@@ -1,6 +1,7 @@
 import { RefreshCw, AlertTriangle, Clock, LayoutGrid, Table } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { formatRelativeTime } from '@/lib/formatters';
+
 interface HeaderProps {
   lastUpdated?: string;
   isStale?: boolean;
@@ -9,15 +10,10 @@ interface HeaderProps {
   setViewMode: (mode: 'cards' | 'table') => void;
   onRefresh: () => void;
 }
-const Header = ({
-  lastUpdated,
-  isStale,
-  isLoading,
-  viewMode,
-  setViewMode,
-  onRefresh
-}: HeaderProps) => {
-  return <header className="space-y-6">
+
+const Header = ({ lastUpdated, isStale, isLoading, viewMode, setViewMode, onRefresh }: HeaderProps) => {
+  return (
+    <header className="space-y-6">
       {/* Logo and title */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div className="flex items-center gap-4">
@@ -41,16 +37,36 @@ const Header = ({
         <div className="flex items-center gap-3">
           {/* View Toggle */}
           <div className="flex bg-card/50 rounded-lg p-1 border border-border/50">
-            <button onClick={() => setViewMode('cards')} className={`p-2 rounded-md transition-all ${viewMode === 'cards' ? 'bg-gradient-to-r from-primary to-secondary text-white' : 'text-muted-foreground hover:text-foreground'}`}>
+            <button
+              onClick={() => setViewMode('cards')}
+              className={`p-2 rounded-md transition-all ${
+                viewMode === 'cards' 
+                  ? 'bg-gradient-to-r from-primary to-secondary text-white' 
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
               <LayoutGrid className="w-4 h-4" />
             </button>
-            <button onClick={() => setViewMode('table')} className={`p-2 rounded-md transition-all ${viewMode === 'table' ? 'bg-gradient-to-r from-primary to-secondary text-white' : 'text-muted-foreground hover:text-foreground'}`}>
+            <button
+              onClick={() => setViewMode('table')}
+              className={`p-2 rounded-md transition-all ${
+                viewMode === 'table' 
+                  ? 'bg-gradient-to-r from-primary to-secondary text-white' 
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
               <Table className="w-4 h-4" />
             </button>
           </div>
 
           {/* Refresh Button */}
-          <Button variant="outline" size="sm" onClick={onRefresh} disabled={isLoading} className="bg-card/50 border-border/50 hover:border-primary/50">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onRefresh}
+            disabled={isLoading}
+            className="bg-card/50 border-border/50 hover:border-primary/50"
+          >
             <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
@@ -59,12 +75,21 @@ const Header = ({
 
       {/* Status bar */}
       <div className="flex flex-wrap items-center gap-4 text-sm">
-        {lastUpdated && <div className="flex items-center gap-2 text-muted-foreground">
+        {lastUpdated && (
+          <div className="flex items-center gap-2 text-muted-foreground">
             <Clock className="w-4 h-4" />
             Updated {formatRelativeTime(lastUpdated)}
-          </div>}
-        {isStale}
+          </div>
+        )}
+        {isStale && (
+          <div className="flex items-center gap-2 text-warning bg-warning/10 px-3 py-1 rounded-full">
+            <AlertTriangle className="w-4 h-4" />
+            Data may be stale
+          </div>
+        )}
       </div>
-    </header>;
+    </header>
+  );
 };
+
 export default Header;
