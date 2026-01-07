@@ -9,7 +9,6 @@ import MarketCard from '@/components/dashboard/MarketCard';
 import MarketsTable from '@/components/dashboard/MarketsTable';
 import LoadingState from '@/components/dashboard/LoadingState';
 import ErrorState from '@/components/dashboard/ErrorState';
-
 const Index = () => {
   // State
   const [sortField, setSortField] = useState<SortField>('totalSupplyApy');
@@ -21,12 +20,21 @@ const Index = () => {
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
 
   // Fetch data
-  const { data: marketsData, isLoading, error, refetch } = useAaveMarkets({
+  const {
+    data: marketsData,
+    isLoading,
+    error,
+    refetch
+  } = useAaveMarkets({
     sort: sortField || undefined,
-    order: sortOrder,
+    order: sortOrder
   });
-  const { data: stats } = useAaveMarketStats();
-  const { data: marketsList } = useAaveMarketsList();
+  const {
+    data: stats
+  } = useAaveMarketStats();
+  const {
+    data: marketsList
+  } = useAaveMarketsList();
 
   // Handle sort
   const handleSort = (field: SortField) => {
@@ -46,13 +54,11 @@ const Index = () => {
   // Filter markets
   const filteredMarkets = useMemo(() => {
     if (!marketsData?.data) return [];
-
     return marketsData.data.filter(market => {
       // Search filter
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
-        if (!market.tokenSymbol.toLowerCase().includes(query) &&
-            !market.tokenName.toLowerCase().includes(query)) {
+        if (!market.tokenSymbol.toLowerCase().includes(query) && !market.tokenName.toLowerCase().includes(query)) {
           return false;
         }
       }
@@ -82,7 +88,6 @@ const Index = () => {
             break;
         }
       }
-
       return true;
     });
   }, [marketsData?.data, searchQuery, selectedMarkets, selectedCategory]);
@@ -96,102 +101,12 @@ const Index = () => {
   if (error) {
     return <ErrorState error={error as Error} onRetry={() => refetch()} />;
   }
-
-  return (
-    <div className="min-h-screen bg-background">
+  return <div className="min-h-screen bg-background">
       {/* Background gradient */}
       <div className="fixed inset-0 bg-gradient-radial from-primary/5 via-transparent to-transparent pointer-events-none" />
       <div className="fixed top-0 right-0 w-1/2 h-1/2 bg-gradient-radial from-secondary/5 via-transparent to-transparent pointer-events-none" />
 
-      <div className="relative z-10 container mx-auto px-4 py-6 md:py-8 space-y-6 md:space-y-8">
-        {/* Header */}
-        <Header
-          lastUpdated={marketsData?.lastUpdated}
-          isStale={marketsData?.isStale}
-          isLoading={isLoading}
-          viewMode={viewMode}
-          setViewMode={setViewMode}
-          onRefresh={() => refetch()}
-        />
-
-        {/* Stats Cards */}
-        <StatsCards 
-          stats={stats} 
-          markets={marketsData?.data} 
-          isLoading={isLoading} 
-        />
-
-        {/* Top Opportunities */}
-        {marketsData?.data && (
-          <TopOpportunities markets={marketsData.data} />
-        )}
-
-        {/* Filters */}
-        <FilterBar
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          selectedMarkets={selectedMarkets}
-          setSelectedMarkets={setSelectedMarkets}
-          selectedCategory={selectedCategory}
-          setSelectedCategory={setSelectedCategory}
-          isApy={isApy}
-          setIsApy={setIsApy}
-          marketsList={marketsList}
-        />
-
-        {/* Results count */}
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            Showing <span className="text-foreground font-medium">{filteredMarkets.length}</span> markets
-          </p>
-        </div>
-
-        {/* Markets Display */}
-        {viewMode === 'cards' ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {filteredMarkets.map((market, index) => (
-              <MarketCard
-                key={`${market.marketName}-${market.tokenSymbol}-${index}`}
-                market={market}
-                isApy={isApy}
-              />
-            ))}
-          </div>
-        ) : (
-          <MarketsTable
-            markets={filteredMarkets}
-            sortField={sortField}
-            sortOrder={sortOrder}
-            onSort={handleSort}
-            isApy={isApy}
-          />
-        )}
-
-        {/* Empty state */}
-        {filteredMarkets.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">No markets found matching your filters</p>
-          </div>
-        )}
-
-        {/* Footer */}
-        <footer className="text-center py-8 border-t border-border/50">
-          <p className="text-sm text-muted-foreground">
-            Data sourced from{' '}
-            <a 
-              href="https://app.aave.com" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-secondary hover:underline"
-            >
-              Aave Protocol
-            </a>
-            {' '}across 17 chains
-          </p>
-        </footer>
-      </div>
-    </div>
-  );
+      
+    </div>;
 };
-
 export default Index;
