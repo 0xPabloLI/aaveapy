@@ -1,4 +1,5 @@
 import { TrendingUp, Zap, ArrowRight } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { MarketWithSpread, ETHEREUM_MARKET_NAMES } from '@/types/aave';
 import { formatPercent, formatSpread } from '@/lib/formatters';
 
@@ -25,6 +26,19 @@ const TopOpportunities = ({ markets }: TopOpportunitiesProps) => {
     return market.chainName;
   };
 
+  const itemVariants = {
+    hidden: { opacity: 0, y: 10 },
+    visible: (i: number) => ({
+      opacity: 1,
+      y: 0,
+      transition: {
+        delay: i * 0.08,
+        duration: 0.3,
+        ease: [0.25, 0.1, 0.25, 1] as const
+      }
+    })
+  };
+
   return (
     <div className="grid md:grid-cols-2 gap-6">
       {/* Top Supply APY */}
@@ -39,10 +53,14 @@ const TopOpportunities = ({ markets }: TopOpportunitiesProps) => {
           </div>
         </div>
         <div className="space-y-3">
-        {topSupply.map((market, i) => (
-            <div 
+          {topSupply.map((market, i) => (
+            <motion.div 
               key={`supply-${market.marketName}-${market.tokenSymbol}`}
-              className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-background to-success/5 border border-border shadow-sm hover:border-success/50 hover:shadow-md transition-all group cursor-pointer"
+              custom={i}
+              initial="hidden"
+              animate="visible"
+              variants={itemVariants}
+              className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-background to-success/5 border border-border hover:border-success/50 transition-all group cursor-pointer"
             >
               <div className="flex items-center gap-3">
                 <span className="text-lg font-bold text-secondary w-6">
@@ -59,7 +77,7 @@ const TopOpportunities = ({ markets }: TopOpportunitiesProps) => {
                 </span>
                 <ArrowRight className="w-4 h-4 text-secondary opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
       </div>
@@ -78,9 +96,13 @@ const TopOpportunities = ({ markets }: TopOpportunitiesProps) => {
         {topLooping.length > 0 ? (
           <div className="space-y-3">
             {topLooping.map((market, i) => (
-              <div 
+              <motion.div 
                 key={`loop-${market.marketName}-${market.tokenSymbol}`}
-                className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-background to-warning/5 border border-border shadow-sm hover:border-warning/50 hover:shadow-md transition-all group cursor-pointer"
+                custom={i}
+                initial="hidden"
+                animate="visible"
+                variants={itemVariants}
+                className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-background to-warning/5 border border-border hover:border-warning/50 transition-all group cursor-pointer"
               >
                 <div className="flex items-center gap-3">
                   <span className="text-lg font-bold text-warning w-6">
@@ -99,7 +121,7 @@ const TopOpportunities = ({ markets }: TopOpportunitiesProps) => {
                     {formatPercent(market.totalSupplyApy)} / {formatPercent(market.totalBorrowApy)}
                   </span>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
         ) : (
