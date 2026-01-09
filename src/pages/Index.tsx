@@ -4,7 +4,6 @@ import { SortField, SortOrder, TokenCategory, STABLECOINS, ETH_RELATED, BTC_RELA
 import Header from '@/components/dashboard/Header';
 import FilterBar from '@/components/dashboard/FilterBar';
 import TopOpportunities from '@/components/dashboard/TopOpportunities';
-import MarketCard from '@/components/dashboard/MarketCard';
 import MarketsTable from '@/components/dashboard/MarketsTable';
 import LoadingState from '@/components/dashboard/LoadingState';
 import ErrorState from '@/components/dashboard/ErrorState';
@@ -17,7 +16,6 @@ const Index = () => {
   const [selectedMarkets, setSelectedMarkets] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<TokenCategory>('all');
   const [isApy, setIsApy] = useState(true);
-  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
 
   // Fetch data
   const { data: marketsData, isLoading, error } = useAaveMarkets({
@@ -106,8 +104,6 @@ const Index = () => {
         {/* Header */}
         <Header
           isLoading={isLoading}
-          viewMode={viewMode}
-          setViewMode={setViewMode}
           lastUpdated={marketsData?.lastUpdated}
         />
 
@@ -136,27 +132,14 @@ const Index = () => {
           </p>
         </div>
 
-        {/* Markets Display */}
-        {viewMode === 'cards' ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {filteredMarkets.map((market, index) => (
-              <MarketCard
-                key={`${market.marketName}-${market.tokenSymbol}-${index}`}
-                market={market}
-                isApy={isApy}
-                index={index}
-              />
-            ))}
-          </div>
-        ) : (
-          <MarketsTable
-            markets={filteredMarkets}
-            sortField={sortField}
-            sortOrder={sortOrder}
-            onSort={handleSort}
-            isApy={isApy}
-          />
-        )}
+        {/* Markets Table */}
+        <MarketsTable
+          markets={filteredMarkets}
+          sortField={sortField}
+          sortOrder={sortOrder}
+          onSort={handleSort}
+          isApy={isApy}
+        />
 
         {/* Empty state */}
         {filteredMarkets.length === 0 && (
