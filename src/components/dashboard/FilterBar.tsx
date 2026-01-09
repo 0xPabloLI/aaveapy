@@ -28,6 +28,7 @@ const categories: { value: TokenCategory; label: string }[] = [
 const ChainIcon = ({ chain, className = "" }: { chain: string; className?: string }) => {
   const size = "w-3.5 h-3.5";
   
+  // Ethereum
   if (chain === 'Ethereum') {
     return (
       <svg className={`${size} ${className}`} viewBox="0 0 256 417" fill="currentColor">
@@ -39,9 +40,110 @@ const ChainIcon = ({ chain, className = "" }: { chain: string; className?: strin
     );
   }
   
-  // Default circle for other chains
+  // Arbitrum
+  if (chain === 'Arbitrum') {
+    return (
+      <svg className={`${size} ${className}`} viewBox="0 0 256 256" fill="currentColor">
+        <circle cx="128" cy="128" r="120" opacity="0.2"/>
+        <path d="M128 28L48 198h40l40-100 40 100h40L128 28z"/>
+      </svg>
+    );
+  }
+  
+  // Optimism
+  if (chain === 'Optimism') {
+    return (
+      <svg className={`${size} ${className}`} viewBox="0 0 256 256" fill="currentColor">
+        <circle cx="128" cy="128" r="100" opacity="0.3"/>
+        <circle cx="128" cy="128" r="60"/>
+      </svg>
+    );
+  }
+  
+  // Polygon
+  if (chain === 'Polygon') {
+    return (
+      <svg className={`${size} ${className}`} viewBox="0 0 256 256" fill="currentColor">
+        <path d="M188 80l-60-35-60 35v70l60 35 60-35V80z" opacity="0.4"/>
+        <path d="M128 95l-40 23v46l40 23 40-23v-46l-40-23z"/>
+      </svg>
+    );
+  }
+  
+  // Avalanche
+  if (chain === 'Avalanche') {
+    return (
+      <svg className={`${size} ${className}`} viewBox="0 0 256 256" fill="currentColor">
+        <path d="M128 40l90 156H38L128 40z" opacity="0.3"/>
+        <path d="M128 80l50 86H78l50-86z"/>
+      </svg>
+    );
+  }
+  
+  // Base
+  if (chain === 'Base') {
+    return (
+      <svg className={`${size} ${className}`} viewBox="0 0 256 256" fill="currentColor">
+        <circle cx="128" cy="128" r="100" opacity="0.3"/>
+        <path d="M128 68c-33 0-60 27-60 60s27 60 60 60c25 0 46-15 55-36h-55v-48h55c-9-21-30-36-55-36z"/>
+      </svg>
+    );
+  }
+  
+  // BNB Chain
+  if (chain === 'BNB Chain') {
+    return (
+      <svg className={`${size} ${className}`} viewBox="0 0 256 256" fill="currentColor">
+        <path d="M128 48l-24 24 24 24 24-24-24-24zm-56 56l-24 24 24 24 24-24-24-24zm112 0l-24 24 24 24 24-24-24-24zm-56 56l-24 24 24 24 24-24-24-24z"/>
+      </svg>
+    );
+  }
+  
+  // Gnosis
+  if (chain === 'Gnosis') {
+    return (
+      <svg className={`${size} ${className}`} viewBox="0 0 256 256" fill="currentColor">
+        <circle cx="128" cy="100" r="40"/>
+        <circle cx="88" cy="170" r="30" opacity="0.6"/>
+        <circle cx="168" cy="170" r="30" opacity="0.6"/>
+      </svg>
+    );
+  }
+  
+  // Scroll
+  if (chain === 'Scroll') {
+    return (
+      <svg className={`${size} ${className}`} viewBox="0 0 256 256" fill="currentColor">
+        <path d="M60 60h136v30H90v106h106v30H60V60z" opacity="0.5"/>
+        <path d="M90 90h106v106H90V90z"/>
+      </svg>
+    );
+  }
+  
+  // Metis
+  if (chain === 'Metis') {
+    return (
+      <svg className={`${size} ${className}`} viewBox="0 0 256 256" fill="currentColor">
+        <path d="M128 48l70 40v80l-70 40-70-40V88l70-40z" opacity="0.4"/>
+        <path d="M128 78l40 23v46l-40 23-40-23v-46l40-23z"/>
+      </svg>
+    );
+  }
+  
+  // ZKSync
+  if (chain === 'ZKSync Era') {
+    return (
+      <svg className={`${size} ${className}`} viewBox="0 0 256 256" fill="currentColor">
+        <path d="M48 128l80-60v40h80l-80 60v-40H48z"/>
+      </svg>
+    );
+  }
+  
+  // Default icon for unknown chains
   return (
-    <div className={`${size} rounded-full bg-current opacity-60 ${className}`} />
+    <div className={`${size} rounded-full bg-current opacity-40 flex items-center justify-center text-[8px] font-bold`}>
+      {chain.charAt(0)}
+    </div>
   );
 };
 
@@ -174,25 +276,21 @@ const FilterBar = ({
           );
         })}
 
-        {/* Separator if both groups exist */}
-        {ethereumMarkets.length > 0 && otherMarkets.length > 0 && (
-          <div className="w-px h-4 bg-border/50 mx-0.5" />
-        )}
-
-        {/* Other chain markets */}
+        {/* Other chain markets with icons */}
         {otherMarkets.map((market) => {
           const isSelected = selectedMarkets.includes(market.marketName);
           return (
             <button
               key={market.marketName}
               onClick={() => toggleMarket(market.marketName)}
-              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
+              className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-all ${
                 isSelected
                   ? 'bg-secondary text-secondary-foreground'
                   : 'bg-card/60 text-muted-foreground hover:text-foreground hover:bg-card border border-border/40'
               }`}
             >
-              {market.chainName}
+              <ChainIcon chain={market.chainName} />
+              <span>{market.chainName}</span>
             </button>
           );
         })}
