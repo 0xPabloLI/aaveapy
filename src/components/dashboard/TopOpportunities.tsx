@@ -13,10 +13,10 @@ const TopOpportunities = ({ markets }: TopOpportunitiesProps) => {
     .sort((a, b) => b.totalSupplyApy - a.totalSupplyApy)
     .slice(0, 5);
 
-  // Top 5 Looping opportunities (most negative spread)
+  // Top 5 Looping opportunities (highest positive spread)
   const topLooping = [...markets]
-    .filter(m => m.apySpread !== null && m.apySpread < 0)
-    .sort((a, b) => (a.apySpread || 0) - (b.apySpread || 0))
+    .filter(m => m.apySpread !== null && m.apySpread > 0)
+    .sort((a, b) => (b.apySpread || 0) - (a.apySpread || 0))
     .slice(0, 5);
 
   const getMarketDisplayName = (market: MarketWithSpread) => {
@@ -181,7 +181,7 @@ const TopOpportunities = ({ markets }: TopOpportunitiesProps) => {
         ) : (
           <div className="text-center py-8 text-muted-foreground">
             <p>No looping opportunities found</p>
-            <p className="text-xs mt-1">Supply APY &gt; Borrow APY for all tokens</p>
+            <p className="text-xs mt-1">Supply APY &lt;= Borrow APY for all tokens</p>
           </div>
         )}
       </div>
