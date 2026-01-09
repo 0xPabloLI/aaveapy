@@ -2,7 +2,6 @@ import { useState, useMemo } from 'react';
 import { useAaveMarkets, useAaveMarketStats, useAaveMarketsList } from '@/hooks/useAaveMarkets';
 import { SortField, SortOrder, TokenCategory, STABLECOINS, ETH_RELATED, BTC_RELATED, PENDLE_TOKENS } from '@/types/aave';
 import Header from '@/components/dashboard/Header';
-import StatsCards from '@/components/dashboard/StatsCards';
 import FilterBar from '@/components/dashboard/FilterBar';
 import TopOpportunities from '@/components/dashboard/TopOpportunities';
 import MarketCard from '@/components/dashboard/MarketCard';
@@ -109,12 +108,6 @@ const Index = () => {
           isLoading={isLoading}
           viewMode={viewMode}
           setViewMode={setViewMode}
-        />
-
-        {/* Stats Cards */}
-        <StatsCards 
-          markets={marketsData?.data} 
-          isLoading={isLoading}
           lastUpdated={marketsData?.lastUpdated}
         />
 
