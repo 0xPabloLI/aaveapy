@@ -144,6 +144,7 @@ const Index = () => {
                 key={`${market.marketName}-${market.tokenSymbol}-${index}`}
                 market={market}
                 isApy={isApy}
+                index={index}
               />
             ))}
           </div>
