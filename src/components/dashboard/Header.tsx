@@ -1,12 +1,14 @@
-import { LayoutGrid, Table } from 'lucide-react';
+import { LayoutGrid, Table, Clock } from 'lucide-react';
+import { formatRelativeTime } from '@/lib/formatters';
 
 interface HeaderProps {
   isLoading: boolean;
   viewMode: 'cards' | 'table';
   setViewMode: (mode: 'cards' | 'table') => void;
+  lastUpdated?: string;
 }
 
-const Header = ({ viewMode, setViewMode }: HeaderProps) => {
+const Header = ({ viewMode, setViewMode, lastUpdated }: HeaderProps) => {
   return (
     <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
       <div className="flex items-center gap-4">
@@ -27,28 +29,38 @@ const Header = ({ viewMode, setViewMode }: HeaderProps) => {
         </div>
       </div>
 
-      {/* View Toggle */}
-      <div className="flex bg-card/50 rounded-lg p-1 border border-border/50">
-        <button
-          onClick={() => setViewMode('cards')}
-          className={`p-2 rounded-md transition-all ${
-            viewMode === 'cards'
-              ? 'bg-gradient-to-r from-primary to-secondary text-white'
-              : 'text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          <LayoutGrid className="w-4 h-4" />
-        </button>
-        <button
-          onClick={() => setViewMode('table')}
-          className={`p-2 rounded-md transition-all ${
-            viewMode === 'table'
-              ? 'bg-gradient-to-r from-primary to-secondary text-white'
-              : 'text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          <Table className="w-4 h-4" />
-        </button>
+      <div className="flex items-center gap-4">
+        {/* Last Updated */}
+        {lastUpdated && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Clock className="w-4 h-4" />
+            <span>Updated {formatRelativeTime(lastUpdated)}</span>
+          </div>
+        )}
+
+        {/* View Toggle */}
+        <div className="flex bg-card/50 rounded-lg p-1 border border-border/50">
+          <button
+            onClick={() => setViewMode('cards')}
+            className={`p-2 rounded-md transition-all ${
+              viewMode === 'cards'
+                ? 'bg-gradient-to-r from-primary to-secondary text-white'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <LayoutGrid className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => setViewMode('table')}
+            className={`p-2 rounded-md transition-all ${
+              viewMode === 'table'
+                ? 'bg-gradient-to-r from-primary to-secondary text-white'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Table className="w-4 h-4" />
+          </button>
+        </div>
       </div>
     </header>
   );
