@@ -39,25 +39,25 @@ const TopOpportunities = ({ markets }: TopOpportunitiesProps) => {
           </div>
         </div>
         <div className="space-y-3">
-          {topSupply.map((market, i) => (
+        {topSupply.map((market, i) => (
             <div 
               key={`supply-${market.marketName}-${market.tokenSymbol}`}
-              className="flex items-center justify-between p-3 rounded-lg bg-accent/30 hover:bg-accent/50 transition-colors group cursor-pointer"
+              className="flex items-center justify-between p-3 rounded-lg bg-card border border-border/50 hover:border-success/30 transition-colors group cursor-pointer"
             >
               <div className="flex items-center gap-3">
-                <span className="text-lg font-bold text-muted-foreground w-6">
+                <span className="text-lg font-bold text-secondary w-6">
                   {i + 1}
                 </span>
                 <div>
-                  <p className="font-semibold">{market.tokenSymbol}</p>
-                  <p className="text-xs text-muted-foreground">{getMarketDisplayName(market)}</p>
+                  <p className="font-semibold text-foreground">{market.tokenSymbol}</p>
+                  <p className="text-xs text-secondary">{getMarketDisplayName(market)}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-success font-bold text-lg">
                   {formatPercent(market.totalSupplyApy)}
                 </span>
-                <ArrowRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                <ArrowRight className="w-4 h-4 text-secondary opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
             </div>
           ))}
