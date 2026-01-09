@@ -38,6 +38,28 @@ const TopOpportunities = ({ markets }: TopOpportunitiesProps) => {
     }
   };
 
+  const iconVariants = {
+    hidden: { scale: 0, rotate: -180 },
+    visible: {
+      scale: 1,
+      rotate: 0,
+      transition: {
+        type: 'spring' as const,
+        stiffness: 260,
+        damping: 20,
+        delay: 0.1
+      }
+    },
+    pulse: {
+      scale: [1, 1.1, 1],
+      transition: {
+        duration: 2,
+        repeat: Infinity,
+        ease: 'easeInOut' as const
+      }
+    }
+  };
+
   const itemVariants = {
     hidden: { opacity: 0, y: 10 },
     visible: (i: number) => ({
@@ -61,9 +83,14 @@ const TopOpportunities = ({ markets }: TopOpportunitiesProps) => {
           animate="visible"
           variants={headerVariants}
         >
-          <div className="p-2 rounded-lg bg-success/10">
+          <motion.div 
+            className="p-2 rounded-lg bg-success/10"
+            variants={iconVariants}
+            initial="hidden"
+            animate={["visible", "pulse"]}
+          >
             <TrendingUp className="w-5 h-5 text-success" />
-          </div>
+          </motion.div>
           <div>
             <h3 className="font-bold">Top Supply APY</h3>
             <p className="text-xs text-muted-foreground">Best lending opportunities</p>
@@ -107,9 +134,14 @@ const TopOpportunities = ({ markets }: TopOpportunitiesProps) => {
           animate="visible"
           variants={headerVariants}
         >
-          <div className="p-2 rounded-lg bg-warning/10">
+          <motion.div 
+            className="p-2 rounded-lg bg-warning/10"
+            variants={iconVariants}
+            initial="hidden"
+            animate={["visible", "pulse"]}
+          >
             <Zap className="w-5 h-5 text-warning" />
-          </div>
+          </motion.div>
           <div>
             <h3 className="font-bold">Leverage Opportunities</h3>
             <p className="text-xs text-muted-foreground">Supply APY &gt; Borrow APY</p>
