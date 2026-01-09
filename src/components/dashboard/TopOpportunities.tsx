@@ -42,7 +42,7 @@ const TopOpportunities = ({ markets }: TopOpportunitiesProps) => {
         {topSupply.map((market, i) => (
             <div 
               key={`supply-${market.marketName}-${market.tokenSymbol}`}
-              className="flex items-center justify-between p-3 rounded-lg bg-background/80 border border-border shadow-sm hover:border-success/50 hover:shadow-md transition-all group cursor-pointer"
+              className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-background to-success/5 border border-border shadow-sm hover:border-success/50 hover:shadow-md transition-all group cursor-pointer"
             >
               <div className="flex items-center gap-3">
                 <span className="text-lg font-bold text-secondary w-6">
@@ -80,22 +80,22 @@ const TopOpportunities = ({ markets }: TopOpportunitiesProps) => {
             {topLooping.map((market, i) => (
               <div 
                 key={`loop-${market.marketName}-${market.tokenSymbol}`}
-                className="flex items-center justify-between p-3 rounded-lg bg-warning/5 border border-warning/20 hover:bg-warning/10 transition-colors group cursor-pointer"
+                className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-background to-warning/5 border border-border shadow-sm hover:border-warning/50 hover:shadow-md transition-all group cursor-pointer"
               >
                 <div className="flex items-center gap-3">
                   <span className="text-lg font-bold text-warning w-6">
                     {i + 1}
                   </span>
                   <div>
-                    <p className="font-semibold">{market.tokenSymbol}</p>
-                    <p className="text-xs text-muted-foreground">{getMarketDisplayName(market)}</p>
+                    <p className="font-semibold text-foreground">{market.tokenSymbol}</p>
+                    <p className="text-xs text-secondary">{getMarketDisplayName(market)}</p>
                   </div>
                 </div>
                 <div className="flex flex-col items-end">
                   <span className="text-warning font-bold">
                     {formatSpread(market.apySpread)}
                   </span>
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-xs text-secondary">
                     {formatPercent(market.totalSupplyApy)} / {formatPercent(market.totalBorrowApy)}
                   </span>
                 </div>
