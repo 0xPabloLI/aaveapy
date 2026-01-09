@@ -64,15 +64,15 @@ const TopOpportunities = ({ markets }: TopOpportunitiesProps) => {
         </div>
       </div>
 
-      {/* Top Looping Opportunities */}
+      {/* Leverage Opportunities */}
       <div className="glass-card rounded-xl p-5">
         <div className="flex items-center gap-2 mb-4">
           <div className="p-2 rounded-lg bg-warning/10">
             <Zap className="w-5 h-5 text-warning" />
           </div>
           <div>
-            <h3 className="font-bold">Looping Opportunities</h3>
-            <p className="text-xs text-muted-foreground">Best arbitrage opportunities</p>
+            <h3 className="font-bold">Leverage Opportunities</h3>
+            <p className="text-xs text-muted-foreground">Supply APY &gt; Borrow APY</p>
           </div>
         </div>
         {topLooping.length > 0 ? (
