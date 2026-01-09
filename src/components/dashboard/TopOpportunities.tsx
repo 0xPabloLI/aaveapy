@@ -26,13 +26,25 @@ const TopOpportunities = ({ markets }: TopOpportunitiesProps) => {
     return market.chainName;
   };
 
+  const headerVariants = {
+    hidden: { opacity: 0, x: -10 },
+    visible: {
+      opacity: 1,
+      x: 0,
+      transition: {
+        duration: 0.4,
+        ease: [0.25, 0.1, 0.25, 1] as const
+      }
+    }
+  };
+
   const itemVariants = {
     hidden: { opacity: 0, y: 10 },
     visible: (i: number) => ({
       opacity: 1,
       y: 0,
       transition: {
-        delay: i * 0.08,
+        delay: 0.2 + i * 0.08,
         duration: 0.3,
         ease: [0.25, 0.1, 0.25, 1] as const
       }
@@ -43,7 +55,12 @@ const TopOpportunities = ({ markets }: TopOpportunitiesProps) => {
     <div className="grid md:grid-cols-2 gap-6">
       {/* Top Supply APY */}
       <div className="glass-card rounded-xl p-5">
-        <div className="flex items-center gap-2 mb-4">
+        <motion.div 
+          className="flex items-center gap-2 mb-4"
+          initial="hidden"
+          animate="visible"
+          variants={headerVariants}
+        >
           <div className="p-2 rounded-lg bg-success/10">
             <TrendingUp className="w-5 h-5 text-success" />
           </div>
@@ -51,7 +68,7 @@ const TopOpportunities = ({ markets }: TopOpportunitiesProps) => {
             <h3 className="font-bold">Top Supply APY</h3>
             <p className="text-xs text-muted-foreground">Best lending opportunities</p>
           </div>
-        </div>
+        </motion.div>
         <div className="space-y-3">
           {topSupply.map((market, i) => (
             <motion.div 
@@ -84,7 +101,12 @@ const TopOpportunities = ({ markets }: TopOpportunitiesProps) => {
 
       {/* Leverage Opportunities */}
       <div className="glass-card rounded-xl p-5">
-        <div className="flex items-center gap-2 mb-4">
+        <motion.div 
+          className="flex items-center gap-2 mb-4"
+          initial="hidden"
+          animate="visible"
+          variants={headerVariants}
+        >
           <div className="p-2 rounded-lg bg-warning/10">
             <Zap className="w-5 h-5 text-warning" />
           </div>
@@ -92,7 +114,7 @@ const TopOpportunities = ({ markets }: TopOpportunitiesProps) => {
             <h3 className="font-bold">Leverage Opportunities</h3>
             <p className="text-xs text-muted-foreground">Supply APY &gt; Borrow APY</p>
           </div>
-        </div>
+        </motion.div>
         {topLooping.length > 0 ? (
           <div className="space-y-3">
             {topLooping.map((market, i) => (
