@@ -1,4 +1,5 @@
 import { ExternalLink, TrendingUp, TrendingDown, Zap } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { MarketWithSpread, ETHEREUM_MARKET_NAMES } from '@/types/aave';
 import { formatPercent, formatSpread, apyToApr } from '@/lib/formatters';
 import { Badge } from '@/components/ui/badge';
@@ -6,9 +7,10 @@ import { Badge } from '@/components/ui/badge';
 interface MarketCardProps {
   market: MarketWithSpread;
   isApy: boolean;
+  index?: number;
 }
 
-const MarketCard = ({ market, isApy }: MarketCardProps) => {
+const MarketCard = ({ market, isApy, index = 0 }: MarketCardProps) => {
   const getMarketDisplayName = () => {
     if (market.chainName === 'Ethereum' && ETHEREUM_MARKET_NAMES[market.marketName]) {
       return `ETH ${ETHEREUM_MARKET_NAMES[market.marketName]}`;
@@ -28,9 +30,18 @@ const MarketCard = ({ market, isApy }: MarketCardProps) => {
   const hasIncentives = market.totalIncentiveSupplyApy > 0 || market.totalIncentiveBorrowApy > 0;
 
   return (
-    <div className={`glass-card rounded-xl p-4 hover:scale-[1.01] transition-all duration-300 group relative overflow-hidden ${
-      isLoopingOpportunity ? 'ring-1 ring-warning/50' : ''
-    }`}>
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ 
+        duration: 0.4, 
+        delay: Math.min(index * 0.05, 0.5),
+        ease: [0.25, 0.1, 0.25, 1]
+      }}
+      className={`glass-card rounded-xl p-4 hover:scale-[1.01] transition-all duration-300 group relative overflow-hidden ${
+        isLoopingOpportunity ? 'ring-1 ring-warning/50' : ''
+      }`}
+    >
       {/* Looping opportunity indicator */}
       {isLoopingOpportunity && (
         <div className="absolute top-0 right-0 bg-warning text-warning-foreground px-2 py-0.5 text-xs font-bold rounded-bl-lg flex items-center gap-1">
@@ -107,7 +118,7 @@ const MarketCard = ({ market, isApy }: MarketCardProps) => {
 
       {/* Hover effect */}
       <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-    </div>
+    </motion.div>
   );
 };
 
