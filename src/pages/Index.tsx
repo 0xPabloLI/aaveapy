@@ -21,7 +21,7 @@ const Index = () => {
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
 
   // Fetch data
-  const { data: marketsData, isLoading, error, refetch } = useAaveMarkets({
+  const { data: marketsData, isLoading, error } = useAaveMarkets({
     sort: sortField || undefined,
     order: sortOrder,
   });
@@ -94,7 +94,7 @@ const Index = () => {
 
   // Error state
   if (error) {
-    return <ErrorState error={error as Error} onRetry={() => refetch()} />;
+    return <ErrorState error={error as Error} />;
   }
 
   return (
@@ -111,7 +111,6 @@ const Index = () => {
           isLoading={isLoading}
           viewMode={viewMode}
           setViewMode={setViewMode}
-          onRefresh={() => refetch()}
         />
 
         {/* Stats Cards */}

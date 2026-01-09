@@ -1,12 +1,10 @@
-import { AlertTriangle, RefreshCw } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { AlertTriangle } from 'lucide-react';
 
 interface ErrorStateProps {
   error: Error;
-  onRetry: () => void;
 }
 
-const ErrorState = ({ error, onRetry }: ErrorStateProps) => {
+const ErrorState = ({ error }: ErrorStateProps) => {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="text-center max-w-md">
@@ -14,13 +12,9 @@ const ErrorState = ({ error, onRetry }: ErrorStateProps) => {
           <AlertTriangle className="w-8 h-8 text-destructive" />
         </div>
         <h2 className="text-xl font-bold mb-2">Failed to load markets</h2>
-        <p className="text-muted-foreground mb-4">
-          {error.message || 'An unexpected error occurred. Please try again.'}
+        <p className="text-muted-foreground">
+          {error.message || 'An unexpected error occurred. Please try again later.'}
         </p>
-        <Button onClick={onRetry} className="bg-gradient-to-r from-primary to-secondary">
-          <RefreshCw className="w-4 h-4 mr-2" />
-          Try Again
-        </Button>
       </div>
     </div>
   );
