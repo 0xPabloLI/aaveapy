@@ -106,8 +106,6 @@ const Index = () => {
       <div className="relative z-10 container mx-auto px-4 py-6 md:py-8 space-y-6 md:space-y-8">
         {/* Header */}
         <Header
-          lastUpdated={marketsData?.lastUpdated}
-          isStale={marketsData?.isStale}
           isLoading={isLoading}
           viewMode={viewMode}
           setViewMode={setViewMode}
@@ -115,9 +113,9 @@ const Index = () => {
 
         {/* Stats Cards */}
         <StatsCards 
-          stats={stats} 
           markets={marketsData?.data} 
-          isLoading={isLoading} 
+          isLoading={isLoading}
+          lastUpdated={marketsData?.lastUpdated}
         />
 
         {/* Top Opportunities */}
