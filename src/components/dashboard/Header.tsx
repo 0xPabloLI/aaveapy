@@ -1,5 +1,4 @@
-import { RefreshCw, AlertTriangle, Clock, LayoutGrid, Table } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { AlertTriangle, Clock, LayoutGrid, Table } from 'lucide-react';
 import { formatRelativeTime } from '@/lib/formatters';
 
 interface HeaderProps {
@@ -8,10 +7,9 @@ interface HeaderProps {
   isLoading: boolean;
   viewMode: 'cards' | 'table';
   setViewMode: (mode: 'cards' | 'table') => void;
-  onRefresh: () => void;
 }
 
-const Header = ({ lastUpdated, isStale, isLoading, viewMode, setViewMode, onRefresh }: HeaderProps) => {
+const Header = ({ lastUpdated, isStale, isLoading, viewMode, setViewMode }: HeaderProps) => {
   return (
     <header className="space-y-6">
       {/* Logo and title */}
@@ -40,8 +38,8 @@ const Header = ({ lastUpdated, isStale, isLoading, viewMode, setViewMode, onRefr
             <button
               onClick={() => setViewMode('cards')}
               className={`p-2 rounded-md transition-all ${
-                viewMode === 'cards' 
-                  ? 'bg-gradient-to-r from-primary to-secondary text-white' 
+                viewMode === 'cards'
+                  ? 'bg-gradient-to-r from-primary to-secondary text-white'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -50,26 +48,14 @@ const Header = ({ lastUpdated, isStale, isLoading, viewMode, setViewMode, onRefr
             <button
               onClick={() => setViewMode('table')}
               className={`p-2 rounded-md transition-all ${
-                viewMode === 'table' 
-                  ? 'bg-gradient-to-r from-primary to-secondary text-white' 
+                viewMode === 'table'
+                  ? 'bg-gradient-to-r from-primary to-secondary text-white'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               <Table className="w-4 h-4" />
             </button>
           </div>
-
-          {/* Refresh Button */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onRefresh}
-            disabled={isLoading}
-            className="bg-card/50 border-border/50 hover:border-primary/50"
-          >
-            <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
         </div>
       </div>
 

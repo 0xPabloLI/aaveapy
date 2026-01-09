@@ -38,7 +38,6 @@ export const useAaveMarkets = (params?: FetchMarketsParams) => {
   return useQuery({
     queryKey: ['aave-markets', params],
     queryFn: () => fetchMarkets(params),
-    refetchInterval: 30000, // Refetch every 30 seconds
     staleTime: 15000,
   });
 };
