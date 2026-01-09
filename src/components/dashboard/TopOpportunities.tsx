@@ -42,7 +42,7 @@ const TopOpportunities = ({ markets }: TopOpportunitiesProps) => {
         {topSupply.map((market, i) => (
             <div 
               key={`supply-${market.marketName}-${market.tokenSymbol}`}
-              className="flex items-center justify-between p-3 rounded-lg bg-card border border-border/50 hover:border-success/30 transition-colors group cursor-pointer"
+              className="flex items-center justify-between p-3 rounded-lg bg-background/80 border border-border shadow-sm hover:border-success/50 hover:shadow-md transition-all group cursor-pointer"
             >
               <div className="flex items-center gap-3">
                 <span className="text-lg font-bold text-secondary w-6">
