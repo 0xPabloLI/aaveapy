@@ -120,9 +120,7 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
                     delay: Math.min(index * 0.02, 0.4),
                     ease: [0.25, 0.1, 0.25, 1]
                   }}
-                  className={`border-b border-border/30 hover:bg-accent/30 transition-colors cursor-pointer md:cursor-default ${
-                    isLoopingOpportunity ? 'bg-warning/5' : ''
-                  }`}
+                  className="border-b border-border/30 hover:bg-accent/30 transition-colors cursor-pointer md:cursor-default"
                   onClick={() => {
                     // Only toggle on mobile
                     if (window.innerWidth < 768) {
