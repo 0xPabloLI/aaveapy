@@ -1,4 +1,4 @@
-import { Search, X } from 'lucide-react';
+import { Search, X, Check, RotateCcw } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -36,14 +36,6 @@ const FilterBar = ({
   setIsApy,
   marketsList,
 }: FilterBarProps) => {
-  // Group markets by chain
-  const groupedMarkets = marketsList?.reduce((acc, market) => {
-    const chain = market.chainName;
-    if (!acc[chain]) acc[chain] = [];
-    acc[chain].push(market);
-    return acc;
-  }, {} as Record<string, MarketListItem[]>) || {};
-
   const getMarketDisplayName = (market: MarketListItem) => {
     if (market.chainName === 'Ethereum' && ETHEREUM_MARKET_NAMES[market.marketName]) {
       return `Ethereum ${ETHEREUM_MARKET_NAMES[market.marketName]}`;
@@ -59,41 +51,51 @@ const FilterBar = ({
     }
   };
 
+  const selectAllMarkets = () => {
+    if (marketsList) {
+      setSelectedMarkets(marketsList.map(m => m.marketName));
+    }
+  };
+
+  const deselectAllMarkets = () => {
+    setSelectedMarkets([]);
+  };
+
   const clearFilters = () => {
     setSearchQuery('');
     setSelectedMarkets([]);
     setSelectedCategory('all');
   };
 
+  const allMarketsSelected = marketsList && selectedMarkets.length === marketsList.length;
   const hasActiveFilters = searchQuery || selectedMarkets.length > 0 || selectedCategory !== 'all';
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {/* Main filter row */}
-      <div className="flex flex-col md:flex-row gap-4">
+      <div className="flex flex-col md:flex-row gap-3 md:gap-4 items-start md:items-center">
         {/* Search */}
-        <div className="relative flex-1 max-w-md">
+        <div className="relative flex-1 w-full md:max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             placeholder="Search tokens..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 bg-card/50 border-border/50 focus:border-primary"
+            className="pl-10 bg-card/50 border-border/50 focus:border-primary h-10"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
             >
               <X className="w-4 h-4" />
             </button>
           )}
         </div>
 
-
         {/* APY/APR Toggle */}
-        <div className="flex items-center gap-2 bg-card/50 border border-border/50 rounded-lg px-4 py-2">
-          <Label htmlFor="apy-toggle" className={`text-sm ${!isApy ? 'text-foreground' : 'text-muted-foreground'}`}>
+        <div className="flex items-center gap-2 bg-card/50 border border-border/50 rounded-lg px-4 h-10">
+          <Label htmlFor="apy-toggle" className={`text-sm cursor-pointer ${!isApy ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
             APR
           </Label>
           <Switch
@@ -102,7 +104,7 @@ const FilterBar = ({
             onCheckedChange={setIsApy}
             className="data-[state=checked]:bg-primary"
           />
-          <Label htmlFor="apy-toggle" className={`text-sm ${isApy ? 'text-foreground' : 'text-muted-foreground'}`}>
+          <Label htmlFor="apy-toggle" className={`text-sm cursor-pointer ${isApy ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
             APY
           </Label>
         </div>
@@ -113,51 +115,86 @@ const FilterBar = ({
             variant="ghost"
             size="sm"
             onClick={clearFilters}
-            className="text-muted-foreground hover:text-foreground"
+            className="text-muted-foreground hover:text-foreground h-10"
           >
-            <X className="w-4 h-4 mr-1" />
-            Clear
+            <RotateCcw className="w-4 h-4 mr-1" />
+            Reset
           </Button>
         )}
       </div>
 
-      {/* Category Pills */}
-      <div className="flex flex-wrap gap-2">
-        {categories.map((category) => (
-          <button
-            key={category.value}
-            onClick={() => setSelectedCategory(category.value)}
-            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
-              selectedCategory === category.value
-                ? 'bg-gradient-to-r from-primary to-secondary text-white shadow-lg glow-primary'
-                : 'bg-card/50 text-muted-foreground hover:text-foreground hover:bg-card border border-border/50'
-            }`}
-          >
-            {category.label}
-          </button>
-        ))}
+      {/* Token Category Section */}
+      <div className="space-y-2">
+        <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Token Category</div>
+        <div className="flex flex-wrap gap-2">
+          {categories.map((category) => (
+            <button
+              key={category.value}
+              onClick={() => setSelectedCategory(category.value)}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
+                selectedCategory === category.value
+                  ? 'bg-gradient-to-r from-primary to-secondary text-white shadow-lg'
+                  : 'bg-card/50 text-muted-foreground hover:text-foreground hover:bg-card border border-border/50'
+              }`}
+            >
+              {category.label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Market Pills */}
+      {/* Market Selection Section */}
       {marketsList && marketsList.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {marketsList.map((market) => {
-            const isSelected = selectedMarkets.includes(market.marketName);
-            return (
-              <button
-                key={market.marketName}
-                onClick={() => toggleMarket(market.marketName)}
-                className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
-                  isSelected
-                    ? 'bg-secondary/30 text-secondary border border-secondary/50'
-                    : 'bg-card/30 text-muted-foreground hover:text-foreground hover:bg-card/50 border border-border/30'
-                }`}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              Markets
+              {selectedMarkets.length > 0 && (
+                <span className="ml-2 text-primary">
+                  ({selectedMarkets.length}/{marketsList.length})
+                </span>
+              )}
+            </div>
+            <div className="flex gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={allMarketsSelected ? deselectAllMarkets : selectAllMarkets}
+                className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
               >
-                {getMarketDisplayName(market)}
-                {isSelected && <X className="w-3 h-3 ml-1 inline" />}
-              </button>
-            );
-          })}
+                {allMarketsSelected ? (
+                  <>
+                    <X className="w-3 h-3 mr-1" />
+                    Deselect All
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-3 h-3 mr-1" />
+                    Select All
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {marketsList.map((market) => {
+              const isSelected = selectedMarkets.includes(market.marketName);
+              return (
+                <button
+                  key={market.marketName}
+                  onClick={() => toggleMarket(market.marketName)}
+                  className={`inline-flex items-center px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
+                    isSelected
+                      ? 'bg-secondary/20 text-secondary border border-secondary/40 shadow-sm'
+                      : 'bg-card/40 text-muted-foreground hover:text-foreground hover:bg-card/60 border border-border/40'
+                  }`}
+                >
+                  {getMarketDisplayName(market)}
+                  {isSelected && <X className="w-3 h-3 ml-1.5 opacity-70" />}
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>
