@@ -1,4 +1,5 @@
 import { ArrowUpDown, ArrowUp, ArrowDown, Zap, TrendingUp, TrendingDown } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { MarketWithSpread, SortField, SortOrder, ETHEREUM_MARKET_NAMES } from '@/types/aave';
@@ -83,9 +84,16 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
               const isLoopingOpportunity = market.apySpread !== null && market.apySpread < 0;
 
               return (
-                <TableRow 
+                <motion.tr
                   key={`${market.marketName}-${market.tokenSymbol}-${index}`}
-                  className={`border-border/30 hover:bg-accent/30 transition-colors ${
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ 
+                    duration: 0.3, 
+                    delay: Math.min(index * 0.03, 0.5),
+                    ease: [0.25, 0.1, 0.25, 1]
+                  }}
+                  className={`border-b border-border/30 hover:bg-accent/30 transition-colors ${
                     isLoopingOpportunity ? 'bg-warning/5' : ''
                   }`}
                 >
@@ -160,8 +168,8 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
                       )}
                       {market.totalIncentiveSupplyApy === 0 && market.totalIncentiveBorrowApy === 0 && '-'}
                     </div>
-                  </TableCell>
-                </TableRow>
+                </TableCell>
+                </motion.tr>
               );
             })}
           </TableBody>
