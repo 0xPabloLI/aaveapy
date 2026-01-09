@@ -30,45 +30,47 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
     return market.chainName;
   };
 
+  const headerColumns = [
+    { key: 'token', label: 'Token', sortable: false },
+    { key: 'market', label: 'Market', sortable: false },
+    { key: 'supply', label: `Supply ${isApy ? 'APY' : 'APR'}`, sortable: true, field: 'totalSupplyApy' as SortField, icon: TrendingUp, iconColor: 'text-success' },
+    { key: 'borrow', label: `Borrow ${isApy ? 'APY' : 'APR'}`, sortable: true, field: 'totalBorrowApy' as SortField, icon: TrendingDown, iconColor: 'text-secondary' },
+    { key: 'spread', label: 'Spread', sortable: true, field: 'apySpread' as SortField, icon: Zap, iconColor: 'text-warning' },
+    { key: 'rewards', label: 'Rewards', sortable: false, align: 'right' },
+  ];
+
   return (
     <div className="glass-card rounded-xl overflow-hidden">
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow className="border-border/50 hover:bg-transparent">
-              <TableHead className="text-muted-foreground font-semibold">Token</TableHead>
-              <TableHead className="text-muted-foreground font-semibold">Market</TableHead>
-              <TableHead 
-                className="text-muted-foreground font-semibold cursor-pointer hover:text-foreground transition-colors"
-                onClick={() => onSort('totalSupplyApy')}
-              >
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-success" />
-                  Supply {isApy ? 'APY' : 'APR'}
-                  {getSortIcon('totalSupplyApy')}
-                </div>
-              </TableHead>
-              <TableHead 
-                className="text-muted-foreground font-semibold cursor-pointer hover:text-foreground transition-colors"
-                onClick={() => onSort('totalBorrowApy')}
-              >
-                <div className="flex items-center gap-2">
-                  <TrendingDown className="w-4 h-4 text-secondary" />
-                  Borrow {isApy ? 'APY' : 'APR'}
-                  {getSortIcon('totalBorrowApy')}
-                </div>
-              </TableHead>
-              <TableHead 
-                className="text-muted-foreground font-semibold cursor-pointer hover:text-foreground transition-colors"
-                onClick={() => onSort('apySpread')}
-              >
-                <div className="flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-warning" />
-                  Spread
-                  {getSortIcon('apySpread')}
-                </div>
-              </TableHead>
-              <TableHead className="text-muted-foreground font-semibold text-right">Rewards</TableHead>
+              {headerColumns.map((col, index) => (
+                <motion.th
+                  key={col.key}
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ 
+                    duration: 0.3, 
+                    delay: index * 0.05,
+                    ease: [0.25, 0.1, 0.25, 1]
+                  }}
+                  className={`h-10 px-2 text-left align-middle font-semibold text-muted-foreground [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px] ${
+                    col.sortable ? 'cursor-pointer hover:text-foreground transition-colors' : ''
+                  } ${col.align === 'right' ? 'text-right' : ''}`}
+                  onClick={col.sortable && col.field ? () => onSort(col.field!) : undefined}
+                >
+                  {col.sortable && col.icon ? (
+                    <div className="flex items-center gap-2">
+                      <col.icon className={`w-4 h-4 ${col.iconColor}`} />
+                      {col.label}
+                      {getSortIcon(col.field!)}
+                    </div>
+                  ) : (
+                    col.label
+                  )}
+                </motion.th>
+              ))}
             </TableRow>
           </TableHeader>
           <TableBody>
