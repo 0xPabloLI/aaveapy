@@ -24,26 +24,41 @@ const categories: { value: TokenCategory; label: string }[] = [
   { value: 'pendle', label: 'Pendle' },
 ];
 
-// Simplified market display names
-const getShortMarketName = (market: MarketListItem) => {
-  if (market.chainName === 'Ethereum') {
-    const suffix = ETHEREUM_MARKET_NAMES[market.marketName];
-    return suffix ? `ETH ${suffix}` : 'Ethereum';
+// Chain icons as simple SVG components
+const ChainIcon = ({ chain, className = "" }: { chain: string; className?: string }) => {
+  const size = "w-3.5 h-3.5";
+  
+  if (chain === 'Ethereum') {
+    return (
+      <svg className={`${size} ${className}`} viewBox="0 0 256 417" fill="currentColor">
+        <path d="M127.961 0l-2.795 9.5v275.668l2.795 2.79 127.962-75.638z" opacity="0.6"/>
+        <path d="M127.962 0L0 212.32l127.962 75.639V154.158z"/>
+        <path d="M127.961 312.187l-1.575 1.92v98.199l1.575 4.6L256 236.587z" opacity="0.6"/>
+        <path d="M127.962 416.905v-104.72L0 236.585z"/>
+      </svg>
+    );
   }
-  // Shorten long chain names
-  const shortNames: Record<string, string> = {
-    'Arbitrum': 'ARB',
-    'Optimism': 'OP',
-    'Polygon': 'MATIC',
-    'Avalanche': 'AVAX',
-    'Base': 'BASE',
-    'Metis': 'METIS',
-    'Gnosis': 'GNO',
-    'BNB Chain': 'BNB',
-    'Scroll': 'SCROLL',
-    'ZKSync': 'ZK',
+  
+  // Default circle for other chains
+  return (
+    <div className={`${size} rounded-full bg-current opacity-60 ${className}`} />
+  );
+};
+
+// Get market display info
+const getMarketInfo = (market: MarketListItem) => {
+  if (market.chainName === 'Ethereum' && ETHEREUM_MARKET_NAMES[market.marketName]) {
+    return {
+      label: ETHEREUM_MARKET_NAMES[market.marketName],
+      chain: 'Ethereum',
+      isEthereum: true,
+    };
+  }
+  return {
+    label: market.chainName,
+    chain: market.chainName,
+    isEthereum: false,
   };
-  return shortNames[market.chainName] || market.chainName;
 };
 
 const FilterBar = ({
@@ -65,92 +80,119 @@ const FilterBar = ({
     }
   };
 
-  // Check if no markets selected (show all) or some selected
   const noMarketsSelected = selectedMarkets.length === 0;
+
+  // Separate Ethereum markets and other chains
+  const ethereumMarkets = marketsList?.filter(m => m.chainName === 'Ethereum') || [];
+  const otherMarkets = marketsList?.filter(m => m.chainName !== 'Ethereum') || [];
 
   return (
     <div className="space-y-4">
-      {/* Top row: Search + APY toggle */}
-      <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
-        <div className="relative flex-1 max-w-md">
+      {/* Row 1: Search + APY Toggle */}
+      <div className="flex items-center gap-3">
+        <div className="relative flex-1 max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Search tokens..."
+            placeholder="Search..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 bg-card/50 border-border/50 focus:border-primary h-9"
+            className="pl-9 pr-8 bg-card/50 border-border/50 focus:border-primary h-8 text-sm"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
             >
-              <X className="w-4 h-4" />
+              <X className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
 
-        <div className="flex items-center gap-2 bg-card/50 border border-border/50 rounded-md px-3 h-9">
-          <Label htmlFor="apy-toggle" className={`text-xs cursor-pointer ${!isApy ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
-            APR
-          </Label>
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <span className={!isApy ? 'text-foreground font-medium' : ''}>APR</span>
           <Switch
-            id="apy-toggle"
             checked={isApy}
             onCheckedChange={setIsApy}
-            className="data-[state=checked]:bg-primary scale-90"
+            className="data-[state=checked]:bg-primary scale-75"
           />
-          <Label htmlFor="apy-toggle" className={`text-xs cursor-pointer ${isApy ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
-            APY
-          </Label>
+          <span className={isApy ? 'text-foreground font-medium' : ''}>APY</span>
         </div>
       </div>
 
-      {/* Unified filter pills row */}
+      {/* Row 2: Token Categories */}
       <div className="flex flex-wrap items-center gap-1.5">
-        {/* Token categories */}
+        <span className="text-xs text-muted-foreground mr-1">Tokens:</span>
         {categories.map((category) => (
           <button
             key={category.value}
             onClick={() => setSelectedCategory(category.value)}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
+            className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
               selectedCategory === category.value
                 ? 'bg-primary text-primary-foreground'
-                : 'bg-card/50 text-muted-foreground hover:text-foreground hover:bg-card/80 border border-border/50'
+                : 'bg-card/60 text-muted-foreground hover:text-foreground hover:bg-card border border-border/40'
             }`}
           >
             {category.label}
           </button>
         ))}
+      </div>
 
-        {/* Separator */}
-        <div className="w-px h-5 bg-border/50 mx-1" />
-
-        {/* Markets: "All" option + individual markets */}
+      {/* Row 3: Markets */}
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span className="text-xs text-muted-foreground mr-1">Markets:</span>
+        
+        {/* All Markets option */}
         <button
           onClick={() => setSelectedMarkets([])}
-          className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
+          className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
             noMarketsSelected
               ? 'bg-secondary text-secondary-foreground'
-              : 'bg-card/50 text-muted-foreground hover:text-foreground hover:bg-card/80 border border-border/50'
+              : 'bg-card/60 text-muted-foreground hover:text-foreground hover:bg-card border border-border/40'
           }`}
         >
-          All Markets
+          All
         </button>
 
-        {marketsList?.map((market) => {
+        {/* Ethereum markets with chain icon */}
+        {ethereumMarkets.map((market) => {
+          const info = getMarketInfo(market);
           const isSelected = selectedMarkets.includes(market.marketName);
           return (
             <button
               key={market.marketName}
               onClick={() => toggleMarket(market.marketName)}
-              className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
+              className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-all ${
                 isSelected
                   ? 'bg-secondary text-secondary-foreground'
-                  : 'bg-card/50 text-muted-foreground hover:text-foreground hover:bg-card/80 border border-border/50'
+                  : 'bg-card/60 text-muted-foreground hover:text-foreground hover:bg-card border border-border/40'
+              }`}
+              title={`Ethereum ${info.label}`}
+            >
+              <ChainIcon chain="Ethereum" />
+              <span>{info.label}</span>
+            </button>
+          );
+        })}
+
+        {/* Separator if both groups exist */}
+        {ethereumMarkets.length > 0 && otherMarkets.length > 0 && (
+          <div className="w-px h-4 bg-border/50 mx-0.5" />
+        )}
+
+        {/* Other chain markets */}
+        {otherMarkets.map((market) => {
+          const isSelected = selectedMarkets.includes(market.marketName);
+          return (
+            <button
+              key={market.marketName}
+              onClick={() => toggleMarket(market.marketName)}
+              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
+                isSelected
+                  ? 'bg-secondary text-secondary-foreground'
+                  : 'bg-card/60 text-muted-foreground hover:text-foreground hover:bg-card border border-border/40'
               }`}
             >
-              {getShortMarketName(market)}
+              {market.chainName}
             </button>
           );
         })}
