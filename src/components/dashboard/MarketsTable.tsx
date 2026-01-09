@@ -36,7 +36,6 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
     { key: 'supply', label: `Supply ${isApy ? 'APY' : 'APR'}`, sortable: true, field: 'totalSupplyApy' as SortField, icon: TrendingUp, iconColor: 'text-success', hideOnMobile: false },
     { key: 'borrow', label: `Borrow ${isApy ? 'APY' : 'APR'}`, sortable: true, field: 'totalBorrowApy' as SortField, icon: TrendingDown, iconColor: 'text-secondary', hideOnMobile: false },
     { key: 'spread', label: 'Spread', sortable: true, field: 'apySpread' as SortField, icon: Zap, iconColor: 'text-warning', hideOnMobile: true },
-    { key: 'rewards', label: 'Rewards', sortable: false, align: 'right', hideOnMobile: true },
   ];
 
   return (
@@ -57,7 +56,7 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
                   }}
                   className={`h-10 px-2 text-left align-middle font-semibold text-muted-foreground text-sm [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px] ${
                     col.sortable ? 'cursor-pointer hover:text-foreground transition-colors' : ''
-                  } ${col.align === 'right' ? 'text-right' : ''} ${col.hideOnMobile ? 'hidden md:table-cell' : ''}`}
+                  } ${col.hideOnMobile ? 'hidden md:table-cell' : ''}`}
                   onClick={col.sortable && col.field ? () => onSort(col.field!) : undefined}
                 >
                   {col.sortable && col.icon ? (
@@ -162,23 +161,6 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
                     </div>
                   </TableCell>
 
-                  {/* Rewards - hidden on mobile */}
-                  <TableCell className="hidden md:table-cell text-right py-2 px-2">
-                    <div className="text-xs text-muted-foreground">
-                      {market.totalIncentiveSupplyApy > 0 && (
-                        <span className="text-success">
-                          +{formatPercent(market.totalIncentiveSupplyApy)}
-                        </span>
-                      )}
-                      {market.totalIncentiveSupplyApy > 0 && market.totalIncentiveBorrowApy > 0 && ' / '}
-                      {market.totalIncentiveBorrowApy > 0 && (
-                        <span className="text-secondary">
-                          -{formatPercent(market.totalIncentiveBorrowApy)}
-                        </span>
-                      )}
-                      {market.totalIncentiveSupplyApy === 0 && market.totalIncentiveBorrowApy === 0 && '-'}
-                    </div>
-                  </TableCell>
                 </motion.tr>
               );
             })}
