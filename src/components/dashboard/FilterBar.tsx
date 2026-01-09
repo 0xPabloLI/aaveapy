@@ -1,17 +1,8 @@
-import { Search, X, Filter } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuCheckboxItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-  DropdownMenuLabel,
-} from '@/components/ui/dropdown-menu';
 import { TokenCategory, MarketListItem, ETHEREUM_MARKET_NAMES } from '@/types/aave';
 
 interface FilterBarProps {
@@ -99,40 +90,6 @@ const FilterBar = ({
           )}
         </div>
 
-        {/* Market Filter Dropdown */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="gap-2 bg-card/50 border-border/50">
-              <Filter className="w-4 h-4" />
-              Markets
-              {selectedMarkets.length > 0 && (
-                <Badge variant="secondary" className="ml-1 bg-primary/20 text-primary">
-                  {selectedMarkets.length}
-                </Badge>
-              )}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-64 max-h-80 overflow-y-auto bg-card border-border">
-            {Object.entries(groupedMarkets).map(([chain, markets]) => (
-              <div key={chain}>
-                <DropdownMenuLabel className="text-muted-foreground text-xs">
-                  {chain}
-                </DropdownMenuLabel>
-                {markets.map((market) => (
-                  <DropdownMenuCheckboxItem
-                    key={market.marketName}
-                    checked={selectedMarkets.includes(market.marketName)}
-                    onCheckedChange={() => toggleMarket(market.marketName)}
-                    className="cursor-pointer"
-                  >
-                    {getMarketDisplayName(market)}
-                  </DropdownMenuCheckboxItem>
-                ))}
-                <DropdownMenuSeparator />
-              </div>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
 
         {/* APY/APR Toggle */}
         <div className="flex items-center gap-2 bg-card/50 border border-border/50 rounded-lg px-4 py-2">
@@ -181,21 +138,24 @@ const FilterBar = ({
         ))}
       </div>
 
-      {/* Active market filters */}
-      {selectedMarkets.length > 0 && (
+      {/* Market Pills */}
+      {marketsList && marketsList.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          {selectedMarkets.map((marketName) => {
-            const market = marketsList?.find(m => m.marketName === marketName);
+          {marketsList.map((market) => {
+            const isSelected = selectedMarkets.includes(market.marketName);
             return (
-              <Badge
-                key={marketName}
-                variant="secondary"
-                className="bg-secondary/20 text-secondary border border-secondary/30 cursor-pointer hover:bg-secondary/30"
-                onClick={() => toggleMarket(marketName)}
+              <button
+                key={market.marketName}
+                onClick={() => toggleMarket(market.marketName)}
+                className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
+                  isSelected
+                    ? 'bg-secondary/30 text-secondary border border-secondary/50'
+                    : 'bg-card/30 text-muted-foreground hover:text-foreground hover:bg-card/50 border border-border/30'
+                }`}
               >
-                {market ? getMarketDisplayName(market) : marketName}
-                <X className="w-3 h-3 ml-1" />
-              </Badge>
+                {getMarketDisplayName(market)}
+                {isSelected && <X className="w-3 h-3 ml-1 inline" />}
+              </button>
             );
           })}
         </div>
