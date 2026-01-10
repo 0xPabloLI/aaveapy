@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ArrowUpDown, ArrowUp, ArrowDown, Zap, TrendingUp, TrendingDown, ChevronDown, ChevronUp } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { MarketWithSpread, SortField, SortOrder, ETHEREUM_MARKET_NAMES } from '@/types/aave';
@@ -67,15 +67,8 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
                   );
                 }
                 return (
-                  <motion.th
+                  <TableHead
                     key={col.key}
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ 
-                      duration: 0.3, 
-                      delay: index * 0.05,
-                      ease: [0.25, 0.1, 0.25, 1]
-                    }}
                     className={`h-10 px-2 text-left align-middle font-semibold text-muted-foreground text-xs ${
                       col.sortable ? 'cursor-pointer hover:text-foreground transition-colors' : ''
                     } ${col.hideOnMobile ? 'hidden md:table-cell' : ''}`}
@@ -90,7 +83,7 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
                     ) : (
                       col.label
                     )}
-                  </motion.th>
+                  </TableHead>
                 );
               })}
             </TableRow>
@@ -111,15 +104,8 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
               const isLoopingOpportunity = market.apySpread !== null && market.apySpread > 0;
 
               return (
-                <motion.tr
+                <TableRow
                   key={rowKey}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ 
-                    duration: 0.3, 
-                    delay: Math.min(index * 0.02, 0.4),
-                    ease: [0.25, 0.1, 0.25, 1]
-                  }}
                   className="border-b border-border/30 hover:bg-accent/30 transition-colors cursor-pointer md:cursor-default"
                   onClick={() => {
                     // Only toggle on mobile
@@ -191,7 +177,7 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
                       <ChevronDown className="w-4 h-4 text-muted-foreground" />
                     )}
                   </TableCell>
-                </motion.tr>
+                </TableRow>
               );
             })}
           </TableBody>
