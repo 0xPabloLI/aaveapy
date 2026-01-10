@@ -9,56 +9,56 @@ interface HeaderProps {
 
 const Header = ({ lastUpdated }: HeaderProps) => {
   return (
-    <header className="glass-card rounded-2xl p-3 md:p-5">
-      <div className="flex items-center justify-between gap-3">
+    <header className="glass-card rounded-2xl p-4 md:p-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         {/* Logo & Title */}
-        <div className="flex items-center gap-3">
-          <div className="relative flex-shrink-0">
-            <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-card to-card/80 border border-border/50 p-1.5 shadow-sm">
+        <div className="flex items-center gap-4">
+          <div className="relative">
+            <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-secondary/20 p-1 glow-primary">
               <img 
                 src={logo} 
-                alt="Aave APY" 
+                alt="Aave APY Logo" 
                 className="w-full h-full object-contain"
               />
             </div>
-            <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-success border-2 border-card" />
+            <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-success border-2 border-background animate-pulse" />
           </div>
-          <div className="min-w-0">
-            <h1 className="text-lg md:text-xl font-bold tracking-tight">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
               <span className="gradient-text">Aave APY</span>
-              <span className="hidden sm:inline text-muted-foreground ml-1.5 font-normal text-sm md:text-base">Dashboard</span>
+              <span className="text-muted-foreground ml-2 font-normal text-lg md:text-xl">Dashboard</span>
             </h1>
-            <p className="text-xs text-muted-foreground hidden sm:block">
-              Best rates across 17 chains
+            <p className="text-sm text-muted-foreground mt-0.5">
+              Find the best lending & borrowing opportunities across 17 chains
             </p>
           </div>
         </div>
 
         {/* Right side - Links & Status */}
-        <div className="flex items-center gap-2 md:gap-3">
-          {/* Last Updated */}
-          {lastUpdated && (
-            <div className="flex items-center gap-1.5 px-2 py-1 md:px-2.5 md:py-1.5 rounded-lg bg-muted/30 border border-border/30">
-              <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
-              <Clock className="w-3 h-3 text-muted-foreground hidden sm:block" />
-              <span className="text-[10px] md:text-xs text-muted-foreground">
-                {formatRelativeTime(lastUpdated)}
-              </span>
-            </div>
-          )}
-
+        <div className="flex items-center gap-4">
           {/* Visit Aave */}
           <a
             href="https://app.aave.com"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1.5 px-2.5 py-1 md:px-3 md:py-1.5 rounded-lg bg-primary/10 border border-primary/20 hover:border-primary/40 hover:bg-primary/15 transition-all duration-200 group"
+            className="hidden md:flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/20 hover:border-primary/40 transition-all duration-300 group"
           >
-            <span className="text-xs font-medium text-primary">
-              <span className="hidden sm:inline">Visit </span>Aave
+            <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
+              Visit Aave
             </span>
-            <ExternalLink className="w-3 h-3 text-primary/70 group-hover:text-primary transition-colors" />
+            <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
           </a>
+
+          {/* Last Updated */}
+          {lastUpdated && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-muted/50 border border-border/50">
+              <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
+              <Clock className="w-4 h-4 text-muted-foreground" />
+              <span className="text-xs md:text-sm text-muted-foreground">
+                {formatRelativeTime(lastUpdated)}
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </header>
