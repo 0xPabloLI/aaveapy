@@ -126,9 +126,9 @@ const Index = () => {
         />
 
         {/* Results count */}
-        <div className="flex items-center justify-between px-1">
-          <p className="text-xs md:text-sm text-muted-foreground">
-            <span className="text-foreground font-medium">{filteredMarkets.length}</span> markets
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">
+            Showing <span className="text-foreground font-medium">{filteredMarkets.length}</span> markets
           </p>
         </div>
 
