@@ -5,6 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { MarketWithSpread, SortField, SortOrder, ETHEREUM_MARKET_NAMES } from '@/types/aave';
 import { formatPercent, formatSpread, apyToApr } from '@/lib/formatters';
+import { getChainIconSrc } from '@/lib/chainIcons';
 
 interface MarketsTableProps {
   markets: MarketWithSpread[];
@@ -53,6 +54,28 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
     { key: 'spread', label: 'Spread', sortable: true, field: 'apySpread' as SortField, icon: Zap, iconColor: 'text-warning', hideOnMobile: true },
     { key: 'expand', label: '', sortable: false, hideOnMobile: false, mobileOnly: true },
   ];
+
+  const ChainIcon = ({ chain, className = "" }: { chain: string; className?: string }) => {
+    const size = "w-3.5 h-3.5";
+    const src = getChainIconSrc(chain);
+
+    if (!src) {
+      return (
+        <div className={`${size} rounded-full bg-current opacity-40 flex items-center justify-center text-[8px] font-bold`}>
+          {chain.charAt(0)}
+        </div>
+      );
+    }
+
+    return (
+      <img
+        src={src}
+        alt={`${chain} logo`}
+        className={`${size} ${className}`}
+        loading="lazy"
+      />
+    );
+  };
 
   return (
     <div className="glass-card rounded-xl overflow-hidden">
@@ -133,8 +156,9 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
                   <TableCell className="hidden md:table-cell py-2 px-2">
                     <Badge 
                       variant="outline" 
-                      className="bg-secondary/10 text-secondary border-secondary/30 text-xs"
+                      className="bg-secondary/10 text-secondary border-secondary/30 text-xs inline-flex items-center gap-1"
                     >
+                      <ChainIcon chain={market.chainName} />
                       {getMarketDisplayName(market)}
                     </Badge>
                   </TableCell>
@@ -208,8 +232,9 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
                     <span className="text-muted-foreground">Market</span>
                     <Badge 
                       variant="outline" 
-                      className="bg-secondary/10 text-secondary border-secondary/30 text-xs"
+                      className="bg-secondary/10 text-secondary border-secondary/30 text-xs inline-flex items-center gap-1"
                     >
+                      <ChainIcon chain={market.chainName} />
                       {getMarketDisplayName(market)}
                     </Badge>
                   </div>
