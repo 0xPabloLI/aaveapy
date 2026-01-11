@@ -17,7 +17,7 @@ const Header = ({ lastUpdated }: HeaderProps) => {
             <span className="text-muted-foreground ml-2 font-normal text-xl">Dashboard</span>
           </h1>
           <p className="text-sm text-muted-foreground">
-            Find the best lending & borrowing opportunities across 17 chains
+            Find the best lending & leverage opportunities across 17 chains
           </p>
         </div>
       </div>
