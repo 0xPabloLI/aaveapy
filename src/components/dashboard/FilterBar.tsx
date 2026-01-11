@@ -1,7 +1,7 @@
-import { Search, X } from 'lucide-react';
+import { useState } from 'react';
+import { Search, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 import { TokenCategory, MarketListItem, ETHEREUM_MARKET_NAMES } from '@/types/aave';
 import { getChainIconSrc } from '@/lib/chainIcons';
 
@@ -47,7 +47,6 @@ const ChainIcon = ({ chain, className = "" }: { chain: string; className?: strin
   );
 };
 
-// Get market display info
 const getMarketInfo = (market: MarketListItem) => {
   if (market.chainName === 'Ethereum' && ETHEREUM_MARKET_NAMES[market.marketName]) {
     return {
@@ -74,6 +73,8 @@ const FilterBar = ({
   setIsApy,
   marketsList,
 }: FilterBarProps) => {
+  const [showMarketsExpanded, setShowMarketsExpanded] = useState(false);
+
   const toggleMarket = (marketName: string) => {
     if (selectedMarkets.includes(marketName)) {
       setSelectedMarkets(selectedMarkets.filter(m => m !== marketName));
@@ -87,42 +88,21 @@ const FilterBar = ({
   // Separate Ethereum markets and other chains
   const ethereumMarkets = marketsList?.filter(m => m.chainName === 'Ethereum') || [];
   const otherMarkets = marketsList?.filter(m => m.chainName !== 'Ethereum') || [];
+  const allMarkets = [...ethereumMarkets, ...otherMarkets];
+
+  // Show first 6 markets, rest in "More"
+  const visibleMarkets = allMarkets.slice(0, 6);
+  const hiddenMarkets = allMarkets.slice(6);
+  const hasHiddenMarkets = hiddenMarkets.length > 0;
+
+  // Count selected hidden markets
+  const selectedHiddenCount = hiddenMarkets.filter(m => selectedMarkets.includes(m.marketName)).length;
 
   return (
-    <div className="space-y-4">
-      {/* Row 1: Search + APY Toggle */}
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Search..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 pr-8 bg-card/50 border-border/50 focus:border-primary h-8 text-sm"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          )}
-        </div>
-
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <span className={!isApy ? 'text-foreground font-medium' : ''}>APR</span>
-          <Switch
-            checked={isApy}
-            onCheckedChange={setIsApy}
-            className="data-[state=checked]:bg-primary scale-75"
-          />
-          <span className={isApy ? 'text-foreground font-medium' : ''}>APY</span>
-        </div>
-      </div>
-
-      {/* Row 2: Token Categories */}
-      <div className="flex flex-wrap items-center gap-1.5">
+    <div className="space-y-3">
+      {/* Row 1: Token Categories + Search + APY Toggle */}
+      <div className="flex flex-wrap items-center gap-2">
+        {/* Token Categories */}
         <span className="text-xs text-muted-foreground mr-1">Tokens:</span>
         {categories.map((category) => (
           <button
@@ -137,9 +117,42 @@ const FilterBar = ({
             {category.label}
           </button>
         ))}
+
+        {/* Spacer */}
+        <div className="flex-1 min-w-4" />
+
+        {/* Search */}
+        <div className="relative w-40">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Search..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-8 pr-7 bg-card/50 border-border/50 focus:border-primary h-7 text-xs"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          )}
+        </div>
+
+        {/* APY/APR Toggle */}
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground ml-2">
+          <span className={!isApy ? 'text-foreground font-medium' : ''}>APR</span>
+          <Switch
+            checked={isApy}
+            onCheckedChange={setIsApy}
+            className="data-[state=checked]:bg-primary scale-75"
+          />
+          <span className={isApy ? 'text-foreground font-medium' : ''}>APY</span>
+        </div>
       </div>
 
-      {/* Row 3: Markets */}
+      {/* Row 2: Markets */}
       <div className="flex flex-wrap items-center gap-1.5">
         <span className="text-xs text-muted-foreground mr-1">Markets:</span>
         
@@ -155,10 +168,11 @@ const FilterBar = ({
           All
         </button>
 
-        {/* Ethereum markets with chain icon */}
-        {ethereumMarkets.map((market) => {
+        {/* Visible markets */}
+        {visibleMarkets.map((market) => {
           const info = getMarketInfo(market);
           const isSelected = selectedMarkets.includes(market.marketName);
+          const isEthereum = market.chainName === 'Ethereum';
           return (
             <button
               key={market.marketName}
@@ -168,32 +182,73 @@ const FilterBar = ({
                   ? 'bg-secondary text-secondary-foreground'
                   : 'bg-card/60 text-muted-foreground hover:text-foreground hover:bg-card border border-border/40'
               }`}
-              title={`Ethereum ${info.label}`}
+              title={isEthereum ? `Ethereum ${info.label}` : market.chainName}
             >
-              <ChainIcon chain="Ethereum" />
-              <span>{info.label}</span>
+              <ChainIcon chain={market.chainName} />
+              <span>{isEthereum ? info.label : market.chainName}</span>
             </button>
           );
         })}
 
-        {/* Other chain markets with icons */}
-        {otherMarkets.map((market) => {
-          const isSelected = selectedMarkets.includes(market.marketName);
-          return (
+        {/* More button */}
+        {hasHiddenMarkets && (
+          <div className="relative">
             <button
-              key={market.marketName}
-              onClick={() => toggleMarket(market.marketName)}
+              onClick={() => setShowMarketsExpanded(!showMarketsExpanded)}
               className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-all ${
-                isSelected
+                showMarketsExpanded || selectedHiddenCount > 0
                   ? 'bg-secondary text-secondary-foreground'
                   : 'bg-card/60 text-muted-foreground hover:text-foreground hover:bg-card border border-border/40'
               }`}
             >
-              <ChainIcon chain={market.chainName} />
-              <span>{market.chainName}</span>
+              <span>More</span>
+              {selectedHiddenCount > 0 && (
+                <span className="bg-primary text-primary-foreground rounded-full w-4 h-4 text-[10px] flex items-center justify-center">
+                  {selectedHiddenCount}
+                </span>
+              )}
+              {showMarketsExpanded ? (
+                <ChevronUp className="w-3 h-3" />
+              ) : (
+                <ChevronDown className="w-3 h-3" />
+              )}
             </button>
-          );
-        })}
+
+            {/* Dropdown for hidden markets */}
+            {showMarketsExpanded && (
+              <>
+                <div 
+                  className="fixed inset-0 z-10" 
+                  onClick={() => setShowMarketsExpanded(false)}
+                />
+                <div className="absolute left-0 top-full mt-1 bg-popover border border-border rounded-lg shadow-lg py-2 z-20 min-w-[180px] max-h-64 overflow-y-auto">
+                  {hiddenMarkets.map((market) => {
+                    const info = getMarketInfo(market);
+                    const isSelected = selectedMarkets.includes(market.marketName);
+                    const isEthereum = market.chainName === 'Ethereum';
+                    return (
+                      <button
+                        key={market.marketName}
+                        onClick={() => toggleMarket(market.marketName)}
+                        className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left transition-colors ${
+                          isSelected
+                            ? 'bg-secondary/20 text-foreground font-medium'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+                        }`}
+                      >
+                        <ChainIcon chain={market.chainName} />
+                        <span>{isEthereum ? `Ethereum ${info.label}` : market.chainName}</span>
+                        {isSelected && (
+                          <span className="ml-auto text-primary">✓</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
