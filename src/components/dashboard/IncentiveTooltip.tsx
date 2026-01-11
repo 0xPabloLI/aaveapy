@@ -47,6 +47,13 @@ const IncentiveTooltip = ({ market, type, position, onClose }: IncentiveTooltipP
           top: `${Math.min(position.y + 10, window.innerHeight - 200)}px` 
         }}
       >
+        {/* Arrow pointing to trigger */}
+        <div 
+          className="absolute -top-2 w-4 h-4 bg-popover border-l border-t border-border rotate-45"
+          style={{ 
+            left: `${Math.max(16, Math.min(position.x - Math.min(position.x, window.innerWidth - 280), 240))}px`
+          }}
+        />
         <div className="flex items-start gap-3">
           <div className="p-2 bg-amber-500/10 rounded-lg flex-shrink-0">
             <IncentiveIcon className="w-5 h-5 text-amber-500" />
