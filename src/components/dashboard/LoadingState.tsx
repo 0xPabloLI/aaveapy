@@ -1,4 +1,5 @@
 import { Skeleton } from '@/components/ui/skeleton';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 const LoadingState = () => {
   return (
@@ -11,15 +12,15 @@ const LoadingState = () => {
         {/* Header Skeleton */}
         <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="flex items-center gap-4">
-            <Skeleton className="w-12 h-12 rounded-xl" />
+            <Skeleton className="w-16 h-16 rounded-xl" />
             <div className="space-y-2">
               <Skeleton className="h-8 w-48" />
               <Skeleton className="h-4 w-64" />
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Skeleton className="w-4 h-4 rounded" />
             <Skeleton className="h-5 w-32" />
-            <Skeleton className="h-10 w-20 rounded-lg" />
           </div>
         </header>
 
@@ -57,58 +58,94 @@ const LoadingState = () => {
         </div>
 
         {/* Filter Bar Skeleton */}
-        <div className="flex flex-col md:flex-row gap-4">
-          <Skeleton className="h-10 flex-1 max-w-md rounded-lg" />
-          <Skeleton className="h-10 w-32 rounded-lg" />
-          <Skeleton className="h-10 w-24 rounded-lg" />
+        <div className="space-y-4">
+          {/* Row 1: Search + APY Toggle */}
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-8 flex-1 max-w-xs rounded-lg" />
+            <div className="flex items-center gap-1.5">
+              <Skeleton className="h-4 w-8 rounded" />
+              <Skeleton className="h-5 w-10 rounded-full" />
+              <Skeleton className="h-4 w-8 rounded" />
+            </div>
         </div>
 
-        {/* Category Tabs Skeleton */}
-        <div className="flex gap-2">
+          {/* Row 2: Category Tabs */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Skeleton className="h-4 w-12" />
           {[0, 1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="h-8 w-24 rounded-full" />
+              <Skeleton key={i} className="h-7 w-16 rounded-md" />
           ))}
         </div>
 
-        {/* Results Count Skeleton */}
-        <Skeleton className="h-5 w-36" />
-
-        {/* Market Cards Skeleton */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {/* Row 3: Market Tags */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Skeleton className="h-4 w-16" />
           {Array.from({ length: 8 }).map((_, i) => (
-            <div 
+              <Skeleton key={i} className="h-7 w-20 rounded-md" />
+            ))}
+          </div>
+        </div>
+
+        {/* Markets Table Skeleton */}
+        <div className="glass-card rounded-xl overflow-hidden">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-border/50 hover:bg-transparent">
+                  <TableHead className="h-10 px-2">
+                    <Skeleton className="h-4 w-12" />
+                  </TableHead>
+                  <TableHead className="h-10 px-2 hidden md:table-cell">
+                    <Skeleton className="h-4 w-16" />
+                  </TableHead>
+                  <TableHead className="h-10 px-2">
+                    <Skeleton className="h-4 w-16" />
+                  </TableHead>
+                  <TableHead className="h-10 px-2">
+                    <Skeleton className="h-4 w-16" />
+                  </TableHead>
+                  <TableHead className="h-10 px-2 hidden md:table-cell">
+                    <Skeleton className="h-4 w-12" />
+                  </TableHead>
+                  <TableHead className="h-10 px-1 w-8 md:hidden" />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {Array.from({ length: 10 }).map((_, i) => (
+                  <TableRow 
               key={i} 
-              className="glass-card rounded-xl p-4 space-y-4"
+                    className="border-b border-border/30"
               style={{ animationDelay: `${i * 50}ms` }}
             >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Skeleton className="w-10 h-10 rounded-full" />
+                    <TableCell className="py-2 px-2">
+                      <div className="flex items-center gap-2">
+                        <Skeleton className="w-7 h-7 rounded-full" />
                   <div className="space-y-1">
-                    <Skeleton className="h-5 w-16" />
-                    <Skeleton className="h-3 w-24" />
-                  </div>
-                </div>
-                <Skeleton className="h-5 w-16 rounded-full" />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="p-3 rounded-lg bg-background/50 space-y-1">
-                  <Skeleton className="h-3 w-16" />
-                  <Skeleton className="h-6 w-14" />
-                  <Skeleton className="h-3 w-20" />
-                </div>
-                <div className="p-3 rounded-lg bg-background/50 space-y-1">
-                  <Skeleton className="h-3 w-16" />
-                  <Skeleton className="h-6 w-14" />
+                          <Skeleton className="h-4 w-12" />
                   <Skeleton className="h-3 w-20" />
                 </div>
               </div>
-              <div className="flex items-center justify-between pt-2 border-t border-border/50">
-                <Skeleton className="h-4 w-20" />
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell py-2 px-2">
+                      <Skeleton className="h-5 w-20 rounded-full" />
+                    </TableCell>
+                    <TableCell className="py-2 px-2">
+                      <Skeleton className="h-5 w-16" />
+                    </TableCell>
+                    <TableCell className="py-2 px-2">
+                      <Skeleton className="h-5 w-16" />
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell py-2 px-2">
                 <Skeleton className="h-5 w-16" />
-              </div>
+                    </TableCell>
+                    <TableCell className="md:hidden py-2 px-1 w-8">
+                      <Skeleton className="w-4 h-4 rounded" />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
             </div>
-          ))}
         </div>
       </div>
     </div>
