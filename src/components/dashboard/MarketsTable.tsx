@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { ArrowUpDown, ArrowUp, ArrowDown, Zap, TrendingUp, TrendingDown, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowUpDown, ArrowUp, ArrowDown, Zap, TrendingUp, TrendingDown, ChevronDown, ChevronUp, Star } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { MarketWithSpread, SortField, SortOrder, ETHEREUM_MARKET_NAMES } from '@/types/aave';
 import { formatPercent, formatSpread, apyToApr } from '@/lib/formatters';
 import { getChainIconSrc } from '@/lib/chainIcons';
+import IncentiveTooltip from './IncentiveTooltip';
 
 interface MarketsTableProps {
   markets: MarketWithSpread[];
@@ -15,8 +16,16 @@ interface MarketsTableProps {
   isApy: boolean;
 }
 
+interface TooltipState {
+  market: MarketWithSpread;
+  type: 'supply' | 'borrow';
+  position: { x: number; y: number };
+}
+
 const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsTableProps) => {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [tooltipState, setTooltipState] = useState<TooltipState | null>(null);
+  const [showSortMenu, setShowSortMenu] = useState<'supply' | 'borrow' | null>(null);
 
   const toggleRow = (rowKey: string) => {
     setExpandedRows(prev => {
@@ -30,13 +39,17 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
     });
   };
 
-  const getSortIcon = (field: SortField) => {
-    if (sortField !== field) {
-      return <ArrowUpDown className="w-3 h-3 text-muted-foreground" />;
-    }
-    return sortOrder === 'asc' 
-      ? <ArrowUp className="w-3 h-3 text-secondary" />
-      : <ArrowDown className="w-3 h-3 text-secondary" />;
+  const handleIncentiveClick = (
+    e: React.MouseEvent, 
+    market: MarketWithSpread, 
+    type: 'supply' | 'borrow'
+  ) => {
+    e.stopPropagation();
+    setTooltipState({
+      market,
+      type,
+      position: { x: e.clientX, y: e.clientY }
+    });
   };
 
   const getMarketDisplayName = (market: MarketWithSpread) => {
@@ -45,15 +58,6 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
     }
     return market.chainName;
   };
-
-  const headerColumns = [
-    { key: 'token', label: 'Token', sortable: false, hideOnMobile: false },
-    { key: 'market', label: 'Market', sortable: false, hideOnMobile: true },
-    { key: 'supply', label: `Supply`, sortable: true, field: 'totalSupplyApy' as SortField, icon: TrendingUp, iconColor: 'text-success', hideOnMobile: false },
-    { key: 'borrow', label: `Borrow`, sortable: true, field: 'totalBorrowApy' as SortField, icon: TrendingDown, iconColor: 'text-secondary', hideOnMobile: false },
-    { key: 'spread', label: 'Spread', sortable: true, field: 'apySpread' as SortField, icon: Zap, iconColor: 'text-warning', hideOnMobile: true },
-    { key: 'expand', label: '', sortable: false, hideOnMobile: false, mobileOnly: true },
-  ];
 
   const ChainIcon = ({ chain, className = "" }: { chain: string; className?: string }) => {
     const size = "w-3.5 h-3.5";
@@ -77,53 +81,207 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
     );
   };
 
+  const IncentiveIcon = ({ className = "" }: { className?: string }) => (
+    <Star className={className} fill="currentColor" />
+  );
+
+  // Calculate native APY (total - incentive)
+  const getNativeApy = (market: MarketWithSpread, type: 'supply' | 'borrow') => {
+    if (type === 'supply') {
+      return market.totalSupplyApy - market.totalIncentiveSupplyApy;
+    }
+    if (market.totalBorrowApy === null) return null;
+    return market.totalBorrowApy - market.totalIncentiveBorrowApy;
+  };
+
+  // Render APY cell with three-color system
+  const renderApyCell = (
+    market: MarketWithSpread, 
+    type: 'supply' | 'borrow',
+    totalValue: number | null,
+    incentiveValue: number
+  ) => {
+    if (totalValue === null) {
+      return <span className="text-muted-foreground">-</span>;
+    }
+
+    const displayTotal = isApy ? totalValue : apyToApr(totalValue);
+    const nativeApy = type === 'supply' 
+      ? market.totalSupplyApy - market.totalIncentiveSupplyApy
+      : (market.totalBorrowApy ?? 0) - market.totalIncentiveBorrowApy;
+    const displayNative = isApy ? nativeApy : apyToApr(nativeApy);
+    const displayIncentive = isApy ? incentiveValue : apyToApr(incentiveValue);
+
+    const hasIncentive = incentiveValue > 0;
+    const colorClass = type === 'supply' ? 'text-emerald-500' : 'text-blue-500';
+
+    return (
+      <div className="flex flex-col items-end gap-0.5">
+        {/* Total APY - large, colored */}
+        <span className={`font-bold ${colorClass} text-sm`}>
+          {formatPercent(displayTotal)}
+        </span>
+        {/* Native + Incentive breakdown */}
+        {hasIncentive && (
+          <div className="flex items-center gap-1 text-[10px]">
+            <span className="text-blue-500 font-medium">
+              {formatPercent(displayNative)}
+            </span>
+            <span className="text-muted-foreground">+</span>
+            <button
+              onClick={(e) => handleIncentiveClick(e, market, type)}
+              className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded bg-amber-500/10 text-amber-500 font-medium hover:bg-amber-500/20 transition-colors cursor-pointer"
+            >
+              <IncentiveIcon className="w-2.5 h-2.5" />
+              {formatPercent(displayIncentive)}
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Sort header with dropdown
+  const renderSortHeader = (
+    field: SortField,
+    label: string,
+    icon: React.ReactNode,
+    menuKey: 'supply' | 'borrow'
+  ) => {
+    const isActive = sortField === field;
+    const colorClass = menuKey === 'supply' ? 'text-emerald-500' : 'text-blue-500';
+
+    return (
+      <div className="flex items-center justify-end gap-3">
+        {/* Sort field dropdown */}
+        <div className="relative">
+          <button
+            onClick={() => setShowSortMenu(showSortMenu === menuKey ? null : menuKey)}
+            className={`flex items-center gap-1.5 px-2 py-1 rounded transition-colors text-xs font-medium ${
+              isActive ? `${colorClass} bg-accent` : 'hover:bg-accent text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {icon}
+            <ChevronDown className="w-3 h-3" />
+            <span>{label} (Total)</span>
+          </button>
+          
+          {showSortMenu === menuKey && (
+            <>
+              <div 
+                className="fixed inset-0 z-10" 
+                onClick={() => setShowSortMenu(null)}
+              />
+              <div className="absolute right-0 top-full mt-1 bg-popover border border-border rounded-lg shadow-lg py-1 z-20 min-w-[140px]">
+                <button
+                  onClick={() => { onSort(field); setShowSortMenu(null); }}
+                  className="w-full px-3 py-1.5 text-left text-xs font-bold transition-colors text-emerald-500 bg-emerald-500/10 hover:bg-emerald-500/20"
+                >
+                  Sort by Total
+                </button>
+                <button
+                  onClick={() => { onSort(field); setShowSortMenu(null); }}
+                  className="w-full px-3 py-1.5 text-left text-xs font-bold transition-colors text-blue-500 bg-blue-500/10 hover:bg-blue-500/20"
+                >
+                  Sort by Native
+                </button>
+                <button
+                  onClick={() => { onSort(field); setShowSortMenu(null); }}
+                  className="w-full px-3 py-1.5 text-left text-xs font-bold transition-colors text-amber-500 bg-amber-500/10 hover:bg-amber-500/20"
+                >
+                  Sort by Incentive
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+        
+        {/* Sort direction arrow - separate */}
+        <button
+          onClick={() => onSort(field)}
+          className={`p-1.5 rounded transition-colors ${
+            isActive ? 'bg-accent' : 'hover:bg-accent'
+          }`}
+          title="Toggle sort direction"
+        >
+          {isActive ? (
+            sortOrder === 'desc' ? (
+              <ArrowDown className={`w-4 h-4 ${colorClass}`} />
+            ) : (
+              <ArrowUp className={`w-4 h-4 ${colorClass}`} />
+            )
+          ) : (
+            <ArrowUpDown className="w-3.5 h-3.5 text-muted-foreground" />
+          )}
+        </button>
+      </div>
+    );
+  };
+
   return (
     <div className="glass-card rounded-xl overflow-hidden">
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow className="border-border/50 hover:bg-transparent">
-              {headerColumns.map((col, index) => {
-                if (col.mobileOnly) {
-                  return (
-                    <th key={col.key} className="w-8 md:hidden" />
-                  );
-                }
-                return (
-                  <TableHead
-                    key={col.key}
-                    className={`h-10 px-2 text-left align-middle font-semibold text-muted-foreground text-xs ${
-                      col.sortable ? 'cursor-pointer hover:text-foreground transition-colors' : ''
-                    } ${col.hideOnMobile ? 'hidden md:table-cell' : ''}`}
-                    onClick={col.sortable && col.field ? () => onSort(col.field!) : undefined}
-                  >
-                    {col.sortable && col.icon ? (
-                      <div className="flex items-center gap-1">
-                        <col.icon className={`w-3 h-3 ${col.iconColor}`} />
-                        <span>{col.label}</span>
-                        {getSortIcon(col.field!)}
-                      </div>
+              {/* Token */}
+              <TableHead className="h-10 px-2 text-left align-middle font-semibold text-muted-foreground text-xs">
+                Token
+              </TableHead>
+              
+              {/* Market - hidden on mobile */}
+              <TableHead className="hidden md:table-cell h-10 px-2 text-left align-middle font-semibold text-muted-foreground text-xs">
+                Market
+              </TableHead>
+              
+              {/* Spread - moved before Supply/Borrow, hidden on mobile */}
+              <TableHead 
+                className="hidden md:table-cell h-10 px-2 text-right align-middle font-semibold text-muted-foreground text-xs cursor-pointer hover:text-foreground transition-colors"
+                onClick={() => onSort('apySpread')}
+              >
+                <div className="flex items-center justify-end gap-1">
+                  <Zap className="w-3 h-3 text-warning" />
+                  <span>Spread</span>
+                  {sortField === 'apySpread' ? (
+                    sortOrder === 'desc' ? (
+                      <ArrowDown className="w-3 h-3 text-warning" />
                     ) : (
-                      col.label
-                    )}
-                  </TableHead>
-                );
-              })}
+                      <ArrowUp className="w-3 h-3 text-warning" />
+                    )
+                  ) : (
+                    <ArrowUpDown className="w-3 h-3" />
+                  )}
+                </div>
+              </TableHead>
+
+              {/* Supply */}
+              <TableHead className="h-10 px-2 text-right align-middle font-semibold text-muted-foreground text-xs">
+                {renderSortHeader(
+                  'totalSupplyApy',
+                  'Supply',
+                  <TrendingUp className="w-3 h-3" />,
+                  'supply'
+                )}
+              </TableHead>
+
+              {/* Borrow */}
+              <TableHead className="h-10 px-2 text-right align-middle font-semibold text-muted-foreground text-xs">
+                {renderSortHeader(
+                  'totalBorrowApy',
+                  'Borrow',
+                  <TrendingDown className="w-3 h-3" />,
+                  'borrow'
+                )}
+              </TableHead>
+
+              {/* Expand indicator - mobile only */}
+              <th className="w-8 md:hidden" />
             </TableRow>
           </TableHeader>
           <TableBody>
             {markets.map((market, index) => {
               const rowKey = `${market.marketName}-${market.tokenSymbol}-${index}`;
               const isExpanded = expandedRows.has(rowKey);
-              
-              const displaySupply = isApy 
-                ? market.totalSupplyApy 
-                : apyToApr(market.totalSupplyApy);
-              
-              const displayBorrow = market.totalBorrowApy !== null
-                ? (isApy ? market.totalBorrowApy : apyToApr(market.totalBorrowApy))
-                : null;
-
               const isLoopingOpportunity = market.apySpread !== null && market.apySpread > 0;
 
               return (
@@ -131,7 +289,6 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
                   key={rowKey}
                   className="border-b border-border/30 hover:bg-accent/30 transition-colors cursor-pointer md:cursor-default"
                   onClick={() => {
-                    // Only toggle on mobile
                     if (window.innerWidth < 768) {
                       toggleRow(rowKey);
                     }
@@ -163,23 +320,9 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
                     </Badge>
                   </TableCell>
 
-                  {/* Supply APY */}
-                  <TableCell className="py-2 px-2">
-                    <span className="text-success font-semibold text-sm">
-                      {formatPercent(displaySupply)}
-                    </span>
-                  </TableCell>
-
-                  {/* Borrow APY */}
-                  <TableCell className="py-2 px-2">
-                    <span className="text-secondary font-semibold text-sm">
-                      {displayBorrow !== null ? formatPercent(displayBorrow) : '-'}
-                    </span>
-                  </TableCell>
-
-                  {/* Spread - hidden on mobile */}
-                  <TableCell className="hidden md:table-cell py-2 px-2">
-                    <div className="flex items-center gap-1">
+                  {/* Spread - moved before Supply/Borrow, hidden on mobile */}
+                  <TableCell className="hidden md:table-cell py-2 px-2 text-right">
+                    <div className="flex items-center justify-end gap-1">
                       {isLoopingOpportunity && (
                         <Zap className="w-3 h-3 text-warning animate-pulse" />
                       )}
@@ -191,6 +334,26 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
                         {formatSpread(market.apySpread)}
                       </span>
                     </div>
+                  </TableCell>
+
+                  {/* Supply APY */}
+                  <TableCell className="py-2 px-2 text-right">
+                    {renderApyCell(
+                      market, 
+                      'supply', 
+                      market.totalSupplyApy, 
+                      market.totalIncentiveSupplyApy
+                    )}
+                  </TableCell>
+
+                  {/* Borrow APY */}
+                  <TableCell className="py-2 px-2 text-right">
+                    {renderApyCell(
+                      market, 
+                      'borrow', 
+                      market.totalBorrowApy, 
+                      market.totalIncentiveBorrowApy
+                    )}
                   </TableCell>
 
                   {/* Expand indicator - mobile only */}
@@ -254,13 +417,13 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
                   {market.totalIncentiveSupplyApy > 0 && (
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Supply Rewards</span>
-                      <span className="text-success">+{formatPercent(market.totalIncentiveSupplyApy)}</span>
+                      <span className="text-amber-500">+{formatPercent(market.totalIncentiveSupplyApy)}</span>
                     </div>
                   )}
                   {market.totalIncentiveBorrowApy > 0 && (
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Borrow Rewards</span>
-                      <span className="text-secondary">-{formatPercent(market.totalIncentiveBorrowApy)}</span>
+                      <span className="text-amber-500">-{formatPercent(market.totalIncentiveBorrowApy)}</span>
                     </div>
                   )}
                 </div>
@@ -269,6 +432,16 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
           })}
         </AnimatePresence>
       </div>
+
+      {/* Incentive Tooltip */}
+      {tooltipState && (
+        <IncentiveTooltip
+          market={tooltipState.market}
+          type={tooltipState.type}
+          position={tooltipState.position}
+          onClose={() => setTooltipState(null)}
+        />
+      )}
     </div>
   );
 };
