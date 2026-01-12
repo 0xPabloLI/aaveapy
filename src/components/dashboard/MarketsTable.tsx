@@ -39,6 +39,7 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
     market: MarketWithSpread;
     type: 'supply' | 'borrow';
     position: { x: number; y: number };
+    triggerCenterX: number;
   } | null>(null);
 
   const getMarketDisplayName = (market: MarketWithSpread) => {
@@ -153,10 +154,12 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
     e.stopPropagation();
     if (apy === null || isNaN(apy)) return;
     const rect = e.currentTarget.getBoundingClientRect();
+    const triggerCenterX = rect.left + rect.width / 2;
     setTooltipState({
       market,
       type,
       position: { x: rect.left, y: rect.bottom },
+      triggerCenterX,
     });
   };
 
@@ -498,6 +501,7 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
           market={tooltipState.market}
           type={tooltipState.type}
           position={tooltipState.position}
+          triggerCenterX={tooltipState.triggerCenterX}
           onClose={() => setTooltipState(null)}
         />
       )}

@@ -141,13 +141,26 @@ const FilterBar = ({
         ))}
 
         {/* Search after Pendle */}
-        <div className="relative w-24 md:w-32">
+        <div className="relative w-20 sm:w-24 md:w-36 lg:w-44">
           <Search className="absolute left-2 md:left-2.5 top-1/2 -translate-y-1/2 w-3 md:w-3.5 h-3 md:h-3.5 text-muted-foreground" />
+          {/* Responsive placeholder using multiple inputs */}
           <Input
-            placeholder="weth, gho"
+            placeholder="Search..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-7 md:pl-8 pr-6 md:pr-7 bg-card/50 border-border/50 focus:border-primary h-7 text-xs"
+            className="pl-7 md:pl-8 pr-6 md:pr-7 bg-card/50 border-border/50 focus:border-primary h-7 text-xs sm:hidden"
+          />
+          <Input
+            placeholder="Token..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-7 md:pl-8 pr-6 md:pr-7 bg-card/50 border-border/50 focus:border-primary h-7 text-xs hidden sm:block md:hidden"
+          />
+          <Input
+            placeholder="Search tokens..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-7 md:pl-8 pr-6 md:pr-7 bg-card/50 border-border/50 focus:border-primary h-7 text-xs hidden md:block"
           />
           {searchQuery && (
             <button
