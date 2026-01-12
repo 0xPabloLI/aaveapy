@@ -144,7 +144,7 @@ const FilterBar = ({
         <div className="relative w-24 md:w-32">
           <Search className="absolute left-2 md:left-2.5 top-1/2 -translate-y-1/2 w-3 md:w-3.5 h-3 md:h-3.5 text-muted-foreground" />
           <Input
-            placeholder="USDC..."
+            placeholder="weth, gho"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-7 md:pl-8 pr-6 md:pr-7 bg-card/50 border-border/50 focus:border-primary h-7 text-xs"
@@ -183,8 +183,8 @@ const FilterBar = ({
           onClick={() => setSelectedMarkets([])}
           className={`px-2 md:px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
             noMarketsSelected
-              ? 'bg-secondary text-secondary-foreground'
-              : 'bg-card/60 text-muted-foreground hover:text-foreground hover:bg-card border border-border/40'
+              ? 'bg-slate-900 text-white shadow-sm'
+              : 'bg-slate-100 text-slate-700 hover:text-slate-900 hover:bg-slate-200 border border-slate-200'
           }`}
         >
           All
@@ -201,13 +201,13 @@ const FilterBar = ({
               onClick={() => toggleMarket(market.marketName)}
               className={`inline-flex items-center gap-1 px-1.5 md:px-2 py-1 rounded-md text-xs font-medium transition-all ${
                 isSelected
-                  ? 'bg-secondary text-secondary-foreground'
-                  : 'bg-card/60 text-muted-foreground hover:text-foreground hover:bg-card border border-border/40'
+                  ? 'bg-slate-900 text-white shadow-sm'
+                  : 'bg-slate-100 text-slate-700 hover:text-slate-900 hover:bg-slate-200 border border-slate-200'
               }`}
               title={isEthereum ? `Ethereum ${info.label}` : market.chainName}
             >
               <ChainIcon chain={market.chainName} />
-              <span className="hidden xs:inline">{isEthereum ? info.label : market.chainName}</span>
+              <span>{isEthereum ? info.label : market.chainName}</span>
             </button>
           );
         })}
@@ -216,7 +216,7 @@ const FilterBar = ({
         {hasHiddenMarkets && !showMarketsExpanded && (
           <button
             onClick={() => setShowMarketsExpanded(true)}
-            className="inline-flex items-center gap-1 px-1.5 md:px-2 py-1 rounded-md text-xs font-medium transition-all bg-card/60 text-muted-foreground hover:text-foreground hover:bg-card border border-border/40"
+            className="inline-flex items-center gap-1 px-1.5 md:px-2 py-1 rounded-md text-xs font-medium transition-all bg-indigo-50 text-indigo-700 hover:text-indigo-800 hover:bg-indigo-100 border border-indigo-200 border-dashed"
           >
             <span>{hiddenMarkets.length}+ more</span>
           </button>
@@ -233,13 +233,13 @@ const FilterBar = ({
               onClick={() => toggleMarket(market.marketName)}
               className={`inline-flex items-center gap-1 px-1.5 md:px-2 py-1 rounded-md text-xs font-medium transition-all ${
                 isSelected
-                  ? 'bg-secondary text-secondary-foreground'
-                  : 'bg-card/60 text-muted-foreground hover:text-foreground hover:bg-card border border-border/40'
+                  ? 'bg-slate-900 text-white shadow-sm'
+                  : 'bg-slate-100 text-slate-700 hover:text-slate-900 hover:bg-slate-200 border border-slate-200'
               }`}
               title={isEthereum ? `Ethereum ${info.label}` : market.chainName}
             >
               <ChainIcon chain={market.chainName} loading="eager" />
-              <span className="hidden xs:inline">{isEthereum ? info.label : market.chainName}</span>
+              <span>{isEthereum ? info.label : market.chainName}</span>
             </button>
           );
         })}
@@ -248,7 +248,7 @@ const FilterBar = ({
         {showMarketsExpanded && (
           <button
             onClick={() => setShowMarketsExpanded(false)}
-            className="inline-flex items-center gap-1 px-1.5 md:px-2 py-1 rounded-md text-xs font-medium transition-all bg-card/60 text-muted-foreground hover:text-foreground hover:bg-card border border-border/40"
+            className="inline-flex items-center gap-1 px-1.5 md:px-2 py-1 rounded-md text-xs font-medium transition-all bg-indigo-50 text-indigo-700 hover:text-indigo-800 hover:bg-indigo-100 border border-indigo-200 border-dashed"
           >
             <ChevronUp className="w-3 h-3" />
             <span>Less</span>
