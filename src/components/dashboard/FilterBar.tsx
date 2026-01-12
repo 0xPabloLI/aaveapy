@@ -141,10 +141,10 @@ const FilterBar = ({
         ))}
 
         {/* Search after Pendle */}
-        <div className="relative w-28 md:w-36">
+        <div className="relative w-24 md:w-32">
           <Search className="absolute left-2 md:left-2.5 top-1/2 -translate-y-1/2 w-3 md:w-3.5 h-3 md:h-3.5 text-muted-foreground" />
           <Input
-            placeholder="USDC, WETH..."
+            placeholder="USDC..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-7 md:pl-8 pr-6 md:pr-7 bg-card/50 border-border/50 focus:border-primary h-7 text-xs"
