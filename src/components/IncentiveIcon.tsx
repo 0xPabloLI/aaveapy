@@ -11,18 +11,25 @@ export function IncentiveIcon({ width = 12, height = 12, className = '' }: Incen
     <svg
       width={width}
       height={height}
-      viewBox="0 0 12 12"
+      viewBox="0 0 16 16"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
     >
-      <path
-        d="M1 7C2.5 4 3.5 4 5 7C6.5 10 7.5 10 9 7C10.5 4 11.5 4 12 7"
-        stroke="currentColor"
+      <circle
+        cx="7.2"
+        cy="7.2"
+        r="7.2"
+        stroke="#9391F7"
         strokeWidth="1.5"
+        transform="matrix(1 0 0 -1 .8 15.2)"
+      />
+      <path
+        stroke="#BCBBFF"
         strokeLinecap="round"
         strokeLinejoin="round"
-        fill="none"
+        strokeWidth="1.5"
+        d="m4.557 8.082.891 1.132a1 1 0 0 0 1.591-.026l1.75-2.376a1 1 0 0 1 1.591-.026l1.064 1.35"
       />
     </svg>
   );

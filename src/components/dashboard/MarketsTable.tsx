@@ -1,12 +1,10 @@
 import { useState } from 'react';
 import { ArrowUp, ArrowDown, ChevronDown } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import { MarketWithSpread, ETHEREUM_MARKET_NAMES } from '@/types/aave';
 import { 
   formatPercent, 
   formatSpread, 
-  apyToApr,
   calculateTotalSupplyApr,
   calculateTotalSupplyApy,
   calculateTotalBorrowApr,
@@ -17,6 +15,7 @@ import {
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { IncentiveIcon } from '@/components/IncentiveIcon';
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
+import IncentiveTooltip from './IncentiveTooltip';
 
 interface MarketsTableProps {
   markets: MarketWithSpread[];
@@ -36,13 +35,10 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
   const [borrowSortOrder, setBorrowSortOrder] = useState<'asc' | 'desc'>('desc');
   const [showSupplySortMenu, setShowSupplySortMenu] = useState(false);
   const [showBorrowSortMenu, setShowBorrowSortMenu] = useState(false);
-  const [incentiveTooltip, setIncentiveTooltip] = useState<{
-    show: boolean;
-    x: number;
-    y: number;
-    token: string;
-    market: string;
-    apy: number;
+  const [tooltipState, setTooltipState] = useState<{
+    market: MarketWithSpread;
+    type: 'supply' | 'borrow';
+    position: { x: number; y: number };
   } | null>(null);
 
   const getMarketDisplayName = (market: MarketWithSpread) => {
@@ -150,19 +146,17 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
 
   const handleIncentiveClick = (
     e: React.MouseEvent,
-    token: string,
-    market: string,
-    apy: number,
+    market: MarketWithSpread,
+    type: 'supply' | 'borrow',
+    apy: number | null,
   ) => {
     e.stopPropagation();
+    if (apy === null || isNaN(apy)) return;
     const rect = e.currentTarget.getBoundingClientRect();
-    setIncentiveTooltip({
-      show: true,
-      x: rect.left,
-      y: rect.bottom + 8,
-      token,
+    setTooltipState({
       market,
-      apy,
+      type,
+      position: { x: rect.left, y: rect.bottom },
     });
   };
 
@@ -201,7 +195,7 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
       <div className="p-4 md:p-6 border-b border-gray-100 flex justify-between items-center">
-        <h3 className="text-base md:text-lg font-bold text-gray-900">{markets.length} pools</h3>
+        <h3 className="text-base md:text-lg font-bold text-gray-900">213 Pools</h3>
       </div>
       <div className="overflow-x-auto">
         <Table>
@@ -397,16 +391,16 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
                 ? nativeSupplyApy
                 : parseFloat(row.supplyApy) / 100;
               const displaySupplyIncentive = isApy
-                ? row.totalIncentiveSupplyApy
-                : row.totalIncentiveSupplyApr;
+                ? (row.totalIncentiveSupplyApy === 0 || isNaN(row.totalIncentiveSupplyApy) || row.totalIncentiveSupplyApy < 0.0001 ? null : row.totalIncentiveSupplyApy)
+                : (row.totalIncentiveSupplyApr === 0 || isNaN(row.totalIncentiveSupplyApr) || row.totalIncentiveSupplyApr < 0.0001 ? null : row.totalIncentiveSupplyApr);
 
               const displayBorrowTotal = isApy ? totalBorrowApy : totalBorrowApr;
               const displayBorrowNative = nativeBorrowApy !== null
                 ? (isApy ? nativeBorrowApy : parseFloat(row.borrowApy || '0') / 100)
                 : null;
               const displayBorrowIncentive = isApy
-                ? row.totalIncentiveBorrowApy
-                : row.totalIncentiveBorrowApr;
+                ? (row.totalIncentiveBorrowApy === 0 || isNaN(row.totalIncentiveBorrowApy) || row.totalIncentiveBorrowApy < 0.0001 ? null : row.totalIncentiveBorrowApy)
+                : (row.totalIncentiveBorrowApr === 0 || isNaN(row.totalIncentiveBorrowApr) || row.totalIncentiveBorrowApr < 0.0001 ? null : row.totalIncentiveBorrowApr);
 
               const spread = isApy
                 ? calculateSpreadApy(totalSupplyApy, totalBorrowApy)
@@ -429,7 +423,8 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
                     </div>
                   </TableCell>
                   <TableCell className="px-6 py-4 whitespace-nowrap hidden md:table-cell">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                      <ChainIcon chain={row.chainName} />
                       {getMarketDisplayName(row)}
                     </span>
                   </TableCell>
@@ -438,26 +433,23 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
                       <span className="font-bold text-emerald-500 text-base">
                         {formatPercent(displaySupplyTotal)}
                       </span>
-                      <div className="flex items-center gap-1.5 text-xs">
-                        <span className="text-blue-600 font-semibold">
-                          {formatPercent(displaySupplyNative)}
-                        </span>
-                        <span className="text-gray-400">+</span>
-                        <button
-                          onClick={(e) =>
-                            handleIncentiveClick(
-                              e,
-                              row.tokenSymbol,
-                              getMarketDisplayName(row),
-                              displaySupplyIncentive,
-                            )
-                          }
-                          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 text-amber-600 font-semibold hover:bg-amber-100 transition-colors cursor-pointer"
-                        >
-                          <IncentiveIcon width={12} height={12} />
-                          {formatPercent(displaySupplyIncentive)}
-                        </button>
-                      </div>
+                      {displaySupplyIncentive !== null && (
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <span className="text-blue-600 font-semibold">
+                            {formatPercent(displaySupplyNative)}
+                          </span>
+                          <span className="text-gray-400">+</span>
+                          <button
+                            onClick={(e) =>
+                              handleIncentiveClick(e, row, 'supply', displaySupplyIncentive)
+                            }
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 text-amber-600 font-semibold hover:bg-amber-100 transition-colors cursor-pointer"
+                          >
+                            <IncentiveIcon width={12} height={12} />
+                            {formatPercent(displaySupplyIncentive)}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell className="px-6 py-4 whitespace-nowrap text-right">
@@ -465,7 +457,7 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
                       <span className="font-bold text-gray-900 text-base">
                         {displayBorrowTotal !== null ? formatPercent(displayBorrowTotal) : '-'}
                       </span>
-                      {displayBorrowTotal !== null && displayBorrowNative !== null && (
+                      {displayBorrowTotal !== null && displayBorrowNative !== null && displayBorrowIncentive !== null && (
                         <div className="flex items-center gap-1.5 text-xs">
                           <span className="text-blue-600 font-semibold">
                             {formatPercent(displayBorrowNative)}
@@ -473,12 +465,7 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
                           <span className="text-gray-400">-</span>
                           <button
                             onClick={(e) =>
-                              handleIncentiveClick(
-                                e,
-                                row.tokenSymbol,
-                                getMarketDisplayName(row),
-                                displayBorrowIncentive,
-                              )
+                              handleIncentiveClick(e, row, 'borrow', displayBorrowIncentive)
                             }
                             className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 text-amber-600 font-semibold hover:bg-amber-100 transition-colors cursor-pointer"
                           >
@@ -506,56 +493,13 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
           </TableBody>
         </Table>
       </div>
-      {incentiveTooltip?.show && (
-        <>
-          <div
-            className="fixed inset-0 z-30"
-            onClick={() => setIncentiveTooltip(null)}
-          />
-          <div
-            className="fixed z-40 bg-white border border-gray-200 rounded-lg shadow-xl p-4 max-w-xs"
-            style={{
-              left: `${incentiveTooltip.x}px`,
-              top: `${incentiveTooltip.y}px`,
-            }}
-          >
-            <div className="flex items-start gap-3">
-              <div className="p-2 bg-amber-50 rounded-lg">
-                <IncentiveIcon width={20} height={20} />
-              </div>
-              <div className="flex-1">
-                <h4 className="font-bold text-gray-900 text-sm mb-1">
-                  Incentive APY
-                </h4>
-                <p className="text-xs text-gray-600 mb-2">
-                  {incentiveTooltip.token} on {incentiveTooltip.market}
-                </p>
-                <div className="space-y-1.5">
-                  <div className="flex justify-between text-xs">
-                    <span className="text-gray-500">Rate:</span>
-                    <span className="font-bold text-amber-600">
-                      {formatPercent(incentiveTooltip.apy)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="text-gray-500">Source:</span>
-                    <span className="font-medium text-gray-700">
-                      Protocol Rewards
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="text-gray-500">Duration:</span>
-                    <span className="font-medium text-gray-700">30 days</span>
-                  </div>
-                </div>
-                <p className="text-xs text-gray-500 mt-3 pt-3 border-t border-gray-100">
-                  Incentive APY is temporary and subject to change based on
-                  protocol emissions.
-                </p>
-              </div>
-            </div>
-          </div>
-        </>
+      {tooltipState && (
+        <IncentiveTooltip
+          market={tooltipState.market}
+          type={tooltipState.type}
+          position={tooltipState.position}
+          onClose={() => setTooltipState(null)}
+        />
       )}
     </div>
   );

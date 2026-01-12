@@ -55,10 +55,7 @@ export const calculateTotalSupplyApy = (supplyApy: string, totalIncentiveSupplyA
 
 // Calculate total Borrow APR
 export const calculateTotalBorrowApr = (borrowApy: string | null, totalIncentiveBorrowApr: number): number | null => {
-  if (borrowApy === null) {
-    if (isNaN(totalIncentiveBorrowApr)) return null;
-    return -totalIncentiveBorrowApr;
-  }
+  if (borrowApy === null) return null;
   const nativeBorrowApr = parseFloat(borrowApy) / 100;
   if (isNaN(nativeBorrowApr)) return null;
   if (isNaN(totalIncentiveBorrowApr)) return null;
@@ -67,10 +64,7 @@ export const calculateTotalBorrowApr = (borrowApy: string | null, totalIncentive
 
 // Calculate total Borrow APY
 export const calculateTotalBorrowApy = (borrowApy: string | null, totalIncentiveBorrowApy: number): number | null => {
-  if (borrowApy === null) {
-    if (isNaN(totalIncentiveBorrowApy)) return null;
-    return -totalIncentiveBorrowApy;
-  }
+  if (borrowApy === null) return null;
   const nativeBorrowApy = parseFloat(borrowApy) / 100;
   if (isNaN(nativeBorrowApy)) return null;
   if (isNaN(totalIncentiveBorrowApy)) return null;
