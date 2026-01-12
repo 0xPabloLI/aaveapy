@@ -39,9 +39,9 @@ const IncentiveTooltip = ({ market, type, position, onClose }: IncentiveTooltipP
         className="fixed inset-0 z-30" 
         onClick={onClose}
       />
-      {/* Tooltip content */}
+      {/* Tooltip content with fade-in animation */}
       <div
-        className="fixed z-40 bg-popover border border-border rounded-lg shadow-xl p-4 max-w-xs"
+        className="fixed z-40 bg-popover border border-border rounded-lg shadow-xl p-4 max-w-xs animate-in fade-in-0 zoom-in-95 duration-200"
         style={{ 
           left: `${Math.min(position.x + 20, window.innerWidth - 280)}px`, 
           top: `${Math.min(position.y - 40, window.innerHeight - 200)}px` 
