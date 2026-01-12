@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, X, ChevronUp } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { TokenCategory, MarketListItem, ETHEREUM_MARKET_NAMES } from '@/types/aave';
@@ -118,14 +118,11 @@ const FilterBar = ({
           </button>
         ))}
 
-        {/* Spacer */}
-        <div className="flex-1 min-w-4" />
-
-        {/* Search */}
-        <div className="relative w-40">
+        {/* Search after Pendle */}
+        <div className="relative w-36">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
           <Input
-            placeholder="Search..."
+            placeholder="USDC, WETH..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-8 pr-7 bg-card/50 border-border/50 focus:border-primary h-7 text-xs"
@@ -140,8 +137,11 @@ const FilterBar = ({
           )}
         </div>
 
+        {/* Spacer */}
+        <div className="flex-1 min-w-4" />
+
         {/* APY/APR Toggle */}
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground ml-2">
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <span className={!isApy ? 'text-foreground font-medium' : ''}>APR</span>
           <Switch
             checked={isApy}
@@ -190,64 +190,47 @@ const FilterBar = ({
           );
         })}
 
-        {/* More button */}
-        {hasHiddenMarkets && (
-          <div className="relative">
+        {/* More button - expands inline */}
+        {hasHiddenMarkets && !showMarketsExpanded && (
+          <button
+            onClick={() => setShowMarketsExpanded(true)}
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-all bg-card/60 text-muted-foreground hover:text-foreground hover:bg-card border border-border/40"
+          >
+            <span>{hiddenMarkets.length}+ more</span>
+          </button>
+        )}
+
+        {/* Expanded hidden markets */}
+        {showMarketsExpanded && hiddenMarkets.map((market) => {
+          const info = getMarketInfo(market);
+          const isSelected = selectedMarkets.includes(market.marketName);
+          const isEthereum = market.chainName === 'Ethereum';
+          return (
             <button
-              onClick={() => setShowMarketsExpanded(!showMarketsExpanded)}
+              key={market.marketName}
+              onClick={() => toggleMarket(market.marketName)}
               className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-all ${
-                showMarketsExpanded || selectedHiddenCount > 0
+                isSelected
                   ? 'bg-secondary text-secondary-foreground'
                   : 'bg-card/60 text-muted-foreground hover:text-foreground hover:bg-card border border-border/40'
               }`}
+              title={isEthereum ? `Ethereum ${info.label}` : market.chainName}
             >
-              <span>More</span>
-              {selectedHiddenCount > 0 && (
-                <span className="bg-primary text-primary-foreground rounded-full w-4 h-4 text-[10px] flex items-center justify-center">
-                  {selectedHiddenCount}
-                </span>
-              )}
-              {showMarketsExpanded ? (
-                <ChevronUp className="w-3 h-3" />
-              ) : (
-                <ChevronDown className="w-3 h-3" />
-              )}
+              <ChainIcon chain={market.chainName} />
+              <span>{isEthereum ? info.label : market.chainName}</span>
             </button>
+          );
+        })}
 
-            {/* Dropdown for hidden markets */}
-            {showMarketsExpanded && (
-              <>
-                <div 
-                  className="fixed inset-0 z-10" 
-                  onClick={() => setShowMarketsExpanded(false)}
-                />
-                <div className="absolute left-0 top-full mt-1 bg-popover border border-border rounded-lg shadow-lg py-2 z-20 min-w-[180px] max-h-64 overflow-y-auto">
-                  {hiddenMarkets.map((market) => {
-                    const info = getMarketInfo(market);
-                    const isSelected = selectedMarkets.includes(market.marketName);
-                    const isEthereum = market.chainName === 'Ethereum';
-                    return (
-                      <button
-                        key={market.marketName}
-                        onClick={() => toggleMarket(market.marketName)}
-                        className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left transition-colors ${
-                          isSelected
-                            ? 'bg-secondary/20 text-foreground font-medium'
-                            : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
-                        }`}
-                      >
-                        <ChainIcon chain={market.chainName} />
-                        <span>{isEthereum ? `Ethereum ${info.label}` : market.chainName}</span>
-                        {isSelected && (
-                          <span className="ml-auto text-primary">✓</span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </>
-            )}
-          </div>
+        {/* Collapse button */}
+        {showMarketsExpanded && (
+          <button
+            onClick={() => setShowMarketsExpanded(false)}
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-all bg-card/60 text-muted-foreground hover:text-foreground hover:bg-card border border-border/40"
+          >
+            <ChevronUp className="w-3 h-3" />
+            <span>Less</span>
+          </button>
         )}
       </div>
     </div>

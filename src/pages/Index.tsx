@@ -153,7 +153,6 @@ const Index = () => {
             >
               Aave Protocol
             </a>
-            {' '}across 17 chains
           </p>
         </footer>
       </div>
