@@ -39,6 +39,9 @@ const Header = ({ lastUpdated }: HeaderProps) => {
               </TooltipProvider>
             )}
           </div>
+          <p className="text-xs text-muted-foreground mt-0.5 sm:hidden">
+            Find the best opportunities
+          </p>
           <p className="text-xs md:text-sm text-muted-foreground mt-0.5 hidden sm:block">
             Find the best lending & leverage opportunities across 17 chains
           </p>
