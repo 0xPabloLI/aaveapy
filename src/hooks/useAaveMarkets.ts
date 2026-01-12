@@ -12,7 +12,15 @@ interface FetchMarketsParams {
 
 export const fetchMarkets = async (params?: FetchMarketsParams): Promise<MarketsResponse> => {
   const searchParams = new URLSearchParams();
-  if (params?.sort) searchParams.set('sort', params.sort);
+  // Map internal sort fields to API field names (API uses native field names)
+  if (params?.sort) {
+    const apiSortField = params.sort === 'totalSupplyApy' ? 'supplyApy' 
+      : params.sort === 'totalBorrowApy' ? 'borrowApy'
+      : params.sort; // apySpread or null - API doesn't support spread sorting
+    if (apiSortField !== 'apySpread') {
+      searchParams.set('sort', apiSortField);
+    }
+  }
   if (params?.order) searchParams.set('order', params.order);
   if (params?.chain) searchParams.set('chain', params.chain);
   if (params?.token) searchParams.set('token', params.token);
