@@ -43,16 +43,13 @@ const IncentiveTooltip = ({ market, type, position, onClose }: IncentiveTooltipP
       <div
         className="fixed z-40 bg-popover border border-border rounded-lg shadow-xl p-4 max-w-xs"
         style={{ 
-          left: `${Math.min(position.x, window.innerWidth - 280)}px`, 
-          top: `${Math.min(position.y + 10, window.innerHeight - 200)}px` 
+          left: `${Math.min(position.x + 20, window.innerWidth - 280)}px`, 
+          top: `${Math.min(position.y - 40, window.innerHeight - 200)}px` 
         }}
       >
-        {/* Arrow pointing to trigger */}
+        {/* Left-pointing arrow */}
         <div 
-          className="absolute -top-2 w-4 h-4 bg-popover border-l border-t border-border rotate-45"
-          style={{ 
-            left: `${Math.max(16, Math.min(position.x - Math.min(position.x, window.innerWidth - 280), 240))}px`
-          }}
+          className="absolute -left-2 top-8 w-4 h-4 bg-popover border-l border-b border-border -rotate-45"
         />
         <div className="flex items-start gap-3">
           <div className="p-2 bg-amber-500/10 rounded-lg flex-shrink-0">
