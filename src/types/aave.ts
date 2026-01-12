@@ -7,10 +7,9 @@ export interface MarketWithSpread {
   tokenAddress: string;
   supplyApy: string;
   borrowApy: string | null;
-  totalSupplyApy: number;
-  totalBorrowApy: number | null;
-  apySpread: number | null;
+  totalIncentiveSupplyApr: number;
   totalIncentiveSupplyApy: number;
+  totalIncentiveBorrowApr: number;
   totalIncentiveBorrowApy: number;
   meritSupplyApr?: string[];
   meritBorrowApr?: string[];

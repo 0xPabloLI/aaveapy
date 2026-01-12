@@ -1,20 +1,38 @@
 import { TrendingUp, Zap, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { MarketWithSpread, ETHEREUM_MARKET_NAMES } from '@/types/aave';
-import { formatPercent, formatSpread } from '@/lib/formatters';
+import { 
+  formatPercent, 
+  formatSpread, 
+  calculateTotalSupplyApy, 
+  calculateTotalBorrowApy,
+  calculateSpreadApy 
+} from '@/lib/formatters';
+import { buildAaveReserveUrl } from '@/lib/aaveLinks';
 
 interface TopOpportunitiesProps {
   markets: MarketWithSpread[];
 }
 
 const TopOpportunities = ({ markets }: TopOpportunitiesProps) => {
+  // Calculate totals for all markets
+  const marketsWithTotals = markets.map(market => ({
+    ...market,
+    totalSupplyApy: calculateTotalSupplyApy(market.supplyApy, market.totalIncentiveSupplyApy),
+    totalBorrowApy: calculateTotalBorrowApy(market.borrowApy, market.totalIncentiveBorrowApy),
+    apySpread: calculateSpreadApy(
+      calculateTotalSupplyApy(market.supplyApy, market.totalIncentiveSupplyApy),
+      calculateTotalBorrowApy(market.borrowApy, market.totalIncentiveBorrowApy)
+    ),
+  }));
+
   // Top 5 Supply APY
-  const topSupply = [...markets]
+  const topSupply = [...marketsWithTotals]
     .sort((a, b) => b.totalSupplyApy - a.totalSupplyApy)
     .slice(0, 5);
 
   // Top 5 Looping opportunities (highest positive spread)
-  const topLooping = [...markets]
+  const topLooping = [...marketsWithTotals]
     .filter(m => m.apySpread !== null && m.apySpread > 0)
     .sort((a, b) => (b.apySpread || 0) - (a.apySpread || 0))
     .slice(0, 5);
@@ -73,6 +91,13 @@ const TopOpportunities = ({ markets }: TopOpportunitiesProps) => {
     })
   };
 
+  const handleCardClick = (market: Pick<MarketWithSpread, 'marketName' | 'tokenAddress'>) => {
+    const url = buildAaveReserveUrl(market);
+    if (url) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
   return (
     <div className="grid md:grid-cols-2 gap-6">
       {/* Top Supply APY */}
@@ -105,6 +130,7 @@ const TopOpportunities = ({ markets }: TopOpportunitiesProps) => {
               animate="visible"
               variants={itemVariants}
               className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-background to-success/5 border border-border hover:border-success/50 transition-all group cursor-pointer"
+              onClick={() => handleCardClick(market)}
             >
               <div className="flex items-center gap-3">
                 <span className="text-lg font-bold text-secondary w-6">
@@ -115,12 +141,9 @@ const TopOpportunities = ({ markets }: TopOpportunitiesProps) => {
                   <p className="text-xs text-secondary">{getMarketDisplayName(market)}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-success font-bold text-lg">
-                  {formatPercent(market.totalSupplyApy)}
-                </span>
-                <ArrowRight className="w-4 h-4 text-secondary opacity-0 group-hover:opacity-100 transition-opacity" />
-              </div>
+              <span className="text-success font-bold text-lg">
+                {formatPercent(market.totalSupplyApy)}
+              </span>
             </motion.div>
           ))}
         </div>
@@ -153,11 +176,12 @@ const TopOpportunities = ({ markets }: TopOpportunitiesProps) => {
               <motion.div 
                 key={`loop-${market.marketName}-${market.tokenSymbol}`}
                 custom={i}
-                initial="hidden"
-                animate="visible"
-                variants={itemVariants}
-                className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-background to-warning/5 border border-border hover:border-warning/50 transition-all group cursor-pointer"
-              >
+              initial="hidden"
+              animate="visible"
+              variants={itemVariants}
+              className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-background to-warning/5 border border-border hover:border-warning/50 transition-all group cursor-pointer"
+              onClick={() => handleCardClick(market)}
+            >
                 <div className="flex items-center gap-3">
                   <span className="text-lg font-bold text-warning w-6">
                     {i + 1}
