@@ -200,8 +200,8 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-      <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-        <h3 className="text-lg font-bold text-gray-900">{markets.length} markets</h3>
+      <div className="p-4 md:p-6 border-b border-gray-100 flex justify-between items-center">
+        <h3 className="text-base md:text-lg font-bold text-gray-900">{markets.length} pools</h3>
       </div>
       <div className="overflow-x-auto">
         <Table>
