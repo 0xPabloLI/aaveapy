@@ -1,4 +1,4 @@
-import { X } from 'lucide-react';
+import { useRef, useEffect, useState } from 'react';
 import { MarketWithSpread } from '@/types/aave';
 import { formatPercent } from '@/lib/formatters';
 
@@ -6,31 +6,63 @@ interface IncentiveTooltipProps {
   market: MarketWithSpread;
   type: 'supply' | 'borrow';
   position: { x: number; y: number };
+  triggerCenterX: number;
   onClose: () => void;
 }
 
 const IncentiveIcon = ({ className = "" }: { className?: string }) => (
   <svg 
-    viewBox="0 0 24 24" 
+    viewBox="0 0 16 16" 
     fill="none" 
     className={className}
-    stroke="currentColor" 
-    strokeWidth="2" 
-    strokeLinecap="round" 
-    strokeLinejoin="round"
+    xmlns="http://www.w3.org/2000/svg"
   >
-    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+    <rect width="16" height="16" rx="2" fill="#E8E7FF"/>
+    <path
+      d="M3 8C3 8 4.5 6 6 8C7.5 10 9 8 9 8"
+      stroke="white"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M3 10C3 10 4.5 8 6 10C7.5 12 9 10 9 10"
+      stroke="white"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
   </svg>
 );
 
-const IncentiveTooltip = ({ market, type, position, onClose }: IncentiveTooltipProps) => {
+const IncentiveTooltip = ({ market, type, position, triggerCenterX, onClose }: IncentiveTooltipProps) => {
   const incentiveApy = type === 'supply' 
     ? market.totalIncentiveSupplyApy 
     : market.totalIncentiveBorrowApy;
 
-  const meritApr = type === 'supply' ? market.meritSupplyApr : market.meritBorrowApr;
-  const merklApr = type === 'supply' ? market.merklSupplyApr : market.merklBorrowApr;
-  const brevisApr = type === 'supply' ? market.brevisSupplyApr : market.brevisBorrowApr;
+  const tooltipRef = useRef<HTMLDivElement>(null);
+  const [arrowLeft, setArrowLeft] = useState(0);
+
+  useEffect(() => {
+    // Use requestAnimationFrame to ensure tooltip is fully rendered before calculating
+    const updateArrowPosition = () => {
+      if (tooltipRef.current) {
+        const tooltipRect = tooltipRef.current.getBoundingClientRect();
+        const arrowWidth = 16;
+        // Calculate arrow position: trigger center X - tooltip left - arrow width / 2
+        const calculatedLeft = triggerCenterX - tooltipRect.left - arrowWidth / 2;
+        // Clamp arrow position to stay within tooltip bounds (with some padding)
+        const minLeft = 8;
+        const maxLeft = tooltipRect.width - arrowWidth - 8;
+        setArrowLeft(Math.max(minLeft, Math.min(maxLeft, calculatedLeft)));
+      }
+    };
+
+    // Use requestAnimationFrame to wait for DOM update
+    requestAnimationFrame(() => {
+      requestAnimationFrame(updateArrowPosition);
+    });
+  }, [triggerCenterX, position]);
 
   return (
     <>
@@ -41,66 +73,55 @@ const IncentiveTooltip = ({ market, type, position, onClose }: IncentiveTooltipP
       />
       {/* Tooltip content with fade-in animation */}
       <div
-        className="fixed z-40 bg-popover border border-border rounded-lg shadow-xl p-4 max-w-xs animate-in fade-in-0 zoom-in-95 duration-200"
+        ref={tooltipRef}
+        className="fixed z-40 bg-white border border-gray-200 rounded-xl shadow-xl p-4 max-w-[360px] animate-in fade-in-0 zoom-in-95 duration-200"
         style={{ 
-          left: `${Math.min(position.x + 20, window.innerWidth - 280)}px`, 
-          top: `${Math.min(position.y - 40, window.innerHeight - 200)}px` 
+          left: `${Math.min(position.x, window.innerWidth - 360)}px`, 
+          top: `${position.y + 8}px` 
         }}
       >
-        {/* Left-pointing arrow */}
+        {/* Upward-pointing arrow - dynamically positioned, appears as border extension */}
         <div 
-          className="absolute -left-2 top-8 w-4 h-4 bg-popover border-l border-b border-border -rotate-45"
+          className="absolute -top-2 w-4 h-4 bg-white border-l border-t border-gray-200 transform rotate-45"
+          style={{ 
+            left: `${arrowLeft}px`
+          }}
         />
         <div className="flex items-start gap-3">
-          <div className="p-2 bg-amber-500/10 rounded-lg flex-shrink-0">
-            <IncentiveIcon className="w-5 h-5 text-amber-500" />
+          {/* Icon area */}
+          <div className="p-2 bg-amber-50 rounded-lg flex-shrink-0">
+            <IncentiveIcon className="w-5 h-5" />
           </div>
+          {/* Content area */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between mb-1">
-              <h4 className="font-bold text-foreground text-sm">
-                {type === 'supply' ? 'Supply' : 'Borrow'} Incentives
-              </h4>
-              <button
-                onClick={onClose}
-                className="p-1 hover:bg-accent rounded transition-colors"
-              >
-                <X className="w-3.5 h-3.5 text-muted-foreground" />
-              </button>
-            </div>
-            <p className="text-xs text-muted-foreground mb-3">
+            <h4 className="font-bold text-gray-900 text-sm mb-1">
+              Incentive APY
+            </h4>
+            <p className="text-xs text-gray-600 mb-2">
               {market.tokenSymbol} on {market.chainName}
             </p>
             
-            <div className="space-y-2">
+            {/* Data rows */}
+            <div className="space-y-1.5">
               <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">Total Incentive:</span>
-                <span className="font-bold text-amber-500">{formatPercent(incentiveApy)}</span>
+                <span className="text-gray-500">Rate:</span>
+                <span className="font-bold text-amber-600">{formatPercent(incentiveApy)}</span>
               </div>
               
-              {meritApr && meritApr.length > 0 && (
-                <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground">Merit Rewards:</span>
-                  <span className="font-medium text-foreground">{meritApr.join(', ')}</span>
-                </div>
-              )}
+              <div className="flex justify-between text-xs">
+                <span className="text-gray-500">Source:</span>
+                <span className="font-medium text-gray-700">Protocol Rewards</span>
+              </div>
               
-              {merklApr !== undefined && merklApr > 0 && (
-                <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground">Merkl Rewards:</span>
-                  <span className="font-medium text-foreground">{formatPercent(merklApr)}</span>
-                </div>
-              )}
-              
-              {brevisApr !== undefined && brevisApr !== null && brevisApr > 0 && (
-                <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground">Brevis Rewards:</span>
-                  <span className="font-medium text-foreground">{formatPercent(brevisApr)}</span>
-                </div>
-              )}
+              <div className="flex justify-between text-xs">
+                <span className="text-gray-500">Duration:</span>
+                <span className="font-medium text-gray-700">30 days</span>
+              </div>
             </div>
             
-            <p className="text-xs text-muted-foreground mt-3 pt-3 border-t border-border/50">
-              Incentive APY is temporary and subject to change.
+            {/* Bottom disclaimer */}
+            <p className="text-xs text-gray-500 mt-3 pt-3 border-t border-gray-100">
+              Incentive APY is temporary and subject to change based on protocol emissions.
             </p>
           </div>
         </div>

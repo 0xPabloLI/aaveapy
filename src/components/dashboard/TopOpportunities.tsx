@@ -6,15 +6,19 @@ import {
   formatSpread, 
   calculateTotalSupplyApy, 
   calculateTotalBorrowApy,
-  calculateSpreadApy 
+  calculateSpreadApy,
+  calculateTotalSupplyApr,
+  calculateTotalBorrowApr,
+  calculateSpreadApr
 } from '@/lib/formatters';
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
 
 interface TopOpportunitiesProps {
   markets: MarketWithSpread[];
+  isApy: boolean;
 }
 
-const TopOpportunities = ({ markets }: TopOpportunitiesProps) => {
+const TopOpportunities = ({ markets, isApy }: TopOpportunitiesProps) => {
   // Calculate totals for all markets
   const marketsWithTotals = markets.map(market => ({
     ...market,
@@ -24,17 +28,33 @@ const TopOpportunities = ({ markets }: TopOpportunitiesProps) => {
       calculateTotalSupplyApy(market.supplyApy, market.totalIncentiveSupplyApy),
       calculateTotalBorrowApy(market.borrowApy, market.totalIncentiveBorrowApy)
     ),
+    totalSupplyApr: calculateTotalSupplyApr(market.supplyApy, market.totalIncentiveSupplyApr),
+    totalBorrowApr: calculateTotalBorrowApr(market.borrowApy, market.totalIncentiveBorrowApr),
+    aprSpread: calculateSpreadApr(
+      calculateTotalSupplyApr(market.supplyApy, market.totalIncentiveSupplyApr),
+      calculateTotalBorrowApr(market.borrowApy, market.totalIncentiveBorrowApr)
+    ),
   }));
 
   // Top 5 Supply APY
   const topSupply = [...marketsWithTotals]
-    .sort((a, b) => b.totalSupplyApy - a.totalSupplyApy)
+    .sort((a, b) =>
+      (isApy ? b.totalSupplyApy : b.totalSupplyApr) -
+      (isApy ? a.totalSupplyApy : a.totalSupplyApr)
+    )
     .slice(0, 5);
 
   // Top 5 Looping opportunities (highest positive spread)
   const topLooping = [...marketsWithTotals]
-    .filter(m => m.apySpread !== null && m.apySpread > 0)
-    .sort((a, b) => (b.apySpread || 0) - (a.apySpread || 0))
+    .filter(m => {
+      const spread = isApy ? m.apySpread : m.aprSpread;
+      return spread !== null && spread > 0;
+    })
+    .sort((a, b) => {
+      const aSpread = isApy ? a.apySpread : a.aprSpread;
+      const bSpread = isApy ? b.apySpread : b.aprSpread;
+      return (bSpread || 0) - (aSpread || 0);
+    })
     .slice(0, 5);
 
   const getMarketDisplayName = (market: MarketWithSpread) => {
@@ -117,7 +137,7 @@ const TopOpportunities = ({ markets }: TopOpportunitiesProps) => {
             <TrendingUp className="w-5 h-5 text-success" />
           </motion.div>
           <div>
-            <h3 className="font-bold">Top Supply APY</h3>
+            <h3 className="font-bold">Top Supply {isApy ? 'APY' : 'APR'}</h3>
             <p className="text-xs text-muted-foreground">Best lending opportunities</p>
           </div>
         </motion.div>
@@ -141,9 +161,15 @@ const TopOpportunities = ({ markets }: TopOpportunitiesProps) => {
                   <p className="text-xs text-secondary">{getMarketDisplayName(market)}</p>
                 </div>
               </div>
-              <span className="text-success font-bold text-lg">
-                {formatPercent(market.totalSupplyApy)}
-              </span>
+              <div className="flex flex-col items-end gap-1 min-h-[36px] min-w-[100px]">
+                <span className="text-success font-bold text-lg">
+                  {formatPercent(isApy ? market.totalSupplyApy : market.totalSupplyApr)}
+                </span>
+                <span className="text-xs text-secondary">
+                  {formatPercent(parseFloat(market.supplyApy) / 100)} +{' '}
+                  {formatPercent(isApy ? market.totalIncentiveSupplyApy : market.totalIncentiveSupplyApr)}
+                </span>
+              </div>
             </motion.div>
           ))}
         </div>
@@ -167,7 +193,9 @@ const TopOpportunities = ({ markets }: TopOpportunitiesProps) => {
           </motion.div>
           <div>
             <h3 className="font-bold">Leverage Opportunities</h3>
-            <p className="text-xs text-muted-foreground">Supply APY &gt; Borrow APY</p>
+            <p className="text-xs text-muted-foreground">
+              Supply {isApy ? 'APY' : 'APR'} &gt; Borrow {isApy ? 'APY' : 'APR'}
+            </p>
           </div>
         </motion.div>
         {topLooping.length > 0 ? (
@@ -191,12 +219,15 @@ const TopOpportunities = ({ markets }: TopOpportunitiesProps) => {
                     <p className="text-xs text-secondary">{getMarketDisplayName(market)}</p>
                   </div>
                 </div>
-                <div className="flex flex-col items-end">
-                  <span className="text-warning font-bold">
-                    {formatSpread(market.apySpread)}
+                <div className="flex flex-col items-end gap-1 min-h-[36px] min-w-[100px]">
+                  <span className="text-warning font-bold text-lg">
+                    {formatSpread(isApy ? market.apySpread : market.aprSpread)}
                   </span>
                   <span className="text-xs text-secondary">
-                    {formatPercent(market.totalSupplyApy)} / {formatPercent(market.totalBorrowApy)}
+                    {formatPercent(isApy ? market.totalSupplyApy : market.totalSupplyApr)} -{' '}
+                    {(isApy ? market.totalBorrowApy : market.totalBorrowApr) < 0
+                      ? `(${formatPercent(isApy ? market.totalBorrowApy : market.totalBorrowApr)})`
+                      : formatPercent(isApy ? market.totalBorrowApy : market.totalBorrowApr)}
                   </span>
                 </div>
               </motion.div>

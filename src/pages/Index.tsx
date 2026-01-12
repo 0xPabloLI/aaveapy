@@ -109,7 +109,7 @@ const Index = () => {
 
         {/* Top Opportunities */}
         {marketsData?.data && (
-          <TopOpportunities markets={marketsData.data} />
+          <TopOpportunities markets={marketsData.data} isApy={isApy} />
         )}
 
         {/* Filters */}
