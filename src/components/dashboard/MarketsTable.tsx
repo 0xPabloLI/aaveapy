@@ -3,9 +3,20 @@ import { ArrowUp, ArrowDown, ChevronDown } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { MarketWithSpread, ETHEREUM_MARKET_NAMES } from '@/types/aave';
-import { formatPercent, formatSpread, apyToApr } from '@/lib/formatters';
+import { 
+  formatPercent, 
+  formatSpread, 
+  apyToApr,
+  calculateTotalSupplyApr,
+  calculateTotalSupplyApy,
+  calculateTotalBorrowApr,
+  calculateTotalBorrowApy,
+  calculateSpreadApy,
+  calculateSpreadApr
+} from '@/lib/formatters';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { IncentiveIcon } from '@/components/IncentiveIcon';
+import { buildAaveReserveUrl } from '@/lib/aaveLinks';
 
 interface MarketsTableProps {
   markets: MarketWithSpread[];
@@ -41,14 +52,31 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
     return market.chainName;
   };
 
-  // Calculate native APY (total - incentive)
+  // Calculate totals for a market
+  const getTotalSupplyApy = (market: MarketWithSpread): number => {
+    return calculateTotalSupplyApy(market.supplyApy, market.totalIncentiveSupplyApy);
+  };
+
+  const getTotalSupplyApr = (market: MarketWithSpread): number => {
+    return calculateTotalSupplyApr(market.supplyApy, market.totalIncentiveSupplyApr);
+  };
+
+  const getTotalBorrowApy = (market: MarketWithSpread): number | null => {
+    return calculateTotalBorrowApy(market.borrowApy, market.totalIncentiveBorrowApy);
+  };
+
+  const getTotalBorrowApr = (market: MarketWithSpread): number | null => {
+    return calculateTotalBorrowApr(market.borrowApy, market.totalIncentiveBorrowApr);
+  };
+
+  // Calculate native values (total - incentive)
   const getNativeSupplyApy = (market: MarketWithSpread): number => {
-    return market.totalSupplyApy - market.totalIncentiveSupplyApy;
+    return parseFloat(market.supplyApy) / 100;
   };
 
   const getNativeBorrowApy = (market: MarketWithSpread): number | null => {
-    if (market.totalBorrowApy === null) return null;
-    return market.totalBorrowApy - market.totalIncentiveBorrowApy;
+    if (market.borrowApy === null) return null;
+    return parseFloat(market.borrowApy) / 100;
   };
 
   // Sort data based on active column and its sort mode
@@ -62,9 +90,14 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
         const bNative = getNativeSupplyApy(b);
         comparison = bNative - aNative;
       } else if (supplySortMode === 'incentive') {
-        comparison = b.totalIncentiveSupplyApy - a.totalIncentiveSupplyApy;
+        const aIncentive = isApy ? a.totalIncentiveSupplyApy : a.totalIncentiveSupplyApr;
+        const bIncentive = isApy ? b.totalIncentiveSupplyApy : b.totalIncentiveSupplyApr;
+        comparison = bIncentive - aIncentive;
       } else {
-        comparison = b.totalSupplyApy - a.totalSupplyApy;
+        // Total sorting
+        const aTotal = isApy ? getTotalSupplyApy(a) : getTotalSupplyApr(a);
+        const bTotal = isApy ? getTotalSupplyApy(b) : getTotalSupplyApr(b);
+        comparison = bTotal - aTotal;
       }
       return supplySortOrder === 'desc' ? comparison : -comparison;
     } else {
@@ -77,15 +110,17 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
         if (bNative === null) return -1;
         comparison = bNative - aNative;
       } else if (borrowSortMode === 'incentive') {
-        if (a.totalIncentiveBorrowApy === null && b.totalIncentiveBorrowApy === null) return 0;
-        if (a.totalIncentiveBorrowApy === null) return 1;
-        if (b.totalIncentiveBorrowApy === null) return -1;
-        comparison = b.totalIncentiveBorrowApy - a.totalIncentiveBorrowApy;
+        const aIncentive = isApy ? a.totalIncentiveBorrowApy : a.totalIncentiveBorrowApr;
+        const bIncentive = isApy ? b.totalIncentiveBorrowApy : b.totalIncentiveBorrowApr;
+        comparison = bIncentive - aIncentive;
       } else {
-        if (a.totalBorrowApy === null && b.totalBorrowApy === null) return 0;
-        if (a.totalBorrowApy === null) return 1;
-        if (b.totalBorrowApy === null) return -1;
-        comparison = b.totalBorrowApy - a.totalBorrowApy;
+        // Total sorting
+        const aTotal = isApy ? getTotalBorrowApy(a) : getTotalBorrowApr(a);
+        const bTotal = isApy ? getTotalBorrowApy(b) : getTotalBorrowApr(b);
+        if (aTotal === null && bTotal === null) return 0;
+        if (aTotal === null) return 1;
+        if (bTotal === null) return -1;
+        comparison = bTotal - aTotal;
       }
       return borrowSortOrder === 'desc' ? comparison : -comparison;
     }
@@ -151,6 +186,16 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
         loading="lazy"
       />
     );
+  };
+
+  const handleRowClick = (market: MarketWithSpread) => {
+    const url = buildAaveReserveUrl({
+      marketName: market.marketName,
+      tokenAddress: market.tokenAddress,
+    });
+    if (url) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
   };
 
   return (
@@ -340,33 +385,38 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
           </TableHeader>
           <TableBody>
             {sortedData.map((row, idx) => {
+              const totalSupplyApy = getTotalSupplyApy(row);
+              const totalSupplyApr = getTotalSupplyApr(row);
+              const totalBorrowApy = getTotalBorrowApy(row);
+              const totalBorrowApr = getTotalBorrowApr(row);
               const nativeSupplyApy = getNativeSupplyApy(row);
               const nativeBorrowApy = getNativeBorrowApy(row);
               
-              const displaySupplyTotal = isApy
-                ? row.totalSupplyApy
-                : apyToApr(row.totalSupplyApy);
+              const displaySupplyTotal = isApy ? totalSupplyApy : totalSupplyApr;
               const displaySupplyNative = isApy
                 ? nativeSupplyApy
-                : apyToApr(nativeSupplyApy);
+                : parseFloat(row.supplyApy) / 100;
               const displaySupplyIncentive = isApy
                 ? row.totalIncentiveSupplyApy
-                : apyToApr(row.totalIncentiveSupplyApy);
+                : row.totalIncentiveSupplyApr;
 
-              const displayBorrowTotal = row.totalBorrowApy !== null
-                ? (isApy ? row.totalBorrowApy : apyToApr(row.totalBorrowApy))
-                : null;
+              const displayBorrowTotal = isApy ? totalBorrowApy : totalBorrowApr;
               const displayBorrowNative = nativeBorrowApy !== null
-                ? (isApy ? nativeBorrowApy : apyToApr(nativeBorrowApy))
+                ? (isApy ? nativeBorrowApy : parseFloat(row.borrowApy || '0') / 100)
                 : null;
-              const displayBorrowIncentive = row.totalIncentiveBorrowApy !== null
-                ? (isApy ? row.totalIncentiveBorrowApy : apyToApr(row.totalIncentiveBorrowApy))
-                : null;
+              const displayBorrowIncentive = isApy
+                ? row.totalIncentiveBorrowApy
+                : row.totalIncentiveBorrowApr;
+
+              const spread = isApy
+                ? calculateSpreadApy(totalSupplyApy, totalBorrowApy)
+                : calculateSpreadApr(totalSupplyApr, totalBorrowApr);
 
               return (
                 <TableRow
                   key={idx}
                   className="hover:bg-gray-50/50 transition-colors cursor-pointer"
+                  onClick={() => handleRowClick(row)}
                 >
                   <TableCell className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center gap-3">
@@ -399,7 +449,7 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
                               e,
                               row.tokenSymbol,
                               getMarketDisplayName(row),
-                              row.totalIncentiveSupplyApy,
+                              displaySupplyIncentive,
                             )
                           }
                           className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 text-amber-600 font-semibold hover:bg-amber-100 transition-colors cursor-pointer"
@@ -415,19 +465,19 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
                       <span className="font-bold text-gray-900 text-base">
                         {displayBorrowTotal !== null ? formatPercent(displayBorrowTotal) : '-'}
                       </span>
-                      {displayBorrowTotal !== null && displayBorrowNative !== null && displayBorrowIncentive !== null && (
+                      {displayBorrowTotal !== null && displayBorrowNative !== null && (
                         <div className="flex items-center gap-1.5 text-xs">
                           <span className="text-blue-600 font-semibold">
                             {formatPercent(displayBorrowNative)}
                           </span>
-                          <span className="text-gray-400">+</span>
+                          <span className="text-gray-400">-</span>
                           <button
                             onClick={(e) =>
                               handleIncentiveClick(
                                 e,
                                 row.tokenSymbol,
                                 getMarketDisplayName(row),
-                                row.totalIncentiveBorrowApy,
+                                displayBorrowIncentive,
                               )
                             }
                             className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 text-amber-600 font-semibold hover:bg-amber-100 transition-colors cursor-pointer"
@@ -442,12 +492,12 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
                   <TableCell className="px-6 py-4 whitespace-nowrap text-right hidden md:table-cell">
                     <span
                       className={`font-bold ${
-                        row.apySpread !== null && row.apySpread >= 0
+                        spread !== null && spread >= 0
                           ? 'text-amber-500'
                           : 'text-rose-500'
                       }`}
                     >
-                      {formatSpread(row.apySpread)}
+                      {formatSpread(spread)}
                     </span>
                   </TableCell>
                 </TableRow>
