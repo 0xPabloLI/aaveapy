@@ -1,47 +1,135 @@
 import { useRef, useEffect, useState } from 'react';
-import { MarketWithSpread } from '@/types/aave';
-import { formatPercent } from '@/lib/formatters';
+import { ExternalLink } from 'lucide-react';
+import { PoolWithSpread } from '@/types/aave';
+import { formatPercent, convertAprToApy, sumAprSources, sumApyFromAprSources } from '@/lib/formatters';
 
 interface IncentiveTooltipProps {
-  market: MarketWithSpread;
+  pool: PoolWithSpread;
   type: 'supply' | 'borrow';
   position: { x: number; y: number };
   triggerCenterX: number;
   onClose: () => void;
+  isApy?: boolean;
 }
 
-const IncentiveIcon = ({ className = "" }: { className?: string }) => (
-  <svg 
-    viewBox="0 0 16 16" 
-    fill="none" 
-    className={className}
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <rect width="16" height="16" rx="2" fill="#E8E7FF"/>
-    <path
-      d="M3 8C3 8 4.5 6 6 8C7.5 10 9 8 9 8"
-      stroke="white"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M3 10C3 10 4.5 8 6 10C7.5 12 9 10 9 10"
-      stroke="white"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
+interface IncentiveSource {
+  name: string;
+  value: number;
+  color: string;
+  bgColor: string;
+}
 
-const IncentiveTooltip = ({ market, type, position, triggerCenterX, onClose }: IncentiveTooltipProps) => {
-  const incentiveApy = type === 'supply' 
-    ? market.totalIncentiveSupplyApy 
-    : market.totalIncentiveBorrowApy;
+interface MerklCampaign {
+  campaignApr: number;
+  campaignApy: number;
+  campaignStartedAt: string;
+  campaignEndedAt: string;
+  campaignId: string;
+  opportunityLink?: string;
+}
 
+const IncentiveTooltip = ({ pool, type, position, triggerCenterX, onClose, isApy = true }: IncentiveTooltipProps) => {
   const tooltipRef = useRef<HTMLDivElement>(null);
   const [arrowLeft, setArrowLeft] = useState(0);
+
+  // Get detailed incentive sources
+  const getIncentiveSources = (): IncentiveSource[] => {
+    const sources: IncentiveSource[] = [];
+
+    const addSource = (name: string, value: number, color: string, bgColor: string) => {
+      if (value > 0) {
+        sources.push({ name, value, color, bgColor });
+      }
+    };
+
+    const getAprValue = (aprSources?: Array<string | { apr: string }>) => (
+      isApy ? sumApyFromAprSources(aprSources) : sumAprSources(aprSources)
+    );
+
+    const protocolAprs = type === 'supply' ? pool.supplyIncentives : pool.borrowIncentives;
+    addSource('Protocol', getAprValue(protocolAprs), 'text-indigo-600', 'bg-indigo-50');
+
+    const meritAprs = type === 'supply' ? pool.meritSupplyApr : pool.meritBorrowApr;
+    addSource('Merit', getAprValue(meritAprs), 'text-purple-600', 'bg-purple-50');
+
+    const meritSelfAprs = type === 'supply' ? pool.meritSelfSupply : pool.meritSelfBorrow;
+    addSource('Merit Self', getAprValue(meritSelfAprs), 'text-purple-700', 'bg-purple-50');
+
+    const requirementAprs = type === 'supply'
+      ? pool.meritSupplyWithBorrowRequirement
+      : pool.meritBorrowWithSupplyRequirement;
+    addSource(
+      type === 'supply' ? 'Merit (w/ Borrow Req)' : 'Merit (w/ Supply Req)',
+      getAprValue(requirementAprs),
+      'text-purple-600',
+      'bg-purple-50',
+    );
+
+    // Merkl incentives are now handled separately with detailed breakdowns
+
+    // Brevis incentives (percentage APR, e.g., 5 for 5%)
+    const brevisApr = type === 'supply' ? pool.brevisSupplyApr : pool.brevisBorrowApr;
+    if (brevisApr !== null && brevisApr !== undefined && !isNaN(brevisApr) && brevisApr > 0) {
+      // Convert APR to APY if needed (using monthly compounding)
+      const brevisValue = isApy ? convertAprToApy(brevisApr) : brevisApr;
+      sources.push({
+        name: 'Brevis',
+        value: brevisValue,
+        color: 'text-green-600',
+        bgColor: 'bg-green-50',
+      });
+    }
+
+    return sources;
+  };
+
+  // Get Merkl campaigns with detailed breakdowns
+  const getMerklCampaigns = (): MerklCampaign[] => {
+    const opportunities = type === 'supply' 
+      ? pool.merklSupplyOpportunities 
+      : pool.merklBorrowOpportunities;
+    
+    if (!opportunities || !Array.isArray(opportunities)) return [];
+
+    const campaigns: MerklCampaign[] = [];
+    opportunities.forEach(opportunity => {
+      if (opportunity.breakdowns && Array.isArray(opportunity.breakdowns)) {
+        opportunity.breakdowns.forEach(breakdown => {
+          if (breakdown.campaignApr && breakdown.campaignApr > 0) {
+            campaigns.push({
+              campaignApr: breakdown.campaignApr,
+              campaignApy: convertAprToApy(breakdown.campaignApr),
+              campaignStartedAt: breakdown.campaignStartedAt,
+              campaignEndedAt: breakdown.campaignEndedAt,
+              campaignId: breakdown.campaignId,
+              opportunityLink: opportunity.opportunityLink,
+            });
+          }
+        });
+      }
+    });
+
+    return campaigns;
+  };
+
+  // Format date for display (e.g., "Jan 7, 2026")
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric' 
+    });
+  };
+
+  // Format date range
+  const formatDateRange = (start: string, end: string): string => {
+    return `${formatDate(start)} - ${formatDate(end)}`;
+  };
+
+  const incentiveSources = getIncentiveSources();
+  const merklCampaigns = getMerklCampaigns();
+  const hasDetails = incentiveSources.length > 0 || merklCampaigns.length > 0;
 
   useEffect(() => {
     // Use requestAnimationFrame to ensure tooltip is fully rendered before calculating
@@ -88,40 +176,80 @@ const IncentiveTooltip = ({ market, type, position, triggerCenterX, onClose }: I
           }}
         />
         <div className="flex items-start gap-3">
-          {/* Icon area */}
-          <div className="p-2 bg-amber-50 rounded-lg flex-shrink-0">
-            <IncentiveIcon className="w-5 h-5" />
-          </div>
           {/* Content area */}
           <div className="flex-1 min-w-0">
-            <h4 className="font-bold text-gray-900 text-sm mb-1">
-              Incentive APY
-            </h4>
-            <p className="text-xs text-gray-600 mb-2">
-              {market.tokenSymbol} on {market.chainName}
-            </p>
-            
-            {/* Data rows */}
-            <div className="space-y-1.5">
-              <div className="flex justify-between text-xs">
-                <span className="text-gray-500">Rate:</span>
-                <span className="font-bold text-amber-600">{formatPercent(incentiveApy)}</span>
+            {/* Detailed sources */}
+            {hasDetails ? (
+              <div className="space-y-2 mb-3">
+                {incentiveSources.map((source, index) => (
+                  <div 
+                    key={`${source.name}-${index}`}
+                    className={`flex items-center justify-between p-2 rounded-md ${source.bgColor}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs font-medium ${source.color}`}>
+                        {source.name}
+                      </span>
+                    </div>
+                    <span className={`text-xs font-bold ${source.color}`}>
+                      {formatPercent(source.value)}
+                    </span>
+                  </div>
+                ))}
+
+                {/* Merkl detailed breakdowns */}
+                {merklCampaigns.length > 0 && (
+                  <div className="mt-3 pt-3 border-t border-gray-200">
+                    <div className="mb-2">
+                      <span className="text-xs font-semibold text-blue-600">Merkl Campaigns</span>
+                    </div>
+                    <div className="space-y-2">
+                      {merklCampaigns.map((campaign, index) => (
+                        <div 
+                          key={`merkl-${campaign.campaignId}-${index}`}
+                          className="p-2 rounded-md bg-blue-50 border border-blue-100"
+                        >
+                          <div className="flex items-start justify-between gap-2 mb-1">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5 mb-1">
+                                <span className="text-xs font-bold text-blue-600">
+                                  {formatPercent(isApy ? campaign.campaignApy : campaign.campaignApr)}
+                                </span>
+                                {campaign.opportunityLink && (
+                                  <a
+                                    href={campaign.opportunityLink}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="text-blue-600 hover:text-blue-800 transition-colors"
+                                    title="View opportunity"
+                                  >
+                                    <ExternalLink className="w-3 h-3" />
+                                  </a>
+                                )}
+                              </div>
+                              <p className="text-xs text-gray-600">
+                                {formatDateRange(campaign.campaignStartedAt, campaign.campaignEndedAt)}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-              
-              <div className="flex justify-between text-xs">
-                <span className="text-gray-500">Source:</span>
-                <span className="font-medium text-gray-700">Protocol Rewards</span>
+            ) : (
+              <div className="mb-3">
+                <p className="text-xs text-gray-500 italic">
+                  No detailed breakdown available
+                </p>
               </div>
-              
-              <div className="flex justify-between text-xs">
-                <span className="text-gray-500">Duration:</span>
-                <span className="font-medium text-gray-700">30 days</span>
-              </div>
-            </div>
+            )}
             
             {/* Bottom disclaimer */}
             <p className="text-xs text-gray-500 mt-3 pt-3 border-t border-gray-100">
-              Incentive APY is temporary and subject to change based on protocol emissions.
+              Incentive {isApy ? 'APY' : 'APR'} is temporary and subject to change based on protocol emissions.
             </p>
           </div>
         </div>

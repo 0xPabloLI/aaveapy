@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ArrowUp, ArrowDown, ChevronDown } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { MarketWithSpread, ETHEREUM_MARKET_NAMES } from '@/types/aave';
+import { PoolWithSpread, ETHEREUM_MARKET_NAMES } from '@/types/aave';
 import { 
   formatPercent, 
   formatSpread, 
@@ -10,15 +10,17 @@ import {
   calculateTotalBorrowApr,
   calculateTotalBorrowApy,
   calculateSpreadApy,
-  calculateSpreadApr
+  calculateSpreadApr,
+  calculateTotalIncentiveApr,
+  calculateTotalIncentiveApy
 } from '@/lib/formatters';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { IncentiveIcon } from '@/components/IncentiveIcon';
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
 import IncentiveTooltip from './IncentiveTooltip';
 
-interface MarketsTableProps {
-  markets: MarketWithSpread[];
+interface PoolsTableProps {
+  pools: PoolWithSpread[];
   sortField: 'totalSupplyApy' | 'totalBorrowApy' | 'apySpread' | null;
   sortOrder: 'asc' | 'desc';
   onSort: (field: 'totalSupplyApy' | 'totalBorrowApy' | 'apySpread' | null) => void;
@@ -27,7 +29,7 @@ interface MarketsTableProps {
 
 type SortMode = 'total' | 'native' | 'incentive';
 
-const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsTableProps) => {
+const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTableProps) => {
   const [activeSortColumn, setActiveSortColumn] = useState<'supply' | 'borrow'>('supply');
   const [supplySortMode, setSupplySortMode] = useState<SortMode>('total');
   const [supplySortOrder, setSupplySortOrder] = useState<'asc' | 'desc'>('desc');
@@ -36,48 +38,67 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
   const [showSupplySortMenu, setShowSupplySortMenu] = useState(false);
   const [showBorrowSortMenu, setShowBorrowSortMenu] = useState(false);
   const [tooltipState, setTooltipState] = useState<{
-    market: MarketWithSpread;
+    pool: PoolWithSpread;
     type: 'supply' | 'borrow';
     position: { x: number; y: number };
     triggerCenterX: number;
   } | null>(null);
 
-  const getMarketDisplayName = (market: MarketWithSpread) => {
-    if (market.chainName === 'Ethereum' && ETHEREUM_MARKET_NAMES[market.marketName]) {
-      return ETHEREUM_MARKET_NAMES[market.marketName];
+  const getMarketDisplayName = (pool: PoolWithSpread) => {
+    if (pool.chainName === 'Ethereum' && ETHEREUM_MARKET_NAMES[pool.marketName]) {
+      return ETHEREUM_MARKET_NAMES[pool.marketName];
     }
-    return market.chainName;
+    return pool.chainName;
   };
 
-  // Calculate totals for a market
-  const getTotalSupplyApy = (market: MarketWithSpread): number => {
-    return calculateTotalSupplyApy(market.supplyApy, market.totalIncentiveSupplyApy);
+  // Helper: Get incentive values for a pool (supply or borrow)
+  const getIncentiveValues = (pool: PoolWithSpread, type: 'supply' | 'borrow') => {
+    const protocolAprs = type === 'supply' ? pool.supplyIncentives : pool.borrowIncentives;
+    const meritAprs = type === 'supply' ? pool.meritSupplyApr : pool.meritBorrowApr;
+    const meritSelfAprs = type === 'supply' ? pool.meritSelfSupply : pool.meritSelfBorrow;
+    const merklApr = type === 'supply' ? pool.merklSupplyApr : pool.merklBorrowApr;
+    const brevisApr = type === 'supply' ? pool.brevisSupplyApr : pool.brevisBorrowApr;
+    const requirementAprs = type === 'supply'
+      ? pool.meritSupplyWithBorrowRequirement
+      : pool.meritBorrowWithSupplyRequirement;
+    return {
+      apr: calculateTotalIncentiveApr(meritAprs, merklApr, brevisApr, protocolAprs, meritSelfAprs, requirementAprs),
+      apy: calculateTotalIncentiveApy(meritAprs, merklApr, brevisApr, protocolAprs, meritSelfAprs, requirementAprs),
+    };
   };
 
-  const getTotalSupplyApr = (market: MarketWithSpread): number => {
-    return calculateTotalSupplyApr(market.supplyApy, market.totalIncentiveSupplyApr);
+  // Calculate totals for a pool (frontend calculates incentive totals from details)
+  const getTotalSupplyApy = (pool: PoolWithSpread): number | null => {
+    return calculateTotalSupplyApy(pool.supplyApy, getIncentiveValues(pool, 'supply').apy);
   };
 
-  const getTotalBorrowApy = (market: MarketWithSpread): number | null => {
-    return calculateTotalBorrowApy(market.borrowApy, market.totalIncentiveBorrowApy);
+  const getTotalSupplyApr = (pool: PoolWithSpread): number | null => {
+    return calculateTotalSupplyApr(pool.supplyApy, getIncentiveValues(pool, 'supply').apr);
   };
 
-  const getTotalBorrowApr = (market: MarketWithSpread): number | null => {
-    return calculateTotalBorrowApr(market.borrowApy, market.totalIncentiveBorrowApr);
+  const getTotalBorrowApy = (pool: PoolWithSpread): number | null => {
+    return calculateTotalBorrowApy(pool.borrowApy, getIncentiveValues(pool, 'borrow').apy);
   };
 
-  // Calculate native values (total - incentive)
-  const getNativeSupplyApy = (market: MarketWithSpread): number => {
-    return parseFloat(market.supplyApy) / 100;
+  const getTotalBorrowApr = (pool: PoolWithSpread): number | null => {
+    return calculateTotalBorrowApr(pool.borrowApy, getIncentiveValues(pool, 'borrow').apr);
   };
 
-  const getNativeBorrowApy = (market: MarketWithSpread): number | null => {
-    if (market.borrowApy === null) return null;
-    return parseFloat(market.borrowApy) / 100;
+  // Calculate native values (already in percentage form)
+  const getNativeSupplyApy = (pool: PoolWithSpread): number | null => {
+    if (pool.supplyApy === null || pool.supplyApy === undefined) return null;
+    const value = parseFloat(pool.supplyApy);
+    return isNaN(value) ? null : value;
+  };
+
+  const getNativeBorrowApy = (pool: PoolWithSpread): number | null => {
+    if (pool.borrowApy === null || pool.borrowApy === undefined) return null;
+    const value = parseFloat(pool.borrowApy);
+    return isNaN(value) ? null : value;
   };
 
   // Sort data based on active column and its sort mode
-  const sortedData = [...markets].sort((a, b) => {
+  const sortedData = [...pools].sort((a, b) => {
     let comparison = 0;
 
     if (activeSortColumn === 'supply') {
@@ -85,15 +106,25 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
       if (supplySortMode === 'native') {
         const aNative = getNativeSupplyApy(a);
         const bNative = getNativeSupplyApy(b);
+        if (aNative === null && bNative === null) return 0;
+        if (aNative === null) return 1;
+        if (bNative === null) return -1;
         comparison = bNative - aNative;
       } else if (supplySortMode === 'incentive') {
-        const aIncentive = isApy ? a.totalIncentiveSupplyApy : a.totalIncentiveSupplyApr;
-        const bIncentive = isApy ? b.totalIncentiveSupplyApy : b.totalIncentiveSupplyApr;
+        const aIncentive = isApy ? getIncentiveValues(a, 'supply').apy : getIncentiveValues(a, 'supply').apr;
+        const bIncentive = isApy ? getIncentiveValues(b, 'supply').apy : getIncentiveValues(b, 'supply').apr;
+        // Handle NaN values
+        if (isNaN(aIncentive) && isNaN(bIncentive)) return 0;
+        if (isNaN(aIncentive)) return 1;
+        if (isNaN(bIncentive)) return -1;
         comparison = bIncentive - aIncentive;
       } else {
-        // Total sorting
+        // Total sorting - 使用 totalSupplyApy (Native + Incentive)
         const aTotal = isApy ? getTotalSupplyApy(a) : getTotalSupplyApr(a);
         const bTotal = isApy ? getTotalSupplyApy(b) : getTotalSupplyApr(b);
+        if (aTotal === null && bTotal === null) return 0;
+        if (aTotal === null) return 1;
+        if (bTotal === null) return -1;
         comparison = bTotal - aTotal;
       }
       return supplySortOrder === 'desc' ? comparison : -comparison;
@@ -107,8 +138,12 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
         if (bNative === null) return -1;
         comparison = bNative - aNative;
       } else if (borrowSortMode === 'incentive') {
-        const aIncentive = isApy ? a.totalIncentiveBorrowApy : a.totalIncentiveBorrowApr;
-        const bIncentive = isApy ? b.totalIncentiveBorrowApy : b.totalIncentiveBorrowApr;
+        const aIncentive = isApy ? getIncentiveValues(a, 'borrow').apy : getIncentiveValues(a, 'borrow').apr;
+        const bIncentive = isApy ? getIncentiveValues(b, 'borrow').apy : getIncentiveValues(b, 'borrow').apr;
+        // Handle NaN values
+        if (isNaN(aIncentive) && isNaN(bIncentive)) return 0;
+        if (isNaN(aIncentive)) return 1;
+        if (isNaN(bIncentive)) return -1;
         comparison = bIncentive - aIncentive;
       } else {
         // Total sorting
@@ -147,7 +182,7 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
 
   const handleIncentiveClick = (
     e: React.MouseEvent,
-    market: MarketWithSpread,
+    pool: PoolWithSpread,
     type: 'supply' | 'borrow',
     apy: number | null,
   ) => {
@@ -156,7 +191,7 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
     const rect = e.currentTarget.getBoundingClientRect();
     const triggerCenterX = rect.left + rect.width / 2;
     setTooltipState({
-      market,
+      pool,
       type,
       position: { x: rect.left, y: rect.bottom },
       triggerCenterX,
@@ -185,10 +220,10 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
     );
   };
 
-  const handleRowClick = (market: MarketWithSpread) => {
+  const handleRowClick = (pool: PoolWithSpread) => {
     const url = buildAaveReserveUrl({
-      marketName: market.marketName,
-      tokenAddress: market.tokenAddress,
+      marketName: pool.marketName,
+      tokenAddress: pool.tokenAddress,
     });
     if (url) {
       window.open(url, '_blank', 'noopener,noreferrer');
@@ -198,7 +233,7 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
       <div className="p-4 md:p-6 border-b border-gray-100 flex justify-between items-center">
-        <h3 className="text-base md:text-lg font-bold text-gray-900">213 Pools</h3>
+        <h3 className="text-base md:text-lg font-bold text-gray-900">{pools.length} Pools</h3>
       </div>
       <div className="overflow-x-auto">
         <Table>
@@ -381,29 +416,26 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sortedData.map((row, idx) => {
-              const totalSupplyApy = getTotalSupplyApy(row);
-              const totalSupplyApr = getTotalSupplyApr(row);
-              const totalBorrowApy = getTotalBorrowApy(row);
-              const totalBorrowApr = getTotalBorrowApr(row);
-              const nativeSupplyApy = getNativeSupplyApy(row);
-              const nativeBorrowApy = getNativeBorrowApy(row);
+            {sortedData.map((pool, idx) => {
+              const totalSupplyApy = getTotalSupplyApy(pool);
+              const totalSupplyApr = getTotalSupplyApr(pool);
+              const totalBorrowApy = getTotalBorrowApy(pool);
+              const totalBorrowApr = getTotalBorrowApr(pool);
+              const nativeSupplyApy = getNativeSupplyApy(pool);
+              const nativeBorrowApy = getNativeBorrowApy(pool);
               
               const displaySupplyTotal = isApy ? totalSupplyApy : totalSupplyApr;
-              const displaySupplyNative = isApy
-                ? nativeSupplyApy
-                : parseFloat(row.supplyApy) / 100;
-              const displaySupplyIncentive = isApy
-                ? (row.totalIncentiveSupplyApy === 0 || isNaN(row.totalIncentiveSupplyApy) || row.totalIncentiveSupplyApy < 0.0001 ? null : row.totalIncentiveSupplyApy)
-                : (row.totalIncentiveSupplyApr === 0 || isNaN(row.totalIncentiveSupplyApr) || row.totalIncentiveSupplyApr < 0.0001 ? null : row.totalIncentiveSupplyApr);
+              const displaySupplyNative = nativeSupplyApy;
+              // Helper to get display incentive value (returns null if invalid)
+              const getDisplayIncentive = (type: 'supply' | 'borrow') => {
+                const incentive = isApy ? getIncentiveValues(pool, type).apy : getIncentiveValues(pool, type).apr;
+                return incentive === 0 || isNaN(incentive) || incentive < 0.01 ? null : incentive;
+              };
 
+              const displaySupplyIncentive = getDisplayIncentive('supply');
               const displayBorrowTotal = isApy ? totalBorrowApy : totalBorrowApr;
-              const displayBorrowNative = nativeBorrowApy !== null
-                ? (isApy ? nativeBorrowApy : parseFloat(row.borrowApy || '0') / 100)
-                : null;
-              const displayBorrowIncentive = isApy
-                ? (row.totalIncentiveBorrowApy === 0 || isNaN(row.totalIncentiveBorrowApy) || row.totalIncentiveBorrowApy < 0.0001 ? null : row.totalIncentiveBorrowApy)
-                : (row.totalIncentiveBorrowApr === 0 || isNaN(row.totalIncentiveBorrowApr) || row.totalIncentiveBorrowApr < 0.0001 ? null : row.totalIncentiveBorrowApr);
+              const displayBorrowNative = nativeBorrowApy;
+              const displayBorrowIncentive = getDisplayIncentive('borrow');
 
               const spread = isApy
                 ? calculateSpreadApy(totalSupplyApy, totalBorrowApy)
@@ -413,22 +445,22 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
                 <TableRow
                   key={idx}
                   className="hover:bg-gray-50/50 transition-colors cursor-pointer"
-                  onClick={() => handleRowClick(row)}
+                  onClick={() => handleRowClick(pool)}
                 >
                   <TableCell className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-600">
-                        {row.tokenSymbol[0]}
+                        {pool.tokenSymbol[0]}
                       </div>
                       <span className="font-semibold text-gray-900">
-                        {row.tokenSymbol}
+                        {pool.tokenSymbol}
                       </span>
                     </div>
                   </TableCell>
                   <TableCell className="px-6 py-4 whitespace-nowrap hidden md:table-cell">
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                      <ChainIcon chain={row.chainName} />
-                      {getMarketDisplayName(row)}
+                      <ChainIcon chain={pool.chainName} />
+                      {getMarketDisplayName(pool)}
                     </span>
                   </TableCell>
                   <TableCell className="px-6 py-4 whitespace-nowrap text-right">
@@ -444,7 +476,7 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
                           <span className="text-gray-400">+</span>
                           <button
                             onClick={(e) =>
-                              handleIncentiveClick(e, row, 'supply', displaySupplyIncentive)
+                              handleIncentiveClick(e, pool, 'supply', displaySupplyIncentive)
                             }
                             className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 text-amber-600 font-semibold hover:bg-amber-100 transition-colors cursor-pointer"
                           >
@@ -460,15 +492,19 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
                       <span className="font-bold text-gray-900 text-base">
                         {displayBorrowTotal !== null ? formatPercent(displayBorrowTotal) : '-'}
                       </span>
-                      {displayBorrowTotal !== null && displayBorrowNative !== null && displayBorrowIncentive !== null && (
+                      {displayBorrowIncentive !== null && (
                         <div className="flex items-center gap-1.5 text-xs">
-                          <span className="text-blue-600 font-semibold">
-                            {formatPercent(displayBorrowNative)}
-                          </span>
-                          <span className="text-gray-400">-</span>
+                          {displayBorrowNative !== null && (
+                            <>
+                              <span className="text-blue-600 font-semibold">
+                                {formatPercent(displayBorrowNative)}
+                              </span>
+                              <span className="text-gray-400">-</span>
+                            </>
+                          )}
                           <button
                             onClick={(e) =>
-                              handleIncentiveClick(e, row, 'borrow', displayBorrowIncentive)
+                              handleIncentiveClick(e, pool, 'borrow', displayBorrowIncentive)
                             }
                             className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 text-amber-600 font-semibold hover:bg-amber-100 transition-colors cursor-pointer"
                           >
@@ -498,15 +534,16 @@ const MarketsTable = ({ markets, sortField, sortOrder, onSort, isApy }: MarketsT
       </div>
       {tooltipState && (
         <IncentiveTooltip
-          market={tooltipState.market}
+          pool={tooltipState.pool}
           type={tooltipState.type}
           position={tooltipState.position}
           triggerCenterX={tooltipState.triggerCenterX}
           onClose={() => setTooltipState(null)}
+          isApy={isApy}
         />
       )}
     </div>
   );
 };
 
-export default MarketsTable;
+export default PoolsTable;

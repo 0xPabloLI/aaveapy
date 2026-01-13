@@ -86,7 +86,7 @@ const LoadingState = () => {
           </div>
         </div>
 
-        {/* Markets Table Skeleton */}
+        {/* Pools Table Skeleton */}
         <div className="glass-card rounded-xl overflow-hidden">
           <div className="overflow-x-auto">
             <Table>

@@ -1,33 +1,79 @@
-export interface MarketWithSpread {
+export interface PoolWithSpread {
   marketName: string;
   chainName: string;
   chainId: number;
   tokenName: string;
   tokenSymbol: string;
   tokenAddress: string;
-  supplyApy: string;
-  borrowApy: string | null;
-  totalIncentiveSupplyApr: number;
-  totalIncentiveSupplyApy: number;
-  totalIncentiveBorrowApr: number;
-  totalIncentiveBorrowApy: number;
+  aTokenAddress?: string;
+  vTokenAddress?: string;
+  supplyApy?: string;
+  borrowApy?: string;
+  supplyIncentives?: string[];
+  borrowIncentives?: string[];
   meritSupplyApr?: string[];
   meritBorrowApr?: string[];
+  meritSelfSupply?: string[];
+  meritSelfBorrow?: string[];
+  meritSupplyWithBorrowRequirement?: Array<{
+    apr: string;
+    requiredBorrowTokens: string[];
+    isSelf?: boolean;
+  }>;
+  meritBorrowWithSupplyRequirement?: Array<{
+    apr: string;
+    requiredSupplyTokens: string[];
+    isSelf?: boolean;
+  }>;
   merklSupplyApr?: number;
   merklBorrowApr?: number;
-  brevisSupplyApr?: number | null;
-  brevisBorrowApr?: number | null;
+  merklHoldApr?: number;
+  merklSupplyOpportunities?: Array<{
+    opportunityLink: string;
+    breakdowns: Array<{
+      campaignApr: number;
+      campaignStartedAt: string;
+      campaignEndedAt: string;
+      campaignId: string;
+      pointsPerThousandUsd?: number;
+      dailyPoints?: number;
+    }>;
+  }>;
+  merklBorrowOpportunities?: Array<{
+    opportunityLink: string;
+    breakdowns: Array<{
+      campaignApr: number;
+      campaignStartedAt: string;
+      campaignEndedAt: string;
+      campaignId: string;
+      pointsPerThousandUsd?: number;
+      dailyPoints?: number;
+    }>;
+  }>;
+  merklHoldOpportunities?: Array<{
+    opportunityLink: string;
+    breakdowns: Array<{
+      campaignApr: number;
+      campaignStartedAt: string;
+      campaignEndedAt: string;
+      campaignId: string;
+      pointsPerThousandUsd?: number;
+      dailyPoints?: number;
+    }>;
+  }>;
+  brevisSupplyApr?: number;
+  brevisBorrowApr?: number;
 }
 
 export interface MarketsResponse {
-  data: MarketWithSpread[];
+  data: PoolWithSpread[];
   lastUpdated: string;
   isStale: boolean;
   updateInProgress: boolean;
 }
 
 export interface MarketStats {
-  totalMarkets: number;
+  totalPools: number;
   totalChains: number;
   totalTokens: number;
   chains: string[];
