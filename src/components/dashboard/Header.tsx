@@ -21,7 +21,6 @@ const Header = ({ lastUpdated }: HeaderProps) => {
           <div className="flex items-center gap-2 flex-wrap">
             <h1 className="text-xl md:text-2xl lg:text-3xl font-bold whitespace-nowrap">
               <span className="gradient-text">Aave APY</span>
-              <span className="text-muted-foreground ml-1.5 md:ml-2 font-normal text-base md:text-xl">Dashboard</span>
             </h1>
             {/* Mobile: Last Updated as icon with tooltip */}
             {lastUpdated && (

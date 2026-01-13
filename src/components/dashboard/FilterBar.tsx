@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Search, X, ChevronUp } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -74,6 +74,8 @@ const FilterBar = ({
   marketsList,
 }: FilterBarProps) => {
   const [showMarketsExpanded, setShowMarketsExpanded] = useState(false);
+  const [searchPlaceholder, setSearchPlaceholder] = useState('Search token');
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const toggleMarket = (marketName: string) => {
     if (selectedMarkets.includes(marketName)) {
@@ -117,6 +119,78 @@ const FilterBar = ({
     }
   }, [hiddenMarkets]);
 
+  // Auto-adapt search placeholder based on input width (optimized with debounce)
+  useEffect(() => {
+    // Cache canvas for text measurement
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    if (!context) return;
+    context.font = '12px system-ui, -apple-system, sans-serif';
+    
+    // Pre-calculate text widths
+    const fullTextWidth = context.measureText('Search token').width;
+    const shortTextWidth = context.measureText('Token').width;
+    
+    let rafId: number | null = null;
+    let timeoutId: NodeJS.Timeout | null = null;
+    
+    const updatePlaceholder = () => {
+      if (!searchInputRef.current) return;
+      
+      const input = searchInputRef.current;
+      const inputWidth = input.offsetWidth;
+      if (inputWidth === 0) return; // Not yet rendered
+      
+      const iconWidth = 24; // Search icon width + padding
+      const clearButtonWidth = 20; // Clear button width when visible
+      const padding = 16; // Left and right padding
+      const availableWidth = inputWidth - iconWidth - padding - (searchQuery ? clearButtonWidth : 0);
+      
+      // Determine new placeholder
+      let newPlaceholder: string;
+      if (availableWidth >= fullTextWidth) {
+        newPlaceholder = 'Search token';
+      } else if (availableWidth >= shortTextWidth) {
+        newPlaceholder = 'Token';
+      } else {
+        newPlaceholder = 'Search';
+      }
+      
+      // Only update if changed to avoid unnecessary re-renders
+      setSearchPlaceholder(prev => prev !== newPlaceholder ? newPlaceholder : prev);
+    };
+
+    // Debounced update function
+    const debouncedUpdate = () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        if (rafId) cancelAnimationFrame(rafId);
+        rafId = requestAnimationFrame(updatePlaceholder);
+      }, 100); // 100ms debounce
+    };
+
+    // Initial update after DOM is ready
+    const initialRafId = requestAnimationFrame(() => {
+      requestAnimationFrame(updatePlaceholder);
+    });
+    
+    const resizeObserver = new ResizeObserver(debouncedUpdate);
+    
+    if (searchInputRef.current) {
+      resizeObserver.observe(searchInputRef.current);
+    }
+    
+    window.addEventListener('resize', debouncedUpdate);
+    
+    return () => {
+      if (initialRafId) cancelAnimationFrame(initialRafId);
+      if (rafId) cancelAnimationFrame(rafId);
+      if (timeoutId) clearTimeout(timeoutId);
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', debouncedUpdate);
+    };
+  }, [searchQuery]);
+
   // Count selected hidden markets
   const selectedHiddenCount = hiddenMarkets.filter(m => selectedMarkets.includes(m.marketName)).length;
 
@@ -143,24 +217,12 @@ const FilterBar = ({
         {/* Search after Pendle */}
         <div className="relative w-20 sm:w-24 md:w-36 lg:w-44">
           <Search className="absolute left-2 md:left-2.5 top-1/2 -translate-y-1/2 w-3 md:w-3.5 h-3 md:h-3.5 text-muted-foreground" />
-          {/* Responsive placeholder using multiple inputs */}
           <Input
-            placeholder="Search..."
+            ref={searchInputRef}
+            placeholder={searchPlaceholder}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-7 md:pl-8 pr-6 md:pr-7 bg-card/50 border-border/50 focus:border-primary h-7 text-xs sm:hidden"
-          />
-          <Input
-            placeholder="Token..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-7 md:pl-8 pr-6 md:pr-7 bg-card/50 border-border/50 focus:border-primary h-7 text-xs hidden sm:block md:hidden"
-          />
-          <Input
-            placeholder="Search tokens..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-7 md:pl-8 pr-6 md:pr-7 bg-card/50 border-border/50 focus:border-primary h-7 text-xs hidden md:block"
+            className="pl-7 md:pl-8 pr-6 md:pr-7 bg-card/50 border-border/50 focus:border-primary h-7 text-xs"
           />
           {searchQuery && (
             <button

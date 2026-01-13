@@ -1,31 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
-import { MarketsResponse, MarketStats, MarketListItem, SortField, SortOrder } from '@/types/aave';
+import { MarketsResponse, MarketStats, MarketListItem } from '@/types/aave';
 
-const API_BASE = 'https://api.aaveapy.com/api';
+// 从环境变量读取API地址，如果没有设置则使用远程地址作为默认值
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://api.aaveapy.com/api';
 
-interface FetchMarketsParams {
-  sort?: SortField;
-  order?: SortOrder;
-  chain?: string;
-  token?: string;
-}
-
-export const fetchMarkets = async (params?: FetchMarketsParams): Promise<MarketsResponse> => {
-  const searchParams = new URLSearchParams();
-  // Map internal sort fields to API field names (API uses native field names)
-  if (params?.sort) {
-    const apiSortField = params.sort === 'totalSupplyApy' ? 'supplyApy' 
-      : params.sort === 'totalBorrowApy' ? 'borrowApy'
-      : params.sort; // apySpread or null - API doesn't support spread sorting
-    if (apiSortField !== 'apySpread') {
-      searchParams.set('sort', apiSortField);
-    }
-  }
-  if (params?.order) searchParams.set('order', params.order);
-  if (params?.chain) searchParams.set('chain', params.chain);
-  if (params?.token) searchParams.set('token', params.token);
-
-  const response = await fetch(`${API_BASE}/markets?${searchParams}`);
+// 获取所有市场数据（所有排序和过滤都在前端完成）
+export const fetchMarkets = async (): Promise<MarketsResponse> => {
+  const response = await fetch(`${API_BASE}/markets`);
   if (!response.ok) throw new Error('Failed to fetch markets');
   return response.json();
 };
@@ -42,10 +23,10 @@ export const fetchMarketsList = async (): Promise<MarketListItem[]> => {
   return response.json();
 };
 
-export const useAaveMarkets = (params?: FetchMarketsParams) => {
+export const useAaveMarkets = () => {
   return useQuery({
-    queryKey: ['aave-markets', params],
-    queryFn: () => fetchMarkets(params),
+    queryKey: ['aave-markets'],
+    queryFn: fetchMarkets,
     staleTime: 15000,
   });
 };

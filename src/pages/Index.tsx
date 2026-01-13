@@ -4,24 +4,22 @@ import { SortField, SortOrder, TokenCategory, STABLECOINS, ETH_RELATED, BTC_RELA
 import Header from '@/components/dashboard/Header';
 import FilterBar from '@/components/dashboard/FilterBar';
 import TopOpportunities from '@/components/dashboard/TopOpportunities';
-import MarketsTable from '@/components/dashboard/MarketsTable';
+import PoolsTable from '@/components/dashboard/PoolsTable';
 import LoadingState from '@/components/dashboard/LoadingState';
 import ErrorState from '@/components/dashboard/ErrorState';
 
 const Index = () => {
   // State
-  const [sortField, setSortField] = useState<SortField>('totalSupplyApy');
+  const [sortField, setSortField] = useState<SortField>(null);
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMarkets, setSelectedMarkets] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<TokenCategory>('all');
   const [isApy, setIsApy] = useState(true);
 
-  // Fetch data
-  const { data: marketsData, isLoading, error } = useAaveMarkets({
-    sort: sortField || undefined,
-    order: sortOrder,
-  });
+  // Fetch data - 不传 sort 参数，所有排序都在前端完成
+  // 这样表格的 total/native/incentive 模式才能正确工作
+  const { data: poolsData, isLoading, error } = useAaveMarkets();
   const { data: stats } = useAaveMarketStats();
   const { data: marketsList } = useAaveMarketsList();
 
@@ -40,30 +38,30 @@ const Index = () => {
     }
   };
 
-  // Filter markets
-  const filteredMarkets = useMemo(() => {
-    if (!marketsData?.data) return [];
+  // Filter pools
+  const filteredPools = useMemo(() => {
+    if (!poolsData?.data) return [];
 
-    return marketsData.data.filter(market => {
+    return poolsData.data.filter(pool => {
       // Search filter
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
-        if (!market.tokenSymbol.toLowerCase().includes(query) &&
-            !market.tokenName.toLowerCase().includes(query)) {
+        if (!pool.tokenSymbol.toLowerCase().includes(query) &&
+            !pool.tokenName.toLowerCase().includes(query)) {
           return false;
         }
       }
 
       // Market filter
       if (selectedMarkets.length > 0) {
-        if (!selectedMarkets.includes(market.marketName)) {
+        if (!selectedMarkets.includes(pool.marketName)) {
           return false;
         }
       }
 
       // Category filter
       if (selectedCategory !== 'all') {
-        const symbol = market.tokenSymbol.toUpperCase();
+        const symbol = pool.tokenSymbol.toUpperCase();
         switch (selectedCategory) {
           case 'stablecoin':
             if (!STABLECOINS.some(s => symbol.includes(s.toUpperCase()))) return false;
@@ -82,10 +80,10 @@ const Index = () => {
 
       return true;
     });
-  }, [marketsData?.data, searchQuery, selectedMarkets, selectedCategory]);
+  }, [poolsData?.data, searchQuery, selectedMarkets, selectedCategory]);
 
   // Loading state
-  if (isLoading && !marketsData) {
+  if (isLoading && !poolsData) {
     return <LoadingState />;
   }
 
@@ -104,12 +102,12 @@ const Index = () => {
         {/* Header */}
         <Header
           isLoading={isLoading}
-          lastUpdated={marketsData?.lastUpdated}
+          lastUpdated={poolsData?.lastUpdated}
         />
 
         {/* Top Opportunities */}
-        {marketsData?.data && (
-          <TopOpportunities markets={marketsData.data} isApy={isApy} />
+        {poolsData?.data && (
+          <TopOpportunities pools={poolsData.data} isApy={isApy} />
         )}
 
         {/* Filters */}
@@ -125,9 +123,9 @@ const Index = () => {
           marketsList={marketsList}
         />
 
-        {/* Markets Table */}
-        <MarketsTable
-          markets={filteredMarkets}
+        {/* Pools Table */}
+        <PoolsTable
+          pools={filteredPools}
           sortField={sortField}
           sortOrder={sortOrder}
           onSort={handleSort}
@@ -135,9 +133,9 @@ const Index = () => {
         />
 
         {/* Empty state */}
-        {filteredMarkets.length === 0 && (
+        {filteredPools.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-muted-foreground">No markets found matching your filters</p>
+            <p className="text-muted-foreground">No pools found matching your filters</p>
           </div>
         )}
 

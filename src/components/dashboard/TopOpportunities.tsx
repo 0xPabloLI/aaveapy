@@ -1,6 +1,6 @@
 import { TrendingUp, Zap, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { MarketWithSpread, ETHEREUM_MARKET_NAMES } from '@/types/aave';
+import { PoolWithSpread, ETHEREUM_MARKET_NAMES, STABLECOINS, ETH_RELATED, BTC_RELATED } from '@/types/aave';
 import { 
   formatPercent, 
   formatSpread, 
@@ -9,43 +9,118 @@ import {
   calculateSpreadApy,
   calculateTotalSupplyApr,
   calculateTotalBorrowApr,
-  calculateSpreadApr
+  calculateSpreadApr,
+  calculateTotalIncentiveApr,
+  calculateTotalIncentiveApy
 } from '@/lib/formatters';
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
 
 interface TopOpportunitiesProps {
-  markets: MarketWithSpread[];
+  pools: PoolWithSpread[];
   isApy: boolean;
 }
 
-const TopOpportunities = ({ markets, isApy }: TopOpportunitiesProps) => {
-  // Calculate totals for all markets
-  const marketsWithTotals = markets.map(market => ({
-    ...market,
-    totalSupplyApy: calculateTotalSupplyApy(market.supplyApy, market.totalIncentiveSupplyApy),
-    totalBorrowApy: calculateTotalBorrowApy(market.borrowApy, market.totalIncentiveBorrowApy),
-    apySpread: calculateSpreadApy(
-      calculateTotalSupplyApy(market.supplyApy, market.totalIncentiveSupplyApy),
-      calculateTotalBorrowApy(market.borrowApy, market.totalIncentiveBorrowApy)
-    ),
-    totalSupplyApr: calculateTotalSupplyApr(market.supplyApy, market.totalIncentiveSupplyApr),
-    totalBorrowApr: calculateTotalBorrowApr(market.borrowApy, market.totalIncentiveBorrowApr),
-    aprSpread: calculateSpreadApr(
-      calculateTotalSupplyApr(market.supplyApy, market.totalIncentiveSupplyApr),
-      calculateTotalBorrowApr(market.borrowApy, market.totalIncentiveBorrowApr)
-    ),
-  }));
+const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
+  // Calculate totals for all pools (frontend calculates incentive totals from details)
+  const poolsWithTotals = pools.map(pool => {
+    // Helper: Calculate incentive values for supply/borrow
+    const getIncentiveValues = (type: 'supply' | 'borrow') => {
+      const protocolAprs = type === 'supply' ? pool.supplyIncentives : pool.borrowIncentives;
+      const meritAprs = type === 'supply' ? pool.meritSupplyApr : pool.meritBorrowApr;
+      const meritSelfAprs = type === 'supply' ? pool.meritSelfSupply : pool.meritSelfBorrow;
+      const merklApr = type === 'supply' ? pool.merklSupplyApr : pool.merklBorrowApr;
+      const brevisApr = type === 'supply' ? pool.brevisSupplyApr : pool.brevisBorrowApr;
+      const requirementAprs = type === 'supply'
+        ? pool.meritSupplyWithBorrowRequirement
+        : pool.meritBorrowWithSupplyRequirement;
+      return {
+        apr: calculateTotalIncentiveApr(meritAprs, merklApr, brevisApr, protocolAprs, meritSelfAprs, requirementAprs),
+        apy: calculateTotalIncentiveApy(meritAprs, merklApr, brevisApr, protocolAprs, meritSelfAprs, requirementAprs),
+      };
+    };
 
-  // Top 5 Supply APY
-  const topSupply = [...marketsWithTotals]
-    .sort((a, b) =>
-      (isApy ? b.totalSupplyApy : b.totalSupplyApr) -
-      (isApy ? a.totalSupplyApy : a.totalSupplyApr)
-    )
+    const supplyIncentive = getIncentiveValues('supply');
+    const borrowIncentive = getIncentiveValues('borrow');
+
+    const totalSupplyApy = calculateTotalSupplyApy(pool.supplyApy, supplyIncentive.apy);
+    const totalBorrowApy = calculateTotalBorrowApy(pool.borrowApy, borrowIncentive.apy);
+    const totalSupplyApr = calculateTotalSupplyApr(pool.supplyApy, supplyIncentive.apr);
+    const totalBorrowApr = calculateTotalBorrowApr(pool.borrowApy, borrowIncentive.apr);
+
+    return {
+      ...pool,
+      supplyIncentiveApr: supplyIncentive.apr,
+      supplyIncentiveApy: supplyIncentive.apy,
+      borrowIncentiveApr: borrowIncentive.apr,
+      borrowIncentiveApy: borrowIncentive.apy,
+      totalSupplyApy,
+      totalBorrowApy,
+      apySpread: calculateSpreadApy(totalSupplyApy, totalBorrowApy),
+      totalSupplyApr,
+      totalBorrowApr,
+      aprSpread: calculateSpreadApr(totalSupplyApr, totalBorrowApr),
+    };
+  });
+
+  // Helper function to check if token is stablecoin
+  const isStablecoin = (symbol: string): boolean => {
+    return STABLECOINS.some(s => symbol.toUpperCase().includes(s.toUpperCase()));
+  };
+
+  // Helper function to check if token is ETH-related
+  const isEthRelated = (symbol: string): boolean => {
+    return ETH_RELATED.some(s => symbol.toUpperCase().includes(s.toUpperCase()));
+  };
+
+  // Helper function to check if token is BTC-related
+  const isBtcRelated = (symbol: string): boolean => {
+    return BTC_RELATED.some(s => symbol.toUpperCase().includes(s.toUpperCase()));
+  };
+
+  // Top 5 Stable APY (sorted by totalSupplyApy)
+  const topStable = [...poolsWithTotals]
+    .filter(m => isStablecoin(m.tokenSymbol))
+    .filter(m => {
+      const value = isApy ? m.totalSupplyApy : m.totalSupplyApr;
+      return value !== null && !isNaN(value);
+    })
+    .sort((a, b) => {
+      const aValue = isApy ? a.totalSupplyApy : a.totalSupplyApr;
+      const bValue = isApy ? b.totalSupplyApy : b.totalSupplyApr;
+      return bValue - aValue;
+    })
+    .slice(0, 5);
+
+  // Top 5 ETH APY (sorted by totalSupplyApy)
+  const topEth = [...poolsWithTotals]
+    .filter(m => isEthRelated(m.tokenSymbol))
+    .filter(m => {
+      const value = isApy ? m.totalSupplyApy : m.totalSupplyApr;
+      return value !== null && !isNaN(value);
+    })
+    .sort((a, b) => {
+      const aValue = isApy ? a.totalSupplyApy : a.totalSupplyApr;
+      const bValue = isApy ? b.totalSupplyApy : b.totalSupplyApr;
+      return bValue - aValue;
+    })
+    .slice(0, 5);
+
+  // Top 5 BTC APY (sorted by totalSupplyApy)
+  const topBtc = [...poolsWithTotals]
+    .filter(m => isBtcRelated(m.tokenSymbol))
+    .filter(m => {
+      const value = isApy ? m.totalSupplyApy : m.totalSupplyApr;
+      return value !== null && !isNaN(value);
+    })
+    .sort((a, b) => {
+      const aValue = isApy ? a.totalSupplyApy : a.totalSupplyApr;
+      const bValue = isApy ? b.totalSupplyApy : b.totalSupplyApr;
+      return bValue - aValue;
+    })
     .slice(0, 5);
 
   // Top 5 Looping opportunities (highest positive spread)
-  const topLooping = [...marketsWithTotals]
+  const topLooping = [...poolsWithTotals]
     .filter(m => {
       const spread = isApy ? m.apySpread : m.aprSpread;
       return spread !== null && spread > 0;
@@ -57,11 +132,11 @@ const TopOpportunities = ({ markets, isApy }: TopOpportunitiesProps) => {
     })
     .slice(0, 5);
 
-  const getMarketDisplayName = (market: MarketWithSpread) => {
-    if (market.chainName === 'Ethereum' && ETHEREUM_MARKET_NAMES[market.marketName]) {
-      return `ETH ${ETHEREUM_MARKET_NAMES[market.marketName]}`;
+  const getMarketDisplayName = (pool: PoolWithSpread) => {
+    if (pool.chainName === 'Ethereum' && ETHEREUM_MARKET_NAMES[pool.marketName]) {
+      return `ETH ${ETHEREUM_MARKET_NAMES[pool.marketName]}`;
     }
-    return market.chainName;
+    return pool.chainName;
   };
 
   const headerVariants = {
@@ -111,16 +186,16 @@ const TopOpportunities = ({ markets, isApy }: TopOpportunitiesProps) => {
     })
   };
 
-  const handleCardClick = (market: Pick<MarketWithSpread, 'marketName' | 'tokenAddress'>) => {
-    const url = buildAaveReserveUrl(market);
+  const handleCardClick = (pool: Pick<PoolWithSpread, 'marketName' | 'tokenAddress'>) => {
+    const url = buildAaveReserveUrl(pool);
     if (url) {
       window.open(url, '_blank', 'noopener,noreferrer');
     }
   };
 
   return (
-    <div className="grid md:grid-cols-2 gap-6">
-      {/* Top Supply APY */}
+    <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Top Stable APY */}
       <div className="glass-card rounded-xl p-5">
         <motion.div 
           className="flex items-center gap-2 mb-4"
@@ -137,41 +212,169 @@ const TopOpportunities = ({ markets, isApy }: TopOpportunitiesProps) => {
             <TrendingUp className="w-5 h-5 text-success" />
           </motion.div>
           <div>
-            <h3 className="font-bold">Top Supply {isApy ? 'APY' : 'APR'}</h3>
-            <p className="text-xs text-muted-foreground">Best lending opportunities</p>
+            <h3 className="font-bold">Top Stable {isApy ? 'APY' : 'APR'}</h3>
+            <p className="text-xs text-muted-foreground">Native {isApy ? 'APY' : 'APR'} + Incentive {isApy ? 'APY' : 'APR'}</p>
           </div>
         </motion.div>
         <div className="space-y-3">
-          {topSupply.map((market, i) => (
-            <motion.div 
-              key={`supply-${market.marketName}-${market.tokenSymbol}`}
-              custom={i}
-              initial="hidden"
-              animate="visible"
-              variants={itemVariants}
-              className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-background to-success/5 border border-border hover:border-success/50 transition-all group cursor-pointer"
-              onClick={() => handleCardClick(market)}
-            >
-              <div className="flex items-center gap-3">
-                <span className="text-lg font-bold text-secondary w-6">
-                  {i + 1}
-                </span>
-                <div>
-                  <p className="font-semibold text-foreground">{market.tokenSymbol}</p>
-                  <p className="text-xs text-secondary">{getMarketDisplayName(market)}</p>
+          {topStable.length > 0 ? (
+            topStable.map((pool, i) => (
+              <motion.div 
+                key={`stable-${pool.marketName}-${pool.tokenSymbol}`}
+                custom={i}
+                initial="hidden"
+                animate="visible"
+                variants={itemVariants}
+                className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-background to-success/5 border border-border hover:border-success/50 transition-all group cursor-pointer"
+                onClick={() => handleCardClick(pool)}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-lg font-bold text-secondary w-6">
+                    {i + 1}
+                  </span>
+                  <div>
+                    <p className="font-semibold text-foreground">{pool.tokenSymbol}</p>
+                    <p className="text-xs text-secondary">{getMarketDisplayName(pool)}</p>
+                  </div>
                 </div>
-              </div>
-              <div className="flex flex-col items-end gap-1 min-h-[36px] min-w-[100px]">
-                <span className="text-success font-bold text-lg">
-                  {formatPercent(isApy ? market.totalSupplyApy : market.totalSupplyApr)}
-                </span>
+                <div className="flex flex-col items-end gap-1 min-h-[36px] min-w-[100px]">
+                  <span className="text-success font-bold text-lg">
+                    {formatPercent(isApy ? pool.totalSupplyApy : pool.totalSupplyApr)}
+                  </span>
                 <span className="text-xs text-secondary">
-                  {formatPercent(parseFloat(market.supplyApy) / 100)} +{' '}
-                  {formatPercent(isApy ? market.totalIncentiveSupplyApy : market.totalIncentiveSupplyApr)}
+                  {formatPercent(pool.supplyApy ? parseFloat(pool.supplyApy) : null)} +{' '}
+                  {formatPercent(isApy ? pool.supplyIncentiveApy : pool.supplyIncentiveApr)}
                 </span>
-              </div>
-            </motion.div>
-          ))}
+                </div>
+              </motion.div>
+            ))
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <p className="text-xs">No stablecoin opportunities found</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Top ETH APY */}
+      <div className="glass-card rounded-xl p-5">
+        <motion.div 
+          className="flex items-center gap-2 mb-4"
+          initial="hidden"
+          animate="visible"
+          variants={headerVariants}
+        >
+          <motion.div 
+            className="p-2 rounded-lg bg-success/10"
+            variants={iconVariants}
+            initial="hidden"
+            animate={["visible", "pulse"]}
+          >
+            <TrendingUp className="w-5 h-5 text-success" />
+          </motion.div>
+          <div>
+            <h3 className="font-bold">Top ETH {isApy ? 'APY' : 'APR'}</h3>
+            <p className="text-xs text-muted-foreground">Native {isApy ? 'APY' : 'APR'} + Incentive {isApy ? 'APY' : 'APR'}</p>
+          </div>
+        </motion.div>
+        <div className="space-y-3">
+          {topEth.length > 0 ? (
+            topEth.map((pool, i) => (
+              <motion.div 
+                key={`eth-${pool.marketName}-${pool.tokenSymbol}`}
+                custom={i}
+                initial="hidden"
+                animate="visible"
+                variants={itemVariants}
+                className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-background to-success/5 border border-border hover:border-success/50 transition-all group cursor-pointer"
+                onClick={() => handleCardClick(pool)}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-lg font-bold text-secondary w-6">
+                    {i + 1}
+                  </span>
+                  <div>
+                    <p className="font-semibold text-foreground">{pool.tokenSymbol}</p>
+                    <p className="text-xs text-secondary">{getMarketDisplayName(pool)}</p>
+                  </div>
+                </div>
+                <div className="flex flex-col items-end gap-1 min-h-[36px] min-w-[100px]">
+                  <span className="text-success font-bold text-lg">
+                    {formatPercent(isApy ? pool.totalSupplyApy : pool.totalSupplyApr)}
+                  </span>
+                <span className="text-xs text-secondary">
+                  {formatPercent(pool.supplyApy ? parseFloat(pool.supplyApy) : null)} +{' '}
+                  {formatPercent(isApy ? pool.supplyIncentiveApy : pool.supplyIncentiveApr)}
+                </span>
+                </div>
+              </motion.div>
+            ))
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <p className="text-xs">No ETH-related opportunities found</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Top BTC APY */}
+      <div className="glass-card rounded-xl p-5">
+        <motion.div 
+          className="flex items-center gap-2 mb-4"
+          initial="hidden"
+          animate="visible"
+          variants={headerVariants}
+        >
+          <motion.div 
+            className="p-2 rounded-lg bg-success/10"
+            variants={iconVariants}
+            initial="hidden"
+            animate={["visible", "pulse"]}
+          >
+            <TrendingUp className="w-5 h-5 text-success" />
+          </motion.div>
+          <div>
+            <h3 className="font-bold">Top BTC {isApy ? 'APY' : 'APR'}</h3>
+            <p className="text-xs text-muted-foreground">Native {isApy ? 'APY' : 'APR'} + Incentive {isApy ? 'APY' : 'APR'}</p>
+          </div>
+        </motion.div>
+        <div className="space-y-3">
+          {topBtc.length > 0 ? (
+            topBtc.map((pool, i) => (
+              <motion.div 
+                key={`btc-${pool.marketName}-${pool.tokenSymbol}`}
+                custom={i}
+                initial="hidden"
+                animate="visible"
+                variants={itemVariants}
+                className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-background to-success/5 border border-border hover:border-success/50 transition-all group cursor-pointer"
+                onClick={() => handleCardClick(pool)}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-lg font-bold text-secondary w-6">
+                    {i + 1}
+                  </span>
+                  <div>
+                    <p className="font-semibold text-foreground">{pool.tokenSymbol}</p>
+                    <p className="text-xs text-secondary">{getMarketDisplayName(pool)}</p>
+                  </div>
+                </div>
+                <div className="flex flex-col items-end gap-1 min-h-[36px] min-w-[100px]">
+                  <span className="text-success font-bold text-lg">
+                    {formatPercent(isApy ? pool.totalSupplyApy : pool.totalSupplyApr)}
+                  </span>
+                <span className="text-xs text-secondary">
+                  {formatPercent(pool.supplyApy ? parseFloat(pool.supplyApy) : null)} +{' '}
+                  {formatPercent(isApy ? pool.supplyIncentiveApy : pool.supplyIncentiveApr)}
+                </span>
+                </div>
+              </motion.div>
+            ))
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <p className="text-xs">No BTC-related opportunities found</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -194,40 +397,44 @@ const TopOpportunities = ({ markets, isApy }: TopOpportunitiesProps) => {
           <div>
             <h3 className="font-bold">Leverage Opportunities</h3>
             <p className="text-xs text-muted-foreground">
-              Supply {isApy ? 'APY' : 'APR'} &gt; Borrow {isApy ? 'APY' : 'APR'}
+              Supply {isApy ? 'APY' : 'APR'} - Borrow {isApy ? 'APY' : 'APR'}
             </p>
           </div>
         </motion.div>
         {topLooping.length > 0 ? (
           <div className="space-y-3">
-            {topLooping.map((market, i) => (
+            {topLooping.map((pool, i) => (
               <motion.div 
-                key={`loop-${market.marketName}-${market.tokenSymbol}`}
+                key={`loop-${pool.marketName}-${pool.tokenSymbol}`}
                 custom={i}
               initial="hidden"
               animate="visible"
               variants={itemVariants}
               className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-background to-warning/5 border border-border hover:border-warning/50 transition-all group cursor-pointer"
-              onClick={() => handleCardClick(market)}
+              onClick={() => handleCardClick(pool)}
             >
                 <div className="flex items-center gap-3">
                   <span className="text-lg font-bold text-warning w-6">
                     {i + 1}
                   </span>
                   <div>
-                    <p className="font-semibold text-foreground">{market.tokenSymbol}</p>
-                    <p className="text-xs text-secondary">{getMarketDisplayName(market)}</p>
+                    <p className="font-semibold text-foreground">{pool.tokenSymbol}</p>
+                    <p className="text-xs text-secondary">{getMarketDisplayName(pool)}</p>
                   </div>
                 </div>
                 <div className="flex flex-col items-end gap-1 min-h-[36px] min-w-[100px]">
                   <span className="text-warning font-bold text-lg">
-                    {formatSpread(isApy ? market.apySpread : market.aprSpread)}
+                    {formatSpread(isApy ? pool.apySpread : pool.aprSpread)}
                   </span>
                   <span className="text-xs text-secondary">
-                    {formatPercent(isApy ? market.totalSupplyApy : market.totalSupplyApr)} -{' '}
-                    {(isApy ? market.totalBorrowApy : market.totalBorrowApr) < 0
-                      ? `(${formatPercent(isApy ? market.totalBorrowApy : market.totalBorrowApr)})`
-                      : formatPercent(isApy ? market.totalBorrowApy : market.totalBorrowApr)}
+                    {formatPercent(isApy ? pool.totalSupplyApy : pool.totalSupplyApr)} -{' '}
+                    {(() => {
+                      const borrowValue = isApy ? pool.totalBorrowApy : pool.totalBorrowApr;
+                      if (borrowValue === null) return '-';
+                      return borrowValue < 0
+                        ? `(${formatPercent(borrowValue)})`
+                        : formatPercent(borrowValue);
+                    })()}
                   </span>
                 </div>
               </motion.div>
