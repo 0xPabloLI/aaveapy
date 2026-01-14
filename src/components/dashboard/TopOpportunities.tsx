@@ -35,17 +35,13 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
   const poolsWithTotals = pools.map(pool => {
     // Helper: Calculate incentive values for supply/borrow
     const getIncentiveValues = (type: 'supply' | 'borrow') => {
-      const protocolAprs = type === 'supply' ? pool.supplyIncentives : pool.borrowIncentives;
-      const meritAprs = type === 'supply' ? pool.meritSupplyApr : pool.meritBorrowApr;
-      const meritSelfAprs = type === 'supply' ? pool.meritSelfSupply : pool.meritSelfBorrow;
-      const merklApr = type === 'supply' ? pool.merklSupplyApr : pool.merklBorrowApr;
+      const protocolIncentives = type === 'supply' ? pool.supplyIncentives : pool.borrowIncentives;
+      const meritIncentives = type === 'supply' ? pool.meritSupplys : pool.meritBorrows;
+      const merklOpportunities = type === 'supply' ? pool.merklSupplys : pool.merklBorrows;
       const brevisApr = type === 'supply' ? pool.brevisSupplyApr : pool.brevisBorrowApr;
-      const requirementAprs = type === 'supply'
-        ? pool.meritSupplyWithBorrowRequirement
-        : pool.meritBorrowWithSupplyRequirement;
       return {
-        apr: calculateTotalIncentiveApr(meritAprs, merklApr, brevisApr, protocolAprs, meritSelfAprs, requirementAprs),
-        apy: calculateTotalIncentiveApy(meritAprs, merklApr, brevisApr, protocolAprs, meritSelfAprs, requirementAprs),
+        apr: calculateTotalIncentiveApr(meritIncentives, merklOpportunities, brevisApr, protocolIncentives),
+        apy: calculateTotalIncentiveApy(meritIncentives, merklOpportunities, brevisApr, protocolIncentives),
       };
     };
 
@@ -286,7 +282,7 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
                     {formatPercent(isApy ? pool.totalSupplyApy : pool.totalSupplyApr)}
                   </span>
                 <span className="text-xs text-secondary flex items-center gap-1">
-                  {formatPercent(pool.supplyApy ? parseFloat(pool.supplyApy) : null)} +{' '}
+                  {formatPercent(pool.supplyApy ?? null)} +{' '}
                   {(() => {
                     const incentiveValue = isApy ? pool.supplyIncentiveApy : pool.supplyIncentiveApr;
                     if (incentiveValue === null || isNaN(incentiveValue) || incentiveValue < 0.01) {
@@ -377,7 +373,7 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
                     {formatPercent(isApy ? pool.totalSupplyApy : pool.totalSupplyApr)}
                   </span>
                 <span className="text-xs text-secondary flex items-center gap-1">
-                  {formatPercent(pool.supplyApy ? parseFloat(pool.supplyApy) : null)} +{' '}
+                  {formatPercent(pool.supplyApy ?? null)} +{' '}
                   {(() => {
                     const incentiveValue = isApy ? pool.supplyIncentiveApy : pool.supplyIncentiveApr;
                     if (incentiveValue === null || isNaN(incentiveValue) || incentiveValue < 0.01) {
@@ -468,7 +464,7 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
                     {formatPercent(isApy ? pool.totalSupplyApy : pool.totalSupplyApr)}
                   </span>
                 <span className="text-xs text-secondary flex items-center gap-1">
-                  {formatPercent(pool.supplyApy ? parseFloat(pool.supplyApy) : null)} +{' '}
+                  {formatPercent(pool.supplyApy ?? null)} +{' '}
                   {(() => {
                     const incentiveValue = isApy ? pool.supplyIncentiveApy : pool.supplyIncentiveApr;
                     if (incentiveValue === null || isNaN(incentiveValue) || incentiveValue < 0.01) {

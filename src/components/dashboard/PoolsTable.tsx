@@ -53,17 +53,13 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
 
   // Helper: Get incentive values for a pool (supply or borrow)
   const getIncentiveValues = (pool: PoolWithSpread, type: 'supply' | 'borrow') => {
-    const protocolAprs = type === 'supply' ? pool.supplyIncentives : pool.borrowIncentives;
-    const meritAprs = type === 'supply' ? pool.meritSupplyApr : pool.meritBorrowApr;
-    const meritSelfAprs = type === 'supply' ? pool.meritSelfSupply : pool.meritSelfBorrow;
-    const merklApr = type === 'supply' ? pool.merklSupplyApr : pool.merklBorrowApr;
+    const protocolIncentives = type === 'supply' ? pool.supplyIncentives : pool.borrowIncentives;
+    const meritIncentives = type === 'supply' ? pool.meritSupplys : pool.meritBorrows;
+    const merklOpportunities = type === 'supply' ? pool.merklSupplys : pool.merklBorrows;
     const brevisApr = type === 'supply' ? pool.brevisSupplyApr : pool.brevisBorrowApr;
-    const requirementAprs = type === 'supply'
-      ? pool.meritSupplyWithBorrowRequirement
-      : pool.meritBorrowWithSupplyRequirement;
     return {
-      apr: calculateTotalIncentiveApr(meritAprs, merklApr, brevisApr, protocolAprs, meritSelfAprs, requirementAprs),
-      apy: calculateTotalIncentiveApy(meritAprs, merklApr, brevisApr, protocolAprs, meritSelfAprs, requirementAprs),
+      apr: calculateTotalIncentiveApr(meritIncentives, merklOpportunities, brevisApr, protocolIncentives),
+      apy: calculateTotalIncentiveApy(meritIncentives, merklOpportunities, brevisApr, protocolIncentives),
     };
   };
 
@@ -84,17 +80,13 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
     return calculateTotalBorrowApr(pool.borrowApy, getIncentiveValues(pool, 'borrow').apr);
   };
 
-  // Calculate native values (already in percentage form)
+  // Calculate native values (already in percentage form, number type)
   const getNativeSupplyApy = (pool: PoolWithSpread): number | null => {
-    if (pool.supplyApy === null || pool.supplyApy === undefined) return null;
-    const value = parseFloat(pool.supplyApy);
-    return isNaN(value) ? null : value;
+    return pool.supplyApy ?? null;
   };
 
   const getNativeBorrowApy = (pool: PoolWithSpread): number | null => {
-    if (pool.borrowApy === null || pool.borrowApy === undefined) return null;
-    const value = parseFloat(pool.borrowApy);
-    return isNaN(value) ? null : value;
+    return pool.borrowApy ?? null;
   };
 
   // Sort data based on active column and its sort mode

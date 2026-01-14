@@ -60,32 +60,79 @@ export const truncateAddress = (address: string): string => {
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 };
 
-type AprSource = string | { apr: string };
+import type { MeritIncentive, MerklOpportunityGroup } from '@/types/aave';
 
 /**
- * Helper: Sum valid APR values from an array of percentage strings or objects
+ * Helper: Sum valid APR values from an array of numbers
  */
-export const sumAprSources = (aprSources?: AprSource[]): number => {
-  if (!aprSources || !Array.isArray(aprSources)) return 0;
-  return aprSources.reduce((sum, aprSource) => {
-    const aprStr = typeof aprSource === 'string' ? aprSource : aprSource.apr;
-    const apr = parseFloat(aprStr);
-    return !isNaN(apr) && apr > 0 ? sum + apr : sum;
+const sumNumberArray = (arr?: number[]): number => {
+  if (!arr || !Array.isArray(arr)) return 0;
+  return arr.reduce((sum, val) => {
+    return (!isNaN(val) && val > 0) ? sum + val : sum;
   }, 0);
 };
 
 /**
- * Helper: Sum valid APY values from APR sources (convert each APR to APY then sum)
+ * Helper: Sum Merit incentive APR values
  */
-export const sumApyFromAprSources = (aprSources?: AprSource[]): number => {
-  if (!aprSources || !Array.isArray(aprSources)) return 0;
-  return aprSources.reduce((sum, aprSource) => {
-    const aprStr = typeof aprSource === 'string' ? aprSource : aprSource.apr;
-    const apr = parseFloat(aprStr);
+const sumMeritIncentives = (meritIncentives?: MeritIncentive[]): number => {
+  if (!meritIncentives || !Array.isArray(meritIncentives)) return 0;
+  return meritIncentives.reduce((sum, incentive) => {
+    const apr = incentive.apr;
+    const selfApr = incentive.selfApr || 0;
+    // Sum both apr and selfApr if they are valid
+    const totalApr = (!isNaN(apr) && apr > 0 ? apr : 0) + (!isNaN(selfApr) && selfApr > 0 ? selfApr : 0);
+    return sum + totalApr;
+  }, 0);
+};
+
+/**
+ * Helper: Sum Merit incentive APY values (convert each APR to APY then sum)
+ */
+const sumMeritIncentivesApy = (meritIncentives?: MeritIncentive[]): number => {
+  if (!meritIncentives || !Array.isArray(meritIncentives)) return 0;
+  return meritIncentives.reduce((sum, incentive) => {
+    const apr = incentive.apr;
+    const selfApr = incentive.selfApr || 0;
+    let totalApy = 0;
     if (!isNaN(apr) && apr > 0) {
-      return sum + convertAprToApy(apr);
+      totalApy += convertAprToApy(apr);
     }
-    return sum;
+    if (!isNaN(selfApr) && selfApr > 0) {
+      totalApy += convertAprToApy(selfApr);
+    }
+    return sum + totalApy;
+  }, 0);
+};
+
+/**
+ * Helper: Calculate total Merkl APR from opportunity groups
+ */
+const sumMerklOpportunities = (opportunities?: MerklOpportunityGroup[]): number => {
+  if (!opportunities || !Array.isArray(opportunities)) return 0;
+  return opportunities.reduce((sum, opp) => {
+    const breakdownsApr = opp.breakdowns.reduce((breakdownSum, breakdown) => {
+      const apr = breakdown.campaignApr;
+      return breakdownSum + (!isNaN(apr) && apr > 0 ? apr : 0);
+    }, 0);
+    return sum + breakdownsApr;
+  }, 0);
+};
+
+/**
+ * Helper: Calculate total Merkl APY from opportunity groups (convert each APR to APY then sum)
+ */
+const sumMerklOpportunitiesApy = (opportunities?: MerklOpportunityGroup[]): number => {
+  if (!opportunities || !Array.isArray(opportunities)) return 0;
+  return opportunities.reduce((sum, opp) => {
+    const breakdownsApy = opp.breakdowns.reduce((breakdownSum, breakdown) => {
+      const apr = breakdown.campaignApr;
+      if (!isNaN(apr) && apr > 0) {
+        return breakdownSum + convertAprToApy(apr);
+      }
+      return breakdownSum;
+    }, 0);
+    return sum + breakdownsApy;
   }, 0);
 };
 
@@ -99,84 +146,88 @@ const getValidApr = (apr?: number | null): number => {
 /**
  * Calculate total incentive APR from detailed sources
  * All values are in percentage form (e.g., 5 for 5%)
- * @param meritAprs - Base merit APR incentives
- * @param merklApr - Merkl APR incentive
+ * @param meritIncentives - Merit incentive objects array
+ * @param merklOpportunities - Merkl opportunity groups array
  * @param brevisApr - Brevis APR incentive
- * @param extraAprs - Additional APR sources (protocol incentives, self incentives, requirement-based incentives)
+ * @param protocolIncentives - Protocol incentives array (number[])
  */
 export const calculateTotalIncentiveApr = (
-  meritAprs?: AprSource[],
-  merklApr?: number,
+  meritIncentives?: MeritIncentive[],
+  merklOpportunities?: MerklOpportunityGroup[],
   brevisApr?: number | null,
-  ...extraAprs: AprSource[][]
+  protocolIncentives?: number[]
 ): number => {
-  const baseApr = sumAprSources(meritAprs);
-  const extraApr = extraAprs.reduce((sum, aprs) => sum + sumAprSources(aprs), 0);
-  return baseApr + extraApr + getValidApr(merklApr) + getValidApr(brevisApr);
+  const meritApr = sumMeritIncentives(meritIncentives);
+  const merklApr = sumMerklOpportunities(merklOpportunities);
+  const protocolApr = sumNumberArray(protocolIncentives);
+  const brevisAprValue = getValidApr(brevisApr);
+  
+  return meritApr + merklApr + protocolApr + brevisAprValue;
 };
 
 /**
  * Calculate total incentive APY from detailed sources
  * Converts each APR source to APY and sums them (each source converted separately, then summed)
- * @param meritAprs - Base merit APR incentives
- * @param merklApr - Merkl APR incentive
+ * @param meritIncentives - Merit incentive objects array
+ * @param merklOpportunities - Merkl opportunity groups array
  * @param brevisApr - Brevis APR incentive
- * @param extraAprs - Additional APR sources (protocol incentives, self incentives, requirement-based incentives)
+ * @param protocolIncentives - Protocol incentives array (number[])
  */
 export const calculateTotalIncentiveApy = (
-  meritAprs?: AprSource[],
-  merklApr?: number,
+  meritIncentives?: MeritIncentive[],
+  merklOpportunities?: MerklOpportunityGroup[],
   brevisApr?: number | null,
-  ...extraAprs: AprSource[][]
+  protocolIncentives?: number[]
 ): number => {
-  const baseApy = sumApyFromAprSources(meritAprs);
-  const extraApy = extraAprs.reduce((sum, aprs) => sum + sumApyFromAprSources(aprs), 0);
-
-  const merklAprValue = getValidApr(merklApr);
+  const meritApy = sumMeritIncentivesApy(meritIncentives);
+  const merklApy = sumMerklOpportunitiesApy(merklOpportunities);
+  
+  // Convert protocol incentives (already in APR form) to APY
+  let protocolApy = 0;
+  if (protocolIncentives && Array.isArray(protocolIncentives)) {
+    protocolIncentives.forEach(apr => {
+      if (!isNaN(apr) && apr > 0) {
+        protocolApy += convertAprToApy(apr);
+      }
+    });
+  }
+  
   const brevisAprValue = getValidApr(brevisApr);
-
-  return baseApy +
-    extraApy +
-    (merklAprValue > 0 ? convertAprToApy(merklAprValue) : 0) +
-    (brevisAprValue > 0 ? convertAprToApy(brevisAprValue) : 0);
+  const brevisApy = brevisAprValue > 0 ? convertAprToApy(brevisAprValue) : 0;
+  
+  return meritApy + merklApy + protocolApy + brevisApy;
 };
 
 // Calculate total Supply APR (native + incentive)
 // All values are in percentage form
-export const calculateTotalSupplyApr = (supplyApy: string | null | undefined, incentiveApr: number): number | null => {
+export const calculateTotalSupplyApr = (supplyApy: number | null | undefined, incentiveApr: number): number | null => {
   if (supplyApy === null || supplyApy === undefined) return null;
-  const nativeSupplyApr = parseFloat(supplyApy);
-  if (isNaN(nativeSupplyApr) || isNaN(incentiveApr)) return null;
-  return nativeSupplyApr + incentiveApr;
+  if (isNaN(supplyApy) || isNaN(incentiveApr)) return null;
+  return supplyApy + incentiveApr;
 };
 
 // Calculate total Supply APY (native + incentive)
 // All values are in percentage form
-export const calculateTotalSupplyApy = (supplyApy: string | null | undefined, incentiveApy: number): number | null => {
+export const calculateTotalSupplyApy = (supplyApy: number | null | undefined, incentiveApy: number): number | null => {
   if (supplyApy === null || supplyApy === undefined) return null;
-  const nativeSupplyApy = parseFloat(supplyApy);
-  if (isNaN(nativeSupplyApy) || isNaN(incentiveApy)) return null;
-  return nativeSupplyApy + incentiveApy;
+  if (isNaN(supplyApy) || isNaN(incentiveApy)) return null;
+  return supplyApy + incentiveApy;
 };
 
 // Calculate total Borrow APR (native - incentive)
 // All values are in percentage form
-export const calculateTotalBorrowApr = (borrowApy: string | null | undefined, incentiveApr: number): number | null => {
+export const calculateTotalBorrowApr = (borrowApy: number | null | undefined, incentiveApr: number): number | null => {
   if (borrowApy === null || borrowApy === undefined) return null;
-  const nativeBorrowApr = parseFloat(borrowApy);
-  if (isNaN(nativeBorrowApr)) return null;
-  if (isNaN(incentiveApr)) return null;
-  return nativeBorrowApr - incentiveApr;
+  if (isNaN(borrowApy) || isNaN(incentiveApr)) return null;
+  return borrowApy - incentiveApr;
 };
 
 // Calculate total Borrow APY (native - incentive)
 // All values are in percentage form
-export const calculateTotalBorrowApy = (borrowApy: string | null | undefined, incentiveApy: number): number | null => {
+export const calculateTotalBorrowApy = (borrowApy: number | null | undefined, incentiveApy: number): number | null => {
   if (borrowApy === null || borrowApy === undefined) return null;
-  const nativeBorrowApy = parseFloat(borrowApy);
-  if (isNaN(nativeBorrowApy)) return null;
-  if (isNaN(incentiveApy)) return null;
-  return nativeBorrowApy - incentiveApy;
+  if (isNaN(borrowApy) || isNaN(incentiveApy)) return null;
+  return borrowApy - incentiveApy;
 };
 
 // Calculate spread (APY version)

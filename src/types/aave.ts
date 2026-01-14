@@ -1,66 +1,58 @@
+// Merit incentive data structure
+export interface MeritIncentive {
+  apr: number;                         // APR 百分比值（如 5.2 表示 5.2%）
+  selfApr?: number;                    // Self APR 百分比值（如果有对应的 self- 前缀的 key）
+  link: string;                        // Merit 活动详情页链接
+  startDate: string;                   // 活动开始日期
+  endDate: string;                     // 活动结束日期
+  requiredBorrowTokens?: string[];      // 需要 borrow 的 token 列表（用于 supply with borrow requirement），'multiple' 表示任意 token
+  requiredSupplyTokens?: string[];      // 需要 supply 的 token 列表（用于 borrow with supply requirement），'multiple' 表示任意 token
+}
+
+// Merkl opportunity data structure
+export interface MerklCampaignBreakdown {
+  campaignApr: number;                 // 活动 APR（百分比数值）
+  campaignStartedAt: string;           // 活动开始时间（ISO 8601）
+  campaignEndedAt: string;             // 活动结束时间（ISO 8601）
+  campaignId: string;                 // 活动 ID
+  pointsPerThousandUsd?: number;       // Tydro 协议的 points/1000USD 值（可选）
+  dailyPoints?: number;                // Tydro 协议的每日 points（可选）
+}
+
+export interface MerklOpportunityGroup {
+  opportunityLink: string;            // Opportunity 详情页链接
+  breakdowns: MerklCampaignBreakdown[]; // 该 opportunity 的所有 breakdowns
+}
+
 export interface PoolWithSpread {
+  // 基础信息
   marketName: string;
   chainName: string;
   chainId: number;
   tokenName: string;
   tokenSymbol: string;
   tokenAddress: string;
-  aTokenAddress?: string;
-  vTokenAddress?: string;
-  supplyApy?: string;
-  borrowApy?: string;
-  supplyIncentives?: string[];
-  borrowIncentives?: string[];
-  meritSupplyApr?: string[];
-  meritBorrowApr?: string[];
-  meritSelfSupply?: string[];
-  meritSelfBorrow?: string[];
-  meritSupplyWithBorrowRequirement?: Array<{
-    apr: string;
-    requiredBorrowTokens: string[];
-    isSelf?: boolean;
-  }>;
-  meritBorrowWithSupplyRequirement?: Array<{
-    apr: string;
-    requiredSupplyTokens: string[];
-    isSelf?: boolean;
-  }>;
-  merklSupplyApr?: number;
-  merklBorrowApr?: number;
-  merklHoldApr?: number;
-  merklSupplyOpportunities?: Array<{
-    opportunityLink: string;
-    breakdowns: Array<{
-      campaignApr: number;
-      campaignStartedAt: string;
-      campaignEndedAt: string;
-      campaignId: string;
-      pointsPerThousandUsd?: number;
-      dailyPoints?: number;
-    }>;
-  }>;
-  merklBorrowOpportunities?: Array<{
-    opportunityLink: string;
-    breakdowns: Array<{
-      campaignApr: number;
-      campaignStartedAt: string;
-      campaignEndedAt: string;
-      campaignId: string;
-      pointsPerThousandUsd?: number;
-      dailyPoints?: number;
-    }>;
-  }>;
-  merklHoldOpportunities?: Array<{
-    opportunityLink: string;
-    breakdowns: Array<{
-      campaignApr: number;
-      campaignStartedAt: string;
-      campaignEndedAt: string;
-      campaignId: string;
-      pointsPerThousandUsd?: number;
-      dailyPoints?: number;
-    }>;
-  }>;
+  aTokenAddress?: string | null;
+  vTokenAddress?: string | null;
+  
+  // 基础 APY（百分比数值，如 2.07 表示 2.07%）
+  supplyApy?: number;
+  borrowApy?: number;
+  
+  // 协议激励（来自 Aave 协议，百分比数值数组）
+  supplyIncentives?: number[];
+  borrowIncentives?: number[];
+  
+  // Merit APR 激励（对象数组，包含完整的活动信息）
+  meritSupplys?: MeritIncentive[];
+  meritBorrows?: MeritIncentive[];
+  
+  // Merkl 详细机会数据
+  merklSupplys?: MerklOpportunityGroup[];
+  merklBorrows?: MerklOpportunityGroup[];
+  merklHolds?: MerklOpportunityGroup[];
+  
+  // Brevis APR 激励（百分比数值）
   brevisSupplyApr?: number;
   brevisBorrowApr?: number;
 }
