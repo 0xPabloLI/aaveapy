@@ -1,13 +1,17 @@
 // Format percentage to string (value is already in percentage form, e.g., 5 for 5%)
 export const formatPercent = (value: number | null | undefined): string => {
-  if (value === null || value === undefined || isNaN(value)) return '-';
-  return `${value.toFixed(2)}%`;
+  if (value === null || value === undefined) return '-';
+  const numValue = typeof value === 'number' ? value : Number(value);
+  if (isNaN(numValue)) return '-';
+  return `${numValue.toFixed(2)}%`;
 };
 
 // Format spread with sign (value is already in percentage form)
 export const formatSpread = (value: number | null | undefined): string => {
-  if (value === null || value === undefined || isNaN(value)) return '-';
-  return `${value > 0 ? '+' : ''}${value.toFixed(2)}%`;
+  if (value === null || value === undefined) return '-';
+  const numValue = typeof value === 'number' ? value : Number(value);
+  if (isNaN(numValue)) return '-';
+  return `${numValue > 0 ? '+' : ''}${numValue.toFixed(2)}%`;
 };
 
 // Format relative time
