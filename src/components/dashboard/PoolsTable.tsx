@@ -18,6 +18,8 @@ import { getChainIconSrc } from '@/lib/chainIcons';
 import { IncentiveIcon } from '@/components/IncentiveIcon';
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
 import IncentiveTooltip from './IncentiveTooltip';
+import MobilePoolCard from './MobilePoolCard';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface PoolsTableProps {
   pools: PoolWithSpread[];
@@ -30,6 +32,7 @@ interface PoolsTableProps {
 type SortMode = 'total' | 'native' | 'incentive';
 
 const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTableProps) => {
+  const isMobile = useIsMobile();
   const [activeSortColumn, setActiveSortColumn] = useState<'supply' | 'borrow'>('supply');
   const [supplySortMode, setSupplySortMode] = useState<SortMode>('total');
   const [supplySortOrder, setSupplySortOrder] = useState<'asc' | 'desc'>('desc');
@@ -221,6 +224,55 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
       window.open(url, '_blank', 'noopener,noreferrer');
     }
   };
+
+  // Mobile card view with tooltip support
+  const handleMobileIncentiveClick = (
+    e: React.MouseEvent,
+    pool: PoolWithSpread,
+    type: 'supply' | 'borrow',
+    apy: number | null
+  ) => {
+    if (apy === null || isNaN(apy)) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const triggerCenterX = rect.left + rect.width / 2;
+    setTooltipState({
+      pool,
+      type,
+      position: { x: rect.left, y: rect.bottom },
+      triggerCenterX,
+    });
+  };
+
+  // Mobile card view
+  if (isMobile) {
+    return (
+      <div className="space-y-3">
+        <div className="flex justify-between items-center px-1">
+          <h3 className="text-base font-bold text-gray-900">{pools.length} Pools</h3>
+        </div>
+        <div className="space-y-3">
+          {sortedData.map((pool, idx) => (
+            <MobilePoolCard
+              key={idx}
+              pool={pool}
+              isApy={isApy}
+              onIncentiveClick={handleMobileIncentiveClick}
+            />
+          ))}
+        </div>
+        {tooltipState && (
+          <IncentiveTooltip
+            pool={tooltipState.pool}
+            type={tooltipState.type}
+            position={tooltipState.position}
+            triggerCenterX={tooltipState.triggerCenterX}
+            onClose={() => setTooltipState(null)}
+            isApy={isApy}
+          />
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
@@ -456,13 +508,13 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                     </span>
                   </TableCell>
                   <TableCell className="px-6 py-4 whitespace-nowrap text-right">
-                    <div className="flex flex-col items-end gap-1 min-w-[120px]">
-                      <span className="font-bold text-emerald-500 text-base">
+                    <div className="flex flex-col items-end gap-0.5 min-w-[120px]">
+                      <span className="font-bold text-emerald-500 text-base tabular-nums">
                         {formatPercent(displaySupplyTotal)}
                       </span>
                       {displaySupplyIncentive !== null && (
-                        <div className="flex items-center gap-1.5 text-xs justify-end">
-                          <span className="text-blue-600 font-semibold">
+                        <div className="flex items-center gap-1 text-xs justify-end">
+                          <span className="text-blue-600 font-semibold tabular-nums">
                             {formatPercent(displaySupplyNative)}
                           </span>
                           <span className="text-gray-400">+</span>
@@ -470,7 +522,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                             onClick={(e) =>
                               handleIncentiveClick(e, pool, 'supply', displaySupplyIncentive)
                             }
-                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 text-amber-600 font-semibold hover:bg-amber-100 transition-colors cursor-pointer"
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 text-amber-600 font-semibold hover:bg-amber-100 transition-colors cursor-pointer tabular-nums"
                           >
                             <IncentiveIcon width={12} height={12} />
                             {formatPercent(displaySupplyIncentive)}
@@ -480,15 +532,15 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                     </div>
                   </TableCell>
                   <TableCell className="px-6 py-4 whitespace-nowrap text-right">
-                    <div className="flex flex-col items-end gap-1 min-w-[120px]">
-                      <span className="font-bold text-gray-900 text-base">
+                    <div className="flex flex-col items-end gap-0.5 min-w-[120px]">
+                      <span className="font-bold text-gray-900 text-base tabular-nums">
                         {displayBorrowTotal !== null ? formatPercent(displayBorrowTotal) : '-'}
                       </span>
                       {displayBorrowIncentive !== null && (
-                        <div className="flex items-center gap-1.5 text-xs justify-end">
+                        <div className="flex items-center gap-1 text-xs justify-end">
                           {displayBorrowNative !== null && (
                             <>
-                              <span className="text-blue-600 font-semibold">
+                              <span className="text-blue-600 font-semibold tabular-nums">
                                 {formatPercent(displayBorrowNative)}
                               </span>
                               <span className="text-gray-400">-</span>
@@ -498,7 +550,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                             onClick={(e) =>
                               handleIncentiveClick(e, pool, 'borrow', displayBorrowIncentive)
                             }
-                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 text-amber-600 font-semibold hover:bg-amber-100 transition-colors cursor-pointer"
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 text-amber-600 font-semibold hover:bg-amber-100 transition-colors cursor-pointer tabular-nums"
                           >
                             <IncentiveIcon width={12} height={12} />
                             {formatPercent(displayBorrowIncentive)}

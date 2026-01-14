@@ -1,5 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useAaveMarkets, useAaveMarketStats, useAaveMarketsList } from '@/hooks/useAaveMarkets';
+import { useQueryClient } from '@tanstack/react-query';
 import { SortField, SortOrder, TokenCategory, STABLECOINS, ETH_RELATED, BTC_RELATED, PENDLE_TOKENS } from '@/types/aave';
 import Header from '@/components/dashboard/Header';
 import FilterBar from '@/components/dashboard/FilterBar';
@@ -7,6 +8,7 @@ import TopOpportunities from '@/components/dashboard/TopOpportunities';
 import PoolsTable from '@/components/dashboard/PoolsTable';
 import LoadingState from '@/components/dashboard/LoadingState';
 import ErrorState from '@/components/dashboard/ErrorState';
+import PullToRefresh from '@/components/dashboard/PullToRefresh';
 
 const Index = () => {
   // State
@@ -17,11 +19,22 @@ const Index = () => {
   const [selectedCategory, setSelectedCategory] = useState<TokenCategory>('all');
   const [isApy, setIsApy] = useState(true);
 
+  const queryClient = useQueryClient();
+
   // Fetch data - 不传 sort 参数，所有排序都在前端完成
   // 这样表格的 total/native/incentive 模式才能正确工作
-  const { data: poolsData, isLoading, error } = useAaveMarkets();
-  const { data: stats } = useAaveMarketStats();
-  const { data: marketsList } = useAaveMarketsList();
+  const { data: poolsData, isLoading, error, refetch } = useAaveMarkets();
+  const { data: stats, refetch: refetchStats } = useAaveMarketStats();
+  const { data: marketsList, refetch: refetchMarketsList } = useAaveMarketsList();
+
+  // Pull to refresh handler
+  const handleRefresh = useCallback(async () => {
+    await Promise.all([
+      refetch(),
+      refetchStats(),
+      refetchMarketsList(),
+    ]);
+  }, [refetch, refetchStats, refetchMarketsList]);
 
   // Handle sort
   const handleSort = (field: SortField) => {
@@ -93,68 +106,70 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Background gradient */}
-      <div className="fixed inset-0 bg-gradient-radial from-primary/5 via-transparent to-transparent pointer-events-none" />
-      <div className="fixed top-0 right-0 w-1/2 h-1/2 bg-gradient-radial from-secondary/5 via-transparent to-transparent pointer-events-none" />
+    <PullToRefresh onRefresh={handleRefresh}>
+      <div className="min-h-screen bg-background">
+        {/* Background gradient */}
+        <div className="fixed inset-0 bg-gradient-radial from-primary/5 via-transparent to-transparent pointer-events-none" />
+        <div className="fixed top-0 right-0 w-1/2 h-1/2 bg-gradient-radial from-secondary/5 via-transparent to-transparent pointer-events-none" />
 
-      <div className="relative z-10 container mx-auto px-3 md:px-4 py-4 md:py-8 space-y-4 md:space-y-8">
-        {/* Header */}
-        <Header
-          isLoading={isLoading}
-          lastUpdated={poolsData?.lastUpdated}
-        />
+        <div className="relative z-10 container mx-auto px-3 md:px-4 py-4 md:py-8 space-y-4 md:space-y-8">
+          {/* Header */}
+          <Header
+            isLoading={isLoading}
+            lastUpdated={poolsData?.lastUpdated}
+          />
 
-        {/* Top Opportunities */}
-        {poolsData?.data && (
-          <TopOpportunities pools={poolsData.data} isApy={isApy} />
-        )}
+          {/* Top Opportunities */}
+          {poolsData?.data && (
+            <TopOpportunities pools={poolsData.data} isApy={isApy} />
+          )}
 
-        {/* Filters */}
-        <FilterBar
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          selectedMarkets={selectedMarkets}
-          setSelectedMarkets={setSelectedMarkets}
-          selectedCategory={selectedCategory}
-          setSelectedCategory={setSelectedCategory}
-          isApy={isApy}
-          setIsApy={setIsApy}
-          marketsList={marketsList}
-        />
+          {/* Filters */}
+          <FilterBar
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            selectedMarkets={selectedMarkets}
+            setSelectedMarkets={setSelectedMarkets}
+            selectedCategory={selectedCategory}
+            setSelectedCategory={setSelectedCategory}
+            isApy={isApy}
+            setIsApy={setIsApy}
+            marketsList={marketsList}
+          />
 
-        {/* Pools Table */}
-        <PoolsTable
-          pools={filteredPools}
-          sortField={sortField}
-          sortOrder={sortOrder}
-          onSort={handleSort}
-          isApy={isApy}
-        />
+          {/* Pools Table */}
+          <PoolsTable
+            pools={filteredPools}
+            sortField={sortField}
+            sortOrder={sortOrder}
+            onSort={handleSort}
+            isApy={isApy}
+          />
 
-        {/* Empty state */}
-        {filteredPools.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">No pools found matching your filters</p>
-          </div>
-        )}
+          {/* Empty state */}
+          {filteredPools.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">No pools found matching your filters</p>
+            </div>
+          )}
 
-        {/* Footer */}
-        <footer className="text-center py-8 border-t border-border/50">
-          <p className="text-sm text-muted-foreground">
-            Data sourced from{' '}
-            <a 
-              href="https://app.aave.com" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-secondary hover:underline"
-            >
-              Aave Protocol
-            </a>
-          </p>
-        </footer>
+          {/* Footer */}
+          <footer className="text-center py-8 border-t border-border/50">
+            <p className="text-sm text-muted-foreground">
+              Data sourced from{' '}
+              <a 
+                href="https://app.aave.com" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-secondary hover:underline"
+              >
+                Aave Protocol
+              </a>
+            </p>
+          </footer>
+        </div>
       </div>
-    </div>
+    </PullToRefresh>
   );
 };
 
