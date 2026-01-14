@@ -246,7 +246,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                 Market
               </TableHead>
               <TableHead className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                <div className="flex items-center justify-end gap-3">
+                <div className="flex items-center justify-end gap-3 min-w-[120px]">
                   <div className="relative flex items-center gap-1.5">
                     <button
                       onClick={() => setShowSupplySortMenu(!showSupplySortMenu)}
@@ -327,7 +327,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                 </div>
               </TableHead>
               <TableHead className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                <div className="flex items-center justify-end gap-3">
+                <div className="flex items-center justify-end gap-3 min-w-[120px]">
                   <div className="relative flex items-center gap-1.5">
                     <button
                       onClick={() => setShowBorrowSortMenu(!showBorrowSortMenu)}
@@ -408,7 +408,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                 </div>
               </TableHead>
               <TableHead className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700 hidden md:table-cell">
-                <div className="flex items-center justify-end gap-1">
+                <div className="flex items-center justify-end gap-1 min-w-[80px]">
                   SPREAD
                   <ArrowDown className="w-3 h-3" />
                 </div>
@@ -464,12 +464,12 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                     </span>
                   </TableCell>
                   <TableCell className="px-6 py-4 whitespace-nowrap text-right">
-                    <div className="flex flex-col items-end gap-1">
+                    <div className="flex flex-col items-end gap-1 min-w-[120px]">
                       <span className="font-bold text-emerald-500 text-base">
                         {formatPercent(displaySupplyTotal)}
                       </span>
                       {displaySupplyIncentive !== null && (
-                        <div className="flex items-center gap-1.5 text-xs">
+                        <div className="flex items-center gap-1.5 text-xs justify-end">
                           <span className="text-blue-600 font-semibold">
                             {formatPercent(displaySupplyNative)}
                           </span>
@@ -488,12 +488,12 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                     </div>
                   </TableCell>
                   <TableCell className="px-6 py-4 whitespace-nowrap text-right">
-                    <div className="flex flex-col items-end gap-1">
+                    <div className="flex flex-col items-end gap-1 min-w-[120px]">
                       <span className="font-bold text-gray-900 text-base">
                         {displayBorrowTotal !== null ? formatPercent(displayBorrowTotal) : '-'}
                       </span>
                       {displayBorrowIncentive !== null && (
-                        <div className="flex items-center gap-1.5 text-xs">
+                        <div className="flex items-center gap-1.5 text-xs justify-end">
                           {displayBorrowNative !== null && (
                             <>
                               <span className="text-blue-600 font-semibold">
@@ -516,15 +516,17 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                     </div>
                   </TableCell>
                   <TableCell className="px-6 py-4 whitespace-nowrap text-right hidden md:table-cell">
-                    <span
-                      className={`font-bold ${
-                        spread !== null && spread >= 0
-                          ? 'text-amber-500'
-                          : 'text-rose-500'
-                      }`}
-                    >
-                      {formatSpread(spread)}
-                    </span>
+                    <div className="min-w-[80px] flex justify-end">
+                      <span
+                        className={`font-bold ${
+                          spread !== null && spread >= 0
+                            ? 'text-amber-500'
+                            : 'text-rose-500'
+                        }`}
+                      >
+                        {formatSpread(spread)}
+                      </span>
+                    </div>
                   </TableCell>
                 </TableRow>
               );
