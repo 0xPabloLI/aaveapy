@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { MarketsResponse, MarketStats, MarketListItem } from '@/types/aave';
 
-// 从环境变量读取API地址，如果没有设置则使用远程地址作为默认值
+// Read API base URL from environment variable, fallback to remote URL if not set
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://api.aaveapy.com/api';
 
-// 获取所有市场数据（所有排序和过滤都在前端完成）
+// Fetch all market data (all sorting and filtering done on frontend)
 export const fetchMarkets = async (): Promise<MarketsResponse> => {
   const response = await fetch(`${API_BASE}/markets`);
   if (!response.ok) throw new Error('Failed to fetch markets');

@@ -74,10 +74,22 @@ const IncentiveTooltip = ({ pool, type, position, triggerCenterX, onClose, isApy
       meritIncentives.forEach((merit, index) => {
         const apr = merit.apr;
         const selfApr = merit.selfApr || 0;
-        const totalApr = (!isNaN(apr) && apr > 0 ? apr : 0) + (!isNaN(selfApr) && selfApr > 0 ? selfApr : 0);
         
-        if (totalApr > 0) {
-          const totalValue = isApy ? convertAprToApy(totalApr) : totalApr;
+        // Convert each APR to APY separately then sum (convertAprToApy is non-linear)
+        let totalValue = 0;
+        if (isApy) {
+          if (!isNaN(apr) && apr > 0) {
+            totalValue += convertAprToApy(apr);
+          }
+          if (!isNaN(selfApr) && selfApr > 0) {
+            totalValue += convertAprToApy(selfApr);
+          }
+        } else {
+          // For APR mode, just sum the APR values
+          totalValue = (!isNaN(apr) && apr > 0 ? apr : 0) + (!isNaN(selfApr) && selfApr > 0 ? selfApr : 0);
+        }
+        
+        if (totalValue > 0) {
           const name = meritIncentives.length > 1 
             ? `Merit ${index + 1}${merit.requiredBorrowTokens || merit.requiredSupplyTokens ? ' (w/ Req)' : ''}`
             : `Merit${merit.requiredBorrowTokens || merit.requiredSupplyTokens ? ' (w/ Req)' : ''}`;

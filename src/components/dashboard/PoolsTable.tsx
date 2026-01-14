@@ -12,7 +12,8 @@ import {
   calculateSpreadApy,
   calculateSpreadApr,
   calculateTotalIncentiveApr,
-  calculateTotalIncentiveApy
+  calculateTotalIncentiveApy,
+  apyToApr
 } from '@/lib/formatters';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { IncentiveIcon } from '@/components/IncentiveIcon';
@@ -114,7 +115,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
         if (isNaN(bIncentive)) return -1;
         comparison = bIncentive - aIncentive;
       } else {
-        // Total sorting - 使用 totalSupplyApy (Native + Incentive)
+        // Total sorting - use totalSupplyApy (Native + Incentive)
         const aTotal = isApy ? getTotalSupplyApy(a) : getTotalSupplyApr(a);
         const bTotal = isApy ? getTotalSupplyApy(b) : getTotalSupplyApr(b);
         if (aTotal === null && bTotal === null) return 0;
@@ -461,25 +462,31 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
           </TableHeader>
           <TableBody>
             {sortedData.map((pool, idx) => {
-              const totalSupplyApy = getTotalSupplyApy(pool);
-              const totalSupplyApr = getTotalSupplyApr(pool);
-              const totalBorrowApy = getTotalBorrowApy(pool);
-              const totalBorrowApr = getTotalBorrowApr(pool);
+              // Cache incentive values to avoid redundant calculations
+              const supplyIncentiveValues = getIncentiveValues(pool, 'supply');
+              const borrowIncentiveValues = getIncentiveValues(pool, 'borrow');
+              
+              const totalSupplyApy = calculateTotalSupplyApy(pool.supplyApy, supplyIncentiveValues.apy);
+              const totalSupplyApr = calculateTotalSupplyApr(pool.supplyApy, supplyIncentiveValues.apr);
+              const totalBorrowApy = calculateTotalBorrowApy(pool.borrowApy, borrowIncentiveValues.apy);
+              const totalBorrowApr = calculateTotalBorrowApr(pool.borrowApy, borrowIncentiveValues.apr);
               const nativeSupplyApy = getNativeSupplyApy(pool);
               const nativeBorrowApy = getNativeBorrowApy(pool);
               
               const displaySupplyTotal = isApy ? totalSupplyApy : totalSupplyApr;
-              const displaySupplyNative = nativeSupplyApy;
-              // Helper to get display incentive value (returns null if invalid)
-              const getDisplayIncentive = (type: 'supply' | 'borrow') => {
-                const incentive = isApy ? getIncentiveValues(pool, type).apy : getIncentiveValues(pool, type).apr;
-                return incentive === 0 || isNaN(incentive) || incentive < 0.01 ? null : incentive;
-              };
-
-              const displaySupplyIncentive = getDisplayIncentive('supply');
+              const displaySupplyNative = isApy ? nativeSupplyApy : (nativeSupplyApy !== null ? apyToApr(nativeSupplyApy) : null);
               const displayBorrowTotal = isApy ? totalBorrowApy : totalBorrowApr;
-              const displayBorrowNative = nativeBorrowApy;
-              const displayBorrowIncentive = getDisplayIncentive('borrow');
+              const displayBorrowNative = isApy ? nativeBorrowApy : (nativeBorrowApy !== null ? apyToApr(nativeBorrowApy) : null);
+              
+              // Get display incentive values using cached results
+              const displaySupplyIncentive = (() => {
+                const incentive = isApy ? supplyIncentiveValues.apy : supplyIncentiveValues.apr;
+                return incentive === 0 || isNaN(incentive) || incentive < 0.01 ? null : incentive;
+              })();
+              const displayBorrowIncentive = (() => {
+                const incentive = isApy ? borrowIncentiveValues.apy : borrowIncentiveValues.apr;
+                return incentive === 0 || isNaN(incentive) || incentive < 0.01 ? null : incentive;
+              })();
 
               const spread = isApy
                 ? calculateSpreadApy(totalSupplyApy, totalBorrowApy)

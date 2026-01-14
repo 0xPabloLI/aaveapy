@@ -10,7 +10,8 @@ import {
   calculateSpreadApy,
   calculateSpreadApr,
   calculateTotalIncentiveApr,
-  calculateTotalIncentiveApy
+  calculateTotalIncentiveApy,
+  apyToApr
 } from '@/lib/formatters';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { IncentiveIcon } from '@/components/IncentiveIcon';
@@ -47,21 +48,27 @@ const MobilePoolCard = ({ pool, isApy, onIncentiveClick }: MobilePoolCardProps) 
     return pool.chainName;
   };
 
-  const totalSupplyApy = calculateTotalSupplyApy(pool.supplyApy, getIncentiveValues('supply').apy);
-  const totalSupplyApr = calculateTotalSupplyApr(pool.supplyApy, getIncentiveValues('supply').apr);
-  const totalBorrowApy = calculateTotalBorrowApy(pool.borrowApy, getIncentiveValues('borrow').apy);
-  const totalBorrowApr = calculateTotalBorrowApr(pool.borrowApy, getIncentiveValues('borrow').apr);
+  // Cache incentive values to avoid redundant calculations
+  const supplyIncentiveValues = getIncentiveValues('supply');
+  const borrowIncentiveValues = getIncentiveValues('borrow');
+  
+  const totalSupplyApy = calculateTotalSupplyApy(pool.supplyApy, supplyIncentiveValues.apy);
+  const totalSupplyApr = calculateTotalSupplyApr(pool.supplyApy, supplyIncentiveValues.apr);
+  const totalBorrowApy = calculateTotalBorrowApy(pool.borrowApy, borrowIncentiveValues.apy);
+  const totalBorrowApr = calculateTotalBorrowApr(pool.borrowApy, borrowIncentiveValues.apr);
   
   const displaySupplyTotal = isApy ? totalSupplyApy : totalSupplyApr;
   const displayBorrowTotal = isApy ? totalBorrowApy : totalBorrowApr;
   
-  const getDisplayIncentive = (type: 'supply' | 'borrow') => {
-    const incentive = isApy ? getIncentiveValues(type).apy : getIncentiveValues(type).apr;
+  // Get display incentive values using cached results
+  const displaySupplyIncentive = (() => {
+    const incentive = isApy ? supplyIncentiveValues.apy : supplyIncentiveValues.apr;
     return incentive === 0 || isNaN(incentive) || incentive < 0.01 ? null : incentive;
-  };
-
-  const displaySupplyIncentive = getDisplayIncentive('supply');
-  const displayBorrowIncentive = getDisplayIncentive('borrow');
+  })();
+  const displayBorrowIncentive = (() => {
+    const incentive = isApy ? borrowIncentiveValues.apy : borrowIncentiveValues.apr;
+    return incentive === 0 || isNaN(incentive) || incentive < 0.01 ? null : incentive;
+  })();
 
   const spread = isApy
     ? calculateSpreadApy(totalSupplyApy, totalBorrowApy)
@@ -113,7 +120,7 @@ const MobilePoolCard = ({ pool, isApy, onIncentiveClick }: MobilePoolCardProps) 
           </p>
           {displaySupplyIncentive !== null && (
             <div className="flex items-center gap-1 text-[10px]">
-              <span className="text-blue-600">{formatPercent(pool.supplyApy ?? null)}</span>
+              <span className="text-blue-600">{formatPercent(isApy ? (pool.supplyApy ?? null) : (pool.supplyApy !== null && pool.supplyApy !== undefined ? apyToApr(pool.supplyApy) : null))}</span>
               <span className="text-gray-400">+</span>
               <button
                 onClick={(e) => {
@@ -137,7 +144,7 @@ const MobilePoolCard = ({ pool, isApy, onIncentiveClick }: MobilePoolCardProps) 
           </p>
           {displayBorrowIncentive !== null && (
             <div className="flex items-center gap-1 text-[10px]">
-              <span className="text-blue-600">{formatPercent(pool.borrowApy ?? null)}</span>
+              <span className="text-blue-600">{formatPercent(isApy ? (pool.borrowApy ?? null) : (pool.borrowApy !== null && pool.borrowApy !== undefined ? apyToApr(pool.borrowApy) : null))}</span>
               <span className="text-gray-400">-</span>
               <button
                 onClick={(e) => {

@@ -8,7 +8,6 @@ import {
 } from "@/components/ui/tooltip";
 
 interface HeaderProps {
-  isLoading: boolean;
   lastUpdated?: string;
 }
 

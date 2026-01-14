@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, X, ChevronUp } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -83,6 +83,12 @@ const FilterBar = ({
   const [showMarketsExpanded, setShowMarketsExpanded] = useState(false);
   const [searchPlaceholder, setSearchPlaceholder] = useState('Search token');
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const debouncedUpdateRef = useRef<(() => void) | null>(null);
+
+  // Stable handler function that reads from ref - never changes, so can be used for addEventListener/removeEventListener
+  const stableResizeHandler = useCallback(() => {
+    debouncedUpdateRef.current?.();
+  }, []);
 
   const toggleMarket = (marketName: string) => {
     if (selectedMarkets.includes(marketName)) {
@@ -167,7 +173,7 @@ const FilterBar = ({
       setSearchPlaceholder(prev => prev !== newPlaceholder ? newPlaceholder : prev);
     };
 
-    // Debounced update function
+    // Debounced update function - stored in ref so stable handler can call it
     const debouncedUpdate = () => {
       if (timeoutId) clearTimeout(timeoutId);
       timeoutId = setTimeout(() => {
@@ -175,26 +181,29 @@ const FilterBar = ({
         rafId = requestAnimationFrame(updatePlaceholder);
       }, 100); // 100ms debounce
     };
+    
+    // Store handler in ref so stableResizeHandler can call the latest version
+    debouncedUpdateRef.current = debouncedUpdate;
 
     // Initial update after DOM is ready
     const initialRafId = requestAnimationFrame(() => {
       requestAnimationFrame(updatePlaceholder);
     });
     
-    const resizeObserver = new ResizeObserver(debouncedUpdate);
+    const resizeObserver = new ResizeObserver(stableResizeHandler);
     
     if (searchInputRef.current) {
       resizeObserver.observe(searchInputRef.current);
     }
     
-    window.addEventListener('resize', debouncedUpdate);
+    window.addEventListener('resize', stableResizeHandler);
     
     return () => {
       if (initialRafId) cancelAnimationFrame(initialRafId);
       if (rafId) cancelAnimationFrame(rafId);
       if (timeoutId) clearTimeout(timeoutId);
       resizeObserver.disconnect();
-      window.removeEventListener('resize', debouncedUpdate);
+      window.removeEventListener('resize', stableResizeHandler);
     };
   }, [searchQuery]);
 
