@@ -1,7 +1,7 @@
 import { useRef, useEffect, useState } from 'react';
 import { ExternalLink } from 'lucide-react';
-import { PoolWithSpread } from '@/types/aave';
-import { formatPercent, convertAprToApy, sumAprSources, sumApyFromAprSources } from '@/lib/formatters';
+import { PoolWithSpread, MeritIncentive } from '@/types/aave';
+import { formatPercent, convertAprToApy } from '@/lib/formatters';
 
 interface IncentiveTooltipProps {
   pool: PoolWithSpread;
@@ -17,6 +17,9 @@ interface IncentiveSource {
   value: number;
   color: string;
   bgColor: string;
+  link?: string;
+  dateRange?: string;
+  requiredTokens?: string[];
 }
 
 interface MerklCampaign {
@@ -32,40 +35,65 @@ const IncentiveTooltip = ({ pool, type, position, triggerCenterX, onClose, isApy
   const tooltipRef = useRef<HTMLDivElement>(null);
   const [arrowLeft, setArrowLeft] = useState(0);
 
+  // Format date for display (e.g., "Jan 7, 2026")
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric' 
+    });
+  };
+
   // Get detailed incentive sources
   const getIncentiveSources = (): IncentiveSource[] => {
     const sources: IncentiveSource[] = [];
 
-    const addSource = (name: string, value: number, color: string, bgColor: string) => {
-      if (value > 0) {
-        sources.push({ name, value, color, bgColor });
+    // Protocol incentives (number array)
+    const protocolIncentives = type === 'supply' ? pool.supplyIncentives : pool.borrowIncentives;
+    if (protocolIncentives && Array.isArray(protocolIncentives) && protocolIncentives.length > 0) {
+      const totalProtocol = protocolIncentives.reduce((sum, apr) => {
+        if (!isNaN(apr) && apr > 0) {
+          return sum + (isApy ? convertAprToApy(apr) : apr);
+        }
+        return sum;
+      }, 0);
+      if (totalProtocol > 0) {
+        sources.push({
+          name: 'Protocol',
+          value: totalProtocol,
+          color: 'text-indigo-600',
+          bgColor: 'bg-indigo-50',
+        });
       }
-    };
+    }
 
-    const getAprValue = (aprSources?: Array<string | { apr: string }>) => (
-      isApy ? sumApyFromAprSources(aprSources) : sumAprSources(aprSources)
-    );
-
-    const protocolAprs = type === 'supply' ? pool.supplyIncentives : pool.borrowIncentives;
-    addSource('Protocol', getAprValue(protocolAprs), 'text-indigo-600', 'bg-indigo-50');
-
-    const meritAprs = type === 'supply' ? pool.meritSupplyApr : pool.meritBorrowApr;
-    addSource('Merit', getAprValue(meritAprs), 'text-purple-600', 'bg-purple-50');
-
-    const meritSelfAprs = type === 'supply' ? pool.meritSelfSupply : pool.meritSelfBorrow;
-    addSource('Merit Self', getAprValue(meritSelfAprs), 'text-purple-700', 'bg-purple-50');
-
-    const requirementAprs = type === 'supply'
-      ? pool.meritSupplyWithBorrowRequirement
-      : pool.meritBorrowWithSupplyRequirement;
-    addSource(
-      type === 'supply' ? 'Merit (w/ Borrow Req)' : 'Merit (w/ Supply Req)',
-      getAprValue(requirementAprs),
-      'text-purple-600',
-      'bg-purple-50',
-    );
-
-    // Merkl incentives are now handled separately with detailed breakdowns
+    // Merit incentives (MeritIncentive array)
+    const meritIncentives: MeritIncentive[] | undefined = type === 'supply' ? pool.meritSupplys : pool.meritBorrows;
+    if (meritIncentives && Array.isArray(meritIncentives)) {
+      meritIncentives.forEach((merit, index) => {
+        const apr = merit.apr;
+        const selfApr = merit.selfApr || 0;
+        const totalApr = (!isNaN(apr) && apr > 0 ? apr : 0) + (!isNaN(selfApr) && selfApr > 0 ? selfApr : 0);
+        
+        if (totalApr > 0) {
+          const totalValue = isApy ? convertAprToApy(totalApr) : totalApr;
+          const name = meritIncentives.length > 1 
+            ? `Merit ${index + 1}${merit.requiredBorrowTokens || merit.requiredSupplyTokens ? ' (w/ Req)' : ''}`
+            : `Merit${merit.requiredBorrowTokens || merit.requiredSupplyTokens ? ' (w/ Req)' : ''}`;
+          
+          sources.push({
+            name,
+            value: totalValue,
+            color: 'text-purple-600',
+            bgColor: 'bg-purple-50',
+            link: merit.link,
+            dateRange: `${formatDate(merit.startDate)} - ${formatDate(merit.endDate)}`,
+            requiredTokens: merit.requiredBorrowTokens || merit.requiredSupplyTokens,
+          });
+        }
+      });
+    }
 
     // Brevis incentives (percentage APR, e.g., 5 for 5%)
     const brevisApr = type === 'supply' ? pool.brevisSupplyApr : pool.brevisBorrowApr;
@@ -86,8 +114,8 @@ const IncentiveTooltip = ({ pool, type, position, triggerCenterX, onClose, isApy
   // Get Merkl campaigns with detailed breakdowns
   const getMerklCampaigns = (): MerklCampaign[] => {
     const opportunities = type === 'supply' 
-      ? pool.merklSupplyOpportunities 
-      : pool.merklBorrowOpportunities;
+      ? pool.merklSupplys 
+      : pool.merklBorrows;
     
     if (!opportunities || !Array.isArray(opportunities)) return [];
 
@@ -110,16 +138,6 @@ const IncentiveTooltip = ({ pool, type, position, triggerCenterX, onClose, isApy
     });
 
     return campaigns;
-  };
-
-  // Format date for display (e.g., "Jan 7, 2026")
-  const formatDate = (dateString: string): string => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric', 
-      year: 'numeric' 
-    });
   };
 
   // Format date range
@@ -184,16 +202,40 @@ const IncentiveTooltip = ({ pool, type, position, triggerCenterX, onClose, isApy
                 {incentiveSources.map((source, index) => (
                   <div 
                     key={`${source.name}-${index}`}
-                    className={`flex items-center justify-between p-2 rounded-md ${source.bgColor}`}
+                    className={`p-2 rounded-md ${source.bgColor} border border-gray-100`}
                   >
-                    <div className="flex items-center gap-2">
-                      <span className={`text-xs font-medium ${source.color}`}>
-                        {source.name}
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-2">
+                        <span className={`text-xs font-medium ${source.color}`}>
+                          {source.name}
+                        </span>
+                        {source.link && (
+                          <a
+                            href={source.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className={`${source.color} hover:opacity-80 transition-opacity`}
+                            title="View details"
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        )}
+                      </div>
+                      <span className={`text-xs font-bold ${source.color}`}>
+                        {formatPercent(source.value)}
                       </span>
                     </div>
-                    <span className={`text-xs font-bold ${source.color}`}>
-                      {formatPercent(source.value)}
-                    </span>
+                    {source.dateRange && (
+                      <p className="text-xs text-gray-600 mt-1">
+                        {source.dateRange}
+                      </p>
+                    )}
+                    {source.requiredTokens && source.requiredTokens.length > 0 && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Requires: {source.requiredTokens.join(', ')}
+                      </p>
+                    )}
                   </div>
                 ))}
 
