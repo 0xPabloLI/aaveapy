@@ -21,8 +21,8 @@ const Index = () => {
 
   const queryClient = useQueryClient();
 
-  // Fetch data - 不传 sort 参数，所有排序都在前端完成
-  // 这样表格的 total/native/incentive 模式才能正确工作
+  // Fetch data - no sort params, all sorting done on frontend
+  // This allows the table's total/native/incentive mode to work correctly
   const { data: poolsData, isLoading, error, refetch } = useAaveMarkets();
   const { data: stats, refetch: refetchStats } = useAaveMarketStats();
   const { data: marketsList, refetch: refetchMarketsList } = useAaveMarketsList();
@@ -115,7 +115,6 @@ const Index = () => {
         <div className="relative z-10 container mx-auto px-3 md:px-4 py-4 md:py-8 space-y-4 md:space-y-8">
           {/* Header */}
           <Header
-            isLoading={isLoading}
             lastUpdated={poolsData?.lastUpdated}
           />
 

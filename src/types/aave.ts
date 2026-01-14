@@ -1,31 +1,31 @@
 // Merit incentive data structure
 export interface MeritIncentive {
-  apr: number;                         // APR 百分比值（如 5.2 表示 5.2%）
-  selfApr?: number;                    // Self APR 百分比值（如果有对应的 self- 前缀的 key）
-  link: string;                        // Merit 活动详情页链接
-  startDate: string;                   // 活动开始日期
-  endDate: string;                     // 活动结束日期
-  requiredBorrowTokens?: string[];      // 需要 borrow 的 token 列表（用于 supply with borrow requirement），'multiple' 表示任意 token
-  requiredSupplyTokens?: string[];      // 需要 supply 的 token 列表（用于 borrow with supply requirement），'multiple' 表示任意 token
+  apr: number;                         // APR percentage value (e.g., 5.2 means 5.2%)
+  selfApr?: number;                    // Self APR percentage value (if there's a corresponding self- prefixed key)
+  link: string;                        // Merit campaign detail page link
+  startDate: string;                   // Campaign start date
+  endDate: string;                     // Campaign end date
+  requiredBorrowTokens?: string[];      // List of tokens that need to be borrowed (for supply with borrow requirement), 'multiple' means any token
+  requiredSupplyTokens?: string[];      // List of tokens that need to be supplied (for borrow with supply requirement), 'multiple' means any token
 }
 
 // Merkl opportunity data structure
 export interface MerklCampaignBreakdown {
-  campaignApr: number;                 // 活动 APR（百分比数值）
-  campaignStartedAt: string;           // 活动开始时间（ISO 8601）
-  campaignEndedAt: string;             // 活动结束时间（ISO 8601）
-  campaignId: string;                 // 活动 ID
-  pointsPerThousandUsd?: number;       // Tydro 协议的 points/1000USD 值（可选）
-  dailyPoints?: number;                // Tydro 协议的每日 points（可选）
+  campaignApr: number;                 // Campaign APR (percentage value)
+  campaignStartedAt: string;           // Campaign start time (ISO 8601)
+  campaignEndedAt: string;             // Campaign end time (ISO 8601)
+  campaignId: string;                 // Campaign ID
+  pointsPerThousandUsd?: number;       // Tydro protocol points/1000USD value (optional)
+  dailyPoints?: number;                // Tydro protocol daily points (optional)
 }
 
 export interface MerklOpportunityGroup {
-  opportunityLink: string;            // Opportunity 详情页链接
-  breakdowns: MerklCampaignBreakdown[]; // 该 opportunity 的所有 breakdowns
+  opportunityLink: string;            // Opportunity detail page link
+  breakdowns: MerklCampaignBreakdown[]; // All breakdowns for this opportunity
 }
 
 export interface PoolWithSpread {
-  // 基础信息
+  // Basic information
   marketName: string;
   chainName: string;
   chainId: number;
@@ -35,24 +35,24 @@ export interface PoolWithSpread {
   aTokenAddress?: string | null;
   vTokenAddress?: string | null;
   
-  // 基础 APY（百分比数值，如 2.07 表示 2.07%）
+  // Base APY (percentage value, e.g., 2.07 means 2.07%)
   supplyApy?: number;
   borrowApy?: number;
   
-  // 协议激励（来自 Aave 协议，百分比数值数组）
+  // Protocol incentives (from Aave protocol, array of percentage values)
   supplyIncentives?: number[];
   borrowIncentives?: number[];
   
-  // Merit APR 激励（对象数组，包含完整的活动信息）
+  // Merit APR incentives (array of objects containing complete campaign information)
   meritSupplys?: MeritIncentive[];
   meritBorrows?: MeritIncentive[];
   
-  // Merkl 详细机会数据
+  // Merkl detailed opportunity data
   merklSupplys?: MerklOpportunityGroup[];
   merklBorrows?: MerklOpportunityGroup[];
   merklHolds?: MerklOpportunityGroup[];
   
-  // Brevis APR 激励（百分比数值）
+  // Brevis APR incentives (percentage value)
   brevisSupplyApr?: number;
   brevisBorrowApr?: number;
 }

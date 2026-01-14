@@ -287,7 +287,7 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
                     {(() => {
                       const incentiveValue = isApy ? pool.supplyIncentiveApy : pool.supplyIncentiveApr;
                       if (incentiveValue === null || isNaN(incentiveValue) || incentiveValue < 0.01) {
-                        return <span className="tabular-nums">{formatPercent(incentiveValue)}</span>;
+                        return <span className="tabular-nums">-</span>;
                       }
                       return (
                         <button
@@ -379,7 +379,7 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
                     {(() => {
                       const incentiveValue = isApy ? pool.supplyIncentiveApy : pool.supplyIncentiveApr;
                       if (incentiveValue === null || isNaN(incentiveValue) || incentiveValue < 0.01) {
-                        return <span className="tabular-nums">{formatPercent(incentiveValue)}</span>;
+                        return <span className="tabular-nums">-</span>;
                       }
                       return (
                         <button
@@ -471,7 +471,7 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
                     {(() => {
                       const incentiveValue = isApy ? pool.supplyIncentiveApy : pool.supplyIncentiveApr;
                       if (incentiveValue === null || isNaN(incentiveValue) || incentiveValue < 0.01) {
-                        return <span className="tabular-nums">{formatPercent(incentiveValue)}</span>;
+                        return <span className="tabular-nums">-</span>;
                       }
                       return (
                         <button
