@@ -4,13 +4,6 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { TokenCategory, MarketListItem, ETHEREUM_MARKET_NAMES } from '@/types/aave';
 import { getChainIconSrc } from '@/lib/chainIcons';
-import { IncentiveIcon } from '@/components/IncentiveIcon';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 
 interface FilterBarProps {
   searchQuery: string;
@@ -262,27 +255,6 @@ const FilterBar = ({
             className="data-[state=checked]:bg-primary scale-[0.65] md:scale-75"
           />
           <span className={isApy ? 'text-foreground font-medium' : ''}>APY</span>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  className="inline-flex items-center justify-center p-1 rounded hover:bg-amber-50 transition-colors cursor-pointer"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <IncentiveIcon width={14} height={14} />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="max-w-xs">
-                <div className="space-y-1.5">
-                  <p className="text-xs font-semibold text-amber-600">Incentive {isApy ? 'APY' : 'APR'}</p>
-                  <p className="text-xs text-muted-foreground">
-                    Temporary rewards from protocols (Protocol, Merit, Merkl, Brevis) that boost your {isApy ? 'APY' : 'APR'}.
-                    Click on incentive values in the table to see detailed breakdowns.
-                  </p>
-                </div>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
         </div>
       </div>
 

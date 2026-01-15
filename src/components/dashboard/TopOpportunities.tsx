@@ -237,23 +237,7 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
           </motion.div>
           <div className="flex-1">
             <h3 className="font-bold">Top Stable {isApy ? 'APY' : 'APR'}</h3>
-            <div className="flex items-center gap-1.5">
-              <p className="text-xs text-muted-foreground">Native {isApy ? 'APY' : 'APR'} + Incentive {isApy ? 'APY' : 'APR'}</p>
-              {topStable.length > 0 && topStable[0] && (() => {
-                const firstPool = topStable[0];
-                const incentiveValue = isApy ? firstPool.supplyIncentiveApy : firstPool.supplyIncentiveApr;
-                if (incentiveValue === null || isNaN(incentiveValue) || incentiveValue < 0.01) return null;
-                return (
-                  <button
-                    onClick={(e) => handleIncentiveClick(e, firstPool, 'supply', incentiveValue)}
-                    className="inline-flex items-center justify-center p-0.5 rounded hover:bg-amber-50 transition-colors cursor-pointer"
-                    title="View incentive details"
-                  >
-                    <IncentiveIcon width={14} height={14} />
-                  </button>
-                );
-              })()}
-            </div>
+            <p className="text-xs text-muted-foreground">Native {isApy ? 'APY' : 'APR'} + Incentive {isApy ? 'APY' : 'APR'}</p>
           </div>
         </motion.div>
         <div className="space-y-3">
@@ -329,23 +313,7 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
           </motion.div>
           <div className="flex-1">
             <h3 className="font-bold">Top ETH {isApy ? 'APY' : 'APR'}</h3>
-            <div className="flex items-center gap-1.5">
-              <p className="text-xs text-muted-foreground">Native {isApy ? 'APY' : 'APR'} + Incentive {isApy ? 'APY' : 'APR'}</p>
-              {topEth.length > 0 && topEth[0] && (() => {
-                const firstPool = topEth[0];
-                const incentiveValue = isApy ? firstPool.supplyIncentiveApy : firstPool.supplyIncentiveApr;
-                if (incentiveValue === null || isNaN(incentiveValue) || incentiveValue < 0.01) return null;
-                return (
-                  <button
-                    onClick={(e) => handleIncentiveClick(e, firstPool, 'supply', incentiveValue)}
-                    className="inline-flex items-center justify-center p-0.5 rounded hover:bg-amber-50 transition-colors cursor-pointer"
-                    title="View incentive details"
-                  >
-                    <IncentiveIcon width={14} height={14} />
-                  </button>
-                );
-              })()}
-            </div>
+            <p className="text-xs text-muted-foreground">Native {isApy ? 'APY' : 'APR'} + Incentive {isApy ? 'APY' : 'APR'}</p>
           </div>
         </motion.div>
         <div className="space-y-3">
@@ -421,23 +389,7 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
           </motion.div>
           <div className="flex-1">
             <h3 className="font-bold">Top BTC {isApy ? 'APY' : 'APR'}</h3>
-            <div className="flex items-center gap-1.5">
-              <p className="text-xs text-muted-foreground">Native {isApy ? 'APY' : 'APR'} + Incentive {isApy ? 'APY' : 'APR'}</p>
-              {topBtc.length > 0 && topBtc[0] && (() => {
-                const firstPool = topBtc[0];
-                const incentiveValue = isApy ? firstPool.supplyIncentiveApy : firstPool.supplyIncentiveApr;
-                if (incentiveValue === null || isNaN(incentiveValue) || incentiveValue < 0.01) return null;
-                return (
-                  <button
-                    onClick={(e) => handleIncentiveClick(e, firstPool, 'supply', incentiveValue)}
-                    className="inline-flex items-center justify-center p-0.5 rounded hover:bg-amber-50 transition-colors cursor-pointer"
-                    title="View incentive details"
-                  >
-                    <IncentiveIcon width={14} height={14} />
-                  </button>
-                );
-              })()}
-            </div>
+            <p className="text-xs text-muted-foreground">Native {isApy ? 'APY' : 'APR'} + Incentive {isApy ? 'APY' : 'APR'}</p>
           </div>
         </motion.div>
         <div className="space-y-3">
