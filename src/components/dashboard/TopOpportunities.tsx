@@ -17,6 +17,8 @@ import {
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
 import { IncentiveIcon } from '@/components/IncentiveIcon';
 import IncentiveTooltip from './IncentiveTooltip';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { getChainIconSrc } from '@/lib/chainIcons';
 
 interface TopOpportunitiesProps {
   pools: PoolWithSpread[];
@@ -24,6 +26,7 @@ interface TopOpportunitiesProps {
 }
 
 const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
+  const isMobile = useIsMobile();
   const [tooltipState, setTooltipState] = useState<{
     pool: PoolWithSpread;
     type: 'supply' | 'borrow';
@@ -229,9 +232,13 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
   };
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
+    <div className={`grid gap-3 md:gap-6 ${
+      isMobile 
+        ? 'grid-cols-2' // Mobile: 2 columns - Stable and Leverage span full width, ETH/BTC side by side
+        : 'grid-cols-2 lg:grid-cols-4' // Desktop: 2 columns on medium, 4 on large
+    }`}>
       {/* Top Stable APY */}
-      <div className="glass-card rounded-xl p-5">
+      <div className={`glass-card rounded-xl p-5 ${isMobile ? 'col-span-1' : ''}`}>
         <motion.div 
           className="flex items-center gap-2 mb-4"
           initial="hidden"
@@ -263,43 +270,46 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
                 className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-background to-success/5 border border-border hover:border-success/50 transition-all group cursor-pointer"
                 onClick={() => handleCardClick(pool)}
               >
-                <div className="flex items-center gap-3 min-w-0">
-                  <span className="text-lg font-bold text-secondary w-5 shrink-0 text-center">
+                <div className="flex items-start gap-2 min-w-0 flex-1">
+                  <span className={`font-bold text-secondary shrink-0 text-center ${isMobile ? 'text-xs w-3' : 'text-lg w-5'} pt-0.5`}>
                     {i + 1}
                   </span>
-                  <div className="min-w-0 w-16">
-                    <p className="font-semibold text-foreground truncate">{pool.tokenSymbol}</p>
-                    <p className="text-xs text-secondary truncate">{getMarketDisplayName(pool)}</p>
+                  <div className={`min-w-0 flex-1 ${isMobile ? 'min-w-[70px] max-w-[80px]' : 'w-16'}`}>
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <p className={`font-semibold text-foreground truncate ${isMobile ? 'text-sm' : ''}`}>{pool.tokenSymbol}</p>
+                      {(() => {
+                        const chainIconSrc = getChainIconSrc(pool.chainName);
+                        return chainIconSrc ? (
+                          <img src={chainIconSrc} alt={pool.chainName} className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'} shrink-0`} />
+                        ) : null;
+                      })()}
+                    </div>
+                    {(() => {
+                      const incentiveValue = isApy ? pool.supplyIncentiveApy : pool.supplyIncentiveApr;
+                      const hasIncentive = incentiveValue !== null && !isNaN(incentiveValue) && incentiveValue >= 0.01;
+                      if (!hasIncentive) {
+                        return null;
+                      }
+                      return (
+                        <div className="flex items-center gap-0.5 text-[10px] text-secondary flex-wrap">
+                          <span className="tabular-nums text-blue-600">{formatPercent(pool.supplyApy ?? null)}</span>
+                          <span>+</span>
+                          <button
+                            onClick={(e) => handleIncentiveClick(e, pool, 'supply', incentiveValue)}
+                            className="inline-flex items-center gap-0.5 px-0.5 py-0 rounded bg-amber-50 text-amber-600 font-semibold hover:bg-amber-100 transition-colors cursor-pointer tabular-nums"
+                          >
+                            <IncentiveIcon width={9} height={9} />
+                            <span>{formatPercent(incentiveValue)}</span>
+                          </button>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
-                <div className="flex flex-col items-center gap-0.5 shrink-0 ml-auto">
-                  <span className={`${getApyColorClass(isApy ? pool.totalSupplyApy : pool.totalSupplyApr)} font-bold text-base tabular-nums text-right w-full`}>
+                <div className="flex flex-col items-end gap-0 shrink-0 ml-2">
+                  <span className={`${getApyColorClass(isApy ? pool.totalSupplyApy : pool.totalSupplyApr)} font-bold tabular-nums text-right ${isMobile ? 'text-sm whitespace-nowrap' : 'text-base'}`}>
                     {formatPercent(isApy ? pool.totalSupplyApy : pool.totalSupplyApr)}
                   </span>
-                  {(() => {
-                    const incentiveValue = isApy ? pool.supplyIncentiveApy : pool.supplyIncentiveApr;
-                    const hasIncentive = incentiveValue !== null && !isNaN(incentiveValue) && incentiveValue >= 0.01;
-                    if (!hasIncentive) {
-                      return (
-                        <span className="text-[10px] text-secondary tabular-nums">
-                          {formatPercent(pool.supplyApy ?? null)}
-                        </span>
-                      );
-                    }
-                    return (
-                      <span className="text-[10px] text-secondary flex items-center gap-0.5 justify-end w-full">
-                        <span className="tabular-nums">{formatPercent(pool.supplyApy ?? null)}</span>
-                        <span>+</span>
-                        <button
-                          onClick={(e) => handleIncentiveClick(e, pool, 'supply', incentiveValue)}
-                          className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded bg-amber-50 text-amber-600 font-semibold hover:bg-amber-100 transition-colors cursor-pointer tabular-nums"
-                        >
-                          <IncentiveIcon width={10} height={10} />
-                          {formatPercent(incentiveValue)}
-                        </button>
-                      </span>
-                    );
-                  })()}
                 </div>
               </motion.div>
             ))
@@ -311,8 +321,87 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
         </div>
       </div>
 
+      {/* Leverage Opportunities */}
+      <div className={`glass-card rounded-xl p-5 ${isMobile ? 'col-span-1' : ''}`}>
+        <motion.div 
+          className="flex items-center gap-2 mb-4"
+          initial="hidden"
+          animate="visible"
+          variants={headerVariants}
+        >
+          <motion.div 
+            className="p-2 rounded-lg bg-warning/10"
+            variants={iconVariants}
+            initial="hidden"
+            animate={["visible", "pulse"]}
+          >
+            <Zap className="w-5 h-5 text-warning" />
+          </motion.div>
+          <div>
+            <h3 className="font-bold">Leverage Opportunities</h3>
+            <p className="text-xs text-muted-foreground">
+              Supply {isApy ? 'APY' : 'APR'} - Borrow {isApy ? 'APY' : 'APR'}
+            </p>
+          </div>
+        </motion.div>
+        {topLooping.length > 0 ? (
+          <div className="space-y-3">
+            {topLooping.map((pool, i) => (
+              <motion.div 
+                key={`loop-${pool.marketName}-${pool.tokenSymbol}`}
+                custom={i}
+                initial="hidden"
+                animate="visible"
+                variants={itemVariants}
+                className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-background to-warning/5 border border-border hover:border-warning/50 transition-all group cursor-pointer"
+                onClick={() => handleCardClick(pool)}
+              >
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <span className={`font-bold text-warning shrink-0 text-center ${isMobile ? 'text-xs w-3' : 'text-lg w-5'}`}>
+                    {i + 1}
+                  </span>
+                  <div className={`min-w-0 flex-1 ${isMobile ? 'min-w-[70px] max-w-[80px]' : 'w-16'}`}>
+                    <div className="flex items-center gap-1.5">
+                      <p className={`font-semibold text-foreground truncate ${isMobile ? 'text-sm' : ''}`}>{pool.tokenSymbol}</p>
+                      {(() => {
+                        const chainIconSrc = getChainIconSrc(pool.chainName);
+                        return chainIconSrc ? (
+                          <img src={chainIconSrc} alt={pool.chainName} className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'} shrink-0`} />
+                        ) : null;
+                      })()}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex flex-col items-center gap-0.5 shrink-0 ml-1">
+                  <span className={`${getApyColorClass(isApy ? pool.apySpread : pool.aprSpread)} font-bold tabular-nums text-right ${isMobile ? 'text-sm whitespace-nowrap' : 'text-base'}`}>
+                    {formatSpread(isApy ? pool.apySpread : pool.aprSpread)}
+                  </span>
+                  {!isMobile && (
+                    <span className="text-[10px] text-secondary tabular-nums text-right w-full">
+                      {formatPercent(isApy ? pool.totalSupplyApy : pool.totalSupplyApr)} -{' '}
+                      {(() => {
+                        const borrowValue = isApy ? pool.totalBorrowApy : pool.totalBorrowApr;
+                        if (borrowValue === null) return '-';
+                        return borrowValue < 0
+                          ? `(${formatPercent(borrowValue)})`
+                          : formatPercent(borrowValue);
+                      })()}
+                    </span>
+                  )}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8 text-muted-foreground">
+            <p>No looping opportunities found</p>
+            <p className="text-xs mt-1">Supply APY &lt;= Borrow APY for all tokens</p>
+          </div>
+        )}
+      </div>
+
       {/* Top ETH APY */}
-      <div className="glass-card rounded-xl p-5">
+      <div className={`glass-card rounded-xl p-5 ${isMobile ? 'col-span-1' : ''}`}>
         <motion.div 
           className="flex items-center gap-2 mb-4"
           initial="hidden"
@@ -344,43 +433,46 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
                 className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-background to-success/5 border border-border hover:border-success/50 transition-all group cursor-pointer"
                 onClick={() => handleCardClick(pool)}
               >
-                <div className="flex items-center gap-3 min-w-0">
-                  <span className="text-lg font-bold text-secondary w-5 shrink-0 text-center">
+                <div className="flex items-start gap-2 min-w-0 flex-1">
+                  <span className={`font-bold text-secondary shrink-0 text-center ${isMobile ? 'text-xs w-3' : 'text-lg w-5'} pt-0.5`}>
                     {i + 1}
                   </span>
-                  <div className="min-w-0 w-16">
-                    <p className="font-semibold text-foreground truncate">{pool.tokenSymbol}</p>
-                    <p className="text-xs text-secondary truncate">{getMarketDisplayName(pool)}</p>
+                  <div className={`min-w-0 flex-1 ${isMobile ? 'min-w-[70px] max-w-[80px]' : 'w-16'}`}>
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <p className={`font-semibold text-foreground truncate ${isMobile ? 'text-sm' : ''}`}>{pool.tokenSymbol}</p>
+                      {(() => {
+                        const chainIconSrc = getChainIconSrc(pool.chainName);
+                        return chainIconSrc ? (
+                          <img src={chainIconSrc} alt={pool.chainName} className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'} shrink-0`} />
+                        ) : null;
+                      })()}
+                    </div>
+                    {(() => {
+                      const incentiveValue = isApy ? pool.supplyIncentiveApy : pool.supplyIncentiveApr;
+                      const hasIncentive = incentiveValue !== null && !isNaN(incentiveValue) && incentiveValue >= 0.01;
+                      if (!hasIncentive) {
+                        return null;
+                      }
+                      return (
+                        <div className="flex items-center gap-0.5 text-[10px] text-secondary flex-wrap">
+                          <span className="tabular-nums text-blue-600">{formatPercent(pool.supplyApy ?? null)}</span>
+                          <span>+</span>
+                          <button
+                            onClick={(e) => handleIncentiveClick(e, pool, 'supply', incentiveValue)}
+                            className="inline-flex items-center gap-0.5 px-0.5 py-0 rounded bg-amber-50 text-amber-600 font-semibold hover:bg-amber-100 transition-colors cursor-pointer tabular-nums"
+                          >
+                            <IncentiveIcon width={9} height={9} />
+                            <span>{formatPercent(incentiveValue)}</span>
+                          </button>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
-                <div className="flex flex-col items-center gap-0.5 shrink-0 ml-auto">
-                  <span className={`${getApyColorClass(isApy ? pool.totalSupplyApy : pool.totalSupplyApr)} font-bold text-base tabular-nums text-right w-full`}>
+                <div className="flex flex-col items-end gap-0 shrink-0 ml-2">
+                  <span className={`${getApyColorClass(isApy ? pool.totalSupplyApy : pool.totalSupplyApr)} font-bold tabular-nums text-right ${isMobile ? 'text-sm whitespace-nowrap' : 'text-base'}`}>
                     {formatPercent(isApy ? pool.totalSupplyApy : pool.totalSupplyApr)}
                   </span>
-                  {(() => {
-                    const incentiveValue = isApy ? pool.supplyIncentiveApy : pool.supplyIncentiveApr;
-                    const hasIncentive = incentiveValue !== null && !isNaN(incentiveValue) && incentiveValue >= 0.01;
-                    if (!hasIncentive) {
-                      return (
-                        <span className="text-[10px] text-secondary tabular-nums">
-                          {formatPercent(pool.supplyApy ?? null)}
-                        </span>
-                      );
-                    }
-                    return (
-                      <span className="text-[10px] text-secondary flex items-center gap-0.5 justify-end w-full">
-                        <span className="tabular-nums">{formatPercent(pool.supplyApy ?? null)}</span>
-                        <span>+</span>
-                        <button
-                          onClick={(e) => handleIncentiveClick(e, pool, 'supply', incentiveValue)}
-                          className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded bg-amber-50 text-amber-600 font-semibold hover:bg-amber-100 transition-colors cursor-pointer tabular-nums"
-                        >
-                          <IncentiveIcon width={10} height={10} />
-                          {formatPercent(incentiveValue)}
-                        </button>
-                      </span>
-                    );
-                  })()}
                 </div>
               </motion.div>
             ))
@@ -393,7 +485,7 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
       </div>
 
       {/* Top BTC APY */}
-      <div className="glass-card rounded-xl p-5">
+      <div className={`glass-card rounded-xl p-5 ${isMobile ? 'col-span-1' : ''}`}>
         <motion.div 
           className="flex items-center gap-2 mb-4"
           initial="hidden"
@@ -425,43 +517,46 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
                 className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-background to-success/5 border border-border hover:border-success/50 transition-all group cursor-pointer"
                 onClick={() => handleCardClick(pool)}
               >
-                <div className="flex items-center gap-3 min-w-0">
-                  <span className="text-lg font-bold text-secondary w-5 shrink-0 text-center">
+                <div className="flex items-start gap-2 min-w-0 flex-1">
+                  <span className={`font-bold text-secondary shrink-0 text-center ${isMobile ? 'text-xs w-3' : 'text-lg w-5'} pt-0.5`}>
                     {i + 1}
                   </span>
-                  <div className="min-w-0 w-16">
-                    <p className="font-semibold text-foreground truncate">{pool.tokenSymbol}</p>
-                    <p className="text-xs text-secondary truncate">{getMarketDisplayName(pool)}</p>
+                  <div className={`min-w-0 flex-1 ${isMobile ? 'min-w-[70px] max-w-[80px]' : 'w-16'}`}>
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <p className={`font-semibold text-foreground truncate ${isMobile ? 'text-sm' : ''}`}>{pool.tokenSymbol}</p>
+                      {(() => {
+                        const chainIconSrc = getChainIconSrc(pool.chainName);
+                        return chainIconSrc ? (
+                          <img src={chainIconSrc} alt={pool.chainName} className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'} shrink-0`} />
+                        ) : null;
+                      })()}
+                    </div>
+                    {(() => {
+                      const incentiveValue = isApy ? pool.supplyIncentiveApy : pool.supplyIncentiveApr;
+                      const hasIncentive = incentiveValue !== null && !isNaN(incentiveValue) && incentiveValue >= 0.01;
+                      if (!hasIncentive) {
+                        return null;
+                      }
+                      return (
+                        <div className="flex items-center gap-0.5 text-[10px] text-secondary flex-wrap">
+                          <span className="tabular-nums text-blue-600">{formatPercent(pool.supplyApy ?? null)}</span>
+                          <span>+</span>
+                          <button
+                            onClick={(e) => handleIncentiveClick(e, pool, 'supply', incentiveValue)}
+                            className="inline-flex items-center gap-0.5 px-0.5 py-0 rounded bg-amber-50 text-amber-600 font-semibold hover:bg-amber-100 transition-colors cursor-pointer tabular-nums"
+                          >
+                            <IncentiveIcon width={9} height={9} />
+                            <span>{formatPercent(incentiveValue)}</span>
+                          </button>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
-                <div className="flex flex-col items-center gap-0.5 shrink-0 ml-auto">
-                  <span className={`${getApyColorClass(isApy ? pool.totalSupplyApy : pool.totalSupplyApr)} font-bold text-base tabular-nums text-right w-full`}>
+                <div className="flex flex-col items-end gap-0 shrink-0 ml-2">
+                  <span className={`${getApyColorClass(isApy ? pool.totalSupplyApy : pool.totalSupplyApr)} font-bold tabular-nums text-right ${isMobile ? 'text-sm whitespace-nowrap' : 'text-base'}`}>
                     {formatPercent(isApy ? pool.totalSupplyApy : pool.totalSupplyApr)}
                   </span>
-                  {(() => {
-                    const incentiveValue = isApy ? pool.supplyIncentiveApy : pool.supplyIncentiveApr;
-                    const hasIncentive = incentiveValue !== null && !isNaN(incentiveValue) && incentiveValue >= 0.01;
-                    if (!hasIncentive) {
-                      return (
-                        <span className="text-[10px] text-secondary tabular-nums">
-                          {formatPercent(pool.supplyApy ?? null)}
-                        </span>
-                      );
-                    }
-                    return (
-                      <span className="text-[10px] text-secondary flex items-center gap-0.5 justify-end w-full">
-                        <span className="tabular-nums">{formatPercent(pool.supplyApy ?? null)}</span>
-                        <span>+</span>
-                        <button
-                          onClick={(e) => handleIncentiveClick(e, pool, 'supply', incentiveValue)}
-                          className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded bg-amber-50 text-amber-600 font-semibold hover:bg-amber-100 transition-colors cursor-pointer tabular-nums"
-                        >
-                          <IncentiveIcon width={10} height={10} />
-                          {formatPercent(incentiveValue)}
-                        </button>
-                      </span>
-                    );
-                  })()}
                 </div>
               </motion.div>
             ))
@@ -471,76 +566,6 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
             </div>
           )}
         </div>
-      </div>
-
-      {/* Leverage Opportunities */}
-      <div className="glass-card rounded-xl p-5">
-        <motion.div 
-          className="flex items-center gap-2 mb-4"
-          initial="hidden"
-          animate="visible"
-          variants={headerVariants}
-        >
-          <motion.div 
-            className="p-2 rounded-lg bg-warning/10"
-            variants={iconVariants}
-            initial="hidden"
-            animate={["visible", "pulse"]}
-          >
-            <Zap className="w-5 h-5 text-warning" />
-          </motion.div>
-          <div>
-            <h3 className="font-bold">Leverage Opportunities</h3>
-            <p className="text-xs text-muted-foreground">
-              Supply {isApy ? 'APY' : 'APR'} - Borrow {isApy ? 'APY' : 'APR'}
-            </p>
-          </div>
-        </motion.div>
-        {topLooping.length > 0 ? (
-          <div className="space-y-3">
-            {topLooping.map((pool, i) => (
-              <motion.div 
-                key={`loop-${pool.marketName}-${pool.tokenSymbol}`}
-                custom={i}
-              initial="hidden"
-              animate="visible"
-              variants={itemVariants}
-              className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-background to-warning/5 border border-border hover:border-warning/50 transition-all group cursor-pointer"
-              onClick={() => handleCardClick(pool)}
-            >
-                <div className="flex items-center gap-3 min-w-0">
-                  <span className="text-lg font-bold text-warning w-5 shrink-0 text-center">
-                    {i + 1}
-                  </span>
-                  <div className="min-w-0 w-16">
-                    <p className="font-semibold text-foreground truncate">{pool.tokenSymbol}</p>
-                    <p className="text-xs text-secondary truncate">{getMarketDisplayName(pool)}</p>
-                  </div>
-                </div>
-                <div className="flex flex-col items-center gap-0.5 shrink-0 ml-auto">
-                  <span className={`${getApyColorClass(isApy ? pool.apySpread : pool.aprSpread)} font-bold text-base tabular-nums text-right w-full`}>
-                    {formatSpread(isApy ? pool.apySpread : pool.aprSpread)}
-                  </span>
-                  <span className="text-[10px] text-secondary tabular-nums text-right w-full">
-                    {formatPercent(isApy ? pool.totalSupplyApy : pool.totalSupplyApr)} -{' '}
-                    {(() => {
-                      const borrowValue = isApy ? pool.totalBorrowApy : pool.totalBorrowApr;
-                      if (borrowValue === null) return '-';
-                      return borrowValue < 0
-                        ? `(${formatPercent(borrowValue)})`
-                        : formatPercent(borrowValue);
-                    })()}
-                  </span>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-8 text-muted-foreground">
-            <p>No looping opportunities found</p>
-            <p className="text-xs mt-1">Supply APY &lt;= Borrow APY for all tokens</p>
-          </div>
-        )}
       </div>
       {tooltipState && (
         <IncentiveTooltip

@@ -1,7 +1,8 @@
 import { useRef, useEffect, useState } from 'react';
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, X } from 'lucide-react';
 import { PoolWithSpread, MeritIncentive } from '@/types/aave';
 import { formatPercent, convertAprToApy } from '@/lib/formatters';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface IncentiveTooltipProps {
   pool: PoolWithSpread;
@@ -32,6 +33,7 @@ interface MerklCampaign {
 }
 
 const IncentiveTooltip = ({ pool, type, position, triggerCenterX, onClose, isApy = true }: IncentiveTooltipProps) => {
+  const isMobile = useIsMobile();
   const tooltipRef = useRef<HTMLDivElement>(null);
   const [arrowLeft, setArrowLeft] = useState(0);
 
@@ -182,6 +184,138 @@ const IncentiveTooltip = ({ pool, type, position, triggerCenterX, onClose, isApy
     });
   }, [triggerCenterX, position]);
 
+  // Mobile: bottom sheet style
+  if (isMobile) {
+    return (
+      <>
+        {/* Background overlay */}
+        <div 
+          className="fixed inset-0 z-30 bg-black/50 backdrop-blur-sm animate-in fade-in-0 duration-200" 
+          onClick={onClose}
+        />
+        {/* Bottom sheet */}
+        <div
+          ref={tooltipRef}
+          className="fixed bottom-0 left-0 right-0 z-40 bg-white rounded-t-2xl shadow-2xl animate-in slide-in-from-bottom duration-300 max-h-[80vh] overflow-y-auto"
+        >
+          {/* Handle bar */}
+          <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between z-10">
+            <h3 className="text-base font-bold text-gray-900">
+              {type === 'supply' ? 'Supply' : 'Borrow'} Incentive Details
+            </h3>
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-full hover:bg-gray-100 transition-colors"
+            >
+              <X className="w-5 h-5 text-gray-600" />
+            </button>
+          </div>
+          
+          <div className="p-4">
+            {/* Detailed sources */}
+            {hasDetails ? (
+              <div className="space-y-2 mb-3">
+                {incentiveSources.map((source, index) => (
+                  <div 
+                    key={`${source.name}-${index}`}
+                    className={`p-2 rounded-md ${source.bgColor} border border-gray-100`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-2">
+                        <span className={`text-xs font-medium ${source.color}`}>
+                          {source.name}
+                        </span>
+                        {source.link && (
+                          <a
+                            href={source.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className={`${source.color} hover:opacity-80 transition-opacity`}
+                            title="View details"
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        )}
+                      </div>
+                      <span className={`text-xs font-bold ${source.color}`}>
+                        {formatPercent(source.value)}
+                      </span>
+                    </div>
+                    {source.dateRange && (
+                      <p className="text-xs text-gray-600 mt-1">
+                        {source.dateRange}
+                      </p>
+                    )}
+                    {source.requiredTokens && source.requiredTokens.length > 0 && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Requires: {source.requiredTokens.join(', ')}
+                      </p>
+                    )}
+                  </div>
+                ))}
+
+                {/* Merkl detailed breakdowns */}
+                {merklCampaigns.length > 0 && (
+                  <div className="mt-3 pt-3 border-t border-gray-200">
+                    <div className="mb-2">
+                      <span className="text-xs font-semibold text-blue-600">Merkl Campaigns</span>
+                    </div>
+                    <div className="space-y-2">
+                      {merklCampaigns.map((campaign, index) => (
+                        <div 
+                          key={`merkl-${campaign.campaignId}-${index}`}
+                          className="p-2 rounded-md bg-blue-50 border border-blue-100"
+                        >
+                          <div className="flex items-start justify-between gap-2 mb-1">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5 mb-1">
+                                <span className="text-xs font-bold text-blue-600">
+                                  {formatPercent(isApy ? campaign.campaignApy : campaign.campaignApr)}
+                                </span>
+                                {campaign.opportunityLink && (
+                                  <a
+                                    href={campaign.opportunityLink}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="text-blue-600 hover:text-blue-800 transition-colors"
+                                    title="View opportunity"
+                                  >
+                                    <ExternalLink className="w-3 h-3" />
+                                  </a>
+                                )}
+                              </div>
+                              <p className="text-xs text-gray-600">
+                                {formatDateRange(campaign.campaignStartedAt, campaign.campaignEndedAt)}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="mb-3">
+                <p className="text-xs text-gray-500 italic">
+                  No detailed breakdown available
+                </p>
+              </div>
+            )}
+            
+            {/* Bottom disclaimer */}
+            <p className="text-xs text-gray-500 mt-3 pt-3 border-t border-gray-100">
+              Incentive {isApy ? 'APY' : 'APR'} is temporary and subject to change based on protocol emissions.
+            </p>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // Desktop: tooltip style
   return (
     <>
       {/* Background overlay */}
