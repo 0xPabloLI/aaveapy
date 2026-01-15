@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, X, ChevronUp } from 'lucide-react';
+import { Search, X, ChevronUp, ChevronDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { TokenCategory, MarketListItem, ETHEREUM_MARKET_NAMES } from '@/types/aave';
@@ -205,7 +205,7 @@ const FilterBar = ({
 
   return (
     <div className="space-y-2 md:space-y-3">
-      {/* Row 1: Token Categories + Search + APY Toggle */}
+      {/* Row 1: Token Categories + APY Toggle */}
       <div className="flex flex-wrap items-center gap-1.5 md:gap-2">
         {/* Token Categories */}
         <span className="text-xs text-muted-foreground mr-0.5 md:mr-1 hidden sm:inline">Tokens:</span>
@@ -223,8 +223,24 @@ const FilterBar = ({
           </button>
         ))}
 
-        {/* Search after Pendle */}
-        <div className="relative w-20 sm:w-24 md:w-36 lg:w-44">
+        {/* Spacer */}
+        <div className="flex-1 min-w-2 md:min-w-4" />
+
+        {/* APY/APR Toggle - Right aligned */}
+        <div className="flex items-center gap-1 md:gap-1.5 text-xs text-muted-foreground">
+          <span className={!isApy ? 'text-foreground font-medium' : ''}>APR</span>
+          <Switch
+            checked={isApy}
+            onCheckedChange={setIsApy}
+            className="data-[state=checked]:bg-primary scale-[0.65] md:scale-75"
+          />
+          <span className={isApy ? 'text-foreground font-medium' : ''}>APY</span>
+        </div>
+      </div>
+
+      {/* Row 2: Search */}
+      <div className="flex items-center gap-1.5 md:gap-2">
+        <div className="relative w-full sm:w-64 md:w-80 lg:w-96">
           <Search className="absolute left-2 md:left-2.5 top-1/2 -translate-y-1/2 w-3 md:w-3.5 h-3 md:h-3.5 text-muted-foreground" />
           <Input
             ref={searchInputRef}
@@ -241,20 +257,6 @@ const FilterBar = ({
               <X className="w-3 h-3" />
             </button>
           )}
-        </div>
-
-        {/* Spacer */}
-        <div className="flex-1 min-w-2 md:min-w-4" />
-
-        {/* APY/APR Toggle */}
-        <div className="flex items-center gap-1 md:gap-1.5 text-xs text-muted-foreground">
-          <span className={!isApy ? 'text-foreground font-medium' : ''}>APR</span>
-          <Switch
-            checked={isApy}
-            onCheckedChange={setIsApy}
-            className="data-[state=checked]:bg-primary scale-[0.65] md:scale-75"
-          />
-          <span className={isApy ? 'text-foreground font-medium' : ''}>APY</span>
         </div>
       </div>
 
@@ -303,6 +305,7 @@ const FilterBar = ({
             className="inline-flex items-center gap-1 px-1.5 md:px-2 py-1 rounded-md text-xs font-medium transition-all bg-indigo-50 text-indigo-700 hover:text-indigo-800 hover:bg-indigo-100 border border-indigo-200 border-dashed"
           >
             <span>{hiddenMarkets.length}+ more</span>
+            <ChevronDown className="w-3 h-3" />
           </button>
         )}
 

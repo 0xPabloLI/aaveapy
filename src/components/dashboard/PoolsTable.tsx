@@ -34,11 +34,12 @@ type SortMode = 'total' | 'native' | 'incentive';
 
 const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTableProps) => {
   const isMobile = useIsMobile();
-  const [activeSortColumn, setActiveSortColumn] = useState<'supply' | 'borrow'>('supply');
+  const [activeSortColumn, setActiveSortColumn] = useState<'supply' | 'borrow' | 'spread'>('supply');
   const [supplySortMode, setSupplySortMode] = useState<SortMode>('total');
   const [supplySortOrder, setSupplySortOrder] = useState<'asc' | 'desc'>('desc');
   const [borrowSortMode, setBorrowSortMode] = useState<SortMode>('total');
   const [borrowSortOrder, setBorrowSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [spreadSortOrder, setSpreadSortOrder] = useState<'asc' | 'desc'>('desc');
   const [showSupplySortMenu, setShowSupplySortMenu] = useState(false);
   const [showBorrowSortMenu, setShowBorrowSortMenu] = useState(false);
   const [tooltipState, setTooltipState] = useState<{
@@ -93,6 +94,14 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
     return pool.borrowApy ?? null;
   };
 
+  // Calculate spread for a pool
+  const getSpread = (pool: PoolWithSpread): number | null => {
+    const totalSupplyApy = isApy ? getTotalSupplyApy(pool) : getTotalSupplyApr(pool);
+    const totalBorrowApy = isApy ? getTotalBorrowApy(pool) : getTotalBorrowApr(pool);
+    if (totalSupplyApy === null || totalBorrowApy === null) return null;
+    return totalSupplyApy - totalBorrowApy;
+  };
+
   // Sort data based on active column and its sort mode
   const sortedData = [...pools].sort((a, b) => {
     let comparison = 0;
@@ -124,7 +133,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
         comparison = bTotal - aTotal;
       }
       return supplySortOrder === 'desc' ? comparison : -comparison;
-    } else {
+    } else if (activeSortColumn === 'borrow') {
       // Borrow sorting
       if (borrowSortMode === 'native') {
         const aNative = getNativeBorrowApy(a);
@@ -151,6 +160,15 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
         comparison = bTotal - aTotal;
       }
       return borrowSortOrder === 'desc' ? comparison : -comparison;
+    } else {
+      // Spread sorting
+      const aSpread = getSpread(a);
+      const bSpread = getSpread(b);
+      if (aSpread === null && bSpread === null) return 0;
+      if (aSpread === null) return 1;
+      if (bSpread === null) return -1;
+      comparison = bSpread - aSpread;
+      return spreadSortOrder === 'desc' ? comparison : -comparison;
     }
   });
 
@@ -174,6 +192,11 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
   const toggleBorrowSortOrder = () => {
     setActiveSortColumn('borrow');
     setBorrowSortOrder(borrowSortOrder === 'desc' ? 'asc' : 'desc');
+  };
+
+  const toggleSpreadSortOrder = () => {
+    setActiveSortColumn('spread');
+    setSpreadSortOrder(spreadSortOrder === 'desc' ? 'asc' : 'desc');
   };
 
   const handleIncentiveClick = (
@@ -303,7 +326,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                 }}
                 className={`flex items-center gap-1 px-2 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
                   activeSortColumn === 'borrow'
-                    ? 'bg-gray-100 border-gray-300 text-gray-700'
+                    ? 'bg-blue-50 border-blue-200 text-blue-700'
                     : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
                 }`}
               >
@@ -324,7 +347,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                         }}
                         className={`w-full px-3 py-1.5 text-left text-xs transition-colors ${
                           borrowSortMode === mode && activeSortColumn === 'borrow'
-                            ? 'text-gray-700 font-bold bg-gray-100'
+                            ? 'text-blue-600 font-bold bg-blue-50'
                             : 'text-gray-600 hover:bg-gray-50'
                         }`}
                       >
@@ -335,19 +358,36 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                 </>
               )}
             </div>
+
+            {/* Spread sort button */}
+            <button
+              onClick={() => {
+                setActiveSortColumn('spread');
+                toggleSpreadSortOrder();
+              }}
+              className={`px-2 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                activeSortColumn === 'spread'
+                  ? 'bg-amber-50 border-amber-200 text-amber-700'
+                  : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              Spread
+            </button>
             
             {/* Sort order toggle */}
             <button
               onClick={() => {
                 if (activeSortColumn === 'supply') {
                   toggleSupplySortOrder();
-                } else {
+                } else if (activeSortColumn === 'borrow') {
                   toggleBorrowSortOrder();
+                } else {
+                  toggleSpreadSortOrder();
                 }
               }}
               className="p-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition-colors"
             >
-              {(activeSortColumn === 'supply' ? supplySortOrder : borrowSortOrder) === 'desc' ? (
+              {(activeSortColumn === 'supply' ? supplySortOrder : activeSortColumn === 'borrow' ? borrowSortOrder : spreadSortOrder) === 'desc' ? (
                 <ArrowDown className="w-3.5 h-3.5 text-gray-600" />
               ) : (
                 <ArrowUp className="w-3.5 h-3.5 text-gray-600" />
@@ -560,8 +600,22 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
               </TableHead>
               <TableHead className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700 hidden md:table-cell">
                 <div className="flex items-center justify-end gap-1 min-w-[80px]">
-                  SPREAD
-                  <ArrowDown className="w-3 h-3" />
+                  <button
+                    onClick={toggleSpreadSortOrder}
+                    className="flex items-center gap-1 hover:text-gray-700 transition-colors"
+                    title="Sort by Spread"
+                  >
+                    SPREAD
+                    {activeSortColumn === 'spread' ? (
+                      spreadSortOrder === 'desc' ? (
+                        <ArrowDown className="w-3 h-3 text-amber-500" />
+                      ) : (
+                        <ArrowUp className="w-3 h-3 text-amber-500" />
+                      )
+                    ) : (
+                      <ArrowDown className="w-3 h-3 opacity-40" />
+                    )}
+                  </button>
                 </div>
               </TableHead>
             </TableRow>
