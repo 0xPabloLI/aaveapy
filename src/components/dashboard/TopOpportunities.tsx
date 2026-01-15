@@ -265,15 +265,20 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
                   <span className="text-success font-bold text-base tabular-nums text-right w-full">
                     {formatPercent(isApy ? pool.totalSupplyApy : pool.totalSupplyApr)}
                   </span>
-                  <span className="text-[10px] text-secondary flex items-center gap-0.5 justify-end w-full">
-                    <span className="tabular-nums">{formatPercent(pool.supplyApy ?? null)}</span>
-                    <span>+</span>
-                    {(() => {
-                      const incentiveValue = isApy ? pool.supplyIncentiveApy : pool.supplyIncentiveApr;
-                      if (incentiveValue === null || isNaN(incentiveValue) || incentiveValue < 0.01) {
-                        return <span className="tabular-nums">-</span>;
-                      }
+                  {(() => {
+                    const incentiveValue = isApy ? pool.supplyIncentiveApy : pool.supplyIncentiveApr;
+                    const hasIncentive = incentiveValue !== null && !isNaN(incentiveValue) && incentiveValue >= 0.01;
+                    if (!hasIncentive) {
                       return (
+                        <span className="text-[10px] text-secondary tabular-nums">
+                          {formatPercent(pool.supplyApy ?? null)}
+                        </span>
+                      );
+                    }
+                    return (
+                      <span className="text-[10px] text-secondary flex items-center gap-0.5 justify-end w-full">
+                        <span className="tabular-nums">{formatPercent(pool.supplyApy ?? null)}</span>
+                        <span>+</span>
                         <button
                           onClick={(e) => handleIncentiveClick(e, pool, 'supply', incentiveValue)}
                           className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded bg-amber-50 text-amber-600 font-semibold hover:bg-amber-100 transition-colors cursor-pointer tabular-nums"
@@ -281,9 +286,9 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
                           <IncentiveIcon width={10} height={10} />
                           {formatPercent(incentiveValue)}
                         </button>
-                      );
-                    })()}
-                  </span>
+                      </span>
+                    );
+                  })()}
                 </div>
               </motion.div>
             ))
@@ -341,15 +346,20 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
                   <span className="text-success font-bold text-base tabular-nums text-right w-full">
                     {formatPercent(isApy ? pool.totalSupplyApy : pool.totalSupplyApr)}
                   </span>
-                  <span className="text-[10px] text-secondary flex items-center gap-0.5 justify-end w-full">
-                    <span className="tabular-nums">{formatPercent(pool.supplyApy ?? null)}</span>
-                    <span>+</span>
-                    {(() => {
-                      const incentiveValue = isApy ? pool.supplyIncentiveApy : pool.supplyIncentiveApr;
-                      if (incentiveValue === null || isNaN(incentiveValue) || incentiveValue < 0.01) {
-                        return <span className="tabular-nums">-</span>;
-                      }
+                  {(() => {
+                    const incentiveValue = isApy ? pool.supplyIncentiveApy : pool.supplyIncentiveApr;
+                    const hasIncentive = incentiveValue !== null && !isNaN(incentiveValue) && incentiveValue >= 0.01;
+                    if (!hasIncentive) {
                       return (
+                        <span className="text-[10px] text-secondary tabular-nums">
+                          {formatPercent(pool.supplyApy ?? null)}
+                        </span>
+                      );
+                    }
+                    return (
+                      <span className="text-[10px] text-secondary flex items-center gap-0.5 justify-end w-full">
+                        <span className="tabular-nums">{formatPercent(pool.supplyApy ?? null)}</span>
+                        <span>+</span>
                         <button
                           onClick={(e) => handleIncentiveClick(e, pool, 'supply', incentiveValue)}
                           className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded bg-amber-50 text-amber-600 font-semibold hover:bg-amber-100 transition-colors cursor-pointer tabular-nums"
@@ -357,9 +367,9 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
                           <IncentiveIcon width={10} height={10} />
                           {formatPercent(incentiveValue)}
                         </button>
-                      );
-                    })()}
-                  </span>
+                      </span>
+                    );
+                  })()}
                 </div>
               </motion.div>
             ))
@@ -417,15 +427,20 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
                   <span className="text-success font-bold text-base tabular-nums text-right w-full">
                     {formatPercent(isApy ? pool.totalSupplyApy : pool.totalSupplyApr)}
                   </span>
-                  <span className="text-[10px] text-secondary flex items-center gap-0.5 justify-end w-full">
-                    <span className="tabular-nums">{formatPercent(pool.supplyApy ?? null)}</span>
-                    <span>+</span>
-                    {(() => {
-                      const incentiveValue = isApy ? pool.supplyIncentiveApy : pool.supplyIncentiveApr;
-                      if (incentiveValue === null || isNaN(incentiveValue) || incentiveValue < 0.01) {
-                        return <span className="tabular-nums">-</span>;
-                      }
+                  {(() => {
+                    const incentiveValue = isApy ? pool.supplyIncentiveApy : pool.supplyIncentiveApr;
+                    const hasIncentive = incentiveValue !== null && !isNaN(incentiveValue) && incentiveValue >= 0.01;
+                    if (!hasIncentive) {
                       return (
+                        <span className="text-[10px] text-secondary tabular-nums">
+                          {formatPercent(pool.supplyApy ?? null)}
+                        </span>
+                      );
+                    }
+                    return (
+                      <span className="text-[10px] text-secondary flex items-center gap-0.5 justify-end w-full">
+                        <span className="tabular-nums">{formatPercent(pool.supplyApy ?? null)}</span>
+                        <span>+</span>
                         <button
                           onClick={(e) => handleIncentiveClick(e, pool, 'supply', incentiveValue)}
                           className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded bg-amber-50 text-amber-600 font-semibold hover:bg-amber-100 transition-colors cursor-pointer tabular-nums"
@@ -433,9 +448,9 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
                           <IncentiveIcon width={10} height={10} />
                           {formatPercent(incentiveValue)}
                         </button>
-                      );
-                    })()}
-                  </span>
+                      </span>
+                    );
+                  })()}
                 </div>
               </motion.div>
             ))
