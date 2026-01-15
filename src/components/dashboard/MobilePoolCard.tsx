@@ -86,40 +86,48 @@ const MobilePoolCard = ({ pool, isApy, onIncentiveClick }: MobilePoolCardProps) 
     }
   };
 
+  // Dynamic color based on APY value
+  const getSupplyColorClass = (value: number | null) => {
+    if (value === null) return 'text-gray-400';
+    if (value >= 10) return 'text-emerald-600';
+    if (value >= 5) return 'text-emerald-500';
+    if (value >= 2) return 'text-emerald-400';
+    if (value >= 1) return 'text-teal-500';
+    return 'text-gray-500';
+  };
+
   return (
     <div 
-      className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm active:bg-gray-50 transition-colors cursor-pointer"
+      className="bg-white rounded-xl border border-gray-100 p-3 shadow-sm active:bg-gray-50 transition-colors cursor-pointer"
       onClick={handleCardClick}
     >
-      {/* Header: Token + Market */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-sm font-bold text-gray-600">
-            {pool.tokenSymbol[0]}
-          </div>
-          <div>
-            <p className="font-bold text-gray-900">{pool.tokenSymbol}</p>
-            <div className="flex items-center gap-1.5 text-xs text-gray-500">
-              {chainIconSrc && (
-                <img src={chainIconSrc} alt={pool.chainName} className="w-3.5 h-3.5" />
-              )}
-              <span>{getMarketDisplayName()}</span>
-            </div>
+      {/* Header: Token + Market - Compact layout */}
+      <div className="flex items-center gap-2 mb-2">
+        <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-600 shrink-0">
+          {pool.tokenSymbol[0]}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="font-bold text-gray-900 text-sm truncate">{pool.tokenSymbol}</p>
+          <div className="flex items-center gap-1 text-[10px] text-gray-500">
+            {chainIconSrc && (
+              <img src={chainIconSrc} alt={pool.chainName} className="w-3 h-3" />
+            )}
+            <span className="truncate">{getMarketDisplayName()}</span>
           </div>
         </div>
-        <ChevronRight className="w-5 h-5 text-gray-400" />
+        <ChevronRight className="w-4 h-4 text-gray-400 shrink-0" />
       </div>
 
-      {/* APY Values */}
-      <div className="grid grid-cols-3 gap-3">
+      {/* APY Values - Compact 2 column layout */}
+      <div className="grid grid-cols-2 gap-2">
         {/* Supply */}
         <div className="space-y-0.5">
-          <p className="text-[10px] text-gray-500 uppercase font-medium">Supply</p>
-          <p className="text-base font-bold text-emerald-500">
+          <p className="text-[9px] text-gray-500 uppercase font-medium">Supply</p>
+          <p className={`text-sm font-bold ${getSupplyColorClass(displaySupplyTotal)}`}>
             {formatPercent(displaySupplyTotal)}
           </p>
           {displaySupplyIncentive !== null && (
-            <div className="flex items-center gap-1 text-[10px]">
+            <div className="flex items-center gap-0.5 text-[9px] flex-wrap">
               <span className="text-blue-600">{formatPercent(isApy ? (pool.supplyApy ?? null) : (pool.supplyApy !== null && pool.supplyApy !== undefined ? apyToApr(pool.supplyApy) : null))}</span>
               <span className="text-gray-400">+</span>
               <button
@@ -129,44 +137,23 @@ const MobilePoolCard = ({ pool, isApy, onIncentiveClick }: MobilePoolCardProps) 
                 }}
                 className="inline-flex items-center gap-0.5 text-amber-600"
               >
-                <IncentiveIcon width={8} height={8} />
+                <IncentiveIcon width={7} height={7} />
                 <span>{formatPercent(displaySupplyIncentive)}</span>
               </button>
             </div>
           )}
         </div>
 
-        {/* Borrow */}
-        <div className="space-y-0.5">
-          <p className="text-[10px] text-gray-500 uppercase font-medium">Borrow</p>
-          <p className="text-base font-bold text-gray-900">
-            {displayBorrowTotal !== null ? formatPercent(displayBorrowTotal) : '-'}
-          </p>
-          {displayBorrowIncentive !== null && (
-            <div className="flex items-center gap-1 text-[10px]">
-              <span className="text-blue-600">{formatPercent(isApy ? (pool.borrowApy ?? null) : (pool.borrowApy !== null && pool.borrowApy !== undefined ? apyToApr(pool.borrowApy) : null))}</span>
-              <span className="text-gray-400">-</span>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onIncentiveClick(e, pool, 'borrow', displayBorrowIncentive);
-                }}
-                className="inline-flex items-center gap-0.5 text-amber-600"
-              >
-                <IncentiveIcon width={8} height={8} />
-                <span>{formatPercent(displayBorrowIncentive)}</span>
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Spread */}
-        <div className="space-y-0.5">
-          <p className="text-[10px] text-gray-500 uppercase font-medium">Spread</p>
-          <p className={`text-base font-bold ${
+        {/* Spread - more prominent */}
+        <div className="space-y-0.5 text-right">
+          <p className="text-[9px] text-gray-500 uppercase font-medium">Spread</p>
+          <p className={`text-sm font-bold ${
             spread !== null && spread >= 0 ? 'text-amber-500' : 'text-rose-500'
           }`}>
             {formatSpread(spread)}
+          </p>
+          <p className="text-[9px] text-gray-400">
+            Borrow: {displayBorrowTotal !== null ? formatPercent(displayBorrowTotal) : '-'}
           </p>
         </div>
       </div>

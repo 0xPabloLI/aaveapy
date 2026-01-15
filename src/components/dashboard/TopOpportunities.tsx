@@ -217,8 +217,19 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
     });
   };
 
+  // Dynamic color based on APY value for Top Opportunities
+  const getApyColorClass = (value: number | null) => {
+    if (value === null) return 'text-gray-400';
+    if (value >= 15) return 'text-emerald-600';
+    if (value >= 10) return 'text-emerald-500';
+    if (value >= 5) return 'text-teal-500';
+    if (value >= 2) return 'text-teal-400';
+    if (value >= 1) return 'text-cyan-500';
+    return 'text-gray-500';
+  };
+
   return (
-    <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
       {/* Top Stable APY */}
       <div className="glass-card rounded-xl p-5">
         <motion.div 
@@ -262,7 +273,7 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
                   </div>
                 </div>
                 <div className="flex flex-col items-center gap-0.5 shrink-0 ml-auto">
-                  <span className="text-success font-bold text-base tabular-nums text-right w-full">
+                  <span className={`${getApyColorClass(isApy ? pool.totalSupplyApy : pool.totalSupplyApr)} font-bold text-base tabular-nums text-right w-full`}>
                     {formatPercent(isApy ? pool.totalSupplyApy : pool.totalSupplyApr)}
                   </span>
                   {(() => {
@@ -343,7 +354,7 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
                   </div>
                 </div>
                 <div className="flex flex-col items-center gap-0.5 shrink-0 ml-auto">
-                  <span className="text-success font-bold text-base tabular-nums text-right w-full">
+                  <span className={`${getApyColorClass(isApy ? pool.totalSupplyApy : pool.totalSupplyApr)} font-bold text-base tabular-nums text-right w-full`}>
                     {formatPercent(isApy ? pool.totalSupplyApy : pool.totalSupplyApr)}
                   </span>
                   {(() => {
@@ -424,7 +435,7 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
                   </div>
                 </div>
                 <div className="flex flex-col items-center gap-0.5 shrink-0 ml-auto">
-                  <span className="text-success font-bold text-base tabular-nums text-right w-full">
+                  <span className={`${getApyColorClass(isApy ? pool.totalSupplyApy : pool.totalSupplyApr)} font-bold text-base tabular-nums text-right w-full`}>
                     {formatPercent(isApy ? pool.totalSupplyApy : pool.totalSupplyApr)}
                   </span>
                   {(() => {
@@ -507,7 +518,7 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
                   </div>
                 </div>
                 <div className="flex flex-col items-center gap-0.5 shrink-0 ml-auto">
-                  <span className="text-warning font-bold text-base tabular-nums text-right w-full">
+                  <span className={`${getApyColorClass(isApy ? pool.apySpread : pool.aprSpread)} font-bold text-base tabular-nums text-right w-full`}>
                     {formatSpread(isApy ? pool.apySpread : pool.aprSpread)}
                   </span>
                   <span className="text-[10px] text-secondary tabular-nums text-right w-full">
