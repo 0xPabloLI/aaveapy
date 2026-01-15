@@ -248,10 +248,116 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
   if (isMobile) {
     return (
       <div className="space-y-3">
+        {/* Header with sorting controls */}
         <div className="flex justify-between items-center px-1">
           <h3 className="text-base font-bold text-gray-900">{pools.length} Pools</h3>
+          <div className="flex items-center gap-2">
+            {/* Supply sort dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => {
+                  setShowSupplySortMenu(!showSupplySortMenu);
+                  setShowBorrowSortMenu(false);
+                }}
+                className={`flex items-center gap-1 px-2 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                  activeSortColumn === 'supply'
+                    ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                    : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                <span>Supply</span>
+                <ChevronDown className="w-3 h-3" />
+              </button>
+              {showSupplySortMenu && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setShowSupplySortMenu(false)} />
+                  <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-20 min-w-[130px]">
+                    {(['total', 'native', 'incentive'] as SortMode[]).map((mode) => (
+                      <button
+                        key={mode}
+                        onClick={() => {
+                          setSupplySortMode(mode);
+                          setActiveSortColumn('supply');
+                          setShowSupplySortMenu(false);
+                        }}
+                        className={`w-full px-3 py-1.5 text-left text-xs transition-colors ${
+                          supplySortMode === mode && activeSortColumn === 'supply'
+                            ? 'text-emerald-600 font-bold bg-emerald-50'
+                            : 'text-gray-600 hover:bg-gray-50'
+                        }`}
+                      >
+                        {mode.charAt(0).toUpperCase() + mode.slice(1)}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+            
+            {/* Borrow sort dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => {
+                  setShowBorrowSortMenu(!showBorrowSortMenu);
+                  setShowSupplySortMenu(false);
+                }}
+                className={`flex items-center gap-1 px-2 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                  activeSortColumn === 'borrow'
+                    ? 'bg-gray-100 border-gray-300 text-gray-700'
+                    : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                <span>Borrow</span>
+                <ChevronDown className="w-3 h-3" />
+              </button>
+              {showBorrowSortMenu && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setShowBorrowSortMenu(false)} />
+                  <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-20 min-w-[130px]">
+                    {(['total', 'native', 'incentive'] as SortMode[]).map((mode) => (
+                      <button
+                        key={mode}
+                        onClick={() => {
+                          setBorrowSortMode(mode);
+                          setActiveSortColumn('borrow');
+                          setShowBorrowSortMenu(false);
+                        }}
+                        className={`w-full px-3 py-1.5 text-left text-xs transition-colors ${
+                          borrowSortMode === mode && activeSortColumn === 'borrow'
+                            ? 'text-gray-700 font-bold bg-gray-100'
+                            : 'text-gray-600 hover:bg-gray-50'
+                        }`}
+                      >
+                        {mode.charAt(0).toUpperCase() + mode.slice(1)}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+            
+            {/* Sort order toggle */}
+            <button
+              onClick={() => {
+                if (activeSortColumn === 'supply') {
+                  toggleSupplySortOrder();
+                } else {
+                  toggleBorrowSortOrder();
+                }
+              }}
+              className="p-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition-colors"
+            >
+              {(activeSortColumn === 'supply' ? supplySortOrder : borrowSortOrder) === 'desc' ? (
+                <ArrowDown className="w-3.5 h-3.5 text-gray-600" />
+              ) : (
+                <ArrowUp className="w-3.5 h-3.5 text-gray-600" />
+              )}
+            </button>
+          </div>
         </div>
-        <div className="space-y-3">
+        
+        {/* 2x2 Grid layout for mobile */}
+        <div className="grid grid-cols-2 gap-2">
           {sortedData.map((pool, idx) => (
             <MobilePoolCard
               key={idx}
