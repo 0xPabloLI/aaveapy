@@ -252,7 +252,7 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
                 className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-background to-success/5 border border-border hover:border-success/50 transition-all group cursor-pointer"
                 onClick={() => handleCardClick(pool)}
               >
-                <div className="flex items-center gap-3 min-w-0 flex-1">
+                <div className="flex items-center gap-3 min-w-0">
                   <span className="text-lg font-bold text-secondary w-5 shrink-0 text-center">
                     {i + 1}
                   </span>
@@ -261,7 +261,7 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
                     <p className="text-xs text-secondary truncate">{getMarketDisplayName(pool)}</p>
                   </div>
                 </div>
-                <div className="flex flex-col items-end gap-0.5 shrink-0 w-24">
+                <div className="flex flex-col items-center gap-0.5 shrink-0 ml-auto">
                   <span className="text-success font-bold text-base tabular-nums text-right w-full">
                     {formatPercent(isApy ? pool.totalSupplyApy : pool.totalSupplyApr)}
                   </span>
@@ -333,7 +333,7 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
                 className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-background to-success/5 border border-border hover:border-success/50 transition-all group cursor-pointer"
                 onClick={() => handleCardClick(pool)}
               >
-                <div className="flex items-center gap-3 min-w-0 flex-1">
+                <div className="flex items-center gap-3 min-w-0">
                   <span className="text-lg font-bold text-secondary w-5 shrink-0 text-center">
                     {i + 1}
                   </span>
@@ -342,7 +342,7 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
                     <p className="text-xs text-secondary truncate">{getMarketDisplayName(pool)}</p>
                   </div>
                 </div>
-                <div className="flex flex-col items-end gap-0.5 shrink-0 w-24">
+                <div className="flex flex-col items-center gap-0.5 shrink-0 ml-auto">
                   <span className="text-success font-bold text-base tabular-nums text-right w-full">
                     {formatPercent(isApy ? pool.totalSupplyApy : pool.totalSupplyApr)}
                   </span>
@@ -414,7 +414,7 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
                 className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-background to-success/5 border border-border hover:border-success/50 transition-all group cursor-pointer"
                 onClick={() => handleCardClick(pool)}
               >
-                <div className="flex items-center gap-3 min-w-0 flex-1">
+                <div className="flex items-center gap-3 min-w-0">
                   <span className="text-lg font-bold text-secondary w-5 shrink-0 text-center">
                     {i + 1}
                   </span>
@@ -423,7 +423,7 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
                     <p className="text-xs text-secondary truncate">{getMarketDisplayName(pool)}</p>
                   </div>
                 </div>
-                <div className="flex flex-col items-end gap-0.5 shrink-0 w-24">
+                <div className="flex flex-col items-center gap-0.5 shrink-0 ml-auto">
                   <span className="text-success font-bold text-base tabular-nums text-right w-full">
                     {formatPercent(isApy ? pool.totalSupplyApy : pool.totalSupplyApr)}
                   </span>
@@ -497,7 +497,7 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
               className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-background to-warning/5 border border-border hover:border-warning/50 transition-all group cursor-pointer"
               onClick={() => handleCardClick(pool)}
             >
-                <div className="flex items-center gap-3 min-w-0 flex-1">
+                <div className="flex items-center gap-3 min-w-0">
                   <span className="text-lg font-bold text-warning w-5 shrink-0 text-center">
                     {i + 1}
                   </span>
@@ -506,7 +506,7 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
                     <p className="text-xs text-secondary truncate">{getMarketDisplayName(pool)}</p>
                   </div>
                 </div>
-                <div className="flex flex-col items-end gap-0.5 shrink-0 w-28">
+                <div className="flex flex-col items-center gap-0.5 shrink-0 ml-auto">
                   <span className="text-warning font-bold text-base tabular-nums text-right w-full">
                     {formatSpread(isApy ? pool.apySpread : pool.aprSpread)}
                   </span>
