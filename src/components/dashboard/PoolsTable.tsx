@@ -600,22 +600,8 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
               </TableHead>
               <TableHead className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700 hidden md:table-cell">
                 <div className="flex items-center justify-end gap-1 min-w-[80px]">
-                  <button
-                    onClick={toggleSpreadSortOrder}
-                    className="flex items-center gap-1 hover:text-gray-700 transition-colors"
-                    title="Sort by Spread"
-                  >
-                    SPREAD
-                    {activeSortColumn === 'spread' ? (
-                      spreadSortOrder === 'desc' ? (
-                        <ArrowDown className="w-3 h-3 text-amber-500" />
-                      ) : (
-                        <ArrowUp className="w-3 h-3 text-amber-500" />
-                      )
-                    ) : (
-                      <ArrowDown className="w-3 h-3 opacity-40" />
-                    )}
-                  </button>
+                  SPREAD
+                  <ArrowDown className="w-3 h-3" />
                 </div>
               </TableHead>
             </TableRow>

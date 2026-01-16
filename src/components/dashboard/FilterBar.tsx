@@ -205,7 +205,7 @@ const FilterBar = ({
 
   return (
     <div className="space-y-2 md:space-y-3">
-      {/* Row 1: Token Categories + APY Toggle */}
+      {/* Row 1: Token Categories + Search + APY Toggle (PC) / Token Categories + APY Toggle (Mobile) */}
       <div className="flex flex-wrap items-center gap-1.5 md:gap-2">
         {/* Token Categories */}
         <span className="text-xs text-muted-foreground mr-0.5 md:mr-1 hidden sm:inline">Tokens:</span>
@@ -223,10 +223,30 @@ const FilterBar = ({
           </button>
         ))}
 
+        {/* Search - only on PC, hidden on mobile */}
+        <div className="relative w-20 sm:w-24 md:w-36 lg:w-44 hidden md:block">
+          <Search className="absolute left-2 md:left-2.5 top-1/2 -translate-y-1/2 w-3 md:w-3.5 h-3 md:h-3.5 text-muted-foreground" />
+          <Input
+            ref={searchInputRef}
+            placeholder={searchPlaceholder}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-7 md:pl-8 pr-6 md:pr-7 bg-card/50 border-border/50 focus:border-primary h-7 text-xs"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          )}
+        </div>
+
         {/* Spacer */}
         <div className="flex-1 min-w-2 md:min-w-4" />
 
-        {/* APY/APR Toggle - Right aligned */}
+        {/* APY/APR Toggle */}
         <div className="flex items-center gap-1 md:gap-1.5 text-xs text-muted-foreground">
           <span className={!isApy ? 'text-foreground font-medium' : ''}>APR</span>
           <Switch
@@ -238,16 +258,16 @@ const FilterBar = ({
         </div>
       </div>
 
-      {/* Row 2: Search */}
-      <div className="flex items-center gap-1.5 md:gap-2">
-        <div className="relative w-full sm:w-64 md:w-80 lg:w-96">
-          <Search className="absolute left-2 md:left-2.5 top-1/2 -translate-y-1/2 w-3 md:w-3.5 h-3 md:h-3.5 text-muted-foreground" />
+      {/* Row 2: Search - only on mobile */}
+      <div className="flex items-center gap-1.5 md:gap-2 md:hidden">
+        <div className="relative w-full">
+          <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
           <Input
             ref={searchInputRef}
             placeholder={searchPlaceholder}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-7 md:pl-8 pr-6 md:pr-7 bg-card/50 border-border/50 focus:border-primary h-7 text-xs"
+            className="pl-7 pr-6 bg-card/50 border-border/50 focus:border-primary h-7 text-xs"
           />
           {searchQuery && (
             <button
