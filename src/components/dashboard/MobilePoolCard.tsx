@@ -98,19 +98,19 @@ const MobilePoolCard = ({ pool, isApy, onIncentiveClick }: MobilePoolCardProps) 
 
   return (
     <div 
-      className="bg-white rounded-xl border border-gray-100 p-3 shadow-sm active:bg-gray-50 transition-colors cursor-pointer"
+      className="bg-white rounded-xl border border-gray-100 p-3 shadow-sm active:bg-gray-50 transition-colors cursor-pointer h-full flex flex-col"
       onClick={handleCardClick}
     >
-      {/* Header: Token + Market - Compact layout */}
-      <div className="flex items-center gap-2 mb-2">
+      {/* Header: Token + Market - Fixed height */}
+      <div className="flex items-center gap-2 mb-2 h-10">
         <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-600 shrink-0">
           {pool.tokenSymbol[0]}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="font-bold text-gray-900 text-sm truncate">{pool.tokenSymbol}</p>
-          <div className="flex items-center gap-1 text-[10px] text-gray-500">
+          <p className="font-bold text-gray-900 text-sm truncate leading-tight">{pool.tokenSymbol}</p>
+          <div className="flex items-center gap-1 text-[10px] text-gray-500 leading-tight">
             {chainIconSrc && (
-              <img src={chainIconSrc} alt={pool.chainName} className="w-3 h-3" />
+              <img src={chainIconSrc} alt={pool.chainName} className="w-3 h-3 shrink-0" />
             )}
             <span className="truncate">{getMarketDisplayName()}</span>
           </div>
@@ -118,64 +118,68 @@ const MobilePoolCard = ({ pool, isApy, onIncentiveClick }: MobilePoolCardProps) 
         <ChevronRight className="w-4 h-4 text-gray-400 shrink-0" />
       </div>
 
-      {/* APY Values - 3 column layout: Supply | Spread | Borrow */}
-      <div className="grid grid-cols-3 gap-2">
-        {/* Supply */}
-        <div className="space-y-0.5">
-          <p className="text-[9px] text-gray-500 uppercase font-medium">Supply</p>
-          <p className={`text-sm font-bold ${getSupplyColorClass(displaySupplyTotal)}`}>
+      {/* APY Values - 3 column grid with fixed structure */}
+      <div className="grid grid-cols-3 gap-1 flex-1">
+        {/* Supply Column */}
+        <div className="flex flex-col min-h-[48px]">
+          <p className="text-[9px] text-gray-500 uppercase font-medium mb-0.5">Supply</p>
+          <p className={`text-sm font-bold leading-tight ${getSupplyColorClass(displaySupplyTotal)}`}>
             {formatPercent(displaySupplyTotal)}
           </p>
-          {displaySupplyIncentive !== null && (
-            <div className="flex items-center gap-0.5 text-[9px] flex-nowrap">
-              <span className="text-blue-600">{formatPercent(isApy ? (pool.supplyApy ?? null) : (pool.supplyApy !== null && pool.supplyApy !== undefined ? apyToApr(pool.supplyApy) : null))}</span>
-              <span className="text-gray-400">+</span>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onIncentiveClick(e, pool, 'supply', displaySupplyIncentive);
-                }}
-                className="inline-flex items-center gap-0.5 text-amber-600 shrink-0"
-              >
-                <IncentiveIcon width={7} height={7} />
-                <span>{formatPercent(displaySupplyIncentive)}</span>
-              </button>
-            </div>
-          )}
+          <div className="mt-auto min-h-[14px]">
+            {displaySupplyIncentive !== null && (
+              <div className="flex items-center gap-0.5 text-[9px] flex-nowrap">
+                <span className="text-blue-600 tabular-nums">{formatPercent(isApy ? (pool.supplyApy ?? null) : (pool.supplyApy !== null && pool.supplyApy !== undefined ? apyToApr(pool.supplyApy) : null))}</span>
+                <span className="text-gray-400">+</span>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onIncentiveClick(e, pool, 'supply', displaySupplyIncentive);
+                  }}
+                  className="inline-flex items-center gap-0.5 text-amber-600 shrink-0"
+                >
+                  <IncentiveIcon width={7} height={7} />
+                  <span className="tabular-nums">{formatPercent(displaySupplyIncentive)}</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Spread - middle, less prominent */}
-        <div className="space-y-0.5 text-center">
-          <p className="text-[9px] text-gray-400 uppercase font-medium">Spread</p>
-          <p className={`text-xs font-medium ${
-            spread !== null && spread >= 0 ? 'text-amber-400' : 'text-gray-400'
+        {/* Spread Column - Centered */}
+        <div className="flex flex-col items-center min-h-[48px]">
+          <p className="text-[9px] text-gray-400 uppercase font-medium mb-0.5">Spread</p>
+          <p className={`text-xs font-medium leading-tight ${
+            spread !== null && spread >= 0 ? 'text-amber-500' : 'text-gray-400'
           }`}>
             {formatSpread(spread)}
           </p>
         </div>
 
-        {/* Borrow */}
-        <div className="space-y-0.5 text-right">
-          <p className="text-[9px] text-gray-500 uppercase font-medium">Borrow</p>
-          <p className={`text-sm font-bold ${getSupplyColorClass(displayBorrowTotal)}`}>
+        {/* Borrow Column */}
+        <div className="flex flex-col items-end min-h-[48px]">
+          <p className="text-[9px] text-gray-500 uppercase font-medium mb-0.5">Borrow</p>
+          <p className={`text-sm font-bold leading-tight ${getSupplyColorClass(displayBorrowTotal)}`}>
             {formatPercent(displayBorrowTotal)}
           </p>
-          {displayBorrowIncentive !== null && (
-            <div className="flex items-center gap-0.5 text-[9px] flex-nowrap justify-end">
-              <span className="text-blue-600">{formatPercent(isApy ? (pool.borrowApy ?? null) : (pool.borrowApy !== null && pool.borrowApy !== undefined ? apyToApr(pool.borrowApy) : null))}</span>
-              <span className="text-gray-400">+</span>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onIncentiveClick(e, pool, 'borrow', displayBorrowIncentive);
-                }}
-                className="inline-flex items-center gap-0.5 text-amber-600 shrink-0"
-              >
-                <IncentiveIcon width={7} height={7} />
-                <span>{formatPercent(displayBorrowIncentive)}</span>
-              </button>
-            </div>
-          )}
+          <div className="mt-auto min-h-[14px]">
+            {displayBorrowIncentive !== null && (
+              <div className="flex items-center gap-0.5 text-[9px] flex-nowrap justify-end">
+                <span className="text-blue-600 tabular-nums">{formatPercent(isApy ? (pool.borrowApy ?? null) : (pool.borrowApy !== null && pool.borrowApy !== undefined ? apyToApr(pool.borrowApy) : null))}</span>
+                <span className="text-gray-400">+</span>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onIncentiveClick(e, pool, 'borrow', displayBorrowIncentive);
+                  }}
+                  className="inline-flex items-center gap-0.5 text-amber-600 shrink-0"
+                >
+                  <IncentiveIcon width={7} height={7} />
+                  <span className="tabular-nums">{formatPercent(displayBorrowIncentive)}</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
