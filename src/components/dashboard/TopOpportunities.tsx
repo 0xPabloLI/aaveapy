@@ -225,8 +225,94 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
     return 'text-gray-500';
   };
 
-  // Shared item card component for consistent layout
-  const OpportunityItem = ({ 
+  // Mobile-optimized item component with larger touch targets
+  const MobileOpportunityItem = ({ 
+    pool, 
+    index, 
+    type 
+  }: { 
+    pool: typeof poolsWithTotals[0]; 
+    index: number; 
+    type: 'stable' | 'eth' | 'btc' | 'leverage';
+  }) => {
+    const isLeverage = type === 'leverage';
+    const colorClass = isLeverage ? 'text-warning' : 'text-secondary';
+    const borderHoverClass = isLeverage ? 'active:border-warning/50' : 'active:border-success/50';
+    
+    const displayValue = isLeverage 
+      ? (isApy ? pool.apySpread : pool.aprSpread)
+      : (isApy ? pool.totalSupplyApy : pool.totalSupplyApr);
+    
+    const incentiveValue = isApy ? pool.supplyIncentiveApy : pool.supplyIncentiveApr;
+    const hasIncentive = !isLeverage && incentiveValue !== null && !isNaN(incentiveValue) && incentiveValue >= 0.01;
+    const nativeValue = pool.supplyApy ?? null;
+
+    return (
+      <motion.div 
+        custom={index}
+        initial="hidden"
+        animate="visible"
+        variants={itemVariants}
+        className={`flex flex-col p-3 rounded-lg bg-card border border-border ${borderHoverClass} transition-all cursor-pointer min-h-[52px]`}
+        onClick={() => handleCardClick(pool)}
+      >
+        {/* Main row: Index + Token + APY */}
+        <div className="flex items-center justify-between gap-3">
+          {/* Left: Index + Token info */}
+          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+            <span className={`font-bold ${colorClass} shrink-0 w-5 text-center text-sm`}>
+              {index + 1}
+            </span>
+            <div className="flex items-center gap-1.5 min-w-0">
+              <p className="font-semibold text-foreground text-sm truncate">
+                {pool.tokenSymbol}
+              </p>
+              {(() => {
+                const chainIconSrc = getChainIconSrc(pool.chainName);
+                return chainIconSrc ? (
+                  <img src={chainIconSrc} alt={pool.chainName} className="w-4 h-4 shrink-0" />
+                ) : null;
+              })()}
+            </div>
+          </div>
+          
+          {/* Right: APY value */}
+          <div className="shrink-0 text-right">
+            <span className={`${getApyColorClass(displayValue)} font-bold tabular-nums text-base`}>
+              {isLeverage ? formatSpread(displayValue) : formatPercent(displayValue)}
+            </span>
+          </div>
+        </div>
+        
+        {/* Secondary row: Native + Incentive breakdown OR Leverage details */}
+        {isLeverage ? (
+          <div className="mt-1 ml-7 text-[11px] text-muted-foreground tabular-nums">
+            Supply {formatPercent(isApy ? pool.totalSupplyApy : pool.totalSupplyApr)} − Borrow{' '}
+            {(() => {
+              const borrowValue = isApy ? pool.totalBorrowApy : pool.totalBorrowApr;
+              if (borrowValue === null) return '-';
+              return borrowValue < 0 ? `(${formatPercent(borrowValue)})` : formatPercent(borrowValue);
+            })()}
+          </div>
+        ) : hasIncentive ? (
+          <div className="mt-1 ml-7 flex items-center gap-1 text-[11px] text-muted-foreground">
+            <span className="tabular-nums text-blue-500">{formatPercent(nativeValue)}</span>
+            <span className="text-muted-foreground/60">+</span>
+            <button
+              onClick={(e) => handleIncentiveClick(e, pool, 'supply', incentiveValue)}
+              className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded bg-amber-50 text-amber-600 font-semibold hover:bg-amber-100 transition-colors cursor-pointer tabular-nums"
+            >
+              <IncentiveIcon width={10} height={10} />
+              <span>{formatPercent(incentiveValue)}</span>
+            </button>
+          </div>
+        ) : null}
+      </motion.div>
+    );
+  };
+
+  // Desktop item card component (original design)
+  const DesktopOpportunityItem = ({ 
     pool, 
     index, 
     type 
@@ -256,20 +342,20 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
         className={`flex items-center p-3 rounded-lg bg-gradient-to-r from-background ${bgClass} border border-border ${borderHoverClass} transition-all group cursor-pointer h-[60px]`}
         onClick={() => handleCardClick(pool)}
       >
-        {/* Left section: Index + Token info - fixed width */}
+        {/* Left section: Index + Token info */}
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          <span className={`font-bold ${colorClass} shrink-0 w-4 text-center ${isMobile ? 'text-xs' : 'text-lg'}`}>
+          <span className={`font-bold ${colorClass} shrink-0 w-4 text-center text-lg`}>
             {index + 1}
           </span>
-          <div className={`min-w-0 ${isMobile ? 'flex-1' : 'w-20'}`}>
+          <div className="min-w-0 w-20">
             <div className="flex items-center gap-1.5">
-              <p className={`font-semibold text-foreground truncate ${isMobile ? 'text-sm' : 'text-base'}`}>
+              <p className="font-semibold text-foreground truncate text-base">
                 {pool.tokenSymbol}
               </p>
               {(() => {
                 const chainIconSrc = getChainIconSrc(pool.chainName);
                 return chainIconSrc ? (
-                  <img src={chainIconSrc} alt={pool.chainName} className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'} shrink-0`} />
+                  <img src={chainIconSrc} alt={pool.chainName} className="w-4 h-4 shrink-0" />
                 ) : null;
               })()}
             </div>
@@ -289,12 +375,12 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
           </div>
         </div>
 
-        {/* Right section: APY value - fixed width */}
-        <div className={`shrink-0 text-right ${isMobile ? 'w-16' : 'w-20'}`}>
-          <span className={`${getApyColorClass(displayValue)} font-bold tabular-nums ${isMobile ? 'text-sm' : 'text-base'}`}>
+        {/* Right section: APY value */}
+        <div className="shrink-0 text-right w-20">
+          <span className={`${getApyColorClass(displayValue)} font-bold tabular-nums text-base`}>
             {isLeverage ? formatSpread(displayValue) : formatPercent(displayValue)}
           </span>
-          {isLeverage && !isMobile && (
+          {isLeverage && (
             <div className="text-[10px] text-secondary tabular-nums mt-0.5">
               {formatPercent(isApy ? pool.totalSupplyApy : pool.totalSupplyApr)} -{' '}
               {(() => {
@@ -309,8 +395,8 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
     );
   };
 
-  // Shared card container component
-  const OpportunityCard = ({ 
+  // Mobile-optimized card container - single column, full width
+  const MobileOpportunityCard = ({ 
     title, 
     subtitle, 
     icon: Icon, 
@@ -329,30 +415,89 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
     type: 'stable' | 'eth' | 'btc' | 'leverage';
     emptyMessage: string;
   }) => (
-    <div className="glass-card rounded-xl p-4 md:p-5 flex flex-col">
+    <div className="glass-card rounded-xl p-4 flex flex-col">
       <motion.div 
-        className="flex items-center gap-2 mb-3 md:mb-4"
+        className="flex items-center gap-3 mb-3"
         initial="hidden"
         animate="visible"
         variants={headerVariants}
       >
         <motion.div 
-          className={`p-1.5 md:p-2 rounded-lg ${iconBgClass}`}
+          className={`p-2 rounded-lg ${iconBgClass}`}
           variants={iconVariants}
           initial="hidden"
           animate={["visible", "pulse"]}
         >
-          <Icon className={`w-4 h-4 md:w-5 md:h-5 ${iconColorClass}`} />
+          <Icon className={`w-5 h-5 ${iconColorClass}`} />
         </motion.div>
         <div className="flex-1 min-w-0">
-          <h3 className={`font-bold truncate ${isMobile ? 'text-sm' : 'text-base'}`}>{title}</h3>
-          <p className="text-[10px] md:text-xs text-muted-foreground truncate">{subtitle}</p>
+          <h3 className="font-bold text-base">{title}</h3>
+          <p className="text-xs text-muted-foreground">{subtitle}</p>
         </div>
       </motion.div>
       <div className="space-y-2 flex-1">
         {cardPools.length > 0 ? (
           cardPools.map((pool, i) => (
-            <OpportunityItem
+            <MobileOpportunityItem
+              key={`${type}-${pool.marketName}-${pool.tokenSymbol}`}
+              pool={pool}
+              index={i}
+              type={type}
+            />
+          ))
+        ) : (
+          <div className="text-center py-6 text-muted-foreground flex-1 flex items-center justify-center">
+            <p className="text-xs">{emptyMessage}</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  // Desktop card container (original design)
+  const DesktopOpportunityCard = ({ 
+    title, 
+    subtitle, 
+    icon: Icon, 
+    iconBgClass, 
+    iconColorClass,
+    pools: cardPools,
+    type,
+    emptyMessage
+  }: { 
+    title: string;
+    subtitle: string;
+    icon: typeof TrendingUp;
+    iconBgClass: string;
+    iconColorClass: string;
+    pools: typeof poolsWithTotals;
+    type: 'stable' | 'eth' | 'btc' | 'leverage';
+    emptyMessage: string;
+  }) => (
+    <div className="glass-card rounded-xl p-5 flex flex-col">
+      <motion.div 
+        className="flex items-center gap-2 mb-4"
+        initial="hidden"
+        animate="visible"
+        variants={headerVariants}
+      >
+        <motion.div 
+          className={`p-2 rounded-lg ${iconBgClass}`}
+          variants={iconVariants}
+          initial="hidden"
+          animate={["visible", "pulse"]}
+        >
+          <Icon className={`w-5 h-5 ${iconColorClass}`} />
+        </motion.div>
+        <div className="flex-1 min-w-0">
+          <h3 className="font-bold text-base">{title}</h3>
+          <p className="text-xs text-muted-foreground truncate">{subtitle}</p>
+        </div>
+      </motion.div>
+      <div className="space-y-2 flex-1">
+        {cardPools.length > 0 ? (
+          cardPools.map((pool, i) => (
+            <DesktopOpportunityItem
               key={`${type}-${pool.marketName}-${pool.tokenSymbol}`}
               pool={pool}
               index={i}
@@ -368,8 +513,11 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
     </div>
   );
 
+  // Choose component based on device
+  const OpportunityCard = isMobile ? MobileOpportunityCard : DesktopOpportunityCard;
+
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+    <div className={isMobile ? "flex flex-col gap-4" : "grid grid-cols-4 gap-4"}>
       {/* Top Stable APY */}
       <OpportunityCard
         title={`Top Stable ${isApy ? 'APY' : 'APR'}`}
