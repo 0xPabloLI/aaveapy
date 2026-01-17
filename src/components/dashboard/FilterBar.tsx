@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { TokenCategory, MarketListItem, ETHEREUM_MARKET_NAMES } from '@/types/aave';
 import { getChainIconSrc } from '@/lib/chainIcons';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface FilterBarProps {
   searchQuery: string;
@@ -73,9 +74,11 @@ const FilterBar = ({
   setIsApy,
   marketsList,
 }: FilterBarProps) => {
+  const isMobile = useIsMobile();
   const [showMarketsExpanded, setShowMarketsExpanded] = useState(false);
   const [searchPlaceholder, setSearchPlaceholder] = useState('Search token');
-  const searchInputRef = useRef<HTMLInputElement>(null);
+  const desktopSearchInputRef = useRef<HTMLInputElement>(null);
+  const mobileSearchInputRef = useRef<HTMLInputElement>(null);
   const debouncedUpdateRef = useRef<(() => void) | null>(null);
 
   // Stable handler function that reads from ref - never changes, so can be used for addEventListener/removeEventListener
@@ -141,10 +144,11 @@ const FilterBar = ({
     let timeoutId: NodeJS.Timeout | null = null;
     
     const updatePlaceholder = () => {
-      if (!searchInputRef.current) return;
+      // Get the currently visible input based on viewport size
+      const activeInput = isMobile ? mobileSearchInputRef.current : desktopSearchInputRef.current;
+      if (!activeInput) return;
       
-      const input = searchInputRef.current;
-      const inputWidth = input.offsetWidth;
+      const inputWidth = activeInput.offsetWidth;
       if (inputWidth === 0) return; // Not yet rendered
       
       const iconWidth = 24; // Search icon width + padding
@@ -185,8 +189,13 @@ const FilterBar = ({
     
     const resizeObserver = new ResizeObserver(stableResizeHandler);
     
-    if (searchInputRef.current) {
-      resizeObserver.observe(searchInputRef.current);
+    // Observe both inputs, but only the visible one will affect placeholder calculation
+    // This ensures we catch resize events regardless of which input is currently visible
+    if (desktopSearchInputRef.current) {
+      resizeObserver.observe(desktopSearchInputRef.current);
+    }
+    if (mobileSearchInputRef.current) {
+      resizeObserver.observe(mobileSearchInputRef.current);
     }
     
     window.addEventListener('resize', stableResizeHandler);
@@ -198,7 +207,7 @@ const FilterBar = ({
       resizeObserver.disconnect();
       window.removeEventListener('resize', stableResizeHandler);
     };
-  }, [searchQuery]);
+  }, [searchQuery, isMobile, stableResizeHandler]);
 
   // Count selected hidden markets
   const selectedHiddenCount = hiddenMarkets.filter(m => selectedMarkets.includes(m.marketName)).length;
@@ -234,7 +243,7 @@ const FilterBar = ({
         <div className="relative w-20 sm:w-24 md:w-36 lg:w-44 hidden md:block">
           <Search className="absolute left-2 md:left-2.5 top-1/2 -translate-y-1/2 w-3 md:w-3.5 h-3 md:h-3.5 text-muted-foreground" />
           <Input
-            ref={searchInputRef}
+            ref={desktopSearchInputRef}
             placeholder={searchPlaceholder}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -270,7 +279,7 @@ const FilterBar = ({
         <div className="relative w-full">
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
           <Input
-            ref={searchInputRef}
+            ref={mobileSearchInputRef}
             placeholder={searchPlaceholder}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
