@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowUp, ArrowDown, ChevronDown } from 'lucide-react';
+import { ArrowUp, ArrowDown, ChevronDown, ChevronUp } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { PoolWithSpread, ETHEREUM_MARKET_NAMES } from '@/types/aave';
 import { 
@@ -32,6 +32,8 @@ interface PoolsTableProps {
 
 type SortMode = 'total' | 'native' | 'incentive';
 
+const DEFAULT_VISIBLE_COUNT = 20;
+
 const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTableProps) => {
   const isMobile = useIsMobile();
   const [activeSortColumn, setActiveSortColumn] = useState<'supply' | 'borrow' | 'spread'>('supply');
@@ -42,6 +44,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
   const [spreadSortOrder, setSpreadSortOrder] = useState<'asc' | 'desc'>('desc');
   const [showSupplySortMenu, setShowSupplySortMenu] = useState(false);
   const [showBorrowSortMenu, setShowBorrowSortMenu] = useState(false);
+  const [showAll, setShowAll] = useState(false);
   const [tooltipState, setTooltipState] = useState<{
     pool: PoolWithSpread;
     type: 'supply' | 'borrow';
@@ -398,7 +401,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
         
         {/* 2x2 Grid layout for mobile */}
         <div className="grid grid-cols-2 gap-2">
-          {sortedData.map((pool, idx) => (
+          {(showAll ? sortedData : sortedData.slice(0, DEFAULT_VISIBLE_COUNT)).map((pool, idx) => (
             <MobilePoolCard
               key={idx}
               pool={pool}
@@ -407,6 +410,18 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
             />
           ))}
         </div>
+        
+        {/* Show More/Less button for mobile */}
+        {sortedData.length > DEFAULT_VISIBLE_COUNT && (
+          <button
+            onClick={() => setShowAll(!showAll)}
+            className="w-full mt-4 flex items-center justify-center gap-2 py-3 rounded-xl border border-border bg-card hover:bg-muted/50 transition-colors text-foreground font-medium"
+          >
+            <span>{showAll ? 'Show Less' : `Show ${sortedData.length - DEFAULT_VISIBLE_COUNT} More Pools`}</span>
+            {showAll ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </button>
+        )}
+        
         {tooltipState && (
           <IncentiveTooltip
             pool={tooltipState.pool}
@@ -607,7 +622,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sortedData.map((pool, idx) => {
+            {(showAll ? sortedData : sortedData.slice(0, DEFAULT_VISIBLE_COUNT)).map((pool, idx) => {
               // Cache incentive values to avoid redundant calculations
               const supplyIncentiveValues = getIncentiveValues(pool, 'supply');
               const borrowIncentiveValues = getIncentiveValues(pool, 'borrow');
@@ -731,6 +746,20 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
           </TableBody>
         </Table>
       </div>
+      
+      {/* Show More/Less button for desktop */}
+      {sortedData.length > DEFAULT_VISIBLE_COUNT && (
+        <div className="p-4 border-t border-gray-100">
+          <button
+            onClick={() => setShowAll(!showAll)}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-border bg-muted/30 hover:bg-muted/50 transition-colors text-foreground font-medium"
+          >
+            <span>{showAll ? 'Show Less' : `Show ${sortedData.length - DEFAULT_VISIBLE_COUNT} More Pools`}</span>
+            {showAll ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </button>
+        </div>
+      )}
+      
       {tooltipState && (
         <IncentiveTooltip
           pool={tooltipState.pool}
