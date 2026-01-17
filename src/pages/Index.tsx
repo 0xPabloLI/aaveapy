@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useRef } from 'react';
 import { useAaveMarkets, useAaveMarketStats, useAaveMarketsList } from '@/hooks/useAaveMarkets';
 import { useQueryClient } from '@tanstack/react-query';
 import { SortField, SortOrder, TokenCategory, STABLECOINS, ETH_RELATED, BTC_RELATED, PENDLE_TOKENS } from '@/types/aave';
@@ -26,6 +26,12 @@ const Index = () => {
   const { data: poolsData, isLoading, error, refetch } = useAaveMarkets();
   const { data: stats, refetch: refetchStats } = useAaveMarketStats();
   const { data: marketsList, refetch: refetchMarketsList } = useAaveMarketsList();
+
+  // Stable reference for pools data to prevent TopOpportunities from re-rendering
+  // when filters change (only update when actual data changes)
+  const stablePools = useMemo(() => {
+    return poolsData?.data || [];
+  }, [poolsData?.data]);
 
   // Pull to refresh handler
   const handleRefresh = useCallback(async () => {
@@ -120,8 +126,8 @@ const Index = () => {
           />
 
           {/* Top Opportunities */}
-          {poolsData?.data && (
-            <TopOpportunities pools={poolsData.data} isApy={isApy} />
+          {stablePools && stablePools.length > 0 && (
+            <TopOpportunities pools={stablePools} isApy={isApy} />
           )}
 
           {/* Filters */}
