@@ -401,9 +401,9 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
         
         {/* 2x2 Grid layout for mobile */}
         <div className="grid grid-cols-2 gap-2">
-          {(showAll ? sortedData : sortedData.slice(0, DEFAULT_VISIBLE_COUNT)).map((pool, idx) => (
+          {(showAll ? sortedData : sortedData.slice(0, DEFAULT_VISIBLE_COUNT)).map((pool) => (
             <MobilePoolCard
-              key={idx}
+              key={`${pool.marketName}-${pool.tokenAddress}`}
               pool={pool}
               isApy={isApy}
               onIncentiveClick={handleMobileIncentiveClick}
@@ -622,7 +622,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
             </TableRow>
           </TableHeader>
           <TableBody>
-            {(showAll ? sortedData : sortedData.slice(0, DEFAULT_VISIBLE_COUNT)).map((pool, idx) => {
+            {(showAll ? sortedData : sortedData.slice(0, DEFAULT_VISIBLE_COUNT)).map((pool) => {
               // Cache incentive values to avoid redundant calculations
               const supplyIncentiveValues = getIncentiveValues(pool, 'supply');
               const borrowIncentiveValues = getIncentiveValues(pool, 'borrow');
@@ -655,7 +655,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
 
               return (
                 <TableRow
-                  key={idx}
+                  key={`${pool.marketName}-${pool.tokenAddress}`}
                   className="hover:bg-gray-50/50 transition-colors cursor-pointer"
                   onClick={() => handleRowClick(pool)}
                 >

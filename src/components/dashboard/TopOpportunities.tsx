@@ -590,19 +590,19 @@ export default memo(TopOpportunities, (prevProps, nextProps) => {
     return true;
   }
   
-  // Quick check: compare first and last items' tokenAddress
-  // If they're the same, likely the same data (just different reference)
-  const prevFirst = prevProps.pools[0]?.tokenAddress;
-  const nextFirst = nextProps.pools[0]?.tokenAddress;
-  const prevLast = prevProps.pools[prevProps.pools.length - 1]?.tokenAddress;
-  const nextLast = nextProps.pools[nextProps.pools.length - 1]?.tokenAddress;
-  
-  // If first and last items are the same, assume data hasn't changed
-  // This prevents re-renders when filter buttons are clicked but data is the same
-  if (prevFirst === nextFirst && prevLast === nextLast) {
-    return true;
+  // Deep comparison: compare all items' tokenAddress values
+  // This ensures we detect changes in the middle of the array or reordering
+  for (let i = 0; i < prevProps.pools.length; i++) {
+    const prevPool = prevProps.pools[i];
+    const nextPool = nextProps.pools[i];
+    
+    // Compare tokenAddress (unique identifier) and marketName (for disambiguation)
+    if (prevPool?.tokenAddress !== nextPool?.tokenAddress || 
+        prevPool?.marketName !== nextPool?.marketName) {
+      return false; // Data changed, allow re-render
+    }
   }
   
-  // Data likely changed, allow re-render
-  return false;
+  // All items match, skip re-render
+  return true;
 });
