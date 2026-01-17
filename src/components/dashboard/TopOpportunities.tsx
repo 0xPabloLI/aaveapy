@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, memo } from 'react';
 import { TrendingUp, Zap, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PoolWithSpread, ETHEREUM_MARKET_NAMES, STABLECOINS, ETH_RELATED, BTC_RELATED } from '@/types/aave';
@@ -39,7 +39,8 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
   } | null>(null);
 
   // Calculate totals for all pools (frontend calculates incentive totals from details)
-  const poolsWithTotals = pools.map(pool => {
+  // Memoize to prevent recalculation when props haven't changed
+  const poolsWithTotals = useMemo(() => pools.map(pool => {
     const getIncentiveValues = (type: 'supply' | 'borrow') => {
       const protocolIncentives = type === 'supply' ? pool.supplyIncentives : pool.borrowIncentives;
       const meritIncentives = type === 'supply' ? pool.meritSupplys : pool.meritBorrows;
@@ -72,7 +73,7 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
       totalBorrowApr,
       aprSpread: calculateSpreadApr(totalSupplyApr, totalBorrowApr),
     };
-  });
+  }), [pools]);
 
   const isStablecoin = (symbol: string): boolean => {
     return STABLECOINS.some(s => symbol.toUpperCase().includes(s.toUpperCase()));
@@ -86,8 +87,8 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
     return BTC_RELATED.some(s => symbol.toUpperCase().includes(s.toUpperCase()));
   };
 
-  // Top 3 Stable APY
-  const topStable = [...poolsWithTotals]
+  // Top 5 Stable APY - memoized to prevent recalculation
+  const topStable = useMemo(() => [...poolsWithTotals]
     .filter(m => isStablecoin(m.tokenSymbol))
     .filter(m => {
       const value = isApy ? m.totalSupplyApy : m.totalSupplyApr;
@@ -98,10 +99,10 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
       const bValue = isApy ? b.totalSupplyApy : b.totalSupplyApr;
       return bValue - aValue;
     })
-    .slice(0, DISPLAY_COUNT);
+    .slice(0, DISPLAY_COUNT), [poolsWithTotals, isApy]);
 
-  // Top 3 ETH APY
-  const topEth = [...poolsWithTotals]
+  // Top 5 ETH APY - memoized to prevent recalculation
+  const topEth = useMemo(() => [...poolsWithTotals]
     .filter(m => isEthRelated(m.tokenSymbol))
     .filter(m => {
       const value = isApy ? m.totalSupplyApy : m.totalSupplyApr;
@@ -112,10 +113,10 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
       const bValue = isApy ? b.totalSupplyApy : b.totalSupplyApr;
       return bValue - aValue;
     })
-    .slice(0, DISPLAY_COUNT);
+    .slice(0, DISPLAY_COUNT), [poolsWithTotals, isApy]);
 
-  // Top 3 BTC APY
-  const topBtc = [...poolsWithTotals]
+  // Top 5 BTC APY - memoized to prevent recalculation
+  const topBtc = useMemo(() => [...poolsWithTotals]
     .filter(m => isBtcRelated(m.tokenSymbol))
     .filter(m => {
       const value = isApy ? m.totalSupplyApy : m.totalSupplyApr;
@@ -126,10 +127,10 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
       const bValue = isApy ? b.totalSupplyApy : b.totalSupplyApr;
       return bValue - aValue;
     })
-    .slice(0, DISPLAY_COUNT);
+    .slice(0, DISPLAY_COUNT), [poolsWithTotals, isApy]);
 
-  // Top 3 Looping opportunities
-  const topLooping = [...poolsWithTotals]
+  // Top 5 Looping opportunities - memoized to prevent recalculation
+  const topLooping = useMemo(() => [...poolsWithTotals]
     .filter(m => {
       const spread = isApy ? m.apySpread : m.aprSpread;
       return spread !== null && spread > 0;
@@ -139,7 +140,7 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
       const bSpread = isApy ? b.apySpread : b.aprSpread;
       return (bSpread || 0) - (aSpread || 0);
     })
-    .slice(0, DISPLAY_COUNT);
+    .slice(0, DISPLAY_COUNT), [poolsWithTotals, isApy]);
 
   const getMarketDisplayName = (pool: PoolWithSpread) => {
     if (pool.chainName === 'Ethereum' && ETHEREUM_MARKET_NAMES[pool.marketName]) {
@@ -566,4 +567,42 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
   );
 };
 
-export default TopOpportunities;
+// Memoize component to prevent re-renders when parent state changes (e.g., filter buttons)
+// Only re-render when pools data actually changed or isApy changed
+export default memo(TopOpportunities, (prevProps, nextProps) => {
+  // If isApy changed, always re-render
+  if (prevProps.isApy !== nextProps.isApy) {
+    return false;
+  }
+  
+  // If pools array reference is the same, no re-render needed
+  if (prevProps.pools === nextProps.pools) {
+    return true;
+  }
+  
+  // If pools arrays have different lengths, data changed
+  if (prevProps.pools.length !== nextProps.pools.length) {
+    return false;
+  }
+  
+  // If both arrays are empty, no change
+  if (prevProps.pools.length === 0) {
+    return true;
+  }
+  
+  // Quick check: compare first and last items' tokenAddress
+  // If they're the same, likely the same data (just different reference)
+  const prevFirst = prevProps.pools[0]?.tokenAddress;
+  const nextFirst = nextProps.pools[0]?.tokenAddress;
+  const prevLast = prevProps.pools[prevProps.pools.length - 1]?.tokenAddress;
+  const nextLast = nextProps.pools[nextProps.pools.length - 1]?.tokenAddress;
+  
+  // If first and last items are the same, assume data hasn't changed
+  // This prevents re-renders when filter buttons are clicked but data is the same
+  if (prevFirst === nextFirst && prevLast === nextLast) {
+    return true;
+  }
+  
+  // Data likely changed, allow re-render
+  return false;
+});

@@ -212,7 +212,14 @@ const FilterBar = ({
         {categories.map((category) => (
           <button
             key={category.value}
-            onClick={() => setSelectedCategory(category.value)}
+            onClick={() => {
+              // Toggle behavior: if clicking the selected category, switch to 'all'
+              if (selectedCategory === category.value) {
+                setSelectedCategory('all');
+              } else {
+                setSelectedCategory(category.value);
+              }
+            }}
             className={`px-2 md:px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
               selectedCategory === category.value
                 ? 'bg-primary text-primary-foreground'
