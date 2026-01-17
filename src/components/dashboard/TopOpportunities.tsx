@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { TrendingUp, Zap, ChevronDown, ChevronUp } from 'lucide-react';
+import { TrendingUp, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PoolWithSpread, ETHEREUM_MARKET_NAMES, STABLECOINS, ETH_RELATED, BTC_RELATED } from '@/types/aave';
 import { 
@@ -25,8 +25,7 @@ interface TopOpportunitiesProps {
   isApy: boolean;
 }
 
-const DEFAULT_VISIBLE_COUNT = 3;
-const FULL_COUNT = 5;
+const DISPLAY_COUNT = 3;
 
 const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
   const isMobile = useIsMobile();
@@ -36,26 +35,6 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
     position: { x: number; y: number };
     triggerCenterX: number;
   } | null>(null);
-
-  // Collapse states for each category
-  const [expandedCategories, setExpandedCategories] = useState<{
-    stable: boolean;
-    eth: boolean;
-    btc: boolean;
-    leverage: boolean;
-  }>({
-    stable: false,
-    eth: false,
-    btc: false,
-    leverage: false
-  });
-
-  const toggleCategory = (category: keyof typeof expandedCategories) => {
-    setExpandedCategories(prev => ({
-      ...prev,
-      [category]: !prev[category]
-    }));
-  };
 
   // Calculate totals for all pools (frontend calculates incentive totals from details)
   const poolsWithTotals = pools.map(pool => {
@@ -105,7 +84,7 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
     return BTC_RELATED.some(s => symbol.toUpperCase().includes(s.toUpperCase()));
   };
 
-  // Top 5 Stable APY
+  // Top 3 Stable APY
   const topStable = [...poolsWithTotals]
     .filter(m => isStablecoin(m.tokenSymbol))
     .filter(m => {
@@ -117,9 +96,9 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
       const bValue = isApy ? b.totalSupplyApy : b.totalSupplyApr;
       return bValue - aValue;
     })
-    .slice(0, FULL_COUNT);
+    .slice(0, DISPLAY_COUNT);
 
-  // Top 5 ETH APY
+  // Top 3 ETH APY
   const topEth = [...poolsWithTotals]
     .filter(m => isEthRelated(m.tokenSymbol))
     .filter(m => {
@@ -131,9 +110,9 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
       const bValue = isApy ? b.totalSupplyApy : b.totalSupplyApr;
       return bValue - aValue;
     })
-    .slice(0, FULL_COUNT);
+    .slice(0, DISPLAY_COUNT);
 
-  // Top 5 BTC APY
+  // Top 3 BTC APY
   const topBtc = [...poolsWithTotals]
     .filter(m => isBtcRelated(m.tokenSymbol))
     .filter(m => {
@@ -145,9 +124,9 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
       const bValue = isApy ? b.totalSupplyApy : b.totalSupplyApr;
       return bValue - aValue;
     })
-    .slice(0, FULL_COUNT);
+    .slice(0, DISPLAY_COUNT);
 
-  // Top 5 Looping opportunities
+  // Top 3 Looping opportunities
   const topLooping = [...poolsWithTotals]
     .filter(m => {
       const spread = isApy ? m.apySpread : m.aprSpread;
@@ -158,7 +137,7 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
       const bSpread = isApy ? b.apySpread : b.aprSpread;
       return (bSpread || 0) - (aSpread || 0);
     })
-    .slice(0, FULL_COUNT);
+    .slice(0, DISPLAY_COUNT);
 
   const getMarketDisplayName = (pool: PoolWithSpread) => {
     if (pool.chainName === 'Ethereum' && ETHEREUM_MARKET_NAMES[pool.marketName]) {
@@ -325,7 +304,7 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
     );
   };
 
-  // Category card component with expand/collapse
+  // Category card component (simplified - no expand/collapse)
   const CategoryCard = ({
     title,
     subtitle,
@@ -343,14 +322,10 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
     iconColorClass: string;
     bgColorClass: string;
     pools: typeof poolsWithTotals;
-    categoryKey: keyof typeof expandedCategories;
+    categoryKey: string;
     type: 'supply' | 'leverage';
     emptyMessage: string;
   }) => {
-    const isExpanded = expandedCategories[categoryKey];
-    const displayPools = isExpanded ? categoryPools : categoryPools.slice(0, DEFAULT_VISIBLE_COUNT);
-    const hasMore = categoryPools.length > DEFAULT_VISIBLE_COUNT;
-
     return (
       <div className={`glass-card rounded-xl ${isMobile ? 'p-3' : 'p-5'} ${isMobile ? 'col-span-1' : ''} flex flex-col`}>
         <motion.div 
@@ -376,7 +351,7 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
         <div className="flex-1 space-y-2">
           <AnimatePresence mode="popLayout">
             {categoryPools.length > 0 ? (
-              displayPools.map((pool, i) => (
+              categoryPools.map((pool, i) => (
                 <PoolItem 
                   key={`${categoryKey}-${pool.marketName}-${pool.tokenSymbol}`}
                   pool={pool} 
@@ -391,17 +366,6 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
             )}
           </AnimatePresence>
         </div>
-
-        {/* Expand/Collapse button */}
-        {hasMore && (
-          <button
-            onClick={() => toggleCategory(categoryKey)}
-            className={`mt-3 w-full flex items-center justify-center gap-1 py-2 rounded-lg border border-border bg-muted/30 hover:bg-muted/50 transition-colors text-secondary ${isMobile ? 'text-xs' : 'text-sm'}`}
-          >
-            <span>{isExpanded ? 'Show Less' : `Show ${categoryPools.length - DEFAULT_VISIBLE_COUNT} More`}</span>
-            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-          </button>
-        )}
       </div>
     );
   };
