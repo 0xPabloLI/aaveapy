@@ -17,7 +17,9 @@ import {
 } from '@/lib/formatters';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { IncentiveIcon } from '@/components/IncentiveIcon';
+import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
+import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
 import IncentiveTooltip from './IncentiveTooltip';
 import MobilePoolCard from './MobilePoolCard';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -652,6 +654,11 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
               const spread = isApy
                 ? calculateSpreadApy(totalSupplyApy, totalBorrowApy)
                 : calculateSpreadApr(totalSupplyApr, totalBorrowApr);
+              const { iconSymbol } = fetchIconSymbolAndName({
+                underlyingAsset: pool.tokenAddress,
+                symbol: pool.tokenSymbol,
+                name: pool.tokenName,
+              });
 
               return (
                 <TableRow
@@ -661,9 +668,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                 >
                   <TableCell className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-600">
-                        {pool.tokenSymbol[0]}
-                      </div>
+                      <TokenIcon symbol={iconSymbol} size={32} loading="eager" />
                       <span className="font-semibold text-gray-900">
                         {pool.tokenSymbol}
                       </span>
