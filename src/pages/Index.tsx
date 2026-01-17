@@ -56,11 +56,12 @@ const Index = () => {
     if (!poolsData?.data) return [];
 
     return poolsData.data.filter(pool => {
-      // Search filter
+      // Search filter - only match tokenSymbol
       if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-        if (!pool.tokenSymbol.toLowerCase().includes(query) &&
-            !pool.tokenName.toLowerCase().includes(query)) {
+        const query = searchQuery.toLowerCase().trim();
+        const symbol = pool.tokenSymbol.toLowerCase();
+        
+        if (!symbol.includes(query)) {
           return false;
         }
       }
