@@ -19,6 +19,8 @@ import { IncentiveIcon } from '@/components/IncentiveIcon';
 import IncentiveTooltip from './IncentiveTooltip';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getChainIconSrc } from '@/lib/chainIcons';
+import { TokenIcon } from '@/components/primitives/TokenIcon';
+import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
 import { Carousel, CarouselContent, CarouselItem, CarouselApi } from '@/components/ui/carousel';
 import { Button } from '@/components/ui/button';
 
@@ -232,6 +234,11 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
     const incentiveValue = isApy ? pool.supplyIncentiveApy : pool.supplyIncentiveApr;
     const hasIncentive = incentiveValue !== null && !isNaN(incentiveValue) && incentiveValue >= 0.01;
     const chainIconSrc = getChainIconSrc(pool.chainName);
+    const { iconSymbol } = fetchIconSymbolAndName({
+      underlyingAsset: pool.tokenAddress,
+      symbol: pool.tokenSymbol,
+      name: pool.tokenName,
+    });
 
     return (
       <motion.div 
@@ -256,6 +263,12 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
         {/* Token Info - Flex grow */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
+            <TokenIcon
+              symbol={iconSymbol}
+              size={isMobile ? 20 : 24}
+              loading="eager"
+              className="shrink-0"
+            />
             <p className={`font-semibold text-foreground truncate ${isMobile ? 'text-sm' : 'text-base'}`}>
               {pool.tokenSymbol}
             </p>

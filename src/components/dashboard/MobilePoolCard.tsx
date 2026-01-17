@@ -16,6 +16,8 @@ import {
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { IncentiveIcon } from '@/components/IncentiveIcon';
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
+import { TokenIcon } from '@/components/primitives/TokenIcon';
+import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
 
 interface MobilePoolCardProps {
   pool: PoolWithSpread;
@@ -75,6 +77,11 @@ const MobilePoolCard = ({ pool, isApy, onIncentiveClick }: MobilePoolCardProps) 
     : calculateSpreadApr(totalSupplyApr, totalBorrowApr);
 
   const chainIconSrc = getChainIconSrc(pool.chainName);
+  const { iconSymbol } = fetchIconSymbolAndName({
+    underlyingAsset: pool.tokenAddress,
+    symbol: pool.tokenSymbol,
+    name: pool.tokenName,
+  });
 
   const handleCardClick = () => {
     const url = buildAaveReserveUrl({
@@ -103,9 +110,7 @@ const MobilePoolCard = ({ pool, isApy, onIncentiveClick }: MobilePoolCardProps) 
     >
       {/* Header: Token + Market - Compact layout */}
       <div className="flex items-center gap-2 mb-2">
-        <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-600 shrink-0">
-          {pool.tokenSymbol[0]}
-        </div>
+        <TokenIcon symbol={iconSymbol} size={32} loading="eager" className="shrink-0" />
         <div className="min-w-0 flex-1">
           <p className="font-bold text-gray-900 text-sm truncate">{pool.tokenSymbol}</p>
           <div className="flex items-center gap-1 text-[10px] text-gray-500">
