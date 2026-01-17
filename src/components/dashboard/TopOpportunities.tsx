@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { TrendingUp, Zap } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { TrendingUp, Zap, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PoolWithSpread, ETHEREUM_MARKET_NAMES, STABLECOINS, ETH_RELATED, BTC_RELATED } from '@/types/aave';
 import { 
@@ -19,13 +19,15 @@ import { IncentiveIcon } from '@/components/IncentiveIcon';
 import IncentiveTooltip from './IncentiveTooltip';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getChainIconSrc } from '@/lib/chainIcons';
+import { Carousel, CarouselContent, CarouselItem, CarouselApi } from '@/components/ui/carousel';
+import { Button } from '@/components/ui/button';
 
 interface TopOpportunitiesProps {
   pools: PoolWithSpread[];
   isApy: boolean;
 }
 
-const DISPLAY_COUNT = 3;
+const DISPLAY_COUNT = 5;
 
 const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
   const isMobile = useIsMobile();
@@ -370,59 +372,185 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
     );
   };
 
+  // Mobile carousel state
+  const [api, setApi] = useState<CarouselApi>();
+  const [current, setCurrent] = useState(0);
+  const [canScrollPrev, setCanScrollPrev] = useState(false);
+  const [canScrollNext, setCanScrollNext] = useState(false);
+
+  useEffect(() => {
+    if (!api) {
+      return;
+    }
+
+    setCurrent(api.selectedScrollSnap());
+    setCanScrollPrev(api.canScrollPrev());
+    setCanScrollNext(api.canScrollNext());
+
+    api.on("select", () => {
+      setCurrent(api.selectedScrollSnap());
+      setCanScrollPrev(api.canScrollPrev());
+      setCanScrollNext(api.canScrollNext());
+    });
+  }, [api]);
+
+  const categories = [
+    {
+      title: `Top Stable ${isApy ? 'APY' : 'APR'}`,
+      subtitle: `Native + Incentive ${isApy ? 'APY' : 'APR'}`,
+      icon: TrendingUp,
+      iconColorClass: "text-success",
+      bgColorClass: "bg-success/10",
+      pools: topStable,
+      categoryKey: "stable",
+      type: "supply" as const,
+      emptyMessage: "No stablecoin opportunities found"
+    },
+    {
+      title: `Top ETH ${isApy ? 'APY' : 'APR'}`,
+      subtitle: `Native + Incentive ${isApy ? 'APY' : 'APR'}`,
+      icon: TrendingUp,
+      iconColorClass: "text-success",
+      bgColorClass: "bg-success/10",
+      pools: topEth,
+      categoryKey: "eth",
+      type: "supply" as const,
+      emptyMessage: "No ETH-related opportunities found"
+    },
+    {
+      title: `Top BTC ${isApy ? 'APY' : 'APR'}`,
+      subtitle: `Native + Incentive ${isApy ? 'APY' : 'APR'}`,
+      icon: TrendingUp,
+      iconColorClass: "text-success",
+      bgColorClass: "bg-success/10",
+      pools: topBtc,
+      categoryKey: "btc",
+      type: "supply" as const,
+      emptyMessage: "No BTC-related opportunities found"
+    },
+    {
+      title: "Leverage Opportunities",
+      subtitle: `Supply - Borrow ${isApy ? 'APY' : 'APR'}`,
+      icon: Zap,
+      iconColorClass: "text-warning",
+      bgColorClass: "bg-warning/10",
+      pools: topLooping,
+      categoryKey: "leverage",
+      type: "leverage" as const,
+      emptyMessage: "No looping opportunities found"
+    }
+  ];
+
+  // Desktop grid layout
+  if (!isMobile) {
+    return (
+      <div className="grid gap-3 md:gap-4 grid-cols-2 lg:grid-cols-4">
+        {categories.map((category) => (
+          <CategoryCard
+            key={category.categoryKey}
+            title={category.title}
+            subtitle={category.subtitle}
+            icon={category.icon}
+            iconColorClass={category.iconColorClass}
+            bgColorClass={category.bgColorClass}
+            pools={category.pools}
+            categoryKey={category.categoryKey}
+            type={category.type}
+            emptyMessage={category.emptyMessage}
+          />
+        ))}
+
+        {tooltipState && (
+          <IncentiveTooltip
+            pool={tooltipState.pool}
+            type={tooltipState.type}
+            position={tooltipState.position}
+            triggerCenterX={tooltipState.triggerCenterX}
+            onClose={() => setTooltipState(null)}
+            isApy={isApy}
+          />
+        )}
+      </div>
+    );
+  }
+
+  // Mobile carousel layout
   return (
-    <div className={`grid gap-3 md:gap-4 ${
-      isMobile 
-        ? 'grid-cols-2'
-        : 'grid-cols-2 lg:grid-cols-4'
-    }`}>
-      <CategoryCard
-        title={`Top Stable ${isApy ? 'APY' : 'APR'}`}
-        subtitle={`Native + Incentive ${isApy ? 'APY' : 'APR'}`}
-        icon={TrendingUp}
-        iconColorClass="text-success"
-        bgColorClass="bg-success/10"
-        pools={topStable}
-        categoryKey="stable"
-        type="supply"
-        emptyMessage="No stablecoin opportunities found"
-      />
+    <div className="relative">
+      <Carousel
+        setApi={setApi}
+        opts={{
+          align: "center",
+          loop: false,
+          dragFree: false,
+          containScroll: "trimSnaps",
+        }}
+        className="w-full"
+      >
+        <CarouselContent className="-ml-2 md:-ml-4">
+          {categories.map((category, index) => (
+            <CarouselItem key={category.categoryKey} className="pl-2 md:pl-4 basis-[85%] sm:basis-[85%]">
+              <div className="relative h-full">
+                <CategoryCard
+                  title={category.title}
+                  subtitle={category.subtitle}
+                  icon={category.icon}
+                  iconColorClass={category.iconColorClass}
+                  bgColorClass={category.bgColorClass}
+                  pools={category.pools}
+                  categoryKey={category.categoryKey}
+                  type={category.type}
+                  emptyMessage={category.emptyMessage}
+                />
+              </div>
+            </CarouselItem>
+          ))}
+        </CarouselContent>
 
-      <CategoryCard
-        title={`Top ETH ${isApy ? 'APY' : 'APR'}`}
-        subtitle={`Native + Incentive ${isApy ? 'APY' : 'APR'}`}
-        icon={TrendingUp}
-        iconColorClass="text-success"
-        bgColorClass="bg-success/10"
-        pools={topEth}
-        categoryKey="eth"
-        type="supply"
-        emptyMessage="No ETH-related opportunities found"
-      />
+        {/* Navigation arrows - positioned on card edges */}
+        {canScrollPrev && (
+          <div className="absolute left-2 top-1/2 -translate-y-1/2 z-20 pointer-events-none">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-7 w-7 rounded-full bg-background/90 backdrop-blur-sm border shadow-lg pointer-events-auto hover:bg-accent"
+              onClick={() => api?.scrollPrev()}
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+              <span className="sr-only">Previous slide</span>
+            </Button>
+          </div>
+        )}
+        {canScrollNext && (
+          <div className="absolute right-2 top-1/2 -translate-y-1/2 z-20 pointer-events-none">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-7 w-7 rounded-full bg-background/90 backdrop-blur-sm border shadow-lg pointer-events-auto hover:bg-accent"
+              onClick={() => api?.scrollNext()}
+            >
+              <ChevronRight className="h-3.5 w-3.5" />
+              <span className="sr-only">Next slide</span>
+            </Button>
+          </div>
+        )}
+      </Carousel>
 
-      <CategoryCard
-        title={`Top BTC ${isApy ? 'APY' : 'APR'}`}
-        subtitle={`Native + Incentive ${isApy ? 'APY' : 'APR'}`}
-        icon={TrendingUp}
-        iconColorClass="text-success"
-        bgColorClass="bg-success/10"
-        pools={topBtc}
-        categoryKey="btc"
-        type="supply"
-        emptyMessage="No BTC-related opportunities found"
-      />
-
-      <CategoryCard
-        title="Leverage Opportunities"
-        subtitle={`Supply - Borrow ${isApy ? 'APY' : 'APR'}`}
-        icon={Zap}
-        iconColorClass="text-warning"
-        bgColorClass="bg-warning/10"
-        pools={topLooping}
-        categoryKey="leverage"
-        type="leverage"
-        emptyMessage="No looping opportunities found"
-      />
+      {/* Pagination indicators */}
+      <div className="flex justify-center items-center gap-2 mt-4">
+        {categories.map((_, index) => (
+          <button
+            key={index}
+            className={`transition-all rounded-full ${
+              current === index
+                ? 'w-2.5 h-2.5 bg-primary'
+                : 'w-2 h-2 bg-muted-foreground/30 hover:bg-muted-foreground/50'
+            }`}
+            onClick={() => api?.scrollTo(index)}
+            aria-label={`Go to slide ${index + 1}`}
+          />
+        ))}
+      </div>
 
       {tooltipState && (
         <IncentiveTooltip

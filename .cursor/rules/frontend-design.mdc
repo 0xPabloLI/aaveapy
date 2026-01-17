@@ -1,0 +1,192 @@
+# Frontend Design & UX Rules
+
+## Scope
+This rule applies to all UI components, pages, and design-related code in `src/components/`, `src/pages/`, and `src/index.css`.
+
+## Mobile-First Design Principles
+
+### Responsive Breakpoints
+- Always design mobile-first, then enhance for larger screens
+- Use Tailwind breakpoints: `sm:` (640px), `md:` (768px), `lg:` (1024px)
+- Mobile detection: Use `useIsMobile()` hook (768px breakpoint)
+- Never use fixed widths on mobile - use `w-full` or percentage-based widths
+
+### Mobile Carousel Pattern
+When implementing carousels/swipers for mobile:
+
+1. **Required Components**:
+   - Use `embla-carousel-react` via `@/components/ui/carousel`
+   - Import: `Carousel`, `CarouselContent`, `CarouselItem`, `CarouselApi`
+
+2. **State Management**:
+   ```tsx
+   const [api, setApi] = useState<CarouselApi>();
+   const [current, setCurrent] = useState(0);
+   const [canScrollPrev, setCanScrollPrev] = useState(false);
+   const [canScrollNext, setCanScrollNext] = useState(false);
+   ```
+
+3. **Configuration**:
+   ```tsx
+   opts={{
+     align: "center",        // Center snap for peek effect
+     loop: false,            // No infinite loop
+     dragFree: false,        // Snap to slides
+     containScroll: "trimSnaps",
+   }}
+   ```
+
+4. **Peek Effect**:
+   - Use `basis-[85%]` on `CarouselItem` to show 15% of adjacent cards
+   - This creates visual hint that more content is available
+
+5. **Pagination Indicators**:
+   - Always include dots at bottom
+   - Active dot: `w-2.5 h-2.5 bg-primary`
+   - Inactive dots: `w-2 h-2 bg-muted-foreground/30`
+   - Make dots clickable: `onClick={() => api?.scrollTo(index)}`
+
+6. **Navigation Arrows**:
+   - Position: `absolute left-2` and `right-2` on card edges
+   - Only show when scrollable: `{canScrollPrev && ...}`
+   - Style: `h-7 w-7 rounded-full bg-background/90 backdrop-blur-sm`
+   - Use `ChevronLeft` and `ChevronRight` from `lucide-react`
+
+## Visual Design Standards
+
+### Spacing & Layout
+- Base spacing unit: 4px (0.5rem = 8px, 1rem = 16px)
+- Card padding: `p-3` (mobile), `p-5` (desktop)
+- Gap between cards: `gap-3` (mobile), `gap-4` (desktop)
+- Section spacing: `space-y-4` (mobile), `space-y-8` (desktop)
+
+### Typography
+- Headings: `font-bold`, responsive sizes (`text-sm` → `text-base`)
+- Body text: `text-muted-foreground` for secondary
+- Numbers: Always `tabular-nums` for alignment
+- Truncation: Use `truncate` with `min-w-0` on parent container
+
+### Colors & Theming
+- Use semantic tokens: `primary`, `secondary`, `success`, `warning`, `destructive`
+- APY color coding:
+  - ≥15%: `text-emerald-600`
+  - ≥10%: `text-emerald-500`
+  - ≥5%: `text-teal-500`
+  - ≥2%: `text-teal-400`
+  - ≥1%: `text-cyan-500`
+  - <1%: `text-muted-foreground`
+
+### Component Styling
+- Cards: `glass-card rounded-xl` class
+- Borders: `border border-border` (subtle)
+- Shadows: Use scale (sm, md, lg) - avoid heavy shadows
+- Hover states: `hover:bg-accent`, `hover:scale-105` (subtle)
+
+## Animation Guidelines
+
+### Framer Motion Usage
+- Import: `motion`, `AnimatePresence` from `framer-motion`
+- Duration: 0.2-0.4s for most animations
+- Easing: `[0.25, 0.1, 0.25, 1]` (smooth, natural)
+- Stagger: `delay: 0.2 + i * 0.08` for list items
+
+### Performance
+- Use `transform` and `opacity` only (GPU-accelerated)
+- Avoid animating `width`, `height`, `top`, `left`
+- Use `AnimatePresence` for mount/unmount animations
+
+## Accessibility Requirements
+
+### Interactive Elements
+- All buttons/links must have `aria-label` or visible text
+- Touch targets: Minimum 44x44px on mobile
+- Focus states: `focus-visible:ring-2 focus-visible:ring-ring`
+- Keyboard navigation: Support Tab, Enter, Arrow keys
+
+### Screen Readers
+- Use semantic HTML (`<button>`, `<nav>`, `<main>`)
+- Add `sr-only` class for visually hidden but accessible text
+- Provide context: `aria-label="Go to slide 2"` for pagination
+
+### Color Contrast
+- Text must meet WCAG AA: 4.5:1 contrast ratio
+- Use `text-muted-foreground` for secondary text (lower contrast OK)
+- Never rely on color alone to convey information
+
+## Data Display Patterns
+
+### APY/APR Formatting
+- Use `formatPercent()` and `formatSpread()` from `@/lib/formatters`
+- Show breakdown: `{native} + {incentive}` with `+` separator
+- Incentive badges: `bg-amber-50 text-amber-600` with icon
+- Always use `tabular-nums` for number alignment
+
+### Empty States
+- Show helpful message: "No {category} opportunities found"
+- Center content: `text-center py-6`
+- Use `text-muted-foreground` for empty state text
+
+### Loading States
+- Use skeleton loaders matching final layout
+- Reference: `LoadingState.tsx` component
+- Show skeletons in same grid/carousel structure as final content
+
+## Component Patterns
+
+### Responsive Grid
+```tsx
+// Desktop: 4 columns, Mobile: 2 columns
+<div className="grid gap-3 md:gap-4 grid-cols-2 lg:grid-cols-4">
+  {/* Cards */}
+</div>
+```
+
+### Mobile Carousel Wrapper
+```tsx
+// Desktop: Grid, Mobile: Carousel
+{!isMobile ? (
+  <div className="grid ...">{cards}</div>
+) : (
+  <Carousel>
+    <CarouselContent>
+      {cards.map(card => (
+        <CarouselItem key={...} className="basis-[85%]">
+          {card}
+        </CarouselItem>
+      ))}
+    </CarouselContent>
+    {/* Pagination & Arrows */}
+  </Carousel>
+)}
+```
+
+## Performance Best Practices
+
+### Code Splitting
+- Use `React.lazy()` for route-level components
+- Dynamic imports for heavy dependencies
+
+### Re-render Optimization
+- Use `React.memo()` for expensive components
+- Use `useMemo()` for calculated values
+- Use `useCallback()` for event handlers passed as props
+
+### Image Optimization
+- Use WebP format when possible
+- Add `loading="lazy"` for below-fold images
+- Specify width/height to prevent layout shift
+
+## Testing Checklist
+
+Before submitting UI changes:
+- [ ] Test on mobile viewport (< 768px)
+- [ ] Test on tablet viewport (768px - 1024px)
+- [ ] Test on desktop viewport (> 1024px)
+- [ ] Verify carousel pagination works
+- [ ] Verify navigation arrows appear/disappear correctly
+- [ ] Check touch/swipe gestures on mobile
+- [ ] Verify keyboard navigation
+- [ ] Check color contrast ratios
+- [ ] Test with screen reader (if available)
+- [ ] Verify loading states match final layout
+- [ ] Check empty states display correctly
