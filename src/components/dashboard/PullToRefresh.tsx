@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { RefreshCw } from 'lucide-react';
-import { motion, useAnimation, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface PullToRefreshProps {
   onRefresh: () => Promise<void>;
@@ -17,7 +17,6 @@ const PullToRefresh = ({ onRefresh, children, disabled = false }: PullToRefreshP
   const [isRefreshing, setIsRefreshing] = useState(false);
   const startY = useRef(0);
   const containerRef = useRef<HTMLDivElement>(null);
-  const controls = useAnimation();
 
   const handleTouchStart = useCallback((e: TouchEvent) => {
     if (disabled || isRefreshing) return;
@@ -90,10 +89,10 @@ const PullToRefresh = ({ onRefresh, children, disabled = false }: PullToRefreshP
             style={{ paddingTop: Math.min(pullDistance, PULL_THRESHOLD * 0.8) }}
           >
             <motion.div
-              className={`flex items-center justify-center w-10 h-10 rounded-full shadow-lg ${
+              className={`flex items-center justify-center w-10 h-10 rounded-full shadow-lg border transition-colors ${
                 shouldTrigger || isRefreshing
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-card text-muted-foreground'
+                  ? 'bg-success text-success-foreground border-success/30'
+                  : 'bg-card text-muted-foreground border-border'
               }`}
               style={{
                 transform: `rotate(${progress * 360}deg)`,
