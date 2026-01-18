@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { ArrowUp, ArrowDown, ChevronDown, ChevronUp } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { PoolWithSpread, ETHEREUM_MARKET_NAMES } from '@/types/aave';
@@ -438,6 +438,66 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
     );
   }
 
+  // Virtual scrolling setup
+  const displayData = useMemo(() => 
+    showAll ? sortedData : sortedData.slice(0, DEFAULT_VISIBLE_COUNT),
+    [sortedData, showAll]
+  );
+
+  const rowVirtualizer = useVirtualizer({
+    count: displayData.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => ROW_HEIGHT,
+    overscan: 5,
+  });
+
+  // Memoized row renderer
+  const renderPoolRow = useCallback((pool: PoolWithSpread) => {
+    const supplyIncentiveValues = getIncentiveValues(pool, 'supply');
+    const borrowIncentiveValues = getIncentiveValues(pool, 'borrow');
+    
+    const totalSupplyApy = calculateTotalSupplyApy(pool.supplyApy, supplyIncentiveValues.apy);
+    const totalSupplyApr = calculateTotalSupplyApr(pool.supplyApy, supplyIncentiveValues.apr);
+    const totalBorrowApy = calculateTotalBorrowApy(pool.borrowApy, borrowIncentiveValues.apy);
+    const totalBorrowApr = calculateTotalBorrowApr(pool.borrowApy, borrowIncentiveValues.apr);
+    const nativeSupplyApy = getNativeSupplyApy(pool);
+    const nativeBorrowApy = getNativeBorrowApy(pool);
+    
+    const displaySupplyTotal = isApy ? totalSupplyApy : totalSupplyApr;
+    const displaySupplyNative = isApy ? nativeSupplyApy : (nativeSupplyApy !== null ? apyToApr(nativeSupplyApy) : null);
+    const displayBorrowTotal = isApy ? totalBorrowApy : totalBorrowApr;
+    const displayBorrowNative = isApy ? nativeBorrowApy : (nativeBorrowApy !== null ? apyToApr(nativeBorrowApy) : null);
+    
+    const displaySupplyIncentive = (() => {
+      const incentive = isApy ? supplyIncentiveValues.apy : supplyIncentiveValues.apr;
+      return incentive === 0 || isNaN(incentive) || incentive < 0.01 ? null : incentive;
+    })();
+    const displayBorrowIncentive = (() => {
+      const incentive = isApy ? borrowIncentiveValues.apy : borrowIncentiveValues.apr;
+      return incentive === 0 || isNaN(incentive) || incentive < 0.01 ? null : incentive;
+    })();
+
+    const spread = isApy
+      ? calculateSpreadApy(totalSupplyApy, totalBorrowApy)
+      : calculateSpreadApr(totalSupplyApr, totalBorrowApr);
+    const { iconSymbol } = fetchIconSymbolAndName({
+      underlyingAsset: pool.tokenAddress,
+      symbol: pool.tokenSymbol,
+      name: pool.tokenName,
+    });
+
+    return {
+      displaySupplyTotal,
+      displaySupplyNative,
+      displayBorrowTotal,
+      displayBorrowNative,
+      displaySupplyIncentive,
+      displayBorrowIncentive,
+      spread,
+      iconSymbol,
+    };
+  }, [isApy]);
+
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
       <div className="p-4 md:p-6 border-b border-gray-100 flex justify-between items-center">
@@ -624,8 +684,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
             </TableRow>
           </TableHeader>
           <TableBody>
-            {(showAll ? sortedData : sortedData.slice(0, DEFAULT_VISIBLE_COUNT)).map((pool) => {
-              // Cache incentive values to avoid redundant calculations
+            {displayData.map((pool) => {
               const supplyIncentiveValues = getIncentiveValues(pool, 'supply');
               const borrowIncentiveValues = getIncentiveValues(pool, 'borrow');
               
@@ -641,7 +700,6 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
               const displayBorrowTotal = isApy ? totalBorrowApy : totalBorrowApr;
               const displayBorrowNative = isApy ? nativeBorrowApy : (nativeBorrowApy !== null ? apyToApr(nativeBorrowApy) : null);
               
-              // Get display incentive values using cached results
               const displaySupplyIncentive = (() => {
                 const incentive = isApy ? supplyIncentiveValues.apy : supplyIncentiveValues.apr;
                 return incentive === 0 || isNaN(incentive) || incentive < 0.01 ? null : incentive;
