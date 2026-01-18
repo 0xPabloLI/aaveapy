@@ -253,13 +253,6 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
         } ${isMobile ? 'px-2.5 gap-2' : 'px-3 gap-2'}`}
         onClick={() => handleCardClick(pool)}
       >
-        {/* Rank - Fixed width */}
-        <div className={`shrink-0 flex items-center justify-center rounded-full bg-muted/50 ${isMobile ? 'w-6 h-6' : 'w-8 h-8'}`}>
-          <span className={`font-bold ${isLeverage ? 'text-warning' : 'text-secondary'} ${isMobile ? 'text-xs' : 'text-sm'}`}>
-            {index + 1}
-          </span>
-        </div>
-        
         {/* Token Info - Flex grow */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
@@ -272,13 +265,13 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
             <p className={`font-semibold text-foreground truncate ${isMobile ? 'text-sm' : 'text-base'}`}>
               {pool.tokenSymbol}
             </p>
-            {chainIconSrc && (
-              <img src={chainIconSrc} alt={pool.chainName} className={`shrink-0 ${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`} />
-            )}
           </div>
-          {!isMobile && (
-            <p className="text-xs text-secondary truncate">{getMarketDisplayName(pool)}</p>
-          )}
+          <div className="flex items-center gap-1 mt-0.5">
+            {chainIconSrc && (
+              <img src={chainIconSrc} alt={pool.chainName} className={`shrink-0 ${isMobile ? 'w-3 h-3' : 'w-3.5 h-3.5'}`} />
+            )}
+            <p className={`text-secondary truncate ${isMobile ? 'text-[10px]' : 'text-xs'}`}>{getMarketDisplayName(pool)}</p>
+          </div>
         </div>
         
         {/* APY Values - Fixed width, right aligned */}
@@ -305,8 +298,8 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
             </div>
           )}
           {/* Leverage detail */}
-          {isLeverage && !isMobile && (
-            <div className="text-[10px] text-secondary tabular-nums mt-0.5">
+          {isLeverage && (
+            <div className={`text-secondary tabular-nums mt-0.5 ${isMobile ? 'text-[9px]' : 'text-[10px]'}`}>
               {formatPercent(isApy ? pool.totalSupplyApy : pool.totalSupplyApr)} -{' '}
               {(() => {
                 const borrowValue = isApy ? pool.totalBorrowApy : pool.totalBorrowApr;
