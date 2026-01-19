@@ -1,5 +1,4 @@
-import { useState, useMemo, useRef } from 'react';
-import { useVirtualizer } from '@tanstack/react-virtual';
+import { useState, useMemo } from 'react';
 import { ArrowUp, ArrowDown, ChevronDown, ChevronUp } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { PoolWithSpread, ETHEREUM_MARKET_NAMES } from '@/types/aave';
@@ -279,17 +278,6 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
     [sortedData, showAll]
   );
 
-  // Virtual scrolling setup for desktop
-  const parentRef = useRef<HTMLDivElement>(null);
-  const ROW_HEIGHT = 65; // Estimated row height in pixels
-  
-  const virtualizer = useVirtualizer({
-    count: displayData.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => ROW_HEIGHT,
-    overscan: 5,
-  });
-
   // Mobile card view
   if (isMobile) {
     return (
@@ -457,374 +445,316 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
   }
 
 
-  const virtualItems = virtualizer.getVirtualItems();
-
-  // Column widths for consistent layout
-  const colWidths = {
-    token: 'w-[15%] min-w-[120px]',
-    market: 'w-[15%] min-w-[100px]',
-    supply: 'w-[25%] min-w-[160px]',
-    borrow: 'w-[25%] min-w-[160px]',
-    spread: 'w-[20%] min-w-[100px]',
-  };
-
-  // Row renderer for both virtual and regular modes
-  const renderRow = (pool: PoolWithSpread, style?: React.CSSProperties) => {
-    const supplyIncentiveValues = getIncentiveValues(pool, 'supply');
-    const borrowIncentiveValues = getIncentiveValues(pool, 'borrow');
-    
-    const totalSupplyApy = calculateTotalSupplyApy(pool.supplyApy, supplyIncentiveValues.apy);
-    const totalSupplyApr = calculateTotalSupplyApr(pool.supplyApy, supplyIncentiveValues.apr);
-    const totalBorrowApy = calculateTotalBorrowApy(pool.borrowApy, borrowIncentiveValues.apy);
-    const totalBorrowApr = calculateTotalBorrowApr(pool.borrowApy, borrowIncentiveValues.apr);
-    const nativeSupplyApy = getNativeSupplyApy(pool);
-    const nativeBorrowApy = getNativeBorrowApy(pool);
-    
-    const displaySupplyTotal = isApy ? totalSupplyApy : totalSupplyApr;
-    const displaySupplyNative = isApy ? nativeSupplyApy : (nativeSupplyApy !== null ? apyToApr(nativeSupplyApy) : null);
-    const displayBorrowTotal = isApy ? totalBorrowApy : totalBorrowApr;
-    const displayBorrowNative = isApy ? nativeBorrowApy : (nativeBorrowApy !== null ? apyToApr(nativeBorrowApy) : null);
-    
-    const displaySupplyIncentive = (() => {
-      const incentive = isApy ? supplyIncentiveValues.apy : supplyIncentiveValues.apr;
-      return incentive === 0 || isNaN(incentive) || incentive < 0.01 ? null : incentive;
-    })();
-    const displayBorrowIncentive = (() => {
-      const incentive = isApy ? borrowIncentiveValues.apy : borrowIncentiveValues.apr;
-      return incentive === 0 || isNaN(incentive) || incentive < 0.01 ? null : incentive;
-    })();
-
-    const spread = isApy
-      ? calculateSpreadApy(totalSupplyApy, totalBorrowApy)
-      : calculateSpreadApr(totalSupplyApr, totalBorrowApr);
-    const { iconSymbol } = fetchIconSymbolAndName({
-      underlyingAsset: pool.tokenAddress,
-      symbol: pool.tokenSymbol,
-      name: pool.tokenName,
-    });
-
-    return (
-      <div
-        key={`${pool.marketName}-${pool.tokenAddress}`}
-        className="flex items-center border-b border-gray-100 hover:bg-gray-50/50 transition-colors cursor-pointer"
-        onClick={() => handleRowClick(pool)}
-        style={style}
-      >
-        {/* Token */}
-        <div className={`${colWidths.token} px-6 py-4 flex-shrink-0`}>
-          <div className="flex items-center gap-3">
-            <TokenIcon symbol={iconSymbol} size={32} loading="eager" />
-            <span className="font-semibold text-gray-900">
-              {pool.tokenSymbol}
-            </span>
-          </div>
-        </div>
-        
-        {/* Market */}
-        <div className={`${colWidths.market} px-6 py-4 flex-shrink-0 hidden md:block`}>
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-            <ChainIcon chain={pool.chainName} />
-            {getMarketDisplayName(pool)}
-          </span>
-        </div>
-        
-        {/* Supply */}
-        <div className={`${colWidths.supply} px-6 py-4 flex-shrink-0 text-right`}>
-          <div className="flex flex-col items-end gap-0.5">
-            <span className="font-bold text-emerald-500 text-base tabular-nums">
-              {formatPercent(displaySupplyTotal)}
-            </span>
-            {displaySupplyIncentive !== null && (
-              <div className="flex items-center gap-1 text-xs justify-end">
-                <span className="text-blue-600 font-semibold tabular-nums">
-                  {formatPercent(displaySupplyNative)}
-                </span>
-                <span className="text-gray-400">+</span>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleIncentiveClick(e, pool, 'supply', displaySupplyIncentive);
-                  }}
-                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 text-amber-600 font-semibold hover:bg-amber-100 transition-colors cursor-pointer tabular-nums"
-                >
-                  <IncentiveIcon width={12} height={12} />
-                  {formatPercent(displaySupplyIncentive)}
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-        
-        {/* Borrow */}
-        <div className={`${colWidths.borrow} px-6 py-4 flex-shrink-0 text-right`}>
-          <div className="flex flex-col items-end gap-0.5">
-            <span className="font-bold text-gray-900 text-base tabular-nums">
-              {displayBorrowTotal !== null ? formatPercent(displayBorrowTotal) : '-'}
-            </span>
-            {displayBorrowIncentive !== null && (
-              <div className="flex items-center gap-1 text-xs justify-end">
-                {displayBorrowNative !== null && (
-                  <>
-                    <span className="text-blue-600 font-semibold tabular-nums">
-                      {formatPercent(displayBorrowNative)}
-                    </span>
-                    <span className="text-gray-400">-</span>
-                  </>
-                )}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleIncentiveClick(e, pool, 'borrow', displayBorrowIncentive);
-                  }}
-                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 text-amber-600 font-semibold hover:bg-amber-100 transition-colors cursor-pointer tabular-nums"
-                >
-                  <IncentiveIcon width={12} height={12} />
-                  {formatPercent(displayBorrowIncentive)}
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-        
-        {/* Spread */}
-        <div className={`${colWidths.spread} px-6 py-4 flex-shrink-0 text-right hidden md:block`}>
-          <span
-            className={`font-bold ${
-              spread !== null && spread >= 0
-                ? 'text-amber-500'
-                : 'text-rose-500'
-            }`}
-          >
-            {formatSpread(spread)}
-          </span>
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
       <div className="p-4 md:p-6 border-b border-gray-100 flex justify-between items-center">
         <h3 className="text-base md:text-lg font-bold text-gray-900">{pools.length} Pools</h3>
       </div>
-      
-      {/* Header */}
-      <div className="flex items-center bg-gray-50/50 border-b border-gray-100">
-        <div className={`${colWidths.token} px-6 py-4 flex-shrink-0 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider`}>
-          Token
-        </div>
-        <div className={`${colWidths.market} px-6 py-4 flex-shrink-0 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden md:block`}>
-          Market
-        </div>
-        <div className={`${colWidths.supply} px-6 py-4 flex-shrink-0 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider`}>
-          <div className="flex items-center justify-end gap-3">
-            <div className="relative flex items-center gap-1.5">
-              <button
-                onClick={() => setShowSupplySortMenu(!showSupplySortMenu)}
-                className={`flex items-center gap-1 px-2 py-1 hover:bg-gray-100 rounded transition-colors ${
-                  showSupplySortMenu ? 'bg-gray-100 border border-blue-500' : ''
-                }`}
-                title="Select sort field"
-              >
-                <ChevronDown className="w-3.5 h-3.5 text-gray-600" />
-                <span className="text-gray-700">
-                  Supply ({supplySortLabel})
-                </span>
-              </button>
-              {showSupplySortMenu && (
-                <>
-                  <div
-                    className="fixed inset-0 z-10"
-                    onClick={() => setShowSupplySortMenu(false)}
-                  />
-                  <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-20 min-w-[160px]">
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow className="border-border/50 hover:bg-transparent bg-gray-50/50">
+              <TableHead className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                Token
+              </TableHead>
+              <TableHead className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden md:table-cell">
+                Market
+              </TableHead>
+              <TableHead className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                <div className="flex items-center justify-end gap-3 min-w-[120px]">
+                  <div className="relative flex items-center gap-1.5">
                     <button
-                      onClick={() => {
-                        setSupplySortMode('total');
-                        setActiveSortColumn('supply');
-                        setShowSupplySortMenu(false);
-                      }}
-                      className={`w-full px-4 py-2 text-left text-sm hover:bg-emerald-50/50 transition-colors ${
-                        supplySortMode === 'total' && activeSortColumn === 'supply'
-                          ? 'text-emerald-600 font-bold bg-emerald-50'
-                          : 'text-gray-700'
+                      onClick={() => setShowSupplySortMenu(!showSupplySortMenu)}
+                      className={`flex items-center gap-1 px-2 py-1 hover:bg-gray-100 rounded transition-colors ${
+                        showSupplySortMenu ? 'bg-gray-100 border border-blue-500' : ''
                       }`}
+                      title="Select sort field"
                     >
-                      Sort by Total
+                      <ChevronDown className="w-3.5 h-3.5 text-gray-600" />
+                      <span className="text-gray-700">
+                        Supply ({supplySortLabel})
+                      </span>
                     </button>
-                    <button
-                      onClick={() => {
-                        setSupplySortMode('native');
-                        setActiveSortColumn('supply');
-                        setShowSupplySortMenu(false);
-                      }}
-                      className={`w-full px-4 py-2 text-left text-sm hover:bg-blue-50 transition-colors ${
-                        supplySortMode === 'native' && activeSortColumn === 'supply'
-                          ? 'text-blue-600 font-bold bg-blue-50'
-                          : 'text-gray-700'
-                      }`}
-                    >
-                      Sort by Native
-                    </button>
-                    <button
-                      onClick={() => {
-                        setSupplySortMode('incentive');
-                        setActiveSortColumn('supply');
-                        setShowSupplySortMenu(false);
-                      }}
-                      className={`w-full px-4 py-2 text-left text-sm hover:bg-amber-50/50 transition-colors ${
-                        supplySortMode === 'incentive' && activeSortColumn === 'supply'
-                          ? 'text-amber-600 font-bold bg-amber-50'
-                          : 'text-gray-700'
-                      }`}
-                    >
-                      Sort by Incentive
-                    </button>
+                    {showSupplySortMenu && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-10"
+                          onClick={() => setShowSupplySortMenu(false)}
+                        />
+                        <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-20 min-w-[160px]">
+                          <button
+                            onClick={() => {
+                              setSupplySortMode('total');
+                              setActiveSortColumn('supply');
+                              setShowSupplySortMenu(false);
+                            }}
+                            className={`w-full px-4 py-2 text-left text-sm hover:bg-emerald-50/50 transition-colors ${
+                              supplySortMode === 'total' && activeSortColumn === 'supply'
+                                ? 'text-emerald-600 font-bold bg-emerald-50'
+                                : 'text-gray-700'
+                            }`}
+                          >
+                            Sort by Total
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSupplySortMode('native');
+                              setActiveSortColumn('supply');
+                              setShowSupplySortMenu(false);
+                            }}
+                            className={`w-full px-4 py-2 text-left text-sm hover:bg-blue-50 transition-colors ${
+                              supplySortMode === 'native' && activeSortColumn === 'supply'
+                                ? 'text-blue-600 font-bold bg-blue-50'
+                                : 'text-gray-700'
+                            }`}
+                          >
+                            Sort by Native
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSupplySortMode('incentive');
+                              setActiveSortColumn('supply');
+                              setShowSupplySortMenu(false);
+                            }}
+                            className={`w-full px-4 py-2 text-left text-sm hover:bg-amber-50/50 transition-colors ${
+                              supplySortMode === 'incentive' && activeSortColumn === 'supply'
+                                ? 'text-amber-600 font-bold bg-amber-50'
+                                : 'text-gray-700'
+                            }`}
+                          >
+                            Sort by Incentive
+                          </button>
+                        </div>
+                      </>
+                    )}
                   </div>
-                </>
-              )}
-            </div>
-            <button
-              onClick={toggleSupplySortOrder}
-              className="p-1.5 hover:bg-gray-100 rounded transition-colors"
-              title="Toggle sort direction"
-            >
-              {supplySortOrder === 'desc' ? (
-                <ArrowDown className="w-4 h-4 text-emerald-500" />
-              ) : (
-                <ArrowUp className="w-4 h-4 text-emerald-500" />
-              )}
-            </button>
-          </div>
-        </div>
-        <div className={`${colWidths.borrow} px-6 py-4 flex-shrink-0 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider`}>
-          <div className="flex items-center justify-end gap-3">
-            <div className="relative flex items-center gap-1.5">
-              <button
-                onClick={() => setShowBorrowSortMenu(!showBorrowSortMenu)}
-                className={`flex items-center gap-1 px-2 py-1 hover:bg-gray-100 rounded transition-colors ${
-                  showBorrowSortMenu ? 'bg-gray-100 border border-blue-500' : ''
-                }`}
-                title="Select sort field"
-              >
-                <ChevronDown className="w-3.5 h-3.5 text-gray-600" />
-                <span className="text-gray-700">
-                  Borrow ({borrowSortLabel})
-                </span>
-              </button>
-              {showBorrowSortMenu && (
-                <>
-                  <div
-                    className="fixed inset-0 z-10"
-                    onClick={() => setShowBorrowSortMenu(false)}
-                  />
-                  <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-20 min-w-[160px]">
-                    <button
-                      onClick={() => {
-                        setBorrowSortMode('total');
-                        setActiveSortColumn('borrow');
-                        setShowBorrowSortMenu(false);
-                      }}
-                      className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-100 transition-colors ${
-                        borrowSortMode === 'total' && activeSortColumn === 'borrow'
-                          ? 'text-gray-900 font-bold bg-gray-200'
-                          : 'text-gray-700'
-                      }`}
-                    >
-                      Sort by Total
-                    </button>
-                    <button
-                      onClick={() => {
-                        setBorrowSortMode('native');
-                        setActiveSortColumn('borrow');
-                        setShowBorrowSortMenu(false);
-                      }}
-                      className={`w-full px-4 py-2 text-left text-sm hover:bg-blue-50 transition-colors ${
-                        borrowSortMode === 'native' && activeSortColumn === 'borrow'
-                          ? 'text-blue-600 font-bold bg-blue-50'
-                          : 'text-gray-700'
-                      }`}
-                    >
-                      Sort by Native
-                    </button>
-                    <button
-                      onClick={() => {
-                        setBorrowSortMode('incentive');
-                        setActiveSortColumn('borrow');
-                        setShowBorrowSortMenu(false);
-                      }}
-                      className={`w-full px-4 py-2 text-left text-sm hover:bg-amber-50/50 transition-colors ${
-                        borrowSortMode === 'incentive' && activeSortColumn === 'borrow'
-                          ? 'text-amber-600 font-bold bg-amber-50'
-                          : 'text-gray-700'
-                      }`}
-                    >
-                      Sort by Incentive
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-            <button
-              onClick={toggleBorrowSortOrder}
-              className="p-1.5 hover:bg-gray-100 rounded transition-colors"
-              title="Toggle sort direction"
-            >
-              {borrowSortOrder === 'desc' ? (
-                <ArrowDown className="w-4 h-4 text-gray-600" />
-              ) : (
-                <ArrowUp className="w-4 h-4 text-gray-600" />
-              )}
-            </button>
-          </div>
-        </div>
-        <div className={`${colWidths.spread} px-6 py-4 flex-shrink-0 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider hidden md:flex items-center justify-end gap-1`}>
-          SPREAD
-          <ArrowDown className="w-3 h-3" />
-        </div>
-      </div>
-      
-      {/* Body with virtual scrolling */}
-      <div 
-        ref={parentRef}
-        className="overflow-auto"
-        style={{ maxHeight: showAll ? '600px' : 'none' }}
-      >
-        {showAll ? (
-          // Virtual scrolling when showing all
-          <div
-            style={{
-              height: `${virtualizer.getTotalSize()}px`,
-              width: '100%',
-              position: 'relative',
-            }}
-          >
-            {virtualItems.map((virtualItem) => {
-              const pool = displayData[virtualItem.index];
-              return (
-                <div
-                  key={`${pool.marketName}-${pool.tokenAddress}`}
-                  data-index={virtualItem.index}
-                  ref={virtualizer.measureElement}
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    transform: `translateY(${virtualItem.start}px)`,
-                  }}
-                >
-                  {renderRow(pool)}
+                  <button
+                    onClick={toggleSupplySortOrder}
+                    className="p-1.5 hover:bg-gray-100 rounded transition-colors"
+                    title="Toggle sort direction"
+                  >
+                    {supplySortOrder === 'desc' ? (
+                      <ArrowDown className="w-4 h-4 text-emerald-500" />
+                    ) : (
+                      <ArrowUp className="w-4 h-4 text-emerald-500" />
+                    )}
+                  </button>
                 </div>
+              </TableHead>
+              <TableHead className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                <div className="flex items-center justify-end gap-3 min-w-[120px]">
+                  <div className="relative flex items-center gap-1.5">
+                    <button
+                      onClick={() => setShowBorrowSortMenu(!showBorrowSortMenu)}
+                      className={`flex items-center gap-1 px-2 py-1 hover:bg-gray-100 rounded transition-colors ${
+                        showBorrowSortMenu ? 'bg-gray-100 border border-blue-500' : ''
+                      }`}
+                      title="Select sort field"
+                    >
+                      <ChevronDown className="w-3.5 h-3.5 text-gray-600" />
+                      <span className="text-gray-700">
+                        Borrow ({borrowSortLabel})
+                      </span>
+                    </button>
+                    {showBorrowSortMenu && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-10"
+                          onClick={() => setShowBorrowSortMenu(false)}
+                        />
+                        <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-20 min-w-[160px]">
+                          <button
+                            onClick={() => {
+                              setBorrowSortMode('total');
+                              setActiveSortColumn('borrow');
+                              setShowBorrowSortMenu(false);
+                            }}
+                            className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-100 transition-colors ${
+                              borrowSortMode === 'total' && activeSortColumn === 'borrow'
+                                ? 'text-gray-900 font-bold bg-gray-200'
+                                : 'text-gray-700'
+                            }`}
+                          >
+                            Sort by Total
+                          </button>
+                          <button
+                            onClick={() => {
+                              setBorrowSortMode('native');
+                              setActiveSortColumn('borrow');
+                              setShowBorrowSortMenu(false);
+                            }}
+                            className={`w-full px-4 py-2 text-left text-sm hover:bg-blue-50 transition-colors ${
+                              borrowSortMode === 'native' && activeSortColumn === 'borrow'
+                                ? 'text-blue-600 font-bold bg-blue-50'
+                                : 'text-gray-700'
+                            }`}
+                          >
+                            Sort by Native
+                          </button>
+                          <button
+                            onClick={() => {
+                              setBorrowSortMode('incentive');
+                              setActiveSortColumn('borrow');
+                              setShowBorrowSortMenu(false);
+                            }}
+                            className={`w-full px-4 py-2 text-left text-sm hover:bg-amber-50/50 transition-colors ${
+                              borrowSortMode === 'incentive' && activeSortColumn === 'borrow'
+                                ? 'text-amber-600 font-bold bg-amber-50'
+                                : 'text-gray-700'
+                            }`}
+                          >
+                            Sort by Incentive
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  <button
+                    onClick={toggleBorrowSortOrder}
+                    className="p-1.5 hover:bg-gray-100 rounded transition-colors"
+                    title="Toggle sort direction"
+                  >
+                    {borrowSortOrder === 'desc' ? (
+                      <ArrowDown className="w-4 h-4 text-gray-600" />
+                    ) : (
+                      <ArrowUp className="w-4 h-4 text-gray-600" />
+                    )}
+                  </button>
+                </div>
+              </TableHead>
+              <TableHead className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700 hidden md:table-cell">
+                <div className="flex items-center justify-end gap-1 min-w-[80px]">
+                  SPREAD
+                  <ArrowDown className="w-3 h-3" />
+                </div>
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {displayData.map((pool) => {
+              const supplyIncentiveValues = getIncentiveValues(pool, 'supply');
+              const borrowIncentiveValues = getIncentiveValues(pool, 'borrow');
+              
+              const totalSupplyApy = calculateTotalSupplyApy(pool.supplyApy, supplyIncentiveValues.apy);
+              const totalSupplyApr = calculateTotalSupplyApr(pool.supplyApy, supplyIncentiveValues.apr);
+              const totalBorrowApy = calculateTotalBorrowApy(pool.borrowApy, borrowIncentiveValues.apy);
+              const totalBorrowApr = calculateTotalBorrowApr(pool.borrowApy, borrowIncentiveValues.apr);
+              const nativeSupplyApy = getNativeSupplyApy(pool);
+              const nativeBorrowApy = getNativeBorrowApy(pool);
+              
+              const displaySupplyTotal = isApy ? totalSupplyApy : totalSupplyApr;
+              const displaySupplyNative = isApy ? nativeSupplyApy : (nativeSupplyApy !== null ? apyToApr(nativeSupplyApy) : null);
+              const displayBorrowTotal = isApy ? totalBorrowApy : totalBorrowApr;
+              const displayBorrowNative = isApy ? nativeBorrowApy : (nativeBorrowApy !== null ? apyToApr(nativeBorrowApy) : null);
+              
+              const displaySupplyIncentive = (() => {
+                const incentive = isApy ? supplyIncentiveValues.apy : supplyIncentiveValues.apr;
+                return incentive === 0 || isNaN(incentive) || incentive < 0.01 ? null : incentive;
+              })();
+              const displayBorrowIncentive = (() => {
+                const incentive = isApy ? borrowIncentiveValues.apy : borrowIncentiveValues.apr;
+                return incentive === 0 || isNaN(incentive) || incentive < 0.01 ? null : incentive;
+              })();
+
+              const spread = isApy
+                ? calculateSpreadApy(totalSupplyApy, totalBorrowApy)
+                : calculateSpreadApr(totalSupplyApr, totalBorrowApr);
+              const { iconSymbol } = fetchIconSymbolAndName({
+                underlyingAsset: pool.tokenAddress,
+                symbol: pool.tokenSymbol,
+                name: pool.tokenName,
+              });
+
+              return (
+                <TableRow
+                  key={`${pool.marketName}-${pool.tokenAddress}`}
+                  className="hover:bg-gray-50/50 transition-colors cursor-pointer"
+                  onClick={() => handleRowClick(pool)}
+                >
+                  <TableCell className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center gap-3">
+                      <TokenIcon symbol={iconSymbol} size={32} loading="eager" />
+                      <span className="font-semibold text-gray-900">
+                        {pool.tokenSymbol}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="px-6 py-4 whitespace-nowrap hidden md:table-cell">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                      <ChainIcon chain={pool.chainName} />
+                      {getMarketDisplayName(pool)}
+                    </span>
+                  </TableCell>
+                  <TableCell className="px-6 py-4 whitespace-nowrap text-right">
+                    <div className="flex flex-col items-end gap-0.5 min-w-[120px]">
+                      <span className="font-bold text-emerald-500 text-base tabular-nums">
+                        {formatPercent(displaySupplyTotal)}
+                      </span>
+                      {displaySupplyIncentive !== null && (
+                        <div className="flex items-center gap-1 text-xs justify-end">
+                          <span className="text-blue-600 font-semibold tabular-nums">
+                            {formatPercent(displaySupplyNative)}
+                          </span>
+                          <span className="text-gray-400">+</span>
+                          <button
+                            onClick={(e) =>
+                              handleIncentiveClick(e, pool, 'supply', displaySupplyIncentive)
+                            }
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 text-amber-600 font-semibold hover:bg-amber-100 transition-colors cursor-pointer tabular-nums"
+                          >
+                            <IncentiveIcon width={12} height={12} />
+                            {formatPercent(displaySupplyIncentive)}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="px-6 py-4 whitespace-nowrap text-right">
+                    <div className="flex flex-col items-end gap-0.5 min-w-[120px]">
+                      <span className="font-bold text-gray-900 text-base tabular-nums">
+                        {displayBorrowTotal !== null ? formatPercent(displayBorrowTotal) : '-'}
+                      </span>
+                      {displayBorrowIncentive !== null && (
+                        <div className="flex items-center gap-1 text-xs justify-end">
+                          {displayBorrowNative !== null && (
+                            <>
+                              <span className="text-blue-600 font-semibold tabular-nums">
+                                {formatPercent(displayBorrowNative)}
+                              </span>
+                              <span className="text-gray-400">-</span>
+                            </>
+                          )}
+                          <button
+                            onClick={(e) =>
+                              handleIncentiveClick(e, pool, 'borrow', displayBorrowIncentive)
+                            }
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 text-amber-600 font-semibold hover:bg-amber-100 transition-colors cursor-pointer tabular-nums"
+                          >
+                            <IncentiveIcon width={12} height={12} />
+                            {formatPercent(displayBorrowIncentive)}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="px-6 py-4 whitespace-nowrap text-right hidden md:table-cell">
+                    <div className="min-w-[80px] flex justify-end">
+                      <span
+                        className={`font-bold ${
+                          spread !== null && spread >= 0
+                            ? 'text-amber-500'
+                            : 'text-rose-500'
+                        }`}
+                      >
+                        {formatSpread(spread)}
+                      </span>
+                    </div>
+                  </TableCell>
+                </TableRow>
               );
             })}
-          </div>
-        ) : (
-          // Regular rendering for initial view
-          <div>
-            {displayData.map((pool) => renderRow(pool))}
-          </div>
-        )}
+          </TableBody>
+        </Table>
       </div>
       
       {/* Show More/Less button for desktop */}
