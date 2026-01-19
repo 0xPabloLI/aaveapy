@@ -272,6 +272,12 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
     });
   };
 
+  // Display data with pagination - must be before conditional returns
+  const displayData = useMemo(() => 
+    showAll ? sortedData : sortedData.slice(0, DEFAULT_VISIBLE_COUNT),
+    [sortedData, showAll]
+  );
+
   // Mobile card view
   if (isMobile) {
     return (
@@ -438,11 +444,6 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
     );
   }
 
-  // Display data with pagination
-  const displayData = useMemo(() => 
-    showAll ? sortedData : sortedData.slice(0, DEFAULT_VISIBLE_COUNT),
-    [sortedData, showAll]
-  );
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
