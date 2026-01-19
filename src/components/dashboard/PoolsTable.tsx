@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { ArrowUp, ArrowDown, ChevronDown, ChevronUp } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { PoolWithSpread, ETHEREUM_MARKET_NAMES } from '@/types/aave';
@@ -278,6 +279,17 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
     [sortedData, showAll]
   );
 
+  // Virtual scrolling setup for desktop
+  const parentRef = useRef<HTMLDivElement>(null);
+  const ROW_HEIGHT = 65; // Estimated row height in pixels
+  
+  const virtualizer = useVirtualizer({
+    count: displayData.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => ROW_HEIGHT,
+    overscan: 5,
+  });
+
   // Mobile card view
   if (isMobile) {
     return (
@@ -445,22 +457,28 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
   }
 
 
+  const virtualItems = virtualizer.getVirtualItems();
+
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
       <div className="p-4 md:p-6 border-b border-gray-100 flex justify-between items-center">
         <h3 className="text-base md:text-lg font-bold text-gray-900">{pools.length} Pools</h3>
       </div>
-      <div className="overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow className="border-border/50 hover:bg-transparent bg-gray-50/50">
-              <TableHead className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+      <div 
+        ref={parentRef}
+        className="overflow-auto"
+        style={{ maxHeight: showAll ? '600px' : 'none' }}
+      >
+        <table className="w-full caption-bottom text-sm">
+          <thead className="[&_tr]:border-b sticky top-0 bg-white z-10">
+            <tr className="border-border/50 hover:bg-transparent bg-gray-50/50">
+              <th className="h-12 px-6 py-4 text-left align-middle font-semibold text-xs text-gray-500 uppercase tracking-wider">
                 Token
-              </TableHead>
-              <TableHead className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden md:table-cell">
+              </th>
+              <th className="h-12 px-6 py-4 text-left align-middle font-semibold text-xs text-gray-500 uppercase tracking-wider hidden md:table-cell">
                 Market
-              </TableHead>
-              <TableHead className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              </th>
+              <th className="h-12 px-6 py-4 text-right align-middle font-semibold text-xs text-gray-500 uppercase tracking-wider">
                 <div className="flex items-center justify-end gap-3 min-w-[120px]">
                   <div className="relative flex items-center gap-1.5">
                     <button
@@ -540,8 +558,8 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                     )}
                   </button>
                 </div>
-              </TableHead>
-              <TableHead className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              </th>
+              <th className="h-12 px-6 py-4 text-right align-middle font-semibold text-xs text-gray-500 uppercase tracking-wider">
                 <div className="flex items-center justify-end gap-3 min-w-[120px]">
                   <div className="relative flex items-center gap-1.5">
                     <button
@@ -621,140 +639,287 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                     )}
                   </button>
                 </div>
-              </TableHead>
-              <TableHead className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700 hidden md:table-cell">
+              </th>
+              <th className="h-12 px-6 py-4 text-right align-middle font-semibold text-xs text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700 hidden md:table-cell">
                 <div className="flex items-center justify-end gap-1 min-w-[80px]">
                   SPREAD
                   <ArrowDown className="w-3 h-3" />
                 </div>
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {displayData.map((pool) => {
-              const supplyIncentiveValues = getIncentiveValues(pool, 'supply');
-              const borrowIncentiveValues = getIncentiveValues(pool, 'borrow');
-              
-              const totalSupplyApy = calculateTotalSupplyApy(pool.supplyApy, supplyIncentiveValues.apy);
-              const totalSupplyApr = calculateTotalSupplyApr(pool.supplyApy, supplyIncentiveValues.apr);
-              const totalBorrowApy = calculateTotalBorrowApy(pool.borrowApy, borrowIncentiveValues.apy);
-              const totalBorrowApr = calculateTotalBorrowApr(pool.borrowApy, borrowIncentiveValues.apr);
-              const nativeSupplyApy = getNativeSupplyApy(pool);
-              const nativeBorrowApy = getNativeBorrowApy(pool);
-              
-              const displaySupplyTotal = isApy ? totalSupplyApy : totalSupplyApr;
-              const displaySupplyNative = isApy ? nativeSupplyApy : (nativeSupplyApy !== null ? apyToApr(nativeSupplyApy) : null);
-              const displayBorrowTotal = isApy ? totalBorrowApy : totalBorrowApr;
-              const displayBorrowNative = isApy ? nativeBorrowApy : (nativeBorrowApy !== null ? apyToApr(nativeBorrowApy) : null);
-              
-              const displaySupplyIncentive = (() => {
-                const incentive = isApy ? supplyIncentiveValues.apy : supplyIncentiveValues.apr;
-                return incentive === 0 || isNaN(incentive) || incentive < 0.01 ? null : incentive;
-              })();
-              const displayBorrowIncentive = (() => {
-                const incentive = isApy ? borrowIncentiveValues.apy : borrowIncentiveValues.apr;
-                return incentive === 0 || isNaN(incentive) || incentive < 0.01 ? null : incentive;
-              })();
+              </th>
+            </tr>
+          </thead>
+          <tbody 
+            className="[&_tr:last-child]:border-0"
+            style={{
+              height: showAll ? `${virtualizer.getTotalSize()}px` : 'auto',
+              position: 'relative',
+            }}
+          >
+            {showAll ? (
+              // Virtual scrolling when showing all
+              virtualItems.map((virtualItem) => {
+                const pool = displayData[virtualItem.index];
+                const supplyIncentiveValues = getIncentiveValues(pool, 'supply');
+                const borrowIncentiveValues = getIncentiveValues(pool, 'borrow');
+                
+                const totalSupplyApy = calculateTotalSupplyApy(pool.supplyApy, supplyIncentiveValues.apy);
+                const totalSupplyApr = calculateTotalSupplyApr(pool.supplyApy, supplyIncentiveValues.apr);
+                const totalBorrowApy = calculateTotalBorrowApy(pool.borrowApy, borrowIncentiveValues.apy);
+                const totalBorrowApr = calculateTotalBorrowApr(pool.borrowApy, borrowIncentiveValues.apr);
+                const nativeSupplyApy = getNativeSupplyApy(pool);
+                const nativeBorrowApy = getNativeBorrowApy(pool);
+                
+                const displaySupplyTotal = isApy ? totalSupplyApy : totalSupplyApr;
+                const displaySupplyNative = isApy ? nativeSupplyApy : (nativeSupplyApy !== null ? apyToApr(nativeSupplyApy) : null);
+                const displayBorrowTotal = isApy ? totalBorrowApy : totalBorrowApr;
+                const displayBorrowNative = isApy ? nativeBorrowApy : (nativeBorrowApy !== null ? apyToApr(nativeBorrowApy) : null);
+                
+                const displaySupplyIncentive = (() => {
+                  const incentive = isApy ? supplyIncentiveValues.apy : supplyIncentiveValues.apr;
+                  return incentive === 0 || isNaN(incentive) || incentive < 0.01 ? null : incentive;
+                })();
+                const displayBorrowIncentive = (() => {
+                  const incentive = isApy ? borrowIncentiveValues.apy : borrowIncentiveValues.apr;
+                  return incentive === 0 || isNaN(incentive) || incentive < 0.01 ? null : incentive;
+                })();
 
-              const spread = isApy
-                ? calculateSpreadApy(totalSupplyApy, totalBorrowApy)
-                : calculateSpreadApr(totalSupplyApr, totalBorrowApr);
-              const { iconSymbol } = fetchIconSymbolAndName({
-                underlyingAsset: pool.tokenAddress,
-                symbol: pool.tokenSymbol,
-                name: pool.tokenName,
-              });
+                const spread = isApy
+                  ? calculateSpreadApy(totalSupplyApy, totalBorrowApy)
+                  : calculateSpreadApr(totalSupplyApr, totalBorrowApr);
+                const { iconSymbol } = fetchIconSymbolAndName({
+                  underlyingAsset: pool.tokenAddress,
+                  symbol: pool.tokenSymbol,
+                  name: pool.tokenName,
+                });
 
-              return (
-                <TableRow
-                  key={`${pool.marketName}-${pool.tokenAddress}`}
-                  className="hover:bg-gray-50/50 transition-colors cursor-pointer"
-                  onClick={() => handleRowClick(pool)}
-                >
-                  <TableCell className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center gap-3">
-                      <TokenIcon symbol={iconSymbol} size={32} loading="eager" />
-                      <span className="font-semibold text-gray-900">
-                        {pool.tokenSymbol}
+                return (
+                  <tr
+                    key={`${pool.marketName}-${pool.tokenAddress}`}
+                    data-index={virtualItem.index}
+                    ref={virtualizer.measureElement}
+                    className="border-b transition-colors data-[state=selected]:bg-muted hover:bg-gray-50/50 cursor-pointer"
+                    onClick={() => handleRowClick(pool)}
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      transform: `translateY(${virtualItem.start}px)`,
+                    }}
+                  >
+                    <td className="p-4 px-6 align-middle whitespace-nowrap">
+                      <div className="flex items-center gap-3">
+                        <TokenIcon symbol={iconSymbol} size={32} loading="eager" />
+                        <span className="font-semibold text-gray-900">
+                          {pool.tokenSymbol}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="p-4 px-6 align-middle whitespace-nowrap hidden md:table-cell">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                        <ChainIcon chain={pool.chainName} />
+                        {getMarketDisplayName(pool)}
                       </span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="px-6 py-4 whitespace-nowrap hidden md:table-cell">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                      <ChainIcon chain={pool.chainName} />
-                      {getMarketDisplayName(pool)}
-                    </span>
-                  </TableCell>
-                  <TableCell className="px-6 py-4 whitespace-nowrap text-right">
-                    <div className="flex flex-col items-end gap-0.5 min-w-[120px]">
-                      <span className="font-bold text-emerald-500 text-base tabular-nums">
-                        {formatPercent(displaySupplyTotal)}
+                    </td>
+                    <td className="p-4 px-6 align-middle whitespace-nowrap text-right">
+                      <div className="flex flex-col items-end gap-0.5 min-w-[120px]">
+                        <span className="font-bold text-emerald-500 text-base tabular-nums">
+                          {formatPercent(displaySupplyTotal)}
+                        </span>
+                        {displaySupplyIncentive !== null && (
+                          <div className="flex items-center gap-1 text-xs justify-end">
+                            <span className="text-blue-600 font-semibold tabular-nums">
+                              {formatPercent(displaySupplyNative)}
+                            </span>
+                            <span className="text-gray-400">+</span>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleIncentiveClick(e, pool, 'supply', displaySupplyIncentive);
+                              }}
+                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 text-amber-600 font-semibold hover:bg-amber-100 transition-colors cursor-pointer tabular-nums"
+                            >
+                              <IncentiveIcon width={12} height={12} />
+                              {formatPercent(displaySupplyIncentive)}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td className="p-4 px-6 align-middle whitespace-nowrap text-right">
+                      <div className="flex flex-col items-end gap-0.5 min-w-[120px]">
+                        <span className="font-bold text-gray-900 text-base tabular-nums">
+                          {displayBorrowTotal !== null ? formatPercent(displayBorrowTotal) : '-'}
+                        </span>
+                        {displayBorrowIncentive !== null && (
+                          <div className="flex items-center gap-1 text-xs justify-end">
+                            {displayBorrowNative !== null && (
+                              <>
+                                <span className="text-blue-600 font-semibold tabular-nums">
+                                  {formatPercent(displayBorrowNative)}
+                                </span>
+                                <span className="text-gray-400">-</span>
+                              </>
+                            )}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleIncentiveClick(e, pool, 'borrow', displayBorrowIncentive);
+                              }}
+                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 text-amber-600 font-semibold hover:bg-amber-100 transition-colors cursor-pointer tabular-nums"
+                            >
+                              <IncentiveIcon width={12} height={12} />
+                              {formatPercent(displayBorrowIncentive)}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td className="p-4 px-6 align-middle whitespace-nowrap text-right hidden md:table-cell">
+                      <div className="min-w-[80px] flex justify-end">
+                        <span
+                          className={`font-bold ${
+                            spread !== null && spread >= 0
+                              ? 'text-amber-500'
+                              : 'text-rose-500'
+                          }`}
+                        >
+                          {formatSpread(spread)}
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
+            ) : (
+              // Regular rendering for initial view (no virtual scrolling needed for 20 items)
+              displayData.map((pool) => {
+                const supplyIncentiveValues = getIncentiveValues(pool, 'supply');
+                const borrowIncentiveValues = getIncentiveValues(pool, 'borrow');
+                
+                const totalSupplyApy = calculateTotalSupplyApy(pool.supplyApy, supplyIncentiveValues.apy);
+                const totalSupplyApr = calculateTotalSupplyApr(pool.supplyApy, supplyIncentiveValues.apr);
+                const totalBorrowApy = calculateTotalBorrowApy(pool.borrowApy, borrowIncentiveValues.apy);
+                const totalBorrowApr = calculateTotalBorrowApr(pool.borrowApy, borrowIncentiveValues.apr);
+                const nativeSupplyApy = getNativeSupplyApy(pool);
+                const nativeBorrowApy = getNativeBorrowApy(pool);
+                
+                const displaySupplyTotal = isApy ? totalSupplyApy : totalSupplyApr;
+                const displaySupplyNative = isApy ? nativeSupplyApy : (nativeSupplyApy !== null ? apyToApr(nativeSupplyApy) : null);
+                const displayBorrowTotal = isApy ? totalBorrowApy : totalBorrowApr;
+                const displayBorrowNative = isApy ? nativeBorrowApy : (nativeBorrowApy !== null ? apyToApr(nativeBorrowApy) : null);
+                
+                const displaySupplyIncentive = (() => {
+                  const incentive = isApy ? supplyIncentiveValues.apy : supplyIncentiveValues.apr;
+                  return incentive === 0 || isNaN(incentive) || incentive < 0.01 ? null : incentive;
+                })();
+                const displayBorrowIncentive = (() => {
+                  const incentive = isApy ? borrowIncentiveValues.apy : borrowIncentiveValues.apr;
+                  return incentive === 0 || isNaN(incentive) || incentive < 0.01 ? null : incentive;
+                })();
+
+                const spread = isApy
+                  ? calculateSpreadApy(totalSupplyApy, totalBorrowApy)
+                  : calculateSpreadApr(totalSupplyApr, totalBorrowApr);
+                const { iconSymbol } = fetchIconSymbolAndName({
+                  underlyingAsset: pool.tokenAddress,
+                  symbol: pool.tokenSymbol,
+                  name: pool.tokenName,
+                });
+
+                return (
+                  <tr
+                    key={`${pool.marketName}-${pool.tokenAddress}`}
+                    className="border-b transition-colors data-[state=selected]:bg-muted hover:bg-gray-50/50 cursor-pointer"
+                    onClick={() => handleRowClick(pool)}
+                  >
+                    <td className="p-4 px-6 align-middle whitespace-nowrap">
+                      <div className="flex items-center gap-3">
+                        <TokenIcon symbol={iconSymbol} size={32} loading="eager" />
+                        <span className="font-semibold text-gray-900">
+                          {pool.tokenSymbol}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="p-4 px-6 align-middle whitespace-nowrap hidden md:table-cell">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                        <ChainIcon chain={pool.chainName} />
+                        {getMarketDisplayName(pool)}
                       </span>
-                      {displaySupplyIncentive !== null && (
-                        <div className="flex items-center gap-1 text-xs justify-end">
-                          <span className="text-blue-600 font-semibold tabular-nums">
-                            {formatPercent(displaySupplyNative)}
-                          </span>
-                          <span className="text-gray-400">+</span>
-                          <button
-                            onClick={(e) =>
-                              handleIncentiveClick(e, pool, 'supply', displaySupplyIncentive)
-                            }
-                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 text-amber-600 font-semibold hover:bg-amber-100 transition-colors cursor-pointer tabular-nums"
-                          >
-                            <IncentiveIcon width={12} height={12} />
-                            {formatPercent(displaySupplyIncentive)}
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="px-6 py-4 whitespace-nowrap text-right">
-                    <div className="flex flex-col items-end gap-0.5 min-w-[120px]">
-                      <span className="font-bold text-gray-900 text-base tabular-nums">
-                        {displayBorrowTotal !== null ? formatPercent(displayBorrowTotal) : '-'}
-                      </span>
-                      {displayBorrowIncentive !== null && (
-                        <div className="flex items-center gap-1 text-xs justify-end">
-                          {displayBorrowNative !== null && (
-                            <>
-                              <span className="text-blue-600 font-semibold tabular-nums">
-                                {formatPercent(displayBorrowNative)}
-                              </span>
-                              <span className="text-gray-400">-</span>
-                            </>
-                          )}
-                          <button
-                            onClick={(e) =>
-                              handleIncentiveClick(e, pool, 'borrow', displayBorrowIncentive)
-                            }
-                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 text-amber-600 font-semibold hover:bg-amber-100 transition-colors cursor-pointer tabular-nums"
-                          >
-                            <IncentiveIcon width={12} height={12} />
-                            {formatPercent(displayBorrowIncentive)}
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="px-6 py-4 whitespace-nowrap text-right hidden md:table-cell">
-                    <div className="min-w-[80px] flex justify-end">
-                      <span
-                        className={`font-bold ${
-                          spread !== null && spread >= 0
-                            ? 'text-amber-500'
-                            : 'text-rose-500'
-                        }`}
-                      >
-                        {formatSpread(spread)}
-                      </span>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+                    </td>
+                    <td className="p-4 px-6 align-middle whitespace-nowrap text-right">
+                      <div className="flex flex-col items-end gap-0.5 min-w-[120px]">
+                        <span className="font-bold text-emerald-500 text-base tabular-nums">
+                          {formatPercent(displaySupplyTotal)}
+                        </span>
+                        {displaySupplyIncentive !== null && (
+                          <div className="flex items-center gap-1 text-xs justify-end">
+                            <span className="text-blue-600 font-semibold tabular-nums">
+                              {formatPercent(displaySupplyNative)}
+                            </span>
+                            <span className="text-gray-400">+</span>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleIncentiveClick(e, pool, 'supply', displaySupplyIncentive);
+                              }}
+                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 text-amber-600 font-semibold hover:bg-amber-100 transition-colors cursor-pointer tabular-nums"
+                            >
+                              <IncentiveIcon width={12} height={12} />
+                              {formatPercent(displaySupplyIncentive)}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td className="p-4 px-6 align-middle whitespace-nowrap text-right">
+                      <div className="flex flex-col items-end gap-0.5 min-w-[120px]">
+                        <span className="font-bold text-gray-900 text-base tabular-nums">
+                          {displayBorrowTotal !== null ? formatPercent(displayBorrowTotal) : '-'}
+                        </span>
+                        {displayBorrowIncentive !== null && (
+                          <div className="flex items-center gap-1 text-xs justify-end">
+                            {displayBorrowNative !== null && (
+                              <>
+                                <span className="text-blue-600 font-semibold tabular-nums">
+                                  {formatPercent(displayBorrowNative)}
+                                </span>
+                                <span className="text-gray-400">-</span>
+                              </>
+                            )}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleIncentiveClick(e, pool, 'borrow', displayBorrowIncentive);
+                              }}
+                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 text-amber-600 font-semibold hover:bg-amber-100 transition-colors cursor-pointer tabular-nums"
+                            >
+                              <IncentiveIcon width={12} height={12} />
+                              {formatPercent(displayBorrowIncentive)}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td className="p-4 px-6 align-middle whitespace-nowrap text-right hidden md:table-cell">
+                      <div className="min-w-[80px] flex justify-end">
+                        <span
+                          className={`font-bold ${
+                            spread !== null && spread >= 0
+                              ? 'text-amber-500'
+                              : 'text-rose-500'
+                          }`}
+                        >
+                          {formatSpread(spread)}
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
       </div>
       
       {/* Show More/Less button for desktop */}
