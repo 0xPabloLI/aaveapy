@@ -257,19 +257,19 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <TokenIcon
             symbol={iconSymbol}
-            size={isMobile ? 32 : 36}
+            size={isMobile ? 28 : 32}
             loading="eager"
             className="shrink-0"
           />
           <div className="min-w-0">
-            <p className={`font-semibold text-foreground truncate ${isMobile ? 'text-sm' : 'text-base'}`}>
+            <p className={`font-semibold text-foreground truncate ${isMobile ? 'text-sm' : 'text-sm'}`}>
               {pool.tokenSymbol}
             </p>
             <div className="flex items-center gap-1 mt-0.5">
               {chainIconSrc && (
-                <img src={chainIconSrc} alt={pool.chainName} className={`shrink-0 ${isMobile ? 'w-3.5 h-3.5' : 'w-4 h-4'}`} />
+                <img src={chainIconSrc} alt={pool.chainName} className="shrink-0 w-3 h-3" />
               )}
-              <p className={`text-secondary truncate ${isMobile ? 'text-[10px]' : 'text-xs'}`}>{getMarketDisplayName(pool)}</p>
+              <p className="text-secondary truncate text-[10px]">{getMarketDisplayName(pool)}</p>
             </div>
           </div>
         </div>
@@ -448,10 +448,10 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
     }
   ];
 
-  // Desktop grid layout
+  // Desktop and tablet grid layout (2x2 on medium screens, 4 columns on large)
   if (!isMobile) {
     return (
-      <div className="grid gap-3 md:gap-4 grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 md:gap-4 grid-cols-2 xl:grid-cols-4">
         {categories.map((category) => (
           <CategoryCard
             key={category.categoryKey}
