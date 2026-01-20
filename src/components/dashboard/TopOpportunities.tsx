@@ -146,7 +146,7 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
 
   const getMarketDisplayName = (pool: PoolWithSpread) => {
     if (pool.chainName === 'Ethereum' && ETHEREUM_MARKET_NAMES[pool.marketName]) {
-      return `ETH ${ETHEREUM_MARKET_NAMES[pool.marketName]}`;
+      return ETHEREUM_MARKET_NAMES[pool.marketName];
     }
     return pool.chainName;
   };
