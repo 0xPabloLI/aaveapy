@@ -672,9 +672,9 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                   onClick={() => handleRowClick(pool)}
                 >
                   <TableCell className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center gap-3">
-                      <TokenIcon symbol={iconSymbol} size={32} loading="eager" />
-                      <span className="font-semibold text-gray-900">
+                    <div className="flex items-center gap-2.5">
+                      <TokenIcon symbol={iconSymbol} size={28} loading="eager" />
+                      <span className="font-semibold text-gray-900 text-sm">
                         {pool.tokenSymbol}
                       </span>
                     </div>
