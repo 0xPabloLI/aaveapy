@@ -253,24 +253,24 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
         } ${isMobile ? 'px-2.5 gap-2' : 'px-3 gap-2'}`}
         onClick={() => handleCardClick(pool)}
       >
-        {/* Token Info - Flex grow */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5">
-            <TokenIcon
-              symbol={iconSymbol}
-              size={isMobile ? 20 : 24}
-              loading="eager"
-              className="shrink-0"
-            />
+        {/* Token Info - Mobile style layout: large icon left, text right */}
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <TokenIcon
+            symbol={iconSymbol}
+            size={isMobile ? 32 : 36}
+            loading="eager"
+            className="shrink-0"
+          />
+          <div className="min-w-0">
             <p className={`font-semibold text-foreground truncate ${isMobile ? 'text-sm' : 'text-base'}`}>
               {pool.tokenSymbol}
             </p>
-          </div>
-          <div className="flex items-center gap-1 mt-0.5">
-            {chainIconSrc && (
-              <img src={chainIconSrc} alt={pool.chainName} className={`shrink-0 ${isMobile ? 'w-3 h-3' : 'w-3.5 h-3.5'}`} />
-            )}
-            <p className={`text-secondary truncate ${isMobile ? 'text-[10px]' : 'text-xs'}`}>{getMarketDisplayName(pool)}</p>
+            <div className="flex items-center gap-1 mt-0.5">
+              {chainIconSrc && (
+                <img src={chainIconSrc} alt={pool.chainName} className={`shrink-0 ${isMobile ? 'w-3.5 h-3.5' : 'w-4 h-4'}`} />
+              )}
+              <p className={`text-secondary truncate ${isMobile ? 'text-[10px]' : 'text-xs'}`}>{getMarketDisplayName(pool)}</p>
+            </div>
           </div>
         </div>
         
