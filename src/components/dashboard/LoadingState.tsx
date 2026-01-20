@@ -23,33 +23,36 @@ const LoadingState = () => {
           </div>
         </header>
 
-        {/* Top Opportunities Skeleton - 4 cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+        {/* Top Opportunities Skeleton - 2x2 on mobile/tablet, 4 columns on xl */}
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 md:gap-4">
           {[0, 1, 2, 3].map((cardIndex) => (
-            <div key={cardIndex} className="glass-card rounded-xl p-5">
-              <div className="flex items-center gap-2 mb-4">
-                <Skeleton className="w-9 h-9 rounded-lg" />
-                <div className="space-y-1 flex-1">
-                  <Skeleton className="h-5 w-28" />
-                  <Skeleton className="h-3 w-36" />
+            <div key={cardIndex} className="glass-card rounded-xl p-3 md:p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <Skeleton className="w-8 h-8 md:w-9 md:h-9 rounded-lg" />
+                <div className="space-y-1 flex-1 min-w-0">
+                  <Skeleton className="h-4 md:h-5 w-20 md:w-28" />
+                  <Skeleton className="h-2.5 md:h-3 w-24 md:w-36" />
                 </div>
               </div>
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {[0, 1, 2, 3, 4].map((i) => (
                   <div 
                     key={i} 
-                    className="flex items-center justify-between p-3 rounded-lg border border-border"
+                    className="flex items-center justify-between px-2.5 md:px-3 h-14 rounded-lg border border-border"
                   >
-                    <div className="flex items-center gap-3">
-                      <Skeleton className="w-5 h-5 rounded" />
+                    <div className="flex items-center gap-2">
+                      <Skeleton className="w-7 h-7 md:w-8 md:h-8 rounded-full" />
                       <div className="space-y-1">
-                        <Skeleton className="h-4 w-14" />
-                        <Skeleton className="h-3 w-16" />
+                        <Skeleton className="h-3.5 md:h-4 w-10 md:w-14" />
+                        <div className="flex items-center gap-1">
+                          <Skeleton className="w-3 h-3 rounded-full" />
+                          <Skeleton className="h-2.5 w-8 md:w-12" />
+                        </div>
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-1">
-                      <Skeleton className="h-5 w-16" />
-                      <Skeleton className="h-3 w-20" />
+                      <Skeleton className="h-4 md:h-5 w-12 md:w-16" />
+                      <Skeleton className="h-2.5 md:h-3 w-14 md:w-20" />
                     </div>
                   </div>
                 ))}
