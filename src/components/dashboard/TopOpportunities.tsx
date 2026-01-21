@@ -1,7 +1,13 @@
 import { useState, useEffect, useMemo, memo } from 'react';
 import { TrendingUp, Zap, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PoolWithSpread, ETHEREUM_MARKET_NAMES, STABLECOINS, ETH_RELATED, BTC_RELATED } from '@/types/aave';
+import { PoolWithSpread, ETHEREUM_MARKET_NAMES } from '@/types/aave';
+import {
+  isStablecoinSymbol,
+  isEthRelatedSymbol,
+  isBtcRelatedSymbol,
+  TokenCategoryGroups,
+} from '@/lib/tokenCategories';
 import { 
   formatPercent, 
   formatSpread, 
@@ -27,11 +33,12 @@ import { Button } from '@/components/ui/button';
 interface TopOpportunitiesProps {
   pools: PoolWithSpread[];
   isApy: boolean;
+  categoryGroups: TokenCategoryGroups;
 }
 
 const DISPLAY_COUNT = 5;
 
-const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
+const TopOpportunities = ({ pools, isApy, categoryGroups }: TopOpportunitiesProps) => {
   const isMobile = useIsMobile();
   const [tooltipState, setTooltipState] = useState<{
     pool: PoolWithSpread;
@@ -77,21 +84,9 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
     };
   }), [pools]);
 
-  const isStablecoin = (symbol: string): boolean => {
-    return STABLECOINS.some(s => symbol.toUpperCase().includes(s.toUpperCase()));
-  };
-
-  const isEthRelated = (symbol: string): boolean => {
-    return ETH_RELATED.some(s => symbol.toUpperCase().includes(s.toUpperCase()));
-  };
-
-  const isBtcRelated = (symbol: string): boolean => {
-    return BTC_RELATED.some(s => symbol.toUpperCase().includes(s.toUpperCase()));
-  };
-
   // Top 5 Stable APY - memoized to prevent recalculation
   const topStable = useMemo(() => [...poolsWithTotals]
-    .filter(m => isStablecoin(m.tokenSymbol))
+    .filter(m => isStablecoinSymbol(m.tokenSymbol, categoryGroups))
     .filter(m => {
       const value = isApy ? m.totalSupplyApy : m.totalSupplyApr;
       return value !== null && !isNaN(value);
@@ -101,11 +96,11 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
       const bValue = isApy ? b.totalSupplyApy : b.totalSupplyApr;
       return bValue - aValue;
     })
-    .slice(0, DISPLAY_COUNT), [poolsWithTotals, isApy]);
+    .slice(0, DISPLAY_COUNT), [poolsWithTotals, isApy, categoryGroups]);
 
   // Top 5 ETH APY - memoized to prevent recalculation
   const topEth = useMemo(() => [...poolsWithTotals]
-    .filter(m => isEthRelated(m.tokenSymbol))
+    .filter(m => isEthRelatedSymbol(m.tokenSymbol, categoryGroups))
     .filter(m => {
       const value = isApy ? m.totalSupplyApy : m.totalSupplyApr;
       return value !== null && !isNaN(value);
@@ -115,11 +110,11 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
       const bValue = isApy ? b.totalSupplyApy : b.totalSupplyApr;
       return bValue - aValue;
     })
-    .slice(0, DISPLAY_COUNT), [poolsWithTotals, isApy]);
+    .slice(0, DISPLAY_COUNT), [poolsWithTotals, isApy, categoryGroups]);
 
   // Top 5 BTC APY - memoized to prevent recalculation
   const topBtc = useMemo(() => [...poolsWithTotals]
-    .filter(m => isBtcRelated(m.tokenSymbol))
+    .filter(m => isBtcRelatedSymbol(m.tokenSymbol, categoryGroups))
     .filter(m => {
       const value = isApy ? m.totalSupplyApy : m.totalSupplyApr;
       return value !== null && !isNaN(value);
@@ -129,7 +124,7 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
       const bValue = isApy ? b.totalSupplyApy : b.totalSupplyApr;
       return bValue - aValue;
     })
-    .slice(0, DISPLAY_COUNT), [poolsWithTotals, isApy]);
+    .slice(0, DISPLAY_COUNT), [poolsWithTotals, isApy, categoryGroups]);
 
   // Top 5 Looping opportunities - memoized to prevent recalculation
   const topLooping = useMemo(() => [...poolsWithTotals]
@@ -214,7 +209,12 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
     if (value >= 5) return 'text-teal-500';
     if (value >= 2) return 'text-teal-400';
     if (value >= 1) return 'text-cyan-500';
-    return 'text-muted-foreground';
+    return 'text-slate-400';
+  };
+
+  const getSpreadColorClass = (value: number | null) => {
+    if (value === null) return 'text-muted-foreground';
+    return value >= 0 ? 'text-amber-500' : 'text-gray-400';
   };
 
   // Reusable pool item component
@@ -234,7 +234,7 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
     const incentiveValue = isApy ? pool.supplyIncentiveApy : pool.supplyIncentiveApr;
     const hasIncentive = incentiveValue !== null && !isNaN(incentiveValue) && incentiveValue >= 0.01;
     const chainIconSrc = getChainIconSrc(pool.chainName);
-    const { iconSymbol } = fetchIconSymbolAndName({
+    const { iconSymbol, logoURI } = fetchIconSymbolAndName({
       underlyingAsset: pool.tokenAddress,
       symbol: pool.tokenSymbol,
       name: pool.tokenName,
@@ -260,6 +260,7 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
             size={isMobile ? 28 : 32}
             loading="eager"
             className="shrink-0"
+            logoURI={logoURI}
           />
           <div className="min-w-0">
             <p className={`font-semibold text-foreground truncate ${isMobile ? 'text-sm' : 'text-sm'}`}>
@@ -275,8 +276,8 @@ const TopOpportunities = ({ pools, isApy }: TopOpportunitiesProps) => {
         </div>
         
         {/* APY Values - Fixed width, right aligned */}
-        <div className={`shrink-0 text-right ${isMobile ? 'w-16' : 'w-24'}`}>
-          <div className={`${getApyColorClass(mainValue)} font-bold tabular-nums ${isMobile ? 'text-base' : 'text-lg'}`}>
+          <div className={`shrink-0 text-right ${isMobile ? 'w-16' : 'w-24'}`}>
+          <div className={`${(isLeverage ? getSpreadColorClass(mainValue) : getApyColorClass(mainValue))} font-bold tabular-nums ${isMobile ? 'text-base' : 'text-lg'}`}>
             {isLeverage ? formatSpread(mainValue) : formatPercent(mainValue)}
           </div>
           {/* Detail breakdown - Only show for supply type */}

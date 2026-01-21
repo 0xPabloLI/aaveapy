@@ -80,9 +80,46 @@ export type SortField = 'totalSupplyApy' | 'totalBorrowApy' | 'apySpread' | null
 export type SortOrder = 'asc' | 'desc';
 export type TokenCategory = 'stablecoin' | 'eth-related' | 'btc-related' | 'pendle' | 'all';
 
-export const STABLECOINS = ['USDC', 'USDT', 'DAI', 'FRAX', 'LUSD', 'PYUSD', 'GHO', 'crvUSD', 'USDS', 'sUSDe', 'USDe'];
-export const ETH_RELATED = ['WETH', 'ETH', 'stETH', 'wstETH', 'rETH', 'cbETH', 'WETH.e', 'weETH', 'ezETH', 'rsETH', 'osETH'];
-export const BTC_RELATED = ['WBTC', 'BTC', 'tBTC', 'cbBTC', 'LBTC', 'eBTC'];
+export const STABLECOINS = [
+  'USDC',
+  'USDT',
+  'USD₮',
+  'USD₮0',
+  'USDG',
+  'DAI',
+  'FRAX',
+  'LUSD',
+  'PYUSD',
+  'GHO',
+  'CRVUSD',
+  'USDS',
+  'SUSDE',
+  'USDE',
+  'EURC',
+  'USDBC',
+  'RLUSD',
+  'SDAI',
+  'USDC.E',
+  'EURE',
+  'XDAI',
+  'WXDAI',
+];
+export const ETH_RELATED = [
+  'ETH',
+  'WETH',
+  'WETH.E',
+  'STETH',
+  'WSTETH',
+  'CBETH',
+  'WEETH',
+  'EZETH',
+  'WRSETH',
+  'RSETH',
+  'OSETH',
+  'RETH',
+  'ETHX',
+];
+export const BTC_RELATED = ['BTC', 'CBBTC', 'WBTC', 'LBTC', 'TBTC', 'EBTC'];
 export const PENDLE_TOKENS = ['PT-', 'YT-', 'SY-'];
 
 export const ETHEREUM_MARKET_NAMES: Record<string, string> = {

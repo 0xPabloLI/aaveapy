@@ -77,7 +77,7 @@ const MobilePoolCard = ({ pool, isApy, onIncentiveClick }: MobilePoolCardProps) 
     : calculateSpreadApr(totalSupplyApr, totalBorrowApr);
 
   const chainIconSrc = getChainIconSrc(pool.chainName);
-  const { iconSymbol } = fetchIconSymbolAndName({
+  const { iconSymbol, logoURI } = fetchIconSymbolAndName({
     underlyingAsset: pool.tokenAddress,
     symbol: pool.tokenSymbol,
     name: pool.tokenName,
@@ -110,7 +110,13 @@ const MobilePoolCard = ({ pool, isApy, onIncentiveClick }: MobilePoolCardProps) 
     >
       {/* Header: Token + Market - Compact layout */}
       <div className="flex items-center gap-2 mb-2">
-        <TokenIcon symbol={iconSymbol} size={32} loading="eager" className="shrink-0" />
+        <TokenIcon
+          symbol={iconSymbol}
+          size={32}
+          loading="eager"
+          className="shrink-0"
+          logoURI={logoURI}
+        />
         <div className="min-w-0 flex-1">
           <p className="font-bold text-gray-900 text-sm truncate">{pool.tokenSymbol}</p>
           <div className="flex items-center gap-1 text-[10px] text-gray-500">
