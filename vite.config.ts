@@ -11,6 +11,9 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {
+    // Fixes rare "Cannot read properties of null (reading 'useRef')" crashes
+    // caused by duplicated React instances in Vite optimized deps.
+    dedupe: ["react", "react-dom"],
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
