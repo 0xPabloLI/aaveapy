@@ -6,6 +6,7 @@ interface TokenIconProps {
   className?: string;
   size?: number;
   loading?: 'lazy' | 'eager';
+  logoURI?: string;
 }
 
 const TokenImage = ({
@@ -13,26 +14,40 @@ const TokenImage = ({
   className,
   size,
   loading = 'lazy',
+  logoURI,
 }: {
   symbol: string;
   className?: string;
   size: number;
   loading?: 'lazy' | 'eager';
+  logoURI?: string;
 }) => {
-  const [tokenSymbol, setTokenSymbol] = useState(symbol.toLowerCase());
+  const localSrc = `/icons/tokens/${symbol.toLowerCase()}.svg`;
+  const defaultSrc = '/icons/tokens/default.svg';
+  const [src, setSrc] = useState(localSrc);
 
   useEffect(() => {
-    setTokenSymbol(symbol.toLowerCase());
+    setSrc(`/icons/tokens/${symbol.toLowerCase()}.svg`);
   }, [symbol]);
+
+  const handleError = () => {
+    if (logoURI && src !== logoURI) {
+      setSrc(logoURI);
+      return;
+    }
+    if (src !== defaultSrc) {
+      setSrc(defaultSrc);
+    }
+  };
 
   return (
     <img
-      src={`/icons/tokens/${tokenSymbol}.svg`}
+      src={src}
       alt={`${symbol} icon`}
       width={size}
       height={size}
       loading={loading}
-      onError={() => setTokenSymbol('default')}
+      onError={handleError}
       className={cn('rounded-full object-contain', className)}
     />
   );
@@ -67,6 +82,7 @@ export const TokenIcon = ({
   className,
   size = 32,
   loading = 'lazy',
+  logoURI,
 }: TokenIconProps) => {
   const symbols = useMemo(
     () => symbol.split('_').map((part) => part.trim()).filter(Boolean),
@@ -83,6 +99,7 @@ export const TokenIcon = ({
       size={size}
       loading={loading}
       className={className}
+      logoURI={logoURI}
     />
   );
 };

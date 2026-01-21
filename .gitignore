@@ -31,3 +31,6 @@ env.example
 *.njsproj
 *.sln
 *.sw?
+
+
+.cursor/

@@ -1,26 +1,76 @@
 import { useQuery } from '@tanstack/react-query';
 import { MarketsResponse, MarketStats, MarketListItem } from '@/types/aave';
+import {
+  getCachedMarkets,
+  setCachedMarkets,
+  getCachedMarketStats,
+  setCachedMarketStats,
+  getCachedMarketsList,
+  setCachedMarketsList,
+} from '@/lib/cache';
 
 // Read API base URL from environment variable, fallback to remote URL if not set
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://api.aaveapy.com/api';
 
 // Fetch all market data (all sorting and filtering done on frontend)
 export const fetchMarkets = async (): Promise<MarketsResponse> => {
-  const response = await fetch(`${API_BASE}/markets`);
-  if (!response.ok) throw new Error('Failed to fetch markets');
-  return response.json();
+  try {
+    const response = await fetch(`${API_BASE}/markets`);
+    if (!response.ok) throw new Error('Failed to fetch markets');
+    const data = await response.json();
+    // Save to cache on success
+    setCachedMarkets(data);
+    return data;
+  } catch (error) {
+    // Try to get from cache on failure
+    const cached = getCachedMarkets();
+    if (cached) {
+      console.warn('Using cached markets data due to fetch error:', error);
+      return cached;
+    }
+    // Re-throw if no cache available
+    throw error;
+  }
 };
 
 export const fetchMarketStats = async (): Promise<MarketStats> => {
-  const response = await fetch(`${API_BASE}/markets/stats`);
-  if (!response.ok) throw new Error('Failed to fetch market stats');
-  return response.json();
+  try {
+    const response = await fetch(`${API_BASE}/markets/stats`);
+    if (!response.ok) throw new Error('Failed to fetch market stats');
+    const data = await response.json();
+    // Save to cache on success
+    setCachedMarketStats(data);
+    return data;
+  } catch (error) {
+    // Try to get from cache on failure
+    const cached = getCachedMarketStats();
+    if (cached) {
+      console.warn('Using cached market stats due to fetch error:', error);
+      return cached;
+    }
+    // Re-throw if no cache available
+    throw error;
+  }
 };
 
 export const fetchMarketsList = async (): Promise<MarketListItem[]> => {
-  const response = await fetch(`${API_BASE}/markets/list`);
-  if (!response.ok) throw new Error('Failed to fetch markets list');
-  return response.json();
+  try {
+    const response = await fetch(`${API_BASE}/markets/list`);
+    if (!response.ok) throw new Error('Failed to fetch markets list');
+    const data = await response.json();
+    // Save to cache on success
+    setCachedMarketsList(data);
+    return data;
+  } catch (error) {
+    // Try to get from cache on failure
+    const cached = getCachedMarketsList();
+    if (cached) {
+      console.warn('Using cached markets list due to fetch error:', error);
+      return cached;
+    }
+    // Re-throw if no cache available
+    throw error;
+  }
 };
 
 export const useAaveMarkets = () => {
