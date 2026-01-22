@@ -212,20 +212,41 @@ const TopOpportunities = ({ pools, isApy, categoryGroups }: TopOpportunitiesProp
     return 'text-slate-400';
   };
 
-  const getSpreadColorClass = (value: number | null) => {
+  const getSpreadColorClass = (value: number | null, index: number = 0, total: number = 5) => {
     if (value === null) return 'text-muted-foreground';
-    return value >= 0 ? 'text-amber-500' : 'text-gray-400';
+    // Create gradient from high to low: darker purple for high values, lighter pink for low values
+    // Index 0 = highest value (darkest), index 4 = lowest value (lightest)
+    const intensity = 1 - (index / Math.max(total - 1, 1)); // 1.0 for first item, 0.0 for last item
+    
+    if (intensity >= 0.8) {
+      // Highest values: deep purple
+      return 'bg-gradient-to-r from-purple-700 via-purple-600 to-purple-600 text-transparent bg-clip-text';
+    } else if (intensity >= 0.6) {
+      // High values: purple
+      return 'bg-gradient-to-r from-purple-600 via-purple-500 to-fuchsia-500 text-transparent bg-clip-text';
+    } else if (intensity >= 0.4) {
+      // Medium values: purple to fuchsia
+      return 'bg-gradient-to-r from-purple-500 via-fuchsia-500 to-fuchsia-500 text-transparent bg-clip-text';
+    } else if (intensity >= 0.2) {
+      // Low values: fuchsia to pink
+      return 'bg-gradient-to-r from-fuchsia-500 via-fuchsia-400 to-pink-500 text-transparent bg-clip-text';
+    } else {
+      // Lowest values: light pink
+      return 'bg-gradient-to-r from-fuchsia-400 via-pink-400 to-pink-400 text-transparent bg-clip-text';
+    }
   };
 
   // Reusable pool item component
   const PoolItem = ({ 
     pool, 
     index, 
-    type 
+    type,
+    totalItems = 5
   }: { 
     pool: typeof poolsWithTotals[0]; 
     index: number;
     type: 'supply' | 'leverage';
+    totalItems?: number;
   }) => {
     const isLeverage = type === 'leverage';
     const mainValue = isLeverage 
@@ -248,7 +269,7 @@ const TopOpportunities = ({ pools, isApy, categoryGroups }: TopOpportunitiesProp
         variants={itemVariants}
         className={`flex items-center rounded-lg border transition-all group cursor-pointer h-[56px] ${
           isLeverage 
-            ? 'bg-gradient-to-r from-background to-warning/5 border-border hover:border-warning/50'
+            ? 'bg-gradient-to-r from-background via-purple-500/5 to-fuchsia-500/5 border-border hover:border-purple-500/50'
             : 'bg-gradient-to-r from-background to-success/5 border-border hover:border-success/50'
         } ${isMobile ? 'px-2.5 gap-2' : 'px-3 gap-2'}`}
         onClick={() => handleCardClick(pool)}
@@ -277,19 +298,19 @@ const TopOpportunities = ({ pools, isApy, categoryGroups }: TopOpportunitiesProp
         
         {/* APY Values - Fixed width, right aligned */}
           <div className={`shrink-0 text-right ${isMobile ? 'w-16' : 'w-24'}`}>
-          <div className={`${(isLeverage ? getSpreadColorClass(mainValue) : getApyColorClass(mainValue))} font-bold tabular-nums ${isMobile ? 'text-base' : 'text-lg'}`}>
+          <div className={`${(isLeverage ? getSpreadColorClass(mainValue, index, totalItems) : getApyColorClass(mainValue))} font-bold tabular-nums ${isMobile ? 'text-base' : 'text-lg'}`}>
             {isLeverage ? formatSpread(mainValue) : formatPercent(mainValue)}
           </div>
           {/* Detail breakdown - Only show for supply type */}
           {!isLeverage && (
-            <div className={`flex items-center justify-end gap-0.5 ${isMobile ? 'text-[9px]' : 'text-[10px]'} text-secondary mt-0.5`}>
-              <span className="tabular-nums text-blue-600">{formatPercent(pool.supplyApy ?? null)}</span>
+            <div className="flex items-center justify-end gap-0.5 text-xs text-secondary mt-0.5">
+              <span className="text-blue-600 tabular-nums">{formatPercent(pool.supplyApy ?? null)}</span>
               {hasIncentive && (
                 <>
                   <span className="text-muted-foreground">+</span>
                   <button
                     onClick={(e) => handleIncentiveClick(e, pool, 'supply', incentiveValue)}
-                    className="inline-flex items-center gap-0.5 px-0.5 py-0 rounded bg-amber-50 text-amber-600 font-semibold hover:bg-amber-100 transition-colors cursor-pointer tabular-nums"
+                    className="inline-flex items-center gap-0.5 px-0.5 py-0 rounded bg-amber-50 text-amber-600 hover:bg-amber-100 transition-colors cursor-pointer tabular-nums"
                   >
                     <IncentiveIcon width={isMobile ? 8 : 10} height={isMobile ? 8 : 10} />
                     <span>{formatPercent(incentiveValue)}</span>
@@ -300,7 +321,7 @@ const TopOpportunities = ({ pools, isApy, categoryGroups }: TopOpportunitiesProp
           )}
           {/* Leverage detail */}
           {isLeverage && (
-            <div className={`text-secondary tabular-nums mt-0.5 ${isMobile ? 'text-[9px]' : 'text-[10px]'}`}>
+            <div className="text-secondary tabular-nums text-xs mt-0.5">
               {formatPercent(isApy ? pool.totalSupplyApy : pool.totalSupplyApr)} -{' '}
               {(() => {
                 const borrowValue = isApy ? pool.totalBorrowApy : pool.totalBorrowApr;
@@ -367,6 +388,7 @@ const TopOpportunities = ({ pools, isApy, categoryGroups }: TopOpportunitiesProp
                   pool={pool} 
                   index={i} 
                   type={type}
+                  totalItems={categoryPools.length}
                 />
               ))
             ) : (
@@ -440,8 +462,8 @@ const TopOpportunities = ({ pools, isApy, categoryGroups }: TopOpportunitiesProp
       title: "Leverage Opportunities",
       subtitle: `Supply - Borrow ${isApy ? 'APY' : 'APR'}`,
       icon: Zap,
-      iconColorClass: "text-warning",
-      bgColorClass: "bg-warning/10",
+      iconColorClass: "text-purple-500",
+      bgColorClass: "bg-purple-500/10",
       pools: topLooping,
       categoryKey: "leverage",
       type: "leverage" as const,

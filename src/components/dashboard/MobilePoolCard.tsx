@@ -93,13 +93,23 @@ const MobilePoolCard = ({ pool, isApy, onIncentiveClick }: MobilePoolCardProps) 
     }
   };
 
-  // Dynamic color based on APY value
+  // Dynamic color based on APY value for Supply
   const getSupplyColorClass = (value: number | null) => {
     if (value === null) return 'text-gray-400';
     if (value >= 10) return 'text-emerald-600';
     if (value >= 5) return 'text-emerald-500';
     if (value >= 2) return 'text-emerald-400';
     if (value >= 1) return 'text-teal-500';
+    return 'text-gray-500';
+  };
+
+  // Dynamic color based on APY value for Borrow
+  const getBorrowColorClass = (value: number | null) => {
+    if (value === null) return 'text-gray-400';
+    if (value >= 10) return 'text-blue-600';
+    if (value >= 5) return 'text-blue-500';
+    if (value >= 2) return 'text-blue-400';
+    if (value >= 1) return 'text-cyan-500';
     return 'text-gray-500';
   };
 
@@ -139,7 +149,7 @@ const MobilePoolCard = ({ pool, isApy, onIncentiveClick }: MobilePoolCardProps) 
           </p>
           {displaySupplyIncentive !== null && (
             <div className="flex items-center gap-0.5 text-[9px] flex-nowrap">
-              <span className="text-blue-600">{formatPercent(isApy ? (pool.supplyApy ?? null) : (pool.supplyApy !== null && pool.supplyApy !== undefined ? apyToApr(pool.supplyApy) : null))}</span>
+              <span className="text-gray-600">{formatPercent(isApy ? (pool.supplyApy ?? null) : (pool.supplyApy !== null && pool.supplyApy !== undefined ? apyToApr(pool.supplyApy) : null))}</span>
               <span className="text-gray-400">+</span>
               <button
                 onClick={(e) => {
@@ -159,7 +169,7 @@ const MobilePoolCard = ({ pool, isApy, onIncentiveClick }: MobilePoolCardProps) 
         <div className="space-y-0.5 text-center">
           <p className="text-[9px] text-gray-400 uppercase font-medium">Spread</p>
           <p className={`text-xs font-medium ${
-            spread !== null && spread >= 0 ? 'text-amber-400' : 'text-gray-400'
+            spread !== null ? 'text-purple-500' : 'text-gray-400'
           }`}>
             {formatSpread(spread)}
           </p>
@@ -168,12 +178,12 @@ const MobilePoolCard = ({ pool, isApy, onIncentiveClick }: MobilePoolCardProps) 
         {/* Borrow */}
         <div className="space-y-0.5 text-right">
           <p className="text-[9px] text-gray-500 uppercase font-medium">Borrow</p>
-          <p className={`text-sm font-bold ${getSupplyColorClass(displayBorrowTotal)}`}>
+          <p className={`text-sm font-bold ${getBorrowColorClass(displayBorrowTotal)}`}>
             {formatPercent(displayBorrowTotal)}
           </p>
           {displayBorrowIncentive !== null && (
             <div className="flex items-center gap-0.5 text-[9px] flex-nowrap justify-end">
-              <span className="text-blue-600">{formatPercent(isApy ? (pool.borrowApy ?? null) : (pool.borrowApy !== null && pool.borrowApy !== undefined ? apyToApr(pool.borrowApy) : null))}</span>
+              <span className="text-gray-600">{formatPercent(isApy ? (pool.borrowApy ?? null) : (pool.borrowApy !== null && pool.borrowApy !== undefined ? apyToApr(pool.borrowApy) : null))}</span>
               <span className="text-gray-400">-</span>
               <button
                 onClick={(e) => {
