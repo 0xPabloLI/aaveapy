@@ -503,24 +503,28 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-      <div className="py-2 px-4 border-b border-gray-100 flex justify-between items-center">
-        <h3 className={`font-bold text-gray-900 ${isMobile ? 'text-sm' : 'text-base'}`}>{pools.length} Reserves</h3>
-      </div>
       <div className="overflow-x-auto">
         <Table className="table-fixed w-full">
+          <colgroup>
+            <col className="w-1/5" />
+            <col className="w-1/5" />
+            <col className="w-1/5" />
+            <col className="w-1/5" />
+            <col className="w-1/5" />
+          </colgroup>
           <TableHeader>
             <TableRow className="border-border/50 hover:bg-transparent bg-gray-50/50">
               {/* Token - flex grow */}
-              <TableHead className="w-[20%] px-4 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              <TableHead className="w-1/5 px-3 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
                 Token
               </TableHead>
               {/* Market */}
-              <TableHead className="w-[12%] px-4 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden md:table-cell">
+              <TableHead className="w-1/5 px-3 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider hidden md:table-cell">
                 Market
               </TableHead>
-              {/* Supply Column - right aligned with arrow outside */}
-              <TableHead className="w-[23%] px-4 py-4 text-xs font-semibold uppercase tracking-wider text-right">
-                <div className="flex items-center justify-end gap-2">
+              {/* Supply Column - center aligned */}
+              <TableHead className="w-1/5 px-3 py-3 text-xs font-semibold uppercase tracking-wider text-center">
+                <div className="flex items-center justify-center gap-2">
                   <div className="flex items-center gap-1.5">
                     <span
                       className={activeSortColumn === 'supply' ? 'text-emerald-600' : 'text-gray-600'}
@@ -641,8 +645,8 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                   </div>
                 </div>
               </TableHead>
-              {/* Spread Column - right aligned, purple color to distinguish from incentive */}
-              <TableHead className="w-[22.5%] px-4 py-4 text-right text-xs font-semibold uppercase tracking-wider hidden md:table-cell">
+              {/* Spread Column - center aligned */}
+              <TableHead className="w-1/5 px-3 py-3 text-center text-xs font-semibold uppercase tracking-wider hidden md:table-cell">
                 <button
                   onClick={() => {
                     if (activeSortColumn === 'spread') {
@@ -668,9 +672,9 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                   )}
                 </button>
               </TableHead>
-              {/* Borrow Column - right aligned with arrow outside */}
-              <TableHead className="w-[22.5%] px-4 py-4 text-xs font-semibold uppercase tracking-wider text-right">
-                <div className="flex items-center justify-end gap-2">
+              {/* Borrow Column - center aligned */}
+              <TableHead className="w-1/5 px-3 py-3 text-xs font-semibold uppercase tracking-wider text-center">
+                <div className="flex items-center justify-center gap-2">
                   <div className="flex items-center gap-1.5">
                     <span
                       className={activeSortColumn === 'borrow' ? 'text-blue-600' : 'text-gray-600'}
@@ -789,7 +793,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                         )}
                       </div>
                     </div>
-                  </div>
+                </div>
               </TableHead>
             </TableRow>
           </TableHeader>
@@ -835,8 +839,8 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                   onClick={() => handleRowClick(pool)}
                 >
                   {/* Token */}
-                  <TableCell className="w-[20%] px-4 py-4 whitespace-nowrap">
-                    <div className="flex items-center gap-2">
+                  <TableCell className="w-1/5 px-3 py-3 whitespace-nowrap text-center">
+                    <div className="flex items-center justify-center gap-2">
                       <TokenIcon symbol={iconSymbol} size={28} loading="eager" logoURI={logoURI} />
                       <span className="font-semibold text-gray-900 text-sm">
                         {pool.tokenSymbol}
@@ -844,20 +848,20 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                     </div>
                   </TableCell>
                   {/* Market */}
-                  <TableCell className="w-[12%] px-4 py-4 whitespace-nowrap hidden md:table-cell">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                  <TableCell className="w-1/5 px-3 py-3 whitespace-nowrap text-center hidden md:table-cell">
+                    <span className="inline-flex items-center justify-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
                       <ChainIcon chain={pool.chainName} />
                       {getMarketDisplayName(pool)}
                     </span>
                   </TableCell>
                   {/* Supply */}
-                  <TableCell className="w-[23%] px-4 py-4 whitespace-nowrap text-right">
-                    <div className="flex flex-col items-end gap-0.5">
+                  <TableCell className="w-1/5 px-3 py-3 whitespace-nowrap text-center">
+                    <div className="flex flex-col items-center gap-0.5">
                       <span className={`font-bold text-emerald-500 tabular-nums ${isMobile ? 'text-base' : 'text-lg'}`}>
                         {formatPercent(displaySupplyTotal)}
                       </span>
                       {displaySupplyIncentive !== null && (
-                        <div className="flex items-center gap-0.5 text-xs justify-end">
+                        <div className="flex items-center gap-0.5 text-xs justify-center">
                           <span className="text-blue-600 tabular-nums">
                             {formatPercent(displaySupplyNative)}
                           </span>
@@ -876,7 +880,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                     </div>
                   </TableCell>
                   {/* Spread */}
-                  <TableCell className="w-[22.5%] px-4 py-4 whitespace-nowrap text-right hidden md:table-cell">
+                  <TableCell className="w-1/5 px-3 py-3 whitespace-nowrap text-center hidden md:table-cell">
                     <span
                       className={`font-bold tabular-nums ${isMobile ? 'text-base' : 'text-lg'} ${
                         spread !== null ? 'text-purple-500' : 'text-gray-400'
@@ -886,13 +890,13 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                     </span>
                   </TableCell>
                   {/* Borrow */}
-                  <TableCell className="w-[22.5%] px-4 py-4 whitespace-nowrap text-right">
-                    <div className="flex flex-col items-end gap-0.5">
+                  <TableCell className="w-1/5 px-3 py-3 whitespace-nowrap text-center">
+                    <div className="flex flex-col items-center gap-0.5">
                         <span className={`font-bold text-blue-600 tabular-nums ${isMobile ? 'text-base' : 'text-lg'}`}>
                           {displayBorrowTotal !== null ? formatPercent(displayBorrowTotal) : '-'}
                         </span>
                         {displayBorrowIncentive !== null && (
-                          <div className="flex items-center gap-0.5 text-xs justify-end">
+                          <div className="flex items-center gap-0.5 text-xs justify-center">
                             {displayBorrowNative !== null && (
                               <>
                                 <span className="text-blue-600 tabular-nums">
