@@ -38,7 +38,7 @@ const DEFAULT_VISIBLE_COUNT = 20;
 
 const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTableProps) => {
   const isMobile = useIsMobile();
-  const [activeSortColumn, setActiveSortColumn] = useState<'supply' | 'borrow' | 'spread'>('supply');
+  const [activeSortColumn, setActiveSortColumn] = useState<'supply' | 'borrow' | 'spread' | null>(null);
   const [supplySortMode, setSupplySortMode] = useState<SortMode>('total');
   const [supplySortOrder, setSupplySortOrder] = useState<'asc' | 'desc'>('desc');
   const [borrowSortMode, setBorrowSortMode] = useState<SortMode>('total');
@@ -111,7 +111,10 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
   const sortedData = [...pools].sort((a, b) => {
     let comparison = 0;
 
-    if (activeSortColumn === 'supply') {
+    // Default to supply total desc when no column is selected
+    const sortColumn = activeSortColumn ?? 'supply';
+
+    if (sortColumn === 'supply') {
       // Supply sorting
       if (supplySortMode === 'native') {
         const aNative = getNativeSupplyApy(a);
@@ -138,7 +141,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
         comparison = bTotal - aTotal;
       }
       return supplySortOrder === 'desc' ? comparison : -comparison;
-    } else if (activeSortColumn === 'borrow') {
+    } else if (sortColumn === 'borrow') {
       // Borrow sorting
       if (borrowSortMode === 'native') {
         const aNative = getNativeBorrowApy(a);
@@ -166,7 +169,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
       }
       return borrowSortOrder === 'desc' ? comparison : -comparison;
     } else {
-      // Spread sorting
+      // Spread sorting (or default when activeSortColumn is null)
       const aSpread = getSpread(a);
       const bSpread = getSpread(b);
       if (aSpread === null && bSpread === null) return 0;
@@ -284,7 +287,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
       <div className="space-y-3">
         {/* Header with sorting controls */}
         <div className="flex justify-between items-center px-1">
-          <h3 className="text-base font-bold text-gray-900">{pools.length} Pools</h3>
+          <h3 className="text-sm font-bold text-gray-900">{pools.length} Reserves</h3>
           <div className="flex items-center gap-2">
             {/* Supply sort dropdown */}
             <div className="relative">
@@ -306,23 +309,43 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setShowSupplySortMenu(false)} />
                   <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-20 min-w-[130px]">
-                    {(['total', 'native', 'incentive'] as SortMode[]).map((mode) => (
-                      <button
-                        key={mode}
-                        onClick={() => {
-                          setSupplySortMode(mode);
-                          setActiveSortColumn('supply');
-                          setShowSupplySortMenu(false);
-                        }}
-                        className={`w-full px-3 py-1.5 text-left text-xs transition-colors ${
-                          supplySortMode === mode && activeSortColumn === 'supply'
-                            ? 'text-emerald-600 font-bold bg-emerald-50'
-                            : 'text-gray-600 hover:bg-gray-50'
-                        }`}
-                      >
-                        {mode.charAt(0).toUpperCase() + mode.slice(1)}
-                      </button>
-                    ))}
+                    {(['total', 'native', 'incentive'] as SortMode[]).map((mode) => {
+                      const isAlreadySelected = supplySortMode === mode && activeSortColumn === 'supply';
+                      const getColorClass = () => {
+                        if (mode === 'total') return 'text-emerald-600';
+                        if (mode === 'native') return 'text-gray-600';
+                        return 'text-amber-600';
+                      };
+                      return (
+                        <button
+                          key={mode}
+                          onClick={() => {
+                            if (isAlreadySelected && supplySortOrder === 'desc') {
+                              setSupplySortOrder('asc');
+                            } else {
+                              setSupplySortMode(mode);
+                              setActiveSortColumn('supply');
+                              setSupplySortOrder('desc');
+                            }
+                            setShowSupplySortMenu(false);
+                          }}
+                          className={`w-full px-3 py-1.5 text-left text-xs transition-colors flex items-center justify-between ${
+                            isAlreadySelected
+                              ? `${getColorClass()} font-bold bg-emerald-50`
+                              : 'text-gray-600 hover:bg-gray-50'
+                          }`}
+                        >
+                          <span>{mode.charAt(0).toUpperCase() + mode.slice(1)}</span>
+                          {isAlreadySelected && (
+                            supplySortOrder === 'desc' ? (
+                              <ArrowDown className={`w-3 h-3 ${getColorClass()}`} />
+                            ) : (
+                              <ArrowUp className={`w-3 h-3 ${getColorClass()}`} />
+                            )
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                 </>
               )}
@@ -348,23 +371,43 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setShowBorrowSortMenu(false)} />
                   <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-20 min-w-[130px]">
-                    {(['total', 'native', 'incentive'] as SortMode[]).map((mode) => (
-                      <button
-                        key={mode}
-                        onClick={() => {
-                          setBorrowSortMode(mode);
-                          setActiveSortColumn('borrow');
-                          setShowBorrowSortMenu(false);
-                        }}
-                        className={`w-full px-3 py-1.5 text-left text-xs transition-colors ${
-                          borrowSortMode === mode && activeSortColumn === 'borrow'
-                            ? 'text-blue-600 font-bold bg-blue-50'
-                            : 'text-gray-600 hover:bg-gray-50'
-                        }`}
-                      >
-                        {mode.charAt(0).toUpperCase() + mode.slice(1)}
-                      </button>
-                    ))}
+                    {(['total', 'native', 'incentive'] as SortMode[]).map((mode) => {
+                      const isAlreadySelected = borrowSortMode === mode && activeSortColumn === 'borrow';
+                      const getColorClass = () => {
+                        if (mode === 'total') return 'text-blue-600';
+                        if (mode === 'native') return 'text-gray-600';
+                        return 'text-amber-600';
+                      };
+                      return (
+                        <button
+                          key={mode}
+                          onClick={() => {
+                            if (isAlreadySelected && borrowSortOrder === 'desc') {
+                              setBorrowSortOrder('asc');
+                            } else {
+                              setBorrowSortMode(mode);
+                              setActiveSortColumn('borrow');
+                              setBorrowSortOrder('desc');
+                            }
+                            setShowBorrowSortMenu(false);
+                          }}
+                          className={`w-full px-3 py-1.5 text-left text-xs transition-colors flex items-center justify-between ${
+                            isAlreadySelected
+                              ? `${getColorClass()} font-bold bg-blue-50`
+                              : 'text-gray-600 hover:bg-gray-50'
+                          }`}
+                        >
+                          <span>{mode.charAt(0).toUpperCase() + mode.slice(1)}</span>
+                          {isAlreadySelected && (
+                            borrowSortOrder === 'desc' ? (
+                              <ArrowDown className={`w-3 h-3 ${getColorClass()}`} />
+                            ) : (
+                              <ArrowUp className={`w-3 h-3 ${getColorClass()}`} />
+                            )
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                 </>
               )}
@@ -373,16 +416,29 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
             {/* Spread sort button */}
             <button
               onClick={() => {
-                setActiveSortColumn('spread');
-                toggleSpreadSortOrder();
+                if (activeSortColumn === 'spread') {
+                  toggleSpreadSortOrder();
+                } else {
+                  setActiveSortColumn('spread');
+                  setSpreadSortOrder('desc');
+                }
               }}
-              className={`px-2 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+              className={`px-2 py-1.5 text-xs font-medium rounded-lg border transition-colors flex items-center gap-1 ${
                 activeSortColumn === 'spread'
-                  ? 'bg-amber-50 border-amber-200 text-amber-700'
+                  ? 'bg-purple-50 border-purple-200 text-purple-700'
                   : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
               }`}
             >
-              Spread
+              <span>Spread</span>
+              {activeSortColumn === 'spread' ? (
+                spreadSortOrder === 'desc' ? (
+                  <ArrowDown className="w-3 h-3" />
+                ) : (
+                  <ArrowUp className="w-3 h-3" />
+                )
+              ) : (
+                <ArrowDown className="w-3 h-3 opacity-50" />
+              )}
             </button>
             
             {/* Sort order toggle */}
@@ -425,7 +481,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
             onClick={() => setShowAll(!showAll)}
             className="w-full mt-4 flex items-center justify-center gap-2 py-3 rounded-xl border border-border bg-card hover:bg-muted/50 transition-colors text-foreground font-medium"
           >
-            <span>{showAll ? 'Show Less' : `Show ${sortedData.length - DEFAULT_VISIBLE_COUNT} More Pools`}</span>
+            <span>{showAll ? 'Show Less' : `Show ${sortedData.length - DEFAULT_VISIBLE_COUNT} More Reserves`}</span>
             {showAll ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
         )}
@@ -447,31 +503,35 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-      <div className="p-4 md:p-6 border-b border-gray-100 flex justify-between items-center">
-        <h3 className="text-base md:text-lg font-bold text-gray-900">{pools.length} Pools</h3>
+      <div className="py-2 px-4 border-b border-gray-100 flex justify-between items-center">
+        <h3 className={`font-bold text-gray-900 ${isMobile ? 'text-sm' : 'text-base'}`}>{pools.length} Reserves</h3>
       </div>
       <div className="overflow-x-auto">
         <Table className="table-fixed w-full">
           <TableHeader>
             <TableRow className="border-border/50 hover:bg-transparent bg-gray-50/50">
               {/* Token - flex grow */}
-              <TableHead className="w-[22%] px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              <TableHead className="w-[20%] px-4 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                 Token
               </TableHead>
               {/* Market */}
-              <TableHead className="w-[18%] px-4 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden md:table-cell">
+              <TableHead className="w-[12%] px-4 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden md:table-cell">
                 Market
               </TableHead>
               {/* Supply Column - right aligned with arrow outside */}
-              <TableHead className="w-[20%] px-4 py-4 text-xs font-semibold uppercase tracking-wider">
+              <TableHead className="w-[23%] px-4 py-4 text-xs font-semibold uppercase tracking-wider text-right">
                 <div className="flex items-center justify-end gap-2">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-emerald-600">Supply</span>
+                    <span
+                      className={activeSortColumn === 'supply' ? 'text-emerald-600' : 'text-gray-600'}
+                    >
+                      Supply
+                    </span>
                     <div className="relative">
                       <button
                         onClick={() => setShowSupplySortMenu(!showSupplySortMenu)}
-                        className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded border transition-colors text-[10px] ${
-                          showSupplySortMenu
+                        className={`flex items-center gap-1 px-2 py-1 rounded-lg border transition-colors text-xs ${
+                          showSupplySortMenu || activeSortColumn === 'supply'
                             ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
                             : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
                         }`}
@@ -489,94 +549,140 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                           <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-20 min-w-[140px]">
                             <button
                               onClick={() => {
-                                setSupplySortMode('total');
-                                setActiveSortColumn('supply');
+                                const isAlreadySelected = supplySortMode === 'total' && activeSortColumn === 'supply';
+                                if (isAlreadySelected && supplySortOrder === 'desc') {
+                                  setSupplySortOrder('asc');
+                                } else {
+                                  setSupplySortMode('total');
+                                  setActiveSortColumn('supply');
+                                  setSupplySortOrder('desc');
+                                }
                                 setShowSupplySortMenu(false);
                               }}
-                              className={`w-full px-3 py-1.5 text-left text-xs hover:bg-emerald-50/50 transition-colors ${
+                              className={`w-full px-3 py-1.5 text-left text-xs hover:bg-emerald-50/50 transition-colors flex items-center justify-between ${
                                 supplySortMode === 'total' && activeSortColumn === 'supply'
                                   ? 'text-emerald-600 font-bold bg-emerald-50'
                                   : 'text-gray-700'
                               }`}
                             >
-                              Sort by Total
+                              <span>Sort by Total</span>
+                              {supplySortMode === 'total' && activeSortColumn === 'supply' ? (
+                                supplySortOrder === 'desc' ? (
+                                  <ArrowDown className="w-3 h-3 text-emerald-600" />
+                                ) : (
+                                  <ArrowUp className="w-3 h-3 text-emerald-600" />
+                                )
+                              ) : (
+                                <ArrowDown className="w-3 h-3 text-gray-400" />
+                              )}
                             </button>
                             <button
                               onClick={() => {
-                                setSupplySortMode('native');
-                                setActiveSortColumn('supply');
+                                const isAlreadySelected = supplySortMode === 'native' && activeSortColumn === 'supply';
+                                if (isAlreadySelected && supplySortOrder === 'desc') {
+                                  setSupplySortOrder('asc');
+                                } else {
+                                  setSupplySortMode('native');
+                                  setActiveSortColumn('supply');
+                                  setSupplySortOrder('desc');
+                                }
                                 setShowSupplySortMenu(false);
                               }}
-                              className={`w-full px-3 py-1.5 text-left text-xs hover:bg-blue-50 transition-colors ${
+                              className={`w-full px-3 py-1.5 text-left text-xs hover:bg-gray-50 transition-colors flex items-center justify-between ${
                                 supplySortMode === 'native' && activeSortColumn === 'supply'
-                                  ? 'text-blue-600 font-bold bg-blue-50'
+                                  ? 'text-gray-700 font-bold bg-gray-100'
                                   : 'text-gray-700'
                               }`}
                             >
-                              Sort by Native
+                              <span>Sort by Native</span>
+                              {supplySortMode === 'native' && activeSortColumn === 'supply' ? (
+                                supplySortOrder === 'desc' ? (
+                                  <ArrowDown className="w-3 h-3 text-gray-600" />
+                                ) : (
+                                  <ArrowUp className="w-3 h-3 text-gray-600" />
+                                )
+                              ) : (
+                                <ArrowDown className="w-3 h-3 text-gray-400" />
+                              )}
                             </button>
                             <button
                               onClick={() => {
-                                setSupplySortMode('incentive');
-                                setActiveSortColumn('supply');
+                                const isAlreadySelected = supplySortMode === 'incentive' && activeSortColumn === 'supply';
+                                if (isAlreadySelected && supplySortOrder === 'desc') {
+                                  setSupplySortOrder('asc');
+                                } else {
+                                  setSupplySortMode('incentive');
+                                  setActiveSortColumn('supply');
+                                  setSupplySortOrder('desc');
+                                }
                                 setShowSupplySortMenu(false);
                               }}
-                              className={`w-full px-3 py-1.5 text-left text-xs hover:bg-amber-50/50 transition-colors ${
+                              className={`w-full px-3 py-1.5 text-left text-xs hover:bg-amber-50/50 transition-colors flex items-center justify-between ${
                                 supplySortMode === 'incentive' && activeSortColumn === 'supply'
                                   ? 'text-amber-600 font-bold bg-amber-50'
                                   : 'text-gray-700'
                               }`}
                             >
-                              Sort by Incentive
+                              <span>Sort by Incentive</span>
+                              {supplySortMode === 'incentive' && activeSortColumn === 'supply' ? (
+                                supplySortOrder === 'desc' ? (
+                                  <ArrowDown className="w-3 h-3 text-amber-600" />
+                                ) : (
+                                  <ArrowUp className="w-3 h-3 text-amber-600" />
+                                )
+                              ) : (
+                                <ArrowDown className="w-3 h-3 text-gray-400" />
+                              )}
                             </button>
                           </div>
                         </>
                       )}
                     </div>
                   </div>
-                  <button
-                    onClick={toggleSupplySortOrder}
-                    className="p-1 rounded border border-gray-200 bg-white hover:bg-gray-50 transition-colors"
-                    title="Toggle sort direction"
-                  >
-                    {supplySortOrder === 'desc' ? (
-                      <ArrowDown className="w-3 h-3 text-emerald-500" />
-                    ) : (
-                      <ArrowUp className="w-3 h-3 text-emerald-500" />
-                    )}
-                  </button>
                 </div>
               </TableHead>
-              {/* Spread Column - centered, amber color to match data */}
-              <TableHead className="w-[12%] px-4 py-4 text-center text-xs font-semibold uppercase tracking-wider hidden md:table-cell">
+              {/* Spread Column - right aligned, purple color to distinguish from incentive */}
+              <TableHead className="w-[22.5%] px-4 py-4 text-right text-xs font-semibold uppercase tracking-wider hidden md:table-cell">
                 <button
                   onClick={() => {
-                    setActiveSortColumn('spread');
-                    toggleSpreadSortOrder();
+                    if (activeSortColumn === 'spread') {
+                      toggleSpreadSortOrder();
+                    } else {
+                      setActiveSortColumn('spread');
+                      setSpreadSortOrder('desc');
+                    }
                   }}
                   className={`inline-flex items-center gap-1 transition-colors ${
-                    activeSortColumn === 'spread' ? 'text-amber-600' : 'text-amber-500 hover:text-amber-600'
+                    activeSortColumn === 'spread' ? 'text-purple-600' : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
-                  <span>Spread</span>
-                  {spreadSortOrder === 'desc' && activeSortColumn === 'spread' ? (
-                    <ArrowDown className="w-3 h-3" />
+                  <span>SPREAD</span>
+                  {activeSortColumn === 'spread' ? (
+                    spreadSortOrder === 'desc' ? (
+                      <ArrowDown className="w-3 h-3" />
+                    ) : (
+                      <ArrowUp className="w-3 h-3" />
+                    )
                   ) : (
-                    <ArrowUp className="w-3 h-3" />
+                    <ArrowDown className="w-3 h-3 opacity-50" />
                   )}
                 </button>
               </TableHead>
               {/* Borrow Column - right aligned with arrow outside */}
-              <TableHead className="w-[20%] px-6 py-4 text-xs font-semibold uppercase tracking-wider">
+              <TableHead className="w-[22.5%] px-4 py-4 text-xs font-semibold uppercase tracking-wider text-right">
                 <div className="flex items-center justify-end gap-2">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-gray-600">Borrow</span>
+                    <span
+                      className={activeSortColumn === 'borrow' ? 'text-blue-600' : 'text-gray-600'}
+                    >
+                      Borrow
+                    </span>
                     <div className="relative">
                       <button
                         onClick={() => setShowBorrowSortMenu(!showBorrowSortMenu)}
-                        className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded border transition-colors text-[10px] ${
-                          showBorrowSortMenu
-                            ? 'bg-gray-100 border-gray-300 text-gray-700'
+                        className={`flex items-center gap-1 px-2 py-1 rounded-lg border transition-colors text-xs ${
+                          showBorrowSortMenu || activeSortColumn === 'borrow'
+                            ? 'bg-blue-50 border-blue-200 text-blue-700'
                             : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
                         }`}
                         title="Select sort field"
@@ -584,72 +690,106 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                         <span className="font-semibold">{borrowSortLabel}</span>
                         <ChevronDown className="w-2.5 h-2.5" />
                       </button>
-                      {showBorrowSortMenu && (
-                        <>
-                          <div
-                            className="fixed inset-0 z-10"
-                            onClick={() => setShowBorrowSortMenu(false)}
-                          />
-                          <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-20 min-w-[140px]">
-                            <button
-                              onClick={() => {
-                                setBorrowSortMode('total');
-                                setActiveSortColumn('borrow');
-                                setShowBorrowSortMenu(false);
-                              }}
-                              className={`w-full px-3 py-1.5 text-left text-xs hover:bg-gray-100 transition-colors ${
-                                borrowSortMode === 'total' && activeSortColumn === 'borrow'
-                                  ? 'text-gray-900 font-bold bg-gray-200'
-                                  : 'text-gray-700'
-                              }`}
-                            >
-                              Sort by Total
-                            </button>
-                            <button
-                              onClick={() => {
-                                setBorrowSortMode('native');
-                                setActiveSortColumn('borrow');
-                                setShowBorrowSortMenu(false);
-                              }}
-                              className={`w-full px-3 py-1.5 text-left text-xs hover:bg-blue-50 transition-colors ${
-                                borrowSortMode === 'native' && activeSortColumn === 'borrow'
-                                  ? 'text-blue-600 font-bold bg-blue-50'
-                                  : 'text-gray-700'
-                              }`}
-                            >
-                              Sort by Native
-                            </button>
-                            <button
-                              onClick={() => {
-                                setBorrowSortMode('incentive');
-                                setActiveSortColumn('borrow');
-                                setShowBorrowSortMenu(false);
-                              }}
-                              className={`w-full px-3 py-1.5 text-left text-xs hover:bg-amber-50/50 transition-colors ${
-                                borrowSortMode === 'incentive' && activeSortColumn === 'borrow'
-                                  ? 'text-amber-600 font-bold bg-amber-50'
-                                  : 'text-gray-700'
-                              }`}
-                            >
-                              Sort by Incentive
-                            </button>
-                          </div>
-                        </>
-                      )}
+                        {showBorrowSortMenu && (
+                          <>
+                            <div
+                              className="fixed inset-0 z-10"
+                              onClick={() => setShowBorrowSortMenu(false)}
+                            />
+                            <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-20 min-w-[140px]">
+                              <button
+                                onClick={() => {
+                                  const isAlreadySelected = borrowSortMode === 'total' && activeSortColumn === 'borrow';
+                                  if (isAlreadySelected && borrowSortOrder === 'desc') {
+                                    setBorrowSortOrder('asc');
+                                  } else {
+                                    setBorrowSortMode('total');
+                                    setActiveSortColumn('borrow');
+                                    setBorrowSortOrder('desc');
+                                  }
+                                  setShowBorrowSortMenu(false);
+                                }}
+                                className={`w-full px-3 py-1.5 text-left text-xs hover:bg-blue-50/50 transition-colors flex items-center justify-between ${
+                                  borrowSortMode === 'total' && activeSortColumn === 'borrow'
+                                    ? 'text-blue-600 font-bold bg-blue-50'
+                                    : 'text-gray-700'
+                                }`}
+                              >
+                                <span>Sort by Total</span>
+                                {borrowSortMode === 'total' && activeSortColumn === 'borrow' ? (
+                                  borrowSortOrder === 'desc' ? (
+                                    <ArrowDown className="w-3 h-3 text-blue-600" />
+                                  ) : (
+                                    <ArrowUp className="w-3 h-3 text-blue-600" />
+                                  )
+                                ) : (
+                                  <ArrowDown className="w-3 h-3 text-gray-400" />
+                                )}
+                              </button>
+                              <button
+                                onClick={() => {
+                                  const isAlreadySelected = borrowSortMode === 'native' && activeSortColumn === 'borrow';
+                                  if (isAlreadySelected && borrowSortOrder === 'desc') {
+                                    setBorrowSortOrder('asc');
+                                  } else {
+                                    setBorrowSortMode('native');
+                                    setActiveSortColumn('borrow');
+                                    setBorrowSortOrder('desc');
+                                  }
+                                  setShowBorrowSortMenu(false);
+                                }}
+                                className={`w-full px-3 py-1.5 text-left text-xs hover:bg-gray-50 transition-colors flex items-center justify-between ${
+                                  borrowSortMode === 'native' && activeSortColumn === 'borrow'
+                                    ? 'text-gray-700 font-bold bg-gray-100'
+                                    : 'text-gray-700'
+                                }`}
+                              >
+                                <span>Sort by Native</span>
+                                {borrowSortMode === 'native' && activeSortColumn === 'borrow' ? (
+                                  borrowSortOrder === 'desc' ? (
+                                    <ArrowDown className="w-3 h-3 text-gray-600" />
+                                  ) : (
+                                    <ArrowUp className="w-3 h-3 text-gray-600" />
+                                  )
+                                ) : (
+                                  <ArrowDown className="w-3 h-3 text-gray-400" />
+                                )}
+                              </button>
+                              <button
+                                onClick={() => {
+                                  const isAlreadySelected = borrowSortMode === 'incentive' && activeSortColumn === 'borrow';
+                                  if (isAlreadySelected && borrowSortOrder === 'desc') {
+                                    setBorrowSortOrder('asc');
+                                  } else {
+                                    setBorrowSortMode('incentive');
+                                    setActiveSortColumn('borrow');
+                                    setBorrowSortOrder('desc');
+                                  }
+                                  setShowBorrowSortMenu(false);
+                                }}
+                                className={`w-full px-3 py-1.5 text-left text-xs hover:bg-amber-50/50 transition-colors flex items-center justify-between ${
+                                  borrowSortMode === 'incentive' && activeSortColumn === 'borrow'
+                                    ? 'text-amber-600 font-bold bg-amber-50'
+                                    : 'text-gray-700'
+                                }`}
+                              >
+                                <span>Sort by Incentive</span>
+                                {borrowSortMode === 'incentive' && activeSortColumn === 'borrow' ? (
+                                  borrowSortOrder === 'desc' ? (
+                                    <ArrowDown className="w-3 h-3 text-amber-600" />
+                                  ) : (
+                                    <ArrowUp className="w-3 h-3 text-amber-600" />
+                                  )
+                                ) : (
+                                  <ArrowDown className="w-3 h-3 text-gray-400" />
+                                )}
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
-                  <button
-                    onClick={toggleBorrowSortOrder}
-                    className="p-1 rounded border border-gray-200 bg-white hover:bg-gray-50 transition-colors"
-                    title="Toggle sort direction"
-                  >
-                    {borrowSortOrder === 'desc' ? (
-                      <ArrowDown className="w-3 h-3 text-gray-600" />
-                    ) : (
-                      <ArrowUp className="w-3 h-3 text-gray-600" />
-                    )}
-                  </button>
-                </div>
               </TableHead>
             </TableRow>
           </TableHeader>
@@ -695,7 +835,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                   onClick={() => handleRowClick(pool)}
                 >
                   {/* Token */}
-                  <TableCell className="w-[22%] px-6 py-4 whitespace-nowrap">
+                  <TableCell className="w-[20%] px-4 py-4 whitespace-nowrap">
                     <div className="flex items-center gap-2">
                       <TokenIcon symbol={iconSymbol} size={28} loading="eager" logoURI={logoURI} />
                       <span className="font-semibold text-gray-900 text-sm">
@@ -704,21 +844,21 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                     </div>
                   </TableCell>
                   {/* Market */}
-                  <TableCell className="w-[18%] px-4 py-4 whitespace-nowrap hidden md:table-cell">
+                  <TableCell className="w-[12%] px-4 py-4 whitespace-nowrap hidden md:table-cell">
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
                       <ChainIcon chain={pool.chainName} />
                       {getMarketDisplayName(pool)}
                     </span>
                   </TableCell>
                   {/* Supply */}
-                  <TableCell className="w-[20%] px-4 py-4 whitespace-nowrap text-right">
+                  <TableCell className="w-[23%] px-4 py-4 whitespace-nowrap text-right">
                     <div className="flex flex-col items-end gap-0.5">
-                      <span className="font-bold text-emerald-500 text-base tabular-nums">
+                      <span className={`font-bold text-emerald-500 tabular-nums ${isMobile ? 'text-base' : 'text-lg'}`}>
                         {formatPercent(displaySupplyTotal)}
                       </span>
                       {displaySupplyIncentive !== null && (
-                        <div className="flex items-center gap-1 text-xs justify-end">
-                          <span className="text-blue-600 font-semibold tabular-nums">
+                        <div className="flex items-center gap-0.5 text-xs justify-end">
+                          <span className="text-blue-600 tabular-nums">
                             {formatPercent(displaySupplyNative)}
                           </span>
                           <span className="text-gray-400">+</span>
@@ -726,54 +866,52 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                             onClick={(e) =>
                               handleIncentiveClick(e, pool, 'supply', displaySupplyIncentive)
                             }
-                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 text-amber-600 font-semibold hover:bg-amber-100 transition-colors cursor-pointer tabular-nums"
+                            className="inline-flex items-center gap-0.5 px-0.5 py-0 rounded bg-amber-50 text-amber-600 hover:bg-amber-100 transition-colors cursor-pointer tabular-nums"
                           >
-                            <IncentiveIcon width={12} height={12} />
-                            {formatPercent(displaySupplyIncentive)}
+                            <IncentiveIcon width={isMobile ? 8 : 10} height={isMobile ? 8 : 10} />
+                            <span>{formatPercent(displaySupplyIncentive)}</span>
                           </button>
                         </div>
                       )}
                     </div>
                   </TableCell>
                   {/* Spread */}
-                  <TableCell className="w-[12%] px-4 py-4 whitespace-nowrap text-center hidden md:table-cell">
+                  <TableCell className="w-[22.5%] px-4 py-4 whitespace-nowrap text-right hidden md:table-cell">
                     <span
-                      className={`font-bold tabular-nums ${
-                        spread !== null && spread >= 0
-                          ? 'text-amber-500'
-                          : 'text-gray-400'
+                      className={`font-bold tabular-nums ${isMobile ? 'text-base' : 'text-lg'} ${
+                        spread !== null ? 'text-purple-500' : 'text-gray-400'
                       }`}
                     >
                       {formatSpread(spread)}
                     </span>
                   </TableCell>
                   {/* Borrow */}
-                  <TableCell className="w-[20%] px-6 py-4 whitespace-nowrap text-right">
+                  <TableCell className="w-[22.5%] px-4 py-4 whitespace-nowrap text-right">
                     <div className="flex flex-col items-end gap-0.5">
-                      <span className="font-bold text-gray-900 text-base tabular-nums">
-                        {displayBorrowTotal !== null ? formatPercent(displayBorrowTotal) : '-'}
-                      </span>
-                      {displayBorrowIncentive !== null && (
-                        <div className="flex items-center gap-1 text-xs justify-end">
-                          {displayBorrowNative !== null && (
-                            <>
-                              <span className="text-blue-600 font-semibold tabular-nums">
-                                {formatPercent(displayBorrowNative)}
-                              </span>
-                              <span className="text-gray-400">-</span>
-                            </>
-                          )}
-                          <button
-                            onClick={(e) =>
-                              handleIncentiveClick(e, pool, 'borrow', displayBorrowIncentive)
-                            }
-                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 text-amber-600 font-semibold hover:bg-amber-100 transition-colors cursor-pointer tabular-nums"
-                          >
-                            <IncentiveIcon width={12} height={12} />
-                            {formatPercent(displayBorrowIncentive)}
-                          </button>
-                        </div>
-                      )}
+                        <span className={`font-bold text-blue-600 tabular-nums ${isMobile ? 'text-base' : 'text-lg'}`}>
+                          {displayBorrowTotal !== null ? formatPercent(displayBorrowTotal) : '-'}
+                        </span>
+                        {displayBorrowIncentive !== null && (
+                          <div className="flex items-center gap-0.5 text-xs justify-end">
+                            {displayBorrowNative !== null && (
+                              <>
+                                <span className="text-blue-600 tabular-nums">
+                                  {formatPercent(displayBorrowNative)}
+                                </span>
+                                <span className="text-gray-400">-</span>
+                              </>
+                            )}
+                            <button
+                              onClick={(e) =>
+                                handleIncentiveClick(e, pool, 'borrow', displayBorrowIncentive)
+                              }
+                              className="inline-flex items-center gap-0.5 px-0.5 py-0 rounded bg-amber-50 text-amber-600 hover:bg-amber-100 transition-colors cursor-pointer tabular-nums"
+                            >
+                              <IncentiveIcon width={isMobile ? 8 : 10} height={isMobile ? 8 : 10} />
+                              <span>{formatPercent(displayBorrowIncentive)}</span>
+                            </button>
+                          </div>
+                        )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -790,7 +928,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
             onClick={() => setShowAll(!showAll)}
             className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-border bg-muted/30 hover:bg-muted/50 transition-colors text-foreground font-medium"
           >
-            <span>{showAll ? 'Show Less' : `Show ${sortedData.length - DEFAULT_VISIBLE_COUNT} More Pools`}</span>
+            <span>{showAll ? 'Show Less' : `Show ${sortedData.length - DEFAULT_VISIBLE_COUNT} More Reserves`}</span>
             {showAll ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
         </div>

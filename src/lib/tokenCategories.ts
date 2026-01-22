@@ -17,11 +17,14 @@ const normalizeBaseSymbol = (symbol: string): string => {
 };
 
 const normalizeStableSymbol = (symbol: string): string => {
-  return normalizeBaseSymbol(symbol)
+  const normalized = normalizeBaseSymbol(symbol)
     .replace(/^W/, '')
     .replace(/USD₮0/g, 'USDT')
     .replace(/USD₮/g, 'USDT')
     .replace(/USDT0/g, 'USDT');
+  if (normalized === 'CEUR') return 'EURM';
+  if (normalized === 'EURM') return 'CEUR';
+  return normalized;
 };
 
 const normalizeEthSymbol = (symbol: string): string => {
