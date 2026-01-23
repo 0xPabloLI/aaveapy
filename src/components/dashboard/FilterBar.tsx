@@ -231,7 +231,7 @@ const FilterBar = ({
             }}
             className={`px-2 md:px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
               selectedCategory === category.value
-                ? 'bg-primary text-primary-foreground'
+                ? 'bg-[#c242b1] text-white'
                 : 'bg-card/60 text-muted-foreground hover:text-foreground hover:bg-card border border-border/40'
             }`}
           >
@@ -268,7 +268,7 @@ const FilterBar = ({
           <Switch
             checked={isApy}
             onCheckedChange={setIsApy}
-            className="data-[state=checked]:bg-primary scale-[0.65] md:scale-75"
+            className="data-[state=checked]:bg-[#c242b1] scale-[0.65] md:scale-75"
           />
           <span className={isApy ? 'text-foreground font-medium' : ''}>APY</span>
         </div>
@@ -305,8 +305,8 @@ const FilterBar = ({
           onClick={() => setSelectedMarkets([])}
           className={`px-2 md:px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
             noMarketsSelected
-              ? 'bg-slate-900 text-white shadow-sm'
-              : 'bg-slate-100 text-slate-700 hover:text-slate-900 hover:bg-slate-200 border border-slate-200'
+              ? 'text-[#c242b1] border border-[#c242b1] shadow-sm'
+              : 'text-slate-700 border border-slate-200 hover:text-slate-900'
           }`}
         >
           All
@@ -321,11 +321,11 @@ const FilterBar = ({
             <button
               key={market.marketName}
               onClick={() => toggleMarket(market.marketName)}
-              className={`inline-flex items-center gap-1 px-1.5 md:px-2 py-1 rounded-md text-xs font-medium transition-all ${
-                isSelected
-                  ? 'bg-slate-900 text-white shadow-sm'
-                  : 'bg-slate-100 text-slate-700 hover:text-slate-900 hover:bg-slate-200 border border-slate-200'
-              }`}
+            className={`inline-flex items-center gap-1 px-1.5 md:px-2 py-1 rounded-md text-xs font-medium transition-all ${
+              isSelected
+                ? 'text-[#c242b1] border border-[#c242b1] shadow-sm'
+                : 'text-slate-700 border border-slate-200 hover:text-slate-900'
+            }`}
               title={isEthereum ? `Ethereum ${info.label}` : market.chainName}
             >
               <ChainIcon chain={market.chainName} />
@@ -337,9 +337,9 @@ const FilterBar = ({
         {/* More button - expands inline */}
         {hasHiddenMarkets && !showMarketsExpanded && (
           <button
-            onClick={() => setShowMarketsExpanded(true)}
-            className="inline-flex items-center gap-1 px-1.5 md:px-2 py-1 rounded-md text-xs font-medium transition-all bg-indigo-50 text-indigo-700 hover:text-indigo-800 hover:bg-indigo-100 border border-indigo-200 border-dashed"
-          >
+          onClick={() => setShowMarketsExpanded(true)}
+          className="inline-flex items-center gap-1 px-1.5 md:px-2 py-1 rounded-md text-xs font-medium transition-all text-[#c242b1] border border-[#c242b1]/40 border-dashed"
+        >
             <span>{hiddenMarkets.length}+ more</span>
             <ChevronDown className="w-3 h-3" />
           </button>
@@ -354,11 +354,11 @@ const FilterBar = ({
             <button
               key={market.marketName}
               onClick={() => toggleMarket(market.marketName)}
-              className={`inline-flex items-center gap-1 px-1.5 md:px-2 py-1 rounded-md text-xs font-medium transition-all ${
-                isSelected
-                  ? 'bg-slate-900 text-white shadow-sm'
-                  : 'bg-slate-100 text-slate-700 hover:text-slate-900 hover:bg-slate-200 border border-slate-200'
-              }`}
+            className={`inline-flex items-center gap-1 px-1.5 md:px-2 py-1 rounded-md text-xs font-medium transition-all ${
+              isSelected
+                ? 'text-[#c242b1] border border-[#c242b1] shadow-sm'
+                : 'text-slate-700 border border-slate-200 hover:text-slate-900'
+            }`}
               title={isEthereum ? `Ethereum ${info.label}` : market.chainName}
             >
               <ChainIcon chain={market.chainName} loading="eager" />
@@ -370,9 +370,9 @@ const FilterBar = ({
         {/* Collapse button */}
         {showMarketsExpanded && (
           <button
-            onClick={() => setShowMarketsExpanded(false)}
-            className="inline-flex items-center gap-1 px-1.5 md:px-2 py-1 rounded-md text-xs font-medium transition-all bg-indigo-50 text-indigo-700 hover:text-indigo-800 hover:bg-indigo-100 border border-indigo-200 border-dashed"
-          >
+          onClick={() => setShowMarketsExpanded(false)}
+          className="inline-flex items-center gap-1 px-1.5 md:px-2 py-1 rounded-md text-xs font-medium transition-all text-[#c242b1] border border-[#c242b1]/40 border-dashed"
+        >
             <ChevronUp className="w-3 h-3" />
             <span>Less</span>
           </button>
