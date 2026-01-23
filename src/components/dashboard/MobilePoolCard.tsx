@@ -94,7 +94,7 @@ const MobilePoolCard = ({ pool, isApy, onIncentiveClick }: MobilePoolCardProps) 
   };
 
   const supplyValueClass = displaySupplyTotal === null ? 'text-gray-400' : 'text-emerald-500';
-  const borrowValueClass = displayBorrowTotal === null ? 'text-gray-400' : 'text-blue-600';
+  const borrowValueClass = displayBorrowTotal === null ? 'text-gray-400' : 'text-[#1aa3c7]';
 
   return (
     <div 
@@ -132,17 +132,17 @@ const MobilePoolCard = ({ pool, isApy, onIncentiveClick }: MobilePoolCardProps) 
           </p>
           {displaySupplyIncentive !== null && (
             <div className="flex items-center gap-0.5 text-[9px] flex-nowrap">
-              <span className="text-blue-600">{formatPercent(isApy ? (pool.supplyApy ?? null) : (pool.supplyApy !== null && pool.supplyApy !== undefined ? apyToApr(pool.supplyApy) : null))}</span>
+              <span className="text-emerald-500/70">{formatPercent(isApy ? (pool.supplyApy ?? null) : (pool.supplyApy !== null && pool.supplyApy !== undefined ? apyToApr(pool.supplyApy) : null))}</span>
               <span className="text-gray-400">+</span>
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   onIncentiveClick(e, pool, 'supply', displaySupplyIncentive);
                 }}
-                className="inline-flex items-center gap-0.5 text-amber-600 shrink-0"
+                className="inline-flex items-center gap-0.5 text-emerald-600 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-full px-1 py-0.5 shrink-0 ring-1 ring-emerald-500/15 transition-colors"
               >
-                <IncentiveIcon width={7} height={7} />
                 <span>{formatPercent(displaySupplyIncentive)}</span>
+                <IncentiveIcon width={7} height={7} />
               </button>
             </div>
           )}
@@ -166,17 +166,17 @@ const MobilePoolCard = ({ pool, isApy, onIncentiveClick }: MobilePoolCardProps) 
           </p>
           {displayBorrowIncentive !== null && (
             <div className="flex items-center gap-0.5 text-[9px] flex-nowrap justify-end">
-              <span className="text-blue-600">{formatPercent(isApy ? (pool.borrowApy ?? null) : (pool.borrowApy !== null && pool.borrowApy !== undefined ? apyToApr(pool.borrowApy) : null))}</span>
+              <span className="text-[#1aa3c7]/70">{formatPercent(isApy ? (pool.borrowApy ?? null) : (pool.borrowApy !== null && pool.borrowApy !== undefined ? apyToApr(pool.borrowApy) : null))}</span>
               <span className="text-gray-400">-</span>
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   onIncentiveClick(e, pool, 'borrow', displayBorrowIncentive);
                 }}
-                className="inline-flex items-center gap-0.5 text-amber-600 shrink-0"
+                className="inline-flex items-center gap-0.5 text-[#1aa3c7] bg-[#1aa3c7]/10 hover:bg-[#1aa3c7]/20 rounded-full px-1 py-0.5 shrink-0 ring-1 ring-[#1aa3c7]/15 transition-colors"
               >
-                <IncentiveIcon width={7} height={7} />
                 <span>{formatPercent(displayBorrowIncentive)}</span>
+                <IncentiveIcon width={7} height={7} />
               </button>
             </div>
           )}

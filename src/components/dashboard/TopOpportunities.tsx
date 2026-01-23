@@ -264,7 +264,7 @@ const TopOpportunities = ({ pools, isApy, categoryGroups }: TopOpportunitiesProp
     return (
       <motion.div 
         custom={index}
-        initial="hidden"
+        initial={isMobile ? false : "hidden"}
         animate="visible"
         variants={itemVariants}
         className={`flex items-center rounded-lg border transition-all group cursor-pointer h-[56px] ${
@@ -310,10 +310,10 @@ const TopOpportunities = ({ pools, isApy, categoryGroups }: TopOpportunitiesProp
                   <span className="text-muted-foreground">+</span>
                   <button
                     onClick={(e) => handleIncentiveClick(e, pool, 'supply', incentiveValue)}
-                    className="inline-flex items-center gap-0.5 px-0.5 py-0 rounded bg-amber-50 text-amber-600 hover:bg-amber-100 transition-colors cursor-pointer tabular-nums"
+                    className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 ring-1 ring-emerald-500/15 transition-colors cursor-pointer tabular-nums"
                   >
-                    <IncentiveIcon width={isMobile ? 8 : 10} height={isMobile ? 8 : 10} />
                     <span>{formatPercent(incentiveValue)}</span>
+                    <IncentiveIcon width={isMobile ? 8 : 10} height={isMobile ? 8 : 10} />
                   </button>
                 </>
               )}
@@ -321,7 +321,7 @@ const TopOpportunities = ({ pools, isApy, categoryGroups }: TopOpportunitiesProp
           )}
           {/* Leverage detail */}
           {isLeverage && (
-            <div className="text-secondary tabular-nums text-xs mt-0.5">
+            <div className={`text-secondary tabular-nums mt-0.5 whitespace-nowrap ${isMobile ? 'text-[10px]' : 'text-xs'}`}>
               {formatPercent(isApy ? pool.totalSupplyApy : pool.totalSupplyApr)} -{' '}
               {(() => {
                 const borrowValue = isApy ? pool.totalBorrowApy : pool.totalBorrowApr;
@@ -361,14 +361,14 @@ const TopOpportunities = ({ pools, isApy, categoryGroups }: TopOpportunitiesProp
       <div className={`glass-card rounded-xl ${isMobile ? 'p-3' : 'p-5'} ${isMobile ? 'col-span-1' : ''} flex flex-col`}>
         <motion.div 
           className="flex items-center gap-2 mb-3"
-          initial="hidden"
+          initial={isMobile ? false : "hidden"}
           animate="visible"
           variants={headerVariants}
         >
           <motion.div 
             className={`p-2 rounded-lg ${bgColorClass}`}
             variants={iconVariants}
-            initial="hidden"
+            initial={isMobile ? false : "hidden"}
             animate={["visible", "pulse"]}
           >
             <Icon className={`w-4 h-4 md:w-5 md:h-5 ${iconColorClass}`} />
