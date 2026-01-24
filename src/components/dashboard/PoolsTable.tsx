@@ -38,8 +38,8 @@ const DEFAULT_VISIBLE_COUNT = 20;
 
 const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTableProps) => {
   const isMobile = useIsMobile();
-  const [activeSortColumn, setActiveSortColumn] = useState<'supply' | 'borrow' | 'spread' | null>(null);
-  const [supplySortMode, setSupplySortMode] = useState<SortMode>('total');
+  const [activeSortColumn, setActiveSortColumn] = useState<'supply' | 'borrow' | 'spread' | null>('supply');
+  const [supplySortMode, setSupplySortMode] = useState<SortMode>('incentive');
   const [supplySortOrder, setSupplySortOrder] = useState<'asc' | 'desc'>('desc');
   const [borrowSortMode, setBorrowSortMode] = useState<SortMode>('total');
   const [borrowSortOrder, setBorrowSortOrder] = useState<'asc' | 'desc'>('desc');
@@ -66,10 +66,10 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
     const protocolIncentives = type === 'supply' ? pool.supplyIncentives : pool.borrowIncentives;
     const meritIncentives = type === 'supply' ? pool.meritSupplys : pool.meritBorrows;
     const merklOpportunities = type === 'supply' ? pool.merklSupplys : pool.merklBorrows;
-    const brevisApr = type === 'supply' ? pool.brevisSupplyApr : pool.brevisBorrowApr;
+    const brevisIncentives = type === 'supply' ? pool.brevisSupplys : pool.brevisBorrows;
     return {
-      apr: calculateTotalIncentiveApr(meritIncentives, merklOpportunities, brevisApr, protocolIncentives),
-      apy: calculateTotalIncentiveApy(meritIncentives, merklOpportunities, brevisApr, protocolIncentives),
+      apr: calculateTotalIncentiveApr(meritIncentives, merklOpportunities, brevisIncentives, protocolIncentives),
+      apy: calculateTotalIncentiveApy(meritIncentives, merklOpportunities, brevisIncentives, protocolIncentives),
     };
   };
 
@@ -313,8 +313,8 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                       const isAlreadySelected = supplySortMode === mode && activeSortColumn === 'supply';
                       const getColorClass = () => {
                         if (mode === 'total') return 'text-emerald-600';
-                        if (mode === 'native') return 'text-gray-600';
-                        return 'text-[#1185b8]';
+                        if (mode === 'native') return 'text-emerald-600';
+                        return 'text-emerald-600';
                       };
                       return (
                         <button
@@ -360,7 +360,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                 }}
                 className={`flex items-center gap-1 px-2 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
                   activeSortColumn === 'borrow'
-                    ? 'bg-blue-50 border-blue-200 text-blue-700'
+                    ? 'bg-[#1aa3c7]/10 border-[#1aa3c7]/20 text-[#1aa3c7]'
                     : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
                 }`}
               >
@@ -374,9 +374,9 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                     {(['total', 'native', 'incentive'] as SortMode[]).map((mode) => {
                       const isAlreadySelected = borrowSortMode === mode && activeSortColumn === 'borrow';
                       const getColorClass = () => {
-                        if (mode === 'total') return 'text-blue-600';
-                        if (mode === 'native') return 'text-gray-600';
-                        return 'text-[#1185b8]';
+                        if (mode === 'total') return 'text-[#1aa3c7]';
+                        if (mode === 'native') return 'text-[#1aa3c7]';
+                        return 'text-[#1aa3c7]';
                       };
                       return (
                         <button
@@ -393,7 +393,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                           }}
                           className={`w-full px-3 py-1.5 text-left text-xs transition-colors flex items-center justify-between ${
                             isAlreadySelected
-                              ? `${getColorClass()} font-bold bg-blue-50`
+                              ? `${getColorClass()} font-bold bg-[#1aa3c7]/10`
                               : 'text-gray-600 hover:bg-gray-50'
                           }`}
                         >
@@ -515,26 +515,26 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
           <TableHeader>
             <TableRow className="border-border/50 hover:bg-transparent bg-gray-50/50">
               {/* Token - flex grow */}
-              <TableHead className="w-1/5 px-3 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              <TableHead className="w-1/5 px-3 py-3 text-center text-sm font-bold text-muted-foreground">
                 Token
               </TableHead>
               {/* Market */}
-              <TableHead className="w-1/5 px-3 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider hidden md:table-cell">
+              <TableHead className="w-1/5 px-3 py-3 text-center text-sm font-bold text-muted-foreground hidden md:table-cell">
                 Market
               </TableHead>
               {/* Supply Column - center aligned */}
-              <TableHead className="w-1/5 px-3 py-3 text-xs font-semibold uppercase tracking-wider text-center">
+              <TableHead className="w-1/5 px-3 py-3 text-sm font-bold text-muted-foreground text-center">
                 <div className="flex items-center justify-center gap-2">
                   <div className="flex items-center gap-1.5">
                     <span
-                      className={activeSortColumn === 'supply' ? 'text-emerald-600' : 'text-gray-600'}
+                      className={activeSortColumn === 'supply' ? 'text-emerald-600' : 'text-muted-foreground'}
                     >
                       Supply
                     </span>
                     <div className="relative">
                       <button
                         onClick={() => setShowSupplySortMenu(!showSupplySortMenu)}
-                        className={`flex items-center gap-1 px-2 py-1 rounded-lg border transition-colors text-xs ${
+                        className={`flex items-center gap-1 px-2 py-1 rounded-lg border transition-colors text-sm ${
                           showSupplySortMenu || activeSortColumn === 'supply'
                             ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
                             : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
@@ -592,18 +592,18 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                                 }
                                 setShowSupplySortMenu(false);
                               }}
-                              className={`w-full px-3 py-1.5 text-left text-xs hover:bg-gray-50 transition-colors flex items-center justify-between ${
+                              className={`w-full px-3 py-1.5 text-left text-xs hover:bg-emerald-50/50 transition-colors flex items-center justify-between ${
                                 supplySortMode === 'native' && activeSortColumn === 'supply'
-                                  ? 'text-gray-700 font-bold bg-gray-100'
+                                  ? 'text-emerald-600 font-bold bg-emerald-50'
                                   : 'text-gray-700'
                               }`}
                             >
                               <span>Sort by Native</span>
                               {supplySortMode === 'native' && activeSortColumn === 'supply' ? (
                                 supplySortOrder === 'desc' ? (
-                                  <ArrowDown className="w-3 h-3 text-gray-600" />
+                                  <ArrowDown className="w-3 h-3 text-emerald-600" />
                                 ) : (
-                                  <ArrowUp className="w-3 h-3 text-gray-600" />
+                                  <ArrowUp className="w-3 h-3 text-emerald-600" />
                                 )
                               ) : (
                                 <ArrowDown className="w-3 h-3 text-gray-400" />
@@ -621,18 +621,18 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                                 }
                                 setShowSupplySortMenu(false);
                               }}
-                              className={`w-full px-3 py-1.5 text-left text-xs hover:bg-[#1185b8]/10 transition-colors flex items-center justify-between ${
+                              className={`w-full px-3 py-1.5 text-left text-xs hover:bg-emerald-50/50 transition-colors flex items-center justify-between ${
                                 supplySortMode === 'incentive' && activeSortColumn === 'supply'
-                                  ? 'text-[#1185b8] font-bold bg-[#1185b8]/10'
+                                  ? 'text-emerald-600 font-bold bg-emerald-50'
                                   : 'text-gray-700'
                               }`}
                             >
                               <span>Sort by Incentive</span>
                               {supplySortMode === 'incentive' && activeSortColumn === 'supply' ? (
                                 supplySortOrder === 'desc' ? (
-                                  <ArrowDown className="w-3 h-3 text-[#1185b8]" />
+                                  <ArrowDown className="w-3 h-3 text-emerald-600" />
                                 ) : (
-                                  <ArrowUp className="w-3 h-3 text-[#1185b8]" />
+                                  <ArrowUp className="w-3 h-3 text-emerald-600" />
                                 )
                               ) : (
                                 <ArrowDown className="w-3 h-3 text-gray-400" />
@@ -646,7 +646,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                 </div>
               </TableHead>
               {/* Spread Column - center aligned */}
-              <TableHead className="w-1/5 px-3 py-3 text-center text-xs font-semibold uppercase tracking-wider hidden md:table-cell">
+              <TableHead className="w-1/5 px-3 py-3 text-center text-sm font-bold text-muted-foreground hidden md:table-cell">
                 <button
                   onClick={() => {
                     if (activeSortColumn === 'spread') {
@@ -657,10 +657,10 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                     }
                   }}
                   className={`inline-flex items-center gap-1 transition-colors ${
-                    activeSortColumn === 'spread' ? 'text-purple-600' : 'text-gray-600 hover:text-gray-900'
+                    activeSortColumn === 'spread' ? 'text-purple-600' : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  <span>SPREAD</span>
+                  <span>Spread</span>
                   {activeSortColumn === 'spread' ? (
                     spreadSortOrder === 'desc' ? (
                       <ArrowDown className="w-3 h-3" />
@@ -673,18 +673,18 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                 </button>
               </TableHead>
               {/* Borrow Column - center aligned */}
-              <TableHead className="w-1/5 px-3 py-3 text-xs font-semibold uppercase tracking-wider text-center">
+              <TableHead className="w-1/5 px-3 py-3 text-sm font-bold text-muted-foreground text-center">
                 <div className="flex items-center justify-center gap-2">
                   <div className="flex items-center gap-1.5">
                     <span
-                      className={activeSortColumn === 'borrow' ? 'text-[#1aa3c7]' : 'text-gray-600'}
+                      className={activeSortColumn === 'borrow' ? 'text-[#1aa3c7]' : 'text-muted-foreground'}
                     >
                       Borrow
                     </span>
                     <div className="relative">
                       <button
                         onClick={() => setShowBorrowSortMenu(!showBorrowSortMenu)}
-                        className={`flex items-center gap-1 px-2 py-1 rounded-lg border transition-colors text-xs ${
+                        className={`flex items-center gap-1 px-2 py-1 rounded-lg border transition-colors text-sm ${
                           showBorrowSortMenu || activeSortColumn === 'borrow'
                             ? 'bg-[#1aa3c7]/10 border-[#1aa3c7]/20 text-[#1aa3c7]'
                             : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
@@ -742,18 +742,18 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                                   }
                                   setShowBorrowSortMenu(false);
                                 }}
-                                className={`w-full px-3 py-1.5 text-left text-xs hover:bg-gray-50 transition-colors flex items-center justify-between ${
+                                className={`w-full px-3 py-1.5 text-left text-xs hover:bg-[#1aa3c7]/10 transition-colors flex items-center justify-between ${
                                   borrowSortMode === 'native' && activeSortColumn === 'borrow'
-                                    ? 'text-gray-700 font-bold bg-gray-100'
+                                    ? 'text-[#1aa3c7] font-bold bg-[#1aa3c7]/10'
                                     : 'text-gray-700'
                                 }`}
                               >
                                 <span>Sort by Native</span>
                                 {borrowSortMode === 'native' && activeSortColumn === 'borrow' ? (
                                   borrowSortOrder === 'desc' ? (
-                                    <ArrowDown className="w-3 h-3 text-gray-600" />
+                                    <ArrowDown className="w-3 h-3 text-[#1aa3c7]" />
                                   ) : (
-                                    <ArrowUp className="w-3 h-3 text-gray-600" />
+                                    <ArrowUp className="w-3 h-3 text-[#1aa3c7]" />
                                   )
                                 ) : (
                                   <ArrowDown className="w-3 h-3 text-gray-400" />
@@ -771,18 +771,18 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                                   }
                                   setShowBorrowSortMenu(false);
                                 }}
-                                className={`w-full px-3 py-1.5 text-left text-xs hover:bg-[#1185b8]/10 transition-colors flex items-center justify-between ${
+                                className={`w-full px-3 py-1.5 text-left text-xs hover:bg-[#1aa3c7]/10 transition-colors flex items-center justify-between ${
                                   borrowSortMode === 'incentive' && activeSortColumn === 'borrow'
-                                    ? 'text-[#1185b8] font-bold bg-[#1185b8]/10'
+                                    ? 'text-[#1aa3c7] font-bold bg-[#1aa3c7]/10'
                                     : 'text-gray-700'
                                 }`}
                               >
                                 <span>Sort by Incentive</span>
                                 {borrowSortMode === 'incentive' && activeSortColumn === 'borrow' ? (
                                   borrowSortOrder === 'desc' ? (
-                                    <ArrowDown className="w-3 h-3 text-[#1185b8]" />
+                                    <ArrowDown className="w-3 h-3 text-[#1aa3c7]" />
                                   ) : (
-                                    <ArrowUp className="w-3 h-3 text-[#1185b8]" />
+                                    <ArrowUp className="w-3 h-3 text-[#1aa3c7]" />
                                   )
                                 ) : (
                                   <ArrowDown className="w-3 h-3 text-gray-400" />
@@ -870,7 +870,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                             onClick={(e) =>
                               handleIncentiveClick(e, pool, 'supply', displaySupplyIncentive)
                             }
-                            className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 ring-1 ring-emerald-500/15 transition-colors cursor-pointer tabular-nums"
+                            className="inline-flex items-center gap-0.5 px-0.5 py-0 rounded-full bg-emerald-500/10 text-emerald-500/70 hover:bg-emerald-500/20 ring-1 ring-emerald-500/15 transition-colors cursor-pointer tabular-nums"
                           >
                             <span>{formatPercent(displaySupplyIncentive)}</span>
                             <IncentiveIcon width={isMobile ? 8 : 10} height={isMobile ? 8 : 10} />
@@ -909,7 +909,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                               onClick={(e) =>
                                 handleIncentiveClick(e, pool, 'borrow', displayBorrowIncentive)
                               }
-                              className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded-full bg-[#1aa3c7]/10 text-[#1aa3c7] hover:bg-[#1aa3c7]/20 ring-1 ring-[#1aa3c7]/15 transition-colors cursor-pointer tabular-nums"
+                              className="inline-flex items-center gap-0.5 px-0.5 py-0 rounded-full bg-[#1aa3c7]/10 text-[#1aa3c7]/70 hover:bg-[#1aa3c7]/20 ring-1 ring-[#1aa3c7]/15 transition-colors cursor-pointer tabular-nums"
                             >
                               <span>{formatPercent(displayBorrowIncentive)}</span>
                               <IncentiveIcon width={isMobile ? 8 : 10} height={isMobile ? 8 : 10} />

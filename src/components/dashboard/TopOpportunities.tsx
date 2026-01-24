@@ -22,7 +22,6 @@ import {
 } from '@/lib/formatters';
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
 import { IncentiveIcon } from '@/components/IncentiveIcon';
-import IncentiveTooltip from './IncentiveTooltip';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
@@ -34,18 +33,18 @@ interface TopOpportunitiesProps {
   pools: PoolWithSpread[];
   isApy: boolean;
   categoryGroups: TokenCategoryGroups;
-}
-
-const DISPLAY_COUNT = 5;
-
-const TopOpportunities = ({ pools, isApy, categoryGroups }: TopOpportunitiesProps) => {
-  const isMobile = useIsMobile();
-  const [tooltipState, setTooltipState] = useState<{
+  onIncentiveClick?: (payload: {
     pool: PoolWithSpread;
     type: 'supply' | 'borrow';
     position: { x: number; y: number };
     triggerCenterX: number;
-  } | null>(null);
+  }) => void;
+}
+
+const DISPLAY_COUNT = 5;
+
+const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: TopOpportunitiesProps) => {
+  const isMobile = useIsMobile();
 
   // Calculate totals for all pools (frontend calculates incentive totals from details)
   // Memoize to prevent recalculation when props haven't changed
@@ -54,10 +53,10 @@ const TopOpportunities = ({ pools, isApy, categoryGroups }: TopOpportunitiesProp
       const protocolIncentives = type === 'supply' ? pool.supplyIncentives : pool.borrowIncentives;
       const meritIncentives = type === 'supply' ? pool.meritSupplys : pool.meritBorrows;
       const merklOpportunities = type === 'supply' ? pool.merklSupplys : pool.merklBorrows;
-      const brevisApr = type === 'supply' ? pool.brevisSupplyApr : pool.brevisBorrowApr;
+      const brevisIncentives = type === 'supply' ? pool.brevisSupplys : pool.brevisBorrows;
       return {
-        apr: calculateTotalIncentiveApr(meritIncentives, merklOpportunities, brevisApr, protocolIncentives),
-        apy: calculateTotalIncentiveApy(meritIncentives, merklOpportunities, brevisApr, protocolIncentives),
+        apr: calculateTotalIncentiveApr(meritIncentives, merklOpportunities, brevisIncentives, protocolIncentives),
+        apy: calculateTotalIncentiveApy(meritIncentives, merklOpportunities, brevisIncentives, protocolIncentives),
       };
     };
 
@@ -192,9 +191,10 @@ const TopOpportunities = ({ pools, isApy, categoryGroups }: TopOpportunitiesProp
   ) => {
     e.stopPropagation();
     if (incentiveValue === null || isNaN(incentiveValue) || incentiveValue < 0.01) return;
+    if (!onIncentiveClick) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const triggerCenterX = rect.left + rect.width / 2;
-    setTooltipState({
+    onIncentiveClick({
       pool,
       type,
       position: { x: rect.left, y: rect.bottom },
@@ -210,6 +210,49 @@ const TopOpportunities = ({ pools, isApy, categoryGroups }: TopOpportunitiesProp
     if (value >= 2) return 'text-teal-400';
     if (value >= 1) return 'text-cyan-500';
     return 'text-slate-400';
+  };
+
+  const getApyAccentClasses = (value: number | null) => {
+    if (value === null) {
+      return {
+        text: 'text-muted-foreground',
+        chip: 'bg-slate-100 text-slate-400 ring-slate-200/70 hover:bg-slate-200/70',
+      };
+    }
+    if (value >= 15) {
+      return {
+        text: 'text-emerald-600/70',
+        chip: 'bg-emerald-500/10 text-emerald-600/70 ring-emerald-500/15 hover:bg-emerald-500/20',
+      };
+    }
+    if (value >= 10) {
+      return {
+        text: 'text-emerald-500/70',
+        chip: 'bg-emerald-500/10 text-emerald-500/70 ring-emerald-500/15 hover:bg-emerald-500/20',
+      };
+    }
+    if (value >= 5) {
+      return {
+        text: 'text-teal-500/70',
+        chip: 'bg-teal-500/10 text-teal-500/70 ring-teal-500/15 hover:bg-teal-500/20',
+      };
+    }
+    if (value >= 2) {
+      return {
+        text: 'text-teal-400/70',
+        chip: 'bg-teal-400/10 text-teal-400/70 ring-teal-400/15 hover:bg-teal-400/20',
+      };
+    }
+    if (value >= 1) {
+      return {
+        text: 'text-cyan-500/70',
+        chip: 'bg-cyan-500/10 text-cyan-500/70 ring-cyan-500/15 hover:bg-cyan-500/20',
+      };
+    }
+    return {
+      text: 'text-slate-400/70',
+      chip: 'bg-slate-400/10 text-slate-400/70 ring-slate-400/15 hover:bg-slate-400/20',
+    };
   };
 
   const getSpreadColorClass = (value: number | null, index: number = 0, total: number = 5) => {
@@ -236,6 +279,15 @@ const TopOpportunities = ({ pools, isApy, categoryGroups }: TopOpportunitiesProp
     }
   };
 
+  const getSpreadAccentClass = (value: number | null, index: number = 0, total: number = 5) => {
+    if (value === null) return 'text-muted-foreground';
+    const intensity = 1 - (index / Math.max(total - 1, 1));
+    if (intensity >= 0.8) return 'text-purple-600/70';
+    if (intensity >= 0.6) return 'text-purple-500/70';
+    if (intensity >= 0.4) return 'text-fuchsia-500/70';
+    if (intensity >= 0.2) return 'text-fuchsia-400/70';
+    return 'text-pink-400/70';
+  };
   // Reusable pool item component
   const PoolItem = ({ 
     pool, 
@@ -254,6 +306,7 @@ const TopOpportunities = ({ pools, isApy, categoryGroups }: TopOpportunitiesProp
       : (isApy ? pool.totalSupplyApy : pool.totalSupplyApr);
     const incentiveValue = isApy ? pool.supplyIncentiveApy : pool.supplyIncentiveApr;
     const hasIncentive = incentiveValue !== null && !isNaN(incentiveValue) && incentiveValue >= 0.01;
+    const apyAccent = getApyAccentClasses(mainValue);
     const chainIconSrc = getChainIconSrc(pool.chainName);
     const { iconSymbol, logoURI } = fetchIconSymbolAndName({
       underlyingAsset: pool.tokenAddress,
@@ -269,48 +322,44 @@ const TopOpportunities = ({ pools, isApy, categoryGroups }: TopOpportunitiesProp
         variants={itemVariants}
         className={`flex items-center rounded-lg border transition-all group cursor-pointer h-[56px] ${
           isLeverage 
-            ? 'bg-gradient-to-r from-background via-purple-500/5 to-fuchsia-500/5 border-border hover:border-purple-500/50'
+            ? 'bg-background border-border hover:border-purple-500/50'
             : 'bg-gradient-to-r from-background to-success/5 border-border hover:border-success/50'
         } ${isMobile ? 'px-2.5 gap-2' : 'px-3 gap-2'}`}
         onClick={() => handleCardClick(pool)}
       >
         {/* Token Info - Mobile style layout: large icon left, text right */}
-        <div className="flex items-center gap-2 flex-1 min-w-0">
+        <div className="grid grid-cols-[auto,1fr,auto] grid-rows-[auto,auto] content-center items-center gap-x-2 gap-y-1.5 flex-1 min-w-0 h-full">
           <TokenIcon
             symbol={iconSymbol}
             size={isMobile ? 28 : 32}
             loading="eager"
-            className="shrink-0"
+            className="shrink-0 row-span-2"
             logoURI={logoURI}
           />
-          <div className="min-w-0">
-            <p className={`font-semibold text-foreground truncate ${isMobile ? 'text-sm' : 'text-sm'}`}>
-              {pool.tokenSymbol}
-            </p>
-            <div className="flex items-center gap-1 mt-0.5">
-              {chainIconSrc && (
-                <img src={chainIconSrc} alt={pool.chainName} className="shrink-0 w-3 h-3" />
-              )}
-              <p className="text-secondary truncate text-[10px]">{getMarketDisplayName(pool)}</p>
-            </div>
-          </div>
-        </div>
-        
-        {/* APY Values - Fixed width, right aligned */}
-          <div className={`shrink-0 text-right ${isMobile ? 'w-16' : 'w-24'}`}>
-          <div className={`${(isLeverage ? getSpreadColorClass(mainValue, index, totalItems) : getApyColorClass(mainValue))} font-bold tabular-nums ${isMobile ? 'text-base' : 'text-lg'}`}>
+          <p className={`font-semibold text-foreground truncate leading-none ${isMobile ? 'text-sm' : 'text-sm'}`}>
+            {pool.tokenSymbol}
+          </p>
+          <div
+            className={`${(isLeverage ? getSpreadColorClass(mainValue, index, totalItems) : getApyColorClass(mainValue))} font-bold tabular-nums text-right leading-none ${isMobile ? 'text-base' : 'text-lg'}`}
+          >
             {isLeverage ? formatSpread(mainValue) : formatPercent(mainValue)}
+          </div>
+          <div className="flex items-center gap-1 min-w-0 leading-none">
+            {chainIconSrc && (
+              <img src={chainIconSrc} alt={pool.chainName} className="shrink-0 w-3 h-3" />
+            )}
+            <p className="text-secondary truncate text-[10px] leading-none">{getMarketDisplayName(pool)}</p>
           </div>
           {/* Detail breakdown - Only show for supply type */}
           {!isLeverage && (
-            <div className="flex items-center justify-end gap-0.5 text-xs text-secondary mt-0.5">
-              <span className="text-blue-600 tabular-nums">{formatPercent(pool.supplyApy ?? null)}</span>
+            <div className="flex items-center justify-end gap-0.5 text-xs text-secondary whitespace-nowrap leading-none">
+              <span className={`${apyAccent.text} tabular-nums`}>{formatPercent(pool.supplyApy ?? null)}</span>
               {hasIncentive && (
                 <>
                   <span className="text-muted-foreground">+</span>
                   <button
                     onClick={(e) => handleIncentiveClick(e, pool, 'supply', incentiveValue)}
-                    className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 ring-1 ring-emerald-500/15 transition-colors cursor-pointer tabular-nums"
+                    className={`inline-flex items-center gap-0.5 px-0.5 py-0 rounded-full ring-1 transition-colors cursor-pointer tabular-nums ${apyAccent.chip}`}
                   >
                     <span>{formatPercent(incentiveValue)}</span>
                     <IncentiveIcon width={isMobile ? 8 : 10} height={isMobile ? 8 : 10} />
@@ -321,7 +370,7 @@ const TopOpportunities = ({ pools, isApy, categoryGroups }: TopOpportunitiesProp
           )}
           {/* Leverage detail */}
           {isLeverage && (
-            <div className={`text-secondary tabular-nums mt-0.5 whitespace-nowrap ${isMobile ? 'text-[10px]' : 'text-xs'}`}>
+            <div className={`${getSpreadAccentClass(mainValue, index, totalItems)} tabular-nums whitespace-nowrap text-right leading-none ${isMobile ? 'text-[10px]' : 'text-xs'}`}>
               {formatPercent(isApy ? pool.totalSupplyApy : pool.totalSupplyApr)} -{' '}
               {(() => {
                 const borrowValue = isApy ? pool.totalBorrowApy : pool.totalBorrowApr;
@@ -331,7 +380,7 @@ const TopOpportunities = ({ pools, isApy, categoryGroups }: TopOpportunitiesProp
             </div>
           )}
         </div>
-      </motion.div>
+        </motion.div>
     );
   };
 
@@ -490,16 +539,6 @@ const TopOpportunities = ({ pools, isApy, categoryGroups }: TopOpportunitiesProp
           />
         ))}
 
-        {tooltipState && (
-          <IncentiveTooltip
-            pool={tooltipState.pool}
-            type={tooltipState.type}
-            position={tooltipState.position}
-            triggerCenterX={tooltipState.triggerCenterX}
-            onClose={() => setTooltipState(null)}
-            isApy={isApy}
-          />
-        )}
       </div>
     );
   }
@@ -582,16 +621,6 @@ const TopOpportunities = ({ pools, isApy, categoryGroups }: TopOpportunitiesProp
         ))}
       </div>
 
-      {tooltipState && (
-        <IncentiveTooltip
-          pool={tooltipState.pool}
-          type={tooltipState.type}
-          position={tooltipState.position}
-          triggerCenterX={tooltipState.triggerCenterX}
-          onClose={() => setTooltipState(null)}
-          isApy={isApy}
-        />
-      )}
     </div>
   );
 };
