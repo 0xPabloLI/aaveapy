@@ -1,0 +1,21 @@
+# Local Development Override Instructions
+# =======================================
+# 
+# The .npmrc file contains platform=linux and arch=x64 settings required for Lovable deployments.
+# For local development on macOS or Windows, you have two options:
+#
+# Option 1: Use environment variables (recommended)
+#   macOS:   NPM_CONFIG_PLATFORM=darwin npm install
+#   Windows: NPM_CONFIG_PLATFORM=win32 npm install
+#   Linux:   npm install (uses .npmrc settings)
+#
+# Option 2: Temporarily comment out platform/arch in .npmrc
+#   Edit .npmrc and comment out the platform and arch lines:
+#     # platform=linux
+#     # arch=x64
+#   Remember to uncomment them before committing!
+#
+# Option 3: Create a local override script
+#   Create a script in package.json or use:
+#     npm config set platform darwin --location=project
+#     npm config set arch x64 --location=project

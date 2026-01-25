@@ -20,12 +20,12 @@ export function IncentiveIcon({ width = 12, height = 12, className = '' }: Incen
         cx="7.2"
         cy="7.2"
         r="7.2"
-        stroke="#9391F7"
+        stroke="currentColor"
         strokeWidth="1.5"
         transform="matrix(1 0 0 -1 .8 15.2)"
       />
       <path
-        stroke="#BCBBFF"
+        stroke="currentColor"
         strokeLinecap="round"
         strokeLinejoin="round"
         strokeWidth="1.5"

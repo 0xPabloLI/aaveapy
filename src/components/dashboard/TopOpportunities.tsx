@@ -38,6 +38,9 @@ interface TopOpportunitiesProps {
     type: 'supply' | 'borrow';
     position: { x: number; y: number };
     triggerCenterX: number;
+    accentBorderClass?: string;
+    accentTextClass?: string;
+    accentBgClass?: string;
   }) => void;
 }
 
@@ -190,6 +193,7 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
     pool: PoolWithSpread,
     type: 'supply' | 'borrow',
     incentiveValue: number | null,
+    accentValue: number | null,
   ) => {
     e.stopPropagation();
     if (incentiveValue === null || isNaN(incentiveValue) || incentiveValue < 0.01) return;
@@ -210,61 +214,95 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
       type,
       position: { x: rect.left, y: rect.bottom },
       triggerCenterX,
+      accentBorderClass: getAccentBorderClass(accentValue),
+      accentTextClass: getAccentTextClass(accentValue),
+      accentBgClass: getAccentBgClass(accentValue),
     });
   };
 
   const getApyColorClass = (value: number | null) => {
     if (value === null) return 'text-muted-foreground';
-    if (value >= 15) return 'text-emerald-600';
-    if (value >= 10) return 'text-emerald-500';
-    if (value >= 5) return 'text-teal-500';
-    if (value >= 2) return 'text-teal-400';
-    if (value >= 1) return 'text-cyan-500';
-    return 'text-slate-400';
+    if (value >= 15) return 'ds-text-emerald-600';
+    if (value >= 10) return 'ds-text-emerald-500';
+    if (value >= 5) return 'ds-text-teal-500-70';
+    if (value >= 2) return 'ds-text-teal-400-70';
+    if (value >= 1) return 'ds-text-cyan-500-70';
+    return 'text-muted-foreground/70';
   };
 
   const getApyAccentClasses = (value: number | null) => {
     if (value === null) {
       return {
         text: 'text-muted-foreground',
-        chip: 'bg-slate-100 text-slate-400 ring-slate-200/70 hover:bg-slate-200/70',
+        chip: 'bg-muted text-muted-foreground/70 ring-border/70 hover:bg-muted/80',
       };
     }
     if (value >= 15) {
       return {
-        text: 'text-emerald-600/70',
-        chip: 'bg-emerald-500/10 text-emerald-600/70 ring-emerald-500/15 hover:bg-emerald-500/20',
+        text: 'ds-text-emerald-600-70',
+        chip: 'ds-bg-emerald-500-10 ds-text-emerald-600-70 ds-ring-emerald-500-15 hover:bg-[rgb(var(--ds-emerald-500-rgb)/0.2)]',
       };
     }
     if (value >= 10) {
       return {
-        text: 'text-emerald-500/70',
-        chip: 'bg-emerald-500/10 text-emerald-500/70 ring-emerald-500/15 hover:bg-emerald-500/20',
+        text: 'ds-text-emerald-500-70',
+        chip: 'ds-bg-emerald-500-10 ds-text-emerald-500-70 ds-ring-emerald-500-15 hover:bg-[rgb(var(--ds-emerald-500-rgb)/0.2)]',
       };
     }
     if (value >= 5) {
       return {
-        text: 'text-teal-500/70',
-        chip: 'bg-teal-500/10 text-teal-500/70 ring-teal-500/15 hover:bg-teal-500/20',
+        text: 'ds-text-teal-500-70',
+        chip: 'ds-bg-teal-500-10 ds-text-teal-500-70 ds-ring-teal-500-15 hover:bg-[rgb(var(--ds-teal-500-rgb)/0.2)]',
       };
     }
     if (value >= 2) {
       return {
-        text: 'text-teal-400/70',
-        chip: 'bg-teal-400/10 text-teal-400/70 ring-teal-400/15 hover:bg-teal-400/20',
+        text: 'ds-text-teal-400-70',
+        chip: 'ds-bg-teal-400-10 ds-text-teal-400-70 ds-ring-teal-400-15 hover:bg-[rgb(var(--ds-teal-400-rgb)/0.2)]',
       };
     }
     if (value >= 1) {
       return {
-        text: 'text-cyan-500/70',
-        chip: 'bg-cyan-500/10 text-cyan-500/70 ring-cyan-500/15 hover:bg-cyan-500/20',
+        text: 'ds-text-cyan-500-70',
+        chip: 'ds-bg-cyan-500-10 ds-text-cyan-500-70 ds-ring-cyan-500-15 hover:bg-[rgb(var(--ds-cyan-500-rgb)/0.2)]',
       };
     }
     return {
-      text: 'text-slate-400/70',
-      chip: 'bg-slate-400/10 text-slate-400/70 ring-slate-400/15 hover:bg-slate-400/20',
+      text: 'text-muted-foreground/70',
+      chip: 'bg-muted/40 text-muted-foreground/70 ring-border/40 hover:bg-muted/60',
     };
   };
+
+  const getAccentBorderClass = (value: number | null) => {
+    if (value === null) return 'border-l-[3px] border-l-border/40';
+    if (value >= 15) return 'border-l-[3px] border-l-[rgb(var(--ds-emerald-600-rgb)/0.35)]';
+    if (value >= 10) return 'border-l-[3px] border-l-[rgb(var(--ds-emerald-500-rgb)/0.35)]';
+    if (value >= 5) return 'border-l-[3px] border-l-[rgb(var(--ds-teal-500-rgb)/0.35)]';
+    if (value >= 2) return 'border-l-[3px] border-l-[rgb(var(--ds-teal-400-rgb)/0.35)]';
+    if (value >= 1) return 'border-l-[3px] border-l-[rgb(var(--ds-cyan-500-rgb)/0.35)]';
+    return 'border-l-[3px] border-l-border/40';
+  };
+
+  const getAccentTextClass = (value: number | null) => {
+    if (value === null) return 'text-muted-foreground';
+    if (value >= 15) return 'ds-text-emerald-600';
+    if (value >= 10) return 'ds-text-emerald-500';
+    if (value >= 5) return 'ds-text-teal-500-70';
+    if (value >= 2) return 'ds-text-teal-400-70';
+    if (value >= 1) return 'ds-text-cyan-500-70';
+    return 'text-muted-foreground/70';
+  };
+
+  const getAccentBgClass = (value: number | null) => {
+    if (value === null) return 'bg-muted/40';
+    if (value >= 15) return 'ds-bg-emerald-500-10';
+    if (value >= 10) return 'ds-bg-emerald-500-10';
+    if (value >= 5) return 'ds-bg-teal-500-10';
+    if (value >= 2) return 'ds-bg-teal-400-10';
+    if (value >= 1) return 'ds-bg-cyan-500-10';
+    return 'bg-muted/40';
+  };
+
 
   const getSpreadColorClass = (value: number | null, index: number = 0, total: number = 5) => {
     if (value === null) return 'text-muted-foreground';
@@ -293,11 +331,11 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
   const getSpreadAccentClass = (value: number | null, index: number = 0, total: number = 5) => {
     if (value === null) return 'text-muted-foreground';
     const intensity = 1 - (index / Math.max(total - 1, 1));
-    if (intensity >= 0.8) return 'text-purple-600/70';
-    if (intensity >= 0.6) return 'text-purple-500/70';
+    if (intensity >= 0.8) return 'ds-text-purple-600-70';
+    if (intensity >= 0.6) return 'ds-text-purple-500-70';
     if (intensity >= 0.4) return 'text-fuchsia-500/70';
     if (intensity >= 0.2) return 'text-fuchsia-400/70';
-    return 'text-pink-400/70';
+    return 'ds-text-pink-400-70';
   };
   // Reusable pool item component
   const PoolItem = ({ 
@@ -333,7 +371,7 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
         variants={itemVariants}
         className={`flex items-center rounded-lg border transition-all group cursor-pointer h-[56px] ${
           isLeverage 
-            ? 'bg-background border-border hover:border-purple-500/50'
+            ? 'bg-background border-border hover:border-[rgb(var(--ds-purple-500-rgb)/0.5)]'
             : 'bg-gradient-to-r from-background to-success/5 border-border hover:border-success/50'
         } ${isMobile ? 'px-[var(--ds-space-2-5)] gap-[var(--ds-space-2)]' : 'px-[var(--ds-space-3)] gap-[var(--ds-space-2)]'}`}
         onClick={() => handleCardClick(pool)}
@@ -369,7 +407,7 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
                 <>
                   <span className="text-muted-foreground">+</span>
                   <button
-                    onClick={(e) => handleIncentiveClick(e, pool, 'supply', incentiveValue)}
+                    onClick={(e) => handleIncentiveClick(e, pool, 'supply', incentiveValue, mainValue)}
                     className={`inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-0-5)] py-[var(--ds-space-0)] rounded-full ring-1 transition-colors cursor-pointer tabular-nums ${apyAccent.chip}`}
                   >
                     <span>{formatPercent(incentiveValue)}</span>
@@ -418,7 +456,7 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
     emptyMessage: string;
   }) => {
     return (
-        <div className={`glass-card rounded-xl ${isMobile ? 'ds-card-pad-sm' : 'ds-card-pad'} ${isMobile ? 'col-span-1' : ''} flex flex-col`}>
+        <div className={`bg-card border border-border/60 shadow-sm rounded-xl ${isMobile ? 'ds-card-pad-sm' : 'ds-card-pad'} ${isMobile ? 'col-span-1' : ''} flex flex-col`}>
         <motion.div 
           className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-3)]"
           initial={isMobile ? false : "hidden"}
@@ -522,8 +560,8 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
       title: "Leverage Opportunities",
       subtitle: `Supply - Borrow ${isApy ? 'APY' : 'APR'}`,
       icon: Zap,
-      iconColorClass: "text-purple-500",
-      bgColorClass: "bg-purple-500/10",
+      iconColorClass: "ds-text-purple-500",
+      bgColorClass: "ds-bg-purple-500-10",
       pools: topLooping,
       categoryKey: "leverage",
       type: "leverage" as const,

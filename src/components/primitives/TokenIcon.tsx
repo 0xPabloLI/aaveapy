@@ -71,7 +71,7 @@ const MultiTokenIcon = ({
         symbol={symbol}
         size={size}
         loading={loading}
-        className="border border-white"
+        className="border border-background"
       />
     ))}
   </div>

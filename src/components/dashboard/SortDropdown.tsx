@@ -14,9 +14,9 @@ interface SortDropdownProps {
 }
 
 const sortOptions: { value: SortSubField; label: string; colorClass: string }[] = [
-  { value: 'total', label: 'Total', colorClass: 'text-emerald-500 bg-emerald-500/10 hover:bg-emerald-500/20' },
-  { value: 'native', label: 'Native', colorClass: 'text-blue-500 bg-blue-500/10 hover:bg-blue-500/20' },
-  { value: 'incentive', label: 'Incentive', colorClass: 'text-amber-500 bg-amber-500/10 hover:bg-amber-500/20' },
+  { value: 'total', label: 'Total', colorClass: 'ds-text-emerald-500 ds-bg-emerald-500-10 hover:bg-[rgb(var(--ds-emerald-500-rgb)/0.2)]' },
+  { value: 'native', label: 'Native', colorClass: 'ds-text-blue-500 ds-bg-blue-500-10 hover:bg-[rgb(var(--ds-blue-500-rgb)/0.2)]' },
+  { value: 'incentive', label: 'Incentive', colorClass: 'ds-text-amber-500 ds-bg-amber-500-10 hover:bg-[rgb(var(--ds-amber-500-rgb)/0.2)]' },
 ];
 
 const SortDropdown = ({ 
