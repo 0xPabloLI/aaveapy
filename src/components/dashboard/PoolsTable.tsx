@@ -30,13 +30,14 @@ interface PoolsTableProps {
   sortOrder: 'asc' | 'desc';
   onSort: (field: 'totalSupplyApy' | 'totalBorrowApy' | 'apySpread' | null) => void;
   isApy: boolean;
+  onSelectMarket?: (marketName: string) => void;
 }
 
 type SortMode = 'total' | 'native' | 'incentive';
 
 const DEFAULT_VISIBLE_COUNT = 20;
 
-const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTableProps) => {
+const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket }: PoolsTableProps) => {
   const isMobile = useIsMobile();
   const [activeSortColumn, setActiveSortColumn] = useState<'supply' | 'borrow' | 'spread' | null>('supply');
   const [supplySortMode, setSupplySortMode] = useState<SortMode>('incentive');
@@ -67,9 +68,11 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
     const meritIncentives = type === 'supply' ? pool.meritSupplys : pool.meritBorrows;
     const merklOpportunities = type === 'supply' ? pool.merklSupplys : pool.merklBorrows;
     const brevisIncentives = type === 'supply' ? pool.brevisSupplys : pool.brevisBorrows;
+    const brevisLegacyApr = type === 'supply' ? pool.brevisSupplyApr : pool.brevisBorrowApr;
+    const brevisSource = brevisIncentives && brevisIncentives.length > 0 ? brevisIncentives : brevisLegacyApr ?? null;
     return {
-      apr: calculateTotalIncentiveApr(meritIncentives, merklOpportunities, brevisIncentives, protocolIncentives),
-      apy: calculateTotalIncentiveApy(meritIncentives, merklOpportunities, brevisIncentives, protocolIncentives),
+      apr: calculateTotalIncentiveApr(meritIncentives, merklOpportunities, brevisSource, protocolIncentives),
+      apy: calculateTotalIncentiveApy(meritIncentives, merklOpportunities, brevisSource, protocolIncentives),
     };
   };
 
@@ -230,11 +233,11 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
     const src = getChainIconSrc(chain);
 
     if (!src) {
-      return (
-        <div className={`${size} rounded-full bg-current opacity-40 flex items-center justify-center text-[8px] font-bold`}>
-          {chain.charAt(0)}
-        </div>
-      );
+    return (
+      <div className={`${size} rounded-full bg-current opacity-40 flex items-center justify-center ds-text-8 font-bold`}>
+        {chain.charAt(0)}
+      </div>
+    );
     }
 
     return (
@@ -286,9 +289,9 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
     return (
       <div className="space-y-3">
         {/* Header with sorting controls */}
-        <div className="flex justify-between items-center px-1">
-          <h3 className="text-sm font-bold text-gray-900">{pools.length} Reserves</h3>
-          <div className="flex items-center gap-2">
+        <div className="flex justify-between items-center px-[var(--ds-space-1)]">
+          <h3 className="ds-text-14 font-bold text-gray-900">{pools.length} Reserves</h3>
+          <div className="flex items-center gap-[var(--ds-space-2)]">
             {/* Supply sort dropdown */}
             <div className="relative">
               <button
@@ -296,7 +299,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                   setShowSupplySortMenu(!showSupplySortMenu);
                   setShowBorrowSortMenu(false);
                 }}
-                className={`flex items-center gap-1 px-2 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-lg border transition-colors ${
                   activeSortColumn === 'supply'
                     ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
                     : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
@@ -308,7 +311,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
               {showSupplySortMenu && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setShowSupplySortMenu(false)} />
-                  <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-20 min-w-[130px]">
+                  <div className="absolute right-0 top-full mt-[var(--ds-space-1)] bg-white border border-gray-200 rounded-lg shadow-lg py-[var(--ds-space-1)] z-20 min-w-[130px]">
                     {(['total', 'native', 'incentive'] as SortMode[]).map((mode) => {
                       const isAlreadySelected = supplySortMode === mode && activeSortColumn === 'supply';
                       const getColorClass = () => {
@@ -329,7 +332,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                             }
                             setShowSupplySortMenu(false);
                           }}
-                          className={`w-full px-3 py-1.5 text-left text-xs transition-colors flex items-center justify-between ${
+                          className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-12 transition-colors flex items-center justify-between ${
                             isAlreadySelected
                               ? `${getColorClass()} font-bold bg-emerald-50`
                               : 'text-gray-600 hover:bg-gray-50'
@@ -358,7 +361,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                   setShowBorrowSortMenu(!showBorrowSortMenu);
                   setShowSupplySortMenu(false);
                 }}
-                className={`flex items-center gap-1 px-2 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-lg border transition-colors ${
                   activeSortColumn === 'borrow'
                     ? 'bg-[#1aa3c7]/10 border-[#1aa3c7]/20 text-[#1aa3c7]'
                     : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
@@ -370,7 +373,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
               {showBorrowSortMenu && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setShowBorrowSortMenu(false)} />
-                  <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-20 min-w-[130px]">
+                  <div className="absolute right-0 top-full mt-[var(--ds-space-1)] bg-white border border-gray-200 rounded-lg shadow-lg py-[var(--ds-space-1)] z-20 min-w-[130px]">
                     {(['total', 'native', 'incentive'] as SortMode[]).map((mode) => {
                       const isAlreadySelected = borrowSortMode === mode && activeSortColumn === 'borrow';
                       const getColorClass = () => {
@@ -391,7 +394,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                             }
                             setShowBorrowSortMenu(false);
                           }}
-                          className={`w-full px-3 py-1.5 text-left text-xs transition-colors flex items-center justify-between ${
+                          className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-12 transition-colors flex items-center justify-between ${
                             isAlreadySelected
                               ? `${getColorClass()} font-bold bg-[#1aa3c7]/10`
                               : 'text-gray-600 hover:bg-gray-50'
@@ -423,7 +426,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                   setSpreadSortOrder('desc');
                 }
               }}
-              className={`px-2 py-1.5 text-xs font-medium rounded-lg border transition-colors flex items-center gap-1 ${
+              className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-lg border transition-colors ${
                 activeSortColumn === 'spread'
                   ? 'bg-purple-50 border-purple-200 text-purple-700'
                   : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
@@ -452,7 +455,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                   toggleSpreadSortOrder();
                 }
               }}
-              className="p-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition-colors"
+              className="ds-icon-button border border-gray-200 bg-white hover:bg-gray-50 transition-colors"
             >
               {(activeSortColumn === 'supply' ? supplySortOrder : activeSortColumn === 'borrow' ? borrowSortOrder : spreadSortOrder) === 'desc' ? (
                 <ArrowDown className="w-3.5 h-3.5 text-gray-600" />
@@ -464,7 +467,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
         </div>
         
         {/* 2x2 Grid layout for mobile */}
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-[var(--ds-space-2)]">
           {(showAll ? sortedData : sortedData.slice(0, DEFAULT_VISIBLE_COUNT)).map((pool) => (
             <MobilePoolCard
               key={`${pool.marketName}-${pool.tokenAddress}`}
@@ -479,7 +482,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
         {sortedData.length > DEFAULT_VISIBLE_COUNT && (
           <button
             onClick={() => setShowAll(!showAll)}
-            className="w-full mt-4 flex items-center justify-center gap-2 py-3 rounded-xl border border-border bg-card hover:bg-muted/50 transition-colors text-foreground font-medium"
+            className="w-full mt-[var(--ds-space-4)] ds-button gap-[var(--ds-space-2)] border border-border bg-card hover:bg-muted/50 transition-colors text-foreground font-medium"
           >
             <span>{showAll ? 'Show Less' : `Show ${sortedData.length - DEFAULT_VISIBLE_COUNT} More Reserves`}</span>
             {showAll ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -515,17 +518,17 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
           <TableHeader>
             <TableRow className="border-border/50 hover:bg-transparent bg-gray-50/50">
               {/* Token - flex grow */}
-              <TableHead className="w-1/5 px-3 py-3 text-center text-sm font-bold text-muted-foreground">
+              <TableHead className="w-1/5 px-[var(--ds-space-3)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground">
                 Token
               </TableHead>
               {/* Market */}
-              <TableHead className="w-1/5 px-3 py-3 text-center text-sm font-bold text-muted-foreground hidden md:table-cell">
+              <TableHead className="w-1/5 px-[var(--ds-space-3)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
                 Market
               </TableHead>
               {/* Supply Column - center aligned */}
-              <TableHead className="w-1/5 px-3 py-3 text-sm font-bold text-muted-foreground text-center">
-                <div className="flex items-center justify-center gap-2">
-                  <div className="flex items-center gap-1.5">
+              <TableHead className="w-1/5 px-[var(--ds-space-3)] py-[var(--ds-space-3)] ds-text-14 md:ds-text-16 font-semibold text-muted-foreground text-center">
+                <div className="flex items-center justify-center gap-[var(--ds-space-2)]">
+                  <div className="flex items-center gap-[var(--ds-space-1-5)]">
                     <span
                       className={activeSortColumn === 'supply' ? 'text-emerald-600' : 'text-muted-foreground'}
                     >
@@ -534,7 +537,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                     <div className="relative">
                       <button
                         onClick={() => setShowSupplySortMenu(!showSupplySortMenu)}
-                        className={`flex items-center gap-1 px-2 py-1 rounded-lg border transition-colors text-sm ${
+                        className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-lg border transition-colors ${
                           showSupplySortMenu || activeSortColumn === 'supply'
                             ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
                             : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
@@ -550,7 +553,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                             className="fixed inset-0 z-10"
                             onClick={() => setShowSupplySortMenu(false)}
                           />
-                          <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-20 min-w-[140px]">
+                          <div className="absolute right-0 top-full mt-[var(--ds-space-1)] bg-white border border-gray-200 rounded-lg shadow-lg py-[var(--ds-space-1)] z-20 min-w-[140px]">
                             <button
                               onClick={() => {
                                 const isAlreadySelected = supplySortMode === 'total' && activeSortColumn === 'supply';
@@ -563,7 +566,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                                 }
                                 setShowSupplySortMenu(false);
                               }}
-                              className={`w-full px-3 py-1.5 text-left text-xs hover:bg-emerald-50/50 transition-colors flex items-center justify-between ${
+                              className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-12 hover:bg-emerald-50/50 transition-colors flex items-center justify-between ${
                                 supplySortMode === 'total' && activeSortColumn === 'supply'
                                   ? 'text-emerald-600 font-bold bg-emerald-50'
                                   : 'text-gray-700'
@@ -592,7 +595,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                                 }
                                 setShowSupplySortMenu(false);
                               }}
-                              className={`w-full px-3 py-1.5 text-left text-xs hover:bg-emerald-50/50 transition-colors flex items-center justify-between ${
+                              className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-12 hover:bg-emerald-50/50 transition-colors flex items-center justify-between ${
                                 supplySortMode === 'native' && activeSortColumn === 'supply'
                                   ? 'text-emerald-600 font-bold bg-emerald-50'
                                   : 'text-gray-700'
@@ -621,7 +624,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                                 }
                                 setShowSupplySortMenu(false);
                               }}
-                              className={`w-full px-3 py-1.5 text-left text-xs hover:bg-emerald-50/50 transition-colors flex items-center justify-between ${
+                              className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-12 hover:bg-emerald-50/50 transition-colors flex items-center justify-between ${
                                 supplySortMode === 'incentive' && activeSortColumn === 'supply'
                                   ? 'text-emerald-600 font-bold bg-emerald-50'
                                   : 'text-gray-700'
@@ -646,7 +649,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                 </div>
               </TableHead>
               {/* Spread Column - center aligned */}
-              <TableHead className="w-1/5 px-3 py-3 text-center text-sm font-bold text-muted-foreground hidden md:table-cell">
+              <TableHead className="w-1/5 px-[var(--ds-space-3)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
                 <button
                   onClick={() => {
                     if (activeSortColumn === 'spread') {
@@ -656,7 +659,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                       setSpreadSortOrder('desc');
                     }
                   }}
-                  className={`inline-flex items-center gap-1 transition-colors ${
+                  className={`ds-chip-heading md:ds-text-16 gap-[var(--ds-space-1)] transition-colors ${
                     activeSortColumn === 'spread' ? 'text-purple-600' : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
@@ -673,9 +676,9 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                 </button>
               </TableHead>
               {/* Borrow Column - center aligned */}
-              <TableHead className="w-1/5 px-3 py-3 text-sm font-bold text-muted-foreground text-center">
-                <div className="flex items-center justify-center gap-2">
-                  <div className="flex items-center gap-1.5">
+              <TableHead className="w-1/5 px-[var(--ds-space-3)] py-[var(--ds-space-3)] ds-text-14 md:ds-text-16 font-semibold text-muted-foreground text-center">
+                <div className="flex items-center justify-center gap-[var(--ds-space-2)]">
+                  <div className="flex items-center gap-[var(--ds-space-1-5)]">
                     <span
                       className={activeSortColumn === 'borrow' ? 'text-[#1aa3c7]' : 'text-muted-foreground'}
                     >
@@ -684,7 +687,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                     <div className="relative">
                       <button
                         onClick={() => setShowBorrowSortMenu(!showBorrowSortMenu)}
-                        className={`flex items-center gap-1 px-2 py-1 rounded-lg border transition-colors text-sm ${
+                        className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-lg border transition-colors ${
                           showBorrowSortMenu || activeSortColumn === 'borrow'
                             ? 'bg-[#1aa3c7]/10 border-[#1aa3c7]/20 text-[#1aa3c7]'
                             : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
@@ -700,7 +703,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                               className="fixed inset-0 z-10"
                               onClick={() => setShowBorrowSortMenu(false)}
                             />
-                            <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-20 min-w-[140px]">
+                            <div className="absolute right-0 top-full mt-[var(--ds-space-1)] bg-white border border-gray-200 rounded-lg shadow-lg py-[var(--ds-space-1)] z-20 min-w-[140px]">
                               <button
                                 onClick={() => {
                                   const isAlreadySelected = borrowSortMode === 'total' && activeSortColumn === 'borrow';
@@ -713,7 +716,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                                   }
                                   setShowBorrowSortMenu(false);
                                 }}
-                                className={`w-full px-3 py-1.5 text-left text-xs hover:bg-[#1aa3c7]/10 transition-colors flex items-center justify-between ${
+                                className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-12 hover:bg-[#1aa3c7]/10 transition-colors flex items-center justify-between ${
                                   borrowSortMode === 'total' && activeSortColumn === 'borrow'
                                     ? 'text-[#1aa3c7] font-bold bg-[#1aa3c7]/10'
                                     : 'text-gray-700'
@@ -742,7 +745,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                                   }
                                   setShowBorrowSortMenu(false);
                                 }}
-                                className={`w-full px-3 py-1.5 text-left text-xs hover:bg-[#1aa3c7]/10 transition-colors flex items-center justify-between ${
+                                className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-12 hover:bg-[#1aa3c7]/10 transition-colors flex items-center justify-between ${
                                   borrowSortMode === 'native' && activeSortColumn === 'borrow'
                                     ? 'text-[#1aa3c7] font-bold bg-[#1aa3c7]/10'
                                     : 'text-gray-700'
@@ -771,7 +774,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                                   }
                                   setShowBorrowSortMenu(false);
                                 }}
-                                className={`w-full px-3 py-1.5 text-left text-xs hover:bg-[#1aa3c7]/10 transition-colors flex items-center justify-between ${
+                                className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-12 hover:bg-[#1aa3c7]/10 transition-colors flex items-center justify-between ${
                                   borrowSortMode === 'incentive' && activeSortColumn === 'borrow'
                                     ? 'text-[#1aa3c7] font-bold bg-[#1aa3c7]/10'
                                     : 'text-gray-700'
@@ -839,29 +842,37 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                   onClick={() => handleRowClick(pool)}
                 >
                   {/* Token */}
-                  <TableCell className="w-1/5 px-3 py-3 whitespace-nowrap text-center">
-                    <div className="flex items-center justify-center gap-2">
+                  <TableCell className="w-1/5 px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center">
+                    <div className="flex items-center justify-center gap-[var(--ds-space-2)]">
                       <TokenIcon symbol={iconSymbol} size={28} loading="eager" logoURI={logoURI} />
-                      <span className="font-semibold text-gray-900 text-sm">
+                      <span className="font-semibold text-gray-900 ds-text-14">
                         {pool.tokenSymbol}
                       </span>
                     </div>
                   </TableCell>
                   {/* Market */}
-                  <TableCell className="w-1/5 px-3 py-3 whitespace-nowrap text-center hidden md:table-cell">
-                    <span className="inline-flex items-center justify-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                  <TableCell className="w-1/5 px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell">
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onSelectMarket?.(pool.marketName);
+                      }}
+                      className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)] px-[var(--ds-space-2-5)] py-[var(--ds-space-0-5)] rounded-full ds-text-11 font-medium bg-gray-100 text-gray-800 hover:bg-gray-200/70 transition-colors"
+                      aria-label={`Filter by ${getMarketDisplayName(pool)} market`}
+                    >
                       <ChainIcon chain={pool.chainName} />
                       {getMarketDisplayName(pool)}
-                    </span>
+                    </button>
                   </TableCell>
                   {/* Supply */}
-                  <TableCell className="w-1/5 px-3 py-3 whitespace-nowrap text-center">
-                    <div className="flex flex-col items-center gap-0.5">
-                      <span className={`font-bold text-emerald-500 tabular-nums ${isMobile ? 'text-base' : 'text-lg'}`}>
+                  <TableCell className="w-1/5 px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center">
+                    <div className="flex flex-col items-center justify-center gap-[var(--ds-space-0-5)] min-h-[3.25rem]">
+                      <span className={`font-bold text-emerald-500 tabular-nums ${isMobile ? 'ds-text-16' : 'ds-text-18'}`}>
                         {formatPercent(displaySupplyTotal)}
                       </span>
                       {displaySupplyIncentive !== null && (
-                        <div className="flex items-center gap-0.5 text-xs justify-center">
+                        <div className="flex items-center gap-[var(--ds-space-0-5)] ds-text-11 justify-center min-h-[1.25rem]">
                           <span className="text-emerald-500/70 tabular-nums">
                             {formatPercent(displaySupplyNative)}
                           </span>
@@ -870,7 +881,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                             onClick={(e) =>
                               handleIncentiveClick(e, pool, 'supply', displaySupplyIncentive)
                             }
-                            className="inline-flex items-center gap-0.5 px-0.5 py-0 rounded-full bg-emerald-500/10 text-emerald-500/70 hover:bg-emerald-500/20 ring-1 ring-emerald-500/15 transition-colors cursor-pointer tabular-nums"
+                            className="inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-0-5)] py-[var(--ds-space-0)] rounded-full bg-emerald-500/10 text-emerald-500/70 hover:bg-emerald-500/20 ring-1 ring-emerald-500/15 transition-colors cursor-pointer tabular-nums"
                           >
                             <span>{formatPercent(displaySupplyIncentive)}</span>
                             <IncentiveIcon width={isMobile ? 8 : 10} height={isMobile ? 8 : 10} />
@@ -880,9 +891,9 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                     </div>
                   </TableCell>
                   {/* Spread */}
-                  <TableCell className="w-1/5 px-3 py-3 whitespace-nowrap text-center hidden md:table-cell">
+                  <TableCell className="w-1/5 px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell">
                     <span
-                      className={`font-bold tabular-nums ${isMobile ? 'text-base' : 'text-lg'} ${
+                      className={`font-bold tabular-nums ${isMobile ? 'ds-text-16' : 'ds-text-18'} ${
                         spread !== null ? 'text-purple-500' : 'text-gray-400'
                       }`}
                     >
@@ -890,13 +901,13 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                     </span>
                   </TableCell>
                   {/* Borrow */}
-                  <TableCell className="w-1/5 px-3 py-3 whitespace-nowrap text-center">
-                    <div className="flex flex-col items-center gap-0.5">
-                        <span className={`font-bold text-[#1aa3c7] tabular-nums ${isMobile ? 'text-base' : 'text-lg'}`}>
+                  <TableCell className="w-1/5 px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center">
+                    <div className="flex flex-col items-center justify-center gap-[var(--ds-space-0-5)] min-h-[3.25rem]">
+                        <span className={`font-bold text-[#1aa3c7] tabular-nums ${isMobile ? 'ds-text-16' : 'ds-text-18'}`}>
                           {displayBorrowTotal !== null ? formatPercent(displayBorrowTotal) : '-'}
                         </span>
                         {displayBorrowIncentive !== null && (
-                          <div className="flex items-center gap-0.5 text-xs justify-center">
+                          <div className="flex items-center gap-[var(--ds-space-0-5)] ds-text-11 justify-center min-h-[1.25rem]">
                             {displayBorrowNative !== null && (
                               <>
                                 <span className="text-[#1aa3c7]/70 tabular-nums">
@@ -909,7 +920,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
                               onClick={(e) =>
                                 handleIncentiveClick(e, pool, 'borrow', displayBorrowIncentive)
                               }
-                              className="inline-flex items-center gap-0.5 px-0.5 py-0 rounded-full bg-[#1aa3c7]/10 text-[#1aa3c7]/70 hover:bg-[#1aa3c7]/20 ring-1 ring-[#1aa3c7]/15 transition-colors cursor-pointer tabular-nums"
+                              className="inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-0-5)] py-[var(--ds-space-0)] rounded-full bg-[#1aa3c7]/10 text-[#1aa3c7]/70 hover:bg-[#1aa3c7]/20 ring-1 ring-[#1aa3c7]/15 transition-colors cursor-pointer tabular-nums"
                             >
                               <span>{formatPercent(displayBorrowIncentive)}</span>
                               <IncentiveIcon width={isMobile ? 8 : 10} height={isMobile ? 8 : 10} />
@@ -927,10 +938,10 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy }: PoolsTablePr
       
       {/* Show More/Less button for desktop */}
       {sortedData.length > DEFAULT_VISIBLE_COUNT && (
-        <div className="p-4 border-t border-gray-100">
+        <div className="p-[var(--ds-space-4)] border-t border-gray-200">
           <button
             onClick={() => setShowAll(!showAll)}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-border bg-muted/30 hover:bg-muted/50 transition-colors text-foreground font-medium"
+            className="w-full ds-button gap-[var(--ds-space-2)] border border-border bg-muted/30 hover:bg-muted/50 transition-colors text-foreground font-medium"
           >
             <span>{showAll ? 'Show Less' : `Show ${sortedData.length - DEFAULT_VISIBLE_COUNT} More Reserves`}</span>
             {showAll ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}

@@ -16,6 +16,8 @@ interface FilterBarProps {
   isApy: boolean;
   setIsApy: (isApy: boolean) => void;
   marketsList?: MarketListItem[];
+  showMarketsExpanded?: boolean;
+  setShowMarketsExpanded?: (expanded: boolean) => void;
 }
 
 const categories: { value: TokenCategory; label: string }[] = [
@@ -32,7 +34,7 @@ const ChainIcon = ({ chain, className = "", loading = "lazy" }: { chain: string;
 
   if (!src) {
     return (
-      <div className={`${size} rounded-full bg-current opacity-40 flex items-center justify-center text-[8px] font-bold`}>
+      <div className={`${size} rounded-full bg-current opacity-40 flex items-center justify-center ds-text-8 font-bold`}>
         {chain.charAt(0)}
       </div>
     );
@@ -73,9 +75,13 @@ const FilterBar = ({
   isApy,
   setIsApy,
   marketsList,
+  showMarketsExpanded: showMarketsExpandedProp,
+  setShowMarketsExpanded: setShowMarketsExpandedProp,
 }: FilterBarProps) => {
   const isMobile = useIsMobile();
-  const [showMarketsExpanded, setShowMarketsExpanded] = useState(false);
+  const [internalShowMarketsExpanded, setInternalShowMarketsExpanded] = useState(false);
+  const showMarketsExpanded = showMarketsExpandedProp ?? internalShowMarketsExpanded;
+  const setShowMarketsExpanded = setShowMarketsExpandedProp ?? setInternalShowMarketsExpanded;
   const [searchPlaceholder, setSearchPlaceholder] = useState('Search token');
   const desktopSearchInputRef = useRef<HTMLInputElement>(null);
   const mobileSearchInputRef = useRef<HTMLInputElement>(null);
@@ -215,9 +221,9 @@ const FilterBar = ({
   return (
     <div className="space-y-2 md:space-y-3">
       {/* Row 1: Token Categories + Search + APY Toggle (PC) / Token Categories + APY Toggle (Mobile) */}
-      <div className="flex flex-wrap items-center gap-1.5 md:gap-2">
+      <div className="flex flex-wrap items-center gap-[var(--ds-space-1-5)] md:gap-[var(--ds-space-2)]">
         {/* Token Categories */}
-        <span className="text-xs text-muted-foreground mr-0.5 md:mr-1 hidden sm:inline">Tokens:</span>
+        <span className="ds-text-11 text-muted-foreground mr-[var(--ds-space-0-5)] md:mr-[var(--ds-space-1)] hidden sm:inline">Tokens:</span>
         {categories.map((category) => (
           <button
             key={category.value}
@@ -229,7 +235,7 @@ const FilterBar = ({
                 setSelectedCategory(category.value);
               }
             }}
-            className={`px-2 md:px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
+            className={`ds-chip px-[var(--ds-space-2)] md:px-[var(--ds-space-2-5)] py-[var(--ds-space-1)] rounded-md font-medium transition-all ${
               selectedCategory === category.value
                 ? 'bg-[#c242b1] text-white'
                 : 'bg-card/60 text-muted-foreground hover:text-foreground hover:bg-card border border-border/40'
@@ -247,7 +253,7 @@ const FilterBar = ({
             placeholder={searchPlaceholder}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-7 md:pl-8 pr-6 md:pr-7 bg-card/50 border-border/50 focus:border-primary h-7 text-xs"
+            className="pl-[var(--ds-space-7)] md:pl-[var(--ds-space-8)] pr-[var(--ds-space-6)] md:pr-[var(--ds-space-7)] bg-card/50 border-border/50 focus:border-[#c242b1] focus-visible:ring-0 focus-visible:ring-offset-0 h-7 ds-text-11"
           />
           {searchQuery && (
             <button
@@ -263,7 +269,7 @@ const FilterBar = ({
         <div className="flex-1 min-w-2 md:min-w-4" />
 
         {/* APY/APR Toggle */}
-        <div className="flex items-center gap-1 md:gap-1.5 text-xs text-muted-foreground">
+        <div className="flex items-center gap-[var(--ds-space-1)] md:gap-[var(--ds-space-1-5)] ds-text-11 text-muted-foreground">
           <span className={!isApy ? 'text-foreground font-medium' : ''}>APR</span>
           <Switch
             checked={isApy}
@@ -275,7 +281,7 @@ const FilterBar = ({
       </div>
 
       {/* Row 2: Search - only on mobile */}
-      <div className="flex items-center gap-1.5 md:gap-2 md:hidden">
+      <div className="flex items-center gap-[var(--ds-space-1-5)] md:gap-[var(--ds-space-2)] md:hidden">
         <div className="relative w-full">
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
           <Input
@@ -283,7 +289,7 @@ const FilterBar = ({
             placeholder={searchPlaceholder}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-7 pr-6 bg-card/50 border-border/50 focus:border-primary h-7 text-xs"
+            className="pl-[var(--ds-space-7)] pr-[var(--ds-space-6)] bg-card/50 border-border/50 focus:border-[#c242b1] focus-visible:ring-0 focus-visible:ring-offset-0 h-7 ds-text-11"
           />
           {searchQuery && (
             <button
@@ -297,13 +303,13 @@ const FilterBar = ({
       </div>
 
       {/* Row 2: Markets */}
-      <div className="flex flex-wrap items-center gap-1 md:gap-1.5">
-        <span className="text-xs text-muted-foreground mr-0.5 md:mr-1 hidden sm:inline">Markets:</span>
+      <div className="flex flex-wrap items-center gap-[var(--ds-space-1)] md:gap-[var(--ds-space-1-5)]">
+        <span className="ds-text-11 text-muted-foreground mr-[var(--ds-space-0-5)] md:mr-[var(--ds-space-1)] hidden sm:inline">Markets:</span>
         
         {/* All Markets option */}
         <button
           onClick={() => setSelectedMarkets([])}
-          className={`px-2 md:px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
+          className={`ds-chip px-[var(--ds-space-2)] md:px-[var(--ds-space-2-5)] py-[var(--ds-space-1)] rounded-md font-medium transition-all ${
             noMarketsSelected
               ? 'text-[#c242b1] border border-[#c242b1] shadow-sm'
               : 'text-slate-700 border border-slate-200 hover:text-slate-900'
@@ -321,7 +327,7 @@ const FilterBar = ({
             <button
               key={market.marketName}
               onClick={() => toggleMarket(market.marketName)}
-            className={`inline-flex items-center gap-1 px-1.5 md:px-2 py-1 rounded-md text-xs font-medium transition-all ${
+            className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-1-5)] md:px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-md font-medium transition-all ${
               isSelected
                 ? 'text-[#c242b1] border border-[#c242b1] shadow-sm'
                 : 'text-slate-700 border border-slate-200 hover:text-slate-900'
@@ -338,7 +344,7 @@ const FilterBar = ({
         {hasHiddenMarkets && !showMarketsExpanded && (
           <button
           onClick={() => setShowMarketsExpanded(true)}
-          className="inline-flex items-center gap-1 px-1.5 md:px-2 py-1 rounded-md text-xs font-medium transition-all text-[#c242b1] border border-[#c242b1]/40 border-dashed"
+          className="ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-1-5)] md:px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-md font-medium transition-all text-[#c242b1] border border-[#c242b1]/40 border-dashed"
         >
             <span>{hiddenMarkets.length}+ more</span>
             <ChevronDown className="w-3 h-3" />
@@ -354,7 +360,7 @@ const FilterBar = ({
             <button
               key={market.marketName}
               onClick={() => toggleMarket(market.marketName)}
-            className={`inline-flex items-center gap-1 px-1.5 md:px-2 py-1 rounded-md text-xs font-medium transition-all ${
+            className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-1-5)] md:px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-md font-medium transition-all ${
               isSelected
                 ? 'text-[#c242b1] border border-[#c242b1] shadow-sm'
                 : 'text-slate-700 border border-slate-200 hover:text-slate-900'
@@ -371,7 +377,7 @@ const FilterBar = ({
         {showMarketsExpanded && (
           <button
           onClick={() => setShowMarketsExpanded(false)}
-          className="inline-flex items-center gap-1 px-1.5 md:px-2 py-1 rounded-md text-xs font-medium transition-all text-[#c242b1] border border-[#c242b1]/40 border-dashed"
+          className="ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-1-5)] md:px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-md font-medium transition-all text-[#c242b1] border border-[#c242b1]/40 border-dashed"
         >
             <ChevronUp className="w-3 h-3" />
             <span>Less</span>

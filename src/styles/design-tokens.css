@@ -1,0 +1,195 @@
+@layer base {
+  :root {
+    --ds-text-8: 8px;
+    --ds-text-9: 9px;
+    --ds-text-11: 11px;
+    --ds-text-12: 12px;
+    --ds-text-13: 13px;
+    --ds-text-14: 14px;
+    --ds-text-16: 16px;
+    --ds-text-18: 18px;
+    --ds-text-20: 20px;
+    --ds-text-24: 24px;
+    --ds-text-36: 36px;
+    --ds-space-0: 0rem;
+    --ds-space-0-5: 0.125rem;
+    --ds-space-1: 0.25rem;
+    --ds-space-1-5: 0.375rem;
+    --ds-space-2: 0.5rem;
+    --ds-space-2-5: 0.625rem;
+    --ds-space-3: 0.75rem;
+    --ds-space-3-5: 0.875rem;
+    --ds-space-4: 1rem;
+    --ds-space-5: 1.25rem;
+    --ds-space-6: 1.5rem;
+    --ds-space-7: 1.75rem;
+    --ds-space-8: 2rem;
+    --ds-space-9: 2.25rem;
+    --ds-space-10: 2.5rem;
+    --ds-space-11: 2.75rem;
+    --ds-space-12: 3rem;
+    --ds-space-14: 3.5rem;
+    --ds-space-16: 4rem;
+    --ds-leading-11: 1.25;
+    --ds-title-min: 20px;
+    --ds-title-max: 24px;
+    --ds-title-line: 1.2;
+    --ds-chip-h: 1.75rem;
+    --ds-button-h: 2.5rem;
+    --ds-icon-button: 1.75rem;
+    --ds-tooltip-pad: 0.75rem;
+    --ds-tooltip-item-pad: 0.5rem;
+    --ds-row-pad-y: 0.625rem;
+    --ds-card-pad: 1rem;
+    --ds-card-pad-sm: 0.75rem;
+    --ds-dot: 0.5rem;
+    --ds-dot-active: 0.625rem;
+  }
+}
+
+@layer utilities {
+  .ds-text-11 {
+    font-size: var(--ds-text-11);
+    line-height: calc(var(--ds-text-11) * var(--ds-leading-11));
+  }
+
+  .ds-text-8 {
+    font-size: var(--ds-text-8);
+    line-height: calc(var(--ds-text-8) * var(--ds-leading-11));
+  }
+
+  .ds-text-9 {
+    font-size: var(--ds-text-9);
+    line-height: calc(var(--ds-text-9) * var(--ds-leading-11));
+  }
+
+  .ds-text-12 {
+    font-size: var(--ds-text-12);
+    line-height: calc(var(--ds-text-12) * var(--ds-leading-11));
+  }
+
+  .ds-text-13 {
+    font-size: var(--ds-text-13);
+    line-height: calc(var(--ds-text-13) * var(--ds-leading-11));
+  }
+
+  .ds-text-14 {
+    font-size: var(--ds-text-14);
+    line-height: calc(var(--ds-text-14) * var(--ds-leading-11));
+  }
+
+  .ds-text-16 {
+    font-size: var(--ds-text-16);
+    line-height: calc(var(--ds-text-16) * var(--ds-leading-11));
+  }
+
+  .ds-text-18 {
+    font-size: var(--ds-text-18);
+    line-height: calc(var(--ds-text-18) * var(--ds-leading-11));
+  }
+
+  .ds-text-20 {
+    font-size: var(--ds-text-20);
+    line-height: calc(var(--ds-text-20) * var(--ds-leading-11));
+  }
+
+  .ds-text-24 {
+    font-size: var(--ds-text-24);
+    line-height: calc(var(--ds-text-24) * var(--ds-leading-11));
+  }
+
+  .ds-text-36 {
+    font-size: var(--ds-text-36);
+    line-height: calc(var(--ds-text-36) * var(--ds-leading-11));
+  }
+
+  .ds-text-11-strong {
+    font-size: var(--ds-text-11);
+    line-height: calc(var(--ds-text-11) * var(--ds-leading-11));
+    font-weight: 600;
+  }
+
+  .ds-title {
+    font-size: clamp(var(--ds-title-min), 2vw + 10px, var(--ds-title-max));
+    line-height: var(--ds-title-line);
+    font-weight: 700;
+  }
+
+  .ds-chip {
+    height: var(--ds-chip-h);
+    font-size: var(--ds-text-11);
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .ds-chip-heading {
+    height: var(--ds-chip-h);
+    font-size: var(--ds-text-14);
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .ds-button {
+    height: var(--ds-button-h);
+    font-size: var(--ds-text-11);
+    line-height: 1;
+    border-radius: 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .ds-icon-button {
+    width: var(--ds-icon-button);
+    height: var(--ds-icon-button);
+    border-radius: 9999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .ds-tooltip-pad {
+    padding: var(--ds-tooltip-pad);
+  }
+
+  .ds-tooltip-item {
+    padding: var(--ds-tooltip-item-pad);
+  }
+
+  .ds-tooltip-title {
+    font-size: var(--ds-text-11);
+    line-height: calc(var(--ds-text-11) * var(--ds-leading-11));
+    font-weight: 600;
+  }
+
+  .ds-tooltip-body {
+    font-size: var(--ds-text-11);
+    line-height: calc(var(--ds-text-11) * var(--ds-leading-11));
+    font-weight: 500;
+  }
+
+  .ds-row-pad {
+    padding-top: var(--ds-row-pad-y);
+    padding-bottom: var(--ds-row-pad-y);
+  }
+
+  .ds-card-pad {
+    padding: var(--ds-card-pad);
+  }
+
+  .ds-card-pad-sm {
+    padding: var(--ds-card-pad-sm);
+  }
+
+  .ds-dot {
+    width: var(--ds-dot);
+    height: var(--ds-dot);
+  }
+
+  .ds-dot-active {
+    width: var(--ds-dot-active);
+    height: var(--ds-dot-active);
+  }
+}

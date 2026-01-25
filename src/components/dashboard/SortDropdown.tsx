@@ -47,12 +47,12 @@ const SortDropdown = ({
   const currentOption = sortOptions.find(o => o.value === selectedSubField) || sortOptions[0];
 
   return (
-    <div className="flex items-center justify-end gap-3">
+    <div className="flex items-center justify-end gap-[var(--ds-space-3)]">
       {/* Sort field selector */}
       <div className="relative">
         <button
           onClick={() => setShowMenu(!showMenu)}
-          className={`flex items-center gap-1.5 px-2 py-1 rounded transition-colors text-xs font-medium ${
+          className={`ds-chip gap-[var(--ds-space-1-5)] px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded transition-colors ${
             isActive ? currentOption.colorClass : 'hover:bg-accent text-muted-foreground hover:text-foreground'
           }`}
           title="Select sort field"
@@ -67,12 +67,12 @@ const SortDropdown = ({
               className="fixed inset-0 z-10" 
               onClick={() => setShowMenu(false)}
             />
-            <div className="absolute right-0 top-full mt-1 bg-popover border border-border rounded-lg shadow-lg py-1 z-20 min-w-[140px]">
+            <div className="absolute right-0 top-full mt-[var(--ds-space-1)] bg-popover border border-border rounded-lg shadow-lg py-[var(--ds-space-1)] z-20 min-w-[140px]">
               {sortOptions.map((option) => (
                 <button
                   key={option.value}
                   onClick={() => handleSubFieldSelect(option.value)}
-                  className={`w-full px-3 py-1.5 text-left text-xs font-medium transition-colors ${
+                  className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-11 font-medium transition-colors ${
                     selectedSubField === option.value 
                       ? option.colorClass 
                       : 'text-muted-foreground hover:bg-accent hover:text-foreground'
@@ -89,7 +89,7 @@ const SortDropdown = ({
       {/* Sort direction toggle - separate from dropdown */}
       <button
         onClick={toggleSortOrder}
-        className={`p-1.5 rounded transition-colors ${
+        className={`ds-icon-button transition-colors ${
           isActive 
             ? 'bg-accent text-foreground' 
             : 'hover:bg-accent text-muted-foreground hover:text-foreground'
