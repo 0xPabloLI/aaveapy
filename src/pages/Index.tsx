@@ -35,6 +35,9 @@ const Index = () => {
     type: 'supply' | 'borrow';
     position: { x: number; y: number };
     triggerCenterX: number;
+    accentBorderClass?: string;
+    accentTextClass?: string;
+    accentBgClass?: string;
   } | null>(null);
 
   const queryClient = useQueryClient();
@@ -122,6 +125,9 @@ const Index = () => {
     type: 'supply' | 'borrow';
     position: { x: number; y: number };
     triggerCenterX: number;
+    accentBorderClass?: string;
+    accentTextClass?: string;
+    accentBgClass?: string;
   }) => {
     setTopTooltipState(payload);
   }, []);
@@ -203,13 +209,13 @@ const Index = () => {
         <div className="relative z-10 container mx-auto px-[var(--ds-space-3)] md:px-[var(--ds-space-4)] py-[var(--ds-space-4)] md:py-[var(--ds-space-8)] space-y-4 md:space-y-8">
           {/* Cache warning banner */}
           {showCacheWarning && (
-            <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-[var(--ds-space-3)] md:p-[var(--ds-space-4)] flex items-start gap-[var(--ds-space-3)]">
-              <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-[var(--ds-space-0-5)]" />
+            <div className="rounded-lg border ds-border-amber-500-50 ds-bg-amber-500-10 p-[var(--ds-space-3)] md:p-[var(--ds-space-4)] flex items-start gap-[var(--ds-space-3)]">
+              <AlertTriangle className="w-5 h-5 ds-text-amber-600 shrink-0 mt-[var(--ds-space-0-5)]" />
               <div className="flex-1 min-w-0">
-                <p className="ds-text-14 font-medium text-amber-900 dark:text-amber-100">
+                <p className="ds-text-14 font-medium ds-text-amber-900">
                   Using cached data
                 </p>
-                <p className="ds-text-11 text-amber-700 dark:text-amber-300 mt-[var(--ds-space-1)]">
+                <p className="ds-text-11 ds-text-amber-700 mt-[var(--ds-space-1)]">
                   Unable to fetch latest data. Displaying cached information. Please check your connection and try refreshing.
                 </p>
               </div>
@@ -296,6 +302,9 @@ const Index = () => {
               type={topTooltipState.type}
               position={topTooltipState.position}
               triggerCenterX={topTooltipState.triggerCenterX}
+              accentBorderClass={topTooltipState.accentBorderClass}
+              accentTextClass={topTooltipState.accentTextClass}
+              accentBgClass={topTooltipState.accentBgClass}
               onClose={() => setTopTooltipState(null)}
               isApy={isApy}
               usePortal
@@ -327,6 +336,33 @@ const Index = () => {
                 className="text-secondary hover:underline"
               >
                 Aave Protocol
+              </a>
+              {', '}
+              <a
+                href="https://app.merkl.xyz"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-secondary hover:underline"
+              >
+                Merkl
+              </a>
+              {', '}
+              <a
+                href="https://apps.aavechan.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-secondary hover:underline"
+              >
+                ACI
+              </a>
+              {', '}
+              <a
+                href="https://incentra.brevis.network/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-secondary hover:underline"
+              >
+                Brevis
               </a>
             </p>
           </footer>

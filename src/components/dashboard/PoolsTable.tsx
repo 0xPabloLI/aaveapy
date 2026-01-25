@@ -290,7 +290,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
       <div className="space-y-3">
         {/* Header with sorting controls */}
         <div className="flex justify-between items-center px-[var(--ds-space-1)]">
-          <h3 className="ds-text-14 font-bold text-gray-900">{pools.length} Reserves</h3>
+          <h3 className="ds-text-14 font-bold text-foreground">{pools.length} Reserves</h3>
           <div className="flex items-center gap-[var(--ds-space-2)]">
             {/* Supply sort dropdown */}
             <div className="relative">
@@ -301,8 +301,8 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
                 }}
                 className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-lg border transition-colors ${
                   activeSortColumn === 'supply'
-                    ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                    : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                    ? 'bg-card/60 border-border/70 ds-text-emerald-700'
+                    : 'bg-card border-border text-muted-foreground'
                 }`}
               >
                 <span>Supply</span>
@@ -311,13 +311,13 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
               {showSupplySortMenu && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setShowSupplySortMenu(false)} />
-                  <div className="absolute right-0 top-full mt-[var(--ds-space-1)] bg-white border border-gray-200 rounded-lg shadow-lg py-[var(--ds-space-1)] z-20 min-w-[130px]">
+                  <div className="absolute right-0 top-full mt-[var(--ds-space-1)] bg-card border border-border rounded-lg shadow-lg py-[var(--ds-space-1)] z-20 min-w-[130px]">
                     {(['total', 'native', 'incentive'] as SortMode[]).map((mode) => {
                       const isAlreadySelected = supplySortMode === mode && activeSortColumn === 'supply';
                       const getColorClass = () => {
-                        if (mode === 'total') return 'text-emerald-600';
-                        if (mode === 'native') return 'text-emerald-600';
-                        return 'text-emerald-600';
+                        if (mode === 'total') return 'ds-text-emerald-600';
+                        if (mode === 'native') return 'ds-text-emerald-600';
+                        return 'ds-text-emerald-600';
                       };
                       return (
                         <button
@@ -332,10 +332,10 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
                             }
                             setShowSupplySortMenu(false);
                           }}
-                          className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-12 transition-colors flex items-center justify-between ${
+                          className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-13 transition-colors flex items-center justify-between ${
                             isAlreadySelected
-                              ? `${getColorClass()} font-bold bg-emerald-50`
-                              : 'text-gray-600 hover:bg-gray-50'
+                              ? `${getColorClass()} font-bold bg-card/60`
+                              : 'text-muted-foreground'
                           }`}
                         >
                           <span>{mode.charAt(0).toUpperCase() + mode.slice(1)}</span>
@@ -363,8 +363,8 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
                 }}
                 className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-lg border transition-colors ${
                   activeSortColumn === 'borrow'
-                    ? 'bg-[#1aa3c7]/10 border-[#1aa3c7]/20 text-[#1aa3c7]'
-                    : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                    ? 'bg-card/60 border-border/70 ds-text-brand-cyan'
+                    : 'bg-card border-border text-muted-foreground'
                 }`}
               >
                 <span>Borrow</span>
@@ -373,13 +373,13 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
               {showBorrowSortMenu && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setShowBorrowSortMenu(false)} />
-                  <div className="absolute right-0 top-full mt-[var(--ds-space-1)] bg-white border border-gray-200 rounded-lg shadow-lg py-[var(--ds-space-1)] z-20 min-w-[130px]">
+                  <div className="absolute right-0 top-full mt-[var(--ds-space-1)] bg-card border border-border rounded-lg shadow-lg py-[var(--ds-space-1)] z-20 min-w-[130px]">
                     {(['total', 'native', 'incentive'] as SortMode[]).map((mode) => {
                       const isAlreadySelected = borrowSortMode === mode && activeSortColumn === 'borrow';
                       const getColorClass = () => {
-                        if (mode === 'total') return 'text-[#1aa3c7]';
-                        if (mode === 'native') return 'text-[#1aa3c7]';
-                        return 'text-[#1aa3c7]';
+                        if (mode === 'total') return 'ds-text-brand-cyan';
+                        if (mode === 'native') return 'ds-text-brand-cyan';
+                        return 'ds-text-brand-cyan';
                       };
                       return (
                         <button
@@ -394,10 +394,10 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
                             }
                             setShowBorrowSortMenu(false);
                           }}
-                          className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-12 transition-colors flex items-center justify-between ${
+                          className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-13 transition-colors flex items-center justify-between ${
                             isAlreadySelected
-                              ? `${getColorClass()} font-bold bg-[#1aa3c7]/10`
-                              : 'text-gray-600 hover:bg-gray-50'
+                              ? `${getColorClass()} font-bold bg-card/60`
+                              : 'text-muted-foreground'
                           }`}
                         >
                           <span>{mode.charAt(0).toUpperCase() + mode.slice(1)}</span>
@@ -428,8 +428,8 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
               }}
               className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-lg border transition-colors ${
                 activeSortColumn === 'spread'
-                  ? 'bg-purple-50 border-purple-200 text-purple-700'
-                  : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                  ? 'ds-bg-purple-50 ds-border-purple-200 ds-text-purple-700'
+                  : 'bg-card border-border text-muted-foreground hover:bg-muted/60'
               }`}
             >
               <span>Spread</span>
@@ -455,12 +455,12 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
                   toggleSpreadSortOrder();
                 }
               }}
-              className="ds-icon-button border border-gray-200 bg-white hover:bg-gray-50 transition-colors"
+              className="ds-icon-button border border-border bg-card hover:bg-muted/60 transition-colors"
             >
               {(activeSortColumn === 'supply' ? supplySortOrder : activeSortColumn === 'borrow' ? borrowSortOrder : spreadSortOrder) === 'desc' ? (
-                <ArrowDown className="w-3.5 h-3.5 text-gray-600" />
+                <ArrowDown className="w-3.5 h-3.5 text-muted-foreground" />
               ) : (
-                <ArrowUp className="w-3.5 h-3.5 text-gray-600" />
+                <ArrowUp className="w-3.5 h-3.5 text-muted-foreground" />
               )}
             </button>
           </div>
@@ -482,7 +482,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
         {sortedData.length > DEFAULT_VISIBLE_COUNT && (
           <button
             onClick={() => setShowAll(!showAll)}
-            className="w-full mt-[var(--ds-space-4)] ds-button gap-[var(--ds-space-2)] border border-border bg-card hover:bg-muted/50 transition-colors text-foreground font-medium"
+            className="w-full mt-[var(--ds-space-4)] ds-button ds-text-14 md:ds-text-16 gap-[var(--ds-space-2)] border border-border bg-card hover:bg-muted/50 transition-colors text-foreground font-semibold"
           >
             <span>{showAll ? 'Show Less' : `Show ${sortedData.length - DEFAULT_VISIBLE_COUNT} More Reserves`}</span>
             {showAll ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -495,6 +495,8 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
             type={tooltipState.type}
             position={tooltipState.position}
             triggerCenterX={tooltipState.triggerCenterX}
+            accentTextClass={tooltipState.type === 'supply' ? 'ds-text-emerald-600' : 'ds-text-brand-cyan'}
+            accentBgClass={tooltipState.type === 'supply' ? 'ds-bg-emerald-500-10' : 'ds-bg-brand-cyan-10'}
             onClose={() => setTooltipState(null)}
             isApy={isApy}
           />
@@ -505,7 +507,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
 
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+    <div className="bg-card rounded-2xl shadow-sm border border-border/60 overflow-hidden">
       <div className="overflow-x-auto">
         <Table className="table-fixed w-full">
           <colgroup>
@@ -516,7 +518,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
             <col className="w-1/5" />
           </colgroup>
           <TableHeader>
-            <TableRow className="border-border/50 hover:bg-transparent bg-gray-50/50">
+            <TableRow className="border-border/50 bg-card/60">
               {/* Token - flex grow */}
               <TableHead className="w-1/5 px-[var(--ds-space-3)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground">
                 Token
@@ -530,7 +532,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
                 <div className="flex items-center justify-center gap-[var(--ds-space-2)]">
                   <div className="flex items-center gap-[var(--ds-space-1-5)]">
                     <span
-                      className={activeSortColumn === 'supply' ? 'text-emerald-600' : 'text-muted-foreground'}
+                      className={activeSortColumn === 'supply' ? 'ds-text-emerald-600' : 'text-muted-foreground'}
                     >
                       Supply
                     </span>
@@ -539,8 +541,8 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
                         onClick={() => setShowSupplySortMenu(!showSupplySortMenu)}
                         className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-lg border transition-colors ${
                           showSupplySortMenu || activeSortColumn === 'supply'
-                            ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                            : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                            ? 'bg-card/60 border-border/70 ds-text-emerald-700'
+                            : 'bg-card/60 border-border/70 text-muted-foreground'
                         }`}
                         title="Select sort field"
                       >
@@ -553,7 +555,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
                             className="fixed inset-0 z-10"
                             onClick={() => setShowSupplySortMenu(false)}
                           />
-                          <div className="absolute right-0 top-full mt-[var(--ds-space-1)] bg-white border border-gray-200 rounded-lg shadow-lg py-[var(--ds-space-1)] z-20 min-w-[140px]">
+                          <div className="absolute right-0 top-full mt-[var(--ds-space-1)] bg-card border border-border rounded-lg shadow-lg py-[var(--ds-space-1)] z-20 min-w-[140px]">
                             <button
                               onClick={() => {
                                 const isAlreadySelected = supplySortMode === 'total' && activeSortColumn === 'supply';
@@ -566,21 +568,21 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
                                 }
                                 setShowSupplySortMenu(false);
                               }}
-                              className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-12 hover:bg-emerald-50/50 transition-colors flex items-center justify-between ${
+                              className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-12 hover:bg-[rgb(var(--ds-emerald-50-rgb)/0.5)] transition-colors flex items-center justify-between ${
                                 supplySortMode === 'total' && activeSortColumn === 'supply'
-                                  ? 'text-emerald-600 font-bold bg-emerald-50'
-                                  : 'text-gray-700'
+                                  ? 'ds-text-emerald-600 font-bold bg-card/60'
+                                  : 'text-foreground/80'
                               }`}
                             >
                               <span>Sort by Total</span>
                               {supplySortMode === 'total' && activeSortColumn === 'supply' ? (
                                 supplySortOrder === 'desc' ? (
-                                  <ArrowDown className="w-3 h-3 text-emerald-600" />
+                                  <ArrowDown className="w-3 h-3 ds-text-emerald-600" />
                                 ) : (
-                                  <ArrowUp className="w-3 h-3 text-emerald-600" />
+                                  <ArrowUp className="w-3 h-3 ds-text-emerald-600" />
                                 )
                               ) : (
-                                <ArrowDown className="w-3 h-3 text-gray-400" />
+                                <ArrowDown className="w-3 h-3 text-muted-foreground/70" />
                               )}
                             </button>
                             <button
@@ -595,21 +597,21 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
                                 }
                                 setShowSupplySortMenu(false);
                               }}
-                              className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-12 hover:bg-emerald-50/50 transition-colors flex items-center justify-between ${
+                              className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-12 hover:bg-[rgb(var(--ds-emerald-50-rgb)/0.5)] transition-colors flex items-center justify-between ${
                                 supplySortMode === 'native' && activeSortColumn === 'supply'
-                                  ? 'text-emerald-600 font-bold bg-emerald-50'
-                                  : 'text-gray-700'
+                                  ? 'ds-text-emerald-600 font-bold bg-card/60'
+                                  : 'text-foreground/80'
                               }`}
                             >
                               <span>Sort by Native</span>
                               {supplySortMode === 'native' && activeSortColumn === 'supply' ? (
                                 supplySortOrder === 'desc' ? (
-                                  <ArrowDown className="w-3 h-3 text-emerald-600" />
+                                  <ArrowDown className="w-3 h-3 ds-text-emerald-600" />
                                 ) : (
-                                  <ArrowUp className="w-3 h-3 text-emerald-600" />
+                                  <ArrowUp className="w-3 h-3 ds-text-emerald-600" />
                                 )
                               ) : (
-                                <ArrowDown className="w-3 h-3 text-gray-400" />
+                                <ArrowDown className="w-3 h-3 text-muted-foreground/70" />
                               )}
                             </button>
                             <button
@@ -624,21 +626,21 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
                                 }
                                 setShowSupplySortMenu(false);
                               }}
-                              className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-12 hover:bg-emerald-50/50 transition-colors flex items-center justify-between ${
+                              className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-12 hover:bg-[rgb(var(--ds-emerald-50-rgb)/0.5)] transition-colors flex items-center justify-between ${
                                 supplySortMode === 'incentive' && activeSortColumn === 'supply'
-                                  ? 'text-emerald-600 font-bold bg-emerald-50'
-                                  : 'text-gray-700'
+                                  ? 'ds-text-emerald-600 font-bold bg-card/60'
+                                  : 'text-foreground/80'
                               }`}
                             >
                               <span>Sort by Incentive</span>
                               {supplySortMode === 'incentive' && activeSortColumn === 'supply' ? (
                                 supplySortOrder === 'desc' ? (
-                                  <ArrowDown className="w-3 h-3 text-emerald-600" />
+                                  <ArrowDown className="w-3 h-3 ds-text-emerald-600" />
                                 ) : (
-                                  <ArrowUp className="w-3 h-3 text-emerald-600" />
+                                  <ArrowUp className="w-3 h-3 ds-text-emerald-600" />
                                 )
                               ) : (
-                                <ArrowDown className="w-3 h-3 text-gray-400" />
+                                <ArrowDown className="w-3 h-3 text-muted-foreground/70" />
                               )}
                             </button>
                           </div>
@@ -660,7 +662,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
                     }
                   }}
                   className={`ds-chip-heading md:ds-text-16 gap-[var(--ds-space-1)] transition-colors ${
-                    activeSortColumn === 'spread' ? 'text-purple-600' : 'text-muted-foreground hover:text-foreground'
+                    activeSortColumn === 'spread' ? 'ds-text-purple-600' : 'text-muted-foreground'
                   }`}
                 >
                   <span>Spread</span>
@@ -680,7 +682,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
                 <div className="flex items-center justify-center gap-[var(--ds-space-2)]">
                   <div className="flex items-center gap-[var(--ds-space-1-5)]">
                     <span
-                      className={activeSortColumn === 'borrow' ? 'text-[#1aa3c7]' : 'text-muted-foreground'}
+                      className={activeSortColumn === 'borrow' ? 'ds-text-brand-cyan' : 'text-muted-foreground'}
                     >
                       Borrow
                     </span>
@@ -689,8 +691,8 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
                         onClick={() => setShowBorrowSortMenu(!showBorrowSortMenu)}
                         className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-lg border transition-colors ${
                           showBorrowSortMenu || activeSortColumn === 'borrow'
-                            ? 'bg-[#1aa3c7]/10 border-[#1aa3c7]/20 text-[#1aa3c7]'
-                            : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                            ? 'bg-card/60 border-border/70 ds-text-brand-cyan'
+                            : 'bg-card/60 border-border/70 text-muted-foreground'
                         }`}
                         title="Select sort field"
                       >
@@ -703,7 +705,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
                               className="fixed inset-0 z-10"
                               onClick={() => setShowBorrowSortMenu(false)}
                             />
-                            <div className="absolute right-0 top-full mt-[var(--ds-space-1)] bg-white border border-gray-200 rounded-lg shadow-lg py-[var(--ds-space-1)] z-20 min-w-[140px]">
+                            <div className="absolute right-0 top-full mt-[var(--ds-space-1)] bg-card border border-border rounded-lg shadow-lg py-[var(--ds-space-1)] z-20 min-w-[140px]">
                               <button
                                 onClick={() => {
                                   const isAlreadySelected = borrowSortMode === 'total' && activeSortColumn === 'borrow';
@@ -716,21 +718,21 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
                                   }
                                   setShowBorrowSortMenu(false);
                                 }}
-                                className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-12 hover:bg-[#1aa3c7]/10 transition-colors flex items-center justify-between ${
+                                className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-12 hover:bg-[rgb(var(--ds-brand-cyan-rgb)/0.1)] transition-colors flex items-center justify-between ${
                                   borrowSortMode === 'total' && activeSortColumn === 'borrow'
-                                    ? 'text-[#1aa3c7] font-bold bg-[#1aa3c7]/10'
-                                    : 'text-gray-700'
+                                    ? 'ds-text-brand-cyan font-bold bg-card/60'
+                                    : 'text-foreground/80'
                                 }`}
                               >
                                 <span>Sort by Total</span>
                                 {borrowSortMode === 'total' && activeSortColumn === 'borrow' ? (
                                   borrowSortOrder === 'desc' ? (
-                                    <ArrowDown className="w-3 h-3 text-[#1aa3c7]" />
+                                    <ArrowDown className="w-3 h-3 ds-text-brand-cyan" />
                                   ) : (
-                                    <ArrowUp className="w-3 h-3 text-[#1aa3c7]" />
+                                    <ArrowUp className="w-3 h-3 ds-text-brand-cyan" />
                                   )
                                 ) : (
-                                  <ArrowDown className="w-3 h-3 text-gray-400" />
+                                  <ArrowDown className="w-3 h-3 text-muted-foreground/70" />
                                 )}
                               </button>
                               <button
@@ -745,21 +747,21 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
                                   }
                                   setShowBorrowSortMenu(false);
                                 }}
-                                className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-12 hover:bg-[#1aa3c7]/10 transition-colors flex items-center justify-between ${
+                                className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-12 hover:bg-[rgb(var(--ds-brand-cyan-rgb)/0.1)] transition-colors flex items-center justify-between ${
                                   borrowSortMode === 'native' && activeSortColumn === 'borrow'
-                                    ? 'text-[#1aa3c7] font-bold bg-[#1aa3c7]/10'
-                                    : 'text-gray-700'
+                                    ? 'ds-text-brand-cyan font-bold bg-card/60'
+                                    : 'text-foreground/80'
                                 }`}
                               >
                                 <span>Sort by Native</span>
                                 {borrowSortMode === 'native' && activeSortColumn === 'borrow' ? (
                                   borrowSortOrder === 'desc' ? (
-                                    <ArrowDown className="w-3 h-3 text-[#1aa3c7]" />
+                                    <ArrowDown className="w-3 h-3 ds-text-brand-cyan" />
                                   ) : (
-                                    <ArrowUp className="w-3 h-3 text-[#1aa3c7]" />
+                                    <ArrowUp className="w-3 h-3 ds-text-brand-cyan" />
                                   )
                                 ) : (
-                                  <ArrowDown className="w-3 h-3 text-gray-400" />
+                                  <ArrowDown className="w-3 h-3 text-muted-foreground/70" />
                                 )}
                               </button>
                               <button
@@ -774,21 +776,21 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
                                   }
                                   setShowBorrowSortMenu(false);
                                 }}
-                                className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-12 hover:bg-[#1aa3c7]/10 transition-colors flex items-center justify-between ${
+                                className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-12 hover:bg-[rgb(var(--ds-brand-cyan-rgb)/0.1)] transition-colors flex items-center justify-between ${
                                   borrowSortMode === 'incentive' && activeSortColumn === 'borrow'
-                                    ? 'text-[#1aa3c7] font-bold bg-[#1aa3c7]/10'
-                                    : 'text-gray-700'
+                                    ? 'ds-text-brand-cyan font-bold bg-card/60'
+                                    : 'text-foreground/80'
                                 }`}
                               >
                                 <span>Sort by Incentive</span>
                                 {borrowSortMode === 'incentive' && activeSortColumn === 'borrow' ? (
                                   borrowSortOrder === 'desc' ? (
-                                    <ArrowDown className="w-3 h-3 text-[#1aa3c7]" />
+                                    <ArrowDown className="w-3 h-3 ds-text-brand-cyan" />
                                   ) : (
-                                    <ArrowUp className="w-3 h-3 text-[#1aa3c7]" />
+                                    <ArrowUp className="w-3 h-3 ds-text-brand-cyan" />
                                   )
                                 ) : (
-                                  <ArrowDown className="w-3 h-3 text-gray-400" />
+                                  <ArrowDown className="w-3 h-3 text-muted-foreground/70" />
                                 )}
                               </button>
                             </div>
@@ -838,14 +840,14 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
               return (
                 <TableRow
                   key={`${pool.marketName}-${pool.tokenAddress}`}
-                  className="hover:bg-gray-50/50 transition-colors cursor-pointer"
+                  className="transition-colors cursor-pointer"
                   onClick={() => handleRowClick(pool)}
                 >
                   {/* Token */}
                   <TableCell className="w-1/5 px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center">
                     <div className="flex items-center justify-center gap-[var(--ds-space-2)]">
                       <TokenIcon symbol={iconSymbol} size={28} loading="eager" logoURI={logoURI} />
-                      <span className="font-semibold text-gray-900 ds-text-14">
+                      <span className="font-semibold text-foreground ds-text-14">
                         {pool.tokenSymbol}
                       </span>
                     </div>
@@ -858,7 +860,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
                         event.stopPropagation();
                         onSelectMarket?.(pool.marketName);
                       }}
-                      className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)] px-[var(--ds-space-2-5)] py-[var(--ds-space-0-5)] rounded-full ds-text-11 font-medium bg-gray-100 text-gray-800 hover:bg-gray-200/70 transition-colors"
+                      className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)] px-[var(--ds-space-2-5)] py-[var(--ds-space-0-5)] rounded-full ds-text-11 font-medium bg-muted/40 text-muted-foreground border border-border/50 hover:bg-muted/50 transition-colors"
                       aria-label={`Filter by ${getMarketDisplayName(pool)} market`}
                     >
                       <ChainIcon chain={pool.chainName} />
@@ -867,21 +869,21 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
                   </TableCell>
                   {/* Supply */}
                   <TableCell className="w-1/5 px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center">
-                    <div className="flex flex-col items-center justify-center gap-[var(--ds-space-0-5)] min-h-[3.25rem]">
-                      <span className={`font-bold text-emerald-500 tabular-nums ${isMobile ? 'ds-text-16' : 'ds-text-18'}`}>
+                    <div className="flex flex-col items-center justify-center gap-[var(--ds-space-0-5)] min-h-[2.75rem]">
+                      <span className={`font-bold ds-text-emerald-500 tabular-nums ${isMobile ? 'ds-text-16' : 'ds-text-18'}`}>
                         {formatPercent(displaySupplyTotal)}
                       </span>
                       {displaySupplyIncentive !== null && (
                         <div className="flex items-center gap-[var(--ds-space-0-5)] ds-text-11 justify-center min-h-[1.25rem]">
-                          <span className="text-emerald-500/70 tabular-nums">
+                          <span className="ds-text-emerald-500-70 tabular-nums">
                             {formatPercent(displaySupplyNative)}
                           </span>
-                          <span className="text-gray-400">+</span>
+                          <span className="text-muted-foreground/70">+</span>
                           <button
                             onClick={(e) =>
                               handleIncentiveClick(e, pool, 'supply', displaySupplyIncentive)
                             }
-                            className="inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-0-5)] py-[var(--ds-space-0)] rounded-full bg-emerald-500/10 text-emerald-500/70 hover:bg-emerald-500/20 ring-1 ring-emerald-500/15 transition-colors cursor-pointer tabular-nums"
+                            className="inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-0-5)] py-[var(--ds-space-0)] rounded-full ds-bg-emerald-500-10 ds-text-emerald-500-70 hover:bg-[rgb(var(--ds-emerald-500-rgb)/0.2)] ring-1 ds-ring-emerald-500-15 transition-colors cursor-pointer tabular-nums"
                           >
                             <span>{formatPercent(displaySupplyIncentive)}</span>
                             <IncentiveIcon width={isMobile ? 8 : 10} height={isMobile ? 8 : 10} />
@@ -894,7 +896,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
                   <TableCell className="w-1/5 px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell">
                     <span
                       className={`font-bold tabular-nums ${isMobile ? 'ds-text-16' : 'ds-text-18'} ${
-                        spread !== null ? 'text-purple-500' : 'text-gray-400'
+                        spread !== null ? 'ds-text-purple-500' : 'text-muted-foreground/70'
                       }`}
                     >
                       {formatSpread(spread)}
@@ -902,25 +904,25 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
                   </TableCell>
                   {/* Borrow */}
                   <TableCell className="w-1/5 px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center">
-                    <div className="flex flex-col items-center justify-center gap-[var(--ds-space-0-5)] min-h-[3.25rem]">
-                        <span className={`font-bold text-[#1aa3c7] tabular-nums ${isMobile ? 'ds-text-16' : 'ds-text-18'}`}>
+                    <div className="flex flex-col items-center justify-center gap-[var(--ds-space-0-5)] min-h-[2.75rem]">
+                        <span className={`font-bold ds-text-brand-cyan tabular-nums ${isMobile ? 'ds-text-16' : 'ds-text-18'}`}>
                           {displayBorrowTotal !== null ? formatPercent(displayBorrowTotal) : '-'}
                         </span>
                         {displayBorrowIncentive !== null && (
                           <div className="flex items-center gap-[var(--ds-space-0-5)] ds-text-11 justify-center min-h-[1.25rem]">
                             {displayBorrowNative !== null && (
                               <>
-                                <span className="text-[#1aa3c7]/70 tabular-nums">
+                                <span className="ds-text-brand-cyan-70 tabular-nums">
                                   {formatPercent(displayBorrowNative)}
                                 </span>
-                                <span className="text-gray-400">-</span>
+                                <span className="text-muted-foreground/70">-</span>
                               </>
                             )}
                             <button
                               onClick={(e) =>
                                 handleIncentiveClick(e, pool, 'borrow', displayBorrowIncentive)
                               }
-                              className="inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-0-5)] py-[var(--ds-space-0)] rounded-full bg-[#1aa3c7]/10 text-[#1aa3c7]/70 hover:bg-[#1aa3c7]/20 ring-1 ring-[#1aa3c7]/15 transition-colors cursor-pointer tabular-nums"
+                              className="inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-0-5)] py-[var(--ds-space-0)] rounded-full ds-bg-brand-cyan-10 ds-text-brand-cyan-70 hover:bg-[rgb(var(--ds-brand-cyan-rgb)/0.2)] ring-1 ds-ring-brand-cyan-15 transition-colors cursor-pointer tabular-nums"
                             >
                               <span>{formatPercent(displayBorrowIncentive)}</span>
                               <IncentiveIcon width={isMobile ? 8 : 10} height={isMobile ? 8 : 10} />
@@ -938,10 +940,10 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
       
       {/* Show More/Less button for desktop */}
       {sortedData.length > DEFAULT_VISIBLE_COUNT && (
-        <div className="p-[var(--ds-space-4)] border-t border-gray-200">
+        <div className="p-[var(--ds-space-4)] border-t border-border">
           <button
             onClick={() => setShowAll(!showAll)}
-            className="w-full ds-button gap-[var(--ds-space-2)] border border-border bg-muted/30 hover:bg-muted/50 transition-colors text-foreground font-medium"
+            className="w-full ds-button ds-text-14 md:ds-text-16 gap-[var(--ds-space-2)] border border-border bg-muted/30 hover:bg-muted/50 transition-colors text-foreground font-semibold"
           >
             <span>{showAll ? 'Show Less' : `Show ${sortedData.length - DEFAULT_VISIBLE_COUNT} More Reserves`}</span>
             {showAll ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -955,6 +957,8 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
           type={tooltipState.type}
           position={tooltipState.position}
           triggerCenterX={tooltipState.triggerCenterX}
+          accentTextClass={tooltipState.type === 'supply' ? 'ds-text-emerald-600' : 'ds-text-brand-cyan'}
+          accentBgClass={tooltipState.type === 'supply' ? 'ds-bg-emerald-500-10' : 'ds-bg-brand-cyan-10'}
           onClose={() => setTooltipState(null)}
           isApy={isApy}
         />

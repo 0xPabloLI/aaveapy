@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useLayoutEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ExternalLink, X } from 'lucide-react';
 import { PoolWithSpread, MeritIncentive, MerklOpportunityGroup, BrevisIncentive } from '@/types/aave';
@@ -13,6 +13,9 @@ interface IncentiveTooltipProps {
   onClose: () => void;
   isApy?: boolean;
   usePortal?: boolean;
+  accentBorderClass?: string;
+  accentTextClass?: string;
+  accentBgClass?: string;
 }
 
 interface IncentiveSource {
@@ -37,10 +40,22 @@ const sourceIconMap: Record<NonNullable<IncentiveSource['sourceType']>, string> 
 const getSourceIcon = (sourceType?: IncentiveSource['sourceType']) =>
   sourceType && sourceType !== 'Protocol' ? sourceIconMap[sourceType] : null;
 
-const IncentiveTooltip = ({ pool, type, position, triggerCenterX, onClose, isApy = true, usePortal = false }: IncentiveTooltipProps) => {
+const IncentiveTooltip = ({
+  pool,
+  type,
+  position,
+  triggerCenterX,
+  onClose,
+  isApy = true,
+  usePortal = false,
+  accentBorderClass,
+  accentTextClass,
+  accentBgClass,
+}: IncentiveTooltipProps) => {
   const isMobile = useIsMobile();
   const tooltipRef = useRef<HTMLDivElement>(null);
   const [arrowLeft, setArrowLeft] = useState(0);
+  const [tooltipLeft, setTooltipLeft] = useState<number | null>(null);
   const portalTarget = typeof document !== 'undefined' ? document.body : null;
   const numberMatch = /^(\d+(?:\.\d+)?%?)$/;
   const currencyMatch = /^[€$£¥]$/;
@@ -49,7 +64,7 @@ const IncentiveTooltip = ({ pool, type, position, triggerCenterX, onClose, isApy
     <>
       {text.split(/([€$£¥]?\d+(?:\.\d+)?%?|[€$£¥])/g).map((part, index) =>
         highlightMatch.test(part) && (numberMatch.test(part) || currencyMatch.test(part) || /^[€$£¥]\d/.test(part)) ? (
-          <span key={`num-${index}`} className="font-semibold text-gray-900">
+          <span key={`num-${index}`} className="font-semibold text-foreground">
             {part}
           </span>
         ) : (
@@ -58,17 +73,6 @@ const IncentiveTooltip = ({ pool, type, position, triggerCenterX, onClose, isApy
       )}
     </>
   );
-  const tooltipSurfaceStyle = {
-    backgroundImage: [
-      'linear-gradient(180deg, rgba(255,255,255,0.9), rgba(255,255,255,0.98))',
-      'radial-gradient(900px 220px at 5% -10%, rgba(255, 196, 0, 0.10), transparent 60%)',
-      'radial-gradient(700px 220px at 100% 0%, rgba(14, 116, 144, 0.10), transparent 55%)',
-      'linear-gradient(90deg, rgba(0,0,0,0.03) 1px, transparent 1px)',
-      'linear-gradient(0deg, rgba(0,0,0,0.03) 1px, transparent 1px)',
-    ].join(', '),
-    backgroundSize: 'auto, auto, auto, 18px 18px, 18px 18px',
-  } as const;
-
   // Format date for display (e.g., "Jan 7, 2026"), safe for invalid values
   const formatDate = (dateString?: string): string | null => {
     if (!dateString) return null;
@@ -98,27 +102,71 @@ const IncentiveTooltip = ({ pool, type, position, triggerCenterX, onClose, isApy
 
   const getMessageLines = (message?: string | Record<string, unknown> | unknown[]): string[] => {
     if (!message) return [];
-    if (typeof message === 'string') return [message];
+    const filterLines = (lines: string[]) =>
+      lines.filter((line) => !line.toLowerCase().includes('require_multiple'));
+    if (typeof message === 'string') return filterLines([message]);
     if (Array.isArray(message)) {
-      return message
-        .map((item) => {
-          if (typeof item === 'string') return item;
-          if (typeof item === 'object' && item) {
-            const values = Object.values(item as Record<string, unknown>)
-              .map((entry) => formatValue(entry))
-              .filter(Boolean);
-            return values.length > 0 ? values.join(': ') : '';
-          }
-          return '';
-        })
-        .filter(Boolean);
+      return filterLines(
+        message
+          .map((item) => {
+            if (typeof item === 'string') return item;
+            if (typeof item === 'object' && item) {
+              const values = Object.values(item as Record<string, unknown>)
+                .map((entry) => formatValue(entry))
+                .filter(Boolean);
+              return values.length > 0 ? values.join(': ') : '';
+            }
+            return '';
+          })
+          .filter(Boolean)
+      );
     }
     const values = Object.values(message)
       .map((entry) => formatValue(entry))
       .filter(Boolean);
     if (values.length === 0) return [];
-    return [values.join(': ')];
+    return filterLines([values.join(': ')]);
   };
+
+  // Get source-specific accent border class based on source type
+  const getSourceAccentClass = (sourceType?: IncentiveSource['sourceType']): string => {
+    if (accentBorderClass) return accentBorderClass;
+    
+    // Default to supply/borrow colors if no source type or Protocol
+    if (!sourceType || sourceType === 'Protocol') {
+      return type === 'supply'
+        ? 'border-l-[3px] border-l-[rgb(var(--ds-emerald-500-rgb)/0.35)]'
+        : 'border-l-[3px] border-l-[rgb(var(--ds-brand-cyan-rgb)/0.35)]';
+    }
+    
+    // Source-specific accent colors
+    switch (sourceType) {
+      case 'ACI':
+        return 'border-l-[3px] border-l-[rgb(var(--ds-blue-500-rgb)/0.35)]';
+      case 'Merkl':
+        return 'border-l-[3px] border-l-[rgb(var(--ds-purple-500-rgb)/0.35)]';
+      case 'Brevis':
+        return 'border-l-[3px] border-l-[rgb(var(--ds-amber-500-rgb)/0.35)]';
+      default:
+        return type === 'supply'
+          ? 'border-l-[3px] border-l-[rgb(var(--ds-emerald-500-rgb)/0.35)]'
+          : 'border-l-[3px] border-l-[rgb(var(--ds-brand-cyan-rgb)/0.35)]';
+    }
+  };
+
+  const accentClass =
+    accentBorderClass ??
+    (type === 'supply'
+      ? 'border-l-[3px] border-l-[rgb(var(--ds-emerald-500-rgb)/0.35)]'
+      : 'border-l-[3px] border-l-[rgb(var(--ds-brand-cyan-rgb)/0.35)]');
+  const valueAccentClass =
+    accentTextClass ?? (type === 'supply' ? 'ds-text-emerald-600' : 'ds-text-brand-cyan');
+  const valueBgClass =
+    accentBgClass ?? (type === 'supply' ? 'ds-bg-emerald-500-10' : 'ds-bg-brand-cyan-10');
+  const tooltipSurfaceStyle = {
+    backgroundColor: 'hsl(var(--card))',
+    backgroundImage: 'linear-gradient(180deg, hsl(var(--card)), hsl(var(--card)))',
+  } as const;
 
   const getMerklLink = (opportunity: MerklOpportunityGroup): string | undefined => {
     return opportunity.link || opportunity.opportunityLink;
@@ -141,8 +189,8 @@ const IncentiveTooltip = ({ pool, type, position, triggerCenterX, onClose, isApy
         sources.push({
           name: 'Protocol Incentive',
           value: totalProtocol,
-          color: 'text-indigo-600',
-          bgColor: 'bg-indigo-50',
+          color: 'text-foreground',
+          bgColor: 'bg-muted/60',
           sourceType: 'Protocol',
         });
       }
@@ -179,8 +227,8 @@ const IncentiveTooltip = ({ pool, type, position, triggerCenterX, onClose, isApy
           sources.push({
             name,
             value: totalValue,
-            color: 'text-purple-600',
-            bgColor: 'bg-purple-50',
+            color: 'text-foreground',
+            bgColor: 'bg-muted/60',
             sourceType: 'ACI',
             link: merit.link,
             message: merit.message,
@@ -203,8 +251,8 @@ const IncentiveTooltip = ({ pool, type, position, triggerCenterX, onClose, isApy
           sources.push({
             name: brevis.name || 'Brevis Incentive',
             value: isApy ? convertAprToApy(apr) : apr,
-            color: 'text-green-600',
-            bgColor: 'bg-green-50',
+            color: 'text-foreground',
+            bgColor: 'bg-muted/60',
             sourceType: 'Brevis',
             link: brevis.link,
             dateRange: formatDateRange(brevis.startDate, brevis.endDate) || undefined,
@@ -216,8 +264,8 @@ const IncentiveTooltip = ({ pool, type, position, triggerCenterX, onClose, isApy
       sources.push({
         name: 'Brevis Incentive',
         value: brevisValue,
-        color: 'text-green-600',
-        bgColor: 'bg-green-50',
+        color: 'text-foreground',
+        bgColor: 'bg-muted/60',
         sourceType: 'Brevis',
       });
     }
@@ -233,8 +281,8 @@ const IncentiveTooltip = ({ pool, type, position, triggerCenterX, onClose, isApy
             sources.push({
               name: opportunity.name || 'Merkl Incentive',
               value: isApy ? convertAprToApy(apr) : apr,
-              color: 'text-blue-600',
-              bgColor: 'bg-blue-50',
+              color: 'text-foreground',
+              bgColor: 'bg-muted/60',
               sourceType: 'Merkl',
               link: getMerklLink(opportunity),
               message: opportunity.message,
@@ -252,26 +300,38 @@ const IncentiveTooltip = ({ pool, type, position, triggerCenterX, onClose, isApy
   const incentiveSources = getIncentiveSources();
   const hasDetails = incentiveSources.length > 0;
 
-  useEffect(() => {
-    // Use requestAnimationFrame to ensure tooltip is fully rendered before calculating
-    const updateArrowPosition = () => {
-      if (tooltipRef.current) {
-        const tooltipRect = tooltipRef.current.getBoundingClientRect();
-        const arrowWidth = 16;
-        // Calculate arrow position: trigger center X - tooltip left - arrow width / 2
-        const calculatedLeft = triggerCenterX - tooltipRect.left - arrowWidth / 2;
-        // Clamp arrow position to stay within tooltip bounds (with some padding)
-        const minLeft = 12;
-        const maxLeft = tooltipRect.width - arrowWidth - 12;
-        setArrowLeft(Math.max(minLeft, Math.min(maxLeft, calculatedLeft)));
-      }
+  useLayoutEffect(() => {
+    const updatePosition = () => {
+      if (!tooltipRef.current) return;
+      const tooltipWidth = tooltipRef.current.offsetWidth;
+      const minLeft = 16;
+      const maxLeft = Math.max(minLeft, window.innerWidth - tooltipWidth - minLeft);
+      const baseLeft = type === 'borrow' ? triggerCenterX - tooltipWidth + 24 : position.x;
+      const nextLeft = Math.min(Math.max(baseLeft, minLeft), maxLeft);
+      setTooltipLeft(nextLeft);
+
+      const arrowWidth = 16;
+      const calculatedLeft = triggerCenterX - nextLeft - arrowWidth / 2;
+      const maxArrowLeft = tooltipWidth - arrowWidth - 12;
+      setArrowLeft(Math.max(12, Math.min(maxArrowLeft, calculatedLeft)));
     };
 
-    // Use requestAnimationFrame to wait for DOM update
-    requestAnimationFrame(() => {
-      requestAnimationFrame(updateArrowPosition);
+    // Use double RAF to ensure layout is complete, but store both IDs for cleanup
+    let innerRafId: number | null = null;
+    const outerRafId = requestAnimationFrame(() => {
+      innerRafId = requestAnimationFrame(updatePosition);
     });
-  }, [triggerCenterX, position]);
+
+    window.addEventListener('resize', updatePosition);
+
+    return () => {
+      cancelAnimationFrame(outerRafId);
+      if (innerRafId !== null) {
+        cancelAnimationFrame(innerRafId);
+      }
+      window.removeEventListener('resize', updatePosition);
+    };
+  }, [triggerCenterX, position, type]);
 
   // Mobile: bottom sheet style
   if (isMobile) {
@@ -279,114 +339,116 @@ const IncentiveTooltip = ({ pool, type, position, triggerCenterX, onClose, isApy
       <>
         {/* Background overlay */}
         <div 
-          className="fixed inset-0 z-30 bg-black/50 backdrop-blur-sm animate-in fade-in-0 duration-200" 
+          className="fixed inset-0 z-30 bg-transparent animate-in fade-in-0 duration-200" 
           onClick={onClose}
         />
         {/* Bottom sheet */}
         <div
           ref={tooltipRef}
-          className="fixed bottom-0 left-0 right-0 z-40 rounded-t-2xl border border-black/10 shadow-[0_-24px_60px_-40px_rgba(0,0,0,0.35)] animate-in slide-in-from-bottom duration-300 max-h-[80vh] overflow-y-auto"
+          className="fixed bottom-0 left-0 right-0 z-40 rounded-t-2xl border border-border/60 bg-card ds-tooltip-shadow-up animate-in slide-in-from-bottom duration-300 max-h-[80vh] overflow-y-auto"
           style={tooltipSurfaceStyle}
         >
           {/* Handle bar */}
-          <div className="sticky top-0 bg-white border-b border-gray-200 px-[var(--ds-space-4)] py-[var(--ds-space-3)] flex items-center justify-between z-10">
-            <h3 className="ds-tooltip-title text-gray-900">
+          <div className="sticky top-0 bg-card border-b border-border px-[var(--ds-space-4)] py-[var(--ds-space-3)] flex items-center justify-between z-10">
+            <h3 className="ds-tooltip-title text-foreground">
               {type === 'supply' ? 'Supply' : 'Borrow'} Incentive Details
             </h3>
             <button
               onClick={onClose}
-              className="p-[var(--ds-space-1-5)] rounded-full hover:bg-gray-100 transition-colors"
+              className="p-[var(--ds-space-1-5)] rounded-full hover:bg-muted transition-colors"
             >
-              <X className="w-5 h-5 text-gray-600" />
+              <X className="w-5 h-5 text-muted-foreground" />
             </button>
           </div>
           
           <div className="ds-tooltip-pad pt-[var(--ds-space-3)] pb-[var(--ds-space-3)]">
             {/* Detailed sources */}
             {hasDetails ? (
-              <div className="divide-y divide-gray-200/70 my-[var(--ds-space-2)]">
-                {incentiveSources.map((source, index) => (
-                  <div 
-                    key={`${source.name}-${index}`}
-                    className="ds-tooltip-item relative px-[var(--ds-space-2)] py-[var(--ds-space-1)] animate-in fade-in-0"
-                    style={{ animationDelay: `${index * 45}ms` }}
-                  >
-                    {(() => {
-                      const valueClass = 'ds-tooltip-title text-gray-900';
-                      const linkClass = 'text-gray-500 hover:text-gray-700 transition-colors';
-                      const iconSrc = source.sourceType ? getSourceIcon(source.sourceType) : null;
-                      const isBrevis = source.sourceType === 'Brevis';
-                      const isWordmark = source.sourceType === 'Brevis' || source.sourceType === 'ACI' || source.sourceType === 'Merkl';
-                      return (
-                        <div className="flex items-center justify-between gap-[var(--ds-space-2)] mb-[var(--ds-space-1)]">
-                          <div className="flex items-center gap-[var(--ds-space-1-5)] min-w-0 flex-1 pr-1">
-                            {iconSrc && (
-                              <span
-                                className={`flex items-center justify-center rounded-md ring-1 ring-black/10 shadow-sm flex-shrink-0 bg-gray-50 ${
-                                  isWordmark ? 'h-5 min-w-[44px] px-2' : 'h-5 w-5'
-                                }`}
-                              >
-                                <img
-                                  src={iconSrc}
-                                  alt={`${source.sourceType} logo`}
-                                  title={source.sourceType}
-                                  className={isWordmark ? 'h-3.5 w-auto max-w-[56px]' : 'h-3.5 w-3.5'}
-                                  loading="lazy"
-                                />
-                              </span>
-                            )}
-                            {isBrevis && !iconSrc && (
-                              <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gray-700 flex-shrink-0">
-                                Brevis
-                              </span>
-                            )}
-                            <div className="min-w-0 flex-1">
-                              <span className="ds-tooltip-title text-gray-900 truncate max-w-[220px] block">
-                                {source.name}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-[var(--ds-space-1-5)] flex-shrink-0">
-                            {source.link && (
-                              <a
-                                href={source.link}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                onClick={(e) => e.stopPropagation()}
-                                className={`${linkClass} flex items-center justify-center rounded-full border border-current/25 p-1.5 text-[10px] font-semibold`}
-                                title="View details"
-                              >
-                                <ExternalLink className="w-3.5 h-3.5" />
-                              </a>
-                            )}
-                            <span className={`${valueClass} whitespace-nowrap`}>
-                              {formatPercent(source.value)}
+              <div className="divide-y divide-border/40 my-[var(--ds-space-2)]">
+                {incentiveSources.map((source, index) => {
+                  const messageLines = getMessageLines(source.message);
+                  const valueClass = `ds-tooltip-title ${valueAccentClass}`;
+                  const linkClass = `${valueAccentClass} ${valueBgClass} transition-opacity opacity-80 hover:opacity-100`;
+                  const iconSrc = source.sourceType ? getSourceIcon(source.sourceType) : null;
+                  const isBrevis = source.sourceType === 'Brevis';
+                  const isWordmark = source.sourceType === 'Brevis' || source.sourceType === 'ACI' || source.sourceType === 'Merkl';
+                  const logoWrapperClass = isWordmark ? 'min-w-[44px] px-[6px] py-[5px]' : 'h-[20px] w-[20px]';
+                  const logoClass = isWordmark ? 'h-[11px] w-auto max-w-[60px]' : 'h-[11px] w-[11px]';
+                  return (
+                    <div 
+                      key={`${source.name}-${index}`}
+                      className={`ds-tooltip-item relative px-[var(--ds-space-2)] py-[var(--ds-space-1)] ${getSourceAccentClass(source.sourceType)} animate-in fade-in-0 slide-in-from-top-2`}
+                      style={{ animationDelay: `${index * 45}ms` }}
+                    >
+                      <div className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-1)]">
+                        <div className="flex items-center gap-[var(--ds-space-1-5)] min-w-0 flex-1 pr-1">
+                          {iconSrc && (
+                            <span
+                              className={`flex items-center justify-center rounded-md ring-1 ring-border/50 shadow-sm flex-shrink-0 bg-muted/60 ${logoWrapperClass}`}
+                            >
+                              <img
+                                src={iconSrc}
+                                alt={`${source.sourceType} logo`}
+                                title={source.sourceType}
+                                className={logoClass}
+                                loading="lazy"
+                              />
                             </span>
-                          </div>
+                          )}
+                          {isBrevis && !iconSrc && (
+                            <span className="ds-text-9 font-semibold uppercase tracking-[0.22em] text-foreground/80 flex-shrink-0">
+                              Brevis
+                            </span>
+                          )}
+                          <span className="ds-tooltip-title text-foreground break-words block min-w-0">
+                            {source.name}
+                          </span>
                         </div>
-                      );
-                    })()}
+                        <div className="flex items-center gap-[var(--ds-space-1-5)] flex-shrink-0">
+                          {source.link && (
+                            <a
+                              href={source.link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                                className={`${linkClass} flex h-7 w-7 items-center justify-center rounded-full border border-current/40 ring-1 ring-current/15 focus:outline-none focus-visible:outline-none focus-visible:ring-0`}
+                              title="Open link"
+                            >
+                              <ExternalLink className="w-3.5 h-3.5" />
+                            </a>
+                          )}
+                          <span className={`${valueClass} ${valueBgClass} whitespace-nowrap rounded-md px-[6px] py-[2px] shadow-none`}>
+                            {formatPercent(source.value)}
+                          </span>
+                        </div>
+                      </div>
                     {source.dateRange && (
-                      <p className="ds-tooltip-body text-gray-600 mt-[var(--ds-space-1)] break-words">
-                        {source.dateRange}
+                      <p className={`ds-tooltip-body mt-[var(--ds-space-1)] break-words ${valueAccentClass}`}>
+                        Campaign time: {source.dateRange}
                       </p>
                     )}
-                    {getMessageLines(source.message).map((line, lineIndex) => (
-                      <p key={`message-${index}-${lineIndex}`} className="ds-tooltip-body text-gray-600 mt-[var(--ds-space-1)] break-words">
-                        {renderHighlightedText(line)}
-                      </p>
-                    ))}
-                    {source.requiredTokens && (
-                      <p className="ds-tooltip-body text-gray-500 mt-[var(--ds-space-1)] break-words">
-                        Requires: {renderHighlightedText(Array.isArray(source.requiredTokens) ? source.requiredTokens.join(', ') : source.requiredTokens)}
-                      </p>
+                    {messageLines.length > 0 && (
+                      <ul className="mt-[var(--ds-space-1)] space-y-[var(--ds-space-1)] ds-tooltip-body text-muted-foreground">
+                        {messageLines.map((line, lineIndex) => (
+                          <li key={`message-${index}-${lineIndex}`} className="flex items-start gap-[var(--ds-space-1)]">
+                            <span className={`mt-[0.4em] h-1 w-1 rounded-full bg-current flex-shrink-0 ${valueAccentClass}`} />
+                            <span className="min-w-0 break-words">{renderHighlightedText(line)}</span>
+                          </li>
+                        ))}
+                      </ul>
                     )}
-                  </div>
-                ))}
+                      {source.requiredTokens && (
+                        <p className="ds-tooltip-body text-muted-foreground mt-[var(--ds-space-1)] break-words">
+                          Requires: {renderHighlightedText(Array.isArray(source.requiredTokens) ? source.requiredTokens.join(', ') : source.requiredTokens)}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <div className="mb-[var(--ds-space-2)]">
-                <p className="ds-tooltip-body text-gray-500 italic">
+                <p className="ds-tooltip-body text-muted-foreground italic">
                   No detailed breakdown available
                 </p>
               </div>
@@ -413,109 +475,110 @@ const IncentiveTooltip = ({ pool, type, position, triggerCenterX, onClose, isApy
       {/* Tooltip content with fade-in animation */}
       <div
         ref={tooltipRef}
-        className="fixed z-40 rounded-xl border border-black/10 shadow-[0_24px_60px_-40px_rgba(0,0,0,0.35)] ds-tooltip-pad max-w-[360px] w-[360px] animate-in fade-in-0 zoom-in-95 duration-200"
+        className="fixed z-40 rounded-xl border border-border/60 bg-card ds-tooltip-pad ds-tooltip-shadow max-w-[min(520px,calc(100vw-32px))] w-auto min-w-[240px] animate-in fade-in-0 slide-in-from-top-2 duration-200"
         style={{ 
-          left: `${Math.max(16, Math.min(position.x, window.innerWidth - 376))}px`, 
+          left: `${tooltipLeft ?? position.x}px`,
           top: `${position.y + 8}px`,
           ...tooltipSurfaceStyle,
         }}
       >
         {/* Upward-pointing arrow - dynamically positioned, appears as border extension */}
         <div 
-          className="absolute -top-2 w-4 h-4 border-l border-t border-black/10 transform rotate-45"
+          className="absolute -top-2 w-4 h-4 border-l border-t border-border/60 transform rotate-45 bg-card"
           style={{ 
             left: `${arrowLeft}px`,
-            backgroundImage: tooltipSurfaceStyle.backgroundImage,
-            backgroundSize: tooltipSurfaceStyle.backgroundSize,
+            ...tooltipSurfaceStyle,
           }}
         />
         {/* Content area */}
         <div className="w-full min-w-0">
           {/* Detailed sources */}
           {hasDetails ? (
-            <div className="divide-y divide-gray-200/70 my-[var(--ds-space-2)]">
-              {incentiveSources.map((source, index) => (
+            <div className="divide-y divide-border/40 my-[var(--ds-space-2)]">
+              {incentiveSources.map((source, index) => {
+                const messageLines = getMessageLines(source.message);
+                const valueClass = `ds-tooltip-title ${valueAccentClass}`;
+                const linkClass = `${valueAccentClass} ${valueBgClass} transition-opacity opacity-80 hover:opacity-100`;
+                const iconSrc = source.sourceType ? getSourceIcon(source.sourceType) : null;
+                const isBrevis = source.sourceType === 'Brevis';
+                const isWordmark = source.sourceType === 'Brevis' || source.sourceType === 'ACI' || source.sourceType === 'Merkl';
+                const logoWrapperClass = isWordmark ? 'min-w-[44px] px-[6px] py-[5px]' : 'h-[20px] w-[20px]';
+                const logoClass = isWordmark ? 'h-[11px] w-auto max-w-[60px]' : 'h-[11px] w-[11px]';
+                return (
                   <div 
                     key={`${source.name}-${index}`}
-                    className="ds-tooltip-item relative px-[var(--ds-space-2)] py-[var(--ds-space-1)] animate-in fade-in-0"
+                    className={`ds-tooltip-item relative px-[var(--ds-space-2)] py-[var(--ds-space-1)] ${getSourceAccentClass(source.sourceType)} animate-in fade-in-0 slide-in-from-top-2`}
                     style={{ animationDelay: `${index * 45}ms` }}
                   >
-                    {(() => {
-                      const valueClass = 'ds-tooltip-title text-gray-900';
-                      const linkClass = 'text-gray-500 hover:text-gray-700 transition-colors';
-                      const iconSrc = source.sourceType ? getSourceIcon(source.sourceType) : null;
-                      const isBrevis = source.sourceType === 'Brevis';
-                      const isWordmark = source.sourceType === 'Brevis' || source.sourceType === 'ACI' || source.sourceType === 'Merkl';
-                      return (
-                        <div className="flex items-center justify-between gap-[var(--ds-space-2)] mb-[var(--ds-space-1)]">
-                          <div className="flex items-center gap-[var(--ds-space-1-5)] min-w-0 flex-1 pr-1">
-                            {iconSrc && (
-                              <span
-                                className={`flex items-center justify-center rounded-md ring-1 ring-black/10 shadow-sm flex-shrink-0 bg-gray-50 ${
-                                  isWordmark ? 'h-5 min-w-[44px] px-2' : 'h-5 w-5'
-                                }`}
-                              >
-                                <img
-                                  src={iconSrc}
-                                  alt={`${source.sourceType} logo`}
-                                  title={source.sourceType}
-                                  className={isWordmark ? 'h-3.5 w-auto max-w-[56px]' : 'h-3.5 w-3.5'}
-                                  loading="lazy"
-                                />
-                              </span>
-                            )}
-                            {isBrevis && !iconSrc && (
-                              <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gray-700 flex-shrink-0">
-                                Brevis
-                              </span>
-                            )}
-                            <div className="min-w-0 flex-1">
-                              <span className="ds-tooltip-title text-gray-900 truncate max-w-[220px] block">
-                                {source.name}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-[var(--ds-space-1-5)] flex-shrink-0">
-                            {source.link && (
-                              <a
-                                href={source.link}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                onClick={(e) => e.stopPropagation()}
-                                className={`${linkClass} flex items-center justify-center rounded-full border border-current/25 p-1.5 text-[10px] font-semibold`}
-                                title="View details"
-                              >
-                                <ExternalLink className="w-3.5 h-3.5" />
-                              </a>
-                            )}
-                            <span className={`${valueClass} whitespace-nowrap`}>
-                              {formatPercent(source.value)}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })()}
-                  {source.dateRange && (
-                    <p className="ds-tooltip-body text-gray-600 mt-[var(--ds-space-1)] break-words">
-                      {source.dateRange}
-                    </p>
-                  )}
-                  {getMessageLines(source.message).map((line, lineIndex) => (
-                    <p key={`message-desktop-${index}-${lineIndex}`} className="ds-tooltip-body text-gray-600 mt-[var(--ds-space-1)] break-words">
-                      {renderHighlightedText(line)}
-                    </p>
-                  ))}
-                  {source.requiredTokens && (
-                    <p className="ds-tooltip-body text-gray-500 mt-[var(--ds-space-1)] break-words">
-                      Requires: {renderHighlightedText(Array.isArray(source.requiredTokens) ? source.requiredTokens.join(', ') : source.requiredTokens)}
-                    </p>
-                  )}
-                </div>
-              ))}
+                    <div className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-1)]">
+                      <div className="flex items-center gap-[var(--ds-space-1-5)] min-w-0 flex-1 pr-1">
+                        {iconSrc && (
+                          <span
+                            className={`flex items-center justify-center rounded-md ring-1 ring-border/50 shadow-sm flex-shrink-0 bg-muted/60 ${logoWrapperClass}`}
+                          >
+                            <img
+                              src={iconSrc}
+                              alt={`${source.sourceType} logo`}
+                              title={source.sourceType}
+                              className={logoClass}
+                              loading="lazy"
+                            />
+                          </span>
+                        )}
+                        {isBrevis && !iconSrc && (
+                          <span className="ds-text-9 font-semibold uppercase tracking-[0.22em] text-foreground/80 flex-shrink-0">
+                            Brevis
+                          </span>
+                        )}
+                        <span className="ds-tooltip-title text-foreground break-words block min-w-0">
+                          {source.name}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-[var(--ds-space-1-5)] flex-shrink-0">
+                        {source.link && (
+                          <a
+                            href={source.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className={`${linkClass} flex h-7 w-7 items-center justify-center rounded-full border border-current/40 ring-1 ring-current/15 focus:outline-none focus-visible:outline-none focus-visible:ring-0`}
+                            title="Open link"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </a>
+                        )}
+                        <span className={`${valueClass} ${valueBgClass} whitespace-nowrap rounded-md px-[6px] py-[2px] shadow-none`}>
+                          {formatPercent(source.value)}
+                        </span>
+                      </div>
+                    </div>
+                    {source.dateRange && (
+                      <p className={`ds-tooltip-body mt-[var(--ds-space-1)] break-words ${valueAccentClass}`}>
+                        Campaign time: {source.dateRange}
+                      </p>
+                    )}
+                    {messageLines.length > 0 && (
+                      <ul className="mt-[var(--ds-space-1)] space-y-[var(--ds-space-1)] ds-tooltip-body text-muted-foreground">
+                        {messageLines.map((line, lineIndex) => (
+                          <li key={`message-desktop-${index}-${lineIndex}`} className="flex items-start gap-[var(--ds-space-1)]">
+                            <span className={`mt-[0.4em] h-1 w-1 rounded-full bg-current flex-shrink-0 ${valueAccentClass}`} />
+                            <span className="min-w-0 break-words">{renderHighlightedText(line)}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {source.requiredTokens && (
+                      <p className="ds-tooltip-body text-muted-foreground mt-[var(--ds-space-1)] break-words">
+                        Requires: {renderHighlightedText(Array.isArray(source.requiredTokens) ? source.requiredTokens.join(', ') : source.requiredTokens)}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <div className="mb-[var(--ds-space-2)]">
-              <p className="ds-tooltip-body text-gray-500 italic">
+              <p className="ds-tooltip-body text-muted-foreground italic">
                 No detailed breakdown available
               </p>
             </div>

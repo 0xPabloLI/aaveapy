@@ -39,11 +39,48 @@
     --ds-icon-button: 1.75rem;
     --ds-tooltip-pad: 0.75rem;
     --ds-tooltip-item-pad: 0.5rem;
-    --ds-row-pad-y: 0.625rem;
+    --ds-row-pad-y: 0.5rem;
     --ds-card-pad: 1rem;
     --ds-card-pad-sm: 0.75rem;
     --ds-dot: 0.5rem;
     --ds-dot-active: 0.625rem;
+    --ds-shadow-rgb: 0 0 0;
+    --ds-gradient-primary: 308 51% 51%;
+    --ds-gradient-secondary: 175 71% 47%;
+    --ds-white: 0 0% 100%;
+    --ds-tooltip-white-rgb: 255 255 255;
+    --ds-tooltip-warm-rgb: 255 196 0;
+    --ds-tooltip-cool-rgb: 14 116 144;
+    --ds-tooltip-grid-rgb: 0 0 0;
+    --ds-tooltip-surface-image:
+      linear-gradient(180deg, rgb(var(--ds-tooltip-white-rgb) / 0.9), rgb(var(--ds-tooltip-white-rgb) / 0.98)),
+      radial-gradient(900px 220px at 5% -10%, rgb(var(--ds-tooltip-warm-rgb) / 0.10), transparent 60%),
+      radial-gradient(700px 220px at 100% 0%, rgb(var(--ds-tooltip-cool-rgb) / 0.10), transparent 55%),
+      linear-gradient(90deg, rgb(var(--ds-tooltip-grid-rgb) / 0.03) 1px, transparent 1px),
+      linear-gradient(0deg, rgb(var(--ds-tooltip-grid-rgb) / 0.03) 1px, transparent 1px);
+    --ds-tooltip-surface-size: auto, auto, auto, 18px 18px, 18px 18px;
+    --ds-tooltip-shadow: 0 24px 60px -40px rgb(var(--ds-shadow-rgb) / 0.35);
+    --ds-tooltip-shadow-up: 0 -24px 60px -40px rgb(var(--ds-shadow-rgb) / 0.35);
+    --ds-emerald-50-rgb: 236 253 245;
+    --ds-emerald-200-rgb: 167 243 208;
+    --ds-emerald-500-rgb: 16 185 129;
+    --ds-emerald-600-rgb: 5 150 105;
+    --ds-emerald-700-rgb: 4 120 87;
+    --ds-teal-400-rgb: 45 212 191;
+    --ds-teal-500-rgb: 20 184 166;
+    --ds-cyan-500-rgb: 6 182 212;
+    --ds-purple-500-rgb: 168 85 247;
+    --ds-purple-600-rgb: 147 51 234;
+    --ds-purple-700-rgb: 126 34 206;
+    --ds-pink-400-rgb: 244 114 182;
+    --ds-amber-500-rgb: 245 158 11;
+    --ds-amber-600-rgb: 217 119 6;
+    --ds-amber-100-rgb: 254 243 199;
+    --ds-amber-300-rgb: 252 211 77;
+    --ds-blue-500-rgb: 59 130 246;
+    --ds-brand-cyan-rgb: 26 163 199;
+    --ds-brand-magenta-rgb: 194 66 177;
+    --ds-on-brand-rgb: 255 255 255;
   }
 }
 
@@ -159,15 +196,28 @@
   }
 
   .ds-tooltip-title {
-    font-size: var(--ds-text-11);
-    line-height: calc(var(--ds-text-11) * var(--ds-leading-11));
+    font-size: var(--ds-text-14);
+    line-height: calc(var(--ds-text-14) * var(--ds-leading-11));
     font-weight: 600;
   }
 
   .ds-tooltip-body {
-    font-size: var(--ds-text-11);
-    line-height: calc(var(--ds-text-11) * var(--ds-leading-11));
+    font-size: var(--ds-text-12);
+    line-height: calc(var(--ds-text-12) * var(--ds-leading-11));
     font-weight: 500;
+  }
+
+  .ds-tooltip-surface {
+    background-image: var(--ds-tooltip-surface-image);
+    background-size: var(--ds-tooltip-surface-size);
+  }
+
+  .ds-tooltip-shadow {
+    box-shadow: var(--ds-tooltip-shadow);
+  }
+
+  .ds-tooltip-shadow-up {
+    box-shadow: var(--ds-tooltip-shadow-up);
   }
 
   .ds-row-pad {
@@ -191,5 +241,207 @@
   .ds-dot-active {
     width: var(--ds-dot-active);
     height: var(--ds-dot-active);
+  }
+
+  .ds-text-emerald-500 {
+    color: rgb(var(--ds-emerald-500-rgb));
+  }
+
+  .ds-text-emerald-600 {
+    color: rgb(var(--ds-emerald-600-rgb));
+  }
+
+  .ds-text-emerald-700 {
+    color: rgb(var(--ds-emerald-700-rgb));
+  }
+
+  .ds-text-emerald-500-70 {
+    color: rgb(var(--ds-emerald-500-rgb) / 0.7);
+  }
+
+  .ds-text-emerald-600-70 {
+    color: rgb(var(--ds-emerald-600-rgb) / 0.7);
+  }
+
+  .ds-text-teal-500-70 {
+    color: rgb(var(--ds-teal-500-rgb) / 0.7);
+  }
+
+  .ds-text-teal-400-70 {
+    color: rgb(var(--ds-teal-400-rgb) / 0.7);
+  }
+
+  .ds-text-cyan-500-70 {
+    color: rgb(var(--ds-cyan-500-rgb) / 0.7);
+  }
+
+  .ds-text-purple-500 {
+    color: rgb(var(--ds-purple-500-rgb));
+  }
+
+  .ds-text-purple-600 {
+    color: rgb(var(--ds-purple-600-rgb));
+  }
+
+  .ds-text-purple-700 {
+    color: rgb(var(--ds-purple-700-rgb));
+  }
+
+  .ds-text-purple-600-70 {
+    color: rgb(var(--ds-purple-600-rgb) / 0.7);
+  }
+
+  .ds-text-purple-500-70 {
+    color: rgb(var(--ds-purple-500-rgb) / 0.7);
+  }
+
+  .ds-text-pink-400-70 {
+    color: rgb(var(--ds-pink-400-rgb) / 0.7);
+  }
+
+  .ds-text-amber-600 {
+    color: rgb(var(--ds-amber-600-rgb));
+  }
+
+  .ds-text-amber-700 {
+    color: rgb(var(--ds-amber-600-rgb) / 0.85);
+  }
+
+  .ds-text-amber-900 {
+    color: rgb(var(--ds-amber-600-rgb));
+  }
+
+  .ds-text-amber-500 {
+    color: rgb(var(--ds-amber-500-rgb));
+  }
+
+  .ds-text-blue-500 {
+    color: rgb(var(--ds-blue-500-rgb));
+  }
+
+  .ds-bg-emerald-50 {
+    background-color: rgb(var(--ds-emerald-50-rgb));
+  }
+
+  .ds-bg-emerald-50-50 {
+    background-color: rgb(var(--ds-emerald-50-rgb) / 0.5);
+  }
+
+  .ds-bg-emerald-500-10 {
+    background-color: rgb(var(--ds-emerald-500-rgb) / 0.1);
+  }
+
+  .ds-bg-emerald-500-20 {
+    background-color: rgb(var(--ds-emerald-500-rgb) / 0.2);
+  }
+
+  .ds-bg-purple-50 {
+    background-color: rgb(var(--ds-purple-500-rgb) / 0.08);
+  }
+
+  .ds-bg-purple-500-10 {
+    background-color: rgb(var(--ds-purple-500-rgb) / 0.1);
+  }
+
+  .ds-bg-amber-500-10 {
+    background-color: rgb(var(--ds-amber-500-rgb) / 0.1);
+  }
+
+  .ds-bg-blue-500-10 {
+    background-color: rgb(var(--ds-blue-500-rgb) / 0.1);
+  }
+
+  .ds-bg-teal-500-10 {
+    background-color: rgb(var(--ds-teal-500-rgb) / 0.1);
+  }
+
+  .ds-bg-teal-400-10 {
+    background-color: rgb(var(--ds-teal-400-rgb) / 0.1);
+  }
+
+  .ds-bg-cyan-500-10 {
+    background-color: rgb(var(--ds-cyan-500-rgb) / 0.1);
+  }
+
+  .ds-border-emerald-200 {
+    border-color: rgb(var(--ds-emerald-200-rgb));
+  }
+
+  .ds-border-purple-200 {
+    border-color: rgb(var(--ds-purple-500-rgb) / 0.2);
+  }
+
+  .ds-border-amber-500-50 {
+    border-color: rgb(var(--ds-amber-500-rgb) / 0.5);
+  }
+
+  .ds-ring-emerald-500-15 {
+    --tw-ring-color: rgb(var(--ds-emerald-500-rgb) / 0.15);
+  }
+
+  .ds-ring-teal-500-15 {
+    --tw-ring-color: rgb(var(--ds-teal-500-rgb) / 0.15);
+  }
+
+  .ds-ring-teal-400-15 {
+    --tw-ring-color: rgb(var(--ds-teal-400-rgb) / 0.15);
+  }
+
+  .ds-ring-cyan-500-15 {
+    --tw-ring-color: rgb(var(--ds-cyan-500-rgb) / 0.15);
+  }
+
+  .ds-text-brand-cyan {
+    color: rgb(var(--ds-brand-cyan-rgb));
+  }
+
+  .ds-text-brand-cyan-70 {
+    color: rgb(var(--ds-brand-cyan-rgb) / 0.7);
+  }
+
+  .ds-bg-brand-cyan-10 {
+    background-color: rgb(var(--ds-brand-cyan-rgb) / 0.1);
+  }
+
+  .ds-bg-brand-cyan-20 {
+    background-color: rgb(var(--ds-brand-cyan-rgb) / 0.2);
+  }
+
+  .ds-border-brand-cyan-20 {
+    border-color: rgb(var(--ds-brand-cyan-rgb) / 0.2);
+  }
+
+  .ds-ring-brand-cyan-15 {
+    --tw-ring-color: rgb(var(--ds-brand-cyan-rgb) / 0.15);
+  }
+
+  .ds-text-brand-magenta {
+    color: rgb(var(--ds-brand-magenta-rgb));
+  }
+
+  .ds-text-on-brand {
+    color: rgb(var(--ds-on-brand-rgb));
+  }
+
+  .ds-bg-brand-magenta-10 {
+    background-color: rgb(var(--ds-brand-magenta-rgb) / 0.1);
+  }
+
+  .ds-border-brand-magenta-40 {
+    border-color: rgb(var(--ds-brand-magenta-rgb) / 0.4);
+  }
+
+  .ds-ring-brand-magenta-60 {
+    --tw-ring-color: rgb(var(--ds-brand-magenta-rgb) / 0.6);
+  }
+}
+
+@layer utilities {
+  .dark .ds-text-amber-900 {
+    color: rgb(var(--ds-amber-100-rgb));
+  }
+
+  .dark .ds-text-amber-700 {
+    color: rgb(var(--ds-amber-300-rgb));
   }
 }

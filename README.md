@@ -30,6 +30,12 @@ git clone <YOUR_GIT_URL>
 cd <YOUR_PROJECT_NAME>
 
 # Step 3: Install the necessary dependencies.
+# Note: The .npmrc file contains Linux platform settings required for Lovable deployments.
+# If you're developing on macOS or Windows, override them during installation:
+#   macOS:   NPM_CONFIG_PLATFORM=darwin npm i
+#   Windows: NPM_CONFIG_PLATFORM=win32 npm i
+#   Linux:   npm i (uses .npmrc settings)
+# See .npmrc.local.example for more details.
 npm i
 
 # Step 4: Start the development server with auto-reloading and an instant preview.

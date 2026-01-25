@@ -237,7 +237,7 @@ const FilterBar = ({
             }}
             className={`ds-chip px-[var(--ds-space-2)] md:px-[var(--ds-space-2-5)] py-[var(--ds-space-1)] rounded-md font-medium transition-all ${
               selectedCategory === category.value
-                ? 'bg-[#c242b1] text-white'
+                ? 'bg-[rgb(var(--ds-brand-magenta-rgb))] ds-text-on-brand'
                 : 'bg-card/60 text-muted-foreground hover:text-foreground hover:bg-card border border-border/40'
             }`}
           >
@@ -253,7 +253,7 @@ const FilterBar = ({
             placeholder={searchPlaceholder}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-[var(--ds-space-7)] md:pl-[var(--ds-space-8)] pr-[var(--ds-space-6)] md:pr-[var(--ds-space-7)] bg-card/50 border-border/50 focus:border-[#c242b1] focus-visible:ring-0 focus-visible:ring-offset-0 h-7 ds-text-11"
+            className="pl-[var(--ds-space-7)] md:pl-[var(--ds-space-8)] pr-[var(--ds-space-6)] md:pr-[var(--ds-space-7)] bg-card/50 border-border/50 focus:border-[rgb(var(--ds-brand-magenta-rgb))] focus-visible:ring-0 focus-visible:ring-offset-0 h-7 ds-text-11"
           />
           {searchQuery && (
             <button
@@ -274,7 +274,7 @@ const FilterBar = ({
           <Switch
             checked={isApy}
             onCheckedChange={setIsApy}
-            className="data-[state=checked]:bg-[#c242b1] scale-[0.65] md:scale-75"
+            className="data-[state=checked]:bg-[rgb(var(--ds-brand-magenta-rgb))] scale-[0.65] md:scale-75"
           />
           <span className={isApy ? 'text-foreground font-medium' : ''}>APY</span>
         </div>
@@ -289,7 +289,7 @@ const FilterBar = ({
             placeholder={searchPlaceholder}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-[var(--ds-space-7)] pr-[var(--ds-space-6)] bg-card/50 border-border/50 focus:border-[#c242b1] focus-visible:ring-0 focus-visible:ring-offset-0 h-7 ds-text-11"
+            className="pl-[var(--ds-space-7)] pr-[var(--ds-space-6)] bg-card/50 border-border/50 focus:border-[rgb(var(--ds-brand-magenta-rgb))] focus-visible:ring-0 focus-visible:ring-offset-0 h-7 ds-text-11"
           />
           {searchQuery && (
             <button
@@ -311,8 +311,8 @@ const FilterBar = ({
           onClick={() => setSelectedMarkets([])}
           className={`ds-chip px-[var(--ds-space-2)] md:px-[var(--ds-space-2-5)] py-[var(--ds-space-1)] rounded-md font-medium transition-all ${
             noMarketsSelected
-              ? 'text-[#c242b1] border border-[#c242b1] shadow-sm'
-              : 'text-slate-700 border border-slate-200 hover:text-slate-900'
+              ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
+              : 'text-foreground/80 border border-border hover:text-foreground'
           }`}
         >
           All
@@ -329,8 +329,8 @@ const FilterBar = ({
               onClick={() => toggleMarket(market.marketName)}
             className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-1-5)] md:px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-md font-medium transition-all ${
               isSelected
-                ? 'text-[#c242b1] border border-[#c242b1] shadow-sm'
-                : 'text-slate-700 border border-slate-200 hover:text-slate-900'
+                ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
+                : 'text-foreground/80 border border-border hover:text-foreground'
             }`}
               title={isEthereum ? `Ethereum ${info.label}` : market.chainName}
             >
@@ -344,7 +344,7 @@ const FilterBar = ({
         {hasHiddenMarkets && !showMarketsExpanded && (
           <button
           onClick={() => setShowMarketsExpanded(true)}
-          className="ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-1-5)] md:px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-md font-medium transition-all text-[#c242b1] border border-[#c242b1]/40 border-dashed"
+          className="ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-1-5)] md:px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-md font-medium transition-all ds-text-brand-magenta border ds-border-brand-magenta-40 border-dashed"
         >
             <span>{hiddenMarkets.length}+ more</span>
             <ChevronDown className="w-3 h-3" />
@@ -362,8 +362,8 @@ const FilterBar = ({
               onClick={() => toggleMarket(market.marketName)}
             className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-1-5)] md:px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-md font-medium transition-all ${
               isSelected
-                ? 'text-[#c242b1] border border-[#c242b1] shadow-sm'
-                : 'text-slate-700 border border-slate-200 hover:text-slate-900'
+                ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
+                : 'text-foreground/80 border border-border hover:text-foreground'
             }`}
               title={isEthereum ? `Ethereum ${info.label}` : market.chainName}
             >
@@ -377,7 +377,7 @@ const FilterBar = ({
         {showMarketsExpanded && (
           <button
           onClick={() => setShowMarketsExpanded(false)}
-          className="ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-1-5)] md:px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-md font-medium transition-all text-[#c242b1] border border-[#c242b1]/40 border-dashed"
+          className="ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-1-5)] md:px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-md font-medium transition-all ds-text-brand-magenta border ds-border-brand-magenta-40 border-dashed"
         >
             <ChevronUp className="w-3 h-3" />
             <span>Less</span>

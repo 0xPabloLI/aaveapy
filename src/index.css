@@ -29,7 +29,7 @@
     --secondary: 24 5% 44%;
     --secondary-foreground: 60 9% 97%;
 
-    --muted: 23 5% 82%;
+    --muted: 23 5% 88%;
     --muted-foreground: 24 9% 10%;
 
     --accent: 47 100% 96%;
@@ -157,7 +157,7 @@
 /* Custom utility classes for Aave styling */
 @layer utilities {
   .gradient-text {
-    background: linear-gradient(135deg, hsl(308 51% 51%) 0%, hsl(175 71% 47%) 100%);
+    background: linear-gradient(135deg, hsl(var(--ds-gradient-primary)) 0%, hsl(var(--ds-gradient-secondary)) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -175,8 +175,8 @@
     inset: 0;
     padding: 1px;
     border-radius: var(--radius);
-    background: linear-gradient(135deg, hsl(308 51% 51%) 0%, hsl(175 71% 47%) 100%);
-    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    background: linear-gradient(135deg, hsl(var(--ds-gradient-primary)) 0%, hsl(var(--ds-gradient-secondary)) 100%);
+    -webkit-mask: linear-gradient(hsl(var(--ds-white)) 0 0) content-box, linear-gradient(hsl(var(--ds-white)) 0 0);
     -webkit-mask-composite: xor;
     mask-composite: exclude;
     pointer-events: none;
@@ -189,11 +189,11 @@
   }
 
   .glow-primary {
-    box-shadow: 0 0 40px hsl(308 51% 51% / 0.2);
+    box-shadow: 0 0 40px hsl(var(--ds-gradient-primary) / 0.2);
   }
 
   .glow-secondary {
-    box-shadow: 0 0 40px hsl(175 71% 47% / 0.2);
+    box-shadow: 0 0 40px hsl(var(--ds-gradient-secondary) / 0.2);
   }
 
   .animate-pulse-slow {

@@ -90,7 +90,7 @@ const LoadingState = () => {
             <Skeleton className="h-5 w-20" />
           </div>
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="bg-white rounded-xl border border-gray-100 ds-card-pad-sm">
+            <div key={i} className="bg-card rounded-xl border border-border/60 ds-card-pad-sm">
               <div className="flex items-center justify-between mb-[var(--ds-space-3)]">
                 <div className="flex items-center gap-[var(--ds-space-3)]">
                   <Skeleton className="w-10 h-10 rounded-full" />
