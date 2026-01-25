@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useAaveMarkets, useAaveMarketStats, useAaveMarketsList } from '@/hooks/useAaveMarkets';
 import { useQueryClient } from '@tanstack/react-query';
-import { SortField, SortOrder, TokenCategory } from '@/types/aave';
+import { SortField, SortOrder, TokenCategory, PoolWithSpread } from '@/types/aave';
 import {
   buildTokenCategoryGroups,
   isStablecoinSymbol,
@@ -16,6 +16,7 @@ import TopOpportunities from '@/components/dashboard/TopOpportunities';
 import PoolsTable from '@/components/dashboard/PoolsTable';
 import LoadingState from '@/components/dashboard/LoadingState';
 import PullToRefresh from '@/components/dashboard/PullToRefresh';
+import IncentiveTooltip from '@/components/dashboard/IncentiveTooltip';
 import { getCachedMarkets, getCachedMarketStats, getCachedMarketsList } from '@/lib/cache';
 import { AlertTriangle } from 'lucide-react';
 
@@ -28,6 +29,13 @@ const Index = () => {
   const [selectedCategory, setSelectedCategory] = useState<TokenCategory>('all');
   const [isApy, setIsApy] = useState(true);
   const [showCacheWarning, setShowCacheWarning] = useState(false);
+  const [showMarketsExpanded, setShowMarketsExpanded] = useState(false);
+  const [topTooltipState, setTopTooltipState] = useState<{
+    pool: PoolWithSpread;
+    type: 'supply' | 'borrow';
+    position: { x: number; y: number };
+    triggerCenterX: number;
+  } | null>(null);
 
   const queryClient = useQueryClient();
 
@@ -47,6 +55,18 @@ const Index = () => {
   const effectivePoolsData = poolsData || cachedPoolsData;
   const effectiveStats = stats || cachedStats;
   const effectiveMarketsList = marketsList || cachedMarketsList;
+
+  const orderedMarkets = useMemo(() => {
+    const list = effectiveMarketsList || [];
+    const ethereum = list.filter((market) => market.chainName === 'Ethereum');
+    const others = list.filter((market) => market.chainName !== 'Ethereum');
+    return [...ethereum, ...others];
+  }, [effectiveMarketsList]);
+
+  const hiddenMarketNames = useMemo(
+    () => orderedMarkets.slice(6).map((market) => market.marketName),
+    [orderedMarkets]
+  );
 
   // Check if we're using cached data
   // Only show once loading is done to avoid flashing the banner on initial load.
@@ -70,6 +90,13 @@ const Index = () => {
     return () => window.clearTimeout(timer);
   }, [isUsingCache]);
 
+  useEffect(() => {
+    if (selectedMarkets.length !== 1) return;
+    if (hiddenMarketNames.includes(selectedMarkets[0])) {
+      setShowMarketsExpanded(true);
+    }
+  }, [hiddenMarketNames, selectedMarkets]);
+
   // Stable reference for pools data to prevent TopOpportunities from re-rendering
   // when filters change (only update when actual data changes)
   const stablePools = useMemo(() => {
@@ -89,6 +116,15 @@ const Index = () => {
       refetchMarketsList(),
     ]);
   }, [refetch, refetchStats, refetchMarketsList]);
+
+  const handleTopIncentiveClick = useCallback((payload: {
+    pool: PoolWithSpread;
+    type: 'supply' | 'borrow';
+    position: { x: number; y: number };
+    triggerCenterX: number;
+  }) => {
+    setTopTooltipState(payload);
+  }, []);
 
   // Handle sort
   const handleSort = (field: SortField) => {
@@ -164,16 +200,16 @@ const Index = () => {
         <div className="fixed inset-0 bg-gradient-radial from-primary/5 via-transparent to-transparent pointer-events-none" />
         <div className="fixed top-0 right-0 w-1/2 h-1/2 bg-gradient-radial from-secondary/5 via-transparent to-transparent pointer-events-none" />
 
-        <div className="relative z-10 container mx-auto px-3 md:px-4 py-4 md:py-8 space-y-4 md:space-y-8">
+        <div className="relative z-10 container mx-auto px-[var(--ds-space-3)] md:px-[var(--ds-space-4)] py-[var(--ds-space-4)] md:py-[var(--ds-space-8)] space-y-4 md:space-y-8">
           {/* Cache warning banner */}
           {showCacheWarning && (
-            <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-3 md:p-4 flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+            <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-[var(--ds-space-3)] md:p-[var(--ds-space-4)] flex items-start gap-[var(--ds-space-3)]">
+              <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-[var(--ds-space-0-5)]" />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+                <p className="ds-text-14 font-medium text-amber-900 dark:text-amber-100">
                   Using cached data
                 </p>
-                <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                <p className="ds-text-11 text-amber-700 dark:text-amber-300 mt-[var(--ds-space-1)]">
                   Unable to fetch latest data. Displaying cached information. Please check your connection and try refreshing.
                 </p>
               </div>
@@ -182,13 +218,13 @@ const Index = () => {
 
           {/* Error banner (only show if no cache available) */}
           {error && !cachedPoolsData && (
-            <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 md:p-4 flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+            <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-[var(--ds-space-3)] md:p-[var(--ds-space-4)] flex items-start gap-[var(--ds-space-3)]">
+              <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-[var(--ds-space-0-5)]" />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-destructive">
+                <p className="ds-text-14 font-medium text-destructive">
                   Failed to load data
                 </p>
-                <p className="text-xs text-destructive/80 mt-1">
+                <p className="ds-text-11 text-destructive/80 mt-[var(--ds-space-1)]">
                   {(error as Error).message || 'An unexpected error occurred. Please check your connection and try again later.'}
                 </p>
               </div>
@@ -197,13 +233,13 @@ const Index = () => {
 
           {/* No data warning banner (when there's no data, no error, and no cache) */}
           {!effectivePoolsData && !isLoading && !error && !cachedPoolsData && (
-            <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 md:p-4 flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+            <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-[var(--ds-space-3)] md:p-[var(--ds-space-4)] flex items-start gap-[var(--ds-space-3)]">
+              <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-[var(--ds-space-0-5)]" />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-destructive">
+                <p className="ds-text-14 font-medium text-destructive">
                   No data available
                 </p>
-                <p className="text-xs text-destructive/80 mt-1">
+                <p className="ds-text-11 text-destructive/80 mt-[var(--ds-space-1)]">
                   Unable to load data. Please check your connection and try refreshing the page.
                 </p>
               </div>
@@ -217,7 +253,12 @@ const Index = () => {
 
           {/* Top Opportunities */}
           {stablePools && stablePools.length > 0 && (
-            <TopOpportunities pools={stablePools} isApy={isApy} categoryGroups={tokenCategoryGroups} />
+            <TopOpportunities
+              pools={stablePools}
+              isApy={isApy}
+              categoryGroups={tokenCategoryGroups}
+              onIncentiveClick={handleTopIncentiveClick}
+            />
           )}
 
           {/* Filters */}
@@ -231,6 +272,8 @@ const Index = () => {
             isApy={isApy}
             setIsApy={setIsApy}
             marketsList={effectiveMarketsList}
+            showMarketsExpanded={showMarketsExpanded}
+            setShowMarketsExpanded={setShowMarketsExpanded}
           />
 
           {/* Pools Table */}
@@ -240,25 +283,42 @@ const Index = () => {
             sortOrder={sortOrder}
             onSort={handleSort}
             isApy={isApy}
+            onSelectMarket={(marketName) => {
+              setSelectedMarkets((prev) =>
+                prev.length === 1 && prev[0] === marketName ? [] : [marketName]
+              );
+            }}
           />
+
+          {topTooltipState && (
+            <IncentiveTooltip
+              pool={topTooltipState.pool}
+              type={topTooltipState.type}
+              position={topTooltipState.position}
+              triggerCenterX={topTooltipState.triggerCenterX}
+              onClose={() => setTopTooltipState(null)}
+              isApy={isApy}
+              usePortal
+            />
+          )}
 
           {/* Empty state */}
           {filteredPools.length === 0 && effectivePoolsData && (
-            <div className="text-center py-12">
+            <div className="text-center py-[var(--ds-space-12)]">
               <p className="text-muted-foreground">No pools found matching your filters</p>
             </div>
           )}
 
           {/* No data state (when there's no data at all, not even cache) - only show if no banner is shown */}
           {!effectivePoolsData && !isLoading && (error || !cachedPoolsData) && (
-            <div className="text-center py-12">
+            <div className="text-center py-[var(--ds-space-12)]">
               <p className="text-muted-foreground">No data to display</p>
             </div>
           )}
 
           {/* Footer */}
-          <footer className="text-center py-8 border-t border-border/50">
-            <p className="text-sm text-muted-foreground">
+          <footer className="text-center py-[var(--ds-space-8)] border-t border-border/50">
+            <p className="ds-text-14 text-muted-foreground">
               Data sourced from{' '}
               <a 
                 href="https://app.aave.com" 

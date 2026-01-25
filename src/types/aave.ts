@@ -3,10 +3,14 @@ export interface MeritIncentive {
   apr: number;                         // APR percentage value (e.g., 5.2 means 5.2%)
   selfApr?: number;                    // Self APR percentage value (if there's a corresponding self- prefixed key)
   link: string;                        // Merit campaign detail page link
+  name?: string;                       // Merit campaign name (optional)
+  message?: string;                    // Merit campaign message/description (optional)
   startDate: string;                   // Campaign start date
   endDate: string;                     // Campaign end date
-  requiredBorrowTokens?: string[];      // List of tokens that need to be borrowed (for supply with borrow requirement), 'multiple' means any token
-  requiredSupplyTokens?: string[];      // List of tokens that need to be supplied (for borrow with supply requirement), 'multiple' means any token
+  startBlock?: string;                 // Campaign start block (optional)
+  endBlock?: string;                   // Campaign end block (optional)
+  requiredBorrowTokens?: string[] | string; // List of tokens to borrow, 'multiple' means any token
+  requiredSupplyTokens?: string[] | string; // List of tokens to supply, 'multiple' means any token
 }
 
 // Merkl opportunity data structure
@@ -20,8 +24,19 @@ export interface MerklCampaignBreakdown {
 }
 
 export interface MerklOpportunityGroup {
-  opportunityLink: string;            // Opportunity detail page link
+  link?: string;                       // Opportunity detail page link (preferred)
+  opportunityLink?: string;            // Backward-compatible link field
+  name?: string;                       // Opportunity name (optional)
+  message?: string;                    // Opportunity message/description (optional)
   breakdowns: MerklCampaignBreakdown[]; // All breakdowns for this opportunity
+}
+
+export interface BrevisIncentive {
+  apr: number;                         // APR percentage value (e.g., 1.5 means 1.5%)
+  link: string;                        // Brevis campaign detail link
+  startDate: string;                   // Campaign start date
+  endDate: string;                     // Campaign end date
+  name: string;                        // Campaign name
 }
 
 export interface PoolWithSpread {
@@ -52,7 +67,11 @@ export interface PoolWithSpread {
   merklBorrows?: MerklOpportunityGroup[];
   merklHolds?: MerklOpportunityGroup[];
   
-  // Brevis APR incentives (percentage value)
+  // Brevis APR incentives (array of objects)
+  brevisSupplys?: BrevisIncentive[];
+  brevisBorrows?: BrevisIncentive[];
+
+  // Deprecated: legacy single APR fields
   brevisSupplyApr?: number;
   brevisBorrowApr?: number;
 }

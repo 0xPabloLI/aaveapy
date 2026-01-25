@@ -60,7 +60,7 @@ export const truncateAddress = (address: string): string => {
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 };
 
-import type { MeritIncentive, MerklOpportunityGroup } from '@/types/aave';
+import type { MeritIncentive, MerklOpportunityGroup, BrevisIncentive } from '@/types/aave';
 
 /**
  * Helper: Sum valid APR values from an array of numbers
@@ -144,6 +144,33 @@ const getValidApr = (apr?: number | null): number => {
 };
 
 /**
+ * Helper: Sum Brevis incentives (supports array or legacy single APR)
+ */
+const sumBrevisIncentives = (brevis?: BrevisIncentive[] | number | null): number => {
+  if (Array.isArray(brevis)) {
+    return brevis.reduce((sum, entry) => {
+      const apr = entry.apr;
+      return sum + (!isNaN(apr) && apr > 0 ? apr : 0);
+    }, 0);
+  }
+  return getValidApr(brevis);
+};
+
+/**
+ * Helper: Sum Brevis incentives as APY (supports array or legacy single APR)
+ */
+const sumBrevisIncentivesApy = (brevis?: BrevisIncentive[] | number | null): number => {
+  if (Array.isArray(brevis)) {
+    return brevis.reduce((sum, entry) => {
+      const apr = entry.apr;
+      return sum + (!isNaN(apr) && apr > 0 ? convertAprToApy(apr) : 0);
+    }, 0);
+  }
+  const brevisAprValue = getValidApr(brevis);
+  return brevisAprValue > 0 ? convertAprToApy(brevisAprValue) : 0;
+};
+
+/**
  * Calculate total incentive APR from detailed sources
  * All values are in percentage form (e.g., 5 for 5%)
  * @param meritIncentives - Merit incentive objects array
@@ -154,13 +181,13 @@ const getValidApr = (apr?: number | null): number => {
 export const calculateTotalIncentiveApr = (
   meritIncentives?: MeritIncentive[],
   merklOpportunities?: MerklOpportunityGroup[],
-  brevisApr?: number | null,
+  brevisIncentives?: BrevisIncentive[] | number | null,
   protocolIncentives?: number[]
 ): number => {
   const meritApr = sumMeritIncentives(meritIncentives);
   const merklApr = sumMerklOpportunities(merklOpportunities);
   const protocolApr = sumNumberArray(protocolIncentives);
-  const brevisAprValue = getValidApr(brevisApr);
+  const brevisAprValue = sumBrevisIncentives(brevisIncentives);
   
   return meritApr + merklApr + protocolApr + brevisAprValue;
 };
@@ -176,7 +203,7 @@ export const calculateTotalIncentiveApr = (
 export const calculateTotalIncentiveApy = (
   meritIncentives?: MeritIncentive[],
   merklOpportunities?: MerklOpportunityGroup[],
-  brevisApr?: number | null,
+  brevisIncentives?: BrevisIncentive[] | number | null,
   protocolIncentives?: number[]
 ): number => {
   const meritApy = sumMeritIncentivesApy(meritIncentives);
@@ -192,8 +219,7 @@ export const calculateTotalIncentiveApy = (
     });
   }
   
-  const brevisAprValue = getValidApr(brevisApr);
-  const brevisApy = brevisAprValue > 0 ? convertAprToApy(brevisAprValue) : 0;
+  const brevisApy = sumBrevisIncentivesApy(brevisIncentives);
   
   return meritApy + merklApy + protocolApy + brevisApy;
 };

@@ -54,9 +54,11 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
       const meritIncentives = type === 'supply' ? pool.meritSupplys : pool.meritBorrows;
       const merklOpportunities = type === 'supply' ? pool.merklSupplys : pool.merklBorrows;
       const brevisIncentives = type === 'supply' ? pool.brevisSupplys : pool.brevisBorrows;
+      const brevisLegacyApr = type === 'supply' ? pool.brevisSupplyApr : pool.brevisBorrowApr;
+      const brevisSource = brevisIncentives && brevisIncentives.length > 0 ? brevisIncentives : brevisLegacyApr ?? null;
       return {
-        apr: calculateTotalIncentiveApr(meritIncentives, merklOpportunities, brevisIncentives, protocolIncentives),
-        apy: calculateTotalIncentiveApy(meritIncentives, merklOpportunities, brevisIncentives, protocolIncentives),
+        apr: calculateTotalIncentiveApr(meritIncentives, merklOpportunities, brevisSource, protocolIncentives),
+        apy: calculateTotalIncentiveApy(meritIncentives, merklOpportunities, brevisSource, protocolIncentives),
       };
     };
 
@@ -194,6 +196,15 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
     if (!onIncentiveClick) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const triggerCenterX = rect.left + rect.width / 2;
+    if (import.meta.env.DEV) {
+      const target = e.currentTarget as HTMLElement;
+      const style = window.getComputedStyle(target);
+      const parent = target.parentElement;
+      const parentStyle = parent ? window.getComputedStyle(parent) : null;
+      console.debug('[TopOpportunities] Incentive rect', rect);
+      console.debug('[TopOpportunities] Incentive transform', style.transform);
+      console.debug('[TopOpportunities] Parent transform', parentStyle?.transform || 'none');
+    }
     onIncentiveClick({
       pool,
       type,
@@ -324,11 +335,11 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
           isLeverage 
             ? 'bg-background border-border hover:border-purple-500/50'
             : 'bg-gradient-to-r from-background to-success/5 border-border hover:border-success/50'
-        } ${isMobile ? 'px-2.5 gap-2' : 'px-3 gap-2'}`}
+        } ${isMobile ? 'px-[var(--ds-space-2-5)] gap-[var(--ds-space-2)]' : 'px-[var(--ds-space-3)] gap-[var(--ds-space-2)]'}`}
         onClick={() => handleCardClick(pool)}
       >
         {/* Token Info - Mobile style layout: large icon left, text right */}
-        <div className="grid grid-cols-[auto,1fr,auto] grid-rows-[auto,auto] content-center items-center gap-x-2 gap-y-1.5 flex-1 min-w-0 h-full">
+        <div className="grid grid-cols-[auto,1fr,auto] grid-rows-[auto,auto] content-center items-center gap-x-[var(--ds-space-2)] gap-y-[var(--ds-space-1)] flex-1 min-w-0 h-full">
           <TokenIcon
             symbol={iconSymbol}
             size={isMobile ? 28 : 32}
@@ -336,30 +347,30 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
             className="shrink-0 row-span-2"
             logoURI={logoURI}
           />
-          <p className={`font-semibold text-foreground truncate leading-none ${isMobile ? 'text-sm' : 'text-sm'}`}>
+          <p className={`font-semibold text-foreground truncate leading-none ${isMobile ? 'ds-text-14' : 'ds-text-14'}`}>
             {pool.tokenSymbol}
           </p>
           <div
-            className={`${(isLeverage ? getSpreadColorClass(mainValue, index, totalItems) : getApyColorClass(mainValue))} font-bold tabular-nums text-right leading-none ${isMobile ? 'text-base' : 'text-lg'}`}
+            className={`${(isLeverage ? getSpreadColorClass(mainValue, index, totalItems) : getApyColorClass(mainValue))} font-bold tabular-nums text-right leading-none ${isMobile ? 'ds-text-16' : 'ds-text-18'} ${!isLeverage && !hasIncentive ? 'row-span-2 self-center' : ''}`}
           >
             {isLeverage ? formatSpread(mainValue) : formatPercent(mainValue)}
           </div>
-          <div className="flex items-center gap-1 min-w-0 leading-none">
+          <div className="flex items-center gap-[var(--ds-space-1)] min-w-0 leading-none">
             {chainIconSrc && (
-              <img src={chainIconSrc} alt={pool.chainName} className="shrink-0 w-3 h-3" />
+              <img src={chainIconSrc} alt={pool.chainName} className="shrink-0 w-3.5 h-3.5" />
             )}
-            <p className="text-secondary truncate text-[10px] leading-none">{getMarketDisplayName(pool)}</p>
+            <p className="text-secondary truncate ds-text-11 leading-none">{getMarketDisplayName(pool)}</p>
           </div>
           {/* Detail breakdown - Only show for supply type */}
-          {!isLeverage && (
-            <div className="flex items-center justify-end gap-0.5 text-xs text-secondary whitespace-nowrap leading-none">
+          {!isLeverage && hasIncentive && (
+            <div className="flex items-center justify-end gap-[var(--ds-space-0-5)] ds-text-11 text-secondary whitespace-nowrap leading-none">
               <span className={`${apyAccent.text} tabular-nums`}>{formatPercent(pool.supplyApy ?? null)}</span>
               {hasIncentive && (
                 <>
                   <span className="text-muted-foreground">+</span>
                   <button
                     onClick={(e) => handleIncentiveClick(e, pool, 'supply', incentiveValue)}
-                    className={`inline-flex items-center gap-0.5 px-0.5 py-0 rounded-full ring-1 transition-colors cursor-pointer tabular-nums ${apyAccent.chip}`}
+                    className={`inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-0-5)] py-[var(--ds-space-0)] rounded-full ring-1 transition-colors cursor-pointer tabular-nums ${apyAccent.chip}`}
                   >
                     <span>{formatPercent(incentiveValue)}</span>
                     <IncentiveIcon width={isMobile ? 8 : 10} height={isMobile ? 8 : 10} />
@@ -370,7 +381,7 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
           )}
           {/* Leverage detail */}
           {isLeverage && (
-            <div className={`${getSpreadAccentClass(mainValue, index, totalItems)} tabular-nums whitespace-nowrap text-right leading-none ${isMobile ? 'text-[10px]' : 'text-xs'}`}>
+            <div className={`${getSpreadAccentClass(mainValue, index, totalItems)} tabular-nums whitespace-nowrap text-right leading-none ds-text-11`}>
               {formatPercent(isApy ? pool.totalSupplyApy : pool.totalSupplyApr)} -{' '}
               {(() => {
                 const borrowValue = isApy ? pool.totalBorrowApy : pool.totalBorrowApr;
@@ -407,15 +418,15 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
     emptyMessage: string;
   }) => {
     return (
-      <div className={`glass-card rounded-xl ${isMobile ? 'p-3' : 'p-5'} ${isMobile ? 'col-span-1' : ''} flex flex-col`}>
+        <div className={`glass-card rounded-xl ${isMobile ? 'ds-card-pad-sm' : 'ds-card-pad'} ${isMobile ? 'col-span-1' : ''} flex flex-col`}>
         <motion.div 
-          className="flex items-center gap-2 mb-3"
+          className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-3)]"
           initial={isMobile ? false : "hidden"}
           animate="visible"
           variants={headerVariants}
         >
           <motion.div 
-            className={`p-2 rounded-lg ${bgColorClass}`}
+            className={`p-[var(--ds-space-2)] rounded-lg ${bgColorClass}`}
             variants={iconVariants}
             initial={isMobile ? false : "hidden"}
             animate={["visible", "pulse"]}
@@ -423,8 +434,8 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
             <Icon className={`w-4 h-4 md:w-5 md:h-5 ${iconColorClass}`} />
           </motion.div>
           <div className="flex-1 min-w-0">
-            <h3 className={`font-bold truncate ${isMobile ? 'text-sm' : 'text-base'}`}>{title}</h3>
-            <p className={`text-muted-foreground truncate ${isMobile ? 'text-[10px]' : 'text-xs'}`}>{subtitle}</p>
+            <h3 className={`font-bold truncate ${isMobile ? 'ds-text-14' : 'ds-text-16'}`}>{title}</h3>
+            <p className="text-muted-foreground truncate ds-text-11">{subtitle}</p>
           </div>
         </motion.div>
 
@@ -441,8 +452,8 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
                 />
               ))
             ) : (
-              <div className="text-center py-6 text-muted-foreground">
-                <p className="text-xs">{emptyMessage}</p>
+              <div className="text-center py-[var(--ds-space-6)] text-muted-foreground">
+                <p className="ds-text-11">{emptyMessage}</p>
               </div>
             )}
           </AnimatePresence>
@@ -523,7 +534,7 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
   // Desktop and tablet grid layout (2x2 on medium screens, 4 columns on large)
   if (!isMobile) {
     return (
-      <div className="grid gap-3 md:gap-4 grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-[var(--ds-space-3)] md:gap-[var(--ds-space-4)] grid-cols-2 xl:grid-cols-4">
         {categories.map((category) => (
           <CategoryCard
             key={category.categoryKey}
@@ -538,7 +549,6 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
             emptyMessage={category.emptyMessage}
           />
         ))}
-
       </div>
     );
   }
@@ -556,9 +566,9 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
         }}
         className="w-full"
       >
-        <CarouselContent className="-ml-2 md:-ml-4">
+        <CarouselContent className="-ml-[var(--ds-space-2)] md:-ml-[var(--ds-space-4)]">
           {categories.map((category, index) => (
-            <CarouselItem key={category.categoryKey} className="pl-2 md:pl-4 basis-[85%] sm:basis-[85%]">
+            <CarouselItem key={category.categoryKey} className="pl-[var(--ds-space-2)] md:pl-[var(--ds-space-4)] basis-[85%] sm:basis-[85%]">
               <div className="relative h-full">
                 <CategoryCard
                   title={category.title}
@@ -582,7 +592,7 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
             <Button
               variant="outline"
               size="icon"
-              className="h-7 w-7 rounded-full bg-background/90 backdrop-blur-sm border shadow-lg pointer-events-auto hover:bg-accent"
+              className="ds-icon-button bg-background/90 backdrop-blur-sm border shadow-lg pointer-events-auto hover:bg-accent"
               onClick={() => api?.scrollPrev()}
             >
               <ChevronLeft className="h-3.5 w-3.5" />
@@ -595,7 +605,7 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
             <Button
               variant="outline"
               size="icon"
-              className="h-7 w-7 rounded-full bg-background/90 backdrop-blur-sm border shadow-lg pointer-events-auto hover:bg-accent"
+              className="ds-icon-button bg-background/90 backdrop-blur-sm border shadow-lg pointer-events-auto hover:bg-accent"
               onClick={() => api?.scrollNext()}
             >
               <ChevronRight className="h-3.5 w-3.5" />
@@ -606,21 +616,20 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
       </Carousel>
 
       {/* Pagination indicators */}
-      <div className="flex justify-center items-center gap-2 mt-4">
+      <div className="flex justify-center items-center gap-[var(--ds-space-2)] mt-[var(--ds-space-4)]">
         {categories.map((_, index) => (
           <button
             key={index}
             className={`transition-all rounded-full ${
               current === index
-                ? 'w-2.5 h-2.5 bg-primary'
-                : 'w-2 h-2 bg-muted-foreground/30 hover:bg-muted-foreground/50'
+                ? 'ds-dot-active bg-primary'
+                : 'ds-dot bg-muted-foreground/30 hover:bg-muted-foreground/50'
             }`}
             onClick={() => api?.scrollTo(index)}
             aria-label={`Go to slide ${index + 1}`}
           />
         ))}
       </div>
-
     </div>
   );
 };
@@ -630,6 +639,14 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
 export default memo(TopOpportunities, (prevProps, nextProps) => {
   // If isApy changed, always re-render
   if (prevProps.isApy !== nextProps.isApy) {
+    return false;
+  }
+
+  if (prevProps.onIncentiveClick !== nextProps.onIncentiveClick) {
+    return false;
+  }
+
+  if (prevProps.categoryGroups !== nextProps.categoryGroups) {
     return false;
   }
   
