@@ -96,7 +96,7 @@ const IncentiveTooltip = ({ pool, type, position, triggerCenterX, onClose, isApy
     return '';
   };
 
-  const getMessageLines = (message?: string | Record<string, unknown>): string[] => {
+  const getMessageLines = (message?: string | Record<string, unknown> | unknown[]): string[] => {
     if (!message) return [];
     if (typeof message === 'string') return [message];
     if (Array.isArray(message)) {
