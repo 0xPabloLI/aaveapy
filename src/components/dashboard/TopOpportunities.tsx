@@ -372,7 +372,7 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
         className="rounded-xl border ds-card-pad-sm cursor-pointer transition-colors bg-card border-border/60 active:bg-muted/60 h-[72px] flex flex-col justify-between"
         onClick={() => handleCardClick(pool)}
       >
-        {/* Header: Token + Market */}
+        {/* Header: Token + Market + Arrow */}
         <div className="flex items-center gap-[var(--ds-space-2)]">
           <TokenIcon
             symbol={iconSymbol}
@@ -390,6 +390,7 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
               <span className="truncate">{getMarketDisplayName(pool)}</span>
             </div>
           </div>
+          <ChevronRight className="w-4 h-4 text-muted-foreground/50 shrink-0" />
         </div>
 
         {/* Main value + detail row */}
