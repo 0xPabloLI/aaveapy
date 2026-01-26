@@ -6,6 +6,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import ThemeToggle from '@/components/ThemeToggle';
 
 interface HeaderProps {
   lastUpdated?: string;
@@ -46,13 +47,19 @@ const Header = ({ lastUpdated }: HeaderProps) => {
         </div>
       </div>
 
-      {/* Desktop: Last Updated */}
-      {lastUpdated && (
-        <div className="hidden md:flex items-center gap-[var(--ds-space-2)] ds-text-11 text-muted-foreground shrink-0">
-          <Clock className="w-4 h-4" />
-          <span>Updated {formatRelativeTime(lastUpdated)}</span>
-        </div>
-      )}
+      {/* Right side: Theme toggle + Last Updated */}
+      <div className="flex items-center gap-[var(--ds-space-3)]">
+        {/* Theme Toggle */}
+        <ThemeToggle />
+        
+        {/* Desktop: Last Updated */}
+        {lastUpdated && (
+          <div className="hidden md:flex items-center gap-[var(--ds-space-2)] ds-text-11 text-muted-foreground shrink-0">
+            <Clock className="w-4 h-4" />
+            <span>Updated {formatRelativeTime(lastUpdated)}</span>
+          </div>
+        )}
+      </div>
     </header>
   );
 };
