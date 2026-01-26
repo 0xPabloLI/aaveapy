@@ -125,17 +125,17 @@ const MobilePoolCard = ({ pool, isApy, onIncentiveClick }: MobilePoolCardProps) 
       </div>
 
       {/* APY Values - 3 column layout: Supply | Spread | Borrow */}
-      <div className="grid grid-cols-[1fr_auto_1fr] gap-[var(--ds-space-2)]">
+      <div className="grid grid-cols-3 gap-[var(--ds-space-1)] overflow-hidden">
         {/* Supply - left aligned */}
-        <div className="flex flex-col items-start gap-[var(--ds-space-0-5)] min-h-[2.5rem]">
+        <div className="flex flex-col items-start gap-[var(--ds-space-0-5)] min-h-[2.5rem] overflow-hidden">
           <p className="ds-text-9 text-muted-foreground uppercase font-medium tracking-wide">Supply</p>
           <p className={`ds-text-14 font-bold tabular-nums ${supplyValueClass}`}>
             {formatPercent(displaySupplyTotal)}
           </p>
           {displaySupplyIncentive !== null && (
             <div className="flex items-center gap-[var(--ds-space-0-5)] ds-text-9 flex-nowrap min-h-[1rem]">
-              <span className="ds-text-emerald-500-70 tabular-nums">{formatPercent(isApy ? (pool.supplyApy ?? null) : (pool.supplyApy !== null && pool.supplyApy !== undefined ? apyToApr(pool.supplyApy) : null))}</span>
-              <span className="text-muted-foreground/70">+</span>
+              <span className="ds-text-emerald-500-70 tabular-nums shrink-0">{formatPercent(isApy ? (pool.supplyApy ?? null) : (pool.supplyApy !== null && pool.supplyApy !== undefined ? apyToApr(pool.supplyApy) : null))}</span>
+              <span className="text-muted-foreground/70 shrink-0">+</span>
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -150,8 +150,8 @@ const MobilePoolCard = ({ pool, isApy, onIncentiveClick }: MobilePoolCardProps) 
           )}
         </div>
 
-        {/* Spread - center aligned, fixed width */}
-        <div className="flex flex-col items-center justify-center gap-[var(--ds-space-0-5)] min-h-[2.5rem] min-w-[3.5rem]">
+        {/* Spread - center aligned */}
+        <div className="flex flex-col items-center justify-center gap-[var(--ds-space-0-5)] min-h-[2.5rem]">
           <p className="ds-text-9 text-muted-foreground/70 uppercase font-medium tracking-wide">Spread</p>
           <p className={`ds-text-11 font-medium tabular-nums ${
             spread !== null ? 'ds-text-purple-500' : 'text-muted-foreground/70'
@@ -161,15 +161,15 @@ const MobilePoolCard = ({ pool, isApy, onIncentiveClick }: MobilePoolCardProps) 
         </div>
 
         {/* Borrow - right aligned */}
-        <div className="flex flex-col items-end gap-[var(--ds-space-0-5)] min-h-[2.5rem]">
+        <div className="flex flex-col items-end gap-[var(--ds-space-0-5)] min-h-[2.5rem] overflow-hidden">
           <p className="ds-text-9 text-muted-foreground uppercase font-medium tracking-wide">Borrow</p>
           <p className={`ds-text-14 font-bold tabular-nums ${borrowValueClass}`}>
             {formatPercent(displayBorrowTotal)}
           </p>
           {displayBorrowIncentive !== null && (
             <div className="flex items-center gap-[var(--ds-space-0-5)] ds-text-9 flex-nowrap justify-end min-h-[1rem]">
-              <span className="ds-text-brand-cyan-70 tabular-nums">{formatPercent(isApy ? (pool.borrowApy ?? null) : (pool.borrowApy !== null && pool.borrowApy !== undefined ? apyToApr(pool.borrowApy) : null))}</span>
-              <span className="text-muted-foreground/70">-</span>
+              <span className="ds-text-brand-cyan-70 tabular-nums shrink-0">{formatPercent(isApy ? (pool.borrowApy ?? null) : (pool.borrowApy !== null && pool.borrowApy !== undefined ? apyToApr(pool.borrowApy) : null))}</span>
+              <span className="text-muted-foreground/70 shrink-0">-</span>
               <button
                 onClick={(e) => {
                   e.stopPropagation();
