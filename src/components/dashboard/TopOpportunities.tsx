@@ -337,7 +337,88 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
     if (intensity >= 0.2) return 'text-fuchsia-400/70';
     return 'ds-text-pink-400-70';
   };
-  // Reusable pool item component
+  // Mobile mini card component for 2-column grid layout
+  const MiniPoolCard = ({
+    pool,
+    index,
+    type,
+    totalItems = 5
+  }: {
+    pool: typeof poolsWithTotals[0];
+    index: number;
+    type: 'supply' | 'leverage';
+    totalItems?: number;
+  }) => {
+    const isLeverage = type === 'leverage';
+    const mainValue = isLeverage
+      ? (isApy ? pool.apySpread : pool.aprSpread)
+      : (isApy ? pool.totalSupplyApy : pool.totalSupplyApr);
+    const incentiveValue = isApy ? pool.supplyIncentiveApy : pool.supplyIncentiveApr;
+    const hasIncentive = incentiveValue !== null && !isNaN(incentiveValue) && incentiveValue >= 0.01;
+    const apyAccent = getApyAccentClasses(mainValue);
+    const chainIconSrc = getChainIconSrc(pool.chainName);
+    const { iconSymbol, logoURI } = fetchIconSymbolAndName({
+      underlyingAsset: pool.tokenAddress,
+      symbol: pool.tokenSymbol,
+      name: pool.tokenName,
+    });
+
+    return (
+      <motion.div
+        custom={index}
+        initial={false}
+        animate="visible"
+        variants={itemVariants}
+        className="rounded-xl border ds-card-pad-sm cursor-pointer transition-colors bg-card border-border/60 active:bg-muted/60 h-[72px] flex flex-col justify-between"
+        onClick={() => handleCardClick(pool)}
+      >
+        {/* Header: Token + Market */}
+        <div className="flex items-center gap-[var(--ds-space-2)]">
+          <TokenIcon
+            symbol={iconSymbol}
+            size={24}
+            loading="eager"
+            className="shrink-0"
+            logoURI={logoURI}
+          />
+          <div className="min-w-0 flex-1">
+            <p className="font-bold text-foreground ds-text-12 truncate">{pool.tokenSymbol}</p>
+            <div className="flex items-center gap-[var(--ds-space-1)] ds-text-9 text-muted-foreground">
+              {chainIconSrc && (
+                <img src={chainIconSrc} alt={pool.chainName} className="w-3 h-3" />
+              )}
+              <span className="truncate">{getMarketDisplayName(pool)}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Main value + detail row */}
+        <div className="flex items-baseline justify-between gap-[var(--ds-space-1)]">
+          <span className={`font-bold ds-text-14 tabular-nums ${isLeverage ? getSpreadColorClass(mainValue, index, totalItems) : getApyColorClass(mainValue)}`}>
+            {isLeverage ? formatSpread(mainValue) : formatPercent(mainValue)}
+          </span>
+          {/* Incentive badge for supply type */}
+          {!isLeverage && hasIncentive && (
+            <button
+              onClick={(e) => handleIncentiveClick(e, pool, 'supply', incentiveValue, mainValue)}
+              className={`inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-1)] py-[var(--ds-space-0-5)] rounded-full ring-1 transition-colors cursor-pointer tabular-nums ds-text-9 ${apyAccent.chip}`}
+            >
+              <span>+{formatPercent(incentiveValue)}</span>
+              <IncentiveIcon width={7} height={7} />
+            </button>
+          )}
+          {/* Leverage detail inline */}
+          {isLeverage && (
+            <span className={`${getSpreadAccentClass(mainValue, index, totalItems)} tabular-nums ds-text-9`}>
+              {formatPercent(isApy ? pool.totalSupplyApy : pool.totalSupplyApr)} - {formatPercent(isApy ? pool.totalBorrowApy : pool.totalBorrowApr)}
+            </span>
+          )}
+        </div>
+      </motion.div>
+    );
+  };
+
+  // Reusable pool item component (for desktop)
   const PoolItem = ({ 
     pool, 
     index, 
@@ -477,17 +558,27 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
           </div>
         </motion.div>
 
-        <div className="flex-1 space-y-2">
+        <div className="flex-1 space-y-[var(--ds-space-1-5)]">
           <AnimatePresence mode="popLayout">
             {categoryPools.length > 0 ? (
               categoryPools.map((pool, i) => (
-                <PoolItem 
-                  key={`${categoryKey}-${pool.marketName}-${pool.tokenSymbol}`}
-                  pool={pool} 
-                  index={i} 
-                  type={type}
-                  totalItems={categoryPools.length}
-                />
+                isMobile ? (
+                  <MiniPoolCard
+                    key={`${categoryKey}-${pool.marketName}-${pool.tokenSymbol}`}
+                    pool={pool}
+                    index={i}
+                    type={type}
+                    totalItems={categoryPools.length}
+                  />
+                ) : (
+                  <PoolItem 
+                    key={`${categoryKey}-${pool.marketName}-${pool.tokenSymbol}`}
+                    pool={pool} 
+                    index={i} 
+                    type={type}
+                    totalItems={categoryPools.length}
+                  />
+                )
               ))
             ) : (
               <div className="text-center py-[var(--ds-space-6)] text-muted-foreground">
@@ -591,40 +682,48 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
     );
   }
 
-  // Mobile carousel layout
+  // Mobile carousel layout - 2 pages, each with 2 categories
+  const mobilePages = [
+    [categories[0], categories[1]], // Page 1: Stable + ETH
+    [categories[2], categories[3]], // Page 2: BTC + Leverage
+  ];
+
   return (
     <div className="relative">
       <Carousel
         setApi={setApi}
         opts={{
-          align: "center",
+          align: "start",
           loop: false,
           dragFree: false,
           containScroll: "trimSnaps",
         }}
         className="w-full"
       >
-        <CarouselContent className="-ml-[var(--ds-space-2)] md:-ml-[var(--ds-space-4)]">
-          {categories.map((category, index) => (
-            <CarouselItem key={category.categoryKey} className="pl-[var(--ds-space-2)] md:pl-[var(--ds-space-4)] basis-[85%] sm:basis-[85%]">
-              <div className="relative h-full">
-                <CategoryCard
-                  title={category.title}
-                  subtitle={category.subtitle}
-                  icon={category.icon}
-                  iconColorClass={category.iconColorClass}
-                  bgColorClass={category.bgColorClass}
-                  pools={category.pools}
-                  categoryKey={category.categoryKey}
-                  type={category.type}
-                  emptyMessage={category.emptyMessage}
-                />
+        <CarouselContent className="-ml-[var(--ds-space-2)]">
+          {mobilePages.map((pageCats, pageIndex) => (
+            <CarouselItem key={pageIndex} className="pl-[var(--ds-space-2)] basis-full">
+              <div className="grid grid-cols-2 gap-[var(--ds-space-2)]">
+                {pageCats.map((category) => (
+                  <CategoryCard
+                    key={category.categoryKey}
+                    title={category.title}
+                    subtitle={category.subtitle}
+                    icon={category.icon}
+                    iconColorClass={category.iconColorClass}
+                    bgColorClass={category.bgColorClass}
+                    pools={category.pools}
+                    categoryKey={category.categoryKey}
+                    type={category.type}
+                    emptyMessage={category.emptyMessage}
+                  />
+                ))}
               </div>
             </CarouselItem>
           ))}
         </CarouselContent>
 
-        {/* Navigation arrows - positioned on card edges */}
+        {/* Navigation arrows */}
         {canScrollPrev && (
           <div className="absolute left-2 top-1/2 -translate-y-1/2 z-20 pointer-events-none">
             <Button
@@ -653,9 +752,9 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
         )}
       </Carousel>
 
-      {/* Pagination indicators */}
+      {/* Pagination indicators - 2 dots for 2 pages */}
       <div className="flex justify-center items-center gap-[var(--ds-space-2)] mt-[var(--ds-space-4)]">
-        {categories.map((_, index) => (
+        {mobilePages.map((_, index) => (
           <button
             key={index}
             className={`transition-all rounded-full ${
@@ -664,7 +763,7 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
                 : 'ds-dot bg-muted-foreground/30 hover:bg-muted-foreground/50'
             }`}
             onClick={() => api?.scrollTo(index)}
-            aria-label={`Go to slide ${index + 1}`}
+            aria-label={`Go to page ${index + 1}`}
           />
         ))}
       </div>
