@@ -384,13 +384,13 @@ const IncentiveTooltip = ({
                               target="_blank"
                               rel="noopener noreferrer"
                               onClick={(e) => e.stopPropagation()}
-                                className={`${linkClass} flex h-7 w-7 items-center justify-center rounded-full border border-current/40 ring-1 ring-current/15 focus:outline-none focus-visible:outline-none focus-visible:ring-0`}
+                              className={`${linkClass} flex h-7 w-7 items-center justify-center rounded-full transition-opacity opacity-80 hover:opacity-100 focus:outline-none focus-visible:outline-none focus-visible:ring-0`}
                               title="Open link"
                             >
                               <ExternalLink className="w-3.5 h-3.5" />
                             </a>
                           )}
-                          <span className={`${valueClass} ${valueBgClass} whitespace-nowrap rounded-md px-[6px] py-[2px] shadow-none`}>
+                          <span className={`${valueClass} whitespace-nowrap`}>
                             {formatPercent(source.value)}
                           </span>
                         </div>
@@ -509,13 +509,13 @@ const IncentiveTooltip = ({
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
-                            className={`${linkClass} flex h-7 w-7 items-center justify-center rounded-full border border-current/40 ring-1 ring-current/15 focus:outline-none focus-visible:outline-none focus-visible:ring-0`}
+                            className={`${linkClass} flex h-7 w-7 items-center justify-center rounded-full transition-opacity opacity-80 hover:opacity-100 focus:outline-none focus-visible:outline-none focus-visible:ring-0`}
                             title="Open link"
                           >
                             <ExternalLink className="w-3.5 h-3.5" />
                           </a>
                         )}
-                        <span className={`${valueClass} ${valueBgClass} whitespace-nowrap rounded-md px-[6px] py-[2px] shadow-none`}>
+                        <span className={`${valueClass} whitespace-nowrap`}>
                           {formatPercent(source.value)}
                         </span>
                       </div>
