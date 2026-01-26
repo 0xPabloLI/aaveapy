@@ -127,7 +127,7 @@ const MobilePoolCard = ({ pool, isApy, onIncentiveClick }: MobilePoolCardProps) 
       {/* APY Values - 3 column layout: Supply | Spread | Borrow */}
       <div className="grid grid-cols-3 gap-[var(--ds-space-2)]">
         {/* Supply */}
-        <div className="flex flex-col items-start justify-center gap-[var(--ds-space-0-5)] min-h-[2.5rem]">
+        <div className="flex flex-col items-start justify-start gap-[var(--ds-space-0-5)] min-h-[2.5rem]">
           <p className="ds-text-9 text-muted-foreground uppercase font-medium">Supply</p>
           <p className={`ds-text-14 font-bold ${supplyValueClass}`}>
             {formatPercent(displaySupplyTotal)}
@@ -151,7 +151,7 @@ const MobilePoolCard = ({ pool, isApy, onIncentiveClick }: MobilePoolCardProps) 
         </div>
 
         {/* Spread - middle, less prominent */}
-        <div className="flex flex-col items-center justify-center gap-[var(--ds-space-0-5)] min-h-[2.5rem] text-center">
+        <div className="flex flex-col items-center justify-start gap-[var(--ds-space-0-5)] min-h-[2.5rem] text-center">
           <p className="ds-text-9 text-muted-foreground/70 uppercase font-medium">Spread</p>
           <p className={`ds-text-11 font-medium ${
             spread !== null ? 'ds-text-purple-500' : 'text-muted-foreground/70'
@@ -161,7 +161,7 @@ const MobilePoolCard = ({ pool, isApy, onIncentiveClick }: MobilePoolCardProps) 
         </div>
 
         {/* Borrow */}
-        <div className="flex flex-col items-end justify-center gap-[var(--ds-space-0-5)] min-h-[2.5rem] text-right">
+        <div className="flex flex-col items-end justify-start gap-[var(--ds-space-0-5)] min-h-[2.5rem] text-right">
           <p className="ds-text-9 text-muted-foreground uppercase font-medium">Borrow</p>
           <p className={`ds-text-14 font-bold ${borrowValueClass}`}>
             {formatPercent(displayBorrowTotal)}
