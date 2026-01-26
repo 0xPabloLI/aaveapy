@@ -125,17 +125,17 @@ const MobilePoolCard = ({ pool, isApy, onIncentiveClick }: MobilePoolCardProps) 
       </div>
 
       {/* APY Values - 3 column layout: Supply | Spread | Borrow */}
-      <div className="grid grid-cols-3 gap-[var(--ds-space-1)] overflow-hidden">
-        {/* Supply - left aligned */}
-        <div className="flex flex-col items-start gap-[var(--ds-space-0-5)] min-h-[2.5rem] overflow-hidden">
-          <p className="ds-text-9 text-muted-foreground uppercase font-medium tracking-wide">Supply</p>
-          <p className={`ds-text-14 font-bold tabular-nums ${supplyValueClass}`}>
+      <div className="grid grid-cols-3 gap-[var(--ds-space-2)]">
+        {/* Supply */}
+        <div className="flex flex-col items-start justify-center gap-[var(--ds-space-0-5)] min-h-[2.5rem]">
+          <p className="ds-text-9 text-muted-foreground uppercase font-medium">Supply</p>
+          <p className={`ds-text-14 font-bold ${supplyValueClass}`}>
             {formatPercent(displaySupplyTotal)}
           </p>
           {displaySupplyIncentive !== null && (
             <div className="flex items-center gap-[var(--ds-space-0-5)] ds-text-9 flex-nowrap min-h-[1rem]">
-              <span className="ds-text-emerald-500-70 tabular-nums shrink-0">{formatPercent(isApy ? (pool.supplyApy ?? null) : (pool.supplyApy !== null && pool.supplyApy !== undefined ? apyToApr(pool.supplyApy) : null))}</span>
-              <span className="text-muted-foreground/70 shrink-0">+</span>
+              <span className="ds-text-emerald-500-70">{formatPercent(isApy ? (pool.supplyApy ?? null) : (pool.supplyApy !== null && pool.supplyApy !== undefined ? apyToApr(pool.supplyApy) : null))}</span>
+              <span className="text-muted-foreground/70">+</span>
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -143,33 +143,33 @@ const MobilePoolCard = ({ pool, isApy, onIncentiveClick }: MobilePoolCardProps) 
                 }}
                 className="inline-flex items-center gap-[var(--ds-space-0-5)] ds-text-emerald-600 ds-bg-emerald-500-10 hover:bg-[rgb(var(--ds-emerald-500-rgb)/0.2)] rounded-full px-[var(--ds-space-1)] py-[var(--ds-space-0-5)] shrink-0 ring-1 ds-ring-emerald-500-15 transition-colors"
               >
-                <span className="tabular-nums">{formatPercent(displaySupplyIncentive)}</span>
+                <span>{formatPercent(displaySupplyIncentive)}</span>
                 <IncentiveIcon width={7} height={7} />
               </button>
             </div>
           )}
         </div>
 
-        {/* Spread - center aligned */}
-        <div className="flex flex-col items-center justify-center gap-[var(--ds-space-0-5)] min-h-[2.5rem]">
-          <p className="ds-text-9 text-muted-foreground/70 uppercase font-medium tracking-wide">Spread</p>
-          <p className={`ds-text-11 font-medium tabular-nums ${
+        {/* Spread - middle, less prominent */}
+        <div className="flex flex-col items-center justify-center gap-[var(--ds-space-0-5)] min-h-[2.5rem] text-center">
+          <p className="ds-text-9 text-muted-foreground/70 uppercase font-medium">Spread</p>
+          <p className={`ds-text-11 font-medium ${
             spread !== null ? 'ds-text-purple-500' : 'text-muted-foreground/70'
           }`}>
             {formatSpread(spread)}
           </p>
         </div>
 
-        {/* Borrow - right aligned */}
-        <div className="flex flex-col items-end gap-[var(--ds-space-0-5)] min-h-[2.5rem] overflow-hidden">
-          <p className="ds-text-9 text-muted-foreground uppercase font-medium tracking-wide">Borrow</p>
-          <p className={`ds-text-14 font-bold tabular-nums ${borrowValueClass}`}>
+        {/* Borrow */}
+        <div className="flex flex-col items-end justify-center gap-[var(--ds-space-0-5)] min-h-[2.5rem] text-right">
+          <p className="ds-text-9 text-muted-foreground uppercase font-medium">Borrow</p>
+          <p className={`ds-text-14 font-bold ${borrowValueClass}`}>
             {formatPercent(displayBorrowTotal)}
           </p>
           {displayBorrowIncentive !== null && (
             <div className="flex items-center gap-[var(--ds-space-0-5)] ds-text-9 flex-nowrap justify-end min-h-[1rem]">
-              <span className="ds-text-brand-cyan-70 tabular-nums shrink-0">{formatPercent(isApy ? (pool.borrowApy ?? null) : (pool.borrowApy !== null && pool.borrowApy !== undefined ? apyToApr(pool.borrowApy) : null))}</span>
-              <span className="text-muted-foreground/70 shrink-0">-</span>
+              <span className="ds-text-brand-cyan-70">{formatPercent(isApy ? (pool.borrowApy ?? null) : (pool.borrowApy !== null && pool.borrowApy !== undefined ? apyToApr(pool.borrowApy) : null))}</span>
+              <span className="text-muted-foreground/70">-</span>
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -177,7 +177,7 @@ const MobilePoolCard = ({ pool, isApy, onIncentiveClick }: MobilePoolCardProps) 
                 }}
                 className="inline-flex items-center gap-[var(--ds-space-0-5)] ds-text-brand-cyan ds-bg-brand-cyan-10 hover:bg-[rgb(var(--ds-brand-cyan-rgb)/0.2)] rounded-full px-[var(--ds-space-1)] py-[var(--ds-space-0-5)] shrink-0 ring-1 ds-ring-brand-cyan-15 transition-colors"
               >
-                <span className="tabular-nums">{formatPercent(displayBorrowIncentive)}</span>
+                <span>{formatPercent(displayBorrowIncentive)}</span>
                 <IncentiveIcon width={7} height={7} />
               </button>
             </div>
