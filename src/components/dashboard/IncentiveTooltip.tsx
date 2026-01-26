@@ -128,32 +128,6 @@ const IncentiveTooltip = ({
     return filterLines([values.join(': ')]);
   };
 
-  // Get source-specific accent border class based on source type
-  const getSourceAccentClass = (sourceType?: IncentiveSource['sourceType']): string => {
-    if (accentBorderClass) return accentBorderClass;
-    
-    // Default to supply/borrow colors if no source type or Protocol
-    if (!sourceType || sourceType === 'Protocol') {
-      return type === 'supply'
-        ? 'border-l-[3px] border-l-[rgb(var(--ds-emerald-500-rgb)/0.35)]'
-        : 'border-l-[3px] border-l-[rgb(var(--ds-brand-cyan-rgb)/0.35)]';
-    }
-    
-    // Source-specific accent colors
-    switch (sourceType) {
-      case 'ACI':
-        return 'border-l-[3px] border-l-[rgb(var(--ds-blue-500-rgb)/0.35)]';
-      case 'Merkl':
-        return 'border-l-[3px] border-l-[rgb(var(--ds-purple-500-rgb)/0.35)]';
-      case 'Brevis':
-        return 'border-l-[3px] border-l-[rgb(var(--ds-amber-500-rgb)/0.35)]';
-      default:
-        return type === 'supply'
-          ? 'border-l-[3px] border-l-[rgb(var(--ds-emerald-500-rgb)/0.35)]'
-          : 'border-l-[3px] border-l-[rgb(var(--ds-brand-cyan-rgb)/0.35)]';
-    }
-  };
-
   const accentClass =
     accentBorderClass ??
     (type === 'supply'
@@ -233,7 +207,6 @@ const IncentiveTooltip = ({
             link: merit.link,
             message: merit.message,
             dateRange: formatDateRange(merit.startDate, merit.endDate) || undefined,
-            requiredTokens: merit.requiredBorrowTokens || merit.requiredSupplyTokens,
           });
         }
       });
@@ -377,7 +350,7 @@ const IncentiveTooltip = ({
                   return (
                     <div 
                       key={`${source.name}-${index}`}
-                      className={`ds-tooltip-item relative px-[var(--ds-space-2)] py-[var(--ds-space-1)] ${getSourceAccentClass(source.sourceType)} animate-in fade-in-0 slide-in-from-top-2`}
+                      className={`ds-tooltip-item relative px-[var(--ds-space-2)] py-[var(--ds-space-1)] ${accentClass} animate-in fade-in-0 slide-in-from-top-2`}
                       style={{ animationDelay: `${index * 45}ms` }}
                     >
                       <div className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-1)]">
@@ -437,11 +410,6 @@ const IncentiveTooltip = ({
                         ))}
                       </ul>
                     )}
-                      {source.requiredTokens && (
-                        <p className="ds-tooltip-body text-muted-foreground mt-[var(--ds-space-1)] break-words">
-                          Requires: {renderHighlightedText(Array.isArray(source.requiredTokens) ? source.requiredTokens.join(', ') : source.requiredTokens)}
-                        </p>
-                      )}
                     </div>
                   );
                 })}
@@ -507,7 +475,7 @@ const IncentiveTooltip = ({
                 return (
                   <div 
                     key={`${source.name}-${index}`}
-                    className={`ds-tooltip-item relative px-[var(--ds-space-2)] py-[var(--ds-space-1)] ${getSourceAccentClass(source.sourceType)} animate-in fade-in-0 slide-in-from-top-2`}
+                    className={`ds-tooltip-item relative px-[var(--ds-space-2)] py-[var(--ds-space-1)] ${accentClass} animate-in fade-in-0 slide-in-from-top-2`}
                     style={{ animationDelay: `${index * 45}ms` }}
                   >
                     <div className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-1)]">
@@ -566,11 +534,6 @@ const IncentiveTooltip = ({
                           </li>
                         ))}
                       </ul>
-                    )}
-                    {source.requiredTokens && (
-                      <p className="ds-tooltip-body text-muted-foreground mt-[var(--ds-space-1)] break-words">
-                        Requires: {renderHighlightedText(Array.isArray(source.requiredTokens) ? source.requiredTokens.join(', ') : source.requiredTokens)}
-                      </p>
                     )}
                   </div>
                 );
