@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo, memo } from 'react';
-import { TrendingUp, Zap, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useMemo, memo } from 'react';
+import { TrendingUp, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PoolWithSpread, ETHEREUM_MARKET_NAMES } from '@/types/aave';
 import {
@@ -26,8 +26,6 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
-import { Carousel, CarouselContent, CarouselItem, CarouselApi } from '@/components/ui/carousel';
-import { Button } from '@/components/ui/button';
 
 interface TopOpportunitiesProps {
   pools: PoolWithSpread[];
@@ -500,28 +498,6 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
     );
   };
 
-  // Mobile carousel state
-  const [api, setApi] = useState<CarouselApi>();
-  const [current, setCurrent] = useState(0);
-  const [canScrollPrev, setCanScrollPrev] = useState(false);
-  const [canScrollNext, setCanScrollNext] = useState(false);
-
-  useEffect(() => {
-    if (!api) {
-      return;
-    }
-
-    setCurrent(api.selectedScrollSnap());
-    setCanScrollPrev(api.canScrollPrev());
-    setCanScrollNext(api.canScrollNext());
-
-    api.on("select", () => {
-      setCurrent(api.selectedScrollSnap());
-      setCanScrollPrev(api.canScrollPrev());
-      setCanScrollNext(api.canScrollNext());
-    });
-  }, [api]);
-
   const categories = [
     {
       title: `Top Stable ${isApy ? 'APY' : 'APR'}`,
@@ -591,83 +567,23 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
     );
   }
 
-  // Mobile carousel layout
+  // Mobile 2-column grid layout
   return (
-    <div className="relative">
-      <Carousel
-        setApi={setApi}
-        opts={{
-          align: "center",
-          loop: false,
-          dragFree: false,
-          containScroll: "trimSnaps",
-        }}
-        className="w-full"
-      >
-        <CarouselContent className="-ml-[var(--ds-space-2)] md:-ml-[var(--ds-space-4)]">
-          {categories.map((category, index) => (
-            <CarouselItem key={category.categoryKey} className="pl-[var(--ds-space-2)] md:pl-[var(--ds-space-4)] basis-[85%] sm:basis-[85%]">
-              <div className="relative h-full">
-                <CategoryCard
-                  title={category.title}
-                  subtitle={category.subtitle}
-                  icon={category.icon}
-                  iconColorClass={category.iconColorClass}
-                  bgColorClass={category.bgColorClass}
-                  pools={category.pools}
-                  categoryKey={category.categoryKey}
-                  type={category.type}
-                  emptyMessage={category.emptyMessage}
-                />
-              </div>
-            </CarouselItem>
-          ))}
-        </CarouselContent>
-
-        {/* Navigation arrows - positioned on card edges */}
-        {canScrollPrev && (
-          <div className="absolute left-2 top-1/2 -translate-y-1/2 z-20 pointer-events-none">
-            <Button
-              variant="outline"
-              size="icon"
-              className="ds-icon-button bg-background/90 backdrop-blur-sm border shadow-lg pointer-events-auto hover:bg-accent"
-              onClick={() => api?.scrollPrev()}
-            >
-              <ChevronLeft className="h-3.5 w-3.5" />
-              <span className="sr-only">Previous slide</span>
-            </Button>
-          </div>
-        )}
-        {canScrollNext && (
-          <div className="absolute right-2 top-1/2 -translate-y-1/2 z-20 pointer-events-none">
-            <Button
-              variant="outline"
-              size="icon"
-              className="ds-icon-button bg-background/90 backdrop-blur-sm border shadow-lg pointer-events-auto hover:bg-accent"
-              onClick={() => api?.scrollNext()}
-            >
-              <ChevronRight className="h-3.5 w-3.5" />
-              <span className="sr-only">Next slide</span>
-            </Button>
-          </div>
-        )}
-      </Carousel>
-
-      {/* Pagination indicators */}
-      <div className="flex justify-center items-center gap-[var(--ds-space-2)] mt-[var(--ds-space-4)]">
-        {categories.map((_, index) => (
-          <button
-            key={index}
-            className={`transition-all rounded-full ${
-              current === index
-                ? 'ds-dot-active bg-primary'
-                : 'ds-dot bg-muted-foreground/30 hover:bg-muted-foreground/50'
-            }`}
-            onClick={() => api?.scrollTo(index)}
-            aria-label={`Go to slide ${index + 1}`}
-          />
-        ))}
-      </div>
+    <div className="grid grid-cols-2 gap-[var(--ds-space-2)]">
+      {categories.map((category) => (
+        <CategoryCard
+          key={category.categoryKey}
+          title={category.title}
+          subtitle={category.subtitle}
+          icon={category.icon}
+          iconColorClass={category.iconColorClass}
+          bgColorClass={category.bgColorClass}
+          pools={category.pools}
+          categoryKey={category.categoryKey}
+          type={category.type}
+          emptyMessage={category.emptyMessage}
+        />
+      ))}
     </div>
   );
 };
