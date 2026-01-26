@@ -466,8 +466,8 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
           </div>
         </div>
         
-        {/* 2x2 Grid layout for mobile */}
-        <div className="grid grid-cols-2 gap-[var(--ds-space-2)]">
+        {/* Single column layout for mobile */}
+        <div className="flex flex-col gap-[var(--ds-space-2)]">
           {(showAll ? sortedData : sortedData.slice(0, DEFAULT_VISIBLE_COUNT)).map((pool) => (
             <MobilePoolCard
               key={`${pool.marketName}-${pool.tokenAddress}`}
