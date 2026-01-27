@@ -295,6 +295,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
             {/* Supply sort dropdown */}
             <div className="relative">
               <button
+                type="button"
                 onClick={() => {
                   setShowSupplySortMenu(!showSupplySortMenu);
                   setShowBorrowSortMenu(false);
@@ -320,7 +321,8 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
                         return 'ds-text-emerald-600';
                       };
                       return (
-                        <button
+                      <button
+                          type="button"
                           key={mode}
                           onClick={() => {
                             if (isAlreadySelected && supplySortOrder === 'desc') {
@@ -357,6 +359,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
             {/* Borrow sort dropdown */}
             <div className="relative">
               <button
+                type="button"
                 onClick={() => {
                   setShowBorrowSortMenu(!showBorrowSortMenu);
                   setShowSupplySortMenu(false);
@@ -382,7 +385,8 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
                         return 'ds-text-brand-cyan';
                       };
                       return (
-                        <button
+                      <button
+                          type="button"
                           key={mode}
                           onClick={() => {
                             if (isAlreadySelected && borrowSortOrder === 'desc') {
@@ -418,6 +422,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
 
             {/* Spread sort button */}
             <button
+              type="button"
               onClick={() => {
                 if (activeSortColumn === 'spread') {
                   toggleSpreadSortOrder();
@@ -446,6 +451,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
             
             {/* Sort order toggle */}
             <button
+              type="button"
               onClick={() => {
                 if (activeSortColumn === 'supply') {
                   toggleSupplySortOrder();
@@ -481,6 +487,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
         {/* Show More/Less button for mobile */}
         {sortedData.length > DEFAULT_VISIBLE_COUNT && (
           <button
+            type="button"
             onClick={() => setShowAll(!showAll)}
             className="w-full mt-[var(--ds-space-4)] ds-button ds-text-14 md:ds-text-16 gap-[var(--ds-space-2)] border border-border bg-card hover:bg-muted/50 transition-colors text-foreground font-semibold"
           >
@@ -538,6 +545,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
                     </span>
                     <div className="relative">
                       <button
+                        type="button"
                         onClick={() => setShowSupplySortMenu(!showSupplySortMenu)}
                         className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-lg border transition-colors ${
                           showSupplySortMenu || activeSortColumn === 'supply'
@@ -557,6 +565,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
                           />
                           <div className="absolute right-0 top-full mt-[var(--ds-space-1)] bg-card border border-border rounded-lg shadow-lg py-[var(--ds-space-1)] z-20 min-w-[140px]">
                             <button
+                              type="button"
                               onClick={() => {
                                 const isAlreadySelected = supplySortMode === 'total' && activeSortColumn === 'supply';
                                 if (isAlreadySelected && supplySortOrder === 'desc') {
@@ -586,6 +595,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
                               )}
                             </button>
                             <button
+                              type="button"
                               onClick={() => {
                                 const isAlreadySelected = supplySortMode === 'native' && activeSortColumn === 'supply';
                                 if (isAlreadySelected && supplySortOrder === 'desc') {
@@ -615,6 +625,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
                               )}
                             </button>
                             <button
+                              type="button"
                               onClick={() => {
                                 const isAlreadySelected = supplySortMode === 'incentive' && activeSortColumn === 'supply';
                                 if (isAlreadySelected && supplySortOrder === 'desc') {
@@ -653,6 +664,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
               {/* Spread Column - center aligned */}
               <TableHead className="w-1/5 px-[var(--ds-space-3)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
                 <button
+                  type="button"
                   onClick={() => {
                     if (activeSortColumn === 'spread') {
                       toggleSpreadSortOrder();
@@ -688,6 +700,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
                     </span>
                     <div className="relative">
                       <button
+                        type="button"
                         onClick={() => setShowBorrowSortMenu(!showBorrowSortMenu)}
                         className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-lg border transition-colors ${
                           showBorrowSortMenu || activeSortColumn === 'borrow'
@@ -707,6 +720,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
                             />
                             <div className="absolute right-0 top-full mt-[var(--ds-space-1)] bg-card border border-border rounded-lg shadow-lg py-[var(--ds-space-1)] z-20 min-w-[140px]">
                               <button
+                                type="button"
                                 onClick={() => {
                                   const isAlreadySelected = borrowSortMode === 'total' && activeSortColumn === 'borrow';
                                   if (isAlreadySelected && borrowSortOrder === 'desc') {
@@ -736,6 +750,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
                                 )}
                               </button>
                               <button
+                                type="button"
                                 onClick={() => {
                                   const isAlreadySelected = borrowSortMode === 'native' && activeSortColumn === 'borrow';
                                   if (isAlreadySelected && borrowSortOrder === 'desc') {
@@ -765,6 +780,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
                                 )}
                               </button>
                               <button
+                                type="button"
                                 onClick={() => {
                                   const isAlreadySelected = borrowSortMode === 'incentive' && activeSortColumn === 'borrow';
                                   if (isAlreadySelected && borrowSortOrder === 'desc') {
@@ -944,6 +960,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
       {sortedData.length > DEFAULT_VISIBLE_COUNT && (
         <div className="p-[var(--ds-space-4)] border-t border-border">
           <button
+            type="button"
             onClick={() => setShowAll(!showAll)}
             className="w-full ds-button ds-text-14 md:ds-text-16 gap-[var(--ds-space-2)] border border-border bg-muted/30 hover:bg-muted/50 transition-colors text-foreground font-semibold"
           >

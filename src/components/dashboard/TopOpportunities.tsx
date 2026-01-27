@@ -337,7 +337,7 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
     if (intensity >= 0.2) return 'text-fuchsia-400/70';
     return 'ds-text-pink-400-70';
   };
-  // Mobile mini card component for 2-column grid layout
+  // Mobile mini card component - styled to match MobilePoolCard
   const MiniPoolCard = ({
     pool,
     index,
@@ -353,9 +353,9 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
     const mainValue = isLeverage
       ? (isApy ? pool.apySpread : pool.aprSpread)
       : (isApy ? pool.totalSupplyApy : pool.totalSupplyApr);
+    const nativeValue = isApy ? (pool.supplyApy ?? null) : (pool.supplyApy !== null && pool.supplyApy !== undefined ? pool.supplyApy * 0.95 : null);
     const incentiveValue = isApy ? pool.supplyIncentiveApy : pool.supplyIncentiveApr;
     const hasIncentive = incentiveValue !== null && !isNaN(incentiveValue) && incentiveValue >= 0.01;
-    const apyAccent = getApyAccentClasses(mainValue);
     const chainIconSrc = getChainIconSrc(pool.chainName);
     const { iconSymbol, logoURI } = fetchIconSymbolAndName({
       underlyingAsset: pool.tokenAddress,
@@ -363,20 +363,27 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
       name: pool.tokenName,
     });
 
+    const handleCardLinkClick = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      handleCardClick(pool);
+    };
+
     return (
       <motion.div
         custom={index}
         initial={false}
         animate="visible"
         variants={itemVariants}
-        className="rounded-xl border ds-card-pad-sm cursor-pointer transition-colors bg-card border-border/60 active:bg-muted/60 h-[72px] flex flex-col justify-between"
-        onClick={() => handleCardClick(pool)}
+        className="bg-card rounded-xl border border-border/60 ds-card-pad-sm transition-colors"
       >
-        {/* Header: Token + Market + Arrow */}
-        <div className="flex items-center gap-[var(--ds-space-2)]">
+        {/* Header: Token + Market + Link button - matches MobilePoolCard layout */}
+        <div 
+          className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-2)] cursor-pointer active:opacity-70 transition-opacity"
+          onClick={handleCardLinkClick}
+        >
           <TokenIcon
             symbol={iconSymbol}
-            size={24}
+            size={28}
             loading="eager"
             className="shrink-0"
             logoURI={logoURI}
@@ -390,24 +397,31 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
               <span className="truncate">{getMarketDisplayName(pool)}</span>
             </div>
           </div>
-          <ChevronRight className="w-4 h-4 text-muted-foreground/50 shrink-0" />
+          {/* Link button - matches MobilePoolCard style */}
+          <div className="shrink-0 w-6 h-6 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center text-primary">
+            <ChevronRight className="w-3 h-3" />
+          </div>
         </div>
 
-        {/* Main value + detail row */}
+        {/* APY Values - matches MobilePoolCard style */}
         <div className="flex items-baseline justify-between gap-[var(--ds-space-1)]">
           <span className={`font-bold ds-text-14 tabular-nums ${isLeverage ? getSpreadColorClass(mainValue, index, totalItems) : getApyColorClass(mainValue)}`}>
             {isLeverage ? formatSpread(mainValue) : formatPercent(mainValue)}
           </span>
-          {/* Incentive badge for supply type */}
+          {/* Incentive breakdown for supply type - styled like MobilePoolCard */}
           {!isLeverage && hasIncentive && (
-            <button
-              type="button"
-              onClick={(e) => handleIncentiveClick(e, pool, 'supply', incentiveValue, mainValue)}
-              className={`inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-1)] py-[var(--ds-space-0-5)] rounded-full ring-1 transition-colors cursor-pointer tabular-nums ds-text-9 ${apyAccent.chip}`}
-            >
-              <span>+{formatPercent(incentiveValue)}</span>
-              <IncentiveIcon width={7} height={7} />
-            </button>
+            <div className="flex items-center gap-[var(--ds-space-0-5)] ds-text-9 flex-nowrap">
+              <span className="ds-text-emerald-500-70 tabular-nums">{formatPercent(nativeValue)}</span>
+              <span className="text-muted-foreground/70">+</span>
+              <button
+                type="button"
+                onClick={(e) => handleIncentiveClick(e, pool, 'supply', incentiveValue, mainValue)}
+                className="inline-flex items-center gap-[var(--ds-space-0-5)] ds-text-emerald-600 ds-bg-emerald-500-10 hover:bg-[rgb(var(--ds-emerald-500-rgb)/0.25)] rounded-full px-[var(--ds-space-1-5)] py-[var(--ds-space-1)] shrink-0 ring-1 ds-ring-emerald-500-15 active:scale-95 transition-all min-h-[28px]"
+              >
+                <span className="tabular-nums">{formatPercent(incentiveValue)}</span>
+                <IncentiveIcon width={8} height={8} />
+              </button>
+            </div>
           )}
           {/* Leverage detail inline */}
           {isLeverage && (
@@ -757,6 +771,7 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
       <div className="flex justify-center items-center gap-[var(--ds-space-2)] mt-[var(--ds-space-4)]">
         {mobilePages.map((_, index) => (
           <button
+            type="button"
             key={index}
             className={`transition-all rounded-full ${
               current === index
