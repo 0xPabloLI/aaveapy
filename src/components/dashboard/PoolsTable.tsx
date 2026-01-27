@@ -840,7 +840,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
               return (
                 <TableRow
                   key={`${pool.marketName}-${pool.tokenAddress}`}
-                  className="transition-colors cursor-pointer"
+                  className="transition-all duration-150 cursor-pointer hover:bg-muted/60 hover:shadow-sm active:bg-muted/80"
                   onClick={() => handleRowClick(pool)}
                 >
                   {/* Token */}
@@ -860,7 +860,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
                         event.stopPropagation();
                         onSelectMarket?.(pool.marketName);
                       }}
-                      className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)] px-[var(--ds-space-2-5)] py-[var(--ds-space-0-5)] rounded-full ds-text-11 font-medium bg-muted/40 text-muted-foreground border border-border/50 hover:bg-muted/50 transition-colors"
+                      className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)] px-[var(--ds-space-2-5)] py-[var(--ds-space-1)] rounded-full ds-text-11 font-medium bg-muted/50 text-muted-foreground border border-border/60 hover:bg-primary/10 hover:text-primary hover:border-primary/40 hover:shadow-sm active:scale-[0.98] transition-all duration-150"
                       aria-label={`Filter by ${getMarketDisplayName(pool)} market`}
                     >
                       <ChainIcon chain={pool.chainName} />
@@ -880,10 +880,11 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
                           </span>
                           <span className="text-muted-foreground/70">+</span>
                           <button
+                            type="button"
                             onClick={(e) =>
                               handleIncentiveClick(e, pool, 'supply', displaySupplyIncentive)
                             }
-                            className="inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-0-5)] py-[var(--ds-space-0)] rounded-full ds-bg-emerald-500-10 ds-text-emerald-500-70 hover:bg-[rgb(var(--ds-emerald-500-rgb)/0.2)] ring-1 ds-ring-emerald-500-15 transition-colors cursor-pointer tabular-nums"
+                            className="inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-0-5)] py-[var(--ds-space-0)] rounded-full ds-bg-emerald-500-10 ds-text-emerald-500-70 hover:bg-[rgb(var(--ds-emerald-500-rgb)/0.25)] hover:ring-2 ring-1 ds-ring-emerald-500-15 transition-all duration-150 cursor-pointer tabular-nums"
                           >
                             <span>{formatPercent(displaySupplyIncentive)}</span>
                             <IncentiveIcon width={isMobile ? 8 : 10} height={isMobile ? 8 : 10} />
@@ -919,10 +920,11 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
                               </>
                             )}
                             <button
+                              type="button"
                               onClick={(e) =>
                                 handleIncentiveClick(e, pool, 'borrow', displayBorrowIncentive)
                               }
-                              className="inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-0-5)] py-[var(--ds-space-0)] rounded-full ds-bg-brand-cyan-10 ds-text-brand-cyan-70 hover:bg-[rgb(var(--ds-brand-cyan-rgb)/0.2)] ring-1 ds-ring-brand-cyan-15 transition-colors cursor-pointer tabular-nums"
+                              className="inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-0-5)] py-[var(--ds-space-0)] rounded-full ds-bg-brand-cyan-10 ds-text-brand-cyan-70 hover:bg-[rgb(var(--ds-brand-cyan-rgb)/0.25)] hover:ring-2 ring-1 ds-ring-brand-cyan-15 transition-all duration-150 cursor-pointer tabular-nums"
                             >
                               <span>{formatPercent(displayBorrowIncentive)}</span>
                               <IncentiveIcon width={isMobile ? 8 : 10} height={isMobile ? 8 : 10} />
