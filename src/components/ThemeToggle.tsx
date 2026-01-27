@@ -1,4 +1,4 @@
-import { Moon, Sun, Monitor } from 'lucide-react';
+import { Moon, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -7,15 +7,9 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 
 const ThemeToggle = () => {
-  const { setTheme, theme, resolvedTheme } = useTheme();
+  const { setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   // Avoid hydration mismatch
@@ -30,9 +24,10 @@ const ThemeToggle = () => {
     }, 350);
   };
 
-  const handleThemeChange = (newTheme: string) => {
+  const handleToggle = () => {
     applyTransition();
-    setTheme(newTheme);
+    // Simple toggle: if current is dark, switch to light; otherwise switch to dark
+    setTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
   };
 
   if (!mounted) {
@@ -41,65 +36,30 @@ const ThemeToggle = () => {
     );
   }
 
-  const getIcon = () => {
-    if (theme === 'system') {
-      return <Monitor className="h-4 w-4 text-primary" />;
-    }
-    if (resolvedTheme === 'dark') {
-      return <Moon className="h-4 w-4 text-primary" />;
-    }
-    return <Sun className="h-4 w-4 text-primary" />;
-  };
-
-  const getLabel = () => {
-    if (theme === 'system') return 'System theme';
-    if (resolvedTheme === 'dark') return 'Dark mode';
-    return 'Light mode';
-  };
+  const isDark = resolvedTheme === 'dark';
 
   return (
-    <DropdownMenu>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="outline"
-              size="icon"
-              className="relative h-9 w-9 rounded-full bg-card border-2 border-border hover:bg-accent hover:border-primary/50 transition-all duration-300 shadow-sm"
-            >
-              {getIcon()}
-              <span className="sr-only">{getLabel()}</span>
-            </Button>
-          </DropdownMenuTrigger>
-        </TooltipTrigger>
-        <TooltipContent side="bottom" className="ds-text-11">
-          {getLabel()}
-        </TooltipContent>
-      </Tooltip>
-      <DropdownMenuContent align="end" className="min-w-[140px]">
-        <DropdownMenuItem
-          onClick={() => handleThemeChange('light')}
-          className={theme === 'light' ? 'bg-accent' : ''}
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          onClick={handleToggle}
+          className="relative h-9 w-9 rounded-full bg-card border border-border hover:bg-accent hover:border-primary/50 transition-all duration-300"
         >
-          <Sun className="mr-2 h-4 w-4" />
-          <span>Light</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={() => handleThemeChange('dark')}
-          className={theme === 'dark' ? 'bg-accent' : ''}
-        >
-          <Moon className="mr-2 h-4 w-4" />
-          <span>Dark</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={() => handleThemeChange('system')}
-          className={theme === 'system' ? 'bg-accent' : ''}
-        >
-          <Monitor className="mr-2 h-4 w-4" />
-          <span>System</span>
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+          {isDark ? (
+            <Moon className="h-4 w-4 text-primary" />
+          ) : (
+            <Sun className="h-4 w-4 text-primary" />
+          )}
+          <span className="sr-only">{isDark ? 'Dark mode' : 'Light mode'}</span>
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent side="bottom" className="ds-text-11">
+        Switch to {isDark ? 'light' : 'dark'} mode
+      </TooltipContent>
+    </Tooltip>
   );
 };
 
