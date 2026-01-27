@@ -337,7 +337,7 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
     if (intensity >= 0.2) return 'text-fuchsia-400/70';
     return 'ds-text-pink-400-70';
   };
-  // Mobile mini card component - styled to match MobilePoolCard
+  // Mobile mini card component - simple compact style (original design)
   const MiniPoolCard = ({
     pool,
     index,
@@ -353,9 +353,9 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
     const mainValue = isLeverage
       ? (isApy ? pool.apySpread : pool.aprSpread)
       : (isApy ? pool.totalSupplyApy : pool.totalSupplyApr);
-    const nativeValue = isApy ? (pool.supplyApy ?? null) : (pool.supplyApy !== null && pool.supplyApy !== undefined ? pool.supplyApy * 0.95 : null);
     const incentiveValue = isApy ? pool.supplyIncentiveApy : pool.supplyIncentiveApr;
     const hasIncentive = incentiveValue !== null && !isNaN(incentiveValue) && incentiveValue >= 0.01;
+    const apyAccent = getApyAccentClasses(mainValue);
     const chainIconSrc = getChainIconSrc(pool.chainName);
     const { iconSymbol, logoURI } = fetchIconSymbolAndName({
       underlyingAsset: pool.tokenAddress,
@@ -363,71 +363,67 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
       name: pool.tokenName,
     });
 
-    const handleCardLinkClick = (e: React.MouseEvent) => {
-      e.stopPropagation();
-      handleCardClick(pool);
-    };
-
     return (
       <motion.div
         custom={index}
         initial={false}
         animate="visible"
         variants={itemVariants}
-        className="bg-card rounded-xl border border-border/60 ds-card-pad-sm transition-colors"
+        className={`flex items-center rounded-lg border transition-all cursor-pointer h-[52px] ${
+          isLeverage 
+            ? 'bg-background border-border hover:border-[rgb(var(--ds-purple-500-rgb)/0.5)]'
+            : 'bg-gradient-to-r from-background to-success/5 border-border hover:border-success/50'
+        } px-[var(--ds-space-2)] gap-[var(--ds-space-2)]`}
+        onClick={() => handleCardClick(pool)}
       >
-        {/* Header: Token + Market + Link button - matches MobilePoolCard layout */}
-        <div 
-          className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-2)] cursor-pointer active:opacity-70 transition-opacity"
-          onClick={handleCardLinkClick}
-        >
+        {/* Token Info - compact grid layout */}
+        <div className="grid grid-cols-[auto,1fr,auto] grid-rows-[auto,auto] content-center items-center gap-x-[var(--ds-space-2)] gap-y-[var(--ds-space-0-5)] flex-1 min-w-0 h-full">
           <TokenIcon
             symbol={iconSymbol}
             size={28}
             loading="eager"
-            className="shrink-0"
+            className="shrink-0 row-span-2"
             logoURI={logoURI}
           />
-          <div className="min-w-0 flex-1">
-            <p className="font-bold text-foreground ds-text-12 truncate">{pool.tokenSymbol}</p>
-            <div className="flex items-center gap-[var(--ds-space-1)] ds-text-9 text-muted-foreground">
-              {chainIconSrc && (
-                <img src={chainIconSrc} alt={pool.chainName} className="w-3 h-3" />
-              )}
-              <span className="truncate">{getMarketDisplayName(pool)}</span>
-            </div>
-          </div>
-          {/* Link button - matches MobilePoolCard style */}
-          <div className="shrink-0 w-6 h-6 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center text-primary">
-            <ChevronRight className="w-3 h-3" />
-          </div>
-        </div>
-
-        {/* APY Values - matches MobilePoolCard style */}
-        <div className="flex items-baseline justify-between gap-[var(--ds-space-1)]">
-          <span className={`font-bold ds-text-14 tabular-nums ${isLeverage ? getSpreadColorClass(mainValue, index, totalItems) : getApyColorClass(mainValue)}`}>
+          <p className="font-semibold text-foreground truncate leading-none ds-text-12">
+            {pool.tokenSymbol}
+          </p>
+          <div
+            className={`${(isLeverage ? getSpreadColorClass(mainValue, index, totalItems) : getApyColorClass(mainValue))} font-bold tabular-nums text-right leading-none ds-text-14 ${!isLeverage && !hasIncentive ? 'row-span-2 self-center' : ''}`}
+          >
             {isLeverage ? formatSpread(mainValue) : formatPercent(mainValue)}
-          </span>
-          {/* Incentive breakdown for supply type - styled like MobilePoolCard */}
+          </div>
+          <div className="flex items-center gap-[var(--ds-space-1)] min-w-0 leading-none">
+            {chainIconSrc && (
+              <img src={chainIconSrc} alt={pool.chainName} className="shrink-0 w-3 h-3" />
+            )}
+            <p className="text-secondary truncate ds-text-9 leading-none">{getMarketDisplayName(pool)}</p>
+          </div>
+          {/* Detail breakdown - Only show for supply type */}
           {!isLeverage && hasIncentive && (
-            <div className="flex items-center gap-[var(--ds-space-0-5)] ds-text-9 flex-nowrap">
-              <span className="ds-text-emerald-500-70 tabular-nums">{formatPercent(nativeValue)}</span>
-              <span className="text-muted-foreground/70">+</span>
+            <div className="flex items-center justify-end gap-[var(--ds-space-0-5)] ds-text-9 text-secondary whitespace-nowrap leading-none">
+              <span className={`${apyAccent.text} tabular-nums`}>{formatPercent(pool.supplyApy ?? null)}</span>
+              <span className="text-muted-foreground">+</span>
               <button
                 type="button"
                 onClick={(e) => handleIncentiveClick(e, pool, 'supply', incentiveValue, mainValue)}
-                className="inline-flex items-center gap-[var(--ds-space-0-5)] ds-text-emerald-600 ds-bg-emerald-500-10 hover:bg-[rgb(var(--ds-emerald-500-rgb)/0.25)] rounded-full px-[var(--ds-space-1-5)] py-[var(--ds-space-1)] shrink-0 ring-1 ds-ring-emerald-500-15 active:scale-95 transition-all min-h-[28px]"
+                className={`inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-0-5)] py-[var(--ds-space-0)] rounded-full ring-1 transition-colors cursor-pointer tabular-nums ${apyAccent.chip}`}
               >
-                <span className="tabular-nums">{formatPercent(incentiveValue)}</span>
+                <span>{formatPercent(incentiveValue)}</span>
                 <IncentiveIcon width={8} height={8} />
               </button>
             </div>
           )}
-          {/* Leverage detail inline */}
+          {/* Leverage detail */}
           {isLeverage && (
-            <span className={`${getSpreadAccentClass(mainValue, index, totalItems)} tabular-nums ds-text-9`}>
-              {formatPercent(isApy ? pool.totalSupplyApy : pool.totalSupplyApr)} - {formatPercent(isApy ? pool.totalBorrowApy : pool.totalBorrowApr)}
-            </span>
+            <div className={`${getSpreadAccentClass(mainValue, index, totalItems)} tabular-nums whitespace-nowrap text-right leading-none ds-text-9`}>
+              {formatPercent(isApy ? pool.totalSupplyApy : pool.totalSupplyApr)} -{' '}
+              {(() => {
+                const borrowValue = isApy ? pool.totalBorrowApy : pool.totalBorrowApr;
+                if (borrowValue === null) return '-';
+                return borrowValue < 0 ? `(${formatPercent(borrowValue)})` : formatPercent(borrowValue);
+              })()}
+            </div>
           )}
         </div>
       </motion.div>
