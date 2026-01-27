@@ -1,3 +1,6 @@
+@tailwind base;
+@tailwind utilities;
+
 @layer base {
   :root {
     --ds-text-8: 8px;
@@ -443,5 +446,56 @@
 
   .dark .ds-text-amber-700 {
     color: rgb(var(--ds-amber-300-rgb));
+  }
+
+  /* Dark mode tooltip surface - darker with subtle grid */
+  .dark .ds-tooltip-surface {
+    --ds-tooltip-white-rgb: 30 32 38;
+    --ds-tooltip-warm-rgb: 200 150 50;
+    --ds-tooltip-cool-rgb: 50 130 160;
+    --ds-tooltip-grid-rgb: 255 255 255;
+    background-image:
+      linear-gradient(180deg, rgb(var(--ds-tooltip-white-rgb) / 0.95), rgb(var(--ds-tooltip-white-rgb) / 0.98)),
+      radial-gradient(900px 220px at 5% -10%, rgb(var(--ds-tooltip-warm-rgb) / 0.08), transparent 60%),
+      radial-gradient(700px 220px at 100% 0%, rgb(var(--ds-tooltip-cool-rgb) / 0.08), transparent 55%),
+      linear-gradient(90deg, rgb(var(--ds-tooltip-grid-rgb) / 0.03) 1px, transparent 1px),
+      linear-gradient(0deg, rgb(var(--ds-tooltip-grid-rgb) / 0.03) 1px, transparent 1px);
+  }
+
+  /* Dark mode color adjustments for better contrast */
+  .dark .ds-text-emerald-700 {
+    color: rgb(var(--ds-emerald-500-rgb));
+  }
+
+  .dark .ds-text-emerald-600 {
+    color: rgb(var(--ds-emerald-500-rgb) / 0.9);
+  }
+
+  .dark .ds-text-purple-700 {
+    color: rgb(var(--ds-purple-500-rgb));
+  }
+
+  .dark .ds-text-purple-600 {
+    color: rgb(var(--ds-purple-500-rgb) / 0.9);
+  }
+
+  .dark .ds-bg-emerald-50 {
+    background-color: rgb(var(--ds-emerald-500-rgb) / 0.15);
+  }
+
+  .dark .ds-bg-emerald-50-50 {
+    background-color: rgb(var(--ds-emerald-500-rgb) / 0.1);
+  }
+
+  .dark .ds-bg-purple-50 {
+    background-color: rgb(var(--ds-purple-500-rgb) / 0.12);
+  }
+
+  .dark .ds-border-emerald-200 {
+    border-color: rgb(var(--ds-emerald-500-rgb) / 0.3);
+  }
+
+  .dark .ds-border-purple-200 {
+    border-color: rgb(var(--ds-purple-500-rgb) / 0.3);
   }
 }
