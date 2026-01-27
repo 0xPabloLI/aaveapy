@@ -401,6 +401,7 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
           {/* Incentive badge for supply type */}
           {!isLeverage && hasIncentive && (
             <button
+              type="button"
               onClick={(e) => handleIncentiveClick(e, pool, 'supply', incentiveValue, mainValue)}
               className={`inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-1)] py-[var(--ds-space-0-5)] rounded-full ring-1 transition-colors cursor-pointer tabular-nums ds-text-9 ${apyAccent.chip}`}
             >
@@ -489,6 +490,7 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
                 <>
                   <span className="text-muted-foreground">+</span>
                   <button
+                    type="button"
                     onClick={(e) => handleIncentiveClick(e, pool, 'supply', incentiveValue, mainValue)}
                     className={`inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-0-5)] py-[var(--ds-space-0)] rounded-full ring-1 transition-colors cursor-pointer tabular-nums ${apyAccent.chip}`}
                   >
@@ -724,31 +726,29 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
           ))}
         </CarouselContent>
 
-        {/* Navigation arrows */}
+        {/* Navigation arrows - lighter style to differentiate from card arrows */}
         {canScrollPrev && (
-          <div className="absolute left-2 top-1/2 -translate-y-1/2 z-20 pointer-events-none">
-            <Button
-              variant="outline"
-              size="icon"
-              className="ds-icon-button bg-background/90 backdrop-blur-sm border shadow-lg pointer-events-auto hover:bg-accent"
+          <div className="absolute left-0 top-1/2 -translate-y-1/2 z-20 pointer-events-none">
+            <button
+              type="button"
+              className="w-6 h-6 flex items-center justify-center rounded-full bg-muted/60 text-muted-foreground/70 hover:bg-muted hover:text-foreground transition-colors pointer-events-auto"
               onClick={() => api?.scrollPrev()}
             >
-              <ChevronLeft className="h-3.5 w-3.5" />
+              <ChevronLeft className="h-3 w-3" />
               <span className="sr-only">Previous slide</span>
-            </Button>
+            </button>
           </div>
         )}
         {canScrollNext && (
-          <div className="absolute right-2 top-1/2 -translate-y-1/2 z-20 pointer-events-none">
-            <Button
-              variant="outline"
-              size="icon"
-              className="ds-icon-button bg-background/90 backdrop-blur-sm border shadow-lg pointer-events-auto hover:bg-accent"
+          <div className="absolute right-0 top-1/2 -translate-y-1/2 z-20 pointer-events-none">
+            <button
+              type="button"
+              className="w-6 h-6 flex items-center justify-center rounded-full bg-muted/60 text-muted-foreground/70 hover:bg-muted hover:text-foreground transition-colors pointer-events-auto"
               onClick={() => api?.scrollNext()}
             >
-              <ChevronRight className="h-3.5 w-3.5" />
+              <ChevronRight className="h-3 w-3" />
               <span className="sr-only">Next slide</span>
-            </Button>
+            </button>
           </div>
         )}
       </Carousel>

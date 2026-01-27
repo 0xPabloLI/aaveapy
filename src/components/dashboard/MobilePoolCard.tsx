@@ -1,4 +1,4 @@
-import { ChevronRight } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 import { PoolWithSpread, ETHEREUM_MARKET_NAMES } from '@/types/aave';
 import { 
   formatPercent, 
@@ -99,12 +99,12 @@ const MobilePoolCard = ({ pool, isApy, onIncentiveClick }: MobilePoolCardProps) 
   const borrowValueClass = displayBorrowTotal === null ? 'text-muted-foreground/70' : 'ds-text-brand-cyan';
 
   return (
-    <div 
-      className="bg-card rounded-xl border border-border/60 ds-card-pad-sm shadow-sm active:bg-muted/60 transition-colors cursor-pointer"
-      onClick={handleCardClick}
-    >
-      {/* Header: Token + Market - Compact layout */}
-      <div className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-2)]">
+    <div className="bg-card rounded-xl border border-border/60 ds-card-pad-sm shadow-sm transition-colors">
+      {/* Header: Token + Market + Link button - Compact layout */}
+      <div 
+        className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-2)] cursor-pointer active:opacity-70 transition-opacity"
+        onClick={handleCardClick}
+      >
         <TokenIcon
           symbol={iconSymbol}
           size={32}
@@ -121,7 +121,10 @@ const MobilePoolCard = ({ pool, isApy, onIncentiveClick }: MobilePoolCardProps) 
             <span className="truncate">{getMarketDisplayName()}</span>
           </div>
         </div>
-        <ChevronRight className="w-4 h-4 text-muted-foreground/70 shrink-0" />
+        {/* Link button - clear visual affordance */}
+        <div className="shrink-0 w-7 h-7 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center text-primary hover:bg-primary/20 active:scale-95 transition-all">
+          <ExternalLink className="w-3.5 h-3.5" />
+        </div>
       </div>
 
       {/* APY Values - 3 column layout: Supply | Spread | Borrow */}
@@ -137,14 +140,15 @@ const MobilePoolCard = ({ pool, isApy, onIncentiveClick }: MobilePoolCardProps) 
               <span className="ds-text-emerald-500-70">{formatPercent(isApy ? (pool.supplyApy ?? null) : (pool.supplyApy !== null && pool.supplyApy !== undefined ? apyToApr(pool.supplyApy) : null))}</span>
               <span className="text-muted-foreground/70">+</span>
               <button
+                type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   onIncentiveClick(e, pool, 'supply', displaySupplyIncentive);
                 }}
-                className="inline-flex items-center gap-[var(--ds-space-0-5)] ds-text-emerald-600 ds-bg-emerald-500-10 hover:bg-[rgb(var(--ds-emerald-500-rgb)/0.2)] rounded-full px-[var(--ds-space-1)] py-[var(--ds-space-0-5)] shrink-0 ring-1 ds-ring-emerald-500-15 transition-colors"
+                className="inline-flex items-center gap-[var(--ds-space-0-5)] ds-text-emerald-600 ds-bg-emerald-500-10 hover:bg-[rgb(var(--ds-emerald-500-rgb)/0.25)] rounded-full px-[var(--ds-space-1-5)] py-[var(--ds-space-1)] shrink-0 ring-1 ds-ring-emerald-500-15 active:scale-95 transition-all min-h-[28px]"
               >
                 <span>{formatPercent(displaySupplyIncentive)}</span>
-                <IncentiveIcon width={7} height={7} />
+                <IncentiveIcon width={8} height={8} />
               </button>
             </div>
           )}
@@ -171,14 +175,15 @@ const MobilePoolCard = ({ pool, isApy, onIncentiveClick }: MobilePoolCardProps) 
               <span className="ds-text-brand-cyan-70">{formatPercent(isApy ? (pool.borrowApy ?? null) : (pool.borrowApy !== null && pool.borrowApy !== undefined ? apyToApr(pool.borrowApy) : null))}</span>
               <span className="text-muted-foreground/70">-</span>
               <button
+                type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   onIncentiveClick(e, pool, 'borrow', displayBorrowIncentive);
                 }}
-                className="inline-flex items-center gap-[var(--ds-space-0-5)] ds-text-brand-cyan ds-bg-brand-cyan-10 hover:bg-[rgb(var(--ds-brand-cyan-rgb)/0.2)] rounded-full px-[var(--ds-space-1)] py-[var(--ds-space-0-5)] shrink-0 ring-1 ds-ring-brand-cyan-15 transition-colors"
+                className="inline-flex items-center gap-[var(--ds-space-0-5)] ds-text-brand-cyan ds-bg-brand-cyan-10 hover:bg-[rgb(var(--ds-brand-cyan-rgb)/0.25)] rounded-full px-[var(--ds-space-1-5)] py-[var(--ds-space-1)] shrink-0 ring-1 ds-ring-brand-cyan-15 active:scale-95 transition-all min-h-[28px]"
               >
                 <span>{formatPercent(displayBorrowIncentive)}</span>
-                <IncentiveIcon width={7} height={7} />
+                <IncentiveIcon width={8} height={8} />
               </button>
             </div>
           )}

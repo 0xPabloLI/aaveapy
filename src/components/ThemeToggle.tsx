@@ -1,46 +1,105 @@
-import { Moon, Sun } from 'lucide-react';
+import { Moon, Sun, Monitor } from 'lucide-react';
 import { useTheme } from 'next-themes';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const ThemeToggle = () => {
-  const { setTheme, resolvedTheme } = useTheme();
+  const { setTheme, theme, resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
 
-  const toggleTheme = () => {
-    // Add transition class before theme change
+  // Avoid hydration mismatch
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const applyTransition = () => {
     document.documentElement.classList.add('theme-transition');
-    
-    setTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
-    
-    // Remove transition class after animation completes
     setTimeout(() => {
       document.documentElement.classList.remove('theme-transition');
     }, 350);
   };
 
+  const handleThemeChange = (newTheme: string) => {
+    applyTransition();
+    setTheme(newTheme);
+  };
+
+  if (!mounted) {
+    return (
+      <div className="h-9 w-9 rounded-full bg-muted animate-pulse" />
+    );
+  }
+
+  const getIcon = () => {
+    if (theme === 'system') {
+      return <Monitor className="h-4 w-4 text-primary" />;
+    }
+    if (resolvedTheme === 'dark') {
+      return <Moon className="h-4 w-4 text-primary" />;
+    }
+    return <Sun className="h-4 w-4 text-primary" />;
+  };
+
+  const getLabel = () => {
+    if (theme === 'system') return 'System theme';
+    if (resolvedTheme === 'dark') return 'Dark mode';
+    return 'Light mode';
+  };
+
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={toggleTheme}
-          className="relative h-8 w-8 rounded-full bg-card/60 border border-border/40 hover:bg-card hover:border-border transition-all duration-300"
+    <DropdownMenu>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              size="icon"
+              className="relative h-9 w-9 rounded-full bg-card border-2 border-border hover:bg-accent hover:border-primary/50 transition-all duration-300 shadow-sm"
+            >
+              {getIcon()}
+              <span className="sr-only">{getLabel()}</span>
+            </Button>
+          </DropdownMenuTrigger>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" className="ds-text-11">
+          {getLabel()}
+        </TooltipContent>
+      </Tooltip>
+      <DropdownMenuContent align="end" className="min-w-[140px]">
+        <DropdownMenuItem
+          onClick={() => handleThemeChange('light')}
+          className={theme === 'light' ? 'bg-accent' : ''}
         >
-          <Sun className="h-4 w-4 rotate-0 scale-100 transition-all duration-300 dark:-rotate-90 dark:scale-0 text-primary" />
-          <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all duration-300 dark:rotate-0 dark:scale-100 text-primary" />
-          <span className="sr-only">Toggle theme</span>
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent side="bottom" className="ds-text-11">
-        {resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-      </TooltipContent>
-    </Tooltip>
+          <Sun className="mr-2 h-4 w-4" />
+          <span>Light</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => handleThemeChange('dark')}
+          className={theme === 'dark' ? 'bg-accent' : ''}
+        >
+          <Moon className="mr-2 h-4 w-4" />
+          <span>Dark</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => handleThemeChange('system')}
+          className={theme === 'system' ? 'bg-accent' : ''}
+        >
+          <Monitor className="mr-2 h-4 w-4" />
+          <span>System</span>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 };
 
