@@ -84,63 +84,74 @@
   }
 
   .dark {
-    --background: 24 9% 10%;
-    --foreground: 60 9% 97%;
+    /* Deep charcoal background with better contrast */
+    --background: 220 15% 8%;
+    --foreground: 60 5% 96%;
 
-    --card: 12 6% 15%;
-    --card-foreground: 60 9% 97%;
+    /* Elevated surfaces with subtle warmth */
+    --card: 220 12% 12%;
+    --card-foreground: 60 5% 96%;
 
-    --popover: 30 6% 25%;
-    --popover-foreground: 60 9% 97%;
+    /* Popovers slightly elevated */
+    --popover: 220 12% 16%;
+    --popover-foreground: 60 5% 96%;
 
-    --primary: 43 96% 56%;
-    --primary-foreground: 20 91% 14%;
+    /* Primary - bright gold for strong contrast */
+    --primary: 43 96% 58%;
+    --primary-foreground: 220 15% 8%;
 
-    --secondary: 24 5% 44%;
-    --secondary-foreground: 60 9% 97%;
+    /* Secondary - muted but readable */
+    --secondary: 220 8% 35%;
+    --secondary-foreground: 60 5% 90%;
 
-    --muted: 24 5% 44%;
-    --muted-foreground: 60 9% 97%;
+    /* Muted - for subtle text */
+    --muted: 220 10% 25%;
+    --muted-foreground: 60 5% 70%;
 
-    --accent: 25 83% 14%;
-    --accent-foreground: 47 95% 53%;
+    /* Accent - for highlights */
+    --accent: 43 50% 18%;
+    --accent-foreground: 43 96% 70%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 85% 97%;
 
-    --success: 161 52% 46%;
+    --success: 161 52% 50%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 30 93% 63%;
+    --warning: 38 92% 55%;
     --warning-foreground: 0 0% 0%;
 
-    --border: 33 5% 32%;
-    --input: 33 5% 32%;
-    --ring: 43 96% 56%;
+    /* Borders - more visible */
+    --border: 220 10% 22%;
+    --input: 220 10% 22%;
+    --ring: 43 96% 58%;
 
-    --sidebar-background: 240 67% 8%;
-    --sidebar-foreground: 60 9% 97%;
-    --sidebar-primary: 43 96% 56%;
-    --sidebar-primary-foreground: 20 91% 14%;
-    --sidebar-accent: 47 95% 53%;
-    --sidebar-accent-foreground: 25 83% 14%;
-    --sidebar-border: 33 5% 32%;
-    --sidebar-ring: 43 96% 56%;
+    --sidebar-background: 220 15% 6%;
+    --sidebar-foreground: 60 5% 96%;
+    --sidebar-primary: 43 96% 58%;
+    --sidebar-primary-foreground: 220 15% 8%;
+    --sidebar-accent: 43 50% 25%;
+    --sidebar-accent-foreground: 43 96% 70%;
+    --sidebar-border: 220 10% 22%;
+    --sidebar-ring: 43 96% 58%;
     --chart-1: 45 96% 64%;
     --chart-2: 48 96% 76%;
     --chart-3: 43 96% 56%;
     --chart-4: 37 92% 50%;
-    --chart-5: 33 5% 32%;
-    --sidebar: 12 6% 15%;
-    --radius: 0rem;
-    --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
-    --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
-    --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
-    --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
-    --shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 2px 4px -1px hsl(0 0% 0% / 0.1);
-    --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 4px 6px -1px hsl(0 0% 0% / 0.1);
-    --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 8px 10px -1px hsl(0 0% 0% / 0.1);
-    --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
+    --chart-5: 220 10% 30%;
+    --sidebar: 220 12% 12%;
+    
+    /* Keep rounded corners in dark mode for consistency */
+    --radius: 1rem;
+    
+    --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.15);
+    --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.15);
+    --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.2), 0 1px 2px -1px hsl(0 0% 0% / 0.2);
+    --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.2), 0 1px 2px -1px hsl(0 0% 0% / 0.2);
+    --shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.25), 0 2px 4px -1px hsl(0 0% 0% / 0.2);
+    --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.3), 0 4px 6px -1px hsl(0 0% 0% / 0.25);
+    --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.35), 0 8px 10px -1px hsl(0 0% 0% / 0.3);
+    --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.5);
   }
 }
 
@@ -151,6 +162,19 @@
 
   body {
     @apply bg-background text-foreground;
+  }
+
+  /* Smooth theme transition for all color-related properties */
+  html.theme-transition,
+  html.theme-transition *,
+  html.theme-transition *::before,
+  html.theme-transition *::after {
+    transition: background-color 300ms ease-out,
+                border-color 300ms ease-out,
+                color 200ms ease-out,
+                fill 200ms ease-out,
+                stroke 200ms ease-out,
+                box-shadow 300ms ease-out !important;
   }
 }
 

@@ -15,6 +15,7 @@ interface HeaderProps {
 const Header = ({ lastUpdated }: HeaderProps) => {
   return (
     <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-[var(--ds-space-3)] md:gap-[var(--ds-space-4)]">
+      {/* Left side: Logo + Title + Mobile theme toggle */}
       <div className="flex items-center gap-[var(--ds-space-3)] md:gap-[var(--ds-space-4)]">
         <img src="/aave_apy_logo.svg" alt="Aave APY logo" className="w-12 h-12 md:w-16 md:h-16 object-contain" />
         <div className="flex-1 min-w-0">
@@ -45,20 +46,25 @@ const Header = ({ lastUpdated }: HeaderProps) => {
             Find the best lending & leverage opportunities across 17 chains
           </p>
         </div>
+        
+        {/* Mobile: Theme toggle aligned with title */}
+        <div className="md:hidden shrink-0">
+          <ThemeToggle />
+        </div>
       </div>
 
-      {/* Right side: Theme toggle + Last Updated */}
-      <div className="flex items-center gap-[var(--ds-space-3)]">
-        {/* Theme Toggle */}
-        <ThemeToggle />
-        
-        {/* Desktop: Last Updated */}
+      {/* Desktop Right side: Last Updated + Theme toggle */}
+      <div className="hidden md:flex items-center gap-[var(--ds-space-3)]">
+        {/* Desktop: Last Updated first */}
         {lastUpdated && (
-          <div className="hidden md:flex items-center gap-[var(--ds-space-2)] ds-text-11 text-muted-foreground shrink-0">
+          <div className="flex items-center gap-[var(--ds-space-2)] ds-text-11 text-muted-foreground shrink-0">
             <Clock className="w-4 h-4" />
             <span>Updated {formatRelativeTime(lastUpdated)}</span>
           </div>
         )}
+        
+        {/* Desktop: Theme Toggle after updated text */}
+        <ThemeToggle />
       </div>
     </header>
   );
