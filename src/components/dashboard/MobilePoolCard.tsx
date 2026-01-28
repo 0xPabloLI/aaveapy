@@ -100,9 +100,9 @@ const MobilePoolCard = ({ pool, isApy, onIncentiveClick }: MobilePoolCardProps) 
 
   return (
     <div className="bg-card rounded-xl border border-border/60 ds-card-pad-sm shadow-sm transition-colors">
-      {/* Header: Token + Market + Link button - Compact layout */}
+      {/* Header: Token + Market + Link button - Compact layout with min touch target */}
       <div 
-        className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-2)] cursor-pointer active:opacity-70 transition-opacity"
+        className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-2)] cursor-pointer active:opacity-70 transition-opacity min-h-[44px]"
         onClick={handleCardClick}
       >
         <TokenIcon
@@ -121,9 +121,11 @@ const MobilePoolCard = ({ pool, isApy, onIncentiveClick }: MobilePoolCardProps) 
             <span className="truncate">{getMarketDisplayName()}</span>
           </div>
         </div>
-        {/* Link button - neutral style matching other interactive elements */}
-        <div className="shrink-0 w-7 h-7 rounded-full bg-muted/60 border border-border flex items-center justify-center text-muted-foreground transition-all hover:bg-muted hover:border-border/80 hover:text-foreground">
-          <ExternalLink className="w-3.5 h-3.5" />
+        {/* Link button - neutral style with expanded touch target */}
+        <div className="shrink-0 w-10 h-10 -m-1.5 rounded-full flex items-center justify-center">
+          <div className="w-7 h-7 rounded-full bg-muted/60 border border-border flex items-center justify-center text-muted-foreground transition-all hover:bg-muted hover:border-border/80 hover:text-foreground">
+            <ExternalLink className="w-3.5 h-3.5" />
+          </div>
         </div>
       </div>
 
@@ -139,16 +141,19 @@ const MobilePoolCard = ({ pool, isApy, onIncentiveClick }: MobilePoolCardProps) 
             <div className="flex items-center gap-[var(--ds-space-0-5)] ds-text-9 flex-nowrap">
               <span className="ds-text-emerald-500-70">{formatPercent(isApy ? (pool.supplyApy ?? null) : (pool.supplyApy !== null && pool.supplyApy !== undefined ? apyToApr(pool.supplyApy) : null))}</span>
               <span className="text-muted-foreground/70">+</span>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onIncentiveClick(e, pool, 'supply', displaySupplyIncentive);
-                }}
-                className="inline-flex items-center ds-text-emerald-600 ds-bg-emerald-500-10 hover:bg-[rgb(var(--ds-emerald-500-rgb)/0.2)] rounded-full px-[var(--ds-space-1)] shrink-0 ring-1 ds-ring-emerald-500-15 active:scale-95 transition-all hover:ring-[rgb(var(--ds-emerald-500-rgb)/0.3)]"
-              >
-                <span>{formatPercent(displaySupplyIncentive)}</span>
-              </button>
+              {/* Expanded touch target wrapper without visual change */}
+              <div className="relative -m-1.5 p-1.5">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onIncentiveClick(e, pool, 'supply', displaySupplyIncentive);
+                  }}
+                  className="inline-flex items-center ds-text-emerald-600 ds-bg-emerald-500-10 hover:bg-[rgb(var(--ds-emerald-500-rgb)/0.25)] rounded-full px-[var(--ds-space-1)] shrink-0 ring-1 ds-ring-emerald-500-15 active:scale-95 transition-all hover:ring-2 hover:ring-[rgb(var(--ds-emerald-500-rgb)/0.35)]"
+                >
+                  <span>{formatPercent(displaySupplyIncentive)}</span>
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -173,16 +178,19 @@ const MobilePoolCard = ({ pool, isApy, onIncentiveClick }: MobilePoolCardProps) 
             <div className="flex items-center gap-[var(--ds-space-0-5)] ds-text-9 flex-nowrap justify-end">
               <span className="ds-text-brand-cyan-70">{formatPercent(isApy ? (pool.borrowApy ?? null) : (pool.borrowApy !== null && pool.borrowApy !== undefined ? apyToApr(pool.borrowApy) : null))}</span>
               <span className="text-muted-foreground/70">-</span>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onIncentiveClick(e, pool, 'borrow', displayBorrowIncentive);
-                }}
-                className="inline-flex items-center ds-text-brand-cyan ds-bg-brand-cyan-10 hover:bg-[rgb(var(--ds-brand-cyan-rgb)/0.2)] rounded-full px-[var(--ds-space-1)] shrink-0 ring-1 ds-ring-brand-cyan-15 active:scale-95 transition-all hover:ring-[rgb(var(--ds-brand-cyan-rgb)/0.3)]"
-              >
-                <span>{formatPercent(displayBorrowIncentive)}</span>
-              </button>
+              {/* Expanded touch target wrapper without visual change */}
+              <div className="relative -m-1.5 p-1.5">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onIncentiveClick(e, pool, 'borrow', displayBorrowIncentive);
+                  }}
+                  className="inline-flex items-center ds-text-brand-cyan ds-bg-brand-cyan-10 hover:bg-[rgb(var(--ds-brand-cyan-rgb)/0.25)] rounded-full px-[var(--ds-space-1)] shrink-0 ring-1 ds-ring-brand-cyan-15 active:scale-95 transition-all hover:ring-2 hover:ring-[rgb(var(--ds-brand-cyan-rgb)/0.35)]"
+                >
+                  <span>{formatPercent(displayBorrowIncentive)}</span>
+                </button>
+              </div>
             </div>
           )}
         </div>
