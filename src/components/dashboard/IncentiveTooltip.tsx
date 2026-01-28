@@ -345,13 +345,13 @@ const IncentiveTooltip = ({
       <>
         {/* Background overlay with smooth fade */}
         <div 
-          className="fixed inset-0 z-30 bg-background/20 backdrop-blur-[2px] animate-in fade-in-0 duration-300 ease-out" 
+          className="fixed inset-0 z-30 bg-background/20" 
           onClick={onClose}
         />
         {/* Bottom sheet with spring-like animation */}
         <div
           ref={tooltipRef}
-          className="fixed bottom-0 left-0 right-0 z-40 rounded-t-2xl border border-border/60 bg-card ds-tooltip-shadow-up animate-in slide-in-from-bottom-4 fade-in-0 duration-300 ease-out max-h-[80vh] overflow-y-auto"
+          className="fixed bottom-0 left-0 right-0 z-40 rounded-t-2xl border border-border/60 bg-card ds-tooltip-shadow-up max-h-[80vh] overflow-y-auto"
           style={tooltipSurfaceStyle}
         >
           {/* Handle bar */}
