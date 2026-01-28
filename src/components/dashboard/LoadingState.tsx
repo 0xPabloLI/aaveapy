@@ -79,9 +79,9 @@ const LoadingState = () => {
               variants={cardVariants}
             >
               <div className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-3)]">
-                <Skeleton className="w-8 h-8 md:w-9 md:h-9 rounded-lg" />
+                <Skeleton variant="gradient" className="w-8 h-8 md:w-9 md:h-9 rounded-lg" />
                 <div className="space-y-1 flex-1 min-w-0">
-                  <Skeleton className="h-4 md:h-5 w-20 md:w-28" />
+                  <Skeleton variant="gradient" className="h-4 md:h-5 w-20 md:w-28" />
                   <Skeleton className="h-2.5 md:h-3 w-24 md:w-36" />
                 </div>
               </div>
@@ -96,9 +96,9 @@ const LoadingState = () => {
                     variants={itemVariants}
                   >
                     <div className="flex items-center gap-[var(--ds-space-2)]">
-                      <Skeleton className="w-7 h-7 md:w-8 md:h-8 rounded-full" />
+                      <Skeleton variant="gradient" className="w-7 h-7 md:w-8 md:h-8 rounded-full" />
                       <div className="space-y-1">
-                        <Skeleton className="h-3.5 md:h-4 w-10 md:w-14" />
+                        <Skeleton variant="gradient" className="h-3.5 md:h-4 w-10 md:w-14" />
                         <div className="flex items-center gap-[var(--ds-space-1)]">
                           <Skeleton className="w-3 h-3 rounded-full" />
                           <Skeleton className="h-2.5 w-8 md:w-12" />
@@ -106,7 +106,7 @@ const LoadingState = () => {
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-[var(--ds-space-1)]">
-                      <Skeleton className="h-4 md:h-5 w-12 md:w-16" />
+                      <Skeleton variant="gradient" className="h-4 md:h-5 w-12 md:w-16" />
                       <Skeleton className="h-2.5 md:h-3 w-14 md:w-20" />
                     </div>
                   </motion.div>
