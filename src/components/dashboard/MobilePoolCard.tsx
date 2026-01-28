@@ -121,8 +121,8 @@ const MobilePoolCard = ({ pool, isApy, onIncentiveClick }: MobilePoolCardProps) 
             <span className="truncate">{getMarketDisplayName()}</span>
           </div>
         </div>
-        {/* Link button - matches TopOpportunities MiniPoolCard style */}
-        <div className="shrink-0 w-7 h-7 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center text-primary">
+        {/* Link button - neutral style matching other interactive elements */}
+        <div className="shrink-0 w-7 h-7 rounded-full bg-muted/60 border border-border flex items-center justify-center text-muted-foreground transition-all hover:bg-muted hover:border-border/80 hover:text-foreground">
           <ExternalLink className="w-3.5 h-3.5" />
         </div>
       </div>
