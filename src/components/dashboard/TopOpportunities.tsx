@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, memo } from 'react';
-import { TrendingUp, Zap, ChevronLeft, ChevronRight } from 'lucide-react';
+import { TrendingUp, Zap, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PoolWithSpread, ETHEREUM_MARKET_NAMES } from '@/types/aave';
 import {
@@ -702,12 +702,32 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
         }}
         className="w-full"
       >
-        {/* Subtle edge fades to hint horizontal scroll */}
+        {/* Edge light-bands + double chevrons to hint horizontal scroll */}
         {canScrollPrev && (
-          <div className="pointer-events-none absolute left-0 top-0 h-full w-12 bg-gradient-to-r from-background/80 via-background/30 to-transparent z-10" />
+          <div className="pointer-events-none absolute -left-[2rem] top-0 h-full w-[2.5rem] z-10">
+            <div className="absolute top-[var(--ds-space-2)] bottom-[var(--ds-space-2)] left-0 w-full bg-gradient-to-r from-[rgb(var(--ds-brand-magenta-rgb)/0.16)] via-[rgb(var(--ds-brand-cyan-rgb)/0.10)] to-transparent dark:from-[rgb(var(--ds-brand-magenta-rgb)/0.30)] dark:via-[rgb(var(--ds-brand-cyan-rgb)/0.20)]" />
+            <button
+              type="button"
+              className="pointer-events-auto absolute left-[2rem] top-1/2 -translate-y-1/2 p-1 rounded-full text-foreground/50 dark:text-foreground/70 hover:text-foreground/90 hover:bg-[rgb(var(--ds-brand-magenta-rgb)/0.12)] dark:hover:bg-[rgb(var(--ds-brand-magenta-rgb)/0.20)] transition-colors"
+              onClick={() => api?.scrollPrev()}
+              aria-label="Previous slide"
+            >
+              <ChevronsLeft className="h-3 w-3" />
+            </button>
+          </div>
         )}
         {canScrollNext && (
-          <div className="pointer-events-none absolute right-0 top-0 h-full w-12 bg-gradient-to-l from-background/80 via-background/30 to-transparent z-10" />
+          <div className="pointer-events-none absolute -right-[2rem] top-0 h-full w-[2.5rem] z-10">
+            <div className="absolute top-[var(--ds-space-2)] bottom-[var(--ds-space-2)] right-0 w-full bg-gradient-to-l from-[rgb(var(--ds-brand-magenta-rgb)/0.16)] via-[rgb(var(--ds-brand-cyan-rgb)/0.10)] to-transparent dark:from-[rgb(var(--ds-brand-magenta-rgb)/0.30)] dark:via-[rgb(var(--ds-brand-cyan-rgb)/0.20)]" />
+            <button
+              type="button"
+              className="pointer-events-auto absolute right-[2rem] top-1/2 -translate-y-1/2 p-1 rounded-full text-foreground/50 dark:text-foreground/70 hover:text-foreground/90 hover:bg-[rgb(var(--ds-brand-magenta-rgb)/0.12)] dark:hover:bg-[rgb(var(--ds-brand-magenta-rgb)/0.20)] transition-colors"
+              onClick={() => api?.scrollNext()}
+              aria-label="Next slide"
+            >
+              <ChevronsRight className="h-3 w-3" />
+            </button>
+          </div>
         )}
         <CarouselContent className="-ml-[var(--ds-space-2)]">
           {mobilePages.map((pageCats, pageIndex) => (
@@ -732,31 +752,7 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
           ))}
         </CarouselContent>
 
-        {/* Navigation arrows - lighter style to differentiate from card arrows */}
-        {canScrollPrev && (
-          <div className="absolute left-0 top-1/2 -translate-y-1/2 z-20 pointer-events-none">
-            <button
-              type="button"
-              className="w-8 h-8 flex items-center justify-center rounded-full glass-card text-foreground/80 shadow-sm hover:text-foreground hover:shadow-md hover:bg-card/90 active:scale-95 transition-all pointer-events-auto"
-              onClick={() => api?.scrollPrev()}
-            >
-              <ChevronLeft className="h-3.5 w-3.5" />
-              <span className="sr-only">Previous slide</span>
-            </button>
-          </div>
-        )}
-        {canScrollNext && (
-          <div className="absolute right-0 top-1/2 -translate-y-1/2 z-20 pointer-events-none">
-            <button
-              type="button"
-              className="w-8 h-8 flex items-center justify-center rounded-full glass-card text-foreground/80 shadow-sm hover:text-foreground hover:shadow-md hover:bg-card/90 active:scale-95 transition-all pointer-events-auto"
-              onClick={() => api?.scrollNext()}
-            >
-              <ChevronRight className="h-3.5 w-3.5" />
-              <span className="sr-only">Next slide</span>
-            </button>
-          </div>
-        )}
+        {/* Navigation arrows integrated into edge bands */}
       </Carousel>
 
       {/* Pagination indicators - 2 dots for 2 pages */}
