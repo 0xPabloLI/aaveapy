@@ -876,7 +876,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
                         event.stopPropagation();
                         onSelectMarket?.(pool.marketName);
                       }}
-                      className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)] px-[var(--ds-space-2-5)] py-[var(--ds-space-1)] rounded-full ds-text-11 font-medium bg-muted/50 text-muted-foreground border border-border/60 hover:bg-primary/10 hover:text-primary hover:border-primary/40 hover:shadow-sm active:scale-[0.98] transition-all duration-150"
+                      className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)] px-[var(--ds-space-2-5)] py-[var(--ds-space-1)] rounded-full ds-text-11 font-medium bg-muted/50 text-muted-foreground border border-border/60 hover:bg-muted hover:text-foreground hover:border-border hover:ring-2 hover:ring-border/30 active:scale-[0.98] transition-all duration-150"
                       aria-label={`Filter by ${getMarketDisplayName(pool)} market`}
                     >
                       <ChainIcon chain={pool.chainName} />
