@@ -407,7 +407,7 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
               <button
                 type="button"
                 onClick={(e) => handleIncentiveClick(e, pool, 'supply', incentiveValue, mainValue)}
-                className={`inline-flex items-center px-[var(--ds-space-1)] rounded-full ring-1 transition-colors cursor-pointer tabular-nums ${apyAccent.chip}`}
+                className={`inline-flex items-center px-[var(--ds-space-1)] rounded-full ring-1 transition-all cursor-pointer tabular-nums hover:ring-2 ${apyAccent.chip}`}
               >
                 <span>{formatPercent(incentiveValue)}</span>
               </button>
