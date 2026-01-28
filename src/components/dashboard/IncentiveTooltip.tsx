@@ -383,8 +383,7 @@ const IncentiveTooltip = ({
                   return (
                     <div 
                       key={`${source.name}-${index}`}
-                      className={`ds-tooltip-item relative px-[var(--ds-space-2)] py-[var(--ds-space-1)] ${accentClass} animate-in fade-in-0 slide-in-from-top-2`}
-                      style={{ animationDelay: `${index * 45}ms` }}
+                      className={`ds-tooltip-item relative px-[var(--ds-space-2)] py-[var(--ds-space-1)] ${accentClass}`}
                     >
                       <div className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-1)]">
                         <div className="flex items-center gap-[var(--ds-space-1-5)] min-w-0 flex-1 pr-1">

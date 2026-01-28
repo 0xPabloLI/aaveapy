@@ -337,7 +337,7 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
     if (intensity >= 0.2) return 'text-fuchsia-400/70';
     return 'ds-text-pink-400-70';
   };
-  // Mobile mini card component - simple compact style (original design)
+  // Mobile mini card component for 2-column grid layout（恢复旧版样式）
   const MiniPoolCard = ({
     pool,
     index,
@@ -362,67 +362,57 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
       symbol: pool.tokenSymbol,
       name: pool.tokenName,
     });
-
     return (
       <motion.div
         custom={index}
         initial={false}
         animate="visible"
         variants={itemVariants}
-        className={`flex items-center rounded-lg border transition-all cursor-pointer h-[52px] ${
-          isLeverage 
-            ? 'bg-background border-border hover:border-[rgb(var(--ds-purple-500-rgb)/0.5)]'
-            : 'bg-gradient-to-r from-background to-success/5 border-border hover:border-success/50'
-        } px-[var(--ds-space-2)] gap-[var(--ds-space-2)]`}
+        className="rounded-xl border ds-card-pad-sm cursor-pointer transition-colors bg-card border-border/60 active:bg-muted/60 h-[68px] flex flex-col justify-between"
         onClick={() => handleCardClick(pool)}
       >
-        {/* Token Info - compact grid layout */}
-        <div className="grid grid-cols-[auto,1fr,auto] grid-rows-[auto,auto] content-center items-center gap-x-[var(--ds-space-2)] gap-y-[var(--ds-space-0-5)] flex-1 min-w-0 h-full">
+        {/* Header: Token + Market + Arrow */}
+        <div className="flex items-center gap-[var(--ds-space-2)]">
           <TokenIcon
             symbol={iconSymbol}
-            size={28}
+            size={24}
             loading="eager"
-            className="shrink-0 row-span-2"
+            className="shrink-0"
             logoURI={logoURI}
           />
-          <p className="font-semibold text-foreground truncate leading-none ds-text-12">
-            {pool.tokenSymbol}
-          </p>
-          <div
-            className={`${(isLeverage ? getSpreadColorClass(mainValue, index, totalItems) : getApyColorClass(mainValue))} font-bold tabular-nums text-right leading-none ds-text-14 ${!isLeverage && !hasIncentive ? 'row-span-2 self-center' : ''}`}
-          >
+          <div className="min-w-0 flex-1">
+            <p className="font-bold text-foreground ds-text-12 truncate">{pool.tokenSymbol}</p>
+            <div className="flex items-center gap-[var(--ds-space-1)] ds-text-9 text-muted-foreground">
+              {chainIconSrc && (
+                <img src={chainIconSrc} alt={pool.chainName} className="w-3 h-3" />
+              )}
+              <span className="truncate">{getMarketDisplayName(pool)}</span>
+            </div>
+          </div>
+          <ChevronRight className="w-4 h-4 text-muted-foreground/50 shrink-0" />
+        </div>
+
+        {/* Main value + detail row */}
+        <div className="flex items-baseline justify-between gap-[var(--ds-space-1)] mt-[var(--ds-space-0-5)]">
+          <span className={`font-bold ds-text-14 tabular-nums ${isLeverage ? getSpreadColorClass(mainValue, index, totalItems) : getApyColorClass(mainValue)}`}>
             {isLeverage ? formatSpread(mainValue) : formatPercent(mainValue)}
-          </div>
-          <div className="flex items-center gap-[var(--ds-space-1)] min-w-0 leading-none">
-            {chainIconSrc && (
-              <img src={chainIconSrc} alt={pool.chainName} className="shrink-0 w-3 h-3" />
-            )}
-            <p className="text-secondary truncate ds-text-9 leading-none">{getMarketDisplayName(pool)}</p>
-          </div>
-          {/* Detail breakdown - Only show for supply type */}
+          </span>
+          {/* Incentive badge for supply type */}
           {!isLeverage && hasIncentive && (
-            <div className="flex items-center justify-end gap-[var(--ds-space-0-5)] ds-text-9 text-secondary whitespace-nowrap leading-none">
-              <span className={`${apyAccent.text} tabular-nums`}>{formatPercent(pool.supplyApy ?? null)}</span>
-              <span className="text-muted-foreground">+</span>
-              <button
-                type="button"
-                onClick={(e) => handleIncentiveClick(e, pool, 'supply', incentiveValue, mainValue)}
-                className={`inline-flex items-center px-[var(--ds-space-1)] rounded-full ring-1 transition-all cursor-pointer tabular-nums hover:ring-2 ${apyAccent.chip}`}
-              >
-                <span>{formatPercent(incentiveValue)}</span>
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={(e) => handleIncentiveClick(e, pool, 'supply', incentiveValue, mainValue)}
+              className={`inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-1)] py-[var(--ds-space-0-5)] rounded-full ring-1 transition-colors cursor-pointer tabular-nums ds-text-9 ${apyAccent.chip}`}
+            >
+              <span>+{formatPercent(incentiveValue)}</span>
+              <IncentiveIcon width={7} height={7} />
+            </button>
           )}
-          {/* Leverage detail */}
+          {/* Leverage detail inline */}
           {isLeverage && (
-            <div className={`${getSpreadAccentClass(mainValue, index, totalItems)} tabular-nums whitespace-nowrap text-right leading-none ds-text-9`}>
-              {formatPercent(isApy ? pool.totalSupplyApy : pool.totalSupplyApr)} -{' '}
-              {(() => {
-                const borrowValue = isApy ? pool.totalBorrowApy : pool.totalBorrowApr;
-                if (borrowValue === null) return '-';
-                return borrowValue < 0 ? `(${formatPercent(borrowValue)})` : formatPercent(borrowValue);
-              })()}
-            </div>
+            <span className={`${getSpreadAccentClass(mainValue, index, totalItems)} tabular-nums ds-text-9`}>
+              {formatPercent(isApy ? pool.totalSupplyApy : pool.totalSupplyApr)} - {formatPercent(isApy ? pool.totalBorrowApy : pool.totalBorrowApr)}
+            </span>
           )}
         </div>
       </motion.div>
@@ -770,8 +760,8 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
             key={index}
             className={`transition-all rounded-full ${
               current === index
-                ? 'ds-dot-active bg-primary'
-                : 'ds-dot bg-muted-foreground/30 hover:bg-muted-foreground/50'
+                ? 'ds-dot-active bg-[rgb(var(--ds-purple-500-rgb))] shadow-[0_0_0_3px_rgba(0,0,0,0.04)] dark:shadow-[0_0_0_3px_rgba(0,0,0,0.4)]'
+                : 'ds-dot bg-muted-foreground/30 hover:bg-muted-foreground/60'
             }`}
             onClick={() => api?.scrollTo(index)}
             aria-label={`Go to page ${index + 1}`}

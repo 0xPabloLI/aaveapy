@@ -102,7 +102,7 @@ const MobilePoolCard = ({ pool, isApy, onIncentiveClick }: MobilePoolCardProps) 
     <div className="bg-card rounded-xl border border-border/60 ds-card-pad-sm shadow-sm transition-colors">
       {/* Header: Token + Market + Link button - Compact layout with min touch target */}
       <div 
-        className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-2)] cursor-pointer active:opacity-70 transition-opacity min-h-[44px]"
+        className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-3)] cursor-pointer active:opacity-70 transition-opacity min-h-[44px]"
         onClick={handleCardClick}
       >
         <TokenIcon
@@ -162,7 +162,7 @@ const MobilePoolCard = ({ pool, isApy, onIncentiveClick }: MobilePoolCardProps) 
         <div className="flex flex-col items-center justify-start gap-[var(--ds-space-0-5)] min-h-[2.5rem] text-center">
           <p className="ds-text-9 text-muted-foreground/70 uppercase font-medium">Spread</p>
           <p className={`ds-text-11 font-medium ${
-            spread !== null ? 'ds-text-purple-500' : 'text-muted-foreground/70'
+            spread !== null ? 'text-purple-500' : 'text-muted-foreground/70'
           }`}>
             {formatSpread(spread)}
           </p>
