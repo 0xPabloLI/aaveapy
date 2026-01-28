@@ -702,6 +702,13 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
         }}
         className="w-full"
       >
+        {/* Subtle edge fades to hint horizontal scroll */}
+        {canScrollPrev && (
+          <div className="pointer-events-none absolute left-0 top-0 h-full w-12 bg-gradient-to-r from-background/80 via-background/30 to-transparent z-10" />
+        )}
+        {canScrollNext && (
+          <div className="pointer-events-none absolute right-0 top-0 h-full w-12 bg-gradient-to-l from-background/80 via-background/30 to-transparent z-10" />
+        )}
         <CarouselContent className="-ml-[var(--ds-space-2)]">
           {mobilePages.map((pageCats, pageIndex) => (
             <CarouselItem key={pageIndex} className="pl-[var(--ds-space-2)] basis-full">
@@ -730,10 +737,10 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
           <div className="absolute left-0 top-1/2 -translate-y-1/2 z-20 pointer-events-none">
             <button
               type="button"
-              className="w-6 h-6 flex items-center justify-center rounded-full bg-muted/60 text-muted-foreground/70 hover:bg-muted hover:text-foreground transition-colors pointer-events-auto"
+              className="w-8 h-8 flex items-center justify-center rounded-full glass-card text-foreground/80 shadow-sm hover:text-foreground hover:shadow-md hover:bg-card/90 active:scale-95 transition-all pointer-events-auto"
               onClick={() => api?.scrollPrev()}
             >
-              <ChevronLeft className="h-3 w-3" />
+              <ChevronLeft className="h-3.5 w-3.5" />
               <span className="sr-only">Previous slide</span>
             </button>
           </div>
@@ -742,10 +749,10 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
           <div className="absolute right-0 top-1/2 -translate-y-1/2 z-20 pointer-events-none">
             <button
               type="button"
-              className="w-6 h-6 flex items-center justify-center rounded-full bg-muted/60 text-muted-foreground/70 hover:bg-muted hover:text-foreground transition-colors pointer-events-auto"
+              className="w-8 h-8 flex items-center justify-center rounded-full glass-card text-foreground/80 shadow-sm hover:text-foreground hover:shadow-md hover:bg-card/90 active:scale-95 transition-all pointer-events-auto"
               onClick={() => api?.scrollNext()}
             >
-              <ChevronRight className="h-3 w-3" />
+              <ChevronRight className="h-3.5 w-3.5" />
               <span className="sr-only">Next slide</span>
             </button>
           </div>
@@ -760,8 +767,8 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
             key={index}
             className={`transition-all rounded-full ${
               current === index
-                ? 'ds-dot-active bg-[rgb(var(--ds-purple-500-rgb))] shadow-[0_0_0_3px_rgba(0,0,0,0.04)] dark:shadow-[0_0_0_3px_rgba(0,0,0,0.4)]'
-                : 'ds-dot bg-muted-foreground/30 hover:bg-muted-foreground/60'
+                ? 'ds-dot-active bg-[rgb(var(--ds-brand-magenta-rgb))] shadow-[0_0_0_3px_rgba(0,0,0,0.04)] dark:shadow-[0_0_0_3px_rgba(0,0,0,0.4)]'
+                : 'ds-dot bg-[rgb(var(--ds-brand-magenta-rgb)/0.25)] hover:bg-[rgb(var(--ds-brand-magenta-rgb)/0.45)]'
             }`}
             onClick={() => api?.scrollTo(index)}
             aria-label={`Go to page ${index + 1}`}

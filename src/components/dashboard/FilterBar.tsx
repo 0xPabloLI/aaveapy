@@ -5,6 +5,11 @@ import { Switch } from '@/components/ui/switch';
 import { TokenCategory, MarketListItem, ETHEREUM_MARKET_NAMES } from '@/types/aave';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { useIsMobile } from '@/hooks/use-mobile';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface FilterBarProps {
   searchQuery: string;
@@ -247,13 +252,13 @@ const FilterBar = ({
 
         {/* Search - only on PC, hidden on mobile */}
         <div className="relative w-20 sm:w-24 md:w-36 lg:w-44 hidden md:block">
-          <Search className="absolute left-2 md:left-2.5 top-1/2 -translate-y-1/2 w-3 md:w-3.5 h-3 md:h-3.5 text-muted-foreground" />
+          <Search className="absolute left-2 md:left-2.5 top-1/2 -translate-y-1/2 w-3 md:w-3.5 h-3 md:h-3.5 text-muted-foreground/60" />
           <Input
             ref={desktopSearchInputRef}
             placeholder={searchPlaceholder}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-[var(--ds-space-7)] md:pl-[var(--ds-space-8)] pr-[var(--ds-space-6)] md:pr-[var(--ds-space-7)] bg-card/50 border-border/50 focus:border-[rgb(var(--ds-brand-magenta-rgb))] focus-visible:ring-0 focus-visible:ring-offset-0 h-7 ds-text-11"
+            className="pl-[var(--ds-space-7)] md:pl-[var(--ds-space-8)] pr-[var(--ds-space-6)] md:pr-[var(--ds-space-7)] bg-card/50 border-border/50 focus:border-[rgb(var(--ds-brand-magenta-rgb))] focus-visible:ring-0 focus-visible:ring-offset-0 h-7 ds-text-11 md:ds-text-11 text-muted-foreground/60 placeholder:text-muted-foreground/60 focus:text-foreground"
           />
           {searchQuery && (
             <button
@@ -268,28 +273,41 @@ const FilterBar = ({
         {/* Spacer */}
         <div className="flex-1 min-w-2 md:min-w-4" />
 
-        {/* APY/APR Toggle */}
-        <div className="flex items-center gap-[var(--ds-space-1)] md:gap-[var(--ds-space-1-5)] ds-text-11 text-muted-foreground">
-          <span className={!isApy ? 'text-foreground font-medium' : ''}>APR</span>
-          <Switch
-            checked={isApy}
-            onCheckedChange={setIsApy}
-            className="data-[state=checked]:bg-[rgb(var(--ds-brand-magenta-rgb))] scale-[0.65] md:scale-75"
-          />
-          <span className={isApy ? 'text-foreground font-medium' : ''}>APY</span>
-        </div>
+        {/* APY/APR Toggle with explainer tooltip */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="flex items-center gap-[var(--ds-space-1)] md:gap-[var(--ds-space-1-5)] ds-text-11 text-muted-foreground cursor-help">
+              <span className={!isApy ? 'text-foreground font-medium' : ''}>APR</span>
+              <Switch
+                checked={isApy}
+                onCheckedChange={setIsApy}
+                className="data-[state=checked]:bg-[rgb(var(--ds-brand-magenta-rgb))] scale-[0.65] md:scale-75"
+              />
+              <span className={isApy ? 'text-foreground font-medium' : ''}>APY</span>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="ds-text-11 max-w-xs">
+            <p className="font-medium mb-[var(--ds-space-0-5)]">APR vs APY</p>
+            <p className="text-muted-foreground">
+              APR is the simple annual rate without compounding. APY assumes you claim and reinvest rewards monthly, so it includes the effect of compounding.
+            </p>
+            <p className="mt-[var(--ds-space-1)] text-muted-foreground">
+              Internally we convert APR to APY using monthly compounding: APY = (1 + APR/12)<sup>12</sup> − 1.
+            </p>
+          </TooltipContent>
+        </Tooltip>
       </div>
 
       {/* Row 2: Search - only on mobile */}
       <div className="flex items-center gap-[var(--ds-space-1-5)] md:gap-[var(--ds-space-2)] md:hidden">
         <div className="relative w-full">
-          <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
+          <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
           <Input
             ref={mobileSearchInputRef}
             placeholder={searchPlaceholder}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-[var(--ds-space-7)] pr-[var(--ds-space-6)] bg-card/50 border-border/50 focus:border-[rgb(var(--ds-brand-magenta-rgb))] focus-visible:ring-0 focus-visible:ring-offset-0 h-7 ds-text-11"
+            className="pl-[var(--ds-space-8)] pr-[var(--ds-space-6)] bg-card/50 border-border/50 focus:border-[rgb(var(--ds-brand-magenta-rgb))] focus-visible:ring-0 focus-visible:ring-offset-0 h-7 ds-text-11 text-muted-foreground/50 placeholder:text-muted-foreground/50 focus:text-foreground"
           />
           {searchQuery && (
             <button
