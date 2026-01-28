@@ -82,33 +82,51 @@ const PullToRefresh = ({ onRefresh, children, disabled = false }: PullToRefreshP
       <AnimatePresence>
         {(pullDistance > 0 || isRefreshing) && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed top-0 left-0 right-0 z-50 flex justify-center"
-            style={{ paddingTop: Math.min(pullDistance, PULL_THRESHOLD * 0.8) }}
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+            className="fixed top-0 left-0 right-0 z-50 flex justify-center pt-safe"
+            style={{ paddingTop: Math.max(12, Math.min(pullDistance, PULL_THRESHOLD * 0.8)) }}
           >
             <motion.div
-              className={`flex items-center justify-center w-10 h-10 rounded-full shadow-lg border transition-colors ${
+              className={`flex items-center justify-center w-11 h-11 rounded-full shadow-lg border-2 transition-all duration-200 ${
                 shouldTrigger || isRefreshing
-                  ? 'bg-success text-success-foreground border-success/30'
-                  : 'bg-card text-muted-foreground border-border'
+                  ? 'ds-bg-emerald-500-20 ds-text-emerald-600 ds-border-emerald-200 shadow-[0_0_16px_rgb(var(--ds-emerald-500-rgb)/0.25)]'
+                  : 'bg-card text-muted-foreground border-border shadow-md'
               }`}
-              style={{
-                transform: `rotate(${progress * 360}deg)`,
+              initial={false}
+              animate={{
+                scale: shouldTrigger || isRefreshing ? 1.05 : 1,
+                rotate: isRefreshing ? 360 : progress * 360,
               }}
-              animate={isRefreshing ? { rotate: 360 } : {}}
-              transition={isRefreshing ? { repeat: Infinity, duration: 1, ease: 'linear' } : {}}
+              transition={
+                isRefreshing 
+                  ? { rotate: { repeat: Infinity, duration: 0.8, ease: 'linear' } }
+                  : { type: 'spring', stiffness: 200, damping: 15 }
+              }
             >
-              <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <RefreshCw className="w-5 h-5" />
             </motion.div>
+            {/* Progress indicator text */}
+            {isRefreshing && (
+              <motion.span 
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="absolute top-full mt-2 ds-text-11 text-muted-foreground font-medium"
+              >
+                Refreshing...
+              </motion.span>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
       <motion.div
-        style={{
-          transform: pullDistance > 0 ? `translateY(${pullDistance * 0.3}px)` : 'none',
+        animate={{
+          y: pullDistance > 0 ? pullDistance * 0.3 : 0,
         }}
+        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
       >
         {children}
       </motion.div>
