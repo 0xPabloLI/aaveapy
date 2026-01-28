@@ -1,6 +1,7 @@
 import { useRef, useEffect, useLayoutEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ExternalLink, X } from 'lucide-react';
+import { useTheme } from 'next-themes';
 import { PoolWithSpread, MeritIncentive, MerklOpportunityGroup, BrevisIncentive } from '@/types/aave';
 import { formatPercent, convertAprToApy } from '@/lib/formatters';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -30,15 +31,28 @@ interface IncentiveSource {
   requiredTokens?: string[] | string;
 }
 
-const sourceIconMap: Record<NonNullable<IncentiveSource['sourceType']>, string> = {
+const lightSourceIconMap: Record<NonNullable<IncentiveSource['sourceType']>, string> = {
   Protocol: '/icons/tokens/aave.svg',
-  Brevis: '/icons/partners/brevis.svg',
+  Brevis: '/icons/partners/brevis-black.svg',
   Merkl: '/icons/partners/merkl-black.svg',
   ACI: '/icons/partners/aci-black.svg',
 };
 
-const getSourceIcon = (sourceType?: IncentiveSource['sourceType']) =>
-  sourceType && sourceType !== 'Protocol' ? sourceIconMap[sourceType] : null;
+const darkSourceIconMap: Record<NonNullable<IncentiveSource['sourceType']>, string> = {
+  Protocol: '/icons/tokens/aave.svg',
+  Brevis: '/icons/partners/brevis-white.svg',
+  Merkl: '/icons/partners/merkl-white.svg',
+  ACI: '/icons/partners/aci-white.svg',
+};
+
+const getSourceIcon = (
+  sourceType?: IncentiveSource['sourceType'],
+  isDark?: boolean
+) => {
+  if (!sourceType || sourceType === 'Protocol') return null;
+  const map = isDark ? darkSourceIconMap : lightSourceIconMap;
+  return map[sourceType];
+};
 
 const IncentiveTooltip = ({
   pool,
@@ -52,6 +66,7 @@ const IncentiveTooltip = ({
   accentTextClass,
   accentBgClass,
 }: IncentiveTooltipProps) => {
+  const { resolvedTheme } = useTheme();
   const isMobile = useIsMobile();
   const tooltipRef = useRef<HTMLDivElement>(null);
   const [arrowLeft, setArrowLeft] = useState(0);
@@ -60,6 +75,7 @@ const IncentiveTooltip = ({
   const numberMatch = /^(\d+(?:\.\d+)?%?)$/;
   const currencyMatch = /^[€$£¥]$/;
   const highlightMatch = /^([€$£¥]?\d+(?:\.\d+)?%?|[€$£¥])$/;
+  type MessageLine = { text: string; emphasizePrefix?: boolean };
   const renderHighlightedText = (text: string) => (
     <>
       {text.split(/([€$£¥]?\d+(?:\.\d+)?%?|[€$£¥])/g).map((part, index) =>
@@ -73,6 +89,19 @@ const IncentiveTooltip = ({
       )}
     </>
   );
+  const renderMessageLine = (line: MessageLine, accentClass: string) => {
+    if (!line.emphasizePrefix) return renderHighlightedText(line.text);
+    const colonIndex = line.text.indexOf(':');
+    if (colonIndex === -1) return renderHighlightedText(line.text);
+    const prefix = line.text.slice(0, colonIndex + 1);
+    const rest = line.text.slice(colonIndex + 1).trimStart();
+    return (
+      <>
+        <span className={`font-semibold ${accentClass}`}>{prefix}</span>
+        {rest ? <span className="ml-1">{renderHighlightedText(rest)}</span> : null}
+      </>
+    );
+  };
   // Format date for display (e.g., "Jan 7, 2026"), safe for invalid values
   const formatDate = (dateString?: string): string | null => {
     if (!dateString) return null;
@@ -100,11 +129,11 @@ const IncentiveTooltip = ({
     return '';
   };
 
-  const getMessageLines = (message?: string | Record<string, unknown> | unknown[]): string[] => {
+  const getMessageLines = (message?: string | Record<string, unknown> | unknown[]): MessageLine[] => {
     if (!message) return [];
-    const filterLines = (lines: string[]) =>
-      lines.filter((line) => !line.toLowerCase().includes('require_multiple'));
-    if (typeof message === 'string') return filterLines([message]);
+    const filterLines = (lines: MessageLine[]) =>
+      lines.filter((line) => !line.text.toLowerCase().includes('require_multiple'));
+    if (typeof message === 'string') return filterLines([{ text: message }]);
     if (Array.isArray(message)) {
       return filterLines(
         message
@@ -114,18 +143,21 @@ const IncentiveTooltip = ({
               const values = Object.values(item as Record<string, unknown>)
                 .map((entry) => formatValue(entry))
                 .filter(Boolean);
-              return values.length > 0 ? values.join(': ') : '';
+              return values.length > 0
+                ? { text: values.join(': '), emphasizePrefix: values.length > 1 }
+                : '';
             }
             return '';
           })
           .filter(Boolean)
+          .map((item) => (typeof item === 'string' ? { text: item } : item))
       );
     }
     const values = Object.values(message)
       .map((entry) => formatValue(entry))
       .filter(Boolean);
     if (values.length === 0) return [];
-    return filterLines([values.join(': ')]);
+    return filterLines([{ text: values.join(': '), emphasizePrefix: values.length > 1 }]);
   };
 
   const accentClass =
@@ -137,6 +169,7 @@ const IncentiveTooltip = ({
     accentTextClass ?? (type === 'supply' ? 'ds-text-emerald-600' : 'ds-text-brand-cyan');
   const valueBgClass =
     accentBgClass ?? (type === 'supply' ? 'ds-bg-emerald-500-10' : 'ds-bg-brand-cyan-10');
+  const isDark = resolvedTheme === 'dark';
   const tooltipSurfaceStyle = {
     backgroundColor: 'hsl(var(--card))',
     backgroundImage: 'linear-gradient(180deg, hsl(var(--card)), hsl(var(--card)))',
@@ -342,7 +375,7 @@ const IncentiveTooltip = ({
                   const messageLines = getMessageLines(source.message);
                   const valueClass = `ds-tooltip-title ${valueAccentClass}`;
                   const linkClass = `${valueAccentClass} ${valueBgClass} transition-opacity opacity-80 hover:opacity-100`;
-                  const iconSrc = source.sourceType ? getSourceIcon(source.sourceType) : null;
+                  const iconSrc = source.sourceType ? getSourceIcon(source.sourceType, isDark) : null;
                   const isBrevis = source.sourceType === 'Brevis';
                   const isWordmark = source.sourceType === 'Brevis' || source.sourceType === 'ACI' || source.sourceType === 'Merkl';
                   const logoWrapperClass = isWordmark ? 'min-w-[44px] px-[6px] py-[5px]' : 'h-[20px] w-[20px]';
@@ -405,7 +438,7 @@ const IncentiveTooltip = ({
                         {messageLines.map((line, lineIndex) => (
                           <li key={`message-${index}-${lineIndex}`} className="flex items-start gap-[var(--ds-space-1)]">
                             <span className={`mt-[0.4em] h-1 w-1 rounded-full bg-current flex-shrink-0 ${valueAccentClass}`} />
-                            <span className="min-w-0 break-words">{renderHighlightedText(line)}</span>
+                            <span className="min-w-0 break-words">{renderMessageLine(line, valueAccentClass)}</span>
                           </li>
                         ))}
                       </ul>
@@ -467,7 +500,7 @@ const IncentiveTooltip = ({
                 const messageLines = getMessageLines(source.message);
                 const valueClass = `ds-tooltip-title ${valueAccentClass}`;
                 const linkClass = `${valueAccentClass} ${valueBgClass} transition-opacity opacity-80 hover:opacity-100`;
-                const iconSrc = source.sourceType ? getSourceIcon(source.sourceType) : null;
+                const iconSrc = source.sourceType ? getSourceIcon(source.sourceType, isDark) : null;
                 const isBrevis = source.sourceType === 'Brevis';
                 const isWordmark = source.sourceType === 'Brevis' || source.sourceType === 'ACI' || source.sourceType === 'Merkl';
                 const logoWrapperClass = isWordmark ? 'min-w-[44px] px-[6px] py-[5px]' : 'h-[20px] w-[20px]';
@@ -530,7 +563,7 @@ const IncentiveTooltip = ({
                         {messageLines.map((line, lineIndex) => (
                           <li key={`message-desktop-${index}-${lineIndex}`} className="flex items-start gap-[var(--ds-space-1)]">
                             <span className={`mt-[0.4em] h-1 w-1 rounded-full bg-current flex-shrink-0 ${valueAccentClass}`} />
-                            <span className="min-w-0 break-words">{renderHighlightedText(line)}</span>
+                            <span className="min-w-0 break-words">{renderMessageLine(line, valueAccentClass)}</span>
                           </li>
                         ))}
                       </ul>
