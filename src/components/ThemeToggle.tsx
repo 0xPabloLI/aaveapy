@@ -46,12 +46,13 @@ const ThemeToggle = () => {
           variant="outline"
           size="icon"
           onClick={handleToggle}
-          className="relative h-9 w-9 rounded-full bg-card border border-border hover:bg-muted hover:border-muted-foreground/30 transition-all duration-300"
+          className="relative h-9 w-9 rounded-full bg-card border-2 border-border text-muted-foreground
+            transition-all duration-300 shadow-sm hover:shadow-md hover:bg-muted hover:border-muted-foreground/40 hover:text-foreground"
         >
           {isDark ? (
-            <Moon className="h-4 w-4 text-foreground" />
+            <Moon className="h-4 w-4" />
           ) : (
-            <Sun className="h-4 w-4 text-foreground" />
+            <Sun className="h-4 w-4" />
           )}
           <span className="sr-only">{isDark ? 'Dark mode' : 'Light mode'}</span>
         </Button>
