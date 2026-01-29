@@ -61,6 +61,7 @@ export const truncateAddress = (address: string): string => {
 };
 
 import type { MeritIncentive, MerklOpportunityGroup, BrevisIncentive } from '@/types/aave';
+import { getMerklBreakdownApr } from '@/lib/tydro';
 
 /**
  * Helper: Sum valid APR values from an array of numbers
@@ -112,7 +113,7 @@ const sumMerklOpportunities = (opportunities?: MerklOpportunityGroup[]): number 
   if (!opportunities || !Array.isArray(opportunities)) return 0;
   return opportunities.reduce((sum, opp) => {
     const breakdownsApr = opp.breakdowns.reduce((breakdownSum, breakdown) => {
-      const apr = breakdown.campaignApr;
+      const apr = getMerklBreakdownApr(breakdown);
       return breakdownSum + (!isNaN(apr) && apr > 0 ? apr : 0);
     }, 0);
     return sum + breakdownsApr;
@@ -126,7 +127,7 @@ const sumMerklOpportunitiesApy = (opportunities?: MerklOpportunityGroup[]): numb
   if (!opportunities || !Array.isArray(opportunities)) return 0;
   return opportunities.reduce((sum, opp) => {
     const breakdownsApy = opp.breakdowns.reduce((breakdownSum, breakdown) => {
-      const apr = breakdown.campaignApr;
+      const apr = getMerklBreakdownApr(breakdown);
       if (!isNaN(apr) && apr > 0) {
         return breakdownSum + convertAprToApy(apr);
       }
