@@ -718,7 +718,7 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
   ];
 
   return (
-    <div className="relative">
+    <div className="relative overflow-x-hidden">
       <Carousel
         setApi={setApi}
         opts={{
