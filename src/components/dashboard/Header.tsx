@@ -1,11 +1,10 @@
 import { Clock } from 'lucide-react';
 import { formatRelativeTime } from '@/lib/formatters';
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import ThemeToggle from '@/components/ThemeToggle';
 
 interface HeaderProps {
@@ -23,24 +22,26 @@ const Header = ({ lastUpdated }: HeaderProps) => {
             <h1 className="ds-title whitespace-nowrap">
               <span className="gradient-text">Aave APY</span>
             </h1>
-            {/* Mobile: Last Updated as icon with tooltip */}
+            {/* Mobile: Last Updated as clickable icon; click opens small popover */}
             {lastUpdated && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="md:hidden flex items-center justify-center w-6 h-6 rounded-full bg-card/60 border border-border/40">
-                      <Clock className="w-3 h-3 text-muted-foreground" />
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" className="ds-text-11">
-                    Updated {formatRelativeTime(lastUpdated)}
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className="md:hidden flex items-center justify-center w-6 h-6 rounded-full bg-card/60 border border-border/40 text-muted-foreground touch-manipulation hover:bg-muted/60 hover:border-border focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                    aria-label={`Last updated ${formatRelativeTime(lastUpdated)}`}
+                  >
+                    <Clock className="w-3 h-3" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent side="bottom" align="start" sideOffset={6} className="w-auto py-2 px-3 ds-text-11">
+                  Updated {formatRelativeTime(lastUpdated)}
+                </PopoverContent>
+              </Popover>
             )}
           </div>
           <p className="ds-text-11 text-muted-foreground mt-[var(--ds-space-1)] sm:hidden">
-            Find the best opportunities
+            Find the best lending & leverage opportunities
           </p>
           <p className="ds-text-11 md:ds-text-14 text-muted-foreground mt-[var(--ds-space-1)] hidden sm:block">
             Find the best lending & leverage opportunities across 17 chains

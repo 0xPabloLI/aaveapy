@@ -88,6 +88,8 @@ const LoadingState = () => {
               <motion.div 
                 className="space-y-2"
                 variants={containerVariants}
+                initial="hidden"
+                animate="visible"
               >
                 {[0, 1, 2, 3, 4].map((i) => (
                   <motion.div 
