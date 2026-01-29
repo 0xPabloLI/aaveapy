@@ -1,15 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, X, ChevronUp, ChevronDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
 import { TokenCategory, MarketListItem, ETHEREUM_MARKET_NAMES } from '@/types/aave';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { useIsMobile } from '@/hooks/use-mobile';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import AprApyToggle from '@/components/dashboard/AprApyToggle';
 
 interface FilterBarProps {
   searchQuery: string;
@@ -273,29 +268,8 @@ const FilterBar = ({
         {/* Spacer */}
         <div className="flex-1 min-w-2 md:min-w-4" />
 
-        {/* APY/APR Toggle with explainer tooltip */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div className="flex items-center gap-[var(--ds-space-1)] md:gap-[var(--ds-space-1-5)] ds-text-11 text-muted-foreground cursor-help">
-              <span className={!isApy ? 'text-foreground font-medium' : ''}>APR</span>
-              <Switch
-                checked={isApy}
-                onCheckedChange={setIsApy}
-                className="data-[state=checked]:bg-[rgb(var(--ds-brand-magenta-rgb))] scale-[0.65] md:scale-75"
-              />
-              <span className={isApy ? 'text-foreground font-medium' : ''}>APY</span>
-            </div>
-          </TooltipTrigger>
-          <TooltipContent side="bottom" className="ds-text-11 max-w-xs">
-            <p className="font-medium mb-[var(--ds-space-0-5)]">APR vs APY</p>
-            <p className="text-muted-foreground">
-              APR is the simple annual rate without compounding. APY assumes you claim and reinvest rewards monthly, so it includes the effect of compounding.
-            </p>
-            <p className="mt-[var(--ds-space-1)] text-muted-foreground">
-              Internally we convert APR to APY using monthly compounding: APY = (1 + APR/12)<sup>12</sup> − 1.
-            </p>
-          </TooltipContent>
-        </Tooltip>
+        {/* APY/APR Toggle with symmetric info icons */}
+        <AprApyToggle isApy={isApy} setIsApy={setIsApy} />
       </div>
 
       {/* Row 2: Search - only on mobile */}
