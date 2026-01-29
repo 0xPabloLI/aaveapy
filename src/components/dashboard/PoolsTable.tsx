@@ -31,13 +31,14 @@ interface PoolsTableProps {
   onSort: (field: 'totalSupplyApy' | 'totalBorrowApy' | 'apySpread' | null) => void;
   isApy: boolean;
   onSelectMarket?: (marketName: string) => void;
+  tydroPointToUsdRate: number;
 }
 
 type SortMode = 'total' | 'native' | 'incentive';
 
 const DEFAULT_VISIBLE_COUNT = 20;
 
-const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket }: PoolsTableProps) => {
+const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket, tydroPointToUsdRate }: PoolsTableProps) => {
   const isMobile = useIsMobile();
   const [activeSortColumn, setActiveSortColumn] = useState<'supply' | 'borrow' | 'spread' | null>('supply');
   const [supplySortMode, setSupplySortMode] = useState<SortMode>('incentive');
@@ -71,8 +72,8 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
     const brevisLegacyApr = type === 'supply' ? pool.brevisSupplyApr : pool.brevisBorrowApr;
     const brevisSource = brevisIncentives && brevisIncentives.length > 0 ? brevisIncentives : brevisLegacyApr ?? null;
     return {
-      apr: calculateTotalIncentiveApr(meritIncentives, merklOpportunities, brevisSource, protocolIncentives),
-      apy: calculateTotalIncentiveApy(meritIncentives, merklOpportunities, brevisSource, protocolIncentives),
+      apr: calculateTotalIncentiveApr(meritIncentives, merklOpportunities, brevisSource, protocolIncentives, tydroPointToUsdRate),
+      apy: calculateTotalIncentiveApy(meritIncentives, merklOpportunities, brevisSource, protocolIncentives, tydroPointToUsdRate),
     };
   };
 
@@ -480,6 +481,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
               pool={pool}
               isApy={isApy}
               onIncentiveClick={handleMobileIncentiveClick}
+              tydroPointToUsdRate={tydroPointToUsdRate}
             />
           ))}
         </div>
@@ -506,6 +508,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
             accentBgClass={tooltipState.type === 'supply' ? 'ds-bg-emerald-500-10' : 'ds-bg-brand-cyan-10'}
             onClose={() => setTooltipState(null)}
             isApy={isApy}
+            tydroPointToUsdRate={tydroPointToUsdRate}
           />
         )}
       </div>
@@ -980,6 +983,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
           accentBgClass={tooltipState.type === 'supply' ? 'ds-bg-emerald-500-10' : 'ds-bg-brand-cyan-10'}
           onClose={() => setTooltipState(null)}
           isApy={isApy}
+          tydroPointToUsdRate={tydroPointToUsdRate}
         />
       )}
     </div>

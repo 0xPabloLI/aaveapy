@@ -18,6 +18,7 @@ interface IncentiveTooltipProps {
   accentBorderClass?: string;
   accentTextClass?: string;
   accentBgClass?: string;
+  tydroPointToUsdRate: number;
 }
 
 interface IncentiveSource {
@@ -66,6 +67,7 @@ const IncentiveTooltip = ({
   accentBorderClass,
   accentTextClass,
   accentBgClass,
+  tydroPointToUsdRate,
 }: IncentiveTooltipProps) => {
   const { resolvedTheme } = useTheme();
   const isMobile = useIsMobile();
@@ -283,7 +285,7 @@ const IncentiveTooltip = ({
       opportunities.forEach((opportunity) => {
         if (!opportunity.breakdowns || !Array.isArray(opportunity.breakdowns)) return;
         opportunity.breakdowns.forEach((breakdown) => {
-          const apr = getMerklBreakdownApr(breakdown);
+          const apr = getMerklBreakdownApr(breakdown, tydroPointToUsdRate);
           if (!isNaN(apr) && apr > 0) {
             sources.push({
               name: opportunity.name || 'Merkl Incentive',

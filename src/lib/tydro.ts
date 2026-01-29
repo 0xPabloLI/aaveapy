@@ -8,9 +8,12 @@ export const calculateTydroApr = (pointsPerThousandUsd: number, pointToUsdRate =
   return pointsPerThousandUsd * pointToUsdRate * 36.5;
 };
 
-export const getMerklBreakdownApr = (breakdown: MerklCampaignBreakdown): number => {
+export const getMerklBreakdownApr = (
+  breakdown: MerklCampaignBreakdown,
+  pointToUsdRate = TYDRO_POINT_TO_USD_RATE
+): number => {
   if (breakdown.pointsPerThousandUsd !== undefined && !isNaN(breakdown.pointsPerThousandUsd)) {
-    const tydroApr = calculateTydroApr(breakdown.pointsPerThousandUsd);
+    const tydroApr = calculateTydroApr(breakdown.pointsPerThousandUsd, pointToUsdRate);
     if (tydroApr > 0) return tydroApr;
   }
   return breakdown.campaignApr;
