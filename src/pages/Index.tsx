@@ -39,6 +39,12 @@ const Index = () => {
     accentTextClass?: string;
     accentBgClass?: string;
   } | null>(null);
+  const [tydroPointToUsdRateInput, setTydroPointToUsdRateInput] = useState('1');
+  const tydroPointToUsdRate = useMemo(() => {
+    const parsed = parseFloat(tydroPointToUsdRateInput);
+    if (Number.isNaN(parsed)) return 1;
+    return Math.max(parsed, 0);
+  }, [tydroPointToUsdRateInput]);
 
   const queryClient = useQueryClient();
 
@@ -264,6 +270,7 @@ const Index = () => {
               isApy={isApy}
               categoryGroups={tokenCategoryGroups}
               onIncentiveClick={handleTopIncentiveClick}
+              tydroPointToUsdRate={tydroPointToUsdRate}
             />
           )}
 
@@ -280,6 +287,8 @@ const Index = () => {
             marketsList={effectiveMarketsList}
             showMarketsExpanded={showMarketsExpanded}
             setShowMarketsExpanded={setShowMarketsExpanded}
+            tydroPointToUsdRateInput={tydroPointToUsdRateInput}
+            setTydroPointToUsdRateInput={setTydroPointToUsdRateInput}
           />
 
           {/* Pools Table */}
@@ -294,6 +303,7 @@ const Index = () => {
                 prev.length === 1 && prev[0] === marketName ? [] : [marketName]
               );
             }}
+            tydroPointToUsdRate={tydroPointToUsdRate}
           />
 
           {topTooltipState && (
@@ -307,6 +317,7 @@ const Index = () => {
               accentBgClass={topTooltipState.accentBgClass}
               onClose={() => setTopTooltipState(null)}
               isApy={isApy}
+              tydroPointToUsdRate={tydroPointToUsdRate}
               usePortal
             />
           )}

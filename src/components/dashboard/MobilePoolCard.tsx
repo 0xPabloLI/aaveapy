@@ -28,9 +28,10 @@ interface MobilePoolCardProps {
     type: 'supply' | 'borrow',
     apy: number | null
   ) => void;
+  tydroPointToUsdRate: number;
 }
 
-const MobilePoolCard = ({ pool, isApy, onIncentiveClick }: MobilePoolCardProps) => {
+const MobilePoolCard = ({ pool, isApy, onIncentiveClick, tydroPointToUsdRate }: MobilePoolCardProps) => {
   // Helper: Get incentive values for a pool (supply or borrow)
   const getIncentiveValues = (type: 'supply' | 'borrow') => {
     const protocolIncentives = type === 'supply' ? pool.supplyIncentives : pool.borrowIncentives;
@@ -40,8 +41,8 @@ const MobilePoolCard = ({ pool, isApy, onIncentiveClick }: MobilePoolCardProps) 
     const brevisLegacyApr = type === 'supply' ? pool.brevisSupplyApr : pool.brevisBorrowApr;
     const brevisSource = brevisIncentives && brevisIncentives.length > 0 ? brevisIncentives : brevisLegacyApr ?? null;
     return {
-      apr: calculateTotalIncentiveApr(meritIncentives, merklOpportunities, brevisSource, protocolIncentives),
-      apy: calculateTotalIncentiveApy(meritIncentives, merklOpportunities, brevisSource, protocolIncentives),
+      apr: calculateTotalIncentiveApr(meritIncentives, merklOpportunities, brevisSource, protocolIncentives, tydroPointToUsdRate),
+      apy: calculateTotalIncentiveApy(meritIncentives, merklOpportunities, brevisSource, protocolIncentives, tydroPointToUsdRate),
     };
   };
 

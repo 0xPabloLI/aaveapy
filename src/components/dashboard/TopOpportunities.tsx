@@ -42,11 +42,12 @@ interface TopOpportunitiesProps {
     accentTextClass?: string;
     accentBgClass?: string;
   }) => void;
+  tydroPointToUsdRate: number;
 }
 
 const DISPLAY_COUNT = 5;
 
-const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: TopOpportunitiesProps) => {
+const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick, tydroPointToUsdRate }: TopOpportunitiesProps) => {
   const isMobile = useIsMobile();
   const prevIsApyRef = useRef(isApy);
   const isApyChanged = prevIsApyRef.current !== isApy;
@@ -66,8 +67,8 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
       const brevisLegacyApr = type === 'supply' ? pool.brevisSupplyApr : pool.brevisBorrowApr;
       const brevisSource = brevisIncentives && brevisIncentives.length > 0 ? brevisIncentives : brevisLegacyApr ?? null;
       return {
-        apr: calculateTotalIncentiveApr(meritIncentives, merklOpportunities, brevisSource, protocolIncentives),
-        apy: calculateTotalIncentiveApy(meritIncentives, merklOpportunities, brevisSource, protocolIncentives),
+        apr: calculateTotalIncentiveApr(meritIncentives, merklOpportunities, brevisSource, protocolIncentives, tydroPointToUsdRate),
+        apy: calculateTotalIncentiveApy(meritIncentives, merklOpportunities, brevisSource, protocolIncentives, tydroPointToUsdRate),
       };
     };
 
