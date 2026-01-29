@@ -756,7 +756,7 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
       </Carousel>
 
       {/* Pagination indicators - 2 dots for 2 pages */}
-      <div className="flex justify-center items-center gap-[var(--ds-space-2)] mt-[var(--ds-space-4)]">
+      <div className="flex justify-center items-center gap-[var(--ds-space-2)] mt-[var(--ds-space-4)] [--ds-dot:0.375rem] [--ds-dot-active:0.5rem]">
         {mobilePages.map((_, index) => (
           <button
             type="button"
