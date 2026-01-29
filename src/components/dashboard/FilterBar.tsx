@@ -218,32 +218,41 @@ const FilterBar = ({
   // Count selected hidden markets
   const selectedHiddenCount = hiddenMarkets.filter(m => selectedMarkets.includes(m.marketName)).length;
 
+  const tokenCategoryButtons = categories.map((category) => (
+    <button
+      key={category.value}
+      onClick={() => {
+        // Toggle behavior: if clicking the selected category, switch to 'all'
+        if (selectedCategory === category.value) {
+          setSelectedCategory('all');
+        } else {
+          setSelectedCategory(category.value);
+        }
+      }}
+      className={`ds-chip px-[var(--ds-space-2)] md:px-[var(--ds-space-2-5)] py-[var(--ds-space-1)] rounded-md font-medium transition-all ${
+        selectedCategory === category.value
+          ? 'bg-[rgb(var(--ds-brand-magenta-rgb))] ds-text-on-brand'
+          : 'bg-card/60 text-muted-foreground hover:text-foreground hover:bg-card border border-border/40'
+      }`}
+    >
+      {category.label}
+    </button>
+  ));
+
   return (
     <div className="space-y-2 md:space-y-3">
-      {/* Row 1: Token Categories + Search + APY Toggle (PC) / Token Categories + APY Toggle (Mobile) */}
+      {/* Row 1 (Mobile): APY/APR Toggle */}
+      {isMobile && (
+        <div className="flex items-center gap-[var(--ds-space-1-5)]">
+          <AprApyToggle isApy={isApy} setIsApy={setIsApy} />
+        </div>
+      )}
+
+      {/* Row 2: Token Categories + Search + APY Toggle (PC) / Token Categories (Mobile) */}
       <div className="flex flex-wrap items-center gap-[var(--ds-space-1-5)] md:gap-[var(--ds-space-2)]">
         {/* Token Categories */}
         <span className="ds-text-11 text-muted-foreground mr-[var(--ds-space-0-5)] md:mr-[var(--ds-space-1)] hidden sm:inline">Tokens:</span>
-        {categories.map((category) => (
-          <button
-            key={category.value}
-            onClick={() => {
-              // Toggle behavior: if clicking the selected category, switch to 'all'
-              if (selectedCategory === category.value) {
-                setSelectedCategory('all');
-              } else {
-                setSelectedCategory(category.value);
-              }
-            }}
-            className={`ds-chip px-[var(--ds-space-2)] md:px-[var(--ds-space-2-5)] py-[var(--ds-space-1)] rounded-md font-medium transition-all ${
-              selectedCategory === category.value
-                ? 'bg-[rgb(var(--ds-brand-magenta-rgb))] ds-text-on-brand'
-                : 'bg-card/60 text-muted-foreground hover:text-foreground hover:bg-card border border-border/40'
-            }`}
-          >
-            {category.label}
-          </button>
-        ))}
+        {tokenCategoryButtons}
 
         {/* Search - only on PC, hidden on mobile */}
         <div className="relative w-20 sm:w-24 md:w-36 lg:w-44 hidden md:block">
@@ -266,13 +275,15 @@ const FilterBar = ({
         </div>
 
         {/* Spacer */}
-        <div className="flex-1 min-w-2 md:min-w-4" />
+        <div className="flex-1 min-w-2 md:min-w-4 hidden md:block" />
 
-        {/* APY/APR Toggle with symmetric info icons */}
-        <AprApyToggle isApy={isApy} setIsApy={setIsApy} />
+        {/* APY/APR Toggle with symmetric info icons - only on PC */}
+        <div className="hidden md:block">
+          <AprApyToggle isApy={isApy} setIsApy={setIsApy} />
+        </div>
       </div>
 
-      {/* Row 2: Search - only on mobile */}
+      {/* Row 3: Search - only on mobile */}
       <div className="flex items-center gap-[var(--ds-space-1-5)] md:gap-[var(--ds-space-2)] md:hidden">
         <div className="relative w-full">
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
