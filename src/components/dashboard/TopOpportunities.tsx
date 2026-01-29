@@ -601,14 +601,24 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick, tydr
               </AnimatePresence>
             ) : (
               categoryPools.map((pool, i) => (
-                <PoolItem 
-                  key={`${categoryKey}-${pool.marketName}-${pool.tokenSymbol}`}
-                  pool={pool} 
-                  index={i} 
-                  type={type}
-                  totalItems={categoryPools.length}
-                  disableMotion
-                />
+                isMobile ? (
+                  <MiniPoolCard
+                    key={`${categoryKey}-${pool.marketName}-${pool.tokenSymbol}`}
+                    pool={pool}
+                    index={i}
+                    type={type}
+                    totalItems={categoryPools.length}
+                  />
+                ) : (
+                  <PoolItem
+                    key={`${categoryKey}-${pool.marketName}-${pool.tokenSymbol}`}
+                    pool={pool}
+                    index={i}
+                    type={type}
+                    totalItems={categoryPools.length}
+                    disableMotion
+                  />
+                )
               ))
             )
           ) : (
