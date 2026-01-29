@@ -4,6 +4,7 @@ import { ExternalLink, X } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { PoolWithSpread, MeritIncentive, MerklOpportunityGroup, BrevisIncentive } from '@/types/aave';
 import { formatPercent, convertAprToApy } from '@/lib/formatters';
+import { getMerklBreakdownApr } from '@/lib/tydro';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface IncentiveTooltipProps {
@@ -282,7 +283,7 @@ const IncentiveTooltip = ({
       opportunities.forEach((opportunity) => {
         if (!opportunity.breakdowns || !Array.isArray(opportunity.breakdowns)) return;
         opportunity.breakdowns.forEach((breakdown) => {
-          const apr = breakdown.campaignApr;
+          const apr = getMerklBreakdownApr(breakdown);
           if (!isNaN(apr) && apr > 0) {
             sources.push({
               name: opportunity.name || 'Merkl Incentive',
