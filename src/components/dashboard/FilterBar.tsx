@@ -220,14 +220,8 @@ const FilterBar = ({
 
   return (
     <div className="space-y-2 md:space-y-3">
-      {/* Row 1 Mobile: APY/APR Toggle first */}
-      {/* Row 1 Desktop: Token Categories + Search + APY Toggle */}
+      {/* Row 1: Token Categories + Search + APY Toggle (PC) / Token Categories + APY Toggle (Mobile) */}
       <div className="flex flex-wrap items-center gap-[var(--ds-space-1-5)] md:gap-[var(--ds-space-2)]">
-        {/* APY/APR Toggle - FIRST on mobile, LAST on desktop */}
-        <div className="md:hidden">
-          <AprApyToggle isApy={isApy} setIsApy={setIsApy} />
-        </div>
-        
         {/* Token Categories */}
         <span className="ds-text-11 text-muted-foreground mr-[var(--ds-space-0-5)] md:mr-[var(--ds-space-1)] hidden sm:inline">Tokens:</span>
         {categories.map((category) => (
@@ -274,10 +268,8 @@ const FilterBar = ({
         {/* Spacer */}
         <div className="flex-1 min-w-2 md:min-w-4" />
 
-        {/* APY/APR Toggle - ONLY on desktop (hidden on mobile since it's shown first) */}
-        <div className="hidden md:block">
-          <AprApyToggle isApy={isApy} setIsApy={setIsApy} />
-        </div>
+        {/* APY/APR Toggle with symmetric info icons */}
+        <AprApyToggle isApy={isApy} setIsApy={setIsApy} />
       </div>
 
       {/* Row 2: Search - only on mobile */}
