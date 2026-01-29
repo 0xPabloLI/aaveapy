@@ -8,7 +8,7 @@ interface AprApyToggleProps {
   setIsApy: (value: boolean) => void;
 }
 
-const TOOLTIP_WIDTH = 260;
+const TOOLTIP_WIDTH = 320;
 const VIEWPORT_PADDING = 16;
 
 interface TooltipPosition {
@@ -24,12 +24,9 @@ function calculateTooltipPosition(
   const top = triggerRect.bottom + 8;
   
   if (alignLeft) {
-    // For left-aligned tooltip, ensure it doesn't overflow left edge
     const left = Math.max(VIEWPORT_PADDING, triggerRect.left);
-    // Also check right edge
     const rightEdge = left + TOOLTIP_WIDTH;
     if (rightEdge > window.innerWidth - VIEWPORT_PADDING) {
-      // Shift left to fit
       return {
         top,
         left: Math.max(VIEWPORT_PADDING, window.innerWidth - TOOLTIP_WIDTH - VIEWPORT_PADDING),
@@ -37,12 +34,9 @@ function calculateTooltipPosition(
     }
     return { top, left };
   } else {
-    // For right-aligned tooltip, ensure it doesn't overflow right edge
     const right = Math.max(VIEWPORT_PADDING, window.innerWidth - triggerRect.right);
-    // Also check left edge
     const leftEdge = window.innerWidth - right - TOOLTIP_WIDTH;
     if (leftEdge < VIEWPORT_PADDING) {
-      // Shift right to fit
       return {
         top,
         right: Math.max(VIEWPORT_PADDING, window.innerWidth - TOOLTIP_WIDTH - VIEWPORT_PADDING),
@@ -92,8 +86,6 @@ function InfoIconButton({
     }
   }, [isOpen]);
 
-  // Mobile: click only
-  // Desktop: hover + focus
   const handleClick = () => {
     if (isMobile) {
       updateTriggerRect();
@@ -135,10 +127,10 @@ function InfoIconButton({
           }
         }}
         className="h-4 w-4 rounded-full bg-muted text-muted-foreground
-          hover:bg-primary hover:text-primary-foreground
+          hover:bg-secondary hover:text-secondary-foreground
           flex items-center justify-center
           transition-all duration-200
-          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
+          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
       >
         <Info className="h-2.5 w-2.5 shrink-0" aria-hidden />
       </button>
@@ -162,33 +154,29 @@ function MobileTooltip({
 
   return createPortal(
     <>
-      {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/20 z-[9998] backdrop-blur-[1px]"
+        className="fixed inset-0 bg-background/40 z-[9998] backdrop-blur-[2px]"
         onClick={onClose}
         aria-hidden
       />
-      {/* Bottom Sheet */}
       <div
-        className="fixed inset-x-4 bottom-4 z-[9999] bg-popover border border-border rounded-xl shadow-2xl
+        className="fixed inset-x-4 bottom-4 z-[9999] bg-card border border-border rounded-xl shadow-xl
           animate-in slide-in-from-bottom-4 fade-in-0 duration-200"
         role="dialog"
         aria-modal="true"
       >
-        {/* Header */}
-        <div className="bg-gradient-to-r from-primary via-secondary to-[hsl(175,65%,50%)] px-4 py-2.5 rounded-t-xl flex items-center justify-between">
-          <h3 className="text-primary-foreground text-sm font-bold">{title}</h3>
+        <div className="bg-muted px-4 py-2.5 rounded-t-xl flex items-center justify-between border-b border-border">
+          <h3 className="text-foreground text-sm font-semibold">{title}</h3>
           <button
             type="button"
             onClick={onClose}
-            className="text-primary-foreground/80 hover:text-primary-foreground transition-colors"
+            className="text-muted-foreground hover:text-foreground transition-colors"
             aria-label="Close"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
-        {/* Content */}
-        <div className="px-4 py-3.5 rounded-b-xl space-y-3 bg-popover">{children}</div>
+        <div className="px-4 py-3.5 rounded-b-xl space-y-3 bg-card">{children}</div>
       </div>
     </>,
     document.body
@@ -218,7 +206,7 @@ function DesktopTooltip({
 
   return createPortal(
     <div
-      className="fixed z-[9999] bg-popover border border-border rounded-xl shadow-2xl
+      className="fixed z-[9999] bg-card border border-border rounded-xl shadow-lg
         animate-in fade-in-0 zoom-in-95 duration-150"
       style={{
         width: TOOLTIP_WIDTH,
@@ -230,12 +218,10 @@ function DesktopTooltip({
       onMouseLeave={onMouseLeave}
       role="tooltip"
     >
-      {/* Header */}
-      <div className="bg-gradient-to-r from-primary via-secondary to-[hsl(175,65%,50%)] px-4 py-2 rounded-t-xl">
-        <h3 className="text-primary-foreground text-sm font-bold">{title}</h3>
+      <div className="bg-muted px-4 py-2 rounded-t-xl border-b border-border">
+        <h3 className="text-foreground text-sm font-semibold">{title}</h3>
       </div>
-      {/* Content */}
-      <div className="px-4 py-3 rounded-b-xl space-y-2.5 bg-popover">{children}</div>
+      <div className="px-4 py-3 rounded-b-xl space-y-2.5 bg-card">{children}</div>
     </div>,
     document.body
   );
@@ -244,23 +230,23 @@ function DesktopTooltip({
 function AprTooltipContent() {
   return (
     <>
-      <div className="bg-card rounded-lg border border-border px-3 py-2">
-        <code className="text-xs font-mono font-semibold text-foreground">
+      <div className="bg-muted/50 rounded-lg border border-border px-3 py-2">
+        <code className="text-xs font-mono font-semibold text-foreground whitespace-nowrap">
           APR = Native APY + Incentive APR
         </code>
       </div>
       <ul className="space-y-1.5 text-xs text-muted-foreground">
         <li className="flex gap-2 items-start">
-          <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[hsl(var(--ds-blue-500))]" aria-hidden />
+          <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ds-bg-blue-500-10 ring-1 ring-[rgb(var(--ds-blue-500-rgb)/0.4)]" aria-hidden />
           <span>
-            <strong className="font-semibold text-[hsl(var(--ds-blue-600))]">Native APY:</strong>{' '}
-            Auto-compounded
+            <strong className="font-semibold ds-text-blue-500">Native APY:</strong>{' '}
+            Auto-compounded by Aave
           </span>
         </li>
         <li className="flex gap-2 items-start">
-          <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[hsl(var(--ds-emerald-500))]" aria-hidden />
+          <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ds-bg-emerald-500-10 ring-1 ring-[rgb(var(--ds-emerald-500-rgb)/0.4)]" aria-hidden />
           <span>
-            <strong className="font-semibold text-[hsl(var(--ds-emerald-600))]">Incentive:</strong>{' '}
+            <strong className="font-semibold ds-text-emerald-600">Incentive:</strong>{' '}
             Requires manual claiming
           </span>
         </li>
@@ -277,29 +263,29 @@ function AprTooltipContent() {
 function ApyTooltipContent() {
   return (
     <>
-      <div className="bg-card rounded-lg border border-border px-3 py-2">
-        <code className="text-xs font-mono font-semibold text-foreground">
+      <div className="bg-muted/50 rounded-lg border border-border px-3 py-2">
+        <code className="text-xs font-mono font-semibold text-foreground whitespace-nowrap">
           APY = Native APY + Incentive APY
         </code>
       </div>
       <ul className="space-y-1.5 text-xs text-muted-foreground">
         <li className="flex gap-2 items-start">
-          <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[hsl(var(--ds-blue-500))]" aria-hidden />
+          <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ds-bg-blue-500-10 ring-1 ring-[rgb(var(--ds-blue-500-rgb)/0.4)]" aria-hidden />
           <span>
-            <strong className="font-semibold text-[hsl(var(--ds-blue-600))]">Native APY:</strong>{' '}
-            Auto-compounded
+            <strong className="font-semibold ds-text-blue-500">Native APY:</strong>{' '}
+            Auto-compounded by Aave
           </span>
         </li>
         <li className="flex gap-2 items-start">
-          <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[hsl(var(--ds-emerald-500))]" aria-hidden />
+          <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ds-bg-emerald-500-10 ring-1 ring-[rgb(var(--ds-emerald-500-rgb)/0.4)]" aria-hidden />
           <span>
-            <strong className="font-semibold text-[hsl(var(--ds-emerald-600))]">Incentive:</strong>{' '}
+            <strong className="font-semibold ds-text-emerald-600">Incentive:</strong>{' '}
             Monthly reinvesting assumed
           </span>
         </li>
       </ul>
-      <div className="bg-[hsl(var(--ds-emerald-500)/0.1)] border border-[hsl(var(--ds-emerald-500)/0.2)] rounded-lg px-3 py-2">
-        <code className="text-[10px] font-mono font-semibold text-[hsl(var(--ds-emerald-700))] dark:text-[hsl(var(--ds-emerald-400))]">
+      <div className="ds-bg-emerald-500-10 border ds-border-emerald-200 rounded-lg px-3 py-2">
+        <code className="text-[11px] font-mono font-semibold ds-text-emerald-700 whitespace-nowrap">
           Incentive APY = (1 + APR/12)¹² − 1
         </code>
       </div>
@@ -330,7 +316,7 @@ export function AprApyToggle({ isApy, setIsApy }: AprApyToggleProps) {
             <MobileTooltip
               isOpen={aprOpen}
               onClose={() => setAprOpen(false)}
-              title="APR"
+              title="APR (Annual Percentage Rate)"
             >
               <AprTooltipContent />
             </MobileTooltip>
@@ -341,7 +327,7 @@ export function AprApyToggle({ isApy, setIsApy }: AprApyToggleProps) {
               triggerRect={triggerRect}
               onMouseEnter={() => setAprOpen(true)}
               onMouseLeave={() => setAprOpen(false)}
-              title="APR"
+              title="APR (Annual Percentage Rate)"
             >
               <AprTooltipContent />
             </DesktopTooltip>
@@ -349,35 +335,41 @@ export function AprApyToggle({ isApy, setIsApy }: AprApyToggleProps) {
         }
       </InfoIconButton>
 
-      {/* Segmented Control */}
-      <div className="flex items-center bg-muted rounded-full p-0.5 border border-border/50">
+      {/* Segmented Control with underline indicator */}
+      <div className="flex items-center gap-0.5 bg-muted/60 rounded-lg p-0.5 border border-border/40">
         <button
           type="button"
           onClick={() => setIsApy(false)}
           className={`
-            px-2.5 py-0.5 rounded-full text-xs font-medium transition-all duration-200
+            relative px-3 py-1 rounded-md text-xs font-semibold transition-all duration-200
             ${!isApy 
-              ? 'bg-card text-foreground shadow-sm' 
-              : 'text-muted-foreground hover:text-foreground'
+              ? 'bg-card text-foreground shadow-sm border border-border/60' 
+              : 'text-muted-foreground hover:text-foreground hover:bg-card/50'
             }
           `}
           aria-pressed={!isApy}
         >
           APR
+          {!isApy && (
+            <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-0.5 rounded-full bg-foreground/60" />
+          )}
         </button>
         <button
           type="button"
           onClick={() => setIsApy(true)}
           className={`
-            px-2.5 py-0.5 rounded-full text-xs font-medium transition-all duration-200
+            relative px-3 py-1 rounded-md text-xs font-semibold transition-all duration-200
             ${isApy 
-              ? 'bg-card text-foreground shadow-sm' 
-              : 'text-muted-foreground hover:text-foreground'
+              ? 'bg-card text-foreground shadow-sm border border-border/60' 
+              : 'text-muted-foreground hover:text-foreground hover:bg-card/50'
             }
           `}
           aria-pressed={isApy}
         >
           APY
+          {isApy && (
+            <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-0.5 rounded-full bg-foreground/60" />
+          )}
         </button>
       </div>
 
@@ -392,7 +384,7 @@ export function AprApyToggle({ isApy, setIsApy }: AprApyToggleProps) {
             <MobileTooltip
               isOpen={apyOpen}
               onClose={() => setApyOpen(false)}
-              title="APY"
+              title="APY (Annual Percentage Yield)"
             >
               <ApyTooltipContent />
             </MobileTooltip>
@@ -403,7 +395,7 @@ export function AprApyToggle({ isApy, setIsApy }: AprApyToggleProps) {
               triggerRect={triggerRect}
               onMouseEnter={() => setApyOpen(true)}
               onMouseLeave={() => setApyOpen(false)}
-              title="APY"
+              title="APY (Annual Percentage Yield)"
             >
               <ApyTooltipContent />
             </DesktopTooltip>
