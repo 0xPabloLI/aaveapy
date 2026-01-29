@@ -475,7 +475,7 @@ const IncentiveTooltip = ({
       {/* Tooltip content with smooth zoom + fade animation */}
       <div
         ref={tooltipRef}
-        className="fixed z-40 rounded-xl border border-border/60 bg-card ds-tooltip-pad ds-tooltip-shadow max-w-[min(560px,calc(100vw-32px))] w-auto min-w-[320px] md:min-w-[400px] animate-in fade-in-0 zoom-in-95 slide-in-from-top-1 duration-200 ease-out"
+        className="fixed z-40 rounded-xl border border-border/60 bg-card ds-tooltip-pad ds-tooltip-shadow max-w-[min(520px,calc(100vw-32px))] w-auto min-w-[240px] animate-in fade-in-0 zoom-in-95 slide-in-from-top-1 duration-200 ease-out"
         style={{ 
           left: `${tooltipLeft ?? position.x}px`,
           top: `${position.y + 8}px`,
