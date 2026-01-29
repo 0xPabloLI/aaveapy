@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, memo } from 'react';
+import { useState, useEffect, useMemo, useRef, memo } from 'react';
 import { TrendingUp, Zap, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PoolWithSpread, ETHEREUM_MARKET_NAMES } from '@/types/aave';
@@ -48,6 +48,12 @@ const DISPLAY_COUNT = 5;
 
 const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: TopOpportunitiesProps) => {
   const isMobile = useIsMobile();
+  const prevIsApyRef = useRef(isApy);
+  const isApyChanged = prevIsApyRef.current !== isApy;
+
+  useEffect(() => {
+    prevIsApyRef.current = isApy;
+  }, [isApy]);
 
   // Calculate totals for all pools (frontend calculates incentive totals from details)
   // Memoize to prevent recalculation when props haven't changed
@@ -424,12 +430,14 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
     pool, 
     index, 
     type,
-    totalItems = 5
+    totalItems = 5,
+    disableMotion = false
   }: { 
     pool: typeof poolsWithTotals[0]; 
     index: number;
     type: 'supply' | 'leverage';
     totalItems?: number;
+    disableMotion?: boolean;
   }) => {
     const isLeverage = type === 'leverage';
     const mainValue = isLeverage 
@@ -445,12 +453,14 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
       name: pool.tokenName,
     });
 
+    const shouldAnimateItem = !disableMotion && !isMobile;
+    const ItemWrapper: React.ElementType = shouldAnimateItem ? motion.div : 'div';
+
     return (
-      <motion.div 
-        custom={index}
-        initial={isMobile ? false : "hidden"}
-        animate="visible"
-        variants={itemVariants}
+      <ItemWrapper 
+        {...(shouldAnimateItem
+          ? { custom: index, initial: 'hidden', animate: 'visible', variants: itemVariants }
+          : {})}
         className={`flex items-center rounded-lg border transition-all group cursor-pointer h-[56px] ${
           isLeverage 
             ? 'bg-background border-border hover:border-[rgb(var(--ds-purple-500-rgb)/0.5)]'
@@ -512,7 +522,7 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
             </div>
           )}
         </div>
-        </motion.div>
+      </ItemWrapper>
     );
   };
 
@@ -538,56 +548,73 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick }: To
     type: 'supply' | 'leverage';
     emptyMessage: string;
   }) => {
+    const shouldAnimateHeader = isMobile || !isApyChanged;
+    const shouldAnimateList = isMobile || !isApyChanged;
+    const HeaderWrapper: React.ElementType = shouldAnimateHeader ? motion.div : 'div';
+    const IconWrapper: React.ElementType = shouldAnimateHeader ? motion.div : 'div';
     return (
         <div className={`bg-card border border-border/60 shadow-sm rounded-xl ${isMobile ? 'ds-card-pad-sm' : 'ds-card-pad'} ${isMobile ? 'col-span-1' : ''} flex flex-col`}>
-        <motion.div 
+        <HeaderWrapper 
           className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-3)]"
-          initial={isMobile ? false : "hidden"}
-          animate="visible"
-          variants={headerVariants}
+          {...(shouldAnimateHeader
+            ? { initial: 'hidden', animate: 'visible', variants: headerVariants }
+            : {})}
         >
-          <motion.div 
+          <IconWrapper 
             className={`p-[var(--ds-space-2)] rounded-lg ${bgColorClass}`}
-            variants={iconVariants}
-            initial={isMobile ? false : "hidden"}
-            animate={["visible", "pulse"]}
+            {...(shouldAnimateHeader
+              ? { variants: iconVariants, initial: 'hidden', animate: ['visible', 'pulse'] as const }
+              : {})}
           >
             <Icon className={`w-4 h-4 md:w-5 md:h-5 ${iconColorClass}`} />
-          </motion.div>
+          </IconWrapper>
           <div className="flex-1 min-w-0">
             <h3 className={`font-bold truncate ${isMobile ? 'ds-text-14' : 'ds-text-16'}`}>{title}</h3>
             <p className="text-muted-foreground truncate ds-text-11">{subtitle}</p>
           </div>
-        </motion.div>
+        </HeaderWrapper>
 
         <div className="flex-1 space-y-[var(--ds-space-1-5)]">
-          <AnimatePresence mode="popLayout">
-            {categoryPools.length > 0 ? (
-              categoryPools.map((pool, i) => (
-                isMobile ? (
-                  <MiniPoolCard
-                    key={`${categoryKey}-${pool.marketName}-${pool.tokenSymbol}`}
-                    pool={pool}
-                    index={i}
-                    type={type}
-                    totalItems={categoryPools.length}
-                  />
-                ) : (
-                  <PoolItem 
-                    key={`${categoryKey}-${pool.marketName}-${pool.tokenSymbol}`}
-                    pool={pool} 
-                    index={i} 
-                    type={type}
-                    totalItems={categoryPools.length}
-                  />
-                )
-              ))
+          {categoryPools.length > 0 ? (
+            shouldAnimateList ? (
+              <AnimatePresence mode="popLayout">
+                {categoryPools.map((pool, i) => (
+                  isMobile ? (
+                    <MiniPoolCard
+                      key={`${categoryKey}-${pool.marketName}-${pool.tokenSymbol}`}
+                      pool={pool}
+                      index={i}
+                      type={type}
+                      totalItems={categoryPools.length}
+                    />
+                  ) : (
+                    <PoolItem 
+                      key={`${categoryKey}-${pool.marketName}-${pool.tokenSymbol}`}
+                      pool={pool} 
+                      index={i} 
+                      type={type}
+                      totalItems={categoryPools.length}
+                    />
+                  )
+                ))}
+              </AnimatePresence>
             ) : (
-              <div className="text-center py-[var(--ds-space-6)] text-muted-foreground">
-                <p className="ds-text-11">{emptyMessage}</p>
-              </div>
-            )}
-          </AnimatePresence>
+              categoryPools.map((pool, i) => (
+                <PoolItem 
+                  key={`${categoryKey}-${pool.marketName}-${pool.tokenSymbol}`}
+                  pool={pool} 
+                  index={i} 
+                  type={type}
+                  totalItems={categoryPools.length}
+                  disableMotion
+                />
+              ))
+            )
+          ) : (
+            <div className="text-center py-[var(--ds-space-6)] text-muted-foreground">
+              <p className="ds-text-11">{emptyMessage}</p>
+            </div>
+          )}
         </div>
       </div>
     );
