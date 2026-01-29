@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { Info } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { Info, X } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface AprApyToggleProps {
@@ -16,6 +17,7 @@ interface TooltipRenderProps {
   onMouseLeave: () => void;
   onTooltipFocus: () => void;
   onTooltipBlur: (e: React.FocusEvent) => void;
+  triggerRect: DOMRect | null;
 }
 
 function InfoIconButton({
@@ -33,6 +35,7 @@ function InfoIconButton({
 }) {
   const triggerRef = useRef<HTMLButtonElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
+  const [triggerRect, setTriggerRect] = useState<DOMRect | null>(null);
 
   const handleBlur = (e: React.FocusEvent) => {
     if (tooltipRef.current?.contains(e.relatedTarget as Node)) return;
@@ -41,6 +44,12 @@ function InfoIconButton({
   const handleTooltipBlur = (e: React.FocusEvent) => {
     if (triggerRef.current?.contains(e.relatedTarget as Node)) return;
     onClose();
+  };
+
+  const updateTriggerRect = () => {
+    if (triggerRef.current) {
+      setTriggerRect(triggerRef.current.getBoundingClientRect());
+    }
   };
 
   useEffect(() => {
@@ -54,23 +63,35 @@ function InfoIconButton({
     return () => document.removeEventListener('keydown', handleEscape);
   }, [isOpen, onClose]);
 
+  useEffect(() => {
+    if (isOpen) {
+      updateTriggerRect();
+    }
+  }, [isOpen]);
+
   return (
     <div className="relative inline-flex">
       <button
         ref={triggerRef}
         type="button"
         aria-label={ariaLabel}
-        onMouseEnter={onOpen}
+        onMouseEnter={() => {
+          updateTriggerRect();
+          onOpen();
+        }}
         onMouseLeave={onClose}
-        onFocus={onOpen}
+        onFocus={() => {
+          updateTriggerRect();
+          onOpen();
+        }}
         onBlur={handleBlur}
-        className="h-3.5 w-3.5 rounded-full bg-muted text-muted-foreground
+        className="h-4 w-4 rounded-full bg-muted text-muted-foreground
           hover:bg-primary hover:text-primary-foreground
           flex items-center justify-center
           transition-all duration-200
           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
       >
-        <Info className="h-2 w-2 shrink-0" aria-hidden />
+        <Info className="h-2.5 w-2.5 shrink-0" aria-hidden />
       </button>
       {renderTooltip({
         tooltipRef,
@@ -79,6 +100,7 @@ function InfoIconButton({
         onMouseLeave: onClose,
         onTooltipFocus: onOpen,
         onTooltipBlur: handleTooltipBlur,
+        triggerRect,
       })}
     </div>
   );
@@ -92,8 +114,10 @@ function TooltipShell({
   onMouseLeave,
   onFocus,
   onBlur,
+  onClose,
   title,
   children,
+  triggerRect,
 }: {
   alignLeft: boolean;
   isOpen: boolean;
@@ -102,27 +126,38 @@ function TooltipShell({
   onMouseLeave: () => void;
   onFocus: () => void;
   onBlur: (e: React.FocusEvent) => void;
+  onClose: () => void;
   title: string;
   children: React.ReactNode;
+  triggerRect: DOMRect | null;
 }) {
   const isMobile = useIsMobile();
-  
-  return (
+
+  if (!isOpen) return null;
+
+  const tooltipContent = (
     <div
       ref={tooltipRef}
       tabIndex={-1}
-      className={`absolute top-5 z-50
-        bg-popover border border-border rounded-xl shadow-xl
-        transition-[opacity,visibility] duration-300 ease-out
-        ${isOpen ? 'opacity-100 visible pointer-events-auto' : 'opacity-0 invisible pointer-events-none'}
-        ${isMobile 
-          ? 'fixed left-4 right-4 top-auto bottom-4 w-auto max-w-[calc(100vw-32px)]' 
-          : alignLeft 
-            ? 'left-0' 
-            : 'right-0'
-        }
+      className={`z-[9999] bg-popover border border-border rounded-xl shadow-2xl
+        transition-[opacity,transform] duration-200 ease-out
+        ${isOpen ? 'opacity-100' : 'opacity-0'}
+        ${isMobile ? 'fixed inset-x-4 bottom-4' : 'fixed'}
       `}
-      style={{ width: isMobile ? 'auto' : TOOLTIP_WIDTH }}
+      style={
+        isMobile
+          ? { width: 'auto' }
+          : {
+              width: TOOLTIP_WIDTH,
+              top: triggerRect ? triggerRect.bottom + 8 : 0,
+              left: alignLeft
+                ? Math.max(16, triggerRect?.left ?? 0)
+                : undefined,
+              right: !alignLeft
+                ? Math.max(16, window.innerWidth - (triggerRect?.right ?? 0))
+                : undefined,
+            }
+      }
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
       onFocus={onFocus}
@@ -130,12 +165,41 @@ function TooltipShell({
       role="tooltip"
       aria-hidden={!isOpen}
     >
-      <div className="bg-gradient-to-r from-[hsl(var(--primary))] via-[hsl(175,65%,45%)] to-[hsl(175,65%,50%)] px-4 py-2.5 rounded-t-xl">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-primary via-secondary to-[hsl(175,65%,50%)] px-4 py-2.5 rounded-t-xl flex items-center justify-between">
         <h3 className="text-primary-foreground text-sm font-bold">{title}</h3>
+        {isMobile && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-primary-foreground/80 hover:text-primary-foreground transition-colors"
+            aria-label="Close tooltip"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
       </div>
+      {/* Content */}
       <div className="px-4 py-3.5 rounded-b-xl space-y-3 bg-popover">{children}</div>
     </div>
   );
+
+  // Mobile: also render backdrop
+  if (isMobile) {
+    return createPortal(
+      <>
+        <div
+          className="fixed inset-0 bg-black/20 z-[9998] backdrop-blur-[1px]"
+          onClick={onClose}
+          aria-hidden
+        />
+        {tooltipContent}
+      </>,
+      document.body
+    );
+  }
+
+  return createPortal(tooltipContent, document.body);
 }
 
 function AprTooltipContent() {
@@ -220,7 +284,7 @@ export function AprApyToggle({ isApy, setIsApy }: AprApyToggleProps) {
         isOpen={aprOpen}
         onOpen={() => setAprOpen(true)}
         onClose={() => setAprOpen(false)}
-        renderTooltip={({ tooltipRef, isOpen, onMouseEnter, onMouseLeave, onTooltipFocus, onTooltipBlur }) => (
+        renderTooltip={({ tooltipRef, isOpen, onMouseEnter, onMouseLeave, onTooltipFocus, onTooltipBlur, triggerRect }) => (
           <TooltipShell
             alignLeft
             isOpen={isOpen}
@@ -229,7 +293,9 @@ export function AprApyToggle({ isApy, setIsApy }: AprApyToggleProps) {
             onMouseLeave={onMouseLeave}
             onFocus={onTooltipFocus}
             onBlur={onTooltipBlur}
+            onClose={() => setAprOpen(false)}
             title="APR"
+            triggerRect={triggerRect}
           >
             <AprTooltipContent />
           </TooltipShell>
@@ -273,7 +339,7 @@ export function AprApyToggle({ isApy, setIsApy }: AprApyToggleProps) {
         isOpen={apyOpen}
         onOpen={() => setApyOpen(true)}
         onClose={() => setApyOpen(false)}
-        renderTooltip={({ tooltipRef, isOpen, onMouseEnter, onMouseLeave, onTooltipFocus, onTooltipBlur }) => (
+        renderTooltip={({ tooltipRef, isOpen, onMouseEnter, onMouseLeave, onTooltipFocus, onTooltipBlur, triggerRect }) => (
           <TooltipShell
             alignLeft={false}
             isOpen={isOpen}
@@ -282,7 +348,9 @@ export function AprApyToggle({ isApy, setIsApy }: AprApyToggleProps) {
             onMouseLeave={onMouseLeave}
             onFocus={onTooltipFocus}
             onBlur={onTooltipBlur}
+            onClose={() => setApyOpen(false)}
             title="APY"
+            triggerRect={triggerRect}
           >
             <ApyTooltipContent />
           </TooltipShell>
