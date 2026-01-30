@@ -1,14 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Info } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { useCoingeckoFdv } from '@/hooks/useCoingeckoFdv';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 
 interface InkAprCalculatorProps {
   rateInput: string;
@@ -186,178 +179,151 @@ const InkAprCalculator = ({
   }, [isDragging, handleTrackInteraction]);
 
   return (
-    <TooltipProvider>
-      <Card className="border-border/60 bg-card">
-        <CardContent className="p-[var(--ds-space-3)]">
-          <div className="space-y-[var(--ds-space-2)]">
-            {/* Row 1: Title (with description inline) and inputs */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-[var(--ds-space-2)]">
-              <div className="flex items-center gap-[var(--ds-space-2)] flex-wrap">
-                <div className="w-5 h-5 rounded-full bg-black dark:bg-white flex items-center justify-center shrink-0">
-                  <img
-                    src="/icons/networks/ink.svg"
-                    alt="INK"
-                    className="w-3.5 h-3.5 invert dark:invert-0"
-                  />
-                </div>
-                <span className="ds-text-12 md:ds-text-13 font-semibold text-foreground">
-                  Ink incentive APR calculator
-                </span>
-                <span className="ds-text-10 md:ds-text-11 text-muted-foreground">
-                  enter estimated $INK FDV for TydroInkPoints APR
-                </span>
-              </div>
-
-              <div className="flex items-center gap-[var(--ds-space-2)]">
-                {/* FDV Input */}
-                <div className="inline-flex items-center bg-muted/60 border border-transparent focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/20 transition-all rounded-md px-[var(--ds-space-2)] py-[var(--ds-space-1)] h-7">
-                  <span className="ds-text-10 text-muted-foreground uppercase tracking-wide mr-1.5 font-medium">FDV</span>
-                  <span className="ds-text-11 text-muted-foreground">$</span>
-                  <Input
-                    type="number"
-                    min="0.1"
-                    max="150"
-                    step="0.1"
-                    inputMode="decimal"
-                    value={fdvInputValue}
-                    onChange={handleFdvInputChange}
-                    placeholder="1.0"
-                    className="w-10 px-0 ds-text-11 font-medium tabular-nums bg-transparent border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 h-auto p-0 text-center"
-                    aria-label="Estimated $INK FDV in billions"
-                  />
-                  <span className="ds-text-11 text-muted-foreground ml-0.5" title="Billions">B</span>
-                </div>
-
-                {/* INK Price */}
-                <div className="inline-flex items-center gap-[var(--ds-space-1-5)] bg-primary/10 dark:bg-primary/20 rounded-md px-[var(--ds-space-2)] py-[var(--ds-space-1)] h-7">
-                  <span className="ds-text-10 text-primary font-medium">INK</span>
-                  <span className="ds-text-11 font-semibold tabular-nums text-foreground">
-                    ${formatInkPrice(currentFdvBillions)}
-                  </span>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
-                        className="text-muted-foreground hover:text-foreground transition-colors"
-                        aria-label="APR formula"
-                      >
-                        <Info className="w-3 h-3" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="max-w-xs">
-                      <p className="ds-text-12 text-muted-foreground">
-                        APR = daily points × $INK price × 365%
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-              </div>
-            </div>
-
-            {/* Row 2: Slider */}
-            <div className="relative pt-[var(--ds-space-8)] pb-[var(--ds-space-6)]">
-              {/* Exchange labels + FDV values above slider */}
-              <div className="absolute top-0 left-0 right-0 h-[var(--ds-space-6)]">
-                {exchangeDataWithLiveFdv.map((ex) => {
-                  const position = fdvToLogPosition(ex.fdv);
-                  const isSelected = Math.abs(currentFdvBillions - ex.fdv) < 0.5;
-                  return (
-                    <div
-                      key={ex.exchange}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        handleExchangeClick(ex.fdv);
-                      }}
-                      className={`absolute -translate-x-1/2 flex flex-col items-center gap-0 cursor-pointer group ${
-                        isSelected ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
-                      }`}
-                      style={{ left: `${position}%` }}
-                      role="button"
-                      aria-label={`Set FDV to ${ex.exchange} (${ex.fdv.toFixed(1)}B)`}
-                    >
-                      <span className={`ds-text-9 md:ds-text-10 font-medium whitespace-nowrap transition-colors ${
-                        isSelected ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
-                      }`}>
-                        {ex.exchange}
-                      </span>
-                      <span className={`ds-text-8 md:ds-text-9 tabular-nums whitespace-nowrap transition-colors ${
-                        isSelected ? 'text-primary/80' : 'text-muted-foreground/60 group-hover:text-muted-foreground'
-                      }`}>
-                        ${formatFdv(ex.fdv)}B
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Current FDV indicator above slider */}
-              <div
-                className="absolute top-[var(--ds-space-4)] -translate-x-1/2 flex flex-col items-center z-10 pointer-events-none"
-                style={{ left: `${sliderPosition}%` }}
-              >
-                <span className="ds-text-10 font-semibold tabular-nums text-primary whitespace-nowrap bg-card/80 px-1 rounded-sm backdrop-blur-[2px]">
-                  ${formatFdv(currentFdvBillions)}B
-                </span>
-                <div className="w-px h-1.5 bg-primary/50" />
-              </div>
-
-              {/* Slider track */}
-              <div
-                ref={trackRef}
-                className="relative h-1.5 rounded-full cursor-pointer select-none mt-1"
-                style={{
-                  background: 'linear-gradient(to right, #c242b1, #23cdbf)',
-                }}
-                onMouseDown={handleMouseDown}
-                onTouchStart={handleTouchStart}
-                role="slider"
-                aria-valuemin={MIN_FDV}
-                aria-valuemax={MAX_FDV}
-                aria-valuenow={currentFdvBillions}
-                aria-label="FDV slider"
-                tabIndex={0}
-              >
-                {/* Reference point markers */}
-                {exchangeDataWithLiveFdv.map((ex) => {
-                  const position = fdvToLogPosition(ex.fdv);
-                  return (
-                    <div
-                      key={`marker-${ex.exchange}`}
-                      className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-background border border-border pointer-events-none"
-                      style={{ left: `${position}%` }}
-                    />
-                  );
-                })}
-
-                {/* Current value thumb */}
-                <div
-                  className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-primary border-2 border-background shadow-sm pointer-events-none transition-transform hover:scale-110"
-                  style={{ left: `${sliderPosition}%` }}
+    <Card className="border-border/60 bg-card">
+      <CardContent className="p-[var(--ds-space-3)]">
+        <div className="space-y-[var(--ds-space-2)]">
+          {/* Row 1: Title with formula, description and inputs */}
+          <div className="flex flex-col gap-[var(--ds-space-2)]">
+            {/* Title row */}
+            <div className="flex items-center gap-[var(--ds-space-2)] flex-wrap">
+              <div className="w-5 h-5 rounded-full bg-[#7c3aed] flex items-center justify-center shrink-0">
+                <img
+                  src="/icons/networks/ink.svg"
+                  alt="INK"
+                  className="w-3.5 h-3.5"
                 />
               </div>
+              <span className="ds-text-12 md:ds-text-13 font-semibold text-foreground">
+                Ink incentive APR calculator
+              </span>
+              <span className="ds-text-10 text-muted-foreground font-mono">
+                APR = daily_points × $INK × 365%
+              </span>
+            </div>
+            
+            {/* Input row */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-[var(--ds-space-2)]">
+              <span className="ds-text-10 md:ds-text-11 text-muted-foreground">
+                enter estimated $INK FDV for TydroInkPoints APR
+              </span>
+              
+              <div className="flex items-center gap-[var(--ds-space-3)]">
+                {/* FDV Input */}
+                <div className="flex items-center gap-[var(--ds-space-1-5)]">
+                  <span className="ds-text-10 text-muted-foreground">FDV</span>
+                  <div className="inline-flex items-center bg-muted/50 border border-border rounded-md px-2 py-1 h-7 focus-within:border-foreground/40 transition-colors">
+                    <span className="ds-text-11 text-muted-foreground">$</span>
+                    <Input
+                      type="number"
+                      min="0.1"
+                      max="150"
+                      step="0.1"
+                      inputMode="decimal"
+                      value={fdvInputValue}
+                      onChange={handleFdvInputChange}
+                      placeholder="1.0"
+                      className="w-12 px-1 ds-text-11 font-medium tabular-nums bg-transparent border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 h-auto p-0 text-right"
+                      aria-label="Estimated $INK FDV in billions"
+                    />
+                    <span className="ds-text-10 text-muted-foreground ml-0.5">B</span>
+                  </div>
+                </div>
+                
+                {/* Separator */}
+                <div className="w-px h-4 bg-border" />
 
-              {/* Chain labels below slider */}
-              <div className="absolute bottom-0 left-0 right-0 h-[var(--ds-space-4)] mt-1.5">
-                {exchangeDataWithLiveFdv.map((ex) => {
-                  const position = fdvToLogPosition(ex.fdv);
-                  return (
-                    <a
-                      key={`chain-${ex.exchange}`}
-                      href={ex.link}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="absolute -translate-x-1/2 ds-text-8 md:ds-text-9 text-muted-foreground/70 hover:text-primary transition-colors whitespace-nowrap cursor-pointer z-10"
-                      style={{ left: `${position}%` }}
-                    >
-                      {ex.chain}-{ex.token}
-                    </a>
-                  );
-                })}
+                {/* INK Price */}
+                <div className="flex items-center gap-[var(--ds-space-1-5)]">
+                  <span className="ds-text-10 text-muted-foreground">INK price</span>
+                  <span className="ds-text-12 font-semibold tabular-nums text-foreground">
+                    ${formatInkPrice(currentFdvBillions)}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
-    </TooltipProvider>
+
+          {/* Row 2: Slider */}
+          <div className="relative pt-[var(--ds-space-2)] pb-[var(--ds-space-10)]">
+            {/* Slider track */}
+            <div
+              ref={trackRef}
+              className="relative h-1.5 rounded-full cursor-pointer select-none"
+              style={{
+                background: 'linear-gradient(to right, #c242b1, #23cdbf)',
+              }}
+              onMouseDown={handleMouseDown}
+              onTouchStart={handleTouchStart}
+              role="slider"
+              aria-valuemin={MIN_FDV}
+              aria-valuemax={MAX_FDV}
+              aria-valuenow={currentFdvBillions}
+              aria-label="FDV slider"
+              tabIndex={0}
+            >
+              {/* Reference point markers */}
+              {exchangeDataWithLiveFdv.map((ex) => {
+                const position = fdvToLogPosition(ex.fdv);
+                return (
+                  <div
+                    key={`marker-${ex.exchange}`}
+                    className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-background border border-border/80 pointer-events-none"
+                    style={{ left: `${position}%` }}
+                  />
+                );
+              })}
+
+              {/* Current value thumb - white/neutral */}
+              <div
+                className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-white border-2 border-foreground/20 shadow-md pointer-events-none"
+                style={{ left: `${sliderPosition}%` }}
+              />
+            </div>
+
+            {/* Exchange labels + chain info below slider */}
+            <div className="absolute top-[var(--ds-space-4)] left-0 right-0">
+              {exchangeDataWithLiveFdv.map((ex) => {
+                const position = fdvToLogPosition(ex.fdv);
+                const isSelected = Math.abs(currentFdvBillions - ex.fdv) < 0.5;
+                return (
+                  <a
+                    key={ex.exchange}
+                    href={ex.link}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleExchangeClick(ex.fdv);
+                    }}
+                    className={`absolute -translate-x-1/2 flex flex-col items-center gap-0 cursor-pointer group transition-colors ${
+                      isSelected ? '' : 'hover:opacity-80'
+                    }`}
+                    style={{ left: `${position}%` }}
+                    aria-label={`Set FDV to ${ex.exchange} (${ex.fdv.toFixed(1)}B)`}
+                  >
+                    <span className={`ds-text-9 md:ds-text-10 font-medium whitespace-nowrap transition-colors ${
+                      isSelected ? 'text-foreground' : 'text-muted-foreground'
+                    }`}>
+                      {ex.exchange}
+                    </span>
+                    <span className={`ds-text-8 md:ds-text-9 tabular-nums whitespace-nowrap ${
+                      isSelected ? 'text-foreground/80' : 'text-muted-foreground/60'
+                    }`}>
+                      ${formatFdv(ex.fdv)}B
+                    </span>
+                    <span className={`ds-text-8 whitespace-nowrap underline decoration-dotted underline-offset-2 ${
+                      isSelected ? 'text-foreground/70' : 'text-muted-foreground/50 group-hover:text-muted-foreground'
+                    }`}>
+                      {ex.chain}/{ex.token}
+                    </span>
+                  </a>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 
