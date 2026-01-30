@@ -216,24 +216,30 @@ const InkAprCalculator = ({
 
   return (
     <Card className="border-border/60 bg-card">
-      <CardContent className="p-[var(--ds-space-3)]">
-        <div className="space-y-[var(--ds-space-2)]">
-          {/* Row 1: Everything in one row - Title, Slider, Inputs */}
+      <CardContent className="p-[var(--ds-space-2)] md:p-[var(--ds-space-3)]">
+        <div className="flex flex-col gap-[var(--ds-space-2)]">
+          
+          {/* Top Row: Title, Formula, Slider, Inputs */}
           <div className="flex flex-col lg:flex-row lg:items-center gap-[var(--ds-space-2)]">
-            {/* Left: Logo + Title */}
-            <div className="flex items-center gap-[var(--ds-space-2)] shrink-0">
-              <img
-                src="/icons/networks/ink.svg"
-                alt="INK"
-                className="w-5 h-5 shrink-0"
-              />
-              <span className="ds-text-14 md:ds-text-16 font-semibold text-foreground whitespace-nowrap">
-                Ink incentive APR calculator
+            {/* Left: Logo + Title + Formula */}
+            <div className="flex flex-col gap-0.5 shrink-0">
+              <div className="flex items-center gap-[var(--ds-space-2)]">
+                <img
+                  src="/icons/networks/ink.svg"
+                  alt="INK"
+                  className="w-5 h-5 shrink-0"
+                />
+                <span className="ds-text-14 md:ds-text-16 font-semibold text-foreground whitespace-nowrap">
+                  Ink incentive APR calculator
+                </span>
+              </div>
+              <span className="ds-text-9 text-muted-foreground font-mono whitespace-nowrap pl-7 hidden md:block">
+                APR = daily_points × $INK × 365%
               </span>
             </div>
 
             {/* Center: Slider */}
-            <div className="relative flex-1 min-w-[120px] lg:mx-4">
+            <div className="relative flex-1 min-w-[120px] lg:mx-4 pt-1">
               <div
                 ref={trackRef}
                 className="relative h-1.5 rounded-full cursor-pointer select-none"
@@ -278,7 +284,7 @@ const InkAprCalculator = ({
 
             {/* Right: Inputs */}
             <div className="flex items-center gap-[var(--ds-space-2)] shrink-0">
-              <div className="inline-flex items-center bg-muted/50 border border-border rounded px-1.5 py-0.5 h-6 focus-within:border-foreground/40 transition-colors">
+              <div className="inline-flex items-center bg-muted/50 border border-border rounded px-1.5 py-0.5 h-7 focus-within:border-foreground/40 transition-colors">
                 <span className="ds-text-9 text-muted-foreground">$</span>
                 <Input
                   type="number"
@@ -289,19 +295,18 @@ const InkAprCalculator = ({
                   value={fdvInputValue}
                   onChange={handleFdvInputChange}
                   placeholder="1.00"
-                  className="w-14 px-0.5 ds-text-9 font-medium tabular-nums bg-transparent border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 h-auto p-0 text-right"
+                  className="w-14 px-0.5 ds-text-10 font-medium tabular-nums bg-transparent border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 h-auto p-0 text-right"
                   aria-label="Estimated $INK FDV in billions"
                 />
-                <span className="ds-text-8 text-muted-foreground">B</span>
+                <span className="ds-text-10 md:ds-text-11 text-muted-foreground font-medium">B</span>
               </div>
-              <div className="w-px h-4 bg-border" />
-              <div className="flex items-center gap-1">
+              <div className="w-px h-5 bg-border" />
+              <div className="flex items-center gap-1.5">
                 <img
                   src="/icons/partners/inktoken.svg"
                   alt="INK"
-                  className="w-3.5 h-3.5 shrink-0 invert dark:invert-0"
+                  className="w-4 h-4 shrink-0 invert dark:invert-0"
                 />
-                <span className="ds-text-10 text-muted-foreground">INK</span>
                 <span className="ds-text-11 font-semibold tabular-nums text-foreground">
                   ${formatInkPrice(currentFdvBillions)}
                 </span>
@@ -309,20 +314,20 @@ const InkAprCalculator = ({
             </div>
           </div>
 
-          {/* Row 2: Labels below slider + Formula */}
-          <div className="flex items-start gap-[var(--ds-space-2)] pt-1">
-            {/* Spacer for left section */}
-            <div className="shrink-0 hidden lg:block" style={{ width: '280px' }} />
+          {/* Bottom Row: Reference Labels - precisely aligned with slider */}
+          <div className="flex items-start gap-[var(--ds-space-2)]">
+            {/* Left Spacer to align with Title block */}
+            <div className="shrink-0 hidden lg:block w-[220px]" />
             
-            {/* Reference labels container - aligned with slider */}
+            {/* Labels Container - matches Slider width/position */}
             <div className="relative flex-1 min-w-[120px] lg:mx-4 h-10">
-              {/* FDV label at 0 */}
+               {/* FDV label at 0 */}
               <div
-                className="absolute flex flex-col items-center justify-center h-full"
+                className="absolute flex flex-col items-center justify-start pt-1 h-full"
                 style={{ left: '0%', transform: 'translateX(-50%)' }}
               >
-                <span className="ds-text-10 md:ds-text-11 text-muted-foreground font-medium">FDV</span>
-                <span className="ds-text-9 md:ds-text-10 text-muted-foreground/50 tabular-nums">0.00B</span>
+                <span className="ds-text-10 md:ds-text-11 text-muted-foreground font-medium leading-none mb-0.5">FDV</span>
+                <span className="ds-text-9 md:ds-text-10 text-muted-foreground/50 tabular-nums leading-none">0.00B</span>
               </div>
 
               {/* Reference point labels */}
@@ -332,38 +337,38 @@ const InkAprCalculator = ({
                   <div
                     key={point.id}
                     onClick={() => handlePointClick(point.fdv)}
-                    className={`absolute flex flex-col items-center justify-center h-full cursor-pointer group transition-colors ${
+                    className={`absolute flex flex-col items-center justify-start pt-1 h-full cursor-pointer group transition-colors ${
                       isSelected ? '' : 'hover:opacity-80'
                     }`}
                     style={{ left: `${point.position}%`, transform: 'translateX(-50%)' }}
                     role="button"
                     aria-label={point.isDefault ? `Set FDV to default (${point.fdv}B)` : `Set FDV to ${point.exchange} (${point.fdv.toFixed(2)}B)`}
                   >
-                    <span className={`ds-text-10 md:ds-text-11 tabular-nums whitespace-nowrap font-medium ${
+                    <span className={`ds-text-10 md:ds-text-11 tabular-nums whitespace-nowrap font-medium leading-none mb-0.5 ${
                       isSelected ? 'text-foreground' : 'text-muted-foreground'
                     }`}>
                       ${formatFdv(point.fdv)}B
                     </span>
                     {point.isDefault ? (
-                      <span className={`ds-text-9 md:ds-text-10 whitespace-nowrap ${
+                      <span className={`ds-text-9 md:ds-text-10 whitespace-nowrap leading-none ${
                         isSelected ? 'text-foreground/70' : 'text-muted-foreground/50'
                       }`}>
                         Default
                       </span>
                     ) : (
-                      <div className="flex flex-col items-center leading-none">
+                      <div className="flex flex-col items-center leading-none gap-0.5">
                         <a
                           href={point.link}
                           target="_blank"
                           rel="noreferrer"
                           onClick={(e) => e.stopPropagation()}
-                          className={`ds-text-9 md:ds-text-10 whitespace-nowrap underline decoration-dotted underline-offset-2 ${
+                          className={`ds-text-9 md:ds-text-10 whitespace-nowrap underline decoration-dotted underline-offset-2 leading-none ${
                             isSelected ? 'text-foreground/70' : 'text-muted-foreground/50 group-hover:text-muted-foreground'
                           }`}
                         >
                           {point.chain}/{point.token}
                         </a>
-                        <span className={`ds-text-9 md:ds-text-10 whitespace-nowrap mt-0.5 ${
+                        <span className={`ds-text-9 md:ds-text-10 whitespace-nowrap leading-none ${
                           isSelected ? 'text-foreground/60' : 'text-muted-foreground/40'
                         }`}>
                           {point.exchange}
@@ -375,19 +380,19 @@ const InkAprCalculator = ({
               })}
             </div>
 
-            {/* Formula and Kraken label on right */}
-            <div className="shrink-0 hidden lg:flex flex-col items-end gap-1 w-[140px]">
-              <div className="flex flex-col items-center">
-                 <span className="ds-text-9 md:ds-text-10 whitespace-nowrap text-muted-foreground/50 underline decoration-dotted underline-offset-2">
+            {/* Right Spacer + Kraken label - to align with Inputs */}
+            <div className="shrink-0 flex flex-col items-end gap-0.5 w-[140px] pt-1">
+               <span className="ds-text-9 md:ds-text-10 whitespace-nowrap text-muted-foreground/50 font-medium tabular-nums">
+                  ${formatFdv(currentFdvBillions)}B
+                </span>
+               <div className="flex items-center gap-1.5 opacity-60">
+                <span className="ds-text-9 md:ds-text-10 whitespace-nowrap text-muted-foreground underline decoration-dotted underline-offset-2">
                   Ink/INK
                 </span>
-                <span className="ds-text-9 md:ds-text-10 whitespace-nowrap text-muted-foreground/40">
+                <span className="ds-text-9 md:ds-text-10 whitespace-nowrap text-muted-foreground">
                   Kraken
                 </span>
               </div>
-              <span className="ds-text-9 md:ds-text-10 text-muted-foreground font-mono whitespace-nowrap mt-1">
-                APR = daily_points × $INK × 365%
-              </span>
             </div>
           </div>
         </div>
