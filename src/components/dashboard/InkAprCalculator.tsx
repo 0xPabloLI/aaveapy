@@ -10,52 +10,68 @@ interface InkAprCalculatorProps {
 }
 
 const TOTAL_SUPPLY = 1_000_000_000;
-const MIN_FDV = 0.1;
-const MAX_FDV = 150;
 const DEFAULT_FDV = 1.0;
 
-interface ExchangeData {
-  exchange: string;
-  chain: string;
-  token: string;
-  defaultFdv: number;
-  link: string;
+interface ReferencePoint {
+  id: string;
+  fdv: number;
+  position: number;
+  exchange?: string;
+  chain?: string;
+  token?: string;
+  link?: string;
+  isDefault?: boolean;
+  isKraken?: boolean;
 }
 
-const EXCHANGE_DATA: ExchangeData[] = [
-  { exchange: 'OKX', chain: 'X Layer', token: 'OKB', defaultFdv: 2.1, link: 'https://www.coingecko.com/en/coins/okb' },
-  { exchange: 'Bitget', chain: 'Morph', token: 'BGB', defaultFdv: 3.2, link: 'https://www.coingecko.com/en/coins/bitget-token' },
-  { exchange: 'Bybit', chain: 'Mantle', token: 'MNT', defaultFdv: 5.0, link: 'https://www.coingecko.com/en/coins/mantle' },
-  { exchange: 'Crypto.com', chain: 'Cronos', token: 'CRO', defaultFdv: 8.5, link: 'https://www.coingecko.com/en/coins/cronos' },
-  { exchange: 'Binance', chain: 'BSC', token: 'BNB', defaultFdv: 115.8, link: 'https://www.coingecko.com/en/coins/bnb' },
+// Reference points with evenly distributed positions (0-100%)
+// Order: Default, OKX, Bitget, Bybit, Crypto.com, Binance, Kraken(Ink)
+const REFERENCE_POINTS: ReferencePoint[] = [
+  { id: 'default', fdv: 1.0, position: 0, isDefault: true },
+  { id: 'okx', fdv: 2.1, position: 16.67, exchange: 'OKX', chain: 'X Layer', token: 'OKB', link: 'https://www.coingecko.com/en/coins/okb' },
+  { id: 'bitget', fdv: 3.2, position: 33.33, exchange: 'Bitget', chain: 'Morph', token: 'BGB', link: 'https://www.coingecko.com/en/coins/bitget-token' },
+  { id: 'bybit', fdv: 5.0, position: 50, exchange: 'Bybit', chain: 'Mantle', token: 'MNT', link: 'https://www.coingecko.com/en/coins/mantle' },
+  { id: 'cryptocom', fdv: 8.5, position: 66.67, exchange: 'Crypto.com', chain: 'Cronos', token: 'CRO', link: 'https://www.coingecko.com/en/coins/cronos' },
+  { id: 'binance', fdv: 115.8, position: 83.33, exchange: 'Binance', chain: 'BSC', token: 'BNB', link: 'https://www.coingecko.com/en/coins/bnb' },
+  { id: 'kraken', fdv: 150, position: 100, exchange: 'Kraken', chain: 'Ink', token: 'INK', link: 'https://www.coingecko.com/en/coins/ink', isKraken: true },
 ];
 
-function fdvToLogPosition(fdv: number): number {
-  const minLog = Math.log10(MIN_FDV);
-  const maxLog = Math.log10(MAX_FDV);
-  const fdvLog = Math.log10(Math.max(MIN_FDV, Math.min(MAX_FDV, fdv)));
-  return ((fdvLog - minLog) / (maxLog - minLog)) * 100;
+// Piecewise linear interpolation: evenly spaced reference points
+function fdvToPosition(fdv: number, points: ReferencePoint[]): number {
+  const sorted = [...points].sort((a, b) => a.fdv - b.fdv);
+  if (fdv <= sorted[0].fdv) return sorted[0].position;
+  if (fdv >= sorted[sorted.length - 1].fdv) return sorted[sorted.length - 1].position;
+  
+  for (let i = 0; i < sorted.length - 1; i++) {
+    if (fdv >= sorted[i].fdv && fdv <= sorted[i + 1].fdv) {
+      const ratio = (fdv - sorted[i].fdv) / (sorted[i + 1].fdv - sorted[i].fdv);
+      return sorted[i].position + ratio * (sorted[i + 1].position - sorted[i].position);
+    }
+  }
+  return 50;
 }
 
-function logPositionToFdv(position: number): number {
-  const minLog = Math.log10(MIN_FDV);
-  const maxLog = Math.log10(MAX_FDV);
-  const fdvLog = minLog + (position / 100) * (maxLog - minLog);
-  return Math.pow(10, fdvLog);
+function positionToFdv(position: number, points: ReferencePoint[]): number {
+  const sorted = [...points].sort((a, b) => a.position - b.position);
+  if (position <= sorted[0].position) return sorted[0].fdv;
+  if (position >= sorted[sorted.length - 1].position) return sorted[sorted.length - 1].fdv;
+  
+  for (let i = 0; i < sorted.length - 1; i++) {
+    if (position >= sorted[i].position && position <= sorted[i + 1].position) {
+      const ratio = (position - sorted[i].position) / (sorted[i + 1].position - sorted[i].position);
+      return sorted[i].fdv + ratio * (sorted[i + 1].fdv - sorted[i].fdv);
+    }
+  }
+  return 1.0;
 }
 
 function formatInkPrice(fdvBillions: number): string {
   const price = (fdvBillions * 1e9) / TOTAL_SUPPLY;
-  if (price >= 100) return price.toFixed(0);
-  if (price >= 10) return price.toFixed(1);
-  if (price >= 1) return price.toFixed(2);
-  return price.toFixed(3);
+  return price.toFixed(2);
 }
 
 function formatFdv(fdv: number): string {
-  if (fdv >= 100) return fdv.toFixed(0);
-  if (fdv >= 10) return fdv.toFixed(1);
-  return fdv.toFixed(1);
+  return fdv.toFixed(2);
 }
 
 const InkAprCalculator = ({
@@ -67,7 +83,7 @@ const InkAprCalculator = ({
   const trackRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
-  const [fdvInputValue, setFdvInputValue] = useState('1.0');
+  const [fdvInputValue, setFdvInputValue] = useState('1.00');
   const tooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const fdvBySymbol = useMemo(() => {
@@ -78,11 +94,17 @@ const InkAprCalculator = ({
     );
   }, [fdvData]);
 
-  const exchangeDataWithLiveFdv = useMemo(() => {
-    return EXCHANGE_DATA.map((ex) => ({
-      ...ex,
-      fdv: fdvBySymbol.get(ex.token) ?? ex.defaultFdv,
-    }));
+  // Update reference points with live FDV data
+  const referencePointsWithLiveFdv = useMemo(() => {
+    return REFERENCE_POINTS.map((point) => {
+      if (point.token && !point.isDefault && !point.isKraken) {
+        const liveFdv = fdvBySymbol.get(point.token);
+        if (liveFdv !== null && liveFdv !== undefined) {
+          return { ...point, fdv: liveFdv };
+        }
+      }
+      return point;
+    });
   }, [fdvBySymbol]);
 
   const parsedRate = parseFloat(rateInput);
@@ -90,11 +112,10 @@ const InkAprCalculator = ({
   const currentFdvBillions = isValidRate 
     ? (parsedRate * TOTAL_SUPPLY) / 1e9 
     : DEFAULT_FDV;
-  const sliderPosition = fdvToLogPosition(currentFdvBillions);
-  const defaultPosition = fdvToLogPosition(DEFAULT_FDV);
+  const sliderPosition = fdvToPosition(currentFdvBillions, referencePointsWithLiveFdv);
 
   useEffect(() => {
-    const formatted = currentFdvBillions.toFixed(1);
+    const formatted = currentFdvBillions.toFixed(2);
     if (Math.abs(parseFloat(fdvInputValue) - currentFdvBillions) > 0.01) {
        setFdvInputValue(formatted);
     }
@@ -108,11 +129,13 @@ const InkAprCalculator = ({
   }, [rateInput, setRateInput]);
 
   const updateFromFdv = useCallback((fdvBillions: number) => {
-    const clampedFdv = Math.max(MIN_FDV, Math.min(MAX_FDV, fdvBillions));
+    const minFdv = referencePointsWithLiveFdv[0].fdv;
+    const maxFdv = referencePointsWithLiveFdv[referencePointsWithLiveFdv.length - 1].fdv;
+    const clampedFdv = Math.max(minFdv, Math.min(maxFdv, fdvBillions));
     const price = (clampedFdv * 1e9) / TOTAL_SUPPLY;
     setRateInput(price.toFixed(4));
     onRateChange?.(price);
-  }, [setRateInput, onRateChange]);
+  }, [setRateInput, onRateChange, referencePointsWithLiveFdv]);
 
   const handleFdvInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -123,7 +146,7 @@ const InkAprCalculator = ({
     }
   }, [updateFromFdv]);
 
-  const handleExchangeClick = useCallback((fdv: number) => {
+  const handlePointClick = useCallback((fdv: number) => {
     updateFromFdv(fdv);
   }, [updateFromFdv]);
 
@@ -131,9 +154,9 @@ const InkAprCalculator = ({
     if (!trackRef.current) return;
     const rect = trackRef.current.getBoundingClientRect();
     const position = Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100));
-    const fdv = logPositionToFdv(position);
+    const fdv = positionToFdv(position, referencePointsWithLiveFdv);
     updateFromFdv(fdv);
-  }, [updateFromFdv]);
+  }, [updateFromFdv, referencePointsWithLiveFdv]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -191,9 +214,9 @@ const InkAprCalculator = ({
     <Card className="border-border/60 bg-card">
       <CardContent className="p-[var(--ds-space-3)]">
         <div className="space-y-[var(--ds-space-2)]">
-          {/* Row 1: Title, slider, formula, inputs */}
+          {/* Row 1: Title, inputs, slider */}
           <div className="flex flex-col lg:flex-row lg:items-center gap-[var(--ds-space-2)]">
-            {/* Left: Logo + Title + Formula */}
+            {/* Left: Logo + Title */}
             <div className="flex items-center gap-[var(--ds-space-2)] shrink-0">
               <img
                 src="/icons/networks/ink.svg"
@@ -202,9 +225,6 @@ const InkAprCalculator = ({
               />
               <span className="ds-text-12 md:ds-text-13 font-semibold text-foreground whitespace-nowrap">
                 Ink incentive APR calculator
-              </span>
-              <span className="ds-text-9 text-muted-foreground font-mono whitespace-nowrap hidden sm:inline">
-                APR = points × $INK × 365%
               </span>
             </div>
 
@@ -219,31 +239,20 @@ const InkAprCalculator = ({
                 onMouseDown={handleMouseDown}
                 onTouchStart={handleTouchStart}
                 role="slider"
-                aria-valuemin={MIN_FDV}
-                aria-valuemax={MAX_FDV}
+                aria-valuemin={referencePointsWithLiveFdv[0].fdv}
+                aria-valuemax={referencePointsWithLiveFdv[referencePointsWithLiveFdv.length - 1].fdv}
                 aria-valuenow={currentFdvBillions}
                 aria-label="FDV slider"
                 tabIndex={0}
               >
-                {/* Default 1B marker */}
-                <div
-                  className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 flex flex-col items-center pointer-events-none"
-                  style={{ left: `${defaultPosition}%` }}
-                >
-                  <div className="w-1.5 h-1.5 rounded-full bg-foreground/60" />
-                </div>
-
                 {/* Reference point markers */}
-                {exchangeDataWithLiveFdv.map((ex) => {
-                  const position = fdvToLogPosition(ex.fdv);
-                  return (
-                    <div
-                      key={`marker-${ex.exchange}`}
-                      className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-background border border-border/80 pointer-events-none"
-                      style={{ left: `${position}%` }}
-                    />
-                  );
-                })}
+                {referencePointsWithLiveFdv.map((point) => (
+                  <div
+                    key={`marker-${point.id}`}
+                    className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-background border border-border/80 pointer-events-none"
+                    style={{ left: `${point.position}%` }}
+                  />
+                ))}
 
                 {/* Current value thumb */}
                 <div
@@ -254,20 +263,12 @@ const InkAprCalculator = ({
                 {/* Tooltip popup on drag */}
                 {showTooltip && (
                   <div
-                    className="absolute -top-8 -translate-x-1/2 bg-foreground text-background px-1.5 py-0.5 rounded ds-text-10 font-semibold tabular-nums whitespace-nowrap shadow-md z-20 transition-opacity"
-                    style={{ left: `${sliderPosition}%`, opacity: showTooltip ? 1 : 0 }}
+                    className="absolute -top-8 -translate-x-1/2 bg-foreground text-background px-1.5 py-0.5 rounded ds-text-10 font-semibold tabular-nums whitespace-nowrap shadow-md z-20"
+                    style={{ left: `${sliderPosition}%` }}
                   >
                     ${formatFdv(currentFdvBillions)}B
                   </div>
                 )}
-              </div>
-
-              {/* Default label below slider */}
-              <div
-                className="absolute top-2.5 -translate-x-1/2 ds-text-8 text-muted-foreground/60 whitespace-nowrap"
-                style={{ left: `${defaultPosition}%` }}
-              >
-                default 1B
               </div>
             </div>
 
@@ -278,14 +279,14 @@ const InkAprCalculator = ({
                 <span className="ds-text-10 text-muted-foreground">$</span>
                 <Input
                   type="number"
-                  min="0.1"
+                  min="1"
                   max="150"
-                  step="0.1"
+                  step="0.01"
                   inputMode="decimal"
                   value={fdvInputValue}
                   onChange={handleFdvInputChange}
-                  placeholder="1.0"
-                  className="w-10 px-0.5 ds-text-10 font-medium tabular-nums bg-transparent border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 h-auto p-0 text-right"
+                  placeholder="1.00"
+                  className="w-12 px-0.5 ds-text-10 font-medium tabular-nums bg-transparent border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 h-auto p-0 text-right"
                   aria-label="Estimated $INK FDV in billions"
                 />
                 <span className="ds-text-9 text-muted-foreground">B</span>
@@ -298,43 +299,65 @@ const InkAprCalculator = ({
             </div>
           </div>
 
-          {/* Row 2: Reference points info */}
-          <div className="flex items-start justify-between gap-[var(--ds-space-2)] overflow-x-auto pb-1">
-            {exchangeDataWithLiveFdv.map((ex) => {
-              const isSelected = Math.abs(currentFdvBillions - ex.fdv) < 0.5;
-              return (
-                <a
-                  key={ex.exchange}
-                  href={ex.link}
-                  target="_blank"
-                  rel="noreferrer"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleExchangeClick(ex.fdv);
-                  }}
-                  className={`flex flex-col items-center gap-0 cursor-pointer group transition-colors min-w-0 flex-1 ${
-                    isSelected ? '' : 'hover:opacity-80'
-                  }`}
-                  aria-label={`Set FDV to ${ex.exchange} (${ex.fdv.toFixed(1)}B)`}
-                >
-                  <span className={`ds-text-9 md:ds-text-10 tabular-nums whitespace-nowrap font-medium ${
-                    isSelected ? 'text-foreground' : 'text-muted-foreground'
-                  }`}>
-                    ${formatFdv(ex.fdv)}B
-                  </span>
-                  <span className={`ds-text-8 whitespace-nowrap underline decoration-dotted underline-offset-2 ${
-                    isSelected ? 'text-foreground/70' : 'text-muted-foreground/50 group-hover:text-muted-foreground'
-                  }`}>
-                    {ex.chain}/{ex.token}
-                  </span>
-                  <span className={`ds-text-8 whitespace-nowrap ${
-                    isSelected ? 'text-foreground/60' : 'text-muted-foreground/40'
-                  }`}>
-                    {ex.exchange}
-                  </span>
-                </a>
-              );
-            })}
+          {/* Row 2: Reference points aligned below slider + Formula */}
+          <div className="flex items-start gap-[var(--ds-space-2)]">
+            {/* Reference points - positioned to align with slider markers */}
+            <div className="relative flex-1 min-w-[120px] lg:mx-4">
+              <div className="flex justify-between">
+                {referencePointsWithLiveFdv.map((point) => {
+                  const isSelected = Math.abs(currentFdvBillions - point.fdv) < 0.3;
+                  return (
+                    <div
+                      key={point.id}
+                      onClick={() => handlePointClick(point.fdv)}
+                      className={`flex flex-col items-center cursor-pointer group transition-colors ${
+                        isSelected ? '' : 'hover:opacity-80'
+                      }`}
+                      style={{ width: `${100 / referencePointsWithLiveFdv.length}%` }}
+                      role="button"
+                      aria-label={point.isDefault ? `Set FDV to default (${point.fdv}B)` : `Set FDV to ${point.exchange} (${point.fdv.toFixed(2)}B)`}
+                    >
+                      <span className={`ds-text-9 md:ds-text-10 tabular-nums whitespace-nowrap font-medium ${
+                        isSelected ? 'text-foreground' : 'text-muted-foreground'
+                      }`}>
+                        ${formatFdv(point.fdv)}B
+                      </span>
+                      {point.isDefault ? (
+                        <span className={`ds-text-8 whitespace-nowrap ${
+                          isSelected ? 'text-foreground/70' : 'text-muted-foreground/50'
+                        }`}>
+                          Default
+                        </span>
+                      ) : point.link ? (
+                        <a
+                          href={point.link}
+                          target="_blank"
+                          rel="noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className={`ds-text-8 whitespace-nowrap underline decoration-dotted underline-offset-2 ${
+                            isSelected ? 'text-foreground/70' : 'text-muted-foreground/50 group-hover:text-muted-foreground'
+                          }`}
+                        >
+                          {point.chain}/{point.token}
+                        </a>
+                      ) : null}
+                      <span className={`ds-text-8 whitespace-nowrap ${
+                        isSelected ? 'text-foreground/60' : 'text-muted-foreground/40'
+                      }`}>
+                        {point.isDefault ? '' : point.exchange}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Formula on the right */}
+            <div className="shrink-0 hidden sm:block">
+              <span className="ds-text-9 text-muted-foreground font-mono whitespace-nowrap">
+                APR = daily_points × $INK × 365%
+              </span>
+            </div>
           </div>
         </div>
       </CardContent>
