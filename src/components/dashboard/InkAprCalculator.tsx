@@ -11,6 +11,8 @@ interface InkAprCalculatorProps {
 
 const TOTAL_SUPPLY = 1_000_000_000;
 const DEFAULT_FDV = 1.0;
+const MIN_FDV = 0;
+const MAX_FDV = 115.8; // Binance as max
 
 interface ReferencePoint {
   id: string;
@@ -21,19 +23,18 @@ interface ReferencePoint {
   token?: string;
   link?: string;
   isDefault?: boolean;
-  isKraken?: boolean;
 }
 
 // Reference points with evenly distributed positions (0-100%)
-// Order: Default, OKX, Bitget, Bybit, Crypto.com, Binance, Kraken(Ink)
+// Order: 0, Default, OKX, Bitget, Bybit, Crypto.com, Binance
 const REFERENCE_POINTS: ReferencePoint[] = [
-  { id: 'default', fdv: 1.0, position: 0, isDefault: true },
-  { id: 'okx', fdv: 2.1, position: 16.67, exchange: 'OKX', chain: 'X Layer', token: 'OKB', link: 'https://www.coingecko.com/en/coins/okb' },
-  { id: 'bitget', fdv: 3.2, position: 33.33, exchange: 'Bitget', chain: 'Morph', token: 'BGB', link: 'https://www.coingecko.com/en/coins/bitget-token' },
-  { id: 'bybit', fdv: 5.0, position: 50, exchange: 'Bybit', chain: 'Mantle', token: 'MNT', link: 'https://www.coingecko.com/en/coins/mantle' },
-  { id: 'cryptocom', fdv: 8.5, position: 66.67, exchange: 'Crypto.com', chain: 'Cronos', token: 'CRO', link: 'https://www.coingecko.com/en/coins/cronos' },
-  { id: 'binance', fdv: 115.8, position: 83.33, exchange: 'Binance', chain: 'BSC', token: 'BNB', link: 'https://www.coingecko.com/en/coins/bnb' },
-  { id: 'kraken', fdv: 150, position: 100, exchange: 'Kraken', chain: 'Ink', token: 'INK', link: 'https://www.coingecko.com/en/coins/ink', isKraken: true },
+  { id: 'zero', fdv: 0, position: 0 },
+  { id: 'default', fdv: 1.0, position: 16.67, isDefault: true },
+  { id: 'okx', fdv: 2.1, position: 33.33, exchange: 'OKX', chain: 'X Layer', token: 'OKB', link: 'https://www.coingecko.com/en/coins/okb' },
+  { id: 'bitget', fdv: 3.2, position: 50, exchange: 'Bitget', chain: 'Morph', token: 'BGB', link: 'https://www.coingecko.com/en/coins/bitget-token' },
+  { id: 'bybit', fdv: 5.0, position: 66.67, exchange: 'Bybit', chain: 'Mantle', token: 'MNT', link: 'https://www.coingecko.com/en/coins/mantle' },
+  { id: 'cryptocom', fdv: 8.5, position: 83.33, exchange: 'Crypto.com', chain: 'Cronos', token: 'CRO', link: 'https://www.coingecko.com/en/coins/cronos' },
+  { id: 'binance', fdv: 115.8, position: 100, exchange: 'Binance', chain: 'BSC', token: 'BNB', link: 'https://www.coingecko.com/en/coins/bnb' },
 ];
 
 // Piecewise linear interpolation: evenly spaced reference points
@@ -97,7 +98,7 @@ const InkAprCalculator = ({
   // Update reference points with live FDV data
   const referencePointsWithLiveFdv = useMemo(() => {
     return REFERENCE_POINTS.map((point) => {
-      if (point.token && !point.isDefault && !point.isKraken) {
+      if (point.token && !point.isDefault) {
         const liveFdv = fdvBySymbol.get(point.token);
         if (liveFdv !== null && liveFdv !== undefined) {
           return { ...point, fdv: liveFdv };
@@ -106,6 +107,11 @@ const InkAprCalculator = ({
       return point;
     });
   }, [fdvBySymbol]);
+  
+  // Filter out the zero point for display but keep for calculation
+  const displayPoints = useMemo(() => {
+    return referencePointsWithLiveFdv.filter(p => p.id !== 'zero');
+  }, [referencePointsWithLiveFdv]);
 
   const parsedRate = parseFloat(rateInput);
   const isValidRate = !Number.isNaN(parsedRate) && parsedRate >= 0;
@@ -129,13 +135,11 @@ const InkAprCalculator = ({
   }, [rateInput, setRateInput]);
 
   const updateFromFdv = useCallback((fdvBillions: number) => {
-    const minFdv = referencePointsWithLiveFdv[0].fdv;
-    const maxFdv = referencePointsWithLiveFdv[referencePointsWithLiveFdv.length - 1].fdv;
-    const clampedFdv = Math.max(minFdv, Math.min(maxFdv, fdvBillions));
+    const clampedFdv = Math.max(MIN_FDV, Math.min(MAX_FDV, fdvBillions));
     const price = (clampedFdv * 1e9) / TOTAL_SUPPLY;
     setRateInput(price.toFixed(4));
     onRateChange?.(price);
-  }, [setRateInput, onRateChange, referencePointsWithLiveFdv]);
+  }, [setRateInput, onRateChange]);
 
   const handleFdvInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -214,106 +218,126 @@ const InkAprCalculator = ({
     <Card className="border-border/60 bg-card">
       <CardContent className="p-[var(--ds-space-3)]">
         <div className="space-y-[var(--ds-space-2)]">
-          {/* Row 1: Title, inputs, slider */}
+          {/* Row 1: Title + Formula on left, Slider in center, Inputs on right */}
           <div className="flex flex-col lg:flex-row lg:items-center gap-[var(--ds-space-2)]">
-            {/* Left: Logo + Title */}
-            <div className="flex items-center gap-[var(--ds-space-2)] shrink-0">
-              <img
-                src="/icons/networks/ink.svg"
-                alt="INK"
-                className="w-5 h-5 shrink-0"
-              />
-              <span className="ds-text-12 md:ds-text-13 font-semibold text-foreground whitespace-nowrap">
-                Ink incentive APR calculator
+            {/* Left: Logo + Title + Formula */}
+            <div className="flex flex-col gap-0.5 shrink-0">
+              <div className="flex items-center gap-[var(--ds-space-2)]">
+                <img
+                  src="/icons/networks/ink.svg"
+                  alt="INK"
+                  className="w-5 h-5 shrink-0"
+                />
+                <span className="ds-text-12 md:ds-text-13 font-semibold text-foreground whitespace-nowrap">
+                  Ink incentive APR calculator
+                </span>
+              </div>
+              <span className="ds-text-9 text-muted-foreground font-mono whitespace-nowrap pl-7">
+                APR = daily_points × $INK × 365%
               </span>
             </div>
 
-            {/* Center: Slider */}
-            <div className="relative flex-1 min-w-[120px] lg:mx-4">
-              <div
-                ref={trackRef}
-                className="relative h-1.5 rounded-full cursor-pointer select-none"
-                style={{
-                  background: 'linear-gradient(to right, #c242b1, #23cdbf)',
-                }}
-                onMouseDown={handleMouseDown}
-                onTouchStart={handleTouchStart}
-                role="slider"
-                aria-valuemin={referencePointsWithLiveFdv[0].fdv}
-                aria-valuemax={referencePointsWithLiveFdv[referencePointsWithLiveFdv.length - 1].fdv}
-                aria-valuenow={currentFdvBillions}
-                aria-label="FDV slider"
-                tabIndex={0}
-              >
-                {/* Reference point markers */}
-                {referencePointsWithLiveFdv.map((point) => (
-                  <div
-                    key={`marker-${point.id}`}
-                    className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-background border border-border/80 pointer-events-none"
-                    style={{ left: `${point.position}%` }}
-                  />
-                ))}
-
-                {/* Current value thumb */}
+            {/* Center: FDV label + Slider */}
+            <div className="relative flex-1 min-w-[120px] lg:mx-4 flex items-center gap-2">
+              <span className="ds-text-9 text-muted-foreground font-medium shrink-0">FDV</span>
+              <div className="relative flex-1">
                 <div
-                  className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-foreground shadow-md pointer-events-none transition-transform"
-                  style={{ left: `${sliderPosition}%` }}
-                />
+                  ref={trackRef}
+                  className="relative h-1.5 rounded-full cursor-pointer select-none"
+                  style={{
+                    background: 'linear-gradient(to right, #c242b1, #23cdbf)',
+                  }}
+                  onMouseDown={handleMouseDown}
+                  onTouchStart={handleTouchStart}
+                  role="slider"
+                  aria-valuemin={MIN_FDV}
+                  aria-valuemax={MAX_FDV}
+                  aria-valuenow={currentFdvBillions}
+                  aria-label="FDV slider"
+                  tabIndex={0}
+                >
+                  {/* Reference point markers (skip zero) */}
+                  {displayPoints.map((point) => (
+                    <div
+                      key={`marker-${point.id}`}
+                      className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-background border border-border/80 pointer-events-none"
+                      style={{ left: `${point.position}%` }}
+                    />
+                  ))}
 
-                {/* Tooltip popup on drag */}
-                {showTooltip && (
+                  {/* Current value thumb */}
                   <div
-                    className="absolute -top-8 -translate-x-1/2 bg-foreground text-background px-1.5 py-0.5 rounded ds-text-10 font-semibold tabular-nums whitespace-nowrap shadow-md z-20"
+                    className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-foreground shadow-md pointer-events-none transition-transform"
                     style={{ left: `${sliderPosition}%` }}
-                  >
-                    ${formatFdv(currentFdvBillions)}B
-                  </div>
-                )}
+                  />
+
+                  {/* Tooltip popup on drag */}
+                  {showTooltip && (
+                    <div
+                      className="absolute -top-8 -translate-x-1/2 bg-foreground text-background px-1.5 py-0.5 rounded ds-text-10 font-semibold tabular-nums whitespace-nowrap shadow-md z-20"
+                      style={{ left: `${sliderPosition}%` }}
+                    >
+                      ${formatFdv(currentFdvBillions)}B
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
-            {/* Right: Inputs */}
-            <div className="flex items-center gap-[var(--ds-space-2)] shrink-0">
-              <span className="ds-text-10 text-muted-foreground hidden md:inline">FDV</span>
-              <div className="inline-flex items-center bg-muted/50 border border-border rounded px-1.5 py-0.5 h-6 focus-within:border-foreground/40 transition-colors">
-                <span className="ds-text-10 text-muted-foreground">$</span>
-                <Input
-                  type="number"
-                  min="1"
-                  max="150"
-                  step="0.01"
-                  inputMode="decimal"
-                  value={fdvInputValue}
-                  onChange={handleFdvInputChange}
-                  placeholder="1.00"
-                  className="w-12 px-0.5 ds-text-10 font-medium tabular-nums bg-transparent border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 h-auto p-0 text-right"
-                  aria-label="Estimated $INK FDV in billions"
-                />
-                <span className="ds-text-9 text-muted-foreground">B</span>
+            {/* Right: Inputs with Kraken label */}
+            <div className="flex flex-col items-end gap-0.5 shrink-0">
+              <div className="flex items-center gap-[var(--ds-space-2)]">
+                <div className="inline-flex items-center bg-muted/50 border border-border rounded px-1.5 py-0.5 h-6 focus-within:border-foreground/40 transition-colors">
+                  <span className="ds-text-9 text-muted-foreground">$</span>
+                  <Input
+                    type="number"
+                    min="0"
+                    max="120"
+                    step="0.01"
+                    inputMode="decimal"
+                    value={fdvInputValue}
+                    onChange={handleFdvInputChange}
+                    placeholder="1.00"
+                    className="w-14 px-0.5 ds-text-9 font-medium tabular-nums bg-transparent border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 h-auto p-0 text-right"
+                    aria-label="Estimated $INK FDV in billions"
+                  />
+                  <span className="ds-text-8 text-muted-foreground">B</span>
+                </div>
+                <div className="w-px h-4 bg-border" />
+                <div className="flex items-center gap-1">
+                  <img
+                    src="/icons/partners/inktoken.svg"
+                    alt="INK"
+                    className="w-3.5 h-3.5 shrink-0 dark:invert"
+                  />
+                  <span className="ds-text-11 font-semibold tabular-nums text-foreground">
+                    ${formatInkPrice(currentFdvBillions)}
+                  </span>
+                </div>
               </div>
-              <div className="w-px h-3 bg-border" />
-              <span className="ds-text-10 text-muted-foreground hidden md:inline">INK</span>
-              <span className="ds-text-11 font-semibold tabular-nums text-foreground">
-                ${formatInkPrice(currentFdvBillions)}
-              </span>
+              <span className="ds-text-8 text-muted-foreground/60">Kraken</span>
             </div>
           </div>
 
-          {/* Row 2: Reference points aligned below slider + Formula */}
+          {/* Row 2: Reference points aligned below slider markers */}
           <div className="flex items-start gap-[var(--ds-space-2)]">
+            {/* Spacer for left section */}
+            <div className="shrink-0 hidden lg:block" style={{ width: '280px' }} />
+            
             {/* Reference points - positioned to align with slider markers */}
-            <div className="relative flex-1 min-w-[120px] lg:mx-4">
-              <div className="flex justify-between">
-                {referencePointsWithLiveFdv.map((point) => {
+            <div className="relative flex-1 min-w-[120px] lg:mx-4 flex items-center gap-2">
+              <div className="shrink-0 w-6" /> {/* Spacer for FDV label */}
+              <div className="flex-1 relative">
+                {displayPoints.map((point) => {
                   const isSelected = Math.abs(currentFdvBillions - point.fdv) < 0.3;
                   return (
                     <div
                       key={point.id}
                       onClick={() => handlePointClick(point.fdv)}
-                      className={`flex flex-col items-center cursor-pointer group transition-colors ${
+                      className={`absolute -translate-x-1/2 flex flex-col items-center cursor-pointer group transition-colors ${
                         isSelected ? '' : 'hover:opacity-80'
                       }`}
-                      style={{ width: `${100 / referencePointsWithLiveFdv.length}%` }}
+                      style={{ left: `${point.position}%` }}
                       role="button"
                       aria-label={point.isDefault ? `Set FDV to default (${point.fdv}B)` : `Set FDV to ${point.exchange} (${point.fdv.toFixed(2)}B)`}
                     >
@@ -352,12 +376,8 @@ const InkAprCalculator = ({
               </div>
             </div>
 
-            {/* Formula on the right */}
-            <div className="shrink-0 hidden sm:block">
-              <span className="ds-text-9 text-muted-foreground font-mono whitespace-nowrap">
-                APR = daily_points × $INK × 365%
-              </span>
-            </div>
+            {/* Spacer for right section */}
+            <div className="shrink-0 hidden lg:block" style={{ width: '140px' }} />
           </div>
         </div>
       </CardContent>
