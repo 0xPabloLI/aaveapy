@@ -17,7 +17,7 @@ import PoolsTable from '@/components/dashboard/PoolsTable';
 import LoadingState from '@/components/dashboard/LoadingState';
 import PullToRefresh from '@/components/dashboard/PullToRefresh';
 import IncentiveTooltip from '@/components/dashboard/IncentiveTooltip';
-import TydroRateConfig from '@/components/dashboard/TydroRateConfig';
+import InkAprCalculator from '@/components/dashboard/InkAprCalculator';
 import { getCachedMarkets, getCachedMarketStats, getCachedMarketsList, getCachedTydroRate, setCachedTydroRate } from '@/lib/cache';
 import { TYDRO_POINT_TO_USD_RATE } from '@/lib/tydro';
 import { AlertTriangle } from 'lucide-react';
@@ -276,8 +276,8 @@ const Index = () => {
             lastUpdated={effectivePoolsData?.lastUpdated}
           />
 
-          {/* Tydro Rate Configuration */}
-          <TydroRateConfig
+          {/* INK Incentive APR Calculator */}
+          <InkAprCalculator
             rateInput={tydroPointToUsdRateInput}
             setRateInput={setTydroPointToUsdRateInput}
           />
