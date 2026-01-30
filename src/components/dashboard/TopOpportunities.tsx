@@ -93,7 +93,7 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick, tydr
       totalBorrowApr,
       aprSpread: calculateSpreadApr(totalSupplyApr, totalBorrowApr),
     };
-  }), [pools]);
+  }), [pools, tydroPointToUsdRate]);
 
   // Top 5 Stable APY - memoized to prevent recalculation
   const topStable = useMemo(() => [...poolsWithTotals]
@@ -821,6 +821,11 @@ export default memo(TopOpportunities, (prevProps, nextProps) => {
     return false;
   }
 
+  // If tydroPointToUsdRate changed, always re-render
+  if (prevProps.tydroPointToUsdRate !== nextProps.tydroPointToUsdRate) {
+    return false;
+  }
+
   if (prevProps.onIncentiveClick !== nextProps.onIncentiveClick) {
     return false;
   }
@@ -828,35 +833,35 @@ export default memo(TopOpportunities, (prevProps, nextProps) => {
   if (prevProps.categoryGroups !== nextProps.categoryGroups) {
     return false;
   }
-  
+
   // If pools array reference is the same, no re-render needed
   if (prevProps.pools === nextProps.pools) {
     return true;
   }
-  
+
   // If pools arrays have different lengths, data changed
   if (prevProps.pools.length !== nextProps.pools.length) {
     return false;
   }
-  
+
   // If both arrays are empty, no change
   if (prevProps.pools.length === 0) {
     return true;
   }
-  
+
   // Deep comparison: compare all items' tokenAddress values
   // This ensures we detect changes in the middle of the array or reordering
   for (let i = 0; i < prevProps.pools.length; i++) {
     const prevPool = prevProps.pools[i];
     const nextPool = nextProps.pools[i];
-    
+
     // Compare tokenAddress (unique identifier) and marketName (for disambiguation)
-    if (prevPool?.tokenAddress !== nextPool?.tokenAddress || 
+    if (prevPool?.tokenAddress !== nextPool?.tokenAddress ||
         prevPool?.marketName !== nextPool?.marketName) {
       return false; // Data changed, allow re-render
     }
   }
-  
+
   // All items match, skip re-render
   return true;
 });

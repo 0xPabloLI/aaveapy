@@ -18,8 +18,6 @@ interface FilterBarProps {
   marketsList?: MarketListItem[];
   showMarketsExpanded?: boolean;
   setShowMarketsExpanded?: (expanded: boolean) => void;
-  tydroPointToUsdRateInput: string;
-  setTydroPointToUsdRateInput: (value: string) => void;
 }
 
 const categories: { value: TokenCategory; label: string }[] = [
@@ -79,8 +77,6 @@ const FilterBar = ({
   marketsList,
   showMarketsExpanded: showMarketsExpandedProp,
   setShowMarketsExpanded: setShowMarketsExpandedProp,
-  tydroPointToUsdRateInput,
-  setTydroPointToUsdRateInput,
 }: FilterBarProps) => {
   const isMobile = useIsMobile();
   const [internalShowMarketsExpanded, setInternalShowMarketsExpanded] = useState(false);
@@ -285,22 +281,6 @@ const FilterBar = ({
         <div className="hidden md:block">
           <AprApyToggle isApy={isApy} setIsApy={setIsApy} />
         </div>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-[var(--ds-space-1)] md:gap-[var(--ds-space-2)]">
-        <label htmlFor="tydro-point-rate-input" className="ds-text-11 text-muted-foreground/80">Tydro point → USD</label>
-        <Input
-          id="tydro-point-rate-input"
-          type="number"
-          min="0"
-          step="0.01"
-          inputMode="decimal"
-          value={tydroPointToUsdRateInput}
-          onChange={(e) => setTydroPointToUsdRateInput(e.target.value)}
-          className="w-28 h-9 pl-[var(--ds-space-2)] pr-[var(--ds-space-2)] text-muted-foreground/80 focus:text-foreground"
-          aria-label="Tydro point to USD rate"
-        />
-        <span className="ds-text-11 text-muted-foreground/60">used in Tydro APR calculations</span>
       </div>
 
       {/* Row 3: Search - only on mobile */}

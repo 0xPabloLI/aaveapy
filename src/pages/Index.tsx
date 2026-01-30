@@ -17,7 +17,9 @@ import PoolsTable from '@/components/dashboard/PoolsTable';
 import LoadingState from '@/components/dashboard/LoadingState';
 import PullToRefresh from '@/components/dashboard/PullToRefresh';
 import IncentiveTooltip from '@/components/dashboard/IncentiveTooltip';
-import { getCachedMarkets, getCachedMarketStats, getCachedMarketsList } from '@/lib/cache';
+import TydroRateConfig from '@/components/dashboard/TydroRateConfig';
+import { getCachedMarkets, getCachedMarketStats, getCachedMarketsList, getCachedTydroRate, setCachedTydroRate } from '@/lib/cache';
+import { TYDRO_POINT_TO_USD_RATE } from '@/lib/tydro';
 import { AlertTriangle } from 'lucide-react';
 
 const Index = () => {
@@ -39,11 +41,22 @@ const Index = () => {
     accentTextClass?: string;
     accentBgClass?: string;
   } | null>(null);
-  const [tydroPointToUsdRateInput, setTydroPointToUsdRateInput] = useState('1');
+  const [tydroPointToUsdRateInput, setTydroPointToUsdRateInput] = useState(() => {
+    const cached = getCachedTydroRate();
+    return cached !== null ? String(cached) : TYDRO_POINT_TO_USD_RATE.toFixed(2);
+  });
   const tydroPointToUsdRate = useMemo(() => {
     const parsed = parseFloat(tydroPointToUsdRateInput);
-    if (Number.isNaN(parsed)) return 1;
+    if (Number.isNaN(parsed)) return TYDRO_POINT_TO_USD_RATE;
     return Math.max(parsed, 0);
+  }, [tydroPointToUsdRateInput]);
+
+  // Persist Tydro rate to localStorage when it changes
+  useEffect(() => {
+    const parsed = parseFloat(tydroPointToUsdRateInput);
+    if (!Number.isNaN(parsed) && parsed >= 0) {
+      setCachedTydroRate(parsed);
+    }
   }, [tydroPointToUsdRateInput]);
 
   const queryClient = useQueryClient();
@@ -263,6 +276,12 @@ const Index = () => {
             lastUpdated={effectivePoolsData?.lastUpdated}
           />
 
+          {/* Tydro Rate Configuration */}
+          <TydroRateConfig
+            rateInput={tydroPointToUsdRateInput}
+            setRateInput={setTydroPointToUsdRateInput}
+          />
+
           {/* Top Opportunities */}
           {stablePools && stablePools.length > 0 && (
             <TopOpportunities
@@ -287,8 +306,6 @@ const Index = () => {
             marketsList={effectiveMarketsList}
             showMarketsExpanded={showMarketsExpanded}
             setShowMarketsExpanded={setShowMarketsExpanded}
-            tydroPointToUsdRateInput={tydroPointToUsdRateInput}
-            setTydroPointToUsdRateInput={setTydroPointToUsdRateInput}
           />
 
           {/* Pools Table */}

@@ -4,6 +4,7 @@ const CACHE_KEYS = {
   MARKETS: 'aave-markets-cache',
   MARKET_STATS: 'aave-market-stats-cache',
   MARKETS_LIST: 'aave-markets-list-cache',
+  TYDRO_RATE: 'tydro-point-usd-rate',
 } as const;
 
 const CACHE_VERSION = '1.0.0';
@@ -83,4 +84,35 @@ export function setCachedMarketsList(data: MarketListItem[]): void {
 export function getCacheTimestamp(key: string): string | null {
   const entry = getCacheEntry(key);
   return entry?.timestamp || null;
+}
+
+// Tydro point to USD rate cache (user preference)
+export function getCachedTydroRate(): number | null {
+  try {
+    const cached = localStorage.getItem(CACHE_KEYS.TYDRO_RATE);
+    if (!cached) return null;
+    const rate = parseFloat(cached);
+    if (Number.isNaN(rate) || rate < 0) return null;
+    return rate;
+  } catch (error) {
+    console.warn('Failed to read Tydro rate from cache:', error);
+    return null;
+  }
+}
+
+export function setCachedTydroRate(rate: number): void {
+  try {
+    if (Number.isNaN(rate) || rate < 0) return;
+    localStorage.setItem(CACHE_KEYS.TYDRO_RATE, String(rate));
+  } catch (error) {
+    console.warn('Failed to write Tydro rate to cache:', error);
+  }
+}
+
+export function clearCachedTydroRate(): void {
+  try {
+    localStorage.removeItem(CACHE_KEYS.TYDRO_RATE);
+  } catch (error) {
+    console.warn('Failed to clear Tydro rate from cache:', error);
+  }
 }
