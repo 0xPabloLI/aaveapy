@@ -107,14 +107,14 @@ const TydroRateConfig = ({
         <CardContent className="p-[var(--ds-space-4)] md:p-[var(--ds-space-5)]">
           <div className="space-y-[var(--ds-space-4)]">
             {/* Title */}
-            <h3 className="ds-text-16 md:ds-text-18 font-semibold text-foreground">
+            <h3 className="ds-text-16 md:ds-text-18 font-semibold text-foreground md:text-center">
               Ink incentive APR calculator
             </h3>
 
             <Collapsible defaultOpen>
               {/* Compact summary row */}
-              <div className="flex items-center justify-between gap-[var(--ds-space-2)]">
-                <div className="flex items-center gap-[var(--ds-space-2)] whitespace-nowrap overflow-x-auto">
+              <div className="flex items-center gap-[var(--ds-space-2)]">
+                <div className="flex flex-1 items-center gap-[var(--ds-space-2)] whitespace-nowrap overflow-x-auto md:justify-center">
                   <div className="flex items-center gap-[var(--ds-space-2)] ds-text-11 text-muted-foreground whitespace-nowrap">
                     <img
                       src="/icons/partners/inktoken.svg"
@@ -156,7 +156,7 @@ const TydroRateConfig = ({
                 </div>
 
                 <CollapsibleTrigger
-                  className="group inline-flex items-center gap-[var(--ds-space-1)] ds-text-11 text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap"
+                  className="group inline-flex items-center gap-[var(--ds-space-1)] ds-text-11 text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap shrink-0"
                   aria-label="Toggle details"
                 >
                   <ChevronDown className="w-4 h-4 transition-transform group-data-[state=open]:rotate-180" />
