@@ -217,7 +217,7 @@ const InkAprCalculator = ({
   return (
     <Card className="border-border/60 bg-card">
       <CardContent className="p-[var(--ds-space-2)] md:p-[var(--ds-space-3)]">
-        <div className="flex flex-col gap-[var(--ds-space-2)]">
+        <div className="flex flex-col gap-[var(--ds-space-1)]">
           
           {/* Top Row: Title, Formula, Slider, Inputs */}
           <div className="flex flex-col lg:flex-row lg:items-center gap-[var(--ds-space-2)]">
