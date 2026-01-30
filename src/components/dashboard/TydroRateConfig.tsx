@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { TYDRO_POINT_TO_USD_RATE } from '@/lib/tydro';
+import { useCoingeckoFdv } from '@/hooks/useCoingeckoFdv';
 
 interface TydroRateConfigProps {
   rateInput: string;
@@ -26,6 +27,57 @@ const TydroRateConfig = ({
   setRateInput,
   onRateChange,
 }: TydroRateConfigProps) => {
+  const { data: fdvData } = useCoingeckoFdv();
+  const fdvBySymbol = new Map(
+    fdvData?.items
+      .filter((item) => item.symbol)
+      .map((item) => [item.symbol!.toUpperCase(), item.fdvUsd ?? null]) ?? []
+  );
+  const getFdvDisplay = (symbol: string) => {
+    const fdvUsd = fdvBySymbol.get(symbol.toUpperCase());
+    if (typeof fdvUsd === 'number') return formatFdv(fdvUsd);
+    return undefined;
+  };
+
+  const referenceRows = [
+    {
+      exchange: 'Crypto.com',
+      chain: 'Cronos',
+      token: 'CRO',
+      fdv: getFdvDisplay('CRO'),
+      link: 'https://www.coingecko.com/en/coins/cronos',
+    },
+    {
+      exchange: 'OKX',
+      chain: 'X Layer',
+      token: 'OKB',
+      fdv: getFdvDisplay('OKB'),
+      link: 'https://www.coingecko.com/en/coins/okb',
+    },
+    {
+      exchange: 'Bybit',
+      chain: 'Mantle',
+      token: 'MNT',
+      fdv: getFdvDisplay('MNT'),
+      link: 'https://www.coingecko.com/en/coins/mantle',
+    },
+    {
+      exchange: 'Bitget',
+      chain: 'Morph',
+      token: 'BGB',
+      fdv: getFdvDisplay('BGB'),
+      link: 'https://www.coingecko.com/en/coins/bitget-token',
+    },
+    {
+      exchange: 'Binance',
+      chain: 'BSC',
+      token: 'BNB',
+      fdv: getFdvDisplay('BNB'),
+      link: 'https://www.coingecko.com/en/coins/bnb',
+    },
+  ].filter((row) => row.fdv !== undefined);
+
+  const hasValidFdv = (fdvData?.items ?? []).some((item) => typeof item.fdvUsd === 'number');
   const parsedRate = parseFloat(rateInput);
   const isValidRate = !Number.isNaN(parsedRate) && parsedRate >= 0;
   const isCustomRate = isValidRate && parsedRate !== DEFAULT_RATE;
@@ -128,48 +180,42 @@ const TydroRateConfig = ({
                 </div>
 
                 {/* Reference data */}
-                <div className="border-t border-border/50 pt-[var(--ds-space-3)]">
-                  <div className="flex items-center gap-[var(--ds-space-1-5)] mb-[var(--ds-space-2)]">
-                    <span className="ds-text-11 font-medium text-muted-foreground">Reference Data</span>
-                  </div>
-                  <div className="rounded-md border border-border/50 overflow-hidden">
-                    <div className="grid grid-cols-4 gap-[var(--ds-space-2)] bg-muted/30 px-[var(--ds-space-2)] py-[var(--ds-space-1)] ds-text-9 text-muted-foreground/70 uppercase tracking-wide">
-                      <span>Source</span>
-                      <span>Token / Chain</span>
-                      <span>FDV</span>
-                      <span>Link</span>
+                {hasValidFdv && referenceRows.length > 0 && (
+                  <div className="border-t border-border/50 pt-[var(--ds-space-3)]">
+                    <div className="flex items-center gap-[var(--ds-space-1-5)] mb-[var(--ds-space-2)]">
+                      <span className="ds-text-11 font-medium text-muted-foreground">Reference Data</span>
                     </div>
-                    <div className="grid grid-cols-4 gap-[var(--ds-space-2)] px-[var(--ds-space-2)] py-[var(--ds-space-2)]">
-                      <div className="flex items-center gap-[var(--ds-space-1-5)]">
-                        <img
-                          src="/icons/partners/inktoken.svg"
-                          alt="Ink market"
-                          className="w-4 h-4 shrink-0"
-                        />
-                        <span className="ds-text-11 font-medium text-foreground">Ink Market</span>
+                    <div className="rounded-md border border-border/50 overflow-hidden">
+                      <div className="grid grid-cols-5 gap-[var(--ds-space-2)] bg-muted/30 px-[var(--ds-space-2)] py-[var(--ds-space-1)] ds-text-9 text-muted-foreground/70 uppercase tracking-wide">
+                        <span>Exchange</span>
+                        <span>Chain</span>
+                        <span>Token</span>
+                        <span>FDV</span>
+                        <span>Link</span>
                       </div>
-                      <span className="ds-text-11 text-muted-foreground">$INK / Ink</span>
-                      <span className="ds-text-11 font-semibold text-foreground tabular-nums">
-                        {estimatedFdv !== null ? formatFdv(estimatedFdv) : defaultFdv}
-                      </span>
-                      <a
-                        href="https://www.coingecko.com/"
-                        target="_blank"
-                        rel="noreferrer"
-                        className="ds-text-11 text-primary hover:underline"
-                        aria-label="Open CoinGecko"
-                      >
-                        CoinGecko
-                      </a>
-                    </div>
-                    <div className="grid grid-cols-4 gap-[var(--ds-space-2)] px-[var(--ds-space-2)] py-[var(--ds-space-2)] border-t border-border/50 text-muted-foreground">
-                      <span className="ds-text-11">Add more sources</span>
-                      <span className="ds-text-11">Chains / tokens</span>
-                      <span className="ds-text-11">FDV</span>
-                      <span className="ds-text-11">Links</span>
+                      {referenceRows.map((row) => (
+                        <div
+                          key={`${row.exchange}-${row.token}`}
+                          className="grid grid-cols-5 gap-[var(--ds-space-2)] px-[var(--ds-space-2)] py-[var(--ds-space-2)] border-t border-border/50"
+                        >
+                          <span className="ds-text-11 font-medium text-foreground">{row.exchange}</span>
+                          <span className="ds-text-11 text-muted-foreground">{row.chain}</span>
+                          <span className="ds-text-11 text-muted-foreground">{row.token}</span>
+                          <span className="ds-text-11 font-semibold text-foreground tabular-nums">{row.fdv}</span>
+                          <a
+                            href={row.link}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="ds-text-11 text-primary hover:underline"
+                            aria-label={`Open CoinGecko for ${row.token}`}
+                          >
+                            CoinGecko
+                          </a>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                </div>
+                )}
               </CollapsibleContent>
             </Collapsible>
           </div>
