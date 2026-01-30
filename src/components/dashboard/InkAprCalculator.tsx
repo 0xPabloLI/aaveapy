@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useCoingeckoFdv } from '@/hooks/useCoingeckoFdv';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { Info } from 'lucide-react';
 
 interface InkAprCalculatorProps {
   rateInput: string;
@@ -81,9 +84,11 @@ const InkAprCalculator = ({
   onRateChange,
 }: InkAprCalculatorProps) => {
   const { data: fdvData } = useCoingeckoFdv();
+  const isMobile = useIsMobile();
   const trackRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
+  const [isAprTooltipOpen, setIsAprTooltipOpen] = useState(false);
   const [fdvInputValue, setFdvInputValue] = useState('1.00');
   const tooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -297,17 +302,6 @@ const InkAprCalculator = ({
                 />
                 <span className="ds-text-10 md:ds-text-11 text-muted-foreground font-medium">B</span>
               </div>
-              <div className="w-px h-5 bg-border" />
-              <div className="flex items-center gap-1.5">
-                <img
-                  src="/icons/partners/inktoken.svg"
-                  alt="INK"
-                  className="w-4 h-4 shrink-0 invert dark:invert-0"
-                />
-                <span className="ds-text-11 font-semibold tabular-nums text-foreground">
-                  ${formatInkPrice(currentFdvBillions)}
-                </span>
-              </div>
             </div>
           </div>
 
@@ -315,9 +309,53 @@ const InkAprCalculator = ({
           <div className="flex items-start gap-[var(--ds-space-2)]">
             {/* Formula aligned with labels row */}
             <div className="shrink-0 hidden lg:flex w-[240px] pt-0.5">
-              <span className="ds-text-11 text-muted-foreground font-mono whitespace-nowrap">
-                APR=daily_points×$INK×365%
-              </span>
+              <div className="flex flex-col gap-0.5">
+                <TooltipProvider delayDuration={120}>
+                  <div className="flex flex-wrap items-center justify-center gap-1.5 text-muted-foreground text-center">
+                    <span className="ds-text-11">
+                      Enter your estimated $INK FDV to update the incentive{' '}
+                      <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+                        APR
+                        <Tooltip
+                          open={isMobile ? isAprTooltipOpen : undefined}
+                          onOpenChange={isMobile ? setIsAprTooltipOpen : undefined}
+                        >
+                          <TooltipTrigger asChild>
+                            <button
+                              type="button"
+                              aria-label="APR formula"
+                              className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-border/60 text-muted-foreground bg-muted/40 shadow-[0_0_0_2px_rgba(15,23,42,0.06)] transition-all duration-200 hover:bg-muted/60 hover:text-foreground hover:shadow-[0_0_0_2px_rgba(15,23,42,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                              onClick={(event) => {
+                                if (!isMobile) return;
+                                event.preventDefault();
+                                setIsAprTooltipOpen((open) => !open);
+                              }}
+                            >
+                              <Info className="h-3 w-3" aria-hidden />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" align="start" className="ds-text-11">
+                            <div className="flex flex-col gap-1">
+                              <div className="flex items-center gap-1.5 text-muted-foreground font-mono">
+                                <img
+                                  src="/icons/partners/inktoken.svg"
+                                  alt="INK"
+                                  className="w-3.5 h-3.5 shrink-0 invert dark:invert-0"
+                                />
+                                <span>INK</span>
+                                <span className="tabular-nums">${formatInkPrice(currentFdvBillions)}</span>
+                              </div>
+                              <div className="text-muted-foreground font-mono">
+                                APR = daily_points × $INK × 365%
+                              </div>
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      </span>
+                    </span>
+                  </div>
+                </TooltipProvider>
+              </div>
             </div>
             
             {/* Labels Container - matches Slider width/position */}
