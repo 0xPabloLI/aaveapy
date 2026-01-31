@@ -341,7 +341,7 @@ const InkAprCalculator = ({
           {/* Bottom Row: Reference Labels - precisely aligned with slider */}
           <div className="flex items-start gap-[var(--ds-space-2)]">
             <div className="shrink-0 hidden lg:block w-[240px]" />
-            <div className="shrink-0 hidden lg:flex w-14 items-center justify-center pt-0.5">
+            <div className="shrink-0 hidden lg:flex w-14 items-center justify-center pt-0.5 ml-2">
               <span className="inline-flex items-center bg-muted/30 border border-border/70 rounded-md px-1.5 py-0.5 h-6 align-middle focus-within:border-foreground/40 transition-colors">
                 <span className="ds-text-11 text-muted-foreground">$</span>
                 <Input
