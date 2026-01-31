@@ -77,6 +77,15 @@ function formatFdv(fdv: number): string {
   return fdv.toFixed(2);
 }
 
+// Thumb color at position (0–100) on track gradient: #c242b1 → #23cdbf
+function positionToThumbColor(positionPercent: number): string {
+  const p = Math.max(0, Math.min(100, positionPercent)) / 100;
+  const r = Math.round(194 + (35 - 194) * p);
+  const g = Math.round(66 + (205 - 66) * p);
+  const b = Math.round(177 + (191 - 177) * p);
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
 function InkAprTooltipContent({
   formatInkPrice,
   currentFdvBillions,
@@ -185,6 +194,20 @@ const InkAprCalculator = ({
     updateFromFdv(fdv);
   }, [updateFromFdv]);
 
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      const step = e.shiftKey ? 5 : 1;
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        updateFromFdv(Math.max(MIN_FDV, currentFdvBillions - step * 0.5));
+      } else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        updateFromFdv(Math.min(MAX_FDV, currentFdvBillions + step * 0.5));
+      }
+    },
+    [updateFromFdv, currentFdvBillions]
+  );
+
   const handleTrackInteraction = useCallback((clientX: number) => {
     if (!trackRef.current) return;
     const rect = trackRef.current.getBoundingClientRect();
@@ -202,6 +225,7 @@ const InkAprCalculator = ({
   }, [handleTrackInteraction]);
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    e.preventDefault();
     setIsDragging(true);
     setShowTooltip(true);
     if (tooltipTimeoutRef.current) clearTimeout(tooltipTimeoutRef.current);
@@ -216,6 +240,7 @@ const InkAprCalculator = ({
     };
 
     const handleTouchMove = (e: TouchEvent) => {
+      e.preventDefault();
       handleTrackInteraction(e.touches[0].clientX);
     };
 
@@ -228,7 +253,7 @@ const InkAprCalculator = ({
 
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mouseup', handleEnd);
-    window.addEventListener('touchmove', handleTouchMove);
+    window.addEventListener('touchmove', handleTouchMove, { passive: false });
     window.addEventListener('touchend', handleEnd);
 
     return () => {
@@ -315,12 +340,13 @@ const InkAprCalculator = ({
                 </div>
                 <div
                   ref={trackRef}
-                  className="relative h-1.5 flex-1 rounded-full cursor-pointer select-none"
+                  className="relative h-1.5 flex-1 rounded-full cursor-pointer select-none touch-none"
                   style={{
                     background: 'linear-gradient(to right, #c242b1, #23cdbf)',
                   }}
                   onMouseDown={handleMouseDown}
                   onTouchStart={handleTouchStart}
+                  onKeyDown={handleKeyDown}
                   role="slider"
                   aria-valuemin={MIN_FDV}
                   aria-valuemax={MAX_FDV}
@@ -328,25 +354,28 @@ const InkAprCalculator = ({
                   aria-label="FDV slider"
                   tabIndex={0}
                 >
-                {/* Reference point markers (skip zero) */}
+                {/* Reference point markers (skip zero) - high contrast on gradient */}
                 {displayPoints.map((point) => (
                   <div
                     key={`marker-${point.id}`}
-                    className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-background border border-border/80 pointer-events-none"
+                    className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-white dark:bg-card border-2 border-foreground/90 shadow-sm pointer-events-none"
                     style={{ left: `${point.position}%` }}
                   />
                 ))}
 
-                {/* Current value thumb */}
+                {/* Current value thumb - color follows position on track gradient */}
                 <div
-                  className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-foreground shadow-md pointer-events-none transition-transform"
-                  style={{ left: `${sliderPosition}%` }}
+                  className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full border-2 border-white/90 shadow-md pointer-events-none transition-colors duration-150"
+                  style={{
+                    left: `${sliderPosition}%`,
+                    background: positionToThumbColor(sliderPosition),
+                  }}
                 />
 
-                {/* Tooltip popup on drag */}
-                {showTooltip && (
+                {/* Tooltip: floating number only, no background box */}
+                {(showTooltip || isDragging) && (
                   <div
-                    className="absolute -top-8 -translate-x-1/2 bg-foreground text-background px-1.5 py-0.5 rounded ds-text-10 font-semibold tabular-nums whitespace-nowrap shadow-md z-20"
+                    className="absolute -top-5 -translate-x-1/2 text-foreground ds-text-11 font-semibold tabular-nums whitespace-nowrap z-20"
                     style={{ left: `${sliderPosition}%` }}
                   >
                     ${formatFdv(currentFdvBillions)}
@@ -358,13 +387,13 @@ const InkAprCalculator = ({
 
           </div>
 
-          {/* Bottom Row: space above labels = space below tallest label to card bottom */}
-          <div className="flex items-center gap-[var(--ds-space-2)] -mt-14 min-h-[3.5rem]">
-            <div className="shrink-0 hidden lg:block w-[240px] pointer-events-none" aria-hidden />
+          {/* Bottom Row: space above labels = space below tallest label to card bottom. pointer-events-none so overlay does not block slider; auto on inputs/labels. */}
+          <div className="flex items-center gap-[var(--ds-space-2)] -mt-14 min-h-[3.5rem] pointer-events-none">
+            <div className="shrink-0 hidden lg:block w-[240px]" aria-hidden />
             {/* Wrapper: content shifted down slightly so space(slider→labels) ≈ space(labels bottom→card bottom) */}
-            <div className="relative flex-1 min-w-[120px] lg:ml-4 lg:mr-4 flex flex-col justify-center min-h-[3.5rem] pt-2">
-              <div className="flex items-start gap-1.5">
-                <div className="hidden lg:flex w-14 shrink-0 items-center justify-center pt-0.5">
+            <div className="relative flex-1 min-w-[120px] lg:ml-4 lg:mr-4 flex flex-col justify-center min-h-[3.5rem] pt-2 pointer-events-none">
+              <div className="flex items-start gap-1.5 pointer-events-none">
+                <div className="hidden lg:flex w-14 shrink-0 items-center justify-center pt-0.5 pointer-events-auto">
                   <span className="inline-flex items-center bg-muted/30 border border-border/70 rounded-md px-1.5 py-0.5 h-6 align-middle focus-within:border-foreground/40 transition-colors">
                     <span className="ds-text-11 text-muted-foreground">$</span>
                     <Input
@@ -382,7 +411,7 @@ const InkAprCalculator = ({
               </span>
             </div>
                 {/* Labels container same width as track (flex-1 after w-14 + gap-2) */}
-                <div className="relative flex-1 min-w-0 h-8">
+                <div className="relative flex-1 min-w-0 h-8 pointer-events-none">
                {/* FDV label at 0 */}
               <div
                 className="absolute flex flex-col items-center justify-start pt-0.5 h-full"
@@ -396,7 +425,7 @@ const InkAprCalculator = ({
                   <div
                     key={point.id}
                     onClick={() => handlePointClick(point.fdv)}
-                    className={`absolute flex flex-col items-center justify-start pt-0.5 h-full cursor-pointer group transition-colors ${
+                    className={`absolute flex flex-col items-center justify-start pt-0.5 h-full cursor-pointer group transition-colors pointer-events-auto ${
                       isSelected ? '' : 'hover:opacity-80'
                     }`}
                     style={{ left: `${point.position}%`, transform: 'translateX(-50%)' }}
