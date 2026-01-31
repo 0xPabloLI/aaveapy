@@ -46,7 +46,7 @@ function calculateTooltipPosition(
   }
 }
 
-function InfoIconButton({
+export function InfoIconButton({
   'aria-label': ariaLabel,
   isOpen,
   onToggle,
@@ -139,7 +139,7 @@ function InfoIconButton({
   );
 }
 
-function MobileTooltip({
+export function MobileTooltip({
   isOpen,
   onClose,
   title,
@@ -183,7 +183,7 @@ function MobileTooltip({
   );
 }
 
-function DesktopTooltip({
+export function DesktopTooltip({
   isOpen,
   alignLeft,
   triggerRect,

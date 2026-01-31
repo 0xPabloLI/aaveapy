@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { InfoIconButton, DesktopTooltip, MobileTooltip } from '@/components/dashboard/AprApyToggle';
 import { useCoingeckoFdv } from '@/hooks/useCoingeckoFdv';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Info } from 'lucide-react';
 
 interface InkAprCalculatorProps {
   rateInput: string;
@@ -76,6 +75,33 @@ function formatInkPrice(fdvBillions: number): string {
 
 function formatFdv(fdv: number): string {
   return fdv.toFixed(2);
+}
+
+function InkAprTooltipContent({
+  formatInkPrice,
+  currentFdvBillions,
+}: {
+  formatInkPrice: (fdvBillions: number) => string;
+  currentFdvBillions: number;
+}) {
+  return (
+    <>
+      <div className="bg-muted/50 rounded-lg border border-border px-3 py-2">
+        <code className="ds-text-12 font-mono font-semibold text-foreground whitespace-nowrap">
+          APR = daily_points × $INK × 365%
+        </code>
+      </div>
+      <div className="flex items-center gap-1.5 ds-text-12 text-muted-foreground">
+        <img
+          src="/icons/partners/inktoken.svg"
+          alt="INK"
+          className="w-3.5 h-3.5 shrink-0 invert dark:invert-0"
+        />
+        <span>INK</span>
+        <span className="tabular-nums">${formatInkPrice(currentFdvBillions)}</span>
+      </div>
+    </>
+  );
 }
 
 const InkAprCalculator = ({
@@ -225,9 +251,9 @@ const InkAprCalculator = ({
         <div className="flex flex-col gap-[var(--ds-space-2)]">
           
           {/* Top Row: Title, Formula, Slider, Inputs */}
-          <div className="flex flex-col lg:flex-row lg:items-center gap-[var(--ds-space-2)]">
-            {/* Left: Logo + Title + Formula */}
-            <div className="flex flex-col gap-1 shrink-0 lg:w-[240px]">
+          <div className="flex flex-col lg:flex-row lg:items-start gap-[var(--ds-space-2)]">
+            {/* Left: Logo + Title + Formula - relative z-10 so info icon receives hover above overlapping bottom row */}
+            <div className="relative z-10 flex flex-col gap-1 shrink-0 lg:w-[240px]">
               <div className="flex items-center gap-[var(--ds-space-2)]">
                 <img
                   src="/icons/networks/ink.svg"
@@ -238,58 +264,52 @@ const InkAprCalculator = ({
                   Ink incentive APR calculator
                 </span>
               </div>
-              <TooltipProvider delayDuration={120}>
-                <div className="flex flex-wrap items-center gap-1.5 text-muted-foreground">
+              <div className="flex items-center justify-center">
+                <div className="flex flex-wrap items-center justify-center gap-1.5 text-muted-foreground text-center">
                   <span className="ds-text-11">
                     Enter your estimated $INK FDV to update the incentive{' '}
                     <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
                       APR
-                      <Tooltip
-                        open={isMobile ? isAprTooltipOpen : undefined}
-                        onOpenChange={isMobile ? setIsAprTooltipOpen : undefined}
+                      <InfoIconButton
+                        aria-label="Incentive APR formula"
+                        isOpen={isAprTooltipOpen}
+                        onToggle={() => setIsAprTooltipOpen((o) => !o)}
+                        onClose={() => setIsAprTooltipOpen(false)}
                       >
-                        <TooltipTrigger asChild>
-                          <button
-                            type="button"
-                            aria-label="APR formula"
-                            className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-border/60 text-muted-foreground bg-muted/40 shadow-[0_0_0_2px_rgba(15,23,42,0.06)] transition-all duration-200 hover:bg-muted/60 hover:text-foreground hover:shadow-[0_0_0_2px_rgba(15,23,42,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                            onClick={(event) => {
-                              if (!isMobile) return;
-                              event.preventDefault();
-                              setIsAprTooltipOpen((open) => !open);
-                            }}
-                          >
-                            <Info className="h-3 w-3" aria-hidden />
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent side="top" align="start" className="ds-text-11">
-                          <div className="flex flex-col gap-1">
-                            <div className="flex items-center gap-1.5 text-muted-foreground font-mono">
-                              <img
-                                src="/icons/partners/inktoken.svg"
-                                alt="INK"
-                                className="w-3.5 h-3.5 shrink-0 invert dark:invert-0"
-                              />
-                              <span>INK</span>
-                              <span className="tabular-nums">${formatInkPrice(currentFdvBillions)}</span>
-                            </div>
-                            <div className="text-muted-foreground font-mono">
-                              APR = daily_points × $INK × 365%
-                            </div>
-                          </div>
-                        </TooltipContent>
-                      </Tooltip>
+                        {(triggerRect) =>
+                          isMobile ? (
+                            <MobileTooltip
+                              isOpen={isAprTooltipOpen}
+                              onClose={() => setIsAprTooltipOpen(false)}
+                              title="Incentive APR formula"
+                            >
+                              <InkAprTooltipContent formatInkPrice={formatInkPrice} currentFdvBillions={currentFdvBillions} />
+                            </MobileTooltip>
+                          ) : (
+                            <DesktopTooltip
+                              isOpen={isAprTooltipOpen}
+                              alignLeft
+                              triggerRect={triggerRect}
+                              onMouseEnter={() => setIsAprTooltipOpen(true)}
+                              onMouseLeave={() => setIsAprTooltipOpen(false)}
+                              title="Incentive APR formula"
+                            >
+                              <InkAprTooltipContent formatInkPrice={formatInkPrice} currentFdvBillions={currentFdvBillions} />
+                            </DesktopTooltip>
+                          )
+                        }
+                      </InfoIconButton>
                     </span>
                   </span>
                 </div>
-              </TooltipProvider>
+              </div>
             </div>
 
-            {/* Center: Slider */}
-            <div className="relative flex-1 min-w-[120px] lg:mx-4 pt-1">
-              <div className="flex items-center gap-2">
-                <div className="flex items-center justify-end w-14">
-                  <span className="ds-text-11 md:ds-text-12 text-muted-foreground font-semibold tracking-wide text-right">
+            {/* Center: Slider - aligned with title row */}
+            <div className="relative flex-1 min-w-[120px] lg:ml-4 lg:mr-4 lg:pt-[0.375rem]">
+              <div className="flex items-center gap-1.5">
+                <div className="flex items-center justify-center w-14">
+                  <span className="ds-text-11 md:ds-text-12 text-muted-foreground font-semibold tracking-wide">
                     FDV (B)
                   </span>
                 </div>
@@ -329,7 +349,7 @@ const InkAprCalculator = ({
                     className="absolute -top-8 -translate-x-1/2 bg-foreground text-background px-1.5 py-0.5 rounded ds-text-10 font-semibold tabular-nums whitespace-nowrap shadow-md z-20"
                     style={{ left: `${sliderPosition}%` }}
                   >
-                    ${formatFdv(currentFdvBillions)}B
+                    ${formatFdv(currentFdvBillions)}
                   </div>
                 )}
                 </div>
@@ -338,30 +358,31 @@ const InkAprCalculator = ({
 
           </div>
 
-          {/* Bottom Row: Reference Labels - precisely aligned with slider */}
-          <div className="flex items-start gap-[var(--ds-space-2)]">
-            <div className="shrink-0 hidden lg:block w-[240px]" />
-            <div className="shrink-0 hidden lg:flex w-14 items-center justify-center pt-0.5 ml-2">
-              <span className="inline-flex items-center bg-muted/30 border border-border/70 rounded-md px-1.5 py-0.5 h-6 align-middle focus-within:border-foreground/40 transition-colors">
-                <span className="ds-text-11 text-muted-foreground">$</span>
-                <Input
-                  type="number"
-                  min="0"
-                  max="120"
-                  step="0.01"
-                  inputMode="decimal"
-                  value={fdvInputValue}
-                  onChange={handleFdvInputChange}
-                  placeholder="1.00"
-                  className="w-10 px-0.5 ds-text-11 font-medium tabular-nums bg-transparent border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 h-auto p-0 text-left appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  aria-label="Estimated $INK FDV in billions"
-                />
-                <span className="ds-text-11 text-muted-foreground font-medium">B</span>
+          {/* Bottom Row: space above labels = space below tallest label to card bottom */}
+          <div className="flex items-center gap-[var(--ds-space-2)] -mt-14 min-h-[3.5rem]">
+            <div className="shrink-0 hidden lg:block w-[240px] pointer-events-none" aria-hidden />
+            {/* Wrapper: content shifted down slightly so space(slider→labels) ≈ space(labels bottom→card bottom) */}
+            <div className="relative flex-1 min-w-[120px] lg:ml-4 lg:mr-4 flex flex-col justify-center min-h-[3.5rem] pt-2">
+              <div className="flex items-start gap-1.5">
+                <div className="hidden lg:flex w-14 shrink-0 items-center justify-center pt-0.5">
+                  <span className="inline-flex items-center bg-muted/30 border border-border/70 rounded-md px-1.5 py-0.5 h-6 align-middle focus-within:border-foreground/40 transition-colors">
+                    <span className="ds-text-11 text-muted-foreground">$</span>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="120"
+                      step="0.01"
+                      inputMode="decimal"
+                      value={fdvInputValue}
+                      onChange={handleFdvInputChange}
+                      placeholder="1.00"
+                      className="w-10 px-0.5 ds-text-11 font-medium tabular-nums bg-transparent border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 h-auto p-0 text-left appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      aria-label="Estimated $INK FDV in billions"
+                    />
               </span>
             </div>
-            
-            {/* Labels Container - matches Slider width/position */}
-            <div className="relative flex-1 min-w-[120px] lg:mx-4 h-8">
+                {/* Labels container same width as track (flex-1 after w-14 + gap-2) */}
+                <div className="relative flex-1 min-w-0 h-8">
                {/* FDV label at 0 */}
               <div
                 className="absolute flex flex-col items-center justify-start pt-0.5 h-full"
@@ -380,12 +401,12 @@ const InkAprCalculator = ({
                     }`}
                     style={{ left: `${point.position}%`, transform: 'translateX(-50%)' }}
                     role="button"
-                    aria-label={point.isDefault ? `Set FDV to default (${point.fdv}B)` : `Set FDV to ${point.exchange} (${point.fdv.toFixed(2)}B)`}
+                    aria-label={point.isDefault ? `Set FDV to default (${point.fdv})` : `Set FDV to ${point.exchange} (${point.fdv.toFixed(2)})`}
                   >
                     <span className={`ds-text-10 md:ds-text-11 tabular-nums whitespace-nowrap font-medium leading-none mb-0.5 ${
                       isSelected ? 'text-foreground' : 'text-muted-foreground'
                     }`}>
-                      ${formatFdv(point.fdv)}B
+                      ${formatFdv(point.fdv)}
                     </span>
                     {point.isDefault ? (
                       <span className={`ds-text-9 md:ds-text-10 whitespace-nowrap leading-none ${
@@ -416,6 +437,8 @@ const InkAprCalculator = ({
                   </div>
                 );
               })}
+                </div>
+              </div>
             </div>
 
           </div>
