@@ -288,9 +288,11 @@ const InkAprCalculator = ({
             {/* Center: Slider */}
             <div className="relative flex-1 min-w-[120px] lg:mx-4 pt-1">
               <div className="flex items-center gap-2">
-                <span className="ds-text-11 md:ds-text-12 text-muted-foreground font-semibold tracking-wide w-14 text-right">
-                  FDV (B)
-                </span>
+                <div className="flex items-center justify-end w-14">
+                  <span className="ds-text-11 md:ds-text-12 text-muted-foreground font-semibold tracking-wide text-right">
+                    FDV (B)
+                  </span>
+                </div>
                 <div
                   ref={trackRef}
                   className="relative h-1.5 flex-1 rounded-full cursor-pointer select-none"
@@ -338,24 +340,25 @@ const InkAprCalculator = ({
 
           {/* Bottom Row: Reference Labels - precisely aligned with slider */}
           <div className="flex items-start gap-[var(--ds-space-2)]">
-            {/* Input aligned with labels row */}
-            <div className="shrink-0 flex w-[180px] lg:w-[240px] pt-0.5">
-              <span className="inline-flex items-center bg-muted/30 border border-border/70 rounded-md px-1.5 py-0.5 h-6 align-middle focus-within:border-foreground/40 transition-colors">
-                <span className="ds-text-11 text-muted-foreground">$</span>
-                <Input
-                  type="number"
-                  min="0"
-                  max="120"
-                  step="0.01"
-                  inputMode="decimal"
-                  value={fdvInputValue}
-                  onChange={handleFdvInputChange}
-                  placeholder="1.00"
-                  className="w-10 px-0.5 ds-text-11 font-medium tabular-nums bg-transparent border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 h-auto p-0 text-left appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  aria-label="Estimated $INK FDV in billions"
-                />
-                <span className="ds-text-11 text-muted-foreground font-medium">B</span>
-              </span>
+            <div className="shrink-0 hidden lg:flex w-[240px] pt-0.5">
+              <div className="relative w-14 h-6">
+                <span className="absolute left-1/2 -translate-x-1/2 inline-flex items-center bg-muted/30 border border-border/70 rounded-md px-1.5 py-0.5 h-6 align-middle focus-within:border-foreground/40 transition-colors">
+                  <span className="ds-text-11 text-muted-foreground">$</span>
+                  <Input
+                    type="number"
+                    min="0"
+                    max="120"
+                    step="0.01"
+                    inputMode="decimal"
+                    value={fdvInputValue}
+                    onChange={handleFdvInputChange}
+                    placeholder="1.00"
+                    className="w-10 px-0.5 ds-text-11 font-medium tabular-nums bg-transparent border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 h-auto p-0 text-left appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    aria-label="Estimated $INK FDV in billions"
+                  />
+                  <span className="ds-text-11 text-muted-foreground font-medium">B</span>
+                </span>
+              </div>
             </div>
             
             {/* Labels Container - matches Slider width/position */}
