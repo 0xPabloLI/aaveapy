@@ -370,9 +370,31 @@ const InkAprCalculator = ({
               }
             </InfoIconButton>
           </div>
-          <span className="ds-text-11 text-muted-foreground pl-7">
-            Enter your estimated $INK FDV to update the incentive APR
-          </span>
+          <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 ds-text-11 text-muted-foreground pl-7">
+            <span>Enter your estimated $INK FDV</span>
+            <span className="inline-flex items-center bg-muted/30 border border-border/70 rounded-md px-1.5 py-px h-4 align-middle focus-within:border-foreground/40 transition-colors leading-none shrink-0">
+              <span className="ds-text-11 text-muted-foreground/80">$</span>
+              <Input
+                type="number"
+                min="0"
+                max="120"
+                step="0.01"
+                inputMode="decimal"
+                value={fdvInputValue}
+                onChange={handleFdvInputChange}
+                onFocus={() => {
+                  setIsFdvInputFocused(true);
+                  setFdvInputValue('');
+                }}
+                onBlur={handleFdvInputBlur}
+                onKeyDown={handleFdvInputKeyDown}
+                placeholder={isFdvInputFocused ? '' : '1.00'}
+                className="w-10 px-0.5 !text-[11px] font-medium tabular-nums bg-transparent border-0 shadow-none text-muted-foreground/80 focus:text-muted-foreground/50 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 h-auto p-0 text-center appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                aria-label="Estimated $INK FDV in billions"
+              />
+            </span>
+            <span>to update the incentive APR</span>
+          </div>
         </div>
 
         {/* Center: Slider - aligned with title row */}
@@ -482,26 +504,8 @@ const InkAprCalculator = ({
         <div className="relative flex-1 min-w-[120px] lg:ml-4 lg:mr-6 flex flex-col justify-start min-h-[3.5rem] pt-[0.8125rem] pointer-events-none">
           <div className="flex items-start gap-1.5 pointer-events-none">
             <div className="hidden lg:flex w-14 shrink-0 flex-col items-center gap-[var(--ds-space-0-5)] pt-0.5 pointer-events-auto">
-              <span className="inline-flex items-center bg-muted/30 border border-border/70 rounded-md px-1.5 py-px h-4 align-middle focus-within:border-[rgb(var(--ds-brand-magenta-rgb))] focus-within:ring-2 focus-within:ring-[rgb(var(--ds-brand-magenta-rgb)/0.6)] focus-within:ring-offset-1 transition-colors leading-none ds-text-11 text-muted-foreground/80">
-                <span className="ds-text-11 text-muted-foreground/80">$</span>
-                <Input
-                  type="number"
-                  min="0"
-                  max="120"
-                  step="0.01"
-                  inputMode="decimal"
-                  value={fdvInputValue}
-                  onChange={handleFdvInputChange}
-                  onFocus={() => {
-                    setIsFdvInputFocused(true);
-                    setFdvInputValue('');
-                  }}
-                  onBlur={handleFdvInputBlur}
-                  onKeyDown={handleFdvInputKeyDown}
-                  placeholder={isFdvInputFocused ? '' : '1.00'}
-                  className="w-10 px-0.5 !text-[11px] font-medium tabular-nums bg-transparent border-0 shadow-none text-muted-foreground/80 focus:text-muted-foreground/50 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 h-auto p-0 text-center appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  aria-label="Estimated $INK FDV in billions"
-                />
+              <span className="ds-text-11 text-muted-foreground/50 tabular-nums whitespace-nowrap leading-none">
+                = ${formatInkPrice(currentFdvBillions)}/INK
               </span>
               <span className="ds-text-9 md:ds-text-10 whitespace-nowrap leading-none text-muted-foreground/40">Kraken</span>
               <a
@@ -619,7 +623,7 @@ const InkAprCalculator = ({
   const subtitleWithInput = (
     <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 ds-text-11 text-muted-foreground sm:flex-nowrap sm:items-center">
       <span>Enter your estimated $INK FDV</span>
-      <span className="inline-flex items-center bg-muted/30 border border-border/70 rounded-md px-2 h-7 focus-within:border-[rgb(var(--ds-brand-magenta-rgb))] focus-within:ring-2 focus-within:ring-[rgb(var(--ds-brand-magenta-rgb)/0.6)] focus-within:ring-offset-1 transition-colors shrink-0">
+      <span className="inline-flex items-center rounded-md border h-7 bg-card/50 border-border/50 px-2 focus-within:border-[rgb(var(--ds-brand-magenta-rgb))] focus-within:ring-2 focus-within:ring-[rgb(var(--ds-brand-magenta-rgb)/0.6)] focus-within:ring-offset-1 transition-colors shrink-0">
         <span className="ds-text-11 text-muted-foreground/80 font-medium">$</span>
         <Input
           type="number"
@@ -636,7 +640,7 @@ const InkAprCalculator = ({
           onBlur={handleFdvInputBlur}
           onKeyDown={handleFdvInputKeyDown}
           placeholder={isFdvInputFocused ? '' : '1.00'}
-          className="w-12 px-1 ds-text-11 font-semibold tabular-nums bg-transparent border-0 shadow-none text-foreground focus:text-foreground focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 h-full min-h-0 py-0 text-center appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+          className="w-12 px-1 ds-text-11 font-semibold tabular-nums bg-transparent border-0 shadow-none text-foreground focus:text-foreground focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/50 h-full min-h-0 py-0 text-center appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none md:placeholder:text-muted-foreground/60 md:text-muted-foreground/60 md:focus:text-foreground"
           aria-label="Estimated $INK FDV in billions"
         />
         <span className="ds-text-11 text-muted-foreground/60">B</span>
