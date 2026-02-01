@@ -495,10 +495,13 @@ const InkAprCalculator = ({
                       inputMode="decimal"
                       value={fdvInputValue}
                       onChange={handleFdvInputChange}
-                      onFocus={() => setIsFdvInputFocused(true)}
+                      onFocus={() => {
+                        setIsFdvInputFocused(true);
+                        setFdvInputValue('');
+                      }}
                       onBlur={handleFdvInputBlur}
                       onKeyDown={handleFdvInputKeyDown}
-                      placeholder="1.00"
+                      placeholder={isFdvInputFocused ? '' : '1.00'}
                       className="w-10 px-0.5 !text-[11px] font-medium tabular-nums bg-transparent border-0 shadow-none text-muted-foreground/80 focus:text-muted-foreground/50 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 h-auto p-0 text-center appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       aria-label="Estimated $INK FDV in billions"
                     />
