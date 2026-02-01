@@ -743,7 +743,7 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick, tydr
         {/* Edge light-bands + double chevrons to hint horizontal scroll */}
         {canScrollPrev && (
           <div className="pointer-events-none absolute -left-[2rem] top-0 h-full w-[2.5rem] z-10">
-            <div className="absolute top-[var(--ds-space-2)] bottom-[var(--ds-space-2)] left-0 w-full bg-gradient-to-r from-[rgb(var(--ds-brand-magenta-rgb)/0.22)] via-[rgb(var(--ds-brand-cyan-rgb)/0.14)] to-transparent dark:from-[rgb(var(--ds-brand-magenta-rgb)/0.38)] dark:via-[rgb(var(--ds-brand-cyan-rgb)/0.26)]" />
+            <div className="absolute top-[var(--ds-space-2)] bottom-[var(--ds-space-2)] left-0 w-full bg-gradient-to-r from-[rgb(var(--ds-brand-magenta-rgb)/0.45)] via-[rgb(var(--ds-brand-cyan-rgb)/0.28)] to-transparent dark:from-[rgb(var(--ds-brand-magenta-rgb)/0.58)] dark:via-[rgb(var(--ds-brand-cyan-rgb)/0.42)]" />
             <button
               type="button"
               className="pointer-events-auto absolute left-[2rem] top-1/2 -translate-y-1/2 p-1 rounded-full text-foreground/50 dark:text-foreground/70 hover:text-foreground/90 hover:bg-[rgb(var(--ds-brand-magenta-rgb)/0.12)] dark:hover:bg-[rgb(var(--ds-brand-magenta-rgb)/0.20)] transition-colors"
@@ -756,7 +756,7 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick, tydr
         )}
         {canScrollNext && (
           <div className="pointer-events-none absolute -right-[2rem] top-0 h-full w-[2.5rem] z-10">
-            <div className="absolute top-[var(--ds-space-2)] bottom-[var(--ds-space-2)] right-0 w-full bg-gradient-to-l from-[rgb(var(--ds-brand-magenta-rgb)/0.22)] via-[rgb(var(--ds-brand-cyan-rgb)/0.14)] to-transparent dark:from-[rgb(var(--ds-brand-magenta-rgb)/0.38)] dark:via-[rgb(var(--ds-brand-cyan-rgb)/0.26)]" />
+            <div className="absolute top-[var(--ds-space-2)] bottom-[var(--ds-space-2)] right-0 w-full bg-gradient-to-l from-[rgb(var(--ds-brand-magenta-rgb)/0.45)] via-[rgb(var(--ds-brand-cyan-rgb)/0.28)] to-transparent dark:from-[rgb(var(--ds-brand-magenta-rgb)/0.58)] dark:via-[rgb(var(--ds-brand-cyan-rgb)/0.42)]" />
             <button
               type="button"
               className="pointer-events-auto absolute right-[2rem] top-1/2 -translate-y-1/2 p-1 rounded-full text-foreground/50 dark:text-foreground/70 hover:text-foreground/90 hover:bg-[rgb(var(--ds-brand-magenta-rgb)/0.12)] dark:hover:bg-[rgb(var(--ds-brand-magenta-rgb)/0.20)] transition-colors"

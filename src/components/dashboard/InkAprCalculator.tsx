@@ -152,6 +152,8 @@ const InkAprCalculator = ({
   const [pillHoveredPointId, setPillHoveredPointId] = useState<string | null>(null);
   const [linkHoveredPointId, setLinkHoveredPointId] = useState<string | null>(null);
   const tooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [fdvJustChanged, setFdvJustChanged] = useState(false);
+  const prevFdvRef = useRef(DEFAULT_FDV);
 
   const fdvBySymbol = useMemo(() => {
     return new Map(
@@ -194,6 +196,17 @@ const InkAprCalculator = ({
       setFdvInputValue(formatted);
     }
   }, [currentFdvBillions, fdvInputValue, isFdvInputFocused]);
+
+  // Brief color hint when FDV changes (slider/pill, not from typing)
+  useEffect(() => {
+    if (isFdvInputFocused) return;
+    if (Math.abs(currentFdvBillions - prevFdvRef.current) > 0.001) {
+      prevFdvRef.current = currentFdvBillions;
+      setFdvJustChanged(true);
+      const t = setTimeout(() => setFdvJustChanged(false), 450);
+      return () => clearTimeout(t);
+    }
+  }, [currentFdvBillions, isFdvInputFocused]);
   
   useEffect(() => {
     if (!rateInput || rateInput === '0') {
@@ -372,7 +385,7 @@ const InkAprCalculator = ({
           </div>
           <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 ds-text-11 text-muted-foreground pl-7">
             <span>Enter your estimated $INK FDV</span>
-            <span className="inline-flex items-center bg-muted/30 border border-border/70 rounded-md px-1.5 py-px h-4 align-middle focus-within:border-foreground/40 transition-colors leading-none shrink-0">
+            <span className="inline-flex items-center bg-muted/30 border border-border/70 rounded-md px-1.5 py-px h-4 align-middle focus-within:border-[rgb(var(--ds-brand-magenta-rgb))] transition-colors duration-200 leading-none shrink-0">
               <span className="ds-text-11 text-muted-foreground/80">$</span>
               <Input
                 type="number"
@@ -389,9 +402,10 @@ const InkAprCalculator = ({
                 onBlur={handleFdvInputBlur}
                 onKeyDown={handleFdvInputKeyDown}
                 placeholder={isFdvInputFocused ? '' : '1.00'}
-                className="w-10 px-0.5 !text-[11px] font-medium tabular-nums bg-transparent border-0 shadow-none text-muted-foreground/80 focus:text-muted-foreground/50 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 h-auto p-0 text-center appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                className={`w-10 px-0.5 !text-[11px] font-medium tabular-nums bg-transparent border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 h-auto p-0 text-center appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-colors duration-300 ${fdvJustChanged ? 'text-[rgb(var(--ds-brand-magenta-rgb))]' : 'text-muted-foreground/80 focus:text-muted-foreground/50'}`}
                 aria-label="Estimated $INK FDV in billions"
               />
+              <span className="ds-text-11 text-muted-foreground/80">B</span>
             </span>
             <span>to update the incentive APR</span>
           </div>
@@ -505,7 +519,7 @@ const InkAprCalculator = ({
           <div className="flex items-start gap-1.5 pointer-events-none">
             <div className="hidden lg:flex w-14 shrink-0 flex-col items-center justify-start pt-0.5 h-8 pointer-events-auto">
               <div className="flex flex-col items-center leading-none gap-[var(--ds-space-0-5)] w-full">
-                <span className="min-h-4 flex items-center justify-center ds-text-10 md:ds-text-11 text-muted-foreground/50 tabular-nums whitespace-nowrap leading-none">
+                <span className={`min-h-4 flex items-center justify-center ds-text-10 md:ds-text-11 font-medium tabular-nums whitespace-nowrap leading-none transition-colors duration-300 ${fdvJustChanged ? 'text-[rgb(var(--ds-brand-magenta-rgb))]' : 'text-muted-foreground'}`}>
                   = ${formatInkPrice(currentFdvBillions)}/INK
                 </span>
                 <span className="ds-text-9 md:ds-text-10 whitespace-nowrap leading-none text-muted-foreground/40">Kraken</span>
@@ -807,7 +821,7 @@ const InkAprCalculator = ({
   );
 
   return (
-    <Card className="border-border/60 bg-card">
+    <Card className="group border-border/60 bg-card transition-[border-color,box-shadow] hover:border-border hover:shadow-md">
       <CardContent className="p-[var(--ds-space-3)] md:p-[var(--ds-space-4)]">
         {isXl ? <FullLayout /> : compactLayoutJsx}
       </CardContent>
