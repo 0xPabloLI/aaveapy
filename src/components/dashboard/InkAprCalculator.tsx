@@ -150,6 +150,7 @@ const InkAprCalculator = ({
   const [isFdvInputFocused, setIsFdvInputFocused] = useState(false);
   const fdvTriggerRef = useRef<HTMLButtonElement>(null);
   const fdvInputRef = useRef<HTMLInputElement>(null);
+  const fdvInputWrapperRef = useRef<HTMLSpanElement>(null);
   const [pillHoveredPointId, setPillHoveredPointId] = useState<string | null>(null);
   const [linkHoveredPointId, setLinkHoveredPointId] = useState<string | null>(null);
   const tooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -252,6 +253,25 @@ const InkAprCalculator = ({
     },
     []
   );
+
+  // When FDV input is focused, clicking outside (anywhere) should blur and commit so value takes effect
+  useEffect(() => {
+    if (!isFdvInputFocused) return;
+    const wrapper = fdvInputWrapperRef.current;
+    const inputEl = fdvInputRef.current;
+    const handlePointerOutside = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as Node;
+      if (!inputEl || !wrapper?.contains(target)) {
+        inputEl?.blur();
+      }
+    };
+    document.addEventListener('mousedown', handlePointerOutside, true);
+    document.addEventListener('touchstart', handlePointerOutside, true);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerOutside, true);
+      document.removeEventListener('touchstart', handlePointerOutside, true);
+    };
+  }, [isFdvInputFocused]);
 
   const handlePointClick = useCallback((fdv: number) => {
     updateFromFdv(fdv);
@@ -386,7 +406,7 @@ const InkAprCalculator = ({
           </div>
           <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 ds-text-11 text-muted-foreground pl-7">
             <span>Enter your estimated <span className="font-semibold">$INK FDV</span></span>
-            <span className="inline-flex items-center bg-muted/30 border border-border/70 rounded-md px-1.5 py-px h-4 focus-within:border-[rgb(var(--ds-brand-magenta-rgb))] transition-colors duration-200 shrink-0 [font-size:11px]">
+            <span ref={fdvInputWrapperRef} className="inline-flex items-center bg-muted/30 border border-border/70 rounded-md px-1.5 py-px h-4 focus-within:border-[rgb(var(--ds-brand-magenta-rgb))] transition-colors duration-200 shrink-0 [font-size:11px]">
               <span className="inline-flex items-center justify-center !text-[11px] leading-none text-muted-foreground/80">$</span>
               <Input
                 ref={fdvInputRef}
@@ -641,7 +661,7 @@ const InkAprCalculator = ({
   const subtitleWithInput = (
     <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 ds-text-11 text-muted-foreground sm:flex-nowrap sm:items-center">
       <span>Enter your estimated <span className="font-semibold">$INK FDV</span></span>
-      <span className="inline-flex items-center h-7 rounded-md border bg-card/50 border-border/50 pl-[var(--ds-space-1-5)] pr-[var(--ds-space-1-5)] focus-within:border-[rgb(var(--ds-brand-magenta-rgb))] focus-within:ring-0 focus-within:ring-offset-0 transition-colors shrink-0 [font-size:11px] [line-height:1.75rem]">
+      <span ref={fdvInputWrapperRef} className="inline-flex items-center h-7 rounded-md border bg-card/50 border-border/50 pl-[var(--ds-space-1-5)] pr-[var(--ds-space-1-5)] focus-within:border-[rgb(var(--ds-brand-magenta-rgb))] focus-within:ring-0 focus-within:ring-offset-0 transition-colors shrink-0 [font-size:11px] [line-height:1.75rem]">
         <span className="h-7 inline-flex items-center justify-center !text-[11px] leading-none text-muted-foreground/50 w-[1ch] shrink-0">$</span>
         <Input
           ref={fdvInputRef}
