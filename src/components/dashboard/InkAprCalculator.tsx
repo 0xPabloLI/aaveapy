@@ -381,54 +381,7 @@ const InkAprCalculator = ({
             {/* Center: Slider - aligned with title row */}
             <div className="relative flex-1 min-w-[120px] lg:ml-4 lg:mr-6 lg:pt-[0.375rem]">
               <div className="flex items-center gap-1.5 -mt-1">
-                <div className="relative -top-[5px] flex items-center justify-center gap-0.5 w-14">
-                  <span className="ds-text-10 md:ds-text-11 text-muted-foreground/70 font-normal tracking-wide">
-                    FDV (B)
-                  </span>
-                  <div className="relative inline-flex">
-                    <button
-                      ref={fdvTriggerRef}
-                      type="button"
-                      aria-label="FDV definition"
-                      className="h-4 w-4 rounded-full flex items-center justify-center bg-muted/40 text-muted-foreground/80 shadow-sm hover:bg-muted hover:text-foreground hover:shadow-md hover:shadow-muted-foreground/25 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
-                      onMouseEnter={() => {
-                        if (fdvTriggerRef.current) setFdvTriggerRect(fdvTriggerRef.current.getBoundingClientRect());
-                        if (!isMobile) setIsFdvTooltipOpen(true);
-                      }}
-                      onMouseLeave={() => !isMobile && setIsFdvTooltipOpen(false)}
-                      onClick={() => {
-                        if (isMobile && fdvTriggerRef.current) setFdvTriggerRect(fdvTriggerRef.current.getBoundingClientRect());
-                        if (isMobile) setIsFdvTooltipOpen((o) => !o);
-                      }}
-                    >
-                      <Info className="h-2.5 w-2.5 shrink-0" aria-hidden />
-                    </button>
-                    {isMobile ? (
-                      <MobileTooltip
-                        isOpen={isFdvTooltipOpen}
-                        onClose={() => setIsFdvTooltipOpen(false)}
-                        title="FDV (B)"
-                        variant="neutral"
-                        hideTitle
-                      >
-                        <p className="text-muted-foreground ds-text-11">Fully Diluted Valuation, in billions USD</p>
-                      </MobileTooltip>
-                    ) : (
-                      <DesktopTooltip
-                        isOpen={isFdvTooltipOpen}
-                        alignLeft
-                        triggerRect={fdvTriggerRect}
-                        onMouseEnter={() => setIsFdvTooltipOpen(true)}
-                        onMouseLeave={() => setIsFdvTooltipOpen(false)}
-                        title="FDV (B)"
-                        variant="neutral"
-                        hideTitle
-                      >
-                        <p className="text-muted-foreground ds-text-11">Fully Diluted Valuation, in billions USD</p>
-                      </DesktopTooltip>
-                    )}
-                  </div>
-                </div>
+                <div className="w-14 shrink-0" aria-hidden />
                 <div
                   ref={trackRef}
                   className="relative h-1.5 flex-1 rounded-full cursor-pointer select-none touch-none"
@@ -482,7 +435,7 @@ const InkAprCalculator = ({
           <div className="flex items-center gap-[var(--ds-space-2)] -mt-14 min-h-[3.5rem] pointer-events-none">
             <div className="shrink-0 hidden lg:block w-[240px]" aria-hidden />
             {/* Wrapper: content shifted down slightly so space(slider→labels) ≈ space(labels bottom→card bottom) */}
-            <div className="relative flex-1 min-w-[120px] lg:ml-4 lg:mr-6 flex flex-col justify-start min-h-[3.5rem] pt-2.5 pointer-events-none">
+            <div className="relative flex-1 min-w-[120px] lg:ml-4 lg:mr-6 flex flex-col justify-start min-h-[3.5rem] pt-3 pointer-events-none">
               <div className="flex items-start gap-1.5 pointer-events-none">
                 <div className="hidden lg:flex w-14 shrink-0 flex-col items-center gap-[var(--ds-space-0-5)] pt-0.5 pointer-events-auto">
                   <span className="inline-flex items-center bg-muted/30 border border-border/70 rounded-md px-1.5 py-px h-4 align-middle focus-within:border-foreground/40 transition-colors leading-none ds-text-11 text-muted-foreground/80">
@@ -533,17 +486,17 @@ const InkAprCalculator = ({
                   <div
                     key={point.id}
                     onClick={() => handlePointClick(point.fdv)}
-                    className="absolute flex flex-col items-start justify-start pt-0.5 h-full cursor-pointer pointer-events-auto rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+                    className="absolute flex flex-col items-center justify-start pt-0.5 h-full cursor-pointer pointer-events-auto rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
                     style={{ left: `${point.position}%`, transform: 'translateX(-50%)' }}
                     role="button"
                     aria-label={point.isDefault ? `Set FDV to default (${point.fdv})` : `Set FDV to ${point.exchange} (${point.fdv.toFixed(2)})`}
                   >
-                    <div className="flex flex-col items-start leading-none gap-[var(--ds-space-0-5)] w-full">
+                    <div className="flex flex-col items-center leading-none gap-[var(--ds-space-0-5)] w-full">
                       {/* Pill: only top two lines (FDV + exchange/Default), py-0 so line spacing equals gap to line 3 */}
                       <div
                         onMouseEnter={() => setPillHoveredPointId(point.id)}
                         onMouseLeave={() => setPillHoveredPointId(null)}
-                        className={`rounded-md py-0 flex flex-col items-start leading-none gap-[var(--ds-space-0-5)] transition-all duration-200 ${
+                        className={`rounded-md py-0 flex flex-col items-center leading-none gap-[var(--ds-space-0-5)] transition-all duration-200 ${
                           pointRgb ? 'px-[var(--ds-space-2-5)]' : 'px-[var(--ds-space-1-5)]'
                         } ${
                           !isSelected && (pillHoveredPointId === point.id && linkHoveredPointId !== point.id)
@@ -553,7 +506,7 @@ const InkAprCalculator = ({
                         style={pointRgb ? { backgroundColor: `rgba(${pointRgb.r}, ${pointRgb.g}, ${pointRgb.b}, 0.12)` } : undefined}
                       >
                         <span
-                          className={`ds-text-10 md:ds-text-11 tabular-nums whitespace-nowrap font-medium leading-none ${!pointRgb ? 'text-muted-foreground' : ''}`}
+                          className={`min-h-4 flex items-center justify-center ds-text-10 md:ds-text-11 tabular-nums whitespace-nowrap font-medium leading-none ${!pointRgb ? 'text-muted-foreground' : ''}`}
                           style={pointRgb ? { color: `rgb(${pointRgb.r}, ${pointRgb.g}, ${pointRgb.b})` } : undefined}
                         >
                           ${formatFdv(point.fdv)}
@@ -574,7 +527,7 @@ const InkAprCalculator = ({
                           </span>
                         )}
                       </div>
-                      {/* Third line: chain/token link, outside the pill — same left padding as pill so both lines align */}
+                      {/* Third line: chain/token link, outside the pill — centered with pill */}
                       {!point.isDefault && (
                         <a
                           href={point.link}
@@ -584,9 +537,7 @@ const InkAprCalculator = ({
                           onMouseEnter={() => setLinkHoveredPointId(point.id)}
                           onMouseLeave={() => setLinkHoveredPointId(null)}
                           title="Open CoinGecko (new tab)"
-                          className={`inline-flex items-center gap-0.5 ds-text-9 md:ds-text-10 whitespace-nowrap leading-none transition-colors ${
-                            pointRgb ? 'pl-[var(--ds-space-2-5)]' : 'pl-[var(--ds-space-1-5)]'
-                          } ${
+                          className={`inline-flex items-center justify-center gap-0.5 ds-text-9 md:ds-text-10 whitespace-nowrap leading-none transition-colors ${
                             linkHoveredPointId === point.id ? 'text-foreground' : !pointRgb ? 'text-muted-foreground/50 hover:text-foreground' : 'hover:text-foreground'
                           }`}
                           style={pointRgb && linkHoveredPointId !== point.id ? { color: `rgba(${pointRgb.r}, ${pointRgb.g}, ${pointRgb.b}, 0.72)` } : undefined}
