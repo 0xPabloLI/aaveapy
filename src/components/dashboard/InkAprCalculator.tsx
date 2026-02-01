@@ -361,7 +361,7 @@ const InkAprCalculator = ({
             {/* Center: Slider - aligned with title row */}
             <div className="relative flex-1 min-w-[120px] lg:ml-4 lg:mr-6 lg:pt-[0.375rem]">
               <div className="flex items-center gap-1.5 -mt-1">
-                <div className="flex items-center justify-center gap-0.5 w-14">
+                <div className="relative -top-[5px] flex items-center justify-center gap-0.5 w-14">
                   <span className="ds-text-10 md:ds-text-11 text-muted-foreground/70 font-normal tracking-wide">
                     FDV (B)
                   </span>
