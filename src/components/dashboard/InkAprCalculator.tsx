@@ -503,20 +503,22 @@ const InkAprCalculator = ({
         {/* Wrapper: content shifted down slightly so space(slider→labels) ≈ space(labels bottom→card bottom); minimal pt so pill shadow barely clears thumb */}
         <div className="relative flex-1 min-w-[120px] lg:ml-4 lg:mr-6 flex flex-col justify-start min-h-[3.5rem] pt-[0.8125rem] pointer-events-none">
           <div className="flex items-start gap-1.5 pointer-events-none">
-            <div className="hidden lg:flex w-14 shrink-0 flex-col items-center gap-[var(--ds-space-0-5)] pt-0.5 pointer-events-auto">
-              <span className="ds-text-11 text-muted-foreground/50 tabular-nums whitespace-nowrap leading-none">
-                = ${formatInkPrice(currentFdvBillions)}/INK
-              </span>
-              <span className="ds-text-9 md:ds-text-10 whitespace-nowrap leading-none text-muted-foreground/40">Kraken</span>
-              <a
-                href="https://coinmarketcap.com/currencies/ink-token/"
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-0.5 ds-text-9 md:ds-text-10 whitespace-nowrap leading-none text-muted-foreground/50 hover:text-foreground transition-colors"
-              >
-                Ink/INK
-                <ExternalLink className="w-2.5 h-2.5 shrink-0 opacity-70" aria-hidden />
-              </a>
+            <div className="hidden lg:flex w-14 shrink-0 flex-col items-center justify-start pt-0.5 h-8 pointer-events-auto">
+              <div className="flex flex-col items-center leading-none gap-[var(--ds-space-0-5)] w-full">
+                <span className="min-h-4 flex items-center justify-center ds-text-10 md:ds-text-11 text-muted-foreground/50 tabular-nums whitespace-nowrap leading-none">
+                  = ${formatInkPrice(currentFdvBillions)}/INK
+                </span>
+                <span className="ds-text-9 md:ds-text-10 whitespace-nowrap leading-none text-muted-foreground/40">Kraken</span>
+                <a
+                  href="https://coinmarketcap.com/currencies/ink-token/"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center justify-center gap-0.5 ds-text-9 md:ds-text-10 whitespace-nowrap leading-none text-muted-foreground/50 hover:text-foreground transition-colors"
+                >
+                  Ink/INK
+                  <ExternalLink className="w-2.5 h-2.5 shrink-0 opacity-70" aria-hidden />
+                </a>
+              </div>
             </div>
             {/* Labels container same width as track (flex-1 after w-14 + gap-2) */}
             <div className="relative flex-1 min-w-0 h-8 pointer-events-none">
