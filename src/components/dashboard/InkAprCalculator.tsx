@@ -616,17 +616,16 @@ const InkAprCalculator = ({
   }, []);
 
   // Render compact layout directly as JSX (not as component call)
-  // Render compact layout directly as JSX (not as component call)
   const compactLayoutJsx = (
-    <div className="flex flex-col gap-[var(--ds-space-2-5)]">
-      {/* Header row: Logo + Title + Info */}
-      <div className="flex items-center gap-[var(--ds-space-2)]">
+    <div className="flex flex-col gap-[var(--ds-space-2)]">
+      {/* Header row: Logo + Title + (Tablet: inline description) + Info */}
+      <div className="flex items-center gap-[var(--ds-space-2)] flex-wrap">
         <img
           src="/icons/networks/ink.svg"
           alt="INK"
           className="w-5 h-5 shrink-0"
         />
-        <span className="ds-text-14 font-semibold text-foreground">
+        <span className="ds-text-14 font-semibold text-foreground whitespace-nowrap">
           Ink incentive APR calculator
         </span>
         <InfoIconButton
@@ -658,13 +657,40 @@ const InkAprCalculator = ({
             )
           }
         </InfoIconButton>
+        {/* Tablet: inline FDV input - hidden on mobile, shown on sm+ */}
+        <div className="hidden sm:flex items-center gap-[var(--ds-space-1-5)] ml-auto">
+          <span className="ds-text-11 text-muted-foreground">FDV</span>
+          <span className="inline-flex items-center bg-muted/30 border border-border/70 rounded-md px-2 h-7 focus-within:border-foreground/40 transition-colors">
+            <span className="ds-text-11 text-muted-foreground/80 font-medium">$</span>
+            <Input
+              type="number"
+              min="0"
+              max="120"
+              step="0.01"
+              inputMode="decimal"
+              value={fdvInputValue}
+              onChange={handleFdvInputChange}
+              onFocus={() => {
+                setIsFdvInputFocused(true);
+                setFdvInputValue('');
+              }}
+              onBlur={handleFdvInputBlur}
+              onKeyDown={handleFdvInputKeyDown}
+              placeholder={isFdvInputFocused ? '' : '1.00'}
+              className="w-12 px-1 ds-text-11 font-semibold tabular-nums bg-transparent border-0 shadow-none text-foreground focus:text-foreground focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 h-auto p-0 text-center appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              aria-label="Estimated $INK FDV in billions"
+            />
+            <span className="ds-text-10 text-muted-foreground/60">B</span>
+          </span>
+          <span className="ds-text-10 text-muted-foreground/50 tabular-nums">
+            = ${formatInkPrice(currentFdvBillions)}/INK
+          </span>
+        </div>
       </div>
 
-      {/* FDV Input row with inline description */}
-      <div className="flex items-center gap-[var(--ds-space-2)] flex-wrap">
-        <span className="ds-text-11 text-muted-foreground shrink-0">
-          Enter $INK FDV
-        </span>
+      {/* Mobile only: FDV input row - shown on mobile, hidden on sm+ */}
+      <div className="flex sm:hidden items-center gap-[var(--ds-space-2)]">
+        <span className="ds-text-11 text-muted-foreground">FDV</span>
         <span className="inline-flex items-center bg-muted/30 border border-border/70 rounded-md px-2 h-7 focus-within:border-foreground/40 transition-colors">
           <span className="ds-text-11 text-muted-foreground/80 font-medium">$</span>
           <Input
@@ -687,8 +713,8 @@ const InkAprCalculator = ({
           />
           <span className="ds-text-10 text-muted-foreground/60">B</span>
         </span>
-        <span className="ds-text-11 text-muted-foreground shrink-0">
-          to update incentive APR
+        <span className="ds-text-10 text-muted-foreground/50 tabular-nums ml-auto">
+          = ${formatInkPrice(currentFdvBillions)}/INK
         </span>
       </div>
 
@@ -742,17 +768,14 @@ const InkAprCalculator = ({
         </div>
       </div>
 
-      {/* Collapsible Reference section with price on the right */}
-      <Collapsible open={isReferenceOpen} onOpenChange={setIsReferenceOpen}>
+      {/* Collapsible Reference section - hidden on mobile to save space */}
+      <Collapsible open={isReferenceOpen} onOpenChange={setIsReferenceOpen} className="hidden sm:block">
         <CollapsibleTrigger className="flex items-center gap-[var(--ds-space-1-5)] ds-text-11 text-muted-foreground hover:text-foreground transition-colors w-full">
           <ChevronDown 
             className={`w-3.5 h-3.5 transition-transform duration-200 ${isReferenceOpen ? 'rotate-180' : ''}`} 
           />
           <span>Reference FDVs</span>
           <span className="ds-text-10 text-muted-foreground/50">(CEX chain tokens)</span>
-          <span className="ds-text-11 text-muted-foreground/50 ml-auto tabular-nums">
-            = ${formatInkPrice(currentFdvBillions)}/INK
-          </span>
         </CollapsibleTrigger>
         <CollapsibleContent className="pt-[var(--ds-space-2)]">
           <div className="flex flex-wrap gap-[var(--ds-space-2)]">
