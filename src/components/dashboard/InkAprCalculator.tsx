@@ -511,11 +511,11 @@ const InkAprCalculator = ({
 
       </div>
 
-      {/* Bottom Row: space above labels = space below tallest label to card bottom. pointer-events-none so overlay does not block slider; auto on inputs/labels. */}
-      <div className="flex items-center gap-[var(--ds-space-2)] -mt-[3.4375rem] min-h-[3.5rem] pointer-events-none">
+      {/* Bottom Row: space above labels = space below tallest label to card bottom; keep a little gap between thumb bottom and shadow top. pointer-events-none so overlay does not block slider; auto on inputs/labels. */}
+      <div className="flex items-center gap-[var(--ds-space-2)] -mt-[3.5625rem] min-h-[3.5rem] pointer-events-none">
         <div className="shrink-0 hidden lg:block w-[240px]" aria-hidden />
-        {/* Wrapper: content shifted down slightly so space(slider→labels) ≈ space(labels bottom→card bottom); minimal pt so pill shadow barely clears thumb */}
-        <div className="relative flex-1 min-w-[120px] lg:ml-4 lg:mr-6 flex flex-col justify-start min-h-[3.5rem] pt-[0.8125rem] pointer-events-none">
+        {/* Wrapper: content shifted down slightly so space(slider→labels) ≈ space(labels bottom→card bottom); minimal pt so a little space remains between thumb bottom and labels/shadow. */}
+        <div className="relative flex-1 min-w-[120px] lg:ml-4 lg:mr-6 flex flex-col justify-start min-h-[3.5rem] pt-[0.6875rem] pointer-events-none">
           <div className="flex items-start gap-1.5 pointer-events-none">
             <div className="hidden lg:flex w-14 shrink-0 flex-col items-center justify-start pt-0.5 h-8 pointer-events-auto">
               <div className="flex flex-col items-center leading-none gap-[var(--ds-space-0-5)] w-full">
