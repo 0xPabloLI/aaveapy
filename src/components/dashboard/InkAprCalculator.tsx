@@ -465,7 +465,7 @@ const InkAprCalculator = ({
             <div className="relative flex-1 min-w-[120px] lg:ml-4 lg:mr-6 flex flex-col justify-start min-h-[3.5rem] pt-2.5 pointer-events-none">
               <div className="flex items-start gap-1.5 pointer-events-none">
                 <div className="hidden lg:flex w-14 shrink-0 flex-col items-center gap-[var(--ds-space-0-5)] pt-0.5 pointer-events-auto">
-                  <span className="inline-flex items-center bg-muted/30 border border-border/70 rounded-md px-1.5 py-px h-4 align-middle focus-within:border-foreground/40 transition-colors leading-none ds-text-10 md:ds-text-11">
+                  <span className="inline-flex items-center bg-muted/30 border border-border/70 rounded-md px-1.5 py-px h-4 align-middle focus-within:border-foreground/40 transition-colors leading-none ds-text-11">
                     <span className="ds-text-11 text-muted-foreground">$</span>
                     <Input
                       type="number"
@@ -476,7 +476,7 @@ const InkAprCalculator = ({
                       value={fdvInputValue}
                       onChange={handleFdvInputChange}
                       placeholder="1.00"
-                      className="w-10 px-0.5 ds-text-10 md:ds-text-11 font-medium tabular-nums bg-transparent border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 h-auto p-0 text-center appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      className="w-10 px-0.5 !text-[11px] font-medium tabular-nums bg-transparent border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 h-auto p-0 text-center appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       aria-label="Estimated $INK FDV in billions"
                     />
                   </span>
@@ -521,7 +521,7 @@ const InkAprCalculator = ({
                           pointRgb ? 'px-[var(--ds-space-2-5)]' : 'px-[var(--ds-space-1-5)]'
                         } ${
                           !isSelected && (pillHoveredPointId === point.id && linkHoveredPointId !== point.id)
-                            ? 'ring-1 ring-border shadow-sm bg-muted/50'
+                            ? 'shadow-sm bg-muted/50'
                             : ''
                         }`}
                         style={pointRgb ? { backgroundColor: `rgba(${pointRgb.r}, ${pointRgb.g}, ${pointRgb.b}, 0.12)` } : undefined}
