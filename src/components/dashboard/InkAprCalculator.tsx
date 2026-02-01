@@ -639,8 +639,8 @@ const InkAprCalculator = ({
   const subtitleWithInput = (
     <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 ds-text-11 text-muted-foreground sm:flex-nowrap sm:items-center">
       <span>Enter your estimated <span className="font-semibold">$INK FDV</span></span>
-      <span className="inline-flex items-center rounded-md border h-7 bg-card/50 border-border/50 px-2 focus-within:border-[rgb(var(--ds-brand-magenta-rgb))] focus-within:ring-2 focus-within:ring-[rgb(var(--ds-brand-magenta-rgb)/0.6)] focus-within:ring-offset-1 transition-colors shrink-0">
-        <span className="ds-text-11 text-muted-foreground/80 font-medium">$</span>
+      <span className="inline-flex items-center rounded-md border h-7 bg-card/50 border-border/50 pl-[var(--ds-space-1-5)] pr-[var(--ds-space-1-5)] focus-within:border-[rgb(var(--ds-brand-magenta-rgb))] focus-within:ring-0 focus-within:ring-offset-0 transition-colors shrink-0 [font-size:11px] [line-height:1.25]">
+        <span className="!text-[11px] !leading-[1.25] text-muted-foreground/50">$</span>
         <Input
           type="number"
           min="0"
@@ -656,10 +656,10 @@ const InkAprCalculator = ({
           onBlur={handleFdvInputBlur}
           onKeyDown={handleFdvInputKeyDown}
           placeholder={isFdvInputFocused ? '' : '1.00'}
-          className="w-10 px-1 ds-text-11 font-semibold tabular-nums bg-transparent border-0 shadow-none text-foreground focus:text-foreground focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/50 h-full min-h-0 py-0 text-center appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none md:placeholder:text-muted-foreground/60 md:text-muted-foreground/60 md:focus:text-foreground"
+          className="w-9 min-w-0 px-1 !text-[11px] !leading-[1.25] font-normal tabular-nums bg-transparent border-0 shadow-none text-muted-foreground/50 placeholder:text-muted-foreground/50 focus:text-foreground focus-visible:ring-0 focus-visible:ring-offset-0 h-full min-h-0 py-0 text-center appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           aria-label="Estimated $INK FDV in billions"
         />
-        <span className="ds-text-11 text-muted-foreground/60">B</span>
+        <span className="!text-[11px] !leading-[1.25] text-muted-foreground/50">B</span>
       </span>
       <span>to update the incentive APR</span>
     </div>
