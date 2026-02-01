@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ExternalLink } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { InfoIconButton, DesktopTooltip, MobileTooltip } from '@/components/dashboard/AprApyToggle';
@@ -127,6 +128,8 @@ const InkAprCalculator = ({
   const [showTooltip, setShowTooltip] = useState(false);
   const [isAprTooltipOpen, setIsAprTooltipOpen] = useState(false);
   const [fdvInputValue, setFdvInputValue] = useState('1.00');
+  const [pillHoveredPointId, setPillHoveredPointId] = useState<string | null>(null);
+  const [linkHoveredPointId, setLinkHoveredPointId] = useState<string | null>(null);
   const tooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const fdvBySymbol = useMemo(() => {
@@ -333,7 +336,7 @@ const InkAprCalculator = ({
             </div>
 
             {/* Center: Slider - aligned with title row */}
-            <div className="relative flex-1 min-w-[120px] lg:ml-4 lg:mr-4 lg:pt-[0.375rem]">
+            <div className="relative flex-1 min-w-[120px] lg:ml-4 lg:mr-6 lg:pt-[0.375rem]">
               <div className="flex items-center gap-1.5">
                 <div className="flex items-center justify-center w-14">
                   <span className="ds-text-11 md:ds-text-12 text-muted-foreground font-semibold tracking-wide">
@@ -393,7 +396,7 @@ const InkAprCalculator = ({
           <div className="flex items-center gap-[var(--ds-space-2)] -mt-14 min-h-[3.5rem] pointer-events-none">
             <div className="shrink-0 hidden lg:block w-[240px]" aria-hidden />
             {/* Wrapper: content shifted down slightly so space(slider→labels) ≈ space(labels bottom→card bottom) */}
-            <div className="relative flex-1 min-w-[120px] lg:ml-4 lg:mr-4 flex flex-col justify-center min-h-[3.5rem] pt-2 pointer-events-none">
+            <div className="relative flex-1 min-w-[120px] lg:ml-4 lg:mr-6 flex flex-col justify-center min-h-[3.5rem] pt-2 pointer-events-none">
               <div className="flex items-start gap-1.5 pointer-events-none">
                 <div className="hidden lg:flex w-14 shrink-0 items-center justify-center pt-0.5 pointer-events-auto">
                   <span className="inline-flex items-center bg-muted/30 border border-border/70 rounded-md px-1.5 py-0.5 h-6 align-middle focus-within:border-foreground/40 transition-colors">
@@ -427,44 +430,66 @@ const InkAprCalculator = ({
                   <div
                     key={point.id}
                     onClick={() => handlePointClick(point.fdv)}
-                    className={`absolute flex flex-col items-center justify-start pt-0.5 h-full cursor-pointer group transition-colors pointer-events-auto ${
-                      isSelected ? '' : 'hover:opacity-80'
-                    }`}
+                    className="absolute flex flex-col items-center justify-start pt-0.5 h-full cursor-pointer pointer-events-auto rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
                     style={{ left: `${point.position}%`, transform: 'translateX(-50%)' }}
                     role="button"
                     aria-label={point.isDefault ? `Set FDV to default (${point.fdv})` : `Set FDV to ${point.exchange} (${point.fdv.toFixed(2)})`}
                   >
-                    <span className={`ds-text-10 md:ds-text-11 tabular-nums whitespace-nowrap font-medium leading-none mb-0.5 ${
-                      isSelected ? 'text-foreground' : 'text-muted-foreground'
-                    }`}>
-                      ${formatFdv(point.fdv)}
-                    </span>
-                    {point.isDefault ? (
-                      <span className={`ds-text-9 md:ds-text-10 whitespace-nowrap leading-none ${
-                        isSelected ? 'text-foreground/70' : 'text-muted-foreground/50'
-                      }`}>
-                        Default
-                      </span>
-                    ) : (
-                      <div className="flex flex-col items-center leading-none gap-0.5">
+                    <div className="flex flex-col items-center leading-none gap-[var(--ds-space-0-5)]">
+                      {/* Pill: only top two lines (FDV + exchange/Default), py-0 so line spacing equals gap to line 3 */}
+                      <div
+                        onMouseEnter={() => setPillHoveredPointId(point.id)}
+                        onMouseLeave={() => setPillHoveredPointId(null)}
+                        className={`rounded-md px-[var(--ds-space-1-5)] py-0 flex flex-col items-center leading-none gap-[var(--ds-space-0-5)] transition-all duration-200 ${
+                          isSelected
+                            ? 'border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm ds-bg-brand-magenta-10 ds-text-brand-magenta'
+                            : pillHoveredPointId === point.id && linkHoveredPointId !== point.id
+                              ? 'ring-1 ring-border shadow-sm bg-muted/50'
+                              : ''
+                        }`}
+                      >
+                        <span className={`ds-text-10 md:ds-text-11 tabular-nums whitespace-nowrap font-medium leading-none ${
+                          isSelected ? 'ds-text-brand-magenta' : 'text-muted-foreground'
+                        }`}>
+                          ${formatFdv(point.fdv)}
+                        </span>
+                        {point.isDefault ? (
+                          <span className={`ds-text-9 md:ds-text-10 whitespace-nowrap leading-none ${
+                            isSelected ? 'ds-text-brand-magenta/90' : 'text-muted-foreground/50'
+                          }`}>
+                            Default
+                          </span>
+                        ) : (
+                          <span className={`ds-text-9 md:ds-text-10 whitespace-nowrap leading-none ${
+                            isSelected ? 'ds-text-brand-magenta/90' : 'text-muted-foreground/40'
+                          }`}>
+                            {point.exchange}
+                          </span>
+                        )}
+                      </div>
+                      {/* Third line: chain/token link, outside the pill */}
+                      {!point.isDefault && (
                         <a
                           href={point.link}
                           target="_blank"
                           rel="noreferrer"
                           onClick={(e) => e.stopPropagation()}
-                          className={`ds-text-9 md:ds-text-10 whitespace-nowrap underline decoration-dotted underline-offset-2 leading-none ${
-                            isSelected ? 'text-foreground/70' : 'text-muted-foreground/50 group-hover:text-muted-foreground'
+                          onMouseEnter={() => setLinkHoveredPointId(point.id)}
+                          onMouseLeave={() => setLinkHoveredPointId(null)}
+                          title="Open CoinGecko (new tab)"
+                          className={`inline-flex items-center gap-0.5 ds-text-9 md:ds-text-10 whitespace-nowrap leading-none transition-colors ${
+                            linkHoveredPointId === point.id
+                              ? 'text-foreground'
+                              : isSelected
+                                ? 'ds-text-brand-magenta/90 hover:text-foreground'
+                                : 'text-muted-foreground/50 hover:text-foreground'
                           }`}
                         >
                           {point.chain}/{point.token}
+                          <ExternalLink className="w-2.5 h-2.5 shrink-0 opacity-70" aria-hidden />
                         </a>
-                        <span className={`ds-text-9 md:ds-text-10 whitespace-nowrap leading-none ${
-                          isSelected ? 'text-foreground/60' : 'text-muted-foreground/40'
-                        }`}>
-                          {point.exchange}
-                        </span>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
                 );
               })}
