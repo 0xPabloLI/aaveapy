@@ -149,6 +149,7 @@ const InkAprCalculator = ({
   const [fdvInputValue, setFdvInputValue] = useState('1.00');
   const [isFdvInputFocused, setIsFdvInputFocused] = useState(false);
   const fdvTriggerRef = useRef<HTMLButtonElement>(null);
+  const fdvInputRef = useRef<HTMLInputElement>(null);
   const [pillHoveredPointId, setPillHoveredPointId] = useState<string | null>(null);
   const [linkHoveredPointId, setLinkHoveredPointId] = useState<string | null>(null);
   const tooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -388,6 +389,7 @@ const InkAprCalculator = ({
             <span className="inline-flex items-center bg-muted/30 border border-border/70 rounded-md px-1.5 py-px h-4 focus-within:border-[rgb(var(--ds-brand-magenta-rgb))] transition-colors duration-200 shrink-0 [font-size:11px]">
               <span className="inline-flex items-center justify-center !text-[11px] leading-none text-muted-foreground/80">$</span>
               <Input
+                ref={fdvInputRef}
                 type="number"
                 min="0"
                 max="120"
@@ -397,7 +399,7 @@ const InkAprCalculator = ({
                 onChange={handleFdvInputChange}
                 onFocus={() => {
                   setIsFdvInputFocused(true);
-                  setFdvInputValue('');
+                  requestAnimationFrame(() => fdvInputRef.current?.select());
                 }}
                 onBlur={handleFdvInputBlur}
                 onKeyDown={handleFdvInputKeyDown}
@@ -642,6 +644,7 @@ const InkAprCalculator = ({
       <span className="inline-flex items-center h-7 rounded-md border bg-card/50 border-border/50 pl-[var(--ds-space-1-5)] pr-[var(--ds-space-1-5)] focus-within:border-[rgb(var(--ds-brand-magenta-rgb))] focus-within:ring-0 focus-within:ring-offset-0 transition-colors shrink-0 [font-size:11px] [line-height:1.75rem]">
         <span className="h-7 inline-flex items-center justify-center !text-[11px] leading-none text-muted-foreground/50 w-[1ch] shrink-0">$</span>
         <Input
+          ref={fdvInputRef}
           type="number"
           min="0"
           max="120"
@@ -651,7 +654,7 @@ const InkAprCalculator = ({
           onChange={handleFdvInputChange}
           onFocus={() => {
             setIsFdvInputFocused(true);
-            setFdvInputValue('');
+            requestAnimationFrame(() => fdvInputRef.current?.select());
           }}
           onBlur={handleFdvInputBlur}
           onKeyDown={handleFdvInputKeyDown}
