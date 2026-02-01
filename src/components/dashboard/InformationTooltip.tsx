@@ -118,13 +118,13 @@ const InformationTooltip = () => {
 
           {/* Formula Section */}
           <div className="mt-3.5">
-            <h4 className="text-xs font-semibold text-[#1c1917] mb-2">Conversion Formula</h4>
-            <div className="bg-white rounded-lg border border-[#d3d1cf] p-3">
-              <code className="text-xs font-mono text-[#1c1917] block">
+            <h4 className="ds-text-12 font-semibold text-foreground mb-2">Conversion Formula</h4>
+            <div className="bg-muted/50 rounded-lg border border-border px-3 py-2">
+              <code className="ds-text-12 font-mono font-medium text-foreground whitespace-nowrap">
                 APY = (1 + APR/12)<sup>12</sup> − 1
               </code>
             </div>
-            <p className="text-[11px] text-[#766f6b] mt-2">
+            <p className="ds-text-11 text-muted-foreground mt-2">
               We use monthly compounding to convert APR to APY. This formula assumes you reinvest rewards every month.
             </p>
           </div>
