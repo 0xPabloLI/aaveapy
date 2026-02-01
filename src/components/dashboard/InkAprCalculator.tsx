@@ -337,44 +337,42 @@ const InkAprCalculator = ({
                   Ink incentive APR calculator
                 </span>
               </div>
-              <div className="flex items-center justify-center">
-                <div className="flex flex-wrap items-center justify-center gap-1.5 text-muted-foreground text-center">
-                  <span className="ds-text-11">
-                    Enter your estimated $INK FDV to update the incentive{' '}
-                    <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
-                      APR
-                      <InfoIconButton
-                        aria-label="Incentive APR formula"
-                        isOpen={isAprTooltipOpen}
-                        onToggle={() => setIsAprTooltipOpen((o) => !o)}
-                        onClose={() => setIsAprTooltipOpen(false)}
-                      >
-                        {(triggerRect) =>
-                          isMobile ? (
-                            <MobileTooltip
-                              isOpen={isAprTooltipOpen}
-                              onClose={() => setIsAprTooltipOpen(false)}
-                              title="Incentive APR formula"
-                            >
-                              <InkAprTooltipContent formatInkPrice={formatInkPrice} currentFdvBillions={currentFdvBillions} />
-                            </MobileTooltip>
-                          ) : (
-                            <DesktopTooltip
-                              isOpen={isAprTooltipOpen}
-                              alignLeft
-                              triggerRect={triggerRect}
-                              onMouseEnter={() => setIsAprTooltipOpen(true)}
-                              onMouseLeave={() => setIsAprTooltipOpen(false)}
-                              title="Incentive APR formula"
-                            >
-                              <InkAprTooltipContent formatInkPrice={formatInkPrice} currentFdvBillions={currentFdvBillions} />
-                            </DesktopTooltip>
-                          )
-                        }
-                      </InfoIconButton>
-                    </span>
+              <div className="flex flex-col items-center text-center text-muted-foreground ds-text-11">
+                <span>Enter your estimated $INK FDV</span>
+                <span className="relative inline-block">
+                  to update the incentive APR
+                  <span className="absolute -right-5 top-0 inline-flex items-center">
+                    <InfoIconButton
+                      aria-label="Incentive APR formula"
+                      isOpen={isAprTooltipOpen}
+                      onToggle={() => setIsAprTooltipOpen((o) => !o)}
+                      onClose={() => setIsAprTooltipOpen(false)}
+                    >
+                      {(triggerRect) =>
+                        isMobile ? (
+                          <MobileTooltip
+                            isOpen={isAprTooltipOpen}
+                            onClose={() => setIsAprTooltipOpen(false)}
+                            title="Incentive APR formula"
+                          >
+                            <InkAprTooltipContent formatInkPrice={formatInkPrice} currentFdvBillions={currentFdvBillions} />
+                          </MobileTooltip>
+                        ) : (
+                          <DesktopTooltip
+                            isOpen={isAprTooltipOpen}
+                            alignLeft
+                            triggerRect={triggerRect}
+                            onMouseEnter={() => setIsAprTooltipOpen(true)}
+                            onMouseLeave={() => setIsAprTooltipOpen(false)}
+                            title="Incentive APR formula"
+                          >
+                            <InkAprTooltipContent formatInkPrice={formatInkPrice} currentFdvBillions={currentFdvBillions} />
+                          </DesktopTooltip>
+                        )
+                      }
+                    </InfoIconButton>
                   </span>
-                </div>
+                </span>
               </div>
             </div>
 
