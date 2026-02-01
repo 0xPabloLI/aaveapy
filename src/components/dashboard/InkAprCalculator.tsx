@@ -616,111 +616,80 @@ const InkAprCalculator = ({
   }, []);
 
   // Render compact layout directly as JSX (not as component call)
+  const subtitleWithInput = (
+    <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 ds-text-11 text-muted-foreground sm:flex-nowrap sm:items-center">
+      <span>Enter your estimated $INK FDV</span>
+      <span className="inline-flex items-center bg-muted/30 border border-border/70 rounded-md px-2 h-7 focus-within:border-[rgb(var(--ds-brand-magenta-rgb))] focus-within:ring-2 focus-within:ring-[rgb(var(--ds-brand-magenta-rgb)/0.6)] focus-within:ring-offset-1 transition-colors shrink-0">
+        <span className="ds-text-11 text-muted-foreground/80 font-medium">$</span>
+        <Input
+          type="number"
+          min="0"
+          max="120"
+          step="0.01"
+          inputMode="decimal"
+          value={fdvInputValue}
+          onChange={handleFdvInputChange}
+          onFocus={() => {
+            setIsFdvInputFocused(true);
+            setFdvInputValue('');
+          }}
+          onBlur={handleFdvInputBlur}
+          onKeyDown={handleFdvInputKeyDown}
+          placeholder={isFdvInputFocused ? '' : '1.00'}
+          className="w-12 px-1 ds-text-11 font-semibold tabular-nums bg-transparent border-0 shadow-none text-foreground focus:text-foreground focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 h-full min-h-0 py-0 text-center appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+          aria-label="Estimated $INK FDV in billions"
+        />
+        <span className="ds-text-11 text-muted-foreground/60">B</span>
+      </span>
+      <span>to update the incentive APR</span>
+    </div>
+  );
+
   const compactLayoutJsx = (
     <div className="flex flex-col gap-[var(--ds-space-2)]">
-      {/* Header row: Logo + Title + Info + (Tablet: inline FDV input) */}
-      <div className="flex items-center gap-[var(--ds-space-2)] flex-wrap">
-        <img
-          src="/icons/networks/ink.svg"
-          alt="INK"
-          className="w-5 h-5 shrink-0"
-        />
-        <span className="ds-text-14 font-semibold text-foreground whitespace-nowrap">
-          Ink incentive APR calculator
-        </span>
-        <InfoIconButton
-          aria-label="Incentive APR formula"
-          isOpen={isAprTooltipOpen}
-          onToggle={() => setIsAprTooltipOpen((o) => !o)}
-          onClose={() => setIsAprTooltipOpen(false)}
-        >
-          {(triggerRect) =>
-            isMobile ? (
-              <MobileTooltip
-                isOpen={isAprTooltipOpen}
-                onClose={() => setIsAprTooltipOpen(false)}
-                title="Incentive APR formula"
-              >
-                <InkAprTooltipContent formatInkPrice={formatInkPrice} currentFdvBillions={currentFdvBillions} />
-              </MobileTooltip>
-            ) : (
-              <DesktopTooltip
-                isOpen={isAprTooltipOpen}
-                alignLeft
-                triggerRect={triggerRect}
-                onMouseEnter={() => setIsAprTooltipOpen(true)}
-                onMouseLeave={() => setIsAprTooltipOpen(false)}
-                title="Incentive APR formula"
-              >
-                <InkAprTooltipContent formatInkPrice={formatInkPrice} currentFdvBillions={currentFdvBillions} />
-              </DesktopTooltip>
-            )
-          }
-        </InfoIconButton>
-        {/* Tablet: inline FDV input - hidden on mobile, shown on sm+ */}
-        <div className="hidden sm:flex items-center gap-[var(--ds-space-1-5)] ml-auto">
-          <span className="ds-text-11 text-muted-foreground">FDV</span>
-          <span className="inline-flex items-center bg-muted/30 border border-border/70 rounded-md px-2 h-7 focus-within:border-[rgb(var(--ds-brand-magenta-rgb))] transition-colors">
-            <span className="ds-text-11 text-muted-foreground/80 font-medium">$</span>
-            <Input
-              type="number"
-              min="0"
-              max="120"
-              step="0.01"
-              inputMode="decimal"
-              value={fdvInputValue}
-              onChange={handleFdvInputChange}
-              onFocus={() => {
-                setIsFdvInputFocused(true);
-                setFdvInputValue('');
-              }}
-              onBlur={handleFdvInputBlur}
-              onKeyDown={handleFdvInputKeyDown}
-              placeholder={isFdvInputFocused ? '' : '1.00'}
-              className="w-12 px-1 ds-text-11 font-semibold tabular-nums bg-transparent border-0 shadow-none text-foreground focus:text-foreground focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 h-auto p-0 text-center appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              aria-label="Estimated $INK FDV in billions"
-            />
-            <span className="ds-text-10 text-muted-foreground/60">B</span>
-          </span>
-          <span className="ds-text-10 text-muted-foreground/50 tabular-nums">
-            = ${formatInkPrice(currentFdvBillions)}/INK
-          </span>
-        </div>
-      </div>
-
-      {/* Subtitle - shown on all compact layouts */}
-      <span className="ds-text-11 text-muted-foreground -mt-1">
-        Enter your estimated $INK FDV to update the incentive APR
-      </span>
-
-      {/* Mobile only: FDV input row - shown on mobile, hidden on sm+ */}
-      <div className="flex sm:hidden items-center gap-[var(--ds-space-2)]">
-        <span className="ds-text-11 text-muted-foreground">FDV</span>
-        <span className="inline-flex items-center bg-muted/30 border border-border/70 rounded-md px-2 h-7 focus-within:border-[rgb(var(--ds-brand-magenta-rgb))] transition-colors">
-          <span className="ds-text-11 text-muted-foreground/80 font-medium">$</span>
-          <Input
-            type="number"
-            min="0"
-            max="120"
-            step="0.01"
-            inputMode="decimal"
-            value={fdvInputValue}
-            onChange={handleFdvInputChange}
-            onFocus={() => {
-              setIsFdvInputFocused(true);
-              setFdvInputValue('');
-            }}
-            onBlur={handleFdvInputBlur}
-            onKeyDown={handleFdvInputKeyDown}
-            placeholder={isFdvInputFocused ? '' : '1.00'}
-            className="w-12 px-1 ds-text-11 font-semibold tabular-nums bg-transparent border-0 shadow-none text-foreground focus:text-foreground focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 h-auto p-0 text-center appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-            aria-label="Estimated $INK FDV in billions"
+      {/* Header: Logo + Title + Info; tablet (sm+): same row as subtitle with input */}
+      <div className="flex flex-col gap-1 sm:flex-row sm:flex-nowrap sm:items-center sm:gap-[var(--ds-space-2)]">
+        <div className="flex items-center gap-[var(--ds-space-2)] shrink-0">
+          <img
+            src="/icons/networks/ink.svg"
+            alt="INK"
+            className="w-5 h-5 shrink-0"
           />
-          <span className="ds-text-10 text-muted-foreground/60">B</span>
-        </span>
-        <span className="ds-text-10 text-muted-foreground/50 tabular-nums ml-auto">
-          = ${formatInkPrice(currentFdvBillions)}/INK
-        </span>
+          <span className="ds-text-14 font-semibold text-foreground whitespace-nowrap">
+            Ink incentive APR calculator
+          </span>
+          <InfoIconButton
+            aria-label="Incentive APR formula"
+            isOpen={isAprTooltipOpen}
+            onToggle={() => setIsAprTooltipOpen((o) => !o)}
+            onClose={() => setIsAprTooltipOpen(false)}
+          >
+            {(triggerRect) =>
+              isMobile ? (
+                <MobileTooltip
+                  isOpen={isAprTooltipOpen}
+                  onClose={() => setIsAprTooltipOpen(false)}
+                  title="Incentive APR formula"
+                >
+                  <InkAprTooltipContent formatInkPrice={formatInkPrice} currentFdvBillions={currentFdvBillions} />
+                </MobileTooltip>
+              ) : (
+                <DesktopTooltip
+                  isOpen={isAprTooltipOpen}
+                  alignLeft
+                  triggerRect={triggerRect}
+                  onMouseEnter={() => setIsAprTooltipOpen(true)}
+                  onMouseLeave={() => setIsAprTooltipOpen(false)}
+                  title="Incentive APR formula"
+                >
+                  <InkAprTooltipContent formatInkPrice={formatInkPrice} currentFdvBillions={currentFdvBillions} />
+                </DesktopTooltip>
+              )
+            }
+          </InfoIconButton>
+        </div>
+        {/* Tablet: subtitle with input on same line as title */}
+        <div className="sm:min-w-0 sm:flex-1">{subtitleWithInput}</div>
       </div>
 
       {/* Slider - full width on its own row */}
@@ -780,7 +749,10 @@ const InkAprCalculator = ({
             className={`w-3.5 h-3.5 transition-transform duration-200 ${isReferenceOpen ? 'rotate-180' : ''}`} 
           />
           <span>Reference FDVs</span>
-          <span className="ds-text-10 text-muted-foreground/50">(CEX chain tokens)</span>
+          <span className="ds-text-11 text-muted-foreground/50">(CEX chain tokens)</span>
+          <span className="ds-text-11 text-muted-foreground/50 tabular-nums ml-auto">
+            = ${formatInkPrice(currentFdvBillions)}/INK
+          </span>
         </CollapsibleTrigger>
         <CollapsibleContent className="pt-[var(--ds-space-1-5)]">
           <div className="flex flex-wrap gap-[var(--ds-space-2)]">
