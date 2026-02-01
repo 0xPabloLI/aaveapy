@@ -482,7 +482,7 @@ const InkAprCalculator = ({
         <div className="relative flex-1 min-w-[120px] lg:ml-4 lg:mr-6 flex flex-col justify-start min-h-[3.5rem] pt-[0.8125rem] pointer-events-none">
           <div className="flex items-start gap-1.5 pointer-events-none">
             <div className="hidden lg:flex w-14 shrink-0 flex-col items-center gap-[var(--ds-space-0-5)] pt-0.5 pointer-events-auto">
-              <span className="inline-flex items-center bg-muted/30 border border-border/70 rounded-md px-1.5 py-px h-4 align-middle focus-within:border-foreground/40 transition-colors leading-none ds-text-11 text-muted-foreground/80">
+              <span className="inline-flex items-center bg-muted/30 border border-border/70 rounded-md px-1.5 py-px h-4 align-middle focus-within:border-[rgb(var(--ds-brand-magenta-rgb))] focus-within:ring-2 focus-within:ring-[rgb(var(--ds-brand-magenta-rgb)/0.6)] focus-within:ring-offset-1 transition-colors leading-none ds-text-11 text-muted-foreground/80">
                 <span className="ds-text-11 text-muted-foreground/80">$</span>
                 <Input
                   type="number"
