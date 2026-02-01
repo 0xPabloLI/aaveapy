@@ -77,12 +77,12 @@ function formatFdv(fdv: number): string {
   return fdv.toFixed(2);
 }
 
-// Thumb color at position (0–100) on track gradient: #c242b1 → #23cdbf
+// Thumb color at position (0–100): low = blue (TopOpp low), high = emerald (TopOpp high)
 function positionToThumbColor(positionPercent: number): string {
   const p = Math.max(0, Math.min(100, positionPercent)) / 100;
-  const r = Math.round(194 + (35 - 194) * p);
-  const g = Math.round(66 + (205 - 66) * p);
-  const b = Math.round(177 + (191 - 177) * p);
+  const r = Math.round(59 + (5 - 59) * p);
+  const g = Math.round(130 + (150 - 130) * p);
+  const b = Math.round(246 + (105 - 246) * p);
   return `rgb(${r}, ${g}, ${b})`;
 }
 
@@ -344,7 +344,7 @@ const InkAprCalculator = ({
                   ref={trackRef}
                   className="relative h-1.5 flex-1 rounded-full cursor-pointer select-none touch-none"
                   style={{
-                    background: 'linear-gradient(to right, #c242b1, #23cdbf)',
+                    background: 'linear-gradient(to right, rgb(var(--ds-blue-500-rgb)), rgb(var(--ds-emerald-600-rgb)))',
                   }}
                   onMouseDown={handleMouseDown}
                   onTouchStart={handleTouchStart}
@@ -377,7 +377,7 @@ const InkAprCalculator = ({
                 {/* Tooltip: floating number only, no background box */}
                 {(showTooltip || isDragging) && (
                   <div
-                    className="absolute -top-5 -translate-x-1/2 text-foreground ds-text-11 font-semibold tabular-nums whitespace-nowrap z-20"
+                    className="absolute -top-5 -translate-x-1/2 text-foreground ds-text-13 font-semibold tabular-nums whitespace-nowrap z-20"
                     style={{ left: `${sliderPosition}%` }}
                   >
                     ${formatFdv(currentFdvBillions)}
