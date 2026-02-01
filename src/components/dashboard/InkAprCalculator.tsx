@@ -624,44 +624,49 @@ const InkAprCalculator = ({
   const compactLayoutJsx = (
     <div className="flex flex-col gap-[var(--ds-space-3)]">
       {/* Header row: Logo + Title + Info */}
-      <div className="flex items-center gap-[var(--ds-space-2)]">
-        <img
-          src="/icons/networks/ink.svg"
-          alt="INK"
-          className="w-5 h-5 shrink-0"
-        />
-        <span className="ds-text-14 font-semibold text-foreground">
-          Ink incentive APR calculator
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center gap-[var(--ds-space-2)]">
+          <img
+            src="/icons/networks/ink.svg"
+            alt="INK"
+            className="w-5 h-5 shrink-0"
+          />
+          <span className="ds-text-14 font-semibold text-foreground">
+            Ink incentive APR calculator
+          </span>
+          <InfoIconButton
+            aria-label="Incentive APR formula"
+            isOpen={isAprTooltipOpen}
+            onToggle={() => setIsAprTooltipOpen((o) => !o)}
+            onClose={() => setIsAprTooltipOpen(false)}
+          >
+            {(triggerRect) =>
+              isMobile ? (
+                <MobileTooltip
+                  isOpen={isAprTooltipOpen}
+                  onClose={() => setIsAprTooltipOpen(false)}
+                  title="Incentive APR formula"
+                >
+                  <InkAprTooltipContent formatInkPrice={formatInkPrice} currentFdvBillions={currentFdvBillions} />
+                </MobileTooltip>
+              ) : (
+                <DesktopTooltip
+                  isOpen={isAprTooltipOpen}
+                  alignLeft
+                  triggerRect={triggerRect}
+                  onMouseEnter={() => setIsAprTooltipOpen(true)}
+                  onMouseLeave={() => setIsAprTooltipOpen(false)}
+                  title="Incentive APR formula"
+                >
+                  <InkAprTooltipContent formatInkPrice={formatInkPrice} currentFdvBillions={currentFdvBillions} />
+                </DesktopTooltip>
+              )
+            }
+          </InfoIconButton>
+        </div>
+        <span className="ds-text-11 text-muted-foreground pl-7">
+          Enter your estimated $INK FDV to update the incentive APR
         </span>
-        <InfoIconButton
-          aria-label="Incentive APR formula"
-          isOpen={isAprTooltipOpen}
-          onToggle={() => setIsAprTooltipOpen((o) => !o)}
-          onClose={() => setIsAprTooltipOpen(false)}
-        >
-          {(triggerRect) =>
-            isMobile ? (
-              <MobileTooltip
-                isOpen={isAprTooltipOpen}
-                onClose={() => setIsAprTooltipOpen(false)}
-                title="Incentive APR formula"
-              >
-                <InkAprTooltipContent formatInkPrice={formatInkPrice} currentFdvBillions={currentFdvBillions} />
-              </MobileTooltip>
-            ) : (
-              <DesktopTooltip
-                isOpen={isAprTooltipOpen}
-                alignLeft
-                triggerRect={triggerRect}
-                onMouseEnter={() => setIsAprTooltipOpen(true)}
-                onMouseLeave={() => setIsAprTooltipOpen(false)}
-                title="Incentive APR formula"
-              >
-                <InkAprTooltipContent formatInkPrice={formatInkPrice} currentFdvBillions={currentFdvBillions} />
-              </DesktopTooltip>
-            )
-          }
-        </InfoIconButton>
       </div>
 
       {/* FDV Input row */}
@@ -693,8 +698,8 @@ const InkAprCalculator = ({
         </span>
       </div>
 
-      {/* Slider - full width on its own row */}
-      <div className="flex flex-col gap-[var(--ds-space-1)]">
+      {/* Slider - full width on its own row with extra top padding for tooltip */}
+      <div className="flex flex-col gap-[var(--ds-space-1)] pt-5">
         <div
           ref={!isXl ? trackRef : undefined}
           className="relative h-2 rounded-full cursor-pointer select-none touch-none"
@@ -729,10 +734,10 @@ const InkAprCalculator = ({
             }}
           />
 
-          {/* Tooltip */}
+          {/* Tooltip - positioned above slider with enough space */}
           {(showTooltip || isDragging) && (
             <div
-              className="absolute -top-6 -translate-x-1/2 text-foreground ds-text-13 font-semibold tabular-nums whitespace-nowrap z-20"
+              className="absolute -top-5 -translate-x-1/2 text-foreground ds-text-13 font-semibold tabular-nums whitespace-nowrap pointer-events-none"
               style={{ left: `${sliderPosition}%` }}
             >
               ${formatFdv(currentFdvBillions)}
