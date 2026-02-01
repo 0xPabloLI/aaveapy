@@ -78,13 +78,24 @@ function formatFdv(fdv: number): string {
   return fdv.toFixed(2);
 }
 
-// Thumb color at position (0–100): low = blue (TopOpp low), high = emerald (TopOpp high)
+// Thumb color at position (0–100): blue → purple → emerald (three-stop gradient)
 function positionToThumbColor(positionPercent: number): string {
   const p = Math.max(0, Math.min(100, positionPercent)) / 100;
-  const r = Math.round(59 + (5 - 59) * p);
-  const g = Math.round(130 + (150 - 130) * p);
-  const b = Math.round(246 + (105 - 246) * p);
-  return `rgb(${r}, ${g}, ${b})`;
+  let r: number;
+  let g: number;
+  let b: number;
+  if (p <= 0.5) {
+    const t = p * 2; // 0..1 over first half
+    r = 59 + (168 - 59) * t;
+    g = 130 + (85 - 130) * t;
+    b = 246 + (247 - 246) * t;
+  } else {
+    const t = (p - 0.5) * 2; // 0..1 over second half
+    r = 168 + (5 - 168) * t;
+    g = 85 + (150 - 85) * t;
+    b = 247 + (105 - 247) * t;
+  }
+  return `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`;
 }
 
 function InkAprTooltipContent({
@@ -188,11 +199,15 @@ const InkAprCalculator = ({
 
   const handleFdvInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    setFdvInputValue(value);
+    const trimmed = value.trim();
     const parsed = parseFloat(value);
-    if (!Number.isNaN(parsed) && parsed > 0) {
-      updateFromFdv(parsed);
+    if (trimmed === '' || Number.isNaN(parsed) || parsed <= 0) {
+      setFdvInputValue('1.00');
+      updateFromFdv(DEFAULT_FDV);
+      return;
     }
+    setFdvInputValue(value);
+    updateFromFdv(parsed);
   }, [updateFromFdv]);
 
   const handlePointClick = useCallback((fdv: number) => {
@@ -347,7 +362,7 @@ const InkAprCalculator = ({
                   ref={trackRef}
                   className="relative h-1.5 flex-1 rounded-full cursor-pointer select-none touch-none"
                   style={{
-                    background: 'linear-gradient(to right, rgb(var(--ds-blue-500-rgb)), rgb(var(--ds-emerald-600-rgb)))',
+                    background: 'linear-gradient(to right, rgb(var(--ds-blue-500-rgb)), rgb(var(--ds-purple-500-rgb)), rgb(var(--ds-emerald-600-rgb)))',
                   }}
                   onMouseDown={handleMouseDown}
                   onTouchStart={handleTouchStart}
@@ -425,7 +440,7 @@ const InkAprCalculator = ({
 
               {/* Reference point labels */}
               {displayPoints.map((point) => {
-                const isSelected = Math.abs(currentFdvBillions - point.fdv) < 0.3;
+                const isSelected = Math.abs(currentFdvBillions - point.fdv) < 0.02;
                 return (
                   <div
                     key={point.id}
