@@ -695,13 +695,10 @@ const InkAprCalculator = ({
         <span className="ds-text-12 text-muted-foreground shrink-0">
           to update incentive APR
         </span>
-        <span className="ds-text-11 text-muted-foreground/50 ml-auto tabular-nums">
-          = ${formatInkPrice(currentFdvBillions)}/INK
-        </span>
       </div>
 
-      {/* Slider - full width on its own row with extra top padding for tooltip */}
-      <div className="flex flex-col gap-[var(--ds-space-1)] pt-5">
+      {/* Slider - full width on its own row with reduced top padding */}
+      <div className="flex flex-col gap-[var(--ds-space-1)] pt-4">
         <div
           ref={!isXl ? trackRef : undefined}
           className="relative h-2 rounded-full cursor-pointer select-none touch-none"
@@ -754,7 +751,7 @@ const InkAprCalculator = ({
         </div>
       </div>
 
-      {/* Collapsible Reference section */}
+      {/* Collapsible Reference section with price on the right */}
       <Collapsible open={isReferenceOpen} onOpenChange={setIsReferenceOpen}>
         <CollapsibleTrigger className="flex items-center gap-[var(--ds-space-1-5)] ds-text-11 text-muted-foreground hover:text-foreground transition-colors w-full">
           <ChevronDown 
@@ -762,6 +759,9 @@ const InkAprCalculator = ({
           />
           <span>Reference FDVs</span>
           <span className="ds-text-10 text-muted-foreground/50">(CEX chain tokens)</span>
+          <span className="ds-text-11 text-muted-foreground/50 ml-auto tabular-nums">
+            = ${formatInkPrice(currentFdvBillions)}/INK
+          </span>
         </CollapsibleTrigger>
         <CollapsibleContent className="pt-[var(--ds-space-2)]">
           <div className="flex flex-wrap gap-[var(--ds-space-2)]">
