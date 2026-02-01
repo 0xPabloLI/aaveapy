@@ -144,13 +144,26 @@ export function MobileTooltip({
   onClose,
   title,
   children,
+  variant = 'default',
+  hideTitle = false,
 }: {
   isOpen: boolean;
   onClose: () => void;
   title: string;
   children: React.ReactNode;
+  variant?: 'default' | 'neutral';
+  hideTitle?: boolean;
 }) {
   if (!isOpen) return null;
+
+  const headerClass =
+    variant === 'neutral'
+      ? 'bg-muted/60 px-4 py-2.5 rounded-t-xl flex items-center justify-between border-b border-border'
+      : 'ds-bg-emerald-500-10 px-4 py-2.5 rounded-t-xl flex items-center justify-between border-b ds-border-emerald-200';
+  const titleClass =
+    variant === 'neutral'
+      ? 'ds-text-14 font-semibold text-foreground'
+      : 'ds-text-emerald-700 ds-text-14 font-semibold';
 
   return createPortal(
     <>
@@ -165,18 +178,34 @@ export function MobileTooltip({
         role="dialog"
         aria-modal="true"
       >
-        <div className="ds-bg-emerald-500-10 px-4 py-2.5 rounded-t-xl flex items-center justify-between border-b ds-border-emerald-200">
-          <h3 className="ds-text-emerald-700 ds-text-14 font-semibold">{title}</h3>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-muted-foreground hover:text-foreground transition-colors"
-            aria-label="Close"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-        <div className="px-4 py-3.5 rounded-b-xl space-y-3 bg-card">{children}</div>
+        {hideTitle ? (
+          <div className="relative px-4 py-3.5 rounded-xl space-y-3 bg-card">
+            <button
+              type="button"
+              onClick={onClose}
+              className="absolute top-3 right-3 text-muted-foreground hover:text-foreground transition-colors"
+              aria-label="Close"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            {children}
+          </div>
+        ) : (
+          <>
+            <div className={headerClass}>
+              <h3 className={titleClass}>{title}</h3>
+              <button
+                type="button"
+                onClick={onClose}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="Close"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="px-4 py-3.5 rounded-b-xl space-y-3 bg-card">{children}</div>
+          </>
+        )}
       </div>
     </>,
     document.body
@@ -191,6 +220,8 @@ export function DesktopTooltip({
   onMouseLeave,
   title,
   children,
+  variant = 'default',
+  hideTitle = false,
 }: {
   isOpen: boolean;
   alignLeft: boolean;
@@ -199,10 +230,20 @@ export function DesktopTooltip({
   onMouseLeave: () => void;
   title: string;
   children: React.ReactNode;
+  variant?: 'default' | 'neutral';
+  hideTitle?: boolean;
 }) {
   if (!isOpen || !triggerRect) return null;
 
   const position = calculateTooltipPosition(triggerRect, alignLeft);
+  const headerClass =
+    variant === 'neutral'
+      ? 'bg-muted/60 px-4 py-2 rounded-t-xl border-b border-border'
+      : 'ds-bg-emerald-500-10 px-4 py-2 rounded-t-xl border-b ds-border-emerald-200';
+  const titleClass =
+    variant === 'neutral'
+      ? 'ds-text-14 font-semibold text-foreground'
+      : 'ds-text-emerald-700 ds-text-14 font-semibold';
 
   return createPortal(
     <div
@@ -218,10 +259,16 @@ export function DesktopTooltip({
       onMouseLeave={onMouseLeave}
       role="tooltip"
     >
-      <div className="ds-bg-emerald-500-10 px-4 py-2 rounded-t-xl border-b ds-border-emerald-200">
-        <h3 className="ds-text-emerald-700 ds-text-14 font-semibold">{title}</h3>
-      </div>
-      <div className="px-4 py-3 rounded-b-xl space-y-2.5 bg-card">{children}</div>
+      {hideTitle ? (
+        <div className="px-4 py-3 rounded-xl space-y-2.5 bg-card">{children}</div>
+      ) : (
+        <>
+          <div className={headerClass}>
+            <h3 className={titleClass}>{title}</h3>
+          </div>
+          <div className="px-4 py-3 rounded-b-xl space-y-2.5 bg-card">{children}</div>
+        </>
+      )}
     </div>,
     document.body
   );
