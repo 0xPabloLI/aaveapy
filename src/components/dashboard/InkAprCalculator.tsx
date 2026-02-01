@@ -340,44 +340,39 @@ const InkAprCalculator = ({
             <span className="ds-text-14 md:ds-text-16 font-semibold text-foreground whitespace-nowrap">
               Ink incentive APR calculator
             </span>
+            <InfoIconButton
+              aria-label="Incentive APR formula"
+              isOpen={isAprTooltipOpen}
+              onToggle={() => setIsAprTooltipOpen((o) => !o)}
+              onClose={() => setIsAprTooltipOpen(false)}
+            >
+              {(triggerRect) =>
+                isMobile ? (
+                  <MobileTooltip
+                    isOpen={isAprTooltipOpen}
+                    onClose={() => setIsAprTooltipOpen(false)}
+                    title="Incentive APR formula"
+                  >
+                    <InkAprTooltipContent formatInkPrice={formatInkPrice} currentFdvBillions={currentFdvBillions} />
+                  </MobileTooltip>
+                ) : (
+                  <DesktopTooltip
+                    isOpen={isAprTooltipOpen}
+                    alignLeft
+                    triggerRect={triggerRect}
+                    onMouseEnter={() => setIsAprTooltipOpen(true)}
+                    onMouseLeave={() => setIsAprTooltipOpen(false)}
+                    title="Incentive APR formula"
+                  >
+                    <InkAprTooltipContent formatInkPrice={formatInkPrice} currentFdvBillions={currentFdvBillions} />
+                  </DesktopTooltip>
+                )
+              }
+            </InfoIconButton>
           </div>
-          <div className="flex flex-col items-center text-center text-muted-foreground ds-text-11">
-            <span>Enter your estimated $INK FDV</span>
-            <span className="relative inline-block">
-              to update the incentive APR
-              <span className="absolute -right-5 top-0 inline-flex items-center">
-                <InfoIconButton
-                  aria-label="Incentive APR formula"
-                  isOpen={isAprTooltipOpen}
-                  onToggle={() => setIsAprTooltipOpen((o) => !o)}
-                  onClose={() => setIsAprTooltipOpen(false)}
-                >
-                  {(triggerRect) =>
-                    isMobile ? (
-                      <MobileTooltip
-                        isOpen={isAprTooltipOpen}
-                        onClose={() => setIsAprTooltipOpen(false)}
-                        title="Incentive APR formula"
-                      >
-                        <InkAprTooltipContent formatInkPrice={formatInkPrice} currentFdvBillions={currentFdvBillions} />
-                      </MobileTooltip>
-                    ) : (
-                      <DesktopTooltip
-                        isOpen={isAprTooltipOpen}
-                        alignLeft
-                        triggerRect={triggerRect}
-                        onMouseEnter={() => setIsAprTooltipOpen(true)}
-                        onMouseLeave={() => setIsAprTooltipOpen(false)}
-                        title="Incentive APR formula"
-                      >
-                        <InkAprTooltipContent formatInkPrice={formatInkPrice} currentFdvBillions={currentFdvBillions} />
-                      </DesktopTooltip>
-                    )
-                  }
-                </InfoIconButton>
-              </span>
-            </span>
-          </div>
+          <span className="ds-text-11 text-muted-foreground pl-7">
+            Enter your estimated $INK FDV to update the incentive APR
+          </span>
         </div>
 
         {/* Center: Slider - aligned with title row */}
@@ -667,11 +662,11 @@ const InkAprCalculator = ({
 
       {/* FDV Input row with inline description */}
       <div className="flex items-center gap-[var(--ds-space-2)] flex-wrap">
-        <span className="ds-text-12 text-muted-foreground shrink-0">
+        <span className="ds-text-11 text-muted-foreground shrink-0">
           Enter $INK FDV
         </span>
-        <span className="inline-flex items-center bg-muted/30 border border-border/70 rounded-md px-2.5 py-1.5 h-8 focus-within:border-foreground/40 transition-colors">
-          <span className="ds-text-14 text-muted-foreground/80 font-medium">$</span>
+        <span className="inline-flex items-center bg-muted/30 border border-border/70 rounded-md px-2 h-7 focus-within:border-foreground/40 transition-colors">
+          <span className="ds-text-11 text-muted-foreground/80 font-medium">$</span>
           <Input
             type="number"
             min="0"
@@ -687,18 +682,18 @@ const InkAprCalculator = ({
             onBlur={handleFdvInputBlur}
             onKeyDown={handleFdvInputKeyDown}
             placeholder={isFdvInputFocused ? '' : '1.00'}
-            className="w-16 px-1 ds-text-14 font-semibold tabular-nums bg-transparent border-0 shadow-none text-foreground focus:text-foreground focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 h-auto p-0 text-center appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            className="w-12 px-1 ds-text-11 font-semibold tabular-nums bg-transparent border-0 shadow-none text-foreground focus:text-foreground focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 h-auto p-0 text-center appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             aria-label="Estimated $INK FDV in billions"
           />
-          <span className="ds-text-11 text-muted-foreground/60 ml-0.5">B</span>
+          <span className="ds-text-10 text-muted-foreground/60">B</span>
         </span>
-        <span className="ds-text-12 text-muted-foreground shrink-0">
+        <span className="ds-text-11 text-muted-foreground shrink-0">
           to update incentive APR
         </span>
       </div>
 
-      {/* Slider - full width on its own row with reduced top padding */}
-      <div className="flex flex-col gap-[var(--ds-space-1)] pt-4">
+      {/* Slider - full width on its own row */}
+      <div className="flex flex-col">
         <div
           ref={!isXl ? trackRef : undefined}
           className="relative h-2 rounded-full cursor-pointer select-none touch-none"
@@ -733,21 +728,17 @@ const InkAprCalculator = ({
             }}
           />
 
-          {/* Tooltip - positioned above slider with enough space */}
+          {/* Tooltip with background - no extra spacing needed */}
           {(showTooltip || isDragging) && (
             <div
-              className="absolute -top-5 -translate-x-1/2 text-foreground ds-text-13 font-semibold tabular-nums whitespace-nowrap pointer-events-none"
+              className="absolute -top-7 -translate-x-1/2 bg-card/95 backdrop-blur-sm border border-border/50 rounded-md px-1.5 py-0.5 shadow-sm pointer-events-none"
               style={{ left: `${sliderPosition}%` }}
             >
-              ${formatFdv(currentFdvBillions)}
+              <span className="text-foreground ds-text-11 font-semibold tabular-nums whitespace-nowrap">
+                ${formatFdv(currentFdvBillions)}B
+              </span>
             </div>
           )}
-        </div>
-
-        {/* Slider scale labels */}
-        <div className="flex justify-between ds-text-10 text-muted-foreground/50 px-0.5">
-          <span>$0</span>
-          <span>${formatFdv(MAX_FDV)}</span>
         </div>
       </div>
 
