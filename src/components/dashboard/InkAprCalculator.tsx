@@ -621,59 +621,57 @@ const InkAprCalculator = ({
   }, []);
 
   // Render compact layout directly as JSX (not as component call)
+  // Render compact layout directly as JSX (not as component call)
   const compactLayoutJsx = (
-    <div className="flex flex-col gap-[var(--ds-space-3)]">
+    <div className="flex flex-col gap-[var(--ds-space-2-5)]">
       {/* Header row: Logo + Title + Info */}
-      <div className="flex flex-col gap-1">
-        <div className="flex items-center gap-[var(--ds-space-2)]">
-          <img
-            src="/icons/networks/ink.svg"
-            alt="INK"
-            className="w-5 h-5 shrink-0"
-          />
-          <span className="ds-text-14 font-semibold text-foreground">
-            Ink incentive APR calculator
-          </span>
-          <InfoIconButton
-            aria-label="Incentive APR formula"
-            isOpen={isAprTooltipOpen}
-            onToggle={() => setIsAprTooltipOpen((o) => !o)}
-            onClose={() => setIsAprTooltipOpen(false)}
-          >
-            {(triggerRect) =>
-              isMobile ? (
-                <MobileTooltip
-                  isOpen={isAprTooltipOpen}
-                  onClose={() => setIsAprTooltipOpen(false)}
-                  title="Incentive APR formula"
-                >
-                  <InkAprTooltipContent formatInkPrice={formatInkPrice} currentFdvBillions={currentFdvBillions} />
-                </MobileTooltip>
-              ) : (
-                <DesktopTooltip
-                  isOpen={isAprTooltipOpen}
-                  alignLeft
-                  triggerRect={triggerRect}
-                  onMouseEnter={() => setIsAprTooltipOpen(true)}
-                  onMouseLeave={() => setIsAprTooltipOpen(false)}
-                  title="Incentive APR formula"
-                >
-                  <InkAprTooltipContent formatInkPrice={formatInkPrice} currentFdvBillions={currentFdvBillions} />
-                </DesktopTooltip>
-              )
-            }
-          </InfoIconButton>
-        </div>
-        <span className="ds-text-11 text-muted-foreground pl-7">
-          Enter your estimated $INK FDV to update the incentive APR
+      <div className="flex items-center gap-[var(--ds-space-2)]">
+        <img
+          src="/icons/networks/ink.svg"
+          alt="INK"
+          className="w-5 h-5 shrink-0"
+        />
+        <span className="ds-text-14 font-semibold text-foreground">
+          Ink incentive APR calculator
         </span>
+        <InfoIconButton
+          aria-label="Incentive APR formula"
+          isOpen={isAprTooltipOpen}
+          onToggle={() => setIsAprTooltipOpen((o) => !o)}
+          onClose={() => setIsAprTooltipOpen(false)}
+        >
+          {(triggerRect) =>
+            isMobile ? (
+              <MobileTooltip
+                isOpen={isAprTooltipOpen}
+                onClose={() => setIsAprTooltipOpen(false)}
+                title="Incentive APR formula"
+              >
+                <InkAprTooltipContent formatInkPrice={formatInkPrice} currentFdvBillions={currentFdvBillions} />
+              </MobileTooltip>
+            ) : (
+              <DesktopTooltip
+                isOpen={isAprTooltipOpen}
+                alignLeft
+                triggerRect={triggerRect}
+                onMouseEnter={() => setIsAprTooltipOpen(true)}
+                onMouseLeave={() => setIsAprTooltipOpen(false)}
+                title="Incentive APR formula"
+              >
+                <InkAprTooltipContent formatInkPrice={formatInkPrice} currentFdvBillions={currentFdvBillions} />
+              </DesktopTooltip>
+            )
+          }
+        </InfoIconButton>
       </div>
 
-      {/* FDV Input row */}
-      <div className="flex items-center gap-[var(--ds-space-2)]">
-        <span className="ds-text-12 text-muted-foreground shrink-0">FDV (B)</span>
-        <span className="inline-flex items-center bg-muted/30 border border-border/70 rounded-md px-2 py-1 h-7 focus-within:border-foreground/40 transition-colors">
-          <span className="ds-text-13 text-muted-foreground/80">$</span>
+      {/* FDV Input row with inline description */}
+      <div className="flex items-center gap-[var(--ds-space-2)] flex-wrap">
+        <span className="ds-text-12 text-muted-foreground shrink-0">
+          Enter $INK FDV
+        </span>
+        <span className="inline-flex items-center bg-muted/30 border border-border/70 rounded-md px-2.5 py-1.5 h-8 focus-within:border-foreground/40 transition-colors">
+          <span className="ds-text-14 text-muted-foreground/80 font-medium">$</span>
           <Input
             type="number"
             min="0"
@@ -689,12 +687,16 @@ const InkAprCalculator = ({
             onBlur={handleFdvInputBlur}
             onKeyDown={handleFdvInputKeyDown}
             placeholder={isFdvInputFocused ? '' : '1.00'}
-            className="w-14 px-1 ds-text-13 font-medium tabular-nums bg-transparent border-0 shadow-none text-foreground focus:text-foreground focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 h-auto p-0 text-center appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            className="w-16 px-1 ds-text-14 font-semibold tabular-nums bg-transparent border-0 shadow-none text-foreground focus:text-foreground focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 h-auto p-0 text-center appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             aria-label="Estimated $INK FDV in billions"
           />
+          <span className="ds-text-11 text-muted-foreground/60 ml-0.5">B</span>
         </span>
-        <span className="ds-text-11 text-muted-foreground/60 ml-auto">
-          = ${formatInkPrice(currentFdvBillions)} per INK
+        <span className="ds-text-12 text-muted-foreground shrink-0">
+          to update incentive APR
+        </span>
+        <span className="ds-text-11 text-muted-foreground/50 ml-auto tabular-nums">
+          = ${formatInkPrice(currentFdvBillions)}/INK
         </span>
       </div>
 
