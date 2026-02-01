@@ -18,7 +18,7 @@ import LoadingState from '@/components/dashboard/LoadingState';
 import PullToRefresh from '@/components/dashboard/PullToRefresh';
 import IncentiveTooltip from '@/components/dashboard/IncentiveTooltip';
 import InkAprCalculator from '@/components/dashboard/InkAprCalculator';
-import { getCachedMarkets, getCachedMarketStats, getCachedMarketsList, getCachedTydroRate, setCachedTydroRate } from '@/lib/cache';
+import { getCachedMarkets, getCachedMarketStats, getCachedMarketsList, setCachedTydroRate } from '@/lib/cache';
 import { TYDRO_POINT_TO_USD_RATE } from '@/lib/tydro';
 import { AlertTriangle } from 'lucide-react';
 
@@ -41,10 +41,8 @@ const Index = () => {
     accentTextClass?: string;
     accentBgClass?: string;
   } | null>(null);
-  const [tydroPointToUsdRateInput, setTydroPointToUsdRateInput] = useState(() => {
-    const cached = getCachedTydroRate();
-    return cached !== null ? String(cached) : TYDRO_POINT_TO_USD_RATE.toFixed(2);
-  });
+  // Always start at FDV default 1 on load/refresh (do not restore from cache)
+  const [tydroPointToUsdRateInput, setTydroPointToUsdRateInput] = useState('1.0000');
   const tydroPointToUsdRate = useMemo(() => {
     const parsed = parseFloat(tydroPointToUsdRateInput);
     if (Number.isNaN(parsed)) return TYDRO_POINT_TO_USD_RATE;
