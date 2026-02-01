@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ExternalLink, Info } from 'lucide-react';
+import { ChevronDown, ExternalLink, Info } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { InfoIconButton, DesktopTooltip, MobileTooltip } from '@/components/dashboard/AprApyToggle';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useCoingeckoFdv } from '@/hooks/useCoingeckoFdv';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -318,6 +319,9 @@ const InkAprCalculator = ({
     };
   }, []);
 
+  // State for collapsible reference section
+  const [isReferenceOpen, setIsReferenceOpen] = useState(false);
+
   // Compact layout for smaller screens (< xl breakpoint)
   const CompactLayout = () => (
     <div className="flex flex-col gap-[var(--ds-space-3)]">
@@ -362,109 +366,141 @@ const InkAprCalculator = ({
         </InfoIconButton>
       </div>
 
-      {/* FDV Input + Slider row */}
-      <div className="flex items-center gap-[var(--ds-space-3)]">
-        {/* FDV Input */}
-        <div className="flex items-center gap-1.5 shrink-0">
-          <span className="ds-text-11 text-muted-foreground/70">FDV (B)</span>
-          <span className="inline-flex items-center bg-muted/30 border border-border/70 rounded-md px-1.5 py-px h-5 align-middle focus-within:border-foreground/40 transition-colors">
-            <span className="ds-text-11 text-muted-foreground/80">$</span>
-            <Input
-              type="number"
-              min="0"
-              max="120"
-              step="0.01"
-              inputMode="decimal"
-              value={fdvInputValue}
-              onChange={handleFdvInputChange}
-              onFocus={() => {
-                setIsFdvInputFocused(true);
-                setFdvInputValue('');
-              }}
-              onBlur={handleFdvInputBlur}
-              onKeyDown={handleFdvInputKeyDown}
-              placeholder={isFdvInputFocused ? '' : '1.00'}
-              className="w-10 px-0.5 !text-[11px] font-medium tabular-nums bg-transparent border-0 shadow-none text-muted-foreground/80 focus:text-muted-foreground/50 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 h-auto p-0 text-center appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              aria-label="Estimated $INK FDV in billions"
-            />
-          </span>
-        </div>
-
-        {/* Slider */}
-        <div className="flex-1">
-          <div
-            ref={trackRef}
-            className="relative h-2 rounded-full cursor-pointer select-none touch-none"
-            style={{
-              background: 'linear-gradient(to right, rgb(var(--ds-blue-500-rgb)), rgb(var(--ds-purple-500-rgb)), rgb(var(--ds-emerald-600-rgb)))',
+      {/* FDV Input row */}
+      <div className="flex items-center gap-[var(--ds-space-2)]">
+        <span className="ds-text-12 text-muted-foreground shrink-0">FDV (B)</span>
+        <span className="inline-flex items-center bg-muted/30 border border-border/70 rounded-md px-2 py-1 h-7 focus-within:border-foreground/40 transition-colors">
+          <span className="ds-text-13 text-muted-foreground/80">$</span>
+          <Input
+            type="number"
+            min="0"
+            max="120"
+            step="0.01"
+            inputMode="decimal"
+            value={fdvInputValue}
+            onChange={handleFdvInputChange}
+            onFocus={() => {
+              setIsFdvInputFocused(true);
+              setFdvInputValue('');
             }}
-            onMouseDown={handleMouseDown}
-            onTouchStart={handleTouchStart}
-            onKeyDown={handleKeyDown}
-            role="slider"
-            aria-valuemin={MIN_FDV}
-            aria-valuemax={MAX_FDV}
-            aria-valuenow={currentFdvBillions}
-            aria-label="FDV slider"
-            tabIndex={0}
-          >
-            {/* Reference point markers */}
-            {displayPoints.map((point) => (
-              <div
-                key={`marker-${point.id}`}
-                className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-white dark:bg-card border-2 border-foreground/90 shadow-sm pointer-events-none"
-                style={{ left: `${point.position}%` }}
-              />
-            ))}
+            onBlur={handleFdvInputBlur}
+            onKeyDown={handleFdvInputKeyDown}
+            placeholder={isFdvInputFocused ? '' : '1.00'}
+            className="w-14 px-1 ds-text-13 font-medium tabular-nums bg-transparent border-0 shadow-none text-foreground focus:text-foreground focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 h-auto p-0 text-center appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            aria-label="Estimated $INK FDV in billions"
+          />
+        </span>
+        <span className="ds-text-11 text-muted-foreground/60 ml-auto">
+          = ${formatInkPrice(currentFdvBillions)} per INK
+        </span>
+      </div>
 
-            {/* Current value thumb */}
+      {/* Slider - full width on its own row */}
+      <div className="flex flex-col gap-[var(--ds-space-1)]">
+        <div
+          ref={trackRef}
+          className="relative h-2 rounded-full cursor-pointer select-none touch-none"
+          style={{
+            background: 'linear-gradient(to right, rgb(var(--ds-blue-500-rgb)), rgb(var(--ds-purple-500-rgb)), rgb(var(--ds-emerald-600-rgb)))',
+          }}
+          onMouseDown={handleMouseDown}
+          onTouchStart={handleTouchStart}
+          onKeyDown={handleKeyDown}
+          role="slider"
+          aria-valuemin={MIN_FDV}
+          aria-valuemax={MAX_FDV}
+          aria-valuenow={currentFdvBillions}
+          aria-label="FDV slider"
+          tabIndex={0}
+        >
+          {/* Reference point markers */}
+          {displayPoints.map((point) => (
             <div
-              className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-4 h-4 rounded-full border-2 border-white/90 shadow-md pointer-events-none transition-colors duration-150"
-              style={{
-                left: `${sliderPosition}%`,
-                background: positionToThumbColor(sliderPosition),
-              }}
+              key={`marker-${point.id}`}
+              className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-white dark:bg-card border-2 border-foreground/90 shadow-sm pointer-events-none"
+              style={{ left: `${point.position}%` }}
             />
+          ))}
 
-            {/* Tooltip */}
-            {(showTooltip || isDragging) && (
-              <div
-                className="absolute -top-6 -translate-x-1/2 text-foreground ds-text-13 font-semibold tabular-nums whitespace-nowrap z-20"
-                style={{ left: `${sliderPosition}%` }}
-              >
-                ${formatFdv(currentFdvBillions)}
-              </div>
-            )}
-          </div>
+          {/* Current value thumb */}
+          <div
+            className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-4 h-4 rounded-full border-2 border-white/90 shadow-md pointer-events-none transition-colors duration-150"
+            style={{
+              left: `${sliderPosition}%`,
+              background: positionToThumbColor(sliderPosition),
+            }}
+          />
+
+          {/* Tooltip */}
+          {(showTooltip || isDragging) && (
+            <div
+              className="absolute -top-6 -translate-x-1/2 text-foreground ds-text-13 font-semibold tabular-nums whitespace-nowrap z-20"
+              style={{ left: `${sliderPosition}%` }}
+            >
+              ${formatFdv(currentFdvBillions)}
+            </div>
+          )}
+        </div>
+
+        {/* Slider scale labels */}
+        <div className="flex justify-between ds-text-10 text-muted-foreground/50 px-0.5">
+          <span>$0</span>
+          <span>${formatFdv(MAX_FDV)}</span>
         </div>
       </div>
 
-      {/* Quick preset buttons */}
-      <div className="flex items-center gap-[var(--ds-space-2)] flex-wrap">
-        <span className="ds-text-10 text-muted-foreground/60 shrink-0">Presets:</span>
-        {displayPoints.filter(p => !p.isDefault).slice(0, 4).map((point) => {
-          const isSelected = Math.abs(currentFdvBillions - point.fdv) < 0.02;
-          const pointRgb = isSelected ? positionToThumbRgb(point.position) : null;
-          return (
-            <button
-              key={point.id}
-              onClick={() => handlePointClick(point.fdv)}
-              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md ds-text-10 transition-all duration-200 ${
-                isSelected
-                  ? 'shadow-sm'
-                  : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
-              }`}
-              style={pointRgb ? {
-                backgroundColor: `rgba(${pointRgb.r}, ${pointRgb.g}, ${pointRgb.b}, 0.12)`,
-                color: `rgb(${pointRgb.r}, ${pointRgb.g}, ${pointRgb.b})`,
-              } : undefined}
-            >
-              <span className="font-medium tabular-nums">${formatFdv(point.fdv)}</span>
-              <span className="opacity-70">{point.exchange}</span>
-            </button>
-          );
-        })}
-      </div>
+      {/* Collapsible Reference section */}
+      <Collapsible open={isReferenceOpen} onOpenChange={setIsReferenceOpen}>
+        <CollapsibleTrigger className="flex items-center gap-[var(--ds-space-1-5)] ds-text-11 text-muted-foreground hover:text-foreground transition-colors w-full">
+          <ChevronDown 
+            className={`w-3.5 h-3.5 transition-transform duration-200 ${isReferenceOpen ? 'rotate-180' : ''}`} 
+          />
+          <span>Reference FDVs</span>
+          <span className="ds-text-10 text-muted-foreground/50">(CEX chain tokens)</span>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="pt-[var(--ds-space-2)]">
+          <div className="flex flex-wrap gap-[var(--ds-space-2)]">
+            {displayPoints.map((point) => {
+              const isSelected = Math.abs(currentFdvBillions - point.fdv) < 0.02;
+              const pointRgb = isSelected ? positionToThumbRgb(point.position) : null;
+              return (
+                <button
+                  key={point.id}
+                  onClick={() => handlePointClick(point.fdv)}
+                  className={`inline-flex flex-col items-start gap-0.5 px-2.5 py-1.5 rounded-lg ds-text-11 transition-all duration-200 min-w-[72px] ${
+                    isSelected
+                      ? 'shadow-sm'
+                      : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
+                  }`}
+                  style={pointRgb ? {
+                    backgroundColor: `rgba(${pointRgb.r}, ${pointRgb.g}, ${pointRgb.b}, 0.12)`,
+                    color: `rgb(${pointRgb.r}, ${pointRgb.g}, ${pointRgb.b})`,
+                  } : undefined}
+                >
+                  <span className="font-semibold tabular-nums">${formatFdv(point.fdv)}</span>
+                  {point.isDefault ? (
+                    <span className="ds-text-10 opacity-70">Default</span>
+                  ) : (
+                    <>
+                      <span className="ds-text-10 opacity-70">{point.exchange}</span>
+                      <a
+                        href={point.link}
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="inline-flex items-center gap-0.5 ds-text-9 opacity-60 hover:opacity-100 transition-opacity"
+                      >
+                        {point.chain}/{point.token}
+                        <ExternalLink className="w-2.5 h-2.5" aria-hidden />
+                      </a>
+                    </>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
     </div>
   );
 
