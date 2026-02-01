@@ -530,17 +530,17 @@ const InkAprCalculator = ({
                   <div
                     key={point.id}
                     onClick={() => handlePointClick(point.fdv)}
-                    className="absolute flex flex-col items-center justify-start pt-0.5 h-full cursor-pointer pointer-events-auto rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+                    className="absolute flex flex-col items-start justify-start pt-0.5 h-full cursor-pointer pointer-events-auto rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
                     style={{ left: `${point.position}%`, transform: 'translateX(-50%)' }}
                     role="button"
                     aria-label={point.isDefault ? `Set FDV to default (${point.fdv})` : `Set FDV to ${point.exchange} (${point.fdv.toFixed(2)})`}
                   >
-                    <div className="flex flex-col items-center leading-none gap-[var(--ds-space-0-5)]">
+                    <div className="flex flex-col items-start leading-none gap-[var(--ds-space-0-5)] w-full">
                       {/* Pill: only top two lines (FDV + exchange/Default), py-0 so line spacing equals gap to line 3 */}
                       <div
                         onMouseEnter={() => setPillHoveredPointId(point.id)}
                         onMouseLeave={() => setPillHoveredPointId(null)}
-                        className={`rounded-md py-0 flex flex-col items-center leading-none gap-[var(--ds-space-0-5)] transition-all duration-200 ${
+                        className={`rounded-md py-0 flex flex-col items-start leading-none gap-[var(--ds-space-0-5)] transition-all duration-200 ${
                           pointRgb ? 'px-[var(--ds-space-2-5)]' : 'px-[var(--ds-space-1-5)]'
                         } ${
                           !isSelected && (pillHoveredPointId === point.id && linkHoveredPointId !== point.id)
@@ -571,7 +571,7 @@ const InkAprCalculator = ({
                           </span>
                         )}
                       </div>
-                      {/* Third line: chain/token link, outside the pill */}
+                      {/* Third line: chain/token link, outside the pill — same left padding as pill so both lines align */}
                       {!point.isDefault && (
                         <a
                           href={point.link}
@@ -582,6 +582,8 @@ const InkAprCalculator = ({
                           onMouseLeave={() => setLinkHoveredPointId(null)}
                           title="Open CoinGecko (new tab)"
                           className={`inline-flex items-center gap-0.5 ds-text-9 md:ds-text-10 whitespace-nowrap leading-none transition-colors ${
+                            pointRgb ? 'pl-[var(--ds-space-2-5)]' : 'pl-[var(--ds-space-1-5)]'
+                          } ${
                             linkHoveredPointId === point.id ? 'text-foreground' : !pointRgb ? 'text-muted-foreground/50 hover:text-foreground' : 'hover:text-foreground'
                           }`}
                           style={pointRgb && linkHoveredPointId !== point.id ? { color: `rgba(${pointRgb.r}, ${pointRgb.g}, ${pointRgb.b}, 0.72)` } : undefined}
