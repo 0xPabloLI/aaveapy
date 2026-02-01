@@ -231,7 +231,7 @@ function AprTooltipContent() {
   return (
     <>
       <div className="bg-muted/50 rounded-lg border border-border px-3 py-2">
-        <code className="ds-text-12 font-mono font-semibold text-foreground whitespace-nowrap">
+        <code className="ds-text-12 font-mono font-medium text-foreground whitespace-nowrap">
           APR = Native APY + Incentive APR
         </code>
       </div>
@@ -264,7 +264,7 @@ function ApyTooltipContent() {
   return (
     <>
       <div className="bg-muted/50 rounded-lg border border-border px-3 py-2">
-        <code className="ds-text-12 font-mono font-semibold text-foreground whitespace-nowrap">
+        <code className="ds-text-12 font-mono font-medium text-foreground whitespace-nowrap">
           APY = Native APY + Incentive APY
         </code>
       </div>
@@ -285,7 +285,7 @@ function ApyTooltipContent() {
         </li>
       </ul>
       <div className="ds-bg-emerald-500-10 border ds-border-emerald-200 rounded-lg px-3 py-2">
-        <code className="ds-text-11 font-mono font-semibold ds-text-emerald-700 whitespace-nowrap">
+        <code className="ds-text-11 font-mono font-medium ds-text-emerald-700 whitespace-nowrap">
           Incentive APY = (1 + APR/12)¹² − 1
         </code>
       </div>

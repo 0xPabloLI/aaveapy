@@ -95,12 +95,14 @@ function InkAprTooltipContent({
 }) {
   return (
     <>
-      <div className="bg-muted/50 rounded-lg border border-border px-3 py-2">
-        <code className="ds-text-12 font-mono font-semibold text-foreground whitespace-nowrap">
-          APR = daily_points × $INK × 365%
-        </code>
+      <div className="flex justify-center">
+        <div className="bg-muted/50 rounded-lg border border-border px-3 py-2">
+          <code className="ds-text-12 font-mono font-medium text-foreground whitespace-nowrap">
+            APR = daily_points × $INK × 365%
+          </code>
+        </div>
       </div>
-      <div className="flex items-center gap-1.5 ds-text-12 text-muted-foreground">
+      <div className="flex items-center justify-center gap-1.5 ds-text-12 text-muted-foreground">
         <img
           src="/icons/partners/inktoken.svg"
           alt="INK"
