@@ -618,7 +618,7 @@ const InkAprCalculator = ({
   // Render compact layout directly as JSX (not as component call)
   const compactLayoutJsx = (
     <div className="flex flex-col gap-[var(--ds-space-2)]">
-      {/* Header row: Logo + Title + (Tablet: inline description) + Info */}
+      {/* Header row: Logo + Title + Info + (Tablet: inline FDV input) */}
       <div className="flex items-center gap-[var(--ds-space-2)] flex-wrap">
         <img
           src="/icons/networks/ink.svg"
@@ -660,7 +660,7 @@ const InkAprCalculator = ({
         {/* Tablet: inline FDV input - hidden on mobile, shown on sm+ */}
         <div className="hidden sm:flex items-center gap-[var(--ds-space-1-5)] ml-auto">
           <span className="ds-text-11 text-muted-foreground">FDV</span>
-          <span className="inline-flex items-center bg-muted/30 border border-border/70 rounded-md px-2 h-7 focus-within:border-foreground/40 transition-colors">
+          <span className="inline-flex items-center bg-muted/30 border border-border/70 rounded-md px-2 h-7 focus-within:border-[rgb(var(--ds-brand-magenta-rgb))] transition-colors">
             <span className="ds-text-11 text-muted-foreground/80 font-medium">$</span>
             <Input
               type="number"
@@ -688,10 +688,15 @@ const InkAprCalculator = ({
         </div>
       </div>
 
+      {/* Subtitle - shown on all compact layouts */}
+      <span className="ds-text-11 text-muted-foreground -mt-1">
+        Enter your estimated $INK FDV to update the incentive APR
+      </span>
+
       {/* Mobile only: FDV input row - shown on mobile, hidden on sm+ */}
       <div className="flex sm:hidden items-center gap-[var(--ds-space-2)]">
         <span className="ds-text-11 text-muted-foreground">FDV</span>
-        <span className="inline-flex items-center bg-muted/30 border border-border/70 rounded-md px-2 h-7 focus-within:border-foreground/40 transition-colors">
+        <span className="inline-flex items-center bg-muted/30 border border-border/70 rounded-md px-2 h-7 focus-within:border-[rgb(var(--ds-brand-magenta-rgb))] transition-colors">
           <span className="ds-text-11 text-muted-foreground/80 font-medium">$</span>
           <Input
             type="number"
@@ -768,16 +773,16 @@ const InkAprCalculator = ({
         </div>
       </div>
 
-      {/* Collapsible Reference section - hidden on mobile to save space */}
-      <Collapsible open={isReferenceOpen} onOpenChange={setIsReferenceOpen} className="hidden sm:block">
-        <CollapsibleTrigger className="flex items-center gap-[var(--ds-space-1-5)] ds-text-11 text-muted-foreground hover:text-foreground transition-colors w-full">
+      {/* Collapsible Reference section - visible on all screen sizes, balanced spacing */}
+      <Collapsible open={isReferenceOpen} onOpenChange={setIsReferenceOpen} className="mt-[var(--ds-space-1)]">
+        <CollapsibleTrigger className="flex items-center gap-[var(--ds-space-1-5)] ds-text-11 text-muted-foreground hover:text-foreground transition-colors w-full py-1">
           <ChevronDown 
             className={`w-3.5 h-3.5 transition-transform duration-200 ${isReferenceOpen ? 'rotate-180' : ''}`} 
           />
           <span>Reference FDVs</span>
           <span className="ds-text-10 text-muted-foreground/50">(CEX chain tokens)</span>
         </CollapsibleTrigger>
-        <CollapsibleContent className="pt-[var(--ds-space-2)]">
+        <CollapsibleContent className="pt-[var(--ds-space-1-5)]">
           <div className="flex flex-wrap gap-[var(--ds-space-2)]">
             {displayPoints.map((point) => {
               const isSelected = Math.abs(currentFdvBillions - point.fdv) < 0.02;
