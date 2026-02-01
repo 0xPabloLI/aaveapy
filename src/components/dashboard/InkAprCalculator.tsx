@@ -476,16 +476,16 @@ const InkAprCalculator = ({
                       value={fdvInputValue}
                       onChange={handleFdvInputChange}
                       placeholder="1.00"
-                      className="w-10 px-0.5 ds-text-11 font-medium tabular-nums bg-transparent border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 h-auto p-0 text-left appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      className="w-10 px-0.5 ds-text-10 md:ds-text-11 font-medium tabular-nums bg-transparent border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 h-auto p-0 text-center appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       aria-label="Estimated $INK FDV in billions"
                     />
                   </span>
-                  <span className="leading-none ds-text-9 md:ds-text-10 text-muted-foreground">Kraken</span>
+                  <span className="ds-text-9 md:ds-text-10 whitespace-nowrap leading-none text-muted-foreground/40">Kraken</span>
                   <a
                     href="https://coinmarketcap.com/currencies/ink-token/"
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-0.5 leading-none ds-text-9 md:ds-text-10 text-muted-foreground hover:text-foreground transition-colors"
+                    className="inline-flex items-center gap-0.5 ds-text-9 md:ds-text-10 whitespace-nowrap leading-none text-muted-foreground/50 hover:text-foreground transition-colors"
                   >
                     Ink/INK
                     <ExternalLink className="w-2.5 h-2.5 shrink-0 opacity-70" aria-hidden />
