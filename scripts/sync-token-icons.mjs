@@ -4,9 +4,13 @@
  * Run periodically (e.g. after adding new markets) so users get icons from
  * static assets instead of hitting CoinGecko. Commit the new .png files.
  *
- * Usage: node scripts/sync-token-icons.mjs [--all]
- *   Default: only sync EXTRA_SYMBOLS (e.g. syrupusdc) that are missing.
- *   --all: sync all missing symbols from aave tokenlist + EXTRA_SYMBOLS (slower, rate-limited).
+ * Usage: node scripts/sync-token-icons.mjs [--extra-only]
+ *   Default: sync all missing symbols from aave tokenlist + EXTRA_SYMBOLS.
+ *   --extra-only: only sync EXTRA_SYMBOLS (e.g. syrupusdc) that are missing (faster).
+ *   SKIP_SYNC_TOKEN_ICONS=1: no-op (e.g. skip in CI if you commit icons).
+ *
+ * Run manually or in CI when you want to backfill icons into public/; normal users
+ * cannot persist icons when opening the site (browser cannot write to repo).
  * Requires: Node 18+ (for fetch), and @bgd-labs/aave-address-book installed.
  */
 
@@ -47,10 +51,10 @@ function getTokenListSymbols() {
 const EXTRA_SYMBOLS = ['syrupusdc'];
 
 /**
- * @param {boolean} allFromTokenList - If true, include all symbols from tokenlist; if false, only EXTRA_SYMBOLS.
+ * @param {boolean} extraOnly - If true, only EXTRA_SYMBOLS; if false, tokenlist + EXTRA_SYMBOLS.
  */
-function getMissingSymbols(allFromTokenList = false) {
-  const fromList = allFromTokenList ? getTokenListSymbols() : new Set();
+function getMissingSymbols(extraOnly = false) {
+  const fromList = extraOnly ? new Set() : getTokenListSymbols();
   const all = new Set([...fromList, ...EXTRA_SYMBOLS]);
   const missing = [];
   const files = fs.existsSync(TOKENS_DIR) ? fs.readdirSync(TOKENS_DIR) : [];
@@ -93,9 +97,13 @@ async function downloadToFile(url, filePath) {
 }
 
 async function main() {
-  const allFromTokenList = process.argv.includes('--all');
-  const missing = getMissingSymbols(allFromTokenList);
-  if (allFromTokenList) {
+  if (process.env.SKIP_SYNC_TOKEN_ICONS === '1') {
+    console.log('SKIP_SYNC_TOKEN_ICONS=1, skipping.');
+    return;
+  }
+  const extraOnly = process.argv.includes('--extra-only');
+  const missing = getMissingSymbols(extraOnly);
+  if (!extraOnly) {
     console.log('Syncing all missing symbols from tokenlist + extra.');
   }
   if (missing.length === 0) {
