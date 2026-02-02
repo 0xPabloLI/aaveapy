@@ -763,10 +763,10 @@ const InkAprCalculator = ({
             />
           </div>
 
-          {/* Tooltip with background - no extra spacing needed */}
+          {/* Tooltip with background - dynamic positioning based on drag state */}
           {(showTooltip || isDragging) && (
             <div
-              className="absolute -top-6 -translate-x-1/2 bg-card/95 backdrop-blur-sm border border-border/50 rounded-md px-1.5 py-0.5 shadow-sm pointer-events-none"
+              className={`absolute ${isDragging ? '-top-10' : '-top-8'} -translate-x-1/2 bg-card/95 backdrop-blur-sm border border-border/50 rounded-md px-1.5 py-0.5 shadow-sm pointer-events-none z-20 transition-[top] duration-150`}
               style={{ left: `${sliderPosition}%` }}
             >
               <span className="text-foreground ds-text-11 font-semibold tabular-nums whitespace-nowrap">
@@ -777,8 +777,8 @@ const InkAprCalculator = ({
         </div>
       </div>
 
-      {/* Collapsible Reference section - reduced bottom spacing via negative margin */}
-      <Collapsible open={isReferenceOpen} onOpenChange={setIsReferenceOpen} className="mt-[var(--ds-space-1)] -mb-1">
+      {/* Collapsible Reference section - tighter spacing to slider */}
+      <Collapsible open={isReferenceOpen} onOpenChange={setIsReferenceOpen} className="mt-[var(--ds-space-0-5)] -mb-1">
         <CollapsibleTrigger className="flex items-center gap-[var(--ds-space-1-5)] ds-text-11 text-muted-foreground hover:text-foreground transition-colors w-full py-1.5">
           <ChevronDown 
             className={`w-3.5 h-3.5 transition-transform duration-200 ${isReferenceOpen ? 'rotate-180' : ''}`} 
