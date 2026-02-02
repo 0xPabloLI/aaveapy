@@ -664,8 +664,8 @@ const InkAprCalculator = ({
 
   // Render compact layout directly as JSX (not as component call)
   const subtitleWithInput = (
-    <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 ds-text-11 text-muted-foreground sm:flex-nowrap sm:items-center">
-      <span>Enter your estimated <span className="font-semibold">$INK FDV</span></span>
+    <div className="flex flex-nowrap items-center gap-x-1.5 ds-text-11 text-muted-foreground overflow-x-auto min-w-0">
+      <span className="shrink-0 whitespace-nowrap">Enter your estimated <span className="font-semibold">$INK FDV</span></span>
       <span className="inline-flex items-center h-7 rounded-md border bg-card/50 border-border/50 pl-[var(--ds-space-1-5)] pr-[var(--ds-space-1-5)] focus-within:border-[rgb(var(--ds-brand-magenta-rgb))] focus-within:ring-0 focus-within:ring-offset-0 transition-colors shrink-0 [font-size:11px] [line-height:1.75rem]">
         <span className="h-7 inline-flex items-center justify-center !text-[11px] leading-none text-muted-foreground/50 w-[1ch] shrink-0">$</span>
         <Input
@@ -731,7 +731,7 @@ const InkAprCalculator = ({
           </DesktopTooltip>
         )}
       </div>
-      <span>to update the incentive APR</span>
+      <span className="shrink-0 whitespace-nowrap">to update the incentive APR</span>
     </div>
   );
 
