@@ -32,6 +32,7 @@ const Index = () => {
   const [isApy, setIsApy] = useState(true);
   const [showCacheWarning, setShowCacheWarning] = useState(false);
   const [showMarketsExpanded, setShowMarketsExpanded] = useState(false);
+  const [isRateDragging, setIsRateDragging] = useState(false);
   const [topTooltipState, setTopTooltipState] = useState<{
     pool: PoolWithSpread;
     type: 'supply' | 'borrow';
@@ -278,6 +279,7 @@ const Index = () => {
           <InkAprCalculator
             rateInput={tydroPointToUsdRateInput}
             setRateInput={setTydroPointToUsdRateInput}
+            onDragStateChange={setIsRateDragging}
           />
 
           {/* Top Opportunities */}
@@ -285,6 +287,7 @@ const Index = () => {
             <TopOpportunities
               pools={stablePools}
               isApy={isApy}
+              isRateDragging={isRateDragging}
               categoryGroups={tokenCategoryGroups}
               onIncentiveClick={handleTopIncentiveClick}
               tydroPointToUsdRate={tydroPointToUsdRate}

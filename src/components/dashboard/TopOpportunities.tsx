@@ -32,6 +32,7 @@ import { Button } from '@/components/ui/button';
 interface TopOpportunitiesProps {
   pools: PoolWithSpread[];
   isApy: boolean;
+  isRateDragging?: boolean;
   categoryGroups: TokenCategoryGroups;
   onIncentiveClick?: (payload: {
     pool: PoolWithSpread;
@@ -49,7 +50,7 @@ const DISPLAY_COUNT = 5;
 
 const XL_BREAKPOINT = 1280;
 
-const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick, tydroPointToUsdRate }: TopOpportunitiesProps) => {
+const TopOpportunities = ({ pools, isApy, isRateDragging = false, categoryGroups, onIncentiveClick, tydroPointToUsdRate }: TopOpportunitiesProps) => {
   const isMobile = useIsMobile();
   const [isXl, setIsXl] = useState(false);
   const prevIsApyRef = useRef(isApy);
@@ -360,12 +361,14 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick, tydr
     pool,
     index,
     type,
-    totalItems = 5
+    totalItems = 5,
+    disableMotion = false,
   }: {
     pool: typeof poolsWithTotals[0];
     index: number;
     type: 'supply' | 'leverage';
     totalItems?: number;
+    disableMotion?: boolean;
   }) => {
     const isLeverage = type === 'leverage';
     const mainValue = isLeverage
@@ -380,12 +383,15 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick, tydr
       symbol: pool.tokenSymbol,
       name: pool.tokenName,
     });
+    const CardWrapper: React.ElementType = disableMotion ? 'div' : motion.div;
     return (
-      <motion.div
-        custom={index}
-        initial={false}
-        animate="visible"
-        variants={itemVariants}
+      <CardWrapper
+        {...(disableMotion ? {} : {
+          custom: index,
+          initial: false,
+          animate: 'visible',
+          variants: itemVariants,
+        })}
         className="rounded-xl border ds-card-pad-sm cursor-pointer transition-colors bg-card border-border/60 active:bg-muted/60 h-[68px] flex flex-col justify-between"
         onClick={() => handleCardClick(pool)}
       >
@@ -433,7 +439,7 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick, tydr
             </span>
           )}
         </div>
-      </motion.div>
+      </CardWrapper>
     );
   };
 
@@ -465,7 +471,7 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick, tydr
       name: pool.tokenName,
     });
 
-    const shouldAnimateItem = !disableMotion && !isMobile;
+    const shouldAnimateItem = !disableMotion && !isMobile && !isRateDragging;
     const ItemWrapper: React.ElementType = shouldAnimateItem ? motion.div : 'div';
 
     return (
@@ -560,8 +566,8 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick, tydr
     type: 'supply' | 'leverage';
     emptyMessage: string;
   }) => {
-    const shouldAnimateHeader = isMobile || !isApyChanged;
-    const shouldAnimateList = isMobile || !isApyChanged;
+    const shouldAnimateHeader = !isMobile && !isRateDragging && !isApyChanged;
+    const shouldAnimateList = !isMobile && !isRateDragging && !isApyChanged;
     const HeaderWrapper: React.ElementType = shouldAnimateHeader ? motion.div : 'div';
     const IconWrapper: React.ElementType = shouldAnimateHeader ? motion.div : 'div';
     return (
@@ -598,6 +604,7 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick, tydr
                       index={i}
                       type={type}
                       totalItems={categoryPools.length}
+                      disableMotion={!shouldAnimateList}
                     />
                   ) : (
                     <PoolItem 
@@ -619,6 +626,7 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick, tydr
                     index={i}
                     type={type}
                     totalItems={categoryPools.length}
+                    disableMotion
                   />
                 ) : (
                   <PoolItem
@@ -834,6 +842,10 @@ export default memo(TopOpportunities, (prevProps, nextProps) => {
 
   // If tydroPointToUsdRate changed, always re-render
   if (prevProps.tydroPointToUsdRate !== nextProps.tydroPointToUsdRate) {
+    return false;
+  }
+
+  if (prevProps.isRateDragging !== nextProps.isRateDragging) {
     return false;
   }
 
