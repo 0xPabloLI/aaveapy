@@ -497,7 +497,9 @@ const InkAprCalculator = ({
 
             {/* Current value thumb - color follows position on track gradient */}
             <div
-              className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full border-2 border-white/90 shadow-md pointer-events-none transition-colors duration-150"
+              className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-4 h-4 rounded-full border-2 border-white shadow-md pointer-events-none transition-all duration-150 ${
+                isDragging ? 'scale-[1.4] shadow-lg ring-2 ring-white/30' : ''
+              }`}
               style={{
                 left: `${sliderPosition}%`,
                 background: positionToThumbColor(sliderPosition),
