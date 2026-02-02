@@ -157,7 +157,7 @@ export function MobileTooltip({
   onClose: () => void;
   title: string;
   children: React.ReactNode;
-  variant?: 'default' | 'neutral';
+  variant?: 'default' | 'neutral' | 'purple';
   hideTitle?: boolean;
 }) {
   if (!isOpen) return null;
@@ -165,11 +165,15 @@ export function MobileTooltip({
   const headerClass =
     variant === 'neutral'
       ? 'bg-muted/60 px-4 py-2.5 rounded-t-xl flex items-center justify-between border-b border-border'
-      : 'ds-bg-emerald-500-10 px-4 py-2.5 rounded-t-xl flex items-center justify-between border-b ds-border-emerald-200';
+      : variant === 'purple'
+        ? 'ds-bg-purple-500-10 px-4 py-2.5 rounded-t-xl flex items-center justify-between border-b ds-border-purple-200'
+        : 'ds-bg-emerald-500-10 px-4 py-2.5 rounded-t-xl flex items-center justify-between border-b ds-border-emerald-200';
   const titleClass =
     variant === 'neutral'
       ? 'ds-text-14 font-semibold text-foreground'
-      : 'ds-text-emerald-700 ds-text-14 font-semibold';
+      : variant === 'purple'
+        ? 'ds-text-purple-700 ds-text-14 font-semibold'
+        : 'ds-text-emerald-700 ds-text-14 font-semibold';
 
   return createPortal(
     <>
@@ -236,7 +240,7 @@ export function DesktopTooltip({
   onMouseLeave: () => void;
   title: string;
   children: React.ReactNode;
-  variant?: 'default' | 'neutral';
+  variant?: 'default' | 'neutral' | 'purple';
   hideTitle?: boolean;
 }) {
   if (!isOpen || !triggerRect) return null;
@@ -246,11 +250,15 @@ export function DesktopTooltip({
   const headerClass =
     variant === 'neutral'
       ? 'bg-muted/60 px-4 py-2 rounded-t-xl border-b border-border'
-      : 'ds-bg-emerald-500-10 px-4 py-2 rounded-t-xl border-b ds-border-emerald-200';
+      : variant === 'purple'
+        ? 'ds-bg-purple-500-10 px-4 py-2 rounded-t-xl border-b ds-border-purple-200'
+        : 'ds-bg-emerald-500-10 px-4 py-2 rounded-t-xl border-b ds-border-emerald-200';
   const titleClass =
     variant === 'neutral'
       ? 'ds-text-14 font-semibold text-foreground'
-      : 'ds-text-emerald-700 ds-text-14 font-semibold';
+      : variant === 'purple'
+        ? 'ds-text-purple-700 ds-text-14 font-semibold'
+        : 'ds-text-emerald-700 ds-text-14 font-semibold';
 
   return createPortal(
     <div
