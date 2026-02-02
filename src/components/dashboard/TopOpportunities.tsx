@@ -50,6 +50,122 @@ const DISPLAY_COUNT = 5;
 
 const XL_BREAKPOINT = 1280;
 
+interface CategoryCardHeaderProps {
+  title: string;
+  subtitle: string;
+  icon: React.ElementType;
+  iconColorClass: string;
+  bgColorClass: string;
+  isMobile: boolean;
+  shouldAnimateHeader: boolean;
+  headerVariants: Record<string, unknown>;
+  iconVariants: Record<string, unknown>;
+}
+
+const CategoryCardHeader = memo(({
+  title,
+  subtitle,
+  icon: Icon,
+  iconColorClass,
+  bgColorClass,
+  isMobile,
+  shouldAnimateHeader,
+  headerVariants,
+  iconVariants,
+}: CategoryCardHeaderProps) => {
+  const HeaderWrapper: React.ElementType = shouldAnimateHeader ? motion.div : 'div';
+  const IconWrapper: React.ElementType = shouldAnimateHeader ? motion.div : 'div';
+
+  return (
+    <HeaderWrapper
+      className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-3)]"
+      {...(shouldAnimateHeader
+        ? { initial: 'hidden', animate: 'visible', variants: headerVariants }
+        : {})}
+    >
+      <IconWrapper
+        className={`p-[var(--ds-space-2)] rounded-lg ${bgColorClass}`}
+        {...(shouldAnimateHeader
+          ? { variants: iconVariants, initial: 'hidden', animate: ['visible', 'pulse'] as const }
+          : {})}
+      >
+        <Icon className={`w-4 h-4 md:w-5 md:h-5 ${iconColorClass}`} />
+      </IconWrapper>
+      <div className="flex-1 min-w-0">
+        <h3 className={`font-bold truncate ${isMobile ? 'ds-text-14' : 'ds-text-16'}`}>{title}</h3>
+        <p className="text-muted-foreground truncate ds-text-11">{subtitle}</p>
+      </div>
+    </HeaderWrapper>
+  );
+});
+
+interface PoolIdentityProps {
+  iconSymbol: string;
+  logoURI?: string | null;
+  tokenSymbol: string;
+  chainName: string;
+  chainIconSrc?: string;
+  marketDisplayName: string;
+  isMobile: boolean;
+  mini?: boolean;
+}
+
+const PoolIdentity = memo(({
+  iconSymbol,
+  logoURI,
+  tokenSymbol,
+  chainName,
+  chainIconSrc,
+  marketDisplayName,
+  isMobile,
+  mini = false,
+}: PoolIdentityProps) => {
+  if (mini) {
+    return (
+      <div className="flex items-center gap-[var(--ds-space-2)]">
+        <TokenIcon
+          symbol={iconSymbol}
+          size={24}
+          loading="eager"
+          className="shrink-0"
+          logoURI={logoURI}
+        />
+        <div className="min-w-0 flex-1">
+          <p className="font-bold text-foreground ds-text-12 truncate">{tokenSymbol}</p>
+          <div className="flex items-center gap-[var(--ds-space-1)] ds-text-9 text-muted-foreground">
+            {chainIconSrc && (
+              <img src={chainIconSrc} alt={chainName} className="w-3 h-3" />
+            )}
+            <span className="truncate">{marketDisplayName}</span>
+          </div>
+        </div>
+        <ChevronRight className="w-4 h-4 text-muted-foreground/50 shrink-0" />
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <TokenIcon
+        symbol={iconSymbol}
+        size={isMobile ? 28 : 32}
+        loading="eager"
+        className="shrink-0 row-span-2"
+        logoURI={logoURI}
+      />
+      <p className="font-semibold text-foreground truncate leading-none ds-text-14">
+        {tokenSymbol}
+      </p>
+      <div className="flex items-center gap-[var(--ds-space-1)] min-w-0 leading-none">
+        {chainIconSrc && (
+          <img src={chainIconSrc} alt={chainName} className="shrink-0 w-3.5 h-3.5" />
+        )}
+        <p className="text-secondary truncate ds-text-11 leading-none">{marketDisplayName}</p>
+      </div>
+    </>
+  );
+});
+
 const TopOpportunities = ({ pools, isApy, isRateDragging = false, categoryGroups, onIncentiveClick, tydroPointToUsdRate }: TopOpportunitiesProps) => {
   const isMobile = useIsMobile();
   const [isXl, setIsXl] = useState(false);
@@ -383,6 +499,7 @@ const TopOpportunities = ({ pools, isApy, isRateDragging = false, categoryGroups
       symbol: pool.tokenSymbol,
       name: pool.tokenName,
     });
+    const marketDisplayName = getMarketDisplayName(pool);
     const CardWrapper: React.ElementType = disableMotion ? 'div' : motion.div;
     return (
       <CardWrapper
@@ -395,26 +512,16 @@ const TopOpportunities = ({ pools, isApy, isRateDragging = false, categoryGroups
         className="rounded-xl border ds-card-pad-sm cursor-pointer transition-colors bg-card border-border/60 active:bg-muted/60 h-[68px] flex flex-col justify-between"
         onClick={() => handleCardClick(pool)}
       >
-        {/* Header: Token + Market + Arrow */}
-        <div className="flex items-center gap-[var(--ds-space-2)]">
-          <TokenIcon
-            symbol={iconSymbol}
-            size={24}
-            loading="eager"
-            className="shrink-0"
-            logoURI={logoURI}
-          />
-          <div className="min-w-0 flex-1">
-            <p className="font-bold text-foreground ds-text-12 truncate">{pool.tokenSymbol}</p>
-            <div className="flex items-center gap-[var(--ds-space-1)] ds-text-9 text-muted-foreground">
-              {chainIconSrc && (
-                <img src={chainIconSrc} alt={pool.chainName} className="w-3 h-3" />
-              )}
-              <span className="truncate">{getMarketDisplayName(pool)}</span>
-            </div>
-          </div>
-          <ChevronRight className="w-4 h-4 text-muted-foreground/50 shrink-0" />
-        </div>
+        <PoolIdentity
+          mini
+          iconSymbol={iconSymbol}
+          logoURI={logoURI}
+          tokenSymbol={pool.tokenSymbol}
+          chainName={pool.chainName}
+          chainIconSrc={chainIconSrc}
+          marketDisplayName={marketDisplayName}
+          isMobile={isMobile}
+        />
 
         {/* Main value + detail row */}
         <div className="flex items-baseline justify-between gap-[var(--ds-space-1)] mt-[var(--ds-space-0-5)]">
@@ -470,6 +577,7 @@ const TopOpportunities = ({ pools, isApy, isRateDragging = false, categoryGroups
       symbol: pool.tokenSymbol,
       name: pool.tokenName,
     });
+    const marketDisplayName = getMarketDisplayName(pool);
 
     const shouldAnimateItem = !disableMotion && !isMobile && !isRateDragging;
     const ItemWrapper: React.ElementType = shouldAnimateItem ? motion.div : 'div';
@@ -488,26 +596,19 @@ const TopOpportunities = ({ pools, isApy, isRateDragging = false, categoryGroups
       >
         {/* Token Info - Mobile style layout: large icon left, text right */}
         <div className="grid grid-cols-[auto,1fr,auto] grid-rows-[auto,auto] content-center items-center gap-x-[var(--ds-space-2)] gap-y-[var(--ds-space-1)] flex-1 min-w-0 h-full">
-          <TokenIcon
-            symbol={iconSymbol}
-            size={isMobile ? 28 : 32}
-            loading="eager"
-            className="shrink-0 row-span-2"
+          <PoolIdentity
+            iconSymbol={iconSymbol}
             logoURI={logoURI}
+            tokenSymbol={pool.tokenSymbol}
+            chainName={pool.chainName}
+            chainIconSrc={chainIconSrc}
+            marketDisplayName={marketDisplayName}
+            isMobile={isMobile}
           />
-          <p className={`font-semibold text-foreground truncate leading-none ${isMobile ? 'ds-text-14' : 'ds-text-14'}`}>
-            {pool.tokenSymbol}
-          </p>
           <div
             className={`${(isLeverage ? getSpreadColorClass(mainValue, index, totalItems) : getApyColorClass(mainValue))} font-bold tabular-nums text-right leading-none ${isMobile ? 'ds-text-16' : 'ds-text-18'} ${!isLeverage && !hasIncentive ? 'row-span-2 self-center' : ''}`}
           >
             {isLeverage ? formatSpread(mainValue) : formatPercent(mainValue)}
-          </div>
-          <div className="flex items-center gap-[var(--ds-space-1)] min-w-0 leading-none">
-            {chainIconSrc && (
-              <img src={chainIconSrc} alt={pool.chainName} className="shrink-0 w-3.5 h-3.5" />
-            )}
-            <p className="text-secondary truncate ds-text-11 leading-none">{getMarketDisplayName(pool)}</p>
           </div>
           {/* Detail breakdown - Only show for supply type */}
           {!isLeverage && hasIncentive && (
@@ -568,29 +669,19 @@ const TopOpportunities = ({ pools, isApy, isRateDragging = false, categoryGroups
   }) => {
     const shouldAnimateHeader = !isMobile && !isRateDragging && !isApyChanged;
     const shouldAnimateList = !isMobile && !isRateDragging && !isApyChanged;
-    const HeaderWrapper: React.ElementType = shouldAnimateHeader ? motion.div : 'div';
-    const IconWrapper: React.ElementType = shouldAnimateHeader ? motion.div : 'div';
     return (
         <div className={`bg-card border border-border/60 shadow-sm rounded-xl ${isMobile ? 'ds-card-pad-sm' : 'ds-card-pad'} ${isMobile ? 'col-span-1' : ''} flex flex-col`}>
-        <HeaderWrapper 
-          className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-3)]"
-          {...(shouldAnimateHeader
-            ? { initial: 'hidden', animate: 'visible', variants: headerVariants }
-            : {})}
-        >
-          <IconWrapper 
-            className={`p-[var(--ds-space-2)] rounded-lg ${bgColorClass}`}
-            {...(shouldAnimateHeader
-              ? { variants: iconVariants, initial: 'hidden', animate: ['visible', 'pulse'] as const }
-              : {})}
-          >
-            <Icon className={`w-4 h-4 md:w-5 md:h-5 ${iconColorClass}`} />
-          </IconWrapper>
-          <div className="flex-1 min-w-0">
-            <h3 className={`font-bold truncate ${isMobile ? 'ds-text-14' : 'ds-text-16'}`}>{title}</h3>
-            <p className="text-muted-foreground truncate ds-text-11">{subtitle}</p>
-          </div>
-        </HeaderWrapper>
+        <CategoryCardHeader
+          title={title}
+          subtitle={subtitle}
+          icon={Icon}
+          iconColorClass={iconColorClass}
+          bgColorClass={bgColorClass}
+          isMobile={isMobile}
+          shouldAnimateHeader={shouldAnimateHeader}
+          headerVariants={headerVariants}
+          iconVariants={iconVariants}
+        />
 
         <div className="flex-1 space-y-[var(--ds-space-1-5)]">
           {categoryPools.length > 0 ? (
