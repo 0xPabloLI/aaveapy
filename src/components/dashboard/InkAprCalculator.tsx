@@ -779,8 +779,8 @@ const InkAprCalculator = ({
           />
           <span>Reference FDVs</span>
           <span className="ds-text-11 text-muted-foreground/50">(CEX chain tokens)</span>
-          <span className="ds-text-11 text-muted-foreground/50 tabular-nums ml-auto">
-            = ${formatInkPrice(currentFdvBillions)}/INK
+          <span className="ds-text-11 tabular-nums ml-auto">
+            = $<span className={`transition-colors duration-300 ${fdvJustChanged ? 'text-[rgb(var(--ds-brand-magenta-rgb))]' : 'text-muted-foreground/50'}`}>{formatInkPrice(currentFdvBillions)}</span>/INK
           </span>
         </CollapsibleTrigger>
         <CollapsibleContent className="pt-[var(--ds-space-1-5)]">
