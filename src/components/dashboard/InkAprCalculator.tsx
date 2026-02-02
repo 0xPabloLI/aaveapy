@@ -11,6 +11,7 @@ interface InkAprCalculatorProps {
   rateInput: string;
   setRateInput: (value: string) => void;
   onRateChange?: (rate: number) => void;
+  onDragStateChange?: (isDragging: boolean) => void;
 }
 
 const TOTAL_SUPPLY = 1_000_000_000;
@@ -137,6 +138,7 @@ const InkAprCalculator = ({
   rateInput,
   setRateInput,
   onRateChange,
+  onDragStateChange,
 }: InkAprCalculatorProps) => {
   const { data: fdvData } = useCoingeckoFdv();
   const isMobile = useIsMobile();
@@ -288,18 +290,20 @@ const InkAprCalculator = ({
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     setIsDragging(true);
+    onDragStateChange?.(true);
     setShowTooltip(true);
     if (tooltipTimeoutRef.current) clearTimeout(tooltipTimeoutRef.current);
     handleTrackInteraction(e.clientX);
-  }, [handleTrackInteraction]);
+  }, [handleTrackInteraction, onDragStateChange]);
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     e.preventDefault();
     setIsDragging(true);
+    onDragStateChange?.(true);
     setShowTooltip(true);
     if (tooltipTimeoutRef.current) clearTimeout(tooltipTimeoutRef.current);
     handleTrackInteraction(e.touches[0].clientX);
-  }, [handleTrackInteraction]);
+  }, [handleTrackInteraction, onDragStateChange]);
 
   useEffect(() => {
     if (!isDragging) return;
@@ -315,6 +319,7 @@ const InkAprCalculator = ({
 
     const handleEnd = () => {
       setIsDragging(false);
+      onDragStateChange?.(false);
       tooltipTimeoutRef.current = setTimeout(() => {
         setShowTooltip(false);
       }, 800);
@@ -331,7 +336,7 @@ const InkAprCalculator = ({
       window.removeEventListener('touchmove', handleTouchMove);
       window.removeEventListener('touchend', handleEnd);
     };
-  }, [isDragging, handleTrackInteraction]);
+  }, [isDragging, handleTrackInteraction, onDragStateChange]);
 
   useEffect(() => {
     return () => {
