@@ -506,10 +506,10 @@ const InkAprCalculator = ({
               }}
             />
 
-            {/* Tooltip: floating number only, no background box */}
+            {/* Tooltip: floating number only, no background box - positioned higher to avoid overlap with scaled thumb */}
             {(showTooltip || isDragging) && (
               <div
-                className="absolute -top-5 -translate-x-1/2 text-foreground ds-text-13 font-semibold tabular-nums whitespace-nowrap z-20"
+                className="absolute -top-6 -translate-x-1/2 text-foreground ds-text-13 font-semibold tabular-nums whitespace-nowrap z-20"
                 style={{ left: `${sliderPosition}%` }}
               >
                 ${formatFdv(currentFdvBillions)}
