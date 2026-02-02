@@ -756,7 +756,7 @@ const InkAprCalculator = ({
             style={{ left: `${sliderPosition}%` }}
           >
             <div
-              className={`w-5 h-5 rounded-full border-2 border-white shadow-md pointer-events-none transition-all duration-150 ${
+              className={`w-4 h-4 rounded-full border-2 border-white shadow-md pointer-events-none transition-all duration-150 ${
                 isDragging ? 'scale-[1.4] shadow-lg ring-2 ring-white/30' : ''
               }`}
               style={{ background: positionToThumbColor(sliderPosition) }}
@@ -766,7 +766,7 @@ const InkAprCalculator = ({
           {/* Tooltip with background - no extra spacing needed */}
           {(showTooltip || isDragging) && (
             <div
-              className="absolute -top-7 -translate-x-1/2 bg-card/95 backdrop-blur-sm border border-border/50 rounded-md px-1.5 py-0.5 shadow-sm pointer-events-none"
+              className="absolute -top-6 -translate-x-1/2 bg-card/95 backdrop-blur-sm border border-border/50 rounded-md px-1.5 py-0.5 shadow-sm pointer-events-none"
               style={{ left: `${sliderPosition}%` }}
             >
               <span className="text-foreground ds-text-11 font-semibold tabular-nums whitespace-nowrap">
@@ -778,7 +778,7 @@ const InkAprCalculator = ({
       </div>
 
       {/* Collapsible Reference section - reduced bottom spacing via negative margin */}
-      <Collapsible open={isReferenceOpen} onOpenChange={setIsReferenceOpen} className="mt-[var(--ds-space-2)] -mb-1">
+      <Collapsible open={isReferenceOpen} onOpenChange={setIsReferenceOpen} className="mt-[var(--ds-space-1)] -mb-1">
         <CollapsibleTrigger className="flex items-center gap-[var(--ds-space-1-5)] ds-text-11 text-muted-foreground hover:text-foreground transition-colors w-full py-1.5">
           <ChevronDown 
             className={`w-3.5 h-3.5 transition-transform duration-200 ${isReferenceOpen ? 'rotate-180' : ''}`} 
