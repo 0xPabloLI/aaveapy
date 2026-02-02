@@ -70,6 +70,14 @@
 - 自定义表面：渐变 + 微网格纹理
 - 浅/深色两套对比调优
 
+### 4.6 Incentive 弹窗（激励详情）
+- **形态**：移动端为底部抽屉（bottom sheet），桌面端为带箭头的浮动卡片；点击遮罩或关闭按钮关闭。
+- **表面**：`bg-card` + `border-border/60`，圆角桌面 `rounded-xl`、移动端顶部 `rounded-t-2xl`；阴影使用 `ds-tooltip-shadow`（桌面）或 `ds-tooltip-shadow-up`（底部抽屉）。
+- **排版**：标题用 `ds-tooltip-title`，正文用 `ds-tooltip-body`，内边距用 `ds-tooltip-pad`；每条激励项用 `ds-tooltip-item` + 左侧色条（Supply 青绿 / Borrow 品牌青）。
+- **语义色**：Supply 激励用 emerald 系（`ds-text-emerald-600`、`ds-bg-emerald-500-10`），Borrow 用品牌青（`ds-text-brand-cyan`、`ds-bg-brand-cyan-10`）；外链为圆形按钮 + ExternalLink 图标，hover 不改变主色。
+- **内容**：每条展示名称、APR/APY 数值（`formatPercent`）、可选「Campaign time: 日期范围」、可选 message 列表（小圆点 + 文案）；无句号结尾，与 APR/APY 等短句 tooltip 一致。
+- **可访问性**：外链需 `title="Open link"` 或等价 `aria-label`；关闭按钮需可聚焦与可见焦点。
+
 ## 5. 布局与网格原则
 - 使用 `container` 居中，桌面最大宽 1400px
 - 移动优先：单列、紧凑间距、触控友好

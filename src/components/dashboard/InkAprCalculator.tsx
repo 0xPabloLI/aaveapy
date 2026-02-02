@@ -342,6 +342,24 @@ const InkAprCalculator = ({
   // State for collapsible reference section
   const [isReferenceOpen, setIsReferenceOpen] = useState(false);
 
+  const fdvTooltipContent = (
+    <div className="space-y-1">
+      <p className="text-muted-foreground ds-text-11 leading-snug">Fully Diluted Valuation, in billions USD</p>
+      <p className="text-muted-foreground ds-text-11 leading-snug">
+        INK total supply: {TOTAL_SUPPLY.toLocaleString()} (1 billion){' '}
+        <a
+          href="https://x.com/inkfndhq/status/1934991370957033888"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Official documentation"
+          className="inline text-muted-foreground hover:text-foreground"
+        >
+          <ExternalLink className="h-3 w-3 shrink-0 ml-0.5 inline-block align-middle" aria-hidden />
+        </a>
+      </p>
+    </div>
+  );
+
   // (CompactLayout removed - inlined in return statement to fix React hook rules)
 
   // Full layout for large screens (xl+)
@@ -452,7 +470,7 @@ const InkAprCalculator = ({
                     variant="neutral"
                     hideTitle
                   >
-                    <p className="text-muted-foreground ds-text-11">Fully Diluted Valuation, in billions USD</p>
+                    {fdvTooltipContent}
                   </MobileTooltip>
                 ) : (
                   <DesktopTooltip
@@ -465,7 +483,7 @@ const InkAprCalculator = ({
                     variant="neutral"
                     hideTitle
                   >
-                    <p className="text-muted-foreground ds-text-11">Fully Diluted Valuation, in billions USD</p>
+                    {fdvTooltipContent}
                   </DesktopTooltip>
                 )}
               </div>
@@ -672,6 +690,49 @@ const InkAprCalculator = ({
         />
         <span className="h-7 inline-flex items-center justify-center !text-[11px] leading-none text-muted-foreground/50 w-[1ch] shrink-0">B</span>
       </span>
+      <div className="relative inline-flex shrink-0">
+        <button
+          ref={fdvTriggerRef}
+          type="button"
+          aria-label="FDV definition"
+          className="h-6 w-6 rounded-full flex items-center justify-center bg-muted/40 text-muted-foreground/80 shadow-sm hover:bg-muted hover:text-foreground transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+          onMouseEnter={() => {
+            if (fdvTriggerRef.current) setFdvTriggerRect(fdvTriggerRef.current.getBoundingClientRect());
+            if (!isMobile) setIsFdvTooltipOpen(true);
+          }}
+          onMouseLeave={() => !isMobile && setIsFdvTooltipOpen(false)}
+          onClick={() => {
+            if (isMobile && fdvTriggerRef.current) setFdvTriggerRect(fdvTriggerRef.current.getBoundingClientRect());
+            if (isMobile) setIsFdvTooltipOpen((o) => !o);
+          }}
+        >
+          <Info className="h-3 w-3 shrink-0" aria-hidden />
+        </button>
+        {isMobile ? (
+          <MobileTooltip
+            isOpen={isFdvTooltipOpen}
+            onClose={() => setIsFdvTooltipOpen(false)}
+            title="FDV (B)"
+            variant="neutral"
+            hideTitle
+          >
+            {fdvTooltipContent}
+          </MobileTooltip>
+        ) : (
+          <DesktopTooltip
+            isOpen={isFdvTooltipOpen}
+            alignLeft
+            triggerRect={fdvTriggerRect}
+            onMouseEnter={() => setIsFdvTooltipOpen(true)}
+            onMouseLeave={() => setIsFdvTooltipOpen(false)}
+            title="FDV (B)"
+            variant="neutral"
+            hideTitle
+          >
+            {fdvTooltipContent}
+          </DesktopTooltip>
+        )}
+      </div>
       <span>to update the incentive APR</span>
     </div>
   );
