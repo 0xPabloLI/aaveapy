@@ -160,8 +160,17 @@
     @apply border-border;
   }
 
+  /* Prevent horizontal overflow on mobile (no hidden horizontal scrollbar) */
+  html {
+    overflow-x: hidden;
+    width: 100%;
+  }
+
   body {
     @apply bg-background text-foreground;
+    overflow-x: hidden;
+    width: 100%;
+    position: relative;
   }
 
   /* Smooth theme transition for all color-related properties */

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { cn } from '@/lib/utils';
+import { useCoingeckoTokenImage } from '@/hooks/useCoingeckoTokenImage';
 
 interface TokenIconProps {
   symbol: string;
@@ -22,17 +23,44 @@ const TokenImage = ({
   loading?: 'lazy' | 'eager';
   logoURI?: string;
 }) => {
-  const localSrc = `/icons/tokens/${symbol.toLowerCase()}.svg`;
+  const symbolKey = symbol.toLowerCase();
+  const localSvg = `/icons/tokens/${symbolKey}.svg`;
+  const localPng = `/icons/tokens/${symbolKey}.png`;
   const defaultSrc = '/icons/tokens/default.svg';
-  const [src, setSrc] = useState(localSrc);
+  const [src, setSrc] = useState(localSvg);
+  const [triedPng, setTriedPng] = useState(false);
+  const [needCoingeckoFallback, setNeedCoingeckoFallback] = useState(false);
+  const { data: coingeckoImageUrl, isFetched: coingeckoFetched } = useCoingeckoTokenImage(
+    needCoingeckoFallback ? symbol : null
+  );
 
   useEffect(() => {
-    setSrc(`/icons/tokens/${symbol.toLowerCase()}.svg`);
-  }, [symbol]);
+    setSrc(`/icons/tokens/${symbolKey}.svg`);
+    setTriedPng(false);
+    setNeedCoingeckoFallback(false);
+  }, [symbolKey]);
+
+  useEffect(() => {
+    if (!needCoingeckoFallback) return;
+    if (coingeckoImageUrl) {
+      setSrc(coingeckoImageUrl);
+    } else if (coingeckoFetched) {
+      setSrc(defaultSrc);
+    }
+  }, [needCoingeckoFallback, coingeckoImageUrl, coingeckoFetched]);
 
   const handleError = () => {
     if (logoURI && src !== logoURI) {
       setSrc(logoURI);
+      return;
+    }
+    if (!triedPng && (src === localSvg || src === localPng)) {
+      setTriedPng(true);
+      setSrc(localPng);
+      return;
+    }
+    if (src !== defaultSrc && !needCoingeckoFallback) {
+      setNeedCoingeckoFallback(true);
       return;
     }
     if (src !== defaultSrc) {
