@@ -775,8 +775,8 @@ const InkAprCalculator = ({
         </div>
       </div>
 
-      {/* Collapsible Reference section - increased top margin for better touch separation */}
-      <Collapsible open={isReferenceOpen} onOpenChange={setIsReferenceOpen} className="mt-[var(--ds-space-2)]">
+      {/* Collapsible Reference section - reduced bottom spacing via negative margin */}
+      <Collapsible open={isReferenceOpen} onOpenChange={setIsReferenceOpen} className="mt-[var(--ds-space-2)] -mb-1">
         <CollapsibleTrigger className="flex items-center gap-[var(--ds-space-1-5)] ds-text-11 text-muted-foreground hover:text-foreground transition-colors w-full py-1.5">
           <ChevronDown 
             className={`w-3.5 h-3.5 transition-transform duration-200 ${isReferenceOpen ? 'rotate-180' : ''}`} 
