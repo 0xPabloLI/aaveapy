@@ -11,6 +11,11 @@ interface AprApyToggleProps {
 const TOOLTIP_WIDTH = 320;
 const VIEWPORT_PADDING = 16;
 
+function getTooltipWidth(): number {
+  if (typeof window === 'undefined') return TOOLTIP_WIDTH;
+  return Math.min(TOOLTIP_WIDTH, window.innerWidth - VIEWPORT_PADDING * 2);
+}
+
 interface TooltipPosition {
   top: number;
   left?: number;
@@ -19,27 +24,28 @@ interface TooltipPosition {
 
 function calculateTooltipPosition(
   triggerRect: DOMRect,
-  alignLeft: boolean
+  alignLeft: boolean,
+  width: number = TOOLTIP_WIDTH
 ): TooltipPosition {
   const top = triggerRect.bottom + 8;
-  
+
   if (alignLeft) {
     const left = Math.max(VIEWPORT_PADDING, triggerRect.left);
-    const rightEdge = left + TOOLTIP_WIDTH;
+    const rightEdge = left + width;
     if (rightEdge > window.innerWidth - VIEWPORT_PADDING) {
       return {
         top,
-        left: Math.max(VIEWPORT_PADDING, window.innerWidth - TOOLTIP_WIDTH - VIEWPORT_PADDING),
+        left: Math.max(VIEWPORT_PADDING, window.innerWidth - width - VIEWPORT_PADDING),
       };
     }
     return { top, left };
   } else {
     const right = Math.max(VIEWPORT_PADDING, window.innerWidth - triggerRect.right);
-    const leftEdge = window.innerWidth - right - TOOLTIP_WIDTH;
+    const leftEdge = window.innerWidth - right - width;
     if (leftEdge < VIEWPORT_PADDING) {
       return {
         top,
-        right: Math.max(VIEWPORT_PADDING, window.innerWidth - TOOLTIP_WIDTH - VIEWPORT_PADDING),
+        right: Math.max(VIEWPORT_PADDING, window.innerWidth - width - VIEWPORT_PADDING),
       };
     }
     return { top, right };
@@ -173,7 +179,7 @@ export function MobileTooltip({
         aria-hidden
       />
       <div
-        className="fixed inset-x-4 bottom-4 z-[9999] bg-card border border-border rounded-xl shadow-xl
+        className="fixed left-1/2 -translate-x-1/2 w-[calc(100vw-2rem)] max-w-[360px] bottom-4 z-[9999] bg-card border border-border rounded-xl shadow-xl
           animate-in slide-in-from-bottom-4 fade-in-0 duration-200"
         role="dialog"
         aria-modal="true"
@@ -235,7 +241,8 @@ export function DesktopTooltip({
 }) {
   if (!isOpen || !triggerRect) return null;
 
-  const position = calculateTooltipPosition(triggerRect, alignLeft);
+  const tooltipWidth = getTooltipWidth();
+  const position = calculateTooltipPosition(triggerRect, alignLeft, tooltipWidth);
   const headerClass =
     variant === 'neutral'
       ? 'bg-muted/60 px-4 py-2 rounded-t-xl border-b border-border'
@@ -250,7 +257,8 @@ export function DesktopTooltip({
       className="fixed z-[9999] bg-card border border-border rounded-xl shadow-lg
         animate-in fade-in-0 zoom-in-95 duration-150"
       style={{
-        width: TOOLTIP_WIDTH,
+        width: tooltipWidth,
+        maxWidth: `calc(100vw - ${VIEWPORT_PADDING * 2}px)`,
         top: position.top,
         left: position.left,
         right: position.right,

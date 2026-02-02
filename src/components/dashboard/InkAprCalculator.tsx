@@ -468,7 +468,6 @@ const InkAprCalculator = ({
                     onClose={() => setIsFdvTooltipOpen(false)}
                     title="FDV (B)"
                     variant="neutral"
-                    hideTitle
                   >
                     {fdvTooltipContent}
                   </MobileTooltip>
@@ -695,7 +694,7 @@ const InkAprCalculator = ({
           ref={fdvTriggerRef}
           type="button"
           aria-label="FDV definition"
-          className="h-6 w-6 rounded-full flex items-center justify-center bg-muted/40 text-muted-foreground/80 shadow-sm hover:bg-muted hover:text-foreground transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+          className="h-4 w-4 rounded-full flex items-center justify-center bg-muted/40 text-muted-foreground/80 shadow-sm hover:bg-muted hover:text-foreground hover:shadow-md hover:shadow-muted-foreground/25 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
           onMouseEnter={() => {
             if (fdvTriggerRef.current) setFdvTriggerRect(fdvTriggerRef.current.getBoundingClientRect());
             if (!isMobile) setIsFdvTooltipOpen(true);
@@ -706,7 +705,7 @@ const InkAprCalculator = ({
             if (isMobile) setIsFdvTooltipOpen((o) => !o);
           }}
         >
-          <Info className="h-3 w-3 shrink-0" aria-hidden />
+          <Info className="h-2.5 w-2.5 shrink-0" aria-hidden />
         </button>
         {isMobile ? (
           <MobileTooltip
@@ -714,7 +713,6 @@ const InkAprCalculator = ({
             onClose={() => setIsFdvTooltipOpen(false)}
             title="FDV (B)"
             variant="neutral"
-            hideTitle
           >
             {fdvTooltipContent}
           </MobileTooltip>
