@@ -748,14 +748,18 @@ const InkAprCalculator = ({
             />
           ))}
 
-          {/* Current value thumb */}
+          {/* Current value thumb - enlarged hit area for mobile touch */}
           <div
-            className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-4 h-4 rounded-full border-2 border-white/90 shadow-md pointer-events-none transition-colors duration-150"
-            style={{
-              left: `${sliderPosition}%`,
-              background: positionToThumbColor(sliderPosition),
-            }}
-          />
+            className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-11 h-11 flex items-center justify-center cursor-pointer"
+            style={{ left: `${sliderPosition}%` }}
+          >
+            <div
+              className={`w-4 h-4 rounded-full border-2 border-white/90 shadow-md pointer-events-none transition-all duration-150 ${
+                isDragging ? 'scale-125' : ''
+              }`}
+              style={{ background: positionToThumbColor(sliderPosition) }}
+            />
+          </div>
 
           {/* Tooltip with background - no extra spacing needed */}
           {(showTooltip || isDragging) && (
@@ -771,9 +775,9 @@ const InkAprCalculator = ({
         </div>
       </div>
 
-      {/* Collapsible Reference section - visible on all screen sizes, balanced spacing */}
-      <Collapsible open={isReferenceOpen} onOpenChange={setIsReferenceOpen} className="mt-[var(--ds-space-1)]">
-        <CollapsibleTrigger className="flex items-center gap-[var(--ds-space-1-5)] ds-text-11 text-muted-foreground hover:text-foreground transition-colors w-full py-1">
+      {/* Collapsible Reference section - increased top margin for better touch separation */}
+      <Collapsible open={isReferenceOpen} onOpenChange={setIsReferenceOpen} className="mt-[var(--ds-space-2)]">
+        <CollapsibleTrigger className="flex items-center gap-[var(--ds-space-1-5)] ds-text-11 text-muted-foreground hover:text-foreground transition-colors w-full py-1.5">
           <ChevronDown 
             className={`w-3.5 h-3.5 transition-transform duration-200 ${isReferenceOpen ? 'rotate-180' : ''}`} 
           />
@@ -783,7 +787,7 @@ const InkAprCalculator = ({
             = $<span className={`transition-colors duration-300 ${fdvJustChanged ? 'text-[rgb(var(--ds-brand-magenta-rgb))]' : 'text-muted-foreground/50'}`}>{formatInkPrice(currentFdvBillions)}</span>/INK
           </span>
         </CollapsibleTrigger>
-        <CollapsibleContent className="pt-[var(--ds-space-1-5)]">
+        <CollapsibleContent className="pt-1">
           <div className="flex flex-wrap gap-[var(--ds-space-2)]">
             {displayPoints.map((point) => {
               const isSelected = Math.abs(currentFdvBillions - point.fdv) < 0.02;
