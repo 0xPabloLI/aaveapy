@@ -665,7 +665,7 @@ const InkAprCalculator = ({
           onBlur={handleFdvInputBlur}
           onKeyDown={handleFdvInputKeyDown}
           placeholder={isFdvInputFocused ? '' : '1.00'}
-          className="w-9 min-w-0 px-1 !text-[11px] font-normal tabular-nums bg-transparent border-0 shadow-none text-muted-foreground/50 placeholder:text-muted-foreground/50 focus:text-foreground focus-visible:ring-0 focus-visible:ring-offset-0 h-7 min-h-0 py-0 text-center appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [line-height:1.75rem]"
+          className={`w-9 min-w-0 px-1 !text-[11px] font-normal tabular-nums bg-transparent border-0 shadow-none placeholder:text-muted-foreground/50 focus:text-foreground focus-visible:ring-0 focus-visible:ring-offset-0 h-7 min-h-0 py-0 text-center appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [line-height:1.75rem] transition-colors duration-300 ${fdvJustChanged ? 'text-[rgb(var(--ds-brand-magenta-rgb))]' : 'text-muted-foreground/50'}`}
           aria-label="Estimated $INK FDV in billions"
         />
         <span className="h-7 inline-flex items-center justify-center !text-[11px] leading-none text-muted-foreground/50 w-[1ch] shrink-0">B</span>

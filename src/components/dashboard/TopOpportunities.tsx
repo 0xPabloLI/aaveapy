@@ -47,9 +47,20 @@ interface TopOpportunitiesProps {
 
 const DISPLAY_COUNT = 5;
 
+const XL_BREAKPOINT = 1280;
+
 const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick, tydroPointToUsdRate }: TopOpportunitiesProps) => {
   const isMobile = useIsMobile();
+  const [isXl, setIsXl] = useState(false);
   const prevIsApyRef = useRef(isApy);
+
+  useEffect(() => {
+    const mql = window.matchMedia(`(min-width: ${XL_BREAKPOINT}px)`);
+    const onChange = () => setIsXl(mql.matches);
+    mql.addEventListener('change', onChange);
+    setIsXl(mql.matches);
+    return () => mql.removeEventListener('change', onChange);
+  }, []);
   const isApyChanged = prevIsApyRef.current !== isApy;
 
   useEffect(() => {
@@ -700,8 +711,8 @@ const TopOpportunities = ({ pools, isApy, categoryGroups, onIncentiveClick, tydr
     }
   ];
 
-  // Desktop and tablet grid layout (2x2 on medium screens, 4 columns on large)
-  if (!isMobile) {
+  // Desktop only (xl+): grid layout. Mobile + tablet: carousel (swipe) below.
+  if (isXl) {
     return (
       <div className="grid gap-[var(--ds-space-3)] md:gap-[var(--ds-space-4)] grid-cols-2 xl:grid-cols-4">
         {categories.map((category) => (
