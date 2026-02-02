@@ -754,8 +754,8 @@ const InkAprCalculator = ({
             style={{ left: `${sliderPosition}%` }}
           >
             <div
-              className={`w-4 h-4 rounded-full border-2 border-white/90 shadow-md pointer-events-none transition-all duration-150 ${
-                isDragging ? 'scale-125' : ''
+              className={`w-5 h-5 rounded-full border-2 border-white shadow-md pointer-events-none transition-all duration-150 ${
+                isDragging ? 'scale-[1.4] shadow-lg ring-2 ring-white/30' : ''
               }`}
               style={{ background: positionToThumbColor(sliderPosition) }}
             />
