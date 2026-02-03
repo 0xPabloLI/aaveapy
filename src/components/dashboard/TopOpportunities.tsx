@@ -500,10 +500,11 @@ const TopOpportunities = ({ pools, isApy, isRateDragging = false, categoryGroups
       name: pool.tokenName,
     });
     const marketDisplayName = getMarketDisplayName(pool);
-    const CardWrapper: React.ElementType = disableMotion ? 'div' : motion.div;
     return (
-      <CardWrapper
-        {...(disableMotion ? {} : {
+      <motion.div
+        {...(disableMotion
+          ? { initial: false, animate: false as const }
+          : {
           custom: index,
           initial: false,
           animate: 'visible',
@@ -546,7 +547,7 @@ const TopOpportunities = ({ pools, isApy, isRateDragging = false, categoryGroups
             </span>
           )}
         </div>
-      </CardWrapper>
+      </motion.div>
     );
   };
 
@@ -577,16 +578,13 @@ const TopOpportunities = ({ pools, isApy, isRateDragging = false, categoryGroups
       symbol: pool.tokenSymbol,
       name: pool.tokenName,
     });
-    const marketDisplayName = getMarketDisplayName(pool);
-
     const shouldAnimateItem = !disableMotion && !isMobile && !isRateDragging;
-    const ItemWrapper: React.ElementType = shouldAnimateItem ? motion.div : 'div';
 
     return (
-      <ItemWrapper 
+      <motion.div
         {...(shouldAnimateItem
-          ? { custom: index, initial: 'hidden', animate: 'visible', variants: itemVariants }
-          : {})}
+          ? { custom: index, initial: false, animate: 'visible', variants: itemVariants }
+          : { initial: false, animate: false as const })}
         className={`flex items-center rounded-lg border transition-all group cursor-pointer h-[56px] ${
           isLeverage 
             ? 'bg-background border-border hover:border-[rgb(var(--ds-purple-500-rgb)/0.5)]'
@@ -596,19 +594,26 @@ const TopOpportunities = ({ pools, isApy, isRateDragging = false, categoryGroups
       >
         {/* Token Info - Mobile style layout: large icon left, text right */}
         <div className="grid grid-cols-[auto,1fr,auto] grid-rows-[auto,auto] content-center items-center gap-x-[var(--ds-space-2)] gap-y-[var(--ds-space-1)] flex-1 min-w-0 h-full">
-          <PoolIdentity
-            iconSymbol={iconSymbol}
+          <TokenIcon
+            symbol={iconSymbol}
+            size={isMobile ? 28 : 32}
+            loading="eager"
+            className="shrink-0 row-span-2"
             logoURI={logoURI}
-            tokenSymbol={pool.tokenSymbol}
-            chainName={pool.chainName}
-            chainIconSrc={chainIconSrc}
-            marketDisplayName={marketDisplayName}
-            isMobile={isMobile}
           />
+          <p className="font-semibold text-foreground truncate leading-none ds-text-14">
+            {pool.tokenSymbol}
+          </p>
           <div
             className={`${(isLeverage ? getSpreadColorClass(mainValue, index, totalItems) : getApyColorClass(mainValue))} font-bold tabular-nums text-right leading-none ${isMobile ? 'ds-text-16' : 'ds-text-18'} ${!isLeverage && !hasIncentive ? 'row-span-2 self-center' : ''}`}
           >
             {isLeverage ? formatSpread(mainValue) : formatPercent(mainValue)}
+          </div>
+          <div className="flex items-center gap-[var(--ds-space-1)] min-w-0 leading-none">
+            {chainIconSrc && (
+              <img src={chainIconSrc} alt={pool.chainName} className="shrink-0 w-3.5 h-3.5" />
+            )}
+            <p className="text-secondary truncate ds-text-11 leading-none">{getMarketDisplayName(pool)}</p>
           </div>
           {/* Detail breakdown - Only show for supply type */}
           {!isLeverage && hasIncentive && (
@@ -641,7 +646,7 @@ const TopOpportunities = ({ pools, isApy, isRateDragging = false, categoryGroups
             </div>
           )}
         </div>
-      </ItemWrapper>
+      </motion.div>
     );
   };
 
@@ -667,8 +672,8 @@ const TopOpportunities = ({ pools, isApy, isRateDragging = false, categoryGroups
     type: 'supply' | 'leverage';
     emptyMessage: string;
   }) => {
-    const shouldAnimateHeader = !isMobile && !isRateDragging && !isApyChanged;
-    const shouldAnimateList = !isMobile && !isRateDragging && !isApyChanged;
+    const shouldAnimateHeader = false;
+    const shouldAnimateList = !isMobile && !isApyChanged;
     return (
         <div className={`bg-card border border-border/60 shadow-sm rounded-xl ${isMobile ? 'ds-card-pad-sm' : 'ds-card-pad'} ${isMobile ? 'col-span-1' : ''} flex flex-col`}>
         <CategoryCardHeader
@@ -695,7 +700,7 @@ const TopOpportunities = ({ pools, isApy, isRateDragging = false, categoryGroups
                       index={i}
                       type={type}
                       totalItems={categoryPools.length}
-                      disableMotion={!shouldAnimateList}
+                      disableMotion={isRateDragging || !shouldAnimateList}
                     />
                   ) : (
                     <PoolItem 
@@ -704,6 +709,7 @@ const TopOpportunities = ({ pools, isApy, isRateDragging = false, categoryGroups
                       index={i} 
                       type={type}
                       totalItems={categoryPools.length}
+                      disableMotion={isRateDragging}
                     />
                   )
                 ))}
