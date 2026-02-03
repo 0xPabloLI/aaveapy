@@ -736,7 +736,8 @@ const InkAprCalculator = ({
           </DesktopTooltip>
         )}
       </div>
-      <span className="shrink-0 whitespace-nowrap">to update the incentive APR</span>
+      <span className="shrink-0 whitespace-nowrap min-[470px]:hidden">to update</span>
+      <span className="hidden shrink-0 whitespace-nowrap min-[470px]:inline">to update the incentive APR</span>
     </div>
   );
 
