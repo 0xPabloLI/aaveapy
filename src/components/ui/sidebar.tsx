@@ -531,21 +531,28 @@ const SidebarMenuSkeleton = React.forwardRef<
     showIcon?: boolean;
   }
 >(({ className, showIcon = false, ...props }, ref) => {
-  // Random width between 50 to 90%.
+  // Keep width randomness constrained so skeleton rows feel realistic.
   const width = React.useMemo(() => {
-    return `${Math.floor(Math.random() * 40) + 50}%`;
+    return `${Math.floor(Math.random() * 32) + 56}%`;
   }, []);
 
   return (
     <div
       ref={ref}
       data-sidebar="menu-skeleton"
-      className={cn("flex h-8 items-center gap-[var(--ds-space-2)] rounded-md px-[var(--ds-space-2)]", className)}
+      className={cn("flex h-8 items-center gap-[var(--ds-space-2)] rounded-lg px-[var(--ds-space-2)]", className)}
       {...props}
     >
-      {showIcon && <Skeleton className="size-4 rounded-md" data-sidebar="menu-skeleton-icon" />}
+      {showIcon && (
+        <Skeleton
+          variant="gradient"
+          className="size-4 rounded-md border-transparent"
+          data-sidebar="menu-skeleton-icon"
+        />
+      )}
       <Skeleton
-        className="h-4 max-w-[--skeleton-width] flex-1"
+        variant="subtle"
+        className="h-4 max-w-[--skeleton-width] flex-1 rounded-md"
         data-sidebar="menu-skeleton-text"
         style={
           {
