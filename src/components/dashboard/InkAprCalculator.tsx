@@ -349,8 +349,8 @@ const InkAprCalculator = ({
 
   const fdvTooltipContent = (
     <div className="space-y-1">
-      <p className="text-muted-foreground ds-text-11 leading-snug">Fully Diluted Valuation, in billions USD</p>
-      <p className="text-muted-foreground ds-text-11 leading-snug">
+      <p className="text-muted-foreground ds-text-12 leading-snug">Fully Diluted Valuation, in billions USD</p>
+      <p className="text-muted-foreground ds-text-12 leading-snug">
         INK total supply: {TOTAL_SUPPLY.toLocaleString()} (1 billion){' '}
         <a
           href="https://x.com/inkfndhq/status/1934991370957033888"
