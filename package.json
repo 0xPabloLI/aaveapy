@@ -10,7 +10,8 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
-    "sync-token-icons": "node scripts/sync-token-icons.mjs"
+    "sync-token-icons": "node scripts/sync-token-icons.mjs",
+    "test": "vitest run"
   },
   "dependencies": {
     "@bgd-labs/aave-address-book": "^4.38.0",
@@ -89,6 +90,7 @@
     "tailwindcss": "^3.4.17",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.38.0",
-    "vite": "^7.3.1"
+    "vite": "^7.3.1",
+    "vitest": "^3.2.4"
   }
 }
