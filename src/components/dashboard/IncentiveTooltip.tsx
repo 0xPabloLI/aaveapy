@@ -190,12 +190,12 @@ const IncentiveTooltip = ({
     const protocolIncentives = type === 'supply' ? pool.supplyIncentives : pool.borrowIncentives;
     if (protocolIncentives && Array.isArray(protocolIncentives) && protocolIncentives.length > 0) {
       const totalProtocol = protocolIncentives.reduce((sum, apr) => {
-        if (!isNaN(apr) && apr > 0) {
+        if (!isNaN(apr) && apr >= 0) {
           return sum + (isApy ? convertAprToApy(apr) : apr);
         }
         return sum;
       }, 0);
-      if (totalProtocol > 0) {
+      if (totalProtocol >= 0) {
         sources.push({
           name: 'Protocol Incentive',
           value: totalProtocol,
@@ -216,18 +216,18 @@ const IncentiveTooltip = ({
         // Convert each APR to APY separately then sum (convertAprToApy is non-linear)
         let totalValue = 0;
         if (isApy) {
-          if (!isNaN(apr) && apr > 0) {
+          if (!isNaN(apr) && apr >= 0) {
             totalValue += convertAprToApy(apr);
           }
-          if (!isNaN(selfApr) && selfApr > 0) {
+          if (!isNaN(selfApr) && selfApr >= 0) {
             totalValue += convertAprToApy(selfApr);
           }
         } else {
           // For APR mode, just sum the APR values
-          totalValue = (!isNaN(apr) && apr > 0 ? apr : 0) + (!isNaN(selfApr) && selfApr > 0 ? selfApr : 0);
+          totalValue = (!isNaN(apr) && apr >= 0 ? apr : 0) + (!isNaN(selfApr) && selfApr >= 0 ? selfApr : 0);
         }
         
-        if (totalValue > 0) {
+        if (totalValue >= 0) {
           const name = merit.name
             ? merit.name
             : meritIncentives.length > 1 
@@ -256,7 +256,7 @@ const IncentiveTooltip = ({
     if (brevisIncentives && Array.isArray(brevisIncentives) && brevisIncentives.length > 0) {
       brevisIncentives.forEach((brevis) => {
         const apr = brevis.apr;
-        if (!isNaN(apr) && apr > 0) {
+        if (!isNaN(apr) && apr >= 0) {
           sources.push({
             name: brevis.name || 'Brevis Incentive',
             value: isApy ? convertAprToApy(apr) : apr,
@@ -268,7 +268,7 @@ const IncentiveTooltip = ({
           });
         }
       });
-    } else if (brevisLegacyApr !== null && brevisLegacyApr !== undefined && !isNaN(brevisLegacyApr) && brevisLegacyApr > 0) {
+    } else if (brevisLegacyApr !== null && brevisLegacyApr !== undefined && !isNaN(brevisLegacyApr) && brevisLegacyApr >= 0) {
       const brevisValue = isApy ? convertAprToApy(brevisLegacyApr) : brevisLegacyApr;
       sources.push({
         name: 'Brevis Incentive',
@@ -286,7 +286,7 @@ const IncentiveTooltip = ({
         if (!opportunity.breakdowns || !Array.isArray(opportunity.breakdowns)) return;
         opportunity.breakdowns.forEach((breakdown) => {
           const apr = getMerklBreakdownApr(breakdown, tydroPointToUsdRate);
-          if (!isNaN(apr) && apr > 0) {
+          if (!isNaN(apr) && apr >= 0) {
             sources.push({
               name: opportunity.name || 'Merkl Incentive',
               value: isApy ? convertAprToApy(apr) : apr,
