@@ -31,6 +31,11 @@ interface IncentiveSource {
   dateRange?: string;
   message?: string | Record<string, unknown> | unknown[];
   requiredTokens?: string[] | string;
+  campaigns?: Array<{
+    value: number;
+    dateRange?: string;
+    message?: string | Record<string, unknown> | unknown[];
+  }>;
 }
 
 const lightSourceIconMap: Record<NonNullable<IncentiveSource['sourceType']>, string> = {
@@ -166,8 +171,8 @@ const IncentiveTooltip = ({
   const accentClass =
     accentBorderClass ??
     (type === 'supply'
-      ? 'border-l-[3px] border-l-[rgb(var(--ds-emerald-500-rgb)/0.35)]'
-      : 'border-l-[3px] border-l-[rgb(var(--ds-brand-cyan-rgb)/0.35)]');
+      ? 'border-l-[3px] border-l-[rgb(var(--ds-emerald-500-rgb))]'
+      : 'border-l-[3px] border-l-[rgb(var(--ds-brand-cyan-rgb))]');
   const valueAccentClass =
     accentTextClass ?? (type === 'supply' ? 'ds-text-emerald-600' : 'ds-text-brand-cyan');
   const valueBgClass =
@@ -180,6 +185,29 @@ const IncentiveTooltip = ({
 
   const getMerklLink = (opportunity: MerklOpportunityGroup): string | undefined => {
     return opportunity.link || opportunity.opportunityLink;
+  };
+
+  const buildSourceGroupKey = (source: IncentiveSource): string =>
+    `${source.sourceType ?? 'Unknown'}|${source.name}|${source.link ?? ''}`;
+
+  const groupIncentiveSources = (sources: IncentiveSource[]): IncentiveSource[] => {
+    const grouped = new Map<string, IncentiveSource>();
+
+    sources.forEach((source) => {
+      const key = buildSourceGroupKey(source);
+      const campaigns = source.campaigns ?? [{ value: source.value, dateRange: source.dateRange, message: source.message }];
+      const existing = grouped.get(key);
+
+      if (!existing) {
+        grouped.set(key, { ...source, campaigns: [...campaigns] });
+        return;
+      }
+
+      existing.value += source.value;
+      existing.campaigns = [...(existing.campaigns ?? []), ...campaigns];
+    });
+
+    return Array.from(grouped.values());
   };
 
   // Get detailed incentive sources (unified layout)
@@ -202,6 +230,7 @@ const IncentiveTooltip = ({
           color: 'text-foreground',
           bgColor: 'bg-muted/60',
           sourceType: 'Protocol',
+          campaigns: [{ value: totalProtocol }],
         });
       }
     }
@@ -243,6 +272,11 @@ const IncentiveTooltip = ({
             link: merit.link,
             message: merit.message,
             dateRange: formatDateRange(merit.startDate, merit.endDate) || undefined,
+            campaigns: [{
+              value: totalValue,
+              dateRange: formatDateRange(merit.startDate, merit.endDate) || undefined,
+              message: merit.message,
+            }],
           });
         }
       });
@@ -265,6 +299,10 @@ const IncentiveTooltip = ({
             sourceType: 'Brevis',
             link: brevis.link,
             dateRange: formatDateRange(brevis.startDate, brevis.endDate) || undefined,
+            campaigns: [{
+              value: isApy ? convertAprToApy(apr) : apr,
+              dateRange: formatDateRange(brevis.startDate, brevis.endDate) || undefined,
+            }],
           });
         }
       });
@@ -276,6 +314,7 @@ const IncentiveTooltip = ({
         color: 'text-foreground',
         bgColor: 'bg-muted/60',
         sourceType: 'Brevis',
+        campaigns: [{ value: brevisValue }],
       });
     }
 
@@ -296,18 +335,83 @@ const IncentiveTooltip = ({
               link: getMerklLink(opportunity),
               message: opportunity.message,
               dateRange: formatDateRange(breakdown.campaignStartedAt, breakdown.campaignEndedAt) || undefined,
+              campaigns: [{
+                value: isApy ? convertAprToApy(apr) : apr,
+                dateRange: formatDateRange(breakdown.campaignStartedAt, breakdown.campaignEndedAt) || undefined,
+                message: opportunity.message,
+              }],
             });
           }
         });
       });
     }
 
-    return sources;
+    return groupIncentiveSources(sources);
   };
 
 
   const incentiveSources = getIncentiveSources();
   const hasDetails = incentiveSources.length > 0;
+
+  const renderSourceCampaigns = (source: IncentiveSource, keyPrefix: string) => {
+    const campaigns = source.campaigns ?? [{ value: source.value, dateRange: source.dateRange, message: source.message }];
+
+    if (campaigns.length === 1) {
+      const campaign = campaigns[0];
+      const messageLines = getMessageLines(campaign.message);
+      return (
+        <>
+          {campaign.dateRange && (
+            <p className={`ds-tooltip-body mt-[var(--ds-space-1)] break-words ${valueAccentClass}`}>
+              Campaign time: {campaign.dateRange}
+            </p>
+          )}
+          {messageLines.length > 0 && (
+            <ul className="mt-[var(--ds-space-1)] space-y-[var(--ds-space-1)] ds-tooltip-body text-muted-foreground">
+              {messageLines.map((line, lineIndex) => (
+                <li key={`${keyPrefix}-message-${lineIndex}`} className="flex items-start gap-[var(--ds-space-1)]">
+                  <span className={`mt-[0.4em] h-1 w-1 rounded-full bg-current flex-shrink-0 ${valueAccentClass}`} />
+                  <span className="min-w-0 break-words">{renderMessageLine(line, valueAccentClass)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
+      );
+    }
+
+    return (
+      <div className="mt-[var(--ds-space-1)] space-y-[var(--ds-space-1-5)]">
+        {campaigns.map((campaign, campaignIndex) => {
+          const messageLines = getMessageLines(campaign.message);
+          const campaignLabel = campaign.dateRange ? `Campaign time: ${campaign.dateRange}` : 'Campaign time: N/A';
+          return (
+            <div
+              key={`${keyPrefix}-campaign-${campaignIndex}`}
+              className={campaignIndex > 0 ? 'pt-[var(--ds-space-0-5)]' : ''}
+            >
+              <div className="flex items-start justify-between gap-[var(--ds-space-2)]">
+                <p className={`ds-tooltip-body break-words min-w-0 ${valueAccentClass}`}>{campaignLabel}</p>
+                <span className={`ds-tooltip-body tabular-nums font-semibold whitespace-nowrap ${valueAccentClass}`}>
+                  {formatPercent(campaign.value)}
+                </span>
+              </div>
+              {messageLines.length > 0 && (
+                <ul className="mt-[var(--ds-space-1)] space-y-[var(--ds-space-1)] ds-tooltip-body text-muted-foreground">
+                  {messageLines.map((line, lineIndex) => (
+                    <li key={`${keyPrefix}-campaign-${campaignIndex}-message-${lineIndex}`} className="flex items-start gap-[var(--ds-space-1)]">
+                      <span className={`mt-[0.4em] h-1 w-1 rounded-full bg-current flex-shrink-0 ${valueAccentClass}`} />
+                      <span className="min-w-0 break-words">{renderMessageLine(line, valueAccentClass)}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
 
   useLayoutEffect(() => {
     const updatePosition = () => {
@@ -373,9 +477,10 @@ const IncentiveTooltip = ({
           <div className="ds-tooltip-pad pt-[var(--ds-space-3)] pb-[var(--ds-space-3)]">
             {/* Detailed sources */}
             {hasDetails ? (
-              <div className="divide-y divide-border/40 my-[var(--ds-space-2)]">
+              <div className="relative my-[var(--ds-space-2)] pl-[var(--ds-space-2)]">
+                <div className={`pointer-events-none absolute left-0 top-0 bottom-0 ${accentClass}`} />
+                <div className="divide-y divide-border/40">
                 {incentiveSources.map((source, index) => {
-                  const messageLines = getMessageLines(source.message);
                   const valueClass = `ds-tooltip-title ${valueAccentClass}`;
                   const linkClass = `${valueAccentClass} ${valueBgClass} transition-opacity opacity-80 hover:opacity-100`;
                   const iconSrc = source.sourceType ? getSourceIcon(source.sourceType, isDark) : null;
@@ -386,7 +491,7 @@ const IncentiveTooltip = ({
                   return (
                     <div 
                       key={`${source.name}-${index}`}
-                      className={`ds-tooltip-item relative px-[var(--ds-space-2)] py-[var(--ds-space-1)] ${accentClass}`}
+                      className="ds-tooltip-item relative px-[var(--ds-space-2)] py-[var(--ds-space-1)]"
                     >
                       <div className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-1)]">
                         <div className="flex items-center gap-[var(--ds-space-1-5)] min-w-0 flex-1 pr-1">
@@ -430,24 +535,11 @@ const IncentiveTooltip = ({
                           </span>
                         </div>
                       </div>
-                    {source.dateRange && (
-                      <p className={`ds-tooltip-body mt-[var(--ds-space-1)] break-words ${valueAccentClass}`}>
-                        Campaign time: {source.dateRange}
-                      </p>
-                    )}
-                    {messageLines.length > 0 && (
-                      <ul className="mt-[var(--ds-space-1)] space-y-[var(--ds-space-1)] ds-tooltip-body text-muted-foreground">
-                        {messageLines.map((line, lineIndex) => (
-                          <li key={`message-${index}-${lineIndex}`} className="flex items-start gap-[var(--ds-space-1)]">
-                            <span className={`mt-[0.4em] h-1 w-1 rounded-full bg-current flex-shrink-0 ${valueAccentClass}`} />
-                            <span className="min-w-0 break-words">{renderMessageLine(line, valueAccentClass)}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
+                      {renderSourceCampaigns(source, `mobile-${index}`)}
                     </div>
                   );
                 })}
+                </div>
               </div>
             ) : (
               <div className="mb-[var(--ds-space-2)]">
@@ -497,9 +589,10 @@ const IncentiveTooltip = ({
         <div className="w-full min-w-0">
           {/* Detailed sources */}
           {hasDetails ? (
-            <div className="divide-y divide-border/40 my-[var(--ds-space-2)]">
+            <div className="relative my-[var(--ds-space-2)] pl-[var(--ds-space-2)]">
+              <div className={`pointer-events-none absolute left-0 top-0 bottom-0 ${accentClass}`} />
+              <div className="divide-y divide-border/40">
               {incentiveSources.map((source, index) => {
-                const messageLines = getMessageLines(source.message);
                 const valueClass = `ds-tooltip-title ${valueAccentClass}`;
                 const linkClass = `${valueAccentClass} ${valueBgClass} transition-opacity opacity-80 hover:opacity-100`;
                 const iconSrc = source.sourceType ? getSourceIcon(source.sourceType, isDark) : null;
@@ -510,7 +603,7 @@ const IncentiveTooltip = ({
                 return (
                   <div 
                     key={`${source.name}-${index}`}
-                    className={`ds-tooltip-item relative px-[var(--ds-space-2)] py-[var(--ds-space-1)] ${accentClass} animate-in fade-in-0 slide-in-from-top-2`}
+                    className="ds-tooltip-item relative px-[var(--ds-space-2)] py-[var(--ds-space-1)] animate-in fade-in-0 slide-in-from-top-2"
                     style={{ animationDelay: `${index * 45}ms` }}
                   >
                     <div className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-1)]">
@@ -555,24 +648,11 @@ const IncentiveTooltip = ({
                         </span>
                       </div>
                     </div>
-                    {source.dateRange && (
-                      <p className={`ds-tooltip-body mt-[var(--ds-space-1)] break-words ${valueAccentClass}`}>
-                        Campaign time: {source.dateRange}
-                      </p>
-                    )}
-                    {messageLines.length > 0 && (
-                      <ul className="mt-[var(--ds-space-1)] space-y-[var(--ds-space-1)] ds-tooltip-body text-muted-foreground">
-                        {messageLines.map((line, lineIndex) => (
-                          <li key={`message-desktop-${index}-${lineIndex}`} className="flex items-start gap-[var(--ds-space-1)]">
-                            <span className={`mt-[0.4em] h-1 w-1 rounded-full bg-current flex-shrink-0 ${valueAccentClass}`} />
-                            <span className="min-w-0 break-words">{renderMessageLine(line, valueAccentClass)}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
+                    {renderSourceCampaigns(source, `desktop-${index}`)}
                   </div>
                 );
               })}
+              </div>
             </div>
           ) : (
             <div className="mb-[var(--ds-space-2)]">
