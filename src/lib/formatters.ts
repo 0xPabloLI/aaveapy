@@ -69,7 +69,7 @@ import { TYDRO_POINT_TO_USD_RATE, getMerklBreakdownApr } from '@/lib/tydro';
 const sumNumberArray = (arr?: number[]): number => {
   if (!arr || !Array.isArray(arr)) return 0;
   return arr.reduce((sum, val) => {
-    return (!isNaN(val) && val > 0) ? sum + val : sum;
+    return (!isNaN(val) && val >= 0) ? sum + val : sum;
   }, 0);
 };
 
@@ -229,7 +229,7 @@ export const calculateTotalIncentiveApy = (
   let protocolApy = 0;
   if (protocolIncentives && Array.isArray(protocolIncentives)) {
     protocolIncentives.forEach(apr => {
-      if (!isNaN(apr) && apr > 0) {
+      if (!isNaN(apr) && apr >= 0) {
         protocolApy += convertAprToApy(apr);
       }
     });

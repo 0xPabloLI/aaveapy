@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import { ThemeProvider } from "next-themes";
 import LoadingState from "@/components/dashboard/LoadingState";
+import { fetchMarkets, fetchMarketStats, fetchMarketsList } from "@/hooks/useAaveMarkets";
 
 // Lazy load route components
 const Index = lazy(() => import("./pages/Index"));
@@ -17,6 +18,24 @@ const queryClient = new QueryClient({
       staleTime: 5 * 60 * 1000,
     },
   },
+});
+
+// Prefetch critical data immediately on app load
+// This starts fetching before React components mount
+queryClient.prefetchQuery({
+  queryKey: ['aave-markets'],
+  queryFn: fetchMarkets,
+  staleTime: 15000,
+});
+queryClient.prefetchQuery({
+  queryKey: ['aave-market-stats'],
+  queryFn: fetchMarketStats,
+  staleTime: 60000,
+});
+queryClient.prefetchQuery({
+  queryKey: ['aave-markets-list'],
+  queryFn: fetchMarketsList,
+  staleTime: 300000,
 });
 
 const App = () => (
