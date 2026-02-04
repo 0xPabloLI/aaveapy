@@ -409,13 +409,13 @@ const TopOpportunities = ({ pools, isApy, isRateDragging = false, categoryGroups
   };
 
   const getAccentBorderClass = (value: number | null) => {
-    if (value === null) return 'border-l-[3px] border-l-border/40';
-    if (value >= 15) return 'border-l-[3px] border-l-[rgb(var(--ds-emerald-600-rgb)/0.35)]';
-    if (value >= 10) return 'border-l-[3px] border-l-[rgb(var(--ds-emerald-500-rgb)/0.35)]';
-    if (value >= 5) return 'border-l-[3px] border-l-[rgb(var(--ds-teal-500-rgb)/0.35)]';
-    if (value >= 2) return 'border-l-[3px] border-l-[rgb(var(--ds-teal-400-rgb)/0.35)]';
-    if (value >= 1) return 'border-l-[3px] border-l-[rgb(var(--ds-cyan-500-rgb)/0.35)]';
-    return 'border-l-[3px] border-l-border/40';
+    if (value === null) return 'border-l-[4px] border-l-border/60';
+    if (value >= 15) return 'border-l-[4px] border-l-[rgb(var(--ds-emerald-600-rgb)/0.7)]';
+    if (value >= 10) return 'border-l-[4px] border-l-[rgb(var(--ds-emerald-500-rgb)/0.7)]';
+    if (value >= 5) return 'border-l-[4px] border-l-[rgb(var(--ds-teal-500-rgb)/0.7)]';
+    if (value >= 2) return 'border-l-[4px] border-l-[rgb(var(--ds-teal-400-rgb)/0.7)]';
+    if (value >= 1) return 'border-l-[4px] border-l-[rgb(var(--ds-cyan-500-rgb)/0.7)]';
+    return 'border-l-[4px] border-l-border/60';
   };
 
   const getAccentTextClass = (value: number | null) => {
