@@ -192,11 +192,9 @@ const TopOpportunities = ({ pools, isApy, isRateDragging = false, categoryGroups
       const meritIncentives = type === 'supply' ? pool.meritSupplys : pool.meritBorrows;
       const merklOpportunities = type === 'supply' ? pool.merklSupplys : pool.merklBorrows;
       const brevisIncentives = type === 'supply' ? pool.brevisSupplys : pool.brevisBorrows;
-      const brevisLegacyApr = type === 'supply' ? pool.brevisSupplyApr : pool.brevisBorrowApr;
-      const brevisSource = brevisIncentives && brevisIncentives.length > 0 ? brevisIncentives : brevisLegacyApr ?? null;
       return {
-        apr: calculateTotalIncentiveApr(meritIncentives, merklOpportunities, brevisSource, protocolIncentives, tydroPointToUsdRate),
-        apy: calculateTotalIncentiveApy(meritIncentives, merklOpportunities, brevisSource, protocolIncentives, tydroPointToUsdRate),
+        apr: calculateTotalIncentiveApr(meritIncentives, merklOpportunities, brevisIncentives, protocolIncentives, tydroPointToUsdRate),
+        apy: calculateTotalIncentiveApy(meritIncentives, merklOpportunities, brevisIncentives, protocolIncentives, tydroPointToUsdRate),
       };
     };
 

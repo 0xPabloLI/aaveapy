@@ -282,10 +282,9 @@ const IncentiveTooltip = ({
       });
     }
 
-    // Brevis incentives (array, fallback to legacy single APR)
+    // Brevis incentives (array)
     const brevisIncentives: BrevisIncentive[] | undefined =
       type === 'supply' ? pool.brevisSupplys : pool.brevisBorrows;
-    const brevisLegacyApr = type === 'supply' ? pool.brevisSupplyApr : pool.brevisBorrowApr;
 
     if (brevisIncentives && Array.isArray(brevisIncentives) && brevisIncentives.length > 0) {
       brevisIncentives.forEach((brevis) => {
@@ -305,16 +304,6 @@ const IncentiveTooltip = ({
             }],
           });
         }
-      });
-    } else if (brevisLegacyApr !== null && brevisLegacyApr !== undefined && !isNaN(brevisLegacyApr) && brevisLegacyApr >= 0) {
-      const brevisValue = isApy ? convertAprToApy(brevisLegacyApr) : brevisLegacyApr;
-      sources.push({
-        name: 'Brevis Incentive',
-        value: brevisValue,
-        color: 'text-foreground',
-        bgColor: 'bg-muted/60',
-        sourceType: 'Brevis',
-        campaigns: [{ value: brevisValue }],
       });
     }
 

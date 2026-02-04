@@ -71,9 +71,6 @@ export interface PoolWithSpread {
   brevisSupplys?: BrevisIncentive[];
   brevisBorrows?: BrevisIncentive[];
 
-  // Deprecated: legacy single APR fields
-  brevisSupplyApr?: number;
-  brevisBorrowApr?: number;
 }
 
 export interface MarketsResponse {
