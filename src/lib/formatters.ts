@@ -75,20 +75,22 @@ const sumNumberArray = (arr?: number[]): number => {
 
 /**
  * Helper: Sum Merit incentive APR values
+ * Note: apr >= 0 allows campaigns with 0 APR (e.g., not yet started) to be included
  */
 const sumMeritIncentives = (meritIncentives?: MeritIncentive[]): number => {
   if (!meritIncentives || !Array.isArray(meritIncentives)) return 0;
   return meritIncentives.reduce((sum, incentive) => {
     const apr = incentive.apr;
     const selfApr = incentive.selfApr || 0;
-    // Sum both apr and selfApr if they are valid
-    const totalApr = (!isNaN(apr) && apr > 0 ? apr : 0) + (!isNaN(selfApr) && selfApr > 0 ? selfApr : 0);
+    // Sum both apr and selfApr if they are valid (>= 0 to include not-yet-started campaigns)
+    const totalApr = (!isNaN(apr) && apr >= 0 ? apr : 0) + (!isNaN(selfApr) && selfApr >= 0 ? selfApr : 0);
     return sum + totalApr;
   }, 0);
 };
 
 /**
  * Helper: Sum Merit incentive APY values (convert each APR to APY then sum)
+ * Note: apr >= 0 allows campaigns with 0 APR (e.g., not yet started) to be included
  */
 const sumMeritIncentivesApy = (meritIncentives?: MeritIncentive[]): number => {
   if (!meritIncentives || !Array.isArray(meritIncentives)) return 0;
@@ -96,10 +98,10 @@ const sumMeritIncentivesApy = (meritIncentives?: MeritIncentive[]): number => {
     const apr = incentive.apr;
     const selfApr = incentive.selfApr || 0;
     let totalApy = 0;
-    if (!isNaN(apr) && apr > 0) {
+    if (!isNaN(apr) && apr >= 0) {
       totalApy += convertAprToApy(apr);
     }
-    if (!isNaN(selfApr) && selfApr > 0) {
+    if (!isNaN(selfApr) && selfApr >= 0) {
       totalApy += convertAprToApy(selfApr);
     }
     return sum + totalApy;
@@ -108,6 +110,7 @@ const sumMeritIncentivesApy = (meritIncentives?: MeritIncentive[]): number => {
 
 /**
  * Helper: Calculate total Merkl APR from opportunity groups
+ * Note: apr >= 0 allows campaigns with 0 APR (e.g., not yet started) to be included
  */
 const sumMerklOpportunities = (
   opportunities?: MerklOpportunityGroup[],
@@ -117,7 +120,7 @@ const sumMerklOpportunities = (
   return opportunities.reduce((sum, opp) => {
     const breakdownsApr = opp.breakdowns.reduce((breakdownSum, breakdown) => {
       const apr = getMerklBreakdownApr(breakdown, pointToUsdRate);
-      return breakdownSum + (!isNaN(apr) && apr > 0 ? apr : 0);
+      return breakdownSum + (!isNaN(apr) && apr >= 0 ? apr : 0);
     }, 0);
     return sum + breakdownsApr;
   }, 0);
@@ -125,6 +128,7 @@ const sumMerklOpportunities = (
 
 /**
  * Helper: Calculate total Merkl APY from opportunity groups (convert each APR to APY then sum)
+ * Note: apr >= 0 allows campaigns with 0 APR (e.g., not yet started) to be included
  */
 const sumMerklOpportunitiesApy = (
   opportunities?: MerklOpportunityGroup[],
@@ -134,7 +138,7 @@ const sumMerklOpportunitiesApy = (
   return opportunities.reduce((sum, opp) => {
     const breakdownsApy = opp.breakdowns.reduce((breakdownSum, breakdown) => {
       const apr = getMerklBreakdownApr(breakdown, pointToUsdRate);
-      if (!isNaN(apr) && apr > 0) {
+      if (!isNaN(apr) && apr >= 0) {
         return breakdownSum + convertAprToApy(apr);
       }
       return breakdownSum;
@@ -145,19 +149,21 @@ const sumMerklOpportunitiesApy = (
 
 /**
  * Helper: Get valid APR value (percentage form)
+ * Note: apr >= 0 allows campaigns with 0 APR (e.g., not yet started) to be included
  */
 const getValidApr = (apr?: number | null): number => {
-  return (apr !== undefined && apr !== null && !isNaN(apr) && apr > 0) ? apr : 0;
+  return (apr !== undefined && apr !== null && !isNaN(apr) && apr >= 0) ? apr : 0;
 };
 
 /**
  * Helper: Sum Brevis incentives (supports array or legacy single APR)
+ * Note: apr >= 0 allows campaigns with 0 APR (e.g., not yet started) to be included
  */
 const sumBrevisIncentives = (brevis?: BrevisIncentive[] | number | null): number => {
   if (Array.isArray(brevis)) {
     return brevis.reduce((sum, entry) => {
       const apr = entry.apr;
-      return sum + (!isNaN(apr) && apr > 0 ? apr : 0);
+      return sum + (!isNaN(apr) && apr >= 0 ? apr : 0);
     }, 0);
   }
   return getValidApr(brevis);
@@ -165,16 +171,17 @@ const sumBrevisIncentives = (brevis?: BrevisIncentive[] | number | null): number
 
 /**
  * Helper: Sum Brevis incentives as APY (supports array or legacy single APR)
+ * Note: apr >= 0 allows campaigns with 0 APR (e.g., not yet started) to be included
  */
 const sumBrevisIncentivesApy = (brevis?: BrevisIncentive[] | number | null): number => {
   if (Array.isArray(brevis)) {
     return brevis.reduce((sum, entry) => {
       const apr = entry.apr;
-      return sum + (!isNaN(apr) && apr > 0 ? convertAprToApy(apr) : 0);
+      return sum + (!isNaN(apr) && apr >= 0 ? convertAprToApy(apr) : 0);
     }, 0);
   }
   const brevisAprValue = getValidApr(brevis);
-  return brevisAprValue > 0 ? convertAprToApy(brevisAprValue) : 0;
+  return brevisAprValue >= 0 ? convertAprToApy(brevisAprValue) : 0;
 };
 
 /**
