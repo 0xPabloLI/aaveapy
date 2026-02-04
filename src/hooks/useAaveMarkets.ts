@@ -74,25 +74,32 @@ export const fetchMarketsList = async (): Promise<MarketListItem[]> => {
 };
 
 export const useAaveMarkets = () => {
+  // Use cached data as placeholder for instant display (SWR pattern)
+  const cachedData = getCachedMarkets();
   return useQuery({
     queryKey: ['aave-markets'],
     queryFn: fetchMarkets,
     staleTime: 15000,
+    placeholderData: cachedData ?? undefined,
   });
 };
 
 export const useAaveMarketStats = () => {
+  const cachedData = getCachedMarketStats();
   return useQuery({
     queryKey: ['aave-market-stats'],
     queryFn: fetchMarketStats,
     staleTime: 60000,
+    placeholderData: cachedData ?? undefined,
   });
 };
 
 export const useAaveMarketsList = () => {
+  const cachedData = getCachedMarketsList();
   return useQuery({
     queryKey: ['aave-markets-list'],
     queryFn: fetchMarketsList,
     staleTime: 300000, // 5 minutes
+    placeholderData: cachedData ?? undefined,
   });
 };
