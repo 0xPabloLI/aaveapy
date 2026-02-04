@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Clock } from 'lucide-react';
 import { formatRelativeTime } from '@/lib/formatters';
 import {
@@ -12,6 +13,18 @@ interface HeaderProps {
 }
 
 const Header = ({ lastUpdated }: HeaderProps) => {
+  const [, setNowTick] = useState(() => Date.now());
+
+  useEffect(() => {
+    if (!lastUpdated) return;
+
+    const intervalId = window.setInterval(() => {
+      setNowTick(Date.now());
+    }, 60000);
+
+    return () => window.clearInterval(intervalId);
+  }, [lastUpdated]);
+
   return (
     <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-[var(--ds-space-3)] md:gap-[var(--ds-space-4)]">
       {/* Left side: Logo + Title + Mobile theme toggle */}
