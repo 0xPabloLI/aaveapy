@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, memo } from 'react';
 import { cn } from '@/lib/utils';
 import { useCoingeckoTokenImage } from '@/hooks/useCoingeckoTokenImage';
+import { isImagePreloaded } from '@/lib/preloadUtils';
 
 interface TokenIconProps {
   symbol: string;
@@ -10,7 +11,7 @@ interface TokenIconProps {
   logoURI?: string;
 }
 
-const TokenImage = ({
+const TokenImage = memo(({
   symbol,
   className,
   size,
@@ -27,7 +28,9 @@ const TokenImage = ({
   const localSvg = `/icons/tokens/${symbolKey}.svg`;
   const localPng = `/icons/tokens/${symbolKey}.png`;
   const defaultSrc = '/icons/tokens/default.svg';
-  const [src, setSrc] = useState(localSvg);
+  // If image is already preloaded, use it directly
+  const initialSrc = isImagePreloaded(localSvg) ? localSvg : localSvg;
+  const [src, setSrc] = useState(initialSrc);
   const [triedPng, setTriedPng] = useState(false);
   const [needCoingeckoFallback, setNeedCoingeckoFallback] = useState(false);
   const { data: coingeckoImageUrl, isFetched: coingeckoFetched } = useCoingeckoTokenImage(
@@ -79,7 +82,9 @@ const TokenImage = ({
       className={cn('rounded-full object-contain', className)}
     />
   );
-};
+});
+
+TokenImage.displayName = 'TokenImage';
 
 const MultiTokenIcon = ({
   symbols,
@@ -105,7 +110,7 @@ const MultiTokenIcon = ({
   </div>
 );
 
-export const TokenIcon = ({
+export const TokenIcon = memo(({
   symbol,
   className,
   size = 32,
@@ -130,4 +135,6 @@ export const TokenIcon = ({
       logoURI={logoURI}
     />
   );
-};
+});
+
+TokenIcon.displayName = 'TokenIcon';
