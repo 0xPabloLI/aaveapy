@@ -3,6 +3,9 @@ import { cn } from '@/lib/utils';
 import { useCoingeckoTokenImage } from '@/hooks/useCoingeckoTokenImage';
 import { isImagePreloaded } from '@/lib/preloadUtils';
 
+// Priority order for token icon formats (SVG first, then WebP for better compression)
+const IMAGE_FORMATS = ['svg', 'webp', 'png'] as const;
+
 interface TokenIconProps {
   symbol: string;
   className?: string;
@@ -25,23 +28,29 @@ const TokenImage = memo(({
   logoURI?: string;
 }) => {
   const symbolKey = symbol.toLowerCase();
-  const localSvg = `/icons/tokens/${symbolKey}.svg`;
-  const localPng = `/icons/tokens/${symbolKey}.png`;
   const defaultSrc = '/icons/tokens/default.svg';
-  // If image is already preloaded, use it directly
-  const initialSrc = isImagePreloaded(localSvg) ? localSvg : localSvg;
+  
+  // Build list of local sources to try
+  const localSources = useMemo(() => 
+    IMAGE_FORMATS.map(fmt => `/icons/tokens/${symbolKey}.${fmt}`),
+    [symbolKey]
+  );
+  
+  // Start with first format (SVG)
+  const initialSrc = localSources[0];
   const [src, setSrc] = useState(initialSrc);
-  const [triedPng, setTriedPng] = useState(false);
+  const [formatIndex, setFormatIndex] = useState(0);
   const [needCoingeckoFallback, setNeedCoingeckoFallback] = useState(false);
+  
   const { data: coingeckoImageUrl, isFetched: coingeckoFetched } = useCoingeckoTokenImage(
     needCoingeckoFallback ? symbol : null
   );
 
   useEffect(() => {
-    setSrc(`/icons/tokens/${symbolKey}.svg`);
-    setTriedPng(false);
+    setSrc(localSources[0]);
+    setFormatIndex(0);
     setNeedCoingeckoFallback(false);
-  }, [symbolKey]);
+  }, [symbolKey, localSources]);
 
   useEffect(() => {
     if (!needCoingeckoFallback) return;
@@ -53,19 +62,27 @@ const TokenImage = memo(({
   }, [needCoingeckoFallback, coingeckoImageUrl, coingeckoFetched]);
 
   const handleError = () => {
+    // 1. Try logoURI from API if available
     if (logoURI && src !== logoURI) {
       setSrc(logoURI);
       return;
     }
-    if (!triedPng && (src === localSvg || src === localPng)) {
-      setTriedPng(true);
-      setSrc(localPng);
+    
+    // 2. Try next local format (svg -> webp -> png)
+    const nextIndex = formatIndex + 1;
+    if (nextIndex < localSources.length && src !== defaultSrc) {
+      setFormatIndex(nextIndex);
+      setSrc(localSources[nextIndex]);
       return;
     }
+    
+    // 3. Try CoinGecko as last resort
     if (src !== defaultSrc && !needCoingeckoFallback) {
       setNeedCoingeckoFallback(true);
       return;
     }
+    
+    // 4. Fall back to default icon
     if (src !== defaultSrc) {
       setSrc(defaultSrc);
     }
