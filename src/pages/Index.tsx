@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, lazy, Suspense } from 'react';
 import { useAaveMarkets, useAaveMarketStats, useAaveMarketsList } from '@/hooks/useAaveMarkets';
 import { useQueryClient } from '@tanstack/react-query';
 import { SortField, SortOrder, TokenCategory, PoolWithSpread } from '@/types/aave';
@@ -16,11 +16,13 @@ import TopOpportunities from '@/components/dashboard/TopOpportunities';
 import PoolsTable from '@/components/dashboard/PoolsTable';
 import LoadingState from '@/components/dashboard/LoadingState';
 import PullToRefresh from '@/components/dashboard/PullToRefresh';
-import IncentiveTooltip from '@/components/dashboard/IncentiveTooltip';
-import InkAprCalculator from '@/components/dashboard/InkAprCalculator';
 import { getCachedMarkets, getCachedMarketStats, getCachedMarketsList, setCachedTydroRate } from '@/lib/cache';
 import { TYDRO_POINT_TO_USD_RATE } from '@/lib/tydro';
 import { AlertTriangle } from 'lucide-react';
+
+// Lazy load non-critical components
+const IncentiveTooltip = lazy(() => import('@/components/dashboard/IncentiveTooltip'));
+const InkAprCalculator = lazy(() => import('@/components/dashboard/InkAprCalculator'));
 
 const Index = () => {
   // State
@@ -276,11 +278,13 @@ const Index = () => {
           />
 
           {/* INK Incentive APR Calculator */}
-          <InkAprCalculator
-            rateInput={tydroPointToUsdRateInput}
-            setRateInput={setTydroPointToUsdRateInput}
-            onDragStateChange={setIsRateDragging}
-          />
+          <Suspense fallback={<div className="h-[120px] rounded-xl bg-muted/50 animate-pulse" />}>
+            <InkAprCalculator
+              rateInput={tydroPointToUsdRateInput}
+              setRateInput={setTydroPointToUsdRateInput}
+              onDragStateChange={setIsRateDragging}
+            />
+          </Suspense>
 
           {/* Top Opportunities */}
           {stablePools && stablePools.length > 0 && (
@@ -325,19 +329,21 @@ const Index = () => {
           />
 
           {topTooltipState && (
-            <IncentiveTooltip
-              pool={topTooltipState.pool}
-              type={topTooltipState.type}
-              position={topTooltipState.position}
-              triggerCenterX={topTooltipState.triggerCenterX}
-              accentBorderClass={topTooltipState.accentBorderClass}
-              accentTextClass={topTooltipState.accentTextClass}
-              accentBgClass={topTooltipState.accentBgClass}
-              onClose={() => setTopTooltipState(null)}
-              isApy={isApy}
-              tydroPointToUsdRate={tydroPointToUsdRate}
-              usePortal
-            />
+            <Suspense fallback={null}>
+              <IncentiveTooltip
+                pool={topTooltipState.pool}
+                type={topTooltipState.type}
+                position={topTooltipState.position}
+                triggerCenterX={topTooltipState.triggerCenterX}
+                accentBorderClass={topTooltipState.accentBorderClass}
+                accentTextClass={topTooltipState.accentTextClass}
+                accentBgClass={topTooltipState.accentBgClass}
+                onClose={() => setTopTooltipState(null)}
+                isApy={isApy}
+                tydroPointToUsdRate={tydroPointToUsdRate}
+                usePortal
+              />
+            </Suspense>
           )}
 
           {/* Empty state */}
