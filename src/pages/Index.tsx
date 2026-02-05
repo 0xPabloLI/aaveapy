@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, lazy, Suspense } from 'react';
+import { usePreloadPoolAssets } from '@/hooks/usePreloadPoolAssets';
 import { useAaveMarkets, useAaveMarketStats, useAaveMarketsList } from '@/hooks/useAaveMarkets';
 import { useQueryClient } from '@tanstack/react-query';
 import { SortField, SortOrder, TokenCategory, PoolWithSpread } from '@/types/aave';
@@ -19,6 +20,7 @@ import PullToRefresh from '@/components/dashboard/PullToRefresh';
 import { getCachedMarkets, getCachedMarketStats, getCachedMarketsList, setCachedTydroRate } from '@/lib/cache';
 import { TYDRO_POINT_TO_USD_RATE } from '@/lib/tydro';
 import { AlertTriangle } from 'lucide-react';
+import { preloadChainIcons } from '@/lib/preloadUtils';
 
 // Lazy load non-critical components
 const IncentiveTooltip = lazy(() => import('@/components/dashboard/IncentiveTooltip'));
@@ -125,6 +127,21 @@ const Index = () => {
   const stablePools = useMemo(() => {
     return effectivePoolsData?.data || [];
   }, [effectivePoolsData?.data]);
+
+  // Phase 3 Optimization: Preload token and chain icons during idle time
+  usePreloadPoolAssets(stablePools, {
+    limit: 40, // Preload icons for first 40 pools
+    delay: 300, // Start after initial render settles
+    enabled: stablePools.length > 0,
+  });
+
+  // Preload chain icons for hidden markets when user hovers "More" button
+  useEffect(() => {
+    if (showMarketsExpanded && orderedMarkets.length > 6) {
+      const hiddenChains = orderedMarkets.slice(6).map(m => m.chainName);
+      preloadChainIcons(hiddenChains);
+    }
+  }, [showMarketsExpanded, orderedMarkets]);
 
   const tokenCategoryGroups = useMemo(
     () => buildTokenCategoryGroups(tokenCategoryOverrides),
