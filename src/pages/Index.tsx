@@ -20,7 +20,7 @@ import PullToRefresh from '@/components/dashboard/PullToRefresh';
 import { getCachedMarkets, getCachedMarketStats, getCachedMarketsList, setCachedTydroRate } from '@/lib/cache';
 import { TYDRO_POINT_TO_USD_RATE } from '@/lib/tydro';
 import { AlertTriangle } from 'lucide-react';
-import { preloadChainIcons } from '@/lib/preloadUtils';
+import { preloadChainIcons, preloadIncentiveIcons } from '@/lib/preloadUtils';
 
 // Lazy load non-critical components
 const IncentiveTooltip = lazy(() => import('@/components/dashboard/IncentiveTooltip'));
@@ -142,6 +142,17 @@ const Index = () => {
       preloadChainIcons(hiddenChains);
     }
   }, [showMarketsExpanded, orderedMarkets]);
+
+  // Preload incentive icons after initial data load (for tooltip)
+  useEffect(() => {
+    if (!stablePools || stablePools.length === 0) return;
+    // Delay to not interfere with initial render
+    const timeoutId = setTimeout(() => {
+      preloadIncentiveIcons();
+    }, 500);
+    return () => clearTimeout(timeoutId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stablePools.length > 0]);
 
   const tokenCategoryGroups = useMemo(
     () => buildTokenCategoryGroups(tokenCategoryOverrides),
