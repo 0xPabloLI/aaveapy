@@ -131,3 +131,24 @@
  export function isImagePreloaded(src: string): boolean {
    return preloadedImages.has(src);
  }
+
+/**
+ * Preload incentive-related icons (partner logos, source icons)
+ * Called after initial page load to ensure they're ready when tooltip opens
+ */
+export function preloadIncentiveIcons(): void {
+  const incentiveIcons = [
+    // Partner logos (light theme)
+    '/icons/partners/aci-black.svg',
+    '/icons/partners/brevis-black.svg',
+    '/icons/partners/merkl-black.svg',
+    // Partner logos (dark theme)
+    '/icons/partners/aci-white.svg',
+    '/icons/partners/brevis-white.svg',
+    '/icons/partners/merkl-white.svg',
+    // Protocol icon
+    '/icons/tokens/aave.svg',
+  ];
+
+  preloadImagesIdle(incentiveIcons);
+}
