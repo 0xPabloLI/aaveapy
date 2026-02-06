@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { ArrowUp, ArrowDown, ChevronDown, ChevronUp } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { PoolWithSpread, ETHEREUM_MARKET_NAMES } from '@/types/aave';
+import { PoolWithSpread, ETHEREUM_MARKET_NAMES, TokenPricesIndex } from '@/types/aave';
 import { 
   formatPercent, 
   formatSpread, 
@@ -32,13 +32,14 @@ interface PoolsTableProps {
   isApy: boolean;
   onSelectMarket?: (marketName: string) => void;
   tydroPointToUsdRate: number;
+  tokenPrices?: TokenPricesIndex;
 }
 
 type SortMode = 'total' | 'native' | 'incentive';
 
 const DEFAULT_VISIBLE_COUNT = 20;
 
-const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket, tydroPointToUsdRate }: PoolsTableProps) => {
+const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket, tydroPointToUsdRate, tokenPrices }: PoolsTableProps) => {
   const isMobile = useIsMobile();
   const [activeSortColumn, setActiveSortColumn] = useState<'supply' | 'borrow' | 'spread' | null>('supply');
   const [supplySortMode, setSupplySortMode] = useState<SortMode>('incentive');
@@ -507,6 +508,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
             onClose={() => setTooltipState(null)}
             isApy={isApy}
             tydroPointToUsdRate={tydroPointToUsdRate}
+            tokenPrices={tokenPrices}
           />
         )}
       </div>
@@ -982,6 +984,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
           onClose={() => setTooltipState(null)}
           isApy={isApy}
           tydroPointToUsdRate={tydroPointToUsdRate}
+          tokenPrices={tokenPrices}
         />
       )}
     </div>

@@ -78,6 +78,7 @@ export interface MarketsResponse {
   lastUpdated: string;
   isStale: boolean;
   updateInProgress: boolean;
+  tokenPrices?: TokenPricesIndex;
 }
 
 export interface MarketStats {
@@ -91,6 +92,17 @@ export interface MarketListItem {
   marketName: string;
   chainName: string;
 }
+
+export interface TokenPriceEntry {
+  chainId: number;
+  address: string;
+  symbol: string;
+  price: number;
+  updatedAt: number;
+  source: string;
+}
+
+export type TokenPricesIndex = Record<string, TokenPriceEntry>;
 
 export interface MerklForecastStateResponse {
   campaignId: string;

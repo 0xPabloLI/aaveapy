@@ -1,15 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, Loader2 } from 'lucide-react';
 
-import type { PoolWithSpread } from '@/types/aave';
+import type { PoolWithSpread, TokenPricesIndex } from '@/types/aave';
 import { collectMerklCampaignOptions } from '@/lib/merklCampaigns';
 import { fetchMerklForecastState, fetchMerklForecastStates } from '@/lib/merklForecastApi';
 import { shouldSurfaceForecastError } from '@/lib/merklForecastErrors';
 import { forecastWithTVL } from '@/lib/merklForecast';
 import { formatPercent } from '@/lib/formatters';
+import { formatNumberInput, parseNumberInput } from '@/lib/numberFormat';
 
 interface MerklForecastPanelProps {
   pools: PoolWithSpread[];
+  tokenPrices?: TokenPricesIndex;
 }
 
 const formatUsd = (value: number): string =>
@@ -19,10 +21,10 @@ const formatUsd = (value: number): string =>
     maximumFractionDigits: value >= 1000 ? 0 : 2,
   }).format(value);
 
-const MerklForecastPanel = ({ pools }: MerklForecastPanelProps) => {
+const MerklForecastPanel = ({ pools, tokenPrices }: MerklForecastPanelProps) => {
   const campaignOptions = useMemo(() => collectMerklCampaignOptions(pools), [pools]);
   const [selectedCampaignId, setSelectedCampaignId] = useState('');
-  const [depositInput, setDepositInput] = useState('100000');
+  const [depositInput, setDepositInput] = useState('100,000');
   const [loading, setLoading] = useState(false);
   const [states, setStates] = useState<Record<string, Awaited<ReturnType<typeof fetchMerklForecastState>>>>({});
   const [error, setError] = useState<string | null>(null);
@@ -77,22 +79,30 @@ const MerklForecastPanel = ({ pools }: MerklForecastPanelProps) => {
     };
   }, [campaignOptions]);
 
-  const deposit = useMemo(() => {
-    const normalized = depositInput.replace(/,/g, '').trim();
-    const parsed = Number(normalized);
-    return Number.isFinite(parsed) ? Math.max(parsed, 0) : 0;
-  }, [depositInput]);
+  const selectedOption = useMemo(
+    () => campaignOptions.find((option) => option.campaignId === selectedCampaignId) || null,
+    [campaignOptions, selectedCampaignId]
+  );
+
+  const tokenKey = selectedOption
+    ? `${selectedOption.chainId}:${selectedOption.tokenAddress.toLowerCase()}`
+    : null;
+  const tokenPrice = tokenKey ? tokenPrices?.[tokenKey]?.price : undefined;
+  const tokenSymbol = selectedOption?.tokenSymbol ?? 'Token';
+
+  const depositAssetAmount = useMemo(() => parseNumberInput(depositInput), [depositInput]);
+  const depositUsd = tokenPrice ? depositAssetAmount * tokenPrice : 0;
 
   const selectedState = selectedCampaignId ? states[selectedCampaignId] : undefined;
   const forecast = useMemo(() => {
     if (!selectedState) return null;
-    const hypotheticalTvl = Math.max(selectedState.latestTvl + deposit, 0);
+    const hypotheticalTvl = Math.max(selectedState.latestTvl + depositUsd, 0);
     return {
       hypotheticalTvl,
       ...forecastWithTVL(selectedState, hypotheticalTvl),
       isCatchingUp: selectedState.distributedSoFar < selectedState.expectedByNow,
     };
-  }, [deposit, selectedState]);
+  }, [depositUsd, selectedState]);
 
   if (campaignOptions.length === 0) {
     return null;
@@ -127,14 +137,23 @@ const MerklForecastPanel = ({ pools }: MerklForecastPanelProps) => {
         </label>
 
         <label className="text-xs text-muted-foreground">
-          Deposit Amount (USD)
+          Amount ({tokenSymbol})
           <input
             value={depositInput}
-            onChange={(event) => setDepositInput(event.target.value)}
+            onChange={(event) => setDepositInput(formatNumberInput(event.target.value))}
             inputMode="decimal"
             className="mt-1 w-full rounded-md border border-border bg-background px-2 py-2 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            placeholder="e.g. 100000"
+            placeholder="e.g. 100,000"
           />
+          {tokenPrice ? (
+            <span className="mt-1 block text-[11px] text-muted-foreground">
+              ≈ {formatUsd(depositUsd)}
+            </span>
+          ) : (
+            <span className="mt-1 block text-[11px] text-muted-foreground">
+              Price unavailable for {tokenSymbol}; forecast uses current TVL.
+            </span>
+          )}
         </label>
       </div>
 

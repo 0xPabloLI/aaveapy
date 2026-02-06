@@ -4,6 +4,9 @@ export interface MerklCampaignOption {
   campaignId: string;
   label: string;
   actionType: 'Supply' | 'Borrow' | 'Hold';
+  tokenSymbol: string;
+  tokenAddress: string;
+  chainId: number;
 }
 
 const addFromGroups = (
@@ -22,6 +25,9 @@ const addFromGroups = (
         campaignId,
         actionType,
         label: `${pool.chainName} · ${pool.marketName} · ${pool.tokenSymbol} · ${actionType}${groupName}`,
+        tokenSymbol: pool.tokenSymbol,
+        tokenAddress: pool.tokenAddress,
+        chainId: pool.chainId,
       });
     });
   });

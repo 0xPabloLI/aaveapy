@@ -80,7 +80,11 @@ describe('collectMerklCampaignOptions', () => {
     const ids = options.map((option) => option.campaignId);
 
     expect(ids).toEqual(['borrow-1', 'hold-1', 'supply-1']);
-    expect(options.find((option) => option.campaignId === 'supply-1')?.label).toContain('Supply');
+    const supply = options.find((option) => option.campaignId === 'supply-1');
+    expect(supply?.label).toContain('Supply');
+    expect(supply?.tokenSymbol).toBe('USDC');
+    expect(supply?.tokenAddress).toBe('0x1');
+    expect(supply?.chainId).toBe(1);
     expect(options.find((option) => option.campaignId === 'borrow-1')?.label).toContain('Borrow');
     expect(options.find((option) => option.campaignId === 'hold-1')?.label).toContain('Hold');
   });

@@ -316,7 +316,7 @@ const Index = () => {
           </Suspense>
 
           <Suspense fallback={<div className="h-[120px] rounded-xl bg-muted/50 animate-pulse" />}>
-            <MerklForecastPanel pools={filteredPools} />
+            <MerklForecastPanel pools={filteredPools} tokenPrices={effectivePoolsData?.tokenPrices} />
           </Suspense>
 
           {/* Top Opportunities */}
@@ -359,6 +359,7 @@ const Index = () => {
               );
             }}
             tydroPointToUsdRate={tydroPointToUsdRate}
+            tokenPrices={effectivePoolsData?.tokenPrices}
           />
 
           {topTooltipState && (
@@ -374,6 +375,7 @@ const Index = () => {
                 onClose={() => setTopTooltipState(null)}
                 isApy={isApy}
                 tydroPointToUsdRate={tydroPointToUsdRate}
+                tokenPrices={effectivePoolsData?.tokenPrices}
                 usePortal
               />
             </Suspense>

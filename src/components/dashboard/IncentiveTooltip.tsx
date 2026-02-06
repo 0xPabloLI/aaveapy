@@ -2,11 +2,12 @@ import { useRef, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ExternalLink, X } from 'lucide-react';
 import { useTheme } from 'next-themes';
-import { PoolWithSpread, MeritIncentive, MerklOpportunityGroup, BrevisIncentive } from '@/types/aave';
+import { PoolWithSpread, MeritIncentive, MerklOpportunityGroup, BrevisIncentive, TokenPricesIndex } from '@/types/aave';
 import { formatPercent, convertAprToApy } from '@/lib/formatters';
 import { getMerklBreakdownApr } from '@/lib/tydro';
 import { fetchMerklForecastState } from '@/lib/merklForecastApi';
 import { forecastWithTVL } from '@/lib/merklForecast';
+import { formatNumberInput, parseNumberInput } from '@/lib/numberFormat';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface IncentiveTooltipProps {
@@ -21,6 +22,7 @@ interface IncentiveTooltipProps {
   accentTextClass?: string;
   accentBgClass?: string;
   tydroPointToUsdRate: number;
+  tokenPrices?: TokenPricesIndex;
 }
 
 interface IncentiveSource {
@@ -77,6 +79,7 @@ const IncentiveTooltip = ({
   accentTextClass,
   accentBgClass,
   tydroPointToUsdRate,
+  tokenPrices,
 }: IncentiveTooltipProps) => {
   const { resolvedTheme } = useTheme();
   const isMobile = useIsMobile();
@@ -223,12 +226,12 @@ const IncentiveTooltip = ({
     return Array.from(grouped.values());
   };
 
-  const parsedDeposit = useMemo(() => {
-    const normalized = depositInput.replace(/,/g, '').trim();
-    if (!normalized) return 0;
-    const parsed = Number(normalized);
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
-  }, [depositInput]);
+  const tokenKey = `${pool.chainId}:${pool.tokenAddress.toLowerCase()}`;
+  const tokenPrice = tokenPrices?.[tokenKey]?.price;
+  const tokenSymbol = pool.tokenSymbol || 'Token';
+
+  const depositAssetAmount = useMemo(() => parseNumberInput(depositInput), [depositInput]);
+  const depositUsd = tokenPrice ? depositAssetAmount * tokenPrice : 0;
 
   const campaignIds = useMemo(() => {
     const opportunities = type === 'supply' ? pool.merklSupplys : pool.merklBorrows;
@@ -406,15 +409,24 @@ const IncentiveTooltip = ({
   const merklForecastInput = showForecastInput ? (
     <div className="mb-[var(--ds-space-2)] rounded-lg border border-border/60 bg-muted/20 px-[var(--ds-space-2)] py-[var(--ds-space-2)]">
       <label className="ds-tooltip-body text-muted-foreground block mb-[var(--ds-space-1)]">
-        Merkl TVL Forecast (deposit amount in USD)
+        Merkl TVL Forecast (amount in {tokenSymbol})
       </label>
       <input
         value={depositInput}
-        onChange={(event) => setDepositInput(event.target.value)}
+        onChange={(event) => setDepositInput(formatNumberInput(event.target.value))}
         inputMode="decimal"
-        placeholder="e.g. 100000"
+        placeholder="e.g. 100,000"
         className="w-full rounded-md border border-border bg-background px-[var(--ds-space-2)] py-[var(--ds-space-1-5)] ds-tooltip-body text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
       />
+      {tokenPrice ? (
+        <p className="mt-[var(--ds-space-1)] ds-tooltip-body text-muted-foreground">
+          ≈ {formatUsd(depositUsd)}
+        </p>
+      ) : (
+        <p className="mt-[var(--ds-space-1)] ds-tooltip-body text-muted-foreground">
+          Price unavailable for {tokenSymbol}; forecast uses current TVL.
+        </p>
+      )}
       <p className="mt-[var(--ds-space-1)] ds-tooltip-body text-muted-foreground">
         Forecasts apply to capped Merkl campaigns only.
       </p>
@@ -424,12 +436,12 @@ const IncentiveTooltip = ({
   const renderSourceCampaigns = (source: IncentiveSource, keyPrefix: string) => {
     const campaigns = source.campaigns ?? [{ value: source.value, dateRange: source.dateRange, message: source.message, sourceType: source.sourceType }];
     const getForecastPreview = (campaign: (typeof campaigns)[number]) => {
-      if (parsedDeposit <= 0) return null;
+      if (depositUsd <= 0) return null;
       if (campaign.sourceType !== 'Merkl' || !campaign.campaignId) return null;
       const forecastState = merklForecastStates[campaign.campaignId];
       if (!forecastState) return null;
 
-      const hypotheticalTvl = Math.max(forecastState.latestTvl + parsedDeposit, 0);
+      const hypotheticalTvl = Math.max(forecastState.latestTvl + depositUsd, 0);
       const forecast = forecastWithTVL(forecastState, hypotheticalTvl);
       return {
         hypotheticalTvl,
