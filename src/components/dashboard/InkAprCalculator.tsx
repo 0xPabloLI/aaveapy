@@ -35,10 +35,11 @@ interface ReferencePoint {
 const REFERENCE_POINTS: ReferencePoint[] = [
   { id: 'zero', fdv: 0, position: 0 },
   { id: 'default', fdv: 1.0, position: 12, isDefault: true },
-  { id: 'okx', fdv: 2.1, position: 29.6, exchange: 'OKX', chain: 'X Layer', token: 'OKB', link: 'https://www.coingecko.com/en/coins/okb' },
-  { id: 'bitget', fdv: 3.2, position: 47.2, exchange: 'Bitget', chain: 'Morph', token: 'BGB', link: 'https://www.coingecko.com/en/coins/bitget-token' },
-  { id: 'bybit', fdv: 5.0, position: 64.8, exchange: 'Bybit', chain: 'Mantle', token: 'MNT', link: 'https://www.coingecko.com/en/coins/mantle' },
-  { id: 'cryptocom', fdv: 8.5, position: 82.4, exchange: 'Crypto.com', chain: 'Cronos', token: 'CRO', link: 'https://www.coingecko.com/en/coins/cronos' },
+  { id: 'okx', fdv: 2.1, position: 26.7, exchange: 'OKX', chain: 'X Layer', token: 'OKB', link: 'https://www.coingecko.com/en/coins/okb' },
+  { id: 'gate', fdv: 2.6, position: 41.3, exchange: 'Gate', chain: 'Gate Layer', token: 'GT', link: 'https://www.coingecko.com/en/coins/gatechain-token' },
+  { id: 'bitget', fdv: 3.2, position: 56.0, exchange: 'Bitget', chain: 'Morph', token: 'BGB', link: 'https://www.coingecko.com/en/coins/bitget-token' },
+  { id: 'bybit', fdv: 5.0, position: 70.7, exchange: 'Bybit', chain: 'Mantle', token: 'MNT', link: 'https://www.coingecko.com/en/coins/mantle' },
+  { id: 'cryptocom', fdv: 8.5, position: 85.3, exchange: 'Crypto.com', chain: 'Cronos', token: 'CRO', link: 'https://www.coingecko.com/en/coins/cronos' },
   { id: 'binance', fdv: 115.8, position: 100, exchange: 'Binance', chain: 'BSC', token: 'BNB', link: 'https://www.coingecko.com/en/coins/bnb' },
 ];
 

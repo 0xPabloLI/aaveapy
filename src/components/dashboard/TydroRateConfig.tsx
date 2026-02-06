@@ -62,6 +62,13 @@ const TydroRateConfig = ({
       link: 'https://www.coingecko.com/en/coins/mantle',
     },
     {
+      exchange: 'Gate',
+      chain: 'Gate Layer',
+      token: 'GT',
+      fdv: getFdvDisplay('GT'),
+      link: 'https://www.coingecko.com/en/coins/gatechain-token',
+    },
+    {
       exchange: 'Bitget',
       chain: 'Morph',
       token: 'BGB',
