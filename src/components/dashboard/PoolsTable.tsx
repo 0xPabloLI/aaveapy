@@ -15,6 +15,7 @@ import {
   calculateTotalIncentiveApy,
   apyToApr
 } from '@/lib/formatters';
+import { compareIncentiveWithNative } from '@/lib/sorters';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { IncentiveIcon } from '@/components/IncentiveIcon';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
@@ -128,11 +129,9 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
       } else if (supplySortMode === 'incentive') {
         const aIncentive = isApy ? getIncentiveValues(a, 'supply').apy : getIncentiveValues(a, 'supply').apr;
         const bIncentive = isApy ? getIncentiveValues(b, 'supply').apy : getIncentiveValues(b, 'supply').apr;
-        // Handle NaN values
-        if (isNaN(aIncentive) && isNaN(bIncentive)) return 0;
-        if (isNaN(aIncentive)) return 1;
-        if (isNaN(bIncentive)) return -1;
-        comparison = bIncentive - aIncentive;
+        const aNative = getNativeSupplyApy(a);
+        const bNative = getNativeSupplyApy(b);
+        return compareIncentiveWithNative(aIncentive, bIncentive, aNative, bNative, supplySortOrder);
       } else {
         // Total sorting - use totalSupplyApy (Native + Incentive)
         const aTotal = isApy ? getTotalSupplyApy(a) : getTotalSupplyApr(a);
@@ -155,11 +154,9 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
       } else if (borrowSortMode === 'incentive') {
         const aIncentive = isApy ? getIncentiveValues(a, 'borrow').apy : getIncentiveValues(a, 'borrow').apr;
         const bIncentive = isApy ? getIncentiveValues(b, 'borrow').apy : getIncentiveValues(b, 'borrow').apr;
-        // Handle NaN values
-        if (isNaN(aIncentive) && isNaN(bIncentive)) return 0;
-        if (isNaN(aIncentive)) return 1;
-        if (isNaN(bIncentive)) return -1;
-        comparison = bIncentive - aIncentive;
+        const aNative = getNativeBorrowApy(a);
+        const bNative = getNativeBorrowApy(b);
+        return compareIncentiveWithNative(aIncentive, bIncentive, aNative, bNative, borrowSortOrder);
       } else {
         // Total sorting
         const aTotal = isApy ? getTotalBorrowApy(a) : getTotalBorrowApr(a);
