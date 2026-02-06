@@ -69,6 +69,13 @@ const TydroRateConfig = ({
       link: 'https://www.coingecko.com/en/coins/bitget-token',
     },
     {
+      exchange: 'Gate',
+      chain: 'Gate Layer',
+      token: 'GT',
+      fdv: getFdvDisplay('GT'),
+      link: 'https://www.coingecko.com/en/coins/gatechain-token',
+    },
+    {
       exchange: 'Binance',
       chain: 'BSC',
       token: 'BNB',
