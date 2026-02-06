@@ -92,6 +92,32 @@ export interface MarketListItem {
   chainName: string;
 }
 
+export interface MerklForecastStateResponse {
+  campaignId: string;
+  totalBudget: number;
+  desiredDaily: number;
+  remainingBudget: number;
+  remainingDays: number;
+  maxAPR: number;
+  computedUntil: number | null;
+  asOf: number;
+  distributedSoFar: number;
+  latestTvl: number;
+  startTimestamp: number;
+  endTimestamp: number;
+  expectedByNow: number;
+}
+
+export interface MerklForecastStatesBatchResponse {
+  requested: number;
+  items: MerklForecastStateResponse[];
+  errors: Array<{
+    campaignId: string;
+    status: number;
+    message: string;
+  }>;
+}
+
 export type SortField = 'totalSupplyApy' | 'totalBorrowApy' | 'apySpread' | null;
 export type SortOrder = 'asc' | 'desc';
 export type TokenCategory = 'stablecoin' | 'eth-related' | 'btc-related' | 'pendle' | 'all';

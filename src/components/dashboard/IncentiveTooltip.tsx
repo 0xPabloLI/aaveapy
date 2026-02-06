@@ -1,10 +1,12 @@
-import { useRef, useEffect, useLayoutEffect, useState } from 'react';
+import { useRef, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ExternalLink, X } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { PoolWithSpread, MeritIncentive, MerklOpportunityGroup, BrevisIncentive } from '@/types/aave';
 import { formatPercent, convertAprToApy } from '@/lib/formatters';
 import { getMerklBreakdownApr } from '@/lib/tydro';
+import { fetchMerklForecastState } from '@/lib/merklForecastApi';
+import { forecastWithTVL } from '@/lib/merklForecast';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface IncentiveTooltipProps {
@@ -35,6 +37,8 @@ interface IncentiveSource {
     value: number;
     dateRange?: string;
     message?: string | Record<string, unknown> | unknown[];
+    campaignId?: string;
+    sourceType?: IncentiveSource['sourceType'];
   }>;
 }
 
@@ -79,6 +83,8 @@ const IncentiveTooltip = ({
   const tooltipRef = useRef<HTMLDivElement>(null);
   const [arrowLeft, setArrowLeft] = useState(0);
   const [tooltipLeft, setTooltipLeft] = useState<number | null>(null);
+  const [depositInput, setDepositInput] = useState('');
+  const [merklForecastStates, setMerklForecastStates] = useState<Record<string, Awaited<ReturnType<typeof fetchMerklForecastState>>>>({});
   const portalTarget = typeof document !== 'undefined' ? document.body : null;
   const numberMatch = /^(\d+(?:\.\d+)?%?)$/;
   const currencyMatch = /^[€$£¥]$/;
@@ -128,6 +134,13 @@ const IncentiveTooltip = ({
     if (!startText || !endText) return null;
     return `${startText} - ${endText}`;
   };
+
+  const formatUsd = (value: number): string =>
+    new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      maximumFractionDigits: value >= 1000 ? 0 : 2,
+    }).format(value);
 
   const formatValue = (value: unknown): string => {
     if (value === null || value === undefined) return '';
@@ -195,7 +208,7 @@ const IncentiveTooltip = ({
 
     sources.forEach((source) => {
       const key = buildSourceGroupKey(source);
-      const campaigns = source.campaigns ?? [{ value: source.value, dateRange: source.dateRange, message: source.message }];
+      const campaigns = source.campaigns ?? [{ value: source.value, dateRange: source.dateRange, message: source.message, sourceType: source.sourceType }];
       const existing = grouped.get(key);
 
       if (!existing) {
@@ -209,6 +222,52 @@ const IncentiveTooltip = ({
 
     return Array.from(grouped.values());
   };
+
+  const parsedDeposit = useMemo(() => {
+    const normalized = depositInput.replace(/,/g, '').trim();
+    if (!normalized) return 0;
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+  }, [depositInput]);
+
+  const campaignIds = useMemo(() => {
+    const opportunities = type === 'supply' ? pool.merklSupplys : pool.merklBorrows;
+    if (!opportunities || !Array.isArray(opportunities)) return [];
+    const ids = new Set<string>();
+    opportunities.forEach((opportunity) => {
+      opportunity.breakdowns?.forEach((breakdown) => {
+        if (breakdown?.campaignId) ids.add(String(breakdown.campaignId));
+      });
+    });
+    return Array.from(ids);
+  }, [pool, type]);
+
+  useEffect(() => {
+    if (campaignIds.length === 0) {
+      setMerklForecastStates({});
+      return;
+    }
+
+    let cancelled = false;
+    Promise.allSettled(campaignIds.map((campaignId) => fetchMerklForecastState(campaignId)))
+      .then((results) => {
+        if (cancelled) return;
+        const next: Record<string, Awaited<ReturnType<typeof fetchMerklForecastState>>> = {};
+        results.forEach((result, index) => {
+          if (result.status === 'fulfilled') {
+            next[campaignIds[index]] = result.value;
+          }
+        });
+        setMerklForecastStates(next);
+      })
+      .catch(() => {
+        if (!cancelled) setMerklForecastStates({});
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [campaignIds]);
 
   // Get detailed incentive sources (unified layout)
   const getIncentiveSources = (): IncentiveSource[] => {
@@ -328,6 +387,8 @@ const IncentiveTooltip = ({
                 value: isApy ? convertAprToApy(apr) : apr,
                 dateRange: formatDateRange(breakdown.campaignStartedAt, breakdown.campaignEndedAt) || undefined,
                 message: opportunity.message,
+                campaignId: breakdown.campaignId,
+                sourceType: 'Merkl',
               }],
             });
           }
@@ -341,12 +402,45 @@ const IncentiveTooltip = ({
 
   const incentiveSources = getIncentiveSources();
   const hasDetails = incentiveSources.length > 0;
+  const showForecastInput = campaignIds.length > 0;
+  const merklForecastInput = showForecastInput ? (
+    <div className="mb-[var(--ds-space-2)] rounded-lg border border-border/60 bg-muted/20 px-[var(--ds-space-2)] py-[var(--ds-space-2)]">
+      <label className="ds-tooltip-body text-muted-foreground block mb-[var(--ds-space-1)]">
+        Merkl TVL Forecast (deposit amount in USD)
+      </label>
+      <input
+        value={depositInput}
+        onChange={(event) => setDepositInput(event.target.value)}
+        inputMode="decimal"
+        placeholder="e.g. 100000"
+        className="w-full rounded-md border border-border bg-background px-[var(--ds-space-2)] py-[var(--ds-space-1-5)] ds-tooltip-body text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      />
+      <p className="mt-[var(--ds-space-1)] ds-tooltip-body text-muted-foreground">
+        Forecasts apply to capped Merkl campaigns only.
+      </p>
+    </div>
+  ) : null;
 
   const renderSourceCampaigns = (source: IncentiveSource, keyPrefix: string) => {
-    const campaigns = source.campaigns ?? [{ value: source.value, dateRange: source.dateRange, message: source.message }];
+    const campaigns = source.campaigns ?? [{ value: source.value, dateRange: source.dateRange, message: source.message, sourceType: source.sourceType }];
+    const getForecastPreview = (campaign: (typeof campaigns)[number]) => {
+      if (parsedDeposit <= 0) return null;
+      if (campaign.sourceType !== 'Merkl' || !campaign.campaignId) return null;
+      const forecastState = merklForecastStates[campaign.campaignId];
+      if (!forecastState) return null;
+
+      const hypotheticalTvl = Math.max(forecastState.latestTvl + parsedDeposit, 0);
+      const forecast = forecastWithTVL(forecastState, hypotheticalTvl);
+      return {
+        hypotheticalTvl,
+        isCatchingUp: forecastState.distributedSoFar < forecastState.expectedByNow,
+        ...forecast,
+      };
+    };
 
     if (campaigns.length === 1) {
       const campaign = campaigns[0];
+      const forecastPreview = getForecastPreview(campaign);
       const messageLines = getMessageLines(campaign.message);
       return (
         <>
@@ -365,6 +459,19 @@ const IncentiveTooltip = ({
               ))}
             </ul>
           )}
+          {forecastPreview && (
+            <div className="mt-[var(--ds-space-1-5)] rounded-md border border-border/50 bg-muted/30 px-[var(--ds-space-2)] py-[var(--ds-space-1-5)]">
+              <p className="ds-tooltip-body text-muted-foreground">
+                Forecast at TVL {formatUsd(forecastPreview.hypotheticalTvl)}
+              </p>
+              <p className={`ds-tooltip-body mt-[var(--ds-space-0-5)] ${valueAccentClass}`}>
+                APR {formatPercent(forecastPreview.apr * 100)} · Daily Rewards {formatUsd(forecastPreview.dailyRewards)}
+              </p>
+              <p className="ds-tooltip-body text-muted-foreground mt-[var(--ds-space-0-5)]">
+                Regime: {forecastPreview.regime} · Cap binding: {forecastPreview.capBinding ? 'Yes' : 'No'} · Catching up: {forecastPreview.isCatchingUp ? 'Yes' : 'No'}
+              </p>
+            </div>
+          )}
         </>
       );
     }
@@ -372,6 +479,7 @@ const IncentiveTooltip = ({
     return (
       <div className="mt-[var(--ds-space-1)] space-y-[var(--ds-space-1-5)]">
         {campaigns.map((campaign, campaignIndex) => {
+          const forecastPreview = getForecastPreview(campaign);
           const messageLines = getMessageLines(campaign.message);
           const campaignLabel = campaign.dateRange ? `Campaign time: ${campaign.dateRange}` : 'Campaign time: N/A';
           return (
@@ -394,6 +502,19 @@ const IncentiveTooltip = ({
                     </li>
                   ))}
                 </ul>
+              )}
+              {forecastPreview && (
+                <div className="mt-[var(--ds-space-1-5)] rounded-md border border-border/50 bg-muted/30 px-[var(--ds-space-2)] py-[var(--ds-space-1-5)]">
+                  <p className="ds-tooltip-body text-muted-foreground">
+                    Forecast at TVL {formatUsd(forecastPreview.hypotheticalTvl)}
+                  </p>
+                  <p className={`ds-tooltip-body mt-[var(--ds-space-0-5)] ${valueAccentClass}`}>
+                    APR {formatPercent(forecastPreview.apr * 100)} · Daily Rewards {formatUsd(forecastPreview.dailyRewards)}
+                  </p>
+                  <p className="ds-tooltip-body text-muted-foreground mt-[var(--ds-space-0-5)]">
+                    Regime: {forecastPreview.regime} · Cap binding: {forecastPreview.capBinding ? 'Yes' : 'No'} · Catching up: {forecastPreview.isCatchingUp ? 'Yes' : 'No'}
+                  </p>
+                </div>
               )}
             </div>
           );
@@ -464,6 +585,7 @@ const IncentiveTooltip = ({
           </div>
           
           <div className="ds-tooltip-pad pt-[var(--ds-space-3)] pb-[var(--ds-space-3)]">
+            {merklForecastInput}
             {/* Detailed sources */}
             {hasDetails ? (
               <div className="relative my-[var(--ds-space-2)] pl-[var(--ds-space-2)]">
@@ -576,6 +698,7 @@ const IncentiveTooltip = ({
         />
         {/* Content area */}
         <div className="w-full min-w-0">
+          {merklForecastInput}
           {/* Detailed sources */}
           {hasDetails ? (
             <div className="relative my-[var(--ds-space-2)] pl-[var(--ds-space-2)]">

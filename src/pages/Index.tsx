@@ -25,6 +25,7 @@ import { preloadChainIcons, preloadIncentiveIcons } from '@/lib/preloadUtils';
 // Lazy load non-critical components
 const IncentiveTooltip = lazy(() => import('@/components/dashboard/IncentiveTooltip'));
 const InkAprCalculator = lazy(() => import('@/components/dashboard/InkAprCalculator'));
+const MerklForecastPanel = lazy(() => import('@/components/dashboard/MerklForecastPanel'));
 
 const Index = () => {
   // State
@@ -312,6 +313,10 @@ const Index = () => {
               setRateInput={setTydroPointToUsdRateInput}
               onDragStateChange={setIsRateDragging}
             />
+          </Suspense>
+
+          <Suspense fallback={<div className="h-[120px] rounded-xl bg-muted/50 animate-pulse" />}>
+            <MerklForecastPanel pools={filteredPools} />
           </Suspense>
 
           {/* Top Opportunities */}

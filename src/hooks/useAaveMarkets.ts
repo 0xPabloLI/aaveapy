@@ -8,9 +8,7 @@ import {
   getCachedMarketsList,
   setCachedMarketsList,
 } from '@/lib/cache';
-
-// Read API base URL from environment variable, fallback to remote URL if not set
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://api.aaveapy.com/api';
+import { API_BASE } from '@/lib/apiBase';
 
 // Fetch all market data (all sorting and filtering done on frontend)
 export const fetchMarkets = async (): Promise<MarketsResponse> => {
