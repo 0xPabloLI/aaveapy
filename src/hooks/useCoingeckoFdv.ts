@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://api.aaveapy.com/api';
 
-export interface CoingeckoFdvItem {
+interface CoingeckoFdvItem {
   id: string;
   symbol: string | null;
   name: string | null;

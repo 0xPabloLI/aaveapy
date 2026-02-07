@@ -35,7 +35,6 @@ export default {
         interactive: {
           DEFAULT: 'hsl(var(--interactive))',
           strong: 'hsl(var(--interactive-strong))',
-          accent: 'hsl(var(--interactive-accent))',
         },
         signature: {
           DEFAULT: 'hsl(var(--signature))',

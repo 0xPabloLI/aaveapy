@@ -544,7 +544,6 @@
     /* Semantic interaction/signature colors */
     --interactive: 24 7% 44%;
     --interactive-strong: 24 10% 18%;
-    --interactive-accent: 43 90% 42%;
     --signature: 24 6% 40%;
     --signature-strong: 24 9% 26%;
 
@@ -628,7 +627,6 @@
     /* Semantic interaction/signature colors */
     --interactive: 60 5% 74%;
     --interactive-strong: 60 6% 90%;
-    --interactive-accent: 43 96% 66%;
     --signature: 60 4% 76%;
     --signature-strong: 60 5% 90%;
 
