@@ -50,9 +50,9 @@ const ThemeToggle = () => {
             focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
           {isDark ? (
-            <Moon className="h-4 w-4 text-primary" />
+            <Moon className="h-4 w-4 text-success" />
           ) : (
-            <Sun className="h-4 w-4 text-primary" />
+            <Sun className="h-4 w-4 text-success" />
           )}
           <span className="sr-only">{isDark ? 'Dark mode' : 'Light mode'}</span>
         </Button>
