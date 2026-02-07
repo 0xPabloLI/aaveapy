@@ -80,12 +80,6 @@ export function setCachedMarketsList(data: MarketListItem[]): void {
   setCacheEntry(CACHE_KEYS.MARKETS_LIST, data);
 }
 
-// Get cache timestamp for a key
-export function getCacheTimestamp(key: string): string | null {
-  const entry = getCacheEntry(key);
-  return entry?.timestamp || null;
-}
-
 // Tydro point to USD rate cache (user preference)
 export function getCachedTydroRate(): number | null {
   try {
@@ -106,13 +100,5 @@ export function setCachedTydroRate(rate: number): void {
     localStorage.setItem(CACHE_KEYS.TYDRO_RATE, String(rate));
   } catch (error) {
     console.warn('Failed to write Tydro rate to cache:', error);
-  }
-}
-
-export function clearCachedTydroRate(): void {
-  try {
-    localStorage.removeItem(CACHE_KEYS.TYDRO_RATE);
-  } catch (error) {
-    console.warn('Failed to clear Tydro rate from cache:', error);
   }
 }
