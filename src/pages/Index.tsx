@@ -348,6 +348,7 @@ const Index = () => {
             sortOrder={sortOrder}
             onSort={handleSort}
             isApy={isApy}
+            isLoading={isLoading}
             onSelectMarket={(marketName) => {
               setSelectedMarkets((prev) =>
                 prev.length === 1 && prev[0] === marketName ? [] : [marketName]
@@ -375,7 +376,7 @@ const Index = () => {
           )}
 
           {/* Empty state */}
-          {filteredPools.length === 0 && effectivePoolsData && (
+          {filteredPools.length === 0 && effectivePoolsData && !isLoading && (
             <div className="text-center py-[var(--ds-space-12)]">
               <p className="text-muted-foreground">No pools found matching your filters</p>
             </div>
