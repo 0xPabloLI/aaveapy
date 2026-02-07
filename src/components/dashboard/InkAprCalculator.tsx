@@ -30,8 +30,7 @@ interface ReferencePoint {
   isDefault?: boolean;
 }
 
-// Reference points with positions (0-100%)
-// Tighter spacing: 0 at 0%, Default at 12%, then evenly distribute the rest
+// Reference points with baseline FDVs (positions are recomputed from live FDV).
 const REFERENCE_POINTS: ReferencePoint[] = [
   { id: 'zero', fdv: 0, position: 0 },
   { id: 'default', fdv: 1.0, position: 12, isDefault: true },
@@ -43,12 +42,46 @@ const REFERENCE_POINTS: ReferencePoint[] = [
   { id: 'binance', fdv: 115.8, position: 100, exchange: 'Binance', chain: 'BSC', token: 'BNB', link: 'https://www.coingecko.com/en/coins/bnb' },
 ];
 
-// Piecewise linear interpolation: evenly spaced reference points
+function fdvToLogPosition(fdv: number, maxFdv: number): number {
+  const safeMax = Math.max(maxFdv, 1);
+  const clamped = Math.max(0, Math.min(fdv, safeMax));
+  if (clamped <= 0) return 0;
+  return (Math.log1p(clamped) / Math.log1p(safeMax)) * 100;
+}
+
+function computeAlignedPositions(points: ReferencePoint[]): Map<string, number> {
+  const sorted = [...points].sort((a, b) => a.fdv - b.fdv);
+  const maxFdv = Math.max(...sorted.map((point) => point.fdv), 1);
+  const EDGE_PADDING = 2.5;
+  const MIN_GAP = 8;
+  const desired = sorted.map((point) => fdvToLogPosition(point.fdv, maxFdv));
+  const adjusted = [...desired];
+
+  if (adjusted.length === 0) return new Map();
+  adjusted[0] = EDGE_PADDING;
+
+  for (let i = 1; i < adjusted.length; i++) {
+    adjusted[i] = Math.max(desired[i], adjusted[i - 1] + MIN_GAP);
+  }
+
+  // Pin the largest FDV to the true track end so there's no trailing tail after the last marker.
+  adjusted[adjusted.length - 1] = 100;
+  for (let i = adjusted.length - 2; i >= 0; i--) {
+    adjusted[i] = Math.min(adjusted[i], adjusted[i + 1] - MIN_GAP);
+    adjusted[i] = Math.max(adjusted[i], EDGE_PADDING);
+  }
+
+  const byId = new Map<string, number>();
+  sorted.forEach((point, index) => byId.set(point.id, adjusted[index]));
+  return byId;
+}
+
+// Piecewise interpolation across computed reference points.
 function fdvToPosition(fdv: number, points: ReferencePoint[]): number {
   const sorted = [...points].sort((a, b) => a.fdv - b.fdv);
   if (fdv <= sorted[0].fdv) return sorted[0].position;
   if (fdv >= sorted[sorted.length - 1].fdv) return sorted[sorted.length - 1].position;
-  
+
   for (let i = 0; i < sorted.length - 1; i++) {
     if (fdv >= sorted[i].fdv && fdv <= sorted[i + 1].fdv) {
       const ratio = (fdv - sorted[i].fdv) / (sorted[i + 1].fdv - sorted[i].fdv);
@@ -62,7 +95,7 @@ function positionToFdv(position: number, points: ReferencePoint[]): number {
   const sorted = [...points].sort((a, b) => a.position - b.position);
   if (position <= sorted[0].position) return sorted[0].fdv;
   if (position >= sorted[sorted.length - 1].position) return sorted[sorted.length - 1].fdv;
-  
+
   for (let i = 0; i < sorted.length - 1; i++) {
     if (position >= sorted[i].position && position <= sorted[i + 1].position) {
       const ratio = (position - sorted[i].position) / (sorted[i + 1].position - sorted[i].position);
@@ -167,9 +200,9 @@ const InkAprCalculator = ({
     );
   }, [fdvData]);
 
-  // Update reference points with live FDV data
+  // Update reference points with live FDV data and recompute aligned positions.
   const referencePointsWithLiveFdv = useMemo(() => {
-    return REFERENCE_POINTS.map((point) => {
+    const pointsWithLiveFdv = REFERENCE_POINTS.map((point) => {
       if (point.token && !point.isDefault) {
         const liveFdv = fdvBySymbol.get(point.token);
         if (liveFdv !== null && liveFdv !== undefined) {
@@ -178,11 +211,23 @@ const InkAprCalculator = ({
       }
       return point;
     });
+
+    const positionById = computeAlignedPositions(pointsWithLiveFdv);
+
+    return pointsWithLiveFdv.map((point) => ({
+      ...point,
+      position: positionById.get(point.id) ?? point.position,
+    }));
   }, [fdvBySymbol]);
   
-  // Filter out the zero point for display but keep for calculation
+  // Filter out the zero point for display but keep for calculation, always ascending by FDV.
   const displayPoints = useMemo(() => {
-    return referencePointsWithLiveFdv.filter(p => p.id !== 'zero');
+    return referencePointsWithLiveFdv
+      .filter((p) => p.id !== 'zero')
+      .sort((a, b) => {
+        if (a.fdv === b.fdv) return a.position - b.position;
+        return a.fdv - b.fdv;
+      });
   }, [referencePointsWithLiveFdv]);
 
   const parsedRate = parseFloat(rateInput);
@@ -597,7 +642,7 @@ const InkAprCalculator = ({
                       pointRgb ? 'px-[var(--ds-space-2-5)]' : 'px-[var(--ds-space-1-5)]'
                     } ${
                       !isSelected && (pillHoveredPointId === point.id && linkHoveredPointId !== point.id)
-                        ? 'shadow-sm bg-muted/50'
+                        ? 'shadow-md bg-muted/50'
                         : ''
                     }`}
                     style={pointRgb ? { backgroundColor: `rgba(${pointRgb.r}, ${pointRgb.g}, ${pointRgb.b}, 0.12)` } : undefined}
@@ -856,7 +901,7 @@ const InkAprCalculator = ({
           </span>
         </CollapsibleTrigger>
         <CollapsibleContent className="pt-1">
-          <div className="flex flex-wrap gap-[var(--ds-space-2)]">
+          <div className="grid grid-cols-4 gap-[var(--ds-space-2)]">
             {displayPoints.map((point) => {
               const isSelected = Math.abs(currentFdvBillions - point.fdv) < 0.02;
               const pointRgb = isSelected ? positionToThumbRgb(point.position) : null;
@@ -864,7 +909,7 @@ const InkAprCalculator = ({
                 <button
                   key={point.id}
                   onClick={() => handlePointClick(point.fdv)}
-                  className={`inline-flex flex-col items-start gap-0.5 px-2.5 py-1.5 rounded-lg ds-text-11 transition-all duration-200 min-w-[72px] ${
+                  className={`inline-flex w-full flex-col items-start gap-0.5 px-2 py-1.5 rounded-lg ds-text-11 transition-all duration-200 min-w-0 ${
                     isSelected
                       ? 'shadow-sm'
                       : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
@@ -885,10 +930,10 @@ const InkAprCalculator = ({
                         target="_blank"
                         rel="noreferrer"
                         onClick={(e) => e.stopPropagation()}
-                        className="inline-flex items-center gap-0.5 ds-text-9 opacity-60 hover:opacity-100 transition-opacity"
+                        className="inline-flex w-full min-w-0 items-center gap-0.5 ds-text-9 opacity-60 hover:opacity-100 transition-opacity"
                       >
-                        {point.chain}/{point.token}
-                        <ExternalLink className="w-2.5 h-2.5" aria-hidden />
+                        <span className="truncate">{point.chain}/{point.token}</span>
+                        <ExternalLink className="w-2.5 h-2.5 shrink-0" aria-hidden />
                       </a>
                     </>
                   )}
