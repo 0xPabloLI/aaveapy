@@ -41,6 +41,13 @@ const TydroRateConfig = ({
 
   const referenceRows = [
     {
+      exchange: 'Gate',
+      chain: 'Gate Layer',
+      token: 'GT',
+      fdv: getFdvDisplay('GT'),
+      link: 'https://www.coingecko.com/en/coins/gatechain-token',
+    },
+    {
       exchange: 'Crypto.com',
       chain: 'Cronos',
       token: 'CRO',
