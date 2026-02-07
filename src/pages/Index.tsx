@@ -22,9 +22,10 @@ import { TYDRO_POINT_TO_USD_RATE } from '@/lib/tydro';
 import { AlertTriangle } from 'lucide-react';
 import { preloadChainIcons, preloadIncentiveIcons } from '@/lib/preloadUtils';
 
-// Lazy load non-critical components
+// Lazy load non-critical components (only for components not visible on initial render)
 const IncentiveTooltip = lazy(() => import('@/components/dashboard/IncentiveTooltip'));
-const InkAprCalculator = lazy(() => import('@/components/dashboard/InkAprCalculator'));
+// InkAprCalculator is always visible, so load it eagerly
+import InkAprCalculator from '@/components/dashboard/InkAprCalculator';
 
 const Index = () => {
   // State
@@ -306,13 +307,13 @@ const Index = () => {
           />
 
           {/* INK Incentive APR Calculator */}
-          <Suspense fallback={<div className="h-[120px] rounded-xl bg-muted/50 animate-pulse" />}>
+          <>
             <InkAprCalculator
               rateInput={tydroPointToUsdRateInput}
               setRateInput={setTydroPointToUsdRateInput}
               onDragStateChange={setIsRateDragging}
             />
-          </Suspense>
+          </>
 
           {/* Top Opportunities */}
           {stablePools && stablePools.length > 0 && (
