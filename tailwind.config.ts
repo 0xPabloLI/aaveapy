@@ -32,6 +32,15 @@ export default {
   				DEFAULT: 'hsl(var(--destructive))',
   				foreground: 'hsl(var(--destructive-foreground))'
   			},
+        interactive: {
+          DEFAULT: 'hsl(var(--interactive))',
+          strong: 'hsl(var(--interactive-strong))',
+          accent: 'hsl(var(--interactive-accent))',
+        },
+        signature: {
+          DEFAULT: 'hsl(var(--signature))',
+          strong: 'hsl(var(--signature-strong))',
+        },
   			success: {
   				DEFAULT: 'hsl(var(--success))',
   				foreground: 'hsl(var(--success-foreground))'

@@ -432,14 +432,14 @@ const Index = () => {
                 </a>
               </p>
 
-              <p className="text-xs sm:text-sm text-gray-600 opacity-85 dark:text-gray-300 dark:opacity-80">
+              <p className="text-xs sm:text-sm text-signature opacity-85">
                 Built with ❤️ by{' '}
                 <a
                   href="https://twitter.com/silenlee"
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Pablo on X"
-                  className="inline-flex items-center gap-2 align-baseline transition-opacity duration-200 hover:opacity-100 dark:hover:opacity-95"
+                  className="inline-flex items-center gap-2 align-baseline text-signature-strong transition-opacity duration-200 hover:opacity-100"
                 >
                   <span>Pablo</span>
                   <svg
