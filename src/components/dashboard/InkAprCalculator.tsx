@@ -51,28 +51,76 @@ function fdvToLogPosition(fdv: number, maxFdv: number): number {
 
 function computeAlignedPositions(points: ReferencePoint[]): Map<string, number> {
   const sorted = [...points].sort((a, b) => a.fdv - b.fdv);
-  const maxFdv = Math.max(...sorted.map((point) => point.fdv), 1);
-  const EDGE_PADDING = 2.5;
-  const MIN_GAP = 8;
-  const desired = sorted.map((point) => fdvToLogPosition(point.fdv, maxFdv));
-  const adjusted = [...desired];
+  if (sorted.length === 0) return new Map();
 
-  if (adjusted.length === 0) return new Map();
-  adjusted[0] = EDGE_PADDING;
-
-  for (let i = 1; i < adjusted.length; i++) {
-    adjusted[i] = Math.max(desired[i], adjusted[i - 1] + MIN_GAP);
+  const zeroPoint = sorted.find((point) => point.id === 'zero');
+  const visiblePoints = sorted.filter((point) => point.id !== 'zero');
+  if (visiblePoints.length === 0) {
+    return zeroPoint ? new Map([[zeroPoint.id, 0]]) : new Map();
+  }
+  if (visiblePoints.length === 1) {
+    const byId = new Map<string, number>([[visiblePoints[0].id, 100]]);
+    if (zeroPoint) byId.set(zeroPoint.id, 0);
+    return byId;
   }
 
-  // Pin the largest FDV to the true track end so there's no trailing tail after the last marker.
-  adjusted[adjusted.length - 1] = 100;
-  for (let i = adjusted.length - 2; i >= 0; i--) {
-    adjusted[i] = Math.min(adjusted[i], adjusted[i + 1] - MIN_GAP);
-    adjusted[i] = Math.max(adjusted[i], EDGE_PADDING);
+  const maxFdv = Math.max(...visiblePoints.map((point) => point.fdv), 1);
+  const desired = visiblePoints.map((point) => fdvToLogPosition(point.fdv, maxFdv));
+  const firstPos = Math.min(6, Math.max(3, desired[0]));
+  const totalSpan = 100 - firstPos;
+  const gapCount = visiblePoints.length - 1;
+  const avgGap = totalSpan / gapCount;
+  const minGap = avgGap / 1.5;
+  const maxGap = minGap * 2; // max gap no more than 2x min gap
+
+  const rawGaps = Array.from({ length: gapCount }, (_, i) => {
+    const next = desired[i + 1] ?? desired[i];
+    const curr = desired[i] ?? 0;
+    return Math.max(0.0001, next - curr);
+  });
+  const rawSum = rawGaps.reduce((sum, g) => sum + g, 0) || 1;
+  const gaps = rawGaps.map((g) => (g / rawSum) * totalSpan);
+
+  // Project gap sizes into [minGap, maxGap] while preserving total span.
+  for (let iter = 0; iter < 12; iter++) {
+    for (let i = 0; i < gaps.length; i++) {
+      gaps[i] = Math.min(maxGap, Math.max(minGap, gaps[i]));
+    }
+
+    const sum = gaps.reduce((acc, g) => acc + g, 0);
+    const delta = totalSpan - sum;
+    if (Math.abs(delta) < 0.001) break;
+
+    if (delta > 0) {
+      const expandable = gaps
+        .map((g, i) => (g < maxGap - 1e-6 ? i : -1))
+        .filter((i) => i >= 0);
+      if (expandable.length === 0) break;
+      const step = delta / expandable.length;
+      expandable.forEach((i) => {
+        gaps[i] = Math.min(maxGap, gaps[i] + step);
+      });
+    } else {
+      const shrinkable = gaps
+        .map((g, i) => (g > minGap + 1e-6 ? i : -1))
+        .filter((i) => i >= 0);
+      if (shrinkable.length === 0) break;
+      const step = (-delta) / shrinkable.length;
+      shrinkable.forEach((i) => {
+        gaps[i] = Math.max(minGap, gaps[i] - step);
+      });
+    }
   }
+
+  const positions = [firstPos];
+  for (let i = 0; i < gaps.length; i++) {
+    positions.push(positions[i] + gaps[i]);
+  }
+  positions[positions.length - 1] = 100;
 
   const byId = new Map<string, number>();
-  sorted.forEach((point, index) => byId.set(point.id, adjusted[index]));
+  visiblePoints.forEach((point, index) => byId.set(point.id, positions[index] ?? 100));
+  if (zeroPoint) byId.set(zeroPoint.id, 0);
   return byId;
 }
 
