@@ -946,8 +946,18 @@ const InkAprCalculator = ({
           />
           <span>Reference FDVs</span>
           <span className="ds-text-11 text-muted-foreground/50">(CEX chain tokens)</span>
-          <span className="ds-text-11 tabular-nums ml-auto">
+          <span className="ds-text-11 tabular-nums ml-auto inline-flex items-center gap-0.5">
             = $<span className={`transition-colors duration-300 ${fdvJustChanged ? 'text-[rgb(var(--ds-brand-magenta-rgb))]' : 'text-muted-foreground'}`}>{formatInkPrice(currentFdvBillions)}</span>/INK
+            <a
+              href="https://coinmarketcap.com/currencies/ink-token/"
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Open INK on CoinMarketCap (new tab)"
+              onClick={(e) => e.stopPropagation()}
+              className="inline-flex items-center justify-center text-muted-foreground/60 hover:text-foreground transition-colors"
+            >
+              <ExternalLink className="w-2.5 h-2.5 shrink-0" aria-hidden />
+            </a>
           </span>
         </CollapsibleTrigger>
         <CollapsibleContent className="pt-1">
