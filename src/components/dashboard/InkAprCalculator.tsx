@@ -589,11 +589,11 @@ const InkAprCalculator = ({
                 aria-label={point.isDefault ? `Set FDV to default (${point.fdv})` : `Set FDV to ${point.exchange} (${point.fdv.toFixed(2)})`}
               >
                 <div className="flex flex-col items-center leading-none gap-[var(--ds-space-0-5)] w-full">
-                  {/* Pill: only top two lines (FDV + exchange/Default), py-0 so line spacing equals gap to line 3 */}
+                  {/* Pill: keep top compact but add a little bottom breathing room under exchange/Default text. */}
                   <div
                     onMouseEnter={() => setPillHoveredPointId(point.id)}
                     onMouseLeave={() => setPillHoveredPointId(null)}
-                    className={`rounded-md py-0 flex flex-col items-center leading-none gap-[var(--ds-space-0-5)] transition-all duration-200 ${
+                    className={`rounded-md pt-0 pb-1 flex flex-col items-center leading-none gap-[var(--ds-space-0-5)] transition-all duration-200 ${
                       pointRgb ? 'px-[var(--ds-space-2-5)]' : 'px-[var(--ds-space-1-5)]'
                     } ${
                       !isSelected && (pillHoveredPointId === point.id && linkHoveredPointId !== point.id)
