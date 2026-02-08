@@ -367,7 +367,7 @@ export function AprApyToggle({ isApy, setIsApy }: AprApyToggleProps) {
   const isMobile = useIsMobile();
 
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center gap-[var(--ds-info-gap)]">
       <InfoIconButton
         aria-label="Information about APR"
         isOpen={aprOpen}

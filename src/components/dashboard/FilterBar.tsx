@@ -241,13 +241,6 @@ const FilterBar = ({
 
   return (
     <div className="space-y-2 md:space-y-3">
-      {/* Row 1 (Mobile): APY/APR Toggle */}
-      {isMobile && (
-        <div className="flex items-center gap-[var(--ds-space-1-5)]">
-          <AprApyToggle isApy={isApy} setIsApy={setIsApy} />
-        </div>
-      )}
-
       {/* Row 2: Token Categories + Search + APY Toggle (PC) / Token Categories (Mobile) */}
       <div className="flex flex-wrap items-center gap-[var(--ds-space-1-5)] md:gap-[var(--ds-space-2)]">
         {/* Token Categories */}
@@ -283,9 +276,9 @@ const FilterBar = ({
         </div>
       </div>
 
-      {/* Row 3: Search - only on mobile */}
+      {/* Row 3: Search + APY/APR toggle - only on mobile */}
       <div className="flex items-center gap-[var(--ds-space-1-5)] md:gap-[var(--ds-space-2)] md:hidden">
-        <div className="relative w-full">
+        <div className="relative flex-1 min-w-0">
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
           <Input
             ref={mobileSearchInputRef}
@@ -302,6 +295,9 @@ const FilterBar = ({
               <X className="w-3 h-3" />
             </button>
           )}
+        </div>
+        <div className="shrink-0">
+          <AprApyToggle isApy={isApy} setIsApy={setIsApy} />
         </div>
       </div>
 
