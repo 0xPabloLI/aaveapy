@@ -77,3 +77,23 @@ Yes, you can!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+
+## Branch and PR workflow
+
+- Use `dev` as the integration branch for day-to-day changes.
+- Open PRs from `dev` to `main` when preparing a release.
+- Keep PR descriptions concise and include manual verification notes.
+
+### Create a release PR from `dev` to `main`
+
+```sh
+# Ensure local refs are up to date
+git fetch origin
+
+# Push your latest dev commits
+git checkout dev
+git push origin dev
+
+# Then open: GitHub -> Compare & pull request
+# base: main, compare: dev
+```
