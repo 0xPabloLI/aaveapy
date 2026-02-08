@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { forecastWithTVL, type MerklForecastState } from './merklForecast';
+import {
+  deriveForecastProgressFlags,
+  forecastWithTVL,
+  type MerklForecastProgressState,
+  type MerklForecastState,
+} from './merklForecast';
 
 const baseState: MerklForecastState = {
   desiredDaily: 4000,
@@ -45,5 +50,41 @@ describe('forecastWithTVL', () => {
     expect(result.apr).toBe(0);
     expect(result.capBinding).toBe(false);
     expect(result.regime).toBe('BUDGET_LIMITED');
+  });
+});
+
+describe('deriveForecastProgressFlags', () => {
+  const progressState: MerklForecastProgressState = {
+    ...baseState,
+    totalBudget: 59_0910.6,
+    expectedByNow: 300_000,
+    endTimestamp: 1_770_300_000,
+  };
+
+  it('treats catching-up as a live-only state while campaign is active', () => {
+    const flags = deriveForecastProgressFlags(
+      {
+        ...progressState,
+        distributedSoFar: 250_000,
+      },
+      1_770_200_000
+    );
+
+    expect(flags.isCatchingUpLive).toBe(true);
+    expect(flags.isUnderDistributed).toBe(false);
+  });
+
+  it('marks ended under-distributed campaigns separately', () => {
+    const flags = deriveForecastProgressFlags(
+      {
+        ...progressState,
+        distributedSoFar: 547_837.39,
+        expectedByNow: 590_910.6,
+      },
+      1_770_521_447
+    );
+
+    expect(flags.isCatchingUpLive).toBe(false);
+    expect(flags.isUnderDistributed).toBe(true);
   });
 });

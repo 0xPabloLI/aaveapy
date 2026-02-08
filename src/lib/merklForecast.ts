@@ -10,11 +10,22 @@ export interface MerklForecastState {
   distributedSoFar: number;
 }
 
+export interface MerklForecastProgressState extends MerklForecastState {
+  totalBudget: number;
+  expectedByNow: number;
+  endTimestamp: number;
+}
+
 export interface MerklForecastResult {
   dailyRewards: number;
   apr: number;
   capBinding: boolean;
   regime: 'APR_CAPPED' | 'BUDGET_LIMITED';
+}
+
+export interface MerklForecastProgressFlags {
+  isCatchingUpLive: boolean;
+  isUnderDistributed: boolean;
 }
 
 const safe = (value: number): number => (Number.isFinite(value) ? Math.max(value, 0) : 0);
@@ -45,5 +56,27 @@ export const forecastWithTVL = (
     apr,
     capBinding,
     regime: capBinding ? 'APR_CAPPED' : 'BUDGET_LIMITED',
+  };
+};
+
+export const deriveForecastProgressFlags = (
+  forecastState: MerklForecastProgressState,
+  nowTs = Math.floor(Date.now() / 1000)
+): MerklForecastProgressFlags => {
+  const distributedSoFar = safe(forecastState.distributedSoFar);
+  const expectedByNow = safe(forecastState.expectedByNow);
+  const totalBudget = safe(forecastState.totalBudget);
+  const endTimestamp = safe(forecastState.endTimestamp);
+
+  if (endTimestamp > 0 && nowTs >= endTimestamp) {
+    return {
+      isCatchingUpLive: false,
+      isUnderDistributed: distributedSoFar < totalBudget,
+    };
+  }
+
+  return {
+    isCatchingUpLive: distributedSoFar < expectedByNow,
+    isUnderDistributed: false,
   };
 };

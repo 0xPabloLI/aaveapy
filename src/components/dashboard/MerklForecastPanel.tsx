@@ -5,7 +5,7 @@ import type { PoolWithSpread, TokenPricesIndex } from '@/types/aave';
 import { collectMerklCampaignOptions } from '@/lib/merklCampaigns';
 import { fetchMerklForecastState, fetchMerklForecastStates } from '@/lib/merklForecastApi';
 import { shouldSurfaceForecastError } from '@/lib/merklForecastErrors';
-import { forecastWithTVL } from '@/lib/merklForecast';
+import { deriveForecastProgressFlags, forecastWithTVL } from '@/lib/merklForecast';
 import { formatPercent } from '@/lib/formatters';
 import { formatNumberInput, parseNumberInput } from '@/lib/numberFormat';
 
@@ -97,10 +97,11 @@ const MerklForecastPanel = ({ pools, tokenPrices }: MerklForecastPanelProps) => 
   const forecast = useMemo(() => {
     if (!selectedState) return null;
     const hypotheticalTvl = Math.max(selectedState.latestTvl + depositUsd, 0);
+    const progress = deriveForecastProgressFlags(selectedState);
     return {
       hypotheticalTvl,
       ...forecastWithTVL(selectedState, hypotheticalTvl),
-      isCatchingUp: selectedState.distributedSoFar < selectedState.expectedByNow,
+      ...progress,
     };
   }, [depositUsd, selectedState]);
 
@@ -184,8 +185,8 @@ const MerklForecastPanel = ({ pools, tokenPrices }: MerklForecastPanelProps) => 
           </div>
           <div className="rounded-md border border-border/60 bg-muted/20 p-2 md:col-span-3">
             <p className="text-[11px] text-muted-foreground">
-              Regime: {forecast.regime} · Cap binding: {forecast.capBinding ? 'Yes' : 'No'} · Catching up:{' '}
-              {forecast.isCatchingUp ? 'Yes' : 'No'}
+              Regime: {forecast.regime} · Cap binding: {forecast.capBinding ? 'Yes' : 'No'} · Catching up (live):{' '}
+              {forecast.isCatchingUpLive ? 'Yes' : 'No'} · Ended under-distributed: {forecast.isUnderDistributed ? 'Yes' : 'No'}
             </p>
           </div>
         </div>

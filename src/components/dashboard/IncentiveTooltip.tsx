@@ -6,7 +6,7 @@ import { PoolWithSpread, MeritIncentive, MerklOpportunityGroup, BrevisIncentive,
 import { formatPercent, convertAprToApy } from '@/lib/formatters';
 import { getMerklBreakdownApr } from '@/lib/tydro';
 import { fetchMerklForecastState } from '@/lib/merklForecastApi';
-import { forecastWithTVL } from '@/lib/merklForecast';
+import { deriveForecastProgressFlags, forecastWithTVL } from '@/lib/merklForecast';
 import { formatNumberInput, parseNumberInput } from '@/lib/numberFormat';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -443,9 +443,10 @@ const IncentiveTooltip = ({
 
       const hypotheticalTvl = Math.max(forecastState.latestTvl + depositUsd, 0);
       const forecast = forecastWithTVL(forecastState, hypotheticalTvl);
+      const progress = deriveForecastProgressFlags(forecastState);
       return {
         hypotheticalTvl,
-        isCatchingUp: forecastState.distributedSoFar < forecastState.expectedByNow,
+        ...progress,
         ...forecast,
       };
     };
@@ -480,7 +481,7 @@ const IncentiveTooltip = ({
                 APR {formatPercent(forecastPreview.apr * 100)} · Daily Rewards {formatUsd(forecastPreview.dailyRewards)}
               </p>
               <p className="ds-tooltip-body text-muted-foreground mt-[var(--ds-space-0-5)]">
-                Regime: {forecastPreview.regime} · Cap binding: {forecastPreview.capBinding ? 'Yes' : 'No'} · Catching up: {forecastPreview.isCatchingUp ? 'Yes' : 'No'}
+                Regime: {forecastPreview.regime} · Cap binding: {forecastPreview.capBinding ? 'Yes' : 'No'} · Catching up (live): {forecastPreview.isCatchingUpLive ? 'Yes' : 'No'} · Ended under-distributed: {forecastPreview.isUnderDistributed ? 'Yes' : 'No'}
               </p>
             </div>
           )}
@@ -524,7 +525,7 @@ const IncentiveTooltip = ({
                     APR {formatPercent(forecastPreview.apr * 100)} · Daily Rewards {formatUsd(forecastPreview.dailyRewards)}
                   </p>
                   <p className="ds-tooltip-body text-muted-foreground mt-[var(--ds-space-0-5)]">
-                    Regime: {forecastPreview.regime} · Cap binding: {forecastPreview.capBinding ? 'Yes' : 'No'} · Catching up: {forecastPreview.isCatchingUp ? 'Yes' : 'No'}
+                    Regime: {forecastPreview.regime} · Cap binding: {forecastPreview.capBinding ? 'Yes' : 'No'} · Catching up (live): {forecastPreview.isCatchingUpLive ? 'Yes' : 'No'} · Ended under-distributed: {forecastPreview.isUnderDistributed ? 'Yes' : 'No'}
                   </p>
                 </div>
               )}
