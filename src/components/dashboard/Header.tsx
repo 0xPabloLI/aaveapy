@@ -29,7 +29,7 @@ const Header = ({ lastUpdated }: HeaderProps) => {
     <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-[var(--ds-space-3)] md:gap-[var(--ds-space-4)]">
       {/* Left side: Logo + Title + Mobile theme toggle */}
       <div className="flex items-center gap-[var(--ds-space-3)] md:gap-[var(--ds-space-4)]">
-        <img src="/aave_apy_logo.svg" alt="Aave APY logo" className="w-12 h-12 md:w-16 md:h-16 object-contain" />
+        <img src="/aave_apy_logo.png" alt="Aave APY logo" className="w-12 h-12 md:w-16 md:h-16 object-contain" />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-[var(--ds-space-2)] flex-wrap">
             <h1 className="ds-title whitespace-nowrap">
