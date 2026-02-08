@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import { ThemeProvider } from "next-themes";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 import LoadingState from "@/components/dashboard/LoadingState";
 import { fetchMarkets, fetchMarketStats, fetchMarketsList } from "@/hooks/useAaveMarkets";
 
@@ -53,6 +54,7 @@ const App = () => (
             </Routes>
           </Suspense>
         </BrowserRouter>
+        <SpeedInsights />
       </TooltipProvider>
     </QueryClientProvider>
   </ThemeProvider>
