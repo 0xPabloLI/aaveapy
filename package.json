@@ -1,7 +1,23 @@
 {
-  "name": "vite_react_shadcn_ts",
-  "private": true,
-  "version": "0.0.0",
+  "name": "aaveapy",
+  "version": "1.0.0",
+  "description": "React dashboard for Aave V3 market data with yield comparisons across multiple chains",
+  "author": "0xPabloLI <0xpablo.li@proton.me>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/0xPabloLI/aaveapy.git"
+  },
+  "homepage": "https://aaveapy.com",
+  "keywords": [
+    "aave",
+    "defi",
+    "yield",
+    "apy",
+    "dashboard",
+    "react",
+    "typescript"
+  ],
   "type": "module",
   "scripts": {
     "dev": "vite",

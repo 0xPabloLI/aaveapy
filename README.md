@@ -1,79 +1,74 @@
-# Welcome to your Lovable project
+# Aave APY
 
-## Project info
+A React dashboard for displaying Aave V3 market data with yield comparisons across multiple chains.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+🌐 **Live**: [aaveapy.com](https://aaveapy.com)
 
-## How can I edit this code?
+## Features
 
-There are several ways of editing your application.
+- **Multi-chain Support**: View Aave V3 markets across Ethereum, Arbitrum, Optimism, Base, Polygon, Avalanche, and more
+- **Yield Comparison**: Compare supply/borrow APYs across all supported chains
+- **Incentive Tracking**: Track additional yield from Merit, Merkl, and Brevis programs
+- **Real-time Data**: Data fetched from [api.aaveapy.com](https://api.aaveapy.com)
+- **Mobile Friendly**: Responsive design with optimized mobile experience
 
-**Use Lovable**
+## Tech Stack
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+- **Framework**: React 18 + TypeScript
+- **Build Tool**: Vite
+- **Styling**: TailwindCSS + shadcn/ui
+- **Data Fetching**: TanStack Query
 
-Changes made via Lovable will be committed automatically to this repo.
+## Getting Started
 
-**Use your preferred IDE**
+### Prerequisites
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+- Node.js 18+
+- npm
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Installation
 
-Follow these steps:
+```bash
+# Clone the repository
+git clone https://github.com/0xPabloLI/aaveapy.git
+cd aaveapy
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-# Note: The .npmrc file contains Linux platform settings required for Lovable deployments.
-# If you're developing on macOS or Windows, override them during installation:
+# Install dependencies
+# Note: .npmrc has Linux platform settings for deployment
+# Override for local development:
 #   macOS:   NPM_CONFIG_PLATFORM=darwin npm i
 #   Windows: NPM_CONFIG_PLATFORM=win32 npm i
-#   Linux:   npm i (uses .npmrc settings)
-# See .npmrc.local.example for more details.
-npm i
+npm install
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Start development server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+The app will be available at `http://localhost:8080`.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Environment Variables
 
-**Use GitHub Codespaces**
+Create a `.env` file:
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+```bash
+# API base URL (optional, defaults to https://api.aaveapy.com/api)
+VITE_API_BASE_URL=http://localhost:3001/api
+```
 
-## What technologies are used for this project?
+## Scripts
 
-This project is built with:
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start dev server |
+| `npm run build` | Production build |
+| `npm run preview` | Preview production build |
+| `npm run lint` | Run ESLint |
+| `npm run test` | Run tests |
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## License
 
-## How can I deploy this project?
+[MIT](LICENSE)
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+## Author
 
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+**0xPabloLI** - [@0xPabloLI](https://github.com/0xPabloLI)
