@@ -84,6 +84,14 @@
 - **适用范围**：`Ink incentive APR calculator` 标题、`FDV (B)` 标签、`APR/APY` 信息区等“文字 + info icon”组合统一采用该规则，不再使用局部硬编码 gap。
 - **不换行约束**：`FDV (B)` 必须保持单行（`whitespace-nowrap`），避免标签换行导致滑动条 marks 与 labels 垂直对齐漂移。
 
+### 4.8 通用 Tooltip（非 Incentive）
+- **适用范围**：短信息提示（如主题切换提示 `Switch to dark/light mode`），统一使用 `@/components/ui/tooltip`。
+- **容器形态**：`rounded-md + border + bg-popover + shadow-md`，保持中性浮层，不使用品牌强色底。
+- **内边距与字号**：默认 `px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] + ds-text-14`；导航/图标提示可降级为 `ds-text-11`。
+- **位置与偏移**：默认 `sideOffset=4`；移动端优先 `bottom`，避免左右动画造成“拉伸感”。
+- **动效规则**：移动端使用轻量 `fade + slide-from-bottom`；桌面使用 `fade + zoom`，时长保持短促（约 150-200ms 体感）。
+- **文案约束**：一句话短提示，避免长段落；不承载业务说明（业务说明使用 DesktopTooltip/MobileTooltip 专用组件）。
+
 ## 5. 布局与网格原则
 - 使用 `container` 居中，桌面最大宽 1400px
 - 移动优先：单列、紧凑间距、触控友好

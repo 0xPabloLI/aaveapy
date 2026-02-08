@@ -29,7 +29,7 @@ const TooltipContent = React.forwardRef<
       // 移动端统一从下往上弹出，避免左右滑动带来的“拉伸”感
       side={isMobile ? "bottom" : side}
       className={cn(
-        "z-50 overflow-hidden rounded-md border bg-popover px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] ds-text-14 text-popover-foreground shadow-md",
+        "z-50 max-w-[18rem] overflow-hidden rounded-md border border-border/50 bg-card px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] ds-text-14 leading-tight text-foreground shadow-sm duration-200",
         isMobile ? mobileAnimationClasses : desktopAnimationClasses,
         className,
       )}

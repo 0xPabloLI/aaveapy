@@ -57,7 +57,7 @@ const ThemeToggle = () => {
           <span className="sr-only">{isDark ? 'Dark mode' : 'Light mode'}</span>
         </Button>
       </TooltipTrigger>
-      <TooltipContent side="bottom" className="ds-text-11">
+      <TooltipContent side="bottom" className="ds-text-11 whitespace-nowrap">
         Switch to {isDark ? 'light' : 'dark'} mode
       </TooltipContent>
     </Tooltip>
