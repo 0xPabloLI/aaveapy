@@ -3,7 +3,6 @@
 ## Project Structure & Module Organization
 - `src/` contains the React + TypeScript app. Key areas: `src/pages/` for routes, `src/components/` for UI and dashboard pieces, `src/hooks/` for reusable logic, `src/lib/` for helpers, `src/types/` for shared types.
 - `public/` holds static assets (icons, robots.txt, favicon).
-- `supabase/` stores Supabase config used by integrations in `src/integrations/supabase/`.
 - `dist/` is build output from Vite. Treat as generated.
 
 ## Build, Test, and Development Commands
@@ -30,7 +29,6 @@
 
 ## Configuration & Secrets
 - Use `.env` for local secrets and keep it out of version control.
-- When changing Supabase configuration, keep `supabase/config.toml` and `src/integrations/supabase/` in sync.
 
 ---
 
