@@ -474,38 +474,40 @@ const InkAprCalculator = ({
               alt="INK"
               className="w-5 h-5 shrink-0"
             />
-            <span className="ds-text-14 md:ds-text-16 font-semibold text-foreground whitespace-nowrap">
-              Ink incentive APR calculator
-            </span>
-            <InfoIconButton
-              aria-label="Incentive APR formula"
-              isOpen={isAprTooltipOpen}
-              onToggle={() => setIsAprTooltipOpen((o) => !o)}
-              onClose={() => setIsAprTooltipOpen(false)}
-            >
-              {(triggerRect) =>
-                isMobile ? (
-                  <MobileTooltip
-                    isOpen={isAprTooltipOpen}
-                    onClose={() => setIsAprTooltipOpen(false)}
-                    title="Incentive APR formula"
-                  >
-                    <InkAprTooltipContent formatInkPrice={formatInkPrice} currentFdvBillions={currentFdvBillions} />
-                  </MobileTooltip>
-                ) : (
-                  <DesktopTooltip
-                    isOpen={isAprTooltipOpen}
-                    alignLeft
-                    triggerRect={triggerRect}
-                    onMouseEnter={() => setIsAprTooltipOpen(true)}
-                    onMouseLeave={() => setIsAprTooltipOpen(false)}
-                    title="Incentive APR formula"
-                  >
-                    <InkAprTooltipContent formatInkPrice={formatInkPrice} currentFdvBillions={currentFdvBillions} />
-                  </DesktopTooltip>
-                )
-              }
-            </InfoIconButton>
+            <div className="ds-info-inline">
+              <span className="ds-text-14 md:ds-text-16 font-semibold text-foreground whitespace-nowrap">
+                Ink incentive APR calculator
+              </span>
+              <InfoIconButton
+                aria-label="Incentive APR formula"
+                isOpen={isAprTooltipOpen}
+                onToggle={() => setIsAprTooltipOpen((o) => !o)}
+                onClose={() => setIsAprTooltipOpen(false)}
+              >
+                {(triggerRect) =>
+                  isMobile ? (
+                    <MobileTooltip
+                      isOpen={isAprTooltipOpen}
+                      onClose={() => setIsAprTooltipOpen(false)}
+                      title="Incentive APR formula"
+                    >
+                      <InkAprTooltipContent formatInkPrice={formatInkPrice} currentFdvBillions={currentFdvBillions} />
+                    </MobileTooltip>
+                  ) : (
+                    <DesktopTooltip
+                      isOpen={isAprTooltipOpen}
+                      alignLeft
+                      triggerRect={triggerRect}
+                      onMouseEnter={() => setIsAprTooltipOpen(true)}
+                      onMouseLeave={() => setIsAprTooltipOpen(false)}
+                      title="Incentive APR formula"
+                    >
+                      <InkAprTooltipContent formatInkPrice={formatInkPrice} currentFdvBillions={currentFdvBillions} />
+                    </DesktopTooltip>
+                  )
+                }
+              </InfoIconButton>
+            </div>
           </div>
           <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 ds-text-11 text-muted-foreground pl-7">
             <span>Enter your estimated <span className="font-semibold">$INK FDV</span></span>
@@ -539,51 +541,53 @@ const InkAprCalculator = ({
         {/* Center: Slider - aligned with title row */}
         <div className="relative flex-1 min-w-[120px] lg:ml-4 lg:mr-6 lg:pt-[0.375rem]">
           <div className="flex items-center gap-1.5 -mt-1">
-            <div className="relative flex items-center justify-center gap-0.5 w-14 ml-1">
-              <span className="ds-text-10 md:ds-text-11 text-muted-foreground/70 font-normal tracking-wide">
-                FDV (B)
-              </span>
-              <div className="relative inline-flex">
-                <button
-                  ref={fdvTriggerRef}
-                  type="button"
-                  aria-label="FDV definition"
-                  className="h-4 w-4 rounded-full flex items-center justify-center ds-bg-blue-500-10 ds-text-blue-500 shadow-sm hover:bg-[rgb(var(--ds-blue-500-rgb)/0.2)] hover:shadow-md transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
-                  onMouseEnter={() => {
-                    if (fdvTriggerRef.current) setFdvTriggerRect(fdvTriggerRef.current.getBoundingClientRect());
-                    if (!isMobile) setIsFdvTooltipOpen(true);
-                  }}
-                  onMouseLeave={() => !isMobile && setIsFdvTooltipOpen(false)}
-                  onClick={() => {
-                    if (isMobile && fdvTriggerRef.current) setFdvTriggerRect(fdvTriggerRef.current.getBoundingClientRect());
-                    if (isMobile) setIsFdvTooltipOpen((o) => !o);
-                  }}
-                >
-                  <Info className="h-2.5 w-2.5 shrink-0" aria-hidden />
-                </button>
-                {isMobile ? (
-                  <MobileTooltip
-                    isOpen={isFdvTooltipOpen}
-                    onClose={() => setIsFdvTooltipOpen(false)}
-                    title="FDV (B)"
-                    variant="purple"
+            <div className="relative flex items-center justify-center w-16 ml-1">
+              <div className="ds-info-inline">
+                <span className="ds-text-10 md:ds-text-11 text-muted-foreground/70 font-normal tracking-wide whitespace-nowrap">
+                  FDV (B)
+                </span>
+                <div className="relative inline-flex">
+                  <button
+                    ref={fdvTriggerRef}
+                    type="button"
+                    aria-label="FDV definition"
+                    className="h-4 w-4 rounded-full flex items-center justify-center ds-bg-blue-500-10 ds-text-blue-500 shadow-sm hover:bg-[rgb(var(--ds-blue-500-rgb)/0.2)] hover:shadow-md transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+                    onMouseEnter={() => {
+                      if (fdvTriggerRef.current) setFdvTriggerRect(fdvTriggerRef.current.getBoundingClientRect());
+                      if (!isMobile) setIsFdvTooltipOpen(true);
+                    }}
+                    onMouseLeave={() => !isMobile && setIsFdvTooltipOpen(false)}
+                    onClick={() => {
+                      if (isMobile && fdvTriggerRef.current) setFdvTriggerRect(fdvTriggerRef.current.getBoundingClientRect());
+                      if (isMobile) setIsFdvTooltipOpen((o) => !o);
+                    }}
                   >
-                    {fdvTooltipContent}
-                  </MobileTooltip>
-                ) : (
-                  <DesktopTooltip
-                    isOpen={isFdvTooltipOpen}
-                    alignLeft
-                    triggerRect={fdvTriggerRect}
-                    onMouseEnter={() => setIsFdvTooltipOpen(true)}
-                    onMouseLeave={() => setIsFdvTooltipOpen(false)}
-                    title="FDV (B)"
-                    variant="purple"
-                    hideTitle
-                  >
-                    {fdvTooltipContent}
-                  </DesktopTooltip>
-                )}
+                    <Info className="h-2.5 w-2.5 shrink-0" aria-hidden />
+                  </button>
+                  {isMobile ? (
+                    <MobileTooltip
+                      isOpen={isFdvTooltipOpen}
+                      onClose={() => setIsFdvTooltipOpen(false)}
+                      title="FDV (B)"
+                      variant="purple"
+                    >
+                      {fdvTooltipContent}
+                    </MobileTooltip>
+                  ) : (
+                    <DesktopTooltip
+                      isOpen={isFdvTooltipOpen}
+                      alignLeft
+                      triggerRect={fdvTriggerRect}
+                      onMouseEnter={() => setIsFdvTooltipOpen(true)}
+                      onMouseLeave={() => setIsFdvTooltipOpen(false)}
+                      title="FDV (B)"
+                      variant="purple"
+                      hideTitle
+                    >
+                      {fdvTooltipContent}
+                    </DesktopTooltip>
+                  )}
+                </div>
               </div>
             </div>
             <div
@@ -643,7 +647,7 @@ const InkAprCalculator = ({
         {/* Wrapper: content shifted down slightly so space(slider→labels) ≈ space(labels bottom→card bottom); minimal pt so a little space remains between thumb bottom and labels/shadow. */}
         <div className="relative flex-1 min-w-[120px] lg:ml-4 lg:mr-6 flex flex-col justify-start min-h-[3.5rem] pt-[0.6875rem] pointer-events-none">
           <div className="flex items-start gap-1.5 pointer-events-none">
-            <div className="hidden lg:flex w-14 shrink-0 flex-col items-center justify-start pt-0.5 h-8 pointer-events-auto">
+            <div className="hidden lg:flex w-16 shrink-0 flex-col items-center justify-start pt-0.5 h-8 pointer-events-auto">
               <div className="flex w-full flex-col items-center leading-none gap-[2px]">
                 <span className="h-[0.875rem] flex items-center justify-center ds-text-10 md:ds-text-11 font-medium tabular-nums whitespace-nowrap leading-none text-muted-foreground">
                   = $<span className={`transition-colors duration-300 ${fdvJustChanged ? 'text-[rgb(var(--ds-brand-magenta-rgb))]' : 'text-muted-foreground'}`}>{formatInkPrice(currentFdvBillions)}</span>/INK
@@ -660,7 +664,7 @@ const InkAprCalculator = ({
                 </a>
               </div>
             </div>
-            {/* Labels container same width as track (flex-1 after w-14 + gap-2) */}
+            {/* Labels container same width as track (flex-1 after left anchor + gap-2) */}
             <div className="relative flex-1 min-w-0 h-8 pointer-events-none">
            {/* FDV label at 0 */}
           <div
@@ -847,38 +851,40 @@ const InkAprCalculator = ({
             alt="INK"
             className="w-5 h-5 shrink-0"
           />
-          <span className="ds-text-14 font-semibold text-foreground whitespace-nowrap">
-            Ink incentive APR calculator
-          </span>
-          <InfoIconButton
-            aria-label="Incentive APR formula"
-            isOpen={isAprTooltipOpen}
-            onToggle={() => setIsAprTooltipOpen((o) => !o)}
-            onClose={() => setIsAprTooltipOpen(false)}
-          >
-            {(triggerRect) =>
-              isMobile ? (
-                <MobileTooltip
-                  isOpen={isAprTooltipOpen}
-                  onClose={() => setIsAprTooltipOpen(false)}
-                  title="Incentive APR formula"
-                >
-                  <InkAprTooltipContent formatInkPrice={formatInkPrice} currentFdvBillions={currentFdvBillions} />
-                </MobileTooltip>
-              ) : (
-                <DesktopTooltip
-                  isOpen={isAprTooltipOpen}
-                  alignLeft
-                  triggerRect={triggerRect}
-                  onMouseEnter={() => setIsAprTooltipOpen(true)}
-                  onMouseLeave={() => setIsAprTooltipOpen(false)}
-                  title="Incentive APR formula"
-                >
-                  <InkAprTooltipContent formatInkPrice={formatInkPrice} currentFdvBillions={currentFdvBillions} />
-                </DesktopTooltip>
-              )
-            }
-          </InfoIconButton>
+          <div className="ds-info-inline">
+            <span className="ds-text-14 font-semibold text-foreground whitespace-nowrap">
+              Ink incentive APR calculator
+            </span>
+            <InfoIconButton
+              aria-label="Incentive APR formula"
+              isOpen={isAprTooltipOpen}
+              onToggle={() => setIsAprTooltipOpen((o) => !o)}
+              onClose={() => setIsAprTooltipOpen(false)}
+            >
+              {(triggerRect) =>
+                isMobile ? (
+                  <MobileTooltip
+                    isOpen={isAprTooltipOpen}
+                    onClose={() => setIsAprTooltipOpen(false)}
+                    title="Incentive APR formula"
+                  >
+                    <InkAprTooltipContent formatInkPrice={formatInkPrice} currentFdvBillions={currentFdvBillions} />
+                  </MobileTooltip>
+                ) : (
+                  <DesktopTooltip
+                    isOpen={isAprTooltipOpen}
+                    alignLeft
+                    triggerRect={triggerRect}
+                    onMouseEnter={() => setIsAprTooltipOpen(true)}
+                    onMouseLeave={() => setIsAprTooltipOpen(false)}
+                    title="Incentive APR formula"
+                  >
+                    <InkAprTooltipContent formatInkPrice={formatInkPrice} currentFdvBillions={currentFdvBillions} />
+                  </DesktopTooltip>
+                )
+              }
+            </InfoIconButton>
+          </div>
         </div>
         {/* Tablet: subtitle with input on same line as title */}
         <div className="sm:min-w-0 sm:flex-1">{subtitleWithInput}</div>
