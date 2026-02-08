@@ -78,6 +78,12 @@
 - **内容**：每条展示名称、APR/APY 数值（`formatPercent`）、可选「Campaign time: 日期范围」、可选 message 列表（小圆点 + 文案）；无句号结尾，与 APR/APY 等短句 tooltip 一致。
 - **可访问性**：外链需 `title="Open link"` 或等价 `aria-label`；关闭按钮需可聚焦与可见焦点。
 
+### 4.7 信息图标与文本间距（Info Spacing）
+- **统一语义 token**：信息图标与相邻文字使用 `--ds-info-gap`，统一通过 `ds-info-inline`（`inline-flex + items-center + gap`）实现。
+- **响应式数值**：移动端默认 `--ds-info-gap = 0.25rem`（4px）；`sm` 及以上 `--ds-info-gap = 0.375rem`（6px）。
+- **适用范围**：`Ink incentive APR calculator` 标题、`FDV (B)` 标签、`APR/APY` 信息区等“文字 + info icon”组合统一采用该规则，不再使用局部硬编码 gap。
+- **不换行约束**：`FDV (B)` 必须保持单行（`whitespace-nowrap`），避免标签换行导致滑动条 marks 与 labels 垂直对齐漂移。
+
 ## 5. 布局与网格原则
 - 使用 `container` 居中，桌面最大宽 1400px
 - 移动优先：单列、紧凑间距、触控友好
@@ -102,6 +108,7 @@
 - 移动端：单列卡片或 Carousel（`basis-[85%]` peek）
 - 桌面端：表格/多列卡片（3–4 列）
 - 所有交互目标 ≥ 44x44px
+- `info icon + 文本` 统一使用 `--ds-info-gap`：移动端 4px，`sm+` 为 6px
 
 ## 4. 状态与反馈
 - 加载态必须使用 skeleton + shimmer
@@ -112,4 +119,3 @@
 - 所有交互元素必须有可见文本或 `aria-label`
 - `focus-visible:ring-2` 保持可见焦点
 - 颜色对比满足 WCAG AA
-
