@@ -9,6 +9,8 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
+    "lint:colors": "node scripts/check-semantic-colors.mjs",
+    "lint:all": "npm run lint && npm run lint:colors",
     "preview": "vite preview",
     "sync-token-icons": "node scripts/sync-token-icons.mjs",
     "test": "vitest run"
@@ -43,7 +45,6 @@
     "@radix-ui/react-toggle": "^1.1.9",
     "@radix-ui/react-toggle-group": "^1.1.10",
     "@radix-ui/react-tooltip": "^1.2.7",
-    "@supabase/supabase-js": "^2.93.3",
     "@tanstack/react-query": "^5.83.0",
     "@tanstack/react-virtual": "^3.13.18",
     "baseline-browser-mapping": "^2.9.18",

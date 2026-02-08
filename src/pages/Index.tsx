@@ -22,9 +22,10 @@ import { TYDRO_POINT_TO_USD_RATE } from '@/lib/tydro';
 import { AlertTriangle } from 'lucide-react';
 import { preloadChainIcons, preloadIncentiveIcons } from '@/lib/preloadUtils';
 
-// Lazy load non-critical components
+// Lazy load non-critical components (only for components not visible on initial render)
 const IncentiveTooltip = lazy(() => import('@/components/dashboard/IncentiveTooltip'));
-const InkAprCalculator = lazy(() => import('@/components/dashboard/InkAprCalculator'));
+// InkAprCalculator is always visible, so load it eagerly
+import InkAprCalculator from '@/components/dashboard/InkAprCalculator';
 const MerklForecastPanel = lazy(() => import('@/components/dashboard/MerklForecastPanel'));
 
 const Index = () => {
@@ -307,13 +308,13 @@ const Index = () => {
           />
 
           {/* INK Incentive APR Calculator */}
-          <Suspense fallback={<div className="h-[120px] rounded-xl bg-muted/50 animate-pulse" />}>
+          <>
             <InkAprCalculator
               rateInput={tydroPointToUsdRateInput}
               setRateInput={setTydroPointToUsdRateInput}
               onDragStateChange={setIsRateDragging}
             />
-          </Suspense>
+          </>
 
           <Suspense fallback={<div className="h-[120px] rounded-xl bg-muted/50 animate-pulse" />}>
             <MerklForecastPanel pools={filteredPools} tokenPrices={effectivePoolsData?.tokenPrices} />
@@ -353,6 +354,7 @@ const Index = () => {
             sortOrder={sortOrder}
             onSort={handleSort}
             isApy={isApy}
+            isLoading={isLoading}
             onSelectMarket={(marketName) => {
               setSelectedMarkets((prev) =>
                 prev.length === 1 && prev[0] === marketName ? [] : [marketName]
@@ -382,7 +384,7 @@ const Index = () => {
           )}
 
           {/* Empty state */}
-          {filteredPools.length === 0 && effectivePoolsData && (
+          {filteredPools.length === 0 && effectivePoolsData && !isLoading && (
             <div className="text-center py-[var(--ds-space-12)]">
               <p className="text-muted-foreground">No pools found matching your filters</p>
             </div>
@@ -396,45 +398,68 @@ const Index = () => {
           )}
 
           {/* Footer */}
-          <footer className="text-center py-[var(--ds-space-8)] border-t border-border/50">
-            <p className="ds-text-14 text-muted-foreground">
-              Data sourced from{' '}
-              <a 
-                href="https://app.aave.com" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-secondary hover:underline"
-              >
-                Aave Protocol
-              </a>
-              {', '}
-              <a
-                href="https://app.merkl.xyz"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-secondary hover:underline"
-              >
-                Merkl
-              </a>
-              {', '}
-              <a
-                href="https://apps.aavechan.com/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-secondary hover:underline"
-              >
-                ACI
-              </a>
-              {', '}
-              <a
-                href="https://incentra.brevis.network/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-secondary hover:underline"
-              >
-                Brevis
-              </a>
-            </p>
+          <footer className="border-t border-border/50 py-[var(--ds-space-8)]">
+            <div className="flex flex-col items-center gap-1.5 px-4 sm:gap-2">
+              <p className="text-center ds-text-14 text-muted-foreground leading-relaxed">
+                Data sourced from{' '}
+                <a
+                  href="https://app.aave.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-secondary hover:underline"
+                >
+                  Aave Protocol
+                </a>
+                {', '}
+                <a
+                  href="https://app.merkl.xyz"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-secondary hover:underline"
+                >
+                  Merkl
+                </a>
+                {', '}
+                <a
+                  href="https://apps.aavechan.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-secondary hover:underline"
+                >
+                  ACI
+                </a>
+                {', '}
+                <a
+                  href="https://incentra.brevis.network/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-secondary hover:underline"
+                >
+                  Brevis
+                </a>
+              </p>
+
+              <p className="text-xs sm:text-sm text-signature opacity-85">
+                Built with ❤️ by{' '}
+                <a
+                  href="https://twitter.com/silenlee"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Pablo on X"
+                  className="inline-flex items-center gap-2 align-baseline text-signature-strong transition-opacity duration-200 hover:opacity-100"
+                >
+                  <span>Pablo</span>
+                  <svg
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                    className="h-3.5 w-3.5"
+                    fill="currentColor"
+                  >
+                    <path d="M18.244 2H21.5l-7.11 8.126L22.75 22h-6.545l-5.124-6.694L5.22 22H1.96l7.603-8.694L1.5 2h6.711l4.632 6.112L18.244 2Zm-1.143 18.02h1.804L7.23 3.875H5.295L17.101 20.02Z" />
+                  </svg>
+                </a>
+              </p>
+            </div>
           </footer>
         </div>
       </div>
