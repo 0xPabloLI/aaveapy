@@ -67,6 +67,10 @@ VITE_API_BASE_URL=http://localhost:3001/api
 | `npm run lint` | Run ESLint |
 | `npm run test` | Run tests |
 
+## Security
+
+See [SECURITY.md](SECURITY.md) for vulnerability reporting and a public-release security checklist.
+
 ## License
 
 [MIT](LICENSE)
