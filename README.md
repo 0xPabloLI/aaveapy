@@ -66,6 +66,13 @@ VITE_API_BASE_URL=http://localhost:3001/api
 | `npm run preview` | Preview production build |
 | `npm run lint` | Run ESLint |
 | `npm run test` | Run tests |
+| `npm run preflight:release` | Fast release readiness checks |
+
+Full checks (includes lint/build/audit):
+
+```bash
+npm run preflight:release -- --full
+```
 
 ## Security
 

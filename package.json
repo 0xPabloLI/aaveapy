@@ -27,6 +27,7 @@
     "lint": "eslint .",
     "lint:colors": "node scripts/check-semantic-colors.mjs",
     "lint:all": "npm run lint && npm run lint:colors",
+    "preflight:release": "node scripts/preflight-release.mjs",
     "preview": "vite preview",
     "sync-token-icons": "node scripts/sync-token-icons.mjs",
     "test": "vitest run"
