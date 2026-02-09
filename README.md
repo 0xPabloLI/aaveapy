@@ -34,10 +34,6 @@ git clone https://github.com/0xPabloLI/aaveapy.git
 cd aaveapy
 
 # Install dependencies
-# Note: .npmrc has Linux platform settings for deployment
-# Override for local development:
-#   macOS:   NPM_CONFIG_PLATFORM=darwin npm i
-#   Windows: NPM_CONFIG_PLATFORM=win32 npm i
 npm install
 
 # Start development server
@@ -48,7 +44,13 @@ The app will be available at `http://localhost:8080`.
 
 ### Environment Variables
 
-Create a `.env` file:
+Create your local environment file from the example:
+
+```bash
+cp .env.example .env
+```
+
+Then update values as needed:
 
 ```bash
 # API base URL (optional, defaults to https://api.aaveapy.com/api)
