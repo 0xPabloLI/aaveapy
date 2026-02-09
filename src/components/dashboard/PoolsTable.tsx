@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { ArrowUp, ArrowDown, ChevronDown, ChevronUp } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { PoolWithSpread, ETHEREUM_MARKET_NAMES } from '@/types/aave';
 import { 
@@ -15,6 +16,7 @@ import {
   calculateTotalIncentiveApy,
   apyToApr
 } from '@/lib/formatters';
+import { compareIncentiveWithNative } from '@/lib/sorters';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { IncentiveIcon } from '@/components/IncentiveIcon';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
@@ -30,6 +32,7 @@ interface PoolsTableProps {
   sortOrder: 'asc' | 'desc';
   onSort: (field: 'totalSupplyApy' | 'totalBorrowApy' | 'apySpread' | null) => void;
   isApy: boolean;
+  isLoading?: boolean;
   onSelectMarket?: (marketName: string) => void;
   tydroPointToUsdRate: number;
 }
@@ -38,7 +41,7 @@ type SortMode = 'total' | 'native' | 'incentive';
 
 const DEFAULT_VISIBLE_COUNT = 20;
 
-const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket, tydroPointToUsdRate }: PoolsTableProps) => {
+const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, isLoading, onSelectMarket, tydroPointToUsdRate }: PoolsTableProps) => {
   const isMobile = useIsMobile();
   const [activeSortColumn, setActiveSortColumn] = useState<'supply' | 'borrow' | 'spread' | null>('supply');
   const [supplySortMode, setSupplySortMode] = useState<SortMode>('incentive');
@@ -128,11 +131,9 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
       } else if (supplySortMode === 'incentive') {
         const aIncentive = isApy ? getIncentiveValues(a, 'supply').apy : getIncentiveValues(a, 'supply').apr;
         const bIncentive = isApy ? getIncentiveValues(b, 'supply').apy : getIncentiveValues(b, 'supply').apr;
-        // Handle NaN values
-        if (isNaN(aIncentive) && isNaN(bIncentive)) return 0;
-        if (isNaN(aIncentive)) return 1;
-        if (isNaN(bIncentive)) return -1;
-        comparison = bIncentive - aIncentive;
+        const aNative = getNativeSupplyApy(a);
+        const bNative = getNativeSupplyApy(b);
+        return compareIncentiveWithNative(aIncentive, bIncentive, aNative, bNative, supplySortOrder);
       } else {
         // Total sorting - use totalSupplyApy (Native + Incentive)
         const aTotal = isApy ? getTotalSupplyApy(a) : getTotalSupplyApr(a);
@@ -155,11 +156,9 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
       } else if (borrowSortMode === 'incentive') {
         const aIncentive = isApy ? getIncentiveValues(a, 'borrow').apy : getIncentiveValues(a, 'borrow').apr;
         const bIncentive = isApy ? getIncentiveValues(b, 'borrow').apy : getIncentiveValues(b, 'borrow').apr;
-        // Handle NaN values
-        if (isNaN(aIncentive) && isNaN(bIncentive)) return 0;
-        if (isNaN(aIncentive)) return 1;
-        if (isNaN(bIncentive)) return -1;
-        comparison = bIncentive - aIncentive;
+        const aNative = getNativeBorrowApy(a);
+        const bNative = getNativeBorrowApy(b);
+        return compareIncentiveWithNative(aIncentive, bIncentive, aNative, bNative, borrowSortOrder);
       } else {
         // Total sorting
         const aTotal = isApy ? getTotalBorrowApy(a) : getTotalBorrowApr(a);
@@ -473,15 +472,46 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
         
         {/* 2x2 Grid layout for mobile */}
         <div className="grid grid-cols-2 gap-[var(--ds-space-2)]">
-          {(showAll ? sortedData : sortedData.slice(0, DEFAULT_VISIBLE_COUNT)).map((pool) => (
-            <MobilePoolCard
-              key={`${pool.marketName}-${pool.tokenAddress}`}
-              pool={pool}
-              isApy={isApy}
-              onIncentiveClick={handleMobileIncentiveClick}
-              tydroPointToUsdRate={tydroPointToUsdRate}
-            />
-          ))}
+          {isLoading && pools.length === 0 ? (
+            Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="bg-card rounded-xl border border-border/60 ds-card-pad-sm">
+                <div className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-3)]">
+                  <Skeleton variant="gradient" className="w-8 h-8 rounded-full border-transparent shrink-0" />
+                  <div className="space-y-1 flex-1 min-w-0">
+                    <Skeleton variant="gradient" className="h-4 w-14 rounded-md" />
+                    <Skeleton variant="subtle" className="h-3 w-20 rounded-md" />
+                  </div>
+                  <Skeleton variant="subtle" className="w-7 h-7 rounded-full border-border/60 shrink-0" />
+                </div>
+                <div className="grid grid-cols-3 gap-[var(--ds-space-2)]">
+                  <div className="space-y-1">
+                    <Skeleton variant="subtle" className="h-2 w-10 rounded-md" />
+                    <Skeleton variant="gradient" className="h-5 w-14 rounded-md" />
+                    <Skeleton variant="subtle" className="h-3 w-16 rounded-full border-transparent" />
+                  </div>
+                  <div className="space-y-1 items-center flex flex-col">
+                    <Skeleton variant="subtle" className="h-2 w-10 rounded-md" />
+                    <Skeleton variant="subtle" className="h-4 w-14 rounded-md" />
+                  </div>
+                  <div className="space-y-1 flex flex-col items-end">
+                    <Skeleton variant="subtle" className="h-2 w-10 rounded-md" />
+                    <Skeleton variant="gradient" className="h-5 w-14 rounded-md" />
+                    <Skeleton variant="subtle" className="h-3 w-16 rounded-full border-transparent" />
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : (
+            (showAll ? sortedData : sortedData.slice(0, DEFAULT_VISIBLE_COUNT)).map((pool) => (
+              <MobilePoolCard
+                key={`${pool.marketName}-${pool.tokenAddress}`}
+                pool={pool}
+                isApy={isApy}
+                onIncentiveClick={handleMobileIncentiveClick}
+                tydroPointToUsdRate={tydroPointToUsdRate}
+              />
+            ))
+          )}
         </div>
         
         {/* Show More/Less button for mobile */}
@@ -820,7 +850,36 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
             </TableRow>
           </TableHeader>
           <TableBody>
-            {displayData.map((pool) => {
+            {isLoading && pools.length === 0 ? (
+              Array.from({ length: 10 }).map((_, i) => (
+                <TableRow key={i} className="border-b border-border/30">
+                  <TableCell className="w-1/5 px-[var(--ds-space-3)] ds-row-pad text-center">
+                    <div className="flex items-center justify-center gap-[var(--ds-space-2)]">
+                      <Skeleton variant="gradient" className="w-7 h-7 rounded-full border-transparent" />
+                      <Skeleton variant="default" className="h-4 w-14 rounded-md" />
+                    </div>
+                  </TableCell>
+                  <TableCell className="w-1/5 px-[var(--ds-space-3)] ds-row-pad text-center hidden md:table-cell">
+                    <Skeleton variant="subtle" className="h-6 w-20 rounded-full mx-auto" />
+                  </TableCell>
+                  <TableCell className="w-1/5 px-[var(--ds-space-3)] ds-row-pad text-center">
+                    <div className="flex flex-col items-center gap-[var(--ds-space-1)]">
+                      <Skeleton variant="gradient" className={`h-5 rounded-md ${i % 2 === 0 ? 'w-16' : 'w-[4.5rem]'}`} />
+                      <Skeleton variant="subtle" className={`h-3 rounded-full border-transparent ${i % 2 === 0 ? 'w-20' : 'w-[4.5rem]'}`} />
+                    </div>
+                  </TableCell>
+                  <TableCell className="w-1/5 px-[var(--ds-space-3)] ds-row-pad text-center">
+                    <Skeleton variant="subtle" className={`h-5 rounded-md mx-auto ${i % 2 === 0 ? 'w-16' : 'w-14'}`} />
+                  </TableCell>
+                  <TableCell className="w-1/5 px-[var(--ds-space-3)] ds-row-pad text-center">
+                    <div className="flex flex-col items-center gap-[var(--ds-space-1)]">
+                      <Skeleton variant="gradient" className={`h-5 rounded-md ${i % 3 === 0 ? 'w-16' : 'w-[4.5rem]'}`} />
+                      <Skeleton variant="subtle" className={`h-3 rounded-full border-transparent ${i % 3 === 0 ? 'w-20' : 'w-[4.5rem]'}`} />
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : displayData.map((pool) => {
               const supplyIncentiveValues = getIncentiveValues(pool, 'supply');
               const borrowIncentiveValues = getIncentiveValues(pool, 'borrow');
               
@@ -952,7 +1011,8 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, onSelectMarket
                   </TableCell>
                 </TableRow>
               );
-            })}
+            })
+            }
           </TableBody>
         </Table>
       </div>

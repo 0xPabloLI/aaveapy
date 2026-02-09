@@ -43,21 +43,21 @@ const ThemeToggle = () => {
       <TooltipTrigger asChild>
         <Button
           type="button"
-          variant="outline"
+          variant="utility"
           size="icon"
           onClick={handleToggle}
-          className="relative h-9 w-9 rounded-full bg-card border-2 border-border text-muted-foreground
-            transition-all duration-300 shadow-sm hover:shadow-md hover:bg-muted hover:border-muted-foreground/40 hover:text-foreground"
+          className="relative h-9 w-9 rounded-full text-interactive transition-colors duration-200
+            focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
           {isDark ? (
-            <Moon className="h-4 w-4" />
+            <Moon className="h-4 w-4 text-success" />
           ) : (
-            <Sun className="h-4 w-4" />
+            <Sun className="h-4 w-4 text-success" />
           )}
           <span className="sr-only">{isDark ? 'Dark mode' : 'Light mode'}</span>
         </Button>
       </TooltipTrigger>
-      <TooltipContent side="bottom" className="ds-text-11">
+      <TooltipContent side="bottom" className="ds-text-11 whitespace-nowrap">
         Switch to {isDark ? 'light' : 'dark'} mode
       </TooltipContent>
     </Tooltip>

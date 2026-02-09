@@ -54,12 +54,6 @@ export const apyToApr = (apy: number): number => {
   return aprDecimal * 100;
 };
 
-// Truncate address
-export const truncateAddress = (address: string): string => {
-  if (!address) return '';
-  return `${address.slice(0, 6)}...${address.slice(-4)}`;
-};
-
 import type { MeritIncentive, MerklOpportunityGroup, BrevisIncentive } from '@/types/aave';
 import { TYDRO_POINT_TO_USD_RATE, getMerklBreakdownApr } from '@/lib/tydro';
 
