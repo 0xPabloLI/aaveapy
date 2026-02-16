@@ -23,12 +23,12 @@ const baseState: MerklForecastState = {
 };
 
 describe('forecastWithTVL', () => {
-  it('returns BUDGET_LIMITED when requiredDaily equals plannedDaily', () => {
+  it('returns PLANNED when requiredDaily equals plannedDaily', () => {
     const result = forecastWithTVL(baseState, 10_000_000_000);
 
     expect(result.dailyRewards).toBeCloseTo(baseState.plannedDaily!, 6);
     expect(result.apr).toBeLessThan(0.001);
-    expect(result.regime).toBe('BUDGET_LIMITED');
+    expect(result.regime).toBe('PLANNED');
   });
 
   it('stays APR-capped when TVL is very small', () => {
@@ -52,7 +52,7 @@ describe('forecastWithTVL', () => {
 
     expect(result.dailyRewards).toBe(0);
     expect(result.apr).toBe(0);
-    expect(result.regime).toBe('BUDGET_LIMITED');
+    expect(result.regime).toBe('PLANNED');
   });
 
   it('detects CATCHING_UP when requiredDaily exceeds plannedDaily', () => {
@@ -80,7 +80,7 @@ describe('forecastWithTVL', () => {
 
     expect(result.dailyRewards).toBe(500);
     expect(result.apr).toBeCloseTo((500 * 365) / 100_000, 10);
-    expect(result.regime).toBe('BUDGET_LIMITED');
+    expect(result.regime).toBe('PLANNED');
   });
 
   it('applies rate limit for FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE campaigns', () => {

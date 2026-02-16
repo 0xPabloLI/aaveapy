@@ -6,6 +6,7 @@ import { collectMerklCampaignOptions } from '@/lib/merklCampaigns';
 import { fetchMerklForecastState, fetchMerklForecastStates } from '@/lib/merklForecastApi';
 import { shouldSurfaceForecastError } from '@/lib/merklForecastErrors';
 import { deriveForecastProgressFlags, forecastWithTVL } from '@/lib/merklForecast';
+import { resolveForecastTokenPrice } from '@/lib/merklTokenPrice';
 import { formatPercent } from '@/lib/formatters';
 import { formatNumberInput, parseNumberInput } from '@/lib/numberFormat';
 
@@ -84,10 +85,16 @@ const MerklForecastPanel = ({ pools, tokenPrices }: MerklForecastPanelProps) => 
     [campaignOptions, selectedCampaignId]
   );
 
-  const tokenKey = selectedOption
-    ? `${selectedOption.chainId}:${selectedOption.tokenAddress.toLowerCase()}`
-    : null;
-  const tokenPrice = tokenKey ? tokenPrices?.[tokenKey]?.price : undefined;
+  const tokenPrice = selectedOption
+    ? resolveForecastTokenPrice({
+        tokenPrices,
+        chainId: selectedOption.chainId,
+        actionType: selectedOption.actionType,
+        tokenAddress: selectedOption.tokenAddress,
+        aTokenAddress: selectedOption.aTokenAddress,
+        vTokenAddress: selectedOption.vTokenAddress,
+      })
+    : undefined;
   const tokenSymbol = selectedOption?.tokenSymbol ?? 'Token';
 
   const depositAssetAmount = useMemo(() => parseNumberInput(depositInput), [depositInput]);

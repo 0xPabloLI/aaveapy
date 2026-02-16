@@ -22,7 +22,7 @@ export interface MerklForecastProgressState extends MerklForecastState {
 export interface MerklForecastResult {
   dailyRewards: number;
   apr: number;
-  regime: 'APR_CAPPED' | 'CATCHING_UP' | 'BUDGET_LIMITED';
+  regime: 'APR_CAPPED' | 'CATCHING_UP' | 'PLANNED';
 }
 
 export interface MerklForecastProgressFlags {
@@ -38,14 +38,13 @@ export const forecastWithTVL = (
   const safeTvl = safe(tvl);
   const isRateLimitedCampaign =
     forecastState.campaignType === 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE' ||
-    forecastState.campaignType === 'MAX_APR' ||
     forecastState.campaignType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE';
 
   if (safeTvl <= 0) {
     return {
       dailyRewards: 0,
       apr: 0,
-      regime: isRateLimitedCampaign ? 'APR_CAPPED' : 'BUDGET_LIMITED',
+      regime: isRateLimitedCampaign ? 'APR_CAPPED' : 'PLANNED',
     };
   }
 
@@ -59,13 +58,13 @@ export const forecastWithTVL = (
   const capBinding = isRateLimitedCampaign && capDaily < requiredDaily;
   const isCatchingUp = requiredDaily > plannedDaily * 1.01; // 1% tolerance for floating point
 
-  let regime: 'APR_CAPPED' | 'CATCHING_UP' | 'BUDGET_LIMITED';
+  let regime: 'APR_CAPPED' | 'CATCHING_UP' | 'PLANNED';
   if (capBinding) {
     regime = 'APR_CAPPED';
   } else if (isCatchingUp) {
     regime = 'CATCHING_UP';
   } else {
-    regime = 'BUDGET_LIMITED';
+    regime = 'PLANNED';
   }
 
   return {

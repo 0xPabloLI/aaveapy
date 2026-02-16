@@ -7,6 +7,7 @@ import { formatPercent, convertAprToApy } from '@/lib/formatters';
 import { getMerklBreakdownApr } from '@/lib/tydro';
 import { fetchMerklForecastState, fetchMerklForecastStates } from '@/lib/merklForecastApi';
 import { deriveForecastProgressFlags, forecastWithTVL } from '@/lib/merklForecast';
+import { resolveForecastTokenPrice } from '@/lib/merklTokenPrice';
 import { formatNumberInput, parseNumberInput } from '@/lib/numberFormat';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -226,8 +227,14 @@ const IncentiveTooltip = ({
     return Array.from(grouped.values());
   };
 
-  const tokenKey = `${pool.chainId}:${pool.tokenAddress.toLowerCase()}`;
-  const tokenPrice = tokenPrices?.[tokenKey]?.price;
+  const tokenPrice = resolveForecastTokenPrice({
+    tokenPrices,
+    chainId: pool.chainId,
+    actionType: type === 'supply' ? 'Supply' : 'Borrow',
+    tokenAddress: pool.tokenAddress,
+    aTokenAddress: pool.aTokenAddress,
+    vTokenAddress: pool.vTokenAddress,
+  });
   const tokenSymbol = pool.tokenSymbol || 'Token';
 
   const depositAssetAmount = useMemo(() => parseNumberInput(depositInput), [depositInput]);
