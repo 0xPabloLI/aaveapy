@@ -5,7 +5,7 @@ import { useTheme } from 'next-themes';
 import { PoolWithSpread, MeritIncentive, MerklOpportunityGroup, BrevisIncentive, TokenPricesIndex } from '@/types/aave';
 import { formatPercent, convertAprToApy } from '@/lib/formatters';
 import { getMerklBreakdownApr } from '@/lib/tydro';
-import { fetchMerklForecastState } from '@/lib/merklForecastApi';
+import { fetchMerklForecastState, fetchMerklForecastStates } from '@/lib/merklForecastApi';
 import { deriveForecastProgressFlags, forecastWithTVL } from '@/lib/merklForecast';
 import { formatNumberInput, parseNumberInput } from '@/lib/numberFormat';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -252,14 +252,12 @@ const IncentiveTooltip = ({
     }
 
     let cancelled = false;
-    Promise.allSettled(campaignIds.map((campaignId) => fetchMerklForecastState(campaignId)))
-      .then((results) => {
+    fetchMerklForecastStates(campaignIds)
+      .then((result) => {
         if (cancelled) return;
         const next: Record<string, Awaited<ReturnType<typeof fetchMerklForecastState>>> = {};
-        results.forEach((result, index) => {
-          if (result.status === 'fulfilled') {
-            next[campaignIds[index]] = result.value;
-          }
+        result.items.forEach((item) => {
+          next[item.campaignId] = item;
         });
         setMerklForecastStates(next);
       })
@@ -428,7 +426,7 @@ const IncentiveTooltip = ({
         </p>
       )}
       <p className="mt-[var(--ds-space-1)] ds-tooltip-body text-muted-foreground">
-        Forecasts apply to capped Merkl campaigns only.
+        Forecasts support MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE, DUTCH_AUCTION, and FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE campaigns.
       </p>
     </div>
   ) : null;
@@ -446,6 +444,7 @@ const IncentiveTooltip = ({
       const progress = deriveForecastProgressFlags(forecastState);
       return {
         hypotheticalTvl,
+        campaignType: forecastState.campaignType,
         ...progress,
         ...forecast,
       };
@@ -481,7 +480,8 @@ const IncentiveTooltip = ({
                 APR {formatPercent(forecastPreview.apr * 100)} · Daily Rewards {formatUsd(forecastPreview.dailyRewards)}
               </p>
               <p className="ds-tooltip-body text-muted-foreground mt-[var(--ds-space-0-5)]">
-                Regime: {forecastPreview.regime} · Cap binding: {forecastPreview.capBinding ? 'Yes' : 'No'} · Catching up (live): {forecastPreview.isCatchingUpLive ? 'Yes' : 'No'} · Ended under-distributed: {forecastPreview.isUnderDistributed ? 'Yes' : 'No'}
+                Type: {forecastPreview.campaignType} · Regime: {forecastPreview.regime} · Ended under-distributed:{' '}
+                {forecastPreview.isUnderDistributed ? 'Yes' : 'No'}
               </p>
             </div>
           )}
@@ -525,7 +525,8 @@ const IncentiveTooltip = ({
                     APR {formatPercent(forecastPreview.apr * 100)} · Daily Rewards {formatUsd(forecastPreview.dailyRewards)}
                   </p>
                   <p className="ds-tooltip-body text-muted-foreground mt-[var(--ds-space-0-5)]">
-                    Regime: {forecastPreview.regime} · Cap binding: {forecastPreview.capBinding ? 'Yes' : 'No'} · Catching up (live): {forecastPreview.isCatchingUpLive ? 'Yes' : 'No'} · Ended under-distributed: {forecastPreview.isUnderDistributed ? 'Yes' : 'No'}
+                    Type: {forecastPreview.campaignType} · Regime: {forecastPreview.regime} · Ended under-distributed:{' '}
+                    {forecastPreview.isUnderDistributed ? 'Yes' : 'No'}
                   </p>
                 </div>
               )}

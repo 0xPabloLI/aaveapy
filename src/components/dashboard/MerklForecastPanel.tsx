@@ -50,7 +50,7 @@ const MerklForecastPanel = ({ pools, tokenPrices }: MerklForecastPanelProps) => 
     setLoading(true);
     setError(null);
 
-    fetchMerklForecastStates()
+    fetchMerklForecastStates(campaignOptions.map((option) => option.campaignId))
       .then((result) => {
         if (cancelled) return;
         const next: Record<string, Awaited<ReturnType<typeof fetchMerklForecastState>>> = {};
@@ -113,9 +113,9 @@ const MerklForecastPanel = ({ pools, tokenPrices }: MerklForecastPanelProps) => 
     <section className="rounded-xl border border-border/60 bg-card/80 p-[var(--ds-space-3)] md:p-[var(--ds-space-4)]">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h2 className="text-sm md:text-base font-semibold text-foreground">Merkl Capped Forecast</h2>
+          <h2 className="text-sm md:text-base font-semibold text-foreground">Merkl Campaign Forecast</h2>
           <p className="text-xs text-muted-foreground mt-1">
-            Estimate next-run daily rewards and APR after adding a hypothetical deposit.
+            Estimate next-run daily rewards and APR after adding a hypothetical deposit (MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE, DUTCH_AUCTION, FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE).
           </p>
         </div>
         {loading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
@@ -185,8 +185,8 @@ const MerklForecastPanel = ({ pools, tokenPrices }: MerklForecastPanelProps) => 
           </div>
           <div className="rounded-md border border-border/60 bg-muted/20 p-2 md:col-span-3">
             <p className="text-[11px] text-muted-foreground">
-              Regime: {forecast.regime} · Cap binding: {forecast.capBinding ? 'Yes' : 'No'} · Catching up (live):{' '}
-              {forecast.isCatchingUpLive ? 'Yes' : 'No'} · Ended under-distributed: {forecast.isUnderDistributed ? 'Yes' : 'No'}
+              Type: {selectedState.campaignType} · Regime: {forecast.regime} · Ended under-distributed:{' '}
+              {forecast.isUnderDistributed ? 'Yes' : 'No'}
             </p>
           </div>
         </div>

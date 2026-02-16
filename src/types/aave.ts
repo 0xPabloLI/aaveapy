@@ -19,6 +19,7 @@ export interface MerklCampaignBreakdown {
   campaignStartedAt: string;           // Campaign start time (ISO 8601)
   campaignEndedAt: string;             // Campaign end time (ISO 8601)
   campaignId: string;                 // Campaign ID
+  distributionType?: string;           // Merkl distribution type from opportunity breakdown
   pointsPerThousandUsd?: number;       // Tydro protocol points/1000USD value (optional)
   dailyPoints?: number;                // Tydro protocol daily points (optional)
 }
@@ -106,11 +107,13 @@ export type TokenPricesIndex = Record<string, TokenPriceEntry>;
 
 export interface MerklForecastStateResponse {
   campaignId: string;
+  campaignType: string;
   totalBudget: number;
-  desiredDaily: number;
+  plannedDaily?: number;
+  requiredDaily?: number;
   remainingBudget: number;
   remainingDays: number;
-  maxAPR: number;
+  maxAPR: number | null;
   computedUntil: number | null;
   asOf: number;
   distributedSoFar: number;

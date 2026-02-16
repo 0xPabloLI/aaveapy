@@ -11,8 +11,8 @@ describe('fetchMerklForecastStates', () => {
     const json = vi.fn().mockResolvedValue({
       requested: 2,
       items: [
-        { campaignId: '1', desiredDaily: 1 },
-        { campaignId: '2', desiredDaily: 2 },
+        { campaignId: '1', plannedDaily: 1, requiredDaily: 1 },
+        { campaignId: '2', plannedDaily: 2, requiredDaily: 2 },
       ],
       errors: [],
     });
