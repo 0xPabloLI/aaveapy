@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect, lazy, Suspense } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { usePreloadPoolAssets } from '@/hooks/usePreloadPoolAssets';
 import { useAaveMarkets, useAaveMarketStats, useAaveMarketsList } from '@/hooks/useAaveMarkets';
 import { useQueryClient } from '@tanstack/react-query';
@@ -22,9 +22,7 @@ import { TYDRO_POINT_TO_USD_RATE } from '@/lib/tydro';
 import { AlertTriangle } from 'lucide-react';
 import { preloadChainIcons, preloadIncentiveIcons } from '@/lib/preloadUtils';
 
-// Lazy load non-critical components (only for components not visible on initial render)
-const IncentiveTooltip = lazy(() => import('@/components/dashboard/IncentiveTooltip'));
-// InkAprCalculator is always visible, so load it eagerly
+import IncentiveTooltip from '@/components/dashboard/IncentiveTooltip';
 import InkAprCalculator from '@/components/dashboard/InkAprCalculator';
 const MerklForecastPanel = lazy(() => import('@/components/dashboard/MerklForecastPanel'));
 
@@ -365,7 +363,6 @@ const Index = () => {
           />
 
           {topTooltipState && (
-            <Suspense fallback={null}>
               <IncentiveTooltip
                 pool={topTooltipState.pool}
                 type={topTooltipState.type}
@@ -380,7 +377,6 @@ const Index = () => {
                 tokenPrices={effectivePoolsData?.tokenPrices}
                 usePortal
               />
-            </Suspense>
           )}
 
           {/* Empty state */}

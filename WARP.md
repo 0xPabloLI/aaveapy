@@ -62,8 +62,6 @@ src/
 │   └── tydro.ts            # Tydro points conversion constants
 ├── types/
 │   └── aave.ts             # TypeScript interfaces for API data
-└── integrations/
-    └── supabase/           # Supabase client (for future features)
 ```
 
 ### Data Flow
