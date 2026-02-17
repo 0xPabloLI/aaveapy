@@ -35,6 +35,8 @@ interface PoolsTableProps {
   isLoading?: boolean;
   onSelectMarket?: (marketName: string) => void;
   tydroPointToUsdRate: number;
+  includeWhitelistOnlyMerkl: boolean;
+  onToggleWhitelistOnlyMerkl: (next: boolean) => void;
   tokenPrices?: TokenPricesIndex;
 }
 
@@ -42,7 +44,19 @@ type SortMode = 'total' | 'native' | 'incentive';
 
 const DEFAULT_VISIBLE_COUNT = 20;
 
-const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, isLoading, onSelectMarket, tydroPointToUsdRate, tokenPrices }: PoolsTableProps) => {
+const PoolsTable = ({
+  pools,
+  sortField,
+  sortOrder,
+  onSort,
+  isApy,
+  isLoading,
+  onSelectMarket,
+  tydroPointToUsdRate,
+  includeWhitelistOnlyMerkl,
+  onToggleWhitelistOnlyMerkl,
+  tokenPrices,
+}: PoolsTableProps) => {
   const isMobile = useIsMobile();
   const [activeSortColumn, setActiveSortColumn] = useState<'supply' | 'borrow' | 'spread' | null>('supply');
   const [supplySortMode, setSupplySortMode] = useState<SortMode>('incentive');
@@ -74,8 +88,22 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, isLoading, onS
     const merklOpportunities = type === 'supply' ? pool.merklSupplys : pool.merklBorrows;
     const brevisIncentives = type === 'supply' ? pool.brevisSupplys : pool.brevisBorrows;
     return {
-      apr: calculateTotalIncentiveApr(meritIncentives, merklOpportunities, brevisIncentives, protocolIncentives, tydroPointToUsdRate),
-      apy: calculateTotalIncentiveApy(meritIncentives, merklOpportunities, brevisIncentives, protocolIncentives, tydroPointToUsdRate),
+      apr: calculateTotalIncentiveApr(
+        meritIncentives,
+        merklOpportunities,
+        brevisIncentives,
+        protocolIncentives,
+        tydroPointToUsdRate,
+        { includeWhitelistOnlyMerkl }
+      ),
+      apy: calculateTotalIncentiveApy(
+        meritIncentives,
+        merklOpportunities,
+        brevisIncentives,
+        protocolIncentives,
+        tydroPointToUsdRate,
+        { includeWhitelistOnlyMerkl }
+      ),
     };
   };
 
@@ -508,6 +536,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, isLoading, onS
                 key={`${pool.marketName}-${pool.tokenAddress}`}
                 pool={pool}
                 isApy={isApy}
+                includeWhitelistOnlyMerkl={includeWhitelistOnlyMerkl}
                 onIncentiveClick={handleMobileIncentiveClick}
                 tydroPointToUsdRate={tydroPointToUsdRate}
               />
@@ -538,6 +567,8 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, isLoading, onS
             onClose={() => setTooltipState(null)}
             isApy={isApy}
             tydroPointToUsdRate={tydroPointToUsdRate}
+            includeWhitelistOnlyMerkl={includeWhitelistOnlyMerkl}
+            onToggleWhitelistOnlyMerkl={onToggleWhitelistOnlyMerkl}
             tokenPrices={tokenPrices}
           />
         )}
@@ -1044,6 +1075,8 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, isLoading, onS
           onClose={() => setTooltipState(null)}
           isApy={isApy}
           tydroPointToUsdRate={tydroPointToUsdRate}
+          includeWhitelistOnlyMerkl={includeWhitelistOnlyMerkl}
+          onToggleWhitelistOnlyMerkl={onToggleWhitelistOnlyMerkl}
           tokenPrices={tokenPrices}
         />
       )}

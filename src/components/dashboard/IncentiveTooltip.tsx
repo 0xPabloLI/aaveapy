@@ -4,11 +4,13 @@ import { ExternalLink, X } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { PoolWithSpread, MeritIncentive, MerklOpportunityGroup, BrevisIncentive, TokenPricesIndex } from '@/types/aave';
 import { formatPercent, convertAprToApy } from '@/lib/formatters';
-import { getMerklBreakdownApr } from '@/lib/tydro';
+import { getMerklBreakdownApr, getMerklForecastUsdMultiplier } from '@/lib/tydro';
 import { fetchMerklForecastState, fetchMerklForecastStates } from '@/lib/merklForecastApi';
 import { deriveForecastProgressFlags, forecastWithTVL } from '@/lib/merklForecast';
-import { resolveForecastTokenPrice } from '@/lib/merklTokenPrice';
+import { resolveForecastTokenPrice, resolveForecastTokenPriceWithBackup } from '@/lib/merklTokenPrice';
+import { shouldSurfaceForecastError } from '@/lib/merklForecastErrors';
 import { formatNumberInput, parseNumberInput } from '@/lib/numberFormat';
+import { adjustTooltipAnchorForScroll, getWindowScroll } from '@/lib/tooltipPosition';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface IncentiveTooltipProps {
@@ -23,6 +25,8 @@ interface IncentiveTooltipProps {
   accentTextClass?: string;
   accentBgClass?: string;
   tydroPointToUsdRate: number;
+  includeWhitelistOnlyMerkl: boolean;
+  onToggleWhitelistOnlyMerkl: (next: boolean) => void;
   tokenPrices?: TokenPricesIndex;
 }
 
@@ -42,6 +46,10 @@ interface IncentiveSource {
     message?: string | Record<string, unknown> | unknown[];
     campaignId?: string;
     sourceType?: IncentiveSource['sourceType'];
+    forecastMultiplier?: number;
+    whitelistOnly?: boolean;
+    included?: boolean;
+    rawValue?: number;
   }>;
 }
 
@@ -80,6 +88,8 @@ const IncentiveTooltip = ({
   accentTextClass,
   accentBgClass,
   tydroPointToUsdRate,
+  includeWhitelistOnlyMerkl,
+  onToggleWhitelistOnlyMerkl,
   tokenPrices,
 }: IncentiveTooltipProps) => {
   const { resolvedTheme } = useTheme();
@@ -87,8 +97,13 @@ const IncentiveTooltip = ({
   const tooltipRef = useRef<HTMLDivElement>(null);
   const [arrowLeft, setArrowLeft] = useState(0);
   const [tooltipLeft, setTooltipLeft] = useState<number | null>(null);
+  const [tooltipTop, setTooltipTop] = useState<number | null>(null);
+  const [openedAtScroll, setOpenedAtScroll] = useState(() => getWindowScroll());
   const [depositInput, setDepositInput] = useState('');
+  const [tokenPrice, setTokenPrice] = useState<number | undefined>(undefined);
+  const [tokenPriceLoading, setTokenPriceLoading] = useState(false);
   const [merklForecastStates, setMerklForecastStates] = useState<Record<string, Awaited<ReturnType<typeof fetchMerklForecastState>>>>({});
+  const [merklForecastErrors, setMerklForecastErrors] = useState<Record<string, string>>({});
   const portalTarget = typeof document !== 'undefined' ? document.body : null;
   const numberMatch = /^(\d+(?:\.\d+)?%?)$/;
   const currencyMatch = /^[€$£¥]$/;
@@ -227,15 +242,47 @@ const IncentiveTooltip = ({
     return Array.from(grouped.values());
   };
 
-  const tokenPrice = resolveForecastTokenPrice({
-    tokenPrices,
-    chainId: pool.chainId,
-    actionType: type === 'supply' ? 'Supply' : 'Borrow',
-    tokenAddress: pool.tokenAddress,
-    aTokenAddress: pool.aTokenAddress,
-    vTokenAddress: pool.vTokenAddress,
-  });
   const tokenSymbol = pool.tokenSymbol || 'Token';
+
+  useEffect(() => {
+    setOpenedAtScroll(getWindowScroll());
+  }, [position.x, position.y, triggerCenterX, type]);
+
+  useEffect(() => {
+    const lookupInput = {
+      tokenPrices,
+      chainId: pool.chainId,
+      actionType: type === 'supply' ? 'Supply' : 'Borrow',
+      tokenSymbol: pool.tokenSymbol,
+      tokenAddress: pool.tokenAddress,
+      aTokenAddress: pool.aTokenAddress,
+      vTokenAddress: pool.vTokenAddress,
+    } as const;
+
+    const localPrice = resolveForecastTokenPrice(lookupInput);
+    if (localPrice !== undefined) {
+      setTokenPrice(localPrice);
+      setTokenPriceLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setTokenPrice(undefined);
+    setTokenPriceLoading(true);
+
+    resolveForecastTokenPriceWithBackup(lookupInput)
+      .then((price) => {
+        if (cancelled) return;
+        setTokenPrice(price);
+      })
+      .finally(() => {
+        if (!cancelled) setTokenPriceLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [pool, type, tokenPrices]);
 
   const depositAssetAmount = useMemo(() => parseNumberInput(depositInput), [depositInput]);
   const depositUsd = tokenPrice ? depositAssetAmount * tokenPrice : 0;
@@ -255,6 +302,7 @@ const IncentiveTooltip = ({
   useEffect(() => {
     if (campaignIds.length === 0) {
       setMerklForecastStates({});
+      setMerklForecastErrors({});
       return;
     }
 
@@ -263,13 +311,23 @@ const IncentiveTooltip = ({
       .then((result) => {
         if (cancelled) return;
         const next: Record<string, Awaited<ReturnType<typeof fetchMerklForecastState>>> = {};
+        const nextErrors: Record<string, string> = {};
         result.items.forEach((item) => {
           next[item.campaignId] = item;
         });
+        result.errors
+          .filter((item) => shouldSurfaceForecastError(item))
+          .forEach((item) => {
+            nextErrors[item.campaignId] = item.message;
+          });
         setMerklForecastStates(next);
+        setMerklForecastErrors(nextErrors);
       })
       .catch(() => {
-        if (!cancelled) setMerklForecastStates({});
+        if (!cancelled) {
+          setMerklForecastStates({});
+          setMerklForecastErrors({});
+        }
       });
 
     return () => {
@@ -381,10 +439,13 @@ const IncentiveTooltip = ({
         if (!opportunity.breakdowns || !Array.isArray(opportunity.breakdowns)) return;
         opportunity.breakdowns.forEach((breakdown) => {
           const apr = getMerklBreakdownApr(breakdown, tydroPointToUsdRate);
+          const whitelistOnly = breakdown.whitelistOnly === true;
+          const included = !whitelistOnly || includeWhitelistOnlyMerkl;
           if (!isNaN(apr) && apr >= 0) {
+            const displayValue = isApy ? convertAprToApy(apr) : apr;
             sources.push({
               name: opportunity.name || 'Merkl Incentive',
-              value: isApy ? convertAprToApy(apr) : apr,
+              value: included ? displayValue : 0,
               color: 'text-foreground',
               bgColor: 'bg-muted/60',
               sourceType: 'Merkl',
@@ -392,11 +453,15 @@ const IncentiveTooltip = ({
               message: opportunity.message,
               dateRange: formatDateRange(breakdown.campaignStartedAt, breakdown.campaignEndedAt) || undefined,
               campaigns: [{
-                value: isApy ? convertAprToApy(apr) : apr,
+                value: included ? displayValue : 0,
+                rawValue: displayValue,
+                whitelistOnly,
+                included,
                 dateRange: formatDateRange(breakdown.campaignStartedAt, breakdown.campaignEndedAt) || undefined,
                 message: opportunity.message,
                 campaignId: breakdown.campaignId,
                 sourceType: 'Merkl',
+                forecastMultiplier: getMerklForecastUsdMultiplier(breakdown, tydroPointToUsdRate),
               }],
             });
           }
@@ -409,8 +474,30 @@ const IncentiveTooltip = ({
 
 
   const incentiveSources = getIncentiveSources();
+  const orderedIncentiveSources = useMemo(() => {
+    const sourcePriority = (source: IncentiveSource): number => {
+      const campaigns = source.campaigns ?? [];
+      if (source.sourceType !== 'Merkl' || campaigns.length === 0) return 0;
+      const hasIncludedCampaign = campaigns.some((campaign) => campaign.included !== false);
+      return hasIncludedCampaign ? 0 : 1;
+    };
+
+    return [...incentiveSources].sort((a, b) => sourcePriority(a) - sourcePriority(b));
+  }, [incentiveSources]);
   const hasDetails = incentiveSources.length > 0;
   const showForecastInput = campaignIds.length > 0;
+  const whitelistOnlyCampaignCount = useMemo(() => {
+    const opportunities = type === 'supply' ? pool.merklSupplys : pool.merklBorrows;
+    if (!opportunities || !Array.isArray(opportunities)) return 0;
+    return opportunities.reduce((count, opportunity) => {
+      const breakdowns = opportunity.breakdowns ?? [];
+      return (
+        count +
+        breakdowns.reduce((innerCount, breakdown) => innerCount + (breakdown.whitelistOnly ? 1 : 0), 0)
+      );
+    }, 0);
+  }, [pool, type]);
+  const showWhitelistToggle = whitelistOnlyCampaignCount > 0 || includeWhitelistOnlyMerkl;
   const merklForecastInput = showForecastInput ? (
     <div className="mb-[var(--ds-space-2)] rounded-lg border border-border/60 bg-muted/20 px-[var(--ds-space-2)] py-[var(--ds-space-2)]">
       <label className="ds-tooltip-body text-muted-foreground block mb-[var(--ds-space-1)]">
@@ -427,6 +514,10 @@ const IncentiveTooltip = ({
         <p className="mt-[var(--ds-space-1)] ds-tooltip-body text-muted-foreground">
           ≈ {formatUsd(depositUsd)}
         </p>
+      ) : tokenPriceLoading ? (
+        <p className="mt-[var(--ds-space-1)] ds-tooltip-body text-muted-foreground">
+          Fetching backup price...
+        </p>
       ) : (
         <p className="mt-[var(--ds-space-1)] ds-tooltip-body text-muted-foreground">
           Price unavailable for {tokenSymbol}; forecast uses current TVL.
@@ -435,36 +526,80 @@ const IncentiveTooltip = ({
       <p className="mt-[var(--ds-space-1)] ds-tooltip-body text-muted-foreground">
         Forecasts support MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE, DUTCH_AUCTION, and FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE campaigns.
       </p>
+      {showWhitelistToggle && (
+        <label className="mt-[var(--ds-space-1)] flex items-center gap-[var(--ds-space-1-5)] ds-tooltip-body text-muted-foreground">
+          <input
+            type="checkbox"
+            checked={includeWhitelistOnlyMerkl}
+            onChange={(event) => onToggleWhitelistOnlyMerkl(event.target.checked)}
+            className="h-3.5 w-3.5 rounded border-border bg-background"
+          />
+          <span>
+            Include whitelist-only Merkl campaigns
+            {!includeWhitelistOnlyMerkl && whitelistOnlyCampaignCount > 0 ? ` (${whitelistOnlyCampaignCount} excluded)` : ''}
+          </span>
+        </label>
+      )}
     </div>
   ) : null;
 
   const renderSourceCampaigns = (source: IncentiveSource, keyPrefix: string) => {
-    const campaigns = source.campaigns ?? [{ value: source.value, dateRange: source.dateRange, message: source.message, sourceType: source.sourceType }];
+    const campaignsBase =
+      source.campaigns ?? [{ value: source.value, dateRange: source.dateRange, message: source.message, sourceType: source.sourceType }];
+    const campaigns = [...campaignsBase].sort((a, b) => {
+      const aExcluded = a.whitelistOnly === true && a.included === false;
+      const bExcluded = b.whitelistOnly === true && b.included === false;
+      if (aExcluded === bExcluded) return 0;
+      return aExcluded ? 1 : -1;
+    });
     const getForecastPreview = (campaign: (typeof campaigns)[number]) => {
       if (depositUsd <= 0) return null;
       if (campaign.sourceType !== 'Merkl' || !campaign.campaignId) return null;
+      if (campaign.whitelistOnly && campaign.included === false) return null;
       const forecastState = merklForecastStates[campaign.campaignId];
-      if (!forecastState) return null;
+      if (!forecastState) {
+        const errorMessage = merklForecastErrors[campaign.campaignId];
+        return {
+          unavailable: true,
+          campaignId: campaign.campaignId,
+          message: errorMessage || 'Forecast state unavailable',
+        } as const;
+      }
 
       const hypotheticalTvl = Math.max(forecastState.latestTvl + depositUsd, 0);
       const forecast = forecastWithTVL(forecastState, hypotheticalTvl);
+      const multiplier =
+        typeof campaign.forecastMultiplier === 'number' && Number.isFinite(campaign.forecastMultiplier)
+          ? Math.max(campaign.forecastMultiplier, 0)
+          : 1;
       const progress = deriveForecastProgressFlags(forecastState);
       return {
+        unavailable: false,
         hypotheticalTvl,
         campaignType: forecastState.campaignType,
+        dailyRewards: forecast.dailyRewards * multiplier,
+        apr: forecast.apr * multiplier,
+        regime: forecast.regime,
         ...progress,
-        ...forecast,
       };
     };
 
     if (campaigns.length === 1) {
       const campaign = campaigns[0];
+      const isExcludedWhitelist = campaign.whitelistOnly === true && campaign.included === false;
       const forecastPreview = getForecastPreview(campaign);
       const messageLines = getMessageLines(campaign.message);
+      const campaignAccentClass = isExcludedWhitelist ? 'text-zinc-500' : valueAccentClass;
+      const displayValue = isExcludedWhitelist ? campaign.rawValue ?? campaign.value : campaign.value;
       return (
         <>
+          {isExcludedWhitelist && (
+            <p className="ds-tooltip-body mt-[var(--ds-space-1)] text-zinc-500">
+              Whitelist-only campaign (excluded) · {formatPercent(displayValue)}
+            </p>
+          )}
           {campaign.dateRange && (
-            <p className={`ds-tooltip-body mt-[var(--ds-space-1)] break-words ${valueAccentClass}`}>
+            <p className={`ds-tooltip-body mt-[var(--ds-space-1)] break-words ${campaignAccentClass}`}>
               Campaign time: {campaign.dateRange}
             </p>
           )}
@@ -472,13 +607,13 @@ const IncentiveTooltip = ({
             <ul className="mt-[var(--ds-space-1)] space-y-[var(--ds-space-1)] ds-tooltip-body text-muted-foreground">
               {messageLines.map((line, lineIndex) => (
                 <li key={`${keyPrefix}-message-${lineIndex}`} className="flex items-start gap-[var(--ds-space-1)]">
-                  <span className={`mt-[0.4em] h-1 w-1 rounded-full bg-current flex-shrink-0 ${valueAccentClass}`} />
-                  <span className="min-w-0 break-words">{renderMessageLine(line, valueAccentClass)}</span>
+                  <span className={`mt-[0.4em] h-1 w-1 rounded-full bg-current flex-shrink-0 ${campaignAccentClass}`} />
+                  <span className="min-w-0 break-words">{renderMessageLine(line, campaignAccentClass)}</span>
                 </li>
               ))}
             </ul>
           )}
-          {forecastPreview && (
+          {forecastPreview && !forecastPreview.unavailable && (
             <div className="mt-[var(--ds-space-1-5)] rounded-md border border-border/50 bg-muted/30 px-[var(--ds-space-2)] py-[var(--ds-space-1-5)]">
               <p className="ds-tooltip-body text-muted-foreground">
                 Forecast at TVL {formatUsd(forecastPreview.hypotheticalTvl)}
@@ -492,6 +627,11 @@ const IncentiveTooltip = ({
               </p>
             </div>
           )}
+          {forecastPreview && forecastPreview.unavailable && (
+            <p className="ds-tooltip-body mt-[var(--ds-space-1)] text-amber-600">
+              Forecast unavailable for campaign {forecastPreview.campaignId}: {forecastPreview.message}
+            </p>
+          )}
         </>
       );
     }
@@ -499,31 +639,39 @@ const IncentiveTooltip = ({
     return (
       <div className="mt-[var(--ds-space-1)] space-y-[var(--ds-space-1-5)]">
         {campaigns.map((campaign, campaignIndex) => {
+          const isExcludedWhitelist = campaign.whitelistOnly === true && campaign.included === false;
           const forecastPreview = getForecastPreview(campaign);
           const messageLines = getMessageLines(campaign.message);
           const campaignLabel = campaign.dateRange ? `Campaign time: ${campaign.dateRange}` : 'Campaign time: N/A';
+          const campaignAccentClass = isExcludedWhitelist ? 'text-zinc-500' : valueAccentClass;
+          const displayValue = isExcludedWhitelist ? campaign.rawValue ?? campaign.value : campaign.value;
           return (
             <div
               key={`${keyPrefix}-campaign-${campaignIndex}`}
               className={campaignIndex > 0 ? 'pt-[var(--ds-space-0-5)]' : ''}
             >
+              {isExcludedWhitelist && (
+                <p className="ds-tooltip-body text-zinc-500 mb-[var(--ds-space-0-5)]">
+                  Whitelist-only campaign (excluded)
+                </p>
+              )}
               <div className="flex items-start justify-between gap-[var(--ds-space-2)]">
-                <p className={`ds-tooltip-body break-words min-w-0 ${valueAccentClass}`}>{campaignLabel}</p>
-                <span className={`ds-tooltip-body tabular-nums font-semibold whitespace-nowrap ${valueAccentClass}`}>
-                  {formatPercent(campaign.value)}
+                <p className={`ds-tooltip-body break-words min-w-0 ${campaignAccentClass}`}>{campaignLabel}</p>
+                <span className={`ds-tooltip-body tabular-nums font-semibold whitespace-nowrap ${campaignAccentClass}`}>
+                  {formatPercent(displayValue)}
                 </span>
               </div>
               {messageLines.length > 0 && (
                 <ul className="mt-[var(--ds-space-1)] space-y-[var(--ds-space-1)] ds-tooltip-body text-muted-foreground">
                   {messageLines.map((line, lineIndex) => (
                     <li key={`${keyPrefix}-campaign-${campaignIndex}-message-${lineIndex}`} className="flex items-start gap-[var(--ds-space-1)]">
-                      <span className={`mt-[0.4em] h-1 w-1 rounded-full bg-current flex-shrink-0 ${valueAccentClass}`} />
-                      <span className="min-w-0 break-words">{renderMessageLine(line, valueAccentClass)}</span>
+                      <span className={`mt-[0.4em] h-1 w-1 rounded-full bg-current flex-shrink-0 ${campaignAccentClass}`} />
+                      <span className="min-w-0 break-words">{renderMessageLine(line, campaignAccentClass)}</span>
                     </li>
                   ))}
                 </ul>
               )}
-              {forecastPreview && (
+              {forecastPreview && !forecastPreview.unavailable && (
                 <div className="mt-[var(--ds-space-1-5)] rounded-md border border-border/50 bg-muted/30 px-[var(--ds-space-2)] py-[var(--ds-space-1-5)]">
                   <p className="ds-tooltip-body text-muted-foreground">
                     Forecast at TVL {formatUsd(forecastPreview.hypotheticalTvl)}
@@ -537,6 +685,11 @@ const IncentiveTooltip = ({
                   </p>
                 </div>
               )}
+              {forecastPreview && forecastPreview.unavailable && (
+                <p className="ds-tooltip-body mt-[var(--ds-space-1)] text-amber-600">
+                  Forecast unavailable for campaign {forecastPreview.campaignId}: {forecastPreview.message}
+                </p>
+              )}
             </div>
           );
         })}
@@ -547,15 +700,25 @@ const IncentiveTooltip = ({
   useLayoutEffect(() => {
     const updatePosition = () => {
       if (!tooltipRef.current) return;
+      const anchored = adjustTooltipAnchorForScroll({
+        position,
+        triggerCenterX,
+        openedAtScroll,
+        currentScroll: getWindowScroll(),
+      });
       const tooltipWidth = tooltipRef.current.offsetWidth;
       const minLeft = 16;
       const maxLeft = Math.max(minLeft, window.innerWidth - tooltipWidth - minLeft);
-      const baseLeft = type === 'borrow' ? triggerCenterX - tooltipWidth + 24 : position.x;
+      const baseLeft =
+        type === 'borrow'
+          ? anchored.triggerCenterX - tooltipWidth + 24
+          : anchored.position.x;
       const nextLeft = Math.min(Math.max(baseLeft, minLeft), maxLeft);
       setTooltipLeft(nextLeft);
+      setTooltipTop(anchored.position.y + 8);
 
       const arrowWidth = 16;
-      const calculatedLeft = triggerCenterX - nextLeft - arrowWidth / 2;
+      const calculatedLeft = anchored.triggerCenterX - nextLeft - arrowWidth / 2;
       const maxArrowLeft = tooltipWidth - arrowWidth - 12;
       setArrowLeft(Math.max(12, Math.min(maxArrowLeft, calculatedLeft)));
     };
@@ -567,6 +730,7 @@ const IncentiveTooltip = ({
     });
 
     window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
 
     return () => {
       cancelAnimationFrame(outerRafId);
@@ -574,8 +738,9 @@ const IncentiveTooltip = ({
         cancelAnimationFrame(innerRafId);
       }
       window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
     };
-  }, [triggerCenterX, position, type]);
+  }, [triggerCenterX, position, type, openedAtScroll]);
 
   // Mobile: bottom sheet style
   if (isMobile) {
@@ -612,9 +777,17 @@ const IncentiveTooltip = ({
               <div className="relative my-[var(--ds-space-2)] pl-[var(--ds-space-2)]">
                 <div className={`pointer-events-none absolute left-0 top-0 bottom-0 ${accentClass}`} />
                 <div className="divide-y divide-border/40">
-                {incentiveSources.map((source, index) => {
-                  const valueClass = `ds-tooltip-title ${valueAccentClass}`;
-                  const linkClass = `${valueAccentClass} ${valueBgClass} transition-opacity opacity-80 hover:opacity-100`;
+                {orderedIncentiveSources.map((source, index) => {
+                  const campaigns = source.campaigns ?? [];
+                  const hasIncludedCampaign =
+                    campaigns.length === 0 || campaigns.some((campaign) => campaign.included !== false);
+                  const allWhitelistExcluded =
+                    source.sourceType === 'Merkl' && campaigns.length > 0 && !hasIncludedCampaign;
+                  const sourceDisplayValue = allWhitelistExcluded
+                    ? campaigns.reduce((sum, campaign) => sum + (campaign.rawValue ?? campaign.value), 0)
+                    : source.value;
+                  const valueClass = `ds-tooltip-title ${allWhitelistExcluded ? 'text-zinc-500' : valueAccentClass}`;
+                  const linkClass = `${allWhitelistExcluded ? 'text-zinc-500 bg-zinc-500/10' : `${valueAccentClass} ${valueBgClass}`} transition-opacity opacity-80 hover:opacity-100`;
                   const iconSrc = source.sourceType ? getSourceIcon(source.sourceType, isDark) : null;
                   const isBrevis = source.sourceType === 'Brevis';
                   const isWordmark = source.sourceType === 'Brevis' || source.sourceType === 'ACI' || source.sourceType === 'Merkl';
@@ -623,7 +796,7 @@ const IncentiveTooltip = ({
                   return (
                     <div 
                       key={`${source.name}-${index}`}
-                      className="ds-tooltip-item relative px-[var(--ds-space-2)] py-[var(--ds-space-1)]"
+                      className={`ds-tooltip-item relative px-[var(--ds-space-2)] py-[var(--ds-space-1)] ${allWhitelistExcluded ? 'bg-zinc-500/5 rounded-md' : ''}`}
                     >
                       <div className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-1)]">
                         <div className="flex items-center gap-[var(--ds-space-1-5)] min-w-0 flex-1 pr-1">
@@ -663,7 +836,7 @@ const IncentiveTooltip = ({
                             </a>
                           )}
                           <span className={`${valueClass} whitespace-nowrap`}>
-                            {formatPercent(source.value)}
+                            {formatPercent(sourceDisplayValue)}
                           </span>
                         </div>
                       </div>
@@ -705,7 +878,7 @@ const IncentiveTooltip = ({
         className="fixed z-40 rounded-xl border border-border/60 bg-card ds-tooltip-pad ds-tooltip-shadow max-w-[min(520px,calc(100vw-32px))] w-[min(520px,calc(100vw-32px))] min-w-[320px] animate-in fade-in-0 zoom-in-95 slide-in-from-top-1 duration-200 ease-out"
         style={{ 
           left: `${tooltipLeft ?? position.x}px`,
-          top: `${position.y + 8}px`,
+          top: `${tooltipTop ?? position.y + 8}px`,
           ...tooltipSurfaceStyle,
         }}
       >
@@ -725,9 +898,17 @@ const IncentiveTooltip = ({
             <div className="relative my-[var(--ds-space-2)] pl-[var(--ds-space-2)]">
               <div className={`pointer-events-none absolute left-0 top-0 bottom-0 ${accentClass}`} />
               <div className="divide-y divide-border/40">
-              {incentiveSources.map((source, index) => {
-                const valueClass = `ds-tooltip-title ${valueAccentClass}`;
-                const linkClass = `${valueAccentClass} ${valueBgClass} transition-opacity opacity-80 hover:opacity-100`;
+              {orderedIncentiveSources.map((source, index) => {
+                const campaigns = source.campaigns ?? [];
+                const hasIncludedCampaign =
+                  campaigns.length === 0 || campaigns.some((campaign) => campaign.included !== false);
+                const allWhitelistExcluded =
+                  source.sourceType === 'Merkl' && campaigns.length > 0 && !hasIncludedCampaign;
+                const sourceDisplayValue = allWhitelistExcluded
+                  ? campaigns.reduce((sum, campaign) => sum + (campaign.rawValue ?? campaign.value), 0)
+                  : source.value;
+                const valueClass = `ds-tooltip-title ${allWhitelistExcluded ? 'text-zinc-500' : valueAccentClass}`;
+                const linkClass = `${allWhitelistExcluded ? 'text-zinc-500 bg-zinc-500/10' : `${valueAccentClass} ${valueBgClass}`} transition-opacity opacity-80 hover:opacity-100`;
                 const iconSrc = source.sourceType ? getSourceIcon(source.sourceType, isDark) : null;
                 const isBrevis = source.sourceType === 'Brevis';
                 const isWordmark = source.sourceType === 'Brevis' || source.sourceType === 'ACI' || source.sourceType === 'Merkl';
@@ -736,7 +917,7 @@ const IncentiveTooltip = ({
                 return (
                   <div 
                     key={`${source.name}-${index}`}
-                    className="ds-tooltip-item relative px-[var(--ds-space-2)] py-[var(--ds-space-1)] animate-in fade-in-0 slide-in-from-top-2"
+                    className={`ds-tooltip-item relative px-[var(--ds-space-2)] py-[var(--ds-space-1)] animate-in fade-in-0 slide-in-from-top-2 ${allWhitelistExcluded ? 'bg-zinc-500/5 rounded-md' : ''}`}
                     style={{ animationDelay: `${index * 45}ms` }}
                   >
                     <div className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-1)]">
@@ -777,7 +958,7 @@ const IncentiveTooltip = ({
                           </a>
                         )}
                         <span className={`${valueClass} whitespace-nowrap`}>
-                          {formatPercent(source.value)}
+                          {formatPercent(sourceDisplayValue)}
                         </span>
                       </div>
                     </div>

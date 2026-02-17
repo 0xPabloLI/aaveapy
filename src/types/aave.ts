@@ -19,6 +19,7 @@ export interface MerklCampaignBreakdown {
   campaignStartedAt: string;           // Campaign start time (ISO 8601)
   campaignEndedAt: string;             // Campaign end time (ISO 8601)
   campaignId: string;                 // Campaign ID
+  whitelistOnly?: boolean;             // Merkl campaign is whitelist-only
   distributionType?: string;           // Merkl distribution type from opportunity breakdown
   pointsPerThousandUsd?: number;       // Tydro protocol points/1000USD value (optional)
   dailyPoints?: number;                // Tydro protocol daily points (optional)
@@ -95,9 +96,6 @@ export interface MarketListItem {
 }
 
 export interface TokenPriceEntry {
-  chainId: number;
-  address: string;
-  symbol: string;
   price: number;
   updatedAt: number;
   source: string;
@@ -108,19 +106,13 @@ export type TokenPricesIndex = Record<string, TokenPriceEntry>;
 export interface MerklForecastStateResponse {
   campaignId: string;
   campaignType: string;
-  totalBudget: number;
   plannedDaily?: number;
   requiredDaily?: number;
-  remainingBudget: number;
-  remainingDays: number;
-  maxAPR: number | null;
-  computedUntil: number | null;
-  asOf: number;
+  aprCap: number | null;
+  totalBudget: number;
   distributedSoFar: number;
   latestTvl: number;
-  startTimestamp: number;
   endTimestamp: number;
-  expectedByNow: number;
 }
 
 export interface MerklForecastStatesBatchResponse {

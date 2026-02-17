@@ -1,7 +1,11 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { TokenPricesIndex } from '@/types/aave';
-import { resolveForecastTokenPrice } from './merklTokenPrice';
+import {
+  __resetForecastTokenPriceBackupCachesForTests,
+  resolveForecastTokenPrice,
+  resolveForecastTokenPriceWithBackup,
+} from './merklTokenPrice';
 
 const tokenPrices: TokenPricesIndex = {
   '1:0xunderlying': {
@@ -81,5 +85,194 @@ describe('resolveForecastTokenPrice', () => {
     });
 
     expect(price).toBeUndefined();
+  });
+});
+
+describe('resolveForecastTokenPriceWithBackup', () => {
+  afterEach(() => {
+    __resetForecastTokenPriceBackupCachesForTests();
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  it('returns local tokenPrices result without calling backup fetch', async () => {
+    const fetchMock = vi.fn();
+    const price = await resolveForecastTokenPriceWithBackup(
+      {
+        tokenPrices,
+        chainId: 1,
+        actionType: 'Supply',
+        tokenAddress: '0xUnderlying',
+      },
+      fetchMock as unknown as typeof fetch
+    );
+
+    expect(price).toBe(0.99);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('uses hardcoded platform mapping before asset_platforms lookup', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          '0xmissing': {
+            usd: 1.2345,
+          },
+        }),
+      });
+
+    const price = await resolveForecastTokenPriceWithBackup(
+      {
+        tokenPrices,
+        chainId: 1,
+        actionType: 'Supply',
+        tokenAddress: '0xmissing',
+      },
+      fetchMock as unknown as typeof fetch
+    );
+
+    expect(price).toBe(1.2345);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0][0]).toContain('/simple/token_price/ethereum');
+  });
+
+  it('refreshes asset_platforms only when first token price lookup misses', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({}),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [{ id: 'ethereum', chain_identifier: 1 }],
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          '0xmissing': {
+            usd: 1.1111,
+          },
+        }),
+      });
+
+    const price = await resolveForecastTokenPriceWithBackup(
+      {
+        tokenPrices,
+        chainId: 1,
+        actionType: 'Supply',
+        tokenAddress: '0xmissing',
+      },
+      fetchMock as unknown as typeof fetch
+    );
+
+    expect(price).toBe(1.1111);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(fetchMock.mock.calls[0][0]).toContain('/simple/token_price/ethereum');
+    expect(fetchMock.mock.calls[1][0]).toContain('/asset_platforms');
+    expect(fetchMock.mock.calls[2][0]).toContain('/simple/token_price/ethereum');
+  });
+
+  it('uses longer cache ttl for stable tokens', async () => {
+    vi.useFakeTimers();
+
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          '0xstable': {
+            usd: 1,
+          },
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          '0xstable': {
+            usd: 1.1,
+          },
+        }),
+      });
+
+    const first = await resolveForecastTokenPriceWithBackup(
+      {
+        tokenPrices,
+        chainId: 1,
+        actionType: 'Supply',
+        tokenAddress: '0xstable',
+        tokenSymbol: 'USDC',
+      },
+      fetchMock as unknown as typeof fetch
+    );
+    expect(first).toBe(1);
+
+    vi.advanceTimersByTime(2 * 60 * 1000);
+
+    const second = await resolveForecastTokenPriceWithBackup(
+      {
+        tokenPrices,
+        chainId: 1,
+        actionType: 'Supply',
+        tokenAddress: '0xstable',
+        tokenSymbol: 'USDC',
+      },
+      fetchMock as unknown as typeof fetch
+    );
+    expect(second).toBe(1);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('uses shorter cache ttl for volatile tokens', async () => {
+    vi.useFakeTimers();
+
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          '0xvolatile': {
+            usd: 2000,
+          },
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          '0xvolatile': {
+            usd: 2100,
+          },
+        }),
+      });
+
+    const first = await resolveForecastTokenPriceWithBackup(
+      {
+        tokenPrices,
+        chainId: 1,
+        actionType: 'Supply',
+        tokenAddress: '0xvolatile',
+        tokenSymbol: 'WETH',
+      },
+      fetchMock as unknown as typeof fetch
+    );
+    expect(first).toBe(2000);
+
+    vi.advanceTimersByTime(2 * 60 * 1000);
+
+    const second = await resolveForecastTokenPriceWithBackup(
+      {
+        tokenPrices,
+        chainId: 1,
+        actionType: 'Supply',
+        tokenAddress: '0xvolatile',
+        tokenSymbol: 'WETH',
+      },
+      fetchMock as unknown as typeof fetch
+    );
+    expect(second).toBe(2100);
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });

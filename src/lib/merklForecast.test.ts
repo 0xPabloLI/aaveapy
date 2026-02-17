@@ -11,14 +11,10 @@ const baseState: MerklForecastState = {
   campaignType: 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
   plannedDaily: 4000,
   requiredDaily: 4000,
-  remainingBudget: 24000,
-  remainingDays: 6,
-  maxAPR: 0.032,
-  computedUntil: 1770274800,
-  asOf: 1770279000,
+  aprCap: 0.032,
   distributedSoFar: 42000,
   totalBudget: 100000,
-  startTimestamp: 1770000000,
+  latestTvl: 10_000_000,
   endTimestamp: 1771000000,
 };
 
@@ -34,9 +30,9 @@ describe('forecastWithTVL', () => {
   it('stays APR-capped when TVL is very small', () => {
     const result = forecastWithTVL(baseState, 1_000);
 
-    const expectedCapDaily = (1_000 * baseState.maxAPR) / 365;
+    const expectedCapDaily = (1_000 * baseState.aprCap) / 365;
     expect(result.dailyRewards).toBeCloseTo(expectedCapDaily, 10);
-    expect(result.apr).toBeCloseTo(baseState.maxAPR, 10);
+    expect(result.apr).toBeCloseTo(baseState.aprCap, 10);
     expect(result.regime).toBe('APR_CAPPED');
   });
 
@@ -45,7 +41,6 @@ describe('forecastWithTVL', () => {
       ...baseState,
       plannedDaily: 0,
       requiredDaily: 0,
-      remainingBudget: 0,
     };
 
     const result = forecastWithTVL(noBudgetState, 500_000);
@@ -71,7 +66,7 @@ describe('forecastWithTVL', () => {
     const dutchState: MerklForecastState = {
       ...baseState,
       campaignType: 'DUTCH_AUCTION',
-      maxAPR: null,
+      aprCap: null,
       plannedDaily: 500,
       requiredDaily: 500,
     };
@@ -87,7 +82,7 @@ describe('forecastWithTVL', () => {
     const fixState: MerklForecastState = {
       ...baseState,
       campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
-      maxAPR: 0.005,
+      aprCap: 0.005,
       plannedDaily: 4_000,
       requiredDaily: 10_000,
     };
@@ -114,7 +109,6 @@ describe('forecastWithTVL', () => {
 describe('deriveForecastProgressFlags', () => {
   const progressState: MerklForecastProgressState = {
     ...baseState,
-    expectedByNow: 300_000,
     endTimestamp: 1_770_300_000,
   };
 

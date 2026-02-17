@@ -6,13 +6,16 @@ import { collectMerklCampaignOptions } from '@/lib/merklCampaigns';
 import { fetchMerklForecastState, fetchMerklForecastStates } from '@/lib/merklForecastApi';
 import { shouldSurfaceForecastError } from '@/lib/merklForecastErrors';
 import { deriveForecastProgressFlags, forecastWithTVL } from '@/lib/merklForecast';
-import { resolveForecastTokenPrice } from '@/lib/merklTokenPrice';
+import { resolveForecastTokenPrice, resolveForecastTokenPriceWithBackup } from '@/lib/merklTokenPrice';
 import { formatPercent } from '@/lib/formatters';
 import { formatNumberInput, parseNumberInput } from '@/lib/numberFormat';
 
 interface MerklForecastPanelProps {
   pools: PoolWithSpread[];
   tokenPrices?: TokenPricesIndex;
+  tydroPointToUsdRate: number;
+  includeWhitelistOnlyMerkl: boolean;
+  onToggleWhitelistOnlyMerkl: (next: boolean) => void;
 }
 
 const formatUsd = (value: number): string =>
@@ -22,13 +25,28 @@ const formatUsd = (value: number): string =>
     maximumFractionDigits: value >= 1000 ? 0 : 2,
   }).format(value);
 
-const MerklForecastPanel = ({ pools, tokenPrices }: MerklForecastPanelProps) => {
-  const campaignOptions = useMemo(() => collectMerklCampaignOptions(pools), [pools]);
+const MerklForecastPanel = ({
+  pools,
+  tokenPrices,
+  tydroPointToUsdRate,
+  includeWhitelistOnlyMerkl,
+  onToggleWhitelistOnlyMerkl,
+}: MerklForecastPanelProps) => {
+  const campaignOptions = useMemo(
+    () =>
+      collectMerklCampaignOptions(pools, {
+        includeWhitelistOnly: includeWhitelistOnlyMerkl,
+      }),
+    [includeWhitelistOnlyMerkl, pools]
+  );
   const [selectedCampaignId, setSelectedCampaignId] = useState('');
   const [depositInput, setDepositInput] = useState('100,000');
   const [loading, setLoading] = useState(false);
   const [states, setStates] = useState<Record<string, Awaited<ReturnType<typeof fetchMerklForecastState>>>>({});
+  const [stateErrors, setStateErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
+  const [tokenPrice, setTokenPrice] = useState<number | undefined>(undefined);
+  const [tokenPriceLoading, setTokenPriceLoading] = useState(false);
 
   useEffect(() => {
     if (campaignOptions.length === 0) {
@@ -43,6 +61,7 @@ const MerklForecastPanel = ({ pools, tokenPrices }: MerklForecastPanelProps) => 
   useEffect(() => {
     if (campaignOptions.length === 0) {
       setStates({});
+      setStateErrors({});
       setError(null);
       return;
     }
@@ -55,14 +74,26 @@ const MerklForecastPanel = ({ pools, tokenPrices }: MerklForecastPanelProps) => 
       .then((result) => {
         if (cancelled) return;
         const next: Record<string, Awaited<ReturnType<typeof fetchMerklForecastState>>> = {};
+        const nextErrors: Record<string, string> = {};
         result.items.forEach((item) => {
           next[item.campaignId] = item;
         });
-        const failed = result.errors.filter((item) => shouldSurfaceForecastError(item)).length;
+        const surfacedErrors = result.errors.filter((item) => shouldSurfaceForecastError(item));
+        surfacedErrors.forEach((item) => {
+          nextErrors[item.campaignId] = item.message;
+        });
+        const failed = surfacedErrors.length;
 
         setStates((prev) => ({ ...prev, ...next }));
+        setStateErrors(nextErrors);
         if (failed > 0) {
-          setError(`Failed to load ${failed} campaign forecast state${failed > 1 ? 's' : ''}.`);
+          const details = surfacedErrors
+            .slice(0, 3)
+            .map((item) => `${item.campaignId} (${item.status})`)
+            .join(', ');
+          setError(
+            `Failed to load ${failed} campaign forecast state${failed > 1 ? 's' : ''}${details ? `: ${details}` : ''}.`
+          );
         }
       })
       .catch((err) => {
@@ -85,32 +116,70 @@ const MerklForecastPanel = ({ pools, tokenPrices }: MerklForecastPanelProps) => 
     [campaignOptions, selectedCampaignId]
   );
 
-  const tokenPrice = selectedOption
-    ? resolveForecastTokenPrice({
-        tokenPrices,
-        chainId: selectedOption.chainId,
-        actionType: selectedOption.actionType,
-        tokenAddress: selectedOption.tokenAddress,
-        aTokenAddress: selectedOption.aTokenAddress,
-        vTokenAddress: selectedOption.vTokenAddress,
-      })
-    : undefined;
   const tokenSymbol = selectedOption?.tokenSymbol ?? 'Token';
+
+  useEffect(() => {
+    if (!selectedOption) {
+      setTokenPrice(undefined);
+      setTokenPriceLoading(false);
+      return;
+    }
+
+    const lookupInput = {
+      tokenPrices,
+      chainId: selectedOption.chainId,
+      actionType: selectedOption.actionType,
+      tokenSymbol: selectedOption.tokenSymbol,
+      tokenAddress: selectedOption.tokenAddress,
+      aTokenAddress: selectedOption.aTokenAddress,
+      vTokenAddress: selectedOption.vTokenAddress,
+    } as const;
+
+    const localPrice = resolveForecastTokenPrice(lookupInput);
+    if (localPrice !== undefined) {
+      setTokenPrice(localPrice);
+      setTokenPriceLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setTokenPrice(undefined);
+    setTokenPriceLoading(true);
+
+    resolveForecastTokenPriceWithBackup(lookupInput)
+      .then((price) => {
+        if (cancelled) return;
+        setTokenPrice(price);
+      })
+      .finally(() => {
+        if (!cancelled) setTokenPriceLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedOption, tokenPrices]);
 
   const depositAssetAmount = useMemo(() => parseNumberInput(depositInput), [depositInput]);
   const depositUsd = tokenPrice ? depositAssetAmount * tokenPrice : 0;
 
   const selectedState = selectedCampaignId ? states[selectedCampaignId] : undefined;
   const forecast = useMemo(() => {
-    if (!selectedState) return null;
+    if (!selectedState || !selectedOption) return null;
     const hypotheticalTvl = Math.max(selectedState.latestTvl + depositUsd, 0);
+    const baseForecast = forecastWithTVL(selectedState, hypotheticalTvl);
+    const forecastMultiplier = selectedOption.usesPointToUsdRate
+      ? Math.max(tydroPointToUsdRate, 0)
+      : 1;
     const progress = deriveForecastProgressFlags(selectedState);
     return {
       hypotheticalTvl,
-      ...forecastWithTVL(selectedState, hypotheticalTvl),
+      dailyRewards: baseForecast.dailyRewards * forecastMultiplier,
+      apr: baseForecast.apr * forecastMultiplier,
+      regime: baseForecast.regime,
       ...progress,
     };
-  }, [depositUsd, selectedState]);
+  }, [depositUsd, selectedOption, selectedState, tydroPointToUsdRate]);
 
   if (campaignOptions.length === 0) {
     return null;
@@ -127,6 +196,16 @@ const MerklForecastPanel = ({ pools, tokenPrices }: MerklForecastPanelProps) => 
         </div>
         {loading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
       </div>
+
+      <label className="mt-2 inline-flex items-center gap-2 text-xs text-muted-foreground">
+        <input
+          type="checkbox"
+          checked={includeWhitelistOnlyMerkl}
+          onChange={(event) => onToggleWhitelistOnlyMerkl(event.target.checked)}
+          className="h-3.5 w-3.5 rounded border-border bg-background"
+        />
+        Include whitelist-only Merkl campaigns
+      </label>
 
       <div className="mt-3 grid gap-3 md:grid-cols-2">
         <label className="text-xs text-muted-foreground">
@@ -157,6 +236,10 @@ const MerklForecastPanel = ({ pools, tokenPrices }: MerklForecastPanelProps) => 
             <span className="mt-1 block text-[11px] text-muted-foreground">
               ≈ {formatUsd(depositUsd)}
             </span>
+          ) : tokenPriceLoading ? (
+            <span className="mt-1 block text-[11px] text-muted-foreground">
+              Fetching backup price...
+            </span>
           ) : (
             <span className="mt-1 block text-[11px] text-muted-foreground">
               Price unavailable for {tokenSymbol}; forecast uses current TVL.
@@ -173,7 +256,10 @@ const MerklForecastPanel = ({ pools, tokenPrices }: MerklForecastPanelProps) => 
       )}
 
       {!selectedState && !loading && (
-        <p className="mt-3 text-xs text-muted-foreground">Forecast state is not available for the selected campaign yet.</p>
+        <p className="mt-3 text-xs text-muted-foreground">
+          Forecast state is not available for the selected campaign yet.
+          {selectedCampaignId && stateErrors[selectedCampaignId] ? ` (${stateErrors[selectedCampaignId]})` : ''}
+        </p>
       )}
 
       {selectedState && forecast && (

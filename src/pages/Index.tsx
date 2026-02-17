@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { lazy, Suspense, useState, useMemo, useCallback, useEffect } from 'react';
 import { usePreloadPoolAssets } from '@/hooks/usePreloadPoolAssets';
 import { useAaveMarkets, useAaveMarketStats, useAaveMarketsList } from '@/hooks/useAaveMarkets';
 import { useQueryClient } from '@tanstack/react-query';
@@ -37,6 +37,7 @@ const Index = () => {
   const [showCacheWarning, setShowCacheWarning] = useState(false);
   const [showMarketsExpanded, setShowMarketsExpanded] = useState(false);
   const [isRateDragging, setIsRateDragging] = useState(false);
+  const [includeWhitelistOnlyMerkl, setIncludeWhitelistOnlyMerkl] = useState(false);
   const [topTooltipState, setTopTooltipState] = useState<{
     pool: PoolWithSpread;
     type: 'supply' | 'borrow';
@@ -315,7 +316,13 @@ const Index = () => {
           </>
 
           <Suspense fallback={<div className="h-[120px] rounded-xl bg-muted/50 animate-pulse" />}>
-            <MerklForecastPanel pools={filteredPools} tokenPrices={effectivePoolsData?.tokenPrices} />
+            <MerklForecastPanel
+              pools={filteredPools}
+              tokenPrices={effectivePoolsData?.tokenPrices}
+              tydroPointToUsdRate={tydroPointToUsdRate}
+              includeWhitelistOnlyMerkl={includeWhitelistOnlyMerkl}
+              onToggleWhitelistOnlyMerkl={setIncludeWhitelistOnlyMerkl}
+            />
           </Suspense>
 
           {/* Top Opportunities */}
@@ -324,6 +331,7 @@ const Index = () => {
               pools={stablePools}
               isApy={isApy}
               isRateDragging={isRateDragging}
+              includeWhitelistOnlyMerkl={includeWhitelistOnlyMerkl}
               categoryGroups={tokenCategoryGroups}
               onIncentiveClick={handleTopIncentiveClick}
               tydroPointToUsdRate={tydroPointToUsdRate}
@@ -359,6 +367,8 @@ const Index = () => {
               );
             }}
             tydroPointToUsdRate={tydroPointToUsdRate}
+            includeWhitelistOnlyMerkl={includeWhitelistOnlyMerkl}
+            onToggleWhitelistOnlyMerkl={setIncludeWhitelistOnlyMerkl}
             tokenPrices={effectivePoolsData?.tokenPrices}
           />
 
@@ -374,6 +384,8 @@ const Index = () => {
                 onClose={() => setTopTooltipState(null)}
                 isApy={isApy}
                 tydroPointToUsdRate={tydroPointToUsdRate}
+                includeWhitelistOnlyMerkl={includeWhitelistOnlyMerkl}
+                onToggleWhitelistOnlyMerkl={setIncludeWhitelistOnlyMerkl}
                 tokenPrices={effectivePoolsData?.tokenPrices}
                 usePortal
               />

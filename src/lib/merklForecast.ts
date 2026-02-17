@@ -4,20 +4,14 @@ export interface MerklForecastState {
   campaignType: string;
   plannedDaily?: number;
   requiredDaily?: number;
-  remainingBudget: number;
-  remainingDays: number;
-  maxAPR: number | null;
-  computedUntil: number | null;
-  asOf: number;
+  aprCap: number | null;
   distributedSoFar: number;
   totalBudget: number;
-  startTimestamp: number;
+  latestTvl: number;
   endTimestamp: number;
 }
 
-export interface MerklForecastProgressState extends MerklForecastState {
-  expectedByNow: number;
-}
+export type MerklForecastProgressState = MerklForecastState;
 
 export interface MerklForecastResult {
   dailyRewards: number;
@@ -51,8 +45,8 @@ export const forecastWithTVL = (
   const plannedDaily = safe(forecastState.plannedDaily ?? 0);
   const requiredDaily = safe(forecastState.requiredDaily ?? plannedDaily);
 
-  const maxAPR = safe(forecastState.maxAPR ?? 0);
-  const capDaily = isRateLimitedCampaign ? (safeTvl * maxAPR) / DAYS_PER_YEAR : Number.POSITIVE_INFINITY;
+  const aprCap = safe(forecastState.aprCap ?? 0);
+  const capDaily = isRateLimitedCampaign ? (safeTvl * aprCap) / DAYS_PER_YEAR : Number.POSITIVE_INFINITY;
   const dailyRewards = Math.min(requiredDaily, capDaily);
   const apr = (dailyRewards * DAYS_PER_YEAR) / safeTvl;
   const capBinding = isRateLimitedCampaign && capDaily < requiredDaily;

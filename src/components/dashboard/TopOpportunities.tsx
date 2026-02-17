@@ -28,11 +28,13 @@ import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
 import { Carousel, CarouselContent, CarouselItem, CarouselApi } from '@/components/ui/carousel';
 import { Button } from '@/components/ui/button';
+import { shouldSkipTopOpportunitiesRender } from '@/lib/topOpportunitiesMemo';
 
 interface TopOpportunitiesProps {
   pools: PoolWithSpread[];
   isApy: boolean;
   isRateDragging?: boolean;
+  includeWhitelistOnlyMerkl: boolean;
   categoryGroups: TokenCategoryGroups;
   onIncentiveClick?: (payload: {
     pool: PoolWithSpread;
@@ -166,7 +168,15 @@ const PoolIdentity = memo(({
   );
 });
 
-const TopOpportunities = ({ pools, isApy, isRateDragging = false, categoryGroups, onIncentiveClick, tydroPointToUsdRate }: TopOpportunitiesProps) => {
+const TopOpportunities = ({
+  pools,
+  isApy,
+  isRateDragging = false,
+  includeWhitelistOnlyMerkl,
+  categoryGroups,
+  onIncentiveClick,
+  tydroPointToUsdRate,
+}: TopOpportunitiesProps) => {
   const isMobile = useIsMobile();
   const [isXl, setIsXl] = useState(false);
   const prevIsApyRef = useRef(isApy);
@@ -193,8 +203,22 @@ const TopOpportunities = ({ pools, isApy, isRateDragging = false, categoryGroups
       const merklOpportunities = type === 'supply' ? pool.merklSupplys : pool.merklBorrows;
       const brevisIncentives = type === 'supply' ? pool.brevisSupplys : pool.brevisBorrows;
       return {
-        apr: calculateTotalIncentiveApr(meritIncentives, merklOpportunities, brevisIncentives, protocolIncentives, tydroPointToUsdRate),
-        apy: calculateTotalIncentiveApy(meritIncentives, merklOpportunities, brevisIncentives, protocolIncentives, tydroPointToUsdRate),
+        apr: calculateTotalIncentiveApr(
+          meritIncentives,
+          merklOpportunities,
+          brevisIncentives,
+          protocolIncentives,
+          tydroPointToUsdRate,
+          { includeWhitelistOnlyMerkl }
+        ),
+        apy: calculateTotalIncentiveApy(
+          meritIncentives,
+          merklOpportunities,
+          brevisIncentives,
+          protocolIncentives,
+          tydroPointToUsdRate,
+          { includeWhitelistOnlyMerkl }
+        ),
       };
     };
 
@@ -219,7 +243,7 @@ const TopOpportunities = ({ pools, isApy, isRateDragging = false, categoryGroups
       totalBorrowApr,
       aprSpread: calculateSpreadApr(totalSupplyApr, totalBorrowApr),
     };
-  }), [pools, tydroPointToUsdRate]);
+  }), [includeWhitelistOnlyMerkl, pools, tydroPointToUsdRate]);
 
   // Top 5 Stable APY - memoized to prevent recalculation
   const topStable = useMemo(() => [...poolsWithTotals]
@@ -929,57 +953,4 @@ const TopOpportunities = ({ pools, isApy, isRateDragging = false, categoryGroups
 
 // Memoize component to prevent re-renders when parent state changes (e.g., filter buttons)
 // Only re-render when pools data actually changed or isApy changed
-export default memo(TopOpportunities, (prevProps, nextProps) => {
-  // If isApy changed, always re-render
-  if (prevProps.isApy !== nextProps.isApy) {
-    return false;
-  }
-
-  // If tydroPointToUsdRate changed, always re-render
-  if (prevProps.tydroPointToUsdRate !== nextProps.tydroPointToUsdRate) {
-    return false;
-  }
-
-  if (prevProps.isRateDragging !== nextProps.isRateDragging) {
-    return false;
-  }
-
-  if (prevProps.onIncentiveClick !== nextProps.onIncentiveClick) {
-    return false;
-  }
-
-  if (prevProps.categoryGroups !== nextProps.categoryGroups) {
-    return false;
-  }
-
-  // If pools array reference is the same, no re-render needed
-  if (prevProps.pools === nextProps.pools) {
-    return true;
-  }
-
-  // If pools arrays have different lengths, data changed
-  if (prevProps.pools.length !== nextProps.pools.length) {
-    return false;
-  }
-
-  // If both arrays are empty, no change
-  if (prevProps.pools.length === 0) {
-    return true;
-  }
-
-  // Deep comparison: compare all items' tokenAddress values
-  // This ensures we detect changes in the middle of the array or reordering
-  for (let i = 0; i < prevProps.pools.length; i++) {
-    const prevPool = prevProps.pools[i];
-    const nextPool = nextProps.pools[i];
-
-    // Compare tokenAddress (unique identifier) and marketName (for disambiguation)
-    if (prevPool?.tokenAddress !== nextPool?.tokenAddress ||
-        prevPool?.marketName !== nextPool?.marketName) {
-      return false; // Data changed, allow re-render
-    }
-  }
-
-  // All items match, skip re-render
-  return true;
-});
+export default memo(TopOpportunities, shouldSkipTopOpportunitiesRender);

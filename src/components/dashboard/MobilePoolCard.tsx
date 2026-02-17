@@ -22,6 +22,7 @@ import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
 interface MobilePoolCardProps {
   pool: PoolWithSpread;
   isApy: boolean;
+  includeWhitelistOnlyMerkl: boolean;
   onIncentiveClick: (
     e: React.MouseEvent,
     pool: PoolWithSpread,
@@ -31,7 +32,13 @@ interface MobilePoolCardProps {
   tydroPointToUsdRate: number;
 }
 
-const MobilePoolCard = ({ pool, isApy, onIncentiveClick, tydroPointToUsdRate }: MobilePoolCardProps) => {
+const MobilePoolCard = ({
+  pool,
+  isApy,
+  includeWhitelistOnlyMerkl,
+  onIncentiveClick,
+  tydroPointToUsdRate,
+}: MobilePoolCardProps) => {
   // Helper: Get incentive values for a pool (supply or borrow)
   const getIncentiveValues = (type: 'supply' | 'borrow') => {
     const protocolIncentives = type === 'supply' ? pool.supplyIncentives : pool.borrowIncentives;
@@ -39,8 +46,22 @@ const MobilePoolCard = ({ pool, isApy, onIncentiveClick, tydroPointToUsdRate }: 
     const merklOpportunities = type === 'supply' ? pool.merklSupplys : pool.merklBorrows;
     const brevisIncentives = type === 'supply' ? pool.brevisSupplys : pool.brevisBorrows;
     return {
-      apr: calculateTotalIncentiveApr(meritIncentives, merklOpportunities, brevisIncentives, protocolIncentives, tydroPointToUsdRate),
-      apy: calculateTotalIncentiveApy(meritIncentives, merklOpportunities, brevisIncentives, protocolIncentives, tydroPointToUsdRate),
+      apr: calculateTotalIncentiveApr(
+        meritIncentives,
+        merklOpportunities,
+        brevisIncentives,
+        protocolIncentives,
+        tydroPointToUsdRate,
+        { includeWhitelistOnlyMerkl }
+      ),
+      apy: calculateTotalIncentiveApy(
+        meritIncentives,
+        merklOpportunities,
+        brevisIncentives,
+        protocolIncentives,
+        tydroPointToUsdRate,
+        { includeWhitelistOnlyMerkl }
+      ),
     };
   };
 

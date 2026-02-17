@@ -57,6 +57,10 @@ export const apyToApr = (apy: number): number => {
 import type { MeritIncentive, MerklOpportunityGroup, BrevisIncentive } from '@/types/aave';
 import { TYDRO_POINT_TO_USD_RATE, getMerklBreakdownApr } from '@/lib/tydro';
 
+export interface IncentiveCalculationOptions {
+  includeWhitelistOnlyMerkl?: boolean;
+}
+
 const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 const parseCampaignBoundaryMs = (value: string | undefined, boundary: 'start' | 'end'): number | null => {
@@ -132,12 +136,15 @@ const sumMeritIncentivesApy = (meritIncentives?: MeritIncentive[]): number => {
  */
 const sumMerklOpportunities = (
   opportunities?: MerklOpportunityGroup[],
-  pointToUsdRate = TYDRO_POINT_TO_USD_RATE
+  pointToUsdRate = TYDRO_POINT_TO_USD_RATE,
+  options: IncentiveCalculationOptions = {}
 ): number => {
+  const includeWhitelistOnlyMerkl = options.includeWhitelistOnlyMerkl === true;
   if (!opportunities || !Array.isArray(opportunities)) return 0;
   return opportunities.reduce((sum, opp) => {
     const breakdownsApr = opp.breakdowns.reduce((breakdownSum, breakdown) => {
       if (!isCampaignActive(breakdown.campaignStartedAt, breakdown.campaignEndedAt)) return breakdownSum;
+      if (breakdown.whitelistOnly && !includeWhitelistOnlyMerkl) return breakdownSum;
       const apr = getMerklBreakdownApr(breakdown, pointToUsdRate);
       return breakdownSum + (!isNaN(apr) && apr >= 0 ? apr : 0);
     }, 0);
@@ -151,12 +158,15 @@ const sumMerklOpportunities = (
  */
 const sumMerklOpportunitiesApy = (
   opportunities?: MerklOpportunityGroup[],
-  pointToUsdRate = TYDRO_POINT_TO_USD_RATE
+  pointToUsdRate = TYDRO_POINT_TO_USD_RATE,
+  options: IncentiveCalculationOptions = {}
 ): number => {
+  const includeWhitelistOnlyMerkl = options.includeWhitelistOnlyMerkl === true;
   if (!opportunities || !Array.isArray(opportunities)) return 0;
   return opportunities.reduce((sum, opp) => {
     const breakdownsApy = opp.breakdowns.reduce((breakdownSum, breakdown) => {
       if (!isCampaignActive(breakdown.campaignStartedAt, breakdown.campaignEndedAt)) return breakdownSum;
+      if (breakdown.whitelistOnly && !includeWhitelistOnlyMerkl) return breakdownSum;
       const apr = getMerklBreakdownApr(breakdown, pointToUsdRate);
       if (!isNaN(apr) && apr >= 0) {
         return breakdownSum + convertAprToApy(apr);
@@ -206,10 +216,11 @@ export const calculateTotalIncentiveApr = (
   merklOpportunities?: MerklOpportunityGroup[],
   brevisIncentives?: BrevisIncentive[],
   protocolIncentives?: number[],
-  tydroPointToUsdRate = TYDRO_POINT_TO_USD_RATE
+  tydroPointToUsdRate = TYDRO_POINT_TO_USD_RATE,
+  options: IncentiveCalculationOptions = {}
 ): number => {
   const meritApr = sumMeritIncentives(meritIncentives);
-  const merklApr = sumMerklOpportunities(merklOpportunities, tydroPointToUsdRate);
+  const merklApr = sumMerklOpportunities(merklOpportunities, tydroPointToUsdRate, options);
   const protocolApr = sumNumberArray(protocolIncentives);
   const brevisAprValue = sumBrevisIncentives(brevisIncentives);
   
@@ -229,10 +240,11 @@ export const calculateTotalIncentiveApy = (
   merklOpportunities?: MerklOpportunityGroup[],
   brevisIncentives?: BrevisIncentive[],
   protocolIncentives?: number[],
-  tydroPointToUsdRate = TYDRO_POINT_TO_USD_RATE
+  tydroPointToUsdRate = TYDRO_POINT_TO_USD_RATE,
+  options: IncentiveCalculationOptions = {}
 ): number => {
   const meritApy = sumMeritIncentivesApy(meritIncentives);
-  const merklApy = sumMerklOpportunitiesApy(merklOpportunities, tydroPointToUsdRate);
+  const merklApy = sumMerklOpportunitiesApy(merklOpportunities, tydroPointToUsdRate, options);
   
   // Convert protocol incentives (already in APR form) to APY
   let protocolApy = 0;
