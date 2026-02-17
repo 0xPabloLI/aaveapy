@@ -48,4 +48,35 @@ describe('fetchMerklForecastStates', () => {
     expect(fetchMock.mock.calls[0][0]).toContain('/campaigns/forecast-states');
     expect(fetchMock.mock.calls[0][0]).not.toContain('ids=');
   });
+
+  it('dedupes concurrent batch requests for the same id set', async () => {
+    let resolveJson: ((value: unknown) => void) | null = null;
+    const json = vi.fn().mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveJson = resolve;
+        })
+    );
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json,
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const p1 = fetchMerklForecastStates(['9', '10']);
+    const p2 = fetchMerklForecastStates(['10', '9']);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    await Promise.resolve();
+    expect(resolveJson).toBeTypeOf('function');
+    resolveJson?.({
+      requested: 2,
+      items: [],
+      errors: [],
+    });
+
+    const [r1, r2] = await Promise.all([p1, p2]);
+    expect(r1.requested).toBe(2);
+    expect(r2.requested).toBe(2);
+  });
 });

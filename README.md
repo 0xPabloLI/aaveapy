@@ -9,6 +9,7 @@ A React dashboard for displaying Aave V3 market data with yield comparisons acro
 - **Multi-chain Support**: View Aave V3 markets across Ethereum, Arbitrum, Optimism, Base, Polygon, Avalanche, and more
 - **Yield Comparison**: Compare supply/borrow APYs across all supported chains
 - **Incentive Tracking**: Track additional yield from Merit, Merkl, and Brevis programs
+- **Merkl Forecast**: Estimate next-run Merkl daily rewards/APR for hypothetical deposit amounts
 - **Real-time Data**: Data fetched from [api.aaveapy.com](https://api.aaveapy.com)
 - **Mobile Friendly**: Responsive design with optimized mobile experience
 
@@ -77,6 +78,15 @@ npm run preflight:release -- --full
 ## Security
 
 See [SECURITY.md](SECURITY.md) for vulnerability reporting and a public-release security checklist.
+
+## Merkl Forecast Notes
+
+- Forecast state is loaded from backend:
+  - `GET /api/campaigns/forecast-states`
+  - `GET /api/campaigns/:campaignId/forecast-state`
+- Frontend forecast math only changes hypothetical TVL (based on user input amount * token price).
+- Token price is resolved from `/api/markets` `tokenPrices` first, with backup lookup if missing.
+- Campaign type and regime are rendered from forecast-state + local calculation (`APR_CAPPED`, `CATCHING_UP`, `PLANNED`).
 
 ## License
 
