@@ -2,10 +2,10 @@ import { useRef, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ExternalLink, X } from 'lucide-react';
 import { useTheme } from 'next-themes';
-import { PoolWithSpread, MeritIncentive, MerklOpportunityGroup, BrevisIncentive, TokenPricesIndex } from '@/types/aave';
+import { PoolWithSpread, MeritIncentive, MerklOpportunityGroup, BrevisIncentive, TokenPricesIndex, MerklForecastStateResponse } from '@/types/aave';
 import { formatPercent, convertAprToApy } from '@/lib/formatters';
 import { getMerklBreakdownApr, getMerklForecastUsdMultiplier } from '@/lib/tydro';
-import { fetchMerklForecastState, fetchMerklForecastStates } from '@/lib/merklForecastApi';
+import { fetchMerklForecastStates } from '@/lib/merklForecastApi';
 import { deriveForecastProgressFlags, forecastWithTVL } from '@/lib/merklForecast';
 import { resolveForecastTokenPrice, resolveForecastTokenPriceWithBackup } from '@/lib/merklTokenPrice';
 import { shouldSurfaceForecastError } from '@/lib/merklForecastErrors';
@@ -102,7 +102,7 @@ const IncentiveTooltip = ({
   const [depositInput, setDepositInput] = useState('');
   const [tokenPrice, setTokenPrice] = useState<number | undefined>(undefined);
   const [tokenPriceLoading, setTokenPriceLoading] = useState(false);
-  const [merklForecastStates, setMerklForecastStates] = useState<Record<string, Awaited<ReturnType<typeof fetchMerklForecastState>>>>({});
+  const [merklForecastStates, setMerklForecastStates] = useState<Record<string, MerklForecastStateResponse>>({});
   const [merklForecastErrors, setMerklForecastErrors] = useState<Record<string, string>>({});
   const portalTarget = typeof document !== 'undefined' ? document.body : null;
   const numberMatch = /^(\d+(?:\.\d+)?%?)$/;
@@ -310,7 +310,7 @@ const IncentiveTooltip = ({
     fetchMerklForecastStates(campaignIds)
       .then((result) => {
         if (cancelled) return;
-        const next: Record<string, Awaited<ReturnType<typeof fetchMerklForecastState>>> = {};
+        const next: Record<string, MerklForecastStateResponse> = {};
         const nextErrors: Record<string, string> = {};
         result.items.forEach((item) => {
           next[item.campaignId] = item;

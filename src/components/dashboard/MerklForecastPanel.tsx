@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, Loader2 } from 'lucide-react';
 
-import type { PoolWithSpread, TokenPricesIndex } from '@/types/aave';
+import type { PoolWithSpread, TokenPricesIndex, MerklForecastStateResponse } from '@/types/aave';
 import { collectMerklCampaignOptions } from '@/lib/merklCampaigns';
-import { fetchMerklForecastState, fetchMerklForecastStates } from '@/lib/merklForecastApi';
+import { fetchMerklForecastStates } from '@/lib/merklForecastApi';
 import { shouldSurfaceForecastError } from '@/lib/merklForecastErrors';
 import { deriveForecastProgressFlags, forecastWithTVL } from '@/lib/merklForecast';
 import { resolveForecastTokenPrice, resolveForecastTokenPriceWithBackup } from '@/lib/merklTokenPrice';
@@ -42,7 +42,7 @@ const MerklForecastPanel = ({
   const [selectedCampaignId, setSelectedCampaignId] = useState('');
   const [depositInput, setDepositInput] = useState('100,000');
   const [loading, setLoading] = useState(false);
-  const [states, setStates] = useState<Record<string, Awaited<ReturnType<typeof fetchMerklForecastState>>>>({});
+  const [states, setStates] = useState<Record<string, MerklForecastStateResponse>>({});
   const [stateErrors, setStateErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [tokenPrice, setTokenPrice] = useState<number | undefined>(undefined);
@@ -73,7 +73,7 @@ const MerklForecastPanel = ({
     fetchMerklForecastStates(campaignOptions.map((option) => option.campaignId))
       .then((result) => {
         if (cancelled) return;
-        const next: Record<string, Awaited<ReturnType<typeof fetchMerklForecastState>>> = {};
+        const next: Record<string, MerklForecastStateResponse> = {};
         const nextErrors: Record<string, string> = {};
         result.items.forEach((item) => {
           next[item.campaignId] = item;
