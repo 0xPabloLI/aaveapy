@@ -184,14 +184,24 @@ const fetchCoingeckoTokenPrice = async (
     try {
       const cachedPlatforms = platformMapCache?.map ?? new Map<number, string>();
       let platformId = resolvePlatformId(chainId, cachedPlatforms);
+      let forceRefreshedPlatforms = false;
       if (!platformId) {
         const mappedPlatforms = await getAssetPlatformMap(fetchImpl);
         platformId = resolvePlatformId(chainId, mappedPlatforms);
+        const now = Date.now();
+        const shouldForceRefresh =
+          now - lastPlatformForceRefreshAt >= PLATFORM_FORCE_REFRESH_COOLDOWN_MS;
+        if (!platformId && shouldForceRefresh) {
+          lastPlatformForceRefreshAt = now;
+          const refreshedPlatforms = await getAssetPlatformMap(fetchImpl, { forceRefresh: true });
+          platformId = resolvePlatformId(chainId, refreshedPlatforms);
+          forceRefreshedPlatforms = true;
+        }
       }
       if (!platformId) return undefined;
 
       let usd = await fetchTokenPriceByPlatform(platformId, normalizedAddress, fetchImpl);
-      if (usd === undefined) {
+      if (usd === undefined && !forceRefreshedPlatforms) {
         const now = Date.now();
         const shouldForceRefresh =
           now - lastPlatformForceRefreshAt >= PLATFORM_FORCE_REFRESH_COOLDOWN_MS;

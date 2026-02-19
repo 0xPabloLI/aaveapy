@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef, memo } from 'react';
 import { TrendingUp, Zap, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PoolWithSpread, ETHEREUM_MARKET_NAMES } from '@/types/aave';
+import { ReserveWithSpread, ETHEREUM_MARKET_NAMES } from '@/types/aave';
 import {
   isStablecoinSymbol,
   isEthRelatedSymbol,
@@ -31,13 +31,13 @@ import { Button } from '@/components/ui/button';
 import { shouldSkipTopOpportunitiesRender } from '@/lib/topOpportunitiesMemo';
 
 interface TopOpportunitiesProps {
-  pools: PoolWithSpread[];
+  pools: ReserveWithSpread[];
   isApy: boolean;
   isRateDragging?: boolean;
   includeWhitelistOnlyMerkl: boolean;
   categoryGroups: TokenCategoryGroups;
   onIncentiveClick?: (payload: {
-    pool: PoolWithSpread;
+    pool: ReserveWithSpread;
     type: 'supply' | 'borrow';
     position: { x: number; y: number };
     triggerCenterX: number;
@@ -300,7 +300,7 @@ const TopOpportunities = ({
     })
     .slice(0, DISPLAY_COUNT), [poolsWithTotals, isApy]);
 
-  const getMarketDisplayName = (pool: PoolWithSpread) => {
+  const getMarketDisplayName = (pool: ReserveWithSpread) => {
     if (pool.chainName === 'Ethereum' && ETHEREUM_MARKET_NAMES[pool.marketName]) {
       return ETHEREUM_MARKET_NAMES[pool.marketName];
     }
@@ -338,7 +338,7 @@ const TopOpportunities = ({
     })
   };
 
-  const handleCardClick = (pool: Pick<PoolWithSpread, 'marketName' | 'tokenAddress'>) => {
+  const handleCardClick = (pool: Pick<ReserveWithSpread, 'marketName' | 'tokenAddress'>) => {
     const url = buildAaveReserveUrl(pool);
     if (url) {
       window.open(url, '_blank', 'noopener,noreferrer');
@@ -347,7 +347,7 @@ const TopOpportunities = ({
 
   const handleIncentiveClick = (
     e: React.MouseEvent,
-    pool: PoolWithSpread,
+    pool: ReserveWithSpread,
     type: 'supply' | 'borrow',
     incentiveValue: number | null,
     accentValue: number | null,

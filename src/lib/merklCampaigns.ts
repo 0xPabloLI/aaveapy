@@ -1,4 +1,4 @@
-import type { PoolWithSpread, MerklOpportunityGroup } from '@/types/aave';
+import type { ReserveWithSpread, MerklOpportunityGroup } from '@/types/aave';
 
 export interface MerklCampaignOption {
   campaignId: string;
@@ -20,7 +20,7 @@ const addFromGroups = (
   byCampaignId: Map<string, MerklCampaignOption>,
   groups: MerklOpportunityGroup[] | undefined,
   actionType: MerklCampaignOption['actionType'],
-  pool: PoolWithSpread,
+  pool: ReserveWithSpread,
   includeWhitelistOnly: boolean
 ) => {
   if (!groups || groups.length === 0) return;
@@ -58,7 +58,7 @@ const addFromGroups = (
 };
 
 export const collectMerklCampaignOptions = (
-  pools: PoolWithSpread[],
+  pools: ReserveWithSpread[],
   config: CollectMerklCampaignOptionsConfig = {}
 ): MerklCampaignOption[] => {
   const byCampaignId = new Map<string, MerklCampaignOption>();

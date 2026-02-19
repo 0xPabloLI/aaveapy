@@ -138,9 +138,13 @@ describe('resolveForecastTokenPriceWithBackup', () => {
     expect(fetchMock.mock.calls[0][0]).toContain('/simple/token_price/ethereum');
   });
 
-  it('does not force-refresh asset_platforms when chain has no platform mapping', async () => {
+  it('force-refreshes asset_platforms once when chain has no platform mapping', async () => {
     const fetchMock = vi
       .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [{ id: 'ethereum', chain_identifier: 1 }],
+      })
       .mockResolvedValueOnce({
         ok: true,
         json: async () => [{ id: 'ethereum', chain_identifier: 1 }],
@@ -157,8 +161,9 @@ describe('resolveForecastTokenPriceWithBackup', () => {
     );
 
     expect(price).toBeUndefined();
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(fetchMock.mock.calls[0][0]).toContain('/asset_platforms');
+    expect(fetchMock.mock.calls[1][0]).toContain('/asset_platforms');
   });
 
   it('refreshes asset_platforms after a miss to recover platform mapping changes', async () => {

@@ -2,7 +2,7 @@ import { useRef, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ExternalLink, X } from 'lucide-react';
 import { useTheme } from 'next-themes';
-import { PoolWithSpread, MeritIncentive, MerklOpportunityGroup, BrevisIncentive, TokenPricesIndex, MerklForecastStateResponse } from '@/types/aave';
+import { ReserveWithSpread, MeritIncentive, MerklOpportunityGroup, BrevisIncentive, TokenPricesIndex, MerklForecastStateResponse } from '@/types/aave';
 import { formatPercent, convertAprToApy } from '@/lib/formatters';
 import { getMerklBreakdownApr, getMerklForecastUsdMultiplier } from '@/lib/tydro';
 import { fetchMerklForecastStates } from '@/lib/merklForecastApi';
@@ -14,7 +14,7 @@ import { adjustTooltipAnchorForScroll, getWindowScroll } from '@/lib/tooltipPosi
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface IncentiveTooltipProps {
-  pool: PoolWithSpread;
+  pool: ReserveWithSpread;
   type: 'supply' | 'borrow';
   position: { x: number; y: number };
   triggerCenterX: number;

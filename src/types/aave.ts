@@ -75,9 +75,6 @@ export interface ReserveWithSpread {
 
 }
 
-// Backward-compatible alias while migrating naming from "pool" to "reserve".
-export type PoolWithSpread = ReserveWithSpread;
-
 export interface MarketsResponse {
   data: ReserveWithSpread[];
   lastUpdated: string;

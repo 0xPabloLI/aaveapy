@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
 import { collectMerklCampaignOptions } from './merklCampaigns';
-import type { PoolWithSpread } from '@/types/aave';
+import type { ReserveWithSpread } from '@/types/aave';
 
-const makePool = (overrides: Partial<PoolWithSpread> = {}): PoolWithSpread =>
+const makePool = (overrides: Partial<ReserveWithSpread> = {}): ReserveWithSpread =>
   ({
     marketName: 'AaveV3Ink',
     chainName: 'Ink',
@@ -12,7 +12,7 @@ const makePool = (overrides: Partial<PoolWithSpread> = {}): PoolWithSpread =>
     tokenSymbol: 'USDC',
     tokenAddress: '0xToken',
     ...overrides,
-  }) as PoolWithSpread;
+  }) as ReserveWithSpread;
 
 describe('collectMerklCampaignOptions', () => {
   it('marks point-based campaigns as rate-driven', () => {

@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { ArrowUp, ArrowDown, ChevronDown, ChevronUp } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { PoolWithSpread, ETHEREUM_MARKET_NAMES, TokenPricesIndex } from '@/types/aave';
+import { ReserveWithSpread, ETHEREUM_MARKET_NAMES, TokenPricesIndex } from '@/types/aave';
 import { 
   formatPercent, 
   formatSpread, 
@@ -27,7 +27,7 @@ import MobilePoolCard from './MobilePoolCard';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface PoolsTableProps {
-  pools: PoolWithSpread[];
+  pools: ReserveWithSpread[];
   sortField: 'totalSupplyApy' | 'totalBorrowApy' | 'apySpread' | null;
   sortOrder: 'asc' | 'desc';
   onSort: (field: 'totalSupplyApy' | 'totalBorrowApy' | 'apySpread' | null) => void;
@@ -68,13 +68,13 @@ const PoolsTable = ({
   const [showBorrowSortMenu, setShowBorrowSortMenu] = useState(false);
   const [showAll, setShowAll] = useState(false);
   const [tooltipState, setTooltipState] = useState<{
-    pool: PoolWithSpread;
+    pool: ReserveWithSpread;
     type: 'supply' | 'borrow';
     position: { x: number; y: number };
     triggerCenterX: number;
   } | null>(null);
 
-  const getMarketDisplayName = (pool: PoolWithSpread) => {
+  const getMarketDisplayName = (pool: ReserveWithSpread) => {
     if (pool.chainName === 'Ethereum' && ETHEREUM_MARKET_NAMES[pool.marketName]) {
       return ETHEREUM_MARKET_NAMES[pool.marketName];
     }
@@ -82,7 +82,7 @@ const PoolsTable = ({
   };
 
   // Helper: Get incentive values for a pool (supply or borrow)
-  const getIncentiveValues = (pool: PoolWithSpread, type: 'supply' | 'borrow') => {
+  const getIncentiveValues = (pool: ReserveWithSpread, type: 'supply' | 'borrow') => {
     const protocolIncentives = type === 'supply' ? pool.supplyIncentives : pool.borrowIncentives;
     const meritIncentives = type === 'supply' ? pool.meritSupplys : pool.meritBorrows;
     const merklOpportunities = type === 'supply' ? pool.merklSupplys : pool.merklBorrows;
@@ -108,33 +108,33 @@ const PoolsTable = ({
   };
 
   // Calculate totals for a pool (frontend calculates incentive totals from details)
-  const getTotalSupplyApy = (pool: PoolWithSpread): number | null => {
+  const getTotalSupplyApy = (pool: ReserveWithSpread): number | null => {
     return calculateTotalSupplyApy(pool.supplyApy, getIncentiveValues(pool, 'supply').apy);
   };
 
-  const getTotalSupplyApr = (pool: PoolWithSpread): number | null => {
+  const getTotalSupplyApr = (pool: ReserveWithSpread): number | null => {
     return calculateTotalSupplyApr(pool.supplyApy, getIncentiveValues(pool, 'supply').apr);
   };
 
-  const getTotalBorrowApy = (pool: PoolWithSpread): number | null => {
+  const getTotalBorrowApy = (pool: ReserveWithSpread): number | null => {
     return calculateTotalBorrowApy(pool.borrowApy, getIncentiveValues(pool, 'borrow').apy);
   };
 
-  const getTotalBorrowApr = (pool: PoolWithSpread): number | null => {
+  const getTotalBorrowApr = (pool: ReserveWithSpread): number | null => {
     return calculateTotalBorrowApr(pool.borrowApy, getIncentiveValues(pool, 'borrow').apr);
   };
 
   // Calculate native values (already in percentage form, number type)
-  const getNativeSupplyApy = (pool: PoolWithSpread): number | null => {
+  const getNativeSupplyApy = (pool: ReserveWithSpread): number | null => {
     return pool.supplyApy ?? null;
   };
 
-  const getNativeBorrowApy = (pool: PoolWithSpread): number | null => {
+  const getNativeBorrowApy = (pool: ReserveWithSpread): number | null => {
     return pool.borrowApy ?? null;
   };
 
   // Calculate spread for a pool
-  const getSpread = (pool: PoolWithSpread): number | null => {
+  const getSpread = (pool: ReserveWithSpread): number | null => {
     const totalSupplyApy = isApy ? getTotalSupplyApy(pool) : getTotalSupplyApr(pool);
     const totalBorrowApy = isApy ? getTotalBorrowApy(pool) : getTotalBorrowApr(pool);
     if (totalSupplyApy === null || totalBorrowApy === null) return null;
@@ -239,7 +239,7 @@ const PoolsTable = ({
 
   const handleIncentiveClick = (
     e: React.MouseEvent,
-    pool: PoolWithSpread,
+    pool: ReserveWithSpread,
     type: 'supply' | 'borrow',
     apy: number | null,
   ) => {
@@ -277,7 +277,7 @@ const PoolsTable = ({
     );
   };
 
-  const handleRowClick = (pool: PoolWithSpread) => {
+  const handleRowClick = (pool: ReserveWithSpread) => {
     const url = buildAaveReserveUrl({
       marketName: pool.marketName,
       tokenAddress: pool.tokenAddress,
@@ -290,7 +290,7 @@ const PoolsTable = ({
   // Mobile card view with tooltip support
   const handleMobileIncentiveClick = (
     e: React.MouseEvent,
-    pool: PoolWithSpread,
+    pool: ReserveWithSpread,
     type: 'supply' | 'borrow',
     apy: number | null
   ) => {

@@ -1,5 +1,5 @@
 import { ExternalLink } from 'lucide-react';
-import { PoolWithSpread, ETHEREUM_MARKET_NAMES } from '@/types/aave';
+import { ReserveWithSpread, ETHEREUM_MARKET_NAMES } from '@/types/aave';
 import { 
   formatPercent, 
   formatSpread, 
@@ -20,12 +20,12 @@ import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
 
 interface MobilePoolCardProps {
-  pool: PoolWithSpread;
+  pool: ReserveWithSpread;
   isApy: boolean;
   includeWhitelistOnlyMerkl: boolean;
   onIncentiveClick: (
     e: React.MouseEvent,
-    pool: PoolWithSpread,
+    pool: ReserveWithSpread,
     type: 'supply' | 'borrow',
     apy: number | null
   ) => void;

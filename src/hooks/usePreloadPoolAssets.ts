@@ -1,5 +1,5 @@
  import { useEffect, useRef } from 'react';
- import { PoolWithSpread } from '@/types/aave';
+ import { ReserveWithSpread } from '@/types/aave';
  import { preloadTokenIcons, preloadChainIcons } from '@/lib/preloadUtils';
  import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
  
@@ -8,7 +8,7 @@
   * Runs during idle time to warm up image cache
   */
  export function usePreloadPoolAssets(
-   pools: PoolWithSpread[] | undefined,
+   pools: ReserveWithSpread[] | undefined,
    options: {
      /** Only preload first N pools' icons */
      limit?: number;
@@ -58,7 +58,7 @@
   * e.g., when user is about to scroll or expand a section
   */
  export function usePreloadOnHover(
-   pools: PoolWithSpread[] | undefined,
+   pools: ReserveWithSpread[] | undefined,
    isHovering: boolean
  ): void {
    const hasPreloaded = useRef(false);

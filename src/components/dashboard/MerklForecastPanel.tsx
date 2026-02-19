@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, Loader2 } from 'lucide-react';
 
-import type { PoolWithSpread, TokenPricesIndex, MerklForecastStateResponse } from '@/types/aave';
+import type { ReserveWithSpread, TokenPricesIndex, MerklForecastStateResponse } from '@/types/aave';
 import { collectMerklCampaignOptions } from '@/lib/merklCampaigns';
 import { fetchMerklForecastStates } from '@/lib/merklForecastApi';
 import { shouldSurfaceForecastError } from '@/lib/merklForecastErrors';
@@ -11,7 +11,7 @@ import { formatPercent } from '@/lib/formatters';
 import { formatNumberInput, parseNumberInput } from '@/lib/numberFormat';
 
 interface MerklForecastPanelProps {
-  pools: PoolWithSpread[];
+  pools: ReserveWithSpread[];
   tokenPrices?: TokenPricesIndex;
   tydroPointToUsdRate: number;
   includeWhitelistOnlyMerkl: boolean;
