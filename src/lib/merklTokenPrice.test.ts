@@ -138,7 +138,30 @@ describe('resolveForecastTokenPriceWithBackup', () => {
     expect(fetchMock.mock.calls[0][0]).toContain('/simple/token_price/ethereum');
   });
 
-  it('refreshes asset_platforms only when first token price lookup misses', async () => {
+  it('does not force-refresh asset_platforms when chain has no platform mapping', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [{ id: 'ethereum', chain_identifier: 1 }],
+      });
+
+    const price = await resolveForecastTokenPriceWithBackup(
+      {
+        tokenPrices,
+        chainId: 999999,
+        actionType: 'Supply',
+        tokenAddress: '0xmissing',
+      },
+      fetchMock as unknown as typeof fetch
+    );
+
+    expect(price).toBeUndefined();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0][0]).toContain('/asset_platforms');
+  });
+
+  it('refreshes asset_platforms after a miss to recover platform mapping changes', async () => {
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce({
@@ -173,6 +196,43 @@ describe('resolveForecastTokenPriceWithBackup', () => {
     expect(fetchMock.mock.calls[0][0]).toContain('/simple/token_price/ethereum');
     expect(fetchMock.mock.calls[1][0]).toContain('/asset_platforms');
     expect(fetchMock.mock.calls[2][0]).toContain('/simple/token_price/ethereum');
+  });
+
+  it('limits forced asset_platforms refresh to cooldown window after misses', async () => {
+    const fetchMock = vi
+      .fn()
+      // First lookup: miss -> force refresh -> miss
+      .mockResolvedValueOnce({ ok: true, json: async () => ({}) })
+      .mockResolvedValueOnce({ ok: true, json: async () => [{ id: 'ethereum', chain_identifier: 1 }] })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({}) })
+      // Second lookup: should only hit token_price once, no force refresh
+      .mockResolvedValueOnce({ ok: true, json: async () => ({}) });
+
+    const first = await resolveForecastTokenPriceWithBackup(
+      {
+        tokenPrices,
+        chainId: 1,
+        actionType: 'Supply',
+        tokenAddress: '0xmiss1',
+      },
+      fetchMock as unknown as typeof fetch
+    );
+    const second = await resolveForecastTokenPriceWithBackup(
+      {
+        tokenPrices,
+        chainId: 1,
+        actionType: 'Supply',
+        tokenAddress: '0xmiss2',
+      },
+      fetchMock as unknown as typeof fetch
+    );
+
+    expect(first).toBeUndefined();
+    expect(second).toBeUndefined();
+    expect(fetchMock).toHaveBeenCalledTimes(4);
+    expect(fetchMock.mock.calls[1][0]).toContain('/asset_platforms');
+    expect(fetchMock.mock.calls.some((call) => String(call[0]).includes('/asset_platforms'))).toBe(true);
+    expect(fetchMock.mock.calls.filter((call) => String(call[0]).includes('/asset_platforms')).length).toBe(1);
   });
 
   it('uses longer cache ttl for stable tokens', async () => {

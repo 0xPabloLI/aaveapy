@@ -1,8 +1,7 @@
 import { lazy, Suspense, useState, useMemo, useCallback, useEffect } from 'react';
 import { usePreloadPoolAssets } from '@/hooks/usePreloadPoolAssets';
-import { useAaveMarkets, useAaveMarketStats, useAaveMarketsList } from '@/hooks/useAaveMarkets';
-import { useQueryClient } from '@tanstack/react-query';
-import { SortField, SortOrder, TokenCategory, PoolWithSpread } from '@/types/aave';
+import { useAaveMarkets, useAaveMarketsList } from '@/hooks/useAaveMarkets';
+import { SortField, SortOrder, TokenCategory, ReserveWithSpread } from '@/types/aave';
 import {
   buildTokenCategoryGroups,
   isStablecoinSymbol,
@@ -17,7 +16,7 @@ import TopOpportunities from '@/components/dashboard/TopOpportunities';
 import PoolsTable from '@/components/dashboard/PoolsTable';
 import LoadingState from '@/components/dashboard/LoadingState';
 import PullToRefresh from '@/components/dashboard/PullToRefresh';
-import { getCachedMarkets, getCachedMarketStats, getCachedMarketsList, setCachedTydroRate } from '@/lib/cache';
+import { getCachedMarkets, getCachedMarketsList, setCachedTydroRate } from '@/lib/cache';
 import { TYDRO_POINT_TO_USD_RATE } from '@/lib/tydro';
 import { AlertTriangle } from 'lucide-react';
 import { preloadChainIcons, preloadIncentiveIcons } from '@/lib/preloadUtils';
@@ -39,7 +38,7 @@ const Index = () => {
   const [isRateDragging, setIsRateDragging] = useState(false);
   const [includeWhitelistOnlyMerkl, setIncludeWhitelistOnlyMerkl] = useState(false);
   const [topTooltipState, setTopTooltipState] = useState<{
-    pool: PoolWithSpread;
+    reserve: ReserveWithSpread;
     type: 'supply' | 'borrow';
     position: { x: number; y: number };
     triggerCenterX: number;
@@ -63,23 +62,18 @@ const Index = () => {
     }
   }, [tydroPointToUsdRateInput]);
 
-  const queryClient = useQueryClient();
-
   // Fetch data - no sort params, all sorting done on frontend
   // This allows the table's total/native/incentive mode to work correctly
-  const { data: poolsData, isLoading, error, isError, refetch } = useAaveMarkets();
-  const { data: stats, refetch: refetchStats } = useAaveMarketStats();
+  const { data: reservesData, isLoading, error, isError, refetch } = useAaveMarkets();
   const { data: marketsList, refetch: refetchMarketsList } = useAaveMarketsList();
   const { data: tokenCategoryOverrides } = useTokenCategories();
 
   // Get cached data as fallback
-  const cachedPoolsData = useMemo(() => getCachedMarkets(), []);
-  const cachedStats = useMemo(() => getCachedMarketStats(), []);
+  const cachedReservesData = useMemo(() => getCachedMarkets(), []);
   const cachedMarketsList = useMemo(() => getCachedMarketsList(), []);
 
   // Use actual data if available, otherwise fall back to cache
-  const effectivePoolsData = poolsData || cachedPoolsData;
-  const effectiveStats = stats || cachedStats;
+  const effectiveReservesData = reservesData || cachedReservesData;
   const effectiveMarketsList = marketsList || cachedMarketsList;
 
   const orderedMarkets = useMemo(() => {
@@ -97,7 +91,7 @@ const Index = () => {
   // Check if we're using cached data
   // Only show once loading is done to avoid flashing the banner on initial load.
   const isUsingCache =
-    !isLoading && ((isError && !!cachedPoolsData) || (!poolsData && !!cachedPoolsData));
+    !isLoading && ((isError && !!cachedReservesData) || (!reservesData && !!cachedReservesData));
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -125,15 +119,15 @@ const Index = () => {
 
   // Stable reference for pools data to prevent TopOpportunities from re-rendering
   // when filters change (only update when actual data changes)
-  const stablePools = useMemo(() => {
-    return effectivePoolsData?.data || [];
-  }, [effectivePoolsData?.data]);
+  const stableReserves = useMemo(() => {
+    return effectiveReservesData?.data || [];
+  }, [effectiveReservesData?.data]);
 
   // Phase 3 Optimization: Preload token and chain icons during idle time
-  usePreloadPoolAssets(stablePools, {
+  usePreloadPoolAssets(stableReserves, {
     limit: 40, // Preload icons for first 40 pools
     delay: 300, // Start after initial render settles
-    enabled: stablePools.length > 0,
+    enabled: stableReserves.length > 0,
   });
 
   // Preload chain icons for hidden markets when user hovers "More" button
@@ -146,14 +140,14 @@ const Index = () => {
 
   // Preload incentive icons after initial data load (for tooltip)
   useEffect(() => {
-    if (!stablePools || stablePools.length === 0) return;
+    if (!stableReserves || stableReserves.length === 0) return;
     // Delay to not interfere with initial render
     const timeoutId = setTimeout(() => {
       preloadIncentiveIcons();
     }, 500);
     return () => clearTimeout(timeoutId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stablePools.length > 0]);
+  }, [stableReserves.length > 0]);
 
   const tokenCategoryGroups = useMemo(
     () => buildTokenCategoryGroups(tokenCategoryOverrides),
@@ -164,13 +158,12 @@ const Index = () => {
   const handleRefresh = useCallback(async () => {
     await Promise.all([
       refetch(),
-      refetchStats(),
       refetchMarketsList(),
     ]);
-  }, [refetch, refetchStats, refetchMarketsList]);
+  }, [refetch, refetchMarketsList]);
 
   const handleTopIncentiveClick = useCallback((payload: {
-    pool: PoolWithSpread;
+    pool: ReserveWithSpread;
     type: 'supply' | 'borrow';
     position: { x: number; y: number };
     triggerCenterX: number;
@@ -178,7 +171,15 @@ const Index = () => {
     accentTextClass?: string;
     accentBgClass?: string;
   }) => {
-    setTopTooltipState(payload);
+    setTopTooltipState({
+      reserve: payload.pool,
+      type: payload.type,
+      position: payload.position,
+      triggerCenterX: payload.triggerCenterX,
+      accentBorderClass: payload.accentBorderClass,
+      accentTextClass: payload.accentTextClass,
+      accentBgClass: payload.accentBgClass,
+    });
   }, []);
 
   // Handle sort
@@ -198,13 +199,13 @@ const Index = () => {
 
   // Filter pools
   const filteredPools = useMemo(() => {
-    if (!effectivePoolsData?.data) return [];
+    if (!effectiveReservesData?.data) return [];
 
-    return effectivePoolsData.data.filter(pool => {
+    return effectiveReservesData.data.filter((reserve) => {
       // Search filter - only match tokenSymbol
       if (searchQuery) {
         const query = searchQuery.toLowerCase().trim();
-        const symbol = pool.tokenSymbol.toLowerCase();
+        const symbol = reserve.tokenSymbol.toLowerCase();
         
         if (!symbol.includes(query)) {
           return false;
@@ -213,14 +214,14 @@ const Index = () => {
 
       // Market filter
       if (selectedMarkets.length > 0) {
-        if (!selectedMarkets.includes(pool.marketName)) {
+        if (!selectedMarkets.includes(reserve.marketName)) {
           return false;
         }
       }
 
       // Category filter
       if (selectedCategory !== 'all') {
-        const symbol = pool.tokenSymbol.toUpperCase();
+        const symbol = reserve.tokenSymbol.toUpperCase();
         switch (selectedCategory) {
           case 'stablecoin':
             if (!isStablecoinSymbol(symbol, tokenCategoryGroups)) return false;
@@ -239,10 +240,10 @@ const Index = () => {
 
       return true;
     });
-  }, [effectivePoolsData?.data, searchQuery, selectedMarkets, selectedCategory, tokenCategoryGroups]);
+  }, [effectiveReservesData?.data, searchQuery, selectedMarkets, selectedCategory, tokenCategoryGroups]);
 
   // Loading state - only show if we have no data at all (neither fresh nor cached)
-  if (isLoading && !effectivePoolsData) {
+  if (isLoading && !effectiveReservesData) {
     return <LoadingState />;
   }
 
@@ -272,7 +273,7 @@ const Index = () => {
           )}
 
           {/* Error banner (only show if no cache available) */}
-          {error && !cachedPoolsData && (
+          {error && !cachedReservesData && (
             <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-[var(--ds-space-3)] md:p-[var(--ds-space-4)] flex items-start gap-[var(--ds-space-3)]">
               <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-[var(--ds-space-0-5)]" />
               <div className="flex-1 min-w-0">
@@ -287,7 +288,7 @@ const Index = () => {
           )}
 
           {/* No data warning banner (when there's no data, no error, and no cache) */}
-          {!effectivePoolsData && !isLoading && !error && !cachedPoolsData && (
+          {!effectiveReservesData && !isLoading && !error && !cachedReservesData && (
             <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-[var(--ds-space-3)] md:p-[var(--ds-space-4)] flex items-start gap-[var(--ds-space-3)]">
               <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-[var(--ds-space-0-5)]" />
               <div className="flex-1 min-w-0">
@@ -303,7 +304,7 @@ const Index = () => {
 
           {/* Header */}
           <Header
-            lastUpdated={effectivePoolsData?.lastUpdated}
+            lastUpdated={effectiveReservesData?.lastUpdated}
           />
 
           {/* INK Incentive APR Calculator */}
@@ -318,7 +319,7 @@ const Index = () => {
           <Suspense fallback={<div className="h-[120px] rounded-xl bg-muted/50 animate-pulse" />}>
             <MerklForecastPanel
               pools={filteredPools}
-              tokenPrices={effectivePoolsData?.tokenPrices}
+              tokenPrices={effectiveReservesData?.tokenPrices}
               tydroPointToUsdRate={tydroPointToUsdRate}
               includeWhitelistOnlyMerkl={includeWhitelistOnlyMerkl}
               onToggleWhitelistOnlyMerkl={setIncludeWhitelistOnlyMerkl}
@@ -326,9 +327,9 @@ const Index = () => {
           </Suspense>
 
           {/* Top Opportunities */}
-          {stablePools && stablePools.length > 0 && (
+          {stableReserves && stableReserves.length > 0 && (
             <TopOpportunities
-              pools={stablePools}
+              pools={stableReserves}
               isApy={isApy}
               isRateDragging={isRateDragging}
               includeWhitelistOnlyMerkl={includeWhitelistOnlyMerkl}
@@ -369,12 +370,12 @@ const Index = () => {
             tydroPointToUsdRate={tydroPointToUsdRate}
             includeWhitelistOnlyMerkl={includeWhitelistOnlyMerkl}
             onToggleWhitelistOnlyMerkl={setIncludeWhitelistOnlyMerkl}
-            tokenPrices={effectivePoolsData?.tokenPrices}
+            tokenPrices={effectiveReservesData?.tokenPrices}
           />
 
           {topTooltipState && (
               <IncentiveTooltip
-                pool={topTooltipState.pool}
+                pool={topTooltipState.reserve}
                 type={topTooltipState.type}
                 position={topTooltipState.position}
                 triggerCenterX={topTooltipState.triggerCenterX}
@@ -386,20 +387,20 @@ const Index = () => {
                 tydroPointToUsdRate={tydroPointToUsdRate}
                 includeWhitelistOnlyMerkl={includeWhitelistOnlyMerkl}
                 onToggleWhitelistOnlyMerkl={setIncludeWhitelistOnlyMerkl}
-                tokenPrices={effectivePoolsData?.tokenPrices}
+                tokenPrices={effectiveReservesData?.tokenPrices}
                 usePortal
               />
           )}
 
           {/* Empty state */}
-          {filteredPools.length === 0 && effectivePoolsData && !isLoading && (
+          {filteredPools.length === 0 && effectiveReservesData && !isLoading && (
             <div className="text-center py-[var(--ds-space-12)]">
               <p className="text-muted-foreground">No pools found matching your filters</p>
             </div>
           )}
 
           {/* No data state (when there's no data at all, not even cache) - only show if no banner is shown */}
-          {!effectivePoolsData && !isLoading && (error || !cachedPoolsData) && (
+          {!effectiveReservesData && !isLoading && (error || !cachedReservesData) && (
             <div className="text-center py-[var(--ds-space-12)]">
               <p className="text-muted-foreground">No data to display</p>
             </div>

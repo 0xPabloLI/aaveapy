@@ -19,7 +19,8 @@ const toKey = (chainId: number, address: string): string =>
   `${chainId}:${address.toLowerCase()}`;
 
 const COINGECKO_API_BASE = 'https://api.coingecko.com/api/v3';
-const PLATFORM_TTL_MS = 30 * 60 * 1000;
+const PLATFORM_TTL_MS = 24 * 60 * 60 * 1000;
+const PLATFORM_FORCE_REFRESH_COOLDOWN_MS = 10 * 60 * 1000;
 const HARDCODED_PLATFORM_BY_CHAIN_ID: Record<number, string> = {
   1: 'ethereum',
   10: 'optimistic-ethereum',
@@ -44,6 +45,7 @@ let platformMapCache:
       expiresAt: number;
     }
   | null = null;
+let lastPlatformForceRefreshAt = 0;
 
 const pushIfPresent = (into: string[], value?: string | null) => {
   if (!value) return;
@@ -183,17 +185,23 @@ const fetchCoingeckoTokenPrice = async (
       const cachedPlatforms = platformMapCache?.map ?? new Map<number, string>();
       let platformId = resolvePlatformId(chainId, cachedPlatforms);
       if (!platformId) {
-        const refreshedPlatforms = await getAssetPlatformMap(fetchImpl, { forceRefresh: true });
-        platformId = resolvePlatformId(chainId, refreshedPlatforms);
+        const mappedPlatforms = await getAssetPlatformMap(fetchImpl);
+        platformId = resolvePlatformId(chainId, mappedPlatforms);
       }
       if (!platformId) return undefined;
 
       let usd = await fetchTokenPriceByPlatform(platformId, normalizedAddress, fetchImpl);
       if (usd === undefined) {
-        const refreshedPlatforms = await getAssetPlatformMap(fetchImpl, { forceRefresh: true });
-        const refreshedPlatformId = resolvePlatformId(chainId, refreshedPlatforms);
-        if (refreshedPlatformId) {
-          usd = await fetchTokenPriceByPlatform(refreshedPlatformId, normalizedAddress, fetchImpl);
+        const now = Date.now();
+        const shouldForceRefresh =
+          now - lastPlatformForceRefreshAt >= PLATFORM_FORCE_REFRESH_COOLDOWN_MS;
+        if (shouldForceRefresh) {
+          lastPlatformForceRefreshAt = now;
+          const refreshedPlatforms = await getAssetPlatformMap(fetchImpl, { forceRefresh: true });
+          const refreshedPlatformId = resolvePlatformId(chainId, refreshedPlatforms);
+          if (refreshedPlatformId) {
+            usd = await fetchTokenPriceByPlatform(refreshedPlatformId, normalizedAddress, fetchImpl);
+          }
         }
       }
       if (usd === undefined) return undefined;
@@ -234,4 +242,5 @@ export const __resetForecastTokenPriceBackupCachesForTests = (): void => {
   priceCache.clear();
   priceInFlight.clear();
   platformMapCache = null;
+  lastPlatformForceRefreshAt = 0;
 };

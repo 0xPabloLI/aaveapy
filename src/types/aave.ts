@@ -41,7 +41,7 @@ export interface BrevisIncentive {
   name: string;                        // Campaign name
 }
 
-export interface PoolWithSpread {
+export interface ReserveWithSpread {
   // Basic information
   marketName: string;
   chainName: string;
@@ -75,19 +75,15 @@ export interface PoolWithSpread {
 
 }
 
+// Backward-compatible alias while migrating naming from "pool" to "reserve".
+export type PoolWithSpread = ReserveWithSpread;
+
 export interface MarketsResponse {
-  data: PoolWithSpread[];
+  data: ReserveWithSpread[];
   lastUpdated: string;
   isStale: boolean;
   updateInProgress: boolean;
   tokenPrices?: TokenPricesIndex;
-}
-
-export interface MarketStats {
-  totalPools: number;
-  totalChains: number;
-  totalTokens: number;
-  chains: string[];
 }
 
 export interface MarketListItem {
