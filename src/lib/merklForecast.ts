@@ -1,4 +1,6 @@
 const DAYS_PER_YEAR = 365;
+const SECONDS_PER_DAY = 86400;
+const EPSILON = 1e-9;
 
 export interface MerklForecastState {
   campaignType: string;
@@ -17,6 +19,8 @@ export interface MerklForecastResult {
   dailyRewards: number;
   apr: number;
   regime: 'APR_CAPPED' | 'CATCHING_UP' | 'PLANNED';
+  fixRewardableDays?: number;
+  fixRewardableUntilTs?: number;
 }
 
 export interface MerklForecastProgressFlags {
@@ -27,29 +31,54 @@ const safe = (value: number): number => (Number.isFinite(value) ? Math.max(value
 
 export const forecastWithTVL = (
   forecastState: MerklForecastState,
-  tvl: number
+  tvl: number,
+  nowTs = Math.floor(Date.now() / 1000)
 ): MerklForecastResult => {
   const safeTvl = safe(tvl);
-  const isRateLimitedCampaign =
-    forecastState.campaignType === 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE' ||
-    forecastState.campaignType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE';
+  const isMaxAprCampaign = forecastState.campaignType === 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE';
+  const isFixAprCampaign = forecastState.campaignType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE';
+  const isRateLimitedCampaign = isMaxAprCampaign || isFixAprCampaign;
 
   if (safeTvl <= 0) {
     return {
       dailyRewards: 0,
       apr: 0,
-      regime: isRateLimitedCampaign ? 'APR_CAPPED' : 'PLANNED',
+      regime: isMaxAprCampaign ? 'APR_CAPPED' : 'PLANNED',
     };
   }
 
   const plannedDaily = safe(forecastState.plannedDaily ?? 0);
   const requiredDaily = safe(forecastState.requiredDaily ?? plannedDaily);
+  const remainingBudget = safe((forecastState.totalBudget ?? 0) - (forecastState.distributedSoFar ?? 0));
+  const remainingDays = Math.max((safe(forecastState.endTimestamp) - safe(nowTs)) / SECONDS_PER_DAY, 0);
 
   const aprCap = safe(forecastState.aprCap ?? 0);
-  const capDaily = isRateLimitedCampaign ? (safeTvl * aprCap) / DAYS_PER_YEAR : Number.POSITIVE_INFINITY;
-  const dailyRewards = Math.min(requiredDaily, capDaily);
+  const aprBasedDaily = isRateLimitedCampaign ? (safeTvl * aprCap) / DAYS_PER_YEAR : Number.POSITIVE_INFINITY;
+
+  if (isFixAprCampaign) {
+    const dailyRewards = Math.min(aprBasedDaily, remainingBudget);
+    const apr = (dailyRewards * DAYS_PER_YEAR) / safeTvl;
+    const rewardableDaysByBudget = aprBasedDaily > EPSILON ? remainingBudget / aprBasedDaily : remainingDays;
+    const fixRewardableDays = Math.max(Math.min(remainingDays, rewardableDaysByBudget), 0);
+    const fixRewardableUntilTs = Math.floor(
+      Math.min(
+        safe(forecastState.endTimestamp),
+        safe(nowTs) + fixRewardableDays * SECONDS_PER_DAY
+      )
+    );
+
+    return {
+      dailyRewards,
+      apr,
+      regime: 'PLANNED',
+      fixRewardableDays,
+      fixRewardableUntilTs,
+    };
+  }
+
+  const dailyRewards = Math.min(requiredDaily, aprBasedDaily);
   const apr = (dailyRewards * DAYS_PER_YEAR) / safeTvl;
-  const capBinding = isRateLimitedCampaign && capDaily < requiredDaily;
+  const capBinding = isMaxAprCampaign && aprBasedDaily < requiredDaily;
   const isCatchingUp = requiredDaily > plannedDaily * 1.01; // 1% tolerance for floating point
 
   let regime: 'APR_CAPPED' | 'CATCHING_UP' | 'PLANNED';

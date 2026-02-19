@@ -53,6 +53,26 @@ interface IncentiveSource {
   }>;
 }
 
+const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+const parseCampaignBoundaryMs = (value: string | undefined, boundary: 'start' | 'end'): number | null => {
+  if (!value) return null;
+  if (DATE_ONLY_PATTERN.test(value)) {
+    const normalized = boundary === 'start' ? `${value}T00:00:00.000Z` : `${value}T23:59:59.999Z`;
+    const timestamp = Date.parse(normalized);
+    return Number.isNaN(timestamp) ? null : timestamp;
+  }
+  const timestamp = Date.parse(value);
+  return Number.isNaN(timestamp) ? null : timestamp;
+};
+
+const isCampaignActive = (startDate: string | undefined, endDate: string | undefined, nowMs = Date.now()): boolean => {
+  const startMs = parseCampaignBoundaryMs(startDate, 'start');
+  const endMs = parseCampaignBoundaryMs(endDate, 'end');
+  if (startMs === null || endMs === null) return false;
+  return nowMs >= startMs && nowMs <= endMs;
+};
+
 const lightSourceIconMap: Record<NonNullable<IncentiveSource['sourceType']>, string> = {
   Protocol: '/icons/tokens/aave.svg',
   Brevis: '/icons/partners/brevis-black.svg',
@@ -160,6 +180,15 @@ const IncentiveTooltip = ({
       currency: 'USD',
       maximumFractionDigits: value >= 1000 ? 0 : 2,
     }).format(value);
+
+  const formatForecastTimestamp = (unixSeconds: number): string =>
+    new Intl.DateTimeFormat('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    }).format(new Date(unixSeconds * 1000));
 
   const formatValue = (value: unknown): string => {
     if (value === null || value === undefined) return '';
@@ -293,6 +322,7 @@ const IncentiveTooltip = ({
     const ids = new Set<string>();
     opportunities.forEach((opportunity) => {
       opportunity.breakdowns?.forEach((breakdown) => {
+        if (!isCampaignActive(breakdown.campaignStartedAt, breakdown.campaignEndedAt)) return;
         if (breakdown?.campaignId) ids.add(String(breakdown.campaignId));
       });
     });
@@ -364,6 +394,7 @@ const IncentiveTooltip = ({
     const meritIncentives: MeritIncentive[] | undefined = type === 'supply' ? pool.meritSupplys : pool.meritBorrows;
     if (meritIncentives && Array.isArray(meritIncentives)) {
       meritIncentives.forEach((merit, index) => {
+        if (!isCampaignActive(merit.startDate, merit.endDate)) return;
         const apr = merit.apr;
         const selfApr = merit.selfApr || 0;
         
@@ -413,6 +444,7 @@ const IncentiveTooltip = ({
 
     if (brevisIncentives && Array.isArray(brevisIncentives) && brevisIncentives.length > 0) {
       brevisIncentives.forEach((brevis) => {
+        if (!isCampaignActive(brevis.startDate, brevis.endDate)) return;
         const apr = brevis.apr;
         if (!isNaN(apr) && apr >= 0) {
           sources.push({
@@ -438,6 +470,7 @@ const IncentiveTooltip = ({
       opportunities.forEach((opportunity) => {
         if (!opportunity.breakdowns || !Array.isArray(opportunity.breakdowns)) return;
         opportunity.breakdowns.forEach((breakdown) => {
+          if (!isCampaignActive(breakdown.campaignStartedAt, breakdown.campaignEndedAt)) return;
           const apr = getMerklBreakdownApr(breakdown, tydroPointToUsdRate);
           const whitelistOnly = breakdown.whitelistOnly === true;
           const included = !whitelistOnly || includeWhitelistOnlyMerkl;
@@ -580,6 +613,8 @@ const IncentiveTooltip = ({
         dailyRewards: forecast.dailyRewards * multiplier,
         apr: forecast.apr * multiplier,
         regime: forecast.regime,
+        fixRewardableDays: forecast.fixRewardableDays,
+        fixRewardableUntilTs: forecast.fixRewardableUntilTs,
         ...progress,
       };
     };
@@ -625,6 +660,14 @@ const IncentiveTooltip = ({
                 Type: {forecastPreview.campaignType} · Regime: {forecastPreview.regime} · Ended under-distributed:{' '}
                 {forecastPreview.isUnderDistributed ? 'Yes' : 'No'}
               </p>
+              {forecastPreview.campaignType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE' &&
+                typeof forecastPreview.fixRewardableDays === 'number' &&
+                typeof forecastPreview.fixRewardableUntilTs === 'number' && (
+                  <p className="ds-tooltip-body text-muted-foreground mt-[var(--ds-space-0-5)]">
+                    Rewardable until {formatForecastTimestamp(forecastPreview.fixRewardableUntilTs)} (
+                    {forecastPreview.fixRewardableDays.toFixed(2)}d)
+                  </p>
+                )}
             </div>
           )}
           {forecastPreview && forecastPreview.unavailable && (
@@ -683,6 +726,14 @@ const IncentiveTooltip = ({
                     Type: {forecastPreview.campaignType} · Regime: {forecastPreview.regime} · Ended under-distributed:{' '}
                     {forecastPreview.isUnderDistributed ? 'Yes' : 'No'}
                   </p>
+                  {forecastPreview.campaignType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE' &&
+                    typeof forecastPreview.fixRewardableDays === 'number' &&
+                    typeof forecastPreview.fixRewardableUntilTs === 'number' && (
+                      <p className="ds-tooltip-body text-muted-foreground mt-[var(--ds-space-0-5)]">
+                        Rewardable until {formatForecastTimestamp(forecastPreview.fixRewardableUntilTs)} (
+                        {forecastPreview.fixRewardableDays.toFixed(2)}d)
+                      </p>
+                    )}
                 </div>
               )}
               {forecastPreview && forecastPreview.unavailable && (

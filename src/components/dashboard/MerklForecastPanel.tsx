@@ -25,6 +25,21 @@ const formatUsd = (value: number): string =>
     maximumFractionDigits: value >= 1000 ? 0 : 2,
   }).format(value);
 
+const formatDateTime = (unixSeconds: number): string =>
+  new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(new Date(unixSeconds * 1000));
+
+const formatDays = (days: number): string =>
+  `${new Intl.NumberFormat('en-US', {
+    maximumFractionDigits: days >= 10 ? 1 : 2,
+  }).format(days)} day${days >= 1.5 ? 's' : ''}`;
+
 const MerklForecastPanel = ({
   pools,
   tokenPrices,
@@ -177,6 +192,8 @@ const MerklForecastPanel = ({
       dailyRewards: baseForecast.dailyRewards * forecastMultiplier,
       apr: baseForecast.apr * forecastMultiplier,
       regime: baseForecast.regime,
+      fixRewardableDays: baseForecast.fixRewardableDays,
+      fixRewardableUntilTs: baseForecast.fixRewardableUntilTs,
       ...progress,
     };
   }, [depositUsd, selectedOption, selectedState, tydroPointToUsdRate]);
@@ -282,6 +299,19 @@ const MerklForecastPanel = ({
               {forecast.isUnderDistributed ? 'Yes' : 'No'}
             </p>
           </div>
+          {selectedState.campaignType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE' &&
+            typeof forecast.fixRewardableDays === 'number' &&
+            typeof forecast.fixRewardableUntilTs === 'number' && (
+              <div className="rounded-md border border-border/60 bg-muted/20 p-2 md:col-span-3">
+                <p className="text-[11px] text-muted-foreground">FIX Rewardable Window (campaign-level)</p>
+                <p className="text-sm font-semibold text-foreground mt-1">
+                  Now → {formatDateTime(forecast.fixRewardableUntilTs)} ({formatDays(forecast.fixRewardableDays)})
+                </p>
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  Campaign window baseline: Now → {formatDateTime(selectedState.endTimestamp)}
+                </p>
+              </div>
+            )}
         </div>
       )}
     </section>
