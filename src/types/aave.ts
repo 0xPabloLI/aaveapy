@@ -11,6 +11,12 @@ export interface MeritIncentive {
   endBlock?: string;                   // Campaign end block (optional)
   requiredBorrowTokens?: string[] | string; // List of tokens to borrow, 'multiple' means any token
   requiredSupplyTokens?: string[] | string; // List of tokens to supply, 'multiple' means any token
+  estimatedDailyRewardUsd?: number;    // Estimated from latest Merkl JSON_AIRDROP round
+  estimatedImpliedTvlUsd?: number;     // Implied eligible TVL derived from current Merit APR
+  estimatedRoundIntervalDays?: number; // Latest-vs-previous round spacing in days
+  estimatedRoundCampaignId?: string;   // Source Merkl campaign id used for estimate
+  estimatedRoundOpportunityId?: string;// Source Merkl opportunity id used for estimate
+  estimatedRoundAsOf?: number;         // Estimate snapshot unix seconds
 }
 
 // Merkl opportunity data structure

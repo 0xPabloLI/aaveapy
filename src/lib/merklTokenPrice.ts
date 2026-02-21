@@ -36,6 +36,21 @@ const HARDCODED_PLATFORM_BY_CHAIN_ID: Record<number, string> = {
   59144: 'linea',
   534352: 'scroll',
 };
+const COINGECKO_COIN_ID_BY_SYMBOL: Record<string, string> = {
+  usdt: 'tether',
+  usdc: 'usd-coin',
+  dai: 'dai',
+  gho: 'gho',
+  pyusd: 'paypal-usd',
+  usde: 'ethena-usde',
+  susde: 'ethena-staked-usde',
+  usds: 'usds',
+  eth: 'ethereum',
+  weth: 'weth',
+  btc: 'bitcoin',
+  wbtc: 'wrapped-bitcoin',
+  eurc: 'euro-coin',
+};
 
 const priceCache = new Map<string, { price: number; expiresAt: number }>();
 const priceInFlight = new Map<string, Promise<number | undefined>>();
@@ -52,6 +67,36 @@ const pushIfPresent = (into: string[], value?: string | null) => {
   const normalized = value.trim().toLowerCase();
   if (!normalized) return;
   if (!into.includes(normalized)) into.push(normalized);
+};
+
+const normalizeTokenSymbol = (symbol?: string | null): string | undefined => {
+  if (!symbol) return undefined;
+  const normalized = symbol
+    .trim()
+    .toLowerCase()
+    .replace(/₮/g, 't')
+    .replace(/[^a-z0-9]/g, '');
+  return normalized || undefined;
+};
+
+const inferUnderlyingSymbolCandidates = (tokenSymbol?: string | null): string[] => {
+  const normalized = normalizeTokenSymbol(tokenSymbol);
+  if (!normalized) return [];
+
+  const knownSymbols = Object.keys(COINGECKO_COIN_ID_BY_SYMBOL).sort((a, b) => b.length - a.length);
+  const candidates: string[] = [];
+
+  if (knownSymbols.includes(normalized)) {
+    candidates.push(normalized);
+  }
+
+  for (const known of knownSymbols) {
+    if (normalized !== known && normalized.endsWith(known)) {
+      candidates.push(known);
+    }
+  }
+
+  return Array.from(new Set(candidates));
 };
 
 const buildCandidateAddresses = ({
@@ -159,6 +204,52 @@ const fetchTokenPriceByPlatform = async (
   return usd;
 };
 
+const fetchCoingeckoPriceBySymbol = async (
+  symbol: string,
+  tokenSymbol: string | null | undefined,
+  fetchImpl: FetchLike
+): Promise<number | undefined> => {
+  const coinId = COINGECKO_COIN_ID_BY_SYMBOL[symbol];
+  if (!coinId) return undefined;
+
+  const cacheKey = `coin:${coinId}`;
+  const cached = priceCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.price;
+  }
+
+  const existing = priceInFlight.get(cacheKey);
+  if (existing) return existing;
+
+  const request = (async () => {
+    try {
+      const url =
+        `${COINGECKO_API_BASE}/simple/price` +
+        `?ids=${encodeURIComponent(coinId)}` +
+        `&vs_currencies=usd`;
+      const response = await fetchImpl(url);
+      if (!response.ok) return undefined;
+
+      const payload = (await response.json()) as Record<string, { usd?: number }>;
+      const usd = payload?.[coinId]?.usd;
+      if (typeof usd !== 'number' || !Number.isFinite(usd)) return undefined;
+
+      priceCache.set(cacheKey, {
+        price: usd,
+        expiresAt: Date.now() + getCoingeckoBackupPriceTtlMs(tokenSymbol),
+      });
+      return usd;
+    } catch {
+      return undefined;
+    } finally {
+      priceInFlight.delete(cacheKey);
+    }
+  })();
+
+  priceInFlight.set(cacheKey, request);
+  return request;
+};
+
 const resolvePlatformId = (chainId: number, dynamicMap: Map<number, string>): string | undefined => {
   return HARDCODED_PLATFORM_BY_CHAIN_ID[chainId] ?? dynamicMap.get(chainId);
 };
@@ -242,6 +333,13 @@ export const resolveForecastTokenPriceWithBackup = async (
   const candidates = buildCandidateAddresses(input);
   for (const address of candidates) {
     const backup = await fetchCoingeckoTokenPrice(input.chainId, address, input.tokenSymbol, fetchImpl);
+    if (backup !== undefined) return backup;
+  }
+
+  // Last fallback: infer underlying symbol (e.g. aCelUSDT -> USDT) and fetch coin-level USD price.
+  const symbolCandidates = inferUnderlyingSymbolCandidates(input.tokenSymbol);
+  for (const symbol of symbolCandidates) {
+    const backup = await fetchCoingeckoPriceBySymbol(symbol, input.tokenSymbol, fetchImpl);
     if (backup !== undefined) return backup;
   }
 

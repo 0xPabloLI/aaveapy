@@ -340,4 +340,37 @@ describe('resolveForecastTokenPriceWithBackup', () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
+
+  it('falls back to underlying symbol price when address-based lookup misses', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({}) })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [{ id: 'ethereum', chain_identifier: 1 }],
+      })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({}) })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          tether: {
+            usd: 1.001,
+          },
+        }),
+      });
+
+    const price = await resolveForecastTokenPriceWithBackup(
+      {
+        tokenPrices,
+        chainId: 1,
+        actionType: 'Supply',
+        tokenAddress: '0xmissing',
+        tokenSymbol: 'aEthUSDT',
+      },
+      fetchMock as unknown as typeof fetch
+    );
+
+    expect(price).toBe(1.001);
+    expect(fetchMock.mock.calls.some((call) => String(call[0]).includes('/simple/price?ids=tether'))).toBe(true);
+  });
 });

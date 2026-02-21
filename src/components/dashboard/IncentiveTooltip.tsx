@@ -50,6 +50,10 @@ interface IncentiveSource {
     whitelistOnly?: boolean;
     included?: boolean;
     rawValue?: number;
+    estimatedDailyRewardUsd?: number;
+    estimatedImpliedTvlUsd?: number;
+    estimatedRoundCampaignId?: string;
+    estimatedRoundIntervalDays?: number;
   }>;
 }
 
@@ -432,6 +436,10 @@ const IncentiveTooltip = ({
               value: totalValue,
               dateRange: formatDateRange(merit.startDate, merit.endDate) || undefined,
               message: merit.message,
+              estimatedDailyRewardUsd: merit.estimatedDailyRewardUsd,
+              estimatedImpliedTvlUsd: merit.estimatedImpliedTvlUsd,
+              estimatedRoundCampaignId: merit.estimatedRoundCampaignId,
+              estimatedRoundIntervalDays: merit.estimatedRoundIntervalDays,
             }],
           });
         }
@@ -518,7 +526,29 @@ const IncentiveTooltip = ({
     return [...incentiveSources].sort((a, b) => sourcePriority(a) - sourcePriority(b));
   }, [incentiveSources]);
   const hasDetails = incentiveSources.length > 0;
-  const showForecastInput = campaignIds.length > 0;
+  const meritEstimateCampaignCount = useMemo(() => {
+    const merits = type === 'supply' ? pool.meritSupplys : pool.meritBorrows;
+    if (!Array.isArray(merits)) return 0;
+    return merits.reduce((count, merit) => {
+      if (!isCampaignActive(merit.startDate, merit.endDate)) return count;
+      if (
+        typeof merit.estimatedDailyRewardUsd !== 'number' ||
+        !Number.isFinite(merit.estimatedDailyRewardUsd) ||
+        merit.estimatedDailyRewardUsd <= 0
+      ) {
+        return count;
+      }
+      if (
+        typeof merit.estimatedImpliedTvlUsd !== 'number' ||
+        !Number.isFinite(merit.estimatedImpliedTvlUsd) ||
+        merit.estimatedImpliedTvlUsd <= 0
+      ) {
+        return count;
+      }
+      return count + 1;
+    }, 0);
+  }, [pool, type]);
+  const showForecastInput = campaignIds.length > 0 || meritEstimateCampaignCount > 0;
   const whitelistOnlyCampaignCount = useMemo(() => {
     const opportunities = type === 'supply' ? pool.merklSupplys : pool.merklBorrows;
     if (!opportunities || !Array.isArray(opportunities)) return 0;
@@ -534,7 +564,7 @@ const IncentiveTooltip = ({
   const merklForecastInput = showForecastInput ? (
     <div className="mb-[var(--ds-space-2)] rounded-lg border border-border/60 bg-muted/20 px-[var(--ds-space-2)] py-[var(--ds-space-2)]">
       <label className="ds-tooltip-body text-muted-foreground block mb-[var(--ds-space-1)]">
-        Merkl TVL Forecast (amount in {tokenSymbol})
+        Incentive Forecast Input (amount in {tokenSymbol})
       </label>
       <input
         value={depositInput}
@@ -557,7 +587,8 @@ const IncentiveTooltip = ({
         </p>
       )}
       <p className="mt-[var(--ds-space-1)] ds-tooltip-body text-muted-foreground">
-        Forecasts support MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE, DUTCH_AUCTION, and FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE campaigns.
+        Merkl forecasts support MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE, DUTCH_AUCTION, and FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE.
+        Merit uses latest-round estimates when available.
       </p>
       {showWhitelistToggle && (
         <label className="mt-[var(--ds-space-1)] flex items-center gap-[var(--ds-space-1-5)] ds-tooltip-body text-muted-foreground">
@@ -587,36 +618,73 @@ const IncentiveTooltip = ({
     });
     const getForecastPreview = (campaign: (typeof campaigns)[number]) => {
       if (depositUsd <= 0) return null;
-      if (campaign.sourceType !== 'Merkl' || !campaign.campaignId) return null;
-      if (campaign.whitelistOnly && campaign.included === false) return null;
-      const forecastState = merklForecastStates[campaign.campaignId];
-      if (!forecastState) {
-        const errorMessage = merklForecastErrors[campaign.campaignId];
+      if (campaign.sourceType === 'Merkl' && campaign.campaignId) {
+        if (campaign.whitelistOnly && campaign.included === false) return null;
+        const forecastState = merklForecastStates[campaign.campaignId];
+        if (!forecastState) {
+          const errorMessage = merklForecastErrors[campaign.campaignId];
+          return {
+            unavailable: true,
+            campaignId: campaign.campaignId,
+            message: errorMessage || 'Forecast state unavailable',
+          } as const;
+        }
+
+        const hypotheticalTvl = Math.max(forecastState.latestTvl + depositUsd, 0);
+        const forecast = forecastWithTVL(forecastState, hypotheticalTvl);
+        const multiplier =
+          typeof campaign.forecastMultiplier === 'number' && Number.isFinite(campaign.forecastMultiplier)
+            ? Math.max(campaign.forecastMultiplier, 0)
+            : 1;
+        const progress = deriveForecastProgressFlags(forecastState);
         return {
-          unavailable: true,
-          campaignId: campaign.campaignId,
-          message: errorMessage || 'Forecast state unavailable',
-        } as const;
+          unavailable: false,
+          hypotheticalTvl,
+          campaignType: forecastState.campaignType,
+          dailyRewards: forecast.dailyRewards * multiplier,
+          apr: forecast.apr * multiplier,
+          regime: forecast.regime,
+          fixRewardableDays: forecast.fixRewardableDays,
+          fixRewardableUntilTs: forecast.fixRewardableUntilTs,
+          ...progress,
+        };
       }
 
-      const hypotheticalTvl = Math.max(forecastState.latestTvl + depositUsd, 0);
-      const forecast = forecastWithTVL(forecastState, hypotheticalTvl);
-      const multiplier =
-        typeof campaign.forecastMultiplier === 'number' && Number.isFinite(campaign.forecastMultiplier)
-          ? Math.max(campaign.forecastMultiplier, 0)
-          : 1;
-      const progress = deriveForecastProgressFlags(forecastState);
-      return {
-        unavailable: false,
-        hypotheticalTvl,
-        campaignType: forecastState.campaignType,
-        dailyRewards: forecast.dailyRewards * multiplier,
-        apr: forecast.apr * multiplier,
-        regime: forecast.regime,
-        fixRewardableDays: forecast.fixRewardableDays,
-        fixRewardableUntilTs: forecast.fixRewardableUntilTs,
-        ...progress,
-      };
+      if (campaign.sourceType === 'ACI') {
+        const estimatedDailyRewardUsd = campaign.estimatedDailyRewardUsd;
+        const estimatedImpliedTvlUsd = campaign.estimatedImpliedTvlUsd;
+        if (
+          typeof estimatedDailyRewardUsd !== 'number' ||
+          !Number.isFinite(estimatedDailyRewardUsd) ||
+          estimatedDailyRewardUsd <= 0
+        ) {
+          return null;
+        }
+        if (
+          typeof estimatedImpliedTvlUsd !== 'number' ||
+          !Number.isFinite(estimatedImpliedTvlUsd) ||
+          estimatedImpliedTvlUsd <= 0
+        ) {
+          return null;
+        }
+
+        const hypotheticalTvl = Math.max(estimatedImpliedTvlUsd + depositUsd, 0);
+        const apr = hypotheticalTvl > 0 ? (estimatedDailyRewardUsd * 365) / hypotheticalTvl : 0;
+        return {
+          unavailable: false,
+          hypotheticalTvl,
+          campaignType: 'MERIT_ESTIMATE',
+          dailyRewards: estimatedDailyRewardUsd,
+          apr,
+          regime: 'PLANNED',
+          isUnderDistributed: false,
+          estimateKind: 'MERIT_LATEST_ROUND' as const,
+          estimatedRoundCampaignId: campaign.estimatedRoundCampaignId,
+          estimatedRoundIntervalDays: campaign.estimatedRoundIntervalDays,
+        };
+      }
+
+      return null;
     };
 
     if (campaigns.length === 1) {
@@ -656,10 +724,20 @@ const IncentiveTooltip = ({
               <p className={`ds-tooltip-body mt-[var(--ds-space-0-5)] ${valueAccentClass}`}>
                 APR {formatPercent(forecastPreview.apr * 100)} · Daily Rewards {formatUsd(forecastPreview.dailyRewards)}
               </p>
-              <p className="ds-tooltip-body text-muted-foreground mt-[var(--ds-space-0-5)]">
-                Type: {forecastPreview.campaignType} · Regime: {forecastPreview.regime} · Ended under-distributed:{' '}
-                {forecastPreview.isUnderDistributed ? 'Yes' : 'No'}
-              </p>
+              {forecastPreview.estimateKind === 'MERIT_LATEST_ROUND' ? (
+                <p className="ds-tooltip-body text-muted-foreground mt-[var(--ds-space-0-5)]">
+                  Estimated from latest Merkl round
+                  {forecastPreview.estimatedRoundCampaignId ? ` (${forecastPreview.estimatedRoundCampaignId})` : ''}.
+                  {typeof forecastPreview.estimatedRoundIntervalDays === 'number'
+                    ? ` Interval: ${forecastPreview.estimatedRoundIntervalDays.toFixed(2)}d`
+                    : ''}
+                </p>
+              ) : (
+                <p className="ds-tooltip-body text-muted-foreground mt-[var(--ds-space-0-5)]">
+                  Type: {forecastPreview.campaignType} · Regime: {forecastPreview.regime} · Ended under-distributed:{' '}
+                  {forecastPreview.isUnderDistributed ? 'Yes' : 'No'}
+                </p>
+              )}
               {forecastPreview.campaignType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE' &&
                 typeof forecastPreview.fixRewardableDays === 'number' &&
                 typeof forecastPreview.fixRewardableUntilTs === 'number' && (
@@ -722,10 +800,20 @@ const IncentiveTooltip = ({
                   <p className={`ds-tooltip-body mt-[var(--ds-space-0-5)] ${valueAccentClass}`}>
                     APR {formatPercent(forecastPreview.apr * 100)} · Daily Rewards {formatUsd(forecastPreview.dailyRewards)}
                   </p>
-                  <p className="ds-tooltip-body text-muted-foreground mt-[var(--ds-space-0-5)]">
-                    Type: {forecastPreview.campaignType} · Regime: {forecastPreview.regime} · Ended under-distributed:{' '}
-                    {forecastPreview.isUnderDistributed ? 'Yes' : 'No'}
-                  </p>
+                  {forecastPreview.estimateKind === 'MERIT_LATEST_ROUND' ? (
+                    <p className="ds-tooltip-body text-muted-foreground mt-[var(--ds-space-0-5)]">
+                      Estimated from latest Merkl round
+                      {forecastPreview.estimatedRoundCampaignId ? ` (${forecastPreview.estimatedRoundCampaignId})` : ''}.
+                      {typeof forecastPreview.estimatedRoundIntervalDays === 'number'
+                        ? ` Interval: ${forecastPreview.estimatedRoundIntervalDays.toFixed(2)}d`
+                        : ''}
+                    </p>
+                  ) : (
+                    <p className="ds-tooltip-body text-muted-foreground mt-[var(--ds-space-0-5)]">
+                      Type: {forecastPreview.campaignType} · Regime: {forecastPreview.regime} · Ended under-distributed:{' '}
+                      {forecastPreview.isUnderDistributed ? 'Yes' : 'No'}
+                    </p>
+                  )}
                   {forecastPreview.campaignType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE' &&
                     typeof forecastPreview.fixRewardableDays === 'number' &&
                     typeof forecastPreview.fixRewardableUntilTs === 'number' && (
