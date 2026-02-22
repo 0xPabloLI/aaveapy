@@ -9,7 +9,7 @@ const makeProps = () => ({
   onIncentiveClick: undefined,
   categoryGroups: {},
   includeWhitelistOnlyMerkl: false,
-  pools: [
+  reserves: [
     { marketName: 'AaveV3Ethereum', tokenAddress: '0x1' },
     { marketName: 'AaveV3Base', tokenAddress: '0x2' },
   ],
@@ -23,19 +23,19 @@ describe('shouldSkipTopOpportunitiesRender', () => {
     expect(shouldSkipTopOpportunitiesRender(prev, next)).toBe(false);
   });
 
-  it('returns true when pool identity ordering is unchanged', () => {
+  it('returns true when reserve identity ordering is unchanged', () => {
     const prev = makeProps();
     const next = {
       ...prev,
-      pools: [...prev.pools],
+      reserves: [...prev.reserves],
     };
 
     expect(shouldSkipTopOpportunitiesRender(prev, next)).toBe(true);
   });
 
-  it('returns false when pool order changes', () => {
+  it('returns false when reserve order changes', () => {
     const prev = makeProps();
-    const next = { ...makeProps(), pools: [...makeProps().pools].reverse() };
+    const next = { ...makeProps(), reserves: [...makeProps().reserves].reverse() };
 
     expect(shouldSkipTopOpportunitiesRender(prev, next)).toBe(false);
   });

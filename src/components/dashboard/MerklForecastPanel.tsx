@@ -11,7 +11,7 @@ import { formatPercent } from '@/lib/formatters';
 import { formatNumberInput, parseNumberInput } from '@/lib/numberFormat';
 
 interface MerklForecastPanelProps {
-  pools: ReserveWithSpread[];
+  reserves: ReserveWithSpread[];
   tokenPrices?: TokenPricesIndex;
   tydroPointToUsdRate: number;
   includeWhitelistOnlyMerkl: boolean;
@@ -41,7 +41,7 @@ const formatDays = (days: number): string =>
   }).format(days)} day${days >= 1.5 ? 's' : ''}`;
 
 const MerklForecastPanel = ({
-  pools,
+  reserves,
   tokenPrices,
   tydroPointToUsdRate,
   includeWhitelistOnlyMerkl,
@@ -49,10 +49,10 @@ const MerklForecastPanel = ({
 }: MerklForecastPanelProps) => {
   const campaignOptions = useMemo(
     () =>
-      collectMerklCampaignOptions(pools, {
+      collectMerklCampaignOptions(reserves, {
         includeWhitelistOnly: includeWhitelistOnlyMerkl,
       }),
-    [includeWhitelistOnlyMerkl, pools]
+    [includeWhitelistOnlyMerkl, reserves]
   );
   const [selectedCampaignId, setSelectedCampaignId] = useState('');
   const [depositInput, setDepositInput] = useState('100,000');

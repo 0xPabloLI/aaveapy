@@ -10,7 +10,7 @@ export interface TopOpportunitiesMemoProps {
   onIncentiveClick?: unknown;
   categoryGroups: unknown;
   includeWhitelistOnlyMerkl: boolean;
-  pools: TopOpportunitiesMemoPool[];
+  reserves: TopOpportunitiesMemoPool[];
 }
 
 export const shouldSkipTopOpportunitiesRender = (
@@ -24,13 +24,13 @@ export const shouldSkipTopOpportunitiesRender = (
   if (prevProps.categoryGroups !== nextProps.categoryGroups) return false;
   if (prevProps.includeWhitelistOnlyMerkl !== nextProps.includeWhitelistOnlyMerkl) return false;
 
-  if (prevProps.pools === nextProps.pools) return true;
-  if (prevProps.pools.length !== nextProps.pools.length) return false;
-  if (prevProps.pools.length === 0) return true;
+  if (prevProps.reserves === nextProps.reserves) return true;
+  if (prevProps.reserves.length !== nextProps.reserves.length) return false;
+  if (prevProps.reserves.length === 0) return true;
 
-  for (let i = 0; i < prevProps.pools.length; i += 1) {
-    const prevPool = prevProps.pools[i];
-    const nextPool = nextProps.pools[i];
+  for (let i = 0; i < prevProps.reserves.length; i += 1) {
+    const prevPool = prevProps.reserves[i];
+    const nextPool = nextProps.reserves[i];
     if (
       prevPool?.tokenAddress !== nextPool?.tokenAddress ||
       prevPool?.marketName !== nextPool?.marketName

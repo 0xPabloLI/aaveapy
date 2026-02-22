@@ -31,13 +31,13 @@ import { Button } from '@/components/ui/button';
 import { shouldSkipTopOpportunitiesRender } from '@/lib/topOpportunitiesMemo';
 
 interface TopOpportunitiesProps {
-  pools: ReserveWithSpread[];
+  reserves: ReserveWithSpread[];
   isApy: boolean;
   isRateDragging?: boolean;
   includeWhitelistOnlyMerkl: boolean;
   categoryGroups: TokenCategoryGroups;
   onIncentiveClick?: (payload: {
-    pool: ReserveWithSpread;
+    reserve: ReserveWithSpread;
     type: 'supply' | 'borrow';
     position: { x: number; y: number };
     triggerCenterX: number;
@@ -169,7 +169,7 @@ const PoolIdentity = memo(({
 });
 
 const TopOpportunities = ({
-  pools,
+  reserves,
   isApy,
   isRateDragging = false,
   includeWhitelistOnlyMerkl,
@@ -194,14 +194,14 @@ const TopOpportunities = ({
     prevIsApyRef.current = isApy;
   }, [isApy]);
 
-  // Calculate totals for all pools (frontend calculates incentive totals from details)
+  // Calculate totals for all reserves (frontend calculates incentive totals from details)
   // Memoize to prevent recalculation when props haven't changed
-  const poolsWithTotals = useMemo(() => pools.map(pool => {
+  const reservesWithTotals = useMemo(() => reserves.map(reserve => {
     const getIncentiveValues = (type: 'supply' | 'borrow') => {
-      const protocolIncentives = type === 'supply' ? pool.supplyIncentives : pool.borrowIncentives;
-      const meritIncentives = type === 'supply' ? pool.meritSupplys : pool.meritBorrows;
-      const merklOpportunities = type === 'supply' ? pool.merklSupplys : pool.merklBorrows;
-      const brevisIncentives = type === 'supply' ? pool.brevisSupplys : pool.brevisBorrows;
+      const protocolIncentives = type === 'supply' ? reserve.supplyIncentives : reserve.borrowIncentives;
+      const meritIncentives = type === 'supply' ? reserve.meritSupplys : reserve.meritBorrows;
+      const merklOpportunities = type === 'supply' ? reserve.merklSupplys : reserve.merklBorrows;
+      const brevisIncentives = type === 'supply' ? reserve.brevisSupplys : reserve.brevisBorrows;
       return {
         apr: calculateTotalIncentiveApr(
           meritIncentives,
@@ -225,13 +225,13 @@ const TopOpportunities = ({
     const supplyIncentive = getIncentiveValues('supply');
     const borrowIncentive = getIncentiveValues('borrow');
 
-    const totalSupplyApy = calculateTotalSupplyApy(pool.supplyApy, supplyIncentive.apy);
-    const totalBorrowApy = calculateTotalBorrowApy(pool.borrowApy, borrowIncentive.apy);
-    const totalSupplyApr = calculateTotalSupplyApr(pool.supplyApy, supplyIncentive.apr);
-    const totalBorrowApr = calculateTotalBorrowApr(pool.borrowApy, borrowIncentive.apr);
+    const totalSupplyApy = calculateTotalSupplyApy(reserve.supplyApy, supplyIncentive.apy);
+    const totalBorrowApy = calculateTotalBorrowApy(reserve.borrowApy, borrowIncentive.apy);
+    const totalSupplyApr = calculateTotalSupplyApr(reserve.supplyApy, supplyIncentive.apr);
+    const totalBorrowApr = calculateTotalBorrowApr(reserve.borrowApy, borrowIncentive.apr);
 
     return {
-      ...pool,
+      ...reserve,
       supplyIncentiveApr: supplyIncentive.apr,
       supplyIncentiveApy: supplyIncentive.apy,
       borrowIncentiveApr: borrowIncentive.apr,
@@ -243,10 +243,10 @@ const TopOpportunities = ({
       totalBorrowApr,
       aprSpread: calculateSpreadApr(totalSupplyApr, totalBorrowApr),
     };
-  }), [includeWhitelistOnlyMerkl, pools, tydroPointToUsdRate]);
+  }), [includeWhitelistOnlyMerkl, reserves, tydroPointToUsdRate]);
 
   // Top 5 Stable APY - memoized to prevent recalculation
-  const topStable = useMemo(() => [...poolsWithTotals]
+  const topStable = useMemo(() => [...reservesWithTotals]
     .filter(m => isStablecoinSymbol(m.tokenSymbol, categoryGroups))
     .filter(m => {
       const value = isApy ? m.totalSupplyApy : m.totalSupplyApr;
@@ -257,10 +257,10 @@ const TopOpportunities = ({
       const bValue = isApy ? b.totalSupplyApy : b.totalSupplyApr;
       return bValue - aValue;
     })
-    .slice(0, DISPLAY_COUNT), [poolsWithTotals, isApy, categoryGroups]);
+    .slice(0, DISPLAY_COUNT), [reservesWithTotals, isApy, categoryGroups]);
 
   // Top 5 ETH APY - memoized to prevent recalculation
-  const topEth = useMemo(() => [...poolsWithTotals]
+  const topEth = useMemo(() => [...reservesWithTotals]
     .filter(m => isEthRelatedSymbol(m.tokenSymbol, categoryGroups))
     .filter(m => {
       const value = isApy ? m.totalSupplyApy : m.totalSupplyApr;
@@ -271,10 +271,10 @@ const TopOpportunities = ({
       const bValue = isApy ? b.totalSupplyApy : b.totalSupplyApr;
       return bValue - aValue;
     })
-    .slice(0, DISPLAY_COUNT), [poolsWithTotals, isApy, categoryGroups]);
+    .slice(0, DISPLAY_COUNT), [reservesWithTotals, isApy, categoryGroups]);
 
   // Top 5 BTC APY - memoized to prevent recalculation
-  const topBtc = useMemo(() => [...poolsWithTotals]
+  const topBtc = useMemo(() => [...reservesWithTotals]
     .filter(m => isBtcRelatedSymbol(m.tokenSymbol, categoryGroups))
     .filter(m => {
       const value = isApy ? m.totalSupplyApy : m.totalSupplyApr;
@@ -285,10 +285,10 @@ const TopOpportunities = ({
       const bValue = isApy ? b.totalSupplyApy : b.totalSupplyApr;
       return bValue - aValue;
     })
-    .slice(0, DISPLAY_COUNT), [poolsWithTotals, isApy, categoryGroups]);
+    .slice(0, DISPLAY_COUNT), [reservesWithTotals, isApy, categoryGroups]);
 
   // Top 5 Looping opportunities - memoized to prevent recalculation
-  const topLooping = useMemo(() => [...poolsWithTotals]
+  const topLooping = useMemo(() => [...reservesWithTotals]
     .filter(m => {
       const spread = isApy ? m.apySpread : m.aprSpread;
       return spread !== null && spread > 0;
@@ -298,13 +298,13 @@ const TopOpportunities = ({
       const bSpread = isApy ? b.apySpread : b.aprSpread;
       return (bSpread || 0) - (aSpread || 0);
     })
-    .slice(0, DISPLAY_COUNT), [poolsWithTotals, isApy]);
+    .slice(0, DISPLAY_COUNT), [reservesWithTotals, isApy]);
 
-  const getMarketDisplayName = (pool: ReserveWithSpread) => {
-    if (pool.chainName === 'Ethereum' && ETHEREUM_MARKET_NAMES[pool.marketName]) {
-      return ETHEREUM_MARKET_NAMES[pool.marketName];
+  const getMarketDisplayName = (reserve: ReserveWithSpread) => {
+    if (reserve.chainName === 'Ethereum' && ETHEREUM_MARKET_NAMES[reserve.marketName]) {
+      return ETHEREUM_MARKET_NAMES[reserve.marketName];
     }
-    return pool.chainName;
+    return reserve.chainName;
   };
 
   const headerVariants = {
@@ -338,8 +338,8 @@ const TopOpportunities = ({
     })
   };
 
-  const handleCardClick = (pool: Pick<ReserveWithSpread, 'marketName' | 'tokenAddress'>) => {
-    const url = buildAaveReserveUrl(pool);
+  const handleCardClick = (reserve: Pick<ReserveWithSpread, 'marketName' | 'tokenAddress'>) => {
+    const url = buildAaveReserveUrl(reserve);
     if (url) {
       window.open(url, '_blank', 'noopener,noreferrer');
     }
@@ -347,7 +347,7 @@ const TopOpportunities = ({
 
   const handleIncentiveClick = (
     e: React.MouseEvent,
-    pool: ReserveWithSpread,
+    reserve: ReserveWithSpread,
     type: 'supply' | 'borrow',
     incentiveValue: number | null,
     accentValue: number | null,
@@ -367,7 +367,7 @@ const TopOpportunities = ({
       console.debug('[TopOpportunities] Parent transform', parentStyle?.transform || 'none');
     }
     onIncentiveClick({
-      pool,
+      reserve,
       type,
       position: { x: rect.left, y: rect.bottom },
       triggerCenterX,
@@ -496,13 +496,13 @@ const TopOpportunities = ({
   };
   // Mobile mini card component for 2-column grid layout（恢复旧版样式）
   const MiniPoolCard = ({
-    pool,
+    reserve,
     index,
     type,
     totalItems = 5,
     disableMotion = false,
   }: {
-    pool: typeof poolsWithTotals[0];
+    reserve: typeof reservesWithTotals[0];
     index: number;
     type: 'supply' | 'leverage';
     totalItems?: number;
@@ -510,18 +510,18 @@ const TopOpportunities = ({
   }) => {
     const isLeverage = type === 'leverage';
     const mainValue = isLeverage
-      ? (isApy ? pool.apySpread : pool.aprSpread)
-      : (isApy ? pool.totalSupplyApy : pool.totalSupplyApr);
-    const incentiveValue = isApy ? pool.supplyIncentiveApy : pool.supplyIncentiveApr;
+      ? (isApy ? reserve.apySpread : reserve.aprSpread)
+      : (isApy ? reserve.totalSupplyApy : reserve.totalSupplyApr);
+    const incentiveValue = isApy ? reserve.supplyIncentiveApy : reserve.supplyIncentiveApr;
     const hasIncentive = incentiveValue !== null && !isNaN(incentiveValue) && incentiveValue >= 0.01;
     const apyAccent = getApyAccentClasses(mainValue);
-    const chainIconSrc = getChainIconSrc(pool.chainName);
+    const chainIconSrc = getChainIconSrc(reserve.chainName);
     const { iconSymbol, logoURI } = fetchIconSymbolAndName({
-      underlyingAsset: pool.tokenAddress,
-      symbol: pool.tokenSymbol,
-      name: pool.tokenName,
+      underlyingAsset: reserve.tokenAddress,
+      symbol: reserve.tokenSymbol,
+      name: reserve.tokenName,
     });
-    const marketDisplayName = getMarketDisplayName(pool);
+    const marketDisplayName = getMarketDisplayName(reserve);
     return (
       <motion.div
         {...(disableMotion
@@ -533,14 +533,14 @@ const TopOpportunities = ({
           variants: itemVariants,
         })}
         className="rounded-xl border ds-card-pad-sm cursor-pointer transition-colors bg-card border-border/60 active:bg-muted/60 h-[68px] flex flex-col justify-between"
-        onClick={() => handleCardClick(pool)}
+        onClick={() => handleCardClick(reserve)}
       >
         <PoolIdentity
           mini
           iconSymbol={iconSymbol}
           logoURI={logoURI}
-          tokenSymbol={pool.tokenSymbol}
-          chainName={pool.chainName}
+          tokenSymbol={reserve.tokenSymbol}
+          chainName={reserve.chainName}
           chainIconSrc={chainIconSrc}
           marketDisplayName={marketDisplayName}
           isMobile={isMobile}
@@ -555,7 +555,7 @@ const TopOpportunities = ({
           {!isLeverage && hasIncentive && (
             <button
               type="button"
-              onClick={(e) => handleIncentiveClick(e, pool, 'supply', incentiveValue, mainValue)}
+              onClick={(e) => handleIncentiveClick(e, reserve, 'supply', incentiveValue, mainValue)}
               className={`inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-1)] py-[var(--ds-space-0-5)] rounded-full ring-1 transition-colors cursor-pointer tabular-nums ds-text-9 ${apyAccent.chip}`}
             >
               <span>+{formatPercent(incentiveValue)}</span>
@@ -565,7 +565,7 @@ const TopOpportunities = ({
           {/* Leverage detail inline */}
           {isLeverage && (
             <span className={`${getSpreadAccentClass(mainValue, index, totalItems)} tabular-nums ds-text-9`}>
-              {formatPercent(isApy ? pool.totalSupplyApy : pool.totalSupplyApr)} - {formatPercent(isApy ? pool.totalBorrowApy : pool.totalBorrowApr)}
+              {formatPercent(isApy ? reserve.totalSupplyApy : reserve.totalSupplyApr)} - {formatPercent(isApy ? reserve.totalBorrowApy : reserve.totalBorrowApr)}
             </span>
           )}
         </div>
@@ -573,15 +573,15 @@ const TopOpportunities = ({
     );
   };
 
-  // Reusable pool item component (for desktop)
+  // Reusable reserve item component (for desktop)
   const PoolItem = ({ 
-    pool, 
+    reserve, 
     index, 
     type,
     totalItems = 5,
     disableMotion = false
   }: { 
-    pool: typeof poolsWithTotals[0]; 
+    reserve: typeof reservesWithTotals[0]; 
     index: number;
     type: 'supply' | 'leverage';
     totalItems?: number;
@@ -589,16 +589,16 @@ const TopOpportunities = ({
   }) => {
     const isLeverage = type === 'leverage';
     const mainValue = isLeverage 
-      ? (isApy ? pool.apySpread : pool.aprSpread)
-      : (isApy ? pool.totalSupplyApy : pool.totalSupplyApr);
-    const incentiveValue = isApy ? pool.supplyIncentiveApy : pool.supplyIncentiveApr;
+      ? (isApy ? reserve.apySpread : reserve.aprSpread)
+      : (isApy ? reserve.totalSupplyApy : reserve.totalSupplyApr);
+    const incentiveValue = isApy ? reserve.supplyIncentiveApy : reserve.supplyIncentiveApr;
     const hasIncentive = incentiveValue !== null && !isNaN(incentiveValue) && incentiveValue >= 0.01;
     const apyAccent = getApyAccentClasses(mainValue);
-    const chainIconSrc = getChainIconSrc(pool.chainName);
+    const chainIconSrc = getChainIconSrc(reserve.chainName);
     const { iconSymbol, logoURI } = fetchIconSymbolAndName({
-      underlyingAsset: pool.tokenAddress,
-      symbol: pool.tokenSymbol,
-      name: pool.tokenName,
+      underlyingAsset: reserve.tokenAddress,
+      symbol: reserve.tokenSymbol,
+      name: reserve.tokenName,
     });
     const shouldAnimateItem = !disableMotion && !isMobile && !isRateDragging;
 
@@ -612,7 +612,7 @@ const TopOpportunities = ({
             ? 'bg-background border-border hover:border-[rgb(var(--ds-purple-500-rgb)/0.5)]'
             : 'bg-gradient-to-r from-background to-success/5 border-border hover:border-success/50'
         } ${isMobile ? 'px-[var(--ds-space-2-5)] gap-[var(--ds-space-2)]' : 'px-[var(--ds-space-3)] gap-[var(--ds-space-2)]'}`}
-        onClick={() => handleCardClick(pool)}
+        onClick={() => handleCardClick(reserve)}
       >
         {/* Token Info - Mobile style layout: large icon left, text right */}
         <div className="grid grid-cols-[auto,1fr,auto] grid-rows-[auto,auto] content-center items-center gap-x-[var(--ds-space-2)] gap-y-[var(--ds-space-1)] flex-1 min-w-0 h-full">
@@ -624,7 +624,7 @@ const TopOpportunities = ({
             logoURI={logoURI}
           />
           <p className="font-semibold text-foreground truncate leading-none ds-text-14">
-            {pool.tokenSymbol}
+            {reserve.tokenSymbol}
           </p>
           <div
             className={`${(isLeverage ? getSpreadColorClass(mainValue, index, totalItems) : getApyColorClass(mainValue))} font-bold tabular-nums text-right leading-none ${isMobile ? 'ds-text-16' : 'ds-text-18'} ${!isLeverage && !hasIncentive ? 'row-span-2 self-center' : ''}`}
@@ -633,20 +633,20 @@ const TopOpportunities = ({
           </div>
           <div className="flex items-center gap-[var(--ds-space-1)] min-w-0 leading-none">
             {chainIconSrc && (
-              <img src={chainIconSrc} alt={pool.chainName} className="shrink-0 w-3.5 h-3.5" />
+              <img src={chainIconSrc} alt={reserve.chainName} className="shrink-0 w-3.5 h-3.5" />
             )}
-            <p className="text-secondary truncate ds-text-11 leading-none">{getMarketDisplayName(pool)}</p>
+            <p className="text-secondary truncate ds-text-11 leading-none">{getMarketDisplayName(reserve)}</p>
           </div>
           {/* Detail breakdown - Only show for supply type */}
           {!isLeverage && hasIncentive && (
             <div className="flex items-center justify-end gap-[var(--ds-space-0-5)] ds-text-11 text-secondary whitespace-nowrap leading-none">
-              <span className={`${apyAccent.text} tabular-nums`}>{formatPercent(pool.supplyApy ?? null)}</span>
+              <span className={`${apyAccent.text} tabular-nums`}>{formatPercent(reserve.supplyApy ?? null)}</span>
               {hasIncentive && (
                 <>
                   <span className="text-muted-foreground">+</span>
                   <button
                     type="button"
-                    onClick={(e) => handleIncentiveClick(e, pool, 'supply', incentiveValue, mainValue)}
+                    onClick={(e) => handleIncentiveClick(e, reserve, 'supply', incentiveValue, mainValue)}
                     className={`inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-0-5)] py-[var(--ds-space-0)] rounded-full ring-1 transition-colors cursor-pointer tabular-nums ${apyAccent.chip}`}
                   >
                     <span>{formatPercent(incentiveValue)}</span>
@@ -659,9 +659,9 @@ const TopOpportunities = ({
           {/* Leverage detail */}
           {isLeverage && (
             <div className={`${getSpreadAccentClass(mainValue, index, totalItems)} tabular-nums whitespace-nowrap text-right leading-none ds-text-11`}>
-              {formatPercent(isApy ? pool.totalSupplyApy : pool.totalSupplyApr)} -{' '}
+              {formatPercent(isApy ? reserve.totalSupplyApy : reserve.totalSupplyApr)} -{' '}
               {(() => {
-                const borrowValue = isApy ? pool.totalBorrowApy : pool.totalBorrowApr;
+                const borrowValue = isApy ? reserve.totalBorrowApy : reserve.totalBorrowApr;
                 if (borrowValue === null) return '-';
                 return borrowValue < 0 ? `(${formatPercent(borrowValue)})` : formatPercent(borrowValue);
               })()}
@@ -679,7 +679,7 @@ const TopOpportunities = ({
     icon: Icon,
     iconColorClass,
     bgColorClass,
-    pools: categoryPools,
+    reserves: categoryReserves,
     categoryKey,
     type,
     emptyMessage
@@ -689,7 +689,7 @@ const TopOpportunities = ({
     icon: typeof TrendingUp;
     iconColorClass: string;
     bgColorClass: string;
-    pools: typeof poolsWithTotals;
+    reserves: typeof reservesWithTotals;
     categoryKey: string;
     type: 'supply' | 'leverage';
     emptyMessage: string;
@@ -711,49 +711,49 @@ const TopOpportunities = ({
         />
 
         <div className="flex-1 space-y-[var(--ds-space-1-5)]">
-          {categoryPools.length > 0 ? (
+          {categoryReserves.length > 0 ? (
             shouldAnimateList ? (
               <AnimatePresence mode="popLayout">
-                {categoryPools.map((pool, i) => (
+                {categoryReserves.map((reserve, i) => (
                   isMobile ? (
                     <MiniPoolCard
-                      key={`${categoryKey}-${pool.marketName}-${pool.tokenSymbol}`}
-                      pool={pool}
+                      key={`${categoryKey}-${reserve.marketName}-${reserve.tokenSymbol}`}
+                      reserve={reserve}
                       index={i}
                       type={type}
-                      totalItems={categoryPools.length}
+                      totalItems={categoryReserves.length}
                       disableMotion={isRateDragging || !shouldAnimateList}
                     />
                   ) : (
                     <PoolItem 
-                      key={`${categoryKey}-${pool.marketName}-${pool.tokenSymbol}`}
-                      pool={pool} 
+                      key={`${categoryKey}-${reserve.marketName}-${reserve.tokenSymbol}`}
+                      reserve={reserve} 
                       index={i} 
                       type={type}
-                      totalItems={categoryPools.length}
+                      totalItems={categoryReserves.length}
                       disableMotion={isRateDragging}
                     />
                   )
                 ))}
               </AnimatePresence>
             ) : (
-              categoryPools.map((pool, i) => (
+              categoryReserves.map((reserve, i) => (
                 isMobile ? (
                   <MiniPoolCard
-                    key={`${categoryKey}-${pool.marketName}-${pool.tokenSymbol}`}
-                    pool={pool}
+                    key={`${categoryKey}-${reserve.marketName}-${reserve.tokenSymbol}`}
+                    reserve={reserve}
                     index={i}
                     type={type}
-                    totalItems={categoryPools.length}
+                    totalItems={categoryReserves.length}
                     disableMotion
                   />
                 ) : (
                   <PoolItem
-                    key={`${categoryKey}-${pool.marketName}-${pool.tokenSymbol}`}
-                    pool={pool}
+                    key={`${categoryKey}-${reserve.marketName}-${reserve.tokenSymbol}`}
+                    reserve={reserve}
                     index={i}
                     type={type}
-                    totalItems={categoryPools.length}
+                    totalItems={categoryReserves.length}
                     disableMotion
                   />
                 )
@@ -798,7 +798,7 @@ const TopOpportunities = ({
       icon: TrendingUp,
       iconColorClass: "text-success",
       bgColorClass: "bg-success/10",
-      pools: topStable,
+      reserves: topStable,
       categoryKey: "stable",
       type: "supply" as const,
       emptyMessage: "No stablecoin opportunities found"
@@ -809,7 +809,7 @@ const TopOpportunities = ({
       icon: TrendingUp,
       iconColorClass: "text-success",
       bgColorClass: "bg-success/10",
-      pools: topEth,
+      reserves: topEth,
       categoryKey: "eth",
       type: "supply" as const,
       emptyMessage: "No ETH-related opportunities found"
@@ -820,7 +820,7 @@ const TopOpportunities = ({
       icon: TrendingUp,
       iconColorClass: "text-success",
       bgColorClass: "bg-success/10",
-      pools: topBtc,
+      reserves: topBtc,
       categoryKey: "btc",
       type: "supply" as const,
       emptyMessage: "No BTC-related opportunities found"
@@ -831,7 +831,7 @@ const TopOpportunities = ({
       icon: Zap,
       iconColorClass: "ds-text-purple-500",
       bgColorClass: "ds-bg-purple-500-10",
-      pools: topLooping,
+      reserves: topLooping,
       categoryKey: "leverage",
       type: "leverage" as const,
       emptyMessage: "No looping opportunities found"
@@ -850,7 +850,7 @@ const TopOpportunities = ({
             icon={category.icon}
             iconColorClass={category.iconColorClass}
             bgColorClass={category.bgColorClass}
-            pools={category.pools}
+            reserves={category.reserves}
             categoryKey={category.categoryKey}
             type={category.type}
             emptyMessage={category.emptyMessage}
@@ -917,7 +917,7 @@ const TopOpportunities = ({
                     icon={category.icon}
                     iconColorClass={category.iconColorClass}
                     bgColorClass={category.bgColorClass}
-                    pools={category.pools}
+                    reserves={category.reserves}
                     categoryKey={category.categoryKey}
                     type={category.type}
                     emptyMessage={category.emptyMessage}
@@ -952,5 +952,5 @@ const TopOpportunities = ({
 };
 
 // Memoize component to prevent re-renders when parent state changes (e.g., filter buttons)
-// Only re-render when pools data actually changed or isApy changed
+// Only re-render when reserves data actually changed or isApy changed
 export default memo(TopOpportunities, shouldSkipTopOpportunitiesRender);

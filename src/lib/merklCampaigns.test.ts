@@ -16,7 +16,7 @@ const makePool = (overrides: Partial<ReserveWithSpread> = {}): ReserveWithSpread
 
 describe('collectMerklCampaignOptions', () => {
   it('marks point-based campaigns as rate-driven', () => {
-    const pools = [
+    const reserves = [
       makePool({
         merklSupplys: [
           {
@@ -35,13 +35,13 @@ describe('collectMerklCampaignOptions', () => {
       }),
     ];
 
-    const options = collectMerklCampaignOptions(pools);
+    const options = collectMerklCampaignOptions(reserves);
     expect(options).toHaveLength(1);
     expect(options[0].usesPointToUsdRate).toBe(true);
   });
 
   it('excludes whitelist-only campaigns by default and includes them when enabled', () => {
-    const pools = [
+    const reserves = [
       makePool({
         merklSupplys: [
           {
@@ -66,10 +66,10 @@ describe('collectMerklCampaignOptions', () => {
       }),
     ];
 
-    const defaultOptions = collectMerklCampaignOptions(pools);
+    const defaultOptions = collectMerklCampaignOptions(reserves);
     expect(defaultOptions.map((option) => option.campaignId)).toEqual(['public']);
 
-    const includeWhitelistOptions = collectMerklCampaignOptions(pools, {
+    const includeWhitelistOptions = collectMerklCampaignOptions(reserves, {
       includeWhitelistOnly: true,
     });
     expect(includeWhitelistOptions.map((option) => option.campaignId)).toEqual(['public', 'whitelist']);

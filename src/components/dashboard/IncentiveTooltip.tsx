@@ -14,7 +14,7 @@ import { adjustTooltipAnchorForScroll, getWindowScroll } from '@/lib/tooltipPosi
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface IncentiveTooltipProps {
-  pool: ReserveWithSpread;
+  reserve: ReserveWithSpread;
   type: 'supply' | 'borrow';
   position: { x: number; y: number };
   triggerCenterX: number;
@@ -110,7 +110,7 @@ const getSourceIcon = (
 };
 
 const IncentiveTooltip = ({
-  pool,
+  reserve,
   type,
   position,
   triggerCenterX,
@@ -284,7 +284,7 @@ const IncentiveTooltip = ({
     return Array.from(grouped.values());
   };
 
-  const tokenSymbol = pool.tokenSymbol || 'Token';
+  const tokenSymbol = reserve.tokenSymbol || 'Token';
 
   useEffect(() => {
     setOpenedAtScroll(getWindowScroll());
@@ -293,12 +293,12 @@ const IncentiveTooltip = ({
   useEffect(() => {
     const lookupInput = {
       tokenPrices,
-      chainId: pool.chainId,
+      chainId: reserve.chainId,
       actionType: type === 'supply' ? 'Supply' : 'Borrow',
-      tokenSymbol: pool.tokenSymbol,
-      tokenAddress: pool.tokenAddress,
-      aTokenAddress: pool.aTokenAddress,
-      vTokenAddress: pool.vTokenAddress,
+      tokenSymbol: reserve.tokenSymbol,
+      tokenAddress: reserve.tokenAddress,
+      aTokenAddress: reserve.aTokenAddress,
+      vTokenAddress: reserve.vTokenAddress,
     } as const;
 
     const localPrice = resolveForecastTokenPrice(lookupInput);
@@ -324,13 +324,13 @@ const IncentiveTooltip = ({
     return () => {
       cancelled = true;
     };
-  }, [pool, type, tokenPrices]);
+  }, [reserve, type, tokenPrices]);
 
   const depositAssetAmount = useMemo(() => parseNumberInput(depositInput), [depositInput]);
   const depositUsd = tokenPrice ? depositAssetAmount * tokenPrice : 0;
 
   const campaignIds = useMemo(() => {
-    const opportunities = type === 'supply' ? pool.merklSupplys : pool.merklBorrows;
+    const opportunities = type === 'supply' ? reserve.merklSupplys : reserve.merklBorrows;
     if (!opportunities || !Array.isArray(opportunities)) return [];
     const ids = new Set<string>();
     opportunities.forEach((opportunity) => {
@@ -340,7 +340,7 @@ const IncentiveTooltip = ({
       });
     });
     return Array.from(ids);
-  }, [pool, type]);
+  }, [reserve, type]);
 
   useEffect(() => {
     if (campaignIds.length === 0) {
@@ -383,7 +383,7 @@ const IncentiveTooltip = ({
     const sources: IncentiveSource[] = [];
 
     // Protocol incentives (number array)
-    const protocolIncentives = type === 'supply' ? pool.supplyIncentives : pool.borrowIncentives;
+    const protocolIncentives = type === 'supply' ? reserve.supplyIncentives : reserve.borrowIncentives;
     if (protocolIncentives && Array.isArray(protocolIncentives) && protocolIncentives.length > 0) {
       const totalProtocol = protocolIncentives.reduce((sum, apr) => {
         if (!isNaN(apr) && apr >= 0) {
@@ -404,7 +404,7 @@ const IncentiveTooltip = ({
     }
 
     // Merit incentives (MeritIncentive array)
-    const meritIncentives: MeritIncentive[] | undefined = type === 'supply' ? pool.meritSupplys : pool.meritBorrows;
+    const meritIncentives: MeritIncentive[] | undefined = type === 'supply' ? reserve.meritSupplys : reserve.meritBorrows;
     if (meritIncentives && Array.isArray(meritIncentives)) {
       meritIncentives.forEach((merit, index) => {
         if (!isCampaignActive(merit.startDate, merit.endDate)) return;
@@ -457,7 +457,7 @@ const IncentiveTooltip = ({
 
     // Brevis incentives (array)
     const brevisIncentives: BrevisIncentive[] | undefined =
-      type === 'supply' ? pool.brevisSupplys : pool.brevisBorrows;
+      type === 'supply' ? reserve.brevisSupplys : reserve.brevisBorrows;
 
     if (brevisIncentives && Array.isArray(brevisIncentives) && brevisIncentives.length > 0) {
       brevisIncentives.forEach((brevis) => {
@@ -484,7 +484,7 @@ const IncentiveTooltip = ({
     }
 
     // Merkl incentives (use breakdowns for date range)
-    const opportunities = type === 'supply' ? pool.merklSupplys : pool.merklBorrows;
+    const opportunities = type === 'supply' ? reserve.merklSupplys : reserve.merklBorrows;
     if (opportunities && Array.isArray(opportunities)) {
       opportunities.forEach((opportunity) => {
         if (!opportunity.breakdowns || !Array.isArray(opportunity.breakdowns)) return;
@@ -540,7 +540,7 @@ const IncentiveTooltip = ({
   }, [incentiveSources]);
   const hasDetails = incentiveSources.length > 0;
   const meritEstimateCampaignCount = useMemo(() => {
-    const merits = type === 'supply' ? pool.meritSupplys : pool.meritBorrows;
+    const merits = type === 'supply' ? reserve.meritSupplys : reserve.meritBorrows;
     if (!Array.isArray(merits)) return 0;
     return merits.reduce((count, merit) => {
       if (!isCampaignActive(merit.startDate, merit.endDate)) return count;
@@ -559,10 +559,10 @@ const IncentiveTooltip = ({
       }
       return count + 1;
     }, 0);
-  }, [pool, type]);
+  }, [reserve, type]);
   const showForecastInput = campaignIds.length > 0 || meritEstimateCampaignCount > 0;
   const whitelistOnlyCampaignCount = useMemo(() => {
-    const opportunities = type === 'supply' ? pool.merklSupplys : pool.merklBorrows;
+    const opportunities = type === 'supply' ? reserve.merklSupplys : reserve.merklBorrows;
     if (!opportunities || !Array.isArray(opportunities)) return 0;
     return opportunities.reduce((count, opportunity) => {
       const breakdowns = opportunity.breakdowns ?? [];
@@ -571,7 +571,7 @@ const IncentiveTooltip = ({
         breakdowns.reduce((innerCount, breakdown) => innerCount + (breakdown.whitelistOnly ? 1 : 0), 0)
       );
     }, 0);
-  }, [pool, type]);
+  }, [reserve, type]);
   const showWhitelistToggle = whitelistOnlyCampaignCount > 0 || includeWhitelistOnlyMerkl;
   const merklForecastInput = showForecastInput ? (
     <div className="mb-[var(--ds-space-2)] rounded-lg border border-border/60 bg-muted/20 px-[var(--ds-space-2)] py-[var(--ds-space-2)]">

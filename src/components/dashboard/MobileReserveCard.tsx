@@ -20,31 +20,31 @@ import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
 
 interface MobilePoolCardProps {
-  pool: ReserveWithSpread;
+  reserve: ReserveWithSpread;
   isApy: boolean;
   includeWhitelistOnlyMerkl: boolean;
   onIncentiveClick: (
     e: React.MouseEvent,
-    pool: ReserveWithSpread,
+    reserve: ReserveWithSpread,
     type: 'supply' | 'borrow',
     apy: number | null
   ) => void;
   tydroPointToUsdRate: number;
 }
 
-const MobilePoolCard = ({
-  pool,
+const MobileReserveCard = ({
+  reserve,
   isApy,
   includeWhitelistOnlyMerkl,
   onIncentiveClick,
   tydroPointToUsdRate,
 }: MobilePoolCardProps) => {
-  // Helper: Get incentive values for a pool (supply or borrow)
+  // Helper: Get incentive values for a reserve (supply or borrow)
   const getIncentiveValues = (type: 'supply' | 'borrow') => {
-    const protocolIncentives = type === 'supply' ? pool.supplyIncentives : pool.borrowIncentives;
-    const meritIncentives = type === 'supply' ? pool.meritSupplys : pool.meritBorrows;
-    const merklOpportunities = type === 'supply' ? pool.merklSupplys : pool.merklBorrows;
-    const brevisIncentives = type === 'supply' ? pool.brevisSupplys : pool.brevisBorrows;
+    const protocolIncentives = type === 'supply' ? reserve.supplyIncentives : reserve.borrowIncentives;
+    const meritIncentives = type === 'supply' ? reserve.meritSupplys : reserve.meritBorrows;
+    const merklOpportunities = type === 'supply' ? reserve.merklSupplys : reserve.merklBorrows;
+    const brevisIncentives = type === 'supply' ? reserve.brevisSupplys : reserve.brevisBorrows;
     return {
       apr: calculateTotalIncentiveApr(
         meritIncentives,
@@ -66,20 +66,20 @@ const MobilePoolCard = ({
   };
 
   const getMarketDisplayName = () => {
-    if (pool.chainName === 'Ethereum' && ETHEREUM_MARKET_NAMES[pool.marketName]) {
-      return ETHEREUM_MARKET_NAMES[pool.marketName];
+    if (reserve.chainName === 'Ethereum' && ETHEREUM_MARKET_NAMES[reserve.marketName]) {
+      return ETHEREUM_MARKET_NAMES[reserve.marketName];
     }
-    return pool.chainName;
+    return reserve.chainName;
   };
 
   // Cache incentive values to avoid redundant calculations
   const supplyIncentiveValues = getIncentiveValues('supply');
   const borrowIncentiveValues = getIncentiveValues('borrow');
   
-  const totalSupplyApy = calculateTotalSupplyApy(pool.supplyApy, supplyIncentiveValues.apy);
-  const totalSupplyApr = calculateTotalSupplyApr(pool.supplyApy, supplyIncentiveValues.apr);
-  const totalBorrowApy = calculateTotalBorrowApy(pool.borrowApy, borrowIncentiveValues.apy);
-  const totalBorrowApr = calculateTotalBorrowApr(pool.borrowApy, borrowIncentiveValues.apr);
+  const totalSupplyApy = calculateTotalSupplyApy(reserve.supplyApy, supplyIncentiveValues.apy);
+  const totalSupplyApr = calculateTotalSupplyApr(reserve.supplyApy, supplyIncentiveValues.apr);
+  const totalBorrowApy = calculateTotalBorrowApy(reserve.borrowApy, borrowIncentiveValues.apy);
+  const totalBorrowApr = calculateTotalBorrowApr(reserve.borrowApy, borrowIncentiveValues.apr);
   
   const displaySupplyTotal = isApy ? totalSupplyApy : totalSupplyApr;
   const displayBorrowTotal = isApy ? totalBorrowApy : totalBorrowApr;
@@ -98,17 +98,17 @@ const MobilePoolCard = ({
     ? calculateSpreadApy(totalSupplyApy, totalBorrowApy)
     : calculateSpreadApr(totalSupplyApr, totalBorrowApr);
 
-  const chainIconSrc = getChainIconSrc(pool.chainName);
+  const chainIconSrc = getChainIconSrc(reserve.chainName);
   const { iconSymbol, logoURI } = fetchIconSymbolAndName({
-    underlyingAsset: pool.tokenAddress,
-    symbol: pool.tokenSymbol,
-    name: pool.tokenName,
+    underlyingAsset: reserve.tokenAddress,
+    symbol: reserve.tokenSymbol,
+    name: reserve.tokenName,
   });
 
   const handleCardClick = () => {
     const url = buildAaveReserveUrl({
-      marketName: pool.marketName,
-      tokenAddress: pool.tokenAddress,
+      marketName: reserve.marketName,
+      tokenAddress: reserve.tokenAddress,
     });
     if (url) {
       window.open(url, '_blank', 'noopener,noreferrer');
@@ -133,10 +133,10 @@ const MobilePoolCard = ({
           logoURI={logoURI}
         />
         <div className="min-w-0 flex-1">
-          <p className="font-bold text-foreground ds-text-14 truncate">{pool.tokenSymbol}</p>
+          <p className="font-bold text-foreground ds-text-14 truncate">{reserve.tokenSymbol}</p>
           <div className="flex items-center gap-[var(--ds-space-1)] ds-text-11 text-muted-foreground">
             {chainIconSrc && (
-              <img src={chainIconSrc} alt={pool.chainName} className="w-3.5 h-3.5" />
+              <img src={chainIconSrc} alt={reserve.chainName} className="w-3.5 h-3.5" />
             )}
             <span className="truncate">{getMarketDisplayName()}</span>
           </div>
@@ -159,7 +159,7 @@ const MobilePoolCard = ({
           </p>
           {displaySupplyIncentive !== null && (
             <div className="flex items-center gap-[var(--ds-space-0-5)] ds-text-9 flex-nowrap">
-              <span className="ds-text-emerald-500-70">{formatPercent(isApy ? (pool.supplyApy ?? null) : (pool.supplyApy !== null && pool.supplyApy !== undefined ? apyToApr(pool.supplyApy) : null))}</span>
+              <span className="ds-text-emerald-500-70">{formatPercent(isApy ? (reserve.supplyApy ?? null) : (reserve.supplyApy !== null && reserve.supplyApy !== undefined ? apyToApr(reserve.supplyApy) : null))}</span>
               <span className="text-muted-foreground/70">+</span>
               {/* Expanded touch target wrapper without visual change */}
               <div className="relative -m-1.5 p-1.5">
@@ -167,7 +167,7 @@ const MobilePoolCard = ({
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
-                    onIncentiveClick(e, pool, 'supply', displaySupplyIncentive);
+                    onIncentiveClick(e, reserve, 'supply', displaySupplyIncentive);
                   }}
                   className="inline-flex items-center ds-text-emerald-600 ds-bg-emerald-500-10 hover:bg-[rgb(var(--ds-emerald-500-rgb)/0.25)] rounded-full px-[var(--ds-space-1)] shrink-0 ring-1 ds-ring-emerald-500-15 active:scale-95 transition-all hover:ring-2 hover:ring-[rgb(var(--ds-emerald-500-rgb)/0.35)]"
                 >
@@ -196,7 +196,7 @@ const MobilePoolCard = ({
           </p>
           {displayBorrowIncentive !== null && (
             <div className="flex items-center gap-[var(--ds-space-0-5)] ds-text-9 flex-nowrap justify-end">
-              <span className="ds-text-brand-cyan-70">{formatPercent(isApy ? (pool.borrowApy ?? null) : (pool.borrowApy !== null && pool.borrowApy !== undefined ? apyToApr(pool.borrowApy) : null))}</span>
+              <span className="ds-text-brand-cyan-70">{formatPercent(isApy ? (reserve.borrowApy ?? null) : (reserve.borrowApy !== null && reserve.borrowApy !== undefined ? apyToApr(reserve.borrowApy) : null))}</span>
               <span className="text-muted-foreground/70">-</span>
               {/* Expanded touch target wrapper without visual change */}
               <div className="relative -m-1.5 p-1.5">
@@ -204,7 +204,7 @@ const MobilePoolCard = ({
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
-                    onIncentiveClick(e, pool, 'borrow', displayBorrowIncentive);
+                    onIncentiveClick(e, reserve, 'borrow', displayBorrowIncentive);
                   }}
                   className="inline-flex items-center ds-text-brand-cyan ds-bg-brand-cyan-10 hover:bg-[rgb(var(--ds-brand-cyan-rgb)/0.25)] rounded-full px-[var(--ds-space-1)] shrink-0 ring-1 ds-ring-brand-cyan-15 active:scale-95 transition-all hover:ring-2 hover:ring-[rgb(var(--ds-brand-cyan-rgb)/0.35)]"
                 >
@@ -219,4 +219,4 @@ const MobilePoolCard = ({
   );
 };
 
-export default MobilePoolCard;
+export default MobileReserveCard;

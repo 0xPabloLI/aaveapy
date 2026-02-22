@@ -1,5 +1,5 @@
 import { lazy, Suspense, useState, useMemo, useCallback, useEffect } from 'react';
-import { usePreloadPoolAssets } from '@/hooks/usePreloadPoolAssets';
+import { usePreloadReserveAssets } from '@/hooks/usePreloadReserveAssets';
 import { useAaveMarkets, useAaveMarketsList } from '@/hooks/useAaveMarkets';
 import { SortField, SortOrder, TokenCategory, ReserveWithSpread } from '@/types/aave';
 import {
@@ -13,7 +13,7 @@ import { useTokenCategories } from '@/hooks/useTokenCategories';
 import Header from '@/components/dashboard/Header';
 import FilterBar from '@/components/dashboard/FilterBar';
 import TopOpportunities from '@/components/dashboard/TopOpportunities';
-import PoolsTable from '@/components/dashboard/PoolsTable';
+import ReservesTable from '@/components/dashboard/ReservesTable';
 import LoadingState from '@/components/dashboard/LoadingState';
 import PullToRefresh from '@/components/dashboard/PullToRefresh';
 import { getCachedMarkets, getCachedMarketsList, setCachedTydroRate } from '@/lib/cache';
@@ -117,15 +117,15 @@ const Index = () => {
     }
   }, [hiddenMarketNames, selectedMarkets]);
 
-  // Stable reference for pools data to prevent TopOpportunities from re-rendering
+  // Stable reference for reserves data to prevent TopOpportunities from re-rendering
   // when filters change (only update when actual data changes)
   const stableReserves = useMemo(() => {
     return effectiveReservesData?.data || [];
   }, [effectiveReservesData?.data]);
 
   // Phase 3 Optimization: Preload token and chain icons during idle time
-  usePreloadPoolAssets(stableReserves, {
-    limit: 40, // Preload icons for first 40 pools
+  usePreloadReserveAssets(stableReserves, {
+    limit: 40, // Preload icons for first 40 reserves
     delay: 300, // Start after initial render settles
     enabled: stableReserves.length > 0,
   });
@@ -163,7 +163,7 @@ const Index = () => {
   }, [refetch, refetchMarketsList]);
 
   const handleTopIncentiveClick = useCallback((payload: {
-    pool: ReserveWithSpread;
+    reserve: ReserveWithSpread;
     type: 'supply' | 'borrow';
     position: { x: number; y: number };
     triggerCenterX: number;
@@ -172,7 +172,7 @@ const Index = () => {
     accentBgClass?: string;
   }) => {
     setTopTooltipState({
-      reserve: payload.pool,
+      reserve: payload.reserve,
       type: payload.type,
       position: payload.position,
       triggerCenterX: payload.triggerCenterX,
@@ -197,8 +197,8 @@ const Index = () => {
     }
   };
 
-  // Filter pools
-  const filteredPools = useMemo(() => {
+  // Filter reserves
+  const filteredReserves = useMemo(() => {
     if (!effectiveReservesData?.data) return [];
 
     return effectiveReservesData.data.filter((reserve) => {
@@ -318,7 +318,7 @@ const Index = () => {
 
           <Suspense fallback={<div className="h-[120px] rounded-xl bg-muted/50 animate-pulse" />}>
             <MerklForecastPanel
-              pools={filteredPools}
+              reserves={filteredReserves}
               tokenPrices={effectiveReservesData?.tokenPrices}
               tydroPointToUsdRate={tydroPointToUsdRate}
               includeWhitelistOnlyMerkl={includeWhitelistOnlyMerkl}
@@ -329,7 +329,7 @@ const Index = () => {
           {/* Top Opportunities */}
           {stableReserves && stableReserves.length > 0 && (
             <TopOpportunities
-              pools={stableReserves}
+              reserves={stableReserves}
               isApy={isApy}
               isRateDragging={isRateDragging}
               includeWhitelistOnlyMerkl={includeWhitelistOnlyMerkl}
@@ -354,9 +354,9 @@ const Index = () => {
             setShowMarketsExpanded={setShowMarketsExpanded}
           />
 
-          {/* Pools Table */}
-          <PoolsTable
-            pools={filteredPools}
+          {/* Reserves Table */}
+          <ReservesTable
+            reserves={filteredReserves}
             sortField={sortField}
             sortOrder={sortOrder}
             onSort={handleSort}
@@ -375,7 +375,7 @@ const Index = () => {
 
           {topTooltipState && (
               <IncentiveTooltip
-                pool={topTooltipState.reserve}
+                reserve={topTooltipState.reserve}
                 type={topTooltipState.type}
                 position={topTooltipState.position}
                 triggerCenterX={topTooltipState.triggerCenterX}
@@ -393,9 +393,9 @@ const Index = () => {
           )}
 
           {/* Empty state */}
-          {filteredPools.length === 0 && effectiveReservesData && !isLoading && (
+          {filteredReserves.length === 0 && effectiveReservesData && !isLoading && (
             <div className="text-center py-[var(--ds-space-12)]">
-              <p className="text-muted-foreground">No pools found matching your filters</p>
+              <p className="text-muted-foreground">No reserves found matching your filters</p>
             </div>
           )}
 

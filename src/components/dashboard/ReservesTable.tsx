@@ -23,11 +23,11 @@ import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
 import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
 import IncentiveTooltip from './IncentiveTooltip';
-import MobilePoolCard from './MobilePoolCard';
+import MobileReserveCard from './MobileReserveCard';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface PoolsTableProps {
-  pools: ReserveWithSpread[];
+  reserves: ReserveWithSpread[];
   sortField: 'totalSupplyApy' | 'totalBorrowApy' | 'apySpread' | null;
   sortOrder: 'asc' | 'desc';
   onSort: (field: 'totalSupplyApy' | 'totalBorrowApy' | 'apySpread' | null) => void;
@@ -44,8 +44,8 @@ type SortMode = 'total' | 'native' | 'incentive';
 
 const DEFAULT_VISIBLE_COUNT = 20;
 
-const PoolsTable = ({
-  pools,
+const ReservesTable = ({
+  reserves,
   sortField,
   sortOrder,
   onSort,
@@ -68,25 +68,25 @@ const PoolsTable = ({
   const [showBorrowSortMenu, setShowBorrowSortMenu] = useState(false);
   const [showAll, setShowAll] = useState(false);
   const [tooltipState, setTooltipState] = useState<{
-    pool: ReserveWithSpread;
+    reserve: ReserveWithSpread;
     type: 'supply' | 'borrow';
     position: { x: number; y: number };
     triggerCenterX: number;
   } | null>(null);
 
-  const getMarketDisplayName = (pool: ReserveWithSpread) => {
-    if (pool.chainName === 'Ethereum' && ETHEREUM_MARKET_NAMES[pool.marketName]) {
-      return ETHEREUM_MARKET_NAMES[pool.marketName];
+  const getMarketDisplayName = (reserve: ReserveWithSpread) => {
+    if (reserve.chainName === 'Ethereum' && ETHEREUM_MARKET_NAMES[reserve.marketName]) {
+      return ETHEREUM_MARKET_NAMES[reserve.marketName];
     }
-    return pool.chainName;
+    return reserve.chainName;
   };
 
-  // Helper: Get incentive values for a pool (supply or borrow)
-  const getIncentiveValues = (pool: ReserveWithSpread, type: 'supply' | 'borrow') => {
-    const protocolIncentives = type === 'supply' ? pool.supplyIncentives : pool.borrowIncentives;
-    const meritIncentives = type === 'supply' ? pool.meritSupplys : pool.meritBorrows;
-    const merklOpportunities = type === 'supply' ? pool.merklSupplys : pool.merklBorrows;
-    const brevisIncentives = type === 'supply' ? pool.brevisSupplys : pool.brevisBorrows;
+  // Helper: Get incentive values for a reserve (supply or borrow)
+  const getIncentiveValues = (reserve: ReserveWithSpread, type: 'supply' | 'borrow') => {
+    const protocolIncentives = type === 'supply' ? reserve.supplyIncentives : reserve.borrowIncentives;
+    const meritIncentives = type === 'supply' ? reserve.meritSupplys : reserve.meritBorrows;
+    const merklOpportunities = type === 'supply' ? reserve.merklSupplys : reserve.merklBorrows;
+    const brevisIncentives = type === 'supply' ? reserve.brevisSupplys : reserve.brevisBorrows;
     return {
       apr: calculateTotalIncentiveApr(
         meritIncentives,
@@ -107,42 +107,42 @@ const PoolsTable = ({
     };
   };
 
-  // Calculate totals for a pool (frontend calculates incentive totals from details)
-  const getTotalSupplyApy = (pool: ReserveWithSpread): number | null => {
-    return calculateTotalSupplyApy(pool.supplyApy, getIncentiveValues(pool, 'supply').apy);
+  // Calculate totals for a reserve (frontend calculates incentive totals from details)
+  const getTotalSupplyApy = (reserve: ReserveWithSpread): number | null => {
+    return calculateTotalSupplyApy(reserve.supplyApy, getIncentiveValues(reserve, 'supply').apy);
   };
 
-  const getTotalSupplyApr = (pool: ReserveWithSpread): number | null => {
-    return calculateTotalSupplyApr(pool.supplyApy, getIncentiveValues(pool, 'supply').apr);
+  const getTotalSupplyApr = (reserve: ReserveWithSpread): number | null => {
+    return calculateTotalSupplyApr(reserve.supplyApy, getIncentiveValues(reserve, 'supply').apr);
   };
 
-  const getTotalBorrowApy = (pool: ReserveWithSpread): number | null => {
-    return calculateTotalBorrowApy(pool.borrowApy, getIncentiveValues(pool, 'borrow').apy);
+  const getTotalBorrowApy = (reserve: ReserveWithSpread): number | null => {
+    return calculateTotalBorrowApy(reserve.borrowApy, getIncentiveValues(reserve, 'borrow').apy);
   };
 
-  const getTotalBorrowApr = (pool: ReserveWithSpread): number | null => {
-    return calculateTotalBorrowApr(pool.borrowApy, getIncentiveValues(pool, 'borrow').apr);
+  const getTotalBorrowApr = (reserve: ReserveWithSpread): number | null => {
+    return calculateTotalBorrowApr(reserve.borrowApy, getIncentiveValues(reserve, 'borrow').apr);
   };
 
   // Calculate native values (already in percentage form, number type)
-  const getNativeSupplyApy = (pool: ReserveWithSpread): number | null => {
-    return pool.supplyApy ?? null;
+  const getNativeSupplyApy = (reserve: ReserveWithSpread): number | null => {
+    return reserve.supplyApy ?? null;
   };
 
-  const getNativeBorrowApy = (pool: ReserveWithSpread): number | null => {
-    return pool.borrowApy ?? null;
+  const getNativeBorrowApy = (reserve: ReserveWithSpread): number | null => {
+    return reserve.borrowApy ?? null;
   };
 
-  // Calculate spread for a pool
-  const getSpread = (pool: ReserveWithSpread): number | null => {
-    const totalSupplyApy = isApy ? getTotalSupplyApy(pool) : getTotalSupplyApr(pool);
-    const totalBorrowApy = isApy ? getTotalBorrowApy(pool) : getTotalBorrowApr(pool);
+  // Calculate spread for a reserve
+  const getSpread = (reserve: ReserveWithSpread): number | null => {
+    const totalSupplyApy = isApy ? getTotalSupplyApy(reserve) : getTotalSupplyApr(reserve);
+    const totalBorrowApy = isApy ? getTotalBorrowApy(reserve) : getTotalBorrowApr(reserve);
     if (totalSupplyApy === null || totalBorrowApy === null) return null;
     return totalSupplyApy - totalBorrowApy;
   };
 
   // Sort data based on active column and its sort mode
-  const sortedData = [...pools].sort((a, b) => {
+  const sortedData = [...reserves].sort((a, b) => {
     let comparison = 0;
 
     // Default to supply total desc when no column is selected
@@ -239,7 +239,7 @@ const PoolsTable = ({
 
   const handleIncentiveClick = (
     e: React.MouseEvent,
-    pool: ReserveWithSpread,
+    reserve: ReserveWithSpread,
     type: 'supply' | 'borrow',
     apy: number | null,
   ) => {
@@ -248,7 +248,7 @@ const PoolsTable = ({
     const rect = e.currentTarget.getBoundingClientRect();
     const triggerCenterX = rect.left + rect.width / 2;
     setTooltipState({
-      pool,
+      reserve,
       type,
       position: { x: rect.left, y: rect.bottom },
       triggerCenterX,
@@ -277,10 +277,10 @@ const PoolsTable = ({
     );
   };
 
-  const handleRowClick = (pool: ReserveWithSpread) => {
+  const handleRowClick = (reserve: ReserveWithSpread) => {
     const url = buildAaveReserveUrl({
-      marketName: pool.marketName,
-      tokenAddress: pool.tokenAddress,
+      marketName: reserve.marketName,
+      tokenAddress: reserve.tokenAddress,
     });
     if (url) {
       window.open(url, '_blank', 'noopener,noreferrer');
@@ -290,7 +290,7 @@ const PoolsTable = ({
   // Mobile card view with tooltip support
   const handleMobileIncentiveClick = (
     e: React.MouseEvent,
-    pool: ReserveWithSpread,
+    reserve: ReserveWithSpread,
     type: 'supply' | 'borrow',
     apy: number | null
   ) => {
@@ -298,7 +298,7 @@ const PoolsTable = ({
     const rect = e.currentTarget.getBoundingClientRect();
     const triggerCenterX = rect.left + rect.width / 2;
     setTooltipState({
-      pool,
+      reserve,
       type,
       position: { x: rect.left, y: rect.bottom },
       triggerCenterX,
@@ -317,7 +317,7 @@ const PoolsTable = ({
       <div className="space-y-3">
         {/* Header with sorting controls */}
         <div className="flex justify-between items-center px-[var(--ds-space-1)]">
-          <h3 className="ds-text-14 font-bold text-foreground">{pools.length} Reserves</h3>
+          <h3 className="ds-text-14 font-bold text-foreground">{reserves.length} Reserves</h3>
           <div className="flex items-center gap-[var(--ds-space-2)]">
             {/* Supply sort dropdown */}
             <div className="relative">
@@ -501,7 +501,7 @@ const PoolsTable = ({
         
         {/* 2x2 Grid layout for mobile */}
         <div className="grid grid-cols-2 gap-[var(--ds-space-2)]">
-          {isLoading && pools.length === 0 ? (
+          {isLoading && reserves.length === 0 ? (
             Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="bg-card rounded-xl border border-border/60 ds-card-pad-sm">
                 <div className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-3)]">
@@ -531,10 +531,10 @@ const PoolsTable = ({
               </div>
             ))
           ) : (
-            (showAll ? sortedData : sortedData.slice(0, DEFAULT_VISIBLE_COUNT)).map((pool) => (
-              <MobilePoolCard
-                key={`${pool.marketName}-${pool.tokenAddress}`}
-                pool={pool}
+            (showAll ? sortedData : sortedData.slice(0, DEFAULT_VISIBLE_COUNT)).map((reserve) => (
+              <MobileReserveCard
+                key={`${reserve.marketName}-${reserve.tokenAddress}`}
+                reserve={reserve}
                 isApy={isApy}
                 includeWhitelistOnlyMerkl={includeWhitelistOnlyMerkl}
                 onIncentiveClick={handleMobileIncentiveClick}
@@ -558,7 +558,7 @@ const PoolsTable = ({
         
         {tooltipState && (
           <IncentiveTooltip
-            pool={tooltipState.pool}
+            reserve={tooltipState.reserve}
             type={tooltipState.type}
             position={tooltipState.position}
             triggerCenterX={tooltipState.triggerCenterX}
@@ -883,7 +883,7 @@ const PoolsTable = ({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading && pools.length === 0 ? (
+            {isLoading && reserves.length === 0 ? (
               Array.from({ length: 10 }).map((_, i) => (
                 <TableRow key={i} className="border-b border-border/30">
                   <TableCell className="w-1/5 px-[var(--ds-space-3)] ds-row-pad text-center">
@@ -912,16 +912,16 @@ const PoolsTable = ({
                   </TableCell>
                 </TableRow>
               ))
-            ) : displayData.map((pool) => {
-              const supplyIncentiveValues = getIncentiveValues(pool, 'supply');
-              const borrowIncentiveValues = getIncentiveValues(pool, 'borrow');
+            ) : displayData.map((reserve) => {
+              const supplyIncentiveValues = getIncentiveValues(reserve, 'supply');
+              const borrowIncentiveValues = getIncentiveValues(reserve, 'borrow');
               
-              const totalSupplyApy = calculateTotalSupplyApy(pool.supplyApy, supplyIncentiveValues.apy);
-              const totalSupplyApr = calculateTotalSupplyApr(pool.supplyApy, supplyIncentiveValues.apr);
-              const totalBorrowApy = calculateTotalBorrowApy(pool.borrowApy, borrowIncentiveValues.apy);
-              const totalBorrowApr = calculateTotalBorrowApr(pool.borrowApy, borrowIncentiveValues.apr);
-              const nativeSupplyApy = getNativeSupplyApy(pool);
-              const nativeBorrowApy = getNativeBorrowApy(pool);
+              const totalSupplyApy = calculateTotalSupplyApy(reserve.supplyApy, supplyIncentiveValues.apy);
+              const totalSupplyApr = calculateTotalSupplyApr(reserve.supplyApy, supplyIncentiveValues.apr);
+              const totalBorrowApy = calculateTotalBorrowApy(reserve.borrowApy, borrowIncentiveValues.apy);
+              const totalBorrowApr = calculateTotalBorrowApr(reserve.borrowApy, borrowIncentiveValues.apr);
+              const nativeSupplyApy = getNativeSupplyApy(reserve);
+              const nativeBorrowApy = getNativeBorrowApy(reserve);
               
               const displaySupplyTotal = isApy ? totalSupplyApy : totalSupplyApr;
               const displaySupplyNative = isApy ? nativeSupplyApy : (nativeSupplyApy !== null ? apyToApr(nativeSupplyApy) : null);
@@ -941,23 +941,23 @@ const PoolsTable = ({
                 ? calculateSpreadApy(totalSupplyApy, totalBorrowApy)
                 : calculateSpreadApr(totalSupplyApr, totalBorrowApr);
               const { iconSymbol, logoURI } = fetchIconSymbolAndName({
-                underlyingAsset: pool.tokenAddress,
-                symbol: pool.tokenSymbol,
-                name: pool.tokenName,
+                underlyingAsset: reserve.tokenAddress,
+                symbol: reserve.tokenSymbol,
+                name: reserve.tokenName,
               });
 
               return (
                 <TableRow
-                  key={`${pool.marketName}-${pool.tokenAddress}`}
+                  key={`${reserve.marketName}-${reserve.tokenAddress}`}
                   className="transition-all duration-150 cursor-pointer hover:bg-muted/60 hover:shadow-sm active:bg-muted/80"
-                  onClick={() => handleRowClick(pool)}
+                  onClick={() => handleRowClick(reserve)}
                 >
                   {/* Token */}
                   <TableCell className="w-1/5 px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center">
                     <div className="flex items-center justify-center gap-[var(--ds-space-2)]">
                       <TokenIcon symbol={iconSymbol} size={28} loading="eager" logoURI={logoURI} />
                       <span className="font-semibold text-foreground ds-text-14">
-                        {pool.tokenSymbol}
+                        {reserve.tokenSymbol}
                       </span>
                     </div>
                   </TableCell>
@@ -967,13 +967,13 @@ const PoolsTable = ({
                       type="button"
                       onClick={(event) => {
                         event.stopPropagation();
-                        onSelectMarket?.(pool.marketName);
+                        onSelectMarket?.(reserve.marketName);
                       }}
                       className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)] px-[var(--ds-space-2-5)] py-[var(--ds-space-1)] rounded-full ds-text-11 font-medium bg-muted/50 text-muted-foreground border border-border/60 hover:bg-muted hover:text-foreground hover:border-border/80 hover:ring-2 hover:ring-muted-foreground/20 active:scale-[0.98] transition-all duration-150"
-                      aria-label={`Filter by ${getMarketDisplayName(pool)} market`}
+                      aria-label={`Filter by ${getMarketDisplayName(reserve)} market`}
                     >
-                      <ChainIcon chain={pool.chainName} />
-                      {getMarketDisplayName(pool)}
+                      <ChainIcon chain={reserve.chainName} />
+                      {getMarketDisplayName(reserve)}
                     </button>
                   </TableCell>
                   {/* Supply */}
@@ -991,7 +991,7 @@ const PoolsTable = ({
                           <button
                             type="button"
                             onClick={(e) =>
-                              handleIncentiveClick(e, pool, 'supply', displaySupplyIncentive)
+                              handleIncentiveClick(e, reserve, 'supply', displaySupplyIncentive)
                             }
                             className="inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-0-5)] py-[var(--ds-space-0)] rounded-full ds-bg-emerald-500-10 ds-text-emerald-500-70 hover:bg-[rgb(var(--ds-emerald-500-rgb)/0.25)] hover:ring-2 hover:ring-[rgb(var(--ds-emerald-500-rgb)/0.3)] ring-1 ds-ring-emerald-500-15 transition-all duration-150 cursor-pointer tabular-nums"
                           >
@@ -1031,7 +1031,7 @@ const PoolsTable = ({
                             <button
                               type="button"
                               onClick={(e) =>
-                                handleIncentiveClick(e, pool, 'borrow', displayBorrowIncentive)
+                                handleIncentiveClick(e, reserve, 'borrow', displayBorrowIncentive)
                               }
                               className="inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-0-5)] py-[var(--ds-space-0)] rounded-full ds-bg-brand-cyan-10 ds-text-brand-cyan-70 hover:bg-[rgb(var(--ds-brand-cyan-rgb)/0.25)] hover:ring-2 hover:ring-[rgb(var(--ds-brand-cyan-rgb)/0.3)] ring-1 ds-ring-brand-cyan-15 transition-all duration-150 cursor-pointer tabular-nums"
                             >
@@ -1066,7 +1066,7 @@ const PoolsTable = ({
       
       {tooltipState && (
         <IncentiveTooltip
-          pool={tooltipState.pool}
+          reserve={tooltipState.reserve}
           type={tooltipState.type}
           position={tooltipState.position}
           triggerCenterX={tooltipState.triggerCenterX}
@@ -1084,4 +1084,4 @@ const PoolsTable = ({
   );
 };
 
-export default PoolsTable;
+export default ReservesTable;

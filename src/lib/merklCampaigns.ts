@@ -20,7 +20,7 @@ const addFromGroups = (
   byCampaignId: Map<string, MerklCampaignOption>,
   groups: MerklOpportunityGroup[] | undefined,
   actionType: MerklCampaignOption['actionType'],
-  pool: ReserveWithSpread,
+  reserve: ReserveWithSpread,
   includeWhitelistOnly: boolean
 ) => {
   if (!groups || groups.length === 0) return;
@@ -45,29 +45,29 @@ const addFromGroups = (
       byCampaignId.set(campaignId, {
         campaignId,
         actionType,
-        label: `${pool.chainName} · ${pool.marketName} · ${pool.tokenSymbol} · ${actionType}${groupName}`,
+        label: `${reserve.chainName} · ${reserve.marketName} · ${reserve.tokenSymbol} · ${actionType}${groupName}`,
         usesPointToUsdRate,
-        tokenSymbol: pool.tokenSymbol,
-        tokenAddress: pool.tokenAddress,
-        aTokenAddress: pool.aTokenAddress,
-        vTokenAddress: pool.vTokenAddress,
-        chainId: pool.chainId,
+        tokenSymbol: reserve.tokenSymbol,
+        tokenAddress: reserve.tokenAddress,
+        aTokenAddress: reserve.aTokenAddress,
+        vTokenAddress: reserve.vTokenAddress,
+        chainId: reserve.chainId,
       });
     });
   });
 };
 
 export const collectMerklCampaignOptions = (
-  pools: ReserveWithSpread[],
+  reserves: ReserveWithSpread[],
   config: CollectMerklCampaignOptionsConfig = {}
 ): MerklCampaignOption[] => {
   const byCampaignId = new Map<string, MerklCampaignOption>();
   const includeWhitelistOnly = config.includeWhitelistOnly === true;
 
-  pools.forEach((pool) => {
-    addFromGroups(byCampaignId, pool.merklSupplys, 'Supply', pool, includeWhitelistOnly);
-    addFromGroups(byCampaignId, pool.merklBorrows, 'Borrow', pool, includeWhitelistOnly);
-    addFromGroups(byCampaignId, pool.merklHolds, 'Hold', pool, includeWhitelistOnly);
+  reserves.forEach((reserve) => {
+    addFromGroups(byCampaignId, reserve.merklSupplys, 'Supply', reserve, includeWhitelistOnly);
+    addFromGroups(byCampaignId, reserve.merklBorrows, 'Borrow', reserve, includeWhitelistOnly);
+    addFromGroups(byCampaignId, reserve.merklHolds, 'Hold', reserve, includeWhitelistOnly);
   });
 
   return Array.from(byCampaignId.values()).sort((a, b) => a.campaignId.localeCompare(b.campaignId));

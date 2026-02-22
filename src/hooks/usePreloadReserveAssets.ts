@@ -4,13 +4,13 @@
  import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
  
  /**
-  * Hook to preload token and chain icons for pools
+  * Hook to preload token and chain icons for reserves
   * Runs during idle time to warm up image cache
   */
- export function usePreloadPoolAssets(
-   pools: ReserveWithSpread[] | undefined,
+ export function usePreloadReserveAssets(
+   reserves: ReserveWithSpread[] | undefined,
    options: {
-     /** Only preload first N pools' icons */
+     /** Only preload first N reserves' icons */
      limit?: number;
      /** Delay before starting preload (ms) */
      delay?: number;
@@ -22,25 +22,25 @@
    const hasPreloaded = useRef(false);
  
    useEffect(() => {
-     if (!enabled || !pools || pools.length === 0 || hasPreloaded.current) {
+     if (!enabled || !reserves || reserves.length === 0 || hasPreloaded.current) {
        return;
      }
  
      const timeoutId = setTimeout(() => {
-       const poolsToPreload = pools.slice(0, limit);
+       const reservesToPreload = reserves.slice(0, limit);
  
        // Extract unique token symbols
-       const tokenSymbols = poolsToPreload.map(pool => {
+       const tokenSymbols = reservesToPreload.map(reserve => {
          const { iconSymbol } = fetchIconSymbolAndName({
-           underlyingAsset: pool.tokenAddress,
-           symbol: pool.tokenSymbol,
-           name: pool.tokenSymbol,
+           underlyingAsset: reserve.tokenAddress,
+           symbol: reserve.tokenSymbol,
+           name: reserve.tokenSymbol,
          });
          return iconSymbol;
        });
  
        // Extract unique chain names
-       const chainNames = [...new Set(poolsToPreload.map(pool => pool.chainName))];
+       const chainNames = [...new Set(reservesToPreload.map(reserve => reserve.chainName))];
  
        // Preload in background
        preloadTokenIcons(tokenSymbols);
@@ -50,38 +50,38 @@
      }, delay);
  
      return () => clearTimeout(timeoutId);
-   }, [pools, limit, delay, enabled]);
+   }, [reserves, limit, delay, enabled]);
  }
  
  /**
-  * Hook to preload icons for pools that will be visible after user interaction
+  * Hook to preload icons for reserves that will be visible after user interaction
   * e.g., when user is about to scroll or expand a section
   */
  export function usePreloadOnHover(
-   pools: ReserveWithSpread[] | undefined,
+   reserves: ReserveWithSpread[] | undefined,
    isHovering: boolean
  ): void {
    const hasPreloaded = useRef(false);
  
    useEffect(() => {
-     if (!isHovering || !pools || pools.length === 0 || hasPreloaded.current) {
+     if (!isHovering || !reserves || reserves.length === 0 || hasPreloaded.current) {
        return;
      }
  
-     const tokenSymbols = pools.map(pool => {
+     const tokenSymbols = reserves.map(reserve => {
        const { iconSymbol } = fetchIconSymbolAndName({
-         underlyingAsset: pool.tokenAddress,
-         symbol: pool.tokenSymbol,
-         name: pool.tokenSymbol,
+         underlyingAsset: reserve.tokenAddress,
+         symbol: reserve.tokenSymbol,
+         name: reserve.tokenSymbol,
        });
        return iconSymbol;
      });
  
-     const chainNames = [...new Set(pools.map(pool => pool.chainName))];
+     const chainNames = [...new Set(reserves.map(reserve => reserve.chainName))];
  
      preloadTokenIcons(tokenSymbols);
      preloadChainIcons(chainNames);
  
      hasPreloaded.current = true;
-   }, [pools, isHovering]);
+   }, [reserves, isHovering]);
  }
