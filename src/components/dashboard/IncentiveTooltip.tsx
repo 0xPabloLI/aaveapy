@@ -43,6 +43,8 @@ interface IncentiveSource {
   campaigns?: Array<{
     value: number;
     dateRange?: string;
+    startDate?: string;
+    endDate?: string;
     message?: string | Record<string, unknown> | unknown[];
     campaignId?: string;
     sourceType?: IncentiveSource['sourceType'];
@@ -52,8 +54,6 @@ interface IncentiveSource {
     rawValue?: number;
     forecastAprPercent?: number;
     lastRoundRewardUsd?: number;
-    estimatedDailyRewardUsd?: number;
-    lastRoundRewardAsOf?: number;
   }>;
 }
 
@@ -75,6 +75,15 @@ const isCampaignActive = (startDate: string | undefined, endDate: string | undef
   const endMs = parseCampaignBoundaryMs(endDate, 'end');
   if (startMs === null || endMs === null) return false;
   return nowMs >= startMs && nowMs <= endMs;
+};
+
+const getCampaignCycleDays = (startDate: string | undefined, endDate: string | undefined): number | null => {
+  if (!startDate || !endDate) return null;
+  const startMs = Date.parse(startDate);
+  const endMs = Date.parse(endDate);
+  if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) return null;
+  const days = (endMs - startMs) / 1000 / 86400;
+  return Number.isFinite(days) && days > 0 ? days : null;
 };
 
 const lightSourceIconMap: Record<NonNullable<IncentiveSource['sourceType']>, string> = {
@@ -435,11 +444,11 @@ const IncentiveTooltip = ({
             campaigns: [{
               value: totalValue,
               dateRange: formatDateRange(merit.startDate, merit.endDate) || undefined,
+              startDate: merit.startDate,
+              endDate: merit.endDate,
               message: merit.message,
               forecastAprPercent: (!isNaN(apr) && apr >= 0 ? apr : 0) + (!isNaN(selfApr) && selfApr >= 0 ? selfApr : 0),
               lastRoundRewardUsd: merit.lastRoundRewardUsd,
-              estimatedDailyRewardUsd: merit.estimatedDailyRewardUsd,
-              lastRoundRewardAsOf: merit.lastRoundRewardAsOf,
             }],
           });
         }
@@ -466,6 +475,8 @@ const IncentiveTooltip = ({
             campaigns: [{
               value: isApy ? convertAprToApy(apr) : apr,
               dateRange: formatDateRange(brevis.startDate, brevis.endDate) || undefined,
+              startDate: brevis.startDate,
+              endDate: brevis.endDate,
             }],
           });
         }
@@ -499,6 +510,8 @@ const IncentiveTooltip = ({
                 whitelistOnly,
                 included,
                 dateRange: formatDateRange(breakdown.campaignStartedAt, breakdown.campaignEndedAt) || undefined,
+                startDate: breakdown.campaignStartedAt,
+                endDate: breakdown.campaignEndedAt,
                 message: opportunity.message,
                 campaignId: breakdown.campaignId,
                 sourceType: 'Merkl',
@@ -532,12 +545,14 @@ const IncentiveTooltip = ({
     return merits.reduce((count, merit) => {
       if (!isCampaignActive(merit.startDate, merit.endDate)) return count;
       if (
-        typeof merit.estimatedDailyRewardUsd !== 'number' ||
-        !Number.isFinite(merit.estimatedDailyRewardUsd) ||
-        merit.estimatedDailyRewardUsd <= 0
+        typeof merit.lastRoundRewardUsd !== 'number' ||
+        !Number.isFinite(merit.lastRoundRewardUsd) ||
+        merit.lastRoundRewardUsd <= 0
       ) {
         return count;
       }
+      const cycleDays = getCampaignCycleDays(merit.startDate, merit.endDate);
+      if (!cycleDays || cycleDays <= 0) return count;
       const forecastAprPercent = (typeof merit.apr === 'number' ? merit.apr : 0) + (typeof merit.selfApr === 'number' ? merit.selfApr : 0);
       if (!Number.isFinite(forecastAprPercent) || forecastAprPercent <= 0) {
         return count;
@@ -649,14 +664,16 @@ const IncentiveTooltip = ({
 
       if (campaign.sourceType === 'ACI') {
         const forecastAprPercent = campaign.forecastAprPercent;
-        const estimatedDailyRewardUsd = campaign.estimatedDailyRewardUsd;
+        const lastRoundRewardUsd = campaign.lastRoundRewardUsd;
+        const cycleDays = getCampaignCycleDays(campaign.startDate, campaign.endDate);
         if (
-          typeof estimatedDailyRewardUsd !== 'number' ||
-          !Number.isFinite(estimatedDailyRewardUsd) ||
-          estimatedDailyRewardUsd <= 0
+          typeof lastRoundRewardUsd !== 'number' ||
+          !Number.isFinite(lastRoundRewardUsd) ||
+          lastRoundRewardUsd <= 0
         ) {
           return null;
         }
+        if (!cycleDays || cycleDays <= 0) return null;
         if (
           typeof forecastAprPercent !== 'number' ||
           !Number.isFinite(forecastAprPercent) ||
@@ -665,6 +682,8 @@ const IncentiveTooltip = ({
           return null;
         }
 
+        const estimatedDailyRewardUsd = lastRoundRewardUsd / cycleDays;
+        if (!Number.isFinite(estimatedDailyRewardUsd) || estimatedDailyRewardUsd <= 0) return null;
         const estimatedImpliedTvlUsd = (estimatedDailyRewardUsd * 365 * 100) / forecastAprPercent;
         if (!Number.isFinite(estimatedImpliedTvlUsd) || estimatedImpliedTvlUsd <= 0) {
           return null;
@@ -680,8 +699,7 @@ const IncentiveTooltip = ({
           regime: 'PLANNED',
           isUnderDistributed: false,
           estimateKind: 'MERIT_LATEST_ROUND' as const,
-          lastRoundRewardUsd: campaign.lastRoundRewardUsd,
-          lastRoundRewardAsOf: campaign.lastRoundRewardAsOf,
+          lastRoundRewardUsd,
         };
       }
 

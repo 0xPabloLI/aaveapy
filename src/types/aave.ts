@@ -12,8 +12,6 @@ export interface MeritIncentive {
   requiredBorrowTokens?: string[] | string; // List of tokens to borrow, 'multiple' means any token
   requiredSupplyTokens?: string[] | string; // List of tokens to supply, 'multiple' means any token
   lastRoundRewardUsd?: number;         // Latest round total reward in USD
-  estimatedDailyRewardUsd?: number;    // lastRoundRewardUsd / current cycle days
-  lastRoundRewardAsOf?: number;        // Last round snapshot unix seconds
 }
 
 // Merkl opportunity data structure
