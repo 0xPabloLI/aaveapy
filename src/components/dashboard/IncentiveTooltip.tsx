@@ -50,10 +50,10 @@ interface IncentiveSource {
     whitelistOnly?: boolean;
     included?: boolean;
     rawValue?: number;
+    forecastAprPercent?: number;
+    lastRoundRewardUsd?: number;
     estimatedDailyRewardUsd?: number;
-    estimatedImpliedTvlUsd?: number;
-    estimatedRoundCampaignId?: string;
-    estimatedRoundIntervalDays?: number;
+    lastRoundRewardAsOf?: number;
   }>;
 }
 
@@ -436,10 +436,10 @@ const IncentiveTooltip = ({
               value: totalValue,
               dateRange: formatDateRange(merit.startDate, merit.endDate) || undefined,
               message: merit.message,
+              forecastAprPercent: (!isNaN(apr) && apr >= 0 ? apr : 0) + (!isNaN(selfApr) && selfApr >= 0 ? selfApr : 0),
+              lastRoundRewardUsd: merit.lastRoundRewardUsd,
               estimatedDailyRewardUsd: merit.estimatedDailyRewardUsd,
-              estimatedImpliedTvlUsd: merit.estimatedImpliedTvlUsd,
-              estimatedRoundCampaignId: merit.estimatedRoundCampaignId,
-              estimatedRoundIntervalDays: merit.estimatedRoundIntervalDays,
+              lastRoundRewardAsOf: merit.lastRoundRewardAsOf,
             }],
           });
         }
@@ -538,11 +538,8 @@ const IncentiveTooltip = ({
       ) {
         return count;
       }
-      if (
-        typeof merit.estimatedImpliedTvlUsd !== 'number' ||
-        !Number.isFinite(merit.estimatedImpliedTvlUsd) ||
-        merit.estimatedImpliedTvlUsd <= 0
-      ) {
+      const forecastAprPercent = (typeof merit.apr === 'number' ? merit.apr : 0) + (typeof merit.selfApr === 'number' ? merit.selfApr : 0);
+      if (!Number.isFinite(forecastAprPercent) || forecastAprPercent <= 0) {
         return count;
       }
       return count + 1;
@@ -651,8 +648,8 @@ const IncentiveTooltip = ({
       }
 
       if (campaign.sourceType === 'ACI') {
+        const forecastAprPercent = campaign.forecastAprPercent;
         const estimatedDailyRewardUsd = campaign.estimatedDailyRewardUsd;
-        const estimatedImpliedTvlUsd = campaign.estimatedImpliedTvlUsd;
         if (
           typeof estimatedDailyRewardUsd !== 'number' ||
           !Number.isFinite(estimatedDailyRewardUsd) ||
@@ -661,13 +658,17 @@ const IncentiveTooltip = ({
           return null;
         }
         if (
-          typeof estimatedImpliedTvlUsd !== 'number' ||
-          !Number.isFinite(estimatedImpliedTvlUsd) ||
-          estimatedImpliedTvlUsd <= 0
+          typeof forecastAprPercent !== 'number' ||
+          !Number.isFinite(forecastAprPercent) ||
+          forecastAprPercent <= 0
         ) {
           return null;
         }
 
+        const estimatedImpliedTvlUsd = (estimatedDailyRewardUsd * 365 * 100) / forecastAprPercent;
+        if (!Number.isFinite(estimatedImpliedTvlUsd) || estimatedImpliedTvlUsd <= 0) {
+          return null;
+        }
         const hypotheticalTvl = Math.max(estimatedImpliedTvlUsd + depositUsd, 0);
         const apr = hypotheticalTvl > 0 ? (estimatedDailyRewardUsd * 365) / hypotheticalTvl : 0;
         return {
@@ -679,8 +680,8 @@ const IncentiveTooltip = ({
           regime: 'PLANNED',
           isUnderDistributed: false,
           estimateKind: 'MERIT_LATEST_ROUND' as const,
-          estimatedRoundCampaignId: campaign.estimatedRoundCampaignId,
-          estimatedRoundIntervalDays: campaign.estimatedRoundIntervalDays,
+          lastRoundRewardUsd: campaign.lastRoundRewardUsd,
+          lastRoundRewardAsOf: campaign.lastRoundRewardAsOf,
         };
       }
 
@@ -726,11 +727,10 @@ const IncentiveTooltip = ({
               </p>
               {forecastPreview.estimateKind === 'MERIT_LATEST_ROUND' ? (
                 <p className="ds-tooltip-body text-muted-foreground mt-[var(--ds-space-0-5)]">
-                  Estimated from latest Merkl round
-                  {forecastPreview.estimatedRoundCampaignId ? ` (${forecastPreview.estimatedRoundCampaignId})` : ''}.
-                  {typeof forecastPreview.estimatedRoundIntervalDays === 'number'
-                    ? ` Interval: ${forecastPreview.estimatedRoundIntervalDays.toFixed(2)}d`
-                    : ''}
+                  Estimated from last round reward
+                  {typeof forecastPreview.lastRoundRewardUsd === 'number'
+                    ? ` (${formatUsd(forecastPreview.lastRoundRewardUsd)})`
+                    : ''}.
                 </p>
               ) : (
                 <p className="ds-tooltip-body text-muted-foreground mt-[var(--ds-space-0-5)]">
@@ -800,15 +800,14 @@ const IncentiveTooltip = ({
                   <p className={`ds-tooltip-body mt-[var(--ds-space-0-5)] ${valueAccentClass}`}>
                     APR {formatPercent(forecastPreview.apr * 100)} · Daily Rewards {formatUsd(forecastPreview.dailyRewards)}
                   </p>
-                  {forecastPreview.estimateKind === 'MERIT_LATEST_ROUND' ? (
-                    <p className="ds-tooltip-body text-muted-foreground mt-[var(--ds-space-0-5)]">
-                      Estimated from latest Merkl round
-                      {forecastPreview.estimatedRoundCampaignId ? ` (${forecastPreview.estimatedRoundCampaignId})` : ''}.
-                      {typeof forecastPreview.estimatedRoundIntervalDays === 'number'
-                        ? ` Interval: ${forecastPreview.estimatedRoundIntervalDays.toFixed(2)}d`
-                        : ''}
-                    </p>
-                  ) : (
+                {forecastPreview.estimateKind === 'MERIT_LATEST_ROUND' ? (
+                  <p className="ds-tooltip-body text-muted-foreground mt-[var(--ds-space-0-5)]">
+                    Estimated from last round reward
+                    {typeof forecastPreview.lastRoundRewardUsd === 'number'
+                      ? ` (${formatUsd(forecastPreview.lastRoundRewardUsd)})`
+                      : ''}.
+                  </p>
+                ) : (
                     <p className="ds-tooltip-body text-muted-foreground mt-[var(--ds-space-0-5)]">
                       Type: {forecastPreview.campaignType} · Regime: {forecastPreview.regime} · Ended under-distributed:{' '}
                       {forecastPreview.isUnderDistributed ? 'Yes' : 'No'}
