@@ -101,7 +101,7 @@ const CategoryCardHeader = memo(({
   );
 });
 
-interface PoolIdentityProps {
+interface ReserveIdentityProps {
   iconSymbol: string;
   logoURI?: string | null;
   tokenSymbol: string;
@@ -112,7 +112,7 @@ interface PoolIdentityProps {
   mini?: boolean;
 }
 
-const PoolIdentity = memo(({
+const ReserveIdentity = memo(({
   iconSymbol,
   logoURI,
   tokenSymbol,
@@ -121,7 +121,7 @@ const PoolIdentity = memo(({
   marketDisplayName,
   isMobile,
   mini = false,
-}: PoolIdentityProps) => {
+}: ReserveIdentityProps) => {
   if (mini) {
     return (
       <div className="flex items-center gap-[var(--ds-space-2)]">
@@ -495,7 +495,7 @@ const TopOpportunities = ({
     return 'ds-text-pink-400-70';
   };
   // Mobile mini card component for 2-column grid layout（恢复旧版样式）
-  const MiniPoolCard = ({
+  const MiniReserveCard = ({
     reserve,
     index,
     type,
@@ -535,7 +535,7 @@ const TopOpportunities = ({
         className="rounded-xl border ds-card-pad-sm cursor-pointer transition-colors bg-card border-border/60 active:bg-muted/60 h-[68px] flex flex-col justify-between"
         onClick={() => handleCardClick(reserve)}
       >
-        <PoolIdentity
+        <ReserveIdentity
           mini
           iconSymbol={iconSymbol}
           logoURI={logoURI}
@@ -574,7 +574,7 @@ const TopOpportunities = ({
   };
 
   // Reusable reserve item component (for desktop)
-  const PoolItem = ({ 
+  const ReserveItem = ({
     reserve, 
     index, 
     type,
@@ -716,7 +716,7 @@ const TopOpportunities = ({
               <AnimatePresence mode="popLayout">
                 {categoryReserves.map((reserve, i) => (
                   isMobile ? (
-                    <MiniPoolCard
+                    <MiniReserveCard
                       key={`${categoryKey}-${reserve.marketName}-${reserve.tokenSymbol}`}
                       reserve={reserve}
                       index={i}
@@ -725,7 +725,7 @@ const TopOpportunities = ({
                       disableMotion={isRateDragging || !shouldAnimateList}
                     />
                   ) : (
-                    <PoolItem 
+                    <ReserveItem
                       key={`${categoryKey}-${reserve.marketName}-${reserve.tokenSymbol}`}
                       reserve={reserve} 
                       index={i} 
@@ -739,7 +739,7 @@ const TopOpportunities = ({
             ) : (
               categoryReserves.map((reserve, i) => (
                 isMobile ? (
-                  <MiniPoolCard
+                  <MiniReserveCard
                     key={`${categoryKey}-${reserve.marketName}-${reserve.tokenSymbol}`}
                     reserve={reserve}
                     index={i}
@@ -748,7 +748,7 @@ const TopOpportunities = ({
                     disableMotion
                   />
                 ) : (
-                  <PoolItem
+                  <ReserveItem
                     key={`${categoryKey}-${reserve.marketName}-${reserve.tokenSymbol}`}
                     reserve={reserve}
                     index={i}

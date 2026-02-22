@@ -1,4 +1,4 @@
-export interface TopOpportunitiesMemoPool {
+export interface TopOpportunitiesMemoReserve {
   tokenAddress?: string;
   marketName?: string;
 }
@@ -10,7 +10,7 @@ export interface TopOpportunitiesMemoProps {
   onIncentiveClick?: unknown;
   categoryGroups: unknown;
   includeWhitelistOnlyMerkl: boolean;
-  reserves: TopOpportunitiesMemoPool[];
+  reserves: TopOpportunitiesMemoReserve[];
 }
 
 export const shouldSkipTopOpportunitiesRender = (
@@ -29,11 +29,11 @@ export const shouldSkipTopOpportunitiesRender = (
   if (prevProps.reserves.length === 0) return true;
 
   for (let i = 0; i < prevProps.reserves.length; i += 1) {
-    const prevPool = prevProps.reserves[i];
-    const nextPool = nextProps.reserves[i];
+    const prevReserve = prevProps.reserves[i];
+    const nextReserve = nextProps.reserves[i];
     if (
-      prevPool?.tokenAddress !== nextPool?.tokenAddress ||
-      prevPool?.marketName !== nextPool?.marketName
+      prevReserve?.tokenAddress !== nextReserve?.tokenAddress ||
+      prevReserve?.marketName !== nextReserve?.marketName
     ) {
       return false;
     }

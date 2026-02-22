@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { collectMerklCampaignOptions } from './merklCampaigns';
 import type { ReserveWithSpread } from '@/types/aave';
 
-const makePool = (overrides: Partial<ReserveWithSpread> = {}): ReserveWithSpread =>
+const makeReserve = (overrides: Partial<ReserveWithSpread> = {}): ReserveWithSpread =>
   ({
     marketName: 'AaveV3Ink',
     chainName: 'Ink',
@@ -17,7 +17,7 @@ const makePool = (overrides: Partial<ReserveWithSpread> = {}): ReserveWithSpread
 describe('collectMerklCampaignOptions', () => {
   it('marks point-based campaigns as rate-driven', () => {
     const reserves = [
-      makePool({
+      makeReserve({
         merklSupplys: [
           {
             name: 'Ink points campaign',
@@ -42,7 +42,7 @@ describe('collectMerklCampaignOptions', () => {
 
   it('excludes whitelist-only campaigns by default and includes them when enabled', () => {
     const reserves = [
-      makePool({
+      makeReserve({
         merklSupplys: [
           {
             name: 'Mixed campaign',

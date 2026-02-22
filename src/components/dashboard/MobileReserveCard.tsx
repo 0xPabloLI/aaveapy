@@ -19,7 +19,7 @@ import { buildAaveReserveUrl } from '@/lib/aaveLinks';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
 
-interface MobilePoolCardProps {
+interface MobileReserveCardProps {
   reserve: ReserveWithSpread;
   isApy: boolean;
   includeWhitelistOnlyMerkl: boolean;
@@ -38,7 +38,7 @@ const MobileReserveCard = ({
   includeWhitelistOnlyMerkl,
   onIncentiveClick,
   tydroPointToUsdRate,
-}: MobilePoolCardProps) => {
+}: MobileReserveCardProps) => {
   // Helper: Get incentive values for a reserve (supply or borrow)
   const getIncentiveValues = (type: 'supply' | 'borrow') => {
     const protocolIncentives = type === 'supply' ? reserve.supplyIncentives : reserve.borrowIncentives;

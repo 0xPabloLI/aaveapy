@@ -26,7 +26,7 @@ import IncentiveTooltip from './IncentiveTooltip';
 import MobileReserveCard from './MobileReserveCard';
 import { useIsMobile } from '@/hooks/use-mobile';
 
-interface PoolsTableProps {
+interface ReservesTableProps {
   reserves: ReserveWithSpread[];
   sortField: 'totalSupplyApy' | 'totalBorrowApy' | 'apySpread' | null;
   sortOrder: 'asc' | 'desc';
@@ -56,7 +56,7 @@ const ReservesTable = ({
   includeWhitelistOnlyMerkl,
   onToggleWhitelistOnlyMerkl,
   tokenPrices,
-}: PoolsTableProps) => {
+}: ReservesTableProps) => {
   const isMobile = useIsMobile();
   const [activeSortColumn, setActiveSortColumn] = useState<'supply' | 'borrow' | 'spread' | null>('supply');
   const [supplySortMode, setSupplySortMode] = useState<SortMode>('incentive');
