@@ -7,7 +7,7 @@ import { formatPercent, convertAprToApy } from '@/lib/formatters';
 import { getMerklBreakdownApr, getMerklForecastUsdMultiplier } from '@/lib/tydro';
 import { fetchMerklForecastStates } from '@/lib/merklForecastApi';
 import { deriveForecastProgressFlags, forecastWithTVL } from '@/lib/merklForecast';
-import { resolveForecastTokenPrice, resolveForecastTokenPriceWithBackup } from '@/lib/merklTokenPrice';
+import { resolveForecastTokenPrice, resolveForecastTokenPriceWithBackup } from '@/lib/tokenPriceResolver';
 import { shouldSurfaceForecastError } from '@/lib/merklForecastErrors';
 import { formatNumberInput, parseNumberInput } from '@/lib/numberFormat';
 import { adjustTooltipAnchorForScroll, getWindowScroll } from '@/lib/tooltipPosition';

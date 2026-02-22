@@ -6,7 +6,7 @@ import { collectMerklCampaignOptions } from '@/lib/merklCampaigns';
 import { fetchMerklForecastStates } from '@/lib/merklForecastApi';
 import { shouldSurfaceForecastError } from '@/lib/merklForecastErrors';
 import { deriveForecastProgressFlags, forecastWithTVL } from '@/lib/merklForecast';
-import { resolveForecastTokenPrice, resolveForecastTokenPriceWithBackup } from '@/lib/merklTokenPrice';
+import { resolveForecastTokenPrice, resolveForecastTokenPriceWithBackup } from '@/lib/tokenPriceResolver';
 import { formatPercent } from '@/lib/formatters';
 import { formatNumberInput, parseNumberInput } from '@/lib/numberFormat';
 
