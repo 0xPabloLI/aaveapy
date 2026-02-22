@@ -5,7 +5,7 @@ import {
   __resetForecastTokenPriceBackupCachesForTests,
   resolveForecastTokenPrice,
   resolveForecastTokenPriceWithBackup,
-} from './merklTokenPrice';
+} from './tokenPriceResolver';
 
 const tokenPrices: TokenPricesIndex = {
   '1:0xunderlying': {
