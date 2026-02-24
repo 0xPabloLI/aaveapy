@@ -883,6 +883,9 @@ const IncentiveTooltip = ({
       };
     };
 
+    const getForecastDailyRewardsLabel = (forecastPreview: NonNullable<ReturnType<typeof getForecastPreview>>) =>
+      forecastPreview.estimateKind === 'MERIT_SELF_CAP' ? 'Your Daily Rewards' : 'Daily Rewards';
+
     if (campaigns.length === 1) {
       const campaign = campaigns[0];
       const isExcludedWhitelist = campaign.whitelistOnly === true && campaign.included === false;
@@ -922,7 +925,8 @@ const IncentiveTooltip = ({
                 if (!rateDisplay) return null;
                 return (
               <p className={`ds-tooltip-body mt-[var(--ds-space-0-5)] ${valueAccentClass}`}>
-                {rateDisplay.label} {formatPercent(rateDisplay.valuePercent)} · Daily Rewards {formatUsd(forecastPreview.dailyRewards)}
+                {rateDisplay.label} {formatPercent(rateDisplay.valuePercent)} · {getForecastDailyRewardsLabel(forecastPreview)}{' '}
+                {formatUsd(forecastPreview.dailyRewards)}
               </p>
                 );
               })()}
@@ -935,10 +939,8 @@ const IncentiveTooltip = ({
                 </p>
               ) : forecastPreview.estimateKind === 'MERIT_SELF_CAP' ? (
                 <p className="ds-tooltip-body text-muted-foreground mt-[var(--ds-space-0-5)]">
-                  Self bonus applies to first {formatUsd(forecastPreview.selfCapUsd)} of your deposit
-                  {typeof forecastPreview.selfEligibleUsd === 'number'
-                    ? ` (eligible now: ${formatUsd(forecastPreview.selfEligibleUsd)})`
-                    : ''}.
+                  Self bonus applies to the first {formatUsd(forecastPreview.selfCapUsd)} of your deposit.
+                  Forecast shown is your bonus-only estimate (user-specific), not campaign total rewards.
                 </p>
               ) : null}
               {forecastPreview.campaignType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE' &&
@@ -1005,7 +1007,8 @@ const IncentiveTooltip = ({
                     if (!rateDisplay) return null;
                     return (
                       <p className={`ds-tooltip-body mt-[var(--ds-space-0-5)] ${valueAccentClass}`}>
-                        {rateDisplay.label} {formatPercent(rateDisplay.valuePercent)} · Daily Rewards {formatUsd(forecastPreview.dailyRewards)}
+                        {rateDisplay.label} {formatPercent(rateDisplay.valuePercent)} · {getForecastDailyRewardsLabel(forecastPreview)}{' '}
+                        {formatUsd(forecastPreview.dailyRewards)}
                       </p>
                     );
                   })()}
@@ -1018,10 +1021,8 @@ const IncentiveTooltip = ({
                   </p>
                 ) : forecastPreview.estimateKind === 'MERIT_SELF_CAP' ? (
                   <p className="ds-tooltip-body text-muted-foreground mt-[var(--ds-space-0-5)]">
-                    Self bonus applies to first {formatUsd(forecastPreview.selfCapUsd)} of your deposit
-                    {typeof forecastPreview.selfEligibleUsd === 'number'
-                      ? ` (eligible now: ${formatUsd(forecastPreview.selfEligibleUsd)})`
-                      : ''}.
+                    Self bonus applies to the first {formatUsd(forecastPreview.selfCapUsd)} of your deposit.
+                    Forecast shown is your bonus-only estimate (user-specific), not campaign total rewards.
                   </p>
                 ) : null}
                   {forecastPreview.campaignType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE' &&
@@ -1064,7 +1065,11 @@ const IncentiveTooltip = ({
           : anchored.position.x;
       const nextLeft = Math.min(Math.max(baseLeft, minLeft), maxLeft);
       setTooltipLeft(nextLeft);
-      setTooltipTop(anchored.position.y + 8);
+      const desiredTop = anchored.position.y + 8;
+      const tooltipHeight = tooltipRef.current.offsetHeight;
+      const minTop = 8;
+      const maxTop = Math.max(minTop, window.innerHeight - tooltipHeight - minTop);
+      setTooltipTop(Math.min(Math.max(desiredTop, minTop), maxTop));
 
       const arrowWidth = 16;
       const calculatedLeft = anchored.triggerCenterX - nextLeft - arrowWidth / 2;
@@ -1080,12 +1085,20 @@ const IncentiveTooltip = ({
 
     window.addEventListener('resize', updatePosition);
     window.addEventListener('scroll', updatePosition, true);
+    const resizeObserver =
+      typeof ResizeObserver !== 'undefined' && tooltipRef.current
+        ? new ResizeObserver(updatePosition)
+        : null;
+    if (resizeObserver && tooltipRef.current) {
+      resizeObserver.observe(tooltipRef.current);
+    }
 
     return () => {
       cancelAnimationFrame(outerRafId);
       if (innerRafId !== null) {
         cancelAnimationFrame(innerRafId);
       }
+      resizeObserver?.disconnect();
       window.removeEventListener('resize', updatePosition);
       window.removeEventListener('scroll', updatePosition, true);
     };
@@ -1240,7 +1253,7 @@ const IncentiveTooltip = ({
           }}
         />
         {/* Content area */}
-        <div className="w-full min-w-0">
+        <div className="w-full min-w-0 max-h-[calc(100vh-32px)] overflow-y-auto overscroll-contain pr-1">
           {merklForecastInput}
           {/* Detailed sources */}
           {hasDetails ? (

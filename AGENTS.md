@@ -4,6 +4,7 @@
 - `src/` contains the React + TypeScript app. Key areas: `src/pages/` for routes, `src/components/` for UI and dashboard pieces, `src/hooks/` for reusable logic, `src/lib/` for helpers, `src/types/` for shared types.
 - `public/` holds static assets (icons, robots.txt, favicon).
 - `dist/` is build output from Vite. Treat as generated.
+- `docs/` holds living implementation notes (for example `docs/frontend-interaction-guardrails.md` for tooltip/search/forecast UI pitfalls).
 
 ## Build, Test, and Development Commands
 - `npm run dev`: start the Vite dev server with hot reload.
@@ -29,6 +30,9 @@
 
 ## Configuration & Secrets
 - Use `.env` for local secrets and keep it out of version control.
+
+## UI Regression Guardrails
+- When changing incentive tooltip behavior, search filtering, or forecast display semantics, review and update `docs/frontend-interaction-guardrails.md` in the same work session.
 
 ---
 
