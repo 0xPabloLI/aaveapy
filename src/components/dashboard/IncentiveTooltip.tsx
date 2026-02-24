@@ -629,8 +629,9 @@ const IncentiveTooltip = ({
       return aExcluded ? 1 : -1;
     });
     const getForecastPreview = (campaign: (typeof campaigns)[number]) => {
+      const campaignSourceType = campaign.sourceType ?? source.sourceType;
       if (depositUsd <= 0) return null;
-      if (campaign.sourceType === 'Merkl' && campaign.campaignId) {
+      if (campaignSourceType === 'Merkl' && campaign.campaignId) {
         if (campaign.whitelistOnly && campaign.included === false) return null;
         const forecastState = merklForecastStates[campaign.campaignId];
         if (!forecastState) {
@@ -662,7 +663,7 @@ const IncentiveTooltip = ({
         };
       }
 
-      if (campaign.sourceType === 'ACI') {
+      if (campaignSourceType === 'ACI') {
         const forecastAprPercent = campaign.forecastAprPercent;
         const lastRoundRewardUsd = campaign.lastRoundRewardUsd;
         const cycleDays = getCampaignCycleDays(campaign.startDate, campaign.endDate);
