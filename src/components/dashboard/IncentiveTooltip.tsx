@@ -261,6 +261,33 @@ const IncentiveTooltip = ({
     return opportunity.link || opportunity.opportunityLink;
   };
 
+  const splitMeritMessageBySelfAuth = (
+    message?: string | Record<string, unknown> | unknown[]
+  ): {
+    baseMessage?: string | Record<string, unknown> | unknown[];
+    selfMessage?: string | Record<string, unknown> | unknown[];
+  } => {
+    if (!Array.isArray(message)) {
+      return { baseMessage: message };
+    }
+
+    const base: unknown[] = [];
+    const self: unknown[] = [];
+    for (const item of message) {
+      const text = typeof item === 'object' && item ? JSON.stringify(item).toLowerCase() : String(item ?? '').toLowerCase();
+      if (text.includes('self authentication')) {
+        self.push(item);
+      } else {
+        base.push(item);
+      }
+    }
+
+    return {
+      baseMessage: base.length > 0 ? base : undefined,
+      selfMessage: self.length > 0 ? self : undefined,
+    };
+  };
+
   const buildSourceGroupKey = (source: IncentiveSource): string =>
     `${source.sourceType ?? 'Unknown'}|${source.name}|${source.link ?? ''}`;
 
@@ -411,18 +438,17 @@ const IncentiveTooltip = ({
         const apr = merit.apr;
         const selfApr = merit.selfApr || 0;
         
+        const baseAprPercent = !isNaN(apr) && apr >= 0 ? apr : 0;
+        const selfAprPercent = !isNaN(selfApr) && selfApr >= 0 ? selfApr : 0;
+        const totalForecastAprPercent = baseAprPercent + selfAprPercent;
+
         // Convert each APR to APY separately then sum (convertAprToApy is non-linear)
         let totalValue = 0;
         if (isApy) {
-          if (!isNaN(apr) && apr >= 0) {
-            totalValue += convertAprToApy(apr);
-          }
-          if (!isNaN(selfApr) && selfApr >= 0) {
-            totalValue += convertAprToApy(selfApr);
-          }
+          if (baseAprPercent > 0) totalValue += convertAprToApy(baseAprPercent);
+          if (selfAprPercent > 0) totalValue += convertAprToApy(selfAprPercent);
         } else {
-          // For APR mode, just sum the APR values
-          totalValue = (!isNaN(apr) && apr >= 0 ? apr : 0) + (!isNaN(selfApr) && selfApr >= 0 ? selfApr : 0);
+          totalValue = totalForecastAprPercent;
         }
         
         if (totalValue >= 0) {
@@ -431,6 +457,46 @@ const IncentiveTooltip = ({
             : meritIncentives.length > 1 
               ? `ACI Incentive ${index + 1}`
               : 'ACI Incentive';
+
+          const { baseMessage, selfMessage } = splitMeritMessageBySelfAuth(merit.message);
+          const allocateLastRoundRewardUsd = (componentAprPercent: number): number | undefined => {
+            if (
+              typeof merit.lastRoundRewardUsd !== 'number' ||
+              !Number.isFinite(merit.lastRoundRewardUsd) ||
+              merit.lastRoundRewardUsd <= 0 ||
+              totalForecastAprPercent <= 0 ||
+              componentAprPercent <= 0
+            ) {
+              return undefined;
+            }
+            return merit.lastRoundRewardUsd * (componentAprPercent / totalForecastAprPercent);
+          };
+
+          const meritCampaigns: NonNullable<IncentiveSource['campaigns']> = [];
+          if (baseAprPercent > 0) {
+            meritCampaigns.push({
+              value: isApy ? convertAprToApy(baseAprPercent) : baseAprPercent,
+              dateRange: formatDateRange(merit.startDate, merit.endDate) || undefined,
+              startDate: merit.startDate,
+              endDate: merit.endDate,
+              message: baseMessage ?? merit.message,
+              forecastAprPercent: baseAprPercent,
+              lastRoundRewardUsd: allocateLastRoundRewardUsd(baseAprPercent),
+              sourceType: 'ACI',
+            });
+          }
+          if (selfAprPercent > 0) {
+            meritCampaigns.push({
+              value: isApy ? convertAprToApy(selfAprPercent) : selfAprPercent,
+              dateRange: formatDateRange(merit.startDate, merit.endDate) || undefined,
+              startDate: merit.startDate,
+              endDate: merit.endDate,
+              message: selfMessage,
+              forecastAprPercent: selfAprPercent,
+              lastRoundRewardUsd: allocateLastRoundRewardUsd(selfAprPercent),
+              sourceType: 'ACI',
+            });
+          }
 
           sources.push({
             name,
@@ -441,15 +507,17 @@ const IncentiveTooltip = ({
             link: merit.link,
             message: merit.message,
             dateRange: formatDateRange(merit.startDate, merit.endDate) || undefined,
-            campaigns: [{
-              value: totalValue,
-              dateRange: formatDateRange(merit.startDate, merit.endDate) || undefined,
-              startDate: merit.startDate,
-              endDate: merit.endDate,
-              message: merit.message,
-              forecastAprPercent: (!isNaN(apr) && apr >= 0 ? apr : 0) + (!isNaN(selfApr) && selfApr >= 0 ? selfApr : 0),
-              lastRoundRewardUsd: merit.lastRoundRewardUsd,
-            }],
+            campaigns: meritCampaigns.length > 0
+              ? meritCampaigns
+              : [{
+                  value: totalValue,
+                  dateRange: formatDateRange(merit.startDate, merit.endDate) || undefined,
+                  startDate: merit.startDate,
+                  endDate: merit.endDate,
+                  message: merit.message,
+                  forecastAprPercent: totalForecastAprPercent,
+                  lastRoundRewardUsd: merit.lastRoundRewardUsd,
+                }],
           });
         }
       });
@@ -769,12 +837,7 @@ const IncentiveTooltip = ({
                     ? ` (${formatUsd(forecastPreview.lastRoundRewardUsd)})`
                     : ''}.
                 </p>
-              ) : (
-                <p className="ds-tooltip-body text-muted-foreground mt-[var(--ds-space-0-5)]">
-                  Type: {forecastPreview.campaignType} · Regime: {forecastPreview.regime} · Ended under-distributed:{' '}
-                  {forecastPreview.isUnderDistributed ? 'Yes' : 'No'}
-                </p>
-              )}
+              ) : null}
               {forecastPreview.campaignType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE' &&
                 typeof forecastPreview.fixRewardableDays === 'number' &&
                 typeof forecastPreview.fixRewardableUntilTs === 'number' && (
@@ -850,12 +913,7 @@ const IncentiveTooltip = ({
                       ? ` (${formatUsd(forecastPreview.lastRoundRewardUsd)})`
                       : ''}.
                   </p>
-                ) : (
-                    <p className="ds-tooltip-body text-muted-foreground mt-[var(--ds-space-0-5)]">
-                      Type: {forecastPreview.campaignType} · Regime: {forecastPreview.regime} · Ended under-distributed:{' '}
-                      {forecastPreview.isUnderDistributed ? 'Yes' : 'No'}
-                    </p>
-                  )}
+                ) : null}
                   {forecastPreview.campaignType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE' &&
                     typeof forecastPreview.fixRewardableDays === 'number' &&
                     typeof forecastPreview.fixRewardableUntilTs === 'number' && (

@@ -34,7 +34,18 @@ const MARKET_NAME_MAP: Record<string, string> = {
 const resolveMarketName = (marketName: string): string | null => {
   if (!marketName) return null;
   if (marketName.startsWith('proto_')) return marketName;
-  return MARKET_NAME_MAP[marketName] ?? null;
+  const mapped = MARKET_NAME_MAP[marketName];
+  if (mapped) return mapped;
+
+  // Generic fallback for new standalone Aave v3 markets (e.g. AaveV3Mantle -> proto_mantle_v3).
+  if (marketName.startsWith('AaveV3') && !marketName.startsWith('AaveV3Ethereum')) {
+    const rawChain = marketName.slice('AaveV3'.length).replace(/Whitelabel$/i, '');
+    if (rawChain) {
+      return `proto_${rawChain.toLowerCase()}_v3`;
+    }
+  }
+
+  return null;
 };
 
 export const buildAaveReserveUrl = (market: {
