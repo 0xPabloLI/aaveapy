@@ -19,6 +19,8 @@ const MARKET_NAME_MAP: Record<string, string> = {
   AaveV3Linea: 'proto_linea_v3',
   AaveV3Sonic: 'proto_sonic_v3',
   AaveV3Celo: 'proto_celo_v3',
+  AaveV3Mantle: 'proto_mantle_v3',
+  AaveV3MegaETH: 'proto_megaeth_v3',
   AaveV3Soneium: 'proto_soneium_v3',
   AaveV3Plasma: 'proto_plasma_v3',
   AaveV3Ink: 'proto_ink_v3',

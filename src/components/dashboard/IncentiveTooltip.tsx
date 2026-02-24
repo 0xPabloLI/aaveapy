@@ -572,7 +572,7 @@ const IncentiveTooltip = ({
       );
     }, 0);
   }, [reserve, type]);
-  const showWhitelistToggle = whitelistOnlyCampaignCount > 0 || includeWhitelistOnlyMerkl;
+  const showWhitelistToggle = whitelistOnlyCampaignCount > 0;
   const merklForecastInput = showForecastInput ? (
     <div className="mb-[var(--ds-space-2)] rounded-lg border border-border/60 bg-muted/20 px-[var(--ds-space-2)] py-[var(--ds-space-2)]">
       <label className="ds-tooltip-body text-muted-foreground block mb-[var(--ds-space-1)]">
@@ -707,6 +707,18 @@ const IncentiveTooltip = ({
       return null;
     };
 
+    const getForecastRateDisplay = (forecastPreview: NonNullable<ReturnType<typeof getForecastPreview>>) => {
+      if (forecastPreview.unavailable) {
+        return null;
+      }
+      const forecastAprPercent = forecastPreview.apr * 100;
+      const displayPercent = isApy ? convertAprToApy(forecastAprPercent) : forecastAprPercent;
+      return {
+        label: isApy ? 'APY' : 'APR',
+        valuePercent: displayPercent,
+      };
+    };
+
     if (campaigns.length === 1) {
       const campaign = campaigns[0];
       const isExcludedWhitelist = campaign.whitelistOnly === true && campaign.included === false;
@@ -741,9 +753,15 @@ const IncentiveTooltip = ({
               <p className="ds-tooltip-body text-muted-foreground">
                 Forecast at TVL {formatUsd(forecastPreview.hypotheticalTvl)}
               </p>
+              {(() => {
+                const rateDisplay = getForecastRateDisplay(forecastPreview);
+                if (!rateDisplay) return null;
+                return (
               <p className={`ds-tooltip-body mt-[var(--ds-space-0-5)] ${valueAccentClass}`}>
-                APR {formatPercent(forecastPreview.apr * 100)} · Daily Rewards {formatUsd(forecastPreview.dailyRewards)}
+                {rateDisplay.label} {formatPercent(rateDisplay.valuePercent)} · Daily Rewards {formatUsd(forecastPreview.dailyRewards)}
               </p>
+                );
+              })()}
               {forecastPreview.estimateKind === 'MERIT_LATEST_ROUND' ? (
                 <p className="ds-tooltip-body text-muted-foreground mt-[var(--ds-space-0-5)]">
                   Estimated from last round reward
@@ -760,8 +778,8 @@ const IncentiveTooltip = ({
               {forecastPreview.campaignType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE' &&
                 typeof forecastPreview.fixRewardableDays === 'number' &&
                 typeof forecastPreview.fixRewardableUntilTs === 'number' && (
-                  <p className="ds-tooltip-body text-muted-foreground mt-[var(--ds-space-0-5)]">
-                    Rewardable until {formatForecastTimestamp(forecastPreview.fixRewardableUntilTs)} (
+                  <p className={`ds-tooltip-body mt-[var(--ds-space-0-5)] font-medium ${valueAccentClass}`}>
+                    Rewardable until: {formatForecastTimestamp(forecastPreview.fixRewardableUntilTs)} (
                     {forecastPreview.fixRewardableDays.toFixed(2)}d)
                   </p>
                 )}
@@ -816,9 +834,15 @@ const IncentiveTooltip = ({
                   <p className="ds-tooltip-body text-muted-foreground">
                     Forecast at TVL {formatUsd(forecastPreview.hypotheticalTvl)}
                   </p>
-                  <p className={`ds-tooltip-body mt-[var(--ds-space-0-5)] ${valueAccentClass}`}>
-                    APR {formatPercent(forecastPreview.apr * 100)} · Daily Rewards {formatUsd(forecastPreview.dailyRewards)}
-                  </p>
+                  {(() => {
+                    const rateDisplay = getForecastRateDisplay(forecastPreview);
+                    if (!rateDisplay) return null;
+                    return (
+                      <p className={`ds-tooltip-body mt-[var(--ds-space-0-5)] ${valueAccentClass}`}>
+                        {rateDisplay.label} {formatPercent(rateDisplay.valuePercent)} · Daily Rewards {formatUsd(forecastPreview.dailyRewards)}
+                      </p>
+                    );
+                  })()}
                 {forecastPreview.estimateKind === 'MERIT_LATEST_ROUND' ? (
                   <p className="ds-tooltip-body text-muted-foreground mt-[var(--ds-space-0-5)]">
                     Estimated from last round reward
@@ -835,8 +859,8 @@ const IncentiveTooltip = ({
                   {forecastPreview.campaignType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE' &&
                     typeof forecastPreview.fixRewardableDays === 'number' &&
                     typeof forecastPreview.fixRewardableUntilTs === 'number' && (
-                      <p className="ds-tooltip-body text-muted-foreground mt-[var(--ds-space-0-5)]">
-                        Rewardable until {formatForecastTimestamp(forecastPreview.fixRewardableUntilTs)} (
+                      <p className={`ds-tooltip-body mt-[var(--ds-space-0-5)] font-medium ${valueAccentClass}`}>
+                        Rewardable until: {formatForecastTimestamp(forecastPreview.fixRewardableUntilTs)} (
                         {forecastPreview.fixRewardableDays.toFixed(2)}d)
                       </p>
                     )}
