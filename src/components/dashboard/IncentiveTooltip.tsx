@@ -877,14 +877,15 @@ const IncentiveTooltip = ({
       }
       const forecastAprPercent = forecastPreview.apr * 100;
       const displayPercent = isApy ? convertAprToApy(forecastAprPercent) : forecastAprPercent;
+      const isSelfEstimate = forecastPreview.estimateKind === 'MERIT_SELF_CAP';
       return {
-        label: isApy ? 'APY' : 'APR',
+        label: isSelfEstimate ? (isApy ? 'Your APY' : 'Your APR') : isApy ? 'APY' : 'APR',
         valuePercent: displayPercent,
       };
     };
 
     const getForecastDailyRewardsLabel = (forecastPreview: NonNullable<ReturnType<typeof getForecastPreview>>) =>
-      forecastPreview.estimateKind === 'MERIT_SELF_CAP' ? 'Your Daily Rewards' : 'Daily Rewards';
+      forecastPreview.estimateKind === 'MERIT_SELF_CAP' ? 'Your Daily Rewards' : 'Total Daily Rewards';
 
     if (campaigns.length === 1) {
       const campaign = campaigns[0];
@@ -940,7 +941,6 @@ const IncentiveTooltip = ({
               ) : forecastPreview.estimateKind === 'MERIT_SELF_CAP' ? (
                 <p className="ds-tooltip-body text-muted-foreground mt-[var(--ds-space-0-5)]">
                   Self bonus applies to the first {formatUsd(forecastPreview.selfCapUsd)} of your deposit.
-                  Forecast shown is your bonus-only estimate (user-specific), not campaign total rewards.
                 </p>
               ) : null}
               {forecastPreview.campaignType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE' &&
@@ -1022,7 +1022,6 @@ const IncentiveTooltip = ({
                 ) : forecastPreview.estimateKind === 'MERIT_SELF_CAP' ? (
                   <p className="ds-tooltip-body text-muted-foreground mt-[var(--ds-space-0-5)]">
                     Self bonus applies to the first {formatUsd(forecastPreview.selfCapUsd)} of your deposit.
-                    Forecast shown is your bonus-only estimate (user-specific), not campaign total rewards.
                   </p>
                 ) : null}
                   {forecastPreview.campaignType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE' &&
