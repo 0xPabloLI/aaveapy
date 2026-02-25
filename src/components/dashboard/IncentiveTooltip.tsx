@@ -880,7 +880,7 @@ const IncentiveTooltip = ({
       const isSelfEstimate = forecastPreview.estimateKind === 'MERIT_SELF_CAP';
       const rateUnitLabel = isApy ? 'APY' : 'APR';
       return {
-        label: isSelfEstimate ? `Your Forecast ${rateUnitLabel}` : `Forecast ${rateUnitLabel}`,
+        label: isSelfEstimate ? `Your ${rateUnitLabel}` : `Forecast ${rateUnitLabel}`,
         valuePercent: displayPercent,
       };
     };
@@ -1066,14 +1066,19 @@ const IncentiveTooltip = ({
       const nextLeft = Math.min(Math.max(baseLeft, minLeft), maxLeft);
       setTooltipLeft(nextLeft);
       const gap = 8;
+      const viewportEdge = 12;
+      const flipThreshold = 24;
       const desiredBottomTop = anchored.position.y + gap;
       const tooltipHeight = tooltipRef.current.offsetHeight;
-      const minTop = 8;
+      const minTop = viewportEdge;
       const maxTop = Math.max(minTop, window.innerHeight - tooltipHeight - minTop);
-      const desiredTopTop = anchored.position.y - tooltipHeight - gap;
-      const spaceBelow = window.innerHeight - desiredBottomTop - minTop;
-      const spaceAbove = anchored.position.y - gap - minTop;
-      const shouldPlaceAbove = spaceBelow < tooltipHeight && spaceAbove > spaceBelow;
+      // Above placement needs a slightly larger offset to keep the arrow clear of the trigger button.
+      const topPlacementExtraGap = 8;
+      const desiredTopTop = anchored.position.y - tooltipHeight - gap - topPlacementExtraGap;
+      const spaceBelow = window.innerHeight - desiredBottomTop - viewportEdge;
+      const spaceAbove = anchored.position.y - gap - topPlacementExtraGap - viewportEdge;
+      const shouldPlaceAbove =
+        spaceBelow < tooltipHeight + flipThreshold && spaceAbove > spaceBelow + flipThreshold;
       setTooltipPlacement(shouldPlaceAbove ? 'top' : 'bottom');
       const desiredTop = shouldPlaceAbove ? desiredTopTop : desiredBottomTop;
       setTooltipTop(Math.min(Math.max(desiredTop, minTop), maxTop));
