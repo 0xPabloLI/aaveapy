@@ -18,6 +18,7 @@ interface IncentiveTooltipProps {
   type: 'supply' | 'borrow';
   position: { x: number; y: number };
   triggerCenterX: number;
+  triggerHeight?: number;
   onClose: () => void;
   isApy?: boolean;
   usePortal?: boolean;
@@ -118,6 +119,7 @@ const IncentiveTooltip = ({
   type,
   position,
   triggerCenterX,
+  triggerHeight,
   onClose,
   isApy = true,
   usePortal = false,
@@ -1069,15 +1071,15 @@ const IncentiveTooltip = ({
       const gap = 8;
       const viewportEdge = 12;
       const flipThreshold = 24;
+      const effectiveTriggerHeight = typeof triggerHeight === 'number' && triggerHeight > 0 ? triggerHeight : 0;
       const desiredBottomTop = anchored.position.y + gap;
       const tooltipHeight = tooltipRef.current.offsetHeight;
       const minTop = viewportEdge;
       const maxTop = Math.max(minTop, window.innerHeight - tooltipHeight - minTop);
-      // Above placement needs a slightly larger offset to keep the arrow clear of the trigger button.
-      const topPlacementExtraGap = 12;
-      const desiredTopTop = anchored.position.y - tooltipHeight - gap - topPlacementExtraGap;
+      const triggerTopY = anchored.position.y - effectiveTriggerHeight;
+      const desiredTopTop = triggerTopY - tooltipHeight - gap;
       const spaceBelow = window.innerHeight - desiredBottomTop - viewportEdge;
-      const spaceAbove = anchored.position.y - gap - topPlacementExtraGap - viewportEdge;
+      const spaceAbove = triggerTopY - gap - viewportEdge;
       const shouldPlaceAbove =
         spaceBelow < tooltipHeight + flipThreshold && spaceAbove > spaceBelow + flipThreshold;
       setTooltipPlacement(shouldPlaceAbove ? 'top' : 'bottom');

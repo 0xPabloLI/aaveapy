@@ -72,6 +72,7 @@ const ReservesTable = ({
     type: 'supply' | 'borrow';
     position: { x: number; y: number };
     triggerCenterX: number;
+    triggerHeight: number;
   } | null>(null);
 
   const getMarketDisplayName = (reserve: ReserveWithSpread) => {
@@ -252,6 +253,7 @@ const ReservesTable = ({
       type,
       position: { x: rect.left, y: rect.bottom },
       triggerCenterX,
+      triggerHeight: rect.height,
     });
   };
 
@@ -302,6 +304,7 @@ const ReservesTable = ({
       type,
       position: { x: rect.left, y: rect.bottom },
       triggerCenterX,
+      triggerHeight: rect.height,
     });
   };
 
@@ -562,6 +565,7 @@ const ReservesTable = ({
             type={tooltipState.type}
             position={tooltipState.position}
             triggerCenterX={tooltipState.triggerCenterX}
+            triggerHeight={tooltipState.triggerHeight}
             accentTextClass={tooltipState.type === 'supply' ? 'ds-text-emerald-600' : 'ds-text-brand-cyan'}
             accentBgClass={tooltipState.type === 'supply' ? 'ds-bg-emerald-500-10' : 'ds-bg-brand-cyan-10'}
             onClose={() => setTooltipState(null)}
@@ -1070,6 +1074,7 @@ const ReservesTable = ({
           type={tooltipState.type}
           position={tooltipState.position}
           triggerCenterX={tooltipState.triggerCenterX}
+          triggerHeight={tooltipState.triggerHeight}
           accentTextClass={tooltipState.type === 'supply' ? 'ds-text-emerald-600' : 'ds-text-brand-cyan'}
           accentBgClass={tooltipState.type === 'supply' ? 'ds-bg-emerald-500-10' : 'ds-bg-brand-cyan-10'}
           onClose={() => setTooltipState(null)}

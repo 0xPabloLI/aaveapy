@@ -11,6 +11,7 @@ This note records recurring UI/interaction issues found during incentive/forecas
   - Recompute position on resize, scroll, and content-size changes (e.g. `ResizeObserver`).
 - **Use flip placement before aggressive clamping**: if bottom space is insufficient, prefer rendering above the trigger (and vice versa).
   - Keep a consistent trigger/arrow gap for both placements.
+  - Prefer passing trigger geometry (at least trigger height; ideally full trigger rect) into the tooltip so top/bottom gaps can be computed exactly instead of approximated.
   - Add a flip threshold (not just `space < height`) to avoid jitter near the viewport midpoint.
   - If the tooltip is heavily clamped and the arrow can no longer point cleanly to the trigger, hide the arrow rather than showing a misleading one.
 - **Do not rely on page scroll for fixed overlays**: fixed-position tooltip content should remain usable even when the underlying page cannot scroll.

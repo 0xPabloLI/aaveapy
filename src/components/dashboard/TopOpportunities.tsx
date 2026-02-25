@@ -41,6 +41,7 @@ interface TopOpportunitiesProps {
     type: 'supply' | 'borrow';
     position: { x: number; y: number };
     triggerCenterX: number;
+    triggerHeight: number;
     accentBorderClass?: string;
     accentTextClass?: string;
     accentBgClass?: string;
@@ -371,6 +372,7 @@ const TopOpportunities = ({
       type,
       position: { x: rect.left, y: rect.bottom },
       triggerCenterX,
+      triggerHeight: rect.height,
       accentBorderClass: getAccentBorderClass(accentValue),
       accentTextClass: getAccentTextClass(accentValue),
       accentBgClass: getAccentBgClass(accentValue),

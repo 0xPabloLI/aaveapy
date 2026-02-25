@@ -43,6 +43,7 @@ const Index = () => {
     type: 'supply' | 'borrow';
     position: { x: number; y: number };
     triggerCenterX: number;
+    triggerHeight: number;
     accentBorderClass?: string;
     accentTextClass?: string;
     accentBgClass?: string;
@@ -168,6 +169,7 @@ const Index = () => {
     type: 'supply' | 'borrow';
     position: { x: number; y: number };
     triggerCenterX: number;
+    triggerHeight: number;
     accentBorderClass?: string;
     accentTextClass?: string;
     accentBgClass?: string;
@@ -177,6 +179,7 @@ const Index = () => {
       type: payload.type,
       position: payload.position,
       triggerCenterX: payload.triggerCenterX,
+      triggerHeight: payload.triggerHeight,
       accentBorderClass: payload.accentBorderClass,
       accentTextClass: payload.accentTextClass,
       accentBgClass: payload.accentBgClass,
@@ -384,6 +387,7 @@ const Index = () => {
                 type={topTooltipState.type}
                 position={topTooltipState.position}
                 triggerCenterX={topTooltipState.triggerCenterX}
+                triggerHeight={topTooltipState.triggerHeight}
                 accentBorderClass={topTooltipState.accentBorderClass}
                 accentTextClass={topTooltipState.accentTextClass}
                 accentBgClass={topTooltipState.accentBgClass}
