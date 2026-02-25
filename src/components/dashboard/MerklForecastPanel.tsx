@@ -102,9 +102,17 @@ const MerklForecastPanel = ({
         setStates((prev) => ({ ...prev, ...next }));
         setStateErrors(nextErrors);
         if (failed > 0) {
+          const campaignLabelById = new Map(
+            campaignOptions.map((option) => [option.campaignId, option.label] as const)
+          );
           const details = surfacedErrors
             .slice(0, 3)
-            .map((item) => `${item.campaignId} (${item.status})`)
+            .map((item) => {
+              const label = campaignLabelById.get(item.campaignId);
+              return label
+                ? `${label} · ${item.campaignId} (${item.status})`
+                : `${item.campaignId} (${item.status})`;
+            })
             .join(', ');
           setError(
             `Failed to load ${failed} campaign forecast state${failed > 1 ? 's' : ''}${details ? `: ${details}` : ''}.`
