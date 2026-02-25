@@ -6,6 +6,8 @@ This note records recurring UI/interaction issues found during incentive/forecas
 
 ### Tooltip / Overlay behavior
 
+- **If a UI requirement is stated as exact geometry, implement exact geometry** (not “close enough” heuristics).
+  - Example: when the requested top/bottom arrow gap must match, pass full trigger geometry (or at least trigger height) and compute the same gap from trigger edges.
 - **Clamp desktop tooltips to viewport**: floating tooltips must not render below the viewport bottom.
   - Use a max height (`max-h`) and internal scroll (`overflow-y-auto`).
   - Recompute position on resize, scroll, and content-size changes (e.g. `ResizeObserver`).
