@@ -1,5 +1,6 @@
 import type { TokenPricesIndex } from '@/types/aave';
 import { getCoingeckoBackupPriceTtlMs } from './merklForecastConfig';
+import { normalizeTokenSymbolForAsciiLower } from './tokenSymbolNormalization';
 
 type ForecastActionType = 'Supply' | 'Borrow' | 'Hold';
 type FetchLike = typeof fetch;
@@ -70,13 +71,7 @@ const pushIfPresent = (into: string[], value?: string | null) => {
 };
 
 const normalizeTokenSymbol = (symbol?: string | null): string | undefined => {
-  if (!symbol) return undefined;
-  const normalized = symbol
-    .trim()
-    .toLowerCase()
-    .replace(/₮/g, 't')
-    .replace(/[^a-z0-9]/g, '');
-  return normalized || undefined;
+  return normalizeTokenSymbolForAsciiLower(symbol);
 };
 
 const inferUnderlyingSymbolCandidates = (tokenSymbol?: string | null): string[] => {

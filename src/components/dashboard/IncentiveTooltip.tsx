@@ -135,6 +135,7 @@ const IncentiveTooltip = ({
   const [arrowLeft, setArrowLeft] = useState(0);
   const [tooltipLeft, setTooltipLeft] = useState<number | null>(null);
   const [tooltipTop, setTooltipTop] = useState<number | null>(null);
+  const [tooltipPlacement, setTooltipPlacement] = useState<'top' | 'bottom'>('bottom');
   const [openedAtScroll, setOpenedAtScroll] = useState(() => getWindowScroll());
   const [depositInput, setDepositInput] = useState('');
   const [tokenPrice, setTokenPrice] = useState<number | undefined>(undefined);
@@ -810,11 +811,10 @@ const IncentiveTooltip = ({
           const baseForecastAprPercent = (baseEstimate.estimatedDailyRewardUsd * 365 * 100) / hypotheticalTvl;
           if (!Number.isFinite(baseForecastAprPercent) || baseForecastAprPercent <= 0) return null;
 
-          const dilutionRatio = baseForecastAprPercent / baseAprPercent;
-          const selfEligibleAprPercent = selfAprPercent * dilutionRatio;
+          const selfEligibleAprPercent = baseForecastAprPercent;
           const eligibleDepositUsd = Math.min(depositUsd, selfCapUsd);
           const effectiveAprPercent = selfEligibleAprPercent * (eligibleDepositUsd / depositUsd);
-          const userDailyRewardsUsd = (effectiveAprPercent / 100) * (depositUsd / 365);
+          const userDailyRewardsUsd = (selfEligibleAprPercent / 100) * (eligibleDepositUsd / 365);
 
           return {
             unavailable: false,
@@ -878,8 +878,9 @@ const IncentiveTooltip = ({
       const forecastAprPercent = forecastPreview.apr * 100;
       const displayPercent = isApy ? convertAprToApy(forecastAprPercent) : forecastAprPercent;
       const isSelfEstimate = forecastPreview.estimateKind === 'MERIT_SELF_CAP';
+      const rateUnitLabel = isApy ? 'APY' : 'APR';
       return {
-        label: isSelfEstimate ? (isApy ? 'Your APY' : 'Your APR') : isApy ? 'APY' : 'APR',
+        label: isSelfEstimate ? `Your Forecast ${rateUnitLabel}` : `Forecast ${rateUnitLabel}`,
         valuePercent: displayPercent,
       };
     };
@@ -1064,10 +1065,17 @@ const IncentiveTooltip = ({
           : anchored.position.x;
       const nextLeft = Math.min(Math.max(baseLeft, minLeft), maxLeft);
       setTooltipLeft(nextLeft);
-      const desiredTop = anchored.position.y + 8;
+      const gap = 8;
+      const desiredBottomTop = anchored.position.y + gap;
       const tooltipHeight = tooltipRef.current.offsetHeight;
       const minTop = 8;
       const maxTop = Math.max(minTop, window.innerHeight - tooltipHeight - minTop);
+      const desiredTopTop = anchored.position.y - tooltipHeight - gap;
+      const spaceBelow = window.innerHeight - desiredBottomTop - minTop;
+      const spaceAbove = anchored.position.y - gap - minTop;
+      const shouldPlaceAbove = spaceBelow < tooltipHeight && spaceAbove > spaceBelow;
+      setTooltipPlacement(shouldPlaceAbove ? 'top' : 'bottom');
+      const desiredTop = shouldPlaceAbove ? desiredTopTop : desiredBottomTop;
       setTooltipTop(Math.min(Math.max(desiredTop, minTop), maxTop));
 
       const arrowWidth = 16;
@@ -1236,7 +1244,9 @@ const IncentiveTooltip = ({
       {/* Tooltip content with smooth zoom + fade animation */}
       <div
         ref={tooltipRef}
-        className="fixed z-40 rounded-xl border border-border/60 bg-card ds-tooltip-pad ds-tooltip-shadow max-w-[min(520px,calc(100vw-32px))] w-[min(520px,calc(100vw-32px))] min-w-[320px] animate-in fade-in-0 zoom-in-95 slide-in-from-top-1 duration-200 ease-out"
+        className={`fixed z-40 rounded-xl border border-border/60 bg-card ds-tooltip-pad ds-tooltip-shadow max-w-[min(520px,calc(100vw-32px))] w-[min(520px,calc(100vw-32px))] min-w-[320px] animate-in fade-in-0 zoom-in-95 duration-200 ease-out ${
+          tooltipPlacement === 'top' ? 'slide-in-from-bottom-1' : 'slide-in-from-top-1'
+        }`}
         style={{ 
           left: `${tooltipLeft ?? position.x}px`,
           top: `${tooltipTop ?? position.y + 8}px`,
@@ -1245,7 +1255,11 @@ const IncentiveTooltip = ({
       >
         {/* Upward-pointing arrow - dynamically positioned, appears as border extension */}
         <div 
-          className="absolute -top-2 w-4 h-4 border-l border-t border-border/60 transform rotate-45 bg-card"
+          className={`absolute w-4 h-4 border-border/60 transform bg-card ${
+            tooltipPlacement === 'top'
+              ? '-bottom-2 border-r border-b rotate-45'
+              : '-top-2 border-l border-t rotate-45'
+          }`}
           style={{ 
             left: `${arrowLeft}px`,
             ...tooltipSurfaceStyle,

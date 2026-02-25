@@ -20,20 +20,11 @@ import { getCachedMarkets, getCachedMarketsList, setCachedTydroRate } from '@/li
 import { TYDRO_POINT_TO_USD_RATE } from '@/lib/tydro';
 import { AlertTriangle } from 'lucide-react';
 import { preloadChainIcons, preloadIncentiveIcons } from '@/lib/preloadUtils';
+import { normalizeTokenSymbolForSearch } from '@/lib/tokenSymbolNormalization';
 
 import IncentiveTooltip from '@/components/dashboard/IncentiveTooltip';
 import InkAprCalculator from '@/components/dashboard/InkAprCalculator';
 const MerklForecastPanel = lazy(() => import('@/components/dashboard/MerklForecastPanel'));
-
-const normalizeSearchTokenSymbol = (value: string): string =>
-  value
-    .toUpperCase()
-    .trim()
-    .replace(/USD₮0/g, 'USDT0')
-    .replace(/USD₮/g, 'USDT')
-    .replace(/\.E$/, '')
-    .replace(/^M\./, '')
-    .replace(/[^A-Z0-9]/g, '');
 
 const Index = () => {
   // State
@@ -216,8 +207,8 @@ const Index = () => {
       if (searchQuery) {
         const query = searchQuery.toLowerCase().trim();
         const symbol = reserve.tokenSymbol.toLowerCase();
-        const normalizedQuery = normalizeSearchTokenSymbol(searchQuery);
-        const normalizedSymbol = normalizeSearchTokenSymbol(reserve.tokenSymbol);
+        const normalizedQuery = normalizeTokenSymbolForSearch(searchQuery);
+        const normalizedSymbol = normalizeTokenSymbolForSearch(reserve.tokenSymbol);
 
         const matchesRaw = symbol.includes(query);
         const matchesNormalized = normalizedQuery.length > 0 && normalizedSymbol.includes(normalizedQuery);
