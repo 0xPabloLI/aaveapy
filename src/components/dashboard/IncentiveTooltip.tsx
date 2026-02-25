@@ -136,6 +136,7 @@ const IncentiveTooltip = ({
   const [tooltipLeft, setTooltipLeft] = useState<number | null>(null);
   const [tooltipTop, setTooltipTop] = useState<number | null>(null);
   const [tooltipPlacement, setTooltipPlacement] = useState<'top' | 'bottom'>('bottom');
+  const [showTooltipArrow, setShowTooltipArrow] = useState(true);
   const [openedAtScroll, setOpenedAtScroll] = useState(() => getWindowScroll());
   const [depositInput, setDepositInput] = useState('');
   const [tokenPrice, setTokenPrice] = useState<number | undefined>(undefined);
@@ -1073,7 +1074,7 @@ const IncentiveTooltip = ({
       const minTop = viewportEdge;
       const maxTop = Math.max(minTop, window.innerHeight - tooltipHeight - minTop);
       // Above placement needs a slightly larger offset to keep the arrow clear of the trigger button.
-      const topPlacementExtraGap = 8;
+      const topPlacementExtraGap = 12;
       const desiredTopTop = anchored.position.y - tooltipHeight - gap - topPlacementExtraGap;
       const spaceBelow = window.innerHeight - desiredBottomTop - viewportEdge;
       const spaceAbove = anchored.position.y - gap - topPlacementExtraGap - viewportEdge;
@@ -1081,7 +1082,10 @@ const IncentiveTooltip = ({
         spaceBelow < tooltipHeight + flipThreshold && spaceAbove > spaceBelow + flipThreshold;
       setTooltipPlacement(shouldPlaceAbove ? 'top' : 'bottom');
       const desiredTop = shouldPlaceAbove ? desiredTopTop : desiredBottomTop;
-      setTooltipTop(Math.min(Math.max(desiredTop, minTop), maxTop));
+      const clampedTop = Math.min(Math.max(desiredTop, minTop), maxTop);
+      const severelyClamped = Math.abs(clampedTop - desiredTop) > 6;
+      setShowTooltipArrow(!severelyClamped);
+      setTooltipTop(clampedTop);
 
       const arrowWidth = 16;
       const calculatedLeft = anchored.triggerCenterX - nextLeft - arrowWidth / 2;
@@ -1259,17 +1263,19 @@ const IncentiveTooltip = ({
         }}
       >
         {/* Upward-pointing arrow - dynamically positioned, appears as border extension */}
-        <div 
-          className={`absolute w-4 h-4 border-border/60 transform bg-card ${
-            tooltipPlacement === 'top'
-              ? '-bottom-2 border-r border-b rotate-45'
-              : '-top-2 border-l border-t rotate-45'
-          }`}
-          style={{ 
-            left: `${arrowLeft}px`,
-            ...tooltipSurfaceStyle,
-          }}
-        />
+        {showTooltipArrow && (
+          <div 
+            className={`absolute w-4 h-4 border-border/60 transform bg-card ${
+              tooltipPlacement === 'top'
+                ? '-bottom-2 border-r border-b rotate-45'
+                : '-top-2 border-l border-t rotate-45'
+            }`}
+            style={{ 
+              left: `${arrowLeft}px`,
+              ...tooltipSurfaceStyle,
+            }}
+          />
+        )}
         {/* Content area */}
         <div className="w-full min-w-0 max-h-[calc(100vh-32px)] overflow-y-auto overscroll-contain pr-1">
           {merklForecastInput}

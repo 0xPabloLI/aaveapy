@@ -9,6 +9,10 @@ This note records recurring UI/interaction issues found during incentive/forecas
 - **Clamp desktop tooltips to viewport**: floating tooltips must not render below the viewport bottom.
   - Use a max height (`max-h`) and internal scroll (`overflow-y-auto`).
   - Recompute position on resize, scroll, and content-size changes (e.g. `ResizeObserver`).
+- **Use flip placement before aggressive clamping**: if bottom space is insufficient, prefer rendering above the trigger (and vice versa).
+  - Keep a consistent trigger/arrow gap for both placements.
+  - Add a flip threshold (not just `space < height`) to avoid jitter near the viewport midpoint.
+  - If the tooltip is heavily clamped and the arrow can no longer point cleanly to the trigger, hide the arrow rather than showing a misleading one.
 - **Do not rely on page scroll for fixed overlays**: fixed-position tooltip content should remain usable even when the underlying page cannot scroll.
 - **Whitelist toggles must be scoped**: only show per-tooltip controls when the current reserve/source actually has applicable items (avoid leaking global state into unrelated tooltips).
 
