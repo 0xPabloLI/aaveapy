@@ -51,6 +51,7 @@ const MerklForecastPanel = ({
     () =>
       collectMerklCampaignOptions(reserves, {
         includeWhitelistOnly: includeWhitelistOnlyMerkl,
+        activeOnly: true,
       }),
     [includeWhitelistOnlyMerkl, reserves]
   );

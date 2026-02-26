@@ -14,19 +14,30 @@ export interface MerklCampaignOption {
 
 interface CollectMerklCampaignOptionsConfig {
   includeWhitelistOnly?: boolean;
+  activeOnly?: boolean;
 }
+
+const isBreakdownActive = (start?: string, end?: string, nowMs = Date.now()): boolean => {
+  if (!start || !end) return false;
+  const startMs = Date.parse(start);
+  const endMs = Date.parse(end);
+  if (!Number.isFinite(startMs) || !Number.isFinite(endMs)) return false;
+  return nowMs >= startMs && nowMs <= endMs;
+};
 
 const addFromGroups = (
   byCampaignId: Map<string, MerklCampaignOption>,
   groups: MerklOpportunityGroup[] | undefined,
   actionType: MerklCampaignOption['actionType'],
   reserve: ReserveWithSpread,
-  includeWhitelistOnly: boolean
+  includeWhitelistOnly: boolean,
+  activeOnly: boolean
 ) => {
   if (!groups || groups.length === 0) return;
   groups.forEach((group) => {
     group.breakdowns?.forEach((breakdown) => {
       if (breakdown.whitelistOnly && !includeWhitelistOnly) return;
+      if (activeOnly && !isBreakdownActive(breakdown.campaignStartedAt, breakdown.campaignEndedAt)) return;
       const campaignId = String(breakdown.campaignId || '').trim();
       if (!campaignId) return;
       const usesPointToUsdRate =
@@ -63,11 +74,12 @@ export const collectMerklCampaignOptions = (
 ): MerklCampaignOption[] => {
   const byCampaignId = new Map<string, MerklCampaignOption>();
   const includeWhitelistOnly = config.includeWhitelistOnly === true;
+  const activeOnly = config.activeOnly === true;
 
   reserves.forEach((reserve) => {
-    addFromGroups(byCampaignId, reserve.merklSupplys, 'Supply', reserve, includeWhitelistOnly);
-    addFromGroups(byCampaignId, reserve.merklBorrows, 'Borrow', reserve, includeWhitelistOnly);
-    addFromGroups(byCampaignId, reserve.merklHolds, 'Hold', reserve, includeWhitelistOnly);
+    addFromGroups(byCampaignId, reserve.merklSupplys, 'Supply', reserve, includeWhitelistOnly, activeOnly);
+    addFromGroups(byCampaignId, reserve.merklBorrows, 'Borrow', reserve, includeWhitelistOnly, activeOnly);
+    addFromGroups(byCampaignId, reserve.merklHolds, 'Hold', reserve, includeWhitelistOnly, activeOnly);
   });
 
   return Array.from(byCampaignId.values()).sort((a, b) => a.campaignId.localeCompare(b.campaignId));
