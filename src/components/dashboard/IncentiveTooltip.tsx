@@ -19,6 +19,14 @@ interface IncentiveTooltipProps {
   position: { x: number; y: number };
   triggerCenterX: number;
   triggerHeight?: number;
+  triggerRect?: {
+    top: number;
+    bottom: number;
+    left: number;
+    right: number;
+    width: number;
+    height: number;
+  };
   onClose: () => void;
   isApy?: boolean;
   usePortal?: boolean;
@@ -120,6 +128,7 @@ const IncentiveTooltip = ({
   position,
   triggerCenterX,
   triggerHeight,
+  triggerRect,
   onClose,
   isApy = true,
   usePortal = false,
@@ -1059,6 +1068,19 @@ const IncentiveTooltip = ({
         openedAtScroll,
         currentScroll: getWindowScroll(),
       });
+      const currentScroll = getWindowScroll();
+      const scrollDeltaX = currentScroll.x - openedAtScroll.x;
+      const scrollDeltaY = currentScroll.y - openedAtScroll.y;
+      const anchoredTriggerRect = triggerRect
+        ? {
+            top: triggerRect.top - scrollDeltaY,
+            bottom: triggerRect.bottom - scrollDeltaY,
+            left: triggerRect.left - scrollDeltaX,
+            right: triggerRect.right - scrollDeltaX,
+            width: triggerRect.width,
+            height: triggerRect.height,
+          }
+        : null;
       const tooltipWidth = tooltipRef.current.offsetWidth;
       const minLeft = 16;
       const maxLeft = Math.max(minLeft, window.innerWidth - tooltipWidth - minLeft);
@@ -1072,11 +1094,12 @@ const IncentiveTooltip = ({
       const viewportEdge = 12;
       const flipThreshold = 24;
       const effectiveTriggerHeight = typeof triggerHeight === 'number' && triggerHeight > 0 ? triggerHeight : 0;
-      const desiredBottomTop = anchored.position.y + gap;
+      const triggerBottomY = anchoredTriggerRect?.bottom ?? anchored.position.y;
+      const desiredBottomTop = triggerBottomY + gap;
       const tooltipHeight = tooltipRef.current.offsetHeight;
       const minTop = viewportEdge;
       const maxTop = Math.max(minTop, window.innerHeight - tooltipHeight - minTop);
-      const triggerTopY = anchored.position.y - effectiveTriggerHeight;
+      const triggerTopY = anchoredTriggerRect?.top ?? (anchored.position.y - effectiveTriggerHeight);
       const desiredTopTop = triggerTopY - tooltipHeight - gap;
       const spaceBelow = window.innerHeight - desiredBottomTop - viewportEdge;
       const spaceAbove = triggerTopY - gap - viewportEdge;
@@ -1120,7 +1143,7 @@ const IncentiveTooltip = ({
       window.removeEventListener('resize', updatePosition);
       window.removeEventListener('scroll', updatePosition, true);
     };
-  }, [triggerCenterX, position, type, openedAtScroll]);
+  }, [triggerCenterX, position, type, openedAtScroll, triggerHeight, triggerRect]);
 
   // Mobile: bottom sheet style
   if (isMobile) {

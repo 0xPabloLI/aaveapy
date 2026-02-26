@@ -73,6 +73,7 @@ const ReservesTable = ({
     position: { x: number; y: number };
     triggerCenterX: number;
     triggerHeight: number;
+    triggerRect: { top: number; bottom: number; left: number; right: number; width: number; height: number };
   } | null>(null);
 
   const getMarketDisplayName = (reserve: ReserveWithSpread) => {
@@ -254,6 +255,14 @@ const ReservesTable = ({
       position: { x: rect.left, y: rect.bottom },
       triggerCenterX,
       triggerHeight: rect.height,
+      triggerRect: {
+        top: rect.top,
+        bottom: rect.bottom,
+        left: rect.left,
+        right: rect.right,
+        width: rect.width,
+        height: rect.height,
+      },
     });
   };
 
@@ -305,6 +314,14 @@ const ReservesTable = ({
       position: { x: rect.left, y: rect.bottom },
       triggerCenterX,
       triggerHeight: rect.height,
+      triggerRect: {
+        top: rect.top,
+        bottom: rect.bottom,
+        left: rect.left,
+        right: rect.right,
+        width: rect.width,
+        height: rect.height,
+      },
     });
   };
 
@@ -566,6 +583,7 @@ const ReservesTable = ({
             position={tooltipState.position}
             triggerCenterX={tooltipState.triggerCenterX}
             triggerHeight={tooltipState.triggerHeight}
+            triggerRect={tooltipState.triggerRect}
             accentTextClass={tooltipState.type === 'supply' ? 'ds-text-emerald-600' : 'ds-text-brand-cyan'}
             accentBgClass={tooltipState.type === 'supply' ? 'ds-bg-emerald-500-10' : 'ds-bg-brand-cyan-10'}
             onClose={() => setTooltipState(null)}
@@ -1075,6 +1093,7 @@ const ReservesTable = ({
           position={tooltipState.position}
           triggerCenterX={tooltipState.triggerCenterX}
           triggerHeight={tooltipState.triggerHeight}
+          triggerRect={tooltipState.triggerRect}
           accentTextClass={tooltipState.type === 'supply' ? 'ds-text-emerald-600' : 'ds-text-brand-cyan'}
           accentBgClass={tooltipState.type === 'supply' ? 'ds-bg-emerald-500-10' : 'ds-bg-brand-cyan-10'}
           onClose={() => setTooltipState(null)}

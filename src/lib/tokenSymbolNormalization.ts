@@ -5,6 +5,8 @@ export const normalizeTokenSymbolAliasesUpper = (value: string): string =>
   value
     .replace(/USD₮0/g, 'USDT0')
     .replace(/USD₮/g, 'USDT')
+    .replace(/USDTE/g, 'USDT')
+    .replace(/USDC0/g, 'USDC')
     .replace(/USDT0/g, 'USDT');
 
 export const normalizeTokenSymbolForSearch = (value: string): string =>

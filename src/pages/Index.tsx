@@ -44,6 +44,7 @@ const Index = () => {
     position: { x: number; y: number };
     triggerCenterX: number;
     triggerHeight: number;
+    triggerRect: { top: number; bottom: number; left: number; right: number; width: number; height: number };
     accentBorderClass?: string;
     accentTextClass?: string;
     accentBgClass?: string;
@@ -170,6 +171,7 @@ const Index = () => {
     position: { x: number; y: number };
     triggerCenterX: number;
     triggerHeight: number;
+    triggerRect: { top: number; bottom: number; left: number; right: number; width: number; height: number };
     accentBorderClass?: string;
     accentTextClass?: string;
     accentBgClass?: string;
@@ -180,6 +182,7 @@ const Index = () => {
       position: payload.position,
       triggerCenterX: payload.triggerCenterX,
       triggerHeight: payload.triggerHeight,
+      triggerRect: payload.triggerRect,
       accentBorderClass: payload.accentBorderClass,
       accentTextClass: payload.accentTextClass,
       accentBgClass: payload.accentBgClass,
@@ -388,6 +391,7 @@ const Index = () => {
                 position={topTooltipState.position}
                 triggerCenterX={topTooltipState.triggerCenterX}
                 triggerHeight={topTooltipState.triggerHeight}
+                triggerRect={topTooltipState.triggerRect}
                 accentBorderClass={topTooltipState.accentBorderClass}
                 accentTextClass={topTooltipState.accentTextClass}
                 accentBgClass={topTooltipState.accentBgClass}

@@ -42,6 +42,7 @@ interface TopOpportunitiesProps {
     position: { x: number; y: number };
     triggerCenterX: number;
     triggerHeight: number;
+    triggerRect: { top: number; bottom: number; left: number; right: number; width: number; height: number };
     accentBorderClass?: string;
     accentTextClass?: string;
     accentBgClass?: string;
@@ -373,6 +374,14 @@ const TopOpportunities = ({
       position: { x: rect.left, y: rect.bottom },
       triggerCenterX,
       triggerHeight: rect.height,
+      triggerRect: {
+        top: rect.top,
+        bottom: rect.bottom,
+        left: rect.left,
+        right: rect.right,
+        width: rect.width,
+        height: rect.height,
+      },
       accentBorderClass: getAccentBorderClass(accentValue),
       accentTextClass: getAccentTextClass(accentValue),
       accentBgClass: getAccentBgClass(accentValue),
