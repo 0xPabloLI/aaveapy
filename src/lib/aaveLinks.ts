@@ -1,6 +1,6 @@
 const AAVE_APP_BASE = 'https://app.aave.com';
 
-// Map API market names to interface-1 CustomMarket values for reserve overview routing.
+// Map API market names to interface CustomMarket values for reserve overview routing.
 const MARKET_NAME_MAP: Record<string, string> = {
   AaveV3Ethereum: 'proto_mainnet_v3',
   AaveV3EthereumLido: 'proto_lido_v3',
@@ -23,6 +23,9 @@ const MARKET_NAME_MAP: Record<string, string> = {
   AaveV3Plasma: 'proto_plasma_v3',
   AaveV3Ink: 'proto_ink_v3',
   AaveV3InkWhitelabel: 'proto_ink_v3',
+  AaveV3Mantle: 'proto_mantle_v3',
+  AaveV3MegaEth: 'proto_megaeth_v3',
+  AaveV3MegaETH: 'proto_megaeth_v3',
   AaveV2Ethereum: 'proto_mainnet',
   AaveV2Avalanche: 'proto_avalanche',
   AaveV2Polygon: 'proto_polygon',

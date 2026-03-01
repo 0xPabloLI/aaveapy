@@ -1,6 +1,7 @@
 const chainIconMap: Record<string, string> = {
   ethereum: 'ethereum',
   arbitrum: 'arbitrum',
+  arbitrumone: 'arbitrum',
   optimism: 'optimism',
   polygon: 'polygon',
   avalanche: 'avalanche',
@@ -12,6 +13,7 @@ const chainIconMap: Record<string, string> = {
   gnosis: 'gnosis',
   scroll: 'scroll',
   metis: 'metis',
+  metisandromeda: 'metis',
   zksync: 'zksync',
   zksyncera: 'zksync',
   linea: 'linea',
@@ -20,6 +22,8 @@ const chainIconMap: Record<string, string> = {
   soneium: 'soneium',
   plasma: 'plasma',
   ink: 'ink',
+  mantle: 'mantle',
+  megaeth: 'megaeth',
 };
 
 const normalizeChainName = (chain: string) => chain.toLowerCase().replace(/[^a-z0-9]/g, '');
