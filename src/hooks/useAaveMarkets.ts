@@ -7,6 +7,7 @@ import {
   setCachedMarketsList,
 } from '@/lib/cache';
 import { API_BASE } from '@/lib/apiBase';
+import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
 
 // Fetch all market data (all sorting and filtering done on frontend)
 export const fetchMarkets = async (): Promise<MarketsResponse> => {
@@ -55,7 +56,7 @@ export const useAaveMarkets = () => {
   return useQuery({
     queryKey: ['aave-markets'],
     queryFn: fetchMarkets,
-    staleTime: 60000,
+    staleTime: QUERY_STALE_TIMES.marketApi,
     placeholderData: cachedData ?? undefined,
   });
 };
@@ -65,7 +66,7 @@ export const useAaveMarketsList = () => {
   return useQuery({
     queryKey: ['aave-markets-list'],
     queryFn: fetchMarketsList,
-    staleTime: 300000, // 5 minutes
+    staleTime: QUERY_STALE_TIMES.marketApi,
     placeholderData: cachedData ?? undefined,
   });
 };

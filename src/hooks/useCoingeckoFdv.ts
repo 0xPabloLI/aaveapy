@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://api.aaveapy.com/api';
 
@@ -26,7 +27,7 @@ export const useCoingeckoFdv = () => {
   return useQuery({
     queryKey: ['coingecko-fdv'],
     queryFn: fetchCoingeckoFdv,
-    staleTime: 10 * 60 * 1000,
+    staleTime: QUERY_STALE_TIMES.coingeckoFdv,
     retry: 1,
   });
 };
