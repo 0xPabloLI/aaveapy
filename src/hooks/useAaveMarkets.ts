@@ -8,6 +8,7 @@ import {
   getCachedMarketsList,
   setCachedMarketsList,
 } from '@/lib/cache';
+import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
 
 // Read API base URL from environment variable, fallback to remote URL if not set
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://api.aaveapy.com/api';
@@ -79,7 +80,7 @@ export const useAaveMarkets = () => {
   return useQuery({
     queryKey: ['aave-markets'],
     queryFn: fetchMarkets,
-    staleTime: 15000,
+    staleTime: QUERY_STALE_TIMES.marketApi,
     placeholderData: cachedData ?? undefined,
   });
 };
@@ -89,7 +90,7 @@ export const useAaveMarketStats = () => {
   return useQuery({
     queryKey: ['aave-market-stats'],
     queryFn: fetchMarketStats,
-    staleTime: 60000,
+    staleTime: QUERY_STALE_TIMES.marketApi,
     placeholderData: cachedData ?? undefined,
   });
 };
@@ -99,7 +100,7 @@ export const useAaveMarketsList = () => {
   return useQuery({
     queryKey: ['aave-markets-list'],
     queryFn: fetchMarketsList,
-    staleTime: 300000, // 5 minutes
+    staleTime: QUERY_STALE_TIMES.marketApi,
     placeholderData: cachedData ?? undefined,
   });
 };

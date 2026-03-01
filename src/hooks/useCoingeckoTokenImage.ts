@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { QUERY_GC_TIMES, QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
 
 const COINGECKO_SEARCH_BASE = 'https://api.coingecko.com/api/v3/search';
 
@@ -46,8 +47,8 @@ export function useCoingeckoTokenImage(symbol: string | null) {
     queryKey: ['coingecko-token-image', normalizedSymbol],
     queryFn: () => fetchCoingeckoTokenImage(normalizedSymbol!),
     enabled: Boolean(normalizedSymbol),
-    staleTime: 24 * 60 * 60 * 1000,
-    gcTime: 7 * 24 * 60 * 60 * 1000,
+    staleTime: QUERY_STALE_TIMES.coingeckoTokenImage,
+    gcTime: QUERY_GC_TIMES.coingeckoTokenImage,
     retry: 1,
   });
 }

@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { TokenCategoryOverrides } from '@/lib/tokenCategories';
+import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://api.aaveapy.com/api';
 
@@ -24,7 +25,7 @@ export const useTokenCategories = () => {
   return useQuery({
     queryKey: ['token-categories'],
     queryFn: fetchTokenCategories,
-    staleTime: 6 * 60 * 60 * 1000,
+    staleTime: QUERY_STALE_TIMES.tokenCategories,
     retry: 1,
   });
 };

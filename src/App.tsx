@@ -8,6 +8,7 @@ import { ThemeProvider } from "next-themes";
 import { Analytics } from "@vercel/analytics/react";
 import LoadingState from "@/components/dashboard/LoadingState";
 import { fetchMarkets, fetchMarketStats, fetchMarketsList } from "@/hooks/useAaveMarkets";
+import { QUERY_STALE_TIMES } from "@/config/queryStaleTimes";
 
 // Lazy load route components
 const Index = lazy(() => import("./pages/Index"));
@@ -16,7 +17,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000,
+      staleTime: QUERY_STALE_TIMES.default,
     },
   },
 });
@@ -26,17 +27,17 @@ const queryClient = new QueryClient({
 queryClient.prefetchQuery({
   queryKey: ['aave-markets'],
   queryFn: fetchMarkets,
-  staleTime: 15000,
+  staleTime: QUERY_STALE_TIMES.marketApi,
 });
 queryClient.prefetchQuery({
   queryKey: ['aave-market-stats'],
   queryFn: fetchMarketStats,
-  staleTime: 60000,
+  staleTime: QUERY_STALE_TIMES.marketApi,
 });
 queryClient.prefetchQuery({
   queryKey: ['aave-markets-list'],
   queryFn: fetchMarketsList,
-  staleTime: 300000,
+  staleTime: QUERY_STALE_TIMES.marketApi,
 });
 
 const App = () => (
