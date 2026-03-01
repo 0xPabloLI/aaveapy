@@ -74,6 +74,21 @@ Full checks (includes lint/build/audit):
 npm run preflight:release -- --full
 ```
 
+## Data Freshness Policy (Frontend)
+
+React Query staleTime config is centralized in `src/config/queryStaleTimes.ts`.
+
+| Bucket | staleTime | Scope | Reasoning |
+|---|---:|---|---|
+| `marketApi` | 60s | `/markets` `/markets/stats` `/markets/list` | Same backend snapshot family, so freshness must stay aligned across views. |
+| `coingeckoFdv` | 10m | `/coingecko-fdv` | Relevant for ranking/valuation UX, but not execution-critical; reduces external API pressure. |
+| `tokenCategories` | 6h | `/coingecko-categories` | Low-change metadata, long cache window is acceptable. |
+| `coingeckoTokenImage` | 24h | Coin symbol -> image lookup | Icon changes are infrequent; long cache + long GC avoids repeated fetches. |
+
+Rule of thumb:
+- Same-source snapshot data should share staleTime.
+- External-source data should be bucketed by change frequency and quota cost.
+
 ## Security
 
 See [SECURITY.md](SECURITY.md) for vulnerability reporting and a public-release security checklist.
