@@ -30,6 +30,8 @@
     "preflight:release": "node scripts/preflight-release.mjs",
     "preview": "vite preview",
     "sync-token-icons": "node scripts/sync-token-icons.mjs",
+    "check:hardcode-icons": "node scripts/check-hardcode-icons.mjs",
+    "check:reserve-patches-upstream": "node scripts/check-reserve-patches-upstream.mjs",
     "test": "vitest run"
   },
   "dependencies": {
