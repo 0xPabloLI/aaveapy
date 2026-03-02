@@ -1,10 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import { MarketsResponse, MarketStats, MarketListItem } from '@/types/aave';
+import { MarketsResponse, MarketListItem } from '@/types/aave';
 import {
   getCachedMarkets,
   setCachedMarkets,
-  getCachedMarketStats,
-  setCachedMarketStats,
   getCachedMarketsList,
   setCachedMarketsList,
 } from '@/lib/cache';
@@ -27,26 +25,6 @@ export const fetchMarkets = async (): Promise<MarketsResponse> => {
     const cached = getCachedMarkets();
     if (cached) {
       console.warn('Using cached markets data due to fetch error:', error);
-      return cached;
-    }
-    // Re-throw if no cache available
-    throw error;
-  }
-};
-
-export const fetchMarketStats = async (): Promise<MarketStats> => {
-  try {
-    const response = await fetch(`${API_BASE}/markets/stats`);
-    if (!response.ok) throw new Error('Failed to fetch market stats');
-    const data = await response.json();
-    // Save to cache on success
-    setCachedMarketStats(data);
-    return data;
-  } catch (error) {
-    // Try to get from cache on failure
-    const cached = getCachedMarketStats();
-    if (cached) {
-      console.warn('Using cached market stats due to fetch error:', error);
       return cached;
     }
     // Re-throw if no cache available
@@ -80,16 +58,6 @@ export const useAaveMarkets = () => {
   return useQuery({
     queryKey: ['aave-markets'],
     queryFn: fetchMarkets,
-    staleTime: QUERY_STALE_TIMES.marketApi,
-    placeholderData: cachedData ?? undefined,
-  });
-};
-
-export const useAaveMarketStats = () => {
-  const cachedData = getCachedMarketStats();
-  return useQuery({
-    queryKey: ['aave-market-stats'],
-    queryFn: fetchMarketStats,
     staleTime: QUERY_STALE_TIMES.marketApi,
     placeholderData: cachedData ?? undefined,
   });
