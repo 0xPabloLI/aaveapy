@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { usePreloadPoolAssets } from '@/hooks/usePreloadPoolAssets';
-import { useAaveMarkets, useAaveMarketStats, useAaveMarketsList } from '@/hooks/useAaveMarkets';
+import { useAaveMarkets, useAaveMarketsList } from '@/hooks/useAaveMarkets';
 import { useQueryClient } from '@tanstack/react-query';
 import { SortField, SortOrder, TokenCategory, PoolWithSpread } from '@/types/aave';
 import {
@@ -17,7 +17,7 @@ import TopOpportunities from '@/components/dashboard/TopOpportunities';
 import PoolsTable from '@/components/dashboard/PoolsTable';
 import LoadingState from '@/components/dashboard/LoadingState';
 import PullToRefresh from '@/components/dashboard/PullToRefresh';
-import { getCachedMarkets, getCachedMarketStats, getCachedMarketsList, setCachedTydroRate } from '@/lib/cache';
+import { getCachedMarkets, getCachedMarketsList, setCachedTydroRate } from '@/lib/cache';
 import { TYDRO_POINT_TO_USD_RATE } from '@/lib/tydro';
 import { AlertTriangle } from 'lucide-react';
 import { preloadChainIcons, preloadIncentiveIcons } from '@/lib/preloadUtils';
@@ -66,18 +66,15 @@ const Index = () => {
   // Fetch data - no sort params, all sorting done on frontend
   // This allows the table's total/native/incentive mode to work correctly
   const { data: poolsData, isLoading, error, isError, refetch } = useAaveMarkets();
-  const { data: stats, refetch: refetchStats } = useAaveMarketStats();
   const { data: marketsList, refetch: refetchMarketsList } = useAaveMarketsList();
   const { data: tokenCategoryOverrides } = useTokenCategories();
 
   // Get cached data as fallback
   const cachedPoolsData = useMemo(() => getCachedMarkets(), []);
-  const cachedStats = useMemo(() => getCachedMarketStats(), []);
   const cachedMarketsList = useMemo(() => getCachedMarketsList(), []);
 
   // Use actual data if available, otherwise fall back to cache
   const effectivePoolsData = poolsData || cachedPoolsData;
-  const effectiveStats = stats || cachedStats;
   const effectiveMarketsList = marketsList || cachedMarketsList;
 
   const orderedMarkets = useMemo(() => {
@@ -162,10 +159,9 @@ const Index = () => {
   const handleRefresh = useCallback(async () => {
     await Promise.all([
       refetch(),
-      refetchStats(),
       refetchMarketsList(),
     ]);
-  }, [refetch, refetchStats, refetchMarketsList]);
+  }, [refetch, refetchMarketsList]);
 
   const handleTopIncentiveClick = useCallback((payload: {
     pool: PoolWithSpread;

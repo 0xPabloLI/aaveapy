@@ -1,8 +1,7 @@
-import { MarketsResponse, MarketStats, MarketListItem } from '@/types/aave';
+import { MarketsResponse, MarketListItem } from '@/types/aave';
 
 const CACHE_KEYS = {
   MARKETS: 'aave-markets-cache',
-  MARKET_STATS: 'aave-market-stats-cache',
   MARKETS_LIST: 'aave-markets-list-cache',
   TYDRO_RATE: 'tydro-point-usd-rate',
 } as const;
@@ -58,16 +57,6 @@ export function getCachedMarkets(): MarketsResponse | null {
 
 export function setCachedMarkets(data: MarketsResponse): void {
   setCacheEntry(CACHE_KEYS.MARKETS, data);
-}
-
-// Market stats cache
-export function getCachedMarketStats(): MarketStats | null {
-  const entry = getCacheEntry<MarketStats>(CACHE_KEYS.MARKET_STATS);
-  return entry?.data || null;
-}
-
-export function setCachedMarketStats(data: MarketStats): void {
-  setCacheEntry(CACHE_KEYS.MARKET_STATS, data);
 }
 
 // Markets list cache

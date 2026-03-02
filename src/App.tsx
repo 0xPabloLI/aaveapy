@@ -7,7 +7,7 @@ import { lazy, Suspense } from "react";
 import { ThemeProvider } from "next-themes";
 import { Analytics } from "@vercel/analytics/react";
 import LoadingState from "@/components/dashboard/LoadingState";
-import { fetchMarkets, fetchMarketStats, fetchMarketsList } from "@/hooks/useAaveMarkets";
+import { fetchMarkets, fetchMarketsList } from "@/hooks/useAaveMarkets";
 import { QUERY_STALE_TIMES } from "@/config/queryStaleTimes";
 
 // Lazy load route components
@@ -27,11 +27,6 @@ const queryClient = new QueryClient({
 queryClient.prefetchQuery({
   queryKey: ['aave-markets'],
   queryFn: fetchMarkets,
-  staleTime: QUERY_STALE_TIMES.marketApi,
-});
-queryClient.prefetchQuery({
-  queryKey: ['aave-market-stats'],
-  queryFn: fetchMarketStats,
   staleTime: QUERY_STALE_TIMES.marketApi,
 });
 queryClient.prefetchQuery({
