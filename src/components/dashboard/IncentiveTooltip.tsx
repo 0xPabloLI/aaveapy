@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { ExternalLink, X } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { ReserveWithSpread, MeritIncentive, MerklOpportunityGroup, BrevisIncentive, TokenPricesIndex, MerklForecastStateResponse } from '@/types/aave';
-import { formatPercent, convertAprToApy } from '@/lib/formatters';
+import { formatPercent, convertAprToApy, apyToApr } from '@/lib/formatters';
 import { getMerklBreakdownApr, getMerklForecastUsdMultiplier } from '@/lib/tydro';
 import { fetchMerklForecastStates } from '@/lib/merklForecastApi';
 import { deriveForecastProgressFlags, forecastWithTVL } from '@/lib/merklForecast';
@@ -12,6 +12,8 @@ import { shouldSurfaceForecastError } from '@/lib/merklForecastErrors';
 import { formatNumberInput, parseNumberInput } from '@/lib/numberFormat';
 import { adjustTooltipAnchorForScroll, getWindowScroll } from '@/lib/tooltipPosition';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useReserveRateInput } from '@/hooks/useReserveRateInputs';
+import { simulateNativeRatesAfterSupply } from '@/lib/interestRateCalculator';
 
 interface IncentiveTooltipProps {
   reserve: ReserveWithSpread;
@@ -413,6 +415,37 @@ const IncentiveTooltip = ({
 
   const depositAssetAmount = useMemo(() => parseNumberInput(depositInput), [depositInput]);
   const depositUsd = tokenPrice ? depositAssetAmount * tokenPrice : 0;
+  const {
+    data: reserveRateInput,
+    isLoading: reserveRateInputLoading,
+    error: reserveRateInputError,
+  } = useReserveRateInput({
+    chainId: reserve.chainId,
+    tokenAddress: reserve.tokenAddress,
+  });
+
+  const nativeSimulation = useMemo(() => {
+    if (!reserveRateInput) return null;
+    return simulateNativeRatesAfterSupply(reserveRateInput, depositInput);
+  }, [reserveRateInput, depositInput]);
+
+  const nativeRateUnitLabel = isApy ? 'APY' : 'APR';
+  const currentNativeApy = type === 'supply' ? reserve.supplyApy ?? null : reserve.borrowApy ?? null;
+  const currentNativeRate = useMemo(() => {
+    if (currentNativeApy === null || currentNativeApy === undefined) return null;
+    return isApy ? currentNativeApy : apyToApr(currentNativeApy);
+  }, [currentNativeApy, isApy]);
+  const simulatedNativeRate = useMemo(() => {
+    if (!nativeSimulation) return null;
+    if (type === 'supply') {
+      return isApy ? nativeSimulation.supplyApyPercent : nativeSimulation.supplyAprPercent;
+    }
+    return isApy ? nativeSimulation.borrowApyPercent : nativeSimulation.borrowAprPercent;
+  }, [nativeSimulation, type, isApy]);
+  const nativeRateDelta =
+    currentNativeRate !== null && simulatedNativeRate !== null
+      ? simulatedNativeRate - currentNativeRate
+      : null;
 
   const campaignIds = useMemo(() => {
     const opportunities = type === 'supply' ? reserve.merklSupplys : reserve.merklBorrows;
@@ -682,7 +715,12 @@ const IncentiveTooltip = ({
       return count + 1;
     }, 0);
   }, [reserve, type]);
-  const showForecastInput = campaignIds.length > 0 || meritEstimateCampaignCount > 0;
+  const showForecastInput =
+    campaignIds.length > 0 ||
+    meritEstimateCampaignCount > 0 ||
+    reserveRateInput !== null ||
+    reserveRateInputLoading ||
+    Boolean(reserveRateInputError);
   const whitelistOnlyCampaignCount = useMemo(() => {
     const opportunities = type === 'supply' ? reserve.merklSupplys : reserve.merklBorrows;
     if (!opportunities || !Array.isArray(opportunities)) return 0;
@@ -724,6 +762,41 @@ const IncentiveTooltip = ({
         Merkl forecasts support MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE, DUTCH_AUCTION, and FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE.
         Merit uses latest-round estimates when available.
       </p>
+      <div className="mt-[var(--ds-space-1-5)] rounded-md border border-border/50 bg-muted/30 px-[var(--ds-space-2)] py-[var(--ds-space-1-5)]">
+        <p className="ds-tooltip-body text-muted-foreground">
+          Native {type === 'supply' ? 'supply' : 'borrow'} {nativeRateUnitLabel} simulation
+        </p>
+        {reserveRateInputLoading ? (
+          <p className="ds-tooltip-body mt-[var(--ds-space-0-5)] text-muted-foreground">Loading rate inputs...</p>
+        ) : reserveRateInputError ? (
+          <p className="ds-tooltip-body mt-[var(--ds-space-0-5)] text-amber-600">
+            Native simulation unavailable: {reserveRateInputError instanceof Error ? reserveRateInputError.message : 'failed to fetch rate inputs'}
+          </p>
+        ) : !reserveRateInput || !nativeSimulation ? (
+          <p className="ds-tooltip-body mt-[var(--ds-space-0-5)] text-muted-foreground">
+            Native simulation unavailable for this reserve.
+          </p>
+        ) : (
+          <>
+            {simulatedNativeRate !== null ? (
+              <p className={`ds-tooltip-body mt-[var(--ds-space-0-5)] ${valueAccentClass}`}>
+                Forecast {nativeRateUnitLabel} {formatPercent(simulatedNativeRate)}
+                {nativeRateDelta !== null ? ` (${nativeRateDelta >= 0 ? '+' : ''}${nativeRateDelta.toFixed(2)}%)` : ''}
+              </p>
+            ) : (
+              <p className="ds-tooltip-body mt-[var(--ds-space-0-5)] text-muted-foreground">
+                Enter amount to simulate.
+              </p>
+            )}
+            <p className="ds-tooltip-body mt-[var(--ds-space-0-5)] text-muted-foreground">
+              Utilization {formatPercent(nativeSimulation.utilizationRatePercent)} · source {reserveRateInput.source}
+            </p>
+            <p className="ds-tooltip-body mt-[var(--ds-space-0-5)] text-muted-foreground">
+              data: {reserveRateInput.sourceDetail}
+            </p>
+          </>
+        )}
+      </div>
       {showWhitelistToggle && (
         <label className="mt-[var(--ds-space-1)] flex items-center gap-[var(--ds-space-1-5)] ds-tooltip-body text-muted-foreground">
           <input

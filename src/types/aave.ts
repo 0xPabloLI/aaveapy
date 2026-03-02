@@ -119,6 +119,36 @@ export interface MerklForecastStatesBatchResponse {
   }>;
 }
 
+export type RateInputSource = 'subgraph' | 'onchain';
+
+export interface ReserveRateInput {
+  chainId: number;
+  tokenAddress: string;
+  decimals: number;
+  availableLiquidity: string;
+  totalScaledVariableDebt: string;
+  variableBorrowIndex: string;
+  reserveFactor: string;
+  variableRateSlope1: string;
+  variableRateSlope2: string;
+  baseVariableBorrowRate: string;
+  optimalUsageRate: string;
+  source: RateInputSource;
+  sourceDetail: string;
+}
+
+export interface RateInputsResponse {
+  data: ReserveRateInput[];
+  lastUpdated: string;
+  isStale: boolean;
+  staleTimeMs: number;
+  sources: {
+    subgraphChains: number[];
+    onchainChains: number[];
+    subgraphMissingChains: number[];
+  };
+}
+
 export type SortField = 'totalSupplyApy' | 'totalBorrowApy' | 'apySpread' | null;
 export type SortOrder = 'asc' | 'desc';
 export type TokenCategory = 'stablecoin' | 'eth-related' | 'btc-related' | 'pendle' | 'all';
