@@ -63,6 +63,7 @@
 ### 3. 需定期触发的脚本
 
 - **仅** `scripts/sync-token-icons.mjs`：从 tokenlist + CoinGecko 拉取缺失 token 图标到 `public/icons/tokens/`。建议用 N8N 或 CI **定期触发**，保证新资产有图标。
+- 已加 GitHub Actions 自动化：`.github/workflows/token-icon-sync.yml`（定时 + 手动触发，变更自动开 PR）。
 
 ### 4. 其他 URL / API
 

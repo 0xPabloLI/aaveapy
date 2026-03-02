@@ -1,0 +1,44 @@
+name: Token Icon Sync
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Every Monday at 04:20 UTC
+    - cron: "20 4 * * 1"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync-token-icons:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Sync token icons
+        run: npm run sync-token-icons
+
+      - name: Create PR when icons changed
+        uses: peter-evans/create-pull-request@v7
+        with:
+          commit-message: "chore(icons): sync token icons"
+          title: "chore(icons): sync token icons"
+          body: |
+            Automated update from `npm run sync-token-icons`.
+          branch: "bot/token-icon-sync-${{ github.run_id }}"
+          delete-branch: true
+          labels: |
+            automation
+            assets
+
