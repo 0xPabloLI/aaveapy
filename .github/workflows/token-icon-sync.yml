@@ -1,7 +1,6 @@
 name: Token Icon Sync
 
 on:
-  workflow_dispatch:
   schedule:
     # Every Monday at 04:20 UTC
     - cron: "20 4 * * 1"
@@ -41,4 +40,3 @@ jobs:
           labels: |
             automation
             assets
-
