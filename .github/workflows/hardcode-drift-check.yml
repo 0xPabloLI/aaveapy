@@ -1,7 +1,6 @@
 name: Hardcode Drift Check
 
 on:
-  workflow_dispatch:
   schedule:
     # Every Monday at 04:40 UTC
     - cron: "40 4 * * 1"

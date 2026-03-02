@@ -9,16 +9,13 @@
 ### 1. chainId 与 chainName
 
 - **当前代码**：没有静态的 chainId↔chainName map；池子数据来自 API，每条带 `chainId` 和 `chainName`，前端只用 `chainName` 展示和取图标。
-- **若需要 map**：可来自 [aave/interface `networksConfig.ts`](https://github.com/aave/interface/blob/main/src/ui-config/networksConfig.ts)。该文件以 **ChainId 为 key**，每项含 `name`、`networkLogoPath`、`publicJsonRPCUrl` 等，可提供：
-  - chainId → 链名（`name`）
-  - chainId → 图标路径（`networkLogoPath`，如 `/icons/networks/ethereum.svg`）
-  - chainId → RPC 列表（`publicJsonRPCUrl`）
+- **若需要 map**：来源是 [aave/interface `networksConfig.ts`](https://github.com/aave/interface/blob/main/src/ui-config/networksConfig.ts)，仅用于 chainId → 链名（`name`）。
 
 ### 2. chainIconMap（链名 → 图标路径）
 
 - **当前代码**：`src/lib/chainIconMap.ts` 作为单一来源，`chainIcons.ts` 与 `preloadUtils.ts` 共用这份映射。
 - **更新源**：**aave/interface** 的 `networksConfig.ts`。他们没有字面量 "chainIconMap"，但有 `prodNetworkConfig` / `testnetConfig`：每链为 `ChainId → { name, networkLogoPath }`。可从 `name` 归一化得到我们用的 key，从 `networkLogoPath` 得到图标路径（如 `/icons/networks/arbitrum.svg`），新链会随官方一起更新。
-- **建议**：N8N 或脚本监听 aave/interface 变更，生成或更新本仓库的 chainIconMap 数据；新链图标可从 interface 的 `public/icons/networks/` 同步或从 networkLogoPath 拉取到本仓库 `public/icons/networks/`。
+- **建议**：定时 CI + drift check 兜底；新链图标从 interface `public/icons/networks/` 同步或从 `networkLogoPath` 拉取。
 
 ### 3. MARKET_NAME_MAP（API 市场名 → Aave 前端 marketName）
 
@@ -63,7 +60,7 @@
 ### 3. 需定期触发的脚本
 
 - **仅** `scripts/sync-token-icons.mjs`：从 tokenlist + CoinGecko 拉取缺失 token 图标到 `public/icons/tokens/`。建议用 N8N 或 CI **定期触发**，保证新资产有图标。
-- 已加 GitHub Actions 自动化：`.github/workflows/token-icon-sync.yml`（定时 + 手动触发，变更自动开 PR）。
+- 已加 GitHub Actions 自动化：`.github/workflows/token-icon-sync.yml`（定时触发，变更自动开 PR）。
 - 已加 GitHub Actions 检查：`.github/workflows/hardcode-drift-check.yml`，执行 `npm run check:hardcode-icons`，定时检查 `reservePatches` 中 `iconSymbol` 是否有对应本地图标。
 
 ### 4. 其他 URL / API
@@ -76,7 +73,7 @@
 
 | 项目 | CI 状态 | 原因 | 怎么办 |
 |------|--------|------|------|
-| Token icon 同步 | 已自动化 | 新资产图标需持续补齐 | `.github/workflows/token-icon-sync.yml`（定时 + 手动） |
+| Token icon 同步 | 已自动化 | 新资产图标需持续补齐 | `.github/workflows/token-icon-sync.yml`（定时） |
 | `reservePatches` 的 `iconSymbol` 本地图标存在性 | 已自动化 | 防止 iconSymbol 落到 default icon | `.github/workflows/hardcode-drift-check.yml` -> `check:hardcode-icons` |
 | `reservePatches` 与上游 interface 地址键漂移 | 已自动化 | 防止漏同步上游新增资产映射 | `.github/workflows/hardcode-drift-check.yml` -> `check:reserve-patches-upstream` |
 | `MARKET_NAME_MAP` 与上游 `marketsConfig.tsx` 对齐 | 已自动化 | 防止市场路由映射漂移 | `.github/workflows/hardcode-drift-check.yml` -> `check:market-name-map-upstream` |
@@ -105,10 +102,7 @@
 - `chainIconMap` 对齐 `interface/src/ui-config/networksConfig.ts`
 
 2. 同步后必须执行（本地或 CI）：
-- `npm run check:hardcode-icons`
-- `npm run check:reserve-patches-upstream`
-- `npm run check:market-name-map-upstream`
-- `npm run check:chain-icons-upstream`
+- 运行 `hardcode-drift-check`（等价于四个检查脚本：icons / reserve-patches / market-name-map / chain-icons）。
 
 3. 图标缺失处理：
 - 上游也缺图标：记录“上游待补”，不做本仓分叉补丁。
