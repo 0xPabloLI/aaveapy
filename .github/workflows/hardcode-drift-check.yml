@@ -25,3 +25,5 @@ jobs:
       - name: Check reservePatches icon symbols
         run: npm run check:hardcode-icons
 
+      - name: Check reservePatches drift against aave/interface
+        run: npm run check:reserve-patches-upstream
