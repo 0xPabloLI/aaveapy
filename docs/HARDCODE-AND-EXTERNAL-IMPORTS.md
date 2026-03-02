@@ -16,9 +16,9 @@
 
 ### 2. chainIconMap（链名 → 图标路径）
 
-- **当前代码**：`src/lib/chainIcons.ts` 与 `src/lib/preloadUtils.ts` 内各有一份 `chainIconMap`（链名归一化 → 图标文件名），重复定义。
+- **当前代码**：`src/lib/chainIconMap.ts` 作为单一来源，`chainIcons.ts` 与 `preloadUtils.ts` 共用这份映射。
 - **更新源**：**aave/interface** 的 `networksConfig.ts`。他们没有字面量 "chainIconMap"，但有 `prodNetworkConfig` / `testnetConfig`：每链为 `ChainId → { name, networkLogoPath }`。可从 `name` 归一化得到我们用的 key，从 `networkLogoPath` 得到图标路径（如 `/icons/networks/arbitrum.svg`），新链会随官方一起更新。
-- **建议**：N8N 或脚本监听 aave/interface 变更，生成或更新本仓库的 chainIconMap 数据（并统一从一处读取，去掉 preloadUtils 内重复）；新链图标可从 interface 的 `public/icons/networks/` 同步或从 networkLogoPath 拉取到本仓库 `public/icons/networks/`。
+- **建议**：N8N 或脚本监听 aave/interface 变更，生成或更新本仓库的 chainIconMap 数据；新链图标可从 interface 的 `public/icons/networks/` 同步或从 networkLogoPath 拉取到本仓库 `public/icons/networks/`。
 
 ### 3. MARKET_NAME_MAP（API 市场名 → Aave 前端 marketName）
 
@@ -97,64 +97,25 @@
 
 ## 五、hardcode 补充规则（防漏）
 
-本节只记录“下次同步必须检查什么”，不记录某次同步结果。
+这一节只保留“同步时不漏项”的最小规则，避免和前文重复。
 
-### A. 数据源对齐规则
+1. 以上游为准：
+- `reservePatches.ts` 对齐 `interface/src/ui-config/reservePatches.ts`
+- `MARKET_NAME_MAP` 对齐 `interface/src/ui-config/marketsConfig.tsx`
+- `chainIconMap` 对齐 `interface/src/ui-config/networksConfig.ts`
 
-1. `reservePatches.ts`：以 `interface/src/ui-config/reservePatches.ts` 为主源，逐条同步新增/修改地址映射（`symbol/name/iconSymbol`）。
-2. `MARKET_NAME_MAP`：以 `interface/src/ui-config/marketsConfig.tsx` 的 market 标识为准，确保后端返回 marketName 100% 可映射。
-3. `chainIconMap`：以 `interface/src/ui-config/networksConfig.ts` 的 `name/networkLogoPath` 为准，保证所有运行中链都可映射图标。
-4. token 图标目录：`public/icons/tokens` 需覆盖运行时会出现的 token symbol/iconSymbol（至少不落到 default icon）。
-
-### B. 每次同步必跑检查
-
-1. `reservePatches` 差异：
-```bash
-git --no-pager diff --no-index -- \
-  /Users/pabloli/Documents/interface/src/ui-config/reservePatches.ts \
-  /Users/pabloli/Documents/aaveapy/src/ui-config/reservePatches.ts
-```
-
-2. token icon 文件差异（interface 有、aaveapy 没有）：
-```bash
-comm -23 <(ls -1 /Users/pabloli/Documents/interface/public/icons/tokens | sort) \
-         <(ls -1 /Users/pabloli/Documents/aaveapy/public/icons/tokens | sort)
-```
-
-3. `MARKET_NAME_MAP` 覆盖率（后端市场名）：
-- 从 `data/debug/aave-all-markets-data.json` 提取 `markets[].name`，必须全部命中 `src/lib/aaveLinks.ts` 的 `MARKET_NAME_MAP`。
-
-4. `chainIconMap` 覆盖率（运行时链名）：
-- 从 `data/runtime/aave-formatted-data.json` 提取 `chainName`，必须全部命中 `src/lib/chainIcons.ts`。
-
-5. `reservePatches` 的 `iconSymbol` 文件存在性：
-- 逐个检查 `iconSymbol` 是否在 `public/icons/tokens` 有对应文件（或存在明确“故意缺失”白名单）。
-- 自动化检查脚本：`scripts/check-hardcode-icons.mjs`（白名单在脚本内 `KNOWN_MISSING_ICON_SYMBOLS`）。
-6. `reservePatches` 上游漂移：
-- 对比 `interface/src/ui-config/reservePatches.ts` 与本地 `src/ui-config/reservePatches.ts` 的地址 key 集合，本地不得缺失上游新增地址。
-- 自动化检查脚本：`scripts/check-reserve-patches-upstream.mjs`。
-7. `MARKET_NAME_MAP` 上游漂移：
-- 对齐 `interface/src/ui-config/marketsConfig.tsx` 的 market source -> `CustomMarket` 映射（排除 sepolia 测试市场）。
-- 自动化检查脚本：`scripts/check-market-name-map-upstream.mjs`。
-8. `chainIconMap` 上游漂移：
-- 对齐 `interface/src/ui-config/networksConfig.ts` 的生产网络链名/图标路径映射。
-- 自动化检查脚本：`scripts/check-chain-icon-map-upstream.mjs`。
-
-### C. 缺失处理规则
-
-1. 如果 `interface` 也缺图标：沿用现状，不单独在 aaveapy 发散补丁；只记录为“上游待补”。
-2. 如果仅 aaveapy 缺失：优先从 interface 同步；没有则用 tokenlist 的 `logoURI` 兜底。
-3. 新 token（例如新链新资产）加入后，必须同时检查：
-- `reservePatches` 映射
-- token icon 文件
-- `MARKET_NAME_MAP`（如涉及新市场）
-- `chainIconMap`（如涉及新链）
-
-### D. 已落地自动化
-
-1. `.github/workflows/token-icon-sync.yml`：定时同步 token icon（生成 PR）。
-2. `.github/workflows/hardcode-drift-check.yml`：定时执行
+2. 同步后必须执行（本地或 CI）：
 - `npm run check:hardcode-icons`
 - `npm run check:reserve-patches-upstream`
 - `npm run check:market-name-map-upstream`
 - `npm run check:chain-icons-upstream`
+
+3. 图标缺失处理：
+- 上游也缺图标：记录“上游待补”，不做本仓分叉补丁。
+- 仅本仓缺图标：优先从上游同步；上游无资源时再用 tokenlist `logoURI` 兜底。
+
+4. 新链/新资产进入后，四项必须同批检查：
+- `reservePatches` 映射
+- token icon 文件
+- `MARKET_NAME_MAP`
+- `chainIconMap`
