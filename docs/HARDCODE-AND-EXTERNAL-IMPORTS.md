@@ -79,8 +79,8 @@
 | Token icon 同步 | 已自动化 | 新资产图标需持续补齐 | `.github/workflows/token-icon-sync.yml`（定时 + 手动） |
 | `reservePatches` 的 `iconSymbol` 本地图标存在性 | 已自动化 | 防止 iconSymbol 落到 default icon | `.github/workflows/hardcode-drift-check.yml` -> `check:hardcode-icons` |
 | `reservePatches` 与上游 interface 地址键漂移 | 已自动化 | 防止漏同步上游新增资产映射 | `.github/workflows/hardcode-drift-check.yml` -> `check:reserve-patches-upstream` |
-| `MARKET_NAME_MAP` 覆盖率（对后端真实 markets 返回） | 未完全自动化 | 依赖运行时/环境样本，不宜固定在静态 CI | 可加一条集成检查（抓后端样本并断言全覆盖） |
-| `chainIconMap` 运行时覆盖率 | 未完全自动化 | 依赖实际链集合，静态检查不完整 | 可用 nightly 集成任务对实际 API 数据做覆盖断言 |
+| `MARKET_NAME_MAP` 与上游 `marketsConfig.tsx` 对齐 | 已自动化 | 防止市场路由映射漂移 | `.github/workflows/hardcode-drift-check.yml` -> `check:market-name-map-upstream` |
+| `chainIconMap` 与上游 `networksConfig.ts` 对齐 | 已自动化 | 防止链名/图标映射漂移 | `.github/workflows/hardcode-drift-check.yml` -> `check:chain-icons-upstream` |
 | 本地业务常量（如 `ETHEREUM_MARKET_NAMES`、`TYDRO` 常量） | 不建议自动化 | 本质是业务决策，不是外部源同步问题 | 保持人工评审 |
 
 不做自动更新的项：chainId/chainName 若仅用 API 返回值则无需 map；ETHEREUM_MARKET_NAMES、TYDRO 汇率、Ink 常量、REFERENCE_POINTS 列表、固定 logo/partner 图标。
@@ -89,9 +89,9 @@
 
 - 对本仓库当前 hardcode 场景，GitHub Actions 已覆盖核心自动化，N8N 不是必需。
 - N8N 仍有价值的场景：
-  - 需要跨仓库/跨系统编排（GitHub + Notion + Slack + Jira 等）。
-  - 需要复杂审批流、值班路由、业务时段触发策略。
-  - 需要把检查结果聚合到统一运营面板，而非只在 GitHub 内部闭环。
+  - `token-icon-sync` 产出 PR 后，自动在 Slack 通知 design/ops 并等待人工审批后再自动 merge。
+  - `hardcode-drift-check` 失败时自动创建 Linear/Jira 工单，附带失败脚本输出和责任人路由。
+  - 前后端两仓同时触发“接口+图标+文档”联动更新（GitHub Actions 跨仓编排较弱时用 N8N 做总控）。
 
 ---
 
@@ -133,6 +133,12 @@ comm -23 <(ls -1 /Users/pabloli/Documents/interface/public/icons/tokens | sort) 
 6. `reservePatches` 上游漂移：
 - 对比 `interface/src/ui-config/reservePatches.ts` 与本地 `src/ui-config/reservePatches.ts` 的地址 key 集合，本地不得缺失上游新增地址。
 - 自动化检查脚本：`scripts/check-reserve-patches-upstream.mjs`。
+7. `MARKET_NAME_MAP` 上游漂移：
+- 对齐 `interface/src/ui-config/marketsConfig.tsx` 的 market source -> `CustomMarket` 映射（排除 sepolia 测试市场）。
+- 自动化检查脚本：`scripts/check-market-name-map-upstream.mjs`。
+8. `chainIconMap` 上游漂移：
+- 对齐 `interface/src/ui-config/networksConfig.ts` 的生产网络链名/图标路径映射。
+- 自动化检查脚本：`scripts/check-chain-icon-map-upstream.mjs`。
 
 ### C. 缺失处理规则
 
@@ -150,3 +156,5 @@ comm -23 <(ls -1 /Users/pabloli/Documents/interface/public/icons/tokens | sort) 
 2. `.github/workflows/hardcode-drift-check.yml`：定时执行
 - `npm run check:hardcode-icons`
 - `npm run check:reserve-patches-upstream`
+- `npm run check:market-name-map-upstream`
+- `npm run check:chain-icons-upstream`
