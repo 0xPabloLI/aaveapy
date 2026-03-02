@@ -72,21 +72,30 @@
 
 ---
 
-## 三、N8N / 自动化建议汇总
+## 三、CI 自动化覆盖（前端）
 
-| 项目 | 更新源 | 动作 |
-|------|--------|------|
-| chainIconMap + 新链图标 | aave/interface `networksConfig.ts`、`public/icons/networks/` | 监听 interface 变更，生成 chainIconMap 并同步网络图标；去掉 preloadUtils 内重复 map |
-| MARKET_NAME_MAP | aave/interface `marketsConfig.tsx` 或 address-book | 随官方更新生成 aaveLinks 用的 market 名 → marketName |
-| underlyingAssetMap / reservePatches | aave/interface `reservePatches.ts` | 同步 underlyingAssetMap 与 SYMBOL_*；保留本仓库 tokenlist logoURI |
-| @bgd-labs/aave-address-book | npm / GitHub release | 定期升级或 release 时触发同步 |
-| Token 图标 | 本仓库 tokenlist + CoinGecko | 定期运行 `sync-token-icons.mjs` |
+| 项目 | CI 状态 | 原因 | 怎么办 |
+|------|--------|------|------|
+| Token icon 同步 | 已自动化 | 新资产图标需持续补齐 | `.github/workflows/token-icon-sync.yml`（定时 + 手动） |
+| `reservePatches` 的 `iconSymbol` 本地图标存在性 | 已自动化 | 防止 iconSymbol 落到 default icon | `.github/workflows/hardcode-drift-check.yml` -> `check:hardcode-icons` |
+| `reservePatches` 与上游 interface 地址键漂移 | 已自动化 | 防止漏同步上游新增资产映射 | `.github/workflows/hardcode-drift-check.yml` -> `check:reserve-patches-upstream` |
+| `MARKET_NAME_MAP` 覆盖率（对后端真实 markets 返回） | 未完全自动化 | 依赖运行时/环境样本，不宜固定在静态 CI | 可加一条集成检查（抓后端样本并断言全覆盖） |
+| `chainIconMap` 运行时覆盖率 | 未完全自动化 | 依赖实际链集合，静态检查不完整 | 可用 nightly 集成任务对实际 API 数据做覆盖断言 |
+| 本地业务常量（如 `ETHEREUM_MARKET_NAMES`、`TYDRO` 常量） | 不建议自动化 | 本质是业务决策，不是外部源同步问题 | 保持人工评审 |
 
 不做自动更新的项：chainId/chainName 若仅用 API 返回值则无需 map；ETHEREUM_MARKET_NAMES、TYDRO 汇率、Ink 常量、REFERENCE_POINTS 列表、固定 logo/partner 图标。
 
+## 四、N8N 还是否需要
+
+- 对本仓库当前 hardcode 场景，GitHub Actions 已覆盖核心自动化，N8N 不是必需。
+- N8N 仍有价值的场景：
+  - 需要跨仓库/跨系统编排（GitHub + Notion + Slack + Jira 等）。
+  - 需要复杂审批流、值班路由、业务时段触发策略。
+  - 需要把检查结果聚合到统一运营面板，而非只在 GitHub 内部闭环。
+
 ---
 
-## 四、hardcode 补充规则（防漏）
+## 五、hardcode 补充规则（防漏）
 
 本节只记录“下次同步必须检查什么”，不记录某次同步结果。
 
