@@ -89,6 +89,7 @@
      binance: 'binance',
      binancesmartchain: 'binance',
      gnosis: 'gnosis',
+     gnosischain: 'gnosis',
      scroll: 'scroll',
      metis: 'metis',
      metisandromeda: 'metis',

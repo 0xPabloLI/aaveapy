@@ -27,3 +27,9 @@ jobs:
 
       - name: Check reservePatches drift against aave/interface
         run: npm run check:reserve-patches-upstream
+
+      - name: Check MARKET_NAME_MAP drift against aave/interface
+        run: npm run check:market-name-map-upstream
+
+      - name: Check chainIconMap drift against aave/interface
+        run: npm run check:chain-icons-upstream

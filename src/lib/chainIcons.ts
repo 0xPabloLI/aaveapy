@@ -11,6 +11,7 @@ const chainIconMap: Record<string, string> = {
   binance: 'binance',
   binancesmartchain: 'binance',
   gnosis: 'gnosis',
+  gnosischain: 'gnosis',
   scroll: 'scroll',
   metis: 'metis',
   metisandromeda: 'metis',
