@@ -6,7 +6,7 @@ const ROOT = '/Users/pabloli/Documents/aaveapy';
 const LOCAL_NETWORKS_CONFIG_PATH = '/Users/pabloli/Documents/interface/src/ui-config/networksConfig.ts';
 const REMOTE_NETWORKS_CONFIG_URL =
   'https://raw.githubusercontent.com/aave/interface/main/src/ui-config/networksConfig.ts';
-const LOCAL_CHAIN_ICONS_PATH = path.join(ROOT, 'src/lib/chainIcons.ts');
+const LOCAL_CHAIN_ICONS_PATH = path.join(ROOT, 'src/lib/chainIconMap.ts');
 
 const NORMALIZATION_ALIASES = {
   op: ['optimism'],
@@ -56,10 +56,10 @@ function normalizeChainName(value) {
 
 function parseLocalChainIconMap(chainIconsContent) {
   const objectMatch = chainIconsContent.match(
-    /const chainIconMap:\s*Record<string,\s*string>\s*=\s*\{([\s\S]*?)\};/
+    /export const chainIconMap:\s*Record<string,\s*string>\s*=\s*\{([\s\S]*?)\};/
   );
   if (!objectMatch) {
-    throw new Error('Failed to parse chainIconMap from src/lib/chainIcons.ts');
+    throw new Error('Failed to parse chainIconMap from src/lib/chainIconMap.ts');
   }
   const map = new Map();
   const pairs = objectMatch[1].matchAll(/([a-z0-9_]+)\s*:\s*'([^']+)'/gi);
