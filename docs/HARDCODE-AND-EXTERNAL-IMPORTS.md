@@ -96,10 +96,7 @@
 
 这一节只保留“同步时不漏项”的最小规则，避免和前文重复。
 
-1. 以上游为准：
-- `reservePatches.ts` 对齐 `interface/src/ui-config/reservePatches.ts`
-- `MARKET_NAME_MAP` 对齐 `interface/src/ui-config/marketsConfig.tsx`
-- `chainIconMap` 对齐 `interface/src/ui-config/networksConfig.ts`
+1. 核心映射以上一节定义和上游源文件为准，不在本节重复展开。
 
 2. 同步后必须执行（本地或 CI）：
 - 运行 `hardcode-drift-check`（等价于四个检查脚本：icons / reserve-patches / market-name-map / chain-icons）。
