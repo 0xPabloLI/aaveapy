@@ -64,6 +64,7 @@
 
 - **仅** `scripts/sync-token-icons.mjs`：从 tokenlist + CoinGecko 拉取缺失 token 图标到 `public/icons/tokens/`。建议用 N8N 或 CI **定期触发**，保证新资产有图标。
 - 已加 GitHub Actions 自动化：`.github/workflows/token-icon-sync.yml`（定时 + 手动触发，变更自动开 PR）。
+- 已加 GitHub Actions 检查：`.github/workflows/hardcode-drift-check.yml`，执行 `npm run check:hardcode-icons`，定时检查 `reservePatches` 中 `iconSymbol` 是否有对应本地图标。
 
 ### 4. 其他 URL / API
 
@@ -119,6 +120,7 @@ comm -23 <(ls -1 /Users/pabloli/Documents/interface/public/icons/tokens | sort) 
 
 5. `reservePatches` 的 `iconSymbol` 文件存在性：
 - 逐个检查 `iconSymbol` 是否在 `public/icons/tokens` 有对应文件（或存在明确“故意缺失”白名单）。
+- 自动化检查脚本：`scripts/check-hardcode-icons.mjs`（白名单在脚本内 `KNOWN_MISSING_ICON_SYMBOLS`）。
 
 ### C. 缺失处理规则
 

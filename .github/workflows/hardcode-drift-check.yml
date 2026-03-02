@@ -1,0 +1,27 @@
+name: Hardcode Drift Check
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Every Monday at 04:40 UTC
+    - cron: "40 4 * * 1"
+
+jobs:
+  check-hardcode-icons:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check reservePatches icon symbols
+        run: npm run check:hardcode-icons
+
