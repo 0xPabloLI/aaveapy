@@ -1,28 +1,4 @@
-const chainIconMap: Record<string, string> = {
-  ethereum: 'ethereum',
-  arbitrum: 'arbitrum',
-  optimism: 'optimism',
-  polygon: 'polygon',
-  avalanche: 'avalanche',
-  base: 'base',
-  bnbchain: 'binance',
-  bsc: 'binance',
-  binance: 'binance',
-  binancesmartchain: 'binance',
-  gnosis: 'gnosis',
-  scroll: 'scroll',
-  metis: 'metis',
-  zksync: 'zksync',
-  zksyncera: 'zksync',
-  linea: 'linea',
-  celo: 'celo',
-  sonic: 'sonic',
-  soneium: 'soneium',
-  plasma: 'plasma',
-  ink: 'ink',
-};
-
-const normalizeChainName = (chain: string) => chain.toLowerCase().replace(/[^a-z0-9]/g, '');
+import { chainIconMap, normalizeChainName } from './chainIconMap';
 
 export const getChainIconSrc = (chain: string) => {
   const normalized = normalizeChainName(chain);
