@@ -1,6 +1,8 @@
 name: Hardcode Drift Check
 
 on:
+  repository_dispatch:
+    types: [upstream-change]
   schedule:
     # Every day at 04:40 UTC
     - cron: "40 4 * * *"

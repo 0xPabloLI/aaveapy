@@ -1,6 +1,8 @@
 name: Token Icon Sync
 
 on:
+  repository_dispatch:
+    types: [upstream-change]
   schedule:
     # Every day at 04:20 UTC
     - cron: "20 4 * * *"
