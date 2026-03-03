@@ -4,11 +4,14 @@ on:
   pull_request:
     branches:
       - main
+      - dev
+      - railway
   push:
     branches:
       - main
       - dev
-      - feature/merkl-forecast
+      - railway
+      - feature/**
 
 jobs:
   lint:
