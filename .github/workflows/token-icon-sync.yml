@@ -2,9 +2,11 @@ name: Token Icon Sync
 
 on:
   workflow_dispatch:
+  repository_dispatch:
+    types: [upstream-change]
   schedule:
-    # Every Monday at 04:20 UTC
-    - cron: "20 4 * * 1"
+    # Every day at 04:20 UTC
+    - cron: "20 4 * * *"
 
 permissions:
   contents: write
@@ -41,4 +43,3 @@ jobs:
           labels: |
             automation
             assets
-
