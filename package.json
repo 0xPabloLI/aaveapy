@@ -21,7 +21,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:staging": "VITE_API_BASE_URL=https://staging-api.aaveapy.com/api vite",
     "dev:production": "vite --mode production",
+    "ci:remote": "npm run lint && npm run build && npm audit --omit=dev --audit-level=high",
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
