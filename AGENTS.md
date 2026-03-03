@@ -33,8 +33,9 @@
 
 ## Local Git Hook Policy (Mandatory)
 - This repo uses local `pre-commit` and `pre-push` hooks to run `npm run ci:remote`.
-- If a hook fails, do not bypass it by default. Fix lint/build/security issues first, then retry commit/push.
-- Temporary bypass (`SKIP_CI_REMOTE_HOOK=1`) is emergency-only and must be followed by a real fix in the same work session.
+- If `ci:remote` fails, hooks must automatically attempt `npm run ci:auto-fix`, then rerun `ci:remote`.
+- If checks still fail after auto-fix, stop the commit/push and fix the root cause before retrying.
+- Do not bypass hooks as a normal workflow.
 - Treat hook failures as release blockers for branch updates.
 
 ## UI Regression Guardrails
