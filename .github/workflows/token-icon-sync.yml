@@ -2,8 +2,8 @@ name: Token Icon Sync
 
 on:
   schedule:
-    # Every Monday at 04:20 UTC
-    - cron: "20 4 * * 1"
+    # Every day at 04:20 UTC
+    - cron: "20 4 * * *"
 
 permissions:
   contents: write
