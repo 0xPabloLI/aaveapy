@@ -1,6 +1,7 @@
 name: Hardcode Drift Check
 
 on:
+  workflow_dispatch:
   repository_dispatch:
     types: [upstream-change]
   schedule:
