@@ -1,6 +1,7 @@
 name: Token Icon Sync
 
 on:
+  workflow_dispatch:
   repository_dispatch:
     types: [upstream-change]
   schedule:
