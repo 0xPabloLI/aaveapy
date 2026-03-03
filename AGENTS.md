@@ -30,6 +30,12 @@
 ## Configuration & Secrets
 - Use `.env` for local secrets and keep it out of version control.
 
+## Local Git Hook Policy (Mandatory)
+- This repo uses local `pre-commit` and `pre-push` hooks to run `npm run ci:remote`.
+- If a hook fails, do not bypass it by default. Fix lint/build/security issues first, then retry commit/push.
+- Temporary bypass (`SKIP_CI_REMOTE_HOOK=1`) is emergency-only and must be followed by a real fix in the same work session.
+- Treat hook failures as release blockers for branch updates.
+
 ---
 
 ## Frontend Design & UX Skills
