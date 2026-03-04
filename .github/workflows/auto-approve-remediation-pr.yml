@@ -1,0 +1,88 @@
+name: Auto Approve Remediation PR
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, ready_for_review]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  approve-and-enable-automerge:
+    if: >
+      startsWith(github.event.pull_request.head.ref, 'bot/ci-auto-remediation-') &&
+      github.event.pull_request.user.login == 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Policy-check changed files, approve, and enable auto-merge
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.CODEX_BOT_TOKEN != '' && secrets.CODEX_BOT_TOKEN || github.token }}
+          script: |
+            const { owner, repo } = context.repo;
+            const prNumber = context.payload.pull_request.number;
+
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              owner,
+              repo,
+              pull_number: prNumber,
+              per_page: 100,
+            });
+
+            const allowed = new Set([
+              'package.json',
+              'package-lock.json',
+            ]);
+
+            const disallowed = files
+              .map((file) => file.filename)
+              .filter((filename) => !allowed.has(filename));
+
+            if (disallowed.length > 0) {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: prNumber,
+                body: [
+                  'Auto-remediation PR contains disallowed file changes.',
+                  '',
+                  ...disallowed.map((name) => `- \`${name}\``),
+                  '',
+                  'Skipping auto-approval and auto-merge.',
+                ].join('\n'),
+              });
+              core.setFailed('Disallowed files found in remediation PR');
+              return;
+            }
+
+            await github.rest.pulls.createReview({
+              owner,
+              repo,
+              pull_number: prNumber,
+              event: 'APPROVE',
+              body: 'Automated dependency remediation review passed policy checks.',
+            });
+
+            try {
+              await github.graphql(
+                `
+                mutation EnableAutoMerge($pullRequestId: ID!) {
+                  enablePullRequestAutoMerge(input: { pullRequestId: $pullRequestId, mergeMethod: SQUASH }) {
+                    pullRequest {
+                      number
+                    }
+                  }
+                }
+                `,
+                { pullRequestId: context.payload.pull_request.node_id }
+              );
+            } catch (error) {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: prNumber,
+                body: `Auto-approval succeeded, but enabling auto-merge failed: ${error.message}`,
+              });
+              throw error;
+            }
