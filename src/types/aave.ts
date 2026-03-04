@@ -122,6 +122,7 @@ export interface MerklForecastStatesBatchResponse {
 export type RateInputSource = 'subgraph' | 'onchain';
 
 export interface ReserveRateInput {
+  marketName: string;
   chainId: number;
   tokenAddress: string;
   decimals: number;

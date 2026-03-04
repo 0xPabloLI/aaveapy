@@ -1,6 +1,8 @@
 import { lazy, Suspense, useState, useMemo, useCallback, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { usePreloadReserveAssets } from '@/hooks/usePreloadReserveAssets';
 import { useAaveMarkets, useAaveMarketsList } from '@/hooks/useAaveMarkets';
+import { prefetchRateInputsSnapshot } from '@/hooks/useReserveRateInputs';
 import { SortField, SortOrder, TokenCategory, ReserveWithSpread } from '@/types/aave';
 import {
   buildTokenCategoryGroups,
@@ -27,6 +29,8 @@ import InkAprCalculator from '@/components/dashboard/InkAprCalculator';
 const MerklForecastPanel = lazy(() => import('@/components/dashboard/MerklForecastPanel'));
 
 const Index = () => {
+  const queryClient = useQueryClient();
+
   // State
   const [sortField, setSortField] = useState<SortField>(null);
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
@@ -125,12 +129,13 @@ const Index = () => {
   const stableReserves = useMemo(() => {
     return effectiveReservesData?.data || [];
   }, [effectiveReservesData?.data]);
+  const hasReserves = stableReserves.length > 0;
 
   // Phase 3 Optimization: Preload token and chain icons during idle time
   usePreloadReserveAssets(stableReserves, {
     limit: 40, // Preload icons for first 40 reserves
     delay: 300, // Start after initial render settles
-    enabled: stableReserves.length > 0,
+    enabled: hasReserves,
   });
 
   // Preload chain icons for hidden markets when user hovers "More" button
@@ -143,14 +148,24 @@ const Index = () => {
 
   // Preload incentive icons after initial data load (for tooltip)
   useEffect(() => {
-    if (!stableReserves || stableReserves.length === 0) return;
+    if (!hasReserves) return;
     // Delay to not interfere with initial render
     const timeoutId = setTimeout(() => {
       preloadIncentiveIcons();
     }, 500);
     return () => clearTimeout(timeoutId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stableReserves.length > 0]);
+  }, [hasReserves]);
+
+  // Warm up rate-input snapshot once home data is loaded to avoid first-tooltip latency.
+  useEffect(() => {
+    if (!hasReserves) return;
+    const timeoutId = setTimeout(() => {
+      void prefetchRateInputsSnapshot(queryClient).catch(() => {
+        // No-op: keep UI non-blocking if prefetch fails.
+      });
+    }, 700);
+    return () => clearTimeout(timeoutId);
+  }, [hasReserves, queryClient]);
 
   const tokenCategoryGroups = useMemo(
     () => buildTokenCategoryGroups(tokenCategoryOverrides),

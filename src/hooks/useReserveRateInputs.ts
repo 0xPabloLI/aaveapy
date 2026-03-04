@@ -1,4 +1,6 @@
+import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import type { QueryClient } from '@tanstack/react-query';
 import { API_BASE } from '@/lib/apiBase';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
 import type { RateInputsResponse, ReserveRateInput } from '@/types/aave';
@@ -6,39 +8,76 @@ import type { RateInputsResponse, ReserveRateInput } from '@/types/aave';
 interface UseReserveRateInputParams {
   chainId: number;
   tokenAddress: string;
+  marketName: string;
   enabled?: boolean;
 }
+
+export const RATE_INPUTS_SNAPSHOT_QUERY_KEY = ['rate-inputs-snapshot'] as const;
 
 function normalizeAddress(value: string): string {
   return value.trim().toLowerCase();
 }
 
-async function fetchReserveRateInput(chainId: number, tokenAddress: string): Promise<ReserveRateInput | null> {
-  const params = new URLSearchParams();
-  params.set('chainId', String(chainId));
-  params.set('asset', normalizeAddress(tokenAddress));
-
-  const response = await fetch(`${API_BASE}/rate-inputs?${params.toString()}`);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch rate inputs: ${response.status} ${response.statusText}`);
-  }
-
-  const payload = (await response.json()) as RateInputsResponse;
-  const target = normalizeAddress(tokenAddress);
-  const item =
-    payload.data.find(
-      (entry) => entry.chainId === chainId && normalizeAddress(entry.tokenAddress) === target
-    ) ?? null;
-  return item;
+function normalizeMarketName(value: string): string {
+  return value.trim().toLowerCase();
 }
 
-export function useReserveRateInput({ chainId, tokenAddress, enabled = true }: UseReserveRateInputParams) {
-  const normalized = normalizeAddress(tokenAddress);
-  return useQuery({
-    queryKey: ['reserve-rate-input', chainId, normalized],
-    queryFn: () => fetchReserveRateInput(chainId, normalized),
-    enabled: enabled && chainId > 0 && normalized.length > 0,
+export async function fetchRateInputsSnapshot(): Promise<RateInputsResponse> {
+  const response = await fetch(`${API_BASE}/rate-inputs`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch rate inputs snapshot: ${response.status} ${response.statusText}`);
+  }
+  return (await response.json()) as RateInputsResponse;
+}
+
+export async function prefetchRateInputsSnapshot(queryClient: QueryClient): Promise<void> {
+  await queryClient.prefetchQuery({
+    queryKey: RATE_INPUTS_SNAPSHOT_QUERY_KEY,
+    queryFn: fetchRateInputsSnapshot,
     staleTime: QUERY_STALE_TIMES.marketApi,
   });
 }
 
+function findReserveRateInput(
+  payload: RateInputsResponse,
+  chainId: number,
+  tokenAddress: string,
+  marketName: string
+): ReserveRateInput | null {
+  const normalizedTokenAddress = normalizeAddress(tokenAddress);
+  const normalizedMarketName = normalizeMarketName(marketName);
+  return (
+    payload.data.find(
+      (entry) =>
+        entry.chainId === chainId &&
+        normalizeAddress(entry.tokenAddress) === normalizedTokenAddress &&
+        normalizeMarketName(entry.marketName) === normalizedMarketName
+    ) ?? null
+  );
+}
+
+export function useReserveRateInput({
+  chainId,
+  tokenAddress,
+  marketName,
+  enabled = true,
+}: UseReserveRateInputParams) {
+  const normalizedTokenAddress = normalizeAddress(tokenAddress);
+  const normalizedMarketName = normalizeMarketName(marketName);
+  const snapshotQuery = useQuery({
+    queryKey: RATE_INPUTS_SNAPSHOT_QUERY_KEY,
+    queryFn: fetchRateInputsSnapshot,
+    enabled: enabled && chainId > 0 && normalizedTokenAddress.length > 0 && normalizedMarketName.length > 0,
+    staleTime: QUERY_STALE_TIMES.marketApi,
+  });
+
+  const selected = useMemo(() => {
+    if (!snapshotQuery.data) return null;
+    return findReserveRateInput(snapshotQuery.data, chainId, normalizedTokenAddress, normalizedMarketName);
+  }, [snapshotQuery.data, chainId, normalizedTokenAddress, normalizedMarketName]);
+
+  return {
+    ...snapshotQuery,
+    data: selected,
+  };
+}

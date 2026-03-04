@@ -422,6 +422,7 @@ const IncentiveTooltip = ({
   } = useReserveRateInput({
     chainId: reserve.chainId,
     tokenAddress: reserve.tokenAddress,
+    marketName: reserve.marketName,
   });
 
   const nativeSimulation = useMemo(() => {
