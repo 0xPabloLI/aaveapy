@@ -414,7 +414,6 @@ const IncentiveTooltip = ({
   }, [reserve, type, tokenPrices]);
 
   const depositAssetAmount = useMemo(() => parseNumberInput(depositInput), [depositInput]);
-  const hasSimulationInput = depositAssetAmount > 0;
   const depositUsd = tokenPrice ? depositAssetAmount * tokenPrice : 0;
   const {
     data: reserveRateInput,
@@ -426,9 +425,9 @@ const IncentiveTooltip = ({
   });
 
   const nativeSimulation = useMemo(() => {
-    if (!reserveRateInput || !hasSimulationInput) return null;
+    if (!reserveRateInput) return null;
     return simulateNativeRatesAfterSupply(reserveRateInput, depositInput);
-  }, [reserveRateInput, depositInput, hasSimulationInput]);
+  }, [reserveRateInput, depositInput]);
 
   const nativeRateUnitLabel = isApy ? 'APY' : 'APR';
   const currentNativeApy = type === 'supply' ? reserve.supplyApy ?? null : reserve.borrowApy ?? null;
@@ -773,13 +772,9 @@ const IncentiveTooltip = ({
           <p className="ds-tooltip-body mt-[var(--ds-space-0-5)] text-amber-600">
             Native simulation unavailable: {reserveRateInputError instanceof Error ? reserveRateInputError.message : 'failed to fetch rate inputs'}
           </p>
-        ) : !reserveRateInput ? (
+        ) : !reserveRateInput || !nativeSimulation ? (
           <p className="ds-tooltip-body mt-[var(--ds-space-0-5)] text-muted-foreground">
             Native simulation unavailable for this reserve.
-          </p>
-        ) : !hasSimulationInput || !nativeSimulation ? (
-          <p className="ds-tooltip-body mt-[var(--ds-space-0-5)] text-muted-foreground">
-            Enter amount to simulate.
           </p>
         ) : (
           <>
