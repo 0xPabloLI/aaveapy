@@ -27,12 +27,12 @@ const queryClient = new QueryClient({
 queryClient.prefetchQuery({
   queryKey: ['aave-markets'],
   queryFn: fetchMarkets,
-  staleTime: QUERY_STALE_TIMES.marketApi,
+  staleTime: QUERY_STALE_TIMES.coreSnapshotApi,
 });
 queryClient.prefetchQuery({
   queryKey: ['aave-markets-list'],
   queryFn: fetchMarketsList,
-  staleTime: QUERY_STALE_TIMES.marketApi,
+  staleTime: QUERY_STALE_TIMES.coreSnapshotApi,
 });
 
 const App = () => (

@@ -34,7 +34,7 @@ export async function prefetchRateInputsSnapshot(queryClient: QueryClient): Prom
   await queryClient.prefetchQuery({
     queryKey: RATE_INPUTS_SNAPSHOT_QUERY_KEY,
     queryFn: fetchRateInputsSnapshot,
-    staleTime: QUERY_STALE_TIMES.marketApi,
+    staleTime: QUERY_STALE_TIMES.coreSnapshotApi,
   });
 }
 
@@ -68,7 +68,7 @@ export function useReserveRateInput({
     queryKey: RATE_INPUTS_SNAPSHOT_QUERY_KEY,
     queryFn: fetchRateInputsSnapshot,
     enabled: enabled && chainId > 0 && normalizedTokenAddress.length > 0 && normalizedMarketName.length > 0,
-    staleTime: QUERY_STALE_TIMES.marketApi,
+    staleTime: QUERY_STALE_TIMES.coreSnapshotApi,
   });
 
   const selected = useMemo(() => {

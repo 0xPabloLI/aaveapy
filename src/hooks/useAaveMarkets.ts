@@ -56,7 +56,7 @@ export const useAaveMarkets = () => {
   return useQuery({
     queryKey: ['aave-markets'],
     queryFn: fetchMarkets,
-    staleTime: QUERY_STALE_TIMES.marketApi,
+    staleTime: QUERY_STALE_TIMES.coreSnapshotApi,
     placeholderData: cachedData ?? undefined,
   });
 };
@@ -66,7 +66,7 @@ export const useAaveMarketsList = () => {
   return useQuery({
     queryKey: ['aave-markets-list'],
     queryFn: fetchMarketsList,
-    staleTime: QUERY_STALE_TIMES.marketApi,
+    staleTime: QUERY_STALE_TIMES.coreSnapshotApi,
     placeholderData: cachedData ?? undefined,
   });
 };
