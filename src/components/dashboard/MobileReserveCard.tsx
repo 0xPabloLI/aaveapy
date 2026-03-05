@@ -119,7 +119,10 @@ const MobileReserveCard = ({
   const borrowValueClass = displayBorrowTotal === null ? 'text-muted-foreground/70' : 'ds-text-brand-cyan';
 
   return (
-    <div className="bg-card rounded-xl border border-border/60 ds-card-pad-sm shadow-sm transition-colors">
+    <div
+      data-reserve-id={`${reserve.marketName}-${reserve.tokenAddress}`}
+      className="bg-card rounded-xl border border-border/60 ds-card-pad-sm shadow-sm transition-colors"
+    >
       {/* Header: Token + Market + Link button - Compact layout with min touch target */}
       <div 
         className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-3)] cursor-pointer active:opacity-70 transition-opacity min-h-[44px]"

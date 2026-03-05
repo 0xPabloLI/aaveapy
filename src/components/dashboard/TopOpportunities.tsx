@@ -47,6 +47,7 @@ interface TopOpportunitiesProps {
     accentTextClass?: string;
     accentBgClass?: string;
   }) => void;
+  onCardClick?: (reserve: Pick<ReserveWithSpread, 'marketName' | 'tokenAddress'>) => void;
   tydroPointToUsdRate: number;
 }
 
@@ -177,6 +178,7 @@ const TopOpportunities = ({
   includeWhitelistOnlyMerkl,
   categoryGroups,
   onIncentiveClick,
+  onCardClick,
   tydroPointToUsdRate,
 }: TopOpportunitiesProps) => {
   const isMobile = useIsMobile();
@@ -341,6 +343,10 @@ const TopOpportunities = ({
   };
 
   const handleCardClick = (reserve: Pick<ReserveWithSpread, 'marketName' | 'tokenAddress'>) => {
+    if (onCardClick) {
+      onCardClick(reserve);
+      return;
+    }
     const url = buildAaveReserveUrl(reserve);
     if (url) {
       window.open(url, '_blank', 'noopener,noreferrer');

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { ArrowUp, ArrowDown, ChevronDown, ChevronUp } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -38,6 +38,7 @@ interface ReservesTableProps {
   includeWhitelistOnlyMerkl: boolean;
   onToggleWhitelistOnlyMerkl: (next: boolean) => void;
   tokenPrices?: TokenPricesIndex;
+  scrollToReserveId?: string | null;
 }
 
 type SortMode = 'total' | 'native' | 'incentive';
@@ -56,6 +57,7 @@ const ReservesTable = ({
   includeWhitelistOnlyMerkl,
   onToggleWhitelistOnlyMerkl,
   tokenPrices,
+  scrollToReserveId,
 }: ReservesTableProps) => {
   const isMobile = useIsMobile();
   const [activeSortColumn, setActiveSortColumn] = useState<'supply' | 'borrow' | 'spread' | null>('supply');
@@ -324,6 +326,13 @@ const ReservesTable = ({
       },
     });
   };
+
+  // Auto-expand when parent requests scroll to a specific reserve
+  useEffect(() => {
+    if (scrollToReserveId) {
+      setShowAll(true);
+    }
+  }, [scrollToReserveId]);
 
   // Display data with pagination - must be before conditional returns
   const displayData = useMemo(() => 
@@ -971,6 +980,7 @@ const ReservesTable = ({
               return (
                 <TableRow
                   key={`${reserve.marketName}-${reserve.tokenAddress}`}
+                  data-reserve-id={`${reserve.marketName}-${reserve.tokenAddress}`}
                   className="transition-all duration-150 cursor-pointer hover:bg-muted/60 hover:shadow-sm active:bg-muted/80"
                   onClick={() => handleRowClick(reserve)}
                 >

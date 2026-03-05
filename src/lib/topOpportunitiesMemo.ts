@@ -8,6 +8,7 @@ export interface TopOpportunitiesMemoProps {
   tydroPointToUsdRate: number;
   isRateDragging?: boolean;
   onIncentiveClick?: unknown;
+  onCardClick?: unknown;
   categoryGroups: unknown;
   includeWhitelistOnlyMerkl: boolean;
   reserves: TopOpportunitiesMemoReserve[];
@@ -21,6 +22,7 @@ export const shouldSkipTopOpportunitiesRender = (
   if (prevProps.tydroPointToUsdRate !== nextProps.tydroPointToUsdRate) return false;
   if (prevProps.isRateDragging !== nextProps.isRateDragging) return false;
   if (prevProps.onIncentiveClick !== nextProps.onIncentiveClick) return false;
+  if (prevProps.onCardClick !== nextProps.onCardClick) return false;
   if (prevProps.categoryGroups !== nextProps.categoryGroups) return false;
   if (prevProps.includeWhitelistOnlyMerkl !== nextProps.includeWhitelistOnlyMerkl) return false;
 

@@ -42,6 +42,7 @@ const Index = () => {
   const [showMarketsExpanded, setShowMarketsExpanded] = useState(false);
   const [isRateDragging, setIsRateDragging] = useState(false);
   const [includeWhitelistOnlyMerkl, setIncludeWhitelistOnlyMerkl] = useState(false);
+  const [pendingScrollReserveId, setPendingScrollReserveId] = useState<string | null>(null);
   const [topTooltipState, setTopTooltipState] = useState<{
     reserve: ReserveWithSpread;
     type: 'supply' | 'borrow';
@@ -179,6 +180,37 @@ const Index = () => {
       refetchMarketsList(),
     ]);
   }, [refetch, refetchMarketsList]);
+
+  const scrollToReserveElement = useCallback((id: string) => {
+    const el = document.querySelector(`[data-reserve-id="${id}"]`);
+    if (!el) return false;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    el.classList.remove('reserve-highlight');
+    void (el as HTMLElement).offsetWidth;
+    el.classList.add('reserve-highlight');
+    return true;
+  }, []);
+
+  const handleTopCardClick = useCallback((reserve: Pick<ReserveWithSpread, 'marketName' | 'tokenAddress'>) => {
+    const id = `${reserve.marketName}-${reserve.tokenAddress}`;
+    if (scrollToReserveElement(id)) return;
+    // Element not in DOM — clear filters and schedule a deferred scroll
+    setSearchQuery('');
+    setSelectedMarkets([]);
+    setSelectedCategory('all');
+    setPendingScrollReserveId(id);
+  }, [scrollToReserveElement]);
+
+  // Deferred scroll: fires after filters are cleared and ReservesTable expands
+  useEffect(() => {
+    if (!pendingScrollReserveId) return;
+    // Wait for React to re-render with cleared filters + expanded list
+    const timer = setTimeout(() => {
+      scrollToReserveElement(pendingScrollReserveId);
+      setPendingScrollReserveId(null);
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [pendingScrollReserveId, scrollToReserveElement]);
 
   const handleTopIncentiveClick = useCallback((payload: {
     reserve: ReserveWithSpread;
@@ -361,6 +393,7 @@ const Index = () => {
               includeWhitelistOnlyMerkl={includeWhitelistOnlyMerkl}
               categoryGroups={tokenCategoryGroups}
               onIncentiveClick={handleTopIncentiveClick}
+              onCardClick={handleTopCardClick}
               tydroPointToUsdRate={tydroPointToUsdRate}
             />
           )}
@@ -397,6 +430,7 @@ const Index = () => {
             includeWhitelistOnlyMerkl={includeWhitelistOnlyMerkl}
             onToggleWhitelistOnlyMerkl={setIncludeWhitelistOnlyMerkl}
             tokenPrices={effectiveReservesData?.tokenPrices}
+            scrollToReserveId={pendingScrollReserveId}
           />
 
           {topTooltipState && (
