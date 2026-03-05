@@ -3,7 +3,7 @@ export const QUERY_STALE_TIMES = {
   default: 5 * 60 * 1000,
 
   // Core backend snapshot family (markets + rate-inputs).
-  coreSnapshotApi: 5 * 60 * 1000,
+  coreSnapshotApi: 2 * 60 * 1000,
 
   // Side data.
   coingeckoFdv: 10 * 60 * 1000,
