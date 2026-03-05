@@ -3,6 +3,10 @@ import { useQuery } from '@tanstack/react-query';
 import type { QueryClient } from '@tanstack/react-query';
 import { API_BASE } from '@/lib/apiBase';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
+import {
+  getCachedRateInputsSnapshotEntry,
+  setCachedRateInputsSnapshot,
+} from '@/lib/cache';
 import type { RateInputsResponse, ReserveRateInput } from '@/types/aave';
 
 interface UseReserveRateInputParams {
@@ -27,7 +31,9 @@ export async function fetchRateInputsSnapshot(): Promise<RateInputsResponse> {
   if (!response.ok) {
     throw new Error(`Failed to fetch rate inputs snapshot: ${response.status} ${response.statusText}`);
   }
-  return (await response.json()) as RateInputsResponse;
+  const payload = (await response.json()) as RateInputsResponse;
+  setCachedRateInputsSnapshot(payload);
+  return payload;
 }
 
 export async function prefetchRateInputsSnapshot(queryClient: QueryClient): Promise<void> {
@@ -64,11 +70,15 @@ export function useReserveRateInput({
 }: UseReserveRateInputParams) {
   const normalizedTokenAddress = normalizeAddress(tokenAddress);
   const normalizedMarketName = normalizeMarketName(marketName);
+  const cachedEntry = getCachedRateInputsSnapshotEntry<RateInputsResponse>();
+
   const snapshotQuery = useQuery({
     queryKey: RATE_INPUTS_SNAPSHOT_QUERY_KEY,
     queryFn: fetchRateInputsSnapshot,
     enabled: enabled && chainId > 0 && normalizedTokenAddress.length > 0 && normalizedMarketName.length > 0,
     staleTime: QUERY_STALE_TIMES.coreSnapshotApi,
+    initialData: cachedEntry?.data,
+    initialDataUpdatedAt: cachedEntry?.updatedAt,
   });
 
   const selected = useMemo(() => {

@@ -4,9 +4,14 @@ const CACHE_KEYS = {
   MARKETS: 'aave-markets-cache',
   MARKETS_LIST: 'aave-markets-list-cache',
   TYDRO_RATE: 'tydro-point-usd-rate',
+  COINGECKO_FDV: 'coingecko-fdv-cache',
+  TOKEN_CATEGORIES: 'token-categories-cache',
+  RATE_INPUTS_SNAPSHOT: 'rate-inputs-snapshot-cache',
+  COINGECKO_TOKEN_IMAGE_PREFIX: 'coingecko-token-image:',
 } as const;
 
-const CACHE_VERSION = '1.0.0';
+// Bump cache version when schema changes.
+const CACHE_VERSION = '1.1.0';
 
 interface CacheEntry<T> {
   data: T;
@@ -14,21 +19,34 @@ interface CacheEntry<T> {
   version: string;
 }
 
+export interface CachedPayload<T> {
+  data: T;
+  updatedAt: number;
+}
+
+function toCachedPayload<T>(entry: CacheEntry<T>): CachedPayload<T> {
+  const parsed = Date.parse(entry.timestamp);
+  return {
+    data: entry.data,
+    updatedAt: Number.isFinite(parsed) ? parsed : Date.now(),
+  };
+}
+
 // Helper to get cache entry
-function getCacheEntry<T>(key: string): CacheEntry<T> | null {
+function getCacheEntry<T>(key: string): CachedPayload<T> | null {
   try {
     const cached = localStorage.getItem(key);
     if (!cached) return null;
-    
+
     const entry: CacheEntry<T> = JSON.parse(cached);
-    
+
     // Check version compatibility
     if (entry.version !== CACHE_VERSION) {
       localStorage.removeItem(key);
       return null;
     }
-    
-    return entry;
+
+    return toCachedPayload(entry);
   } catch (error) {
     console.warn(`Failed to read cache for ${key}:`, error);
     return null;
@@ -49,10 +67,18 @@ function setCacheEntry<T>(key: string, data: T): void {
   }
 }
 
+function normalizeSymbolKey(symbol: string): string {
+  return symbol.trim().toLowerCase();
+}
+
 // Markets cache
+export function getCachedMarketsEntry(): CachedPayload<MarketsResponse> | null {
+  return getCacheEntry<MarketsResponse>(CACHE_KEYS.MARKETS);
+}
+
 export function getCachedMarkets(): MarketsResponse | null {
-  const entry = getCacheEntry<MarketsResponse>(CACHE_KEYS.MARKETS);
-  return entry?.data || null;
+  const entry = getCachedMarketsEntry();
+  return entry?.data ?? null;
 }
 
 export function setCachedMarkets(data: MarketsResponse): void {
@@ -60,13 +86,57 @@ export function setCachedMarkets(data: MarketsResponse): void {
 }
 
 // Markets list cache
+export function getCachedMarketsListEntry(): CachedPayload<MarketListItem[]> | null {
+  return getCacheEntry<MarketListItem[]>(CACHE_KEYS.MARKETS_LIST);
+}
+
 export function getCachedMarketsList(): MarketListItem[] | null {
-  const entry = getCacheEntry<MarketListItem[]>(CACHE_KEYS.MARKETS_LIST);
-  return entry?.data || null;
+  const entry = getCachedMarketsListEntry();
+  return entry?.data ?? null;
 }
 
 export function setCachedMarketsList(data: MarketListItem[]): void {
   setCacheEntry(CACHE_KEYS.MARKETS_LIST, data);
+}
+
+// CoinGecko FDV cache
+export function getCachedCoingeckoFdvEntry<T>(): CachedPayload<T> | null {
+  return getCacheEntry<T>(CACHE_KEYS.COINGECKO_FDV);
+}
+
+export function setCachedCoingeckoFdv<T>(data: T): void {
+  setCacheEntry(CACHE_KEYS.COINGECKO_FDV, data);
+}
+
+// Token categories cache
+export function getCachedTokenCategoriesEntry<T>(): CachedPayload<T> | null {
+  return getCacheEntry<T>(CACHE_KEYS.TOKEN_CATEGORIES);
+}
+
+export function setCachedTokenCategories<T>(data: T): void {
+  setCacheEntry(CACHE_KEYS.TOKEN_CATEGORIES, data);
+}
+
+// Rate-inputs snapshot cache
+export function getCachedRateInputsSnapshotEntry<T>(): CachedPayload<T> | null {
+  return getCacheEntry<T>(CACHE_KEYS.RATE_INPUTS_SNAPSHOT);
+}
+
+export function setCachedRateInputsSnapshot<T>(data: T): void {
+  setCacheEntry(CACHE_KEYS.RATE_INPUTS_SNAPSHOT, data);
+}
+
+// Token image cache (per symbol)
+export function getCachedCoingeckoTokenImageEntry(symbol: string): CachedPayload<string | null> | null {
+  const normalized = normalizeSymbolKey(symbol);
+  if (!normalized) return null;
+  return getCacheEntry<string | null>(`${CACHE_KEYS.COINGECKO_TOKEN_IMAGE_PREFIX}${normalized}`);
+}
+
+export function setCachedCoingeckoTokenImage(symbol: string, imageUrl: string | null): void {
+  const normalized = normalizeSymbolKey(symbol);
+  if (!normalized) return;
+  setCacheEntry(`${CACHE_KEYS.COINGECKO_TOKEN_IMAGE_PREFIX}${normalized}`, imageUrl);
 }
 
 // Tydro point to USD rate cache (user preference)

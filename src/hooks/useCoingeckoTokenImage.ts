@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { QUERY_GC_TIMES, QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
+import { getCachedCoingeckoTokenImageEntry, setCachedCoingeckoTokenImage } from '@/lib/cache';
 
 const COINGECKO_SEARCH_BASE = 'https://api.coingecko.com/api/v3/search';
 
@@ -43,12 +44,22 @@ async function fetchCoingeckoTokenImage(symbol: string): Promise<string | null> 
  */
 export function useCoingeckoTokenImage(symbol: string | null) {
   const normalizedSymbol = symbol?.trim() ?? null;
+  const cachedEntry = normalizedSymbol
+    ? getCachedCoingeckoTokenImageEntry(normalizedSymbol)
+    : null;
+
   return useQuery({
     queryKey: ['coingecko-token-image', normalizedSymbol],
-    queryFn: () => fetchCoingeckoTokenImage(normalizedSymbol!),
+    queryFn: async () => {
+      const data = await fetchCoingeckoTokenImage(normalizedSymbol!);
+      setCachedCoingeckoTokenImage(normalizedSymbol!, data);
+      return data;
+    },
     enabled: Boolean(normalizedSymbol),
     staleTime: QUERY_STALE_TIMES.coingeckoTokenImage,
     gcTime: QUERY_GC_TIMES.coingeckoTokenImage,
+    initialData: cachedEntry ? cachedEntry.data : undefined,
+    initialDataUpdatedAt: cachedEntry?.updatedAt,
     retry: 1,
   });
 }
