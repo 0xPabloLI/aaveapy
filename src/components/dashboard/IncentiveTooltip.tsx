@@ -13,7 +13,7 @@ import { formatNumberInput, parseNumberInput } from '@/lib/numberFormat';
 import { adjustTooltipAnchorForScroll, getWindowScroll } from '@/lib/tooltipPosition';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useReserveRateInput } from '@/hooks/useReserveRateInputs';
-import { simulateNativeRatesAfterSupply } from '@/lib/interestRateCalculator';
+import { simulateNativeRatesAfterSupply, simulateNativeRatesAfterBorrow } from '@/lib/interestRateCalculator';
 
 interface IncentiveTooltipProps {
   reserve: ReserveWithSpread;
@@ -427,8 +427,10 @@ const IncentiveTooltip = ({
 
   const nativeSimulation = useMemo(() => {
     if (!reserveRateInput) return null;
-    return simulateNativeRatesAfterSupply(reserveRateInput, depositInput);
-  }, [reserveRateInput, depositInput]);
+    return type === 'borrow'
+      ? simulateNativeRatesAfterBorrow(reserveRateInput, depositInput)
+      : simulateNativeRatesAfterSupply(reserveRateInput, depositInput);
+  }, [reserveRateInput, depositInput, type]);
 
   const nativeRateUnitLabel = isApy ? 'APY' : 'APR';
   const currentNativeApy = type === 'supply' ? reserve.supplyApy ?? null : reserve.borrowApy ?? null;

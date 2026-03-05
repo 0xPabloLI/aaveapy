@@ -111,18 +111,12 @@ export interface NativeRateSimulation {
   addedLiquidityRaw: string;
 }
 
-export function simulateNativeRatesAfterSupply(
+function computeRates(
   rateInput: ReserveRateInput,
-  supplyAmount: string
+  availableLiquidity: bigint,
+  totalVariableDebt: bigint,
+  addedRaw: bigint,
 ): NativeRateSimulation {
-  const decimals = Number.isFinite(rateInput.decimals) ? rateInput.decimals : 18;
-  const addedLiquidity = parseUnits(supplyAmount, decimals);
-
-  const availableLiquidity = toBigInt(rateInput.availableLiquidity) + addedLiquidity;
-  const totalScaledVariableDebt = toBigInt(rateInput.totalScaledVariableDebt);
-  const variableBorrowIndex = toBigInt(rateInput.variableBorrowIndex);
-
-  const totalVariableDebt = rayMul(totalScaledVariableDebt, variableBorrowIndex);
   const totalLiquidityAndDebt = availableLiquidity + totalVariableDebt;
   const utilizationRate =
     totalLiquidityAndDebt > 0n ? rayDiv(totalVariableDebt, totalLiquidityAndDebt) : 0n;
@@ -148,7 +142,38 @@ export function simulateNativeRatesAfterSupply(
     borrowAprPercent: rayToPercent(variableBorrowRate),
     supplyApyPercent: rayToApyPercent(liquidityRate),
     borrowApyPercent: rayToApyPercent(variableBorrowRate),
-    addedLiquidityRaw: addedLiquidity.toString(),
+    addedLiquidityRaw: addedRaw.toString(),
   };
+}
+
+export function simulateNativeRatesAfterSupply(
+  rateInput: ReserveRateInput,
+  supplyAmount: string
+): NativeRateSimulation {
+  const decimals = Number.isFinite(rateInput.decimals) ? rateInput.decimals : 18;
+  const addedLiquidity = parseUnits(supplyAmount, decimals);
+
+  const availableLiquidity = toBigInt(rateInput.availableLiquidity) + addedLiquidity;
+  const totalScaledVariableDebt = toBigInt(rateInput.totalScaledVariableDebt);
+  const variableBorrowIndex = toBigInt(rateInput.variableBorrowIndex);
+  const totalVariableDebt = rayMul(totalScaledVariableDebt, variableBorrowIndex);
+
+  return computeRates(rateInput, availableLiquidity, totalVariableDebt, addedLiquidity);
+}
+
+export function simulateNativeRatesAfterBorrow(
+  rateInput: ReserveRateInput,
+  borrowAmount: string
+): NativeRateSimulation {
+  const decimals = Number.isFinite(rateInput.decimals) ? rateInput.decimals : 18;
+  const addedBorrow = parseUnits(borrowAmount, decimals);
+
+  const baseAvailable = toBigInt(rateInput.availableLiquidity);
+  const availableLiquidity = baseAvailable > addedBorrow ? baseAvailable - addedBorrow : 0n;
+  const totalScaledVariableDebt = toBigInt(rateInput.totalScaledVariableDebt);
+  const variableBorrowIndex = toBigInt(rateInput.variableBorrowIndex);
+  const totalVariableDebt = rayMul(totalScaledVariableDebt, variableBorrowIndex) + addedBorrow;
+
+  return computeRates(rateInput, availableLiquidity, totalVariableDebt, addedBorrow);
 }
 
