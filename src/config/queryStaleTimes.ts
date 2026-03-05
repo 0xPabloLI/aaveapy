@@ -3,7 +3,7 @@ export const QUERY_STALE_TIMES = {
   default: 5 * 60 * 1000,
 
   // Core market data family (same freshness bucket).
-  marketApi: 60 * 1000,
+  marketApi: 5 * 60 * 1000,
 
   // Side data.
   coingeckoFdv: 10 * 60 * 1000,

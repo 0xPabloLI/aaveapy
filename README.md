@@ -81,7 +81,7 @@ React Query staleTime config is centralized in `src/config/queryStaleTimes.ts`.
 
 | Bucket | staleTime | Scope | Reasoning |
 |---|---:|---|---|
-| `marketApi` | 60s | `/markets` `/markets/stats` `/markets/list` `/rate-inputs` | Same backend snapshot family, so freshness must stay aligned across views. |
+| `marketApi` | 5m | `/markets` `/markets/stats` `/markets/list` `/rate-inputs` | Same backend snapshot family; 5m UI cache reduces redundant refetch while staying within acceptable freshness. |
 | `coingeckoFdv` | 10m | `/coingecko-fdv` | Relevant for ranking/valuation UX, but not execution-critical; reduces external API pressure. |
 | `tokenCategories` | 6h | `/coingecko-categories` | Low-change metadata, long cache window is acceptable. |
 | `coingeckoTokenImage` | 24h | Coin symbol -> image lookup | Icon changes are infrequent; long cache + long GC avoids repeated fetches. |
