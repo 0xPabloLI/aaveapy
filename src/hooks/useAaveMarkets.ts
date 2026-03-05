@@ -5,10 +5,11 @@ import {
   setCachedMarkets,
   getCachedMarketsList,
   setCachedMarketsList,
+  getCachedMarketsEntry,
+  getCachedMarketsListEntry,
 } from '@/lib/cache';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
 
-// Read API base URL from environment variable, fallback to remote URL if not set
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://api.aaveapy.com/api';
 
 // Fetch all market data (all sorting and filtering done on frontend)
@@ -53,22 +54,23 @@ export const fetchMarketsList = async (): Promise<MarketListItem[]> => {
 };
 
 export const useAaveMarkets = () => {
-  // Use cached data as placeholder for instant display (SWR pattern)
-  const cachedData = getCachedMarkets();
+  const cachedEntry = getCachedMarketsEntry();
   return useQuery({
     queryKey: ['aave-markets'],
     queryFn: fetchMarkets,
     staleTime: QUERY_STALE_TIMES.coreSnapshotApi,
-    placeholderData: cachedData ?? undefined,
+    initialData: cachedEntry?.data,
+    initialDataUpdatedAt: cachedEntry?.updatedAt,
   });
 };
 
 export const useAaveMarketsList = () => {
-  const cachedData = getCachedMarketsList();
+  const cachedEntry = getCachedMarketsListEntry();
   return useQuery({
     queryKey: ['aave-markets-list'],
     queryFn: fetchMarketsList,
     staleTime: QUERY_STALE_TIMES.coreSnapshotApi,
-    placeholderData: cachedData ?? undefined,
+    initialData: cachedEntry?.data,
+    initialDataUpdatedAt: cachedEntry?.updatedAt,
   });
 };
