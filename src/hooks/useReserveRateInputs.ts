@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { QueryClient } from '@tanstack/react-query';
 import { API_BASE } from '@/lib/apiBase';
+import { RateInputsResponseSchema } from '@/lib/apiSchemas';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
 import {
   getCachedRateInputsSnapshotEntry,
