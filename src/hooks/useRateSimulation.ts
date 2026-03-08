@@ -209,6 +209,7 @@ interface UseRateSimulationParams {
   enabled?: boolean;
   supplyInput: string;
   borrowInput: string;
+  inputMode?: ScenarioInputMode;
 }
 
 interface UseSharedRateSimulationsParams {
