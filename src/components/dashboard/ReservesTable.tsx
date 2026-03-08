@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, Fragment } from 'react';
-import { ArrowUp, ArrowDown, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
+import { ArrowUp, ArrowDown, ChevronDown, ChevronUp, ExternalLink, Filter } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ReserveWithSpread, ETHEREUM_MARKET_NAMES, TokenPricesIndex } from '@/types/aave';
