@@ -39,7 +39,7 @@ const Index = () => {
   const [selectedCategory, setSelectedCategory] = useState<TokenCategory>('all');
   const [isApy, setIsApy] = useState(true);
   const [showCacheWarning, setShowCacheWarning] = useState(false);
-  const [showMarketsExpanded, setShowMarketsExpanded] = useState(false);
+  
   const [isRateDragging, setIsRateDragging] = useState(false);
   const [includeWhitelistOnlyMerkl, setIncludeWhitelistOnlyMerkl] = useState(false);
   const [pendingScrollReserveId, setPendingScrollReserveId] = useState<string | null>(null);
