@@ -86,6 +86,10 @@ export function useReserveRateInput({
     staleTime: QUERY_STALE_TIMES.coreSnapshotApi,
     initialData: cachedEntry?.data,
     initialDataUpdatedAt: cachedEntry?.updatedAt,
+    retry: (failureCount, error) => {
+      if (error instanceof RateInputsUnavailableError) return false;
+      return failureCount < 2;
+    },
   });
 
   const selected = useMemo(() => {
