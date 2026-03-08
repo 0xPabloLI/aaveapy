@@ -1032,7 +1032,8 @@ const IncentiveTooltip = ({
                   Self bonus applies to the first {formatUsd(forecastPreview.selfCapUsd)} of your deposit.
                 </p>
               ) : null}
-              {forecastPreview.campaignType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE' &&
+              {'fixRewardableDays' in forecastPreview &&
+                forecastPreview.campaignType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE' &&
                 typeof forecastPreview.fixRewardableDays === 'number' &&
                 typeof forecastPreview.fixRewardableUntilTs === 'number' && (
                   <p className={`ds-tooltip-body mt-[var(--ds-space-0-5)] font-medium ${valueAccentClass}`}>
