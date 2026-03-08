@@ -85,14 +85,16 @@ const BreakdownRow = ({
   after,
   delta,
   accentClass,
+  href,
 }: {
   label: string;
   current: number | null;
   after: number | null;
   delta: number | null;
   accentClass?: string;
+  href?: string | null;
 }) => {
-  const link = SOURCE_LINKS[label];
+  const link = href ?? SOURCE_LINKS[label];
   return (
     <div className="grid grid-cols-[1fr_5rem_5rem_5rem] items-center gap-[var(--ds-space-1)] py-[var(--ds-space-1)]">
       {link ? (
