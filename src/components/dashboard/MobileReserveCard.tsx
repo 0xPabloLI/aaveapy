@@ -216,6 +216,7 @@ const MobileReserveCard = memo(({
               isApy={isApy}
               supplyInput={supplyInput}
               borrowInput={borrowInput}
+              inputMode={inputMode}
               compact
             />
           </div>
