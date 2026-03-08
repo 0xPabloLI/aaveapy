@@ -18,7 +18,7 @@
      enabled?: boolean;
    } = {}
  ): void {
-   const { limit = 30, delay = 500, enabled = true } = options;
+   const { limit = Infinity, delay = 500, enabled = true } = options;
    const hasPreloaded = useRef(false);
  
    useEffect(() => {

@@ -118,22 +118,19 @@ const Index = () => {
   }, [effectiveReservesData?.data]);
   const hasReserves = stableReserves.length > 0;
 
-  // Phase 3 Optimization: Preload token and chain icons during idle time
+  // Phase 3 Optimization: Preload ALL token and chain icons during idle time
   usePreloadReserveAssets(stableReserves, {
-    limit: 40, // Preload icons for first 40 reserves
+    limit: Infinity, // Preload icons for all reserves
     delay: 300, // Start after initial render settles
     enabled: hasReserves,
   });
 
-
-
-  // Preload incentive icons after initial data load (for tooltip)
+  // Preload incentive icons after reserve icons (lower priority)
   useEffect(() => {
     if (!hasReserves) return;
-    // Delay to not interfere with initial render
     const timeoutId = setTimeout(() => {
       preloadIncentiveIcons();
-    }, 500);
+    }, 2000); // Delay further to let reserve icons finish first
     return () => clearTimeout(timeoutId);
   }, [hasReserves]);
 
@@ -289,7 +286,7 @@ const Index = () => {
   // If we have cached data, use it; otherwise show empty state
   return (
     <PullToRefresh onRefresh={handleRefresh}>
-      <div className="min-h-screen min-w-0 w-full overflow-x-hidden bg-background">
+      <div className="min-h-screen min-w-0 w-full bg-background">
         {/* Background gradient */}
         <div className="fixed inset-0 bg-gradient-radial from-primary/5 via-transparent to-transparent pointer-events-none" />
         <div className="fixed top-0 right-0 w-1/2 h-1/2 bg-gradient-radial from-secondary/5 via-transparent to-transparent pointer-events-none" />
