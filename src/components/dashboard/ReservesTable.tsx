@@ -1184,6 +1184,7 @@ const ReservesTable = ({
                           isApy={isApy}
                           supplyInput={debouncedSharedSupplyInput}
                           borrowInput={debouncedSharedBorrowInput}
+                          inputMode={sharedInputMode}
                         />
                       )}
                     </TableCell>
