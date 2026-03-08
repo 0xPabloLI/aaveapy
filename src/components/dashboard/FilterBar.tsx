@@ -309,15 +309,14 @@ const FilterBar = ({
   ));
 
   return (
-    <div className="space-y-2 md:space-y-3">
-      {/* Row 2: Token Categories + Search + APY Toggle (PC) / Token Categories (Mobile) */}
-      <div className="flex flex-wrap items-center gap-[var(--ds-space-1-5)] md:gap-[var(--ds-space-2)]">
-        {/* Token Categories */}
-        <span className="ds-text-11 text-muted-foreground mr-[var(--ds-space-0-5)] md:mr-[var(--ds-space-1)] hidden sm:inline">Tokens:</span>
+    <div className="space-y-1.5 md:space-y-2">
+      {/* Row 1: Token Categories + Search + APY Toggle (desktop) / Token Categories (mobile) */}
+      <div className="flex flex-wrap items-center gap-1.5 md:gap-2">
+        <span className="ds-text-11 text-muted-foreground/70 hidden sm:inline">Tokens</span>
         {tokenCategoryButtons}
 
-        {/* Search - only on PC, hidden on mobile */}
-        <div className="relative w-20 sm:w-24 md:w-36 lg:w-44 hidden md:block">
+        {/* Search – desktop only */}
+        <div className="relative w-20 sm:w-24 md:w-36 lg:w-44 hidden md:block ml-1">
           <Search className="absolute left-2 md:left-2.5 top-1/2 -translate-y-1/2 w-3 md:w-3.5 h-3 md:h-3.5 text-muted-foreground/60" />
           <Input
             ref={desktopSearchInputRef}
@@ -336,17 +335,16 @@ const FilterBar = ({
           )}
         </div>
 
-        {/* Spacer */}
         <div className="flex-1 min-w-2 md:min-w-4 hidden md:block" />
 
-        {/* APY/APR Toggle with symmetric info icons - only on PC */}
+        {/* APR/APY toggle – desktop only */}
         <div className="hidden md:block">
           <AprApyToggle isApy={isApy} setIsApy={setIsApy} />
         </div>
       </div>
 
-      {/* Row 3: Search + APY/APR toggle - only on mobile */}
-      <div className="flex items-center gap-[var(--ds-space-1-5)] md:gap-[var(--ds-space-2)] md:hidden">
+      {/* Row 2: Search + APR/APY toggle – mobile only */}
+      <div className="flex items-center gap-1.5 md:hidden">
         <div className="relative flex-1 min-w-0">
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
           <Input
@@ -370,17 +368,17 @@ const FilterBar = ({
         </div>
       </div>
 
-      {/* Row 2: Markets */}
+      {/* Row 3: Markets */}
       <div
         ref={marketsRowRef}
-        className={`flex flex-wrap items-center gap-[var(--ds-space-1)] md:gap-[var(--ds-space-1-5)] ${isMeasuring ? 'overflow-hidden max-h-[2rem]' : ''}`}
+        className={`flex flex-wrap items-center gap-1 md:gap-1.5 ${isMeasuring ? 'overflow-hidden max-h-[2rem]' : ''}`}
       >
-        <span className="ds-text-11 text-muted-foreground mr-[var(--ds-space-0-5)] md:mr-[var(--ds-space-1)] hidden sm:inline">Markets:</span>
-        
-        {/* All Markets option */}
+        <span className="ds-text-11 text-muted-foreground/70 hidden sm:inline">Markets</span>
+
+        {/* "All" pill */}
         <button
           onClick={() => setSelectedMarkets([])}
-          className={`ds-chip px-[var(--ds-space-2)] md:px-[var(--ds-space-2-5)] py-[var(--ds-space-1)] rounded-md font-medium transition-all ${
+          className={`ds-chip px-2 md:px-2.5 py-1 rounded-md font-medium transition-all ${
             noMarketsSelected
               ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
               : 'text-foreground/80 border border-border hover:text-foreground'
@@ -389,7 +387,7 @@ const FilterBar = ({
           All
         </button>
 
-        {/* During measuring: render ALL pills to measure which fit */}
+        {/* Measuring pass: render all pills (overflow hidden) */}
         {isMeasuring && allMarkets.map((market, i) => {
           const info = getMarketInfo(market);
           const isSelected = selectedMarkets.includes(market.marketName);
@@ -399,7 +397,7 @@ const FilterBar = ({
               key={market.marketName}
               data-market-index={i}
               onClick={() => toggleMarket(market.marketName)}
-              className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-1-5)] md:px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-md font-medium transition-all ${
+              className={`ds-chip gap-1 px-1.5 md:px-2 py-1 rounded-md font-medium transition-all ${
                 isSelected
                   ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
                   : 'text-foreground/80 border border-border hover:text-foreground'
@@ -412,7 +410,7 @@ const FilterBar = ({
           );
         })}
 
-        {/* After measuring: render only visible pills */}
+        {/* Final render: only visible pills */}
         {!isMeasuring && visibleMarkets.map((market) => {
           const info = getMarketInfo(market);
           const isSelected = selectedMarkets.includes(market.marketName);
@@ -422,7 +420,7 @@ const FilterBar = ({
               key={market.marketName}
               data-market-pill
               onClick={() => toggleMarket(market.marketName)}
-              className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-1-5)] md:px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-md font-medium transition-all ${
+              className={`ds-chip gap-1 px-1.5 md:px-2 py-1 rounded-md font-medium transition-all ${
                 isSelected
                   ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
                   : 'text-foreground/80 border border-border hover:text-foreground'
@@ -435,25 +433,24 @@ const FilterBar = ({
           );
         })}
 
-        {/* More button - expands inline */}
+        {/* Expand */}
         {!isMeasuring && hasHiddenMarkets && !showMarketsExpanded && (
           <button
             onClick={() => setShowMarketsExpanded(true)}
-            className="ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-1-5)] md:px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-md font-medium transition-all ds-text-brand-magenta border ds-border-brand-magenta-40 border-dashed"
+            className="ds-chip gap-1 px-1.5 md:px-2 py-1 rounded-md font-medium transition-all ds-text-brand-magenta border ds-border-brand-magenta-40 border-dashed"
           >
-            <span>{hiddenMarkets.length}+ more</span>
+            <span>+{hiddenMarkets.length}</span>
             <ChevronDown className="w-3 h-3" />
           </button>
         )}
 
-        {/* Collapse button */}
+        {/* Collapse */}
         {showMarketsExpanded && (
           <button
             onClick={() => setShowMarketsExpanded(false)}
-            className="ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-1-5)] md:px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-md font-medium transition-all ds-text-brand-magenta border ds-border-brand-magenta-40 border-dashed"
+            className="ds-chip gap-1 px-1.5 md:px-2 py-1 rounded-md font-medium transition-all ds-text-brand-magenta border ds-border-brand-magenta-40 border-dashed"
           >
             <ChevronUp className="w-3 h-3" />
-            <span>Less</span>
           </button>
         )}
       </div>
