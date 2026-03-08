@@ -221,7 +221,7 @@ interface UseSharedRateSimulationsParams {
   enabled?: boolean;
   supplyInput: string;
   borrowInput: string;
-  inputMode: ScenarioInputMode;
+  inputMode?: ScenarioInputMode;
 }
 
 const buildIncentiveCurrent = (
