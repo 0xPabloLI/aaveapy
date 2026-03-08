@@ -17,6 +17,7 @@ interface SimulationSubRowProps {
   isApy: boolean;
   supplyInput: string;
   borrowInput: string;
+  inputMode?: 'usd' | 'token';
   compact?: boolean;
 }
 
@@ -155,6 +156,7 @@ const SimulationSubRow = ({
   isApy,
   supplyInput,
   borrowInput,
+  inputMode = 'usd',
   compact = false,
 }: SimulationSubRowProps) => {
   const rateLabel = isApy ? 'APY' : 'APR';
@@ -259,12 +261,12 @@ const SimulationSubRow = ({
         </div>
         <div className={`grid ${compact ? 'grid-cols-1' : 'grid-cols-2'} gap-[var(--ds-space-2)]`}>
           <div className="rounded-lg border border-border/60 bg-background/80 px-[var(--ds-space-2)] py-[var(--ds-space-1-5)]">
-            <p className="ds-text-10 uppercase tracking-wide text-muted-foreground">Supply scenario</p>
-            <p className="mt-[var(--ds-space-0-5)] ds-text-12 font-semibold text-foreground">{formatScenarioAmount(supplyInput)}</p>
+            <p className="ds-text-10 uppercase tracking-wide text-muted-foreground">Supply ({inputMode === 'usd' ? 'USD' : reserve.tokenSymbol})</p>
+            <p className="mt-[var(--ds-space-0-5)] ds-text-12 font-semibold text-foreground">{inputMode === 'usd' ? '$' : ''}{formatScenarioAmount(supplyInput)}</p>
           </div>
           <div className="rounded-lg border border-border/60 bg-background/80 px-[var(--ds-space-2)] py-[var(--ds-space-1-5)]">
-            <p className="ds-text-10 uppercase tracking-wide text-muted-foreground">Borrow scenario</p>
-            <p className="mt-[var(--ds-space-0-5)] ds-text-12 font-semibold text-foreground">{formatScenarioAmount(borrowInput)}</p>
+            <p className="ds-text-10 uppercase tracking-wide text-muted-foreground">Borrow ({inputMode === 'usd' ? 'USD' : reserve.tokenSymbol})</p>
+            <p className="mt-[var(--ds-space-0-5)] ds-text-12 font-semibold text-foreground">{inputMode === 'usd' ? '$' : ''}{formatScenarioAmount(borrowInput)}</p>
           </div>
         </div>
       </div>

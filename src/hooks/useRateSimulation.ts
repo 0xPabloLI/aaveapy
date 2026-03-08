@@ -185,6 +185,8 @@ export interface RateSimulationResult extends RateSimulationComputedResult {
   hasRateInput: boolean;
 }
 
+export type ScenarioInputMode = 'usd' | 'token';
+
 interface BuildRateSimulationResultParams {
   reserve: ReserveWithSpread;
   reserveRateInput?: ReserveRateInput | null;
@@ -194,6 +196,7 @@ interface BuildRateSimulationResultParams {
   tokenPrice?: number;
   supplyInput: string;
   borrowInput: string;
+  inputMode?: ScenarioInputMode;
   forecastStates: Record<string, MerklForecastStateResponse>;
 }
 
@@ -206,6 +209,7 @@ interface UseRateSimulationParams {
   enabled?: boolean;
   supplyInput: string;
   borrowInput: string;
+  inputMode?: ScenarioInputMode;
 }
 
 interface UseSharedRateSimulationsParams {
@@ -217,6 +221,7 @@ interface UseSharedRateSimulationsParams {
   enabled?: boolean;
   supplyInput: string;
   borrowInput: string;
+  inputMode?: ScenarioInputMode;
 }
 
 const buildIncentiveCurrent = (
@@ -359,15 +364,22 @@ export function buildRateSimulationResult({
   tokenPrice,
   supplyInput,
   borrowInput,
+  inputMode = 'token',
   forecastStates,
 }: BuildRateSimulationResultParams): RateSimulationComputedResult {
-  const supplyAmount = parseNumberInput(supplyInput);
-  const borrowAmount = parseNumberInput(borrowInput);
-  const hasSupplyInput = supplyAmount > 0;
-  const hasBorrowInput = borrowAmount > 0;
+  const rawSupply = parseNumberInput(supplyInput);
+  const rawBorrow = parseNumberInput(borrowInput);
+
+  // In USD mode, convert to token amounts for native simulation
+  const supplyAmount = inputMode === 'usd' && tokenPrice ? rawSupply / tokenPrice : rawSupply;
+  const borrowAmount = inputMode === 'usd' && tokenPrice ? rawBorrow / tokenPrice : rawBorrow;
+  const hasSupplyInput = rawSupply > 0;
+  const hasBorrowInput = rawBorrow > 0;
   const hasAnyInput = hasSupplyInput || hasBorrowInput;
-  const supplyInputUsd = tokenPrice ? supplyAmount * tokenPrice : 0;
-  const borrowInputUsd = tokenPrice ? borrowAmount * tokenPrice : 0;
+
+  // For incentive forecasts, we need USD values
+  const supplyInputUsd = inputMode === 'usd' ? rawSupply : (tokenPrice ? rawSupply * tokenPrice : 0);
+  const borrowInputUsd = inputMode === 'usd' ? rawBorrow : (tokenPrice ? rawBorrow * tokenPrice : 0);
 
   const currentNativeSimulation = reserveRateInput
     ? simulateNativeRatesAfterActions(reserveRateInput, {
@@ -378,8 +390,8 @@ export function buildRateSimulationResult({
 
   const combinedNativeSimulation = reserveRateInput && hasAnyInput
     ? simulateNativeRatesAfterActions(reserveRateInput, {
-        supplyAmount: supplyInput,
-        borrowAmount: borrowInput,
+        supplyAmount: String(supplyAmount),
+        borrowAmount: String(borrowAmount),
       })
     : null;
 
@@ -621,6 +633,7 @@ export const useSharedRateSimulations = ({
   enabled = true,
   supplyInput,
   borrowInput,
+  inputMode = 'token',
 }: UseSharedRateSimulationsParams) => {
   const cachedEntry = getCachedRateInputsSnapshotEntry<RateInputsResponse>();
   const hasAnyInput = useMemo(() => parseNumberInput(supplyInput) > 0 || parseNumberInput(borrowInput) > 0, [borrowInput, supplyInput]);
@@ -748,6 +761,7 @@ export const useSharedRateSimulations = ({
           tokenPrice: tokenPriceById[reserveId],
           supplyInput,
           borrowInput,
+          inputMode,
           forecastStates,
         }),
         tokenPriceLoading: tokenPriceLoadingById[reserveId] ?? false,
@@ -766,6 +780,7 @@ export const useSharedRateSimulations = ({
     forecastQuery.isPending,
     forecastStates,
     includeWhitelistOnlyMerkl,
+    inputMode,
     isApy,
     rateInputsQuery.error,
     rateInputsQuery.isFetching,
