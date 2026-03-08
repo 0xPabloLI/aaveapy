@@ -9,6 +9,7 @@ import {
   getCachedMarketsListEntry,
 } from '@/lib/cache';
 import { API_BASE } from '@/lib/apiBase';
+import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
 
 // Fetch all market data (all sorting and filtering done on frontend)
 export const fetchMarkets = async (): Promise<MarketsResponse> => {

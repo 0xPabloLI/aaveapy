@@ -25,6 +25,7 @@ import type {
   MerklCampaignBreakdown,
   MerklForecastStateResponse,
   MerklOpportunityGroup,
+  RateInputsResponse,
   ReserveRateInput,
   ReserveWithSpread,
   TokenPricesIndex,
