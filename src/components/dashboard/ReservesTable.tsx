@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, Fragment } from 'react';
-import { ArrowUp, ArrowDown, ChevronDown, ChevronUp, ExternalLink, Filter } from 'lucide-react';
+import { ArrowUp, ArrowDown, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ReserveWithSpread, ETHEREUM_MARKET_NAMES, TokenPricesIndex } from '@/types/aave';
@@ -1070,42 +1070,37 @@ const ReservesTable = ({
                 >
                   {/* Token */}
                   <TableCell className="w-1/5 px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center">
-                    <div className="flex items-center justify-center gap-[var(--ds-space-2)]">
+                    <a
+                      href={buildAaveReserveUrl({ marketName: reserve.marketName, tokenAddress: reserve.tokenAddress }) || '#'}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(event) => event.stopPropagation()}
+                      className="group/token inline-flex items-center justify-center gap-[var(--ds-space-2)] hover:opacity-80 transition-opacity duration-150"
+                      aria-label={`Open ${reserve.tokenSymbol} on Aave`}
+                      title="Open on Aave"
+                    >
                       <TokenIcon symbol={iconSymbol} size={28} loading="eager" logoURI={logoURI} />
                       <span className="font-semibold text-foreground ds-text-14">
                         {reserve.tokenSymbol}
                       </span>
-                    </div>
+                      <ExternalLink className="w-3 h-3 text-muted-foreground opacity-0 -ml-1 group-hover/token:opacity-70 transition-opacity duration-150" />
+                    </a>
                   </TableCell>
                   {/* Market */}
                   <TableCell className="w-1/5 px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell">
-                    <div className="flex items-center justify-center gap-[var(--ds-space-1)]">
-                      <a
-                        href={buildAaveReserveUrl({ marketName: reserve.marketName, tokenAddress: reserve.tokenAddress }) || '#'}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(event) => event.stopPropagation()}
-                        className="group/market inline-flex items-center justify-center gap-[var(--ds-space-1-5)] px-[var(--ds-space-2-5)] py-[var(--ds-space-1)] rounded-full ds-text-11 font-medium bg-muted/50 text-muted-foreground border border-border/60 hover:bg-muted hover:text-foreground hover:border-border/80 hover:ring-2 hover:ring-muted-foreground/20 active:scale-[0.98] transition-all duration-150"
-                        aria-label={`Open ${reserve.tokenSymbol} on Aave (${getMarketDisplayName(reserve)})`}
-                        title="Open on Aave"
-                      >
-                        <ChainIcon chain={reserve.chainName} />
-                        {getMarketDisplayName(reserve)}
-                        <ExternalLink className="w-3 h-3 opacity-0 -ml-0.5 group-hover/market:opacity-70 transition-opacity duration-150" />
-                      </a>
-                      <button
-                        type="button"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          onSelectMarket?.(reserve.marketName);
-                        }}
-                        className="inline-flex shrink-0 items-center justify-center w-6 h-6 rounded-full text-muted-foreground/50 hover:text-foreground hover:bg-muted/80 transition-all duration-150"
-                        aria-label={`Filter by ${getMarketDisplayName(reserve)} market`}
-                        title={`Filter by ${getMarketDisplayName(reserve)}`}
-                      >
-                        <Filter className="w-3 h-3" />
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onSelectMarket?.(reserve.marketName);
+                      }}
+                      className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)] px-[var(--ds-space-2-5)] py-[var(--ds-space-1)] rounded-full ds-text-11 font-medium bg-muted/50 text-muted-foreground border border-border/60 hover:bg-muted hover:text-foreground hover:border-border/80 active:scale-[0.98] transition-all duration-150"
+                      aria-label={`Filter by ${getMarketDisplayName(reserve)} market`}
+                      title={`Filter by ${getMarketDisplayName(reserve)}`}
+                    >
+                      <ChainIcon chain={reserve.chainName} />
+                      {getMarketDisplayName(reserve)}
+                    </button>
                   </TableCell>
                   {/* Supply */}
                   <TableCell className="w-1/5 px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center">
