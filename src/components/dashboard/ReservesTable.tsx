@@ -1172,12 +1172,7 @@ const ReservesTable = ({
                             {formatPercent(displaySupplyNative)}
                           </span>
                           <span className="text-muted-foreground/70">+</span>
-                          {hasSharedScenario ? (
-                            <span className="inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-0-5)] py-[var(--ds-space-0)] rounded-full ds-bg-emerald-500-10 ds-text-emerald-500-70 ring-1 ds-ring-emerald-500-15 tabular-nums">
-                              <span>{formatPercent(displaySupplyIncentive)}</span>
-                            </span>
-                          ) : (
-                            <button
+                          <button
                               type="button"
                               onClick={(e) =>
                                 handleIncentiveClick(e, reserve, 'supply', displaySupplyIncentive)
@@ -1187,7 +1182,6 @@ const ReservesTable = ({
                               <span>{formatPercent(displaySupplyIncentive)}</span>
                               <IncentiveIcon width={isMobile ? 8 : 10} height={isMobile ? 8 : 10} />
                             </button>
-                          )}
                         </div>
                       )}
                     </div>
