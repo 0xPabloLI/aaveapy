@@ -125,13 +125,7 @@ const Index = () => {
     enabled: hasReserves,
   });
 
-  // Preload chain icons for hidden markets when user hovers "More" button
-  useEffect(() => {
-    if (showMarketsExpanded && orderedMarkets.length > 6) {
-      const hiddenChains = orderedMarkets.slice(6).map(m => m.chainName);
-      preloadChainIcons(hiddenChains);
-    }
-  }, [showMarketsExpanded, orderedMarkets]);
+
 
   // Preload incentive icons after initial data load (for tooltip)
   useEffect(() => {
