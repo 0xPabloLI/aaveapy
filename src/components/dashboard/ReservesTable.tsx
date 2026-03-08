@@ -362,7 +362,7 @@ const ReservesTable = ({
     });
   };
 
-  // ChainIcon is now defined outside the component as MemoChainIcon
+  
 
   const handleRowClick = (reserve: ReserveWithSpread) => {
     const url = buildAaveReserveUrl({
