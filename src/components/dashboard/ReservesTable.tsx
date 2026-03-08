@@ -411,11 +411,14 @@ const ReservesTable = ({
     prevSortedIdsRef.current = currentIds;
     // Only scroll if the position actually changed
     if (prevIndex >= 0 && newIndex >= 0 && prevIndex !== newIndex) {
+      // Use double-rAF so the DOM has settled after React re-render
       requestAnimationFrame(() => {
-        const el = document.querySelector(`[data-reserve-id="${CSS.escape(expandedId)}"]`);
-        if (el) {
-          el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-        }
+        requestAnimationFrame(() => {
+          const el = document.querySelector(`[data-reserve-id="${CSS.escape(expandedId)}"]`);
+          if (el) {
+            el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+          }
+        });
       });
     }
   }, [sortedData]);
