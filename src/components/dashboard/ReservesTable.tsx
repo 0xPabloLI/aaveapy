@@ -393,6 +393,33 @@ const ReservesTable = ({
     }
   }, [scrollToReserveId]);
 
+  // Scroll to expanded row when sorting changes move it (e.g. scenario input updates)
+  const expandedRowRef = useRef<string | null>(null);
+  expandedRowRef.current = expandedReserveId;
+
+  const prevSortedIdsRef = useRef<string[]>([]);
+  useEffect(() => {
+    const currentIds = sortedData.map((r) => getReserveSimulationId(r));
+    const expandedId = expandedRowRef.current;
+    if (!expandedId) {
+      prevSortedIdsRef.current = currentIds;
+      return;
+    }
+    const prevIds = prevSortedIdsRef.current;
+    const prevIndex = prevIds.indexOf(expandedId);
+    const newIndex = currentIds.indexOf(expandedId);
+    prevSortedIdsRef.current = currentIds;
+    // Only scroll if the position actually changed
+    if (prevIndex >= 0 && newIndex >= 0 && prevIndex !== newIndex) {
+      requestAnimationFrame(() => {
+        const el = document.querySelector(`[data-reserve-id="${CSS.escape(expandedId)}"]`);
+        if (el) {
+          el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        }
+      });
+    }
+  }, [sortedData]);
+
   // Display data with pagination - must be before conditional returns
   const displayData = useMemo(() => 
     showAll ? sortedData : sortedData.slice(0, DEFAULT_VISIBLE_COUNT),
