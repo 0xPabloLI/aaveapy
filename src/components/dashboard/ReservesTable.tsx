@@ -1,5 +1,5 @@
-import { useState, useMemo, useEffect, useCallback, Fragment, memo } from 'react';
-import { ArrowUp, ArrowDown, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
+import { useState, useMemo, useEffect, useCallback, memo } from 'react';
+import { ArrowUp, ArrowDown, ChevronDown, ChevronUp } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ReserveWithSpread, ETHEREUM_MARKET_NAMES, TokenPricesIndex } from '@/types/aave';
@@ -10,8 +10,6 @@ import {
   calculateTotalSupplyApy,
   calculateTotalBorrowApr,
   calculateTotalBorrowApy,
-  calculateSpreadApy,
-  calculateSpreadApr,
   calculateTotalIncentiveApr,
   calculateTotalIncentiveApy,
   apyToApr
@@ -19,13 +17,10 @@ import {
 import ScenarioControls from './ScenarioControls';
 import { compareIncentiveWithNative } from '@/lib/sorters';
 import { getChainIconSrc } from '@/lib/chainIcons';
-import { IncentiveIcon } from '@/components/IncentiveIcon';
-import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
-import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
 import IncentiveTooltip from './IncentiveTooltip';
 import MobileReserveCard from './MobileReserveCard';
-import SimulationSubRow from './SimulationSubRow';
+import DesktopReserveRow from './DesktopReserveRow';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getReserveSimulationId, useSharedRateSimulations } from '@/hooks/useRateSimulation';
 
@@ -46,22 +41,6 @@ interface ReservesTableProps {
 
 type SortMode = 'total' | 'native' | 'incentive';
 
-// Extracted & memoized to prevent re-mount on parent state changes (e.g. row expand)
-const ChainIcon = memo(({ chain, className = '' }: { chain: string; className?: string }) => {
-  const size = 'w-3.5 h-3.5';
-  const src = getChainIconSrc(chain);
-  if (!src) {
-    return (
-      <div className={`${size} rounded-full bg-current opacity-40 flex items-center justify-center ds-text-8 font-bold`}>
-        {chain.charAt(0)}
-      </div>
-    );
-  }
-  return (
-    <img src={src} alt={`${chain} logo`} className={`${size} ${className}`} loading="lazy" />
-  );
-});
-ChainIcon.displayName = 'ChainIcon';
 
 const DEFAULT_VISIBLE_COUNT = 20;
 
@@ -97,6 +76,9 @@ const ReservesTable = ({
     setDebouncedSharedSupplyInput(supply);
     setDebouncedSharedBorrowInput(borrow);
     setSharedInputMode(mode);
+  }, []);
+  const handleToggleExpand = useCallback((reserveId: string) => {
+    setExpandedReserveId((prev) => (prev === reserveId ? null : reserveId));
   }, []);
   const [tooltipState, setTooltipState] = useState<{
     reserve: ReserveWithSpread;
@@ -338,7 +320,7 @@ const ReservesTable = ({
     setSpreadSortOrder(spreadSortOrder === 'desc' ? 'asc' : 'desc');
   };
 
-  const handleIncentiveClick = (
+  const handleIncentiveClick = useCallback((
     e: React.MouseEvent,
     reserve: ReserveWithSpread,
     type: 'supply' | 'borrow',
@@ -363,7 +345,7 @@ const ReservesTable = ({
         height: rect.height,
       },
     });
-  };
+  }, []);
 
   
 
@@ -1040,12 +1022,7 @@ const ReservesTable = ({
               ))
             ) : displayData.map((reserve) => {
               const reserveId = getReserveSimulationId(reserve);
-              const isExpanded = expandedReserveId === reserveId;
               const simulation = simulationsById[reserveId];
-              const displaySupplyTotal = getDisplaySupplyTotal(reserve);
-              const displaySupplyNative = getDisplaySupplyNative(reserve);
-              const displayBorrowTotal = getDisplayBorrowTotal(reserve);
-              const displayBorrowNative = getDisplayBorrowNative(reserve);
               const displaySupplyIncentive = (() => {
                 const incentive = getDisplaySupplyIncentive(reserve);
                 return incentive === 0 || isNaN(incentive) || incentive < 0.01 ? null : incentive;
@@ -1055,143 +1032,29 @@ const ReservesTable = ({
                 return incentive === 0 || isNaN(incentive) || incentive < 0.01 ? null : incentive;
               })();
 
-              const spread = getDisplaySpread(reserve);
-              const { iconSymbol, logoURI } = fetchIconSymbolAndName({
-                underlyingAsset: reserve.tokenAddress,
-                symbol: reserve.tokenSymbol,
-                name: reserve.tokenName,
-              });
-
               return (
-                <Fragment key={reserveId}>
-              <TableRow
-                  data-reserve-id={reserveId}
-                  className={`transition-all duration-150 cursor-pointer hover:bg-muted/60 hover:shadow-sm active:bg-muted/80 ${
-                    isExpanded ? 'bg-muted/30' : ''
-                  }`}
-                  onClick={() => setExpandedReserveId((prev) => (prev === reserveId ? null : reserveId))}
-                >
-                  {/* Token */}
-                  <TableCell className="w-1/5 px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center">
-                    <a
-                      href={buildAaveReserveUrl({ marketName: reserve.marketName, tokenAddress: reserve.tokenAddress }) || '#'}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(event) => event.stopPropagation()}
-                      className="group/token inline-flex items-center justify-center gap-[var(--ds-space-2)] hover:opacity-80 transition-opacity duration-150"
-                      aria-label={`Open ${reserve.tokenSymbol} on Aave`}
-                      title="Open on Aave"
-                    >
-                      <TokenIcon symbol={iconSymbol} size={28} loading="eager" logoURI={logoURI} />
-                      <span className="font-semibold text-foreground ds-text-14">
-                        {reserve.tokenSymbol}
-                      </span>
-                      <ExternalLink className="w-3 h-3 text-muted-foreground opacity-0 -ml-1 group-hover/token:opacity-70 transition-opacity duration-150" />
-                    </a>
-                  </TableCell>
-                  {/* Market */}
-                  <TableCell className="w-1/5 px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell">
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        onSelectMarket?.(reserve.marketName);
-                      }}
-                      className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)] px-[var(--ds-space-2-5)] py-[var(--ds-space-1)] rounded-full ds-text-11 font-medium bg-muted/50 text-muted-foreground border border-border/60 hover:bg-muted hover:text-foreground hover:border-border/80 active:scale-[0.98] transition-all duration-150"
-                      aria-label={`Filter by ${getMarketDisplayName(reserve)} market`}
-                      title={`Filter by ${getMarketDisplayName(reserve)}`}
-                    >
-                      <ChainIcon chain={reserve.chainName} />
-                      {getMarketDisplayName(reserve)}
-                    </button>
-                  </TableCell>
-                  {/* Supply */}
-                  <TableCell className="w-1/5 px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center">
-                    <div className="flex flex-col items-center justify-center gap-[var(--ds-space-0-5)] min-h-[2.75rem]">
-                      <span className={`font-bold ds-text-emerald-500 tabular-nums ${isMobile ? 'ds-text-16' : 'ds-text-18'}`}>
-                        {formatPercent(displaySupplyTotal)}
-                      </span>
-                      {displaySupplyIncentive !== null && (
-                        <div className="flex items-center gap-[var(--ds-space-0-5)] ds-text-11 justify-center min-h-[1.25rem]">
-                          <span className="ds-text-emerald-500-70 tabular-nums">
-                            {formatPercent(displaySupplyNative)}
-                          </span>
-                          <span className="text-muted-foreground/70">+</span>
-                          <button
-                              type="button"
-                              onClick={(e) =>
-                                handleIncentiveClick(e, reserve, 'supply', displaySupplyIncentive)
-                              }
-                              className="inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-0-5)] py-[var(--ds-space-0)] rounded-full ds-bg-emerald-500-10 ds-text-emerald-500-70 hover:bg-[rgb(var(--ds-emerald-500-rgb)/0.25)] hover:ring-2 hover:ring-[rgb(var(--ds-emerald-500-rgb)/0.3)] ring-1 ds-ring-emerald-500-15 transition-all duration-150 cursor-pointer tabular-nums"
-                            >
-                              <span>{formatPercent(displaySupplyIncentive)}</span>
-                              <IncentiveIcon width={isMobile ? 8 : 10} height={isMobile ? 8 : 10} />
-                            </button>
-                        </div>
-                      )}
-                    </div>
-                  </TableCell>
-                  {/* Spread */}
-                  <TableCell className="w-1/5 px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell">
-                    <span
-                      className={`font-bold tabular-nums ${isMobile ? 'ds-text-16' : 'ds-text-18'} ${
-                        spread !== null ? 'ds-text-purple-500' : 'text-muted-foreground/70'
-                      }`}
-                    >
-                      {formatSpread(spread)}
-                    </span>
-                  </TableCell>
-                  {/* Borrow */}
-                  <TableCell className="w-1/5 px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center">
-                    <div className="flex flex-col items-center justify-center gap-[var(--ds-space-0-5)] min-h-[2.75rem]">
-                        <span className={`font-bold ds-text-brand-cyan tabular-nums ${isMobile ? 'ds-text-16' : 'ds-text-18'}`}>
-                          {displayBorrowTotal !== null ? formatPercent(displayBorrowTotal) : '-'}
-                        </span>
-                        {displayBorrowIncentive !== null && (
-                          <div className="flex items-center gap-[var(--ds-space-0-5)] ds-text-11 justify-center min-h-[1.25rem]">
-                            {displayBorrowNative !== null && (
-                              <>
-                                <span className="ds-text-brand-cyan-70 tabular-nums">
-                                  {formatPercent(displayBorrowNative)}
-                                </span>
-                                <span className="text-muted-foreground/70">-</span>
-                              </>
-                            )}
-                            <button
-                                type="button"
-                                onClick={(e) =>
-                                  handleIncentiveClick(e, reserve, 'borrow', displayBorrowIncentive)
-                                }
-                                className="inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-0-5)] py-[var(--ds-space-0)] rounded-full ds-bg-brand-cyan-10 ds-text-brand-cyan-70 hover:bg-[rgb(var(--ds-brand-cyan-rgb)/0.25)] hover:ring-2 hover:ring-[rgb(var(--ds-brand-cyan-rgb)/0.3)] ring-1 ds-ring-brand-cyan-15 transition-all duration-150 cursor-pointer tabular-nums"
-                              >
-                                <span>{formatPercent(displayBorrowIncentive)}</span>
-                                <IncentiveIcon width={isMobile ? 8 : 10} height={isMobile ? 8 : 10} />
-                              </button>
-                          </div>
-                        )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-                {isExpanded && (
-                  <TableRow
-                    className="border-b border-border/40 bg-muted/10"
-                    onClick={(event) => event.stopPropagation()}
-                  >
-                    <TableCell colSpan={5} className="px-[var(--ds-space-3)] py-[var(--ds-space-3)]">
-                      {simulation && (
-                        <SimulationSubRow
-                          reserve={reserve}
-                          simulation={simulation}
-                          isApy={isApy}
-                          supplyInput={debouncedSharedSupplyInput}
-                          borrowInput={debouncedSharedBorrowInput}
-                          inputMode={sharedInputMode}
-                        />
-                      )}
-                    </TableCell>
-                  </TableRow>
-                )}
-                </Fragment>
+                <DesktopReserveRow
+                  key={reserveId}
+                  reserve={reserve}
+                  reserveId={reserveId}
+                  isExpanded={expandedReserveId === reserveId}
+                  onToggleExpand={handleToggleExpand}
+                  onSelectMarket={onSelectMarket}
+                  onIncentiveClick={handleIncentiveClick}
+                  displaySupplyTotal={getDisplaySupplyTotal(reserve)}
+                  displaySupplyNative={getDisplaySupplyNative(reserve)}
+                  displaySupplyIncentive={displaySupplyIncentive}
+                  displayBorrowTotal={getDisplayBorrowTotal(reserve)}
+                  displayBorrowNative={getDisplayBorrowNative(reserve)}
+                  displayBorrowIncentive={displayBorrowIncentive}
+                  spread={getDisplaySpread(reserve)}
+                  simulation={simulation}
+                  supplyInput={debouncedSharedSupplyInput}
+                  borrowInput={debouncedSharedBorrowInput}
+                  inputMode={sharedInputMode}
+                  isApy={isApy}
+                  isMobile={isMobile}
+                />
               );
             })
             }
