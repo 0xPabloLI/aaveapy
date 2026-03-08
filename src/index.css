@@ -683,15 +683,15 @@
     @apply border-border;
   }
 
-  /* Prevent horizontal overflow on mobile (no hidden horizontal scrollbar) */
+  /* Prevent horizontal overflow on mobile without breaking position:sticky */
   html {
-    overflow-x: hidden;
+    overflow-x: clip;
     width: 100%;
   }
 
   body {
     @apply bg-background text-foreground;
-    overflow-x: hidden;
+    overflow-x: clip;
     width: 100%;
     position: relative;
   }
