@@ -761,6 +761,7 @@ export const useSharedRateSimulations = ({
           tokenPrice: tokenPriceById[reserveId],
           supplyInput,
           borrowInput,
+          inputMode,
           forecastStates,
         }),
         tokenPriceLoading: tokenPriceLoadingById[reserveId] ?? false,
