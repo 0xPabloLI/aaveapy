@@ -26,10 +26,17 @@ function normalizeMarketName(value: string): string {
   return value.trim().toLowerCase();
 }
 
+export class RateInputsUnavailableError extends Error {
+  constructor(status: number, statusText: string) {
+    super(`Native simulation unavailable (${status})`);
+    this.name = 'RateInputsUnavailableError';
+  }
+}
+
 export async function fetchRateInputsSnapshot(): Promise<RateInputsResponse> {
   const response = await fetch(`${API_BASE}/rate-inputs`);
   if (!response.ok) {
-    throw new Error(`Failed to fetch rate inputs snapshot: ${response.status} ${response.statusText}`);
+    throw new RateInputsUnavailableError(response.status, response.statusText);
   }
   const payload = (await response.json()) as RateInputsResponse;
   setCachedRateInputsSnapshot(payload);
