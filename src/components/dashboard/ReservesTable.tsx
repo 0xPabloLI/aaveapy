@@ -1,7 +1,7 @@
-import { useState, useMemo, useEffect, useCallback, Fragment, memo } from 'react';
-import { ArrowUp, ArrowDown, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
+import { useState, useMemo, useEffect, useCallback, memo } from 'react';
+import { ArrowUp, ArrowDown, ChevronDown, ChevronUp } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ReserveWithSpread, ETHEREUM_MARKET_NAMES, TokenPricesIndex } from '@/types/aave';
 import { 
   formatPercent, 
@@ -10,22 +10,15 @@ import {
   calculateTotalSupplyApy,
   calculateTotalBorrowApr,
   calculateTotalBorrowApy,
-  calculateSpreadApy,
-  calculateSpreadApr,
   calculateTotalIncentiveApr,
   calculateTotalIncentiveApy,
   apyToApr
 } from '@/lib/formatters';
 import ScenarioControls from './ScenarioControls';
 import { compareIncentiveWithNative } from '@/lib/sorters';
-import { getChainIconSrc } from '@/lib/chainIcons';
-import { IncentiveIcon } from '@/components/IncentiveIcon';
-import { TokenIcon } from '@/components/primitives/TokenIcon';
-import { buildAaveReserveUrl } from '@/lib/aaveLinks';
-import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
 import IncentiveTooltip from './IncentiveTooltip';
 import MobileReserveCard from './MobileReserveCard';
-import SimulationSubRow from './SimulationSubRow';
+import DesktopReserveRow from './DesktopReserveRow';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getReserveSimulationId, useSharedRateSimulations } from '@/hooks/useRateSimulation';
 
