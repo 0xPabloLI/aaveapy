@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useCallback, memo } from 'react';
 import { ArrowUp, ArrowDown, ChevronDown, ChevronUp } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ReserveWithSpread, ETHEREUM_MARKET_NAMES, TokenPricesIndex } from '@/types/aave';
 import { 
   formatPercent, 
@@ -16,6 +16,8 @@ import {
 } from '@/lib/formatters';
 import ScenarioControls from './ScenarioControls';
 import { compareIncentiveWithNative } from '@/lib/sorters';
+import { getChainIconSrc } from '@/lib/chainIcons';
+import { buildAaveReserveUrl } from '@/lib/aaveLinks';
 import IncentiveTooltip from './IncentiveTooltip';
 import MobileReserveCard from './MobileReserveCard';
 import DesktopReserveRow from './DesktopReserveRow';
