@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
 import { getCachedCoingeckoFdvEntry, setCachedCoingeckoFdv } from '@/lib/cache';
 import { API_BASE } from '@/lib/apiBase';
+import { CoingeckoFdvResponseSchema } from '@/lib/apiSchemas';
 
 interface CoingeckoFdvItem {
   id: string;
