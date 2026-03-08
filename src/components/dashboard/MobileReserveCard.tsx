@@ -27,7 +27,7 @@ interface MobileReserveCardProps {
   hasSharedScenario: boolean;
 }
 
-const MobileReserveCard = ({
+const MobileReserveCard = memo(({
   reserve,
   isApy,
   onIncentiveClick,
