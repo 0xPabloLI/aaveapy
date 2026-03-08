@@ -658,6 +658,7 @@ const ReservesTable = ({
                 supplyInput={debouncedSharedSupplyInput}
                 borrowInput={debouncedSharedBorrowInput}
                 hasSharedScenario={hasSharedScenario}
+                inputMode={sharedInputMode}
               />
               );
             })
