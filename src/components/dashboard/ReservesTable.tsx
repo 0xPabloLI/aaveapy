@@ -41,22 +41,6 @@ interface ReservesTableProps {
 
 type SortMode = 'total' | 'native' | 'incentive';
 
-// Extracted & memoized to prevent re-mount on parent state changes (e.g. row expand)
-const ChainIcon = memo(({ chain, className = '' }: { chain: string; className?: string }) => {
-  const size = 'w-3.5 h-3.5';
-  const src = getChainIconSrc(chain);
-  if (!src) {
-    return (
-      <div className={`${size} rounded-full bg-current opacity-40 flex items-center justify-center ds-text-8 font-bold`}>
-        {chain.charAt(0)}
-      </div>
-    );
-  }
-  return (
-    <img src={src} alt={`${chain} logo`} className={`${size} ${className}`} loading="lazy" />
-  );
-});
-ChainIcon.displayName = 'ChainIcon';
 
 const DEFAULT_VISIBLE_COUNT = 20;
 
