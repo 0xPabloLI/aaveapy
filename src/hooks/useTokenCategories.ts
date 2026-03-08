@@ -2,8 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { TokenCategoryOverrides } from '@/lib/tokenCategories';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
 import { getCachedTokenCategoriesEntry, setCachedTokenCategories } from '@/lib/cache';
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://api.aaveapy.com/api';
+import { API_BASE } from '@/lib/apiBase';
 
 interface CoingeckoCategoriesResponse {
   uniqueSymbolsStablecoins?: string[];
