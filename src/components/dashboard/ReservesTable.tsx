@@ -1171,7 +1171,7 @@ const ReservesTable = ({
                     className="border-b border-border/40 bg-muted/10"
                     onClick={(event) => event.stopPropagation()}
                   >
-                    <TableCell colSpan={5} className="px-[var(--ds-space-3)] pb-[var(--ds-space-3)] pt-0">
+                    <TableCell colSpan={5} className="px-[var(--ds-space-3)] py-[var(--ds-space-3)]">
                       {simulation && (
                         <SimulationSubRow
                           reserve={reserve}
