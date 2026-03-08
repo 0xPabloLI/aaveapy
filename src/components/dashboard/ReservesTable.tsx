@@ -320,7 +320,7 @@ const ReservesTable = ({
     setSpreadSortOrder(spreadSortOrder === 'desc' ? 'asc' : 'desc');
   };
 
-  const handleIncentiveClick = (
+  const handleIncentiveClick = useCallback((
     e: React.MouseEvent,
     reserve: ReserveWithSpread,
     type: 'supply' | 'borrow',
