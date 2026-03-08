@@ -110,6 +110,18 @@ const FilterBar = ({
   const hiddenMarkets = showMarketsExpanded ? [] : allMarkets.slice(marketsVisibleCount);
   const hasHiddenMarkets = hiddenMarkets.length > 0;
 
+  // Auto-expand when a selected market is hidden behind overflow
+  const hiddenMarketNames = useMemo(
+    () => hiddenMarkets.map(m => m.marketName),
+    [hiddenMarkets]
+  );
+  useEffect(() => {
+    if (selectedMarkets.length !== 1) return;
+    if (hiddenMarketNames.includes(selectedMarkets[0])) {
+      setShowMarketsExpanded(true);
+    }
+  }, [hiddenMarketNames, selectedMarkets]);
+
   // --- Overflow: Token categories ---
   const tokensRowRef = useRef<HTMLDivElement>(null);
   const [tokenCatsExpanded, setTokenCatsExpanded] = useState(false);
