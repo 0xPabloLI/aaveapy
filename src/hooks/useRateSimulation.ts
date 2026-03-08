@@ -633,6 +633,7 @@ export const useSharedRateSimulations = ({
   enabled = true,
   supplyInput,
   borrowInput,
+  inputMode = 'token',
 }: UseSharedRateSimulationsParams) => {
   const cachedEntry = getCachedRateInputsSnapshotEntry<RateInputsResponse>();
   const hasAnyInput = useMemo(() => parseNumberInput(supplyInput) > 0 || parseNumberInput(borrowInput) > 0, [borrowInput, supplyInput]);
