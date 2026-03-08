@@ -77,6 +77,9 @@ const ReservesTable = ({
     setDebouncedSharedBorrowInput(borrow);
     setSharedInputMode(mode);
   }, []);
+  const handleToggleExpand = useCallback((reserveId: string) => {
+    setExpandedReserveId((prev) => (prev === reserveId ? null : reserveId));
+  }, []);
   const [tooltipState, setTooltipState] = useState<{
     reserve: ReserveWithSpread;
     type: 'supply' | 'borrow';
