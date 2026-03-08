@@ -101,39 +101,47 @@ const MobileReserveCard = ({
       className="bg-card rounded-xl border border-border/60 ds-card-pad-sm shadow-sm transition-colors"
     >
       <div
-        className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-3)] cursor-pointer active:opacity-70 transition-opacity min-h-[44px]"
-        onClick={onToggleSimulation}
+        className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-3)] min-h-[44px]"
       >
-        <TokenIcon
-          symbol={iconSymbol}
-          size={32}
-          loading="eager"
-          className="shrink-0"
-          logoURI={logoURI}
-        />
-        <div className="min-w-0 flex-1">
-          <p className="font-bold text-foreground ds-text-14 truncate">{reserve.tokenSymbol}</p>
-          <div className="flex items-center gap-[var(--ds-space-1)] ds-text-11 text-muted-foreground">
-            {chainIconSrc && (
-              <img src={chainIconSrc} alt={reserve.chainName} className="w-3.5 h-3.5" />
-            )}
-            <span className="truncate">{getMarketDisplayName()}</span>
+        <a
+          href={buildAaveReserveUrl({ marketName: reserve.marketName, tokenAddress: reserve.tokenAddress }) || '#'}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="flex items-center gap-[var(--ds-space-2)] min-w-0 flex-1 active:opacity-70 transition-opacity"
+          aria-label={`Open ${reserve.tokenSymbol} on Aave`}
+        >
+          <TokenIcon
+            symbol={iconSymbol}
+            size={32}
+            loading="eager"
+            className="shrink-0"
+            logoURI={logoURI}
+          />
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-[var(--ds-space-1)]">
+              <p className="font-bold text-foreground ds-text-14 truncate">{reserve.tokenSymbol}</p>
+              <ExternalLink className="w-3 h-3 text-muted-foreground/50 shrink-0" />
+            </div>
+            <div className="flex items-center gap-[var(--ds-space-1)] ds-text-11 text-muted-foreground">
+              {chainIconSrc && (
+                <img src={chainIconSrc} alt={reserve.chainName} className="w-3.5 h-3.5" />
+              )}
+              <span className="truncate">{getMarketDisplayName()}</span>
+            </div>
           </div>
-        </div>
-        <div className="shrink-0 w-10 h-10 -m-1.5 rounded-full flex items-center justify-center">
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleCardClick();
-            }}
-            className="w-7 h-7 rounded-full bg-muted/60 border border-border flex items-center justify-center text-muted-foreground transition-all hover:bg-muted hover:border-border/80 hover:text-foreground"
-            aria-label={`Open ${reserve.tokenSymbol} on Aave`}
-            title="Open on Aave"
-          >
-            <ExternalLink className="w-3.5 h-3.5" />
-          </button>
-        </div>
+        </a>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleSimulation();
+          }}
+          className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground/60"
+          aria-label="Toggle scenario breakdown"
+        >
+          {isSimulationExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+        </button>
       </div>
 
       <div className="grid grid-cols-3 gap-[var(--ds-space-2)]">
