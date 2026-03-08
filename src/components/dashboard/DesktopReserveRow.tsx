@@ -31,7 +31,7 @@ interface DesktopReserveRowProps {
   reserve: ReserveWithSpread;
   reserveId: string;
   isExpanded: boolean;
-  onToggleExpand: () => void;
+  onToggleExpand: (reserveId: string) => void;
   onSelectMarket?: (marketName: string) => void;
   onIncentiveClick: (e: React.MouseEvent, reserve: ReserveWithSpread, type: 'supply' | 'borrow', apy: number | null) => void;
   displaySupplyTotal: number | null;
