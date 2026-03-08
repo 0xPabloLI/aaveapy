@@ -107,9 +107,66 @@ const FilterBar = ({
   const otherMarkets = marketsList?.filter(m => m.chainName !== 'Ethereum') || [];
   const allMarkets = [...ethereumMarkets, ...otherMarkets];
 
-  // Show first 6 markets, rest in "More"
-  const visibleMarkets = allMarkets.slice(0, 6);
-  const hiddenMarkets = allMarkets.slice(6);
+  // Dynamic overflow: measure how many pills fit in one row
+  const marketsRowRef = useRef<HTMLDivElement>(null);
+  const [visibleCount, setVisibleCount] = useState(allMarkets.length); // default: show all
+
+  useLayoutEffect(() => {
+    const container = marketsRowRef.current;
+    if (!container || allMarkets.length === 0 || showMarketsExpanded) return;
+
+    const measure = () => {
+      // Temporarily show all children to measure
+      const children = Array.from(container.children) as HTMLElement[];
+      if (children.length === 0) return;
+
+      const containerRight = container.getBoundingClientRect().right;
+      const containerTop = children[0].getBoundingClientRect().top;
+
+      // Find the "All" button (index 0), then market pills start at index 1
+      // We want to find how many market pills fit on the first row
+      let lastFittingIndex = 0;
+
+      for (let i = 1; i < children.length; i++) {
+        const child = children[i];
+        // Skip non-market elements (like "More" button or "Less" button)
+        if (child.dataset.marketPill === undefined) continue;
+
+        const rect = child.getBoundingClientRect();
+        // If the pill wraps to the next line, stop
+        if (rect.top > containerTop + 4) break; // 4px tolerance
+        lastFittingIndex = i;
+      }
+
+      // lastFittingIndex is 1-based (since index 0 is "All" button)
+      // But we need to leave room for the "More" button
+      // We count market pills that fit (subtract 1 for "All" button)
+      const marketPillsFit = lastFittingIndex; // already 0-based count of market pills
+
+      if (marketPillsFit < allMarkets.length) {
+        // Need to subtract 1 more to make room for the "More" button
+        setVisibleCount(Math.max(1, marketPillsFit - 1));
+      } else {
+        setVisibleCount(allMarkets.length);
+      }
+    };
+
+    // Use ResizeObserver to re-measure on container resize
+    const ro = new ResizeObserver(() => {
+      // Reset to show all so we can re-measure
+      setVisibleCount(allMarkets.length);
+      requestAnimationFrame(measure);
+    });
+
+    ro.observe(container);
+    // Initial measure
+    requestAnimationFrame(measure);
+
+    return () => ro.disconnect();
+  }, [allMarkets.length, showMarketsExpanded]);
+
+  const visibleMarkets = showMarketsExpanded ? allMarkets : allMarkets.slice(0, visibleCount);
+  const hiddenMarkets = showMarketsExpanded ? [] : allMarkets.slice(visibleCount);
   const hasHiddenMarkets = hiddenMarkets.length > 0;
 
   // Preload hidden market icons after page load
