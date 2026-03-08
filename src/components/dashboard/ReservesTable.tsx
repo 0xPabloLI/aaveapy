@@ -115,6 +115,7 @@ const ReservesTable = ({
     tokenPrices,
     supplyInput: debouncedSharedSupplyInput,
     borrowInput: debouncedSharedBorrowInput,
+    inputMode: sharedInputMode,
   });
 
   const getMarketDisplayName = (reserve: ReserveWithSpread) => {
