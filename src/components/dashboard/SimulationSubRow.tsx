@@ -1,7 +1,15 @@
+import { ExternalLink } from 'lucide-react';
 import { formatPercent, formatSpread } from '@/lib/formatters';
 import { formatNumberInput } from '@/lib/numberFormat';
 import type { RateSimulationResult } from '@/hooks/useRateSimulation';
 import type { ReserveWithSpread } from '@/types/aave';
+
+const SOURCE_LINKS: Record<string, string> = {
+  ACI: 'https://apps.aavechan.com/',
+  Merkl: 'https://app.merkl.xyz/',
+  Brevis: 'https://incentra.brevis.network/',
+  'Protocol Incentive': 'https://app.aave.com/',
+};
 
 interface SimulationSubRowProps {
   reserve: ReserveWithSpread;
@@ -83,16 +91,33 @@ const BreakdownRow = ({
   after: number | null;
   delta: number | null;
   accentClass?: string;
-}) => (
-  <div className="grid grid-cols-[1fr_5rem_5rem_5rem] items-center gap-[var(--ds-space-1)] py-[var(--ds-space-1)]">
-    <span className={`ds-text-11 truncate ${accentClass ?? 'text-muted-foreground'}`}>{label}</span>
-    <span className="ds-text-11 tabular-nums text-right text-muted-foreground">{formatPercent(current)}</span>
-    <span className={`ds-text-11 tabular-nums text-right ${after === null ? 'text-muted-foreground' : 'text-foreground'}`}>
-      {formatPercent(after)}
-    </span>
-    <span className={`ds-text-11 tabular-nums text-right ${deltaClass(delta, accentClass ?? 'text-foreground')}`}>{formatDelta(delta)}</span>
-  </div>
-);
+}) => {
+  const link = SOURCE_LINKS[label];
+  return (
+    <div className="grid grid-cols-[1fr_5rem_5rem_5rem] items-center gap-[var(--ds-space-1)] py-[var(--ds-space-1)]">
+      <span className={`ds-text-11 truncate inline-flex items-center gap-[var(--ds-space-1)] ${accentClass ?? 'text-muted-foreground'}`}>
+        {label}
+        {link && (
+          <a
+            href={link}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="inline-flex items-center text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+            title={`Open ${label}`}
+          >
+            <ExternalLink className="w-2.5 h-2.5" />
+          </a>
+        )}
+      </span>
+      <span className="ds-text-11 tabular-nums text-right text-muted-foreground">{formatPercent(current)}</span>
+      <span className={`ds-text-11 tabular-nums text-right ${after === null ? 'text-muted-foreground' : 'text-foreground'}`}>
+        {formatPercent(after)}
+      </span>
+      <span className={`ds-text-11 tabular-nums text-right ${deltaClass(delta, accentClass ?? 'text-foreground')}`}>{formatDelta(delta)}</span>
+    </div>
+  );
+};
 
 const BreakdownCard = ({
   title,

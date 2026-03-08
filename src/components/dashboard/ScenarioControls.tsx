@@ -58,9 +58,6 @@ const ScenarioControls = memo(({ onDebouncedChange }: ScenarioControlsProps) => 
           </button>
         </div>
       </div>
-      <p className="mt-[var(--ds-space-2)] ds-text-11 text-muted-foreground">
-        Shared scenario applies to every reserve row, sorting mode, and expanded breakdown.
-      </p>
     </div>
   );
 });
