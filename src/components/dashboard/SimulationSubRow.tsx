@@ -1,4 +1,3 @@
-import { ExternalLink } from 'lucide-react';
 import { formatPercent, formatSpread } from '@/lib/formatters';
 import { formatNumberInput } from '@/lib/numberFormat';
 import type { RateSimulationResult } from '@/hooks/useRateSimulation';
@@ -95,21 +94,20 @@ const BreakdownRow = ({
   const link = SOURCE_LINKS[label];
   return (
     <div className="grid grid-cols-[1fr_5rem_5rem_5rem] items-center gap-[var(--ds-space-1)] py-[var(--ds-space-1)]">
-      <span className={`ds-text-11 truncate inline-flex items-center gap-[var(--ds-space-1)] ${accentClass ?? 'text-muted-foreground'}`}>
-        {label}
-        {link && (
-          <a
-            href={link}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="inline-flex items-center text-muted-foreground/50 hover:text-muted-foreground transition-colors"
-            title={`Open ${label}`}
-          >
-            <ExternalLink className="w-2.5 h-2.5" />
-          </a>
-        )}
-      </span>
+      {link ? (
+        <a
+          href={link}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className={`ds-text-11 truncate hover:underline underline-offset-2 transition-colors ${accentClass ?? 'text-muted-foreground'} hover:opacity-80`}
+          title={`Open ${label}`}
+        >
+          {label}
+        </a>
+      ) : (
+        <span className={`ds-text-11 truncate ${accentClass ?? 'text-muted-foreground'}`}>{label}</span>
+      )}
       <span className="ds-text-11 tabular-nums text-right text-muted-foreground">{formatPercent(current)}</span>
       <span className={`ds-text-11 tabular-nums text-right ${after === null ? 'text-muted-foreground' : 'text-foreground'}`}>
         {formatPercent(after)}
