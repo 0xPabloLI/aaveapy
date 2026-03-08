@@ -17,6 +17,7 @@ import {
   apyToApr
 } from '@/lib/formatters';
 import { formatNumberInput } from '@/lib/numberFormat';
+import ScenarioControls from './ScenarioControls';
 import { compareIncentiveWithNative } from '@/lib/sorters';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { IncentiveIcon } from '@/components/IncentiveIcon';
