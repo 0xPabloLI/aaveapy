@@ -345,7 +345,7 @@ const ReservesTable = ({
         height: rect.height,
       },
     });
-  };
+  }, []);
 
   
 
