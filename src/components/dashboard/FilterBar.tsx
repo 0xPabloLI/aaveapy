@@ -272,8 +272,6 @@ const FilterBar = ({
     };
   }, [searchQuery, isMobile, stableResizeHandler]);
 
-  // Count selected hidden markets
-  const selectedHiddenCount = hiddenMarkets.filter(m => selectedMarkets.includes(m.marketName)).length;
 
   const tokenCategoryButtons = categories.map((category) => (
     <button
