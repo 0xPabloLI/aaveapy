@@ -108,80 +108,22 @@ const FilterBar = ({
   const otherMarkets = marketsList?.filter(m => m.chainName !== 'Ethereum') || [];
   const allMarkets = [...ethereumMarkets, ...otherMarkets];
 
-  // Dynamic overflow: measure how many pills fit in one row
+  // --- Overflow: Markets ---
   const marketsRowRef = useRef<HTMLDivElement>(null);
-  const [visibleCount, setVisibleCount] = useState<number | null>(null); // null = measuring phase
-  const measureRafRef = useRef<number | null>(null);
-
-  const measureVisiblePills = useCallback(() => {
-    const container = marketsRowRef.current;
-    if (!container) return;
-
-    const pills = container.querySelectorAll<HTMLElement>('[data-market-index]');
-    if (pills.length === 0) return;
-
-    // Get the top of the first row (use the "All" button or first pill)
-    const firstRowTop = pills[0].getBoundingClientRect().top;
-
-    let fitCount = 0;
-    for (let i = 0; i < pills.length; i++) {
-      const rect = pills[i].getBoundingClientRect();
-      if (rect.top > firstRowTop + 4) break; // wrapped to next line
-      fitCount = i + 1;
-    }
-
-    if (fitCount < allMarkets.length) {
-      // Reserve space for the "More" button by removing 1
-      setVisibleCount(Math.max(1, fitCount - 1));
-    } else {
-      setVisibleCount(allMarkets.length);
-    }
-  }, [allMarkets.length]);
-
-  // Measure on mount & resize
-  useLayoutEffect(() => {
-    if (showMarketsExpanded || allMarkets.length === 0) return;
-
-    // Reset to measure all pills
-    setVisibleCount(null);
-  }, [allMarkets.length, showMarketsExpanded]);
-
-  // When visibleCount is null (measuring), render all pills and measure
-  useEffect(() => {
-    if (visibleCount !== null || showMarketsExpanded) return;
-
-    measureRafRef.current = requestAnimationFrame(() => {
-      measureRafRef.current = requestAnimationFrame(measureVisiblePills);
-    });
-
-    return () => {
-      if (measureRafRef.current) cancelAnimationFrame(measureRafRef.current);
-    };
-  }, [visibleCount, showMarketsExpanded, measureVisiblePills]);
-
-  // Re-measure on container resize
-  useEffect(() => {
-    const container = marketsRowRef.current;
-    if (!container || showMarketsExpanded) return;
-
-    let resizeTimeout: NodeJS.Timeout | null = null;
-    const ro = new ResizeObserver(() => {
-      if (resizeTimeout) clearTimeout(resizeTimeout);
-      resizeTimeout = setTimeout(() => setVisibleCount(null), 100);
-    });
-
-    ro.observe(container);
-    return () => {
-      ro.disconnect();
-      if (resizeTimeout) clearTimeout(resizeTimeout);
-    };
-  }, [showMarketsExpanded]);
-
-  const isMeasuring = visibleCount === null && !showMarketsExpanded;
-  const effectiveVisibleCount = visibleCount ?? allMarkets.length;
-  const visibleMarkets = showMarketsExpanded ? allMarkets : allMarkets.slice(0, effectiveVisibleCount);
-  const hiddenMarkets = showMarketsExpanded ? [] : allMarkets.slice(effectiveVisibleCount);
+  const { visibleCount: marketsVisibleCount, isMeasuring: marketsMeasuring } =
+    useOverflowCount(marketsRowRef, allMarkets.length, showMarketsExpanded);
+  const visibleMarkets = showMarketsExpanded ? allMarkets : allMarkets.slice(0, marketsVisibleCount);
+  const hiddenMarkets = showMarketsExpanded ? [] : allMarkets.slice(marketsVisibleCount);
   const hasHiddenMarkets = hiddenMarkets.length > 0;
+
+  // --- Overflow: Token categories ---
+  const tokensRowRef = useRef<HTMLDivElement>(null);
+  const [tokenCatsExpanded, setTokenCatsExpanded] = useState(false);
+  const { visibleCount: catsVisibleCount, isMeasuring: catsMeasuring } =
+    useOverflowCount(tokensRowRef, categories.length, tokenCatsExpanded);
+  const visibleCategories = tokenCatsExpanded ? categories : categories.slice(0, catsVisibleCount);
+  const hiddenCategories = tokenCatsExpanded ? [] : categories.slice(catsVisibleCount);
+  const hasHiddenCategories = hiddenCategories.length > 0;
 
 
   // Preload hidden market icons after page load
