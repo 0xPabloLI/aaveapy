@@ -161,6 +161,8 @@ const SimulationSubRow = ({
     (simulation.supply.hasInput || simulation.borrow.hasInput) && !simulation.tokenPrice && !simulation.tokenPriceLoading;
   const showEmptyStateNote = !simulation.supply.hasInput && !simulation.borrow.hasInput;
 
+  const aaveUrl = buildAaveReserveUrl({ marketName: reserve.marketName, tokenAddress: reserve.tokenAddress });
+
   const supplyRows = [
     {
       label: 'Native',
@@ -168,6 +170,7 @@ const SimulationSubRow = ({
       after: simulation.supply.afterNative,
       delta: simulation.supply.deltaNative,
       accentClass: 'ds-text-emerald-600',
+      href: aaveUrl,
     },
     {
       label: 'Incentive total',
