@@ -389,8 +389,8 @@ export function buildRateSimulationResult({
 
   const combinedNativeSimulation = reserveRateInput && hasAnyInput
     ? simulateNativeRatesAfterActions(reserveRateInput, {
-        supplyAmount: supplyInput,
-        borrowAmount: borrowInput,
+        supplyAmount: String(supplyAmount),
+        borrowAmount: String(borrowAmount),
       })
     : null;
 
