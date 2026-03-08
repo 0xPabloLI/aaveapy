@@ -767,7 +767,7 @@ export const useSharedRateSimulations = ({
         tokenPriceLoading: tokenPriceLoadingById[reserveId] ?? false,
         reserveRateInputLoading: rateInputsQuery.isPending || rateInputsQuery.isFetching,
         reserveRateInputError: rateInputsQuery.error,
-        forecastLoading: forecastQuery.isPending || forecastQuery.isFetching,
+        forecastLoading: allCampaignIds.length > 0 && (forecastQuery.isPending || forecastQuery.isFetching),
         forecastErrors,
         hasRateInput: Boolean(reserveRateInput),
       };
@@ -798,7 +798,7 @@ export const useSharedRateSimulations = ({
     simulationsById,
     rateInputsSnapshotLoading: rateInputsQuery.isPending || rateInputsQuery.isFetching,
     rateInputsSnapshotError: rateInputsQuery.error,
-    forecastLoading: forecastQuery.isPending || forecastQuery.isFetching,
+    forecastLoading: allCampaignIds.length > 0 && (forecastQuery.isPending || forecastQuery.isFetching),
     forecastErrors,
   };
 };
