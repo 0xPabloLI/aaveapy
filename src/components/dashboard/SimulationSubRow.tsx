@@ -212,6 +212,7 @@ const SimulationSubRow = ({
       after: simulation.borrow.afterNative,
       delta: simulation.borrow.deltaNative,
       accentClass: 'ds-text-brand-cyan',
+      href: aaveUrl,
     },
     {
       label: 'Incentive total',
