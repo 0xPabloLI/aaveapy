@@ -1212,12 +1212,7 @@ const ReservesTable = ({
                                 <span className="text-muted-foreground/70">-</span>
                               </>
                             )}
-                            {hasSharedScenario ? (
-                              <span className="inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-0-5)] py-[var(--ds-space-0)] rounded-full ds-bg-brand-cyan-10 ds-text-brand-cyan-70 ring-1 ds-ring-brand-cyan-15 tabular-nums">
-                                <span>{formatPercent(displayBorrowIncentive)}</span>
-                              </span>
-                            ) : (
-                              <button
+                            <button
                                 type="button"
                                 onClick={(e) =>
                                   handleIncentiveClick(e, reserve, 'borrow', displayBorrowIncentive)
@@ -1227,7 +1222,6 @@ const ReservesTable = ({
                                 <span>{formatPercent(displayBorrowIncentive)}</span>
                                 <IncentiveIcon width={isMobile ? 8 : 10} height={isMobile ? 8 : 10} />
                               </button>
-                            )}
                           </div>
                         )}
                     </div>

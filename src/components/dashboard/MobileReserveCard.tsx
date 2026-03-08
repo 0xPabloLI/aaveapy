@@ -178,12 +178,7 @@ const MobileReserveCard = ({
             <div className="flex items-center gap-[var(--ds-space-0-5)] ds-text-9 flex-nowrap justify-end">
               <span className="ds-text-brand-cyan-70">{formatPercent(displayBorrowNative)}</span>
               <span className="text-muted-foreground/70">-</span>
-              {hasSharedScenario ? (
-                <span className="inline-flex items-center ds-text-brand-cyan ds-bg-brand-cyan-10 rounded-full px-[var(--ds-space-1)] shrink-0 ring-1 ds-ring-brand-cyan-15">
-                  <span>{formatPercent(visibleBorrowIncentive)}</span>
-                </span>
-              ) : (
-                <div className="relative -m-1.5 p-1.5">
+              <div className="relative -m-1.5 p-1.5">
                   <button
                     type="button"
                     onClick={(e) => {
@@ -195,7 +190,6 @@ const MobileReserveCard = ({
                     <span>{formatPercent(visibleBorrowIncentive)}</span>
                   </button>
                 </div>
-              )}
             </div>
           )}
         </div>
