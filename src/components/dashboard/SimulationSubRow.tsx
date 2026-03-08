@@ -84,8 +84,8 @@ const BreakdownRow = ({
   delta: number | null;
   accentClass?: string;
 }) => (
-  <div className="grid grid-cols-[minmax(0,1fr)_72px_72px_72px] items-center gap-[var(--ds-space-2)] py-[var(--ds-space-1)]">
-    <span className={`ds-text-11 ${accentClass ?? 'text-muted-foreground'}`}>{label}</span>
+  <div className="grid grid-cols-[1fr_5rem_5rem_5rem] items-center gap-[var(--ds-space-1)] py-[var(--ds-space-1)]">
+    <span className={`ds-text-11 truncate ${accentClass ?? 'text-muted-foreground'}`}>{label}</span>
     <span className="ds-text-11 tabular-nums text-right text-muted-foreground">{formatPercent(current)}</span>
     <span className={`ds-text-11 tabular-nums text-right ${after === null ? 'text-muted-foreground' : 'text-foreground'}`}>
       {formatPercent(after)}
