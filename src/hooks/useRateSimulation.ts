@@ -185,6 +185,8 @@ export interface RateSimulationResult extends RateSimulationComputedResult {
   hasRateInput: boolean;
 }
 
+export type ScenarioInputMode = 'usd' | 'token';
+
 interface BuildRateSimulationResultParams {
   reserve: ReserveWithSpread;
   reserveRateInput?: ReserveRateInput | null;
@@ -194,6 +196,7 @@ interface BuildRateSimulationResultParams {
   tokenPrice?: number;
   supplyInput: string;
   borrowInput: string;
+  inputMode: ScenarioInputMode;
   forecastStates: Record<string, MerklForecastStateResponse>;
 }
 
