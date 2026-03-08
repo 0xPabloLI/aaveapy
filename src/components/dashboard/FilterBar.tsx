@@ -359,7 +359,7 @@ const FilterBar = ({
       </div>
 
       {/* Row 2: Markets */}
-      <div className="flex flex-wrap items-center gap-[var(--ds-space-1)] md:gap-[var(--ds-space-1-5)]">
+      <div ref={marketsRowRef} className="flex flex-wrap items-center gap-[var(--ds-space-1)] md:gap-[var(--ds-space-1-5)]">
         <span className="ds-text-11 text-muted-foreground mr-[var(--ds-space-0-5)] md:mr-[var(--ds-space-1)] hidden sm:inline">Markets:</span>
         
         {/* All Markets option */}
@@ -382,6 +382,7 @@ const FilterBar = ({
           return (
             <button
               key={market.marketName}
+              data-market-pill
               onClick={() => toggleMarket(market.marketName)}
             className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-1-5)] md:px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-md font-medium transition-all ${
               isSelected
@@ -390,7 +391,7 @@ const FilterBar = ({
             }`}
               title={isEthereum ? `Ethereum ${info.label}` : market.chainName}
             >
-              <ChainIcon chain={market.chainName} />
+              <ChainIcon chain={market.chainName} loading={showMarketsExpanded ? "eager" : "lazy"} />
               <span>{isEthereum ? info.label : market.chainName}</span>
             </button>
           );
@@ -406,28 +407,6 @@ const FilterBar = ({
             <ChevronDown className="w-3 h-3" />
           </button>
         )}
-
-        {/* Expanded hidden markets */}
-        {showMarketsExpanded && hiddenMarkets.map((market) => {
-          const info = getMarketInfo(market);
-          const isSelected = selectedMarkets.includes(market.marketName);
-          const isEthereum = market.chainName === 'Ethereum';
-          return (
-            <button
-              key={market.marketName}
-              onClick={() => toggleMarket(market.marketName)}
-            className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-1-5)] md:px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-md font-medium transition-all ${
-              isSelected
-                ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
-                : 'text-foreground/80 border border-border hover:text-foreground'
-            }`}
-              title={isEthereum ? `Ethereum ${info.label}` : market.chainName}
-            >
-              <ChainIcon chain={market.chainName} loading="eager" />
-              <span>{isEthereum ? info.label : market.chainName}</span>
-            </button>
-          );
-        })}
 
         {/* Collapse button */}
         {showMarketsExpanded && (
