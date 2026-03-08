@@ -221,6 +221,7 @@ const MobileReserveCard = memo(({
       </div>
     </div>
   );
-};
+});
+MobileReserveCard.displayName = 'MobileReserveCard';
 
 export default MobileReserveCard;
