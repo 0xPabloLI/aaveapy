@@ -420,7 +420,9 @@ const ReservesTable = ({
   if (isMobile) {
     return (
       <div className="space-y-3">
-        {scenarioControls}
+        <div className="sticky top-0 z-20 -mx-[var(--ds-space-3)] px-[var(--ds-space-3)] py-[var(--ds-space-1)] bg-background/95 backdrop-blur-sm">
+          {scenarioControls}
+        </div>
         {/* Header with sorting controls */}
         <div className="flex justify-between items-center px-[var(--ds-space-1)]">
           <h3 className="ds-text-14 font-bold text-foreground">{reserves.length} Reserves</h3>
@@ -695,8 +697,8 @@ const ReservesTable = ({
 
 
   return (
-    <div className="bg-card rounded-2xl shadow-sm border border-border/60 overflow-hidden">
-      <div className="border-b border-border/60 p-[var(--ds-space-3)]">
+    <div className="bg-card rounded-2xl shadow-sm border border-border/60 overflow-hidden relative">
+      <div className="sticky top-0 z-20 border-b border-border/60 p-[var(--ds-space-3)] bg-card/95 backdrop-blur-sm shadow-[0_1px_3px_0_rgb(0_0_0/0.04)]">
         {scenarioControls}
       </div>
       <div className="overflow-x-auto">
