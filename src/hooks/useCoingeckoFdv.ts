@@ -21,7 +21,8 @@ const fetchCoingeckoFdv = async (): Promise<CoingeckoFdvResponse> => {
   if (!response.ok) {
     throw new Error('Failed to fetch CoinGecko FDV data');
   }
-  const data = (await response.json()) as CoingeckoFdvResponse;
+  const raw = await response.json();
+  const data = CoingeckoFdvResponseSchema.parse(raw) as CoingeckoFdvResponse;
   setCachedCoingeckoFdv(data);
   return data;
 };
