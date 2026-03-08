@@ -1290,7 +1290,7 @@ const IncentiveTooltip = ({
                                 alt={`${source.sourceType} logo`}
                                 title={source.sourceType}
                                 className={logoClass}
-                                loading="lazy"
+                                loading="eager"
                               />
                             </span>
                           )}
