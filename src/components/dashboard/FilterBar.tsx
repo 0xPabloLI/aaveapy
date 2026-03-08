@@ -109,65 +109,79 @@ const FilterBar = ({
 
   // Dynamic overflow: measure how many pills fit in one row
   const marketsRowRef = useRef<HTMLDivElement>(null);
-  const [visibleCount, setVisibleCount] = useState(allMarkets.length); // default: show all
+  const [visibleCount, setVisibleCount] = useState<number | null>(null); // null = measuring phase
+  const measureRafRef = useRef<number | null>(null);
 
-  useLayoutEffect(() => {
+  const measureVisiblePills = useCallback(() => {
     const container = marketsRowRef.current;
-    if (!container || allMarkets.length === 0 || showMarketsExpanded) return;
+    if (!container) return;
 
-    const measure = () => {
-      // Temporarily show all children to measure
-      const children = Array.from(container.children) as HTMLElement[];
-      if (children.length === 0) return;
+    const pills = container.querySelectorAll<HTMLElement>('[data-market-index]');
+    if (pills.length === 0) return;
 
-      const containerRight = container.getBoundingClientRect().right;
-      const containerTop = children[0].getBoundingClientRect().top;
+    // Get the top of the first row (use the "All" button or first pill)
+    const firstRowTop = pills[0].getBoundingClientRect().top;
 
-      // Find the "All" button (index 0), then market pills start at index 1
-      // We want to find how many market pills fit on the first row
-      let lastFittingIndex = 0;
+    let fitCount = 0;
+    for (let i = 0; i < pills.length; i++) {
+      const rect = pills[i].getBoundingClientRect();
+      if (rect.top > firstRowTop + 4) break; // wrapped to next line
+      fitCount = i + 1;
+    }
 
-      for (let i = 1; i < children.length; i++) {
-        const child = children[i];
-        // Skip non-market elements (like "More" button or "Less" button)
-        if (child.dataset.marketPill === undefined) continue;
-
-        const rect = child.getBoundingClientRect();
-        // If the pill wraps to the next line, stop
-        if (rect.top > containerTop + 4) break; // 4px tolerance
-        lastFittingIndex = i;
-      }
-
-      // lastFittingIndex is 1-based (since index 0 is "All" button)
-      // But we need to leave room for the "More" button
-      // We count market pills that fit (subtract 1 for "All" button)
-      const marketPillsFit = lastFittingIndex; // already 0-based count of market pills
-
-      if (marketPillsFit < allMarkets.length) {
-        // Need to subtract 1 more to make room for the "More" button
-        setVisibleCount(Math.max(1, marketPillsFit - 1));
-      } else {
-        setVisibleCount(allMarkets.length);
-      }
-    };
-
-    // Use ResizeObserver to re-measure on container resize
-    const ro = new ResizeObserver(() => {
-      // Reset to show all so we can re-measure
+    if (fitCount < allMarkets.length) {
+      // Reserve space for the "More" button by removing 1
+      setVisibleCount(Math.max(1, fitCount - 1));
+    } else {
       setVisibleCount(allMarkets.length);
-      requestAnimationFrame(measure);
+    }
+  }, [allMarkets.length]);
+
+  // Measure on mount & resize
+  useLayoutEffect(() => {
+    if (showMarketsExpanded || allMarkets.length === 0) return;
+
+    // Reset to measure all pills
+    setVisibleCount(null);
+  }, [allMarkets.length, showMarketsExpanded]);
+
+  // When visibleCount is null (measuring), render all pills and measure
+  useEffect(() => {
+    if (visibleCount !== null || showMarketsExpanded) return;
+
+    measureRafRef.current = requestAnimationFrame(() => {
+      measureRafRef.current = requestAnimationFrame(measureVisiblePills);
+    });
+
+    return () => {
+      if (measureRafRef.current) cancelAnimationFrame(measureRafRef.current);
+    };
+  }, [visibleCount, showMarketsExpanded, measureVisiblePills]);
+
+  // Re-measure on container resize
+  useEffect(() => {
+    const container = marketsRowRef.current;
+    if (!container || showMarketsExpanded) return;
+
+    let resizeTimeout: NodeJS.Timeout | null = null;
+    const ro = new ResizeObserver(() => {
+      if (resizeTimeout) clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => setVisibleCount(null), 100);
     });
 
     ro.observe(container);
-    // Initial measure
-    requestAnimationFrame(measure);
+    return () => {
+      ro.disconnect();
+      if (resizeTimeout) clearTimeout(resizeTimeout);
+    };
+  }, [showMarketsExpanded]);
 
-    return () => ro.disconnect();
-  }, [allMarkets.length, showMarketsExpanded]);
-
-  const visibleMarkets = showMarketsExpanded ? allMarkets : allMarkets.slice(0, visibleCount);
-  const hiddenMarkets = showMarketsExpanded ? [] : allMarkets.slice(visibleCount);
+  const isMeasuring = visibleCount === null && !showMarketsExpanded;
+  const effectiveVisibleCount = visibleCount ?? allMarkets.length;
+  const visibleMarkets = showMarketsExpanded ? allMarkets : allMarkets.slice(0, effectiveVisibleCount);
+  const hiddenMarkets = showMarketsExpanded ? [] : allMarkets.slice(effectiveVisibleCount);
   const hasHiddenMarkets = hiddenMarkets.length > 0;
+
 
   // Preload hidden market icons after page load
   useEffect(() => {
@@ -357,7 +371,10 @@ const FilterBar = ({
       </div>
 
       {/* Row 2: Markets */}
-      <div ref={marketsRowRef} className="flex flex-wrap items-center gap-[var(--ds-space-1)] md:gap-[var(--ds-space-1-5)]">
+      <div
+        ref={marketsRowRef}
+        className={`flex flex-wrap items-center gap-[var(--ds-space-1)] md:gap-[var(--ds-space-1-5)] ${isMeasuring ? 'overflow-hidden max-h-[2rem]' : ''}`}
+      >
         <span className="ds-text-11 text-muted-foreground mr-[var(--ds-space-0-5)] md:mr-[var(--ds-space-1)] hidden sm:inline">Markets:</span>
         
         {/* All Markets option */}
@@ -372,8 +389,31 @@ const FilterBar = ({
           All
         </button>
 
-        {/* Visible markets */}
-        {visibleMarkets.map((market) => {
+        {/* During measuring: render ALL pills to measure which fit */}
+        {isMeasuring && allMarkets.map((market, i) => {
+          const info = getMarketInfo(market);
+          const isSelected = selectedMarkets.includes(market.marketName);
+          const isEthereum = market.chainName === 'Ethereum';
+          return (
+            <button
+              key={market.marketName}
+              data-market-index={i}
+              onClick={() => toggleMarket(market.marketName)}
+              className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-1-5)] md:px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-md font-medium transition-all ${
+                isSelected
+                  ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
+                  : 'text-foreground/80 border border-border hover:text-foreground'
+              }`}
+              title={isEthereum ? `Ethereum ${info.label}` : market.chainName}
+            >
+              <ChainIcon chain={market.chainName} />
+              <span>{isEthereum ? info.label : market.chainName}</span>
+            </button>
+          );
+        })}
+
+        {/* After measuring: render only visible pills */}
+        {!isMeasuring && visibleMarkets.map((market) => {
           const info = getMarketInfo(market);
           const isSelected = selectedMarkets.includes(market.marketName);
           const isEthereum = market.chainName === 'Ethereum';
@@ -382,11 +422,11 @@ const FilterBar = ({
               key={market.marketName}
               data-market-pill
               onClick={() => toggleMarket(market.marketName)}
-            className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-1-5)] md:px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-md font-medium transition-all ${
-              isSelected
-                ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
-                : 'text-foreground/80 border border-border hover:text-foreground'
-            }`}
+              className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-1-5)] md:px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-md font-medium transition-all ${
+                isSelected
+                  ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
+                  : 'text-foreground/80 border border-border hover:text-foreground'
+              }`}
               title={isEthereum ? `Ethereum ${info.label}` : market.chainName}
             >
               <ChainIcon chain={market.chainName} loading={showMarketsExpanded ? "eager" : "lazy"} />
@@ -396,11 +436,11 @@ const FilterBar = ({
         })}
 
         {/* More button - expands inline */}
-        {hasHiddenMarkets && !showMarketsExpanded && (
+        {!isMeasuring && hasHiddenMarkets && !showMarketsExpanded && (
           <button
-          onClick={() => setShowMarketsExpanded(true)}
-          className="ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-1-5)] md:px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-md font-medium transition-all ds-text-brand-magenta border ds-border-brand-magenta-40 border-dashed"
-        >
+            onClick={() => setShowMarketsExpanded(true)}
+            className="ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-1-5)] md:px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-md font-medium transition-all ds-text-brand-magenta border ds-border-brand-magenta-40 border-dashed"
+          >
             <span>{hiddenMarkets.length}+ more</span>
             <ChevronDown className="w-3 h-3" />
           </button>
@@ -409,9 +449,9 @@ const FilterBar = ({
         {/* Collapse button */}
         {showMarketsExpanded && (
           <button
-          onClick={() => setShowMarketsExpanded(false)}
-          className="ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-1-5)] md:px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-md font-medium transition-all ds-text-brand-magenta border ds-border-brand-magenta-40 border-dashed"
-        >
+            onClick={() => setShowMarketsExpanded(false)}
+            className="ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-1-5)] md:px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-md font-medium transition-all ds-text-brand-magenta border ds-border-brand-magenta-40 border-dashed"
+          >
             <ChevronUp className="w-3 h-3" />
             <span>Less</span>
           </button>
