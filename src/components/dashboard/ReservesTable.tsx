@@ -697,7 +697,7 @@ const ReservesTable = ({
 
 
   return (
-    <div className="bg-card rounded-2xl shadow-sm border border-border/60 overflow-hidden relative">
+    <div className="bg-card rounded-2xl shadow-sm border border-border/60 relative">
       <div className="sticky top-0 z-20 border-b border-border/60 p-[var(--ds-space-3)] bg-card/95 backdrop-blur-sm shadow-[0_1px_3px_0_rgb(0_0_0/0.04)]">
         {scenarioControls}
       </div>
