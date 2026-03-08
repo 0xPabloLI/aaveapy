@@ -3,6 +3,7 @@ import { TokenCategoryOverrides } from '@/lib/tokenCategories';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
 import { getCachedTokenCategoriesEntry, setCachedTokenCategories } from '@/lib/cache';
 import { API_BASE } from '@/lib/apiBase';
+import { CoingeckoCategoriesResponseSchema } from '@/lib/apiSchemas';
 
 interface CoingeckoCategoriesResponse {
   uniqueSymbolsStablecoins?: string[];
@@ -14,7 +15,8 @@ const fetchTokenCategories = async (): Promise<TokenCategoryOverrides> => {
   if (!response.ok) {
     throw new Error('Failed to fetch token categories');
   }
-  const data = (await response.json()) as CoingeckoCategoriesResponse;
+  const raw = await response.json();
+  const data = CoingeckoCategoriesResponseSchema.parse(raw) as CoingeckoCategoriesResponse;
   const normalized: TokenCategoryOverrides = {
     stablecoins: data.uniqueSymbolsStablecoins ?? [],
     ethRelated: data.uniqueSymbolsEth ?? [],

@@ -91,3 +91,22 @@ export const MarketListItemSchema = z.object({
 }).passthrough();
 
 export const MarketsListSchema = z.array(MarketListItemSchema);
+
+// ── CoinGecko FDV ──
+const CoingeckoFdvItemSchema = z.object({
+  id: z.string(),
+  symbol: z.string().nullable(),
+  name: z.string().nullable(),
+  fdvUsd: z.number().nullable(),
+}).passthrough();
+
+export const CoingeckoFdvResponseSchema = z.object({
+  items: z.array(CoingeckoFdvItemSchema),
+  fetchedAt: z.string(),
+}).passthrough();
+
+// ── Token categories ──
+export const CoingeckoCategoriesResponseSchema = z.object({
+  uniqueSymbolsStablecoins: z.array(z.string()).optional(),
+  uniqueSymbolsEth: z.array(z.string()).optional(),
+}).passthrough();
