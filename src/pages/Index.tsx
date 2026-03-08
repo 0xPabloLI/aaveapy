@@ -389,8 +389,6 @@ const Index = () => {
             isApy={isApy}
             setIsApy={setIsApy}
             marketsList={effectiveMarketsList}
-            showMarketsExpanded={showMarketsExpanded}
-            setShowMarketsExpanded={setShowMarketsExpanded}
           />
 
           {/* Reserves Table */}
