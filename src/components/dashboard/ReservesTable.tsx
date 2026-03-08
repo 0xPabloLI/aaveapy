@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, Fragment } from 'react';
-import { ArrowUp, ArrowDown, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowUp, ArrowDown, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ReserveWithSpread, ETHEREUM_MARKET_NAMES, TokenPricesIndex } from '@/types/aave';
@@ -1112,37 +1112,37 @@ const ReservesTable = ({
 
               return (
                 <Fragment key={reserveId}>
-                <TableRow
+              <TableRow
                   data-reserve-id={reserveId}
                   className={`transition-all duration-150 cursor-pointer hover:bg-muted/60 hover:shadow-sm active:bg-muted/80 ${
                     isExpanded ? 'bg-muted/30' : ''
                   }`}
-                  onClick={() => handleRowClick(reserve)}
+                  onClick={() => setExpandedReserveId((prev) => (prev === reserveId ? null : reserveId))}
                 >
                   {/* Token */}
                   <TableCell className="w-1/5 px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center">
                     <div className="flex items-center justify-center gap-[var(--ds-space-2)]">
-                      <button
-                        type="button"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          setExpandedReserveId((prev) => (prev === reserveId ? null : reserveId));
-                        }}
-                        className={`inline-flex shrink-0 items-center gap-[var(--ds-space-1)] rounded-full border px-[var(--ds-space-2)] py-[var(--ds-space-0-5)] ds-text-11 font-medium transition-colors ${
-                          isExpanded
-                            ? 'border-border bg-muted text-foreground'
-                            : 'border-border/60 bg-background text-muted-foreground hover:bg-muted/60'
-                        }`}
-                        aria-label={isExpanded ? 'Collapse simulation panel' : 'Expand simulation panel'}
-                        title={isExpanded ? 'Hide scenario breakdown' : 'Show scenario breakdown'}
-                      >
-                        <span>Breakdown</span>
-                        {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                      </button>
+                      <div className={`inline-flex shrink-0 items-center justify-center w-5 h-5 rounded-full transition-colors ${
+                        isExpanded ? 'text-foreground' : 'text-muted-foreground'
+                      }`}>
+                        {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                      </div>
                       <TokenIcon symbol={iconSymbol} size={28} loading="eager" logoURI={logoURI} />
                       <span className="font-semibold text-foreground ds-text-14">
                         {reserve.tokenSymbol}
                       </span>
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleRowClick(reserve);
+                        }}
+                        className="inline-flex shrink-0 items-center justify-center w-7 h-7 rounded-full bg-muted/60 border border-border/60 text-muted-foreground transition-all hover:bg-muted hover:border-border/80 hover:text-foreground"
+                        aria-label={`Open ${reserve.tokenSymbol} on Aave`}
+                        title="Open on Aave"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </TableCell>
                   {/* Market */}
