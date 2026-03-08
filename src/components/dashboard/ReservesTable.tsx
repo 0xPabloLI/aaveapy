@@ -420,7 +420,9 @@ const ReservesTable = ({
   if (isMobile) {
     return (
       <div className="space-y-3">
-        {scenarioControls}
+        <div className="sticky top-0 z-20 -mx-[var(--ds-space-3)] px-[var(--ds-space-3)] py-[var(--ds-space-1)] bg-background/95 backdrop-blur-sm">
+          {scenarioControls}
+        </div>
         {/* Header with sorting controls */}
         <div className="flex justify-between items-center px-[var(--ds-space-1)]">
           <h3 className="ds-text-14 font-bold text-foreground">{reserves.length} Reserves</h3>
