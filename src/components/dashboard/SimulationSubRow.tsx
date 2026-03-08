@@ -84,8 +84,8 @@ const BreakdownRow = ({
   delta: number | null;
   accentClass?: string;
 }) => (
-  <div className="grid grid-cols-[minmax(0,1fr)_72px_72px_72px] items-center gap-[var(--ds-space-2)] py-[var(--ds-space-1)]">
-    <span className={`ds-text-11 ${accentClass ?? 'text-muted-foreground'}`}>{label}</span>
+  <div className="grid grid-cols-[1fr_5rem_5rem_5rem] items-center gap-[var(--ds-space-1)] py-[var(--ds-space-1)]">
+    <span className={`ds-text-11 truncate ${accentClass ?? 'text-muted-foreground'}`}>{label}</span>
     <span className="ds-text-11 tabular-nums text-right text-muted-foreground">{formatPercent(current)}</span>
     <span className={`ds-text-11 tabular-nums text-right ${after === null ? 'text-muted-foreground' : 'text-foreground'}`}>
       {formatPercent(after)}
@@ -108,7 +108,7 @@ const BreakdownCard = ({
   }>;
 }) => (
   <div className="rounded-lg border border-border/60 bg-background/80 px-[var(--ds-space-3)] py-[var(--ds-space-2)]">
-    <div className="grid grid-cols-[minmax(0,1fr)_72px_72px_72px] items-center gap-[var(--ds-space-2)] border-b border-border/60 pb-[var(--ds-space-1)]">
+    <div className="grid grid-cols-[1fr_5rem_5rem_5rem] items-center gap-[var(--ds-space-1)] border-b border-border/60 pb-[var(--ds-space-1)]">
       <span className="ds-text-11 font-semibold uppercase tracking-wide text-foreground">{title}</span>
       <span className="ds-text-10 text-right text-muted-foreground">Current</span>
       <span className="ds-text-10 text-right text-muted-foreground">After</span>
