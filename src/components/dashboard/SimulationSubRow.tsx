@@ -156,6 +156,7 @@ const SimulationSubRow = ({
   isApy,
   supplyInput,
   borrowInput,
+  inputMode = 'usd',
   compact = false,
 }: SimulationSubRowProps) => {
   const rateLabel = isApy ? 'APY' : 'APR';
