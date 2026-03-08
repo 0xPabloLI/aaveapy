@@ -110,3 +110,33 @@ export const CoingeckoCategoriesResponseSchema = z.object({
   uniqueSymbolsStablecoins: z.array(z.string()).optional(),
   uniqueSymbolsEth: z.array(z.string()).optional(),
 }).passthrough();
+
+// ── Rate inputs ──
+const ReserveRateInputSchema = z.object({
+  marketName: z.string(),
+  chainId: z.number(),
+  tokenAddress: z.string(),
+  decimals: z.number(),
+  availableLiquidity: z.string(),
+  totalScaledVariableDebt: z.string(),
+  variableBorrowIndex: z.string(),
+  reserveFactor: z.string(),
+  variableRateSlope1: z.string(),
+  variableRateSlope2: z.string(),
+  baseVariableBorrowRate: z.string(),
+  optimalUsageRate: z.string(),
+  source: z.string(),
+  sourceDetail: z.string(),
+}).passthrough();
+
+export const RateInputsResponseSchema = z.object({
+  data: z.array(ReserveRateInputSchema),
+  lastUpdated: z.string(),
+  isStale: z.boolean(),
+  staleTimeMs: z.number(),
+  sources: z.object({
+    subgraphChains: z.array(z.number()),
+    onchainChains: z.array(z.number()),
+    subgraphMissingChains: z.array(z.number()),
+  }),
+}).passthrough();

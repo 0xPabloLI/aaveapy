@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { QueryClient } from '@tanstack/react-query';
 import { API_BASE } from '@/lib/apiBase';
+import { RateInputsResponseSchema } from '@/lib/apiSchemas';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
 import {
   getCachedRateInputsSnapshotEntry,
@@ -38,7 +39,8 @@ export async function fetchRateInputsSnapshot(): Promise<RateInputsResponse> {
   if (!response.ok) {
     throw new RateInputsUnavailableError(response.status, response.statusText);
   }
-  const payload = (await response.json()) as RateInputsResponse;
+  const raw = await response.json();
+  const payload = RateInputsResponseSchema.parse(raw) as RateInputsResponse;
   setCachedRateInputsSnapshot(payload);
   return payload;
 }
