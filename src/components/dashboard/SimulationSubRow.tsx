@@ -1,5 +1,6 @@
 import { formatPercent, formatSpread } from '@/lib/formatters';
 import { formatNumberInput } from '@/lib/numberFormat';
+import { buildAaveReserveUrl } from '@/lib/aaveLinks';
 import type { RateSimulationResult } from '@/hooks/useRateSimulation';
 import type { ReserveWithSpread } from '@/types/aave';
 
