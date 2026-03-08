@@ -92,9 +92,11 @@ const ReservesTable = ({
   const [expandedReserveId, setExpandedReserveId] = useState<string | null>(null);
   const [debouncedSharedSupplyInput, setDebouncedSharedSupplyInput] = useState('');
   const [debouncedSharedBorrowInput, setDebouncedSharedBorrowInput] = useState('');
-  const handleScenarioChange = useCallback((supply: string, borrow: string) => {
+  const [sharedInputMode, setSharedInputMode] = useState<import('@/hooks/useRateSimulation').ScenarioInputMode>('usd');
+  const handleScenarioChange = useCallback((supply: string, borrow: string, mode: import('@/components/dashboard/ScenarioControls').ScenarioInputMode) => {
     setDebouncedSharedSupplyInput(supply);
     setDebouncedSharedBorrowInput(borrow);
+    setSharedInputMode(mode);
   }, []);
   const [tooltipState, setTooltipState] = useState<{
     reserve: ReserveWithSpread;
