@@ -1,5 +1,6 @@
 import { formatPercent, formatSpread } from '@/lib/formatters';
 import { formatNumberInput } from '@/lib/numberFormat';
+import { buildAaveReserveUrl } from '@/lib/aaveLinks';
 import type { RateSimulationResult } from '@/hooks/useRateSimulation';
 import type { ReserveWithSpread } from '@/types/aave';
 
@@ -84,14 +85,16 @@ const BreakdownRow = ({
   after,
   delta,
   accentClass,
+  href,
 }: {
   label: string;
   current: number | null;
   after: number | null;
   delta: number | null;
   accentClass?: string;
+  href?: string | null;
 }) => {
-  const link = SOURCE_LINKS[label];
+  const link = href ?? SOURCE_LINKS[label];
   return (
     <div className="grid grid-cols-[1fr_5rem_5rem_5rem] items-center gap-[var(--ds-space-1)] py-[var(--ds-space-1)]">
       {link ? (
@@ -128,6 +131,7 @@ const BreakdownCard = ({
     after: number | null;
     delta: number | null;
     accentClass?: string;
+    href?: string | null;
   }>;
 }) => (
   <div className="rounded-lg border border-border/60 bg-background/80 px-[var(--ds-space-3)] py-[var(--ds-space-2)]">
@@ -158,6 +162,8 @@ const SimulationSubRow = ({
     (simulation.supply.hasInput || simulation.borrow.hasInput) && !simulation.tokenPrice && !simulation.tokenPriceLoading;
   const showEmptyStateNote = !simulation.supply.hasInput && !simulation.borrow.hasInput;
 
+  const aaveUrl = buildAaveReserveUrl({ marketName: reserve.marketName, tokenAddress: reserve.tokenAddress });
+
   const supplyRows = [
     {
       label: 'Native',
@@ -165,6 +171,7 @@ const SimulationSubRow = ({
       after: simulation.supply.afterNative,
       delta: simulation.supply.deltaNative,
       accentClass: 'ds-text-emerald-600',
+      href: aaveUrl,
     },
     {
       label: 'Incentive total',
@@ -206,6 +213,7 @@ const SimulationSubRow = ({
       after: simulation.borrow.afterNative,
       delta: simulation.borrow.deltaNative,
       accentClass: 'ds-text-brand-cyan',
+      href: aaveUrl,
     },
     {
       label: 'Incentive total',
