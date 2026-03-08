@@ -1035,7 +1035,7 @@ const ReservesTable = ({
                   reserve={reserve}
                   reserveId={reserveId}
                   isExpanded={expandedReserveId === reserveId}
-                  onToggleExpand={() => setExpandedReserveId((prev) => (prev === reserveId ? null : reserveId))}
+                  onToggleExpand={handleToggleExpand}
                   onSelectMarket={onSelectMarket}
                   onIncentiveClick={handleIncentiveClick}
                   displaySupplyTotal={getDisplaySupplyTotal(reserve)}
