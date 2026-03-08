@@ -25,6 +25,7 @@ interface MobileReserveCardProps {
   supplyInput: string;
   borrowInput: string;
   hasSharedScenario: boolean;
+  inputMode?: 'usd' | 'token';
 }
 
 const MobileReserveCard = memo(({
