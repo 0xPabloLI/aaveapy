@@ -102,7 +102,7 @@ const MobileReserveCard = ({
     >
       <div
         className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-3)] cursor-pointer active:opacity-70 transition-opacity min-h-[44px]"
-        onClick={handleCardClick}
+        onClick={onToggleSimulation}
       >
         <TokenIcon
           symbol={iconSymbol}
@@ -121,9 +121,18 @@ const MobileReserveCard = ({
           </div>
         </div>
         <div className="shrink-0 w-10 h-10 -m-1.5 rounded-full flex items-center justify-center">
-          <div className="w-7 h-7 rounded-full bg-muted/60 border border-border flex items-center justify-center text-muted-foreground transition-all hover:bg-muted hover:border-border/80 hover:text-foreground">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleCardClick();
+            }}
+            className="w-7 h-7 rounded-full bg-muted/60 border border-border flex items-center justify-center text-muted-foreground transition-all hover:bg-muted hover:border-border/80 hover:text-foreground"
+            aria-label={`Open ${reserve.tokenSymbol} on Aave`}
+            title="Open on Aave"
+          >
             <ExternalLink className="w-3.5 h-3.5" />
-          </div>
+          </button>
         </div>
       </div>
 
