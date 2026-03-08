@@ -38,6 +38,7 @@ const MobileReserveCard = memo(({
   supplyInput,
   borrowInput,
   hasSharedScenario,
+  inputMode = 'usd',
 }: MobileReserveCardProps) => {
   const getMarketDisplayName = () => {
     if (reserve.chainName === 'Ethereum' && ETHEREUM_MARKET_NAMES[reserve.marketName]) {
