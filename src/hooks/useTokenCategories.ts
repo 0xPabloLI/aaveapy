@@ -3,6 +3,7 @@ import { TokenCategoryOverrides } from '@/lib/tokenCategories';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
 import { getCachedTokenCategoriesEntry, setCachedTokenCategories } from '@/lib/cache';
 import { API_BASE } from '@/lib/apiBase';
+import { CoingeckoCategoriesResponseSchema } from '@/lib/apiSchemas';
 
 interface CoingeckoCategoriesResponse {
   uniqueSymbolsStablecoins?: string[];
