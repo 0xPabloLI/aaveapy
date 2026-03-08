@@ -5,6 +5,7 @@ import { TokenCategory, MarketListItem, ETHEREUM_MARKET_NAMES } from '@/types/aa
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { useIsMobile } from '@/hooks/use-mobile';
 import AprApyToggle from '@/components/dashboard/AprApyToggle';
+import { useOverflowCount } from '@/hooks/useOverflowCount';
 
 interface FilterBarProps {
   searchQuery: string;
