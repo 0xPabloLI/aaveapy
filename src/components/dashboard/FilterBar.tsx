@@ -182,9 +182,6 @@ const FilterBar = ({
   const hiddenMarkets = showMarketsExpanded ? [] : allMarkets.slice(effectiveVisibleCount);
   const hasHiddenMarkets = hiddenMarkets.length > 0;
 
-  const visibleMarkets = showMarketsExpanded ? allMarkets : allMarkets.slice(0, visibleCount);
-  const hiddenMarkets = showMarketsExpanded ? [] : allMarkets.slice(visibleCount);
-  const hasHiddenMarkets = hiddenMarkets.length > 0;
 
   // Preload hidden market icons after page load
   useEffect(() => {
