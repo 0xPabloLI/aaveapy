@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef, useCallback, useLayoutEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, X, ChevronUp, ChevronDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { TokenCategory, MarketListItem, ETHEREUM_MARKET_NAMES } from '@/types/aave';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { useIsMobile } from '@/hooks/use-mobile';
 import AprApyToggle from '@/components/dashboard/AprApyToggle';
+import { useOverflowCount } from '@/hooks/useOverflowCount';
 
 interface FilterBarProps {
   searchQuery: string;
@@ -107,80 +108,22 @@ const FilterBar = ({
   const otherMarkets = marketsList?.filter(m => m.chainName !== 'Ethereum') || [];
   const allMarkets = [...ethereumMarkets, ...otherMarkets];
 
-  // Dynamic overflow: measure how many pills fit in one row
+  // --- Overflow: Markets ---
   const marketsRowRef = useRef<HTMLDivElement>(null);
-  const [visibleCount, setVisibleCount] = useState<number | null>(null); // null = measuring phase
-  const measureRafRef = useRef<number | null>(null);
-
-  const measureVisiblePills = useCallback(() => {
-    const container = marketsRowRef.current;
-    if (!container) return;
-
-    const pills = container.querySelectorAll<HTMLElement>('[data-market-index]');
-    if (pills.length === 0) return;
-
-    // Get the top of the first row (use the "All" button or first pill)
-    const firstRowTop = pills[0].getBoundingClientRect().top;
-
-    let fitCount = 0;
-    for (let i = 0; i < pills.length; i++) {
-      const rect = pills[i].getBoundingClientRect();
-      if (rect.top > firstRowTop + 4) break; // wrapped to next line
-      fitCount = i + 1;
-    }
-
-    if (fitCount < allMarkets.length) {
-      // Reserve space for the "More" button by removing 1
-      setVisibleCount(Math.max(1, fitCount - 1));
-    } else {
-      setVisibleCount(allMarkets.length);
-    }
-  }, [allMarkets.length]);
-
-  // Measure on mount & resize
-  useLayoutEffect(() => {
-    if (showMarketsExpanded || allMarkets.length === 0) return;
-
-    // Reset to measure all pills
-    setVisibleCount(null);
-  }, [allMarkets.length, showMarketsExpanded]);
-
-  // When visibleCount is null (measuring), render all pills and measure
-  useEffect(() => {
-    if (visibleCount !== null || showMarketsExpanded) return;
-
-    measureRafRef.current = requestAnimationFrame(() => {
-      measureRafRef.current = requestAnimationFrame(measureVisiblePills);
-    });
-
-    return () => {
-      if (measureRafRef.current) cancelAnimationFrame(measureRafRef.current);
-    };
-  }, [visibleCount, showMarketsExpanded, measureVisiblePills]);
-
-  // Re-measure on container resize
-  useEffect(() => {
-    const container = marketsRowRef.current;
-    if (!container || showMarketsExpanded) return;
-
-    let resizeTimeout: NodeJS.Timeout | null = null;
-    const ro = new ResizeObserver(() => {
-      if (resizeTimeout) clearTimeout(resizeTimeout);
-      resizeTimeout = setTimeout(() => setVisibleCount(null), 100);
-    });
-
-    ro.observe(container);
-    return () => {
-      ro.disconnect();
-      if (resizeTimeout) clearTimeout(resizeTimeout);
-    };
-  }, [showMarketsExpanded]);
-
-  const isMeasuring = visibleCount === null && !showMarketsExpanded;
-  const effectiveVisibleCount = visibleCount ?? allMarkets.length;
-  const visibleMarkets = showMarketsExpanded ? allMarkets : allMarkets.slice(0, effectiveVisibleCount);
-  const hiddenMarkets = showMarketsExpanded ? [] : allMarkets.slice(effectiveVisibleCount);
+  const { visibleCount: marketsVisibleCount, isMeasuring: marketsMeasuring } =
+    useOverflowCount(marketsRowRef, allMarkets.length, showMarketsExpanded);
+  const visibleMarkets = showMarketsExpanded ? allMarkets : allMarkets.slice(0, marketsVisibleCount);
+  const hiddenMarkets = showMarketsExpanded ? [] : allMarkets.slice(marketsVisibleCount);
   const hasHiddenMarkets = hiddenMarkets.length > 0;
+
+  // --- Overflow: Token categories ---
+  const tokensRowRef = useRef<HTMLDivElement>(null);
+  const [tokenCatsExpanded, setTokenCatsExpanded] = useState(false);
+  const { visibleCount: catsVisibleCount, isMeasuring: catsMeasuring } =
+    useOverflowCount(tokensRowRef, categories.length, tokenCatsExpanded);
+  const visibleCategories = tokenCatsExpanded ? categories : categories.slice(0, catsVisibleCount);
+  const hiddenCategories = tokenCatsExpanded ? [] : categories.slice(catsVisibleCount);
+  const hasHiddenCategories = hiddenCategories.length > 0;
 
 
   // Preload hidden market icons after page load
@@ -287,18 +230,18 @@ const FilterBar = ({
   }, [searchQuery, isMobile, stableResizeHandler]);
 
 
-  const tokenCategoryButtons = categories.map((category) => (
+  const renderCategoryButton = (category: typeof categories[number], measuring = false) => (
     <button
       key={category.value}
+      {...(measuring ? { 'data-overflow-index': '' } : {})}
       onClick={() => {
-        // Toggle behavior: if clicking the selected category, switch to 'all'
         if (selectedCategory === category.value) {
           setSelectedCategory('all');
         } else {
           setSelectedCategory(category.value);
         }
       }}
-      className={`ds-chip px-[var(--ds-space-2)] md:px-[var(--ds-space-2-5)] py-[var(--ds-space-1)] rounded-md font-medium transition-all ${
+      className={`ds-chip px-2 md:px-2.5 py-1 rounded-md font-medium transition-all ${
         selectedCategory === category.value
           ? 'bg-[rgb(var(--ds-brand-magenta-rgb))] ds-text-on-brand'
           : 'bg-card/60 text-muted-foreground hover:text-foreground hover:bg-card border border-border/40'
@@ -306,14 +249,65 @@ const FilterBar = ({
     >
       {category.label}
     </button>
-  ));
+  );
+
+  const renderMarketButton = (market: MarketListItem, measuring = false) => {
+    const info = getMarketInfo(market);
+    const isSelected = selectedMarkets.includes(market.marketName);
+    const isEthereum = market.chainName === 'Ethereum';
+    return (
+      <button
+        key={market.marketName}
+        {...(measuring ? { 'data-overflow-index': '' } : {})}
+        onClick={() => toggleMarket(market.marketName)}
+        className={`ds-chip gap-1 px-1.5 md:px-2 py-1 rounded-md font-medium transition-all ${
+          isSelected
+            ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
+            : 'text-foreground/80 border border-border hover:text-foreground'
+        }`}
+        title={isEthereum ? `Ethereum ${info.label}` : market.chainName}
+      >
+        <ChainIcon chain={market.chainName} loading={measuring ? "lazy" : showMarketsExpanded ? "eager" : "lazy"} />
+        <span>{isEthereum ? info.label : market.chainName}</span>
+      </button>
+    );
+  };
 
   return (
     <div className="space-y-1.5 md:space-y-2">
-      {/* Row 1: Token Categories + Search + APY Toggle (desktop) / Token Categories (mobile) */}
-      <div className="flex flex-wrap items-center gap-1.5 md:gap-2">
+      {/* Row 1: Token Categories + Search + APY Toggle */}
+      <div
+        ref={tokensRowRef}
+        className={`flex flex-wrap items-center gap-1.5 md:gap-2 ${catsMeasuring ? 'overflow-hidden max-h-[2rem]' : ''}`}
+      >
         <span className="ds-text-11 text-muted-foreground/70 hidden sm:inline">Tokens</span>
-        {tokenCategoryButtons}
+
+        {/* Measuring: render all categories */}
+        {catsMeasuring && categories.map((c) => renderCategoryButton(c, true))}
+
+        {/* Final: visible categories */}
+        {!catsMeasuring && visibleCategories.map((c) => renderCategoryButton(c))}
+
+        {/* Expand categories */}
+        {!catsMeasuring && hasHiddenCategories && !tokenCatsExpanded && (
+          <button
+            onClick={() => setTokenCatsExpanded(true)}
+            className="ds-chip gap-1 px-1.5 md:px-2 py-1 rounded-md font-medium transition-all ds-text-brand-magenta border ds-border-brand-magenta-40 border-dashed"
+          >
+            <span>+{hiddenCategories.length}</span>
+            <ChevronDown className="w-3 h-3" />
+          </button>
+        )}
+
+        {/* Collapse categories */}
+        {tokenCatsExpanded && (
+          <button
+            onClick={() => setTokenCatsExpanded(false)}
+            className="ds-chip gap-1 px-1.5 md:px-2 py-1 rounded-md font-medium transition-all ds-text-brand-magenta border ds-border-brand-magenta-40 border-dashed"
+          >
+            <ChevronUp className="w-3 h-3" />
+          </button>
+        )}
 
         {/* Search – desktop only */}
         <div className="relative w-20 sm:w-24 md:w-36 lg:w-44 hidden md:block ml-1">
@@ -371,7 +365,7 @@ const FilterBar = ({
       {/* Row 3: Markets */}
       <div
         ref={marketsRowRef}
-        className={`flex flex-wrap items-center gap-1 md:gap-1.5 ${isMeasuring ? 'overflow-hidden max-h-[2rem]' : ''}`}
+        className={`flex flex-wrap items-center gap-1 md:gap-1.5 ${marketsMeasuring ? 'overflow-hidden max-h-[2rem]' : ''}`}
       >
         <span className="ds-text-11 text-muted-foreground/70 hidden sm:inline">Markets</span>
 
@@ -387,54 +381,14 @@ const FilterBar = ({
           All
         </button>
 
-        {/* Measuring pass: render all pills (overflow hidden) */}
-        {isMeasuring && allMarkets.map((market, i) => {
-          const info = getMarketInfo(market);
-          const isSelected = selectedMarkets.includes(market.marketName);
-          const isEthereum = market.chainName === 'Ethereum';
-          return (
-            <button
-              key={market.marketName}
-              data-market-index={i}
-              onClick={() => toggleMarket(market.marketName)}
-              className={`ds-chip gap-1 px-1.5 md:px-2 py-1 rounded-md font-medium transition-all ${
-                isSelected
-                  ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
-                  : 'text-foreground/80 border border-border hover:text-foreground'
-              }`}
-              title={isEthereum ? `Ethereum ${info.label}` : market.chainName}
-            >
-              <ChainIcon chain={market.chainName} />
-              <span>{isEthereum ? info.label : market.chainName}</span>
-            </button>
-          );
-        })}
+        {/* Measuring: render all market pills */}
+        {marketsMeasuring && allMarkets.map((m) => renderMarketButton(m, true))}
 
-        {/* Final render: only visible pills */}
-        {!isMeasuring && visibleMarkets.map((market) => {
-          const info = getMarketInfo(market);
-          const isSelected = selectedMarkets.includes(market.marketName);
-          const isEthereum = market.chainName === 'Ethereum';
-          return (
-            <button
-              key={market.marketName}
-              data-market-pill
-              onClick={() => toggleMarket(market.marketName)}
-              className={`ds-chip gap-1 px-1.5 md:px-2 py-1 rounded-md font-medium transition-all ${
-                isSelected
-                  ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
-                  : 'text-foreground/80 border border-border hover:text-foreground'
-              }`}
-              title={isEthereum ? `Ethereum ${info.label}` : market.chainName}
-            >
-              <ChainIcon chain={market.chainName} loading={showMarketsExpanded ? "eager" : "lazy"} />
-              <span>{isEthereum ? info.label : market.chainName}</span>
-            </button>
-          );
-        })}
+        {/* Final: visible market pills */}
+        {!marketsMeasuring && visibleMarkets.map((m) => renderMarketButton(m))}
 
         {/* Expand */}
-        {!isMeasuring && hasHiddenMarkets && !showMarketsExpanded && (
+        {!marketsMeasuring && hasHiddenMarkets && !showMarketsExpanded && (
           <button
             onClick={() => setShowMarketsExpanded(true)}
             className="ds-chip gap-1 px-1.5 md:px-2 py-1 rounded-md font-medium transition-all ds-text-brand-magenta border ds-border-brand-magenta-40 border-dashed"
