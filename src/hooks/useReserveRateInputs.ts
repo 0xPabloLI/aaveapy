@@ -44,7 +44,7 @@ export async function prefetchRateInputsSnapshot(queryClient: QueryClient): Prom
   });
 }
 
-function findReserveRateInput(
+export function findReserveRateInput(
   payload: RateInputsResponse,
   chainId: number,
   tokenAddress: string,

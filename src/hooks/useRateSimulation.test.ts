@@ -1,0 +1,222 @@
+import { describe, expect, it } from 'vitest';
+import type {
+  MerklOpportunityGroup,
+  MerklForecastStateResponse,
+  ReserveRateInput,
+  ReserveWithSpread,
+} from '@/types/aave';
+import { buildForecastMerklOpportunities, buildRateSimulationResult } from '@/hooks/useRateSimulation';
+
+const baseReserve: ReserveWithSpread = {
+  marketName: 'Core',
+  chainName: 'Ethereum',
+  chainId: 1,
+  tokenName: 'USD Coin',
+  tokenSymbol: 'USDC',
+  tokenAddress: '0x0000000000000000000000000000000000000001',
+  aTokenAddress: '0x0000000000000000000000000000000000000002',
+  vTokenAddress: '0x0000000000000000000000000000000000000003',
+  supplyApy: 4.25,
+  borrowApy: 6.5,
+  supplyIncentives: [1.1],
+  borrowIncentives: [0.4],
+  meritSupplys: [],
+  meritBorrows: [],
+  merklSupplys: [],
+  merklBorrows: [],
+  brevisSupplys: [],
+  brevisBorrows: [],
+};
+
+const baseRateInput: ReserveRateInput = {
+  chainId: 1,
+  tokenAddress: '0x0000000000000000000000000000000000000001',
+  marketName: 'Core',
+  decimals: 6,
+  availableLiquidity: '1000000000000',
+  totalScaledVariableDebt: '500000000000',
+  variableBorrowIndex: '1000000000000000000000000000',
+  reserveFactor: '1000',
+  variableRateSlope1: '40000000000000000000000000',
+  variableRateSlope2: '600000000000000000000000000',
+  baseVariableBorrowRate: '0',
+  optimalUsageRate: '800000000000000000000000000',
+  source: 'subgraph',
+  sourceDetail: 'id/test',
+};
+
+describe('buildForecastMerklOpportunities', () => {
+  it('uses forecast APR when campaign state exists and amount is provided', () => {
+    const opportunities: MerklOpportunityGroup[] = [
+      {
+        name: 'Merkl campaign',
+        breakdowns: [
+          {
+            campaignApr: 20,
+            campaignStartedAt: '2020-01-01T00:00:00.000Z',
+            campaignEndedAt: '2099-01-01T00:00:00.000Z',
+            campaignId: 'c1',
+          },
+        ],
+      },
+    ];
+
+    const states: Record<string, MerklForecastStateResponse> = {
+      c1: {
+        campaignId: 'c1',
+        campaignType: 'DUTCH_AUCTION',
+        plannedDaily: 10,
+        requiredDaily: 10,
+        aprCap: null,
+        totalBudget: 100000,
+        distributedSoFar: 0,
+        latestTvl: 1000,
+        endTimestamp: Math.floor(Date.now() / 1000) + 86400 * 30,
+      },
+    };
+
+    const result = buildForecastMerklOpportunities({
+      opportunities,
+      inputUsd: 1000,
+      forecastStates: states,
+      includeWhitelistOnlyMerkl: true,
+      tydroPointToUsdRate: 1,
+    });
+
+    expect(result[0].breakdowns[0].campaignApr).toBeCloseTo(182.5, 1);
+    expect(result[0].breakdowns[0].pointsPerThousandUsd).toBeUndefined();
+  });
+
+  it('keeps whitelist-only campaign APR unchanged when excluded', () => {
+    const opportunities: MerklOpportunityGroup[] = [
+      {
+        name: 'Whitelist campaign',
+        breakdowns: [
+          {
+            campaignApr: 33,
+            campaignStartedAt: '2020-01-01T00:00:00.000Z',
+            campaignEndedAt: '2099-01-01T00:00:00.000Z',
+            campaignId: 'c2',
+            whitelistOnly: true,
+          },
+        ],
+      },
+    ];
+
+    const states: Record<string, MerklForecastStateResponse> = {
+      c2: {
+        campaignId: 'c2',
+        campaignType: 'DUTCH_AUCTION',
+        plannedDaily: 100,
+        requiredDaily: 100,
+        aprCap: null,
+        totalBudget: 100000,
+        distributedSoFar: 0,
+        latestTvl: 1000,
+        endTimestamp: Math.floor(Date.now() / 1000) + 86400 * 30,
+      },
+    };
+
+    const result = buildForecastMerklOpportunities({
+      opportunities,
+      inputUsd: 5000,
+      forecastStates: states,
+      includeWhitelistOnlyMerkl: false,
+      tydroPointToUsdRate: 1,
+    });
+
+    expect(result[0].breakdowns[0].campaignApr).toBe(33);
+  });
+});
+
+describe('buildRateSimulationResult', () => {
+  it('recomputes supply, spread, borrow, and utilization from one shared scenario', () => {
+    const result = buildRateSimulationResult({
+      reserve: baseReserve,
+      reserveRateInput: baseRateInput,
+      isApy: true,
+      includeWhitelistOnlyMerkl: true,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '100000',
+      borrowInput: '20000',
+      forecastStates: {},
+    });
+
+    expect(result.supply.afterTotal).not.toBeNull();
+    expect(result.spread.after).not.toBeNull();
+    expect(result.borrow.afterTotal).not.toBeNull();
+    expect(result.utilization.after).not.toBeNull();
+    expect(result.supply.afterNative).not.toBe(result.supply.currentNative);
+    expect(result.borrow.afterNative).not.toBe(result.borrow.currentNative);
+    expect(result.utilization.after).not.toBe(result.utilization.current);
+  });
+
+  it('uses forecasted Merkl values in the supply breakdown when a shared supply amount is present', () => {
+    const reserve: ReserveWithSpread = {
+      ...baseReserve,
+      merklSupplys: [
+        {
+          name: 'Merkl campaign',
+          breakdowns: [
+            {
+              campaignApr: 10,
+              campaignStartedAt: '2020-01-01T00:00:00.000Z',
+              campaignEndedAt: '2099-01-01T00:00:00.000Z',
+              campaignId: 'c1',
+            },
+          ],
+        },
+      ],
+    };
+
+    const states: Record<string, MerklForecastStateResponse> = {
+      c1: {
+        campaignId: 'c1',
+        campaignType: 'DUTCH_AUCTION',
+        plannedDaily: 10,
+        requiredDaily: 10,
+        aprCap: null,
+        totalBudget: 100000,
+        distributedSoFar: 0,
+        latestTvl: 1000,
+        endTimestamp: Math.floor(Date.now() / 1000) + 86400 * 30,
+      },
+    };
+
+    const result = buildRateSimulationResult({
+      reserve,
+      reserveRateInput: baseRateInput,
+      isApy: false,
+      includeWhitelistOnlyMerkl: true,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '1000',
+      borrowInput: '0',
+      forecastStates: states,
+    });
+
+    expect(result.supply.sources.merkl.current).toBe(10);
+    expect(result.supply.sources.merkl.after).toBeGreaterThan(10);
+    expect(result.supply.afterIncentive).toBeGreaterThan(result.supply.currentIncentive);
+  });
+
+  it('keeps after values empty when the shared scenario is blank', () => {
+    const result = buildRateSimulationResult({
+      reserve: baseReserve,
+      reserveRateInput: baseRateInput,
+      isApy: true,
+      includeWhitelistOnlyMerkl: true,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '',
+      borrowInput: '',
+      forecastStates: {},
+    });
+
+    expect(result.supply.afterTotal).toBeNull();
+    expect(result.spread.after).toBeNull();
+    expect(result.borrow.afterTotal).toBeNull();
+    expect(result.utilization.after).toBeNull();
+  });
+});

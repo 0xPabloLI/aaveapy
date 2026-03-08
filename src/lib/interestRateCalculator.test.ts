@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { ReserveRateInput } from '@/types/aave';
-import { simulateNativeRatesAfterSupply, simulateNativeRatesAfterBorrow } from '@/lib/interestRateCalculator';
+import {
+  simulateNativeRatesAfterSupply,
+  simulateNativeRatesAfterBorrow,
+  simulateNativeRatesAfterActions,
+} from '@/lib/interestRateCalculator';
 
 const baseRateInput: ReserveRateInput = {
   chainId: 1,
@@ -74,3 +78,42 @@ describe('simulateNativeRatesAfterBorrow', () => {
   });
 });
 
+describe('simulateNativeRatesAfterActions', () => {
+  it('lets supply input change both supply and borrow side rates', () => {
+    const current = simulateNativeRatesAfterActions(baseRateInput, { supplyAmount: '0', borrowAmount: '0' });
+    const afterSupply = simulateNativeRatesAfterActions(baseRateInput, { supplyAmount: '100000', borrowAmount: '0' });
+
+    expect(afterSupply.utilizationRatePercent).toBeLessThan(current.utilizationRatePercent);
+    expect(afterSupply.supplyApyPercent).toBeLessThan(current.supplyApyPercent);
+    expect(afterSupply.borrowApyPercent).toBeLessThan(current.borrowApyPercent);
+  });
+
+  it('lets borrow input change both supply and borrow side rates', () => {
+    const current = simulateNativeRatesAfterActions(baseRateInput, { supplyAmount: '0', borrowAmount: '0' });
+    const afterBorrow = simulateNativeRatesAfterActions(baseRateInput, { supplyAmount: '0', borrowAmount: '100000' });
+
+    expect(afterBorrow.utilizationRatePercent).toBeGreaterThan(current.utilizationRatePercent);
+    expect(afterBorrow.supplyApyPercent).toBeGreaterThan(current.supplyApyPercent);
+    expect(afterBorrow.borrowApyPercent).toBeGreaterThan(current.borrowApyPercent);
+  });
+
+  it('combines supply and borrow inputs into one utilization state', () => {
+    const combined = simulateNativeRatesAfterActions(baseRateInput, {
+      supplyAmount: '50000',
+      borrowAmount: '20000',
+    });
+    const onlySupply = simulateNativeRatesAfterActions(baseRateInput, {
+      supplyAmount: '50000',
+      borrowAmount: '0',
+    });
+    const onlyBorrow = simulateNativeRatesAfterActions(baseRateInput, {
+      supplyAmount: '0',
+      borrowAmount: '20000',
+    });
+
+    expect(combined.utilizationRatePercent).not.toBe(onlySupply.utilizationRatePercent);
+    expect(combined.utilizationRatePercent).not.toBe(onlyBorrow.utilizationRatePercent);
+    expect(combined.borrowApyPercent).not.toBe(onlySupply.borrowApyPercent);
+    expect(combined.supplyApyPercent).not.toBe(onlyBorrow.supplyApyPercent);
+  });
+});
