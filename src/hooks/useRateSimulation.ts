@@ -363,15 +363,22 @@ export function buildRateSimulationResult({
   tokenPrice,
   supplyInput,
   borrowInput,
+  inputMode = 'token',
   forecastStates,
 }: BuildRateSimulationResultParams): RateSimulationComputedResult {
-  const supplyAmount = parseNumberInput(supplyInput);
-  const borrowAmount = parseNumberInput(borrowInput);
-  const hasSupplyInput = supplyAmount > 0;
-  const hasBorrowInput = borrowAmount > 0;
+  const rawSupply = parseNumberInput(supplyInput);
+  const rawBorrow = parseNumberInput(borrowInput);
+
+  // In USD mode, convert to token amounts for native simulation
+  const supplyAmount = inputMode === 'usd' && tokenPrice ? rawSupply / tokenPrice : rawSupply;
+  const borrowAmount = inputMode === 'usd' && tokenPrice ? rawBorrow / tokenPrice : rawBorrow;
+  const hasSupplyInput = rawSupply > 0;
+  const hasBorrowInput = rawBorrow > 0;
   const hasAnyInput = hasSupplyInput || hasBorrowInput;
-  const supplyInputUsd = tokenPrice ? supplyAmount * tokenPrice : 0;
-  const borrowInputUsd = tokenPrice ? borrowAmount * tokenPrice : 0;
+
+  // For incentive forecasts, we need USD values
+  const supplyInputUsd = inputMode === 'usd' ? rawSupply : (tokenPrice ? rawSupply * tokenPrice : 0);
+  const borrowInputUsd = inputMode === 'usd' ? rawBorrow : (tokenPrice ? rawBorrow * tokenPrice : 0);
 
   const currentNativeSimulation = reserveRateInput
     ? simulateNativeRatesAfterActions(reserveRateInput, {
