@@ -21,7 +21,7 @@ import PullToRefresh from '@/components/dashboard/PullToRefresh';
 import { getCachedMarkets, getCachedMarketsList, setCachedTydroRate } from '@/lib/cache';
 import { TYDRO_POINT_TO_USD_RATE } from '@/lib/tydro';
 import { AlertTriangle } from 'lucide-react';
-import { preloadChainIcons, preloadIncentiveIcons } from '@/lib/preloadUtils';
+import { preloadIncentiveIcons } from '@/lib/preloadUtils';
 import { normalizeTokenSymbolForSearch } from '@/lib/tokenSymbolNormalization';
 
 import IncentiveTooltip from '@/components/dashboard/IncentiveTooltip';
@@ -39,7 +39,7 @@ const Index = () => {
   const [selectedCategory, setSelectedCategory] = useState<TokenCategory>('all');
   const [isApy, setIsApy] = useState(true);
   const [showCacheWarning, setShowCacheWarning] = useState(false);
-  const [showMarketsExpanded, setShowMarketsExpanded] = useState(false);
+  
   const [isRateDragging, setIsRateDragging] = useState(false);
   const [includeWhitelistOnlyMerkl, setIncludeWhitelistOnlyMerkl] = useState(false);
   const [pendingScrollReserveId, setPendingScrollReserveId] = useState<string | null>(null);
@@ -84,17 +84,8 @@ const Index = () => {
   const effectiveReservesData = reservesData || cachedReservesData;
   const effectiveMarketsList = marketsList || cachedMarketsList;
 
-  const orderedMarkets = useMemo(() => {
-    const list = effectiveMarketsList || [];
-    const ethereum = list.filter((market) => market.chainName === 'Ethereum');
-    const others = list.filter((market) => market.chainName !== 'Ethereum');
-    return [...ethereum, ...others];
-  }, [effectiveMarketsList]);
 
-  const hiddenMarketNames = useMemo(
-    () => orderedMarkets.slice(6).map((market) => market.marketName),
-    [orderedMarkets]
-  );
+
 
   // Check if we're using cached data
   // Only show once loading is done to avoid flashing the banner on initial load.
@@ -118,12 +109,7 @@ const Index = () => {
     return () => window.clearTimeout(timer);
   }, [isUsingCache]);
 
-  useEffect(() => {
-    if (selectedMarkets.length !== 1) return;
-    if (hiddenMarketNames.includes(selectedMarkets[0])) {
-      setShowMarketsExpanded(true);
-    }
-  }, [hiddenMarketNames, selectedMarkets]);
+
 
   // Stable reference for reserves data to prevent TopOpportunities from re-rendering
   // when filters change (only update when actual data changes)
@@ -139,13 +125,7 @@ const Index = () => {
     enabled: hasReserves,
   });
 
-  // Preload chain icons for hidden markets when user hovers "More" button
-  useEffect(() => {
-    if (showMarketsExpanded && orderedMarkets.length > 6) {
-      const hiddenChains = orderedMarkets.slice(6).map(m => m.chainName);
-      preloadChainIcons(hiddenChains);
-    }
-  }, [showMarketsExpanded, orderedMarkets]);
+
 
   // Preload incentive icons after initial data load (for tooltip)
   useEffect(() => {
@@ -409,8 +389,6 @@ const Index = () => {
             isApy={isApy}
             setIsApy={setIsApy}
             marketsList={effectiveMarketsList}
-            showMarketsExpanded={showMarketsExpanded}
-            setShowMarketsExpanded={setShowMarketsExpanded}
           />
 
           {/* Reserves Table */}

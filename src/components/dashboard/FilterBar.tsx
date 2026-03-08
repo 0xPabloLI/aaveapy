@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Search, X, ChevronUp, ChevronDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { TokenCategory, MarketListItem, ETHEREUM_MARKET_NAMES } from '@/types/aave';
@@ -17,8 +17,6 @@ interface FilterBarProps {
   isApy: boolean;
   setIsApy: (isApy: boolean) => void;
   marketsList?: MarketListItem[];
-  showMarketsExpanded?: boolean;
-  setShowMarketsExpanded?: (expanded: boolean) => void;
 }
 
 const categories: { value: TokenCategory; label: string }[] = [
@@ -76,13 +74,9 @@ const FilterBar = ({
   isApy,
   setIsApy,
   marketsList,
-  showMarketsExpanded: showMarketsExpandedProp,
-  setShowMarketsExpanded: setShowMarketsExpandedProp,
 }: FilterBarProps) => {
   const isMobile = useIsMobile();
-  const [internalShowMarketsExpanded, setInternalShowMarketsExpanded] = useState(false);
-  const showMarketsExpanded = showMarketsExpandedProp ?? internalShowMarketsExpanded;
-  const setShowMarketsExpanded = setShowMarketsExpandedProp ?? setInternalShowMarketsExpanded;
+  const [showMarketsExpanded, setShowMarketsExpanded] = useState(false);
   const [searchPlaceholder, setSearchPlaceholder] = useState('Search token');
   const desktopSearchInputRef = useRef<HTMLInputElement>(null);
   const mobileSearchInputRef = useRef<HTMLInputElement>(null);
@@ -115,6 +109,18 @@ const FilterBar = ({
   const visibleMarkets = showMarketsExpanded ? allMarkets : allMarkets.slice(0, marketsVisibleCount);
   const hiddenMarkets = showMarketsExpanded ? [] : allMarkets.slice(marketsVisibleCount);
   const hasHiddenMarkets = hiddenMarkets.length > 0;
+
+  // Auto-expand when a selected market is hidden behind overflow
+  const hiddenMarketNames = useMemo(
+    () => hiddenMarkets.map(m => m.marketName),
+    [hiddenMarkets]
+  );
+  useEffect(() => {
+    if (selectedMarkets.length !== 1) return;
+    if (hiddenMarketNames.includes(selectedMarkets[0])) {
+      setShowMarketsExpanded(true);
+    }
+  }, [hiddenMarketNames, selectedMarkets]);
 
   // --- Overflow: Token categories ---
   const tokensRowRef = useRef<HTMLDivElement>(null);
