@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback, Fragment } from 'react';
+import { useState, useMemo, useEffect, useCallback, Fragment, memo } from 'react';
 import { ArrowUp, ArrowDown, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -45,6 +45,23 @@ interface ReservesTableProps {
 }
 
 type SortMode = 'total' | 'native' | 'incentive';
+
+// Extracted & memoized to prevent re-mount on parent state changes (e.g. row expand)
+const ChainIcon = memo(({ chain, className = '' }: { chain: string; className?: string }) => {
+  const size = 'w-3.5 h-3.5';
+  const src = getChainIconSrc(chain);
+  if (!src) {
+    return (
+      <div className={`${size} rounded-full bg-current opacity-40 flex items-center justify-center ds-text-8 font-bold`}>
+        {chain.charAt(0)}
+      </div>
+    );
+  }
+  return (
+    <img src={src} alt={`${chain} logo`} className={`${size} ${className}`} loading="lazy" />
+  );
+});
+ChainIcon.displayName = 'ChainIcon';
 
 const DEFAULT_VISIBLE_COUNT = 20;
 
@@ -345,27 +362,7 @@ const ReservesTable = ({
     });
   };
 
-  const ChainIcon = ({ chain, className = '' }: { chain: string; className?: string }) => {
-    const size = 'w-3.5 h-3.5';
-    const src = getChainIconSrc(chain);
-
-    if (!src) {
-    return (
-      <div className={`${size} rounded-full bg-current opacity-40 flex items-center justify-center ds-text-8 font-bold`}>
-        {chain.charAt(0)}
-      </div>
-    );
-    }
-
-    return (
-      <img
-        src={src}
-        alt={`${chain} logo`}
-        className={`${size} ${className}`}
-        loading="lazy"
-      />
-    );
-  };
+  
 
   const handleRowClick = (reserve: ReserveWithSpread) => {
     const url = buildAaveReserveUrl({

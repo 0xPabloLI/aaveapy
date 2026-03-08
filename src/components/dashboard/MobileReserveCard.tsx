@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
 import { ReserveWithSpread, ETHEREUM_MARKET_NAMES } from '@/types/aave';
 import { formatPercent, formatSpread } from '@/lib/formatters';
@@ -26,7 +27,7 @@ interface MobileReserveCardProps {
   hasSharedScenario: boolean;
 }
 
-const MobileReserveCard = ({
+const MobileReserveCard = memo(({
   reserve,
   isApy,
   onIncentiveClick,
@@ -220,6 +221,7 @@ const MobileReserveCard = ({
       </div>
     </div>
   );
-};
+});
+MobileReserveCard.displayName = 'MobileReserveCard';
 
 export default MobileReserveCard;
