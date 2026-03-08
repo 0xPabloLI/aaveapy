@@ -1,8 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
 import { getCachedCoingeckoFdvEntry, setCachedCoingeckoFdv } from '@/lib/cache';
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://api.aaveapy.com/api';
+import { API_BASE } from '@/lib/apiBase';
 
 interface CoingeckoFdvItem {
   id: string;
