@@ -9,25 +9,16 @@ import {
 
 const tokenPrices: TokenPricesIndex = {
   '1:0xunderlying': {
-    chainId: 1,
-    address: '0xunderlying',
-    symbol: 'USDX',
     price: 0.99,
     updatedAt: 1,
     source: 'opportunity',
   },
   '1:0xatoken': {
-    chainId: 1,
-    address: '0xatoken',
-    symbol: 'aUSDX',
     price: 1.01,
     updatedAt: 1,
     source: 'opportunity',
   },
   '1:0xvtoken': {
-    chainId: 1,
-    address: '0xvtoken',
-    symbol: 'vUSDX',
     price: 1.02,
     updatedAt: 1,
     source: 'opportunity',

@@ -11,8 +11,6 @@ import {
 import { API_BASE } from '@/lib/apiBase';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://api.aaveapy.com/api';
-
 // Fetch all market data (all sorting and filtering done on frontend)
 export const fetchMarkets = async (): Promise<MarketsResponse> => {
   try {
