@@ -230,18 +230,18 @@ const FilterBar = ({
   }, [searchQuery, isMobile, stableResizeHandler]);
 
 
-  const tokenCategoryButtons = categories.map((category) => (
+  const renderCategoryButton = (category: typeof categories[number], measuring = false) => (
     <button
       key={category.value}
+      {...(measuring ? { 'data-overflow-index': '' } : {})}
       onClick={() => {
-        // Toggle behavior: if clicking the selected category, switch to 'all'
         if (selectedCategory === category.value) {
           setSelectedCategory('all');
         } else {
           setSelectedCategory(category.value);
         }
       }}
-      className={`ds-chip px-[var(--ds-space-2)] md:px-[var(--ds-space-2-5)] py-[var(--ds-space-1)] rounded-md font-medium transition-all ${
+      className={`ds-chip px-2 md:px-2.5 py-1 rounded-md font-medium transition-all ${
         selectedCategory === category.value
           ? 'bg-[rgb(var(--ds-brand-magenta-rgb))] ds-text-on-brand'
           : 'bg-card/60 text-muted-foreground hover:text-foreground hover:bg-card border border-border/40'
@@ -249,14 +249,65 @@ const FilterBar = ({
     >
       {category.label}
     </button>
-  ));
+  );
+
+  const renderMarketButton = (market: MarketListItem, measuring = false) => {
+    const info = getMarketInfo(market);
+    const isSelected = selectedMarkets.includes(market.marketName);
+    const isEthereum = market.chainName === 'Ethereum';
+    return (
+      <button
+        key={market.marketName}
+        {...(measuring ? { 'data-overflow-index': '' } : {})}
+        onClick={() => toggleMarket(market.marketName)}
+        className={`ds-chip gap-1 px-1.5 md:px-2 py-1 rounded-md font-medium transition-all ${
+          isSelected
+            ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
+            : 'text-foreground/80 border border-border hover:text-foreground'
+        }`}
+        title={isEthereum ? `Ethereum ${info.label}` : market.chainName}
+      >
+        <ChainIcon chain={market.chainName} loading={measuring ? "lazy" : showMarketsExpanded ? "eager" : "lazy"} />
+        <span>{isEthereum ? info.label : market.chainName}</span>
+      </button>
+    );
+  };
 
   return (
     <div className="space-y-1.5 md:space-y-2">
-      {/* Row 1: Token Categories + Search + APY Toggle (desktop) / Token Categories (mobile) */}
-      <div className="flex flex-wrap items-center gap-1.5 md:gap-2">
+      {/* Row 1: Token Categories + Search + APY Toggle */}
+      <div
+        ref={tokensRowRef}
+        className={`flex flex-wrap items-center gap-1.5 md:gap-2 ${catsMeasuring ? 'overflow-hidden max-h-[2rem]' : ''}`}
+      >
         <span className="ds-text-11 text-muted-foreground/70 hidden sm:inline">Tokens</span>
-        {tokenCategoryButtons}
+
+        {/* Measuring: render all categories */}
+        {catsMeasuring && categories.map((c) => renderCategoryButton(c, true))}
+
+        {/* Final: visible categories */}
+        {!catsMeasuring && visibleCategories.map((c) => renderCategoryButton(c))}
+
+        {/* Expand categories */}
+        {!catsMeasuring && hasHiddenCategories && !tokenCatsExpanded && (
+          <button
+            onClick={() => setTokenCatsExpanded(true)}
+            className="ds-chip gap-1 px-1.5 md:px-2 py-1 rounded-md font-medium transition-all ds-text-brand-magenta border ds-border-brand-magenta-40 border-dashed"
+          >
+            <span>+{hiddenCategories.length}</span>
+            <ChevronDown className="w-3 h-3" />
+          </button>
+        )}
+
+        {/* Collapse categories */}
+        {tokenCatsExpanded && (
+          <button
+            onClick={() => setTokenCatsExpanded(false)}
+            className="ds-chip gap-1 px-1.5 md:px-2 py-1 rounded-md font-medium transition-all ds-text-brand-magenta border ds-border-brand-magenta-40 border-dashed"
+          >
+            <ChevronUp className="w-3 h-3" />
+          </button>
+        )}
 
         {/* Search – desktop only */}
         <div className="relative w-20 sm:w-24 md:w-36 lg:w-44 hidden md:block ml-1">
@@ -314,7 +365,7 @@ const FilterBar = ({
       {/* Row 3: Markets */}
       <div
         ref={marketsRowRef}
-        className={`flex flex-wrap items-center gap-1 md:gap-1.5 ${isMeasuring ? 'overflow-hidden max-h-[2rem]' : ''}`}
+        className={`flex flex-wrap items-center gap-1 md:gap-1.5 ${marketsMeasuring ? 'overflow-hidden max-h-[2rem]' : ''}`}
       >
         <span className="ds-text-11 text-muted-foreground/70 hidden sm:inline">Markets</span>
 
@@ -330,54 +381,14 @@ const FilterBar = ({
           All
         </button>
 
-        {/* Measuring pass: render all pills (overflow hidden) */}
-        {isMeasuring && allMarkets.map((market, i) => {
-          const info = getMarketInfo(market);
-          const isSelected = selectedMarkets.includes(market.marketName);
-          const isEthereum = market.chainName === 'Ethereum';
-          return (
-            <button
-              key={market.marketName}
-              data-market-index={i}
-              onClick={() => toggleMarket(market.marketName)}
-              className={`ds-chip gap-1 px-1.5 md:px-2 py-1 rounded-md font-medium transition-all ${
-                isSelected
-                  ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
-                  : 'text-foreground/80 border border-border hover:text-foreground'
-              }`}
-              title={isEthereum ? `Ethereum ${info.label}` : market.chainName}
-            >
-              <ChainIcon chain={market.chainName} />
-              <span>{isEthereum ? info.label : market.chainName}</span>
-            </button>
-          );
-        })}
+        {/* Measuring: render all market pills */}
+        {marketsMeasuring && allMarkets.map((m) => renderMarketButton(m, true))}
 
-        {/* Final render: only visible pills */}
-        {!isMeasuring && visibleMarkets.map((market) => {
-          const info = getMarketInfo(market);
-          const isSelected = selectedMarkets.includes(market.marketName);
-          const isEthereum = market.chainName === 'Ethereum';
-          return (
-            <button
-              key={market.marketName}
-              data-market-pill
-              onClick={() => toggleMarket(market.marketName)}
-              className={`ds-chip gap-1 px-1.5 md:px-2 py-1 rounded-md font-medium transition-all ${
-                isSelected
-                  ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
-                  : 'text-foreground/80 border border-border hover:text-foreground'
-              }`}
-              title={isEthereum ? `Ethereum ${info.label}` : market.chainName}
-            >
-              <ChainIcon chain={market.chainName} loading={showMarketsExpanded ? "eager" : "lazy"} />
-              <span>{isEthereum ? info.label : market.chainName}</span>
-            </button>
-          );
-        })}
+        {/* Final: visible market pills */}
+        {!marketsMeasuring && visibleMarkets.map((m) => renderMarketButton(m))}
 
         {/* Expand */}
-        {!isMeasuring && hasHiddenMarkets && !showMarketsExpanded && (
+        {!marketsMeasuring && hasHiddenMarkets && !showMarketsExpanded && (
           <button
             onClick={() => setShowMarketsExpanded(true)}
             className="ds-chip gap-1 px-1.5 md:px-2 py-1 rounded-md font-medium transition-all ds-text-brand-magenta border ds-border-brand-magenta-40 border-dashed"
