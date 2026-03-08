@@ -84,17 +84,8 @@ const Index = () => {
   const effectiveReservesData = reservesData || cachedReservesData;
   const effectiveMarketsList = marketsList || cachedMarketsList;
 
-  const orderedMarkets = useMemo(() => {
-    const list = effectiveMarketsList || [];
-    const ethereum = list.filter((market) => market.chainName === 'Ethereum');
-    const others = list.filter((market) => market.chainName !== 'Ethereum');
-    return [...ethereum, ...others];
-  }, [effectiveMarketsList]);
 
-  const hiddenMarketNames = useMemo(
-    () => orderedMarkets.slice(6).map((market) => market.marketName),
-    [orderedMarkets]
-  );
+
 
   // Check if we're using cached data
   // Only show once loading is done to avoid flashing the banner on initial load.
