@@ -6,7 +6,7 @@ const MeritIncentiveSchema = z.object({
   selfApr: z.number().optional(),
   link: z.string(),
   name: z.string().optional(),
-  message: z.string().optional(),
+  message: z.union([z.string(), z.array(z.string())]).optional(),
   startDate: z.string(),
   endDate: z.string(),
   startBlock: z.string().optional(),
