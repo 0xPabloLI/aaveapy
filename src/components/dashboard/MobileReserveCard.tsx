@@ -82,15 +82,8 @@ const MobileReserveCard = ({
     name: reserve.tokenName,
   });
 
-  const handleCardClick = () => {
-    const url = buildAaveReserveUrl({
-      marketName: reserve.marketName,
-      tokenAddress: reserve.tokenAddress,
-    });
-    if (url) {
-      window.open(url, '_blank', 'noopener,noreferrer');
-    }
-  };
+
+
 
   const supplyValueClass = displaySupplyTotal === null ? 'text-muted-foreground/70' : 'ds-text-emerald-500';
   const borrowValueClass = displayBorrowTotal === null ? 'text-muted-foreground/70' : 'ds-text-brand-cyan';
