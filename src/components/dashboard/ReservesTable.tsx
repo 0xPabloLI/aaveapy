@@ -74,8 +74,12 @@ const ReservesTable = ({
   const [showBorrowSortMenu, setShowBorrowSortMenu] = useState(false);
   const [showAll, setShowAll] = useState(false);
   const [expandedReserveId, setExpandedReserveId] = useState<string | null>(null);
-  const [sharedSupplyInput, setSharedSupplyInput] = useState('');
-  const [sharedBorrowInput, setSharedBorrowInput] = useState('');
+  const [debouncedSharedSupplyInput, setDebouncedSharedSupplyInput] = useState('');
+  const [debouncedSharedBorrowInput, setDebouncedSharedBorrowInput] = useState('');
+  const handleScenarioChange = useCallback((supply: string, borrow: string) => {
+    setDebouncedSharedSupplyInput(supply);
+    setDebouncedSharedBorrowInput(borrow);
+  }, []);
   const [tooltipState, setTooltipState] = useState<{
     reserve: ReserveWithSpread;
     type: 'supply' | 'borrow';
@@ -84,8 +88,6 @@ const ReservesTable = ({
     triggerHeight: number;
     triggerRect: { top: number; bottom: number; left: number; right: number; width: number; height: number };
   } | null>(null);
-  const debouncedSharedSupplyInput = useDebouncedValue(sharedSupplyInput, INPUT_DEBOUNCE_MS);
-  const debouncedSharedBorrowInput = useDebouncedValue(sharedBorrowInput, INPUT_DEBOUNCE_MS);
 
   const { simulationsById, hasAnyInput: hasSharedScenario } = useSharedRateSimulations({
     reserves,
