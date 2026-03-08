@@ -621,7 +621,7 @@ export const useSharedRateSimulations = ({
   supplyInput,
   borrowInput,
 }: UseSharedRateSimulationsParams) => {
-  const cachedEntry = getCachedRateInputsSnapshotEntry();
+  const cachedEntry = getCachedRateInputsSnapshotEntry<RateInputsResponse>();
   const hasAnyInput = useMemo(() => parseNumberInput(supplyInput) > 0 || parseNumberInput(borrowInput) > 0, [borrowInput, supplyInput]);
 
   const rateInputsQuery = useQuery({

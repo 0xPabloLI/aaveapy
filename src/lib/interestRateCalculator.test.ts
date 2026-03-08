@@ -7,6 +7,7 @@ import {
 } from '@/lib/interestRateCalculator';
 
 const baseRateInput: ReserveRateInput = {
+  marketName: 'proto_mainnet_v3',
   chainId: 1,
   tokenAddress: '0x0000000000000000000000000000000000000001',
   decimals: 18,
