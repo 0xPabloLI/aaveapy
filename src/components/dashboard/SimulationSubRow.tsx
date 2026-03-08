@@ -1,4 +1,3 @@
-import { ExternalLink } from 'lucide-react';
 import { formatPercent, formatSpread } from '@/lib/formatters';
 import { formatNumberInput } from '@/lib/numberFormat';
 import type { RateSimulationResult } from '@/hooks/useRateSimulation';
