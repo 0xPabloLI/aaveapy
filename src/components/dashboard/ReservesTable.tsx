@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, Fragment } from 'react';
+import { useState, useMemo, useEffect, useCallback, Fragment } from 'react';
 import { ArrowUp, ArrowDown, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -16,7 +16,7 @@ import {
   calculateTotalIncentiveApy,
   apyToApr
 } from '@/lib/formatters';
-import { formatNumberInput } from '@/lib/numberFormat';
+import ScenarioControls from './ScenarioControls';
 import { compareIncentiveWithNative } from '@/lib/sorters';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { IncentiveIcon } from '@/components/IncentiveIcon';
@@ -47,18 +47,6 @@ interface ReservesTableProps {
 type SortMode = 'total' | 'native' | 'incentive';
 
 const DEFAULT_VISIBLE_COUNT = 20;
-const INPUT_DEBOUNCE_MS = 300;
-
-const useDebouncedValue = (value: string, delayMs: number) => {
-  const [debounced, setDebounced] = useState(value);
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => setDebounced(value), delayMs);
-    return () => window.clearTimeout(timer);
-  }, [value, delayMs]);
-
-  return debounced;
-};
 
 const ReservesTable = ({
   reserves,
@@ -85,8 +73,12 @@ const ReservesTable = ({
   const [showBorrowSortMenu, setShowBorrowSortMenu] = useState(false);
   const [showAll, setShowAll] = useState(false);
   const [expandedReserveId, setExpandedReserveId] = useState<string | null>(null);
-  const [sharedSupplyInput, setSharedSupplyInput] = useState('');
-  const [sharedBorrowInput, setSharedBorrowInput] = useState('');
+  const [debouncedSharedSupplyInput, setDebouncedSharedSupplyInput] = useState('');
+  const [debouncedSharedBorrowInput, setDebouncedSharedBorrowInput] = useState('');
+  const handleScenarioChange = useCallback((supply: string, borrow: string) => {
+    setDebouncedSharedSupplyInput(supply);
+    setDebouncedSharedBorrowInput(borrow);
+  }, []);
   const [tooltipState, setTooltipState] = useState<{
     reserve: ReserveWithSpread;
     type: 'supply' | 'borrow';
@@ -95,8 +87,6 @@ const ReservesTable = ({
     triggerHeight: number;
     triggerRect: { top: number; bottom: number; left: number; right: number; width: number; height: number };
   } | null>(null);
-  const debouncedSharedSupplyInput = useDebouncedValue(sharedSupplyInput, INPUT_DEBOUNCE_MS);
-  const debouncedSharedBorrowInput = useDebouncedValue(sharedBorrowInput, INPUT_DEBOUNCE_MS);
 
   const { simulationsById, hasAnyInput: hasSharedScenario } = useSharedRateSimulations({
     reserves,
@@ -427,48 +417,7 @@ const ReservesTable = ({
     [sortedData, showAll]
   );
 
-  const scenarioControls = (
-    <div className="rounded-xl border border-border/70 bg-card/80 p-[var(--ds-space-3)]">
-      <div className={`grid gap-[var(--ds-space-2)] ${isMobile ? 'grid-cols-1' : 'grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]'}`}>
-        <label className="block">
-          <span className="ds-text-11 text-muted-foreground">Supply amount for all reserves</span>
-          <input
-            value={sharedSupplyInput}
-            onChange={(event) => setSharedSupplyInput(formatNumberInput(event.target.value))}
-            inputMode="decimal"
-            placeholder="e.g. 100,000"
-            className="mt-[var(--ds-space-1)] w-full rounded-md border border-border bg-background px-[var(--ds-space-2)] py-[var(--ds-space-1-5)] ds-text-13 text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          />
-        </label>
-        <label className="block">
-          <span className="ds-text-11 text-muted-foreground">Borrow amount for all reserves</span>
-          <input
-            value={sharedBorrowInput}
-            onChange={(event) => setSharedBorrowInput(formatNumberInput(event.target.value))}
-            inputMode="decimal"
-            placeholder="e.g. 20,000"
-            className="mt-[var(--ds-space-1)] w-full rounded-md border border-border bg-background px-[var(--ds-space-2)] py-[var(--ds-space-1-5)] ds-text-13 text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          />
-        </label>
-        <div className={`flex ${isMobile ? 'justify-start' : 'justify-end'} items-end`}>
-          <button
-            type="button"
-            onClick={() => {
-              setSharedSupplyInput('');
-              setSharedBorrowInput('');
-            }}
-            disabled={!sharedSupplyInput && !sharedBorrowInput}
-            className="inline-flex h-[38px] items-center justify-center rounded-md border border-border/70 bg-background px-[var(--ds-space-3)] ds-text-12 text-foreground transition-colors hover:bg-muted/40 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Clear scenario
-          </button>
-        </div>
-      </div>
-      <p className="mt-[var(--ds-space-2)] ds-text-11 text-muted-foreground">
-        Shared scenario applies to every reserve row, sorting mode, and expanded breakdown.
-      </p>
-    </div>
-  );
+  const scenarioControls = <ScenarioControls onDebouncedChange={handleScenarioChange} />;
 
   // Mobile card view
   if (isMobile) {
