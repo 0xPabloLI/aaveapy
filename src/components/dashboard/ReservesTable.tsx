@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, Fragment } from 'react';
 import { ArrowUp, ArrowDown, ChevronDown, ChevronUp } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -16,6 +16,7 @@ import {
   calculateTotalIncentiveApy,
   apyToApr
 } from '@/lib/formatters';
+import { formatNumberInput } from '@/lib/numberFormat';
 import { compareIncentiveWithNative } from '@/lib/sorters';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { IncentiveIcon } from '@/components/IncentiveIcon';
@@ -24,7 +25,9 @@ import { buildAaveReserveUrl } from '@/lib/aaveLinks';
 import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
 import IncentiveTooltip from './IncentiveTooltip';
 import MobileReserveCard from './MobileReserveCard';
+import SimulationSubRow from './SimulationSubRow';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { getReserveSimulationId, useSharedRateSimulations } from '@/hooks/useRateSimulation';
 
 interface ReservesTableProps {
   reserves: ReserveWithSpread[];
@@ -44,6 +47,18 @@ interface ReservesTableProps {
 type SortMode = 'total' | 'native' | 'incentive';
 
 const DEFAULT_VISIBLE_COUNT = 20;
+const INPUT_DEBOUNCE_MS = 300;
+
+const useDebouncedValue = (value: string, delayMs: number) => {
+  const [debounced, setDebounced] = useState(value);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebounced(value), delayMs);
+    return () => window.clearTimeout(timer);
+  }, [value, delayMs]);
+
+  return debounced;
+};
 
 const ReservesTable = ({
   reserves,
@@ -69,6 +84,9 @@ const ReservesTable = ({
   const [showSupplySortMenu, setShowSupplySortMenu] = useState(false);
   const [showBorrowSortMenu, setShowBorrowSortMenu] = useState(false);
   const [showAll, setShowAll] = useState(false);
+  const [expandedReserveId, setExpandedReserveId] = useState<string | null>(null);
+  const [sharedSupplyInput, setSharedSupplyInput] = useState('');
+  const [sharedBorrowInput, setSharedBorrowInput] = useState('');
   const [tooltipState, setTooltipState] = useState<{
     reserve: ReserveWithSpread;
     type: 'supply' | 'borrow';
@@ -77,6 +95,18 @@ const ReservesTable = ({
     triggerHeight: number;
     triggerRect: { top: number; bottom: number; left: number; right: number; width: number; height: number };
   } | null>(null);
+  const debouncedSharedSupplyInput = useDebouncedValue(sharedSupplyInput, INPUT_DEBOUNCE_MS);
+  const debouncedSharedBorrowInput = useDebouncedValue(sharedBorrowInput, INPUT_DEBOUNCE_MS);
+
+  const { simulationsById, hasAnyInput: hasSharedScenario } = useSharedRateSimulations({
+    reserves,
+    isApy,
+    includeWhitelistOnlyMerkl,
+    tydroPointToUsdRate,
+    tokenPrices,
+    supplyInput: debouncedSharedSupplyInput,
+    borrowInput: debouncedSharedBorrowInput,
+  });
 
   const getMarketDisplayName = (reserve: ReserveWithSpread) => {
     if (reserve.chainName === 'Ethereum' && ETHEREUM_MARKET_NAMES[reserve.marketName]) {
@@ -145,6 +175,63 @@ const ReservesTable = ({
     return totalSupplyApy - totalBorrowApy;
   };
 
+  const getSimulation = (reserve: ReserveWithSpread) => simulationsById[getReserveSimulationId(reserve)];
+
+  const pickScenarioValue = (current: number | null, after: number | null): number | null =>
+    hasSharedScenario ? after ?? current : current;
+
+  const getDisplaySupplyTotal = (reserve: ReserveWithSpread): number | null => {
+    const simulation = getSimulation(reserve);
+    if (!simulation) return isApy ? getTotalSupplyApy(reserve) : getTotalSupplyApr(reserve);
+    return pickScenarioValue(simulation.supply.currentTotal, simulation.supply.afterTotal);
+  };
+
+  const getDisplayBorrowTotal = (reserve: ReserveWithSpread): number | null => {
+    const simulation = getSimulation(reserve);
+    if (!simulation) return isApy ? getTotalBorrowApy(reserve) : getTotalBorrowApr(reserve);
+    return pickScenarioValue(simulation.borrow.currentTotal, simulation.borrow.afterTotal);
+  };
+
+  const getDisplaySupplyNative = (reserve: ReserveWithSpread): number | null => {
+    const simulation = getSimulation(reserve);
+    if (!simulation) {
+      const nativeSupplyApy = getNativeSupplyApy(reserve);
+      return isApy ? nativeSupplyApy : nativeSupplyApy !== null ? apyToApr(nativeSupplyApy) : null;
+    }
+    return pickScenarioValue(simulation.supply.currentNative, simulation.supply.afterNative);
+  };
+
+  const getDisplayBorrowNative = (reserve: ReserveWithSpread): number | null => {
+    const simulation = getSimulation(reserve);
+    if (!simulation) {
+      const nativeBorrowApy = getNativeBorrowApy(reserve);
+      return isApy ? nativeBorrowApy : nativeBorrowApy !== null ? apyToApr(nativeBorrowApy) : null;
+    }
+    return pickScenarioValue(simulation.borrow.currentNative, simulation.borrow.afterNative);
+  };
+
+  const getDisplaySupplyIncentive = (reserve: ReserveWithSpread): number | null => {
+    const simulation = getSimulation(reserve);
+    if (!simulation) {
+      return isApy ? getIncentiveValues(reserve, 'supply').apy : getIncentiveValues(reserve, 'supply').apr;
+    }
+    return pickScenarioValue(simulation.supply.currentIncentive, simulation.supply.afterIncentive);
+  };
+
+  const getDisplayBorrowIncentive = (reserve: ReserveWithSpread): number | null => {
+    const simulation = getSimulation(reserve);
+    if (!simulation) {
+      return isApy ? getIncentiveValues(reserve, 'borrow').apy : getIncentiveValues(reserve, 'borrow').apr;
+    }
+    return pickScenarioValue(simulation.borrow.currentIncentive, simulation.borrow.afterIncentive);
+  };
+
+  const getDisplaySpread = (reserve: ReserveWithSpread): number | null => {
+    const simulation = getSimulation(reserve);
+    if (!simulation) return getSpread(reserve);
+    return pickScenarioValue(simulation.spread.current, simulation.spread.after);
+  };
+
   // Sort data based on active column and its sort mode
   const sortedData = [...reserves].sort((a, b) => {
     let comparison = 0;
@@ -155,22 +242,22 @@ const ReservesTable = ({
     if (sortColumn === 'supply') {
       // Supply sorting
       if (supplySortMode === 'native') {
-        const aNative = getNativeSupplyApy(a);
-        const bNative = getNativeSupplyApy(b);
+        const aNative = getDisplaySupplyNative(a);
+        const bNative = getDisplaySupplyNative(b);
         if (aNative === null && bNative === null) return 0;
         if (aNative === null) return 1;
         if (bNative === null) return -1;
         comparison = bNative - aNative;
       } else if (supplySortMode === 'incentive') {
-        const aIncentive = isApy ? getIncentiveValues(a, 'supply').apy : getIncentiveValues(a, 'supply').apr;
-        const bIncentive = isApy ? getIncentiveValues(b, 'supply').apy : getIncentiveValues(b, 'supply').apr;
-        const aNative = getNativeSupplyApy(a);
-        const bNative = getNativeSupplyApy(b);
+        const aIncentive = getDisplaySupplyIncentive(a);
+        const bIncentive = getDisplaySupplyIncentive(b);
+        const aNative = getDisplaySupplyNative(a);
+        const bNative = getDisplaySupplyNative(b);
         return compareIncentiveWithNative(aIncentive, bIncentive, aNative, bNative, supplySortOrder);
       } else {
         // Total sorting - use totalSupplyApy (Native + Incentive)
-        const aTotal = isApy ? getTotalSupplyApy(a) : getTotalSupplyApr(a);
-        const bTotal = isApy ? getTotalSupplyApy(b) : getTotalSupplyApr(b);
+        const aTotal = getDisplaySupplyTotal(a);
+        const bTotal = getDisplaySupplyTotal(b);
         if (aTotal === null && bTotal === null) return 0;
         if (aTotal === null) return 1;
         if (bTotal === null) return -1;
@@ -180,22 +267,22 @@ const ReservesTable = ({
     } else if (sortColumn === 'borrow') {
       // Borrow sorting
       if (borrowSortMode === 'native') {
-        const aNative = getNativeBorrowApy(a);
-        const bNative = getNativeBorrowApy(b);
+        const aNative = getDisplayBorrowNative(a);
+        const bNative = getDisplayBorrowNative(b);
         if (aNative === null && bNative === null) return 0;
         if (aNative === null) return 1;
         if (bNative === null) return -1;
         comparison = bNative - aNative;
       } else if (borrowSortMode === 'incentive') {
-        const aIncentive = isApy ? getIncentiveValues(a, 'borrow').apy : getIncentiveValues(a, 'borrow').apr;
-        const bIncentive = isApy ? getIncentiveValues(b, 'borrow').apy : getIncentiveValues(b, 'borrow').apr;
-        const aNative = getNativeBorrowApy(a);
-        const bNative = getNativeBorrowApy(b);
+        const aIncentive = getDisplayBorrowIncentive(a);
+        const bIncentive = getDisplayBorrowIncentive(b);
+        const aNative = getDisplayBorrowNative(a);
+        const bNative = getDisplayBorrowNative(b);
         return compareIncentiveWithNative(aIncentive, bIncentive, aNative, bNative, borrowSortOrder);
       } else {
         // Total sorting
-        const aTotal = isApy ? getTotalBorrowApy(a) : getTotalBorrowApr(a);
-        const bTotal = isApy ? getTotalBorrowApy(b) : getTotalBorrowApr(b);
+        const aTotal = getDisplayBorrowTotal(a);
+        const bTotal = getDisplayBorrowTotal(b);
         if (aTotal === null && bTotal === null) return 0;
         if (aTotal === null) return 1;
         if (bTotal === null) return -1;
@@ -204,8 +291,8 @@ const ReservesTable = ({
       return borrowSortOrder === 'desc' ? comparison : -comparison;
     } else {
       // Spread sorting (or default when activeSortColumn is null)
-      const aSpread = getSpread(a);
-      const bSpread = getSpread(b);
+      const aSpread = getDisplaySpread(a);
+      const bSpread = getDisplaySpread(b);
       if (aSpread === null && bSpread === null) return 0;
       if (aSpread === null) return 1;
       if (bSpread === null) return -1;
@@ -340,10 +427,54 @@ const ReservesTable = ({
     [sortedData, showAll]
   );
 
+  const scenarioControls = (
+    <div className="rounded-xl border border-border/70 bg-card/80 p-[var(--ds-space-3)]">
+      <div className={`grid gap-[var(--ds-space-2)] ${isMobile ? 'grid-cols-1' : 'grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]'}`}>
+        <label className="block">
+          <span className="ds-text-11 text-muted-foreground">Supply amount for all reserves</span>
+          <input
+            value={sharedSupplyInput}
+            onChange={(event) => setSharedSupplyInput(formatNumberInput(event.target.value))}
+            inputMode="decimal"
+            placeholder="e.g. 100,000"
+            className="mt-[var(--ds-space-1)] w-full rounded-md border border-border bg-background px-[var(--ds-space-2)] py-[var(--ds-space-1-5)] ds-text-13 text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          />
+        </label>
+        <label className="block">
+          <span className="ds-text-11 text-muted-foreground">Borrow amount for all reserves</span>
+          <input
+            value={sharedBorrowInput}
+            onChange={(event) => setSharedBorrowInput(formatNumberInput(event.target.value))}
+            inputMode="decimal"
+            placeholder="e.g. 20,000"
+            className="mt-[var(--ds-space-1)] w-full rounded-md border border-border bg-background px-[var(--ds-space-2)] py-[var(--ds-space-1-5)] ds-text-13 text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          />
+        </label>
+        <div className={`flex ${isMobile ? 'justify-start' : 'justify-end'} items-end`}>
+          <button
+            type="button"
+            onClick={() => {
+              setSharedSupplyInput('');
+              setSharedBorrowInput('');
+            }}
+            disabled={!sharedSupplyInput && !sharedBorrowInput}
+            className="inline-flex h-[38px] items-center justify-center rounded-md border border-border/70 bg-background px-[var(--ds-space-3)] ds-text-12 text-foreground transition-colors hover:bg-muted/40 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Clear scenario
+          </button>
+        </div>
+      </div>
+      <p className="mt-[var(--ds-space-2)] ds-text-11 text-muted-foreground">
+        Shared scenario applies to every reserve row, sorting mode, and expanded breakdown.
+      </p>
+    </div>
+  );
+
   // Mobile card view
   if (isMobile) {
     return (
       <div className="space-y-3">
+        {scenarioControls}
         {/* Header with sorting controls */}
         <div className="flex justify-between items-center px-[var(--ds-space-1)]">
           <h3 className="ds-text-14 font-bold text-foreground">{reserves.length} Reserves</h3>
@@ -560,16 +691,25 @@ const ReservesTable = ({
               </div>
             ))
           ) : (
-            (showAll ? sortedData : sortedData.slice(0, DEFAULT_VISIBLE_COUNT)).map((reserve) => (
+            (showAll ? sortedData : sortedData.slice(0, DEFAULT_VISIBLE_COUNT)).map((reserve) => {
+              const reserveId = `${reserve.marketName}-${reserve.tokenAddress}`;
+              return (
               <MobileReserveCard
-                key={`${reserve.marketName}-${reserve.tokenAddress}`}
+                key={reserveId}
                 reserve={reserve}
                 isApy={isApy}
-                includeWhitelistOnlyMerkl={includeWhitelistOnlyMerkl}
                 onIncentiveClick={handleMobileIncentiveClick}
-                tydroPointToUsdRate={tydroPointToUsdRate}
+                isSimulationExpanded={expandedReserveId === reserveId}
+                onToggleSimulation={() =>
+                  setExpandedReserveId((prev) => (prev === reserveId ? null : reserveId))
+                }
+                simulation={simulationsById[reserveId]}
+                supplyInput={debouncedSharedSupplyInput}
+                borrowInput={debouncedSharedBorrowInput}
+                hasSharedScenario={hasSharedScenario}
               />
-            ))
+              );
+            })
           )}
         </div>
         
@@ -610,6 +750,9 @@ const ReservesTable = ({
 
   return (
     <div className="bg-card rounded-2xl shadow-sm border border-border/60 overflow-hidden">
+      <div className="border-b border-border/60 p-[var(--ds-space-3)]">
+        {scenarioControls}
+      </div>
       <div className="overflow-x-auto">
         <Table className="table-fixed w-full">
           <colgroup>
@@ -944,33 +1087,23 @@ const ReservesTable = ({
                 </TableRow>
               ))
             ) : displayData.map((reserve) => {
-              const supplyIncentiveValues = getIncentiveValues(reserve, 'supply');
-              const borrowIncentiveValues = getIncentiveValues(reserve, 'borrow');
-              
-              const totalSupplyApy = calculateTotalSupplyApy(reserve.supplyApy, supplyIncentiveValues.apy);
-              const totalSupplyApr = calculateTotalSupplyApr(reserve.supplyApy, supplyIncentiveValues.apr);
-              const totalBorrowApy = calculateTotalBorrowApy(reserve.borrowApy, borrowIncentiveValues.apy);
-              const totalBorrowApr = calculateTotalBorrowApr(reserve.borrowApy, borrowIncentiveValues.apr);
-              const nativeSupplyApy = getNativeSupplyApy(reserve);
-              const nativeBorrowApy = getNativeBorrowApy(reserve);
-              
-              const displaySupplyTotal = isApy ? totalSupplyApy : totalSupplyApr;
-              const displaySupplyNative = isApy ? nativeSupplyApy : (nativeSupplyApy !== null ? apyToApr(nativeSupplyApy) : null);
-              const displayBorrowTotal = isApy ? totalBorrowApy : totalBorrowApr;
-              const displayBorrowNative = isApy ? nativeBorrowApy : (nativeBorrowApy !== null ? apyToApr(nativeBorrowApy) : null);
-              
+              const reserveId = getReserveSimulationId(reserve);
+              const isExpanded = expandedReserveId === reserveId;
+              const simulation = simulationsById[reserveId];
+              const displaySupplyTotal = getDisplaySupplyTotal(reserve);
+              const displaySupplyNative = getDisplaySupplyNative(reserve);
+              const displayBorrowTotal = getDisplayBorrowTotal(reserve);
+              const displayBorrowNative = getDisplayBorrowNative(reserve);
               const displaySupplyIncentive = (() => {
-                const incentive = isApy ? supplyIncentiveValues.apy : supplyIncentiveValues.apr;
+                const incentive = getDisplaySupplyIncentive(reserve);
                 return incentive === 0 || isNaN(incentive) || incentive < 0.01 ? null : incentive;
               })();
               const displayBorrowIncentive = (() => {
-                const incentive = isApy ? borrowIncentiveValues.apy : borrowIncentiveValues.apr;
+                const incentive = getDisplayBorrowIncentive(reserve);
                 return incentive === 0 || isNaN(incentive) || incentive < 0.01 ? null : incentive;
               })();
 
-              const spread = isApy
-                ? calculateSpreadApy(totalSupplyApy, totalBorrowApy)
-                : calculateSpreadApr(totalSupplyApr, totalBorrowApr);
+              const spread = getDisplaySpread(reserve);
               const { iconSymbol, logoURI } = fetchIconSymbolAndName({
                 underlyingAsset: reserve.tokenAddress,
                 symbol: reserve.tokenSymbol,
@@ -978,15 +1111,34 @@ const ReservesTable = ({
               });
 
               return (
+                <Fragment key={reserveId}>
                 <TableRow
-                  key={`${reserve.marketName}-${reserve.tokenAddress}`}
-                  data-reserve-id={`${reserve.marketName}-${reserve.tokenAddress}`}
-                  className="transition-all duration-150 cursor-pointer hover:bg-muted/60 hover:shadow-sm active:bg-muted/80"
+                  data-reserve-id={reserveId}
+                  className={`transition-all duration-150 cursor-pointer hover:bg-muted/60 hover:shadow-sm active:bg-muted/80 ${
+                    isExpanded ? 'bg-muted/30' : ''
+                  }`}
                   onClick={() => handleRowClick(reserve)}
                 >
                   {/* Token */}
                   <TableCell className="w-1/5 px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center">
                     <div className="flex items-center justify-center gap-[var(--ds-space-2)]">
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setExpandedReserveId((prev) => (prev === reserveId ? null : reserveId));
+                        }}
+                        className={`inline-flex shrink-0 items-center gap-[var(--ds-space-1)] rounded-full border px-[var(--ds-space-2)] py-[var(--ds-space-0-5)] ds-text-11 font-medium transition-colors ${
+                          isExpanded
+                            ? 'border-border bg-muted text-foreground'
+                            : 'border-border/60 bg-background text-muted-foreground hover:bg-muted/60'
+                        }`}
+                        aria-label={isExpanded ? 'Collapse simulation panel' : 'Expand simulation panel'}
+                        title={isExpanded ? 'Hide scenario breakdown' : 'Show scenario breakdown'}
+                      >
+                        <span>Breakdown</span>
+                        {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                      </button>
                       <TokenIcon symbol={iconSymbol} size={28} loading="eager" logoURI={logoURI} />
                       <span className="font-semibold text-foreground ds-text-14">
                         {reserve.tokenSymbol}
@@ -1020,16 +1172,22 @@ const ReservesTable = ({
                             {formatPercent(displaySupplyNative)}
                           </span>
                           <span className="text-muted-foreground/70">+</span>
-                          <button
-                            type="button"
-                            onClick={(e) =>
-                              handleIncentiveClick(e, reserve, 'supply', displaySupplyIncentive)
-                            }
-                            className="inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-0-5)] py-[var(--ds-space-0)] rounded-full ds-bg-emerald-500-10 ds-text-emerald-500-70 hover:bg-[rgb(var(--ds-emerald-500-rgb)/0.25)] hover:ring-2 hover:ring-[rgb(var(--ds-emerald-500-rgb)/0.3)] ring-1 ds-ring-emerald-500-15 transition-all duration-150 cursor-pointer tabular-nums"
-                          >
-                            <span>{formatPercent(displaySupplyIncentive)}</span>
-                            <IncentiveIcon width={isMobile ? 8 : 10} height={isMobile ? 8 : 10} />
-                          </button>
+                          {hasSharedScenario ? (
+                            <span className="inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-0-5)] py-[var(--ds-space-0)] rounded-full ds-bg-emerald-500-10 ds-text-emerald-500-70 ring-1 ds-ring-emerald-500-15 tabular-nums">
+                              <span>{formatPercent(displaySupplyIncentive)}</span>
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={(e) =>
+                                handleIncentiveClick(e, reserve, 'supply', displaySupplyIncentive)
+                              }
+                              className="inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-0-5)] py-[var(--ds-space-0)] rounded-full ds-bg-emerald-500-10 ds-text-emerald-500-70 hover:bg-[rgb(var(--ds-emerald-500-rgb)/0.25)] hover:ring-2 hover:ring-[rgb(var(--ds-emerald-500-rgb)/0.3)] ring-1 ds-ring-emerald-500-15 transition-all duration-150 cursor-pointer tabular-nums"
+                            >
+                              <span>{formatPercent(displaySupplyIncentive)}</span>
+                              <IncentiveIcon width={isMobile ? 8 : 10} height={isMobile ? 8 : 10} />
+                            </button>
+                          )}
                         </div>
                       )}
                     </div>
@@ -1060,21 +1218,46 @@ const ReservesTable = ({
                                 <span className="text-muted-foreground/70">-</span>
                               </>
                             )}
-                            <button
-                              type="button"
-                              onClick={(e) =>
-                                handleIncentiveClick(e, reserve, 'borrow', displayBorrowIncentive)
-                              }
-                              className="inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-0-5)] py-[var(--ds-space-0)] rounded-full ds-bg-brand-cyan-10 ds-text-brand-cyan-70 hover:bg-[rgb(var(--ds-brand-cyan-rgb)/0.25)] hover:ring-2 hover:ring-[rgb(var(--ds-brand-cyan-rgb)/0.3)] ring-1 ds-ring-brand-cyan-15 transition-all duration-150 cursor-pointer tabular-nums"
-                            >
-                              <span>{formatPercent(displayBorrowIncentive)}</span>
-                              <IncentiveIcon width={isMobile ? 8 : 10} height={isMobile ? 8 : 10} />
-                            </button>
+                            {hasSharedScenario ? (
+                              <span className="inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-0-5)] py-[var(--ds-space-0)] rounded-full ds-bg-brand-cyan-10 ds-text-brand-cyan-70 ring-1 ds-ring-brand-cyan-15 tabular-nums">
+                                <span>{formatPercent(displayBorrowIncentive)}</span>
+                              </span>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={(e) =>
+                                  handleIncentiveClick(e, reserve, 'borrow', displayBorrowIncentive)
+                                }
+                                className="inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-0-5)] py-[var(--ds-space-0)] rounded-full ds-bg-brand-cyan-10 ds-text-brand-cyan-70 hover:bg-[rgb(var(--ds-brand-cyan-rgb)/0.25)] hover:ring-2 hover:ring-[rgb(var(--ds-brand-cyan-rgb)/0.3)] ring-1 ds-ring-brand-cyan-15 transition-all duration-150 cursor-pointer tabular-nums"
+                              >
+                                <span>{formatPercent(displayBorrowIncentive)}</span>
+                                <IncentiveIcon width={isMobile ? 8 : 10} height={isMobile ? 8 : 10} />
+                              </button>
+                            )}
                           </div>
                         )}
                     </div>
                   </TableCell>
                 </TableRow>
+                {isExpanded && (
+                  <TableRow
+                    className="border-b border-border/40 bg-muted/10"
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    <TableCell colSpan={5} className="px-[var(--ds-space-3)] pb-[var(--ds-space-3)] pt-0">
+                      {simulation && (
+                        <SimulationSubRow
+                          reserve={reserve}
+                          simulation={simulation}
+                          isApy={isApy}
+                          supplyInput={debouncedSharedSupplyInput}
+                          borrowInput={debouncedSharedBorrowInput}
+                        />
+                      )}
+                    </TableCell>
+                  </TableRow>
+                )}
+                </Fragment>
               );
             })
             }

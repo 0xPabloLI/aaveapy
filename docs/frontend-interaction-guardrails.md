@@ -40,6 +40,15 @@ This note records recurring UI/interaction issues found during incentive/forecas
   - Merkl forecast rows usually show campaign-wide `Daily Rewards`.
   - Merit self-bonus forecast is user-specific and should be labeled clearly (e.g. `Your Daily Rewards`).
 - **Avoid ambiguous eligibility wording**: if eligibility depends on external user state (e.g. Self verification) and is not known client-side, do not claim the user is currently eligible.
+- **Use global scenario inputs when the core job is cross-row comparison**:
+  - If the user is comparing multiple reserves under the same notional assumption, prefer a shared table-level `Supply amount` / `Borrow amount`.
+  - Keep row expansion for detail inspection, not as the only place where the scenario can be changed.
+- **Hide empty source rows in breakdown UIs**:
+  - Summary rows such as `Native` / `Incentive total` can stay visible.
+  - Source rows like `Protocol Incentive`, `ACI`, `Merkl`, `Brevis` should disappear when both current and simulated values are effectively zero.
+- **Align placeholder state with numeric columns**:
+  - Empty placeholders like `-` must use the same fixed column widths and alignment as real numbers.
+  - Do not let `auto` width columns cause headers and placeholders to drift.
 
 ## Debugging checklist for incentive UI regressions
 
