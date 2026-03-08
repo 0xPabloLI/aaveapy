@@ -780,6 +780,7 @@ export const useSharedRateSimulations = ({
     forecastQuery.isPending,
     forecastStates,
     includeWhitelistOnlyMerkl,
+    inputMode,
     isApy,
     rateInputsQuery.error,
     rateInputsQuery.isFetching,
