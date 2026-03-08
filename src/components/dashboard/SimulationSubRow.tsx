@@ -17,6 +17,7 @@ interface SimulationSubRowProps {
   isApy: boolean;
   supplyInput: string;
   borrowInput: string;
+  inputMode?: 'usd' | 'token';
   compact?: boolean;
 }
 
