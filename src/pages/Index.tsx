@@ -289,7 +289,7 @@ const Index = () => {
   // If we have cached data, use it; otherwise show empty state
   return (
     <PullToRefresh onRefresh={handleRefresh}>
-      <div className="min-h-screen min-w-0 w-full overflow-x-hidden bg-background">
+      <div className="min-h-screen min-w-0 w-full bg-background">
         {/* Background gradient */}
         <div className="fixed inset-0 bg-gradient-radial from-primary/5 via-transparent to-transparent pointer-events-none" />
         <div className="fixed top-0 right-0 w-1/2 h-1/2 bg-gradient-radial from-secondary/5 via-transparent to-transparent pointer-events-none" />
