@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useLayoutEffect } from 'react';
 import { Search, X, ChevronUp, ChevronDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { TokenCategory, MarketListItem, ETHEREUM_MARKET_NAMES } from '@/types/aave';
@@ -107,9 +107,66 @@ const FilterBar = ({
   const otherMarkets = marketsList?.filter(m => m.chainName !== 'Ethereum') || [];
   const allMarkets = [...ethereumMarkets, ...otherMarkets];
 
-  // Show first 6 markets, rest in "More"
-  const visibleMarkets = allMarkets.slice(0, 6);
-  const hiddenMarkets = allMarkets.slice(6);
+  // Dynamic overflow: measure how many pills fit in one row
+  const marketsRowRef = useRef<HTMLDivElement>(null);
+  const [visibleCount, setVisibleCount] = useState(allMarkets.length); // default: show all
+
+  useLayoutEffect(() => {
+    const container = marketsRowRef.current;
+    if (!container || allMarkets.length === 0 || showMarketsExpanded) return;
+
+    const measure = () => {
+      // Temporarily show all children to measure
+      const children = Array.from(container.children) as HTMLElement[];
+      if (children.length === 0) return;
+
+      const containerRight = container.getBoundingClientRect().right;
+      const containerTop = children[0].getBoundingClientRect().top;
+
+      // Find the "All" button (index 0), then market pills start at index 1
+      // We want to find how many market pills fit on the first row
+      let lastFittingIndex = 0;
+
+      for (let i = 1; i < children.length; i++) {
+        const child = children[i];
+        // Skip non-market elements (like "More" button or "Less" button)
+        if (child.dataset.marketPill === undefined) continue;
+
+        const rect = child.getBoundingClientRect();
+        // If the pill wraps to the next line, stop
+        if (rect.top > containerTop + 4) break; // 4px tolerance
+        lastFittingIndex = i;
+      }
+
+      // lastFittingIndex is 1-based (since index 0 is "All" button)
+      // But we need to leave room for the "More" button
+      // We count market pills that fit (subtract 1 for "All" button)
+      const marketPillsFit = lastFittingIndex; // already 0-based count of market pills
+
+      if (marketPillsFit < allMarkets.length) {
+        // Need to subtract 1 more to make room for the "More" button
+        setVisibleCount(Math.max(1, marketPillsFit - 1));
+      } else {
+        setVisibleCount(allMarkets.length);
+      }
+    };
+
+    // Use ResizeObserver to re-measure on container resize
+    const ro = new ResizeObserver(() => {
+      // Reset to show all so we can re-measure
+      setVisibleCount(allMarkets.length);
+      requestAnimationFrame(measure);
+    });
+
+    ro.observe(container);
+    // Initial measure
+    requestAnimationFrame(measure);
+
+    return () => ro.disconnect();
+  }, [allMarkets.length, showMarketsExpanded]);
+
+  const visibleMarkets = showMarketsExpanded ? allMarkets : allMarkets.slice(0, visibleCount);
+  const hiddenMarkets = showMarketsExpanded ? [] : allMarkets.slice(visibleCount);
   const hasHiddenMarkets = hiddenMarkets.length > 0;
 
   // Preload hidden market icons after page load
@@ -215,8 +272,6 @@ const FilterBar = ({
     };
   }, [searchQuery, isMobile, stableResizeHandler]);
 
-  // Count selected hidden markets
-  const selectedHiddenCount = hiddenMarkets.filter(m => selectedMarkets.includes(m.marketName)).length;
 
   const tokenCategoryButtons = categories.map((category) => (
     <button
@@ -302,7 +357,7 @@ const FilterBar = ({
       </div>
 
       {/* Row 2: Markets */}
-      <div className="flex flex-wrap items-center gap-[var(--ds-space-1)] md:gap-[var(--ds-space-1-5)]">
+      <div ref={marketsRowRef} className="flex flex-wrap items-center gap-[var(--ds-space-1)] md:gap-[var(--ds-space-1-5)]">
         <span className="ds-text-11 text-muted-foreground mr-[var(--ds-space-0-5)] md:mr-[var(--ds-space-1)] hidden sm:inline">Markets:</span>
         
         {/* All Markets option */}
@@ -325,6 +380,7 @@ const FilterBar = ({
           return (
             <button
               key={market.marketName}
+              data-market-pill
               onClick={() => toggleMarket(market.marketName)}
             className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-1-5)] md:px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-md font-medium transition-all ${
               isSelected
@@ -333,7 +389,7 @@ const FilterBar = ({
             }`}
               title={isEthereum ? `Ethereum ${info.label}` : market.chainName}
             >
-              <ChainIcon chain={market.chainName} />
+              <ChainIcon chain={market.chainName} loading={showMarketsExpanded ? "eager" : "lazy"} />
               <span>{isEthereum ? info.label : market.chainName}</span>
             </button>
           );
@@ -349,28 +405,6 @@ const FilterBar = ({
             <ChevronDown className="w-3 h-3" />
           </button>
         )}
-
-        {/* Expanded hidden markets */}
-        {showMarketsExpanded && hiddenMarkets.map((market) => {
-          const info = getMarketInfo(market);
-          const isSelected = selectedMarkets.includes(market.marketName);
-          const isEthereum = market.chainName === 'Ethereum';
-          return (
-            <button
-              key={market.marketName}
-              onClick={() => toggleMarket(market.marketName)}
-            className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-1-5)] md:px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-md font-medium transition-all ${
-              isSelected
-                ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
-                : 'text-foreground/80 border border-border hover:text-foreground'
-            }`}
-              title={isEthereum ? `Ethereum ${info.label}` : market.chainName}
-            >
-              <ChainIcon chain={market.chainName} loading="eager" />
-              <span>{isEthereum ? info.label : market.chainName}</span>
-            </button>
-          );
-        })}
 
         {/* Collapse button */}
         {showMarketsExpanded && (
