@@ -54,12 +54,17 @@ export function useOverflowCount(
     return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
   }, [visibleCount, expanded, measure]);
 
-  // Re-measure on container resize
+  // Re-measure on container resize (only when width actually changes)
+  const lastWidthRef = useRef<number>(0);
   useEffect(() => {
     const container = containerRef.current;
     if (!container || expanded) return;
+    lastWidthRef.current = container.offsetWidth;
     let timeout: NodeJS.Timeout | null = null;
     const ro = new ResizeObserver(() => {
+      const newWidth = container.offsetWidth;
+      if (newWidth === lastWidthRef.current) return; // ignore height-only changes
+      lastWidthRef.current = newWidth;
       if (timeout) clearTimeout(timeout);
       timeout = setTimeout(() => setVisibleCount(null), 100);
     });
