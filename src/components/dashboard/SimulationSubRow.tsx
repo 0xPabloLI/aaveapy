@@ -131,6 +131,7 @@ const BreakdownCard = ({
     after: number | null;
     delta: number | null;
     accentClass?: string;
+    href?: string | null;
   }>;
 }) => (
   <div className="rounded-lg border border-border/60 bg-background/80 px-[var(--ds-space-3)] py-[var(--ds-space-2)]">
