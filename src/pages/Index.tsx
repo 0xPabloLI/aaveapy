@@ -109,12 +109,7 @@ const Index = () => {
     return () => window.clearTimeout(timer);
   }, [isUsingCache]);
 
-  useEffect(() => {
-    if (selectedMarkets.length !== 1) return;
-    if (hiddenMarketNames.includes(selectedMarkets[0])) {
-      setShowMarketsExpanded(true);
-    }
-  }, [hiddenMarketNames, selectedMarkets]);
+
 
   // Stable reference for reserves data to prevent TopOpportunities from re-rendering
   // when filters change (only update when actual data changes)
