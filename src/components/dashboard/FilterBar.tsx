@@ -74,13 +74,9 @@ const FilterBar = ({
   isApy,
   setIsApy,
   marketsList,
-  showMarketsExpanded: showMarketsExpandedProp,
-  setShowMarketsExpanded: setShowMarketsExpandedProp,
 }: FilterBarProps) => {
   const isMobile = useIsMobile();
-  const [internalShowMarketsExpanded, setInternalShowMarketsExpanded] = useState(false);
-  const showMarketsExpanded = showMarketsExpandedProp ?? internalShowMarketsExpanded;
-  const setShowMarketsExpanded = setShowMarketsExpandedProp ?? setInternalShowMarketsExpanded;
+  const [showMarketsExpanded, setShowMarketsExpanded] = useState(false);
   const [searchPlaceholder, setSearchPlaceholder] = useState('Search token');
   const desktopSearchInputRef = useRef<HTMLInputElement>(null);
   const mobileSearchInputRef = useRef<HTMLInputElement>(null);
