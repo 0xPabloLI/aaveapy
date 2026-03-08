@@ -92,7 +92,7 @@ const DesktopReserveRow = memo(({
         className={`transition-all duration-150 cursor-pointer hover:bg-muted/60 hover:shadow-sm active:bg-muted/80 ${
           isExpanded ? 'bg-muted/30' : ''
         }`}
-        onClick={onToggleExpand}
+        onClick={() => onToggleExpand(reserveId)}
       >
         {/* Token */}
         <TableCell className="w-1/5 px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center">
