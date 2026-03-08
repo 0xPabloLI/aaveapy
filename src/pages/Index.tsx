@@ -21,7 +21,7 @@ import PullToRefresh from '@/components/dashboard/PullToRefresh';
 import { getCachedMarkets, getCachedMarketsList, setCachedTydroRate } from '@/lib/cache';
 import { TYDRO_POINT_TO_USD_RATE } from '@/lib/tydro';
 import { AlertTriangle } from 'lucide-react';
-import { preloadChainIcons, preloadIncentiveIcons } from '@/lib/preloadUtils';
+import { preloadIncentiveIcons } from '@/lib/preloadUtils';
 import { normalizeTokenSymbolForSearch } from '@/lib/tokenSymbolNormalization';
 
 import IncentiveTooltip from '@/components/dashboard/IncentiveTooltip';
