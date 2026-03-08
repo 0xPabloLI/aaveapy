@@ -196,7 +196,7 @@ interface BuildRateSimulationResultParams {
   tokenPrice?: number;
   supplyInput: string;
   borrowInput: string;
-  inputMode: ScenarioInputMode;
+  inputMode?: ScenarioInputMode;
   forecastStates: Record<string, MerklForecastStateResponse>;
 }
 
