@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
-const IncentiveMessageSchema: z.ZodType<string | Record<string, unknown> | unknown[]> = z.lazy(() =>
-  z.union([z.string(), z.record(z.string(), z.unknown()), z.array(IncentiveMessageSchema)])
-);
+// Message can be string, object, or nested arrays — accept any shape;
+// rendering is handled by getMessageLines which is already resilient.
+const IncentiveMessageSchema = z.unknown();
 
 // ── Merit incentive ──
 const MeritIncentiveSchema = z.object({

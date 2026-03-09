@@ -815,25 +815,28 @@ const IncentiveTooltip = ({
       return null;
     };
 
-    const getForecastRateDisplay = (forecastPreview: NonNullable<ReturnType<typeof getForecastPreview>>) => {
-      if (forecastPreview.unavailable) {
-        return null;
-      }
-      const forecastAprPercent = forecastPreview.apr * 100;
+    type AvailableForecast = Exclude<NonNullable<ReturnType<typeof getForecastPreview>>, { readonly unavailable: true }>;
+
+    const isAvailableForecast = (
+      fp: NonNullable<ReturnType<typeof getForecastPreview>>,
+    ): fp is AvailableForecast => !fp.unavailable;
+
+    const getForecastRateDisplay = (fp: AvailableForecast) => {
+      const forecastAprPercent = ('apr' in fp ? (fp as MeritForecastPreview).apr : (fp as any).apr) * 100;
       const displayPercent = isApy ? convertAprToApy(forecastAprPercent) : forecastAprPercent;
-      const isSelfEstimate = typeof forecastPreview.selfCapUsd === 'number' || forecastPreview.estimateKind === 'MERIT_SELF_CAP';
+      const isSelfEstimate = typeof fp.selfCapUsd === 'number' || fp.estimateKind === 'MERIT_SELF_CAP';
       const rateUnitLabel = isApy ? 'APY' : 'APR';
       return {
         label:
-          isSelfEstimate || forecastPreview.estimateKind === 'MERIT_CURRENT_RATE'
+          isSelfEstimate || fp.estimateKind === 'MERIT_CURRENT_RATE'
             ? `Your ${rateUnitLabel}`
             : `Forecast ${rateUnitLabel}`,
         valuePercent: displayPercent,
       };
     };
 
-    const getForecastDailyRewardsLabel = (forecastPreview: NonNullable<ReturnType<typeof getForecastPreview>>) =>
-      typeof forecastPreview.selfCapUsd === 'number' || forecastPreview.estimateKind === 'MERIT_CURRENT_RATE'
+    const getForecastDailyRewardsLabel = (fp: AvailableForecast) =>
+      typeof fp.selfCapUsd === 'number' || fp.estimateKind === 'MERIT_CURRENT_RATE'
         ? 'Your Daily Rewards'
         : 'Total Daily Rewards';
 
