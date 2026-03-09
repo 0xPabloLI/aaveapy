@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, memo } from 'react';
+import { useEffect, useMemo, useState, memo, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { useCoingeckoTokenImage } from '@/hooks/useCoingeckoTokenImage';
 import { isImagePreloaded } from '@/lib/preloadUtils';
@@ -14,6 +14,22 @@ interface TokenIconProps {
   logoURI?: string;
 }
 
+const DEFAULT_SRC = '/icons/tokens/default.svg';
+
+/**
+ * Resolve the best initial src for a token symbol.
+ * If the SVG was already preloaded, mark it so we can use eager loading
+ * and skip the intersection-observer delay for cached images.
+ */
+const resolveInitialState = (symbolKey: string) => {
+  const svgPath = `/icons/tokens/${symbolKey}.svg`;
+  return {
+    src: svgPath,
+    formatIndex: 0,
+    isPreloaded: isImagePreloaded(svgPath),
+  };
+};
+
 const TokenImage = memo(({
   symbol,
   className,
@@ -28,65 +44,66 @@ const TokenImage = memo(({
   logoURI?: string;
 }) => {
   const symbolKey = symbol.toLowerCase();
-  const defaultSrc = '/icons/tokens/default.svg';
-  
-  // Build list of local sources to try
-  const localSources = useMemo(() => 
+
+  const localSources = useMemo(() =>
     IMAGE_FORMATS.map(fmt => `/icons/tokens/${symbolKey}.${fmt}`),
     [symbolKey]
   );
-  
-  // Start with first format (SVG)
-  const initialSrc = localSources[0];
-  const [src, setSrc] = useState(initialSrc);
-  const [formatIndex, setFormatIndex] = useState(0);
+
+  const initial = useMemo(() => resolveInitialState(symbolKey), [symbolKey]);
+  const [src, setSrc] = useState(initial.src);
+  const [formatIndex, setFormatIndex] = useState(initial.formatIndex);
   const [needCoingeckoFallback, setNeedCoingeckoFallback] = useState(false);
-  
+
+  // If preloaded, force eager + skip lazy intersection-observer wait
+  const effectiveLoading = initial.isPreloaded ? 'eager' : loading;
+
   const { data: coingeckoImageUrl, isFetched: coingeckoFetched } = useCoingeckoTokenImage(
     needCoingeckoFallback ? symbol : null
   );
 
   useEffect(() => {
-    setSrc(localSources[0]);
-    setFormatIndex(0);
+    const next = resolveInitialState(symbolKey);
+    setSrc(next.src);
+    setFormatIndex(next.formatIndex);
     setNeedCoingeckoFallback(false);
-  }, [symbolKey, localSources]);
+  }, [symbolKey]);
 
   useEffect(() => {
     if (!needCoingeckoFallback) return;
     if (coingeckoImageUrl) {
       setSrc(coingeckoImageUrl);
     } else if (coingeckoFetched) {
-      setSrc(defaultSrc);
+      setSrc(DEFAULT_SRC);
     }
   }, [needCoingeckoFallback, coingeckoImageUrl, coingeckoFetched]);
 
-  const handleError = () => {
+  const handleError = useCallback(() => {
     // 1. Try logoURI from API if available
     if (logoURI && src !== logoURI) {
       setSrc(logoURI);
       return;
     }
-    
+
     // 2. Try next local format (svg -> webp -> png)
     const nextIndex = formatIndex + 1;
-    if (nextIndex < localSources.length && src !== defaultSrc) {
+    if (nextIndex < localSources.length && src !== DEFAULT_SRC) {
       setFormatIndex(nextIndex);
       setSrc(localSources[nextIndex]);
       return;
     }
-    
+
     // 3. Try CoinGecko as last resort
-    if (src !== defaultSrc && !needCoingeckoFallback) {
+    if (src !== DEFAULT_SRC && !needCoingeckoFallback) {
       setNeedCoingeckoFallback(true);
       return;
     }
-    
+
     // 4. Fall back to default icon
-    if (src !== defaultSrc) {
-      setSrc(defaultSrc);
+    if (src !== DEFAULT_SRC) {
+      setSrc(DEFAULT_SRC);
     }
-  };
+  }, [logoURI, src, formatIndex, localSources, needCoingeckoFallback]);
 
   return (
     <img
@@ -94,7 +111,8 @@ const TokenImage = memo(({
       alt={`${symbol} icon`}
       width={size}
       height={size}
-      loading={loading}
+      loading={effectiveLoading}
+      decoding="async"
       onError={handleError}
       className={cn('rounded-full object-contain', className)}
     />
