@@ -669,7 +669,7 @@ const ReservesTable = ({
               </div>
             ))
           ) : (
-            (showAll ? sortedData : sortedData.slice(0, DEFAULT_VISIBLE_COUNT)).map((reserve) => {
+            displayData.map((reserve) => {
               const reserveId = `${reserve.marketName}-${reserve.tokenAddress}`;
               return (
               <MobileReserveCard
