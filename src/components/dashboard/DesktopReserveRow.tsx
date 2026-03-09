@@ -89,7 +89,7 @@ const DesktopReserveRow = memo(({
     <Fragment>
       <TableRow
         data-reserve-id={reserveId}
-        className={`transition-all duration-150 cursor-pointer hover:bg-muted/60 hover:shadow-sm active:bg-muted/80 ${
+        className={`transition-colors duration-150 cursor-pointer hover:bg-muted/60 active:bg-muted/80 ${
           isExpanded ? 'bg-muted/30' : ''
         }`}
         onClick={() => onToggleExpand(reserveId)}
