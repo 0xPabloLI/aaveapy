@@ -190,7 +190,7 @@ const fetchTokenPriceByPlatform = async (
     `${COINGECKO_API_BASE}/simple/token_price/${platformId}` +
     `?contract_addresses=${encodeURIComponent(normalizedAddress)}` +
     `&vs_currencies=usd`;
-  const response = await fetchImpl(url);
+  const response = await coingeckoLimiter.run(() => fetchImpl(url));
   if (!response.ok) return undefined;
 
   const payload = (await response.json()) as Record<string, { usd?: number }>;
