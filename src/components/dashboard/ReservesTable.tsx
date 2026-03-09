@@ -1118,15 +1118,27 @@ const ReservesTable = ({
       </div>
       
       {/* Show More/Less button for desktop */}
-      {sortedData.length > DEFAULT_VISIBLE_COUNT && (
+      {sortedData.length > displayData.length && (
         <div className="p-[var(--ds-space-4)] border-t border-border">
           <button
             type="button"
-            onClick={() => setShowAll(!showAll)}
+            onClick={() => setShowAll(true)}
             className="w-full ds-button ds-text-14 md:ds-text-16 gap-[var(--ds-space-2)] border border-border bg-muted/30 hover:bg-muted/50 transition-colors text-foreground font-semibold"
           >
-            <span>{showAll ? 'Show Less' : `Show ${sortedData.length - DEFAULT_VISIBLE_COUNT} More Reserves`}</span>
-            {showAll ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            <span>{`Show ${sortedData.length - displayData.length} More Reserves`}</span>
+            <ChevronDown className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+      {showAll && sortedData.length > DEFAULT_VISIBLE_COUNT && (
+        <div className="p-[var(--ds-space-4)] border-t border-border">
+          <button
+            type="button"
+            onClick={() => setShowAll(false)}
+            className="w-full ds-button ds-text-14 md:ds-text-16 gap-[var(--ds-space-2)] border border-border bg-muted/30 hover:bg-muted/50 transition-colors text-foreground font-semibold"
+          >
+            <span>Show Less</span>
+            <ChevronUp className="w-4 h-4" />
           </button>
         </div>
       )}
