@@ -390,23 +390,23 @@ const Index = () => {
             />
 
             <ReservesTable
-            reserves={filteredReserves}
-            sortField={sortField}
-            sortOrder={sortOrder}
-            onSort={handleSort}
-            isApy={isApy}
-            isLoading={isLoading}
-            onSelectMarket={(marketName) => {
-              setSelectedMarkets((prev) =>
-                prev.length === 1 && prev[0] === marketName ? [] : [marketName]
-              );
-            }}
-            tydroPointToUsdRate={tydroPointToUsdRate}
-            includeWhitelistOnlyMerkl={includeWhitelistOnlyMerkl}
-            onToggleWhitelistOnlyMerkl={setIncludeWhitelistOnlyMerkl}
-            tokenPrices={effectiveReservesData?.tokenPrices}
-            scrollToReserveId={pendingScrollReserveId}
-          />
+              reserves={filteredReserves}
+              sortField={sortField}
+              sortOrder={sortOrder}
+              onSort={handleSort}
+              isApy={isApy}
+              isLoading={isLoading}
+              onSelectMarket={(marketName) => {
+                setSelectedMarkets((prev) =>
+                  prev.length === 1 && prev[0] === marketName ? [] : [marketName]
+                );
+              }}
+              tydroPointToUsdRate={tydroPointToUsdRate}
+              includeWhitelistOnlyMerkl={includeWhitelistOnlyMerkl}
+              onToggleWhitelistOnlyMerkl={setIncludeWhitelistOnlyMerkl}
+              tokenPrices={effectiveReservesData?.tokenPrices}
+              scrollToReserveId={pendingScrollReserveId}
+            />
           </div>
 
           {topTooltipState && (
