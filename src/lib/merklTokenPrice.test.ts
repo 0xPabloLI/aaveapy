@@ -86,6 +86,24 @@ describe('resolveForecastTokenPriceWithBackup', () => {
     vi.restoreAllMocks();
   });
 
+  it('skips third-party fetches when callers disable backup network access', async () => {
+    const fetchMock = vi.fn();
+
+    const price = await resolveForecastTokenPriceWithBackup(
+      {
+        tokenPrices,
+        chainId: 1,
+        actionType: 'Supply',
+        tokenAddress: '0xmissing',
+      },
+      fetchMock as unknown as typeof fetch,
+      { allowThirdPartyFetch: false }
+    );
+
+    expect(price).toBeUndefined();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it('returns local tokenPrices result without calling backup fetch', async () => {
     const fetchMock = vi.fn();
     const price = await resolveForecastTokenPriceWithBackup(

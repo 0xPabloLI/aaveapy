@@ -647,6 +647,7 @@ export const useSharedRateSimulations = ({
 }: UseSharedRateSimulationsParams) => {
   const cachedEntry = getCachedRateInputsSnapshotEntry<RateInputsResponse>();
   const hasAnyInput = useMemo(() => parseNumberInput(supplyInput) > 0 || parseNumberInput(borrowInput) > 0, [borrowInput, supplyInput]);
+  const needsTokenPrice = inputMode === 'token';
 
   const rateInputsQuery = useQuery({
     queryKey: RATE_INPUTS_SNAPSHOT_QUERY_KEY,
@@ -687,11 +688,22 @@ export const useSharedRateSimulations = ({
         ],
         queryFn: async () => {
           return (
-            (await resolveForecastTokenPriceWithBackup(buildPriceLookup(reserve, tokenPrices, 'Supply'))) ??
-            (await resolveForecastTokenPriceWithBackup(buildPriceLookup(reserve, tokenPrices, 'Borrow')))
+            (await resolveForecastTokenPriceWithBackup(
+              buildPriceLookup(reserve, tokenPrices, 'Supply'),
+              fetch,
+              { allowThirdPartyFetch: false }
+            )) ??
+            (await resolveForecastTokenPriceWithBackup(
+              buildPriceLookup(reserve, tokenPrices, 'Borrow'),
+              fetch,
+              { allowThirdPartyFetch: false }
+            )) ??
+            null
           );
         },
-        enabled: enabled && hasAnyInput && localPrice === undefined,
+        // Shared simulation in token mode relies on backend-provided prices only.
+        // Table-wide third-party fetches create a request storm and hit browser CORS/rate limits.
+        enabled: enabled && hasAnyInput && needsTokenPrice && localPrice === undefined,
         staleTime: 5 * 60 * 1000,
       };
     }),
@@ -701,7 +713,7 @@ export const useSharedRateSimulations = ({
     const map: Record<string, number | undefined> = {};
     reserves.forEach((reserve, index) => {
       const localPrice = resolveLocalReserveTokenPrice(reserve, tokenPrices);
-      map[getReserveSimulationId(reserve)] = localPrice ?? priceQueries[index]?.data;
+      map[getReserveSimulationId(reserve)] = localPrice ?? priceQueries[index]?.data ?? undefined;
     });
     return map;
   }, [priceQueries, reserves, tokenPrices]);
@@ -711,10 +723,12 @@ export const useSharedRateSimulations = ({
     reserves.forEach((reserve, index) => {
       const localPrice = resolveLocalReserveTokenPrice(reserve, tokenPrices);
       map[getReserveSimulationId(reserve)] =
-        localPrice === undefined && Boolean(priceQueries[index]?.isPending || priceQueries[index]?.isFetching);
+        needsTokenPrice &&
+        localPrice === undefined &&
+        Boolean(priceQueries[index]?.isPending || priceQueries[index]?.isFetching);
     });
     return map;
-  }, [priceQueries, reserves, tokenPrices]);
+  }, [needsTokenPrice, priceQueries, reserves, tokenPrices]);
 
   const allCampaignIds = useMemo(() => {
     if (!enabled || !hasAnyInput) return [];

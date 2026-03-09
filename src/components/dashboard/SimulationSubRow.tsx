@@ -161,7 +161,10 @@ const SimulationSubRow = ({
 }: SimulationSubRowProps) => {
   const rateLabel = isApy ? 'APY' : 'APR';
   const showPriceMissingNotice =
-    (simulation.supply.hasInput || simulation.borrow.hasInput) && !simulation.tokenPrice && !simulation.tokenPriceLoading;
+    inputMode === 'token' &&
+    (simulation.supply.hasInput || simulation.borrow.hasInput) &&
+    !simulation.tokenPrice &&
+    !simulation.tokenPriceLoading;
   const showEmptyStateNote = !simulation.supply.hasInput && !simulation.borrow.hasInput;
 
   const aaveUrl = buildAaveReserveUrl({ marketName: reserve.marketName, tokenAddress: reserve.tokenAddress });

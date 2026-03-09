@@ -17,6 +17,10 @@ interface ResolveForecastTokenPriceInput {
   vTokenAddress?: string | null;
 }
 
+interface ResolveForecastTokenPriceWithBackupOptions {
+  allowThirdPartyFetch?: boolean;
+}
+
 const toKey = (chainId: number, address: string): string =>
   `${chainId}:${address.toLowerCase()}`;
 
@@ -321,10 +325,12 @@ const fetchCoingeckoTokenPrice = async (
 
 export const resolveForecastTokenPriceWithBackup = async (
   input: ResolveForecastTokenPriceInput,
-  fetchImpl: FetchLike = fetch
+  fetchImpl: FetchLike = fetch,
+  options?: ResolveForecastTokenPriceWithBackupOptions
 ): Promise<number | undefined> => {
   const localPrice = resolveForecastTokenPrice(input);
   if (localPrice !== undefined) return localPrice;
+  if (options?.allowThirdPartyFetch === false) return undefined;
 
   const candidates = buildCandidateAddresses(input);
   for (const address of candidates) {
