@@ -90,6 +90,10 @@ Rule of thumb:
 - Same-source snapshot data should share staleTime.
 - External-source data should be bucketed by change frequency and quota cost.
 
+Market filter source of truth:
+- The home page derives unique `{ marketName, chainName }` filter options directly from `/markets.data`.
+- Do not add a separate `markets/list` fetch for this screen; it creates a second snapshot path for the same UI state.
+
 ## Security
 
 See [SECURITY.md](SECURITY.md) for vulnerability reporting and a public-release security checklist.
