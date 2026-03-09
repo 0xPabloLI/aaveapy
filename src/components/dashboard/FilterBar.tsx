@@ -268,7 +268,7 @@ const FilterBar = ({
         key={market.marketName}
         {...(measuring ? { 'data-overflow-index': '' } : {})}
         onClick={() => toggleMarket(market.marketName)}
-        className={`ds-chip gap-1 px-1.5 md:px-2 py-1 rounded-md font-medium transition-all ${
+        className={`ds-chip gap-1 px-1.5 md:px-2 py-1 rounded-md font-medium transition-colors ${
           isSelected
             ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
             : 'text-foreground/80 border border-border hover:text-foreground'
