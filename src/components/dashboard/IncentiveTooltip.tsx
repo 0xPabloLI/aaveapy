@@ -815,25 +815,29 @@ const IncentiveTooltip = ({
       return null;
     };
 
-    const getForecastRateDisplay = (forecastPreview: NonNullable<ReturnType<typeof getForecastPreview>>) => {
-      if (forecastPreview.unavailable) {
-        return null;
-      }
-      const forecastAprPercent = forecastPreview.apr * 100;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    type AnyForecast = Record<string, any>;
+
+    const toAvailableForecast = (
+      fp: NonNullable<ReturnType<typeof getForecastPreview>>,
+    ): AnyForecast | null => (fp.unavailable ? null : (fp as AnyForecast));
+
+    const getForecastRateDisplay = (fp: AnyForecast) => {
+      const forecastAprPercent = (fp.apr ?? 0) * 100;
       const displayPercent = isApy ? convertAprToApy(forecastAprPercent) : forecastAprPercent;
-      const isSelfEstimate = typeof forecastPreview.selfCapUsd === 'number' || forecastPreview.estimateKind === 'MERIT_SELF_CAP';
+      const isSelfEstimate = typeof fp.selfCapUsd === 'number' || fp.estimateKind === 'MERIT_SELF_CAP';
       const rateUnitLabel = isApy ? 'APY' : 'APR';
       return {
         label:
-          isSelfEstimate || forecastPreview.estimateKind === 'MERIT_CURRENT_RATE'
+          isSelfEstimate || fp.estimateKind === 'MERIT_CURRENT_RATE'
             ? `Your ${rateUnitLabel}`
             : `Forecast ${rateUnitLabel}`,
         valuePercent: displayPercent,
       };
     };
 
-    const getForecastDailyRewardsLabel = (forecastPreview: NonNullable<ReturnType<typeof getForecastPreview>>) =>
-      typeof forecastPreview.selfCapUsd === 'number' || forecastPreview.estimateKind === 'MERIT_CURRENT_RATE'
+    const getForecastDailyRewardsLabel = (fp: AnyForecast) =>
+      typeof fp.selfCapUsd === 'number' || fp.estimateKind === 'MERIT_CURRENT_RATE'
         ? 'Your Daily Rewards'
         : 'Total Daily Rewards';
 
@@ -866,51 +870,55 @@ const IncentiveTooltip = ({
               ))}
             </ul>
           )}
-          {forecastPreview && !forecastPreview.unavailable && (
+          {forecastPreview && (() => {
+            const fp = toAvailableForecast(forecastPreview);
+            if (!fp) return null;
+            return (
             <div className="mt-[var(--ds-space-1-5)] rounded-md border border-border/50 bg-muted/30 px-[var(--ds-space-2)] py-[var(--ds-space-1-5)]">
               <p className="ds-tooltip-body text-muted-foreground">
-                {typeof forecastPreview.hypotheticalTvl === 'number'
-                  ? `Forecast at TVL ${formatUsd(forecastPreview.hypotheticalTvl)}`
+                {typeof fp.hypotheticalTvl === 'number'
+                  ? `Forecast at TVL ${formatUsd(fp.hypotheticalTvl)}`
                   : 'Estimate for your deposit'}
               </p>
               {(() => {
-                const rateDisplay = getForecastRateDisplay(forecastPreview);
+                const rateDisplay = getForecastRateDisplay(fp);
                 if (!rateDisplay) return null;
                 return (
               <p className={`ds-tooltip-body mt-[var(--ds-space-0-5)] ${valueAccentClass}`}>
-                {rateDisplay.label} {formatPercent(rateDisplay.valuePercent)} · {getForecastDailyRewardsLabel(forecastPreview)}{' '}
-                {formatUsd(forecastPreview.dailyRewards)}
+                {rateDisplay.label} {formatPercent(rateDisplay.valuePercent)} · {getForecastDailyRewardsLabel(fp)}{' '}
+                {formatUsd(fp.dailyRewards)}
                   </p>
                 );
               })()}
-              {forecastPreview.usesCurrentRateFallback && (
+              {fp.usesCurrentRateFallback && (
                 <p className="ds-tooltip-body text-muted-foreground mt-[var(--ds-space-0-5)]">
                   Using current APR because latest-round reward data is unavailable.
                 </p>
               )}
-              {forecastPreview.estimateKind === 'MERIT_BASE' ? (
+              {fp.estimateKind === 'MERIT_BASE' ? (
                 <p className="ds-tooltip-body text-muted-foreground mt-[var(--ds-space-0-5)]">
                   Estimated from last round reward
-                  {typeof forecastPreview.lastRoundRewardUsd === 'number'
-                    ? ` (${formatUsd(forecastPreview.lastRoundRewardUsd)})`
+                  {typeof fp.lastRoundRewardUsd === 'number'
+                    ? ` (${formatUsd(fp.lastRoundRewardUsd)})`
                     : ''}.
                 </p>
-              ) : typeof forecastPreview.selfCapUsd === 'number' ? (
+              ) : typeof fp.selfCapUsd === 'number' ? (
                 <p className="ds-tooltip-body text-muted-foreground mt-[var(--ds-space-0-5)]">
-                  Self bonus applies to the first {formatUsd(forecastPreview.selfCapUsd)} of your deposit.
+                  Self bonus applies to the first {formatUsd(fp.selfCapUsd)} of your deposit.
                 </p>
               ) : null}
-              {'fixRewardableDays' in forecastPreview &&
-                forecastPreview.campaignType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE' &&
-                typeof forecastPreview.fixRewardableDays === 'number' &&
-                typeof forecastPreview.fixRewardableUntilTs === 'number' && (
+              {'fixRewardableDays' in fp &&
+                fp.campaignType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE' &&
+                typeof fp.fixRewardableDays === 'number' &&
+                typeof fp.fixRewardableUntilTs === 'number' && (
                   <p className={`ds-tooltip-body mt-[var(--ds-space-0-5)] font-medium ${valueAccentClass}`}>
-                    Rewardable until: {formatForecastTimestamp(forecastPreview.fixRewardableUntilTs)} (
-                    {forecastPreview.fixRewardableDays.toFixed(2)}d)
+                    Rewardable until: {formatForecastTimestamp(fp.fixRewardableUntilTs)} (
+                    {fp.fixRewardableDays.toFixed(2)}d)
                   </p>
                 )}
             </div>
-          )}
+            );
+          })()}
           {forecastPreview && forecastPreview.unavailable && (
             <p className="ds-tooltip-body mt-[var(--ds-space-1)] text-amber-600">
               Forecast unavailable for campaign {forecastPreview.campaignId}: {forecastPreview.message}
@@ -955,51 +963,55 @@ const IncentiveTooltip = ({
                   ))}
                 </ul>
               )}
-              {forecastPreview && !forecastPreview.unavailable && (
+              {forecastPreview && (() => {
+                const fp = toAvailableForecast(forecastPreview);
+                if (!fp) return null;
+                return (
                 <div className="mt-[var(--ds-space-1-5)] rounded-md border border-border/50 bg-muted/30 px-[var(--ds-space-2)] py-[var(--ds-space-1-5)]">
                   <p className="ds-tooltip-body text-muted-foreground">
-                    {typeof forecastPreview.hypotheticalTvl === 'number'
-                      ? `Forecast at TVL ${formatUsd(forecastPreview.hypotheticalTvl)}`
+                    {typeof fp.hypotheticalTvl === 'number'
+                      ? `Forecast at TVL ${formatUsd(fp.hypotheticalTvl)}`
                       : 'Estimate for your deposit'}
                   </p>
                   {(() => {
-                    const rateDisplay = getForecastRateDisplay(forecastPreview);
+                    const rateDisplay = getForecastRateDisplay(fp);
                     if (!rateDisplay) return null;
                     return (
                       <p className={`ds-tooltip-body mt-[var(--ds-space-0-5)] ${valueAccentClass}`}>
-                        {rateDisplay.label} {formatPercent(rateDisplay.valuePercent)} · {getForecastDailyRewardsLabel(forecastPreview)}{' '}
-                        {formatUsd(forecastPreview.dailyRewards)}
+                        {rateDisplay.label} {formatPercent(rateDisplay.valuePercent)} · {getForecastDailyRewardsLabel(fp)}{' '}
+                        {formatUsd(fp.dailyRewards)}
                       </p>
                     );
                   })()}
-                  {forecastPreview.usesCurrentRateFallback && (
+                  {fp.usesCurrentRateFallback && (
                     <p className="ds-tooltip-body text-muted-foreground mt-[var(--ds-space-0-5)]">
                       Using current APR because latest-round reward data is unavailable.
                     </p>
                   )}
-                {forecastPreview.estimateKind === 'MERIT_BASE' ? (
+                {fp.estimateKind === 'MERIT_BASE' ? (
                   <p className="ds-tooltip-body text-muted-foreground mt-[var(--ds-space-0-5)]">
                     Estimated from last round reward
-                    {typeof forecastPreview.lastRoundRewardUsd === 'number'
-                      ? ` (${formatUsd(forecastPreview.lastRoundRewardUsd)})`
+                    {typeof fp.lastRoundRewardUsd === 'number'
+                      ? ` (${formatUsd(fp.lastRoundRewardUsd)})`
                       : ''}.
                   </p>
-                ) : typeof forecastPreview.selfCapUsd === 'number' ? (
+                ) : typeof fp.selfCapUsd === 'number' ? (
                   <p className="ds-tooltip-body text-muted-foreground mt-[var(--ds-space-0-5)]">
-                    Self bonus applies to the first {formatUsd(forecastPreview.selfCapUsd)} of your deposit.
+                    Self bonus applies to the first {formatUsd(fp.selfCapUsd)} of your deposit.
                   </p>
                 ) : null}
-                  {'fixRewardableDays' in forecastPreview &&
-                    forecastPreview.campaignType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE' &&
-                    typeof forecastPreview.fixRewardableDays === 'number' &&
-                    typeof forecastPreview.fixRewardableUntilTs === 'number' && (
+                  {'fixRewardableDays' in fp &&
+                    fp.campaignType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE' &&
+                    typeof fp.fixRewardableDays === 'number' &&
+                    typeof fp.fixRewardableUntilTs === 'number' && (
                       <p className={`ds-tooltip-body mt-[var(--ds-space-0-5)] font-medium ${valueAccentClass}`}>
-                        Rewardable until: {formatForecastTimestamp(forecastPreview.fixRewardableUntilTs)} (
-                        {forecastPreview.fixRewardableDays.toFixed(2)}d)
+                        Rewardable until: {formatForecastTimestamp(fp.fixRewardableUntilTs)} (
+                        {fp.fixRewardableDays.toFixed(2)}d)
                       </p>
                     )}
                 </div>
-              )}
+                );
+              })()}
               {forecastPreview && forecastPreview.unavailable && (
                 <p className="ds-tooltip-body mt-[var(--ds-space-1)] text-amber-600">
                   Forecast unavailable for campaign {forecastPreview.campaignId}: {forecastPreview.message}
