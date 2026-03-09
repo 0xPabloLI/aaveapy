@@ -427,10 +427,22 @@ const ReservesTable = ({
   }, [sortedData]);
 
   // Display data with pagination - must be before conditional returns
-  const displayData = useMemo(() => 
-    showAll ? sortedData : sortedData.slice(0, DEFAULT_VISIBLE_COUNT),
-    [sortedData, showAll]
-  );
+  // Ensure the expanded row is always visible even if it's beyond the default count
+  const displayData = useMemo(() => {
+    if (showAll) return sortedData;
+    const sliced = sortedData.slice(0, DEFAULT_VISIBLE_COUNT);
+    // If there's an expanded row that's beyond the slice, include it
+    if (expandedReserveId) {
+      const expandedIndex = sortedData.findIndex(
+        (r) => getReserveSimulationId(r) === expandedReserveId
+      );
+      if (expandedIndex >= DEFAULT_VISIBLE_COUNT) {
+        // Include all items up to and including the expanded row
+        return sortedData.slice(0, expandedIndex + 1);
+      }
+    }
+    return sliced;
+  }, [sortedData, showAll, expandedReserveId]);
 
   const scenarioControls = <ScenarioControls onDebouncedChange={handleScenarioChange} />;
 
