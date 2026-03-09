@@ -819,9 +819,9 @@ const IncentiveTooltip = ({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     type AnyForecast = Record<string, any>;
 
-    const isAvailableForecast = (
+    const toAvailableForecast = (
       fp: NonNullable<ReturnType<typeof getForecastPreview>>,
-    ): fp is AnyForecast & { unavailable: false } => !fp.unavailable;
+    ): AnyForecast | null => (fp.unavailable ? null : (fp as AnyForecast));
 
     const getForecastRateDisplay = (fp: AnyForecast) => {
       const forecastAprPercent = (fp.apr ?? 0) * 100;
