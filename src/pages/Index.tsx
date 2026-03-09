@@ -118,11 +118,11 @@ const Index = () => {
   }, [effectiveReservesData?.data]);
   const hasReserves = stableReserves.length > 0;
 
-  // Phase 3 Optimization: Preload ALL token and chain icons during idle time
+  // Preload ALL token and chain icons once data is ready (no fixed delay)
   usePreloadReserveAssets(stableReserves, {
-    limit: Infinity, // Preload icons for all reserves
-    delay: 300, // Start after initial render settles
+    limit: Infinity,
     enabled: hasReserves,
+    isSuccess: !!reservesData,
   });
 
   // Preload incentive icons after reserve icons (lower priority)

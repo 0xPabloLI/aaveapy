@@ -1,6 +1,7 @@
 import type { TokenPricesIndex } from '@/types/aave';
 import { getCoingeckoBackupPriceTtlMs } from './merklForecastConfig';
 import { normalizeTokenSymbolForAsciiLower } from './tokenSymbolNormalization';
+import { coingeckoLimiter } from './concurrencyLimiter';
 
 type ForecastActionType = 'Supply' | 'Borrow' | 'Hold';
 type FetchLike = typeof fetch;
@@ -150,7 +151,7 @@ const getAssetPlatformMap = async (
     return platformMapCache.map;
   }
 
-  const response = await fetchImpl(`${COINGECKO_API_BASE}/asset_platforms`);
+  const response = await coingeckoLimiter.run(() => fetchImpl(`${COINGECKO_API_BASE}/asset_platforms`));
   if (!response.ok) {
     throw new Error(`CoinGecko asset_platforms failed (${response.status})`);
   }
@@ -189,7 +190,7 @@ const fetchTokenPriceByPlatform = async (
     `${COINGECKO_API_BASE}/simple/token_price/${platformId}` +
     `?contract_addresses=${encodeURIComponent(normalizedAddress)}` +
     `&vs_currencies=usd`;
-  const response = await fetchImpl(url);
+  const response = await coingeckoLimiter.run(() => fetchImpl(url));
   if (!response.ok) return undefined;
 
   const payload = (await response.json()) as Record<string, { usd?: number }>;
@@ -222,7 +223,7 @@ const fetchCoingeckoPriceBySymbol = async (
         `${COINGECKO_API_BASE}/simple/price` +
         `?ids=${encodeURIComponent(coinId)}` +
         `&vs_currencies=usd`;
-      const response = await fetchImpl(url);
+      const response = await coingeckoLimiter.run(() => fetchImpl(url));
       if (!response.ok) return undefined;
 
       const payload = (await response.json()) as Record<string, { usd?: number }>;
