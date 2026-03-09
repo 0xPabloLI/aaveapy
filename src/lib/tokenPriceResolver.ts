@@ -1,6 +1,7 @@
 import type { TokenPricesIndex } from '@/types/aave';
 import { getCoingeckoBackupPriceTtlMs } from './merklForecastConfig';
 import { normalizeTokenSymbolForAsciiLower } from './tokenSymbolNormalization';
+import { coingeckoLimiter } from './concurrencyLimiter';
 
 type ForecastActionType = 'Supply' | 'Borrow' | 'Hold';
 type FetchLike = typeof fetch;
