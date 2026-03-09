@@ -259,7 +259,7 @@ const FilterBar = ({
     </button>
   );
 
-  const renderMarketButton = (market: MarketListItem, measuring = false) => {
+  const renderMarketButton = (market: MarketListItem, index: number, measuring = false, hidden = false) => {
     const info = getMarketInfo(market);
     const isSelected = selectedMarkets.includes(market.marketName);
     const isEthereum = market.chainName === 'Ethereum';
@@ -272,7 +272,7 @@ const FilterBar = ({
           isSelected
             ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
             : 'text-foreground/80 border border-border hover:text-foreground'
-        }`}
+        } ${hidden ? 'hidden' : ''}`}
         title={isEthereum ? `Ethereum ${info.label}` : market.chainName}
       >
         <ChainIcon chain={market.chainName} />
