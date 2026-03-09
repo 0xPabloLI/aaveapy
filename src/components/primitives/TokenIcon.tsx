@@ -16,17 +16,26 @@ interface TokenIconProps {
 
 const DEFAULT_SRC = '/icons/tokens/default.svg';
 
+// Global cache: maps symbolKey → verified working src URL.
+// Survives across component mount/unmount cycles so re-mounted icons
+// skip the fallback chain and avoid redundant network requests.
+const resolvedSrcCache = new Map<string, string>();
+
 /**
  * Resolve the best initial src for a token symbol.
- * If the SVG was already preloaded, mark it so we can use eager loading
- * and skip the intersection-observer delay for cached images.
+ * If a previous instance already resolved this symbol, reuse that src.
+ * Otherwise fall back to the default SVG path.
  */
 const resolveInitialState = (symbolKey: string) => {
+  const cached = resolvedSrcCache.get(symbolKey);
+  if (cached) {
+    return { src: cached, formatIndex: 0, isResolved: true };
+  }
   const svgPath = `/icons/tokens/${symbolKey}.svg`;
   return {
     src: svgPath,
     formatIndex: 0,
-    isPreloaded: isImagePreloaded(svgPath),
+    isResolved: isImagePreloaded(svgPath),
   };
 };
 
@@ -55,8 +64,8 @@ const TokenImage = memo(({
   const [formatIndex, setFormatIndex] = useState(initial.formatIndex);
   const [needCoingeckoFallback, setNeedCoingeckoFallback] = useState(false);
 
-  // If preloaded, force eager + skip lazy intersection-observer wait
-  const effectiveLoading = initial.isPreloaded ? 'eager' : loading;
+  // If already resolved or preloaded, force eager loading
+  const effectiveLoading = initial.isResolved ? 'eager' : loading;
 
   const { data: coingeckoImageUrl, isFetched: coingeckoFetched } = useCoingeckoTokenImage(
     needCoingeckoFallback ? symbol : null
@@ -77,6 +86,13 @@ const TokenImage = memo(({
       setSrc(DEFAULT_SRC);
     }
   }, [needCoingeckoFallback, coingeckoImageUrl, coingeckoFetched]);
+
+  // Persist verified src into global cache on successful load
+  const handleLoad = useCallback(() => {
+    if (src && src !== DEFAULT_SRC) {
+      resolvedSrcCache.set(symbolKey, src);
+    }
+  }, [symbolKey, src]);
 
   const handleError = useCallback(() => {
     // 1. Try logoURI from API if available
@@ -113,6 +129,7 @@ const TokenImage = memo(({
       height={size}
       loading={effectiveLoading}
       decoding="async"
+      onLoad={handleLoad}
       onError={handleError}
       className={cn('rounded-full object-contain', className)}
     />
