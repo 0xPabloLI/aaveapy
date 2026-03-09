@@ -27,7 +27,9 @@ const categories: { value: TokenCategory; label: string }[] = [
   { value: 'pendle', label: 'Pendle' },
 ];
 
-const ChainIcon = ({ chain, className = "", loading = "lazy" }: { chain: string; className?: string; loading?: "lazy" | "eager" }) => {
+import { memo } from 'react';
+
+const ChainIcon = memo(({ chain, className = "" }: { chain: string; className?: string }) => {
   const size = "w-3.5 h-3.5";
   const src = getChainIconSrc(chain);
 
@@ -44,10 +46,10 @@ const ChainIcon = ({ chain, className = "", loading = "lazy" }: { chain: string;
       src={src}
       alt={`${chain} logo`}
       className={`${size} ${className}`}
-      loading={loading}
+      loading="lazy"
     />
   );
-};
+});
 
 const getMarketInfo = (market: MarketListItem) => {
   if (market.chainName === 'Ethereum' && ETHEREUM_MARKET_NAMES[market.marketName]) {
