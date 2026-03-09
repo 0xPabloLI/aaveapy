@@ -1,7 +1,7 @@
 import { lazy, Suspense, useState, useMemo, useCallback, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { usePreloadReserveAssets } from '@/hooks/usePreloadReserveAssets';
-import { useAaveMarkets, useAaveMarketsList } from '@/hooks/useAaveMarkets';
+import { useAaveMarkets } from '@/hooks/useAaveMarkets';
 import { prefetchRateInputsSnapshot } from '@/hooks/useReserveRateInputs';
 import { SortField, SortOrder, TokenCategory, ReserveWithSpread } from '@/types/aave';
 import {
@@ -18,10 +18,11 @@ import TopOpportunities from '@/components/dashboard/TopOpportunities';
 import ReservesTable from '@/components/dashboard/ReservesTable';
 import LoadingState from '@/components/dashboard/LoadingState';
 import PullToRefresh from '@/components/dashboard/PullToRefresh';
-import { getCachedMarkets, getCachedMarketsList, setCachedTydroRate } from '@/lib/cache';
+import { setCachedTydroRate } from '@/lib/cache';
 import { TYDRO_POINT_TO_USD_RATE } from '@/lib/tydro';
 import { AlertTriangle } from 'lucide-react';
 import { preloadIncentiveIcons } from '@/lib/preloadUtils';
+import { buildMarketsList } from '@/lib/marketsList';
 import { normalizeTokenSymbolForSearch } from '@/lib/tokenSymbolNormalization';
 
 import IncentiveTooltip from '@/components/dashboard/IncentiveTooltip';
@@ -73,24 +74,17 @@ const Index = () => {
   // Fetch data - no sort params, all sorting done on frontend
   // This allows the table's total/native/incentive mode to work correctly
   const { data: reservesData, isLoading, error, isError, refetch } = useAaveMarkets();
-  const { data: marketsList, refetch: refetchMarketsList } = useAaveMarketsList();
   const { data: tokenCategoryOverrides } = useTokenCategories();
 
-  // Get cached data as fallback
-  const cachedReservesData = useMemo(() => getCachedMarkets(), []);
-  const cachedMarketsList = useMemo(() => getCachedMarketsList(), []);
-
-  // Use actual data if available, otherwise fall back to cache
-  const effectiveReservesData = reservesData || cachedReservesData;
-  const effectiveMarketsList = marketsList || cachedMarketsList;
-
-
-
+  const effectiveReservesData = reservesData;
+  const effectiveMarketsList = useMemo(
+    () => buildMarketsList(effectiveReservesData),
+    [effectiveReservesData]
+  );
 
   // Check if we're using cached data
   // Only show once loading is done to avoid flashing the banner on initial load.
-  const isUsingCache =
-    !isLoading && ((isError && !!cachedReservesData) || (!reservesData && !!cachedReservesData));
+  const isUsingCache = !isLoading && isError && !!reservesData;
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -152,11 +146,8 @@ const Index = () => {
 
   // Pull to refresh handler
   const handleRefresh = useCallback(async () => {
-    await Promise.all([
-      refetch(),
-      refetchMarketsList(),
-    ]);
-  }, [refetch, refetchMarketsList]);
+    await refetch();
+  }, [refetch]);
 
   const scrollToReserveElement = useCallback((id: string) => {
     const el = document.querySelector(`[data-reserve-id="${id}"]`);
@@ -308,7 +299,7 @@ const Index = () => {
           )}
 
           {/* Error banner (only show if no cache available) */}
-          {error && !cachedReservesData && (
+          {error && !effectiveReservesData && (
             <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-[var(--ds-space-3)] md:p-[var(--ds-space-4)] flex items-start gap-[var(--ds-space-3)]">
               <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-[var(--ds-space-0-5)]" />
               <div className="flex-1 min-w-0">
@@ -323,7 +314,7 @@ const Index = () => {
           )}
 
           {/* No data warning banner (when there's no data, no error, and no cache) */}
-          {!effectiveReservesData && !isLoading && !error && !cachedReservesData && (
+          {!effectiveReservesData && !isLoading && !error && (
             <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-[var(--ds-space-3)] md:p-[var(--ds-space-4)] flex items-start gap-[var(--ds-space-3)]">
               <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-[var(--ds-space-0-5)]" />
               <div className="flex-1 min-w-0">
@@ -438,7 +429,7 @@ const Index = () => {
           )}
 
           {/* No data state (when there's no data at all, not even cache) - only show if no banner is shown */}
-          {!effectiveReservesData && !isLoading && (error || !cachedReservesData) && (
+          {!effectiveReservesData && !isLoading && !!error && (
             <div className="text-center py-[var(--ds-space-12)]">
               <p className="text-muted-foreground">No data to display</p>
             </div>

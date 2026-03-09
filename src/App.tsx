@@ -7,8 +7,9 @@ import { lazy, Suspense } from "react";
 import { ThemeProvider } from "next-themes";
 import { Analytics } from "@vercel/analytics/react";
 import LoadingState from "@/components/dashboard/LoadingState";
-import { fetchMarkets, fetchMarketsList } from "@/hooks/useAaveMarkets";
+import { fetchMarkets } from "@/hooks/useAaveMarkets";
 import { QUERY_STALE_TIMES } from "@/config/queryStaleTimes";
+import { clearLegacyCacheEntries } from "@/lib/cache";
 
 // Lazy load route components
 const Index = lazy(() => import("./pages/Index"));
@@ -22,16 +23,15 @@ const queryClient = new QueryClient({
   },
 });
 
+if (typeof window !== 'undefined') {
+  clearLegacyCacheEntries();
+}
+
 // Prefetch critical data immediately on app load
 // This starts fetching before React components mount
 queryClient.prefetchQuery({
   queryKey: ['aave-markets'],
   queryFn: fetchMarkets,
-  staleTime: QUERY_STALE_TIMES.coreSnapshotApi,
-});
-queryClient.prefetchQuery({
-  queryKey: ['aave-markets-list'],
-  queryFn: fetchMarketsList,
   staleTime: QUERY_STALE_TIMES.coreSnapshotApi,
 });
 

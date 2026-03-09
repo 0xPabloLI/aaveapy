@@ -88,14 +88,6 @@ export const MarketsResponseSchema = z.object({
   tokenPrices: z.record(z.string(), TokenPriceEntrySchema).optional(),
 });
 
-// ── Markets list ──
-export const MarketListItemSchema = z.object({
-  marketName: z.string(),
-  chainName: z.string(),
-}).passthrough();
-
-export const MarketsListSchema = z.array(MarketListItemSchema);
-
 // ── CoinGecko FDV ──
 const CoingeckoFdvItemSchema = z.object({
   id: z.string(),

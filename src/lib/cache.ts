@@ -1,14 +1,15 @@
-import { MarketsResponse, MarketListItem } from '@/types/aave';
+import { MarketsResponse } from '@/types/aave';
 
 const CACHE_KEYS = {
   MARKETS: 'aave-markets-cache',
-  MARKETS_LIST: 'aave-markets-list-cache',
   TYDRO_RATE: 'tydro-point-usd-rate',
   COINGECKO_FDV: 'coingecko-fdv-cache',
   TOKEN_CATEGORIES: 'token-categories-cache',
   RATE_INPUTS_SNAPSHOT: 'rate-inputs-snapshot-cache',
   COINGECKO_TOKEN_IMAGE_PREFIX: 'coingecko-token-image:',
 } as const;
+
+const LEGACY_CACHE_KEYS = ['aave-markets-list-cache'] as const;
 
 // Bump cache version when schema changes.
 const CACHE_VERSION = '1.1.0';
@@ -23,6 +24,8 @@ export interface CachedPayload<T> {
   data: T;
   updatedAt: number;
 }
+
+type StorageLike = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
 
 function toCachedPayload<T>(entry: CacheEntry<T>): CachedPayload<T> {
   const parsed = Date.parse(entry.timestamp);
@@ -71,6 +74,16 @@ function normalizeSymbolKey(symbol: string): string {
   return symbol.trim().toLowerCase();
 }
 
+export function clearLegacyCacheEntries(storage: StorageLike = localStorage): void {
+  for (const key of LEGACY_CACHE_KEYS) {
+    try {
+      storage.removeItem(key);
+    } catch (error) {
+      console.warn(`Failed to remove legacy cache key ${key}:`, error);
+    }
+  }
+}
+
 // Markets cache
 export function getCachedMarketsEntry(): CachedPayload<MarketsResponse> | null {
   return getCacheEntry<MarketsResponse>(CACHE_KEYS.MARKETS);
@@ -83,20 +96,6 @@ export function getCachedMarkets(): MarketsResponse | null {
 
 export function setCachedMarkets(data: MarketsResponse): void {
   setCacheEntry(CACHE_KEYS.MARKETS, data);
-}
-
-// Markets list cache
-export function getCachedMarketsListEntry(): CachedPayload<MarketListItem[]> | null {
-  return getCacheEntry<MarketListItem[]>(CACHE_KEYS.MARKETS_LIST);
-}
-
-export function getCachedMarketsList(): MarketListItem[] | null {
-  const entry = getCachedMarketsListEntry();
-  return entry?.data ?? null;
-}
-
-export function setCachedMarketsList(data: MarketListItem[]): void {
-  setCacheEntry(CACHE_KEYS.MARKETS_LIST, data);
 }
 
 // CoinGecko FDV cache
