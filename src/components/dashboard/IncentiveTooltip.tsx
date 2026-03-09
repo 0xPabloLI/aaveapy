@@ -816,14 +816,15 @@ const IncentiveTooltip = ({
       return null;
     };
 
-    type AvailableForecast = Exclude<NonNullable<ReturnType<typeof getForecastPreview>>, { readonly unavailable: true }>;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    type AnyForecast = Record<string, any>;
 
     const isAvailableForecast = (
       fp: NonNullable<ReturnType<typeof getForecastPreview>>,
-    ): fp is AvailableForecast => !fp.unavailable;
+    ): fp is AnyForecast & { unavailable: false } => !fp.unavailable;
 
-    const getForecastRateDisplay = (fp: AvailableForecast) => {
-      const forecastAprPercent = ('apr' in fp ? (fp as MeritForecastPreview).apr : (fp as any).apr) * 100;
+    const getForecastRateDisplay = (fp: AnyForecast) => {
+      const forecastAprPercent = (fp.apr ?? 0) * 100;
       const displayPercent = isApy ? convertAprToApy(forecastAprPercent) : forecastAprPercent;
       const isSelfEstimate = typeof fp.selfCapUsd === 'number' || fp.estimateKind === 'MERIT_SELF_CAP';
       const rateUnitLabel = isApy ? 'APY' : 'APR';
@@ -836,7 +837,7 @@ const IncentiveTooltip = ({
       };
     };
 
-    const getForecastDailyRewardsLabel = (fp: AvailableForecast) =>
+    const getForecastDailyRewardsLabel = (fp: AnyForecast) =>
       typeof fp.selfCapUsd === 'number' || fp.estimateKind === 'MERIT_CURRENT_RATE'
         ? 'Your Daily Rewards'
         : 'Total Daily Rewards';
