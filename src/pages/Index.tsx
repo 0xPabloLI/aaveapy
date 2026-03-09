@@ -410,6 +410,7 @@ const Index = () => {
           </div>
 
           {topTooltipState && (
+              <IncentiveTooltip
                 reserve={topTooltipState.reserve}
                 type={topTooltipState.type}
                 position={topTooltipState.position}
