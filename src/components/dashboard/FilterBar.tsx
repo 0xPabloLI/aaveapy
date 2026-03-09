@@ -390,10 +390,13 @@ const FilterBar = ({
         </button>
 
         {/* Measuring: render all market pills */}
-        {marketsMeasuring && allMarkets.map((m) => renderMarketButton(m, true))}
+        {marketsMeasuring && allMarkets.map((m, i) => renderMarketButton(m, i, true))}
 
-        {/* Final: visible market pills */}
-        {!marketsMeasuring && visibleMarkets.map((m) => renderMarketButton(m))}
+        {/* Final: render ALL market pills, hide overflow ones with CSS */}
+        {!marketsMeasuring && allMarkets.map((m, i) => {
+          const isHidden = !showMarketsExpanded && i >= marketsVisibleCount;
+          return renderMarketButton(m, i, false, isHidden);
+        })}
 
         {/* Expand */}
         {!marketsMeasuring && hasHiddenMarkets && !showMarketsExpanded && (
