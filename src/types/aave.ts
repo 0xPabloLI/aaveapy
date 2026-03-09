@@ -1,10 +1,12 @@
+export type IncentiveMessage = string | Record<string, unknown> | unknown[];
+
 // Merit incentive data structure
 export interface MeritIncentive {
   apr: number;                         // APR percentage value (e.g., 5.2 means 5.2%)
   selfApr?: number;                    // Self APR percentage value (if there's a corresponding self- prefixed key)
   link: string;                        // Merit campaign detail page link
   name?: string;                       // Merit campaign name (optional)
-  message?: string;                    // Merit campaign message/description (optional)
+  message?: IncentiveMessage;          // Merit campaign message/description (optional)
   startDate: string;                   // Campaign start date
   endDate: string;                     // Campaign end date
   startBlock?: string;                 // Campaign start block (optional)

@@ -201,6 +201,52 @@ describe('buildRateSimulationResult', () => {
     expect(result.supply.afterIncentive).toBeGreaterThan(result.supply.currentIncentive);
   });
 
+  it('recomputes merit incentives when a shared supply amount is present even without latest-round reward data', () => {
+    const reserve: ReserveWithSpread = {
+      ...baseReserve,
+      meritSupplys: [
+        {
+          apr: 4.084439890516138,
+          selfApr: 4.084439890516138,
+          link: 'https://apps.aavechan.com/merit/celo-supply-usdt',
+          startDate: 'Thu Feb 26 2026',
+          endDate: 'Thu Mar 12 2026',
+          name: 'Supply USDT',
+          message: [
+            {
+              action: 'Supply USDT',
+              description:
+                'Rewards are distributed using the following formula: f(USD₮ aToken Holding - USD₮ vToken Holding / USD₮ Liquidation Threshold)',
+            },
+            {
+              action: 'Self Authentication',
+              description:
+                'Supply USDT and double your yield by verifying your humanity through Self for the first $1000 USDT supplied per user.',
+            },
+          ] as unknown as string,
+        },
+      ],
+    };
+
+    const result = buildRateSimulationResult({
+      reserve,
+      reserveRateInput: baseRateInput,
+      isApy: false,
+      includeWhitelistOnlyMerkl: true,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '100000',
+      borrowInput: '0',
+      inputMode: 'usd',
+      forecastStates: {},
+    });
+
+    expect(result.supply.sources.merit.current).toBeCloseTo(8.168879781032276, 10);
+    expect(result.supply.sources.merit.after).toBeLessThan(result.supply.sources.merit.current!);
+    expect(result.supply.sources.merit.after).toBeCloseTo(4.1252842894213, 10);
+    expect(result.supply.sources.merit.delta).toBeCloseTo(-4.043595491610976, 10);
+  });
+
   it('keeps after values empty when the shared scenario is blank', () => {
     const result = buildRateSimulationResult({
       reserve: baseReserve,

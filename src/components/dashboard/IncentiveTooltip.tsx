@@ -6,6 +6,11 @@ import { ReserveWithSpread, MeritIncentive, MerklOpportunityGroup, BrevisIncenti
 import { formatPercent, convertAprToApy, apyToApr } from '@/lib/formatters';
 import { getMerklBreakdownApr, getMerklForecastUsdMultiplier } from '@/lib/tydro';
 import { fetchMerklForecastStates } from '@/lib/merklForecastApi';
+import {
+  extractMeritSelfCapUsd,
+  forecastMeritCampaign,
+  splitMeritMessageBySelfAuth,
+} from '@/lib/meritForecast';
 import { deriveForecastProgressFlags, forecastWithTVL } from '@/lib/merklForecast';
 import { resolveForecastTokenPrice, resolveForecastTokenPriceWithBackup } from '@/lib/tokenPriceResolver';
 import { shouldSurfaceForecastError } from '@/lib/merklForecastErrors';
@@ -280,74 +285,6 @@ const IncentiveTooltip = ({
     return opportunity.link || opportunity.opportunityLink;
   };
 
-  const splitMeritMessageBySelfAuth = (
-    message?: string | Record<string, unknown> | unknown[]
-  ): {
-    baseMessage?: string | Record<string, unknown> | unknown[];
-    selfMessage?: string | Record<string, unknown> | unknown[];
-  } => {
-    if (!Array.isArray(message)) {
-      return { baseMessage: message };
-    }
-
-    const base: unknown[] = [];
-    const self: unknown[] = [];
-    for (const item of message) {
-      const text = typeof item === 'object' && item ? JSON.stringify(item).toLowerCase() : String(item ?? '').toLowerCase();
-      if (text.includes('self authentication')) {
-        self.push(item);
-      } else {
-        base.push(item);
-      }
-    }
-
-    return {
-      baseMessage: base.length > 0 ? base : undefined,
-      selfMessage: self.length > 0 ? self : undefined,
-    };
-  };
-
-  const extractUsdCapFromMessage = (message?: string | Record<string, unknown> | unknown[]): number | null => {
-    const lines = getMessageLines(message).map((line) => line.text);
-    for (const line of lines) {
-      if (!line.toLowerCase().includes('self')) continue;
-      const match = line.match(/\$\s*([\d,]+(?:\.\d+)?)/);
-      if (!match) continue;
-      const parsed = Number(match[1].replace(/,/g, ''));
-      if (Number.isFinite(parsed) && parsed > 0) return parsed;
-    }
-    return null;
-  };
-
-  const computeMeritBaseEstimate = ({
-    baseAprPercent,
-    lastRoundRewardUsd,
-    startDate,
-    endDate,
-  }: {
-    baseAprPercent: number;
-    lastRoundRewardUsd: number;
-    startDate?: string;
-    endDate?: string;
-  }) => {
-    const cycleDays = getCampaignCycleDays(startDate, endDate);
-    if (!cycleDays || cycleDays <= 0) return null;
-    if (!Number.isFinite(baseAprPercent) || baseAprPercent <= 0) return null;
-    if (!Number.isFinite(lastRoundRewardUsd) || lastRoundRewardUsd <= 0) return null;
-
-    const estimatedDailyRewardUsd = lastRoundRewardUsd / cycleDays;
-    if (!Number.isFinite(estimatedDailyRewardUsd) || estimatedDailyRewardUsd <= 0) return null;
-
-    const estimatedImpliedTvlUsd = (estimatedDailyRewardUsd * 365 * 100) / baseAprPercent;
-    if (!Number.isFinite(estimatedImpliedTvlUsd) || estimatedImpliedTvlUsd <= 0) return null;
-
-    return {
-      cycleDays,
-      estimatedDailyRewardUsd,
-      estimatedImpliedTvlUsd,
-    };
-  };
-
   const buildSourceGroupKey = (source: IncentiveSource): string =>
     `${source.sourceType ?? 'Unknown'}|${source.name}|${source.link ?? ''}`;
 
@@ -553,7 +490,7 @@ const IncentiveTooltip = ({
               : 'ACI Incentive';
 
           const { baseMessage, selfMessage } = splitMeritMessageBySelfAuth(merit.message);
-          const selfCapUsd = extractUsdCapFromMessage(selfMessage);
+          const selfCapUsd = extractMeritSelfCapUsd(selfMessage);
 
           const meritCampaigns: NonNullable<IncentiveSource['campaigns']> = [];
           if (baseAprPercent > 0) {
@@ -862,98 +799,17 @@ const IncentiveTooltip = ({
       }
 
       if (campaignSourceType === 'ACI') {
-        if (campaign.meritForecastMode === 'MERIT_SELF_CAP') {
-          const selfAprPercent = campaign.forecastAprPercent;
-          const selfCapUsd = campaign.selfCapUsd;
-          const baseAprPercent = campaign.meritBaseAprPercent;
-          const baseLastRoundRewardUsd = campaign.meritBaseLastRoundRewardUsd;
-
-          if (
-            typeof selfAprPercent !== 'number' ||
-            !Number.isFinite(selfAprPercent) ||
-            selfAprPercent <= 0 ||
-            typeof selfCapUsd !== 'number' ||
-            !Number.isFinite(selfCapUsd) ||
-            selfCapUsd <= 0 ||
-            typeof baseAprPercent !== 'number' ||
-            !Number.isFinite(baseAprPercent) ||
-            baseAprPercent <= 0 ||
-            typeof baseLastRoundRewardUsd !== 'number' ||
-            !Number.isFinite(baseLastRoundRewardUsd) ||
-            baseLastRoundRewardUsd <= 0
-          ) {
-            return null;
-          }
-
-          const baseEstimate = computeMeritBaseEstimate({
-            baseAprPercent,
-            lastRoundRewardUsd: baseLastRoundRewardUsd,
-            startDate: campaign.startDate,
-            endDate: campaign.endDate,
-          });
-          if (!baseEstimate) return null;
-
-          const hypotheticalTvl = Math.max(baseEstimate.estimatedImpliedTvlUsd + depositUsd, 0);
-          if (hypotheticalTvl <= 0 || depositUsd <= 0) return null;
-
-          const baseForecastAprPercent = (baseEstimate.estimatedDailyRewardUsd * 365 * 100) / hypotheticalTvl;
-          if (!Number.isFinite(baseForecastAprPercent) || baseForecastAprPercent <= 0) return null;
-
-          const selfEligibleAprPercent = baseForecastAprPercent;
-          const eligibleDepositUsd = Math.min(depositUsd, selfCapUsd);
-          const effectiveAprPercent = selfEligibleAprPercent * (eligibleDepositUsd / depositUsd);
-          const userDailyRewardsUsd = (selfEligibleAprPercent / 100) * (eligibleDepositUsd / 365);
-
-          return {
-            unavailable: false,
-            hypotheticalTvl,
-            campaignType: 'MERIT_ESTIMATE',
-            dailyRewards: userDailyRewardsUsd,
-            apr: effectiveAprPercent / 100,
-            regime: 'PLANNED',
-            isUnderDistributed: false,
-            estimateKind: 'MERIT_SELF_CAP' as const,
-            selfCapUsd,
-            selfEligibleUsd: eligibleDepositUsd,
-          };
-        }
-
-        const forecastAprPercent = campaign.forecastAprPercent;
-        const lastRoundRewardUsd = campaign.lastRoundRewardUsd;
-        if (
-          typeof forecastAprPercent !== 'number' ||
-          !Number.isFinite(forecastAprPercent) ||
-          forecastAprPercent <= 0
-        ) {
-          return null;
-        }
-        if (
-          typeof lastRoundRewardUsd !== 'number' ||
-          !Number.isFinite(lastRoundRewardUsd) ||
-          lastRoundRewardUsd <= 0
-        ) {
-          return null;
-        }
-        const baseEstimate = computeMeritBaseEstimate({
-          baseAprPercent: forecastAprPercent,
-          lastRoundRewardUsd,
+        return forecastMeritCampaign({
+          mode: campaign.meritForecastMode === 'MERIT_SELF_CAP' ? 'MERIT_SELF_CAP' : 'MERIT_BASE',
+          depositUsd,
+          forecastAprPercent: campaign.forecastAprPercent,
           startDate: campaign.startDate,
           endDate: campaign.endDate,
+          lastRoundRewardUsd: campaign.lastRoundRewardUsd,
+          selfCapUsd: campaign.selfCapUsd,
+          baseAprPercent: campaign.meritBaseAprPercent,
+          baseLastRoundRewardUsd: campaign.meritBaseLastRoundRewardUsd,
         });
-        if (!baseEstimate) return null;
-        const hypotheticalTvl = Math.max(baseEstimate.estimatedImpliedTvlUsd + depositUsd, 0);
-        const apr = hypotheticalTvl > 0 ? (baseEstimate.estimatedDailyRewardUsd * 365) / hypotheticalTvl : 0;
-        return {
-          unavailable: false,
-          hypotheticalTvl,
-          campaignType: 'MERIT_ESTIMATE',
-          dailyRewards: baseEstimate.estimatedDailyRewardUsd,
-          apr,
-          regime: 'PLANNED',
-          isUnderDistributed: false,
-          estimateKind: 'MERIT_BASE' as const,
-          lastRoundRewardUsd,
-        };
       }
 
       return null;
@@ -965,16 +821,21 @@ const IncentiveTooltip = ({
       }
       const forecastAprPercent = forecastPreview.apr * 100;
       const displayPercent = isApy ? convertAprToApy(forecastAprPercent) : forecastAprPercent;
-      const isSelfEstimate = forecastPreview.estimateKind === 'MERIT_SELF_CAP';
+      const isSelfEstimate = typeof forecastPreview.selfCapUsd === 'number' || forecastPreview.estimateKind === 'MERIT_SELF_CAP';
       const rateUnitLabel = isApy ? 'APY' : 'APR';
       return {
-        label: isSelfEstimate ? `Your ${rateUnitLabel}` : `Forecast ${rateUnitLabel}`,
+        label:
+          isSelfEstimate || forecastPreview.estimateKind === 'MERIT_CURRENT_RATE'
+            ? `Your ${rateUnitLabel}`
+            : `Forecast ${rateUnitLabel}`,
         valuePercent: displayPercent,
       };
     };
 
     const getForecastDailyRewardsLabel = (forecastPreview: NonNullable<ReturnType<typeof getForecastPreview>>) =>
-      forecastPreview.estimateKind === 'MERIT_SELF_CAP' ? 'Your Daily Rewards' : 'Total Daily Rewards';
+      typeof forecastPreview.selfCapUsd === 'number' || forecastPreview.estimateKind === 'MERIT_CURRENT_RATE'
+        ? 'Your Daily Rewards'
+        : 'Total Daily Rewards';
 
     if (campaigns.length === 1) {
       const campaign = campaigns[0];
@@ -1008,7 +869,9 @@ const IncentiveTooltip = ({
           {forecastPreview && !forecastPreview.unavailable && (
             <div className="mt-[var(--ds-space-1-5)] rounded-md border border-border/50 bg-muted/30 px-[var(--ds-space-2)] py-[var(--ds-space-1-5)]">
               <p className="ds-tooltip-body text-muted-foreground">
-                Forecast at TVL {formatUsd(forecastPreview.hypotheticalTvl)}
+                {typeof forecastPreview.hypotheticalTvl === 'number'
+                  ? `Forecast at TVL ${formatUsd(forecastPreview.hypotheticalTvl)}`
+                  : 'Estimate for your deposit'}
               </p>
               {(() => {
                 const rateDisplay = getForecastRateDisplay(forecastPreview);
@@ -1017,9 +880,14 @@ const IncentiveTooltip = ({
               <p className={`ds-tooltip-body mt-[var(--ds-space-0-5)] ${valueAccentClass}`}>
                 {rateDisplay.label} {formatPercent(rateDisplay.valuePercent)} · {getForecastDailyRewardsLabel(forecastPreview)}{' '}
                 {formatUsd(forecastPreview.dailyRewards)}
-              </p>
+                  </p>
                 );
               })()}
+              {forecastPreview.usesCurrentRateFallback && (
+                <p className="ds-tooltip-body text-muted-foreground mt-[var(--ds-space-0-5)]">
+                  Using current APR because latest-round reward data is unavailable.
+                </p>
+              )}
               {forecastPreview.estimateKind === 'MERIT_BASE' ? (
                 <p className="ds-tooltip-body text-muted-foreground mt-[var(--ds-space-0-5)]">
                   Estimated from last round reward
@@ -1027,7 +895,7 @@ const IncentiveTooltip = ({
                     ? ` (${formatUsd(forecastPreview.lastRoundRewardUsd)})`
                     : ''}.
                 </p>
-              ) : forecastPreview.estimateKind === 'MERIT_SELF_CAP' ? (
+              ) : typeof forecastPreview.selfCapUsd === 'number' ? (
                 <p className="ds-tooltip-body text-muted-foreground mt-[var(--ds-space-0-5)]">
                   Self bonus applies to the first {formatUsd(forecastPreview.selfCapUsd)} of your deposit.
                 </p>
@@ -1090,7 +958,9 @@ const IncentiveTooltip = ({
               {forecastPreview && !forecastPreview.unavailable && (
                 <div className="mt-[var(--ds-space-1-5)] rounded-md border border-border/50 bg-muted/30 px-[var(--ds-space-2)] py-[var(--ds-space-1-5)]">
                   <p className="ds-tooltip-body text-muted-foreground">
-                    Forecast at TVL {formatUsd(forecastPreview.hypotheticalTvl)}
+                    {typeof forecastPreview.hypotheticalTvl === 'number'
+                      ? `Forecast at TVL ${formatUsd(forecastPreview.hypotheticalTvl)}`
+                      : 'Estimate for your deposit'}
                   </p>
                   {(() => {
                     const rateDisplay = getForecastRateDisplay(forecastPreview);
@@ -1102,6 +972,11 @@ const IncentiveTooltip = ({
                       </p>
                     );
                   })()}
+                  {forecastPreview.usesCurrentRateFallback && (
+                    <p className="ds-tooltip-body text-muted-foreground mt-[var(--ds-space-0-5)]">
+                      Using current APR because latest-round reward data is unavailable.
+                    </p>
+                  )}
                 {forecastPreview.estimateKind === 'MERIT_BASE' ? (
                   <p className="ds-tooltip-body text-muted-foreground mt-[var(--ds-space-0-5)]">
                     Estimated from last round reward
@@ -1109,7 +984,7 @@ const IncentiveTooltip = ({
                       ? ` (${formatUsd(forecastPreview.lastRoundRewardUsd)})`
                       : ''}.
                   </p>
-                ) : forecastPreview.estimateKind === 'MERIT_SELF_CAP' ? (
+                ) : typeof forecastPreview.selfCapUsd === 'number' ? (
                   <p className="ds-tooltip-body text-muted-foreground mt-[var(--ds-space-0-5)]">
                     Self bonus applies to the first {formatUsd(forecastPreview.selfCapUsd)} of your deposit.
                   </p>

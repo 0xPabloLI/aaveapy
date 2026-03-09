@@ -16,6 +16,7 @@ import { simulateNativeRatesAfterActions } from '@/lib/interestRateCalculator';
 import { forecastWithTVL } from '@/lib/merklForecast';
 import { shouldSurfaceForecastError } from '@/lib/merklForecastErrors';
 import { fetchMerklForecastStates } from '@/lib/merklForecastApi';
+import { forecastMeritAprPercent } from '@/lib/meritForecast';
 import { parseNumberInput } from '@/lib/numberFormat';
 import { resolveForecastTokenPrice, resolveForecastTokenPriceWithBackup } from '@/lib/tokenPriceResolver';
 import { getMerklBreakdownApr, getMerklForecastUsdMultiplier } from '@/lib/tydro';
@@ -265,6 +266,16 @@ const sumMeritValues = (values?: MeritIncentive[], isApy = false): number => {
   }, 0);
 };
 
+const sumForecastMeritValues = (values: MeritIncentive[] | undefined, isApy: boolean, inputUsd: number): number => {
+  if (!values || values.length === 0) return 0;
+  return values.reduce((sum, value) => {
+    if (!isCampaignActive(value.startDate, value.endDate)) return sum;
+    const aprPercent = forecastMeritAprPercent(value, inputUsd);
+    if (aprPercent <= 0) return sum;
+    return sum + (isApy ? convertAprToApy(aprPercent) : aprPercent);
+  }, 0);
+};
+
 const sumBrevisValues = (values?: BrevisIncentive[], isApy = false): number => {
   if (!values || values.length === 0) return 0;
   return values.reduce((sum, value) => {
@@ -321,13 +332,12 @@ const buildIncentiveAfter = (
     tydroPointToUsdRate,
   });
 
-  return isApy
-    ? calculateTotalIncentiveApy(merit, forecastedMerkl, brevis, protocol, tydroPointToUsdRate, {
-        includeWhitelistOnlyMerkl,
-      })
-    : calculateTotalIncentiveApr(merit, forecastedMerkl, brevis, protocol, tydroPointToUsdRate, {
-        includeWhitelistOnlyMerkl,
-      });
+  return (
+    sumNumberArray(protocol, isApy) +
+    sumForecastMeritValues(merit, isApy, inputUsd) +
+    sumMerklValues(forecastedMerkl, isApy, tydroPointToUsdRate, includeWhitelistOnlyMerkl) +
+    sumBrevisValues(brevis, isApy)
+  );
 };
 
 const toDisplayNative = (rawApy: number | null | undefined, isApy: boolean): number | null => {
@@ -482,7 +492,7 @@ export function buildRateSimulationResult({
   const supplyAfterSources = hasAnyInput
     ? {
         protocol: supplyCurrentSources.protocol,
-        merit: supplyCurrentSources.merit,
+        merit: sumForecastMeritValues(reserve.meritSupplys, isApy, supplyInputUsd),
         merkl: sumMerklValues(
           buildForecastMerklOpportunities({
             opportunities: reserve.merklSupplys,
@@ -502,7 +512,7 @@ export function buildRateSimulationResult({
   const borrowAfterSources = hasAnyInput
     ? {
         protocol: borrowCurrentSources.protocol,
-        merit: borrowCurrentSources.merit,
+        merit: sumForecastMeritValues(reserve.meritBorrows, isApy, borrowInputUsd),
         merkl: sumMerklValues(
           buildForecastMerklOpportunities({
             opportunities: reserve.merklBorrows,
@@ -774,6 +784,7 @@ export const useSharedRateSimulations = ({
       return acc;
     }, {});
   }, [
+    allCampaignIds.length,
     borrowInput,
     forecastErrors,
     forecastQuery.isFetching,

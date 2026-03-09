@@ -1,12 +1,16 @@
 import { z } from 'zod';
 
+const IncentiveMessageSchema: z.ZodType<string | Record<string, unknown> | unknown[]> = z.lazy(() =>
+  z.union([z.string(), z.record(z.string(), z.unknown()), z.array(IncentiveMessageSchema)])
+);
+
 // ── Merit incentive ──
 const MeritIncentiveSchema = z.object({
   apr: z.number(),
   selfApr: z.number().optional(),
   link: z.string(),
   name: z.string().optional(),
-  message: z.union([z.string(), z.array(z.string())]).optional(),
+  message: IncentiveMessageSchema.optional(),
   startDate: z.string(),
   endDate: z.string(),
   startBlock: z.string().optional(),
