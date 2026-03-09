@@ -223,7 +223,7 @@ const fetchCoingeckoPriceBySymbol = async (
         `${COINGECKO_API_BASE}/simple/price` +
         `?ids=${encodeURIComponent(coinId)}` +
         `&vs_currencies=usd`;
-      const response = await fetchImpl(url);
+      const response = await coingeckoLimiter.run(() => fetchImpl(url));
       if (!response.ok) return undefined;
 
       const payload = (await response.json()) as Record<string, { usd?: number }>;
