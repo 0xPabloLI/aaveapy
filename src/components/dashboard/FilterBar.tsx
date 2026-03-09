@@ -134,27 +134,7 @@ const FilterBar = ({
   const hasHiddenCategories = hiddenCategories.length > 0;
 
 
-  // Preload hidden market icons after page load
-  useEffect(() => {
-    if (hiddenMarkets.length > 0) {
-      // Use requestIdleCallback for low-priority preloading, fallback to setTimeout
-      const preloadIcons = () => {
-        hiddenMarkets.forEach(market => {
-          const src = getChainIconSrc(market.chainName);
-          if (src) {
-            const img = new Image();
-            img.src = src;
-          }
-        });
-      };
-
-      if ('requestIdleCallback' in window) {
-        (window as Window & { requestIdleCallback: (cb: () => void) => number }).requestIdleCallback(preloadIcons);
-      } else {
-        setTimeout(preloadIcons, 1000);
-      }
-    }
-  }, [hiddenMarkets]);
+  // All market buttons are always in DOM (hidden via CSS), no preloading needed
 
   // Auto-adapt search placeholder based on input width (optimized with debounce)
   useEffect(() => {
@@ -259,7 +239,7 @@ const FilterBar = ({
     </button>
   );
 
-  const renderMarketButton = (market: MarketListItem, measuring = false) => {
+  const renderMarketButton = (market: MarketListItem, index: number, measuring = false, hidden = false) => {
     const info = getMarketInfo(market);
     const isSelected = selectedMarkets.includes(market.marketName);
     const isEthereum = market.chainName === 'Ethereum';
@@ -272,7 +252,7 @@ const FilterBar = ({
           isSelected
             ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
             : 'text-foreground/80 border border-border hover:text-foreground'
-        }`}
+        } ${hidden ? 'hidden' : ''}`}
         title={isEthereum ? `Ethereum ${info.label}` : market.chainName}
       >
         <ChainIcon chain={market.chainName} />
@@ -390,10 +370,13 @@ const FilterBar = ({
         </button>
 
         {/* Measuring: render all market pills */}
-        {marketsMeasuring && allMarkets.map((m) => renderMarketButton(m, true))}
+        {marketsMeasuring && allMarkets.map((m, i) => renderMarketButton(m, i, true))}
 
-        {/* Final: visible market pills */}
-        {!marketsMeasuring && visibleMarkets.map((m) => renderMarketButton(m))}
+        {/* Final: render ALL market pills, hide overflow ones with CSS */}
+        {!marketsMeasuring && allMarkets.map((m, i) => {
+          const isHidden = !showMarketsExpanded && i >= marketsVisibleCount;
+          return renderMarketButton(m, i, false, isHidden);
+        })}
 
         {/* Expand */}
         {!marketsMeasuring && hasHiddenMarkets && !showMarketsExpanded && (
