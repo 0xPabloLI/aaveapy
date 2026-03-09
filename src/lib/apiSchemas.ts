@@ -1,8 +1,14 @@
 import { z } from 'zod';
+import type { IncentiveMessage } from '@/types/aave';
 
-// Message can be string, object, or nested arrays — accept any shape;
-// rendering is handled by getMessageLines which is already resilient.
-const IncentiveMessageSchema = z.unknown();
+const IncentiveMessageScalarSchema = z.union([z.string(), z.number(), z.boolean(), z.null()]);
+const IncentiveMessageSchema: z.ZodType<IncentiveMessage> = z.lazy(() =>
+  z.union([
+    z.string(),
+    z.record(z.string(), z.union([IncentiveMessageScalarSchema, IncentiveMessageSchema])),
+    z.array(IncentiveMessageSchema),
+  ])
+);
 
 // ── Merit incentive ──
 const MeritIncentiveSchema = z.object({

@@ -31,6 +31,15 @@ This note records recurring UI/interaction issues found during incentive/forecas
 - Prefer rule-based URL generation with explicit overrides for exceptions.
 - Keep hardcoded mappings only for special cases (legacy market names, naming mismatches).
 
+### API schema boundaries
+
+- Use bounded schemas for polymorphic API fields.
+  - If an upstream field can be string-or-object-or-array, model that union explicitly.
+  - Do not replace uncertain payloads with `z.unknown()` unless the field is truly opaque and never interpreted by the UI.
+- Keep runtime validation and TypeScript types aligned.
+  - If the parser accepts recursive structured content, the exported type should describe that same recursive shape.
+  - Avoid “runtime accepts anything, compile time says something narrower” drift.
+
 ## B. AaveAPY-specific guardrails (app-specific)
 
 ### Forecast UI consistency
@@ -49,6 +58,10 @@ This note records recurring UI/interaction issues found during incentive/forecas
 - **Align placeholder state with numeric columns**:
   - Empty placeholders like `-` must use the same fixed column widths and alignment as real numbers.
   - Do not let `auto` width columns cause headers and placeholders to drift.
+- **Shared simulation must stay on bounded data sources**:
+  - Use backend `tokenPrices` for table-wide scenario math.
+  - Do not fan out browser-side third-party price lookups across the whole table after one shared input change.
+  - If backup pricing is required for broad coverage, put it behind a backend batch/proxy endpoint.
 
 ## Debugging checklist for incentive UI regressions
 

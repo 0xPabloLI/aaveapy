@@ -1,4 +1,7 @@
-export type IncentiveMessage = string | Record<string, unknown> | unknown[];
+export type IncentiveMessageScalar = string | number | boolean | null;
+export type IncentiveMessage = string | IncentiveMessage[] | {
+  [key: string]: IncentiveMessageScalar | IncentiveMessage;
+};
 
 // Merit incentive data structure
 export interface MeritIncentive {
