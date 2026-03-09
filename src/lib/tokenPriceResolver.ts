@@ -151,7 +151,7 @@ const getAssetPlatformMap = async (
     return platformMapCache.map;
   }
 
-  const response = await fetchImpl(`${COINGECKO_API_BASE}/asset_platforms`);
+  const response = await coingeckoLimiter.run(() => fetchImpl(`${COINGECKO_API_BASE}/asset_platforms`));
   if (!response.ok) {
     throw new Error(`CoinGecko asset_platforms failed (${response.status})`);
   }
