@@ -134,27 +134,7 @@ const FilterBar = ({
   const hasHiddenCategories = hiddenCategories.length > 0;
 
 
-  // Preload hidden market icons after page load
-  useEffect(() => {
-    if (hiddenMarkets.length > 0) {
-      // Use requestIdleCallback for low-priority preloading, fallback to setTimeout
-      const preloadIcons = () => {
-        hiddenMarkets.forEach(market => {
-          const src = getChainIconSrc(market.chainName);
-          if (src) {
-            const img = new Image();
-            img.src = src;
-          }
-        });
-      };
-
-      if ('requestIdleCallback' in window) {
-        (window as Window & { requestIdleCallback: (cb: () => void) => number }).requestIdleCallback(preloadIcons);
-      } else {
-        setTimeout(preloadIcons, 1000);
-      }
-    }
-  }, [hiddenMarkets]);
+  // All market buttons are always in DOM (hidden via CSS), no preloading needed
 
   // Auto-adapt search placeholder based on input width (optimized with debounce)
   useEffect(() => {
