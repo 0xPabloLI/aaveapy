@@ -28,22 +28,27 @@ const ScenarioControls = memo(({ onDebouncedChange }: ScenarioControlsProps) => 
   const hasInput = supplyInput || borrowInput;
 
   return (
-    <div className="rounded-xl border border-border/60 bg-card/60 backdrop-blur-sm p-[var(--ds-space-3)] shadow-sm">
-      {/* Title row */}
-      <div className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-2-5)]">
-        <div className="w-1.5 h-1.5 rounded-full bg-[rgb(var(--ds-brand-magenta-rgb))]" />
-        <span className="ds-text-12 font-semibold text-foreground/80 tracking-wide uppercase">
-          Scenario Simulation
-        </span>
-      </div>
+    <div className="rounded-xl border border-border/60 bg-card/60 backdrop-blur-sm p-[var(--ds-space-2-5)] shadow-sm">
+      <div className={`grid gap-[var(--ds-space-2)] ${isMobile ? 'grid-cols-1' : 'grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)_auto]'} items-end`}>
+        {/* Mode toggle — leftmost */}
+        <div className="flex items-end">
+          <button
+            type="button"
+            onClick={() => setInputMode(inputMode === 'usd' ? 'token' : 'usd')}
+            className="inline-flex h-[34px] items-center justify-center gap-[var(--ds-space-1)] rounded-lg border border-border/60 bg-background/80 px-[var(--ds-space-3)] ds-text-11 font-medium text-foreground/80 transition-all hover:bg-accent/60 hover:border-border focus-visible:ring-2 focus-visible:ring-[rgb(var(--ds-brand-magenta-rgb)/0.5)] focus-visible:outline-none"
+            title={inputMode === 'usd' ? 'Switch to token quantity mode' : 'Switch to USD amount mode'}
+          >
+            <span className="ds-text-13">{inputMode === 'usd' ? '$' : '#'}</span>
+            {inputMode === 'usd' ? 'USD' : 'Token'}
+          </button>
+        </div>
 
-      <div className={`grid gap-[var(--ds-space-2)] ${isMobile ? 'grid-cols-1' : 'grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_auto]'}`}>
         {/* Supply input */}
         <label className="block group">
           <span className="ds-text-11 text-muted-foreground font-medium">Supply ({unitLabel})</span>
-          <div className="relative mt-[var(--ds-space-1)]">
+          <div className="relative mt-[var(--ds-space-0-5)]">
             <span className="absolute left-[var(--ds-space-2)] top-1/2 -translate-y-1/2 ds-text-12 text-muted-foreground/60 pointer-events-none select-none">
-              {inputMode === 'usd' ? '$' : '⟠'}
+              {inputMode === 'usd' ? '$' : '#'}
             </span>
             <input
               value={supplyInput}
@@ -58,9 +63,9 @@ const ScenarioControls = memo(({ onDebouncedChange }: ScenarioControlsProps) => 
         {/* Borrow input */}
         <label className="block group">
           <span className="ds-text-11 text-muted-foreground font-medium">Borrow ({unitLabel})</span>
-          <div className="relative mt-[var(--ds-space-1)]">
+          <div className="relative mt-[var(--ds-space-0-5)]">
             <span className="absolute left-[var(--ds-space-2)] top-1/2 -translate-y-1/2 ds-text-12 text-muted-foreground/60 pointer-events-none select-none">
-              {inputMode === 'usd' ? '$' : '⟠'}
+              {inputMode === 'usd' ? '$' : '#'}
             </span>
             <input
               value={borrowInput}
@@ -72,21 +77,8 @@ const ScenarioControls = memo(({ onDebouncedChange }: ScenarioControlsProps) => 
           </div>
         </label>
 
-        {/* Mode toggle */}
-        <div className={`flex ${isMobile ? 'justify-start' : 'justify-end'} items-end`}>
-          <button
-            type="button"
-            onClick={() => setInputMode(inputMode === 'usd' ? 'token' : 'usd')}
-            className="inline-flex h-[34px] items-center justify-center gap-[var(--ds-space-1)] rounded-lg border border-border/60 bg-background/80 px-[var(--ds-space-3)] ds-text-11 font-medium text-foreground/80 transition-all hover:bg-accent/60 hover:border-border focus-visible:ring-2 focus-visible:ring-[rgb(var(--ds-brand-magenta-rgb)/0.5)] focus-visible:outline-none"
-            title={inputMode === 'usd' ? 'Switch to token quantity mode' : 'Switch to USD amount mode'}
-          >
-            <span className="ds-text-13">{inputMode === 'usd' ? '$' : '⟠'}</span>
-            {inputMode === 'usd' ? 'USD' : 'Token'}
-          </button>
-        </div>
-
         {/* Clear button */}
-        <div className={`flex ${isMobile ? 'justify-start' : 'justify-end'} items-end`}>
+        <div className="flex items-end">
           <button
             type="button"
             onClick={() => {
