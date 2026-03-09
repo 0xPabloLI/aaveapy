@@ -11,6 +11,7 @@ import {
   forecastMeritCampaign,
   splitMeritMessageBySelfAuth,
 } from '@/lib/meritForecast';
+import type { MeritForecastPreview } from '@/lib/meritForecast';
 import { deriveForecastProgressFlags, forecastWithTVL } from '@/lib/merklForecast';
 import { resolveForecastTokenPrice, resolveForecastTokenPriceWithBackup } from '@/lib/tokenPriceResolver';
 import { shouldSurfaceForecastError } from '@/lib/merklForecastErrors';
