@@ -406,10 +406,10 @@ const Index = () => {
             onToggleWhitelistOnlyMerkl={setIncludeWhitelistOnlyMerkl}
             tokenPrices={effectiveReservesData?.tokenPrices}
             scrollToReserveId={pendingScrollReserveId}
+          />
           </div>
 
-
-              <IncentiveTooltip
+          {topTooltipState && (
                 reserve={topTooltipState.reserve}
                 type={topTooltipState.type}
                 position={topTooltipState.position}
