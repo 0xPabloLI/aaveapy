@@ -275,7 +275,7 @@ const FilterBar = ({
         }`}
         title={isEthereum ? `Ethereum ${info.label}` : market.chainName}
       >
-        <ChainIcon chain={market.chainName} loading={measuring ? "lazy" : showMarketsExpanded ? "eager" : "lazy"} />
+        <ChainIcon chain={market.chainName} />
         <span>{isEthereum ? info.label : market.chainName}</span>
       </button>
     );
