@@ -1,11 +1,11 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Search, X, ChevronUp, ChevronDown } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { Search, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { TokenCategory, MarketListItem, ETHEREUM_MARKET_NAMES } from '@/types/aave';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { useIsMobile } from '@/hooks/use-mobile';
 import AprApyToggle from '@/components/dashboard/AprApyToggle';
-import { useOverflowCount } from '@/hooks/useOverflowCount';
+import { memo } from 'react';
 
 interface FilterBarProps {
   searchQuery: string;
@@ -26,8 +26,6 @@ const categories: { value: TokenCategory; label: string }[] = [
   { value: 'btc-related', label: 'BTC' },
   { value: 'pendle', label: 'Pendle' },
 ];
-
-import { memo } from 'react';
 
 const ChainIcon = memo(({ chain, className = "" }: { chain: string; className?: string }) => {
   const size = "w-3.5 h-3.5";
@@ -78,13 +76,11 @@ const FilterBar = ({
   marketsList,
 }: FilterBarProps) => {
   const isMobile = useIsMobile();
-  const [showMarketsExpanded, setShowMarketsExpanded] = useState(false);
   const [searchPlaceholder, setSearchPlaceholder] = useState('Search token');
   const desktopSearchInputRef = useRef<HTMLInputElement>(null);
   const mobileSearchInputRef = useRef<HTMLInputElement>(null);
   const debouncedUpdateRef = useRef<(() => void) | null>(null);
 
-  // Stable handler function that reads from ref - never changes, so can be used for addEventListener/removeEventListener
   const stableResizeHandler = useCallback(() => {
     debouncedUpdateRef.current?.();
   }, []);
@@ -99,72 +95,30 @@ const FilterBar = ({
 
   const noMarketsSelected = selectedMarkets.length === 0;
 
-  // Separate Ethereum markets and other chains
   const ethereumMarkets = marketsList?.filter(m => m.chainName === 'Ethereum') || [];
   const otherMarkets = marketsList?.filter(m => m.chainName !== 'Ethereum') || [];
   const allMarkets = [...ethereumMarkets, ...otherMarkets];
 
-  // --- Overflow: Markets ---
-  const marketsRowRef = useRef<HTMLDivElement>(null);
-  const { visibleCount: marketsVisibleCount, isMeasuring: marketsMeasuring } =
-    useOverflowCount(marketsRowRef, allMarkets.length, showMarketsExpanded);
-  const visibleMarkets = showMarketsExpanded ? allMarkets : allMarkets.slice(0, marketsVisibleCount);
-  const hiddenMarkets = showMarketsExpanded ? [] : allMarkets.slice(marketsVisibleCount);
-  const hasHiddenMarkets = hiddenMarkets.length > 0;
-
-  // Auto-expand when a selected market is hidden behind overflow
-  const hiddenMarketNames = useMemo(
-    () => hiddenMarkets.map(m => m.marketName),
-    [hiddenMarkets]
-  );
+  // Auto-adapt search placeholder based on input width
   useEffect(() => {
-    if (selectedMarkets.length !== 1) return;
-    if (hiddenMarketNames.includes(selectedMarkets[0])) {
-      setShowMarketsExpanded(true);
-    }
-  }, [hiddenMarketNames, selectedMarkets]);
-
-  // --- Overflow: Token categories ---
-  const tokensRowRef = useRef<HTMLDivElement>(null);
-  const [tokenCatsExpanded, setTokenCatsExpanded] = useState(false);
-  const { visibleCount: catsVisibleCount, isMeasuring: catsMeasuring } =
-    useOverflowCount(tokensRowRef, categories.length, tokenCatsExpanded);
-  const visibleCategories = tokenCatsExpanded ? categories : categories.slice(0, catsVisibleCount);
-  const hiddenCategories = tokenCatsExpanded ? [] : categories.slice(catsVisibleCount);
-  const hasHiddenCategories = hiddenCategories.length > 0;
-
-
-  // All market buttons are always in DOM (hidden via CSS), no preloading needed
-
-  // Auto-adapt search placeholder based on input width (optimized with debounce)
-  useEffect(() => {
-    // Cache canvas for text measurement
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
     if (!context) return;
     context.font = '12px system-ui, -apple-system, sans-serif';
-    
-    // Pre-calculate text widths
     const fullTextWidth = context.measureText('Search token').width;
     const shortTextWidth = context.measureText('Token').width;
-    
     let rafId: number | null = null;
     let timeoutId: NodeJS.Timeout | null = null;
-    
+
     const updatePlaceholder = () => {
-      // Get the currently visible input based on viewport size
       const activeInput = isMobile ? mobileSearchInputRef.current : desktopSearchInputRef.current;
       if (!activeInput) return;
-      
       const inputWidth = activeInput.offsetWidth;
-      if (inputWidth === 0) return; // Not yet rendered
-      
-      const iconWidth = 24; // Search icon width + padding
-      const clearButtonWidth = 20; // Clear button width when visible
-      const padding = 16; // Left and right padding
+      if (inputWidth === 0) return;
+      const iconWidth = 24;
+      const clearButtonWidth = 20;
+      const padding = 16;
       const availableWidth = inputWidth - iconWidth - padding - (searchQuery ? clearButtonWidth : 0);
-      
-      // Determine new placeholder
       let newPlaceholder: string;
       if (availableWidth >= fullTextWidth) {
         newPlaceholder = 'Search token';
@@ -173,41 +127,28 @@ const FilterBar = ({
       } else {
         newPlaceholder = 'Search';
       }
-      
-      // Only update if changed to avoid unnecessary re-renders
       setSearchPlaceholder(prev => prev !== newPlaceholder ? newPlaceholder : prev);
     };
 
-    // Debounced update function - stored in ref so stable handler can call it
     const debouncedUpdate = () => {
       if (timeoutId) clearTimeout(timeoutId);
       timeoutId = setTimeout(() => {
         if (rafId) cancelAnimationFrame(rafId);
         rafId = requestAnimationFrame(updatePlaceholder);
-      }, 100); // 100ms debounce
+      }, 100);
     };
-    
-    // Store handler in ref so stableResizeHandler can call the latest version
+
     debouncedUpdateRef.current = debouncedUpdate;
 
-    // Initial update after DOM is ready
     const initialRafId = requestAnimationFrame(() => {
       requestAnimationFrame(updatePlaceholder);
     });
-    
+
     const resizeObserver = new ResizeObserver(stableResizeHandler);
-    
-    // Observe both inputs, but only the visible one will affect placeholder calculation
-    // This ensures we catch resize events regardless of which input is currently visible
-    if (desktopSearchInputRef.current) {
-      resizeObserver.observe(desktopSearchInputRef.current);
-    }
-    if (mobileSearchInputRef.current) {
-      resizeObserver.observe(mobileSearchInputRef.current);
-    }
-    
+    if (desktopSearchInputRef.current) resizeObserver.observe(desktopSearchInputRef.current);
+    if (mobileSearchInputRef.current) resizeObserver.observe(mobileSearchInputRef.current);
     window.addEventListener('resize', stableResizeHandler);
-    
+
     return () => {
       if (initialRafId) cancelAnimationFrame(initialRafId);
       if (rafId) cancelAnimationFrame(rafId);
@@ -217,85 +158,31 @@ const FilterBar = ({
     };
   }, [searchQuery, isMobile, stableResizeHandler]);
 
-
-  const renderCategoryButton = (category: typeof categories[number], measuring = false) => (
-    <button
-      key={category.value}
-      {...(measuring ? { 'data-overflow-index': '' } : {})}
-      onClick={() => {
-        if (selectedCategory === category.value) {
-          setSelectedCategory('all');
-        } else {
-          setSelectedCategory(category.value);
-        }
-      }}
-      className={`ds-chip px-2 md:px-2.5 py-1 rounded-md font-medium transition-all ${
-        selectedCategory === category.value
-          ? 'bg-[rgb(var(--ds-brand-magenta-rgb))] ds-text-on-brand'
-          : 'bg-card/60 text-muted-foreground hover:text-foreground hover:bg-card border border-border/40'
-      }`}
-    >
-      {category.label}
-    </button>
-  );
-
-  const renderMarketButton = (market: MarketListItem, index: number, measuring = false, hidden = false) => {
-    const info = getMarketInfo(market);
-    const isSelected = selectedMarkets.includes(market.marketName);
-    const isEthereum = market.chainName === 'Ethereum';
-    return (
-      <button
-        key={market.marketName}
-        {...(measuring ? { 'data-overflow-index': '' } : {})}
-        onClick={() => toggleMarket(market.marketName)}
-        className={`ds-chip gap-1 px-1.5 md:px-2 py-1 rounded-md font-medium transition-colors ${
-          isSelected
-            ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
-            : 'text-foreground/80 border border-border hover:text-foreground'
-        } ${hidden ? 'hidden' : ''}`}
-        title={isEthereum ? `Ethereum ${info.label}` : market.chainName}
-      >
-        <ChainIcon chain={market.chainName} />
-        <span>{isEthereum ? info.label : market.chainName}</span>
-      </button>
-    );
-  };
-
   return (
-    <div className="space-y-1.5 md:space-y-2">
+    <div className="space-y-1 md:space-y-1.5">
       {/* Row 1: Token Categories + Search + APY Toggle */}
-      <div
-        ref={tokensRowRef}
-        className={`flex flex-wrap items-center gap-1.5 md:gap-2 ${catsMeasuring ? 'overflow-hidden max-h-[2rem]' : ''}`}
-      >
+      <div className="flex flex-wrap items-center gap-1.5 md:gap-2">
         <span className="ds-text-11 text-muted-foreground/70 hidden sm:inline">Tokens</span>
 
-        {/* Measuring: render all categories */}
-        {catsMeasuring && categories.map((c) => renderCategoryButton(c, true))}
-
-        {/* Final: visible categories */}
-        {!catsMeasuring && visibleCategories.map((c) => renderCategoryButton(c))}
-
-        {/* Expand categories */}
-        {!catsMeasuring && hasHiddenCategories && !tokenCatsExpanded && (
+        {categories.map((category) => (
           <button
-            onClick={() => setTokenCatsExpanded(true)}
-            className="ds-chip gap-1 px-1.5 md:px-2 py-1 rounded-md font-medium transition-all ds-text-brand-magenta border ds-border-brand-magenta-40 border-dashed"
+            key={category.value}
+            onClick={() => {
+              if (selectedCategory === category.value) {
+                setSelectedCategory('all');
+              } else {
+                setSelectedCategory(category.value);
+              }
+            }}
+            className={`ds-chip px-2 md:px-2.5 py-1 rounded-md font-medium transition-colors ${
+              selectedCategory === category.value
+                ? 'bg-[rgb(var(--ds-brand-magenta-rgb))] ds-text-on-brand'
+                : 'bg-card/60 text-muted-foreground hover:text-foreground hover:bg-card border border-border/40'
+            }`}
           >
-            <span>+{hiddenCategories.length}</span>
-            <ChevronDown className="w-3 h-3" />
+            {category.label}
           </button>
-        )}
-
-        {/* Collapse categories */}
-        {tokenCatsExpanded && (
-          <button
-            onClick={() => setTokenCatsExpanded(false)}
-            className="ds-chip gap-1 px-1.5 md:px-2 py-1 rounded-md font-medium transition-all ds-text-brand-magenta border ds-border-brand-magenta-40 border-dashed"
-          >
-            <ChevronUp className="w-3 h-3" />
-          </button>
-        )}
+        ))}
 
         {/* Search – desktop only */}
         <div className="relative w-20 sm:w-24 md:w-36 lg:w-44 hidden md:block ml-1">
@@ -350,17 +237,13 @@ const FilterBar = ({
         </div>
       </div>
 
-      {/* Row 3: Markets */}
-      <div
-        ref={marketsRowRef}
-        className={`flex flex-wrap items-center gap-1 md:gap-1.5 ${marketsMeasuring ? 'overflow-hidden max-h-[2rem]' : ''}`}
-      >
+      {/* Row 3: Markets – all visible */}
+      <div className="flex flex-wrap items-center gap-1 md:gap-1.5">
         <span className="ds-text-11 text-muted-foreground/70 hidden sm:inline">Markets</span>
 
-        {/* "All" pill */}
         <button
           onClick={() => setSelectedMarkets([])}
-          className={`ds-chip px-2 md:px-2.5 py-1 rounded-md font-medium transition-all ${
+          className={`ds-chip px-2 md:px-2.5 py-1 rounded-md font-medium transition-colors ${
             noMarketsSelected
               ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
               : 'text-foreground/80 border border-border hover:text-foreground'
@@ -369,35 +252,26 @@ const FilterBar = ({
           All
         </button>
 
-        {/* Measuring: render all market pills */}
-        {marketsMeasuring && allMarkets.map((m, i) => renderMarketButton(m, i, true))}
-
-        {/* Final: render ALL market pills, hide overflow ones with CSS */}
-        {!marketsMeasuring && allMarkets.map((m, i) => {
-          const isHidden = !showMarketsExpanded && i >= marketsVisibleCount;
-          return renderMarketButton(m, i, false, isHidden);
+        {allMarkets.map((market) => {
+          const info = getMarketInfo(market);
+          const isSelected = selectedMarkets.includes(market.marketName);
+          const isEthereum = market.chainName === 'Ethereum';
+          return (
+            <button
+              key={market.marketName}
+              onClick={() => toggleMarket(market.marketName)}
+              className={`ds-chip gap-1 px-1.5 md:px-2 py-1 rounded-md font-medium transition-colors ${
+                isSelected
+                  ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
+                  : 'text-foreground/80 border border-border hover:text-foreground'
+              }`}
+              title={isEthereum ? `Ethereum ${info.label}` : market.chainName}
+            >
+              <ChainIcon chain={market.chainName} />
+              <span>{isEthereum ? info.label : market.chainName}</span>
+            </button>
+          );
         })}
-
-        {/* Expand */}
-        {!marketsMeasuring && hasHiddenMarkets && !showMarketsExpanded && (
-          <button
-            onClick={() => setShowMarketsExpanded(true)}
-            className="ds-chip gap-1 px-1.5 md:px-2 py-1 rounded-md font-medium transition-all ds-text-brand-magenta border ds-border-brand-magenta-40 border-dashed"
-          >
-            <span>+{hiddenMarkets.length}</span>
-            <ChevronDown className="w-3 h-3" />
-          </button>
-        )}
-
-        {/* Collapse */}
-        {showMarketsExpanded && (
-          <button
-            onClick={() => setShowMarketsExpanded(false)}
-            className="ds-chip gap-1 px-1.5 md:px-2 py-1 rounded-md font-medium transition-all ds-text-brand-magenta border ds-border-brand-magenta-40 border-dashed"
-          >
-            <ChevronUp className="w-3 h-3" />
-          </button>
-        )}
       </div>
     </div>
   );

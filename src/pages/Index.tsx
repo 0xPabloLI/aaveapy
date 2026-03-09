@@ -375,38 +375,39 @@ const Index = () => {
             />
           )}
 
-          {/* Filters */}
-          <FilterBar
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            selectedMarkets={selectedMarkets}
-            setSelectedMarkets={setSelectedMarkets}
-            selectedCategory={selectedCategory}
-            setSelectedCategory={setSelectedCategory}
-            isApy={isApy}
-            setIsApy={setIsApy}
-            marketsList={effectiveMarketsList}
-          />
+          {/* Filters + Reserves Table (tighter gap) */}
+          <div className="space-y-2 md:space-y-3">
+            <FilterBar
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              selectedMarkets={selectedMarkets}
+              setSelectedMarkets={setSelectedMarkets}
+              selectedCategory={selectedCategory}
+              setSelectedCategory={setSelectedCategory}
+              isApy={isApy}
+              setIsApy={setIsApy}
+              marketsList={effectiveMarketsList}
+            />
 
-          {/* Reserves Table */}
-          <ReservesTable
-            reserves={filteredReserves}
-            sortField={sortField}
-            sortOrder={sortOrder}
-            onSort={handleSort}
-            isApy={isApy}
-            isLoading={isLoading}
-            onSelectMarket={(marketName) => {
-              setSelectedMarkets((prev) =>
-                prev.length === 1 && prev[0] === marketName ? [] : [marketName]
-              );
-            }}
-            tydroPointToUsdRate={tydroPointToUsdRate}
-            includeWhitelistOnlyMerkl={includeWhitelistOnlyMerkl}
-            onToggleWhitelistOnlyMerkl={setIncludeWhitelistOnlyMerkl}
-            tokenPrices={effectiveReservesData?.tokenPrices}
-            scrollToReserveId={pendingScrollReserveId}
-          />
+            <ReservesTable
+              reserves={filteredReserves}
+              sortField={sortField}
+              sortOrder={sortOrder}
+              onSort={handleSort}
+              isApy={isApy}
+              isLoading={isLoading}
+              onSelectMarket={(marketName) => {
+                setSelectedMarkets((prev) =>
+                  prev.length === 1 && prev[0] === marketName ? [] : [marketName]
+                );
+              }}
+              tydroPointToUsdRate={tydroPointToUsdRate}
+              includeWhitelistOnlyMerkl={includeWhitelistOnlyMerkl}
+              onToggleWhitelistOnlyMerkl={setIncludeWhitelistOnlyMerkl}
+              tokenPrices={effectiveReservesData?.tokenPrices}
+              scrollToReserveId={pendingScrollReserveId}
+            />
+          </div>
 
           {topTooltipState && (
               <IncentiveTooltip
