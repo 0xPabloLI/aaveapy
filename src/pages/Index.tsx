@@ -375,21 +375,21 @@ const Index = () => {
             />
           )}
 
-          {/* Filters */}
-          <FilterBar
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            selectedMarkets={selectedMarkets}
-            setSelectedMarkets={setSelectedMarkets}
-            selectedCategory={selectedCategory}
-            setSelectedCategory={setSelectedCategory}
-            isApy={isApy}
-            setIsApy={setIsApy}
-            marketsList={effectiveMarketsList}
-          />
+          {/* Filters + Reserves Table (tighter gap) */}
+          <div className="space-y-2 md:space-y-3">
+            <FilterBar
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              selectedMarkets={selectedMarkets}
+              setSelectedMarkets={setSelectedMarkets}
+              selectedCategory={selectedCategory}
+              setSelectedCategory={setSelectedCategory}
+              isApy={isApy}
+              setIsApy={setIsApy}
+              marketsList={effectiveMarketsList}
+            />
 
-          {/* Reserves Table */}
-          <ReservesTable
+            <ReservesTable
             reserves={filteredReserves}
             sortField={sortField}
             sortOrder={sortOrder}
