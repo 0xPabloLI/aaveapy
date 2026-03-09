@@ -27,7 +27,9 @@ const categories: { value: TokenCategory; label: string }[] = [
   { value: 'pendle', label: 'Pendle' },
 ];
 
-const ChainIcon = ({ chain, className = "", loading = "lazy" }: { chain: string; className?: string; loading?: "lazy" | "eager" }) => {
+import { memo } from 'react';
+
+const ChainIcon = memo(({ chain, className = "" }: { chain: string; className?: string }) => {
   const size = "w-3.5 h-3.5";
   const src = getChainIconSrc(chain);
 
@@ -44,10 +46,10 @@ const ChainIcon = ({ chain, className = "", loading = "lazy" }: { chain: string;
       src={src}
       alt={`${chain} logo`}
       className={`${size} ${className}`}
-      loading={loading}
+      loading="lazy"
     />
   );
-};
+});
 
 const getMarketInfo = (market: MarketListItem) => {
   if (market.chainName === 'Ethereum' && ETHEREUM_MARKET_NAMES[market.marketName]) {
@@ -266,14 +268,14 @@ const FilterBar = ({
         key={market.marketName}
         {...(measuring ? { 'data-overflow-index': '' } : {})}
         onClick={() => toggleMarket(market.marketName)}
-        className={`ds-chip gap-1 px-1.5 md:px-2 py-1 rounded-md font-medium transition-all ${
+        className={`ds-chip gap-1 px-1.5 md:px-2 py-1 rounded-md font-medium transition-colors ${
           isSelected
             ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
             : 'text-foreground/80 border border-border hover:text-foreground'
         }`}
         title={isEthereum ? `Ethereum ${info.label}` : market.chainName}
       >
-        <ChainIcon chain={market.chainName} loading={measuring ? "lazy" : showMarketsExpanded ? "eager" : "lazy"} />
+        <ChainIcon chain={market.chainName} />
         <span>{isEthereum ? info.label : market.chainName}</span>
       </button>
     );
