@@ -693,14 +693,24 @@ const ReservesTable = ({
         </div>
         
         {/* Show More/Less button for mobile */}
-        {sortedData.length > DEFAULT_VISIBLE_COUNT && (
+        {sortedData.length > displayData.length && (
           <button
             type="button"
             onClick={() => setShowAll(!showAll)}
             className="w-full mt-[var(--ds-space-4)] ds-button ds-text-14 md:ds-text-16 gap-[var(--ds-space-2)] border border-border bg-card hover:bg-muted/50 transition-colors text-foreground font-semibold"
           >
-            <span>{showAll ? 'Show Less' : `Show ${sortedData.length - DEFAULT_VISIBLE_COUNT} More Reserves`}</span>
-            {showAll ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            <span>{`Show ${sortedData.length - displayData.length} More Reserves`}</span>
+            <ChevronDown className="w-4 h-4" />
+          </button>
+        )}
+        {showAll && sortedData.length > DEFAULT_VISIBLE_COUNT && (
+          <button
+            type="button"
+            onClick={() => setShowAll(false)}
+            className="w-full mt-[var(--ds-space-4)] ds-button ds-text-14 md:ds-text-16 gap-[var(--ds-space-2)] border border-border bg-card hover:bg-muted/50 transition-colors text-foreground font-semibold"
+          >
+            <span>Show Less</span>
+            <ChevronUp className="w-4 h-4" />
           </button>
         )}
         
