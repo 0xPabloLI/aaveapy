@@ -871,9 +871,9 @@ const IncentiveTooltip = ({
               ))}
             </ul>
           )}
-          {forecastPreview && isAvailableForecast(forecastPreview) && (() => {
-            const fp = forecastPreview as AnyForecast;
-            return (
+          {forecastPreview && (() => {
+            const fp = toAvailableForecast(forecastPreview);
+            if (!fp) return null;
             <div className="mt-[var(--ds-space-1-5)] rounded-md border border-border/50 bg-muted/30 px-[var(--ds-space-2)] py-[var(--ds-space-1-5)]">
               <p className="ds-tooltip-body text-muted-foreground">
                 {typeof fp.hypotheticalTvl === 'number'
