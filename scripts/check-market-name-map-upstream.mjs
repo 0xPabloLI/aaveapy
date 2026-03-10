@@ -2,8 +2,7 @@
 import { readFile } from 'fs/promises';
 import path from 'path';
 
-const ROOT = '/Users/pabloli/Documents/aaveapy';
-const LOCAL_MARKETS_CONFIG_PATH = '/Users/pabloli/Documents/interface/src/ui-config/marketsConfig.tsx';
+const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const REMOTE_MARKETS_CONFIG_URL =
   'https://raw.githubusercontent.com/aave/interface/main/src/ui-config/marketsConfig.tsx';
 const LOCAL_MAP_PATH = path.join(ROOT, 'src/lib/aaveLinks.ts');
@@ -23,17 +22,7 @@ async function fetchWithTimeout(url, timeoutMs = 15000) {
 }
 
 async function loadUpstreamMarketsConfig() {
-  try {
-    return await fetchWithTimeout(REMOTE_MARKETS_CONFIG_URL);
-  } catch (error) {
-    try {
-      return await readFile(LOCAL_MARKETS_CONFIG_PATH, 'utf8');
-    } catch {
-      throw new Error(
-        `Failed to load upstream marketsConfig.tsx from remote and local mirror. Remote error: ${error instanceof Error ? error.message : String(error)}`
-      );
-    }
-  }
+  return await fetchWithTimeout(REMOTE_MARKETS_CONFIG_URL);
 }
 
 function countChar(input, char) {
