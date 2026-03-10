@@ -29,6 +29,10 @@
     "lint:all": "npm run lint && npm run lint:colors",
     "preview": "vite preview",
     "sync-token-icons": "node scripts/sync-token-icons.mjs",
+    "check:hardcode-icons": "node scripts/check-hardcode-icons.mjs",
+    "check:reserve-patches-upstream": "node scripts/check-reserve-patches-upstream.mjs",
+    "check:market-name-map-upstream": "node scripts/check-market-name-map-upstream.mjs",
+    "check:chain-icons-upstream": "node scripts/check-chain-icon-map-upstream.mjs",
     "test": "vitest run"
   },
   "dependencies": {
