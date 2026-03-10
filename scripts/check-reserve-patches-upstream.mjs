@@ -16,6 +16,21 @@ function extractAddressKeys(content) {
   return values;
 }
 
+/**
+ * Extract expression-based keys like [AaveV3Arbitrum.ASSETS.USDC.UNDERLYING.toLowerCase()]:
+ * These are compared as normalised string representations since their runtime values
+ * cannot be resolved statically.
+ */
+function extractExpressionKeys(content) {
+  const regex = /\[([A-Za-z0-9_.]+\.toLowerCase\(\))\]\s*:/g;
+  const values = new Set();
+  let match = null;
+  while ((match = regex.exec(content)) !== null) {
+    values.add(match[1].replace(/\s+/g, ''));
+  }
+  return values;
+}
+
 function toSortedArray(values) {
   return Array.from(values).sort((a, b) => a.localeCompare(b));
 }
@@ -33,6 +48,8 @@ async function main() {
   const upstreamContent = await upstreamResponse.text();
   const localKeys = extractAddressKeys(localContent);
   const upstreamKeys = extractAddressKeys(upstreamContent);
+  const localExprKeys = extractExpressionKeys(localContent);
+  const upstreamExprKeys = extractExpressionKeys(upstreamContent);
 
   const missingFromLocal = toSortedArray(
     new Set([...upstreamKeys].filter((key) => !localKeys.has(key)))
@@ -40,16 +57,37 @@ async function main() {
   const localOnly = toSortedArray(
     new Set([...localKeys].filter((key) => !upstreamKeys.has(key)))
   );
+  const missingExprFromLocal = toSortedArray(
+    new Set([...upstreamExprKeys].filter((key) => !localExprKeys.has(key)))
+  );
+  const localOnlyExpr = toSortedArray(
+    new Set([...localExprKeys].filter((key) => !upstreamExprKeys.has(key)))
+  );
 
-  console.log(`local reserve keys: ${localKeys.size}`);
-  console.log(`upstream reserve keys: ${upstreamKeys.size}`);
-  console.log(`missing from local: ${missingFromLocal.length}`);
-  console.log(`local-only keys: ${localOnly.length}`);
+  console.log(`local reserve address keys: ${localKeys.size}`);
+  console.log(`upstream reserve address keys: ${upstreamKeys.size}`);
+  console.log(`local reserve expression keys: ${localExprKeys.size}`);
+  console.log(`upstream reserve expression keys: ${upstreamExprKeys.size}`);
+  console.log(`missing address keys from local: ${missingFromLocal.length}`);
+  console.log(`missing expression keys from local: ${missingExprFromLocal.length}`);
+  console.log(`local-only address keys: ${localOnly.length}`);
+  console.log(`local-only expression keys: ${localOnlyExpr.length}`);
+
+  let hasDrift = false;
 
   if (missingFromLocal.length > 0) {
+    hasDrift = true;
     console.error('\nMissing addresses (present in upstream, absent locally):');
     for (const key of missingFromLocal) {
       console.error(`- ${key}`);
+    }
+  }
+
+  if (missingExprFromLocal.length > 0) {
+    hasDrift = true;
+    console.error('\nMissing expression keys (present in upstream, absent locally):');
+    for (const key of missingExprFromLocal) {
+      console.error(`- [${key}]`);
     }
   }
 
@@ -60,7 +98,14 @@ async function main() {
     }
   }
 
-  if (missingFromLocal.length > 0) {
+  if (localOnlyExpr.length > 0) {
+    console.warn('\nLocal-only expression keys (keep if intentional local extension):');
+    for (const key of localOnlyExpr) {
+      console.warn(`- [${key}]`);
+    }
+  }
+
+  if (hasDrift) {
     process.exit(1);
   }
 }
