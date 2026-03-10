@@ -22,6 +22,12 @@ jobs:
         with:
           node-version: 20
           cache: npm
+      - name: Sync lock file (Lovable compat)
+        run: |
+          if [ "$(git log -1 --format='%an')" = "gpt-engineer-app[bot]" ]; then
+            echo "Lovable commit detected – syncing lock file"
+            npm install --package-lock-only
+          fi
       - name: Install dependencies
         run: npm ci
       - name: Run lint
@@ -38,6 +44,12 @@ jobs:
         with:
           node-version: 20
           cache: npm
+      - name: Sync lock file (Lovable compat)
+        run: |
+          if [ "$(git log -1 --format='%an')" = "gpt-engineer-app[bot]" ]; then
+            echo "Lovable commit detected – syncing lock file"
+            npm install --package-lock-only
+          fi
       - name: Install dependencies
         run: npm ci
       - name: Run build
