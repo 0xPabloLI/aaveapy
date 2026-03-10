@@ -8,6 +8,9 @@ on:
     # Every day at 04:40 UTC
     - cron: "40 4 * * *"
 
+permissions:
+  contents: read
+
 jobs:
   check-hardcode-icons:
     if: >

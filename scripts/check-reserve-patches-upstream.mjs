@@ -1,25 +1,12 @@
 #!/usr/bin/env node
 import { readFile } from 'fs/promises';
 import path from 'path';
+import { fetchWithTimeout } from './lib/fetch-utils.mjs';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const UPSTREAM_RESERVE_PATCHES_URL =
   'https://raw.githubusercontent.com/aave/interface/main/src/ui-config/reservePatches.ts';
 const LOCAL_RESERVE_PATCHES_PATH = path.join(ROOT, 'src/ui-config/reservePatches.ts');
-
-async function fetchWithTimeout(url, timeoutMs = 15000) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const response = await fetch(url, { signal: controller.signal });
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status} ${response.statusText}`);
-    }
-    return await response.text();
-  } finally {
-    clearTimeout(timer);
-  }
-}
 
 function extractAddressKeys(content) {
   const regex = /['"`](0x[a-fA-F0-9]{40})['"`]\s*:/g;

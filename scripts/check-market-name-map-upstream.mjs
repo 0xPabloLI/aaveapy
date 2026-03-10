@@ -1,36 +1,15 @@
 #!/usr/bin/env node
 import { readFile } from 'fs/promises';
 import path from 'path';
+import { fetchWithTimeout, countChar } from './lib/fetch-utils.mjs';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const REMOTE_MARKETS_CONFIG_URL =
   'https://raw.githubusercontent.com/aave/interface/main/src/ui-config/marketsConfig.tsx';
 const LOCAL_MAP_PATH = path.join(ROOT, 'src/lib/aaveLinks.ts');
 
-async function fetchWithTimeout(url, timeoutMs = 15000) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const response = await fetch(url, { signal: controller.signal });
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status} ${response.statusText}`);
-    }
-    return await response.text();
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
 async function loadUpstreamMarketsConfig() {
   return await fetchWithTimeout(REMOTE_MARKETS_CONFIG_URL);
-}
-
-function countChar(input, char) {
-  let count = 0;
-  for (const ch of input) {
-    if (ch === char) count += 1;
-  }
-  return count;
 }
 
 function parseExpectedMapping(marketsConfigContent) {
