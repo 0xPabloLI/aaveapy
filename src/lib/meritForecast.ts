@@ -67,8 +67,8 @@ export function splitMeritMessageBySelfAuth(message?: MeritMessage): {
     return { baseMessage: message };
   }
 
-  const base: unknown[] = [];
-  const self: unknown[] = [];
+  const base: IncentiveMessage[] = [];
+  const self: IncentiveMessage[] = [];
   for (const item of message) {
     const text = typeof item === 'object' && item ? JSON.stringify(item).toLowerCase() : String(item ?? '').toLowerCase();
     if (text.includes('self authentication')) {
