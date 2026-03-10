@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 import { readFile, readdir, access } from 'fs/promises';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
-const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const RESERVE_PATCHES_PATH = path.join(ROOT, 'src', 'ui-config', 'reservePatches.ts');
 const TOKEN_ICONS_DIR = path.join(ROOT, 'public', 'icons', 'tokens');
 const ALLOWED_EXTENSIONS = ['.svg', '.png', '.webp', '.jpg', '.jpeg'];
