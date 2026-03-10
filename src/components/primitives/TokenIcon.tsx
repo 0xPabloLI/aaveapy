@@ -1,10 +1,7 @@
 import { useEffect, useMemo, useState, memo } from 'react';
 import { cn } from '@/lib/utils';
 import { useCoingeckoTokenImage } from '@/hooks/useCoingeckoTokenImage';
-import { isImagePreloaded } from '@/lib/preloadUtils';
-
-// Priority order for token icon formats (SVG first, then WebP for better compression)
-const IMAGE_FORMATS = ['svg', 'webp', 'png'] as const;
+import { getPreloadedImageSource, getTokenIconSources } from '@/lib/preloadUtils';
 
 interface TokenIconProps {
   symbol: string;
@@ -27,19 +24,16 @@ const TokenImage = memo(({
   loading?: 'lazy' | 'eager';
   logoURI?: string;
 }) => {
-  const symbolKey = symbol.toLowerCase();
   const defaultSrc = '/icons/tokens/default.svg';
   
   // Build list of local sources to try
-  const localSources = useMemo(() => 
-    IMAGE_FORMATS.map(fmt => `/icons/tokens/${symbolKey}.${fmt}`),
-    [symbolKey]
-  );
+  const localSources = useMemo(() => getTokenIconSources(symbol), [symbol]);
+  const preloadedSrc = getPreloadedImageSource(localSources);
   
-  // Start with first format (SVG)
-  const initialSrc = localSources[0];
+  // Start with the already warmed source when available.
+  const initialSrc = preloadedSrc ?? localSources[0];
   const [src, setSrc] = useState(initialSrc);
-  const [formatIndex, setFormatIndex] = useState(0);
+  const [formatIndex, setFormatIndex] = useState(Math.max(localSources.indexOf(initialSrc), 0));
   const [needCoingeckoFallback, setNeedCoingeckoFallback] = useState(false);
   
   const { data: coingeckoImageUrl, isFetched: coingeckoFetched } = useCoingeckoTokenImage(
@@ -47,10 +41,11 @@ const TokenImage = memo(({
   );
 
   useEffect(() => {
-    setSrc(localSources[0]);
-    setFormatIndex(0);
+    const nextInitialSrc = getPreloadedImageSource(localSources) ?? localSources[0];
+    setSrc(nextInitialSrc);
+    setFormatIndex(Math.max(localSources.indexOf(nextInitialSrc), 0));
     setNeedCoingeckoFallback(false);
-  }, [symbolKey, localSources]);
+  }, [localSources]);
 
   useEffect(() => {
     if (!needCoingeckoFallback) return;
