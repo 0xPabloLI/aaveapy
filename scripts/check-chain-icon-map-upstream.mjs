@@ -9,20 +9,8 @@ const REMOTE_NETWORKS_CONFIG_URL =
   'https://raw.githubusercontent.com/aave/interface/main/src/ui-config/networksConfig.ts';
 const LOCAL_CHAIN_ICONS_PATH = path.join(ROOT, 'src/lib/chainIcons.ts');
 
-const NORMALIZATION_ALIASES = {
-  op: ['optimism'],
-  polygonpos: ['polygon'],
-  bnbchain: ['binance', 'bnbchain'],
-  metisandromeda: ['metis'],
-  gnosischain: ['gnosis'],
-};
-
 async function loadUpstreamNetworksConfig() {
   return await fetchWithTimeout(REMOTE_NETWORKS_CONFIG_URL);
-}
-
-function normalizeChainName(value) {
-  return value.toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
 function parseLocalChainIconMap(chainIconsContent) {
@@ -140,40 +128,31 @@ async function main() {
     console.error('Upstream parsing yielded 0 network entries — possible format change.');
     process.exit(1);
   }
+
+  // Build a set of icon base names the local map covers.
+  // This avoids maintaining a manual alias table for upstream chain name variants.
+  const localIconValues = new Set(localMap.values());
   const errors = [];
 
   for (const network of expectedNetworks) {
-    const canonical = normalizeChainName(network.displayName || network.name);
-    const aliasKeys = NORMALIZATION_ALIASES[canonical] || [];
-    const candidates = [canonical, ...aliasKeys];
     const iconBase = iconBaseFromPath(network.networkLogoPath);
-    const matched = candidates.some((candidate) => localMap.get(candidate) === iconBase);
-
-    if (!matched) {
-      errors.push({
-        name: network.name,
-        displayName: network.displayName,
-        canonical,
-        iconBase,
-        candidates,
-      });
+    if (!localIconValues.has(iconBase)) {
+      errors.push({ name: network.name, iconBase });
     }
   }
 
   console.log(`Upstream prod networks parsed: ${expectedNetworks.length}`);
-  console.log(`Local chainIconMap keys: ${localMap.size}`);
+  console.log(`Local chainIconMap icon values: ${localIconValues.size}`);
 
   if (errors.length > 0) {
-    console.error('\nchainIconMap mismatch against upstream networksConfig:');
+    console.error('\nchainIconMap missing upstream network icons:');
     for (const item of errors) {
-      console.error(
-        `- ${item.name} (${item.displayName ?? 'no-displayName'}) expects icon '${item.iconBase}' via keys [${item.candidates.join(', ')}]`
-      );
+      console.error(`- ${item.name}: needs icon '${item.iconBase}' in chainIconMap`);
     }
     process.exit(1);
   }
 
-  console.log('chainIconMap is aligned with upstream prod networks config.');
+  console.log('chainIconMap covers all upstream prod network icons.');
 }
 
 main().catch((error) => {
