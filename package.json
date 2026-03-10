@@ -33,7 +33,9 @@
     "check:reserve-patches-upstream": "node scripts/check-reserve-patches-upstream.mjs",
     "check:market-name-map-upstream": "node scripts/check-market-name-map-upstream.mjs",
     "check:chain-icons-upstream": "node scripts/check-chain-icon-map-upstream.mjs",
-    "test": "vitest run"
+    "test": "vitest run",
+    "ci:remote": "npm run lint && npm run test && npm run build && npm run check:hardcode-icons",
+    "ci:auto-fix": "npm run lint -- --fix"
   },
   "dependencies": {
     "@bgd-labs/aave-address-book": "^4.38.0",
