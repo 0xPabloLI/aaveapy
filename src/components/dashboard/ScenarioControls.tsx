@@ -25,26 +25,78 @@ const ScenarioControls = memo(({ onDebouncedChange }: ScenarioControlsProps) => 
 
   const hasInput = supplyInput || borrowInput;
 
-  /* shared token classes */
+  /* shared token classes — mobile uses 44px min touch targets */
+  const controlH = isMobile ? 'h-[2.75rem]' : 'h-[1.75rem]';
   const btnBase =
-    'inline-flex items-center justify-center shrink-0 rounded-[0.75rem] border border-border/50 bg-card/50 ds-text-11 font-medium transition-all hover:bg-accent/60 hover:border-border focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none';
+    `inline-flex items-center justify-center shrink-0 rounded-[0.75rem] border border-border/50 bg-card/50 ds-text-11 font-medium transition-all hover:bg-accent/60 hover:border-border focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none ${controlH}`;
   const inputBase =
-    'w-full min-w-0 h-[1.75rem] rounded-[0.75rem] border border-border/50 bg-card/50 px-[var(--ds-space-2)] ds-text-11 tabular-nums text-muted-foreground/60 outline-none transition-all placeholder:text-muted-foreground/60 focus:text-foreground focus:border-[rgb(var(--ds-brand-magenta-rgb))] focus-visible:ring-0 focus-visible:ring-offset-0';
+    `w-full min-w-0 ${controlH} rounded-[0.75rem] border border-border/50 bg-card/50 px-[var(--ds-space-2)] ds-text-11 tabular-nums text-muted-foreground/60 outline-none transition-all placeholder:text-muted-foreground/60 focus:text-foreground focus:border-[rgb(var(--ds-brand-magenta-rgb))] focus-visible:ring-0 focus-visible:ring-offset-0`;
 
+  if (isMobile) {
+    /* Mobile: stacked layout — row 1: mode + clear, row 2: supply, row 3: borrow */
+    return (
+      <div className="rounded-xl border border-border/60 bg-card/60 backdrop-blur-sm px-[var(--ds-space-2-5)] py-[var(--ds-space-1-5)] shadow-sm">
+        <div className="flex flex-col gap-[var(--ds-space-1-5)]">
+          {/* Row 1: mode toggle + clear */}
+          <div className="flex items-center gap-[var(--ds-space-1-5)]">
+            <button
+              type="button"
+              onClick={() => setInputMode(inputMode === 'usd' ? 'token' : 'usd')}
+              className={`${btnBase} w-[4.25rem] text-foreground/80`}
+              title={inputMode === 'usd' ? 'Switch to token quantity mode' : 'Switch to USD amount mode'}
+            >
+              {inputMode === 'usd' ? '$ USD' : 'Token'}
+            </button>
+            <div className="flex-1" />
+            <button
+              type="button"
+              onClick={() => { setSupplyInput(''); setBorrowInput(''); }}
+              disabled={!hasInput}
+              className={`${btnBase} px-[var(--ds-space-2)] text-muted-foreground hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40`}
+            >
+              Clear
+            </button>
+          </div>
+          {/* Row 2: supply */}
+          <div className="flex items-center gap-[var(--ds-space-1)] min-w-0">
+            <span className="ds-text-11 text-muted-foreground font-medium shrink-0 w-[3rem]">Supply</span>
+            <input
+              value={supplyInput}
+              onChange={(event) => setSupplyInput(formatNumberInput(event.target.value))}
+              inputMode="decimal"
+              placeholder={inputMode === 'usd' ? '100,000' : '50'}
+              className={inputBase}
+            />
+          </div>
+          {/* Row 3: borrow */}
+          <div className="flex items-center gap-[var(--ds-space-1)] min-w-0">
+            <span className="ds-text-11 text-muted-foreground font-medium shrink-0 w-[3rem]">Borrow</span>
+            <input
+              value={borrowInput}
+              onChange={(event) => setBorrowInput(formatNumberInput(event.target.value))}
+              inputMode="decimal"
+              placeholder={inputMode === 'usd' ? '20,000' : '10'}
+              className={inputBase}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  /* Desktop: single row */
   return (
     <div className="rounded-xl border border-border/60 bg-card/60 backdrop-blur-sm px-[var(--ds-space-2-5)] py-[var(--ds-space-1-5)] shadow-sm">
-      <div className={`flex items-center gap-[var(--ds-space-1-5)] ${isMobile ? 'flex-wrap' : ''}`}>
-        {/* Mode toggle — fixed width to prevent resize on switch */}
+      <div className="flex items-center gap-[var(--ds-space-1-5)]">
         <button
           type="button"
           onClick={() => setInputMode(inputMode === 'usd' ? 'token' : 'usd')}
-          className={`${btnBase} h-[1.75rem] w-[4.25rem] text-foreground/80`}
+          className={`${btnBase} w-[4.25rem] text-foreground/80`}
           title={inputMode === 'usd' ? 'Switch to token quantity mode' : 'Switch to USD amount mode'}
         >
           {inputMode === 'usd' ? '$ USD' : 'Token'}
         </button>
 
-        {/* Supply input */}
         <div className="flex items-center gap-[var(--ds-space-1)] flex-1 min-w-0">
           <span className="ds-text-11 text-muted-foreground font-medium shrink-0">Supply</span>
           <input
@@ -56,7 +108,6 @@ const ScenarioControls = memo(({ onDebouncedChange }: ScenarioControlsProps) => 
           />
         </div>
 
-        {/* Borrow input */}
         <div className="flex items-center gap-[var(--ds-space-1)] flex-1 min-w-0">
           <span className="ds-text-11 text-muted-foreground font-medium shrink-0">Borrow</span>
           <input
@@ -68,12 +119,11 @@ const ScenarioControls = memo(({ onDebouncedChange }: ScenarioControlsProps) => 
           />
         </div>
 
-        {/* Clear button */}
         <button
           type="button"
           onClick={() => { setSupplyInput(''); setBorrowInput(''); }}
           disabled={!hasInput}
-          className={`${btnBase} h-[1.75rem] px-[var(--ds-space-2)] text-muted-foreground hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40`}
+          className={`${btnBase} px-[var(--ds-space-2)] text-muted-foreground hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40`}
         >
           Clear
         </button>
