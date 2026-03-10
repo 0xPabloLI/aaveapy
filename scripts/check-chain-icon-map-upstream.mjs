@@ -67,11 +67,38 @@ function parseExpectedProdNetworks(networksConfigContent) {
   const lines = content.split('\n');
 
   const expected = [];
+  // outerDepth tracks the top-level prodNetworkConfig object braces so we stop
+  // when it closes instead of scanning into subsequent exports (e.g. testnet configs).
+  let outerDepth = 0;
+  let outerStarted = false;
   let inBlock = false;
   let depth = 0;
   let current = null;
 
   for (const line of lines) {
+    // Track the top-level object depth
+    const opens = countChar(line, '{');
+    const closes = countChar(line, '}');
+    if (!outerStarted && opens > 0) {
+      outerStarted = true;
+    }
+    if (outerStarted) {
+      outerDepth += opens;
+      outerDepth -= closes;
+      // Stop once the prodNetworkConfig object is fully closed
+      if (outerDepth <= 0) {
+        // Process any final block closure on this line before breaking
+        if (inBlock) {
+          depth += opens;
+          depth -= closes;
+          if (depth <= 0 && current?.name && current?.networkLogoPath) {
+            expected.push(current);
+          }
+        }
+        break;
+      }
+    }
+
     if (!inBlock) {
       const start = line.match(/^\s*\[ChainId\.[a-zA-Z0-9_]+\]:\s*\{/);
       if (!start) continue;
@@ -96,8 +123,8 @@ function parseExpectedProdNetworks(networksConfigContent) {
       if (logoMatch) current.networkLogoPath = logoMatch[1];
     }
 
-    depth += countChar(line, '{');
-    depth -= countChar(line, '}');
+    depth += opens;
+    depth -= closes;
     if (depth <= 0) {
       inBlock = false;
       depth = 0;
