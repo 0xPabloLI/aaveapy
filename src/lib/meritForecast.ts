@@ -1,4 +1,4 @@
-import type { MeritIncentive } from '@/types/aave';
+import type { IncentiveMessage, MeritIncentive } from '@/types/aave';
 
 const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
