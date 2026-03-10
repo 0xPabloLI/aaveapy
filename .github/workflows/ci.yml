@@ -23,12 +23,16 @@ jobs:
           node-version: 20
           cache: npm
       - name: Sync lock file (Lovable compat)
-        if: |
-          (github.event_name == 'pull_request' && github.event.pull_request.user.login == 'gpt-engineer-app[bot]') ||
-          (github.event_name == 'push' && github.actor == 'gpt-engineer-app[bot]')
         run: |
-          echo "Lovable commit detected – syncing lock file"
-          npm install --package-lock-only
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            HEAD_AUTHOR=$(git log -1 --format='%an' ${{ github.event.pull_request.head.sha }})
+          else
+            HEAD_AUTHOR=$(git log -1 --format='%an')
+          fi
+          if [ "$HEAD_AUTHOR" = "gpt-engineer-app[bot]" ]; then
+            echo "Lovable commit detected – syncing lock file"
+            npm install --package-lock-only
+          fi
       - name: Install dependencies
         run: npm ci
       - name: Run lint
@@ -46,12 +50,16 @@ jobs:
           node-version: 20
           cache: npm
       - name: Sync lock file (Lovable compat)
-        if: |
-          (github.event_name == 'pull_request' && github.event.pull_request.user.login == 'gpt-engineer-app[bot]') ||
-          (github.event_name == 'push' && github.actor == 'gpt-engineer-app[bot]')
         run: |
-          echo "Lovable commit detected – syncing lock file"
-          npm install --package-lock-only
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            HEAD_AUTHOR=$(git log -1 --format='%an' ${{ github.event.pull_request.head.sha }})
+          else
+            HEAD_AUTHOR=$(git log -1 --format='%an')
+          fi
+          if [ "$HEAD_AUTHOR" = "gpt-engineer-app[bot]" ]; then
+            echo "Lovable commit detected – syncing lock file"
+            npm install --package-lock-only
+          fi
       - name: Install dependencies
         run: npm ci
       - name: Run build
