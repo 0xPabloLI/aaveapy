@@ -1,0 +1,43 @@
+name: Hardcode Drift Check
+
+on:
+  workflow_dispatch:
+  repository_dispatch:
+    types: [upstream-change]
+  schedule:
+    # Every day at 04:40 UTC
+    - cron: "40 4 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  check-hardcode-icons:
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check reservePatches icon symbols
+        run: npm run check:hardcode-icons
+
+      - name: Check reservePatches drift against aave/interface
+        run: npm run check:reserve-patches-upstream
+
+      - name: Check MARKET_NAME_MAP drift against aave/interface
+        run: npm run check:market-name-map-upstream
+
+      - name: Check chainIconMap drift against aave/interface
+        run: npm run check:chain-icons-upstream
