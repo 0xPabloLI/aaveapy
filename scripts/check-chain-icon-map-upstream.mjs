@@ -76,7 +76,6 @@ function parseExpectedProdNetworks(networksConfigContent) {
       depth = 1;
       current = {
         name: null,
-        displayName: null,
         networkLogoPath: null,
       };
       continue;
@@ -85,9 +84,6 @@ function parseExpectedProdNetworks(networksConfigContent) {
     if (depth === 1) {
       const nameMatch = line.match(/^\s*name:\s*'([^']+)'/);
       if (nameMatch) current.name = nameMatch[1];
-
-      const displayNameMatch = line.match(/^\s*displayName:\s*'([^']+)'/);
-      if (displayNameMatch) current.displayName = displayNameMatch[1];
 
       const logoMatch = line.match(/^\s*networkLogoPath:\s*'([^']+)'/);
       if (logoMatch) current.networkLogoPath = logoMatch[1];
