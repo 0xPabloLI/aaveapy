@@ -91,6 +91,10 @@ async function main() {
   ]);
 
   const expected = parseExpectedMapping(upstreamContent);
+  if (expected.size === 0) {
+    console.error('Upstream parsing yielded 0 market entries — possible format change.');
+    process.exit(1);
+  }
   const local = parseLocalMap(localContent);
 
   const missing = [];

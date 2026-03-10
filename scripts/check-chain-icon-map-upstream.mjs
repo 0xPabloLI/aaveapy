@@ -123,6 +123,10 @@ async function main() {
 
   const localMap = parseLocalChainIconMap(localContent);
   const expectedNetworks = parseExpectedProdNetworks(upstreamContent);
+  if (expectedNetworks.length === 0) {
+    console.error('Upstream parsing yielded 0 network entries — possible format change.');
+    process.exit(1);
+  }
   const errors = [];
 
   for (const network of expectedNetworks) {
