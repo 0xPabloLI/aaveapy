@@ -1,4 +1,4 @@
-import type { MeritIncentive } from '@/types/aave';
+import type { IncentiveMessage, MeritIncentive } from '@/types/aave';
 
 const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -67,8 +67,8 @@ export function splitMeritMessageBySelfAuth(message?: MeritMessage): {
     return { baseMessage: message };
   }
 
-  const base: unknown[] = [];
-  const self: unknown[] = [];
+  const base: IncentiveMessage[] = [];
+  const self: IncentiveMessage[] = [];
   for (const item of message) {
     const text = typeof item === 'object' && item ? JSON.stringify(item).toLowerCase() : String(item ?? '').toLowerCase();
     if (text.includes('self authentication')) {

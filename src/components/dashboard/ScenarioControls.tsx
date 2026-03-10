@@ -27,9 +27,9 @@ const ScenarioControls = memo(({ onDebouncedChange }: ScenarioControlsProps) => 
 
   /* shared token classes */
   const btnBase =
-    'inline-flex items-center justify-center shrink-0 rounded-[0.75rem] border border-border/60 bg-background/80 ds-text-11 font-medium transition-all hover:bg-accent/60 hover:border-border focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none';
+    'inline-flex items-center justify-center shrink-0 rounded-[0.75rem] border border-border/50 bg-card/50 ds-text-11 font-medium transition-all hover:bg-accent/60 hover:border-border focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none';
   const inputBase =
-    'w-full min-w-0 h-[1.75rem] rounded-[0.75rem] border border-border/60 bg-background/80 px-[var(--ds-space-2)] ds-text-11 tabular-nums text-foreground outline-none transition-all placeholder:text-muted-foreground/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:border-primary/40 focus-visible:bg-background';
+    'w-full min-w-0 h-[1.75rem] rounded-[0.75rem] border border-border/50 bg-card/50 px-[var(--ds-space-2)] ds-text-11 tabular-nums text-foreground outline-none transition-all placeholder:text-muted-foreground/60 focus-visible:ring-2 focus-visible:ring-[rgb(var(--ds-brand-magenta-rgb)/0.6)] focus-visible:ring-offset-0 focus-visible:border-[rgb(var(--ds-brand-magenta-rgb))]';
 
   return (
     <div className="rounded-xl border border-border/60 bg-card/60 backdrop-blur-sm px-[var(--ds-space-2-5)] py-[var(--ds-space-1-5)] shadow-sm">
