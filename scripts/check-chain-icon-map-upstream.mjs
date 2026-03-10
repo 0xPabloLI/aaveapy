@@ -13,6 +13,8 @@ const NORMALIZATION_ALIASES = {
   op: ['optimism'],
   polygonpos: ['polygon'],
   bnbchain: ['binance', 'bnbchain'],
+  metisandromeda: ['metis'],
+  gnosischain: ['gnosis'],
 };
 
 async function loadUpstreamNetworksConfig() {

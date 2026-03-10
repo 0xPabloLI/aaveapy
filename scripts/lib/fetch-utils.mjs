@@ -8,18 +8,27 @@
  * @param {number} timeoutMs
  * @returns {Promise<string>}
  */
-export async function fetchWithTimeout(url, timeoutMs = 15000) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const response = await fetch(url, { signal: controller.signal });
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status} ${response.statusText}`);
+export async function fetchWithTimeout(url, timeoutMs = 15000, retries = 2) {
+  let lastError;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetch(url, { signal: controller.signal });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status} ${response.statusText}`);
+      }
+      return await response.text();
+    } catch (err) {
+      lastError = err;
+      if (attempt < retries) {
+        await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+      }
+    } finally {
+      clearTimeout(timer);
     }
-    return await response.text();
-  } finally {
-    clearTimeout(timer);
   }
+  throw lastError;
 }
 
 /**
