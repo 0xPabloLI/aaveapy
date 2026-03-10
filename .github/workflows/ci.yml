@@ -17,6 +17,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -24,12 +26,7 @@ jobs:
           cache: npm
       - name: Sync lock file (Lovable compat)
         run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            HEAD_AUTHOR=$(git log -1 --format='%an' ${{ github.event.pull_request.head.sha }})
-          else
-            HEAD_AUTHOR=$(git log -1 --format='%an')
-          fi
-          if [ "$HEAD_AUTHOR" = "gpt-engineer-app[bot]" ]; then
+          if [ "$(git log -1 --format='%an')" = "gpt-engineer-app[bot]" ]; then
             echo "Lovable commit detected – syncing lock file"
             npm install --package-lock-only
           fi
@@ -44,6 +41,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -51,12 +50,7 @@ jobs:
           cache: npm
       - name: Sync lock file (Lovable compat)
         run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            HEAD_AUTHOR=$(git log -1 --format='%an' ${{ github.event.pull_request.head.sha }})
-          else
-            HEAD_AUTHOR=$(git log -1 --format='%an')
-          fi
-          if [ "$HEAD_AUTHOR" = "gpt-engineer-app[bot]" ]; then
+          if [ "$(git log -1 --format='%an')" = "gpt-engineer-app[bot]" ]; then
             echo "Lovable commit detected – syncing lock file"
             npm install --package-lock-only
           fi
