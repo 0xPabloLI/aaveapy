@@ -1,10 +1,25 @@
 #!/usr/bin/env node
 import { readFile } from 'fs/promises';
-import { resolve } from 'path';
+import path from 'path';
 
+const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const UPSTREAM_RESERVE_PATCHES_URL =
   'https://raw.githubusercontent.com/aave/interface/main/src/ui-config/reservePatches.ts';
-const localReservePatchesPath = resolve(process.cwd(), 'src/ui-config/reservePatches.ts');
+const LOCAL_RESERVE_PATCHES_PATH = path.join(ROOT, 'src/ui-config/reservePatches.ts');
+
+async function fetchWithTimeout(url, timeoutMs = 15000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status} ${response.statusText}`);
+    }
+    return await response.text();
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 function extractAddressKeys(content) {
   const regex = /['"`](0x[a-fA-F0-9]{40})['"`]\s*:/g;
@@ -36,16 +51,10 @@ function toSortedArray(values) {
 }
 
 async function main() {
-  const [localContent, upstreamResponse] = await Promise.all([
-    readFile(localReservePatchesPath, 'utf8'),
-    fetch(UPSTREAM_RESERVE_PATCHES_URL),
+  const [localContent, upstreamContent] = await Promise.all([
+    readFile(LOCAL_RESERVE_PATCHES_PATH, 'utf8'),
+    fetchWithTimeout(UPSTREAM_RESERVE_PATCHES_URL),
   ]);
-
-  if (!upstreamResponse.ok) {
-    throw new Error(`Failed to fetch upstream reservePatches.ts: HTTP ${upstreamResponse.status}`);
-  }
-
-  const upstreamContent = await upstreamResponse.text();
   const localKeys = extractAddressKeys(localContent);
   const upstreamKeys = extractAddressKeys(upstreamContent);
   const localExprKeys = extractExpressionKeys(localContent);
@@ -63,6 +72,15 @@ async function main() {
   const localOnlyExpr = toSortedArray(
     new Set([...localExprKeys].filter((key) => !upstreamExprKeys.has(key)))
   );
+
+  if (localKeys.size === 0 && localExprKeys.size === 0) {
+    console.error('Local parsing yielded 0 reserve keys — possible format change.');
+    process.exit(1);
+  }
+  if (upstreamKeys.size === 0 && upstreamExprKeys.size === 0) {
+    console.error('Upstream parsing yielded 0 reserve keys — possible format change.');
+    process.exit(1);
+  }
 
   console.log(`local reserve address keys: ${localKeys.size}`);
   console.log(`upstream reserve address keys: ${upstreamKeys.size}`);

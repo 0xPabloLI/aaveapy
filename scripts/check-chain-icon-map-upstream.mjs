@@ -149,6 +149,10 @@ async function main() {
   ]);
 
   const localMap = parseLocalChainIconMap(localContent);
+  if (localMap.size === 0) {
+    console.error('Local parsing yielded 0 chainIconMap entries — possible format change.');
+    process.exit(1);
+  }
   const expectedNetworks = parseExpectedProdNetworks(upstreamContent);
   if (expectedNetworks.length === 0) {
     console.error('Upstream parsing yielded 0 network entries — possible format change.');

@@ -96,6 +96,10 @@ async function main() {
     process.exit(1);
   }
   const local = parseLocalMap(localContent);
+  if (local.size === 0) {
+    console.error('Local parsing yielded 0 MARKET_NAME_MAP entries — possible format change.');
+    process.exit(1);
+  }
 
   const missing = [];
   for (const [sourceKey, targetMarket] of expected) {
