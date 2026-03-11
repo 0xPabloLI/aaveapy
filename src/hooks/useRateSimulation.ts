@@ -703,7 +703,7 @@ export const useSharedRateSimulations = ({
         // Shared simulation in token mode relies on backend-provided prices only.
         // Table-wide third-party fetches create a request storm and hit browser CORS/rate limits.
         enabled: enabled && hasAnyInput && needsTokenPrice && localPrice === undefined,
-        staleTime: 5 * 60 * 1000,
+        staleTime: QUERY_STALE_TIMES.default,
       };
     }),
   });
@@ -758,7 +758,7 @@ export const useSharedRateSimulations = ({
       return { states, errors };
     },
     enabled: enabled && allCampaignIds.length > 0,
-    staleTime: 60 * 1000,
+    staleTime: QUERY_STALE_TIMES.coreSnapshotApi,
   });
 
   const forecastStates = useMemo(

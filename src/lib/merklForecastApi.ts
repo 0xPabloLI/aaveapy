@@ -1,8 +1,9 @@
+import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
 import { API_BASE } from '@/lib/apiBase';
 import type { MerklForecastStatesBatchResponse } from '@/types/aave';
 import { MerklForecastApiError } from './merklForecastErrors';
 
-const CACHE_TTL_MS = 1 * 60 * 1000;
+const CACHE_TTL_MS = QUERY_STALE_TIMES.coreSnapshotApi;
 
 const batchCache = new Map<string, { data: MerklForecastStatesBatchResponse; expiresAt: number }>();
 const batchInFlight = new Map<string, Promise<MerklForecastStatesBatchResponse>>();

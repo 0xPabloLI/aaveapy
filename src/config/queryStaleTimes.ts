@@ -2,7 +2,7 @@ export const QUERY_STALE_TIMES = {
   // Global fallback for queries without per-query override.
   default: 5 * 60 * 1000,
 
-  // Core backend snapshot family (markets + rate-inputs).
+  // Core backend snapshot family (markets, rate-inputs, Merkl forecast-states).
   coreSnapshotApi: 2 * 60 * 1000,
 
   // Side data.

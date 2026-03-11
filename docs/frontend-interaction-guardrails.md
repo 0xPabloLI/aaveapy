@@ -42,6 +42,18 @@ This note records recurring UI/interaction issues found during incentive/forecas
 
 ## B. AaveAPY-specific guardrails (app-specific)
 
+### API freshness guardrail (`staleTime` + HTTP cache)
+
+- Treat `staleTime` as the single source of truth for **when** the UI should re-check backend freshness.
+- For core APY/simulation APIs, backend should use `no-cache + ETag` rather than long browser/edge TTL.
+  - This ensures each `staleTime`-triggered refetch performs freshness validation.
+  - If data is unchanged, transport cost stays low via `304 Not Modified`.
+- Avoid broad assumptions like "HTTP cache replaces React Query staleTime".
+  - `staleTime` controls fetch schedule.
+  - HTTP cache controls response delivery path and payload size.
+- For side-data (lower business criticality), TTL caching is acceptable and can be longer than core APIs.
+- If strict freshness is required for a view, do not rely on strong cache hit behavior (`max-age` only) for its primary data path.
+
 ### Forecast UI consistency
 
 - **APR/APY mode parity**: any forecast number shown inside a tooltip/panel must follow the same APR/APY mode selected in the main UI.
