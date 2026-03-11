@@ -38,6 +38,7 @@
     "check:market-name-map-upstream": "node scripts/check-market-name-map-upstream.mjs",
     "check:chain-icons-upstream": "node scripts/check-chain-icon-map-upstream.mjs",
     "test": "vitest run",
+    "ci:lockcheck": "npm ci",
     "ci:remote": "npm run lint && npm run test && npm run build && npm run check:hardcode-icons",
     "ci:auto-fix": "npm run lint -- --fix"
   },
