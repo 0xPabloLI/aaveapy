@@ -21,7 +21,7 @@ import PullToRefresh from '@/components/dashboard/PullToRefresh';
 import { setCachedTydroRate } from '@/lib/cache';
 import { TYDRO_POINT_TO_USD_RATE } from '@/lib/tydro';
 import { AlertTriangle } from 'lucide-react';
-import { preloadIncentiveIcons, setPreloadPaused } from '@/lib/preloadUtils';
+import { preloadIncentiveIcons, setPreloadPaused, shouldUseFullPreloadMode } from '@/lib/preloadUtils';
 import { buildMarketsList } from '@/lib/marketsList';
 import { normalizeTokenSymbolForSearch } from '@/lib/tokenSymbolNormalization';
 
@@ -117,10 +117,14 @@ const Index = () => {
     return effectiveReservesData?.data || [];
   }, [effectiveReservesData?.data]);
   const hasReserves = stableReserves.length > 0;
+  const preloadMode = useMemo(
+    () => (shouldUseFullPreloadMode() ? 'full' : 'adaptive'),
+    []
+  );
 
-  // Full mode: eventually preload all reserve icons, but pause when active queries are running.
+  // Use full mode only on Wi-Fi without save-data; otherwise fall back to adaptive mode.
   usePreloadReserveAssets(stableReserves, {
-    preloadMode: 'full',
+    preloadMode,
     enabled: hasReserves,
     isSuccess: !!reservesData,
   });

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { getRecommendedPreloadLimit } from './preloadUtils';
+import { getRecommendedPreloadLimit, shouldUseFullPreloadMode } from './preloadUtils';
 
 const loadOutcomes = new Map<string, boolean>();
 
@@ -41,6 +41,27 @@ describe('getRecommendedPreloadLimit', () => {
     vi.stubGlobal('navigator', { connection: { saveData: false, effectiveType: '4g' } });
 
     expect(getRecommendedPreloadLimit(300)).toBe(140);
+  });
+});
+
+describe('shouldUseFullPreloadMode', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('enables full mode only on wifi when save-data is off', () => {
+    vi.stubGlobal('navigator', { connection: { saveData: false, type: 'wifi', effectiveType: '4g' } });
+    expect(shouldUseFullPreloadMode()).toBe(true);
+  });
+
+  it('disables full mode when save-data is on', () => {
+    vi.stubGlobal('navigator', { connection: { saveData: true, type: 'wifi', effectiveType: '4g' } });
+    expect(shouldUseFullPreloadMode()).toBe(false);
+  });
+
+  it('disables full mode on non-wifi networks', () => {
+    vi.stubGlobal('navigator', { connection: { saveData: false, type: 'cellular', effectiveType: '4g' } });
+    expect(shouldUseFullPreloadMode()).toBe(false);
   });
 });
 

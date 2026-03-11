@@ -14,6 +14,7 @@ export const TOKEN_ICON_FORMATS = ['svg', 'webp', 'png'] as const;
 type ConnectionInfo = {
   saveData?: boolean;
   effectiveType?: string;
+  type?: string;
 };
 
 function getConnectionInfo(): ConnectionInfo | undefined {
@@ -48,6 +49,13 @@ export function getRecommendedPreloadLimit(totalCandidates: number): number {
   if (effectiveType === '4g') return Math.min(totalCandidates, 140);
 
   return Math.min(totalCandidates, 180);
+}
+
+export function shouldUseFullPreloadMode(): boolean {
+  const connection = getConnectionInfo();
+  if (!connection) return false;
+  if (connection.saveData) return false;
+  return connection.type === 'wifi';
 }
 
 export function getTokenIconSources(symbol: string): string[] {
