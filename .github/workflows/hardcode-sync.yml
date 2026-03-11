@@ -104,6 +104,7 @@ jobs:
         with:
           script: |
             const title = '[Hardcode Sync] verify failed after retry';
+            const labels = ['automation', 'hardcode', 'drift'];
             const body = [
               'Hardcode sync verify failed after two rounds.',
               '',
@@ -112,12 +113,29 @@ jobs:
               '',
               'Please inspect upstream drift and sync scripts.'
             ].join('\n');
+            const existing = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: labels.join(','),
+              per_page: 100
+            });
+            const sameTitleIssue = existing.data.find((issue) => issue.title === title);
+            if (sameTitleIssue) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: sameTitleIssue.number,
+                body,
+              });
+              return;
+            }
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
               title,
               body,
-              labels: ['automation', 'hardcode', 'drift']
+              labels
             });
 
       - name: Fail job when verify still fails
