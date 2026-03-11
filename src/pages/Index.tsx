@@ -118,8 +118,9 @@ const Index = () => {
   }, [effectiveReservesData?.data]);
   const hasReserves = stableReserves.length > 0;
 
-  // Preload ALL token and chain icons once data is ready (no fixed delay)
+  // Full mode: eventually preload all reserve icons, but pause when active queries are running.
   usePreloadReserveAssets(stableReserves, {
+    preloadMode: 'full',
     enabled: hasReserves,
     isSuccess: !!reservesData,
   });

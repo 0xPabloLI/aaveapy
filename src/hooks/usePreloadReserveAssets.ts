@@ -3,6 +3,8 @@ import { ReserveWithSpread } from '@/types/aave';
 import { getRecommendedPreloadLimit, preloadTokenIcons, preloadChainIcons } from '@/lib/preloadUtils';
 import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
 
+type PreloadMode = 'adaptive' | 'full';
+
 /**
  * Hook to preload token and chain icons for reserves.
  * Triggers when `isSuccess` flips to true (data ready), not on a fixed timeout.
@@ -16,9 +18,11 @@ export function usePreloadReserveAssets(
     enabled?: boolean;
     /** React Query isSuccess flag — preload fires once this becomes true */
     isSuccess?: boolean;
+    /** adaptive: network-aware cap, full: eventually preload all reserves */
+    preloadMode?: PreloadMode;
   } = {}
 ): void {
-  const { limit, enabled = true, isSuccess = true } = options;
+  const { limit, enabled = true, isSuccess = true, preloadMode = 'adaptive' } = options;
   const hasPreloaded = useRef(false);
 
   useEffect(() => {
@@ -26,7 +30,8 @@ export function usePreloadReserveAssets(
       return;
     }
 
-    const resolvedLimit = limit ?? getRecommendedPreloadLimit(reserves.length);
+    const resolvedLimit = limit
+      ?? (preloadMode === 'full' ? reserves.length : getRecommendedPreloadLimit(reserves.length));
     const reservesToPreload = reserves.slice(0, resolvedLimit);
 
     const tokenSymbols = reservesToPreload.map(reserve => {
@@ -44,7 +49,7 @@ export function usePreloadReserveAssets(
     preloadChainIcons(chainNames);
 
     hasPreloaded.current = true;
-  }, [reserves, limit, enabled, isSuccess]);
+  }, [reserves, limit, enabled, isSuccess, preloadMode]);
 }
 
 /**
