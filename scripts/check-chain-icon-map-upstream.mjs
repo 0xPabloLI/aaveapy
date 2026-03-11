@@ -7,7 +7,7 @@ import { fetchWithTimeout, countChar } from './lib/fetch-utils.mjs';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const REMOTE_NETWORKS_CONFIG_URL =
   'https://raw.githubusercontent.com/aave/interface/main/src/ui-config/networksConfig.ts';
-const LOCAL_CHAIN_ICONS_PATH = path.join(ROOT, 'src/lib/chainIcons.ts');
+const LOCAL_CHAIN_ICONS_PATH = path.join(ROOT, 'src/lib/chainIconMap.ts');
 
 async function loadUpstreamNetworksConfig() {
   return await fetchWithTimeout(REMOTE_NETWORKS_CONFIG_URL);
@@ -18,7 +18,7 @@ function parseLocalChainIconMap(chainIconsContent) {
     /(?:export\s+)?const chainIconMap:\s*Record<string,\s*string>\s*=\s*\{([\s\S]*?)\};/
   );
   if (!objectMatch) {
-    throw new Error('Failed to parse chainIconMap from src/lib/chainIcons.ts');
+    throw new Error('Failed to parse chainIconMap from src/lib/chainIconMap.ts');
   }
   const map = new Map();
   const pairs = objectMatch[1].matchAll(/([a-z0-9_]+)\s*:\s*'([^']+)'/gi);
