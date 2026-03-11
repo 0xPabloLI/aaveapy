@@ -1,11 +1,9 @@
 #!/usr/bin/env node
-
-import fs from 'fs';
+import { readFile, readdir, access } from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const ROOT = path.resolve(__dirname, '..');
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const RESERVE_PATCHES_PATH = path.join(ROOT, 'src', 'ui-config', 'reservePatches.ts');
 const TOKEN_ICONS_DIR = path.join(ROOT, 'public', 'icons', 'tokens');
 const ALLOWED_EXTENSIONS = ['.svg', '.png', '.webp', '.jpg', '.jpeg'];
@@ -29,13 +27,6 @@ const KNOWN_MISSING_ICON_SYMBOLS = new Set([
   'wxlp',
 ]);
 
-function readFileSafe(filePath) {
-  if (!fs.existsSync(filePath)) {
-    throw new Error(`File not found: ${filePath}`);
-  }
-  return fs.readFileSync(filePath, 'utf8');
-}
-
 function extractIconSymbols(content) {
   const symbols = new Set();
   const regex = /iconSymbol:\s*['"]([^'"]+)['"]/g;
@@ -47,11 +38,9 @@ function extractIconSymbols(content) {
   return Array.from(symbols).sort();
 }
 
-function buildIconBaseNameSet(directory) {
-  if (!fs.existsSync(directory)) {
-    throw new Error(`Directory not found: ${directory}`);
-  }
-  const files = fs.readdirSync(directory);
+async function buildIconBaseNameSet(directory) {
+  await access(directory);
+  const files = await readdir(directory);
   const bases = new Set();
   for (const file of files) {
     const ext = path.extname(file).toLowerCase();
@@ -62,10 +51,10 @@ function buildIconBaseNameSet(directory) {
   return bases;
 }
 
-function main() {
-  const reservePatchesContent = readFileSafe(RESERVE_PATCHES_PATH);
+async function main() {
+  const reservePatchesContent = await readFile(RESERVE_PATCHES_PATH, 'utf8');
   const iconSymbols = extractIconSymbols(reservePatchesContent);
-  const iconBaseNameSet = buildIconBaseNameSet(TOKEN_ICONS_DIR);
+  const iconBaseNameSet = await buildIconBaseNameSet(TOKEN_ICONS_DIR);
 
   const missing = iconSymbols.filter(
     (symbol) => !iconBaseNameSet.has(symbol) && !KNOWN_MISSING_ICON_SYMBOLS.has(symbol)
@@ -79,11 +68,13 @@ function main() {
     for (const symbol of missing) {
       console.error(`- ${symbol}`);
     }
-    process.exitCode = 1;
-    return;
+    process.exit(1);
   }
 
   console.log('No missing iconSymbol token icons.');
 }
 
-main();
+main().catch((error) => {
+  console.error(error instanceof Error ? error.stack || error.message : String(error));
+  process.exit(1);
+});

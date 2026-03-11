@@ -24,11 +24,19 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
+      - name: Sync lock file (Lovable compat)
+        run: |
+          if [ "$(git log -1 --format='%an')" = "gpt-engineer-app[bot]" ]; then
+            echo "Lovable commit detected – syncing lock file"
+            npm install --package-lock-only
+          fi
       - name: Install dependencies
         run: npm ci
       - name: Run lint
@@ -40,11 +48,19 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
+      - name: Sync lock file (Lovable compat)
+        run: |
+          if [ "$(git log -1 --format='%an')" = "gpt-engineer-app[bot]" ]; then
+            echo "Lovable commit detected – syncing lock file"
+            npm install --package-lock-only
+          fi
       - name: Install dependencies
         run: npm ci
       - name: Run build
