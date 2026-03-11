@@ -1,7 +1,9 @@
- /**
-  * Performance Optimization - Phase 3
-  * Preload strategies for images and resources
-  */
+import { chainIconMap, normalizeChainName } from './chainIconMap';
+
+/**
+ * Performance Optimization - Phase 3
+ * Preload strategies for images and resources
+ */
  
 // Track preloaded images to avoid duplicates
 const preloadedImages = new Set<string>();
@@ -129,36 +131,15 @@ export function preloadTokenIcons(symbols: string[]): void {
   preloadFallbackImagesIdle(iconSourceGroups);
 }
  
- /**
-  * Preload chain/network icons
-  */
- export function preloadChainIcons(chains: string[]): void {
-   const chainIconMap: Record<string, string> = {
-     ethereum: 'ethereum',
-     arbitrum: 'arbitrum',
-     optimism: 'optimism',
-     polygon: 'polygon',
-     avalanche: 'avalanche',
-     base: 'base',
-     bnbchain: 'binance',
-     bsc: 'binance',
-     gnosis: 'gnosis',
-     scroll: 'scroll',
-     metis: 'metis',
-     zksync: 'zksync',
-     linea: 'linea',
-     celo: 'celo',
-     sonic: 'sonic',
-     soneium: 'soneium',
-     plasma: 'plasma',
-     ink: 'ink',
-   };
- 
-   const iconSrcs = chains
-     .map(chain => chain.toLowerCase().replace(/[^a-z0-9]/g, ''))
-     .map(normalized => chainIconMap[normalized])
-     .filter((iconName): iconName is string => !!iconName)
-     .map(iconName => `/icons/networks/${iconName}.svg`);
+/**
+ * Preload chain/network icons
+ */
+export function preloadChainIcons(chains: string[]): void {
+  const iconSrcs = chains
+    .map(normalizeChainName)
+    .map(normalized => chainIconMap[normalized])
+    .filter((iconName): iconName is string => !!iconName)
+    .map(iconName => `/icons/networks/${iconName}.svg`);
  
    preloadImagesIdle([...new Set(iconSrcs)]);
  }

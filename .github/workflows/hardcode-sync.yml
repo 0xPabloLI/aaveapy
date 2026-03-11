@@ -1,0 +1,144 @@
+name: Hardcode Sync
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_branch:
+        description: "Branch to run hardcode sync on (defaults to repository default branch)"
+        required: false
+        type: string
+  repository_dispatch:
+    types: [upstream-change]
+  schedule:
+    # Every day at 04:20 UTC
+    - cron: "20 4 * * *"
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  hardcode-sync:
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-latest
+    env:
+      TARGET_BRANCH: >-
+        ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.target_branch != '' && github.event.inputs.target_branch || github.event.repository.default_branch }}
+    steps:
+      - name: Checkout target branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TARGET_BRANCH }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Round 1 sync
+        run: npm run hardcode:sync
+
+      - name: Round 1 verify
+        id: verify_round1
+        run: |
+          set +e
+          npm run hardcode:verify
+          status=$?
+          if [ "$status" -eq 0 ]; then
+            echo "passed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "passed=false" >> "$GITHUB_OUTPUT"
+          fi
+          exit 0
+
+      - name: Round 2 sync
+        if: steps.verify_round1.outputs.passed != 'true'
+        run: npm run hardcode:sync
+
+      - name: Round 2 verify
+        id: verify_round2
+        if: steps.verify_round1.outputs.passed != 'true'
+        run: |
+          set +e
+          npm run hardcode:verify
+          status=$?
+          if [ "$status" -eq 0 ]; then
+            echo "passed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "passed=false" >> "$GITHUB_OUTPUT"
+          fi
+          exit 0
+
+      - name: Create PR when hardcode changed
+        uses: peter-evans/create-pull-request@v7
+        with:
+          commit-message: "chore(hardcode): sync hardcoded assets and mappings"
+          title: "chore(hardcode): sync hardcoded assets and mappings"
+          body: |
+            Automated update from `npm run hardcode:sync`.
+
+            Verification:
+            - `npm run hardcode:verify`
+          branch: "bot/hardcode-sync"
+          base: ${{ env.TARGET_BRANCH }}
+          delete-branch: true
+          labels: |
+            automation
+            hardcode
+
+      - name: Create issue when verify still fails
+        if: >
+          steps.verify_round1.outputs.passed != 'true' &&
+          steps.verify_round2.outputs.passed != 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = '[Hardcode Sync] verify failed after retry';
+            const labels = ['automation', 'hardcode', 'drift'];
+            const body = [
+              'Hardcode sync verify failed after two rounds.',
+              '',
+              `Workflow run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              `Target branch: ${process.env.TARGET_BRANCH}`,
+              '',
+              'Please inspect upstream drift and sync scripts.'
+            ].join('\n');
+            const existing = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: labels.join(','),
+              per_page: 100
+            });
+            const sameTitleIssue = existing.data.find((issue) => issue.title === title);
+            if (sameTitleIssue) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: sameTitleIssue.number,
+                body,
+              });
+              return;
+            }
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body,
+              labels
+            });
+
+      - name: Fail job when verify still fails
+        if: >
+          steps.verify_round1.outputs.passed != 'true' &&
+          steps.verify_round2.outputs.passed != 'true'
+        run: |
+          echo "Hardcode verify failed after two rounds."
+          exit 1

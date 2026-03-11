@@ -4,9 +4,10 @@
  * Run periodically (e.g. after adding new markets) so users get icons from
  * static assets instead of hitting CoinGecko. Commit the new .png files.
  *
- * Usage: node scripts/sync-token-icons.mjs [--extra-only]
+ * Usage: node scripts/sync-token-icons.mjs [--extra-only] [--check]
  *   Default: sync all missing symbols from aave tokenlist + EXTRA_SYMBOLS.
  *   --extra-only: only sync EXTRA_SYMBOLS (e.g. syrupusdc) that are missing (faster).
+ *   --check: do not write files; exit 1 when any symbol is missing.
  *   SKIP_SYNC_TOKEN_ICONS=1: no-op (e.g. skip in CI if you commit icons).
  *
  * Run manually or in CI when you want to backfill icons into public/; normal users
@@ -102,6 +103,7 @@ async function main() {
     return;
   }
   const extraOnly = process.argv.includes('--extra-only');
+  const checkOnly = process.argv.includes('--check');
   const missing = getMissingSymbols(extraOnly);
   if (!extraOnly) {
     console.log('Syncing all missing symbols from tokenlist + extra.');
@@ -109,6 +111,10 @@ async function main() {
   if (missing.length === 0) {
     console.log('No missing token icons.');
     return;
+  }
+  if (checkOnly) {
+    console.error(`Missing ${missing.length} token icon(s): ${missing.join(', ')}`);
+    process.exit(1);
   }
   console.log(`Fetching ${missing.length} missing icon(s) from CoinGecko...`);
   for (let i = 0; i < missing.length; i++) {
