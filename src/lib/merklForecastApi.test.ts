@@ -9,7 +9,6 @@ describe('fetchMerklForecastStates', () => {
 
   it('fetches batch forecast states in a single request', async () => {
     const json = vi.fn().mockResolvedValue({
-      requested: 2,
       items: [
         { campaignId: '1', plannedDaily: 1, requiredDaily: 1 },
         { campaignId: '2', plannedDaily: 2, requiredDaily: 2 },
