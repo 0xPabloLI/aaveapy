@@ -68,7 +68,7 @@ describe('fetchMerklForecastStates', () => {
     await Promise.resolve();
     expect(resolveJson).toBeTypeOf('function');
     resolveJson?.({
-      requested: 2,
+      items: [],
       items: [],
       errors: [],
     });
