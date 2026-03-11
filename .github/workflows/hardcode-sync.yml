@@ -77,9 +77,6 @@ jobs:
           exit 0
 
       - name: Create PR when hardcode changed
-        if: >
-          steps.verify_round1.outputs.passed == 'true' ||
-          steps.verify_round2.outputs.passed == 'true'
         uses: peter-evans/create-pull-request@v7
         with:
           commit-message: "chore(hardcode): sync hardcoded assets and mappings"
