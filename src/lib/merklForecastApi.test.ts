@@ -31,7 +31,6 @@ describe('fetchMerklForecastStates', () => {
 
   it('calls the default batch endpoint when ids are omitted', async () => {
     const json = vi.fn().mockResolvedValue({
-      requested: 0,
       items: [],
       errors: [],
     });
