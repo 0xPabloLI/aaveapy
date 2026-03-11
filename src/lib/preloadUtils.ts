@@ -5,8 +5,48 @@ import { chainIconMap, normalizeChainName } from './chainIconMap';
  * Preload strategies for images and resources
  */
  
- // Track preloaded images to avoid duplicates
- const preloadedImages = new Set<string>();
+// Track preloaded images to avoid duplicates
+const preloadedImages = new Set<string>();
+let preloadPaused = false;
+
+type ConnectionInfo = {
+  saveData?: boolean;
+  effectiveType?: string;
+};
+
+function getConnectionInfo(): ConnectionInfo | undefined {
+  if (typeof navigator === 'undefined') return undefined;
+  return (navigator as Navigator & { connection?: ConnectionInfo }).connection;
+}
+
+function shouldDeferPreload(): boolean {
+  if (preloadPaused) return true;
+  if (typeof document === 'undefined') return false;
+  return document.visibilityState === 'hidden';
+}
+
+export function setPreloadPaused(paused: boolean): void {
+  preloadPaused = paused;
+}
+
+export function isPreloadPaused(): boolean {
+  return preloadPaused;
+}
+
+export function getRecommendedPreloadLimit(totalCandidates: number): number {
+  if (totalCandidates <= 0) return 0;
+
+  const connection = getConnectionInfo();
+  const saveData = connection?.saveData === true;
+  const effectiveType = connection?.effectiveType;
+
+  if (saveData) return Math.min(totalCandidates, 20);
+  if (effectiveType === 'slow-2g' || effectiveType === '2g') return Math.min(totalCandidates, 20);
+  if (effectiveType === '3g') return Math.min(totalCandidates, 60);
+  if (effectiveType === '4g') return Math.min(totalCandidates, 140);
+
+  return Math.min(totalCandidates, 180);
+}
  
  /**
   * Preload an image in the background
@@ -34,15 +74,19 @@ import { chainIconMap, normalizeChainName } from './chainIconMap';
   * Preload multiple images during idle time
   * Non-blocking, uses requestIdleCallback when available
   */
- export function preloadImagesIdle(srcs: string[]): void {
+export function preloadImagesIdle(srcs: string[]): void {
    const uniqueSrcs = srcs.filter(src => !preloadedImages.has(src));
    if (uniqueSrcs.length === 0) return;
  
-   const loadNext = (index: number) => {
-     if (index >= uniqueSrcs.length) return;
- 
-     const scheduleNext = () => {
-       if ('requestIdleCallback' in window) {
+  const loadNext = (index: number) => {
+    if (index >= uniqueSrcs.length) return;
+    if (shouldDeferPreload()) {
+      setTimeout(() => loadNext(index), 300);
+      return;
+    }
+
+    const scheduleNext = () => {
+      if ('requestIdleCallback' in window) {
          window.requestIdleCallback(() => loadNext(index + 1), { timeout: 2000 });
        } else {
          setTimeout(() => loadNext(index + 1), 50);

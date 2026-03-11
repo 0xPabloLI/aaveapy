@@ -1,5 +1,5 @@
 import { lazy, Suspense, useState, useMemo, useCallback, useEffect } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useIsFetching, useQueryClient } from '@tanstack/react-query';
 import { usePreloadReserveAssets } from '@/hooks/usePreloadReserveAssets';
 import { useAaveMarkets } from '@/hooks/useAaveMarkets';
 import { prefetchRateInputsSnapshot } from '@/hooks/useReserveRateInputs';
@@ -21,7 +21,7 @@ import PullToRefresh from '@/components/dashboard/PullToRefresh';
 import { setCachedTydroRate } from '@/lib/cache';
 import { TYDRO_POINT_TO_USD_RATE } from '@/lib/tydro';
 import { AlertTriangle } from 'lucide-react';
-import { preloadIncentiveIcons } from '@/lib/preloadUtils';
+import { preloadIncentiveIcons, setPreloadPaused } from '@/lib/preloadUtils';
 import { buildMarketsList } from '@/lib/marketsList';
 import { normalizeTokenSymbolForSearch } from '@/lib/tokenSymbolNormalization';
 
@@ -31,6 +31,7 @@ const MerklForecastPanel = lazy(() => import('@/components/dashboard/MerklForeca
 
 const Index = () => {
   const queryClient = useQueryClient();
+  const activeQueryCount = useIsFetching();
 
   // State
   const [sortField, setSortField] = useState<SortField>(null);
@@ -87,6 +88,11 @@ const Index = () => {
   const isUsingCache = !isLoading && isError && !!reservesData;
 
   useEffect(() => {
+    setPreloadPaused(activeQueryCount > 0);
+    return () => setPreloadPaused(false);
+  }, [activeQueryCount]);
+
+  useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
 
@@ -114,7 +120,6 @@ const Index = () => {
 
   // Preload ALL token and chain icons once data is ready (no fixed delay)
   usePreloadReserveAssets(stableReserves, {
-    limit: Infinity,
     enabled: hasReserves,
     isSuccess: !!reservesData,
   });

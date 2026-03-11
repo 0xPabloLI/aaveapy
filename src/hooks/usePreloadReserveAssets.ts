@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { ReserveWithSpread } from '@/types/aave';
-import { preloadTokenIcons, preloadChainIcons } from '@/lib/preloadUtils';
+import { getRecommendedPreloadLimit, preloadTokenIcons, preloadChainIcons } from '@/lib/preloadUtils';
 import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
 
 /**
@@ -18,7 +18,7 @@ export function usePreloadReserveAssets(
     isSuccess?: boolean;
   } = {}
 ): void {
-  const { limit = Infinity, enabled = true, isSuccess = true } = options;
+  const { limit, enabled = true, isSuccess = true } = options;
   const hasPreloaded = useRef(false);
 
   useEffect(() => {
@@ -26,7 +26,8 @@ export function usePreloadReserveAssets(
       return;
     }
 
-    const reservesToPreload = reserves.slice(0, limit);
+    const resolvedLimit = limit ?? getRecommendedPreloadLimit(reserves.length);
+    const reservesToPreload = reserves.slice(0, resolvedLimit);
 
     const tokenSymbols = reservesToPreload.map(reserve => {
       const { iconSymbol } = fetchIconSymbolAndName({
