@@ -40,8 +40,6 @@ const response: MarketsResponse = {
     },
   ],
   lastUpdated: '2026-03-09T00:00:00.000Z',
-  isStale: false,
-  updateInProgress: false,
 };
 
 describe('buildMarketsList', () => {

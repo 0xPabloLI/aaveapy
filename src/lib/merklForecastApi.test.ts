@@ -76,7 +76,7 @@ describe('fetchMerklForecastStates', () => {
     });
 
     const [r1, r2] = await Promise.all([p1, p2]);
-    expect(r1.requested).toBe(2);
-    expect(r2.requested).toBe(2);
+    expect(r1.items).toHaveLength(0);
+    expect(r2.items).toHaveLength(0);
   });
 });
