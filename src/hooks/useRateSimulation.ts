@@ -113,7 +113,6 @@ export function buildForecastMerklOpportunities({
         tydroPointToUsdRate
       ),
       pointsPerThousandUsd: undefined,
-      dailyPoints: undefined,
     })),
   }));
 }

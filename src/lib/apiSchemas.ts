@@ -19,10 +19,6 @@ const MeritIncentiveSchema = z.object({
   message: IncentiveMessageSchema.optional(),
   startDate: z.string(),
   endDate: z.string(),
-  startBlock: z.string().optional(),
-  endBlock: z.string().optional(),
-  requiredBorrowTokens: z.union([z.array(z.string()), z.string()]).optional(),
-  requiredSupplyTokens: z.union([z.array(z.string()), z.string()]).optional(),
   lastRoundRewardUsd: z.number().optional(),
 });
 
@@ -33,9 +29,7 @@ const MerklCampaignBreakdownSchema = z.object({
   campaignEndedAt: z.string(),
   campaignId: z.string(),
   whitelistOnly: z.boolean().optional(),
-  distributionType: z.string().optional(),
   pointsPerThousandUsd: z.number().optional(),
-  dailyPoints: z.number().optional(),
 });
 
 const MerklOpportunityGroupSchema = z.object({
@@ -58,9 +52,7 @@ const BrevisIncentiveSchema = z.object({
 // ── Token price entry ──
 const TokenPriceEntrySchema = z.object({
   price: z.number(),
-  updatedAt: z.number(),
-  source: z.string(),
-});
+}).passthrough();
 
 // ── Reserve ──
 const ReserveWithSpreadSchema = z.object({
@@ -89,8 +81,6 @@ const ReserveWithSpreadSchema = z.object({
 export const MarketsResponseSchema = z.object({
   data: z.array(ReserveWithSpreadSchema),
   lastUpdated: z.string(),
-  isStale: z.boolean(),
-  updateInProgress: z.boolean(),
   tokenPrices: z.record(z.string(), TokenPriceEntrySchema).optional(),
 });
 

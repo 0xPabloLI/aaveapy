@@ -12,10 +12,6 @@ export interface MeritIncentive {
   message?: IncentiveMessage;          // Merit campaign message/description (optional)
   startDate: string;                   // Campaign start date
   endDate: string;                     // Campaign end date
-  startBlock?: string;                 // Campaign start block (optional)
-  endBlock?: string;                   // Campaign end block (optional)
-  requiredBorrowTokens?: string[] | string; // List of tokens to borrow, 'multiple' means any token
-  requiredSupplyTokens?: string[] | string; // List of tokens to supply, 'multiple' means any token
   lastRoundRewardUsd?: number;         // Latest round total reward in USD
 }
 
@@ -26,9 +22,7 @@ export interface MerklCampaignBreakdown {
   campaignEndedAt: string;             // Campaign end time (ISO 8601)
   campaignId: string;                 // Campaign ID
   whitelistOnly?: boolean;             // Merkl campaign is whitelist-only
-  distributionType?: string;           // Merkl distribution type from opportunity breakdown
   pointsPerThousandUsd?: number;       // Tydro protocol points/1000USD value (optional)
-  dailyPoints?: number;                // Tydro protocol daily points (optional)
 }
 
 export interface MerklOpportunityGroup {
@@ -84,8 +78,6 @@ export interface ReserveWithSpread {
 export interface MarketsResponse {
   data: ReserveWithSpread[];
   lastUpdated: string;
-  isStale: boolean;
-  updateInProgress: boolean;
   tokenPrices?: TokenPricesIndex;
 }
 
@@ -96,8 +88,6 @@ export interface MarketListItem {
 
 export interface TokenPriceEntry {
   price: number;
-  updatedAt: number;
-  source: string;
 }
 
 export type TokenPricesIndex = Record<string, TokenPriceEntry>;
@@ -115,7 +105,6 @@ export interface MerklForecastStateResponse {
 }
 
 export interface MerklForecastStatesBatchResponse {
-  requested: number;
   items: MerklForecastStateResponse[];
   errors: Array<{
     campaignId: string;
