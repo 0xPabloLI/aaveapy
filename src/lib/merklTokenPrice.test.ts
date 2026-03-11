@@ -10,18 +10,12 @@ import {
 const tokenPrices: TokenPricesIndex = {
   '1:0xunderlying': {
     price: 0.99,
-    updatedAt: 1,
-    source: 'opportunity',
   },
   '1:0xatoken': {
     price: 1.01,
-    updatedAt: 1,
-    source: 'opportunity',
   },
   '1:0xvtoken': {
     price: 1.02,
-    updatedAt: 1,
-    source: 'opportunity',
   },
 };
 

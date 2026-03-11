@@ -9,7 +9,6 @@ describe('fetchMerklForecastStates', () => {
 
   it('fetches batch forecast states in a single request', async () => {
     const json = vi.fn().mockResolvedValue({
-      requested: 2,
       items: [
         { campaignId: '1', plannedDaily: 1, requiredDaily: 1 },
         { campaignId: '2', plannedDaily: 2, requiredDaily: 2 },
@@ -32,7 +31,6 @@ describe('fetchMerklForecastStates', () => {
 
   it('calls the default batch endpoint when ids are omitted', async () => {
     const json = vi.fn().mockResolvedValue({
-      requested: 0,
       items: [],
       errors: [],
     });
@@ -70,13 +68,12 @@ describe('fetchMerklForecastStates', () => {
     await Promise.resolve();
     expect(resolveJson).toBeTypeOf('function');
     resolveJson?.({
-      requested: 2,
       items: [],
       errors: [],
     });
 
     const [r1, r2] = await Promise.all([p1, p2]);
-    expect(r1.requested).toBe(2);
-    expect(r2.requested).toBe(2);
+    expect(r1.items).toHaveLength(0);
+    expect(r2.items).toHaveLength(0);
   });
 });
