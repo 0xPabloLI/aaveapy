@@ -11,7 +11,7 @@ import {
   convertAprToApy,
 } from '@/lib/formatters';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
-import { getCachedRateInputsSnapshotEntry } from '@/lib/cache';
+import { getCachedRateInputsSnapshotEntry, getCachedMerklForecastStatesEntry, setCachedMerklForecastStates } from '@/lib/cache';
 import { simulateNativeRatesAfterActions } from '@/lib/interestRateCalculator';
 import { forecastWithTVL } from '@/lib/merklForecast';
 import { shouldSurfaceForecastError } from '@/lib/merklForecastErrors';
@@ -439,7 +439,7 @@ export function buildRateSimulationResult({
       : combinedNativeSimulation.borrowAprPercent
     : null;
 
-  const supplyAfterIncentive = hasAnyInput
+  const supplyAfterIncentiveRaw = hasAnyInput
     ? buildIncentiveAfter(
         reserve,
         'supply',
@@ -450,7 +450,7 @@ export function buildRateSimulationResult({
         includeWhitelistOnlyMerkl
       )
     : null;
-  const borrowAfterIncentive = hasAnyInput
+  const borrowAfterIncentiveRaw = hasAnyInput
     ? buildIncentiveAfter(
         reserve,
         'borrow',
@@ -461,6 +461,11 @@ export function buildRateSimulationResult({
         includeWhitelistOnlyMerkl
       )
     : null;
+  // Shared scenario represents extra market-side size, so same-side incentive should not increase.
+  const supplyAfterIncentive =
+    supplyAfterIncentiveRaw !== null ? Math.min(supplyAfterIncentiveRaw, supplyCurrentIncentive) : null;
+  const borrowAfterIncentive =
+    borrowAfterIncentiveRaw !== null ? Math.min(borrowAfterIncentiveRaw, borrowCurrentIncentive) : null;
 
   const supplyAfterTotal =
     hasAnyInput && supplyAfterNative !== null && supplyAfterIncentive !== null
@@ -489,10 +494,9 @@ export function buildRateSimulationResult({
   };
 
   const supplyAfterSources = hasAnyInput
-    ? {
-        protocol: supplyCurrentSources.protocol,
-        merit: sumForecastMeritValues(reserve.meritSupplys, isApy, supplyInputUsd),
-        merkl: sumMerklValues(
+    ? (() => {
+        const meritAfterRaw = sumForecastMeritValues(reserve.meritSupplys, isApy, supplyInputUsd);
+        const merklAfterRaw = sumMerklValues(
           buildForecastMerklOpportunities({
             opportunities: reserve.merklSupplys,
             inputUsd: supplyInputUsd,
@@ -503,16 +507,20 @@ export function buildRateSimulationResult({
           isApy,
           tydroPointToUsdRate,
           includeWhitelistOnlyMerkl
-        ),
-        brevis: supplyCurrentSources.brevis,
-      }
+        );
+        return {
+          protocol: supplyCurrentSources.protocol,
+          merit: Math.min(meritAfterRaw, supplyCurrentSources.merit),
+          merkl: Math.min(merklAfterRaw, supplyCurrentSources.merkl),
+          brevis: supplyCurrentSources.brevis,
+        };
+      })()
     : null;
 
   const borrowAfterSources = hasAnyInput
-    ? {
-        protocol: borrowCurrentSources.protocol,
-        merit: sumForecastMeritValues(reserve.meritBorrows, isApy, borrowInputUsd),
-        merkl: sumMerklValues(
+    ? (() => {
+        const meritAfterRaw = sumForecastMeritValues(reserve.meritBorrows, isApy, borrowInputUsd);
+        const merklAfterRaw = sumMerklValues(
           buildForecastMerklOpportunities({
             opportunities: reserve.merklBorrows,
             inputUsd: borrowInputUsd,
@@ -523,9 +531,14 @@ export function buildRateSimulationResult({
           isApy,
           tydroPointToUsdRate,
           includeWhitelistOnlyMerkl
-        ),
-        brevis: borrowCurrentSources.brevis,
-      }
+        );
+        return {
+          protocol: borrowCurrentSources.protocol,
+          merit: Math.min(meritAfterRaw, borrowCurrentSources.merit),
+          merkl: Math.min(merklAfterRaw, borrowCurrentSources.merkl),
+          brevis: borrowCurrentSources.brevis,
+        };
+      })()
     : null;
 
   const supplyLane: SimulationLane = {
@@ -741,6 +754,12 @@ export const useSharedRateSimulations = ({
     ).sort();
   }, [enabled, hasAnyInput, reserves]);
 
+  type ForecastCachePayload = {
+    states: Record<string, MerklForecastStateResponse>;
+    errors: Record<string, string>;
+  };
+  const forecastCachedEntry = getCachedMerklForecastStatesEntry<ForecastCachePayload>();
+
   const forecastQuery = useQuery({
     queryKey: [...FORECAST_STATES_QUERY_KEY, ...allCampaignIds],
     queryFn: async () => {
@@ -755,10 +774,14 @@ export const useSharedRateSimulations = ({
         .forEach((item) => {
           errors[item.campaignId] = item.message;
         });
-      return { states, errors };
+      const payload = { states, errors };
+      setCachedMerklForecastStates(payload);
+      return payload;
     },
     enabled: enabled && allCampaignIds.length > 0,
     staleTime: QUERY_STALE_TIMES.coreSnapshotApi,
+    initialData: forecastCachedEntry?.data,
+    initialDataUpdatedAt: forecastCachedEntry?.updatedAt,
   });
 
   const forecastStates = useMemo(

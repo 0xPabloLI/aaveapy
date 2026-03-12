@@ -6,6 +6,7 @@ const CACHE_KEYS = {
   COINGECKO_FDV: 'coingecko-fdv-cache',
   TOKEN_CATEGORIES: 'token-categories-cache',
   RATE_INPUTS_SNAPSHOT: 'rate-inputs-snapshot-cache',
+  MERKL_FORECAST_STATES: 'merkl-forecast-states-cache',
   COINGECKO_TOKEN_IMAGE_PREFIX: 'coingecko-token-image:',
 } as const;
 
@@ -123,6 +124,15 @@ export function getCachedRateInputsSnapshotEntry<T>(): CachedPayload<T> | null {
 
 export function setCachedRateInputsSnapshot<T>(data: T): void {
   setCacheEntry(CACHE_KEYS.RATE_INPUTS_SNAPSHOT, data);
+}
+
+// Merkl forecast states cache
+export function getCachedMerklForecastStatesEntry<T>(): CachedPayload<T> | null {
+  return getCacheEntry<T>(CACHE_KEYS.MERKL_FORECAST_STATES);
+}
+
+export function setCachedMerklForecastStates<T>(data: T): void {
+  setCacheEntry(CACHE_KEYS.MERKL_FORECAST_STATES, data);
 }
 
 // Token image cache (per symbol)

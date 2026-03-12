@@ -74,6 +74,10 @@ This note records recurring UI/interaction issues found during incentive/forecas
   - Use backend `tokenPrices` for table-wide scenario math.
   - Do not fan out browser-side third-party price lookups across the whole table after one shared input change.
   - If backup pricing is required for broad coverage, put it behind a backend batch/proxy endpoint.
+- **Shared same-side incentive monotonicity**:
+  - In table-level shared simulation, adding `Supply` must not increase the simulated `Supply incentive` for that same row.
+  - Likewise, adding `Borrow` must not increase that row's simulated `Borrow incentive`.
+  - Apply this rule both to the incentive total and each source breakdown row (`ACI`, `Merkl`) so totals and rows stay directionally consistent.
 
 ## Debugging checklist for incentive UI regressions
 

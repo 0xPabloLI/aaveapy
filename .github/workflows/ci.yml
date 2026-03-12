@@ -38,7 +38,7 @@ jobs:
             npm install --package-lock-only
           fi
       - name: Install dependencies
-        run: npm ci
+        run: npm run ci:lockcheck
       - name: Run lint
         run: npm run lint
 
@@ -62,7 +62,7 @@ jobs:
             npm install --package-lock-only
           fi
       - name: Install dependencies
-        run: npm ci
+        run: npm run ci:lockcheck
       - name: Run build
         run: npm run build
 
@@ -79,7 +79,7 @@ jobs:
           node-version: 20
           cache: npm
       - name: Install dependencies
-        run: npm ci
+        run: npm run ci:lockcheck
       - name: Audit runtime dependencies (High/Critical)
         run: npm audit --omit=dev --audit-level=high
 
@@ -108,13 +108,13 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm run ci:lockcheck
 
       - name: Attempt dependency remediation
         run: npm run ci:auto-fix
 
       - name: Reinstall dependencies for verification
-        run: npm ci
+        run: npm run ci:lockcheck
 
       - name: Validate checks after remediation
         id: verify

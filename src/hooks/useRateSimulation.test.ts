@@ -152,7 +152,7 @@ describe('buildRateSimulationResult', () => {
     expect(result.utilization.after).not.toBe(result.utilization.current);
   });
 
-  it('uses forecasted Merkl values in the supply breakdown when a shared supply amount is present', () => {
+  it('does not increase supply incentives when a shared supply amount is present', () => {
     const reserve: ReserveWithSpread = {
       ...baseReserve,
       merklSupplys: [
@@ -197,8 +197,8 @@ describe('buildRateSimulationResult', () => {
     });
 
     expect(result.supply.sources.merkl.current).toBe(10);
-    expect(result.supply.sources.merkl.after).toBeGreaterThan(10);
-    expect(result.supply.afterIncentive).toBeGreaterThan(result.supply.currentIncentive);
+    expect(result.supply.sources.merkl.after).toBe(10);
+    expect(result.supply.afterIncentive).toBeLessThanOrEqual(result.supply.currentIncentive);
   });
 
   it('recomputes merit incentives when a shared supply amount is present even without latest-round reward data', () => {
@@ -209,8 +209,8 @@ describe('buildRateSimulationResult', () => {
           apr: 4.084439890516138,
           selfApr: 4.084439890516138,
           link: 'https://apps.aavechan.com/merit/celo-supply-usdt',
-          startDate: 'Thu Feb 26 2026',
-          endDate: 'Thu Mar 12 2026',
+          startDate: '2020-01-01',
+          endDate: '2099-01-01',
           name: 'Supply USDT',
           message: [
             {

@@ -147,3 +147,12 @@ When implementing mobile carousels:
 5. Show navigation arrows conditionally
 6. Set `basis-[85%]` for peek effect
 7. Use `align: "center"` for centered snap
+
+## Learned User Preferences
+- Prefer Chinese for collaboration and implementation discussions.
+- Prefer direct execution after confirmation (for example when saying "直接执行", "继续", or "你来处理"), instead of receiving only manual command suggestions.
+- Prefer evidence-based diagnosis with concrete runtime artifacts (such as CI logs and live API responses) before concluding root cause.
+
+## Learned Workspace Facts
+- Local git hooks in this setup are managed under the main repository `.git/hooks` and are local-only (not versioned).
+- This workspace currently uses a local pre-push flow that runs lockfile consistency checks before the existing `ci:remote` checks.
