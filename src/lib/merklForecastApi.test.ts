@@ -1,10 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { fetchMerklForecastStates } from './merklForecastApi';
+import { __resetMerklForecastApiCacheForTests, fetchMerklForecastStates } from './merklForecastApi';
 
 describe('fetchMerklForecastStates', () => {
   afterEach(() => {
     vi.restoreAllMocks();
+    __resetMerklForecastApiCacheForTests();
   });
 
   it('fetches batch forecast states in a single request', async () => {

@@ -3,6 +3,8 @@ import { useIsFetching, useQueryClient } from '@tanstack/react-query';
 import { usePreloadReserveAssets } from '@/hooks/usePreloadReserveAssets';
 import { useAaveMarkets } from '@/hooks/useAaveMarkets';
 import { prefetchRateInputsSnapshot } from '@/hooks/useReserveRateInputs';
+import { fetchMerklForecastStates } from '@/lib/merklForecastApi';
+import { fetchTokenCategories, useTokenCategories } from '@/hooks/useTokenCategories';
 import { SortField, SortOrder, TokenCategory, ReserveWithSpread } from '@/types/aave';
 import {
   buildTokenCategoryGroups,
@@ -11,7 +13,6 @@ import {
   isBtcRelatedSymbol,
   isPendleSymbol,
 } from '@/lib/tokenCategories';
-import { useTokenCategories } from '@/hooks/useTokenCategories';
 import Header from '@/components/dashboard/Header';
 import FilterBar from '@/components/dashboard/FilterBar';
 import TopOpportunities from '@/components/dashboard/TopOpportunities';
@@ -23,6 +24,7 @@ import { TYDRO_POINT_TO_USD_RATE } from '@/lib/tydro';
 import { AlertTriangle } from 'lucide-react';
 import { preloadIncentiveIcons, setPreloadPaused, shouldUseFullPreloadMode } from '@/lib/preloadUtils';
 import { buildMarketsList } from '@/lib/marketsList';
+import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
 import { normalizeTokenSymbolForSearch } from '@/lib/tokenSymbolNormalization';
 
 import IncentiveTooltip from '@/components/dashboard/IncentiveTooltip';
@@ -146,6 +148,30 @@ const Index = () => {
         // No-op: keep UI non-blocking if prefetch fails.
       });
     }, 700);
+    return () => clearTimeout(timeoutId);
+  }, [hasReserves, queryClient]);
+
+  // Warm up global Merkl forecast-state snapshot once reserves are loaded (higher priority than token-categories).
+  useEffect(() => {
+    if (!hasReserves) return;
+    const timeoutId = setTimeout(() => {
+      void fetchMerklForecastStates().catch(() => {
+        // No-op: keep UI non-blocking if prefetch fails.
+      });
+    }, 800);
+    return () => clearTimeout(timeoutId);
+  }, [hasReserves]);
+
+  // Warm up token-categories after reserves load (post-home warm-up).
+  useEffect(() => {
+    if (!hasReserves) return;
+    const timeoutId = setTimeout(() => {
+      void queryClient.prefetchQuery({
+        queryKey: ['token-categories'],
+        queryFn: fetchTokenCategories,
+        staleTime: QUERY_STALE_TIMES.tokenCategories,
+      }).catch(() => {});
+    }, 1200);
     return () => clearTimeout(timeoutId);
   }, [hasReserves, queryClient]);
 

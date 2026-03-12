@@ -10,7 +10,7 @@ interface CoingeckoCategoriesResponse {
   uniqueSymbolsEth?: string[];
 }
 
-const fetchTokenCategories = async (): Promise<TokenCategoryOverrides> => {
+export const fetchTokenCategories = async (): Promise<TokenCategoryOverrides> => {
   const response = await fetch(`${API_BASE}/coingecko-categories`);
   if (!response.ok) {
     throw new Error('Failed to fetch token categories');

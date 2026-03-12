@@ -18,11 +18,11 @@ This note tracks interaction decisions for the inline reserve simulation flow.
   - `markets` provides reserve rows plus any local `tokenPrices`.
   - `rate-inputs` provides the native-rate state used for supply/borrow recomputation.
   - `forecast-states` provides Merkl campaign state when a campaign is actually being forecast.
-- Browser-side third-party price backup is not allowed for table-wide shared simulation.
-  - The fan-out is too large and turns one scenario edit into many CoinGecko requests.
-  - If broad backup coverage is needed, add a backend batch/proxy path instead of restoring client-side scatter/gather.
-- Single-target flows can still use narrower fallback logic.
-  - Examples: one tooltip, one dedicated forecast panel, or other isolated user actions with bounded request count.
+- Browser-side third-party price backup is enabled for shared simulation as a bounded fallback.
+  - Primary path remains backend snapshot `tokenPrices`.
+  - Fallback is only used when snapshot misses price entries and is protected by query-key dedupe, module in-flight dedupe, limiter, and TTL caches.
+- Keep monitoring fan-out and provider limits.
+  - If request volume rises, prefer backend batch/proxy consolidation over unbounded client scatter/gather.
 
 ## Interaction direction
 

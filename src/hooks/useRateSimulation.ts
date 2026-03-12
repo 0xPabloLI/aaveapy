@@ -702,13 +702,11 @@ export const useSharedRateSimulations = ({
           return (
             (await resolveForecastTokenPriceWithBackup(
               buildPriceLookup(reserve, tokenPrices, 'Supply'),
-              fetch,
-              { allowThirdPartyFetch: false }
+              fetch
             )) ??
             (await resolveForecastTokenPriceWithBackup(
               buildPriceLookup(reserve, tokenPrices, 'Borrow'),
-              fetch,
-              { allowThirdPartyFetch: false }
+              fetch
             )) ??
             null
           );
