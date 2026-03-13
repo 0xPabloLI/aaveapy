@@ -19,6 +19,7 @@ Source: `src/lib/interestRateCalculator.ts`
 | `availableLiquidity` | string (bigint) | token decimals | Pool liquidity available for borrowing |
 | `totalScaledVariableDebt` | string (bigint) | scaled units | Accumulated variable debt (needs index multiplication) |
 | `variableBorrowIndex` | string (bigint) | ray (10^27) | Interest accumulation index |
+| `deficit` | string (bigint) | token decimals | Reserve deficit from onchain/Aave API |
 | `reserveFactor` | string (bigint) | bps | Protocol fee on interest (0–10000) |
 | `optimalUsageRate` | string (bigint) | ray | Target utilization (kink point) |
 | `baseVariableBorrowRate` | string (bigint) | ray | Minimum borrow rate |
@@ -38,15 +39,14 @@ Where `rayMul(a, b) = (a × b + RAY/2) / RAY`
 ### 2. Adjust for User Actions (simulation)
 
 ```
-availableLiquidity' = availableLiquidity + supplyAmount - borrowAmount
-totalVariableDebt'  = totalVariableDebt + borrowAmount
+totalVariableDebt' = totalVariableDebt + borrowAmount
+utilizationDenominator = availableLiquidity + totalVariableDebt + deficit + supplyAmount
 ```
 
 ### 3. Compute Utilization Rate
 
 ```
-totalLiquidityAndDebt = availableLiquidity' + totalVariableDebt'
-utilizationRate = rayDiv(totalVariableDebt', totalLiquidityAndDebt)
+utilizationRate = rayDiv(totalVariableDebt', utilizationDenominator)
 ```
 
 Where `rayDiv(a, b) = (a × RAY + b/2) / b`

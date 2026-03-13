@@ -6,7 +6,7 @@ import { ReserveWithSpread, ETHEREUM_MARKET_NAMES, TokenPricesIndex } from '@/ty
 import { 
   formatPercent, 
   formatSpread, 
-  formatMarketSizeUsd,
+  formatReserveSizeUsd,
   formatUsd,
   calculateTotalSupplyApr,
   calculateTotalSupplyApy,
@@ -238,19 +238,19 @@ const ReservesTable = ({
     return pickScenarioValue(simulation.spread.current, simulation.spread.after);
   };
 
-  const getDisplayMarketSizeUsd = (reserve: ReserveWithSpread): number | null => {
-    const marketSize = reserve.marketSizeUsd;
-    if (marketSize == null || !Number.isFinite(marketSize)) return marketSize ?? null;
+  const getDisplayReserveSizeUsd = (reserve: ReserveWithSpread): number | null => {
+    const reserveSize = reserve.reserveSizeUsd;
+    if (reserveSize == null || !Number.isFinite(reserveSize)) return reserveSize ?? null;
     const supplyRaw = parseNumberInput(debouncedSharedSupplyInput);
     const sim = getSimulation(reserve);
-    const marketSizeUsd =
+    const reserveSizeUsd =
       sharedInputMode === 'usd'
         ? supplyRaw
         : sim?.tokenPrice != null && Number.isFinite(sim.tokenPrice)
           ? supplyRaw * sim.tokenPrice
           : 0;
-    if (marketSizeUsd <= 0) return marketSize;
-    return marketSize + marketSizeUsd;
+    if (reserveSizeUsd <= 0) return reserveSize;
+    return reserveSize + reserveSizeUsd;
   };
 
   // Sort data based on active column and its sort mode
@@ -272,8 +272,8 @@ const ReservesTable = ({
         return priceSortOrder === 'desc' ? -comparison : comparison;
       }
       if (sortColumn === 'size') {
-        const aT = getDisplayMarketSizeUsd(a) ?? -Infinity;
-        const bT = getDisplayMarketSizeUsd(b) ?? -Infinity;
+        const aT = getDisplayReserveSizeUsd(a) ?? -Infinity;
+        const bT = getDisplayReserveSizeUsd(b) ?? -Infinity;
         comparison = aT - bT;
         return sizeSortOrder === 'desc' ? -comparison : comparison;
       }

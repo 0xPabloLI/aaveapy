@@ -5,8 +5,9 @@ This note tracks interaction decisions for the inline reserve simulation flow.
 ## Current behavior
 
 - Native simulation uses one combined reserve state:
-  - `supplyAmount` increases available liquidity
-  - `borrowAmount` decreases available liquidity and increases variable debt
+  - `supplyAmount` increases the utilization denominator
+  - `borrowAmount` increases variable debt
+  - denominator includes `deficit` from `/rate-inputs`
   - utilization, borrow rate, and supply rate are recalculated from that same combined state
 - Incentive simulation remains reserve-specific:
   - supply-side incentives react to the shared supply input

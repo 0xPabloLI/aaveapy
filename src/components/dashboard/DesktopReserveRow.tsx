@@ -3,7 +3,7 @@ import { ExternalLink } from 'lucide-react';
 import { TableRow, TableCell } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ReserveWithSpread, ETHEREUM_MARKET_NAMES } from '@/types/aave';
-import { formatPercent, formatSpread, formatMarketSizeUsd, formatUsd } from '@/lib/formatters';
+import { formatPercent, formatSpread, formatReserveSizeUsd, formatUsd } from '@/lib/formatters';
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
 import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
 import { getChainIconSrc } from '@/lib/chainIcons';
@@ -94,10 +94,10 @@ const DesktopReserveRow = memo(({
       : simulation?.tokenPrice && Number.isFinite(simulation.tokenPrice)
         ? supplyInputRaw * simulation.tokenPrice
         : 0;
-  const displayMarketSizeUsd =
-    reserve.marketSizeUsd != null && Number.isFinite(reserve.marketSizeUsd) && supplyInputUsd > 0
-      ? reserve.marketSizeUsd + supplyInputUsd
-      : reserve.marketSizeUsd;
+  const displayReserveSizeUsd =
+    reserve.reserveSizeUsd != null && Number.isFinite(reserve.reserveSizeUsd) && supplyInputUsd > 0
+      ? reserve.reserveSizeUsd + supplyInputUsd
+      : reserve.reserveSizeUsd;
 
   return (
     <Fragment>
@@ -148,9 +148,9 @@ const DesktopReserveRow = memo(({
         </TableCell>
         {/* Size/Cap */}
         <TableCell className="px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell tabular-nums text-foreground ds-text-13">
-          <span>{formatMarketSizeUsd(displayMarketSizeUsd)}</span>
+          <span>{formatReserveSizeUsd(displayReserveSizeUsd)}</span>
           {reserve.supplyCapUsd != null && Number.isFinite(reserve.supplyCapUsd) && (
-            <span className="text-muted-foreground">/{formatMarketSizeUsd(reserve.supplyCapUsd)}</span>
+            <span className="text-muted-foreground">/{formatReserveSizeUsd(reserve.supplyCapUsd)}</span>
           )}
         </TableCell>
         {/* Supply */}

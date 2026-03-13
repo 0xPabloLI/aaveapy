@@ -57,7 +57,7 @@ export interface ReserveWithSpread {
   supplyApy?: number;
   borrowApy?: number;
   tokenPrice?: number;
-  marketSizeUsd?: number;
+  reserveSizeUsd?: number;
   supplyCapUsd?: number;
   utilizationPct?: number;
   
@@ -134,6 +134,7 @@ export interface ReserveRateInput {
   chainId: number;
   tokenAddress: string;
   decimals: number;
+  deficit: string;
   availableLiquidity: string;
   totalScaledVariableDebt: string;
   variableBorrowIndex: string;

@@ -114,14 +114,13 @@ export interface NativeRateSimulation {
 
 function computeRates(
   rateInput: ReserveRateInput,
-  availableLiquidity: bigint,
+  utilizationDenominator: bigint,
   totalVariableDebt: bigint,
   addedLiquidityRaw: bigint,
   addedBorrowRaw: bigint,
 ): NativeRateSimulation {
-  const totalLiquidityAndDebt = availableLiquidity + totalVariableDebt;
   const utilizationRate =
-    totalLiquidityAndDebt > 0n ? rayDiv(totalVariableDebt, totalLiquidityAndDebt) : 0n;
+    utilizationDenominator > 0n ? clamp(rayDiv(totalVariableDebt, utilizationDenominator), 0n, RAY) : 0n;
 
   const variableBorrowRate = calculateVariableBorrowRate(
     utilizationRate,
@@ -163,13 +162,15 @@ export function simulateNativeRatesAfterActions(
   const addedBorrow = parseUnits(borrowAmount, decimals);
 
   const baseAvailableLiquidity = toBigInt(rateInput.availableLiquidity);
-  const availableLiquidityBeforeClamp = baseAvailableLiquidity + addedLiquidity - addedBorrow;
-  const availableLiquidity = availableLiquidityBeforeClamp > 0n ? availableLiquidityBeforeClamp : 0n;
   const totalScaledVariableDebt = toBigInt(rateInput.totalScaledVariableDebt);
   const variableBorrowIndex = toBigInt(rateInput.variableBorrowIndex);
+  const baseTotalVariableDebt = rayMul(totalScaledVariableDebt, variableBorrowIndex);
+  const baseDeficit = toBigInt(rateInput.deficit);
+  const denominatorBeforeClamp = baseAvailableLiquidity + baseTotalVariableDebt + baseDeficit + addedLiquidity;
+  const utilizationDenominator = denominatorBeforeClamp > 0n ? denominatorBeforeClamp : 0n;
   const totalVariableDebt = rayMul(totalScaledVariableDebt, variableBorrowIndex) + addedBorrow;
 
-  return computeRates(rateInput, availableLiquidity, totalVariableDebt, addedLiquidity, addedBorrow);
+  return computeRates(rateInput, utilizationDenominator, totalVariableDebt, addedLiquidity, addedBorrow);
 }
 
 export function simulateNativeRatesAfterSupply(

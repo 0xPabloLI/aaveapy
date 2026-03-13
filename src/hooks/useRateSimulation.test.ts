@@ -33,6 +33,7 @@ const baseRateInput: ReserveRateInput = {
   tokenAddress: '0x0000000000000000000000000000000000000001',
   marketName: 'Core',
   decimals: 6,
+  deficit: '0',
   availableLiquidity: '1000000000000',
   totalScaledVariableDebt: '500000000000',
   variableBorrowIndex: '1000000000000000000000000000',
