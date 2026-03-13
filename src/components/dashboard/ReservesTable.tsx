@@ -25,6 +25,7 @@ import MobileReserveCard from './MobileReserveCard';
 import DesktopReserveRow from './DesktopReserveRow';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getReserveSimulationId, useSharedRateSimulations } from '@/hooks/useRateSimulation';
+import { parseNumberInput } from '@/lib/numberFormat';
 
 interface ReservesTableProps {
   reserves: ReserveWithSpread[];
@@ -43,6 +44,7 @@ interface ReservesTableProps {
 
 type SortMode = 'total' | 'native' | 'incentive';
 
+type SortableColumn = 'token' | 'price' | 'tvl' | 'util' | 'supply' | 'borrow' | 'spread';
 
 const DEFAULT_VISIBLE_COUNT = 20;
 
@@ -61,7 +63,11 @@ const ReservesTable = ({
   scrollToReserveId,
 }: ReservesTableProps) => {
   const isMobile = useIsMobile();
-  const [activeSortColumn, setActiveSortColumn] = useState<'supply' | 'borrow' | 'spread' | null>('supply');
+  const [activeSortColumn, setActiveSortColumn] = useState<SortableColumn | null>('supply');
+  const [tokenSortOrder, setTokenSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [priceSortOrder, setPriceSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [tvlSortOrder, setTvlSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [utilSortOrder, setUtilSortOrder] = useState<'asc' | 'desc'>('desc');
   const [supplySortMode, setSupplySortMode] = useState<SortMode>('incentive');
   const [supplySortOrder, setSupplySortOrder] = useState<'asc' | 'desc'>('desc');
   const [borrowSortMode, setBorrowSortMode] = useState<SortMode>('total');
@@ -226,6 +232,21 @@ const ReservesTable = ({
     return pickScenarioValue(simulation.spread.current, simulation.spread.after);
   };
 
+  const getDisplayTvlUsd = (reserve: ReserveWithSpread): number | null => {
+    const tvl = reserve.tvlUsd;
+    if (tvl == null || !Number.isFinite(tvl)) return tvl ?? null;
+    const supplyRaw = parseNumberInput(debouncedSharedSupplyInput);
+    const sim = getSimulation(reserve);
+    const supplyUsd =
+      sharedInputMode === 'usd'
+        ? supplyRaw
+        : sim?.tokenPrice != null && Number.isFinite(sim.tokenPrice)
+          ? supplyRaw * sim.tokenPrice
+          : 0;
+    if (supplyUsd <= 0) return tvl;
+    return tvl + supplyUsd;
+  };
+
   // Sort data based on active column and its sort mode
   const sortedData = useMemo(() => {
     return [...reserves].sort((a, b) => {
@@ -233,6 +254,29 @@ const ReservesTable = ({
 
       // Default to supply total desc when no column is selected
       const sortColumn = activeSortColumn ?? 'supply';
+
+      if (sortColumn === 'token') {
+        const order = tokenSortOrder === 'asc' ? 1 : -1;
+        return order * (a.tokenSymbol.localeCompare(b.tokenSymbol, undefined, { sensitivity: 'base' }));
+      }
+      if (sortColumn === 'price') {
+        const aP = a.tokenPrice ?? -Infinity;
+        const bP = b.tokenPrice ?? -Infinity;
+        comparison = aP - bP;
+        return priceSortOrder === 'desc' ? -comparison : comparison;
+      }
+      if (sortColumn === 'tvl') {
+        const aT = getDisplayTvlUsd(a) ?? -Infinity;
+        const bT = getDisplayTvlUsd(b) ?? -Infinity;
+        comparison = aT - bT;
+        return tvlSortOrder === 'desc' ? -comparison : comparison;
+      }
+      if (sortColumn === 'util') {
+        const aU = a.utilizationPct ?? -Infinity;
+        const bU = b.utilizationPct ?? -Infinity;
+        comparison = aU - bU;
+        return utilSortOrder === 'desc' ? -comparison : comparison;
+      }
 
       if (sortColumn === 'supply') {
         // Supply sorting
@@ -296,7 +340,7 @@ const ReservesTable = ({
       }
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reserves, activeSortColumn, supplySortMode, supplySortOrder, borrowSortMode, borrowSortOrder, spreadSortOrder, simulationsById, hasSharedScenario, isApy, tydroPointToUsdRate, includeWhitelistOnlyMerkl]);
+  }, [reserves, activeSortColumn, tokenSortOrder, priceSortOrder, tvlSortOrder, utilSortOrder, supplySortMode, supplySortOrder, borrowSortMode, borrowSortOrder, spreadSortOrder, simulationsById, hasSharedScenario, isApy, tydroPointToUsdRate, includeWhitelistOnlyMerkl, debouncedSharedSupplyInput, sharedInputMode]);
 
   const supplySortLabel = {
     total: 'Total',
@@ -323,6 +367,23 @@ const ReservesTable = ({
   const toggleSpreadSortOrder = () => {
     setActiveSortColumn('spread');
     setSpreadSortOrder(spreadSortOrder === 'desc' ? 'asc' : 'desc');
+  };
+
+  const handleSortToken = () => {
+    setActiveSortColumn('token');
+    setTokenSortOrder((o) => (o === 'asc' ? 'desc' : 'asc'));
+  };
+  const handleSortPrice = () => {
+    setActiveSortColumn('price');
+    setPriceSortOrder((o) => (o === 'desc' ? 'asc' : 'desc'));
+  };
+  const handleSortTvl = () => {
+    setActiveSortColumn('tvl');
+    setTvlSortOrder((o) => (o === 'desc' ? 'asc' : 'desc'));
+  };
+  const handleSortUtil = () => {
+    setActiveSortColumn('util');
+    setUtilSortOrder((o) => (o === 'desc' ? 'asc' : 'desc'));
   };
 
   const handleIncentiveClick = useCallback((
@@ -760,11 +821,45 @@ const ReservesTable = ({
             <TableRow className="border-border/50 bg-card/60">
               {/* Token */}
               <TableHead className="px-[var(--ds-space-3)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground">
-                Token
+                <button
+                  type="button"
+                  onClick={handleSortToken}
+                  className={`ds-chip-heading md:ds-text-16 gap-[var(--ds-space-1)] transition-colors ${
+                    activeSortColumn === 'token' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground/80'
+                  }`}
+                >
+                  <span>Token</span>
+                  {activeSortColumn === 'token' ? (
+                    tokenSortOrder === 'asc' ? (
+                      <ArrowUp className="w-3 h-3" />
+                    ) : (
+                      <ArrowDown className="w-3 h-3" />
+                    )
+                  ) : (
+                    <ArrowDown className="w-3 h-3 opacity-50" />
+                  )}
+                </button>
               </TableHead>
               {/* Price */}
               <TableHead className="px-[var(--ds-space-3)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
-                Price
+                <button
+                  type="button"
+                  onClick={handleSortPrice}
+                  className={`ds-chip-heading md:ds-text-16 gap-[var(--ds-space-1)] transition-colors ${
+                    activeSortColumn === 'price' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground/80'
+                  }`}
+                >
+                  <span>Price</span>
+                  {activeSortColumn === 'price' ? (
+                    priceSortOrder === 'desc' ? (
+                      <ArrowDown className="w-3 h-3" />
+                    ) : (
+                      <ArrowUp className="w-3 h-3" />
+                    )
+                  ) : (
+                    <ArrowDown className="w-3 h-3 opacity-50" />
+                  )}
+                </button>
               </TableHead>
               {/* Market */}
               <TableHead className="px-[var(--ds-space-3)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
@@ -772,7 +867,24 @@ const ReservesTable = ({
               </TableHead>
               {/* TVL */}
               <TableHead className="px-[var(--ds-space-3)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
-                TVL
+                <button
+                  type="button"
+                  onClick={handleSortTvl}
+                  className={`ds-chip-heading md:ds-text-16 gap-[var(--ds-space-1)] transition-colors ${
+                    activeSortColumn === 'tvl' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground/80'
+                  }`}
+                >
+                  <span>TVL</span>
+                  {activeSortColumn === 'tvl' ? (
+                    tvlSortOrder === 'desc' ? (
+                      <ArrowDown className="w-3 h-3" />
+                    ) : (
+                      <ArrowUp className="w-3 h-3" />
+                    )
+                  ) : (
+                    <ArrowDown className="w-3 h-3 opacity-50" />
+                  )}
+                </button>
               </TableHead>
               {/* Supply Column - center aligned */}
               <TableHead className="px-[var(--ds-space-3)] py-[var(--ds-space-3)] ds-text-14 md:ds-text-16 font-semibold text-muted-foreground text-center">
@@ -1058,7 +1170,24 @@ const ReservesTable = ({
               </TableHead>
               {/* Utilization */}
               <TableHead className="px-[var(--ds-space-3)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
-                Util.
+                <button
+                  type="button"
+                  onClick={handleSortUtil}
+                  className={`ds-chip-heading md:ds-text-16 gap-[var(--ds-space-1)] transition-colors ${
+                    activeSortColumn === 'util' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground/80'
+                  }`}
+                >
+                  <span>Util.</span>
+                  {activeSortColumn === 'util' ? (
+                    utilSortOrder === 'desc' ? (
+                      <ArrowDown className="w-3 h-3" />
+                    ) : (
+                      <ArrowUp className="w-3 h-3" />
+                    )
+                  ) : (
+                    <ArrowDown className="w-3 h-3 opacity-50" />
+                  )}
+                </button>
               </TableHead>
             </TableRow>
           </TableHeader>

@@ -1,5 +1,4 @@
-import { formatPercent, formatSpread } from '@/lib/formatters';
-import { formatNumberInput } from '@/lib/numberFormat';
+import { formatPercent, formatSpread, formatTvl } from '@/lib/formatters';
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
 import type { RateSimulationResult } from '@/hooks/useRateSimulation';
 import type { ReserveWithSpread } from '@/types/aave';
@@ -37,11 +36,6 @@ const formatMetricValue = (value: number | null, kind: 'rate' | 'spread' = 'rate
 
 const hasMeaningfulValue = (value: number | null) =>
   value !== null && Number.isFinite(value) && Math.abs(value) >= 0.005;
-
-const formatScenarioAmount = (value: string) => {
-  const normalized = formatNumberInput(value);
-  return normalized.trim().length > 0 ? normalized : '—';
-};
 
 const ValueCard = ({
   title,
@@ -169,6 +163,20 @@ const SimulationSubRow = ({
 
   const aaveUrl = buildAaveReserveUrl({ marketName: reserve.marketName, tokenAddress: reserve.tokenAddress });
 
+  const currentTvlUsd =
+    reserve.tvlUsd != null && Number.isFinite(reserve.tvlUsd) ? reserve.tvlUsd : null;
+  const afterTvlUsd =
+    currentTvlUsd !== null
+      ? currentTvlUsd + simulation.supply.inputUsd - simulation.borrow.inputUsd
+      : null;
+  const deltaTvlPct =
+    currentTvlUsd !== null &&
+    currentTvlUsd !== 0 &&
+    afterTvlUsd !== null &&
+    Number.isFinite(afterTvlUsd)
+      ? ((afterTvlUsd - currentTvlUsd) / currentTvlUsd) * 100
+      : null;
+
   const supplyRows = [
     {
       label: 'Native',
@@ -255,24 +263,39 @@ const SimulationSubRow = ({
 
   return (
     <div className="rounded-xl border border-border/70 bg-muted/20 p-[var(--ds-space-3)]">
-      <div className={`flex ${compact ? 'flex-col gap-[var(--ds-space-2)]' : 'items-start justify-between gap-[var(--ds-space-3)]'}`}>
-        <div>
-          <span className="ds-text-13 font-semibold text-foreground">Shared {rateLabel} simulation</span>
-          <p className="mt-[var(--ds-space-0-5)] ds-text-11 text-muted-foreground">
-            Token: {reserve.tokenSymbol}
-          </p>
-        </div>
-        <div className={`grid ${compact ? 'grid-cols-1' : 'grid-cols-2'} gap-[var(--ds-space-2)]`}>
-          <div className="rounded-lg border border-border/60 bg-background/80 px-[var(--ds-space-2)] py-[var(--ds-space-1-5)]">
-            <p className="ds-text-10 uppercase tracking-wide text-muted-foreground">Supply ({inputMode === 'usd' ? 'USD' : reserve.tokenSymbol})</p>
-            <p className="mt-[var(--ds-space-0-5)] ds-text-12 font-semibold text-foreground">{inputMode === 'usd' ? '$' : ''}{formatScenarioAmount(supplyInput)}</p>
-          </div>
-          <div className="rounded-lg border border-border/60 bg-background/80 px-[var(--ds-space-2)] py-[var(--ds-space-1-5)]">
-            <p className="ds-text-10 uppercase tracking-wide text-muted-foreground">Borrow ({inputMode === 'usd' ? 'USD' : reserve.tokenSymbol})</p>
-            <p className="mt-[var(--ds-space-0-5)] ds-text-12 font-semibold text-foreground">{inputMode === 'usd' ? '$' : ''}{formatScenarioAmount(borrowInput)}</p>
-          </div>
-        </div>
+      <div>
+        <span className="ds-text-13 font-semibold text-foreground">Shared {rateLabel} simulation</span>
+        <p className="mt-[var(--ds-space-0-5)] ds-text-11 text-muted-foreground">
+          Token: {reserve.tokenSymbol}
+        </p>
       </div>
+
+      {currentTvlUsd !== null && (
+        <div className={`mt-[var(--ds-space-3)] grid ${compact ? 'grid-cols-1' : 'grid-cols-3'} gap-[var(--ds-space-2)]`}>
+          <div className="rounded-lg border border-border/60 bg-background/80 px-[var(--ds-space-3)] py-[var(--ds-space-2)]">
+            <p className="ds-text-10 uppercase tracking-wide text-muted-foreground">TVL (current)</p>
+            <p className="mt-[var(--ds-space-0-5)] ds-text-14 font-bold text-foreground">
+              {formatTvl(currentTvlUsd)}
+            </p>
+          </div>
+          <div className="rounded-lg border border-border/60 bg-background/80 px-[var(--ds-space-3)] py-[var(--ds-space-2)]">
+            <p className="ds-text-10 uppercase tracking-wide text-muted-foreground">TVL (after)</p>
+            <p className={`mt-[var(--ds-space-0-5)] ds-text-14 font-bold ${afterTvlUsd === null ? 'text-muted-foreground' : 'text-foreground'}`}>
+              {afterTvlUsd === null ? '—' : formatTvl(afterTvlUsd)}
+            </p>
+          </div>
+          <div className="rounded-lg border border-border/60 bg-background/80 px-[var(--ds-space-3)] py-[var(--ds-space-2)]">
+            <p className="ds-text-10 uppercase tracking-wide text-muted-foreground">TVL change</p>
+            <p
+              className={`mt-[var(--ds-space-0-5)] ds-text-14 font-bold ${
+                deltaClass(deltaTvlPct, 'ds-text-emerald-600')
+              }`}
+            >
+              {formatDelta(deltaTvlPct)}
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className={`mt-[var(--ds-space-3)] grid ${compact ? 'grid-cols-1' : 'grid-cols-4'} gap-[var(--ds-space-2)]`}>
         <ValueCard

@@ -212,7 +212,7 @@ const DesktopReserveRow = memo(({
           </div>
         </TableCell>
         {/* Utilization */}
-        <TableCell className="px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell tabular-nums text-amber-600 ds-text-14">
+        <TableCell className="px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell tabular-nums font-bold text-amber-600 ds-text-14">
           {formatPercent(reserve.utilizationPct ?? null)}
         </TableCell>
       </TableRow>
