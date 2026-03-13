@@ -20,7 +20,7 @@ import TopOpportunities from '@/components/dashboard/TopOpportunities';
 import ReservesTable from '@/components/dashboard/ReservesTable';
 import LoadingState from '@/components/dashboard/LoadingState';
 import PullToRefresh from '@/components/dashboard/PullToRefresh';
-import { setCachedTydroRate } from '@/lib/cache';
+import { getCachedMarkets, setCachedTydroRate } from '@/lib/cache';
 import { TYDRO_POINT_TO_USD_RATE } from '@/lib/tydro';
 import { AlertTriangle } from 'lucide-react';
 import { preloadIncentiveIcons, setPreloadPaused, shouldUseFullPreloadMode } from '@/lib/preloadUtils';
@@ -75,20 +75,18 @@ const Index = () => {
     }
   }, [tydroPointToUsdRateInput]);
 
-  // Fetch data - no sort params, all sorting done on frontend
-  // This allows the table's total/native/incentive mode to work correctly
-  const { data: reservesData, isLoading, error, isError, refetch } = useAaveMarkets();
+  // Fetch data - API returns { snapshot, reserves } (breaking change)
+  const { data, isLoading, error, isError, refetch } = useAaveMarkets();
   const { data: tokenCategoryOverrides } = useTokenCategories();
 
-  const effectiveReservesData = reservesData;
+  const cachedMarkets = useMemo(() => getCachedMarkets(), []);
+  const effectiveReservesData = data ?? cachedMarkets;
   const effectiveMarketsList = useMemo(
     () => buildMarketsList(effectiveReservesData),
     [effectiveReservesData]
   );
 
-  // Check if we're using cached data
-  // Only show once loading is done to avoid flashing the banner on initial load.
-  const isUsingCache = !isLoading && isError && !!reservesData;
+  const isUsingCache = !isLoading && isError && !!effectiveReservesData;
 
   useEffect(() => {
     setPreloadPaused(activeQueryCount > 0);
@@ -114,11 +112,10 @@ const Index = () => {
 
 
 
-  // Stable reference for reserves data to prevent TopOpportunities from re-rendering
-  // when filters change (only update when actual data changes)
-  const stableReserves = useMemo(() => {
-    return effectiveReservesData?.data || [];
-  }, [effectiveReservesData?.data]);
+  const stableReserves = useMemo(
+    () => effectiveReservesData?.reserves ?? [],
+    [effectiveReservesData?.reserves]
+  );
   const hasReserves = stableReserves.length > 0;
   const preloadMode = useMemo(
     () => (shouldUseFullPreloadMode() ? 'full' : 'adaptive'),
@@ -129,7 +126,7 @@ const Index = () => {
   usePreloadReserveAssets(stableReserves, {
     preloadMode,
     enabled: hasReserves,
-    isSuccess: !!reservesData,
+    isSuccess: !!data,
   });
 
   // Preload incentive icons after reserve icons (lower priority)
@@ -185,7 +182,6 @@ const Index = () => {
   const handleRefresh = useCallback(async () => {
     await refetch();
   }, [refetch]);
-
   const scrollToReserveElement = useCallback((id: string) => {
     const el = document.querySelector(`[data-reserve-id="${id}"]`);
     if (!el) return false;
@@ -199,17 +195,14 @@ const Index = () => {
   const handleTopCardClick = useCallback((reserve: Pick<ReserveWithSpread, 'marketName' | 'tokenAddress'>) => {
     const id = `${reserve.marketName}-${reserve.tokenAddress}`;
     if (scrollToReserveElement(id)) return;
-    // Element not in DOM — clear filters and schedule a deferred scroll
     setSearchQuery('');
     setSelectedMarkets([]);
     setSelectedCategory('all');
     setPendingScrollReserveId(id);
   }, [scrollToReserveElement]);
 
-  // Deferred scroll: fires after filters are cleared and ReservesTable expands
   useEffect(() => {
     if (!pendingScrollReserveId) return;
-    // Wait for React to re-render with cleared filters + expanded list
     const timer = setTimeout(() => {
       scrollToReserveElement(pendingScrollReserveId);
       setPendingScrollReserveId(null);
@@ -256,11 +249,9 @@ const Index = () => {
     }
   };
 
-  // Filter reserves
   const filteredReserves = useMemo(() => {
-    if (!effectiveReservesData?.data) return [];
-
-    return effectiveReservesData.data.filter((reserve) => {
+    if (!effectiveReservesData?.reserves) return [];
+    return effectiveReservesData.reserves.filter((reserve) => {
       // Search filter - only match tokenSymbol
       if (searchQuery) {
         const query = searchQuery.toLowerCase().trim();
@@ -303,9 +294,8 @@ const Index = () => {
 
       return true;
     });
-  }, [effectiveReservesData?.data, searchQuery, selectedMarkets, selectedCategory, tokenCategoryGroups]);
+  }, [effectiveReservesData?.reserves, searchQuery, selectedMarkets, selectedCategory, tokenCategoryGroups]);
 
-  // Loading state - only show if we have no data at all (neither fresh nor cached)
   if (isLoading && !effectiveReservesData) {
     return <LoadingState />;
   }
@@ -367,7 +357,7 @@ const Index = () => {
 
           {/* Header */}
           <Header
-            lastUpdated={effectiveReservesData?.lastUpdated}
+            lastUpdated={effectiveReservesData?.snapshot?.lastUpdated}
           />
 
           {/* INK Incentive APR Calculator */}
@@ -382,7 +372,6 @@ const Index = () => {
           <Suspense fallback={<div className="h-[120px] rounded-xl bg-muted/50 animate-pulse" />}>
             <MerklForecastPanel
               reserves={filteredReserves}
-              tokenPrices={effectiveReservesData?.tokenPrices}
               tydroPointToUsdRate={tydroPointToUsdRate}
               includeWhitelistOnlyMerkl={includeWhitelistOnlyMerkl}
               onToggleWhitelistOnlyMerkl={setIncludeWhitelistOnlyMerkl}
@@ -431,8 +420,7 @@ const Index = () => {
               }}
               tydroPointToUsdRate={tydroPointToUsdRate}
               includeWhitelistOnlyMerkl={includeWhitelistOnlyMerkl}
-              onToggleWhitelistOnlyMerkl={setIncludeWhitelistOnlyMerkl}
-              tokenPrices={effectiveReservesData?.tokenPrices}
+              onToggleWhitelistOnlyMerkl={onToggleWhitelistOnlyMerkl}
               scrollToReserveId={pendingScrollReserveId}
             />
           </div>
@@ -453,7 +441,6 @@ const Index = () => {
                 tydroPointToUsdRate={tydroPointToUsdRate}
                 includeWhitelistOnlyMerkl={includeWhitelistOnlyMerkl}
                 onToggleWhitelistOnlyMerkl={setIncludeWhitelistOnlyMerkl}
-                tokenPrices={effectiveReservesData?.tokenPrices}
                 usePortal
               />
           )}

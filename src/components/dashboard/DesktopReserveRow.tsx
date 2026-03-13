@@ -2,7 +2,7 @@ import { memo, Fragment } from 'react';
 import { ExternalLink } from 'lucide-react';
 import { TableRow, TableCell } from '@/components/ui/table';
 import { ReserveWithSpread, ETHEREUM_MARKET_NAMES } from '@/types/aave';
-import { formatPercent, formatSpread } from '@/lib/formatters';
+import { formatPercent, formatSpread, formatUsd, formatTvl } from '@/lib/formatters';
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
 import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
 import { getChainIconSrc } from '@/lib/chainIcons';
@@ -112,6 +112,10 @@ const DesktopReserveRow = memo(({
             <ExternalLink className="w-3 h-3 text-muted-foreground opacity-0 -ml-1 group-hover/token:opacity-70 transition-opacity duration-150" />
           </a>
         </TableCell>
+        {/* Price */}
+        <TableCell className="px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell tabular-nums text-muted-foreground ds-text-14">
+          {formatUsd(reserve.tokenPrice)}
+        </TableCell>
         {/* Market */}
         <TableCell className="w-1/5 px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell">
           <button
@@ -127,6 +131,10 @@ const DesktopReserveRow = memo(({
             <ChainIcon chain={reserve.chainName} />
             {getMarketDisplayName()}
           </button>
+        </TableCell>
+        {/* TVL */}
+        <TableCell className="px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell tabular-nums text-muted-foreground ds-text-14">
+          {formatTvl(reserve.tvlUsd)}
         </TableCell>
         {/* Supply */}
         <TableCell className="w-1/5 px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center">
@@ -190,13 +198,17 @@ const DesktopReserveRow = memo(({
             )}
           </div>
         </TableCell>
+        {/* Utilization */}
+        <TableCell className="px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell tabular-nums text-muted-foreground ds-text-14">
+          {reserve.utilizationPct != null ? `${reserve.utilizationPct.toFixed(0)}%` : '-'}
+        </TableCell>
       </TableRow>
       {isExpanded && (
         <TableRow
           className="border-b border-border/40 bg-muted/10"
           onClick={(event) => event.stopPropagation()}
         >
-          <TableCell colSpan={5} className="px-[var(--ds-space-3)] py-[var(--ds-space-3)]">
+          <TableCell colSpan={8} className="px-[var(--ds-space-3)] py-[var(--ds-space-3)]">
             {simulation && (
               <SimulationSubRow
                 reserve={reserve}

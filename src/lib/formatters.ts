@@ -304,3 +304,27 @@ export const calculateSpreadApr = (totalSupplyApr: number | null, totalBorrowApr
   if (totalSupplyApr === null || totalBorrowApr === null) return null;
   return totalSupplyApr - totalBorrowApr;
 };
+
+// Format USD price (e.g., 3942.52 → "$3,942.52", 0.9998 → "$1.00")
+export const formatUsd = (value: number | null | undefined): string => {
+  if (value === null || value === undefined || isNaN(value)) return '-';
+  if (value >= 1000) {
+    return '$' + value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  return '$' + value.toFixed(2);
+};
+
+// Format TVL in USD with abbreviation (e.g., 1083255123.44 → "$1.08B", 5200000 → "$5.20M")
+export const formatTvl = (value: number | null | undefined): string => {
+  if (value === null || value === undefined || isNaN(value)) return '-';
+  if (value >= 1_000_000_000) {
+    return '$' + (value / 1_000_000_000).toFixed(2) + 'B';
+  }
+  if (value >= 1_000_000) {
+    return '$' + (value / 1_000_000).toFixed(2) + 'M';
+  }
+  if (value >= 1_000) {
+    return '$' + (value / 1_000).toFixed(2) + 'K';
+  }
+  return '$' + value.toFixed(2);
+};

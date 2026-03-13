@@ -5,7 +5,8 @@ import type { MarketsResponse } from '@/types/aave';
 import { buildMarketsList } from './marketsList';
 
 const response: MarketsResponse = {
-  data: [
+  snapshot: { lastUpdated: '2026-03-09T00:00:00.000Z', version: '1.0' },
+  reserves: [
     {
       marketName: 'AaveV3Base',
       chainName: 'Base',
@@ -39,7 +40,6 @@ const response: MarketsResponse = {
       tokenAddress: '0x4',
     },
   ],
-  lastUpdated: '2026-03-09T00:00:00.000Z',
 };
 
 describe('buildMarketsList', () => {

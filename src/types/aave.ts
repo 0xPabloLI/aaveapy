@@ -51,10 +51,14 @@ export interface ReserveWithSpread {
   tokenAddress: string;
   aTokenAddress?: string | null;
   vTokenAddress?: string | null;
+  reserveId?: string;
   
   // Base APY (percentage value, e.g., 2.07 means 2.07%)
   supplyApy?: number;
   borrowApy?: number;
+  tokenPrice?: number;
+  tvlUsd?: number;
+  utilizationPct?: number;
   
   // Protocol incentives (from Aave protocol, array of percentage values)
   supplyIncentives?: number[];
@@ -76,9 +80,11 @@ export interface ReserveWithSpread {
 }
 
 export interface MarketsResponse {
-  data: ReserveWithSpread[];
-  lastUpdated: string;
-  tokenPrices?: TokenPricesIndex;
+  snapshot: {
+    lastUpdated: string;
+    version: string;
+  };
+  reserves: ReserveWithSpread[];
 }
 
 export interface MarketListItem {

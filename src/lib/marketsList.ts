@@ -1,11 +1,12 @@
 import type { MarketListItem, MarketsResponse } from '@/types/aave';
 
 export function buildMarketsList(marketsResponse?: MarketsResponse | null): MarketListItem[] {
-  if (!marketsResponse?.data) return [];
+  const reserves = marketsResponse?.reserves;
+  if (!reserves?.length) return [];
 
   const uniqueMarkets = new Map<string, MarketListItem>();
 
-  for (const reserve of marketsResponse.data) {
+  for (const reserve of reserves) {
     if (!reserve.marketName?.trim() || !reserve.chainName?.trim()) continue;
 
     const key = `${reserve.marketName}::${reserve.chainName}`;

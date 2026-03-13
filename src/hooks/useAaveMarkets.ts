@@ -7,15 +7,17 @@ import {
 } from '@/lib/cache';
 import { API_BASE } from '@/lib/apiBase';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
-import { MarketsResponseSchema } from '@/lib/apiSchemas';
 
-// Fetch all market data (all sorting and filtering done on frontend)
+// Fetch all market data (breaking change: API returns { snapshot, reserves })
 export const fetchMarkets = async (): Promise<MarketsResponse> => {
   try {
     const response = await fetch(`${API_BASE}/markets`);
     if (!response.ok) throw new Error('Failed to fetch markets');
     const raw = await response.json();
-    const data = MarketsResponseSchema.parse(raw) as MarketsResponse;
+    if (!raw?.snapshot?.lastUpdated || !Array.isArray(raw?.reserves)) {
+      throw new Error('Invalid markets response: expected { snapshot: { lastUpdated }, reserves }');
+    }
+    const data = raw as MarketsResponse;
     // Save to cache on success
     setCachedMarkets(data);
     return data;

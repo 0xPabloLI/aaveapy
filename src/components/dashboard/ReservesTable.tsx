@@ -6,6 +6,8 @@ import { ReserveWithSpread, ETHEREUM_MARKET_NAMES, TokenPricesIndex } from '@/ty
 import { 
   formatPercent, 
   formatSpread, 
+  formatUsd,
+  formatTvl,
   calculateTotalSupplyApr,
   calculateTotalSupplyApy,
   calculateTotalBorrowApr,
@@ -745,24 +747,35 @@ const ReservesTable = ({
       <div className="overflow-x-auto">
         <Table className="table-fixed w-full">
           <colgroup>
-            <col className="w-1/5" />
-            <col className="w-1/5" />
-            <col className="w-1/5" />
-            <col className="w-1/5" />
-            <col className="w-1/5" />
+            <col style={{ width: '14%' }} />
+            <col style={{ width: '9%' }} />
+            <col style={{ width: '12%' }} />
+            <col style={{ width: '10%' }} />
+            <col style={{ width: '19%' }} />
+            <col style={{ width: '10%' }} />
+            <col style={{ width: '19%' }} />
+            <col style={{ width: '7%' }} />
           </colgroup>
           <TableHeader>
             <TableRow className="border-border/50 bg-card/60">
-              {/* Token - flex grow */}
-              <TableHead className="w-1/5 px-[var(--ds-space-3)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground">
+              {/* Token */}
+              <TableHead className="px-[var(--ds-space-3)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground">
                 Token
               </TableHead>
+              {/* Price */}
+              <TableHead className="px-[var(--ds-space-3)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
+                Price
+              </TableHead>
               {/* Market */}
-              <TableHead className="w-1/5 px-[var(--ds-space-3)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
+              <TableHead className="px-[var(--ds-space-3)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
                 Market
               </TableHead>
+              {/* TVL */}
+              <TableHead className="px-[var(--ds-space-3)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
+                TVL
+              </TableHead>
               {/* Supply Column - center aligned */}
-              <TableHead className="w-1/5 px-[var(--ds-space-3)] py-[var(--ds-space-3)] ds-text-14 md:ds-text-16 font-semibold text-muted-foreground text-center">
+              <TableHead className="px-[var(--ds-space-3)] py-[var(--ds-space-3)] ds-text-14 md:ds-text-16 font-semibold text-muted-foreground text-center">
                 <div className="flex items-center justify-center gap-[var(--ds-space-2)]">
                   <div className="flex items-center gap-[var(--ds-space-1-5)]">
                     <span
@@ -889,7 +902,7 @@ const ReservesTable = ({
                 </div>
               </TableHead>
               {/* Spread Column - center aligned */}
-              <TableHead className="w-1/5 px-[var(--ds-space-3)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
+              <TableHead className="px-[var(--ds-space-3)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
                 <button
                   type="button"
                   onClick={() => {
@@ -917,7 +930,7 @@ const ReservesTable = ({
                 </button>
               </TableHead>
               {/* Borrow Column - center aligned */}
-              <TableHead className="w-1/5 px-[var(--ds-space-3)] py-[var(--ds-space-3)] ds-text-14 md:ds-text-16 font-semibold text-muted-foreground text-center">
+              <TableHead className="px-[var(--ds-space-3)] py-[var(--ds-space-3)] ds-text-14 md:ds-text-16 font-semibold text-muted-foreground text-center">
                 <div className="flex items-center justify-center gap-[var(--ds-space-2)]">
                   <div className="flex items-center gap-[var(--ds-space-1-5)]">
                     <span
@@ -1043,35 +1056,48 @@ const ReservesTable = ({
                     </div>
                 </div>
               </TableHead>
+              {/* Utilization */}
+              <TableHead className="px-[var(--ds-space-3)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
+                Util.
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading && reserves.length === 0 ? (
               Array.from({ length: 10 }).map((_, i) => (
                 <TableRow key={i} className="border-b border-border/30">
-                  <TableCell className="w-1/5 px-[var(--ds-space-3)] ds-row-pad text-center">
+                  <TableCell className="px-[var(--ds-space-3)] ds-row-pad text-center">
                     <div className="flex items-center justify-center gap-[var(--ds-space-2)]">
                       <Skeleton variant="gradient" className="w-7 h-7 rounded-full border-transparent" />
                       <Skeleton variant="default" className="h-4 w-14 rounded-md" />
                     </div>
                   </TableCell>
-                  <TableCell className="w-1/5 px-[var(--ds-space-3)] ds-row-pad text-center hidden md:table-cell">
+                  <TableCell className="px-[var(--ds-space-3)] ds-row-pad text-center hidden md:table-cell">
+                    <Skeleton variant="subtle" className="h-4 w-16 rounded-md mx-auto" />
+                  </TableCell>
+                  <TableCell className="px-[var(--ds-space-3)] ds-row-pad text-center hidden md:table-cell">
                     <Skeleton variant="subtle" className="h-6 w-20 rounded-full mx-auto" />
                   </TableCell>
-                  <TableCell className="w-1/5 px-[var(--ds-space-3)] ds-row-pad text-center">
+                  <TableCell className="px-[var(--ds-space-3)] ds-row-pad text-center hidden md:table-cell">
+                    <Skeleton variant="subtle" className="h-4 w-16 rounded-md mx-auto" />
+                  </TableCell>
+                  <TableCell className="px-[var(--ds-space-3)] ds-row-pad text-center">
                     <div className="flex flex-col items-center gap-[var(--ds-space-1)]">
                       <Skeleton variant="gradient" className={`h-5 rounded-md ${i % 2 === 0 ? 'w-16' : 'w-[4.5rem]'}`} />
                       <Skeleton variant="subtle" className={`h-3 rounded-full border-transparent ${i % 2 === 0 ? 'w-20' : 'w-[4.5rem]'}`} />
                     </div>
                   </TableCell>
-                  <TableCell className="w-1/5 px-[var(--ds-space-3)] ds-row-pad text-center">
+                  <TableCell className="px-[var(--ds-space-3)] ds-row-pad text-center hidden md:table-cell">
                     <Skeleton variant="subtle" className={`h-5 rounded-md mx-auto ${i % 2 === 0 ? 'w-16' : 'w-14'}`} />
                   </TableCell>
-                  <TableCell className="w-1/5 px-[var(--ds-space-3)] ds-row-pad text-center">
+                  <TableCell className="px-[var(--ds-space-3)] ds-row-pad text-center">
                     <div className="flex flex-col items-center gap-[var(--ds-space-1)]">
                       <Skeleton variant="gradient" className={`h-5 rounded-md ${i % 3 === 0 ? 'w-16' : 'w-[4.5rem]'}`} />
                       <Skeleton variant="subtle" className={`h-3 rounded-full border-transparent ${i % 3 === 0 ? 'w-20' : 'w-[4.5rem]'}`} />
                     </div>
+                  </TableCell>
+                  <TableCell className="px-[var(--ds-space-3)] ds-row-pad text-center hidden md:table-cell">
+                    <Skeleton variant="subtle" className="h-4 w-12 rounded-md mx-auto" />
                   </TableCell>
                 </TableRow>
               ))
@@ -1086,7 +1112,6 @@ const ReservesTable = ({
                 const incentive = getDisplayBorrowIncentive(reserve);
                 return incentive === 0 || isNaN(incentive) || incentive < 0.01 ? null : incentive;
               })();
-
               return (
                 <DesktopReserveRow
                   key={reserveId}
