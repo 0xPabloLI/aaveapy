@@ -547,6 +547,30 @@ const Index = () => {
                   </svg>
                 </a>
               </p>
+
+              {/* Social links */}
+              <div className="flex items-center gap-[var(--ds-space-3)] mt-[var(--ds-space-2)]">
+                <a
+                  href="https://t.me/aaveapy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Join @aaveapy on Telegram"
+                  title="Join @aaveapy on Telegram"
+                  className="flex items-center justify-center w-8 h-8 rounded-full border border-border/40 bg-card/60 text-muted-foreground transition-colors hover:bg-[hsl(200_100%_45%/0.12)] hover:text-[hsl(200_100%_45%)] hover:border-[hsl(200_100%_45%/0.4)] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                >
+                  <Send className="w-4 h-4" />
+                </a>
+                <a
+                  href="https://github.com/0xPabloLI/aaveapy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="View source on GitHub"
+                  title="View source on GitHub"
+                  className="flex items-center justify-center w-8 h-8 rounded-full border border-border/40 bg-card/60 text-muted-foreground transition-colors hover:bg-muted/80 hover:text-foreground hover:border-border focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                >
+                  <Github className="w-4 h-4" />
+                </a>
+              </div>
             </div>
           </footer>
         </div>
