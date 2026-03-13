@@ -50,50 +50,61 @@ function getExistingIconBaseSet() {
 
 function loadTokenLogoByAddress() {
   if (!fs.existsSync(TOKENLIST_PATH)) {
-    return new Map();
+    return { tokenLogoByAddress: new Map(), tokenSymbols: [] };
   }
 
   const payload = JSON.parse(fs.readFileSync(TOKENLIST_PATH, 'utf8'));
   const rows = Array.isArray(payload?.tokens) ? payload.tokens : [];
-  const map = new Map();
+  const tokenLogoByAddress = new Map();
+  const tokenSymbols = [];
 
   for (const row of rows) {
     const address = String(row?.address || '').trim().toLowerCase();
     const logoURI = String(row?.logoURI || '').trim();
+    const symbol = String(row?.symbol || '').trim();
+    if (symbol) tokenSymbols.push(symbol);
     if (!address || !logoURI) continue;
-    map.set(address, logoURI);
+    tokenLogoByAddress.set(address, logoURI);
   }
 
-  return map;
+  return { tokenLogoByAddress, tokenSymbols };
 }
 
 async function loadMarketsRows() {
   try {
     const res = await fetch(MARKETS_API_URL);
     if (!res.ok) {
-      console.warn(`markets API returned HTTP ${res.status}, continuing with reservePatches-only symbols`);
-      return [];
+      console.warn(
+        `markets API returned HTTP ${res.status}, continuing with tokenlist fallback symbols`
+      );
+      return { rows: [], unavailable: true };
     }
 
     const payload = await res.json();
-    return Array.isArray(payload?.data) ? payload.data : [];
+    const rows = Array.isArray(payload?.data) ? payload.data : null;
+    if (!rows) {
+      console.warn('markets API response missing data array, continuing with tokenlist fallback symbols');
+      return { rows: [], unavailable: true };
+    }
+    return { rows, unavailable: false };
   } catch (error) {
     console.warn(
-      `failed to load markets API symbols from ${MARKETS_API_URL}, continuing with reservePatches-only symbols:`,
+      `failed to load markets API symbols from ${MARKETS_API_URL}, continuing with tokenlist fallback symbols:`,
       error instanceof Error ? error.message : String(error)
     );
-    return [];
+    return { rows: [], unavailable: true };
   }
 }
 
 async function getMissingSymbols() {
   const reservePatchesContent = fs.readFileSync(RESERVE_PATCHES_PATH, 'utf8');
-  const marketsRows = await loadMarketsRows();
-  const tokenLogoByAddress = loadTokenLogoByAddress();
+  const { rows: marketsRows, unavailable: marketsUnavailable } = await loadMarketsRows();
+  const { tokenLogoByAddress, tokenSymbols } = loadTokenLogoByAddress();
 
   const requiredSymbols = collectRequiredIconSymbols({
     reservePatchesContent,
     marketsRows,
+    tokenListSymbols: marketsUnavailable ? tokenSymbols : [],
     addressBookContext: addressBook,
   });
   const logoHints = collectIconSymbolLogoHints({
@@ -105,7 +116,7 @@ async function getMissingSymbols() {
 
   const existing = getExistingIconBaseSet();
   const missing = toSortedArray(requiredSymbols).filter((symbol) => !existing.has(symbol));
-  return { missing, logoHints };
+  return { missing, logoHints, usedTokenlistFallback: marketsUnavailable };
 }
 
 async function fetchCoingeckoImageUrl(symbol) {
@@ -195,13 +206,22 @@ async function main() {
     console.warn('--extra-only is deprecated and ignored. Symbols are now derived from used interface resources.');
   }
 
-  const { missing, logoHints } = await getMissingSymbols();
+  const { missing, logoHints, usedTokenlistFallback } = await getMissingSymbols();
   if (missing.length === 0) {
     console.log('No missing token icons.');
     return;
   }
 
   if (checkOnly) {
+    if (usedTokenlistFallback) {
+      console.error(
+        `Missing ${missing.length} token icon(s) while markets API is unavailable (tokenlist fallback active): ${missing
+          .slice(0, 20)
+          .join(', ')}${missing.length > 20 ? ', ...' : ''}`
+      );
+      process.exit(1);
+    }
+
     const { syncable, syncableFromLogo, unsyncable } = await classifyMissingSymbols(
       missing,
       logoHints

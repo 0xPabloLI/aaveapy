@@ -173,6 +173,7 @@ function resolveRuntimeIconSymbol({ row, underlyingAssetMap, symbolMap }) {
 export function collectRequiredIconSymbols({
   reservePatchesContent,
   marketsRows = [],
+  tokenListSymbols = [],
   addressBookContext = {},
 }) {
   const required = new Set();
@@ -196,6 +197,10 @@ export function collectRequiredIconSymbols({
     });
     if (!iconSymbol) continue;
     addIconSymbol(required, iconSymbol);
+  }
+
+  for (const symbol of tokenListSymbols) {
+    addIconSymbol(required, symbol);
   }
 
   return required;

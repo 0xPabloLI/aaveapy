@@ -79,4 +79,15 @@ export function fetchIconSymbolAndName() {
 
     expect(hints.get('foo')).toBe('https://example.com/foo.svg');
   });
+
+  it('accepts tokenlist-derived symbol fallback when runtime markets are unavailable', () => {
+    const symbols = collectRequiredIconSymbols({
+      reservePatchesContent,
+      marketsRows: [],
+      tokenListSymbols: ['ACRED'],
+      addressBookContext: addressBook,
+    });
+
+    expect(symbols.has('acred')).toBe(true);
+  });
 });
