@@ -103,6 +103,23 @@ export const CoingeckoCategoriesResponseSchema = z.object({
   uniqueSymbolsEth: z.array(z.string()).optional(),
 }).passthrough();
 
+export const SideDataMetaResponseSchema = z.object({
+  generatedAt: z.string().optional(),
+  partial: z.boolean().optional(),
+  categories: z.object({
+    uniqueSymbolsStablecoins: z.array(z.string()),
+    uniqueSymbolsEth: z.array(z.string()),
+    fetchedAt: z.string(),
+    staleTimeMs: z.number(),
+  }).optional(),
+  fdv: z.object({
+    items: z.array(CoingeckoFdvItemSchema),
+    fetchedAt: z.string(),
+    staleTimeMs: z.number(),
+  }).optional(),
+  errors: z.record(z.string(), z.string()).optional(),
+}).passthrough();
+
 // ── Rate inputs ──
 const ReserveRateInputSchema = z.object({
   marketName: z.string(),

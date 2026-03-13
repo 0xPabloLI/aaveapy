@@ -1,38 +1,21 @@
-import { useQuery } from '@tanstack/react-query';
 import { TokenCategoryOverrides } from '@/lib/tokenCategories';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
-import { getCachedTokenCategoriesEntry, setCachedTokenCategories } from '@/lib/cache';
-import { API_BASE } from '@/lib/apiBase';
-import { CoingeckoCategoriesResponseSchema } from '@/lib/apiSchemas';
-
-interface CoingeckoCategoriesResponse {
-  uniqueSymbolsStablecoins?: string[];
-  uniqueSymbolsEth?: string[];
-}
-
-export const fetchTokenCategories = async (): Promise<TokenCategoryOverrides> => {
-  const response = await fetch(`${API_BASE}/coingecko-categories`);
-  if (!response.ok) {
-    throw new Error('Failed to fetch token categories');
-  }
-  const raw = await response.json();
-  const data = CoingeckoCategoriesResponseSchema.parse(raw) as CoingeckoCategoriesResponse;
-  const normalized: TokenCategoryOverrides = {
-    stablecoins: data.uniqueSymbolsStablecoins ?? [],
-    ethRelated: data.uniqueSymbolsEth ?? [],
-  };
-  setCachedTokenCategories(normalized);
-  return normalized;
-};
+import { getCachedTokenCategoriesEntry } from '@/lib/cache';
+import { useSideDataMeta } from '@/hooks/useSideDataMeta';
 
 export const useTokenCategories = () => {
   const cachedEntry = getCachedTokenCategoriesEntry<TokenCategoryOverrides>();
-  return useQuery({
-    queryKey: ['token-categories'],
-    queryFn: fetchTokenCategories,
-    staleTime: QUERY_STALE_TIMES.tokenCategories,
-    initialData: cachedEntry?.data,
-    initialDataUpdatedAt: cachedEntry?.updatedAt,
-    retry: 1,
-  });
+  const query = useSideDataMeta(QUERY_STALE_TIMES.tokenCategories, 1);
+
+  return {
+    ...query,
+    data:
+      query.data?.categories
+        ? {
+            stablecoins: query.data.categories.uniqueSymbolsStablecoins,
+            ethRelated: query.data.categories.uniqueSymbolsEth,
+          }
+        : (cachedEntry?.data ?? undefined),
+  };
 };
+

@@ -1,0 +1,64 @@
+import { useQuery } from '@tanstack/react-query';
+import { API_BASE } from '@/lib/apiBase';
+import { SideDataMetaResponseSchema } from '@/lib/apiSchemas';
+import { setCachedCoingeckoFdv, setCachedTokenCategories } from '@/lib/cache';
+
+export const SIDE_DATA_META_QUERY_KEY = ['side-data-meta'] as const;
+
+export interface SideDataMetaResponse {
+  generatedAt?: string;
+  partial?: boolean;
+  categories?: {
+    uniqueSymbolsStablecoins: string[];
+    uniqueSymbolsEth: string[];
+    fetchedAt: string;
+    staleTimeMs: number;
+  };
+  fdv?: {
+    items: Array<{
+      id: string;
+      symbol: string | null;
+      name: string | null;
+      fdvUsd: number | null;
+    }>;
+    fetchedAt: string;
+    staleTimeMs: number;
+  };
+  errors?: Record<string, string>;
+}
+
+export async function fetchSideDataMeta(): Promise<SideDataMetaResponse> {
+  const response = await fetch(`${API_BASE}/meta/side-data`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch side-data meta (${response.status})`);
+  }
+
+  const raw = await response.json();
+  const parsed = SideDataMetaResponseSchema.parse(raw) as SideDataMetaResponse;
+
+  if (parsed.fdv) {
+    setCachedCoingeckoFdv({
+      items: parsed.fdv.items,
+      fetchedAt: parsed.fdv.fetchedAt,
+    });
+  }
+
+  if (parsed.categories) {
+    setCachedTokenCategories({
+      stablecoins: parsed.categories.uniqueSymbolsStablecoins,
+      ethRelated: parsed.categories.uniqueSymbolsEth,
+    });
+  }
+
+  return parsed;
+}
+
+export function useSideDataMeta(staleTime: number, retry: number = 1) {
+  return useQuery({
+    queryKey: SIDE_DATA_META_QUERY_KEY,
+    queryFn: fetchSideDataMeta,
+    staleTime,
+    retry,
+  });
+}
+

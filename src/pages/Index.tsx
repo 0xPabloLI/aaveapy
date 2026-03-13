@@ -4,7 +4,8 @@ import { usePreloadReserveAssets } from '@/hooks/usePreloadReserveAssets';
 import { useAaveMarkets } from '@/hooks/useAaveMarkets';
 import { prefetchRateInputsSnapshot } from '@/hooks/useReserveRateInputs';
 import { fetchMerklForecastStates } from '@/lib/merklForecastApi';
-import { fetchTokenCategories, useTokenCategories } from '@/hooks/useTokenCategories';
+import { useTokenCategories } from '@/hooks/useTokenCategories';
+import { fetchSideDataMeta, SIDE_DATA_META_QUERY_KEY } from '@/hooks/useSideDataMeta';
 import { SortField, SortOrder, TokenCategory, ReserveWithSpread } from '@/types/aave';
 import {
   buildTokenCategoryGroups,
@@ -162,13 +163,13 @@ const Index = () => {
     return () => clearTimeout(timeoutId);
   }, [hasReserves]);
 
-  // Warm up token-categories after reserves load (post-home warm-up).
+  // Warm up low-frequency side-data meta after reserves load (post-home warm-up).
   useEffect(() => {
     if (!hasReserves) return;
     const timeoutId = setTimeout(() => {
       void queryClient.prefetchQuery({
-        queryKey: ['token-categories'],
-        queryFn: fetchTokenCategories,
+        queryKey: SIDE_DATA_META_QUERY_KEY,
+        queryFn: fetchSideDataMeta,
         staleTime: QUERY_STALE_TIMES.tokenCategories,
       }).catch(() => {});
     }, 1200);
