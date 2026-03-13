@@ -22,16 +22,23 @@ jobs:
   hardcode-sync:
     if: >
       github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'repository_dispatch' ||
       github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     runs-on: ubuntu-latest
     env:
       TARGET_BRANCH: >-
-        ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.target_branch != '' && github.event.inputs.target_branch || github.event.repository.default_branch }}
+        ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.target_branch != '' && github.event.client_payload.target_branch || (github.event_name == 'workflow_dispatch' && github.event.inputs.target_branch != '' && github.event.inputs.target_branch || github.event.repository.default_branch) }}
     steps:
       - name: Checkout target branch
         uses: actions/checkout@v4
         with:
           ref: ${{ env.TARGET_BRANCH }}
+
+      - name: Log trigger context
+        run: |
+          echo "event_name=${{ github.event_name }}"
+          echo "target_branch=${{ env.TARGET_BRANCH }}"
+          echo "client_payload=${{ toJSON(github.event.client_payload) }}"
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -77,8 +84,15 @@ jobs:
           exit 0
 
       - name: Create PR when hardcode changed
+        id: cpr
+        if: >
+          steps.verify_round1.outputs.passed == 'true' ||
+          steps.verify_round2.outputs.passed == 'true'
         uses: peter-evans/create-pull-request@v7
         with:
+          # Use PAT to ensure pull_request workflows (CI lint/build) are triggered on the created PR.
+          # Fallback to GITHUB_TOKEN keeps behavior but may leave required checks in "Expected".
+          token: ${{ secrets.HARDCODE_SYNC_PAT != '' && secrets.HARDCODE_SYNC_PAT || github.token }}
           commit-message: "chore(hardcode): sync hardcoded assets and mappings"
           title: "chore(hardcode): sync hardcoded assets and mappings"
           body: |
@@ -93,6 +107,11 @@ jobs:
             automation
             hardcode
 
+      - name: Warn when PAT is missing
+        if: steps.cpr.outputs.pull-request-number != '' && secrets.HARDCODE_SYNC_PAT == ''
+        run: |
+          echo "::warning::HARDCODE_SYNC_PAT is not configured. PR was created with GITHUB_TOKEN, so required CI checks (lint/build) may stay in 'Expected' state."
+
       - name: Create issue when verify still fails
         if: >
           steps.verify_round1.outputs.passed != 'true' &&
@@ -101,38 +120,24 @@ jobs:
         with:
           script: |
             const title = '[Hardcode Sync] verify failed after retry';
-            const labels = ['automation', 'hardcode', 'drift'];
+            const payload = context.payload.client_payload || {};
             const body = [
               'Hardcode sync verify failed after two rounds.',
               '',
               `Workflow run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
               `Target branch: ${process.env.TARGET_BRANCH}`,
+              `Trigger event: ${context.eventName}`,
+              `Payload source: ${payload.sourceRepo || payload.source || '<none>'}`,
+              `Payload ref: ${payload.ref || '<none>'}`,
               '',
               'Please inspect upstream drift and sync scripts.'
             ].join('\n');
-            const existing = await github.rest.issues.listForRepo({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              state: 'open',
-              labels: labels.join(','),
-              per_page: 100
-            });
-            const sameTitleIssue = existing.data.find((issue) => issue.title === title);
-            if (sameTitleIssue) {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: sameTitleIssue.number,
-                body,
-              });
-              return;
-            }
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
               title,
               body,
-              labels
+              labels: ['automation', 'hardcode', 'drift']
             });
 
       - name: Fail job when verify still fails
