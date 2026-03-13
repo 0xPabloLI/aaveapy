@@ -706,7 +706,11 @@ const IncentiveTooltip = ({
         <p className="ds-tooltip-body text-muted-foreground">
           Native {type === 'supply' ? 'supply' : 'borrow'} {nativeRateUnitLabel} simulation
         </p>
-        {reserveRateInputLoading ? (
+        {depositUsd <= 0 ? (
+          <p className="ds-tooltip-body mt-[var(--ds-space-0-5)] text-muted-foreground">
+            Enter amount to simulate.
+          </p>
+        ) : reserveRateInputLoading ? (
           <p className="ds-tooltip-body mt-[var(--ds-space-0-5)] text-muted-foreground">Loading rate inputs...</p>
         ) : reserveRateInputError ? (
           <p className="ds-tooltip-body mt-[var(--ds-space-0-5)] text-amber-600">
@@ -729,11 +733,14 @@ const IncentiveTooltip = ({
               </p>
             )}
             <p className="ds-tooltip-body mt-[var(--ds-space-0-5)] text-muted-foreground">
-              Utilization {formatPercent(nativeSimulation.utilizationRatePercent)} · source {reserveRateInput.source}
+              Utilization {formatPercent(nativeSimulation.utilizationRatePercent)}
+              {reserveRateInput.source != null && ` · source ${reserveRateInput.source}`}
             </p>
-            <p className="ds-tooltip-body mt-[var(--ds-space-0-5)] text-muted-foreground">
-              data: {reserveRateInput.sourceDetail}
-            </p>
+            {reserveRateInput.sourceDetail != null && (
+              <p className="ds-tooltip-body mt-[var(--ds-space-0-5)] text-muted-foreground">
+                data: {reserveRateInput.sourceDetail}
+              </p>
+            )}
           </>
         )}
       </div>

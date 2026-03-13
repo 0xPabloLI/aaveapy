@@ -20,6 +20,7 @@ export interface SideDataMetaResponse {
       symbol: string | null;
       name: string | null;
       fdvUsd: number | null;
+      source?: string;
     }>;
     fetchedAt: string;
     staleTimeMs: number;

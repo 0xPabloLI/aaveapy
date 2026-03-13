@@ -54,14 +54,18 @@ const TokenPriceEntrySchema = z.object({
   price: z.number(),
 }).passthrough();
 
-// ── Reserve ──
+// ── Reserve ── (matches backend /markets reserves[])
 const ReserveWithSpreadSchema = z.object({
+  reserveId: z.string().optional(),
   marketName: z.string(),
   chainName: z.string(),
   chainId: z.number(),
   tokenName: z.string(),
   tokenSymbol: z.string(),
   tokenAddress: z.string(),
+  tokenPrice: z.number().optional(),
+  tvlUsd: z.number().optional(),
+  utilizationPct: z.number().optional(),
   aTokenAddress: z.string().nullish(),
   vTokenAddress: z.string().nullish(),
   supplyApy: z.number().optional(),
@@ -134,18 +138,29 @@ const ReserveRateInputSchema = z.object({
   variableRateSlope2: z.string(),
   baseVariableBorrowRate: z.string(),
   optimalUsageRate: z.string(),
-  source: z.string(),
-  sourceDetail: z.string(),
+  source: z.string().optional(),
+  sourceDetail: z.string().optional(),
 }).passthrough();
 
-export const RateInputsResponseSchema = z.object({
-  data: z.array(ReserveRateInputSchema),
-  lastUpdated: z.string(),
-  isStale: z.boolean(),
-  staleTimeMs: z.number(),
-  sources: z.object({
-    subgraphChains: z.array(z.number()),
-    onchainChains: z.array(z.number()),
-    subgraphMissingChains: z.array(z.number()),
-  }),
-}).passthrough();
+export const RateInputsResponseSchema = z
+  .object({
+    data: z.array(ReserveRateInputSchema),
+    lastUpdated: z.string().optional(),
+    last_updated: z.string().optional(),
+    isStale: z.boolean().optional(),
+    is_stale: z.boolean().optional(),
+    staleTimeMs: z.number().optional(),
+    stale_time_ms: z.number().optional(),
+    sources: z
+      .object({
+        subgraphChains: z.array(z.number()),
+        onchainChains: z.array(z.number()),
+        subgraphMissingChains: z.array(z.number()),
+      })
+      .optional(),
+  })
+  .passthrough()
+  .transform((v) => ({
+    ...v,
+    lastUpdated: v.lastUpdated ?? v.last_updated,
+  }));

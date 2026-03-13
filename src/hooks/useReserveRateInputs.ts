@@ -40,7 +40,14 @@ export async function fetchRateInputsSnapshot(): Promise<RateInputsResponse> {
     throw new RateInputsUnavailableError(response.status, response.statusText);
   }
   const raw = await response.json();
-  const payload = RateInputsResponseSchema.parse(raw) as RateInputsResponse;
+  const parsed = RateInputsResponseSchema.safeParse(raw);
+  if (!parsed.success) {
+    const firstIssue = parsed.error.issues[0];
+    const path = firstIssue?.path?.length ? firstIssue.path.join('.') : 'root';
+    const msg = firstIssue?.message ?? parsed.error.message;
+    throw new Error(`Invalid rate-inputs response at ${path}: ${msg}`);
+  }
+  const payload = parsed.data as RateInputsResponse;
   setCachedRateInputsSnapshot(payload);
   return payload;
 }

@@ -111,6 +111,7 @@ export interface MerklForecastStateResponse {
 }
 
 export interface MerklForecastStatesBatchResponse {
+  requested?: number;
   items: MerklForecastStateResponse[];
   errors: Array<{
     campaignId: string;
@@ -134,16 +135,16 @@ export interface ReserveRateInput {
   variableRateSlope2: string;
   baseVariableBorrowRate: string;
   optimalUsageRate: string;
-  source: RateInputSource;
-  sourceDetail: string;
+  source?: RateInputSource;
+  sourceDetail?: string;
 }
 
 export interface RateInputsResponse {
   data: ReserveRateInput[];
-  lastUpdated: string;
-  isStale: boolean;
-  staleTimeMs: number;
-  sources: {
+  lastUpdated?: string;
+  isStale?: boolean;
+  staleTimeMs?: number;
+  sources?: {
     subgraphChains: number[];
     onchainChains: number[];
     subgraphMissingChains: number[];

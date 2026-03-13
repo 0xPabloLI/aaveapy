@@ -321,10 +321,10 @@ const SimulationSubRow = ({
             Enter a shared supply or borrow amount above the table to populate the After and Delta columns.
           </p>
         )}
-        {simulation.reserveRateInputLoading && (
+        {simulation.reserveRateInputLoading && !showEmptyStateNote && (
           <p className="ds-text-11 text-muted-foreground">Loading rate inputs...</p>
         )}
-        {simulation.reserveRateInputError && (
+        {simulation.reserveRateInputError && !showEmptyStateNote && (
           <p className="ds-text-11 text-amber-600">
             Native simulation unavailable:{' '}
             {simulation.reserveRateInputError instanceof Error
@@ -332,7 +332,10 @@ const SimulationSubRow = ({
               : 'failed to fetch rate inputs'}
           </p>
         )}
-        {!simulation.hasRateInput && !simulation.reserveRateInputLoading && !simulation.reserveRateInputError && (
+        {!showEmptyStateNote &&
+          !simulation.hasRateInput &&
+          !simulation.reserveRateInputLoading &&
+          !simulation.reserveRateInputError && (
           <p className="ds-text-11 text-muted-foreground">Native simulation unavailable for this reserve.</p>
         )}
         {simulation.forecastLoading && (
