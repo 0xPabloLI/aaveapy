@@ -1,7 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
 import { API_BASE } from '@/lib/apiBase';
 import { SideDataMetaResponseSchema } from '@/lib/apiSchemas';
-import { setCachedCoingeckoFdv, setCachedTokenCategories } from '@/lib/cache';
+import {
+  getCachedSideDataMetaEntry,
+  setCachedCoingeckoFdv,
+  setCachedSideDataMeta,
+  setCachedTokenCategories,
+} from '@/lib/cache';
 
 export const SIDE_DATA_META_QUERY_KEY = ['side-data-meta'] as const;
 
@@ -37,6 +42,9 @@ export async function fetchSideDataMeta(): Promise<SideDataMetaResponse> {
   const raw = await response.json();
   const parsed = SideDataMetaResponseSchema.parse(raw) as SideDataMetaResponse;
 
+  // Cache full payload so we can derive staleTime from backend TTLs.
+  setCachedSideDataMeta(parsed);
+
   if (parsed.fdv) {
     setCachedCoingeckoFdv({
       items: parsed.fdv.items,
@@ -55,11 +63,29 @@ export async function fetchSideDataMeta(): Promise<SideDataMetaResponse> {
 }
 
 export function useSideDataMeta(staleTime: number, retry: number = 1) {
+  const cachedEntry = getCachedSideDataMetaEntry<SideDataMetaResponse>();
+
+  const derivedStaleTime = (() => {
+    const payload = cachedEntry?.data;
+    if (!payload) return staleTime;
+
+    const candidates: number[] = [];
+    if (payload.categories?.staleTimeMs != null) {
+      candidates.push(payload.categories.staleTimeMs);
+    }
+    if (payload.fdv?.staleTimeMs != null) {
+      candidates.push(payload.fdv.staleTimeMs);
+    }
+    return candidates.length > 0 ? Math.min(...candidates) : staleTime;
+  })();
+
   return useQuery({
     queryKey: SIDE_DATA_META_QUERY_KEY,
     queryFn: fetchSideDataMeta,
-    staleTime,
+    staleTime: derivedStaleTime,
     retry,
+    initialData: cachedEntry?.data,
+    initialDataUpdatedAt: cachedEntry?.updatedAt,
   });
 }
 

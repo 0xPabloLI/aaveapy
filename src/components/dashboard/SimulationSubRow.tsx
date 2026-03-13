@@ -338,6 +338,7 @@ const SimulationSubRow = ({
           !simulation.reserveRateInputError && (
           <p className="ds-text-11 text-muted-foreground">Native simulation unavailable for this reserve.</p>
         )}
+        
         {simulation.forecastLoading && (
           <p className="ds-text-11 text-muted-foreground">Loading Merkl forecast state...</p>
         )}

@@ -10,6 +10,7 @@ import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { IncentiveIcon } from '@/components/IncentiveIcon';
 import SimulationSubRow from './SimulationSubRow';
 import type { RateSimulationResult, ScenarioInputMode } from '@/hooks/useRateSimulation';
+import { parseNumberInput } from '@/lib/numberFormat';
 
 /* ─── Memoised chain icon ─── */
 const ChainIcon = memo(({ chain, className = '' }: { chain: string; className?: string }) => {
@@ -85,6 +86,18 @@ const DesktopReserveRow = memo(({
 
   const aaveUrl = buildAaveReserveUrl({ marketName: reserve.marketName, tokenAddress: reserve.tokenAddress }) || '#';
 
+  const supplyInputRaw = parseNumberInput(supplyInput);
+  const supplyInputUsd =
+    inputMode === 'usd'
+      ? supplyInputRaw
+      : simulation?.tokenPrice && Number.isFinite(simulation.tokenPrice)
+        ? supplyInputRaw * simulation.tokenPrice
+        : 0;
+  const displayTvlUsd =
+    reserve.tvlUsd != null && Number.isFinite(reserve.tvlUsd) && supplyInputUsd > 0
+      ? reserve.tvlUsd + supplyInputUsd
+      : reserve.tvlUsd;
+
   return (
     <Fragment>
       <TableRow
@@ -133,8 +146,8 @@ const DesktopReserveRow = memo(({
           </button>
         </TableCell>
         {/* TVL */}
-        <TableCell className="px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell tabular-nums text-muted-foreground ds-text-14">
-          {formatTvl(reserve.tvlUsd)}
+        <TableCell className="px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell tabular-nums text-foreground ds-text-14">
+          {formatTvl(displayTvlUsd)}
         </TableCell>
         {/* Supply */}
         <TableCell className="w-1/5 px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center">
@@ -199,8 +212,8 @@ const DesktopReserveRow = memo(({
           </div>
         </TableCell>
         {/* Utilization */}
-        <TableCell className="px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell tabular-nums text-muted-foreground ds-text-14">
-          {reserve.utilizationPct != null ? `${reserve.utilizationPct.toFixed(0)}%` : '-'}
+        <TableCell className="px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell tabular-nums text-amber-600 ds-text-14">
+          {formatPercent(reserve.utilizationPct ?? null)}
         </TableCell>
       </TableRow>
       {isExpanded && (

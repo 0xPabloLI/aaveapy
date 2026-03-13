@@ -88,11 +88,13 @@ export function useReserveRateInput({
   const normalizedMarketName = normalizeMarketName(marketName);
   const cachedEntry = getCachedRateInputsSnapshotEntry<RateInputsResponse>();
 
+  const staleTime = cachedEntry?.data?.staleTimeMs ?? QUERY_STALE_TIMES.coreSnapshotApi;
+
   const snapshotQuery = useQuery({
     queryKey: RATE_INPUTS_SNAPSHOT_QUERY_KEY,
     queryFn: fetchRateInputsSnapshot,
     enabled: enabled && chainId > 0 && normalizedTokenAddress.length > 0 && normalizedMarketName.length > 0,
-    staleTime: QUERY_STALE_TIMES.coreSnapshotApi,
+    staleTime,
     initialData: cachedEntry?.data,
     initialDataUpdatedAt: cachedEntry?.updatedAt,
     retry: (failureCount, error) => {

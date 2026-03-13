@@ -83,6 +83,7 @@ export interface MarketsResponse {
   snapshot: {
     lastUpdated: string;
     version: string;
+    staleTimeMs?: number;
   };
   reserves: ReserveWithSpread[];
 }
@@ -112,6 +113,7 @@ export interface MerklForecastStateResponse {
 
 export interface MerklForecastStatesBatchResponse {
   requested?: number;
+  staleTimeMs?: number;
   items: MerklForecastStateResponse[];
   errors: Array<{
     campaignId: string;

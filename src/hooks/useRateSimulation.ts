@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useQueries, useQuery } from '@tanstack/react-query';
 import {
   apyToApr,
@@ -661,11 +661,14 @@ export const useSharedRateSimulations = ({
   const hasAnyInput = useMemo(() => parseNumberInput(supplyInput) > 0 || parseNumberInput(borrowInput) > 0, [borrowInput, supplyInput]);
   const needsTokenPrice = inputMode === 'token';
 
+  const rateInputsStaleTime =
+    cachedEntry?.data?.staleTimeMs ?? QUERY_STALE_TIMES.coreSnapshotApi;
+
   const rateInputsQuery = useQuery({
     queryKey: RATE_INPUTS_SNAPSHOT_QUERY_KEY,
     queryFn: fetchRateInputsSnapshot,
     enabled: enabled && reserves.length > 0,
-    staleTime: QUERY_STALE_TIMES.coreSnapshotApi,
+    staleTime: rateInputsStaleTime,
     initialData: cachedEntry?.data,
     initialDataUpdatedAt: cachedEntry?.updatedAt,
   });

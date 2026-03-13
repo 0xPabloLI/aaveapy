@@ -1,9 +1,7 @@
-import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
 import { API_BASE } from '@/lib/apiBase';
 import type { MerklForecastStatesBatchResponse } from '@/types/aave';
 import { MerklForecastApiError } from './merklForecastErrors';
 
-const CACHE_TTL_MS = QUERY_STALE_TIMES.coreSnapshotApi;
 const ALL_CAMPAIGNS_KEY = '__all__';
 
 const batchCache = new Map<string, { data: MerklForecastStatesBatchResponse; expiresAt: number }>();
@@ -79,7 +77,9 @@ export const fetchMerklForecastStates = async (
       }
 
       const data = (await response.json()) as MerklForecastStatesBatchResponse;
-      batchCache.set(key, { data, expiresAt: Date.now() + CACHE_TTL_MS });
+      const ttlMs = typeof data.staleTimeMs === 'number' && data.staleTimeMs > 0 ? data.staleTimeMs : undefined;
+      const effectiveTtl = ttlMs ?? 60_000;
+      batchCache.set(key, { data, expiresAt: Date.now() + effectiveTtl });
 
       return data;
     } finally {

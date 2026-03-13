@@ -7,6 +7,7 @@ const CACHE_KEYS = {
   TOKEN_CATEGORIES: 'token-categories-cache',
   RATE_INPUTS_SNAPSHOT: 'rate-inputs-snapshot-cache',
   MERKL_FORECAST_STATES: 'merkl-forecast-states-cache',
+  SIDE_DATA_META: 'side-data-meta-cache',
   COINGECKO_TOKEN_IMAGE_PREFIX: 'coingecko-token-image:',
 } as const;
 
@@ -115,6 +116,15 @@ export function getCachedTokenCategoriesEntry<T>(): CachedPayload<T> | null {
 
 export function setCachedTokenCategories<T>(data: T): void {
   setCacheEntry(CACHE_KEYS.TOKEN_CATEGORIES, data);
+}
+
+// Side-data meta cache
+export function getCachedSideDataMetaEntry<T>(): CachedPayload<T> | null {
+  return getCacheEntry<T>(CACHE_KEYS.SIDE_DATA_META);
+}
+
+export function setCachedSideDataMeta<T>(data: T): void {
+  setCacheEntry(CACHE_KEYS.SIDE_DATA_META, data);
 }
 
 // Rate-inputs snapshot cache
