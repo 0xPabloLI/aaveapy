@@ -8,7 +8,7 @@ import { chainIconMap, normalizeChainName } from './chainIconMap';
 // Track preloaded images to avoid duplicates
 const preloadedImages = new Set<string>();
 
-export const TOKEN_ICON_FORMATS = ['svg', 'webp', 'png'] as const;
+export const TOKEN_ICON_FORMATS = ['svg', 'webp', 'png', 'jpg', 'jpeg'] as const;
 
 export function getTokenIconSources(symbol: string): string[] {
   const symbolKey = symbol.trim().toLowerCase();
