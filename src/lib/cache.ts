@@ -158,46 +158,6 @@ export function setCachedCoingeckoTokenImage(symbol: string, imageUrl: string | 
   setCacheEntry(`${CACHE_KEYS.COINGECKO_TOKEN_IMAGE_PREFIX}${normalized}`, imageUrl);
 }
 
-// CoinGecko FDV cache
-export function getCachedCoingeckoFdvEntry<T>(): CachedPayload<T> | null {
-  return getCacheEntry<T>(CACHE_KEYS.COINGECKO_FDV);
-}
-
-export function setCachedCoingeckoFdv<T>(data: T): void {
-  setCacheEntry(CACHE_KEYS.COINGECKO_FDV, data);
-}
-
-// Token categories cache
-export function getCachedTokenCategoriesEntry<T>(): CachedPayload<T> | null {
-  return getCacheEntry<T>(CACHE_KEYS.TOKEN_CATEGORIES);
-}
-
-export function setCachedTokenCategories<T>(data: T): void {
-  setCacheEntry(CACHE_KEYS.TOKEN_CATEGORIES, data);
-}
-
-// Rate-inputs snapshot cache
-export function getCachedRateInputsSnapshotEntry<T>(): CachedPayload<T> | null {
-  return getCacheEntry<T>(CACHE_KEYS.RATE_INPUTS_SNAPSHOT);
-}
-
-export function setCachedRateInputsSnapshot<T>(data: T): void {
-  setCacheEntry(CACHE_KEYS.RATE_INPUTS_SNAPSHOT, data);
-}
-
-// Token image cache (per symbol)
-export function getCachedCoingeckoTokenImageEntry(symbol: string): CachedPayload<string | null> | null {
-  const normalized = normalizeSymbolKey(symbol);
-  if (!normalized) return null;
-  return getCacheEntry<string | null>(`${CACHE_KEYS.COINGECKO_TOKEN_IMAGE_PREFIX}${normalized}`);
-}
-
-export function setCachedCoingeckoTokenImage(symbol: string, imageUrl: string | null): void {
-  const normalized = normalizeSymbolKey(symbol);
-  if (!normalized) return;
-  setCacheEntry(`${CACHE_KEYS.COINGECKO_TOKEN_IMAGE_PREFIX}${normalized}`, imageUrl);
-}
-
 // Tydro point to USD rate cache (user preference)
 export function getCachedTydroRate(): number | null {
   try {
