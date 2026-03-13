@@ -43,7 +43,7 @@ function useRateInputsVsMarketResult(): {
   loading: boolean;
 } {
   const { data: marketsData, isLoading: marketsLoading } = useAaveMarkets();
-  const cachedEntry = getCachedRateInputsSnapshotEntry();
+  const cachedEntry = getCachedRateInputsSnapshotEntry<RateInputsResponse>();
   const staleTime = cachedEntry?.data?.staleTimeMs ?? QUERY_STALE_TIMES.coreSnapshotApi;
   const rateInputsQuery = useQuery({
     queryKey: RATE_INPUTS_SNAPSHOT_QUERY_KEY,
