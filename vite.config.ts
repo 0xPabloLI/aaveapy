@@ -27,6 +27,9 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  test: {
+    exclude: ["**/node_modules/**", "**/dist/**", "**/.worktrees/**"],
+  },
   build: {
     commonjsOptions: {
       include: [/node_modules/],
