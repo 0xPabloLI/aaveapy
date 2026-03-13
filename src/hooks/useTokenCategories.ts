@@ -17,7 +17,5 @@ export const useTokenCategories = () => {
           }
         : (cachedEntry?.data ?? undefined),
   };
-  setCachedTokenCategories(normalized);
-  return normalized;
 };
 
