@@ -49,6 +49,7 @@ export const SYMBOL_MAP: { [key: string]: string } = {
   'm.DAI': 'DAI',
   // celo
   'USD₮': 'USDT',
+  'USD₮0': 'USDT0',
 };
 
 /**
@@ -275,7 +276,12 @@ export function fetchIconSymbolAndName({ underlyingAsset, symbol, name }: IconSy
     '0x004375dff511095cc5a197a54140a24efef3a416': { iconSymbol: 'UNI_BTC_USDC' },
     '0xbb2b8038a1640196fbe3e38816f3e67cba72d940': { iconSymbol: 'UNI_WBTC_WETH' },
     '0x2fdbadf3c4d5a8666bc06645b8358ab803996e28': { iconSymbol: 'UNI_YFI_WETH' },
-  };
+      [AaveV3Plasma.ASSETS.WXPL.UNDERLYING.toLowerCase()]: {
+      symbol: 'WXLP',
+      name: 'Wrapped XLP',
+      iconSymbol: 'wxlp',
+    },
+};
 
   const lowerUnderlyingAsset = underlyingAsset?.toLowerCase();
   const logoURI = lowerUnderlyingAsset ? tokenLogoByAddress.get(lowerUnderlyingAsset) : undefined;

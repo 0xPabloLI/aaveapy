@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { compareIncentiveWithNative } from './sorters';
 
 describe('compareIncentiveWithNative', () => {
-  it('prioritizes pools with incentives over those without', () => {
+  it('prioritizes reserves with incentives over those without', () => {
     const result = compareIncentiveWithNative(1, 0, 1, 5, 'desc');
     expect(result).toBeLessThan(0);
   });

@@ -1,37 +1,23 @@
-import { useQuery } from '@tanstack/react-query';
 import { TokenCategoryOverrides } from '@/lib/tokenCategories';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
-import { getCachedTokenCategoriesEntry, setCachedTokenCategories } from '@/lib/cache';
+import { getCachedTokenCategoriesEntry } from '@/lib/cache';
+import { useSideDataMeta } from '@/hooks/useSideDataMeta';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://api.aaveapy.com/api';
+export const useTokenCategories = () => {
+  const cachedEntry = getCachedTokenCategoriesEntry<TokenCategoryOverrides>();
+  const query = useSideDataMeta(QUERY_STALE_TIMES.tokenCategories, 1);
 
-interface CoingeckoCategoriesResponse {
-  uniqueSymbolsStablecoins?: string[];
-  uniqueSymbolsEth?: string[];
-}
-
-const fetchTokenCategories = async (): Promise<TokenCategoryOverrides> => {
-  const response = await fetch(`${API_BASE}/coingecko-categories`);
-  if (!response.ok) {
-    throw new Error('Failed to fetch token categories');
-  }
-  const data = (await response.json()) as CoingeckoCategoriesResponse;
-  const normalized: TokenCategoryOverrides = {
-    stablecoins: data.uniqueSymbolsStablecoins ?? [],
-    ethRelated: data.uniqueSymbolsEth ?? [],
+  return {
+    ...query,
+    data:
+      query.data?.categories
+        ? {
+            stablecoins: query.data.categories.uniqueSymbolsStablecoins,
+            ethRelated: query.data.categories.uniqueSymbolsEth,
+          }
+        : (cachedEntry?.data ?? undefined),
   };
   setCachedTokenCategories(normalized);
   return normalized;
 };
 
-export const useTokenCategories = () => {
-  const cachedEntry = getCachedTokenCategoriesEntry<TokenCategoryOverrides>();
-  return useQuery({
-    queryKey: ['token-categories'],
-    queryFn: fetchTokenCategories,
-    staleTime: QUERY_STALE_TIMES.tokenCategories,
-    initialData: cachedEntry?.data,
-    initialDataUpdatedAt: cachedEntry?.updatedAt,
-    retry: 1,
-  });
-};

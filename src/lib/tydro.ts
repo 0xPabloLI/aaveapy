@@ -18,3 +18,14 @@ export const getMerklBreakdownApr = (
   }
   return breakdown.campaignApr;
 };
+
+export const getMerklForecastUsdMultiplier = (
+  breakdown: MerklCampaignBreakdown,
+  pointToUsdRate = TYDRO_POINT_TO_USD_RATE
+): number => {
+  if (breakdown.pointsPerThousandUsd === undefined || isNaN(breakdown.pointsPerThousandUsd)) {
+    return 1;
+  }
+  const safeRate = Number.isFinite(pointToUsdRate) && pointToUsdRate > 0 ? pointToUsdRate : TYDRO_POINT_TO_USD_RATE;
+  return safeRate / TYDRO_POINT_TO_USD_RATE;
+};

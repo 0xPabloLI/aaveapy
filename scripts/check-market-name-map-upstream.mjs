@@ -1,47 +1,16 @@
 #!/usr/bin/env node
 import { readFile } from 'fs/promises';
 import path from 'path';
+import { fileURLToPath } from 'url';
+import { fetchWithTimeout, countChar } from './lib/fetch-utils.mjs';
 
-const ROOT = '/Users/pabloli/Documents/aaveapy';
-const LOCAL_MARKETS_CONFIG_PATH = '/Users/pabloli/Documents/interface/src/ui-config/marketsConfig.tsx';
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const REMOTE_MARKETS_CONFIG_URL =
   'https://raw.githubusercontent.com/aave/interface/main/src/ui-config/marketsConfig.tsx';
 const LOCAL_MAP_PATH = path.join(ROOT, 'src/lib/aaveLinks.ts');
 
-async function fetchWithTimeout(url, timeoutMs = 15000) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const response = await fetch(url, { signal: controller.signal });
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status} ${response.statusText}`);
-    }
-    return await response.text();
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
 async function loadUpstreamMarketsConfig() {
-  try {
-    return await fetchWithTimeout(REMOTE_MARKETS_CONFIG_URL);
-  } catch (error) {
-    try {
-      return await readFile(LOCAL_MARKETS_CONFIG_PATH, 'utf8');
-    } catch {
-      throw new Error(
-        `Failed to load upstream marketsConfig.tsx from remote and local mirror. Remote error: ${error instanceof Error ? error.message : String(error)}`
-      );
-    }
-  }
-}
-
-function countChar(input, char) {
-  let count = 0;
-  for (const ch of input) {
-    if (ch === char) count += 1;
-  }
-  return count;
+  return await fetchWithTimeout(REMOTE_MARKETS_CONFIG_URL);
 }
 
 function parseExpectedMapping(marketsConfigContent) {
@@ -102,7 +71,15 @@ async function main() {
   ]);
 
   const expected = parseExpectedMapping(upstreamContent);
+  if (expected.size === 0) {
+    console.error('Upstream parsing yielded 0 market entries — possible format change.');
+    process.exit(1);
+  }
   const local = parseLocalMap(localContent);
+  if (local.size === 0) {
+    console.error('Local parsing yielded 0 MARKET_NAME_MAP entries — possible format change.');
+    process.exit(1);
+  }
 
   const missing = [];
   for (const [sourceKey, targetMarket] of expected) {

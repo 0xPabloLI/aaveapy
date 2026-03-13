@@ -19,6 +19,9 @@ const MARKET_NAME_MAP: Record<string, string> = {
   AaveV3Linea: 'proto_linea_v3',
   AaveV3Sonic: 'proto_sonic_v3',
   AaveV3Celo: 'proto_celo_v3',
+  AaveV3Mantle: 'proto_mantle_v3',
+  AaveV3MegaEth: 'proto_megaeth_v3',
+  AaveV3MegaETH: 'proto_megaeth_v3',
   AaveV3Soneium: 'proto_soneium_v3',
   AaveV3Plasma: 'proto_plasma_v3',
   AaveV3Ink: 'proto_ink_v3',
@@ -35,7 +38,18 @@ const MARKET_NAME_MAP: Record<string, string> = {
 const resolveMarketName = (marketName: string): string | null => {
   if (!marketName) return null;
   if (marketName.startsWith('proto_')) return marketName;
-  return MARKET_NAME_MAP[marketName] ?? null;
+  const mapped = MARKET_NAME_MAP[marketName];
+  if (mapped) return mapped;
+
+  // Generic fallback for new standalone Aave v3 markets (e.g. AaveV3Mantle -> proto_mantle_v3).
+  if (marketName.startsWith('AaveV3') && !marketName.startsWith('AaveV3Ethereum')) {
+    const rawChain = marketName.slice('AaveV3'.length).replace(/Whitelabel$/i, '');
+    if (rawChain) {
+      return `proto_${rawChain.toLowerCase()}_v3`;
+    }
+  }
+
+  return null;
 };
 
 export const buildAaveReserveUrl = (market: {

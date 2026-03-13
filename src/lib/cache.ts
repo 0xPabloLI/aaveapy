@@ -1,14 +1,17 @@
-import { MarketsResponse, MarketListItem } from '@/types/aave';
+import { MarketsResponse } from '@/types/aave';
 
 const CACHE_KEYS = {
   MARKETS: 'aave-markets-cache',
-  MARKETS_LIST: 'aave-markets-list-cache',
   TYDRO_RATE: 'tydro-point-usd-rate',
   COINGECKO_FDV: 'coingecko-fdv-cache',
   TOKEN_CATEGORIES: 'token-categories-cache',
   RATE_INPUTS_SNAPSHOT: 'rate-inputs-snapshot-cache',
+  MERKL_FORECAST_STATES: 'merkl-forecast-states-cache',
+  SIDE_DATA_META: 'side-data-meta-cache',
   COINGECKO_TOKEN_IMAGE_PREFIX: 'coingecko-token-image:',
 } as const;
+
+const LEGACY_CACHE_KEYS = ['aave-markets-list-cache'] as const;
 
 // Bump cache version when schema changes.
 const CACHE_VERSION = '1.1.0';
@@ -23,6 +26,8 @@ export interface CachedPayload<T> {
   data: T;
   updatedAt: number;
 }
+
+type StorageLike = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
 
 function toCachedPayload<T>(entry: CacheEntry<T>): CachedPayload<T> {
   const parsed = Date.parse(entry.timestamp);
@@ -71,6 +76,16 @@ function normalizeSymbolKey(symbol: string): string {
   return symbol.trim().toLowerCase();
 }
 
+export function clearLegacyCacheEntries(storage: StorageLike = localStorage): void {
+  for (const key of LEGACY_CACHE_KEYS) {
+    try {
+      storage.removeItem(key);
+    } catch (error) {
+      console.warn(`Failed to remove legacy cache key ${key}:`, error);
+    }
+  }
+}
+
 // Markets cache
 export function getCachedMarketsEntry(): CachedPayload<MarketsResponse> | null {
   return getCacheEntry<MarketsResponse>(CACHE_KEYS.MARKETS);
@@ -85,18 +100,62 @@ export function setCachedMarkets(data: MarketsResponse): void {
   setCacheEntry(CACHE_KEYS.MARKETS, data);
 }
 
-// Markets list cache
-export function getCachedMarketsListEntry(): CachedPayload<MarketListItem[]> | null {
-  return getCacheEntry<MarketListItem[]>(CACHE_KEYS.MARKETS_LIST);
+// CoinGecko FDV cache
+export function getCachedCoingeckoFdvEntry<T>(): CachedPayload<T> | null {
+  return getCacheEntry<T>(CACHE_KEYS.COINGECKO_FDV);
 }
 
-export function getCachedMarketsList(): MarketListItem[] | null {
-  const entry = getCachedMarketsListEntry();
-  return entry?.data ?? null;
+export function setCachedCoingeckoFdv<T>(data: T): void {
+  setCacheEntry(CACHE_KEYS.COINGECKO_FDV, data);
 }
 
-export function setCachedMarketsList(data: MarketListItem[]): void {
-  setCacheEntry(CACHE_KEYS.MARKETS_LIST, data);
+// Token categories cache
+export function getCachedTokenCategoriesEntry<T>(): CachedPayload<T> | null {
+  return getCacheEntry<T>(CACHE_KEYS.TOKEN_CATEGORIES);
+}
+
+export function setCachedTokenCategories<T>(data: T): void {
+  setCacheEntry(CACHE_KEYS.TOKEN_CATEGORIES, data);
+}
+
+// Side-data meta cache
+export function getCachedSideDataMetaEntry<T>(): CachedPayload<T> | null {
+  return getCacheEntry<T>(CACHE_KEYS.SIDE_DATA_META);
+}
+
+export function setCachedSideDataMeta<T>(data: T): void {
+  setCacheEntry(CACHE_KEYS.SIDE_DATA_META, data);
+}
+
+// Rate-inputs snapshot cache
+export function getCachedRateInputsSnapshotEntry<T>(): CachedPayload<T> | null {
+  return getCacheEntry<T>(CACHE_KEYS.RATE_INPUTS_SNAPSHOT);
+}
+
+export function setCachedRateInputsSnapshot<T>(data: T): void {
+  setCacheEntry(CACHE_KEYS.RATE_INPUTS_SNAPSHOT, data);
+}
+
+// Merkl forecast states cache
+export function getCachedMerklForecastStatesEntry<T>(): CachedPayload<T> | null {
+  return getCacheEntry<T>(CACHE_KEYS.MERKL_FORECAST_STATES);
+}
+
+export function setCachedMerklForecastStates<T>(data: T): void {
+  setCacheEntry(CACHE_KEYS.MERKL_FORECAST_STATES, data);
+}
+
+// Token image cache (per symbol)
+export function getCachedCoingeckoTokenImageEntry(symbol: string): CachedPayload<string | null> | null {
+  const normalized = normalizeSymbolKey(symbol);
+  if (!normalized) return null;
+  return getCacheEntry<string | null>(`${CACHE_KEYS.COINGECKO_TOKEN_IMAGE_PREFIX}${normalized}`);
+}
+
+export function setCachedCoingeckoTokenImage(symbol: string, imageUrl: string | null): void {
+  const normalized = normalizeSymbolKey(symbol);
+  if (!normalized) return;
+  setCacheEntry(`${CACHE_KEYS.COINGECKO_TOKEN_IMAGE_PREFIX}${normalized}`, imageUrl);
 }
 
 // CoinGecko FDV cache

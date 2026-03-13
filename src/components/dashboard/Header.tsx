@@ -62,7 +62,7 @@ const Header = ({ lastUpdated }: HeaderProps) => {
         </div>
         
         {/* Mobile: Theme toggle aligned with title */}
-        <div className="md:hidden shrink-0">
+        <div className="md:hidden shrink-0 flex items-center gap-[var(--ds-space-2)]">
           <ThemeToggle />
         </div>
       </div>
@@ -77,7 +77,7 @@ const Header = ({ lastUpdated }: HeaderProps) => {
           </div>
         )}
         
-        {/* Desktop: Theme Toggle after updated text */}
+        {/* Desktop: Theme Toggle */}
         <ThemeToggle />
       </div>
     </header>

@@ -683,15 +683,15 @@
     @apply border-border;
   }
 
-  /* Prevent horizontal overflow on mobile (no hidden horizontal scrollbar) */
+  /* Prevent horizontal overflow on mobile without breaking position:sticky */
   html {
-    overflow-x: hidden;
+    overflow-x: clip;
     width: 100%;
   }
 
   body {
     @apply bg-background text-foreground;
-    overflow-x: hidden;
+    overflow-x: clip;
     width: 100%;
     position: relative;
   }
@@ -762,5 +762,20 @@
 
   .animate-pulse-slow {
     animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  .reserve-highlight {
+    animation: reserve-flash 3s ease-out 0.4s both;
+  }
+}
+
+@keyframes reserve-flash {
+  0%, 40% {
+    background-color: rgb(var(--ds-brand-magenta-rgb) / 0.08);
+    box-shadow: 0 0 14px 3px rgb(var(--ds-brand-magenta-rgb) / 0.35);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: none;
   }
 }

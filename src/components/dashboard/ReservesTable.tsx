@@ -1,33 +1,34 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback, memo } from 'react';
 import { ArrowUp, ArrowDown, ChevronDown, ChevronUp } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { PoolWithSpread, ETHEREUM_MARKET_NAMES } from '@/types/aave';
+import { ReserveWithSpread, ETHEREUM_MARKET_NAMES, TokenPricesIndex } from '@/types/aave';
 import { 
   formatPercent, 
   formatSpread, 
+  formatMarketSizeUsd,
+  formatUsd,
   calculateTotalSupplyApr,
   calculateTotalSupplyApy,
   calculateTotalBorrowApr,
   calculateTotalBorrowApy,
-  calculateSpreadApy,
-  calculateSpreadApr,
   calculateTotalIncentiveApr,
   calculateTotalIncentiveApy,
   apyToApr
 } from '@/lib/formatters';
+import ScenarioControls from './ScenarioControls';
 import { compareIncentiveWithNative } from '@/lib/sorters';
 import { getChainIconSrc } from '@/lib/chainIcons';
-import { IncentiveIcon } from '@/components/IncentiveIcon';
-import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
-import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
 import IncentiveTooltip from './IncentiveTooltip';
-import MobilePoolCard from './MobilePoolCard';
+import MobileReserveCard from './MobileReserveCard';
+import DesktopReserveRow from './DesktopReserveRow';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { getReserveSimulationId, useSharedRateSimulations } from '@/hooks/useRateSimulation';
+import { parseNumberInput } from '@/lib/numberFormat';
 
-interface PoolsTableProps {
-  pools: PoolWithSpread[];
+interface ReservesTableProps {
+  reserves: ReserveWithSpread[];
   sortField: 'totalSupplyApy' | 'totalBorrowApy' | 'apySpread' | null;
   sortOrder: 'asc' | 'desc';
   onSort: (field: 'totalSupplyApy' | 'totalBorrowApy' | 'apySpread' | null) => void;
@@ -35,15 +36,38 @@ interface PoolsTableProps {
   isLoading?: boolean;
   onSelectMarket?: (marketName: string) => void;
   tydroPointToUsdRate: number;
+  includeWhitelistOnlyMerkl: boolean;
+  onToggleWhitelistOnlyMerkl: (next: boolean) => void;
+  tokenPrices?: TokenPricesIndex;
+  scrollToReserveId?: string | null;
 }
 
 type SortMode = 'total' | 'native' | 'incentive';
 
+type SortableColumn = 'token' | 'price' | 'size' | 'util' | 'supply' | 'borrow' | 'spread';
+
 const DEFAULT_VISIBLE_COUNT = 20;
 
-const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, isLoading, onSelectMarket, tydroPointToUsdRate }: PoolsTableProps) => {
+const ReservesTable = ({
+  reserves,
+  sortField,
+  sortOrder,
+  onSort,
+  isApy,
+  isLoading,
+  onSelectMarket,
+  tydroPointToUsdRate,
+  includeWhitelistOnlyMerkl,
+  onToggleWhitelistOnlyMerkl,
+  tokenPrices,
+  scrollToReserveId,
+}: ReservesTableProps) => {
   const isMobile = useIsMobile();
-  const [activeSortColumn, setActiveSortColumn] = useState<'supply' | 'borrow' | 'spread' | null>('supply');
+  const [activeSortColumn, setActiveSortColumn] = useState<SortableColumn | null>('supply');
+  const [tokenSortOrder, setTokenSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [priceSortOrder, setPriceSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [sizeSortOrder, setSizeSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [utilSortOrder, setUtilSortOrder] = useState<'asc' | 'desc'>('desc');
   const [supplySortMode, setSupplySortMode] = useState<SortMode>('incentive');
   const [supplySortOrder, setSupplySortOrder] = useState<'asc' | 'desc'>('desc');
   const [borrowSortMode, setBorrowSortMode] = useState<SortMode>('total');
@@ -52,134 +76,271 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, isLoading, onS
   const [showSupplySortMenu, setShowSupplySortMenu] = useState(false);
   const [showBorrowSortMenu, setShowBorrowSortMenu] = useState(false);
   const [showAll, setShowAll] = useState(false);
+  const [expandedReserveId, setExpandedReserveId] = useState<string | null>(null);
+  const [debouncedSharedSupplyInput, setDebouncedSharedSupplyInput] = useState('');
+  const [debouncedSharedBorrowInput, setDebouncedSharedBorrowInput] = useState('');
+  const [sharedInputMode, setSharedInputMode] = useState<import('@/hooks/useRateSimulation').ScenarioInputMode>('usd');
+  const handleScenarioChange = useCallback((supply: string, borrow: string, mode: import('@/components/dashboard/ScenarioControls').ScenarioInputMode) => {
+    setDebouncedSharedSupplyInput(supply);
+    setDebouncedSharedBorrowInput(borrow);
+    setSharedInputMode(mode);
+  }, []);
+  const handleToggleExpand = useCallback((reserveId: string) => {
+    setExpandedReserveId((prev) => (prev === reserveId ? null : reserveId));
+  }, []);
   const [tooltipState, setTooltipState] = useState<{
-    pool: PoolWithSpread;
+    reserve: ReserveWithSpread;
     type: 'supply' | 'borrow';
     position: { x: number; y: number };
     triggerCenterX: number;
+    triggerHeight: number;
+    triggerRect: { top: number; bottom: number; left: number; right: number; width: number; height: number };
   } | null>(null);
 
-  const getMarketDisplayName = (pool: PoolWithSpread) => {
-    if (pool.chainName === 'Ethereum' && ETHEREUM_MARKET_NAMES[pool.marketName]) {
-      return ETHEREUM_MARKET_NAMES[pool.marketName];
+  const { simulationsById, hasAnyInput: hasSharedScenario } = useSharedRateSimulations({
+    reserves,
+    isApy,
+    includeWhitelistOnlyMerkl,
+    tydroPointToUsdRate,
+    tokenPrices,
+    supplyInput: debouncedSharedSupplyInput,
+    borrowInput: debouncedSharedBorrowInput,
+    inputMode: sharedInputMode,
+  });
+
+  const getMarketDisplayName = (reserve: ReserveWithSpread) => {
+    if (reserve.chainName === 'Ethereum' && ETHEREUM_MARKET_NAMES[reserve.marketName]) {
+      return ETHEREUM_MARKET_NAMES[reserve.marketName];
     }
-    return pool.chainName;
+    return reserve.chainName;
   };
 
-  // Helper: Get incentive values for a pool (supply or borrow)
-  const getIncentiveValues = (pool: PoolWithSpread, type: 'supply' | 'borrow') => {
-    const protocolIncentives = type === 'supply' ? pool.supplyIncentives : pool.borrowIncentives;
-    const meritIncentives = type === 'supply' ? pool.meritSupplys : pool.meritBorrows;
-    const merklOpportunities = type === 'supply' ? pool.merklSupplys : pool.merklBorrows;
-    const brevisIncentives = type === 'supply' ? pool.brevisSupplys : pool.brevisBorrows;
+  // Helper: Get incentive values for a reserve (supply or borrow)
+  const getIncentiveValues = (reserve: ReserveWithSpread, type: 'supply' | 'borrow') => {
+    const protocolIncentives = type === 'supply' ? reserve.supplyIncentives : reserve.borrowIncentives;
+    const meritIncentives = type === 'supply' ? reserve.meritSupplys : reserve.meritBorrows;
+    const merklOpportunities = type === 'supply' ? reserve.merklSupplys : reserve.merklBorrows;
+    const brevisIncentives = type === 'supply' ? reserve.brevisSupplys : reserve.brevisBorrows;
     return {
-      apr: calculateTotalIncentiveApr(meritIncentives, merklOpportunities, brevisIncentives, protocolIncentives, tydroPointToUsdRate),
-      apy: calculateTotalIncentiveApy(meritIncentives, merklOpportunities, brevisIncentives, protocolIncentives, tydroPointToUsdRate),
+      apr: calculateTotalIncentiveApr(
+        meritIncentives,
+        merklOpportunities,
+        brevisIncentives,
+        protocolIncentives,
+        tydroPointToUsdRate,
+        { includeWhitelistOnlyMerkl }
+      ),
+      apy: calculateTotalIncentiveApy(
+        meritIncentives,
+        merklOpportunities,
+        brevisIncentives,
+        protocolIncentives,
+        tydroPointToUsdRate,
+        { includeWhitelistOnlyMerkl }
+      ),
     };
   };
 
-  // Calculate totals for a pool (frontend calculates incentive totals from details)
-  const getTotalSupplyApy = (pool: PoolWithSpread): number | null => {
-    return calculateTotalSupplyApy(pool.supplyApy, getIncentiveValues(pool, 'supply').apy);
+  // Calculate totals for a reserve (frontend calculates incentive totals from details)
+  const getTotalSupplyApy = (reserve: ReserveWithSpread): number | null => {
+    return calculateTotalSupplyApy(reserve.supplyApy, getIncentiveValues(reserve, 'supply').apy);
   };
 
-  const getTotalSupplyApr = (pool: PoolWithSpread): number | null => {
-    return calculateTotalSupplyApr(pool.supplyApy, getIncentiveValues(pool, 'supply').apr);
+  const getTotalSupplyApr = (reserve: ReserveWithSpread): number | null => {
+    return calculateTotalSupplyApr(reserve.supplyApy, getIncentiveValues(reserve, 'supply').apr);
   };
 
-  const getTotalBorrowApy = (pool: PoolWithSpread): number | null => {
-    return calculateTotalBorrowApy(pool.borrowApy, getIncentiveValues(pool, 'borrow').apy);
+  const getTotalBorrowApy = (reserve: ReserveWithSpread): number | null => {
+    return calculateTotalBorrowApy(reserve.borrowApy, getIncentiveValues(reserve, 'borrow').apy);
   };
 
-  const getTotalBorrowApr = (pool: PoolWithSpread): number | null => {
-    return calculateTotalBorrowApr(pool.borrowApy, getIncentiveValues(pool, 'borrow').apr);
+  const getTotalBorrowApr = (reserve: ReserveWithSpread): number | null => {
+    return calculateTotalBorrowApr(reserve.borrowApy, getIncentiveValues(reserve, 'borrow').apr);
   };
 
   // Calculate native values (already in percentage form, number type)
-  const getNativeSupplyApy = (pool: PoolWithSpread): number | null => {
-    return pool.supplyApy ?? null;
+  const getNativeSupplyApy = (reserve: ReserveWithSpread): number | null => {
+    return reserve.supplyApy ?? null;
   };
 
-  const getNativeBorrowApy = (pool: PoolWithSpread): number | null => {
-    return pool.borrowApy ?? null;
+  const getNativeBorrowApy = (reserve: ReserveWithSpread): number | null => {
+    return reserve.borrowApy ?? null;
   };
 
-  // Calculate spread for a pool
-  const getSpread = (pool: PoolWithSpread): number | null => {
-    const totalSupplyApy = isApy ? getTotalSupplyApy(pool) : getTotalSupplyApr(pool);
-    const totalBorrowApy = isApy ? getTotalBorrowApy(pool) : getTotalBorrowApr(pool);
+  // Calculate spread for a reserve
+  const getSpread = (reserve: ReserveWithSpread): number | null => {
+    const totalSupplyApy = isApy ? getTotalSupplyApy(reserve) : getTotalSupplyApr(reserve);
+    const totalBorrowApy = isApy ? getTotalBorrowApy(reserve) : getTotalBorrowApr(reserve);
     if (totalSupplyApy === null || totalBorrowApy === null) return null;
     return totalSupplyApy - totalBorrowApy;
   };
 
-  // Sort data based on active column and its sort mode
-  const sortedData = [...pools].sort((a, b) => {
-    let comparison = 0;
+  const getSimulation = (reserve: ReserveWithSpread) => simulationsById[getReserveSimulationId(reserve)];
 
-    // Default to supply total desc when no column is selected
-    const sortColumn = activeSortColumn ?? 'supply';
+  const pickScenarioValue = (current: number | null, after: number | null): number | null =>
+    hasSharedScenario ? after ?? current : current;
 
-    if (sortColumn === 'supply') {
-      // Supply sorting
-      if (supplySortMode === 'native') {
-        const aNative = getNativeSupplyApy(a);
-        const bNative = getNativeSupplyApy(b);
-        if (aNative === null && bNative === null) return 0;
-        if (aNative === null) return 1;
-        if (bNative === null) return -1;
-        comparison = bNative - aNative;
-      } else if (supplySortMode === 'incentive') {
-        const aIncentive = isApy ? getIncentiveValues(a, 'supply').apy : getIncentiveValues(a, 'supply').apr;
-        const bIncentive = isApy ? getIncentiveValues(b, 'supply').apy : getIncentiveValues(b, 'supply').apr;
-        const aNative = getNativeSupplyApy(a);
-        const bNative = getNativeSupplyApy(b);
-        return compareIncentiveWithNative(aIncentive, bIncentive, aNative, bNative, supplySortOrder);
-      } else {
-        // Total sorting - use totalSupplyApy (Native + Incentive)
-        const aTotal = isApy ? getTotalSupplyApy(a) : getTotalSupplyApr(a);
-        const bTotal = isApy ? getTotalSupplyApy(b) : getTotalSupplyApr(b);
-        if (aTotal === null && bTotal === null) return 0;
-        if (aTotal === null) return 1;
-        if (bTotal === null) return -1;
-        comparison = bTotal - aTotal;
-      }
-      return supplySortOrder === 'desc' ? comparison : -comparison;
-    } else if (sortColumn === 'borrow') {
-      // Borrow sorting
-      if (borrowSortMode === 'native') {
-        const aNative = getNativeBorrowApy(a);
-        const bNative = getNativeBorrowApy(b);
-        if (aNative === null && bNative === null) return 0;
-        if (aNative === null) return 1;
-        if (bNative === null) return -1;
-        comparison = bNative - aNative;
-      } else if (borrowSortMode === 'incentive') {
-        const aIncentive = isApy ? getIncentiveValues(a, 'borrow').apy : getIncentiveValues(a, 'borrow').apr;
-        const bIncentive = isApy ? getIncentiveValues(b, 'borrow').apy : getIncentiveValues(b, 'borrow').apr;
-        const aNative = getNativeBorrowApy(a);
-        const bNative = getNativeBorrowApy(b);
-        return compareIncentiveWithNative(aIncentive, bIncentive, aNative, bNative, borrowSortOrder);
-      } else {
-        // Total sorting
-        const aTotal = isApy ? getTotalBorrowApy(a) : getTotalBorrowApr(a);
-        const bTotal = isApy ? getTotalBorrowApy(b) : getTotalBorrowApr(b);
-        if (aTotal === null && bTotal === null) return 0;
-        if (aTotal === null) return 1;
-        if (bTotal === null) return -1;
-        comparison = bTotal - aTotal;
-      }
-      return borrowSortOrder === 'desc' ? comparison : -comparison;
-    } else {
-      // Spread sorting (or default when activeSortColumn is null)
-      const aSpread = getSpread(a);
-      const bSpread = getSpread(b);
-      if (aSpread === null && bSpread === null) return 0;
-      if (aSpread === null) return 1;
-      if (bSpread === null) return -1;
-      comparison = bSpread - aSpread;
-      return spreadSortOrder === 'desc' ? comparison : -comparison;
+  const getDisplaySupplyTotal = (reserve: ReserveWithSpread): number | null => {
+    const simulation = getSimulation(reserve);
+    if (!simulation) return isApy ? getTotalSupplyApy(reserve) : getTotalSupplyApr(reserve);
+    return pickScenarioValue(simulation.supply.currentTotal, simulation.supply.afterTotal);
+  };
+
+  const getDisplayBorrowTotal = (reserve: ReserveWithSpread): number | null => {
+    const simulation = getSimulation(reserve);
+    if (!simulation) return isApy ? getTotalBorrowApy(reserve) : getTotalBorrowApr(reserve);
+    return pickScenarioValue(simulation.borrow.currentTotal, simulation.borrow.afterTotal);
+  };
+
+  const getDisplaySupplyNative = (reserve: ReserveWithSpread): number | null => {
+    const simulation = getSimulation(reserve);
+    if (!simulation) {
+      const nativeSupplyApy = getNativeSupplyApy(reserve);
+      return isApy ? nativeSupplyApy : nativeSupplyApy !== null ? apyToApr(nativeSupplyApy) : null;
     }
-  });
+    return pickScenarioValue(simulation.supply.currentNative, simulation.supply.afterNative);
+  };
+
+  const getDisplayBorrowNative = (reserve: ReserveWithSpread): number | null => {
+    const simulation = getSimulation(reserve);
+    if (!simulation) {
+      const nativeBorrowApy = getNativeBorrowApy(reserve);
+      return isApy ? nativeBorrowApy : nativeBorrowApy !== null ? apyToApr(nativeBorrowApy) : null;
+    }
+    return pickScenarioValue(simulation.borrow.currentNative, simulation.borrow.afterNative);
+  };
+
+  const getDisplaySupplyIncentive = (reserve: ReserveWithSpread): number | null => {
+    const simulation = getSimulation(reserve);
+    if (!simulation) {
+      return isApy ? getIncentiveValues(reserve, 'supply').apy : getIncentiveValues(reserve, 'supply').apr;
+    }
+    return pickScenarioValue(simulation.supply.currentIncentive, simulation.supply.afterIncentive);
+  };
+
+  const getDisplayBorrowIncentive = (reserve: ReserveWithSpread): number | null => {
+    const simulation = getSimulation(reserve);
+    if (!simulation) {
+      return isApy ? getIncentiveValues(reserve, 'borrow').apy : getIncentiveValues(reserve, 'borrow').apr;
+    }
+    return pickScenarioValue(simulation.borrow.currentIncentive, simulation.borrow.afterIncentive);
+  };
+
+  const getDisplaySpread = (reserve: ReserveWithSpread): number | null => {
+    const simulation = getSimulation(reserve);
+    if (!simulation) return getSpread(reserve);
+    return pickScenarioValue(simulation.spread.current, simulation.spread.after);
+  };
+
+  const getDisplayMarketSizeUsd = (reserve: ReserveWithSpread): number | null => {
+    const marketSize = reserve.marketSizeUsd;
+    if (marketSize == null || !Number.isFinite(marketSize)) return marketSize ?? null;
+    const supplyRaw = parseNumberInput(debouncedSharedSupplyInput);
+    const sim = getSimulation(reserve);
+    const marketSizeUsd =
+      sharedInputMode === 'usd'
+        ? supplyRaw
+        : sim?.tokenPrice != null && Number.isFinite(sim.tokenPrice)
+          ? supplyRaw * sim.tokenPrice
+          : 0;
+    if (marketSizeUsd <= 0) return marketSize;
+    return marketSize + marketSizeUsd;
+  };
+
+  // Sort data based on active column and its sort mode
+  const sortedData = useMemo(() => {
+    return [...reserves].sort((a, b) => {
+      let comparison = 0;
+
+      // Default to supply total desc when no column is selected
+      const sortColumn = activeSortColumn ?? 'supply';
+
+      if (sortColumn === 'token') {
+        const order = tokenSortOrder === 'asc' ? 1 : -1;
+        return order * (a.tokenSymbol.localeCompare(b.tokenSymbol, undefined, { sensitivity: 'base' }));
+      }
+      if (sortColumn === 'price') {
+        const aP = a.tokenPrice ?? -Infinity;
+        const bP = b.tokenPrice ?? -Infinity;
+        comparison = aP - bP;
+        return priceSortOrder === 'desc' ? -comparison : comparison;
+      }
+      if (sortColumn === 'size') {
+        const aT = getDisplayMarketSizeUsd(a) ?? -Infinity;
+        const bT = getDisplayMarketSizeUsd(b) ?? -Infinity;
+        comparison = aT - bT;
+        return sizeSortOrder === 'desc' ? -comparison : comparison;
+      }
+      if (sortColumn === 'util') {
+        const aU = a.utilizationPct ?? -Infinity;
+        const bU = b.utilizationPct ?? -Infinity;
+        comparison = aU - bU;
+        return utilSortOrder === 'desc' ? -comparison : comparison;
+      }
+
+      if (sortColumn === 'supply') {
+        // Supply sorting
+        if (supplySortMode === 'native') {
+          const aNative = getDisplaySupplyNative(a);
+          const bNative = getDisplaySupplyNative(b);
+          if (aNative === null && bNative === null) return 0;
+          if (aNative === null) return 1;
+          if (bNative === null) return -1;
+          comparison = bNative - aNative;
+        } else if (supplySortMode === 'incentive') {
+          const aIncentive = getDisplaySupplyIncentive(a);
+          const bIncentive = getDisplaySupplyIncentive(b);
+          const aNative = getDisplaySupplyNative(a);
+          const bNative = getDisplaySupplyNative(b);
+          return compareIncentiveWithNative(aIncentive, bIncentive, aNative, bNative, supplySortOrder);
+        } else {
+          // Total sorting - use totalSupplyApy (Native + Incentive)
+          const aTotal = getDisplaySupplyTotal(a);
+          const bTotal = getDisplaySupplyTotal(b);
+          if (aTotal === null && bTotal === null) return 0;
+          if (aTotal === null) return 1;
+          if (bTotal === null) return -1;
+          comparison = bTotal - aTotal;
+        }
+        return supplySortOrder === 'desc' ? comparison : -comparison;
+      } else if (sortColumn === 'borrow') {
+        // Borrow sorting
+        if (borrowSortMode === 'native') {
+          const aNative = getDisplayBorrowNative(a);
+          const bNative = getDisplayBorrowNative(b);
+          if (aNative === null && bNative === null) return 0;
+          if (aNative === null) return 1;
+          if (bNative === null) return -1;
+          comparison = bNative - aNative;
+        } else if (borrowSortMode === 'incentive') {
+          const aIncentive = getDisplayBorrowIncentive(a);
+          const bIncentive = getDisplayBorrowIncentive(b);
+          const aNative = getDisplayBorrowNative(a);
+          const bNative = getDisplayBorrowNative(b);
+          return compareIncentiveWithNative(aIncentive, bIncentive, aNative, bNative, borrowSortOrder);
+        } else {
+          // Total sorting
+          const aTotal = getDisplayBorrowTotal(a);
+          const bTotal = getDisplayBorrowTotal(b);
+          if (aTotal === null && bTotal === null) return 0;
+          if (aTotal === null) return 1;
+          if (bTotal === null) return -1;
+          comparison = bTotal - aTotal;
+        }
+        return borrowSortOrder === 'desc' ? comparison : -comparison;
+      } else {
+        // Spread sorting (or default when activeSortColumn is null)
+        const aSpread = getDisplaySpread(a);
+        const bSpread = getDisplaySpread(b);
+        if (aSpread === null && bSpread === null) return 0;
+        if (aSpread === null) return 1;
+        if (bSpread === null) return -1;
+        comparison = bSpread - aSpread;
+        return spreadSortOrder === 'desc' ? comparison : -comparison;
+      }
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reserves, activeSortColumn, tokenSortOrder, priceSortOrder, sizeSortOrder, utilSortOrder, supplySortMode, supplySortOrder, borrowSortMode, borrowSortOrder, spreadSortOrder, simulationsById, hasSharedScenario, isApy, tydroPointToUsdRate, includeWhitelistOnlyMerkl, debouncedSharedSupplyInput, sharedInputMode]);
 
   const supplySortLabel = {
     total: 'Total',
@@ -194,23 +355,51 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, isLoading, onS
   }[borrowSortMode];
 
   const toggleSupplySortOrder = () => {
+    collapseExpandedOnSort();
     setActiveSortColumn('supply');
     setSupplySortOrder(supplySortOrder === 'desc' ? 'asc' : 'desc');
   };
 
   const toggleBorrowSortOrder = () => {
+    collapseExpandedOnSort();
     setActiveSortColumn('borrow');
     setBorrowSortOrder(borrowSortOrder === 'desc' ? 'asc' : 'desc');
   };
 
   const toggleSpreadSortOrder = () => {
+    collapseExpandedOnSort();
     setActiveSortColumn('spread');
     setSpreadSortOrder(spreadSortOrder === 'desc' ? 'asc' : 'desc');
   };
 
-  const handleIncentiveClick = (
+  const collapseExpandedOnSort = useCallback(() => {
+    setExpandedReserveId(null);
+  }, []);
+
+  const handleSortToken = () => {
+    collapseExpandedOnSort();
+    setActiveSortColumn('token');
+    setTokenSortOrder((o) => (o === 'asc' ? 'desc' : 'asc'));
+  };
+  const handleSortPrice = () => {
+    collapseExpandedOnSort();
+    setActiveSortColumn('price');
+    setPriceSortOrder((o) => (o === 'desc' ? 'asc' : 'desc'));
+  };
+  const handleSortSize = () => {
+    collapseExpandedOnSort();
+    setActiveSortColumn('size');
+    setSizeSortOrder((o) => (o === 'desc' ? 'asc' : 'desc'));
+  };
+  const handleSortUtil = () => {
+    collapseExpandedOnSort();
+    setActiveSortColumn('util');
+    setUtilSortOrder((o) => (o === 'desc' ? 'asc' : 'desc'));
+  };
+
+  const handleIncentiveClick = useCallback((
     e: React.MouseEvent,
-    pool: PoolWithSpread,
+    reserve: ReserveWithSpread,
     type: 'supply' | 'borrow',
     apy: number | null,
   ) => {
@@ -219,39 +408,28 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, isLoading, onS
     const rect = e.currentTarget.getBoundingClientRect();
     const triggerCenterX = rect.left + rect.width / 2;
     setTooltipState({
-      pool,
+      reserve,
       type,
       position: { x: rect.left, y: rect.bottom },
       triggerCenterX,
+      triggerHeight: rect.height,
+      triggerRect: {
+        top: rect.top,
+        bottom: rect.bottom,
+        left: rect.left,
+        right: rect.right,
+        width: rect.width,
+        height: rect.height,
+      },
     });
-  };
+  }, []);
 
-  const ChainIcon = ({ chain, className = '' }: { chain: string; className?: string }) => {
-    const size = 'w-3.5 h-3.5';
-    const src = getChainIconSrc(chain);
+  
 
-    if (!src) {
-    return (
-      <div className={`${size} rounded-full bg-current opacity-40 flex items-center justify-center ds-text-8 font-bold`}>
-        {chain.charAt(0)}
-      </div>
-    );
-    }
-
-    return (
-      <img
-        src={src}
-        alt={`${chain} logo`}
-        className={`${size} ${className}`}
-        loading="lazy"
-      />
-    );
-  };
-
-  const handleRowClick = (pool: PoolWithSpread) => {
+  const handleRowClick = (reserve: ReserveWithSpread) => {
     const url = buildAaveReserveUrl({
-      marketName: pool.marketName,
-      tokenAddress: pool.tokenAddress,
+      marketName: reserve.marketName,
+      tokenAddress: reserve.tokenAddress,
     });
     if (url) {
       window.open(url, '_blank', 'noopener,noreferrer');
@@ -261,7 +439,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, isLoading, onS
   // Mobile card view with tooltip support
   const handleMobileIncentiveClick = (
     e: React.MouseEvent,
-    pool: PoolWithSpread,
+    reserve: ReserveWithSpread,
     type: 'supply' | 'borrow',
     apy: number | null
   ) => {
@@ -269,26 +447,59 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, isLoading, onS
     const rect = e.currentTarget.getBoundingClientRect();
     const triggerCenterX = rect.left + rect.width / 2;
     setTooltipState({
-      pool,
+      reserve,
       type,
       position: { x: rect.left, y: rect.bottom },
       triggerCenterX,
+      triggerHeight: rect.height,
+      triggerRect: {
+        top: rect.top,
+        bottom: rect.bottom,
+        left: rect.left,
+        right: rect.right,
+        width: rect.width,
+        height: rect.height,
+      },
     });
   };
 
+  // Auto-expand when parent requests scroll to a specific reserve
+  useEffect(() => {
+    if (scrollToReserveId) {
+      setShowAll(true);
+    }
+  }, [scrollToReserveId]);
+
   // Display data with pagination - must be before conditional returns
-  const displayData = useMemo(() => 
-    showAll ? sortedData : sortedData.slice(0, DEFAULT_VISIBLE_COUNT),
-    [sortedData, showAll]
-  );
+  // Ensure the expanded row is always visible even if it's beyond the default count
+  const displayData = useMemo(() => {
+    if (showAll) return sortedData;
+    const sliced = sortedData.slice(0, DEFAULT_VISIBLE_COUNT);
+    // If there's an expanded row that's beyond the slice, include it
+    if (expandedReserveId) {
+      const expandedIndex = sortedData.findIndex(
+        (r) => getReserveSimulationId(r) === expandedReserveId
+      );
+      if (expandedIndex >= DEFAULT_VISIBLE_COUNT) {
+        // Include all items up to and including the expanded row
+        return sortedData.slice(0, expandedIndex + 1);
+      }
+    }
+    return sliced;
+  }, [sortedData, showAll, expandedReserveId]);
+
+  const scenarioControls = <ScenarioControls onDebouncedChange={handleScenarioChange} />;
 
   // Mobile card view
   if (isMobile) {
     return (
       <div className="space-y-3">
+        <div className="sticky top-0 z-20 -mx-[var(--ds-space-3)] px-[var(--ds-space-3)] py-[var(--ds-space-1)] bg-muted/40 backdrop-blur-sm rounded-b-lg border-b border-border/50">
+          {scenarioControls}
+        </div>
         {/* Header with sorting controls */}
         <div className="flex justify-between items-center px-[var(--ds-space-1)]">
-          <h3 className="ds-text-14 font-bold text-foreground">{pools.length} Reserves</h3>
+          <h3 className="ds-text-14 font-bold text-foreground">{reserves.length} Reserves</h3>
           <div className="flex items-center gap-[var(--ds-space-2)]">
             {/* Supply sort dropdown */}
             <div className="relative">
@@ -472,7 +683,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, isLoading, onS
         
         {/* 2x2 Grid layout for mobile */}
         <div className="grid grid-cols-2 gap-[var(--ds-space-2)]">
-          {isLoading && pools.length === 0 ? (
+          {isLoading && reserves.length === 0 ? (
             Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="bg-card rounded-xl border border-border/60 ds-card-pad-sm">
                 <div className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-3)]">
@@ -502,41 +713,67 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, isLoading, onS
               </div>
             ))
           ) : (
-            (showAll ? sortedData : sortedData.slice(0, DEFAULT_VISIBLE_COUNT)).map((pool) => (
-              <MobilePoolCard
-                key={`${pool.marketName}-${pool.tokenAddress}`}
-                pool={pool}
+            displayData.map((reserve) => {
+              const reserveId = `${reserve.marketName}-${reserve.tokenAddress}`;
+              return (
+              <MobileReserveCard
+                key={reserveId}
+                reserve={reserve}
                 isApy={isApy}
                 onIncentiveClick={handleMobileIncentiveClick}
-                tydroPointToUsdRate={tydroPointToUsdRate}
+                isSimulationExpanded={expandedReserveId === reserveId}
+                onToggleSimulation={() =>
+                  setExpandedReserveId((prev) => (prev === reserveId ? null : reserveId))
+                }
+                simulation={simulationsById[reserveId]}
+                supplyInput={debouncedSharedSupplyInput}
+                borrowInput={debouncedSharedBorrowInput}
+                hasSharedScenario={hasSharedScenario}
+                inputMode={sharedInputMode}
               />
-            ))
+              );
+            })
           )}
         </div>
         
         {/* Show More/Less button for mobile */}
-        {sortedData.length > DEFAULT_VISIBLE_COUNT && (
+        {sortedData.length > displayData.length && (
           <button
             type="button"
             onClick={() => setShowAll(!showAll)}
             className="w-full mt-[var(--ds-space-4)] ds-button ds-text-14 md:ds-text-16 gap-[var(--ds-space-2)] border border-border bg-card hover:bg-muted/50 transition-colors text-foreground font-semibold"
           >
-            <span>{showAll ? 'Show Less' : `Show ${sortedData.length - DEFAULT_VISIBLE_COUNT} More Reserves`}</span>
-            {showAll ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            <span>{`Show ${sortedData.length - displayData.length} More Reserves`}</span>
+            <ChevronDown className="w-4 h-4" />
+          </button>
+        )}
+        {showAll && sortedData.length > DEFAULT_VISIBLE_COUNT && (
+          <button
+            type="button"
+            onClick={() => setShowAll(false)}
+            className="w-full mt-[var(--ds-space-4)] ds-button ds-text-14 md:ds-text-16 gap-[var(--ds-space-2)] border border-border bg-card hover:bg-muted/50 transition-colors text-foreground font-semibold"
+          >
+            <span>Show Less</span>
+            <ChevronUp className="w-4 h-4" />
           </button>
         )}
         
         {tooltipState && (
           <IncentiveTooltip
-            pool={tooltipState.pool}
+            reserve={tooltipState.reserve}
             type={tooltipState.type}
             position={tooltipState.position}
             triggerCenterX={tooltipState.triggerCenterX}
+            triggerHeight={tooltipState.triggerHeight}
+            triggerRect={tooltipState.triggerRect}
             accentTextClass={tooltipState.type === 'supply' ? 'ds-text-emerald-600' : 'ds-text-brand-cyan'}
             accentBgClass={tooltipState.type === 'supply' ? 'ds-bg-emerald-500-10' : 'ds-bg-brand-cyan-10'}
             onClose={() => setTooltipState(null)}
             isApy={isApy}
             tydroPointToUsdRate={tydroPointToUsdRate}
+            includeWhitelistOnlyMerkl={includeWhitelistOnlyMerkl}
+            onToggleWhitelistOnlyMerkl={onToggleWhitelistOnlyMerkl}
+            tokenPrices={tokenPrices}
           />
         )}
       </div>
@@ -545,28 +782,93 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, isLoading, onS
 
 
   return (
-    <div className="bg-card rounded-2xl shadow-sm border border-border/60 overflow-hidden">
+    <div className="bg-card rounded-2xl shadow-sm border border-border/60 relative">
+      <div className="sticky top-0 z-20 border-b border-border/60 p-[var(--ds-space-3)] bg-muted/40 backdrop-blur-sm shadow-[0_1px_3px_0_rgb(0_0_0/0.04)]">
+        {scenarioControls}
+      </div>
       <div className="overflow-x-auto">
-        <Table className="table-fixed w-full">
+        <Table className="w-full table-fixed">
           <colgroup>
-            <col className="w-1/5" />
-            <col className="w-1/5" />
-            <col className="w-1/5" />
-            <col className="w-1/5" />
-            <col className="w-1/5" />
+            <col style={{ width: '12%' }} />
+            <col style={{ width: '10%' }} />
+            <col style={{ width: '8%' }} />
+            <col style={{ width: '11%' }} />
+            <col style={{ width: '14%' }} />
+            <col style={{ width: '10%' }} />
+            <col style={{ width: '14%' }} />
+            <col style={{ width: '11%' }} />
           </colgroup>
           <TableHeader>
             <TableRow className="border-border/50 bg-card/60">
-              {/* Token - flex grow */}
-              <TableHead className="w-1/5 px-[var(--ds-space-3)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground">
-                Token
+              {/* Token */}
+              <TableHead className="px-[var(--ds-space-3)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground">
+                <button
+                  type="button"
+                  onClick={handleSortToken}
+                  className={`ds-chip-heading md:ds-text-16 gap-[var(--ds-space-1)] transition-colors ${
+                    activeSortColumn === 'token' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground/80'
+                  }`}
+                >
+                  <span>Token</span>
+                  {activeSortColumn === 'token' ? (
+                    tokenSortOrder === 'asc' ? (
+                      <ArrowUp className="w-3 h-3" />
+                    ) : (
+                      <ArrowDown className="w-3 h-3" />
+                    )
+                  ) : (
+                    <ArrowDown className="w-3 h-3 opacity-50" />
+                  )}
+                </button>
+              </TableHead>
+              {/* Price */}
+              <TableHead className="px-[var(--ds-space-3)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
+                <button
+                  type="button"
+                  onClick={handleSortPrice}
+                  className={`ds-chip-heading md:ds-text-16 gap-[var(--ds-space-1)] transition-colors ${
+                    activeSortColumn === 'price' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground/80'
+                  }`}
+                >
+                  <span>Price</span>
+                  {activeSortColumn === 'price' ? (
+                    priceSortOrder === 'desc' ? (
+                      <ArrowDown className="w-3 h-3" />
+                    ) : (
+                      <ArrowUp className="w-3 h-3" />
+                    )
+                  ) : (
+                    <ArrowDown className="w-3 h-3 opacity-50" />
+                  )}
+                </button>
               </TableHead>
               {/* Market */}
-              <TableHead className="w-1/5 px-[var(--ds-space-3)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
+              <TableHead className="px-[var(--ds-space-3)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
                 Market
               </TableHead>
+              {/* Size */}
+              <TableHead className="px-[var(--ds-space-3)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
+                <button
+                  type="button"
+                  onClick={handleSortSize}
+                  className={`ds-chip-heading md:ds-text-16 gap-[var(--ds-space-1)] transition-colors ${
+                    activeSortColumn === 'size' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground/80'
+                  }`}
+                >
+                  <span>Size</span>
+                  {activeSortColumn === 'size' ? (
+                    sizeSortOrder === 'desc' ? (
+                      <ArrowDown className="w-3 h-3" />
+                    ) : (
+                      <ArrowUp className="w-3 h-3" />
+                    )
+                  ) : (
+                    <ArrowDown className="w-3 h-3 opacity-50" />
+                  )}
+                </button>
+              </TableHead>
               {/* Supply Column - center aligned */}
-              <TableHead className="w-1/5 px-[var(--ds-space-3)] py-[var(--ds-space-3)] ds-text-14 md:ds-text-16 font-semibold text-muted-foreground text-center">
+              <TableHead className="px-[var(--ds-space-3)] py-[var(--ds-space-3)] ds-text-14 md:ds-text-16 font-semibold text-muted-foreground text-center">
                 <div className="flex items-center justify-center gap-[var(--ds-space-2)]">
                   <div className="flex items-center gap-[var(--ds-space-1-5)]">
                     <span
@@ -598,6 +900,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, isLoading, onS
                             <button
                               type="button"
                               onClick={() => {
+                                collapseExpandedOnSort();
                                 const isAlreadySelected = supplySortMode === 'total' && activeSortColumn === 'supply';
                                 if (isAlreadySelected && supplySortOrder === 'desc') {
                                   setSupplySortOrder('asc');
@@ -628,6 +931,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, isLoading, onS
                             <button
                               type="button"
                               onClick={() => {
+                                collapseExpandedOnSort();
                                 const isAlreadySelected = supplySortMode === 'native' && activeSortColumn === 'supply';
                                 if (isAlreadySelected && supplySortOrder === 'desc') {
                                   setSupplySortOrder('asc');
@@ -658,6 +962,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, isLoading, onS
                             <button
                               type="button"
                               onClick={() => {
+                                collapseExpandedOnSort();
                                 const isAlreadySelected = supplySortMode === 'incentive' && activeSortColumn === 'supply';
                                 if (isAlreadySelected && supplySortOrder === 'desc') {
                                   setSupplySortOrder('asc');
@@ -693,13 +998,14 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, isLoading, onS
                 </div>
               </TableHead>
               {/* Spread Column - center aligned */}
-              <TableHead className="w-1/5 px-[var(--ds-space-3)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
+              <TableHead className="px-[var(--ds-space-3)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
                 <button
                   type="button"
                   onClick={() => {
                     if (activeSortColumn === 'spread') {
                       toggleSpreadSortOrder();
                     } else {
+                      collapseExpandedOnSort();
                       setActiveSortColumn('spread');
                       setSpreadSortOrder('desc');
                     }
@@ -721,7 +1027,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, isLoading, onS
                 </button>
               </TableHead>
               {/* Borrow Column - center aligned */}
-              <TableHead className="w-1/5 px-[var(--ds-space-3)] py-[var(--ds-space-3)] ds-text-14 md:ds-text-16 font-semibold text-muted-foreground text-center">
+              <TableHead className="px-[var(--ds-space-3)] py-[var(--ds-space-3)] ds-text-14 md:ds-text-16 font-semibold text-muted-foreground text-center">
                 <div className="flex items-center justify-center gap-[var(--ds-space-2)]">
                   <div className="flex items-center gap-[var(--ds-space-1-5)]">
                     <span
@@ -753,6 +1059,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, isLoading, onS
                               <button
                                 type="button"
                                 onClick={() => {
+                                  collapseExpandedOnSort();
                                   const isAlreadySelected = borrowSortMode === 'total' && activeSortColumn === 'borrow';
                                   if (isAlreadySelected && borrowSortOrder === 'desc') {
                                     setBorrowSortOrder('asc');
@@ -783,6 +1090,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, isLoading, onS
                               <button
                                 type="button"
                                 onClick={() => {
+                                  collapseExpandedOnSort();
                                   const isAlreadySelected = borrowSortMode === 'native' && activeSortColumn === 'borrow';
                                   if (isAlreadySelected && borrowSortOrder === 'desc') {
                                     setBorrowSortOrder('asc');
@@ -813,6 +1121,7 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, isLoading, onS
                               <button
                                 type="button"
                                 onClick={() => {
+                                  collapseExpandedOnSort();
                                   const isAlreadySelected = borrowSortMode === 'incentive' && activeSortColumn === 'borrow';
                                   if (isAlreadySelected && borrowSortOrder === 'desc') {
                                     setBorrowSortOrder('asc');
@@ -847,169 +1156,102 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, isLoading, onS
                     </div>
                 </div>
               </TableHead>
+              {/* Utilization */}
+              <TableHead className="px-[var(--ds-space-3)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
+                <button
+                  type="button"
+                  onClick={handleSortUtil}
+                  className={`ds-chip-heading md:ds-text-16 gap-[var(--ds-space-1)] transition-colors ${
+                    activeSortColumn === 'util' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground/80'
+                  }`}
+                >
+                  <span>Util.</span>
+                  {activeSortColumn === 'util' ? (
+                    utilSortOrder === 'desc' ? (
+                      <ArrowDown className="w-3 h-3" />
+                    ) : (
+                      <ArrowUp className="w-3 h-3" />
+                    )
+                  ) : (
+                    <ArrowDown className="w-3 h-3 opacity-50" />
+                  )}
+                </button>
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading && pools.length === 0 ? (
+            {isLoading && reserves.length === 0 ? (
               Array.from({ length: 10 }).map((_, i) => (
                 <TableRow key={i} className="border-b border-border/30">
-                  <TableCell className="w-1/5 px-[var(--ds-space-3)] ds-row-pad text-center">
+                  <TableCell className="px-[var(--ds-space-3)] ds-row-pad text-center">
                     <div className="flex items-center justify-center gap-[var(--ds-space-2)]">
                       <Skeleton variant="gradient" className="w-7 h-7 rounded-full border-transparent" />
                       <Skeleton variant="default" className="h-4 w-14 rounded-md" />
                     </div>
                   </TableCell>
-                  <TableCell className="w-1/5 px-[var(--ds-space-3)] ds-row-pad text-center hidden md:table-cell">
+                  <TableCell className="px-[var(--ds-space-3)] ds-row-pad text-center hidden md:table-cell">
+                    <Skeleton variant="subtle" className="h-4 w-16 rounded-md mx-auto" />
+                  </TableCell>
+                  <TableCell className="px-[var(--ds-space-3)] ds-row-pad text-center hidden md:table-cell">
                     <Skeleton variant="subtle" className="h-6 w-20 rounded-full mx-auto" />
                   </TableCell>
-                  <TableCell className="w-1/5 px-[var(--ds-space-3)] ds-row-pad text-center">
+                  <TableCell className="px-[var(--ds-space-3)] ds-row-pad text-center hidden md:table-cell">
+                    <Skeleton variant="subtle" className="h-4 w-16 rounded-md mx-auto" />
+                  </TableCell>
+                  <TableCell className="px-[var(--ds-space-3)] ds-row-pad text-center">
                     <div className="flex flex-col items-center gap-[var(--ds-space-1)]">
                       <Skeleton variant="gradient" className={`h-5 rounded-md ${i % 2 === 0 ? 'w-16' : 'w-[4.5rem]'}`} />
                       <Skeleton variant="subtle" className={`h-3 rounded-full border-transparent ${i % 2 === 0 ? 'w-20' : 'w-[4.5rem]'}`} />
                     </div>
                   </TableCell>
-                  <TableCell className="w-1/5 px-[var(--ds-space-3)] ds-row-pad text-center">
+                  <TableCell className="px-[var(--ds-space-3)] ds-row-pad text-center hidden md:table-cell">
                     <Skeleton variant="subtle" className={`h-5 rounded-md mx-auto ${i % 2 === 0 ? 'w-16' : 'w-14'}`} />
                   </TableCell>
-                  <TableCell className="w-1/5 px-[var(--ds-space-3)] ds-row-pad text-center">
+                  <TableCell className="px-[var(--ds-space-3)] ds-row-pad text-center">
                     <div className="flex flex-col items-center gap-[var(--ds-space-1)]">
                       <Skeleton variant="gradient" className={`h-5 rounded-md ${i % 3 === 0 ? 'w-16' : 'w-[4.5rem]'}`} />
                       <Skeleton variant="subtle" className={`h-3 rounded-full border-transparent ${i % 3 === 0 ? 'w-20' : 'w-[4.5rem]'}`} />
                     </div>
                   </TableCell>
+                  <TableCell className="px-[var(--ds-space-3)] ds-row-pad text-center hidden md:table-cell">
+                    <Skeleton variant="subtle" className="h-4 w-12 rounded-md mx-auto" />
+                  </TableCell>
                 </TableRow>
               ))
-            ) : displayData.map((pool) => {
-              const supplyIncentiveValues = getIncentiveValues(pool, 'supply');
-              const borrowIncentiveValues = getIncentiveValues(pool, 'borrow');
-              
-              const totalSupplyApy = calculateTotalSupplyApy(pool.supplyApy, supplyIncentiveValues.apy);
-              const totalSupplyApr = calculateTotalSupplyApr(pool.supplyApy, supplyIncentiveValues.apr);
-              const totalBorrowApy = calculateTotalBorrowApy(pool.borrowApy, borrowIncentiveValues.apy);
-              const totalBorrowApr = calculateTotalBorrowApr(pool.borrowApy, borrowIncentiveValues.apr);
-              const nativeSupplyApy = getNativeSupplyApy(pool);
-              const nativeBorrowApy = getNativeBorrowApy(pool);
-              
-              const displaySupplyTotal = isApy ? totalSupplyApy : totalSupplyApr;
-              const displaySupplyNative = isApy ? nativeSupplyApy : (nativeSupplyApy !== null ? apyToApr(nativeSupplyApy) : null);
-              const displayBorrowTotal = isApy ? totalBorrowApy : totalBorrowApr;
-              const displayBorrowNative = isApy ? nativeBorrowApy : (nativeBorrowApy !== null ? apyToApr(nativeBorrowApy) : null);
-              
+            ) : displayData.map((reserve) => {
+              const reserveId = getReserveSimulationId(reserve);
+              const simulation = simulationsById[reserveId];
               const displaySupplyIncentive = (() => {
-                const incentive = isApy ? supplyIncentiveValues.apy : supplyIncentiveValues.apr;
+                const incentive = getDisplaySupplyIncentive(reserve);
                 return incentive === 0 || isNaN(incentive) || incentive < 0.01 ? null : incentive;
               })();
               const displayBorrowIncentive = (() => {
-                const incentive = isApy ? borrowIncentiveValues.apy : borrowIncentiveValues.apr;
+                const incentive = getDisplayBorrowIncentive(reserve);
                 return incentive === 0 || isNaN(incentive) || incentive < 0.01 ? null : incentive;
               })();
-
-              const spread = isApy
-                ? calculateSpreadApy(totalSupplyApy, totalBorrowApy)
-                : calculateSpreadApr(totalSupplyApr, totalBorrowApr);
-              const { iconSymbol, logoURI } = fetchIconSymbolAndName({
-                underlyingAsset: pool.tokenAddress,
-                symbol: pool.tokenSymbol,
-                name: pool.tokenName,
-              });
-
               return (
-                <TableRow
-                  key={`${pool.marketName}-${pool.tokenAddress}`}
-                  className="transition-all duration-150 cursor-pointer hover:bg-muted/60 hover:shadow-sm active:bg-muted/80"
-                  onClick={() => handleRowClick(pool)}
-                >
-                  {/* Token */}
-                  <TableCell className="w-1/5 px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center">
-                    <div className="flex items-center justify-center gap-[var(--ds-space-2)]">
-                      <TokenIcon symbol={iconSymbol} size={28} loading="eager" logoURI={logoURI} />
-                      <span className="font-semibold text-foreground ds-text-14">
-                        {pool.tokenSymbol}
-                      </span>
-                    </div>
-                  </TableCell>
-                  {/* Market */}
-                  <TableCell className="w-1/5 px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell">
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        onSelectMarket?.(pool.marketName);
-                      }}
-                      className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)] px-[var(--ds-space-2-5)] py-[var(--ds-space-1)] rounded-full ds-text-11 font-medium bg-muted/50 text-muted-foreground border border-border/60 hover:bg-muted hover:text-foreground hover:border-border/80 hover:ring-2 hover:ring-muted-foreground/20 active:scale-[0.98] transition-all duration-150"
-                      aria-label={`Filter by ${getMarketDisplayName(pool)} market`}
-                    >
-                      <ChainIcon chain={pool.chainName} />
-                      {getMarketDisplayName(pool)}
-                    </button>
-                  </TableCell>
-                  {/* Supply */}
-                  <TableCell className="w-1/5 px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center">
-                    <div className="flex flex-col items-center justify-center gap-[var(--ds-space-0-5)] min-h-[2.75rem]">
-                      <span className={`font-bold ds-text-emerald-500 tabular-nums ${isMobile ? 'ds-text-16' : 'ds-text-18'}`}>
-                        {formatPercent(displaySupplyTotal)}
-                      </span>
-                      {displaySupplyIncentive !== null && (
-                        <div className="flex items-center gap-[var(--ds-space-0-5)] ds-text-11 justify-center min-h-[1.25rem]">
-                          <span className="ds-text-emerald-500-70 tabular-nums">
-                            {formatPercent(displaySupplyNative)}
-                          </span>
-                          <span className="text-muted-foreground/70">+</span>
-                          <button
-                            type="button"
-                            onClick={(e) =>
-                              handleIncentiveClick(e, pool, 'supply', displaySupplyIncentive)
-                            }
-                            className="inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-0-5)] py-[var(--ds-space-0)] rounded-full ds-bg-emerald-500-10 ds-text-emerald-500-70 hover:bg-[rgb(var(--ds-emerald-500-rgb)/0.25)] hover:ring-2 hover:ring-[rgb(var(--ds-emerald-500-rgb)/0.3)] ring-1 ds-ring-emerald-500-15 transition-all duration-150 cursor-pointer tabular-nums"
-                          >
-                            <span>{formatPercent(displaySupplyIncentive)}</span>
-                            <IncentiveIcon width={isMobile ? 8 : 10} height={isMobile ? 8 : 10} />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </TableCell>
-                  {/* Spread */}
-                  <TableCell className="w-1/5 px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell">
-                    <span
-                      className={`font-bold tabular-nums ${isMobile ? 'ds-text-16' : 'ds-text-18'} ${
-                        spread !== null ? 'ds-text-purple-500' : 'text-muted-foreground/70'
-                      }`}
-                    >
-                      {formatSpread(spread)}
-                    </span>
-                  </TableCell>
-                  {/* Borrow */}
-                  <TableCell className="w-1/5 px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center">
-                    <div className="flex flex-col items-center justify-center gap-[var(--ds-space-0-5)] min-h-[2.75rem]">
-                        <span className={`font-bold ds-text-brand-cyan tabular-nums ${isMobile ? 'ds-text-16' : 'ds-text-18'}`}>
-                          {displayBorrowTotal !== null ? formatPercent(displayBorrowTotal) : '-'}
-                        </span>
-                        {displayBorrowIncentive !== null && (
-                          <div className="flex items-center gap-[var(--ds-space-0-5)] ds-text-11 justify-center min-h-[1.25rem]">
-                            {displayBorrowNative !== null && (
-                              <>
-                                <span className="ds-text-brand-cyan-70 tabular-nums">
-                                  {formatPercent(displayBorrowNative)}
-                                </span>
-                                <span className="text-muted-foreground/70">-</span>
-                              </>
-                            )}
-                            <button
-                              type="button"
-                              onClick={(e) =>
-                                handleIncentiveClick(e, pool, 'borrow', displayBorrowIncentive)
-                              }
-                              className="inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-0-5)] py-[var(--ds-space-0)] rounded-full ds-bg-brand-cyan-10 ds-text-brand-cyan-70 hover:bg-[rgb(var(--ds-brand-cyan-rgb)/0.25)] hover:ring-2 hover:ring-[rgb(var(--ds-brand-cyan-rgb)/0.3)] ring-1 ds-ring-brand-cyan-15 transition-all duration-150 cursor-pointer tabular-nums"
-                            >
-                              <span>{formatPercent(displayBorrowIncentive)}</span>
-                              <IncentiveIcon width={isMobile ? 8 : 10} height={isMobile ? 8 : 10} />
-                            </button>
-                          </div>
-                        )}
-                    </div>
-                  </TableCell>
-                </TableRow>
+                <DesktopReserveRow
+                  key={reserveId}
+                  reserve={reserve}
+                  reserveId={reserveId}
+                  isExpanded={expandedReserveId === reserveId}
+                  onToggleExpand={handleToggleExpand}
+                  onSelectMarket={onSelectMarket}
+                  onIncentiveClick={handleIncentiveClick}
+                  displaySupplyTotal={getDisplaySupplyTotal(reserve)}
+                  displaySupplyNative={getDisplaySupplyNative(reserve)}
+                  displaySupplyIncentive={displaySupplyIncentive}
+                  displayBorrowTotal={getDisplayBorrowTotal(reserve)}
+                  displayBorrowNative={getDisplayBorrowNative(reserve)}
+                  displayBorrowIncentive={displayBorrowIncentive}
+                  spread={getDisplaySpread(reserve)}
+                  simulation={simulation}
+                  supplyInput={debouncedSharedSupplyInput}
+                  borrowInput={debouncedSharedBorrowInput}
+                  inputMode={sharedInputMode}
+                  isApy={isApy}
+                  isMobile={isMobile}
+                />
               );
             })
             }
@@ -1018,34 +1260,51 @@ const PoolsTable = ({ pools, sortField, sortOrder, onSort, isApy, isLoading, onS
       </div>
       
       {/* Show More/Less button for desktop */}
-      {sortedData.length > DEFAULT_VISIBLE_COUNT && (
+      {sortedData.length > displayData.length && (
         <div className="p-[var(--ds-space-4)] border-t border-border">
           <button
             type="button"
-            onClick={() => setShowAll(!showAll)}
+            onClick={() => setShowAll(true)}
             className="w-full ds-button ds-text-14 md:ds-text-16 gap-[var(--ds-space-2)] border border-border bg-muted/30 hover:bg-muted/50 transition-colors text-foreground font-semibold"
           >
-            <span>{showAll ? 'Show Less' : `Show ${sortedData.length - DEFAULT_VISIBLE_COUNT} More Reserves`}</span>
-            {showAll ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            <span>{`Show ${sortedData.length - displayData.length} More Reserves`}</span>
+            <ChevronDown className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+      {showAll && sortedData.length > DEFAULT_VISIBLE_COUNT && (
+        <div className="p-[var(--ds-space-4)] border-t border-border">
+          <button
+            type="button"
+            onClick={() => setShowAll(false)}
+            className="w-full ds-button ds-text-14 md:ds-text-16 gap-[var(--ds-space-2)] border border-border bg-muted/30 hover:bg-muted/50 transition-colors text-foreground font-semibold"
+          >
+            <span>Show Less</span>
+            <ChevronUp className="w-4 h-4" />
           </button>
         </div>
       )}
       
       {tooltipState && (
         <IncentiveTooltip
-          pool={tooltipState.pool}
+          reserve={tooltipState.reserve}
           type={tooltipState.type}
           position={tooltipState.position}
           triggerCenterX={tooltipState.triggerCenterX}
+          triggerHeight={tooltipState.triggerHeight}
+          triggerRect={tooltipState.triggerRect}
           accentTextClass={tooltipState.type === 'supply' ? 'ds-text-emerald-600' : 'ds-text-brand-cyan'}
           accentBgClass={tooltipState.type === 'supply' ? 'ds-bg-emerald-500-10' : 'ds-bg-brand-cyan-10'}
           onClose={() => setTooltipState(null)}
           isApy={isApy}
           tydroPointToUsdRate={tydroPointToUsdRate}
+          includeWhitelistOnlyMerkl={includeWhitelistOnlyMerkl}
+          onToggleWhitelistOnlyMerkl={onToggleWhitelistOnlyMerkl}
+          tokenPrices={tokenPrices}
         />
       )}
     </div>
   );
 };
 
-export default PoolsTable;
+export default ReservesTable;
