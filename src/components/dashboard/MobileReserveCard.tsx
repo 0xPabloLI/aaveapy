@@ -7,6 +7,7 @@ import { IncentiveIcon } from '@/components/IncentiveIcon';
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import SimulationSubRow from './SimulationSubRow';
 import type { RateSimulationResult } from '@/hooks/useRateSimulation';
 
@@ -88,8 +89,12 @@ const MobileReserveCard = memo(({
 
 
 
-  const supplyValueClass = displaySupplyTotal === null ? 'text-muted-foreground/70' : 'ds-text-emerald-500';
-  const borrowValueClass = displayBorrowTotal === null ? 'text-muted-foreground/70' : 'ds-text-brand-cyan';
+  const supplyValueClass = displaySupplyTotal === null || reserve.supplyDisabled 
+    ? 'text-muted-foreground' 
+    : 'ds-text-emerald-500';
+  const borrowValueClass = displayBorrowTotal === null || reserve.borrowDisabled 
+    ? 'text-muted-foreground' 
+    : 'ds-text-brand-cyan';
 
   return (
     <div
@@ -143,12 +148,25 @@ const MobileReserveCard = memo(({
       <div className="grid grid-cols-3 gap-[var(--ds-space-2)]">
         <div className="flex flex-col items-start justify-start gap-[var(--ds-space-0-5)] min-h-[2.5rem]">
           <p className="ds-text-9 text-muted-foreground uppercase font-medium">Supply</p>
-          <p className={`ds-text-14 font-bold ${supplyValueClass}`}>
-            {formatPercent(displaySupplyTotal)}
-          </p>
+          {reserve.supplyDisabled ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <p className={`ds-text-14 font-bold ${supplyValueClass} cursor-help`}>
+                  {formatPercent(displaySupplyTotal)}
+                </p>
+              </TooltipTrigger>
+              <TooltipContent>Supply unavailable</TooltipContent>
+            </Tooltip>
+          ) : (
+            <p className={`ds-text-14 font-bold ${supplyValueClass}`}>
+              {formatPercent(displaySupplyTotal)}
+            </p>
+          )}
           {visibleSupplyIncentive !== null && (
             <div className="flex items-center gap-[var(--ds-space-0-5)] ds-text-9 flex-nowrap">
-              <span className="ds-text-emerald-500-70">{formatPercent(displaySupplyNative)}</span>
+              <span className={reserve.supplyDisabled ? 'text-muted-foreground/70' : 'ds-text-emerald-500-70'}>
+                {formatPercent(displaySupplyNative)}
+              </span>
               <span className="text-muted-foreground/70">+</span>
               <div className="relative -m-1.5 p-1.5">
                   <button
@@ -157,7 +175,11 @@ const MobileReserveCard = memo(({
                       e.stopPropagation();
                       onIncentiveClick(e, reserve, 'supply', visibleSupplyIncentive);
                     }}
-                    className="inline-flex items-center ds-text-emerald-600 ds-bg-emerald-500-10 hover:bg-[rgb(var(--ds-emerald-500-rgb)/0.25)] rounded-full px-[var(--ds-space-1)] shrink-0 ring-1 ds-ring-emerald-500-15 active:scale-95 transition-all hover:ring-2 hover:ring-[rgb(var(--ds-emerald-500-rgb)/0.35)]"
+                    className={`inline-flex items-center rounded-full px-[var(--ds-space-1)] shrink-0 ring-1 active:scale-95 transition-all hover:ring-2 ${
+                      reserve.supplyDisabled
+                        ? 'text-muted-foreground bg-muted/30 ring-border/30 hover:bg-muted/50 hover:ring-border/50'
+                        : 'ds-text-emerald-600 ds-bg-emerald-500-10 hover:bg-[rgb(var(--ds-emerald-500-rgb)/0.25)] ds-ring-emerald-500-15 hover:ring-[rgb(var(--ds-emerald-500-rgb)/0.35)]'
+                    }`}
                   >
                     <span>{formatPercent(visibleSupplyIncentive)}</span>
                   </button>
@@ -175,12 +197,25 @@ const MobileReserveCard = memo(({
 
         <div className="flex flex-col items-end justify-start gap-[var(--ds-space-0-5)] min-h-[2.5rem] text-right">
           <p className="ds-text-9 text-muted-foreground uppercase font-medium">Borrow</p>
-          <p className={`ds-text-14 font-bold ${borrowValueClass}`}>
-            {formatPercent(displayBorrowTotal)}
-          </p>
+          {reserve.borrowDisabled ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <p className={`ds-text-14 font-bold ${borrowValueClass} cursor-help`}>
+                  {formatPercent(displayBorrowTotal)}
+                </p>
+              </TooltipTrigger>
+              <TooltipContent>Borrow disabled</TooltipContent>
+            </Tooltip>
+          ) : (
+            <p className={`ds-text-14 font-bold ${borrowValueClass}`}>
+              {formatPercent(displayBorrowTotal)}
+            </p>
+          )}
           {visibleBorrowIncentive !== null && (
             <div className="flex items-center gap-[var(--ds-space-0-5)] ds-text-9 flex-nowrap justify-end">
-              <span className="ds-text-brand-cyan-70">{formatPercent(displayBorrowNative)}</span>
+              <span className={reserve.borrowDisabled ? 'text-muted-foreground/70' : 'ds-text-brand-cyan-70'}>
+                {formatPercent(displayBorrowNative)}
+              </span>
               <span className="text-muted-foreground/70">-</span>
               <div className="relative -m-1.5 p-1.5">
                   <button
@@ -189,7 +224,11 @@ const MobileReserveCard = memo(({
                       e.stopPropagation();
                       onIncentiveClick(e, reserve, 'borrow', visibleBorrowIncentive);
                     }}
-                    className="inline-flex items-center ds-text-brand-cyan ds-bg-brand-cyan-10 hover:bg-[rgb(var(--ds-brand-cyan-rgb)/0.25)] rounded-full px-[var(--ds-space-1)] shrink-0 ring-1 ds-ring-brand-cyan-15 active:scale-95 transition-all hover:ring-2 hover:ring-[rgb(var(--ds-brand-cyan-rgb)/0.35)]"
+                    className={`inline-flex items-center rounded-full px-[var(--ds-space-1)] shrink-0 ring-1 active:scale-95 transition-all hover:ring-2 ${
+                      reserve.borrowDisabled
+                        ? 'text-muted-foreground bg-muted/30 ring-border/30 hover:bg-muted/50 hover:ring-border/50'
+                        : 'ds-text-brand-cyan ds-bg-brand-cyan-10 hover:bg-[rgb(var(--ds-brand-cyan-rgb)/0.25)] ds-ring-brand-cyan-15 hover:ring-[rgb(var(--ds-brand-cyan-rgb)/0.35)]'
+                    }`}
                   >
                     <span>{formatPercent(visibleBorrowIncentive)}</span>
                   </button>
