@@ -147,7 +147,10 @@ const ReservesTable = ({
   };
 
   const getTotalSupplyApr = (reserve: ReserveWithSpread): number | null => {
-    return calculateTotalSupplyApr(reserve.supplyApy, getIncentiveValues(reserve, 'supply').apr);
+    const nativeApr = reserve.supplyApy !== undefined && reserve.supplyApy !== null
+      ? apyToApr(reserve.supplyApy)
+      : null;
+    return calculateTotalSupplyApr(nativeApr, getIncentiveValues(reserve, 'supply').apr);
   };
 
   const getTotalBorrowApy = (reserve: ReserveWithSpread): number | null => {
@@ -155,7 +158,10 @@ const ReservesTable = ({
   };
 
   const getTotalBorrowApr = (reserve: ReserveWithSpread): number | null => {
-    return calculateTotalBorrowApr(reserve.borrowApy, getIncentiveValues(reserve, 'borrow').apr);
+    const nativeApr = reserve.borrowApy !== undefined && reserve.borrowApy !== null
+      ? apyToApr(reserve.borrowApy)
+      : null;
+    return calculateTotalBorrowApr(nativeApr, getIncentiveValues(reserve, 'borrow').apr);
   };
 
   // Calculate native values (already in percentage form, number type)

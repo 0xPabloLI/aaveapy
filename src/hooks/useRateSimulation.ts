@@ -423,10 +423,10 @@ export function buildRateSimulationResult({
 
   const supplyCurrentTotal = isApy
     ? calculateTotalSupplyApy(reserve.supplyApy, supplyCurrentIncentive)
-    : calculateTotalSupplyApr(reserve.supplyApy, supplyCurrentIncentive);
+    : calculateTotalSupplyApr(supplyCurrentNative, supplyCurrentIncentive);
   const borrowCurrentTotal = isApy
     ? calculateTotalBorrowApy(reserve.borrowApy, borrowCurrentIncentive)
-    : calculateTotalBorrowApr(reserve.borrowApy, borrowCurrentIncentive);
+    : calculateTotalBorrowApr(borrowCurrentNative, borrowCurrentIncentive);
 
   const supplyAfterNative = combinedNativeSimulation
     ? isApy
