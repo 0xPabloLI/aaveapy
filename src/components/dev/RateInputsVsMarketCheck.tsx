@@ -34,6 +34,14 @@ interface Mismatch {
   supplyDiff: number;
   borrowDiff: number;
   utilizationDiff: number;
+  tokenPrice: number | undefined;
+  tokenDecimals: number;
+  reserveSizeUsd: number | undefined;
+  supplyCapUsd: number | undefined;
+  deficit: string;
+  sourceDetail: string | undefined;
+  totalDebt: string;
+  totalLiquidity: string;
 }
 
 function useRateInputsVsMarketResult(): {
@@ -92,6 +100,8 @@ function useRateInputsVsMarketResult(): {
           ? Math.abs(rateUtilization - marketUtilization)
           : 0;
       if (supplyDiff > TOLERANCE_PCT || borrowDiff > TOLERANCE_PCT) {
+        const totalDebt = (BigInt(rateInput.totalScaledVariableDebt) * BigInt(rateInput.variableBorrowIndex) / BigInt(1e27)).toString();
+        const totalLiquidity = (BigInt(rateInput.availableLiquidity) + BigInt(totalDebt)).toString();
         mismatches.push({
           reserve,
           rateInput,
@@ -105,6 +115,14 @@ function useRateInputsVsMarketResult(): {
           supplyDiff,
           borrowDiff,
           utilizationDiff,
+          tokenPrice: reserve.tokenPrice,
+          tokenDecimals: rateInput.decimals,
+          reserveSizeUsd: reserve.reserveSizeUsd,
+          supplyCapUsd: reserve.supplyCapUsd,
+          deficit: rateInput.deficit,
+          sourceDetail: rateInput.sourceDetail,
+          totalDebt,
+          totalLiquidity,
         });
       }
     }
@@ -220,15 +238,26 @@ export function RateInputsVsMarketCheck() {
                         <tr className="border-b border-amber-200 bg-amber-100/40">
                           <td colSpan={11} className="py-1 px-2">
                             <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[10px] text-amber-800 font-mono">
+                              <span title="token decimals">dec: {m.tokenDecimals}</span>
+                              <span title="token price (USD)">price: ${m.tokenPrice?.toFixed(4) ?? '—'}</span>
+                              <span title="reserve size (USD)">size: ${m.reserveSizeUsd?.toLocaleString() ?? '—'}</span>
+                              <span title="supply cap (USD)">cap: ${m.supplyCapUsd?.toLocaleString() ?? '—'}</span>
+                              <span title="deficit (raw)">deficit: {fmtBigNum(m.deficit)}</span>
+                            </div>
+                            <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[10px] text-amber-800 font-mono mt-0.5">
                               <span title="availableLiquidity (raw)">avail: {fmtBigNum(m.rateInput.availableLiquidity)}</span>
                               <span title="totalScaledVariableDebt (raw)">scaledDebt: {fmtBigNum(m.rateInput.totalScaledVariableDebt)}</span>
+                              <span title="totalDebt = scaledDebt * idx / 1e27">totalDebt: {fmtBigNum(m.totalDebt)}</span>
+                              <span title="totalLiquidity = avail + totalDebt">totalLiq: {fmtBigNum(m.totalLiquidity)}</span>
                               <span title="variableBorrowIndex (ray)">idx: {fmtRay(m.rateInput.variableBorrowIndex)}</span>
+                            </div>
+                            <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[10px] text-amber-800 font-mono mt-0.5">
                               <span title="optimalUsageRate (ray → %)">optUtil: {(Number(m.rateInput.optimalUsageRate) / 1e25).toFixed(1)}%</span>
                               <span title="reserveFactor (bps → %)">resFactor: {(Number(m.rateInput.reserveFactor) / 100).toFixed(2)}%</span>
                               <span title="baseVariableBorrowRate (ray → %)">baseBorrow: {(Number(m.rateInput.baseVariableBorrowRate) / 1e25).toFixed(2)}%</span>
                               <span title="variableRateSlope1 (ray → %)">slope1: {(Number(m.rateInput.variableRateSlope1) / 1e25).toFixed(2)}%</span>
                               <span title="variableRateSlope2 (ray → %)">slope2: {(Number(m.rateInput.variableRateSlope2) / 1e25).toFixed(2)}%</span>
-                              {m.rateInput.source && <span className="text-amber-600">src: {m.rateInput.source}</span>}
+                              {m.rateInput.source && <span className="text-amber-600">src: {m.rateInput.source}{m.sourceDetail ? ` (${m.sourceDetail})` : ''}</span>}
                             </div>
                           </td>
                         </tr>

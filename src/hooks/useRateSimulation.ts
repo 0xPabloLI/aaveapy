@@ -743,18 +743,6 @@ export const useSharedRateSimulations = ({
     return map;
   }, [needsTokenPrice, priceQueries, reserves, tokenPrices]);
 
-  const allCampaignIds = useMemo(() => {
-    if (!enabled || !hasAnyInput) return [];
-    return Array.from(
-      new Set(
-        reserves.flatMap((reserve) => [
-          ...collectActiveCampaignIds(reserve.merklSupplys),
-          ...collectActiveCampaignIds(reserve.merklBorrows),
-        ])
-      )
-    ).sort();
-  }, [enabled, hasAnyInput, reserves]);
-
   type ForecastCachePayload = {
     states: Record<string, MerklForecastStateResponse>;
     errors: Record<string, string>;
@@ -762,9 +750,9 @@ export const useSharedRateSimulations = ({
   const forecastCachedEntry = getCachedMerklForecastStatesEntry<ForecastCachePayload>();
 
   const forecastQuery = useQuery({
-    queryKey: [...FORECAST_STATES_QUERY_KEY, ...allCampaignIds],
+    queryKey: FORECAST_STATES_QUERY_KEY,
     queryFn: async () => {
-      const result = await fetchMerklForecastStates(allCampaignIds);
+      const result = await fetchMerklForecastStates();
       const states: Record<string, MerklForecastStateResponse> = {};
       const errors: Record<string, string> = {};
       result.items.forEach((item) => {
@@ -779,7 +767,7 @@ export const useSharedRateSimulations = ({
       setCachedMerklForecastStates(payload);
       return payload;
     },
-    enabled: enabled && allCampaignIds.length > 0,
+    enabled: enabled && hasAnyInput,
     staleTime: QUERY_STALE_TIMES.coreSnapshotApi,
     initialData: forecastCachedEntry?.data,
     initialDataUpdatedAt: forecastCachedEntry?.updatedAt,

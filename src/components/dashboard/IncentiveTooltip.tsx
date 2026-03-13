@@ -408,16 +408,19 @@ const IncentiveTooltip = ({
     }
 
     let cancelled = false;
-    fetchMerklForecastStates(campaignIds)
+    fetchMerklForecastStates()
       .then((result) => {
         if (cancelled) return;
+        const idSet = new Set(campaignIds);
         const next: Record<string, MerklForecastStateResponse> = {};
         const nextErrors: Record<string, string> = {};
-        result.items.forEach((item) => {
-          next[item.campaignId] = item;
-        });
+        result.items
+          .filter((item) => idSet.has(item.campaignId))
+          .forEach((item) => {
+            next[item.campaignId] = item;
+          });
         result.errors
-          .filter((item) => shouldSurfaceForecastError(item))
+          .filter((item) => idSet.has(item.campaignId) && shouldSurfaceForecastError(item))
           .forEach((item) => {
             nextErrors[item.campaignId] = item.message;
           });

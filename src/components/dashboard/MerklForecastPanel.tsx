@@ -86,15 +86,21 @@ const MerklForecastPanel = ({
     setLoading(true);
     setError(null);
 
-    fetchMerklForecastStates(campaignOptions.map((option) => option.campaignId))
+    const requestedIds = new Set(campaignOptions.map((option) => option.campaignId));
+
+    fetchMerklForecastStates()
       .then((result) => {
         if (cancelled) return;
         const next: Record<string, MerklForecastStateResponse> = {};
         const nextErrors: Record<string, string> = {};
-        result.items.forEach((item) => {
-          next[item.campaignId] = item;
-        });
-        const surfacedErrors = result.errors.filter((item) => shouldSurfaceForecastError(item));
+        result.items
+          .filter((item) => requestedIds.has(item.campaignId))
+          .forEach((item) => {
+            next[item.campaignId] = item;
+          });
+        const surfacedErrors = result.errors.filter(
+          (item) => requestedIds.has(item.campaignId) && shouldSurfaceForecastError(item)
+        );
         surfacedErrors.forEach((item) => {
           nextErrors[item.campaignId] = item.message;
         });
