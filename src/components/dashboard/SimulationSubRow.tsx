@@ -263,11 +263,13 @@ const SimulationSubRow = ({
 
   return (
     <div className="rounded-xl border border-border/70 bg-muted/20 p-[var(--ds-space-3)]">
-      <div>
+      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
         <span className="ds-text-13 font-semibold text-foreground">Shared {rateLabel} simulation</span>
-        <p className="mt-[var(--ds-space-0-5)] ds-text-11 text-muted-foreground">
-          Token: {reserve.tokenSymbol}
-        </p>
+        {showEmptyStateNote && (
+          <span className="ds-text-11 text-muted-foreground">
+            Enter a shared supply or borrow amount above the table to populate the After and Delta columns.
+          </span>
+        )}
       </div>
 
       {currentTvlUsd !== null && (
@@ -339,11 +341,6 @@ const SimulationSubRow = ({
       </div>
 
       <div className="mt-[var(--ds-space-2)] space-y-[var(--ds-space-1)]">
-        {showEmptyStateNote && (
-          <p className="ds-text-11 text-muted-foreground">
-            Enter a shared supply or borrow amount above the table to populate the After and Delta columns.
-          </p>
-        )}
         {simulation.reserveRateInputLoading && !showEmptyStateNote && (
           <p className="ds-text-11 text-muted-foreground">Loading rate inputs...</p>
         )}

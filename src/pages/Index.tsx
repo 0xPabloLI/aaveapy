@@ -6,7 +6,7 @@ import { prefetchRateInputsSnapshot } from '@/hooks/useReserveRateInputs';
 import { fetchMerklForecastStates } from '@/lib/merklForecastApi';
 import { useTokenCategories } from '@/hooks/useTokenCategories';
 import { fetchSideDataMeta, SIDE_DATA_META_QUERY_KEY } from '@/hooks/useSideDataMeta';
-import { SortField, SortOrder, TokenCategory, ReserveWithSpread } from '@/types/aave';
+import { SortField, SortOrder, TokenCategory, ReserveWithSpread, TokenPricesIndex } from '@/types/aave';
 import {
   buildTokenCategoryGroups,
   isStablecoinSymbol,
@@ -30,6 +30,7 @@ import { normalizeTokenSymbolForSearch } from '@/lib/tokenSymbolNormalization';
 
 import IncentiveTooltip from '@/components/dashboard/IncentiveTooltip';
 import InkAprCalculator from '@/components/dashboard/InkAprCalculator';
+import { RateInputsVsMarketCheck } from '@/components/dev/RateInputsVsMarketCheck';
 const MerklForecastPanel = lazy(() => import('@/components/dashboard/MerklForecastPanel'));
 
 const Index = () => {
@@ -177,6 +178,21 @@ const Index = () => {
     () => buildTokenCategoryGroups(tokenCategoryOverrides),
     [tokenCategoryOverrides]
   );
+
+  // Build token price index from market snapshot so simulation/tooltips use backend prices (no CoinGecko backup storm).
+  const tokenPrices = useMemo((): TokenPricesIndex => {
+    const reserves = effectiveReservesData?.reserves ?? [];
+    const index: TokenPricesIndex = {};
+    const toKey = (chainId: number, address: string) => `${chainId}:${address.trim().toLowerCase()}`;
+    for (const r of reserves) {
+      if (r.tokenPrice == null || !Number.isFinite(r.tokenPrice)) continue;
+      const price = { price: r.tokenPrice };
+      index[toKey(r.chainId, r.tokenAddress)] = price;
+      if (r.aTokenAddress) index[toKey(r.chainId, r.aTokenAddress)] = price;
+      if (r.vTokenAddress) index[toKey(r.chainId, r.vTokenAddress)] = price;
+    }
+    return index;
+  }, [effectiveReservesData?.reserves]);
 
   // Pull to refresh handler
   const handleRefresh = useCallback(async () => {
@@ -375,6 +391,7 @@ const Index = () => {
               tydroPointToUsdRate={tydroPointToUsdRate}
               includeWhitelistOnlyMerkl={includeWhitelistOnlyMerkl}
               onToggleWhitelistOnlyMerkl={setIncludeWhitelistOnlyMerkl}
+              tokenPrices={tokenPrices}
             />
           </Suspense>
 
@@ -421,6 +438,7 @@ const Index = () => {
               tydroPointToUsdRate={tydroPointToUsdRate}
               includeWhitelistOnlyMerkl={includeWhitelistOnlyMerkl}
               onToggleWhitelistOnlyMerkl={setIncludeWhitelistOnlyMerkl}
+              tokenPrices={tokenPrices}
               scrollToReserveId={pendingScrollReserveId}
             />
           </div>
@@ -441,6 +459,7 @@ const Index = () => {
                 tydroPointToUsdRate={tydroPointToUsdRate}
                 includeWhitelistOnlyMerkl={includeWhitelistOnlyMerkl}
                 onToggleWhitelistOnlyMerkl={setIncludeWhitelistOnlyMerkl}
+                tokenPrices={tokenPrices}
                 usePortal
               />
           )}
@@ -456,6 +475,13 @@ const Index = () => {
           {!effectiveReservesData && !isLoading && !!error && (
             <div className="text-center py-[var(--ds-space-12)]">
               <p className="text-muted-foreground">No data to display</p>
+            </div>
+          )}
+
+          {/* Rate vs Market check: shown in dev, or when VITE_SHOW_RATE_CHECK=true (e.g. .env) */}
+          {(import.meta.env.DEV || import.meta.env.VITE_SHOW_RATE_CHECK === 'true') && (
+            <div className="max-w-4xl mx-auto">
+              <RateInputsVsMarketCheck />
             </div>
           )}
 

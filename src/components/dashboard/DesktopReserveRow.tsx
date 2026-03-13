@@ -119,14 +119,14 @@ const DesktopReserveRow = memo(({
             title="Open on Aave"
           >
             <TokenIcon symbol={iconSymbol} size={28} loading="eager" logoURI={logoURI} />
-            <span className="font-semibold text-foreground ds-text-14">
+            <span className="font-semibold text-foreground ds-text-13">
               {reserve.tokenSymbol}
             </span>
             <ExternalLink className="w-3 h-3 text-muted-foreground opacity-0 -ml-1 group-hover/token:opacity-70 transition-opacity duration-150" />
           </a>
         </TableCell>
         {/* Price */}
-        <TableCell className="px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell tabular-nums text-muted-foreground ds-text-14">
+        <TableCell className="px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell tabular-nums text-muted-foreground ds-text-13">
           {formatUsd(reserve.tokenPrice)}
         </TableCell>
         {/* Market */}
@@ -137,7 +137,7 @@ const DesktopReserveRow = memo(({
               event.stopPropagation();
               onSelectMarket?.(reserve.marketName);
             }}
-            className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)] px-[var(--ds-space-2-5)] py-[var(--ds-space-1)] rounded-full ds-text-11 font-medium bg-muted/50 text-muted-foreground border border-border/60 hover:bg-muted hover:text-foreground hover:border-border/80 active:scale-[0.98] transition-all duration-150"
+            className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)] px-[var(--ds-space-2-5)] py-[var(--ds-space-1)] rounded-full ds-text-13 font-medium bg-muted/50 text-muted-foreground border border-border/60 hover:bg-muted hover:text-foreground hover:border-border/80 active:scale-[0.98] transition-all duration-150"
             aria-label={`Filter by ${getMarketDisplayName()} market`}
             title={`Filter by ${getMarketDisplayName()}`}
           >
@@ -146,13 +146,13 @@ const DesktopReserveRow = memo(({
           </button>
         </TableCell>
         {/* TVL */}
-        <TableCell className="px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell tabular-nums text-foreground ds-text-14">
+        <TableCell className="px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell tabular-nums text-foreground ds-text-13">
           {formatTvl(displayTvlUsd)}
         </TableCell>
         {/* Supply */}
         <TableCell className="w-1/5 px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center">
           <div className="flex flex-col items-center justify-center gap-[var(--ds-space-0-5)] min-h-[2.75rem]">
-            <span className={`font-bold ds-text-emerald-500 tabular-nums ${isMobile ? 'ds-text-16' : 'ds-text-18'}`}>
+            <span className="font-bold ds-text-emerald-500 tabular-nums ds-text-14">
               {formatPercent(displaySupplyTotal)}
             </span>
             {displaySupplyIncentive !== null && (
@@ -176,7 +176,7 @@ const DesktopReserveRow = memo(({
         {/* Spread */}
         <TableCell className="w-1/5 px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell">
           <span
-            className={`font-bold tabular-nums ${isMobile ? 'ds-text-16' : 'ds-text-18'} ${
+            className={`font-bold tabular-nums ds-text-14 ${
               spread !== null ? 'ds-text-purple-500' : 'text-muted-foreground/70'
             }`}
           >
@@ -186,7 +186,7 @@ const DesktopReserveRow = memo(({
         {/* Borrow */}
         <TableCell className="w-1/5 px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center">
           <div className="flex flex-col items-center justify-center gap-[var(--ds-space-0-5)] min-h-[2.75rem]">
-            <span className={`font-bold ds-text-brand-cyan tabular-nums ${isMobile ? 'ds-text-16' : 'ds-text-18'}`}>
+            <span className="font-bold ds-text-brand-cyan tabular-nums ds-text-14">
               {displayBorrowTotal !== null ? formatPercent(displayBorrowTotal) : '-'}
             </span>
             {displayBorrowIncentive !== null && (
@@ -212,7 +212,7 @@ const DesktopReserveRow = memo(({
           </div>
         </TableCell>
         {/* Utilization */}
-        <TableCell className="px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell tabular-nums font-bold text-amber-600 ds-text-14">
+        <TableCell className="px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell tabular-nums font-bold text-amber-600 ds-text-13">
           {formatPercent(reserve.utilizationPct ?? null)}
         </TableCell>
       </TableRow>

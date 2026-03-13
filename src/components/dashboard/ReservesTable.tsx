@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback, useRef, memo } from 'react';
+import { useState, useMemo, useEffect, useCallback, memo } from 'react';
 import { ArrowUp, ArrowDown, ChevronDown, ChevronUp } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -355,33 +355,44 @@ const ReservesTable = ({
   }[borrowSortMode];
 
   const toggleSupplySortOrder = () => {
+    collapseExpandedOnSort();
     setActiveSortColumn('supply');
     setSupplySortOrder(supplySortOrder === 'desc' ? 'asc' : 'desc');
   };
 
   const toggleBorrowSortOrder = () => {
+    collapseExpandedOnSort();
     setActiveSortColumn('borrow');
     setBorrowSortOrder(borrowSortOrder === 'desc' ? 'asc' : 'desc');
   };
 
   const toggleSpreadSortOrder = () => {
+    collapseExpandedOnSort();
     setActiveSortColumn('spread');
     setSpreadSortOrder(spreadSortOrder === 'desc' ? 'asc' : 'desc');
   };
 
+  const collapseExpandedOnSort = useCallback(() => {
+    setExpandedReserveId(null);
+  }, []);
+
   const handleSortToken = () => {
+    collapseExpandedOnSort();
     setActiveSortColumn('token');
     setTokenSortOrder((o) => (o === 'asc' ? 'desc' : 'asc'));
   };
   const handleSortPrice = () => {
+    collapseExpandedOnSort();
     setActiveSortColumn('price');
     setPriceSortOrder((o) => (o === 'desc' ? 'asc' : 'desc'));
   };
   const handleSortTvl = () => {
+    collapseExpandedOnSort();
     setActiveSortColumn('tvl');
     setTvlSortOrder((o) => (o === 'desc' ? 'asc' : 'desc'));
   };
   const handleSortUtil = () => {
+    collapseExpandedOnSort();
     setActiveSortColumn('util');
     setUtilSortOrder((o) => (o === 'desc' ? 'asc' : 'desc'));
   };
@@ -459,36 +470,6 @@ const ReservesTable = ({
     }
   }, [scrollToReserveId]);
 
-  // Scroll to expanded row when sorting changes move it (e.g. scenario input updates)
-  const expandedRowRef = useRef<string | null>(null);
-  expandedRowRef.current = expandedReserveId;
-
-  const prevSortedIdsRef = useRef<string[]>([]);
-  useEffect(() => {
-    const currentIds = sortedData.map((r) => getReserveSimulationId(r));
-    const expandedId = expandedRowRef.current;
-    if (!expandedId) {
-      prevSortedIdsRef.current = currentIds;
-      return;
-    }
-    const prevIds = prevSortedIdsRef.current;
-    const prevIndex = prevIds.indexOf(expandedId);
-    const newIndex = currentIds.indexOf(expandedId);
-    prevSortedIdsRef.current = currentIds;
-    // Only scroll if the position actually changed
-    if (prevIndex >= 0 && newIndex >= 0 && prevIndex !== newIndex) {
-      // Use double-rAF so the DOM has settled after React re-render
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          const el = document.querySelector(`[data-reserve-id="${CSS.escape(expandedId)}"]`);
-          if (el) {
-            el.scrollIntoView({ block: 'center', behavior: 'smooth' });
-          }
-        });
-      });
-    }
-  }, [sortedData]);
-
   // Display data with pagination - must be before conditional returns
   // Ensure the expanded row is always visible even if it's beyond the default count
   const displayData = useMemo(() => {
@@ -513,7 +494,7 @@ const ReservesTable = ({
   if (isMobile) {
     return (
       <div className="space-y-3">
-        <div className="sticky top-0 z-20 -mx-[var(--ds-space-3)] px-[var(--ds-space-3)] py-[var(--ds-space-1)] bg-background/95 backdrop-blur-sm">
+        <div className="sticky top-0 z-20 -mx-[var(--ds-space-3)] px-[var(--ds-space-3)] py-[var(--ds-space-1)] bg-muted/40 backdrop-blur-sm rounded-b-lg border-b border-border/50">
           {scenarioControls}
         </div>
         {/* Header with sorting controls */}
@@ -802,20 +783,20 @@ const ReservesTable = ({
 
   return (
     <div className="bg-card rounded-2xl shadow-sm border border-border/60 relative">
-      <div className="sticky top-0 z-20 border-b border-border/60 p-[var(--ds-space-3)] bg-card/95 backdrop-blur-sm shadow-[0_1px_3px_0_rgb(0_0_0/0.04)]">
+      <div className="sticky top-0 z-20 border-b border-border/60 p-[var(--ds-space-3)] bg-muted/40 backdrop-blur-sm shadow-[0_1px_3px_0_rgb(0_0_0/0.04)]">
         {scenarioControls}
       </div>
       <div className="overflow-x-auto">
-        <Table className="table-fixed w-full">
+        <Table className="w-full table-fixed">
           <colgroup>
-            <col style={{ width: '14%' }} />
-            <col style={{ width: '9%' }} />
             <col style={{ width: '12%' }} />
             <col style={{ width: '10%' }} />
-            <col style={{ width: '19%' }} />
+            <col style={{ width: '8%' }} />
+            <col style={{ width: '11%' }} />
+            <col style={{ width: '14%' }} />
             <col style={{ width: '10%' }} />
-            <col style={{ width: '19%' }} />
-            <col style={{ width: '7%' }} />
+            <col style={{ width: '14%' }} />
+            <col style={{ width: '11%' }} />
           </colgroup>
           <TableHeader>
             <TableRow className="border-border/50 bg-card/60">
@@ -919,6 +900,7 @@ const ReservesTable = ({
                             <button
                               type="button"
                               onClick={() => {
+                                collapseExpandedOnSort();
                                 const isAlreadySelected = supplySortMode === 'total' && activeSortColumn === 'supply';
                                 if (isAlreadySelected && supplySortOrder === 'desc') {
                                   setSupplySortOrder('asc');
@@ -949,6 +931,7 @@ const ReservesTable = ({
                             <button
                               type="button"
                               onClick={() => {
+                                collapseExpandedOnSort();
                                 const isAlreadySelected = supplySortMode === 'native' && activeSortColumn === 'supply';
                                 if (isAlreadySelected && supplySortOrder === 'desc') {
                                   setSupplySortOrder('asc');
@@ -979,6 +962,7 @@ const ReservesTable = ({
                             <button
                               type="button"
                               onClick={() => {
+                                collapseExpandedOnSort();
                                 const isAlreadySelected = supplySortMode === 'incentive' && activeSortColumn === 'supply';
                                 if (isAlreadySelected && supplySortOrder === 'desc') {
                                   setSupplySortOrder('asc');
@@ -1021,6 +1005,7 @@ const ReservesTable = ({
                     if (activeSortColumn === 'spread') {
                       toggleSpreadSortOrder();
                     } else {
+                      collapseExpandedOnSort();
                       setActiveSortColumn('spread');
                       setSpreadSortOrder('desc');
                     }
@@ -1074,6 +1059,7 @@ const ReservesTable = ({
                               <button
                                 type="button"
                                 onClick={() => {
+                                  collapseExpandedOnSort();
                                   const isAlreadySelected = borrowSortMode === 'total' && activeSortColumn === 'borrow';
                                   if (isAlreadySelected && borrowSortOrder === 'desc') {
                                     setBorrowSortOrder('asc');
@@ -1104,6 +1090,7 @@ const ReservesTable = ({
                               <button
                                 type="button"
                                 onClick={() => {
+                                  collapseExpandedOnSort();
                                   const isAlreadySelected = borrowSortMode === 'native' && activeSortColumn === 'borrow';
                                   if (isAlreadySelected && borrowSortOrder === 'desc') {
                                     setBorrowSortOrder('asc');
@@ -1134,6 +1121,7 @@ const ReservesTable = ({
                               <button
                                 type="button"
                                 onClick={() => {
+                                  collapseExpandedOnSort();
                                   const isAlreadySelected = borrowSortMode === 'incentive' && activeSortColumn === 'borrow';
                                   if (isAlreadySelected && borrowSortOrder === 'desc') {
                                     setBorrowSortOrder('asc');

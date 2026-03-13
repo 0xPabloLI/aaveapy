@@ -150,8 +150,11 @@ When implementing mobile carousels:
 
 ## Learned User Preferences
 - Prefer Chinese for collaboration and implementation discussions.
-- Prefer direct execution after confirmation (for example when saying "直接执行", "继续", or "你来处理"), instead of receiving only manual command suggestions.
+- Prefer direct execution after confirmation (for example when saying "直接执行", "继续", or "你来处理"), including verifying and reproducing issues yourself (e.g. restart dev server, check API) instead of asking the user to do steps.
 - Prefer evidence-based diagnosis with concrete runtime artifacts (such as CI logs and live API responses) before concluding root cause.
+- Avoid default values for missing API or backend fields; keep schema and code minimal (e.g. no fallback values when the backend omits a field).
+- For large design or architectural changes, provide a 方案 (plan) first without modifying code when the user asks (e.g. "先给我方案不要直接修改").
+- When summarizing many items (e.g. APIs, warmup order, options), use tables for clarity (表格形式，一目了然).
 
 ## Learned Workspace Facts
 - Local git hooks in this setup are managed under the main repository `.git/hooks` and are local-only (not versioned).
