@@ -77,8 +77,7 @@ const Header = ({ lastUpdated }: HeaderProps) => {
           </div>
         )}
         
-        {/* Desktop: Telegram + Theme Toggle */}
-        <TelegramLink />
+        {/* Desktop: Theme Toggle */}
         <ThemeToggle />
       </div>
     </header>
