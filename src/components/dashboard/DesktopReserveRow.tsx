@@ -2,7 +2,7 @@ import { memo, Fragment } from 'react';
 import { ExternalLink } from 'lucide-react';
 import { TableRow, TableCell } from '@/components/ui/table';
 import { ReserveWithSpread, ETHEREUM_MARKET_NAMES } from '@/types/aave';
-import { formatPercent, formatSpread, formatSupplyUsd, formatUsd } from '@/lib/formatters';
+import { formatPercent, formatSpread, formatMarketSizeUsd, formatUsd } from '@/lib/formatters';
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
 import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
 import { getChainIconSrc } from '@/lib/chainIcons';
@@ -93,10 +93,10 @@ const DesktopReserveRow = memo(({
       : simulation?.tokenPrice && Number.isFinite(simulation.tokenPrice)
         ? supplyInputRaw * simulation.tokenPrice
         : 0;
-  const displaySupplyUsd =
-    reserve.supplyUsd != null && Number.isFinite(reserve.supplyUsd) && supplyInputUsd > 0
-      ? reserve.supplyUsd + supplyInputUsd
-      : reserve.supplyUsd;
+  const displayMarketSizeUsd =
+    reserve.marketSizeUsd != null && Number.isFinite(reserve.marketSizeUsd) && supplyInputUsd > 0
+      ? reserve.marketSizeUsd + supplyInputUsd
+      : reserve.marketSizeUsd;
 
   return (
     <Fragment>
@@ -147,7 +147,7 @@ const DesktopReserveRow = memo(({
         </TableCell>
         {/* Supply */}
         <TableCell className="px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell tabular-nums text-foreground ds-text-13">
-          {formatSupplyUsd(displaySupplyUsd)}
+          {formatMarketSizeUsd(displayMarketSizeUsd)}
         </TableCell>
         {/* Supply */}
         <TableCell className="w-1/5 px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center">

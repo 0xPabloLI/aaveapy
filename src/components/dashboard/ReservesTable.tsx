@@ -6,7 +6,7 @@ import { ReserveWithSpread, ETHEREUM_MARKET_NAMES, TokenPricesIndex } from '@/ty
 import { 
   formatPercent, 
   formatSpread, 
-  formatSupplyUsd,
+  formatMarketSizeUsd,
   formatUsd,
   calculateTotalSupplyApr,
   calculateTotalSupplyApy,
@@ -44,7 +44,7 @@ interface ReservesTableProps {
 
 type SortMode = 'total' | 'native' | 'incentive';
 
-type SortableColumn = 'token' | 'price' | 'supplyLiquidity' | 'util' | 'supply' | 'borrow' | 'spread';
+type SortableColumn = 'token' | 'price' | 'size' | 'util' | 'supply' | 'borrow' | 'spread';
 
 const DEFAULT_VISIBLE_COUNT = 20;
 
@@ -66,7 +66,7 @@ const ReservesTable = ({
   const [activeSortColumn, setActiveSortColumn] = useState<SortableColumn | null>('supply');
   const [tokenSortOrder, setTokenSortOrder] = useState<'asc' | 'desc'>('asc');
   const [priceSortOrder, setPriceSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [supplyLiquiditySortOrder, setSupplyLiquiditySortOrder] = useState<'asc' | 'desc'>('desc');
+  const [sizeSortOrder, setSizeSortOrder] = useState<'asc' | 'desc'>('desc');
   const [utilSortOrder, setUtilSortOrder] = useState<'asc' | 'desc'>('desc');
   const [supplySortMode, setSupplySortMode] = useState<SortMode>('incentive');
   const [supplySortOrder, setSupplySortOrder] = useState<'asc' | 'desc'>('desc');
@@ -232,19 +232,19 @@ const ReservesTable = ({
     return pickScenarioValue(simulation.spread.current, simulation.spread.after);
   };
 
-  const getDisplaySupplyUsd = (reserve: ReserveWithSpread): number | null => {
-    const supply = reserve.supplyUsd;
-    if (supply == null || !Number.isFinite(supply)) return supply ?? null;
+  const getDisplayMarketSizeUsd = (reserve: ReserveWithSpread): number | null => {
+    const marketSize = reserve.marketSizeUsd;
+    if (marketSize == null || !Number.isFinite(marketSize)) return marketSize ?? null;
     const supplyRaw = parseNumberInput(debouncedSharedSupplyInput);
     const sim = getSimulation(reserve);
-    const supplyUsd =
+    const marketSizeUsd =
       sharedInputMode === 'usd'
         ? supplyRaw
         : sim?.tokenPrice != null && Number.isFinite(sim.tokenPrice)
           ? supplyRaw * sim.tokenPrice
           : 0;
-    if (supplyUsd <= 0) return supply;
-    return supply + supplyUsd;
+    if (marketSizeUsd <= 0) return marketSize;
+    return marketSize + marketSizeUsd;
   };
 
   // Sort data based on active column and its sort mode
@@ -265,11 +265,11 @@ const ReservesTable = ({
         comparison = aP - bP;
         return priceSortOrder === 'desc' ? -comparison : comparison;
       }
-      if (sortColumn === 'supplyLiquidity') {
-        const aT = getDisplaySupplyUsd(a) ?? -Infinity;
-        const bT = getDisplaySupplyUsd(b) ?? -Infinity;
+      if (sortColumn === 'size') {
+        const aT = getDisplayMarketSizeUsd(a) ?? -Infinity;
+        const bT = getDisplayMarketSizeUsd(b) ?? -Infinity;
         comparison = aT - bT;
-        return supplyLiquiditySortOrder === 'desc' ? -comparison : comparison;
+        return sizeSortOrder === 'desc' ? -comparison : comparison;
       }
       if (sortColumn === 'util') {
         const aU = a.utilizationPct ?? -Infinity;
@@ -340,7 +340,7 @@ const ReservesTable = ({
       }
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reserves, activeSortColumn, tokenSortOrder, priceSortOrder, supplyLiquiditySortOrder, utilSortOrder, supplySortMode, supplySortOrder, borrowSortMode, borrowSortOrder, spreadSortOrder, simulationsById, hasSharedScenario, isApy, tydroPointToUsdRate, includeWhitelistOnlyMerkl, debouncedSharedSupplyInput, sharedInputMode]);
+  }, [reserves, activeSortColumn, tokenSortOrder, priceSortOrder, sizeSortOrder, utilSortOrder, supplySortMode, supplySortOrder, borrowSortMode, borrowSortOrder, spreadSortOrder, simulationsById, hasSharedScenario, isApy, tydroPointToUsdRate, includeWhitelistOnlyMerkl, debouncedSharedSupplyInput, sharedInputMode]);
 
   const supplySortLabel = {
     total: 'Total',
@@ -386,10 +386,10 @@ const ReservesTable = ({
     setActiveSortColumn('price');
     setPriceSortOrder((o) => (o === 'desc' ? 'asc' : 'desc'));
   };
-  const handleSortSupplyLiquidity = () => {
+  const handleSortSize = () => {
     collapseExpandedOnSort();
-    setActiveSortColumn('supplyLiquidity');
-    setSupplyLiquiditySortOrder((o) => (o === 'desc' ? 'asc' : 'desc'));
+    setActiveSortColumn('size');
+    setSizeSortOrder((o) => (o === 'desc' ? 'asc' : 'desc'));
   };
   const handleSortUtil = () => {
     collapseExpandedOnSort();
@@ -846,18 +846,18 @@ const ReservesTable = ({
               <TableHead className="px-[var(--ds-space-3)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
                 Market
               </TableHead>
-              {/* Supply */}
+              {/* Size */}
               <TableHead className="px-[var(--ds-space-3)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
                 <button
                   type="button"
-                  onClick={handleSortSupplyLiquidity}
+                  onClick={handleSortSize}
                   className={`ds-chip-heading md:ds-text-16 gap-[var(--ds-space-1)] transition-colors ${
-                    activeSortColumn === 'supplyLiquidity' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground/80'
+                    activeSortColumn === 'size' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground/80'
                   }`}
                 >
-                  <span>Supply</span>
-                  {activeSortColumn === 'supplyLiquidity' ? (
-                    supplyLiquiditySortOrder === 'desc' ? (
+                  <span>Size</span>
+                  {activeSortColumn === 'size' ? (
+                    sizeSortOrder === 'desc' ? (
                       <ArrowDown className="w-3 h-3" />
                     ) : (
                       <ArrowUp className="w-3 h-3" />

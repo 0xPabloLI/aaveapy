@@ -314,8 +314,8 @@ export const formatUsd = (value: number | null | undefined): string => {
   return '$' + value.toFixed(2);
 };
 
-// Format supply liquidity in USD with abbreviation (e.g., 1083255123.44 → "$1.08B", 5200000 → "$5.20M")
-export const formatSupplyUsd = (value: number | null | undefined): string => {
+// Format market size in USD with abbreviation (e.g., 1083255123.44 → "$1.08B", 5200000 → "$5.20M")
+export const formatMarketSizeUsd = (value: number | null | undefined): string => {
   if (value === null || value === undefined || isNaN(value)) return '-';
   if (value >= 1_000_000_000) {
     return '$' + (value / 1_000_000_000).toFixed(2) + 'B';
@@ -330,4 +330,5 @@ export const formatSupplyUsd = (value: number | null | undefined): string => {
 };
 
 // Backward-compatible alias for legacy call sites.
-export const formatTvl = formatSupplyUsd;
+export const formatTvl = formatMarketSizeUsd;
+export const formatSupplyUsd = formatMarketSizeUsd;

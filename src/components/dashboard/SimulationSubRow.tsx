@@ -1,4 +1,4 @@
-import { formatPercent, formatSpread, formatSupplyUsd } from '@/lib/formatters';
+import { formatPercent, formatSpread, formatMarketSizeUsd } from '@/lib/formatters';
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
 import type { RateSimulationResult } from '@/hooks/useRateSimulation';
 import type { ReserveWithSpread } from '@/types/aave';
@@ -163,18 +163,18 @@ const SimulationSubRow = ({
 
   const aaveUrl = buildAaveReserveUrl({ marketName: reserve.marketName, tokenAddress: reserve.tokenAddress });
 
-  const currentSupplyUsd =
-    reserve.supplyUsd != null && Number.isFinite(reserve.supplyUsd) ? reserve.supplyUsd : null;
-  const afterSupplyUsd =
-    currentSupplyUsd !== null
-      ? currentSupplyUsd + simulation.supply.inputUsd - simulation.borrow.inputUsd
+  const currentMarketSizeUsd =
+    reserve.marketSizeUsd != null && Number.isFinite(reserve.marketSizeUsd) ? reserve.marketSizeUsd : null;
+  const afterMarketSizeUsd =
+    currentMarketSizeUsd !== null
+      ? currentMarketSizeUsd + simulation.supply.inputUsd - simulation.borrow.inputUsd
       : null;
-  const deltaSupplyPct =
-    currentSupplyUsd !== null &&
-    currentSupplyUsd !== 0 &&
-    afterSupplyUsd !== null &&
-    Number.isFinite(afterSupplyUsd)
-      ? ((afterSupplyUsd - currentSupplyUsd) / currentSupplyUsd) * 100
+  const deltaMarketSizePct =
+    currentMarketSizeUsd !== null &&
+    currentMarketSizeUsd !== 0 &&
+    afterMarketSizeUsd !== null &&
+    Number.isFinite(afterMarketSizeUsd)
+      ? ((afterMarketSizeUsd - currentMarketSizeUsd) / currentMarketSizeUsd) * 100
       : null;
 
   const supplyRows = [
@@ -272,28 +272,28 @@ const SimulationSubRow = ({
         )}
       </div>
 
-      {currentSupplyUsd !== null && (
+      {currentMarketSizeUsd !== null && (
         <div className={`mt-[var(--ds-space-3)] grid ${compact ? 'grid-cols-1' : 'grid-cols-3'} gap-[var(--ds-space-2)]`}>
           <div className="rounded-lg border border-border/60 bg-background/80 px-[var(--ds-space-3)] py-[var(--ds-space-2)]">
-            <p className="ds-text-10 uppercase tracking-wide text-muted-foreground">Supply (current)</p>
+            <p className="ds-text-10 uppercase tracking-wide text-muted-foreground">Size (current)</p>
             <p className="mt-[var(--ds-space-0-5)] ds-text-14 font-bold text-foreground">
-              {formatSupplyUsd(currentSupplyUsd)}
+              {formatMarketSizeUsd(currentMarketSizeUsd)}
             </p>
           </div>
           <div className="rounded-lg border border-border/60 bg-background/80 px-[var(--ds-space-3)] py-[var(--ds-space-2)]">
-            <p className="ds-text-10 uppercase tracking-wide text-muted-foreground">Supply (after)</p>
-            <p className={`mt-[var(--ds-space-0-5)] ds-text-14 font-bold ${afterSupplyUsd === null ? 'text-muted-foreground' : 'text-foreground'}`}>
-              {afterSupplyUsd === null ? '—' : formatSupplyUsd(afterSupplyUsd)}
+            <p className="ds-text-10 uppercase tracking-wide text-muted-foreground">Size (after)</p>
+            <p className={`mt-[var(--ds-space-0-5)] ds-text-14 font-bold ${afterMarketSizeUsd === null ? 'text-muted-foreground' : 'text-foreground'}`}>
+              {afterMarketSizeUsd === null ? '—' : formatMarketSizeUsd(afterMarketSizeUsd)}
             </p>
           </div>
           <div className="rounded-lg border border-border/60 bg-background/80 px-[var(--ds-space-3)] py-[var(--ds-space-2)]">
-            <p className="ds-text-10 uppercase tracking-wide text-muted-foreground">Supply change</p>
+            <p className="ds-text-10 uppercase tracking-wide text-muted-foreground">Size change</p>
             <p
               className={`mt-[var(--ds-space-0-5)] ds-text-14 font-bold ${
-                deltaClass(deltaSupplyPct, 'ds-text-emerald-600')
+                deltaClass(deltaMarketSizePct, 'ds-text-emerald-600')
               }`}
             >
-              {formatDelta(deltaSupplyPct)}
+              {formatDelta(deltaMarketSizePct)}
             </p>
           </div>
         </div>

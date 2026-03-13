@@ -57,7 +57,7 @@ export interface ReserveWithSpread {
   supplyApy?: number;
   borrowApy?: number;
   tokenPrice?: number;
-  supplyUsd?: number;
+  marketSizeUsd?: number;
   utilizationPct?: number;
   
   // Protocol incentives (from Aave protocol, array of percentage values)

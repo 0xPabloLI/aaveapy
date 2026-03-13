@@ -64,7 +64,7 @@ const ReserveWithSpreadSchema = z.object({
   tokenSymbol: z.string(),
   tokenAddress: z.string(),
   tokenPrice: z.number().optional(),
-  supplyUsd: z.number().optional(),
+  marketSizeUsd: z.number().optional(),
   utilizationPct: z.number().optional(),
   aTokenAddress: z.string().nullish(),
   vTokenAddress: z.string().nullish(),
