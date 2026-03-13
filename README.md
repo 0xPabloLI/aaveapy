@@ -4,6 +4,8 @@ A React dashboard for displaying Aave V3 market data with yield comparisons acro
 
 🌐 **Live**: [aaveapy.com](https://aaveapy.com)
 
+📦 **Backend Repo**: [aave-protocol-analysis](https://github.com/0xPabloLI/aave-protocol-analysis)
+
 ## Features
 
 - **Multi-chain Support**: View Aave V3 markets across Ethereum, Arbitrum, Optimism, Base, Polygon, Avalanche, and more
