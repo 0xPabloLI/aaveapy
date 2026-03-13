@@ -63,7 +63,6 @@ const Header = ({ lastUpdated }: HeaderProps) => {
         
         {/* Mobile: Theme toggle aligned with title */}
         <div className="md:hidden shrink-0 flex items-center gap-[var(--ds-space-2)]">
-          <TelegramLink />
           <ThemeToggle />
         </div>
       </div>
