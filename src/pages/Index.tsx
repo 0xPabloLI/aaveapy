@@ -385,16 +385,6 @@ const Index = () => {
             />
           </>
 
-          <Suspense fallback={<div className="h-[120px] rounded-xl bg-muted/50 animate-pulse" />}>
-            <MerklForecastPanel
-              reserves={filteredReserves}
-              tydroPointToUsdRate={tydroPointToUsdRate}
-              includeWhitelistOnlyMerkl={includeWhitelistOnlyMerkl}
-              onToggleWhitelistOnlyMerkl={setIncludeWhitelistOnlyMerkl}
-              tokenPrices={tokenPrices}
-            />
-          </Suspense>
-
           {/* Top Opportunities */}
           {stableReserves && stableReserves.length > 0 && (
             <TopOpportunities
@@ -478,10 +468,21 @@ const Index = () => {
             </div>
           )}
 
-          {/* Rate vs Market check: shown in dev, or when VITE_SHOW_RATE_CHECK=true (e.g. .env) */}
+          {/* Dev-only debug panels: Merkl Forecast + Rate vs Market check */}
           {(import.meta.env.DEV || import.meta.env.VITE_SHOW_RATE_CHECK === 'true') && (
-            <div className="max-w-4xl mx-auto">
-              <RateInputsVsMarketCheck />
+            <div className="space-y-4">
+              <Suspense fallback={<div className="h-[120px] rounded-xl bg-muted/50 animate-pulse" />}>
+                <MerklForecastPanel
+                  reserves={filteredReserves}
+                  tydroPointToUsdRate={tydroPointToUsdRate}
+                  includeWhitelistOnlyMerkl={includeWhitelistOnlyMerkl}
+                  onToggleWhitelistOnlyMerkl={setIncludeWhitelistOnlyMerkl}
+                  tokenPrices={tokenPrices}
+                />
+              </Suspense>
+              <div className="max-w-4xl mx-auto">
+                <RateInputsVsMarketCheck />
+              </div>
             </div>
           )}
 
