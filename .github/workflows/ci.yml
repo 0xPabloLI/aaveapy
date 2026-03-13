@@ -9,16 +9,27 @@ on:
       - main
       - dev
       - feature/merkl-forecast
+  workflow_dispatch:
+    inputs:
+      target_ref:
+        description: "Ref (branch or SHA) to run CI against"
+        required: false
+        type: string
+  repository_dispatch:
+    types:
+      - ci-hardcode-sync
 
 jobs:
   lint:
     name: lint
     runs-on: ubuntu-latest
+    env:
+      CI_REF: ${{ github.event.pull_request.head.sha || github.event.client_payload.ref || github.event.inputs.target_ref || github.sha }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ env.CI_REF }}
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -38,11 +49,13 @@ jobs:
   build:
     name: build
     runs-on: ubuntu-latest
+    env:
+      CI_REF: ${{ github.event.pull_request.head.sha || github.event.client_payload.ref || github.event.inputs.target_ref || github.sha }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ env.CI_REF }}
       - name: Setup Node
         uses: actions/setup-node@v4
         with:

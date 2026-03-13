@@ -111,7 +111,26 @@ jobs:
       - name: Warn when PAT is missing
         if: steps.cpr.outputs.pull-request-number != '' && env.HAS_HARDCODE_SYNC_PAT != 'true'
         run: |
-          echo "::warning::HARDCODE_SYNC_PAT is not configured. PR was created with GITHUB_TOKEN, so required CI checks (lint/build) may stay in 'Expected' state."
+          echo "::warning::HARDCODE_SYNC_PAT is not configured. PR was created with GITHUB_TOKEN, so pull_request CI may stay in 'Expected'. Fallback repository_dispatch CI will be triggered."
+
+      - name: Trigger fallback CI when PAT is missing
+        if: steps.cpr.outputs.pull-request-number != '' && env.HAS_HARDCODE_SYNC_PAT != 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const ref = `${{ steps.cpr.outputs.pull-request-head-sha }}` || `${{ steps.cpr.outputs.pull-request-branch }}`;
+            await github.rest.repos.createDispatchEvent({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              event_type: 'ci-hardcode-sync',
+              client_payload: {
+                ref,
+                pr_number: `${{ steps.cpr.outputs.pull-request-number }}`,
+                source_workflow: 'hardcode-sync',
+                target_branch: process.env.TARGET_BRANCH
+              }
+            });
+            core.info(`Triggered fallback ci-hardcode-sync dispatch for ref: ${ref}`);
 
       - name: Create issue when verify still fails
         if: >
@@ -133,13 +152,32 @@ jobs:
               '',
               'Please inspect upstream drift and sync scripts.'
             ].join('\n');
-            await github.rest.issues.create({
+            const { data: issues } = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title,
-              body,
-              labels: ['automation', 'hardcode', 'drift']
+              state: 'open',
+              labels: 'automation,hardcode,drift',
+              per_page: 100
             });
+            const existing = issues.find((issue) => issue.title === title);
+            if (existing) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                body
+              });
+              core.info(`Appended failure details to existing issue #${existing.number}`);
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+                labels: ['automation', 'hardcode', 'drift']
+              });
+              core.info('Created a new hardcode verify failure issue');
+            }
 
       - name: Fail job when verify still fails
         if: >
