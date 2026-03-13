@@ -15,12 +15,51 @@ jobs:
       github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     steps:
+      - name: Cooldown for async review bots
+        run: sleep 180
+
       - name: Enable auto-merge when checks pass
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const pr = context.payload.pull_request;
+            const query = `
+              query($owner: String!, $repo: String!, $number: Int!) {
+                repository(owner: $owner, name: $repo) {
+                  pullRequest(number: $number) {
+                    id
+                    number
+                    reviewDecision
+                    autoMergeRequest {
+                      enabledAt
+                    }
+                    reviewThreads(first: 100) {
+                      nodes {
+                        isResolved
+                      }
+                    }
+                  }
+                }
+              }
+            `;
+            const data = await github.graphql(query, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              number: pr.number
+            });
+            const prInfo = data.repository.pullRequest;
+            const unresolvedThreads = prInfo.reviewThreads.nodes.filter((thread) => !thread.isResolved).length;
+            if (prInfo.reviewDecision === 'CHANGES_REQUESTED' || prInfo.reviewDecision === 'REVIEW_REQUIRED' || unresolvedThreads > 0) {
+              core.notice(
+                `Skip enabling auto-merge for PR #${pr.number}: reviewDecision=${prInfo.reviewDecision || 'NONE'}, unresolvedThreads=${unresolvedThreads}`
+              );
+              return;
+            }
+            if (prInfo.autoMergeRequest) {
+              core.info(`Auto-merge already enabled for PR #${pr.number}`);
+              return;
+            }
             await github.graphql(`
               mutation($pullRequestId: ID!) {
                 enablePullRequestAutoMerge(input: {
@@ -35,5 +74,5 @@ jobs:
                   }
                 }
               }
-            `, { pullRequestId: pr.node_id });
+            `, { pullRequestId: prInfo.id });
             core.info(`Enabled auto-merge for PR #${pr.number}`);
