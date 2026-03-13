@@ -10,6 +10,7 @@ import { getChainIconSrc } from '@/lib/chainIcons';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { IncentiveIcon } from '@/components/IncentiveIcon';
 import SimulationSubRow from './SimulationSubRow';
+import CapProgressRing from './CapProgressRing';
 import type { RateSimulationResult, ScenarioInputMode } from '@/hooks/useRateSimulation';
 import { parseNumberInput } from '@/lib/numberFormat';
 
@@ -146,12 +147,12 @@ const DesktopReserveRow = memo(({
             {getMarketDisplayName()}
           </button>
         </TableCell>
-        {/* Size/Cap */}
+        {/* Size */}
         <TableCell className="px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell tabular-nums text-foreground ds-text-13">
-          <span>{formatReserveSizeUsd(displayReserveSizeUsd)}</span>
-          {reserve.supplyCapUsd != null && Number.isFinite(reserve.supplyCapUsd) && (
-            <span className="text-muted-foreground">/{formatReserveSizeUsd(reserve.supplyCapUsd)}</span>
-          )}
+          <div className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)]">
+            <span>{formatReserveSizeUsd(displayReserveSizeUsd)}</span>
+            <CapProgressRing size={displayReserveSizeUsd} cap={reserve.supplyCapUsd} />
+          </div>
         </TableCell>
         {/* Supply */}
         <TableCell className="w-1/5 px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center">
@@ -159,7 +160,7 @@ const DesktopReserveRow = memo(({
             {reserve.supplyDisabled ? (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className="font-bold text-muted-foreground tabular-nums ds-text-14 cursor-help">
+                  <span className="font-bold text-secondary tabular-nums ds-text-14 cursor-help">
                     {formatPercent(displaySupplyTotal)}
                   </span>
                 </TooltipTrigger>
@@ -172,7 +173,7 @@ const DesktopReserveRow = memo(({
             )}
             {displaySupplyIncentive !== null && (
               <div className="flex items-center gap-[var(--ds-space-0-5)] ds-text-11 justify-center min-h-[1.25rem]">
-                <span className={`tabular-nums ${reserve.supplyDisabled ? 'text-muted-foreground/70' : 'ds-text-emerald-500-70'}`}>
+                <span className={`tabular-nums ${reserve.supplyDisabled ? 'text-secondary' : 'ds-text-emerald-500-70'}`}>
                   {formatPercent(displaySupplyNative)}
                 </span>
                 <span className="text-muted-foreground/70">+</span>
@@ -181,7 +182,7 @@ const DesktopReserveRow = memo(({
                   onClick={(e) => onIncentiveClick(e, reserve, 'supply', displaySupplyIncentive)}
                   className={`inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-0-5)] py-[var(--ds-space-0)] rounded-full transition-all duration-150 cursor-pointer tabular-nums ${
                     reserve.supplyDisabled
-                      ? 'bg-muted/30 text-muted-foreground/70 hover:bg-muted/50 ring-1 ring-border/30'
+                      ? 'bg-secondary/10 text-secondary hover:bg-secondary/20 ring-1 ring-secondary/20'
                       : 'ds-bg-emerald-500-10 ds-text-emerald-500-70 hover:bg-[rgb(var(--ds-emerald-500-rgb)/0.25)] hover:ring-2 hover:ring-[rgb(var(--ds-emerald-500-rgb)/0.3)] ring-1 ds-ring-emerald-500-15'
                   }`}
                 >
@@ -208,7 +209,7 @@ const DesktopReserveRow = memo(({
             {reserve.borrowDisabled ? (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className="font-bold text-muted-foreground tabular-nums ds-text-14 cursor-help">
+                  <span className="font-bold text-secondary tabular-nums ds-text-14 cursor-help">
                     {displayBorrowTotal !== null ? formatPercent(displayBorrowTotal) : '-'}
                   </span>
                 </TooltipTrigger>
@@ -223,7 +224,7 @@ const DesktopReserveRow = memo(({
               <div className="flex items-center gap-[var(--ds-space-0-5)] ds-text-11 justify-center min-h-[1.25rem]">
                 {displayBorrowNative !== null && (
                   <>
-                    <span className={`tabular-nums ${reserve.borrowDisabled ? 'text-muted-foreground/70' : 'ds-text-brand-cyan-70'}`}>
+                    <span className={`tabular-nums ${reserve.borrowDisabled ? 'text-secondary' : 'ds-text-brand-cyan-70'}`}>
                       {formatPercent(displayBorrowNative)}
                     </span>
                     <span className="text-muted-foreground/70">-</span>
@@ -234,7 +235,7 @@ const DesktopReserveRow = memo(({
                   onClick={(e) => onIncentiveClick(e, reserve, 'borrow', displayBorrowIncentive)}
                   className={`inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-0-5)] py-[var(--ds-space-0)] rounded-full transition-all duration-150 cursor-pointer tabular-nums ${
                     reserve.borrowDisabled
-                      ? 'bg-muted/30 text-muted-foreground/70 hover:bg-muted/50 ring-1 ring-border/30'
+                      ? 'bg-secondary/10 text-secondary hover:bg-secondary/20 ring-1 ring-secondary/20'
                       : 'ds-bg-brand-cyan-10 ds-text-brand-cyan-70 hover:bg-[rgb(var(--ds-brand-cyan-rgb)/0.25)] hover:ring-2 hover:ring-[rgb(var(--ds-brand-cyan-rgb)/0.3)] ring-1 ds-ring-brand-cyan-15'
                   }`}
                 >

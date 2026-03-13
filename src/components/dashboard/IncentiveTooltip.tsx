@@ -676,7 +676,7 @@ const IncentiveTooltip = ({
     }, 0);
   }, [reserve, type]);
   const showWhitelistToggle = whitelistOnlyCampaignCount > 0;
-  const merklForecastInput = showForecastInput ? (
+  const merklForecastInput = showForecastInput && import.meta.env.DEV ? (
     <div className="mb-[var(--ds-space-2)] rounded-lg border border-border/60 bg-muted/20 px-[var(--ds-space-2)] py-[var(--ds-space-2)]">
       <label className="ds-tooltip-body text-muted-foreground block mb-[var(--ds-space-1)]">
         Incentive Forecast Input (amount in {tokenSymbol})

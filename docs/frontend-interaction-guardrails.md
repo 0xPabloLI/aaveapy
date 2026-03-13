@@ -6,7 +6,13 @@ This note records recurring UI/interaction issues found during incentive/forecas
 
 ### Tooltip / Overlay behavior
 
-- **If a UI requirement is stated as exact geometry, implement exact geometry** (not “close enough” heuristics).
+- **Distinguish auto-show vs click-to-show tooltips**:
+  - **Auto-show tooltip (hover reveals)**: Use default cursor (no `cursor-pointer`). Add subtle hover feedback like `hover:opacity-80`, `hover:scale-110`, or `hover:bg-muted/60` so the user knows the element is interactive.
+  - **Click-to-show tooltip/popover**: Use `cursor-pointer`. Add stronger hover feedback like `hover:ring-2`, `hover:bg-xxx` with increased opacity/saturation.
+  - Never use `cursor-pointer` for auto-show tooltips — it implies a click action that doesn't exist.
+  - Never use `cursor-help` (question mark cursor) — it's not part of our design system.
+- **All interactive elements must have visible hover state**: even auto-show tooltips need visual feedback on hover (e.g. subtle scale, opacity change, or background highlight).
+- **If a UI requirement is stated as exact geometry, implement exact geometry** (not "close enough" heuristics).
   - Example: when the requested top/bottom arrow gap must match, pass full trigger geometry (or at least trigger height) and compute the same gap from trigger edges.
   - Do not ship an approximation first if the requested exact geometry is already available from the trigger element (`getBoundingClientRect()`).
 - **Clamp desktop tooltips to viewport**: floating tooltips must not render below the viewport bottom.
@@ -38,7 +44,7 @@ This note records recurring UI/interaction issues found during incentive/forecas
   - Do not replace uncertain payloads with `z.unknown()` unless the field is truly opaque and never interpreted by the UI.
 - Keep runtime validation and TypeScript types aligned.
   - If the parser accepts recursive structured content, the exported type should describe that same recursive shape.
-  - Avoid “runtime accepts anything, compile time says something narrower” drift.
+  - Avoid "runtime accepts anything, compile time says something narrower" drift.
 
 ## B. AaveAPY-specific guardrails (app-specific)
 

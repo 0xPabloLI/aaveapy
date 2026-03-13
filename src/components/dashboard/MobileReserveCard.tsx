@@ -90,10 +90,10 @@ const MobileReserveCard = memo(({
 
 
   const supplyValueClass = displaySupplyTotal === null || reserve.supplyDisabled 
-    ? 'text-muted-foreground' 
+    ? 'text-secondary' 
     : 'ds-text-emerald-500';
   const borrowValueClass = displayBorrowTotal === null || reserve.borrowDisabled 
-    ? 'text-muted-foreground' 
+    ? 'text-secondary' 
     : 'ds-text-brand-cyan';
 
   return (
@@ -164,7 +164,7 @@ const MobileReserveCard = memo(({
           )}
           {visibleSupplyIncentive !== null && (
             <div className="flex items-center gap-[var(--ds-space-0-5)] ds-text-9 flex-nowrap">
-              <span className={reserve.supplyDisabled ? 'text-muted-foreground/70' : 'ds-text-emerald-500-70'}>
+              <span className={reserve.supplyDisabled ? 'text-secondary' : 'ds-text-emerald-500-70'}>
                 {formatPercent(displaySupplyNative)}
               </span>
               <span className="text-muted-foreground/70">+</span>
@@ -177,7 +177,7 @@ const MobileReserveCard = memo(({
                     }}
                     className={`inline-flex items-center rounded-full px-[var(--ds-space-1)] shrink-0 ring-1 active:scale-95 transition-all hover:ring-2 ${
                       reserve.supplyDisabled
-                        ? 'text-muted-foreground bg-muted/30 ring-border/30 hover:bg-muted/50 hover:ring-border/50'
+                        ? 'text-secondary bg-secondary/10 ring-secondary/20 hover:bg-secondary/20 hover:ring-secondary/30'
                         : 'ds-text-emerald-600 ds-bg-emerald-500-10 hover:bg-[rgb(var(--ds-emerald-500-rgb)/0.25)] ds-ring-emerald-500-15 hover:ring-[rgb(var(--ds-emerald-500-rgb)/0.35)]'
                     }`}
                   >
@@ -213,7 +213,7 @@ const MobileReserveCard = memo(({
           )}
           {visibleBorrowIncentive !== null && (
             <div className="flex items-center gap-[var(--ds-space-0-5)] ds-text-9 flex-nowrap justify-end">
-              <span className={reserve.borrowDisabled ? 'text-muted-foreground/70' : 'ds-text-brand-cyan-70'}>
+              <span className={reserve.borrowDisabled ? 'text-secondary' : 'ds-text-brand-cyan-70'}>
                 {formatPercent(displayBorrowNative)}
               </span>
               <span className="text-muted-foreground/70">-</span>
@@ -226,7 +226,7 @@ const MobileReserveCard = memo(({
                     }}
                     className={`inline-flex items-center rounded-full px-[var(--ds-space-1)] shrink-0 ring-1 active:scale-95 transition-all hover:ring-2 ${
                       reserve.borrowDisabled
-                        ? 'text-muted-foreground bg-muted/30 ring-border/30 hover:bg-muted/50 hover:ring-border/50'
+                        ? 'text-secondary bg-secondary/10 ring-secondary/20 hover:bg-secondary/20 hover:ring-secondary/30'
                         : 'ds-text-brand-cyan ds-bg-brand-cyan-10 hover:bg-[rgb(var(--ds-brand-cyan-rgb)/0.25)] ds-ring-brand-cyan-15 hover:ring-[rgb(var(--ds-brand-cyan-rgb)/0.35)]'
                     }`}
                   >

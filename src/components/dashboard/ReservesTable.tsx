@@ -852,7 +852,7 @@ const ReservesTable = ({
               <TableHead className="px-[var(--ds-space-3)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
                 Market
               </TableHead>
-              {/* Size/Cap */}
+              {/* Size */}
               <TableHead className="px-[var(--ds-space-3)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
                 <button
                   type="button"
@@ -861,7 +861,7 @@ const ReservesTable = ({
                     activeSortColumn === 'size' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground/80'
                   }`}
                 >
-                  <span>Size/Cap</span>
+                  <span>Size</span>
                   {activeSortColumn === 'size' ? (
                     sizeSortOrder === 'desc' ? (
                       <ArrowDown className="w-3 h-3" />
