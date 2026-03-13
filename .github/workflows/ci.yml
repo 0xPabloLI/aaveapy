@@ -15,16 +15,13 @@ on:
         description: "Ref (branch or SHA) to run CI against"
         required: false
         type: string
-  repository_dispatch:
-    types:
-      - ci-hardcode-sync
 
 jobs:
   lint:
     name: lint
     runs-on: ubuntu-latest
     env:
-      CI_REF: ${{ github.event.pull_request.head.sha || github.event.client_payload.ref || github.event.inputs.target_ref || github.sha }}
+      CI_REF: ${{ github.event.pull_request.head.sha || github.event.inputs.target_ref || github.sha }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -50,7 +47,7 @@ jobs:
     name: build
     runs-on: ubuntu-latest
     env:
-      CI_REF: ${{ github.event.pull_request.head.sha || github.event.client_payload.ref || github.event.inputs.target_ref || github.sha }}
+      CI_REF: ${{ github.event.pull_request.head.sha || github.event.inputs.target_ref || github.sha }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4

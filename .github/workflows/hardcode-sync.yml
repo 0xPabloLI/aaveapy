@@ -14,6 +14,7 @@ on:
     - cron: "20 4 * * *"
 
 permissions:
+  actions: write
   contents: write
   pull-requests: write
   issues: write
@@ -111,26 +112,25 @@ jobs:
       - name: Warn when PAT is missing
         if: steps.cpr.outputs.pull-request-number != '' && env.HAS_HARDCODE_SYNC_PAT != 'true'
         run: |
-          echo "::warning::HARDCODE_SYNC_PAT is not configured. PR was created with GITHUB_TOKEN, so pull_request CI may stay in 'Expected'. Fallback repository_dispatch CI will be triggered."
+          echo "::warning::HARDCODE_SYNC_PAT is not configured. PR was created with GITHUB_TOKEN, so pull_request CI may stay in 'Expected'. Fallback workflow_dispatch CI will be triggered on the PR branch."
 
       - name: Trigger fallback CI when PAT is missing
         if: steps.cpr.outputs.pull-request-number != '' && env.HAS_HARDCODE_SYNC_PAT != 'true'
         uses: actions/github-script@v7
         with:
           script: |
-            const ref = `${{ steps.cpr.outputs.pull-request-head-sha }}` || `${{ steps.cpr.outputs.pull-request-branch }}`;
-            await github.rest.repos.createDispatchEvent({
+            const workflowRef = `${{ steps.cpr.outputs.pull-request-branch }}` || 'bot/hardcode-sync';
+            const targetRef = `${{ steps.cpr.outputs.pull-request-head-sha }}` || workflowRef;
+            await github.rest.actions.createWorkflowDispatch({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              event_type: 'ci-hardcode-sync',
-              client_payload: {
-                ref,
-                pr_number: `${{ steps.cpr.outputs.pull-request-number }}`,
-                source_workflow: 'hardcode-sync',
-                target_branch: process.env.TARGET_BRANCH
+              workflow_id: 'ci.yml',
+              ref: workflowRef,
+              inputs: {
+                target_ref: targetRef
               }
             });
-            core.info(`Triggered fallback ci-hardcode-sync dispatch for ref: ${ref}`);
+            core.info(`Triggered fallback workflow_dispatch for ci.yml on ref ${workflowRef}, target_ref ${targetRef}`);
 
       - name: Create issue when verify still fails
         if: >
