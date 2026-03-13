@@ -28,6 +28,7 @@ jobs:
     env:
       TARGET_BRANCH: >-
         ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.target_branch != '' && github.event.client_payload.target_branch || (github.event_name == 'workflow_dispatch' && github.event.inputs.target_branch != '' && github.event.inputs.target_branch || github.event.repository.default_branch) }}
+      HAS_HARDCODE_SYNC_PAT: ${{ secrets.HARDCODE_SYNC_PAT != '' }}
     steps:
       - name: Checkout target branch
         uses: actions/checkout@v4
@@ -108,7 +109,7 @@ jobs:
             hardcode
 
       - name: Warn when PAT is missing
-        if: steps.cpr.outputs.pull-request-number != '' && secrets.HARDCODE_SYNC_PAT == ''
+        if: steps.cpr.outputs.pull-request-number != '' && env.HAS_HARDCODE_SYNC_PAT != 'true'
         run: |
           echo "::warning::HARDCODE_SYNC_PAT is not configured. PR was created with GITHUB_TOKEN, so required CI checks (lint/build) may stay in 'Expected' state."
 
