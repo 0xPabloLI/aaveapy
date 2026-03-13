@@ -12,6 +12,29 @@ This note records recurring UI/interaction issues found during incentive/forecas
   - Never use `cursor-pointer` for auto-show tooltips — it implies a click action that doesn't exist.
   - Never use `cursor-help` (question mark cursor) — it's not part of our design system.
 - **All interactive elements must have visible hover state**: even auto-show tooltips need visual feedback on hover (e.g. subtle scale, opacity change, or background highlight).
+
+#### Implementation examples
+
+**Auto-show tooltip** (e.g. `CapProgressRing`):
+```tsx
+// NO cursor-pointer, subtle hover feedback only
+<div className="inline-flex items-center p-0.5 -m-0.5 rounded-full transition-all duration-150 hover:bg-muted/60 hover:scale-110">
+  {/* content */}
+</div>
+```
+
+**Click-to-show tooltip** (e.g. incentive badge):
+```tsx
+// cursor-pointer + stronger hover feedback (ring + bg)
+<button
+  className="cursor-pointer inline-flex items-center rounded-full px-1 ring-1 transition-all duration-150
+    ds-bg-emerald-500-10 ds-text-emerald-500-70 ds-ring-emerald-500-15
+    hover:bg-[rgb(var(--ds-emerald-500-rgb)/0.25)] hover:ring-2 hover:ring-[rgb(var(--ds-emerald-500-rgb)/0.3)]
+    active:scale-95"
+>
+  {/* content */}
+</button>
+```
 - **If a UI requirement is stated as exact geometry, implement exact geometry** (not "close enough" heuristics).
   - Example: when the requested top/bottom arrow gap must match, pass full trigger geometry (or at least trigger height) and compute the same gap from trigger edges.
   - Do not ship an approximation first if the requested exact geometry is already available from the trigger element (`getBoundingClientRect()`).
@@ -31,6 +54,15 @@ This note records recurring UI/interaction issues found during incentive/forecas
 - **Normalize token symbols for search**: search should match canonical aliases and symbol variants.
   - Example: `USDT` should match `USD₮`.
   - Normalize unicode / punctuation variants before filtering.
+
+### Theme switching behavior
+
+- **Default theme follows system**: on first visit, the app respects `prefers-color-scheme` via `next-themes` with `defaultTheme="system"` and `enableSystem={true}`.
+- **Manual toggle is temporary override**: clicking the theme toggle switches between Light ↔ Dark immediately.
+- **System change resets to follow system**: when the OS theme changes (e.g. macOS auto Light/Dark schedule), the app automatically calls `setTheme('system')` to re-sync.
+  - This prevents the app from being "locked" to a manual choice after the user toggled once.
+  - Implementation: `ThemeToggle.tsx` listens to `matchMedia('(prefers-color-scheme: dark)')` change events.
+- **Resource cost**: the `matchMedia` listener is event-driven (not polling), triggers only on actual OS theme change, and has negligible overhead.
 
 ### Link generation
 

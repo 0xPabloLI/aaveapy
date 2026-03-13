@@ -17,6 +17,14 @@ const ThemeToggle = () => {
     setMounted(true);
   }, []);
 
+  // Re-follow system when OS theme changes
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = () => setTheme('system');
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, [setTheme]);
+
   const applyTransition = () => {
     document.documentElement.classList.add('theme-transition');
     setTimeout(() => {

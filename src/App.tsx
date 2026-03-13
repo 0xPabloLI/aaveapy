@@ -38,7 +38,7 @@ queryClient.prefetchQuery({
 const App = () => (
   <ThemeProvider attribute="class" defaultTheme="system" enableSystem={true}>
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
+      <TooltipProvider delayDuration={200}>
         <Toaster />
         <Sonner />
         <BrowserRouter>
