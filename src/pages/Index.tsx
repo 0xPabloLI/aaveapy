@@ -420,7 +420,7 @@ const Index = () => {
               }}
               tydroPointToUsdRate={tydroPointToUsdRate}
               includeWhitelistOnlyMerkl={includeWhitelistOnlyMerkl}
-              onToggleWhitelistOnlyMerkl={onToggleWhitelistOnlyMerkl}
+              onToggleWhitelistOnlyMerkl={setIncludeWhitelistOnlyMerkl}
               scrollToReserveId={pendingScrollReserveId}
             />
           </div>
