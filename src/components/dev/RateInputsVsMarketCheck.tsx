@@ -15,7 +15,7 @@ import {
 import { simulateNativeRatesAfterActions } from '@/lib/interestRateCalculator';
 import type { NativeRateSimulation } from '@/lib/interestRateCalculator';
 import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
-import type { ReserveWithSpread, ReserveRateInput } from '@/types/aave';
+import type { ReserveWithSpread, ReserveRateInput, RateInputsResponse } from '@/types/aave';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
 import { getCachedRateInputsSnapshotEntry } from '@/lib/cache';
 
