@@ -11,7 +11,7 @@ Frontend types and Zod schemas are aligned with the backend response shapes. Thi
 | `GET /meta/side-data` | Zod `SideDataMetaResponseSchema` | `SideDataMetaResponse` (in useSideDataMeta) |
 | `GET /campaigns/forecast-states` | Cast to `MerklForecastStatesBatchResponse`; no Zod. Uses root `staleTimeMs` (when present) for in-memory cache TTL, falling back to 60s when missing. | `MerklForecastStatesBatchResponse`, `MerklForecastStateResponse` |
 
-Reserve shape: backend sends `reserveId`, `tokenPrice`, `tvlUsd`, `utilizationPct`; all are optional in frontend schema/type. Rate-input items: backend does not send `source` / `sourceDetail`; frontend has them optional. Rate-inputs root: frontend uses `staleTimeMs` (when present) as React Query `staleTime`, and falls back to local TTL when missing; `isStale` (if present) is ignored. Side-data root: frontend uses `categories.staleTimeMs` / `fdv.staleTimeMs` (when present, via their minimum) as React Query `staleTime`, and falls back to local TTL when missing.
+Reserve shape: backend sends `reserveId`, `tokenPrice`, `supplyUsd`, `utilizationPct`; all are optional in frontend schema/type. Rate-input items: backend does not send `source` / `sourceDetail`; frontend has them optional. Rate-inputs root: frontend uses `staleTimeMs` (when present) as React Query `staleTime`, and falls back to local TTL when missing; `isStale` (if present) is ignored. Side-data root: frontend uses `categories.staleTimeMs` / `fdv.staleTimeMs` (when present, via their minimum) as React Query `staleTime`, and falls back to local TTL when missing.
 
 ## Backend fields not used by the frontend
 

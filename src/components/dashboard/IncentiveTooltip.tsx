@@ -695,7 +695,7 @@ const IncentiveTooltip = ({
         </p>
       ) : (
         <p className="mt-[var(--ds-space-1)] ds-tooltip-body text-muted-foreground">
-          Price unavailable for {tokenSymbol}; forecast uses current TVL.
+          Price unavailable for {tokenSymbol}; forecast uses current supply.
         </p>
       )}
       <p className="mt-[var(--ds-space-1)] ds-tooltip-body text-muted-foreground">
@@ -884,7 +884,7 @@ const IncentiveTooltip = ({
             <div className="mt-[var(--ds-space-1-5)] rounded-md border border-border/50 bg-muted/30 px-[var(--ds-space-2)] py-[var(--ds-space-1-5)]">
               <p className="ds-tooltip-body text-muted-foreground">
                 {typeof fp.hypotheticalTvl === 'number'
-                  ? `Forecast at TVL ${formatUsd(fp.hypotheticalTvl)}`
+                  ? `Forecast at Supply ${formatUsd(fp.hypotheticalTvl)}`
                   : 'Estimate for your deposit'}
               </p>
               {(() => {
@@ -977,7 +977,7 @@ const IncentiveTooltip = ({
                 <div className="mt-[var(--ds-space-1-5)] rounded-md border border-border/50 bg-muted/30 px-[var(--ds-space-2)] py-[var(--ds-space-1-5)]">
                   <p className="ds-tooltip-body text-muted-foreground">
                     {typeof fp.hypotheticalTvl === 'number'
-                      ? `Forecast at TVL ${formatUsd(fp.hypotheticalTvl)}`
+                      ? `Forecast at Supply ${formatUsd(fp.hypotheticalTvl)}`
                       : 'Estimate for your deposit'}
                   </p>
                   {(() => {

@@ -268,7 +268,7 @@ const MerklForecastPanel = ({
             </span>
           ) : (
             <span className="mt-1 block text-[11px] text-muted-foreground">
-              Price unavailable for {tokenSymbol}; forecast uses current TVL.
+              Price unavailable for {tokenSymbol}; forecast uses current supply.
             </span>
           )}
         </label>
@@ -291,7 +291,7 @@ const MerklForecastPanel = ({
       {selectedState && forecast && (
         <div className="mt-3 grid gap-2 md:grid-cols-3">
           <div className="rounded-md border border-border/60 bg-muted/20 p-2">
-            <p className="text-[11px] text-muted-foreground">Hypothetical TVL</p>
+            <p className="text-[11px] text-muted-foreground">Hypothetical Supply</p>
             <p className="text-sm font-semibold text-foreground mt-1">{formatUsd(forecast.hypotheticalTvl)}</p>
           </div>
           <div className="rounded-md border border-border/60 bg-muted/20 p-2">

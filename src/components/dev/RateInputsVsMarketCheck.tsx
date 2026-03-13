@@ -151,29 +151,37 @@ export function RateInputsVsMarketCheck() {
           {mismatches.length === 0 ? (
             <p className="text-green-700">Supply/borrow APY from rate-inputs match market snapshot.</p>
           ) : (
-            <div className="overflow-x-auto max-h-48 overflow-y-auto">
+            <div className="overflow-x-auto max-h-64 overflow-y-auto">
               <table className="w-full border-collapse text-xs">
                 <thead>
                   <tr className="border-b border-amber-200">
-                    <th className="text-left py-1 pr-2">Token</th>
-                    <th className="text-right py-1">Market Supply</th>
-                    <th className="text-right py-1">Rate Supply</th>
-                    <th className="text-right py-1">Δ Supply</th>
-                    <th className="text-right py-1">Market Borrow</th>
-                    <th className="text-right py-1">Rate Borrow</th>
-                    <th className="text-right py-1">Δ Borrow</th>
+                    <th className="text-left py-1 pr-2 whitespace-nowrap">Chain</th>
+                    <th className="text-left py-1 pr-2 whitespace-nowrap">Market</th>
+                    <th className="text-left py-1 pr-2 whitespace-nowrap">Token</th>
+                    <th className="text-left py-1 pr-2 max-w-[6rem] truncate" title="Token contract address">Address</th>
+                    <th className="text-right py-1 whitespace-nowrap">Market Supply</th>
+                    <th className="text-right py-1 whitespace-nowrap">Rate Supply</th>
+                    <th className="text-right py-1 whitespace-nowrap">Δ Supply</th>
+                    <th className="text-right py-1 whitespace-nowrap">Market Borrow</th>
+                    <th className="text-right py-1 whitespace-nowrap">Rate Borrow</th>
+                    <th className="text-right py-1 whitespace-nowrap">Δ Borrow</th>
                   </tr>
                 </thead>
                 <tbody>
                   {mismatches.map((m) => (
-                    <tr key={`${m.reserve.marketName}-${m.reserve.tokenAddress}`} className="border-b border-amber-100">
-                      <td className="py-1 pr-2 font-medium">{m.reserve.tokenSymbol}</td>
-                      <td className="text-right tabular-nums">{m.marketSupplyApy?.toFixed(2) ?? '—'}</td>
-                      <td className="text-right tabular-nums">{m.rateSupplyApy.toFixed(2)}</td>
-                      <td className="text-right tabular-nums text-rose-600">+{m.supplyDiff.toFixed(2)}%</td>
-                      <td className="text-right tabular-nums">{m.marketBorrowApy?.toFixed(2) ?? '—'}</td>
-                      <td className="text-right tabular-nums">{m.rateBorrowApy.toFixed(2)}</td>
-                      <td className="text-right tabular-nums text-rose-600">+{m.borrowDiff.toFixed(2)}%</td>
+                    <tr key={`${m.reserve.chainId}-${m.reserve.marketName}-${m.reserve.tokenAddress}`} className="border-b border-amber-100">
+                      <td className="py-1 pr-2 whitespace-nowrap" title={`chainId: ${m.reserve.chainId}`}>{m.reserve.chainName}</td>
+                      <td className="py-1 pr-2 whitespace-nowrap font-medium">{m.reserve.marketName}</td>
+                      <td className="py-1 pr-2 whitespace-nowrap font-medium">{m.reserve.tokenSymbol}</td>
+                      <td className="py-1 pr-2 max-w-[6rem] truncate font-mono text-[10px]" title={m.reserve.tokenAddress}>
+                        {m.reserve.tokenAddress.slice(0, 6)}…{m.reserve.tokenAddress.slice(-4)}
+                      </td>
+                      <td className="text-right tabular-nums py-1">{m.marketSupplyApy?.toFixed(2) ?? '—'}</td>
+                      <td className="text-right tabular-nums py-1">{m.rateSupplyApy.toFixed(2)}</td>
+                      <td className="text-right tabular-nums text-rose-600 py-1">+{m.supplyDiff.toFixed(2)}%</td>
+                      <td className="text-right tabular-nums py-1">{m.marketBorrowApy?.toFixed(2) ?? '—'}</td>
+                      <td className="text-right tabular-nums py-1">{m.rateBorrowApy.toFixed(2)}</td>
+                      <td className="text-right tabular-nums text-rose-600 py-1">+{m.borrowDiff.toFixed(2)}%</td>
                     </tr>
                   ))}
                 </tbody>

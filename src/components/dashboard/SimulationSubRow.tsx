@@ -1,4 +1,4 @@
-import { formatPercent, formatSpread, formatTvl } from '@/lib/formatters';
+import { formatPercent, formatSpread, formatSupplyUsd } from '@/lib/formatters';
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
 import type { RateSimulationResult } from '@/hooks/useRateSimulation';
 import type { ReserveWithSpread } from '@/types/aave';
@@ -163,18 +163,18 @@ const SimulationSubRow = ({
 
   const aaveUrl = buildAaveReserveUrl({ marketName: reserve.marketName, tokenAddress: reserve.tokenAddress });
 
-  const currentTvlUsd =
-    reserve.tvlUsd != null && Number.isFinite(reserve.tvlUsd) ? reserve.tvlUsd : null;
-  const afterTvlUsd =
-    currentTvlUsd !== null
-      ? currentTvlUsd + simulation.supply.inputUsd - simulation.borrow.inputUsd
+  const currentSupplyUsd =
+    reserve.supplyUsd != null && Number.isFinite(reserve.supplyUsd) ? reserve.supplyUsd : null;
+  const afterSupplyUsd =
+    currentSupplyUsd !== null
+      ? currentSupplyUsd + simulation.supply.inputUsd - simulation.borrow.inputUsd
       : null;
-  const deltaTvlPct =
-    currentTvlUsd !== null &&
-    currentTvlUsd !== 0 &&
-    afterTvlUsd !== null &&
-    Number.isFinite(afterTvlUsd)
-      ? ((afterTvlUsd - currentTvlUsd) / currentTvlUsd) * 100
+  const deltaSupplyPct =
+    currentSupplyUsd !== null &&
+    currentSupplyUsd !== 0 &&
+    afterSupplyUsd !== null &&
+    Number.isFinite(afterSupplyUsd)
+      ? ((afterSupplyUsd - currentSupplyUsd) / currentSupplyUsd) * 100
       : null;
 
   const supplyRows = [
@@ -272,28 +272,28 @@ const SimulationSubRow = ({
         )}
       </div>
 
-      {currentTvlUsd !== null && (
+      {currentSupplyUsd !== null && (
         <div className={`mt-[var(--ds-space-3)] grid ${compact ? 'grid-cols-1' : 'grid-cols-3'} gap-[var(--ds-space-2)]`}>
           <div className="rounded-lg border border-border/60 bg-background/80 px-[var(--ds-space-3)] py-[var(--ds-space-2)]">
-            <p className="ds-text-10 uppercase tracking-wide text-muted-foreground">TVL (current)</p>
+            <p className="ds-text-10 uppercase tracking-wide text-muted-foreground">Supply (current)</p>
             <p className="mt-[var(--ds-space-0-5)] ds-text-14 font-bold text-foreground">
-              {formatTvl(currentTvlUsd)}
+              {formatSupplyUsd(currentSupplyUsd)}
             </p>
           </div>
           <div className="rounded-lg border border-border/60 bg-background/80 px-[var(--ds-space-3)] py-[var(--ds-space-2)]">
-            <p className="ds-text-10 uppercase tracking-wide text-muted-foreground">TVL (after)</p>
-            <p className={`mt-[var(--ds-space-0-5)] ds-text-14 font-bold ${afterTvlUsd === null ? 'text-muted-foreground' : 'text-foreground'}`}>
-              {afterTvlUsd === null ? '—' : formatTvl(afterTvlUsd)}
+            <p className="ds-text-10 uppercase tracking-wide text-muted-foreground">Supply (after)</p>
+            <p className={`mt-[var(--ds-space-0-5)] ds-text-14 font-bold ${afterSupplyUsd === null ? 'text-muted-foreground' : 'text-foreground'}`}>
+              {afterSupplyUsd === null ? '—' : formatSupplyUsd(afterSupplyUsd)}
             </p>
           </div>
           <div className="rounded-lg border border-border/60 bg-background/80 px-[var(--ds-space-3)] py-[var(--ds-space-2)]">
-            <p className="ds-text-10 uppercase tracking-wide text-muted-foreground">TVL change</p>
+            <p className="ds-text-10 uppercase tracking-wide text-muted-foreground">Supply change</p>
             <p
               className={`mt-[var(--ds-space-0-5)] ds-text-14 font-bold ${
-                deltaClass(deltaTvlPct, 'ds-text-emerald-600')
+                deltaClass(deltaSupplyPct, 'ds-text-emerald-600')
               }`}
             >
-              {formatDelta(deltaTvlPct)}
+              {formatDelta(deltaSupplyPct)}
             </p>
           </div>
         </div>
@@ -364,7 +364,7 @@ const SimulationSubRow = ({
         )}
         {showPriceMissingNotice && (
           <p className="ds-text-11 text-muted-foreground">
-            Price unavailable for {reserve.tokenSymbol}; incentive forecast falls back to current TVL.
+            Price unavailable for {reserve.tokenSymbol}; incentive forecast falls back to current supply.
           </p>
         )}
         {!simulation.forecastLoading && simulation.forecastUnavailableCampaignCount > 0 && (
