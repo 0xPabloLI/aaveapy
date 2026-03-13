@@ -40,32 +40,41 @@ Where `rayMul(a, b) = (a × b + RAY/2) / RAY`
 
 ```
 totalVariableDebt' = totalVariableDebt + borrowAmount
-utilizationDenominator = availableLiquidity + totalVariableDebt + deficit + supplyAmount
 ```
 
-### 3. Compute Utilization Rate
+### 3. Compute Usage Rates
+
+**Important:** Aave uses two distinct usage rates:
+
+| Rate | Formula | Purpose |
+|------|---------|---------|
+| `borrowUsageRate` | `totalVariableDebt' / (availableLiquidity + totalVariableDebt + supplyAmount)` | Borrow rate calculation, externally displayed utilization |
+| `supplyUsageRate` | `totalVariableDebt' / (availableLiquidity + totalVariableDebt + deficit + supplyAmount)` | Liquidity rate calculation (includes deficit) |
 
 ```
-utilizationRate = rayDiv(totalVariableDebt', utilizationDenominator)
+borrowUsageRate = rayDiv(totalVariableDebt', availableLiquidity + totalVariableDebt + supplyAmount)
+supplyUsageRate = rayDiv(totalVariableDebt', availableLiquidity + totalVariableDebt + deficit + supplyAmount)
 ```
 
 Where `rayDiv(a, b) = (a × RAY + b/2) / b`
 
-Result is in ray units (e.g., 0.8 × 10^27 = 80% utilization).
+Results are in ray units (e.g., 0.8 × 10^27 = 80% utilization).
+
+**Note:** The externally displayed "utilization" is `borrowUsageRate` (without deficit). The `supplyUsageRate` is higher when deficit exists, diluting supplier yields.
 
 ### 4. Compute Variable Borrow Rate (APR)
 
-Two-slope linear model with kink at `optimalUsageRate`:
+Two-slope linear model with kink at `optimalUsageRate`, using **borrowUsageRate**:
 
-**If `utilizationRate ≤ optimalUsageRate`:**
+**If `borrowUsageRate ≤ optimalUsageRate`:**
 ```
-normalizedUsage = rayDiv(utilizationRate, optimalUsageRate)
+normalizedUsage = rayDiv(borrowUsageRate, optimalUsageRate)
 variableBorrowRate = baseVariableBorrowRate + rayMul(variableRateSlope1, normalizedUsage)
 ```
 
-**If `utilizationRate > optimalUsageRate`:**
+**If `borrowUsageRate > optimalUsageRate`:**
 ```
-excessRatio = rayDiv(utilizationRate - optimalUsageRate, RAY - optimalUsageRate)
+excessRatio = rayDiv(borrowUsageRate - optimalUsageRate, RAY - optimalUsageRate)
 variableBorrowRate = baseVariableBorrowRate + variableRateSlope1 + rayMul(variableRateSlope2, excessRatio)
 ```
 
@@ -73,16 +82,18 @@ Result is annual rate in ray units.
 
 ### 5. Compute Liquidity Rate (Supply APR)
 
+Uses **supplyUsageRate** (which includes deficit):
+
 ```
 liquidityRate = percentMul(
-  rayMul(variableBorrowRate, utilizationRate),
+  rayMul(variableBorrowRate, supplyUsageRate),
   PERCENTAGE_FACTOR - reserveFactor
 )
 ```
 
 Where `percentMul(v, pct) = (v × pct + 5000) / 10000`
 
-This is the interest paid to suppliers after protocol fee.
+This is the interest paid to suppliers after protocol fee. When deficit exists, `supplyUsageRate < borrowUsageRate`, resulting in lower supplier yields.
 
 ### 6. Convert APR to APY (compound)
 

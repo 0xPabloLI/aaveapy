@@ -802,15 +802,15 @@ export const useSharedRateSimulations = ({
         tokenPriceLoading: tokenPriceLoadingById[reserveId] ?? false,
         reserveRateInputLoading: rateInputsQuery.isPending || rateInputsQuery.isFetching,
         reserveRateInputError: rateInputsQuery.error,
-        forecastLoading: allCampaignIds.length > 0 && (forecastQuery.isPending || forecastQuery.isFetching),
+        forecastLoading: hasAnyInput && (forecastQuery.isPending || forecastQuery.isFetching),
         forecastErrors,
         hasRateInput: Boolean(reserveRateInput),
       };
       return acc;
     }, {});
   }, [
-    allCampaignIds.length,
     borrowInput,
+    hasAnyInput,
     forecastErrors,
     forecastQuery.isFetching,
     forecastQuery.isPending,
@@ -834,7 +834,7 @@ export const useSharedRateSimulations = ({
     simulationsById,
     rateInputsSnapshotLoading: rateInputsQuery.isPending || rateInputsQuery.isFetching,
     rateInputsSnapshotError: rateInputsQuery.error,
-    forecastLoading: allCampaignIds.length > 0 && (forecastQuery.isPending || forecastQuery.isFetching),
+    forecastLoading: hasAnyInput && (forecastQuery.isPending || forecastQuery.isFetching),
     forecastErrors,
   };
 };

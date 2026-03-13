@@ -114,16 +114,24 @@ export interface NativeRateSimulation {
 
 function computeRates(
   rateInput: ReserveRateInput,
-  utilizationDenominator: bigint,
+  borrowUsageDenominator: bigint,
+  supplyUsageDenominator: bigint,
   totalVariableDebt: bigint,
   addedLiquidityRaw: bigint,
   addedBorrowRaw: bigint,
 ): NativeRateSimulation {
-  const utilizationRate =
-    utilizationDenominator > 0n ? clamp(rayDiv(totalVariableDebt, utilizationDenominator), 0n, RAY) : 0n;
+  // borrowUsageRate: used for borrow rate calculation, does NOT include deficit
+  // This is what external systems display as "utilization"
+  const borrowUsageRate =
+    borrowUsageDenominator > 0n ? clamp(rayDiv(totalVariableDebt, borrowUsageDenominator), 0n, RAY) : 0n;
+
+  // supplyUsageRate: used for liquidity rate calculation, includes deficit
+  // Suppliers' effective yield is diluted by protocol deficit
+  const supplyUsageRate =
+    supplyUsageDenominator > 0n ? clamp(rayDiv(totalVariableDebt, supplyUsageDenominator), 0n, RAY) : 0n;
 
   const variableBorrowRate = calculateVariableBorrowRate(
-    utilizationRate,
+    borrowUsageRate,
     toBigInt(rateInput.optimalUsageRate),
     toBigInt(rateInput.baseVariableBorrowRate),
     toBigInt(rateInput.variableRateSlope1),
@@ -132,13 +140,13 @@ function computeRates(
 
   const reserveFactorBps = clamp(toBigInt(rateInput.reserveFactor), 0n, PERCENTAGE_FACTOR);
   const liquidityRate = percentMul(
-    rayMul(variableBorrowRate, utilizationRate),
+    rayMul(variableBorrowRate, supplyUsageRate),
     PERCENTAGE_FACTOR - reserveFactorBps
   );
 
   return {
-    utilizationRateRay: utilizationRate.toString(),
-    utilizationRatePercent: rayToPercent(utilizationRate),
+    utilizationRateRay: borrowUsageRate.toString(),
+    utilizationRatePercent: rayToPercent(borrowUsageRate),
     supplyAprPercent: rayToPercent(liquidityRate),
     borrowAprPercent: rayToPercent(variableBorrowRate),
     supplyApyPercent: rayToApyPercent(liquidityRate),
@@ -166,11 +174,17 @@ export function simulateNativeRatesAfterActions(
   const variableBorrowIndex = toBigInt(rateInput.variableBorrowIndex);
   const baseTotalVariableDebt = rayMul(totalScaledVariableDebt, variableBorrowIndex);
   const baseDeficit = toBigInt(rateInput.deficit);
-  const denominatorBeforeClamp = baseAvailableLiquidity + baseTotalVariableDebt + baseDeficit + addedLiquidity;
-  const utilizationDenominator = denominatorBeforeClamp > 0n ? denominatorBeforeClamp : 0n;
-  const totalVariableDebt = rayMul(totalScaledVariableDebt, variableBorrowIndex) + addedBorrow;
+  const totalVariableDebt = baseTotalVariableDebt + addedBorrow;
 
-  return computeRates(rateInput, utilizationDenominator, totalVariableDebt, addedLiquidity, addedBorrow);
+  // borrowUsageDenominator: does NOT include deficit (used for borrow rate, external utilization display)
+  const borrowUsageDenominatorRaw = baseAvailableLiquidity + baseTotalVariableDebt + addedLiquidity;
+  const borrowUsageDenominator = borrowUsageDenominatorRaw > 0n ? borrowUsageDenominatorRaw : 0n;
+
+  // supplyUsageDenominator: includes deficit (used for liquidity rate calculation)
+  const supplyUsageDenominatorRaw = baseAvailableLiquidity + baseTotalVariableDebt + baseDeficit + addedLiquidity;
+  const supplyUsageDenominator = supplyUsageDenominatorRaw > 0n ? supplyUsageDenominatorRaw : 0n;
+
+  return computeRates(rateInput, borrowUsageDenominator, supplyUsageDenominator, totalVariableDebt, addedLiquidity, addedBorrow);
 }
 
 export function simulateNativeRatesAfterSupply(
