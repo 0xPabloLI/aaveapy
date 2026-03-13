@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Clock } from 'lucide-react';
+import { Clock, Send } from 'lucide-react';
 import { formatRelativeTime } from '@/lib/formatters';
 import {
   Popover,
@@ -7,6 +7,19 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import ThemeToggle from '@/components/ThemeToggle';
+
+const TelegramLink = () => (
+  <a
+    href="https://t.me/aaveapy"
+    target="_blank"
+    rel="noopener noreferrer"
+    aria-label="Join Telegram channel @aaveapy"
+    title="Join @aaveapy on Telegram"
+    className="flex items-center justify-center w-[1.75rem] h-[1.75rem] rounded-full border border-border/40 bg-card/60 text-muted-foreground transition-colors hover:bg-[hsl(200_100%_45%/0.12)] hover:text-[hsl(200_100%_45%)] hover:border-[hsl(200_100%_45%/0.4)] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+  >
+    <Send className="w-3.5 h-3.5" />
+  </a>
+);
 
 interface HeaderProps {
   lastUpdated?: string;
@@ -62,7 +75,8 @@ const Header = ({ lastUpdated }: HeaderProps) => {
         </div>
         
         {/* Mobile: Theme toggle aligned with title */}
-        <div className="md:hidden shrink-0">
+        <div className="md:hidden shrink-0 flex items-center gap-[var(--ds-space-2)]">
+          <TelegramLink />
           <ThemeToggle />
         </div>
       </div>
@@ -77,7 +91,8 @@ const Header = ({ lastUpdated }: HeaderProps) => {
           </div>
         )}
         
-        {/* Desktop: Theme Toggle after updated text */}
+        {/* Desktop: Telegram + Theme Toggle */}
+        <TelegramLink />
         <ThemeToggle />
       </div>
     </header>
