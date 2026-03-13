@@ -91,7 +91,8 @@ const Header = ({ lastUpdated }: HeaderProps) => {
           </div>
         )}
         
-        {/* Desktop: Theme Toggle after updated text */}
+        {/* Desktop: Telegram + Theme Toggle */}
+        <TelegramLink />
         <ThemeToggle />
       </div>
     </header>
