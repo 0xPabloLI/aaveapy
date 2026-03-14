@@ -1,4 +1,3 @@
-import { AlertTriangle } from 'lucide-react';
 import { formatPercent, formatSpread, formatReserveSizeUsd } from '@/lib/formatters';
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
 import type { RateSimulationResult } from '@/hooks/useRateSimulation';
@@ -19,7 +18,6 @@ interface SimulationSubRowProps {
   borrowInput: string;
   inputMode?: 'usd' | 'token';
   compact?: boolean;
-  onCorrectSupplyInput?: (correctedValue: string) => void;
 }
 
 const formatDelta = (value: number | null) => {
@@ -28,15 +26,9 @@ const formatDelta = (value: number | null) => {
   return `${prefix}${value.toFixed(2)}%`;
 };
 
-const formatUsdDelta = (value: number | null) => {
-  if (value === null || Number.isNaN(value)) return '—';
-  const prefix = value > 0 ? '+' : '';
-  return `${prefix}${formatReserveSizeUsd(value)}`;
-};
-
-const deltaClass = (value: number | null, accentClass: string) => {
-  if (value === null || Number.isNaN(value)) return 'text-muted-foreground';
-  return accentClass;
+const deltaClass = (value: number | null, positiveClass: string) => {
+  if (value === null || Number.isNaN(value) || value === 0) return 'text-muted-foreground';
+  return value > 0 ? positiveClass : 'text-rose-600';
 };
 
 const formatMetricValue = (value: number | null, kind: 'rate' | 'spread' = 'rate') =>
@@ -44,77 +36,6 @@ const formatMetricValue = (value: number | null, kind: 'rate' | 'spread' = 'rate
 
 const hasMeaningfulValue = (value: number | null) =>
   value !== null && Number.isFinite(value) && Math.abs(value) >= 0.005;
-
-const MarketMetricCard = ({
-  title,
-  current,
-  after,
-  delta,
-  accentClass,
-  compact = false,
-}: {
-  title: string;
-  current: number | null;
-  after: number | null;
-  delta: number | null;
-  accentClass: string;
-  compact?: boolean;
-}) => (
-  <div className="rounded-lg border border-border/60 bg-background/80 px-[var(--ds-space-3)] py-[var(--ds-space-2)]">
-    <div className={`flex ${compact ? 'flex-col gap-[var(--ds-space-1)]' : 'items-end justify-between'}`}>
-      <span className="ds-text-11 uppercase tracking-wide text-muted-foreground">{title}</span>
-      <span className={`ds-text-11 font-semibold tabular-nums ${deltaClass(delta, accentClass)}`}>
-        {formatUsdDelta(delta)}
-      </span>
-    </div>
-    <div className={`mt-[var(--ds-space-1)] grid ${compact ? 'grid-cols-1 gap-[var(--ds-space-1)]' : 'grid-cols-2 gap-[var(--ds-space-2)]'}`}>
-      <div>
-        <p className="ds-text-10 text-muted-foreground">Current</p>
-        <p className={`ds-text-14 font-bold tabular-nums ${accentClass}`}>{formatReserveSizeUsd(current)}</p>
-      </div>
-      <div>
-        <p className="ds-text-10 text-muted-foreground">After</p>
-        <p className={`ds-text-14 font-bold tabular-nums ${after === null ? 'text-muted-foreground' : accentClass}`}>
-          {after === null ? '—' : formatReserveSizeUsd(after)}
-        </p>
-      </div>
-    </div>
-  </div>
-);
-
-const StaticMetricCard = ({
-  title,
-  value,
-  unit = '',
-  accentClass = 'text-foreground',
-  warning = false,
-  subtitle,
-}: {
-  title: string;
-  value: number | null;
-  unit?: string;
-  accentClass?: string;
-  warning?: boolean;
-  subtitle?: string;
-}) => (
-  <div className={`rounded-lg border px-[var(--ds-space-3)] py-[var(--ds-space-2)] ${
-    warning 
-      ? 'border-amber-400/60 bg-amber-50/50 dark:bg-amber-950/20' 
-      : 'border-border/60 bg-background/80'
-  }`}>
-    <p className={`ds-text-10 uppercase tracking-wide ${warning ? 'text-amber-700 dark:text-amber-400' : 'text-muted-foreground'}`}>
-      {title}
-    </p>
-    <p className={`mt-[var(--ds-space-0-5)] ds-text-14 font-bold tabular-nums ${warning ? 'text-amber-700 dark:text-amber-400' : accentClass}`}>
-      {value !== null ? (unit === '$' ? formatReserveSizeUsd(value) : `${value.toFixed(2)}%`) : '—'}
-    </p>
-    {subtitle && (
-      <p className={`ds-text-10 ${warning ? 'text-amber-600 dark:text-amber-500' : 'text-muted-foreground'}`}>
-        {subtitle}
-      </p>
-    )}
-  </div>
-);
 
 const ValueCard = ({
   title,
@@ -185,8 +106,8 @@ const BreakdownRow = ({
       ) : (
         <span className={`ds-text-11 truncate ${accentClass ?? 'text-muted-foreground'}`}>{label}</span>
       )}
-      <span className={`ds-text-11 tabular-nums text-right ${accentClass ?? 'text-muted-foreground'}`}>{formatPercent(current)}</span>
-      <span className={`ds-text-11 tabular-nums text-right ${after === null ? 'text-muted-foreground' : (accentClass ?? 'text-foreground')}`}>
+      <span className="ds-text-11 tabular-nums text-right text-muted-foreground">{formatPercent(current)}</span>
+      <span className={`ds-text-11 tabular-nums text-right ${after === null ? 'text-muted-foreground' : 'text-foreground'}`}>
         {formatPercent(after)}
       </span>
       <span className={`ds-text-11 tabular-nums text-right ${deltaClass(delta, accentClass ?? 'text-foreground')}`}>{formatDelta(delta)}</span>
@@ -231,7 +152,6 @@ const SimulationSubRow = ({
   borrowInput,
   inputMode = 'usd',
   compact = false,
-  onCorrectSupplyInput,
 }: SimulationSubRowProps) => {
   const rateLabel = isApy ? 'APY' : 'APR';
   const showPriceMissingNotice =
@@ -243,70 +163,19 @@ const SimulationSubRow = ({
 
   const aaveUrl = buildAaveReserveUrl({ marketName: reserve.marketName, tokenAddress: reserve.tokenAddress });
 
-  const { supplyCapExceeded, availableSupplyRoomUsd, supplyCapExceededByUsd } = simulation.marketMetrics;
-
-  const handleCorrectToMaxSupply = () => {
-    if (!onCorrectSupplyInput || availableSupplyRoomUsd === null) return;
-    if (inputMode === 'usd') {
-      const corrected = Math.max(0, Math.floor(availableSupplyRoomUsd));
-      onCorrectSupplyInput(corrected.toLocaleString('en-US'));
-    } else if (simulation.tokenPrice && simulation.tokenPrice > 0) {
-      const correctedTokens = Math.max(0, availableSupplyRoomUsd / simulation.tokenPrice);
-      const formatted = correctedTokens >= 1 
-        ? correctedTokens.toLocaleString('en-US', { maximumFractionDigits: 2 })
-        : correctedTokens.toPrecision(4);
-      onCorrectSupplyInput(formatted);
-    }
-  };
-
-  const { supplyCapUsd } = simulation.marketMetrics;
-  const currentSupplySizeUsd =
+  const currentReserveSizeUsd =
     reserve.reserveSizeUsd != null && Number.isFinite(reserve.reserveSizeUsd) ? reserve.reserveSizeUsd : null;
-  
-  // Cap the after size at supply cap when input exceeds available room
-  const rawAfterSupplySizeUsd =
-    currentSupplySizeUsd !== null && simulation.supply.inputUsd > 0
-      ? currentSupplySizeUsd + simulation.supply.inputUsd
+  const afterReserveSizeUsd =
+    currentReserveSizeUsd !== null
+      ? currentReserveSizeUsd + simulation.supply.inputUsd
       : null;
-  const afterSupplySizeUsd =
-    rawAfterSupplySizeUsd !== null && supplyCapUsd !== null && supplyCapUsd > 0
-      ? Math.min(rawAfterSupplySizeUsd, supplyCapUsd)
-      : rawAfterSupplySizeUsd;
-  
-  // Calculate capped supply input for liquidity calculation
-  const cappedSupplyInputUsd =
-    supplyCapExceeded && availableSupplyRoomUsd !== null
-      ? availableSupplyRoomUsd
-      : simulation.supply.inputUsd;
-  
-  // Recalculate liquidity with capped input
-  const cappedLiquidityAfter =
-    simulation.marketMetrics.availableLiquidityUsd !== null && simulation.supply.hasInput
-      ? simulation.marketMetrics.availableLiquidityUsd + cappedSupplyInputUsd - simulation.borrow.inputUsd
-      : simulation.marketMetrics.availableLiquidityUsdAfter;
-  const cappedLiquidityDelta =
-    cappedLiquidityAfter !== null && simulation.marketMetrics.availableLiquidityUsd !== null
-      ? cappedLiquidityAfter - simulation.marketMetrics.availableLiquidityUsd
+  const deltaReserveSizePct =
+    currentReserveSizeUsd !== null &&
+    currentReserveSizeUsd !== 0 &&
+    afterReserveSizeUsd !== null &&
+    Number.isFinite(afterReserveSizeUsd)
+      ? ((afterReserveSizeUsd - currentReserveSizeUsd) / currentReserveSizeUsd) * 100
       : null;
-
-  // Build supply incentive sources list
-  const supplyIncentiveSources = [
-    { label: 'Protocol Incentive', ...simulation.supply.sources.protocol },
-    { label: 'ACI Incentive', ...simulation.supply.sources.merit },
-    { label: 'Merkl Incentive', ...simulation.supply.sources.merkl },
-    { label: 'Brevis Incentive', ...simulation.supply.sources.brevis },
-  ].filter((src) => hasMeaningfulValue(src.current) || hasMeaningfulValue(src.after));
-
-  // If only one incentive source, show it directly instead of "Incentive total"
-  const supplyIncentiveRow = supplyIncentiveSources.length === 1
-    ? { ...supplyIncentiveSources[0], accentClass: 'ds-text-emerald-600' }
-    : {
-        label: 'Incentive total',
-        current: simulation.supply.currentIncentive,
-        after: simulation.supply.afterIncentive,
-        delta: simulation.supply.deltaIncentive,
-        accentClass: 'ds-text-emerald-600',
-      };
 
   const supplyRows = [
     {
@@ -317,32 +186,38 @@ const SimulationSubRow = ({
       accentClass: 'ds-text-emerald-600',
       href: aaveUrl,
     },
-    // Only show incentive row if there's meaningful incentive data
-    ...(hasMeaningfulValue(simulation.supply.currentIncentive) || hasMeaningfulValue(simulation.supply.afterIncentive)
-      ? [supplyIncentiveRow]
-      : []),
-    // Show individual sources only if showing "Incentive total" (multiple sources)
-    ...(supplyIncentiveSources.length > 1 ? supplyIncentiveSources : []),
-  ];
-
-  // Build borrow incentive sources list
-  const borrowIncentiveSources = [
-    { label: 'Protocol Incentive', ...simulation.borrow.sources.protocol },
-    { label: 'ACI Incentive', ...simulation.borrow.sources.merit },
-    { label: 'Merkl Incentive', ...simulation.borrow.sources.merkl },
-    { label: 'Brevis Incentive', ...simulation.borrow.sources.brevis },
-  ].filter((src) => hasMeaningfulValue(src.current) || hasMeaningfulValue(src.after));
-
-  // If only one incentive source, show it directly instead of "Incentive total"
-  const borrowIncentiveRow = borrowIncentiveSources.length === 1
-    ? { ...borrowIncentiveSources[0], accentClass: 'ds-text-brand-cyan' }
-    : {
-        label: 'Incentive total',
-        current: simulation.borrow.currentIncentive,
-        after: simulation.borrow.afterIncentive,
-        delta: simulation.borrow.deltaIncentive,
-        accentClass: 'ds-text-brand-cyan',
-      };
+    {
+      label: 'Incentive total',
+      current: simulation.supply.currentIncentive,
+      after: simulation.supply.afterIncentive,
+      delta: simulation.supply.deltaIncentive,
+      accentClass: 'ds-text-emerald-600',
+    },
+    {
+      label: 'Protocol Incentive',
+      current: simulation.supply.sources.protocol.current,
+      after: simulation.supply.sources.protocol.after,
+      delta: simulation.supply.sources.protocol.delta,
+    },
+    {
+      label: 'ACI',
+      current: simulation.supply.sources.merit.current,
+      after: simulation.supply.sources.merit.after,
+      delta: simulation.supply.sources.merit.delta,
+    },
+    {
+      label: 'Merkl',
+      current: simulation.supply.sources.merkl.current,
+      after: simulation.supply.sources.merkl.after,
+      delta: simulation.supply.sources.merkl.delta,
+    },
+    {
+      label: 'Brevis',
+      current: simulation.supply.sources.brevis.current,
+      after: simulation.supply.sources.brevis.after,
+      delta: simulation.supply.sources.brevis.delta,
+    },
+  ].filter((row, index) => index < 2 || hasMeaningfulValue(row.current) || hasMeaningfulValue(row.after));
 
   const borrowRows = [
     {
@@ -353,13 +228,38 @@ const SimulationSubRow = ({
       accentClass: 'ds-text-brand-cyan',
       href: aaveUrl,
     },
-    // Only show incentive row if there's meaningful incentive data
-    ...(hasMeaningfulValue(simulation.borrow.currentIncentive) || hasMeaningfulValue(simulation.borrow.afterIncentive)
-      ? [borrowIncentiveRow]
-      : []),
-    // Show individual sources only if showing "Incentive total" (multiple sources)
-    ...(borrowIncentiveSources.length > 1 ? borrowIncentiveSources : []),
-  ];
+    {
+      label: 'Incentive total',
+      current: simulation.borrow.currentIncentive,
+      after: simulation.borrow.afterIncentive,
+      delta: simulation.borrow.deltaIncentive,
+      accentClass: 'ds-text-brand-cyan',
+    },
+    {
+      label: 'Protocol Incentive',
+      current: simulation.borrow.sources.protocol.current,
+      after: simulation.borrow.sources.protocol.after,
+      delta: simulation.borrow.sources.protocol.delta,
+    },
+    {
+      label: 'ACI',
+      current: simulation.borrow.sources.merit.current,
+      after: simulation.borrow.sources.merit.after,
+      delta: simulation.borrow.sources.merit.delta,
+    },
+    {
+      label: 'Merkl',
+      current: simulation.borrow.sources.merkl.current,
+      after: simulation.borrow.sources.merkl.after,
+      delta: simulation.borrow.sources.merkl.delta,
+    },
+    {
+      label: 'Brevis',
+      current: simulation.borrow.sources.brevis.current,
+      after: simulation.borrow.sources.brevis.after,
+      delta: simulation.borrow.sources.brevis.delta,
+    },
+  ].filter((row, index) => index < 2 || hasMeaningfulValue(row.current) || hasMeaningfulValue(row.after));
 
   return (
     <div className="rounded-xl border border-border/70 bg-muted/20 p-[var(--ds-space-3)]">
@@ -372,65 +272,32 @@ const SimulationSubRow = ({
         )}
       </div>
 
-      {/* Supply Cap Exceeded Warning */}
-      {supplyCapExceeded && (
-        <div className="mt-[var(--ds-space-2)] flex items-center gap-[var(--ds-space-2)] rounded-lg border border-amber-400/60 bg-amber-50/80 dark:bg-amber-950/30 px-[var(--ds-space-3)] py-[var(--ds-space-2)]">
-          <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
-          <div className="flex-1 min-w-0">
-            <p className="ds-text-12 font-medium text-amber-800 dark:text-amber-300">
-              Input exceeds available room by {formatReserveSizeUsd(supplyCapExceededByUsd)}
-            </p>
-            <p className="ds-text-11 text-amber-700 dark:text-amber-400">
-              Max suppliable: {formatReserveSizeUsd(availableSupplyRoomUsd)}
+      {currentReserveSizeUsd !== null && (
+        <div className={`mt-[var(--ds-space-3)] grid ${compact ? 'grid-cols-1' : 'grid-cols-3'} gap-[var(--ds-space-2)]`}>
+          <div className="rounded-lg border border-border/60 bg-background/80 px-[var(--ds-space-3)] py-[var(--ds-space-2)]">
+            <p className="ds-text-10 uppercase tracking-wide text-muted-foreground">Size (current)</p>
+            <p className="mt-[var(--ds-space-0-5)] ds-text-14 font-bold text-foreground">
+              {formatReserveSizeUsd(currentReserveSizeUsd)}
             </p>
           </div>
-          {onCorrectSupplyInput && availableSupplyRoomUsd !== null && availableSupplyRoomUsd > 0 && (
-            <button
-              type="button"
-              onClick={handleCorrectToMaxSupply}
-              className="shrink-0 px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-md border border-amber-500/50 bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-200 ds-text-11 font-medium hover:bg-amber-200 dark:hover:bg-amber-800/50 transition-colors"
+          <div className="rounded-lg border border-border/60 bg-background/80 px-[var(--ds-space-3)] py-[var(--ds-space-2)]">
+            <p className="ds-text-10 uppercase tracking-wide text-muted-foreground">Size (after)</p>
+            <p className={`mt-[var(--ds-space-0-5)] ds-text-14 font-bold ${afterReserveSizeUsd === null ? 'text-muted-foreground' : 'text-foreground'}`}>
+              {afterReserveSizeUsd === null ? '—' : formatReserveSizeUsd(afterReserveSizeUsd)}
+            </p>
+          </div>
+          <div className="rounded-lg border border-border/60 bg-background/80 px-[var(--ds-space-3)] py-[var(--ds-space-2)]">
+            <p className="ds-text-10 uppercase tracking-wide text-muted-foreground">Size change</p>
+            <p
+              className={`mt-[var(--ds-space-0-5)] ds-text-14 font-bold ${
+                deltaClass(deltaReserveSizePct, 'ds-text-emerald-600')
+              }`}
             >
-              Adjust to max
-            </button>
-          )}
+              {formatDelta(deltaReserveSizePct)}
+            </p>
+          </div>
         </div>
       )}
-
-      {/* Market Metrics Section */}
-      <div className={`mt-[var(--ds-space-3)] grid ${compact ? 'grid-cols-1' : 'grid-cols-2 lg:grid-cols-4'} gap-[var(--ds-space-2)]`}>
-        <MarketMetricCard
-          title="Supply Size"
-          current={currentSupplySizeUsd}
-          after={afterSupplySizeUsd}
-          delta={afterSupplySizeUsd !== null && currentSupplySizeUsd !== null ? afterSupplySizeUsd - currentSupplySizeUsd : null}
-          accentClass="ds-text-emerald-600"
-          compact={compact}
-        />
-        <MarketMetricCard
-          title="Liquidity"
-          current={simulation.marketMetrics.availableLiquidityUsd}
-          after={cappedLiquidityAfter}
-          delta={cappedLiquidityDelta}
-          accentClass="ds-text-purple-600"
-          compact={compact}
-        />
-        <MarketMetricCard
-          title="Total Borrowed"
-          current={simulation.marketMetrics.totalBorrowedUsd}
-          after={simulation.marketMetrics.totalBorrowedUsdAfter}
-          delta={simulation.marketMetrics.totalBorrowedUsdDelta}
-          accentClass="ds-text-brand-cyan"
-          compact={compact}
-        />
-        <StaticMetricCard
-          title="Supply Cap"
-          value={simulation.marketMetrics.supplyCapUsd}
-          unit="$"
-          accentClass="text-muted-foreground"
-          warning={supplyCapExceeded}
-          subtitle={supplyCapExceeded ? `Exceeded by ${formatReserveSizeUsd(supplyCapExceededByUsd)}` : undefined}
-        />
-      </div>
 
       <div className={`mt-[var(--ds-space-3)] grid ${compact ? 'grid-cols-1' : 'grid-cols-4'} gap-[var(--ds-space-2)]`}>
         <ValueCard
@@ -463,7 +330,7 @@ const SimulationSubRow = ({
           current={simulation.utilization.current}
           after={simulation.utilization.after}
           delta={simulation.utilization.delta}
-          accentClass="text-foreground"
+          accentClass="text-amber-600"
           compact={compact}
         />
       </div>
@@ -472,22 +339,6 @@ const SimulationSubRow = ({
         <BreakdownCard title="Supply breakdown" rows={supplyRows} />
         <BreakdownCard title="Borrow breakdown" rows={borrowRows} />
       </div>
-
-      {/* Reserve Parameters */}
-      {(simulation.marketMetrics.reserveFactor !== null || simulation.marketMetrics.optimalUtilization !== null) && (
-        <div className={`mt-[var(--ds-space-2)] grid ${compact ? 'grid-cols-1' : 'grid-cols-4'} gap-[var(--ds-space-2)]`}>
-          <StaticMetricCard
-            title="Reserve Factor"
-            value={simulation.marketMetrics.reserveFactor}
-            accentClass="text-muted-foreground"
-          />
-          <StaticMetricCard
-            title="Optimal Utilization"
-            value={simulation.marketMetrics.optimalUtilization}
-            accentClass="text-amber-600"
-          />
-        </div>
-      )}
 
       <div className="mt-[var(--ds-space-2)] space-y-[var(--ds-space-1)]">
         {simulation.reserveRateInputLoading && !showEmptyStateNote && (

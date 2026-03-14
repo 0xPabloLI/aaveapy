@@ -1,6 +1,5 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useQueries, useQuery } from '@tanstack/react-query';
-import { useSideDataMeta } from '@/hooks/useSideDataMeta';
 import {
   apyToApr,
   calculateTotalBorrowApy,
@@ -12,10 +11,11 @@ import {
   convertAprToApy,
 } from '@/lib/formatters';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
-import { getCachedRateInputsSnapshotEntry } from '@/lib/cache';
+import { getCachedRateInputsSnapshotEntry, getCachedMerklForecastStatesEntry, setCachedMerklForecastStates } from '@/lib/cache';
 import { simulateNativeRatesAfterActions } from '@/lib/interestRateCalculator';
 import { forecastWithTVL } from '@/lib/merklForecast';
 import { shouldSurfaceForecastError } from '@/lib/merklForecastErrors';
+import { fetchMerklForecastStates } from '@/lib/merklForecastApi';
 import { forecastMeritAprPercent } from '@/lib/meritForecast';
 import { parseNumberInput } from '@/lib/numberFormat';
 import { resolveForecastTokenPrice, resolveForecastTokenPriceWithBackup } from '@/lib/tokenPriceResolver';
@@ -38,6 +38,7 @@ import {
 } from '@/hooks/useReserveRateInputs';
 
 const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const FORECAST_STATES_QUERY_KEY = ['merkl-forecast-states'] as const;
 const FORECAST_TOKEN_PRICE_QUERY_KEY = ['forecast-token-price'] as const;
 
 const parseCampaignBoundaryMs = (value: string | undefined, boundary: 'start' | 'end'): number | null => {
@@ -157,21 +158,6 @@ export interface SimulationLane {
   };
 }
 
-export interface MarketMetrics {
-  availableLiquidityUsd: number | null;
-  availableLiquidityUsdAfter: number | null;
-  availableLiquidityUsdDelta: number | null;
-  totalBorrowedUsd: number | null;
-  totalBorrowedUsdAfter: number | null;
-  totalBorrowedUsdDelta: number | null;
-  supplyCapUsd: number | null;
-  reserveFactor: number | null;
-  optimalUtilization: number | null;
-  availableSupplyRoomUsd: number | null;
-  supplyCapExceeded: boolean;
-  supplyCapExceededByUsd: number | null;
-}
-
 export interface RateSimulationComputedResult {
   tokenPrice?: number;
   supply: SimulationLane;
@@ -186,9 +172,7 @@ export interface RateSimulationComputedResult {
     current: number | null;
     after: number | null;
     delta: number | null;
-    optimal: number | null;
   };
-  marketMetrics: MarketMetrics;
   forecastUnavailableCampaignCount: number;
 }
 
@@ -615,7 +599,6 @@ export function buildRateSimulationResult({
 
   const utilizationCurrent = currentNativeSimulation?.utilizationRatePercent ?? null;
   const utilizationAfter = combinedNativeSimulation?.utilizationRatePercent ?? null;
-  const utilizationOptimal = currentNativeSimulation?.optimalUtilizationPercent ?? null;
   const forecastUnavailableCampaignCount = hasAnyInput
     ? Array.from(
         new Set([
@@ -624,96 +607,6 @@ export function buildRateSimulationResult({
         ])
       ).filter((id) => !forecastStates[id]).length
     : 0;
-
-  const RAY_SCALE = 1e27;
-  const computeMarketMetrics = (): MarketMetrics => {
-    const supplyCapUsd = reserve.supplyCapUsd ?? null;
-    const currentReserveSizeUsd = reserve.reserveSizeUsd ?? null;
-    
-    const computeSupplyCapFields = (afterSizeUsd: number | null) => {
-      if (supplyCapUsd === null || supplyCapUsd <= 0) {
-        return {
-          availableSupplyRoomUsd: null,
-          supplyCapExceeded: false,
-          supplyCapExceededByUsd: null,
-        };
-      }
-      const availableRoom = currentReserveSizeUsd !== null 
-        ? Math.max(supplyCapUsd - currentReserveSizeUsd, 0)
-        : null;
-      const exceeded = afterSizeUsd !== null && afterSizeUsd > supplyCapUsd;
-      const exceededBy = exceeded && afterSizeUsd !== null ? afterSizeUsd - supplyCapUsd : null;
-      return {
-        availableSupplyRoomUsd: availableRoom,
-        supplyCapExceeded: exceeded,
-        supplyCapExceededByUsd: exceededBy,
-      };
-    };
-
-    if (!reserveRateInput || !tokenPrice) {
-      const afterSizeUsd = currentReserveSizeUsd !== null ? currentReserveSizeUsd + supplyInputUsd : null;
-      const capFields = computeSupplyCapFields(afterSizeUsd);
-      return {
-        availableLiquidityUsd: null,
-        availableLiquidityUsdAfter: null,
-        availableLiquidityUsdDelta: null,
-        totalBorrowedUsd: null,
-        totalBorrowedUsdAfter: null,
-        totalBorrowedUsdDelta: null,
-        supplyCapUsd,
-        reserveFactor: null,
-        optimalUtilization: null,
-        ...capFields,
-      };
-    }
-
-    const decimals = reserveRateInput.decimals ?? 18;
-    const scale = Math.pow(10, decimals);
-
-    const availableLiquidityRaw = Number(reserveRateInput.availableLiquidity) / scale;
-    const availableLiquidityUsd = availableLiquidityRaw * tokenPrice;
-
-    const totalScaledDebt = Number(reserveRateInput.totalScaledVariableDebt) / scale;
-    const variableBorrowIndex = Number(reserveRateInput.variableBorrowIndex) / RAY_SCALE;
-    const totalBorrowedRaw = totalScaledDebt * variableBorrowIndex;
-    const totalBorrowedUsd = totalBorrowedRaw * tokenPrice;
-
-    const reserveFactorRaw = Number(reserveRateInput.reserveFactor);
-    const reserveFactor = reserveFactorRaw > 0 ? (reserveFactorRaw / 10000) * 100 : null;
-
-    const optimalUsageRateRaw = Number(reserveRateInput.optimalUsageRate);
-    const optimalUtilization = optimalUsageRateRaw > 0 ? (optimalUsageRateRaw / RAY_SCALE) * 100 : null;
-
-    const availableLiquidityUsdAfter = hasAnyInput
-      ? availableLiquidityUsd + supplyInputUsd - borrowInputUsd
-      : null;
-    const totalBorrowedUsdAfter = hasAnyInput
-      ? totalBorrowedUsd + borrowInputUsd
-      : null;
-
-    const totalSupplyUsd = availableLiquidityUsd + totalBorrowedUsd;
-    const afterSupplyUsd = hasAnyInput ? totalSupplyUsd + supplyInputUsd : null;
-    const capFields = computeSupplyCapFields(afterSupplyUsd);
-
-    return {
-      availableLiquidityUsd,
-      availableLiquidityUsdAfter,
-      availableLiquidityUsdDelta: availableLiquidityUsdAfter !== null
-        ? availableLiquidityUsdAfter - availableLiquidityUsd
-        : null,
-      totalBorrowedUsd,
-      totalBorrowedUsdAfter,
-      totalBorrowedUsdDelta: totalBorrowedUsdAfter !== null
-        ? totalBorrowedUsdAfter - totalBorrowedUsd
-        : null,
-      supplyCapUsd,
-      reserveFactor,
-      optimalUtilization,
-      ...capFields,
-    };
-  };
-
-  const marketMetrics = computeMarketMetrics();
 
   return {
     tokenPrice,
@@ -732,9 +625,7 @@ export function buildRateSimulationResult({
         utilizationCurrent !== null && utilizationAfter !== null
           ? utilizationAfter - utilizationCurrent
           : null,
-      optimal: utilizationOptimal,
     },
-    marketMetrics,
     forecastUnavailableCampaignCount,
   };
 }
@@ -852,27 +743,44 @@ export const useSharedRateSimulations = ({
     return map;
   }, [needsTokenPrice, priceQueries, reserves, tokenPrices]);
 
-  // Get forecast data directly from side-data-meta (prefetched in App.tsx)
-  const sideDataMetaQuery = useSideDataMeta(QUERY_STALE_TIMES.sideDataMeta);
+  type ForecastCachePayload = {
+    states: Record<string, MerklForecastStateResponse>;
+    errors: Record<string, string>;
+  };
+  const forecastCachedEntry = getCachedMerklForecastStatesEntry<ForecastCachePayload>();
 
-  const { forecastStates, forecastErrors } = useMemo(() => {
-    const forecast = sideDataMetaQuery.data?.forecast;
-    if (!forecast) return { forecastStates: {}, forecastErrors: {} };
-
-    const states: Record<string, MerklForecastStateResponse> = {};
-    const errors: Record<string, string> = {};
-    forecast.items.forEach((item) => {
-      states[item.campaignId] = item;
-    });
-    forecast.errors
-      .filter((item) => shouldSurfaceForecastError(item))
-      .forEach((item) => {
-        errors[item.campaignId] = item.message;
+  const forecastQuery = useQuery({
+    queryKey: FORECAST_STATES_QUERY_KEY,
+    queryFn: async () => {
+      const result = await fetchMerklForecastStates();
+      const states: Record<string, MerklForecastStateResponse> = {};
+      const errors: Record<string, string> = {};
+      result.items.forEach((item) => {
+        states[item.campaignId] = item;
       });
-    return { forecastStates: states, forecastErrors: errors };
-  }, [sideDataMetaQuery.data?.forecast]);
+      result.errors
+        .filter((item) => shouldSurfaceForecastError(item))
+        .forEach((item) => {
+          errors[item.campaignId] = item.message;
+        });
+      const payload = { states, errors };
+      setCachedMerklForecastStates(payload);
+      return payload;
+    },
+    enabled: enabled && hasAnyInput,
+    staleTime: QUERY_STALE_TIMES.coreSnapshotApi,
+    initialData: forecastCachedEntry?.data,
+    initialDataUpdatedAt: forecastCachedEntry?.updatedAt,
+  });
 
-  const forecastLoading = sideDataMetaQuery.isPending || sideDataMetaQuery.isFetching;
+  const forecastStates = useMemo(
+    () => forecastQuery.data?.states ?? {},
+    [forecastQuery.data?.states]
+  );
+  const forecastErrors = useMemo(
+    () => forecastQuery.data?.errors ?? {},
+    [forecastQuery.data?.errors]
+  );
 
   const simulationsById = useMemo(() => {
     return reserves.reduce<Record<string, RateSimulationResult>>((acc, reserve) => {
@@ -894,7 +802,7 @@ export const useSharedRateSimulations = ({
         tokenPriceLoading: tokenPriceLoadingById[reserveId] ?? false,
         reserveRateInputLoading: rateInputsQuery.isPending || rateInputsQuery.isFetching,
         reserveRateInputError: rateInputsQuery.error,
-        forecastLoading: hasAnyInput && forecastLoading,
+        forecastLoading: hasAnyInput && (forecastQuery.isPending || forecastQuery.isFetching),
         forecastErrors,
         hasRateInput: Boolean(reserveRateInput),
       };
@@ -904,7 +812,8 @@ export const useSharedRateSimulations = ({
     borrowInput,
     hasAnyInput,
     forecastErrors,
-    forecastLoading,
+    forecastQuery.isFetching,
+    forecastQuery.isPending,
     forecastStates,
     includeWhitelistOnlyMerkl,
     inputMode,
@@ -925,7 +834,7 @@ export const useSharedRateSimulations = ({
     simulationsById,
     rateInputsSnapshotLoading: rateInputsQuery.isPending || rateInputsQuery.isFetching,
     rateInputsSnapshotError: rateInputsQuery.error,
-    forecastLoading: hasAnyInput && forecastLoading,
+    forecastLoading: hasAnyInput && (forecastQuery.isPending || forecastQuery.isFetching),
     forecastErrors,
   };
 };

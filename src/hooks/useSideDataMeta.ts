@@ -4,31 +4,11 @@ import { SideDataMetaResponseSchema } from '@/lib/apiSchemas';
 import {
   getCachedSideDataMetaEntry,
   setCachedCoingeckoFdv,
-  setCachedMerklForecastStates,
   setCachedSideDataMeta,
   setCachedTokenCategories,
 } from '@/lib/cache';
-import { shouldSurfaceForecastError } from '@/lib/merklForecastErrors';
-import type { MerklForecastStateResponse } from '@/types/aave';
 
 export const SIDE_DATA_META_QUERY_KEY = ['side-data-meta'] as const;
-
-export interface SideDataForecastItem {
-  campaignId: string;
-  campaignType?: string;
-  plannedDaily?: number;
-  requiredDaily?: number;
-  aprCap?: number | null;
-  totalBudget?: number;
-  distributedSoFar?: number;
-  latestTvl?: number;
-  endTimestamp?: number;
-}
-
-export interface SideDataForecastError {
-  campaignId: string;
-  message: string;
-}
 
 export interface SideDataMetaResponse {
   generatedAt?: string;
@@ -48,11 +28,6 @@ export interface SideDataMetaResponse {
       source?: string;
     }>;
     fetchedAt: string;
-    staleTimeMs: number;
-  };
-  forecast?: {
-    items: SideDataForecastItem[];
-    errors: SideDataForecastError[];
     staleTimeMs: number;
   };
   errors?: Record<string, string>;
@@ -84,20 +59,6 @@ export async function fetchSideDataMeta(): Promise<SideDataMetaResponse> {
     });
   }
 
-  if (parsed.forecast) {
-    const states: Record<string, MerklForecastStateResponse> = {};
-    const errors: Record<string, string> = {};
-    parsed.forecast.items.forEach((item) => {
-      states[item.campaignId] = item;
-    });
-    parsed.forecast.errors
-      .filter((item) => shouldSurfaceForecastError(item))
-      .forEach((item) => {
-        errors[item.campaignId] = item.message;
-      });
-    setCachedMerklForecastStates({ states, errors });
-  }
-
   return parsed;
 }
 
@@ -114,9 +75,6 @@ export function useSideDataMeta(staleTime: number, retry: number = 1) {
     }
     if (payload.fdv?.staleTimeMs != null) {
       candidates.push(payload.fdv.staleTimeMs);
-    }
-    if (payload.forecast?.staleTimeMs != null) {
-      candidates.push(payload.forecast.staleTimeMs);
     }
     return candidates.length > 0 ? Math.min(...candidates) : staleTime;
   })();

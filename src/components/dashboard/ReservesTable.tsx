@@ -1,5 +1,4 @@
-import { useState, useMemo, useEffect, useCallback, memo, useRef } from 'react';
-import { createPortal } from 'react-dom';
+import { useState, useMemo, useEffect, useCallback, memo } from 'react';
 import { ArrowUp, ArrowDown, ChevronDown, ChevronUp } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -17,7 +16,7 @@ import {
   calculateTotalIncentiveApy,
   apyToApr
 } from '@/lib/formatters';
-import ScenarioControls, { type ScenarioControlsHandle } from './ScenarioControls';
+import ScenarioControls from './ScenarioControls';
 import { compareIncentiveWithNative } from '@/lib/sorters';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
@@ -76,12 +75,7 @@ const ReservesTable = ({
   const [spreadSortOrder, setSpreadSortOrder] = useState<'asc' | 'desc'>('desc');
   const [showSupplySortMenu, setShowSupplySortMenu] = useState(false);
   const [showBorrowSortMenu, setShowBorrowSortMenu] = useState(false);
-  const borrowSortButtonRef = useRef<HTMLButtonElement>(null);
-  const supplySortButtonRef = useRef<HTMLButtonElement>(null);
-  const scenarioControlsRef = useRef<ScenarioControlsHandle>(null);
-  const [borrowMenuPos, setBorrowMenuPos] = useState<{ top: number; left: number } | null>(null);
-  const [supplyMenuPos, setSupplyMenuPos] = useState<{ top: number; left: number } | null>(null);
-  const [minVisibleCount, setMinVisibleCount] = useState<number | null>(null);
+  const [showAll, setShowAll] = useState(false);
   const [expandedReserveId, setExpandedReserveId] = useState<string | null>(null);
   const [debouncedSharedSupplyInput, setDebouncedSharedSupplyInput] = useState('');
   const [debouncedSharedBorrowInput, setDebouncedSharedBorrowInput] = useState('');
@@ -91,30 +85,6 @@ const ReservesTable = ({
     setDebouncedSharedBorrowInput(borrow);
     setSharedInputMode(mode);
   }, []);
-
-  const handleCorrectSupplyInput = useCallback((correctedValue: string) => {
-    scenarioControlsRef.current?.setSupplyInput(correctedValue);
-  }, []);
-
-  // Refs for tracking expanded row position (used by useLayoutEffect after sortedData is defined)
-  const prevExpandedIndexRef = useRef<number | null>(null);
-  const prevExpandedIdRef = useRef<string | null>(null);
-  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    if (showBorrowSortMenu && borrowSortButtonRef.current) {
-      const rect = borrowSortButtonRef.current.getBoundingClientRect();
-      setBorrowMenuPos({ top: rect.bottom + 4, left: rect.right - 140 });
-    }
-  }, [showBorrowSortMenu]);
-
-  useEffect(() => {
-    if (showSupplySortMenu && supplySortButtonRef.current) {
-      const rect = supplySortButtonRef.current.getBoundingClientRect();
-      setSupplyMenuPos({ top: rect.bottom + 4, left: rect.right - 140 });
-    }
-  }, [showSupplySortMenu]);
-
   const handleToggleExpand = useCallback((reserveId: string) => {
     setExpandedReserveId((prev) => (prev === reserveId ? null : reserveId));
   }, []);
@@ -273,20 +243,14 @@ const ReservesTable = ({
     if (reserveSize == null || !Number.isFinite(reserveSize)) return reserveSize ?? null;
     const supplyRaw = parseNumberInput(debouncedSharedSupplyInput);
     const sim = getSimulation(reserve);
-    const supplyInputUsd =
+    const reserveSizeUsd =
       sharedInputMode === 'usd'
         ? supplyRaw
         : sim?.tokenPrice != null && Number.isFinite(sim.tokenPrice)
           ? supplyRaw * sim.tokenPrice
           : 0;
-    if (supplyInputUsd <= 0) return reserveSize;
-    const rawAfterSize = reserveSize + supplyInputUsd;
-    // Cap at supply cap if available
-    const supplyCapUsd = reserve.supplyCapUsd;
-    if (supplyCapUsd != null && supplyCapUsd > 0 && rawAfterSize > supplyCapUsd) {
-      return supplyCapUsd;
-    }
-    return rawAfterSize;
+    if (reserveSizeUsd <= 0) return reserveSize;
+    return reserveSize + reserveSizeUsd;
   };
 
   // Sort data based on active column and its sort mode
@@ -383,71 +347,6 @@ const ReservesTable = ({
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reserves, activeSortColumn, tokenSortOrder, priceSortOrder, sizeSortOrder, utilSortOrder, supplySortMode, supplySortOrder, borrowSortMode, borrowSortOrder, spreadSortOrder, simulationsById, hasSharedScenario, isApy, tydroPointToUsdRate, includeWhitelistOnlyMerkl, debouncedSharedSupplyInput, sharedInputMode]);
-
-  // When expanded row position changes due to re-sort, keep it pinned near the top
-  useEffect(() => {
-    if (!expandedReserveId) {
-      prevExpandedIndexRef.current = null;
-      prevExpandedIdRef.current = null;
-      return;
-    }
-    
-    const currentIndex = sortedData.findIndex(
-      (r) => getReserveSimulationId(r) === expandedReserveId
-    );
-    
-    if (currentIndex === -1) {
-      prevExpandedIndexRef.current = null;
-      prevExpandedIdRef.current = null;
-      return;
-    }
-    
-    const prevIndex = prevExpandedIndexRef.current;
-    const positionChanged = prevIndex !== null && prevIndex !== currentIndex;
-    
-    prevExpandedIndexRef.current = currentIndex;
-    prevExpandedIdRef.current = expandedReserveId;
-    
-    // Only scroll when position changes (not on initial expand)
-    if (!positionChanged) return;
-    
-    // Clear any pending scroll
-    if (scrollTimeoutRef.current) {
-      clearTimeout(scrollTimeoutRef.current);
-    }
-    
-    // Small delay then scroll to keep row at top
-    scrollTimeoutRef.current = setTimeout(() => {
-      requestAnimationFrame(() => {
-        const rowElement = document.querySelector(
-          `[data-reserve-id="${expandedReserveId}"]`
-        );
-        if (!rowElement) return;
-        
-        const rect = rowElement.getBoundingClientRect();
-        const stickyHeaderHeight = isMobile ? 100 : 80;
-        
-        // Always scroll to put the row near the top (below sticky header)
-        // This ensures Breakdown is always fully visible
-        const targetTop = stickyHeaderHeight + 16; // 16px padding below header
-        const scrollDelta = rect.top - targetTop;
-        
-        // Only scroll if row moved significantly (>20px from target position)
-        if (Math.abs(scrollDelta) > 20) {
-          window.scrollTo({
-            top: window.scrollY + scrollDelta,
-            behavior: 'smooth',
-          });
-        }
-      });
-    }, 50);
-    
-    return () => {
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
-    };
-  }, [sortedData, expandedReserveId, isMobile]);
 
   const supplySortLabel = {
     total: 'Total',
@@ -570,44 +469,32 @@ const ReservesTable = ({
     });
   };
 
-  // Auto-expand to target reserve + 5 rows buffer when scrolling to a specific reserve
+  // Auto-expand when parent requests scroll to a specific reserve
   useEffect(() => {
     if (scrollToReserveId) {
-      const targetIndex = sortedData.findIndex(
-        (r) => `${r.marketName}-${r.tokenAddress}` === scrollToReserveId
-      );
-      if (targetIndex >= 0) {
-        const neededCount = targetIndex + 6; // target row + 5 buffer rows
-        if (neededCount > DEFAULT_VISIBLE_COUNT) {
-          setMinVisibleCount(neededCount);
-        }
-      }
+      setShowAll(true);
     }
-  }, [scrollToReserveId, sortedData]);
+  }, [scrollToReserveId]);
 
   // Display data with pagination - must be before conditional returns
   // Ensure the expanded row is always visible even if it's beyond the default count
   const displayData = useMemo(() => {
-    const baseCount = minVisibleCount ?? DEFAULT_VISIBLE_COUNT;
-    // If minVisibleCount covers all data, return all
-    if (baseCount >= sortedData.length) return sortedData;
-    
-    let visibleCount = baseCount;
-    // If there's an expanded row that's beyond the current count, extend to include it
+    if (showAll) return sortedData;
+    const sliced = sortedData.slice(0, DEFAULT_VISIBLE_COUNT);
+    // If there's an expanded row that's beyond the slice, include it
     if (expandedReserveId) {
       const expandedIndex = sortedData.findIndex(
         (r) => getReserveSimulationId(r) === expandedReserveId
       );
-      if (expandedIndex >= visibleCount) {
-        visibleCount = expandedIndex + 1;
+      if (expandedIndex >= DEFAULT_VISIBLE_COUNT) {
+        // Include all items up to and including the expanded row
+        return sortedData.slice(0, expandedIndex + 1);
       }
     }
-    return sortedData.slice(0, visibleCount);
-  }, [sortedData, minVisibleCount, expandedReserveId]);
-  
-  const showAll = minVisibleCount !== null && minVisibleCount >= sortedData.length;
+    return sliced;
+  }, [sortedData, showAll, expandedReserveId]);
 
-  const scenarioControls = <ScenarioControls ref={scenarioControlsRef} onDebouncedChange={handleScenarioChange} />;
+  const scenarioControls = <ScenarioControls onDebouncedChange={handleScenarioChange} />;
 
   // Mobile card view
   if (isMobile) {
@@ -849,7 +736,6 @@ const ReservesTable = ({
                 borrowInput={debouncedSharedBorrowInput}
                 hasSharedScenario={hasSharedScenario}
                 inputMode={sharedInputMode}
-                onCorrectSupplyInput={handleCorrectSupplyInput}
               />
               );
             })
@@ -860,7 +746,7 @@ const ReservesTable = ({
         {sortedData.length > displayData.length && (
           <button
             type="button"
-            onClick={() => setMinVisibleCount(sortedData.length)}
+            onClick={() => setShowAll(!showAll)}
             className="w-full mt-[var(--ds-space-4)] ds-button ds-text-14 md:ds-text-16 gap-[var(--ds-space-2)] border border-border bg-card hover:bg-muted/50 transition-colors text-foreground font-semibold"
           >
             <span>{`Show ${sortedData.length - displayData.length} More Reserves`}</span>
@@ -870,7 +756,7 @@ const ReservesTable = ({
         {showAll && sortedData.length > DEFAULT_VISIBLE_COUNT && (
           <button
             type="button"
-            onClick={() => setMinVisibleCount(null)}
+            onClick={() => setShowAll(false)}
             className="w-full mt-[var(--ds-space-4)] ds-button ds-text-14 md:ds-text-16 gap-[var(--ds-space-2)] border border-border bg-card hover:bg-muted/50 transition-colors text-foreground font-semibold"
           >
             <span>Show Less</span>
@@ -907,7 +793,7 @@ const ReservesTable = ({
         {scenarioControls}
       </div>
       <div className="overflow-x-auto">
-        <Table className="w-full table-fixed" wrapperClassName="overflow-visible">
+        <Table className="w-full table-fixed">
           <colgroup>
             <col style={{ width: '12%' }} />
             <col style={{ width: '10%' }} />
@@ -918,8 +804,8 @@ const ReservesTable = ({
             <col style={{ width: '14%' }} />
             <col style={{ width: '11%' }} />
           </colgroup>
-          <TableHeader className="overflow-visible">
-            <TableRow className="border-border/50 bg-card/60 overflow-visible">
+          <TableHeader>
+            <TableRow className="border-border/50 bg-card/60">
               {/* Token */}
               <TableHead className="px-[var(--ds-space-3)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground">
                 <button
@@ -998,7 +884,6 @@ const ReservesTable = ({
                     </span>
                     <div className="relative">
                       <button
-                        ref={supplySortButtonRef}
                         type="button"
                         onClick={() => setShowSupplySortMenu(!showSupplySortMenu)}
                         className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-lg border transition-colors ${
@@ -1011,16 +896,13 @@ const ReservesTable = ({
                         <span className="font-semibold">{supplySortLabel}</span>
                         <ChevronDown className="w-2.5 h-2.5" />
                       </button>
-                      {showSupplySortMenu && supplyMenuPos && createPortal(
+                      {showSupplySortMenu && (
                         <>
                           <div
-                            className="fixed inset-0 z-[9999]"
+                            className="fixed inset-0 z-10"
                             onClick={() => setShowSupplySortMenu(false)}
                           />
-                          <div 
-                            className="fixed bg-card border border-border rounded-lg shadow-lg py-[var(--ds-space-1)] z-[10000] min-w-[140px]"
-                            style={{ top: supplyMenuPos.top, left: supplyMenuPos.left }}
-                          >
+                          <div className="absolute right-0 top-full mt-[var(--ds-space-1)] bg-card border border-border rounded-lg shadow-lg py-[var(--ds-space-1)] z-20 min-w-[140px]">
                             <button
                               type="button"
                               onClick={() => {
@@ -1115,8 +997,7 @@ const ReservesTable = ({
                               )}
                             </button>
                           </div>
-                        </>,
-                        document.body
+                        </>
                       )}
                     </div>
                   </div>
@@ -1162,7 +1043,6 @@ const ReservesTable = ({
                     </span>
                     <div className="relative">
                       <button
-                        ref={borrowSortButtonRef}
                         type="button"
                         onClick={() => setShowBorrowSortMenu(!showBorrowSortMenu)}
                         className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-lg border transition-colors ${
@@ -1175,16 +1055,13 @@ const ReservesTable = ({
                         <span className="font-semibold">{borrowSortLabel}</span>
                         <ChevronDown className="w-2.5 h-2.5" />
                       </button>
-                        {showBorrowSortMenu && borrowMenuPos && createPortal(
+                        {showBorrowSortMenu && (
                           <>
                             <div
-                              className="fixed inset-0 z-[9999]"
+                              className="fixed inset-0 z-10"
                               onClick={() => setShowBorrowSortMenu(false)}
                             />
-                            <div 
-                              className="fixed bg-card border border-border rounded-lg shadow-lg py-[var(--ds-space-1)] z-[10000] min-w-[140px]"
-                              style={{ top: borrowMenuPos.top, left: borrowMenuPos.left }}
-                            >
+                            <div className="absolute right-0 top-full mt-[var(--ds-space-1)] bg-card border border-border rounded-lg shadow-lg py-[var(--ds-space-1)] z-20 min-w-[140px]">
                               <button
                                 type="button"
                                 onClick={() => {
@@ -1279,8 +1156,7 @@ const ReservesTable = ({
                                 )}
                               </button>
                             </div>
-                          </>,
-                          document.body
+                          </>
                         )}
                       </div>
                     </div>
@@ -1381,7 +1257,6 @@ const ReservesTable = ({
                   inputMode={sharedInputMode}
                   isApy={isApy}
                   isMobile={isMobile}
-                  onCorrectSupplyInput={handleCorrectSupplyInput}
                 />
               );
             })

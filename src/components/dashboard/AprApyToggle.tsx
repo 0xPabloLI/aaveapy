@@ -136,8 +136,7 @@ export function InfoIconButton({
           hover:ds-bg-emerald-500-20 hover:ds-text-emerald-700
           flex items-center justify-center
           transition-all duration-200
-          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1
-          cursor-pointer md:cursor-auto"
+          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
       >
         <Info className="h-2.5 w-2.5 shrink-0" aria-hidden />
       </button>

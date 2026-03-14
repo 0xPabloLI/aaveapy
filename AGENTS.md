@@ -155,12 +155,6 @@ When implementing mobile carousels:
 - Avoid default values for missing API or backend fields; keep schema and code minimal (e.g. no fallback values when the backend omits a field).
 - For large design or architectural changes, provide a 方案 (plan) first without modifying code when the user asks (e.g. "先给我方案不要直接修改").
 - When summarizing many items (e.g. APIs, warmup order, options), use tables for clarity (表格形式，一目了然).
-- Follow explicit visual descriptions precisely (e.g., when user says "竖线" use vertical, not horizontal; when user says "圆环" use ring, not bar).
-- Maintain design symmetry when adding complementary UI elements (e.g., if Supply info is in Size column, related Borrow info placement should be consistent).
-- Tooltip content should match the visual element's semantic purpose (e.g., hover on progress ring shows ring-related info, not unrelated metrics).
-- Disabled states can be both visually muted and interactive (变灰 and 可点击 are not mutually exclusive).
-- When adding new visual indicators, use distinct forms to distinguish different concepts (e.g., circular for capacity ratios, linear for position indicators).
-- Keep new color schemes consistent with existing column/section color themes rather than introducing conflicting semantic colors.
 
 ## Learned Workspace Facts
 - Local git hooks in this setup are managed under the main repository `.git/hooks` and are local-only (not versioned).
