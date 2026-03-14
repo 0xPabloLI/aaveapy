@@ -3,14 +3,14 @@ const SECONDS_PER_DAY = 86400;
 const EPSILON = 1e-9;
 
 export interface MerklForecastState {
-  campaignType: string;
+  campaignType?: string;
   plannedDaily?: number;
   requiredDaily?: number;
-  aprCap: number | null;
-  distributedSoFar: number;
-  totalBudget: number;
-  latestTvl: number;
-  endTimestamp: number;
+  aprCap?: number | null;
+  distributedSoFar?: number;
+  totalBudget?: number;
+  latestTvl?: number;
+  endTimestamp?: number;
 }
 
 export type MerklForecastProgressState = MerklForecastState;
