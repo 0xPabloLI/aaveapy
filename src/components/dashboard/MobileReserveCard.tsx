@@ -9,6 +9,9 @@ import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import SimulationSubRow from './SimulationSubRow';
+import CapProgressRing from './CapProgressRing';
+import BorrowCapProgressRing from './BorrowCapProgressRing';
+import { formatReserveSizeUsd } from '@/lib/formatters';
 import type { RateSimulationResult } from '@/hooks/useRateSimulation';
 
 interface MobileReserveCardProps {
@@ -90,6 +93,18 @@ const MobileReserveCard = memo(({
     name: reserve.tokenName,
   });
 
+  const totalBorrowedUsd =
+    reserve.reserveSizeUsd != null &&
+    reserve.utilizationPct != null &&
+    Number.isFinite(reserve.reserveSizeUsd) &&
+    Number.isFinite(reserve.utilizationPct)
+      ? reserve.reserveSizeUsd * (reserve.utilizationPct / 100)
+      : null;
+  const poolLiquidity =
+    reserve.reserveSizeUsd != null && totalBorrowedUsd != null
+      ? reserve.reserveSizeUsd - totalBorrowedUsd
+      : null;
+
 
 
 
@@ -147,6 +162,25 @@ const MobileReserveCard = memo(({
         >
           {isSimulationExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </button>
+      </div>
+
+      {/* Size section: two rows for supply/borrow */}
+      <div className="flex items-center justify-center gap-[var(--ds-space-4)] mb-[var(--ds-space-3)] py-[var(--ds-space-1-5)] bg-muted/30 rounded-lg">
+        <div className="flex items-center gap-[var(--ds-space-1-5)] ds-text-emerald-600 ds-text-11">
+          <span className="font-medium tabular-nums">{formatReserveSizeUsd(reserve.reserveSizeUsd)}</span>
+          <CapProgressRing size={reserve.reserveSizeUsd} cap={reserve.supplyCapUsd} ringSize={10} strokeWidth={1.2} />
+        </div>
+        <span className="text-muted-foreground/40 ds-text-10">/</span>
+        <div className="flex items-center gap-[var(--ds-space-1-5)] ds-text-brand-cyan ds-text-11">
+          <span className="font-medium tabular-nums">{formatReserveSizeUsd(totalBorrowedUsd)}</span>
+          <BorrowCapProgressRing
+            borrowed={totalBorrowedUsd}
+            cap={reserve.borrowCapUsd}
+            poolLiquidity={poolLiquidity}
+            ringSize={10}
+            strokeWidth={1.2}
+          />
+        </div>
       </div>
 
       <div className="grid grid-cols-3 gap-[var(--ds-space-2)]">

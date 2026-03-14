@@ -2,39 +2,45 @@ import { memo } from 'react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { formatReserveSizeUsd } from '@/lib/formatters';
 
-interface CapProgressRingProps {
-  size: number | null | undefined;
+interface BorrowCapProgressRingProps {
+  borrowed: number | null | undefined;
   cap: number | null | undefined;
+  poolLiquidity: number | null | undefined;
   ringSize?: number;
   strokeWidth?: number;
 }
 
-const CapProgressRing = memo(({
-  size,
+const BorrowCapProgressRing = memo(({
+  borrowed,
   cap,
+  poolLiquidity,
   ringSize = 12,
   strokeWidth = 1.5,
-}: CapProgressRingProps) => {
+}: BorrowCapProgressRingProps) => {
   if (cap == null || !Number.isFinite(cap) || cap <= 0) {
     return null;
   }
 
-  const currentSize = size ?? 0;
-  const percentage = Math.min((currentSize / cap) * 100, 100);
+  const currentBorrowed = borrowed ?? 0;
+  const percentage = Math.min((currentBorrowed / cap) * 100, 100);
   const radius = (ringSize - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
+  const capRemaining = Math.max(0, cap - currentBorrowed);
+  const liquidityRemaining = poolLiquidity ?? 0;
+  const availableToBorrow = Math.min(capRemaining, liquidityRemaining);
+
   const getProgressColor = () => {
     if (percentage >= 95) return 'rgb(var(--ds-amber-600-rgb, 217 119 6))';
     if (percentage >= 80) return 'rgb(var(--ds-amber-500-rgb, 245 158 11))';
-    return 'rgb(var(--ds-emerald-600-rgb, 5 150 105))';
+    return 'rgb(var(--ds-brand-cyan-rgb, 34 211 238))';
   };
 
   const getProgressColorClass = () => {
     if (percentage >= 95) return 'text-amber-600';
     if (percentage >= 80) return 'text-amber-500';
-    return 'ds-text-emerald-600';
+    return 'ds-text-brand-cyan';
   };
 
   return (
@@ -74,16 +80,16 @@ const CapProgressRing = memo(({
       <TooltipContent side="top" className="max-w-[220px]">
         <div className="space-y-1 ds-text-12">
           <div className="flex justify-between gap-3">
-            <span className="text-muted-foreground">Total supplied</span>
-            <span className="font-medium tabular-nums">{formatReserveSizeUsd(currentSize)}</span>
+            <span className="text-muted-foreground">Total borrowed</span>
+            <span className="font-medium tabular-nums">{formatReserveSizeUsd(currentBorrowed)}</span>
           </div>
           <div className="flex justify-between gap-3">
-            <span className="text-muted-foreground">Supply cap</span>
+            <span className="text-muted-foreground">Borrow cap</span>
             <span className="font-medium tabular-nums">{formatReserveSizeUsd(cap)}</span>
           </div>
           <div className="flex justify-between gap-3">
-            <span className="text-muted-foreground">Available to supply</span>
-            <span className="font-medium tabular-nums ds-text-emerald-600">{formatReserveSizeUsd(Math.max(0, cap - currentSize))}</span>
+            <span className="text-muted-foreground">Available to borrow</span>
+            <span className="font-medium tabular-nums ds-text-brand-cyan">{formatReserveSizeUsd(availableToBorrow)}</span>
           </div>
           <div className="flex justify-between gap-3 pt-1 border-t border-border/50">
             <span className="text-muted-foreground">% of cap</span>
@@ -97,6 +103,6 @@ const CapProgressRing = memo(({
   );
 });
 
-CapProgressRing.displayName = 'CapProgressRing';
+BorrowCapProgressRing.displayName = 'BorrowCapProgressRing';
 
-export default CapProgressRing;
+export default BorrowCapProgressRing;

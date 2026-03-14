@@ -67,8 +67,12 @@ const ReservesTable = ({
   const [activeSortColumn, setActiveSortColumn] = useState<SortableColumn | null>('supply');
   const [tokenSortOrder, setTokenSortOrder] = useState<'asc' | 'desc'>('asc');
   const [priceSortOrder, setPriceSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [sizeSortMode, setSizeSortMode] = useState<'supply' | 'borrow'>('supply');
   const [sizeSortOrder, setSizeSortOrder] = useState<'asc' | 'desc'>('desc');
   const [utilSortOrder, setUtilSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [showSizeSortMenu, setShowSizeSortMenu] = useState(false);
+  const sizeSortButtonRef = useRef<HTMLButtonElement>(null);
+  const [sizeMenuPos, setSizeMenuPos] = useState<{ top: number; left: number } | null>(null);
   const [supplySortMode, setSupplySortMode] = useState<SortMode>('incentive');
   const [supplySortOrder, setSupplySortOrder] = useState<'asc' | 'desc'>('desc');
   const [borrowSortMode, setBorrowSortMode] = useState<SortMode>('total');
@@ -118,6 +122,13 @@ const ReservesTable = ({
       setSupplyMenuPos({ top: rect.bottom + 4, left: rect.right - 140 });
     }
   }, [showSupplySortMenu]);
+
+  useEffect(() => {
+    if (showSizeSortMenu && sizeSortButtonRef.current) {
+      const rect = sizeSortButtonRef.current.getBoundingClientRect();
+      setSizeMenuPos({ top: rect.bottom + 4, left: rect.right - 140 });
+    }
+  }, [showSizeSortMenu]);
 
   const handleToggleExpand = useCallback((reserveId: string) => {
     setExpandedReserveId((prev) => (prev === reserveId ? null : reserveId));
@@ -299,6 +310,18 @@ const ReservesTable = ({
     return rawAfterSize;
   };
 
+  const getTotalBorrowedUsd = (reserve: ReserveWithSpread): number | null => {
+    if (
+      reserve.reserveSizeUsd == null ||
+      reserve.utilizationPct == null ||
+      !Number.isFinite(reserve.reserveSizeUsd) ||
+      !Number.isFinite(reserve.utilizationPct)
+    ) {
+      return null;
+    }
+    return reserve.reserveSizeUsd * (reserve.utilizationPct / 100);
+  };
+
   // Sort data based on active column and its sort mode
   const sortedData = useMemo(() => {
     return [...reserves].sort((a, b) => {
@@ -318,9 +341,15 @@ const ReservesTable = ({
         return priceSortOrder === 'desc' ? -comparison : comparison;
       }
       if (sortColumn === 'size') {
-        const aT = getDisplayReserveSizeUsd(a) ?? -Infinity;
-        const bT = getDisplayReserveSizeUsd(b) ?? -Infinity;
-        comparison = aT - bT;
+        if (sizeSortMode === 'borrow') {
+          const aT = getTotalBorrowedUsd(a) ?? -Infinity;
+          const bT = getTotalBorrowedUsd(b) ?? -Infinity;
+          comparison = aT - bT;
+        } else {
+          const aT = getDisplayReserveSizeUsd(a) ?? -Infinity;
+          const bT = getDisplayReserveSizeUsd(b) ?? -Infinity;
+          comparison = aT - bT;
+        }
         return sizeSortOrder === 'desc' ? -comparison : comparison;
       }
       if (sortColumn === 'util') {
@@ -392,7 +421,7 @@ const ReservesTable = ({
       }
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reserves, activeSortColumn, tokenSortOrder, priceSortOrder, sizeSortOrder, utilSortOrder, supplySortMode, supplySortOrder, borrowSortMode, borrowSortOrder, spreadSortOrder, simulationsById, hasSharedScenario, isApy, tydroPointToUsdRate, includeWhitelistOnlyMerkl, debouncedSharedSupplyInput, sharedInputMode]);
+  }, [reserves, activeSortColumn, tokenSortOrder, priceSortOrder, sizeSortMode, sizeSortOrder, utilSortOrder, supplySortMode, supplySortOrder, borrowSortMode, borrowSortOrder, spreadSortOrder, simulationsById, hasSharedScenario, isApy, tydroPointToUsdRate, includeWhitelistOnlyMerkl, debouncedSharedSupplyInput, sharedInputMode]);
 
   // When expanded row position changes due to re-sort, keep it pinned near the top
   useEffect(() => {
@@ -470,6 +499,11 @@ const ReservesTable = ({
     native: 'Native',
     incentive: 'Incentive',
   }[borrowSortMode];
+
+  const sizeSortLabel = {
+    supply: 'Supply',
+    borrow: 'Borrow',
+  }[sizeSortMode];
 
   const toggleSupplySortOrder = () => {
     collapseExpandedOnSort();
@@ -922,13 +956,13 @@ const ReservesTable = ({
         <Table className="w-full table-fixed" wrapperClassName="overflow-visible">
           <colgroup>
             <col style={{ width: '12%' }} />
-            <col style={{ width: '10%' }} />
+            <col style={{ width: '9%' }} />
             <col style={{ width: '8%' }} />
-            <col style={{ width: '11%' }} />
+            <col style={{ width: '12%' }} />
+            <col style={{ width: '8%' }} />
             <col style={{ width: '14%' }} />
-            <col style={{ width: '10%' }} />
+            <col style={{ width: '9%' }} />
             <col style={{ width: '14%' }} />
-            <col style={{ width: '11%' }} />
           </colgroup>
           <TableHeader className="overflow-visible">
             <TableRow className="border-border/50 bg-card/60 overflow-visible">
@@ -980,16 +1014,122 @@ const ReservesTable = ({
               </TableHead>
               {/* Size */}
               <TableHead className="px-[var(--ds-space-3)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
+                <div className="flex items-center justify-center gap-[var(--ds-space-2)]">
+                  <div className="flex items-center gap-[var(--ds-space-1-5)]">
+                    <span
+                      className={activeSortColumn === 'size' ? (sizeSortMode === 'supply' ? 'ds-text-emerald-600' : 'ds-text-brand-cyan') : 'text-muted-foreground'}
+                    >
+                      Size
+                    </span>
+                    <div className="relative">
+                      <button
+                        ref={sizeSortButtonRef}
+                        type="button"
+                        onClick={() => setShowSizeSortMenu(!showSizeSortMenu)}
+                        className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-lg border transition-colors ${
+                          showSizeSortMenu || activeSortColumn === 'size'
+                            ? sizeSortMode === 'supply'
+                              ? 'bg-card/60 border-border/70 ds-text-emerald-700'
+                              : 'bg-card/60 border-border/70 ds-text-brand-cyan'
+                            : 'bg-card/60 border-border/70 text-muted-foreground'
+                        }`}
+                        title="Select sort field"
+                      >
+                        <span className="font-semibold">{sizeSortLabel}</span>
+                        <ChevronDown className="w-2.5 h-2.5" />
+                      </button>
+                      {showSizeSortMenu && sizeMenuPos && createPortal(
+                        <>
+                          <div
+                            className="fixed inset-0 z-[9999]"
+                            onClick={() => setShowSizeSortMenu(false)}
+                          />
+                          <div 
+                            className="fixed bg-card border border-border rounded-lg shadow-lg py-[var(--ds-space-1)] z-[10000] min-w-[140px]"
+                            style={{ top: sizeMenuPos.top, left: sizeMenuPos.left }}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => {
+                                collapseExpandedOnSort();
+                                const isAlreadySelected = sizeSortMode === 'supply' && activeSortColumn === 'size';
+                                if (isAlreadySelected && sizeSortOrder === 'desc') {
+                                  setSizeSortOrder('asc');
+                                } else {
+                                  setSizeSortMode('supply');
+                                  setActiveSortColumn('size');
+                                  setSizeSortOrder('desc');
+                                }
+                                setShowSizeSortMenu(false);
+                              }}
+                              className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-12 hover:bg-[rgb(var(--ds-emerald-50-rgb)/0.5)] transition-colors flex items-center justify-between ${
+                                sizeSortMode === 'supply' && activeSortColumn === 'size'
+                                  ? 'ds-text-emerald-600 font-bold bg-card/60'
+                                  : 'text-foreground/80'
+                              }`}
+                            >
+                              <span>Sort by Supply</span>
+                              {sizeSortMode === 'supply' && activeSortColumn === 'size' ? (
+                                sizeSortOrder === 'desc' ? (
+                                  <ArrowDown className="w-3 h-3 ds-text-emerald-600" />
+                                ) : (
+                                  <ArrowUp className="w-3 h-3 ds-text-emerald-600" />
+                                )
+                              ) : (
+                                <ArrowDown className="w-3 h-3 text-muted-foreground/70" />
+                              )}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                collapseExpandedOnSort();
+                                const isAlreadySelected = sizeSortMode === 'borrow' && activeSortColumn === 'size';
+                                if (isAlreadySelected && sizeSortOrder === 'desc') {
+                                  setSizeSortOrder('asc');
+                                } else {
+                                  setSizeSortMode('borrow');
+                                  setActiveSortColumn('size');
+                                  setSizeSortOrder('desc');
+                                }
+                                setShowSizeSortMenu(false);
+                              }}
+                              className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-12 hover:bg-[rgb(var(--ds-brand-cyan-rgb)/0.1)] transition-colors flex items-center justify-between ${
+                                sizeSortMode === 'borrow' && activeSortColumn === 'size'
+                                  ? 'ds-text-brand-cyan font-bold bg-card/60'
+                                  : 'text-foreground/80'
+                              }`}
+                            >
+                              <span>Sort by Borrow</span>
+                              {sizeSortMode === 'borrow' && activeSortColumn === 'size' ? (
+                                sizeSortOrder === 'desc' ? (
+                                  <ArrowDown className="w-3 h-3 ds-text-brand-cyan" />
+                                ) : (
+                                  <ArrowUp className="w-3 h-3 ds-text-brand-cyan" />
+                                )
+                              ) : (
+                                <ArrowDown className="w-3 h-3 text-muted-foreground/70" />
+                              )}
+                            </button>
+                          </div>
+                        </>,
+                        document.body
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </TableHead>
+              {/* Utilization - moved to be after Size */}
+              <TableHead className="px-[var(--ds-space-3)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
                 <button
                   type="button"
-                  onClick={handleSortSize}
+                  onClick={handleSortUtil}
                   className={`ds-chip-heading md:ds-text-16 gap-[var(--ds-space-1)] transition-colors ${
-                    activeSortColumn === 'size' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground/80'
+                    activeSortColumn === 'util' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground/80'
                   }`}
                 >
-                  <span>Size</span>
-                  {activeSortColumn === 'size' ? (
-                    sizeSortOrder === 'desc' ? (
+                  <span>Util.</span>
+                  {activeSortColumn === 'util' ? (
+                    utilSortOrder === 'desc' ? (
                       <ArrowDown className="w-3 h-3" />
                     ) : (
                       <ArrowUp className="w-3 h-3" />
@@ -1297,27 +1437,6 @@ const ReservesTable = ({
                       </div>
                     </div>
                 </div>
-              </TableHead>
-              {/* Utilization */}
-              <TableHead className="px-[var(--ds-space-3)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
-                <button
-                  type="button"
-                  onClick={handleSortUtil}
-                  className={`ds-chip-heading md:ds-text-16 gap-[var(--ds-space-1)] transition-colors ${
-                    activeSortColumn === 'util' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground/80'
-                  }`}
-                >
-                  <span>Util.</span>
-                  {activeSortColumn === 'util' ? (
-                    utilSortOrder === 'desc' ? (
-                      <ArrowDown className="w-3 h-3" />
-                    ) : (
-                      <ArrowUp className="w-3 h-3" />
-                    )
-                  ) : (
-                    <ArrowDown className="w-3 h-3 opacity-50" />
-                  )}
-                </button>
               </TableHead>
             </TableRow>
           </TableHeader>

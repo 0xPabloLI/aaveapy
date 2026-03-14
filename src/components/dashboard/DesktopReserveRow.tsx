@@ -11,6 +11,7 @@ import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { IncentiveIcon } from '@/components/IncentiveIcon';
 import SimulationSubRow from './SimulationSubRow';
 import CapProgressRing from './CapProgressRing';
+import BorrowCapProgressRing from './BorrowCapProgressRing';
 import UtilizationIndicator from './UtilizationIndicator';
 import type { RateSimulationResult, ScenarioInputMode } from '@/hooks/useRateSimulation';
 import { parseNumberInput } from '@/lib/numberFormat';
@@ -115,6 +116,19 @@ const DesktopReserveRow = memo(({
       ? reserve.supplyCapUsd
       : rawAfterReserveSizeUsd;
 
+  // Calculate borrowed amount and pool liquidity
+  const totalBorrowedUsd =
+    reserve.reserveSizeUsd != null &&
+    reserve.utilizationPct != null &&
+    Number.isFinite(reserve.reserveSizeUsd) &&
+    Number.isFinite(reserve.utilizationPct)
+      ? reserve.reserveSizeUsd * (reserve.utilizationPct / 100)
+      : null;
+  const poolLiquidity =
+    reserve.reserveSizeUsd != null && totalBorrowedUsd != null
+      ? reserve.reserveSizeUsd - totalBorrowedUsd
+      : null;
+
   return (
     <Fragment>
       <TableRow
@@ -162,11 +176,33 @@ const DesktopReserveRow = memo(({
             {getMarketDisplayName()}
           </button>
         </TableCell>
-        {/* Size */}
-        <TableCell className="px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell tabular-nums ds-text-emerald-600 ds-text-13">
+        {/* Size (Supply + Borrow) */}
+        <TableCell className="px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell tabular-nums ds-text-13">
+          <div className="flex flex-col items-center justify-center gap-[var(--ds-space-0-5)]">
+            {/* Supply Size - Green */}
+            <div className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)] ds-text-emerald-600">
+              <span>{formatReserveSizeUsd(displayReserveSizeUsd)}</span>
+              <CapProgressRing size={displayReserveSizeUsd} cap={reserve.supplyCapUsd} />
+            </div>
+            {/* Borrow Size - Cyan */}
+            <div className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)] ds-text-brand-cyan ds-text-11">
+              <span>{formatReserveSizeUsd(totalBorrowedUsd)}</span>
+              <BorrowCapProgressRing
+                borrowed={totalBorrowedUsd}
+                cap={reserve.borrowCapUsd}
+                poolLiquidity={poolLiquidity}
+              />
+            </div>
+          </div>
+        </TableCell>
+        {/* Utilization - moved to be after Size */}
+        <TableCell className="px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell tabular-nums text-foreground ds-text-13">
           <div className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)]">
-            <span>{formatReserveSizeUsd(displayReserveSizeUsd)}</span>
-            <CapProgressRing size={displayReserveSizeUsd} cap={reserve.supplyCapUsd} />
+            <span>{formatPercent(displayUtilization)}</span>
+            <UtilizationIndicator
+              current={displayUtilization}
+              optimal={simulation?.utilization.optimal ?? null}
+            />
           </div>
         </TableCell>
         {/* Supply */}
@@ -259,16 +295,6 @@ const DesktopReserveRow = memo(({
                 </button>
               </div>
             )}
-          </div>
-        </TableCell>
-        {/* Utilization */}
-        <TableCell className="px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell tabular-nums text-foreground ds-text-13">
-          <div className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)]">
-            <span>{formatPercent(displayUtilization)}</span>
-            <UtilizationIndicator
-              current={displayUtilization}
-              optimal={simulation?.utilization.optimal ?? null}
-            />
           </div>
         </TableCell>
       </TableRow>

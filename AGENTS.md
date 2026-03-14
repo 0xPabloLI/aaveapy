@@ -169,6 +169,7 @@ When implementing mobile carousels:
 - Secondary info (like cap values "/ $20.00M") should use smaller font than main values, but not too small to read.
 - Text content should never touch container edges; always maintain breathing room with proper padding (e.g., px-4 not px-2).
 - Decorative borders (like indent indicators for nested items) should stay within text content boundaries; use inline elements (e.g., `ml-2 pl-2 border-l`) rather than negative margins that extend beyond alignment.
+- Indent indicator borders should use contextual colors matching their parent section: emerald for Supply (`border-l-[rgb(var(--ds-emerald-500-rgb))]`), cyan for Borrow (`border-l-[rgb(var(--ds-brand-cyan-rgb))]`).
 - Data values should have explicit labels when meaning is unclear; e.g., "Cap $20M" not just "/ $20M" to avoid ambiguity.
 - When a section has no title, still maintain header row height for visual alignment with adjacent columns.
 

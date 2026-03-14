@@ -252,14 +252,14 @@ const SimulationSubRow = ({
     return formatDelta(value);
   };
 
-  const renderRow = (row: TableRow, accentClass: string) => {
+  const renderRow = (row: TableRow, accentClass: string, borderColorClass: string) => {
     const deltaColorClass = row.delta === null || Number.isNaN(row.delta) ? 'text-muted-foreground' : accentClass;
     const isBreakdownItem = row.isBreakdown;
 
     return (
       <tr key={row.label} className={row.warning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
         <td className="py-1.5 pl-4 pr-3">
-          <div className={`flex items-baseline gap-1.5 ${isBreakdownItem ? 'ml-2 pl-2 border-l border-border' : ''}`}>
+          <div className={`flex items-baseline gap-1.5 ${isBreakdownItem ? `ml-2 pl-2 border-l ${borderColorClass}` : ''}`}>
             {row.href ? (
               <a
                 href={row.href}
@@ -278,7 +278,7 @@ const SimulationSubRow = ({
             )}
             {row.cap !== null && row.cap !== undefined && (
               <span className={`ds-text-11 tabular-nums flex-shrink-0 ${row.warning ? 'text-amber-600' : 'text-muted-foreground/70'}`}>
-                Cap {formatReserveSizeUsd(row.cap)}
+                / Cap {formatReserveSizeUsd(row.cap)}
               </span>
             )}
           </div>
@@ -302,7 +302,7 @@ const SimulationSubRow = ({
     );
   };
 
-  const renderTable = (title: string, rows: TableRow[], accentClass: string, borderClass: string) => (
+  const renderTable = (title: string, rows: TableRow[], accentClass: string, borderClass: string, indentBorderClass: string) => (
     <div className={`rounded-lg border ${borderClass} bg-background/80`}>
       <table className="w-full">
         <colgroup>
@@ -328,7 +328,7 @@ const SimulationSubRow = ({
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => renderRow(row, accentClass))}
+          {rows.map((row) => renderRow(row, accentClass, indentBorderClass))}
         </tbody>
       </table>
     </div>
@@ -451,9 +451,9 @@ const SimulationSubRow = ({
 
       {/* 3-column layout: Supply | (Spread/Liquidity) | Borrow */}
       <div className={`grid ${compact ? 'grid-cols-1 gap-3' : 'grid-cols-3 gap-2'}`}>
-        {renderTable('Supply', supplyRows, 'ds-text-emerald-600', 'border-emerald-500/40')}
+        {renderTable('Supply', supplyRows, 'ds-text-emerald-600', 'border-emerald-500/40', 'border-l-[rgb(var(--ds-emerald-500-rgb))]')}
         {renderMiddleColumn()}
-        {renderTable('Borrow', borrowRows, 'ds-text-brand-cyan', 'border-[rgb(var(--ds-brand-cyan-rgb))]/40')}
+        {renderTable('Borrow', borrowRows, 'ds-text-brand-cyan', 'border-[rgb(var(--ds-brand-cyan-rgb))]/40', 'border-l-[rgb(var(--ds-brand-cyan-rgb))]')}
       </div>
 
       {/* Footer notes */}
