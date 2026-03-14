@@ -279,55 +279,15 @@ const SimulationSubRow = ({
     }
   };
 
+  // All inputs are already capped in useRateSimulation hook, so we can use the values directly
   const { supplyCapUsd } = simulation.marketMetrics;
   const currentSupplySizeUsd =
     reserve.reserveSizeUsd != null && Number.isFinite(reserve.reserveSizeUsd) ? reserve.reserveSizeUsd : null;
   
-  // Cap the after size at supply cap when input exceeds available room
-  const rawAfterSupplySizeUsd =
+  // Supply Size after uses capped input (already capped in hook)
+  const afterSupplySizeUsd =
     currentSupplySizeUsd !== null && simulation.supply.inputUsd > 0
       ? currentSupplySizeUsd + simulation.supply.inputUsd
-      : null;
-  const afterSupplySizeUsd =
-    rawAfterSupplySizeUsd !== null && supplyCapUsd !== null && supplyCapUsd > 0
-      ? Math.min(rawAfterSupplySizeUsd, supplyCapUsd)
-      : rawAfterSupplySizeUsd;
-  
-  // Calculate capped supply input for liquidity calculation
-  const cappedSupplyInputUsd =
-    supplyCapExceeded && availableSupplyRoomUsd !== null
-      ? availableSupplyRoomUsd
-      : simulation.supply.inputUsd;
-
-  // Calculate capped borrow input for calculations
-  const cappedBorrowInputUsd =
-    borrowCapExceeded && availableBorrowRoomUsd !== null
-      ? availableBorrowRoomUsd
-      : simulation.borrow.inputUsd;
-  
-  // Recalculate liquidity with capped inputs (both supply and borrow)
-  const cappedLiquidityAfter =
-    simulation.marketMetrics.availableLiquidityUsd !== null && (simulation.supply.hasInput || simulation.borrow.hasInput)
-      ? simulation.marketMetrics.availableLiquidityUsd + cappedSupplyInputUsd - cappedBorrowInputUsd
-      : simulation.marketMetrics.availableLiquidityUsdAfter;
-  const cappedLiquidityDelta =
-    cappedLiquidityAfter !== null && simulation.marketMetrics.availableLiquidityUsd !== null
-      ? cappedLiquidityAfter - simulation.marketMetrics.availableLiquidityUsd
-      : null;
-
-  // Calculate capped Total Borrowed
-  const currentTotalBorrowedUsd = simulation.marketMetrics.totalBorrowedUsd;
-  const rawAfterTotalBorrowedUsd =
-    currentTotalBorrowedUsd !== null && simulation.borrow.inputUsd > 0
-      ? currentTotalBorrowedUsd + simulation.borrow.inputUsd
-      : simulation.marketMetrics.totalBorrowedUsdAfter;
-  const cappedAfterTotalBorrowedUsd =
-    rawAfterTotalBorrowedUsd !== null && borrowCapUsd !== null && borrowCapUsd > 0
-      ? Math.min(rawAfterTotalBorrowedUsd, borrowCapUsd)
-      : rawAfterTotalBorrowedUsd;
-  const cappedTotalBorrowedDelta =
-    cappedAfterTotalBorrowedUsd !== null && currentTotalBorrowedUsd !== null
-      ? cappedAfterTotalBorrowedUsd - currentTotalBorrowedUsd
       : null;
 
   // Build supply incentive sources list
@@ -474,16 +434,16 @@ const SimulationSubRow = ({
         <MarketMetricCard
           title="Liquidity"
           current={simulation.marketMetrics.availableLiquidityUsd}
-          after={cappedLiquidityAfter}
-          delta={cappedLiquidityDelta}
+          after={simulation.marketMetrics.availableLiquidityUsdAfter}
+          delta={simulation.marketMetrics.availableLiquidityUsdDelta}
           accentClass="ds-text-purple-600"
           compact={compact}
         />
         <MarketMetricCard
           title="Total Borrowed"
-          current={currentTotalBorrowedUsd}
-          after={cappedAfterTotalBorrowedUsd}
-          delta={cappedTotalBorrowedDelta}
+          current={simulation.marketMetrics.totalBorrowedUsd}
+          after={simulation.marketMetrics.totalBorrowedUsdAfter}
+          delta={simulation.marketMetrics.totalBorrowedUsdDelta}
           accentClass="ds-text-brand-cyan"
           compact={compact}
         />

@@ -174,10 +174,10 @@ const FilterBar = ({
                 setSelectedCategory(category.value);
               }
             }}
-            className={`ds-chip px-2 md:px-2.5 py-1 rounded-md font-medium transition-colors ${
+            className={`inline-flex items-center justify-center h-7 px-2 rounded-md ds-text-11 font-medium transition-colors ${
               selectedCategory === category.value
-                ? 'bg-[rgb(var(--ds-brand-magenta-rgb))] ds-text-on-brand'
-                : 'bg-card/60 text-muted-foreground hover:text-foreground hover:bg-card border border-border/40'
+                ? 'bg-card text-foreground shadow-sm border border-[rgb(var(--ds-brand-magenta-rgb))]'
+                : 'bg-card/50 text-muted-foreground hover:text-foreground hover:bg-card/80 border border-border/40'
             }`}
           >
             {category.label}
@@ -186,13 +186,13 @@ const FilterBar = ({
 
         {/* Search – desktop only */}
         <div className="relative w-20 sm:w-24 md:w-36 lg:w-44 hidden md:block ml-1">
-          <Search className="absolute left-2 md:left-2.5 top-1/2 -translate-y-1/2 w-3 md:w-3.5 h-3 md:h-3.5 text-muted-foreground/60" />
+          <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/60" />
           <Input
             ref={desktopSearchInputRef}
             placeholder={searchPlaceholder}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-[var(--ds-space-7)] md:pl-[var(--ds-space-8)] pr-[var(--ds-space-6)] md:pr-[var(--ds-space-7)] bg-card/50 border-border/50 focus:border-[rgb(var(--ds-brand-magenta-rgb))] focus-visible:ring-0 focus-visible:ring-offset-0 h-7 md:h-8 ds-text-11 md:ds-text-12 text-muted-foreground/60 placeholder:text-muted-foreground/60 focus:text-foreground"
+            className="pl-[var(--ds-space-7)] pr-[var(--ds-space-6)] bg-card/50 border-border/50 focus:border-[rgb(var(--ds-brand-magenta-rgb))] focus-visible:ring-0 focus-visible:ring-offset-0 h-7 md:h-7 ds-text-11 md:ds-text-11 text-muted-foreground/60 placeholder:text-muted-foreground/60 focus:text-foreground"
           />
           {searchQuery && (
             <button

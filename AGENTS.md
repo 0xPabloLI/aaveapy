@@ -161,6 +161,9 @@ When implementing mobile carousels:
 - Reserve semantic colors exclusively for their intended purpose (amber/warning for alerts only, not for regular data display).
 - Avoid reusing colors already assigned to other concepts (e.g., don't use green for new indicators if green is already used for incentives).
 - Non-core data fields (like Utilization) should use normal font weight, same as Price/Size; only core metrics (APY) get bold.
+- Toggle/selection state changes must be visually obvious; subtle differences (e.g., slight opacity or background changes) are insufficient—use border color or other clear indicators.
+- Use distinct visual forms for semantically different indicators (e.g., ring for capacity utilization, line for position relative to threshold); don't reuse the same visual metaphor for different concepts.
+- Don't overload a UI indicator with unrelated data; keep each element focused on its primary semantic purpose (e.g., UtilizationIndicator for optimal rate only, not borrow amounts).
 
 ## Learned Workspace Facts
 - Local git hooks in this setup are managed under the main repository `.git/hooks` and are local-only (not versioned).

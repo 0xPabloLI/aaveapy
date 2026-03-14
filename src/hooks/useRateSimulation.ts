@@ -407,9 +407,27 @@ export function buildRateSimulationResult({
   const hasAnyInput = hasSupplyInput || hasBorrowInput;
 
   // For incentive forecasts, we need USD values
-  const supplyInputUsd = inputMode === 'usd' ? rawSupply : (tokenPrice ? rawSupply * tokenPrice : 0);
-  const borrowInputUsd = inputMode === 'usd' ? rawBorrow : (tokenPrice ? rawBorrow * tokenPrice : 0);
+  const rawSupplyInputUsd = inputMode === 'usd' ? rawSupply : (tokenPrice ? rawSupply * tokenPrice : 0);
+  const rawBorrowInputUsd = inputMode === 'usd' ? rawBorrow : (tokenPrice ? rawBorrow * tokenPrice : 0);
 
+  // Calculate cap constraints for capping inputs
+  const supplyCapUsd = reserve.supplyCapUsd ?? null;
+  const borrowCapUsd = reserve.borrowCapUsd ?? null;
+  const currentReserveSizeUsd = reserve.reserveSizeUsd ?? null;
+  
+  // Calculate available supply room
+  const availableSupplyRoomUsd = 
+    supplyCapUsd !== null && supplyCapUsd > 0 && currentReserveSizeUsd !== null
+      ? Math.max(supplyCapUsd - currentReserveSizeUsd, 0)
+      : null;
+
+  // Cap supply input
+  const supplyInputUsd = 
+    availableSupplyRoomUsd !== null && rawSupplyInputUsd > availableSupplyRoomUsd
+      ? availableSupplyRoomUsd
+      : rawSupplyInputUsd;
+
+  // Calculate current native simulation first to get totalBorrowedUsd for borrow cap
   const currentNativeSimulation = reserveRateInput
     ? simulateNativeRatesAfterActions(reserveRateInput, {
         supplyAmount: '0',
@@ -417,10 +435,55 @@ export function buildRateSimulationResult({
       })
     : null;
 
+  // Calculate totalBorrowedUsd for borrow cap constraint
+  const RAY_SCALE_EARLY = 1e27;
+  const currentTotalBorrowedUsd = reserveRateInput && tokenPrice
+    ? (() => {
+        const decimals = reserveRateInput.decimals ?? 18;
+        const scale = Math.pow(10, decimals);
+        const totalScaledDebt = Number(reserveRateInput.totalScaledVariableDebt) / scale;
+        const variableBorrowIndex = Number(reserveRateInput.variableBorrowIndex) / RAY_SCALE_EARLY;
+        return totalScaledDebt * variableBorrowIndex * tokenPrice;
+      })()
+    : null;
+
+  // Calculate available borrow room (constrained by borrow cap)
+  const availableBorrowRoomUsd = 
+    borrowCapUsd !== null && borrowCapUsd > 0 && currentTotalBorrowedUsd !== null
+      ? Math.max(borrowCapUsd - currentTotalBorrowedUsd, 0)
+      : null;
+
+  // Calculate available liquidity for additional borrow constraint
+  const availableLiquidityForBorrowUsd = reserveRateInput && tokenPrice
+    ? (() => {
+        const decimals = reserveRateInput.decimals ?? 18;
+        const scale = Math.pow(10, decimals);
+        const availableLiquidityRaw = Number(reserveRateInput.availableLiquidity) / scale;
+        return availableLiquidityRaw * tokenPrice + supplyInputUsd;
+      })()
+    : null;
+
+  // Cap borrow input by both borrow cap and available liquidity
+  let borrowInputUsd = rawBorrowInputUsd;
+  if (availableBorrowRoomUsd !== null && borrowInputUsd > availableBorrowRoomUsd) {
+    borrowInputUsd = availableBorrowRoomUsd;
+  }
+  if (availableLiquidityForBorrowUsd !== null && borrowInputUsd > availableLiquidityForBorrowUsd) {
+    borrowInputUsd = Math.max(0, availableLiquidityForBorrowUsd);
+  }
+
+  // Convert capped USD back to token amounts for native rate simulation
+  const cappedSupplyAmount = tokenPrice && tokenPrice > 0
+    ? supplyInputUsd / tokenPrice
+    : supplyAmount;
+  const cappedBorrowAmount = tokenPrice && tokenPrice > 0
+    ? borrowInputUsd / tokenPrice
+    : borrowAmount;
+
   const combinedNativeSimulation = reserveRateInput && hasAnyInput
     ? simulateNativeRatesAfterActions(reserveRateInput, {
-        supplyAmount: String(supplyAmount),
-        borrowAmount: String(borrowAmount),
+        supplyAmount: String(cappedSupplyAmount),
+        borrowAmount: String(cappedBorrowAmount),
       })
     : null;
 
@@ -631,11 +694,10 @@ export function buildRateSimulationResult({
 
   const RAY_SCALE = 1e27;
   const computeMarketMetrics = (): MarketMetrics => {
-    const supplyCapUsd = reserve.supplyCapUsd ?? null;
-    const borrowCapUsd = reserve.borrowCapUsd ?? null;
-    const currentReserveSizeUsd = reserve.reserveSizeUsd ?? null;
+    // Use raw input values to determine if caps are exceeded (for warnings)
+    // But use capped values for actual calculations (supplyInputUsd, borrowInputUsd are already capped)
     
-    const computeSupplyCapFields = (afterSizeUsd: number | null) => {
+    const computeSupplyCapFields = () => {
       if (supplyCapUsd === null || supplyCapUsd <= 0) {
         return {
           availableSupplyRoomUsd: null,
@@ -643,19 +705,20 @@ export function buildRateSimulationResult({
           supplyCapExceededByUsd: null,
         };
       }
-      const availableRoom = currentReserveSizeUsd !== null 
-        ? Math.max(supplyCapUsd - currentReserveSizeUsd, 0)
+      // Use raw input to check if exceeded
+      const rawAfterSizeUsd = currentReserveSizeUsd !== null 
+        ? currentReserveSizeUsd + rawSupplyInputUsd 
         : null;
-      const exceeded = afterSizeUsd !== null && afterSizeUsd > supplyCapUsd;
-      const exceededBy = exceeded && afterSizeUsd !== null ? afterSizeUsd - supplyCapUsd : null;
+      const exceeded = rawAfterSizeUsd !== null && rawAfterSizeUsd > supplyCapUsd;
+      const exceededBy = exceeded ? rawAfterSizeUsd - supplyCapUsd : null;
       return {
-        availableSupplyRoomUsd: availableRoom,
+        availableSupplyRoomUsd: availableSupplyRoomUsd,
         supplyCapExceeded: exceeded,
         supplyCapExceededByUsd: exceededBy,
       };
     };
 
-    const computeBorrowCapFields = (afterBorrowedUsd: number | null, totalBorrowedUsdBase: number | null) => {
+    const computeBorrowCapFields = (totalBorrowedUsdBase: number | null) => {
       if (borrowCapUsd === null || borrowCapUsd <= 0) {
         return {
           availableBorrowRoomUsd: null,
@@ -663,23 +726,22 @@ export function buildRateSimulationResult({
           borrowCapExceededByUsd: null,
         };
       }
-      const availableRoom = totalBorrowedUsdBase !== null 
-        ? Math.max(borrowCapUsd - totalBorrowedUsdBase, 0)
+      // Use raw input to check if exceeded
+      const rawAfterBorrowedUsd = totalBorrowedUsdBase !== null 
+        ? totalBorrowedUsdBase + rawBorrowInputUsd 
         : null;
-      const exceeded = afterBorrowedUsd !== null && afterBorrowedUsd > borrowCapUsd;
-      const exceededBy = exceeded && afterBorrowedUsd !== null ? afterBorrowedUsd - borrowCapUsd : null;
+      const exceeded = rawAfterBorrowedUsd !== null && rawAfterBorrowedUsd > borrowCapUsd;
+      const exceededBy = exceeded ? rawAfterBorrowedUsd - borrowCapUsd : null;
       return {
-        availableBorrowRoomUsd: availableRoom,
+        availableBorrowRoomUsd: availableBorrowRoomUsd,
         borrowCapExceeded: exceeded,
         borrowCapExceededByUsd: exceededBy,
       };
     };
 
     if (!reserveRateInput || !tokenPrice) {
-      const afterSizeUsd = currentReserveSizeUsd !== null ? currentReserveSizeUsd + supplyInputUsd : null;
-      const supplyCapFields = computeSupplyCapFields(afterSizeUsd);
-      // No totalBorrowedUsd available without reserveRateInput, so borrow cap fields are null
-      const borrowCapFields = computeBorrowCapFields(null, null);
+      const supplyCapFields = computeSupplyCapFields();
+      const borrowCapFields = computeBorrowCapFields(null);
       return {
         availableLiquidityUsd: null,
         availableLiquidityUsdAfter: null,
@@ -713,6 +775,7 @@ export function buildRateSimulationResult({
     const optimalUsageRateRaw = Number(reserveRateInput.optimalUsageRate);
     const optimalUtilization = optimalUsageRateRaw > 0 ? (optimalUsageRateRaw / RAY_SCALE) * 100 : null;
 
+    // Use capped inputs for after values (supplyInputUsd and borrowInputUsd are already capped)
     const availableLiquidityUsdAfter = hasAnyInput
       ? availableLiquidityUsd + supplyInputUsd - borrowInputUsd
       : null;
@@ -720,10 +783,8 @@ export function buildRateSimulationResult({
       ? totalBorrowedUsd + borrowInputUsd
       : null;
 
-    const totalSupplyUsd = availableLiquidityUsd + totalBorrowedUsd;
-    const afterSupplyUsd = hasAnyInput ? totalSupplyUsd + supplyInputUsd : null;
-    const supplyCapFields = computeSupplyCapFields(afterSupplyUsd);
-    const borrowCapFields = computeBorrowCapFields(totalBorrowedUsdAfter, totalBorrowedUsd);
+    const supplyCapFields = computeSupplyCapFields();
+    const borrowCapFields = computeBorrowCapFields(totalBorrowedUsd);
 
     return {
       availableLiquidityUsd,

@@ -43,6 +43,9 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
   const inputBase =
     `w-full min-w-0 ${controlH} rounded-md border border-border/50 bg-card/50 px-[var(--ds-space-3)] ${fontSize} tabular-nums text-muted-foreground/60 outline-none transition-all placeholder:text-muted-foreground/30 placeholder:italic focus:text-foreground focus:border-[rgb(var(--ds-brand-magenta-rgb))] focus-visible:ring-0 focus-visible:ring-offset-0`;
 
+  const segmentedSelected = `px-2 py-1 rounded-md ${fontSize} font-semibold bg-card text-foreground shadow-sm border border-border/60 transition-all duration-200`;
+  const segmentedUnselected = `px-2 py-1 rounded-md ${fontSize} font-semibold text-muted-foreground hover:text-foreground hover:bg-card/50 transition-all duration-200`;
+
   if (isMobile) {
     /* Mobile: stacked layout — row 1: mode + clear, row 2: supply, row 3: borrow */
     return (
@@ -50,14 +53,24 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
         <div className="flex flex-col gap-[var(--ds-space-1-5)]">
           {/* Row 1: mode toggle + clear */}
           <div className="flex items-center gap-[var(--ds-space-1-5)]">
-            <button
-              type="button"
-              onClick={() => setInputMode(inputMode === 'usd' ? 'token' : 'usd')}
-              className={`${btnBase} w-[4.25rem] text-foreground/80`}
-              title={inputMode === 'usd' ? 'Switch to token quantity mode' : 'Switch to USD amount mode'}
-            >
-              {inputMode === 'usd' ? '$ USD' : 'Token'}
-            </button>
+            <div className="flex items-center gap-0.5 bg-muted/60 rounded-lg p-0.5 border border-border/40">
+              <button
+                type="button"
+                onClick={() => setInputMode('usd')}
+                className={inputMode === 'usd' ? segmentedSelected : segmentedUnselected}
+                aria-pressed={inputMode === 'usd'}
+              >
+                USD
+              </button>
+              <button
+                type="button"
+                onClick={() => setInputMode('token')}
+                className={inputMode === 'token' ? segmentedSelected : segmentedUnselected}
+                aria-pressed={inputMode === 'token'}
+              >
+                Token
+              </button>
+            </div>
             <div className="flex-1" />
             <button
               type="button"
@@ -99,14 +112,24 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
   return (
     <div className="rounded-xl border border-border/60 bg-card/60 backdrop-blur-sm px-[var(--ds-space-2-5)] py-[var(--ds-space-1-5)] shadow-sm">
       <div className="flex items-center gap-[var(--ds-space-1-5)]">
-        <button
-          type="button"
-          onClick={() => setInputMode(inputMode === 'usd' ? 'token' : 'usd')}
-          className={`${btnBase} w-[4.25rem] text-foreground/80`}
-          title={inputMode === 'usd' ? 'Switch to token quantity mode' : 'Switch to USD amount mode'}
-        >
-          {inputMode === 'usd' ? '$ USD' : 'Token'}
-        </button>
+        <div className="flex items-center gap-0.5 bg-muted/60 rounded-lg p-0.5 border border-border/40">
+          <button
+            type="button"
+            onClick={() => setInputMode('usd')}
+            className={inputMode === 'usd' ? segmentedSelected : segmentedUnselected}
+            aria-pressed={inputMode === 'usd'}
+          >
+            USD
+          </button>
+          <button
+            type="button"
+            onClick={() => setInputMode('token')}
+            className={inputMode === 'token' ? segmentedSelected : segmentedUnselected}
+            aria-pressed={inputMode === 'token'}
+          >
+            Token
+          </button>
+        </div>
 
         <div className="flex items-center gap-[var(--ds-space-1)] flex-1 min-w-0">
           <span className="ds-text-11 text-muted-foreground font-medium shrink-0">Supply</span>
