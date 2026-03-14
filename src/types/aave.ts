@@ -109,11 +109,11 @@ export interface MerklForecastStateResponse {
   campaignType?: string;
   plannedDaily?: number;
   requiredDaily?: number;
-  aprCap: number | null;
-  totalBudget: number;
-  distributedSoFar: number;
-  latestTvl: number;
-  endTimestamp: number;
+  aprCap?: number | null;
+  totalBudget?: number;
+  distributedSoFar?: number;
+  latestTvl?: number;
+  endTimestamp?: number;
 }
 
 export interface MerklForecastStatesBatchResponse {
