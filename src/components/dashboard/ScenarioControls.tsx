@@ -99,25 +99,35 @@ const ScenarioControls = memo(({ onDebouncedChange }: ScenarioControlsProps) => 
         </button>
 
         <div className="flex items-center gap-[var(--ds-space-1)] flex-1 min-w-0">
-          <span className="ds-text-11 text-muted-foreground font-medium shrink-0">Supply</span>
-          <input
-            value={supplyInput}
-            onChange={(event) => setSupplyInput(formatNumberInput(event.target.value))}
-            inputMode="decimal"
-            placeholder={inputMode === 'usd' ? '100,000' : '50'}
-            className={inputBase}
-          />
+          <span className="ds-text-12 text-muted-foreground font-medium shrink-0">Supply</span>
+          <div className="relative flex-1 min-w-0">
+            <input
+              value={supplyInput}
+              onChange={(event) => setSupplyInput(formatNumberInput(event.target.value))}
+              inputMode="decimal"
+              placeholder={inputMode === 'usd' ? '100,000' : '50'}
+              className={inputBase}
+            />
+            <span className="absolute right-[var(--ds-space-2)] top-1/2 -translate-y-1/2 ds-text-11 text-muted-foreground/40 pointer-events-none select-none">
+              {inputMode === 'usd' ? 'USD' : 'Qty'}
+            </span>
+          </div>
         </div>
 
         <div className="flex items-center gap-[var(--ds-space-1)] flex-1 min-w-0">
-          <span className="ds-text-11 text-muted-foreground font-medium shrink-0">Borrow</span>
-          <input
-            value={borrowInput}
-            onChange={(event) => setBorrowInput(formatNumberInput(event.target.value))}
-            inputMode="decimal"
-            placeholder={inputMode === 'usd' ? '20,000' : '10'}
-            className={inputBase}
-          />
+          <span className="ds-text-12 text-muted-foreground font-medium shrink-0">Borrow</span>
+          <div className="relative flex-1 min-w-0">
+            <input
+              value={borrowInput}
+              onChange={(event) => setBorrowInput(formatNumberInput(event.target.value))}
+              inputMode="decimal"
+              placeholder={inputMode === 'usd' ? '20,000' : '10'}
+              className={inputBase}
+            />
+            <span className="absolute right-[var(--ds-space-2)] top-1/2 -translate-y-1/2 ds-text-11 text-muted-foreground/40 pointer-events-none select-none">
+              {inputMode === 'usd' ? 'USD' : 'Qty'}
+            </span>
+          </div>
         </div>
 
         <button
