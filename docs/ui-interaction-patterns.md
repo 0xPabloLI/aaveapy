@@ -6,7 +6,7 @@ A reusable reference for consistent interaction design across web applications.
 
 | Cursor | Tailwind Class | Use Case |
 |--------|----------------|----------|
-| Arrow (default) | `cursor-default` | Auto-show tooltips, static text, non-interactive elements |
+| Arrow (auto) | `cursor-auto` | Auto-show tooltips, static text, non-interactive elements (lets browser decide naturally) |
 | Hand (pointer) | `cursor-pointer` | Buttons, links, click-to-show tooltips, any clickable element |
 | Not allowed | `cursor-not-allowed` | Disabled buttons, unavailable actions |
 | Text selection | `cursor-text` | Editable text fields, selectable content |
@@ -20,8 +20,8 @@ A reusable reference for consistent interaction design across web applications.
 For hybrid components (different behavior on mobile vs desktop):
 
 ```tsx
-// Mobile: click to show (pointer), Desktop: hover auto-show (default)
-className="cursor-pointer md:cursor-default"
+// Mobile: click to show (pointer), Desktop: hover auto-show (auto)
+className="cursor-pointer md:cursor-auto"
 ```
 
 ## 2. Tooltip Interaction Patterns
@@ -29,7 +29,7 @@ className="cursor-pointer md:cursor-default"
 ### Auto-Show Tooltips (Hover to Reveal)
 
 - **Trigger**: Mouse hover (desktop) or long-press (mobile)
-- **Cursor**: `cursor-default` (explicitly set to override browser defaults)
+- **Cursor**: `cursor-auto` (lets browser decide naturally, typically shows arrow)
 - **Delay**: 150-300ms (recommended: 200ms) to prevent accidental triggers
 - **Hover feedback**: Subtle visual change (scale, background, opacity)
 
@@ -40,7 +40,7 @@ className="cursor-pointer md:cursor-default"
 </TooltipProvider>
 
 // Trigger element
-<div className="cursor-default hover:bg-muted/60 hover:scale-110 transition-all duration-150">
+<div className="cursor-auto hover:bg-muted/70 hover:scale-[1.12] transition-all duration-150">
   {content}
 </div>
 ```
@@ -67,7 +67,7 @@ const isMobile = useIsMobile();
   onClick={isMobile ? handleToggle : undefined}
   onMouseEnter={!isMobile ? handleOpen : undefined}
   onMouseLeave={!isMobile ? handleClose : undefined}
-  className="cursor-pointer md:cursor-default"
+  className="cursor-pointer md:cursor-auto"
 >
   {content}
 </button>
@@ -148,7 +148,7 @@ className="text-muted-foreground cursor-not-allowed"
 // Disabled with auto-show explanation tooltip
 <Tooltip>
   <TooltipTrigger asChild>
-    <span className="text-muted-foreground cursor-default">
+    <span className="text-muted-foreground cursor-auto">
       {value}
     </span>
   </TooltipTrigger>
@@ -163,7 +163,7 @@ className="opacity-50 cursor-not-allowed pointer-events-none"
 
 | Scenario | Cursor |
 |----------|--------|
-| Disabled with explanation tooltip | `cursor-default` (tooltip still works) |
+| Disabled with explanation tooltip | `cursor-auto` (tooltip still works) |
 | Disabled with no interaction | `cursor-not-allowed` |
 | Visually disabled, prevents click | `pointer-events-none` |
 
@@ -220,9 +220,9 @@ className="hover:bg-muted/60 dark:hover:bg-muted/40"
 ┌─────────────────────────────────────────────────────────┐
 │ TOOLTIP TYPE        │ CURSOR          │ DELAY  │ HOVER │
 ├─────────────────────┼─────────────────┼────────┼───────┤
-│ Auto-show (hover)   │ cursor-default  │ 200ms  │ Light │
+│ Auto-show (hover)   │ cursor-auto     │ 200ms  │ Light │
 │ Click-to-show       │ cursor-pointer  │ 0ms    │ Strong│
-│ Hybrid (mobile/dt)  │ pointer→default │ varies │ Medium│
-│ Disabled + tooltip  │ cursor-default  │ 200ms  │ None  │
+│ Hybrid (mobile/dt)  │ pointer→auto    │ varies │ Medium│
+│ Disabled + tooltip  │ cursor-auto     │ 200ms  │ None  │
 └─────────────────────────────────────────────────────────┘
 ```

@@ -137,7 +137,7 @@ export function InfoIconButton({
           flex items-center justify-center
           transition-all duration-200
           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1
-          cursor-pointer md:cursor-default"
+          cursor-pointer md:cursor-auto"
       >
         <Info className="h-2.5 w-2.5 shrink-0" aria-hidden />
       </button>

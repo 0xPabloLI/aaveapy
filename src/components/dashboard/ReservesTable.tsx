@@ -792,7 +792,7 @@ const ReservesTable = ({
       <div className="sticky top-0 z-20 border-b border-border/60 p-[var(--ds-space-3)] bg-muted/40 backdrop-blur-sm shadow-[0_1px_3px_0_rgb(0_0_0/0.04)]">
         {scenarioControls}
       </div>
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto overflow-y-visible">
         <Table className="w-full table-fixed">
           <colgroup>
             <col style={{ width: '12%' }} />

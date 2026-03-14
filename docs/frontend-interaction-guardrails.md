@@ -7,7 +7,7 @@ This note records recurring UI/interaction issues found during incentive/forecas
 ### Tooltip / Overlay behavior
 
 - **Distinguish auto-show vs click-to-show tooltips**:
-  - **Auto-show tooltip (hover reveals)**: Explicitly use `cursor-default` to override browser defaults. Add subtle hover feedback like `hover:opacity-80`, `hover:scale-110`, or `hover:bg-muted/60` so the user knows the element is interactive.
+  - **Auto-show tooltip (hover reveals)**: Use `cursor-auto` (lets browser decide naturally). Add subtle hover feedback like `hover:opacity-80`, `hover:scale-[1.12]`, or `hover:bg-muted/70` so the user knows the element is interactive.
   - **Click-to-show tooltip/popover**: Use `cursor-pointer`. Add stronger hover feedback like `hover:ring-2`, `hover:bg-xxx` with increased opacity/saturation.
   - Never use `cursor-pointer` for auto-show tooltips — it implies a click action that doesn't exist.
   - Never use `cursor-help` (question mark cursor) — it's not part of our design system.
@@ -21,16 +21,16 @@ This note records recurring UI/interaction issues found during incentive/forecas
 
 **Auto-show tooltip** (e.g. `CapProgressRing`):
 ```tsx
-// cursor-default to override browser defaults, subtle hover feedback
-<div className="inline-flex items-center p-0.5 -m-0.5 rounded-full transition-all duration-150 hover:bg-muted/60 hover:scale-110 cursor-default">
+// cursor-auto lets browser decide, subtle hover feedback
+<div className="inline-flex items-center p-0.5 -m-0.5 rounded-full transition-all duration-150 hover:bg-muted/70 hover:scale-[1.12] cursor-auto">
   {/* content */}
 </div>
 ```
 
 **Hybrid tooltip** (mobile: click-to-show, desktop: auto-show, e.g. `InfoIconButton`):
 ```tsx
-// cursor-pointer on mobile (click), cursor-default on desktop (hover auto-show)
-<button className="... cursor-pointer md:cursor-default">
+// cursor-pointer on mobile (click), cursor-auto on desktop (hover auto-show)
+<button className="... cursor-pointer md:cursor-auto">
   <Info className="h-2.5 w-2.5" />
 </button>
 ```
@@ -147,3 +147,44 @@ When tooltip/forecast behavior looks wrong, check:
 3. **Forecast source type**: Merkl vs Merit (campaign-wide vs user-specific semantics)
 4. **Viewport constraints**: clipping, scrollability, fixed overlay behavior
 5. **Token normalization**: symbol alias handling in search and display
+
+---
+
+## C. Reserves Table Simulation Notes
+
+### Current behavior
+
+- Native simulation uses one combined reserve state:
+  - `supplyAmount` increases the utilization denominator
+  - `borrowAmount` increases variable debt
+  - denominator includes `deficit` from `/rate-inputs`
+  - utilization, borrow rate, and supply rate are recalculated from that same combined state
+- Incentive simulation remains reserve-specific:
+  - supply-side incentives react to the shared supply input
+  - borrow-side incentives react to the shared borrow input
+
+### Data-source boundaries
+
+- Shared table simulation must treat backend snapshots as the primary data plane.
+  - `markets` provides reserve rows plus any local `tokenPrices`.
+  - `rate-inputs` provides the native-rate state used for supply/borrow recomputation.
+  - `forecast` (in side-data) provides Merkl campaign state when a campaign is actually being forecast.
+- Browser-side third-party price backup is enabled for shared simulation as a bounded fallback.
+  - Primary path remains backend snapshot `tokenPrices`.
+  - Fallback is only used when snapshot misses price entries and is protected by query-key dedupe, module in-flight dedupe, limiter, and TTL caches.
+- Keep monitoring fan-out and provider limits.
+  - If request volume rises, prefer backend batch/proxy consolidation over unbounded client scatter/gather.
+
+### Interaction direction
+
+- Row expansion is acceptable for detailed inspection.
+- If the primary product goal becomes comparing many reserves under the same hypothetical size, move the scenario inputs to a shared table-level control bar.
+- In that model:
+  - main table cells should update from the shared scenario
+  - row expansion should only expose the detailed breakdown, not own the scenario state
+
+### UI rules
+
+- Keep `Native` and `Incentive total` visible even when simulated values are empty.
+- Hide downstream source rows when both current and simulated values are effectively zero.
+- Use fixed numeric column widths so placeholders align with headers.

@@ -1,6 +1,5 @@
 import { lazy, Suspense, useState, useMemo, useCallback, useEffect } from 'react';
 import { useIsFetching, useQueryClient } from '@tanstack/react-query';
-import { usePreloadReserveAssets } from '@/hooks/usePreloadReserveAssets';
 import { useAaveMarkets } from '@/hooks/useAaveMarkets';
 import { prefetchRateInputsSnapshot } from '@/hooks/useReserveRateInputs';
 import { useTokenCategories } from '@/hooks/useTokenCategories';
@@ -22,7 +21,14 @@ import PullToRefresh from '@/components/dashboard/PullToRefresh';
 import { getCachedMarkets, setCachedTydroRate } from '@/lib/cache';
 import { TYDRO_POINT_TO_USD_RATE } from '@/lib/tydro';
 import { AlertTriangle, Send, Github } from 'lucide-react';
-import { preloadIncentiveIcons, setPreloadPaused, shouldUseFullPreloadMode } from '@/lib/preloadUtils';
+import {
+  getRecommendedPreloadLimit,
+  preloadChainIcons,
+  preloadIncentiveIcons,
+  preloadTokenIcons,
+  setPreloadPaused,
+  shouldUseFullPreloadMode,
+} from '@/lib/preloadUtils';
 import { buildMarketsList } from '@/lib/marketsList';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
 import { normalizeTokenSymbolForSearch } from '@/lib/tokenSymbolNormalization';
@@ -122,45 +128,62 @@ const Index = () => {
     []
   );
 
-  // Use full mode only on Wi-Fi without save-data; otherwise fall back to adaptive mode.
-  usePreloadReserveAssets(stableReserves, {
-    preloadMode,
-    enabled: hasReserves,
-    isSuccess: !!data,
-  });
+  // ── Warm-up order: API data first, then static assets ──
+  // Priority: side-data (forecast/categories/FDV) → rate-inputs → reserve icons → incentive icons
 
-  // Preload incentive icons after reserve icons (lower priority)
+  // (1) Warm up side-data meta (includes forecast, categories, FDV) once browser is idle after reserves load.
   useEffect(() => {
     if (!hasReserves) return;
-    const timeoutId = setTimeout(() => {
-      preloadIncentiveIcons();
-    }, 2000); // Delay further to let reserve icons finish first
-    return () => clearTimeout(timeoutId);
-  }, [hasReserves]);
-
-  // Warm up side-data meta (includes forecast, categories, FDV) once reserves load.
-  useEffect(() => {
-    if (!hasReserves) return;
-    const timeoutId = setTimeout(() => {
+    const scheduleWarmup = () => {
       void queryClient.prefetchQuery({
         queryKey: SIDE_DATA_META_QUERY_KEY,
         queryFn: fetchSideDataMeta,
         staleTime: QUERY_STALE_TIMES.sideDataMeta,
       }).catch(() => {});
-    }, 700);
+    };
+    if ('requestIdleCallback' in window) {
+      const idleId = window.requestIdleCallback(scheduleWarmup, { timeout: 2000 });
+      return () => window.cancelIdleCallback(idleId);
+    }
+    const timeoutId = setTimeout(scheduleWarmup, 200);
     return () => clearTimeout(timeoutId);
   }, [hasReserves, queryClient]);
 
-  // Warm up rate-input snapshot after side-data to avoid first-tooltip latency.
+  // (2) Warm up rate-input snapshot after side-data to avoid first-tooltip latency.
+  useEffect(() => {
+    if (!hasReserves) return;
+    const scheduleWarmup = () => {
+      void prefetchRateInputsSnapshot(queryClient).catch(() => {});
+    };
+    if ('requestIdleCallback' in window) {
+      const idleId = window.requestIdleCallback(scheduleWarmup, { timeout: 2500 });
+      return () => window.cancelIdleCallback(idleId);
+    }
+    const timeoutId = setTimeout(scheduleWarmup, 400);
+    return () => clearTimeout(timeoutId);
+  }, [hasReserves, queryClient]);
+
+  // (3) Preload reserve token/chain icons after API warm-ups complete.
+  useEffect(() => {
+    if (!hasReserves || !data) return;
+    const timeoutId = setTimeout(() => {
+      const resolvedLimit = preloadMode === 'full' ? stableReserves.length : getRecommendedPreloadLimit(stableReserves.length);
+      const symbols = stableReserves.slice(0, resolvedLimit).map(r => r.tokenSymbol);
+      const chains = [...new Set(stableReserves.slice(0, resolvedLimit).map(r => r.chainName))];
+      preloadTokenIcons(symbols);
+      preloadChainIcons(chains);
+    }, 3000);
+    return () => clearTimeout(timeoutId);
+  }, [hasReserves, data, stableReserves, preloadMode]);
+
+  // (4) Preload incentive icons after reserve icons (lowest priority).
   useEffect(() => {
     if (!hasReserves) return;
     const timeoutId = setTimeout(() => {
-      void prefetchRateInputsSnapshot(queryClient).catch(() => {
-        // No-op: keep UI non-blocking if prefetch fails.
-      });
-    }, 900);
+      preloadIncentiveIcons();
+    }, 4000);
     return () => clearTimeout(timeoutId);
-  }, [hasReserves, queryClient]);
+  }, [hasReserves]);
 
   const tokenCategoryGroups = useMemo(
     () => buildTokenCategoryGroups(tokenCategoryOverrides),

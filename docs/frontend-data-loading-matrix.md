@@ -29,8 +29,8 @@ This document summarizes data-loading behavior for the home page and simulation 
 | API | Trigger type | Current trigger point | TTL / staleTime | Caches used | Notes |
 | --- | --- | --- | --- | --- | --- |
 | `/markets` | App-level prefetch + hook query | `App.tsx` prefetch + `useAaveMarkets` in `Index` | 1 min (`coreSnapshotApi`) | React Query + localStorage | Core snapshot. |
-| `/meta/side-data` | Warm-up + hook query | Warm-up in `Index` (700ms after reserves) + `useSideDataMeta`, `useTokenCategories`, `useCoingeckoFdv`, simulation hooks | 5 min (`sideDataMeta`); backend TTL overrides (categories 6h, FDV 5m, forecast 10m) | React Query + localStorage + module in-memory (forecast) | Merged endpoint for categories, FDV, and forecast. |
-| `/rate-inputs` | Warm-up + hook query | Warm-up in `Index` (900ms after reserves) + on-demand in simulation hooks | 1 min | React Query + localStorage | Warm-up avoids first-tooltip lag. |
+| `/meta/side-data` | Warm-up + hook query | `requestIdleCallback` after reserves (timeout 2s) + `useSideDataMeta`, `useTokenCategories`, `useCoingeckoFdv`, simulation hooks | 5 min (`sideDataMeta`); backend TTL overrides (categories 6h, FDV 5m, forecast 10m) | React Query + localStorage + module in-memory (forecast) | Merged endpoint for categories, FDV, and forecast. |
+| `/rate-inputs` | Warm-up + hook query | `requestIdleCallback` after reserves (timeout 2.5s) + on-demand in simulation hooks | 1 min | React Query + localStorage | Warm-up avoids first-tooltip lag. |
 | CoinGecko `/search` | Hook query (third-party) | `useCoingeckoTokenImage` fallback only | 24 hours | React Query + localStorage | Icon fallback when local/logo URI misses. |
 
 ## Forecast Token Price Backup
@@ -72,9 +72,12 @@ This document summarizes data-loading behavior for the home page and simulation 
 | Priority | Workload | Current timing |
 |:---------|:---------|:---------------|
 | P0 | `/markets` prefetch | App bootstrap |
-| P1 | `/meta/side-data` warm-up (includes forecast, categories, FDV) | 700ms after reserves available |
-| P2 | `/rate-inputs` warm-up | 900ms after reserves available |
-| P3 | Non-critical image preloading (reserve icons, incentive icons) | Immediate/adaptive + delayed incentive icons (2000ms) |
+| P1 | `/meta/side-data` API warm-up (forecast, categories, FDV) | `requestIdleCallback` after reserves (timeout 2s) |
+| P2 | `/rate-inputs` API warm-up | `requestIdleCallback` after reserves (timeout 2.5s) |
+| P3 | Reserve token/chain icon preload | 3000ms after reserves |
+| P4 | Incentive icons preload | 4000ms after reserves |
+
+**Design rationale:** API data warm-up comes before static asset preloading. API data affects functional experience (tooltip data availability), while icons only affect visual polish.
 
 ## Frontend Layer Stack (System View)
 
@@ -107,7 +110,42 @@ This document summarizes data-loading behavior for the home page and simulation 
 | On-demand when needed | On-demand fetch / lazy fetch | 按需请求 / 懒加载 |
 | Downgrade from prefetch to warm-up | Downgrade from prefetch to post-home warm-up | 从预取降级为延迟预热 |
 
-Order in practice: **App prefetch** → **Home fetch** (e.g. `useAaveMarkets` consumes prefetched `/markets`) → **Post-home warm-up** (side-data at 700ms, rate-inputs at 900ms).
+Order in practice: **App prefetch** → **Home fetch** (e.g. `useAaveMarkets` consumes prefetched `/markets`) → **Post-home warm-up** (API data via `requestIdleCallback`: side-data → rate-inputs) → **Static asset preload** (reserve icons at 3s → incentive icons at 4s).
+
+---
+
+## Backend API Alignment
+
+Frontend types and Zod schemas are aligned with the backend response shapes.
+
+| Endpoint | Frontend usage | Schema / type |
+|----------|----------------|----------------|
+| `GET /markets` | Manual check `snapshot.lastUpdated`, `reserves[]`; no Zod. Uses `snapshot.staleTimeMs` (when present) as React Query `staleTime`, falling back to local TTL. | `MarketsResponse`, `ReserveWithSpread` |
+| `GET /rate-inputs` | Zod `RateInputsResponseSchema` | `RateInputsResponse`, `ReserveRateInput` |
+| `GET /meta/side-data` | Zod `SideDataMetaResponseSchema`. Includes categories, FDV, and forecast (merged endpoint). Uses `min(categories.staleTimeMs, fdv.staleTimeMs, forecast.staleTimeMs)` as React Query `staleTime`, falling back to local TTL. Forecast data is also cached in module in-memory cache and localStorage. | `SideDataMetaResponse` (in useSideDataMeta) |
+
+**Backend fields not used by frontend:**
+- `GET /rate-inputs`: `sources` – `{ subgraphChains, onchainChains, subgraphMissingChains }` (root-level)
+- `GET /meta/side-data` → `fdv.items[]`: `source` – per-item source label (e.g. coingecko)
+
+---
+
+## Token Icon Source at Runtime
+
+Reserve token images (e.g. USDC, WETH) are resolved in this order:
+
+1. **logoURI** – If the reserve has a `logoURI` (from backend or from local config), it is used first.
+   - Local config: `src/ui-config/reservePatches.ts` builds a map from `@bgd-labs/aave-address-book` tokenlist (by `underlyingAsset` → `logoURI`) and optional `underlyingAssetMap` overrides.
+   - So if a token's contract address is in the address-book tokenlist with a `logoURI`, that URL is used.
+
+2. **Local static assets** – `getTokenIconSources(symbol)` in `src/lib/preloadUtils.ts` returns paths like `/icons/tokens/{symbol}.svg` (and .webp, .png).
+   - Files under `public/icons/tokens/` are tried in order; the first that loads wins.
+
+3. **CoinGecko fallback** – If neither logoURI nor a local icon works, `useCoingeckoTokenImage(symbol)` in `src/hooks/useCoingeckoTokenImage.ts` fetches from CoinGecko's search API by symbol and caches the result.
+
+**Preload vs Runtime:** Preload only covers local static files (`/icons/tokens/`). Runtime display prioritizes logoURI first.
+
+---
 
 ## FAQ
 

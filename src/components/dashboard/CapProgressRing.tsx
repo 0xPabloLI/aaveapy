@@ -40,7 +40,7 @@ const CapProgressRing = memo(({
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <div className="inline-flex items-center p-1 -m-1 rounded-full transition-all duration-150 hover:bg-muted hover:scale-125 hover:ring-1 hover:ring-muted-foreground/20 cursor-default">
+        <div className="inline-flex items-center p-0.5 -m-0.5 rounded-full transition-all duration-150 hover:bg-muted/70 hover:scale-[1.12] cursor-auto">
           <svg
             width={ringSize}
             height={ringSize}
