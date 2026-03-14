@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, X } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { TokenCategory, MarketListItem, ETHEREUM_MARKET_NAMES } from '@/types/aave';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -185,13 +186,13 @@ const FilterBar = ({
 
         {/* Search – desktop only */}
         <div className="relative w-20 sm:w-24 md:w-36 lg:w-44 hidden md:block ml-1">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/60" />
-          <input
+          <Search className="absolute left-2 md:left-2.5 top-1/2 -translate-y-1/2 w-3 md:w-3.5 h-3 md:h-3.5 text-muted-foreground/60" />
+          <Input
             ref={desktopSearchInputRef}
             placeholder={searchPlaceholder}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full h-8 rounded-md border border-border/50 bg-card/50 pl-[var(--ds-space-8)] pr-[var(--ds-space-7)] ds-text-12 text-muted-foreground/60 placeholder:text-muted-foreground/60 outline-none transition-all focus:text-foreground focus:border-[rgb(var(--ds-brand-magenta-rgb))] focus-visible:ring-0"
+            className="pl-[var(--ds-space-7)] md:pl-[var(--ds-space-8)] pr-[var(--ds-space-6)] md:pr-[var(--ds-space-7)] bg-card/50 border-border/50 focus:border-[rgb(var(--ds-brand-magenta-rgb))] focus-visible:ring-0 focus-visible:ring-offset-0 h-7 md:h-8 ds-text-11 md:ds-text-12 text-muted-foreground/60 placeholder:text-muted-foreground/60 focus:text-foreground"
           />
           {searchQuery && (
             <button
@@ -215,12 +216,12 @@ const FilterBar = ({
       <div className="flex items-center gap-1.5 md:hidden">
         <div className="relative flex-1 min-w-0">
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
-          <input
+          <Input
             ref={mobileSearchInputRef}
             placeholder={searchPlaceholder}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full h-7 rounded-md border border-border/50 bg-card/50 pl-[var(--ds-space-8)] pr-[var(--ds-space-6)] ds-text-11 text-muted-foreground/50 placeholder:text-muted-foreground/50 outline-none transition-all focus:text-foreground focus:border-[rgb(var(--ds-brand-magenta-rgb))] focus-visible:ring-0"
+            className="pl-[var(--ds-space-8)] pr-[var(--ds-space-6)] bg-card/50 border-border/50 focus:border-[rgb(var(--ds-brand-magenta-rgb))] focus-visible:ring-0 focus-visible:ring-offset-0 h-7 ds-text-11 text-muted-foreground/50 placeholder:text-muted-foreground/50 focus:text-foreground"
           />
           {searchQuery && (
             <button

@@ -7,20 +7,32 @@ This note records recurring UI/interaction issues found during incentive/forecas
 ### Tooltip / Overlay behavior
 
 - **Distinguish auto-show vs click-to-show tooltips**:
-  - **Auto-show tooltip (hover reveals)**: Use default cursor (no `cursor-pointer`). Add subtle hover feedback like `hover:opacity-80`, `hover:scale-110`, or `hover:bg-muted/60` so the user knows the element is interactive.
+  - **Auto-show tooltip (hover reveals)**: Use `cursor-auto` (lets browser decide naturally). Add subtle hover feedback like `hover:opacity-80`, `hover:scale-[1.12]`, or `hover:bg-muted/70` so the user knows the element is interactive.
   - **Click-to-show tooltip/popover**: Use `cursor-pointer`. Add stronger hover feedback like `hover:ring-2`, `hover:bg-xxx` with increased opacity/saturation.
   - Never use `cursor-pointer` for auto-show tooltips — it implies a click action that doesn't exist.
   - Never use `cursor-help` (question mark cursor) — it's not part of our design system.
 - **All interactive elements must have visible hover state**: even auto-show tooltips need visual feedback on hover (e.g. subtle scale, opacity change, or background highlight).
+- **Tooltip delay configuration**:
+  - Global `TooltipProvider` is set to `delayDuration={200}` (200ms) in `App.tsx`.
+  - This only affects Radix UI `Tooltip` components (auto-show tooltips).
+  - Custom click-to-show components (e.g. `IncentiveTooltip`) manage their own timing and are not affected by this setting.
 
 #### Implementation examples
 
 **Auto-show tooltip** (e.g. `CapProgressRing`):
 ```tsx
-// NO cursor-pointer, subtle hover feedback only
-<div className="inline-flex items-center p-0.5 -m-0.5 rounded-full transition-all duration-150 hover:bg-muted/60 hover:scale-110">
+// cursor-auto lets browser decide, subtle hover feedback
+<div className="inline-flex items-center p-0.5 -m-0.5 rounded-full transition-all duration-150 hover:bg-muted/70 hover:scale-[1.12] cursor-auto">
   {/* content */}
 </div>
+```
+
+**Hybrid tooltip** (mobile: click-to-show, desktop: auto-show, e.g. `InfoIconButton`):
+```tsx
+// cursor-pointer on mobile (click), cursor-auto on desktop (hover auto-show)
+<button className="... cursor-pointer md:cursor-auto">
+  <Info className="h-2.5 w-2.5" />
+</button>
 ```
 
 **Click-to-show tooltip** (e.g. incentive badge):
@@ -35,6 +47,40 @@ This note records recurring UI/interaction issues found during incentive/forecas
   {/* content */}
 </button>
 ```
+### Visual consistency
+
+- **Related visual elements must share the same color**: auxiliary indicators (progress rings, icons, badges) placed adjacent to text should inherit from or match that text's color.
+  - Example: a cap progress ring next to "14M/15M" should use `currentColor` so it stays visually tied to the size value.
+  - Only use distinct accent colors (emerald, amber, red) when conveying semantic status (success, warning, danger), not for decoration.
+- **Warning/danger thresholds override base color**: when an indicator crosses a threshold (e.g. >80% utilization), it can switch to amber/red to signal urgency — this is intentional divergence from the adjacent text color.
+
+### Color semantic guidelines (告警色专用原则)
+
+**Reserved semantic colors** — use exclusively for their intended purpose:
+
+| Color | Semantic token | Usage | Examples |
+|-------|---------------|-------|----------|
+| **Amber/Orange** | `warning`, `text-warning` | ⚠️ Warnings only | Supply cap exceeded, over-optimal utilization, risk alerts |
+| **Red** | `destructive` | 🚫 Errors/danger | Transaction failed, critical errors |
+| **Green/Emerald** | `success`, `text-emerald-*` | ✅ Normal/positive state | Safe utilization zone, successful actions |
+
+**Non-semantic data display** — use neutral colors:
+
+| Data type | Recommended color | Example |
+|-----------|------------------|---------|
+| Utilization percentage (normal) | `text-foreground` | "75.2%" in Utilization column |
+| General numeric data | `text-foreground` | Market size, prices |
+| Secondary/muted info | `text-muted-foreground`, `text-secondary` | Labels, descriptions |
+
+**UtilizationIndicator color scheme**:
+- Safe zone (below optimal): `fill-secondary/40` (neutral gray)
+- Warning zone (above optimal): `fill-warning/40` (amber)
+- Current position dot: `fill-muted-foreground` (normal) / `fill-warning` (over-optimal)
+
+**Key principle**: Amber/warning colors must NOT be used for regular data display. This ensures that when amber appears, users immediately recognize it as a warning signal.
+
+### Geometry and layout
+
 - **If a UI requirement is stated as exact geometry, implement exact geometry** (not "close enough" heuristics).
   - Example: when the requested top/bottom arrow gap must match, pass full trigger geometry (or at least trigger height) and compute the same gap from trigger edges.
   - Do not ship an approximation first if the requested exact geometry is already available from the trigger element (`getBoundingClientRect()`).
@@ -126,3 +172,44 @@ When tooltip/forecast behavior looks wrong, check:
 3. **Forecast source type**: Merkl vs Merit (campaign-wide vs user-specific semantics)
 4. **Viewport constraints**: clipping, scrollability, fixed overlay behavior
 5. **Token normalization**: symbol alias handling in search and display
+
+---
+
+## C. Reserves Table Simulation Notes
+
+### Current behavior
+
+- Native simulation uses one combined reserve state:
+  - `supplyAmount` increases the utilization denominator
+  - `borrowAmount` increases variable debt
+  - denominator includes `deficit` from `/rate-inputs`
+  - utilization, borrow rate, and supply rate are recalculated from that same combined state
+- Incentive simulation remains reserve-specific:
+  - supply-side incentives react to the shared supply input
+  - borrow-side incentives react to the shared borrow input
+
+### Data-source boundaries
+
+- Shared table simulation must treat backend snapshots as the primary data plane.
+  - `markets` provides reserve rows plus any local `tokenPrices`.
+  - `rate-inputs` provides the native-rate state used for supply/borrow recomputation.
+  - `forecast` (in side-data) provides Merkl campaign state when a campaign is actually being forecast.
+- Browser-side third-party price backup is enabled for shared simulation as a bounded fallback.
+  - Primary path remains backend snapshot `tokenPrices`.
+  - Fallback is only used when snapshot misses price entries and is protected by query-key dedupe, module in-flight dedupe, limiter, and TTL caches.
+- Keep monitoring fan-out and provider limits.
+  - If request volume rises, prefer backend batch/proxy consolidation over unbounded client scatter/gather.
+
+### Interaction direction
+
+- Row expansion is acceptable for detailed inspection.
+- If the primary product goal becomes comparing many reserves under the same hypothetical size, move the scenario inputs to a shared table-level control bar.
+- In that model:
+  - main table cells should update from the shared scenario
+  - row expansion should only expose the detailed breakdown, not own the scenario state
+
+### UI rules
+
+- Keep `Native` and `Incentive total` visible even when simulated values are empty.
+- Hide downstream source rows when both current and simulated values are effectively zero.
+- Use fixed numeric column widths so placeholders align with headers.

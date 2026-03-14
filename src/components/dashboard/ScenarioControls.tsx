@@ -1,4 +1,4 @@
-import { useState, useEffect, memo } from 'react';
+import { useState, useEffect, memo, forwardRef, useImperativeHandle } from 'react';
 import { formatNumberInput } from '@/lib/numberFormat';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -6,15 +6,25 @@ const INPUT_DEBOUNCE_MS = 300;
 
 export type ScenarioInputMode = 'usd' | 'token';
 
+export interface ScenarioControlsHandle {
+  setSupplyInput: (value: string) => void;
+  setBorrowInput: (value: string) => void;
+}
+
 interface ScenarioControlsProps {
   onDebouncedChange: (supply: string, borrow: string, mode: ScenarioInputMode) => void;
 }
 
-const ScenarioControls = memo(({ onDebouncedChange }: ScenarioControlsProps) => {
+const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControlsProps>(({ onDebouncedChange }, ref) => {
   const isMobile = useIsMobile();
   const [supplyInput, setSupplyInput] = useState('');
   const [borrowInput, setBorrowInput] = useState('');
   const [inputMode, setInputMode] = useState<ScenarioInputMode>('usd');
+
+  useImperativeHandle(ref, () => ({
+    setSupplyInput: (value: string) => setSupplyInput(formatNumberInput(value)),
+    setBorrowInput: (value: string) => setBorrowInput(formatNumberInput(value)),
+  }), []);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -31,7 +41,7 @@ const ScenarioControls = memo(({ onDebouncedChange }: ScenarioControlsProps) => 
   const btnBase =
     `inline-flex items-center justify-center shrink-0 rounded-md border border-border/50 bg-card/50 ${fontSize} font-medium transition-all hover:bg-accent/60 hover:border-border focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none ${controlH}`;
   const inputBase =
-    `w-full min-w-0 ${controlH} rounded-md border border-border/50 bg-card/50 px-[var(--ds-space-3)] pr-[var(--ds-space-9)] ${fontSize} tabular-nums text-muted-foreground/60 outline-none transition-all placeholder:text-muted-foreground/30 placeholder:italic focus:text-foreground focus:border-[rgb(var(--ds-brand-magenta-rgb))] focus-visible:ring-0 focus-visible:ring-offset-0`;
+    `w-full min-w-0 ${controlH} rounded-md border border-border/50 bg-card/50 px-[var(--ds-space-3)] ${fontSize} tabular-nums text-muted-foreground/60 outline-none transition-all placeholder:text-muted-foreground/30 placeholder:italic focus:text-foreground focus:border-[rgb(var(--ds-brand-magenta-rgb))] focus-visible:ring-0 focus-visible:ring-offset-0`;
 
   if (isMobile) {
     /* Mobile: stacked layout — row 1: mode + clear, row 2: supply, row 3: borrow */
@@ -61,34 +71,24 @@ const ScenarioControls = memo(({ onDebouncedChange }: ScenarioControlsProps) => 
           {/* Row 2: supply */}
           <div className="flex items-center gap-[var(--ds-space-1)] min-w-0">
             <span className="ds-text-11 text-muted-foreground font-medium shrink-0 w-[3rem]">Supply</span>
-            <div className="relative flex-1 min-w-0">
-              <input
-                value={supplyInput}
-                onChange={(event) => setSupplyInput(formatNumberInput(event.target.value))}
-                inputMode="decimal"
-                placeholder={inputMode === 'usd' ? '100,000' : '50'}
-                className={inputBase}
-              />
-              <span className="absolute right-[var(--ds-space-2)] top-1/2 -translate-y-1/2 ds-text-10 text-muted-foreground/40 pointer-events-none select-none">
-                {inputMode === 'usd' ? 'USD' : 'Qty'}
-              </span>
-            </div>
+            <input
+              value={supplyInput}
+              onChange={(event) => setSupplyInput(formatNumberInput(event.target.value))}
+              inputMode="decimal"
+              placeholder={inputMode === 'usd' ? '100,000' : '50'}
+              className={inputBase}
+            />
           </div>
           {/* Row 3: borrow */}
           <div className="flex items-center gap-[var(--ds-space-1)] min-w-0">
             <span className="ds-text-11 text-muted-foreground font-medium shrink-0 w-[3rem]">Borrow</span>
-            <div className="relative flex-1 min-w-0">
-              <input
-                value={borrowInput}
-                onChange={(event) => setBorrowInput(formatNumberInput(event.target.value))}
-                inputMode="decimal"
-                placeholder={inputMode === 'usd' ? '20,000' : '10'}
-                className={inputBase}
-              />
-              <span className="absolute right-[var(--ds-space-2)] top-1/2 -translate-y-1/2 ds-text-10 text-muted-foreground/40 pointer-events-none select-none">
-                {inputMode === 'usd' ? 'USD' : 'Qty'}
-              </span>
-            </div>
+            <input
+              value={borrowInput}
+              onChange={(event) => setBorrowInput(formatNumberInput(event.target.value))}
+              inputMode="decimal"
+              placeholder={inputMode === 'usd' ? '20,000' : '10'}
+              className={inputBase}
+            />
           </div>
         </div>
       </div>
@@ -109,35 +109,25 @@ const ScenarioControls = memo(({ onDebouncedChange }: ScenarioControlsProps) => 
         </button>
 
         <div className="flex items-center gap-[var(--ds-space-1)] flex-1 min-w-0">
-          <span className="ds-text-12 text-muted-foreground font-medium shrink-0">Supply</span>
-          <div className="relative flex-1 min-w-0">
-            <input
-              value={supplyInput}
-              onChange={(event) => setSupplyInput(formatNumberInput(event.target.value))}
-              inputMode="decimal"
-              placeholder={inputMode === 'usd' ? '100,000' : '50'}
-              className={inputBase}
-            />
-            <span className="absolute right-[var(--ds-space-2)] top-1/2 -translate-y-1/2 ds-text-11 text-muted-foreground/40 pointer-events-none select-none">
-              {inputMode === 'usd' ? 'USD' : 'Qty'}
-            </span>
-          </div>
+          <span className="ds-text-11 text-muted-foreground font-medium shrink-0">Supply</span>
+          <input
+            value={supplyInput}
+            onChange={(event) => setSupplyInput(formatNumberInput(event.target.value))}
+            inputMode="decimal"
+            placeholder={inputMode === 'usd' ? '100,000' : '50'}
+            className={inputBase}
+          />
         </div>
 
         <div className="flex items-center gap-[var(--ds-space-1)] flex-1 min-w-0">
-          <span className="ds-text-12 text-muted-foreground font-medium shrink-0">Borrow</span>
-          <div className="relative flex-1 min-w-0">
-            <input
-              value={borrowInput}
-              onChange={(event) => setBorrowInput(formatNumberInput(event.target.value))}
-              inputMode="decimal"
-              placeholder={inputMode === 'usd' ? '20,000' : '10'}
-              className={inputBase}
-            />
-            <span className="absolute right-[var(--ds-space-2)] top-1/2 -translate-y-1/2 ds-text-11 text-muted-foreground/40 pointer-events-none select-none">
-              {inputMode === 'usd' ? 'USD' : 'Qty'}
-            </span>
-          </div>
+          <span className="ds-text-11 text-muted-foreground font-medium shrink-0">Borrow</span>
+          <input
+            value={borrowInput}
+            onChange={(event) => setBorrowInput(formatNumberInput(event.target.value))}
+            inputMode="decimal"
+            placeholder={inputMode === 'usd' ? '20,000' : '10'}
+            className={inputBase}
+          />
         </div>
 
         <button
@@ -151,7 +141,7 @@ const ScenarioControls = memo(({ onDebouncedChange }: ScenarioControlsProps) => 
       </div>
     </div>
   );
-});
+}));
 
 ScenarioControls.displayName = 'ScenarioControls';
 

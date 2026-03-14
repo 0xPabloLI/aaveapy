@@ -1,11 +1,7 @@
 import { lazy, Suspense, useState, useMemo, useCallback, useEffect } from 'react';
-import { useIsFetching, useQueryClient } from '@tanstack/react-query';
-import { usePreloadReserveAssets } from '@/hooks/usePreloadReserveAssets';
+import { useIsFetching } from '@tanstack/react-query';
 import { useAaveMarkets } from '@/hooks/useAaveMarkets';
-import { prefetchRateInputsSnapshot } from '@/hooks/useReserveRateInputs';
-import { fetchMerklForecastStates } from '@/lib/merklForecastApi';
 import { useTokenCategories } from '@/hooks/useTokenCategories';
-import { fetchSideDataMeta, SIDE_DATA_META_QUERY_KEY } from '@/hooks/useSideDataMeta';
 import { SortField, SortOrder, TokenCategory, ReserveWithSpread, TokenPricesIndex } from '@/types/aave';
 import {
   buildTokenCategoryGroups,
@@ -23,9 +19,15 @@ import PullToRefresh from '@/components/dashboard/PullToRefresh';
 import { getCachedMarkets, setCachedTydroRate } from '@/lib/cache';
 import { TYDRO_POINT_TO_USD_RATE } from '@/lib/tydro';
 import { AlertTriangle, Send, Github } from 'lucide-react';
-import { preloadIncentiveIcons, setPreloadPaused, shouldUseFullPreloadMode } from '@/lib/preloadUtils';
+import {
+  getRecommendedPreloadLimit,
+  preloadChainIcons,
+  preloadIncentiveIcons,
+  preloadTokenIcons,
+  setPreloadPaused,
+  shouldUseFullPreloadMode,
+} from '@/lib/preloadUtils';
 import { buildMarketsList } from '@/lib/marketsList';
-import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
 import { normalizeTokenSymbolForSearch } from '@/lib/tokenSymbolNormalization';
 
 import IncentiveTooltip from '@/components/dashboard/IncentiveTooltip';
@@ -34,7 +36,6 @@ import { RateInputsVsMarketCheck } from '@/components/dev/RateInputsVsMarketChec
 const MerklForecastPanel = lazy(() => import('@/components/dashboard/MerklForecastPanel'));
 
 const Index = () => {
-  const queryClient = useQueryClient();
   const activeQueryCount = useIsFetching();
 
   // State
@@ -123,56 +124,29 @@ const Index = () => {
     []
   );
 
-  // Use full mode only on Wi-Fi without save-data; otherwise fall back to adaptive mode.
-  usePreloadReserveAssets(stableReserves, {
-    preloadMode,
-    enabled: hasReserves,
-    isSuccess: !!data,
-  });
+  // ── Static asset preloading (API data is prefetched in App.tsx) ──
 
-  // Preload incentive icons after reserve icons (lower priority)
+  // Preload reserve token/chain icons after reserves load.
+  useEffect(() => {
+    if (!hasReserves || !data) return;
+    const timeoutId = setTimeout(() => {
+      const resolvedLimit = preloadMode === 'full' ? stableReserves.length : getRecommendedPreloadLimit(stableReserves.length);
+      const symbols = stableReserves.slice(0, resolvedLimit).map(r => r.tokenSymbol);
+      const chains = [...new Set(stableReserves.slice(0, resolvedLimit).map(r => r.chainName))];
+      preloadTokenIcons(symbols);
+      preloadChainIcons(chains);
+    }, 3000);
+    return () => clearTimeout(timeoutId);
+  }, [hasReserves, data, stableReserves, preloadMode]);
+
+  // (4) Preload incentive icons after reserve icons (lowest priority).
   useEffect(() => {
     if (!hasReserves) return;
     const timeoutId = setTimeout(() => {
       preloadIncentiveIcons();
-    }, 2000); // Delay further to let reserve icons finish first
+    }, 4000);
     return () => clearTimeout(timeoutId);
   }, [hasReserves]);
-
-  // Warm up rate-input snapshot once home data is loaded to avoid first-tooltip latency.
-  useEffect(() => {
-    if (!hasReserves) return;
-    const timeoutId = setTimeout(() => {
-      void prefetchRateInputsSnapshot(queryClient).catch(() => {
-        // No-op: keep UI non-blocking if prefetch fails.
-      });
-    }, 700);
-    return () => clearTimeout(timeoutId);
-  }, [hasReserves, queryClient]);
-
-  // Warm up global Merkl forecast-state snapshot once reserves are loaded (higher priority than token-categories).
-  useEffect(() => {
-    if (!hasReserves) return;
-    const timeoutId = setTimeout(() => {
-      void fetchMerklForecastStates().catch(() => {
-        // No-op: keep UI non-blocking if prefetch fails.
-      });
-    }, 800);
-    return () => clearTimeout(timeoutId);
-  }, [hasReserves]);
-
-  // Warm up low-frequency side-data meta after reserves load (post-home warm-up).
-  useEffect(() => {
-    if (!hasReserves) return;
-    const timeoutId = setTimeout(() => {
-      void queryClient.prefetchQuery({
-        queryKey: SIDE_DATA_META_QUERY_KEY,
-        queryFn: fetchSideDataMeta,
-        staleTime: QUERY_STALE_TIMES.tokenCategories,
-      }).catch(() => {});
-    }, 1200);
-    return () => clearTimeout(timeoutId);
-  }, [hasReserves, queryClient]);
 
   const tokenCategoryGroups = useMemo(
     () => buildTokenCategoryGroups(tokenCategoryOverrides),

@@ -12,8 +12,8 @@ interface CapProgressRingProps {
 const CapProgressRing = memo(({
   size,
   cap,
-  ringSize = 14,
-  strokeWidth = 2,
+  ringSize = 12,
+  strokeWidth = 1.5,
 }: CapProgressRingProps) => {
   if (cap == null || !Number.isFinite(cap) || cap <= 0) {
     return null;
@@ -28,19 +28,19 @@ const CapProgressRing = memo(({
   const getProgressColor = () => {
     if (percentage >= 95) return 'rgb(var(--ds-amber-600-rgb, 217 119 6))';
     if (percentage >= 80) return 'rgb(var(--ds-amber-500-rgb, 245 158 11))';
-    return 'currentColor';
+    return 'rgb(var(--ds-emerald-600-rgb, 5 150 105))';
   };
 
   const getProgressColorClass = () => {
     if (percentage >= 95) return 'text-amber-600';
     if (percentage >= 80) return 'text-amber-500';
-    return 'text-foreground';
+    return 'ds-text-emerald-600';
   };
 
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <div className="inline-flex items-center p-0.5 -m-0.5 rounded-full transition-all duration-150 hover:bg-muted/60 hover:scale-110">
+        <div className="inline-flex items-center p-0.5 -m-0.5 rounded-full transition-all duration-150 hover:bg-muted/70 hover:scale-[1.12] cursor-auto">
           <svg
             width={ringSize}
             height={ringSize}
@@ -54,7 +54,7 @@ const CapProgressRing = memo(({
               fill="none"
               stroke="currentColor"
               strokeWidth={strokeWidth}
-              className="text-muted-foreground/20"
+              className="text-muted-foreground/15"
             />
             <circle
               cx={ringSize / 2}
@@ -66,7 +66,7 @@ const CapProgressRing = memo(({
               strokeLinecap="round"
               strokeDasharray={circumference}
               strokeDashoffset={strokeDashoffset}
-              className={`transition-all duration-300 ${percentage < 80 ? 'text-foreground' : ''}`}
+              className="transition-all duration-300"
             />
           </svg>
         </div>

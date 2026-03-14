@@ -11,6 +11,7 @@ import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { IncentiveIcon } from '@/components/IncentiveIcon';
 import SimulationSubRow from './SimulationSubRow';
 import CapProgressRing from './CapProgressRing';
+import UtilizationIndicator from './UtilizationIndicator';
 import type { RateSimulationResult, ScenarioInputMode } from '@/hooks/useRateSimulation';
 import { parseNumberInput } from '@/lib/numberFormat';
 
@@ -50,6 +51,7 @@ interface DesktopReserveRowProps {
   inputMode: ScenarioInputMode;
   isApy: boolean;
   isMobile: boolean;
+  onCorrectSupplyInput?: (correctedValue: string) => void;
 }
 
 const DesktopReserveRow = memo(({
@@ -72,6 +74,7 @@ const DesktopReserveRow = memo(({
   inputMode,
   isApy,
   isMobile,
+  onCorrectSupplyInput,
 }: DesktopReserveRowProps) => {
   const getMarketDisplayName = () => {
     if (reserve.chainName === 'Ethereum' && ETHEREUM_MARKET_NAMES[reserve.marketName]) {
@@ -95,10 +98,18 @@ const DesktopReserveRow = memo(({
       : simulation?.tokenPrice && Number.isFinite(simulation.tokenPrice)
         ? supplyInputRaw * simulation.tokenPrice
         : 0;
-  const displayReserveSizeUsd =
+  const rawAfterReserveSizeUsd =
     reserve.reserveSizeUsd != null && Number.isFinite(reserve.reserveSizeUsd) && supplyInputUsd > 0
       ? reserve.reserveSizeUsd + supplyInputUsd
       : reserve.reserveSizeUsd;
+  // Cap at supply cap if available
+  const displayReserveSizeUsd =
+    rawAfterReserveSizeUsd != null &&
+    reserve.supplyCapUsd != null &&
+    reserve.supplyCapUsd > 0 &&
+    rawAfterReserveSizeUsd > reserve.supplyCapUsd
+      ? reserve.supplyCapUsd
+      : rawAfterReserveSizeUsd;
 
   return (
     <Fragment>
@@ -148,7 +159,7 @@ const DesktopReserveRow = memo(({
           </button>
         </TableCell>
         {/* Size */}
-        <TableCell className="px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell tabular-nums text-foreground ds-text-13">
+        <TableCell className="px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell tabular-nums ds-text-emerald-600 ds-text-13">
           <div className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)]">
             <span>{formatReserveSizeUsd(displayReserveSizeUsd)}</span>
             <CapProgressRing size={displayReserveSizeUsd} cap={reserve.supplyCapUsd} />
@@ -160,7 +171,7 @@ const DesktopReserveRow = memo(({
             {reserve.supplyDisabled ? (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className="font-bold text-secondary tabular-nums ds-text-14 cursor-help">
+                  <span className="font-bold text-secondary tabular-nums ds-text-14 cursor-auto">
                     {formatPercent(displaySupplyTotal)}
                   </span>
                 </TooltipTrigger>
@@ -180,10 +191,10 @@ const DesktopReserveRow = memo(({
                 <button
                   type="button"
                   onClick={(e) => onIncentiveClick(e, reserve, 'supply', displaySupplyIncentive)}
-                  className={`inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-0-5)] py-[var(--ds-space-0)] rounded-full transition-all duration-150 cursor-pointer tabular-nums ${
+                  className={`inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-0-5)] py-[var(--ds-space-0)] rounded-full transition-all duration-150 cursor-pointer tabular-nums ring-1 ${
                     reserve.supplyDisabled
-                      ? 'bg-secondary/10 text-secondary hover:bg-secondary/20 ring-1 ring-secondary/20'
-                      : 'ds-bg-emerald-500-10 ds-text-emerald-500-70 hover:bg-[rgb(var(--ds-emerald-500-rgb)/0.25)] hover:ring-2 hover:ring-[rgb(var(--ds-emerald-500-rgb)/0.3)] ring-1 ds-ring-emerald-500-15'
+                      ? 'bg-secondary/10 text-secondary hover:bg-secondary/20 ring-secondary/20'
+                      : 'ds-bg-emerald-500-10 ds-text-emerald-500-70 hover:bg-[rgb(var(--ds-emerald-500-rgb)/0.25)] hover:ring-2 hover:ring-[rgb(var(--ds-emerald-500-rgb)/0.3)] ds-ring-emerald-500-15'
                   }`}
                 >
                   <span>{formatPercent(displaySupplyIncentive)}</span>
@@ -209,7 +220,7 @@ const DesktopReserveRow = memo(({
             {reserve.borrowDisabled ? (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className="font-bold text-secondary tabular-nums ds-text-14 cursor-help">
+                  <span className="font-bold text-secondary tabular-nums ds-text-14 cursor-auto">
                     {displayBorrowTotal !== null ? formatPercent(displayBorrowTotal) : '-'}
                   </span>
                 </TooltipTrigger>
@@ -233,10 +244,10 @@ const DesktopReserveRow = memo(({
                 <button
                   type="button"
                   onClick={(e) => onIncentiveClick(e, reserve, 'borrow', displayBorrowIncentive)}
-                  className={`inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-0-5)] py-[var(--ds-space-0)] rounded-full transition-all duration-150 cursor-pointer tabular-nums ${
+                  className={`inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-0-5)] py-[var(--ds-space-0)] rounded-full transition-all duration-150 cursor-pointer tabular-nums ring-1 ${
                     reserve.borrowDisabled
-                      ? 'bg-secondary/10 text-secondary hover:bg-secondary/20 ring-1 ring-secondary/20'
-                      : 'ds-bg-brand-cyan-10 ds-text-brand-cyan-70 hover:bg-[rgb(var(--ds-brand-cyan-rgb)/0.25)] hover:ring-2 hover:ring-[rgb(var(--ds-brand-cyan-rgb)/0.3)] ring-1 ds-ring-brand-cyan-15'
+                      ? 'bg-secondary/10 text-secondary hover:bg-secondary/20 ring-secondary/20'
+                      : 'ds-bg-brand-cyan-10 ds-text-brand-cyan-70 hover:bg-[rgb(var(--ds-brand-cyan-rgb)/0.25)] hover:ring-2 hover:ring-[rgb(var(--ds-brand-cyan-rgb)/0.3)] ds-ring-brand-cyan-15'
                   }`}
                 >
                   <span>{formatPercent(displayBorrowIncentive)}</span>
@@ -247,8 +258,14 @@ const DesktopReserveRow = memo(({
           </div>
         </TableCell>
         {/* Utilization */}
-        <TableCell className="px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell tabular-nums font-bold text-amber-600 ds-text-13">
-          {formatPercent(reserve.utilizationPct ?? null)}
+        <TableCell className="px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell tabular-nums text-foreground ds-text-13">
+          <div className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)]">
+            <span>{formatPercent(reserve.utilizationPct ?? null)}</span>
+            <UtilizationIndicator
+              current={simulation?.utilization.current ?? reserve.utilizationPct ?? null}
+              optimal={simulation?.utilization.optimal ?? null}
+            />
+          </div>
         </TableCell>
       </TableRow>
       {isExpanded && (
@@ -265,6 +282,7 @@ const DesktopReserveRow = memo(({
                 supplyInput={supplyInput}
                 borrowInput={borrowInput}
                 inputMode={inputMode}
+                onCorrectSupplyInput={onCorrectSupplyInput}
               />
             )}
           </TableCell>

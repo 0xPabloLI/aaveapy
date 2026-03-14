@@ -27,6 +27,7 @@ interface MobileReserveCardProps {
   borrowInput: string;
   hasSharedScenario: boolean;
   inputMode?: 'usd' | 'token';
+  onCorrectSupplyInput?: (correctedValue: string) => void;
 }
 
 const MobileReserveCard = memo(({
@@ -40,6 +41,7 @@ const MobileReserveCard = memo(({
   borrowInput,
   hasSharedScenario,
   inputMode = 'usd',
+  onCorrectSupplyInput,
 }: MobileReserveCardProps) => {
   const getMarketDisplayName = () => {
     if (reserve.chainName === 'Ethereum' && ETHEREUM_MARKET_NAMES[reserve.marketName]) {
@@ -151,7 +153,7 @@ const MobileReserveCard = memo(({
           {reserve.supplyDisabled ? (
             <Tooltip>
               <TooltipTrigger asChild>
-                <p className={`ds-text-14 font-bold ${supplyValueClass} cursor-help`}>
+                <p className={`ds-text-14 font-bold ${supplyValueClass} cursor-auto`}>
                   {formatPercent(displaySupplyTotal)}
                 </p>
               </TooltipTrigger>
@@ -200,7 +202,7 @@ const MobileReserveCard = memo(({
           {reserve.borrowDisabled ? (
             <Tooltip>
               <TooltipTrigger asChild>
-                <p className={`ds-text-14 font-bold ${borrowValueClass} cursor-help`}>
+                <p className={`ds-text-14 font-bold ${borrowValueClass} cursor-auto`}>
                   {formatPercent(displayBorrowTotal)}
                 </p>
               </TooltipTrigger>
@@ -257,6 +259,7 @@ const MobileReserveCard = memo(({
               borrowInput={borrowInput}
               inputMode={inputMode}
               compact
+              onCorrectSupplyInput={onCorrectSupplyInput}
             />
           </div>
         )}
