@@ -61,24 +61,34 @@ const ScenarioControls = memo(({ onDebouncedChange }: ScenarioControlsProps) => 
           {/* Row 2: supply */}
           <div className="flex items-center gap-[var(--ds-space-1)] min-w-0">
             <span className="ds-text-11 text-muted-foreground font-medium shrink-0 w-[3rem]">Supply</span>
-            <input
-              value={supplyInput}
-              onChange={(event) => setSupplyInput(formatNumberInput(event.target.value))}
-              inputMode="decimal"
-              placeholder={inputMode === 'usd' ? '100,000' : '50'}
-              className={inputBase}
-            />
+            <div className="relative flex-1 min-w-0">
+              <input
+                value={supplyInput}
+                onChange={(event) => setSupplyInput(formatNumberInput(event.target.value))}
+                inputMode="decimal"
+                placeholder={inputMode === 'usd' ? '100,000' : '50'}
+                className={inputBase}
+              />
+              <span className="absolute right-[var(--ds-space-2)] top-1/2 -translate-y-1/2 ds-text-10 text-muted-foreground/40 pointer-events-none select-none">
+                {inputMode === 'usd' ? 'USD' : 'Qty'}
+              </span>
+            </div>
           </div>
           {/* Row 3: borrow */}
           <div className="flex items-center gap-[var(--ds-space-1)] min-w-0">
             <span className="ds-text-11 text-muted-foreground font-medium shrink-0 w-[3rem]">Borrow</span>
-            <input
-              value={borrowInput}
-              onChange={(event) => setBorrowInput(formatNumberInput(event.target.value))}
-              inputMode="decimal"
-              placeholder={inputMode === 'usd' ? '20,000' : '10'}
-              className={inputBase}
-            />
+            <div className="relative flex-1 min-w-0">
+              <input
+                value={borrowInput}
+                onChange={(event) => setBorrowInput(formatNumberInput(event.target.value))}
+                inputMode="decimal"
+                placeholder={inputMode === 'usd' ? '20,000' : '10'}
+                className={inputBase}
+              />
+              <span className="absolute right-[var(--ds-space-2)] top-1/2 -translate-y-1/2 ds-text-10 text-muted-foreground/40 pointer-events-none select-none">
+                {inputMode === 'usd' ? 'USD' : 'Qty'}
+              </span>
+            </div>
           </div>
         </div>
       </div>

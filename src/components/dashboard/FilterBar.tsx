@@ -216,12 +216,12 @@ const FilterBar = ({
       <div className="flex items-center gap-1.5 md:hidden">
         <div className="relative flex-1 min-w-0">
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
-          <Input
+          <input
             ref={mobileSearchInputRef}
             placeholder={searchPlaceholder}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-[var(--ds-space-8)] pr-[var(--ds-space-6)] bg-card/50 border-border/50 focus:border-[rgb(var(--ds-brand-magenta-rgb))] focus-visible:ring-0 focus-visible:ring-offset-0 h-7 ds-text-11 text-muted-foreground/50 placeholder:text-muted-foreground/50 focus:text-foreground"
+            className="w-full h-7 rounded-md border border-border/50 bg-card/50 pl-[var(--ds-space-8)] pr-[var(--ds-space-6)] ds-text-11 text-muted-foreground/50 placeholder:text-muted-foreground/50 outline-none transition-all focus:text-foreground focus:border-[rgb(var(--ds-brand-magenta-rgb))] focus-visible:ring-0"
           />
           {searchQuery && (
             <button
