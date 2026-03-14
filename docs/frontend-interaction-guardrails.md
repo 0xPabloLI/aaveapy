@@ -54,6 +54,31 @@ This note records recurring UI/interaction issues found during incentive/forecas
   - Only use distinct accent colors (emerald, amber, red) when conveying semantic status (success, warning, danger), not for decoration.
 - **Warning/danger thresholds override base color**: when an indicator crosses a threshold (e.g. >80% utilization), it can switch to amber/red to signal urgency — this is intentional divergence from the adjacent text color.
 
+### Color semantic guidelines (告警色专用原则)
+
+**Reserved semantic colors** — use exclusively for their intended purpose:
+
+| Color | Semantic token | Usage | Examples |
+|-------|---------------|-------|----------|
+| **Amber/Orange** | `warning`, `text-warning` | ⚠️ Warnings only | Supply cap exceeded, over-optimal utilization, risk alerts |
+| **Red** | `destructive` | 🚫 Errors/danger | Transaction failed, critical errors |
+| **Green/Emerald** | `success`, `text-emerald-*` | ✅ Normal/positive state | Safe utilization zone, successful actions |
+
+**Non-semantic data display** — use neutral colors:
+
+| Data type | Recommended color | Example |
+|-----------|------------------|---------|
+| Utilization percentage (normal) | `text-foreground` | "75.2%" in Utilization column |
+| General numeric data | `text-foreground` | Market size, prices |
+| Secondary/muted info | `text-muted-foreground`, `text-secondary` | Labels, descriptions |
+
+**UtilizationIndicator color scheme**:
+- Safe zone (below optimal): `fill-secondary/40` (neutral gray)
+- Warning zone (above optimal): `fill-warning/40` (amber)
+- Current position dot: `fill-muted-foreground` (normal) / `fill-warning` (over-optimal)
+
+**Key principle**: Amber/warning colors must NOT be used for regular data display. This ensures that when amber appears, users immediately recognize it as a warning signal.
+
 ### Geometry and layout
 
 - **If a UI requirement is stated as exact geometry, implement exact geometry** (not "close enough" heuristics).

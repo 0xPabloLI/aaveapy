@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, Loader2 } from 'lucide-react';
 
-import type { ReserveWithSpread, TokenPricesIndex, MerklForecastStateResponse } from '@/types/aave';
+import type { ReserveWithSpread, TokenPricesIndex } from '@/types/aave';
 import { collectMerklCampaignOptions } from '@/lib/merklCampaigns';
-import { fetchMerklForecastStates } from '@/lib/merklForecastApi';
-import { shouldSurfaceForecastError } from '@/lib/merklForecastErrors';
+import { useMerklForecastStates } from '@/hooks/useMerklForecastStates';
 import { deriveForecastProgressFlags, forecastWithTVL } from '@/lib/merklForecast';
 import { resolveForecastTokenPrice, resolveForecastTokenPriceWithBackup } from '@/lib/tokenPriceResolver';
 import { formatPercent } from '@/lib/formatters';
@@ -57,12 +56,14 @@ const MerklForecastPanel = ({
   );
   const [selectedCampaignId, setSelectedCampaignId] = useState('');
   const [depositInput, setDepositInput] = useState('100,000');
-  const [loading, setLoading] = useState(false);
-  const [states, setStates] = useState<Record<string, MerklForecastStateResponse>>({});
-  const [stateErrors, setStateErrors] = useState<Record<string, string>>({});
-  const [error, setError] = useState<string | null>(null);
   const [tokenPrice, setTokenPrice] = useState<number | undefined>(undefined);
   const [tokenPriceLoading, setTokenPriceLoading] = useState(false);
+
+  const campaignIdsForHook = useMemo(
+    () => campaignOptions.map((option) => option.campaignId),
+    [campaignOptions]
+  );
+  const { states, errors: stateErrors, isLoading: loading, error: queryError } = useMerklForecastStates(campaignIdsForHook);
 
   useEffect(() => {
     if (campaignOptions.length === 0) {
@@ -74,72 +75,6 @@ const MerklForecastPanel = ({
     }
   }, [campaignOptions, selectedCampaignId]);
 
-  useEffect(() => {
-    if (campaignOptions.length === 0) {
-      setStates({});
-      setStateErrors({});
-      setError(null);
-      return;
-    }
-
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-
-    const requestedIds = new Set(campaignOptions.map((option) => option.campaignId));
-
-    fetchMerklForecastStates()
-      .then((result) => {
-        if (cancelled) return;
-        const next: Record<string, MerklForecastStateResponse> = {};
-        const nextErrors: Record<string, string> = {};
-        result.items
-          .filter((item) => requestedIds.has(item.campaignId))
-          .forEach((item) => {
-            next[item.campaignId] = item;
-          });
-        const surfacedErrors = result.errors.filter(
-          (item) => requestedIds.has(item.campaignId) && shouldSurfaceForecastError(item)
-        );
-        surfacedErrors.forEach((item) => {
-          nextErrors[item.campaignId] = item.message;
-        });
-        const failed = surfacedErrors.length;
-
-        setStates((prev) => ({ ...prev, ...next }));
-        setStateErrors(nextErrors);
-        if (failed > 0) {
-          const campaignLabelById = new Map(
-            campaignOptions.map((option) => [option.campaignId, option.label] as const)
-          );
-          const details = surfacedErrors
-            .slice(0, 3)
-            .map((item) => {
-              const label = campaignLabelById.get(item.campaignId);
-              return label
-                ? `${label} · ${item.campaignId} (${item.status})`
-                : `${item.campaignId} (${item.status})`;
-            })
-            .join(', ');
-          setError(
-            `Failed to load ${failed} campaign forecast state${failed > 1 ? 's' : ''}${details ? `: ${details}` : ''}.`
-          );
-        }
-      })
-      .catch((err) => {
-        if (cancelled) return;
-        if (shouldSurfaceForecastError(err)) {
-          setError('Failed to load campaign forecast states.');
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [campaignOptions]);
 
   const selectedOption = useMemo(
     () => campaignOptions.find((option) => option.campaignId === selectedCampaignId) || null,
@@ -280,10 +215,10 @@ const MerklForecastPanel = ({
         </label>
       </div>
 
-      {error && (
+      {queryError && (
         <div className="mt-3 flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-2 text-xs text-amber-700">
           <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-          <span>{error}</span>
+          <span>{queryError.message || 'Failed to load campaign forecast states.'}</span>
         </div>
       )}
 

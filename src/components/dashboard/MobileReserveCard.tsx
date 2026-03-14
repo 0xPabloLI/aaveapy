@@ -27,6 +27,7 @@ interface MobileReserveCardProps {
   borrowInput: string;
   hasSharedScenario: boolean;
   inputMode?: 'usd' | 'token';
+  onCorrectSupplyInput?: (correctedValue: string) => void;
 }
 
 const MobileReserveCard = memo(({
@@ -40,6 +41,7 @@ const MobileReserveCard = memo(({
   borrowInput,
   hasSharedScenario,
   inputMode = 'usd',
+  onCorrectSupplyInput,
 }: MobileReserveCardProps) => {
   const getMarketDisplayName = () => {
     if (reserve.chainName === 'Ethereum' && ETHEREUM_MARKET_NAMES[reserve.marketName]) {
@@ -257,6 +259,7 @@ const MobileReserveCard = memo(({
               borrowInput={borrowInput}
               inputMode={inputMode}
               compact
+              onCorrectSupplyInput={onCorrectSupplyInput}
             />
           </div>
         )}

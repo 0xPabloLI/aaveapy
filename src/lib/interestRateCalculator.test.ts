@@ -81,6 +81,11 @@ describe('simulateNativeRatesAfterBorrow', () => {
 });
 
 describe('simulateNativeRatesAfterActions', () => {
+  it('returns optimalUtilizationPercent from rate input', () => {
+    const forecast = simulateNativeRatesAfterActions(baseRateInput, { supplyAmount: '0', borrowAmount: '0' });
+    expect(forecast.optimalUtilizationPercent).toBeCloseTo(80, 0);
+  });
+
   it('lets supply input change both supply and borrow side rates', () => {
     const current = simulateNativeRatesAfterActions(baseRateInput, { supplyAmount: '0', borrowAmount: '0' });
     const afterSupply = simulateNativeRatesAfterActions(baseRateInput, { supplyAmount: '100000', borrowAmount: '0' });

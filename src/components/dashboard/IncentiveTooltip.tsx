@@ -2,10 +2,10 @@ import { useRef, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ExternalLink, X } from 'lucide-react';
 import { useTheme } from 'next-themes';
-import { ReserveWithSpread, MeritIncentive, MerklOpportunityGroup, BrevisIncentive, TokenPricesIndex, MerklForecastStateResponse } from '@/types/aave';
+import { ReserveWithSpread, MeritIncentive, MerklOpportunityGroup, BrevisIncentive, TokenPricesIndex } from '@/types/aave';
 import { formatPercent, convertAprToApy, apyToApr } from '@/lib/formatters';
 import { getMerklBreakdownApr, getMerklForecastUsdMultiplier } from '@/lib/tydro';
-import { fetchMerklForecastStates } from '@/lib/merklForecastApi';
+import { useMerklForecastStates } from '@/hooks/useMerklForecastStates';
 import {
   extractMeritSelfCapUsd,
   forecastMeritCampaign,
@@ -13,7 +13,6 @@ import {
 } from '@/lib/meritForecast';
 import { deriveForecastProgressFlags, forecastWithTVL } from '@/lib/merklForecast';
 import { resolveForecastTokenPrice, resolveForecastTokenPriceWithBackup } from '@/lib/tokenPriceResolver';
-import { shouldSurfaceForecastError } from '@/lib/merklForecastErrors';
 import { formatNumberInput, parseNumberInput } from '@/lib/numberFormat';
 import { adjustTooltipAnchorForScroll, getWindowScroll } from '@/lib/tooltipPosition';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -159,8 +158,6 @@ const IncentiveTooltip = ({
   const [depositInput, setDepositInput] = useState('');
   const [tokenPrice, setTokenPrice] = useState<number | undefined>(undefined);
   const [tokenPriceLoading, setTokenPriceLoading] = useState(false);
-  const [merklForecastStates, setMerklForecastStates] = useState<Record<string, MerklForecastStateResponse>>({});
-  const [merklForecastErrors, setMerklForecastErrors] = useState<Record<string, string>>({});
   const portalTarget = typeof document !== 'undefined' ? document.body : null;
   const numberMatch = /^(\d+(?:\.\d+)?%?)$/;
   const currencyMatch = /^[€$£¥]$/;
@@ -400,44 +397,7 @@ const IncentiveTooltip = ({
     return Array.from(ids);
   }, [reserve, type]);
 
-  useEffect(() => {
-    if (campaignIds.length === 0) {
-      setMerklForecastStates({});
-      setMerklForecastErrors({});
-      return;
-    }
-
-    let cancelled = false;
-    fetchMerklForecastStates()
-      .then((result) => {
-        if (cancelled) return;
-        const idSet = new Set(campaignIds);
-        const next: Record<string, MerklForecastStateResponse> = {};
-        const nextErrors: Record<string, string> = {};
-        result.items
-          .filter((item) => idSet.has(item.campaignId))
-          .forEach((item) => {
-            next[item.campaignId] = item;
-          });
-        result.errors
-          .filter((item) => idSet.has(item.campaignId) && shouldSurfaceForecastError(item))
-          .forEach((item) => {
-            nextErrors[item.campaignId] = item.message;
-          });
-        setMerklForecastStates(next);
-        setMerklForecastErrors(nextErrors);
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setMerklForecastStates({});
-          setMerklForecastErrors({});
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [campaignIds]);
+  const { states: merklForecastStates, errors: merklForecastErrors } = useMerklForecastStates(campaignIds);
 
   // Get detailed incentive sources (unified layout)
   const getIncentiveSources = (): IncentiveSource[] => {

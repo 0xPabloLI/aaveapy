@@ -1,9 +1,7 @@
 import { lazy, Suspense, useState, useMemo, useCallback, useEffect } from 'react';
-import { useIsFetching, useQueryClient } from '@tanstack/react-query';
+import { useIsFetching } from '@tanstack/react-query';
 import { useAaveMarkets } from '@/hooks/useAaveMarkets';
-import { prefetchRateInputsSnapshot } from '@/hooks/useReserveRateInputs';
 import { useTokenCategories } from '@/hooks/useTokenCategories';
-import { fetchSideDataMeta, SIDE_DATA_META_QUERY_KEY } from '@/hooks/useSideDataMeta';
 import { SortField, SortOrder, TokenCategory, ReserveWithSpread, TokenPricesIndex } from '@/types/aave';
 import {
   buildTokenCategoryGroups,
@@ -30,7 +28,6 @@ import {
   shouldUseFullPreloadMode,
 } from '@/lib/preloadUtils';
 import { buildMarketsList } from '@/lib/marketsList';
-import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
 import { normalizeTokenSymbolForSearch } from '@/lib/tokenSymbolNormalization';
 
 import IncentiveTooltip from '@/components/dashboard/IncentiveTooltip';
@@ -39,7 +36,6 @@ import { RateInputsVsMarketCheck } from '@/components/dev/RateInputsVsMarketChec
 const MerklForecastPanel = lazy(() => import('@/components/dashboard/MerklForecastPanel'));
 
 const Index = () => {
-  const queryClient = useQueryClient();
   const activeQueryCount = useIsFetching();
 
   // State
@@ -128,42 +124,9 @@ const Index = () => {
     []
   );
 
-  // ── Warm-up order: API data first, then static assets ──
-  // Priority: side-data (forecast/categories/FDV) → rate-inputs → reserve icons → incentive icons
+  // ── Static asset preloading (API data is prefetched in App.tsx) ──
 
-  // (1) Warm up side-data meta (includes forecast, categories, FDV) once browser is idle after reserves load.
-  useEffect(() => {
-    if (!hasReserves) return;
-    const scheduleWarmup = () => {
-      void queryClient.prefetchQuery({
-        queryKey: SIDE_DATA_META_QUERY_KEY,
-        queryFn: fetchSideDataMeta,
-        staleTime: QUERY_STALE_TIMES.sideDataMeta,
-      }).catch(() => {});
-    };
-    if ('requestIdleCallback' in window) {
-      const idleId = window.requestIdleCallback(scheduleWarmup, { timeout: 2000 });
-      return () => window.cancelIdleCallback(idleId);
-    }
-    const timeoutId = setTimeout(scheduleWarmup, 200);
-    return () => clearTimeout(timeoutId);
-  }, [hasReserves, queryClient]);
-
-  // (2) Warm up rate-input snapshot after side-data to avoid first-tooltip latency.
-  useEffect(() => {
-    if (!hasReserves) return;
-    const scheduleWarmup = () => {
-      void prefetchRateInputsSnapshot(queryClient).catch(() => {});
-    };
-    if ('requestIdleCallback' in window) {
-      const idleId = window.requestIdleCallback(scheduleWarmup, { timeout: 2500 });
-      return () => window.cancelIdleCallback(idleId);
-    }
-    const timeoutId = setTimeout(scheduleWarmup, 400);
-    return () => clearTimeout(timeoutId);
-  }, [hasReserves, queryClient]);
-
-  // (3) Preload reserve token/chain icons after API warm-ups complete.
+  // Preload reserve token/chain icons after reserves load.
   useEffect(() => {
     if (!hasReserves || !data) return;
     const timeoutId = setTimeout(() => {

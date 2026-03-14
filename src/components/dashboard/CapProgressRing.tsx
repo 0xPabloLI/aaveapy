@@ -28,13 +28,13 @@ const CapProgressRing = memo(({
   const getProgressColor = () => {
     if (percentage >= 95) return 'rgb(var(--ds-amber-600-rgb, 217 119 6))';
     if (percentage >= 80) return 'rgb(var(--ds-amber-500-rgb, 245 158 11))';
-    return 'currentColor';
+    return 'rgb(var(--ds-emerald-600-rgb, 5 150 105))';
   };
 
   const getProgressColorClass = () => {
     if (percentage >= 95) return 'text-amber-600';
     if (percentage >= 80) return 'text-amber-500';
-    return 'text-foreground';
+    return 'ds-text-emerald-600';
   };
 
   return (

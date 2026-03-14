@@ -104,6 +104,7 @@ function calculateVariableBorrowRate(
 export interface NativeRateSimulation {
   utilizationRateRay: string;
   utilizationRatePercent: number;
+  optimalUtilizationPercent: number;
   supplyAprPercent: number;
   borrowAprPercent: number;
   supplyApyPercent: number;
@@ -130,9 +131,11 @@ function computeRates(
   const supplyUsageRate =
     supplyUsageDenominator > 0n ? clamp(rayDiv(totalVariableDebt, supplyUsageDenominator), 0n, RAY) : 0n;
 
+  const optimalUsageRateRay = toBigInt(rateInput.optimalUsageRate);
+
   const variableBorrowRate = calculateVariableBorrowRate(
     borrowUsageRate,
-    toBigInt(rateInput.optimalUsageRate),
+    optimalUsageRateRay,
     toBigInt(rateInput.baseVariableBorrowRate),
     toBigInt(rateInput.variableRateSlope1),
     toBigInt(rateInput.variableRateSlope2)
@@ -147,6 +150,7 @@ function computeRates(
   return {
     utilizationRateRay: borrowUsageRate.toString(),
     utilizationRatePercent: rayToPercent(borrowUsageRate),
+    optimalUtilizationPercent: rayToPercent(optimalUsageRateRay),
     supplyAprPercent: rayToPercent(liquidityRate),
     borrowAprPercent: rayToPercent(variableBorrowRate),
     supplyApyPercent: rayToApyPercent(liquidityRate),

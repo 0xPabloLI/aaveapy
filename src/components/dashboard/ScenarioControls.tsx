@@ -1,4 +1,4 @@
-import { useState, useEffect, memo } from 'react';
+import { useState, useEffect, memo, forwardRef, useImperativeHandle } from 'react';
 import { formatNumberInput } from '@/lib/numberFormat';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -6,15 +6,25 @@ const INPUT_DEBOUNCE_MS = 300;
 
 export type ScenarioInputMode = 'usd' | 'token';
 
+export interface ScenarioControlsHandle {
+  setSupplyInput: (value: string) => void;
+  setBorrowInput: (value: string) => void;
+}
+
 interface ScenarioControlsProps {
   onDebouncedChange: (supply: string, borrow: string, mode: ScenarioInputMode) => void;
 }
 
-const ScenarioControls = memo(({ onDebouncedChange }: ScenarioControlsProps) => {
+const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControlsProps>(({ onDebouncedChange }, ref) => {
   const isMobile = useIsMobile();
   const [supplyInput, setSupplyInput] = useState('');
   const [borrowInput, setBorrowInput] = useState('');
   const [inputMode, setInputMode] = useState<ScenarioInputMode>('usd');
+
+  useImperativeHandle(ref, () => ({
+    setSupplyInput: (value: string) => setSupplyInput(formatNumberInput(value)),
+    setBorrowInput: (value: string) => setBorrowInput(formatNumberInput(value)),
+  }), []);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -131,7 +141,7 @@ const ScenarioControls = memo(({ onDebouncedChange }: ScenarioControlsProps) => 
       </div>
     </div>
   );
-});
+}));
 
 ScenarioControls.displayName = 'ScenarioControls';
 
