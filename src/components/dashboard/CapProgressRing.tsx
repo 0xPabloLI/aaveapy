@@ -75,11 +75,11 @@ const CapProgressRing = memo(({
         <div className="space-y-1 ds-text-12">
           <div className="flex justify-between gap-3">
             <span className="text-muted-foreground">Total supplied</span>
-            <span className="font-medium tabular-nums">{formatReserveSizeUsd(currentSize)}</span>
+            <span className="font-medium tabular-nums ds-text-emerald-600">{formatReserveSizeUsd(currentSize)}</span>
           </div>
           <div className="flex justify-between gap-3">
             <span className="text-muted-foreground">Supply cap</span>
-            <span className="font-medium tabular-nums">{formatReserveSizeUsd(cap)}</span>
+            <span className="font-medium tabular-nums ds-text-emerald-600">{formatReserveSizeUsd(cap)}</span>
           </div>
           <div className="flex justify-between gap-3">
             <span className="text-muted-foreground">Available to supply</span>

@@ -167,6 +167,10 @@ const SimulationSubRow = ({
     { label: 'Brevis Incentive', ...simulation.borrow.sources.brevis, href: borrowBrevisLink },
   ].filter((src) => hasMeaningfulValue(src.current) || hasMeaningfulValue(src.after));
 
+  // If only Native (no incentives), put link on APY row directly; otherwise show breakdown
+  const hasSupplyIncentives = supplyIncentiveSources.length > 0;
+  const hasBorrowIncentives = borrowIncentiveSources.length > 0;
+
   const supplyRows: TableRow[] = [
     {
       label: 'Total Supplied',
@@ -183,16 +187,19 @@ const SimulationSubRow = ({
       after: simulation.supply.afterTotal,
       delta: simulation.supply.deltaTotal,
       type: 'rate',
+      // If no incentives, APY = Native, so put link here directly
+      href: hasSupplyIncentives ? null : aaveUrl,
     },
-    {
+    // Only show Native breakdown row if there are incentives to break down
+    ...(hasSupplyIncentives ? [{
       label: 'Native',
       current: simulation.supply.currentNative,
       after: simulation.supply.afterNative,
       delta: simulation.supply.deltaNative,
-      type: 'rate',
+      type: 'rate' as RowType,
       href: aaveUrl,
       isBreakdown: true,
-    },
+    }] : []),
     ...supplyIncentiveSources.map((src) => ({
       label: src.label,
       current: src.current,
@@ -220,16 +227,19 @@ const SimulationSubRow = ({
       after: simulation.borrow.afterTotal,
       delta: simulation.borrow.deltaTotal,
       type: 'rate',
+      // If no incentives, APY = Native, so put link here directly
+      href: hasBorrowIncentives ? null : aaveUrl,
     },
-    {
+    // Only show Native breakdown row if there are incentives to break down
+    ...(hasBorrowIncentives ? [{
       label: 'Native',
       current: simulation.borrow.currentNative,
       after: simulation.borrow.afterNative,
       delta: simulation.borrow.deltaNative,
-      type: 'rate',
+      type: 'rate' as RowType,
       href: aaveUrl,
       isBreakdown: true,
-    },
+    }] : []),
     ...borrowIncentiveSources.map((src) => ({
       label: src.label,
       current: src.current,
@@ -266,7 +276,7 @@ const SimulationSubRow = ({
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
-                className={`ds-text-12 flex items-center gap-1 hover:underline underline-offset-2 ${row.warning ? 'text-amber-700 dark:text-amber-400' : isBreakdownItem ? 'text-muted-foreground hover:text-foreground' : accentClass}`}
+                className={`ds-text-12 flex items-center gap-1 ${row.warning ? 'text-amber-700 dark:text-amber-400' : isBreakdownItem ? 'text-muted-foreground hover:text-foreground' : accentClass}`}
               >
                 <span className="truncate">{row.label}</span>
                 <ExternalLink className="w-3 h-3 flex-shrink-0 opacity-50" />
@@ -302,8 +312,8 @@ const SimulationSubRow = ({
     );
   };
 
-  const renderTable = (title: string, rows: TableRow[], accentClass: string, borderClass: string, indentBorderClass: string) => (
-    <div className={`rounded-lg border ${borderClass} bg-background/80`}>
+  const renderTable = (title: string, rows: TableRow[], accentClass: string, borderClass: string, indentBorderClass: string, isWarning?: boolean) => (
+    <div className={`rounded-lg border ${isWarning ? 'border-amber-500/60' : borderClass} bg-card/50 dark:bg-background/80`}>
       <table className="w-full">
         <colgroup>
           <col />
@@ -312,7 +322,7 @@ const SimulationSubRow = ({
           <col className="w-[76px]" />
         </colgroup>
         <thead>
-          <tr className="border-b border-border/50">
+          <tr className="border-b border-border/50 bg-muted/30">
             <th className="px-4 py-2 text-left">
               <span className={`ds-text-13 font-semibold ${accentClass}`}>{title}</span>
             </th>
@@ -327,25 +337,26 @@ const SimulationSubRow = ({
             </th>
           </tr>
         </thead>
-        <tbody>
+        <tbody className="[&>tr:last-child>td]:pb-2.5">
           {rows.map((row) => renderRow(row, accentClass, indentBorderClass))}
         </tbody>
       </table>
     </div>
   );
 
-  // Middle column (Spread + Liquidity) - no title
+  // Middle column (Spread + Liquidity) - amber border when borrow limited by liquidity
+  const middleColumnWarning = borrowCapExceeded && borrowLimitedByLiquidity;
   const renderMiddleColumn = () => (
-    <div className="rounded-lg border border-purple-500/40 bg-background/80">
+    <div className={`rounded-lg border ${middleColumnWarning ? 'border-amber-500/60' : 'border-purple-500/40'} bg-card/50 dark:bg-background/80`}>
       <table className="w-full">
         <colgroup>
-          <col />
+          <col className="w-[72px]" />
           <col className="w-[76px]" />
           <col className="w-[76px]" />
           <col className="w-[76px]" />
         </colgroup>
         <thead>
-          <tr className="border-b border-border/50">
+          <tr className="border-b border-border/50 bg-muted/30">
             <th className="px-4 py-2 text-left">
               {/* Empty title cell for alignment */}
             </th>
@@ -360,10 +371,10 @@ const SimulationSubRow = ({
             </th>
           </tr>
         </thead>
-        <tbody>
+        <tbody className="[&>tr:last-child>td]:pb-2.5">
           {/* Spread first */}
           <tr>
-            <td className="py-1.5 pl-4 pr-3">
+            <td className="py-1.5 pl-4 pr-2">
               <span className="ds-text-12 ds-text-purple-600">Spread</span>
             </td>
             <td className="py-1.5 px-3 text-right">
@@ -382,7 +393,7 @@ const SimulationSubRow = ({
           </tr>
           {/* Liquidity second */}
           <tr className={borrowCapExceeded && borrowLimitedByLiquidity ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
-            <td className="py-1.5 pl-4 pr-3">
+            <td className="py-1.5 pl-4 pr-2">
               <span className={`ds-text-12 ${borrowCapExceeded && borrowLimitedByLiquidity ? 'text-amber-700 dark:text-amber-400 font-medium' : 'ds-text-purple-600'}`}>
                 Liquidity
               </span>
@@ -451,9 +462,9 @@ const SimulationSubRow = ({
 
       {/* 3-column layout: Supply | (Spread/Liquidity) | Borrow */}
       <div className={`grid ${compact ? 'grid-cols-1 gap-3' : 'grid-cols-3 gap-2'}`}>
-        {renderTable('Supply', supplyRows, 'ds-text-emerald-600', 'border-emerald-500/40', 'border-l-[rgb(var(--ds-emerald-500-rgb))]')}
+        {renderTable('Supply', supplyRows, 'ds-text-emerald-600', 'border-emerald-500/40', 'border-l-[rgb(var(--ds-emerald-500-rgb))]', supplyCapExceeded)}
         {renderMiddleColumn()}
-        {renderTable('Borrow', borrowRows, 'ds-text-brand-cyan', 'border-[rgb(var(--ds-brand-cyan-rgb))]/40', 'border-l-[rgb(var(--ds-brand-cyan-rgb))]')}
+        {renderTable('Borrow', borrowRows, 'ds-text-brand-cyan', 'border-[rgb(var(--ds-brand-cyan-rgb))]/40', 'border-l-[rgb(var(--ds-brand-cyan-rgb))]', borrowCapExceeded)}
       </div>
 
       {/* Footer notes */}

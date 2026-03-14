@@ -81,11 +81,11 @@ const BorrowCapProgressRing = memo(({
         <div className="space-y-1 ds-text-12">
           <div className="flex justify-between gap-3">
             <span className="text-muted-foreground">Total borrowed</span>
-            <span className="font-medium tabular-nums">{formatReserveSizeUsd(currentBorrowed)}</span>
+            <span className="font-medium tabular-nums ds-text-brand-cyan">{formatReserveSizeUsd(currentBorrowed)}</span>
           </div>
           <div className="flex justify-between gap-3">
             <span className="text-muted-foreground">Borrow cap</span>
-            <span className="font-medium tabular-nums">{formatReserveSizeUsd(cap)}</span>
+            <span className="font-medium tabular-nums ds-text-brand-cyan">{formatReserveSizeUsd(cap)}</span>
           </div>
           <div className="flex justify-between gap-3">
             <span className="text-muted-foreground">Available to borrow</span>

@@ -971,8 +971,10 @@ const ReservesTable = ({
                 <button
                   type="button"
                   onClick={handleSortToken}
-                  className={`ds-chip-heading md:ds-text-16 gap-[var(--ds-space-1)] transition-colors ${
-                    activeSortColumn === 'token' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground/80'
+                  className={`ds-chip-heading md:ds-text-16 gap-[var(--ds-space-1)] transition-all duration-200 ${
+                    activeSortColumn === 'token' 
+                      ? 'text-foreground font-bold scale-105' 
+                      : 'text-muted-foreground hover:text-foreground/80'
                   }`}
                 >
                   <span>Token</span>
@@ -992,8 +994,10 @@ const ReservesTable = ({
                 <button
                   type="button"
                   onClick={handleSortPrice}
-                  className={`ds-chip-heading md:ds-text-16 gap-[var(--ds-space-1)] transition-colors ${
-                    activeSortColumn === 'price' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground/80'
+                  className={`ds-chip-heading md:ds-text-16 gap-[var(--ds-space-1)] transition-all duration-200 ${
+                    activeSortColumn === 'price' 
+                      ? 'text-foreground font-bold scale-105' 
+                      : 'text-muted-foreground hover:text-foreground/80'
                   }`}
                 >
                   <span>Price</span>
@@ -1017,7 +1021,7 @@ const ReservesTable = ({
                 <div className="flex items-center justify-center gap-[var(--ds-space-2)]">
                   <div className="flex items-center gap-[var(--ds-space-1-5)]">
                     <span
-                      className={activeSortColumn === 'size' ? (sizeSortMode === 'supply' ? 'ds-text-emerald-600' : 'ds-text-brand-cyan') : 'text-muted-foreground'}
+                      className={`transition-all duration-200 ${activeSortColumn === 'size' ? (sizeSortMode === 'supply' ? 'ds-text-emerald-600 font-bold scale-105' : 'ds-text-brand-cyan font-bold scale-105') : 'text-muted-foreground'}`}
                     >
                       Size
                     </span>
@@ -1123,8 +1127,10 @@ const ReservesTable = ({
                 <button
                   type="button"
                   onClick={handleSortUtil}
-                  className={`ds-chip-heading md:ds-text-16 gap-[var(--ds-space-1)] transition-colors ${
-                    activeSortColumn === 'util' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground/80'
+                  className={`ds-chip-heading md:ds-text-16 gap-[var(--ds-space-1)] transition-all duration-200 ${
+                    activeSortColumn === 'util' 
+                      ? 'text-foreground font-bold scale-105' 
+                      : 'text-muted-foreground hover:text-foreground/80'
                   }`}
                 >
                   <span>Util.</span>
@@ -1144,7 +1150,7 @@ const ReservesTable = ({
                 <div className="flex items-center justify-center gap-[var(--ds-space-2)]">
                   <div className="flex items-center gap-[var(--ds-space-1-5)]">
                     <span
-                      className={activeSortColumn === 'supply' ? 'ds-text-emerald-600' : 'text-muted-foreground'}
+                      className={`transition-all duration-200 ${activeSortColumn === 'supply' ? 'ds-text-emerald-600 font-bold scale-105' : 'text-muted-foreground'}`}
                     >
                       Supply
                     </span>
@@ -1287,8 +1293,8 @@ const ReservesTable = ({
                       setSpreadSortOrder('desc');
                     }
                   }}
-                  className={`ds-chip-heading md:ds-text-16 gap-[var(--ds-space-1)] transition-colors ${
-                    activeSortColumn === 'spread' ? 'ds-text-purple-600' : 'text-muted-foreground'
+                  className={`ds-chip-heading md:ds-text-16 gap-[var(--ds-space-1)] transition-all duration-200 ${
+                    activeSortColumn === 'spread' ? 'ds-text-purple-600 font-bold scale-105' : 'text-muted-foreground'
                   }`}
                 >
                   <span>Spread</span>
@@ -1308,7 +1314,7 @@ const ReservesTable = ({
                 <div className="flex items-center justify-center gap-[var(--ds-space-2)]">
                   <div className="flex items-center gap-[var(--ds-space-1-5)]">
                     <span
-                      className={activeSortColumn === 'borrow' ? 'ds-text-brand-cyan' : 'text-muted-foreground'}
+                      className={`transition-all duration-200 ${activeSortColumn === 'borrow' ? 'ds-text-brand-cyan font-bold scale-105' : 'text-muted-foreground'}`}
                     >
                       Borrow
                     </span>
