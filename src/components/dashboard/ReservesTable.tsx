@@ -1395,7 +1395,7 @@ const ReservesTable = ({
         <div className="p-[var(--ds-space-4)] border-t border-border">
           <button
             type="button"
-            onClick={() => setShowAll(true)}
+            onClick={() => setMinVisibleCount(sortedData.length)}
             className="w-full ds-button ds-text-14 md:ds-text-16 gap-[var(--ds-space-2)] border border-border bg-muted/30 hover:bg-muted/50 transition-colors text-foreground font-semibold"
           >
             <span>{`Show ${sortedData.length - displayData.length} More Reserves`}</span>
