@@ -151,7 +151,7 @@ const MobileReserveCard = memo(({
           {reserve.supplyDisabled ? (
             <Tooltip>
               <TooltipTrigger asChild>
-                <p className={`ds-text-14 font-bold ${supplyValueClass} cursor-help`}>
+                <p className={`ds-text-14 font-bold ${supplyValueClass} cursor-default`}>
                   {formatPercent(displaySupplyTotal)}
                 </p>
               </TooltipTrigger>
@@ -200,7 +200,7 @@ const MobileReserveCard = memo(({
           {reserve.borrowDisabled ? (
             <Tooltip>
               <TooltipTrigger asChild>
-                <p className={`ds-text-14 font-bold ${borrowValueClass} cursor-help`}>
+                <p className={`ds-text-14 font-bold ${borrowValueClass} cursor-default`}>
                   {formatPercent(displayBorrowTotal)}
                 </p>
               </TooltipTrigger>

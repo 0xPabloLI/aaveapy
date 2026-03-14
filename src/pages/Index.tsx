@@ -3,7 +3,6 @@ import { useIsFetching, useQueryClient } from '@tanstack/react-query';
 import { usePreloadReserveAssets } from '@/hooks/usePreloadReserveAssets';
 import { useAaveMarkets } from '@/hooks/useAaveMarkets';
 import { prefetchRateInputsSnapshot } from '@/hooks/useReserveRateInputs';
-import { fetchMerklForecastStates } from '@/lib/merklForecastApi';
 import { useTokenCategories } from '@/hooks/useTokenCategories';
 import { fetchSideDataMeta, SIDE_DATA_META_QUERY_KEY } from '@/hooks/useSideDataMeta';
 import { SortField, SortOrder, TokenCategory, ReserveWithSpread, TokenPricesIndex } from '@/types/aave';
@@ -139,38 +138,27 @@ const Index = () => {
     return () => clearTimeout(timeoutId);
   }, [hasReserves]);
 
-  // Warm up rate-input snapshot once home data is loaded to avoid first-tooltip latency.
-  useEffect(() => {
-    if (!hasReserves) return;
-    const timeoutId = setTimeout(() => {
-      void prefetchRateInputsSnapshot(queryClient).catch(() => {
-        // No-op: keep UI non-blocking if prefetch fails.
-      });
-    }, 700);
-    return () => clearTimeout(timeoutId);
-  }, [hasReserves, queryClient]);
-
-  // Warm up global Merkl forecast-state snapshot once reserves are loaded (higher priority than token-categories).
-  useEffect(() => {
-    if (!hasReserves) return;
-    const timeoutId = setTimeout(() => {
-      void fetchMerklForecastStates().catch(() => {
-        // No-op: keep UI non-blocking if prefetch fails.
-      });
-    }, 800);
-    return () => clearTimeout(timeoutId);
-  }, [hasReserves]);
-
-  // Warm up low-frequency side-data meta after reserves load (post-home warm-up).
+  // Warm up side-data meta (includes forecast, categories, FDV) once reserves load.
   useEffect(() => {
     if (!hasReserves) return;
     const timeoutId = setTimeout(() => {
       void queryClient.prefetchQuery({
         queryKey: SIDE_DATA_META_QUERY_KEY,
         queryFn: fetchSideDataMeta,
-        staleTime: QUERY_STALE_TIMES.tokenCategories,
+        staleTime: QUERY_STALE_TIMES.sideDataMeta,
       }).catch(() => {});
-    }, 1200);
+    }, 700);
+    return () => clearTimeout(timeoutId);
+  }, [hasReserves, queryClient]);
+
+  // Warm up rate-input snapshot after side-data to avoid first-tooltip latency.
+  useEffect(() => {
+    if (!hasReserves) return;
+    const timeoutId = setTimeout(() => {
+      void prefetchRateInputsSnapshot(queryClient).catch(() => {
+        // No-op: keep UI non-blocking if prefetch fails.
+      });
+    }, 900);
     return () => clearTimeout(timeoutId);
   }, [hasReserves, queryClient]);
 

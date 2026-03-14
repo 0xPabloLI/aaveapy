@@ -109,6 +109,23 @@ export const CoingeckoCategoriesResponseSchema = z.object({
   uniqueSymbolsEth: z.array(z.string()).optional(),
 }).passthrough();
 
+const MerklForecastItemSchema = z.object({
+  campaignId: z.string(),
+  campaignType: z.string().optional(),
+  plannedDaily: z.number().optional(),
+  requiredDaily: z.number().optional(),
+  aprCap: z.number().nullable().optional(),
+  totalBudget: z.number().optional(),
+  distributedSoFar: z.number().optional(),
+  latestTvl: z.number().optional(),
+  endTimestamp: z.number().optional(),
+}).passthrough();
+
+const MerklForecastErrorSchema = z.object({
+  campaignId: z.string(),
+  message: z.string(),
+}).passthrough();
+
 export const SideDataMetaResponseSchema = z.object({
   generatedAt: z.string().optional(),
   partial: z.boolean().optional(),
@@ -121,6 +138,11 @@ export const SideDataMetaResponseSchema = z.object({
   fdv: z.object({
     items: z.array(CoingeckoFdvItemSchema),
     fetchedAt: z.string(),
+    staleTimeMs: z.number(),
+  }).optional(),
+  forecast: z.object({
+    items: z.array(MerklForecastItemSchema),
+    errors: z.array(MerklForecastErrorSchema),
     staleTimeMs: z.number(),
   }).optional(),
   errors: z.record(z.string(), z.string()).optional(),

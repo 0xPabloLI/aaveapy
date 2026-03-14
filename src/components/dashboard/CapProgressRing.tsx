@@ -12,8 +12,8 @@ interface CapProgressRingProps {
 const CapProgressRing = memo(({
   size,
   cap,
-  ringSize = 14,
-  strokeWidth = 2,
+  ringSize = 12,
+  strokeWidth = 1.5,
 }: CapProgressRingProps) => {
   if (cap == null || !Number.isFinite(cap) || cap <= 0) {
     return null;
@@ -40,7 +40,7 @@ const CapProgressRing = memo(({
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <div className="inline-flex items-center p-0.5 -m-0.5 rounded-full transition-all duration-150 hover:bg-muted/60 hover:scale-110">
+        <div className="inline-flex items-center p-1 -m-1 rounded-full transition-all duration-150 hover:bg-muted hover:scale-125 hover:ring-1 hover:ring-muted-foreground/20 cursor-default">
           <svg
             width={ringSize}
             height={ringSize}
@@ -54,7 +54,7 @@ const CapProgressRing = memo(({
               fill="none"
               stroke="currentColor"
               strokeWidth={strokeWidth}
-              className="text-muted-foreground/20"
+              className="text-muted-foreground/15"
             />
             <circle
               cx={ringSize / 2}
@@ -66,7 +66,7 @@ const CapProgressRing = memo(({
               strokeLinecap="round"
               strokeDasharray={circumference}
               strokeDashoffset={strokeDashoffset}
-              className={`transition-all duration-300 ${percentage < 80 ? 'text-foreground' : ''}`}
+              className="transition-all duration-300"
             />
           </svg>
         </div>

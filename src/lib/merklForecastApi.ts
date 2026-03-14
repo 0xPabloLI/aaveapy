@@ -1,8 +1,10 @@
 import { API_BASE } from '@/lib/apiBase';
+import { SideDataMetaResponseSchema } from '@/lib/apiSchemas';
 import type { MerklForecastStatesBatchResponse } from '@/types/aave';
 import { MerklForecastApiError } from './merklForecastErrors';
 
 const ALL_CAMPAIGNS_KEY = '__all__';
+const DEFAULT_TTL_MS = 600_000;
 
 const batchCache = new Map<string, { data: MerklForecastStatesBatchResponse; expiresAt: number }>();
 const batchInFlight = new Map<string, Promise<MerklForecastStatesBatchResponse>>();
@@ -65,23 +67,46 @@ export const fetchMerklForecastStates = async (
     }
   }
 
-  const url =
-    deduped.length > 0
-      ? `${API_BASE}/campaigns/forecast-states?ids=${encodeURIComponent(deduped.join(','))}`
-      : `${API_BASE}/campaigns/forecast-states`;
+  // Fetch forecast from merged side-data API
+  const url = `${API_BASE}/meta/side-data`;
   const request = (async () => {
     try {
       const response = await fetch(url);
       if (!response.ok) {
-        throw new MerklForecastApiError(`Failed to fetch Merkl forecast states (${response.status})`, response.status);
+        throw new MerklForecastApiError(`Failed to fetch side-data meta (${response.status})`, response.status);
       }
 
-      const data = (await response.json()) as MerklForecastStatesBatchResponse;
-      const ttlMs = typeof data.staleTimeMs === 'number' && data.staleTimeMs > 0 ? data.staleTimeMs : undefined;
-      const effectiveTtl = ttlMs ?? 60_000;
-      batchCache.set(key, { data, expiresAt: Date.now() + effectiveTtl });
+      const raw = await response.json();
+      const parsed = SideDataMetaResponseSchema.safeParse(raw);
+      if (!parsed.success) {
+        throw new MerklForecastApiError('Invalid side-data response format', 500);
+      }
 
-      return data;
+      const forecast = parsed.data.forecast;
+      if (!forecast) {
+        return { items: [], errors: [], staleTimeMs: DEFAULT_TTL_MS };
+      }
+
+      const data: MerklForecastStatesBatchResponse = {
+        items: forecast.items.map((item) => ({
+          campaignId: item.campaignId,
+          campaignType: item.campaignType,
+          plannedDaily: item.plannedDaily,
+          requiredDaily: item.requiredDaily,
+          aprCap: item.aprCap ?? undefined,
+          totalBudget: item.totalBudget,
+          distributedSoFar: item.distributedSoFar,
+          latestTvl: item.latestTvl,
+          endTimestamp: item.endTimestamp,
+        })),
+        errors: forecast.errors,
+        staleTimeMs: forecast.staleTimeMs,
+      };
+
+      const effectiveTtl = forecast.staleTimeMs ?? DEFAULT_TTL_MS;
+      batchCache.set(ALL_CAMPAIGNS_KEY, { data, expiresAt: Date.now() + effectiveTtl });
+
+      return deduped.length > 0 ? pickCampaignsFromBatch(data, deduped) : data;
     } finally {
       batchInFlight.delete(key);
     }

@@ -160,7 +160,7 @@ const DesktopReserveRow = memo(({
             {reserve.supplyDisabled ? (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className="font-bold text-secondary tabular-nums ds-text-14 cursor-help">
+                  <span className="font-bold text-secondary tabular-nums ds-text-14 cursor-default">
                     {formatPercent(displaySupplyTotal)}
                   </span>
                 </TooltipTrigger>
@@ -209,7 +209,7 @@ const DesktopReserveRow = memo(({
             {reserve.borrowDisabled ? (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className="font-bold text-secondary tabular-nums ds-text-14 cursor-help">
+                  <span className="font-bold text-secondary tabular-nums ds-text-14 cursor-default">
                     {displayBorrowTotal !== null ? formatPercent(displayBorrowTotal) : '-'}
                   </span>
                 </TooltipTrigger>

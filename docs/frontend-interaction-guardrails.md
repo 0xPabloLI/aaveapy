@@ -7,20 +7,32 @@ This note records recurring UI/interaction issues found during incentive/forecas
 ### Tooltip / Overlay behavior
 
 - **Distinguish auto-show vs click-to-show tooltips**:
-  - **Auto-show tooltip (hover reveals)**: Use default cursor (no `cursor-pointer`). Add subtle hover feedback like `hover:opacity-80`, `hover:scale-110`, or `hover:bg-muted/60` so the user knows the element is interactive.
+  - **Auto-show tooltip (hover reveals)**: Explicitly use `cursor-default` to override browser defaults. Add subtle hover feedback like `hover:opacity-80`, `hover:scale-110`, or `hover:bg-muted/60` so the user knows the element is interactive.
   - **Click-to-show tooltip/popover**: Use `cursor-pointer`. Add stronger hover feedback like `hover:ring-2`, `hover:bg-xxx` with increased opacity/saturation.
   - Never use `cursor-pointer` for auto-show tooltips — it implies a click action that doesn't exist.
   - Never use `cursor-help` (question mark cursor) — it's not part of our design system.
 - **All interactive elements must have visible hover state**: even auto-show tooltips need visual feedback on hover (e.g. subtle scale, opacity change, or background highlight).
+- **Tooltip delay configuration**:
+  - Global `TooltipProvider` is set to `delayDuration={200}` (200ms) in `App.tsx`.
+  - This only affects Radix UI `Tooltip` components (auto-show tooltips).
+  - Custom click-to-show components (e.g. `IncentiveTooltip`) manage their own timing and are not affected by this setting.
 
 #### Implementation examples
 
 **Auto-show tooltip** (e.g. `CapProgressRing`):
 ```tsx
-// NO cursor-pointer, subtle hover feedback only
-<div className="inline-flex items-center p-0.5 -m-0.5 rounded-full transition-all duration-150 hover:bg-muted/60 hover:scale-110">
+// cursor-default to override browser defaults, subtle hover feedback
+<div className="inline-flex items-center p-0.5 -m-0.5 rounded-full transition-all duration-150 hover:bg-muted/60 hover:scale-110 cursor-default">
   {/* content */}
 </div>
+```
+
+**Hybrid tooltip** (mobile: click-to-show, desktop: auto-show, e.g. `InfoIconButton`):
+```tsx
+// cursor-pointer on mobile (click), cursor-default on desktop (hover auto-show)
+<button className="... cursor-pointer md:cursor-default">
+  <Info className="h-2.5 w-2.5" />
+</button>
 ```
 
 **Click-to-show tooltip** (e.g. incentive badge):
@@ -35,6 +47,15 @@ This note records recurring UI/interaction issues found during incentive/forecas
   {/* content */}
 </button>
 ```
+### Visual consistency
+
+- **Related visual elements must share the same color**: auxiliary indicators (progress rings, icons, badges) placed adjacent to text should inherit from or match that text's color.
+  - Example: a cap progress ring next to "14M/15M" should use `currentColor` so it stays visually tied to the size value.
+  - Only use distinct accent colors (emerald, amber, red) when conveying semantic status (success, warning, danger), not for decoration.
+- **Warning/danger thresholds override base color**: when an indicator crosses a threshold (e.g. >80% utilization), it can switch to amber/red to signal urgency — this is intentional divergence from the adjacent text color.
+
+### Geometry and layout
+
 - **If a UI requirement is stated as exact geometry, implement exact geometry** (not "close enough" heuristics).
   - Example: when the requested top/bottom arrow gap must match, pass full trigger geometry (or at least trigger height) and compute the same gap from trigger edges.
   - Do not ship an approximation first if the requested exact geometry is already available from the trigger element (`getBoundingClientRect()`).

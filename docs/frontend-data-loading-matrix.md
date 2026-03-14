@@ -28,11 +28,9 @@ This document summarizes data-loading behavior for the home page and simulation 
 
 | API | Trigger type | Current trigger point | TTL / staleTime | Caches used | Notes |
 | --- | --- | --- | --- | --- | --- |
-| `/markets` | App-level prefetch + hook query | `App.tsx` prefetch + `useAaveMarkets` in `Index` | 2 min (`coreSnapshotApi`) | React Query + localStorage | Core snapshot. |
-| `/coingecko-categories` | Warm-up + hook query | Warm-up in `Index` (1200ms after reserves) + `useTokenCategories` in `Index` | 6 hours | React Query + localStorage | Lightweight side-data. |
-| `/coingecko-fdv` | Hook query | `useCoingeckoFdv` in `InkAprCalculator` | 10 min | React Query + localStorage | Needed on first screen by calculator. |
-| `/rate-inputs` | Warm-up + hook query | Warm-up in `Index` (`prefetchRateInputsSnapshot`) + on-demand in simulation hooks | 2 min | React Query + localStorage | Warm-up avoids first-tooltip lag. |
-| `/campaigns/forecast-states` | Warm-up + hook query | Global warm-up in `Index` (800ms after reserves, `fetchMerklForecastStates()`), then id-based consumers | 2 min | Module in-memory + React Query (+ localStorage via simulation hook) | Subset requests can reuse full-batch cache. |
+| `/markets` | App-level prefetch + hook query | `App.tsx` prefetch + `useAaveMarkets` in `Index` | 1 min (`coreSnapshotApi`) | React Query + localStorage | Core snapshot. |
+| `/meta/side-data` | Warm-up + hook query | Warm-up in `Index` (700ms after reserves) + `useSideDataMeta`, `useTokenCategories`, `useCoingeckoFdv`, simulation hooks | 5 min (`sideDataMeta`); backend TTL overrides (categories 6h, FDV 5m, forecast 10m) | React Query + localStorage + module in-memory (forecast) | Merged endpoint for categories, FDV, and forecast. |
+| `/rate-inputs` | Warm-up + hook query | Warm-up in `Index` (900ms after reserves) + on-demand in simulation hooks | 1 min | React Query + localStorage | Warm-up avoids first-tooltip lag. |
 | CoinGecko `/search` | Hook query (third-party) | `useCoingeckoTokenImage` fallback only | 24 hours | React Query + localStorage | Icon fallback when local/logo URI misses. |
 
 ## Forecast Token Price Backup
@@ -57,7 +55,7 @@ This document summarizes data-loading behavior for the home page and simulation 
 
 | Item | Current behavior |
 | --- | --- |
-| API warm-ups (`/rate-inputs`, `/forecast-states`) | Not automatically canceled by user interaction once started. |
+| API warm-ups (`/meta/side-data`, `/rate-inputs`) | Not automatically canceled by user interaction once started. |
 | Image preloading | Can be deferred/paused by preload controls (`setPreloadPaused`, connection heuristics). |
 | Weak network/save-data mode | Currently affects image preload aggressiveness, not a global "disable all warm-ups" switch. |
 
@@ -74,10 +72,9 @@ This document summarizes data-loading behavior for the home page and simulation 
 | Priority | Workload | Current timing |
 |:---------|:---------|:---------------|
 | P0 | `/markets` prefetch | App bootstrap |
-| P1 | `/rate-inputs` warm-up | 700ms after reserves available |
-| P2 | `/forecast-states` warm-up | 800ms after reserves available |
-| P3 | `/token-categories` warm-up | 1200ms after reserves available |
-| P4 | Non-critical image preloading (reserve icons, incentive icons) | Immediate/adaptive + delayed incentive icons (2000ms) |
+| P1 | `/meta/side-data` warm-up (includes forecast, categories, FDV) | 700ms after reserves available |
+| P2 | `/rate-inputs` warm-up | 900ms after reserves available |
+| P3 | Non-critical image preloading (reserve icons, incentive icons) | Immediate/adaptive + delayed incentive icons (2000ms) |
 
 ## Frontend Layer Stack (System View)
 
@@ -110,7 +107,7 @@ This document summarizes data-loading behavior for the home page and simulation 
 | On-demand when needed | On-demand fetch / lazy fetch | 按需请求 / 懒加载 |
 | Downgrade from prefetch to warm-up | Downgrade from prefetch to post-home warm-up | 从预取降级为延迟预热 |
 
-Order in practice: **App prefetch** → **Home fetch** (e.g. `useAaveMarkets` consumes prefetched `/markets`) → **Post-home warm-up** (rate-inputs, forecast-states, token-categories at 700 / 800 / 1200ms).
+Order in practice: **App prefetch** → **Home fetch** (e.g. `useAaveMarkets` consumes prefetched `/markets`) → **Post-home warm-up** (side-data at 700ms, rate-inputs at 900ms).
 
 ## FAQ
 
