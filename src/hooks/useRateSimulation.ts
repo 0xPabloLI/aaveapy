@@ -174,6 +174,7 @@ export interface MarketMetrics {
   availableBorrowRoomUsd: number | null;
   borrowCapExceeded: boolean;
   borrowCapExceededByUsd: number | null;
+  borrowLimitedByLiquidity: boolean;
 }
 
 export interface RateSimulationComputedResult {
@@ -447,14 +448,14 @@ export function buildRateSimulationResult({
       })()
     : null;
 
-  // Calculate available borrow room (constrained by borrow cap)
-  const availableBorrowRoomUsd = 
+  // Calculate borrow cap remaining (if cap exists)
+  const borrowCapRemainingUsd = 
     borrowCapUsd !== null && borrowCapUsd > 0 && currentTotalBorrowedUsd !== null
       ? Math.max(borrowCapUsd - currentTotalBorrowedUsd, 0)
       : null;
 
-  // Calculate available liquidity for additional borrow constraint
-  const availableLiquidityForBorrowUsd = reserveRateInput && tokenPrice
+  // Calculate available liquidity for borrow (pool liquidity + any new supply)
+  const poolLiquidityForBorrowUsd = reserveRateInput && tokenPrice
     ? (() => {
         const decimals = reserveRateInput.decimals ?? 18;
         const scale = Math.pow(10, decimals);
@@ -463,13 +464,26 @@ export function buildRateSimulationResult({
       })()
     : null;
 
-  // Cap borrow input by both borrow cap and available liquidity
+  // Available to borrow = min(borrow cap remaining, pool liquidity)
+  // If no borrow cap, use pool liquidity; if no liquidity data, use cap remaining
+  const availableBorrowRoomUsd = (() => {
+    if (borrowCapRemainingUsd !== null && poolLiquidityForBorrowUsd !== null) {
+      return Math.min(borrowCapRemainingUsd, poolLiquidityForBorrowUsd);
+    }
+    if (borrowCapRemainingUsd !== null) return borrowCapRemainingUsd;
+    if (poolLiquidityForBorrowUsd !== null) return poolLiquidityForBorrowUsd;
+    return null;
+  })();
+
+  // Track which constraint is binding (for UI messaging)
+  const borrowLimitedByLiquidity = 
+    poolLiquidityForBorrowUsd !== null && 
+    (borrowCapRemainingUsd === null || poolLiquidityForBorrowUsd < borrowCapRemainingUsd);
+
+  // Cap borrow input by available borrow room (which already considers both constraints)
   let borrowInputUsd = rawBorrowInputUsd;
   if (availableBorrowRoomUsd !== null && borrowInputUsd > availableBorrowRoomUsd) {
-    borrowInputUsd = availableBorrowRoomUsd;
-  }
-  if (availableLiquidityForBorrowUsd !== null && borrowInputUsd > availableLiquidityForBorrowUsd) {
-    borrowInputUsd = Math.max(0, availableLiquidityForBorrowUsd);
+    borrowInputUsd = Math.max(0, availableBorrowRoomUsd);
   }
 
   // Convert capped USD back to token amounts for native rate simulation
@@ -719,23 +733,16 @@ export function buildRateSimulationResult({
     };
 
     const computeBorrowCapFields = (totalBorrowedUsdBase: number | null) => {
-      if (borrowCapUsd === null || borrowCapUsd <= 0) {
-        return {
-          availableBorrowRoomUsd: null,
-          borrowCapExceeded: false,
-          borrowCapExceededByUsd: null,
-        };
-      }
-      // Use raw input to check if exceeded
-      const rawAfterBorrowedUsd = totalBorrowedUsdBase !== null 
-        ? totalBorrowedUsdBase + rawBorrowInputUsd 
-        : null;
-      const exceeded = rawAfterBorrowedUsd !== null && rawAfterBorrowedUsd > borrowCapUsd;
-      const exceededBy = exceeded ? rawAfterBorrowedUsd - borrowCapUsd : null;
+      // Available borrow room considers both liquidity and cap
+      // Check if user input exceeds available room
+      const exceeded = availableBorrowRoomUsd !== null && rawBorrowInputUsd > availableBorrowRoomUsd;
+      const exceededBy = exceeded ? rawBorrowInputUsd - availableBorrowRoomUsd : null;
+      
       return {
-        availableBorrowRoomUsd: availableBorrowRoomUsd,
+        availableBorrowRoomUsd,
         borrowCapExceeded: exceeded,
         borrowCapExceededByUsd: exceededBy,
+        borrowLimitedByLiquidity,
       };
     };
 

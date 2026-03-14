@@ -153,9 +153,31 @@ Borrow Rate
 | Ray precision | Ensure all inputs are parsed as bigint, not Number (precision loss) |
 | Index staleness | `variableBorrowIndex` should reflect recent accrual |
 
+## Borrow Availability Constraint
+
+When simulating borrow actions, the available borrow amount is constrained by **both** pool liquidity and borrow cap:
+
+```
+Available to Borrow = min(Pool Liquidity + Supply Input, Borrow Cap Remaining)
+```
+
+Where:
+- **Pool Liquidity** = `availableLiquidity` from `/rate-inputs` (converted to USD)
+- **Supply Input** = User's supply input (adds to available liquidity)
+- **Borrow Cap Remaining** = `borrowCapUsd - currentTotalBorrowedUsd`
+
+### Constraint Application
+
+| Constraint | When Active | UI Message |
+|------------|-------------|------------|
+| Borrow Cap | `borrowCapRemaining < poolLiquidity` | "limited by borrow cap" |
+| Pool Liquidity | `poolLiquidity < borrowCapRemaining` | "limited by pool liquidity" |
+
+The simulation hook (`useRateSimulation.ts`) automatically caps borrow input to the effective limit. The UI shows which constraint is binding when the user exceeds it.
+
 ## Related Files
 
 - `src/lib/interestRateCalculator.ts` – Core calculation functions
-- `src/hooks/useRateSimulation.ts` – React hook wrapping simulation
+- `src/hooks/useRateSimulation.ts` – React hook wrapping simulation (includes borrow availability constraints)
 - `src/hooks/useReserveRateInputs.ts` – Fetches `/rate-inputs` API
 - `src/components/dev/RateInputsVsMarketCheck.tsx` – Dev panel for validation

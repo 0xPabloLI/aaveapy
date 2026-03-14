@@ -9,6 +9,7 @@
   :root {
     --ds-text-8: 8px;
     --ds-text-9: 9px;
+    --ds-text-10: 10px;
     --ds-text-11: 11px;
     --ds-text-12: 12px;
     --ds-text-13: 13px;
@@ -108,6 +109,11 @@
     line-height: calc(var(--ds-text-9) * var(--ds-leading-11));
   }
 
+  .ds-text-10 {
+    font-size: var(--ds-text-10);
+    line-height: calc(var(--ds-text-10) * var(--ds-leading-11));
+  }
+
   .ds-text-12 {
     font-size: var(--ds-text-12);
     line-height: calc(var(--ds-text-12) * var(--ds-leading-11));
@@ -166,6 +172,34 @@
     line-height: 1;
     display: inline-flex;
     align-items: center;
+  }
+
+  /* Input base - shared surface styling for all text inputs */
+  .ds-input-surface {
+    @apply rounded-md border border-border/50 bg-card/50 transition-all;
+    @apply focus:border-[rgb(var(--ds-brand-magenta-rgb))] focus:text-foreground;
+    @apply focus-visible:ring-0 focus-visible:ring-offset-0 outline-none;
+  }
+
+  /* Secondary action button (Clear, etc.) */
+  .ds-btn-secondary {
+    @apply inline-flex items-center justify-center shrink-0;
+    @apply rounded-md border border-border/50 bg-card/50;
+    @apply font-medium transition-all;
+    @apply text-muted-foreground hover:text-foreground;
+    @apply hover:bg-accent/60 hover:border-border;
+    @apply focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none;
+    @apply disabled:cursor-not-allowed disabled:opacity-40;
+  }
+
+  /* Warning action button (Adjust to max, etc.) */
+  .ds-btn-warning {
+    @apply inline-flex items-center justify-center shrink-0;
+    @apply rounded-md border border-amber-500/50;
+    @apply bg-amber-100 dark:bg-amber-900/50;
+    @apply text-amber-800 dark:text-amber-200;
+    @apply font-medium transition-colors;
+    @apply hover:bg-amber-200 dark:hover:bg-amber-800/50;
   }
 
   .ds-chip-heading {

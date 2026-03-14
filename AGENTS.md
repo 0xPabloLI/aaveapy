@@ -159,12 +159,21 @@ When implementing mobile carousels:
 - Maintain design symmetry when adding complementary UI elements (e.g., if Supply info is in Size column, related Borrow info placement should be consistent).
 - Tooltip content should not repeat information already visible in the parent element; only show supplementary context.
 - Reserve semantic colors exclusively for their intended purpose (amber/warning for alerts only, not for regular data display).
-- Avoid reusing colors already assigned to other concepts (e.g., don't use green for new indicators if green is already used for incentives).
 - Non-core data fields (like Utilization) should use normal font weight, same as Price/Size; only core metrics (APY) get bold.
 - Toggle/selection state changes must be visually obvious; subtle differences (e.g., slight opacity or background changes) are insufficient—use border color or other clear indicators.
-- Use distinct visual forms for semantically different indicators (e.g., ring for capacity utilization, line for position relative to threshold); don't reuse the same visual metaphor for different concepts.
-- Don't overload a UI indicator with unrelated data; keep each element focused on its primary semantic purpose (e.g., UtilizationIndicator for optimal rate only, not borrow amounts).
+- Visual elements in the same conceptual family should use the same color (e.g., Supply Size and Supply APY both green; Liquidity and Spread both purple).
+- When switching input modes (USD/Token), clear existing values to avoid confusion from different token valuations.
+- When only one item in a category (e.g., single incentive source), show it directly without a summary row.
+- Use consistent typography hierarchy across related cards: titles same style, column headers same style, values same style.
+- Grid layouts should use symmetric column counts (3x3, 4x4) for visual balance; avoid uneven column counts.
+- Secondary info (like cap values "/ $20.00M") should use smaller font than main values, but not too small to read.
+- Text content should never touch container edges; always maintain breathing room with proper padding (e.g., px-4 not px-2).
+- Decorative borders (like indent indicators for nested items) should stay within text content boundaries; use inline elements (e.g., `ml-2 pl-2 border-l`) rather than negative margins that extend beyond alignment.
+- Data values should have explicit labels when meaning is unclear; e.g., "Cap $20M" not just "/ $20M" to avoid ambiguity.
+- When a section has no title, still maintain header row height for visual alignment with adjacent columns.
 
 ## Learned Workspace Facts
 - Local git hooks in this setup are managed under the main repository `.git/hooks` and are local-only (not versioned).
 - This workspace currently uses a local pre-push flow that runs lockfile consistency checks before the existing `ci:remote` checks.
+- Prefer deriving values client-side when possible rather than adding backend fields (e.g., totalBorrowedUsd can be computed from reserveSizeUsd × utilizationPct).
+- Borrow availability is constrained by BOTH pool liquidity AND borrow cap: `Available = min(Pool Liquidity, Borrow Cap Remaining)`.

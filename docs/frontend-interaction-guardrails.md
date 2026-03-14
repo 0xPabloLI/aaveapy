@@ -214,3 +214,25 @@ When tooltip/forecast behavior looks wrong, check:
 - Keep `Native` and `Incentive total` visible even when simulated values are empty.
 - Hide downstream source rows when both current and simulated values are effectively zero.
 - Use fixed numeric column widths so placeholders align with headers.
+
+### Borrow availability constraint
+
+- Available to borrow = `min(Pool Liquidity + Supply Input, Borrow Cap Remaining)`
+- When user input exceeds limit, show which constraint is binding ("limited by pool liquidity" or "limited by borrow cap")
+- Borrow input is automatically capped to the effective limit in simulation calculations
+
+### Simulation breakdown panel layout
+
+- **Row 1 (Market Metrics)**: Supply Size (with cap), Liquidity, Total Borrowed (with cap) — 3 cards
+- **Row 2 (Rates)**: Supply, Spread, Borrow, Utilization (with optimal, amber warning when exceeded) — 4 cards
+- **Row 3 (Breakdowns)**: Supply Breakdown, Borrow Breakdown — 2 cards
+- **Removed elements**: Reserve Factor (not necessary), standalone Cap cards (merged into metrics), standalone Optimal Utilization card (merged into Utilization)
+- **Utilization warning**: When `after` or `current` utilization exceeds optimal, show amber color on delta and after values
+
+### Row expansion auto-extends visible count
+
+- When a reserve row is expanded (showing the simulation breakdown panel), the visible row count automatically extends to include 5 additional rows after the expanded row.
+- This behavior mirrors the TopOpportunities card click jump behavior (`targetIndex + 6 = expanded row + 5 buffer`).
+- **Persistence**: The extended visible count is persisted to `minVisibleCount` state, so collapsing the row does NOT hide the extra rows. Users can continue browsing nearby reserves after closing the simulation panel.
+- Implementation: A `useEffect` watches `expandedReserveId`, computes `neededCount = expandedIndex + 6`, and updates `minVisibleCount` if needed.
+- This prevents the expanded row from appearing at the very bottom of the visible list, giving users context of nearby reserves for comparison.

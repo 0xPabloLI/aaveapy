@@ -26,6 +26,14 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
     setBorrowInput: (value: string) => setBorrowInput(formatNumberInput(value)),
   }), []);
 
+  const handleModeChange = (newMode: ScenarioInputMode) => {
+    if (newMode !== inputMode) {
+      setSupplyInput('');
+      setBorrowInput('');
+      setInputMode(newMode);
+    }
+  };
+
   useEffect(() => {
     const timer = window.setTimeout(() => {
       onDebouncedChange(supplyInput, borrowInput, inputMode);
@@ -38,10 +46,8 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
   /* shared token classes — mobile uses 44px min touch targets */
   const controlH = isMobile ? 'h-[2.75rem]' : 'h-8';
   const fontSize = isMobile ? 'ds-text-11' : 'ds-text-12';
-  const btnBase =
-    `inline-flex items-center justify-center shrink-0 rounded-md border border-border/50 bg-card/50 ${fontSize} font-medium transition-all hover:bg-accent/60 hover:border-border focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none ${controlH}`;
-  const inputBase =
-    `w-full min-w-0 ${controlH} rounded-md border border-border/50 bg-card/50 px-[var(--ds-space-3)] ${fontSize} tabular-nums text-muted-foreground/60 outline-none transition-all placeholder:text-muted-foreground/30 placeholder:italic focus:text-foreground focus:border-[rgb(var(--ds-brand-magenta-rgb))] focus-visible:ring-0 focus-visible:ring-offset-0`;
+  const inputStyles = `ds-input-surface w-full min-w-0 ${controlH} px-[var(--ds-space-3)] ${fontSize} tabular-nums text-muted-foreground/60 placeholder:text-muted-foreground/30 placeholder:italic`;
+  const btnStyles = `ds-btn-secondary ${controlH} ${fontSize} px-[var(--ds-space-2)]`;
 
   const segmentedSelected = `px-2 py-1 rounded-md ${fontSize} font-semibold bg-card text-foreground shadow-sm border border-border/60 transition-all duration-200`;
   const segmentedUnselected = `px-2 py-1 rounded-md ${fontSize} font-semibold text-muted-foreground hover:text-foreground hover:bg-card/50 transition-all duration-200`;
@@ -56,7 +62,7 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
             <div className="flex items-center gap-0.5 bg-muted/60 rounded-lg p-0.5 border border-border/40">
               <button
                 type="button"
-                onClick={() => setInputMode('usd')}
+                onClick={() => handleModeChange('usd')}
                 className={inputMode === 'usd' ? segmentedSelected : segmentedUnselected}
                 aria-pressed={inputMode === 'usd'}
               >
@@ -64,7 +70,7 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
               </button>
               <button
                 type="button"
-                onClick={() => setInputMode('token')}
+                onClick={() => handleModeChange('token')}
                 className={inputMode === 'token' ? segmentedSelected : segmentedUnselected}
                 aria-pressed={inputMode === 'token'}
               >
@@ -76,31 +82,31 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
               type="button"
               onClick={() => { setSupplyInput(''); setBorrowInput(''); }}
               disabled={!hasInput}
-              className={`${btnBase} px-[var(--ds-space-2)] text-muted-foreground hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40`}
+              className={btnStyles}
             >
               Clear
             </button>
           </div>
           {/* Row 2: supply */}
           <div className="flex items-center gap-[var(--ds-space-1)] min-w-0">
-            <span className="ds-text-11 text-muted-foreground font-medium shrink-0 w-[3rem]">Supply</span>
+            <span className={`${fontSize} text-muted-foreground font-medium shrink-0 w-[3rem]`}>Supply</span>
             <input
               value={supplyInput}
               onChange={(event) => setSupplyInput(formatNumberInput(event.target.value))}
               inputMode="decimal"
               placeholder={inputMode === 'usd' ? '100,000' : '50'}
-              className={inputBase}
+              className={inputStyles}
             />
           </div>
           {/* Row 3: borrow */}
           <div className="flex items-center gap-[var(--ds-space-1)] min-w-0">
-            <span className="ds-text-11 text-muted-foreground font-medium shrink-0 w-[3rem]">Borrow</span>
+            <span className={`${fontSize} text-muted-foreground font-medium shrink-0 w-[3rem]`}>Borrow</span>
             <input
               value={borrowInput}
               onChange={(event) => setBorrowInput(formatNumberInput(event.target.value))}
               inputMode="decimal"
               placeholder={inputMode === 'usd' ? '20,000' : '10'}
-              className={inputBase}
+              className={inputStyles}
             />
           </div>
         </div>
@@ -115,7 +121,7 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
         <div className="flex items-center gap-0.5 bg-muted/60 rounded-lg p-0.5 border border-border/40">
           <button
             type="button"
-            onClick={() => setInputMode('usd')}
+            onClick={() => handleModeChange('usd')}
             className={inputMode === 'usd' ? segmentedSelected : segmentedUnselected}
             aria-pressed={inputMode === 'usd'}
           >
@@ -123,7 +129,7 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
           </button>
           <button
             type="button"
-            onClick={() => setInputMode('token')}
+            onClick={() => handleModeChange('token')}
             className={inputMode === 'token' ? segmentedSelected : segmentedUnselected}
             aria-pressed={inputMode === 'token'}
           >
@@ -132,24 +138,24 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
         </div>
 
         <div className="flex items-center gap-[var(--ds-space-1)] flex-1 min-w-0">
-          <span className="ds-text-11 text-muted-foreground font-medium shrink-0">Supply</span>
+          <span className={`${fontSize} text-muted-foreground font-medium shrink-0`}>Supply</span>
           <input
             value={supplyInput}
             onChange={(event) => setSupplyInput(formatNumberInput(event.target.value))}
             inputMode="decimal"
             placeholder={inputMode === 'usd' ? '100,000' : '50'}
-            className={inputBase}
+            className={inputStyles}
           />
         </div>
 
         <div className="flex items-center gap-[var(--ds-space-1)] flex-1 min-w-0">
-          <span className="ds-text-11 text-muted-foreground font-medium shrink-0">Borrow</span>
+          <span className={`${fontSize} text-muted-foreground font-medium shrink-0`}>Borrow</span>
           <input
             value={borrowInput}
             onChange={(event) => setBorrowInput(formatNumberInput(event.target.value))}
             inputMode="decimal"
             placeholder={inputMode === 'usd' ? '20,000' : '10'}
-            className={inputBase}
+            className={inputStyles}
           />
         </div>
 
@@ -157,7 +163,7 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
           type="button"
           onClick={() => { setSupplyInput(''); setBorrowInput(''); }}
           disabled={!hasInput}
-          className={`${btnBase} px-[var(--ds-space-2)] text-muted-foreground hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40`}
+          className={btnStyles}
         >
           Clear
         </button>

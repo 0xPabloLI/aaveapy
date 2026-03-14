@@ -44,6 +44,7 @@ interface DesktopReserveRowProps {
   displayBorrowTotal: number | null;
   displayBorrowNative: number | null;
   displayBorrowIncentive: number | null;
+  displayUtilization: number | null;
   spread: number | null;
   simulation: RateSimulationResult | undefined;
   supplyInput: string;
@@ -68,6 +69,7 @@ const DesktopReserveRow = memo(({
   displayBorrowTotal,
   displayBorrowNative,
   displayBorrowIncentive,
+  displayUtilization,
   spread,
   simulation,
   supplyInput,
@@ -262,9 +264,9 @@ const DesktopReserveRow = memo(({
         {/* Utilization */}
         <TableCell className="px-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell tabular-nums text-foreground ds-text-13">
           <div className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)]">
-            <span>{formatPercent(reserve.utilizationPct ?? null)}</span>
+            <span>{formatPercent(displayUtilization)}</span>
             <UtilizationIndicator
-              current={simulation?.utilization.current ?? reserve.utilizationPct ?? null}
+              current={displayUtilization}
               optimal={simulation?.utilization.optimal ?? null}
             />
           </div>

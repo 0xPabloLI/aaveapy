@@ -314,19 +314,21 @@ export const formatUsd = (value: number | null | undefined): string => {
   return '$' + value.toFixed(2);
 };
 
-// Format reserve size in USD with abbreviation (e.g., 1083255123.44 → "$1.08B", 5200000 → "$5.20M")
+// Format reserve size in USD with abbreviation (e.g., 1083255123.44 → "$1.08B", 5200000 → "$5.20M", -18807985.72 → "-$18.81M")
 export const formatReserveSizeUsd = (value: number | null | undefined): string => {
   if (value === null || value === undefined || isNaN(value)) return '-';
-  if (value >= 1_000_000_000) {
-    return '$' + (value / 1_000_000_000).toFixed(2) + 'B';
+  const absValue = Math.abs(value);
+  const sign = value < 0 ? '-' : '';
+  if (absValue >= 1_000_000_000) {
+    return sign + '$' + (absValue / 1_000_000_000).toFixed(2) + 'B';
   }
-  if (value >= 1_000_000) {
-    return '$' + (value / 1_000_000).toFixed(2) + 'M';
+  if (absValue >= 1_000_000) {
+    return sign + '$' + (absValue / 1_000_000).toFixed(2) + 'M';
   }
-  if (value >= 1_000) {
-    return '$' + (value / 1_000).toFixed(2) + 'K';
+  if (absValue >= 1_000) {
+    return sign + '$' + (absValue / 1_000).toFixed(2) + 'K';
   }
-  return '$' + value.toFixed(2);
+  return sign + '$' + absValue.toFixed(2);
 };
 
 // Domain aliases that share the same USD-size formatting.

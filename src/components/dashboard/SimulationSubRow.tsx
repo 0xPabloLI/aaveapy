@@ -1,14 +1,49 @@
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, ExternalLink } from 'lucide-react';
 import { formatPercent, formatSpread, formatReserveSizeUsd } from '@/lib/formatters';
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
 import type { RateSimulationResult } from '@/hooks/useRateSimulation';
-import type { ReserveWithSpread } from '@/types/aave';
+import type { ReserveWithSpread, MeritIncentive, MerklOpportunityGroup, BrevisIncentive } from '@/types/aave';
 
-const SOURCE_LINKS: Record<string, string> = {
-  ACI: 'https://apps.aavechan.com/',
-  Merkl: 'https://app.merkl.xyz/',
-  Brevis: 'https://incentra.brevis.network/',
-  'Protocol Incentive': 'https://app.aave.com/',
+const getFirstMeritLink = (merits?: MeritIncentive[]): string | null => {
+  if (!merits || !Array.isArray(merits)) return null;
+  const now = Date.now();
+  for (const merit of merits) {
+    const start = Date.parse(merit.startDate);
+    const end = Date.parse(merit.endDate);
+    if (!Number.isNaN(start) && !Number.isNaN(end) && now >= start && now <= end && merit.link) {
+      return merit.link;
+    }
+  }
+  return null;
+};
+
+const getFirstMerklLink = (opportunities?: MerklOpportunityGroup[]): string | null => {
+  if (!opportunities || !Array.isArray(opportunities)) return null;
+  const now = Date.now();
+  for (const opp of opportunities) {
+    const link = opp.link || opp.opportunityLink;
+    if (!link) continue;
+    const hasActive = opp.breakdowns?.some((bd) => {
+      const start = Date.parse(bd.campaignStartedAt);
+      const end = Date.parse(bd.campaignEndedAt);
+      return !Number.isNaN(start) && !Number.isNaN(end) && now >= start && now <= end;
+    });
+    if (hasActive) return link;
+  }
+  return null;
+};
+
+const getFirstBrevisLink = (brevis?: BrevisIncentive[]): string | null => {
+  if (!brevis || !Array.isArray(brevis)) return null;
+  const now = Date.now();
+  for (const b of brevis) {
+    const start = Date.parse(b.startDate);
+    const end = Date.parse(b.endDate);
+    if (!Number.isNaN(start) && !Number.isNaN(end) && now >= start && now <= end && b.link) {
+      return b.link;
+    }
+  }
+  return null;
 };
 
 interface SimulationSubRowProps {
@@ -35,201 +70,27 @@ const formatUsdDelta = (value: number | null) => {
   return `${prefix}${formatReserveSizeUsd(value)}`;
 };
 
-const deltaClass = (value: number | null, accentClass: string) => {
-  if (value === null || Number.isNaN(value)) return 'text-muted-foreground';
-  return accentClass;
-};
-
-const formatMetricValue = (value: number | null, kind: 'rate' | 'spread' = 'rate') =>
-  kind === 'spread' ? formatSpread(value) : formatPercent(value);
-
 const hasMeaningfulValue = (value: number | null) =>
   value !== null && Number.isFinite(value) && Math.abs(value) >= 0.005;
 
-const MarketMetricCard = ({
-  title,
-  current,
-  after,
-  delta,
-  accentClass,
-  compact = false,
-}: {
-  title: string;
-  current: number | null;
-  after: number | null;
-  delta: number | null;
-  accentClass: string;
-  compact?: boolean;
-}) => (
-  <div className="rounded-lg border border-border/60 bg-background/80 px-[var(--ds-space-3)] py-[var(--ds-space-2)]">
-    <div className={`flex ${compact ? 'flex-col gap-[var(--ds-space-1)]' : 'items-end justify-between'}`}>
-      <span className="ds-text-11 uppercase tracking-wide text-muted-foreground">{title}</span>
-      <span className={`ds-text-11 font-semibold tabular-nums ${deltaClass(delta, accentClass)}`}>
-        {formatUsdDelta(delta)}
-      </span>
-    </div>
-    <div className={`mt-[var(--ds-space-1)] grid ${compact ? 'grid-cols-1 gap-[var(--ds-space-1)]' : 'grid-cols-2 gap-[var(--ds-space-2)]'}`}>
-      <div>
-        <p className="ds-text-10 text-muted-foreground">Current</p>
-        <p className={`ds-text-14 font-bold tabular-nums ${accentClass}`}>{formatReserveSizeUsd(current)}</p>
-      </div>
-      <div>
-        <p className="ds-text-10 text-muted-foreground">After</p>
-        <p className={`ds-text-14 font-bold tabular-nums ${after === null ? 'text-muted-foreground' : accentClass}`}>
-          {after === null ? '—' : formatReserveSizeUsd(after)}
-        </p>
-      </div>
-    </div>
-  </div>
-);
+type RowType = 'usd' | 'rate' | 'spread';
 
-const StaticMetricCard = ({
-  title,
-  value,
-  unit = '',
-  accentClass = 'text-foreground',
-  warning = false,
-  subtitle,
-}: {
-  title: string;
-  value: number | null;
-  unit?: string;
-  accentClass?: string;
-  warning?: boolean;
-  subtitle?: string;
-}) => (
-  <div className={`rounded-lg border px-[var(--ds-space-3)] py-[var(--ds-space-2)] ${
-    warning 
-      ? 'border-amber-400/60 bg-amber-50/50 dark:bg-amber-950/20' 
-      : 'border-border/60 bg-background/80'
-  }`}>
-    <p className={`ds-text-10 uppercase tracking-wide ${warning ? 'text-amber-700 dark:text-amber-400' : 'text-muted-foreground'}`}>
-      {title}
-    </p>
-    <p className={`mt-[var(--ds-space-0-5)] ds-text-14 font-bold tabular-nums ${warning ? 'text-amber-700 dark:text-amber-400' : accentClass}`}>
-      {value !== null ? (unit === '$' ? formatReserveSizeUsd(value) : `${value.toFixed(2)}%`) : '—'}
-    </p>
-    {subtitle && (
-      <p className={`ds-text-10 ${warning ? 'text-amber-600 dark:text-amber-500' : 'text-muted-foreground'}`}>
-        {subtitle}
-      </p>
-    )}
-  </div>
-);
-
-const ValueCard = ({
-  title,
-  current,
-  after,
-  delta,
-  accentClass,
-  compact = false,
-  kind = 'rate',
-}: {
-  title: string;
-  current: number | null;
-  after: number | null;
-  delta: number | null;
-  accentClass: string;
-  compact?: boolean;
-  kind?: 'rate' | 'spread';
-}) => (
-  <div className="rounded-lg border border-border/60 bg-background/80 px-[var(--ds-space-3)] py-[var(--ds-space-2)]">
-    <div className={`flex ${compact ? 'flex-col gap-[var(--ds-space-1)]' : 'items-end justify-between'}`}>
-      <span className="ds-text-11 uppercase tracking-wide text-muted-foreground">{title}</span>
-      <span className={`ds-text-11 font-semibold ${deltaClass(delta, accentClass)}`}>{formatDelta(delta)}</span>
-    </div>
-    <div className={`mt-[var(--ds-space-1)] grid ${compact ? 'grid-cols-1 gap-[var(--ds-space-1)]' : 'grid-cols-2 gap-[var(--ds-space-2)]'}`}>
-      <div>
-        <p className="ds-text-10 text-muted-foreground">Current</p>
-        <p className={`ds-text-14 font-bold ${accentClass}`}>{formatMetricValue(current, kind)}</p>
-      </div>
-      <div>
-        <p className="ds-text-10 text-muted-foreground">After</p>
-        <p className={`ds-text-14 font-bold ${after === null ? 'text-muted-foreground' : accentClass}`}>
-          {formatMetricValue(after, kind)}
-        </p>
-      </div>
-    </div>
-  </div>
-);
-
-const BreakdownRow = ({
-  label,
-  current,
-  after,
-  delta,
-  accentClass,
-  href,
-}: {
+interface TableRow {
   label: string;
   current: number | null;
   after: number | null;
   delta: number | null;
-  accentClass?: string;
+  type: RowType;
+  cap?: number | null;
   href?: string | null;
-}) => {
-  const link = href ?? SOURCE_LINKS[label];
-  return (
-    <div className="grid grid-cols-[1fr_5rem_5rem_5rem] items-center gap-[var(--ds-space-1)] py-[var(--ds-space-1)]">
-      {link ? (
-        <a
-          href={link}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={(e) => e.stopPropagation()}
-          className={`ds-text-11 truncate hover:underline underline-offset-2 transition-colors ${accentClass ?? 'text-muted-foreground'} hover:opacity-80`}
-          title={`Open ${label}`}
-        >
-          {label}
-        </a>
-      ) : (
-        <span className={`ds-text-11 truncate ${accentClass ?? 'text-muted-foreground'}`}>{label}</span>
-      )}
-      <span className={`ds-text-11 tabular-nums text-right ${accentClass ?? 'text-muted-foreground'}`}>{formatPercent(current)}</span>
-      <span className={`ds-text-11 tabular-nums text-right ${after === null ? 'text-muted-foreground' : (accentClass ?? 'text-foreground')}`}>
-        {formatPercent(after)}
-      </span>
-      <span className={`ds-text-11 tabular-nums text-right ${deltaClass(delta, accentClass ?? 'text-foreground')}`}>{formatDelta(delta)}</span>
-    </div>
-  );
-};
-
-const BreakdownCard = ({
-  title,
-  rows,
-}: {
-  title: string;
-  rows: Array<{
-    label: string;
-    current: number | null;
-    after: number | null;
-    delta: number | null;
-    accentClass?: string;
-    href?: string | null;
-  }>;
-}) => (
-  <div className="rounded-lg border border-border/60 bg-background/80 px-[var(--ds-space-3)] py-[var(--ds-space-2)]">
-    <div className="grid grid-cols-[1fr_5rem_5rem_5rem] items-center gap-[var(--ds-space-1)] border-b border-border/60 pb-[var(--ds-space-1)]">
-      <span className="ds-text-11 font-semibold uppercase tracking-wide text-foreground">{title}</span>
-      <span className="ds-text-10 text-right text-muted-foreground">Current</span>
-      <span className="ds-text-10 text-right text-muted-foreground">After</span>
-      <span className="ds-text-10 text-right text-muted-foreground">Delta</span>
-    </div>
-    <div className="divide-y divide-border/40">
-      {rows.map((row) => (
-        <BreakdownRow key={row.label} {...row} />
-      ))}
-    </div>
-  </div>
-);
+  isBreakdown?: boolean;
+  warning?: boolean;
+}
 
 const SimulationSubRow = ({
   reserve,
   simulation,
   isApy,
-  supplyInput,
-  borrowInput,
   inputMode = 'usd',
   compact = false,
   onCorrectSupplyInput,
@@ -245,8 +106,7 @@ const SimulationSubRow = ({
 
   const aaveUrl = buildAaveReserveUrl({ marketName: reserve.marketName, tokenAddress: reserve.tokenAddress });
 
-  // Supply cap fields
-  const { supplyCapExceeded, availableSupplyRoomUsd, supplyCapExceededByUsd } = simulation.marketMetrics;
+  const { supplyCapExceeded, availableSupplyRoomUsd, supplyCapExceededByUsd, supplyCapUsd } = simulation.marketMetrics;
 
   const handleCorrectToMaxSupply = () => {
     if (!onCorrectSupplyInput || availableSupplyRoomUsd === null) return;
@@ -255,15 +115,14 @@ const SimulationSubRow = ({
       onCorrectSupplyInput(corrected.toLocaleString('en-US'));
     } else if (simulation.tokenPrice && simulation.tokenPrice > 0) {
       const correctedTokens = Math.max(0, availableSupplyRoomUsd / simulation.tokenPrice);
-      const formatted = correctedTokens >= 1 
+      const formatted = correctedTokens >= 1
         ? correctedTokens.toLocaleString('en-US', { maximumFractionDigits: 2 })
         : correctedTokens.toPrecision(4);
       onCorrectSupplyInput(formatted);
     }
   };
 
-  // Borrow cap fields
-  const { borrowCapExceeded, availableBorrowRoomUsd, borrowCapExceededByUsd, borrowCapUsd } = simulation.marketMetrics;
+  const { borrowCapExceeded, availableBorrowRoomUsd, borrowCapExceededByUsd, borrowCapUsd, borrowLimitedByLiquidity } = simulation.marketMetrics;
 
   const handleCorrectToMaxBorrow = () => {
     if (!onCorrectBorrowInput || availableBorrowRoomUsd === null) return;
@@ -272,289 +131,354 @@ const SimulationSubRow = ({
       onCorrectBorrowInput(corrected.toLocaleString('en-US'));
     } else if (simulation.tokenPrice && simulation.tokenPrice > 0) {
       const correctedTokens = Math.max(0, availableBorrowRoomUsd / simulation.tokenPrice);
-      const formatted = correctedTokens >= 1 
+      const formatted = correctedTokens >= 1
         ? correctedTokens.toLocaleString('en-US', { maximumFractionDigits: 2 })
         : correctedTokens.toPrecision(4);
       onCorrectBorrowInput(formatted);
     }
   };
 
-  // All inputs are already capped in useRateSimulation hook, so we can use the values directly
-  const { supplyCapUsd } = simulation.marketMetrics;
   const currentSupplySizeUsd =
     reserve.reserveSizeUsd != null && Number.isFinite(reserve.reserveSizeUsd) ? reserve.reserveSizeUsd : null;
-  
-  // Supply Size after uses capped input (already capped in hook)
   const afterSupplySizeUsd =
     currentSupplySizeUsd !== null && simulation.supply.inputUsd > 0
       ? currentSupplySizeUsd + simulation.supply.inputUsd
       : null;
 
-  // Build supply incentive sources list
+  const supplyMeritLink = getFirstMeritLink(reserve.meritSupplys);
+  const supplyMerklLink = getFirstMerklLink(reserve.merklSupplys);
+  const supplyBrevisLink = getFirstBrevisLink(reserve.brevisSupplys);
+
+  const borrowMeritLink = getFirstMeritLink(reserve.meritBorrows);
+  const borrowMerklLink = getFirstMerklLink(reserve.merklBorrows);
+  const borrowBrevisLink = getFirstBrevisLink(reserve.brevisBorrows);
+
   const supplyIncentiveSources = [
-    { label: 'Protocol Incentive', ...simulation.supply.sources.protocol },
-    { label: 'ACI Incentive', ...simulation.supply.sources.merit },
-    { label: 'Merkl Incentive', ...simulation.supply.sources.merkl },
-    { label: 'Brevis Incentive', ...simulation.supply.sources.brevis },
+    { label: 'Protocol Incentive', ...simulation.supply.sources.protocol, href: aaveUrl },
+    { label: 'ACI Incentive', ...simulation.supply.sources.merit, href: supplyMeritLink },
+    { label: 'Merkl Incentive', ...simulation.supply.sources.merkl, href: supplyMerklLink },
+    { label: 'Brevis Incentive', ...simulation.supply.sources.brevis, href: supplyBrevisLink },
   ].filter((src) => hasMeaningfulValue(src.current) || hasMeaningfulValue(src.after));
 
-  // If only one incentive source, show it directly instead of "Incentive total"
-  const supplyIncentiveRow = supplyIncentiveSources.length === 1
-    ? { ...supplyIncentiveSources[0], accentClass: 'ds-text-emerald-600' }
-    : {
-        label: 'Incentive total',
-        current: simulation.supply.currentIncentive,
-        after: simulation.supply.afterIncentive,
-        delta: simulation.supply.deltaIncentive,
-        accentClass: 'ds-text-emerald-600',
-      };
+  const borrowIncentiveSources = [
+    { label: 'Protocol Incentive', ...simulation.borrow.sources.protocol, href: aaveUrl },
+    { label: 'ACI Incentive', ...simulation.borrow.sources.merit, href: borrowMeritLink },
+    { label: 'Merkl Incentive', ...simulation.borrow.sources.merkl, href: borrowMerklLink },
+    { label: 'Brevis Incentive', ...simulation.borrow.sources.brevis, href: borrowBrevisLink },
+  ].filter((src) => hasMeaningfulValue(src.current) || hasMeaningfulValue(src.after));
 
-  const supplyRows = [
+  const supplyRows: TableRow[] = [
+    {
+      label: 'Total Supplied',
+      current: currentSupplySizeUsd,
+      after: afterSupplySizeUsd,
+      delta: afterSupplySizeUsd !== null && currentSupplySizeUsd !== null ? afterSupplySizeUsd - currentSupplySizeUsd : null,
+      type: 'usd',
+      cap: supplyCapUsd,
+      warning: supplyCapExceeded,
+    },
+    {
+      label: rateLabel,
+      current: simulation.supply.currentTotal,
+      after: simulation.supply.afterTotal,
+      delta: simulation.supply.deltaTotal,
+      type: 'rate',
+    },
     {
       label: 'Native',
       current: simulation.supply.currentNative,
       after: simulation.supply.afterNative,
       delta: simulation.supply.deltaNative,
-      accentClass: 'ds-text-emerald-600',
+      type: 'rate',
       href: aaveUrl,
+      isBreakdown: true,
     },
-    // Only show incentive row if there's meaningful incentive data
-    ...(hasMeaningfulValue(simulation.supply.currentIncentive) || hasMeaningfulValue(simulation.supply.afterIncentive)
-      ? [supplyIncentiveRow]
-      : []),
-    // Show individual sources only if showing "Incentive total" (multiple sources)
-    ...(supplyIncentiveSources.length > 1 ? supplyIncentiveSources : []),
+    ...supplyIncentiveSources.map((src) => ({
+      label: src.label,
+      current: src.current,
+      after: src.after,
+      delta: src.delta,
+      type: 'rate' as RowType,
+      href: src.href,
+      isBreakdown: true,
+    })),
   ];
 
-  // Build borrow incentive sources list
-  const borrowIncentiveSources = [
-    { label: 'Protocol Incentive', ...simulation.borrow.sources.protocol },
-    { label: 'ACI Incentive', ...simulation.borrow.sources.merit },
-    { label: 'Merkl Incentive', ...simulation.borrow.sources.merkl },
-    { label: 'Brevis Incentive', ...simulation.borrow.sources.brevis },
-  ].filter((src) => hasMeaningfulValue(src.current) || hasMeaningfulValue(src.after));
-
-  // If only one incentive source, show it directly instead of "Incentive total"
-  const borrowIncentiveRow = borrowIncentiveSources.length === 1
-    ? { ...borrowIncentiveSources[0], accentClass: 'ds-text-brand-cyan' }
-    : {
-        label: 'Incentive total',
-        current: simulation.borrow.currentIncentive,
-        after: simulation.borrow.afterIncentive,
-        delta: simulation.borrow.deltaIncentive,
-        accentClass: 'ds-text-brand-cyan',
-      };
-
-  const borrowRows = [
+  const borrowRows: TableRow[] = [
+    {
+      label: 'Total Borrowed',
+      current: simulation.marketMetrics.totalBorrowedUsd,
+      after: simulation.marketMetrics.totalBorrowedUsdAfter,
+      delta: simulation.marketMetrics.totalBorrowedUsdDelta,
+      type: 'usd',
+      cap: borrowCapUsd,
+      warning: borrowCapExceeded && !borrowLimitedByLiquidity,
+    },
+    {
+      label: rateLabel,
+      current: simulation.borrow.currentTotal,
+      after: simulation.borrow.afterTotal,
+      delta: simulation.borrow.deltaTotal,
+      type: 'rate',
+    },
     {
       label: 'Native',
       current: simulation.borrow.currentNative,
       after: simulation.borrow.afterNative,
       delta: simulation.borrow.deltaNative,
-      accentClass: 'ds-text-brand-cyan',
+      type: 'rate',
       href: aaveUrl,
+      isBreakdown: true,
     },
-    // Only show incentive row if there's meaningful incentive data
-    ...(hasMeaningfulValue(simulation.borrow.currentIncentive) || hasMeaningfulValue(simulation.borrow.afterIncentive)
-      ? [borrowIncentiveRow]
-      : []),
-    // Show individual sources only if showing "Incentive total" (multiple sources)
-    ...(borrowIncentiveSources.length > 1 ? borrowIncentiveSources : []),
+    ...borrowIncentiveSources.map((src) => ({
+      label: src.label,
+      current: src.current,
+      after: src.after,
+      delta: src.delta,
+      type: 'rate' as RowType,
+      href: src.href,
+      isBreakdown: true,
+    })),
   ];
 
+  const formatValue = (value: number | null, type: RowType) => {
+    if (type === 'usd') return formatReserveSizeUsd(value);
+    if (type === 'spread') return formatSpread(value);
+    return formatPercent(value);
+  };
+
+  const formatDeltaValue = (value: number | null, type: RowType) => {
+    if (type === 'usd') return formatUsdDelta(value);
+    return formatDelta(value);
+  };
+
+  const renderRow = (row: TableRow, accentClass: string) => {
+    const deltaColorClass = row.delta === null || Number.isNaN(row.delta) ? 'text-muted-foreground' : accentClass;
+    const isBreakdownItem = row.isBreakdown;
+
+    return (
+      <tr key={row.label} className={row.warning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
+        <td className="py-1.5 pl-4 pr-3">
+          <div className={`flex items-baseline gap-1.5 ${isBreakdownItem ? 'ml-2 pl-2 border-l border-border' : ''}`}>
+            {row.href ? (
+              <a
+                href={row.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className={`ds-text-12 flex items-center gap-1 hover:underline underline-offset-2 ${row.warning ? 'text-amber-700 dark:text-amber-400' : isBreakdownItem ? 'text-muted-foreground hover:text-foreground' : accentClass}`}
+              >
+                <span className="truncate">{row.label}</span>
+                <ExternalLink className="w-3 h-3 flex-shrink-0 opacity-50" />
+              </a>
+            ) : (
+              <span className={`ds-text-12 ${row.warning ? 'text-amber-700 dark:text-amber-400 font-medium' : isBreakdownItem ? 'text-muted-foreground' : accentClass}`}>
+                {row.label}
+              </span>
+            )}
+            {row.cap !== null && row.cap !== undefined && (
+              <span className={`ds-text-11 tabular-nums flex-shrink-0 ${row.warning ? 'text-amber-600' : 'text-muted-foreground/70'}`}>
+                Cap {formatReserveSizeUsd(row.cap)}
+              </span>
+            )}
+          </div>
+        </td>
+        <td className="py-1.5 px-3 text-right">
+          <span className={`ds-text-12 tabular-nums ${isBreakdownItem ? 'text-muted-foreground' : accentClass}`}>
+            {formatValue(row.current, row.type)}
+          </span>
+        </td>
+        <td className="py-1.5 px-3 text-right">
+          <span className={`ds-text-12 tabular-nums ${row.after === null ? 'text-muted-foreground' : isBreakdownItem ? 'text-muted-foreground' : accentClass}`}>
+            {formatValue(row.after, row.type)}
+          </span>
+        </td>
+        <td className="py-1.5 pl-3 pr-4 text-right">
+          <span className={`ds-text-12 tabular-nums ${isBreakdownItem ? 'text-muted-foreground' : deltaColorClass}`}>
+            {formatDeltaValue(row.delta, row.type)}
+          </span>
+        </td>
+      </tr>
+    );
+  };
+
+  const renderTable = (title: string, rows: TableRow[], accentClass: string, borderClass: string) => (
+    <div className={`rounded-lg border ${borderClass} bg-background/80`}>
+      <table className="w-full">
+        <colgroup>
+          <col />
+          <col className="w-[76px]" />
+          <col className="w-[76px]" />
+          <col className="w-[76px]" />
+        </colgroup>
+        <thead>
+          <tr className="border-b border-border/50">
+            <th className="px-4 py-2 text-left">
+              <span className={`ds-text-13 font-semibold ${accentClass}`}>{title}</span>
+            </th>
+            <th className="px-3 py-2 text-right">
+              <span className="ds-text-11 text-muted-foreground">Current</span>
+            </th>
+            <th className="px-3 py-2 text-right">
+              <span className="ds-text-11 text-muted-foreground">After</span>
+            </th>
+            <th className="px-4 py-2 text-right">
+              <span className="ds-text-11 text-muted-foreground">Delta</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => renderRow(row, accentClass))}
+        </tbody>
+      </table>
+    </div>
+  );
+
+  // Middle column (Spread + Liquidity) - no title
+  const renderMiddleColumn = () => (
+    <div className="rounded-lg border border-purple-500/40 bg-background/80">
+      <table className="w-full">
+        <colgroup>
+          <col />
+          <col className="w-[76px]" />
+          <col className="w-[76px]" />
+          <col className="w-[76px]" />
+        </colgroup>
+        <thead>
+          <tr className="border-b border-border/50">
+            <th className="px-4 py-2 text-left">
+              {/* Empty title cell for alignment */}
+            </th>
+            <th className="px-3 py-2 text-right">
+              <span className="ds-text-11 text-muted-foreground">Current</span>
+            </th>
+            <th className="px-3 py-2 text-right">
+              <span className="ds-text-11 text-muted-foreground">After</span>
+            </th>
+            <th className="px-4 py-2 text-right">
+              <span className="ds-text-11 text-muted-foreground">Delta</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {/* Spread first */}
+          <tr>
+            <td className="py-1.5 pl-4 pr-3">
+              <span className="ds-text-12 ds-text-purple-600">Spread</span>
+            </td>
+            <td className="py-1.5 px-3 text-right">
+              <span className="ds-text-12 tabular-nums ds-text-purple-600">{formatSpread(simulation.spread.current)}</span>
+            </td>
+            <td className="py-1.5 px-3 text-right">
+              <span className={`ds-text-12 tabular-nums ${simulation.spread.after === null ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
+                {formatSpread(simulation.spread.after)}
+              </span>
+            </td>
+            <td className="py-1.5 pl-3 pr-4 text-right">
+              <span className={`ds-text-12 tabular-nums ${simulation.spread.delta === null ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
+                {formatDelta(simulation.spread.delta)}
+              </span>
+            </td>
+          </tr>
+          {/* Liquidity second */}
+          <tr className={borrowCapExceeded && borrowLimitedByLiquidity ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
+            <td className="py-1.5 pl-4 pr-3">
+              <span className={`ds-text-12 ${borrowCapExceeded && borrowLimitedByLiquidity ? 'text-amber-700 dark:text-amber-400 font-medium' : 'ds-text-purple-600'}`}>
+                Liquidity
+              </span>
+            </td>
+            <td className="py-1.5 px-3 text-right">
+              <span className="ds-text-12 tabular-nums ds-text-purple-600">
+                {formatReserveSizeUsd(simulation.marketMetrics.availableLiquidityUsd)}
+              </span>
+            </td>
+            <td className="py-1.5 px-3 text-right">
+              <span className={`ds-text-12 tabular-nums ${simulation.marketMetrics.availableLiquidityUsdAfter === null ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
+                {formatReserveSizeUsd(simulation.marketMetrics.availableLiquidityUsdAfter)}
+              </span>
+            </td>
+            <td className="py-1.5 pl-3 pr-4 text-right">
+              <span className={`ds-text-12 tabular-nums ${simulation.marketMetrics.availableLiquidityUsdDelta === null ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
+                {formatUsdDelta(simulation.marketMetrics.availableLiquidityUsdDelta)}
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  );
+
   return (
-    <div className="rounded-xl border border-border/70 bg-muted/20 p-[var(--ds-space-3)]">
-      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-        <span className="ds-text-13 font-semibold text-foreground">Shared {rateLabel} simulation</span>
+    <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
+      {/* Header */}
+      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 mb-3">
+        <span className="ds-text-14 font-semibold text-foreground">Shared {rateLabel} simulation</span>
         {showEmptyStateNote && (
-          <span className="ds-text-11 text-muted-foreground">
-            Enter a shared supply or borrow amount above the table to populate the After and Delta columns.
+          <span className="ds-text-12 text-muted-foreground">
+            Enter supply or borrow amount above to see simulated values.
           </span>
         )}
       </div>
 
-      {/* Supply Cap Exceeded Warning */}
+      {/* Warnings */}
       {supplyCapExceeded && (
-        <div className="mt-[var(--ds-space-2)] flex items-center gap-[var(--ds-space-2)] rounded-lg border border-amber-400/60 bg-amber-50/80 dark:bg-amber-950/30 px-[var(--ds-space-3)] py-[var(--ds-space-2)]">
-          <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
-          <div className="flex-1 min-w-0">
-            <p className="ds-text-12 font-medium text-amber-800 dark:text-amber-300">
-              Supply input exceeds available room by {formatReserveSizeUsd(supplyCapExceededByUsd)}
-            </p>
-            <p className="ds-text-11 text-amber-700 dark:text-amber-400">
-              Max suppliable: {formatReserveSizeUsd(availableSupplyRoomUsd)}
-            </p>
-          </div>
+        <div className="mb-3 flex items-center gap-3 rounded-lg border border-amber-400/60 bg-amber-50/80 dark:bg-amber-950/30 px-4 py-2">
+          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+          <p className="flex-1 ds-text-12 text-amber-800 dark:text-amber-300">
+            Supply exceeds cap by {formatReserveSizeUsd(supplyCapExceededByUsd)}
+          </p>
           {onCorrectSupplyInput && availableSupplyRoomUsd !== null && availableSupplyRoomUsd > 0 && (
-            <button
-              type="button"
-              onClick={handleCorrectToMaxSupply}
-              className="shrink-0 px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-md border border-amber-500/50 bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-200 ds-text-11 font-medium hover:bg-amber-200 dark:hover:bg-amber-800/50 transition-colors"
-            >
+            <button type="button" onClick={handleCorrectToMaxSupply} className="ds-btn-warning ds-text-11 px-3 py-1">
               Adjust to max
             </button>
           )}
         </div>
       )}
 
-      {/* Borrow Cap Exceeded Warning */}
       {borrowCapExceeded && (
-        <div className="mt-[var(--ds-space-2)] flex items-center gap-[var(--ds-space-2)] rounded-lg border border-amber-400/60 bg-amber-50/80 dark:bg-amber-950/30 px-[var(--ds-space-3)] py-[var(--ds-space-2)]">
-          <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
-          <div className="flex-1 min-w-0">
-            <p className="ds-text-12 font-medium text-amber-800 dark:text-amber-300">
-              Borrow input exceeds available room by {formatReserveSizeUsd(borrowCapExceededByUsd)}
-            </p>
-            <p className="ds-text-11 text-amber-700 dark:text-amber-400">
-              Max borrowable: {formatReserveSizeUsd(availableBorrowRoomUsd)}
-            </p>
-          </div>
+        <div className="mb-3 flex items-center gap-3 rounded-lg border border-amber-400/60 bg-amber-50/80 dark:bg-amber-950/30 px-4 py-2">
+          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+          <p className="flex-1 ds-text-12 text-amber-800 dark:text-amber-300">
+            Borrow exceeds {borrowLimitedByLiquidity ? 'liquidity' : 'cap'} by {formatReserveSizeUsd(borrowCapExceededByUsd)}
+          </p>
           {onCorrectBorrowInput && availableBorrowRoomUsd !== null && availableBorrowRoomUsd > 0 && (
-            <button
-              type="button"
-              onClick={handleCorrectToMaxBorrow}
-              className="shrink-0 px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-md border border-amber-500/50 bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-200 ds-text-11 font-medium hover:bg-amber-200 dark:hover:bg-amber-800/50 transition-colors"
-            >
+            <button type="button" onClick={handleCorrectToMaxBorrow} className="ds-btn-warning ds-text-11 px-3 py-1">
               Adjust to max
             </button>
           )}
         </div>
       )}
 
-      {/* Market Metrics Section */}
-      <div className={`mt-[var(--ds-space-3)] grid ${compact ? 'grid-cols-1' : 'grid-cols-2 lg:grid-cols-5'} gap-[var(--ds-space-2)]`}>
-        <MarketMetricCard
-          title="Supply Size"
-          current={currentSupplySizeUsd}
-          after={afterSupplySizeUsd}
-          delta={afterSupplySizeUsd !== null && currentSupplySizeUsd !== null ? afterSupplySizeUsd - currentSupplySizeUsd : null}
-          accentClass="ds-text-emerald-600"
-          compact={compact}
-        />
-        <MarketMetricCard
-          title="Liquidity"
-          current={simulation.marketMetrics.availableLiquidityUsd}
-          after={simulation.marketMetrics.availableLiquidityUsdAfter}
-          delta={simulation.marketMetrics.availableLiquidityUsdDelta}
-          accentClass="ds-text-purple-600"
-          compact={compact}
-        />
-        <MarketMetricCard
-          title="Total Borrowed"
-          current={simulation.marketMetrics.totalBorrowedUsd}
-          after={simulation.marketMetrics.totalBorrowedUsdAfter}
-          delta={simulation.marketMetrics.totalBorrowedUsdDelta}
-          accentClass="ds-text-brand-cyan"
-          compact={compact}
-        />
-        <StaticMetricCard
-          title="Supply Cap"
-          value={simulation.marketMetrics.supplyCapUsd}
-          unit="$"
-          accentClass="text-muted-foreground"
-          warning={supplyCapExceeded}
-          subtitle={supplyCapExceeded ? `Exceeded by ${formatReserveSizeUsd(supplyCapExceededByUsd)}` : undefined}
-        />
-        <StaticMetricCard
-          title="Borrow Cap"
-          value={borrowCapUsd}
-          unit="$"
-          accentClass="text-muted-foreground"
-          warning={borrowCapExceeded}
-          subtitle={borrowCapExceeded ? `Exceeded by ${formatReserveSizeUsd(borrowCapExceededByUsd)}` : undefined}
-        />
+      {/* 3-column layout: Supply | (Spread/Liquidity) | Borrow */}
+      <div className={`grid ${compact ? 'grid-cols-1 gap-3' : 'grid-cols-3 gap-2'}`}>
+        {renderTable('Supply', supplyRows, 'ds-text-emerald-600', 'border-emerald-500/40')}
+        {renderMiddleColumn()}
+        {renderTable('Borrow', borrowRows, 'ds-text-brand-cyan', 'border-[rgb(var(--ds-brand-cyan-rgb))]/40')}
       </div>
 
-      <div className={`mt-[var(--ds-space-3)] grid ${compact ? 'grid-cols-1' : 'grid-cols-4'} gap-[var(--ds-space-2)]`}>
-        <ValueCard
-          title="Supply"
-          current={simulation.supply.currentTotal}
-          after={simulation.supply.afterTotal}
-          delta={simulation.supply.deltaTotal}
-          accentClass="ds-text-emerald-600"
-          compact={compact}
-        />
-        <ValueCard
-          title="Spread"
-          current={simulation.spread.current}
-          after={simulation.spread.after}
-          delta={simulation.spread.delta}
-          accentClass="ds-text-purple-600"
-          compact={compact}
-          kind="spread"
-        />
-        <ValueCard
-          title="Borrow"
-          current={simulation.borrow.currentTotal}
-          after={simulation.borrow.afterTotal}
-          delta={simulation.borrow.deltaTotal}
-          accentClass="ds-text-brand-cyan"
-          compact={compact}
-        />
-        <ValueCard
-          title="Utilization"
-          current={simulation.utilization.current}
-          after={simulation.utilization.after}
-          delta={simulation.utilization.delta}
-          accentClass="text-foreground"
-          compact={compact}
-        />
-      </div>
-
-      <div className={`mt-[var(--ds-space-2)] grid ${compact ? 'grid-cols-1' : 'grid-cols-2'} gap-[var(--ds-space-2)]`}>
-        <BreakdownCard title="Supply breakdown" rows={supplyRows} />
-        <BreakdownCard title="Borrow breakdown" rows={borrowRows} />
-      </div>
-
-      {/* Reserve Parameters */}
-      {(simulation.marketMetrics.reserveFactor !== null || simulation.marketMetrics.optimalUtilization !== null) && (
-        <div className={`mt-[var(--ds-space-2)] grid ${compact ? 'grid-cols-1' : 'grid-cols-4'} gap-[var(--ds-space-2)]`}>
-          <StaticMetricCard
-            title="Reserve Factor"
-            value={simulation.marketMetrics.reserveFactor}
-            accentClass="text-muted-foreground"
-          />
-          <StaticMetricCard
-            title="Optimal Utilization"
-            value={simulation.marketMetrics.optimalUtilization}
-            accentClass="text-amber-600"
-          />
+      {/* Footer notes */}
+      {(simulation.reserveRateInputLoading || simulation.reserveRateInputError || simulation.forecastLoading || showPriceMissingNotice || simulation.forecastUnavailableCampaignCount > 0) && (
+        <div className="mt-3 space-y-1 px-1">
+          {simulation.reserveRateInputLoading && !showEmptyStateNote && (
+            <p className="ds-text-11 text-muted-foreground">Loading rate inputs...</p>
+          )}
+          {simulation.reserveRateInputError && !showEmptyStateNote && (
+            <p className="ds-text-11 text-amber-600">
+              Native simulation unavailable: {simulation.reserveRateInputError instanceof Error ? simulation.reserveRateInputError.message : 'failed to fetch'}
+            </p>
+          )}
+          {!showEmptyStateNote && !simulation.hasRateInput && !simulation.reserveRateInputLoading && !simulation.reserveRateInputError && (
+            <p className="ds-text-11 text-muted-foreground">Native simulation unavailable for this reserve.</p>
+          )}
+          {simulation.forecastLoading && <p className="ds-text-11 text-muted-foreground">Loading Merkl forecast...</p>}
+          {showPriceMissingNotice && (
+            <p className="ds-text-11 text-muted-foreground">Price unavailable for {reserve.tokenSymbol}; using current supply for forecast.</p>
+          )}
+          {!simulation.forecastLoading && simulation.forecastUnavailableCampaignCount > 0 && (
+            <p className="ds-text-11 text-muted-foreground">Some Merkl campaigns have no forecast; using current APR.</p>
+          )}
         </div>
       )}
-
-      <div className="mt-[var(--ds-space-2)] space-y-[var(--ds-space-1)]">
-        {simulation.reserveRateInputLoading && !showEmptyStateNote && (
-          <p className="ds-text-11 text-muted-foreground">Loading rate inputs...</p>
-        )}
-        {simulation.reserveRateInputError && !showEmptyStateNote && (
-          <p className="ds-text-11 text-amber-600">
-            Native simulation unavailable:{' '}
-            {simulation.reserveRateInputError instanceof Error
-              ? simulation.reserveRateInputError.message
-              : 'failed to fetch rate inputs'}
-          </p>
-        )}
-        {!showEmptyStateNote &&
-          !simulation.hasRateInput &&
-          !simulation.reserveRateInputLoading &&
-          !simulation.reserveRateInputError && (
-          <p className="ds-text-11 text-muted-foreground">Native simulation unavailable for this reserve.</p>
-        )}
-        
-        {simulation.forecastLoading && (
-          <p className="ds-text-11 text-muted-foreground">Loading Merkl forecast state...</p>
-        )}
-        {showPriceMissingNotice && (
-          <p className="ds-text-11 text-muted-foreground">
-            Price unavailable for {reserve.tokenSymbol}; incentive forecast falls back to current supply.
-          </p>
-        )}
-        {!simulation.forecastLoading && simulation.forecastUnavailableCampaignCount > 0 && (
-          <p className="ds-text-11 text-muted-foreground">
-            Some Merkl campaigns have no forecast state; those parts keep current APR.
-          </p>
-        )}
-      </div>
     </div>
   );
 };

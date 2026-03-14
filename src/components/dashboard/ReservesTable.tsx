@@ -272,6 +272,12 @@ const ReservesTable = ({
     return pickScenarioValue(simulation.spread.current, simulation.spread.after);
   };
 
+  const getDisplayUtilization = (reserve: ReserveWithSpread): number | null => {
+    const simulation = getSimulation(reserve);
+    if (!simulation) return reserve.utilizationPct ?? null;
+    return pickScenarioValue(simulation.utilization.current, simulation.utilization.after);
+  };
+
   const getDisplayReserveSizeUsd = (reserve: ReserveWithSpread): number | null => {
     const reserveSize = reserve.reserveSizeUsd;
     if (reserveSize == null || !Number.isFinite(reserveSize)) return reserveSize ?? null;
@@ -318,8 +324,8 @@ const ReservesTable = ({
         return sizeSortOrder === 'desc' ? -comparison : comparison;
       }
       if (sortColumn === 'util') {
-        const aU = a.utilizationPct ?? -Infinity;
-        const bU = b.utilizationPct ?? -Infinity;
+        const aU = getDisplayUtilization(a) ?? -Infinity;
+        const bU = getDisplayUtilization(b) ?? -Infinity;
         comparison = aU - bU;
         return utilSortOrder === 'desc' ? -comparison : comparison;
       }
@@ -589,25 +595,26 @@ const ReservesTable = ({
     }
   }, [scrollToReserveId, sortedData]);
 
+  // Auto-expand visible count when a row is expanded (persist even after collapse)
+  useEffect(() => {
+    if (!expandedReserveId) return;
+    const expandedIndex = sortedData.findIndex(
+      (r) => getReserveSimulationId(r) === expandedReserveId
+    );
+    if (expandedIndex < 0) return;
+    const neededCount = expandedIndex + 6; // expanded row + 5 buffer rows
+    const currentCount = minVisibleCount ?? DEFAULT_VISIBLE_COUNT;
+    if (neededCount > currentCount) {
+      setMinVisibleCount(Math.min(neededCount, sortedData.length));
+    }
+  }, [expandedReserveId, sortedData, minVisibleCount]);
+
   // Display data with pagination - must be before conditional returns
-  // Ensure the expanded row is always visible even if it's beyond the default count
   const displayData = useMemo(() => {
     const baseCount = minVisibleCount ?? DEFAULT_VISIBLE_COUNT;
-    // If minVisibleCount covers all data, return all
     if (baseCount >= sortedData.length) return sortedData;
-    
-    let visibleCount = baseCount;
-    // If there's an expanded row that's beyond the current count, extend to include it
-    if (expandedReserveId) {
-      const expandedIndex = sortedData.findIndex(
-        (r) => getReserveSimulationId(r) === expandedReserveId
-      );
-      if (expandedIndex >= visibleCount) {
-        visibleCount = expandedIndex + 1;
-      }
-    }
-    return sortedData.slice(0, visibleCount);
-  }, [sortedData, minVisibleCount, expandedReserveId]);
+    return sortedData.slice(0, baseCount);
+  }, [sortedData, minVisibleCount]);
   
   const showAll = minVisibleCount !== null && minVisibleCount >= sortedData.length;
 
@@ -1379,6 +1386,7 @@ const ReservesTable = ({
                   displayBorrowTotal={getDisplayBorrowTotal(reserve)}
                   displayBorrowNative={getDisplayBorrowNative(reserve)}
                   displayBorrowIncentive={displayBorrowIncentive}
+                  displayUtilization={getDisplayUtilization(reserve)}
                   spread={getDisplaySpread(reserve)}
                   simulation={simulation}
                   supplyInput={debouncedSharedSupplyInput}
