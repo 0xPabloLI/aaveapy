@@ -106,7 +106,7 @@ export type TokenPricesIndex = Record<string, TokenPriceEntry>;
 
 export interface MerklForecastStateResponse {
   campaignId: string;
-  campaignType: string;
+  campaignType?: string;
   plannedDaily?: number;
   requiredDaily?: number;
   aprCap: number | null;
