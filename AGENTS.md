@@ -157,10 +157,10 @@ When implementing mobile carousels:
 - When summarizing many items (e.g. APIs, warmup order, options), use tables for clarity (表格形式，一目了然).
 - Follow explicit visual descriptions precisely (e.g., when user says "竖线" use vertical, not horizontal; when user says "圆环" use ring, not bar).
 - Maintain design symmetry when adding complementary UI elements (e.g., if Supply info is in Size column, related Borrow info placement should be consistent).
-- Tooltip content should match the visual element's semantic purpose (e.g., hover on progress ring shows ring-related info, not unrelated metrics).
-- Disabled states can be both visually muted and interactive (变灰 and 可点击 are not mutually exclusive).
-- When adding new visual indicators, use distinct forms to distinguish different concepts (e.g., circular for capacity ratios, linear for position indicators).
-- Keep new color schemes consistent with existing column/section color themes rather than introducing conflicting semantic colors.
+- Tooltip content should not repeat information already visible in the parent element; only show supplementary context.
+- Reserve semantic colors exclusively for their intended purpose (amber/warning for alerts only, not for regular data display).
+- Avoid reusing colors already assigned to other concepts (e.g., don't use green for new indicators if green is already used for incentives).
+- Non-core data fields (like Utilization) should use normal font weight, same as Price/Size; only core metrics (APY) get bold.
 
 ## Learned Workspace Facts
 - Local git hooks in this setup are managed under the main repository `.git/hooks` and are local-only (not versioned).

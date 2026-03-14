@@ -165,11 +165,15 @@ export interface MarketMetrics {
   totalBorrowedUsdAfter: number | null;
   totalBorrowedUsdDelta: number | null;
   supplyCapUsd: number | null;
+  borrowCapUsd: number | null;
   reserveFactor: number | null;
   optimalUtilization: number | null;
   availableSupplyRoomUsd: number | null;
   supplyCapExceeded: boolean;
   supplyCapExceededByUsd: number | null;
+  availableBorrowRoomUsd: number | null;
+  borrowCapExceeded: boolean;
+  borrowCapExceededByUsd: number | null;
 }
 
 export interface RateSimulationComputedResult {
@@ -628,6 +632,7 @@ export function buildRateSimulationResult({
   const RAY_SCALE = 1e27;
   const computeMarketMetrics = (): MarketMetrics => {
     const supplyCapUsd = reserve.supplyCapUsd ?? null;
+    const borrowCapUsd = reserve.borrowCapUsd ?? null;
     const currentReserveSizeUsd = reserve.reserveSizeUsd ?? null;
     
     const computeSupplyCapFields = (afterSizeUsd: number | null) => {
@@ -650,9 +655,31 @@ export function buildRateSimulationResult({
       };
     };
 
+    const computeBorrowCapFields = (afterBorrowedUsd: number | null, totalBorrowedUsdBase: number | null) => {
+      if (borrowCapUsd === null || borrowCapUsd <= 0) {
+        return {
+          availableBorrowRoomUsd: null,
+          borrowCapExceeded: false,
+          borrowCapExceededByUsd: null,
+        };
+      }
+      const availableRoom = totalBorrowedUsdBase !== null 
+        ? Math.max(borrowCapUsd - totalBorrowedUsdBase, 0)
+        : null;
+      const exceeded = afterBorrowedUsd !== null && afterBorrowedUsd > borrowCapUsd;
+      const exceededBy = exceeded && afterBorrowedUsd !== null ? afterBorrowedUsd - borrowCapUsd : null;
+      return {
+        availableBorrowRoomUsd: availableRoom,
+        borrowCapExceeded: exceeded,
+        borrowCapExceededByUsd: exceededBy,
+      };
+    };
+
     if (!reserveRateInput || !tokenPrice) {
       const afterSizeUsd = currentReserveSizeUsd !== null ? currentReserveSizeUsd + supplyInputUsd : null;
-      const capFields = computeSupplyCapFields(afterSizeUsd);
+      const supplyCapFields = computeSupplyCapFields(afterSizeUsd);
+      // No totalBorrowedUsd available without reserveRateInput, so borrow cap fields are null
+      const borrowCapFields = computeBorrowCapFields(null, null);
       return {
         availableLiquidityUsd: null,
         availableLiquidityUsdAfter: null,
@@ -661,9 +688,11 @@ export function buildRateSimulationResult({
         totalBorrowedUsdAfter: null,
         totalBorrowedUsdDelta: null,
         supplyCapUsd,
+        borrowCapUsd,
         reserveFactor: null,
         optimalUtilization: null,
-        ...capFields,
+        ...supplyCapFields,
+        ...borrowCapFields,
       };
     }
 
@@ -693,7 +722,8 @@ export function buildRateSimulationResult({
 
     const totalSupplyUsd = availableLiquidityUsd + totalBorrowedUsd;
     const afterSupplyUsd = hasAnyInput ? totalSupplyUsd + supplyInputUsd : null;
-    const capFields = computeSupplyCapFields(afterSupplyUsd);
+    const supplyCapFields = computeSupplyCapFields(afterSupplyUsd);
+    const borrowCapFields = computeBorrowCapFields(totalBorrowedUsdAfter, totalBorrowedUsd);
 
     return {
       availableLiquidityUsd,
@@ -707,9 +737,11 @@ export function buildRateSimulationResult({
         ? totalBorrowedUsdAfter - totalBorrowedUsd
         : null,
       supplyCapUsd,
+      borrowCapUsd,
       reserveFactor,
       optimalUtilization,
-      ...capFields,
+      ...supplyCapFields,
+      ...borrowCapFields,
     };
   };
 

@@ -20,6 +20,7 @@ interface SimulationSubRowProps {
   inputMode?: 'usd' | 'token';
   compact?: boolean;
   onCorrectSupplyInput?: (correctedValue: string) => void;
+  onCorrectBorrowInput?: (correctedValue: string) => void;
 }
 
 const formatDelta = (value: number | null) => {
@@ -232,6 +233,7 @@ const SimulationSubRow = ({
   inputMode = 'usd',
   compact = false,
   onCorrectSupplyInput,
+  onCorrectBorrowInput,
 }: SimulationSubRowProps) => {
   const rateLabel = isApy ? 'APY' : 'APR';
   const showPriceMissingNotice =
@@ -243,6 +245,7 @@ const SimulationSubRow = ({
 
   const aaveUrl = buildAaveReserveUrl({ marketName: reserve.marketName, tokenAddress: reserve.tokenAddress });
 
+  // Supply cap fields
   const { supplyCapExceeded, availableSupplyRoomUsd, supplyCapExceededByUsd } = simulation.marketMetrics;
 
   const handleCorrectToMaxSupply = () => {
@@ -256,6 +259,23 @@ const SimulationSubRow = ({
         ? correctedTokens.toLocaleString('en-US', { maximumFractionDigits: 2 })
         : correctedTokens.toPrecision(4);
       onCorrectSupplyInput(formatted);
+    }
+  };
+
+  // Borrow cap fields
+  const { borrowCapExceeded, availableBorrowRoomUsd, borrowCapExceededByUsd, borrowCapUsd } = simulation.marketMetrics;
+
+  const handleCorrectToMaxBorrow = () => {
+    if (!onCorrectBorrowInput || availableBorrowRoomUsd === null) return;
+    if (inputMode === 'usd') {
+      const corrected = Math.max(0, Math.floor(availableBorrowRoomUsd));
+      onCorrectBorrowInput(corrected.toLocaleString('en-US'));
+    } else if (simulation.tokenPrice && simulation.tokenPrice > 0) {
+      const correctedTokens = Math.max(0, availableBorrowRoomUsd / simulation.tokenPrice);
+      const formatted = correctedTokens >= 1 
+        ? correctedTokens.toLocaleString('en-US', { maximumFractionDigits: 2 })
+        : correctedTokens.toPrecision(4);
+      onCorrectBorrowInput(formatted);
     }
   };
 
@@ -278,15 +298,36 @@ const SimulationSubRow = ({
     supplyCapExceeded && availableSupplyRoomUsd !== null
       ? availableSupplyRoomUsd
       : simulation.supply.inputUsd;
+
+  // Calculate capped borrow input for calculations
+  const cappedBorrowInputUsd =
+    borrowCapExceeded && availableBorrowRoomUsd !== null
+      ? availableBorrowRoomUsd
+      : simulation.borrow.inputUsd;
   
-  // Recalculate liquidity with capped input
+  // Recalculate liquidity with capped inputs (both supply and borrow)
   const cappedLiquidityAfter =
-    simulation.marketMetrics.availableLiquidityUsd !== null && simulation.supply.hasInput
-      ? simulation.marketMetrics.availableLiquidityUsd + cappedSupplyInputUsd - simulation.borrow.inputUsd
+    simulation.marketMetrics.availableLiquidityUsd !== null && (simulation.supply.hasInput || simulation.borrow.hasInput)
+      ? simulation.marketMetrics.availableLiquidityUsd + cappedSupplyInputUsd - cappedBorrowInputUsd
       : simulation.marketMetrics.availableLiquidityUsdAfter;
   const cappedLiquidityDelta =
     cappedLiquidityAfter !== null && simulation.marketMetrics.availableLiquidityUsd !== null
       ? cappedLiquidityAfter - simulation.marketMetrics.availableLiquidityUsd
+      : null;
+
+  // Calculate capped Total Borrowed
+  const currentTotalBorrowedUsd = simulation.marketMetrics.totalBorrowedUsd;
+  const rawAfterTotalBorrowedUsd =
+    currentTotalBorrowedUsd !== null && simulation.borrow.inputUsd > 0
+      ? currentTotalBorrowedUsd + simulation.borrow.inputUsd
+      : simulation.marketMetrics.totalBorrowedUsdAfter;
+  const cappedAfterTotalBorrowedUsd =
+    rawAfterTotalBorrowedUsd !== null && borrowCapUsd !== null && borrowCapUsd > 0
+      ? Math.min(rawAfterTotalBorrowedUsd, borrowCapUsd)
+      : rawAfterTotalBorrowedUsd;
+  const cappedTotalBorrowedDelta =
+    cappedAfterTotalBorrowedUsd !== null && currentTotalBorrowedUsd !== null
+      ? cappedAfterTotalBorrowedUsd - currentTotalBorrowedUsd
       : null;
 
   // Build supply incentive sources list
@@ -378,7 +419,7 @@ const SimulationSubRow = ({
           <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
           <div className="flex-1 min-w-0">
             <p className="ds-text-12 font-medium text-amber-800 dark:text-amber-300">
-              Input exceeds available room by {formatReserveSizeUsd(supplyCapExceededByUsd)}
+              Supply input exceeds available room by {formatReserveSizeUsd(supplyCapExceededByUsd)}
             </p>
             <p className="ds-text-11 text-amber-700 dark:text-amber-400">
               Max suppliable: {formatReserveSizeUsd(availableSupplyRoomUsd)}
@@ -396,8 +437,32 @@ const SimulationSubRow = ({
         </div>
       )}
 
+      {/* Borrow Cap Exceeded Warning */}
+      {borrowCapExceeded && (
+        <div className="mt-[var(--ds-space-2)] flex items-center gap-[var(--ds-space-2)] rounded-lg border border-amber-400/60 bg-amber-50/80 dark:bg-amber-950/30 px-[var(--ds-space-3)] py-[var(--ds-space-2)]">
+          <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="ds-text-12 font-medium text-amber-800 dark:text-amber-300">
+              Borrow input exceeds available room by {formatReserveSizeUsd(borrowCapExceededByUsd)}
+            </p>
+            <p className="ds-text-11 text-amber-700 dark:text-amber-400">
+              Max borrowable: {formatReserveSizeUsd(availableBorrowRoomUsd)}
+            </p>
+          </div>
+          {onCorrectBorrowInput && availableBorrowRoomUsd !== null && availableBorrowRoomUsd > 0 && (
+            <button
+              type="button"
+              onClick={handleCorrectToMaxBorrow}
+              className="shrink-0 px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-md border border-amber-500/50 bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-200 ds-text-11 font-medium hover:bg-amber-200 dark:hover:bg-amber-800/50 transition-colors"
+            >
+              Adjust to max
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Market Metrics Section */}
-      <div className={`mt-[var(--ds-space-3)] grid ${compact ? 'grid-cols-1' : 'grid-cols-2 lg:grid-cols-4'} gap-[var(--ds-space-2)]`}>
+      <div className={`mt-[var(--ds-space-3)] grid ${compact ? 'grid-cols-1' : 'grid-cols-2 lg:grid-cols-5'} gap-[var(--ds-space-2)]`}>
         <MarketMetricCard
           title="Supply Size"
           current={currentSupplySizeUsd}
@@ -416,9 +481,9 @@ const SimulationSubRow = ({
         />
         <MarketMetricCard
           title="Total Borrowed"
-          current={simulation.marketMetrics.totalBorrowedUsd}
-          after={simulation.marketMetrics.totalBorrowedUsdAfter}
-          delta={simulation.marketMetrics.totalBorrowedUsdDelta}
+          current={currentTotalBorrowedUsd}
+          after={cappedAfterTotalBorrowedUsd}
+          delta={cappedTotalBorrowedDelta}
           accentClass="ds-text-brand-cyan"
           compact={compact}
         />
@@ -429,6 +494,14 @@ const SimulationSubRow = ({
           accentClass="text-muted-foreground"
           warning={supplyCapExceeded}
           subtitle={supplyCapExceeded ? `Exceeded by ${formatReserveSizeUsd(supplyCapExceededByUsd)}` : undefined}
+        />
+        <StaticMetricCard
+          title="Borrow Cap"
+          value={borrowCapUsd}
+          unit="$"
+          accentClass="text-muted-foreground"
+          warning={borrowCapExceeded}
+          subtitle={borrowCapExceeded ? `Exceeded by ${formatReserveSizeUsd(borrowCapExceededByUsd)}` : undefined}
         />
       </div>
 

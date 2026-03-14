@@ -66,6 +66,7 @@ const ReserveWithSpreadSchema = z.object({
   tokenPrice: z.number().optional(),
   reserveSizeUsd: z.number().optional(),
   supplyCapUsd: z.number().optional(),
+  borrowCapUsd: z.number().optional(),
   utilizationPct: z.number().optional(),
   supplyDisabled: z.boolean().optional(),
   borrowDisabled: z.boolean().optional(),

@@ -59,6 +59,7 @@ export interface ReserveWithSpread {
   tokenPrice?: number;
   reserveSizeUsd?: number;
   supplyCapUsd?: number;
+  borrowCapUsd?: number;
   utilizationPct?: number;
   
   // Availability flags

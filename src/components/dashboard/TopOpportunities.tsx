@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef, memo } from 'react';
-import { TrendingUp, Zap, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { TrendingUp, Zap, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ReserveWithSpread, ETHEREUM_MARKET_NAMES } from '@/types/aave';
 import {
@@ -114,6 +114,7 @@ interface ReserveIdentityProps {
   marketDisplayName: string;
   isMobile: boolean;
   mini?: boolean;
+  aaveUrl?: string;
 }
 
 const ReserveIdentity = memo(({
@@ -125,6 +126,7 @@ const ReserveIdentity = memo(({
   marketDisplayName,
   isMobile,
   mini = false,
+  aaveUrl,
 }: ReserveIdentityProps) => {
   if (mini) {
     return (
@@ -137,7 +139,20 @@ const ReserveIdentity = memo(({
           logoURI={logoURI}
         />
         <div className="min-w-0 flex-1">
-          <p className="font-bold text-foreground ds-text-12 truncate">{tokenSymbol}</p>
+          <div className="flex items-center">
+            <a
+              href={aaveUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="group/token inline-flex items-center gap-[var(--ds-space-2)] hover:opacity-80 transition-opacity duration-150"
+              aria-label={`Open ${tokenSymbol} on Aave`}
+              title="Open on Aave"
+            >
+              <span className="font-bold text-foreground ds-text-12 truncate">{tokenSymbol}</span>
+              <ExternalLink className="w-2.5 h-2.5 text-muted-foreground opacity-0 -ml-1 group-hover/token:opacity-70 transition-opacity duration-150 shrink-0" />
+            </a>
+          </div>
           <div className="flex items-center gap-[var(--ds-space-1)] ds-text-9 text-muted-foreground">
             {chainIconSrc && (
               <img src={chainIconSrc} alt={chainName} className="w-3 h-3" />
@@ -159,9 +174,22 @@ const ReserveIdentity = memo(({
         className="shrink-0 row-span-2"
         logoURI={logoURI}
       />
-      <p className="font-semibold text-foreground truncate leading-none ds-text-14">
-        {tokenSymbol}
-      </p>
+      <div className="flex items-center min-w-0">
+        <a
+          href={aaveUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="group/token inline-flex items-center gap-[var(--ds-space-2)] hover:opacity-80 transition-opacity duration-150"
+          aria-label={`Open ${tokenSymbol} on Aave`}
+          title="Open on Aave"
+        >
+          <span className="font-semibold text-foreground truncate leading-none ds-text-14">
+            {tokenSymbol}
+          </span>
+          <ExternalLink className="w-3 h-3 text-muted-foreground opacity-0 -ml-1 group-hover/token:opacity-70 transition-opacity duration-150 shrink-0" />
+        </a>
+      </div>
       <div className="flex items-center gap-[var(--ds-space-1)] min-w-0 leading-none">
         {chainIconSrc && (
           <img src={chainIconSrc} alt={chainName} className="shrink-0 w-3.5 h-3.5" />
@@ -546,6 +574,7 @@ const TopOpportunities = ({
       name: reserve.tokenName,
     });
     const marketDisplayName = getMarketDisplayName(reserve);
+    const aaveUrl = buildAaveReserveUrl(reserve);
     return (
       <motion.div
         {...(disableMotion
@@ -568,6 +597,7 @@ const TopOpportunities = ({
           chainIconSrc={chainIconSrc}
           marketDisplayName={marketDisplayName}
           isMobile={isMobile}
+          aaveUrl={aaveUrl}
         />
 
         {/* Main value + detail row */}
@@ -625,6 +655,7 @@ const TopOpportunities = ({
       name: reserve.tokenName,
     });
     const shouldAnimateItem = !disableMotion && !isMobile && !isRateDragging;
+    const aaveUrl = buildAaveReserveUrl(reserve);
 
     return (
       <motion.div
@@ -647,9 +678,22 @@ const TopOpportunities = ({
             className="shrink-0 row-span-2"
             logoURI={logoURI}
           />
-          <p className="font-semibold text-foreground truncate leading-none ds-text-14">
-            {reserve.tokenSymbol}
-          </p>
+          <div className="flex items-center min-w-0">
+            <a
+              href={aaveUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="group/token inline-flex items-center gap-[var(--ds-space-2)] hover:opacity-80 transition-opacity duration-150"
+              aria-label={`Open ${reserve.tokenSymbol} on Aave`}
+              title="Open on Aave"
+            >
+              <span className="font-semibold text-foreground truncate leading-none ds-text-14">
+                {reserve.tokenSymbol}
+              </span>
+              <ExternalLink className="w-3 h-3 text-muted-foreground opacity-0 -ml-1 group-hover/token:opacity-70 transition-opacity duration-150 shrink-0" />
+            </a>
+          </div>
           <div
             className={`${(isLeverage ? getSpreadColorClass(mainValue, index, totalItems) : getApyColorClass(mainValue))} font-bold tabular-nums text-right leading-none ${isMobile ? 'ds-text-16' : 'ds-text-18'} ${!isLeverage && !hasIncentive ? 'row-span-2 self-center' : ''}`}
           >

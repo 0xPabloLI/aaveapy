@@ -96,6 +96,10 @@ const ReservesTable = ({
     scenarioControlsRef.current?.setSupplyInput(correctedValue);
   }, []);
 
+  const handleCorrectBorrowInput = useCallback((correctedValue: string) => {
+    scenarioControlsRef.current?.setBorrowInput(correctedValue);
+  }, []);
+
   // Refs for tracking expanded row position (used by useLayoutEffect after sortedData is defined)
   const prevExpandedIndexRef = useRef<number | null>(null);
   const prevExpandedIdRef = useRef<string | null>(null);
@@ -850,6 +854,7 @@ const ReservesTable = ({
                 hasSharedScenario={hasSharedScenario}
                 inputMode={sharedInputMode}
                 onCorrectSupplyInput={handleCorrectSupplyInput}
+                onCorrectBorrowInput={handleCorrectBorrowInput}
               />
               );
             })
@@ -1382,6 +1387,7 @@ const ReservesTable = ({
                   isApy={isApy}
                   isMobile={isMobile}
                   onCorrectSupplyInput={handleCorrectSupplyInput}
+                  onCorrectBorrowInput={handleCorrectBorrowInput}
                 />
               );
             })

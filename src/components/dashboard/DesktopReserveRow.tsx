@@ -52,6 +52,7 @@ interface DesktopReserveRowProps {
   isApy: boolean;
   isMobile: boolean;
   onCorrectSupplyInput?: (correctedValue: string) => void;
+  onCorrectBorrowInput?: (correctedValue: string) => void;
 }
 
 const DesktopReserveRow = memo(({
@@ -75,6 +76,7 @@ const DesktopReserveRow = memo(({
   isApy,
   isMobile,
   onCorrectSupplyInput,
+  onCorrectBorrowInput,
 }: DesktopReserveRowProps) => {
   const getMarketDisplayName = () => {
     if (reserve.chainName === 'Ethereum' && ETHEREUM_MARKET_NAMES[reserve.marketName]) {
@@ -283,6 +285,7 @@ const DesktopReserveRow = memo(({
                 borrowInput={borrowInput}
                 inputMode={inputMode}
                 onCorrectSupplyInput={onCorrectSupplyInput}
+                onCorrectBorrowInput={onCorrectBorrowInput}
               />
             )}
           </TableCell>

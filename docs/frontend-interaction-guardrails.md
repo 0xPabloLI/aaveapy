@@ -73,9 +73,10 @@ This note records recurring UI/interaction issues found during incentive/forecas
 | Secondary/muted info | `text-muted-foreground`, `text-secondary` | Labels, descriptions |
 
 **UtilizationIndicator color scheme**:
-- Safe zone (below optimal): `fill-secondary/40` (neutral gray)
-- Warning zone (above optimal): `fill-warning/40` (amber)
-- Current position dot: `fill-muted-foreground` (normal) / `fill-warning` (over-optimal)
+- Safe zone (below optimal): `fill-secondary/50` (neutral gray)
+- Warning zone (above optimal): `fill-amber-500/40` (same amber as CapProgressRing)
+- Optimal marker line: `stroke-foreground/50` (prominent divider)
+- Current position dot: `fill-foreground/70` (normal) / `fill-amber-600` (over-optimal, same as CapProgressRing 95%+ state)
 
 **Key principle**: Amber/warning colors must NOT be used for regular data display. This ensures that when amber appears, users immediately recognize it as a warning signal.
 

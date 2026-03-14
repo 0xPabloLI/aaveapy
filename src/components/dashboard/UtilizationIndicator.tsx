@@ -12,8 +12,8 @@ interface UtilizationIndicatorProps {
 const UtilizationIndicator = memo(({
   current,
   optimal,
-  width = 6,
-  height = 14,
+  width = 10,
+  height = 18,
 }: UtilizationIndicatorProps) => {
   if (current === null || optimal === null || !Number.isFinite(current) || !Number.isFinite(optimal)) {
     return null;
@@ -26,9 +26,10 @@ const UtilizationIndicator = memo(({
   const currentY = height - (clampedCurrent / 100) * height;
   const isOverOptimal = current > optimal;
   
-  const dotRadius = 2;
-  const trackWidth = 3;
+  const dotRadius = 2.5;
+  const trackWidth = 4;
   const trackX = (width - trackWidth) / 2;
+  const trackRadius = trackWidth / 2;
 
   return (
     <Tooltip>
@@ -43,52 +44,54 @@ const UtilizationIndicator = memo(({
             viewBox={`0 0 ${width} ${height}`}
             className="overflow-visible"
           >
-            {/* Safe zone: 0 to optimal (bottom portion) */}
+            <defs>
+              <clipPath id="trackClip">
+                <rect
+                  x={trackX}
+                  y={0}
+                  width={trackWidth}
+                  height={height}
+                  rx={trackRadius}
+                />
+              </clipPath>
+            </defs>
+            {/* Single continuous track with rounded corners */}
             <rect
               x={trackX}
-              y={optimalY}
+              y={0}
               width={trackWidth}
-              height={height - optimalY}
-              rx={trackWidth / 2}
-              className="fill-secondary/40"
+              height={height}
+              rx={trackRadius}
+              className="fill-secondary/70"
             />
-            {/* Over-optimal zone: optimal to 100% (top portion) */}
+            {/* Amber overlay for over-optimal zone, clipped to track shape */}
             <rect
               x={trackX}
               y={0}
               width={trackWidth}
               height={optimalY}
-              rx={trackWidth / 2}
-              className="fill-warning/40"
-            />
-            {/* Optimal marker line */}
-            <line
-              x1={0}
-              y1={optimalY}
-              x2={width}
-              y2={optimalY}
-              strokeWidth={1}
-              className="stroke-muted-foreground/60"
+              clipPath="url(#trackClip)"
+              className="fill-amber-500/60"
             />
             {/* Current position dot */}
             <circle
               cx={width / 2}
               cy={currentY}
               r={dotRadius}
-              className={isOverOptimal ? 'fill-warning' : 'fill-muted-foreground'}
+              className={isOverOptimal ? 'fill-amber-600' : 'fill-foreground/80'}
             />
           </svg>
         </div>
       </TooltipTrigger>
-      <TooltipContent side="top" className="max-w-[180px]">
-        <div className="space-y-1 ds-text-12">
-          <div className="flex justify-between gap-3">
+      <TooltipContent side="top" className="max-w-[200px] p-3">
+        <div className="space-y-2 ds-text-12">
+          <div className="flex justify-between gap-4">
             <span className="text-muted-foreground">Optimal</span>
             <span className="font-medium tabular-nums">{formatPercent(optimal)}</span>
           </div>
           {isOverOptimal && (
-            <p className="text-warning ds-text-11 pt-1 border-t border-border/50">
-              Above optimal → higher borrow rates
+            <p className="text-amber-600 ds-text-11 pt-2 border-t border-border/50">
+              ⚠️ Above optimal
             </p>
           )}
         </div>
