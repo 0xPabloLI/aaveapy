@@ -26,7 +26,7 @@ const UtilizationIndicator = memo(({
   const currentY = height - (clampedCurrent / 100) * height;
   const isOverOptimal = current > optimal;
   
-  const dotRadius = 2.5;
+  const dotRadius = 1.5;
   const trackWidth = 4;
   const trackX = (width - trackWidth) / 2;
   const trackRadius = trackWidth / 2;
@@ -62,7 +62,7 @@ const UtilizationIndicator = memo(({
               width={trackWidth}
               height={height}
               rx={trackRadius}
-              className="fill-secondary/70"
+              className="fill-secondary/40"
             />
             {/* Amber overlay for over-optimal zone, clipped to track shape */}
             <rect
@@ -71,14 +71,14 @@ const UtilizationIndicator = memo(({
               width={trackWidth}
               height={optimalY}
               clipPath="url(#trackClip)"
-              className="fill-amber-500/60"
+              className="fill-amber-500"
             />
             {/* Current position dot */}
             <circle
               cx={width / 2}
               cy={currentY}
               r={dotRadius}
-              className={isOverOptimal ? 'fill-amber-600' : 'fill-foreground/80'}
+              className={isOverOptimal ? 'fill-amber-700' : 'fill-foreground'}
             />
           </svg>
         </div>
