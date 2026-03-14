@@ -31,7 +31,7 @@ const ScenarioControls = memo(({ onDebouncedChange }: ScenarioControlsProps) => 
   const btnBase =
     `inline-flex items-center justify-center shrink-0 rounded-md border border-border/50 bg-card/50 ${fontSize} font-medium transition-all hover:bg-accent/60 hover:border-border focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none ${controlH}`;
   const inputBase =
-    `w-full min-w-0 ${controlH} rounded-md border border-border/50 bg-card/50 px-[var(--ds-space-3)] ${fontSize} tabular-nums text-muted-foreground/60 outline-none transition-all placeholder:text-muted-foreground/30 placeholder:italic focus:text-foreground focus:border-[rgb(var(--ds-brand-magenta-rgb))] focus-visible:ring-0 focus-visible:ring-offset-0`;
+    `w-full min-w-0 ${controlH} rounded-md border border-border/50 bg-card/50 px-[var(--ds-space-3)] pr-[var(--ds-space-9)] ${fontSize} tabular-nums text-muted-foreground/60 outline-none transition-all placeholder:text-muted-foreground/30 placeholder:italic focus:text-foreground focus:border-[rgb(var(--ds-brand-magenta-rgb))] focus-visible:ring-0 focus-visible:ring-offset-0`;
 
   if (isMobile) {
     /* Mobile: stacked layout — row 1: mode + clear, row 2: supply, row 3: borrow */
