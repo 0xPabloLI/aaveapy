@@ -58,6 +58,7 @@ const XL_BREAKPOINT = 1280;
 
 interface CategoryCardHeaderProps {
   title: string;
+  shortTitle?: string;
   subtitle: string;
   icon: React.ElementType;
   iconColorClass: string;
@@ -70,6 +71,7 @@ interface CategoryCardHeaderProps {
 
 const CategoryCardHeader = memo(({
   title,
+  shortTitle,
   subtitle,
   icon: Icon,
   iconColorClass,
@@ -98,7 +100,14 @@ const CategoryCardHeader = memo(({
         <Icon className={`w-4 h-4 md:w-5 md:h-5 ${iconColorClass}`} />
       </IconWrapper>
       <div className="flex-1 min-w-0">
-        <h3 className={`font-bold truncate ${isMobile ? 'ds-text-14' : 'ds-text-16'}`}>{title}</h3>
+        <h3 className={`font-bold truncate ${isMobile ? 'ds-text-14' : 'ds-text-16'}`}>
+          {shortTitle ? (
+            <>
+              <span className="min-[400px]:hidden">{shortTitle}</span>
+              <span className="hidden min-[400px]:inline">{title}</span>
+            </>
+          ) : title}
+        </h3>
         <p className="text-muted-foreground truncate ds-text-11">{subtitle}</p>
       </div>
     </HeaderWrapper>
@@ -743,6 +752,7 @@ const TopOpportunities = ({
   // Category card component (simplified - no expand/collapse)
   const CategoryCard = ({
     title,
+    shortTitle,
     subtitle,
     icon: Icon,
     iconColorClass,
@@ -753,6 +763,7 @@ const TopOpportunities = ({
     emptyMessage
   }: {
     title: string;
+    shortTitle?: string;
     subtitle: string;
     icon: typeof TrendingUp;
     iconColorClass: string;
@@ -768,6 +779,7 @@ const TopOpportunities = ({
         <div className={`bg-card border border-border/60 shadow-sm rounded-xl ${isMobile ? 'ds-card-pad-sm' : 'ds-card-pad'} ${isMobile ? 'col-span-1' : ''} flex flex-col`}>
         <CategoryCardHeader
           title={title}
+          shortTitle={shortTitle}
           subtitle={subtitle}
           icon={Icon}
           iconColorClass={iconColorClass}
@@ -862,6 +874,7 @@ const TopOpportunities = ({
   const categories = [
     {
       title: `Top Stable ${isApy ? 'APY' : 'APR'}`,
+      shortTitle: `Stable ${isApy ? 'APY' : 'APR'}`,
       subtitle: `Native + Incentive ${isApy ? 'APY' : 'APR'}`,
       icon: TrendingUp,
       iconColorClass: "text-success",
@@ -873,6 +886,7 @@ const TopOpportunities = ({
     },
     {
       title: `Top ETH ${isApy ? 'APY' : 'APR'}`,
+      shortTitle: `ETH ${isApy ? 'APY' : 'APR'}`,
       subtitle: `Native + Incentive ${isApy ? 'APY' : 'APR'}`,
       icon: TrendingUp,
       iconColorClass: "text-success",
@@ -884,6 +898,7 @@ const TopOpportunities = ({
     },
     {
       title: `Top BTC ${isApy ? 'APY' : 'APR'}`,
+      shortTitle: `BTC ${isApy ? 'APY' : 'APR'}`,
       subtitle: `Native + Incentive ${isApy ? 'APY' : 'APR'}`,
       icon: TrendingUp,
       iconColorClass: "text-success",
@@ -895,6 +910,7 @@ const TopOpportunities = ({
     },
     {
       title: "Leverage Opportunities",
+      shortTitle: "Leverage",
       subtitle: `Supply - Borrow ${isApy ? 'APY' : 'APR'}`,
       icon: Zap,
       iconColorClass: "ds-text-purple-500",
@@ -914,6 +930,7 @@ const TopOpportunities = ({
           <CategoryCard
             key={category.categoryKey}
             title={category.title}
+            shortTitle={category.shortTitle}
             subtitle={category.subtitle}
             icon={category.icon}
             iconColorClass={category.iconColorClass}
@@ -981,6 +998,7 @@ const TopOpportunities = ({
                   <CategoryCard
                     key={category.categoryKey}
                     title={category.title}
+                    shortTitle={category.shortTitle}
                     subtitle={category.subtitle}
                     icon={category.icon}
                     iconColorClass={category.iconColorClass}

@@ -45,7 +45,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "20"
           cache: "npm"
 
       - name: Install dependencies
@@ -178,22 +178,6 @@ jobs:
               });
               core.info('Created a new hardcode verify failure issue');
             }
-
-      - name: Capture verify failure log
-        if: >
-          steps.verify_round1.outputs.passed != 'true' &&
-          steps.verify_round2.outputs.passed != 'true'
-        run: |
-          npm run hardcode:verify 2>&1 | tee verify-failure.log || true
-
-      - name: Upload verify failure log
-        if: >
-          steps.verify_round1.outputs.passed != 'true' &&
-          steps.verify_round2.outputs.passed != 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: hardcode-verify-failure-log
-          path: verify-failure.log
 
       - name: Fail job when verify still fails
         if: >
