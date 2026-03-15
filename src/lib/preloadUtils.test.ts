@@ -103,4 +103,17 @@ describe('preload image fallback tracking', () => {
       '/icons/tokens/aammdai.jpeg',
     ]);
   });
+
+  it('maps PT symbols to base token icon sources', async () => {
+    const { getTokenIconSources, getTokenIconSymbolKey } = await import('./preloadUtils');
+
+    expect(getTokenIconSymbolKey('pt-susde-7may2026')).toBe('susde');
+    expect(getTokenIconSymbolKey('pt-srusde-2apr2026')).toBe('srusde');
+    expect(getTokenIconSymbolKey('pt-usde-25sep2025')).toBe('usde');
+    expect(getTokenIconSymbolKey('pt-eusde-14aug2025')).toBe('eusde');
+
+    const sources = getTokenIconSources('pt-susde-7may2026');
+    expect(sources[0]).toBe('/icons/tokens/susde.svg');
+    expect(sources).toHaveLength(5);
+  });
 });

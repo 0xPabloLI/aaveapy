@@ -1,0 +1,45 @@
+# When a Dependabot PR has peer dependency conflicts (e.g. npm install fails),
+# automatically run npm install --legacy-peer-deps and push the updated lockfile
+# so CI and Vercel preview can pass. No package-specific rules; applies to any conflict.
+name: Dependabot – resolve peer conflicts
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  resolve-peer-conflicts:
+    if: github.actor == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies (strict)
+        id: install
+        run: npm ci
+        continue-on-error: true
+
+      - name: Resolve peer dependency conflicts
+        if: steps.install.outcome == 'failure'
+        run: |
+          npm install --legacy-peer-deps
+          if git diff --quiet package-lock.json; then
+            echo "No lockfile change, skipping push"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          git commit -m "chore(deps): resolve peer dependency conflicts (legacy-peer-deps)"
+          git push
