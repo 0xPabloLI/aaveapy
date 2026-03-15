@@ -9,7 +9,7 @@ import { chainIconMap, normalizeChainName } from './chainIconMap';
 const preloadedImages = new Set<string>();
 let preloadPaused = false;
 
-export const TOKEN_ICON_FORMATS = ['svg', 'webp', 'png'] as const;
+export const TOKEN_ICON_FORMATS = ['svg', 'webp', 'png', 'jpg', 'jpeg'] as const;
 
 type ConnectionInfo = {
   saveData?: boolean;

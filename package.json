@@ -37,7 +37,7 @@
     "sync:market-name-map-upstream": "node scripts/sync-market-name-map-upstream.mjs",
     "sync:chain-icons-upstream": "node scripts/sync-chain-icon-map-upstream.mjs",
     "hardcode:sync": "npm run sync:reserve-patches-upstream && npm run sync:market-name-map-upstream && npm run sync:chain-icons-upstream && npm run sync-token-icons",
-    "hardcode:verify": "npm run check:hardcode-icons && npm run check:reserve-patches-upstream && npm run check:market-name-map-upstream && npm run check:chain-icons-upstream && npm run sync-token-icons -- --extra-only --check",
+    "hardcode:verify": "npm run check:hardcode-icons && npm run check:reserve-patches-upstream && npm run check:market-name-map-upstream && npm run check:chain-icons-upstream && npm run sync-token-icons -- --check",
     "check:hardcode-icons": "node scripts/check-hardcode-icons.mjs",
     "check:reserve-patches-upstream": "node scripts/check-reserve-patches-upstream.mjs",
     "check:market-name-map-upstream": "node scripts/check-market-name-map-upstream.mjs",

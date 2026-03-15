@@ -90,4 +90,17 @@ describe('preload image fallback tracking', () => {
 
     expect(getPreloadedImageSource(sources)).toBe(sources[2]);
   });
+
+  it('includes jpg and jpeg token icon fallbacks', async () => {
+    const { getTokenIconSources } = await import('./preloadUtils');
+    const sources = getTokenIconSources('aammdai');
+
+    expect(sources).toEqual([
+      '/icons/tokens/aammdai.svg',
+      '/icons/tokens/aammdai.webp',
+      '/icons/tokens/aammdai.png',
+      '/icons/tokens/aammdai.jpg',
+      '/icons/tokens/aammdai.jpeg',
+    ]);
+  });
 });
