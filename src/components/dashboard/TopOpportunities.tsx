@@ -752,6 +752,7 @@ const TopOpportunities = ({
   // Category card component (simplified - no expand/collapse)
   const CategoryCard = ({
     title,
+    shortTitle,
     subtitle,
     icon: Icon,
     iconColorClass,
@@ -762,6 +763,7 @@ const TopOpportunities = ({
     emptyMessage
   }: {
     title: string;
+    shortTitle?: string;
     subtitle: string;
     icon: typeof TrendingUp;
     iconColorClass: string;
