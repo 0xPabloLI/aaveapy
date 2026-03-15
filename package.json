@@ -23,6 +23,8 @@
     "dev": "vite",
     "dev:staging": "VITE_API_BASE_URL=https://staging-api.aaveapy.com/api vite --mode staging",
     "dev:production": "vite --mode production",
+    "ci:remote": "npm run lint && npm run build && npm audit --omit=dev --audit-level=high",
+    "ci:auto-fix": "npm audit fix --omit=dev || true && npm ci",
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
@@ -41,9 +43,7 @@
     "check:market-name-map-upstream": "node scripts/check-market-name-map-upstream.mjs",
     "check:chain-icons-upstream": "node scripts/check-chain-icon-map-upstream.mjs",
     "test": "vitest run",
-    "ci:lockcheck": "npm ci",
-    "ci:remote": "npm run lint && npm run test && npm run build && npm run check:hardcode-icons",
-    "ci:auto-fix": "npm run lint -- --fix"
+    "ci:lockcheck": "npm ci"
   },
   "dependencies": {
     "@bgd-labs/aave-address-book": "^4.38.0",

@@ -1,0 +1,63 @@
+name: Dependabot Auto Triage
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  triage:
+    if: github.actor == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch Dependabot metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Label, approve, and enable automerge for safe updates
+        uses: actions/github-script@v7
+        env:
+          UPDATE_TYPE: ${{ steps.metadata.outputs.update-type }}
+          DEPENDENCY_TYPE: ${{ steps.metadata.outputs.dependency-type }}
+          ECOSYSTEM: ${{ steps.metadata.outputs.package-ecosystem }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { owner, repo } = context.repo;
+            const pull_number = context.payload.pull_request.number;
+            const updateType = process.env.UPDATE_TYPE;
+            const dependencyType = process.env.DEPENDENCY_TYPE;
+            const ecosystem = process.env.ECOSYSTEM;
+            const safeSemver = ['version-update:semver-patch', 'version-update:semver-minor'].includes(updateType);
+            const safeNpm = ecosystem === 'npm' && safeSemver && dependencyType === 'direct:development';
+            const safeActions = ecosystem === 'github-actions' && safeSemver;
+            const safe = safeNpm || safeActions;
+
+            const labels = safe
+              ? ['dependencies', 'automerge', 'safe-update']
+              : ['dependencies', 'manual-review'];
+
+            await github.rest.issues.addLabels({
+              owner,
+              repo,
+              issue_number: pull_number,
+              labels,
+            });
+
+            if (!safe) {
+              core.info(`Manual review required: ecosystem=${ecosystem}, updateType=${updateType}, dependencyType=${dependencyType}`);
+              return;
+            }
+
+            await github.rest.pulls.createReview({
+              owner,
+              repo,
+              pull_number,
+              event: 'APPROVE',
+              body: `Auto-approved safe Dependabot update (${ecosystem}, ${updateType}).`,
+            });

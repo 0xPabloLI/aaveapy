@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef, memo } from 'react';
-import { TrendingUp, Zap, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { TrendingUp, Zap, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PoolWithSpread, ETHEREUM_MARKET_NAMES } from '@/types/aave';
+import { ReserveWithSpread, ETHEREUM_MARKET_NAMES } from '@/types/aave';
 import {
   isStablecoinSymbol,
   isEthRelatedSymbol,
@@ -18,7 +18,8 @@ import {
   calculateTotalBorrowApr,
   calculateSpreadApr,
   calculateTotalIncentiveApr,
-  calculateTotalIncentiveApy
+  calculateTotalIncentiveApy,
+  apyToApr
 } from '@/lib/formatters';
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
 import { IncentiveIcon } from '@/components/IncentiveIcon';
@@ -28,21 +29,26 @@ import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
 import { Carousel, CarouselContent, CarouselItem, CarouselApi } from '@/components/ui/carousel';
 import { Button } from '@/components/ui/button';
+import { shouldSkipTopOpportunitiesRender } from '@/lib/topOpportunitiesMemo';
 
 interface TopOpportunitiesProps {
-  pools: PoolWithSpread[];
+  reserves: ReserveWithSpread[];
   isApy: boolean;
   isRateDragging?: boolean;
+  includeWhitelistOnlyMerkl: boolean;
   categoryGroups: TokenCategoryGroups;
   onIncentiveClick?: (payload: {
-    pool: PoolWithSpread;
+    reserve: ReserveWithSpread;
     type: 'supply' | 'borrow';
     position: { x: number; y: number };
     triggerCenterX: number;
+    triggerHeight: number;
+    triggerRect: { top: number; bottom: number; left: number; right: number; width: number; height: number };
     accentBorderClass?: string;
     accentTextClass?: string;
     accentBgClass?: string;
   }) => void;
+  onCardClick?: (reserve: Pick<ReserveWithSpread, 'marketName' | 'tokenAddress'>) => void;
   tydroPointToUsdRate: number;
 }
 
@@ -52,6 +58,7 @@ const XL_BREAKPOINT = 1280;
 
 interface CategoryCardHeaderProps {
   title: string;
+  shortTitle?: string;
   subtitle: string;
   icon: React.ElementType;
   iconColorClass: string;
@@ -64,6 +71,7 @@ interface CategoryCardHeaderProps {
 
 const CategoryCardHeader = memo(({
   title,
+  shortTitle,
   subtitle,
   icon: Icon,
   iconColorClass,
@@ -92,14 +100,21 @@ const CategoryCardHeader = memo(({
         <Icon className={`w-4 h-4 md:w-5 md:h-5 ${iconColorClass}`} />
       </IconWrapper>
       <div className="flex-1 min-w-0">
-        <h3 className={`font-bold truncate ${isMobile ? 'ds-text-14' : 'ds-text-16'}`}>{title}</h3>
+        <h3 className={`font-bold truncate ${isMobile ? 'ds-text-14' : 'ds-text-16'}`}>
+          {shortTitle ? (
+            <>
+              <span className="min-[400px]:hidden">{shortTitle}</span>
+              <span className="hidden min-[400px]:inline">{title}</span>
+            </>
+          ) : title}
+        </h3>
         <p className="text-muted-foreground truncate ds-text-11">{subtitle}</p>
       </div>
     </HeaderWrapper>
   );
 });
 
-interface PoolIdentityProps {
+interface ReserveIdentityProps {
   iconSymbol: string;
   logoURI?: string | null;
   tokenSymbol: string;
@@ -108,9 +123,10 @@ interface PoolIdentityProps {
   marketDisplayName: string;
   isMobile: boolean;
   mini?: boolean;
+  aaveUrl?: string;
 }
 
-const PoolIdentity = memo(({
+const ReserveIdentity = memo(({
   iconSymbol,
   logoURI,
   tokenSymbol,
@@ -119,7 +135,8 @@ const PoolIdentity = memo(({
   marketDisplayName,
   isMobile,
   mini = false,
-}: PoolIdentityProps) => {
+  aaveUrl,
+}: ReserveIdentityProps) => {
   if (mini) {
     return (
       <div className="flex items-center gap-[var(--ds-space-2)]">
@@ -131,7 +148,20 @@ const PoolIdentity = memo(({
           logoURI={logoURI}
         />
         <div className="min-w-0 flex-1">
-          <p className="font-bold text-foreground ds-text-12 truncate">{tokenSymbol}</p>
+          <div className="flex items-center">
+            <a
+              href={aaveUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="group/token inline-flex items-center gap-[var(--ds-space-2)] hover:opacity-80 transition-opacity duration-150"
+              aria-label={`Open ${tokenSymbol} on Aave`}
+              title="Open on Aave"
+            >
+              <span className="font-bold text-foreground ds-text-12 truncate">{tokenSymbol}</span>
+              <ExternalLink className="w-2.5 h-2.5 text-muted-foreground opacity-0 -ml-1 group-hover/token:opacity-70 transition-opacity duration-150 shrink-0" />
+            </a>
+          </div>
           <div className="flex items-center gap-[var(--ds-space-1)] ds-text-9 text-muted-foreground">
             {chainIconSrc && (
               <img src={chainIconSrc} alt={chainName} className="w-3 h-3" />
@@ -153,9 +183,22 @@ const PoolIdentity = memo(({
         className="shrink-0 row-span-2"
         logoURI={logoURI}
       />
-      <p className="font-semibold text-foreground truncate leading-none ds-text-14">
-        {tokenSymbol}
-      </p>
+      <div className="flex items-center min-w-0">
+        <a
+          href={aaveUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="group/token inline-flex items-center gap-[var(--ds-space-2)] hover:opacity-80 transition-opacity duration-150"
+          aria-label={`Open ${tokenSymbol} on Aave`}
+          title="Open on Aave"
+        >
+          <span className="font-semibold text-foreground truncate leading-none ds-text-14">
+            {tokenSymbol}
+          </span>
+          <ExternalLink className="w-3 h-3 text-muted-foreground opacity-0 -ml-1 group-hover/token:opacity-70 transition-opacity duration-150 shrink-0" />
+        </a>
+      </div>
       <div className="flex items-center gap-[var(--ds-space-1)] min-w-0 leading-none">
         {chainIconSrc && (
           <img src={chainIconSrc} alt={chainName} className="shrink-0 w-3.5 h-3.5" />
@@ -166,7 +209,16 @@ const PoolIdentity = memo(({
   );
 });
 
-const TopOpportunities = ({ pools, isApy, isRateDragging = false, categoryGroups, onIncentiveClick, tydroPointToUsdRate }: TopOpportunitiesProps) => {
+const TopOpportunities = ({
+  reserves,
+  isApy,
+  isRateDragging = false,
+  includeWhitelistOnlyMerkl,
+  categoryGroups,
+  onIncentiveClick,
+  onCardClick,
+  tydroPointToUsdRate,
+}: TopOpportunitiesProps) => {
   const isMobile = useIsMobile();
   const [isXl, setIsXl] = useState(false);
   const prevIsApyRef = useRef(isApy);
@@ -184,30 +236,50 @@ const TopOpportunities = ({ pools, isApy, isRateDragging = false, categoryGroups
     prevIsApyRef.current = isApy;
   }, [isApy]);
 
-  // Calculate totals for all pools (frontend calculates incentive totals from details)
+  // Calculate totals for all reserves (frontend calculates incentive totals from details)
   // Memoize to prevent recalculation when props haven't changed
-  const poolsWithTotals = useMemo(() => pools.map(pool => {
+  const reservesWithTotals = useMemo(() => reserves.map(reserve => {
     const getIncentiveValues = (type: 'supply' | 'borrow') => {
-      const protocolIncentives = type === 'supply' ? pool.supplyIncentives : pool.borrowIncentives;
-      const meritIncentives = type === 'supply' ? pool.meritSupplys : pool.meritBorrows;
-      const merklOpportunities = type === 'supply' ? pool.merklSupplys : pool.merklBorrows;
-      const brevisIncentives = type === 'supply' ? pool.brevisSupplys : pool.brevisBorrows;
+      const protocolIncentives = type === 'supply' ? reserve.supplyIncentives : reserve.borrowIncentives;
+      const meritIncentives = type === 'supply' ? reserve.meritSupplys : reserve.meritBorrows;
+      const merklOpportunities = type === 'supply' ? reserve.merklSupplys : reserve.merklBorrows;
+      const brevisIncentives = type === 'supply' ? reserve.brevisSupplys : reserve.brevisBorrows;
       return {
-        apr: calculateTotalIncentiveApr(meritIncentives, merklOpportunities, brevisIncentives, protocolIncentives, tydroPointToUsdRate),
-        apy: calculateTotalIncentiveApy(meritIncentives, merklOpportunities, brevisIncentives, protocolIncentives, tydroPointToUsdRate),
+        apr: calculateTotalIncentiveApr(
+          meritIncentives,
+          merklOpportunities,
+          brevisIncentives,
+          protocolIncentives,
+          tydroPointToUsdRate,
+          { includeWhitelistOnlyMerkl }
+        ),
+        apy: calculateTotalIncentiveApy(
+          meritIncentives,
+          merklOpportunities,
+          brevisIncentives,
+          protocolIncentives,
+          tydroPointToUsdRate,
+          { includeWhitelistOnlyMerkl }
+        ),
       };
     };
 
     const supplyIncentive = getIncentiveValues('supply');
     const borrowIncentive = getIncentiveValues('borrow');
 
-    const totalSupplyApy = calculateTotalSupplyApy(pool.supplyApy, supplyIncentive.apy);
-    const totalBorrowApy = calculateTotalBorrowApy(pool.borrowApy, borrowIncentive.apy);
-    const totalSupplyApr = calculateTotalSupplyApr(pool.supplyApy, supplyIncentive.apr);
-    const totalBorrowApr = calculateTotalBorrowApr(pool.borrowApy, borrowIncentive.apr);
+    const totalSupplyApy = calculateTotalSupplyApy(reserve.supplyApy, supplyIncentive.apy);
+    const totalBorrowApy = calculateTotalBorrowApy(reserve.borrowApy, borrowIncentive.apy);
+    const supplyNativeApr = reserve.supplyApy !== undefined && reserve.supplyApy !== null
+      ? apyToApr(reserve.supplyApy)
+      : null;
+    const borrowNativeApr = reserve.borrowApy !== undefined && reserve.borrowApy !== null
+      ? apyToApr(reserve.borrowApy)
+      : null;
+    const totalSupplyApr = calculateTotalSupplyApr(supplyNativeApr, supplyIncentive.apr);
+    const totalBorrowApr = calculateTotalBorrowApr(borrowNativeApr, borrowIncentive.apr);
 
     return {
-      ...pool,
+      ...reserve,
       supplyIncentiveApr: supplyIncentive.apr,
       supplyIncentiveApy: supplyIncentive.apy,
       borrowIncentiveApr: borrowIncentive.apr,
@@ -219,10 +291,10 @@ const TopOpportunities = ({ pools, isApy, isRateDragging = false, categoryGroups
       totalBorrowApr,
       aprSpread: calculateSpreadApr(totalSupplyApr, totalBorrowApr),
     };
-  }), [pools, tydroPointToUsdRate]);
+  }), [includeWhitelistOnlyMerkl, reserves, tydroPointToUsdRate]);
 
   // Top 5 Stable APY - memoized to prevent recalculation
-  const topStable = useMemo(() => [...poolsWithTotals]
+  const topStable = useMemo(() => [...reservesWithTotals]
     .filter(m => isStablecoinSymbol(m.tokenSymbol, categoryGroups))
     .filter(m => {
       const value = isApy ? m.totalSupplyApy : m.totalSupplyApr;
@@ -233,10 +305,10 @@ const TopOpportunities = ({ pools, isApy, isRateDragging = false, categoryGroups
       const bValue = isApy ? b.totalSupplyApy : b.totalSupplyApr;
       return bValue - aValue;
     })
-    .slice(0, DISPLAY_COUNT), [poolsWithTotals, isApy, categoryGroups]);
+    .slice(0, DISPLAY_COUNT), [reservesWithTotals, isApy, categoryGroups]);
 
   // Top 5 ETH APY - memoized to prevent recalculation
-  const topEth = useMemo(() => [...poolsWithTotals]
+  const topEth = useMemo(() => [...reservesWithTotals]
     .filter(m => isEthRelatedSymbol(m.tokenSymbol, categoryGroups))
     .filter(m => {
       const value = isApy ? m.totalSupplyApy : m.totalSupplyApr;
@@ -247,10 +319,10 @@ const TopOpportunities = ({ pools, isApy, isRateDragging = false, categoryGroups
       const bValue = isApy ? b.totalSupplyApy : b.totalSupplyApr;
       return bValue - aValue;
     })
-    .slice(0, DISPLAY_COUNT), [poolsWithTotals, isApy, categoryGroups]);
+    .slice(0, DISPLAY_COUNT), [reservesWithTotals, isApy, categoryGroups]);
 
   // Top 5 BTC APY - memoized to prevent recalculation
-  const topBtc = useMemo(() => [...poolsWithTotals]
+  const topBtc = useMemo(() => [...reservesWithTotals]
     .filter(m => isBtcRelatedSymbol(m.tokenSymbol, categoryGroups))
     .filter(m => {
       const value = isApy ? m.totalSupplyApy : m.totalSupplyApr;
@@ -261,10 +333,10 @@ const TopOpportunities = ({ pools, isApy, isRateDragging = false, categoryGroups
       const bValue = isApy ? b.totalSupplyApy : b.totalSupplyApr;
       return bValue - aValue;
     })
-    .slice(0, DISPLAY_COUNT), [poolsWithTotals, isApy, categoryGroups]);
+    .slice(0, DISPLAY_COUNT), [reservesWithTotals, isApy, categoryGroups]);
 
   // Top 5 Looping opportunities - memoized to prevent recalculation
-  const topLooping = useMemo(() => [...poolsWithTotals]
+  const topLooping = useMemo(() => [...reservesWithTotals]
     .filter(m => {
       const spread = isApy ? m.apySpread : m.aprSpread;
       return spread !== null && spread > 0;
@@ -274,13 +346,13 @@ const TopOpportunities = ({ pools, isApy, isRateDragging = false, categoryGroups
       const bSpread = isApy ? b.apySpread : b.aprSpread;
       return (bSpread || 0) - (aSpread || 0);
     })
-    .slice(0, DISPLAY_COUNT), [poolsWithTotals, isApy]);
+    .slice(0, DISPLAY_COUNT), [reservesWithTotals, isApy]);
 
-  const getMarketDisplayName = (pool: PoolWithSpread) => {
-    if (pool.chainName === 'Ethereum' && ETHEREUM_MARKET_NAMES[pool.marketName]) {
-      return ETHEREUM_MARKET_NAMES[pool.marketName];
+  const getMarketDisplayName = (reserve: ReserveWithSpread) => {
+    if (reserve.chainName === 'Ethereum' && ETHEREUM_MARKET_NAMES[reserve.marketName]) {
+      return ETHEREUM_MARKET_NAMES[reserve.marketName];
     }
-    return pool.chainName;
+    return reserve.chainName;
   };
 
   const headerVariants = {
@@ -314,8 +386,12 @@ const TopOpportunities = ({ pools, isApy, isRateDragging = false, categoryGroups
     })
   };
 
-  const handleCardClick = (pool: Pick<PoolWithSpread, 'marketName' | 'tokenAddress'>) => {
-    const url = buildAaveReserveUrl(pool);
+  const handleCardClick = (reserve: Pick<ReserveWithSpread, 'marketName' | 'tokenAddress'>) => {
+    if (onCardClick) {
+      onCardClick(reserve);
+      return;
+    }
+    const url = buildAaveReserveUrl(reserve);
     if (url) {
       window.open(url, '_blank', 'noopener,noreferrer');
     }
@@ -323,7 +399,7 @@ const TopOpportunities = ({ pools, isApy, isRateDragging = false, categoryGroups
 
   const handleIncentiveClick = (
     e: React.MouseEvent,
-    pool: PoolWithSpread,
+    reserve: ReserveWithSpread,
     type: 'supply' | 'borrow',
     incentiveValue: number | null,
     accentValue: number | null,
@@ -343,10 +419,19 @@ const TopOpportunities = ({ pools, isApy, isRateDragging = false, categoryGroups
       console.debug('[TopOpportunities] Parent transform', parentStyle?.transform || 'none');
     }
     onIncentiveClick({
-      pool,
+      reserve,
       type,
       position: { x: rect.left, y: rect.bottom },
       triggerCenterX,
+      triggerHeight: rect.height,
+      triggerRect: {
+        top: rect.top,
+        bottom: rect.bottom,
+        left: rect.left,
+        right: rect.right,
+        width: rect.width,
+        height: rect.height,
+      },
       accentBorderClass: getAccentBorderClass(accentValue),
       accentTextClass: getAccentTextClass(accentValue),
       accentBgClass: getAccentBgClass(accentValue),
@@ -471,14 +556,14 @@ const TopOpportunities = ({ pools, isApy, isRateDragging = false, categoryGroups
     return 'ds-text-pink-400-70';
   };
   // Mobile mini card component for 2-column grid layout（恢复旧版样式）
-  const MiniPoolCard = ({
-    pool,
+  const MiniReserveCard = ({
+    reserve,
     index,
     type,
     totalItems = 5,
     disableMotion = false,
   }: {
-    pool: typeof poolsWithTotals[0];
+    reserve: typeof reservesWithTotals[0];
     index: number;
     type: 'supply' | 'leverage';
     totalItems?: number;
@@ -486,18 +571,19 @@ const TopOpportunities = ({ pools, isApy, isRateDragging = false, categoryGroups
   }) => {
     const isLeverage = type === 'leverage';
     const mainValue = isLeverage
-      ? (isApy ? pool.apySpread : pool.aprSpread)
-      : (isApy ? pool.totalSupplyApy : pool.totalSupplyApr);
-    const incentiveValue = isApy ? pool.supplyIncentiveApy : pool.supplyIncentiveApr;
+      ? (isApy ? reserve.apySpread : reserve.aprSpread)
+      : (isApy ? reserve.totalSupplyApy : reserve.totalSupplyApr);
+    const incentiveValue = isApy ? reserve.supplyIncentiveApy : reserve.supplyIncentiveApr;
     const hasIncentive = incentiveValue !== null && !isNaN(incentiveValue) && incentiveValue >= 0.01;
     const apyAccent = getApyAccentClasses(mainValue);
-    const chainIconSrc = getChainIconSrc(pool.chainName);
+    const chainIconSrc = getChainIconSrc(reserve.chainName);
     const { iconSymbol, logoURI } = fetchIconSymbolAndName({
-      underlyingAsset: pool.tokenAddress,
-      symbol: pool.tokenSymbol,
-      name: pool.tokenName,
+      underlyingAsset: reserve.tokenAddress,
+      symbol: reserve.tokenSymbol,
+      name: reserve.tokenName,
     });
-    const marketDisplayName = getMarketDisplayName(pool);
+    const marketDisplayName = getMarketDisplayName(reserve);
+    const aaveUrl = buildAaveReserveUrl(reserve);
     return (
       <motion.div
         {...(disableMotion
@@ -509,17 +595,18 @@ const TopOpportunities = ({ pools, isApy, isRateDragging = false, categoryGroups
           variants: itemVariants,
         })}
         className="rounded-xl border ds-card-pad-sm cursor-pointer transition-colors bg-card border-border/60 active:bg-muted/60 h-[68px] flex flex-col justify-between"
-        onClick={() => handleCardClick(pool)}
+        onClick={() => handleCardClick(reserve)}
       >
-        <PoolIdentity
+        <ReserveIdentity
           mini
           iconSymbol={iconSymbol}
           logoURI={logoURI}
-          tokenSymbol={pool.tokenSymbol}
-          chainName={pool.chainName}
+          tokenSymbol={reserve.tokenSymbol}
+          chainName={reserve.chainName}
           chainIconSrc={chainIconSrc}
           marketDisplayName={marketDisplayName}
           isMobile={isMobile}
+          aaveUrl={aaveUrl}
         />
 
         {/* Main value + detail row */}
@@ -531,7 +618,7 @@ const TopOpportunities = ({ pools, isApy, isRateDragging = false, categoryGroups
           {!isLeverage && hasIncentive && (
             <button
               type="button"
-              onClick={(e) => handleIncentiveClick(e, pool, 'supply', incentiveValue, mainValue)}
+              onClick={(e) => handleIncentiveClick(e, reserve, 'supply', incentiveValue, mainValue)}
               className={`inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-1)] py-[var(--ds-space-0-5)] rounded-full ring-1 transition-colors cursor-pointer tabular-nums ds-text-9 ${apyAccent.chip}`}
             >
               <span>+{formatPercent(incentiveValue)}</span>
@@ -541,7 +628,7 @@ const TopOpportunities = ({ pools, isApy, isRateDragging = false, categoryGroups
           {/* Leverage detail inline */}
           {isLeverage && (
             <span className={`${getSpreadAccentClass(mainValue, index, totalItems)} tabular-nums ds-text-9`}>
-              {formatPercent(isApy ? pool.totalSupplyApy : pool.totalSupplyApr)} - {formatPercent(isApy ? pool.totalBorrowApy : pool.totalBorrowApr)}
+              {formatPercent(isApy ? reserve.totalSupplyApy : reserve.totalSupplyApr)} - {formatPercent(isApy ? reserve.totalBorrowApy : reserve.totalBorrowApr)}
             </span>
           )}
         </div>
@@ -549,15 +636,15 @@ const TopOpportunities = ({ pools, isApy, isRateDragging = false, categoryGroups
     );
   };
 
-  // Reusable pool item component (for desktop)
-  const PoolItem = ({ 
-    pool, 
+  // Reusable reserve item component (for desktop)
+  const ReserveItem = ({
+    reserve, 
     index, 
     type,
     totalItems = 5,
     disableMotion = false
   }: { 
-    pool: typeof poolsWithTotals[0]; 
+    reserve: typeof reservesWithTotals[0]; 
     index: number;
     type: 'supply' | 'leverage';
     totalItems?: number;
@@ -565,18 +652,19 @@ const TopOpportunities = ({ pools, isApy, isRateDragging = false, categoryGroups
   }) => {
     const isLeverage = type === 'leverage';
     const mainValue = isLeverage 
-      ? (isApy ? pool.apySpread : pool.aprSpread)
-      : (isApy ? pool.totalSupplyApy : pool.totalSupplyApr);
-    const incentiveValue = isApy ? pool.supplyIncentiveApy : pool.supplyIncentiveApr;
+      ? (isApy ? reserve.apySpread : reserve.aprSpread)
+      : (isApy ? reserve.totalSupplyApy : reserve.totalSupplyApr);
+    const incentiveValue = isApy ? reserve.supplyIncentiveApy : reserve.supplyIncentiveApr;
     const hasIncentive = incentiveValue !== null && !isNaN(incentiveValue) && incentiveValue >= 0.01;
     const apyAccent = getApyAccentClasses(mainValue);
-    const chainIconSrc = getChainIconSrc(pool.chainName);
+    const chainIconSrc = getChainIconSrc(reserve.chainName);
     const { iconSymbol, logoURI } = fetchIconSymbolAndName({
-      underlyingAsset: pool.tokenAddress,
-      symbol: pool.tokenSymbol,
-      name: pool.tokenName,
+      underlyingAsset: reserve.tokenAddress,
+      symbol: reserve.tokenSymbol,
+      name: reserve.tokenName,
     });
     const shouldAnimateItem = !disableMotion && !isMobile && !isRateDragging;
+    const aaveUrl = buildAaveReserveUrl(reserve);
 
     return (
       <motion.div
@@ -588,7 +676,7 @@ const TopOpportunities = ({ pools, isApy, isRateDragging = false, categoryGroups
             ? 'bg-background border-border hover:border-[rgb(var(--ds-purple-500-rgb)/0.5)]'
             : 'bg-gradient-to-r from-background to-success/5 border-border hover:border-success/50'
         } ${isMobile ? 'px-[var(--ds-space-2-5)] gap-[var(--ds-space-2)]' : 'px-[var(--ds-space-3)] gap-[var(--ds-space-2)]'}`}
-        onClick={() => handleCardClick(pool)}
+        onClick={() => handleCardClick(reserve)}
       >
         {/* Token Info - Mobile style layout: large icon left, text right */}
         <div className="grid grid-cols-[auto,1fr,auto] grid-rows-[auto,auto] content-center items-center gap-x-[var(--ds-space-2)] gap-y-[var(--ds-space-1)] flex-1 min-w-0 h-full">
@@ -599,9 +687,22 @@ const TopOpportunities = ({ pools, isApy, isRateDragging = false, categoryGroups
             className="shrink-0 row-span-2"
             logoURI={logoURI}
           />
-          <p className="font-semibold text-foreground truncate leading-none ds-text-14">
-            {pool.tokenSymbol}
-          </p>
+          <div className="flex items-center min-w-0">
+            <a
+              href={aaveUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="group/token inline-flex items-center gap-[var(--ds-space-2)] hover:opacity-80 transition-opacity duration-150"
+              aria-label={`Open ${reserve.tokenSymbol} on Aave`}
+              title="Open on Aave"
+            >
+              <span className="font-semibold text-foreground truncate leading-none ds-text-14">
+                {reserve.tokenSymbol}
+              </span>
+              <ExternalLink className="w-3 h-3 text-muted-foreground opacity-0 -ml-1 group-hover/token:opacity-70 transition-opacity duration-150 shrink-0" />
+            </a>
+          </div>
           <div
             className={`${(isLeverage ? getSpreadColorClass(mainValue, index, totalItems) : getApyColorClass(mainValue))} font-bold tabular-nums text-right leading-none ${isMobile ? 'ds-text-16' : 'ds-text-18'} ${!isLeverage && !hasIncentive ? 'row-span-2 self-center' : ''}`}
           >
@@ -609,20 +710,20 @@ const TopOpportunities = ({ pools, isApy, isRateDragging = false, categoryGroups
           </div>
           <div className="flex items-center gap-[var(--ds-space-1)] min-w-0 leading-none">
             {chainIconSrc && (
-              <img src={chainIconSrc} alt={pool.chainName} className="shrink-0 w-3.5 h-3.5" />
+              <img src={chainIconSrc} alt={reserve.chainName} className="shrink-0 w-3.5 h-3.5" />
             )}
-            <p className="text-secondary truncate ds-text-11 leading-none">{getMarketDisplayName(pool)}</p>
+            <p className="text-secondary truncate ds-text-11 leading-none">{getMarketDisplayName(reserve)}</p>
           </div>
           {/* Detail breakdown - Only show for supply type */}
           {!isLeverage && hasIncentive && (
             <div className="flex items-center justify-end gap-[var(--ds-space-0-5)] ds-text-11 text-secondary whitespace-nowrap leading-none">
-              <span className={`${apyAccent.text} tabular-nums`}>{formatPercent(pool.supplyApy ?? null)}</span>
+              <span className={`${apyAccent.text} tabular-nums`}>{formatPercent(reserve.supplyApy ?? null)}</span>
               {hasIncentive && (
                 <>
                   <span className="text-muted-foreground">+</span>
                   <button
                     type="button"
-                    onClick={(e) => handleIncentiveClick(e, pool, 'supply', incentiveValue, mainValue)}
+                    onClick={(e) => handleIncentiveClick(e, reserve, 'supply', incentiveValue, mainValue)}
                     className={`inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-0-5)] py-[var(--ds-space-0)] rounded-full ring-1 transition-colors cursor-pointer tabular-nums ${apyAccent.chip}`}
                   >
                     <span>{formatPercent(incentiveValue)}</span>
@@ -635,9 +736,9 @@ const TopOpportunities = ({ pools, isApy, isRateDragging = false, categoryGroups
           {/* Leverage detail */}
           {isLeverage && (
             <div className={`${getSpreadAccentClass(mainValue, index, totalItems)} tabular-nums whitespace-nowrap text-right leading-none ds-text-11`}>
-              {formatPercent(isApy ? pool.totalSupplyApy : pool.totalSupplyApr)} -{' '}
+              {formatPercent(isApy ? reserve.totalSupplyApy : reserve.totalSupplyApr)} -{' '}
               {(() => {
-                const borrowValue = isApy ? pool.totalBorrowApy : pool.totalBorrowApr;
+                const borrowValue = isApy ? reserve.totalBorrowApy : reserve.totalBorrowApr;
                 if (borrowValue === null) return '-';
                 return borrowValue < 0 ? `(${formatPercent(borrowValue)})` : formatPercent(borrowValue);
               })()}
@@ -651,21 +752,23 @@ const TopOpportunities = ({ pools, isApy, isRateDragging = false, categoryGroups
   // Category card component (simplified - no expand/collapse)
   const CategoryCard = ({
     title,
+    shortTitle,
     subtitle,
     icon: Icon,
     iconColorClass,
     bgColorClass,
-    pools: categoryPools,
+    reserves: categoryReserves,
     categoryKey,
     type,
     emptyMessage
   }: {
     title: string;
+    shortTitle?: string;
     subtitle: string;
     icon: typeof TrendingUp;
     iconColorClass: string;
     bgColorClass: string;
-    pools: typeof poolsWithTotals;
+    reserves: typeof reservesWithTotals;
     categoryKey: string;
     type: 'supply' | 'leverage';
     emptyMessage: string;
@@ -676,6 +779,7 @@ const TopOpportunities = ({ pools, isApy, isRateDragging = false, categoryGroups
         <div className={`bg-card border border-border/60 shadow-sm rounded-xl ${isMobile ? 'ds-card-pad-sm' : 'ds-card-pad'} ${isMobile ? 'col-span-1' : ''} flex flex-col`}>
         <CategoryCardHeader
           title={title}
+          shortTitle={shortTitle}
           subtitle={subtitle}
           icon={Icon}
           iconColorClass={iconColorClass}
@@ -687,49 +791,49 @@ const TopOpportunities = ({ pools, isApy, isRateDragging = false, categoryGroups
         />
 
         <div className="flex-1 space-y-[var(--ds-space-1-5)]">
-          {categoryPools.length > 0 ? (
+          {categoryReserves.length > 0 ? (
             shouldAnimateList ? (
               <AnimatePresence mode="popLayout">
-                {categoryPools.map((pool, i) => (
+                {categoryReserves.map((reserve, i) => (
                   isMobile ? (
-                    <MiniPoolCard
-                      key={`${categoryKey}-${pool.marketName}-${pool.tokenSymbol}`}
-                      pool={pool}
+                    <MiniReserveCard
+                      key={`${categoryKey}-${reserve.marketName}-${reserve.tokenSymbol}`}
+                      reserve={reserve}
                       index={i}
                       type={type}
-                      totalItems={categoryPools.length}
+                      totalItems={categoryReserves.length}
                       disableMotion={isRateDragging || !shouldAnimateList}
                     />
                   ) : (
-                    <PoolItem 
-                      key={`${categoryKey}-${pool.marketName}-${pool.tokenSymbol}`}
-                      pool={pool} 
+                    <ReserveItem
+                      key={`${categoryKey}-${reserve.marketName}-${reserve.tokenSymbol}`}
+                      reserve={reserve} 
                       index={i} 
                       type={type}
-                      totalItems={categoryPools.length}
+                      totalItems={categoryReserves.length}
                       disableMotion={isRateDragging}
                     />
                   )
                 ))}
               </AnimatePresence>
             ) : (
-              categoryPools.map((pool, i) => (
+              categoryReserves.map((reserve, i) => (
                 isMobile ? (
-                  <MiniPoolCard
-                    key={`${categoryKey}-${pool.marketName}-${pool.tokenSymbol}`}
-                    pool={pool}
+                  <MiniReserveCard
+                    key={`${categoryKey}-${reserve.marketName}-${reserve.tokenSymbol}`}
+                    reserve={reserve}
                     index={i}
                     type={type}
-                    totalItems={categoryPools.length}
+                    totalItems={categoryReserves.length}
                     disableMotion
                   />
                 ) : (
-                  <PoolItem
-                    key={`${categoryKey}-${pool.marketName}-${pool.tokenSymbol}`}
-                    pool={pool}
+                  <ReserveItem
+                    key={`${categoryKey}-${reserve.marketName}-${reserve.tokenSymbol}`}
+                    reserve={reserve}
                     index={i}
                     type={type}
-                    totalItems={categoryPools.length}
+                    totalItems={categoryReserves.length}
                     disableMotion
                   />
                 )
@@ -770,44 +874,48 @@ const TopOpportunities = ({ pools, isApy, isRateDragging = false, categoryGroups
   const categories = [
     {
       title: `Top Stable ${isApy ? 'APY' : 'APR'}`,
+      shortTitle: `Stable ${isApy ? 'APY' : 'APR'}`,
       subtitle: `Native + Incentive ${isApy ? 'APY' : 'APR'}`,
       icon: TrendingUp,
       iconColorClass: "text-success",
       bgColorClass: "bg-success/10",
-      pools: topStable,
+      reserves: topStable,
       categoryKey: "stable",
       type: "supply" as const,
       emptyMessage: "No stablecoin opportunities found"
     },
     {
       title: `Top ETH ${isApy ? 'APY' : 'APR'}`,
+      shortTitle: `ETH ${isApy ? 'APY' : 'APR'}`,
       subtitle: `Native + Incentive ${isApy ? 'APY' : 'APR'}`,
       icon: TrendingUp,
       iconColorClass: "text-success",
       bgColorClass: "bg-success/10",
-      pools: topEth,
+      reserves: topEth,
       categoryKey: "eth",
       type: "supply" as const,
       emptyMessage: "No ETH-related opportunities found"
     },
     {
       title: `Top BTC ${isApy ? 'APY' : 'APR'}`,
+      shortTitle: `BTC ${isApy ? 'APY' : 'APR'}`,
       subtitle: `Native + Incentive ${isApy ? 'APY' : 'APR'}`,
       icon: TrendingUp,
       iconColorClass: "text-success",
       bgColorClass: "bg-success/10",
-      pools: topBtc,
+      reserves: topBtc,
       categoryKey: "btc",
       type: "supply" as const,
       emptyMessage: "No BTC-related opportunities found"
     },
     {
       title: "Leverage Opportunities",
+      shortTitle: "Leverage",
       subtitle: `Supply - Borrow ${isApy ? 'APY' : 'APR'}`,
       icon: Zap,
       iconColorClass: "ds-text-purple-500",
       bgColorClass: "ds-bg-purple-500-10",
-      pools: topLooping,
+      reserves: topLooping,
       categoryKey: "leverage",
       type: "leverage" as const,
       emptyMessage: "No looping opportunities found"
@@ -822,11 +930,12 @@ const TopOpportunities = ({ pools, isApy, isRateDragging = false, categoryGroups
           <CategoryCard
             key={category.categoryKey}
             title={category.title}
+            shortTitle={category.shortTitle}
             subtitle={category.subtitle}
             icon={category.icon}
             iconColorClass={category.iconColorClass}
             bgColorClass={category.bgColorClass}
-            pools={category.pools}
+            reserves={category.reserves}
             categoryKey={category.categoryKey}
             type={category.type}
             emptyMessage={category.emptyMessage}
@@ -889,11 +998,12 @@ const TopOpportunities = ({ pools, isApy, isRateDragging = false, categoryGroups
                   <CategoryCard
                     key={category.categoryKey}
                     title={category.title}
+                    shortTitle={category.shortTitle}
                     subtitle={category.subtitle}
                     icon={category.icon}
                     iconColorClass={category.iconColorClass}
                     bgColorClass={category.bgColorClass}
-                    pools={category.pools}
+                    reserves={category.reserves}
                     categoryKey={category.categoryKey}
                     type={category.type}
                     emptyMessage={category.emptyMessage}
@@ -928,58 +1038,5 @@ const TopOpportunities = ({ pools, isApy, isRateDragging = false, categoryGroups
 };
 
 // Memoize component to prevent re-renders when parent state changes (e.g., filter buttons)
-// Only re-render when pools data actually changed or isApy changed
-export default memo(TopOpportunities, (prevProps, nextProps) => {
-  // If isApy changed, always re-render
-  if (prevProps.isApy !== nextProps.isApy) {
-    return false;
-  }
-
-  // If tydroPointToUsdRate changed, always re-render
-  if (prevProps.tydroPointToUsdRate !== nextProps.tydroPointToUsdRate) {
-    return false;
-  }
-
-  if (prevProps.isRateDragging !== nextProps.isRateDragging) {
-    return false;
-  }
-
-  if (prevProps.onIncentiveClick !== nextProps.onIncentiveClick) {
-    return false;
-  }
-
-  if (prevProps.categoryGroups !== nextProps.categoryGroups) {
-    return false;
-  }
-
-  // If pools array reference is the same, no re-render needed
-  if (prevProps.pools === nextProps.pools) {
-    return true;
-  }
-
-  // If pools arrays have different lengths, data changed
-  if (prevProps.pools.length !== nextProps.pools.length) {
-    return false;
-  }
-
-  // If both arrays are empty, no change
-  if (prevProps.pools.length === 0) {
-    return true;
-  }
-
-  // Deep comparison: compare all items' tokenAddress values
-  // This ensures we detect changes in the middle of the array or reordering
-  for (let i = 0; i < prevProps.pools.length; i++) {
-    const prevPool = prevProps.pools[i];
-    const nextPool = nextProps.pools[i];
-
-    // Compare tokenAddress (unique identifier) and marketName (for disambiguation)
-    if (prevPool?.tokenAddress !== nextPool?.tokenAddress ||
-        prevPool?.marketName !== nextPool?.marketName) {
-      return false; // Data changed, allow re-render
-    }
-  }
-
-  // All items match, skip re-render
-  return true;
-});
+// Only re-render when reserves data actually changed or isApy changed
+export default memo(TopOpportunities, shouldSkipTopOpportunitiesRender);

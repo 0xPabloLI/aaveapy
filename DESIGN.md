@@ -1,129 +1,94 @@
 # Design System: Aave APY
 
-## 1. 视觉主题与氛围
-- 以“精致金融数据面板”为核心气质：浅色基底、温暖金色主调、品牌渐变点缀，搭配轻玻璃质感卡片与柔和阴影。
-- 暗色模式为深炭黑背景+高对比金色强调，保留相同圆角尺度与层级结构，确保光暗一致性。
+## 1. 视觉主题
+- 浅色：温暖雾白基底 + 金色主调 + 品牌渐变（洋红→青绿）
+- 暗色：深炭黑背景 + 高对比金色，保持相同圆角与层级
 
-## 2. 色彩体系与语义角色
+## 2. 色彩体系
 
-### 2.1 基础语义色（Light）
-- 画布背景：温暖雾白 #f3f3f2（页面底色）
-- 正文主色：深墨褐 #1c1917（正文/标题）
-- 卡片底色：雾白提亮 #f8f8f7（容器/卡片）
-- 浮层底色：柔和灰米 #e7e5e4（Popover）
-- 边框/分割线：浅石灰 #d3d1cf
+### 语义色
+| 用途 | Light | Dark |
+|------|-------|------|
+| 背景 | #f3f3f2 | #111317 |
+| 正文 | #1c1917 | #f5f5f4 |
+| 卡片 | #f8f8f7 | #1b1d22 |
+| 边框 | #d3d1cf | #32363e |
 
-### 2.2 基础语义色（Dark）
-- 画布背景：深炭黑 #111317
-- 正文主色：雾白 #f5f5f4
-- 卡片底色：深铅灰 #1b1d22
-- 浮层底色：深灰 #24272e
-- 边框/分割线：深石灰 #32363e
+### 品牌色
+- 主色：琥珀金 `--primary`
+- 品牌渐变：`--ds-brand-magenta-rgb` → `--ds-brand-cyan-rgb`
 
-### 2.3 品牌与强调色
-- 主色（Primary）：琥珀金 #f59b0a（主要按钮、关键强调）
-- 主色（Dark）：亮金 #fbc02d（暗色模式强调）
-- 次强调：岩灰 #766f6b（次级文字/标签）
-- 强调面：奶油黄 #fffbeb（高亮背景）
-- 品牌渐变：洋红 #c242b1 → 青绿 #23cdbf（标题渐变、描边、光晕）
+### 数据色
+- Supply：`ds-text-emerald-600`、`ds-bg-emerald-500-10`
+- Borrow：`ds-text-brand-cyan`、`ds-bg-brand-cyan-10`
+- Spread：`ds-text-purple-600`
+- 警告：amber 系
 
-### 2.4 状态色
-- 成功：青绿 #38b28c
-- 警告：橙黄 #f8a149
-- 错误：红 #db2424
+## 3. 排版
+- Sans：Source Sans Pro | Mono：Source Code Pro
+- 尺度：`ds-text-11` ~ `ds-text-24`
+- 数值：`tabular-nums`
 
-### 2.5 数据可视化色阶（数值越高越深）
-- 绿色系：#10b981 / #059669 / #047857
-- 青蓝系：#2dd4bf / #14b8a6 / #06b6d4
-- 紫粉系：#a855f7 / #9333ea / #7e22ce / #f472b6
-- 品牌青/洋红：#1aa3c7 / #c242b1
+## 4. 组件规范
 
-## 3. 字体与排版规则
-- Sans：Source Sans Pro（默认正文与 UI）
-- Serif：Source Serif Pro（可选强调/内容型排版）
-- Mono：Source Code Pro（数值或技术文本）
-- 标题采用 `ds-title`（clamp 机制），正文/辅助文本使用 `ds-text-*` 尺度体系。
-- 数值字段统一 `tabular-nums` 保证对齐。
+### 4.1 输入框
+**CSS 类：`ds-input-surface`**
+```css
+@apply rounded-md border border-border/50 bg-card/50;
+@apply focus:border-[rgb(var(--ds-brand-magenta-rgb))];
+```
+- 高度：移动端 `h-[2.75rem]`，桌面 `h-8` 或 `h-7`
+- 字号：移动端 `ds-text-11`，桌面 `ds-text-12`
 
-## 4. 组件与形态规范
+### 4.2 按钮
 
-### 4.1 按钮
-- 形状：圆角偏大（基准半径 1rem；按钮圆角 0.75rem；图标按钮圆形）
-- 高度：主按钮 2.5rem；图标按钮 1.75rem
-- 交互：hover 提升阴影与对比；浅色背景下使用轻描边
+#### 次级按钮 `ds-btn-secondary`
+适用：Clear 等非主要操作
+```css
+@apply rounded-md border border-border/50 bg-card/50;
+@apply text-muted-foreground hover:text-foreground;
+@apply hover:bg-accent/60 disabled:opacity-40;
+```
 
-### 4.2 卡片/容器
-- 玻璃卡（`glass-card`）：半透明卡面 + 12px blur + 细描边
-- 圆角：`rounded-xl` 为主
-- 内边距：移动端 `ds-card-pad-sm`；桌面 `ds-card-pad`
-- 阴影：轻柔、分层明确，暗色模式阴影更深
+#### 警告按钮 `ds-btn-warning`
+适用：Adjust to max 等纠正操作
+```css
+@apply rounded-md border border-amber-500/50;
+@apply bg-amber-100 dark:bg-amber-900/50;
+@apply text-amber-800 dark:text-amber-200;
+```
 
-### 4.3 表格/列表
-- 桌面端：表格布局，清晰列对齐与排序指示
-- 移动端：卡片化列表/轮播，触控尺寸 ≥ 44px
+#### 分段控制器（Segmented Control）
+适用：USD/Token、APR/APY 切换
+- 容器：`bg-muted/60 rounded-lg p-0.5 border border-border/40`
+- 选中：`bg-card shadow-sm border border-border/60 font-semibold`
+- 未选中：`text-muted-foreground hover:bg-card/50`
 
-### 4.4 标签/徽章
-- 胶囊形，`ring-1` 轻描边
-- 数据徽章用轻色底 + 同色文字（如 APY 激励）
+#### 筛选芯片 `ds-chip`
+适用：Token 类别、Markets 筛选
+- 选中：`border-[rgb(var(--ds-brand-magenta-rgb))] ds-text-brand-magenta`
+- 未选中：`border-border text-foreground/80`
 
-### 4.5 工具提示
-- 自定义表面：渐变 + 微网格纹理
-- 浅/深色两套对比调优
+### 4.3 卡片
+- 玻璃卡：`glass-card`（blur + 半透明）
+- 圆角：`rounded-xl`
+- 内边距：`ds-card-pad`（桌面）、`ds-card-pad-sm`（移动）
 
-### 4.6 Incentive 弹窗（激励详情）
-- **形态**：移动端为底部抽屉（bottom sheet），桌面端为带箭头的浮动卡片；点击遮罩或关闭按钮关闭。
-- **表面**：`bg-card` + `border-border/60`，圆角桌面 `rounded-xl`、移动端顶部 `rounded-t-2xl`；阴影使用 `ds-tooltip-shadow`（桌面）或 `ds-tooltip-shadow-up`（底部抽屉）。
-- **排版**：标题用 `ds-tooltip-title`，正文用 `ds-tooltip-body`，内边距用 `ds-tooltip-pad`；每条激励项用 `ds-tooltip-item` + 左侧色条（Supply 青绿 / Borrow 品牌青）。
-- **语义色**：Supply 激励用 emerald 系（`ds-text-emerald-600`、`ds-bg-emerald-500-10`），Borrow 用品牌青（`ds-text-brand-cyan`、`ds-bg-brand-cyan-10`）；外链为圆形按钮 + ExternalLink 图标，hover 不改变主色。
-- **内容**：每条展示名称、APR/APY 数值（`formatPercent`）、可选「Campaign time: 日期范围」、可选 message 列表（小圆点 + 文案）；无句号结尾，与 APR/APY 等短句 tooltip 一致。
-- **可访问性**：外链需 `title="Open link"` 或等价 `aria-label`；关闭按钮需可聚焦与可见焦点。
+### 4.4 Tooltip
+- 通用提示：`@/components/ui/tooltip`，中性底色
+- 激励详情：`DesktopTooltip`/`MobileTooltip`，品牌底色
 
-### 4.7 信息图标与文本间距（Info Spacing）
-- **统一语义 token**：信息图标与相邻文字使用 `--ds-info-gap`，统一通过 `ds-info-inline`（`inline-flex + items-center + gap`）实现。
-- **响应式数值**：移动端默认 `--ds-info-gap = 0.25rem`（4px）；`sm` 及以上 `--ds-info-gap = 0.375rem`（6px）。
-- **适用范围**：`Ink incentive APR calculator` 标题、`FDV (B)` 标签、`APR/APY` 信息区等“文字 + info icon”组合统一采用该规则，不再使用局部硬编码 gap。
-- **不换行约束**：`FDV (B)` 必须保持单行（`whitespace-nowrap`），避免标签换行导致滑动条 marks 与 labels 垂直对齐漂移。
+### 4.5 信息图标间距
+- 类：`ds-info-inline`
+- 间距：移动端 4px，`sm+` 为 6px
 
-### 4.8 通用 Tooltip（非 Incentive）
-- **适用范围**：短信息提示（如主题切换提示 `Switch to dark/light mode`），统一使用 `@/components/ui/tooltip`。
-- **容器形态**：`rounded-md + border + bg-popover + shadow-md`，保持中性浮层，不使用品牌强色底。
-- **内边距与字号**：默认 `px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] + ds-text-14`；导航/图标提示可降级为 `ds-text-11`。
-- **位置与偏移**：默认 `sideOffset=4`；移动端优先 `bottom`，避免左右动画造成“拉伸感”。
-- **动效规则**：移动端使用轻量 `fade + slide-from-bottom`；桌面使用 `fade + zoom`，时长保持短促（约 150-200ms 体感）。
-- **文案约束**：一句话短提示，避免长段落；不承载业务说明（业务说明使用 DesktopTooltip/MobileTooltip 专用组件）。
+## 5. 布局原则
+- 移动优先，触控目标 ≥ 44px
+- 间距变量：`ds-space-*`（4px 基准）
+- 容器：`container`，最大宽 1400px
 
-## 5. 布局与网格原则
-- 使用 `container` 居中，桌面最大宽 1400px
-- 移动优先：单列、紧凑间距、触控友好
-- 统一间距变量 `ds-space-*` 与 4px 基准
-
----
-
-# 组件规范清单
-
-## 1. 视觉与样式
-- 卡片必须使用 `glass-card` 或 `bg-card + border-border/60`
-- 卡片圆角统一 `rounded-xl`
-- 数值字段添加 `tabular-nums`
-- 任何强调标题可使用 `gradient-text`
-
-## 2. 交互与动效
-- 列表/卡片出现使用 stagger（delay 0.2 + i * 0.08）
-- 动画时长 0.2–0.4s，缓动 `[0.25, 0.1, 0.25, 1]`
-- Hover 不依赖颜色闪烁，优先用阴影/描边加强
-
-## 3. 响应式
-- 移动端：单列卡片或 Carousel（`basis-[85%]` peek）
-- 桌面端：表格/多列卡片（3–4 列）
-- 所有交互目标 ≥ 44x44px
-- `info icon + 文本` 统一使用 `--ds-info-gap`：移动端 4px，`sm+` 为 6px
-
-## 4. 状态与反馈
-- 加载态必须使用 skeleton + shimmer
-- 错误/缓存警告用语义色与明确文案提示
-- 空状态提供可操作建议
-
-## 5. 可访问性
-- 所有交互元素必须有可见文本或 `aria-label`
-- `focus-visible:ring-2` 保持可见焦点
-- 颜色对比满足 WCAG AA
+## 6. 交互规范
+- 动画：0.2–0.4s，缓动 `[0.25, 0.1, 0.25, 1]`
+- 列表 stagger：`delay: 0.2 + i * 0.08`
+- 加载态：skeleton + shimmer
+- 焦点：`focus-visible:ring-2`

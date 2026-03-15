@@ -57,6 +57,10 @@ export const apyToApr = (apy: number): number => {
 import type { MeritIncentive, MerklOpportunityGroup, BrevisIncentive } from '@/types/aave';
 import { TYDRO_POINT_TO_USD_RATE, getMerklBreakdownApr } from '@/lib/tydro';
 
+export interface IncentiveCalculationOptions {
+  includeWhitelistOnlyMerkl?: boolean;
+}
+
 const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 const parseCampaignBoundaryMs = (value: string | undefined, boundary: 'start' | 'end'): number | null => {
@@ -132,12 +136,15 @@ const sumMeritIncentivesApy = (meritIncentives?: MeritIncentive[]): number => {
  */
 const sumMerklOpportunities = (
   opportunities?: MerklOpportunityGroup[],
-  pointToUsdRate = TYDRO_POINT_TO_USD_RATE
+  pointToUsdRate = TYDRO_POINT_TO_USD_RATE,
+  options: IncentiveCalculationOptions = {}
 ): number => {
+  const includeWhitelistOnlyMerkl = options.includeWhitelistOnlyMerkl === true;
   if (!opportunities || !Array.isArray(opportunities)) return 0;
   return opportunities.reduce((sum, opp) => {
     const breakdownsApr = opp.breakdowns.reduce((breakdownSum, breakdown) => {
       if (!isCampaignActive(breakdown.campaignStartedAt, breakdown.campaignEndedAt)) return breakdownSum;
+      if (breakdown.whitelistOnly && !includeWhitelistOnlyMerkl) return breakdownSum;
       const apr = getMerklBreakdownApr(breakdown, pointToUsdRate);
       return breakdownSum + (!isNaN(apr) && apr >= 0 ? apr : 0);
     }, 0);
@@ -151,12 +158,15 @@ const sumMerklOpportunities = (
  */
 const sumMerklOpportunitiesApy = (
   opportunities?: MerklOpportunityGroup[],
-  pointToUsdRate = TYDRO_POINT_TO_USD_RATE
+  pointToUsdRate = TYDRO_POINT_TO_USD_RATE,
+  options: IncentiveCalculationOptions = {}
 ): number => {
+  const includeWhitelistOnlyMerkl = options.includeWhitelistOnlyMerkl === true;
   if (!opportunities || !Array.isArray(opportunities)) return 0;
   return opportunities.reduce((sum, opp) => {
     const breakdownsApy = opp.breakdowns.reduce((breakdownSum, breakdown) => {
       if (!isCampaignActive(breakdown.campaignStartedAt, breakdown.campaignEndedAt)) return breakdownSum;
+      if (breakdown.whitelistOnly && !includeWhitelistOnlyMerkl) return breakdownSum;
       const apr = getMerklBreakdownApr(breakdown, pointToUsdRate);
       if (!isNaN(apr) && apr >= 0) {
         return breakdownSum + convertAprToApy(apr);
@@ -206,10 +216,11 @@ export const calculateTotalIncentiveApr = (
   merklOpportunities?: MerklOpportunityGroup[],
   brevisIncentives?: BrevisIncentive[],
   protocolIncentives?: number[],
-  tydroPointToUsdRate = TYDRO_POINT_TO_USD_RATE
+  tydroPointToUsdRate = TYDRO_POINT_TO_USD_RATE,
+  options: IncentiveCalculationOptions = {}
 ): number => {
   const meritApr = sumMeritIncentives(meritIncentives);
-  const merklApr = sumMerklOpportunities(merklOpportunities, tydroPointToUsdRate);
+  const merklApr = sumMerklOpportunities(merklOpportunities, tydroPointToUsdRate, options);
   const protocolApr = sumNumberArray(protocolIncentives);
   const brevisAprValue = sumBrevisIncentives(brevisIncentives);
   
@@ -229,10 +240,11 @@ export const calculateTotalIncentiveApy = (
   merklOpportunities?: MerklOpportunityGroup[],
   brevisIncentives?: BrevisIncentive[],
   protocolIncentives?: number[],
-  tydroPointToUsdRate = TYDRO_POINT_TO_USD_RATE
+  tydroPointToUsdRate = TYDRO_POINT_TO_USD_RATE,
+  options: IncentiveCalculationOptions = {}
 ): number => {
   const meritApy = sumMeritIncentivesApy(meritIncentives);
-  const merklApy = sumMerklOpportunitiesApy(merklOpportunities, tydroPointToUsdRate);
+  const merklApy = sumMerklOpportunitiesApy(merklOpportunities, tydroPointToUsdRate, options);
   
   // Convert protocol incentives (already in APR form) to APY
   let protocolApy = 0;
@@ -292,3 +304,33 @@ export const calculateSpreadApr = (totalSupplyApr: number | null, totalBorrowApr
   if (totalSupplyApr === null || totalBorrowApr === null) return null;
   return totalSupplyApr - totalBorrowApr;
 };
+
+// Format USD price (e.g., 3942.52 → "$3,942.52", 0.9998 → "$1.00")
+export const formatUsd = (value: number | null | undefined): string => {
+  if (value === null || value === undefined || isNaN(value)) return '-';
+  if (value >= 1000) {
+    return '$' + value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  return '$' + value.toFixed(2);
+};
+
+// Format reserve size in USD with abbreviation (e.g., 1083255123.44 → "$1.08B", 5200000 → "$5.20M", -18807985.72 → "-$18.81M")
+export const formatReserveSizeUsd = (value: number | null | undefined): string => {
+  if (value === null || value === undefined || isNaN(value)) return '-';
+  const absValue = Math.abs(value);
+  const sign = value < 0 ? '-' : '';
+  if (absValue >= 1_000_000_000) {
+    return sign + '$' + (absValue / 1_000_000_000).toFixed(2) + 'B';
+  }
+  if (absValue >= 1_000_000) {
+    return sign + '$' + (absValue / 1_000_000).toFixed(2) + 'M';
+  }
+  if (absValue >= 1_000) {
+    return sign + '$' + (absValue / 1_000).toFixed(2) + 'K';
+  }
+  return sign + '$' + absValue.toFixed(2);
+};
+
+// Domain aliases that share the same USD-size formatting.
+export const formatTvl = formatReserveSizeUsd;
+export const formatSupplyUsd = formatReserveSizeUsd;

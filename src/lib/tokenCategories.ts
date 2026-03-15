@@ -1,4 +1,5 @@
 import { STABLECOINS, ETH_RELATED, BTC_RELATED, PENDLE_TOKENS } from '@/types/aave';
+import { normalizeTokenSymbolAliasesUpper, normalizeTokenSymbolBaseUpper } from '@/lib/tokenSymbolNormalization';
 
 export interface TokenCategoryOverrides {
   stablecoins?: string[];
@@ -13,18 +14,17 @@ export interface TokenCategoryGroups {
 }
 
 const normalizeBaseSymbol = (symbol: string): string => {
-  return symbol.toUpperCase().trim().replace(/\.E$/, '').replace(/^M\./, '');
+  return normalizeTokenSymbolBaseUpper(symbol);
 };
 
 const normalizeStableSymbol = (symbol: string): string => {
   const normalized = normalizeBaseSymbol(symbol)
     .replace(/^W/, '')
-    .replace(/USD₮0/g, 'USDT')
-    .replace(/USD₮/g, 'USDT')
-    .replace(/USDT0/g, 'USDT');
-  if (normalized === 'CEUR') return 'EURM';
-  if (normalized === 'EURM') return 'CEUR';
-  return normalized;
+    .replace(/USD₮0/g, 'USDT0');
+  const aliased = normalizeTokenSymbolAliasesUpper(normalized);
+  if (aliased === 'CEUR') return 'EURM';
+  if (aliased === 'EURM') return 'CEUR';
+  return aliased;
 };
 
 const normalizeEthSymbol = (symbol: string): string => {

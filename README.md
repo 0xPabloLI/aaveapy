@@ -11,6 +11,7 @@ A React dashboard for displaying Aave V3 market data with yield comparisons acro
 - **Multi-chain Support**: View Aave V3 markets across Ethereum, Arbitrum, Optimism, Base, Polygon, Avalanche, and more
 - **Yield Comparison**: Compare supply/borrow APYs across all supported chains
 - **Incentive Tracking**: Track additional yield from Merit, Merkl, and Brevis programs
+- **Merkl Forecast**: Estimate next-run Merkl daily rewards/APR for hypothetical deposit amounts
 - **Real-time Data**: Data fetched from [api.aaveapy.com](https://api.aaveapy.com)
 - **Mobile Friendly**: Responsive design with optimized mobile experience
 
@@ -68,10 +69,45 @@ VITE_API_BASE_URL=http://localhost:3001/api
 | `npm run preview` | Preview production build |
 | `npm run lint` | Run ESLint |
 | `npm run test` | Run tests |
+| `npm run preflight:release` | Fast release readiness checks |
+
+Full checks (includes lint/build/audit):
+
+```bash
+npm run preflight:release -- --full
+```
+
+## Data Freshness Policy (Frontend)
+
+React Query staleTime config is centralized in `src/config/queryStaleTimes.ts`.
+
+| Bucket | staleTime | Scope | Reasoning |
+|---|---:|---|---|
+| `coreSnapshotApi` | 1m | `/markets` `/rate-inputs` snapshot | Same backend snapshot family; aligned with backend soft TTL (realtimeFamily=60s) to reduce cross-end freshness drift. |
+| `coingeckoFdv` | 10m | `/coingecko-fdv` | Relevant for ranking/valuation UX, but not execution-critical; reduces external API pressure. |
+| `tokenCategories` | 6h | `/coingecko-categories` | Low-change metadata, long cache window is acceptable. |
+| `coingeckoTokenImage` | 24h | Coin symbol -> image lookup | Icon changes are infrequent; long cache + long GC avoids repeated fetches. |
+
+Rule of thumb:
+- Same-source snapshot data should share staleTime.
+- External-source data should be bucketed by change frequency and quota cost.
+
+Market filter source of truth:
+- The home page derives unique `{ marketName, chainName }` filter options directly from `/markets.data`.
+- Do not add a separate `markets/list` fetch for this screen; it creates a second snapshot path for the same UI state.
 
 ## Security
 
 See [SECURITY.md](SECURITY.md) for vulnerability reporting and a public-release security checklist.
+
+## Merkl Forecast Notes
+
+- Forecast state is loaded from backend:
+  - `GET /api/campaigns/forecast-states`
+  - `GET /api/campaigns/:campaignId/forecast-state`
+- Frontend forecast math only changes hypothetical TVL (based on user input amount * token price).
+- Token price is resolved from `/api/markets` `tokenPrices` first, with backup lookup if missing.
+- Campaign type and regime are rendered from forecast-state + local calculation (`APR_CAPPED`, `CATCHING_UP`, `PLANNED`).
 
 ## License
 

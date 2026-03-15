@@ -1,16 +1,18 @@
+export type IncentiveMessageScalar = string | number | boolean | null;
+export type IncentiveMessage = string | IncentiveMessage[] | {
+  [key: string]: IncentiveMessageScalar | IncentiveMessage;
+};
+
 // Merit incentive data structure
 export interface MeritIncentive {
   apr: number;                         // APR percentage value (e.g., 5.2 means 5.2%)
   selfApr?: number;                    // Self APR percentage value (if there's a corresponding self- prefixed key)
   link: string;                        // Merit campaign detail page link
   name?: string;                       // Merit campaign name (optional)
-  message?: string;                    // Merit campaign message/description (optional)
+  message?: IncentiveMessage;          // Merit campaign message/description (optional)
   startDate: string;                   // Campaign start date
   endDate: string;                     // Campaign end date
-  startBlock?: string;                 // Campaign start block (optional)
-  endBlock?: string;                   // Campaign end block (optional)
-  requiredBorrowTokens?: string[] | string; // List of tokens to borrow, 'multiple' means any token
-  requiredSupplyTokens?: string[] | string; // List of tokens to supply, 'multiple' means any token
+  lastRoundRewardUsd?: number;         // Latest round total reward in USD
 }
 
 // Merkl opportunity data structure
@@ -19,8 +21,8 @@ export interface MerklCampaignBreakdown {
   campaignStartedAt: string;           // Campaign start time (ISO 8601)
   campaignEndedAt: string;             // Campaign end time (ISO 8601)
   campaignId: string;                 // Campaign ID
+  whitelistOnly?: boolean;             // Merkl campaign is whitelist-only
   pointsPerThousandUsd?: number;       // Tydro protocol points/1000USD value (optional)
-  dailyPoints?: number;                // Tydro protocol daily points (optional)
 }
 
 export interface MerklOpportunityGroup {
@@ -39,7 +41,7 @@ export interface BrevisIncentive {
   name: string;                        // Campaign name
 }
 
-export interface PoolWithSpread {
+export interface ReserveWithSpread {
   // Basic information
   marketName: string;
   chainName: string;
@@ -49,11 +51,32 @@ export interface PoolWithSpread {
   tokenAddress: string;
   aTokenAddress?: string | null;
   vTokenAddress?: string | null;
+  reserveId?: string;
   
   // Base APY (percentage value, e.g., 2.07 means 2.07%)
   supplyApy?: number;
   borrowApy?: number;
+  tokenPrice?: number;
+  reserveSizeUsd?: number;
+  supplyCapUsd?: number;
+  borrowCapUsd?: number;
+  utilizationPct?: number;
   
+  // Availability flags
+  supplyDisabled?: boolean;
+  borrowDisabled?: boolean;
+  
+  // Rate calculation fields (from /api/markets reserves)
+  decimals?: number;
+  availableLiquidity?: string;
+  totalVariableDebt?: string;
+  reserveFactor?: string;
+  variableRateSlope1?: string;
+  variableRateSlope2?: string;
+  optimalUsageRate?: string;
+  deficit?: string;
+  baseVariableBorrowRate?: string;
+
   // Protocol incentives (from Aave protocol, array of percentage values)
   supplyIncentives?: number[];
   borrowIncentives?: number[];
@@ -74,22 +97,46 @@ export interface PoolWithSpread {
 }
 
 export interface MarketsResponse {
-  data: PoolWithSpread[];
-  lastUpdated: string;
-  isStale: boolean;
-  updateInProgress: boolean;
-}
-
-export interface MarketStats {
-  totalPools: number;
-  totalChains: number;
-  totalTokens: number;
-  chains: string[];
+  snapshot: {
+    lastUpdated: string;
+    version: string;
+    staleTimeMs?: number;
+  };
+  reserves: ReserveWithSpread[];
 }
 
 export interface MarketListItem {
   marketName: string;
   chainName: string;
+}
+
+export interface TokenPriceEntry {
+  price: number;
+}
+
+export type TokenPricesIndex = Record<string, TokenPriceEntry>;
+
+export interface MerklForecastStateResponse {
+  campaignId: string;
+  campaignType?: string;
+  plannedDaily?: number;
+  requiredDaily?: number;
+  aprCap?: number | null;
+  totalBudget?: number;
+  distributedSoFar?: number;
+  latestTvl?: number;
+  endTimestamp?: number;
+}
+
+export interface MerklForecastStatesBatchResponse {
+  requested?: number;
+  staleTimeMs?: number;
+  items: MerklForecastStateResponse[];
+  errors: Array<{
+    campaignId: string;
+    status: number;
+    message: string;
+  }>;
 }
 
 export type SortField = 'totalSupplyApy' | 'totalBorrowApy' | 'apySpread' | null;

@@ -154,3 +154,37 @@ describe('incentive calculations only include active campaigns', () => {
     expect(apy).toBeCloseTo(expected, 10);
   });
 });
+
+describe('whitelist-only Merkl campaign handling', () => {
+  const merklOpportunities: MerklOpportunityGroup[] = [
+    {
+      breakdowns: [
+        {
+          campaignApr: 4,
+          campaignId: 'public-merkl',
+          campaignStartedAt: daysFromNowIso(-1),
+          campaignEndedAt: daysFromNowIso(2),
+        },
+        {
+          campaignApr: 7,
+          campaignId: 'whitelist-merkl',
+          campaignStartedAt: daysFromNowIso(-1),
+          campaignEndedAt: daysFromNowIso(2),
+          whitelistOnly: true,
+        },
+      ],
+    },
+  ];
+
+  it('excludes whitelist-only Merkl campaigns from APR by default', () => {
+    const apr = calculateTotalIncentiveApr([], merklOpportunities, [], []);
+    expect(apr).toBe(4);
+  });
+
+  it('includes whitelist-only Merkl campaigns when enabled', () => {
+    const apr = calculateTotalIncentiveApr([], merklOpportunities, [], [], undefined, {
+      includeWhitelistOnlyMerkl: true,
+    });
+    expect(apr).toBe(11);
+  });
+});

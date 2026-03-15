@@ -4,6 +4,7 @@
 - `src/` contains the React + TypeScript app. Key areas: `src/pages/` for routes, `src/components/` for UI and dashboard pieces, `src/hooks/` for reusable logic, `src/lib/` for helpers, `src/types/` for shared types.
 - `public/` holds static assets (icons, robots.txt, favicon).
 - `dist/` is build output from Vite. Treat as generated.
+- `docs/` holds living implementation notes (for example `docs/frontend-interaction-guardrails.md` for tooltip/search/forecast UI pitfalls).
 
 ## Build, Test, and Development Commands
 - `npm run dev`: start the Vite dev server with hot reload.
@@ -29,6 +30,16 @@
 
 ## Configuration & Secrets
 - Use `.env` for local secrets and keep it out of version control.
+
+## Local Git Hook Policy (Mandatory)
+- This repo uses local `pre-commit` and `pre-push` hooks to run `npm run ci:remote`.
+- If `ci:remote` fails, hooks must automatically attempt `npm run ci:auto-fix`, then rerun `ci:remote`.
+- If checks still fail after auto-fix, stop the commit/push and fix the root cause before retrying.
+- Do not bypass hooks as a normal workflow.
+- Treat hook failures as release blockers for branch updates.
+
+## UI Regression Guardrails
+- When changing incentive tooltip behavior, search filtering, or forecast display semantics, review and update `docs/frontend-interaction-guardrails.md` in the same work session.
 
 ---
 
@@ -136,3 +147,23 @@ When implementing mobile carousels:
 5. Show navigation arrows conditionally
 6. Set `basis-[85%]` for peek effect
 7. Use `align: "center"` for centered snap
+
+## Learned User Preferences
+- Prefer Chinese for collaboration and implementation discussions.
+- Prefer direct execution after confirmation (e.g. "直接执行", "继续", "你来处理"), including verifying and reproducing issues yourself instead of asking the user to do steps.
+- Prefer evidence-based diagnosis with concrete runtime artifacts (CI logs, live API responses) before concluding root cause.
+- Avoid default values for missing API or backend fields; keep schema and code minimal.
+- For large design or architectural changes, provide a 方案 (plan) first without modifying code when asked (e.g. "先给我方案不要直接修改").
+- When summarizing many items (APIs, options), use tables for clarity (表格形式，一目了然).
+- Follow explicit visual descriptions precisely (e.g. "竖线" → vertical, "圆环" → ring).
+- Maintain design symmetry when adding complementary UI elements (e.g. Supply and Borrow info placement consistent).
+- Tooltip content should not repeat information already visible in the parent; only show supplementary context.
+- Toggle/selection state changes must be visually obvious; use border color or other clear indicators, not subtle opacity/background only.
+- Reserve semantic colors for their intended purpose (e.g. amber/warning for alerts only, not regular data).
+- Don't overload a UI indicator with unrelated data; keep each element focused on its primary semantic purpose.
+
+## Learned Workspace Facts
+- Local git hooks in this setup are managed under the main repository `.git/hooks` and are local-only (not versioned).
+- This workspace currently uses a local pre-push flow that runs lockfile consistency checks before the existing `ci:remote` checks.
+- Prefer deriving values client-side when possible rather than adding backend fields (e.g., totalBorrowedUsd can be computed from reserveSizeUsd × utilizationPct).
+- Borrow availability is constrained by BOTH pool liquidity AND borrow cap: `Available = min(Pool Liquidity, Borrow Cap Remaining)`.

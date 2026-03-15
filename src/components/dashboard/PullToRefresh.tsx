@@ -122,14 +122,14 @@ const PullToRefresh = ({ onRefresh, children, disabled = false }: PullToRefreshP
           </motion.div>
         )}
       </AnimatePresence>
-      <motion.div
-        animate={{
-          y: pullDistance > 0 ? pullDistance * 0.3 : 0,
-        }}
-        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+      <div
+        style={pullDistance > 0 ? {
+          transform: `translateY(${pullDistance * 0.3}px)`,
+          transition: 'transform 0.15s ease-out',
+        } : undefined}
       >
         {children}
-      </motion.div>
+      </div>
     </div>
   );
 };

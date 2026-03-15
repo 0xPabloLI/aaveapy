@@ -1,6 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://api.aaveapy.com/api';
+import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
+import { getCachedCoingeckoFdvEntry } from '@/lib/cache';
+import { useSideDataMeta } from '@/hooks/useSideDataMeta';
 
 interface CoingeckoFdvItem {
   id: string;
@@ -14,19 +14,18 @@ interface CoingeckoFdvResponse {
   fetchedAt: string;
 }
 
-const fetchCoingeckoFdv = async (): Promise<CoingeckoFdvResponse> => {
-  const response = await fetch(`${API_BASE}/coingecko-fdv`);
-  if (!response.ok) {
-    throw new Error('Failed to fetch CoinGecko FDV data');
-  }
-  return (await response.json()) as CoingeckoFdvResponse;
-};
-
 export const useCoingeckoFdv = () => {
-  return useQuery({
-    queryKey: ['coingecko-fdv'],
-    queryFn: fetchCoingeckoFdv,
-    staleTime: 10 * 60 * 1000,
-    retry: 1,
-  });
+  const cachedEntry = getCachedCoingeckoFdvEntry<CoingeckoFdvResponse>();
+  const query = useSideDataMeta(QUERY_STALE_TIMES.coingeckoFdv, 1);
+
+  return {
+    ...query,
+    data:
+      query.data?.fdv
+        ? {
+            items: query.data.fdv.items,
+            fetchedAt: query.data.fdv.fetchedAt,
+          }
+        : (cachedEntry?.data ?? undefined),
+  };
 };

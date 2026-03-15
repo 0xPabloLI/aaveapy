@@ -4,17 +4,24 @@ on:
   pull_request:
     branches:
       - main
+      - dev
+      - railway
   push:
     branches:
       - main
       - dev
-      - feature/merkl-forecast
+      - railway
+      - feature/**
   workflow_dispatch:
     inputs:
       target_ref:
         description: "Ref (branch or SHA) to run CI against"
         required: false
         type: string
+
+permissions:
+  contents: write
+  pull-requests: write
 
 jobs:
   lint:
@@ -39,7 +46,7 @@ jobs:
             npm install --package-lock-only
           fi
       - name: Install dependencies
-        run: npm ci
+        run: npm run ci:lockcheck
       - name: Run lint
         run: npm run lint
 
@@ -65,6 +72,109 @@ jobs:
             npm install --package-lock-only
           fi
       - name: Install dependencies
-        run: npm ci
+        run: npm run ci:lockcheck
       - name: Run build
         run: npm run build
+
+
+  security-audit:
+    name: security-audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm run ci:lockcheck
+      - name: Audit runtime dependencies (High/Critical)
+        run: npm audit --omit=dev --audit-level=high
+
+  auto-remediate-on-failure:
+    name: auto-remediate-on-failure
+    needs:
+      - lint
+      - build
+      - security-audit
+    if: >
+      always() &&
+      github.event_name == 'push' &&
+      !startsWith(github.ref_name, 'bot/ci-auto-remediation-') &&
+      (needs.lint.result == 'failure' || needs.build.result == 'failure' || needs.security-audit.result == 'failure')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout target branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm run ci:lockcheck
+
+      - name: Attempt dependency remediation
+        run: npm run ci:auto-fix
+
+      - name: Reinstall dependencies for verification
+        run: npm run ci:lockcheck
+
+      - name: Validate checks after remediation
+        id: verify
+        run: |
+          set +e
+          npm run lint
+          LINT=$?
+          npm run build
+          BUILD=$?
+          npm audit --omit=dev --audit-level=high
+          AUDIT=$?
+          if [ "$LINT" -eq 0 ] && [ "$BUILD" -eq 0 ] && [ "$AUDIT" -eq 0 ]; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          fi
+          exit 0
+
+      - name: Check for generated changes
+        id: diff
+        run: |
+          if git diff --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create remediation PR
+        id: cpr
+        if: steps.verify.outputs.ok == 'true' && steps.diff.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: "chore: auto-remediate dependency issues after CI failure"
+          branch: "bot/ci-auto-remediation-${{ github.run_id }}"
+          delete-branch: true
+          title: "chore: auto remediation for CI failure (${{ github.ref_name }})"
+          body: |
+            Auto-generated remediation PR.
+
+            Trigger:
+            - Event: `${{ github.event_name }}`
+            - Source branch: `${{ github.ref_name }}`
+            - Lint: `${{ needs.lint.result }}`
+            - Build: `${{ needs.build.result }}`
+            - Security audit: `${{ needs.security-audit.result }}`
+
+            Actions performed:
+            - `npm run ci:auto-fix`
+            - `npm run lint`
+            - `npm run build`
+            - `npm audit --omit=dev --audit-level=high`
+          labels: ci-auto-remediation,dependencies
+          base: ${{ github.ref_name }}

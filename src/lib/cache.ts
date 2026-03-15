@@ -1,13 +1,19 @@
-import { MarketsResponse, MarketStats, MarketListItem } from '@/types/aave';
+import { MarketsResponse } from '@/types/aave';
 
 const CACHE_KEYS = {
   MARKETS: 'aave-markets-cache',
-  MARKET_STATS: 'aave-market-stats-cache',
-  MARKETS_LIST: 'aave-markets-list-cache',
   TYDRO_RATE: 'tydro-point-usd-rate',
+  COINGECKO_FDV: 'coingecko-fdv-cache',
+  TOKEN_CATEGORIES: 'token-categories-cache',
+  MERKL_FORECAST_STATES: 'merkl-forecast-states-cache',
+  SIDE_DATA_META: 'side-data-meta-cache',
+  COINGECKO_TOKEN_IMAGE_PREFIX: 'coingecko-token-image:',
 } as const;
 
-const CACHE_VERSION = '1.0.0';
+const LEGACY_CACHE_KEYS = ['aave-markets-list-cache', 'rate-inputs-snapshot-cache'] as const;
+
+// Bump cache version when schema changes.
+const CACHE_VERSION = '1.1.0';
 
 interface CacheEntry<T> {
   data: T;
@@ -15,21 +21,36 @@ interface CacheEntry<T> {
   version: string;
 }
 
+export interface CachedPayload<T> {
+  data: T;
+  updatedAt: number;
+}
+
+type StorageLike = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
+
+function toCachedPayload<T>(entry: CacheEntry<T>): CachedPayload<T> {
+  const parsed = Date.parse(entry.timestamp);
+  return {
+    data: entry.data,
+    updatedAt: Number.isFinite(parsed) ? parsed : Date.now(),
+  };
+}
+
 // Helper to get cache entry
-function getCacheEntry<T>(key: string): CacheEntry<T> | null {
+function getCacheEntry<T>(key: string): CachedPayload<T> | null {
   try {
     const cached = localStorage.getItem(key);
     if (!cached) return null;
-    
+
     const entry: CacheEntry<T> = JSON.parse(cached);
-    
+
     // Check version compatibility
     if (entry.version !== CACHE_VERSION) {
       localStorage.removeItem(key);
       return null;
     }
-    
-    return entry;
+
+    return toCachedPayload(entry);
   } catch (error) {
     console.warn(`Failed to read cache for ${key}:`, error);
     return null;
@@ -50,34 +71,81 @@ function setCacheEntry<T>(key: string, data: T): void {
   }
 }
 
+function normalizeSymbolKey(symbol: string): string {
+  return symbol.trim().toLowerCase();
+}
+
+export function clearLegacyCacheEntries(storage: StorageLike = localStorage): void {
+  for (const key of LEGACY_CACHE_KEYS) {
+    try {
+      storage.removeItem(key);
+    } catch (error) {
+      console.warn(`Failed to remove legacy cache key ${key}:`, error);
+    }
+  }
+}
+
 // Markets cache
+export function getCachedMarketsEntry(): CachedPayload<MarketsResponse> | null {
+  return getCacheEntry<MarketsResponse>(CACHE_KEYS.MARKETS);
+}
+
 export function getCachedMarkets(): MarketsResponse | null {
-  const entry = getCacheEntry<MarketsResponse>(CACHE_KEYS.MARKETS);
-  return entry?.data || null;
+  const entry = getCachedMarketsEntry();
+  return entry?.data ?? null;
 }
 
 export function setCachedMarkets(data: MarketsResponse): void {
   setCacheEntry(CACHE_KEYS.MARKETS, data);
 }
 
-// Market stats cache
-export function getCachedMarketStats(): MarketStats | null {
-  const entry = getCacheEntry<MarketStats>(CACHE_KEYS.MARKET_STATS);
-  return entry?.data || null;
+// CoinGecko FDV cache
+export function getCachedCoingeckoFdvEntry<T>(): CachedPayload<T> | null {
+  return getCacheEntry<T>(CACHE_KEYS.COINGECKO_FDV);
 }
 
-export function setCachedMarketStats(data: MarketStats): void {
-  setCacheEntry(CACHE_KEYS.MARKET_STATS, data);
+export function setCachedCoingeckoFdv<T>(data: T): void {
+  setCacheEntry(CACHE_KEYS.COINGECKO_FDV, data);
 }
 
-// Markets list cache
-export function getCachedMarketsList(): MarketListItem[] | null {
-  const entry = getCacheEntry<MarketListItem[]>(CACHE_KEYS.MARKETS_LIST);
-  return entry?.data || null;
+// Token categories cache
+export function getCachedTokenCategoriesEntry<T>(): CachedPayload<T> | null {
+  return getCacheEntry<T>(CACHE_KEYS.TOKEN_CATEGORIES);
 }
 
-export function setCachedMarketsList(data: MarketListItem[]): void {
-  setCacheEntry(CACHE_KEYS.MARKETS_LIST, data);
+export function setCachedTokenCategories<T>(data: T): void {
+  setCacheEntry(CACHE_KEYS.TOKEN_CATEGORIES, data);
+}
+
+// Side-data meta cache
+export function getCachedSideDataMetaEntry<T>(): CachedPayload<T> | null {
+  return getCacheEntry<T>(CACHE_KEYS.SIDE_DATA_META);
+}
+
+export function setCachedSideDataMeta<T>(data: T): void {
+  setCacheEntry(CACHE_KEYS.SIDE_DATA_META, data);
+}
+
+// Merkl forecast states cache
+export function getCachedMerklForecastStatesEntry<T>(): CachedPayload<T> | null {
+  return getCacheEntry<T>(CACHE_KEYS.MERKL_FORECAST_STATES);
+}
+
+export function setCachedMerklForecastStates<T>(data: T): void {
+  setCacheEntry(CACHE_KEYS.MERKL_FORECAST_STATES, data);
+}
+
+// Token image cache (per symbol)
+export function getCachedCoingeckoTokenImageEntry(symbol: string): CachedPayload<string | null> | null {
+  const normalized = normalizeSymbolKey(symbol);
+  if (!normalized) return null;
+  return getCacheEntry<string | null>(`${CACHE_KEYS.COINGECKO_TOKEN_IMAGE_PREFIX}${normalized}`);
+}
+
+export function setCachedCoingeckoTokenImage(symbol: string, imageUrl: string | null): void {
+  const normalized = normalizeSymbolKey(symbol);
+  if (!normalized) return;
+  setCacheEntry(`${CACHE_KEYS.COINGECKO_TOKEN_IMAGE_PREFIX}${normalized}`, imageUrl);
 }
 
 // Tydro point to USD rate cache (user preference)

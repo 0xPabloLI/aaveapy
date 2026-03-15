@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, X, ChevronUp, ChevronDown } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { TokenCategory, MarketListItem, ETHEREUM_MARKET_NAMES } from '@/types/aave';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { useIsMobile } from '@/hooks/use-mobile';
 import AprApyToggle from '@/components/dashboard/AprApyToggle';
+import { memo } from 'react';
 
 interface FilterBarProps {
   searchQuery: string;
@@ -16,8 +17,6 @@ interface FilterBarProps {
   isApy: boolean;
   setIsApy: (isApy: boolean) => void;
   marketsList?: MarketListItem[];
-  showMarketsExpanded?: boolean;
-  setShowMarketsExpanded?: (expanded: boolean) => void;
 }
 
 const categories: { value: TokenCategory; label: string }[] = [
@@ -28,7 +27,7 @@ const categories: { value: TokenCategory; label: string }[] = [
   { value: 'pendle', label: 'Pendle' },
 ];
 
-const ChainIcon = ({ chain, className = "", loading = "lazy" }: { chain: string; className?: string; loading?: "lazy" | "eager" }) => {
+const ChainIcon = memo(({ chain, className = "" }: { chain: string; className?: string }) => {
   const size = "w-3.5 h-3.5";
   const src = getChainIconSrc(chain);
 
@@ -45,10 +44,10 @@ const ChainIcon = ({ chain, className = "", loading = "lazy" }: { chain: string;
       src={src}
       alt={`${chain} logo`}
       className={`${size} ${className}`}
-      loading={loading}
+      loading="lazy"
     />
   );
-};
+});
 
 const getMarketInfo = (market: MarketListItem) => {
   if (market.chainName === 'Ethereum' && ETHEREUM_MARKET_NAMES[market.marketName]) {
@@ -75,19 +74,13 @@ const FilterBar = ({
   isApy,
   setIsApy,
   marketsList,
-  showMarketsExpanded: showMarketsExpandedProp,
-  setShowMarketsExpanded: setShowMarketsExpandedProp,
 }: FilterBarProps) => {
   const isMobile = useIsMobile();
-  const [internalShowMarketsExpanded, setInternalShowMarketsExpanded] = useState(false);
-  const showMarketsExpanded = showMarketsExpandedProp ?? internalShowMarketsExpanded;
-  const setShowMarketsExpanded = setShowMarketsExpandedProp ?? setInternalShowMarketsExpanded;
   const [searchPlaceholder, setSearchPlaceholder] = useState('Search token');
   const desktopSearchInputRef = useRef<HTMLInputElement>(null);
   const mobileSearchInputRef = useRef<HTMLInputElement>(null);
   const debouncedUpdateRef = useRef<(() => void) | null>(null);
 
-  // Stable handler function that reads from ref - never changes, so can be used for addEventListener/removeEventListener
   const stableResizeHandler = useCallback(() => {
     debouncedUpdateRef.current?.();
   }, []);
@@ -102,67 +95,30 @@ const FilterBar = ({
 
   const noMarketsSelected = selectedMarkets.length === 0;
 
-  // Separate Ethereum markets and other chains
   const ethereumMarkets = marketsList?.filter(m => m.chainName === 'Ethereum') || [];
   const otherMarkets = marketsList?.filter(m => m.chainName !== 'Ethereum') || [];
   const allMarkets = [...ethereumMarkets, ...otherMarkets];
 
-  // Show first 6 markets, rest in "More"
-  const visibleMarkets = allMarkets.slice(0, 6);
-  const hiddenMarkets = allMarkets.slice(6);
-  const hasHiddenMarkets = hiddenMarkets.length > 0;
-
-  // Preload hidden market icons after page load
+  // Auto-adapt search placeholder based on input width
   useEffect(() => {
-    if (hiddenMarkets.length > 0) {
-      // Use requestIdleCallback for low-priority preloading, fallback to setTimeout
-      const preloadIcons = () => {
-        hiddenMarkets.forEach(market => {
-          const src = getChainIconSrc(market.chainName);
-          if (src) {
-            const img = new Image();
-            img.src = src;
-          }
-        });
-      };
-
-      if ('requestIdleCallback' in window) {
-        (window as Window & { requestIdleCallback: (cb: () => void) => number }).requestIdleCallback(preloadIcons);
-      } else {
-        setTimeout(preloadIcons, 1000);
-      }
-    }
-  }, [hiddenMarkets]);
-
-  // Auto-adapt search placeholder based on input width (optimized with debounce)
-  useEffect(() => {
-    // Cache canvas for text measurement
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
     if (!context) return;
     context.font = '12px system-ui, -apple-system, sans-serif';
-    
-    // Pre-calculate text widths
     const fullTextWidth = context.measureText('Search token').width;
     const shortTextWidth = context.measureText('Token').width;
-    
     let rafId: number | null = null;
     let timeoutId: NodeJS.Timeout | null = null;
-    
+
     const updatePlaceholder = () => {
-      // Get the currently visible input based on viewport size
       const activeInput = isMobile ? mobileSearchInputRef.current : desktopSearchInputRef.current;
       if (!activeInput) return;
-      
       const inputWidth = activeInput.offsetWidth;
-      if (inputWidth === 0) return; // Not yet rendered
-      
-      const iconWidth = 24; // Search icon width + padding
-      const clearButtonWidth = 20; // Clear button width when visible
-      const padding = 16; // Left and right padding
+      if (inputWidth === 0) return;
+      const iconWidth = 24;
+      const clearButtonWidth = 20;
+      const padding = 16;
       const availableWidth = inputWidth - iconWidth - padding - (searchQuery ? clearButtonWidth : 0);
-      
-      // Determine new placeholder
       let newPlaceholder: string;
       if (availableWidth >= fullTextWidth) {
         newPlaceholder = 'Search token';
@@ -171,41 +127,28 @@ const FilterBar = ({
       } else {
         newPlaceholder = 'Search';
       }
-      
-      // Only update if changed to avoid unnecessary re-renders
       setSearchPlaceholder(prev => prev !== newPlaceholder ? newPlaceholder : prev);
     };
 
-    // Debounced update function - stored in ref so stable handler can call it
     const debouncedUpdate = () => {
       if (timeoutId) clearTimeout(timeoutId);
       timeoutId = setTimeout(() => {
         if (rafId) cancelAnimationFrame(rafId);
         rafId = requestAnimationFrame(updatePlaceholder);
-      }, 100); // 100ms debounce
+      }, 100);
     };
-    
-    // Store handler in ref so stableResizeHandler can call the latest version
+
     debouncedUpdateRef.current = debouncedUpdate;
 
-    // Initial update after DOM is ready
     const initialRafId = requestAnimationFrame(() => {
       requestAnimationFrame(updatePlaceholder);
     });
-    
+
     const resizeObserver = new ResizeObserver(stableResizeHandler);
-    
-    // Observe both inputs, but only the visible one will affect placeholder calculation
-    // This ensures we catch resize events regardless of which input is currently visible
-    if (desktopSearchInputRef.current) {
-      resizeObserver.observe(desktopSearchInputRef.current);
-    }
-    if (mobileSearchInputRef.current) {
-      resizeObserver.observe(mobileSearchInputRef.current);
-    }
-    
+    if (desktopSearchInputRef.current) resizeObserver.observe(desktopSearchInputRef.current);
+    if (mobileSearchInputRef.current) resizeObserver.observe(mobileSearchInputRef.current);
     window.addEventListener('resize', stableResizeHandler);
-    
+
     return () => {
       if (initialRafId) cancelAnimationFrame(initialRafId);
       if (rafId) cancelAnimationFrame(rafId);
@@ -215,47 +158,41 @@ const FilterBar = ({
     };
   }, [searchQuery, isMobile, stableResizeHandler]);
 
-  // Count selected hidden markets
-  const selectedHiddenCount = hiddenMarkets.filter(m => selectedMarkets.includes(m.marketName)).length;
-
-  const tokenCategoryButtons = categories.map((category) => (
-    <button
-      key={category.value}
-      onClick={() => {
-        // Toggle behavior: if clicking the selected category, switch to 'all'
-        if (selectedCategory === category.value) {
-          setSelectedCategory('all');
-        } else {
-          setSelectedCategory(category.value);
-        }
-      }}
-      className={`ds-chip px-[var(--ds-space-2)] md:px-[var(--ds-space-2-5)] py-[var(--ds-space-1)] rounded-md font-medium transition-all ${
-        selectedCategory === category.value
-          ? 'bg-[rgb(var(--ds-brand-magenta-rgb))] ds-text-on-brand'
-          : 'bg-card/60 text-muted-foreground hover:text-foreground hover:bg-card border border-border/40'
-      }`}
-    >
-      {category.label}
-    </button>
-  ));
-
   return (
-    <div className="space-y-2 md:space-y-3">
-      {/* Row 2: Token Categories + Search + APY Toggle (PC) / Token Categories (Mobile) */}
-      <div className="flex flex-wrap items-center gap-[var(--ds-space-1-5)] md:gap-[var(--ds-space-2)]">
-        {/* Token Categories */}
-        <span className="ds-text-11 text-muted-foreground mr-[var(--ds-space-0-5)] md:mr-[var(--ds-space-1)] hidden sm:inline">Tokens:</span>
-        {tokenCategoryButtons}
+    <div className="space-y-1 md:space-y-1.5">
+      {/* Row 1: Token Categories + Search + APY Toggle */}
+      <div className="flex flex-wrap items-center gap-1.5 md:gap-2">
+        <span className="ds-text-11 text-muted-foreground/70 hidden sm:inline">Tokens</span>
 
-        {/* Search - only on PC, hidden on mobile */}
-        <div className="relative w-20 sm:w-24 md:w-36 lg:w-44 hidden md:block">
-          <Search className="absolute left-2 md:left-2.5 top-1/2 -translate-y-1/2 w-3 md:w-3.5 h-3 md:h-3.5 text-muted-foreground/60" />
+        {categories.map((category) => (
+          <button
+            key={category.value}
+            onClick={() => {
+              if (selectedCategory === category.value) {
+                setSelectedCategory('all');
+              } else {
+                setSelectedCategory(category.value);
+              }
+            }}
+            className={`inline-flex items-center justify-center h-7 px-2 rounded-md ds-text-11 font-medium transition-colors ${
+              selectedCategory === category.value
+                ? 'bg-card text-foreground shadow-sm border border-[rgb(var(--ds-brand-magenta-rgb))]'
+                : 'bg-card/50 text-muted-foreground hover:text-foreground hover:bg-card/80 border border-border/40'
+            }`}
+          >
+            {category.label}
+          </button>
+        ))}
+
+        {/* Search – desktop only */}
+        <div className="relative w-20 sm:w-24 md:w-36 lg:w-44 hidden md:block ml-1">
+          <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/60" />
           <Input
             ref={desktopSearchInputRef}
             placeholder={searchPlaceholder}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-[var(--ds-space-7)] md:pl-[var(--ds-space-8)] pr-[var(--ds-space-6)] md:pr-[var(--ds-space-7)] bg-card/50 border-border/50 focus:border-[rgb(var(--ds-brand-magenta-rgb))] focus-visible:ring-0 focus-visible:ring-offset-0 h-7 ds-text-11 md:ds-text-11 text-muted-foreground/60 placeholder:text-muted-foreground/60 focus:text-foreground"
+            className="pl-[var(--ds-space-7)] pr-[var(--ds-space-6)] bg-card/50 border-border/50 focus:border-[rgb(var(--ds-brand-magenta-rgb))] focus-visible:ring-0 focus-visible:ring-offset-0 h-7 md:h-7 ds-text-11 md:ds-text-11 text-muted-foreground/60 placeholder:text-muted-foreground/60 focus:text-foreground"
           />
           {searchQuery && (
             <button
@@ -267,17 +204,16 @@ const FilterBar = ({
           )}
         </div>
 
-        {/* Spacer */}
         <div className="flex-1 min-w-2 md:min-w-4 hidden md:block" />
 
-        {/* APY/APR Toggle with symmetric info icons - only on PC */}
+        {/* APR/APY toggle – desktop only */}
         <div className="hidden md:block">
           <AprApyToggle isApy={isApy} setIsApy={setIsApy} />
         </div>
       </div>
 
-      {/* Row 3: Search + APY/APR toggle - only on mobile */}
-      <div className="flex items-center gap-[var(--ds-space-1-5)] md:gap-[var(--ds-space-2)] md:hidden">
+      {/* Row 2: Search + APR/APY toggle – mobile only */}
+      <div className="flex items-center gap-1.5 md:hidden">
         <div className="relative flex-1 min-w-0">
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
           <Input
@@ -301,14 +237,13 @@ const FilterBar = ({
         </div>
       </div>
 
-      {/* Row 2: Markets */}
-      <div className="flex flex-wrap items-center gap-[var(--ds-space-1)] md:gap-[var(--ds-space-1-5)]">
-        <span className="ds-text-11 text-muted-foreground mr-[var(--ds-space-0-5)] md:mr-[var(--ds-space-1)] hidden sm:inline">Markets:</span>
-        
-        {/* All Markets option */}
+      {/* Row 3: Markets – all visible */}
+      <div className="flex flex-wrap items-center gap-1 md:gap-1.5">
+        <span className="ds-text-11 text-muted-foreground/70 hidden sm:inline">Markets</span>
+
         <button
           onClick={() => setSelectedMarkets([])}
-          className={`ds-chip px-[var(--ds-space-2)] md:px-[var(--ds-space-2-5)] py-[var(--ds-space-1)] rounded-md font-medium transition-all ${
+          className={`ds-chip px-2 md:px-2.5 py-1 rounded-md font-medium transition-colors ${
             noMarketsSelected
               ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
               : 'text-foreground/80 border border-border hover:text-foreground'
@@ -317,8 +252,7 @@ const FilterBar = ({
           All
         </button>
 
-        {/* Visible markets */}
-        {visibleMarkets.map((market) => {
+        {allMarkets.map((market) => {
           const info = getMarketInfo(market);
           const isSelected = selectedMarkets.includes(market.marketName);
           const isEthereum = market.chainName === 'Ethereum';
@@ -326,11 +260,11 @@ const FilterBar = ({
             <button
               key={market.marketName}
               onClick={() => toggleMarket(market.marketName)}
-            className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-1-5)] md:px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-md font-medium transition-all ${
-              isSelected
-                ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
-                : 'text-foreground/80 border border-border hover:text-foreground'
-            }`}
+              className={`ds-chip gap-1 px-1.5 md:px-2 py-1 rounded-md font-medium transition-colors ${
+                isSelected
+                  ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
+                  : 'text-foreground/80 border border-border hover:text-foreground'
+              }`}
               title={isEthereum ? `Ethereum ${info.label}` : market.chainName}
             >
               <ChainIcon chain={market.chainName} />
@@ -338,50 +272,6 @@ const FilterBar = ({
             </button>
           );
         })}
-
-        {/* More button - expands inline */}
-        {hasHiddenMarkets && !showMarketsExpanded && (
-          <button
-          onClick={() => setShowMarketsExpanded(true)}
-          className="ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-1-5)] md:px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-md font-medium transition-all ds-text-brand-magenta border ds-border-brand-magenta-40 border-dashed"
-        >
-            <span>{hiddenMarkets.length}+ more</span>
-            <ChevronDown className="w-3 h-3" />
-          </button>
-        )}
-
-        {/* Expanded hidden markets */}
-        {showMarketsExpanded && hiddenMarkets.map((market) => {
-          const info = getMarketInfo(market);
-          const isSelected = selectedMarkets.includes(market.marketName);
-          const isEthereum = market.chainName === 'Ethereum';
-          return (
-            <button
-              key={market.marketName}
-              onClick={() => toggleMarket(market.marketName)}
-            className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-1-5)] md:px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-md font-medium transition-all ${
-              isSelected
-                ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
-                : 'text-foreground/80 border border-border hover:text-foreground'
-            }`}
-              title={isEthereum ? `Ethereum ${info.label}` : market.chainName}
-            >
-              <ChainIcon chain={market.chainName} loading="eager" />
-              <span>{isEthereum ? info.label : market.chainName}</span>
-            </button>
-          );
-        })}
-
-        {/* Collapse button */}
-        {showMarketsExpanded && (
-          <button
-          onClick={() => setShowMarketsExpanded(false)}
-          className="ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-1-5)] md:px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-md font-medium transition-all ds-text-brand-magenta border ds-border-brand-magenta-40 border-dashed"
-        >
-            <ChevronUp className="w-3 h-3" />
-            <span>Less</span>
-          </button>
-        )}
       </div>
     </div>
   );

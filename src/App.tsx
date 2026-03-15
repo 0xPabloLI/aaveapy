@@ -7,7 +7,10 @@ import { lazy, Suspense } from "react";
 import { ThemeProvider } from "next-themes";
 import { Analytics } from "@vercel/analytics/react";
 import LoadingState from "@/components/dashboard/LoadingState";
-import { fetchMarkets, fetchMarketStats, fetchMarketsList } from "@/hooks/useAaveMarkets";
+import { fetchMarkets } from "@/hooks/useAaveMarkets";
+import { fetchSideDataMeta, SIDE_DATA_META_QUERY_KEY } from "@/hooks/useSideDataMeta";
+import { QUERY_STALE_TIMES } from "@/config/queryStaleTimes";
+import { clearLegacyCacheEntries } from "@/lib/cache";
 
 // Lazy load route components
 const Index = lazy(() => import("./pages/Index"));
@@ -16,33 +19,34 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000,
+      staleTime: QUERY_STALE_TIMES.default,
     },
   },
 });
+
+if (typeof window !== 'undefined') {
+  clearLegacyCacheEntries();
+}
 
 // Prefetch critical data immediately on app load
 // This starts fetching before React components mount
 queryClient.prefetchQuery({
   queryKey: ['aave-markets'],
   queryFn: fetchMarkets,
-  staleTime: 15000,
+  staleTime: QUERY_STALE_TIMES.coreSnapshotApi,
 });
+
+// Prefetch side-data (includes forecast, categories, FDV) alongside markets
 queryClient.prefetchQuery({
-  queryKey: ['aave-market-stats'],
-  queryFn: fetchMarketStats,
-  staleTime: 60000,
-});
-queryClient.prefetchQuery({
-  queryKey: ['aave-markets-list'],
-  queryFn: fetchMarketsList,
-  staleTime: 300000,
+  queryKey: SIDE_DATA_META_QUERY_KEY,
+  queryFn: fetchSideDataMeta,
+  staleTime: QUERY_STALE_TIMES.sideDataMeta,
 });
 
 const App = () => (
   <ThemeProvider attribute="class" defaultTheme="system" enableSystem={true}>
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
+      <TooltipProvider delayDuration={200}>
         <Toaster />
         <Sonner />
         <BrowserRouter>
