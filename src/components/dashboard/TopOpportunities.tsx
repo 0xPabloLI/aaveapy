@@ -71,6 +71,7 @@ interface CategoryCardHeaderProps {
 
 const CategoryCardHeader = memo(({
   title,
+  shortTitle,
   subtitle,
   icon: Icon,
   iconColorClass,
