@@ -7,7 +7,7 @@ import type {
 import type { RateCalcInput } from '@/lib/interestRateCalculator';
 import { buildForecastMerklOpportunities, buildRateSimulationResult } from '@/hooks/useRateSimulation';
 
-const baseReserve: ReserveWithSpread & { decimals: number } = {
+const baseReserve: ReserveWithSpread & RateCalcInput = {
   marketName: 'Core',
   chainName: 'Ethereum',
   chainId: 1,
