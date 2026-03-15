@@ -167,3 +167,4 @@ When implementing mobile carousels:
 - This workspace currently uses a local pre-push flow that runs lockfile consistency checks before the existing `ci:remote` checks.
 - Prefer deriving values client-side when possible rather than adding backend fields (e.g., totalBorrowedUsd can be computed from reserveSizeUsd × utilizationPct).
 - Borrow availability is constrained by BOTH pool liquidity AND borrow cap: `Available = min(Pool Liquidity, Borrow Cap Remaining)`.
+- When bulk-deleting remote branches with `git push origin --delete`, use `--no-verify` so each delete does not run the pre-push hook (ci:remote).

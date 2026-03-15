@@ -91,16 +91,22 @@ describe('preload image fallback tracking', () => {
     expect(getPreloadedImageSource(sources)).toBe(sources[2]);
   });
 
-  it('includes jpg and jpeg token icon fallbacks', async () => {
+  it('returns only manifest-known formats for symbols that have icons', async () => {
     const { getTokenIconSources } = await import('./preloadUtils');
     const sources = getTokenIconSources('aammdai');
+    // Manifest has aammdai as png only → no 404s for svg/webp/jpg/jpeg
+    expect(sources).toContain('/icons/tokens/aammdai.png');
+    expect(sources.every((s) => s.startsWith('/icons/tokens/aammdai.'))).toBe(true);
+    expect(sources.length).toBeGreaterThanOrEqual(1);
+  });
 
-    expect(sources).toEqual([
-      '/icons/tokens/aammdai.svg',
-      '/icons/tokens/aammdai.webp',
-      '/icons/tokens/aammdai.png',
-      '/icons/tokens/aammdai.jpg',
-      '/icons/tokens/aammdai.jpeg',
-    ]);
+  it('falls back to all formats for symbols not in manifest', async () => {
+    const { getTokenIconSources, TOKEN_ICON_FORMATS } = await import('./preloadUtils');
+    const unknown = 'nonexistent-symbol-xyz';
+    const sources = getTokenIconSources(unknown);
+    expect(sources.length).toBe(TOKEN_ICON_FORMATS.length);
+    expect(sources).toEqual(
+      TOKEN_ICON_FORMATS.map((fmt) => `/icons/tokens/${unknown}.${fmt}`)
+    );
   });
 });

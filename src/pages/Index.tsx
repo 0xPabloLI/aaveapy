@@ -20,13 +20,11 @@ import { getCachedMarkets, setCachedTydroRate } from '@/lib/cache';
 import { TYDRO_POINT_TO_USD_RATE } from '@/lib/tydro';
 import { AlertTriangle, Send, Github } from 'lucide-react';
 import {
-  getRecommendedPreloadLimit,
-  preloadChainIcons,
   preloadIncentiveIcons,
-  preloadTokenIcons,
   setPreloadPaused,
   shouldUseFullPreloadMode,
 } from '@/lib/preloadUtils';
+import { usePreloadReserveAssets } from '@/hooks/usePreloadReserveAssets';
 import { buildMarketsList } from '@/lib/marketsList';
 import { normalizeTokenSymbolForSearch } from '@/lib/tokenSymbolNormalization';
 
@@ -124,22 +122,13 @@ const Index = () => {
     []
   );
 
-  // ── Static asset preloading (API data is prefetched in App.tsx) ──
+  // Preload reserve token/chain icons (uses iconSymbol from reservePatches, same as UI).
+  usePreloadReserveAssets(stableReserves, {
+    isSuccess: !!data,
+    preloadMode,
+  });
 
-  // Preload reserve token/chain icons after reserves load.
-  useEffect(() => {
-    if (!hasReserves || !data) return;
-    const timeoutId = setTimeout(() => {
-      const resolvedLimit = preloadMode === 'full' ? stableReserves.length : getRecommendedPreloadLimit(stableReserves.length);
-      const symbols = stableReserves.slice(0, resolvedLimit).map(r => r.tokenSymbol);
-      const chains = [...new Set(stableReserves.slice(0, resolvedLimit).map(r => r.chainName))];
-      preloadTokenIcons(symbols);
-      preloadChainIcons(chains);
-    }, 3000);
-    return () => clearTimeout(timeoutId);
-  }, [hasReserves, data, stableReserves, preloadMode]);
-
-  // (4) Preload incentive icons after reserve icons (lowest priority).
+  // Preload incentive icons after reserve icons (lowest priority).
   useEffect(() => {
     if (!hasReserves) return;
     const timeoutId = setTimeout(() => {

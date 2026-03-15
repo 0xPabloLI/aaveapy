@@ -18,6 +18,9 @@ const DEFAULT_SRC = '/icons/tokens/default.svg';
 // skip fallback probing and avoid redundant network requests.
 const resolvedSrcCache = new Map<string, string>();
 
+// Only log once per symbol when all formats (and CoinGecko) have been tried and failed.
+const missingIconLogged = new Set<string>();
+
 const resolveInitialState = (symbolKey: string, localSources: string[]) => {
   const cached = resolvedSrcCache.get(symbolKey);
   if (cached) {
@@ -101,7 +104,7 @@ const TokenImage = memo(({
       return;
     }
 
-    // 2. Try next local format (svg -> webp -> png)
+    // 2. Try next local format (order from getTokenIconSources / manifest)
     const nextIndex = formatIndex + 1;
     if (nextIndex < localSources.length && src !== DEFAULT_SRC) {
       setFormatIndex(nextIndex);
@@ -115,11 +118,19 @@ const TokenImage = memo(({
       return;
     }
 
-    // 4. Fall back to default icon
+    // 4. Fall back to default icon — log once per symbol after all formats tried
     if (src !== DEFAULT_SRC) {
+      if (!missingIconLogged.has(symbolKey)) {
+        missingIconLogged.add(symbolKey);
+        const tried = [...localSources];
+        if (needCoingeckoFallback) tried.push('CoinGecko');
+        console.warn(
+          `[TokenIcon] No icon found for "${symbol}" (tried: ${tried.join(', ')}; using default).`
+        );
+      }
       setSrc(DEFAULT_SRC);
     }
-  }, [logoURI, src, formatIndex, localSources, needCoingeckoFallback]);
+  }, [symbol, symbolKey, logoURI, src, formatIndex, localSources, needCoingeckoFallback]);
 
   return (
     <img

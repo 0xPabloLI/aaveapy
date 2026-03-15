@@ -10,6 +10,7 @@ lerna-debug.log*
 node_modules
 dist
 .worktrees
+src/lib/tokenIconManifest.generated.ts
 dist-ssr
 *.local
 .npmrc.local

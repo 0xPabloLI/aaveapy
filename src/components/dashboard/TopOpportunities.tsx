@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef, memo } from 'react';
+import { useState, useEffect, useMemo, useRef, memo, forwardRef } from 'react';
 import { TrendingUp, Zap, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ReserveWithSpread, ETHEREUM_MARKET_NAMES } from '@/types/aave';
@@ -636,20 +636,20 @@ const TopOpportunities = ({
     );
   };
 
-  // Reusable reserve item component (for desktop)
-  const ReserveItem = ({
-    reserve, 
-    index, 
-    type,
-    totalItems = 5,
-    disableMotion = false
-  }: { 
-    reserve: typeof reservesWithTotals[0]; 
+  // Reusable reserve item component (for desktop). forwardRef required by AnimatePresence (popLayout).
+  const ReserveItem = forwardRef<HTMLDivElement, {
+    reserve: typeof reservesWithTotals[0];
     index: number;
     type: 'supply' | 'leverage';
     totalItems?: number;
     disableMotion?: boolean;
-  }) => {
+  }>(function ReserveItem({
+    reserve,
+    index,
+    type,
+    totalItems = 5,
+    disableMotion = false
+  }, ref) {
     const isLeverage = type === 'leverage';
     const mainValue = isLeverage 
       ? (isApy ? reserve.apySpread : reserve.aprSpread)
@@ -668,6 +668,7 @@ const TopOpportunities = ({
 
     return (
       <motion.div
+        ref={ref}
         {...(shouldAnimateItem
           ? { custom: index, initial: false, animate: 'visible', variants: itemVariants }
           : { initial: false, animate: false as const })}
@@ -747,7 +748,7 @@ const TopOpportunities = ({
         </div>
       </motion.div>
     );
-  };
+  });
 
   // Category card component (simplified - no expand/collapse)
   const CategoryCard = ({

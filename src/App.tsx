@@ -49,7 +49,7 @@ const App = () => (
       <TooltipProvider delayDuration={200}>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
+        <BrowserRouter future={{ v7_relativeSplatPath: true }}>
           <Suspense fallback={<LoadingState />}>
             <Routes>
               <Route path="/" element={<Index />} />
