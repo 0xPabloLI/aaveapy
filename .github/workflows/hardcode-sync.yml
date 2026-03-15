@@ -116,7 +116,7 @@ jobs:
 
       - name: Trigger fallback CI when PAT is missing
         if: steps.cpr.outputs.pull-request-number != '' && env.HAS_HARDCODE_SYNC_PAT != 'true'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const workflowRef = `${{ steps.cpr.outputs.pull-request-branch }}` || 'bot/hardcode-sync';
@@ -136,7 +136,7 @@ jobs:
         if: >
           steps.verify_round1.outputs.passed != 'true' &&
           steps.verify_round2.outputs.passed != 'true'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const title = '[Hardcode Sync] verify failed after retry';
