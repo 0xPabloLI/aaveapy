@@ -930,6 +930,7 @@ const TopOpportunities = ({
           <CategoryCard
             key={category.categoryKey}
             title={category.title}
+            shortTitle={category.shortTitle}
             subtitle={category.subtitle}
             icon={category.icon}
             iconColorClass={category.iconColorClass}
