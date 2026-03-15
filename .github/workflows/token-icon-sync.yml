@@ -35,7 +35,7 @@ jobs:
         run: npm run sync-token-icons
 
       - name: Create PR when icons changed
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
           commit-message: "chore(icons): sync token icons"
           title: "chore(icons): sync token icons"
