@@ -6,7 +6,7 @@ import type {
 } from '@/types/aave';
 import { buildForecastMerklOpportunities, buildRateSimulationResult } from '@/hooks/useRateSimulation';
 
-const baseReserve: ReserveWithSpread = {
+const baseReserve: ReserveWithSpread & { decimals: number } = {
   marketName: 'Core',
   chainName: 'Ethereum',
   chainId: 1,
