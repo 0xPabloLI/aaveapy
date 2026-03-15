@@ -8,12 +8,16 @@ updates:
       time: "03:00"
       timezone: UTC
     target-branch: main
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 5
     labels:
       - dependencies
     commit-message:
       prefix: "chore"
       include: scope
+    groups:
+      npm-minor-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
 
   - package-ecosystem: github-actions
     directory: "/"
