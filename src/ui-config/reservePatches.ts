@@ -292,6 +292,20 @@ export function fetchIconSymbolAndName({ underlyingAsset, symbol, name }: IconSy
       logoURI: underlyingAssetMap[lowerUnderlyingAsset].logoURI || logoURI,
     };
   }
+  // Symbol-based fallback for PT assets when underlying is not in map (e.g. other chain)
+  const lowerSymbol = symbol.trim().toLowerCase();
+  if (lowerSymbol.startsWith('pt-susde-') || lowerSymbol.startsWith('pt susde')) {
+    return { symbol, iconSymbol: 'ptsusde', name: name ?? symbol, logoURI };
+  }
+  if (lowerSymbol.startsWith('pt-eusde-') || lowerSymbol.startsWith('pt eusde')) {
+    return { symbol, iconSymbol: 'pteusde', name: name ?? symbol, logoURI };
+  }
+  if (lowerSymbol.startsWith('pt-srusde-') || lowerSymbol.startsWith('pt srusde')) {
+    return { symbol, iconSymbol: 'srusde', name: name ?? symbol, logoURI };
+  }
+  if (lowerSymbol.startsWith('pt-usde-') || lowerSymbol.startsWith('pt usde')) {
+    return { symbol, iconSymbol: 'ptusde', name: name ?? symbol, logoURI };
+  }
   const unifiedSymbol = unPrefixSymbol((SYMBOL_MAP[symbol] || symbol).toUpperCase(), 'AMM');
   return {
     iconSymbol: unifiedSymbol,
