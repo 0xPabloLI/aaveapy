@@ -58,6 +58,7 @@ const XL_BREAKPOINT = 1280;
 
 interface CategoryCardHeaderProps {
   title: string;
+  shortTitle?: string;
   subtitle: string;
   icon: React.ElementType;
   iconColorClass: string;
