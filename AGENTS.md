@@ -150,32 +150,17 @@ When implementing mobile carousels:
 
 ## Learned User Preferences
 - Prefer Chinese for collaboration and implementation discussions.
-- Prefer direct execution after confirmation (for example when saying "直接执行", "继续", or "你来处理"), including verifying and reproducing issues yourself (e.g. restart dev server, check API) instead of asking the user to do steps.
-- Prefer evidence-based diagnosis with concrete runtime artifacts (such as CI logs and live API responses) before concluding root cause.
-- Avoid default values for missing API or backend fields; keep schema and code minimal (e.g. no fallback values when the backend omits a field).
-- For large design or architectural changes, provide a 方案 (plan) first without modifying code when the user asks (e.g. "先给我方案不要直接修改").
-- When summarizing many items (e.g. APIs, warmup order, options), use tables for clarity (表格形式，一目了然).
-- Follow explicit visual descriptions precisely (e.g., when user says "竖线" use vertical, not horizontal; when user says "圆环" use ring, not bar).
-- Maintain design symmetry when adding complementary UI elements (e.g., if Supply info is in Size column, related Borrow info placement should be consistent).
-- Tooltip content should not repeat information already visible in the parent element; only show supplementary context.
-- Reserve semantic colors exclusively for their intended purpose (amber/warning for alerts only, not for regular data display).
-- Non-core data fields (like Utilization) should use normal font weight, same as Price/Size; only core metrics (APY) get bold.
-- Toggle/selection state changes must be visually obvious; subtle differences (e.g., slight opacity or background changes) are insufficient—use border color or other clear indicators.
-- Visual elements in the same conceptual family should use the same color (e.g., Supply Size and Supply APY both green; Liquidity and Spread both purple).
-- When switching input modes (USD/Token), clear existing values to avoid confusion from different token valuations.
-- When only one item in a category (e.g., single incentive source), show it directly without a summary row.
-- If APY only has Native (no incentives), don't show Native breakdown row; put the link arrow on APY row directly.
-- Clickable breakdown items (Native, Incentive links) should not show underline on hover; the external link icon already indicates clickability.
-- Use consistent typography hierarchy across related cards: titles same style, column headers same style, values same style.
-- Grid layouts should use symmetric column counts (3x3, 4x4) for visual balance; avoid uneven column counts.
-- Secondary info (like cap values "/ $20.00M") should use smaller font than main values, but not too small to read.
-- Text content should never touch container edges; always maintain breathing room with proper padding (e.g., px-4 not px-2).
-- Vertical and horizontal padding must be consistent throughout a component; if top has py-2, bottom must also have py-2. Same for left/right edges.
-- Decorative borders (like indent indicators for nested items) should stay within text content boundaries; use inline elements (e.g., `ml-2 pl-2 border-l`) rather than negative margins that extend beyond alignment.
-- Indent indicator borders should use contextual colors matching their parent section: emerald for Supply (`border-l-[rgb(var(--ds-emerald-500-rgb))]`), cyan for Borrow (`border-l-[rgb(var(--ds-brand-cyan-rgb))]`).
-- Data values should have explicit labels when meaning is unclear; e.g., "Cap $20M" not just "/ $20M" to avoid ambiguity.
-- When a section has no title, still maintain header row height for visual alignment with adjacent columns.
-- In multi-column layouts, all columns should have the same outer dimensions for visual balance; don't vertically center shorter columns.
+- Prefer direct execution after confirmation (e.g. "直接执行", "继续", "你来处理"), including verifying and reproducing issues yourself instead of asking the user to do steps.
+- Prefer evidence-based diagnosis with concrete runtime artifacts (CI logs, live API responses) before concluding root cause.
+- Avoid default values for missing API or backend fields; keep schema and code minimal.
+- For large design or architectural changes, provide a 方案 (plan) first without modifying code when asked (e.g. "先给我方案不要直接修改").
+- When summarizing many items (APIs, options), use tables for clarity (表格形式，一目了然).
+- Follow explicit visual descriptions precisely (e.g. "竖线" → vertical, "圆环" → ring).
+- Maintain design symmetry when adding complementary UI elements (e.g. Supply and Borrow info placement consistent).
+- Tooltip content should not repeat information already visible in the parent; only show supplementary context.
+- Toggle/selection state changes must be visually obvious; use border color or other clear indicators, not subtle opacity/background only.
+- Reserve semantic colors for their intended purpose (e.g. amber/warning for alerts only, not regular data).
+- Don't overload a UI indicator with unrelated data; keep each element focused on its primary semantic purpose.
 
 ## Learned Workspace Facts
 - Local git hooks in this setup are managed under the main repository `.git/hooks` and are local-only (not versioned).

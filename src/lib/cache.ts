@@ -5,13 +5,12 @@ const CACHE_KEYS = {
   TYDRO_RATE: 'tydro-point-usd-rate',
   COINGECKO_FDV: 'coingecko-fdv-cache',
   TOKEN_CATEGORIES: 'token-categories-cache',
-  RATE_INPUTS_SNAPSHOT: 'rate-inputs-snapshot-cache',
   MERKL_FORECAST_STATES: 'merkl-forecast-states-cache',
   SIDE_DATA_META: 'side-data-meta-cache',
   COINGECKO_TOKEN_IMAGE_PREFIX: 'coingecko-token-image:',
 } as const;
 
-const LEGACY_CACHE_KEYS = ['aave-markets-list-cache'] as const;
+const LEGACY_CACHE_KEYS = ['aave-markets-list-cache', 'rate-inputs-snapshot-cache'] as const;
 
 // Bump cache version when schema changes.
 const CACHE_VERSION = '1.1.0';
@@ -125,15 +124,6 @@ export function getCachedSideDataMetaEntry<T>(): CachedPayload<T> | null {
 
 export function setCachedSideDataMeta<T>(data: T): void {
   setCacheEntry(CACHE_KEYS.SIDE_DATA_META, data);
-}
-
-// Rate-inputs snapshot cache
-export function getCachedRateInputsSnapshotEntry<T>(): CachedPayload<T> | null {
-  return getCacheEntry<T>(CACHE_KEYS.RATE_INPUTS_SNAPSHOT);
-}
-
-export function setCachedRateInputsSnapshot<T>(data: T): void {
-  setCacheEntry(CACHE_KEYS.RATE_INPUTS_SNAPSHOT, data);
 }
 
 // Merkl forecast states cache

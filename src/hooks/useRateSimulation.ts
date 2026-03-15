@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useQueries, useQuery } from '@tanstack/react-query';
+import { useQueries } from '@tanstack/react-query';
 import { useSideDataMeta } from '@/hooks/useSideDataMeta';
 import {
   apyToApr,
@@ -12,8 +12,8 @@ import {
   convertAprToApy,
 } from '@/lib/formatters';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
-import { getCachedRateInputsSnapshotEntry } from '@/lib/cache';
-import { simulateNativeRatesAfterActions } from '@/lib/interestRateCalculator';
+import { simulateNativeRatesAfterActions, hasRateCalcFields } from '@/lib/interestRateCalculator';
+import type { RateCalcInput } from '@/lib/interestRateCalculator';
 import { forecastWithTVL } from '@/lib/merklForecast';
 import { shouldSurfaceForecastError } from '@/lib/merklForecastErrors';
 import { forecastMeritAprPercent } from '@/lib/meritForecast';
@@ -26,16 +26,9 @@ import type {
   MerklCampaignBreakdown,
   MerklForecastStateResponse,
   MerklOpportunityGroup,
-  RateInputsResponse,
-  ReserveRateInput,
   ReserveWithSpread,
   TokenPricesIndex,
 } from '@/types/aave';
-import {
-  fetchRateInputsSnapshot,
-  findReserveRateInput,
-  RATE_INPUTS_SNAPSHOT_QUERY_KEY,
-} from '@/hooks/useReserveRateInputs';
 
 const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const FORECAST_TOKEN_PRICE_QUERY_KEY = ['forecast-token-price'] as const;
@@ -210,7 +203,7 @@ export type ScenarioInputMode = 'usd' | 'token';
 
 interface BuildRateSimulationResultParams {
   reserve: ReserveWithSpread;
-  reserveRateInput?: ReserveRateInput | null;
+  reserveRateInput?: RateCalcInput | null;
   isApy: boolean;
   includeWhitelistOnlyMerkl: boolean;
   tydroPointToUsdRate: number;
@@ -437,14 +430,12 @@ export function buildRateSimulationResult({
     : null;
 
   // Calculate totalBorrowedUsd for borrow cap constraint
-  const RAY_SCALE_EARLY = 1e27;
   const currentTotalBorrowedUsd = reserveRateInput && tokenPrice
     ? (() => {
         const decimals = reserveRateInput.decimals ?? 18;
         const scale = Math.pow(10, decimals);
-        const totalScaledDebt = Number(reserveRateInput.totalScaledVariableDebt) / scale;
-        const variableBorrowIndex = Number(reserveRateInput.variableBorrowIndex) / RAY_SCALE_EARLY;
-        return totalScaledDebt * variableBorrowIndex * tokenPrice;
+        const totalDebt = Number(reserveRateInput.totalVariableDebt) / scale;
+        return totalDebt * tokenPrice;
       })()
     : null;
 
@@ -771,9 +762,7 @@ export function buildRateSimulationResult({
     const availableLiquidityRaw = Number(reserveRateInput.availableLiquidity) / scale;
     const availableLiquidityUsd = availableLiquidityRaw * tokenPrice;
 
-    const totalScaledDebt = Number(reserveRateInput.totalScaledVariableDebt) / scale;
-    const variableBorrowIndex = Number(reserveRateInput.variableBorrowIndex) / RAY_SCALE;
-    const totalBorrowedRaw = totalScaledDebt * variableBorrowIndex;
+    const totalBorrowedRaw = Number(reserveRateInput.totalVariableDebt) / scale;
     const totalBorrowedUsd = totalBorrowedRaw * tokenPrice;
 
     const reserveFactorRaw = Number(reserveRateInput.reserveFactor);
@@ -866,37 +855,8 @@ export const useSharedRateSimulations = ({
   borrowInput,
   inputMode = 'token',
 }: UseSharedRateSimulationsParams) => {
-  const cachedEntry = getCachedRateInputsSnapshotEntry<RateInputsResponse>();
   const hasAnyInput = useMemo(() => parseNumberInput(supplyInput) > 0 || parseNumberInput(borrowInput) > 0, [borrowInput, supplyInput]);
   const needsTokenPrice = inputMode === 'token';
-
-  const rateInputsStaleTime =
-    cachedEntry?.data?.staleTimeMs ?? QUERY_STALE_TIMES.coreSnapshotApi;
-
-  const rateInputsQuery = useQuery({
-    queryKey: RATE_INPUTS_SNAPSHOT_QUERY_KEY,
-    queryFn: fetchRateInputsSnapshot,
-    enabled: enabled && reserves.length > 0,
-    staleTime: rateInputsStaleTime,
-    initialData: cachedEntry?.data,
-    initialDataUpdatedAt: cachedEntry?.updatedAt,
-  });
-
-  const reserveRateInputsById = useMemo(() => {
-    const map: Record<string, ReserveRateInput | null> = {};
-    if (!rateInputsQuery.data) return map;
-
-    reserves.forEach((reserve) => {
-      map[getReserveSimulationId(reserve)] = findReserveRateInput(
-        rateInputsQuery.data,
-        reserve.chainId,
-        reserve.tokenAddress,
-        reserve.marketName
-      );
-    });
-
-    return map;
-  }, [rateInputsQuery.data, reserves]);
 
   const priceQueries = useQueries({
     queries: reserves.map((reserve) => {
@@ -977,7 +937,7 @@ export const useSharedRateSimulations = ({
   const simulationsById = useMemo(() => {
     return reserves.reduce<Record<string, RateSimulationResult>>((acc, reserve) => {
       const reserveId = getReserveSimulationId(reserve);
-      const reserveRateInput = reserveRateInputsById[reserveId] ?? null;
+      const reserveRateInput = hasRateCalcFields(reserve) ? reserve : null;
       acc[reserveId] = {
         ...buildRateSimulationResult({
           reserve,
@@ -992,8 +952,8 @@ export const useSharedRateSimulations = ({
           forecastStates,
         }),
         tokenPriceLoading: tokenPriceLoadingById[reserveId] ?? false,
-        reserveRateInputLoading: rateInputsQuery.isPending || rateInputsQuery.isFetching,
-        reserveRateInputError: rateInputsQuery.error,
+        reserveRateInputLoading: false,
+        reserveRateInputError: null,
         forecastLoading: hasAnyInput && forecastLoading,
         forecastErrors,
         hasRateInput: Boolean(reserveRateInput),
@@ -1009,10 +969,6 @@ export const useSharedRateSimulations = ({
     includeWhitelistOnlyMerkl,
     inputMode,
     isApy,
-    rateInputsQuery.error,
-    rateInputsQuery.isFetching,
-    rateInputsQuery.isPending,
-    reserveRateInputsById,
     reserves,
     supplyInput,
     tokenPriceById,
@@ -1023,8 +979,8 @@ export const useSharedRateSimulations = ({
   return {
     hasAnyInput,
     simulationsById,
-    rateInputsSnapshotLoading: rateInputsQuery.isPending || rateInputsQuery.isFetching,
-    rateInputsSnapshotError: rateInputsQuery.error,
+    rateInputsSnapshotLoading: false,
+    rateInputsSnapshotError: null,
     forecastLoading: hasAnyInput && forecastLoading,
     forecastErrors,
   };

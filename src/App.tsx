@@ -9,7 +9,6 @@ import { Analytics } from "@vercel/analytics/react";
 import LoadingState from "@/components/dashboard/LoadingState";
 import { fetchMarkets } from "@/hooks/useAaveMarkets";
 import { fetchSideDataMeta, SIDE_DATA_META_QUERY_KEY } from "@/hooks/useSideDataMeta";
-import { fetchRateInputsSnapshot, RATE_INPUTS_SNAPSHOT_QUERY_KEY } from "@/hooks/useReserveRateInputs";
 import { QUERY_STALE_TIMES } from "@/config/queryStaleTimes";
 import { clearLegacyCacheEntries } from "@/lib/cache";
 
@@ -42,13 +41,6 @@ queryClient.prefetchQuery({
   queryKey: SIDE_DATA_META_QUERY_KEY,
   queryFn: fetchSideDataMeta,
   staleTime: QUERY_STALE_TIMES.sideDataMeta,
-});
-
-// Prefetch rate-inputs for simulation calculations
-queryClient.prefetchQuery({
-  queryKey: RATE_INPUTS_SNAPSHOT_QUERY_KEY,
-  queryFn: fetchRateInputsSnapshot,
-  staleTime: QUERY_STALE_TIMES.coreSnapshotApi,
 });
 
 const App = () => (

@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import type {
   MerklOpportunityGroup,
   MerklForecastStateResponse,
-  ReserveRateInput,
   ReserveWithSpread,
 } from '@/types/aave';
 import { buildForecastMerklOpportunities, buildRateSimulationResult } from '@/hooks/useRateSimulation';
@@ -26,24 +25,16 @@ const baseReserve: ReserveWithSpread = {
   merklBorrows: [],
   brevisSupplys: [],
   brevisBorrows: [],
-};
-
-const baseRateInput: ReserveRateInput = {
-  chainId: 1,
-  tokenAddress: '0x0000000000000000000000000000000000000001',
-  marketName: 'Core',
+  // Rate calc fields (inline on reserve, no separate rate-input object)
   decimals: 6,
   deficit: '0',
   availableLiquidity: '1000000000000',
-  totalScaledVariableDebt: '500000000000',
-  variableBorrowIndex: '1000000000000000000000000000',
+  totalVariableDebt: '500000000000',
   reserveFactor: '1000',
   variableRateSlope1: '40000000000000000000000000',
   variableRateSlope2: '600000000000000000000000000',
   baseVariableBorrowRate: '0',
   optimalUsageRate: '800000000000000000000000000',
-  source: 'subgraph',
-  sourceDetail: 'id/test',
 };
 
 describe('buildForecastMerklOpportunities', () => {
@@ -134,7 +125,7 @@ describe('buildRateSimulationResult', () => {
   it('recomputes supply, spread, borrow, and utilization from one shared scenario', () => {
     const result = buildRateSimulationResult({
       reserve: baseReserve,
-      reserveRateInput: baseRateInput,
+      reserveRateInput: baseReserve,
       isApy: true,
       includeWhitelistOnlyMerkl: true,
       tydroPointToUsdRate: 1,
@@ -187,7 +178,7 @@ describe('buildRateSimulationResult', () => {
 
     const result = buildRateSimulationResult({
       reserve,
-      reserveRateInput: baseRateInput,
+      reserveRateInput: baseReserve,
       isApy: false,
       includeWhitelistOnlyMerkl: true,
       tydroPointToUsdRate: 1,
@@ -231,7 +222,7 @@ describe('buildRateSimulationResult', () => {
 
     const result = buildRateSimulationResult({
       reserve,
-      reserveRateInput: baseRateInput,
+      reserveRateInput: baseReserve,
       isApy: false,
       includeWhitelistOnlyMerkl: true,
       tydroPointToUsdRate: 1,
@@ -251,7 +242,7 @@ describe('buildRateSimulationResult', () => {
   it('keeps after values empty when the shared scenario is blank', () => {
     const result = buildRateSimulationResult({
       reserve: baseReserve,
-      reserveRateInput: baseRateInput,
+      reserveRateInput: baseReserve,
       isApy: true,
       includeWhitelistOnlyMerkl: true,
       tydroPointToUsdRate: 1,

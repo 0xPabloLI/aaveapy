@@ -1,29 +1,20 @@
 /**
- * Temporary dev-only check: compare native rates computed from /rate-inputs
- * with supplyApy/borrowApy from /markets. Renders a collapsible panel with
+ * Temporary dev-only check: compare native rates computed from reserve
+ * rate-data with supplyApy/borrowApy from /markets. Renders a collapsible panel with
  * mismatches (or "OK") when both APIs are loaded. Also shows logoURI for
  * first reserve (path 1: tokenlist/address-book).
  */
 import React, { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { useAaveMarkets } from '@/hooks/useAaveMarkets';
-import {
-  RATE_INPUTS_SNAPSHOT_QUERY_KEY,
-  fetchRateInputsSnapshot,
-  findReserveRateInput,
-} from '@/hooks/useReserveRateInputs';
-import { simulateNativeRatesAfterActions } from '@/lib/interestRateCalculator';
+import { simulateNativeRatesAfterActions, hasRateCalcFields } from '@/lib/interestRateCalculator';
 import type { NativeRateSimulation } from '@/lib/interestRateCalculator';
 import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
-import type { ReserveWithSpread, ReserveRateInput, RateInputsResponse } from '@/types/aave';
-import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
-import { getCachedRateInputsSnapshotEntry } from '@/lib/cache';
+import type { ReserveWithSpread } from '@/types/aave';
 
 const TOLERANCE_PCT = 0.02;
 
 interface Mismatch {
   reserve: ReserveWithSpread;
-  rateInput: ReserveRateInput;
   simulated: NativeRateSimulation;
   marketSupplyApy: number | undefined;
   marketBorrowApy: number | undefined;
@@ -34,12 +25,6 @@ interface Mismatch {
   supplyDiff: number;
   borrowDiff: number;
   utilizationDiff: number;
-  tokenPrice: number | undefined;
-  tokenDecimals: number;
-  reserveSizeUsd: number | undefined;
-  supplyCapUsd: number | undefined;
-  deficit: string;
-  sourceDetail: string | undefined;
   totalDebt: string;
   totalLiquidity: string;
 }
@@ -51,35 +36,19 @@ function useRateInputsVsMarketResult(): {
   loading: boolean;
 } {
   const { data: marketsData, isLoading: marketsLoading } = useAaveMarkets();
-  const cachedEntry = getCachedRateInputsSnapshotEntry<RateInputsResponse>();
-  const staleTime = cachedEntry?.data?.staleTimeMs ?? QUERY_STALE_TIMES.coreSnapshotApi;
-  const rateInputsQuery = useQuery({
-    queryKey: RATE_INPUTS_SNAPSHOT_QUERY_KEY,
-    queryFn: fetchRateInputsSnapshot,
-    staleTime,
-    initialData: cachedEntry?.data,
-    initialDataUpdatedAt: cachedEntry?.updatedAt,
-  });
 
   return useMemo(() => {
     const reserves = marketsData?.reserves ?? [];
-    const payload = rateInputsQuery.data;
-    if (marketsLoading || rateInputsQuery.isPending || !payload) {
+    if (marketsLoading) {
       return { mismatches: [], totalReserves: reserves.length, withRateInput: 0, loading: true };
     }
 
     const mismatches: Mismatch[] = [];
     let withRateInput = 0;
     for (const reserve of reserves) {
-      const rateInput = findReserveRateInput(
-        payload,
-        reserve.chainId,
-        reserve.tokenAddress,
-        reserve.marketName
-      );
-      if (!rateInput) continue;
+      if (!hasRateCalcFields(reserve)) continue;
       withRateInput += 1;
-      const simulated = simulateNativeRatesAfterActions(rateInput, {
+      const simulated = simulateNativeRatesAfterActions(reserve, {
         supplyAmount: '0',
         borrowAmount: '0',
       });
@@ -100,11 +69,10 @@ function useRateInputsVsMarketResult(): {
           ? Math.abs(rateUtilization - marketUtilization)
           : 0;
       if (supplyDiff > TOLERANCE_PCT || borrowDiff > TOLERANCE_PCT) {
-        const totalDebt = (BigInt(rateInput.totalScaledVariableDebt) * BigInt(rateInput.variableBorrowIndex) / BigInt(1e27)).toString();
-        const totalLiquidity = (BigInt(rateInput.availableLiquidity) + BigInt(totalDebt)).toString();
+        const totalDebt = reserve.totalVariableDebt!;
+        const totalLiquidity = (BigInt(reserve.availableLiquidity!) + BigInt(totalDebt)).toString();
         mismatches.push({
           reserve,
-          rateInput,
           simulated,
           marketSupplyApy: marketSupply,
           marketBorrowApy: marketBorrow,
@@ -115,12 +83,6 @@ function useRateInputsVsMarketResult(): {
           supplyDiff,
           borrowDiff,
           utilizationDiff,
-          tokenPrice: reserve.tokenPrice,
-          tokenDecimals: rateInput.decimals,
-          reserveSizeUsd: reserve.reserveSizeUsd,
-          supplyCapUsd: reserve.supplyCapUsd,
-          deficit: rateInput.deficit,
-          sourceDetail: rateInput.sourceDetail,
           totalDebt,
           totalLiquidity,
         });
@@ -132,7 +94,7 @@ function useRateInputsVsMarketResult(): {
       withRateInput,
       loading: false,
     };
-  }, [marketsData?.reserves, rateInputsQuery.data, rateInputsQuery.isPending, marketsLoading]);
+  }, [marketsData?.reserves, marketsLoading]);
 }
 
 export function RateInputsVsMarketCheck() {
@@ -167,7 +129,7 @@ export function RateInputsVsMarketCheck() {
       {open && (
         <div className="px-3 pb-3 text-amber-900/90">
           <p className="mb-2">
-            Reserves: {totalReserves} total, {withRateInput} with rate-inputs. Tolerance: ±{TOLERANCE_PCT}%
+            Reserves: {totalReserves} total, {withRateInput} with rate-data. Tolerance: ±{TOLERANCE_PCT}%
           </p>
           {acredLogoUri !== null ? (
             <p className="mb-2 ds-text-11">
@@ -184,7 +146,7 @@ export function RateInputsVsMarketCheck() {
             <p className="mb-2 ds-text-11 text-amber-700">ACRED not found in current reserves.</p>
           )}
           {mismatches.length === 0 ? (
-            <p className="text-green-700">Supply/borrow APY from rate-inputs match market snapshot.</p>
+            <p className="text-green-700">Supply/borrow APY from rate-data match market snapshot.</p>
           ) : (
             <div className="overflow-x-auto max-h-[28rem] overflow-y-auto">
               <table className="w-full border-collapse text-xs">
@@ -211,10 +173,6 @@ export function RateInputsVsMarketCheck() {
                       const str = n.toString();
                       return str.length > 12 ? `${str.slice(0, 6)}…e${str.length - 1}` : str;
                     };
-                    const fmtRay = (val: string) => {
-                      const n = Number(val) / 1e27;
-                      return n.toFixed(4);
-                    };
                     const rowKey = `${m.reserve.chainId}-${m.reserve.marketName}-${m.reserve.tokenAddress}`;
                     return (
                       <React.Fragment key={rowKey}>
@@ -238,26 +196,24 @@ export function RateInputsVsMarketCheck() {
                         <tr className="border-b border-amber-200 bg-amber-100/40">
                           <td colSpan={11} className="py-1 px-2">
                             <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[10px] text-amber-800 font-mono">
-                              <span title="token decimals">dec: {m.tokenDecimals}</span>
-                              <span title="token price (USD)">price: ${m.tokenPrice?.toFixed(4) ?? '—'}</span>
-                              <span title="reserve size (USD)">size: ${m.reserveSizeUsd?.toLocaleString() ?? '—'}</span>
-                              <span title="supply cap (USD)">cap: ${m.supplyCapUsd?.toLocaleString() ?? '—'}</span>
-                              <span title="deficit (raw)">deficit: {fmtBigNum(m.deficit)}</span>
+                              <span title="token decimals">dec: {m.reserve.decimals}</span>
+                              <span title="token price (USD)">price: ${m.reserve.tokenPrice?.toFixed(4) ?? '—'}</span>
+                              <span title="reserve size (USD)">size: ${m.reserve.reserveSizeUsd?.toLocaleString() ?? '—'}</span>
+                              <span title="supply cap (USD)">cap: ${m.reserve.supplyCapUsd?.toLocaleString() ?? '—'}</span>
+                              <span title="deficit (raw)">deficit: {fmtBigNum(m.reserve.deficit!)}</span>
                             </div>
                             <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[10px] text-amber-800 font-mono mt-0.5">
-                              <span title="availableLiquidity (raw)">avail: {fmtBigNum(m.rateInput.availableLiquidity)}</span>
-                              <span title="totalScaledVariableDebt (raw)">scaledDebt: {fmtBigNum(m.rateInput.totalScaledVariableDebt)}</span>
-                              <span title="totalDebt = scaledDebt * idx / 1e27">totalDebt: {fmtBigNum(m.totalDebt)}</span>
+                              <span title="availableLiquidity (raw)">avail: {fmtBigNum(m.reserve.availableLiquidity!)}</span>
+                              <span title="totalVariableDebt (raw)">totalDebt: {fmtBigNum(m.reserve.totalVariableDebt!)}</span>
                               <span title="totalLiquidity = avail + totalDebt">totalLiq: {fmtBigNum(m.totalLiquidity)}</span>
-                              <span title="variableBorrowIndex (ray)">idx: {fmtRay(m.rateInput.variableBorrowIndex)}</span>
                             </div>
                             <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[10px] text-amber-800 font-mono mt-0.5">
-                              <span title="optimalUsageRate (ray → %)">optUtil: {(Number(m.rateInput.optimalUsageRate) / 1e25).toFixed(1)}%</span>
-                              <span title="reserveFactor (bps → %)">resFactor: {(Number(m.rateInput.reserveFactor) / 100).toFixed(2)}%</span>
-                              <span title="baseVariableBorrowRate (ray → %)">baseBorrow: {(Number(m.rateInput.baseVariableBorrowRate) / 1e25).toFixed(2)}%</span>
-                              <span title="variableRateSlope1 (ray → %)">slope1: {(Number(m.rateInput.variableRateSlope1) / 1e25).toFixed(2)}%</span>
-                              <span title="variableRateSlope2 (ray → %)">slope2: {(Number(m.rateInput.variableRateSlope2) / 1e25).toFixed(2)}%</span>
-                              {m.rateInput.source && <span className="text-amber-600">src: {m.rateInput.source}{m.sourceDetail ? ` (${m.sourceDetail})` : ''}</span>}
+                              <span title="optimalUsageRate (ray → %)">optUtil: {(Number(m.reserve.optimalUsageRate) / 1e25).toFixed(1)}%</span>
+                              <span title="reserveFactor (bps → %)">resFactor: {(Number(m.reserve.reserveFactor) / 100).toFixed(2)}%</span>
+                              <span title="baseVariableBorrowRate (ray → %)">baseBorrow: {(Number(m.reserve.baseVariableBorrowRate) / 1e25).toFixed(2)}%</span>
+                              <span title="variableRateSlope1 (ray → %)">slope1: {(Number(m.reserve.variableRateSlope1) / 1e25).toFixed(2)}%</span>
+                              <span title="variableRateSlope2 (ray → %)">slope2: {(Number(m.reserve.variableRateSlope2) / 1e25).toFixed(2)}%</span>
+
                             </div>
                           </td>
                         </tr>

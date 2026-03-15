@@ -2,7 +2,7 @@ export const QUERY_STALE_TIMES = {
   // Global fallback for queries without per-query override.
   default: 5 * 60 * 1000,
 
-  // Core backend snapshot family (markets, rate-inputs).
+  // Core backend snapshot family (markets).
   // Align with backend realtimeFamily soft TTL (60s).
   coreSnapshotApi: 1 * 60 * 1000,
 

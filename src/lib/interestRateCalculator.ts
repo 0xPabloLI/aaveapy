@@ -1,10 +1,38 @@
-import type { ReserveRateInput } from '@/types/aave';
+import type { ReserveWithSpread } from '@/types/aave';
 
 const RAY = 10n ** 27n;
 const HALF_RAY = RAY / 2n;
 const PERCENTAGE_FACTOR = 10_000n;
 const HALF_PERCENTAGE_FACTOR = PERCENTAGE_FACTOR / 2n;
 const SECONDS_PER_YEAR = 365n * 24n * 60n * 60n;
+
+/** Minimal set of fields required for native rate simulation. */
+export interface RateCalcInput {
+  decimals: number;
+  availableLiquidity: string;
+  totalVariableDebt: string;
+  deficit: string;
+  reserveFactor: string;
+  variableRateSlope1: string;
+  variableRateSlope2: string;
+  baseVariableBorrowRate: string;
+  optimalUsageRate: string;
+}
+
+/** Type guard: returns true when a reserve has all fields needed for rate calculation. */
+export function hasRateCalcFields(reserve: ReserveWithSpread): reserve is ReserveWithSpread & RateCalcInput {
+  return (
+    reserve.decimals != null &&
+    reserve.availableLiquidity != null &&
+    reserve.totalVariableDebt != null &&
+    reserve.deficit != null &&
+    reserve.reserveFactor != null &&
+    reserve.variableRateSlope1 != null &&
+    reserve.variableRateSlope2 != null &&
+    reserve.baseVariableBorrowRate != null &&
+    reserve.optimalUsageRate != null
+  );
+}
 
 function toBigInt(value: string | number | bigint | null | undefined): bigint {
   if (typeof value === 'bigint') return value;
@@ -114,7 +142,7 @@ export interface NativeRateSimulation {
 }
 
 function computeRates(
-  rateInput: ReserveRateInput,
+  rateInput: RateCalcInput,
   borrowUsageDenominator: bigint,
   supplyUsageDenominator: bigint,
   totalVariableDebt: bigint,
@@ -166,7 +194,7 @@ export interface NativeRateActionInputs {
 }
 
 export function simulateNativeRatesAfterActions(
-  rateInput: ReserveRateInput,
+  rateInput: RateCalcInput,
   { supplyAmount = '0', borrowAmount = '0' }: NativeRateActionInputs
 ): NativeRateSimulation {
   const decimals = Number.isFinite(rateInput.decimals) ? rateInput.decimals : 18;
@@ -174,9 +202,7 @@ export function simulateNativeRatesAfterActions(
   const addedBorrow = parseUnits(borrowAmount, decimals);
 
   const baseAvailableLiquidity = toBigInt(rateInput.availableLiquidity);
-  const totalScaledVariableDebt = toBigInt(rateInput.totalScaledVariableDebt);
-  const variableBorrowIndex = toBigInt(rateInput.variableBorrowIndex);
-  const baseTotalVariableDebt = rayMul(totalScaledVariableDebt, variableBorrowIndex);
+  const baseTotalVariableDebt = toBigInt(rateInput.totalVariableDebt);
   const baseDeficit = toBigInt(rateInput.deficit);
   const totalVariableDebt = baseTotalVariableDebt + addedBorrow;
 
@@ -192,14 +218,14 @@ export function simulateNativeRatesAfterActions(
 }
 
 export function simulateNativeRatesAfterSupply(
-  rateInput: ReserveRateInput,
+  rateInput: RateCalcInput,
   supplyAmount: string
 ): NativeRateSimulation {
   return simulateNativeRatesAfterActions(rateInput, { supplyAmount, borrowAmount: '0' });
 }
 
 export function simulateNativeRatesAfterBorrow(
-  rateInput: ReserveRateInput,
+  rateInput: RateCalcInput,
   borrowAmount: string
 ): NativeRateSimulation {
   return simulateNativeRatesAfterActions(rateInput, { supplyAmount: '0', borrowAmount });

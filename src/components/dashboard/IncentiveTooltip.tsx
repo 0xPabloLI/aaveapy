@@ -16,8 +16,7 @@ import { resolveForecastTokenPrice, resolveForecastTokenPriceWithBackup } from '
 import { formatNumberInput, parseNumberInput } from '@/lib/numberFormat';
 import { adjustTooltipAnchorForScroll, getWindowScroll } from '@/lib/tooltipPosition';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useReserveRateInput } from '@/hooks/useReserveRateInputs';
-import { simulateNativeRatesAfterSupply, simulateNativeRatesAfterBorrow } from '@/lib/interestRateCalculator';
+import { simulateNativeRatesAfterSupply, simulateNativeRatesAfterBorrow, hasRateCalcFields } from '@/lib/interestRateCalculator';
 
 interface IncentiveTooltipProps {
   reserve: ReserveWithSpread;
@@ -349,15 +348,9 @@ const IncentiveTooltip = ({
 
   const depositAssetAmount = useMemo(() => parseNumberInput(depositInput), [depositInput]);
   const depositUsd = tokenPrice ? depositAssetAmount * tokenPrice : 0;
-  const {
-    data: reserveRateInput,
-    isLoading: reserveRateInputLoading,
-    error: reserveRateInputError,
-  } = useReserveRateInput({
-    chainId: reserve.chainId,
-    tokenAddress: reserve.tokenAddress,
-    marketName: reserve.marketName,
-  });
+  const reserveRateInput = hasRateCalcFields(reserve) ? reserve : null;
+  const reserveRateInputLoading = false;
+  const reserveRateInputError = null;
 
   const nativeSimulation = useMemo(() => {
     if (!reserveRateInput) return null;

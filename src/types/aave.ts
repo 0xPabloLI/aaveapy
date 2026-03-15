@@ -66,6 +66,17 @@ export interface ReserveWithSpread {
   supplyDisabled?: boolean;
   borrowDisabled?: boolean;
   
+  // Rate calculation fields (from /api/markets reserves)
+  decimals?: number;
+  availableLiquidity?: string;
+  totalVariableDebt?: string;
+  reserveFactor?: string;
+  variableRateSlope1?: string;
+  variableRateSlope2?: string;
+  optimalUsageRate?: string;
+  deficit?: string;
+  baseVariableBorrowRate?: string;
+
   // Protocol incentives (from Aave protocol, array of percentage values)
   supplyIncentives?: number[];
   borrowIncentives?: number[];
@@ -126,38 +137,6 @@ export interface MerklForecastStatesBatchResponse {
     status: number;
     message: string;
   }>;
-}
-
-export type RateInputSource = 'subgraph' | 'onchain';
-
-export interface ReserveRateInput {
-  marketName: string;
-  chainId: number;
-  tokenAddress: string;
-  decimals: number;
-  deficit: string;
-  availableLiquidity: string;
-  totalScaledVariableDebt: string;
-  variableBorrowIndex: string;
-  reserveFactor: string;
-  variableRateSlope1: string;
-  variableRateSlope2: string;
-  baseVariableBorrowRate: string;
-  optimalUsageRate: string;
-  source?: RateInputSource;
-  sourceDetail?: string;
-}
-
-export interface RateInputsResponse {
-  data: ReserveRateInput[];
-  lastUpdated?: string;
-  isStale?: boolean;
-  staleTimeMs?: number;
-  sources?: {
-    subgraphChains: number[];
-    onchainChains: number[];
-    subgraphMissingChains: number[];
-  };
 }
 
 export type SortField = 'totalSupplyApy' | 'totalBorrowApy' | 'apySpread' | null;
