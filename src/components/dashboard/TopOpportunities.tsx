@@ -874,6 +874,7 @@ const TopOpportunities = ({
   const categories = [
     {
       title: `Top Stable ${isApy ? 'APY' : 'APR'}`,
+      shortTitle: `Stable ${isApy ? 'APY' : 'APR'}`,
       subtitle: `Native + Incentive ${isApy ? 'APY' : 'APR'}`,
       icon: TrendingUp,
       iconColorClass: "text-success",
@@ -885,6 +886,7 @@ const TopOpportunities = ({
     },
     {
       title: `Top ETH ${isApy ? 'APY' : 'APR'}`,
+      shortTitle: `ETH ${isApy ? 'APY' : 'APR'}`,
       subtitle: `Native + Incentive ${isApy ? 'APY' : 'APR'}`,
       icon: TrendingUp,
       iconColorClass: "text-success",
@@ -896,6 +898,7 @@ const TopOpportunities = ({
     },
     {
       title: `Top BTC ${isApy ? 'APY' : 'APR'}`,
+      shortTitle: `BTC ${isApy ? 'APY' : 'APR'}`,
       subtitle: `Native + Incentive ${isApy ? 'APY' : 'APR'}`,
       icon: TrendingUp,
       iconColorClass: "text-success",
@@ -907,6 +910,7 @@ const TopOpportunities = ({
     },
     {
       title: "Leverage Opportunities",
+      shortTitle: "Leverage",
       subtitle: `Supply - Borrow ${isApy ? 'APY' : 'APR'}`,
       icon: Zap,
       iconColorClass: "ds-text-purple-500",
