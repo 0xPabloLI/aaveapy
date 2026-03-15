@@ -14,6 +14,10 @@ updates:
     commit-message:
       prefix: "chore"
       include: scope
+    ignore:
+      # react-day-picker@8 only supports date-fns ^2 || ^3; upgrade to react-day-picker@9 before allowing date-fns v4
+      - dependency-name: date-fns
+        update-types: ["version-update:semver-major"]
     groups:
       npm-minor-patch:
         patterns: ["*"]
