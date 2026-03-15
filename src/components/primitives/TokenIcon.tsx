@@ -104,7 +104,7 @@ const TokenImage = memo(({
       return;
     }
 
-    // 2. Try next local format (svg -> webp -> png)
+    // 2. Try next local format (order from getTokenIconSources / manifest)
     const nextIndex = formatIndex + 1;
     if (nextIndex < localSources.length && src !== DEFAULT_SRC) {
       setFormatIndex(nextIndex);
