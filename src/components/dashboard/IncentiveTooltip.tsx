@@ -690,13 +690,7 @@ const IncentiveTooltip = ({
             )}
             <p className="ds-tooltip-body mt-[var(--ds-space-0-5)] text-muted-foreground">
               Utilization {formatPercent(nativeSimulation.utilizationRatePercent)}
-              {reserveRateInput.source != null && ` · source ${reserveRateInput.source}`}
             </p>
-            {reserveRateInput.sourceDetail != null && (
-              <p className="ds-tooltip-body mt-[var(--ds-space-0-5)] text-muted-foreground">
-                data: {reserveRateInput.sourceDetail}
-              </p>
-            )}
           </>
         )}
       </div>

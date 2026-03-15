@@ -4,9 +4,10 @@ import type {
   MerklForecastStateResponse,
   ReserveWithSpread,
 } from '@/types/aave';
+import type { RateCalcInput } from '@/lib/interestRateCalculator';
 import { buildForecastMerklOpportunities, buildRateSimulationResult } from '@/hooks/useRateSimulation';
 
-const baseReserve: ReserveWithSpread = {
+const baseReserve: ReserveWithSpread & RateCalcInput = {
   marketName: 'Core',
   chainName: 'Ethereum',
   chainId: 1,
