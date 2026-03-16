@@ -105,6 +105,14 @@ This note records recurring UI/interaction issues found during incentive/forecas
 - **Do not rely on page scroll for fixed overlays**: fixed-position tooltip content should remain usable even when the underlying page cannot scroll.
 - **Whitelist toggles must be scoped**: only show per-tooltip controls when the current reserve/source actually has applicable items (avoid leaking global state into unrelated tooltips).
 
+### Expandable rows and scroll stability
+
+- **Keep expanded content on-screen when list order changes**: If the user has expanded a row/card (e.g. to view a Breakdown or detail panel) and the list re-sorts (e.g. due to scenario inputs like Supply/Borrow), the expanded item can move and its expanded content may go off the bottom of the viewport.
+  - **Design habit**: When the expanded item’s *position in the list* changes, scroll the page so that item stays **pinned near the top** of the viewport (below any sticky header). Do not let the expanded content (e.g. Breakdown) scroll out of view.
+  - Apply the same behavior on **desktop** (table row) and **mobile** (card); only the sticky offset (header height + safe area) may differ.
+  - Trigger scroll only when the expanded item’s index actually changes (re-sort), not on initial expand, to avoid unnecessary movement and to limit work (e.g. use `useEffect` with a small delay + `requestAnimationFrame` for DOM measurement).
+  - **Rationale**: The user is focused on the expanded detail; if the list jumps and the detail disappears below the fold, the experience is broken. Pinning the expanded item to the top keeps the full detail visible without heavy layout hacks.
+
 ### Search behavior
 
 - **Normalize token symbols for search**: search should match canonical aliases and symbol variants.
