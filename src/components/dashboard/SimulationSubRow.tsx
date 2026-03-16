@@ -241,7 +241,7 @@ const SimulationSubRow = ({
       warning: supplyCapExceeded,
     },
     {
-      label: effectiveCompact ? `Supplied ${rateLabel}` : rateLabel,
+      label: effectiveCompact ? `Supply ${rateLabel}` : rateLabel,
       current: simulation.supply.currentTotal,
       after: simulation.supply.afterTotal,
       delta: simulation.supply.deltaTotal,
@@ -281,7 +281,7 @@ const SimulationSubRow = ({
       warning: borrowCapExceeded && !borrowLimitedByLiquidity,
     },
     {
-      label: effectiveCompact ? `Borrowed ${rateLabel}` : rateLabel,
+      label: effectiveCompact ? `Borrow ${rateLabel}` : rateLabel,
       current: simulation.borrow.currentTotal,
       after: simulation.borrow.afterTotal,
       delta: simulation.borrow.deltaTotal,
