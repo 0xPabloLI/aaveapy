@@ -240,9 +240,9 @@ Slider 与紧挨其下的区块（如「Reference FDVs」、说明文字）可�
 
 以下为与本仓库业务强相关的规范，复用到其他项目时可忽略或按需裁剪。
 
-- **前端交互守则**：`docs/frontend-interaction-guardrails.md`（API 新鲜度、Forecast UI、Reserves 表列宽与 breakdown 布局、Borrow 可用性公式等）。
-- **数据加载**：`docs/frontend-data-loading-matrix.md`（prefetch、staleTime、缓存分层）。
-- **DESIGN.md**：本项目视觉主题、品牌色、组件类名（如 `ds-input-surface`、`glass-card`）的具体约定。
+- **前端交互守则**：本目录下 `frontend-interaction-guardrails.md`（API 新鲜度、Forecast UI、Reserves 表、InkAprCalculator 等）。
+- **数据加载**：`../frontend-data-loading-matrix.md`（prefetch、staleTime、缓存分层）。
+- **DESIGN.md**：本目录下，本项目视觉主题、品牌色、组件类名（如 `ds-input-surface`、`glass-card`）的具体约定。
 
 ---
 
@@ -277,13 +277,13 @@ Slider 与紧挨其下的区块（如「Reference FDVs」、说明文字）可�
 
 ## 文档来源与维护
 
-本参考由以下文档合并而成，便于在其他项目中复用：
+本参考由以下文档合并而成（现均位于 `docs/design/`），便于在其他项目中复用：
 
 - `DESIGN.md` — 视觉主题、色彩、排版、组件
-- `docs/toggle-switch-specification.md` — 开关与芯片规范
-- `docs/ui-interaction-patterns.md` — 光标、Tooltip、悬停、禁用、无障碍
-- `docs/frontend-interaction-guardrails.md` — Tooltip/颜色/布局/移动端守则
-- `docs/mobile-reserve-card-ascii-layout.md` — 移动卡片排版示意
-- `AGENTS.md` — Frontend Design & UX、Learned User Preferences 中与设计相关的条目
+- `toggle-switch-specification.md` — 开关与芯片规范
+- `ui-interaction-patterns.md` — 光标、Tooltip、悬停、禁用、无障碍
+- `frontend-interaction-guardrails.md` — Tooltip/颜色/布局/移动端守则
+- `mobile-reserve-card-ascii-layout.md` — 移动卡片排版示意
+- 仓库根 `AGENTS.md` — Frontend Design & UX、Learned User Preferences 中与设计相关的条目
 
 **约定**：一次性设计方案（如某次 Lovable/PR 的 UI 方案）**可以删除原文档**，将其内容总结进本文档与设计规范，把可复用部分抽象成习惯写进对应章节即可。后续新增设计习惯请更新本文档（通用部分）或附录 A（项目特定）。

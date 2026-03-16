@@ -4,7 +4,7 @@
 - `src/` contains the React + TypeScript app. Key areas: `src/pages/` for routes, `src/components/` for UI and dashboard pieces, `src/hooks/` for reusable logic, `src/lib/` for helpers, `src/types/` for shared types.
 - `public/` holds static assets (icons, robots.txt, favicon).
 - `dist/` is build output from Vite. Treat as generated.
-- `docs/` holds living implementation notes (e.g. `docs/frontend-interaction-guardrails.md` for tooltip/search/forecast UI, `docs/PR_ANALYSIS.md` for PR merge and batching strategy).
+- `docs/` holds living implementation notes (e.g. `docs/design/frontend-interaction-guardrails.md` for tooltip/search/forecast UI, `docs/PR_ANALYSIS.md` for PR merge and batching strategy).
 
 ## Build, Test, and Development Commands
 - `npm run dev`: start the Vite dev server with hot reload.
@@ -45,8 +45,8 @@
 - Treat hook failures as release blockers for branch updates.
 
 ## UI Regression Guardrails
-- When changing incentive tooltip behavior, search filtering, or forecast display semantics, review and update `docs/frontend-interaction-guardrails.md` in the same work session.
-- Reusable design habits and interaction patterns are consolidated in `docs/DESIGN-SYSTEM-REFERENCE.md`; update that doc when adding or changing cross-project design rules.
+- When changing incentive tooltip behavior, search filtering, or forecast display semantics, review and update `docs/design/frontend-interaction-guardrails.md` in the same work session.
+- Reusable design habits and interaction patterns are consolidated in `docs/design/DESIGN-SYSTEM-REFERENCE.md`; update that doc when adding or changing cross-project design rules.
 
 ---
 
@@ -170,7 +170,7 @@ When implementing mobile carousels:
 - Multi-column panels (e.g. simulation Supply/Spread/Borrow): use equal column widths and uniform compression; do not give one column fixed or favored width. Tables: ensure sufficient padding so text does not cling to edges; when space is tight prefer wrapping over ellipsis.
 
 ## Learned Workspace Facts
-- Mobile overlays (cap details, incentive details) use bottom sheet with title bar and close button, not floating popover; see docs/frontend-interaction-guardrails.md.
+- Mobile overlays (cap details, incentive details) use bottom sheet with title bar and close button, not floating popover; see docs/design/frontend-interaction-guardrails.md.
 - Local git hooks in this setup are managed under the main repository `.git/hooks` and are local-only (not versioned).
 - This workspace currently uses a local pre-push flow that runs lockfile consistency checks before the existing `ci:remote` checks.
 - Prefer deriving values client-side when possible rather than adding backend fields (e.g., totalBorrowedUsd can be computed from reserveSizeUsd × utilizationPct).

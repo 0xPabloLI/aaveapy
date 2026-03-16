@@ -173,6 +173,18 @@ This note records recurring UI/interaction issues found during incentive/forecas
   - Likewise, adding `Borrow` must not increase that row's simulated `Borrow incentive`.
   - Apply this rule both to the incentive total and each source breakdown row (`ACI`, `Merkl`) so totals and rows stay directionally consistent.
 
+### InkAprCalculator mobile (CompactLayout): slider tooltip & Reference FDVs spacing
+
+**文件**：`src/components/dashboard/InkAprCalculator.tsx`，非 XL 的 CompactLayout。
+
+- **Thumb**：视觉 `w-4 h-4`，拖动时 `scale-[1.4]`（≈22.4px）。
+- **数值 Tooltip**（slider 上方）：
+  - 非拖动：`-top-8`（32px）；拖动中：`-top-10`（40px），用 `isDragging` 切换 class。
+  - 必须带 `z-20`，避免被 thumb 的 ring/shadow 盖住。
+  - 可加 `transition-[top] duration-150` 使切换自然。
+- **Reference FDVs 区块**：紧贴 slider 下方的 Collapsible 使用 `mt-[var(--ds-space-0-5)]`（2px）；触控热区与可点击性保持不变。
+- **验收**：拖动时 tooltip 与 thumb 间有明显空隙；松手后 tooltip 不贴 thumb 也不过高；slider 与 Reference 区更紧凑且仍易点。
+
 ## Debugging checklist for incentive UI regressions
 
 When tooltip/forecast behavior looks wrong, check:
