@@ -1,3 +1,4 @@
+import { useRef, useState, useEffect } from 'react';
 import { AlertTriangle, ExternalLink } from 'lucide-react';
 import { formatPercent, formatSpread, formatReserveSizeUsd } from '@/lib/formatters';
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
@@ -100,6 +101,54 @@ const SimulationSubRow = ({
   onCorrectSupplyInput,
   onCorrectBorrowInput,
 }: SimulationSubRowProps) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
+  const [containerNarrow, setContainerNarrow] = useState(false);
+  const tryExpandRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const tryExpandThrottleMs = 150;
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const checkOverflow = () => {
+      const grid = gridRef.current;
+      if (grid && grid.scrollWidth > grid.clientWidth) {
+        setContainerNarrow(true);
+      }
+    };
+    const ro = new ResizeObserver(() => {
+      if (containerNarrow) {
+        if (tryExpandRef.current != null) clearTimeout(tryExpandRef.current);
+        tryExpandRef.current = window.setTimeout(() => {
+          tryExpandRef.current = null;
+          setContainerNarrow(false);
+        }, tryExpandThrottleMs);
+      } else {
+        checkOverflow();
+      }
+    });
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+      if (tryExpandRef.current != null) {
+        clearTimeout(tryExpandRef.current);
+        tryExpandRef.current = null;
+      }
+    };
+  }, [containerNarrow]);
+
+  useEffect(() => {
+    if (compact || containerNarrow) return;
+    const id = requestAnimationFrame(() => {
+      const grid = gridRef.current;
+      if (grid && grid.scrollWidth > grid.clientWidth) {
+        setContainerNarrow(true);
+      }
+    });
+    return () => cancelAnimationFrame(id);
+  }, [compact, containerNarrow]);
+
+  const effectiveCompact = compact || containerNarrow;
   const rateLabel = isApy ? 'APY' : 'APR';
   const showPriceMissingNotice =
     inputMode === 'token' &&
@@ -162,7 +211,7 @@ const SimulationSubRow = ({
   const borrowMerklLink = getFirstMerklLink(reserve.merklBorrows);
   const borrowBrevisLink = getFirstBrevisLink(reserve.brevisBorrows);
 
-  const incentiveLabel = (full: string, short: string) => (compact ? short : full);
+  const incentiveLabel = (full: string, short: string) => (effectiveCompact ? short : full);
   const supplyIncentiveSources = [
     { label: incentiveLabel('Protocol Incentive', 'Protocol'), ...simulation.supply.sources.protocol, href: aaveUrl },
     { label: incentiveLabel('ACI Incentive', 'ACI'), ...simulation.supply.sources.merit, href: supplyMeritLink },
@@ -183,7 +232,7 @@ const SimulationSubRow = ({
 
   const supplyRows: TableRow[] = [
     {
-      label: compact ? 'Supplied' : 'Total Supplied',
+      label: effectiveCompact ? 'Supplied' : 'Total',
       current: currentSupplySizeUsd,
       after: afterSupplySizeUsd,
       delta: afterSupplySizeUsd !== null && currentSupplySizeUsd !== null ? afterSupplySizeUsd - currentSupplySizeUsd : null,
@@ -192,7 +241,7 @@ const SimulationSubRow = ({
       warning: supplyCapExceeded,
     },
     {
-      label: compact ? `Supplied ${rateLabel}` : rateLabel,
+      label: effectiveCompact ? `Supplied ${rateLabel}` : rateLabel,
       current: simulation.supply.currentTotal,
       after: simulation.supply.afterTotal,
       delta: simulation.supply.deltaTotal,
@@ -223,7 +272,7 @@ const SimulationSubRow = ({
 
   const borrowRows: TableRow[] = [
     {
-      label: compact ? 'Borrowed' : 'Total Borrowed',
+      label: effectiveCompact ? 'Borrowed' : 'Total',
       current: simulation.marketMetrics.totalBorrowedUsd,
       after: simulation.marketMetrics.totalBorrowedUsdAfter,
       delta: simulation.marketMetrics.totalBorrowedUsdDelta,
@@ -232,7 +281,7 @@ const SimulationSubRow = ({
       warning: borrowCapExceeded && !borrowLimitedByLiquidity,
     },
     {
-      label: compact ? `Borrowed ${rateLabel}` : rateLabel,
+      label: effectiveCompact ? `Borrowed ${rateLabel}` : rateLabel,
       current: simulation.borrow.currentTotal,
       after: simulation.borrow.afterTotal,
       delta: simulation.borrow.deltaTotal,
@@ -280,6 +329,8 @@ const SimulationSubRow = ({
     const labelPl = tight ? 'pl-3 pr-2.5' : 'pl-4 pr-3';
     const deltaPr = tight ? 'pr-4' : 'pr-5';
     const deltaPl = tight ? 'pl-2.5' : 'pl-3';
+    // Supply = green, Borrow = cyan; breakdown rows (Native + Incentive) use same section color
+    const rowAccentClass = accentClass;
 
     return (
       <tr key={row.label} className={row.warning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
@@ -291,13 +342,13 @@ const SimulationSubRow = ({
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
-                className={`ds-text-12 flex items-center gap-1 min-w-0 break-words ${row.warning ? 'text-amber-700 dark:text-amber-400' : isBreakdownItem ? 'text-muted-foreground hover:text-foreground' : accentClass}`}
+                className={`ds-text-12 flex items-center gap-1 min-w-0 break-words ${row.warning ? 'text-amber-700 dark:text-amber-400' : isBreakdownItem ? `${rowAccentClass} hover:opacity-90` : accentClass}`}
               >
                 <span className="break-words">{row.label}</span>
                 <ExternalLink className="w-3 h-3 flex-shrink-0 opacity-50" />
               </a>
             ) : (
-              <span className={`ds-text-12 break-words ${row.warning ? 'text-amber-700 dark:text-amber-400 font-medium' : isBreakdownItem ? 'text-muted-foreground' : accentClass}`}>
+              <span className={`ds-text-12 break-words ${row.warning ? 'text-amber-700 dark:text-amber-400 font-medium' : isBreakdownItem ? rowAccentClass : accentClass}`}>
                 {row.label}
               </span>
             )}
@@ -309,17 +360,17 @@ const SimulationSubRow = ({
           </div>
         </td>
         <td className={`${cellPy} ${cellPx} text-right`}>
-          <span className={`ds-text-12 tabular-nums ${isBreakdownItem ? 'text-muted-foreground' : accentClass}`}>
+          <span className={`ds-text-12 tabular-nums ${rowAccentClass}`}>
             {formatValue(row.current, row.type)}
           </span>
         </td>
         <td className={`${cellPy} ${cellPx} text-right`}>
-          <span className={`ds-text-12 tabular-nums ${row.after === null ? 'text-muted-foreground' : isBreakdownItem ? 'text-muted-foreground' : accentClass}`}>
+          <span className={`ds-text-12 tabular-nums ${row.after === null ? 'text-muted-foreground' : rowAccentClass}`}>
             {formatValue(row.after, row.type)}
           </span>
         </td>
         <td className={`${cellPy} ${deltaPl} ${deltaPr} text-right`}>
-          <span className={`ds-text-12 tabular-nums ${isBreakdownItem ? 'text-muted-foreground' : deltaColorClass}`}>
+          <span className={`ds-text-12 tabular-nums ${deltaColorClass}`}>
             {formatDeltaValue(row.delta, row.type)}
           </span>
         </td>
@@ -516,10 +567,10 @@ const SimulationSubRow = ({
   );
 
   return (
-    <div className={`min-w-0 rounded-xl border border-border/70 bg-muted/20 ${compact ? 'p-3' : 'p-4'}`}>
+    <div ref={containerRef} className={`min-w-0 rounded-xl border border-border/70 bg-muted/20 ${effectiveCompact ? 'p-3' : 'p-4'}`}>
       {/* Header */}
-      <div className={`flex flex-wrap items-baseline gap-x-2 gap-y-1 ${compact ? 'mb-2' : 'mb-3'}`}>
-        <span className={compact ? 'ds-text-13 font-semibold text-foreground' : 'ds-text-14 font-semibold text-foreground'}>
+      <div className={`flex flex-wrap items-baseline gap-x-2 gap-y-1 ${effectiveCompact ? 'mb-2' : 'mb-3'}`}>
+        <span className={effectiveCompact ? 'ds-text-13 font-semibold text-foreground' : 'ds-text-14 font-semibold text-foreground'}>
           Shared {rateLabel} simulation
         </span>
         {showEmptyStateNote && (
@@ -531,7 +582,7 @@ const SimulationSubRow = ({
 
       {/* Warnings */}
       {supplyCapExceeded && (
-        <div className={`flex items-center gap-3 rounded-lg border border-amber-400/60 bg-amber-50/80 dark:bg-amber-950/30 ${compact ? 'mb-2 px-3 py-1.5' : 'mb-3 px-4 py-2'}`}>
+        <div className={`flex items-center gap-3 rounded-lg border border-amber-400/60 bg-amber-50/80 dark:bg-amber-950/30 ${effectiveCompact ? 'mb-2 px-3 py-1.5' : 'mb-3 px-4 py-2'}`}>
           <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
           <p className="flex-1 ds-text-12 text-amber-800 dark:text-amber-300">
             Supply exceeds cap by {formatReserveSizeUsd(supplyCapExceededByUsd)}
@@ -545,7 +596,7 @@ const SimulationSubRow = ({
       )}
 
       {borrowCapExceeded && (
-        <div className={`flex items-center gap-3 rounded-lg border border-amber-400/60 bg-amber-50/80 dark:bg-amber-950/30 ${compact ? 'mb-2 px-3 py-1.5' : 'mb-3 px-4 py-2'}`}>
+        <div className={`flex items-center gap-3 rounded-lg border border-amber-400/60 bg-amber-50/80 dark:bg-amber-950/30 ${effectiveCompact ? 'mb-2 px-3 py-1.5' : 'mb-3 px-4 py-2'}`}>
           <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
           <p className="flex-1 ds-text-12 text-amber-800 dark:text-amber-300">
             Borrow exceeds {borrowLimitedByLiquidity ? 'liquidity' : 'cap'} by {formatReserveSizeUsd(borrowCapExceededByUsd)}
@@ -558,11 +609,11 @@ const SimulationSubRow = ({
         </div>
       )}
 
-      {/* Layout: compact = single table; desktop = 3 columns, equal width and uniform compression */}
-      {compact ? (
+      {/* Layout: compact = single table; desktop = 3 columns. Switch to compact when grid overflows (adaptive). */}
+      {effectiveCompact ? (
         renderCompactLayout()
       ) : (
-        <div className="grid grid-cols-3 gap-2 min-w-0 items-stretch overflow-hidden">
+        <div ref={gridRef} className="grid grid-cols-3 gap-2 min-w-0 items-stretch overflow-hidden">
           <div className="flex min-w-0 flex-col overflow-hidden">
             {renderTable('Supply', supplyRows, 'ds-text-emerald-600', 'border-emerald-500/40', 'border-l-[rgb(var(--ds-emerald-500-rgb))]', supplyCapExceeded)}
           </div>

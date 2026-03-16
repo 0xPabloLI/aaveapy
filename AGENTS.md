@@ -46,6 +46,7 @@
 
 ## UI Regression Guardrails
 - When changing incentive tooltip behavior, search filtering, or forecast display semantics, review and update `docs/frontend-interaction-guardrails.md` in the same work session.
+- Reusable design habits and interaction patterns are consolidated in `docs/DESIGN-SYSTEM-REFERENCE.md`; update that doc when adding or changing cross-project design rules.
 
 ---
 
@@ -165,10 +166,11 @@ When implementing mobile carousels:
 - Maintain design symmetry when adding complementary UI elements (e.g. Supply and Borrow info placement consistent).
 - Tooltip content should not repeat information already visible in the parent; only show supplementary context.
 - Toggle/selection state changes must be visually obvious; use border color or other clear indicators, not subtle opacity/background only.
-- Reserve semantic colors for their purpose; keep each UI element focused on one semantic role (e.g. amber for alerts only, not regular data).
+- Reserve semantic colors for their purpose; keep each UI element focused on one semantic role (e.g. amber for alerts only, not regular data). When implementing the same control on mobile and desktop, reuse the same design tokens and visual style; only layout may differ (e.g. vertical vs horizontal).
 - Multi-column panels (e.g. simulation Supply/Spread/Borrow): use equal column widths and uniform compression; do not give one column fixed or favored width. Tables: ensure sufficient padding so text does not cling to edges; when space is tight prefer wrapping over ellipsis.
 
 ## Learned Workspace Facts
+- Mobile overlays (cap details, incentive details) use bottom sheet with title bar and close button, not floating popover; see docs/frontend-interaction-guardrails.md.
 - Local git hooks in this setup are managed under the main repository `.git/hooks` and are local-only (not versioned).
 - This workspace currently uses a local pre-push flow that runs lockfile consistency checks before the existing `ci:remote` checks.
 - Prefer deriving values client-side when possible rather than adding backend fields (e.g., totalBorrowedUsd can be computed from reserveSizeUsd × utilizationPct).

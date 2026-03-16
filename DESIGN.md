@@ -1,5 +1,7 @@
 # Design System: Aave APY
 
+> **可复用设计习惯与完整交互规范**见 **[docs/DESIGN-SYSTEM-REFERENCE.md](docs/DESIGN-SYSTEM-REFERENCE.md)**（Tooltip/光标/开关/色彩语义/移动端/无障碍等）。其他项目可直接复制该文档作为设计参考。下面为本项目视觉与组件概要。
+
 ## 1. 视觉主题
 - 浅色：温暖雾白基底 + 金色主调 + 品牌渐变（洋红→青绿）
 - 暗色：深炭黑背景 + 高对比金色，保持相同圆角与层级
