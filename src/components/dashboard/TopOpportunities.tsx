@@ -926,7 +926,7 @@ const TopOpportunities = ({
   // Desktop only (xl+): grid layout. Mobile + tablet: carousel (swipe) below.
   if (isXl) {
     return (
-      <div className="grid gap-[var(--ds-space-3)] md:gap-[var(--ds-space-4)] grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-[var(--ds-space-3)] md:gap-[var(--ds-space-4)] grid-cols-2 lg:grid-cols-4">
         {categories.map((category) => (
           <CategoryCard
             key={category.categoryKey}
