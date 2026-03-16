@@ -396,9 +396,9 @@ const SimulationSubRow = ({
 
   const renderCompactLayout = () => {
     const compactCellPy = 'py-1';
-    const compactMetricCell = 'pl-3 pr-2.5';
-    const compactNumCell = 'pl-2.5 pr-2.5';
-    const compactDeltaCell = 'pl-2.5 pr-4';
+    const compactMetricCell = 'px-3';
+    const compactNumCell = 'px-2.5';
+    const compactDeltaCell = 'pl-2.5 pr-3';
     return (
     <div
       className={`border border-border/60 overflow-hidden ${embeddedFromTop ? 'rounded-b-xl rounded-t-none border-t-0 bg-card' : 'rounded-lg bg-card/50 dark:bg-background/80'}`}
@@ -408,7 +408,7 @@ const SimulationSubRow = ({
           <col style={{ width: 'auto' }} />
           <col style={{ width: '4.75rem' }} />
           <col style={{ width: '4.75rem' }} />
-          <col style={{ width: '4.25rem' }} />
+          <col style={{ width: '4.5rem' }} />
         </colgroup>
         <thead>
           <tr className="border-b border-border/50 bg-muted/30">
@@ -479,14 +479,14 @@ const SimulationSubRow = ({
     <div className={`flex min-h-0 min-w-0 flex-1 flex-col rounded-lg border ${isWarning ? 'border-amber-500/60' : borderClass} bg-card/50 dark:bg-background/80 overflow-hidden`}>
       <table className="w-full min-w-0 table-fixed">
         <colgroup>
-          <col style={{ width: '40%' }} />
+          <col style={{ width: '38%' }} />
           <col style={{ width: '20%' }} />
           <col style={{ width: '20%' }} />
-          <col style={{ width: '20%' }} />
+          <col style={{ width: '22%' }} />
         </colgroup>
         <thead>
           <tr className="border-b border-border/50 bg-muted/30">
-            <th className="pl-4 pr-3 py-2 text-left">
+            <th className="px-4 py-2 text-left">
               <span className={`ds-text-13 font-semibold ${accentClass}`}>{title}</span>
             </th>
             <th className="px-3 py-2 text-right">
@@ -495,7 +495,7 @@ const SimulationSubRow = ({
             <th className="px-3 py-2 text-right">
               <span className="ds-text-11 text-muted-foreground">After</span>
             </th>
-            <th className="pl-3 pr-5 py-2 text-right">
+            <th className="px-4 py-2 text-right">
               <span className="ds-text-11 text-muted-foreground">Delta</span>
             </th>
           </tr>
