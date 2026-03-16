@@ -1,35 +1,5 @@
+# Version updates 已关闭：不再按周期提「有新版本」的 PR。
+# 仅保留 Security updates（在 Repo → Settings → Code security and analysis → Dependabot security updates 中启用）。
+# 需要恢复按周版本更新时，把下方的 updates 配置加回即可。
 version: 2
-updates:
-  - package-ecosystem: npm
-    directory: "/"
-    schedule:
-      interval: weekly
-      day: monday
-      time: "03:00"
-      timezone: UTC
-    target-branch: dev
-    open-pull-requests-limit: 5
-    labels:
-      - dependencies
-    commit-message:
-      prefix: "chore"
-      include: scope
-    groups:
-      npm-minor-patch:
-        patterns: ["*"]
-        update-types: ["minor", "patch"]
-
-  - package-ecosystem: github-actions
-    directory: "/"
-    schedule:
-      interval: weekly
-      day: monday
-      time: "03:15"
-      timezone: UTC
-    target-branch: dev
-    open-pull-requests-limit: 10
-    labels:
-      - dependencies
-    commit-message:
-      prefix: "chore"
-      include: scope
+updates: []
