@@ -214,12 +214,10 @@ async function main() {
 
   if (checkOnly) {
     if (usedTokenlistFallback) {
-      console.error(
-        `Missing ${missing.length} token icon(s) while markets API is unavailable (tokenlist fallback active): ${missing
-          .slice(0, 20)
-          .join(', ')}${missing.length > 20 ? ', ...' : ''}`
+      console.warn(
+        `⚠ Markets API unavailable (tokenlist fallback active) – skipping icon check (${missing.length} unverifiable symbol(s))`
       );
-      process.exit(1);
+      return;
     }
 
     const { syncable, syncableFromLogo, unsyncable } = await classifyMissingSymbols(
