@@ -36,7 +36,11 @@ const TOKENLIST_PATH = path.join(
   'tokenlist.json'
 );
 const COINGECKO_SEARCH = 'https://api.coingecko.com/api/v3/search';
-const MARKETS_API_URL = process.env.SYNC_TOKEN_ICONS_MARKETS_API || 'https://api.aaveapy.com/api/markets';
+const MARKETS_API_URLS = (process.env.SYNC_TOKEN_ICONS_MARKETS_API || 'https://api.aaveapy.com/api/markets')
+  .split(',')
+  .concat('https://staging-api.aaveapy.com/api/markets');
+const MARKETS_RETRY_COUNT = 2;
+const MARKETS_RETRY_DELAY_MS = 3000;
 const RATE_LIMIT_MS = 1500;
 
 function sleep(ms) {
@@ -70,30 +74,44 @@ function loadTokenLogoByAddress() {
   return { tokenLogoByAddress, tokenSymbols };
 }
 
-async function loadMarketsRows() {
-  try {
-    const res = await fetch(MARKETS_API_URL);
-    if (!res.ok) {
-      console.warn(
-        `markets API returned HTTP ${res.status}, continuing with tokenlist fallback symbols`
-      );
-      return { rows: [], unavailable: true };
-    }
-
-    const payload = await res.json();
-    const rows = Array.isArray(payload?.data) ? payload.data : null;
-    if (!rows) {
-      console.warn('markets API response missing data array, continuing with tokenlist fallback symbols');
-      return { rows: [], unavailable: true };
-    }
-    return { rows, unavailable: false };
-  } catch (error) {
-    console.warn(
-      `failed to load markets API symbols from ${MARKETS_API_URL}, continuing with tokenlist fallback symbols:`,
-      error instanceof Error ? error.message : String(error)
-    );
-    return { rows: [], unavailable: true };
+async function fetchMarketsFromUrl(url) {
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}`);
   }
+  const payload = await res.json();
+  const rows = Array.isArray(payload?.reserves) ? payload.reserves
+    : Array.isArray(payload?.data) ? payload.data
+    : null;
+  if (!rows) {
+    throw new Error('response missing reserves/data array');
+  }
+  return rows;
+}
+
+async function loadMarketsRows() {
+  const urls = [...new Set(MARKETS_API_URLS)];
+
+  for (const url of urls) {
+    for (let attempt = 1; attempt <= MARKETS_RETRY_COUNT; attempt++) {
+      try {
+        const rows = await fetchMarketsFromUrl(url);
+        if (attempt > 1 || urls.indexOf(url) > 0) {
+          console.log(`markets API OK: ${url} (attempt ${attempt})`);
+        }
+        return { rows, unavailable: false };
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : String(error);
+        console.warn(`markets API ${url} attempt ${attempt}/${MARKETS_RETRY_COUNT} failed: ${msg}`);
+        if (attempt < MARKETS_RETRY_COUNT) {
+          await sleep(MARKETS_RETRY_DELAY_MS);
+        }
+      }
+    }
+  }
+
+  console.warn('all markets API endpoints exhausted, continuing with tokenlist fallback symbols');
+  return { rows: [], unavailable: true };
 }
 
 async function getMissingSymbols() {

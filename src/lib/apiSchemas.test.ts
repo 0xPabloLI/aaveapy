@@ -3,7 +3,11 @@ import { describe, expect, it } from 'vitest';
 import { MarketsResponseSchema } from './apiSchemas';
 
 const buildMarketsPayload = (message: unknown) => ({
-  data: [
+  snapshot: {
+    lastUpdated: '2026-03-09T00:00:00.000Z',
+    version: '1.0.0',
+  },
+  reserves: [
     {
       marketName: 'AaveV3Celo',
       chainName: 'Celo',
@@ -24,9 +28,6 @@ const buildMarketsPayload = (message: unknown) => ({
       ],
     },
   ],
-  lastUpdated: '2026-03-09T00:00:00.000Z',
-  isStale: false,
-  updateInProgress: false,
 });
 
 describe('MarketsResponseSchema', () => {
