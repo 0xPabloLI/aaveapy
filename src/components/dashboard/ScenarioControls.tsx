@@ -43,13 +43,14 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
 
   const hasInput = supplyInput || borrowInput;
 
-  /* shared token classes — mobile uses 44px min touch targets */
-  const controlH = isMobile ? 'h-[2.75rem]' : 'h-8';
+  /* shared token classes — mobile: h-9 (36px) for max compactness; desktop h-8 */
+  const controlH = isMobile ? 'h-9' : 'h-8';
   const fontSize = isMobile ? 'ds-text-11' : 'ds-text-12';
+  const inputPx = isMobile ? 'px-2' : 'px-[var(--ds-space-3)]';
   /* min-w on inputs so digits don't get clipped; mobile needs more room for long numbers */
-  const inputMinW = isMobile ? 'min-w-[5.5rem]' : 'min-w-[6rem]';
-  const inputBase = `ds-input-surface w-full min-w-0 ${inputMinW} ${controlH} px-[var(--ds-space-3)] ${fontSize} tabular-nums placeholder:italic`;
-  const btnStyles = `ds-btn-secondary ${controlH} ${fontSize} px-[var(--ds-space-2)]`;
+  const inputMinW = isMobile ? 'min-w-[5rem]' : 'min-w-[6rem]';
+  const inputBase = `ds-input-surface w-full min-w-0 ${inputMinW} ${controlH} ${inputPx} ${fontSize} tabular-nums placeholder:italic`;
+  const btnStyles = `ds-btn-secondary ${controlH} ${fontSize} ${isMobile ? 'px-1.5' : 'px-[var(--ds-space-2)]'}`;
 
   /* Supply = emerald (green), Borrow = brand-cyan; apply on focus and when filled (mobile + desktop) */
   const supplyInputClasses = `${inputBase} text-muted-foreground/60 placeholder:text-muted-foreground/30 focus:ds-border-emerald-200 focus:ds-bg-emerald-500-10 focus:text-foreground focus-visible:ring-2 focus-visible:ring-offset-0 focus-visible:ds-ring-emerald-500-15 ${supplyInput.trim() ? 'ds-border-emerald-200 ds-bg-emerald-500-10 ds-text-emerald-500' : ''}`;
@@ -59,21 +60,21 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
   const segmentedUnselected = `px-2 py-1 rounded-md ${fontSize} font-semibold text-muted-foreground hover:text-foreground hover:bg-card/50 transition-all duration-200`;
 
   /* Label colors: Supply = emerald, Borrow = cyan (always on, so inputs are easy to spot) */
-  const supplyLabelMobile = 'text-[10px] font-semibold uppercase tracking-wider ds-text-emerald-500 shrink-0';
-  const borrowLabelMobile = 'text-[10px] font-semibold uppercase tracking-wider ds-text-brand-cyan shrink-0';
+  const supplyLabelMobile = 'text-[9px] font-semibold uppercase tracking-wider ds-text-emerald-500 shrink-0';
+  const borrowLabelMobile = 'text-[9px] font-semibold uppercase tracking-wider ds-text-brand-cyan shrink-0';
   const supplyLabelDesktop = `${fontSize} font-medium shrink-0 ds-text-emerald-500`;
   const borrowLabelDesktop = `${fontSize} font-medium shrink-0 ds-text-brand-cyan`;
 
   if (isMobile) {
-    /* Mobile: 2 rows so Supply aligns with USD, Borrow with Token */
+    /* Mobile: 2 rows, maximally compact — Supply aligns with USD, Borrow with Token */
     return (
-      <div className="rounded-xl border border-border bg-card/60 backdrop-blur-sm px-3 py-2.5 shadow-sm overflow-x-auto">
-        <div className="grid min-w-0 grid-cols-[auto_1fr_1px_auto] grid-rows-2 gap-x-3 gap-y-1.5 items-center">
-          <div className="col-start-1 row-span-2 row-start-1 flex flex-col self-stretch rounded-lg bg-muted/60 p-0.5 border border-border/40">
+      <div className="rounded-lg border border-border bg-card/60 backdrop-blur-sm px-1.5 py-1 shadow-sm overflow-x-auto">
+        <div className="grid min-w-0 grid-cols-[auto_1fr_1px_auto] grid-rows-2 gap-x-1.5 gap-y-0 items-center">
+          <div className="col-start-1 row-span-2 row-start-1 flex flex-col self-stretch gap-0 rounded-lg bg-muted/60 p-0.5 border border-border/40">
             <button
               type="button"
               onClick={() => handleModeChange('usd')}
-              className={`min-h-0 flex-1 px-1.5 py-0.5 rounded-md ${fontSize} font-semibold transition-all duration-200 ${inputMode === 'usd' ? 'bg-card text-foreground shadow-sm border border-border/60' : 'text-muted-foreground hover:text-foreground hover:bg-card/50'}`}
+              className={`min-h-0 flex-1 ${inputMode === 'usd' ? segmentedSelected : segmentedUnselected}`}
               aria-pressed={inputMode === 'usd'}
               aria-label="USD mode"
             >
@@ -82,15 +83,15 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
             <button
               type="button"
               onClick={() => handleModeChange('token')}
-              className={`min-h-0 flex-1 px-1.5 py-0.5 rounded-md ${fontSize} font-semibold transition-all duration-200 ${inputMode === 'token' ? 'bg-card text-foreground shadow-sm border border-border/60' : 'text-muted-foreground hover:text-foreground hover:bg-card/50'}`}
+              className={`min-h-0 flex-1 ${inputMode === 'token' ? segmentedSelected : segmentedUnselected}`}
               aria-pressed={inputMode === 'token'}
               aria-label="Token mode"
             >
               Token
             </button>
           </div>
-          <div className="col-start-2 row-start-1 flex min-w-0 items-center gap-2">
-            <span className={`${supplyLabelMobile} w-14 shrink-0`}>Supply</span>
+          <div className="col-start-2 row-start-1 flex min-w-0 items-center gap-0.5">
+            <span className={`${supplyLabelMobile} w-10 shrink-0`}>Supply</span>
             <input
               value={supplyInput}
               onChange={(event) => setSupplyInput(formatNumberInput(event.target.value))}
@@ -101,8 +102,8 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
             />
           </div>
           <div className="col-start-3 row-span-2 row-start-1 w-px self-stretch bg-border/60" aria-hidden />
-          <div className="col-start-2 row-start-2 flex min-w-0 items-center gap-2">
-            <span className={`${borrowLabelMobile} w-14 shrink-0`}>Borrow</span>
+          <div className="col-start-2 row-start-2 flex min-w-0 items-center gap-0.5">
+            <span className={`${borrowLabelMobile} w-10 shrink-0`}>Borrow</span>
             <input
               value={borrowInput}
               onChange={(event) => setBorrowInput(formatNumberInput(event.target.value))}

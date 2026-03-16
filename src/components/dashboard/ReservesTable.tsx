@@ -654,10 +654,10 @@ const ReservesTable = ({
 
   const scenarioControls = <ScenarioControls ref={scenarioControlsRef} onDebouncedChange={handleScenarioChange} />;
 
-  // Mobile card view
+  // Mobile card view — extra bottom padding so content isn't hidden by browser/safe area
   if (isMobile) {
     return (
-      <div className="space-y-3">
+      <div className="space-y-3 pb-[calc(env(safe-area-inset-bottom,0px)+5rem)]">
         <div className="sticky top-0 z-20 -mx-[var(--ds-space-3)] px-[var(--ds-space-3)] py-[var(--ds-space-1)] bg-muted/40 backdrop-blur-sm rounded-b-lg border-b border-border/50">
           {scenarioControls}
         </div>
