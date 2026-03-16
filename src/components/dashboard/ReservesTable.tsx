@@ -455,7 +455,7 @@ const ReservesTable = ({
       clearTimeout(scrollTimeoutRef.current);
     }
     
-    // Small delay then scroll to keep row at top
+    // Small delay then scroll to keep row at top (desktop table row or mobile card)
     scrollTimeoutRef.current = setTimeout(() => {
       requestAnimationFrame(() => {
         const rowElement = document.querySelector(
@@ -464,11 +464,13 @@ const ReservesTable = ({
         if (!rowElement) return;
         
         const rect = rowElement.getBoundingClientRect();
-        const stickyHeaderHeight = isMobile ? 100 : 80;
+        // Mobile: account for sticky scenario bar + safe area; desktop: table sticky header
+        const stickyHeaderHeight = isMobile ? 120 : 80;
+        const paddingBelowHeader = isMobile ? 24 : 16;
         
-        // Always scroll to put the row near the top (below sticky header)
-        // This ensures Breakdown is always fully visible
-        const targetTop = stickyHeaderHeight + 16; // 16px padding below header
+        // Always scroll to put the expanded row/card near the top (below sticky header)
+        // Same behavior on desktop and mobile so Breakdown stays fully visible
+        const targetTop = stickyHeaderHeight + paddingBelowHeader;
         const scrollDelta = rect.top - targetTop;
         
         // Only scroll if row moved significantly (>20px from target position)
