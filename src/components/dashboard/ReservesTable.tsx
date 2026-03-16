@@ -455,7 +455,7 @@ const ReservesTable = ({
       clearTimeout(scrollTimeoutRef.current);
     }
     
-    // Small delay then scroll to keep row at top
+    // Small delay then scroll to keep row at top (desktop table row or mobile card)
     scrollTimeoutRef.current = setTimeout(() => {
       requestAnimationFrame(() => {
         const rowElement = document.querySelector(
@@ -464,11 +464,13 @@ const ReservesTable = ({
         if (!rowElement) return;
         
         const rect = rowElement.getBoundingClientRect();
-        const stickyHeaderHeight = isMobile ? 100 : 80;
+        // Mobile: account for sticky scenario bar + safe area; desktop: table sticky header
+        const stickyHeaderHeight = isMobile ? 120 : 80;
+        const paddingBelowHeader = isMobile ? 24 : 16;
         
-        // Always scroll to put the row near the top (below sticky header)
-        // This ensures Breakdown is always fully visible
-        const targetTop = stickyHeaderHeight + 16; // 16px padding below header
+        // Always scroll to put the expanded row/card near the top (below sticky header)
+        // Same behavior on desktop and mobile so Breakdown stays fully visible
+        const targetTop = stickyHeaderHeight + paddingBelowHeader;
         const scrollDelta = rect.top - targetTop;
         
         // Only scroll if row moved significantly (>20px from target position)
@@ -658,7 +660,7 @@ const ReservesTable = ({
   if (isMobile) {
     return (
       <div className="space-y-3 pb-[calc(env(safe-area-inset-bottom,0px)+5rem)]">
-        <div className="sticky top-0 z-20 -mx-[var(--ds-space-3)] px-[var(--ds-space-3)] py-[var(--ds-space-1)] bg-muted/40 backdrop-blur-sm rounded-b-lg border-b border-border/50">
+        <div className="sticky top-[env(safe-area-inset-top,0px)] z-20 -mx-[var(--ds-space-3)] px-[var(--ds-space-3)] py-[var(--ds-space-1)] bg-muted/40 backdrop-blur-sm rounded-b-lg border-b border-border/50">
           {scenarioControls}
         </div>
         {/* Header with sorting controls */}

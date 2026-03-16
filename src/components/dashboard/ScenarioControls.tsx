@@ -1,5 +1,5 @@
 import { useState, useEffect, memo, forwardRef, useImperativeHandle } from 'react';
-import { Eraser } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import { formatNumberInput } from '@/lib/numberFormat';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -51,7 +51,9 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
   /* min-w on inputs so digits don't get clipped; mobile needs more room for long numbers */
   const inputMinW = isMobile ? 'min-w-[5rem]' : 'min-w-[6rem]';
   const inputBase = `ds-input-surface w-full min-w-0 ${inputMinW} ${controlH} ${inputPx} ${fontSize} tabular-nums placeholder:italic`;
-  const clearBtnBase = `ds-btn-secondary ${controlH} ${fontSize} inline-flex items-center gap-1.5 ${isMobile ? 'px-2.5' : 'px-[var(--ds-space-2-5)]'} min-w-0`;
+  const clearBtnBase = isMobile
+    ? `ds-btn-secondary ${controlH} ${fontSize} inline-flex items-center justify-center px-1.5 min-w-0`
+    : `ds-btn-secondary ${controlH} ${fontSize} inline-flex items-center gap-1.5 px-[var(--ds-space-2-5)] min-w-0`;
   const clearBtnState = hasInput
     ? 'border-border bg-muted/80 text-foreground hover:bg-accent hover:border-border shadow-sm'
     : '';
@@ -125,8 +127,7 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
               className={`${clearBtnBase} ${clearBtnState}`}
               aria-label="Clear scenario inputs"
             >
-              <Eraser className="size-3.5 shrink-0" aria-hidden />
-              <span>Clear</span>
+              <Trash2 className="size-4 shrink-0" aria-hidden />
             </button>
           </div>
         </div>
@@ -188,7 +189,7 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
           className={`${clearBtnBase} ${clearBtnState}`}
           aria-label="Clear scenario inputs"
         >
-          <Eraser className="size-3.5 shrink-0" aria-hidden />
+          <Trash2 className="size-3.5 shrink-0" aria-hidden />
           <span>Clear</span>
         </button>
       </div>

@@ -28,6 +28,8 @@
 - Commit messages use short, imperative subjects with initial caps (e.g., `Fix leverage opportunity spread sign`, `Add logos to all markets`).
 - PRs should include a concise description, link related issues, and add screenshots for UI changes. Note any manual testing you performed.
 
+### Merge commits (see `docs/conventions/merge-summary.md`)
+- Every merge (branch merge or conflict resolution) must have a **summary** in the commit body and/or PR description/comment. Summary = branches merged, conflicted files, resolution per file, optional follow-up. Full reusable convention: `docs/conventions/merge-summary.md` (copyable to other projects).
 ### PR Merge Strategy (see `docs/PR_ANALYSIS.md`)
 - **Batch related changes**: Combine small optimizations, config/tool updates, and dependency bumps (minor/patch) into one PR when they belong together (e.g. "chore: token icon and config improvements").
 - **Minimum scope**: Prefer opening a PR when there is a meaningful batch (e.g. several related files or 3+ related changes) rather than one-off micro-PRs.
