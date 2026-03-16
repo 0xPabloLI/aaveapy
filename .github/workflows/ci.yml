@@ -24,6 +24,31 @@ permissions:
   pull-requests: write
 
 jobs:
+  peer-dep-check:
+    name: peer-dep-check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install dependencies
+        run: npm run ci:lockcheck
+      - name: Check react/react-dom version match
+        run: |
+          REACT_V=$(node -p "require('react/package.json').version")
+          RDOM_V=$(node -p "require('react-dom/package.json').version")
+          echo "react=$REACT_V  react-dom=$RDOM_V"
+          if [ "$REACT_V" != "$RDOM_V" ]; then
+            echo "::error::react ($REACT_V) and react-dom ($RDOM_V) version mismatch!"
+            exit 1
+          fi
+      - name: Check for peer dependency conflicts
+        run: npm ls --all 2>&1 | grep -i "invalid" && exit 1 || echo "No peer dep conflicts"
+
   lint:
     name: lint
     runs-on: ubuntu-latest
@@ -96,6 +121,7 @@ jobs:
   auto-remediate-on-failure:
     name: auto-remediate-on-failure
     needs:
+      - peer-dep-check
       - lint
       - build
       - security-audit
@@ -103,7 +129,7 @@ jobs:
       always() &&
       github.event_name == 'push' &&
       !startsWith(github.ref_name, 'bot/ci-auto-remediation-') &&
-      (needs.lint.result == 'failure' || needs.build.result == 'failure' || needs.security-audit.result == 'failure')
+      (needs.peer-dep-check.result == 'failure' || needs.lint.result == 'failure' || needs.build.result == 'failure' || needs.security-audit.result == 'failure')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout target branch

@@ -104,25 +104,37 @@ const SimulationSubRow = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
   const [containerNarrow, setContainerNarrow] = useState(false);
-  const tryExpandRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const tryExpandRef = useRef<number | null>(null);
   const tryExpandThrottleMs = 150;
+
+  /** Minimum container width (px) for the 3-column layout.
+   *  Below this we switch to compact unconditionally to avoid clipping. */
+  const MIN_THREE_COL_WIDTH = 720;
 
   useEffect(() => {
     const el = containerRef.current;
     if (!el || typeof ResizeObserver === 'undefined') return;
     const checkOverflow = () => {
+      // Width-based check first (fast), then pixel-level overflow check
+      if (el.clientWidth < MIN_THREE_COL_WIDTH) {
+        setContainerNarrow(true);
+        return;
+      }
       const grid = gridRef.current;
-      if (grid && grid.scrollWidth > grid.clientWidth) {
+      if (grid && grid.scrollWidth > grid.clientWidth + 1) {
         setContainerNarrow(true);
       }
     };
     const ro = new ResizeObserver(() => {
       if (containerNarrow) {
-        if (tryExpandRef.current != null) clearTimeout(tryExpandRef.current);
-        tryExpandRef.current = window.setTimeout(() => {
-          tryExpandRef.current = null;
-          setContainerNarrow(false);
-        }, tryExpandThrottleMs);
+        // Container grew – try expanding back
+        if (el.clientWidth >= MIN_THREE_COL_WIDTH) {
+          if (tryExpandRef.current != null) window.clearTimeout(tryExpandRef.current);
+          tryExpandRef.current = window.setTimeout(() => {
+            tryExpandRef.current = null;
+            setContainerNarrow(false);
+          }, tryExpandThrottleMs);
+        }
       } else {
         checkOverflow();
       }
@@ -131,7 +143,7 @@ const SimulationSubRow = ({
     return () => {
       ro.disconnect();
       if (tryExpandRef.current != null) {
-        clearTimeout(tryExpandRef.current);
+        window.clearTimeout(tryExpandRef.current);
         tryExpandRef.current = null;
       }
     };
@@ -140,8 +152,13 @@ const SimulationSubRow = ({
   useEffect(() => {
     if (compact || containerNarrow) return;
     const id = requestAnimationFrame(() => {
+      const el = containerRef.current;
+      if (el && el.clientWidth < MIN_THREE_COL_WIDTH) {
+        setContainerNarrow(true);
+        return;
+      }
       const grid = gridRef.current;
-      if (grid && grid.scrollWidth > grid.clientWidth) {
+      if (grid && grid.scrollWidth > grid.clientWidth + 1) {
         setContainerNarrow(true);
       }
     });
