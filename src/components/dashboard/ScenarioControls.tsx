@@ -1,4 +1,5 @@
 import { useState, useEffect, memo, forwardRef, useImperativeHandle } from 'react';
+import { Eraser } from 'lucide-react';
 import { formatNumberInput } from '@/lib/numberFormat';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -50,7 +51,10 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
   /* min-w on inputs so digits don't get clipped; mobile needs more room for long numbers */
   const inputMinW = isMobile ? 'min-w-[5rem]' : 'min-w-[6rem]';
   const inputBase = `ds-input-surface w-full min-w-0 ${inputMinW} ${controlH} ${inputPx} ${fontSize} tabular-nums placeholder:italic`;
-  const btnStyles = `ds-btn-secondary ${controlH} ${fontSize} ${isMobile ? 'px-1.5' : 'px-[var(--ds-space-2)]'}`;
+  const clearBtnBase = `ds-btn-secondary ${controlH} ${fontSize} inline-flex items-center gap-1.5 ${isMobile ? 'px-2.5' : 'px-[var(--ds-space-2-5)]'} min-w-0`;
+  const clearBtnState = hasInput
+    ? 'border-border bg-muted/80 text-foreground hover:bg-accent hover:border-border shadow-sm'
+    : '';
 
   /* Supply = emerald (green), Borrow = brand-cyan; apply on focus and when filled (mobile + desktop) */
   const supplyInputClasses = `${inputBase} text-muted-foreground/60 placeholder:text-muted-foreground/30 focus:ds-border-emerald-200 focus:ds-bg-emerald-500-10 focus:text-foreground focus-visible:ring-2 focus-visible:ring-offset-0 focus-visible:ds-ring-emerald-500-15 ${supplyInput.trim() ? 'ds-border-emerald-200 ds-bg-emerald-500-10 ds-text-emerald-500' : ''}`;
@@ -68,8 +72,8 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
   if (isMobile) {
     /* Mobile: 2 rows, maximally compact — Supply aligns with USD, Borrow with Token */
     return (
-      <div className="rounded-lg border border-border bg-card/60 backdrop-blur-sm px-1.5 py-1 shadow-sm overflow-x-auto">
-        <div className="grid min-w-0 grid-cols-[auto_1fr_1px_auto] grid-rows-2 gap-x-1.5 gap-y-0 items-center">
+      <div className="rounded-lg border border-border bg-card/60 backdrop-blur-sm px-1.5 py-0.5 shadow-sm overflow-x-auto">
+        <div className="grid min-w-0 grid-cols-[auto_1fr_1px_auto] grid-rows-2 gap-x-1.5 gap-y-1 items-center">
           <div className="col-start-1 row-span-2 row-start-1 flex flex-col self-stretch gap-0 rounded-lg bg-muted/60 p-0.5 border border-border/40">
             <button
               type="button"
@@ -118,10 +122,11 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
               type="button"
               onClick={() => { setSupplyInput(''); setBorrowInput(''); }}
               disabled={!hasInput}
-              className={btnStyles}
+              className={`${clearBtnBase} ${clearBtnState}`}
               aria-label="Clear scenario inputs"
             >
-              Clear
+              <Eraser className="size-3.5 shrink-0" aria-hidden />
+              <span>Clear</span>
             </button>
           </div>
         </div>
@@ -180,9 +185,11 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
           type="button"
           onClick={() => { setSupplyInput(''); setBorrowInput(''); }}
           disabled={!hasInput}
-          className={btnStyles}
+          className={`${clearBtnBase} ${clearBtnState}`}
+          aria-label="Clear scenario inputs"
         >
-          Clear
+          <Eraser className="size-3.5 shrink-0" aria-hidden />
+          <span>Clear</span>
         </button>
       </div>
     </div>

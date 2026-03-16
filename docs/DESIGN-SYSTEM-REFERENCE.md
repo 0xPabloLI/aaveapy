@@ -189,6 +189,23 @@ className="transition-all motion-reduce:transition-none"
 - **轮播**：移动端轮播需包含：分页点、左右箭头（在可滚动时显示）、peek（如 `basis-[85%]`）、`align: "center"` + `containScroll: "trimSnaps"`。
 - **避免**：仅在 hover 上做交互，移动端需提供 tap/click 等价操作。
 
+### 9.1 Slider + 数值 Tooltip（移动端）
+
+当 Slider 的 thumb 在拖动时会放大（如 `scale-[1.4]`）且上方有**数值 Tooltip** 时：
+
+- **避免重叠**：Tooltip 与放大后的 thumb 之间必须留出明显空隙。按状态区分 Tooltip 的垂直偏移：
+  - **拖动中**：使用更大上偏移（如 `-top-10` / 40px），确保与 thumb 的 ring/shadow 不贴。
+  - **非拖动**：略小上偏移（如 `-top-8` / 32px），既不贴 thumb 也不离得过远。
+- **层级**：Tooltip 使用更高 z-index（如 `z-20`），避免被 thumb 的 ring 或阴影盖住，造成“像重叠”的观感。
+- **实现**：用同一 class 根据 `isDragging` 切换 `-top-10` / `-top-8`，并加 `transition-[top] duration-150` 使切换自然。
+
+### 9.2 Slider 与下方区块间距
+
+Slider 与紧挨其下的区块（如「Reference FDVs」、说明文字）可适当收紧间距，使视觉更紧凑：
+
+- 在**不缩小触控热区、不损害可点击性**的前提下，将下方区块的 `margin-top` 从 4px 减至 2px（如 `--ds-space-1` → `--ds-space-0-5`），必要时可设为 0。
+- 验收：间距更小但不显拥挤，下方区块仍易点、可访问性不受影响。
+
 ---
 
 ## 10. 无障碍与键盘
@@ -269,4 +286,4 @@ className="transition-all motion-reduce:transition-none"
 - `docs/mobile-reserve-card-ascii-layout.md` — 移动卡片排版示意
 - `AGENTS.md` — Frontend Design & UX、Learned User Preferences 中与设计相关的条目
 
-后续新增设计习惯请更新本文档（通用部分）或附录 A（项目特定）。
+**约定**：一次性设计方案（如某次 Lovable/PR 的 UI 方案）**可以删除原文档**，将其内容总结进本文档与设计规范，把可复用部分抽象成习惯写进对应章节即可。后续新增设计习惯请更新本文档（通用部分）或附录 A（项目特定）。
