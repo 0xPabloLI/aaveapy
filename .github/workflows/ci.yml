@@ -100,6 +100,8 @@ jobs:
         run: npm run ci:lockcheck
       - name: Run build
         run: npm run build
+      - name: Validate API schemas against live endpoints
+        run: npx vitest run src/lib/apiSchemas.live.test.ts
 
 
   security-audit:
