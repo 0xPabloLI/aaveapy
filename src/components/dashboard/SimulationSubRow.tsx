@@ -513,14 +513,14 @@ const SimulationSubRow = ({
     <div className={`flex min-h-0 flex-1 flex-col rounded-lg border ${middleColumnWarning ? 'border-amber-500/60' : 'border-purple-500/40'} bg-card/50 dark:bg-background/80 min-w-0`}>
       <table className="w-full min-w-0 table-fixed">
         <colgroup>
-          <col style={{ width: '28%' }} />
+          <col style={{ width: '26%' }} />
           <col style={{ width: '24%' }} />
           <col style={{ width: '24%' }} />
-          <col style={{ width: '24%' }} />
+          <col style={{ width: '26%' }} />
         </colgroup>
         <thead>
           <tr className="border-b border-border/50 bg-muted/30">
-            <th className="pl-4 pr-3 py-2 text-left">
+            <th className="px-4 py-2 text-left">
               {/* Empty title cell for alignment */}
             </th>
             <th className="px-3 py-2 text-right">
@@ -529,7 +529,7 @@ const SimulationSubRow = ({
             <th className="px-3 py-2 text-right">
               <span className="ds-text-11 text-muted-foreground">After</span>
             </th>
-            <th className="pl-3 pr-5 py-2 text-right">
+            <th className="px-4 py-2 text-right">
               <span className="ds-text-11 text-muted-foreground">Delta</span>
             </th>
           </tr>
@@ -537,7 +537,7 @@ const SimulationSubRow = ({
         <tbody className="[&>tr:last-child>td]:pb-2.5">
           {/* Spread first */}
           <tr>
-            <td className="py-1.5 pl-4 pr-3">
+            <td className="py-1.5 px-4">
               <span className="ds-text-12 ds-text-purple-600">Spread</span>
             </td>
             <td className="py-1.5 px-3 text-right">
@@ -548,7 +548,7 @@ const SimulationSubRow = ({
                 {formatSpread(simulation.spread.after)}
               </span>
             </td>
-            <td className="py-1.5 pl-3 pr-5 text-right">
+            <td className="py-1.5 px-4 text-right">
               <span className={`ds-text-12 tabular-nums ${simulation.spread.delta === null ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
                 {formatDelta(simulation.spread.delta)}
               </span>
@@ -556,7 +556,7 @@ const SimulationSubRow = ({
           </tr>
           {/* Liquidity second */}
           <tr className={borrowCapExceeded && borrowLimitedByLiquidity ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
-            <td className="py-1.5 pl-4 pr-3">
+            <td className="py-1.5 px-4">
               <span className={`ds-text-12 ${borrowCapExceeded && borrowLimitedByLiquidity ? 'text-amber-700 dark:text-amber-400 font-medium' : 'ds-text-purple-600'}`}>
                 Liquidity
               </span>
@@ -571,7 +571,7 @@ const SimulationSubRow = ({
                 {formatReserveSizeUsd(simulation.marketMetrics.availableLiquidityUsdAfter)}
               </span>
             </td>
-            <td className="py-1.5 pl-3 pr-5 text-right">
+            <td className="py-1.5 px-4 text-right">
               <span className={`ds-text-12 tabular-nums ${simulation.marketMetrics.availableLiquidityUsdDelta === null ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
                 {formatUsdDelta(simulation.marketMetrics.availableLiquidityUsdDelta)}
               </span>
