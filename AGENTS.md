@@ -4,7 +4,7 @@
 - `src/` contains the React + TypeScript app. Key areas: `src/pages/` for routes, `src/components/` for UI and dashboard pieces, `src/hooks/` for reusable logic, `src/lib/` for helpers, `src/types/` for shared types.
 - `public/` holds static assets (icons, robots.txt, favicon).
 - `dist/` is build output from Vite. Treat as generated.
-- `docs/` holds living implementation notes (for example `docs/frontend-interaction-guardrails.md` for tooltip/search/forecast UI pitfalls).
+- `docs/` holds living implementation notes (e.g. `docs/frontend-interaction-guardrails.md` for tooltip/search/forecast UI, `docs/PR_ANALYSIS.md` for PR merge and batching strategy).
 
 ## Build, Test, and Development Commands
 - `npm run dev`: start the Vite dev server with hot reload.
@@ -27,6 +27,12 @@
 ## Commit & Pull Request Guidelines
 - Commit messages use short, imperative subjects with initial caps (e.g., `Fix leverage opportunity spread sign`, `Add logos to all markets`).
 - PRs should include a concise description, link related issues, and add screenshots for UI changes. Note any manual testing you performed.
+
+### PR Merge Strategy (see `docs/PR_ANALYSIS.md`)
+- **Batch related changes**: Combine small optimizations, config/tool updates, and dependency bumps (minor/patch) into one PR when they belong together (e.g. "chore: token icon and config improvements").
+- **Minimum scope**: Prefer opening a PR when there is a meaningful batch (e.g. several related files or 3+ related changes) rather than one-off micro-PRs.
+- **Keep separate**: New features (independent review), bugfixes (fast merge), breaking changes (discuss first), and security updates (immediate) should be separate PRs.
+- **Automerge**: Chore/docs/refactor PRs with no breaking changes and passing CI may use the `automerge` label per repo workflows.
 
 ## Configuration & Secrets
 - Use `.env` for local secrets and keep it out of version control.
@@ -159,8 +165,8 @@ When implementing mobile carousels:
 - Maintain design symmetry when adding complementary UI elements (e.g. Supply and Borrow info placement consistent).
 - Tooltip content should not repeat information already visible in the parent; only show supplementary context.
 - Toggle/selection state changes must be visually obvious; use border color or other clear indicators, not subtle opacity/background only.
-- Reserve semantic colors for their intended purpose (e.g. amber/warning for alerts only, not regular data).
-- Don't overload a UI indicator with unrelated data; keep each element focused on its primary semantic purpose.
+- Reserve semantic colors for their purpose; keep each UI element focused on one semantic role (e.g. amber for alerts only, not regular data).
+- Multi-column panels (e.g. simulation Supply/Spread/Borrow): use equal column widths and uniform compression; do not give one column fixed or favored width. Tables: ensure sufficient padding so text does not cling to edges; when space is tight prefer wrapping over ellipsis.
 
 ## Learned Workspace Facts
 - Local git hooks in this setup are managed under the main repository `.git/hooks` and are local-only (not versioned).

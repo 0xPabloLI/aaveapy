@@ -877,28 +877,129 @@ const ReservesTable = ({
               </div>
             ))
           ) : (
-            displayData.map((reserve) => {
-              const reserveId = `${reserve.marketName}-${reserve.tokenAddress}`;
-              return (
-              <MobileReserveCard
-                key={reserveId}
-                reserve={reserve}
-                isApy={isApy}
-                onIncentiveClick={handleMobileIncentiveClick}
-                isSimulationExpanded={expandedReserveId === reserveId}
-                onToggleSimulation={() =>
-                  setExpandedReserveId((prev) => (prev === reserveId ? null : reserveId))
-                }
-                simulation={simulationsById[reserveId]}
-                supplyInput={debouncedSharedSupplyInput}
-                borrowInput={debouncedSharedBorrowInput}
-                hasSharedScenario={hasSharedScenario}
-                inputMode={sharedInputMode}
-                onCorrectSupplyInput={handleCorrectSupplyInput}
-                onCorrectBorrowInput={handleCorrectBorrowInput}
-              />
+            (() => {
+              const expandedIndex = displayData.findIndex(
+                (r) => `${r.marketName}-${r.tokenAddress}` === expandedReserveId
               );
-            })
+              const nodes: React.ReactNode[] = [];
+              for (let i = 0; i < displayData.length; i++) {
+                const reserve = displayData[i];
+                const reserveId = `${reserve.marketName}-${reserve.tokenAddress}`;
+                if (expandedIndex >= 0 && i === expandedIndex) {
+                  const isLeftSlot = expandedIndex % 2 === 0;
+                  nodes.push(
+                    <div key={reserveId}>
+                      <MobileReserveCard
+                        variant="upperOnly"
+                        reserve={reserve}
+                        isApy={isApy}
+                        onIncentiveClick={handleMobileIncentiveClick}
+                        isSimulationExpanded
+                        onToggleSimulation={() => handleToggleExpand(reserveId)}
+                        simulation={simulationsById[reserveId]}
+                        supplyInput={debouncedSharedSupplyInput}
+                        borrowInput={debouncedSharedBorrowInput}
+                        hasSharedScenario={hasSharedScenario}
+                        inputMode={sharedInputMode}
+                        onCorrectSupplyInput={handleCorrectSupplyInput}
+                        onCorrectBorrowInput={handleCorrectBorrowInput}
+                      />
+                    </div>
+                  );
+                  if (i + 1 < displayData.length) {
+                    const nextReserve = displayData[i + 1];
+                    const nextId = `${nextReserve.marketName}-${nextReserve.tokenAddress}`;
+                    const nextCardNode = (
+                      <div key={nextId}>
+                        <MobileReserveCard
+                          variant="full"
+                          reserve={nextReserve}
+                          isApy={isApy}
+                          onIncentiveClick={handleMobileIncentiveClick}
+                          isSimulationExpanded={false}
+                          onToggleSimulation={() => handleToggleExpand(nextId)}
+                          simulation={simulationsById[nextId]}
+                          supplyInput={debouncedSharedSupplyInput}
+                          borrowInput={debouncedSharedBorrowInput}
+                          hasSharedScenario={hasSharedScenario}
+                          inputMode={sharedInputMode}
+                          onCorrectSupplyInput={handleCorrectSupplyInput}
+                          onCorrectBorrowInput={handleCorrectBorrowInput}
+                        />
+                      </div>
+                    );
+                    if (isLeftSlot) {
+                      nodes.push(nextCardNode);
+                    }
+                  }
+                  nodes.push(
+                    <div key={`sim-${reserveId}`} className="col-span-2 -mt-[var(--ds-space-2)]">
+                      <MobileReserveCard
+                        variant="simulationOnly"
+                        reserve={reserve}
+                        isApy={isApy}
+                        onIncentiveClick={handleMobileIncentiveClick}
+                        isSimulationExpanded
+                        onToggleSimulation={() => handleToggleExpand(reserveId)}
+                        simulation={simulationsById[reserveId]}
+                        supplyInput={debouncedSharedSupplyInput}
+                        borrowInput={debouncedSharedBorrowInput}
+                        hasSharedScenario={hasSharedScenario}
+                        inputMode={sharedInputMode}
+                        onCorrectSupplyInput={handleCorrectSupplyInput}
+                        onCorrectBorrowInput={handleCorrectBorrowInput}
+                      />
+                    </div>
+                  );
+                  if (!isLeftSlot && i + 1 < displayData.length) {
+                    const nextReserve = displayData[i + 1];
+                    const nextId = `${nextReserve.marketName}-${nextReserve.tokenAddress}`;
+                    nodes.push(
+                      <div key={nextId}>
+                        <MobileReserveCard
+                          variant="full"
+                          reserve={nextReserve}
+                          isApy={isApy}
+                          onIncentiveClick={handleMobileIncentiveClick}
+                          isSimulationExpanded={false}
+                          onToggleSimulation={() => handleToggleExpand(nextId)}
+                          simulation={simulationsById[nextId]}
+                          supplyInput={debouncedSharedSupplyInput}
+                          borrowInput={debouncedSharedBorrowInput}
+                          hasSharedScenario={hasSharedScenario}
+                          inputMode={sharedInputMode}
+                          onCorrectSupplyInput={handleCorrectSupplyInput}
+                          onCorrectBorrowInput={handleCorrectBorrowInput}
+                        />
+                      </div>
+                    );
+                  }
+                  i += 1;
+                  continue;
+                }
+                if (expandedIndex >= 0 && i === expandedIndex + 1) continue;
+                nodes.push(
+                  <div key={reserveId}>
+                    <MobileReserveCard
+                      variant="full"
+                      reserve={reserve}
+                      isApy={isApy}
+                      onIncentiveClick={handleMobileIncentiveClick}
+                      isSimulationExpanded={false}
+                      onToggleSimulation={() => handleToggleExpand(reserveId)}
+                      simulation={simulationsById[reserveId]}
+                      supplyInput={debouncedSharedSupplyInput}
+                      borrowInput={debouncedSharedBorrowInput}
+                      hasSharedScenario={hasSharedScenario}
+                      inputMode={sharedInputMode}
+                      onCorrectSupplyInput={handleCorrectSupplyInput}
+                      onCorrectBorrowInput={handleCorrectBorrowInput}
+                    />
+                  </div>
+                );
+              }
+              return nodes;
+            })()
           )}
         </div>
         
@@ -955,19 +1056,20 @@ const ReservesTable = ({
       <div className="overflow-x-auto">
         <Table className="w-full table-fixed" wrapperClassName="overflow-visible">
           <colgroup>
+            {/* 左边三列再宽松，右边三列（Supply/Spread/Borrow）稍紧凑，合计 100% */}
+            <col style={{ width: '13%' }} />
+            <col style={{ width: '10.5%' }} />
+            <col style={{ width: '11.5%' }} />
+            <col style={{ width: '13%' }} />
             <col style={{ width: '12%' }} />
-            <col style={{ width: '9%' }} />
-            <col style={{ width: '8%' }} />
+            <col style={{ width: '13.5%' }} />
             <col style={{ width: '12%' }} />
-            <col style={{ width: '8%' }} />
-            <col style={{ width: '14%' }} />
-            <col style={{ width: '9%' }} />
-            <col style={{ width: '14%' }} />
+            <col style={{ width: '14.5%' }} />
           </colgroup>
           <TableHeader className="overflow-visible">
             <TableRow className="border-border/50 bg-card/60 overflow-visible">
-              {/* Token */}
-              <TableHead className="px-[var(--ds-space-3)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground">
+              {/* Token — 大幅收窄 */}
+              <TableHead className="pl-[var(--ds-space-1-5)] pr-[var(--ds-space-0-5)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground">
                 <button
                   type="button"
                   onClick={handleSortToken}
@@ -989,8 +1091,8 @@ const ReservesTable = ({
                   )}
                 </button>
               </TableHead>
-              {/* Price */}
-              <TableHead className="px-[var(--ds-space-3)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
+              {/* Price — 大幅收窄 */}
+              <TableHead className="px-[var(--ds-space-0-5)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
                 <button
                   type="button"
                   onClick={handleSortPrice}
@@ -1012,12 +1114,12 @@ const ReservesTable = ({
                   )}
                 </button>
               </TableHead>
-              {/* Market */}
-              <TableHead className="px-[var(--ds-space-3)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
+              {/* Market — 大幅收窄 */}
+              <TableHead className="pl-[var(--ds-space-0-5)] pr-[var(--ds-space-1)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
                 Market
               </TableHead>
               {/* Size */}
-              <TableHead className="px-[var(--ds-space-3)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
+              <TableHead className="px-[var(--ds-space-1-5)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
                 <div className="flex items-center justify-center gap-[var(--ds-space-2)]">
                   <div className="flex items-center gap-[var(--ds-space-1-5)]">
                     <span
@@ -1122,8 +1224,8 @@ const ReservesTable = ({
                   </div>
                 </div>
               </TableHead>
-              {/* Utilization - moved to be after Size */}
-              <TableHead className="px-[var(--ds-space-3)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
+              {/* Utilization */}
+              <TableHead className="px-[var(--ds-space-1-5)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
                 <button
                   type="button"
                   onClick={handleSortUtil}
@@ -1145,8 +1247,8 @@ const ReservesTable = ({
                   )}
                 </button>
               </TableHead>
-              {/* Supply Column - center aligned */}
-              <TableHead className="px-[var(--ds-space-3)] py-[var(--ds-space-3)] ds-text-14 md:ds-text-16 font-semibold text-muted-foreground text-center">
+              {/* Supply */}
+              <TableHead className="px-[var(--ds-space-1-5)] py-[var(--ds-space-3)] ds-text-14 md:ds-text-16 font-semibold text-muted-foreground text-center">
                 <div className="flex items-center justify-center gap-[var(--ds-space-2)]">
                   <div className="flex items-center gap-[var(--ds-space-1-5)]">
                     <span
@@ -1280,8 +1382,8 @@ const ReservesTable = ({
                   </div>
                 </div>
               </TableHead>
-              {/* Spread Column - center aligned */}
-              <TableHead className="px-[var(--ds-space-3)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
+              {/* Spread */}
+              <TableHead className="px-[var(--ds-space-1-5)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
                 <button
                   type="button"
                   onClick={() => {
@@ -1309,8 +1411,8 @@ const ReservesTable = ({
                   )}
                 </button>
               </TableHead>
-              {/* Borrow Column - center aligned */}
-              <TableHead className="px-[var(--ds-space-3)] py-[var(--ds-space-3)] ds-text-14 md:ds-text-16 font-semibold text-muted-foreground text-center">
+              {/* Borrow */}
+              <TableHead className="pl-[var(--ds-space-1-5)] pr-[var(--ds-space-2)] py-[var(--ds-space-3)] ds-text-14 md:ds-text-16 font-semibold text-muted-foreground text-center">
                 <div className="flex items-center justify-center gap-[var(--ds-space-2)]">
                   <div className="flex items-center gap-[var(--ds-space-1-5)]">
                     <span
@@ -1450,37 +1552,37 @@ const ReservesTable = ({
             {isLoading && reserves.length === 0 ? (
               Array.from({ length: 10 }).map((_, i) => (
                 <TableRow key={i} className="border-b border-border/30">
-                  <TableCell className="px-[var(--ds-space-3)] ds-row-pad text-center">
+                  <TableCell className="pl-[var(--ds-space-1-5)] pr-[var(--ds-space-0-5)] ds-row-pad text-center">
                     <div className="flex items-center justify-center gap-[var(--ds-space-2)]">
                       <Skeleton variant="gradient" className="w-7 h-7 rounded-full border-transparent" />
                       <Skeleton variant="default" className="h-4 w-14 rounded-md" />
                     </div>
                   </TableCell>
-                  <TableCell className="px-[var(--ds-space-3)] ds-row-pad text-center hidden md:table-cell">
+                  <TableCell className="px-[var(--ds-space-0-5)] ds-row-pad text-center hidden md:table-cell">
                     <Skeleton variant="subtle" className="h-4 w-16 rounded-md mx-auto" />
                   </TableCell>
-                  <TableCell className="px-[var(--ds-space-3)] ds-row-pad text-center hidden md:table-cell">
+                  <TableCell className="pl-[var(--ds-space-0-5)] pr-[var(--ds-space-1)] ds-row-pad text-center hidden md:table-cell">
                     <Skeleton variant="subtle" className="h-6 w-20 rounded-full mx-auto" />
                   </TableCell>
-                  <TableCell className="px-[var(--ds-space-3)] ds-row-pad text-center hidden md:table-cell">
+                  <TableCell className="px-[var(--ds-space-1-5)] ds-row-pad text-center hidden md:table-cell">
                     <Skeleton variant="subtle" className="h-4 w-16 rounded-md mx-auto" />
                   </TableCell>
-                  <TableCell className="px-[var(--ds-space-3)] ds-row-pad text-center">
+                  <TableCell className="px-[var(--ds-space-1-5)] ds-row-pad text-center">
                     <div className="flex flex-col items-center gap-[var(--ds-space-1)]">
                       <Skeleton variant="gradient" className={`h-5 rounded-md ${i % 2 === 0 ? 'w-16' : 'w-[4.5rem]'}`} />
                       <Skeleton variant="subtle" className={`h-3 rounded-full border-transparent ${i % 2 === 0 ? 'w-20' : 'w-[4.5rem]'}`} />
                     </div>
                   </TableCell>
-                  <TableCell className="px-[var(--ds-space-3)] ds-row-pad text-center hidden md:table-cell">
+                  <TableCell className="px-[var(--ds-space-1-5)] ds-row-pad text-center hidden md:table-cell">
                     <Skeleton variant="subtle" className={`h-5 rounded-md mx-auto ${i % 2 === 0 ? 'w-16' : 'w-14'}`} />
                   </TableCell>
-                  <TableCell className="px-[var(--ds-space-3)] ds-row-pad text-center">
+                  <TableCell className="px-[var(--ds-space-1-5)] ds-row-pad text-center">
                     <div className="flex flex-col items-center gap-[var(--ds-space-1)]">
                       <Skeleton variant="gradient" className={`h-5 rounded-md ${i % 3 === 0 ? 'w-16' : 'w-[4.5rem]'}`} />
                       <Skeleton variant="subtle" className={`h-3 rounded-full border-transparent ${i % 3 === 0 ? 'w-20' : 'w-[4.5rem]'}`} />
                     </div>
                   </TableCell>
-                  <TableCell className="px-[var(--ds-space-3)] ds-row-pad text-center hidden md:table-cell">
+                  <TableCell className="pl-[var(--ds-space-1-5)] pr-[var(--ds-space-2)] ds-row-pad text-center hidden md:table-cell">
                     <Skeleton variant="subtle" className="h-4 w-12 rounded-md mx-auto" />
                   </TableCell>
                 </TableRow>

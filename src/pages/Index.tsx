@@ -173,11 +173,11 @@ const Index = () => {
 
   const handleTopCardClick = useCallback((reserve: Pick<ReserveWithSpread, 'marketName' | 'tokenAddress'>) => {
     const id = `${reserve.marketName}-${reserve.tokenAddress}`;
-    if (scrollToReserveElement(id)) return;
     setSearchQuery('');
     setSelectedMarkets([]);
     setSelectedCategory('all');
     setPendingScrollReserveId(id);
+    scrollToReserveElement(id);
   }, [scrollToReserveElement]);
 
   useEffect(() => {

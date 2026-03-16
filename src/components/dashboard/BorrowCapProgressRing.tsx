@@ -8,6 +8,8 @@ interface BorrowCapProgressRingProps {
   poolLiquidity: number | null | undefined;
   ringSize?: number;
   strokeWidth?: number;
+  /** When true, only the ring SVG is rendered (no tooltip). Use with parent Popover for click-to-open. */
+  disableTooltip?: boolean;
 }
 
 const BorrowCapProgressRing = memo(({
@@ -16,6 +18,7 @@ const BorrowCapProgressRing = memo(({
   poolLiquidity,
   ringSize = 12,
   strokeWidth = 1.5,
+  disableTooltip = false,
 }: BorrowCapProgressRingProps) => {
   if (cap == null || !Number.isFinite(cap) || cap <= 0) {
     return null;
@@ -43,11 +46,9 @@ const BorrowCapProgressRing = memo(({
     return 'ds-text-brand-cyan';
   };
 
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <div className="inline-flex items-center p-0.5 -m-0.5 rounded-full transition-all duration-150 hover:bg-muted/70 hover:scale-[1.12] cursor-auto">
-          <svg
+  const ringNode = (
+    <div className="inline-flex items-center p-0.5 -m-0.5 rounded-full transition-all duration-150 hover:bg-muted/70 hover:scale-[1.12] cursor-auto">
+      <svg
             width={ringSize}
             height={ringSize}
             viewBox={`0 0 ${ringSize} ${ringSize}`}
@@ -76,6 +77,16 @@ const BorrowCapProgressRing = memo(({
             />
           </svg>
         </div>
+  );
+
+  if (disableTooltip) {
+    return ringNode;
+  }
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        {ringNode}
       </TooltipTrigger>
       <TooltipContent side="top" className="max-w-[220px]">
         <div className="space-y-1 ds-text-12">

@@ -47,6 +47,15 @@ This note records recurring UI/interaction issues found during incentive/forecas
   {/* content */}
 </button>
 ```
+
+- **Mobile overlays (弹框) must use bottom-sheet style, not floating popover**:
+  - On mobile, any tap-to-open overlay that shows detailed content (e.g. cap details, incentive details) must use the **bottom sheet** pattern: full-width panel from bottom with `rounded-t-2xl`, sticky header with title + close (X) button, and `max-h-[80vh] overflow-y-auto` for the body. Backdrop: `fixed inset-0 z-30 bg-background/20` with click-to-close.
+  - Do **not** use a small floating Popover anchored to the trigger on mobile — that is the wrong pattern. Reference: `IncentiveTooltip` (mobile branch) and `MobileReserveCard` cap details sheet.
+
+### Text-to-border spacing (mandatory)
+
+- **Text must never touch borders**: Any bordered container (cards, table cells, warning banners, buttons) must have at least `--ds-space-2` (8px) padding between text and the border. See DESIGN.md §5 布局原则.
+
 ### Visual consistency
 
 - **Related visual elements must share the same color**: auxiliary indicators (progress rings, icons, badges) placed adjacent to text should inherit from or match that text's color.
@@ -214,6 +223,33 @@ When tooltip/forecast behavior looks wrong, check:
 - Keep `Native` and `Incentive total` visible even when simulated values are empty.
 - Hide downstream source rows when both current and simulated values are effectively zero.
 - Use fixed numeric column widths so placeholders align with headers.
+
+### Desktop reserves table column layout
+
+The desktop reserves table uses `table-fixed` with a `<colgroup>` so column widths and spacing are predictable. When changing column count or visual balance, update all three places: `ReservesTable.tsx` (colgroup + header cells + skeleton row) and `DesktopReserveRow.tsx` (body cells).
+
+**Column order and widths (percentages, sum = 100%):**
+
+| Column  | Width | Notes |
+|---------|-------|--------|
+| Token   | 13%   | Left three columns kept slightly wider for readability |
+| Price   | 10.5% | |
+| Market  | 11.5% | |
+| Size    | 13%   | |
+| Util.   | 12%   | |
+| Supply  | 13.5% | Right three (Supply / Spread / Borrow) slightly tighter |
+| Spread  | 12%   | |
+| Borrow  | 14.5% | |
+
+**Cell padding (horizontal):**
+
+- **Token**: `pl-[var(--ds-space-1-5)] pr-[var(--ds-space-0-5)]` — tight right so Token and Price sit close.
+- **Price**: `px-[var(--ds-space-0-5)]` — minimal so Price/Market gap stays small.
+- **Market**: `pl-[var(--ds-space-0-5)] pr-[var(--ds-space-1)]` — tight left; right bridges to Size.
+- **Size, Util, Supply, Spread**: `px-[var(--ds-space-1-5)]` — uniform.
+- **Borrow**: `pl-[var(--ds-space-1-5)] pr-[var(--ds-space-2)]` — right keeps a small outer margin.
+
+Keep header, body, and skeleton row padding in sync so alignment and spacing stay consistent.
 
 ### Borrow availability constraint
 

@@ -159,7 +159,7 @@ const FilterBar = ({
   }, [searchQuery, isMobile, stableResizeHandler]);
 
   return (
-    <div className="space-y-1 md:space-y-1.5">
+    <div className="space-y-2 md:space-y-2.5">
       {/* Row 1: Token Categories + Search + APY Toggle */}
       <div className="flex flex-wrap items-center gap-1.5 md:gap-2">
         <span className="ds-text-11 text-muted-foreground/70 hidden sm:inline">Tokens</span>
