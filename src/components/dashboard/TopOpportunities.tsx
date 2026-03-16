@@ -54,7 +54,7 @@ interface TopOpportunitiesProps {
 
 const DISPLAY_COUNT = 5;
 
-const XL_BREAKPOINT = 1280;
+const XL_BREAKPOINT = 1024;
 
 interface CategoryCardHeaderProps {
   title: string;
