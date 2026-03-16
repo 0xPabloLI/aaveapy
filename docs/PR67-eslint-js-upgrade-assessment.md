@@ -1,5 +1,9 @@
 # PR #67 评估：@eslint/js 9 → 10 升级
 
+**已执行**：CI Node 已统一升到 **22**，**eslint** 与 **@eslint/js** 已升到 **^10.0.1**，并修了 ESLint 10 新增规则 `no-useless-assignment` 的一处报错；安装使用 `legacy-peer-deps`（因 eslint-plugin-react-hooks 尚未声明对 eslint 10 的 peer）。下面内容保留作背景与「谁触发了 PR」的说明。
+
+---
+
 ## 结论（先看这个）
 
 | 项目 | 结论 |
@@ -64,10 +68,19 @@
 
 ---
 
-## 6. 总结表
+## 6. 「Breaking change」是谁触发了 PR？Repo 里为什么会多出这个 PR？
+
+- **谁开的 PR**：**Dependabot**（GitHub 自带的依赖更新机器人）。仓库里若启用了 Dependabot（通常有 `.github/dependabot.yml` 或 GitHub 仓库 Settings → Security → Dependabot），它会按配置的周期扫描 `package.json`（及 lockfile），发现 npm 上有**新版本**就自动提一个 PR，把依赖改到新版本。
+- **和「breaking change」的关系**：这里说的「breaking change」**不是**某条「规则」或「开关」触发了 PR，而是 **semver 主版本号**的含义：`@eslint/js` 从 9.x 升到 10.x 是 **major 升级**，按 [semver](https://semver.org/) 约定表示「可能包含不兼容的 API/行为变更」。Dependabot 只是「发现 10.0.1 比当前 9.x 新 → 开个 PR 建议你升级」，它不会单独因为「这是 breaking change」才开 PR；**任何**依赖有新版本（包括 minor/patch）都可能收到 Dependabot 的 PR，只是 major 升级的 PR 需要你额外评估兼容性。
+- **小结**：Repo 里多出来的 PR 是 **Dependabot 检测到 @eslint/js 有新版本 10.0.1 后自动提的**；「breaking change」指的是这次升级本身是 **主版本升级**，可能带来不兼容变更，需要你决定是否接、以及是否顺带升 Node / eslint 整栈。
+
+---
+
+## 7. 总结表
 
 | 问题 | 答案 |
 |------|------|
 | PR 67 有 conflict，值不值得只解冲突并合并？ | **不值得**。只升 @eslint/js 会导致与 eslint 9 的 peer 不匹配。 |
 | 是否有 breaking change？ | **有**。ESLint 10 有 Node、recommended、config、规则行为等多处 breaking changes。 |
 | 推荐操作 | 关闭 PR 67 的 major 升级，保持 9；若要做 10 升级，单独开 PR 做 **eslint + @eslint/js 整栈 10** 并处理新规则与 CI。 |
+| 谁触发了这个 PR？ | **Dependabot** 发现 @eslint/js 有新版本 10.0.1 后自动提的；「breaking change」= 主版本号升级（9→10），需人工评估是否升级。 |

@@ -325,7 +325,7 @@ const ReservesTable = ({
   // Sort data based on active column and its sort mode
   const sortedData = useMemo(() => {
     return [...reserves].sort((a, b) => {
-      let comparison = 0;
+      let comparison: number;
 
       // Default to supply total desc when no column is selected
       const sortColumn = activeSortColumn ?? 'supply';
