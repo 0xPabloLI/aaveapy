@@ -103,6 +103,12 @@
     "vaul": "^0.9.9",
     "zod": "^4.3.6"
   },
+  "overrides": {
+    "react": "$react",
+    "react-dom": "$react-dom",
+    "@types/react": "$@types/react",
+    "@types/react-dom": "$@types/react-dom"
+  },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@tailwindcss/typography": "^0.5.16",
