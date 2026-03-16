@@ -342,16 +342,15 @@ const SimulationSubRow = ({
     const deltaColorClass = row.delta === null || Number.isNaN(row.delta) ? 'text-muted-foreground' : accentClass;
     const isBreakdownItem = row.isBreakdown;
     const cellPy = tight ? 'py-1' : 'py-1.5';
-    const cellPx = tight ? 'px-2.5' : 'px-3';
-    const labelPl = tight ? 'pl-3 pr-2.5' : 'pl-4 pr-3';
-    const deltaPr = tight ? 'pr-4' : 'pr-5';
-    const deltaPl = tight ? 'pl-2.5' : 'pl-3';
+    const metricCellPx = tight ? 'px-3' : 'px-4';
+    const valueCellPx = tight ? 'px-2.5' : 'px-3';
+    const deltaCellPx = tight ? 'px-3' : 'px-4';
     // Supply = green, Borrow = cyan; breakdown rows (Native + Incentive) use same section color
     const rowAccentClass = accentClass;
 
     return (
       <tr key={row.label} className={row.warning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
-        <td className={`${cellPy} ${labelPl} min-w-0 align-top`}>
+        <td className={`${cellPy} ${metricCellPx} min-w-0 align-top`}>
           <div className={`flex flex-wrap items-start gap-x-1.5 gap-y-0.5 min-w-0 ${isBreakdownItem ? `ml-2 pl-2 border-l ${borderColorClass}` : ''}`}>
             {row.href ? (
               <a
@@ -376,17 +375,17 @@ const SimulationSubRow = ({
             )}
           </div>
         </td>
-        <td className={`${cellPy} ${cellPx} text-right`}>
+        <td className={`${cellPy} ${valueCellPx} text-right`}>
           <span className={`ds-text-12 tabular-nums ${rowAccentClass}`}>
             {formatValue(row.current, row.type)}
           </span>
         </td>
-        <td className={`${cellPy} ${cellPx} text-right`}>
+        <td className={`${cellPy} ${valueCellPx} text-right`}>
           <span className={`ds-text-12 tabular-nums ${row.after === null ? 'text-muted-foreground' : rowAccentClass}`}>
             {formatValue(row.after, row.type)}
           </span>
         </td>
-        <td className={`${cellPy} ${deltaPl} ${deltaPr} text-right`}>
+        <td className={`${cellPy} ${deltaCellPx} text-right`}>
           <span className={`ds-text-12 tabular-nums ${deltaColorClass}`}>
             {formatDeltaValue(row.delta, row.type)}
           </span>
