@@ -109,7 +109,7 @@ const SimulationSubRow = ({
 
   /** Minimum container width (px) for the 3-column layout.
    *  Below this we switch to compact unconditionally to avoid clipping. */
-  const MIN_THREE_COL_WIDTH = 720;
+  const MIN_THREE_COL_WIDTH = 900;
 
   useEffect(() => {
     const el = containerRef.current;
