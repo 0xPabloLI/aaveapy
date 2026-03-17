@@ -212,7 +212,7 @@ const MobileReserveCard = memo(({
       {/* Card upper part */}
       <div
         className={`bg-card border border-border/60 ds-card-pad-sm shadow-sm transition-all duration-300 ${
-          isSimulationExpanded && !showUpperOnly ? 'rounded-t-xl rounded-b-none border-b-0' : 'rounded-xl'
+          connectedBelow || (isSimulationExpanded && !showUpperOnly) ? 'rounded-t-xl rounded-b-none border-b-0' : 'rounded-xl'
         }`}
       >
         <div className={shrinkUpperWhenExpanded ? 'w-1/2 min-w-0' : ''}>
