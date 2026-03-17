@@ -440,8 +440,8 @@ const MobileReserveCard = memo(({
           <button
             type="button"
             onClick={onToggleSimulation}
-            className={`relative inline-flex w-full items-center justify-center rounded-lg border bg-background px-[var(--ds-space-2)] py-[var(--ds-space-1-5)] ds-text-12 text-muted-foreground transition-all duration-300 hover:bg-muted/40 ${
-              isSimulationExpanded ? 'border-primary' : 'border-border/70'
+            className={`relative inline-flex w-full items-center justify-center rounded-lg bg-background px-[var(--ds-space-2)] py-[var(--ds-space-1-5)] ds-text-12 text-muted-foreground transition-all duration-300 hover:bg-muted/40 ${
+              isSimulationExpanded ? 'border-2 border-foreground/40' : 'border border-border/70'
             }`}
           >
             <span>Simulation</span>
