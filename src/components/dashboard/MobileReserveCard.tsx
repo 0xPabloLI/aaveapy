@@ -97,6 +97,8 @@ interface MobileReserveCardProps {
   onCorrectBorrowInput?: (correctedValue: string) => void;
   /** When 'upperOnly' only the card upper part is shown; when 'simulationOnly' only the simulation block. */
   variant?: 'full' | 'upperOnly' | 'simulationOnly';
+  /** When true, card gets rounded-b-none + border-b-0 to connect to panel below. */
+  connectedBelow?: boolean;
 }
 
 const MobileReserveCard = memo(({
