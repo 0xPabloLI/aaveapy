@@ -97,6 +97,8 @@ interface MobileReserveCardProps {
   onCorrectBorrowInput?: (correctedValue: string) => void;
   /** When 'upperOnly' only the card upper part is shown; when 'simulationOnly' only the simulation block. */
   variant?: 'full' | 'upperOnly' | 'simulationOnly';
+  /** When true, card gets rounded-b-none + border-b-0 to connect to panel below. */
+  connectedBelow?: boolean;
 }
 
 const MobileReserveCard = memo(({
@@ -113,6 +115,7 @@ const MobileReserveCard = memo(({
   onCorrectSupplyInput,
   onCorrectBorrowInput,
   variant = 'full',
+  connectedBelow = false,
 }: MobileReserveCardProps) => {
   const [capSheet, setCapSheet] = useState<'supply' | 'borrow' | null>(null);
 
@@ -209,7 +212,7 @@ const MobileReserveCard = memo(({
       {/* Card upper part */}
       <div
         className={`bg-card border border-border/60 ds-card-pad-sm shadow-sm transition-all duration-300 ${
-          isSimulationExpanded && !showUpperOnly ? 'rounded-t-xl rounded-b-none border-b-0' : 'rounded-xl'
+          connectedBelow || (isSimulationExpanded && !showUpperOnly) ? 'rounded-t-xl rounded-b-none border-b-0' : 'rounded-xl'
         }`}
       >
         <div className={shrinkUpperWhenExpanded ? 'w-1/2 min-w-0' : ''}>
