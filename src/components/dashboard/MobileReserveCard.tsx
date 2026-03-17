@@ -1,5 +1,5 @@
 import { memo, useState } from 'react';
-import { ExternalLink, ChevronDown, ChevronUp, X } from 'lucide-react';
+import { ExternalLink, ChevronDown, X } from 'lucide-react';
 import { ReserveWithSpread, ETHEREUM_MARKET_NAMES } from '@/types/aave';
 import { formatPercent, formatSpread } from '@/lib/formatters';
 import { getChainIconSrc } from '@/lib/chainIcons';
@@ -441,26 +441,33 @@ const MobileReserveCard = memo(({
         >
           <span>Simulation</span>
           <span className="absolute right-[var(--ds-space-2)]">
-            {isSimulationExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+            <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${isSimulationExpanded ? 'rotate-180' : ''}`} />
           </span>
         </button>
       </div>
       </div>
-      {!showUpperOnly && isSimulationExpanded && (
-          <div className="mt-[var(--ds-space-2)]">
-            <SimulationSubRow
-              reserve={reserve}
-              simulation={simulation}
-              isApy={isApy}
-              supplyInput={supplyInput}
-              borrowInput={borrowInput}
-              inputMode={inputMode}
-              compact
-              onCorrectSupplyInput={onCorrectSupplyInput}
-              onCorrectBorrowInput={onCorrectBorrowInput}
-            />
+      {!showUpperOnly && (
+        <div
+          className="grid transition-[grid-template-rows] duration-300 ease-in-out"
+          style={{ gridTemplateRows: isSimulationExpanded ? '1fr' : '0fr' }}
+        >
+          <div className="overflow-hidden">
+            <div className="mt-[var(--ds-space-2)]">
+              <SimulationSubRow
+                reserve={reserve}
+                simulation={simulation}
+                isApy={isApy}
+                supplyInput={supplyInput}
+                borrowInput={borrowInput}
+                inputMode={inputMode}
+                compact
+                onCorrectSupplyInput={onCorrectSupplyInput}
+                onCorrectBorrowInput={onCorrectBorrowInput}
+              />
+            </div>
           </div>
-        )}
+        </div>
+      )}
     </div>
   );
 });
