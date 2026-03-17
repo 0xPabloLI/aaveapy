@@ -935,7 +935,7 @@ const ReservesTable = ({
                     }
                   }
                   nodes.push(
-                    <div key={`sim-${reserveId}`} className="col-span-2 -mt-[var(--ds-space-2)]">
+                    <div key={`sim-${reserveId}`} className="col-span-2">
                       <MobileReserveCard
                         variant="simulationOnly"
                         reserve={reserve}
