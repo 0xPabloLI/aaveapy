@@ -115,6 +115,7 @@ const MobileReserveCard = memo(({
   onCorrectSupplyInput,
   onCorrectBorrowInput,
   variant = 'full',
+  connectedBelow = false,
 }: MobileReserveCardProps) => {
   const [capSheet, setCapSheet] = useState<'supply' | 'borrow' | null>(null);
 
