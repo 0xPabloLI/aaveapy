@@ -173,7 +173,7 @@ When implementing mobile carousels:
 - Tooltip content should not repeat information already visible in the parent; only show supplementary context.
 - Toggle/selection state changes must be visually obvious; use border color or other clear indicators, not subtle opacity/background only.
 - Reserve semantic colors for their purpose; keep each UI element focused on one semantic role (e.g. amber for alerts only, not regular data). When implementing the same control on mobile and desktop, reuse the same design tokens and visual style; only layout may differ (e.g. vertical vs horizontal).
-- Multi-column panels (e.g. simulation Supply/Spread/Borrow): use equal column widths and uniform compression; do not give one column fixed or favored width. Tables: ensure sufficient padding so text does not cling to edges; when space is tight prefer wrapping over ellipsis.
+- Multi-column panels (e.g. simulation Supply/Spread/Borrow): use equal column widths and uniform compression; do not give one column fixed or favored width. Bordered UI (including tables) must keep clear breathing room between text and borders; when space is tight prefer wrapping over ellipsis.
 
 ## Learned Workspace Facts
 - Mobile overlays (cap details, incentive details) use bottom sheet with title bar and close button, not floating popover; see docs/design/frontend-interaction-guardrails.md.

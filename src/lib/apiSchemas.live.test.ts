@@ -16,7 +16,7 @@ import {
   SideDataMetaResponseSchema,
 } from './apiSchemas';
 
-const API_BASE = process.env.VITE_API_BASE_URL || 'https://api.aaveapy.com/api';
+const API_BASE = process.env.VITE_API_BASE_URL || 'https://staging-api.aaveapy.com/api';
 const TIMEOUT = 15_000;
 
 describe('Live API schema validation', () => {
