@@ -1,5 +1,5 @@
 import { memo, useState } from 'react';
-import { ExternalLink, ChevronDown, ChevronUp, X } from 'lucide-react';
+import { ExternalLink, ChevronDown, X } from 'lucide-react';
 import { ReserveWithSpread, ETHEREUM_MARKET_NAMES } from '@/types/aave';
 import { formatPercent, formatSpread } from '@/lib/formatters';
 import { getChainIconSrc } from '@/lib/chainIcons';
