@@ -74,7 +74,7 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
   if (isMobile) {
     /* Mobile: 2 rows, maximally compact — Supply aligns with USD, Borrow with Token */
     return (
-      <div className="rounded-xl border border-border/60 bg-card/60 backdrop-blur-sm px-1.5 py-1 shadow-sm overflow-x-auto">
+      <div className="rounded-xl border border-border/60 bg-card/60 backdrop-blur-sm px-1.5 py-1.5 overflow-x-auto">
         <div className="grid min-w-0 grid-cols-[auto_1fr_1px_auto] grid-rows-2 gap-x-1.5 gap-y-1 items-center">
           <div className="col-start-1 row-span-2 row-start-1 flex flex-col self-stretch gap-0 rounded-lg bg-muted/60 p-0.5 border border-border/40">
             <button
@@ -137,7 +137,7 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
 
   /* Desktop: single row */
   return (
-    <div className="rounded-xl border border-border/60 bg-card/60 backdrop-blur-sm px-[var(--ds-space-2-5)] py-[var(--ds-space-1-5)] shadow-sm">
+    <div className="rounded-xl border border-border/60 bg-card/60 backdrop-blur-sm px-[var(--ds-space-2-5)] py-[var(--ds-space-1-5)]">
       <div className="flex items-center gap-[var(--ds-space-1-5)]">
         <div className="flex items-center gap-0.5 bg-muted/60 rounded-lg p-0.5 border border-border/40">
           <button
