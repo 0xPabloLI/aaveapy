@@ -101,7 +101,7 @@ jobs:
       - name: Run build
         run: npm run build
       - name: Validate API schemas against live endpoints
-        if: github.event_name != 'pull_request'
+        if: github.event_name == 'push'
         run: npx vitest run src/lib/apiSchemas.live.test.ts
 
 
