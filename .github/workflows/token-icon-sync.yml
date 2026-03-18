@@ -2,6 +2,12 @@ name: Token Icon Sync
 
 on:
   workflow_dispatch:
+    inputs:
+      target_branch:
+        description: "Target base branch for the sync PR (default: dev)"
+        required: false
+        default: "dev"
+        type: string
   repository_dispatch:
     types: [upstream-change]
   schedule:
@@ -9,18 +15,25 @@ on:
     - cron: "20 4 * * *"
 
 permissions:
+  actions: write
   contents: write
   pull-requests: write
 
 jobs:
   sync-token-icons:
+    env:
+      TARGET_BRANCH: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.target_branch || 'dev' }}
+      HAS_SYNC_PAT: ${{ secrets.TOKEN_ICON_SYNC_PAT != '' || secrets.HARDCODE_SYNC_PAT != '' }}
     if: >
       github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'repository_dispatch' ||
       github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          ref: ${{ env.TARGET_BRANCH }}
 
       - name: Setup Node
         uses: actions/setup-node@v5
@@ -35,15 +48,42 @@ jobs:
         run: npm run sync-token-icons
 
       - name: Create PR when icons changed
+        id: cpr
         uses: peter-evans/create-pull-request@v7
         with:
+          # Use PAT to ensure pull_request workflows (CI lint/build) are triggered on created PRs.
+          # Fallback to GITHUB_TOKEN keeps behavior but may leave required checks in "Expected".
+          token: ${{ secrets.TOKEN_ICON_SYNC_PAT != '' && secrets.TOKEN_ICON_SYNC_PAT || secrets.HARDCODE_SYNC_PAT != '' && secrets.HARDCODE_SYNC_PAT || github.token }}
           commit-message: "chore(icons): sync token icons"
           title: "chore(icons): sync token icons"
           body: |
             Automated update from `npm run sync-token-icons`.
-          branch: "bot/token-icon-sync-${{ github.run_id }}"
-          base: ${{ github.event.repository.default_branch }}
+          branch: "bot/token-icon-sync-${{ env.TARGET_BRANCH }}-${{ github.run_id }}"
+          base: ${{ env.TARGET_BRANCH }}
           delete-branch: true
           labels: |
             automation
             assets
+
+      - name: Warn when PAT is missing
+        if: steps.cpr.outputs.pull-request-number != '' && env.HAS_SYNC_PAT != 'true'
+        run: |
+          echo "::warning::TOKEN_ICON_SYNC_PAT/HARDCODE_SYNC_PAT is not configured. PR was created with GITHUB_TOKEN, so pull_request CI may stay in 'Expected'. Fallback workflow_dispatch CI will be triggered on the PR branch."
+
+      - name: Trigger fallback CI when PAT is missing
+        if: steps.cpr.outputs.pull-request-number != '' && env.HAS_SYNC_PAT != 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const workflowRef = `${{ steps.cpr.outputs.pull-request-branch }}`;
+            const targetRef = `${{ steps.cpr.outputs.pull-request-head-sha }}` || workflowRef;
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'ci.yml',
+              ref: workflowRef,
+              inputs: {
+                target_ref: targetRef
+              }
+            });
+            core.info(`Triggered fallback workflow_dispatch for ci.yml on ref ${workflowRef}, target_ref ${targetRef}`);
