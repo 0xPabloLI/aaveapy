@@ -7,17 +7,20 @@ import {
 } from '@/lib/cache';
 import { API_BASE } from '@/lib/apiBase';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
+import { MarketsResponseSchema } from '@/lib/apiSchemas';
 
-// Fetch all market data (breaking change: API returns { snapshot, reserves })
+// Fetch all market data — validated against MarketsResponseSchema (single source of truth)
 export const fetchMarkets = async (): Promise<MarketsResponse> => {
   try {
     const response = await fetch(`${API_BASE}/markets`);
     if (!response.ok) throw new Error('Failed to fetch markets');
     const raw = await response.json();
-    if (!raw?.snapshot?.lastUpdated || !Array.isArray(raw?.reserves)) {
-      throw new Error('Invalid markets response: expected { snapshot: { lastUpdated }, reserves }');
+    const parsed = MarketsResponseSchema.safeParse(raw);
+    if (!parsed.success) {
+      console.error('Markets API schema validation failed:', parsed.error.message);
+      throw new Error(`Invalid markets response: ${parsed.error.message}`);
     }
-    const data = raw as MarketsResponse;
+    const data = parsed.data as MarketsResponse;
     // Save to cache on success
     setCachedMarkets(data);
     return data;

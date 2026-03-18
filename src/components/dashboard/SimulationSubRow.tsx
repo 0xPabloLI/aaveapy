@@ -109,7 +109,7 @@ const SimulationSubRow = ({
 
   /** Minimum container width (px) for the 3-column layout.
    *  Below this we switch to compact unconditionally to avoid clipping. */
-  const MIN_THREE_COL_WIDTH = 720;
+  const MIN_THREE_COL_WIDTH = 900;
 
   useEffect(() => {
     const el = containerRef.current;
@@ -342,16 +342,15 @@ const SimulationSubRow = ({
     const deltaColorClass = row.delta === null || Number.isNaN(row.delta) ? 'text-muted-foreground' : accentClass;
     const isBreakdownItem = row.isBreakdown;
     const cellPy = tight ? 'py-1' : 'py-1.5';
-    const cellPx = tight ? 'px-2.5' : 'px-3';
-    const labelPl = tight ? 'pl-3 pr-2.5' : 'pl-4 pr-3';
-    const deltaPr = tight ? 'pr-4' : 'pr-5';
-    const deltaPl = tight ? 'pl-2.5' : 'pl-3';
+    const metricCellPx = tight ? 'px-3' : 'px-4';
+    const valueCellPx = tight ? 'px-2.5' : 'px-3';
+    const deltaCellPx = tight ? 'px-3' : 'px-4';
     // Supply = green, Borrow = cyan; breakdown rows (Native + Incentive) use same section color
     const rowAccentClass = accentClass;
 
     return (
       <tr key={row.label} className={row.warning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
-        <td className={`${cellPy} ${labelPl} min-w-0 align-top`}>
+        <td className={`${cellPy} ${metricCellPx} min-w-0 align-top`}>
           <div className={`flex flex-wrap items-start gap-x-1.5 gap-y-0.5 min-w-0 ${isBreakdownItem ? `ml-2 pl-2 border-l ${borderColorClass}` : ''}`}>
             {row.href ? (
               <a
@@ -376,17 +375,17 @@ const SimulationSubRow = ({
             )}
           </div>
         </td>
-        <td className={`${cellPy} ${cellPx} text-right`}>
+        <td className={`${cellPy} ${valueCellPx} text-right`}>
           <span className={`ds-text-12 tabular-nums ${rowAccentClass}`}>
             {formatValue(row.current, row.type)}
           </span>
         </td>
-        <td className={`${cellPy} ${cellPx} text-right`}>
+        <td className={`${cellPy} ${valueCellPx} text-right`}>
           <span className={`ds-text-12 tabular-nums ${row.after === null ? 'text-muted-foreground' : rowAccentClass}`}>
             {formatValue(row.after, row.type)}
           </span>
         </td>
-        <td className={`${cellPy} ${deltaPl} ${deltaPr} text-right`}>
+        <td className={`${cellPy} ${deltaCellPx} text-right`}>
           <span className={`ds-text-12 tabular-nums ${deltaColorClass}`}>
             {formatDeltaValue(row.delta, row.type)}
           </span>
@@ -397,22 +396,24 @@ const SimulationSubRow = ({
 
   const renderCompactLayout = () => {
     const compactCellPy = 'py-1';
-    const compactMetricCell = 'pl-3 pr-2.5';
-    const compactNumCell = 'pl-2.5 pr-2.5';
-    const compactDeltaCell = 'pl-2.5 pr-4';
+    const compactMetricCell = 'px-3';
+    const compactNumCell = 'px-2.5';
+    const compactDeltaCell = 'pl-2.5 pr-3';
     return (
     <div
-      className={`border border-border/60 overflow-hidden ${embeddedFromTop ? 'rounded-b-xl rounded-t-none border-t-0 bg-card' : 'rounded-lg bg-card/50 dark:bg-background/80'}`}
+      className={`border border-border/60 bg-card/50 dark:bg-background/80 overflow-hidden ${
+        embeddedFromTop ? 'rounded-b-xl rounded-t-xl' : 'rounded-xl'
+      }`}
     >
       <table className="w-full min-w-0 table-fixed">
         <colgroup>
           <col style={{ width: 'auto' }} />
           <col style={{ width: '4.75rem' }} />
           <col style={{ width: '4.75rem' }} />
-          <col style={{ width: '4.25rem' }} />
+          <col style={{ width: '4.5rem' }} />
         </colgroup>
         <thead>
-          <tr className="border-b border-border/50 bg-muted/30">
+          <tr className="bg-muted/30 border-b border-border/50">
             <th className={`${compactCellPy} ${compactMetricCell} text-left`}>
               <span className="ds-text-11 text-muted-foreground font-medium">{tokenOnChainLabel}</span>
             </th>
@@ -477,17 +478,17 @@ const SimulationSubRow = ({
   };
 
   const renderTable = (title: string, rows: TableRow[], accentClass: string, borderClass: string, indentBorderClass: string, isWarning?: boolean) => (
-    <div className={`flex min-h-0 min-w-0 flex-1 flex-col rounded-lg border ${isWarning ? 'border-amber-500/60' : borderClass} bg-card/50 dark:bg-background/80 overflow-hidden`}>
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
       <table className="w-full min-w-0 table-fixed">
         <colgroup>
-          <col style={{ width: '40%' }} />
+          <col style={{ width: '38%' }} />
           <col style={{ width: '20%' }} />
           <col style={{ width: '20%' }} />
-          <col style={{ width: '20%' }} />
+          <col style={{ width: '22%' }} />
         </colgroup>
         <thead>
-          <tr className="border-b border-border/50 bg-muted/30">
-            <th className="pl-4 pr-3 py-2 text-left">
+          <tr className="bg-muted/30 border-b border-border/50">
+            <th className="px-4 py-2 text-left">
               <span className={`ds-text-13 font-semibold ${accentClass}`}>{title}</span>
             </th>
             <th className="px-3 py-2 text-right">
@@ -496,7 +497,7 @@ const SimulationSubRow = ({
             <th className="px-3 py-2 text-right">
               <span className="ds-text-11 text-muted-foreground">After</span>
             </th>
-            <th className="pl-3 pr-5 py-2 text-right">
+            <th className="px-4 py-2 text-right">
               <span className="ds-text-11 text-muted-foreground">Delta</span>
             </th>
           </tr>
@@ -511,17 +512,17 @@ const SimulationSubRow = ({
   // Middle column (Spread + Liquidity) - amber border when borrow limited by liquidity
   const middleColumnWarning = borrowCapExceeded && borrowLimitedByLiquidity;
   const renderMiddleColumn = () => (
-    <div className={`flex min-h-0 flex-1 flex-col rounded-lg border ${middleColumnWarning ? 'border-amber-500/60' : 'border-purple-500/40'} bg-card/50 dark:bg-background/80 min-w-0`}>
+    <div className="flex min-h-0 flex-1 flex-col min-w-0">
       <table className="w-full min-w-0 table-fixed">
         <colgroup>
-          <col style={{ width: '28%' }} />
+          <col style={{ width: '26%' }} />
           <col style={{ width: '24%' }} />
           <col style={{ width: '24%' }} />
-          <col style={{ width: '24%' }} />
+          <col style={{ width: '26%' }} />
         </colgroup>
         <thead>
-          <tr className="border-b border-border/50 bg-muted/30">
-            <th className="pl-4 pr-3 py-2 text-left">
+          <tr className="bg-muted/30 border-b border-border/50">
+            <th className="px-4 py-2 text-left">
               {/* Empty title cell for alignment */}
             </th>
             <th className="px-3 py-2 text-right">
@@ -530,7 +531,7 @@ const SimulationSubRow = ({
             <th className="px-3 py-2 text-right">
               <span className="ds-text-11 text-muted-foreground">After</span>
             </th>
-            <th className="pl-3 pr-5 py-2 text-right">
+            <th className="px-4 py-2 text-right">
               <span className="ds-text-11 text-muted-foreground">Delta</span>
             </th>
           </tr>
@@ -538,7 +539,7 @@ const SimulationSubRow = ({
         <tbody className="[&>tr:last-child>td]:pb-2.5">
           {/* Spread first */}
           <tr>
-            <td className="py-1.5 pl-4 pr-3">
+            <td className="py-1.5 px-4">
               <span className="ds-text-12 ds-text-purple-600">Spread</span>
             </td>
             <td className="py-1.5 px-3 text-right">
@@ -549,7 +550,7 @@ const SimulationSubRow = ({
                 {formatSpread(simulation.spread.after)}
               </span>
             </td>
-            <td className="py-1.5 pl-3 pr-5 text-right">
+            <td className="py-1.5 px-4 text-right">
               <span className={`ds-text-12 tabular-nums ${simulation.spread.delta === null ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
                 {formatDelta(simulation.spread.delta)}
               </span>
@@ -557,7 +558,7 @@ const SimulationSubRow = ({
           </tr>
           {/* Liquidity second */}
           <tr className={borrowCapExceeded && borrowLimitedByLiquidity ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
-            <td className="py-1.5 pl-4 pr-3">
+            <td className="py-1.5 px-4">
               <span className={`ds-text-12 ${borrowCapExceeded && borrowLimitedByLiquidity ? 'text-amber-700 dark:text-amber-400 font-medium' : 'ds-text-purple-600'}`}>
                 Liquidity
               </span>
@@ -572,7 +573,7 @@ const SimulationSubRow = ({
                 {formatReserveSizeUsd(simulation.marketMetrics.availableLiquidityUsdAfter)}
               </span>
             </td>
-            <td className="py-1.5 pl-3 pr-5 text-right">
+            <td className="py-1.5 px-4 text-right">
               <span className={`ds-text-12 tabular-nums ${simulation.marketMetrics.availableLiquidityUsdDelta === null ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
                 {formatUsdDelta(simulation.marketMetrics.availableLiquidityUsdDelta)}
               </span>
@@ -584,9 +585,9 @@ const SimulationSubRow = ({
   );
 
   return (
-    <div ref={containerRef} className={`min-w-0 rounded-xl border border-border/70 bg-muted/20 ${effectiveCompact ? 'p-3' : 'p-4'}`}>
+    <div ref={containerRef} className={`min-w-0 ${effectiveCompact ? 'p-0' : 'p-0'}`}>
       {/* Header */}
-      <div className={`flex flex-wrap items-baseline gap-x-2 gap-y-1 ${effectiveCompact ? 'mb-2' : 'mb-3'}`}>
+      <div className={`flex flex-wrap items-baseline gap-x-2 gap-y-1 ${effectiveCompact ? 'mb-2 px-1' : 'mb-3 px-1'}`}>
         <span className={effectiveCompact ? 'ds-text-13 font-semibold text-foreground' : 'ds-text-14 font-semibold text-foreground'}>
           Shared {rateLabel} simulation
         </span>

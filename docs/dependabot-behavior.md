@@ -68,3 +68,28 @@
 - **自动审批**：`dependabot-auto-triage` 只对「patch/minor + 开发依赖」打 `automerge` / 自动 approve；**major 和生产依赖**会打 `manual-review`，需要你人工看。
 
 总结：**有更新就提（按周） + 有漏洞也会提（安全更新）**；**只有 minor/patch 会合并成批，major 不会**；新包有问题就先用 ignore 或先不合并，等稳定再升。
+
+---
+
+## 6. Peer Dependency 防护（见 `docs/conventions/peer-dependency-guard.md`）
+
+React 生态中 `react` 和 `react-dom` **必须**是同一大版本。Dependabot 可能只升其中一个，导致白屏（编译通过但运行时崩溃）。
+
+### 已落实的防线
+
+| 防线 | 作用 |
+|------|------|
+| `package.json` 的 `overrides` | 强制所有子依赖使用同一版本的 react/react-dom |
+| CI `peer-dep-check` job | 显式检查 react ≡ react-dom 版本 + 扫描所有 peer dep 冲突 |
+
+### 本地诊断
+
+```bash
+node -p "require('react/package.json').version"
+node -p "require('react-dom/package.json').version"
+npm ls react 2>&1 | grep "invalid"
+```
+
+### 历史案例：2026-03-16 react@19 + react-dom@18 白屏
+
+Dependabot 只升了 `react` 到 19，`react-dom` 留在 18 → `ReactCurrentDispatcher` undefined → 白屏。详见 `docs/conventions/peer-dependency-guard.md`。
