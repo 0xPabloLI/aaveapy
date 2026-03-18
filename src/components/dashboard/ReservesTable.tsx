@@ -660,7 +660,7 @@ const ReservesTable = ({
   if (isMobile) {
     return (
       <div className="space-y-3 pb-[calc(env(safe-area-inset-bottom,0px)+5rem)]">
-        <div className="sticky top-[env(safe-area-inset-top,0px)] z-20 -mx-[var(--ds-space-3)] px-[var(--ds-space-3)] py-0.5 bg-background/80 backdrop-blur-sm">
+        <div className="sticky top-[env(safe-area-inset-top,0px)] z-20 -mx-[var(--ds-space-3)] px-[var(--ds-space-3)] py-1 bg-background/80 backdrop-blur-sm">
           {scenarioControls}
         </div>
         {/* Header with sorting controls */}
