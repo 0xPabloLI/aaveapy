@@ -102,7 +102,7 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
                 value={supplyInput}
                 onChange={(event) => setSupplyInput(formatNumberInput(event.target.value))}
                 inputMode="decimal"
-                placeholder={inputMode === 'usd' ? '100k' : '50'}
+                placeholder={inputMode === 'usd' ? '100,000' : '50'}
                 className={`${supplyInputClasses} flex-1 min-w-0`}
                 aria-label="Supply amount"
               />
@@ -113,7 +113,7 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
                 value={borrowInput}
                 onChange={(event) => setBorrowInput(formatNumberInput(event.target.value))}
                 inputMode="decimal"
-                placeholder={inputMode === 'usd' ? '20k' : '10'}
+                placeholder={inputMode === 'usd' ? '20,000' : '10'}
                 className={`${borrowInputClasses} flex-1 min-w-0`}
                 aria-label="Borrow amount"
               />
