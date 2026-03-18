@@ -309,7 +309,7 @@ const DesktopReserveRow = memo(({
             style={{ gridTemplateRows: isExpanded ? '1fr' : '0fr' }}
           >
             <div className="overflow-hidden">
-              <div className="px-[var(--ds-space-3)] py-[var(--ds-space-3)] bg-muted/10 border-b border-border/40">
+              <div className="px-[var(--ds-space-3)] py-[var(--ds-space-3)] bg-transparent">
                 {simulation && (
                   <SimulationSubRow
                     reserve={reserve}

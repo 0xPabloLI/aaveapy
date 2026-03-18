@@ -953,6 +953,7 @@ const ReservesTable = ({
                                 ? {
                                     left: 'calc(50% - var(--ds-space-2) / 2)',
                                     right: -1,
+                                    borderTopRightRadius: 12,
                                     borderBottomLeftRadius: 12,
                                     borderLeft: '1px solid hsl(var(--border) / 0.6)',
                                     borderBottom: '1px solid hsl(var(--border) / 0.6)',
@@ -960,6 +961,7 @@ const ReservesTable = ({
                                 : {
                                     right: 'calc(50% - var(--ds-space-2) / 2)',
                                     left: -1,
+                                    borderTopLeftRadius: 12,
                                     borderBottomRightRadius: 12,
                                     borderRight: '1px solid hsl(var(--border) / 0.6)',
                                     borderBottom: '1px solid hsl(var(--border) / 0.6)',
@@ -970,10 +972,8 @@ const ReservesTable = ({
                           />
                         )}
                         <div
-                          className="bg-card border border-border/60 border-t-0 rounded-b-xl ds-card-pad-sm"
+                          className="bg-card border border-border/60 border-t-0 rounded-b-xl rounded-t-xl ds-card-pad-sm"
                           style={{
-                            borderTopLeftRadius: isLeftActive ? 0 : 12,
-                            borderTopRightRadius: isLeftActive ? 12 : 0,
                             paddingTop: 'var(--ds-space-2)',
                           }}
                         >

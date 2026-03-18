@@ -463,7 +463,7 @@ const MobileReserveCard = memo(({
           style={{ gridTemplateRows: isSimulationExpanded ? '1fr' : '0fr' }}
         >
           <div className="overflow-hidden">
-            <div className="bg-card border border-border/60 border-t-0 rounded-b-xl ds-card-pad-sm pt-0">
+            <div className="-mt-px bg-card rounded-b-xl rounded-t-none ds-card-pad-sm pt-0">
               <SimulationSubRow
                 reserve={reserve}
                 simulation={simulation}

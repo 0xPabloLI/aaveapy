@@ -401,7 +401,9 @@ const SimulationSubRow = ({
     const compactDeltaCell = 'pl-2.5 pr-3';
     return (
     <div
-      className={`border border-border/60 overflow-hidden ${embeddedFromTop ? 'rounded-b-xl rounded-t-none border-t-0 bg-card' : 'rounded-lg bg-card/50 dark:bg-background/80'}`}
+      className={`border border-border/60 bg-card/50 dark:bg-background/80 overflow-hidden ${
+        embeddedFromTop ? 'rounded-b-xl rounded-t-xl' : 'rounded-xl'
+      }`}
     >
       <table className="w-full min-w-0 table-fixed">
         <colgroup>
@@ -411,7 +413,7 @@ const SimulationSubRow = ({
           <col style={{ width: '4.5rem' }} />
         </colgroup>
         <thead>
-          <tr className="border-b border-border/50 bg-muted/30">
+          <tr className="bg-muted/30 border-b border-border/50">
             <th className={`${compactCellPy} ${compactMetricCell} text-left`}>
               <span className="ds-text-11 text-muted-foreground font-medium">{tokenOnChainLabel}</span>
             </th>
@@ -476,7 +478,7 @@ const SimulationSubRow = ({
   };
 
   const renderTable = (title: string, rows: TableRow[], accentClass: string, borderClass: string, indentBorderClass: string, isWarning?: boolean) => (
-    <div className={`flex min-h-0 min-w-0 flex-1 flex-col rounded-lg border ${isWarning ? 'border-amber-500/60' : borderClass} bg-card/50 dark:bg-background/80 overflow-hidden`}>
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
       <table className="w-full min-w-0 table-fixed">
         <colgroup>
           <col style={{ width: '38%' }} />
@@ -485,7 +487,7 @@ const SimulationSubRow = ({
           <col style={{ width: '22%' }} />
         </colgroup>
         <thead>
-          <tr className="border-b border-border/50 bg-muted/30">
+          <tr className="bg-muted/30 border-b border-border/50">
             <th className="px-4 py-2 text-left">
               <span className={`ds-text-13 font-semibold ${accentClass}`}>{title}</span>
             </th>
@@ -510,7 +512,7 @@ const SimulationSubRow = ({
   // Middle column (Spread + Liquidity) - amber border when borrow limited by liquidity
   const middleColumnWarning = borrowCapExceeded && borrowLimitedByLiquidity;
   const renderMiddleColumn = () => (
-    <div className={`flex min-h-0 flex-1 flex-col rounded-lg border ${middleColumnWarning ? 'border-amber-500/60' : 'border-purple-500/40'} bg-card/50 dark:bg-background/80 min-w-0`}>
+    <div className="flex min-h-0 flex-1 flex-col min-w-0">
       <table className="w-full min-w-0 table-fixed">
         <colgroup>
           <col style={{ width: '26%' }} />
@@ -519,7 +521,7 @@ const SimulationSubRow = ({
           <col style={{ width: '26%' }} />
         </colgroup>
         <thead>
-          <tr className="border-b border-border/50 bg-muted/30">
+          <tr className="bg-muted/30 border-b border-border/50">
             <th className="px-4 py-2 text-left">
               {/* Empty title cell for alignment */}
             </th>
@@ -583,9 +585,9 @@ const SimulationSubRow = ({
   );
 
   return (
-    <div ref={containerRef} className={`min-w-0 rounded-xl border border-border/70 bg-muted/20 ${effectiveCompact ? 'p-3' : 'p-4'}`}>
+    <div ref={containerRef} className={`min-w-0 ${effectiveCompact ? 'p-0' : 'p-0'}`}>
       {/* Header */}
-      <div className={`flex flex-wrap items-baseline gap-x-2 gap-y-1 ${effectiveCompact ? 'mb-2' : 'mb-3'}`}>
+      <div className={`flex flex-wrap items-baseline gap-x-2 gap-y-1 ${effectiveCompact ? 'mb-2 px-1' : 'mb-3 px-1'}`}>
         <span className={effectiveCompact ? 'ds-text-13 font-semibold text-foreground' : 'ds-text-14 font-semibold text-foreground'}>
           Shared {rateLabel} simulation
         </span>
