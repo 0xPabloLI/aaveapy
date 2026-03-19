@@ -23,7 +23,7 @@
     "dev": "node scripts/generate-token-icon-manifest.mjs && vite",
     "dev:staging": "VITE_API_BASE_URL=https://staging-api.aaveapy.com/api vite --mode staging",
     "dev:production": "vite --mode production",
-    "ci:remote": "npm run lint && npm run build && npm audit --omit=dev --audit-level=high",
+    "ci:remote": "npm run lint && npm test && npm run build && npm audit --omit=dev --audit-level=high",
     "ci:auto-fix": "npm audit fix --omit=dev || true && npm ci",
     "build": "node scripts/generate-token-icon-manifest.mjs && vite build",
     "build:dev": "node scripts/generate-token-icon-manifest.mjs && vite build --mode development",

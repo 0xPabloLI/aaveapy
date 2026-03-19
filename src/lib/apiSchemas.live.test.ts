@@ -8,7 +8,11 @@
  * with the actual API response, and ALL consumers (hooks, scripts, types)
  * need to be updated.
  *
- * Run: npx vitest run src/lib/apiSchemas.live.test.ts
+ * Gated behind `RUN_LIVE_TESTS=true` so `npm test` stays deterministic
+ * and network-independent.
+ *
+ * Run explicitly:
+ *   RUN_LIVE_TESTS=true npx vitest run src/lib/apiSchemas.live.test.ts
  */
 import { describe, expect, it } from 'vitest';
 import {
@@ -19,7 +23,7 @@ import {
 const API_BASE = process.env.VITE_API_BASE_URL || 'https://staging-api.aaveapy.com/api';
 const TIMEOUT = 15_000;
 
-describe('Live API schema validation', () => {
+describe.skipIf(!process.env.RUN_LIVE_TESTS)('Live API schema validation', () => {
   it(
     '/markets response matches MarketsResponseSchema',
     async () => {
