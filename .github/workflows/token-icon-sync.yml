@@ -22,7 +22,7 @@ permissions:
 jobs:
   sync-token-icons:
     env:
-      TARGET_BRANCH: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.target_branch || 'dev' }}
+      TARGET_BRANCH: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.target_branch || github.event_name == 'repository_dispatch' && github.event.client_payload.target_branch || 'dev' }}
       HAS_SYNC_PAT: ${{ secrets.TOKEN_ICON_SYNC_PAT != '' || secrets.HARDCODE_SYNC_PAT != '' }}
     if: >
       github.event_name == 'workflow_dispatch' ||
