@@ -100,10 +100,28 @@ jobs:
         run: npm run ci:lockcheck
       - name: Run build
         run: npm run build
-      - name: Validate API schemas against live endpoints
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: npx vitest run src/lib/apiSchemas.live.test.ts
+      - name: Run unit tests
+        run: npm test
 
+  live-schema-validation:
+    name: live-schema-validation
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install dependencies
+        run: npm run ci:lockcheck
+      - name: Validate API schemas against live endpoints
+        env:
+          RUN_LIVE_TESTS: "true"
+        run: npx vitest run src/lib/apiSchemas.live.test.ts
 
   security-audit:
     name: security-audit
