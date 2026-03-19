@@ -43,6 +43,8 @@
     "check:market-name-map-upstream": "node scripts/check-market-name-map-upstream.mjs",
     "check:chain-icons-upstream": "node scripts/check-chain-icon-map-upstream.mjs",
     "test": "vitest run",
+    "test:live": "LIVE_TEST_API_BASE=https://staging-api.aaveapy.com/api RUN_LIVE_TESTS=true vitest run src/lib/apiSchemas.live.test.ts",
+    "test:live:staging": "LIVE_TEST_API_BASE=https://staging-api.aaveapy.com/api RUN_LIVE_TESTS=true vitest run src/lib/apiSchemas.live.test.ts",
     "ci:lockcheck": "npm ci"
   },
   "dependencies": {
