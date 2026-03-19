@@ -943,8 +943,8 @@ const ReservesTable = ({
                         )}
                       </div>
                       {/* Simulation panel with junction curve */}
-                      <div className="relative">
-                        {/* Junction mask — page-bg overlay on non-active side with concave border curve */}
+                      <div className="relative -mt-px">
+                        {/* Junction mask — non-active side with concave border curve */}
                         {rightReserve && (
                           <div
                             className="absolute top-0 z-10 pointer-events-none"
@@ -971,6 +971,29 @@ const ReservesTable = ({
                             }}
                           />
                         )}
+                        {/* Active-side outer concave corner */}
+                        <div
+                          className="absolute top-0 z-10 pointer-events-none"
+                          style={{
+                            ...(isLeftActive
+                              ? {
+                                  left: -1,
+                                  width: 12,
+                                  borderBottomRightRadius: 12,
+                                  borderRight: '1px solid hsl(var(--border) / 0.6)',
+                                  borderBottom: '1px solid hsl(var(--border) / 0.6)',
+                                }
+                              : {
+                                  right: -1,
+                                  width: 12,
+                                  borderBottomLeftRadius: 12,
+                                  borderLeft: '1px solid hsl(var(--border) / 0.6)',
+                                  borderBottom: '1px solid hsl(var(--border) / 0.6)',
+                                }),
+                            height: 12,
+                            background: 'hsl(var(--background))',
+                          }}
+                        />
                         <div
                           className="bg-card border border-border/60 border-t-0 rounded-b-xl ds-card-pad-sm"
                           style={{
