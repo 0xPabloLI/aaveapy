@@ -85,10 +85,14 @@ const ReserveWithSpreadSchema = z.object({
   brevisBorrows: z.array(BrevisIncentiveSchema).optional(),
 }).passthrough(); // allow extra fields from API without breaking
 
-// ── Markets response ── (legacy shape: data + lastUpdated; current API uses snapshot + reserves)
+// ── Markets response ── (current API: { snapshot, reserves })
 export const MarketsResponseSchema = z.object({
-  data: z.array(ReserveWithSpreadSchema),
-  lastUpdated: z.string(),
+  snapshot: z.object({
+    lastUpdated: z.string(),
+    version: z.string().optional(),
+    staleTimeMs: z.number().optional(),
+  }),
+  reserves: z.array(ReserveWithSpreadSchema),
 });
 
 // ── CoinGecko FDV ──

@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       target_branch:
-        description: "Branch to run hardcode sync on (defaults to repository default branch)"
+        description: "Branch to run hardcode sync on (defaults to dev)"
         required: false
         type: string
   repository_dispatch:
@@ -28,11 +28,11 @@ jobs:
     runs-on: ubuntu-latest
     env:
       TARGET_BRANCH: >-
-        ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.target_branch != '' && github.event.client_payload.target_branch || (github.event_name == 'workflow_dispatch' && github.event.inputs.target_branch != '' && github.event.inputs.target_branch || github.event.repository.default_branch) }}
+        ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.target_branch != '' && github.event.client_payload.target_branch || (github.event_name == 'workflow_dispatch' && github.event.inputs.target_branch != '' && github.event.inputs.target_branch || 'dev') }}
       HAS_HARDCODE_SYNC_PAT: ${{ secrets.HARDCODE_SYNC_PAT != '' }}
     steps:
       - name: Checkout target branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ env.TARGET_BRANCH }}
 
@@ -43,7 +43,7 @@ jobs:
           echo "client_payload=${{ toJSON(github.event.client_payload) }}"
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: "22"
           cache: "npm"

@@ -660,7 +660,7 @@ const ReservesTable = ({
   if (isMobile) {
     return (
       <div className="space-y-3 pb-[calc(env(safe-area-inset-bottom,0px)+5rem)]">
-        <div className="sticky top-[env(safe-area-inset-top,0px)] z-20 -mx-[var(--ds-space-3)] px-[var(--ds-space-3)] py-[var(--ds-space-1)] bg-muted/40 backdrop-blur-sm rounded-b-lg border-b border-border/50">
+        <div className="sticky top-[env(safe-area-inset-top,0px)] z-20 -mx-[var(--ds-space-3)] px-[var(--ds-space-3)] pt-1 pb-0 bg-background/80 backdrop-blur-sm">
           {scenarioControls}
         </div>
         {/* Header with sorting controls */}
@@ -880,70 +880,134 @@ const ReservesTable = ({
             ))
           ) : (
             (() => {
-              const expandedIndex = displayData.findIndex(
-                (r) => `${r.marketName}-${r.tokenAddress}` === expandedReserveId
-              );
               const nodes: React.ReactNode[] = [];
-              for (let i = 0; i < displayData.length; i++) {
-                const reserve = displayData[i];
-                const reserveId = `${reserve.marketName}-${reserve.tokenAddress}`;
-                if (expandedIndex >= 0 && i === expandedIndex) {
-                  const isLeftSlot = expandedIndex % 2 === 0;
+              // Process cards in pairs (rows of 2) for connected layout
+              for (let i = 0; i < displayData.length; i += 2) {
+                const leftReserve = displayData[i];
+                const leftId = `${leftReserve.marketName}-${leftReserve.tokenAddress}`;
+                const rightReserve = i + 1 < displayData.length ? displayData[i + 1] : null;
+                const rightId = rightReserve ? `${rightReserve.marketName}-${rightReserve.tokenAddress}` : null;
+
+                const leftExpanded = leftId === expandedReserveId;
+                const rightExpanded = rightId !== null && rightId === expandedReserveId;
+                const rowHasExpanded = leftExpanded || rightExpanded;
+
+                if (rowHasExpanded) {
+                  const isLeftActive = leftExpanded;
+                  const activeReserve = isLeftActive ? leftReserve : rightReserve!;
+                  const activeId = isLeftActive ? leftId : rightId!;
+
                   nodes.push(
-                    <div key={reserveId}>
-                      <MobileReserveCard
-                        variant="upperOnly"
-                        reserve={reserve}
-                        isApy={isApy}
-                        onIncentiveClick={handleMobileIncentiveClick}
-                        isSimulationExpanded
-                        onToggleSimulation={() => handleToggleExpand(reserveId)}
-                        simulation={simulationsById[reserveId]}
-                        supplyInput={debouncedSharedSupplyInput}
-                        borrowInput={debouncedSharedBorrowInput}
-                        hasSharedScenario={hasSharedScenario}
-                        inputMode={sharedInputMode}
-                        onCorrectSupplyInput={handleCorrectSupplyInput}
-                        onCorrectBorrowInput={handleCorrectBorrowInput}
-                      />
-                    </div>
-                  );
-                  if (i + 1 < displayData.length) {
-                    const nextReserve = displayData[i + 1];
-                    const nextId = `${nextReserve.marketName}-${nextReserve.tokenAddress}`;
-                    const nextCardNode = (
-                      <div key={nextId}>
-                        <MobileReserveCard
-                          variant="full"
-                          reserve={nextReserve}
-                          isApy={isApy}
-                          onIncentiveClick={handleMobileIncentiveClick}
-                          isSimulationExpanded={false}
-                          onToggleSimulation={() => handleToggleExpand(nextId)}
-                          simulation={simulationsById[nextId]}
-                          supplyInput={debouncedSharedSupplyInput}
-                          borrowInput={debouncedSharedBorrowInput}
-                          hasSharedScenario={hasSharedScenario}
-                          inputMode={sharedInputMode}
-                          onCorrectSupplyInput={handleCorrectSupplyInput}
-                          onCorrectBorrowInput={handleCorrectBorrowInput}
-                        />
+                    <div key={`row-${i}`} className="col-span-2">
+                      {/* Cards row */}
+                      <div className="relative grid grid-cols-2 gap-[var(--ds-space-2)]">
+                        {/* Left card */}
+                        <div className={isLeftActive ? 'relative z-[2]' : ''}>
+                          <MobileReserveCard
+                            variant={isLeftActive ? 'upperOnly' : 'full'}
+                            connectedBelow={isLeftActive}
+                            reserve={leftReserve}
+                            isApy={isApy}
+                            onIncentiveClick={handleMobileIncentiveClick}
+                            isSimulationExpanded={isLeftActive}
+                            onToggleSimulation={() => handleToggleExpand(leftId)}
+                            simulation={simulationsById[leftId]}
+                            supplyInput={debouncedSharedSupplyInput}
+                            borrowInput={debouncedSharedBorrowInput}
+                            hasSharedScenario={hasSharedScenario}
+                            inputMode={sharedInputMode}
+                            onCorrectSupplyInput={handleCorrectSupplyInput}
+                            onCorrectBorrowInput={handleCorrectBorrowInput}
+                          />
+                        </div>
+                        {/* Right card */}
+                        {rightReserve && (
+                          <div className={!isLeftActive ? 'relative z-[2]' : ''}>
+                            <MobileReserveCard
+                              variant={!isLeftActive ? 'upperOnly' : 'full'}
+                              connectedBelow={!isLeftActive}
+                              reserve={rightReserve}
+                              isApy={isApy}
+                              onIncentiveClick={handleMobileIncentiveClick}
+                              isSimulationExpanded={!isLeftActive}
+                              onToggleSimulation={() => handleToggleExpand(rightId!)}
+                              simulation={simulationsById[rightId!]}
+                              supplyInput={debouncedSharedSupplyInput}
+                              borrowInput={debouncedSharedBorrowInput}
+                              hasSharedScenario={hasSharedScenario}
+                              inputMode={sharedInputMode}
+                              onCorrectSupplyInput={handleCorrectSupplyInput}
+                              onCorrectBorrowInput={handleCorrectBorrowInput}
+                            />
+                          </div>
+                        )}
                       </div>
-                    );
-                    if (isLeftSlot) {
-                      nodes.push(nextCardNode);
-                    }
-                  }
+                      {/* Simulation panel with junction curve */}
+                      <div className="relative">
+                        {/* Junction mask — page-bg overlay on non-active side with concave border curve */}
+                        {rightReserve && (
+                          <div
+                            className="absolute top-0 z-10 pointer-events-none"
+                            style={{
+                              ...(isLeftActive
+                                ? {
+                                    left: 'calc(50% - var(--ds-space-2) / 2)',
+                                    right: -1,
+                                    borderTopRightRadius: 12,
+                                    borderBottomLeftRadius: 12,
+                                    borderLeft: '1px solid hsl(var(--border) / 0.6)',
+                                    borderBottom: '1px solid hsl(var(--border) / 0.6)',
+                                  }
+                                : {
+                                    right: 'calc(50% - var(--ds-space-2) / 2)',
+                                    left: -1,
+                                    borderTopLeftRadius: 12,
+                                    borderBottomRightRadius: 12,
+                                    borderRight: '1px solid hsl(var(--border) / 0.6)',
+                                    borderBottom: '1px solid hsl(var(--border) / 0.6)',
+                                  }),
+                              height: 12,
+                              background: 'hsl(var(--background))',
+                            }}
+                          />
+                        )}
+                        <div
+                          className="bg-card border border-border/60 border-t-0 rounded-b-xl ds-card-pad-sm"
+                          style={{
+                            paddingTop: 'var(--ds-space-2)',
+                          }}
+                        >
+                          <MobileReserveCard
+                            variant="simulationOnly"
+                            reserve={activeReserve}
+                            isApy={isApy}
+                            onIncentiveClick={handleMobileIncentiveClick}
+                            isSimulationExpanded
+                            onToggleSimulation={() => handleToggleExpand(activeId)}
+                            simulation={simulationsById[activeId]}
+                            supplyInput={debouncedSharedSupplyInput}
+                            borrowInput={debouncedSharedBorrowInput}
+                            hasSharedScenario={hasSharedScenario}
+                            inputMode={sharedInputMode}
+                            onCorrectSupplyInput={handleCorrectSupplyInput}
+                            onCorrectBorrowInput={handleCorrectBorrowInput}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                } else {
+                  // Normal pair — no expansion
                   nodes.push(
-                    <div key={`sim-${reserveId}`} className="col-span-2 -mt-[var(--ds-space-2)]">
+                    <div key={leftId}>
                       <MobileReserveCard
-                        variant="simulationOnly"
-                        reserve={reserve}
+                        variant="full"
+                        reserve={leftReserve}
                         isApy={isApy}
                         onIncentiveClick={handleMobileIncentiveClick}
-                        isSimulationExpanded
-                        onToggleSimulation={() => handleToggleExpand(reserveId)}
-                        simulation={simulationsById[reserveId]}
+                        isSimulationExpanded={false}
+                        onToggleSimulation={() => handleToggleExpand(leftId)}
+                        simulation={simulationsById[leftId]}
                         supplyInput={debouncedSharedSupplyInput}
                         borrowInput={debouncedSharedBorrowInput}
                         hasSharedScenario={hasSharedScenario}
@@ -953,19 +1017,17 @@ const ReservesTable = ({
                       />
                     </div>
                   );
-                  if (!isLeftSlot && i + 1 < displayData.length) {
-                    const nextReserve = displayData[i + 1];
-                    const nextId = `${nextReserve.marketName}-${nextReserve.tokenAddress}`;
+                  if (rightReserve) {
                     nodes.push(
-                      <div key={nextId}>
+                      <div key={rightId}>
                         <MobileReserveCard
                           variant="full"
-                          reserve={nextReserve}
+                          reserve={rightReserve}
                           isApy={isApy}
                           onIncentiveClick={handleMobileIncentiveClick}
                           isSimulationExpanded={false}
-                          onToggleSimulation={() => handleToggleExpand(nextId)}
-                          simulation={simulationsById[nextId]}
+                          onToggleSimulation={() => handleToggleExpand(rightId!)}
+                          simulation={simulationsById[rightId!]}
                           supplyInput={debouncedSharedSupplyInput}
                           borrowInput={debouncedSharedBorrowInput}
                           hasSharedScenario={hasSharedScenario}
@@ -976,29 +1038,7 @@ const ReservesTable = ({
                       </div>
                     );
                   }
-                  i += 1;
-                  continue;
                 }
-                if (expandedIndex >= 0 && i === expandedIndex + 1) continue;
-                nodes.push(
-                  <div key={reserveId}>
-                    <MobileReserveCard
-                      variant="full"
-                      reserve={reserve}
-                      isApy={isApy}
-                      onIncentiveClick={handleMobileIncentiveClick}
-                      isSimulationExpanded={false}
-                      onToggleSimulation={() => handleToggleExpand(reserveId)}
-                      simulation={simulationsById[reserveId]}
-                      supplyInput={debouncedSharedSupplyInput}
-                      borrowInput={debouncedSharedBorrowInput}
-                      hasSharedScenario={hasSharedScenario}
-                      inputMode={sharedInputMode}
-                      onCorrectSupplyInput={handleCorrectSupplyInput}
-                      onCorrectBorrowInput={handleCorrectBorrowInput}
-                    />
-                  </div>
-                );
               }
               return nodes;
             })()

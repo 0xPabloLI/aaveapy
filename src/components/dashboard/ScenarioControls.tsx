@@ -72,11 +72,10 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
   const borrowLabelDesktop = `${fontSize} font-medium shrink-0 ds-text-brand-cyan`;
 
   if (isMobile) {
-    /* Mobile: 2 rows, maximally compact — Supply aligns with USD, Borrow with Token */
     return (
-      <div className="rounded-lg border border-border bg-card/60 backdrop-blur-sm px-1.5 py-0.5 shadow-sm overflow-x-auto">
-        <div className="grid min-w-0 grid-cols-[auto_1fr_1px_auto] grid-rows-2 gap-x-1.5 gap-y-1 items-center">
-          <div className="col-start-1 row-span-2 row-start-1 flex flex-col self-stretch gap-0 rounded-lg bg-muted/60 p-0.5 border border-border/40">
+      <div className="rounded-xl border border-border/60 bg-card/60 backdrop-blur-sm px-1.5 py-1">
+        <div className="flex min-w-0 items-center gap-1.5">
+          <div className="flex flex-col self-stretch gap-0 rounded-lg bg-muted/60 p-0.5 border border-border/40 shrink-0">
             <button
               type="button"
               onClick={() => handleModeChange('usd')}
@@ -96,40 +95,39 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
               Token
             </button>
           </div>
-          <div className="col-start-2 row-start-1 flex min-w-0 items-center gap-0.5">
-            <span className={`${supplyLabelMobile} w-10 shrink-0`}>Supply</span>
-            <input
-              value={supplyInput}
-              onChange={(event) => setSupplyInput(formatNumberInput(event.target.value))}
-              inputMode="decimal"
-              placeholder={inputMode === 'usd' ? '100k' : '50'}
-              className={`${supplyInputClasses} flex-1 min-w-0`}
-              aria-label="Supply amount"
-            />
+          <div className="flex flex-col gap-1 flex-1 min-w-0">
+            <div className="flex min-w-0 items-center gap-1">
+              <span className={`${supplyLabelMobile} w-10 shrink-0`}>Supply</span>
+              <input
+                value={supplyInput}
+                onChange={(event) => setSupplyInput(formatNumberInput(event.target.value))}
+                inputMode="decimal"
+                placeholder={inputMode === 'usd' ? '100,000' : '50'}
+                className={`${supplyInputClasses} flex-1 min-w-0`}
+                aria-label="Supply amount"
+              />
+            </div>
+            <div className="flex min-w-0 items-center gap-1">
+              <span className={`${borrowLabelMobile} w-10 shrink-0`}>Borrow</span>
+              <input
+                value={borrowInput}
+                onChange={(event) => setBorrowInput(formatNumberInput(event.target.value))}
+                inputMode="decimal"
+                placeholder={inputMode === 'usd' ? '20,000' : '10'}
+                className={`${borrowInputClasses} flex-1 min-w-0`}
+                aria-label="Borrow amount"
+              />
+            </div>
           </div>
-          <div className="col-start-3 row-span-2 row-start-1 w-px self-stretch bg-border/60" aria-hidden />
-          <div className="col-start-2 row-start-2 flex min-w-0 items-center gap-0.5">
-            <span className={`${borrowLabelMobile} w-10 shrink-0`}>Borrow</span>
-            <input
-              value={borrowInput}
-              onChange={(event) => setBorrowInput(formatNumberInput(event.target.value))}
-              inputMode="decimal"
-              placeholder={inputMode === 'usd' ? '20k' : '10'}
-              className={`${borrowInputClasses} flex-1 min-w-0`}
-              aria-label="Borrow amount"
-            />
-          </div>
-          <div className="col-start-4 row-span-2 row-start-1 flex items-center">
-            <button
-              type="button"
-              onClick={() => { setSupplyInput(''); setBorrowInput(''); }}
-              disabled={!hasInput}
-              className={`${clearBtnBase} ${clearBtnState}`}
-              aria-label="Clear scenario inputs"
-            >
-              <Trash2 className="size-4 shrink-0" aria-hidden />
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => { setSupplyInput(''); setBorrowInput(''); }}
+            disabled={!hasInput}
+            className={`${clearBtnBase} ${clearBtnState} shrink-0`}
+            aria-label="Clear scenario inputs"
+          >
+            <Trash2 className="size-4 shrink-0" aria-hidden />
+          </button>
         </div>
       </div>
     );
@@ -137,7 +135,7 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
 
   /* Desktop: single row */
   return (
-    <div className="rounded-xl border border-border/60 bg-card/60 backdrop-blur-sm px-[var(--ds-space-2-5)] py-[var(--ds-space-1-5)] shadow-sm">
+    <div className="rounded-xl border border-border/60 bg-card/60 backdrop-blur-sm px-[var(--ds-space-2-5)] py-[var(--ds-space-1-5)]">
       <div className="flex items-center gap-[var(--ds-space-1-5)]">
         <div className="flex items-center gap-0.5 bg-muted/60 rounded-lg p-0.5 border border-border/40">
           <button

@@ -1,4 +1,4 @@
-import { memo, Fragment } from 'react';
+import { memo, Fragment, useEffect, useState } from 'react';
 import { ExternalLink } from 'lucide-react';
 import { TableRow, TableCell } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -81,6 +81,14 @@ const DesktopReserveRow = memo(({
   onCorrectSupplyInput,
   onCorrectBorrowInput,
 }: DesktopReserveRowProps) => {
+  const [hasSimulationMounted, setHasSimulationMounted] = useState(isExpanded);
+
+  useEffect(() => {
+    if (isExpanded) {
+      setHasSimulationMounted(true);
+    }
+  }, [isExpanded]);
+
   const getMarketDisplayName = () => {
     if (reserve.chainName === 'Ethereum' && ETHEREUM_MARKET_NAMES[reserve.marketName]) {
       return ETHEREUM_MARKET_NAMES[reserve.marketName];
@@ -298,27 +306,35 @@ const DesktopReserveRow = memo(({
           </div>
         </TableCell>
       </TableRow>
-      {isExpanded && (
-        <TableRow
-          className="border-b border-border/40 bg-muted/10"
-          onClick={(event) => event.stopPropagation()}
-        >
-          <TableCell colSpan={8} className="min-w-0 px-[var(--ds-space-3)] py-[var(--ds-space-3)]">
-            {simulation && (
-              <SimulationSubRow
-                reserve={reserve}
-                simulation={simulation}
-                isApy={isApy}
-                supplyInput={supplyInput}
-                borrowInput={borrowInput}
-                inputMode={inputMode}
-                onCorrectSupplyInput={onCorrectSupplyInput}
-                onCorrectBorrowInput={onCorrectBorrowInput}
-              />
-            )}
-          </TableCell>
-        </TableRow>
-      )}
+      <TableRow
+        className="border-0"
+        onClick={(event) => event.stopPropagation()}
+        style={{ visibility: isExpanded ? 'visible' : 'collapse' }}
+      >
+        <TableCell colSpan={8} className="min-w-0 p-0">
+          <div
+            className="grid transition-[grid-template-rows] duration-300 ease-in-out"
+            style={{ gridTemplateRows: isExpanded ? '1fr' : '0fr' }}
+          >
+            <div className="overflow-hidden">
+              <div className="px-[var(--ds-space-3)] py-[var(--ds-space-3)] bg-transparent">
+                {hasSimulationMounted && simulation && (
+                  <SimulationSubRow
+                    reserve={reserve}
+                    simulation={simulation}
+                    isApy={isApy}
+                    supplyInput={supplyInput}
+                    borrowInput={borrowInput}
+                    inputMode={inputMode}
+                    onCorrectSupplyInput={onCorrectSupplyInput}
+                    onCorrectBorrowInput={onCorrectBorrowInput}
+                  />
+                )}
+              </div>
+            </div>
+          </div>
+        </TableCell>
+      </TableRow>
     </Fragment>
   );
 });

@@ -50,7 +50,7 @@ The app will be available at `http://localhost:8080`.
 Create your local environment file from the example:
 
 ```bash
-cp .env.example .env
+cp .env.example .env.local
 ```
 
 Then update values as needed:
