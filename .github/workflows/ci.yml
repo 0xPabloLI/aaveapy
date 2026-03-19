@@ -179,11 +179,13 @@ jobs:
           set +e
           npm run lint
           LINT=$?
+          npm test
+          TEST=$?
           npm run build
           BUILD=$?
           npm audit --omit=dev --audit-level=high
           AUDIT=$?
-          if [ "$LINT" -eq 0 ] && [ "$BUILD" -eq 0 ] && [ "$AUDIT" -eq 0 ]; then
+          if [ "$LINT" -eq 0 ] && [ "$TEST" -eq 0 ] && [ "$BUILD" -eq 0 ] && [ "$AUDIT" -eq 0 ]; then
             echo "ok=true" >> "$GITHUB_OUTPUT"
           else
             echo "ok=false" >> "$GITHUB_OUTPUT"
@@ -221,6 +223,7 @@ jobs:
             Actions performed:
             - `npm run ci:auto-fix`
             - `npm run lint`
+            - `npm test`
             - `npm run build`
             - `npm audit --omit=dev --audit-level=high`
           labels: ci-auto-remediation,dependencies
