@@ -1,4 +1,4 @@
-import { memo, Fragment } from 'react';
+import { memo, Fragment, useEffect, useState } from 'react';
 import { ExternalLink } from 'lucide-react';
 import { TableRow, TableCell } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -81,6 +81,14 @@ const DesktopReserveRow = memo(({
   onCorrectSupplyInput,
   onCorrectBorrowInput,
 }: DesktopReserveRowProps) => {
+  const [hasSimulationMounted, setHasSimulationMounted] = useState(isExpanded);
+
+  useEffect(() => {
+    if (isExpanded) {
+      setHasSimulationMounted(true);
+    }
+  }, [isExpanded]);
+
   const getMarketDisplayName = () => {
     if (reserve.chainName === 'Ethereum' && ETHEREUM_MARKET_NAMES[reserve.marketName]) {
       return ETHEREUM_MARKET_NAMES[reserve.marketName];
@@ -310,7 +318,7 @@ const DesktopReserveRow = memo(({
           >
             <div className="overflow-hidden">
               <div className="px-[var(--ds-space-3)] py-[var(--ds-space-3)] bg-transparent">
-                {simulation && (
+                {hasSimulationMounted && simulation && (
                   <SimulationSubRow
                     reserve={reserve}
                     simulation={simulation}
