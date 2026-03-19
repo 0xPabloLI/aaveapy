@@ -292,3 +292,11 @@ Keep header, body, and skeleton row padding in sync so alignment and spacing sta
 - **Persistence**: The extended visible count is persisted to `minVisibleCount` state, so collapsing the row does NOT hide the extra rows. Users can continue browsing nearby reserves after closing the simulation panel.
 - Implementation: A `useEffect` watches `expandedReserveId`, computes `neededCount = expandedIndex + 6`, and updates `minVisibleCount` if needed.
 - This prevents the expanded row from appearing at the very bottom of the visible list, giving users context of nearby reserves for comparison.
+
+### Card–Simulation panel junction (mobile)
+
+- When a card expands to show the simulation panel below, the upper card and lower simulation panel must appear as **one continuous card** with a single unbroken outline.
+- **Upper card**: `rounded-t-xl rounded-b-none border-b-0` — removes bottom rounding and border.
+- **Simulation panel**: `rounded-b-xl` only (NO `rounded-t-xl`) — top corners are straight so they align flush with the card above.
+- The junction mask (concave curve overlay) handles the **inactive side** transition; the active side must be a seamless vertical edge with no rounding or gap.
+- **Rule**: Never add `rounded-t-*` to the simulation panel container; the top edge is always joined to the card above.
