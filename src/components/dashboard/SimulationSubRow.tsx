@@ -402,7 +402,7 @@ const SimulationSubRow = ({
     return (
     <div
       className={`border border-border/60 bg-card/50 dark:bg-background/80 overflow-hidden ${
-        embeddedFromTop ? 'rounded-b-xl rounded-t-xl' : 'rounded-xl'
+        embeddedFromTop ? 'rounded-b-xl rounded-t-none' : 'rounded-xl'
       }`}
     >
       <table className="w-full min-w-0 table-fixed">

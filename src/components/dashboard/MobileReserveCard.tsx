@@ -1,4 +1,4 @@
-import { memo, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { ExternalLink, ChevronDown, X } from 'lucide-react';
 import { ReserveWithSpread, ETHEREUM_MARKET_NAMES } from '@/types/aave';
 import { formatPercent, formatSpread } from '@/lib/formatters';
@@ -118,6 +118,13 @@ const MobileReserveCard = memo(({
   connectedBelow = false,
 }: MobileReserveCardProps) => {
   const [capSheet, setCapSheet] = useState<'supply' | 'borrow' | null>(null);
+  const [hasSimulationMounted, setHasSimulationMounted] = useState(isSimulationExpanded);
+
+  useEffect(() => {
+    if (isSimulationExpanded) {
+      setHasSimulationMounted(true);
+    }
+  }, [isSimulationExpanded]);
 
   const getMarketDisplayName = () => {
     if (reserve.chainName === 'Ethereum' && ETHEREUM_MARKET_NAMES[reserve.marketName]) {
@@ -463,20 +470,22 @@ const MobileReserveCard = memo(({
           style={{ gridTemplateRows: isSimulationExpanded ? '1fr' : '0fr' }}
         >
           <div className="overflow-hidden">
-            <div className="-mt-px bg-card border border-border/60 border-t-0 rounded-b-xl rounded-t-none ds-card-pad-sm pt-0">
-              <SimulationSubRow
-                reserve={reserve}
-                simulation={simulation}
-                isApy={isApy}
-                supplyInput={supplyInput}
-                borrowInput={borrowInput}
-                inputMode={inputMode}
-                compact
-                embeddedFromTop
-                onCorrectSupplyInput={onCorrectSupplyInput}
-                onCorrectBorrowInput={onCorrectBorrowInput}
-              />
-            </div>
+            {hasSimulationMounted && (
+              <div className="-mt-px bg-card border border-border/60 border-t-0 rounded-b-xl rounded-t-none ds-card-pad-sm pt-0">
+                <SimulationSubRow
+                  reserve={reserve}
+                  simulation={simulation}
+                  isApy={isApy}
+                  supplyInput={supplyInput}
+                  borrowInput={borrowInput}
+                  inputMode={inputMode}
+                  compact
+                  embeddedFromTop
+                  onCorrectSupplyInput={onCorrectSupplyInput}
+                  onCorrectBorrowInput={onCorrectBorrowInput}
+                />
+              </div>
+            )}
           </div>
         </div>
       )}
