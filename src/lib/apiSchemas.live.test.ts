@@ -12,23 +12,45 @@
  * and network-independent.
  *
  * Run explicitly:
- *   RUN_LIVE_TESTS=true npx vitest run src/lib/apiSchemas.live.test.ts
+ *   npm run test:live
  */
 import { describe, expect, it } from 'vitest';
 import {
   MarketsResponseSchema,
   SideDataMetaResponseSchema,
 } from './apiSchemas';
+import {
+  formatLiveHttpError,
+  resolveLiveApiBase,
+} from './apiSchemas.live.helpers';
 
-const API_BASE = process.env.VITE_API_BASE_URL || 'https://staging-api.aaveapy.com/api';
+const API_BASE = resolveLiveApiBase();
 const TIMEOUT = 15_000;
+
+async function readBodySnippet(res: Response): Promise<string> {
+  const body = await res.text();
+  return body.slice(0, 400);
+}
 
 describe.skipIf(!process.env.RUN_LIVE_TESTS)('Live API schema validation', () => {
   it(
     '/markets response matches MarketsResponseSchema',
     async () => {
-      const res = await fetch(`${API_BASE}/markets`);
-      expect(res.ok).toBe(true);
+      const endpoint = '/markets';
+      const url = `${API_BASE}${endpoint}`;
+      const res = await fetch(url);
+
+      if (!res.ok) {
+        throw new Error(
+          formatLiveHttpError({
+            bodySnippet: await readBodySnippet(res),
+            endpoint,
+            status: res.status,
+            statusText: res.statusText,
+            url,
+          })
+        );
+      }
 
       const raw = await res.json();
       const parsed = MarketsResponseSchema.safeParse(raw);
@@ -46,8 +68,21 @@ describe.skipIf(!process.env.RUN_LIVE_TESTS)('Live API schema validation', () =>
   it(
     '/meta/side-data response matches SideDataMetaResponseSchema',
     async () => {
-      const res = await fetch(`${API_BASE}/meta/side-data`);
-      expect(res.ok).toBe(true);
+      const endpoint = '/meta/side-data';
+      const url = `${API_BASE}${endpoint}`;
+      const res = await fetch(url);
+
+      if (!res.ok) {
+        throw new Error(
+          formatLiveHttpError({
+            bodySnippet: await readBodySnippet(res),
+            endpoint,
+            status: res.status,
+            statusText: res.statusText,
+            url,
+          })
+        );
+      }
 
       const raw = await res.json();
       const parsed = SideDataMetaResponseSchema.safeParse(raw);

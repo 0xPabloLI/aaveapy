@@ -119,8 +119,33 @@ jobs:
         run: npm run ci:lockcheck
       - name: Validate API schemas against live endpoints
         env:
+          LIVE_TEST_API_BASE: "https://staging-api.aaveapy.com/api"
           RUN_LIVE_TESTS: "true"
-        run: npx vitest run src/lib/apiSchemas.live.test.ts
+        run: |
+          set +e
+          attempt=1
+          max_attempts=2
+          delay_seconds=15
+
+          while [ "$attempt" -le "$max_attempts" ]; do
+            echo "Live schema validation attempt $attempt/$max_attempts"
+            npx vitest run src/lib/apiSchemas.live.test.ts
+            status=$?
+
+            if [ "$status" -eq 0 ]; then
+              exit 0
+            fi
+
+            if [ "$attempt" -lt "$max_attempts" ]; then
+              echo "::warning::Live schema validation failed on attempt $attempt/$max_attempts; retrying in ${delay_seconds}s"
+              sleep "$delay_seconds"
+            fi
+
+            attempt=$((attempt + 1))
+          done
+
+          echo "::error::Live schema validation failed after $max_attempts attempts"
+          exit "$status"
 
   security-audit:
     name: security-audit
