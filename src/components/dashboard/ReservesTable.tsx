@@ -972,7 +972,7 @@ const ReservesTable = ({
                           />
                         )}
                         <div
-                          className="bg-card border border-border/60 border-t-0 rounded-b-xl ds-card-pad-sm"
+                          className="bg-card border border-border/60 border-t-0 rounded-b-xl shadow-sm ds-card-pad-sm"
                           style={{
                             paddingTop: 'var(--ds-space-2)',
                           }}
