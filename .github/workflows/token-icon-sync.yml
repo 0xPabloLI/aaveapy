@@ -64,6 +64,7 @@ jobs:
           labels: |
             automation
             assets
+            automerge
 
       - name: Warn when PAT is missing
         if: steps.cpr.outputs.pull-request-number != '' && env.HAS_SYNC_PAT != 'true'
