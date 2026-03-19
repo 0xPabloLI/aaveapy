@@ -208,11 +208,11 @@ const MobileReserveCard = memo(({
   const shrinkUpperWhenExpanded = variant === 'full' && isSimulationExpanded;
 
   return (
-    <div data-reserve-id={`${reserve.marketName}-${reserve.tokenAddress}`}>
+    <div data-reserve-id={`${reserve.marketName}-${reserve.tokenAddress}`} className={isSimulationExpanded && !showUpperOnly ? 'shadow-sm rounded-xl' : ''}>
       {/* Card upper part */}
       <div
-        className={`bg-card border border-border/60 ds-card-pad-sm shadow-sm transition-all duration-300 ${
-          connectedBelow || (isSimulationExpanded && !showUpperOnly) ? 'rounded-t-xl rounded-b-none border-b-0' : 'rounded-xl'
+        className={`bg-card border border-border/60 ds-card-pad-sm transition-all duration-300 ${
+          connectedBelow || (isSimulationExpanded && !showUpperOnly) ? 'rounded-t-xl rounded-b-none border-b-0' : 'rounded-xl shadow-sm'
         }`}
       >
         <div className={shrinkUpperWhenExpanded ? 'w-1/2 min-w-0' : ''}>
