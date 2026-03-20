@@ -117,10 +117,16 @@ const MobileReserveCard = memo(({
   onCorrectBorrowInput,
   variant = 'full',
   connectedBelow = false,
+  defaultTab,
 }: MobileReserveCardProps) => {
   const [capSheet, setCapSheet] = useState<'supply' | 'borrow' | null>(null);
   const [hasSimulationMounted, setHasSimulationMounted] = useState(isSimulationExpanded);
-  const [activeTab, setActiveTab] = useState<'supply' | 'borrow'>('supply');
+  const [activeTab, setActiveTab] = useState<'supply' | 'borrow'>(defaultTab ?? 'supply');
+
+  // Sync with parent's defaultTab (e.g. when sort column changes)
+  useEffect(() => {
+    if (defaultTab) setActiveTab(defaultTab);
+  }, [defaultTab]);
 
   useEffect(() => {
     if (isSimulationExpanded) {
