@@ -98,6 +98,8 @@ interface MobileReserveCardProps {
   variant?: 'full' | 'upperOnly' | 'simulationOnly';
   /** When true, card gets rounded-b-none + border-b-transparent to connect to panel below. */
   connectedBelow?: boolean;
+  /** Override the default active tab from parent (e.g. based on sort column). */
+  defaultTab?: 'supply' | 'borrow';
 }
 
 const MobileReserveCard = memo(({
@@ -115,10 +117,16 @@ const MobileReserveCard = memo(({
   onCorrectBorrowInput,
   variant = 'full',
   connectedBelow = false,
+  defaultTab,
 }: MobileReserveCardProps) => {
   const [capSheet, setCapSheet] = useState<'supply' | 'borrow' | null>(null);
   const [hasSimulationMounted, setHasSimulationMounted] = useState(isSimulationExpanded);
-  const [activeTab, setActiveTab] = useState<'supply' | 'borrow'>('supply');
+  const [activeTab, setActiveTab] = useState<'supply' | 'borrow'>(defaultTab ?? 'supply');
+
+  // Sync with parent's defaultTab (e.g. when sort column changes)
+  useEffect(() => {
+    if (defaultTab) setActiveTab(defaultTab);
+  }, [defaultTab]);
 
   useEffect(() => {
     if (isSimulationExpanded) {
