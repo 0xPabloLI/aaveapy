@@ -221,7 +221,7 @@ const MobileReserveCard = memo(({
           {hasSupplyCap ? (
             <button
               type="button"
-              className="flex items-center gap-[var(--ds-space-1-5)] ds-text-emerald-600 ds-text-12 rounded-md py-0.5 px-1 -mx-1 transition-all duration-150 active:scale-[0.97] active:bg-muted/50 cursor-pointer"
+              className="flex items-center gap-[var(--ds-space-1-5)] ds-text-emerald-600 ds-text-12 rounded-md py-0.5 px-1 -mx-1 transition-colors hover:bg-muted/70 active:opacity-80 cursor-pointer"
               aria-label="Show supply cap details"
               onClick={() => setCapSheet('supply')}
             >
@@ -242,7 +242,7 @@ const MobileReserveCard = memo(({
         {hasBorrowCap ? (
           <button
             type="button"
-            className="flex items-center gap-[var(--ds-space-1-5)] ds-text-brand-cyan ds-text-12 rounded-md py-0.5 px-1 -mx-1 transition-all duration-150 active:scale-[0.97] active:bg-muted/50 cursor-pointer"
+            className="flex items-center gap-[var(--ds-space-1-5)] ds-text-brand-cyan ds-text-12 rounded-md py-0.5 px-1 -mx-1 transition-colors hover:bg-muted/70 active:opacity-80 cursor-pointer"
             aria-label="Show borrow cap details"
             onClick={() => setCapSheet('borrow')}
           >
