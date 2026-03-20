@@ -918,6 +918,7 @@ const ReservesTable = ({
                             inputMode={sharedInputMode}
                             onCorrectSupplyInput={handleCorrectSupplyInput}
                             onCorrectBorrowInput={handleCorrectBorrowInput}
+                            defaultTab={activeSortColumn === 'borrow' ? 'borrow' : undefined}
                           />
                         </div>
                         {/* Right card */}
