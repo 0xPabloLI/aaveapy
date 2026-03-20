@@ -98,6 +98,8 @@ interface MobileReserveCardProps {
   variant?: 'full' | 'upperOnly' | 'simulationOnly';
   /** When true, card gets rounded-b-none + border-b-transparent to connect to panel below. */
   connectedBelow?: boolean;
+  /** Override the default active tab from parent (e.g. based on sort column). */
+  defaultTab?: 'supply' | 'borrow';
 }
 
 const MobileReserveCard = memo(({
