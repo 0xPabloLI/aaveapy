@@ -11,7 +11,10 @@ permissions:
 jobs:
   enable-automerge:
     if: >-
-      contains(github.event.pull_request.labels.*.name, 'automerge') &&
+      (
+        contains(github.event.pull_request.labels.*.name, 'automerge') ||
+        contains(github.event.pull_request.labels.*.name, 'automation')
+      ) &&
       github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     steps:
