@@ -533,19 +533,22 @@ const MobileReserveCard = memo(({
           </>
         )}
 
-        {/* Simulation toggle */}
-        <div className="mt-[var(--ds-space-1-5)]">
+        {/* Simulation toggle — shows Spread inside */}
+        <div className="mt-[var(--ds-space-1)]">
           <button
             type="button"
             onClick={onToggleSimulation}
-            className={`relative inline-flex w-full items-center justify-center rounded-lg bg-background px-[var(--ds-space-2)] py-[var(--ds-space-1-5)] ds-text-12 text-muted-foreground transition-all duration-300 hover:bg-muted/40 ${
+            className={`relative inline-flex w-full items-center justify-between rounded-lg bg-background px-[var(--ds-space-2-5)] py-[var(--ds-space-1-5)] ds-text-12 text-muted-foreground transition-all duration-300 hover:bg-muted/40 ${
               isSimulationExpanded ? 'border-2 border-foreground/40' : 'border border-border/70'
             }`}
           >
-            <span>Simulation</span>
-            <span className="absolute right-[var(--ds-space-2)]">
-              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${isSimulationExpanded ? 'rotate-180' : ''}`} />
+            <span className="flex items-center gap-[var(--ds-space-1-5)]">
+              <span className="ds-text-11 text-muted-foreground/70">Spread</span>
+              <span className={`ds-text-11 font-medium tabular-nums ${displaySpread !== null ? 'text-purple-500' : 'text-muted-foreground/70'}`}>
+                {formatSpread(displaySpread)}
+              </span>
             </span>
+            <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${isSimulationExpanded ? 'rotate-180' : ''}`} />
           </button>
         </div>
       </div>
