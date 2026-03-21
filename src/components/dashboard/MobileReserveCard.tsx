@@ -81,18 +81,14 @@ function BorrowCapSheetContent({
 function UtilizationSheetContent({ current, optimal }: { current: number; optimal: number }) {
   const isOverOptimal = current > optimal;
   return (
-    <div className="space-y-1 ds-text-12">
-      <div className="flex justify-between gap-3">
-        <span className="text-muted-foreground">Current utilization</span>
-        <span className="font-medium tabular-nums">{current.toFixed(2)}%</span>
-      </div>
-      <div className="flex justify-between gap-3">
-        <span className="text-muted-foreground">Optimal utilization</span>
-        <span className="font-medium tabular-nums">{optimal.toFixed(2)}%</span>
+    <div className="space-y-2 ds-text-12">
+      <div className="flex justify-between gap-4">
+        <span className="text-muted-foreground">Optimal</span>
+        <span className="font-medium tabular-nums">{formatPercent(optimal)}</span>
       </div>
       {isOverOptimal && (
-        <p className="text-amber-600 ds-text-11 pt-1 border-t border-border/50">
-          ⚠️ Above optimal — borrow rates increase steeply
+        <p className="text-amber-600 ds-text-11 pt-2 border-t border-border/50">
+          ⚠️ Above optimal
         </p>
       )}
     </div>
