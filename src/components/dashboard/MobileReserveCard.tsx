@@ -265,7 +265,7 @@ const MobileReserveCard = memo(({
         {hasBorrowCap ? (
           <button
             type="button"
-            className="flex items-center gap-[var(--ds-space-1-5)] ds-text-brand-cyan ds-text-12 rounded-md py-0.5 px-1.5 -mx-1 transition-all hover:bg-muted/70 active:scale-[0.97] cursor-pointer shadow-sm ring-1 ring-border/40"
+            className="flex items-center gap-[var(--ds-space-1-5)] ds-text-brand-cyan ds-text-12 rounded-md py-0.5 px-1.5 -mx-1 transition-all hover:bg-muted/70 active:scale-[0.97] cursor-pointer"
             aria-label="Show borrow cap details"
             onClick={() => setCapSheet('borrow')}
           >
