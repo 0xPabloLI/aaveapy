@@ -239,7 +239,7 @@ const MobileReserveCard = memo(({
     const hasBorrowCap = reserve.borrowCapUsd != null && Number.isFinite(reserve.borrowCapUsd) && reserve.borrowCapUsd > 0;
     return (
       <div className="flex items-center justify-between">
-        <span className="ds-text-11 text-muted-foreground uppercase font-medium tracking-wide">Borrowed</span>
+        <span className="ds-text-11 text-muted-foreground uppercase font-medium tracking-wide">Size</span>
         {hasBorrowCap ? (
           <button
             type="button"
