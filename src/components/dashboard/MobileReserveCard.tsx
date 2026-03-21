@@ -498,7 +498,7 @@ const MobileReserveCard = memo(({
         )}
 
         {/* Simulation toggle */}
-        <div className="mt-[var(--ds-space-3)] pt-[var(--ds-space-2)]">
+        <div className="mt-[var(--ds-space-2)] pt-[var(--ds-space-1)]">
           <button
             type="button"
             onClick={onToggleSimulation}
