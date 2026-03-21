@@ -77,6 +77,28 @@ function BorrowCapSheetContent({
   );
 }
 
+/** Utilization bottom sheet content */
+function UtilizationSheetContent({ current, optimal }: { current: number; optimal: number }) {
+  const isOverOptimal = current > optimal;
+  return (
+    <div className="space-y-1 ds-text-12">
+      <div className="flex justify-between gap-3">
+        <span className="text-muted-foreground">Current utilization</span>
+        <span className="font-medium tabular-nums">{current.toFixed(2)}%</span>
+      </div>
+      <div className="flex justify-between gap-3">
+        <span className="text-muted-foreground">Optimal utilization</span>
+        <span className="font-medium tabular-nums">{formatPercent(optimal)}</span>
+      </div>
+      {isOverOptimal && (
+        <p className="text-amber-600 ds-text-11 pt-1 border-t border-border/50">
+          ⚠️ Above optimal — borrow rates increase steeply
+        </p>
+      )}
+    </div>
+  );
+}
+
 interface MobileReserveCardProps {
   reserve: ReserveWithSpread;
   isApy: boolean;
@@ -120,7 +142,7 @@ const MobileReserveCard = memo(({
   connectedBelow = false,
   defaultTab,
 }: MobileReserveCardProps) => {
-  const [capSheet, setCapSheet] = useState<'supply' | 'borrow' | null>(null);
+  const [capSheet, setCapSheet] = useState<'supply' | 'borrow' | 'utilization' | null>(null);
   const [hasSimulationMounted, setHasSimulationMounted] = useState(isSimulationExpanded);
   const [activeTab, setActiveTab] = useState<'supply' | 'borrow'>(defaultTab ?? 'supply');
 
@@ -264,17 +286,14 @@ const MobileReserveCard = memo(({
     );
   };
 
-  /** Render the hero APY section */
+  /** Render the hero APY section — no label, just the number */
   const renderHeroApy = () => {
     if (activeTab === 'supply') {
       const heroValue = displaySupplyTotal;
       const isDisabled = reserve.supplyDisabled;
       const heroColorClass = heroValue === null || isDisabled ? 'text-secondary' : 'ds-text-emerald-500';
       return (
-        <div className="flex flex-col items-center gap-0.5 py-[var(--ds-space-1)]">
-          <span className="ds-text-9 text-muted-foreground uppercase font-medium tracking-wide">
-            {isApy ? 'APY' : 'APR'}
-          </span>
+        <div className="flex flex-col items-center gap-0.5">
           {isDisabled ? (
             <Tooltip>
               <TooltipTrigger asChild>
@@ -323,10 +342,7 @@ const MobileReserveCard = memo(({
     const isDisabled = reserve.borrowDisabled;
     const heroColorClass = heroValue === null || isDisabled ? 'text-secondary' : 'ds-text-brand-cyan';
     return (
-        <div className="flex flex-col items-center gap-0.5 py-[var(--ds-space-1)]">
-          <span className="ds-text-9 text-muted-foreground uppercase font-medium tracking-wide">
-            {isApy ? 'APY' : 'APR'}
-        </span>
+        <div className="flex flex-col items-center gap-0.5">
         {isDisabled ? (
           <Tooltip>
             <TooltipTrigger asChild>
@@ -370,6 +386,8 @@ const MobileReserveCard = memo(({
     );
   };
 
+  const optimalPct = reserve.optimalUsageRate != null ? Number(reserve.optimalUsageRate) * 100 : null;
+
   return (
     <div data-reserve-id={`${reserve.marketName}-${reserve.tokenAddress}`} className={isSimulationExpanded && !showUpperOnly ? 'shadow-sm rounded-xl' : ''}>
       {/* Card upper part */}
@@ -379,25 +397,23 @@ const MobileReserveCard = memo(({
         }`}
       >
         {/* Token header */}
-        <div
-          className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-2)] min-h-[40px]"
-        >
+        <div className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-1-5)] min-h-[36px]">
           <a
             href={buildAaveReserveUrl({ marketName: reserve.marketName, tokenAddress: reserve.tokenAddress }) || '#'}
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="flex items-center gap-[var(--ds-space-2)] min-w-0 flex-1 active:opacity-70 transition-opacity"
+            className="flex items-center gap-[var(--ds-space-2)] min-w-0 active:opacity-70 transition-opacity"
             aria-label={`Open ${reserve.tokenSymbol} on Aave`}
           >
             <TokenIcon
               symbol={iconSymbol}
-              size={32}
+              size={28}
               loading="eager"
               className="shrink-0"
               logoURI={logoURI}
             />
-            <div className="min-w-0 flex-1">
+            <div className="min-w-0">
               <div className="flex items-center gap-[var(--ds-space-1)]">
                 <p className="font-bold text-foreground ds-text-14 truncate">{reserve.tokenSymbol}</p>
                 <ExternalLink className="w-3 h-3 text-muted-foreground/50 shrink-0" />
@@ -410,21 +426,33 @@ const MobileReserveCard = memo(({
               </div>
             </div>
           </a>
-          {/* Utilization indicator in top-right */}
-          {reserve.utilizationPct != null && reserve.optimalUsageRate != null && (
-            <div className="shrink-0">
+          {/* Spacer */}
+          <div className="flex-1" />
+          {/* Utilization indicator - clickable with percentage */}
+          {reserve.utilizationPct != null && optimalPct != null && (
+            <button
+              type="button"
+              onClick={() => setCapSheet('utilization')}
+              className="shrink-0 flex items-center gap-1 rounded-md px-1.5 py-0.5 transition-all hover:bg-muted/50 active:scale-[0.97]"
+              aria-label="Show utilization details"
+            >
+              <span className={`ds-text-11 font-medium tabular-nums ${
+                reserve.utilizationPct > optimalPct ? 'text-amber-600' : 'text-muted-foreground'
+              }`}>
+                {reserve.utilizationPct.toFixed(0)}%
+              </span>
               <UtilizationIndicator
                 current={reserve.utilizationPct}
-                optimal={Number(reserve.optimalUsageRate) * 100}
-                width={10}
-                height={18}
+                optimal={optimalPct}
+                width={8}
+                height={14}
               />
-            </div>
+            </button>
           )}
         </div>
 
         {/* Pill tabs */}
-        <div className="flex gap-[var(--ds-space-1-5)] bg-muted/40 rounded-lg p-0.5 mb-[var(--ds-space-2)]">
+        <div className="flex gap-[var(--ds-space-1-5)] bg-muted/40 rounded-lg p-0.5 mb-[var(--ds-space-1-5)]">
           <button
             type="button"
             onClick={() => setActiveTab('supply')}
@@ -450,20 +478,20 @@ const MobileReserveCard = memo(({
         </div>
 
         {/* Tab content */}
-        <div className="flex flex-col gap-[var(--ds-space-1-5)]">
+        <div className="flex flex-col gap-[var(--ds-space-1)]">
           {renderAmountRow()}
           {renderHeroApy()}
 
-          {/* Spread bar */}
-          <div className="flex items-center justify-between bg-muted/30 rounded-lg px-[var(--ds-space-3)] py-[var(--ds-space-1-5)]">
-            <span className="ds-text-11 text-muted-foreground uppercase font-medium tracking-wide">Spread</span>
-            <span className={`ds-text-12 font-medium tabular-nums ${displaySpread !== null ? 'text-purple-500' : 'text-muted-foreground/70'}`}>
+          {/* Spread - compact inline */}
+          <div className="flex items-center justify-between px-[var(--ds-space-1)]">
+            <span className="ds-text-11 text-muted-foreground">Spread</span>
+            <span className={`ds-text-11 font-medium tabular-nums ${displaySpread !== null ? 'text-purple-500' : 'text-muted-foreground/70'}`}>
               {formatSpread(displaySpread)}
             </span>
           </div>
         </div>
 
-        {/* Mobile bottom sheet for cap details */}
+        {/* Mobile bottom sheet for cap / utilization details */}
         {capSheet !== null && (
           <>
             <div
@@ -475,11 +503,11 @@ const MobileReserveCard = memo(({
               className="fixed bottom-0 left-0 right-0 z-40 rounded-t-2xl border border-border/60 bg-card ds-tooltip-shadow-up max-h-[80vh] overflow-y-auto"
               role="dialog"
               aria-modal="true"
-              aria-labelledby={capSheet === 'supply' ? 'cap-sheet-supply-title' : 'cap-sheet-borrow-title'}
+              aria-labelledby="cap-sheet-title"
             >
               <div className="sticky top-0 bg-card border-b border-border px-[var(--ds-space-4)] py-[var(--ds-space-3)] flex items-center justify-between z-10">
-                <h3 id={capSheet === 'supply' ? 'cap-sheet-supply-title' : 'cap-sheet-borrow-title'} className="ds-tooltip-title text-foreground">
-                  {capSheet === 'supply' ? 'Supply' : 'Borrow'} cap details
+                <h3 id="cap-sheet-title" className="ds-tooltip-title text-foreground">
+                  {capSheet === 'supply' ? 'Supply cap details' : capSheet === 'borrow' ? 'Borrow cap details' : 'Utilization'}
                 </h3>
                 <button
                   type="button"
@@ -504,13 +532,19 @@ const MobileReserveCard = memo(({
                     poolLiquidity={poolLiquidity ?? 0}
                   />
                 )}
+                {capSheet === 'utilization' && optimalPct != null && (
+                  <UtilizationSheetContent
+                    current={reserve.utilizationPct ?? 0}
+                    optimal={optimalPct}
+                  />
+                )}
               </div>
             </div>
           </>
         )}
 
         {/* Simulation toggle */}
-        <div className="mt-[var(--ds-space-2)] pt-[var(--ds-space-1)]">
+        <div className="mt-[var(--ds-space-1-5)]">
           <button
             type="button"
             onClick={onToggleSimulation}
