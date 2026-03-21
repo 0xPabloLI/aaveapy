@@ -329,7 +329,7 @@ const MobileReserveCard = memo(({
         {isDisabled ? (
           <Tooltip>
             <TooltipTrigger asChild>
-              <p className={`text-3xl font-bold tabular-nums ${heroColorClass} cursor-auto`}>
+              <p className={`text-2xl font-bold tabular-nums ${heroColorClass} cursor-auto`}>
                 {formatPercent(heroValue)}
               </p>
             </TooltipTrigger>
