@@ -88,7 +88,7 @@ function UtilizationSheetContent({ current, optimal }: { current: number; optima
       </div>
       <div className="flex justify-between gap-3">
         <span className="text-muted-foreground">Optimal utilization</span>
-        <span className="font-medium tabular-nums">{formatPercent(optimal)}</span>
+        <span className="font-medium tabular-nums">{optimal.toFixed(2)}%</span>
       </div>
       {isOverOptimal && (
         <p className="text-amber-600 ds-text-11 pt-1 border-t border-border/50">
@@ -244,7 +244,7 @@ const MobileReserveCard = memo(({
           {hasSupplyCap ? (
             <button
               type="button"
-              className="flex items-center gap-[var(--ds-space-1-5)] ds-text-emerald-600 ds-text-12 rounded-md py-0.5 px-1.5 -mx-1 transition-all hover:bg-muted/70 active:scale-[0.97] cursor-pointer shadow-sm ring-1 ring-border/40"
+              className="flex items-center gap-[var(--ds-space-1-5)] ds-text-emerald-600 ds-text-12 rounded-md py-0.5 px-1.5 -mx-1 transition-all hover:bg-muted/70 active:scale-[0.97] cursor-pointer"
               aria-label="Show supply cap details"
               onClick={() => setCapSheet('supply')}
             >
@@ -265,7 +265,7 @@ const MobileReserveCard = memo(({
         {hasBorrowCap ? (
           <button
             type="button"
-            className="flex items-center gap-[var(--ds-space-1-5)] ds-text-brand-cyan ds-text-12 rounded-md py-0.5 px-1.5 -mx-1 transition-all hover:bg-muted/70 active:scale-[0.97] cursor-pointer shadow-sm ring-1 ring-border/40"
+            className="flex items-center gap-[var(--ds-space-1-5)] ds-text-brand-cyan ds-text-12 rounded-md py-0.5 px-1.5 -mx-1 transition-all hover:bg-muted/70 active:scale-[0.97] cursor-pointer"
             aria-label="Show borrow cap details"
             onClick={() => setCapSheet('borrow')}
           >
@@ -403,7 +403,7 @@ const MobileReserveCard = memo(({
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="flex items-center gap-[var(--ds-space-2)] min-w-0 active:opacity-70 transition-opacity"
+            className="flex items-center gap-[var(--ds-space-2)] min-w-0 flex-1 active:opacity-70 transition-opacity"
             aria-label={`Open ${reserve.tokenSymbol} on Aave`}
           >
             <TokenIcon
@@ -426,25 +426,23 @@ const MobileReserveCard = memo(({
               </div>
             </div>
           </a>
-          {/* Spacer */}
-          <div className="flex-1" />
-          {/* Utilization indicator - clickable with percentage */}
+          {/* Utilization indicator - clickable */}
           {reserve.utilizationPct != null && optimalPct != null && (
             <button
               type="button"
               onClick={() => setCapSheet('utilization')}
-              className="shrink-0 flex items-center gap-1 rounded-md px-1.5 py-0.5 transition-all hover:bg-muted/50 active:scale-[0.97]"
+              className="shrink-0 flex items-center gap-0.5 rounded-md px-1 py-0.5 transition-all hover:bg-muted/50 active:scale-[0.97]"
               aria-label="Show utilization details"
             >
-              <span className={`ds-text-11 font-medium tabular-nums ${
-                reserve.utilizationPct > optimalPct ? 'text-amber-600' : 'text-muted-foreground'
+              <span className={`text-[10px] font-medium tabular-nums leading-none ${
+                reserve.utilizationPct > optimalPct ? 'text-amber-600' : 'text-muted-foreground/70'
               }`}>
                 {reserve.utilizationPct.toFixed(0)}%
               </span>
               <UtilizationIndicator
                 current={reserve.utilizationPct}
                 optimal={optimalPct}
-                width={8}
+                width={6}
                 height={14}
               />
             </button>
@@ -481,14 +479,6 @@ const MobileReserveCard = memo(({
         <div className="flex flex-col gap-[var(--ds-space-1)]">
           {renderAmountRow()}
           {renderHeroApy()}
-
-          {/* Spread - compact inline */}
-          <div className="flex items-center justify-between px-[var(--ds-space-1)]">
-            <span className="ds-text-11 text-muted-foreground">Spread</span>
-            <span className={`ds-text-11 font-medium tabular-nums ${displaySpread !== null ? 'text-purple-500' : 'text-muted-foreground/70'}`}>
-              {formatSpread(displaySpread)}
-            </span>
-          </div>
         </div>
 
         {/* Mobile bottom sheet for cap / utilization details */}
@@ -543,19 +533,22 @@ const MobileReserveCard = memo(({
           </>
         )}
 
-        {/* Simulation toggle */}
-        <div className="mt-[var(--ds-space-1-5)]">
+        {/* Simulation toggle — shows Spread inside */}
+        <div className="mt-[var(--ds-space-1)]">
           <button
             type="button"
             onClick={onToggleSimulation}
-            className={`relative inline-flex w-full items-center justify-center rounded-lg bg-background px-[var(--ds-space-2)] py-[var(--ds-space-1-5)] ds-text-12 text-muted-foreground transition-all duration-300 hover:bg-muted/40 ${
+            className={`relative inline-flex w-full items-center justify-between rounded-lg bg-background px-[var(--ds-space-2-5)] py-[var(--ds-space-1-5)] ds-text-12 text-muted-foreground transition-all duration-300 hover:bg-muted/40 ${
               isSimulationExpanded ? 'border-2 border-foreground/40' : 'border border-border/70'
             }`}
           >
-            <span>Simulation</span>
-            <span className="absolute right-[var(--ds-space-2)]">
-              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${isSimulationExpanded ? 'rotate-180' : ''}`} />
+            <span className="flex items-center gap-[var(--ds-space-1-5)]">
+              <span className="ds-text-11 text-muted-foreground/70">Spread</span>
+              <span className={`ds-text-11 font-medium tabular-nums ${displaySpread !== null ? 'text-purple-500' : 'text-muted-foreground/70'}`}>
+                {formatSpread(displaySpread)}
+              </span>
             </span>
+            <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${isSimulationExpanded ? 'rotate-180' : ''}`} />
           </button>
         </div>
       </div>
