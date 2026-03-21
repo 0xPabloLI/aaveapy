@@ -8,6 +8,7 @@ import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import SimulationSubRow from './SimulationSubRow';
+import UtilizationIndicator from './UtilizationIndicator';
 import CapProgressRing from './CapProgressRing';
 import BorrowCapProgressRing from './BorrowCapProgressRing';
 import { formatReserveSizeUsd } from '@/lib/formatters';
@@ -217,11 +218,11 @@ const MobileReserveCard = memo(({
       const hasSupplyCap = reserve.supplyCapUsd != null && Number.isFinite(reserve.supplyCapUsd) && reserve.supplyCapUsd > 0;
       return (
         <div className="flex items-center justify-between">
-          <span className="ds-text-11 text-muted-foreground uppercase font-medium tracking-wide">Supplied</span>
+          <span className="ds-text-11 text-muted-foreground uppercase font-medium tracking-wide">Size</span>
           {hasSupplyCap ? (
             <button
               type="button"
-              className="flex items-center gap-[var(--ds-space-1-5)] ds-text-emerald-600 ds-text-12 rounded-md py-0.5 px-1 -mx-1 transition-colors hover:bg-muted/70 active:opacity-80 cursor-pointer"
+              className="flex items-center gap-[var(--ds-space-1-5)] ds-text-emerald-600 ds-text-12 rounded-md py-0.5 px-1.5 -mx-1 transition-all hover:bg-muted/70 active:scale-[0.97] cursor-pointer shadow-sm ring-1 ring-border/40"
               aria-label="Show supply cap details"
               onClick={() => setCapSheet('supply')}
             >
@@ -238,11 +239,11 @@ const MobileReserveCard = memo(({
     const hasBorrowCap = reserve.borrowCapUsd != null && Number.isFinite(reserve.borrowCapUsd) && reserve.borrowCapUsd > 0;
     return (
       <div className="flex items-center justify-between">
-        <span className="ds-text-11 text-muted-foreground uppercase font-medium tracking-wide">Borrowed</span>
+        <span className="ds-text-11 text-muted-foreground uppercase font-medium tracking-wide">Size</span>
         {hasBorrowCap ? (
           <button
             type="button"
-            className="flex items-center gap-[var(--ds-space-1-5)] ds-text-brand-cyan ds-text-12 rounded-md py-0.5 px-1 -mx-1 transition-colors hover:bg-muted/70 active:opacity-80 cursor-pointer"
+            className="flex items-center gap-[var(--ds-space-1-5)] ds-text-brand-cyan ds-text-12 rounded-md py-0.5 px-1.5 -mx-1 transition-all hover:bg-muted/70 active:scale-[0.97] cursor-pointer shadow-sm ring-1 ring-border/40"
             aria-label="Show borrow cap details"
             onClick={() => setCapSheet('borrow')}
           >
@@ -272,7 +273,7 @@ const MobileReserveCard = memo(({
       return (
         <div className="flex flex-col items-center gap-0.5 py-[var(--ds-space-1)]">
           <span className="ds-text-9 text-muted-foreground uppercase font-medium tracking-wide">
-            Supply {isApy ? 'APY' : 'APR'}
+            {isApy ? 'APY' : 'APR'}
           </span>
           {isDisabled ? (
             <Tooltip>
@@ -324,7 +325,7 @@ const MobileReserveCard = memo(({
     return (
         <div className="flex flex-col items-center gap-0.5 py-[var(--ds-space-1)]">
           <span className="ds-text-9 text-muted-foreground uppercase font-medium tracking-wide">
-            Borrow {isApy ? 'APY' : 'APR'}
+            {isApy ? 'APY' : 'APR'}
         </span>
         {isDisabled ? (
           <Tooltip>
@@ -409,6 +410,17 @@ const MobileReserveCard = memo(({
               </div>
             </div>
           </a>
+          {/* Utilization indicator in top-right */}
+          {reserve.utilizationPct != null && reserve.optimalUsageRate != null && (
+            <div className="shrink-0">
+              <UtilizationIndicator
+                current={reserve.utilizationPct}
+                optimal={Number(reserve.optimalUsageRate) * 100}
+                width={10}
+                height={18}
+              />
+            </div>
+          )}
         </div>
 
         {/* Pill tabs */}
