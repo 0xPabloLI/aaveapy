@@ -270,7 +270,7 @@ const MobileReserveCard = memo(({
       const isDisabled = reserve.supplyDisabled;
       const heroColorClass = heroValue === null || isDisabled ? 'text-secondary' : 'ds-text-emerald-500';
       return (
-        <div className="flex flex-col items-center gap-[var(--ds-space-1)] py-[var(--ds-space-2)]">
+        <div className="flex flex-col items-center gap-0.5 py-[var(--ds-space-1)]">
           <span className="ds-text-9 text-muted-foreground uppercase font-medium tracking-wide">
             Supply {isApy ? 'APY' : 'APR'}
           </span>
