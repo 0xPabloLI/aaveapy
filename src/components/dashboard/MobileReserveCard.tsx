@@ -412,7 +412,7 @@ const MobileReserveCard = memo(({
         </div>
 
         {/* Pill tabs */}
-        <div className="flex gap-[var(--ds-space-1-5)] bg-muted/40 rounded-lg p-1 mb-[var(--ds-space-3)]">
+        <div className="flex gap-[var(--ds-space-1-5)] bg-muted/40 rounded-lg p-0.5 mb-[var(--ds-space-2)]">
           <button
             type="button"
             onClick={() => setActiveTab('supply')}
