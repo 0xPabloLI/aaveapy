@@ -479,14 +479,6 @@ const MobileReserveCard = memo(({
         <div className="flex flex-col gap-[var(--ds-space-1)]">
           {renderAmountRow()}
           {renderHeroApy()}
-
-          {/* Spread - compact inline */}
-          <div className="flex items-center justify-between px-[var(--ds-space-1)]">
-            <span className="ds-text-11 text-muted-foreground">Spread</span>
-            <span className={`ds-text-11 font-medium tabular-nums ${displaySpread !== null ? 'text-purple-500' : 'text-muted-foreground/70'}`}>
-              {formatSpread(displaySpread)}
-            </span>
-          </div>
         </div>
 
         {/* Mobile bottom sheet for cap / utilization details */}
