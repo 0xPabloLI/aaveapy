@@ -443,7 +443,7 @@ const MobileReserveCard = memo(({
           {renderHeroApy()}
 
           {/* Spread bar */}
-          <div className="flex items-center justify-between bg-muted/30 rounded-lg px-[var(--ds-space-3)] py-[var(--ds-space-2)]">
+          <div className="flex items-center justify-between bg-muted/30 rounded-lg px-[var(--ds-space-3)] py-[var(--ds-space-1-5)]">
             <span className="ds-text-11 text-muted-foreground uppercase font-medium tracking-wide">Spread</span>
             <span className={`ds-text-12 font-medium tabular-nums ${displaySpread !== null ? 'text-purple-500' : 'text-muted-foreground/70'}`}>
               {formatSpread(displaySpread)}
