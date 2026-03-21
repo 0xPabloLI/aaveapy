@@ -410,6 +410,17 @@ const MobileReserveCard = memo(({
               </div>
             </div>
           </a>
+          {/* Utilization indicator in top-right */}
+          {reserve.utilizationPct != null && reserve.optimalUsageRate != null && (
+            <div className="shrink-0">
+              <UtilizationIndicator
+                current={reserve.utilizationPct}
+                optimal={Number(reserve.optimalUsageRate) * 100}
+                width={10}
+                height={18}
+              />
+            </div>
+          )}
         </div>
 
         {/* Pill tabs */}
