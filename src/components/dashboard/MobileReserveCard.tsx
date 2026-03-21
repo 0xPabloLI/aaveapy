@@ -289,7 +289,7 @@ const MobileReserveCard = memo(({
             </p>
           )}
           {/* APY breakdown: native + incentive */}
-          <div className="min-h-[1.25rem]">
+          <div className="min-h-[1rem]">
             {visibleSupplyIncentive !== null && (
               <div className="flex items-center gap-[var(--ds-space-1)] ds-text-11">
                 <span className={isDisabled ? 'text-secondary' : 'ds-text-emerald-500-70'}>
