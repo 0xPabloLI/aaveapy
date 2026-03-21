@@ -325,7 +325,7 @@ const MobileReserveCard = memo(({
     return (
         <div className="flex flex-col items-center gap-0.5 py-[var(--ds-space-1)]">
           <span className="ds-text-9 text-muted-foreground uppercase font-medium tracking-wide">
-            Borrow {isApy ? 'APY' : 'APR'}
+            {isApy ? 'APY' : 'APR'}
         </span>
         {isDisabled ? (
           <Tooltip>
