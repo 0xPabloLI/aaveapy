@@ -222,7 +222,7 @@ const MobileReserveCard = memo(({
           {hasSupplyCap ? (
             <button
               type="button"
-              className="flex items-center gap-[var(--ds-space-1-5)] ds-text-emerald-600 ds-text-12 rounded-md py-0.5 px-1 -mx-1 transition-colors hover:bg-muted/70 active:opacity-80 cursor-pointer"
+              className="flex items-center gap-[var(--ds-space-1-5)] ds-text-emerald-600 ds-text-12 rounded-md py-0.5 px-1.5 -mx-1 transition-all hover:bg-muted/70 active:scale-[0.97] cursor-pointer shadow-sm ring-1 ring-border/40"
               aria-label="Show supply cap details"
               onClick={() => setCapSheet('supply')}
             >
