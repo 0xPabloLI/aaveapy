@@ -416,7 +416,7 @@ const MobileReserveCard = memo(({
           <button
             type="button"
             onClick={() => setActiveTab('supply')}
-            className={`flex-1 ds-text-12 font-medium py-1.5 rounded-md transition-all duration-200 ${
+            className={`flex-1 ds-text-12 font-medium py-1 rounded-md transition-all duration-200 ${
               activeTab === 'supply'
                 ? 'ds-bg-emerald-500-10 ds-text-emerald-600 shadow-sm'
                 : 'text-muted-foreground hover:text-foreground/70'
