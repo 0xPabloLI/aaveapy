@@ -270,26 +270,26 @@ const MobileReserveCard = memo(({
       const isDisabled = reserve.supplyDisabled;
       const heroColorClass = heroValue === null || isDisabled ? 'text-secondary' : 'ds-text-emerald-500';
       return (
-        <div className="flex flex-col items-center gap-[var(--ds-space-1)] py-[var(--ds-space-2)]">
+        <div className="flex flex-col items-center gap-0.5 py-[var(--ds-space-1)]">
           <span className="ds-text-9 text-muted-foreground uppercase font-medium tracking-wide">
             Supply {isApy ? 'APY' : 'APR'}
           </span>
           {isDisabled ? (
             <Tooltip>
               <TooltipTrigger asChild>
-                <p className={`text-3xl font-bold tabular-nums ${heroColorClass} cursor-auto`}>
+                <p className={`text-2xl font-bold tabular-nums ${heroColorClass} cursor-auto`}>
                   {formatPercent(heroValue)}
                 </p>
               </TooltipTrigger>
               <TooltipContent>Supply unavailable</TooltipContent>
             </Tooltip>
           ) : (
-            <p className={`text-3xl font-bold tabular-nums ${heroColorClass}`}>
+             <p className={`text-2xl font-bold tabular-nums ${heroColorClass}`}>
               {formatPercent(heroValue)}
             </p>
           )}
           {/* APY breakdown: native + incentive */}
-          <div className="min-h-[1.25rem]">
+          <div className="min-h-[1rem]">
             {visibleSupplyIncentive !== null && (
               <div className="flex items-center gap-[var(--ds-space-1)] ds-text-11">
                 <span className={isDisabled ? 'text-secondary' : 'ds-text-emerald-500-70'}>
@@ -322,26 +322,26 @@ const MobileReserveCard = memo(({
     const isDisabled = reserve.borrowDisabled;
     const heroColorClass = heroValue === null || isDisabled ? 'text-secondary' : 'ds-text-brand-cyan';
     return (
-      <div className="flex flex-col items-center gap-[var(--ds-space-1)] py-[var(--ds-space-2)]">
-        <span className="ds-text-9 text-muted-foreground uppercase font-medium tracking-wide">
-          Borrow {isApy ? 'APY' : 'APR'}
+        <div className="flex flex-col items-center gap-0.5 py-[var(--ds-space-1)]">
+          <span className="ds-text-9 text-muted-foreground uppercase font-medium tracking-wide">
+            Borrow {isApy ? 'APY' : 'APR'}
         </span>
         {isDisabled ? (
           <Tooltip>
             <TooltipTrigger asChild>
-              <p className={`text-3xl font-bold tabular-nums ${heroColorClass} cursor-auto`}>
+              <p className={`text-2xl font-bold tabular-nums ${heroColorClass} cursor-auto`}>
                 {formatPercent(heroValue)}
               </p>
             </TooltipTrigger>
             <TooltipContent>Borrow disabled</TooltipContent>
           </Tooltip>
         ) : (
-          <p className={`text-3xl font-bold tabular-nums ${heroColorClass}`}>
+          <p className={`text-2xl font-bold tabular-nums ${heroColorClass}`}>
             {formatPercent(heroValue)}
           </p>
         )}
         {/* Invisible spacer to match supply breakdown height and prevent jitter */}
-        <div className="min-h-[1.25rem]">
+        <div className="min-h-[1rem]">
           {visibleBorrowIncentive !== null && (
             <div className="flex items-center gap-[var(--ds-space-1)] ds-text-11">
               <span className={isDisabled ? 'text-secondary' : 'ds-text-brand-cyan-70'}>
@@ -379,7 +379,7 @@ const MobileReserveCard = memo(({
       >
         {/* Token header */}
         <div
-          className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-3)] min-h-[44px]"
+          className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-2)] min-h-[40px]"
         >
           <a
             href={buildAaveReserveUrl({ marketName: reserve.marketName, tokenAddress: reserve.tokenAddress }) || '#'}
@@ -412,11 +412,11 @@ const MobileReserveCard = memo(({
         </div>
 
         {/* Pill tabs */}
-        <div className="flex gap-[var(--ds-space-1-5)] bg-muted/40 rounded-lg p-1 mb-[var(--ds-space-3)]">
+        <div className="flex gap-[var(--ds-space-1-5)] bg-muted/40 rounded-lg p-0.5 mb-[var(--ds-space-2)]">
           <button
             type="button"
             onClick={() => setActiveTab('supply')}
-            className={`flex-1 ds-text-12 font-medium py-1.5 rounded-md transition-all duration-200 ${
+            className={`flex-1 ds-text-12 font-medium py-1 rounded-md transition-all duration-200 ${
               activeTab === 'supply'
                 ? 'ds-bg-emerald-500-10 ds-text-emerald-600 shadow-sm'
                 : 'text-muted-foreground hover:text-foreground/70'
@@ -427,7 +427,7 @@ const MobileReserveCard = memo(({
           <button
             type="button"
             onClick={() => setActiveTab('borrow')}
-            className={`flex-1 ds-text-12 font-medium py-1.5 rounded-md transition-all duration-200 ${
+            className={`flex-1 ds-text-12 font-medium py-1 rounded-md transition-all duration-200 ${
               activeTab === 'borrow'
                 ? 'ds-bg-brand-cyan-10 ds-text-brand-cyan shadow-sm'
                 : 'text-muted-foreground hover:text-foreground/70'
@@ -438,12 +438,12 @@ const MobileReserveCard = memo(({
         </div>
 
         {/* Tab content */}
-        <div className="flex flex-col gap-[var(--ds-space-2)]">
+        <div className="flex flex-col gap-[var(--ds-space-1-5)]">
           {renderAmountRow()}
           {renderHeroApy()}
 
           {/* Spread bar */}
-          <div className="flex items-center justify-between bg-muted/30 rounded-lg px-[var(--ds-space-3)] py-[var(--ds-space-2)]">
+          <div className="flex items-center justify-between bg-muted/30 rounded-lg px-[var(--ds-space-3)] py-[var(--ds-space-1-5)]">
             <span className="ds-text-11 text-muted-foreground uppercase font-medium tracking-wide">Spread</span>
             <span className={`ds-text-12 font-medium tabular-nums ${displaySpread !== null ? 'text-purple-500' : 'text-muted-foreground/70'}`}>
               {formatSpread(displaySpread)}
@@ -498,7 +498,7 @@ const MobileReserveCard = memo(({
         )}
 
         {/* Simulation toggle */}
-        <div className="mt-[var(--ds-space-3)] pt-[var(--ds-space-2)]">
+        <div className="mt-[var(--ds-space-2)] pt-[var(--ds-space-1)]">
           <button
             type="button"
             onClick={onToggleSimulation}
