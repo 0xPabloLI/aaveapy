@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useId } from 'react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { formatPercent } from '@/lib/formatters';
 
@@ -15,6 +15,8 @@ const UtilizationIndicator = memo(({
   width = 10,
   height = 18,
 }: UtilizationIndicatorProps) => {
+  const clipId = useId();
+
   if (current === null || optimal === null || !Number.isFinite(current) || !Number.isFinite(optimal)) {
     return null;
   }
@@ -45,7 +47,7 @@ const UtilizationIndicator = memo(({
             className="overflow-visible"
           >
             <defs>
-              <clipPath id="trackClip">
+              <clipPath id={clipId}>
                 <rect
                   x={trackX}
                   y={0}
@@ -64,13 +66,22 @@ const UtilizationIndicator = memo(({
               rx={trackRadius}
               className="fill-secondary/40"
             />
+            {/* Green fill below optimal zone, clipped to track shape */}
+            <rect
+              x={trackX}
+              y={optimalY}
+              width={trackWidth}
+              height={height - optimalY}
+              clipPath={`url(#${clipId})`}
+              className="fill-emerald-500/30"
+            />
             {/* Amber overlay for over-optimal zone, clipped to track shape */}
             <rect
               x={trackX}
               y={0}
               width={trackWidth}
               height={optimalY}
-              clipPath="url(#trackClip)"
+              clipPath={`url(#${clipId})`}
               className="fill-amber-500"
             />
             {/* Current position dot */}
