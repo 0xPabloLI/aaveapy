@@ -438,7 +438,7 @@ const MobileReserveCard = memo(({
         </div>
 
         {/* Tab content */}
-        <div className="flex flex-col gap-[var(--ds-space-2)]">
+        <div className="flex flex-col gap-[var(--ds-space-1-5)]">
           {renderAmountRow()}
           {renderHeroApy()}
 
