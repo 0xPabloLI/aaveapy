@@ -426,25 +426,23 @@ const MobileReserveCard = memo(({
               </div>
             </div>
           </a>
-          {/* Spacer */}
-          <div className="flex-1" />
-          {/* Utilization indicator - clickable with percentage */}
+          {/* Utilization indicator - clickable */}
           {reserve.utilizationPct != null && optimalPct != null && (
             <button
               type="button"
               onClick={() => setCapSheet('utilization')}
-              className="shrink-0 flex items-center gap-1 rounded-md px-1.5 py-0.5 transition-all hover:bg-muted/50 active:scale-[0.97]"
+              className="shrink-0 flex items-center gap-0.5 rounded-md px-1 py-0.5 transition-all hover:bg-muted/50 active:scale-[0.97]"
               aria-label="Show utilization details"
             >
-              <span className={`ds-text-11 font-medium tabular-nums ${
-                reserve.utilizationPct > optimalPct ? 'text-amber-600' : 'text-muted-foreground'
+              <span className={`text-[10px] font-medium tabular-nums leading-none ${
+                reserve.utilizationPct > optimalPct ? 'text-amber-600' : 'text-muted-foreground/70'
               }`}>
                 {reserve.utilizationPct.toFixed(0)}%
               </span>
               <UtilizationIndicator
                 current={reserve.utilizationPct}
                 optimal={optimalPct}
-                width={8}
+                width={6}
                 height={14}
               />
             </button>
