@@ -88,7 +88,7 @@ function UtilizationSheetContent({ current, optimal }: { current: number; optima
       </div>
       <div className="flex justify-between gap-3">
         <span className="text-muted-foreground">Optimal utilization</span>
-        <span className="font-medium tabular-nums">{formatPercent(optimal)}</span>
+        <span className="font-medium tabular-nums">{optimal.toFixed(2)}%</span>
       </div>
       {isOverOptimal && (
         <p className="text-amber-600 ds-text-11 pt-1 border-t border-border/50">
