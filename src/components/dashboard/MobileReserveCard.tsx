@@ -336,7 +336,7 @@ const MobileReserveCard = memo(({
             <TooltipContent>Borrow disabled</TooltipContent>
           </Tooltip>
         ) : (
-          <p className={`text-3xl font-bold tabular-nums ${heroColorClass}`}>
+          <p className={`text-2xl font-bold tabular-nums ${heroColorClass}`}>
             {formatPercent(heroValue)}
           </p>
         )}
