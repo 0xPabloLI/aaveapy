@@ -218,7 +218,7 @@ const MobileReserveCard = memo(({
       const hasSupplyCap = reserve.supplyCapUsd != null && Number.isFinite(reserve.supplyCapUsd) && reserve.supplyCapUsd > 0;
       return (
         <div className="flex items-center justify-between">
-          <span className="ds-text-11 text-muted-foreground uppercase font-medium tracking-wide">Supplied</span>
+          <span className="ds-text-11 text-muted-foreground uppercase font-medium tracking-wide">Size</span>
           {hasSupplyCap ? (
             <button
               type="button"
