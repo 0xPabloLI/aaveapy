@@ -341,7 +341,7 @@ const MobileReserveCard = memo(({
           </p>
         )}
         {/* Invisible spacer to match supply breakdown height and prevent jitter */}
-        <div className="min-h-[1.25rem]">
+        <div className="min-h-[1rem]">
           {visibleBorrowIncentive !== null && (
             <div className="flex items-center gap-[var(--ds-space-1)] ds-text-11">
               <span className={isDisabled ? 'text-secondary' : 'ds-text-brand-cyan-70'}>
