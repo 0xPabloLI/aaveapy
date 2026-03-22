@@ -81,6 +81,9 @@ This note records recurring UI/interaction issues found during incentive/forecas
 | General numeric data | `text-foreground` | Market size, prices |
 | Secondary/muted info | `text-muted-foreground`, `text-secondary` | Labels, descriptions |
 
+**Utilization display value (mobile vs desktop)**:
+- Mobile reserve header and bottom sheet must use the same **display** utilization as the desktop Util. column: `hasSharedScenario ? after ?? current : current` from rate simulation (not raw `reserve.utilizationPct` when a scenario is active).
+
 **UtilizationIndicator color scheme**:
 - Safe zone (below optimal): `fill-secondary/50` (neutral gray)
 - Warning zone (above optimal): `fill-amber-500/40` (same amber as CapProgressRing)
@@ -107,11 +110,9 @@ This note records recurring UI/interaction issues found during incentive/forecas
 
 ### Expandable rows and scroll stability
 
-- **Keep expanded content on-screen when list order changes**: If the user has expanded a row/card (e.g. to view a Breakdown or detail panel) and the list re-sorts (e.g. due to scenario inputs like Supply/Borrow), the expanded item can move and its expanded content may go off the bottom of the viewport.
-  - **Design habit**: When the expanded item’s *position in the list* changes, scroll the page so that item stays **pinned near the top** of the viewport (below any sticky header). Do not let the expanded content (e.g. Breakdown) scroll out of view.
-  - Apply the same behavior on **desktop** (table row) and **mobile** (card); only the sticky offset (header height + safe area) may differ.
-  - Trigger scroll only when the expanded item’s index actually changes (re-sort), not on initial expand, to avoid unnecessary movement and to limit work (e.g. use `useEffect` with a small delay + `requestAnimationFrame` for DOM measurement).
-  - **Rationale**: The user is focused on the expanded detail; if the list jumps and the detail disappears below the fold, the experience is broken. Pinning the expanded item to the top keeps the full detail visible without heavy layout hacks.
+- **Do not drive `window` scroll from “row index changed” while simulation is open**: After expanding, shared simulation updates can change computed sort keys (spread, APY, etc.) and reorder the list. Treating “index in `sortedData` changed” like a user re-sort and auto-scrolling to pin the row feels erratic and often fires even when there is already space below the card.
+- **Sort from column headers collapses the expanded row** in `ReservesTable`, so index-based pinning does not correspond to a real “user re-sorted while expanded” flow here.
+- **If** we ever need to keep the expanded panel in view, prefer an **intersection-style check** (e.g. whether the panel’s bottom is clipped by the viewport) before adjusting scroll, rather than index-based `window.scrollTo`.
 
 ### Search behavior
 
@@ -300,3 +301,4 @@ Keep header, body, and skeleton row padding in sync so alignment and spacing sta
 - **Simulation panel**: `rounded-b-xl` only (NO `rounded-t-xl`) — top corners are straight so they align flush with the card above.
 - The junction mask (concave curve overlay) handles the **inactive side** transition; the active side must be a seamless vertical edge with no rounding or gap.
 - **Rule**: Never add `rounded-t-*` to the simulation panel container; the top edge is always joined to the card above.
+- The simulation sub-row does not repeat the desktop heading “Shared APY/APR simulation” in **compact (mobile)** layout; the card’s Simulation toggle already establishes context.

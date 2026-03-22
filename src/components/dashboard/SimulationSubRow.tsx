@@ -2,6 +2,8 @@ import { useRef, useState, useEffect } from 'react';
 import { AlertTriangle, ExternalLink } from 'lucide-react';
 import { formatPercent, formatSpread, formatReserveSizeUsd } from '@/lib/formatters';
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
+import { externalLinkTabProps } from '@/lib/externalNavigation';
+import { useIsMobile } from '@/hooks/use-mobile';
 import type { RateSimulationResult } from '@/hooks/useRateSimulation';
 import type { ReserveWithSpread, MeritIncentive, MerklOpportunityGroup, BrevisIncentive } from '@/types/aave';
 import { ETHEREUM_MARKET_NAMES } from '@/types/aave';
@@ -101,6 +103,7 @@ const SimulationSubRow = ({
   onCorrectSupplyInput,
   onCorrectBorrowInput,
 }: SimulationSubRowProps) => {
+  const isMobile = useIsMobile();
   const containerRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
   const [containerNarrow, setContainerNarrow] = useState(false);
@@ -355,8 +358,7 @@ const SimulationSubRow = ({
             {row.href ? (
               <a
                 href={row.href}
-                target="_blank"
-                rel="noopener noreferrer"
+                {...externalLinkTabProps(isMobile)}
                 onClick={(e) => e.stopPropagation()}
                 className={`ds-text-12 flex items-center gap-1 min-w-0 break-words ${row.warning ? 'text-amber-700 dark:text-amber-400' : isBreakdownItem ? `${rowAccentClass} hover:opacity-90` : accentClass}`}
               >
@@ -399,18 +401,22 @@ const SimulationSubRow = ({
     const compactMetricCell = 'px-3';
     const compactNumCell = 'px-2.5';
     const compactDeltaCell = 'pl-2.5 pr-3';
+    /** Parent card/panel already provides the outer border when embedded; inner borders misalign with thead lines. */
     return (
     <div
-      className={`border border-border/60 bg-card/50 dark:bg-background/80 overflow-hidden ${
-        embeddedFromTop ? 'rounded-b-xl rounded-t-none' : 'rounded-xl'
+      className={`overflow-hidden ${
+        embeddedFromTop
+          ? 'rounded-none bg-transparent dark:bg-transparent'
+          : 'bg-card/50 dark:bg-background/80 border border-border/60 rounded-xl'
       }`}
     >
       <table className="w-full min-w-0 table-fixed">
         <colgroup>
-          <col style={{ width: 'auto' }} />
-          <col style={{ width: '4.75rem' }} />
-          <col style={{ width: '4.75rem' }} />
-          <col style={{ width: '4.5rem' }} />
+          {/* Percent widths so short labels (e.g. Spread) are not stranded in an oversized first column */}
+          <col style={{ width: '34%' }} />
+          <col style={{ width: '22%' }} />
+          <col style={{ width: '22%' }} />
+          <col style={{ width: '22%' }} />
         </colgroup>
         <thead>
           <tr className="bg-muted/30 border-b border-border/50">
@@ -584,19 +590,30 @@ const SimulationSubRow = ({
     </div>
   );
 
+  const showSharedSimulationTitle = !compact;
+  const showHeaderBlock = showSharedSimulationTitle || showEmptyStateNote;
+
   return (
     <div ref={containerRef} className={`min-w-0 ${effectiveCompact ? 'p-0' : 'p-0'}`}>
-      {/* Header */}
-      <div className={`flex flex-wrap items-baseline gap-x-2 gap-y-1 ${effectiveCompact ? 'mb-2 px-1' : 'mb-3 px-1'}`}>
-        <span className={effectiveCompact ? 'ds-text-13 font-semibold text-foreground' : 'ds-text-14 font-semibold text-foreground'}>
-          Shared {rateLabel} simulation
-        </span>
-        {showEmptyStateNote && (
-          <span className="ds-text-12 text-muted-foreground">
-            Enter supply or borrow amount above to see simulated values.
-          </span>
-        )}
-      </div>
+      {/* Header — title omitted on mobile (compact); toggle row already signals simulation context */}
+      {showHeaderBlock && (
+        <div
+        className={`flex flex-wrap items-baseline gap-x-2 gap-y-1 ${
+          effectiveCompact ? (embeddedFromTop ? 'mb-2 px-0' : 'mb-2 px-1') : 'mb-3 px-1'
+        }`}
+      >
+          {showSharedSimulationTitle && (
+            <span className={effectiveCompact ? 'ds-text-13 font-semibold text-foreground' : 'ds-text-14 font-semibold text-foreground'}>
+              Shared {rateLabel} simulation
+            </span>
+          )}
+          {showEmptyStateNote && (
+            <span className="ds-text-12 text-muted-foreground">
+              Enter supply or borrow amount above to see simulated values.
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Warnings */}
       {supplyCapExceeded && (
@@ -646,7 +663,7 @@ const SimulationSubRow = ({
 
       {/* Footer notes */}
       {(simulation.reserveRateInputLoading || simulation.reserveRateInputError || simulation.forecastLoading || showPriceMissingNotice || simulation.forecastUnavailableCampaignCount > 0) && (
-        <div className="mt-3 space-y-1 px-1">
+        <div className={`mt-3 space-y-1 ${effectiveCompact && embeddedFromTop ? 'px-0' : 'px-1'}`}>
           {simulation.reserveRateInputLoading && !showEmptyStateNote && (
             <p className="ds-text-11 text-muted-foreground">Loading rate inputs...</p>
           )}

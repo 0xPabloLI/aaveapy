@@ -172,11 +172,15 @@ When implementing mobile carousels:
 - Maintain design symmetry when adding complementary UI elements (e.g. Supply and Borrow info placement consistent).
 - Tooltip content should not repeat information already visible in the parent; only show supplementary context.
 - Toggle/selection state changes must be visually obvious; use border color or other clear indicators, not subtle opacity/background only.
-- Reserve semantic colors for their purpose; avoid introducing new colors just to show selection/active state (prefer neutral borders + thickness/contrast). Keep each UI element focused on one semantic role (e.g. amber for alerts only, not regular data). When implementing the same control on mobile and desktop, reuse the same design tokens and visual style; only layout may differ (e.g. vertical vs horizontal).
+- Reserve semantic colors for their purpose; avoid introducing new colors just to show selection/active state (prefer neutral borders + thickness/contrast). Keep each UI element focused on one semantic role (e.g. amber for alerts only, not regular data). When implementing the same control on mobile and desktop, reuse the same design tokens and visual style; only layout may differ (e.g. vertical vs horizontal). For utilization vs optimal (kink), prefer informational/neutral (e.g. blue) for the below-optimal zone rather than green; keep amber for above-optimal, not green.
 - Multi-column panels (e.g. simulation Supply/Spread/Borrow): use equal column widths and uniform compression; do not give one column fixed or favored width. Bordered UI (including tables) must keep clear breathing room between text and borders; when space is tight prefer wrapping over ellipsis.
 
 ## Learned Workspace Facts
 - Mobile overlays (cap details, incentive details) use bottom sheet with title bar and close button, not floating popover; see docs/design/frontend-interaction-guardrails.md.
+- Aave reserve `optimalUsageRate` (and similar on-chain rate fields) is RAY; convert to a display percent with `Number(value) / 1e25` or reuse `simulation.utilization.optimal` from rate simulation—never treat the raw integer as a 0–1 fraction and multiply by 100.
+- Mobile Top Opportunities mini cards do not link out to external Aave URLs; elsewhere, shared helpers in `src/lib/externalNavigation.ts` open external URLs in the same tab on mobile and a new tab on desktop where that pattern is applied.
+- Do not drive full-page `scrollTo` from expanded-row index changes when `sortedData` reorders due to simulation updates; prefer viewport-based behavior if scroll is needed later (see docs/design/frontend-interaction-guardrails.md).
+- Mobile reserve utilization display and `UtilizationIndicator` should use the same scenario-based utilization as desktop/`ReservesTable` when simulating, not only raw on-chain `reserve.utilizationPct`.
 - Local git hooks in this setup are managed under the main repository `.git/hooks` and are local-only (not versioned).
 - This workspace currently uses a local pre-push flow that runs lockfile consistency checks before the existing `ci:remote` checks.
 - Prefer deriving values client-side when possible rather than adding backend fields (e.g., totalBorrowedUsd can be computed from reserveSizeUsd × utilizationPct).

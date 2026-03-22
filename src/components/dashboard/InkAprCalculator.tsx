@@ -6,6 +6,7 @@ import { InfoIconButton, DesktopTooltip, MobileTooltip } from '@/components/dash
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useCoingeckoFdv } from '@/hooks/useCoingeckoFdv';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { externalLinkTabProps } from '@/lib/externalNavigation';
 
 interface InkAprCalculatorProps {
   rateInput: string;
@@ -408,8 +409,7 @@ const InkAprCalculator = ({
         INK total supply: {TOTAL_SUPPLY.toLocaleString()} (1 billion){' '}
         <a
           href="https://x.com/inkfndhq/status/1934991370957033888"
-          target="_blank"
-          rel="noopener noreferrer"
+          {...externalLinkTabProps(isMobile)}
           aria-label="Official documentation"
           className="inline text-muted-foreground hover:text-foreground"
         >
@@ -615,8 +615,7 @@ const InkAprCalculator = ({
                 <span className="h-[0.875rem] flex items-center justify-center ds-text-9 md:ds-text-10 whitespace-nowrap leading-none text-muted-foreground/40">Kraken</span>
                 <a
                   href="https://coinmarketcap.com/currencies/ink-token/"
-                  target="_blank"
-                  rel="noreferrer"
+                  {...externalLinkTabProps(isMobile)}
                   className="h-[0.875rem] inline-flex items-center justify-center gap-0.5 ds-text-9 md:ds-text-10 whitespace-nowrap leading-none text-muted-foreground/50 hover:text-foreground transition-colors"
                 >
                   Ink/INK
@@ -687,8 +686,7 @@ const InkAprCalculator = ({
                   ) : (
                     <a
                       href={point.link}
-                      target="_blank"
-                      rel="noreferrer"
+                      {...externalLinkTabProps(isMobile)}
                       onClick={(e) => e.stopPropagation()}
                       onMouseEnter={() => setLinkHoveredPointId(point.id)}
                       onMouseLeave={() => setLinkHoveredPointId(null)}
@@ -917,8 +915,7 @@ const InkAprCalculator = ({
             = $<span className={`transition-colors duration-300 ${fdvJustChanged ? 'text-[rgb(var(--ds-brand-magenta-rgb))]' : 'text-muted-foreground'}`}>{formatInkPrice(currentFdvBillions)}</span>/INK
             <a
               href="https://coinmarketcap.com/currencies/ink-token/"
-              target="_blank"
-              rel="noreferrer"
+              {...externalLinkTabProps(isMobile)}
               aria-label="Open INK on CoinMarketCap (new tab)"
               onClick={(e) => e.stopPropagation()}
               className="inline-flex items-center justify-center text-muted-foreground/60 hover:text-foreground transition-colors"
@@ -954,8 +951,7 @@ const InkAprCalculator = ({
                       <span className="ds-text-10 opacity-70">{point.exchange}</span>
                       <a
                         href={point.link}
-                        target="_blank"
-                        rel="noreferrer"
+                        {...externalLinkTabProps(isMobile)}
                         onClick={(e) => e.stopPropagation()}
                         className="inline-flex w-full min-w-0 items-center gap-0.5 ds-text-9 opacity-60 hover:opacity-100 transition-opacity"
                       >

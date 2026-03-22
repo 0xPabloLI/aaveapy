@@ -4,6 +4,7 @@ import { ReserveWithSpread, ETHEREUM_MARKET_NAMES } from '@/types/aave';
 import { formatPercent, formatSpread } from '@/lib/formatters';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
+import { externalLinkTabProps } from '@/lib/externalNavigation';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -212,7 +213,7 @@ const MobileReserveCard = memo(({
 
   if (variant === 'simulationOnly') {
     return (
-      <div className="mt-[var(--ds-space-2)]">
+      <div>
         <SimulationSubRow
           reserve={reserve}
           simulation={simulation}
@@ -221,6 +222,7 @@ const MobileReserveCard = memo(({
           borrowInput={borrowInput}
           inputMode={inputMode}
           compact
+          embeddedFromTop
           onCorrectSupplyInput={onCorrectSupplyInput}
           onCorrectBorrowInput={onCorrectBorrowInput}
         />
@@ -382,22 +384,32 @@ const MobileReserveCard = memo(({
     );
   };
 
-  const optimalPct = reserve.optimalUsageRate != null ? Number(reserve.optimalUsageRate) * 100 : null;
+  /** RAY → display %; must match `interestRateCalculator` / desktop `simulation.utilization.optimal`. */
+  const RAY_TO_PERCENT_DIVISOR = 1e25;
+  const optimalPctFromReserve =
+    reserve.optimalUsageRate != null && Number(reserve.optimalUsageRate) > 0
+      ? Number(reserve.optimalUsageRate) / RAY_TO_PERCENT_DIVISOR
+      : null;
+  const optimalPct = simulation.utilization.optimal ?? optimalPctFromReserve;
+
+  /** Same rule as `ReservesTable.getDisplayUtilization` / desktop row: scenario uses after when shared inputs exist. */
+  const displayUtilization = hasSharedScenario
+    ? simulation.utilization.after ?? simulation.utilization.current
+    : simulation.utilization.current;
 
   return (
     <div data-reserve-id={`${reserve.marketName}-${reserve.tokenAddress}`} className={isSimulationExpanded && !showUpperOnly ? 'shadow-sm rounded-xl' : ''}>
       {/* Card upper part */}
       <div
         className={`bg-card border border-border/60 ds-card-pad-sm transition-all duration-300 ${
-          connectedBelow || (isSimulationExpanded && !showUpperOnly) ? 'rounded-t-xl rounded-b-none border-b-transparent' : 'rounded-xl shadow-sm'
+          connectedBelow || (isSimulationExpanded && !showUpperOnly) ? 'rounded-t-xl rounded-b-none border-b-0' : 'rounded-xl shadow-sm'
         }`}
       >
         {/* Token header */}
         <div className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-1-5)] min-h-[36px]">
           <a
             href={buildAaveReserveUrl({ marketName: reserve.marketName, tokenAddress: reserve.tokenAddress }) || '#'}
-            target="_blank"
-            rel="noopener noreferrer"
+            {...externalLinkTabProps(true)}
             onClick={(e) => e.stopPropagation()}
             className="flex items-center gap-[var(--ds-space-2)] min-w-0 flex-1 active:opacity-70 transition-opacity"
             aria-label={`Open ${reserve.tokenSymbol} on Aave`}
@@ -422,8 +434,8 @@ const MobileReserveCard = memo(({
               </div>
             </div>
           </a>
-          {/* Utilization indicator - clickable */}
-          {reserve.utilizationPct != null && optimalPct != null && (
+          {/* Utilization indicator - clickable (values match desktop Util. column + UtilizationIndicator) */}
+          {displayUtilization != null && optimalPct != null && (
             <button
               type="button"
               onClick={() => setCapSheet('utilization')}
@@ -431,12 +443,12 @@ const MobileReserveCard = memo(({
               aria-label="Show utilization details"
             >
               <span className={`text-[10px] font-medium tabular-nums leading-none ${
-                reserve.utilizationPct > optimalPct ? 'text-amber-600' : 'text-muted-foreground/70'
+                displayUtilization > optimalPct ? 'text-amber-600' : 'text-muted-foreground/70'
               }`}>
-                {reserve.utilizationPct.toFixed(0)}%
+                {displayUtilization.toFixed(0)}%
               </span>
               <UtilizationIndicator
-                current={reserve.utilizationPct}
+                current={displayUtilization}
                 optimal={optimalPct}
                 width={6}
                 height={14}
@@ -518,9 +530,9 @@ const MobileReserveCard = memo(({
                     poolLiquidity={poolLiquidity ?? 0}
                   />
                 )}
-                {capSheet === 'utilization' && optimalPct != null && (
+                {capSheet === 'utilization' && optimalPct != null && displayUtilization != null && (
                   <UtilizationSheetContent
-                    current={reserve.utilizationPct ?? 0}
+                    current={displayUtilization}
                     optimal={optimalPct}
                   />
                 )}
@@ -534,17 +546,21 @@ const MobileReserveCard = memo(({
           <button
             type="button"
             onClick={onToggleSimulation}
-            className={`relative inline-flex w-full items-center justify-between rounded-lg bg-background px-[var(--ds-space-2-5)] py-[var(--ds-space-1-5)] ds-text-12 text-muted-foreground transition-all duration-300 hover:bg-muted/40 ${
-              isSimulationExpanded ? 'border-2 border-foreground/40' : 'border border-border/70'
+            aria-expanded={isSimulationExpanded}
+            aria-label={isSimulationExpanded ? 'Collapse reserve details' : 'Expand reserve details'}
+            className={`inline-flex w-full items-center justify-between gap-2 rounded-lg px-2 py-1.5 ds-text-12 text-muted-foreground transition-colors duration-300 ${
+              isSimulationExpanded
+                ? 'border-2 border-foreground/40 bg-muted/50'
+                : 'border border-border/70 bg-background hover:bg-muted/40'
             }`}
           >
-            <span className="flex items-center gap-[var(--ds-space-1-5)]">
-              <span className="ds-text-11 text-muted-foreground/70">Spread</span>
+            <span className="flex min-w-0 items-center gap-1.5">
+              <span className="ds-text-11 text-muted-foreground/70 shrink-0">Spread</span>
               <span className={`ds-text-11 font-medium tabular-nums ${displaySpread !== null ? 'text-purple-500' : 'text-muted-foreground/70'}`}>
                 {formatSpread(displaySpread)}
               </span>
             </span>
-            <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${isSimulationExpanded ? 'rotate-180' : ''}`} />
+            <ChevronDown className={`h-3.5 w-3.5 shrink-0 transition-transform duration-300 ${isSimulationExpanded ? 'rotate-180' : ''}`} />
           </button>
         </div>
       </div>

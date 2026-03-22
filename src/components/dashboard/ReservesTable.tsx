@@ -21,6 +21,7 @@ import ScenarioControls, { type ScenarioControlsHandle } from './ScenarioControl
 import { compareIncentiveWithNative } from '@/lib/sorters';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
+import { openExternalUrl } from '@/lib/externalNavigation';
 import IncentiveTooltip from './IncentiveTooltip';
 import MobileReserveCard from './MobileReserveCard';
 import DesktopReserveRow from './DesktopReserveRow';
@@ -103,11 +104,6 @@ const ReservesTable = ({
   const handleCorrectBorrowInput = useCallback((correctedValue: string) => {
     scenarioControlsRef.current?.setBorrowInput(correctedValue);
   }, []);
-
-  // Refs for tracking expanded row position (used by useLayoutEffect after sortedData is defined)
-  const prevExpandedIndexRef = useRef<number | null>(null);
-  const prevExpandedIdRef = useRef<string | null>(null);
-  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (showBorrowSortMenu && borrowSortButtonRef.current) {
@@ -423,73 +419,6 @@ const ReservesTable = ({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reserves, activeSortColumn, tokenSortOrder, priceSortOrder, sizeSortMode, sizeSortOrder, utilSortOrder, supplySortMode, supplySortOrder, borrowSortMode, borrowSortOrder, spreadSortOrder, simulationsById, hasSharedScenario, isApy, tydroPointToUsdRate, includeWhitelistOnlyMerkl, debouncedSharedSupplyInput, sharedInputMode]);
 
-  // When expanded row position changes due to re-sort, keep it pinned near the top
-  useEffect(() => {
-    if (!expandedReserveId) {
-      prevExpandedIndexRef.current = null;
-      prevExpandedIdRef.current = null;
-      return;
-    }
-    
-    const currentIndex = sortedData.findIndex(
-      (r) => getReserveSimulationId(r) === expandedReserveId
-    );
-    
-    if (currentIndex === -1) {
-      prevExpandedIndexRef.current = null;
-      prevExpandedIdRef.current = null;
-      return;
-    }
-    
-    const prevIndex = prevExpandedIndexRef.current;
-    const positionChanged = prevIndex !== null && prevIndex !== currentIndex;
-    
-    prevExpandedIndexRef.current = currentIndex;
-    prevExpandedIdRef.current = expandedReserveId;
-    
-    // Only scroll when position changes (not on initial expand)
-    if (!positionChanged) return;
-    
-    // Clear any pending scroll
-    if (scrollTimeoutRef.current) {
-      clearTimeout(scrollTimeoutRef.current);
-    }
-    
-    // Small delay then scroll to keep row at top (desktop table row or mobile card)
-    scrollTimeoutRef.current = setTimeout(() => {
-      requestAnimationFrame(() => {
-        const rowElement = document.querySelector(
-          `[data-reserve-id="${expandedReserveId}"]`
-        );
-        if (!rowElement) return;
-        
-        const rect = rowElement.getBoundingClientRect();
-        // Mobile: account for sticky scenario bar + safe area; desktop: table sticky header
-        const stickyHeaderHeight = isMobile ? 120 : 80;
-        const paddingBelowHeader = isMobile ? 24 : 16;
-        
-        // Always scroll to put the expanded row/card near the top (below sticky header)
-        // Same behavior on desktop and mobile so Breakdown stays fully visible
-        const targetTop = stickyHeaderHeight + paddingBelowHeader;
-        const scrollDelta = rect.top - targetTop;
-        
-        // Only scroll if row moved significantly (>20px from target position)
-        if (Math.abs(scrollDelta) > 20) {
-          window.scrollTo({
-            top: window.scrollY + scrollDelta,
-            behavior: 'smooth',
-          });
-        }
-      });
-    }, 50);
-    
-    return () => {
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
-    };
-  }, [sortedData, expandedReserveId, isMobile]);
-
   const supplySortLabel = {
     total: 'Total',
     native: 'Native',
@@ -585,7 +514,7 @@ const ReservesTable = ({
       tokenAddress: reserve.tokenAddress,
     });
     if (url) {
-      window.open(url, '_blank', 'noopener,noreferrer');
+      openExternalUrl(url, isMobile);
     }
   };
 
@@ -896,16 +825,17 @@ const ReservesTable = ({
                   const isLeftActive = leftExpanded;
                   const activeReserve = isLeftActive ? leftReserve : rightReserve!;
                   const activeId = isLeftActive ? leftId : rightId!;
+                  /** Matches `grid-cols-2 gap-[--ds-space-2]`: one column width (connector under expanded card only). */
+                  const pairColWidth = 'calc((100% - var(--ds-space-2)) / 2)';
+                  const connectorOnLeft = leftExpanded || !rightReserve;
 
                   nodes.push(
                     <div key={`row-${i}`} className="col-span-2">
-                      {/* Cards row */}
-                      <div className="relative grid grid-cols-2 gap-[var(--ds-space-2)]">
-                        {/* Left card */}
-                        <div className={isLeftActive ? 'relative z-[2]' : ''}>
+                      <div className="grid grid-cols-2 gap-[var(--ds-space-2)]">
+                        <div className="min-w-0">
                           <MobileReserveCard
                             variant={isLeftActive ? 'upperOnly' : 'full'}
-                            connectedBelow={isLeftActive}
+                            connectedBelow={leftExpanded}
                             reserve={leftReserve}
                             isApy={isApy}
                             onIncentiveClick={handleMobileIncentiveClick}
@@ -921,12 +851,11 @@ const ReservesTable = ({
                             defaultTab={activeSortColumn === 'borrow' ? 'borrow' : undefined}
                           />
                         </div>
-                        {/* Right card */}
-                        {rightReserve && (
-                          <div className={!isLeftActive ? 'relative z-[2]' : ''}>
+                        {rightReserve ? (
+                          <div className="min-w-0">
                             <MobileReserveCard
                               variant={!isLeftActive ? 'upperOnly' : 'full'}
-                              connectedBelow={!isLeftActive}
+                              connectedBelow={rightExpanded}
                               reserve={rightReserve}
                               isApy={isApy}
                               onIncentiveClick={handleMobileIncentiveClick}
@@ -942,39 +871,12 @@ const ReservesTable = ({
                               defaultTab={activeSortColumn === 'borrow' ? 'borrow' : undefined}
                             />
                           </div>
-                        )}
+                        ) : null}
                       </div>
-                      {/* Simulation panel with junction curve */}
-                      <div className="relative">
-                        {/* Junction mask — page-bg overlay on non-active side with concave border curve */}
-                        {rightReserve && (
-                          <div
-                            className="absolute top-0 z-10 pointer-events-none"
-                            style={{
-                              ...(isLeftActive
-                                ? {
-                                    left: 'calc(50% - var(--ds-space-2) / 2)',
-                                    right: -1,
-                                    borderTopRightRadius: 12,
-                                    borderBottomLeftRadius: 12,
-                                    borderLeft: '1px solid hsl(var(--border) / 0.6)',
-                                    borderBottom: '1px solid hsl(var(--border) / 0.6)',
-                                  }
-                                : {
-                                    right: 'calc(50% - var(--ds-space-2) / 2)',
-                                    left: -1,
-                                    borderTopLeftRadius: 12,
-                                    borderBottomRightRadius: 12,
-                                    borderRight: '1px solid hsl(var(--border) / 0.6)',
-                                    borderBottom: '1px solid hsl(var(--border) / 0.6)',
-                                  }),
-                              height: 12,
-                              background: 'hsl(var(--background))',
-                            }}
-                          />
-                        )}
+                      {/* Full-width simulation (table needs width). Minimal connector under expanded column only. */}
+                      <div className="relative isolate -mt-px">
                         <div
-                          className="bg-card border border-border/60 border-t-0 rounded-b-xl ds-card-pad-sm"
+                          className="relative z-0 overflow-hidden rounded-b-xl border-x border-b border-border/60 bg-card ds-card-pad-sm"
                           style={{
                             paddingTop: 'var(--ds-space-2)',
                           }}
@@ -996,6 +898,11 @@ const ReservesTable = ({
                             defaultTab={activeSortColumn === 'borrow' ? 'borrow' : undefined}
                           />
                         </div>
+                        <div
+                          aria-hidden
+                          className={`pointer-events-none absolute top-0 z-[1] h-px bg-border/60 ${connectorOnLeft ? 'left-0' : 'right-0'}`}
+                          style={{ width: pairColWidth }}
+                        />
                       </div>
                     </div>
                   );

@@ -22,6 +22,7 @@ import {
   apyToApr
 } from '@/lib/formatters';
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
+import { externalLinkTabProps, openExternalUrl } from '@/lib/externalNavigation';
 import { IncentiveIcon } from '@/components/IncentiveIcon';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getChainIconSrc } from '@/lib/chainIcons';
@@ -149,18 +150,7 @@ const ReserveIdentity = memo(({
         />
         <div className="min-w-0 flex-1">
           <div className="flex items-center">
-            <a
-              href={aaveUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="group/token inline-flex items-center gap-[var(--ds-space-2)] hover:opacity-80 transition-opacity duration-150"
-              aria-label={`Open ${tokenSymbol} on Aave`}
-              title="Open on Aave"
-            >
-              <span className="font-bold text-foreground ds-text-12 truncate">{tokenSymbol}</span>
-              <ExternalLink className="w-2.5 h-2.5 text-muted-foreground opacity-0 -ml-1 group-hover/token:opacity-70 transition-opacity duration-150 shrink-0" />
-            </a>
+            <span className="font-bold text-foreground ds-text-12 truncate">{tokenSymbol}</span>
           </div>
           <div className="flex items-center gap-[var(--ds-space-1)] ds-text-9 text-muted-foreground">
             {chainIconSrc && (
@@ -186,8 +176,7 @@ const ReserveIdentity = memo(({
       <div className="flex items-center min-w-0">
         <a
           href={aaveUrl}
-          target="_blank"
-          rel="noopener noreferrer"
+          {...externalLinkTabProps(isMobile)}
           onClick={(e) => e.stopPropagation()}
           className="group/token inline-flex items-center gap-[var(--ds-space-2)] hover:opacity-80 transition-opacity duration-150"
           aria-label={`Open ${tokenSymbol} on Aave`}
@@ -391,9 +380,10 @@ const TopOpportunities = ({
       onCardClick(reserve);
       return;
     }
+    if (isMobile) return;
     const url = buildAaveReserveUrl(reserve);
     if (url) {
-      window.open(url, '_blank', 'noopener,noreferrer');
+      openExternalUrl(url, false);
     }
   };
 
@@ -583,7 +573,6 @@ const TopOpportunities = ({
       name: reserve.tokenName,
     });
     const marketDisplayName = getMarketDisplayName(reserve);
-    const aaveUrl = buildAaveReserveUrl(reserve);
     return (
       <motion.div
         {...(disableMotion
@@ -606,7 +595,6 @@ const TopOpportunities = ({
           chainIconSrc={chainIconSrc}
           marketDisplayName={marketDisplayName}
           isMobile={isMobile}
-          aaveUrl={aaveUrl}
         />
 
         {/* Main value + detail row */}
@@ -691,8 +679,7 @@ const TopOpportunities = ({
           <div className="flex items-center min-w-0">
             <a
               href={aaveUrl}
-              target="_blank"
-              rel="noopener noreferrer"
+              {...externalLinkTabProps(isMobile)}
               onClick={(e) => e.stopPropagation()}
               className="group/token inline-flex items-center gap-[var(--ds-space-2)] hover:opacity-80 transition-opacity duration-150"
               aria-label={`Open ${reserve.tokenSymbol} on Aave`}
