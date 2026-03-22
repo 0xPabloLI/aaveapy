@@ -232,7 +232,9 @@ const MobileReserveCard = memo(({
 
   const showUpperOnly = variant === 'upperOnly';
 
-  /** Render the amount row with optional cap ring */
+  /**
+   * Stacked metric: caption above, amount (+ cap ring) below — centered with hero APY, separated by a light rule.
+   */
   const renderAmountRow = () => {
     if (activeTab === 'supply') {
       const hasSupplyCap = reserve.supplyCapUsd != null && Number.isFinite(reserve.supplyCapUsd) && reserve.supplyCapUsd > 0;
@@ -247,20 +249,21 @@ const MobileReserveCard = memo(({
           {hasSupplyCap ? (
             <button
               type="button"
-              className="flex items-center gap-[var(--ds-space-1-5)] ds-text-emerald-600 ds-text-12 rounded-md py-0.5 px-1.5 -mx-1 transition-all hover:bg-muted/70 active:scale-[0.97] cursor-pointer"
+              className="flex items-center gap-2 min-w-0 rounded-lg px-2 py-1 ds-text-emerald-600 transition-all hover:bg-muted/50 active:scale-[0.98] cursor-pointer"
               aria-label="Show supply cap details"
               onClick={() => setCapSheet('supply')}
             >
-              <span className="font-medium tabular-nums">{formatReserveSizeUsd(reserve.reserveSizeUsd)}</span>
-              <CapProgressRing size={reserve.reserveSizeUsd} cap={reserve.supplyCapUsd!} ringSize={10} strokeWidth={1.2} disableTooltip />
+              <span className="ds-text-14 font-semibold tabular-nums leading-none">{formatReserveSizeUsd(reserve.reserveSizeUsd)}</span>
+              <CapProgressRing size={reserve.reserveSizeUsd} cap={reserve.supplyCapUsd!} ringSize={12} strokeWidth={1.2} disableTooltip />
             </button>
           ) : (
-            <span className="font-medium tabular-nums ds-text-emerald-600 ds-text-12">{formatReserveSizeUsd(reserve.reserveSizeUsd)}</span>
+            <span className="ds-text-14 font-semibold tabular-nums leading-none ds-text-emerald-600">
+              {formatReserveSizeUsd(reserve.reserveSizeUsd)}
+            </span>
           )}
         </div>
       );
     }
-    // Borrow tab
     const hasBorrowCap = reserve.borrowCapUsd != null && Number.isFinite(reserve.borrowCapUsd) && reserve.borrowCapUsd > 0;
     return (
       <div className="flex items-center justify-between">
@@ -273,22 +276,24 @@ const MobileReserveCard = memo(({
         {hasBorrowCap ? (
           <button
             type="button"
-            className="flex items-center gap-[var(--ds-space-1-5)] ds-text-brand-cyan ds-text-12 rounded-md py-0.5 px-1.5 -mx-1 transition-all hover:bg-muted/70 active:scale-[0.97] cursor-pointer"
+            className="flex items-center gap-2 min-w-0 rounded-lg px-2 py-1 ds-text-brand-cyan transition-all hover:bg-muted/50 active:scale-[0.98] cursor-pointer"
             aria-label="Show borrow cap details"
             onClick={() => setCapSheet('borrow')}
           >
-            <span className="font-medium tabular-nums">{formatReserveSizeUsd(totalBorrowedUsd)}</span>
+            <span className="ds-text-14 font-semibold tabular-nums leading-none">{formatReserveSizeUsd(totalBorrowedUsd)}</span>
             <BorrowCapProgressRing
               borrowed={totalBorrowedUsd}
               cap={reserve.borrowCapUsd!}
               poolLiquidity={poolLiquidity}
-              ringSize={10}
+              ringSize={12}
               strokeWidth={1.2}
               disableTooltip
             />
           </button>
         ) : (
-          <span className="font-medium tabular-nums ds-text-brand-cyan ds-text-12">{formatReserveSizeUsd(totalBorrowedUsd)}</span>
+          <span className="ds-text-14 font-semibold tabular-nums leading-none ds-text-brand-cyan">
+            {formatReserveSizeUsd(totalBorrowedUsd)}
+          </span>
         )}
       </div>
     );
@@ -494,7 +499,7 @@ const MobileReserveCard = memo(({
         </div>
 
         {/* Tab content */}
-        <div className="flex flex-col gap-[var(--ds-space-1)]">
+        <div className="flex w-full flex-col gap-3">
           {renderAmountRow()}
           {renderHeroApy()}
         </div>

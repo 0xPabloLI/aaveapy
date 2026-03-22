@@ -874,8 +874,17 @@ const ReservesTable = ({
                           </div>
                         ) : null}
                       </div>
-                      {/* Full-width simulation (table needs width). Minimal connector under expanded column only. */}
-                      <div className="relative isolate -mt-px">
+                      {/* Full-width simulation (table needs width). mt clears the peer card’s bottom; bridge fills that gap on the expanded column only (same bg/border as panel). */}
+                      <div className="relative isolate mt-[var(--ds-space-2)]">
+                        <div
+                          aria-hidden
+                          className={`pointer-events-none absolute z-0 border-border/60 bg-card ${connectorOnLeft ? 'left-0 border-l border-r' : 'right-0 border-l border-r'}`}
+                          style={{
+                            top: 'calc(-1 * var(--ds-space-2))',
+                            height: 'var(--ds-space-2)',
+                            width: pairColWidth,
+                          }}
+                        />
                         <div
                           className="relative z-0 overflow-hidden rounded-b-xl border-x border-b border-border/60 bg-card ds-card-pad-sm"
                           style={{

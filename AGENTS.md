@@ -163,8 +163,7 @@ When implementing mobile carousels:
 
 ## Learned User Preferences
 - Prefer Chinese for collaboration and implementation discussions.
-- Prefer direct execution after confirmation (e.g. "直接执行", "继续", "你来处理"), including verifying and reproducing issues yourself instead of asking the user to do steps.
-- Prefer evidence-based diagnosis with concrete runtime artifacts (CI logs, live API responses) before concluding root cause.
+- Prefer direct execution after confirmation (e.g. "直接执行", "继续", "你来处理"), including verifying and reproducing issues yourself; prefer evidence-based diagnosis with concrete runtime artifacts (CI logs, live API responses) before concluding root cause.
 - Avoid default values for missing API or backend fields; keep schema and code minimal.
 - For large design or architectural changes, provide a 方案 (plan) first without modifying code when asked (e.g. "先给我方案不要直接修改").
 - When summarizing many items (APIs, options), use tables for clarity (表格形式，一目了然).
@@ -174,6 +173,7 @@ When implementing mobile carousels:
 - Toggle/selection state changes must be visually obvious; use border color or other clear indicators, not subtle opacity/background only.
 - Reserve semantic colors for their purpose; avoid introducing new colors just to show selection/active state (prefer neutral borders + thickness/contrast). Keep each UI element focused on one semantic role (e.g. amber for alerts only, not regular data). When implementing the same control on mobile and desktop, reuse the same design tokens and visual style; only layout may differ (e.g. vertical vs horizontal). For utilization vs optimal (kink), prefer informational/neutral (e.g. blue) for the below-optimal zone rather than green; keep amber for above-optimal, not green.
 - Multi-column panels (e.g. simulation Supply/Spread/Borrow): use equal column widths and uniform compression; do not give one column fixed or favored width. Bordered UI (including tables) must keep clear breathing room between text and borders; when space is tight prefer wrapping over ellipsis.
+- Mobile reserve collapsed row and expand affordance should read as opening the full reserve simulation/detail, not only spread; prefer familiar expand patterns over novel decorative divider treatments.
 
 ## Learned Workspace Facts
 - Mobile overlays (cap details, incentive details) use bottom sheet with title bar and close button, not floating popover; see docs/design/frontend-interaction-guardrails.md.
@@ -181,8 +181,9 @@ When implementing mobile carousels:
 - Mobile Top Opportunities mini cards do not link out to external Aave URLs; elsewhere, shared helpers in `src/lib/externalNavigation.ts` open external URLs in the same tab on mobile and a new tab on desktop where that pattern is applied.
 - Do not drive full-page `scrollTo` from expanded-row index changes when `sortedData` reorders due to simulation updates; prefer viewport-based behavior if scroll is needed later (see docs/design/frontend-interaction-guardrails.md).
 - Mobile reserve utilization display and `UtilizationIndicator` should use the same scenario-based utilization as desktop/`ReservesTable` when simulating, not only raw on-chain `reserve.utilizationPct`.
-- Local git hooks in this setup are managed under the main repository `.git/hooks` and are local-only (not versioned).
-- This workspace currently uses a local pre-push flow that runs lockfile consistency checks before the existing `ci:remote` checks.
+- Local git hooks live under the repository `.git/hooks` (local-only, not versioned); pre-push runs lockfile consistency checks before `ci:remote`.
+- `.github/dependabot.yml` sets `updates: []` so Dependabot version PRs are off; security-related dependency PRs can still be opened when Dependabot security updates are enabled in GitHub repo settings (Code security and analysis).
+- Mobile expanded reserve simulation block should read as one piece with its parent card only; avoid visual overlap with neighboring cards (connectors, lines, and fills stay within that card’s column).
 - Prefer deriving values client-side when possible rather than adding backend fields (e.g., totalBorrowedUsd can be computed from reserveSizeUsd × utilizationPct).
 - Borrow availability is constrained by BOTH pool liquidity AND borrow cap: `Available = min(Pool Liquidity, Borrow Cap Remaining)`.
 - When bulk-deleting remote branches with `git push origin --delete`, use `--no-verify` so each delete does not run the pre-push hook (ci:remote).
