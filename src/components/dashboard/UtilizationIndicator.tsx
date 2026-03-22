@@ -66,16 +66,16 @@ const UtilizationIndicator = memo(({
               rx={trackRadius}
               className="fill-secondary/40"
             />
-            {/* Green fill below optimal zone, clipped to track shape */}
+            {/* Below optimal: borrow-aligned (flatter borrow rates); brand cyan */}
             <rect
               x={trackX}
               y={optimalY}
               width={trackWidth}
               height={height - optimalY}
               clipPath={`url(#${clipId})`}
-              className="fill-emerald-500/30"
+              className="fill-[rgb(var(--ds-brand-cyan-rgb)/0.32)]"
             />
-            {/* Amber overlay for over-optimal zone, clipped to track shape */}
+            {/* Above optimal: past kink — higher borrow, tighter pool — amber */}
             <rect
               x={trackX}
               y={0}
@@ -84,12 +84,11 @@ const UtilizationIndicator = memo(({
               clipPath={`url(#${clipId})`}
               className="fill-amber-500"
             />
-            {/* Current position dot */}
             <circle
               cx={width / 2}
               cy={currentY}
               r={dotRadius}
-              className={isOverOptimal ? 'fill-amber-700' : 'fill-foreground'}
+              className={isOverOptimal ? 'fill-amber-700' : 'fill-[rgb(var(--ds-brand-cyan-rgb))]'}
             />
           </svg>
         </div>
@@ -100,9 +99,13 @@ const UtilizationIndicator = memo(({
             <span className="text-muted-foreground">Optimal</span>
             <span className="font-medium tabular-nums">{formatPercent(optimal)}</span>
           </div>
-          {isOverOptimal && (
+          {isOverOptimal ? (
             <p className="text-amber-600 ds-text-11 pt-2 border-t border-border/50">
               ⚠️ Above optimal
+            </p>
+          ) : (
+            <p className="ds-text-brand-cyan-70 ds-text-11 pt-2 border-t border-border/50">
+              Below optimal
             </p>
           )}
         </div>

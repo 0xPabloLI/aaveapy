@@ -87,9 +87,13 @@ function UtilizationSheetContent({ current, optimal }: { current: number; optima
         <span className="text-muted-foreground">Optimal</span>
         <span className="font-medium tabular-nums">{formatPercent(optimal)}</span>
       </div>
-      {isOverOptimal && (
+      {isOverOptimal ? (
         <p className="text-amber-600 ds-text-11 pt-2 border-t border-border/50">
           ⚠️ Above optimal
+        </p>
+      ) : (
+        <p className="ds-text-brand-cyan-70 ds-text-11 pt-2 border-t border-border/50">
+          Below optimal
         </p>
       )}
     </div>
@@ -233,68 +237,72 @@ const MobileReserveCard = memo(({
   const showUpperOnly = variant === 'upperOnly';
 
   /**
-   * Stacked metric: caption above, amount (+ cap ring) below — centered with hero APY, separated by a light rule.
+   * Single compact row: optional @ price, then amount (+ cap ring) — no "Size" label; ring stays 12px for tap targets.
    */
   const renderAmountRow = () => {
+    const tp = reserve.tokenPrice;
+    const priceEl =
+      tp != null && Number.isFinite(tp) ? (
+        <span className="ds-text-10 text-muted-foreground/60 tabular-nums shrink-0 leading-none sm:ds-text-11">
+          {`$${tp < 0.01 ? tp.toExponential(1) : tp < 100 ? tp.toFixed(2) : tp.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+        </span>
+      ) : null;
+
     if (activeTab === 'supply') {
       const hasSupplyCap = reserve.supplyCapUsd != null && Number.isFinite(reserve.supplyCapUsd) && reserve.supplyCapUsd > 0;
       return (
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-[var(--ds-space-1-5)]">
-            <span className="ds-text-11 text-muted-foreground uppercase font-medium tracking-wide">Size</span>
-            {reserve.tokenPrice != null && Number.isFinite(reserve.tokenPrice) && (
-              <span className="ds-text-11 text-muted-foreground/60 tabular-nums">({reserve.tokenPrice < 0.01 ? reserve.tokenPrice.toExponential(1) : reserve.tokenPrice < 100 ? `$${reserve.tokenPrice.toFixed(2)}` : `$${reserve.tokenPrice.toLocaleString(undefined, { maximumFractionDigits: 0 })}`})</span>
+        <div className="flex w-full min-w-0 flex-nowrap items-center gap-1.5">
+          {priceEl}
+          <div className="ml-auto flex min-w-0 items-center gap-1">
+            {hasSupplyCap ? (
+              <button
+                type="button"
+                className="flex min-w-0 items-center gap-1 rounded-md px-1 py-0 ds-text-emerald-600 transition-all hover:bg-muted/50 active:scale-[0.98] cursor-pointer"
+                aria-label="Show supply cap details"
+                onClick={() => setCapSheet('supply')}
+              >
+                <span className="ds-text-13 font-semibold tabular-nums leading-none truncate">
+                  {formatReserveSizeUsd(reserve.reserveSizeUsd)}
+                </span>
+                <CapProgressRing size={reserve.reserveSizeUsd} cap={reserve.supplyCapUsd!} ringSize={12} strokeWidth={1.2} disableTooltip />
+              </button>
+            ) : (
+              <span className="ds-text-13 font-semibold tabular-nums leading-none ds-text-emerald-600 truncate">
+                {formatReserveSizeUsd(reserve.reserveSizeUsd)}
+              </span>
             )}
           </div>
-          {hasSupplyCap ? (
-            <button
-              type="button"
-              className="flex items-center gap-2 min-w-0 rounded-lg px-2 py-1 ds-text-emerald-600 transition-all hover:bg-muted/50 active:scale-[0.98] cursor-pointer"
-              aria-label="Show supply cap details"
-              onClick={() => setCapSheet('supply')}
-            >
-              <span className="ds-text-14 font-semibold tabular-nums leading-none">{formatReserveSizeUsd(reserve.reserveSizeUsd)}</span>
-              <CapProgressRing size={reserve.reserveSizeUsd} cap={reserve.supplyCapUsd!} ringSize={12} strokeWidth={1.2} disableTooltip />
-            </button>
-          ) : (
-            <span className="ds-text-14 font-semibold tabular-nums leading-none ds-text-emerald-600">
-              {formatReserveSizeUsd(reserve.reserveSizeUsd)}
-            </span>
-          )}
         </div>
       );
     }
     const hasBorrowCap = reserve.borrowCapUsd != null && Number.isFinite(reserve.borrowCapUsd) && reserve.borrowCapUsd > 0;
     return (
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-[var(--ds-space-1-5)]">
-          <span className="ds-text-11 text-muted-foreground uppercase font-medium tracking-wide">Size</span>
-          {reserve.tokenPrice != null && Number.isFinite(reserve.tokenPrice) && (
-            <span className="ds-text-11 text-muted-foreground/60 tabular-nums">({reserve.tokenPrice < 0.01 ? reserve.tokenPrice.toExponential(1) : reserve.tokenPrice < 100 ? `$${reserve.tokenPrice.toFixed(2)}` : `$${reserve.tokenPrice.toLocaleString(undefined, { maximumFractionDigits: 0 })}`})</span>
+      <div className="flex w-full min-w-0 flex-nowrap items-center gap-1.5">
+        {priceEl}
+        <div className="ml-auto flex min-w-0 items-center gap-1">
+          {hasBorrowCap ? (
+            <button
+              type="button"
+              className="flex min-w-0 items-center gap-1 rounded-md px-1 py-0 ds-text-brand-cyan transition-all hover:bg-muted/50 active:scale-[0.98] cursor-pointer"
+              aria-label="Show borrow cap details"
+              onClick={() => setCapSheet('borrow')}
+            >
+              <span className="ds-text-13 font-semibold tabular-nums leading-none truncate">{formatReserveSizeUsd(totalBorrowedUsd)}</span>
+              <BorrowCapProgressRing
+                borrowed={totalBorrowedUsd}
+                cap={reserve.borrowCapUsd!}
+                poolLiquidity={poolLiquidity}
+                ringSize={12}
+                strokeWidth={1.2}
+                disableTooltip
+              />
+            </button>
+          ) : (
+            <span className="ds-text-13 font-semibold tabular-nums leading-none ds-text-brand-cyan truncate">
+              {formatReserveSizeUsd(totalBorrowedUsd)}
+            </span>
           )}
         </div>
-        {hasBorrowCap ? (
-          <button
-            type="button"
-            className="flex items-center gap-2 min-w-0 rounded-lg px-2 py-1 ds-text-brand-cyan transition-all hover:bg-muted/50 active:scale-[0.98] cursor-pointer"
-            aria-label="Show borrow cap details"
-            onClick={() => setCapSheet('borrow')}
-          >
-            <span className="ds-text-14 font-semibold tabular-nums leading-none">{formatReserveSizeUsd(totalBorrowedUsd)}</span>
-            <BorrowCapProgressRing
-              borrowed={totalBorrowedUsd}
-              cap={reserve.borrowCapUsd!}
-              poolLiquidity={poolLiquidity}
-              ringSize={12}
-              strokeWidth={1.2}
-              disableTooltip
-            />
-          </button>
-        ) : (
-          <span className="ds-text-14 font-semibold tabular-nums leading-none ds-text-brand-cyan">
-            {formatReserveSizeUsd(totalBorrowedUsd)}
-          </span>
-        )}
       </div>
     );
   };
@@ -310,14 +318,14 @@ const MobileReserveCard = memo(({
           {isDisabled ? (
             <Tooltip>
               <TooltipTrigger asChild>
-                <p className={`text-2xl font-bold tabular-nums ${heroColorClass} cursor-auto`}>
+                <p className={`ds-text-24 font-bold tabular-nums ${heroColorClass} cursor-auto`}>
                   {formatPercent(heroValue)}
                 </p>
               </TooltipTrigger>
               <TooltipContent>Supply unavailable</TooltipContent>
             </Tooltip>
           ) : (
-             <p className={`text-2xl font-bold tabular-nums ${heroColorClass}`}>
+            <p className={`ds-text-24 font-bold tabular-nums ${heroColorClass}`}>
               {formatPercent(heroValue)}
             </p>
           )}
@@ -359,14 +367,14 @@ const MobileReserveCard = memo(({
         {isDisabled ? (
           <Tooltip>
             <TooltipTrigger asChild>
-              <p className={`text-2xl font-bold tabular-nums ${heroColorClass} cursor-auto`}>
+              <p className={`ds-text-24 font-bold tabular-nums ${heroColorClass} cursor-auto`}>
                 {formatPercent(heroValue)}
               </p>
             </TooltipTrigger>
             <TooltipContent>Borrow disabled</TooltipContent>
           </Tooltip>
         ) : (
-          <p className={`text-2xl font-bold tabular-nums ${heroColorClass}`}>
+          <p className={`ds-text-24 font-bold tabular-nums ${heroColorClass}`}>
             {formatPercent(heroValue)}
           </p>
         )}
@@ -457,8 +465,8 @@ const MobileReserveCard = memo(({
               className="shrink-0 flex items-center gap-0.5 rounded-md px-1 py-0.5 transition-all hover:bg-muted/50 active:scale-[0.97]"
               aria-label="Show utilization details"
             >
-              <span className={`text-[10px] font-medium tabular-nums leading-none ${
-                displayUtilization > optimalPct ? 'text-amber-600' : 'text-muted-foreground/70'
+              <span className={`ds-text-10 font-medium tabular-nums leading-none ${
+                displayUtilization > optimalPct ? 'text-amber-600' : 'ds-text-brand-cyan'
               }`}>
                 {displayUtilization.toFixed(0)}%
               </span>
@@ -499,7 +507,7 @@ const MobileReserveCard = memo(({
         </div>
 
         {/* Tab content */}
-        <div className="flex w-full flex-col gap-3">
+        <div className="flex w-full flex-col gap-2">
           {renderAmountRow()}
           {renderHeroApy()}
         </div>

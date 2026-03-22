@@ -828,7 +828,7 @@ const ReservesTable = ({
                   const activeId = isLeftActive ? leftId : rightId!;
                   /** Matches `grid-cols-2 gap-[--ds-space-2]`: one column width (connector under expanded card only). */
                   const pairColWidth = 'calc((100% - var(--ds-space-2)) / 2)';
-                  const connectorOnLeft = leftExpanded || !rightReserve;
+                  const bridgeOnExpandedColumn = leftExpanded || !rightReserve;
 
                   nodes.push(
                     <div key={`row-${i}`} className="col-span-2">
@@ -874,11 +874,11 @@ const ReservesTable = ({
                           </div>
                         ) : null}
                       </div>
-                      {/* Full-width simulation (table needs width). mt clears the peer card’s bottom; bridge fills that gap on the expanded column only (same bg/border as panel). */}
+                      {/* Full-width simulation (table needs width). mt clears peer card; bridge fills gap on expanded column only. Top h-rule only on inactive column (expanded side stays seamless). */}
                       <div className="relative isolate mt-[var(--ds-space-2)]">
                         <div
                           aria-hidden
-                          className={`pointer-events-none absolute z-0 border-border/60 bg-card ${connectorOnLeft ? 'left-0 border-l border-r' : 'right-0 border-l border-r'}`}
+                          className={`pointer-events-none absolute z-0 border-border/60 bg-card ${bridgeOnExpandedColumn ? 'left-0 border-l border-r' : 'right-0 border-l border-r'}`}
                           style={{
                             top: 'calc(-1 * var(--ds-space-2))',
                             height: 'var(--ds-space-2)',
@@ -908,11 +908,13 @@ const ReservesTable = ({
                             defaultTab={activeSortColumn === 'borrow' ? 'borrow' : undefined}
                           />
                         </div>
-                        <div
-                          aria-hidden
-                          className={`pointer-events-none absolute top-0 z-[1] h-px bg-border/60 ${connectorOnLeft ? 'left-0' : 'right-0'}`}
-                          style={{ width: pairColWidth }}
-                        />
+                        {rightReserve ? (
+                          <div
+                            aria-hidden
+                            className={`pointer-events-none absolute top-0 z-[1] h-px bg-border/60 ${leftExpanded ? 'right-0' : 'left-0'}`}
+                            style={{ width: pairColWidth }}
+                          />
+                        ) : null}
                       </div>
                     </div>
                   );

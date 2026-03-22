@@ -71,13 +71,14 @@ This note records recurring UI/interaction issues found during incentive/forecas
 |-------|---------------|-------|----------|
 | **Amber/Orange** | `warning`, `text-warning` | ⚠️ Warnings only | Supply cap exceeded, over-optimal utilization, risk alerts |
 | **Red** | `destructive` | 🚫 Errors/danger | Transaction failed, critical errors |
-| **Green/Emerald** | `success`, `text-emerald-*` | ✅ Normal/positive state | Safe utilization zone, successful actions |
+| **Green/Emerald** | `success`, `text-emerald-*` | ✅ Normal/positive state | Supply-side highlights, successful actions |
 
 **Non-semantic data display** — use neutral colors:
 
 | Data type | Recommended color | Example |
 |-----------|------------------|---------|
-| Utilization percentage (normal) | `text-foreground` | "75.2%" in Utilization column |
+| Utilization percentage (desktop) | `text-foreground` | "75.2%" in Utilization column |
+| Utilization percentage (mobile header) | `ds-text-brand-cyan` below optimal, `text-amber-600` above optimal | Matches `UtilizationIndicator` zone |
 | General numeric data | `text-foreground` | Market size, prices |
 | Secondary/muted info | `text-muted-foreground`, `text-secondary` | Labels, descriptions |
 
@@ -85,10 +86,9 @@ This note records recurring UI/interaction issues found during incentive/forecas
 - Mobile reserve header and bottom sheet must use the same **display** utilization as the desktop Util. column: `hasSharedScenario ? after ?? current : current` from rate simulation (not raw `reserve.utilizationPct` when a scenario is active).
 
 **UtilizationIndicator color scheme**:
-- Safe zone (below optimal): `fill-secondary/50` (neutral gray)
-- Warning zone (above optimal): `fill-amber-500/40` (same amber as CapProgressRing)
-- Optimal marker line: `stroke-foreground/50` (prominent divider)
-- Current position dot: `fill-foreground/70` (normal) / `fill-amber-600` (over-optimal, same as CapProgressRing 95%+ state)
+- Below optimal (borrow-friendly / flatter borrow curve): `fill-[rgb(var(--ds-brand-cyan-rgb)/0.32)]` on track; dot `fill-[rgb(var(--ds-brand-cyan-rgb))]` — aligns with Borrow (`ds-text-brand-cyan`), not emerald
+- Above optimal (past kink: higher borrow, tighter liquidity): `fill-amber-500` on track; dot `fill-amber-700`
+- Tooltip: “Below optimal” (cyan) vs “⚠️ Above optimal” (amber)
 
 **Key principle**: Amber/warning colors must NOT be used for regular data display. This ensures that when amber appears, users immediately recognize it as a warning signal.
 
