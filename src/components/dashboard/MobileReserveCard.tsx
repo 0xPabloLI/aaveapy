@@ -241,7 +241,7 @@ const MobileReserveCard = memo(({
           <div className="flex items-center gap-[var(--ds-space-1-5)]">
             <span className="ds-text-11 text-muted-foreground uppercase font-medium tracking-wide">Size</span>
             {reserve.tokenPrice != null && Number.isFinite(reserve.tokenPrice) && (
-              <span className="ds-text-11 text-muted-foreground/60 tabular-nums">${reserve.tokenPrice < 0.01 ? reserve.tokenPrice.toExponential(1) : reserve.tokenPrice < 100 ? reserve.tokenPrice.toFixed(2) : reserve.tokenPrice.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+              <span className="ds-text-11 text-muted-foreground/60 tabular-nums">@ ${reserve.tokenPrice < 0.01 ? reserve.tokenPrice.toExponential(1) : reserve.tokenPrice < 100 ? reserve.tokenPrice.toFixed(2) : reserve.tokenPrice.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
             )}
           </div>
           {hasSupplyCap ? (
