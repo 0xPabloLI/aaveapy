@@ -13,8 +13,8 @@ jobs:
   enable-automerge:
     if: >-
       (
-        contains(toJSON(github.event.pull_request.labels), '"name":"automerge"') ||
-        contains(toJSON(github.event.pull_request.labels), '"name":"automation"')
+        contains(github.event.pull_request.labels.*.name, 'automerge') ||
+        contains(github.event.pull_request.labels.*.name, 'automation')
       ) &&
       github.event.pull_request.draft != true
     runs-on: ubuntu-latest
