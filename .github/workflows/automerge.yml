@@ -2,7 +2,8 @@ name: Auto Merge
 
 on:
   pull_request_target:
-    types: [labeled, reopened, synchronize, ready_for_review]
+    # Include `opened` so PRs created with labels (e.g. bot PRs) still evaluate the job `if`.
+    types: [opened, labeled, reopened, synchronize, ready_for_review]
 
 permissions:
   contents: write
@@ -12,10 +13,10 @@ jobs:
   enable-automerge:
     if: >-
       (
-        contains(github.event.pull_request.labels.*.name, 'automerge') ||
-        contains(github.event.pull_request.labels.*.name, 'automation')
+        contains(toJSON(github.event.pull_request.labels), '"name":"automerge"') ||
+        contains(toJSON(github.event.pull_request.labels), '"name":"automation"')
       ) &&
-      github.event.pull_request.draft == false
+      github.event.pull_request.draft != true
     runs-on: ubuntu-latest
     steps:
       - name: Cooldown for async review bots
