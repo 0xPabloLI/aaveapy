@@ -595,7 +595,36 @@ const ReservesTable = ({
         {/* Header with sorting controls */}
         <div className="flex justify-between items-center px-[var(--ds-space-1)]">
           <h3 className="ds-text-14 font-bold text-foreground">{reserves.length} Reserves</h3>
-          <div className="flex items-center gap-[var(--ds-space-2)]">
+          <div className="flex items-center gap-[var(--ds-space-1-5)]">
+            {/* Size sort button */}
+            <button
+              type="button"
+              onClick={() => {
+                if (activeSortColumn === 'size') {
+                  handleSortSize();
+                } else {
+                  setActiveSortColumn('size');
+                  setSizeSortOrder('desc');
+                }
+              }}
+              className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-lg border transition-colors ${
+                activeSortColumn === 'size'
+                  ? 'bg-card/60 border-border/70 text-foreground'
+                  : 'bg-card border-border text-muted-foreground hover:bg-muted/60'
+              }`}
+            >
+              <span>Size</span>
+              {activeSortColumn === 'size' ? (
+                sizeSortOrder === 'desc' ? (
+                  <ArrowDown className="w-3 h-3" />
+                ) : (
+                  <ArrowUp className="w-3 h-3" />
+                )
+              ) : (
+                <ArrowDown className="w-3 h-3 opacity-50" />
+              )}
+            </button>
+
             {/* Supply sort dropdown */}
             <div className="relative">
               <button
@@ -619,11 +648,7 @@ const ReservesTable = ({
                   <div className="absolute right-0 top-full mt-[var(--ds-space-1)] bg-card border border-border rounded-lg shadow-lg py-[var(--ds-space-1)] z-20 min-w-[130px]">
                     {(['total', 'native', 'incentive'] as SortMode[]).map((mode) => {
                       const isAlreadySelected = supplySortMode === mode && activeSortColumn === 'supply';
-                      const getColorClass = () => {
-                        if (mode === 'total') return 'ds-text-emerald-600';
-                        if (mode === 'native') return 'ds-text-emerald-600';
-                        return 'ds-text-emerald-600';
-                      };
+                      const getColorClass = () => 'ds-text-emerald-600';
                       return (
                       <button
                           type="button"
@@ -683,11 +708,7 @@ const ReservesTable = ({
                   <div className="absolute right-0 top-full mt-[var(--ds-space-1)] bg-card border border-border rounded-lg shadow-lg py-[var(--ds-space-1)] z-20 min-w-[130px]">
                     {(['total', 'native', 'incentive'] as SortMode[]).map((mode) => {
                       const isAlreadySelected = borrowSortMode === mode && activeSortColumn === 'borrow';
-                      const getColorClass = () => {
-                        if (mode === 'total') return 'ds-text-brand-cyan';
-                        if (mode === 'native') return 'ds-text-brand-cyan';
-                        return 'ds-text-brand-cyan';
-                      };
+                      const getColorClass = () => 'ds-text-brand-cyan';
                       return (
                       <button
                           type="button"
@@ -750,27 +771,6 @@ const ReservesTable = ({
                 )
               ) : (
                 <ArrowDown className="w-3 h-3 opacity-50" />
-              )}
-            </button>
-            
-            {/* Sort order toggle */}
-            <button
-              type="button"
-              onClick={() => {
-                if (activeSortColumn === 'supply') {
-                  toggleSupplySortOrder();
-                } else if (activeSortColumn === 'borrow') {
-                  toggleBorrowSortOrder();
-                } else {
-                  toggleSpreadSortOrder();
-                }
-              }}
-              className="ds-icon-button border border-border bg-card hover:bg-muted/60 transition-colors"
-            >
-              {(activeSortColumn === 'supply' ? supplySortOrder : activeSortColumn === 'borrow' ? borrowSortOrder : spreadSortOrder) === 'desc' ? (
-                <ArrowDown className="w-3.5 h-3.5 text-muted-foreground" />
-              ) : (
-                <ArrowUp className="w-3.5 h-3.5 text-muted-foreground" />
               )}
             </button>
           </div>
