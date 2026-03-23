@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_LIVE_API_BASE,
   formatLiveHttpError,
+  isLikelyCloudflareChallenge,
   resolveLiveApiBase,
 } from './apiSchemas.live.helpers';
 
@@ -40,5 +41,12 @@ describe('formatLiveHttpError', () => {
     expect(message).toContain('Service Unavailable');
     expect(message).toContain('https://staging-api.aaveapy.com/api/markets');
     expect(message).toContain('upstream unavailable');
+  });
+});
+
+describe('isLikelyCloudflareChallenge', () => {
+  it('detects Cloudflare interstitial HTML', () => {
+    expect(isLikelyCloudflareChallenge('<!DOCTYPE html><title>Just a moment...</title>')).toBe(true);
+    expect(isLikelyCloudflareChallenge('normal json')).toBe(false);
   });
 });

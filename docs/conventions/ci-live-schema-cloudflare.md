@@ -4,6 +4,11 @@
 
 本文给出 **Cloudflare 侧** 与 **仓库侧（workflow / 测试策略）** 的推荐组合；落实后应把「跳过挑战」仅作为过渡，**长期仍应对 API 放行合法自动化流量**。
 
+### 安全边界：域名会不会被「别的站模仿」？
+
+- **不会因为你文档里写了泛化写法，就多出一条攻击面。** Cloudflare 的 WAF / Page Rules / Custom Rules 都是绑在 **具体 Zone**（你在 Cloudflare 里验证过的域名，例如 `aaveapy.com`）上的；规则只对 **该 Zone 下你配置的 Hostname** 生效。别人在 **他们自己的** Cloudflare 账号里配规则，**与你们账户、你们 Zone 无关**，不存在「照抄文档就打开了你家防火墙」这种事。
+- **钓鱼域名**（例如注册很像的域名诱导用户点击）是另一类风险，靠 **DNS/品牌/浏览器地址栏** 防范，不是「WAF 文档写不写全域名」能单独解决的；本文下面一律写清本仓库使用的 **staging 主机名**：**`staging-api.aaveapy.com`**（生产 API 一般为 **`api.aaveapy.com`**，勿把 staging 的放宽规则套到生产 unless 有意为之）。
+
 ---
 
 ## A. Cloudflare 侧（优先，治本）
@@ -12,9 +17,9 @@
 
 | 优先级 | 做法 | 说明 |
 |--------|------|------|
-| **A1** | **路径级 WAF / Security**：对 `staging-api.*` 的 `/api/*` **降低** *Security Level* 或关闭 *Bot Fight Mode*（仅该路径/子域） | 最小改动；注意只作用于 staging，不要误伤生产。 |
+| **A1** | **路径级 WAF / Security**：对 **`staging-api.aaveapy.com`** 上路径 **`/api/*`** **降低** *Security Level* 或关闭 *Bot Fight Mode*（**仅该子域或该路径**，不要套到 `api.aaveapy.com` 生产） | 最小改动；缩小到 staging 主机名 + 路径，减少误伤生产。 |
 | **A2** | **WAF Custom Rule — Allow**：匹配 `Hostname` = `staging-api.aaveapy.com` **且** `URI Path` starts with `/api/` **且** `User Agent` contains `GitHub-Actions`（或你们约定的 header）→ **Skip** / **Allow** | UA 可伪造，**不要单独依赖**；可与 A3 组合。 |
-| **A3** | **IP Access / WAF — GitHub Actions 网段**：定期拉取 [GitHub Meta API](https://api.github.com/meta) 里 `actions` 的 CIDR，在 Cloudflare **IP Access Rules** 或 **WAF** 中对 staging 的 `/api/*` **Allow** | 网段会变，需 **每月或自动化同步**（Terraform / 定时脚本）。 |
+| **A3** | **IP Access / WAF — GitHub Actions 网段**：定期拉取 [GitHub Meta API](https://api.github.com/meta) 里 `actions` 的 CIDR，在 Cloudflare **IP Access Rules** 或 **WAF** 中对 **`staging-api.aaveapy.com` + `/api/*`** **Allow** | 网段会变，需 **每月或自动化同步**（Terraform / 定时脚本）；规则仍只作用于你在该 Zone 里勾选的主机名。 |
 | **A4** | **Cloudflare Access（Zero Trust）**：为 `/api/*` 配置 **Service Token**，CI 在 `fetch` 里带 `CF-Access-Client-Id` / `CF-Access-Client-Secret`（存 GitHub **Secrets**） | 适合已用 Access 的团队；需在测试里读取 env 并加 header（见下文扩展点）。 |
 | **A5** | **独立子域不经 CDN**：API 直连源站（或仅 DNS 橙云关闭） | 架构变动大；安全与证书需单独评估。 |
 

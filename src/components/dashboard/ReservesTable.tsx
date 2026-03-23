@@ -436,6 +436,10 @@ const ReservesTable = ({
     supply: 'Supply',
     borrow: 'Borrow',
   }[sizeSortMode];
+  const mobileCardDefaultTab: 'supply' | 'borrow' =
+    activeSortColumn === 'borrow' || (activeSortColumn === 'size' && sizeSortMode === 'borrow')
+      ? 'borrow'
+      : 'supply';
 
   const toggleSupplySortOrder = () => {
     collapseExpandedOnSort();
@@ -597,34 +601,90 @@ const ReservesTable = ({
         <div className="flex justify-between items-center px-[var(--ds-space-1)]">
           <h3 className="ds-text-14 font-bold text-foreground">{reserves.length} Reserves</h3>
           <div className="flex items-center gap-[var(--ds-space-1-5)]">
-            {/* Size sort button */}
-            <button
-              type="button"
-              onClick={() => {
-                if (activeSortColumn === 'size') {
-                  handleSortSize();
-                } else {
-                  setActiveSortColumn('size');
-                  setSizeSortOrder('desc');
-                }
-              }}
-              className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-lg border transition-colors ${
-                activeSortColumn === 'size'
-                  ? 'bg-card/60 border-border/70 text-foreground'
-                  : 'bg-card border-border text-muted-foreground hover:bg-muted/60'
-              }`}
-            >
-              <span>Size</span>
-              {activeSortColumn === 'size' ? (
-                sizeSortOrder === 'desc' ? (
-                  <ArrowDown className="w-3 h-3" />
-                ) : (
-                  <ArrowUp className="w-3 h-3" />
-                )
-              ) : (
-                <ArrowDown className="w-3 h-3 opacity-50" />
+            {/* Size sort dropdown */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSizeSortMenu(!showSizeSortMenu);
+                  setShowSupplySortMenu(false);
+                  setShowBorrowSortMenu(false);
+                }}
+                className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-lg border transition-colors ${
+                  activeSortColumn === 'size'
+                    ? sizeSortMode === 'supply'
+                      ? 'bg-card/60 border-border/70 ds-text-emerald-700'
+                      : 'bg-card/60 border-border/70 ds-text-brand-cyan'
+                    : 'bg-card border-border text-muted-foreground'
+                }`}
+              >
+                <span>Size</span>
+                <ChevronDown className="w-3 h-3" />
+              </button>
+              {showSizeSortMenu && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setShowSizeSortMenu(false)} />
+                  <div className="absolute right-0 top-full mt-[var(--ds-space-1)] bg-card border border-border rounded-lg shadow-lg py-[var(--ds-space-1)] z-20 min-w-[130px]">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const isAlreadySelected = sizeSortMode === 'supply' && activeSortColumn === 'size';
+                        if (isAlreadySelected && sizeSortOrder === 'desc') {
+                          setSizeSortOrder('asc');
+                        } else {
+                          setSizeSortMode('supply');
+                          setActiveSortColumn('size');
+                          setSizeSortOrder('desc');
+                        }
+                        setShowSizeSortMenu(false);
+                      }}
+                      className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-13 transition-colors flex items-center justify-between ${
+                        sizeSortMode === 'supply' && activeSortColumn === 'size'
+                          ? 'ds-text-emerald-600 font-bold bg-card/60'
+                          : 'text-muted-foreground'
+                      }`}
+                    >
+                      <span>Supply</span>
+                      {sizeSortMode === 'supply' && activeSortColumn === 'size' ? (
+                        sizeSortOrder === 'desc' ? (
+                          <ArrowDown className="w-3 h-3 ds-text-emerald-600" />
+                        ) : (
+                          <ArrowUp className="w-3 h-3 ds-text-emerald-600" />
+                        )
+                      ) : null}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const isAlreadySelected = sizeSortMode === 'borrow' && activeSortColumn === 'size';
+                        if (isAlreadySelected && sizeSortOrder === 'desc') {
+                          setSizeSortOrder('asc');
+                        } else {
+                          setSizeSortMode('borrow');
+                          setActiveSortColumn('size');
+                          setSizeSortOrder('desc');
+                        }
+                        setShowSizeSortMenu(false);
+                      }}
+                      className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-13 transition-colors flex items-center justify-between ${
+                        sizeSortMode === 'borrow' && activeSortColumn === 'size'
+                          ? 'ds-text-brand-cyan font-bold bg-card/60'
+                          : 'text-muted-foreground'
+                      }`}
+                    >
+                      <span>Borrow</span>
+                      {sizeSortMode === 'borrow' && activeSortColumn === 'size' ? (
+                        sizeSortOrder === 'desc' ? (
+                          <ArrowDown className="w-3 h-3 ds-text-brand-cyan" />
+                        ) : (
+                          <ArrowUp className="w-3 h-3 ds-text-brand-cyan" />
+                        )
+                      ) : null}
+                    </button>
+                  </div>
+                </>
               )}
-            </button>
+            </div>
 
             {/* Supply sort dropdown */}
             <div className="relative">
@@ -849,7 +909,7 @@ const ReservesTable = ({
                             inputMode={sharedInputMode}
                             onCorrectSupplyInput={handleCorrectSupplyInput}
                             onCorrectBorrowInput={handleCorrectBorrowInput}
-                            defaultTab={activeSortColumn === 'borrow' ? 'borrow' : undefined}
+                            defaultTab={mobileCardDefaultTab}
                           />
                         </div>
                         {rightReserve ? (
@@ -869,7 +929,7 @@ const ReservesTable = ({
                               inputMode={sharedInputMode}
                               onCorrectSupplyInput={handleCorrectSupplyInput}
                               onCorrectBorrowInput={handleCorrectBorrowInput}
-                              defaultTab={activeSortColumn === 'borrow' ? 'borrow' : undefined}
+                              defaultTab={mobileCardDefaultTab}
                             />
                           </div>
                         ) : null}
@@ -887,18 +947,18 @@ const ReservesTable = ({
                         >
                           {/* Inner corner fillet */}
                           <svg 
-                            width="8" 
-                            height="8" 
-                            viewBox="0 0 8 8" 
-                            className={`absolute bottom-[1px] overflow-visible ${bridgeOnExpandedColumn ? '-right-[8px]' : '-left-[8px]'}`}
+                            width="12" 
+                            height="12" 
+                            viewBox="0 0 12 12" 
+                            className={`absolute bottom-[1px] overflow-visible ${bridgeOnExpandedColumn ? '-right-[12px]' : '-left-[12px]'}`}
                             aria-hidden="true"
                           >
                             <path 
-                              d={bridgeOnExpandedColumn ? "M0,0 A8,8 0 0,0 8,8 L0,8 Z" : "M8,0 A8,8 0 0,1 0,8 L8,8 Z"} 
+                              d={bridgeOnExpandedColumn ? "M0,0 A12,12 0 0,0 12,12 L0,12 Z" : "M12,0 A12,12 0 0,1 0,12 L12,12 Z"} 
                               style={{ fill: 'hsl(var(--card))' }}
                             />
                             <path 
-                              d={bridgeOnExpandedColumn ? "M0,0 A8,8 0 0,0 8,8" : "M8,0 A8,8 0 0,1 0,8"} 
+                              d={bridgeOnExpandedColumn ? "M0,0 A12,12 0 0,0 12,12" : "M12,0 A12,12 0 0,1 0,12"} 
                               style={{ stroke: 'hsl(var(--border) / 0.6)', strokeWidth: 1 }}
                               fill="none" 
                             />
@@ -926,7 +986,7 @@ const ReservesTable = ({
                             inputMode={sharedInputMode}
                             onCorrectSupplyInput={handleCorrectSupplyInput}
                             onCorrectBorrowInput={handleCorrectBorrowInput}
-                            defaultTab={activeSortColumn === 'borrow' ? 'borrow' : undefined}
+                            defaultTab={mobileCardDefaultTab}
                           />
                         </div>
                       </div>
@@ -950,7 +1010,7 @@ const ReservesTable = ({
                         inputMode={sharedInputMode}
                         onCorrectSupplyInput={handleCorrectSupplyInput}
                         onCorrectBorrowInput={handleCorrectBorrowInput}
-                        defaultTab={activeSortColumn === 'borrow' ? 'borrow' : undefined}
+                        defaultTab={mobileCardDefaultTab}
                       />
                     </div>
                   );
@@ -971,7 +1031,7 @@ const ReservesTable = ({
                           inputMode={sharedInputMode}
                           onCorrectSupplyInput={handleCorrectSupplyInput}
                           onCorrectBorrowInput={handleCorrectBorrowInput}
-                          defaultTab={activeSortColumn === 'borrow' ? 'borrow' : undefined}
+                          defaultTab={mobileCardDefaultTab}
                         />
                       </div>
                     );

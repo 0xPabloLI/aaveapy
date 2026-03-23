@@ -1,5 +1,5 @@
 import { memo, useEffect, useState } from 'react';
-import { ExternalLink, ChevronDown, X } from 'lucide-react';
+import { ExternalLink, ListCollapse, X } from 'lucide-react';
 import { ReserveWithSpread, ETHEREUM_MARKET_NAMES } from '@/types/aave';
 import { formatPercent, formatSpread } from '@/lib/formatters';
 import { getChainIconSrc } from '@/lib/chainIcons';
@@ -124,8 +124,6 @@ interface MobileReserveCardProps {
   connectedBelow?: boolean;
   /** Override the default active tab from parent (e.g. based on sort column). */
   defaultTab?: 'supply' | 'borrow';
-  /** Specifies which side of the card is connected (if any) to preserve the opposite rounded corner */
-  connectedSide?: 'left' | 'right';
 }
 
 const MobileReserveCard = memo(({
@@ -144,7 +142,6 @@ const MobileReserveCard = memo(({
   variant = 'full',
   connectedBelow = false,
   defaultTab,
-  connectedSide,
 }: MobileReserveCardProps) => {
   const [capSheet, setCapSheet] = useState<'supply' | 'borrow' | 'utilization' | null>(null);
   const [hasSimulationMounted, setHasSimulationMounted] = useState(isSimulationExpanded);
@@ -429,13 +426,7 @@ const MobileReserveCard = memo(({
       {/* Card upper part */}
       <div
         className={`bg-card border border-border/60 py-3 transition-all duration-300 ${
-          connectedBelow || (isSimulationExpanded && !showUpperOnly)
-            ? connectedSide === 'left'
-              ? 'rounded-t-xl rounded-bl-none rounded-br-xl border-b-0'
-              : connectedSide === 'right'
-              ? 'rounded-t-xl rounded-bl-xl rounded-br-none border-b-0'
-              : 'rounded-t-xl rounded-b-none border-b-0'
-            : 'rounded-xl shadow-sm'
+          connectedBelow || (isSimulationExpanded && !showUpperOnly) ? 'rounded-t-xl rounded-b-none border-b-0' : 'rounded-xl shadow-sm'
         }`}
       >
         {/* Token header */}
@@ -540,7 +531,7 @@ const MobileReserveCard = memo(({
                   {formatSpread(displaySpread)}
                 </span>
               </span>
-              <ChevronDown className={`h-3.5 w-3.5 shrink-0 transition-transform duration-300 ${isSimulationExpanded ? 'rotate-180' : ''}`} />
+              <ListCollapse className={`h-3.5 w-3.5 shrink-0 transition-transform duration-300 ${isSimulationExpanded ? 'rotate-180' : ''}`} />
             </button>
           </div>
         </div>
