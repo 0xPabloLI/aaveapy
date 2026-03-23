@@ -430,7 +430,7 @@ const MobileReserveCard = memo(({
         }`}
       >
         {/* Token header */}
-        <div className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-1-5)] min-h-[36px] px-3">
+        <div className="flex items-center gap-[var(--ds-space-2)] mb-2 min-h-[36px] px-3">
           <a
             href={buildAaveReserveUrl({ marketName: reserve.marketName, tokenAddress: reserve.tokenAddress }) || '#'}
             {...externalLinkTabProps(true)}
@@ -482,7 +482,7 @@ const MobileReserveCard = memo(({
         </div>
 
         {/* Pill tabs */}
-        <div className="flex gap-[var(--ds-space-1-5)] bg-muted/40 rounded-lg p-0.5 mb-[var(--ds-space-1-5)] mx-3">
+        <div className="mx-3 mb-2 flex gap-[var(--ds-space-1-5)] rounded-lg bg-muted/40 p-0.5">
           <button
             type="button"
             onClick={() => setActiveTab('supply')}
@@ -508,7 +508,7 @@ const MobileReserveCard = memo(({
         </div>
 
         {/* Tab content */}
-        <div className="flex w-full flex-col gap-2">
+        <div className="flex w-full flex-col gap-2.5">
           {renderAmountRow()}
           {renderHeroApy()}
 
