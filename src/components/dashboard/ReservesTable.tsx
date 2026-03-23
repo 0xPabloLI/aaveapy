@@ -874,25 +874,42 @@ const ReservesTable = ({
                           </div>
                         ) : null}
                       </div>
-                      {/* Full-width simulation (table needs width). mt clears peer card; bridge fills gap on expanded column and overlaps top border. */}
+                      {/* Full-width simulation (table needs width). mt clears peer card; bridge fills gap on expanded column only. */}
                       <div className="relative isolate mt-[var(--ds-space-2)]">
                         <div
                           aria-hidden
-                          className={`pointer-events-none absolute z-10 border-border/60 bg-card ${bridgeOnExpandedColumn ? 'left-0 border-l border-r' : 'right-0 border-l border-r'}`}
+                          className={`pointer-events-none absolute z-10 border-border/60 bg-card ${bridgeOnExpandedColumn ? 'left-0 border-l' : 'right-0 border-r'}`}
                           style={{
                             top: 'calc(-1 * var(--ds-space-2))',
                             height: 'calc(var(--ds-space-2) + 1px)',
                             width: pairColWidth,
                           }}
-                        />
+                        >
+                          {/* Inner corner fillet */}
+                          <svg 
+                            width="8" 
+                            height="8" 
+                            viewBox="0 0 8 8" 
+                            className={`absolute bottom-[1px] overflow-visible ${bridgeOnExpandedColumn ? '-right-[8px]' : '-left-[8px]'}`}
+                            aria-hidden="true"
+                          >
+                            <path 
+                              d={bridgeOnExpandedColumn ? "M0,0 A8,8 0 0,0 8,8 L0,8 Z" : "M8,0 A8,8 0 0,1 0,8 L8,8 Z"} 
+                              style={{ fill: 'hsl(var(--card))' }}
+                            />
+                            <path 
+                              d={bridgeOnExpandedColumn ? "M0,0 A8,8 0 0,0 8,8" : "M8,0 A8,8 0 0,1 0,8"} 
+                              style={{ stroke: 'hsl(var(--border) / 0.6)', strokeWidth: 1 }}
+                              fill="none" 
+                            />
+                          </svg>
+                        </div>
                         <div
-                          className={`relative z-0 overflow-hidden border border-border/60 bg-card ds-card-pad-sm ${
+                          className={`relative z-0 overflow-hidden rounded-b-xl border border-border/60 bg-card ds-card-pad-sm ${
                             bridgeOnExpandedColumn ? 'rounded-tr-xl rounded-tl-none' : 'rounded-tl-xl rounded-tr-none'
                           }`}
                           style={{
                             paddingTop: 'var(--ds-space-2)',
-                            borderBottomLeftRadius: '24px 20px',
-                            borderBottomRightRadius: '24px 20px',
                           }}
                         >
                           <MobileReserveCard

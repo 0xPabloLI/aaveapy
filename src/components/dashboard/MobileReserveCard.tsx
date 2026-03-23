@@ -124,6 +124,8 @@ interface MobileReserveCardProps {
   connectedBelow?: boolean;
   /** Override the default active tab from parent (e.g. based on sort column). */
   defaultTab?: 'supply' | 'borrow';
+  /** Specifies which side of the card is connected (if any) to preserve the opposite rounded corner */
+  connectedSide?: 'left' | 'right';
 }
 
 const MobileReserveCard = memo(({
@@ -142,14 +144,16 @@ const MobileReserveCard = memo(({
   variant = 'full',
   connectedBelow = false,
   defaultTab,
+  connectedSide,
 }: MobileReserveCardProps) => {
   const [capSheet, setCapSheet] = useState<'supply' | 'borrow' | 'utilization' | null>(null);
   const [hasSimulationMounted, setHasSimulationMounted] = useState(isSimulationExpanded);
   const [activeTab, setActiveTab] = useState<'supply' | 'borrow'>(defaultTab ?? 'supply');
 
-  // Sync with parent's defaultTab (e.g. when sort column changes)
+  // Sync with parent's defaultTab (e.g. when sort column changes). When parent clears
+  // defaultTab (e.g. leaving borrow sort), reset to supply so cards don't stay on borrow.
   useEffect(() => {
-    if (defaultTab) setActiveTab(defaultTab);
+    setActiveTab(defaultTab ?? 'supply');
   }, [defaultTab]);
 
   useEffect(() => {
@@ -425,7 +429,13 @@ const MobileReserveCard = memo(({
       {/* Card upper part */}
       <div
         className={`bg-card border border-border/60 py-3 transition-all duration-300 ${
-          connectedBelow || (isSimulationExpanded && !showUpperOnly) ? 'rounded-t-xl rounded-b-none border-b-0' : 'rounded-xl shadow-sm'
+          connectedBelow || (isSimulationExpanded && !showUpperOnly)
+            ? connectedSide === 'left'
+              ? 'rounded-t-xl rounded-bl-none rounded-br-xl border-b-0'
+              : connectedSide === 'right'
+              ? 'rounded-t-xl rounded-bl-xl rounded-br-none border-b-0'
+              : 'rounded-t-xl rounded-b-none border-b-0'
+            : 'rounded-xl shadow-sm'
         }`}
       >
         {/* Token header */}

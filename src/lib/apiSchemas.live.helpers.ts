@@ -30,3 +30,17 @@ export function formatLiveHttpError({
     `body: ${trimmedBody || '<empty>'}`,
   ].join('\n');
 }
+
+/**
+ * Detects Cloudflare bot/challenge interstitial HTML (e.g. "Just a moment...")
+ * returned instead of JSON — common when CI egress hits a WAF-protected origin.
+ */
+export function isLikelyCloudflareChallenge(bodySnippet: string): boolean {
+  const s = bodySnippet.toLowerCase();
+  return (
+    s.includes('just a moment') ||
+    s.includes('cf-challenge') ||
+    s.includes('challenge-platform') ||
+    s.includes('cf-mitigated')
+  );
+}
