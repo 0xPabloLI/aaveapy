@@ -250,9 +250,8 @@ const MobileReserveCard = memo(({
 
     if (activeTab === 'supply') {
       const hasSupplyCap = reserve.supplyCapUsd != null && Number.isFinite(reserve.supplyCapUsd) && reserve.supplyCapUsd > 0;
-      // px-3.5 = mx-3 (12px) + track p-0.5 (2px): aligns with Supply/Borrow label text
       return (
-        <div className="flex w-full min-w-0 flex-nowrap items-center gap-1.5 px-3.5">
+        <div className="flex w-full min-w-0 flex-nowrap items-center gap-1.5 px-3">
           {priceEl}
           <div className="ml-auto flex min-w-0 items-center justify-end gap-1">
             {hasSupplyCap ? (
