@@ -277,7 +277,7 @@ const MobileReserveCard = memo(({
     }
     const hasBorrowCap = reserve.borrowCapUsd != null && Number.isFinite(reserve.borrowCapUsd) && reserve.borrowCapUsd > 0;
     return (
-      <div className="flex w-full min-w-0 flex-nowrap items-center gap-1.5 px-3.5">
+      <div className="flex w-full min-w-0 flex-nowrap items-center gap-1.5 px-3">
         {priceEl}
         <div className="ml-auto flex min-w-0 items-center justify-end gap-1">
           {hasBorrowCap ? (
