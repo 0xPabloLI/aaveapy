@@ -3,7 +3,7 @@ import { ExternalLink } from 'lucide-react';
 import { TableRow, TableCell } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ReserveWithSpread, ETHEREUM_MARKET_NAMES } from '@/types/aave';
-import { formatPercent, formatSpread, formatReserveSizeUsd, formatUsd } from '@/lib/formatters';
+import { formatPercent, formatScenarioSize, formatSpread, formatUsd } from '@/lib/formatters';
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
 import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
 import { getChainIconSrc } from '@/lib/chainIcons';
@@ -14,7 +14,7 @@ import CapProgressRing from './CapProgressRing';
 import BorrowCapProgressRing from './BorrowCapProgressRing';
 import UtilizationIndicator from './UtilizationIndicator';
 import type { RateSimulationResult, ScenarioInputMode } from '@/hooks/useRateSimulation';
-import { parseNumberInput } from '@/lib/numberFormat';
+import { getPoolLiquidityUsd, getScenarioSupplySizeUsd, getTotalBorrowedUsd, getValidTokenPrice } from '@/lib/scenarioSize';
 
 /* ─── Memoised chain icon ─── */
 const ChainIcon = memo(({ chain, className = '' }: { chain: string; className?: string }) => {
@@ -104,38 +104,22 @@ const DesktopReserveRow = memo(({
 
   const aaveUrl = buildAaveReserveUrl({ marketName: reserve.marketName, tokenAddress: reserve.tokenAddress }) || '#';
 
-  const supplyInputRaw = parseNumberInput(supplyInput);
-  const supplyInputUsd =
-    inputMode === 'usd'
-      ? supplyInputRaw
-      : simulation?.tokenPrice && Number.isFinite(simulation.tokenPrice)
-        ? supplyInputRaw * simulation.tokenPrice
-        : 0;
-  const rawAfterReserveSizeUsd =
-    reserve.reserveSizeUsd != null && Number.isFinite(reserve.reserveSizeUsd) && supplyInputUsd > 0
-      ? reserve.reserveSizeUsd + supplyInputUsd
-      : reserve.reserveSizeUsd;
-  // Cap at supply cap if available
-  const displayReserveSizeUsd =
-    rawAfterReserveSizeUsd != null &&
-    reserve.supplyCapUsd != null &&
-    reserve.supplyCapUsd > 0 &&
-    rawAfterReserveSizeUsd > reserve.supplyCapUsd
-      ? reserve.supplyCapUsd
-      : rawAfterReserveSizeUsd;
-
-  // Calculate borrowed amount and pool liquidity
-  const totalBorrowedUsd =
-    reserve.reserveSizeUsd != null &&
-    reserve.utilizationPct != null &&
-    Number.isFinite(reserve.reserveSizeUsd) &&
-    Number.isFinite(reserve.utilizationPct)
-      ? reserve.reserveSizeUsd * (reserve.utilizationPct / 100)
-      : null;
-  const poolLiquidity =
-    reserve.reserveSizeUsd != null && totalBorrowedUsd != null
-      ? reserve.reserveSizeUsd - totalBorrowedUsd
-      : null;
+  const displayTokenPrice = getValidTokenPrice(simulation?.tokenPrice, reserve.tokenPrice);
+  const displayReserveSizeUsd = getScenarioSupplySizeUsd({
+    reserveSizeUsd: reserve.reserveSizeUsd,
+    supplyCapUsd: reserve.supplyCapUsd,
+    rawSupplyInput: supplyInput,
+    inputMode,
+    tokenPrice: displayTokenPrice,
+  });
+  const totalBorrowedUsd = getTotalBorrowedUsd({
+    reserveSizeUsd: reserve.reserveSizeUsd,
+    utilizationPct: reserve.utilizationPct,
+  });
+  const poolLiquidity = getPoolLiquidityUsd({
+    reserveSizeUsd: reserve.reserveSizeUsd,
+    totalBorrowedUsd,
+  });
 
   return (
     <Fragment>
@@ -189,24 +173,35 @@ const DesktopReserveRow = memo(({
           <div className="flex flex-col items-center justify-center gap-[var(--ds-space-0-5)]">
             {/* Supply Size - Green */}
             <div className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)] ds-text-emerald-600">
-              <span>{formatReserveSizeUsd(displayReserveSizeUsd)}</span>
-              <CapProgressRing size={displayReserveSizeUsd} cap={reserve.supplyCapUsd} />
+              <span>{formatScenarioSize(displayReserveSizeUsd, { inputMode, tokenPrice: displayTokenPrice, tokenSymbol: reserve.tokenSymbol })}</span>
+              <CapProgressRing
+                size={displayReserveSizeUsd}
+                cap={reserve.supplyCapUsd}
+                displayMode={inputMode}
+                tokenPrice={displayTokenPrice}
+                tokenSymbol={reserve.tokenSymbol}
+              />
             </div>
             {/* Borrow Size - Cyan */}
             <div className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)] ds-text-brand-cyan ds-text-11">
-              <span>{formatReserveSizeUsd(totalBorrowedUsd)}</span>
+              <span>{formatScenarioSize(totalBorrowedUsd, { inputMode, tokenPrice: displayTokenPrice, tokenSymbol: reserve.tokenSymbol })}</span>
               <BorrowCapProgressRing
                 borrowed={totalBorrowedUsd}
                 cap={reserve.borrowCapUsd}
                 poolLiquidity={poolLiquidity}
+                displayMode={inputMode}
+                tokenPrice={displayTokenPrice}
+                tokenSymbol={reserve.tokenSymbol}
               />
             </div>
           </div>
         </TableCell>
         {/* Utilization */}
-        <TableCell className="px-[var(--ds-space-2)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell tabular-nums text-foreground ds-text-13">
+        <TableCell className="px-[var(--ds-space-2)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell tabular-nums ds-text-13">
           <div className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)]">
-            <span>{formatPercent(displayUtilization)}</span>
+            <span className={displayUtilization != null && simulation?.utilization.optimal != null && displayUtilization > simulation.utilization.optimal ? 'text-amber-600' : 'text-foreground'}>
+              {formatPercent(displayUtilization)}
+            </span>
             <UtilizationIndicator
               current={displayUtilization}
               optimal={simulation?.utilization.optimal ?? null}

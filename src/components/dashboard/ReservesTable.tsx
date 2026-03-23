@@ -8,7 +8,6 @@ import { ReserveWithSpread, ETHEREUM_MARKET_NAMES, TokenPricesIndex } from '@/ty
 import { 
   formatPercent, 
   formatSpread, 
-  formatReserveSizeUsd,
   formatUsd,
   calculateTotalSupplyApr,
   calculateTotalSupplyApy,
@@ -28,7 +27,7 @@ import MobileReserveCard from './MobileReserveCard';
 import DesktopReserveRow from './DesktopReserveRow';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getReserveSimulationId, useSharedRateSimulations } from '@/hooks/useRateSimulation';
-import { parseNumberInput } from '@/lib/numberFormat';
+import { getScenarioSupplySizeUsd, getTotalBorrowedUsd as getReserveTotalBorrowedUsd } from '@/lib/scenarioSize';
 
 interface ReservesTableProps {
   reserves: ReserveWithSpread[];
@@ -287,36 +286,20 @@ const ReservesTable = ({
   };
 
   const getDisplayReserveSizeUsd = (reserve: ReserveWithSpread): number | null => {
-    const reserveSize = reserve.reserveSizeUsd;
-    if (reserveSize == null || !Number.isFinite(reserveSize)) return reserveSize ?? null;
-    const supplyRaw = parseNumberInput(debouncedSharedSupplyInput);
-    const sim = getSimulation(reserve);
-    const supplyInputUsd =
-      sharedInputMode === 'usd'
-        ? supplyRaw
-        : sim?.tokenPrice != null && Number.isFinite(sim.tokenPrice)
-          ? supplyRaw * sim.tokenPrice
-          : 0;
-    if (supplyInputUsd <= 0) return reserveSize;
-    const rawAfterSize = reserveSize + supplyInputUsd;
-    // Cap at supply cap if available
-    const supplyCapUsd = reserve.supplyCapUsd;
-    if (supplyCapUsd != null && supplyCapUsd > 0 && rawAfterSize > supplyCapUsd) {
-      return supplyCapUsd;
-    }
-    return rawAfterSize;
+    return getScenarioSupplySizeUsd({
+      reserveSizeUsd: reserve.reserveSizeUsd,
+      supplyCapUsd: reserve.supplyCapUsd,
+      rawSupplyInput: debouncedSharedSupplyInput,
+      inputMode: sharedInputMode,
+      tokenPrice: getSimulation(reserve)?.tokenPrice ?? reserve.tokenPrice,
+    });
   };
 
   const getTotalBorrowedUsd = (reserve: ReserveWithSpread): number | null => {
-    if (
-      reserve.reserveSizeUsd == null ||
-      reserve.utilizationPct == null ||
-      !Number.isFinite(reserve.reserveSizeUsd) ||
-      !Number.isFinite(reserve.utilizationPct)
-    ) {
-      return null;
-    }
-    return reserve.reserveSizeUsd * (reserve.utilizationPct / 100);
+    return getReserveTotalBorrowedUsd({
+      reserveSizeUsd: reserve.reserveSizeUsd,
+      utilizationPct: reserve.utilizationPct,
+    });
   };
 
   // Sort data based on active column and its sort mode
@@ -436,6 +419,10 @@ const ReservesTable = ({
     supply: 'Supply',
     borrow: 'Borrow',
   }[sizeSortMode];
+  const mobileCardDefaultTab: 'supply' | 'borrow' =
+    activeSortColumn === 'borrow' || (activeSortColumn === 'size' && sizeSortMode === 'borrow')
+      ? 'borrow'
+      : 'supply';
 
   const toggleSupplySortOrder = () => {
     collapseExpandedOnSort();
@@ -597,34 +584,90 @@ const ReservesTable = ({
         <div className="flex justify-between items-center px-[var(--ds-space-1)]">
           <h3 className="ds-text-14 font-bold text-foreground">{reserves.length} Reserves</h3>
           <div className="flex items-center gap-[var(--ds-space-1-5)]">
-            {/* Size sort button */}
-            <button
-              type="button"
-              onClick={() => {
-                if (activeSortColumn === 'size') {
-                  handleSortSize();
-                } else {
-                  setActiveSortColumn('size');
-                  setSizeSortOrder('desc');
-                }
-              }}
-              className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-lg border transition-colors ${
-                activeSortColumn === 'size'
-                  ? 'bg-card/60 border-border/70 text-foreground'
-                  : 'bg-card border-border text-muted-foreground hover:bg-muted/60'
-              }`}
-            >
-              <span>Size</span>
-              {activeSortColumn === 'size' ? (
-                sizeSortOrder === 'desc' ? (
-                  <ArrowDown className="w-3 h-3" />
-                ) : (
-                  <ArrowUp className="w-3 h-3" />
-                )
-              ) : (
-                <ArrowDown className="w-3 h-3 opacity-50" />
+            {/* Size sort dropdown */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSizeSortMenu(!showSizeSortMenu);
+                  setShowSupplySortMenu(false);
+                  setShowBorrowSortMenu(false);
+                }}
+                className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-lg border transition-colors ${
+                  activeSortColumn === 'size'
+                    ? sizeSortMode === 'supply'
+                      ? 'bg-card/60 border-border/70 ds-text-emerald-700 font-semibold'
+                      : 'bg-card/60 border-border/70 ds-text-brand-cyan font-semibold'
+                    : 'bg-card border-border text-muted-foreground font-medium'
+                }`}
+              >
+                <span>Size</span>
+                <ChevronDown className="w-3 h-3" />
+              </button>
+              {showSizeSortMenu && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setShowSizeSortMenu(false)} />
+                  <div className="absolute right-0 top-full mt-[var(--ds-space-1)] bg-card border border-border rounded-lg shadow-lg py-[var(--ds-space-1)] z-20 min-w-[130px]">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const isAlreadySelected = sizeSortMode === 'supply' && activeSortColumn === 'size';
+                        if (isAlreadySelected && sizeSortOrder === 'desc') {
+                          setSizeSortOrder('asc');
+                        } else {
+                          setSizeSortMode('supply');
+                          setActiveSortColumn('size');
+                          setSizeSortOrder('desc');
+                        }
+                        setShowSizeSortMenu(false);
+                      }}
+                      className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-13 transition-colors flex items-center justify-between ${
+                        sizeSortMode === 'supply' && activeSortColumn === 'size'
+                          ? 'ds-text-emerald-600 font-bold bg-card/60'
+                          : 'text-muted-foreground'
+                      }`}
+                    >
+                      <span>Supply</span>
+                      {sizeSortMode === 'supply' && activeSortColumn === 'size' ? (
+                        sizeSortOrder === 'desc' ? (
+                          <ArrowDown className="w-3 h-3 ds-text-emerald-600" />
+                        ) : (
+                          <ArrowUp className="w-3 h-3 ds-text-emerald-600" />
+                        )
+                      ) : null}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const isAlreadySelected = sizeSortMode === 'borrow' && activeSortColumn === 'size';
+                        if (isAlreadySelected && sizeSortOrder === 'desc') {
+                          setSizeSortOrder('asc');
+                        } else {
+                          setSizeSortMode('borrow');
+                          setActiveSortColumn('size');
+                          setSizeSortOrder('desc');
+                        }
+                        setShowSizeSortMenu(false);
+                      }}
+                      className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-13 transition-colors flex items-center justify-between ${
+                        sizeSortMode === 'borrow' && activeSortColumn === 'size'
+                          ? 'ds-text-brand-cyan font-bold bg-card/60'
+                          : 'text-muted-foreground'
+                      }`}
+                    >
+                      <span>Borrow</span>
+                      {sizeSortMode === 'borrow' && activeSortColumn === 'size' ? (
+                        sizeSortOrder === 'desc' ? (
+                          <ArrowDown className="w-3 h-3 ds-text-brand-cyan" />
+                        ) : (
+                          <ArrowUp className="w-3 h-3 ds-text-brand-cyan" />
+                        )
+                      ) : null}
+                    </button>
+                  </div>
+                </>
               )}
-            </button>
+            </div>
 
             {/* Supply sort dropdown */}
             <div className="relative">
@@ -636,8 +679,8 @@ const ReservesTable = ({
                 }}
                 className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-lg border transition-colors ${
                   activeSortColumn === 'supply'
-                    ? 'bg-card/60 border-border/70 ds-text-emerald-700'
-                    : 'bg-card border-border text-muted-foreground'
+                    ? 'bg-card/60 border-border/70 ds-text-emerald-700 font-semibold'
+                    : 'bg-card border-border text-muted-foreground font-medium'
                 }`}
               >
                 <span>Supply</span>
@@ -696,8 +739,8 @@ const ReservesTable = ({
                 }}
                 className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-lg border transition-colors ${
                   activeSortColumn === 'borrow'
-                    ? 'bg-card/60 border-border/70 ds-text-brand-cyan'
-                    : 'bg-card border-border text-muted-foreground'
+                    ? 'bg-card/60 border-border/70 ds-text-brand-cyan font-semibold'
+                    : 'bg-card border-border text-muted-foreground font-medium'
                 }`}
               >
                 <span>Borrow</span>
@@ -759,8 +802,8 @@ const ReservesTable = ({
               }}
               className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-lg border transition-colors ${
                 activeSortColumn === 'spread'
-                  ? 'ds-bg-purple-50 ds-border-purple-200 ds-text-purple-700'
-                  : 'bg-card border-border text-muted-foreground hover:bg-muted/60'
+                  ? 'bg-card/60 border-border/70 ds-text-purple-700 font-semibold'
+                  : 'bg-card border-border text-muted-foreground hover:bg-muted/60 font-medium'
               }`}
             >
               <span>Spread</span>
@@ -849,7 +892,7 @@ const ReservesTable = ({
                             inputMode={sharedInputMode}
                             onCorrectSupplyInput={handleCorrectSupplyInput}
                             onCorrectBorrowInput={handleCorrectBorrowInput}
-                            defaultTab={activeSortColumn === 'borrow' ? 'borrow' : undefined}
+                            defaultTab={mobileCardDefaultTab}
                           />
                         </div>
                         {rightReserve ? (
@@ -869,30 +912,62 @@ const ReservesTable = ({
                               inputMode={sharedInputMode}
                               onCorrectSupplyInput={handleCorrectSupplyInput}
                               onCorrectBorrowInput={handleCorrectBorrowInput}
-                              defaultTab={activeSortColumn === 'borrow' ? 'borrow' : undefined}
+                              defaultTab={mobileCardDefaultTab}
                             />
                           </div>
                         ) : null}
                       </div>
-                      {/* Full-width simulation (table needs width). mt clears peer card; bridge fills gap on expanded column and overlaps top border. */}
+                      {/* Full-width simulation (table needs width). mt clears peer card; bridge fills gap on expanded column only. */}
                       <div className="relative isolate mt-[var(--ds-space-2)]">
+                        {/* Bridge background and outer border */}
                         <div
                           aria-hidden
-                          className={`pointer-events-none absolute z-10 border-border/60 bg-card ${bridgeOnExpandedColumn ? 'left-0 border-l border-r' : 'right-0 border-l border-r'}`}
+                          className={`pointer-events-none absolute z-10 border-border/60 bg-card ${bridgeOnExpandedColumn ? 'left-0 border-l' : 'right-0 border-r'}`}
                           style={{
                             top: 'calc(-1 * var(--ds-space-2))',
                             height: 'calc(var(--ds-space-2) + 1px)',
                             width: pairColWidth,
+                            borderBottom: 'none',
+                            borderTop: 'none',
                           }}
                         />
+                        
+                        {/* Single continuous SVG for Inner Fillet + Horizontal connection */}
+                        <svg
+                          className="absolute pointer-events-none z-10 overflow-visible"
+                          width="17"
+                          height="9"
+                          viewBox="0 0 17 9"
+                          style={{
+                            top: 'calc(-1 * var(--ds-space-2))',
+                            ...(bridgeOnExpandedColumn 
+                              ? { left: `calc(${pairColWidth} - 1px)` } 
+                              : { right: `calc(${pairColWidth} - 1px)` })
+                          }}
+                          aria-hidden="true"
+                        >
+                          {bridgeOnExpandedColumn ? (
+                            <>
+                              <path d="M 0 0 L 0 9 L 17 9 L 17 8 L 9 8 A 8 8 0 0 1 1 0 Z" style={{ fill: 'hsl(var(--card))' }} />
+                              <path d="M 1.5 0 L 1.5 0.5 A 8 8 0 0 0 9.5 8.5 L 17 8.5" fill="none" style={{ stroke: 'hsl(var(--border) / 0.6)', strokeWidth: 1 }} />
+                            </>
+                          ) : (
+                            <>
+                              <path d="M 17 0 L 17 9 L 0 9 L 0 8 L 8 8 A 8 8 0 0 0 16 0 Z" style={{ fill: 'hsl(var(--card))' }} />
+                              <path d="M 15.5 0 L 15.5 0.5 A 8 8 0 0 1 7.5 8.5 L 0 8.5" fill="none" style={{ stroke: 'hsl(var(--border) / 0.6)', strokeWidth: 1 }} />
+                            </>
+                          )}
+                        </svg>
+
                         <div
-                          className={`relative z-0 overflow-hidden border border-border/60 bg-card ds-card-pad-sm ${
+                          className={`relative z-0 overflow-hidden rounded-b-xl border border-border/60 bg-card ds-card-pad-sm ${
                             bridgeOnExpandedColumn ? 'rounded-tr-xl rounded-tl-none' : 'rounded-tl-xl rounded-tr-none'
                           }`}
                           style={{
                             paddingTop: 'var(--ds-space-2)',
-                            borderBottomLeftRadius: '24px 20px',
-                            borderBottomRightRadius: '24px 20px',
+                            clipPath: bridgeOnExpandedColumn 
+                              ? `polygon(0 1px, calc(${pairColWidth} + 16px) 1px, calc(${pairColWidth} + 16px) 0, 100% 0, 100% 100%, 0 100%)`
+                              : `polygon(0 0, calc(100% - ${pairColWidth} - 16px) 0, calc(100% - ${pairColWidth} - 16px) 1px, 100% 1px, 100% 100%, 0 100%)`
                           }}
                         >
                           <MobileReserveCard
@@ -909,7 +984,7 @@ const ReservesTable = ({
                             inputMode={sharedInputMode}
                             onCorrectSupplyInput={handleCorrectSupplyInput}
                             onCorrectBorrowInput={handleCorrectBorrowInput}
-                            defaultTab={activeSortColumn === 'borrow' ? 'borrow' : undefined}
+                            defaultTab={mobileCardDefaultTab}
                           />
                         </div>
                       </div>
@@ -933,7 +1008,7 @@ const ReservesTable = ({
                         inputMode={sharedInputMode}
                         onCorrectSupplyInput={handleCorrectSupplyInput}
                         onCorrectBorrowInput={handleCorrectBorrowInput}
-                        defaultTab={activeSortColumn === 'borrow' ? 'borrow' : undefined}
+                        defaultTab={mobileCardDefaultTab}
                       />
                     </div>
                   );
@@ -954,7 +1029,7 @@ const ReservesTable = ({
                           inputMode={sharedInputMode}
                           onCorrectSupplyInput={handleCorrectSupplyInput}
                           onCorrectBorrowInput={handleCorrectBorrowInput}
-                          defaultTab={activeSortColumn === 'borrow' ? 'borrow' : undefined}
+                          defaultTab={mobileCardDefaultTab}
                         />
                       </div>
                     );

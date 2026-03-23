@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from 'react';
 import { AlertTriangle, ExternalLink } from 'lucide-react';
-import { formatPercent, formatSpread, formatReserveSizeUsd } from '@/lib/formatters';
+import { formatPercent, formatScenarioSize, formatScenarioSizeDelta, formatSpread } from '@/lib/formatters';
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -68,12 +68,6 @@ const formatDelta = (value: number | null) => {
   if (value === null || Number.isNaN(value)) return '—';
   const prefix = value > 0 ? '+' : '';
   return `${prefix}${value.toFixed(2)}%`;
-};
-
-const formatUsdDelta = (value: number | null) => {
-  if (value === null || Number.isNaN(value)) return '—';
-  const prefix = value > 0 ? '+' : '';
-  return `${prefix}${formatReserveSizeUsd(value)}`;
 };
 
 const hasMeaningfulValue = (value: number | null) =>
@@ -331,13 +325,23 @@ const SimulationSubRow = ({
   ];
 
   const formatValue = (value: number | null, type: RowType) => {
-    if (type === 'usd') return formatReserveSizeUsd(value);
+    if (type === 'usd') {
+      return formatScenarioSize(value, {
+        inputMode,
+        tokenPrice: simulation.tokenPrice,
+      });
+    }
     if (type === 'spread') return formatSpread(value);
     return formatPercent(value);
   };
 
   const formatDeltaValue = (value: number | null, type: RowType) => {
-    if (type === 'usd') return formatUsdDelta(value);
+    if (type === 'usd') {
+      return formatScenarioSizeDelta(value, {
+        inputMode,
+        tokenPrice: simulation.tokenPrice,
+      });
+    }
     return formatDelta(value);
   };
 
@@ -372,7 +376,7 @@ const SimulationSubRow = ({
             )}
             {row.cap !== null && row.cap !== undefined && (
               <span className={`ds-text-11 tabular-nums flex-shrink-0 ${row.warning ? 'text-amber-600' : 'text-muted-foreground/70'}`}>
-                / Cap {formatReserveSizeUsd(row.cap)}
+                / Cap {formatScenarioSize(row.cap, { inputMode, tokenPrice: simulation.tokenPrice })}
               </span>
             )}
           </div>
@@ -462,17 +466,17 @@ const SimulationSubRow = ({
             </td>
             <td className={`${compactCellPy} ${compactNumCell} text-right`}>
               <span className="ds-text-12 tabular-nums ds-text-purple-600">
-                {formatReserveSizeUsd(simulation.marketMetrics.availableLiquidityUsd)}
+                {formatScenarioSize(simulation.marketMetrics.availableLiquidityUsd, { inputMode, tokenPrice: simulation.tokenPrice })}
               </span>
             </td>
             <td className={`${compactCellPy} ${compactNumCell} text-right`}>
               <span className={`ds-text-12 tabular-nums ${simulation.marketMetrics.availableLiquidityUsdAfter === null ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
-                {formatReserveSizeUsd(simulation.marketMetrics.availableLiquidityUsdAfter)}
+                {formatScenarioSize(simulation.marketMetrics.availableLiquidityUsdAfter, { inputMode, tokenPrice: simulation.tokenPrice })}
               </span>
             </td>
             <td className={`${compactCellPy} ${compactDeltaCell} text-right`}>
               <span className={`ds-text-12 tabular-nums ${simulation.marketMetrics.availableLiquidityUsdDelta === null ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
-                {formatUsdDelta(simulation.marketMetrics.availableLiquidityUsdDelta)}
+                {formatScenarioSizeDelta(simulation.marketMetrics.availableLiquidityUsdDelta, { inputMode, tokenPrice: simulation.tokenPrice })}
               </span>
             </td>
           </tr>
@@ -571,17 +575,17 @@ const SimulationSubRow = ({
             </td>
             <td className="py-1.5 px-3 text-right">
               <span className="ds-text-12 tabular-nums ds-text-purple-600">
-                {formatReserveSizeUsd(simulation.marketMetrics.availableLiquidityUsd)}
+                {formatScenarioSize(simulation.marketMetrics.availableLiquidityUsd, { inputMode, tokenPrice: simulation.tokenPrice })}
               </span>
             </td>
             <td className="py-1.5 px-3 text-right">
               <span className={`ds-text-12 tabular-nums ${simulation.marketMetrics.availableLiquidityUsdAfter === null ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
-                {formatReserveSizeUsd(simulation.marketMetrics.availableLiquidityUsdAfter)}
+                {formatScenarioSize(simulation.marketMetrics.availableLiquidityUsdAfter, { inputMode, tokenPrice: simulation.tokenPrice })}
               </span>
             </td>
             <td className="py-1.5 px-4 text-right">
               <span className={`ds-text-12 tabular-nums ${simulation.marketMetrics.availableLiquidityUsdDelta === null ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
-                {formatUsdDelta(simulation.marketMetrics.availableLiquidityUsdDelta)}
+                {formatScenarioSizeDelta(simulation.marketMetrics.availableLiquidityUsdDelta, { inputMode, tokenPrice: simulation.tokenPrice })}
               </span>
             </td>
           </tr>
@@ -620,7 +624,7 @@ const SimulationSubRow = ({
         <div className={`flex items-center gap-3 rounded-lg border border-amber-400/60 bg-amber-50/80 dark:bg-amber-950/30 ${effectiveCompact ? 'mb-2 px-3 py-1.5' : 'mb-3 px-4 py-2'}`}>
           <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
           <p className="flex-1 ds-text-12 text-amber-800 dark:text-amber-300">
-            Supply exceeds cap by {formatReserveSizeUsd(supplyCapExceededByUsd)}
+            Supply exceeds cap by {formatScenarioSize(supplyCapExceededByUsd, { inputMode, tokenPrice: simulation.tokenPrice })}
           </p>
           {onCorrectSupplyInput && availableSupplyRoomUsd !== null && availableSupplyRoomUsd > 0 && (
             <button type="button" onClick={handleCorrectToMaxSupply} className="ds-btn-warning ds-text-11 px-3 py-1">
@@ -634,7 +638,7 @@ const SimulationSubRow = ({
         <div className={`flex items-center gap-3 rounded-lg border border-amber-400/60 bg-amber-50/80 dark:bg-amber-950/30 ${effectiveCompact ? 'mb-2 px-3 py-1.5' : 'mb-3 px-4 py-2'}`}>
           <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
           <p className="flex-1 ds-text-12 text-amber-800 dark:text-amber-300">
-            Borrow exceeds {borrowLimitedByLiquidity ? 'liquidity' : 'cap'} by {formatReserveSizeUsd(borrowCapExceededByUsd)}
+            Borrow exceeds {borrowLimitedByLiquidity ? 'liquidity' : 'cap'} by {formatScenarioSize(borrowCapExceededByUsd, { inputMode, tokenPrice: simulation.tokenPrice })}
           </p>
           {onCorrectBorrowInput && availableBorrowRoomUsd !== null && availableBorrowRoomUsd > 0 && (
             <button type="button" onClick={handleCorrectToMaxBorrow} className="ds-btn-warning ds-text-11 px-3 py-1">

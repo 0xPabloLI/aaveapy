@@ -33,6 +33,7 @@
     "preflight:release": "node scripts/preflight-release.mjs",
     "preview": "vite preview",
     "sync-token-icons": "node scripts/sync-token-icons.mjs",
+    "sync:cloudflare-gh-actions-allowlist": "node scripts/sync-cloudflare-gh-actions-allowlist.mjs",
     "sync:reserve-patches-upstream": "node scripts/sync-reserve-patches-upstream.mjs",
     "sync:market-name-map-upstream": "node scripts/sync-market-name-map-upstream.mjs",
     "sync:chain-icons-upstream": "node scripts/sync-chain-icon-map-upstream.mjs",
@@ -45,6 +46,7 @@
     "test": "vitest run",
     "test:live": "LIVE_TEST_API_BASE=https://staging-api.aaveapy.com/api RUN_LIVE_TESTS=true vitest run src/lib/apiSchemas.live.test.ts",
     "test:live:staging": "LIVE_TEST_API_BASE=https://staging-api.aaveapy.com/api RUN_LIVE_TESTS=true vitest run src/lib/apiSchemas.live.test.ts",
+    "probe:live-api": "node scripts/probe-live-api.mjs",
     "ci:lockcheck": "npm ci"
   },
   "dependencies": {

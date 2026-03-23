@@ -52,6 +52,8 @@ This note records recurring UI/interaction issues found during incentive/forecas
   - On mobile, any tap-to-open overlay that shows detailed content (e.g. cap details, incentive details) must use the **bottom sheet** pattern: full-width panel from bottom with `rounded-t-2xl`, sticky header with title + close (X) button, and `max-h-[80vh] overflow-y-auto` for the body. Backdrop: `fixed inset-0 z-30 bg-background/20` with click-to-close.
   - Do **not** use a small floating Popover anchored to the trigger on mobile — that is the wrong pattern. Reference: `IncentiveTooltip` (mobile branch) and `MobileReserveCard` cap details sheet.
 
+- **`MobileReserveCard` Supply/Borrow tab vs parent `defaultTab`**: Parent may drive the default tab from sort (e.g. borrow column). Sync in `useEffect` with `setActiveTab(defaultTab ?? 'supply')`. If you only update when `defaultTab` is truthy, switching away from borrow sort leaves `defaultTab` as `undefined` and cards **stay stuck on Borrow** — wrong.
+
 ### Text-to-border spacing (mandatory)
 
 - **Text must never touch borders**: Any bordered container (cards, table cells, warning banners, buttons) must have at least `--ds-space-2` (8px) padding between text and the border. See DESIGN.md §5 布局原则.
@@ -78,7 +80,7 @@ This note records recurring UI/interaction issues found during incentive/forecas
 | Data type | Recommended color | Example |
 |-----------|------------------|---------|
 | Utilization percentage (desktop) | `text-foreground` | "75.2%" in Utilization column |
-| Utilization percentage (mobile header) | `ds-text-brand-cyan` below optimal, `text-amber-600` above optimal | Matches `UtilizationIndicator` zone |
+| Utilization percentage (mobile header) | `text-foreground` below optimal, `text-amber-600` above optimal | Matches `UtilizationIndicator` zone |
 | General numeric data | `text-foreground` | Market size, prices |
 | Secondary/muted info | `text-muted-foreground`, `text-secondary` | Labels, descriptions |
 
