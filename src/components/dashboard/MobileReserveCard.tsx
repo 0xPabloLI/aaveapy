@@ -250,9 +250,8 @@ const MobileReserveCard = memo(({
 
     if (activeTab === 'supply') {
       const hasSupplyCap = reserve.supplyCapUsd != null && Number.isFinite(reserve.supplyCapUsd) && reserve.supplyCapUsd > 0;
-      // px-3.5 = mx-3 (12px) + track p-0.5 (2px): aligns with Supply/Borrow label text
       return (
-        <div className="flex w-full min-w-0 flex-nowrap items-center gap-1.5 px-3.5">
+        <div className="flex w-full min-w-0 flex-nowrap items-center gap-1.5 px-3">
           {priceEl}
           <div className="ml-auto flex min-w-0 items-center justify-end gap-1">
             {hasSupplyCap ? (
@@ -278,7 +277,7 @@ const MobileReserveCard = memo(({
     }
     const hasBorrowCap = reserve.borrowCapUsd != null && Number.isFinite(reserve.borrowCapUsd) && reserve.borrowCapUsd > 0;
     return (
-      <div className="flex w-full min-w-0 flex-nowrap items-center gap-1.5 px-3.5">
+      <div className="flex w-full min-w-0 flex-nowrap items-center gap-1.5 px-3">
         {priceEl}
         <div className="ml-auto flex min-w-0 items-center justify-end gap-1">
           {hasBorrowCap ? (
@@ -513,7 +512,7 @@ const MobileReserveCard = memo(({
           {renderHeroApy()}
 
           {/* Simulation toggle — shows Spread inside */}
-          <div className="px-3.5">
+          <div className="px-3">
             <button
               type="button"
               onClick={onToggleSimulation}
@@ -598,7 +597,7 @@ const MobileReserveCard = memo(({
           <div className="overflow-hidden">
             {hasSimulationMounted && (
               <div className="-mt-px bg-card border border-border/60 border-t-0 rounded-b-xl rounded-t-none pb-3 pt-0">
-                <div className="px-3.5">
+                <div className="px-3">
                   <SimulationSubRow
                     reserve={reserve}
                     simulation={simulation}
