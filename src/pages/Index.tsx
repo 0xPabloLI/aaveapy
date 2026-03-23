@@ -27,6 +27,8 @@ import {
 import { usePreloadReserveAssets } from '@/hooks/usePreloadReserveAssets';
 import { buildMarketsList } from '@/lib/marketsList';
 import { normalizeTokenSymbolForSearch } from '@/lib/tokenSymbolNormalization';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { externalLinkTabProps } from '@/lib/externalNavigation';
 
 import IncentiveTooltip from '@/components/dashboard/IncentiveTooltip';
 import InkAprCalculator from '@/components/dashboard/InkAprCalculator';
@@ -35,6 +37,8 @@ const MerklForecastPanel = lazy(() => import('@/components/dashboard/MerklForeca
 
 const Index = () => {
   const activeQueryCount = useIsFetching();
+  const isMobile = useIsMobile();
+  const footerLinkTab = externalLinkTabProps(isMobile);
 
   // State
   const [sortField, setSortField] = useState<SortField>(null);
@@ -456,8 +460,7 @@ const Index = () => {
                 Data sourced from{' '}
                 <a
                   href="https://app.aave.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  {...footerLinkTab}
                   className="text-secondary hover:underline"
                 >
                   Aave Protocol
@@ -465,8 +468,7 @@ const Index = () => {
                 {', '}
                 <a
                   href="https://app.merkl.xyz"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  {...footerLinkTab}
                   className="text-secondary hover:underline"
                 >
                   Merkl
@@ -474,8 +476,7 @@ const Index = () => {
                 {', '}
                 <a
                   href="https://apps.aavechan.com/"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  {...footerLinkTab}
                   className="text-secondary hover:underline"
                 >
                   ACI
@@ -483,8 +484,7 @@ const Index = () => {
                 {', '}
                 <a
                   href="https://incentra.brevis.network/"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  {...footerLinkTab}
                   className="text-secondary hover:underline"
                 >
                   Brevis
@@ -495,8 +495,7 @@ const Index = () => {
                 Built with ❤️ by{' '}
                 <a
                   href="https://twitter.com/silenlee"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  {...footerLinkTab}
                   aria-label="Pablo on X"
                   className="inline-flex items-center gap-2 align-baseline text-signature-strong transition-opacity duration-200 hover:opacity-100"
                 >
@@ -516,8 +515,7 @@ const Index = () => {
               <div className="flex items-center gap-[var(--ds-space-3)] mt-[var(--ds-space-2)]">
                 <a
                   href="https://t.me/aaveapy"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  {...footerLinkTab}
                   aria-label="Join @aaveapy on Telegram"
                   title="Join @aaveapy on Telegram"
                   className="flex items-center justify-center w-8 h-8 rounded-full border border-border/40 bg-card/60 text-muted-foreground transition-colors hover:bg-[hsl(200_100%_45%/0.12)] hover:text-[hsl(200_100%_45%)] hover:border-[hsl(200_100%_45%/0.4)] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
@@ -526,8 +524,7 @@ const Index = () => {
                 </a>
                 <a
                   href="https://github.com/0xPabloLI/aaveapy"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  {...footerLinkTab}
                   aria-label="View source on GitHub"
                   title="View source on GitHub"
                   className="flex items-center justify-center w-8 h-8 rounded-full border border-border/40 bg-card/60 text-muted-foreground transition-colors hover:bg-muted/80 hover:text-foreground hover:border-border focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"

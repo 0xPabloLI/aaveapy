@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Expand / collapse icon preview (Lucide)</title>
+    <style>
+      :root {
+        --bg: #fafafa;
+        --fg: #171717;
+        --muted: #737373;
+        --border: #e5e5e5;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0a0a0a;
+          --fg: #fafafa;
+          --muted: #a3a3a3;
+          --border: #262626;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        background: var(--bg);
+        color: var(--fg);
+        line-height: 1.5;
+        padding: 1.5rem;
+      }
+      h1 {
+        font-size: 1.125rem;
+        font-weight: 600;
+        margin: 0 0 0.5rem;
+      }
+      p {
+        margin: 0 0 1.25rem;
+        color: var(--muted);
+        font-size: 0.875rem;
+        max-width: 42rem;
+      }
+      table {
+        width: 100%;
+        max-width: 52rem;
+        border-collapse: collapse;
+        font-size: 0.8125rem;
+      }
+      th,
+      td {
+        border: 1px solid var(--border);
+        padding: 0.65rem 0.75rem;
+        text-align: left;
+        vertical-align: middle;
+      }
+      th {
+        font-weight: 600;
+        background: color-mix(in oklab, var(--border) 40%, transparent);
+      }
+      code {
+        font-family: ui-monospace, monospace;
+        font-size: 0.8em;
+      }
+      .row-name {
+        font-weight: 500;
+      }
+      .hint {
+        color: var(--muted);
+        font-size: 0.75rem;
+        margin-top: 0.25rem;
+      }
+      .icons {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
+      .mock-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.35rem 0.5rem;
+        border: 1px solid var(--border);
+        border-radius: 0.5rem;
+        background: color-mix(in oklab, var(--border) 25%, transparent);
+        font-size: 0.75rem;
+      }
+      svg.icon-lg {
+        color: var(--fg);
+      }
+      svg.icon-sm {
+        color: var(--fg);
+      }
+    </style>
+  </head>
+  <body>
+    <h1>展开 / 折叠：常见图标长什么样</h1>
+    <p>
+      以下为 <strong>Lucide</strong>（与项目 <code>lucide-react</code> 同源）在
+      <strong>32×32</strong> 与接近 App 里 <strong>14px</strong>（<code>h-3.5</code>）尺寸下的外观。可直接对比选一种替换当前的
+      <code>ChevronDown</code>。
+    </p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>名称</th>
+          <th>32px</th>
+          <th>~14px（按钮内）</th>
+          <th>说明</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="row-name"><code>ChevronDown</code></td>
+          <td>
+            <svg class="icon-lg" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+          </td>
+          <td>
+            <svg class="icon-sm" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+          </td>
+          <td>最常见：下拉 / 展开下面内容。你们<strong>当前</strong>用的。</td>
+        </tr>
+        <tr>
+          <td class="row-name"><code>ChevronRight</code></td>
+          <td><svg class="icon-lg" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></td>
+          <td><svg class="icon-sm" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></td>
+          <td>折叠态用「向右」；展开时旋转 90° 或换成 <code>ChevronDown</code>。很多列表 / 设置页。</td>
+        </tr>
+        <tr>
+          <td class="row-name"><code>ChevronsUpDown</code></td>
+          <td><svg class="icon-lg" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></td>
+          <td><svg class="icon-sm" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></td>
+          <td>「可展开/收起」的中性语义，不强调方向；shadcn Select 等常用。</td>
+        </tr>
+        <tr>
+          <td class="row-name"><code>Plus</code> / <code>Minus</code></td>
+          <td class="icons">
+            <svg class="icon-lg" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+            <svg class="icon-lg" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/></svg>
+          </td>
+          <td class="icons">
+            <svg class="icon-sm" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+            <svg class="icon-sm" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/></svg>
+          </td>
+          <td>折叠 + / 展开 −，语义很直白；更像「展开更多」而不是「下拉菜单」。</td>
+        </tr>
+        <tr>
+          <td class="row-name"><code>CircleChevronDown</code></td>
+          <td><svg class="icon-lg" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m16 10-4 4-4-4"/></svg></td>
+          <td><svg class="icon-sm" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m16 10-4 4-4-4"/></svg></td>
+          <td>带圆框的「向下」，更醒目；小尺寸时圆环可能略糊。</td>
+        </tr>
+        <tr>
+          <td class="row-name"><code>PanelBottomOpen</code></td>
+          <td><svg class="icon-lg" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 15h18"/><path d="m9 10 3-3 3 3"/></svg></td>
+          <td><svg class="icon-sm" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 15h18"/><path d="m9 10 3-3 3 3"/></svg></td>
+          <td>「底部面板打开」隐喻；更像<strong>展开一块区域</strong>，但 14px 时细节会挤。</td>
+        </tr>
+        <tr>
+          <td class="row-name"><code>UnfoldVertical</code></td>
+          <td><svg class="icon-lg" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22v-6"/><path d="M12 8V2"/><path d="M4 12H2"/><path d="M10 12H8"/><path d="M16 12h-2"/><path d="M22 12h-2"/><path d="m15 19-3 3-3-3"/><path d="m15 5-3-3-3 3"/></svg></td>
+          <td><svg class="icon-sm" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22v-6"/><path d="M12 8V2"/><path d="M4 12H2"/><path d="M10 12H8"/><path d="M16 12h-2"/><path d="M22 12h-2"/><path d="m15 19-3 3-3-3"/><path d="m15 5-3-3-3 3"/></svg></td>
+          <td>「垂直展开」语义强；笔画多，<strong>小尺寸不推荐</strong>。</td>
+        </tr>
+        <tr>
+          <td class="row-name"><code>ListCollapse</code></td>
+          <td><svg class="icon-lg" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 2.5-2.5L3 5"/><path d="m3 19 2.5-2.5L3 14"/><path d="M10 6h11"/><path d="M10 12h11"/><path d="M10 18h11"/></svg></td>
+          <td><svg class="icon-sm" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 2.5-2.5L3 5"/><path d="m3 19 2.5-2.5L3 14"/><path d="M10 6h11"/><path d="M10 12h11"/><path d="M10 18h11"/></svg></td>
+          <td>折叠列表；可配 <code>ListExpand</code>（若库里有）作展开态。细节略密。</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 style="margin-top: 2rem; font-size: 1rem">放进按钮行里（示意）</h2>
+    <p class="hint">左：文字 + 14px 图标，接近 App 里 Simulation 行。</p>
+    <div style="display: flex; flex-direction: column; gap: 0.75rem; max-width: 22rem">
+      <div class="mock-btn">
+        <span>Simulation · Spread</span>
+        <span style="font-variant-numeric: tabular-nums; color: #a855f7">+2.31%</span>
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 10 2.5-2.5L3 5"/><path d="m3 19 2.5-2.5L3 14"/><path d="M10 6h11"/><path d="M10 12h11"/><path d="M10 18h11"/></svg>
+      </div>
+      <div class="mock-btn">
+        <span>Simulation · Spread</span>
+        <span style="font-variant-numeric: tabular-nums; color: #a855f7">+2.31%</span>
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg>
+      </div>
+      <div class="mock-btn">
+        <span>Simulation · Spread</span>
+        <span style="font-variant-numeric: tabular-nums; color: #a855f7">+2.31%</span>
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+      </div>
+    </div>
+
+    <p class="hint" style="margin-top: 2rem">
+      本地查看：运行 <code>npm run dev</code> 后打开
+      <code>http://localhost:5173/expand-icon-preview.html</code>（或直接双击用浏览器打开本文件）。
+    </p>
+  </body>
+</html>

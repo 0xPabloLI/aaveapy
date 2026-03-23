@@ -16,6 +16,7 @@ import { resolveForecastTokenPrice, resolveForecastTokenPriceWithBackup } from '
 import { formatNumberInput, parseNumberInput } from '@/lib/numberFormat';
 import { adjustTooltipAnchorForScroll, getWindowScroll } from '@/lib/tooltipPosition';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { externalLinkTabProps } from '@/lib/externalNavigation';
 import { simulateNativeRatesAfterSupply, simulateNativeRatesAfterBorrow, hasRateCalcFields } from '@/lib/interestRateCalculator';
 
 interface IncentiveTooltipProps {
@@ -1151,8 +1152,7 @@ const IncentiveTooltip = ({
                           {source.link && (
                             <a
                               href={source.link}
-                              target="_blank"
-                              rel="noopener noreferrer"
+                              {...externalLinkTabProps(isMobile)}
                               onClick={(e) => e.stopPropagation()}
                               className={`${linkClass} flex h-7 w-7 items-center justify-center rounded-full transition-opacity opacity-80 hover:opacity-100 focus:outline-none focus-visible:outline-none focus-visible:ring-0`}
                               title="Open link"
@@ -1281,8 +1281,7 @@ const IncentiveTooltip = ({
                         {source.link && (
                           <a
                             href={source.link}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                            {...externalLinkTabProps(isMobile)}
                             onClick={(e) => e.stopPropagation()}
                             className={`${linkClass} flex h-7 w-7 items-center justify-center rounded-full transition-opacity opacity-80 hover:opacity-100 focus:outline-none focus-visible:outline-none focus-visible:ring-0`}
                             title="Open link"

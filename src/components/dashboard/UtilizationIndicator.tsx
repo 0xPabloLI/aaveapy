@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useId } from 'react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { formatPercent } from '@/lib/formatters';
 
@@ -15,6 +15,8 @@ const UtilizationIndicator = memo(({
   width = 10,
   height = 18,
 }: UtilizationIndicatorProps) => {
+  const clipId = useId();
+
   if (current === null || optimal === null || !Number.isFinite(current) || !Number.isFinite(optimal)) {
     return null;
   }
@@ -45,7 +47,7 @@ const UtilizationIndicator = memo(({
             className="overflow-visible"
           >
             <defs>
-              <clipPath id="trackClip">
+              <clipPath id={clipId}>
                 <rect
                   x={trackX}
                   y={0}
@@ -64,21 +66,29 @@ const UtilizationIndicator = memo(({
               rx={trackRadius}
               className="fill-secondary/40"
             />
-            {/* Amber overlay for over-optimal zone, clipped to track shape */}
+            {/* Below optimal: borrow-aligned (flatter borrow rates); brand cyan */}
+            <rect
+              x={trackX}
+              y={optimalY}
+              width={trackWidth}
+              height={height - optimalY}
+              clipPath={`url(#${clipId})`}
+              className="fill-[rgb(var(--ds-brand-cyan-rgb)/0.32)]"
+            />
+            {/* Above optimal: past kink — higher borrow, tighter pool — amber */}
             <rect
               x={trackX}
               y={0}
               width={trackWidth}
               height={optimalY}
-              clipPath="url(#trackClip)"
+              clipPath={`url(#${clipId})`}
               className="fill-amber-500"
             />
-            {/* Current position dot */}
             <circle
               cx={width / 2}
               cy={currentY}
               r={dotRadius}
-              className={isOverOptimal ? 'fill-amber-700' : 'fill-foreground'}
+              className={isOverOptimal ? 'fill-amber-700' : 'fill-[rgb(var(--ds-brand-cyan-rgb))]'}
             />
           </svg>
         </div>
@@ -89,9 +99,13 @@ const UtilizationIndicator = memo(({
             <span className="text-muted-foreground">Optimal</span>
             <span className="font-medium tabular-nums">{formatPercent(optimal)}</span>
           </div>
-          {isOverOptimal && (
+          {isOverOptimal ? (
             <p className="text-amber-600 ds-text-11 pt-2 border-t border-border/50">
               ⚠️ Above optimal
+            </p>
+          ) : (
+            <p className="ds-text-brand-cyan-70 ds-text-11 pt-2 border-t border-border/50">
+              Below optimal
             </p>
           )}
         </div>

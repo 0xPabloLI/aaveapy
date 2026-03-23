@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, memo, useRef } from 'react';
+
 import { createPortal } from 'react-dom';
 import { ArrowUp, ArrowDown, ChevronDown, ChevronUp } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -21,6 +22,7 @@ import ScenarioControls, { type ScenarioControlsHandle } from './ScenarioControl
 import { compareIncentiveWithNative } from '@/lib/sorters';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
+import { openExternalUrl } from '@/lib/externalNavigation';
 import IncentiveTooltip from './IncentiveTooltip';
 import MobileReserveCard from './MobileReserveCard';
 import DesktopReserveRow from './DesktopReserveRow';
@@ -103,11 +105,6 @@ const ReservesTable = ({
   const handleCorrectBorrowInput = useCallback((correctedValue: string) => {
     scenarioControlsRef.current?.setBorrowInput(correctedValue);
   }, []);
-
-  // Refs for tracking expanded row position (used by useLayoutEffect after sortedData is defined)
-  const prevExpandedIndexRef = useRef<number | null>(null);
-  const prevExpandedIdRef = useRef<string | null>(null);
-  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (showBorrowSortMenu && borrowSortButtonRef.current) {
@@ -423,73 +420,6 @@ const ReservesTable = ({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reserves, activeSortColumn, tokenSortOrder, priceSortOrder, sizeSortMode, sizeSortOrder, utilSortOrder, supplySortMode, supplySortOrder, borrowSortMode, borrowSortOrder, spreadSortOrder, simulationsById, hasSharedScenario, isApy, tydroPointToUsdRate, includeWhitelistOnlyMerkl, debouncedSharedSupplyInput, sharedInputMode]);
 
-  // When expanded row position changes due to re-sort, keep it pinned near the top
-  useEffect(() => {
-    if (!expandedReserveId) {
-      prevExpandedIndexRef.current = null;
-      prevExpandedIdRef.current = null;
-      return;
-    }
-    
-    const currentIndex = sortedData.findIndex(
-      (r) => getReserveSimulationId(r) === expandedReserveId
-    );
-    
-    if (currentIndex === -1) {
-      prevExpandedIndexRef.current = null;
-      prevExpandedIdRef.current = null;
-      return;
-    }
-    
-    const prevIndex = prevExpandedIndexRef.current;
-    const positionChanged = prevIndex !== null && prevIndex !== currentIndex;
-    
-    prevExpandedIndexRef.current = currentIndex;
-    prevExpandedIdRef.current = expandedReserveId;
-    
-    // Only scroll when position changes (not on initial expand)
-    if (!positionChanged) return;
-    
-    // Clear any pending scroll
-    if (scrollTimeoutRef.current) {
-      clearTimeout(scrollTimeoutRef.current);
-    }
-    
-    // Small delay then scroll to keep row at top (desktop table row or mobile card)
-    scrollTimeoutRef.current = setTimeout(() => {
-      requestAnimationFrame(() => {
-        const rowElement = document.querySelector(
-          `[data-reserve-id="${expandedReserveId}"]`
-        );
-        if (!rowElement) return;
-        
-        const rect = rowElement.getBoundingClientRect();
-        // Mobile: account for sticky scenario bar + safe area; desktop: table sticky header
-        const stickyHeaderHeight = isMobile ? 120 : 80;
-        const paddingBelowHeader = isMobile ? 24 : 16;
-        
-        // Always scroll to put the expanded row/card near the top (below sticky header)
-        // Same behavior on desktop and mobile so Breakdown stays fully visible
-        const targetTop = stickyHeaderHeight + paddingBelowHeader;
-        const scrollDelta = rect.top - targetTop;
-        
-        // Only scroll if row moved significantly (>20px from target position)
-        if (Math.abs(scrollDelta) > 20) {
-          window.scrollTo({
-            top: window.scrollY + scrollDelta,
-            behavior: 'smooth',
-          });
-        }
-      });
-    }, 50);
-    
-    return () => {
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
-    };
-  }, [sortedData, expandedReserveId, isMobile]);
-
   const supplySortLabel = {
     total: 'Total',
     native: 'Native',
@@ -585,7 +515,7 @@ const ReservesTable = ({
       tokenAddress: reserve.tokenAddress,
     });
     if (url) {
-      window.open(url, '_blank', 'noopener,noreferrer');
+      openExternalUrl(url, isMobile);
     }
   };
 
@@ -666,7 +596,36 @@ const ReservesTable = ({
         {/* Header with sorting controls */}
         <div className="flex justify-between items-center px-[var(--ds-space-1)]">
           <h3 className="ds-text-14 font-bold text-foreground">{reserves.length} Reserves</h3>
-          <div className="flex items-center gap-[var(--ds-space-2)]">
+          <div className="flex items-center gap-[var(--ds-space-1-5)]">
+            {/* Size sort button */}
+            <button
+              type="button"
+              onClick={() => {
+                if (activeSortColumn === 'size') {
+                  handleSortSize();
+                } else {
+                  setActiveSortColumn('size');
+                  setSizeSortOrder('desc');
+                }
+              }}
+              className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-lg border transition-colors ${
+                activeSortColumn === 'size'
+                  ? 'bg-card/60 border-border/70 text-foreground'
+                  : 'bg-card border-border text-muted-foreground hover:bg-muted/60'
+              }`}
+            >
+              <span>Size</span>
+              {activeSortColumn === 'size' ? (
+                sizeSortOrder === 'desc' ? (
+                  <ArrowDown className="w-3 h-3" />
+                ) : (
+                  <ArrowUp className="w-3 h-3" />
+                )
+              ) : (
+                <ArrowDown className="w-3 h-3 opacity-50" />
+              )}
+            </button>
+
             {/* Supply sort dropdown */}
             <div className="relative">
               <button
@@ -690,11 +649,7 @@ const ReservesTable = ({
                   <div className="absolute right-0 top-full mt-[var(--ds-space-1)] bg-card border border-border rounded-lg shadow-lg py-[var(--ds-space-1)] z-20 min-w-[130px]">
                     {(['total', 'native', 'incentive'] as SortMode[]).map((mode) => {
                       const isAlreadySelected = supplySortMode === mode && activeSortColumn === 'supply';
-                      const getColorClass = () => {
-                        if (mode === 'total') return 'ds-text-emerald-600';
-                        if (mode === 'native') return 'ds-text-emerald-600';
-                        return 'ds-text-emerald-600';
-                      };
+                      const getColorClass = () => 'ds-text-emerald-600';
                       return (
                       <button
                           type="button"
@@ -754,11 +709,7 @@ const ReservesTable = ({
                   <div className="absolute right-0 top-full mt-[var(--ds-space-1)] bg-card border border-border rounded-lg shadow-lg py-[var(--ds-space-1)] z-20 min-w-[130px]">
                     {(['total', 'native', 'incentive'] as SortMode[]).map((mode) => {
                       const isAlreadySelected = borrowSortMode === mode && activeSortColumn === 'borrow';
-                      const getColorClass = () => {
-                        if (mode === 'total') return 'ds-text-brand-cyan';
-                        if (mode === 'native') return 'ds-text-brand-cyan';
-                        return 'ds-text-brand-cyan';
-                      };
+                      const getColorClass = () => 'ds-text-brand-cyan';
                       return (
                       <button
                           type="button"
@@ -823,27 +774,6 @@ const ReservesTable = ({
                 <ArrowDown className="w-3 h-3 opacity-50" />
               )}
             </button>
-            
-            {/* Sort order toggle */}
-            <button
-              type="button"
-              onClick={() => {
-                if (activeSortColumn === 'supply') {
-                  toggleSupplySortOrder();
-                } else if (activeSortColumn === 'borrow') {
-                  toggleBorrowSortOrder();
-                } else {
-                  toggleSpreadSortOrder();
-                }
-              }}
-              className="ds-icon-button border border-border bg-card hover:bg-muted/60 transition-colors"
-            >
-              {(activeSortColumn === 'supply' ? supplySortOrder : activeSortColumn === 'borrow' ? borrowSortOrder : spreadSortOrder) === 'desc' ? (
-                <ArrowDown className="w-3.5 h-3.5 text-muted-foreground" />
-              ) : (
-                <ArrowUp className="w-3.5 h-3.5 text-muted-foreground" />
-              )}
-            </button>
           </div>
         </div>
         
@@ -896,16 +826,17 @@ const ReservesTable = ({
                   const isLeftActive = leftExpanded;
                   const activeReserve = isLeftActive ? leftReserve : rightReserve!;
                   const activeId = isLeftActive ? leftId : rightId!;
+                  /** Matches `grid-cols-2 gap-[--ds-space-2]`: one column width (connector under expanded card only). */
+                  const pairColWidth = 'calc((100% - var(--ds-space-2)) / 2)';
+                  const bridgeOnExpandedColumn = leftExpanded || !rightReserve;
 
                   nodes.push(
                     <div key={`row-${i}`} className="col-span-2">
-                      {/* Cards row */}
-                      <div className="relative grid grid-cols-2 gap-[var(--ds-space-2)]">
-                        {/* Left card */}
-                        <div className={isLeftActive ? 'relative z-[2]' : ''}>
+                      <div className="grid grid-cols-2 gap-[var(--ds-space-2)]">
+                        <div className="min-w-0">
                           <MobileReserveCard
                             variant={isLeftActive ? 'upperOnly' : 'full'}
-                            connectedBelow={isLeftActive}
+                            connectedBelow={leftExpanded}
                             reserve={leftReserve}
                             isApy={isApy}
                             onIncentiveClick={handleMobileIncentiveClick}
@@ -918,14 +849,14 @@ const ReservesTable = ({
                             inputMode={sharedInputMode}
                             onCorrectSupplyInput={handleCorrectSupplyInput}
                             onCorrectBorrowInput={handleCorrectBorrowInput}
+                            defaultTab={activeSortColumn === 'borrow' ? 'borrow' : undefined}
                           />
                         </div>
-                        {/* Right card */}
-                        {rightReserve && (
-                          <div className={!isLeftActive ? 'relative z-[2]' : ''}>
+                        {rightReserve ? (
+                          <div className="min-w-0">
                             <MobileReserveCard
                               variant={!isLeftActive ? 'upperOnly' : 'full'}
-                              connectedBelow={!isLeftActive}
+                              connectedBelow={rightExpanded}
                               reserve={rightReserve}
                               isApy={isApy}
                               onIncentiveClick={handleMobileIncentiveClick}
@@ -938,43 +869,30 @@ const ReservesTable = ({
                               inputMode={sharedInputMode}
                               onCorrectSupplyInput={handleCorrectSupplyInput}
                               onCorrectBorrowInput={handleCorrectBorrowInput}
+                              defaultTab={activeSortColumn === 'borrow' ? 'borrow' : undefined}
                             />
                           </div>
-                        )}
+                        ) : null}
                       </div>
-                      {/* Simulation panel with junction curve */}
-                      <div className="relative">
-                        {/* Junction mask — page-bg overlay on non-active side with concave border curve */}
-                        {rightReserve && (
-                          <div
-                            className="absolute top-0 z-10 pointer-events-none"
-                            style={{
-                              ...(isLeftActive
-                                ? {
-                                    left: 'calc(50% - var(--ds-space-2) / 2)',
-                                    right: -1,
-                                    borderTopRightRadius: 12,
-                                    borderBottomLeftRadius: 12,
-                                    borderLeft: '1px solid hsl(var(--border) / 0.6)',
-                                    borderBottom: '1px solid hsl(var(--border) / 0.6)',
-                                  }
-                                : {
-                                    right: 'calc(50% - var(--ds-space-2) / 2)',
-                                    left: -1,
-                                    borderTopLeftRadius: 12,
-                                    borderBottomRightRadius: 12,
-                                    borderRight: '1px solid hsl(var(--border) / 0.6)',
-                                    borderBottom: '1px solid hsl(var(--border) / 0.6)',
-                                  }),
-                              height: 12,
-                              background: 'hsl(var(--background))',
-                            }}
-                          />
-                        )}
+                      {/* Full-width simulation (table needs width). mt clears peer card; bridge fills gap on expanded column and overlaps top border. */}
+                      <div className="relative isolate mt-[var(--ds-space-2)]">
                         <div
-                          className="bg-card border border-border/60 border-t-0 rounded-b-xl ds-card-pad-sm"
+                          aria-hidden
+                          className={`pointer-events-none absolute z-10 border-border/60 bg-card ${bridgeOnExpandedColumn ? 'left-0 border-l border-r' : 'right-0 border-l border-r'}`}
+                          style={{
+                            top: 'calc(-1 * var(--ds-space-2))',
+                            height: 'calc(var(--ds-space-2) + 1px)',
+                            width: pairColWidth,
+                          }}
+                        />
+                        <div
+                          className={`relative z-0 overflow-hidden border border-border/60 bg-card ds-card-pad-sm ${
+                            bridgeOnExpandedColumn ? 'rounded-tr-xl rounded-tl-none' : 'rounded-tl-xl rounded-tr-none'
+                          }`}
                           style={{
                             paddingTop: 'var(--ds-space-2)',
+                            borderBottomLeftRadius: '24px 20px',
+                            borderBottomRightRadius: '24px 20px',
                           }}
                         >
                           <MobileReserveCard
@@ -991,6 +909,7 @@ const ReservesTable = ({
                             inputMode={sharedInputMode}
                             onCorrectSupplyInput={handleCorrectSupplyInput}
                             onCorrectBorrowInput={handleCorrectBorrowInput}
+                            defaultTab={activeSortColumn === 'borrow' ? 'borrow' : undefined}
                           />
                         </div>
                       </div>
@@ -1014,6 +933,7 @@ const ReservesTable = ({
                         inputMode={sharedInputMode}
                         onCorrectSupplyInput={handleCorrectSupplyInput}
                         onCorrectBorrowInput={handleCorrectBorrowInput}
+                        defaultTab={activeSortColumn === 'borrow' ? 'borrow' : undefined}
                       />
                     </div>
                   );
@@ -1034,6 +954,7 @@ const ReservesTable = ({
                           inputMode={sharedInputMode}
                           onCorrectSupplyInput={handleCorrectSupplyInput}
                           onCorrectBorrowInput={handleCorrectBorrowInput}
+                          defaultTab={activeSortColumn === 'borrow' ? 'borrow' : undefined}
                         />
                       </div>
                     );
