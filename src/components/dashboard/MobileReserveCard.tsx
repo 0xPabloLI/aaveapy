@@ -12,11 +12,24 @@ import SimulationSubRow from './SimulationSubRow';
 import UtilizationIndicator from './UtilizationIndicator';
 import CapProgressRing from './CapProgressRing';
 import BorrowCapProgressRing from './BorrowCapProgressRing';
-import { formatReserveSizeUsd } from '@/lib/formatters';
+import { formatScenarioSize } from '@/lib/formatters';
 import type { RateSimulationResult } from '@/hooks/useRateSimulation';
+import { getAvailableToBorrowUsd, getPoolLiquidityUsd, getScenarioSupplySizeUsd, getTotalBorrowedUsd, getValidTokenPrice } from '@/lib/scenarioSize';
 
 /** Same content as CapProgressRing tooltip; used in mobile bottom sheet. */
-function SupplyCapSheetContent({ currentSize, cap }: { currentSize: number; cap: number }) {
+function SupplyCapSheetContent({
+  currentSize,
+  cap,
+  inputMode,
+  tokenPrice,
+  tokenSymbol,
+}: {
+  currentSize: number;
+  cap: number;
+  inputMode: 'usd' | 'token';
+  tokenPrice?: number | null;
+  tokenSymbol?: string | null;
+}) {
   const percentage = Math.min((currentSize / cap) * 100, 100);
   const colorClass =
     percentage >= 95 ? 'text-amber-600' : percentage >= 80 ? 'text-amber-500' : 'ds-text-emerald-600';
@@ -24,15 +37,21 @@ function SupplyCapSheetContent({ currentSize, cap }: { currentSize: number; cap:
     <div className="space-y-1 ds-text-12">
       <div className="flex justify-between gap-3">
         <span className="text-muted-foreground">Total supplied</span>
-        <span className="font-medium tabular-nums ds-text-emerald-600">{formatReserveSizeUsd(currentSize)}</span>
+        <span className="font-medium tabular-nums ds-text-emerald-600">
+          {formatScenarioSize(currentSize, { inputMode, tokenPrice, tokenSymbol })}
+        </span>
       </div>
       <div className="flex justify-between gap-3">
         <span className="text-muted-foreground">Supply cap</span>
-        <span className="font-medium tabular-nums ds-text-emerald-600">{formatReserveSizeUsd(cap)}</span>
+        <span className="font-medium tabular-nums ds-text-emerald-600">
+          {formatScenarioSize(cap, { inputMode, tokenPrice, tokenSymbol })}
+        </span>
       </div>
       <div className="flex justify-between gap-3">
         <span className="text-muted-foreground">Available to supply</span>
-        <span className="font-medium tabular-nums ds-text-emerald-600">{formatReserveSizeUsd(Math.max(0, cap - currentSize))}</span>
+        <span className="font-medium tabular-nums ds-text-emerald-600">
+          {formatScenarioSize(Math.max(0, cap - currentSize), { inputMode, tokenPrice, tokenSymbol })}
+        </span>
       </div>
       <div className="flex justify-between gap-3 pt-1 border-t border-border/50">
         <span className="text-muted-foreground">% of cap</span>
@@ -47,28 +66,44 @@ function BorrowCapSheetContent({
   borrowed,
   cap,
   poolLiquidity,
+  inputMode,
+  tokenPrice,
+  tokenSymbol,
 }: {
   borrowed: number;
   cap: number;
   poolLiquidity: number;
+  inputMode: 'usd' | 'token';
+  tokenPrice?: number | null;
+  tokenSymbol?: string | null;
 }) {
   const percentage = Math.min((borrowed / cap) * 100, 100);
-  const availableToBorrow = Math.min(Math.max(0, cap - borrowed), poolLiquidity);
+  const availableToBorrow = getAvailableToBorrowUsd({
+    borrowedUsd: borrowed,
+    borrowCapUsd: cap,
+    poolLiquidityUsd: poolLiquidity,
+  }) ?? 0;
   const colorClass =
     percentage >= 95 ? 'text-amber-600' : percentage >= 80 ? 'text-amber-500' : 'ds-text-brand-cyan';
   return (
     <div className="space-y-1 ds-text-12">
       <div className="flex justify-between gap-3">
         <span className="text-muted-foreground">Total borrowed</span>
-        <span className="font-medium tabular-nums ds-text-brand-cyan">{formatReserveSizeUsd(borrowed)}</span>
+        <span className="font-medium tabular-nums ds-text-brand-cyan">
+          {formatScenarioSize(borrowed, { inputMode, tokenPrice, tokenSymbol })}
+        </span>
       </div>
       <div className="flex justify-between gap-3">
         <span className="text-muted-foreground">Borrow cap</span>
-        <span className="font-medium tabular-nums ds-text-brand-cyan">{formatReserveSizeUsd(cap)}</span>
+        <span className="font-medium tabular-nums ds-text-brand-cyan">
+          {formatScenarioSize(cap, { inputMode, tokenPrice, tokenSymbol })}
+        </span>
       </div>
       <div className="flex justify-between gap-3">
         <span className="text-muted-foreground">Available to borrow</span>
-        <span className="font-medium tabular-nums ds-text-brand-cyan">{formatReserveSizeUsd(availableToBorrow)}</span>
+        <span className="font-medium tabular-nums ds-text-brand-cyan">
+          {formatScenarioSize(availableToBorrow, { inputMode, tokenPrice, tokenSymbol })}
+        </span>
       </div>
       <div className="flex justify-between gap-3 pt-1 border-t border-border/50">
         <span className="text-muted-foreground">% of cap</span>
@@ -204,17 +239,22 @@ const MobileReserveCard = memo(({
     name: reserve.tokenName,
   });
 
-  const totalBorrowedUsd =
-    reserve.reserveSizeUsd != null &&
-    reserve.utilizationPct != null &&
-    Number.isFinite(reserve.reserveSizeUsd) &&
-    Number.isFinite(reserve.utilizationPct)
-      ? reserve.reserveSizeUsd * (reserve.utilizationPct / 100)
-      : null;
-  const poolLiquidity =
-    reserve.reserveSizeUsd != null && totalBorrowedUsd != null
-      ? reserve.reserveSizeUsd - totalBorrowedUsd
-      : null;
+  const displayTokenPrice = getValidTokenPrice(simulation.tokenPrice, reserve.tokenPrice);
+  const displayReserveSizeUsd = getScenarioSupplySizeUsd({
+    reserveSizeUsd: reserve.reserveSizeUsd,
+    supplyCapUsd: reserve.supplyCapUsd,
+    rawSupplyInput: hasSharedScenario ? supplyInput : '',
+    inputMode,
+    tokenPrice: displayTokenPrice,
+  });
+  const totalBorrowedUsd = getTotalBorrowedUsd({
+    reserveSizeUsd: reserve.reserveSizeUsd,
+    utilizationPct: reserve.utilizationPct,
+  });
+  const poolLiquidity = getPoolLiquidityUsd({
+    reserveSizeUsd: reserve.reserveSizeUsd,
+    totalBorrowedUsd,
+  });
 
   if (variant === 'simulationOnly') {
     return (
@@ -263,13 +303,22 @@ const MobileReserveCard = memo(({
                 onClick={() => setCapSheet('supply')}
               >
                 <span className="ds-text-13 font-semibold tabular-nums leading-none truncate">
-                  {formatReserveSizeUsd(reserve.reserveSizeUsd)}
+                  {formatScenarioSize(displayReserveSizeUsd, { inputMode, tokenPrice: displayTokenPrice, tokenSymbol: reserve.tokenSymbol })}
                 </span>
-                <CapProgressRing size={reserve.reserveSizeUsd} cap={reserve.supplyCapUsd!} ringSize={12} strokeWidth={1.2} disableTooltip />
+                <CapProgressRing
+                  size={displayReserveSizeUsd}
+                  cap={reserve.supplyCapUsd!}
+                  displayMode={inputMode}
+                  tokenPrice={displayTokenPrice}
+                  tokenSymbol={reserve.tokenSymbol}
+                  ringSize={12}
+                  strokeWidth={1.2}
+                  disableTooltip
+                />
               </button>
             ) : (
               <span className="ds-text-13 font-semibold tabular-nums leading-none ds-text-emerald-600 truncate">
-                {formatReserveSizeUsd(reserve.reserveSizeUsd)}
+                {formatScenarioSize(displayReserveSizeUsd, { inputMode, tokenPrice: displayTokenPrice, tokenSymbol: reserve.tokenSymbol })}
               </span>
             )}
           </div>
@@ -288,11 +337,16 @@ const MobileReserveCard = memo(({
               aria-label="Show borrow cap details"
               onClick={() => setCapSheet('borrow')}
             >
-              <span className="ds-text-13 font-semibold tabular-nums leading-none truncate">{formatReserveSizeUsd(totalBorrowedUsd)}</span>
+              <span className="ds-text-13 font-semibold tabular-nums leading-none truncate">
+                {formatScenarioSize(totalBorrowedUsd, { inputMode, tokenPrice: displayTokenPrice, tokenSymbol: reserve.tokenSymbol })}
+              </span>
               <BorrowCapProgressRing
                 borrowed={totalBorrowedUsd}
                 cap={reserve.borrowCapUsd!}
                 poolLiquidity={poolLiquidity}
+                displayMode={inputMode}
+                tokenPrice={displayTokenPrice}
+                tokenSymbol={reserve.tokenSymbol}
                 ringSize={12}
                 strokeWidth={1.2}
                 disableTooltip
@@ -300,7 +354,7 @@ const MobileReserveCard = memo(({
             </button>
           ) : (
             <span className="ds-text-13 font-semibold tabular-nums leading-none ds-text-brand-cyan truncate">
-              {formatReserveSizeUsd(totalBorrowedUsd)}
+              {formatScenarioSize(totalBorrowedUsd, { inputMode, tokenPrice: displayTokenPrice, tokenSymbol: reserve.tokenSymbol })}
             </span>
           )}
         </div>
@@ -467,7 +521,7 @@ const MobileReserveCard = memo(({
               aria-label="Show utilization details"
             >
               <span className={`ds-text-10 font-medium tabular-nums leading-none ${
-                displayUtilization > optimalPct ? 'text-amber-600' : 'ds-text-brand-cyan'
+                displayUtilization > optimalPct ? 'text-amber-600' : 'text-foreground'
               }`}>
                 {displayUtilization.toFixed(0)}%
               </span>
@@ -508,12 +562,12 @@ const MobileReserveCard = memo(({
         </div>
 
         {/* Tab content */}
-        <div className="flex w-full flex-col gap-2.5">
+        <div className="flex w-full flex-col">
           {renderAmountRow()}
-          {renderHeroApy()}
+          <div className="mt-1.5">{renderHeroApy()}</div>
 
           {/* Simulation toggle — shows Spread inside */}
-          <div className="px-3">
+          <div className="mt-2 px-3">
             <button
               type="button"
               onClick={onToggleSimulation}
@@ -566,8 +620,11 @@ const MobileReserveCard = memo(({
               <div className="px-[var(--ds-space-4)] pt-[var(--ds-space-3)] pb-[var(--ds-space-3)]">
                 {capSheet === 'supply' && (
                   <SupplyCapSheetContent
-                    currentSize={reserve.reserveSizeUsd ?? 0}
+                    currentSize={displayReserveSizeUsd ?? 0}
                     cap={reserve.supplyCapUsd!}
+                    inputMode={inputMode}
+                    tokenPrice={displayTokenPrice}
+                    tokenSymbol={reserve.tokenSymbol}
                   />
                 )}
                 {capSheet === 'borrow' && (
@@ -575,6 +632,9 @@ const MobileReserveCard = memo(({
                     borrowed={totalBorrowedUsd ?? 0}
                     cap={reserve.borrowCapUsd!}
                     poolLiquidity={poolLiquidity ?? 0}
+                    inputMode={inputMode}
+                    tokenPrice={displayTokenPrice}
+                    tokenSymbol={reserve.tokenSymbol}
                   />
                 )}
                 {capSheet === 'utilization' && optimalPct != null && displayUtilization != null && (

@@ -14,6 +14,24 @@ export function resolveLiveApiBase(env: LiveEnv = process.env): string {
   return env.LIVE_TEST_API_BASE || DEFAULT_LIVE_API_BASE;
 }
 
+const CLOUDFLARE_CHALLENGE_MARKERS = [
+  'just a moment',
+  'cf-mitigated',
+  'cloudflare',
+  '/cdn-cgi/challenge-platform',
+];
+
+export function isLikelyCloudflareChallenge(status: number, bodySnippet: string): boolean {
+  if (status !== 403) return false;
+
+  const normalized = bodySnippet.toLowerCase();
+  return CLOUDFLARE_CHALLENGE_MARKERS.some((marker) => normalized.includes(marker));
+}
+
+export function shouldSoftFailLiveSchema(env: NodeJS.ProcessEnv = process.env): boolean {
+  return env.LIVE_TEST_STRICT !== 'true';
+}
+
 export function formatLiveHttpError({
   bodySnippet,
   endpoint,
@@ -29,18 +47,4 @@ export function formatLiveHttpError({
     `status: ${status} ${statusText}`,
     `body: ${trimmedBody || '<empty>'}`,
   ].join('\n');
-}
-
-/**
- * Detects Cloudflare bot/challenge interstitial HTML (e.g. "Just a moment...")
- * returned instead of JSON — common when CI egress hits a WAF-protected origin.
- */
-export function isLikelyCloudflareChallenge(bodySnippet: string): boolean {
-  const s = bodySnippet.toLowerCase();
-  return (
-    s.includes('just a moment') ||
-    s.includes('cf-challenge') ||
-    s.includes('challenge-platform') ||
-    s.includes('cf-mitigated')
-  );
 }

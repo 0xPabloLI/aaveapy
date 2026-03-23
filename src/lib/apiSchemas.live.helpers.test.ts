@@ -5,6 +5,7 @@ import {
   formatLiveHttpError,
   isLikelyCloudflareChallenge,
   resolveLiveApiBase,
+  shouldSoftFailLiveSchema,
 } from './apiSchemas.live.helpers';
 
 describe('resolveLiveApiBase', () => {
@@ -45,8 +46,28 @@ describe('formatLiveHttpError', () => {
 });
 
 describe('isLikelyCloudflareChallenge', () => {
-  it('detects Cloudflare interstitial HTML', () => {
-    expect(isLikelyCloudflareChallenge('<!DOCTYPE html><title>Just a moment...</title>')).toBe(true);
-    expect(isLikelyCloudflareChallenge('normal json')).toBe(false);
+  it('returns true for a 403 cloudflare challenge page snippet', () => {
+    const bodySnippet = '<html><title>Just a moment...</title><div>cloudflare</div></html>';
+    expect(isLikelyCloudflareChallenge(403, bodySnippet)).toBe(true);
+  });
+
+  it('returns false for non-403 statuses', () => {
+    expect(isLikelyCloudflareChallenge(500, 'just a moment')).toBe(false);
+  });
+
+  it('returns false for ordinary 403 responses', () => {
+    expect(isLikelyCloudflareChallenge(403, '{"error":"forbidden"}')).toBe(false);
+  });
+});
+
+describe('shouldSoftFailLiveSchema', () => {
+  it('defaults to soft-fail mode', () => {
+    expect(shouldSoftFailLiveSchema({} as NodeJS.ProcessEnv)).toBe(true);
+  });
+
+  it('disables soft-fail mode when LIVE_TEST_STRICT=true', () => {
+    expect(
+      shouldSoftFailLiveSchema({ LIVE_TEST_STRICT: 'true' } as NodeJS.ProcessEnv),
+    ).toBe(false);
   });
 });

@@ -80,7 +80,7 @@ This note records recurring UI/interaction issues found during incentive/forecas
 | Data type | Recommended color | Example |
 |-----------|------------------|---------|
 | Utilization percentage (desktop) | `text-foreground` | "75.2%" in Utilization column |
-| Utilization percentage (mobile header) | `ds-text-brand-cyan` below optimal, `text-amber-600` above optimal | Matches `UtilizationIndicator` zone |
+| Utilization percentage (mobile header) | `text-foreground` below optimal, `text-amber-600` above optimal | Matches `UtilizationIndicator` zone |
 | General numeric data | `text-foreground` | Market size, prices |
 | Secondary/muted info | `text-muted-foreground`, `text-secondary` | Labels, descriptions |
 

@@ -1,95 +1,87 @@
-# CI Live Schema Tests vs Cloudflare（推荐改法清单）
+# CI 访问 staging API 被 Cloudflare 拦截
 
-`src/lib/apiSchemas.live.test.ts` 在 CI 里会请求 **staging 真实 API**（默认 `https://staging-api.aaveapy.com/api`）。若域名前有 **Cloudflare**，GitHub Actions 的出口 IP 常被当成机器人，返回 **403** 和 **HTML 挑战页**（标题 *Just a moment...*），而不是 JSON —— 测试会失败，**与前端/schema 代码是否正确无关**。
+GitHub Actions 请求 `https://staging-api.aaveapy.com/api/...` 时，若出现 **403** 且 body 是 **Just a moment...** 的 HTML，说明请求在 Cloudflare 边缘被挑战/拦截，**与前端代码无关**。
 
-本文给出 **Cloudflare 侧** 与 **仓库侧（workflow / 测试策略）** 的推荐组合；落实后应把「跳过挑战」仅作为过渡，**长期仍应对 API 放行合法自动化流量**。
-
-### 安全边界：域名会不会被「别的站模仿」？
-
-- **不会因为你文档里写了泛化写法，就多出一条攻击面。** Cloudflare 的 WAF / Page Rules / Custom Rules 都是绑在 **具体 Zone**（你在 Cloudflare 里验证过的域名，例如 `aaveapy.com`）上的；规则只对 **该 Zone 下你配置的 Hostname** 生效。别人在 **他们自己的** Cloudflare 账号里配规则，**与你们账户、你们 Zone 无关**，不存在「照抄文档就打开了你家防火墙」这种事。
-- **钓鱼域名**（例如注册很像的域名诱导用户点击）是另一类风险，靠 **DNS/品牌/浏览器地址栏** 防范，不是「WAF 文档写不写全域名」能单独解决的；本文下面一律写清本仓库使用的 **staging 主机名**：**`staging-api.aaveapy.com`**（生产 API 一般为 **`api.aaveapy.com`**，勿把 staging 的放宽规则套到生产 unless 有意为之）。
+下面按「你在控制台里要点哪里」写；**只针对 staging 子域 + `/api/`，不要套到生产**。
 
 ---
 
-## A. Cloudflare 侧（优先，治本）
+## 先确认：你开的是哪种「机器人防护」？
 
-按侵入性从低到高排列；可组合使用。
-
-| 优先级 | 做法 | 说明 |
-|--------|------|------|
-| **A1** | **路径级 WAF / Security**：对 **`staging-api.aaveapy.com`** 上路径 **`/api/*`** **降低** *Security Level* 或关闭 *Bot Fight Mode*（**仅该子域或该路径**，不要套到 `api.aaveapy.com` 生产） | 最小改动；缩小到 staging 主机名 + 路径，减少误伤生产。 |
-| **A2** | **WAF Custom Rule — Allow**：匹配 `Hostname` = `staging-api.aaveapy.com` **且** `URI Path` starts with `/api/` **且** `User Agent` contains `GitHub-Actions`（或你们约定的 header）→ **Skip** / **Allow** | UA 可伪造，**不要单独依赖**；可与 A3 组合。 |
-| **A3** | **IP Access / WAF — GitHub Actions 网段**：定期拉取 [GitHub Meta API](https://api.github.com/meta) 里 `actions` 的 CIDR，在 Cloudflare **IP Access Rules** 或 **WAF** 中对 **`staging-api.aaveapy.com` + `/api/*`** **Allow** | 网段会变，需 **每月或自动化同步**（Terraform / 定时脚本）；规则仍只作用于你在该 Zone 里勾选的主机名。 |
-| **A4** | **Cloudflare Access（Zero Trust）**：为 `/api/*` 配置 **Service Token**，CI 在 `fetch` 里带 `CF-Access-Client-Id` / `CF-Access-Client-Secret`（存 GitHub **Secrets**） | 适合已用 Access 的团队；需在测试里读取 env 并加 header（见下文扩展点）。 |
-| **A5** | **独立子域不经 CDN**：API 直连源站（或仅 DNS 橙云关闭） | 架构变动大；安全与证书需单独评估。 |
-
-**不推荐**：仅靠「把 Security 全站降到最低」—— 扩大攻击面。
-
-**验证**：在任意机器上模拟 CI：
-
-```bash
-curl -sS -o /dev/null -w "%{http_code}\n" \
-  -A "GitHub-Actions-Example" \
-  "https://staging-api.aaveapy.com/api/markets"
-```
-
-应返回 **200** 且 body 为 JSON（可先 `| head -c 200` 看是否 HTML）。
+| 产品 | 在控制台的大概位置 | 和本问题的关系 |
+|------|-------------------|----------------|
+| **Bot Fight Mode（BFM，免费档常见）** | `Security` → `Bots` → *Bot Fight Mode* | **不能**用下面「WAF Custom Rule → Skip」跳过 BFM（[官方说明](https://developers.cloudflare.com/bots/troubleshooting/false-positives/)）。可行办法见 **做法 B（IP 放行）** 或关闭/升级机器人方案。 |
+| **Super Bot Fight Mode（SBFM）** | `Security` → `Bots` | 可用 **做法 A（WAF Skip）** 对指定路径跳过 SBFM。 |
+| **Managed Challenge / JS 挑战** | 可能来自 WAF、Rate limit、Security Level 等 | 做法 A 里可同时勾选跳过 **Managed Rules**（按需）；或降低 **Security Level**（仅 staging，见做法 C）。 |
 
 ---
 
-## B. 仓库侧 — Workflow / 测试策略（治标 + 过渡）
+## 做法 A：WAF Custom Rule — 对 staging 的 `/api/*` 跳过 SBFM（推荐，若你已用 SBFM）
 
-| 策略 | 说明 |
-|------|------|
-| **B1 — 探测再跑** | `scripts/probe-live-api.mjs` 先请求 `/markets`：若 **200** 再跑 `vitest`；若识别为 **Cloudflare 挑战页** 且开启跳过模式，则 **warning 并成功退出**（避免 `main` 长期红）。 |
-| **B2 — 定时补跑** | `.github/workflows/live-schema-validation.yml` 仅含 live 测试 + `schedule`（如每周一），与全量 `CI` 解耦；Cloudflare 放行后仍可作为 **回归哨兵**。 |
-| **B3 — 手动触发** | `workflow_dispatch` 在修复 Cloudflare 后人工点跑，确认绿。 |
-| **B4 — 严格模式** | 设置 `LIVE_TESTS_SKIP_WHEN_CHALLENGE=false`（或未设置）且不在「跳过」逻辑中：探测到挑战则 **失败**，强制修复 A 段。 |
+1. 打开 [Cloudflare Dashboard](https://dash.cloudflare.com) → 选择 **aaveapy.com** 这个 Zone（网站）。
+2. 左侧进入 **`Security`** → **`WAF`** → **`Custom rules`**（自定义规则）。
+3. 点 **`Create rule`**（创建规则）。
+4. **Rule name**（规则名称）：例如 `Skip SBFM for staging API only`。
+5. **When incoming requests match…**（当请求匹配时）：
+   - 点 **Edit expression**（编辑表达式），粘贴：
 
-**环境变量（GitHub Actions）**
+     ```txt
+     (http.host eq "staging-api.aaveapy.com" and starts_with(http.request.uri.path, "/api/"))
+     ```
 
-| 变量 | 含义 |
-|------|------|
-| `LIVE_TESTS_SKIP_WHEN_CHALLENGE` | 设为 `true` 时：探测到 Cloudflare 挑战则 **跳过** vitest 并 **job 成功**（带 `::warning::`）。设为 `false` 或未设：与 `false` 行为以 workflow 注释为准。 |
-| `LIVE_TEST_API_BASE` | 与本地 `test:live` 一致，默认 staging `/api`。 |
+   - 或用规则构建器：Field 选 `Hostname` **equals** `staging-api.aaveapy.com`，再 **And** → `URI Path` **starts with** `/api/`（若界面支持组合）。
+6. **Then…**（则）选择 **`Skip`**（跳过）。
+7. 在 **Skip 选项**里勾选（以你控制台显示为准，对应 [官方 Skip 选项](https://developers.cloudflare.com/waf/custom-rules/skip/options/)）：
+   - **All Super Bot Fight Mode rules**（跳过所有 Super Bot Fight Mode 规则）  
+   - 若仍有 JS 挑战，可再勾选 **All managed rules**（会明显减弱 WAF，**仅建议在仍被拦时临时勾选**，确认无后再收窄）。
+8. **`Deploy`** / **保存** 部署规则。
 
-落实 A 段后，建议把 **`LIVE_TESTS_SKIP_WHEN_CHALLENGE` 改为 `false`** 或删除，让 CI **真跑** live schema。
+说明：规则只对你填的 **主机名 + 路径** 生效；**不会**自动作用到 `api.aaveapy.com` 等其它主机名。
 
 ---
 
-## C. 若使用 Cloudflare Access Service Token（扩展）
+## 做法 B：IP Access — 放行 GitHub Actions 出口 IP（BFM / 通用，适合「免费 BFM 无法 Skip」）
 
-1. 在 Zero Trust 为 staging API 路径创建 **Service Auth**。
-2. 在 GitHub **Repository secrets** 写入 `CF_ACCESS_CLIENT_ID`、`CF_ACCESS_CLIENT_SECRET`。
-3. 在 `apiSchemas.live.test.ts` 的 `fetch` 上增加（需单独 PR）：
+GitHub 会公布 Actions 机器使用的 IP 段；对这些 IP 在 **你的 Zone** 里设为 **Allow**，请求匹配时 **Bot Fight Mode 不会再对该请求生效**（[官方说明](https://developers.cloudflare.com/bots/troubleshooting/false-positives/)）。
 
-   ```ts
-   headers: {
-     'CF-Access-Client-Id': process.env.CF_ACCESS_CLIENT_ID ?? '',
-     'CF-Access-Client-Secret': process.env.CF_ACCESS_CLIENT_SECRET ?? '',
-   }
+1. 在终端拉取当前 CIDR 列表（或浏览器打开）：
+
+   ```bash
+   curl -sS https://api.github.com/meta | jq -r '.actions[]'
    ```
 
-4. Workflow 里对 `live-schema-validation` job `env` 传入上述 secrets（仅 **not fork** 时）。
+2. Cloudflare Dashboard → **aaveapy.com** → **`Security`** → **`WAF`** → **`Tools`** → **`IP Access Rules`**（名称可能随界面微调，属「IP 访问规则 / 工具」一类）。
+3. **Add** 一条规则：
+   - **IP**：填入 **一个** GitHub `actions` CIDR（例如 `4.148.0.0/14` 这种；需把 `meta` 里**每条**分别加，或按你们是否支持批量导入来操作）。
+   - **Action**：**Allow**（允许）。
+   - **Zone**：当前网站（该 Zone）。
+   - **Note**：可写 `GitHub Actions egress`。
+
+缺点：网段会变更，需偶尔更新；更稳妥可写脚本定时同步或改用 **做法 A**。
+
+若只想让 **staging** 受益、不想全局 Allow：Cloudflare 免费档的 IP Access 往往是 **全 Zone** 生效。若必须「仅 staging」，更稳妥仍是 **做法 A（SBFM）** 或 **Cloudflare Access / 专用出口** 等（成本更高）。实际项目里很多团队对 **staging** 全 Zone Allow GitHub IP 也可接受。
 
 ---
 
-## D. 相关文件
+## 做法 C：仅降低「安全级别」（挑战变少，较粗）
 
-| 文件 | 作用 |
-|------|------|
-| `scripts/probe-live-api.mjs` | 探测 live API 是否可达 / 是否被 Cloudflare 拦截 |
-| `src/lib/apiSchemas.live.helpers.ts` | `isLikelyCloudflareChallenge()` |
-| `.github/workflows/ci.yml` | `main` push 上的 `live-schema-validation` job |
-| `.github/workflows/live-schema-validation.yml` | 定时 / 手动仅跑 live schema |
-| `docs/conventions/api-contract-checklist.md` | API 契约总清单（含 live 测试说明） |
+1. **`Security`** → **`Settings`**（或 **`Security`** 总览里的 *Security Level*）。
+2. 若存在 **按子域/路径** 的配置（视套餐而定），仅对 **`staging-api.aaveapy.com`** 把 **Security Level** 从 *High* 调到 *Medium* / *Essentially Off*。  
+3. 若没有按主机名细分，**不要**把整个 Zone 调成 *Essentially Off*，优先用做法 A 或 B。
 
 ---
 
-## E. 故障排查速查
+## 改完后自测
 
-| 现象 | 可能原因 |
-|------|----------|
-| 403 + HTML + *Just a moment...* | Cloudflare 挑战；走 **A** 或临时 **B1 跳过** |
-| 5xx / timeout | 源站或网络；非 WAF 文案问题 |
-| 200 但 vitest 仍失败 | **真·schema 漂移**；按 `api-contract-checklist.md` 更新 `apiSchemas.ts` |
+```bash
+curl -sS "https://staging-api.aaveapy.com/api/markets" | head -c 120
+```
+
+应看到 **JSON**（以 `{` 开头），而不是 `<!DOCTYPE html>`。
+
+---
+
+## 仓库里相关逻辑（无需在 Cloudflare 再配）
+
+- `scripts/probe-live-api.mjs`：CI 先探测 `/markets`；仍被拦则失败并指向本文。
+- 契约总览：`api-contract-checklist.md`。

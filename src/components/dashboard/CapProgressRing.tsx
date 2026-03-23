@@ -1,10 +1,13 @@
 import { memo } from 'react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { formatReserveSizeUsd } from '@/lib/formatters';
+import { formatScenarioSize } from '@/lib/formatters';
 
 interface CapProgressRingProps {
   size: number | null | undefined;
   cap: number | null | undefined;
+  displayMode?: 'usd' | 'token';
+  tokenPrice?: number | null;
+  tokenSymbol?: string | null;
   ringSize?: number;
   strokeWidth?: number;
   /** When true, only the ring SVG is rendered (no tooltip). Use with parent Popover for click-to-open. */
@@ -14,6 +17,9 @@ interface CapProgressRingProps {
 const CapProgressRing = memo(({
   size,
   cap,
+  displayMode = 'usd',
+  tokenPrice,
+  tokenSymbol,
   ringSize = 12,
   strokeWidth = 1.5,
   disableTooltip = false,
@@ -86,15 +92,21 @@ const CapProgressRing = memo(({
         <div className="space-y-1 ds-text-12">
           <div className="flex justify-between gap-3">
             <span className="text-muted-foreground">Total supplied</span>
-            <span className="font-medium tabular-nums ds-text-emerald-600">{formatReserveSizeUsd(currentSize)}</span>
+            <span className="font-medium tabular-nums ds-text-emerald-600">
+              {formatScenarioSize(currentSize, { inputMode: displayMode, tokenPrice, tokenSymbol })}
+            </span>
           </div>
           <div className="flex justify-between gap-3">
             <span className="text-muted-foreground">Supply cap</span>
-            <span className="font-medium tabular-nums ds-text-emerald-600">{formatReserveSizeUsd(cap)}</span>
+            <span className="font-medium tabular-nums ds-text-emerald-600">
+              {formatScenarioSize(cap, { inputMode: displayMode, tokenPrice, tokenSymbol })}
+            </span>
           </div>
           <div className="flex justify-between gap-3">
             <span className="text-muted-foreground">Available to supply</span>
-            <span className="font-medium tabular-nums ds-text-emerald-600">{formatReserveSizeUsd(Math.max(0, cap - currentSize))}</span>
+            <span className="font-medium tabular-nums ds-text-emerald-600">
+              {formatScenarioSize(Math.max(0, cap - currentSize), { inputMode: displayMode, tokenPrice, tokenSymbol })}
+            </span>
           </div>
           <div className="flex justify-between gap-3 pt-1 border-t border-border/50">
             <span className="text-muted-foreground">% of cap</span>

@@ -331,6 +331,62 @@ export const formatReserveSizeUsd = (value: number | null | undefined): string =
   return sign + '$' + absValue.toFixed(2);
 };
 
+export const formatReserveSizeToken = (value: number | null | undefined): string => {
+  if (value === null || value === undefined || isNaN(value)) return '-';
+  const absValue = Math.abs(value);
+  const sign = value < 0 ? '-' : '';
+  if (absValue >= 1_000_000_000) {
+    return sign + (absValue / 1_000_000_000).toFixed(2) + 'B';
+  }
+  if (absValue >= 1_000_000) {
+    return sign + (absValue / 1_000_000).toFixed(2) + 'M';
+  }
+  if (absValue >= 1_000) {
+    return sign + (absValue / 1_000).toFixed(2) + 'K';
+  }
+  return sign + absValue.toFixed(2);
+};
+
+interface FormatScenarioSizeOptions {
+  inputMode?: 'usd' | 'token';
+  tokenPrice?: number | null;
+  tokenSymbol?: string | null;
+}
+
+export const formatScenarioSize = (
+  value: number | null | undefined,
+  {
+    inputMode = 'usd',
+    tokenPrice,
+  }: FormatScenarioSizeOptions = {}
+): string => {
+  if (inputMode === 'usd') {
+    return formatReserveSizeUsd(value);
+  }
+  if (
+    value === null ||
+    value === undefined ||
+    isNaN(value) ||
+    tokenPrice === null ||
+    tokenPrice === undefined ||
+    !Number.isFinite(tokenPrice) ||
+    tokenPrice <= 0
+  ) {
+    return '-';
+  }
+
+  return formatReserveSizeToken(value / tokenPrice);
+};
+
+export const formatScenarioSizeDelta = (
+  value: number | null | undefined,
+  options: FormatScenarioSizeOptions = {}
+): string => {
+  if (value === null || value === undefined || isNaN(value)) return '—';
+  const prefix = value > 0 ? '+' : '';
+  return `${prefix}${formatScenarioSize(value, options)}`;
+};
+
 // Domain aliases that share the same USD-size formatting.
 export const formatTvl = formatReserveSizeUsd;
 export const formatSupplyUsd = formatReserveSizeUsd;

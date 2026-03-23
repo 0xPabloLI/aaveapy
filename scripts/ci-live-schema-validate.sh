@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Used by GitHub Actions (live-schema jobs). See docs/conventions/ci-live-schema-cloudflare.md
+# CI: probe staging API then run live schema tests. See docs/conventions/ci-live-schema-cloudflare.md
 set -euo pipefail
 
 max_attempts=2
@@ -8,13 +8,13 @@ delay_seconds=15
 node scripts/probe-live-api.mjs
 probe=$?
 
-if [ "$probe" -eq 2 ] && [ "${LIVE_TESTS_SKIP_WHEN_CHALLENGE:-false}" = "true" ]; then
-  echo "::warning::Live API returned a Cloudflare challenge page — skipping schema tests. Configure Cloudflare per docs/conventions/ci-live-schema-cloudflare.md, or set LIVE_TESTS_SKIP_WHEN_CHALLENGE=false to fail the job until the API is reachable."
-  exit 0
+if [ "$probe" -eq 2 ]; then
+  echo "::error::Staging API returned a Cloudflare challenge (403). Relax WAF only for staging-api.aaveapy.com + /api/* — see docs/conventions/ci-live-schema-cloudflare.md"
+  exit 1
 fi
 
 if [ "$probe" -ne 0 ]; then
-  echo "::error::Live API probe failed (exit code $probe). See docs/conventions/ci-live-schema-cloudflare.md"
+  echo "::error::Live API probe failed (exit $probe). See docs/conventions/ci-live-schema-cloudflare.md"
   exit 1
 fi
 

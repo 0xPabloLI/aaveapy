@@ -121,8 +121,6 @@ jobs:
         env:
           LIVE_TEST_API_BASE: "https://staging-api.aaveapy.com/api"
           RUN_LIVE_TESTS: "true"
-          # When staging is behind Cloudflare challenge for GitHub IPs, probe exits 2; set true to warn+skip instead of failing main. After CF allowlist (see docs), set to false or remove.
-          LIVE_TESTS_SKIP_WHEN_CHALLENGE: "true"
         run: bash scripts/ci-live-schema-validate.sh
 
   security-audit:
