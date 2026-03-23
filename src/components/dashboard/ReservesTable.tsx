@@ -874,21 +874,25 @@ const ReservesTable = ({
                           </div>
                         ) : null}
                       </div>
-                      {/* Full-width simulation (table needs width). mt clears peer card; bridge fills gap on expanded column only. Top h-rule only on inactive column (expanded side stays seamless). */}
+                      {/* Full-width simulation (table needs width). mt clears peer card; bridge fills gap on expanded column and overlaps top border. */}
                       <div className="relative isolate mt-[var(--ds-space-2)]">
                         <div
                           aria-hidden
-                          className={`pointer-events-none absolute z-0 border-border/60 bg-card ${bridgeOnExpandedColumn ? 'left-0 border-l border-r' : 'right-0 border-l border-r'}`}
+                          className={`pointer-events-none absolute z-10 border-border/60 bg-card ${bridgeOnExpandedColumn ? 'left-0 border-l border-r' : 'right-0 border-l border-r'}`}
                           style={{
                             top: 'calc(-1 * var(--ds-space-2))',
-                            height: 'var(--ds-space-2)',
+                            height: 'calc(var(--ds-space-2) + 1px)',
                             width: pairColWidth,
                           }}
                         />
                         <div
-                          className="relative z-0 overflow-hidden rounded-b-xl border-x border-b border-border/60 bg-card ds-card-pad-sm"
+                          className={`relative z-0 overflow-hidden border border-border/60 bg-card ds-card-pad-sm ${
+                            bridgeOnExpandedColumn ? 'rounded-tr-xl rounded-tl-none' : 'rounded-tl-xl rounded-tr-none'
+                          }`}
                           style={{
                             paddingTop: 'var(--ds-space-2)',
+                            borderBottomLeftRadius: '24px 20px',
+                            borderBottomRightRadius: '24px 20px',
                           }}
                         >
                           <MobileReserveCard
@@ -908,13 +912,6 @@ const ReservesTable = ({
                             defaultTab={activeSortColumn === 'borrow' ? 'borrow' : undefined}
                           />
                         </div>
-                        {rightReserve ? (
-                          <div
-                            aria-hidden
-                            className={`pointer-events-none absolute top-0 z-[1] h-px bg-border/60 ${leftExpanded ? 'right-0' : 'left-0'}`}
-                            style={{ width: pairColWidth }}
-                          />
-                        ) : null}
                       </div>
                     </div>
                   );

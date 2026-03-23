@@ -506,10 +506,31 @@ const MobileReserveCard = memo(({
           </button>
         </div>
 
-        {/* Tab content */}
-        <div className="flex w-full flex-col gap-2">
+        {/* Content aligned with the inner segment buttons via px-0.5 */}
+        <div className="flex w-full flex-col gap-2 px-0.5">
           {renderAmountRow()}
           {renderHeroApy()}
+
+          {/* Simulation toggle — shows Spread inside */}
+          <button
+            type="button"
+            onClick={onToggleSimulation}
+            aria-expanded={isSimulationExpanded}
+            aria-label={isSimulationExpanded ? 'Collapse reserve details' : 'Expand reserve details'}
+            className={`inline-flex w-full items-center justify-between gap-2 rounded-lg px-2 py-1.5 ds-text-12 text-muted-foreground transition-colors duration-300 ${
+              isSimulationExpanded
+                ? 'border-2 border-foreground/40 bg-muted/50'
+                : 'border border-border/70 bg-background hover:bg-muted/40'
+            }`}
+          >
+            <span className="flex min-w-0 items-center gap-1.5">
+              <span className="ds-text-11 text-muted-foreground/70 shrink-0">Spread</span>
+              <span className={`ds-text-11 font-medium tabular-nums ${displaySpread !== null ? 'text-purple-500' : 'text-muted-foreground/70'}`}>
+                {formatSpread(displaySpread)}
+              </span>
+            </span>
+            <ChevronDown className={`h-3.5 w-3.5 shrink-0 transition-transform duration-300 ${isSimulationExpanded ? 'rotate-180' : ''}`} />
+          </button>
         </div>
 
         {/* Mobile bottom sheet for cap / utilization details */}
@@ -563,29 +584,6 @@ const MobileReserveCard = memo(({
             </div>
           </>
         )}
-
-        {/* Simulation toggle — shows Spread inside */}
-        <div className="mt-[var(--ds-space-1)]">
-          <button
-            type="button"
-            onClick={onToggleSimulation}
-            aria-expanded={isSimulationExpanded}
-            aria-label={isSimulationExpanded ? 'Collapse reserve details' : 'Expand reserve details'}
-            className={`inline-flex w-full items-center justify-between gap-2 rounded-lg px-2 py-1.5 ds-text-12 text-muted-foreground transition-colors duration-300 ${
-              isSimulationExpanded
-                ? 'border-2 border-foreground/40 bg-muted/50'
-                : 'border border-border/70 bg-background hover:bg-muted/40'
-            }`}
-          >
-            <span className="flex min-w-0 items-center gap-1.5">
-              <span className="ds-text-11 text-muted-foreground/70 shrink-0">Spread</span>
-              <span className={`ds-text-11 font-medium tabular-nums ${displaySpread !== null ? 'text-purple-500' : 'text-muted-foreground/70'}`}>
-                {formatSpread(displaySpread)}
-              </span>
-            </span>
-            <ChevronDown className={`h-3.5 w-3.5 shrink-0 transition-transform duration-300 ${isSimulationExpanded ? 'rotate-180' : ''}`} />
-          </button>
-        </div>
       </div>
 
       {/* Simulation panel — visually connected below the card */}
@@ -597,18 +595,20 @@ const MobileReserveCard = memo(({
           <div className="overflow-hidden">
             {hasSimulationMounted && (
               <div className="-mt-px bg-card border border-border/60 border-t-0 rounded-b-xl rounded-t-none ds-card-pad-sm pt-0">
-                <SimulationSubRow
-                  reserve={reserve}
-                  simulation={simulation}
-                  isApy={isApy}
-                  supplyInput={supplyInput}
-                  borrowInput={borrowInput}
-                  inputMode={inputMode}
-                  compact
-                  embeddedFromTop
-                  onCorrectSupplyInput={onCorrectSupplyInput}
-                  onCorrectBorrowInput={onCorrectBorrowInput}
-                />
+                <div className="px-0.5">
+                  <SimulationSubRow
+                    reserve={reserve}
+                    simulation={simulation}
+                    isApy={isApy}
+                    supplyInput={supplyInput}
+                    borrowInput={borrowInput}
+                    inputMode={inputMode}
+                    compact
+                    embeddedFromTop
+                    onCorrectSupplyInput={onCorrectSupplyInput}
+                    onCorrectBorrowInput={onCorrectBorrowInput}
+                  />
+                </div>
               </div>
             )}
           </div>
