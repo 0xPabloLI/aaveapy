@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import * as formatters from './formatters';
 import { calculateTotalIncentiveApr, calculateTotalIncentiveApy, convertAprToApy } from './formatters';
 import type { BrevisIncentive, MeritIncentive, MerklOpportunityGroup } from '@/types/aave';
 
@@ -186,5 +187,49 @@ describe('whitelist-only Merkl campaign handling', () => {
       includeWhitelistOnlyMerkl: true,
     });
     expect(apr).toBe(11);
+  });
+});
+
+describe('scenario size formatting', () => {
+  it('formats displayed size values in token units when scenario mode is token', () => {
+    const result = (formatters as { formatScenarioSize?: (value: number | null | undefined, options?: unknown) => string })
+      .formatScenarioSize?.(12_000, {
+        inputMode: 'token',
+        tokenPrice: 2_000,
+        tokenSymbol: 'WETH',
+      });
+
+    expect(result).toBe('6.00');
+  });
+
+  it('formats cap-related size values in token units when scenario mode is token', () => {
+    const result = (formatters as { formatScenarioSize?: (value: number | null | undefined, options?: unknown) => string })
+      .formatScenarioSize?.(2_500, {
+        inputMode: 'token',
+        tokenPrice: 2_000,
+        tokenSymbol: 'WETH',
+      });
+
+    expect(result).toBe('1.25');
+  });
+
+  it('formats simulation deltas in token units when scenario mode is token', () => {
+    const result = (formatters as { formatScenarioSizeDelta?: (value: number | null | undefined, options?: unknown) => string })
+      .formatScenarioSizeDelta?.(4_000, {
+        inputMode: 'token',
+        tokenPrice: 2_000,
+      });
+
+    expect(result).toBe('+2.00');
+  });
+
+  it('formats simulation negative deltas in token units when scenario mode is token', () => {
+    const result = (formatters as { formatScenarioSizeDelta?: (value: number | null | undefined, options?: unknown) => string })
+      .formatScenarioSizeDelta?.(-2_500, {
+        inputMode: 'token',
+        tokenPrice: 2_000,
+      });
+
+    expect(result).toBe('-1.25');
   });
 });

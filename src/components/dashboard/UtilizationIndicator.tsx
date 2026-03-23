@@ -88,7 +88,7 @@ const UtilizationIndicator = memo(({
               cx={width / 2}
               cy={currentY}
               r={dotRadius}
-              className={isOverOptimal ? 'fill-amber-700' : 'fill-[rgb(var(--ds-brand-cyan-rgb))]'}
+              className={isOverOptimal ? 'fill-amber-700' : 'fill-foreground/90'}
             />
           </svg>
         </div>

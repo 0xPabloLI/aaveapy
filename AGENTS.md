@@ -37,7 +37,7 @@
 - **Automerge**: Chore/docs/refactor PRs with no breaking changes and passing CI may use the `automerge` label per repo workflows.
 
 ## API Contract & Dependency Safety
-- When backend API response format changes, follow `docs/conventions/api-contract-checklist.md` to ensure all consumers (types, schemas, hooks, scripts) are updated.
+- When backend API response format changes, follow `docs/conventions/api-contract-checklist.md` to ensure all consumers (types, schemas, hooks, scripts) are updated. If CI live schema fails with Cloudflare 403 from GitHub Actions, see `docs/conventions/ci-live-schema-cloudflare.md`.
 - When upgrading React or other core libraries, follow `docs/conventions/peer-dependency-guard.md` to prevent version mismatch white-screen issues.
 
 ## Configuration & Secrets
@@ -167,7 +167,7 @@ When implementing mobile carousels:
 - Avoid default values for missing API or backend fields; keep schema and code minimal.
 - For large design or architectural changes, provide a 方案 (plan) first without modifying code when asked (e.g. "先给我方案不要直接修改").
 - When summarizing many items (APIs, options), use tables for clarity (表格形式，一目了然).
-- Follow explicit visual descriptions precisely (e.g. "竖线" → vertical, "圆环" → ring).
+- Follow explicit visual descriptions precisely (e.g. "竖线" → vertical, "圆环" → ring); when the user caps UI work to named regions and forbids global tokens or unrelated components, keep changes strictly within that scope.
 - Maintain design symmetry when adding complementary UI elements (e.g. Supply and Borrow info placement consistent).
 - Tooltip content should not repeat information already visible in the parent; only show supplementary context.
 - Toggle/selection state changes must be visually obvious; use border color or other clear indicators, not subtle opacity/background only.
@@ -181,10 +181,10 @@ When implementing mobile carousels:
 - Mobile Top Opportunities mini cards do not link out to external Aave URLs; elsewhere, shared helpers in `src/lib/externalNavigation.ts` open external URLs in the same tab on mobile and a new tab on desktop where that pattern is applied.
 - Do not drive full-page `scrollTo` from expanded-row index changes when `sortedData` reorders due to simulation updates; prefer viewport-based behavior if scroll is needed later (see docs/design/frontend-interaction-guardrails.md).
 - Mobile reserve utilization display and `UtilizationIndicator` should use the same scenario-based utilization as desktop/`ReservesTable` when simulating, not only raw on-chain `reserve.utilizationPct`.
-- Local git hooks live under the repository `.git/hooks` (local-only, not versioned); pre-push runs lockfile consistency checks before `ci:remote`.
-- `.github/dependabot.yml` sets `updates: []` so Dependabot version PRs are off; security-related dependency PRs can still be opened when Dependabot security updates are enabled in GitHub repo settings (Code security and analysis).
+- `.github/dependabot.yml` uses `open-pull-requests-limit: 0` for npm/github-actions so Dependabot **version** PRs are off (an empty `updates: []` list did not reliably stop version PRs here); security-related dependency PRs can still be opened when Dependabot security updates are enabled in GitHub repo settings (Code security and analysis).
 - Mobile expanded reserve simulation block should read as one piece with its parent card only; avoid visual overlap with neighboring cards (connectors, lines, and fills stay within that card’s column).
 - Prefer deriving values client-side when possible rather than adding backend fields (e.g., totalBorrowedUsd can be computed from reserveSizeUsd × utilizationPct).
 - Borrow availability is constrained by BOTH pool liquidity AND borrow cap: `Available = min(Pool Liquidity, Borrow Cap Remaining)`.
-- When bulk-deleting remote branches with `git push origin --delete`, use `--no-verify` so each delete does not run the pre-push hook (ci:remote).
+- Local git hooks live under the repository `.git/hooks` (local-only, not versioned); pre-push runs lockfile consistency checks before `ci:remote`. When bulk-deleting remote branches with `git push origin --delete`, use `--no-verify` so each delete does not run the pre-push hook (ci:remote).
+- Workflows using `pull_request_target` use the workflow definition on the default branch (`main`), not the PR base branch (e.g. `dev`); merge workflow changes to `main` for them to take effect. In job `if` conditions on pull request payloads, prefer `github.event.pull_request.draft != true` over `draft == false` when `draft` may be missing.
 - This repo has workspace-level `.vscode/settings.json` that can hide dotfiles (e.g. `.env`) via `files.exclude` and can change search ignore behavior via `search.useIgnoreFiles` / `search.useGlobalIgnoreFiles`.

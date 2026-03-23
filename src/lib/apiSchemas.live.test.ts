@@ -21,15 +21,25 @@ import {
 } from './apiSchemas';
 import {
   formatLiveHttpError,
+  isLikelyCloudflareChallenge,
   resolveLiveApiBase,
+  shouldSoftFailLiveSchema,
 } from './apiSchemas.live.helpers';
 
 const API_BASE = resolveLiveApiBase();
 const TIMEOUT = 15_000;
+const SOFT_FAIL = shouldSoftFailLiveSchema();
 
 async function readBodySnippet(res: Response): Promise<string> {
   const body = await res.text();
   return body.slice(0, 400);
+}
+
+function logSoftFailWarning(endpoint: string, reason: string): void {
+  console.warn(
+    `[live-schema] soft-failing ${endpoint}: ${reason}. ` +
+      'Set LIVE_TEST_STRICT=true to fail the run instead.',
+  );
 }
 
 describe.skipIf(!process.env.RUN_LIVE_TESTS)('Live API schema validation', () => {
@@ -38,12 +48,29 @@ describe.skipIf(!process.env.RUN_LIVE_TESTS)('Live API schema validation', () =>
     async () => {
       const endpoint = '/markets';
       const url = `${API_BASE}${endpoint}`;
-      const res = await fetch(url);
+      let res: Response;
+
+      try {
+        res = await fetch(url);
+      } catch (error) {
+        if (SOFT_FAIL) {
+          const reason = error instanceof Error ? error.message : String(error);
+          logSoftFailWarning(endpoint, `network error (${reason})`);
+          return;
+        }
+        throw error;
+      }
 
       if (!res.ok) {
+        const bodySnippet = await readBodySnippet(res);
+        if (SOFT_FAIL && isLikelyCloudflareChallenge(res.status, bodySnippet)) {
+          logSoftFailWarning(endpoint, `received Cloudflare challenge (status ${res.status})`);
+          return;
+        }
+
         throw new Error(
           formatLiveHttpError({
-            bodySnippet: await readBodySnippet(res),
+            bodySnippet,
             endpoint,
             status: res.status,
             statusText: res.statusText,
@@ -70,12 +97,29 @@ describe.skipIf(!process.env.RUN_LIVE_TESTS)('Live API schema validation', () =>
     async () => {
       const endpoint = '/meta/side-data';
       const url = `${API_BASE}${endpoint}`;
-      const res = await fetch(url);
+      let res: Response;
+
+      try {
+        res = await fetch(url);
+      } catch (error) {
+        if (SOFT_FAIL) {
+          const reason = error instanceof Error ? error.message : String(error);
+          logSoftFailWarning(endpoint, `network error (${reason})`);
+          return;
+        }
+        throw error;
+      }
 
       if (!res.ok) {
+        const bodySnippet = await readBodySnippet(res);
+        if (SOFT_FAIL && isLikelyCloudflareChallenge(res.status, bodySnippet)) {
+          logSoftFailWarning(endpoint, `received Cloudflare challenge (status ${res.status})`);
+          return;
+        }
+
         throw new Error(
           formatLiveHttpError({
-            bodySnippet: await readBodySnippet(res),
+            bodySnippet,
             endpoint,
             status: res.status,
             statusText: res.statusText,

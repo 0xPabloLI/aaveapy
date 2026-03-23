@@ -1,11 +1,14 @@
 import { memo } from 'react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { formatReserveSizeUsd } from '@/lib/formatters';
+import { formatScenarioSize } from '@/lib/formatters';
 
 interface BorrowCapProgressRingProps {
   borrowed: number | null | undefined;
   cap: number | null | undefined;
   poolLiquidity: number | null | undefined;
+  displayMode?: 'usd' | 'token';
+  tokenPrice?: number | null;
+  tokenSymbol?: string | null;
   ringSize?: number;
   strokeWidth?: number;
   /** When true, only the ring SVG is rendered (no tooltip). Use with parent Popover for click-to-open. */
@@ -16,6 +19,9 @@ const BorrowCapProgressRing = memo(({
   borrowed,
   cap,
   poolLiquidity,
+  displayMode = 'usd',
+  tokenPrice,
+  tokenSymbol,
   ringSize = 12,
   strokeWidth = 1.5,
   disableTooltip = false,
@@ -92,15 +98,21 @@ const BorrowCapProgressRing = memo(({
         <div className="space-y-1 ds-text-12">
           <div className="flex justify-between gap-3">
             <span className="text-muted-foreground">Total borrowed</span>
-            <span className="font-medium tabular-nums ds-text-brand-cyan">{formatReserveSizeUsd(currentBorrowed)}</span>
+            <span className="font-medium tabular-nums ds-text-brand-cyan">
+              {formatScenarioSize(currentBorrowed, { inputMode: displayMode, tokenPrice, tokenSymbol })}
+            </span>
           </div>
           <div className="flex justify-between gap-3">
             <span className="text-muted-foreground">Borrow cap</span>
-            <span className="font-medium tabular-nums ds-text-brand-cyan">{formatReserveSizeUsd(cap)}</span>
+            <span className="font-medium tabular-nums ds-text-brand-cyan">
+              {formatScenarioSize(cap, { inputMode: displayMode, tokenPrice, tokenSymbol })}
+            </span>
           </div>
           <div className="flex justify-between gap-3">
             <span className="text-muted-foreground">Available to borrow</span>
-            <span className="font-medium tabular-nums ds-text-brand-cyan">{formatReserveSizeUsd(availableToBorrow)}</span>
+            <span className="font-medium tabular-nums ds-text-brand-cyan">
+              {formatScenarioSize(availableToBorrow, { inputMode: displayMode, tokenPrice, tokenSymbol })}
+            </span>
           </div>
           <div className="flex justify-between gap-3 pt-1 border-t border-border/50">
             <span className="text-muted-foreground">% of cap</span>
