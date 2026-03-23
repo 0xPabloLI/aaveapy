@@ -12,7 +12,7 @@
 | 防线 | 触发时机 | 检测原理 |
 |------|---------|---------|
 | **运行时 schema 验证** | 每次页面加载 | `useAaveMarkets.ts` 用 `MarketsResponseSchema.safeParse()` 验证 API 响应，schema 过时 = 页面报错 |
-| **Live API 测试** | 每次 CI build | `apiSchemas.live.test.ts` 直接请求真实 API 并用 Zod schema 验证，schema 漂移 = CI 红 |
+| **Live API 测试** | `main` push | `apiSchemas.live.test.ts` 直接请求真实 API 并用 Zod schema 验证，schema 漂移 = CI 红 |
 | **Mock 测试** | 每次 CI build | `apiSchemas.test.ts` 验证 mock payload 格式正确性 |
 | **sync-token-icons --check** | hardcode-drift-check 定时 CI | 脚本解析 API 响应，字段名不对 = 报错 |
 
