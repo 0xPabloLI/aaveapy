@@ -33,6 +33,7 @@
     "preflight:release": "node scripts/preflight-release.mjs",
     "preview": "vite preview",
     "sync-token-icons": "node scripts/sync-token-icons.mjs",
+    "sync:cloudflare-gh-actions-allowlist": "node scripts/sync-cloudflare-gh-actions-allowlist.mjs",
     "sync:reserve-patches-upstream": "node scripts/sync-reserve-patches-upstream.mjs",
     "sync:market-name-map-upstream": "node scripts/sync-market-name-map-upstream.mjs",
     "sync:chain-icons-upstream": "node scripts/sync-chain-icon-map-upstream.mjs",

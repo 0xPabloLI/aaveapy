@@ -105,7 +105,7 @@ jobs:
 
   live-schema-validation:
     name: live-schema-validation
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -119,7 +119,7 @@ jobs:
         run: npm run ci:lockcheck
       - name: Validate API schemas against live endpoints
         env:
-          LIVE_TEST_API_BASE: "https://staging-api.aaveapy.com/api"
+          LIVE_TEST_API_BASE: ${{ vars.LIVE_TEST_API_BASE_CI != '' && vars.LIVE_TEST_API_BASE_CI || 'https://staging-api.aaveapy.com/api' }}
           RUN_LIVE_TESTS: "true"
         run: bash scripts/ci-live-schema-validate.sh
 

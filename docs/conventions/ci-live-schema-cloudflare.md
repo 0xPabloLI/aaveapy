@@ -61,6 +61,29 @@ GitHub 会公布 Actions 机器使用的 IP 段；对这些 IP 在 **你的 Zone
 
 若只想让 **staging** 受益、不想全局 Allow：Cloudflare 免费档的 IP Access 往往是 **全 Zone** 生效。若必须「仅 staging」，更稳妥仍是 **做法 A（SBFM）** 或 **Cloudflare Access / 专用出口** 等（成本更高）。实际项目里很多团队对 **staging** 全 Zone Allow GitHub IP 也可接受。
 
+### 仓库内置同步脚本
+
+如果你必须保留 **Bot Fight Mode**，可以直接用仓库脚本把 GitHub Actions CIDR 同步到当前 Zone 的 **IP Access Rules**：
+
+```bash
+CLOUDFLARE_API_TOKEN=... \
+CLOUDFLARE_ZONE_ID=... \
+npm run sync:cloudflare-gh-actions-allowlist
+```
+
+先 dry-run 看计划；确认后再实际写入：
+
+```bash
+CLOUDFLARE_API_TOKEN=... \
+CLOUDFLARE_ZONE_ID=... \
+npm run sync:cloudflare-gh-actions-allowlist -- --apply
+```
+
+说明：
+- 脚本会从 `https://api.github.com/meta` 读取最新 `actions` CIDR。
+- 仅管理 note 以 `GitHub Actions egress allowlist` 开头的规则，不会碰手工维护的其它 allowlist。
+- Cloudflare API token 需要当前 zone 的 **Firewall Access Rules Write** 权限。
+
 ---
 
 ## 做法 C：仅降低「安全级别」（挑战变少，较粗）
@@ -85,3 +108,19 @@ curl -sS "https://staging-api.aaveapy.com/api/markets" | head -c 120
 
 - `scripts/probe-live-api.mjs`：CI 先探测 `/markets`；仍被拦则失败并指向本文。
 - 契约总览：`api-contract-checklist.md`。
+
+## 推荐替代方案：CI 直接走 Railway 域名
+
+如果 staging 站点必须继续走 Cloudflare 且保留 **Bot Fight Mode**，不要尝试把 GitHub Actions 的几千个出口网段全部塞进 IP Access Rules。更稳的做法是让 **CI 单独走 Railway 原始域名**，避开 Cloudflare。
+
+本仓库的 CI 已支持通过 GitHub Actions 仓库变量覆盖 live schema 的 base URL：
+
+1. GitHub → `Settings` → `Secrets and variables` → `Actions` → `Variables`
+2. 新建变量：`LIVE_TEST_API_BASE_CI`
+3. 值填你的 Railway staging API 地址，例如：
+
+   ```txt
+   https://your-service.up.railway.app/api
+   ```
+
+4. 之后 `main` 分支上的 `live-schema-validation` job 会优先使用这个变量；未配置时仍回退到 `https://staging-api.aaveapy.com/api`
