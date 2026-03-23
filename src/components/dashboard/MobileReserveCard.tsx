@@ -512,7 +512,7 @@ const MobileReserveCard = memo(({
           {renderHeroApy()}
 
           {/* Simulation toggle — shows Spread inside */}
-          <div className="px-3.5">
+          <div className="px-3">
             <button
               type="button"
               onClick={onToggleSimulation}
