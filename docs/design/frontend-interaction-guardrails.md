@@ -301,6 +301,11 @@ Keep header, body, and skeleton row padding in sync so alignment and spacing sta
 - When a card expands to show the simulation panel below, the upper card and lower simulation panel must appear as **one continuous card** with a single unbroken outline.
 - **Upper card**: `rounded-t-xl rounded-b-none border-b-0` — removes bottom rounding and border.
 - **Simulation panel**: `rounded-b-xl` only (NO `rounded-t-xl`) — top corners are straight so they align flush with the card above.
-- The junction mask (concave curve overlay) handles the **inactive side** transition; the active side must be a seamless vertical edge with no rounding or gap.
+- **Inner Corner (Concave curve) Implementation**: The junction where the inactive side connects to the simulation panel must look like a continuous native rounded corner.
+  - **Core Principle (Root Cause Fixes over Patches)**: When facing visual artifacts (residual lines, seams, discontinuity), solve the architectural root cause (e.g., removing the conflicting underlying border) instead of masking the symptom. Do not stack patches on top of patches.
+  - **Avoid Multi-layer Patching**: Do NOT use overlapping masks, CSS boxes, or "background patches" to hide the underlying border. This always leaves 1px residual lines or antialiasing seams.
+  - **Single Source of Truth (Clip-path + SVG)**: Use `clipPath` on the lower container to cleanly cut out its native top border exactly at the connection point. Then, place a single SVG element to draw the entire transition (vertical line → arc → horizontal line).
+  - **Geometric Precision**: Use standard SVG `A` (Arc) commands to draw the curve. Do not use `C` (Cubic Bezier) to hand-tune a fake corner, as it lacks the correct visual rhythm of a native `border-radius`.
+  - **Sub-pixel Alignment & Mirroring Exactness**: When drawing a 1px stroke in SVG to match CSS borders, coordinates must be aligned to `.5` (e.g., `M 0.5 0 L 0.5 0.5 A ...`) to ensure pixel-perfect rendering without blurry antialiased edges. **Crucially, when mirroring the right side of a container, the x-coordinate must be `width - 0.5` (e.g., `16.5` for a `17px` box), not integer-rounded, to prevent 1px offset gaps.**
 - **Rule**: Never add `rounded-t-*` to the simulation panel container; the top edge is always joined to the card above.
 - The simulation sub-row does not repeat the desktop heading “Shared APY/APR simulation” in **compact (mobile)** layout; the card’s Simulation toggle already establishes context.
