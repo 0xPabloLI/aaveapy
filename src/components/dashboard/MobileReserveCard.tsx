@@ -250,14 +250,15 @@ const MobileReserveCard = memo(({
 
     if (activeTab === 'supply') {
       const hasSupplyCap = reserve.supplyCapUsd != null && Number.isFinite(reserve.supplyCapUsd) && reserve.supplyCapUsd > 0;
+      // px-3.5 = mx-3 (12px) + track p-0.5 (2px): aligns with Supply/Borrow label text
       return (
-        <div className="flex w-full min-w-0 flex-nowrap items-center gap-1.5 px-3">
+        <div className="flex w-full min-w-0 flex-nowrap items-center gap-1.5 px-3.5">
           {priceEl}
-          <div className="ml-auto flex min-w-0 items-center gap-1">
+          <div className="ml-auto flex min-w-0 items-center justify-end gap-1">
             {hasSupplyCap ? (
               <button
                 type="button"
-                className="flex min-w-0 items-center gap-1 rounded-md px-1 py-0 ds-text-emerald-600 transition-all hover:bg-muted/50 active:scale-[0.98] cursor-pointer"
+                className="flex min-w-0 items-center gap-1 rounded-md py-0 pl-1 pr-0 ds-text-emerald-600 transition-all hover:bg-muted/50 active:scale-[0.98] cursor-pointer"
                 aria-label="Show supply cap details"
                 onClick={() => setCapSheet('supply')}
               >
@@ -277,13 +278,13 @@ const MobileReserveCard = memo(({
     }
     const hasBorrowCap = reserve.borrowCapUsd != null && Number.isFinite(reserve.borrowCapUsd) && reserve.borrowCapUsd > 0;
     return (
-      <div className="flex w-full min-w-0 flex-nowrap items-center gap-1.5 px-3">
+      <div className="flex w-full min-w-0 flex-nowrap items-center gap-1.5 px-3.5">
         {priceEl}
-        <div className="ml-auto flex min-w-0 items-center gap-1">
+        <div className="ml-auto flex min-w-0 items-center justify-end gap-1">
           {hasBorrowCap ? (
             <button
               type="button"
-              className="flex min-w-0 items-center gap-1 rounded-md px-1 py-0 ds-text-brand-cyan transition-all hover:bg-muted/50 active:scale-[0.98] cursor-pointer"
+              className="flex min-w-0 items-center gap-1 rounded-md py-0 pl-1 pr-0 ds-text-brand-cyan transition-all hover:bg-muted/50 active:scale-[0.98] cursor-pointer"
               aria-label="Show borrow cap details"
               onClick={() => setCapSheet('borrow')}
             >
@@ -512,7 +513,7 @@ const MobileReserveCard = memo(({
           {renderHeroApy()}
 
           {/* Simulation toggle — shows Spread inside */}
-          <div className="px-3">
+          <div className="px-3.5">
             <button
               type="button"
               onClick={onToggleSimulation}
@@ -597,7 +598,7 @@ const MobileReserveCard = memo(({
           <div className="overflow-hidden">
             {hasSimulationMounted && (
               <div className="-mt-px bg-card border border-border/60 border-t-0 rounded-b-xl rounded-t-none pb-3 pt-0">
-                <div className="px-1.5">
+                <div className="px-3.5">
                   <SimulationSubRow
                     reserve={reserve}
                     simulation={simulation}
