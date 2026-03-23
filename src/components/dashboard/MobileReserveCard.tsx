@@ -251,7 +251,7 @@ const MobileReserveCard = memo(({
     if (activeTab === 'supply') {
       const hasSupplyCap = reserve.supplyCapUsd != null && Number.isFinite(reserve.supplyCapUsd) && reserve.supplyCapUsd > 0;
       return (
-        <div className="flex w-full min-w-0 flex-nowrap items-center gap-1.5">
+        <div className="flex w-full min-w-0 flex-nowrap items-center gap-1.5 px-3">
           {priceEl}
           <div className="ml-auto flex min-w-0 items-center gap-1">
             {hasSupplyCap ? (
@@ -277,7 +277,7 @@ const MobileReserveCard = memo(({
     }
     const hasBorrowCap = reserve.borrowCapUsd != null && Number.isFinite(reserve.borrowCapUsd) && reserve.borrowCapUsd > 0;
     return (
-      <div className="flex w-full min-w-0 flex-nowrap items-center gap-1.5">
+      <div className="flex w-full min-w-0 flex-nowrap items-center gap-1.5 px-3">
         {priceEl}
         <div className="ml-auto flex min-w-0 items-center gap-1">
           {hasBorrowCap ? (
@@ -424,12 +424,12 @@ const MobileReserveCard = memo(({
     <div data-reserve-id={`${reserve.marketName}-${reserve.tokenAddress}`} className={isSimulationExpanded && !showUpperOnly ? 'shadow-sm rounded-xl' : ''}>
       {/* Card upper part */}
       <div
-        className={`bg-card border border-border/60 ds-card-pad-sm transition-all duration-300 ${
+        className={`bg-card border border-border/60 py-3 transition-all duration-300 ${
           connectedBelow || (isSimulationExpanded && !showUpperOnly) ? 'rounded-t-xl rounded-b-none border-b-0' : 'rounded-xl shadow-sm'
         }`}
       >
         {/* Token header */}
-        <div className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-1-5)] min-h-[36px]">
+        <div className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-1-5)] min-h-[36px] px-3">
           <a
             href={buildAaveReserveUrl({ marketName: reserve.marketName, tokenAddress: reserve.tokenAddress }) || '#'}
             {...externalLinkTabProps(true)}
@@ -481,7 +481,7 @@ const MobileReserveCard = memo(({
         </div>
 
         {/* Pill tabs */}
-        <div className="flex gap-[var(--ds-space-1-5)] bg-muted/40 rounded-lg p-0.5 mb-[var(--ds-space-1-5)]">
+        <div className="flex gap-[var(--ds-space-1-5)] bg-muted/40 rounded-lg p-0.5 mb-[var(--ds-space-1-5)] mx-3">
           <button
             type="button"
             onClick={() => setActiveTab('supply')}
@@ -506,31 +506,33 @@ const MobileReserveCard = memo(({
           </button>
         </div>
 
-        {/* Content aligned with the inner segment buttons via px-0.5 */}
-        <div className="flex w-full flex-col gap-2 px-0.5">
+        {/* Tab content */}
+        <div className="flex w-full flex-col gap-2">
           {renderAmountRow()}
           {renderHeroApy()}
 
           {/* Simulation toggle — shows Spread inside */}
-          <button
-            type="button"
-            onClick={onToggleSimulation}
-            aria-expanded={isSimulationExpanded}
-            aria-label={isSimulationExpanded ? 'Collapse reserve details' : 'Expand reserve details'}
-            className={`inline-flex w-full items-center justify-between gap-2 rounded-lg px-2 py-1.5 ds-text-12 text-muted-foreground transition-colors duration-300 ${
-              isSimulationExpanded
-                ? 'border-2 border-foreground/40 bg-muted/50'
-                : 'border border-border/70 bg-background hover:bg-muted/40'
-            }`}
-          >
-            <span className="flex min-w-0 items-center gap-1.5">
-              <span className="ds-text-11 text-muted-foreground/70 shrink-0">Spread</span>
-              <span className={`ds-text-11 font-medium tabular-nums ${displaySpread !== null ? 'text-purple-500' : 'text-muted-foreground/70'}`}>
-                {formatSpread(displaySpread)}
+          <div className="px-3">
+            <button
+              type="button"
+              onClick={onToggleSimulation}
+              aria-expanded={isSimulationExpanded}
+              aria-label={isSimulationExpanded ? 'Collapse reserve details' : 'Expand reserve details'}
+              className={`inline-flex w-full items-center justify-between gap-2 rounded-lg px-3 py-1.5 ds-text-12 text-muted-foreground transition-colors duration-300 ${
+                isSimulationExpanded
+                  ? 'border-2 border-foreground/40 bg-muted/50'
+                  : 'border border-border/70 bg-background hover:bg-muted/40'
+              }`}
+            >
+              <span className="flex min-w-0 items-center gap-1.5">
+                <span className="ds-text-11 text-muted-foreground/70 shrink-0">Spread</span>
+                <span className={`ds-text-11 font-medium tabular-nums ${displaySpread !== null ? 'text-purple-500' : 'text-muted-foreground/70'}`}>
+                  {formatSpread(displaySpread)}
+                </span>
               </span>
-            </span>
-            <ChevronDown className={`h-3.5 w-3.5 shrink-0 transition-transform duration-300 ${isSimulationExpanded ? 'rotate-180' : ''}`} />
-          </button>
+              <ChevronDown className={`h-3.5 w-3.5 shrink-0 transition-transform duration-300 ${isSimulationExpanded ? 'rotate-180' : ''}`} />
+            </button>
+          </div>
         </div>
 
         {/* Mobile bottom sheet for cap / utilization details */}
@@ -594,8 +596,8 @@ const MobileReserveCard = memo(({
         >
           <div className="overflow-hidden">
             {hasSimulationMounted && (
-              <div className="-mt-px bg-card border border-border/60 border-t-0 rounded-b-xl rounded-t-none ds-card-pad-sm pt-0">
-                <div className="px-0.5">
+              <div className="-mt-px bg-card border border-border/60 border-t-0 rounded-b-xl rounded-t-none pb-3 pt-0">
+                <div className="px-1.5">
                   <SimulationSubRow
                     reserve={reserve}
                     simulation={simulation}
