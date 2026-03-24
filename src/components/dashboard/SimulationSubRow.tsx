@@ -246,7 +246,7 @@ const SimulationSubRow = ({
 
   const supplyRows: TableRow[] = [
     {
-      label: effectiveCompact ? 'Supplied' : 'Total',
+      label: effectiveCompact ? 'Total supplied' : 'Total',
       current: currentSupplySizeUsd,
       after: afterSupplySizeUsd,
       delta: afterSupplySizeUsd !== null && currentSupplySizeUsd !== null ? afterSupplySizeUsd - currentSupplySizeUsd : null,
@@ -286,7 +286,7 @@ const SimulationSubRow = ({
 
   const borrowRows: TableRow[] = [
     {
-      label: effectiveCompact ? 'Borrowed' : 'Total',
+      label: effectiveCompact ? 'Total borrowed' : 'Total',
       current: simulation.marketMetrics.totalBorrowedUsd,
       after: simulation.marketMetrics.totalBorrowedUsdAfter,
       delta: simulation.marketMetrics.totalBorrowedUsdDelta,

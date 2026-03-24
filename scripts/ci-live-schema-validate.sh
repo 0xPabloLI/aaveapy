@@ -5,8 +5,10 @@ set -euo pipefail
 max_attempts=2
 delay_seconds=15
 
+set +e
 node scripts/probe-live-api.mjs
 probe=$?
+set -e
 
 if [ "$probe" -eq 2 ]; then
   echo "::error::Staging API returned a Cloudflare challenge (403). Relax WAF only for staging-api.aaveapy.com + /api/* — see docs/conventions/ci-live-schema-cloudflare.md"

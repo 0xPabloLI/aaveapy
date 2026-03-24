@@ -21,15 +21,19 @@
 - 品牌渐变：`--ds-brand-magenta-rgb` → `--ds-brand-cyan-rgb`
 
 ### 数据色
-- Supply：`ds-text-emerald-600`、`ds-bg-emerald-500-10`
+- Supply：`ds-text-emerald-500`（桌面端 Reserves 表 **Supply APY 主值** 与 **Supply Size** 同色）、`ds-bg-emerald-500-10`
 - Borrow：`ds-text-brand-cyan`、`ds-bg-brand-cyan-10`
+- 桌面 Reserves **Size** 列 Supply/Borrow 金额：`font-medium tabular-nums`，与 cap 环 Tooltip 内数字权重一致
 - Spread：`ds-text-purple-600`
 - 警告：amber 系
+- **层级**：主 APY 粗体 + 语义色；**Size** 与主色满饱和 + `font-medium`；Native/Incentive 为 `ds-text-11` + `*-70`（**与 Size 不同层级**）；**Spread** 桌面 `font-bold`；Util 圆点略大、**不默认描边**（见 `frontend-interaction-guardrails.md`）
+- **移动/桌面一致**：储备卡 Size、tab、cap sheet 与桌面同一 `emerald-500` / `brand-cyan` token
 
 ## 3. 排版
 - Sans：Source Sans Pro | Mono：Source Code Pro
 - 尺度：`ds-text-11` ~ `ds-text-24`
 - 数值：`tabular-nums`
+- APY：主值 `font-bold`；次级 native 可用 `font-medium`；不堆叠过多同色透明度档位
 
 ## 4. 组件规范
 

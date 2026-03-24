@@ -32,24 +32,24 @@ function SupplyCapSheetContent({
 }) {
   const percentage = Math.min((currentSize / cap) * 100, 100);
   const colorClass =
-    percentage >= 95 ? 'text-amber-600' : percentage >= 80 ? 'text-amber-500' : 'ds-text-emerald-600';
+    percentage >= 95 ? 'text-amber-600' : percentage >= 80 ? 'text-amber-500' : 'ds-text-emerald-500';
   return (
     <div className="space-y-1 ds-text-12">
       <div className="flex justify-between gap-3">
         <span className="text-muted-foreground">Total supplied</span>
-        <span className="font-medium tabular-nums ds-text-emerald-600">
+        <span className="font-medium tabular-nums ds-text-emerald-500">
           {formatScenarioSize(currentSize, { inputMode, tokenPrice, tokenSymbol })}
         </span>
       </div>
       <div className="flex justify-between gap-3">
         <span className="text-muted-foreground">Supply cap</span>
-        <span className="font-medium tabular-nums ds-text-emerald-600">
+        <span className="font-medium tabular-nums ds-text-emerald-500">
           {formatScenarioSize(cap, { inputMode, tokenPrice, tokenSymbol })}
         </span>
       </div>
       <div className="flex justify-between gap-3">
         <span className="text-muted-foreground">Available to supply</span>
-        <span className="font-medium tabular-nums ds-text-emerald-600">
+        <span className="font-medium tabular-nums ds-text-emerald-500">
           {formatScenarioSize(Math.max(0, cap - currentSize), { inputMode, tokenPrice, tokenSymbol })}
         </span>
       </div>
@@ -127,7 +127,7 @@ function UtilizationSheetContent({ current, optimal }: { current: number; optima
           ⚠️ Above optimal
         </p>
       ) : (
-        <p className="ds-text-brand-cyan-70 ds-text-11 pt-2 border-t border-border/50">
+        <p className="ds-text-brand-cyan ds-text-11 pt-2 border-t border-border/50">
           Below optimal
         </p>
       )}
@@ -298,11 +298,11 @@ const MobileReserveCard = memo(({
             {hasSupplyCap ? (
               <button
                 type="button"
-                className="flex min-w-0 items-center gap-1 rounded-md py-0 pl-1 pr-0 ds-text-emerald-600 transition-all hover:bg-muted/50 active:scale-[0.98] cursor-pointer"
+                className="flex min-w-0 items-center gap-1 rounded-md py-0 pl-1 pr-0 ds-text-emerald-500 transition-all hover:bg-muted/50 active:scale-[0.98] cursor-pointer"
                 aria-label="Show supply cap details"
                 onClick={() => setCapSheet('supply')}
               >
-                <span className="ds-text-13 font-semibold tabular-nums leading-none truncate">
+                <span className="ds-text-13 font-medium tabular-nums leading-none truncate">
                   {formatScenarioSize(displayReserveSizeUsd, { inputMode, tokenPrice: displayTokenPrice, tokenSymbol: reserve.tokenSymbol })}
                 </span>
                 <CapProgressRing
@@ -317,7 +317,7 @@ const MobileReserveCard = memo(({
                 />
               </button>
             ) : (
-              <span className="ds-text-13 font-semibold tabular-nums leading-none ds-text-emerald-600 truncate">
+              <span className="ds-text-13 font-medium tabular-nums leading-none ds-text-emerald-500 truncate">
                 {formatScenarioSize(displayReserveSizeUsd, { inputMode, tokenPrice: displayTokenPrice, tokenSymbol: reserve.tokenSymbol })}
               </span>
             )}
@@ -337,7 +337,7 @@ const MobileReserveCard = memo(({
               aria-label="Show borrow cap details"
               onClick={() => setCapSheet('borrow')}
             >
-              <span className="ds-text-13 font-semibold tabular-nums leading-none truncate">
+              <span className="ds-text-13 font-medium tabular-nums leading-none truncate">
                 {formatScenarioSize(totalBorrowedUsd, { inputMode, tokenPrice: displayTokenPrice, tokenSymbol: reserve.tokenSymbol })}
               </span>
               <BorrowCapProgressRing
@@ -353,7 +353,7 @@ const MobileReserveCard = memo(({
               />
             </button>
           ) : (
-            <span className="ds-text-13 font-semibold tabular-nums leading-none ds-text-brand-cyan truncate">
+            <span className="ds-text-13 font-medium tabular-nums leading-none ds-text-brand-cyan truncate">
               {formatScenarioSize(totalBorrowedUsd, { inputMode, tokenPrice: displayTokenPrice, tokenSymbol: reserve.tokenSymbol })}
             </span>
           )}
@@ -388,7 +388,7 @@ const MobileReserveCard = memo(({
           <div className="min-h-[1rem]">
             {visibleSupplyIncentive !== null && (
               <div className="flex items-center gap-[var(--ds-space-1)] ds-text-11">
-                <span className={isDisabled ? 'text-secondary' : 'ds-text-emerald-500-70'}>
+                <span className={isDisabled ? 'text-secondary' : 'ds-text-emerald-500-70 font-medium'}>
                   {formatPercent(displaySupplyNative)}
                 </span>
                 <span className="text-muted-foreground/70">+</span>
@@ -401,7 +401,7 @@ const MobileReserveCard = memo(({
                   className={`inline-flex items-center rounded-full px-[var(--ds-space-1)] shrink-0 ring-1 active:scale-95 transition-all hover:ring-2 ${
                     isDisabled
                       ? 'text-secondary bg-secondary/10 ring-secondary/20 hover:bg-secondary/20 hover:ring-secondary/30'
-                      : 'ds-text-emerald-600 ds-bg-emerald-500-10 hover:bg-[rgb(var(--ds-emerald-500-rgb)/0.25)] ds-ring-emerald-500-15 hover:ring-[rgb(var(--ds-emerald-500-rgb)/0.35)]'
+                      : 'ds-text-emerald-500 ds-bg-emerald-500-10 hover:bg-[rgb(var(--ds-emerald-500-rgb)/0.25)] ds-ring-emerald-500-15 hover:ring-[rgb(var(--ds-emerald-500-rgb)/0.35)]'
                   }`}
                 >
                   <span>{formatPercent(visibleSupplyIncentive)}</span>
@@ -437,7 +437,7 @@ const MobileReserveCard = memo(({
         <div className="min-h-[1rem]">
           {visibleBorrowIncentive !== null && (
             <div className="flex items-center gap-[var(--ds-space-1)] ds-text-11">
-              <span className={isDisabled ? 'text-secondary' : 'ds-text-brand-cyan-70'}>
+              <span className={isDisabled ? 'text-secondary' : 'ds-text-brand-cyan-70 font-medium'}>
                 {formatPercent(displayBorrowNative)}
               </span>
               <span className="text-muted-foreground/70">-</span>
@@ -520,7 +520,7 @@ const MobileReserveCard = memo(({
               className="shrink-0 flex items-center gap-0.5 rounded-md px-1 py-0.5 transition-all hover:bg-muted/50 active:scale-[0.97]"
               aria-label="Show utilization details"
             >
-              <span className={`ds-text-10 font-medium tabular-nums leading-none ${
+              <span className={`ds-text-11 font-medium tabular-nums leading-none ${
                 displayUtilization > optimalPct ? 'text-amber-600' : 'text-foreground'
               }`}>
                 {displayUtilization.toFixed(0)}%
@@ -528,8 +528,8 @@ const MobileReserveCard = memo(({
               <UtilizationIndicator
                 current={displayUtilization}
                 optimal={optimalPct}
-                width={6}
-                height={14}
+                width={8}
+                height={16}
               />
             </button>
           )}
@@ -542,7 +542,7 @@ const MobileReserveCard = memo(({
             onClick={() => setActiveTab('supply')}
             className={`flex-1 ds-text-12 font-medium py-1 rounded-md transition-all duration-200 ${
               activeTab === 'supply'
-                ? 'ds-bg-emerald-500-10 ds-text-emerald-600 shadow-sm'
+                ? 'ds-bg-emerald-500-10 ds-text-emerald-500 shadow-sm'
                 : 'text-muted-foreground hover:text-foreground/70'
             }`}
           >

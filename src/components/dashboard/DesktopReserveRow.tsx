@@ -171,9 +171,11 @@ const DesktopReserveRow = memo(({
         {/* Size (Supply + Borrow) */}
         <TableCell className="px-[var(--ds-space-2)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell tabular-nums ds-text-13">
           <div className="flex flex-col items-center justify-center gap-[var(--ds-space-0-5)]">
-            {/* Supply Size - Green */}
-            <div className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)] ds-text-emerald-600">
-              <span>{formatScenarioSize(displayReserveSizeUsd, { inputMode, tokenPrice: displayTokenPrice, tokenSymbol: reserve.tokenSymbol })}</span>
+            {/* Supply Size - Green (match Supply APY primary: ds-text-emerald-500) */}
+            <div className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)] ds-text-emerald-500">
+              <span className="font-medium tabular-nums">
+                {formatScenarioSize(displayReserveSizeUsd, { inputMode, tokenPrice: displayTokenPrice, tokenSymbol: reserve.tokenSymbol })}
+              </span>
               <CapProgressRing
                 size={displayReserveSizeUsd}
                 cap={reserve.supplyCapUsd}
@@ -182,9 +184,11 @@ const DesktopReserveRow = memo(({
                 tokenSymbol={reserve.tokenSymbol}
               />
             </div>
-            {/* Borrow Size - Cyan */}
-            <div className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)] ds-text-brand-cyan ds-text-11">
-              <span>{formatScenarioSize(totalBorrowedUsd, { inputMode, tokenPrice: displayTokenPrice, tokenSymbol: reserve.tokenSymbol })}</span>
+            {/* Borrow Size - Cyan (match tooltip: font-medium + ds-text-brand-cyan) */}
+            <div className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)] ds-text-brand-cyan">
+              <span className="font-medium tabular-nums">
+                {formatScenarioSize(totalBorrowedUsd, { inputMode, tokenPrice: displayTokenPrice, tokenSymbol: reserve.tokenSymbol })}
+              </span>
               <BorrowCapProgressRing
                 borrowed={totalBorrowedUsd}
                 cap={reserve.borrowCapUsd}
@@ -227,7 +231,7 @@ const DesktopReserveRow = memo(({
             )}
             {displaySupplyIncentive !== null && (
               <div className="flex items-center gap-[var(--ds-space-0-5)] ds-text-11 justify-center min-h-[1.25rem]">
-                <span className={`tabular-nums ${reserve.supplyDisabled ? 'text-secondary' : 'ds-text-emerald-500-70'}`}>
+                <span className={`tabular-nums font-medium ${reserve.supplyDisabled ? 'text-secondary' : 'ds-text-emerald-500-70'}`}>
                   {formatPercent(displaySupplyNative)}
                 </span>
                 <span className="text-muted-foreground/70">+</span>
@@ -278,7 +282,7 @@ const DesktopReserveRow = memo(({
               <div className="flex items-center gap-[var(--ds-space-0-5)] ds-text-11 justify-center min-h-[1.25rem]">
                 {displayBorrowNative !== null && (
                   <>
-                    <span className={`tabular-nums ${reserve.borrowDisabled ? 'text-secondary' : 'ds-text-brand-cyan-70'}`}>
+                    <span className={`tabular-nums font-medium ${reserve.borrowDisabled ? 'text-secondary' : 'ds-text-brand-cyan-70'}`}>
                       {formatPercent(displayBorrowNative)}
                     </span>
                     <span className="text-muted-foreground/70">-</span>

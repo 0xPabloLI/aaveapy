@@ -49,6 +49,26 @@
 - **数值**：一律 `tabular-nums` 保证对齐。
 - **文字与边框**：**强制** — 所有带边框的容器（卡片、表格单元格、警告条、按钮）内，文字与边框之间至少保留 8px（`--ds-space-2`）内边距，不得贴边。
 
+### 数据列层级（Supply / Borrow APY、Size、Util）
+
+与 `docs/design/frontend-interaction-guardrails.md` 中「同色内部少档位」原则一致：
+
+| 层级 | 桌面 Reserves 表 | 移动端储备卡 | 字色 / 说明 |
+|------|------------------|-------------|-------------|
+| 主值（合计 APY） | `ds-text-14` + `font-bold` | hero `ds-text-24` + `font-bold` | Supply `emerald-500`，Borrow `brand-cyan` |
+| **Size**（供给/借出规模） | `ds-text-13` + `font-medium` | 顶行金额 `ds-text-13` + `font-medium` | **满饱和** 同主色（与 APY 主值同色阶，不是 `-70`） |
+| 次级（Native + incentive） | `ds-text-11`；native 可选 `font-medium` | 同左 | 小一号 + `*-70` + pill；**刻意**弱于 Size，不要复用 Size 样式 |
+| Spread | `ds-text-14` + **`font-bold`** | 展开条内 `font-medium` | 紫色语义；桌面与 Supply/Borrow **主数字同档粗体** |
+| Util 迷你条 + 圆点 | 与 Util % 并排 | 同左 | 分区：青/琥珀各一档淡填充；标记点 = **实心圆点**（可略大半径），**不**用描边、不外圈柔光 |
+
+### 可迁移的设计习惯（本项目偏好，可复制到其他项目）
+
+1. **同色少档位**：同一语义色避免堆多种透明度/色阶；Util、APY 次级按 guardrails 即可。
+2. **数据点不靠描边**：小圆点、标记点用更实填充或略大半径；**不**把 `stroke` 外轮廓当默认习惯。
+3. **Spread 与主列同强**：桌面 Spread 列用 **`font-bold`**，与 Supply/Borrow APY 主值同级。
+4. **次级 ≠ Size**：Native/Incentive 是 **分解行**（`ds-text-11` + `*-70`）；Size 是 **主数据**（`ds-text-13` + 满饱和 + `font-medium`）—层级不同，**不是**同一套字体规格。
+5. **移动/桌面 token 对齐**：移动端 Size、tab、cap sheet 与桌面共用 `emerald-500` / `brand-cyan`，避免无端深一档（如 `emerald-600`）。
+
 ---
 
 ## 4. 布局原则

@@ -37,13 +37,13 @@ const CapProgressRing = memo(({
   const getProgressColor = () => {
     if (percentage >= 95) return 'rgb(var(--ds-amber-600-rgb, 217 119 6))';
     if (percentage >= 80) return 'rgb(var(--ds-amber-500-rgb, 245 158 11))';
-    return 'rgb(var(--ds-emerald-600-rgb, 5 150 105))';
+    return 'rgb(var(--ds-emerald-500-rgb, 16 185 129))';
   };
 
   const getProgressColorClass = () => {
     if (percentage >= 95) return 'text-amber-600';
     if (percentage >= 80) return 'text-amber-500';
-    return 'ds-text-emerald-600';
+    return 'ds-text-emerald-500';
   };
 
   const ringNode = (
@@ -92,19 +92,19 @@ const CapProgressRing = memo(({
         <div className="space-y-1 ds-text-12">
           <div className="flex justify-between gap-3">
             <span className="text-muted-foreground">Total supplied</span>
-            <span className="font-medium tabular-nums ds-text-emerald-600">
+            <span className="font-medium tabular-nums ds-text-emerald-500">
               {formatScenarioSize(currentSize, { inputMode: displayMode, tokenPrice, tokenSymbol })}
             </span>
           </div>
           <div className="flex justify-between gap-3">
             <span className="text-muted-foreground">Supply cap</span>
-            <span className="font-medium tabular-nums ds-text-emerald-600">
+            <span className="font-medium tabular-nums ds-text-emerald-500">
               {formatScenarioSize(cap, { inputMode: displayMode, tokenPrice, tokenSymbol })}
             </span>
           </div>
           <div className="flex justify-between gap-3">
             <span className="text-muted-foreground">Available to supply</span>
-            <span className="font-medium tabular-nums ds-text-emerald-600">
+            <span className="font-medium tabular-nums ds-text-emerald-500">
               {formatScenarioSize(Math.max(0, cap - currentSize), { inputMode: displayMode, tokenPrice, tokenSymbol })}
             </span>
           </div>

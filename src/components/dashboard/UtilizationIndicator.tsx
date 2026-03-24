@@ -27,8 +27,9 @@ const UtilizationIndicator = memo(({
   const optimalY = height - (clampedOptimal / 100) * height;
   const currentY = height - (clampedCurrent / 100) * height;
   const isOverOptimal = current > optimal;
-  
-  const dotRadius = 1.5;
+
+  /** Solid dot only (no stroke, no outer glow disc). */
+  const dotRadius = 2.5;
   const trackWidth = 4;
   const trackX = (width - trackWidth) / 2;
   const trackRadius = trackWidth / 2;
@@ -66,7 +67,7 @@ const UtilizationIndicator = memo(({
               rx={trackRadius}
               className="fill-secondary/40"
             />
-            {/* Below optimal: borrow-aligned (flatter borrow rates); brand cyan */}
+            {/* Below optimal: zone = single tinted fill; dot = full brand cyan (same token as Borrow / util copy) */}
             <rect
               x={trackX}
               y={optimalY}
@@ -75,7 +76,7 @@ const UtilizationIndicator = memo(({
               clipPath={`url(#${clipId})`}
               className="fill-[rgb(var(--ds-brand-cyan-rgb)/0.32)]"
             />
-            {/* Above optimal: past kink — higher borrow, tighter pool — amber */}
+            {/* Above optimal: zone amber-500; dot matches warning label (amber-600) — avoid 500/600/700 mix */}
             <rect
               x={trackX}
               y={0}
@@ -88,7 +89,7 @@ const UtilizationIndicator = memo(({
               cx={width / 2}
               cy={currentY}
               r={dotRadius}
-              className={isOverOptimal ? 'fill-amber-700' : 'fill-foreground/90'}
+              className={isOverOptimal ? 'fill-amber-600' : 'fill-[rgb(var(--ds-brand-cyan-rgb))]'}
             />
           </svg>
         </div>
@@ -104,7 +105,7 @@ const UtilizationIndicator = memo(({
               ⚠️ Above optimal
             </p>
           ) : (
-            <p className="ds-text-brand-cyan-70 ds-text-11 pt-2 border-t border-border/50">
+            <p className="ds-text-brand-cyan ds-text-11 pt-2 border-t border-border/50">
               Below optimal
             </p>
           )}

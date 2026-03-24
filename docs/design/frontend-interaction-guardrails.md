@@ -87,10 +87,18 @@ This note records recurring UI/interaction issues found during incentive/forecas
 **Utilization display value (mobile vs desktop)**:
 - Mobile reserve header and bottom sheet must use the same **display** utilization as the desktop Util. column: `hasSharedScenario ? after ?? current : current` from rate simulation (not raw `reserve.utilizationPct` when a scenario is active).
 
-**UtilizationIndicator color scheme**:
-- Below optimal (borrow-friendly / flatter borrow curve): `fill-[rgb(var(--ds-brand-cyan-rgb)/0.32)]` on track; dot `fill-[rgb(var(--ds-brand-cyan-rgb))]` — aligns with Borrow (`ds-text-brand-cyan`), not emerald
-- Above optimal (past kink: higher borrow, tighter liquidity): `fill-amber-500` on track; dot `fill-amber-700`
-- Tooltip: “Below optimal” (cyan) vs “⚠️ Above optimal” (amber)
+**UtilizationIndicator color scheme** (minimize same-hue steps: one **zone tint** + one **full semantic** per state):
+- Below optimal (borrow-friendly / flatter borrow curve): track zone `fill-[rgb(var(--ds-brand-cyan-rgb)/0.32)]`; dot **full** `fill-[rgb(var(--ds-brand-cyan-rgb))]` — same as Borrow (`ds-text-brand-cyan`), not emerald; avoid mixing `-70` text with other cyan opacities
+- Above optimal (past kink): track `fill-amber-500`; dot `fill-amber-600` (same as warning copy), not a third amber step
+- **Dot visibility (no extra hue, no outline habit)**: single **solid** dot (slightly larger radius is OK); **do not** add outer glow discs, `stroke` halos, or extra opacity rings by default
+- Tooltip / mobile sheet: “Below optimal” uses `ds-text-brand-cyan`; “⚠️ Above optimal” uses `text-amber-600`
+
+**Supply / Borrow APY typography (desktop table + mobile hero)** — same hierarchy rules:
+- **Primary total APY**: `font-bold`, `ds-text-14` (desktop) or `ds-text-24` (mobile hero), semantic fill `ds-text-emerald-500` (Supply) / `ds-text-brand-cyan` (Borrow)
+- **Secondary row** (native + incentive): `ds-text-11`, native uses `ds-text-emerald-500-70` / `ds-text-brand-cyan-70` with optional `font-medium`; incentive chips stay on the existing tinted pill pattern (`ds-bg-*-10`, `-70` text). **This row is not the same as Size** (see below).
+- **Size column** (Supply/Borrow amounts): `ds-text-13` + `font-medium` + **full** semantic (`emerald-500` / `brand-cyan`)—aligned with APY **primary** color, **not** with the Native/Incentive row (which is smaller + `-70` by design).
+- **Spread column**: `font-bold` + `ds-text-14` + purple semantic—treated as a **primary numeric** column alongside Supply/Borrow totals.
+- **Mobile parity**: Supply/Borrow tab, **size row**, cap sheets, and incentive chips use the **same** emerald/cyan tokens as desktop (`emerald-500` / `brand-cyan`), not a darker step (e.g. avoid `emerald-600` for Supply size when desktop uses `emerald-500`); utilization figure next to the indicator uses at least `ds-text-11`
 
 **Key principle**: Amber/warning colors must NOT be used for regular data display. This ensures that when amber appears, users immediately recognize it as a warning signal.
 
