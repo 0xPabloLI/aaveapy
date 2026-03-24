@@ -1,5 +1,6 @@
 import { memo, useEffect, useState } from 'react';
 import { ExternalLink, ListCollapse, X } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { ReserveWithSpread, ETHEREUM_MARKET_NAMES } from '@/types/aave';
 import { formatPercent, formatSpread } from '@/lib/formatters';
 import { getChainIconSrc } from '@/lib/chainIcons';
