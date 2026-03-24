@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, Loader2 } from 'lucide-react';
 
 import type { ReserveWithSpread, TokenPricesIndex } from '@/types/aave';
-import { collectMerklCampaignOptions } from '@/lib/merklCampaigns';
+import { collectMerklCampaignOptions, collectWhitelistOnlyMerklCampaignEntries } from '@/lib/merklCampaigns';
 import { useMerklForecastStates } from '@/hooks/useMerklForecastStates';
 import { deriveForecastProgressFlags, forecastWithTVL } from '@/lib/merklForecast';
 import { resolveForecastTokenPrice, resolveForecastTokenPriceWithBackup } from '@/lib/tokenPriceResolver';
@@ -13,8 +13,8 @@ interface MerklForecastPanelProps {
   reserves: ReserveWithSpread[];
   tokenPrices?: TokenPricesIndex;
   tydroPointToUsdRate: number;
-  includeWhitelistOnlyMerkl: boolean;
-  onToggleWhitelistOnlyMerkl: (next: boolean) => void;
+  whitelistMerklCampaignIds: ReadonlySet<string>;
+  onToggleWhitelistMerklCampaign: (campaignId: string, enabled: boolean) => void;
 }
 
 const formatUsd = (value: number): string =>
@@ -43,16 +43,17 @@ const MerklForecastPanel = ({
   reserves,
   tokenPrices,
   tydroPointToUsdRate,
-  includeWhitelistOnlyMerkl,
-  onToggleWhitelistOnlyMerkl,
+  whitelistMerklCampaignIds,
+  onToggleWhitelistMerklCampaign,
 }: MerklForecastPanelProps) => {
+  const whitelistEntries = useMemo(() => collectWhitelistOnlyMerklCampaignEntries(reserves), [reserves]);
   const campaignOptions = useMemo(
     () =>
       collectMerklCampaignOptions(reserves, {
-        includeWhitelistOnly: includeWhitelistOnlyMerkl,
+        whitelistMerklCampaignIds,
         activeOnly: true,
       }),
-    [includeWhitelistOnlyMerkl, reserves]
+    [whitelistMerklCampaignIds, reserves]
   );
   const [selectedCampaignId, setSelectedCampaignId] = useState('');
   const [depositInput, setDepositInput] = useState('100,000');
@@ -164,15 +165,26 @@ const MerklForecastPanel = ({
         {loading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
       </div>
 
-      <label className="mt-2 inline-flex items-center gap-2 text-xs text-muted-foreground">
-        <input
-          type="checkbox"
-          checked={includeWhitelistOnlyMerkl}
-          onChange={(event) => onToggleWhitelistOnlyMerkl(event.target.checked)}
-          className="h-3.5 w-3.5 rounded border-border bg-background"
-        />
-        Include whitelist-only Merkl campaigns
-      </label>
+      {whitelistEntries.length > 0 && (
+        <div className="mt-2 space-y-2">
+          <p className="text-xs text-muted-foreground">In:</p>
+          <ul className="space-y-1.5">
+            {whitelistEntries.map((entry) => (
+              <li key={entry.campaignId}>
+                <label className="inline-flex items-start gap-2 text-xs text-muted-foreground">
+                  <input
+                    type="checkbox"
+                    checked={whitelistMerklCampaignIds.has(entry.campaignId)}
+                    onChange={(event) => onToggleWhitelistMerklCampaign(entry.campaignId, event.target.checked)}
+                    className="mt-0.5 h-3.5 w-3.5 shrink-0 rounded border-border bg-background"
+                  />
+                  <span className="min-w-0 break-words">{entry.label}</span>
+                </label>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="mt-3 grid gap-3 md:grid-cols-2">
         <label className="text-xs text-muted-foreground">

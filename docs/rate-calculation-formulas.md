@@ -1,8 +1,10 @@
 # Rate Calculation Formulas
 
-Frontend interest rate simulation based on `/rate-inputs` API data.
+Frontend interest rate simulation based on `/rate-inputs` API data (native Aave rates).
 
-Source: `src/lib/interestRateCalculator.ts`
+This document also describes **Merkl incentive forecast** (`forecastWithTVL`), used when simulating **incentive APR** after a hypothetical **USD** supply/borrow change. Sources: `src/lib/merklForecast.ts`, `src/hooks/useRateSimulation.ts`.
+
+Source (native rates): `src/lib/interestRateCalculator.ts`
 
 ## Constants
 
@@ -175,9 +177,91 @@ Where:
 
 The simulation hook (`useRateSimulation.ts`) automatically caps borrow input to the effective limit. The UI shows which constraint is binding when the user exceeds it.
 
+## Merkl incentive forecast (`forecastWithTVL`)
+
+Source: `src/lib/merklForecast.ts`. Wired into simulation via `forecastBreakdownApr` and `buildForecastMerklOpportunities` in `src/hooks/useRateSimulation.ts`. Campaign state is loaded from **`GET /meta/side-data`** → `forecast.items` (typed as `MerklForecastStateResponse`).
+
+### How simulation connects
+
+- User input is converted to **USD** for incentives: token mode uses `amount × tokenPrice` where available (`supplyInputUsd` / `borrowInputUsd`).
+- For each Merkl breakdown with a `campaignId` and matching forecast row, the model uses:
+
+```
+hypotheticalTvl = max(0, latestTvl + inputUsd)
+```
+
+where `inputUsd` is the hypothetical **increment** on the campaign’s eligible TVL in **USD** (same semantics as `tvl` below). If `inputUsd ≤ 0` or there is no forecast row, the UI keeps the **current** Merkl APR from the reserve (`getMerklBreakdownApr`).
+
+### Symbols
+
+| Symbol / field | Meaning |
+|----------------|---------|
+| `tvl` | USD-denominated eligible TVL passed into `forecastWithTVL` (in practice `hypotheticalTvl`). |
+| `aprCap` | Maximum or fixed annual APR as a **decimal fraction** (e.g. `0.05` = 5% per year), **not** a percentage label. |
+| `plannedDaily` / `requiredDaily` | Backend daily emission targets; if `requiredDaily` is missing, `plannedDaily` is used. |
+| `remainingBudget` | `max(0, totalBudget - distributedSoFar)` when those fields are present. |
+
+### `FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE` (FIX)
+
+In `forecastWithTVL`, the **FIX** branch uses **`aprCap`** (decimal, annual) and **USD-semantic `tvl`** to compute **`aprBasedDaily`**, then takes **`min` with `remainingBudget`**:
+
+```
+aprBasedDaily = (tvl × aprCap) / 365
+dailyRewards   = min(aprBasedDaily, remainingBudget)
+apr            = (dailyRewards × 365) / tvl          // for tvl > 0
+```
+
+The function also derives **`fixRewardableDays`** and **`fixRewardableUntilTs`** from how long the remaining budget lasts at `aprBasedDaily`, capped by the campaign end time. Regime is **`PLANNED`** for FIX in this helper.
+
+### `MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE` (MAX / capped APR)
+
+```
+aprBasedDaily = (tvl × aprCap) / 365
+dailyRewards   = min(requiredDaily, aprBasedDaily)
+apr            = (dailyRewards × 365) / tvl
+```
+
+- **`APR_CAPPED`**: `isMaxAprCampaign && aprBasedDaily < requiredDaily` (the APR cap binds).
+- **`CATCHING_UP`**: `requiredDaily > plannedDaily × 1.01` (tolerance for float noise).
+- **Total budget**: This branch does **not** multiply `dailyRewards` by `remainingBudget`. If the campaign is out of budget, the backend is expected to drive **`requiredDaily` / `plannedDaily`** accordingly (e.g. to zero).
+
+### `DUTCH_AUCTION` and other non–FIX/MAX types
+
+There is no APR-based daily cap in this function for these types (`aprBasedDaily` is effectively unbounded for the min):
+
+```
+dailyRewards = requiredDaily
+apr            = (dailyRewards × 365) / tvl
+```
+
+### Edge case: `tvl ≤ 0`
+
+```
+dailyRewards = 0
+apr = 0
+```
+
+### From model `apr` to UI percentage (`forecastBreakdownApr`)
+
+`forecastWithTVL` returns **`apr` as an annual fraction** (e.g. `0.05`). The simulation converts to **percentage points** for display:
+
+```
+forecastAprPercent = forecast.apr × 100 × multiplier
+```
+
+`multiplier` comes from `getMerklForecastUsdMultiplier` (`src/lib/tydro.ts`): it is **`1`** unless the breakdown uses Tydro **`pointsPerThousandUsd`**, in which case it scales by the configured point-to-USD rate.
+
+### Merkl product docs (concepts)
+
+Distribution types (variable / fixed token vs dollar / capped): [Merkl — Distribution Types](https://docs.merkl.xyz/merkl-mechanisms/distributions)
+
 ## Related Files
 
-- `src/lib/interestRateCalculator.ts` – Core calculation functions
-- `src/hooks/useRateSimulation.ts` – React hook wrapping simulation (includes borrow availability constraints)
+- `src/lib/interestRateCalculator.ts` – Core native rate calculation functions
+- `src/lib/merklForecast.ts` – Merkl `forecastWithTVL` and progress flags
+- `src/lib/merklForecast.test.ts` – Unit tests for forecast branches
+- `src/lib/tydro.ts` – Tydro points → APR and forecast USD multiplier
+- `src/hooks/useRateSimulation.ts` – React hook: native simulation + Merkl forecast overlay (borrow availability constraints)
 - `src/hooks/useReserveRateInputs.ts` – Fetches `/rate-inputs` API
+- `src/hooks/useSideDataMeta.ts` – Fetches `/meta/side-data` (includes forecast items)
 - `src/components/dev/RateInputsVsMarketCheck.tsx` – Dev panel for validation

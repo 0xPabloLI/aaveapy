@@ -36,7 +36,7 @@ interface TopOpportunitiesProps {
   reserves: ReserveWithSpread[];
   isApy: boolean;
   isRateDragging?: boolean;
-  includeWhitelistOnlyMerkl: boolean;
+  whitelistMerklCampaignIds: ReadonlySet<string>;
   categoryGroups: TokenCategoryGroups;
   onIncentiveClick?: (payload: {
     reserve: ReserveWithSpread;
@@ -202,7 +202,7 @@ const TopOpportunities = ({
   reserves,
   isApy,
   isRateDragging = false,
-  includeWhitelistOnlyMerkl,
+  whitelistMerklCampaignIds,
   categoryGroups,
   onIncentiveClick,
   onCardClick,
@@ -240,7 +240,7 @@ const TopOpportunities = ({
           brevisIncentives,
           protocolIncentives,
           tydroPointToUsdRate,
-          { includeWhitelistOnlyMerkl }
+          { whitelistMerklCampaignIds }
         ),
         apy: calculateTotalIncentiveApy(
           meritIncentives,
@@ -248,7 +248,7 @@ const TopOpportunities = ({
           brevisIncentives,
           protocolIncentives,
           tydroPointToUsdRate,
-          { includeWhitelistOnlyMerkl }
+          { whitelistMerklCampaignIds }
         ),
       };
     };
@@ -280,7 +280,7 @@ const TopOpportunities = ({
       totalBorrowApr,
       aprSpread: calculateSpreadApr(totalSupplyApr, totalBorrowApr),
     };
-  }), [includeWhitelistOnlyMerkl, reserves, tydroPointToUsdRate]);
+  }), [whitelistMerklCampaignIds, reserves, tydroPointToUsdRate]);
 
   // Top 5 Stable APY - memoized to prevent recalculation
   const topStable = useMemo(() => [...reservesWithTotals]

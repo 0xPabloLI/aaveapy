@@ -72,7 +72,7 @@ describe('buildForecastMerklOpportunities', () => {
       opportunities,
       inputUsd: 1000,
       forecastStates: states,
-      includeWhitelistOnlyMerkl: true,
+      whitelistMerklCampaignIds: new Set(),
       tydroPointToUsdRate: 1,
     });
 
@@ -114,7 +114,7 @@ describe('buildForecastMerklOpportunities', () => {
       opportunities,
       inputUsd: 5000,
       forecastStates: states,
-      includeWhitelistOnlyMerkl: false,
+      whitelistMerklCampaignIds: new Set(),
       tydroPointToUsdRate: 1,
     });
 
@@ -128,7 +128,7 @@ describe('buildRateSimulationResult', () => {
       reserve: baseReserve,
       reserveRateInput: baseReserve,
       isApy: true,
-      includeWhitelistOnlyMerkl: true,
+      whitelistMerklCampaignIds: new Set(),
       tydroPointToUsdRate: 1,
       tokenPrice: 1,
       supplyInput: '100000',
@@ -181,7 +181,7 @@ describe('buildRateSimulationResult', () => {
       reserve,
       reserveRateInput: baseReserve,
       isApy: false,
-      includeWhitelistOnlyMerkl: true,
+      whitelistMerklCampaignIds: new Set(),
       tydroPointToUsdRate: 1,
       tokenPrice: 1,
       supplyInput: '1000',
@@ -225,7 +225,7 @@ describe('buildRateSimulationResult', () => {
       reserve,
       reserveRateInput: baseReserve,
       isApy: false,
-      includeWhitelistOnlyMerkl: true,
+      whitelistMerklCampaignIds: new Set(),
       tydroPointToUsdRate: 1,
       tokenPrice: 1,
       supplyInput: '100000',
@@ -245,7 +245,7 @@ describe('buildRateSimulationResult', () => {
       reserve: baseReserve,
       reserveRateInput: baseReserve,
       isApy: true,
-      includeWhitelistOnlyMerkl: true,
+      whitelistMerklCampaignIds: new Set(),
       tydroPointToUsdRate: 1,
       tokenPrice: 1,
       supplyInput: '',

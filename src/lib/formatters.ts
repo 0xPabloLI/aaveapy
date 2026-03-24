@@ -57,8 +57,23 @@ export const apyToApr = (apy: number): number => {
 import type { MeritIncentive, MerklOpportunityGroup, BrevisIncentive } from '@/types/aave';
 import { TYDRO_POINT_TO_USD_RATE, getMerklBreakdownApr } from '@/lib/tydro';
 
+/**
+ * Whether a Merkl breakdown should count toward incentive totals.
+ * Non-whitelist campaigns always count; whitelist-only counts only when the user enabled this campaignId.
+ */
+export function isMerklWhitelistBreakdownIncluded(
+  breakdown: { whitelistOnly?: boolean; campaignId: string },
+  whitelistMerklCampaignIds: ReadonlySet<string> | undefined
+): boolean {
+  if (!breakdown.whitelistOnly) return true;
+  const id = String(breakdown.campaignId || '').trim();
+  if (!id) return false;
+  return Boolean(whitelistMerklCampaignIds?.has(id));
+}
+
 export interface IncentiveCalculationOptions {
-  includeWhitelistOnlyMerkl?: boolean;
+  /** Merkl campaign IDs the user opted into for whitelist-only APR */
+  whitelistMerklCampaignIds?: ReadonlySet<string>;
 }
 
 const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
@@ -139,12 +154,11 @@ const sumMerklOpportunities = (
   pointToUsdRate = TYDRO_POINT_TO_USD_RATE,
   options: IncentiveCalculationOptions = {}
 ): number => {
-  const includeWhitelistOnlyMerkl = options.includeWhitelistOnlyMerkl === true;
   if (!opportunities || !Array.isArray(opportunities)) return 0;
   return opportunities.reduce((sum, opp) => {
     const breakdownsApr = opp.breakdowns.reduce((breakdownSum, breakdown) => {
       if (!isCampaignActive(breakdown.campaignStartedAt, breakdown.campaignEndedAt)) return breakdownSum;
-      if (breakdown.whitelistOnly && !includeWhitelistOnlyMerkl) return breakdownSum;
+      if (!isMerklWhitelistBreakdownIncluded(breakdown, options.whitelistMerklCampaignIds)) return breakdownSum;
       const apr = getMerklBreakdownApr(breakdown, pointToUsdRate);
       return breakdownSum + (!isNaN(apr) && apr >= 0 ? apr : 0);
     }, 0);
@@ -161,12 +175,11 @@ const sumMerklOpportunitiesApy = (
   pointToUsdRate = TYDRO_POINT_TO_USD_RATE,
   options: IncentiveCalculationOptions = {}
 ): number => {
-  const includeWhitelistOnlyMerkl = options.includeWhitelistOnlyMerkl === true;
   if (!opportunities || !Array.isArray(opportunities)) return 0;
   return opportunities.reduce((sum, opp) => {
     const breakdownsApy = opp.breakdowns.reduce((breakdownSum, breakdown) => {
       if (!isCampaignActive(breakdown.campaignStartedAt, breakdown.campaignEndedAt)) return breakdownSum;
-      if (breakdown.whitelistOnly && !includeWhitelistOnlyMerkl) return breakdownSum;
+      if (!isMerklWhitelistBreakdownIncluded(breakdown, options.whitelistMerklCampaignIds)) return breakdownSum;
       const apr = getMerklBreakdownApr(breakdown, pointToUsdRate);
       if (!isNaN(apr) && apr >= 0) {
         return breakdownSum + convertAprToApy(apr);

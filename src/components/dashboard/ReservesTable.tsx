@@ -38,15 +38,15 @@ interface ReservesTableProps {
   isLoading?: boolean;
   onSelectMarket?: (marketName: string) => void;
   tydroPointToUsdRate: number;
-  includeWhitelistOnlyMerkl: boolean;
-  onToggleWhitelistOnlyMerkl: (next: boolean) => void;
+  whitelistMerklCampaignIds: ReadonlySet<string>;
+  onToggleWhitelistMerklCampaign: (campaignId: string, enabled: boolean) => void;
   tokenPrices?: TokenPricesIndex;
   scrollToReserveId?: string | null;
 }
 
 type SortMode = 'total' | 'native' | 'incentive';
 
-type SortableColumn = 'token' | 'price' | 'size' | 'util' | 'supply' | 'borrow' | 'spread';
+type SortableColumn = 'token' | 'price' | 'market' | 'size' | 'util' | 'supply' | 'borrow' | 'spread';
 
 const DEFAULT_VISIBLE_COUNT = 20;
 
@@ -59,14 +59,15 @@ const ReservesTable = ({
   isLoading,
   onSelectMarket,
   tydroPointToUsdRate,
-  includeWhitelistOnlyMerkl,
-  onToggleWhitelistOnlyMerkl,
+  whitelistMerklCampaignIds,
+  onToggleWhitelistMerklCampaign,
   tokenPrices,
   scrollToReserveId,
 }: ReservesTableProps) => {
   const isMobile = useIsMobile();
   const [activeSortColumn, setActiveSortColumn] = useState<SortableColumn | null>('supply');
   const [tokenSortOrder, setTokenSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [marketSortOrder, setMarketSortOrder] = useState<'asc' | 'desc'>('asc');
   const [priceSortOrder, setPriceSortOrder] = useState<'asc' | 'desc'>('desc');
   const [sizeSortMode, setSizeSortMode] = useState<'supply' | 'borrow'>('supply');
   const [sizeSortOrder, setSizeSortOrder] = useState<'asc' | 'desc'>('desc');
@@ -141,7 +142,7 @@ const ReservesTable = ({
   const { simulationsById, hasAnyInput: hasSharedScenario } = useSharedRateSimulations({
     reserves,
     isApy,
-    includeWhitelistOnlyMerkl,
+    whitelistMerklCampaignIds,
     tydroPointToUsdRate,
     tokenPrices,
     supplyInput: debouncedSharedSupplyInput,
@@ -169,7 +170,7 @@ const ReservesTable = ({
         brevisIncentives,
         protocolIncentives,
         tydroPointToUsdRate,
-        { includeWhitelistOnlyMerkl }
+        { whitelistMerklCampaignIds }
       ),
       apy: calculateTotalIncentiveApy(
         meritIncentives,
@@ -177,7 +178,7 @@ const ReservesTable = ({
         brevisIncentives,
         protocolIncentives,
         tydroPointToUsdRate,
-        { includeWhitelistOnlyMerkl }
+        { whitelistMerklCampaignIds }
       ),
     };
   };
@@ -314,6 +315,12 @@ const ReservesTable = ({
         const order = tokenSortOrder === 'asc' ? 1 : -1;
         return order * (a.tokenSymbol.localeCompare(b.tokenSymbol, undefined, { sensitivity: 'base' }));
       }
+      if (sortColumn === 'market') {
+        const order = marketSortOrder === 'asc' ? 1 : -1;
+        const byMarket = a.marketName.localeCompare(b.marketName, undefined, { sensitivity: 'base' });
+        if (byMarket !== 0) return order * byMarket;
+        return order * a.tokenSymbol.localeCompare(b.tokenSymbol, undefined, { sensitivity: 'base' });
+      }
       if (sortColumn === 'price') {
         const aP = a.tokenPrice ?? -Infinity;
         const bP = b.tokenPrice ?? -Infinity;
@@ -401,7 +408,7 @@ const ReservesTable = ({
       }
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reserves, activeSortColumn, tokenSortOrder, priceSortOrder, sizeSortMode, sizeSortOrder, utilSortOrder, supplySortMode, supplySortOrder, borrowSortMode, borrowSortOrder, spreadSortOrder, simulationsById, hasSharedScenario, isApy, tydroPointToUsdRate, includeWhitelistOnlyMerkl, debouncedSharedSupplyInput, sharedInputMode]);
+  }, [reserves, activeSortColumn, tokenSortOrder, marketSortOrder, priceSortOrder, sizeSortMode, sizeSortOrder, utilSortOrder, supplySortMode, supplySortOrder, borrowSortMode, borrowSortOrder, spreadSortOrder, simulationsById, hasSharedScenario, isApy, tydroPointToUsdRate, whitelistMerklCampaignIds, debouncedSharedSupplyInput, sharedInputMode]);
 
   const supplySortLabel = {
     total: 'Total',
@@ -450,6 +457,11 @@ const ReservesTable = ({
     collapseExpandedOnSort();
     setActiveSortColumn('token');
     setTokenSortOrder((o) => (o === 'asc' ? 'desc' : 'asc'));
+  };
+  const handleSortMarket = () => {
+    collapseExpandedOnSort();
+    setActiveSortColumn('market');
+    setMarketSortOrder((o) => (o === 'asc' ? 'desc' : 'asc'));
   };
   const handleSortPrice = () => {
     collapseExpandedOnSort();
@@ -1076,8 +1088,8 @@ const ReservesTable = ({
             onClose={() => setTooltipState(null)}
             isApy={isApy}
             tydroPointToUsdRate={tydroPointToUsdRate}
-            includeWhitelistOnlyMerkl={includeWhitelistOnlyMerkl}
-            onToggleWhitelistOnlyMerkl={onToggleWhitelistOnlyMerkl}
+            whitelistMerklCampaignIds={whitelistMerklCampaignIds}
+            onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign}
             tokenPrices={tokenPrices}
           />
         )}
@@ -1154,7 +1166,26 @@ const ReservesTable = ({
               </TableHead>
               {/* Market — 大幅收窄 */}
               <TableHead className="pl-[var(--ds-space-0-5)] pr-[var(--ds-space-1)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
-                Market
+                <button
+                  type="button"
+                  onClick={handleSortMarket}
+                  className={`ds-chip-heading md:ds-text-16 gap-[var(--ds-space-1)] transition-all duration-200 ${
+                    activeSortColumn === 'market'
+                      ? 'text-foreground font-bold scale-105'
+                      : 'text-muted-foreground hover:text-foreground/80'
+                  }`}
+                >
+                  <span>Market</span>
+                  {activeSortColumn === 'market' ? (
+                    marketSortOrder === 'asc' ? (
+                      <ArrowUp className="w-3 h-3" />
+                    ) : (
+                      <ArrowDown className="w-3 h-3" />
+                    )
+                  ) : (
+                    <ArrowDown className="w-3 h-3 opacity-50" />
+                  )}
+                </button>
               </TableHead>
               {/* Size */}
               <TableHead className="px-[var(--ds-space-1-5)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
@@ -1708,8 +1739,8 @@ const ReservesTable = ({
           onClose={() => setTooltipState(null)}
           isApy={isApy}
           tydroPointToUsdRate={tydroPointToUsdRate}
-          includeWhitelistOnlyMerkl={includeWhitelistOnlyMerkl}
-          onToggleWhitelistOnlyMerkl={onToggleWhitelistOnlyMerkl}
+          whitelistMerklCampaignIds={whitelistMerklCampaignIds}
+          onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign}
           tokenPrices={tokenPrices}
         />
       )}

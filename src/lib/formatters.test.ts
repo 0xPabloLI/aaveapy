@@ -184,7 +184,7 @@ describe('whitelist-only Merkl campaign handling', () => {
 
   it('includes whitelist-only Merkl campaigns when enabled', () => {
     const apr = calculateTotalIncentiveApr([], merklOpportunities, [], [], undefined, {
-      includeWhitelistOnlyMerkl: true,
+      whitelistMerklCampaignIds: new Set(['whitelist-merkl']),
     });
     expect(apr).toBe(11);
   });

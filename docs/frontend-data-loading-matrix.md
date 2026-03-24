@@ -2,6 +2,8 @@
 
 This document summarizes data-loading behavior for the home page and simulation flows.
 
+**Merkl forecast math** (how `forecast.items` from `/meta/side-data` feed `forecastWithTVL` in simulation): see [`rate-calculation-formulas.md`](./rate-calculation-formulas.md#merkl-incentive-forecast-forecastwithtvl).
+
 ## Key Terms
 
 | Term | What it means |
@@ -49,7 +51,7 @@ Browser-level `<link rel="preload" as="fetch">` could start API requests during 
 | API | Trigger type | Current trigger point | TTL / staleTime | Caches used | Notes |
 | --- | --- | --- | --- | --- | --- |
 | `/markets` | App-level prefetch + hook query | `App.tsx` prefetch + `useAaveMarkets` in `Index` | 1 min (`coreSnapshotApi`) | React Query + localStorage | Core snapshot. |
-| `/meta/side-data` | App-level prefetch + hook query | `App.tsx` prefetch + `useSideDataMeta` (consumed by `useTokenCategories`, `useCoingeckoFdv`, `useRateSimulation`) | 5 min (`sideDataMeta`); backend TTL overrides (categories 6h, FDV 5m, forecast 10m) | React Query + localStorage | Merged endpoint for categories, FDV, and forecast. |
+| `/meta/side-data` | App-level prefetch + hook query | `App.tsx` prefetch + `useSideDataMeta` (consumed by `useTokenCategories`, `useCoingeckoFdv`, `useRateSimulation`) | 5 min (`sideDataMeta`); backend TTL overrides (categories 6h, FDV 5m, forecast 10m) | React Query + localStorage | Merged endpoint for categories, FDV, and forecast. Merkl campaign state for incentive simulation: formulas in [`rate-calculation-formulas.md` § Merkl incentive forecast](./rate-calculation-formulas.md#merkl-incentive-forecast-forecastwithtvl). |
 | `/rate-inputs` | App-level prefetch + hook query | `App.tsx` prefetch + `useReserveRateInputs` in simulation hooks | 1 min (`coreSnapshotApi`) | React Query + localStorage | Used for native rate simulation. |
 | CoinGecko `/search` | Hook query (third-party) | `useCoingeckoTokenImage` fallback only | 24 hours | React Query + localStorage | Icon fallback when local/logo URI misses. |
 
@@ -142,7 +144,7 @@ Frontend types and Zod schemas are aligned with the backend response shapes.
 |----------|----------------|----------------|
 | `GET /markets` | Manual check `snapshot.lastUpdated`, `reserves[]`; no Zod. Uses `snapshot.staleTimeMs` (when present) as React Query `staleTime`, falling back to local TTL. | `MarketsResponse`, `ReserveWithSpread` |
 | `GET /rate-inputs` | Zod `RateInputsResponseSchema` | `RateInputsResponse`, `ReserveRateInput` |
-| `GET /meta/side-data` | Zod `SideDataMetaResponseSchema`. Includes categories, FDV, and forecast (merged endpoint). Uses `min(categories.staleTimeMs, fdv.staleTimeMs, forecast.staleTimeMs)` as React Query `staleTime`, falling back to local TTL. Forecast data is also cached in module in-memory cache and localStorage. | `SideDataMetaResponse` (in useSideDataMeta) |
+| `GET /meta/side-data` | Zod `SideDataMetaResponseSchema`. Includes categories, FDV, and forecast (merged endpoint). Uses `min(categories.staleTimeMs, fdv.staleTimeMs, forecast.staleTimeMs)` as React Query `staleTime`, falling back to local TTL. Forecast data is also cached in module in-memory cache and localStorage. **`forecast` → `forecastWithTVL`:** see [`rate-calculation-formulas.md`](./rate-calculation-formulas.md#merkl-incentive-forecast-forecastwithtvl). | `SideDataMetaResponse` (in useSideDataMeta) |
 
 **Backend fields not used by frontend:**
 - `GET /rate-inputs`: `sources` – `{ subgraphChains, onchainChains, subgraphMissingChains }` (root-level)

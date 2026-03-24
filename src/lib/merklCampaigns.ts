@@ -1,4 +1,5 @@
 import type { ReserveWithSpread, MerklOpportunityGroup } from '@/types/aave';
+import { isMerklWhitelistBreakdownIncluded } from '@/lib/formatters';
 
 export interface MerklCampaignOption {
   campaignId: string;
@@ -13,9 +14,54 @@ export interface MerklCampaignOption {
 }
 
 interface CollectMerklCampaignOptionsConfig {
-  includeWhitelistOnly?: boolean;
+  whitelistMerklCampaignIds?: ReadonlySet<string>;
   activeOnly?: boolean;
 }
+
+export interface WhitelistOnlyMerklCampaignEntry {
+  campaignId: string;
+  label: string;
+}
+
+/**
+ * Active whitelist-only Merkl campaigns across reserves (deduped by campaignId) for preference UI.
+ */
+export const collectWhitelistOnlyMerklCampaignEntries = (
+  reserves: ReserveWithSpread[]
+): WhitelistOnlyMerklCampaignEntry[] => {
+  const byId = new Map<string, string>();
+
+  const visit = (
+    groups: MerklOpportunityGroup[] | undefined,
+    actionType: MerklCampaignOption['actionType'],
+    reserve: ReserveWithSpread
+  ) => {
+    if (!groups) return;
+    groups.forEach((group) => {
+      group.breakdowns?.forEach((breakdown) => {
+        if (!breakdown.whitelistOnly) return;
+        if (!isBreakdownActive(breakdown.campaignStartedAt, breakdown.campaignEndedAt)) return;
+        const campaignId = String(breakdown.campaignId || '').trim();
+        if (!campaignId) return;
+        const groupName = group.name ? ` · ${group.name}` : '';
+        const label = `${reserve.chainName} · ${reserve.marketName} · ${reserve.tokenSymbol} · ${actionType}${groupName} · ${campaignId}`;
+        if (!byId.has(campaignId)) {
+          byId.set(campaignId, label);
+        }
+      });
+    });
+  };
+
+  reserves.forEach((reserve) => {
+    visit(reserve.merklSupplys, 'Supply', reserve);
+    visit(reserve.merklBorrows, 'Borrow', reserve);
+    visit(reserve.merklHolds, 'Hold', reserve);
+  });
+
+  return Array.from(byId.entries())
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([campaignId, label]) => ({ campaignId, label }));
+};
 
 const isBreakdownActive = (start?: string, end?: string, nowMs = Date.now()): boolean => {
   if (!start || !end) return false;
@@ -30,13 +76,13 @@ const addFromGroups = (
   groups: MerklOpportunityGroup[] | undefined,
   actionType: MerklCampaignOption['actionType'],
   reserve: ReserveWithSpread,
-  includeWhitelistOnly: boolean,
+  whitelistMerklCampaignIds: ReadonlySet<string> | undefined,
   activeOnly: boolean
 ) => {
   if (!groups || groups.length === 0) return;
   groups.forEach((group) => {
     group.breakdowns?.forEach((breakdown) => {
-      if (breakdown.whitelistOnly && !includeWhitelistOnly) return;
+      if (!isMerklWhitelistBreakdownIncluded(breakdown, whitelistMerklCampaignIds)) return;
       if (activeOnly && !isBreakdownActive(breakdown.campaignStartedAt, breakdown.campaignEndedAt)) return;
       const campaignId = String(breakdown.campaignId || '').trim();
       if (!campaignId) return;
@@ -73,13 +119,12 @@ export const collectMerklCampaignOptions = (
   config: CollectMerklCampaignOptionsConfig = {}
 ): MerklCampaignOption[] => {
   const byCampaignId = new Map<string, MerklCampaignOption>();
-  const includeWhitelistOnly = config.includeWhitelistOnly === true;
   const activeOnly = config.activeOnly === true;
 
   reserves.forEach((reserve) => {
-    addFromGroups(byCampaignId, reserve.merklSupplys, 'Supply', reserve, includeWhitelistOnly, activeOnly);
-    addFromGroups(byCampaignId, reserve.merklBorrows, 'Borrow', reserve, includeWhitelistOnly, activeOnly);
-    addFromGroups(byCampaignId, reserve.merklHolds, 'Hold', reserve, includeWhitelistOnly, activeOnly);
+    addFromGroups(byCampaignId, reserve.merklSupplys, 'Supply', reserve, config.whitelistMerklCampaignIds, activeOnly);
+    addFromGroups(byCampaignId, reserve.merklBorrows, 'Borrow', reserve, config.whitelistMerklCampaignIds, activeOnly);
+    addFromGroups(byCampaignId, reserve.merklHolds, 'Hold', reserve, config.whitelistMerklCampaignIds, activeOnly);
   });
 
   return Array.from(byCampaignId.values()).sort((a, b) => a.campaignId.localeCompare(b.campaignId));

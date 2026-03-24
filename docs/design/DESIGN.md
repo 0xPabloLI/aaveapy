@@ -74,6 +74,8 @@
 适用：Token 类别、Markets 筛选
 - 选中：`border-[rgb(var(--ds-brand-magenta-rgb))] ds-text-brand-magenta`
 - 未选中：`border-border text-foreground/80`
+- Markets 选项来源 `buildMarketsList`：按 **`marketName`** 字母序（`localeCompare`，`sensitivity: 'base'`）；`FilterBar` 仍先渲染 Ethereum 再其他链，各段内保持该顺序。
+- 桌面 **Reserves 表**「Market」列表头可点击排序：按 **`marketName`** 字母序，同市场内再按 **`tokenSymbol`**；默认升序，再次点击切换降序（与 Token 列交互一致）。
 
 ### 4.3 卡片
 - 玻璃卡：`glass-card`（blur + 半透明）
@@ -102,6 +104,13 @@
 | **展开模拟区** | 与价格行同一水平常量：**`px-3.5`**，与 `SimulationSubRow` 表格列对齐。 |
 
 **不要**给分段控件再套一层与 `mx-3` 重复的水平边距。Token 标题行仍为 **`px-3`**（图标与名称；可与 segment 左缘差 2px，属预期）。
+
+### 4.7 Merkl 白名单激励（按 campaign）
+
+- 仅 **Merkl 且 `whitelistOnly`** 的活动需用户自行选择是否计入全站激励汇总。
+- **默认**：不勾选任何项（白名单 APR **不计入**表格、Top Opportunities、模拟等）。
+- **勾选**：按 **`campaignId`** 逐项勾选；激励详情 Tooltip 与（若启用）Merkl Forecast 面板使用短文案 **「In」** / **「Out (WL)」**。
+- 完整规则与实现位置见 **[frontend-interaction-guardrails.md](frontend-interaction-guardrails.md)** § *Merkl whitelist-only campaigns*。
 
 ## 5. 布局原则
 - **文字与边框须有间距（强制）**：所有带边框的容器内，文字与边框之间必须保留至少 `--ds-space-2`（8px）的内边距，不得贴边。卡片、表格单元格、警告条、按钮等均需遵守。

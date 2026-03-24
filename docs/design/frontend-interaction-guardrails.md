@@ -192,6 +192,19 @@ This note records recurring UI/interaction issues found during incentive/forecas
   - Likewise, adding `Borrow` must not increase that row's simulated `Borrow incentive`.
   - Apply this rule both to the incentive total and each source breakdown row (`ACI`, `Merkl`) so totals and rows stay directionally consistent.
 
+### Merkl whitelist-only campaigns (per `campaignId`)
+
+Merkl may mark a breakdown as **whitelist-only** (`whitelistOnly: true`). The app does **not** assume the viewer is eligible.
+
+| Topic | Behavior |
+|-------|------------|
+| **Default** | **No** whitelist-only campaigns are included in totals. App state is `whitelistMerklCampaignIds: Set<string>` on `Index`, initially **empty**. |
+| **User opt-in** | User checks **per campaign** by **`campaignId`** (same ID can appear on multiple reserves if Merkl reuses it). |
+| **What changes when checked** | That campaign’s Merkl APR/APY counts toward: reserves table numbers, Top Opportunities, incentive totals in `IncentiveTooltip`, and `useRateSimulation` / shared table simulation. |
+| **Where the UI lives** | **Incentive tooltip**: each whitelist Merkl row shows a short checkbox label **“In”**; rows without a `campaignId` show **“Out (WL)”**. **Merkl Forecast panel** (dev or `VITE_SHOW_RATE_CHECK`): optional list of active whitelist-only campaigns with the same checkbox label under **“In:”**. |
+| **Implementation** | `isMerklWhitelistBreakdownIncluded()` in `formatters.ts`; `useRateSimulation` / `useSharedRateSimulations`; `collectMerklCampaignOptions` / `collectWhitelistOnlyMerklCampaignEntries` in `merklCampaigns.ts`. |
+| **Persistence** | None — selection is **session-only**; reload clears it. |
+
 ### InkAprCalculator mobile (CompactLayout): slider tooltip & Reference FDVs spacing
 
 **文件**：`src/components/dashboard/InkAprCalculator.tsx`，非 XL 的 CompactLayout。
@@ -209,7 +222,7 @@ This note records recurring UI/interaction issues found during incentive/forecas
 When tooltip/forecast behavior looks wrong, check:
 
 1. **Display mode**: APR vs APY toggle consistency
-2. **Source scoping**: current reserve/source only (especially whitelist toggles)
+2. **Merkl whitelist-only**: default **excluded**; opt-in **per `campaignId`** — see § **Merkl whitelist-only campaigns** above
 3. **Forecast source type**: Merkl vs Merit (campaign-wide vs user-specific semantics)
 4. **Viewport constraints**: clipping, scrollability, fixed overlay behavior
 5. **Token normalization**: symbol alias handling in search and display

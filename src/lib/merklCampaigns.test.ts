@@ -70,7 +70,7 @@ describe('collectMerklCampaignOptions', () => {
     expect(defaultOptions.map((option) => option.campaignId)).toEqual(['public']);
 
     const includeWhitelistOptions = collectMerklCampaignOptions(reserves, {
-      includeWhitelistOnly: true,
+      whitelistMerklCampaignIds: new Set(['whitelist']),
     });
     expect(includeWhitelistOptions.map((option) => option.campaignId)).toEqual(['public', 'whitelist']);
   });

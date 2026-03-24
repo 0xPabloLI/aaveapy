@@ -8,7 +8,7 @@ const makeProps = () => ({
   isRateDragging: false,
   onIncentiveClick: undefined,
   categoryGroups: {},
-  includeWhitelistOnlyMerkl: false,
+  whitelistMerklCampaignIds: new Set<string>(),
   reserves: [
     { marketName: 'AaveV3Ethereum', tokenAddress: '0x1' },
     { marketName: 'AaveV3Base', tokenAddress: '0x2' },
@@ -16,9 +16,9 @@ const makeProps = () => ({
 });
 
 describe('shouldSkipTopOpportunitiesRender', () => {
-  it('returns false when whitelist toggle changes', () => {
+  it('returns false when whitelist campaign selection changes', () => {
     const prev = makeProps();
-    const next = { ...makeProps(), includeWhitelistOnlyMerkl: true };
+    const next = { ...makeProps(), whitelistMerklCampaignIds: new Set(['w']) };
 
     expect(shouldSkipTopOpportunitiesRender(prev, next)).toBe(false);
   });

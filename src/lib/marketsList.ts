@@ -19,7 +19,10 @@ export function buildMarketsList(marketsResponse?: MarketsResponse | null): Mark
   }
 
   const markets = Array.from(uniqueMarkets.values());
-  const ethereumMarkets = markets.filter((market) => market.chainName === 'Ethereum');
-  const otherMarkets = markets.filter((market) => market.chainName !== 'Ethereum');
-  return [...ethereumMarkets, ...otherMarkets];
+  markets.sort((a, b) => {
+    const byName = a.marketName.localeCompare(b.marketName, undefined, { sensitivity: 'base' });
+    if (byName !== 0) return byName;
+    return a.chainName.localeCompare(b.chainName, undefined, { sensitivity: 'base' });
+  });
+  return markets;
 }

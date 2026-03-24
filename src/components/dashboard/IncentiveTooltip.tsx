@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { ExternalLink, X } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { ReserveWithSpread, MeritIncentive, MerklOpportunityGroup, BrevisIncentive, TokenPricesIndex } from '@/types/aave';
-import { formatPercent, convertAprToApy, apyToApr } from '@/lib/formatters';
+import { formatPercent, convertAprToApy, apyToApr, isMerklWhitelistBreakdownIncluded } from '@/lib/formatters';
 import { getMerklBreakdownApr, getMerklForecastUsdMultiplier } from '@/lib/tydro';
 import { useMerklForecastStates } from '@/hooks/useMerklForecastStates';
 import {
@@ -40,8 +40,8 @@ interface IncentiveTooltipProps {
   accentTextClass?: string;
   accentBgClass?: string;
   tydroPointToUsdRate: number;
-  includeWhitelistOnlyMerkl: boolean;
-  onToggleWhitelistOnlyMerkl: (next: boolean) => void;
+  whitelistMerklCampaignIds: ReadonlySet<string>;
+  onToggleWhitelistMerklCampaign: (campaignId: string, enabled: boolean) => void;
   tokenPrices?: TokenPricesIndex;
 }
 
@@ -142,8 +142,8 @@ const IncentiveTooltip = ({
   accentTextClass,
   accentBgClass,
   tydroPointToUsdRate,
-  includeWhitelistOnlyMerkl,
-  onToggleWhitelistOnlyMerkl,
+  whitelistMerklCampaignIds,
+  onToggleWhitelistMerklCampaign,
   tokenPrices,
 }: IncentiveTooltipProps) => {
   const { resolvedTheme } = useTheme();
@@ -544,7 +544,7 @@ const IncentiveTooltip = ({
           if (!isCampaignActive(breakdown.campaignStartedAt, breakdown.campaignEndedAt)) return;
           const apr = getMerklBreakdownApr(breakdown, tydroPointToUsdRate);
           const whitelistOnly = breakdown.whitelistOnly === true;
-          const included = !whitelistOnly || includeWhitelistOnlyMerkl;
+          const included = isMerklWhitelistBreakdownIncluded(breakdown, whitelistMerklCampaignIds);
           if (!isNaN(apr) && apr >= 0) {
             const displayValue = isApy ? convertAprToApy(apr) : apr;
             sources.push({
@@ -618,18 +618,6 @@ const IncentiveTooltip = ({
     reserveRateInput !== null ||
     reserveRateInputLoading ||
     Boolean(reserveRateInputError);
-  const whitelistOnlyCampaignCount = useMemo(() => {
-    const opportunities = type === 'supply' ? reserve.merklSupplys : reserve.merklBorrows;
-    if (!opportunities || !Array.isArray(opportunities)) return 0;
-    return opportunities.reduce((count, opportunity) => {
-      const breakdowns = opportunity.breakdowns ?? [];
-      return (
-        count +
-        breakdowns.reduce((innerCount, breakdown) => innerCount + (breakdown.whitelistOnly ? 1 : 0), 0)
-      );
-    }, 0);
-  }, [reserve, type]);
-  const showWhitelistToggle = whitelistOnlyCampaignCount > 0;
   const merklForecastInput = showForecastInput && import.meta.env.DEV ? (
     <div className="mb-[var(--ds-space-2)] rounded-lg border border-border/60 bg-muted/20 px-[var(--ds-space-2)] py-[var(--ds-space-2)]">
       <label className="ds-tooltip-body text-muted-foreground block mb-[var(--ds-space-1)]">
@@ -695,20 +683,6 @@ const IncentiveTooltip = ({
           </>
         )}
       </div>
-      {showWhitelistToggle && (
-        <label className="mt-[var(--ds-space-1)] flex items-center gap-[var(--ds-space-1-5)] ds-tooltip-body text-muted-foreground">
-          <input
-            type="checkbox"
-            checked={includeWhitelistOnlyMerkl}
-            onChange={(event) => onToggleWhitelistOnlyMerkl(event.target.checked)}
-            className="h-3.5 w-3.5 rounded border-border bg-background"
-          />
-          <span>
-            Include whitelist-only Merkl campaigns
-            {!includeWhitelistOnlyMerkl && whitelistOnlyCampaignCount > 0 ? ` (${whitelistOnlyCampaignCount} excluded)` : ''}
-          </span>
-        </label>
-      )}
     </div>
   ) : null;
 
@@ -808,9 +782,23 @@ const IncentiveTooltip = ({
       const displayValue = isExcludedWhitelist ? campaign.rawValue ?? campaign.value : campaign.value;
       return (
         <>
-          {isExcludedWhitelist && (
+          {campaign.whitelistOnly && campaign.campaignId && (
+            <label
+              className="mt-[var(--ds-space-1)] flex items-center gap-[var(--ds-space-1-5)] ds-tooltip-body text-muted-foreground"
+              aria-label="Include whitelist Merkl campaign in incentive totals"
+            >
+              <input
+                type="checkbox"
+                checked={whitelistMerklCampaignIds.has(campaign.campaignId)}
+                onChange={(event) => onToggleWhitelistMerklCampaign(campaign.campaignId!, event.target.checked)}
+                className="h-3.5 w-3.5 rounded border-border bg-background"
+              />
+              <span aria-hidden="true">In</span>
+            </label>
+          )}
+          {campaign.whitelistOnly && !campaign.campaignId && isExcludedWhitelist && (
             <p className="ds-tooltip-body mt-[var(--ds-space-1)] text-zinc-500">
-              Whitelist-only campaign (excluded) · {formatPercent(displayValue)}
+              Out (WL) · {formatPercent(displayValue)}
             </p>
           )}
           {campaign.dateRange && (
@@ -900,9 +888,23 @@ const IncentiveTooltip = ({
               key={`${keyPrefix}-campaign-${campaignIndex}`}
               className={campaignIndex > 0 ? 'pt-[var(--ds-space-0-5)]' : ''}
             >
-              {isExcludedWhitelist && (
+              {campaign.whitelistOnly && campaign.campaignId && (
+                <label
+                  className="flex items-center gap-[var(--ds-space-1-5)] ds-tooltip-body text-muted-foreground mb-[var(--ds-space-0-5)]"
+                  aria-label="Include whitelist Merkl campaign in incentive totals"
+                >
+                  <input
+                    type="checkbox"
+                    checked={whitelistMerklCampaignIds.has(campaign.campaignId)}
+                    onChange={(event) => onToggleWhitelistMerklCampaign(campaign.campaignId!, event.target.checked)}
+                    className="h-3.5 w-3.5 rounded border-border bg-background"
+                  />
+                  <span aria-hidden="true">In</span>
+                </label>
+              )}
+              {campaign.whitelistOnly && !campaign.campaignId && isExcludedWhitelist && (
                 <p className="ds-tooltip-body text-zinc-500 mb-[var(--ds-space-0-5)]">
-                  Whitelist-only campaign (excluded)
+                  Out (WL)
                 </p>
               )}
               <div className="flex items-start justify-between gap-[var(--ds-space-2)]">
