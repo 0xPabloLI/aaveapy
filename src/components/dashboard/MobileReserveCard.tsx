@@ -485,7 +485,7 @@ const MobileReserveCard = memo(({
         }`}
       >
         {/* Token header */}
-        <div className="flex items-center gap-[var(--ds-space-2)] mb-2 min-h-[36px] px-3">
+        <div className="flex items-center gap-[var(--ds-space-2)] mb-1.5 min-h-[36px] px-3">
           <a
             href={buildAaveReserveUrl({ marketName: reserve.marketName, tokenAddress: reserve.tokenAddress }) || '#'}
             {...externalLinkTabProps(true)}
