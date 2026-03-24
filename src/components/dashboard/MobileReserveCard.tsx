@@ -1,5 +1,6 @@
 import { memo, useEffect, useState } from 'react';
 import { ExternalLink, ListCollapse, X } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { ReserveWithSpread, ETHEREUM_MARKET_NAMES } from '@/types/aave';
 import { formatPercent, formatSpread } from '@/lib/formatters';
 import { getChainIconSrc } from '@/lib/chainIcons';
@@ -484,7 +485,7 @@ const MobileReserveCard = memo(({
         }`}
       >
         {/* Token header */}
-        <div className="flex items-center gap-[var(--ds-space-2)] mb-2 min-h-[36px] px-3">
+        <div className="flex items-center gap-[var(--ds-space-2)] mb-1.5 min-h-[36px] px-3">
           <a
             href={buildAaveReserveUrl({ marketName: reserve.marketName, tokenAddress: reserve.tokenAddress }) || '#'}
             {...externalLinkTabProps(true)}
@@ -536,13 +537,13 @@ const MobileReserveCard = memo(({
         </div>
 
         {/* Pill tabs */}
-        <div className="mx-3 mb-2 flex gap-[var(--ds-space-1-5)] rounded-lg bg-muted/40 p-0.5">
+        <div className="mx-3 mb-1.5 flex gap-[var(--ds-space-1)] rounded-lg bg-muted/40 p-0.5">
           <button
             type="button"
             onClick={() => setActiveTab('supply')}
             className={`flex-1 ds-text-12 font-medium py-1 rounded-md transition-all duration-200 ${
               activeTab === 'supply'
-                ? 'ds-bg-emerald-500-10 ds-text-emerald-500 shadow-sm'
+                ? 'ds-bg-emerald-500-10 ds-text-emerald-500 shadow-sm ring-1 ds-ring-emerald-500-15'
                 : 'text-muted-foreground hover:text-foreground/70'
             }`}
           >
@@ -553,7 +554,7 @@ const MobileReserveCard = memo(({
             onClick={() => setActiveTab('borrow')}
             className={`flex-1 ds-text-12 font-medium py-1 rounded-md transition-all duration-200 ${
               activeTab === 'borrow'
-                ? 'ds-bg-brand-cyan-10 ds-text-brand-cyan shadow-sm'
+                ? 'ds-bg-brand-cyan-10 ds-text-brand-cyan shadow-sm ring-1 ds-ring-brand-cyan-15'
                 : 'text-muted-foreground hover:text-foreground/70'
             }`}
           >
@@ -564,19 +565,30 @@ const MobileReserveCard = memo(({
         {/* Tab content */}
         <div className="flex w-full flex-col">
           {renderAmountRow()}
-          <div className="mt-1.5">{renderHeroApy()}</div>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.18, ease: [0.25, 0.1, 0.25, 1] }}
+              className="mt-1"
+            >
+              {renderHeroApy()}
+            </motion.div>
+          </AnimatePresence>
 
           {/* Simulation toggle — shows Spread inside */}
-          <div className="mt-2 px-3">
+          <div className="mt-1.5 px-3">
             <button
               type="button"
               onClick={onToggleSimulation}
               aria-expanded={isSimulationExpanded}
               aria-label={isSimulationExpanded ? 'Collapse reserve details' : 'Expand reserve details'}
-              className={`inline-flex w-full items-center justify-between gap-2 rounded-lg px-3 py-1.5 ds-text-12 text-muted-foreground transition-colors duration-300 ${
+              className={`inline-flex w-full items-center justify-between gap-2 rounded-lg px-3 py-1.5 ds-text-12 text-muted-foreground transition-all duration-200 ${
                 isSimulationExpanded
-                  ? 'border-2 border-foreground/40 bg-muted/50'
-                  : 'border border-border/70 bg-background hover:bg-muted/40'
+                  ? 'border border-foreground/30 bg-muted/50 shadow-sm'
+                  : 'border border-border/60 bg-background hover:bg-muted/40 hover:border-border'
               }`}
             >
               <span className="flex min-w-0 items-center gap-1.5">
