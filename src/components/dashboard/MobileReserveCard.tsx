@@ -579,16 +579,16 @@ const MobileReserveCard = memo(({
           </AnimatePresence>
 
           {/* Simulation toggle — shows Spread inside */}
-          <div className="mt-2 px-3">
+          <div className="mt-1.5 px-3">
             <button
               type="button"
               onClick={onToggleSimulation}
               aria-expanded={isSimulationExpanded}
               aria-label={isSimulationExpanded ? 'Collapse reserve details' : 'Expand reserve details'}
-              className={`inline-flex w-full items-center justify-between gap-2 rounded-lg px-3 py-1.5 ds-text-12 text-muted-foreground transition-colors duration-300 ${
+              className={`inline-flex w-full items-center justify-between gap-2 rounded-lg px-3 py-1.5 ds-text-12 text-muted-foreground transition-all duration-200 ${
                 isSimulationExpanded
-                  ? 'border-2 border-foreground/40 bg-muted/50'
-                  : 'border border-border/70 bg-background hover:bg-muted/40'
+                  ? 'border border-foreground/30 bg-muted/50 shadow-sm'
+                  : 'border border-border/60 bg-background hover:bg-muted/40 hover:border-border'
               }`}
             >
               <span className="flex min-w-0 items-center gap-1.5">
