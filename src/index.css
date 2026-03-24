@@ -208,6 +208,7 @@
     line-height: 1;
     display: inline-flex;
     align-items: center;
+  cursor: pointer;
   }
 
   .ds-button {
