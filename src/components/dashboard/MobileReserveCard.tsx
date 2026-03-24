@@ -537,13 +537,13 @@ const MobileReserveCard = memo(({
         </div>
 
         {/* Pill tabs */}
-        <div className="mx-3 mb-2 flex gap-[var(--ds-space-1-5)] rounded-lg bg-muted/40 p-0.5">
+        <div className="mx-3 mb-1.5 flex gap-[var(--ds-space-1)] rounded-lg bg-muted/40 p-0.5">
           <button
             type="button"
             onClick={() => setActiveTab('supply')}
             className={`flex-1 ds-text-12 font-medium py-1 rounded-md transition-all duration-200 ${
               activeTab === 'supply'
-                ? 'ds-bg-emerald-500-10 ds-text-emerald-500 shadow-sm'
+                ? 'ds-bg-emerald-500-10 ds-text-emerald-500 shadow-sm ring-1 ds-ring-emerald-500-15'
                 : 'text-muted-foreground hover:text-foreground/70'
             }`}
           >
@@ -554,7 +554,7 @@ const MobileReserveCard = memo(({
             onClick={() => setActiveTab('borrow')}
             className={`flex-1 ds-text-12 font-medium py-1 rounded-md transition-all duration-200 ${
               activeTab === 'borrow'
-                ? 'ds-bg-brand-cyan-10 ds-text-brand-cyan shadow-sm'
+                ? 'ds-bg-brand-cyan-10 ds-text-brand-cyan shadow-sm ring-1 ds-ring-brand-cyan-15'
                 : 'text-muted-foreground hover:text-foreground/70'
             }`}
           >
