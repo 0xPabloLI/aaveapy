@@ -565,7 +565,18 @@ const MobileReserveCard = memo(({
         {/* Tab content */}
         <div className="flex w-full flex-col">
           {renderAmountRow()}
-          <div className="mt-1.5">{renderHeroApy()}</div>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.18, ease: [0.25, 0.1, 0.25, 1] }}
+              className="mt-1"
+            >
+              {renderHeroApy()}
+            </motion.div>
+          </AnimatePresence>
 
           {/* Simulation toggle — shows Spread inside */}
           <div className="mt-2 px-3">
