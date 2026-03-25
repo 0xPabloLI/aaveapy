@@ -47,6 +47,8 @@ const BrevisIncentiveSchema = z.object({
   startDate: z.string(),
   endDate: z.string(),
   name: z.string(),
+  perUserRewardCapUsd: z.number().optional(),
+  sharedCapGroupId: z.string().optional(),
 });
 
 // ── Token price entry ──

@@ -169,8 +169,9 @@ This note records recurring UI/interaction issues found during incentive/forecas
 
 ### Forecast UI consistency
 
-- **APR/APY mode parity**: any forecast number shown inside a tooltip/panel must follow the same APR/APY mode selected in the main UI.
-- **Label user-specific vs campaign-wide values**:
+- **Incentive tooltip vs shared simulation**: `IncentiveTooltip` shows **static** incentive context (campaign dates, messages, Merkl whitelist opt-in, short static hints such as Merit self-cap amount or Brevis per-user max when those fields exist). **Deposit- and TVL-dependent** forecasts (Merkl hypothetical TVL, Merit last-round estimates, FIX rewardable horizon, Brevis days-to-cap, cap-binding warnings, etc.) belong in the **shared rate simulation** UI (`useRateSimulation` per-campaign rows on `SimulationSubRow` via `capNote` / `capWarning`), not inside the tooltip.
+- **APR/APY mode parity**: headline incentive **percentages** in `IncentiveTooltip` follow the global APR/APY toggle. **Simulated** rates and any forecast-derived numbers (shared simulation table, `MerklForecastPanel`, other panels) must use the same mode—`IncentiveTooltip` does not show scenario forecasts.
+- **Label user-specific vs campaign-wide values** (simulation / forecast panels—not static tooltip copy):
   - Merkl forecast rows usually show campaign-wide `Daily Rewards`.
   - Merit self-bonus forecast is user-specific and should be labeled clearly (e.g. `Your Daily Rewards`).
 - **Avoid ambiguous eligibility wording**: if eligibility depends on external user state (e.g. Self verification) and is not known client-side, do not claim the user is currently eligible.
@@ -201,8 +202,8 @@ Merkl may mark a breakdown as **whitelist-only** (`whitelistOnly: true`). The ap
 | **Default** | **No** whitelist-only campaigns are included in totals. App state is `whitelistMerklCampaignIds: Set<string>` on `Index`, initially **empty**. |
 | **User opt-in** | User checks **per campaign** by **`campaignId`** (same ID can appear on multiple reserves if Merkl reuses it). |
 | **What changes when checked** | That campaign’s Merkl APR/APY counts toward: reserves table numbers, Top Opportunities, incentive totals in `IncentiveTooltip`, and `useRateSimulation` / shared table simulation. |
-| **Where the UI lives** | **Incentive tooltip**: each whitelist Merkl row shows a short checkbox label **“In”**; rows without a `campaignId` show **“Out (WL)”**. **Merkl Forecast panel** (dev or `VITE_SHOW_RATE_CHECK`): optional list of active whitelist-only campaigns with the same checkbox label under **“In:”**. |
-| **Implementation** | `isMerklWhitelistBreakdownIncluded()` in `formatters.ts`; `useRateSimulation` / `useSharedRateSimulations`; `collectMerklCampaignOptions` / `collectWhitelistOnlyMerklCampaignEntries` in `merklCampaigns.ts`. |
+| **Where the UI lives** | **Incentive tooltip**: each whitelist Merkl row shows the same checkbox label **“Include as WL user”** (with or without a `campaignId`; no id uses an internal sentinel key in `whitelistMerklCampaignIds`). Full accessible name states that checking confirms whitelist participation and includes the campaign in totals. **Merkl Forecast panel** (dev or `VITE_SHOW_RATE_CHECK`): optional list of active whitelist-only campaigns (including a **“Whitelist Merkl (no campaign ID)”** row when applicable) with the same label as the section header before the list. |
+| **Implementation** | `isMerklWhitelistBreakdownIncluded()` and `MERKL_WHITELIST_NO_CAMPAIGN_ID_SENTINEL` in `formatters.ts`; `useRateSimulation` / `useSharedRateSimulations`; `collectMerklCampaignOptions` / `collectWhitelistOnlyMerklCampaignEntries` in `merklCampaigns.ts`. |
 | **Persistence** | None — selection is **session-only**; reload clears it. |
 
 ### InkAprCalculator mobile (CompactLayout): slider tooltip & Reference FDVs spacing
@@ -329,4 +330,4 @@ Keep header, body, and skeleton row padding in sync so alignment and spacing sta
   - **Geometric Precision**: Use standard SVG `A` (Arc) commands to draw the curve. Do not use `C` (Cubic Bezier) to hand-tune a fake corner, as it lacks the correct visual rhythm of a native `border-radius`.
   - **Sub-pixel Alignment & Mirroring Exactness**: When drawing a 1px stroke in SVG to match CSS borders, coordinates must be aligned to `.5` (e.g., `M 0.5 0 L 0.5 0.5 A ...`) to ensure pixel-perfect rendering without blurry antialiased edges. **Crucially, when mirroring the right side of a container, the x-coordinate must be `width - 0.5` (e.g., `16.5` for a `17px` box), not integer-rounded, to prevent 1px offset gaps.**
 - **Rule**: Never add `rounded-t-*` to the simulation panel container; the top edge is always joined to the card above.
-- The simulation sub-row does not repeat the desktop heading “Shared APY/APR simulation” in **compact (mobile)** layout; the card’s Simulation toggle already establishes context.
+- The simulation sub-row does not show a “Shared APY/APR simulation” heading (desktop or mobile); table inputs and the Simulation toggle already establish context.

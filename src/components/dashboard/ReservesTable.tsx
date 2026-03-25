@@ -5,9 +5,9 @@ import { ArrowUp, ArrowDown, ChevronDown, ChevronUp } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ReserveWithSpread, ETHEREUM_MARKET_NAMES, TokenPricesIndex } from '@/types/aave';
-import { 
-  formatPercent, 
-  formatSpread, 
+import {
+  formatPercent,
+  formatSpread,
   formatUsd,
   calculateTotalSupplyApr,
   calculateTotalSupplyApy,
@@ -15,7 +15,8 @@ import {
   calculateTotalBorrowApy,
   calculateTotalIncentiveApr,
   calculateTotalIncentiveApy,
-  apyToApr
+  apyToApr,
+  resolveVisibleIncentiveBadgeValue,
 } from '@/lib/formatters';
 import ScenarioControls, { type ScenarioControlsHandle } from './ScenarioControls';
 import { compareIncentiveWithNative } from '@/lib/sorters';
@@ -894,6 +895,7 @@ const ReservesTable = ({
                             connectedBelow={leftExpanded}
                             reserve={leftReserve}
                             isApy={isApy}
+                            tydroPointToUsdRate={tydroPointToUsdRate}
                             onIncentiveClick={handleMobileIncentiveClick}
                             isSimulationExpanded={isLeftActive}
                             onToggleSimulation={() => handleToggleExpand(leftId)}
@@ -914,6 +916,7 @@ const ReservesTable = ({
                               connectedBelow={rightExpanded}
                               reserve={rightReserve}
                               isApy={isApy}
+                              tydroPointToUsdRate={tydroPointToUsdRate}
                               onIncentiveClick={handleMobileIncentiveClick}
                               isSimulationExpanded={!isLeftActive}
                               onToggleSimulation={() => handleToggleExpand(rightId!)}
@@ -986,6 +989,7 @@ const ReservesTable = ({
                             variant="simulationOnly"
                             reserve={activeReserve}
                             isApy={isApy}
+                            tydroPointToUsdRate={tydroPointToUsdRate}
                             onIncentiveClick={handleMobileIncentiveClick}
                             isSimulationExpanded
                             onToggleSimulation={() => handleToggleExpand(activeId)}
@@ -1010,6 +1014,7 @@ const ReservesTable = ({
                         variant="full"
                         reserve={leftReserve}
                         isApy={isApy}
+                        tydroPointToUsdRate={tydroPointToUsdRate}
                         onIncentiveClick={handleMobileIncentiveClick}
                         isSimulationExpanded={false}
                         onToggleSimulation={() => handleToggleExpand(leftId)}
@@ -1031,6 +1036,7 @@ const ReservesTable = ({
                           variant="full"
                           reserve={rightReserve}
                           isApy={isApy}
+                          tydroPointToUsdRate={tydroPointToUsdRate}
                           onIncentiveClick={handleMobileIncentiveClick}
                           isSimulationExpanded={false}
                           onToggleSimulation={() => handleToggleExpand(rightId!)}
@@ -1090,7 +1096,6 @@ const ReservesTable = ({
             tydroPointToUsdRate={tydroPointToUsdRate}
             whitelistMerklCampaignIds={whitelistMerklCampaignIds}
             onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign}
-            tokenPrices={tokenPrices}
           />
         )}
       </div>
@@ -1659,14 +1664,20 @@ const ReservesTable = ({
             ) : displayData.map((reserve) => {
               const reserveId = getReserveSimulationId(reserve);
               const simulation = simulationsById[reserveId];
-              const displaySupplyIncentive = (() => {
-                const incentive = getDisplaySupplyIncentive(reserve);
-                return incentive === 0 || isNaN(incentive) || incentive < 0.01 ? null : incentive;
-              })();
-              const displayBorrowIncentive = (() => {
-                const incentive = getDisplayBorrowIncentive(reserve);
-                return incentive === 0 || isNaN(incentive) || incentive < 0.01 ? null : incentive;
-              })();
+              const displaySupplyIncentive = resolveVisibleIncentiveBadgeValue(
+                getDisplaySupplyIncentive(reserve),
+                reserve,
+                'supply',
+                isApy,
+                tydroPointToUsdRate,
+              );
+              const displayBorrowIncentive = resolveVisibleIncentiveBadgeValue(
+                getDisplayBorrowIncentive(reserve),
+                reserve,
+                'borrow',
+                isApy,
+                tydroPointToUsdRate,
+              );
               return (
                 <DesktopReserveRow
                   key={reserveId}
@@ -1741,7 +1752,6 @@ const ReservesTable = ({
           tydroPointToUsdRate={tydroPointToUsdRate}
           whitelistMerklCampaignIds={whitelistMerklCampaignIds}
           onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign}
-          tokenPrices={tokenPrices}
         />
       )}
     </div>

@@ -39,6 +39,8 @@ export interface BrevisIncentive {
   startDate: string;                   // Campaign start date
   endDate: string;                     // Campaign end date
   name: string;                        // Campaign name
+  perUserRewardCapUsd?: number;        // Per-user cumulative reward ceiling for the campaign (e.g. 5000)
+  sharedCapGroupId?: string;           // Campaigns with the same id share a single perUserRewardCapUsd budget
 }
 
 export interface ReserveWithSpread {

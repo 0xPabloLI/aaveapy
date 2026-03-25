@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import { collectMerklCampaignOptions } from './merklCampaigns';
+import { MERKL_WHITELIST_NO_CAMPAIGN_ID_SENTINEL } from './formatters';
+import { collectMerklCampaignOptions, collectWhitelistOnlyMerklCampaignEntries } from './merklCampaigns';
 import type { ReserveWithSpread } from '@/types/aave';
+
+const daysFromNowIso = (days: number): string => {
+  const date = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+  return date.toISOString();
+};
 
 const makeReserve = (overrides: Partial<ReserveWithSpread> = {}): ReserveWithSpread =>
   ({
@@ -73,5 +79,30 @@ describe('collectMerklCampaignOptions', () => {
       whitelistMerklCampaignIds: new Set(['whitelist']),
     });
     expect(includeWhitelistOptions.map((option) => option.campaignId)).toEqual(['public', 'whitelist']);
+  });
+});
+
+describe('collectWhitelistOnlyMerklCampaignEntries', () => {
+  it('includes a sentinel entry when a whitelist-only breakdown has no campaign id', () => {
+    const reserves = [
+      makeReserve({
+        merklSupplys: [
+          {
+            name: 'Orphan WL',
+            breakdowns: [
+              {
+                campaignApr: 1,
+                campaignStartedAt: daysFromNowIso(-1),
+                campaignEndedAt: daysFromNowIso(30),
+                campaignId: '',
+                whitelistOnly: true,
+              },
+            ],
+          },
+        ],
+      }),
+    ];
+    const entries = collectWhitelistOnlyMerklCampaignEntries(reserves);
+    expect(entries.some((e) => e.campaignId === MERKL_WHITELIST_NO_CAMPAIGN_ID_SENTINEL)).toBe(true);
   });
 });

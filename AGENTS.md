@@ -39,6 +39,8 @@
 ## API Contract & Dependency Safety
 - When backend API response format changes, follow `docs/conventions/api-contract-checklist.md` to ensure all consumers (types, schemas, hooks, scripts) are updated. If CI live schema fails with Cloudflare 403 from GitHub Actions, see `docs/conventions/ci-live-schema-cloudflare.md`.
 - When upgrading React or other core libraries, follow `docs/conventions/peer-dependency-guard.md` to prevent version mismatch white-screen issues.
+- Primary app reads from the backend: `GET /markets` and `GET /meta/side-data` (via `VITE_API_BASE_URL` / `src/lib/apiBase.ts`); rate simulation is computed client-side—there is no dedicated simulation endpoint.
+- `forecast.errors[]` in side-data maps to `forecastErrors`; Merkl campaigns without forecast state fall back to current APR in simulation; `forecastUnavailableCampaignCount` signals partial forecast coverage.
 
 ## Configuration & Secrets
 - Use `.env` for local secrets and keep it out of version control.
@@ -118,7 +120,7 @@
   - Desktop: Table layout with sortable columns
   - Always show sort indicators and active state
 - **Tooltips**:
-  - Use `IncentiveTooltip` for detailed incentive breakdowns
+  - Use `IncentiveTooltip` for static incentive breakdowns (dates, messages, Merkl whitelist toggles, short cap hints); deposit-dependent forecasts belong in the expanded shared simulation (`SimulationSubRow` / `useRateSimulation`).
   - Position dynamically based on trigger element
   - Close on outside click or Escape key
 
@@ -182,7 +184,8 @@ When implementing mobile carousels:
 - `.github/dependabot.yml` uses `open-pull-requests-limit: 0` for npm/github-actions so Dependabot **version** PRs are off (an empty `updates: []` list did not reliably stop version PRs here); security-related dependency PRs can still be opened when Dependabot security updates are enabled in GitHub repo settings (Code security and analysis).
 - Prefer deriving values client-side when possible rather than adding backend fields; borrow availability is `min(Pool Liquidity, Borrow Cap Remaining)` (e.g. totalBorrowedUsd from reserveSizeUsd × utilizationPct).
 - Desktop reserves: **Spread** uses **`font-bold`** and purple semantic color (same weight tier as Supply/Borrow APY totals); **Size** Supply/Borrow amounts use the same tokens as those APY primaries (`ds-text-emerald-500` / `ds-text-brand-cyan`) with `font-medium tabular-nums` next to cap rings; **Native/Incentive** rows under APY use smaller `ds-text-11` + `*-70` (secondary tier—not the same spec as Size).
-- Merkl `whitelistOnly` campaigns are excluded from incentive totals until the user opts in per `campaignId` (`whitelistMerklCampaignIds`); default is none selected; see `docs/design/frontend-interaction-guardrails.md` § Merkl whitelist-only campaigns. In rate simulation, native Aave rates use capped supply and borrow token amounts together; Merit/Merkl incentive forecasts use per-lane USD (`supplyInputUsd` / `borrowInputUsd`) for hypothetical TVL, not a single shared TVL field with native.
+- Merkl `whitelistOnly` campaigns are excluded from incentive totals until the user opts in via `whitelistMerklCampaignIds` (per `campaignId`, or a fixed sentinel when `campaignId` is missing after trim); default is none selected; see `docs/design/frontend-interaction-guardrails.md` § Merkl whitelist-only campaigns. In rate simulation, native Aave rates use capped supply and borrow token amounts together; Merit/Merkl incentive forecasts use per-lane USD (`supplyInputUsd` / `borrowInputUsd`) for hypothetical TVL, not a single shared TVL field with native.
 - Desktop `ReservesTable` bridge **inner corners** between hero cards and the list: prefer a single SVG path per corner (local border disconnect + vertical / `A` arc / horizontal) over iterative mask tweaks; half-pixel alignment for 1px strokes.
 - Local git hooks live under the repository `.git/hooks` (local-only, not versioned); pre-push runs lockfile consistency checks before `ci:remote`. When bulk-deleting remote branches with `git push origin --delete`, use `--no-verify` so each delete does not run the pre-push hook (ci:remote).
 - Workflows using `pull_request_target` use the workflow definition on the default branch (`main`), not the PR base branch (e.g. `dev`); merge workflow changes to `main` for them to take effect. In job `if` conditions on pull request payloads, prefer `github.event.pull_request.draft != true` over `draft == false` when `draft` may be missing.
+- Brevis incentive forecasting lives in `src/lib/brevisForecast.ts` with per-user reward caps (`perUserRewardCapUsd`), shared cap groups (`sharedCapGroupId`), and `isCampaignActive(allowOpenEnd: true)` for campaigns without `endDate`. Incentive reward cap taxonomy (pool budget / deposit ceiling / per-user reward ceiling) and rate formulas are documented in `docs/rate-calculation-formulas.md`.

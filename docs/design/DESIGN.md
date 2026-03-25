@@ -109,7 +109,7 @@
 
 - 仅 **Merkl 且 `whitelistOnly`** 的活动需用户自行选择是否计入全站激励汇总。
 - **默认**：不勾选任何项（白名单 APR **不计入**表格、Top Opportunities、模拟等）。
-- **勾选**：按 **`campaignId`** 逐项勾选；激励详情 Tooltip 与（若启用）Merkl Forecast 面板使用短文案 **「In」** / **「Out (WL)」**。
+- **勾选**：按 **`campaignId`** 逐项勾选；无 `campaignId` 的白名单条目共用同一 opt-in（在 `whitelistMerklCampaignIds` 内用内部 sentinel，与真实 id 并列）。激励详情 Tooltip 与（若启用）Merkl Forecast 面板对可勾选项统一使用 **「Include as WL user」**，表示用户确认自己是白名单参与者并要把该活动计入汇总。
 - 完整规则与实现位置见 **[frontend-interaction-guardrails.md](frontend-interaction-guardrails.md)** § *Merkl whitelist-only campaigns*。
 
 ## 5. 布局原则

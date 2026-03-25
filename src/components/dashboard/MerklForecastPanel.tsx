@@ -6,7 +6,7 @@ import { collectMerklCampaignOptions, collectWhitelistOnlyMerklCampaignEntries }
 import { useMerklForecastStates } from '@/hooks/useMerklForecastStates';
 import { deriveForecastProgressFlags, forecastWithTVL } from '@/lib/merklForecast';
 import { resolveForecastTokenPrice, resolveForecastTokenPriceWithBackup } from '@/lib/tokenPriceResolver';
-import { formatPercent } from '@/lib/formatters';
+import { formatPercent, MERKL_WHITELIST_TOGGLE_ARIA, MERKL_WHITELIST_TOGGLE_LABEL } from '@/lib/formatters';
 import { formatNumberInput, parseNumberInput } from '@/lib/numberFormat';
 
 interface MerklForecastPanelProps {
@@ -167,18 +167,23 @@ const MerklForecastPanel = ({
 
       {whitelistEntries.length > 0 && (
         <div className="mt-2 space-y-2">
-          <p className="text-xs text-muted-foreground">In:</p>
+          <p className="text-xs text-muted-foreground">{MERKL_WHITELIST_TOGGLE_LABEL}:</p>
           <ul className="space-y-1.5">
             {whitelistEntries.map((entry) => (
               <li key={entry.campaignId}>
-                <label className="inline-flex items-start gap-2 text-xs text-muted-foreground">
+                <label
+                  className="inline-flex items-start gap-2 text-xs text-muted-foreground"
+                  aria-label={`${MERKL_WHITELIST_TOGGLE_ARIA} ${entry.label}`}
+                >
                   <input
                     type="checkbox"
                     checked={whitelistMerklCampaignIds.has(entry.campaignId)}
                     onChange={(event) => onToggleWhitelistMerklCampaign(entry.campaignId, event.target.checked)}
                     className="mt-0.5 h-3.5 w-3.5 shrink-0 rounded border-border bg-background"
                   />
-                  <span className="min-w-0 break-words">{entry.label}</span>
+                  <span className="min-w-0 break-words" aria-hidden="true">
+                    {entry.label}
+                  </span>
                 </label>
               </li>
             ))}

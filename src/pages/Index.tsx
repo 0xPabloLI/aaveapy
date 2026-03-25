@@ -426,7 +426,6 @@ const Index = () => {
                 tydroPointToUsdRate={tydroPointToUsdRate}
                 whitelistMerklCampaignIds={whitelistMerklCampaignIds}
                 onToggleWhitelistMerklCampaign={toggleWhitelistMerklCampaign}
-                tokenPrices={tokenPrices}
                 usePortal
               />
           )}

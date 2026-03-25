@@ -54,12 +54,28 @@ export const apyToApr = (apy: number): number => {
   return aprDecimal * 100;
 };
 
-import type { MeritIncentive, MerklOpportunityGroup, BrevisIncentive } from '@/types/aave';
+import type { BrevisIncentive, MeritIncentive, MerklOpportunityGroup, ReserveWithSpread } from '@/types/aave';
 import { TYDRO_POINT_TO_USD_RATE, getMerklBreakdownApr } from '@/lib/tydro';
 
 /**
+ * Opt-in key for whitelist-only Merkl breakdowns that have no usable `campaignId` (empty after trim).
+ * Stored in `whitelistMerklCampaignIds` alongside real Merkl campaign ids.
+ */
+export const MERKL_WHITELIST_NO_CAMPAIGN_ID_SENTINEL = '__merklWhitelistNoCampaignId__' as const;
+
+/** Visible label next to Merkl whitelist-only opt-in (tooltip + forecast panel). */
+export const MERKL_WHITELIST_TOGGLE_LABEL = 'Include as WL user';
+
+/**
+ * Accessible name for the opt-in control: checked = include this campaign in totals as a WL participant.
+ */
+export const MERKL_WHITELIST_TOGGLE_ARIA =
+  'Include this Merkl campaign in incentive totals. Confirm you are a whitelist participant for this campaign.';
+
+/**
  * Whether a Merkl breakdown should count toward incentive totals.
- * Non-whitelist campaigns always count; whitelist-only counts only when the user enabled this campaignId.
+ * Non-whitelist campaigns always count; whitelist-only counts only when the user enabled this campaignId,
+ * or the sentinel when there is no campaign id.
  */
 export function isMerklWhitelistBreakdownIncluded(
   breakdown: { whitelistOnly?: boolean; campaignId: string },
@@ -67,7 +83,9 @@ export function isMerklWhitelistBreakdownIncluded(
 ): boolean {
   if (!breakdown.whitelistOnly) return true;
   const id = String(breakdown.campaignId || '').trim();
-  if (!id) return false;
+  if (!id) {
+    return Boolean(whitelistMerklCampaignIds?.has(MERKL_WHITELIST_NO_CAMPAIGN_ID_SENTINEL));
+  }
   return Boolean(whitelistMerklCampaignIds?.has(id));
 }
 
@@ -91,11 +109,17 @@ const parseCampaignBoundaryMs = (value: string | undefined, boundary: 'start' | 
   return Number.isNaN(timestamp) ? null : timestamp;
 };
 
-const isCampaignActive = (startDate: string | undefined, endDate: string | undefined, nowMs = Date.now()): boolean => {
+const isCampaignActive = (
+  startDate: string | undefined,
+  endDate: string | undefined,
+  nowMs = Date.now(),
+  allowOpenEnd = false,
+): boolean => {
   const startMs = parseCampaignBoundaryMs(startDate, 'start');
+  if (startMs === null || nowMs < startMs) return false;
   const endMs = parseCampaignBoundaryMs(endDate, 'end');
-  if (startMs === null || endMs === null) return false;
-  return nowMs >= startMs && nowMs <= endMs;
+  if (endMs === null) return allowOpenEnd;
+  return nowMs <= endMs;
 };
 
 /**
@@ -197,7 +221,7 @@ const sumMerklOpportunitiesApy = (
 const sumBrevisIncentives = (brevis?: BrevisIncentive[]): number => {
   if (!brevis || !Array.isArray(brevis)) return 0;
   return brevis.reduce((sum, entry) => {
-    if (!isCampaignActive(entry.startDate, entry.endDate)) return sum;
+    if (!isCampaignActive(entry.startDate, entry.endDate, Date.now(), true)) return sum;
     const apr = entry.apr;
     return sum + (!isNaN(apr) && apr >= 0 ? apr : 0);
   }, 0);
@@ -210,7 +234,7 @@ const sumBrevisIncentives = (brevis?: BrevisIncentive[]): number => {
 const sumBrevisIncentivesApy = (brevis?: BrevisIncentive[]): number => {
   if (!brevis || !Array.isArray(brevis)) return 0;
   return brevis.reduce((sum, entry) => {
-    if (!isCampaignActive(entry.startDate, entry.endDate)) return sum;
+    if (!isCampaignActive(entry.startDate, entry.endDate, Date.now(), true)) return sum;
     const apr = entry.apr;
     return sum + (!isNaN(apr) && apr >= 0 ? convertAprToApy(apr) : 0);
   }, 0);
@@ -403,3 +427,81 @@ export const formatScenarioSizeDelta = (
 // Domain aliases that share the same USD-size formatting.
 export const formatTvl = formatReserveSizeUsd;
 export const formatSupplyUsd = formatReserveSizeUsd;
+
+/**
+ * Whether a reserve would show at least one protocol / Merit / Merkl / Brevis row in
+ * the incentive tooltip (same rules as `IncentiveTooltip` source aggregation).
+ */
+export function reserveHasIncentiveTooltipSources(
+  reserve: ReserveWithSpread,
+  side: 'supply' | 'borrow',
+  isApy: boolean,
+  tydroPointToUsdRate: number,
+): boolean {
+  const protocolIncentives = side === 'supply' ? reserve.supplyIncentives : reserve.borrowIncentives;
+  if (protocolIncentives && protocolIncentives.length > 0) {
+    return true;
+  }
+
+  const meritIncentives = side === 'supply' ? reserve.meritSupplys : reserve.meritBorrows;
+  if (meritIncentives?.length) {
+    for (const merit of meritIncentives) {
+      if (!isCampaignActive(merit.startDate, merit.endDate)) continue;
+      const apr = merit.apr;
+      const selfApr = merit.selfApr || 0;
+      const baseAprPercent = !isNaN(apr) && apr >= 0 ? apr : 0;
+      const selfAprPercent = !isNaN(selfApr) && selfApr >= 0 ? selfApr : 0;
+      let totalValue = 0;
+      if (isApy) {
+        if (baseAprPercent > 0) totalValue += convertAprToApy(baseAprPercent);
+        if (selfAprPercent > 0) totalValue += convertAprToApy(selfAprPercent);
+      } else {
+        totalValue = baseAprPercent + selfAprPercent;
+      }
+      if (totalValue >= 0) return true;
+    }
+  }
+
+  const brevisIncentives = side === 'supply' ? reserve.brevisSupplys : reserve.brevisBorrows;
+  if (brevisIncentives?.length) {
+    for (const brevis of brevisIncentives) {
+      if (!isCampaignActive(brevis.startDate, brevis.endDate, Date.now(), true)) continue;
+      const apr = brevis.apr;
+      if (!isNaN(apr) && apr >= 0) return true;
+    }
+  }
+
+  const opportunities = side === 'supply' ? reserve.merklSupplys : reserve.merklBorrows;
+  if (opportunities?.length) {
+    for (const opportunity of opportunities) {
+      for (const breakdown of opportunity.breakdowns ?? []) {
+        if (!isCampaignActive(breakdown.campaignStartedAt, breakdown.campaignEndedAt)) continue;
+        const apr = getMerklBreakdownApr(breakdown, tydroPointToUsdRate);
+        if (!isNaN(apr) && apr >= 0) return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+/**
+ * When to show the incentive badge + native/incentive sub-row in the reserves table / mobile cards.
+ * Uses the same headline total as the table (`rawIncentive`) but avoids hiding the row when the
+ * total is 0 while the tooltip still has sources (e.g. whitelist-only Merkl not yet opted in).
+ * Previously `rawIncentive < 0.01` hid the whole row and removed access to the tooltip.
+ */
+export function resolveVisibleIncentiveBadgeValue(
+  rawIncentive: number | null,
+  reserve: ReserveWithSpread,
+  side: 'supply' | 'borrow',
+  isApy: boolean,
+  tydroPointToUsdRate: number,
+): number | null {
+  if (rawIncentive === null || Number.isNaN(rawIncentive) || rawIncentive < 0) return null;
+  if (rawIncentive > 0) return rawIncentive;
+  if (rawIncentive === 0 && reserveHasIncentiveTooltipSources(reserve, side, isApy, tydroPointToUsdRate)) {
+    return rawIncentive;
+  }
+  return null;
+}

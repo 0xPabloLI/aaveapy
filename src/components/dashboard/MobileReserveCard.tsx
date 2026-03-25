@@ -2,7 +2,7 @@ import { memo, useEffect, useState } from 'react';
 import { ExternalLink, ListCollapse, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ReserveWithSpread, ETHEREUM_MARKET_NAMES } from '@/types/aave';
-import { formatPercent, formatSpread } from '@/lib/formatters';
+import { formatPercent, formatSpread, resolveVisibleIncentiveBadgeValue } from '@/lib/formatters';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
@@ -139,6 +139,8 @@ function UtilizationSheetContent({ current, optimal }: { current: number; optima
 interface MobileReserveCardProps {
   reserve: ReserveWithSpread;
   isApy: boolean;
+  /** Matches table / `getMerklBreakdownApr` Tydro USD rate. */
+  tydroPointToUsdRate: number;
   onIncentiveClick: (
     e: React.MouseEvent,
     reserve: ReserveWithSpread,
@@ -165,6 +167,7 @@ interface MobileReserveCardProps {
 const MobileReserveCard = memo(({
   reserve,
   isApy,
+  tydroPointToUsdRate,
   onIncentiveClick,
   isSimulationExpanded,
   onToggleSimulation,
@@ -224,14 +227,20 @@ const MobileReserveCard = memo(({
     ? simulation.spread.after ?? simulation.spread.current
     : simulation.spread.current;
 
-  const visibleSupplyIncentive =
-    displaySupplyIncentive === null || Number.isNaN(displaySupplyIncentive) || displaySupplyIncentive < 0.01
-      ? null
-      : displaySupplyIncentive;
-  const visibleBorrowIncentive =
-    displayBorrowIncentive === null || Number.isNaN(displayBorrowIncentive) || displayBorrowIncentive < 0.01
-      ? null
-      : displayBorrowIncentive;
+  const visibleSupplyIncentive = resolveVisibleIncentiveBadgeValue(
+    displaySupplyIncentive,
+    reserve,
+    'supply',
+    isApy,
+    tydroPointToUsdRate,
+  );
+  const visibleBorrowIncentive = resolveVisibleIncentiveBadgeValue(
+    displayBorrowIncentive,
+    reserve,
+    'borrow',
+    isApy,
+    tydroPointToUsdRate,
+  );
 
   const chainIconSrc = getChainIconSrc(reserve.chainName);
   const { iconSymbol, logoURI } = fetchIconSymbolAndName({

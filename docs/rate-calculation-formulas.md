@@ -192,6 +192,8 @@ hypotheticalTvl = max(0, latestTvl + inputUsd)
 
 where `inputUsd` is the hypothetical **increment** on the campaign’s eligible TVL in **USD** (same semantics as `tvl` below). If `inputUsd ≤ 0` or there is no forecast row, the UI keeps the **current** Merkl APR from the reserve (`getMerklBreakdownApr`).
 
+**`getMerklBreakdownApr` precedence** (`src/lib/tydro.ts`): if **`pointsPerThousandUsd`** is present and the Tydro formula yields a positive APR (`points × pointToUsdRate × 36.5`), use that (Ink / Tydro point campaigns). Otherwise use **`campaignApr`** (with coercion for string numbers). **`pointToUsdRate` ≤ 0** falls back to `TYDRO_POINT_TO_USD_RATE` (same as `getMerklForecastUsdMultiplier`). Forecast clones in `buildForecastMerklOpportunities` clear `pointsPerThousandUsd` so simulated rows rely on forecast `campaignApr` when the model returns zero.
+
 ### Symbols
 
 | Symbol / field | Meaning |
@@ -255,13 +257,59 @@ forecastAprPercent = forecast.apr × 100 × multiplier
 
 Distribution types (variable / fixed token vs dollar / capped): [Merkl — Distribution Types](https://docs.merkl.xyz/merkl-mechanisms/distributions)
 
+## Incentive Reward Cap Reference
+
+Incentive programs may impose caps that limit effective APR. There are three distinct cap mechanisms in the pipeline, each acting at a different stage:
+
+```
+deposit → [deposit cap] → nominal APR (from TVL dilution) → nominal reward → [reward cap] → effective APR
+           ↑ Merit self                ↑ Merkl/Merit base              ↑ Brevis per-user
+```
+
+### Cap taxonomy
+
+| Cap type | Scope | Time grain | Mechanism | Source file |
+|----------|-------|------------|-----------|-------------|
+| **Pool budget** (Merkl FIX/MAX) | Pool-wide | Campaign lifetime | `dailyRewards = min(aprBasedDaily, remainingBudget)` — TVL dilution + total budget constraint | `merklForecast.ts` |
+| **Deposit ceiling** (Merit self) | Per-user | Per round (cycle) | `eligibleDeposit = min(deposit, selfCapUsd)` — only counts the first N USD of deposit | `meritForecast.ts` |
+| **Per-user reward ceiling** (Brevis) | Per-user | Campaign lifetime | `effectiveApr = min(nominalApr, capUsd / deposit / remainingYearFraction × 100)` | `brevisForecast.ts` |
+
+### Brevis per-user reward cap
+
+- `perUserRewardCapUsd`: cumulative USD reward ceiling for a single user across the entire campaign.
+- **No `endDate`**: Brevis campaigns typically have no explicit end date. When `endDate` is absent, the cap formula cannot determine whether the cap binds (no `remainingYearFraction`), so the nominal APR is returned unchanged (graceful degradation). The diagnostic field `daysToHitCap` is still computable without `endDate`.
+- **Shared cap across campaigns** (`sharedCapGroupId`): When supply and borrow campaigns on the same market share a single reward budget (e.g. "supply or borrow USDC on Linea" shares one $5,000 cap), they must carry the same `sharedCapGroupId`. The simulation sums `supplyInputUsd + borrowInputUsd` as the combined deposit for cap evaluation.
+- **`isCampaignActive` for Brevis**: uses `allowOpenEnd = true` — a Brevis campaign with a valid past `startDate` and no `endDate` is treated as active.
+
+### Merkl FIX reward cap
+
+- `fixRewardableDays` / `fixRewardableUntilTs`: derived from `remainingBudget / aprBasedDaily`, capped by `endTimestamp`. These fields indicate how many days the campaign can sustain rewards at the current APR before budget exhaustion.
+- Unlike Brevis, this is a **pool-level** cap (all users share the same budget).
+
+### Merit self deposit cap
+
+- `selfCapUsd`: extracted from campaign `message` text (e.g. "first $1000 USDT supplied per user").
+- Caps the **eligible deposit**, not the reward directly. `eligibleDeposit = min(deposit, selfCapUsd)`.
+- `eligibleDepositUsd` is only used for Merit self-auth campaigns — other incentive types do not use deposit capping.
+
+### UI surfaces: Brevis cap (tooltip vs simulation)
+
+**Incentive tooltip** (`IncentiveTooltip`): when `perUserRewardCapUsd` is present, show a short **static** line (max reward per user; note shared Supply/Borrow when `sharedCapGroupId` exists). Do **not** put deposit-dependent simulated APR or days-to-cap in the tooltip.
+
+**Shared simulation** (`useRateSimulation` → per-campaign rows on `SimulationSubRow` via `capNote` / `capWarning`): with supply/borrow scenario input, show forecast diagnostics from `brevisForecast.ts` / `buildBrevisCampaignDetails` (e.g. days to cap, cap binding, combined USD when `sharedCapGroupId` applies).
+
 ## Related Files
 
 - `src/lib/interestRateCalculator.ts` – Core native rate calculation functions
 - `src/lib/merklForecast.ts` – Merkl `forecastWithTVL` and progress flags
 - `src/lib/merklForecast.test.ts` – Unit tests for forecast branches
+- `src/lib/meritForecast.ts` – Merit forecast (base + self-auth deposit cap)
+- `src/lib/brevisForecast.ts` – Brevis per-user reward cap forecast
+- `src/lib/brevisForecast.test.ts` – Unit tests for Brevis cap (shared cap, no endDate, edge cases)
 - `src/lib/tydro.ts` – Tydro points → APR and forecast USD multiplier
-- `src/hooks/useRateSimulation.ts` – React hook: native simulation + Merkl forecast overlay (borrow availability constraints)
+- `src/hooks/useRateSimulation.ts` – React hook: native simulation + incentive forecast overlay (Merkl, Merit, Brevis); exposes per-campaign `capNote` for `SimulationSubRow`
+- `src/components/dashboard/SimulationSubRow.tsx` – Shared table simulation UI (per-campaign incentive rows)
+- `src/components/dashboard/IncentiveTooltip.tsx` – Static incentive context only (no deposit/TVL forecasts)
 - `src/hooks/useReserveRateInputs.ts` – Fetches `/rate-inputs` API
 - `src/hooks/useSideDataMeta.ts` – Fetches `/meta/side-data` (includes forecast items)
 - `src/components/dev/RateInputsVsMarketCheck.tsx` – Dev panel for validation

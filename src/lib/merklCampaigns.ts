@@ -1,5 +1,5 @@
 import type { ReserveWithSpread, MerklOpportunityGroup } from '@/types/aave';
-import { isMerklWhitelistBreakdownIncluded } from '@/lib/formatters';
+import { isMerklWhitelistBreakdownIncluded, MERKL_WHITELIST_NO_CAMPAIGN_ID_SENTINEL } from '@/lib/formatters';
 
 export interface MerklCampaignOption {
   campaignId: string;
@@ -30,6 +30,7 @@ export const collectWhitelistOnlyMerklCampaignEntries = (
   reserves: ReserveWithSpread[]
 ): WhitelistOnlyMerklCampaignEntry[] => {
   const byId = new Map<string, string>();
+  let hasOrphanWhitelist = false;
 
   const visit = (
     groups: MerklOpportunityGroup[] | undefined,
@@ -42,7 +43,10 @@ export const collectWhitelistOnlyMerklCampaignEntries = (
         if (!breakdown.whitelistOnly) return;
         if (!isBreakdownActive(breakdown.campaignStartedAt, breakdown.campaignEndedAt)) return;
         const campaignId = String(breakdown.campaignId || '').trim();
-        if (!campaignId) return;
+        if (!campaignId) {
+          hasOrphanWhitelist = true;
+          return;
+        }
         const groupName = group.name ? ` · ${group.name}` : '';
         const label = `${reserve.chainName} · ${reserve.marketName} · ${reserve.tokenSymbol} · ${actionType}${groupName} · ${campaignId}`;
         if (!byId.has(campaignId)) {
@@ -58,7 +62,15 @@ export const collectWhitelistOnlyMerklCampaignEntries = (
     visit(reserve.merklHolds, 'Hold', reserve);
   });
 
-  return Array.from(byId.entries())
+  const entries = Array.from(byId.entries());
+  if (hasOrphanWhitelist) {
+    entries.push([
+      MERKL_WHITELIST_NO_CAMPAIGN_ID_SENTINEL,
+      'Whitelist Merkl (no campaign ID)',
+    ]);
+  }
+
+  return entries
     .sort((a, b) => a[0].localeCompare(b[0]))
     .map(([campaignId, label]) => ({ campaignId, label }));
 };

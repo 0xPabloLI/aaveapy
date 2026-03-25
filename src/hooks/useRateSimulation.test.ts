@@ -258,4 +258,299 @@ describe('buildRateSimulationResult', () => {
     expect(result.borrow.afterTotal).toBeNull();
     expect(result.utilization.after).toBeNull();
   });
+
+  it('reduces brevis supply incentive when per-user reward cap is binding', () => {
+    const nowMs = Date.now();
+    const endDate = new Date(nowMs + 365 * 86_400_000).toISOString();
+    const reserve: ReserveWithSpread = {
+      ...baseReserve,
+      brevisSupplys: [
+        {
+          apr: 10,
+          link: 'https://example.com/brevis',
+          startDate: '2020-01-01T00:00:00.000Z',
+          endDate,
+          name: 'Brevis Supply',
+          perUserRewardCapUsd: 5000,
+        },
+      ],
+    };
+
+    const result = buildRateSimulationResult({
+      reserve,
+      reserveRateInput: baseReserve,
+      isApy: false,
+      whitelistMerklCampaignIds: new Set(),
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '100000',
+      borrowInput: '0',
+      inputMode: 'usd',
+      forecastStates: {},
+    });
+
+    expect(result.supply.sources.brevis.current).toBe(10);
+    expect(result.supply.sources.brevis.after).toBeLessThan(10);
+    expect(result.supply.sources.brevis.after).toBeCloseTo(5, 0);
+    expect(result.supply.afterIncentive).toBeLessThan(result.supply.currentIncentive);
+  });
+
+  it('keeps brevis incentive unchanged when cap is not binding (small deposit)', () => {
+    const nowMs = Date.now();
+    const endDate = new Date(nowMs + 365 * 86_400_000).toISOString();
+    const reserve: ReserveWithSpread = {
+      ...baseReserve,
+      brevisSupplys: [
+        {
+          apr: 10,
+          link: 'https://example.com/brevis',
+          startDate: '2020-01-01T00:00:00.000Z',
+          endDate,
+          name: 'Brevis Supply',
+          perUserRewardCapUsd: 5000,
+        },
+      ],
+    };
+
+    const result = buildRateSimulationResult({
+      reserve,
+      reserveRateInput: baseReserve,
+      isApy: false,
+      whitelistMerklCampaignIds: new Set(),
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '1000',
+      borrowInput: '0',
+      inputMode: 'usd',
+      forecastStates: {},
+    });
+
+    // deposit=1000, nominal reward = 1000*10%*1year = 100 << 5000, cap not binding
+    expect(result.supply.sources.brevis.current).toBe(10);
+    expect(result.supply.sources.brevis.after).toBe(10);
+  });
+
+  it('keeps brevis incentive unchanged when perUserRewardCapUsd is absent', () => {
+    const reserve: ReserveWithSpread = {
+      ...baseReserve,
+      brevisSupplys: [
+        {
+          apr: 10,
+          link: 'https://example.com/brevis',
+          startDate: '2020-01-01T00:00:00.000Z',
+          endDate: '2099-01-01T00:00:00.000Z',
+          name: 'Brevis Supply',
+        },
+      ],
+    };
+
+    const result = buildRateSimulationResult({
+      reserve,
+      reserveRateInput: baseReserve,
+      isApy: false,
+      whitelistMerklCampaignIds: new Set(),
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '100000',
+      borrowInput: '0',
+      inputMode: 'usd',
+      forecastStates: {},
+    });
+
+    expect(result.supply.sources.brevis.current).toBe(10);
+    expect(result.supply.sources.brevis.after).toBe(10);
+  });
+
+  it('reduces brevis borrow incentive when per-user reward cap is binding', () => {
+    const nowMs = Date.now();
+    const endDate = new Date(nowMs + 365 * 86_400_000).toISOString();
+    const reserve: ReserveWithSpread = {
+      ...baseReserve,
+      brevisBorrows: [
+        {
+          apr: 8,
+          link: 'https://example.com/brevis',
+          startDate: '2020-01-01T00:00:00.000Z',
+          endDate,
+          name: 'Brevis Borrow',
+          perUserRewardCapUsd: 5000,
+        },
+      ],
+    };
+
+    const result = buildRateSimulationResult({
+      reserve,
+      reserveRateInput: baseReserve,
+      isApy: false,
+      whitelistMerklCampaignIds: new Set(),
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '0',
+      borrowInput: '200000',
+      inputMode: 'usd',
+      forecastStates: {},
+    });
+
+    expect(result.borrow.sources.brevis.current).toBe(8);
+    // cap implied = 5000/200000/1 * 100 = 2.5%
+    expect(result.borrow.sources.brevis.after).toBeLessThan(8);
+    expect(result.borrow.sources.brevis.after).toBeCloseTo(2.5, 0);
+  });
+
+  it('includes brevis incentive when endDate is absent (open-ended campaign)', () => {
+    const reserve: ReserveWithSpread = {
+      ...baseReserve,
+      brevisSupplys: [
+        {
+          apr: 10,
+          link: 'https://example.com/brevis',
+          startDate: '2020-01-01T00:00:00.000Z',
+          endDate: '',
+          name: 'Brevis Supply (no end)',
+          perUserRewardCapUsd: 5000,
+        },
+      ],
+    };
+
+    const result = buildRateSimulationResult({
+      reserve,
+      reserveRateInput: baseReserve,
+      isApy: false,
+      whitelistMerklCampaignIds: new Set(),
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '100000',
+      borrowInput: '0',
+      inputMode: 'usd',
+      forecastStates: {},
+    });
+
+    // Campaign counted as active; cap can't bind without endDate → nominal APR
+    expect(result.supply.sources.brevis.current).toBe(10);
+    expect(result.supply.sources.brevis.after).toBe(10);
+  });
+
+  it('uses combined supply+borrow deposit for shared cap group', () => {
+    const nowMs = Date.now();
+    const endDate = new Date(nowMs + 365 * 86_400_000).toISOString();
+    const reserve: ReserveWithSpread = {
+      ...baseReserve,
+      brevisSupplys: [
+        {
+          apr: 10,
+          link: 'https://example.com/brevis-supply',
+          startDate: '2020-01-01T00:00:00.000Z',
+          endDate,
+          name: 'Brevis Supply USDC',
+          perUserRewardCapUsd: 5000,
+          sharedCapGroupId: 'linea-usdc',
+        },
+      ],
+      brevisBorrows: [
+        {
+          apr: 10,
+          link: 'https://example.com/brevis-borrow',
+          startDate: '2020-01-01T00:00:00.000Z',
+          endDate,
+          name: 'Brevis Borrow USDC',
+          perUserRewardCapUsd: 5000,
+          sharedCapGroupId: 'linea-usdc',
+        },
+      ],
+    };
+
+    const result = buildRateSimulationResult({
+      reserve,
+      reserveRateInput: baseReserve,
+      isApy: false,
+      whitelistMerklCampaignIds: new Set(),
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '50000',
+      borrowInput: '50000',
+      inputMode: 'usd',
+      forecastStates: {},
+    });
+
+    // Combined deposit = 100k. Cap implied = 5000/100000/1 * 100 = 5%
+    // Both sides should see the reduced APR
+    expect(result.supply.sources.brevis.after).toBeCloseTo(5, 0);
+    expect(result.borrow.sources.brevis.after).toBeCloseTo(5, 0);
+  });
+
+  it('does not share cap when sharedCapGroupId is absent', () => {
+    const nowMs = Date.now();
+    const endDate = new Date(nowMs + 365 * 86_400_000).toISOString();
+    const reserve: ReserveWithSpread = {
+      ...baseReserve,
+      brevisSupplys: [
+        {
+          apr: 10,
+          link: 'https://example.com/brevis-supply',
+          startDate: '2020-01-01T00:00:00.000Z',
+          endDate,
+          name: 'Brevis Supply',
+          perUserRewardCapUsd: 5000,
+        },
+      ],
+      brevisBorrows: [
+        {
+          apr: 10,
+          link: 'https://example.com/brevis-borrow',
+          startDate: '2020-01-01T00:00:00.000Z',
+          endDate,
+          name: 'Brevis Borrow',
+          perUserRewardCapUsd: 5000,
+        },
+      ],
+    };
+
+    const result = buildRateSimulationResult({
+      reserve,
+      reserveRateInput: baseReserve,
+      isApy: false,
+      whitelistMerklCampaignIds: new Set(),
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '50000',
+      borrowInput: '50000',
+      inputMode: 'usd',
+      forecastStates: {},
+    });
+
+    // No shared group → each side evaluated independently
+    // 50k deposit per side, cap implied = 5000/50000/1 * 100 = 10% = nominal, so cap not binding
+    expect(result.supply.sources.brevis.after).toBe(10);
+    expect(result.borrow.sources.brevis.after).toBe(10);
+  });
+
+  it('counts brevis in current totals even without endDate', () => {
+    const reserve: ReserveWithSpread = {
+      ...baseReserve,
+      brevisSupplys: [
+        {
+          apr: 5,
+          link: 'https://example.com/brevis',
+          startDate: '2020-01-01T00:00:00.000Z',
+          endDate: '',
+          name: 'Brevis open-ended',
+        },
+      ],
+    };
+
+    const result = buildRateSimulationResult({
+      reserve,
+      reserveRateInput: baseReserve,
+      isApy: false,
+      whitelistMerklCampaignIds: new Set(),
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '',
+      borrowInput: '',
+      forecastStates: {},
+    });
+
+    expect(result.supply.sources.brevis.current).toBe(5);
+    expect(result.supply.currentIncentive).toBeGreaterThan(0);
+  });
 });
