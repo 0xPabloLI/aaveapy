@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, Loader2 } from 'lucide-react';
 
-import type { ReserveWithSpread, TokenPricesIndex } from '@/types/aave';
+import type { ReserveWithSpread, TokenPricesIndex, MerklCampaignBreakdown } from '@/types/aave';
 import { collectMerklCampaignOptions, collectWhitelistOnlyMerklCampaignEntries } from '@/lib/merklCampaigns';
 import { useMerklForecastStates } from '@/hooks/useMerklForecastStates';
-import { deriveForecastProgressFlags, forecastWithTVL } from '@/lib/merklForecast';
+import { deriveForecastProgressFlags, forecastWithTVL, type MerklForecastState } from '@/lib/merklForecast';
 import { resolveForecastTokenPrice, resolveForecastTokenPriceWithBackup } from '@/lib/tokenPriceResolver';
 import { formatPercent, MERKL_WHITELIST_TOGGLE_ARIA, MERKL_WHITELIST_TOGGLE_LABEL } from '@/lib/formatters';
 import { formatNumberInput, parseNumberInput } from '@/lib/numberFormat';
@@ -38,6 +38,19 @@ const formatDays = (days: number): string =>
   `${new Intl.NumberFormat('en-US', {
     maximumFractionDigits: days >= 10 ? 1 : 2,
   }).format(days)} day${days >= 1.5 ? 's' : ''}`;
+
+const findBreakdownByCampaignId = (reserves: ReserveWithSpread[], campaignId: string): MerklCampaignBreakdown | undefined => {
+  for (const reserve of reserves) {
+    for (const groups of [reserve.merklSupplys, reserve.merklBorrows, reserve.merklHolds]) {
+      for (const group of groups ?? []) {
+        for (const bd of group.breakdowns ?? []) {
+          if (String(bd.campaignId) === campaignId) return bd;
+        }
+      }
+    }
+  }
+  return undefined;
+};
 
 const MerklForecastPanel = ({
   reserves,
@@ -129,15 +142,34 @@ const MerklForecastPanel = ({
   const depositAssetAmount = useMemo(() => parseNumberInput(depositInput), [depositInput]);
   const depositUsd = tokenPrice ? depositAssetAmount * tokenPrice : 0;
 
-  const selectedState = selectedCampaignId ? states[selectedCampaignId] : undefined;
+  const selectedMetrics = selectedCampaignId ? states[selectedCampaignId] : undefined;
+  const selectedBreakdown = useMemo(
+    () => (selectedCampaignId ? findBreakdownByCampaignId(reserves, selectedCampaignId) : undefined),
+    [reserves, selectedCampaignId]
+  );
+
+  const mergedState: MerklForecastState | undefined = useMemo(() => {
+    if (!selectedBreakdown?.campaignType) return undefined;
+    return {
+      campaignType: selectedBreakdown.campaignType,
+      totalBudget: selectedBreakdown.totalBudget,
+      aprCap: selectedBreakdown.aprCap,
+      latestTvl: selectedBreakdown.latestTvl,
+      plannedDaily: selectedBreakdown.plannedDaily,
+      requiredDaily: selectedMetrics?.requiredDaily,
+      distributedSoFar: selectedMetrics?.distributedSoFar,
+      endTimestamp: selectedMetrics?.endTimestamp,
+    };
+  }, [selectedBreakdown, selectedMetrics]);
+
   const forecast = useMemo(() => {
-    if (!selectedState || !selectedOption) return null;
-    const hypotheticalTvl = Math.max(selectedState.latestTvl + depositUsd, 0);
-    const baseForecast = forecastWithTVL(selectedState, hypotheticalTvl);
+    if (!mergedState || !selectedOption) return null;
+    const hypotheticalTvl = Math.max((mergedState.latestTvl ?? 0) + depositUsd, 0);
+    const baseForecast = forecastWithTVL(mergedState, hypotheticalTvl);
     const forecastMultiplier = selectedOption.usesPointToUsdRate
       ? Math.max(tydroPointToUsdRate, 0)
       : 1;
-    const progress = deriveForecastProgressFlags(selectedState);
+    const progress = deriveForecastProgressFlags(mergedState);
     return {
       hypotheticalTvl,
       dailyRewards: baseForecast.dailyRewards * forecastMultiplier,
@@ -147,7 +179,7 @@ const MerklForecastPanel = ({
       fixRewardableUntilTs: baseForecast.fixRewardableUntilTs,
       ...progress,
     };
-  }, [depositUsd, selectedOption, selectedState, tydroPointToUsdRate]);
+  }, [depositUsd, selectedOption, mergedState, tydroPointToUsdRate]);
 
   if (campaignOptions.length === 0) {
     return null;
@@ -239,14 +271,14 @@ const MerklForecastPanel = ({
         </div>
       )}
 
-      {!selectedState && !loading && (
+      {!mergedState && !loading && (
         <p className="mt-3 text-xs text-muted-foreground">
           Forecast state is not available for the selected campaign yet.
           {selectedCampaignId && stateErrors[selectedCampaignId] ? ` (${stateErrors[selectedCampaignId]})` : ''}
         </p>
       )}
 
-      {selectedState && forecast && (
+      {mergedState && forecast && (
         <div className="mt-3 grid gap-2 md:grid-cols-3">
           <div className="rounded-md border border-border/60 bg-muted/20 p-2">
             <p className="text-[11px] text-muted-foreground">Hypothetical Supply</p>
@@ -262,20 +294,21 @@ const MerklForecastPanel = ({
           </div>
           <div className="rounded-md border border-border/60 bg-muted/20 p-2 md:col-span-3">
             <p className="text-[11px] text-muted-foreground">
-              Type: {selectedState.campaignType} · Regime: {forecast.regime} · Ended under-distributed:{' '}
+              Type: {mergedState.campaignType} · Regime: {forecast.regime} · Ended under-distributed:{' '}
               {forecast.isUnderDistributed ? 'Yes' : 'No'}
             </p>
           </div>
-          {selectedState.campaignType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE' &&
+          {mergedState.campaignType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE' &&
             typeof forecast.fixRewardableDays === 'number' &&
-            typeof forecast.fixRewardableUntilTs === 'number' && (
+            typeof forecast.fixRewardableUntilTs === 'number' &&
+            typeof mergedState.endTimestamp === 'number' && (
               <div className="rounded-md border border-border/60 bg-muted/20 p-2 md:col-span-3">
                 <p className="text-[11px] text-muted-foreground">FIX Rewardable Window (campaign-level)</p>
                 <p className="text-sm font-semibold text-foreground mt-1">
                   Now → {formatDateTime(forecast.fixRewardableUntilTs)} ({formatDays(forecast.fixRewardableDays)})
                 </p>
                 <p className="text-[11px] text-muted-foreground mt-1">
-                  Campaign window baseline: Now → {formatDateTime(selectedState.endTimestamp)}
+                  Campaign window baseline: Now → {formatDateTime(mergedState.endTimestamp)}
                 </p>
               </div>
             )}

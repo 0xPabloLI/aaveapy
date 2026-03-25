@@ -23,6 +23,11 @@ export interface MerklCampaignBreakdown {
   campaignId: string;                 // Campaign ID
   whitelistOnly?: boolean;             // Merkl campaign is whitelist-only
   pointsPerThousandUsd?: number;       // Tydro protocol points/1000USD value (optional)
+  campaignType?: string;
+  totalBudget?: number;
+  aprCap?: number | null;
+  latestTvl?: number;
+  plannedDaily?: number;
 }
 
 export interface MerklOpportunityGroup {
@@ -120,13 +125,8 @@ export type TokenPricesIndex = Record<string, TokenPriceEntry>;
 
 export interface MerklForecastStateResponse {
   campaignId: string;
-  campaignType?: string;
-  plannedDaily?: number;
   requiredDaily?: number;
-  aprCap?: number | null;
-  totalBudget?: number;
   distributedSoFar?: number;
-  latestTvl?: number;
   endTimestamp?: number;
 }
 

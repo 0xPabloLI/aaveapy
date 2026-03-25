@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type {
   MerklOpportunityGroup,
   MerklForecastStateResponse,
+  MerklCampaignBreakdown,
   ReserveWithSpread,
 } from '@/types/aave';
 import type { RateCalcInput } from '@/lib/interestRateCalculator';
@@ -49,6 +50,11 @@ describe('buildForecastMerklOpportunities', () => {
             campaignStartedAt: '2020-01-01T00:00:00.000Z',
             campaignEndedAt: '2099-01-01T00:00:00.000Z',
             campaignId: 'c1',
+            campaignType: 'DUTCH_AUCTION',
+            plannedDaily: 10,
+            aprCap: null,
+            totalBudget: 100000,
+            latestTvl: 1000,
           },
         ],
       },
@@ -57,13 +63,8 @@ describe('buildForecastMerklOpportunities', () => {
     const states: Record<string, MerklForecastStateResponse> = {
       c1: {
         campaignId: 'c1',
-        campaignType: 'DUTCH_AUCTION',
-        plannedDaily: 10,
         requiredDaily: 10,
-        aprCap: null,
-        totalBudget: 100000,
         distributedSoFar: 0,
-        latestTvl: 1000,
         endTimestamp: Math.floor(Date.now() / 1000) + 86400 * 30,
       },
     };
@@ -91,6 +92,11 @@ describe('buildForecastMerklOpportunities', () => {
             campaignEndedAt: '2099-01-01T00:00:00.000Z',
             campaignId: 'c2',
             whitelistOnly: true,
+            campaignType: 'DUTCH_AUCTION',
+            plannedDaily: 100,
+            aprCap: null,
+            totalBudget: 100000,
+            latestTvl: 1000,
           },
         ],
       },
@@ -99,13 +105,8 @@ describe('buildForecastMerklOpportunities', () => {
     const states: Record<string, MerklForecastStateResponse> = {
       c2: {
         campaignId: 'c2',
-        campaignType: 'DUTCH_AUCTION',
-        plannedDaily: 100,
         requiredDaily: 100,
-        aprCap: null,
-        totalBudget: 100000,
         distributedSoFar: 0,
-        latestTvl: 1000,
         endTimestamp: Math.floor(Date.now() / 1000) + 86400 * 30,
       },
     };
@@ -157,6 +158,11 @@ describe('buildRateSimulationResult', () => {
               campaignStartedAt: '2020-01-01T00:00:00.000Z',
               campaignEndedAt: '2099-01-01T00:00:00.000Z',
               campaignId: 'c1',
+              campaignType: 'DUTCH_AUCTION',
+              plannedDaily: 10,
+              aprCap: null,
+              totalBudget: 100000,
+              latestTvl: 1000,
             },
           ],
         },
@@ -166,13 +172,8 @@ describe('buildRateSimulationResult', () => {
     const states: Record<string, MerklForecastStateResponse> = {
       c1: {
         campaignId: 'c1',
-        campaignType: 'DUTCH_AUCTION',
-        plannedDaily: 10,
         requiredDaily: 10,
-        aprCap: null,
-        totalBudget: 100000,
         distributedSoFar: 0,
-        latestTvl: 1000,
         endTimestamp: Math.floor(Date.now() / 1000) + 86400 * 30,
       },
     };

@@ -16,7 +16,7 @@ import {
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
 import { simulateNativeRatesAfterActions, hasRateCalcFields } from '@/lib/interestRateCalculator';
 import type { RateCalcInput } from '@/lib/interestRateCalculator';
-import { forecastWithTVL } from '@/lib/merklForecast';
+import { forecastWithTVL, type MerklForecastState } from '@/lib/merklForecast';
 import { shouldSurfaceForecastError } from '@/lib/merklForecastErrors';
 import {
   extractMeritSelfCapUsd,
@@ -76,6 +76,25 @@ interface BuildForecastMerklOpportunitiesInput {
 const sanitizePercent = (value: number): number =>
   Number.isFinite(value) && value >= 0 ? value : 0;
 
+/** Merge opportunity-only fields from breakdown (1-min) with metrics-only fields from forecast (10-min). */
+const mergeForecastState = (
+  breakdown: MerklCampaignBreakdown,
+  forecastStates: Record<string, MerklForecastStateResponse>,
+): MerklForecastState | null => {
+  if (!breakdown.campaignId || !breakdown.campaignType) return null;
+  const metrics = forecastStates[String(breakdown.campaignId)];
+  return {
+    campaignType: breakdown.campaignType,
+    totalBudget: breakdown.totalBudget,
+    aprCap: breakdown.aprCap,
+    latestTvl: breakdown.latestTvl,
+    plannedDaily: breakdown.plannedDaily,
+    requiredDaily: metrics?.requiredDaily,
+    distributedSoFar: metrics?.distributedSoFar,
+    endTimestamp: metrics?.endTimestamp,
+  };
+};
+
 const forecastBreakdownApr = (
   breakdown: MerklCampaignBreakdown,
   inputUsd: number,
@@ -86,13 +105,12 @@ const forecastBreakdownApr = (
   const currentApr = sanitizePercent(getMerklBreakdownApr(breakdown, tydroPointToUsdRate));
   if (inputUsd <= 0) return currentApr;
   if (!isMerklWhitelistBreakdownIncluded(breakdown, whitelistMerklCampaignIds)) return currentApr;
-  if (!breakdown.campaignId) return currentApr;
 
-  const forecastState = forecastStates[String(breakdown.campaignId)];
-  if (!forecastState) return currentApr;
+  const merged = mergeForecastState(breakdown, forecastStates);
+  if (!merged) return currentApr;
 
-  const hypotheticalTvl = Math.max((forecastState.latestTvl ?? 0) + inputUsd, 0);
-  const forecast = forecastWithTVL(forecastState, hypotheticalTvl);
+  const hypotheticalTvl = Math.max((merged.latestTvl ?? 0) + inputUsd, 0);
+  const forecast = forecastWithTVL(merged, hypotheticalTvl);
   const multiplier = Math.max(getMerklForecastUsdMultiplier(breakdown, tydroPointToUsdRate), 0);
   const forecastApr = sanitizePercent(forecast.apr * 100 * multiplier);
   return forecastApr;
@@ -539,17 +557,17 @@ const buildMerklCampaignDetails = (
         const forecastAprSan = sanitizePercent(forecastApr);
         after = isApy ? convertAprToApy(forecastAprSan) : forecastAprSan;
 
-        if (bd.campaignId) {
-          const st = forecastStates[String(bd.campaignId)];
-          if (st?.campaignType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE') {
-            const hypotheticalTvl = Math.max((st.latestTvl ?? 0) + inputUsd, 0);
-            const forecast = forecastWithTVL(st, hypotheticalTvl);
+        const merged = mergeForecastState(bd, forecastStates);
+        if (merged) {
+          if (merged.campaignType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE') {
+            const hypotheticalTvl = Math.max((merged.latestTvl ?? 0) + inputUsd, 0);
+            const forecast = forecastWithTVL(merged, hypotheticalTvl);
             if (typeof forecast.fixRewardableDays === 'number') {
               capNote = `~${forecast.fixRewardableDays.toFixed(0)}d of rewards at simulated rate`;
             }
-          } else if (st?.campaignType === 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE') {
-            const hypotheticalTvl = Math.max((st.latestTvl ?? 0) + inputUsd, 0);
-            const forecast = forecastWithTVL(st, hypotheticalTvl);
+          } else if (merged.campaignType === 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE') {
+            const hypotheticalTvl = Math.max((merged.latestTvl ?? 0) + inputUsd, 0);
+            const forecast = forecastWithTVL(merged, hypotheticalTvl);
             if (forecast.regime === 'APR_CAPPED') {
               capNote = 'APR cap binding at simulated TVL';
               capWarning = true;
