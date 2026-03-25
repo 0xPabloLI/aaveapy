@@ -7,6 +7,7 @@ import { getChainIconSrc } from '@/lib/chainIcons';
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
+import { IncentiveIcon } from '@/components/IncentiveIcon';
 import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import SimulationSubRow from './SimulationSubRow';
