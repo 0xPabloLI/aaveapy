@@ -499,7 +499,7 @@ const MobileReserveCard = memo(({
             href={buildAaveReserveUrl({ marketName: reserve.marketName, tokenAddress: reserve.tokenAddress }) || '#'}
             {...externalLinkTabProps(true)}
             onClick={(e) => e.stopPropagation()}
-            className="flex items-center gap-[var(--ds-space-2)] min-w-0 flex-1 active:opacity-70 transition-opacity"
+            className="flex items-center gap-2.5 min-w-0 flex-1 active:opacity-70 transition-opacity"
             aria-label={`Open ${reserve.tokenSymbol} on Aave`}
           >
             <TokenIcon
@@ -510,13 +510,13 @@ const MobileReserveCard = memo(({
               logoURI={logoURI}
             />
             <div className="min-w-0">
-              <div className="flex items-center gap-[var(--ds-space-1)]">
+              <div className="flex items-center gap-1">
                 <p className="font-bold text-foreground ds-text-14 truncate">{reserve.tokenSymbol}</p>
-                <ExternalLink className="w-3 h-3 text-muted-foreground/50 shrink-0" />
+                <ExternalLink className="w-2.5 h-2.5 text-muted-foreground/40 shrink-0" />
               </div>
-              <div className="flex items-center gap-[var(--ds-space-1)] ds-text-11 text-muted-foreground">
+              <div className="flex items-center gap-1 ds-text-11 text-muted-foreground/80">
                 {chainIconSrc && (
-                  <img src={chainIconSrc} alt={reserve.chainName} className="w-3.5 h-3.5" />
+                  <img src={chainIconSrc} alt={reserve.chainName} className="w-3 h-3 opacity-80" />
                 )}
                 <span className="truncate">{getMarketDisplayName()}</span>
               </div>
