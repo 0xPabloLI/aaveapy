@@ -465,8 +465,8 @@ const MobileReserveCard = memo(({
                     : 'ds-text-brand-cyan bg-gradient-to-r from-[rgb(var(--ds-brand-cyan-rgb)/0.08)] to-[rgb(var(--ds-brand-cyan-rgb)/0.15)] hover:from-[rgb(var(--ds-brand-cyan-rgb)/0.15)] hover:to-[rgb(var(--ds-brand-cyan-rgb)/0.25)] ds-ring-brand-cyan-15 hover:ring-[rgb(var(--ds-brand-cyan-rgb)/0.35)]'
                 }`}
               >
-                <span className="ds-text-10">✦</span>
                 <span>{formatPercent(visibleBorrowIncentive)}</span>
+                <IncentiveIcon width={8} height={8} />
               </button>
             </div>
           )}
