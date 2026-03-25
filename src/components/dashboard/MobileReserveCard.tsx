@@ -618,7 +618,7 @@ const MobileReserveCard = memo(({
           {capSheet !== null && (
             <>
               <motion.div
-                className="fixed inset-0 z-30 bg-background/40 backdrop-blur-[2px]"
+                className="fixed inset-0 z-30 bg-background/40"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
