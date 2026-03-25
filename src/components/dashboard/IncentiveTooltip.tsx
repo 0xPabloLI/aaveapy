@@ -200,13 +200,6 @@ const IncentiveTooltip = ({
     return `${startText} - ${endText}`;
   };
 
-  const formatUsd = (value: number): string =>
-    new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      maximumFractionDigits: value >= 1000 ? 0 : 2,
-    }).format(value);
-
   const formatValue = (value: unknown): string => {
     if (value === null || value === undefined) return '';
     if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
@@ -508,36 +501,6 @@ const IncentiveTooltip = ({
   }, [incentiveSources]);
   const hasDetails = incentiveSources.length > 0;
 
-  const renderStaticCampaignNotes = (
-    campaign: NonNullable<IncentiveSource['campaigns']>[number],
-    sourceType: IncentiveSource['sourceType'],
-  ) => {
-    if (
-      sourceType === 'ACI' &&
-      campaign.meritForecastMode === 'MERIT_SELF_CAP' &&
-      typeof campaign.selfCapUsd === 'number'
-    ) {
-      return (
-        <p className="ds-tooltip-body text-muted-foreground mt-[var(--ds-space-1)]">
-          Self bonus: first {formatUsd(campaign.selfCapUsd)} eligible.
-        </p>
-      );
-    }
-    if (
-      sourceType === 'Brevis' &&
-      typeof campaign.perUserRewardCapUsd === 'number' &&
-      campaign.perUserRewardCapUsd > 0
-    ) {
-      return (
-        <p className="ds-tooltip-body text-muted-foreground mt-[var(--ds-space-1)]">
-          Max reward {formatUsd(campaign.perUserRewardCapUsd)} per user
-          {campaign.sharedCapGroupId ? ' (shared Supply & Borrow)' : ''}.
-        </p>
-      );
-    }
-    return null;
-  };
-
   const renderSourceCampaigns = (source: IncentiveSource, keyPrefix: string) => {
     const campaignsBase =
       source.campaigns ?? [{ value: source.value, dateRange: source.dateRange, message: source.message, sourceType: source.sourceType }];
@@ -590,7 +553,6 @@ const IncentiveTooltip = ({
               ))}
             </ul>
           )}
-          {renderStaticCampaignNotes(campaign, source.sourceType)}
         </>
       );
     }
@@ -644,7 +606,6 @@ const IncentiveTooltip = ({
                   ))}
                 </ul>
               )}
-              {renderStaticCampaignNotes(campaign, source.sourceType)}
             </div>
           );
         })}

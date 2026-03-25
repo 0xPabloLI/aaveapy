@@ -24,21 +24,23 @@ const calculateTydroApr = (pointsPerThousandUsd: number, pointToUsdRate = TYDRO_
 };
 
 /**
- * Display APR for a Merkl breakdown. Precedence matches the original Tydro integration:
- * when `pointsPerThousandUsd` is present and yields a positive Tydro APR, use that; otherwise
- * fall back to `campaignApr` (with loose numeric coercion). Merkl may send both fields; Ink /
- * Tydro campaigns are driven by the point curve when points are present.
+ * Display APR for a Merkl breakdown. When Merkl provides a positive `campaignApr`, use it first;
+ * otherwise derive APR from `pointsPerThousandUsd` (Tydro-style points curve). Merkl may send both.
  */
 export const getMerklBreakdownApr = (
   breakdown: MerklCampaignBreakdown,
   pointToUsdRate = TYDRO_POINT_TO_USD_RATE
 ): number => {
+  const campaignApr = parseMerklNumeric(breakdown.campaignApr);
+  if (campaignApr !== undefined && campaignApr > 0) {
+    return campaignApr;
+  }
   const points = parseMerklNumeric(breakdown.pointsPerThousandUsd);
   if (points !== undefined && points > 0) {
     const tydroApr = calculateTydroApr(points, safePointToUsdRate(pointToUsdRate));
     if (tydroApr > 0) return tydroApr;
   }
-  return parseMerklNumeric(breakdown.campaignApr) ?? 0;
+  return campaignApr ?? 0;
 };
 
 export const getMerklForecastUsdMultiplier = (

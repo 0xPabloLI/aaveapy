@@ -30,13 +30,13 @@ describe('getMerklForecastUsdMultiplier', () => {
 });
 
 describe('getMerklBreakdownApr', () => {
-  it('prefers Tydro points over campaignApr when both are present', () => {
+  it('prefers campaignApr over Tydro points when campaignApr is positive', () => {
     const apr = getMerklBreakdownApr({
       ...baseBreakdown,
       campaignApr: 2.5,
       pointsPerThousandUsd: 2,
     });
-    expect(apr).toBe(73);
+    expect(apr).toBe(2.5);
   });
 
   it('uses Tydro points when campaignApr is zero', () => {

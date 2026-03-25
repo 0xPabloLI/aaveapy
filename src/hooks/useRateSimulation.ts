@@ -406,12 +406,11 @@ const meritForecastAprToDisplay = (aprDecimal: number, isApy: boolean): number =
   return isApy ? convertAprToApy(pct) : pct;
 };
 
+/** Show per-campaign rows when the user entered a scenario, or when multiple campaigns stack. */
 const shouldExposeCampaignRows = (
   rows: SimulationCampaignDetail[],
   hasAnyInput: boolean,
-): boolean =>
-  rows.length > 1 ||
-  (hasAnyInput && rows.some((r) => Boolean(r.capNote) || r.capWarning));
+): boolean => rows.length > 1 || (hasAnyInput && rows.length > 0);
 
 const buildMeritCampaignDetails = (
   merits: MeritIncentive[] | undefined,
@@ -448,8 +447,9 @@ const buildMeritCampaignDetails = (
         });
         if (fp) {
           baseAfter = meritForecastAprToDisplay(fp.apr, isApy);
+          // Not pool budget: last round distributed reward used to infer Base APR for this scenario.
           if (fp.estimateKind === 'MERIT_BASE' && typeof fp.lastRoundRewardUsd === 'number') {
-            capNote = `Est. from last round (${formatUsd(fp.lastRoundRewardUsd)})`;
+            capNote = `Base uses last round payout (${formatUsd(fp.lastRoundRewardUsd)}) to estimate this rate`;
           } else if (fp.usesCurrentRateFallback) {
             capNote = 'Using current APR (estimate)';
           }
@@ -486,7 +486,7 @@ const buildMeritCampaignDetails = (
         if (fp) {
           selfAfter = meritForecastAprToDisplay(fp.apr, isApy);
           if (typeof fp.selfCapUsd === 'number' && typeof fp.selfEligibleUsd === 'number') {
-            capNote = `Eligible ${formatUsd(fp.selfEligibleUsd)} / ${formatUsd(inputUsd)}`;
+            capNote = `Self-bonus: ${formatUsd(fp.selfEligibleUsd)} of your ${formatUsd(inputUsd)} scenario counts (self cap ${formatUsd(fp.selfCapUsd)})`;
             capWarning = inputUsd > fp.selfCapUsd;
           } else if (fp.usesCurrentRateFallback) {
             capNote = 'Using current APR (estimate)';

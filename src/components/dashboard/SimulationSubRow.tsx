@@ -429,7 +429,7 @@ const SimulationSubRow = ({
             </div>
             {row.capNote ? (
               <p
-                className={`ds-text-11 mt-0.5 break-words ${row.capWarning ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}
+                className={`ds-text-11 mt-0.5 leading-snug text-pretty ${row.capWarning ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}
               >
                 {row.capNote}
               </p>
@@ -471,11 +471,11 @@ const SimulationSubRow = ({
     >
       <table className="w-full min-w-0 table-fixed">
         <colgroup>
-          {/* Percent widths so short labels (e.g. Spread) are not stranded in an oversized first column */}
-          <col style={{ width: '34%' }} />
-          <col style={{ width: '22%' }} />
-          <col style={{ width: '22%' }} />
-          <col style={{ width: '22%' }} />
+          {/* Wider label column so incentive cap notes wrap at spaces, not mid-token (table-fixed + break-words was ugly). */}
+          <col style={{ width: '40%' }} />
+          <col style={{ width: '20%' }} />
+          <col style={{ width: '20%' }} />
+          <col style={{ width: '20%' }} />
         </colgroup>
         <thead>
           <tr className="bg-muted/30 border-b border-border/50">
@@ -546,9 +546,9 @@ const SimulationSubRow = ({
     <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
       <table className="w-full min-w-0 table-fixed">
         <colgroup>
-          <col style={{ width: '38%' }} />
-          <col style={{ width: '20%' }} />
-          <col style={{ width: '20%' }} />
+          <col style={{ width: '40%' }} />
+          <col style={{ width: '19%' }} />
+          <col style={{ width: '19%' }} />
           <col style={{ width: '22%' }} />
         </colgroup>
         <thead>

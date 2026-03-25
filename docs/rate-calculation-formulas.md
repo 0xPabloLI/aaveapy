@@ -192,7 +192,7 @@ hypotheticalTvl = max(0, latestTvl + inputUsd)
 
 where `inputUsd` is the hypothetical **increment** on the campaign’s eligible TVL in **USD** (same semantics as `tvl` below). If `inputUsd ≤ 0` or there is no forecast row, the UI keeps the **current** Merkl APR from the reserve (`getMerklBreakdownApr`).
 
-**`getMerklBreakdownApr` precedence** (`src/lib/tydro.ts`): if **`pointsPerThousandUsd`** is present and the Tydro formula yields a positive APR (`points × pointToUsdRate × 36.5`), use that (Ink / Tydro point campaigns). Otherwise use **`campaignApr`** (with coercion for string numbers). **`pointToUsdRate` ≤ 0** falls back to `TYDRO_POINT_TO_USD_RATE` (same as `getMerklForecastUsdMultiplier`). Forecast clones in `buildForecastMerklOpportunities` clear `pointsPerThousandUsd` so simulated rows rely on forecast `campaignApr` when the model returns zero.
+**`getMerklBreakdownApr` precedence** (`src/lib/tydro.ts`): if **`campaignApr`** coerces to a number **> 0**, use it. Otherwise, if **`pointsPerThousandUsd`** is present and the Tydro formula yields a positive APR (`points × pointToUsdRate × 36.5`), use that. Final fallback is **`campaignApr`** coerced to a number or **0**. **`pointToUsdRate` ≤ 0** falls back to `TYDRO_POINT_TO_USD_RATE` (same as `getMerklForecastUsdMultiplier`). Forecast clones in `buildForecastMerklOpportunities` clear `pointsPerThousandUsd` so simulated rows rely on forecast `campaignApr` when the model returns zero.
 
 ### Symbols
 
