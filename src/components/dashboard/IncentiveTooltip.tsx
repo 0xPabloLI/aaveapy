@@ -804,7 +804,7 @@ const IncentiveTooltip = ({
       {/* Tooltip content with smooth zoom + fade animation */}
       <div
         ref={tooltipRef}
-        className={`fixed z-40 rounded-xl border border-border/60 bg-card ds-tooltip-pad ds-tooltip-shadow max-w-[min(520px,calc(100vw-32px))] w-[min(520px,calc(100vw-32px))] min-w-[320px] animate-in fade-in-0 zoom-in-95 duration-200 ease-out ${
+        className={`fixed z-40 rounded-xl border border-border/60 bg-card ds-tooltip-pad max-w-[min(520px,calc(100vw-32px))] w-[min(520px,calc(100vw-32px))] min-w-[320px] animate-in fade-in-0 zoom-in-95 duration-200 ease-out ${
           tooltipPlacement === 'top' ? 'slide-in-from-bottom-1' : 'slide-in-from-top-1'
         }`}
         style={{ 
