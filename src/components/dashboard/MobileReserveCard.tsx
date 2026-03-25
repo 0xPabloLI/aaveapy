@@ -598,8 +598,8 @@ const MobileReserveCard = memo(({
               aria-label={isSimulationExpanded ? 'Collapse reserve details' : 'Expand reserve details'}
               className={`inline-flex w-full items-center justify-between gap-2 rounded-lg px-3 py-1.5 ds-text-12 text-muted-foreground transition-all duration-200 ${
                 isSimulationExpanded
-                  ? 'border border-foreground/30 bg-muted/50 shadow-sm'
-                  : 'border border-border/60 bg-background hover:bg-muted/40 hover:border-border'
+                  ? 'border border-foreground/25 bg-muted/60 shadow-sm dark:border-foreground/20 dark:bg-muted/40'
+                  : 'border border-border/60 bg-background hover:bg-muted/40 hover:border-border/80 dark:bg-card/50 dark:hover:bg-muted/30'
               }`}
             >
               <span className="flex min-w-0 items-center gap-1.5">
