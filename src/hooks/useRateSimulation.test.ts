@@ -195,6 +195,64 @@ describe('buildRateSimulationResult', () => {
     expect(result.supply.afterIncentive).toBeLessThanOrEqual(result.supply.currentIncentive);
   });
 
+  it('recomputes Merkl supply incentives from forecast TVL when side-data provides campaign metrics', () => {
+    const reserve: ReserveWithSpread = {
+      ...baseReserve,
+      tokenSymbol: 'USDG',
+      reserveSizeUsd: 23655388.009228,
+      merklSupplys: [
+        {
+          name: 'Lend USDG on Tydro',
+          breakdowns: [
+            {
+              campaignApr: 0,
+              campaignStartedAt: '2026-03-24T14:00:00.000Z',
+              campaignEndedAt: '2026-03-31T14:00:00.000Z',
+              campaignId: '16403393592832236981',
+              campaignType: 'DUTCH_AUCTION',
+              plannedDaily: 11312,
+              aprCap: null,
+              totalBudget: 79184,
+              latestTvl: 23586552.55647095,
+              pointsPerThousandUsd: 0.4795953106295122,
+            },
+          ],
+        },
+      ],
+    };
+
+    const states: Record<string, MerklForecastStateResponse> = {
+      '16403393592832236981': {
+        campaignId: '16403393592832236981',
+        campaignType: 'DUTCH_AUCTION',
+        plannedDaily: 11312,
+        requiredDaily: 11312,
+        aprCap: null,
+        totalBudget: 79184,
+        distributedSoFar: 0,
+        latestTvl: 23586552.55647095,
+        endTimestamp: 1774965600,
+      },
+    };
+
+    const result = buildRateSimulationResult({
+      reserve,
+      reserveRateInput: baseReserve,
+      isApy: false,
+      whitelistMerklCampaignIds: new Set(),
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '1000000',
+      borrowInput: '0',
+      inputMode: 'usd',
+      forecastStates: states,
+    });
+
+    expect(result.supply.sources.merkl.current).toBeCloseTo(17.505228837977196, 10);
+    expect(result.supply.sources.merkl.after).toBeCloseTo(16.793244968023455, 10);
+    expect(result.supply.sources.merkl.after).toBeLessThan(result.supply.sources.merkl.current!);
+  });
+
   it('recomputes merit incentives when a shared supply amount is present even without latest-round reward data', () => {
     const reserve: ReserveWithSpread = {
       ...baseReserve,

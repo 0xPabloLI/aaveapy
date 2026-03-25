@@ -170,6 +170,8 @@ export interface SimulationCampaignDetail {
   delta: number | null;
   capNote?: string;
   capWarning?: boolean;
+  /** Optional deep-link for the specific Merkl opportunity/breakdown row. */
+  href?: string | null;
 }
 
 export interface SimulationSourceDetail extends SimulationMetric {
@@ -606,6 +608,7 @@ const buildMerklCampaignDetails = (
 
       const delta = after !== null ? after - current : null;
       const oppLabel = opportunity.name?.trim() || 'Merkl';
+      const oppLink = opportunity.link ?? opportunity.opportunityLink;
       rows.push({
         id: `merkl-${oppIndex}-${bdIndex}-${bd.campaignId ?? 'x'}`,
         // Keep the row label user-friendly; use the (stable) id for internal identity.
@@ -615,6 +618,7 @@ const buildMerklCampaignDetails = (
         delta,
         capNote,
         capWarning,
+        href: oppLink ?? null,
       });
     });
   });

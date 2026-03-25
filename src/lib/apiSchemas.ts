@@ -30,6 +30,11 @@ const MerklCampaignBreakdownSchema = z.object({
   campaignId: z.string(),
   whitelistOnly: z.boolean().optional(),
   pointsPerThousandUsd: z.number().optional(),
+  campaignType: z.string().optional(),
+  totalBudget: z.number().optional(),
+  aprCap: z.number().nullable().optional(),
+  latestTvl: z.number().optional(),
+  plannedDaily: z.number().optional(),
 });
 
 const MerklOpportunityGroupSchema = z.object({
@@ -154,4 +159,3 @@ export const SideDataMetaResponseSchema = z.object({
   }).optional(),
   errors: z.record(z.string(), z.string()).optional(),
 }).passthrough();
-
