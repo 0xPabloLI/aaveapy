@@ -112,6 +112,13 @@
 - **勾选**：按 **`campaignId`** 逐项勾选；无 `campaignId` 的白名单条目共用同一 opt-in（在 `whitelistMerklCampaignIds` 内用内部 sentinel，与真实 id 并列）。激励详情 Tooltip 与（若启用）Merkl Forecast 面板对可勾选项统一使用 **「Include as WL user」**，表示用户确认自己是白名单参与者并要把该活动计入汇总。
 - 完整规则与实现位置见 **[frontend-interaction-guardrails.md](frontend-interaction-guardrails.md)** § *Merkl whitelist-only campaigns*。
 
+### 4.8 Tydro 与 Merkl「点数」术语
+
+- **Tydro**：仅 **Merkl** 的 API 字段 **`pointsPerThousandUsd`**（按千刀点数）在 `tydro.ts` 中按 Tydro 曲线换算 APR；顶栏 **`tydroPointToUsdRate`** 调节该曲线。详见 **[rate-calculation-formulas.md](../rate-calculation-formulas.md)** § *Terminology: Tydro points vs other “points”*。
+- **不是**所有界面上的「points」都指 Tydro（例如 Ink FDV 滑块上的参考点、CSS `pointer-events` 等与激励无关）。
+- **ACI / Brevis / 协议激励**不含 `pointsPerThousandUsd`，不称 Tydro points。
+- **文案**：表格与 Tooltip 常汇总为 **Merkl** / **Merkl Incentive**；不必每条都写「Tydro points」，仅在说明点数曲线或全局点数换算时再用 Tydro。
+
 ## 5. 布局原则
 - **文字与边框须有间距（强制）**：所有带边框的容器内，文字与边框之间必须保留至少 `--ds-space-2`（8px）的内边距，不得贴边。卡片、表格单元格、警告条、按钮等均需遵守。
 - 移动优先，触控目标 ≥ 44px

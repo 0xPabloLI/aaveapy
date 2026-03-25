@@ -17,6 +17,32 @@ describe('extractMeritSelfCapUsd', () => {
 });
 
 describe('forecastMeritCampaign', () => {
+  it('uses anchor reserve TVL × APR when anchorTvlUsd is set (before last round)', () => {
+    const anchor = 9_000_000;
+    const aprPct = 4;
+    const deposit = 100_000;
+    const result = forecastMeritCampaign({
+      mode: 'MERIT_BASE',
+      depositUsd: deposit,
+      forecastAprPercent: aprPct,
+      startDate: 'Thu Feb 26 2026',
+      endDate: 'Thu Mar 12 2026',
+      lastRoundRewardUsd: 10_628.27,
+      anchorTvlUsd: anchor,
+    });
+
+    expect(result).not.toBeNull();
+    expect(result).toMatchObject({
+      unavailable: false,
+      estimateKind: 'MERIT_BASE',
+      meritEstimateSource: 'reserve_tvl',
+      anchorTvlUsd: anchor,
+    });
+    const daily = (anchor * (aprPct / 100)) / 365;
+    const hyp = anchor + deposit;
+    expect(result?.apr).toBeCloseTo((daily * 365) / hyp, 10);
+  });
+
   it('falls back to current APR when latest-round reward data is missing', () => {
     const result = forecastMeritCampaign({
       mode: 'MERIT_BASE',

@@ -11,8 +11,8 @@ import {
   MERKL_WHITELIST_TOGGLE_ARIA,
   MERKL_WHITELIST_TOGGLE_LABEL,
 } from '@/lib/formatters';
-import { getMerklBreakdownApr, getMerklForecastUsdMultiplier } from '@/lib/tydro';
-import { extractMeritSelfCapUsd, splitMeritMessageBySelfAuth } from '@/lib/meritForecast';
+import { getMerklBreakdownApr } from '@/lib/tydro';
+import { splitMeritMessageBySelfAuth } from '@/lib/meritForecast';
 import { adjustTooltipAnchorForScroll, getWindowScroll } from '@/lib/tooltipPosition';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
@@ -60,18 +60,9 @@ interface IncentiveSource {
     message?: string | Record<string, unknown> | unknown[];
     campaignId?: string;
     sourceType?: IncentiveSource['sourceType'];
-    forecastMultiplier?: number;
     whitelistOnly?: boolean;
     included?: boolean;
     rawValue?: number;
-    forecastAprPercent?: number;
-    lastRoundRewardUsd?: number;
-    meritForecastMode?: 'MERIT_BASE' | 'MERIT_SELF_CAP';
-    selfCapUsd?: number;
-    meritBaseAprPercent?: number;
-    meritBaseLastRoundRewardUsd?: number;
-    perUserRewardCapUsd?: number;
-    sharedCapGroupId?: string;
   }>;
 }
 
@@ -354,7 +345,6 @@ const IncentiveTooltip = ({
               : 'ACI Incentive';
 
           const { baseMessage, selfMessage } = splitMeritMessageBySelfAuth(merit.message);
-          const selfCapUsd = extractMeritSelfCapUsd(selfMessage);
 
           const meritCampaigns: NonNullable<IncentiveSource['campaigns']> = [];
           if (baseAprPercent > 0) {
@@ -364,9 +354,6 @@ const IncentiveTooltip = ({
               startDate: merit.startDate,
               endDate: merit.endDate,
               message: baseMessage ?? merit.message,
-              forecastAprPercent: baseAprPercent,
-              lastRoundRewardUsd: merit.lastRoundRewardUsd,
-              meritForecastMode: 'MERIT_BASE',
               sourceType: 'ACI',
             });
           }
@@ -377,14 +364,6 @@ const IncentiveTooltip = ({
               startDate: merit.startDate,
               endDate: merit.endDate,
               message: selfMessage,
-              forecastAprPercent: selfAprPercent,
-              meritForecastMode: 'MERIT_SELF_CAP',
-              selfCapUsd: selfCapUsd ?? undefined,
-              meritBaseAprPercent: baseAprPercent > 0 ? baseAprPercent : undefined,
-              meritBaseLastRoundRewardUsd:
-                typeof merit.lastRoundRewardUsd === 'number' && Number.isFinite(merit.lastRoundRewardUsd) && merit.lastRoundRewardUsd > 0
-                  ? merit.lastRoundRewardUsd
-                  : undefined,
               sourceType: 'ACI',
             });
           }
@@ -406,8 +385,6 @@ const IncentiveTooltip = ({
                   startDate: merit.startDate,
                   endDate: merit.endDate,
                   message: merit.message,
-                  forecastAprPercent: totalForecastAprPercent,
-                  lastRoundRewardUsd: merit.lastRoundRewardUsd,
                 }],
           });
         }
@@ -436,8 +413,6 @@ const IncentiveTooltip = ({
               dateRange: formatDateRange(brevis.startDate, brevis.endDate) || undefined,
               startDate: brevis.startDate,
               endDate: brevis.endDate,
-              perUserRewardCapUsd: brevis.perUserRewardCapUsd,
-              sharedCapGroupId: brevis.sharedCapGroupId,
             }],
           });
         }
@@ -476,7 +451,6 @@ const IncentiveTooltip = ({
                 message: opportunity.message,
                 campaignId: breakdown.campaignId,
                 sourceType: 'Merkl',
-                forecastMultiplier: getMerklForecastUsdMultiplier(breakdown, tydroPointToUsdRate),
               }],
             });
           }

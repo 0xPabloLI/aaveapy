@@ -286,17 +286,25 @@ deposit → [deposit cap] → nominal APR (from TVL dilution) → nominal reward
 - `fixRewardableDays` / `fixRewardableUntilTs`: derived from `remainingBudget / aprBasedDaily`, capped by `endTimestamp`. These fields indicate how many days the campaign can sustain rewards at the current APR before budget exhaustion.
 - Unlike Brevis, this is a **pool-level** cap (all users share the same budget).
 
+### Merit Base: reserve TVL anchor (preferred)
+
+When **`reserve.reserveSizeUsd`** is present, **supply-side** Merit Base simulation passes **`anchorTvlUsd = reserveSizeUsd`** into `forecastMeritCampaign` (assumption: Merit’s rate denominator matches pool supply TVL). **Borrow-side** Merit uses **`anchorTvlUsd = reserveSizeUsd × (utilizationPct / 100)`** when `utilizationPct` is available (borrowed USD proxy).
+
+- **Daily reward (USD)** is then **`anchorTvlUsd × (Base APR / 100) / 365`**, i.e. consistent with headline Base APR at that TVL.
+- **After a hypothetical deposit**, **TVL** is treated as **`anchorTvlUsd + scenarioDepositUsd`** with **daily rewards held flat**, so **APR dilutes** (same intuition as fixed daily rewards elsewhere).
+- If **`anchorTvlUsd`** cannot be resolved (e.g. missing `reserveSizeUsd`, or borrow side without utilization), the implementation **falls back** to the **`lastRoundRewardUsd` / cycle-days** path.
+
 ### Merit self deposit cap
 
 - `selfCapUsd`: extracted from campaign `message` text (e.g. "first $1000 USDT supplied per user").
 - Caps the **eligible deposit**, not the reward directly. `eligibleDeposit = min(deposit, selfCapUsd)`.
 - `eligibleDepositUsd` is only used for Merit self-auth campaigns — other incentive types do not use deposit capping.
 
-### UI surfaces: Brevis cap (tooltip vs simulation)
+### UI surfaces: Brevis cap (simulation only)
 
-**Incentive tooltip** (`IncentiveTooltip`): when `perUserRewardCapUsd` is present, show a short **static** line (max reward per user; note shared Supply/Borrow when `sharedCapGroupId` exists). Do **not** put deposit-dependent simulated APR or days-to-cap in the tooltip.
+**Incentive tooltip** (`IncentiveTooltip`): static context only (dates, messages). It does **not** repeat per-user caps or deposit-dependent Brevis diagnostics.
 
-**Shared simulation** (`useRateSimulation` → per-campaign rows on `SimulationSubRow` via `capNote` / `capWarning`): with supply/borrow scenario input, show forecast diagnostics from `brevisForecast.ts` / `buildBrevisCampaignDetails` (e.g. days to cap, cap binding, combined USD when `sharedCapGroupId` applies).
+**Shared simulation** (`useRateSimulation` → per-campaign rows on `SimulationSubRow` via `capNote` / `capWarning`): with supply/borrow scenario input, show forecast diagnostics from `brevisForecast.ts` / `buildBrevisCampaignDetails` (e.g. max/user, shared Supply+Borrow, days to cap, cap binding).
 
 ## Related Files
 

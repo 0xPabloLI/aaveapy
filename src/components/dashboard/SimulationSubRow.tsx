@@ -397,39 +397,42 @@ const SimulationSubRow = ({
     // Supply = green, Borrow = cyan; breakdown rows (Native + Incentive) use same section color
     const rowAccentClass = accentClass;
 
+    /** Align cap note with label text start; note sits outside nested ml/pl so it can use full column width (wraps later). */
+    const capNoteAlignClass = isSubBreakdown ? 'pl-6' : isBreakdownItem ? 'pl-4' : '';
+
     return (
       <tr key={row.rowKey} className={row.warning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
         <td className={`${cellPy} ${metricCellPx} min-w-0 align-top`}>
-          <div
-            className={`min-w-0 ${isBreakdownItem ? `${breakdownIndentClass} ${borderColorClass}` : ''}`}
-          >
-            <div className="flex flex-wrap items-start gap-x-1.5 gap-y-0.5 min-w-0">
-              {row.href ? (
-                <a
-                  href={row.href}
-                  {...externalLinkTabProps(isMobile)}
-                  onClick={(e) => e.stopPropagation()}
-                  className={`ds-text-12 flex items-center gap-1 min-w-0 break-words ${row.warning ? 'text-amber-700 dark:text-amber-400' : isBreakdownItem ? `${rowAccentClass} hover:opacity-90` : accentClass}`}
-                >
-                  <span className="break-words">{row.label}</span>
-                  <ExternalLink className="w-3 h-3 flex-shrink-0 opacity-50" />
-                </a>
-              ) : (
-                <span
-                  className={`ds-text-12 break-words ${row.warning ? 'text-amber-700 dark:text-amber-400 font-medium' : isBreakdownItem ? rowAccentClass : accentClass}`}
-                >
-                  {row.label}
-                </span>
-              )}
-              {row.cap !== null && row.cap !== undefined && (
-                <span className={`ds-text-11 tabular-nums flex-shrink-0 ${row.warning ? 'text-amber-600' : 'text-muted-foreground/70'}`}>
-                  / Cap {formatScenarioSize(row.cap, { inputMode, tokenPrice: simulation.tokenPrice })}
-                </span>
-              )}
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <div className={`min-w-0 ${isBreakdownItem ? `${breakdownIndentClass} ${borderColorClass}` : ''}`}>
+              <div className="flex flex-wrap items-start gap-x-1.5 gap-y-0.5 min-w-0">
+                {row.href ? (
+                  <a
+                    href={row.href}
+                    {...externalLinkTabProps(isMobile)}
+                    onClick={(e) => e.stopPropagation()}
+                    className={`ds-text-12 flex items-center gap-1 min-w-0 break-words ${row.warning ? 'text-amber-700 dark:text-amber-400' : isBreakdownItem ? `${rowAccentClass} hover:opacity-90` : accentClass}`}
+                  >
+                    <span className="break-words">{row.label}</span>
+                    <ExternalLink className="w-3 h-3 flex-shrink-0 opacity-50" />
+                  </a>
+                ) : (
+                  <span
+                    className={`ds-text-12 break-words ${row.warning ? 'text-amber-700 dark:text-amber-400 font-medium' : isBreakdownItem ? rowAccentClass : accentClass}`}
+                  >
+                    {row.label}
+                  </span>
+                )}
+                {row.cap !== null && row.cap !== undefined && (
+                  <span className={`ds-text-11 tabular-nums flex-shrink-0 ${row.warning ? 'text-amber-600' : 'text-muted-foreground/70'}`}>
+                    / Cap {formatScenarioSize(row.cap, { inputMode, tokenPrice: simulation.tokenPrice })}
+                  </span>
+                )}
+              </div>
             </div>
             {row.capNote ? (
               <p
-                className={`ds-text-11 mt-0.5 leading-snug text-pretty ${row.capWarning ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}
+                className={`ds-text-11 max-w-none leading-snug text-pretty break-normal ${capNoteAlignClass} ${row.capWarning ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}
               >
                 {row.capNote}
               </p>
@@ -471,11 +474,11 @@ const SimulationSubRow = ({
     >
       <table className="w-full min-w-0 table-fixed">
         <colgroup>
-          {/* Wider label column so incentive cap notes wrap at spaces, not mid-token (table-fixed + break-words was ugly). */}
-          <col style={{ width: '40%' }} />
-          <col style={{ width: '20%' }} />
-          <col style={{ width: '20%' }} />
-          <col style={{ width: '20%' }} />
+          {/* Wide label column: cap notes sit outside nested indent so they use full width (later wrap). */}
+          <col style={{ width: '46%' }} />
+          <col style={{ width: '18%' }} />
+          <col style={{ width: '18%' }} />
+          <col style={{ width: '18%' }} />
         </colgroup>
         <thead>
           <tr className="bg-muted/30 border-b border-border/50">
@@ -546,10 +549,10 @@ const SimulationSubRow = ({
     <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
       <table className="w-full min-w-0 table-fixed">
         <colgroup>
-          <col style={{ width: '40%' }} />
-          <col style={{ width: '19%' }} />
-          <col style={{ width: '19%' }} />
-          <col style={{ width: '22%' }} />
+          <col style={{ width: '46%' }} />
+          <col style={{ width: '18%' }} />
+          <col style={{ width: '18%' }} />
+          <col style={{ width: '18%' }} />
         </colgroup>
         <thead>
           <tr className="bg-muted/30 border-b border-border/50">

@@ -326,11 +326,30 @@ const sumMeritValues = (values?: MeritIncentive[], isApy = false): number => {
   }, 0);
 };
 
-const sumForecastMeritValues = (values: MeritIncentive[] | undefined, isApy: boolean, inputUsd: number): number => {
+/**
+ * Supply: `reserveSizeUsd`. Borrow: borrowed USD ≈ reserveSize × utilization (Merit TVL proxy when no campaign TVL exists).
+ */
+const getMeritAnchorTvlUsd = (reserve: ReserveWithSpread, side: RateSide): number | undefined => {
+  const size = reserve.reserveSizeUsd;
+  if (!Number.isFinite(size) || size === undefined || size <= 0) return undefined;
+  if (side === 'supply') return size;
+  const u = reserve.utilizationPct;
+  if (typeof u === 'number' && Number.isFinite(u) && u > 0 && u <= 100) {
+    return size * (u / 100);
+  }
+  return undefined;
+};
+
+const sumForecastMeritValues = (
+  values: MeritIncentive[] | undefined,
+  isApy: boolean,
+  inputUsd: number,
+  anchorTvlUsd?: number,
+): number => {
   if (!values || values.length === 0) return 0;
   return values.reduce((sum, value) => {
     if (!isCampaignActive(value.startDate, value.endDate)) return sum;
-    const aprPercent = forecastMeritAprPercent(value, inputUsd);
+    const aprPercent = forecastMeritAprPercent(value, inputUsd, anchorTvlUsd);
     if (aprPercent <= 0) return sum;
     return sum + (isApy ? convertAprToApy(aprPercent) : aprPercent);
   }, 0);
@@ -435,6 +454,7 @@ const buildMeritCampaignDetails = (
   isApy: boolean,
   inputUsd: number,
   hasAnyInput: boolean,
+  meritAnchorTvlUsd?: number,
 ): SimulationCampaignDetail[] => {
   const rows: SimulationCampaignDetail[] = [];
   if (!merits?.length) return rows;
@@ -462,14 +482,16 @@ const buildMeritCampaignDetails = (
           startDate: merit.startDate,
           endDate: merit.endDate,
           lastRoundRewardUsd: merit.lastRoundRewardUsd,
+          anchorTvlUsd: meritAnchorTvlUsd,
         });
         if (fp) {
           baseAfter = meritForecastAprToDisplay(fp.apr, isApy);
-          // Not pool budget: last round distributed reward used to infer Base APR for this scenario.
-          if (fp.estimateKind === 'MERIT_BASE' && typeof fp.lastRoundRewardUsd === 'number') {
-            capNote = `Base uses last round payout (${formatUsd(fp.lastRoundRewardUsd)}) to estimate this rate`;
+          if (fp.estimateKind === 'MERIT_BASE' && fp.meritEstimateSource === 'reserve_tvl' && typeof fp.anchorTvlUsd === 'number') {
+            capNote = `TVL ${formatUsd(fp.anchorTvlUsd)} · flat rewards/day`;
+          } else if (fp.estimateKind === 'MERIT_BASE' && fp.meritEstimateSource === 'last_round' && typeof fp.lastRoundRewardUsd === 'number') {
+            capNote = `Last round ${formatUsd(fp.lastRoundRewardUsd)} → est.`;
           } else if (fp.usesCurrentRateFallback) {
-            capNote = 'Using current APR (estimate)';
+            capNote = 'Current APR (est.)';
           }
         }
       }
@@ -500,14 +522,15 @@ const buildMeritCampaignDetails = (
           endDate: merit.endDate,
           baseAprPercent: baseAprPercent > 0 ? baseAprPercent : undefined,
           baseLastRoundRewardUsd: merit.lastRoundRewardUsd,
+          anchorTvlUsd: meritAnchorTvlUsd,
         });
         if (fp) {
           selfAfter = meritForecastAprToDisplay(fp.apr, isApy);
           if (typeof fp.selfCapUsd === 'number' && typeof fp.selfEligibleUsd === 'number') {
-            capNote = `Self-bonus: ${formatUsd(fp.selfEligibleUsd)} of your ${formatUsd(inputUsd)} scenario counts (self cap ${formatUsd(fp.selfCapUsd)})`;
+            capNote = `Self ${formatUsd(fp.selfEligibleUsd)} of ${formatUsd(inputUsd)} (cap ${formatUsd(fp.selfCapUsd)})`;
             capWarning = inputUsd > fp.selfCapUsd;
           } else if (fp.usesCurrentRateFallback) {
-            capNote = 'Using current APR (estimate)';
+            capNote = 'Current APR (est.)';
           }
         } else {
           selfAfter = selfCurrent;
@@ -563,25 +586,30 @@ const buildMerklCampaignDetails = (
             const hypotheticalTvl = Math.max((merged.latestTvl ?? 0) + inputUsd, 0);
             const forecast = forecastWithTVL(merged, hypotheticalTvl);
             if (typeof forecast.fixRewardableDays === 'number') {
-              capNote = `~${forecast.fixRewardableDays.toFixed(0)}d of rewards at simulated rate`;
+              capNote = `~${forecast.fixRewardableDays.toFixed(0)}d @ sim`;
             }
           } else if (merged.campaignType === 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE') {
             const hypotheticalTvl = Math.max((merged.latestTvl ?? 0) + inputUsd, 0);
             const forecast = forecastWithTVL(merged, hypotheticalTvl);
             if (forecast.regime === 'APR_CAPPED') {
-              capNote = 'APR cap binding at simulated TVL';
+              capNote = 'APR cap @ sim TVL';
               capWarning = true;
             }
+          } else if (merged.campaignType === 'DUTCH_AUCTION') {
+            // No APR-based daily cap: dailyRewards = requiredDaily (see merklForecast + rate-calculation-formulas).
+            const hypotheticalTvl = Math.max((merged.latestTvl ?? 0) + inputUsd, 0);
+            const forecast = forecastWithTVL(merged, hypotheticalTvl);
+            capNote = forecast.regime === 'CATCHING_UP' ? 'Dutch · catch-up' : 'Dutch';
           }
         }
       }
 
       const delta = after !== null ? after - current : null;
       const oppLabel = opportunity.name?.trim() || 'Merkl';
-      const shortId = String(bd.campaignId ?? `${oppIndex}-${bdIndex}`).slice(0, 10);
       rows.push({
         id: `merkl-${oppIndex}-${bdIndex}-${bd.campaignId ?? 'x'}`,
-        label: `${oppLabel} · ${shortId}`,
+        // Keep the row label user-friendly; use the (stable) id for internal identity.
+        label: oppLabel,
         current,
         after,
         delta,
@@ -620,10 +648,10 @@ const buildBrevisCampaignDetails = (
       if (b.perUserRewardCapUsd !== undefined && b.perUserRewardCapUsd > 0) {
         capWarning = det.isCapBinding;
         const parts: string[] = [];
-        parts.push(`Max reward ${formatUsd(b.perUserRewardCapUsd)} / user`);
-        if (b.sharedCapGroupId) parts.push('Shared Supply+Borrow');
+        parts.push(`Max ${formatUsd(b.perUserRewardCapUsd)}/user`);
+        if (b.sharedCapGroupId) parts.push('S+B');
         if (det.daysToHitCap !== null && Number.isFinite(det.daysToHitCap)) {
-          parts.push(`~${det.daysToHitCap.toFixed(0)}d to cap`);
+          parts.push(`~${det.daysToHitCap.toFixed(0)}d`);
         }
         capNote = parts.join(' · ');
       }
@@ -674,7 +702,7 @@ const buildIncentiveAfter = (
 
   return (
     sumNumberArray(protocol, isApy) +
-    sumForecastMeritValues(merit, isApy, inputUsd) +
+    sumForecastMeritValues(merit, isApy, inputUsd, getMeritAnchorTvlUsd(reserve, side)) +
     sumMerklValues(forecastedMerkl, isApy, tydroPointToUsdRate, whitelistMerklCampaignIds) +
     sumForecastBrevisValues(brevis, isApy, inputUsd, brevisSharedCapCombinedUsd)
   );
@@ -969,6 +997,7 @@ export function buildRateSimulationResult({
     isApy,
     supplyInputUsd,
     hasAnyInput,
+    getMeritAnchorTvlUsd(reserve, 'supply'),
   );
   const supplyMerklCampaignRows = buildMerklCampaignDetails(
     reserve.merklSupplys,
@@ -991,6 +1020,7 @@ export function buildRateSimulationResult({
     isApy,
     borrowInputUsd,
     hasAnyInput,
+    getMeritAnchorTvlUsd(reserve, 'borrow'),
   );
   const borrowMerklCampaignRows = buildMerklCampaignDetails(
     reserve.merklBorrows,

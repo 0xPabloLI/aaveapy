@@ -554,4 +554,69 @@ describe('buildRateSimulationResult', () => {
     expect(result.supply.sources.brevis.current).toBe(5);
     expect(result.supply.currentIncentive).toBeGreaterThan(0);
   });
+
+  it('adds a short cap note for Merkl DUTCH_AUCTION (and catch-up when required exceeds planned)', () => {
+    const merkl: MerklOpportunityGroup[] = [
+      {
+        name: 'Dutch opp',
+        breakdowns: [
+          {
+            campaignApr: 10,
+            campaignStartedAt: '2020-01-01T00:00:00.000Z',
+            campaignEndedAt: '2099-01-01T00:00:00.000Z',
+            campaignId: 'dutch1',
+            campaignType: 'DUTCH_AUCTION',
+            plannedDaily: 10,
+            aprCap: null,
+            totalBudget: 100000,
+            latestTvl: 1000,
+          },
+          {
+            campaignApr: 5,
+            campaignStartedAt: '2020-01-01T00:00:00.000Z',
+            campaignEndedAt: '2099-01-01T00:00:00.000Z',
+            campaignId: 'dutch2',
+            campaignType: 'DUTCH_AUCTION',
+            plannedDaily: 10,
+            aprCap: null,
+            totalBudget: 100000,
+            latestTvl: 1000,
+          },
+        ],
+      },
+    ];
+
+    const states: Record<string, MerklForecastStateResponse> = {
+      dutch1: {
+        campaignId: 'dutch1',
+        requiredDaily: 10,
+        distributedSoFar: 0,
+        endTimestamp: Math.floor(Date.now() / 1000) + 86400 * 30,
+      },
+      dutch2: {
+        campaignId: 'dutch2',
+        requiredDaily: 50,
+        distributedSoFar: 0,
+        endTimestamp: Math.floor(Date.now() / 1000) + 86400 * 30,
+      },
+    };
+
+    const reserve: ReserveWithSpread = { ...baseReserve, merklSupplys: merkl };
+
+    const result = buildRateSimulationResult({
+      reserve,
+      reserveRateInput: baseReserve,
+      isApy: false,
+      whitelistMerklCampaignIds: new Set(),
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '1000',
+      borrowInput: '0',
+      forecastStates: states,
+    });
+
+    const rows = result.supply.sources.merkl.campaigns ?? [];
+    expect(rows.find((r) => r.id.includes('dutch1'))?.capNote).toBe('Dutch');
+    expect(rows.find((r) => r.id.includes('dutch2'))?.capNote).toBe('Dutch · catch-up');
+  });
 });
