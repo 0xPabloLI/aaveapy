@@ -408,12 +408,13 @@ const MobileReserveCard = memo(({
                     e.stopPropagation();
                     onIncentiveClick(e, reserve, 'supply', visibleSupplyIncentive);
                   }}
-                  className={`inline-flex items-center rounded-full px-[var(--ds-space-1)] shrink-0 ring-1 active:scale-95 transition-all hover:ring-2 ${
+                  className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-px shrink-0 ring-1 active:scale-95 transition-all hover:ring-2 ${
                     isDisabled
                       ? 'text-secondary bg-secondary/10 ring-secondary/20 hover:bg-secondary/20 hover:ring-secondary/30'
-                      : 'ds-text-emerald-500 ds-bg-emerald-500-10 hover:bg-[rgb(var(--ds-emerald-500-rgb)/0.25)] ds-ring-emerald-500-15 hover:ring-[rgb(var(--ds-emerald-500-rgb)/0.35)]'
+                      : 'ds-text-emerald-500 bg-gradient-to-r from-[rgb(var(--ds-emerald-500-rgb)/0.08)] to-[rgb(var(--ds-emerald-500-rgb)/0.15)] hover:from-[rgb(var(--ds-emerald-500-rgb)/0.15)] hover:to-[rgb(var(--ds-emerald-500-rgb)/0.25)] ds-ring-emerald-500-15 hover:ring-[rgb(var(--ds-emerald-500-rgb)/0.35)]'
                   }`}
                 >
+                  <span className="ds-text-10">✦</span>
                   <span>{formatPercent(visibleSupplyIncentive)}</span>
                 </button>
               </div>
@@ -457,12 +458,13 @@ const MobileReserveCard = memo(({
                   e.stopPropagation();
                   onIncentiveClick(e, reserve, 'borrow', visibleBorrowIncentive);
                 }}
-                className={`inline-flex items-center rounded-full px-[var(--ds-space-1)] shrink-0 ring-1 active:scale-95 transition-all hover:ring-2 ${
+                className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-px shrink-0 ring-1 active:scale-95 transition-all hover:ring-2 ${
                   isDisabled
                     ? 'text-secondary bg-secondary/10 ring-secondary/20 hover:bg-secondary/20 hover:ring-secondary/30'
-                    : 'ds-text-brand-cyan ds-bg-brand-cyan-10 hover:bg-[rgb(var(--ds-brand-cyan-rgb)/0.25)] ds-ring-brand-cyan-15 hover:ring-[rgb(var(--ds-brand-cyan-rgb)/0.35)]'
+                    : 'ds-text-brand-cyan bg-gradient-to-r from-[rgb(var(--ds-brand-cyan-rgb)/0.08)] to-[rgb(var(--ds-brand-cyan-rgb)/0.15)] hover:from-[rgb(var(--ds-brand-cyan-rgb)/0.15)] hover:to-[rgb(var(--ds-brand-cyan-rgb)/0.25)] ds-ring-brand-cyan-15 hover:ring-[rgb(var(--ds-brand-cyan-rgb)/0.35)]'
                 }`}
               >
+                <span className="ds-text-10">✦</span>
                 <span>{formatPercent(visibleBorrowIncentive)}</span>
               </button>
             </div>
@@ -499,7 +501,7 @@ const MobileReserveCard = memo(({
             href={buildAaveReserveUrl({ marketName: reserve.marketName, tokenAddress: reserve.tokenAddress }) || '#'}
             {...externalLinkTabProps(true)}
             onClick={(e) => e.stopPropagation()}
-            className="flex items-center gap-[var(--ds-space-2)] min-w-0 flex-1 active:opacity-70 transition-opacity"
+            className="flex items-center gap-2.5 min-w-0 flex-1 active:opacity-70 transition-opacity"
             aria-label={`Open ${reserve.tokenSymbol} on Aave`}
           >
             <TokenIcon
@@ -510,13 +512,13 @@ const MobileReserveCard = memo(({
               logoURI={logoURI}
             />
             <div className="min-w-0">
-              <div className="flex items-center gap-[var(--ds-space-1)]">
+              <div className="flex items-center gap-1">
                 <p className="font-bold text-foreground ds-text-14 truncate">{reserve.tokenSymbol}</p>
-                <ExternalLink className="w-3 h-3 text-muted-foreground/50 shrink-0" />
+                <ExternalLink className="w-2.5 h-2.5 text-muted-foreground/40 shrink-0" />
               </div>
-              <div className="flex items-center gap-[var(--ds-space-1)] ds-text-11 text-muted-foreground">
+              <div className="flex items-center gap-1 ds-text-11 text-muted-foreground/80">
                 {chainIconSrc && (
-                  <img src={chainIconSrc} alt={reserve.chainName} className="w-3.5 h-3.5" />
+                  <img src={chainIconSrc} alt={reserve.chainName} className="w-3 h-3 opacity-80" />
                 )}
                 <span className="truncate">{getMarketDisplayName()}</span>
               </div>
@@ -596,8 +598,8 @@ const MobileReserveCard = memo(({
               aria-label={isSimulationExpanded ? 'Collapse reserve details' : 'Expand reserve details'}
               className={`inline-flex w-full items-center justify-between gap-2 rounded-lg px-3 py-1.5 ds-text-12 text-muted-foreground transition-all duration-200 ${
                 isSimulationExpanded
-                  ? 'border border-foreground/30 bg-muted/50 shadow-sm'
-                  : 'border border-border/60 bg-background hover:bg-muted/40 hover:border-border'
+                  ? 'border border-foreground/25 bg-muted/60 shadow-sm dark:border-foreground/20 dark:bg-muted/40'
+                  : 'border border-border/60 bg-background hover:bg-muted/40 hover:border-border/80 dark:bg-card/50 dark:hover:bg-muted/30'
               }`}
             >
               <span className="flex min-w-0 items-center gap-1.5">
@@ -612,62 +614,72 @@ const MobileReserveCard = memo(({
         </div>
 
         {/* Mobile bottom sheet for cap / utilization details */}
-        {capSheet !== null && (
-          <>
-            <div
-              className="fixed inset-0 z-30 bg-background/20"
-              onClick={() => setCapSheet(null)}
-              aria-hidden="true"
-            />
-            <div
-              className="fixed bottom-0 left-0 right-0 z-40 rounded-t-2xl border border-border/60 bg-card ds-tooltip-shadow-up max-h-[80vh] overflow-y-auto"
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="cap-sheet-title"
-            >
-              <div className="sticky top-0 bg-card border-b border-border px-[var(--ds-space-4)] py-[var(--ds-space-3)] flex items-center justify-between z-10">
-                <h3 id="cap-sheet-title" className="ds-tooltip-title text-foreground">
-                  {capSheet === 'supply' ? 'Supply cap details' : capSheet === 'borrow' ? 'Borrow cap details' : 'Utilization'}
-                </h3>
-                <button
-                  type="button"
-                  onClick={() => setCapSheet(null)}
-                  className="p-[var(--ds-space-1-5)] rounded-full hover:bg-muted transition-colors"
-                  aria-label="Close"
-                >
-                  <X className="w-5 h-5 text-muted-foreground" />
-                </button>
-              </div>
-              <div className="px-[var(--ds-space-4)] pt-[var(--ds-space-3)] pb-[var(--ds-space-3)]">
-                {capSheet === 'supply' && (
-                  <SupplyCapSheetContent
-                    currentSize={displayReserveSizeUsd ?? 0}
-                    cap={reserve.supplyCapUsd!}
-                    inputMode={inputMode}
-                    tokenPrice={displayTokenPrice}
-                    tokenSymbol={reserve.tokenSymbol}
-                  />
-                )}
-                {capSheet === 'borrow' && (
-                  <BorrowCapSheetContent
-                    borrowed={totalBorrowedUsd ?? 0}
-                    cap={reserve.borrowCapUsd!}
-                    poolLiquidity={poolLiquidity ?? 0}
-                    inputMode={inputMode}
-                    tokenPrice={displayTokenPrice}
-                    tokenSymbol={reserve.tokenSymbol}
-                  />
-                )}
-                {capSheet === 'utilization' && optimalPct != null && displayUtilization != null && (
-                  <UtilizationSheetContent
-                    current={displayUtilization}
-                    optimal={optimalPct}
-                  />
-                )}
-              </div>
-            </div>
-          </>
-        )}
+        <AnimatePresence>
+          {capSheet !== null && (
+            <>
+              <motion.div
+                className="fixed inset-0 z-30 bg-background/40 backdrop-blur-[2px]"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                onClick={() => setCapSheet(null)}
+                aria-hidden="true"
+              />
+              <motion.div
+                className="fixed bottom-0 left-0 right-0 z-40 rounded-t-2xl border border-border/60 bg-card ds-tooltip-shadow-up max-h-[80vh] overflow-y-auto"
+                initial={{ y: '100%' }}
+                animate={{ y: 0 }}
+                exit={{ y: '100%' }}
+                transition={{ duration: 0.28, ease: [0.32, 0.72, 0, 1] }}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="cap-sheet-title"
+              >
+                <div className="sticky top-0 bg-card border-b border-border px-[var(--ds-space-4)] py-[var(--ds-space-3)] flex items-center justify-between z-10">
+                  <h3 id="cap-sheet-title" className="ds-tooltip-title text-foreground">
+                    {capSheet === 'supply' ? 'Supply cap details' : capSheet === 'borrow' ? 'Borrow cap details' : 'Utilization'}
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setCapSheet(null)}
+                    className="p-[var(--ds-space-1-5)] rounded-full hover:bg-muted transition-colors"
+                    aria-label="Close"
+                  >
+                    <X className="w-5 h-5 text-muted-foreground" />
+                  </button>
+                </div>
+                <div className="px-[var(--ds-space-4)] pt-[var(--ds-space-3)] pb-[var(--ds-space-3)]">
+                  {capSheet === 'supply' && (
+                    <SupplyCapSheetContent
+                      currentSize={displayReserveSizeUsd ?? 0}
+                      cap={reserve.supplyCapUsd!}
+                      inputMode={inputMode}
+                      tokenPrice={displayTokenPrice}
+                      tokenSymbol={reserve.tokenSymbol}
+                    />
+                  )}
+                  {capSheet === 'borrow' && (
+                    <BorrowCapSheetContent
+                      borrowed={totalBorrowedUsd ?? 0}
+                      cap={reserve.borrowCapUsd!}
+                      poolLiquidity={poolLiquidity ?? 0}
+                      inputMode={inputMode}
+                      tokenPrice={displayTokenPrice}
+                      tokenSymbol={reserve.tokenSymbol}
+                    />
+                  )}
+                  {capSheet === 'utilization' && optimalPct != null && displayUtilization != null && (
+                    <UtilizationSheetContent
+                      current={displayUtilization}
+                      optimal={optimalPct}
+                    />
+                  )}
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Simulation panel — visually connected below the card */}
