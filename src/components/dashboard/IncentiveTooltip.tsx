@@ -685,7 +685,7 @@ const IncentiveTooltip = ({
         {/* Bottom sheet with spring-like animation */}
         <div
           ref={tooltipRef}
-          className="fixed bottom-0 left-0 right-0 z-40 rounded-t-2xl border border-border/60 bg-card ds-tooltip-shadow-up max-h-[80vh] overflow-y-auto"
+          className="fixed bottom-0 left-0 right-0 z-40 rounded-t-2xl border border-border/60 bg-card max-h-[80vh] overflow-y-auto"
           style={tooltipSurfaceStyle}
         >
           {/* Handle bar */}
