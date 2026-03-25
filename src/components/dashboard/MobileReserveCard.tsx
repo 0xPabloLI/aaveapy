@@ -612,62 +612,72 @@ const MobileReserveCard = memo(({
         </div>
 
         {/* Mobile bottom sheet for cap / utilization details */}
-        {capSheet !== null && (
-          <>
-            <div
-              className="fixed inset-0 z-30 bg-background/20"
-              onClick={() => setCapSheet(null)}
-              aria-hidden="true"
-            />
-            <div
-              className="fixed bottom-0 left-0 right-0 z-40 rounded-t-2xl border border-border/60 bg-card ds-tooltip-shadow-up max-h-[80vh] overflow-y-auto"
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="cap-sheet-title"
-            >
-              <div className="sticky top-0 bg-card border-b border-border px-[var(--ds-space-4)] py-[var(--ds-space-3)] flex items-center justify-between z-10">
-                <h3 id="cap-sheet-title" className="ds-tooltip-title text-foreground">
-                  {capSheet === 'supply' ? 'Supply cap details' : capSheet === 'borrow' ? 'Borrow cap details' : 'Utilization'}
-                </h3>
-                <button
-                  type="button"
-                  onClick={() => setCapSheet(null)}
-                  className="p-[var(--ds-space-1-5)] rounded-full hover:bg-muted transition-colors"
-                  aria-label="Close"
-                >
-                  <X className="w-5 h-5 text-muted-foreground" />
-                </button>
-              </div>
-              <div className="px-[var(--ds-space-4)] pt-[var(--ds-space-3)] pb-[var(--ds-space-3)]">
-                {capSheet === 'supply' && (
-                  <SupplyCapSheetContent
-                    currentSize={displayReserveSizeUsd ?? 0}
-                    cap={reserve.supplyCapUsd!}
-                    inputMode={inputMode}
-                    tokenPrice={displayTokenPrice}
-                    tokenSymbol={reserve.tokenSymbol}
-                  />
-                )}
-                {capSheet === 'borrow' && (
-                  <BorrowCapSheetContent
-                    borrowed={totalBorrowedUsd ?? 0}
-                    cap={reserve.borrowCapUsd!}
-                    poolLiquidity={poolLiquidity ?? 0}
-                    inputMode={inputMode}
-                    tokenPrice={displayTokenPrice}
-                    tokenSymbol={reserve.tokenSymbol}
-                  />
-                )}
-                {capSheet === 'utilization' && optimalPct != null && displayUtilization != null && (
-                  <UtilizationSheetContent
-                    current={displayUtilization}
-                    optimal={optimalPct}
-                  />
-                )}
-              </div>
-            </div>
-          </>
-        )}
+        <AnimatePresence>
+          {capSheet !== null && (
+            <>
+              <motion.div
+                className="fixed inset-0 z-30 bg-background/40 backdrop-blur-[2px]"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                onClick={() => setCapSheet(null)}
+                aria-hidden="true"
+              />
+              <motion.div
+                className="fixed bottom-0 left-0 right-0 z-40 rounded-t-2xl border border-border/60 bg-card ds-tooltip-shadow-up max-h-[80vh] overflow-y-auto"
+                initial={{ y: '100%' }}
+                animate={{ y: 0 }}
+                exit={{ y: '100%' }}
+                transition={{ duration: 0.28, ease: [0.32, 0.72, 0, 1] }}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="cap-sheet-title"
+              >
+                <div className="sticky top-0 bg-card border-b border-border px-[var(--ds-space-4)] py-[var(--ds-space-3)] flex items-center justify-between z-10">
+                  <h3 id="cap-sheet-title" className="ds-tooltip-title text-foreground">
+                    {capSheet === 'supply' ? 'Supply cap details' : capSheet === 'borrow' ? 'Borrow cap details' : 'Utilization'}
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setCapSheet(null)}
+                    className="p-[var(--ds-space-1-5)] rounded-full hover:bg-muted transition-colors"
+                    aria-label="Close"
+                  >
+                    <X className="w-5 h-5 text-muted-foreground" />
+                  </button>
+                </div>
+                <div className="px-[var(--ds-space-4)] pt-[var(--ds-space-3)] pb-[var(--ds-space-3)]">
+                  {capSheet === 'supply' && (
+                    <SupplyCapSheetContent
+                      currentSize={displayReserveSizeUsd ?? 0}
+                      cap={reserve.supplyCapUsd!}
+                      inputMode={inputMode}
+                      tokenPrice={displayTokenPrice}
+                      tokenSymbol={reserve.tokenSymbol}
+                    />
+                  )}
+                  {capSheet === 'borrow' && (
+                    <BorrowCapSheetContent
+                      borrowed={totalBorrowedUsd ?? 0}
+                      cap={reserve.borrowCapUsd!}
+                      poolLiquidity={poolLiquidity ?? 0}
+                      inputMode={inputMode}
+                      tokenPrice={displayTokenPrice}
+                      tokenSymbol={reserve.tokenSymbol}
+                    />
+                  )}
+                  {capSheet === 'utilization' && optimalPct != null && displayUtilization != null && (
+                    <UtilizationSheetContent
+                      current={displayUtilization}
+                      optimal={optimalPct}
+                    />
+                  )}
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Simulation panel — visually connected below the card */}
