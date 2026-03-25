@@ -7,6 +7,7 @@ import { getChainIconSrc } from '@/lib/chainIcons';
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
+import { IncentiveIcon } from '@/components/IncentiveIcon';
 import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import SimulationSubRow from './SimulationSubRow';
@@ -414,8 +415,8 @@ const MobileReserveCard = memo(({
                       : 'ds-text-emerald-500 bg-gradient-to-r from-[rgb(var(--ds-emerald-500-rgb)/0.08)] to-[rgb(var(--ds-emerald-500-rgb)/0.15)] hover:from-[rgb(var(--ds-emerald-500-rgb)/0.15)] hover:to-[rgb(var(--ds-emerald-500-rgb)/0.25)] ds-ring-emerald-500-15 hover:ring-[rgb(var(--ds-emerald-500-rgb)/0.35)]'
                   }`}
                 >
-                  <span className="ds-text-10">✦</span>
                   <span>{formatPercent(visibleSupplyIncentive)}</span>
+                  <IncentiveIcon width={8} height={8} />
                 </button>
               </div>
             )}
@@ -464,8 +465,8 @@ const MobileReserveCard = memo(({
                     : 'ds-text-brand-cyan bg-gradient-to-r from-[rgb(var(--ds-brand-cyan-rgb)/0.08)] to-[rgb(var(--ds-brand-cyan-rgb)/0.15)] hover:from-[rgb(var(--ds-brand-cyan-rgb)/0.15)] hover:to-[rgb(var(--ds-brand-cyan-rgb)/0.25)] ds-ring-brand-cyan-15 hover:ring-[rgb(var(--ds-brand-cyan-rgb)/0.35)]'
                 }`}
               >
-                <span className="ds-text-10">✦</span>
                 <span>{formatPercent(visibleBorrowIncentive)}</span>
+                <IncentiveIcon width={8} height={8} />
               </button>
             </div>
           )}
@@ -618,7 +619,7 @@ const MobileReserveCard = memo(({
           {capSheet !== null && (
             <>
               <motion.div
-                className="fixed inset-0 z-30 bg-background/40 backdrop-blur-[2px]"
+                className="fixed inset-0 z-30 bg-background/40"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
