@@ -123,15 +123,13 @@ export interface TokenPriceEntry {
 
 export type TokenPricesIndex = Record<string, TokenPriceEntry>;
 
+// Metrics-only fields from side-data forecast (10-min refresh).
+// Opportunity-only fields (campaignType, totalBudget, aprCap, latestTvl, plannedDaily)
+// live on MerklCampaignBreakdown via the markets endpoint (1-min refresh).
 export interface MerklForecastStateResponse {
   campaignId: string;
-  campaignType?: string;
-  plannedDaily?: number;
   requiredDaily?: number;
-  aprCap?: number | null;
-  totalBudget?: number;
   distributedSoFar?: number;
-  latestTvl?: number;
   endTimestamp?: number;
 }
 

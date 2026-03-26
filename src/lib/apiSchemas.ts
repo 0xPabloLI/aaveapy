@@ -123,13 +123,8 @@ export const CoingeckoCategoriesResponseSchema = z.object({
 
 const MerklForecastItemSchema = z.object({
   campaignId: z.string(),
-  campaignType: z.string().optional(),
-  plannedDaily: z.number().optional(),
   requiredDaily: z.number().optional(),
-  aprCap: z.number().nullable().optional(),
-  totalBudget: z.number().optional(),
   distributedSoFar: z.number().optional(),
-  latestTvl: z.number().optional(),
   endTimestamp: z.number().optional(),
 }).passthrough();
 

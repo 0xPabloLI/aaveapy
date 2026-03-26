@@ -146,6 +146,31 @@ describe('buildRateSimulationResult', () => {
     expect(result.utilization.after).not.toBe(result.utilization.current);
   });
 
+  it('keeps native rates in APY even when display mode switches incentive values to APR', () => {
+    const reserve: ReserveWithSpread = {
+      ...baseReserve,
+      supplyIncentives: [1.1],
+      borrowIncentives: [0.4],
+    };
+
+    const result = buildRateSimulationResult({
+      reserve,
+      reserveRateInput: baseReserve,
+      isApy: false,
+      whitelistMerklCampaignIds: new Set(),
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '',
+      borrowInput: '',
+      forecastStates: {},
+    });
+
+    expect(result.supply.currentNative).toBe(baseReserve.supplyApy);
+    expect(result.borrow.currentNative).toBe(baseReserve.borrowApy);
+    expect(result.supply.currentIncentive).toBe(1.1);
+    expect(result.borrow.currentIncentive).toBe(0.4);
+  });
+
   it('does not increase supply incentives when a shared supply amount is present', () => {
     const reserve: ReserveWithSpread = {
       ...baseReserve,
@@ -224,13 +249,8 @@ describe('buildRateSimulationResult', () => {
     const states: Record<string, MerklForecastStateResponse> = {
       '16403393592832236981': {
         campaignId: '16403393592832236981',
-        campaignType: 'DUTCH_AUCTION',
-        plannedDaily: 11312,
         requiredDaily: 11312,
-        aprCap: null,
-        totalBudget: 79184,
         distributedSoFar: 0,
-        latestTvl: 23586552.55647095,
         endTimestamp: 1774965600,
       },
     };
@@ -251,6 +271,62 @@ describe('buildRateSimulationResult', () => {
     expect(result.supply.sources.merkl.current).toBeCloseTo(17.505228837977196, 10);
     expect(result.supply.sources.merkl.after).toBeCloseTo(16.793244968023455, 10);
     expect(result.supply.sources.merkl.after).toBeLessThan(result.supply.sources.merkl.current!);
+  });
+
+  it('recomputes Merkl supply incentive APY from forecast TVL when side-data provides campaign metrics', () => {
+    const reserve: ReserveWithSpread = {
+      ...baseReserve,
+      tokenSymbol: 'USDG',
+      reserveSizeUsd: 23655388.009228,
+      merklSupplys: [
+        {
+          name: 'Lend USDG on Tydro',
+          breakdowns: [
+            {
+              campaignApr: 0,
+              campaignStartedAt: '2026-03-24T14:00:00.000Z',
+              campaignEndedAt: '2026-03-31T14:00:00.000Z',
+              campaignId: '16403393592832236981',
+              campaignType: 'DUTCH_AUCTION',
+              plannedDaily: 11312,
+              aprCap: null,
+              totalBudget: 79184,
+              latestTvl: 23586552.55647095,
+              pointsPerThousandUsd: 0.4795953106295122,
+            },
+          ],
+        },
+      ],
+    };
+
+    const states: Record<string, MerklForecastStateResponse> = {
+      '16403393592832236981': {
+        campaignId: '16403393592832236981',
+        requiredDaily: 11312,
+        distributedSoFar: 0,
+        endTimestamp: 1774965600,
+      },
+    };
+
+    const result = buildRateSimulationResult({
+      reserve,
+      reserveRateInput: baseReserve,
+      isApy: true,
+      whitelistMerklCampaignIds: new Set(),
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '1000000',
+      borrowInput: '0',
+      inputMode: 'usd',
+      forecastStates: states,
+    });
+
+    expect(result.supply.sources.merkl.current).toBeCloseTo(18.98030233890571, 10);
+    expect(result.supply.sources.merkl.after).toBeCloseTo(18.14804186025065, 10);
+    expect(result.supply.sources.merkl.after).toBeLessThan(result.supply.sources.merkl.current!);
+    expect(result.supply.currentIncentive).toBeGreaterThan(result.supply.sources.merkl.current!);
+    expect(result.supply.afterIncentive).toBeGreaterThan(result.supply.sources.merkl.after!);
+    expect(result.supply.afterIncentive).toBeLessThan(result.supply.currentIncentive);
   });
 
   it('recomputes merit incentives when a shared supply amount is present even without latest-round reward data', () => {
@@ -674,7 +750,7 @@ describe('buildRateSimulationResult', () => {
     });
 
     const rows = result.supply.sources.merkl.campaigns ?? [];
-    expect(rows.find((r) => r.id.includes('dutch1'))?.capNote).toBe('Dutch');
-    expect(rows.find((r) => r.id.includes('dutch2'))?.capNote).toBe('Dutch · catch-up');
+    expect(rows.find((r) => r.id.includes('dutch1'))?.capNote).toBeUndefined();
+    expect(rows.find((r) => r.id.includes('dutch2'))?.capNote).toBeUndefined();
   });
 });

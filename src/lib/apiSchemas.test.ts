@@ -101,20 +101,15 @@ describe('apiSchemas', () => {
     expect(breakdown?.latestTvl).toBe(23586552.55647095);
   });
 
-  it('preserves full forecast metrics from /meta/side-data', () => {
+  it('preserves metrics-only forecast fields from /meta/side-data', () => {
     const parsed = SideDataMetaResponseSchema.parse({
       forecast: {
         staleTimeMs: 600000,
         items: [
           {
             campaignId: '16403393592832236981',
-            campaignType: 'DUTCH_AUCTION',
-            plannedDaily: 11312,
             requiredDaily: 11312,
-            aprCap: null,
-            totalBudget: 79184,
             distributedSoFar: 0,
-            latestTvl: 23586552.55647095,
             endTimestamp: 1774965600,
           },
         ],
@@ -123,11 +118,9 @@ describe('apiSchemas', () => {
     });
 
     const item = parsed.forecast?.items[0];
-    expect(item?.campaignType).toBe('DUTCH_AUCTION');
-    expect(item?.plannedDaily).toBe(11312);
+    expect(item?.campaignId).toBe('16403393592832236981');
     expect(item?.requiredDaily).toBe(11312);
-    expect(item?.aprCap).toBeNull();
-    expect(item?.totalBudget).toBe(79184);
-    expect(item?.latestTvl).toBe(23586552.55647095);
+    expect(item?.distributedSoFar).toBe(0);
+    expect(item?.endTimestamp).toBe(1774965600);
   });
 });

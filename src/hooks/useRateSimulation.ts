@@ -2,7 +2,6 @@ import { useMemo } from 'react';
 import { useQueries } from '@tanstack/react-query';
 import { useSideDataMeta } from '@/hooks/useSideDataMeta';
 import {
-  apyToApr,
   calculateTotalBorrowApy,
   calculateTotalBorrowApr,
   calculateTotalIncentiveApy,
@@ -566,6 +565,10 @@ const buildMerklCampaignDetails = (
   const rows: SimulationCampaignDetail[] = [];
   if (!opportunities?.length) return rows;
 
+  // We want user-friendly labels, but also need to disambiguate stacked campaigns when no scenario input exists.
+  // Strategy: collect rows with a base label, then add a "#n" suffix only when the base label repeats.
+  const collected: Array<Omit<SimulationCampaignDetail, 'label'> & { baseLabel: string }> = [];
+
   opportunities.forEach((opportunity, oppIndex) => {
     (opportunity.breakdowns ?? []).forEach((bd, bdIndex) => {
       if (!isCampaignActive(bd.campaignStartedAt, bd.campaignEndedAt)) return;
@@ -598,10 +601,8 @@ const buildMerklCampaignDetails = (
               capWarning = true;
             }
           } else if (merged.campaignType === 'DUTCH_AUCTION') {
-            // No APR-based daily cap: dailyRewards = requiredDaily (see merklForecast + rate-calculation-formulas).
-            const hypotheticalTvl = Math.max((merged.latestTvl ?? 0) + inputUsd, 0);
-            const forecast = forecastWithTVL(merged, hypotheticalTvl);
-            capNote = forecast.regime === 'CATCHING_UP' ? 'Dutch · catch-up' : 'Dutch';
+            // Dutch campaigns don't show an extra "Dutch / catch-up" UI type note.
+            // Forecast-specific "regime" details remain available via underlying forecasting logic if needed.
           }
         }
       }
@@ -609,10 +610,9 @@ const buildMerklCampaignDetails = (
       const delta = after !== null ? after - current : null;
       const oppLabel = opportunity.name?.trim() || 'Merkl';
       const oppLink = opportunity.link ?? opportunity.opportunityLink;
-      rows.push({
+      collected.push({
         id: `merkl-${oppIndex}-${bdIndex}-${bd.campaignId ?? 'x'}`,
-        // Keep the row label user-friendly; use the (stable) id for internal identity.
-        label: oppLabel,
+        baseLabel: oppLabel,
         current,
         after,
         delta,
@@ -622,6 +622,32 @@ const buildMerklCampaignDetails = (
       });
     });
   });
+
+  if (collected.length === 0) return [];
+
+  if (!hasAnyInput) {
+    const totalsByLabel = new Map<string, number>();
+    for (const item of collected) {
+      totalsByLabel.set(item.baseLabel, (totalsByLabel.get(item.baseLabel) ?? 0) + 1);
+    }
+    const idxByLabel = new Map<string, number>();
+    for (const item of collected) {
+      const total = totalsByLabel.get(item.baseLabel) ?? 0;
+      const nextIdx = (idxByLabel.get(item.baseLabel) ?? 0) + 1;
+      idxByLabel.set(item.baseLabel, nextIdx);
+      rows.push({
+        ...item,
+        label: total > 1 ? `${item.baseLabel} #${nextIdx}` : item.baseLabel,
+      });
+    }
+  } else {
+    for (const item of collected) {
+      rows.push({
+        ...item,
+        label: item.baseLabel,
+      });
+    }
+  }
 
   return shouldExposeCampaignRows(rows, hasAnyInput) ? rows : [];
 };
@@ -712,9 +738,9 @@ const buildIncentiveAfter = (
   );
 };
 
-const toDisplayNative = (rawApy: number | null | undefined, isApy: boolean): number | null => {
+const toDisplayNative = (rawApy: number | null | undefined): number | null => {
   if (rawApy === null || rawApy === undefined || !Number.isFinite(rawApy)) return null;
-  return isApy ? rawApy : apyToApr(rawApy);
+  return rawApy;
 };
 
 export const getReserveSimulationId = (reserve: Pick<ReserveWithSpread, 'marketName' | 'tokenAddress'>): string =>
@@ -851,8 +877,8 @@ export function buildRateSimulationResult({
       })
     : null;
 
-  const supplyCurrentNative = toDisplayNative(reserve.supplyApy, isApy);
-  const borrowCurrentNative = toDisplayNative(reserve.borrowApy, isApy);
+  const supplyCurrentNative = toDisplayNative(reserve.supplyApy);
+  const borrowCurrentNative = toDisplayNative(reserve.borrowApy);
   const supplyCurrentIncentive = buildIncentiveCurrent(
     reserve,
     'supply',

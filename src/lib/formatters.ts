@@ -299,35 +299,31 @@ export const calculateTotalIncentiveApy = (
 };
 
 // Calculate total Supply APR (native + incentive)
-// All values are in percentage form
-export const calculateTotalSupplyApr = (supplyApy: number | null | undefined, incentiveApr: number): number | null => {
-  if (supplyApy === null || supplyApy === undefined) return null;
-  if (isNaN(supplyApy) || isNaN(incentiveApr)) return null;
-  return supplyApy + incentiveApr;
+export const calculateTotalSupplyApr = (nativeSupplyApr: number | null | undefined, incentiveApr: number): number | null => {
+  if (nativeSupplyApr === null || nativeSupplyApr === undefined) return null;
+  if (isNaN(nativeSupplyApr) || isNaN(incentiveApr)) return null;
+  return nativeSupplyApr + incentiveApr;
 };
 
 // Calculate total Supply APY (native + incentive)
-// All values are in percentage form
-export const calculateTotalSupplyApy = (supplyApy: number | null | undefined, incentiveApy: number): number | null => {
-  if (supplyApy === null || supplyApy === undefined) return null;
-  if (isNaN(supplyApy) || isNaN(incentiveApy)) return null;
-  return supplyApy + incentiveApy;
+export const calculateTotalSupplyApy = (nativeSupplyApy: number | null | undefined, incentiveApy: number): number | null => {
+  if (nativeSupplyApy === null || nativeSupplyApy === undefined) return null;
+  if (isNaN(nativeSupplyApy) || isNaN(incentiveApy)) return null;
+  return nativeSupplyApy + incentiveApy;
 };
 
 // Calculate total Borrow APR (native - incentive)
-// All values are in percentage form
-export const calculateTotalBorrowApr = (borrowApy: number | null | undefined, incentiveApr: number): number | null => {
-  if (borrowApy === null || borrowApy === undefined) return null;
-  if (isNaN(borrowApy) || isNaN(incentiveApr)) return null;
-  return borrowApy - incentiveApr;
+export const calculateTotalBorrowApr = (nativeBorrowApr: number | null | undefined, incentiveApr: number): number | null => {
+  if (nativeBorrowApr === null || nativeBorrowApr === undefined) return null;
+  if (isNaN(nativeBorrowApr) || isNaN(incentiveApr)) return null;
+  return nativeBorrowApr - incentiveApr;
 };
 
 // Calculate total Borrow APY (native - incentive)
-// All values are in percentage form
-export const calculateTotalBorrowApy = (borrowApy: number | null | undefined, incentiveApy: number): number | null => {
-  if (borrowApy === null || borrowApy === undefined) return null;
-  if (isNaN(borrowApy) || isNaN(incentiveApy)) return null;
-  return borrowApy - incentiveApy;
+export const calculateTotalBorrowApy = (nativeBorrowApy: number | null | undefined, incentiveApy: number): number | null => {
+  if (nativeBorrowApy === null || nativeBorrowApy === undefined) return null;
+  if (isNaN(nativeBorrowApy) || isNaN(incentiveApy)) return null;
+  return nativeBorrowApy - incentiveApy;
 };
 
 // Calculate spread (APY version)

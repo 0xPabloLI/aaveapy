@@ -15,7 +15,6 @@ import {
   calculateTotalBorrowApy,
   calculateTotalIncentiveApr,
   calculateTotalIncentiveApy,
-  apyToApr,
   resolveVisibleIncentiveBadgeValue,
 } from '@/lib/formatters';
 import ScenarioControls, { type ScenarioControlsHandle } from './ScenarioControls';
@@ -190,10 +189,7 @@ const ReservesTable = ({
   };
 
   const getTotalSupplyApr = (reserve: ReserveWithSpread): number | null => {
-    const nativeApr = reserve.supplyApy !== undefined && reserve.supplyApy !== null
-      ? apyToApr(reserve.supplyApy)
-      : null;
-    return calculateTotalSupplyApr(nativeApr, getIncentiveValues(reserve, 'supply').apr);
+    return calculateTotalSupplyApr(reserve.supplyApy ?? null, getIncentiveValues(reserve, 'supply').apr);
   };
 
   const getTotalBorrowApy = (reserve: ReserveWithSpread): number | null => {
@@ -201,10 +197,7 @@ const ReservesTable = ({
   };
 
   const getTotalBorrowApr = (reserve: ReserveWithSpread): number | null => {
-    const nativeApr = reserve.borrowApy !== undefined && reserve.borrowApy !== null
-      ? apyToApr(reserve.borrowApy)
-      : null;
-    return calculateTotalBorrowApr(nativeApr, getIncentiveValues(reserve, 'borrow').apr);
+    return calculateTotalBorrowApr(reserve.borrowApy ?? null, getIncentiveValues(reserve, 'borrow').apr);
   };
 
   // Calculate native values (already in percentage form, number type)
@@ -244,8 +237,7 @@ const ReservesTable = ({
   const getDisplaySupplyNative = (reserve: ReserveWithSpread): number | null => {
     const simulation = getSimulation(reserve);
     if (!simulation) {
-      const nativeSupplyApy = getNativeSupplyApy(reserve);
-      return isApy ? nativeSupplyApy : nativeSupplyApy !== null ? apyToApr(nativeSupplyApy) : null;
+      return getNativeSupplyApy(reserve);
     }
     return pickScenarioValue(simulation.supply.currentNative, simulation.supply.afterNative);
   };
@@ -253,8 +245,7 @@ const ReservesTable = ({
   const getDisplayBorrowNative = (reserve: ReserveWithSpread): number | null => {
     const simulation = getSimulation(reserve);
     if (!simulation) {
-      const nativeBorrowApy = getNativeBorrowApy(reserve);
-      return isApy ? nativeBorrowApy : nativeBorrowApy !== null ? apyToApr(nativeBorrowApy) : null;
+      return getNativeBorrowApy(reserve);
     }
     return pickScenarioValue(simulation.borrow.currentNative, simulation.borrow.afterNative);
   };

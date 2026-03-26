@@ -18,8 +18,7 @@ import {
   calculateTotalBorrowApr,
   calculateSpreadApr,
   calculateTotalIncentiveApr,
-  calculateTotalIncentiveApy,
-  apyToApr
+  calculateTotalIncentiveApy
 } from '@/lib/formatters';
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
 import { externalLinkTabProps, openExternalUrl } from '@/lib/externalNavigation';
@@ -258,14 +257,8 @@ const TopOpportunities = ({
 
     const totalSupplyApy = calculateTotalSupplyApy(reserve.supplyApy, supplyIncentive.apy);
     const totalBorrowApy = calculateTotalBorrowApy(reserve.borrowApy, borrowIncentive.apy);
-    const supplyNativeApr = reserve.supplyApy !== undefined && reserve.supplyApy !== null
-      ? apyToApr(reserve.supplyApy)
-      : null;
-    const borrowNativeApr = reserve.borrowApy !== undefined && reserve.borrowApy !== null
-      ? apyToApr(reserve.borrowApy)
-      : null;
-    const totalSupplyApr = calculateTotalSupplyApr(supplyNativeApr, supplyIncentive.apr);
-    const totalBorrowApr = calculateTotalBorrowApr(borrowNativeApr, borrowIncentive.apr);
+    const totalSupplyApr = calculateTotalSupplyApr(reserve.supplyApy ?? null, supplyIncentive.apr);
+    const totalBorrowApr = calculateTotalBorrowApr(reserve.borrowApy ?? null, borrowIncentive.apr);
 
     return {
       ...reserve,
