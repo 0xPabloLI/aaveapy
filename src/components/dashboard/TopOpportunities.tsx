@@ -100,7 +100,7 @@ const CategoryCardHeader = memo(({
         <Icon className={`w-4 h-4 md:w-5 md:h-5 ${iconColorClass}`} />
       </IconWrapper>
       <div className="flex-1 min-w-0">
-        <h3 className={`font-bold truncate ${isMobile ? 'ds-text-13' : 'ds-text-15'}`}>
+        <h3 className={`font-bold truncate ${isMobile ? 'ds-text-13' : 'ds-text-14'}`}>
           {shortTitle ? (
             <>
               <span className="min-[400px]:hidden">{shortTitle}</span>
