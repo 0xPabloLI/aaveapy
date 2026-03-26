@@ -757,7 +757,7 @@ const TopOpportunities = ({
     const shouldAnimateHeader = false;
     const shouldAnimateList = !isMobile && !isApyChanged;
     return (
-        <div className={`bg-card border border-border/60 shadow-sm rounded-xl ${isMobile ? 'ds-card-pad-sm' : 'ds-card-pad'} ${isMobile ? 'col-span-1' : ''} flex flex-col`}>
+        <div className={`bg-card border border-border/60 rounded-xl ${isMobile ? 'ds-card-pad-sm' : 'ds-card-pad'} ${isMobile ? 'col-span-1' : ''} flex flex-col`}>
         <CategoryCardHeader
           title={title}
           shortTitle={shortTitle}
