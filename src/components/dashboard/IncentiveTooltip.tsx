@@ -423,7 +423,7 @@ const IncentiveTooltip = ({
               dateRange: formatDateRange(startDate, endDate) || undefined,
               startDate,
               endDate,
-              message: displayMessage,
+              message,
             }],
           });
         }
