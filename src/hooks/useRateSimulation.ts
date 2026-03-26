@@ -36,7 +36,7 @@ import type {
   BrevisIncentive,
   MeritIncentive,
   MerklCampaignBreakdown,
-  MerklForecastStateResponse,
+  MerklForecastWireItem,
   MerklOpportunityGroup,
   ReserveWithSpread,
   TokenPricesIndex,
@@ -72,7 +72,7 @@ const isCampaignActive = (
 interface BuildForecastMerklOpportunitiesInput {
   opportunities?: MerklOpportunityGroup[];
   inputUsd: number;
-  forecastStates: Record<string, MerklForecastStateResponse>;
+  forecastStates: Record<string, MerklForecastWireItem>;
   whitelistMerklCampaignIds: ReadonlySet<string> | undefined;
   tydroPointToUsdRate: number;
 }
@@ -87,7 +87,7 @@ const sanitizePercent = (value: number): number =>
  */
 const mergeForecastState = (
   breakdown: MerklCampaignBreakdown,
-  forecastStates: Record<string, MerklForecastStateResponse>,
+  forecastStates: Record<string, MerklForecastWireItem>,
 ): MerklForecastState | null => {
   if (!breakdown.campaignId || !breakdown.campaignType) return null;
   const metrics = forecastStates[String(breakdown.campaignId)];
@@ -106,7 +106,7 @@ const mergeForecastState = (
 const forecastBreakdownApr = (
   breakdown: MerklCampaignBreakdown,
   inputUsd: number,
-  forecastStates: Record<string, MerklForecastStateResponse>,
+  forecastStates: Record<string, MerklForecastWireItem>,
   whitelistMerklCampaignIds: ReadonlySet<string> | undefined,
   tydroPointToUsdRate: number
 ): number => {
@@ -268,7 +268,7 @@ interface BuildRateSimulationResultParams {
   supplyInput: string;
   borrowInput: string;
   inputMode?: ScenarioInputMode;
-  forecastStates: Record<string, MerklForecastStateResponse>;
+  forecastStates: Record<string, MerklForecastWireItem>;
 }
 
 interface UseRateSimulationParams {
@@ -376,49 +376,128 @@ const sumBrevisValues = (values?: BrevisIncentive[], isApy = false): number => {
   }, 0);
 };
 
+type BrevisSharedCampaignSnapshot = {
+  campaignApr: number;
+  campaignStartedAt?: string;
+  campaignEndedAt?: string;
+  latestTvl?: number;
+  totalBudget?: number;
+  perUserRewardCapUsd?: number;
+  message?: string;
+  name: string;
+  link: string;
+};
+
+const getBrevisSharedCampaignSnapshot = (brevis: BrevisIncentive): BrevisSharedCampaignSnapshot => ({
+  campaignApr: sanitizePercent(getBrevisCampaignApr(brevis)),
+  campaignStartedAt: getBrevisCampaignStartedAt(brevis),
+  campaignEndedAt: getBrevisCampaignEndedAt(brevis),
+  latestTvl: brevis.latestTvl,
+  totalBudget: brevis.totalBudget,
+  perUserRewardCapUsd: brevis.perUserRewardCapUsd,
+  message: brevis.message,
+  name: brevis.name,
+  link: brevis.link,
+});
+
+const areBrevisSharedSnapshotsEqual = (
+  left: BrevisSharedCampaignSnapshot,
+  right: BrevisSharedCampaignSnapshot,
+): boolean => (
+  left.campaignApr === right.campaignApr &&
+  left.campaignStartedAt === right.campaignStartedAt &&
+  left.campaignEndedAt === right.campaignEndedAt &&
+  left.latestTvl === right.latestTvl &&
+  left.totalBudget === right.totalBudget &&
+  left.perUserRewardCapUsd === right.perUserRewardCapUsd &&
+  left.message === right.message &&
+  left.name === right.name &&
+  left.link === right.link
+);
+
+/**
+ * Canonical shared-cap rule for Brevis:
+ * only campaigns on the same reserve that appear on both supply and borrow with
+ * the same `campaignId` share a single per-user reward cap, and the campaign
+ * metadata must match exactly across both sides.
+ */
+const computeBrevisSharedCampaignDeposits = (
+  reserve: ReserveWithSpread,
+  supplyInputUsd: number,
+  borrowInputUsd: number,
+): ReadonlyMap<string, number> => {
+  const activeSupply = (reserve.brevisSupplys ?? []).filter((b) =>
+    Boolean(b.campaignId) && isCampaignActive(getBrevisCampaignStartedAt(b), getBrevisCampaignEndedAt(b), Date.now(), true)
+  );
+  const activeBorrow = (reserve.brevisBorrows ?? []).filter((b) =>
+    Boolean(b.campaignId) && isCampaignActive(getBrevisCampaignStartedAt(b), getBrevisCampaignEndedAt(b), Date.now(), true)
+  );
+
+  const supplyByCampaignId = new Map<string, BrevisIncentive[]>();
+  const borrowByCampaignId = new Map<string, BrevisIncentive[]>();
+  activeSupply.forEach((item) => {
+    const campaignId = item.campaignId!;
+    const existing = supplyByCampaignId.get(campaignId);
+    if (existing) existing.push(item);
+    else supplyByCampaignId.set(campaignId, [item]);
+  });
+  activeBorrow.forEach((item) => {
+    const campaignId = item.campaignId!;
+    const existing = borrowByCampaignId.get(campaignId);
+    if (existing) existing.push(item);
+    else borrowByCampaignId.set(campaignId, [item]);
+  });
+
+  const combinedDepositUsd = supplyInputUsd + borrowInputUsd;
+  const sharedDeposits = new Map<string, number>();
+
+  supplyByCampaignId.forEach((supplyItems, campaignId) => {
+    const borrowItems = borrowByCampaignId.get(campaignId);
+    if (!borrowItems?.length) return;
+
+    const entries = [...supplyItems, ...borrowItems];
+    const canonical = getBrevisSharedCampaignSnapshot(entries[0]);
+    const mismatch = entries.slice(1).some((entry) => (
+      !areBrevisSharedSnapshotsEqual(canonical, getBrevisSharedCampaignSnapshot(entry))
+    ));
+
+    if (mismatch) {
+      console.warn(
+        `[Brevis] Skipping shared-cap simulation for ${reserve.marketName} ${reserve.tokenSymbol} campaignId=${campaignId} because supply/borrow metadata differ.`,
+      );
+      return;
+    }
+
+    sharedDeposits.set(campaignId, combinedDepositUsd);
+  });
+
+  return sharedDeposits;
+};
+
+const getBrevisCombinedDepositUsd = (
+  brevis: BrevisIncentive,
+  sharedDepositsByCampaignId: ReadonlyMap<string, number> | undefined,
+): number | undefined => {
+  if (!brevis.campaignId || !sharedDepositsByCampaignId) return undefined;
+  return sharedDepositsByCampaignId.get(brevis.campaignId);
+};
+
 const sumForecastBrevisValues = (
   values: BrevisIncentive[] | undefined,
   isApy: boolean,
   inputUsd: number,
-  combinedDepositUsd?: number,
+  sharedDepositsByCampaignId?: ReadonlyMap<string, number>,
 ): number => {
   if (!values || values.length === 0) return 0;
   return values.reduce((sum, value) => {
     const startDate = getBrevisCampaignStartedAt(value);
     const endDate = getBrevisCampaignEndedAt(value);
     if (!isCampaignActive(startDate, endDate, Date.now(), true)) return sum;
-    const combined = value.sharedCapGroupId ? combinedDepositUsd : undefined;
+    const combined = getBrevisCombinedDepositUsd(value, sharedDepositsByCampaignId);
     const aprPercent = forecastBrevisAprPercent(value, inputUsd, Date.now(), combined);
     if (aprPercent <= 0) return sum;
     return sum + (isApy ? convertAprToApy(aprPercent) : aprPercent);
   }, 0);
-};
-
-/**
- * When Brevis supply and borrow campaigns share a `sharedCapGroupId`, the
- * per-user reward cap applies to their **combined** deposit. This returns
- * `supplyInputUsd + borrowInputUsd` if any shared group exists, otherwise
- * `undefined` (each side evaluated independently).
- */
-const computeBrevisSharedCapCombinedUsd = (
-  reserve: ReserveWithSpread,
-  supplyInputUsd: number,
-  borrowInputUsd: number,
-): number | undefined => {
-  const supplyGroups = new Set(
-    (reserve.brevisSupplys ?? [])
-      .filter((b) => b.sharedCapGroupId)
-      .map((b) => b.sharedCapGroupId!)
-  );
-  const borrowGroups = new Set(
-    (reserve.brevisBorrows ?? [])
-      .filter((b) => b.sharedCapGroupId)
-      .map((b) => b.sharedCapGroupId!)
-  );
-  for (const g of supplyGroups) {
-    if (borrowGroups.has(g)) return supplyInputUsd + borrowInputUsd;
-  }
-  return undefined;
 };
 
 const sumMerklValues = (
@@ -570,7 +649,7 @@ const buildMerklCampaignDetails = (
   opportunities: MerklOpportunityGroup[] | undefined,
   isApy: boolean,
   inputUsd: number,
-  forecastStates: Record<string, MerklForecastStateResponse>,
+  forecastStates: Record<string, MerklForecastWireItem>,
   whitelistMerklCampaignIds: ReadonlySet<string> | undefined,
   tydroPointToUsdRate: number,
   hasAnyInput: boolean,
@@ -669,7 +748,7 @@ const buildBrevisCampaignDetails = (
   items: BrevisIncentive[] | undefined,
   isApy: boolean,
   inputUsd: number,
-  combinedDepositUsd: number | undefined,
+  sharedDepositsByCampaignId: ReadonlyMap<string, number> | undefined,
   hasAnyInput: boolean,
 ): SimulationCampaignDetail[] => {
   const rows: SimulationCampaignDetail[] = [];
@@ -684,17 +763,24 @@ const buildBrevisCampaignDetails = (
     let after: number | null = null;
     let capNote: string | undefined;
     let capWarning = false;
+    const combined = getBrevisCombinedDepositUsd(b, sharedDepositsByCampaignId);
+    const noteDepositUsd = combined ?? inputUsd;
 
     if (inputUsd > 0) {
-      const combined = b.sharedCapGroupId ? combinedDepositUsd : undefined;
       const aprPercent = forecastBrevisAprPercent(b, inputUsd, Date.now(), combined);
       after = isApy ? convertAprToApy(aprPercent) : aprPercent;
-      const det = forecastBrevisDetailed(b, inputUsd, Date.now(), combined);
+    }
+
+    if (hasAnyInput && noteDepositUsd > 0) {
+      const det = forecastBrevisDetailed(b, noteDepositUsd, Date.now(), combined);
       if (b.perUserRewardCapUsd !== undefined && b.perUserRewardCapUsd > 0) {
         capWarning = det.isCapBinding;
         const parts: string[] = [];
-        parts.push(`Max ${formatUsd(b.perUserRewardCapUsd)}/user`);
-        if (b.sharedCapGroupId) parts.push('S+B');
+        parts.push(
+          combined !== undefined
+            ? `Max ${formatUsd(b.perUserRewardCapUsd)}/user for supply + borrow`
+            : `Max ${formatUsd(b.perUserRewardCapUsd)}/user`
+        );
         // Reward window: min(cap hit @ nominal daily rate, calendar days to end) when both exist.
         const capDays =
           det.daysToHitCap !== null && Number.isFinite(det.daysToHitCap) && det.daysToHitCap > 0
@@ -748,10 +834,10 @@ const buildIncentiveAfter = (
   side: RateSide,
   isApy: boolean,
   inputUsd: number,
-  forecastStates: Record<string, MerklForecastStateResponse>,
+  forecastStates: Record<string, MerklForecastWireItem>,
   tydroPointToUsdRate: number,
   whitelistMerklCampaignIds: ReadonlySet<string> | undefined,
-  brevisSharedCapCombinedUsd?: number,
+  brevisSharedDepositsByCampaignId?: ReadonlyMap<string, number>,
 ): number => {
   const merit = side === 'supply' ? reserve.meritSupplys : reserve.meritBorrows;
   const merkl = side === 'supply' ? reserve.merklSupplys : reserve.merklBorrows;
@@ -769,7 +855,7 @@ const buildIncentiveAfter = (
     sumNumberArray(protocol, isApy) +
     sumForecastMeritValues(merit, isApy, inputUsd, getMeritAnchorTvlUsd(reserve, side)) +
     sumMerklValues(forecastedMerkl, isApy, tydroPointToUsdRate, whitelistMerklCampaignIds) +
-    sumForecastBrevisValues(brevis, isApy, inputUsd, brevisSharedCapCombinedUsd)
+    sumForecastBrevisValues(brevis, isApy, inputUsd, brevisSharedDepositsByCampaignId)
   );
 };
 
@@ -947,8 +1033,8 @@ export function buildRateSimulationResult({
       : combinedNativeSimulation.borrowAprPercent
     : null;
 
-  const brevisSharedCapCombinedUsd = hasAnyInput
-    ? computeBrevisSharedCapCombinedUsd(reserve, supplyInputUsd, borrowInputUsd)
+  const brevisSharedDepositsByCampaignId = hasAnyInput
+    ? computeBrevisSharedCampaignDeposits(reserve, supplyInputUsd, borrowInputUsd)
     : undefined;
 
   const supplyAfterIncentiveRaw = hasAnyInput
@@ -960,7 +1046,7 @@ export function buildRateSimulationResult({
         forecastStates,
         tydroPointToUsdRate,
         whitelistMerklCampaignIds,
-        brevisSharedCapCombinedUsd,
+        brevisSharedDepositsByCampaignId,
       )
     : null;
   const borrowAfterIncentiveRaw = hasAnyInput
@@ -972,7 +1058,7 @@ export function buildRateSimulationResult({
         forecastStates,
         tydroPointToUsdRate,
         whitelistMerklCampaignIds,
-        brevisSharedCapCombinedUsd,
+        brevisSharedDepositsByCampaignId,
       )
     : null;
   // Shared scenario represents extra market-side size, so same-side incentive should not increase.
@@ -1022,7 +1108,12 @@ export function buildRateSimulationResult({
           tydroPointToUsdRate,
           whitelistMerklCampaignIds
         );
-        const brevisAfterRaw = sumForecastBrevisValues(reserve.brevisSupplys, isApy, supplyInputUsd, brevisSharedCapCombinedUsd);
+        const brevisAfterRaw = sumForecastBrevisValues(
+          reserve.brevisSupplys,
+          isApy,
+          supplyInputUsd,
+          brevisSharedDepositsByCampaignId,
+        );
         return {
           protocol: supplyCurrentSources.protocol,
           merit: Math.min(meritAfterRaw, supplyCurrentSources.merit),
@@ -1047,7 +1138,12 @@ export function buildRateSimulationResult({
           tydroPointToUsdRate,
           whitelistMerklCampaignIds
         );
-        const brevisAfterRaw = sumForecastBrevisValues(reserve.brevisBorrows, isApy, borrowInputUsd, brevisSharedCapCombinedUsd);
+        const brevisAfterRaw = sumForecastBrevisValues(
+          reserve.brevisBorrows,
+          isApy,
+          borrowInputUsd,
+          brevisSharedDepositsByCampaignId,
+        );
         return {
           protocol: borrowCurrentSources.protocol,
           merit: Math.min(meritAfterRaw, borrowCurrentSources.merit),
@@ -1077,7 +1173,7 @@ export function buildRateSimulationResult({
     reserve.brevisSupplys,
     isApy,
     supplyInputUsd,
-    brevisSharedCapCombinedUsd,
+    brevisSharedDepositsByCampaignId,
     hasAnyInput,
   );
   const borrowMeritCampaignRows = buildMeritCampaignDetails(
@@ -1100,7 +1196,7 @@ export function buildRateSimulationResult({
     reserve.brevisBorrows,
     isApy,
     borrowInputUsd,
-    brevisSharedCapCombinedUsd,
+    brevisSharedDepositsByCampaignId,
     hasAnyInput,
   );
 
@@ -1412,7 +1508,7 @@ export const useSharedRateSimulations = ({
     const forecast = sideDataMetaQuery.data?.forecast;
     if (!forecast) return { forecastStates: {}, forecastErrors: {} };
 
-    const states: Record<string, MerklForecastStateResponse> = {};
+    const states: Record<string, MerklForecastWireItem> = {};
     const errors: Record<string, string> = {};
     forecast.items.forEach((item) => {
       states[item.campaignId] = item;

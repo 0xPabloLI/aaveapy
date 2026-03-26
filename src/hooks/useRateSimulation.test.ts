@@ -1,7 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type {
   MerklOpportunityGroup,
-  MerklForecastStateResponse,
+  MerklForecastWireItem,
   MerklCampaignBreakdown,
   ReserveWithSpread,
 } from '@/types/aave';
@@ -60,7 +60,7 @@ describe('buildForecastMerklOpportunities', () => {
       },
     ];
 
-    const states: Record<string, MerklForecastStateResponse> = {
+    const states: Record<string, MerklForecastWireItem> = {
       c1: {
         campaignId: 'c1',
         requiredDaily: 10,
@@ -102,7 +102,7 @@ describe('buildForecastMerklOpportunities', () => {
       },
     ];
 
-    const states: Record<string, MerklForecastStateResponse> = {
+    const states: Record<string, MerklForecastWireItem> = {
       c2: {
         campaignId: 'c2',
         requiredDaily: 100,
@@ -143,7 +143,7 @@ describe('buildForecastMerklOpportunities', () => {
       },
     ];
 
-    const states: Record<string, MerklForecastStateResponse> = {
+    const states: Record<string, MerklForecastWireItem> = {
       'points-max': {
         campaignId: 'points-max',
         requiredDaily: 1_000,
@@ -184,7 +184,7 @@ describe('buildForecastMerklOpportunities', () => {
       },
     ];
 
-    const states: Record<string, MerklForecastStateResponse> = {
+    const states: Record<string, MerklForecastWireItem> = {
       'points-fix': {
         campaignId: 'points-fix',
         requiredDaily: 1_000,
@@ -276,7 +276,7 @@ describe('buildRateSimulationResult', () => {
       ],
     };
 
-    const states: Record<string, MerklForecastStateResponse> = {
+    const states: Record<string, MerklForecastWireItem> = {
       c1: {
         campaignId: 'c1',
         requiredDaily: 10,
@@ -328,7 +328,7 @@ describe('buildRateSimulationResult', () => {
       ],
     };
 
-    const states: Record<string, MerklForecastStateResponse> = {
+    const states: Record<string, MerklForecastWireItem> = {
       '16403393592832236981': {
         campaignId: '16403393592832236981',
         requiredDaily: 11312,
@@ -381,7 +381,7 @@ describe('buildRateSimulationResult', () => {
       ],
     };
 
-    const states: Record<string, MerklForecastStateResponse> = {
+    const states: Record<string, MerklForecastWireItem> = {
       '16403393592832236981': {
         campaignId: '16403393592832236981',
         requiredDaily: 11312,
@@ -688,7 +688,7 @@ describe('buildRateSimulationResult', () => {
     expect(result.supply.sources.brevis.after).toBe(10);
   });
 
-  it('uses combined supply+borrow deposit for shared cap group', () => {
+  it('uses combined supply+borrow deposit for shared campaignId', () => {
     const nowMs = Date.now();
     const endDate = new Date(nowMs + 365 * 86_400_000).toISOString();
     const reserve: ReserveWithSpread = {
@@ -700,19 +700,31 @@ describe('buildRateSimulationResult', () => {
           startDate: '2020-01-01T00:00:00.000Z',
           endDate,
           name: 'Brevis Supply USDC',
+          campaignApr: 10,
+          campaignStartedAt: '2020-01-01T00:00:00.000Z',
+          campaignEndedAt: endDate,
+          latestTvl: 1_000_000,
+          totalBudget: 100_000,
+          message: 'Shared campaign',
           perUserRewardCapUsd: 5000,
-          sharedCapGroupId: 'linea-usdc',
+          campaignId: 'linea-usdc',
         },
       ],
       brevisBorrows: [
         {
           apr: 10,
-          link: 'https://example.com/brevis-borrow',
+          link: 'https://example.com/brevis-supply',
           startDate: '2020-01-01T00:00:00.000Z',
           endDate,
-          name: 'Brevis Borrow USDC',
+          name: 'Brevis Supply USDC',
+          campaignApr: 10,
+          campaignStartedAt: '2020-01-01T00:00:00.000Z',
+          campaignEndedAt: endDate,
+          latestTvl: 1_000_000,
+          totalBudget: 100_000,
+          message: 'Shared campaign',
           perUserRewardCapUsd: 5000,
-          sharedCapGroupId: 'linea-usdc',
+          campaignId: 'linea-usdc',
         },
       ],
     };
@@ -734,9 +746,11 @@ describe('buildRateSimulationResult', () => {
     // Both sides should see the reduced APR
     expect(result.supply.sources.brevis.after).toBeCloseTo(5, 0);
     expect(result.borrow.sources.brevis.after).toBeCloseTo(5, 0);
+    expect(result.supply.sources.brevis.campaigns?.[0]?.capNote).toContain('Max $5,000.00/user for supply + borrow');
+    expect(result.supply.sources.brevis.campaigns?.[0]?.capNote).toBe(result.borrow.sources.brevis.campaigns?.[0]?.capNote);
   });
 
-  it('does not share cap when sharedCapGroupId is absent', () => {
+  it('does not share cap when campaignId is absent', () => {
     const nowMs = Date.now();
     const endDate = new Date(nowMs + 365 * 86_400_000).toISOString();
     const reserve: ReserveWithSpread = {
@@ -778,8 +792,70 @@ describe('buildRateSimulationResult', () => {
 
     // No shared group → each side evaluated independently
     // 50k deposit per side, cap implied = 5000/50000/1 * 100 = 10% = nominal, so cap not binding
-    expect(result.supply.sources.brevis.after).toBe(10);
-    expect(result.borrow.sources.brevis.after).toBe(10);
+    expect(result.supply.sources.brevis.after).toBeCloseTo(10, 8);
+    expect(result.borrow.sources.brevis.after).toBeCloseTo(10, 8);
+  });
+
+  it('does not share cap when supply and borrow metadata differ for the same campaignId', () => {
+    const nowMs = Date.now();
+    const endDate = new Date(nowMs + 365 * 86_400_000).toISOString();
+    const reserve: ReserveWithSpread = {
+      ...baseReserve,
+      brevisSupplys: [
+        {
+          apr: 10,
+          link: 'https://example.com/brevis-shared',
+          startDate: '2020-01-01T00:00:00.000Z',
+          endDate,
+          name: 'Brevis Shared USDC',
+          campaignApr: 10,
+          campaignStartedAt: '2020-01-01T00:00:00.000Z',
+          campaignEndedAt: endDate,
+          latestTvl: 1_000_000,
+          totalBudget: 100_000,
+          message: 'Shared campaign',
+          perUserRewardCapUsd: 5000,
+          campaignId: 'linea-usdc',
+        },
+      ],
+      brevisBorrows: [
+        {
+          apr: 10,
+          link: 'https://example.com/brevis-shared',
+          startDate: '2020-01-01T00:00:00.000Z',
+          endDate,
+          name: 'Brevis Shared USDC',
+          campaignApr: 12,
+          campaignStartedAt: '2020-01-01T00:00:00.000Z',
+          campaignEndedAt: endDate,
+          latestTvl: 1_000_000,
+          totalBudget: 100_000,
+          message: 'Shared campaign',
+          perUserRewardCapUsd: 5000,
+          campaignId: 'linea-usdc',
+        },
+      ],
+    };
+
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const result = buildRateSimulationResult({
+      reserve,
+      reserveRateInput: baseReserve,
+      isApy: false,
+      whitelistMerklCampaignIds: new Set(),
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '50000',
+      borrowInput: '50000',
+      inputMode: 'usd',
+      forecastStates: {},
+    });
+
+    expect(result.supply.sources.brevis.after).toBeCloseTo(10, 8);
+    expect(result.borrow.sources.brevis.after).toBeCloseTo(10, 8);
+    expect(result.supply.sources.brevis.campaigns?.[0]?.capNote).not.toContain('for supply + borrow');
+    expect(warn).toHaveBeenCalledTimes(1);
+    warn.mockRestore();
   });
 
   it('counts brevis in current totals even without endDate', () => {
@@ -843,7 +919,7 @@ describe('buildRateSimulationResult', () => {
       },
     ];
 
-    const states: Record<string, MerklForecastStateResponse> = {
+    const states: Record<string, MerklForecastWireItem> = {
       dutch1: {
         campaignId: 'dutch1',
         requiredDaily: 10,

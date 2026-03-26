@@ -50,7 +50,7 @@ export interface BrevisIncentive {
   latestTvl?: number;                  // Preferred TVL field
   totalBudget?: number;                // Preferred total budget field
   perUserRewardCapUsd?: number;        // Per-user cumulative reward ceiling for the campaign (e.g. 5000)
-  sharedCapGroupId?: string;           // Campaigns with the same id share a single perUserRewardCapUsd budget
+  campaignId?: string;                 // Same campaignId across supply/borrow represents one shared Brevis campaign
 }
 
 export interface ReserveWithSpread {
@@ -128,25 +128,20 @@ export interface TokenPriceEntry {
 
 export type TokenPricesIndex = Record<string, TokenPriceEntry>;
 
-// Metrics-only fields from side-data forecast (10-min refresh).
-// Opportunity-only fields (campaignType, totalBudget, aprCap, latestTvl, plannedDaily)
-// live on MerklCampaignBreakdown via the markets endpoint (1-min refresh).
-export interface MerklForecastStateResponse {
+// Wire contract for forecast side-data endpoints (`/api/campaigns/forecast-states`,
+// `/api/meta/side-data.forecast.items`). Opportunity/static fields still come
+// from the markets breakdowns and are merged in the frontend view model.
+export interface MerklForecastWireItem {
   campaignId: string;
-  campaignType?: string;
-  plannedDaily?: number;
   requiredDaily?: number;
-  aprCap?: number | null;
-  totalBudget?: number;
   distributedSoFar?: number;
-  latestTvl?: number;
   endTimestamp?: number;
 }
 
 export interface MerklForecastStatesBatchResponse {
   requested?: number;
   staleTimeMs?: number;
-  items: MerklForecastStateResponse[];
+  items: MerklForecastWireItem[];
   errors: Array<{
     campaignId: string;
     status?: number;

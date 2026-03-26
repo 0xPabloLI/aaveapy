@@ -37,9 +37,10 @@ const parseBoundaryMs = (value: string | undefined, boundary: 'start' | 'end'): 
  * returned APR is `min(nominalApr, capUsd / depositUsd / remainingYearFraction × 100)`.
  * Otherwise the nominal APR is returned unchanged (graceful degradation).
  *
- * @param combinedDepositUsd — When multiple campaigns share a single cap budget
- *   (same `sharedCapGroupId`), pass the **total** deposit across all campaigns in
- *   the group. The cap headroom is split proportionally to each side's deposit.
+ * @param combinedDepositUsd — When supply and borrow rows on the same reserve
+ *   represent one shared Brevis campaign (same `campaignId`), pass the **total**
+ *   deposit across both sides. The cap headroom is then evaluated against the
+ *   canonical shared campaign instead of one side in isolation.
  *   When absent, defaults to `depositUsd` (single-campaign behaviour).
  */
 export function forecastBrevisAprPercent(

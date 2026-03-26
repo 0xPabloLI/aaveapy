@@ -153,7 +153,7 @@ describe('apiSchemas', () => {
               latestTvl: 4_151_203.07,
               totalBudget: 25_000,
               perUserRewardCapUsd: 5000,
-              sharedCapGroupId: 'linea-usdc',
+              campaignId: 'linea-usdc',
               rewardAddressType: 'token',
               totalRewardAmount: 12345,
               totalRewardTokenSymbol: 'USDC',
@@ -174,7 +174,7 @@ describe('apiSchemas', () => {
     expect(brevis?.latestTvl).toBe(4_151_203.07);
     expect(brevis?.totalBudget).toBe(25_000);
     expect(brevis?.perUserRewardCapUsd).toBe(5000);
-    expect(brevis?.sharedCapGroupId).toBe('linea-usdc');
+    expect(brevis?.campaignId).toBe('linea-usdc');
     expect('rewardAddressType' in (brevis ?? {})).toBe(false);
     expect('totalRewardAmount' in (brevis ?? {})).toBe(false);
     expect('totalRewardTokenSymbol' in (brevis ?? {})).toBe(false);
