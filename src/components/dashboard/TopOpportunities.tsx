@@ -86,7 +86,7 @@ const CategoryCardHeader = memo(({
 
   return (
     <HeaderWrapper
-      className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-3)]"
+      className={`flex items-center gap-[var(--ds-space-2)] ${isMobile ? 'mb-[var(--ds-space-2)]' : 'mb-[var(--ds-space-3)]'}`}
       {...(shouldAnimateHeader
         ? { initial: 'hidden', animate: 'visible', variants: headerVariants }
         : {})}
