@@ -38,3 +38,6 @@ jobs:
 
       - name: Check chainIconMap drift against aave/interface
         run: npm run check:chain-icons-upstream
+
+      - name: Check CoinGecko platform map drift for market chainIds
+        run: npm run check:coingecko-platform-map-upstream

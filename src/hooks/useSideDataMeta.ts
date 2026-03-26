@@ -15,13 +15,19 @@ export const SIDE_DATA_META_QUERY_KEY = ['side-data-meta'] as const;
 
 export interface SideDataForecastItem {
   campaignId: string;
+  campaignType?: string;
+  plannedDaily?: number;
   requiredDaily?: number;
+  aprCap?: number | null;
+  totalBudget?: number;
   distributedSoFar?: number;
+  latestTvl?: number;
   endTimestamp?: number;
 }
 
 export interface SideDataForecastError {
   campaignId: string;
+  status?: number;
   message: string;
 }
 
@@ -50,7 +56,6 @@ export interface SideDataMetaResponse {
     errors: SideDataForecastError[];
     staleTimeMs: number;
   };
-  errors?: Record<string, string>;
 }
 
 export async function fetchSideDataMeta(): Promise<SideDataMetaResponse> {

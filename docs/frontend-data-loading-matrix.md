@@ -65,6 +65,16 @@ Browser-level `<link rel="preload" as="fetch">` could start API requests during 
 | Why not always triggered? | It is skipped whenever backend snapshot already has the required token price entry. |
 | Deduping/rate-limit controls | Has a concurrency limiter + in-flight dedupe + TTL cache in resolver module. |
 
+### Endpoint Differences (CoinGecko price fallback chain)
+
+| Endpoint | Primary role | Input key | Typical success condition | Why it exists in chain |
+| --- | --- | --- | --- | --- |
+| `/asset_platforms` | Resolve `chainId -> platformId` | `chainId` | A known platform id for the chain (for example `base`, `arbitrum-one`) | `simple/token_price/{platform}` requires a platform id, not a chain id. |
+| `/simple/token_price/{platform}` | Fetch USD by contract address on a specific chain platform | Token contract address | Address exists on that platform and CoinGecko indexes it | Most precise path for ERC20-style assets because it is address-scoped. |
+| `/simple/price` | Fetch USD by CoinGecko coin id (symbol-mapped fallback) | Coin id (for example `usd-coin`, `ethereum`) | Symbol/coin-id mapping exists and CoinGecko has that coin price | Last fallback when address-based lookup is unavailable/missing. |
+
+Current lookup order is strict: first resolve platform, then try address price, and only then fall back to coin-id price.
+
 ## Icon Sources and Fallbacks
 
 | Source | Meaning |

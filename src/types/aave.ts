@@ -23,6 +23,8 @@ export interface MerklCampaignBreakdown {
   campaignId: string;                 // Campaign ID
   whitelistOnly?: boolean;             // Merkl campaign is whitelist-only
   pointsPerThousandUsd?: number;       // Tydro protocol points/1000USD value (optional)
+  dailyPoints?: number;                // Legacy/raw daily reward value from breakdown.value
+  dailyRewardUnits?: number;           // Unit-agnostic alias (points/day or token/day)
   campaignType?: string;
   totalBudget?: number;
   aprCap?: number | null;
@@ -31,8 +33,7 @@ export interface MerklCampaignBreakdown {
 }
 
 export interface MerklOpportunityGroup {
-  link?: string;                       // Opportunity detail page link (preferred)
-  opportunityLink?: string;            // Backward-compatible link field
+  link?: string;                       // Opportunity detail page link
   name?: string;                       // Opportunity name (optional)
   message?: string;                    // Opportunity message/description (optional)
   breakdowns: MerklCampaignBreakdown[]; // All breakdowns for this opportunity
@@ -128,8 +129,13 @@ export type TokenPricesIndex = Record<string, TokenPriceEntry>;
 // live on MerklCampaignBreakdown via the markets endpoint (1-min refresh).
 export interface MerklForecastStateResponse {
   campaignId: string;
+  campaignType?: string;
+  plannedDaily?: number;
   requiredDaily?: number;
+  aprCap?: number | null;
+  totalBudget?: number;
   distributedSoFar?: number;
+  latestTvl?: number;
   endTimestamp?: number;
 }
 
@@ -139,7 +145,7 @@ export interface MerklForecastStatesBatchResponse {
   items: MerklForecastStateResponse[];
   errors: Array<{
     campaignId: string;
-    status: number;
+    status?: number;
     message: string;
   }>;
 }

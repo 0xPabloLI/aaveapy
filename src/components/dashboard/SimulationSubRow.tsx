@@ -25,7 +25,7 @@ const getFirstMerklLink = (opportunities?: MerklOpportunityGroup[]): string | nu
   if (!opportunities || !Array.isArray(opportunities)) return null;
   const now = Date.now();
   for (const opp of opportunities) {
-    const link = opp.link || opp.opportunityLink;
+    const link = opp.link;
     if (!link) continue;
     const hasActive = opp.breakdowns?.some((bd) => {
       const start = Date.parse(bd.campaignStartedAt);

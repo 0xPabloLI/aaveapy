@@ -109,6 +109,14 @@ See [SECURITY.md](SECURITY.md) for vulnerability reporting and a public-release 
 - Token price is resolved from `/api/markets` `tokenPrices` first, with backup lookup if missing.
 - Campaign type and regime are rendered from forecast-state + local calculation (`APR_CAPPED`, `CATCHING_UP`, `PLANNED`).
 
+## CoinGecko Token Price Fallback
+
+- Primary source is backend snapshot `tokenPrices` from `GET /api/markets`.
+- CoinGecko fallback runs only when the required reserve token price is missing from snapshot data.
+- Runtime safeguards in resolver: concurrency limiter, in-flight request dedupe, and TTL cache to reduce duplicate calls and API pressure.
+- Implementation entry: `resolveForecastTokenPriceWithBackup` in `src/lib/tokenPriceResolver.ts`.
+- Canonical behavior and endpoint-level differences: `docs/frontend-data-loading-matrix.md` -> `Forecast Token Price Backup`.
+
 ## License
 
 [MIT](LICENSE)

@@ -246,7 +246,7 @@ const IncentiveTooltip = ({
   } as const;
 
   const getMerklLink = (opportunity: MerklOpportunityGroup): string | undefined => {
-    return opportunity.link || opportunity.opportunityLink;
+    return opportunity.link;
   };
 
   /**

@@ -75,19 +75,27 @@ interface BuildForecastMerklOpportunitiesInput {
 const sanitizePercent = (value: number): number =>
   Number.isFinite(value) && value >= 0 ? value : 0;
 
-/** Merge opportunity-only fields from breakdown (1-min) with metrics-only fields from forecast (10-min). */
+/**
+ * Merge opportunity-only fields from breakdown (1-min) with metrics-only fields from forecast (10-min).
+ * Points-based campaigns still follow the actual Merkl campaignType; their daily units come from
+ * dailyRewardUnits/dailyPoints while the regime logic remains type-driven.
+ */
 const mergeForecastState = (
   breakdown: MerklCampaignBreakdown,
   forecastStates: Record<string, MerklForecastStateResponse>,
 ): MerklForecastState | null => {
   if (!breakdown.campaignId || !breakdown.campaignType) return null;
   const metrics = forecastStates[String(breakdown.campaignId)];
+  const plannedDailyCap =
+    breakdown.dailyRewardUnits ??
+    breakdown.dailyPoints ??
+    breakdown.plannedDaily;
   return {
     campaignType: breakdown.campaignType,
     totalBudget: breakdown.totalBudget,
     aprCap: breakdown.aprCap,
     latestTvl: breakdown.latestTvl,
-    plannedDaily: breakdown.plannedDaily,
+    plannedDaily: plannedDailyCap,
     requiredDaily: metrics?.requiredDaily,
     distributedSoFar: metrics?.distributedSoFar,
     endTimestamp: metrics?.endTimestamp,
@@ -597,17 +605,7 @@ const buildMerklCampaignDetails = (
             const hypotheticalTvl = Math.max((merged.latestTvl ?? 0) + inputUsd, 0);
             const forecast = forecastWithTVL(merged, hypotheticalTvl);
             if (forecast.regime === 'APR_CAPPED') {
-              const requiredDaily =
-                typeof merged.requiredDaily === 'number' && Number.isFinite(merged.requiredDaily)
-                  ? merged.requiredDaily
-                  : 0;
-              const aprCap =
-                typeof merged.aprCap === 'number' && Number.isFinite(merged.aprCap) ? merged.aprCap : 0;
-              const tvlThreshold = requiredDaily > 0 && aprCap > 0 ? (requiredDaily * 365) / aprCap : null;
-              capNote =
-                tvlThreshold && Number.isFinite(tvlThreshold) && tvlThreshold > 0
-                  ? `APR capped for TVL below ${formatUsd(tvlThreshold)}`
-                  : 'APR capped for low TVL';
+              capNote = 'APR capped for low TVL';
               capWarning = true;
             }
           } else if (merged.campaignType === 'DUTCH_AUCTION') {
@@ -619,7 +617,7 @@ const buildMerklCampaignDetails = (
 
       const delta = after !== null ? after - current : null;
       const oppLabel = opportunity.name?.trim() || 'Merkl';
-      const oppLink = opportunity.link ?? opportunity.opportunityLink;
+      const oppLink = opportunity.link;
       collected.push({
         id: `merkl-${oppIndex}-${bdIndex}-${bd.campaignId ?? 'x'}`,
         baseLabel: oppLabel,
@@ -690,17 +688,29 @@ const buildBrevisCampaignDetails = (
         const parts: string[] = [];
         parts.push(`Max ${formatUsd(b.perUserRewardCapUsd)}/user`);
         if (b.sharedCapGroupId) parts.push('S+B');
-        // At nominal APR: days until per-user cap is exhausted (not calendar guarantee).
-        if (det.daysToHitCap !== null && Number.isFinite(det.daysToHitCap)) {
-          parts.push(`~${det.daysToHitCap.toFixed(0)}d to cap`);
+        // Reward window: min(cap hit @ nominal daily rate, calendar days to end) when both exist.
+        const capDays =
+          det.daysToHitCap !== null && Number.isFinite(det.daysToHitCap) && det.daysToHitCap > 0
+            ? det.daysToHitCap
+            : null;
+        const endDays =
+          det.remainingDays !== null && Number.isFinite(det.remainingDays) && det.remainingDays > 0
+            ? det.remainingDays
+            : null;
+        let earnDays: number | null = null;
+        if (capDays !== null && endDays !== null) {
+          earnDays = Math.min(capDays, endDays);
+        } else if (capDays !== null) {
+          earnDays = capDays;
+        } else if (endDays !== null) {
+          earnDays = endDays;
         }
-        // Campaign window: rewards only accrue until endDate when present.
-        if (det.remainingDays !== null && Number.isFinite(det.remainingDays) && det.remainingDays > 0) {
-          parts.push(`~${det.remainingDays.toFixed(0)}d to end`);
+        if (earnDays !== null) {
+          parts.push(`~${earnDays.toFixed(0)}d earn`);
         }
         capNote = parts.join(' · ');
       } else if (det.remainingDays !== null && Number.isFinite(det.remainingDays) && det.remainingDays > 0) {
-        // Backend may omit perUserRewardCapUsd; still show time left when endDate exists.
+        // No per-user cap in payload: calendar window only (same as remainingDays).
         capNote = `~${det.remainingDays.toFixed(0)}d to end`;
       }
     }

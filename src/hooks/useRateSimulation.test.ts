@@ -121,6 +121,90 @@ describe('buildForecastMerklOpportunities', () => {
 
     expect(result[0].breakdowns[0].campaignApr).toBe(33);
   });
+
+  it('applies MAX reward campaign constraints to points-based breakdowns using the actual campaign type', () => {
+    const opportunities: MerklOpportunityGroup[] = [
+      {
+        name: 'Tydro points campaign',
+        breakdowns: [
+          {
+            campaignApr: 0,
+            campaignStartedAt: '2020-01-01T00:00:00.000Z',
+            campaignEndedAt: '2099-01-01T00:00:00.000Z',
+            campaignId: 'points-max',
+            campaignType: 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+            dailyRewardUnits: 1_000,
+            plannedDaily: 1_000,
+            aprCap: 0.1,
+            totalBudget: 100_000,
+            latestTvl: 1_000,
+            pointsPerThousandUsd: 4,
+          },
+        ],
+      },
+    ];
+
+    const states: Record<string, MerklForecastStateResponse> = {
+      'points-max': {
+        campaignId: 'points-max',
+        requiredDaily: 1_000,
+        distributedSoFar: 0,
+        endTimestamp: Math.floor(Date.now() / 1000) + 86400 * 30,
+      },
+    };
+
+    const result = buildForecastMerklOpportunities({
+      opportunities,
+      inputUsd: 1_000,
+      forecastStates: states,
+      whitelistMerklCampaignIds: new Set(),
+      tydroPointToUsdRate: 2,
+    });
+
+    expect(result[0].breakdowns[0].campaignApr).toBeCloseTo(20, 10);
+  });
+
+  it('applies FIX reward campaign constraints to points-based breakdowns using the actual campaign type', () => {
+    const opportunities: MerklOpportunityGroup[] = [
+      {
+        name: 'Tydro points campaign',
+        breakdowns: [
+          {
+            campaignApr: 0,
+            campaignStartedAt: '2020-01-01T00:00:00.000Z',
+            campaignEndedAt: '2099-01-01T00:00:00.000Z',
+            campaignId: 'points-fix',
+            campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+            dailyRewardUnits: 1_000,
+            plannedDaily: 1_000,
+            aprCap: 0.05,
+            totalBudget: 100_000,
+            latestTvl: 1_000,
+            pointsPerThousandUsd: 4,
+          },
+        ],
+      },
+    ];
+
+    const states: Record<string, MerklForecastStateResponse> = {
+      'points-fix': {
+        campaignId: 'points-fix',
+        requiredDaily: 1_000,
+        distributedSoFar: 0,
+        endTimestamp: Math.floor(Date.now() / 1000) + 86400 * 30,
+      },
+    };
+
+    const result = buildForecastMerklOpportunities({
+      opportunities,
+      inputUsd: 1_000,
+      forecastStates: states,
+      whitelistMerklCampaignIds: new Set(),
+      tydroPointToUsdRate: 2,
+    });
+
+    expect(result[0].breakdowns[0].campaignApr).toBeCloseTo(10, 10);
+  });
 });
 
 describe('buildRateSimulationResult', () => {
@@ -428,6 +512,47 @@ describe('buildRateSimulationResult', () => {
     expect(result.supply.sources.brevis.after).toBeLessThan(10);
     expect(result.supply.sources.brevis.after).toBeCloseTo(5, 0);
     expect(result.supply.afterIncentive).toBeLessThan(result.supply.currentIncentive);
+  });
+
+  it('brevis capNote uses min(daysToHitCap, remainingDays) as ~Nd earn when both exist', () => {
+    const nowMs = Date.now();
+    const endDate = new Date(nowMs + 50 * 86_400_000).toISOString();
+    const reserve: ReserveWithSpread = {
+      ...baseReserve,
+      brevisSupplys: [
+        {
+          apr: 10,
+          link: 'https://example.com/brevis',
+          startDate: '2020-01-01T00:00:00.000Z',
+          endDate,
+          name: 'Brevis Supply',
+          perUserRewardCapUsd: 5000,
+        },
+      ],
+    };
+
+    const result = buildRateSimulationResult({
+      reserve,
+      reserveRateInput: baseReserve,
+      isApy: false,
+      whitelistMerklCampaignIds: new Set(),
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '100000',
+      borrowInput: '0',
+      inputMode: 'usd',
+      forecastStates: {},
+    });
+
+    const capNote = result.supply.sources.brevis.campaigns?.[0]?.capNote;
+    expect(capNote).toBeDefined();
+    expect(capNote).toMatch(/~\d+d earn/);
+    const m = capNote!.match(/~(\d+)d earn/);
+    expect(m).not.toBeNull();
+    const n = Number(m![1]);
+    // remainingDays ≈ 50; daysToHitCap at 100k × 10% is much larger → min is calendar window
+    expect(n).toBeGreaterThanOrEqual(48);
+    expect(n).toBeLessThanOrEqual(52);
   });
 
   it('keeps brevis incentive unchanged when cap is not binding (small deposit)', () => {
