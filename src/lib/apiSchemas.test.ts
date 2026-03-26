@@ -123,4 +123,63 @@ describe('apiSchemas', () => {
     expect(item?.distributedSoFar).toBe(0);
     expect(item?.endTimestamp).toBe(1774965600);
   });
+
+  it('accepts aligned Brevis fields while dropping deprecated legacy fields', () => {
+    const parsed = MarketsResponseSchema.parse({
+      snapshot: {
+        lastUpdated: '2026-03-26T00:00:00.000Z',
+      },
+      reserves: [
+        {
+          marketName: 'AaveV3Linea',
+          chainName: 'Linea',
+          chainId: 59144,
+          tokenName: 'USDC',
+          tokenSymbol: 'USDC',
+          tokenAddress: '0x1',
+          aTokenAddress: '0x2',
+          vTokenAddress: '0x3',
+          brevisSupplys: [
+            {
+              apr: 2.4,
+              campaignApr: 2.8,
+              link: 'https://example.com/brevis',
+              startDate: '2025-08-13T13:00:00.000Z',
+              campaignStartedAt: '2025-08-13T13:00:00.000Z',
+              endDate: '2026-08-08T00:00:00.000Z',
+              campaignEndedAt: '2026-08-08T00:00:00.000Z',
+              name: 'Brevis campaign',
+              message: 'Aligned message',
+              latestTvl: 4_151_203.07,
+              totalBudget: 25_000,
+              perUserRewardCapUsd: 5000,
+              sharedCapGroupId: 'linea-usdc',
+              rewardAddressType: 'token',
+              totalRewardAmount: 12345,
+              totalRewardTokenSymbol: 'USDC',
+              description: 'legacy',
+              tvlUsd: 1,
+              totalRewardUsd: 2,
+            },
+          ],
+        },
+      ],
+    });
+
+    const brevis = parsed.reserves[0].brevisSupplys?.[0];
+    expect(brevis?.campaignApr).toBe(2.8);
+    expect(brevis?.campaignStartedAt).toBe('2025-08-13T13:00:00.000Z');
+    expect(brevis?.campaignEndedAt).toBe('2026-08-08T00:00:00.000Z');
+    expect(brevis?.message).toBe('Aligned message');
+    expect(brevis?.latestTvl).toBe(4_151_203.07);
+    expect(brevis?.totalBudget).toBe(25_000);
+    expect(brevis?.perUserRewardCapUsd).toBe(5000);
+    expect(brevis?.sharedCapGroupId).toBe('linea-usdc');
+    expect('rewardAddressType' in (brevis ?? {})).toBe(false);
+    expect('totalRewardAmount' in (brevis ?? {})).toBe(false);
+    expect('totalRewardTokenSymbol' in (brevis ?? {})).toBe(false);
+    expect('description' in (brevis ?? {})).toBe(false);
+    expect('tvlUsd' in (brevis ?? {})).toBe(false);
+    expect('totalRewardUsd' in (brevis ?? {})).toBe(false);
+  });
 });

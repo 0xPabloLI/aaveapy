@@ -23,8 +23,6 @@ export interface MerklCampaignBreakdown {
   campaignId: string;                 // Campaign ID
   whitelistOnly?: boolean;             // Merkl campaign is whitelist-only
   pointsPerThousandUsd?: number;       // Tydro protocol points/1000USD value (optional)
-  dailyPoints?: number;                // Legacy/raw daily reward value from breakdown.value
-  dailyRewardUnits?: number;           // Unit-agnostic alias (points/day or token/day)
   campaignType?: string;
   totalBudget?: number;
   aprCap?: number | null;
@@ -45,6 +43,12 @@ export interface BrevisIncentive {
   startDate: string;                   // Campaign start date
   endDate: string;                     // Campaign end date
   name: string;                        // Campaign name
+  campaignApr?: number;                // Merkl-like aligned APR field
+  campaignStartedAt?: string;          // Merkl-like aligned start time
+  campaignEndedAt?: string;            // Merkl-like aligned end time
+  message?: string;                    // Preferred description/message field
+  latestTvl?: number;                  // Preferred TVL field
+  totalBudget?: number;                // Preferred total budget field
   perUserRewardCapUsd?: number;        // Per-user cumulative reward ceiling for the campaign (e.g. 5000)
   sharedCapGroupId?: string;           // Campaigns with the same id share a single perUserRewardCapUsd budget
 }

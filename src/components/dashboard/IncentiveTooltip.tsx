@@ -13,6 +13,12 @@ import {
 } from '@/lib/formatters';
 import { getMerklBreakdownApr } from '@/lib/tydro';
 import { splitMeritMessageBySelfAuth } from '@/lib/meritForecast';
+import {
+  getBrevisCampaignApr,
+  getBrevisCampaignEndedAt,
+  getBrevisCampaignMessage,
+  getBrevisCampaignStartedAt,
+} from '@/lib/brevis';
 import { adjustTooltipAnchorForScroll, getWindowScroll } from '@/lib/tooltipPosition';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
@@ -397,8 +403,12 @@ const IncentiveTooltip = ({
 
     if (brevisIncentives && Array.isArray(brevisIncentives) && brevisIncentives.length > 0) {
       brevisIncentives.forEach((brevis) => {
-        if (!isCampaignActive(brevis.startDate, brevis.endDate, Date.now(), true)) return;
-        const apr = brevis.apr;
+        const startDate = getBrevisCampaignStartedAt(brevis);
+        const endDate = getBrevisCampaignEndedAt(brevis);
+        if (!isCampaignActive(startDate, endDate, Date.now(), true)) return;
+        const apr = getBrevisCampaignApr(brevis);
+        const message = getBrevisCampaignMessage(brevis);
+        const displayMessage = message && message.trim() !== brevis.name.trim() ? message : undefined;
         if (!isNaN(apr) && apr >= 0) {
           sources.push({
             name: brevis.name || 'Brevis Incentive',
@@ -407,12 +417,14 @@ const IncentiveTooltip = ({
             bgColor: 'bg-muted/60',
             sourceType: 'Brevis',
             link: brevis.link,
-            dateRange: formatDateRange(brevis.startDate, brevis.endDate) || undefined,
+            message: displayMessage,
+            dateRange: formatDateRange(startDate, endDate) || undefined,
             campaigns: [{
               value: isApy ? convertAprToApy(apr) : apr,
-              dateRange: formatDateRange(brevis.startDate, brevis.endDate) || undefined,
-              startDate: brevis.startDate,
-              endDate: brevis.endDate,
+              dateRange: formatDateRange(startDate, endDate) || undefined,
+              startDate,
+              endDate,
+              message: displayMessage,
             }],
           });
         }

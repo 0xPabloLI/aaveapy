@@ -55,6 +55,11 @@ export const apyToApr = (apy: number): number => {
 };
 
 import type { BrevisIncentive, MeritIncentive, MerklOpportunityGroup, ReserveWithSpread } from '@/types/aave';
+import {
+  getBrevisCampaignApr,
+  getBrevisCampaignEndedAt,
+  getBrevisCampaignStartedAt,
+} from '@/lib/brevis';
 import { TYDRO_POINT_TO_USD_RATE, getMerklBreakdownApr } from '@/lib/tydro';
 
 /**
@@ -221,8 +226,10 @@ const sumMerklOpportunitiesApy = (
 const sumBrevisIncentives = (brevis?: BrevisIncentive[]): number => {
   if (!brevis || !Array.isArray(brevis)) return 0;
   return brevis.reduce((sum, entry) => {
-    if (!isCampaignActive(entry.startDate, entry.endDate, Date.now(), true)) return sum;
-    const apr = entry.apr;
+    const startDate = getBrevisCampaignStartedAt(entry);
+    const endDate = getBrevisCampaignEndedAt(entry);
+    if (!isCampaignActive(startDate, endDate, Date.now(), true)) return sum;
+    const apr = getBrevisCampaignApr(entry);
     return sum + (!isNaN(apr) && apr >= 0 ? apr : 0);
   }, 0);
 };
@@ -234,8 +241,10 @@ const sumBrevisIncentives = (brevis?: BrevisIncentive[]): number => {
 const sumBrevisIncentivesApy = (brevis?: BrevisIncentive[]): number => {
   if (!brevis || !Array.isArray(brevis)) return 0;
   return brevis.reduce((sum, entry) => {
-    if (!isCampaignActive(entry.startDate, entry.endDate, Date.now(), true)) return sum;
-    const apr = entry.apr;
+    const startDate = getBrevisCampaignStartedAt(entry);
+    const endDate = getBrevisCampaignEndedAt(entry);
+    if (!isCampaignActive(startDate, endDate, Date.now(), true)) return sum;
+    const apr = getBrevisCampaignApr(entry);
     return sum + (!isNaN(apr) && apr >= 0 ? convertAprToApy(apr) : 0);
   }, 0);
 };
@@ -461,8 +470,10 @@ export function reserveHasIncentiveTooltipSources(
   const brevisIncentives = side === 'supply' ? reserve.brevisSupplys : reserve.brevisBorrows;
   if (brevisIncentives?.length) {
     for (const brevis of brevisIncentives) {
-      if (!isCampaignActive(brevis.startDate, brevis.endDate, Date.now(), true)) continue;
-      const apr = brevis.apr;
+      const startDate = getBrevisCampaignStartedAt(brevis);
+      const endDate = getBrevisCampaignEndedAt(brevis);
+      if (!isCampaignActive(startDate, endDate, Date.now(), true)) continue;
+      const apr = getBrevisCampaignApr(brevis);
       if (!isNaN(apr) && apr >= 0) return true;
     }
   }

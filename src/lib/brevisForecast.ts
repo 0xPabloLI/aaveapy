@@ -1,4 +1,5 @@
 import type { BrevisIncentive } from '@/types/aave';
+import { getBrevisCampaignApr, getBrevisCampaignEndedAt } from '@/lib/brevis';
 
 const DAYS_PER_YEAR = 365;
 const MS_PER_DAY = 86_400_000;
@@ -47,14 +48,14 @@ export function forecastBrevisAprPercent(
   nowMs = Date.now(),
   combinedDepositUsd?: number,
 ): number {
-  const nominalApr = sanitizePercent(brevis.apr);
+  const nominalApr = sanitizePercent(getBrevisCampaignApr(brevis));
   if (nominalApr <= 0) return 0;
   if (!Number.isFinite(depositUsd) || depositUsd <= 0) return nominalApr;
 
   const capUsd = brevis.perUserRewardCapUsd;
   if (capUsd === undefined || !Number.isFinite(capUsd) || capUsd <= 0) return nominalApr;
 
-  const endMs = parseBoundaryMs(brevis.endDate, 'end');
+  const endMs = parseBoundaryMs(getBrevisCampaignEndedAt(brevis), 'end');
   if (endMs === null || endMs <= nowMs) return nominalApr;
 
   const remainingDays = (endMs - nowMs) / MS_PER_DAY;
@@ -84,10 +85,10 @@ export function forecastBrevisDetailed(
   nowMs = Date.now(),
   combinedDepositUsd?: number,
 ): BrevisForecastResult {
-  const nominalApr = sanitizePercent(brevis.apr);
+  const nominalApr = sanitizePercent(getBrevisCampaignApr(brevis));
   const effectiveApr = forecastBrevisAprPercent(brevis, depositUsd, nowMs, combinedDepositUsd);
 
-  const endMs = parseBoundaryMs(brevis.endDate, 'end');
+  const endMs = parseBoundaryMs(getBrevisCampaignEndedAt(brevis), 'end');
   const remainingDays = endMs !== null && endMs > nowMs
     ? (endMs - nowMs) / MS_PER_DAY
     : null;

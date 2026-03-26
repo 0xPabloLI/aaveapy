@@ -24,6 +24,11 @@ import {
   splitMeritMessageBySelfAuth,
 } from '@/lib/meritForecast';
 import { forecastBrevisAprPercent, forecastBrevisDetailed } from '@/lib/brevisForecast';
+import {
+  getBrevisCampaignApr,
+  getBrevisCampaignEndedAt,
+  getBrevisCampaignStartedAt,
+} from '@/lib/brevis';
 import { parseNumberInput } from '@/lib/numberFormat';
 import { resolveForecastTokenPrice, resolveForecastTokenPriceWithBackup } from '@/lib/tokenPriceResolver';
 import { getMerklBreakdownApr, getMerklForecastUsdMultiplier } from '@/lib/tydro';
@@ -77,8 +82,8 @@ const sanitizePercent = (value: number): number =>
 
 /**
  * Merge opportunity-only fields from breakdown (1-min) with metrics-only fields from forecast (10-min).
- * Points-based campaigns still follow the actual Merkl campaignType; their daily units come from
- * dailyRewardUnits/dailyPoints while the regime logic remains type-driven.
+ * Points-based campaigns still follow the actual Merkl campaignType; forecast constraints stay
+ * type-driven even when the campaign's display intensity comes from pointsPerThousandUsd.
  */
 const mergeForecastState = (
   breakdown: MerklCampaignBreakdown,
@@ -86,16 +91,12 @@ const mergeForecastState = (
 ): MerklForecastState | null => {
   if (!breakdown.campaignId || !breakdown.campaignType) return null;
   const metrics = forecastStates[String(breakdown.campaignId)];
-  const plannedDailyCap =
-    breakdown.dailyRewardUnits ??
-    breakdown.dailyPoints ??
-    breakdown.plannedDaily;
   return {
     campaignType: breakdown.campaignType,
     totalBudget: breakdown.totalBudget,
     aprCap: breakdown.aprCap,
     latestTvl: breakdown.latestTvl,
-    plannedDaily: plannedDailyCap,
+    plannedDaily: breakdown.plannedDaily,
     requiredDaily: metrics?.requiredDaily,
     distributedSoFar: metrics?.distributedSoFar,
     endTimestamp: metrics?.endTimestamp,
@@ -367,8 +368,10 @@ const sumForecastMeritValues = (
 const sumBrevisValues = (values?: BrevisIncentive[], isApy = false): number => {
   if (!values || values.length === 0) return 0;
   return values.reduce((sum, value) => {
-    if (!isCampaignActive(value.startDate, value.endDate, Date.now(), true)) return sum;
-    const apr = sanitizePercent(value.apr);
+    const startDate = getBrevisCampaignStartedAt(value);
+    const endDate = getBrevisCampaignEndedAt(value);
+    if (!isCampaignActive(startDate, endDate, Date.now(), true)) return sum;
+    const apr = sanitizePercent(getBrevisCampaignApr(value));
     return sum + (isApy ? convertAprToApy(apr) : apr);
   }, 0);
 };
@@ -381,7 +384,9 @@ const sumForecastBrevisValues = (
 ): number => {
   if (!values || values.length === 0) return 0;
   return values.reduce((sum, value) => {
-    if (!isCampaignActive(value.startDate, value.endDate, Date.now(), true)) return sum;
+    const startDate = getBrevisCampaignStartedAt(value);
+    const endDate = getBrevisCampaignEndedAt(value);
+    if (!isCampaignActive(startDate, endDate, Date.now(), true)) return sum;
     const combined = value.sharedCapGroupId ? combinedDepositUsd : undefined;
     const aprPercent = forecastBrevisAprPercent(value, inputUsd, Date.now(), combined);
     if (aprPercent <= 0) return sum;
@@ -671,8 +676,10 @@ const buildBrevisCampaignDetails = (
   if (!items?.length) return rows;
 
   items.forEach((b, i) => {
-    if (!isCampaignActive(b.startDate, b.endDate, Date.now(), true)) return;
-    const nominal = sanitizePercent(b.apr);
+    const startDate = getBrevisCampaignStartedAt(b);
+    const endDate = getBrevisCampaignEndedAt(b);
+    if (!isCampaignActive(startDate, endDate, Date.now(), true)) return;
+    const nominal = sanitizePercent(getBrevisCampaignApr(b));
     const current = isApy ? convertAprToApy(nominal) : nominal;
     let after: number | null = null;
     let capNote: string | undefined;

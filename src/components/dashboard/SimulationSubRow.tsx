@@ -7,6 +7,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import type { RateSimulationResult, SimulationCampaignDetail, SimulationSourceDetail } from '@/hooks/useRateSimulation';
 import type { ReserveWithSpread, MeritIncentive, MerklOpportunityGroup, BrevisIncentive } from '@/types/aave';
 import { ETHEREUM_MARKET_NAMES } from '@/types/aave';
+import { getBrevisCampaignEndedAt, getBrevisCampaignStartedAt } from '@/lib/brevis';
 
 const getFirstMeritLink = (merits?: MeritIncentive[]): string | null => {
   if (!merits || !Array.isArray(merits)) return null;
@@ -41,8 +42,8 @@ const getFirstBrevisLink = (brevis?: BrevisIncentive[]): string | null => {
   if (!brevis || !Array.isArray(brevis)) return null;
   const now = Date.now();
   for (const b of brevis) {
-    const start = Date.parse(b.startDate);
-    const end = Date.parse(b.endDate);
+    const start = Date.parse(getBrevisCampaignStartedAt(b) ?? '');
+    const end = Date.parse(getBrevisCampaignEndedAt(b) ?? '');
     if (!Number.isNaN(start) && !Number.isNaN(end) && now >= start && now <= end && b.link) {
       return b.link;
     }
