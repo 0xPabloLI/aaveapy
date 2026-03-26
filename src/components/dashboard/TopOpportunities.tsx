@@ -86,7 +86,7 @@ const CategoryCardHeader = memo(({
 
   return (
     <HeaderWrapper
-      className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-3)]"
+      className={`flex items-center gap-[var(--ds-space-2)] ${isMobile ? 'mb-[var(--ds-space-2)]' : 'mb-[var(--ds-space-3)]'}`}
       {...(shouldAnimateHeader
         ? { initial: 'hidden', animate: 'visible', variants: headerVariants }
         : {})}
@@ -100,7 +100,7 @@ const CategoryCardHeader = memo(({
         <Icon className={`w-4 h-4 md:w-5 md:h-5 ${iconColorClass}`} />
       </IconWrapper>
       <div className="flex-1 min-w-0">
-        <h3 className={`font-bold truncate ${isMobile ? 'ds-text-14' : 'ds-text-16'}`}>
+        <h3 className={`font-bold truncate ${isMobile ? 'ds-text-13' : 'ds-text-14'}`}>
           {shortTitle ? (
             <>
               <span className="min-[400px]:hidden">{shortTitle}</span>
@@ -757,7 +757,7 @@ const TopOpportunities = ({
     const shouldAnimateHeader = false;
     const shouldAnimateList = !isMobile && !isApyChanged;
     return (
-        <div className={`bg-card border border-border/60 shadow-sm rounded-xl ${isMobile ? 'ds-card-pad-sm' : 'ds-card-pad'} ${isMobile ? 'col-span-1' : ''} flex flex-col`}>
+        <div className={`bg-card border border-border/60 rounded-xl ${isMobile ? 'ds-card-pad-sm' : 'ds-card-pad'} ${isMobile ? 'col-span-1' : ''} flex flex-col`}>
         <CategoryCardHeader
           title={title}
           shortTitle={shortTitle}
@@ -771,7 +771,7 @@ const TopOpportunities = ({
           iconVariants={iconVariants}
         />
 
-        <div className="flex-1 space-y-[var(--ds-space-1-5)]">
+        <div className={`flex-1 ${isMobile ? 'space-y-[var(--ds-space-1)]' : 'space-y-[var(--ds-space-1-5)]'}`}>
           {categoryReserves.length > 0 ? (
             shouldAnimateList ? (
               <AnimatePresence mode="popLayout">
