@@ -771,7 +771,7 @@ const TopOpportunities = ({
           iconVariants={iconVariants}
         />
 
-        <div className="flex-1 space-y-[var(--ds-space-1-5)]">
+        <div className={`flex-1 ${isMobile ? 'space-y-[var(--ds-space-1)]' : 'space-y-[var(--ds-space-1-5)]'}`}>
           {categoryReserves.length > 0 ? (
             shouldAnimateList ? (
               <AnimatePresence mode="popLayout">
