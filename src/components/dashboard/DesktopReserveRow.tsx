@@ -4,7 +4,8 @@ import { TableRow, TableCell } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ReserveWithSpread, ETHEREUM_MARKET_NAMES } from '@/types/aave';
 import { formatPercent, formatScenarioSize, formatSpread, formatUsd } from '@/lib/formatters';
-import { buildAaveReserveUrl } from '@/lib/aaveLinks';
+import { buildAaveMarketUrl, buildAaveReserveUrl } from '@/lib/aaveLinks';
+import { externalLinkTabProps } from '@/lib/externalNavigation';
 import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
@@ -103,6 +104,7 @@ const DesktopReserveRow = memo(({
   });
 
   const aaveUrl = buildAaveReserveUrl({ marketName: reserve.marketName, tokenAddress: reserve.tokenAddress }) || '#';
+  const aaveMarketUrl = buildAaveMarketUrl(reserve.marketName);
 
   const displayTokenPrice = getValidTokenPrice(simulation?.tokenPrice, reserve.tokenPrice);
   const displayReserveSizeUsd = getScenarioSupplySizeUsd({
@@ -154,19 +156,33 @@ const DesktopReserveRow = memo(({
         </TableCell>
         {/* Market — 左侧留白更小，右侧与其余列统一 */}
         <TableCell className="pl-[var(--ds-space-1)] pr-[var(--ds-space-2)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell">
-          <button
-            type="button"
-            onClick={(event) => {
-              event.stopPropagation();
-              onSelectMarket?.(reserve.marketName);
-            }}
-            className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)] px-[var(--ds-space-2-5)] py-[var(--ds-space-1)] rounded-full ds-text-13 font-medium bg-muted/50 text-muted-foreground border border-border/60 hover:bg-muted hover:text-foreground hover:border-border/80 active:scale-[0.98] transition-all duration-150"
-            aria-label={`Filter by ${getMarketDisplayName()} market`}
-            title={`Filter by ${getMarketDisplayName()}`}
-          >
-            <ChainIcon chain={reserve.chainName} />
-            {getMarketDisplayName()}
-          </button>
+          <div className="group/market inline-flex items-center justify-center gap-[var(--ds-space-1)]">
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onSelectMarket?.(reserve.marketName);
+              }}
+              className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)] px-[var(--ds-space-2-5)] py-[var(--ds-space-1)] rounded-full ds-text-13 font-medium bg-muted/50 text-muted-foreground border border-border/60 hover:bg-muted hover:text-foreground hover:border-border/80 active:scale-[0.98] transition-all duration-150"
+              aria-label={`Filter by ${getMarketDisplayName()} market`}
+              title={`Filter by ${getMarketDisplayName()}`}
+            >
+              <ChainIcon chain={reserve.chainName} />
+              {getMarketDisplayName()}
+            </button>
+            {aaveMarketUrl ? (
+              <a
+                href={aaveMarketUrl}
+                {...externalLinkTabProps(isMobile)}
+                onClick={(event) => event.stopPropagation()}
+                className="inline-flex shrink-0 items-center justify-center hover:opacity-80 transition-opacity duration-100"
+                aria-label={`Open ${getMarketDisplayName()} market on Aave`}
+                title="Open market on Aave"
+              >
+                <ExternalLink className="w-3 h-3 text-muted-foreground opacity-0 -ml-0.5 group-hover/market:opacity-70 transition-opacity duration-75" />
+              </a>
+            ) : null}
+          </div>
         </TableCell>
         {/* Size (Supply + Borrow) */}
         <TableCell className="px-[var(--ds-space-2)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell tabular-nums ds-text-13">

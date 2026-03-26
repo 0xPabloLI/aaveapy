@@ -95,6 +95,8 @@ interface TableRow {
 interface IncentiveSourceRow extends SimulationSourceDetail {
   label: string;
   href: string | null;
+  /** When one campaign, merge into the source row so capNote shows under the main label (Brevis cap/duration). */
+  mergeSingleCampaignRow?: boolean;
 }
 
 function incentiveSourceToTableRows(src: IncentiveSourceRow, sourceIndex: number, side: 'supply' | 'borrow'): TableRow[] {
@@ -111,6 +113,23 @@ function incentiveSourceToTableRows(src: IncentiveSourceRow, sourceIndex: number
   };
   const campaigns = src.campaigns;
   if (!campaigns?.length) return [main];
+  if (campaigns.length === 1 && src.mergeSingleCampaignRow) {
+    const c = campaigns[0];
+    return [
+      {
+        rowKey: `${prefix}-merged`,
+        label: src.label,
+        current: src.current,
+        after: src.after,
+        delta: src.delta,
+        type: 'rate',
+        href: c.href ?? src.href,
+        isBreakdown: true,
+        capNote: c.capNote,
+        capWarning: c.capWarning,
+      },
+    ];
+  }
   return [
     main,
     ...campaigns.map((c: SimulationCampaignDetail, ci: number) => ({
@@ -274,7 +293,12 @@ const SimulationSubRow = ({
     { label: incentiveLabel('ACI Incentive', 'ACI'), ...simulation.supply.sources.merit, href: supplyMeritLink },
     // If we have per-campaign rows, the more specific campaign rows should own the link.
     { label: incentiveLabel('Merkl Incentive', 'Merkl'), ...simulation.supply.sources.merkl, href: supplyMerklHasCampaigns ? null : supplyMerklLink },
-    { label: incentiveLabel('Brevis Incentive', 'Brevis'), ...simulation.supply.sources.brevis, href: supplyBrevisLink },
+    {
+      label: incentiveLabel('Brevis Incentive', 'Brevis'),
+      ...simulation.supply.sources.brevis,
+      href: supplyBrevisLink,
+      mergeSingleCampaignRow: true,
+    },
   ].filter((src) => hasMeaningfulValue(src.current) || hasMeaningfulValue(src.after));
 
   const borrowMerklHasCampaigns = !!simulation.borrow.sources.merkl.campaigns?.length;
@@ -282,7 +306,12 @@ const SimulationSubRow = ({
     { label: incentiveLabel('Protocol Incentive', 'Protocol'), ...simulation.borrow.sources.protocol, href: aaveUrl },
     { label: incentiveLabel('ACI Incentive', 'ACI'), ...simulation.borrow.sources.merit, href: borrowMeritLink },
     { label: incentiveLabel('Merkl Incentive', 'Merkl'), ...simulation.borrow.sources.merkl, href: borrowMerklHasCampaigns ? null : borrowMerklLink },
-    { label: incentiveLabel('Brevis Incentive', 'Brevis'), ...simulation.borrow.sources.brevis, href: borrowBrevisLink },
+    {
+      label: incentiveLabel('Brevis Incentive', 'Brevis'),
+      ...simulation.borrow.sources.brevis,
+      href: borrowBrevisLink,
+      mergeSingleCampaignRow: true,
+    },
   ].filter((src) => hasMeaningfulValue(src.current) || hasMeaningfulValue(src.after));
 
   // If only Native (no incentives), put link on APY row directly; otherwise show breakdown

@@ -253,6 +253,42 @@ forecastAprPercent = forecast.apr × 100 × multiplier
 
 `multiplier` comes from `getMerklForecastUsdMultiplier` (`src/lib/tydro.ts`): it is **`1`** unless the breakdown uses Tydro **`pointsPerThousandUsd`**, in which case it scales by the configured point-to-USD rate.
 
+## APR/APY display semantics
+
+The app treats **native** and **incentive** rates differently at display time:
+
+- **Native Aave rates** (`reserve.supplyApy`, `reserve.borrowApy`, and the native side of shared simulation) remain in **APY** in the UI. The global APR/APY toggle does **not** convert native rates to APR.
+- **Incentive / forecast-derived rates** (Merit, Merkl, Brevis, protocol incentives, simulated incentive rows, forecast panels, incentive totals) follow the global APR/APY toggle.
+
+### Incentive APR → APY conversion
+
+Incentive APY uses the shared helper in `src/lib/formatters.ts`:
+
+```
+aprDecimal = aprPercent / 100
+apyPercent = ((1 + aprDecimal / 12) ^ 12 - 1) × 100
+```
+
+This is a **monthly compounding** assumption and is applied consistently to:
+
+- Merkl breakdown display values
+- Merit base / self rows
+- Brevis rows
+- Protocol incentive rows
+- Incentive totals (convert each source to APY first, then sum)
+
+### Total rate composition
+
+- **Supply total** = `nativeSupplyApy + incentiveDisplayValue`
+- **Borrow total** = `nativeBorrowApy - incentiveDisplayValue`
+
+Where `incentiveDisplayValue` is:
+
+- incentive **APR** when the toggle is on APR
+- incentive **APY** when the toggle is on APY
+
+This means the toggle changes the **incentive contribution**, not the native base rate.
+
 ### Merkl product docs (concepts)
 
 Distribution types (variable / fixed token vs dollar / capped): [Merkl — Distribution Types](https://docs.merkl.xyz/merkl-mechanisms/distributions)
@@ -304,7 +340,7 @@ When **`reserve.reserveSizeUsd`** is present, **supply-side** Merit Base simulat
 
 **Incentive tooltip** (`IncentiveTooltip`): static context only (dates, messages). It does **not** repeat per-user caps or deposit-dependent Brevis diagnostics.
 
-**Shared simulation** (`useRateSimulation` → per-campaign rows on `SimulationSubRow` via `capNote` / `capWarning`): with supply/borrow scenario input, show forecast diagnostics from `brevisForecast.ts` / `buildBrevisCampaignDetails` (e.g. max/user, shared Supply+Borrow, days to cap, cap binding).
+**Shared simulation** (`useRateSimulation` → per-campaign rows on `SimulationSubRow` via `capNote` / `capWarning`): with supply/borrow scenario input, show forecast diagnostics from `brevisForecast.ts` / `buildBrevisCampaignDetails`: `Max …/user`, optional `S+B` (shared cap), **`~Nd to cap`** (`daysToHitCap` — at **nominal** APR, rough days to exhaust the per-user cap; not a guarantee), **`~Xd to end`** when `endDate` parses and is in the future (`remainingDays` — calendar time until campaign end). If the API omits `perUserRewardCapUsd`, only **`~Xd to end`** is shown when `endDate` allows it. **UI**: a single Brevis campaign is merged onto the **Brevis Incentive** row so this line is not hidden under a separate sub-label. `capWarning` when `isCapBinding` (cap constrains effective APR over the remaining window).
 
 ## Related Files
 

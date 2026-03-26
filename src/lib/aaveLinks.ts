@@ -61,3 +61,10 @@ export const buildAaveReserveUrl = (market: {
     underlyingAsset,
   )}&marketName=${encodeURIComponent(resolvedMarketName)}`;
 };
+
+/** Aave app markets list for a specific pool (same `marketName` encoding as reserve overview). */
+export function buildAaveMarketUrl(marketName: string): string | null {
+  const resolvedMarketName = resolveMarketName(marketName);
+  if (!resolvedMarketName) return null;
+  return `${AAVE_APP_BASE}/markets/?marketName=${encodeURIComponent(resolvedMarketName)}`;
+}

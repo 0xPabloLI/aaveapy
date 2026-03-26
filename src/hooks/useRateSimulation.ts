@@ -597,7 +597,17 @@ const buildMerklCampaignDetails = (
             const hypotheticalTvl = Math.max((merged.latestTvl ?? 0) + inputUsd, 0);
             const forecast = forecastWithTVL(merged, hypotheticalTvl);
             if (forecast.regime === 'APR_CAPPED') {
-              capNote = 'APR cap @ sim TVL';
+              const requiredDaily =
+                typeof merged.requiredDaily === 'number' && Number.isFinite(merged.requiredDaily)
+                  ? merged.requiredDaily
+                  : 0;
+              const aprCap =
+                typeof merged.aprCap === 'number' && Number.isFinite(merged.aprCap) ? merged.aprCap : 0;
+              const tvlThreshold = requiredDaily > 0 && aprCap > 0 ? (requiredDaily * 365) / aprCap : null;
+              capNote =
+                tvlThreshold && Number.isFinite(tvlThreshold) && tvlThreshold > 0
+                  ? `APR capped for TVL below ${formatUsd(tvlThreshold)}`
+                  : 'APR capped for low TVL';
               capWarning = true;
             }
           } else if (merged.campaignType === 'DUTCH_AUCTION') {
@@ -680,10 +690,18 @@ const buildBrevisCampaignDetails = (
         const parts: string[] = [];
         parts.push(`Max ${formatUsd(b.perUserRewardCapUsd)}/user`);
         if (b.sharedCapGroupId) parts.push('S+B');
+        // At nominal APR: days until per-user cap is exhausted (not calendar guarantee).
         if (det.daysToHitCap !== null && Number.isFinite(det.daysToHitCap)) {
-          parts.push(`~${det.daysToHitCap.toFixed(0)}d`);
+          parts.push(`~${det.daysToHitCap.toFixed(0)}d to cap`);
+        }
+        // Campaign window: rewards only accrue until endDate when present.
+        if (det.remainingDays !== null && Number.isFinite(det.remainingDays) && det.remainingDays > 0) {
+          parts.push(`~${det.remainingDays.toFixed(0)}d to end`);
         }
         capNote = parts.join(' · ');
+      } else if (det.remainingDays !== null && Number.isFinite(det.remainingDays) && det.remainingDays > 0) {
+        // Backend may omit perUserRewardCapUsd; still show time left when endDate exists.
+        capNote = `~${det.remainingDays.toFixed(0)}d to end`;
       }
     }
 
