@@ -408,16 +408,15 @@ const IncentiveTooltip = ({
         if (!isCampaignActive(startDate, endDate, Date.now(), true)) return;
         const apr = getBrevisCampaignApr(brevis);
         const message = getBrevisCampaignMessage(brevis);
-        const displayMessage = message && message.trim() !== brevis.name.trim() ? message : undefined;
         if (!isNaN(apr) && apr >= 0) {
           sources.push({
-            name: brevis.name || 'Brevis Incentive',
+            name: message || 'Brevis Incentive',
             value: isApy ? convertAprToApy(apr) : apr,
             color: 'text-foreground',
             bgColor: 'bg-muted/60',
             sourceType: 'Brevis',
             link: brevis.link,
-            message: displayMessage,
+            message,
             dateRange: formatDateRange(startDate, endDate) || undefined,
             campaigns: [{
               value: isApy ? convertAprToApy(apr) : apr,

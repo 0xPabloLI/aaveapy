@@ -8,11 +8,11 @@ const MS_PER_DAY = 86_400_000;
 const daysFromNowMs = (days: number): number => Date.now() + days * MS_PER_DAY;
 
 const makeBrevis = (overrides: Partial<BrevisIncentive> = {}): BrevisIncentive => ({
-  apr: 10,
+  campaignApr: 10,
   link: 'https://example.com/brevis',
-  startDate: new Date(daysFromNowMs(-30)).toISOString(),
-  endDate: new Date(daysFromNowMs(335)).toISOString(),
-  name: 'Brevis USDC',
+  campaignStartedAt: new Date(daysFromNowMs(-30)).toISOString(),
+  campaignEndedAt: new Date(daysFromNowMs(335)).toISOString(),
+  message: 'Brevis USDC',
   ...overrides,
 });
 
@@ -33,7 +33,7 @@ describe('forecastBrevisAprPercent', () => {
   });
 
   it('returns 0 when nominal APR is 0', () => {
-    const brevis = makeBrevis({ apr: 0, perUserRewardCapUsd: 5000 });
+    const brevis = makeBrevis({ campaignApr: 0, perUserRewardCapUsd: 5000 });
     expect(forecastBrevisAprPercent(brevis, 50_000)).toBe(0);
   });
 
@@ -42,7 +42,7 @@ describe('forecastBrevisAprPercent', () => {
     const endMs = nowMs + 365 * MS_PER_DAY;
     const brevis = makeBrevis({
       perUserRewardCapUsd: 5000,
-      endDate: new Date(endMs).toISOString(),
+      campaignEndedAt: new Date(endMs).toISOString(),
     });
     expect(forecastBrevisAprPercent(brevis, 1000, nowMs)).toBeCloseTo(10, 0);
   });
@@ -51,9 +51,8 @@ describe('forecastBrevisAprPercent', () => {
     const nowMs = Date.now();
     const endMs = nowMs + 365 * MS_PER_DAY;
     const brevis = makeBrevis({
-      apr: 10,
       perUserRewardCapUsd: 5000,
-      endDate: new Date(endMs).toISOString(),
+      campaignEndedAt: new Date(endMs).toISOString(),
     });
     const result = forecastBrevisAprPercent(brevis, 100_000, nowMs);
     expect(result).toBeCloseTo(5, 0);
@@ -64,9 +63,8 @@ describe('forecastBrevisAprPercent', () => {
     const nowMs = Date.now();
     const endMs = nowMs + (365 / 2) * MS_PER_DAY;
     const brevis = makeBrevis({
-      apr: 10,
       perUserRewardCapUsd: 5000,
-      endDate: new Date(endMs).toISOString(),
+      campaignEndedAt: new Date(endMs).toISOString(),
     });
     const result = forecastBrevisAprPercent(brevis, 200_000, nowMs);
     expect(result).toBeCloseTo(5, 0);
@@ -75,7 +73,7 @@ describe('forecastBrevisAprPercent', () => {
   it('returns nominal APR when endDate is in the past', () => {
     const brevis = makeBrevis({
       perUserRewardCapUsd: 5000,
-      endDate: new Date(daysFromNowMs(-1)).toISOString(),
+      campaignEndedAt: new Date(daysFromNowMs(-1)).toISOString(),
     });
     expect(forecastBrevisAprPercent(brevis, 100_000)).toBe(10);
   });
@@ -83,7 +81,7 @@ describe('forecastBrevisAprPercent', () => {
   it('returns nominal APR when endDate is empty string (no endDate)', () => {
     const brevis = makeBrevis({
       perUserRewardCapUsd: 5000,
-      endDate: '',
+      campaignEndedAt: '',
     });
     expect(forecastBrevisAprPercent(brevis, 100_000)).toBe(10);
   });
@@ -91,7 +89,7 @@ describe('forecastBrevisAprPercent', () => {
   it('returns nominal APR when endDate is unparseable', () => {
     const brevis = makeBrevis({
       perUserRewardCapUsd: 5000,
-      endDate: 'not-a-date',
+      campaignEndedAt: 'not-a-date',
     });
     expect(forecastBrevisAprPercent(brevis, 100_000)).toBe(10);
   });
@@ -101,9 +99,8 @@ describe('forecastBrevisAprPercent', () => {
     const futureDate = new Date(nowMs + 365 * MS_PER_DAY);
     const dateOnly = futureDate.toISOString().slice(0, 10);
     const brevis = makeBrevis({
-      apr: 10,
       perUserRewardCapUsd: 5000,
-      endDate: dateOnly,
+      campaignEndedAt: dateOnly,
     });
     const result = forecastBrevisAprPercent(brevis, 100_000, nowMs);
     expect(result).toBeLessThan(10);
@@ -118,14 +115,12 @@ describe('forecastBrevisAprPercent', () => {
   it('cap becomes less binding as remaining time shrinks', () => {
     const nowMs = Date.now();
     const brevisLong = makeBrevis({
-      apr: 10,
       perUserRewardCapUsd: 5000,
-      endDate: new Date(nowMs + 365 * MS_PER_DAY).toISOString(),
+      campaignEndedAt: new Date(nowMs + 365 * MS_PER_DAY).toISOString(),
     });
     const brevisShort = makeBrevis({
-      apr: 10,
       perUserRewardCapUsd: 5000,
-      endDate: new Date(nowMs + 30 * MS_PER_DAY).toISOString(),
+      campaignEndedAt: new Date(nowMs + 30 * MS_PER_DAY).toISOString(),
     });
     const deposit = 100_000;
     const aprLong = forecastBrevisAprPercent(brevisLong, deposit, nowMs);
@@ -135,9 +130,8 @@ describe('forecastBrevisAprPercent', () => {
 
   it('returns nominal APR when no endDate and cap set (graceful degradation)', () => {
     const brevis = makeBrevis({
-      apr: 10,
       perUserRewardCapUsd: 5000,
-      endDate: '',
+      campaignEndedAt: '',
     });
     expect(forecastBrevisAprPercent(brevis, 100_000)).toBe(10);
   });
@@ -156,9 +150,8 @@ describe('forecastBrevisDetailed', () => {
 
   it('computes daysToHitCap even without valid endDate', () => {
     const brevis = makeBrevis({
-      apr: 10,
       perUserRewardCapUsd: 5000,
-      endDate: '',
+      campaignEndedAt: '',
     });
     const result = forecastBrevisDetailed(brevis, 50_000);
     expect(result.daysToHitCap).toBeCloseTo(365, 0);
@@ -170,9 +163,8 @@ describe('forecastBrevisDetailed', () => {
   it('reports cap binding when large deposit exceeds cap over campaign', () => {
     const nowMs = Date.now();
     const brevis = makeBrevis({
-      apr: 10,
       perUserRewardCapUsd: 5000,
-      endDate: new Date(nowMs + 365 * MS_PER_DAY).toISOString(),
+      campaignEndedAt: new Date(nowMs + 365 * MS_PER_DAY).toISOString(),
     });
     const result = forecastBrevisDetailed(brevis, 100_000, nowMs);
     expect(result.isCapBinding).toBe(true);
@@ -185,9 +177,8 @@ describe('forecastBrevisDetailed', () => {
   it('reports cap not binding for small deposit', () => {
     const nowMs = Date.now();
     const brevis = makeBrevis({
-      apr: 10,
       perUserRewardCapUsd: 5000,
-      endDate: new Date(nowMs + 365 * MS_PER_DAY).toISOString(),
+      campaignEndedAt: new Date(nowMs + 365 * MS_PER_DAY).toISOString(),
     });
     const result = forecastBrevisDetailed(brevis, 1000, nowMs);
     expect(result.isCapBinding).toBe(false);
@@ -197,7 +188,7 @@ describe('forecastBrevisDetailed', () => {
   });
 
   it('returns null diagnostics when APR is 0', () => {
-    const brevis = makeBrevis({ apr: 0, perUserRewardCapUsd: 5000 });
+    const brevis = makeBrevis({ campaignApr: 0, perUserRewardCapUsd: 5000 });
     const result = forecastBrevisDetailed(brevis, 50_000);
     expect(result.aprPercent).toBe(0);
     expect(result.isCapBinding).toBe(false);
@@ -217,9 +208,8 @@ describe('forecastBrevisDetailed', () => {
 
   it('returns null remainingDays when endDate is absent', () => {
     const brevis = makeBrevis({
-      apr: 10,
       perUserRewardCapUsd: 5000,
-      endDate: '',
+      campaignEndedAt: '',
     });
     const result = forecastBrevisDetailed(brevis, 100_000);
     expect(result.remainingDays).toBeNull();

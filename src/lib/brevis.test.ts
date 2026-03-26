@@ -11,22 +11,19 @@ import {
 } from './brevis';
 
 const makeBrevis = (overrides: Partial<BrevisIncentive> = {}): BrevisIncentive => ({
-  apr: 1.5,
   link: 'https://example.com/brevis',
-  startDate: '2026-03-01T00:00:00.000Z',
-  endDate: '2026-03-31T00:00:00.000Z',
-  name: 'Brevis campaign',
+  campaignApr: 1.5,
+  campaignStartedAt: '2026-03-01T00:00:00.000Z',
+  campaignEndedAt: '2026-03-31T00:00:00.000Z',
+  message: 'Brevis campaign',
   ...overrides,
 });
 
 describe('brevis field normalization', () => {
   it('prefers Merkl-like aligned fields when present', () => {
     const brevis = makeBrevis({
-      apr: 1.5,
       campaignApr: 2.25,
-      startDate: '2026-03-01T00:00:00.000Z',
       campaignStartedAt: '2026-03-02T00:00:00.000Z',
-      endDate: '2026-03-31T00:00:00.000Z',
       campaignEndedAt: '2026-04-01T00:00:00.000Z',
       message: 'Aligned message',
       latestTvl: 150_000,
@@ -41,7 +38,7 @@ describe('brevis field normalization', () => {
     expect(getBrevisTotalBudget(brevis)).toBe(9000);
   });
 
-  it('does not fall back to removed legacy Brevis fields', () => {
+  it('reads canonical Brevis fields directly', () => {
     const brevis = makeBrevis();
 
     expect(getBrevisCampaignApr(brevis)).toBe(1.5);
@@ -52,11 +49,11 @@ describe('brevis field normalization', () => {
     expect(getBrevisTotalBudget(brevis)).toBeUndefined();
   });
 
-  it('uses campaign name as the last message fallback', () => {
+  it('returns undefined when message is absent', () => {
     const brevis = makeBrevis({
-      message: '',
+      message: undefined,
     });
 
-    expect(getBrevisCampaignMessage(brevis)).toBe('Brevis campaign');
+    expect(getBrevisCampaignMessage(brevis)).toBeUndefined();
   });
 });

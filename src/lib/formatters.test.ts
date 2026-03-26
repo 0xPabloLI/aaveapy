@@ -60,18 +60,18 @@ describe('incentive calculations only include active campaigns', () => {
 
     const brevisIncentives: BrevisIncentive[] = [
       {
-        apr: 3,
+        campaignApr: 3,
         link: 'https://example.com/active-brevis',
-        startDate: daysFromNowIso(-1),
-        endDate: daysFromNowIso(1),
-        name: 'Active Brevis',
+        campaignStartedAt: daysFromNowIso(-1),
+        campaignEndedAt: daysFromNowIso(1),
+        message: 'Active Brevis',
       },
       {
-        apr: 8,
+        campaignApr: 8,
         link: 'https://example.com/future-brevis',
-        startDate: daysFromNowIso(4),
-        endDate: daysFromNowIso(8),
-        name: 'Future Brevis',
+        campaignStartedAt: daysFromNowIso(4),
+        campaignEndedAt: daysFromNowIso(8),
+        message: 'Future Brevis',
       },
     ];
 
@@ -126,18 +126,18 @@ describe('incentive calculations only include active campaigns', () => {
 
     const brevisIncentives: BrevisIncentive[] = [
       {
-        apr: 3,
+        campaignApr: 3,
         link: 'https://example.com/active-brevis',
-        startDate: daysFromNowIso(-1),
-        endDate: daysFromNowIso(1),
-        name: 'Active Brevis',
+        campaignStartedAt: daysFromNowIso(-1),
+        campaignEndedAt: daysFromNowIso(1),
+        message: 'Active Brevis',
       },
       {
-        apr: 8,
+        campaignApr: 8,
         link: 'https://example.com/future-brevis',
-        startDate: daysFromNowIso(4),
-        endDate: daysFromNowIso(8),
-        name: 'Future Brevis',
+        campaignStartedAt: daysFromNowIso(4),
+        campaignEndedAt: daysFromNowIso(8),
+        message: 'Future Brevis',
       },
     ];
 
@@ -222,11 +222,11 @@ describe('Brevis open-ended campaign handling', () => {
   it('includes brevis with no endDate in APR totals', () => {
     const brevisIncentives: BrevisIncentive[] = [
       {
-        apr: 5,
+        campaignApr: 5,
         link: 'https://example.com/brevis-open',
-        startDate: daysFromNowIso(-10),
-        endDate: '',
-        name: 'Open-ended Brevis',
+        campaignStartedAt: daysFromNowIso(-10),
+        campaignEndedAt: '',
+        message: 'Open-ended Brevis',
       },
     ];
     const apr = calculateTotalIncentiveApr([], [], brevisIncentives, []);
@@ -236,11 +236,11 @@ describe('Brevis open-ended campaign handling', () => {
   it('includes brevis with no endDate in APY totals', () => {
     const brevisIncentives: BrevisIncentive[] = [
       {
-        apr: 5,
+        campaignApr: 5,
         link: 'https://example.com/brevis-open',
-        startDate: daysFromNowIso(-10),
-        endDate: '',
-        name: 'Open-ended Brevis',
+        campaignStartedAt: daysFromNowIso(-10),
+        campaignEndedAt: '',
+        message: 'Open-ended Brevis',
       },
     ];
     const apy = calculateTotalIncentiveApy([], [], brevisIncentives, []);
@@ -250,11 +250,11 @@ describe('Brevis open-ended campaign handling', () => {
   it('excludes brevis with future startDate and no endDate', () => {
     const brevisIncentives: BrevisIncentive[] = [
       {
-        apr: 5,
+        campaignApr: 5,
         link: 'https://example.com/brevis-future',
-        startDate: daysFromNowIso(10),
-        endDate: '',
-        name: 'Future Brevis',
+        campaignStartedAt: daysFromNowIso(10),
+        campaignEndedAt: '',
+        message: 'Future Brevis',
       },
     ];
     const apr = calculateTotalIncentiveApr([], [], brevisIncentives, []);

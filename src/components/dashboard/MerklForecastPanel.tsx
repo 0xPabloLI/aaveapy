@@ -8,6 +8,7 @@ import { deriveForecastProgressFlags, forecastWithTVL, type MerklForecastState }
 import { resolveForecastTokenPrice, resolveForecastTokenPriceWithBackup } from '@/lib/tokenPriceResolver';
 import { formatPercent, MERKL_WHITELIST_TOGGLE_ARIA, MERKL_WHITELIST_TOGGLE_LABEL } from '@/lib/formatters';
 import { formatNumberInput, parseNumberInput } from '@/lib/numberFormat';
+import { convertMerklPointsAmountToUsd, isMerklPointsCampaign } from '@/lib/tydro';
 
 interface MerklForecastPanelProps {
   reserves: ReserveWithSpread[];
@@ -150,36 +151,39 @@ const MerklForecastPanel = ({
 
   const mergedState: MerklForecastState | undefined = useMemo(() => {
     if (!selectedBreakdown?.campaignType) return undefined;
+    const normalizeUsdUnit = (value: number | null | undefined): number | undefined => {
+      if (isMerklPointsCampaign(selectedBreakdown)) {
+        return convertMerklPointsAmountToUsd(value, tydroPointToUsdRate);
+      }
+      return value ?? undefined;
+    };
     return {
       campaignType: selectedBreakdown.campaignType,
-      totalBudget: selectedBreakdown.totalBudget,
+      totalBudget: normalizeUsdUnit(selectedBreakdown.totalBudget),
       aprCap: selectedBreakdown.aprCap,
-      latestTvl: selectedBreakdown.latestTvl,
-      plannedDaily: selectedBreakdown.plannedDaily,
-      requiredDaily: selectedMetrics?.requiredDaily,
-      distributedSoFar: selectedMetrics?.distributedSoFar,
+      latestTvl: normalizeUsdUnit(selectedBreakdown.latestTvl),
+      plannedDaily: normalizeUsdUnit(selectedBreakdown.plannedDaily),
+      requiredDaily: normalizeUsdUnit(selectedMetrics?.requiredDaily),
+      distributedSoFar: normalizeUsdUnit(selectedMetrics?.distributedSoFar),
       endTimestamp: selectedMetrics?.endTimestamp,
     };
-  }, [selectedBreakdown, selectedMetrics]);
+  }, [selectedBreakdown, selectedMetrics, tydroPointToUsdRate]);
 
   const forecast = useMemo(() => {
     if (!mergedState || !selectedOption) return null;
     const hypotheticalTvl = Math.max((mergedState.latestTvl ?? 0) + depositUsd, 0);
     const baseForecast = forecastWithTVL(mergedState, hypotheticalTvl);
-    const forecastMultiplier = selectedOption.usesPointToUsdRate
-      ? Math.max(tydroPointToUsdRate, 0)
-      : 1;
     const progress = deriveForecastProgressFlags(mergedState);
     return {
       hypotheticalTvl,
-      dailyRewards: baseForecast.dailyRewards * forecastMultiplier,
-      apr: baseForecast.apr * forecastMultiplier,
+      dailyRewards: baseForecast.dailyRewards,
+      apr: baseForecast.apr,
       regime: baseForecast.regime,
       fixRewardableDays: baseForecast.fixRewardableDays,
       fixRewardableUntilTs: baseForecast.fixRewardableUntilTs,
       ...progress,
     };
-  }, [depositUsd, selectedOption, mergedState, tydroPointToUsdRate]);
+  }, [depositUsd, selectedOption, mergedState]);
 
   if (campaignOptions.length === 0) {
     return null;

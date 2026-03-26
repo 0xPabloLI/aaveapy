@@ -52,3 +52,24 @@ export const getMerklForecastUsdMultiplier = (
   }
   return safePointToUsdRate(pointToUsdRate) / TYDRO_POINT_TO_USD_RATE;
 };
+
+/**
+ * Points-mode Merkl campaign:
+ * - campaignApr is missing/zero/non-positive
+ * - pointsPerThousandUsd is present and positive
+ */
+export const isMerklPointsCampaign = (
+  breakdown: Pick<MerklCampaignBreakdown, 'campaignApr' | 'pointsPerThousandUsd'>
+): boolean => {
+  const campaignApr = parseMerklNumeric(breakdown.campaignApr);
+  const points = parseMerklNumeric(breakdown.pointsPerThousandUsd);
+  return (campaignApr ?? 0) <= 0 && (points ?? 0) > 0;
+};
+
+export const convertMerklPointsAmountToUsd = (
+  amount: number | null | undefined,
+  pointToUsdRate = TYDRO_POINT_TO_USD_RATE
+): number | undefined => {
+  if (amount === null || amount === undefined || !Number.isFinite(amount)) return undefined;
+  return amount * safePointToUsdRate(pointToUsdRate);
+};

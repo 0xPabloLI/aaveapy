@@ -31,7 +31,11 @@ import {
 } from '@/lib/brevis';
 import { parseNumberInput } from '@/lib/numberFormat';
 import { resolveForecastTokenPrice, resolveForecastTokenPriceWithBackup } from '@/lib/tokenPriceResolver';
-import { getMerklBreakdownApr, getMerklForecastUsdMultiplier } from '@/lib/tydro';
+import {
+  convertMerklPointsAmountToUsd,
+  getMerklBreakdownApr,
+  isMerklPointsCampaign,
+} from '@/lib/tydro';
 import type {
   BrevisIncentive,
   MeritIncentive,
@@ -88,17 +92,24 @@ const sanitizePercent = (value: number): number =>
 const mergeForecastState = (
   breakdown: MerklCampaignBreakdown,
   forecastStates: Record<string, MerklForecastWireItem>,
+  tydroPointToUsdRate: number,
 ): MerklForecastState | null => {
   if (!breakdown.campaignId || !breakdown.campaignType) return null;
   const metrics = forecastStates[String(breakdown.campaignId)];
+  const normalizeUsdUnit = (value: number | null | undefined): number | undefined => {
+    if (isMerklPointsCampaign(breakdown)) {
+      return convertMerklPointsAmountToUsd(value, tydroPointToUsdRate);
+    }
+    return value ?? undefined;
+  };
   return {
     campaignType: breakdown.campaignType,
-    totalBudget: breakdown.totalBudget,
+    totalBudget: normalizeUsdUnit(breakdown.totalBudget),
     aprCap: breakdown.aprCap,
-    latestTvl: breakdown.latestTvl,
-    plannedDaily: breakdown.plannedDaily,
-    requiredDaily: metrics?.requiredDaily,
-    distributedSoFar: metrics?.distributedSoFar,
+    latestTvl: normalizeUsdUnit(breakdown.latestTvl),
+    plannedDaily: normalizeUsdUnit(breakdown.plannedDaily),
+    requiredDaily: normalizeUsdUnit(metrics?.requiredDaily),
+    distributedSoFar: normalizeUsdUnit(metrics?.distributedSoFar),
     endTimestamp: metrics?.endTimestamp,
   };
 };
@@ -114,13 +125,12 @@ const forecastBreakdownApr = (
   if (inputUsd <= 0) return currentApr;
   if (!isMerklWhitelistBreakdownIncluded(breakdown, whitelistMerklCampaignIds)) return currentApr;
 
-  const merged = mergeForecastState(breakdown, forecastStates);
+  const merged = mergeForecastState(breakdown, forecastStates, tydroPointToUsdRate);
   if (!merged) return currentApr;
 
   const hypotheticalTvl = Math.max((merged.latestTvl ?? 0) + inputUsd, 0);
   const forecast = forecastWithTVL(merged, hypotheticalTvl);
-  const multiplier = Math.max(getMerklForecastUsdMultiplier(breakdown, tydroPointToUsdRate), 0);
-  const forecastApr = sanitizePercent(forecast.apr * 100 * multiplier);
+  const forecastApr = sanitizePercent(forecast.apr * 100);
   return forecastApr;
 };
 
@@ -384,7 +394,6 @@ type BrevisSharedCampaignSnapshot = {
   totalBudget?: number;
   perUserRewardCapUsd?: number;
   message?: string;
-  name: string;
   link: string;
 };
 
@@ -396,7 +405,6 @@ const getBrevisSharedCampaignSnapshot = (brevis: BrevisIncentive): BrevisSharedC
   totalBudget: brevis.totalBudget,
   perUserRewardCapUsd: brevis.perUserRewardCapUsd,
   message: brevis.message,
-  name: brevis.name,
   link: brevis.link,
 });
 
@@ -411,7 +419,6 @@ const areBrevisSharedSnapshotsEqual = (
   left.totalBudget === right.totalBudget &&
   left.perUserRewardCapUsd === right.perUserRewardCapUsd &&
   left.message === right.message &&
-  left.name === right.name &&
   left.link === right.link
 );
 
@@ -677,7 +684,7 @@ const buildMerklCampaignDetails = (
         const forecastAprSan = sanitizePercent(forecastApr);
         after = isApy ? convertAprToApy(forecastAprSan) : forecastAprSan;
 
-        const merged = mergeForecastState(bd, forecastStates);
+        const merged = mergeForecastState(bd, forecastStates, tydroPointToUsdRate);
         if (merged) {
           if (merged.campaignType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE') {
             const hypotheticalTvl = Math.max((merged.latestTvl ?? 0) + inputUsd, 0);
@@ -810,8 +817,8 @@ const buildBrevisCampaignDetails = (
 
     const delta = after !== null ? after - current : null;
     rows.push({
-      id: `brevis-${i}-${b.name ?? 'b'}`,
-      label: b.name || 'Brevis',
+      id: `brevis-${i}-${b.campaignId ?? 'b'}`,
+      label: b.message || 'Brevis',
       current,
       after,
       delta,

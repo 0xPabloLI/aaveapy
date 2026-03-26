@@ -141,14 +141,10 @@ describe('apiSchemas', () => {
           vTokenAddress: '0x3',
           brevisSupplys: [
             {
-              apr: 2.4,
               campaignApr: 2.8,
               link: 'https://example.com/brevis',
-              startDate: '2025-08-13T13:00:00.000Z',
               campaignStartedAt: '2025-08-13T13:00:00.000Z',
-              endDate: '2026-08-08T00:00:00.000Z',
               campaignEndedAt: '2026-08-08T00:00:00.000Z',
-              name: 'Brevis campaign',
               message: 'Aligned message',
               latestTvl: 4_151_203.07,
               totalBudget: 25_000,

@@ -19,16 +19,16 @@ const firstNonEmptyString = (...values: Array<string | undefined>): string | und
 };
 
 export const getBrevisCampaignApr = (brevis: BrevisIncentive): number =>
-  firstFiniteNumber(brevis.campaignApr, brevis.apr) ?? 0;
+  firstFiniteNumber(brevis.campaignApr) ?? 0;
 
 export const getBrevisCampaignStartedAt = (brevis: BrevisIncentive): string | undefined =>
-  firstNonEmptyString(brevis.campaignStartedAt, brevis.startDate);
+  firstNonEmptyString(brevis.campaignStartedAt);
 
 export const getBrevisCampaignEndedAt = (brevis: BrevisIncentive): string | undefined =>
-  firstNonEmptyString(brevis.campaignEndedAt, brevis.endDate);
+  firstNonEmptyString(brevis.campaignEndedAt);
 
 export const getBrevisCampaignMessage = (brevis: BrevisIncentive): string | undefined =>
-  firstNonEmptyString(brevis.message, brevis.name);
+  firstNonEmptyString(brevis.message);
 
 export const getBrevisLatestTvl = (brevis: BrevisIncentive): number | undefined =>
   firstFiniteNumber(brevis.latestTvl);

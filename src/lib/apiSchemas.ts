@@ -46,14 +46,10 @@ const MerklOpportunityGroupSchema = z.object({
 
 // ── Brevis incentive ──
 const BrevisIncentiveSchema = z.object({
-  apr: z.number(),
   link: z.string(),
-  startDate: z.string(),
-  endDate: z.string(),
-  name: z.string(),
-  campaignApr: z.number().optional(),
-  campaignStartedAt: z.string().optional(),
-  campaignEndedAt: z.string().optional(),
+  campaignApr: z.number(),
+  campaignStartedAt: z.string(),
+  campaignEndedAt: z.string(),
   message: z.string().optional(),
   latestTvl: z.number().optional(),
   totalBudget: z.number().optional(),

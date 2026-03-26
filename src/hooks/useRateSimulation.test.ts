@@ -160,7 +160,7 @@ describe('buildForecastMerklOpportunities', () => {
       tydroPointToUsdRate: 2,
     });
 
-    expect(result[0].breakdowns[0].campaignApr).toBeCloseTo(20, 10);
+    expect(result[0].breakdowns[0].campaignApr).toBeCloseTo(10, 10);
   });
 
   it('applies FIX reward campaign constraints to points-based breakdowns using the actual campaign type', () => {
@@ -201,7 +201,7 @@ describe('buildForecastMerklOpportunities', () => {
       tydroPointToUsdRate: 2,
     });
 
-    expect(result[0].breakdowns[0].campaignApr).toBeCloseTo(10, 10);
+    expect(result[0].breakdowns[0].campaignApr).toBeCloseTo(5, 10);
   });
 });
 
@@ -483,11 +483,11 @@ describe('buildRateSimulationResult', () => {
       ...baseReserve,
       brevisSupplys: [
         {
-          apr: 10,
+          campaignApr: 10,
           link: 'https://example.com/brevis',
-          startDate: '2020-01-01T00:00:00.000Z',
-          endDate,
-          name: 'Brevis Supply',
+          campaignStartedAt: '2020-01-01T00:00:00.000Z',
+          campaignEndedAt: endDate,
+          message: 'Brevis Supply',
           perUserRewardCapUsd: 5000,
         },
       ],
@@ -519,11 +519,11 @@ describe('buildRateSimulationResult', () => {
       ...baseReserve,
       brevisSupplys: [
         {
-          apr: 10,
+          campaignApr: 10,
           link: 'https://example.com/brevis',
-          startDate: '2020-01-01T00:00:00.000Z',
-          endDate,
-          name: 'Brevis Supply',
+          campaignStartedAt: '2020-01-01T00:00:00.000Z',
+          campaignEndedAt: endDate,
+          message: 'Brevis Supply',
           perUserRewardCapUsd: 5000,
         },
       ],
@@ -560,11 +560,11 @@ describe('buildRateSimulationResult', () => {
       ...baseReserve,
       brevisSupplys: [
         {
-          apr: 10,
+          campaignApr: 10,
           link: 'https://example.com/brevis',
-          startDate: '2020-01-01T00:00:00.000Z',
-          endDate,
-          name: 'Brevis Supply',
+          campaignStartedAt: '2020-01-01T00:00:00.000Z',
+          campaignEndedAt: endDate,
+          message: 'Brevis Supply',
           perUserRewardCapUsd: 5000,
         },
       ],
@@ -593,11 +593,11 @@ describe('buildRateSimulationResult', () => {
       ...baseReserve,
       brevisSupplys: [
         {
-          apr: 10,
+          campaignApr: 10,
           link: 'https://example.com/brevis',
-          startDate: '2020-01-01T00:00:00.000Z',
-          endDate: '2099-01-01T00:00:00.000Z',
-          name: 'Brevis Supply',
+          campaignStartedAt: '2020-01-01T00:00:00.000Z',
+          campaignEndedAt: '2099-01-01T00:00:00.000Z',
+          message: 'Brevis Supply',
         },
       ],
     };
@@ -626,11 +626,11 @@ describe('buildRateSimulationResult', () => {
       ...baseReserve,
       brevisBorrows: [
         {
-          apr: 8,
+          campaignApr: 8,
           link: 'https://example.com/brevis',
-          startDate: '2020-01-01T00:00:00.000Z',
-          endDate,
-          name: 'Brevis Borrow',
+          campaignStartedAt: '2020-01-01T00:00:00.000Z',
+          campaignEndedAt: endDate,
+          message: 'Brevis Borrow',
           perUserRewardCapUsd: 5000,
         },
       ],
@@ -660,11 +660,11 @@ describe('buildRateSimulationResult', () => {
       ...baseReserve,
       brevisSupplys: [
         {
-          apr: 10,
+          campaignApr: 10,
           link: 'https://example.com/brevis',
-          startDate: '2020-01-01T00:00:00.000Z',
-          endDate: '',
-          name: 'Brevis Supply (no end)',
+          campaignStartedAt: '2020-01-01T00:00:00.000Z',
+          campaignEndedAt: '',
+          message: 'Brevis Supply (no end)',
           perUserRewardCapUsd: 5000,
         },
       ],
@@ -695,11 +695,7 @@ describe('buildRateSimulationResult', () => {
       ...baseReserve,
       brevisSupplys: [
         {
-          apr: 10,
           link: 'https://example.com/brevis-supply',
-          startDate: '2020-01-01T00:00:00.000Z',
-          endDate,
-          name: 'Brevis Supply USDC',
           campaignApr: 10,
           campaignStartedAt: '2020-01-01T00:00:00.000Z',
           campaignEndedAt: endDate,
@@ -712,11 +708,7 @@ describe('buildRateSimulationResult', () => {
       ],
       brevisBorrows: [
         {
-          apr: 10,
           link: 'https://example.com/brevis-supply',
-          startDate: '2020-01-01T00:00:00.000Z',
-          endDate,
-          name: 'Brevis Supply USDC',
           campaignApr: 10,
           campaignStartedAt: '2020-01-01T00:00:00.000Z',
           campaignEndedAt: endDate,
@@ -750,6 +742,59 @@ describe('buildRateSimulationResult', () => {
     expect(result.supply.sources.brevis.campaigns?.[0]?.capNote).toBe(result.borrow.sources.brevis.campaigns?.[0]?.capNote);
   });
 
+  it('shows shared cap note on both sides when only one side has scenario input', () => {
+    const nowMs = Date.now();
+    const endDate = new Date(nowMs + 365 * 86_400_000).toISOString();
+    const reserve: ReserveWithSpread = {
+      ...baseReserve,
+      brevisSupplys: [
+        {
+          link: 'https://example.com/brevis-shared',
+          campaignApr: 10,
+          campaignStartedAt: '2020-01-01T00:00:00.000Z',
+          campaignEndedAt: endDate,
+          latestTvl: 1_000_000,
+          totalBudget: 100_000,
+          message: 'Shared campaign',
+          perUserRewardCapUsd: 5000,
+          campaignId: 'linea-usdc',
+        },
+      ],
+      brevisBorrows: [
+        {
+          link: 'https://example.com/brevis-shared',
+          campaignApr: 10,
+          campaignStartedAt: '2020-01-01T00:00:00.000Z',
+          campaignEndedAt: endDate,
+          latestTvl: 1_000_000,
+          totalBudget: 100_000,
+          message: 'Shared campaign',
+          perUserRewardCapUsd: 5000,
+          campaignId: 'linea-usdc',
+        },
+      ],
+    };
+
+    const result = buildRateSimulationResult({
+      reserve,
+      reserveRateInput: baseReserve,
+      isApy: false,
+      whitelistMerklCampaignIds: new Set(),
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '0',
+      borrowInput: '50000',
+      inputMode: 'usd',
+      forecastStates: {},
+    });
+
+    expect(result.supply.sources.brevis.campaigns?.[0]?.capNote).toContain('Max $5,000.00/user for supply + borrow');
+    expect(result.borrow.sources.brevis.campaigns?.[0]?.capNote).toContain('Max $5,000.00/user for supply + borrow');
+    expect(result.supply.sources.brevis.campaigns?.[0]?.capNote).toBe(result.borrow.sources.brevis.campaigns?.[0]?.capNote);
+    expect(result.supply.sources.brevis.after).toBeCloseTo(10, 8);
+    expect(result.borrow.sources.brevis.after).toBeCloseTo(10, 8);
+  });
+
   it('does not share cap when campaignId is absent', () => {
     const nowMs = Date.now();
     const endDate = new Date(nowMs + 365 * 86_400_000).toISOString();
@@ -757,21 +802,21 @@ describe('buildRateSimulationResult', () => {
       ...baseReserve,
       brevisSupplys: [
         {
-          apr: 10,
+          campaignApr: 10,
           link: 'https://example.com/brevis-supply',
-          startDate: '2020-01-01T00:00:00.000Z',
-          endDate,
-          name: 'Brevis Supply',
+          campaignStartedAt: '2020-01-01T00:00:00.000Z',
+          campaignEndedAt: endDate,
+          message: 'Brevis Supply',
           perUserRewardCapUsd: 5000,
         },
       ],
       brevisBorrows: [
         {
-          apr: 10,
+          campaignApr: 10,
           link: 'https://example.com/brevis-borrow',
-          startDate: '2020-01-01T00:00:00.000Z',
-          endDate,
-          name: 'Brevis Borrow',
+          campaignStartedAt: '2020-01-01T00:00:00.000Z',
+          campaignEndedAt: endDate,
+          message: 'Brevis Borrow',
           perUserRewardCapUsd: 5000,
         },
       ],
@@ -803,11 +848,7 @@ describe('buildRateSimulationResult', () => {
       ...baseReserve,
       brevisSupplys: [
         {
-          apr: 10,
           link: 'https://example.com/brevis-shared',
-          startDate: '2020-01-01T00:00:00.000Z',
-          endDate,
-          name: 'Brevis Shared USDC',
           campaignApr: 10,
           campaignStartedAt: '2020-01-01T00:00:00.000Z',
           campaignEndedAt: endDate,
@@ -820,11 +861,7 @@ describe('buildRateSimulationResult', () => {
       ],
       brevisBorrows: [
         {
-          apr: 10,
           link: 'https://example.com/brevis-shared',
-          startDate: '2020-01-01T00:00:00.000Z',
-          endDate,
-          name: 'Brevis Shared USDC',
           campaignApr: 12,
           campaignStartedAt: '2020-01-01T00:00:00.000Z',
           campaignEndedAt: endDate,
@@ -863,11 +900,11 @@ describe('buildRateSimulationResult', () => {
       ...baseReserve,
       brevisSupplys: [
         {
-          apr: 5,
+          campaignApr: 5,
           link: 'https://example.com/brevis',
-          startDate: '2020-01-01T00:00:00.000Z',
-          endDate: '',
-          name: 'Brevis open-ended',
+          campaignStartedAt: '2020-01-01T00:00:00.000Z',
+          campaignEndedAt: '',
+          message: 'Brevis open-ended',
         },
       ],
     };

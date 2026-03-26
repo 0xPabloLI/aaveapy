@@ -38,14 +38,10 @@ export interface MerklOpportunityGroup {
 }
 
 export interface BrevisIncentive {
-  apr: number;                         // APR percentage value (e.g., 1.5 means 1.5%)
   link: string;                        // Brevis campaign detail link
-  startDate: string;                   // Campaign start date
-  endDate: string;                     // Campaign end date
-  name: string;                        // Campaign name
-  campaignApr?: number;                // Merkl-like aligned APR field
-  campaignStartedAt?: string;          // Merkl-like aligned start time
-  campaignEndedAt?: string;            // Merkl-like aligned end time
+  campaignApr: number;                 // Canonical APR field
+  campaignStartedAt: string;           // Canonical start time
+  campaignEndedAt: string;             // Canonical end time
   message?: string;                    // Preferred description/message field
   latestTvl?: number;                  // Preferred TVL field
   totalBudget?: number;                // Preferred total budget field
