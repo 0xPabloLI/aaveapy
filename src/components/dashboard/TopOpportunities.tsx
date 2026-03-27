@@ -108,7 +108,7 @@ const CategoryCardHeader = memo(({
             </>
           ) : title}
         </h3>
-        <p className="text-muted-foreground truncate ds-text-11">{subtitle}</p>
+        <p className="text-foreground/60 truncate ds-text-11">{subtitle}</p>
       </div>
     </HeaderWrapper>
   );
