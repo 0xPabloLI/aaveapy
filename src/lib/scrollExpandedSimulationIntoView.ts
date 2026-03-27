@@ -28,10 +28,54 @@ function getScrollBehavior(): ScrollBehavior {
   return prefersReduced ? 'auto' : 'smooth';
 }
 
+/**
+ * Mirrors the CSS.escape reference polyfill when the browser API is missing (e.g. some test runners).
+ * Needed so attribute selector values cannot break querySelector parsing (backslashes, quotes, NUL, etc.).
+ */
+function cssEscapeFallback(value: string): string {
+  const string = String(value);
+  const length = string.length;
+  let result = '';
+  const firstCodeUnit = string.charCodeAt(0);
+  for (let index = 0; index < length; index += 1) {
+    const codeUnit = string.charCodeAt(index);
+    if (codeUnit === 0) {
+      result += '\uFFFD';
+      continue;
+    }
+    if ((codeUnit >= 1 && codeUnit <= 0x001f) || codeUnit === 0x007f) {
+      result += `\\${codeUnit.toString(16)} `;
+      continue;
+    }
+    if (index === 0 && codeUnit >= 0x30 && codeUnit <= 0x39) {
+      result += `\\${codeUnit.toString(16)} `;
+      continue;
+    }
+    if (index === 1 && codeUnit >= 0x30 && codeUnit <= 0x39 && firstCodeUnit === 0x002d) {
+      result += `\\${codeUnit.toString(16)} `;
+      continue;
+    }
+    if (
+      codeUnit >= 0x0080 ||
+      codeUnit === 0x002d ||
+      codeUnit === 0x005f ||
+      (codeUnit >= 0x30 && codeUnit <= 0x39) ||
+      (codeUnit >= 0x41 && codeUnit <= 0x5a) ||
+      (codeUnit >= 0x61 && codeUnit <= 0x7a)
+    ) {
+      result += string.charAt(index);
+      continue;
+    }
+    result += `\\${string.charAt(index)}`;
+  }
+  return result;
+}
+
 function escapeReserveId(reserveId: string): string {
-  return typeof CSS !== 'undefined' && typeof CSS.escape === 'function'
-    ? CSS.escape(reserveId)
-    : reserveId.replace(/"/g, '\\"');
+  if (typeof CSS !== 'undefined' && typeof CSS.escape === 'function') {
+    return CSS.escape(reserveId);
+  }
+  return cssEscapeFallback(reserveId);
 }
 
 /**
