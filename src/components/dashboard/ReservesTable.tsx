@@ -28,6 +28,7 @@ import DesktopReserveRow from './DesktopReserveRow';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getReserveSimulationId, useSharedRateSimulations } from '@/hooks/useRateSimulation';
 import { getScenarioSupplySizeUsd, getTotalBorrowedUsd as getReserveTotalBorrowedUsd } from '@/lib/scenarioSize';
+import { scrollExpandedSimulationIntoView } from '@/lib/scrollExpandedSimulationIntoView';
 
 interface ReservesTableProps {
   reserves: ReserveWithSpread[];
@@ -85,6 +86,9 @@ const ReservesTable = ({
   const borrowSortButtonRef = useRef<HTMLButtonElement>(null);
   const supplySortButtonRef = useRef<HTMLButtonElement>(null);
   const scenarioControlsRef = useRef<ScenarioControlsHandle>(null);
+  const lastScenarioKeyForPinScrollRef = useRef<string | null>(null);
+  const lastSortedIdsForPinScrollRef = useRef<string[]>([]);
+  const scenarioPinScrollBaselineReadyRef = useRef(false);
   const [borrowMenuPos, setBorrowMenuPos] = useState<{ top: number; left: number } | null>(null);
   const [supplyMenuPos, setSupplyMenuPos] = useState<{ top: number; left: number } | null>(null);
   const [minVisibleCount, setMinVisibleCount] = useState<number | null>(null);
@@ -130,6 +134,7 @@ const ReservesTable = ({
   const handleToggleExpand = useCallback((reserveId: string) => {
     setExpandedReserveId((prev) => (prev === reserveId ? null : reserveId));
   }, []);
+
   const [tooltipState, setTooltipState] = useState<{
     reserve: ReserveWithSpread;
     type: 'supply' | 'borrow';
@@ -149,6 +154,15 @@ const ReservesTable = ({
     borrowInput: debouncedSharedBorrowInput,
     inputMode: sharedInputMode,
   });
+
+  /** Scroll-on-expand only when list order can change with shared scenario (matches `pickScenarioValue` / size supply USD). */
+  const expandScrollFollowsScenarioSort = useMemo(() => {
+    if (!hasSharedScenario) return false;
+    const col = activeSortColumn ?? 'supply';
+    if (col === 'token' || col === 'market' || col === 'price') return false;
+    if (col === 'size' && sizeSortMode === 'borrow') return false;
+    return true;
+  }, [hasSharedScenario, activeSortColumn, sizeSortMode]);
 
   const getMarketDisplayName = (reserve: ReserveWithSpread) => {
     if (reserve.chainName === 'Ethereum' && ETHEREUM_MARKET_NAMES[reserve.marketName]) {
@@ -402,6 +416,57 @@ const ReservesTable = ({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reserves, activeSortColumn, tokenSortOrder, marketSortOrder, priceSortOrder, sizeSortMode, sizeSortOrder, utilSortOrder, supplySortMode, supplySortOrder, borrowSortMode, borrowSortOrder, spreadSortOrder, simulationsById, hasSharedScenario, isApy, tydroPointToUsdRate, whitelistMerklCampaignIds, debouncedSharedSupplyInput, sharedInputMode]);
 
+  /**
+   * Simulation pin scroll — normative spec + implementation steps:
+   * `docs/design/frontend-interaction-guardrails.md` § "Simulation pin scroll".
+   * Do not move to `expandedReserveId`-only effects or index-based scroll without updating that doc.
+   */
+  useEffect(() => {
+    const scenarioKey = `${debouncedSharedSupplyInput}\0${debouncedSharedBorrowInput}\0${sharedInputMode}`;
+    const ids = sortedData.map((r) => getReserveSimulationId(r));
+
+    if (!scenarioPinScrollBaselineReadyRef.current) {
+      lastScenarioKeyForPinScrollRef.current = scenarioKey;
+      lastSortedIdsForPinScrollRef.current = ids;
+      scenarioPinScrollBaselineReadyRef.current = true;
+      return;
+    }
+
+    if (scenarioKey !== lastScenarioKeyForPinScrollRef.current) {
+      const prevIds = lastSortedIdsForPinScrollRef.current;
+      const orderChanged =
+        prevIds.length !== ids.length || prevIds.some((id, i) => id !== ids[i]);
+      lastScenarioKeyForPinScrollRef.current = scenarioKey;
+      lastSortedIdsForPinScrollRef.current = ids;
+
+      if (
+        orderChanged &&
+        expandScrollFollowsScenarioSort &&
+        expandedReserveId
+      ) {
+        const id = expandedReserveId;
+        const mode = isMobile ? 'minimal-if-clipped' : 'pin-main-row-top';
+        const timer = window.setTimeout(() => {
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => scrollExpandedSimulationIntoView(id, { mode }));
+          });
+        }, 320);
+        return () => window.clearTimeout(timer);
+      }
+      return;
+    }
+
+    lastSortedIdsForPinScrollRef.current = ids;
+  }, [
+    debouncedSharedSupplyInput,
+    debouncedSharedBorrowInput,
+    sharedInputMode,
+    sortedData,
+    expandedReserveId,
+    isMobile,
+    expandScrollFollowsScenarioSort,
+  ]);
+
   const supplySortLabel = {
     total: 'Total',
     native: 'Native',
@@ -577,11 +642,37 @@ const ReservesTable = ({
 
   const scenarioControls = <ScenarioControls ref={scenarioControlsRef} onDebouncedChange={handleScenarioChange} />;
 
+  const desktopTableCardRef = useRef<HTMLDivElement>(null);
+  const desktopStickyScenarioRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isMobile) return;
+    const stickyEl = desktopStickyScenarioRef.current;
+    const card = desktopTableCardRef.current;
+    if (!stickyEl || !card) return undefined;
+    const apply = () => {
+      card.style.setProperty(
+        '--reserves-sticky-scenario-height',
+        `${stickyEl.getBoundingClientRect().height}px`,
+      );
+    };
+    apply();
+    const ro = new ResizeObserver(apply);
+    ro.observe(stickyEl);
+    return () => {
+      ro.disconnect();
+      card.style.removeProperty('--reserves-sticky-scenario-height');
+    };
+  }, [isMobile]);
+
   // Mobile card view — extra bottom padding so content isn't hidden by browser/safe area
   if (isMobile) {
     return (
       <div className="space-y-3 pb-[calc(env(safe-area-inset-bottom,0px)+5rem)]">
-        <div className="sticky top-[env(safe-area-inset-top,0px)] z-20 -mx-[var(--ds-space-3)] px-[var(--ds-space-3)] pt-1 pb-0 bg-background/80 backdrop-blur-sm">
+        <div
+          data-reserves-sticky-scenario
+          className="sticky top-[env(safe-area-inset-top,0px)] z-20 -mx-[var(--ds-space-3)] px-[var(--ds-space-3)] pt-1 pb-0 bg-background/80 backdrop-blur-sm"
+        >
           {scenarioControls}
         </div>
         {/* Header with sorting controls */}
@@ -878,7 +969,11 @@ const ReservesTable = ({
                   const bridgeOnExpandedColumn = leftExpanded || !rightReserve;
 
                   nodes.push(
-                    <div key={`row-${i}`} className="col-span-2">
+                    <div
+                      key={`row-${i}`}
+                      className="col-span-2"
+                      data-reserve-expanded-anchor={activeId}
+                    >
                       <div className="grid grid-cols-2 gap-[var(--ds-space-2)]">
                         <div className="min-w-0">
                           <MobileReserveCard
@@ -1095,12 +1190,24 @@ const ReservesTable = ({
 
 
   return (
-    <div className="bg-card rounded-2xl shadow-sm border border-border/60 relative">
-      <div className="sticky top-0 z-20 border-b border-border/60 p-[var(--ds-space-3)] bg-muted/40 backdrop-blur-sm shadow-[0_1px_3px_0_rgb(0_0_0/0.04)]">
+    <div
+      ref={desktopTableCardRef}
+      className="bg-card rounded-2xl shadow-sm border border-border/60 relative"
+    >
+      <div
+        ref={desktopStickyScenarioRef}
+        data-reserves-sticky-scenario
+        className="sticky top-0 z-20 border-b border-border/60 p-[var(--ds-space-3)] bg-muted/40 backdrop-blur-sm shadow-[0_1px_3px_0_rgb(0_0_0/0.04)]"
+      >
         {scenarioControls}
       </div>
-      <div className="overflow-x-auto">
-        <Table className="w-full table-fixed" wrapperClassName="overflow-visible">
+      {/*
+        Do not wrap the table in overflow-x-auto: that creates a scrollport so thead’s
+        sticky `top` is relative to that box, not the viewport — scenario uses viewport top-0,
+        producing a huge gap and tbody bleeding above the header. Horizontal overflow falls
+        through to the page when the table is wider than the container.
+      */}
+      <Table className="w-full table-fixed min-w-0" wrapperClassName="overflow-visible">
           <colgroup>
             {/* 左边三列再宽松，右边三列（Supply/Spread/Borrow）稍紧凑，合计 100% */}
             <col style={{ width: '13%' }} />
@@ -1112,8 +1219,12 @@ const ReservesTable = ({
             <col style={{ width: '12%' }} />
             <col style={{ width: '14.5%' }} />
           </colgroup>
-          <TableHeader className="overflow-visible">
-            <TableRow className="border-border/50 bg-card/60 overflow-visible">
+          <TableHeader
+            data-reserves-sticky-thead
+            className="overflow-visible sticky z-10 border-b border-border/60 bg-card shadow-[0_1px_2px_0_rgb(0_0_0/0.04)] [&_tr]:border-b-0"
+            style={{ top: 'var(--reserves-sticky-scenario-height, 4.5rem)' }}
+          >
+            <TableRow className="border-0 bg-transparent overflow-visible">
               {/* Token — 大幅收窄 */}
               <TableHead className="pl-[var(--ds-space-1-5)] pr-[var(--ds-space-0-5)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground">
                 <button
@@ -1700,7 +1811,6 @@ const ReservesTable = ({
             }
           </TableBody>
         </Table>
-      </div>
       
       {/* Show More/Less button for desktop */}
       {sortedData.length > displayData.length && (

@@ -27,7 +27,7 @@ describe('buildMeritSelfDepositCeilingEffect', () => {
       depositCeilingUsd: 1000,
     });
     expect(ceilingEffectToSimulationFields(under)).toEqual({
-      capNote: 'Self $500.00 of $500.00 (cap $1,000.00)',
+      capNote: 'Eligible deposit capped at $1,000.00',
       capWarning: false,
     });
 
@@ -37,7 +37,7 @@ describe('buildMeritSelfDepositCeilingEffect', () => {
       depositCeilingUsd: 1000,
     });
     expect(ceilingEffectToSimulationFields(over)).toEqual({
-      capNote: 'Self $1,000.00 of $2,000.00 (cap $1,000.00)',
+      capNote: 'Eligible deposit capped at $1,000.00',
       capWarning: true,
     });
   });
@@ -53,7 +53,7 @@ describe('buildBrevisRewardCeilingEffect', () => {
       remainingDays: null,
     });
     expect(ceilingEffectToSimulationFields(eff).capNote).toBe(
-      'Max $5,000.00/user for supply + borrow · ~100d earn',
+      'Reward capped at $5,000.00/user · supply + borrow · ~100d earn',
     );
   });
 
@@ -66,7 +66,7 @@ describe('buildBrevisRewardCeilingEffect', () => {
       remainingDays: 50,
     });
     const { capNote, capWarning } = ceilingEffectToSimulationFields(eff);
-    expect(capNote).toBe('Max $5,000.00/user · ~50d earn');
+    expect(capNote).toBe('Reward capped at $5,000.00/user · ~50d earn');
     expect(capWarning).toBe(true);
   });
 
@@ -78,7 +78,7 @@ describe('buildBrevisRewardCeilingEffect', () => {
       daysToHitCap: null,
       remainingDays: null,
     });
-    expect(ceilingEffectToSimulationFields(eff).capNote).toBe('Max $100.00/user');
+    expect(ceilingEffectToSimulationFields(eff).capNote).toBe('Reward capped at $100.00/user');
   });
 });
 

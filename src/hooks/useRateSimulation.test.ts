@@ -738,7 +738,9 @@ describe('buildRateSimulationResult', () => {
     // Both sides should see the reduced APR
     expect(result.supply.sources.brevis.after).toBeCloseTo(5, 0);
     expect(result.borrow.sources.brevis.after).toBeCloseTo(5, 0);
-    expect(result.supply.sources.brevis.campaigns?.[0]?.capNote).toContain('Max $5,000.00/user for supply + borrow');
+    expect(result.supply.sources.brevis.campaigns?.[0]?.capNote).toContain(
+      'Reward capped at $5,000.00/user · supply + borrow',
+    );
     expect(result.supply.sources.brevis.campaigns?.[0]?.capNote).toBe(result.borrow.sources.brevis.campaigns?.[0]?.capNote);
   });
 
@@ -788,8 +790,12 @@ describe('buildRateSimulationResult', () => {
       forecastStates: {},
     });
 
-    expect(result.supply.sources.brevis.campaigns?.[0]?.capNote).toContain('Max $5,000.00/user for supply + borrow');
-    expect(result.borrow.sources.brevis.campaigns?.[0]?.capNote).toContain('Max $5,000.00/user for supply + borrow');
+    expect(result.supply.sources.brevis.campaigns?.[0]?.capNote).toContain(
+      'Reward capped at $5,000.00/user · supply + borrow',
+    );
+    expect(result.borrow.sources.brevis.campaigns?.[0]?.capNote).toContain(
+      'Reward capped at $5,000.00/user · supply + borrow',
+    );
     expect(result.supply.sources.brevis.campaigns?.[0]?.capNote).toBe(result.borrow.sources.brevis.campaigns?.[0]?.capNote);
     expect(result.supply.sources.brevis.after).toBeCloseTo(10, 8);
     expect(result.borrow.sources.brevis.after).toBeCloseTo(10, 8);
@@ -890,7 +896,7 @@ describe('buildRateSimulationResult', () => {
 
     expect(result.supply.sources.brevis.after).toBeCloseTo(10, 8);
     expect(result.borrow.sources.brevis.after).toBeCloseTo(10, 8);
-    expect(result.supply.sources.brevis.campaigns?.[0]?.capNote).not.toContain('for supply + borrow');
+    expect(result.supply.sources.brevis.campaigns?.[0]?.capNote).not.toContain('supply + borrow');
     expect(warn).toHaveBeenCalledTimes(1);
     warn.mockRestore();
   });

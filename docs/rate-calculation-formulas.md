@@ -307,6 +307,18 @@ To keep semantics clear without breaking API contracts or UI props:
 
 Merit Self: parsed `selfCapUsd` in `meritForecast.ts` is a **deposit ceiling** (eligible deposit only). Brevis: `perUserRewardCapUsd` is a **per-user reward ceiling**. Shared simulation copy is assembled via `src/lib/incentiveCeilings.ts` → `ceilingEffectToSimulationFields`.
 
+**Field mapping (contract unchanged):**
+
+| Source | API or parse | Domain meaning | Notes |
+|--------|----------------|------------------|--------|
+| Brevis | `perUserRewardCapUsd` | Per-user **reward** ceiling | Keep API name; map in forecast/ceiling helpers |
+| Merit Self | `selfCapUsd` (from `message`) | **Deposit** ceiling | Eligible deposit only, not a reward USD cap |
+| Simulation UI | `capNote`, `capWarning` | Same diagnostics, stable prop names | Prefer *ceiling* in new **domain** names only |
+
+**Why “ceiling” in code but “cap” on rows:** Renaming `capNote` / `capWarning` would touch every simulation consumer for little user benefit. Domain types and helpers use *ceiling* vocabulary; the table row props stay `cap*` for stability.
+
+**Extending behavior:** Add or adjust incentive-cap simulation copy through `incentiveCeilings.ts` (`IncentiveCeilingEffect` kinds include `deposit_ceiling`, `reward_ceiling`, `pool_budget`, `apr_ceiling`, `informational`). Never merge **deposit ceiling** (Merit Self) semantics with **reward ceiling** (Brevis) in one helper.
+
 Incentive programs may impose caps that limit effective APR. There are three distinct cap mechanisms in the pipeline, each acting at a different stage:
 
 ```
@@ -342,17 +354,21 @@ When **`reserve.reserveSizeUsd`** is present, **supply-side** Merit Base simulat
 - **After a hypothetical deposit**, **TVL** is treated as **`anchorTvlUsd + scenarioDepositUsd`** with **daily rewards held flat**, so **APR dilutes** (same intuition as fixed daily rewards elsewhere).
 - If **`anchorTvlUsd`** cannot be resolved (e.g. missing `reserveSizeUsd`, or borrow side without utilization), the implementation **falls back** to the **`lastRoundRewardUsd` / cycle-days** path.
 
+**Shared simulation UI (`capNote`):** Merit **Base** rows intentionally emit **no** per-row `capNote` — same rule as Merkl **`DUTCH_AUCTION`** (scenario-adjusted APR only; no TVL / last-round / fallback diagnostic line). If product adds a row-level note for Dutch, add Merit Base in the **same** change (`buildMerklCampaignDetails` + `buildMeritCampaignDetails` in `useRateSimulation.ts`). Merit **Self** still uses `capNote` when a deposit ceiling applies (`incentiveCeilings.ts`).
+
+**Staging snapshot (anchor vs last-round):** For a concrete numeric comparison when both paths are computable from live data, see `docs/merit-base-anchor-vs-last-round-staging.md`.
+
 ### Merit self deposit cap
 
 - `selfCapUsd`: extracted from campaign `message` text (e.g. "first $1000 USDT supplied per user").
 - Caps the **eligible deposit**, not the reward directly. `eligibleDeposit = min(deposit, selfCapUsd)`.
-- `eligibleDepositUsd` is only used for Merit self-auth campaigns — other incentive types do not use deposit capping.
+- `eligibleDepositUsd` is only used for Merit self-auth campaigns — other incentive types do not use deposit capping. Simulation copy uses **`Eligible deposit capped at $Z`** (same “capped” vocabulary as Merkl APR notes).
 
 ### UI surfaces: Brevis cap (simulation only)
 
 **Incentive tooltip** (`IncentiveTooltip`): static context only (dates, messages). It does **not** repeat per-user caps or deposit-dependent Brevis diagnostics.
 
-**Shared simulation** (`useRateSimulation` → per-campaign rows on `SimulationSubRow` via `capNote` / `capWarning`): with supply/borrow scenario input, `buildBrevisCampaignDetails` shows `Max …/user` and optional `S+B` when `perUserRewardCapUsd` is present. **Reward horizon** (single number, **`~Nd earn`**): **`N = min(daysToHitCap, remainingDays)`** when both are computable — i.e. the earlier of (a) days to exhaust the per-user cap at **nominal** daily reward rate, and (b) calendar days until `endDate`. If only one bound exists, that value is used (still shown as **`~Nd earn`**). If the API omits `perUserRewardCapUsd`, only **`~Xd to end`** is shown (`remainingDays` only). **UI**: a single Brevis campaign is merged onto the **Brevis Incentive** row. `capWarning` when `isCapBinding`.
+**Shared simulation** (`useRateSimulation` → per-campaign rows on `SimulationSubRow` via `capNote` / `capWarning`): with supply/borrow scenario input, `buildBrevisCampaignDetails` shows `Reward capped at …/user` and optional `supply + borrow` when `perUserRewardCapUsd` is present. **Reward horizon** (single number, **`~Nd earn`**): **`N = min(daysToHitCap, remainingDays)`** when both are computable — i.e. the earlier of (a) days to exhaust the per-user cap at **nominal** daily reward rate, and (b) calendar days until `endDate`. If only one bound exists, that value is used (still shown as **`~Nd earn`**). If the API omits `perUserRewardCapUsd`, only **`~Xd to end`** is shown (`remainingDays` only). **UI**: a single Brevis campaign is merged onto the **Brevis Incentive** row. `capWarning` when `isCapBinding`.
 
 ## Related Files
 

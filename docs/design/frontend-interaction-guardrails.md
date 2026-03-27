@@ -122,7 +122,45 @@ This note records recurring UI/interaction issues found during incentive/forecas
 
 - **Do not drive `window` scroll from “row index changed” while simulation is open**: After expanding, shared simulation updates can change computed sort keys (spread, APY, etc.) and reorder the list. Treating “index in `sortedData` changed” like a user re-sort and auto-scrolling to pin the row feels erratic and often fires even when there is already space below the card.
 - **Sort from column headers collapses the expanded row** in `ReservesTable`, so index-based pinning does not correspond to a real “user re-sorted while expanded” flow here.
-- **If** we ever need to keep the expanded panel in view, prefer an **intersection-style check** (e.g. whether the panel’s bottom is clipped by the viewport) before adjusting scroll, rather than index-based `window.scrollTo`.
+
+#### Simulation pin scroll (normative — do not regress)
+
+These rules are **product constraints**. Any PR that changes reserve-table scrolling must preserve them unless there is an explicit spec change and this section is updated in the same work.
+
+| Rule | MUST / MUST NOT |
+|------|-----------------|
+| Expand / collapse / switch expanded row **without** a change to debounced shared scenario | **MUST NOT** run pinning scroll (no “expand → jump”). |
+| Debounced shared scenario **changes** and `sortedData` **order** (reserve id sequence) **changes** and a row **is expanded** and the active sort is scenario-driven | **MUST** run pinning scroll for that expanded row (desktop: pin below sticky stack; mobile: clip fix only). |
+| Debounced scenario changes but sort order **unchanged** | **MUST NOT** scroll. |
+| Sort order changes **without** a debounced scenario key change (e.g. fresh `reserves` payload, user changed sort column) | **MUST NOT** trigger this pin path (only sync refs; see implementation). |
+| Tie scroll to `sortedData` index or “every reorder” while expanded | **MUST NOT** (forbidden; see first bullet in this section). |
+
+**Debounced scenario key** (must stay consistent with the effect): `` `${debouncedSharedSupplyInput}\0${debouncedSharedBorrowInput}\0${sharedInputMode}` `` — the same values that feed `useSharedRateSimulations` / table sort dependencies for shared inputs.
+
+**Scenario-driven sort gate** (`expandScrollFollowsScenarioSort` in `ReservesTable.tsx`): pinning is allowed only when **`hasSharedScenario`** is true **and** the active column can change sort keys from shared scenario (`pickScenarioValue` / supply size USD). **Exclude**: Token, Market, Price; Size when `sizeSortMode === 'borrow'`. **Include**: Supply, Borrow, Spread, Util; Size when `sizeSortMode === 'supply'`. If you add a new sort column that uses scenario-sized or `after` totals, extend this `useMemo` in the same PR.
+
+#### Simulation pin scroll — implementation reference (maintainers)
+
+**Goal:** keep the spec above stable when refactoring; do not “simplify” the effect into expand-only or index-only scroll.
+
+1. **Single call site** for `scrollExpandedSimulationIntoView`: the `useEffect` placed **immediately after** the `sortedData` `useMemo` in `ReservesTable.tsx` (comment: *Pin expanded row only when debounced scenario inputs change…*). Do **not** add a second effect on `expandedReserveId` for pinning.
+2. **Refs** (names matter for grep / review): `lastScenarioKeyForPinScrollRef`, `lastSortedIdsForPinScrollRef`, `scenarioPinScrollBaselineReadyRef`. First run seeds baseline only (no scroll). On each later run: if scenario key **equals** last key, only `lastSortedIdsForPinScrollRef ← current ids` (handles data refresh without false pin). If key **differs**: compare **previous** `lastSortedIdsForPinScrollRef` to **new** `sortedData.map(getReserveSimulationId)`; update key + ids; scroll **iff** `orderChanged && expandScrollFollowsScenarioSort && expandedReserveId`.
+3. **Effect dependency array** must include: `debouncedSharedSupplyInput`, `debouncedSharedBorrowInput`, `sharedInputMode`, `sortedData`, `expandedReserveId`, `isMobile`, `expandScrollFollowsScenarioSort`. If scenario debouncing moves to another layer, keep the **debounced** values here — never the raw typing state.
+4. **Timing:** `setTimeout(320)` + **two** `requestAnimationFrame` ticks before measuring/scrolling — matches expand row CSS transition (~300ms) so layout matches post-sort DOM. Changing duration in `DesktopReserveRow` / `MobileReserveCard` grid transitions may require retuning this constant in the same PR.
+5. **Scroll implementation** (`src/lib/scrollExpandedSimulationIntoView.ts`): desktop `pin-main-row-top` uses `window.scrollBy` so `tr[data-reserve-id]` top aligns to `getPinnedRowTopY()` = `max(bottom of [data-reserves-sticky-scenario], bottom of [data-reserves-sticky-thead]) + GAP_BELOW_STICKY_STACK_PX`, else `VIEW_MARGIN_PX`. Mobile expanded block: `[data-reserve-expanded-anchor]`. Do not remove these `data-*` hooks from the sticky wrappers without updating this function and this doc.
+
+#### DOM contract (pin scroll)
+
+| Attribute | Where | Purpose |
+|-----------|--------|---------|
+| `data-reserves-sticky-scenario` | Sticky wrapper around shared `ScenarioControls` (desktop + mobile table layouts) | Pin scroll vertical offset |
+| `data-reserves-sticky-thead` | Sticky table header row wrapper (desktop) | Same — body row must sit below stacked stickies |
+| `data-reserve-id` | Main `TableRow` in `DesktopReserveRow` | Target row for desktop pin |
+| `data-reserve-expanded-anchor` | Mobile expanded pair + simulation container | Bounds for mobile clip scroll |
+
+**Regression checklist** (before merge if touching reserves table / scroll / scenario debounce): (1) Expand with fixed scenario inputs → no scroll. (2) With expanded row, change debounced scenario so sort order changes (Spread + inputs) → row pins below sticky stack on desktop. (3) Change scenario but sort column is Token → no scroll. (4) Scenario change + sort change but row collapsed → no scroll.
+
+**Related (layout geometry):** § **Desktop reserves table: sticky stack and scrollport (normative)** — `ResizeObserver`, `--reserves-sticky-scenario-height`, scrollport rules, and how sticky `thead` stacks under the scenario strip. `getPinnedRowTopY()` in `scrollExpandedSimulationIntoView.ts` must remain consistent with that stack (and with the `data-reserves-sticky-*` elements).
 
 ### Search behavior
 
@@ -170,7 +208,8 @@ This note records recurring UI/interaction issues found during incentive/forecas
 ### Forecast UI consistency
 
 - **Terminology (Tydro vs Merkl labels)**: only Merkl’s optional `pointsPerThousandUsd` path is treated as Tydro (`src/lib/tydro.ts`, `tydroPointToUsdRate`). `Merit` / `Brevis` / protocol incentives are not Tydro points. Aggregate UI labels can stay as **Merkl** / **Merkl Incentive**; use “Tydro” only when explaining the points-to-APR conversion or the global point-to-USD control. Unrelated “points” (e.g. Ink FDV reference points) are not Tydro.
-- **Incentive tooltip vs shared simulation**: `IncentiveTooltip` shows **static** incentive context (campaign dates, messages, Merkl whitelist opt-in). **Deposit- and TVL-dependent** forecasts (Merkl hypothetical TVL, Merit base/self scenario notes, FIX rewardable horizon, Brevis per-user cap / days-to-cap, cap-binding warnings, etc.) belong in the **shared rate simulation** UI (`useRateSimulation` per-campaign rows on `SimulationSubRow` via `capNote` / `capWarning`), not inside the tooltip.
+- **Incentive tooltip vs shared simulation**: `IncentiveTooltip` shows **static** incentive context (campaign dates, messages, Merkl whitelist opt-in). **Deposit- and TVL-dependent** forecasts (Merkl hypothetical TVL, Merit Self deposit-ceiling lines, FIX rewardable horizon, Brevis per-user cap / days-to-cap, cap-binding warnings, etc.) belong in the **shared rate simulation** UI (`useRateSimulation` per-campaign rows on `SimulationSubRow` via `capNote` / `capWarning`), not inside the tooltip. Merit **Base** and Merkl **DUTCH_AUCTION** use **no** row `capNote` (scenario APR only); keep that policy in sync if it changes. **New** user-visible cap/ceiling lines should be produced via `src/lib/incentiveCeilings.ts` (then mapped to `capNote` / `capWarning`) where applicable—see `docs/rate-calculation-formulas.md` (Incentive Reward Cap Reference, naming layers).
+- **`capNote` copy family**: Prefer a consistent **“capped”** idiom where it fits—e.g. Merkl **`APR capped for low TVL`**, Brevis **`Reward capped at …/user`**, Merit self **`Eligible deposit capped at …`**. Horizon fragments (`~Nd @ sim`, `~Nd earn`, `~Nd to end`) stay as short suffixes joined with **` · `**.
 - **APR/APY mode parity**: the global APR/APY toggle applies to **non-native rate displays only**. Headline incentive **percentages** in `IncentiveTooltip`, shared simulation incentive rows, and any other **forecast-derived / incentive-derived** numbers (`MerklForecastPanel`, per-campaign simulation rows, incentive totals) must follow the toggle. **Native Aave supply / borrow rates stay in APY** and do **not** switch to APR in table cells, cards, or shared simulation. `IncentiveTooltip` does not show scenario forecasts.
 - **Label user-specific vs campaign-wide values** (simulation / forecast panels—not static tooltip copy):
   - Merkl forecast rows usually show campaign-wide `Daily Rewards`.
@@ -270,9 +309,28 @@ When tooltip/forecast behavior looks wrong, check:
 - Hide downstream source rows when both current and simulated values are effectively zero.
 - Use fixed numeric column widths so placeholders align with headers.
 
+### Desktop reserves table: sticky stack and scrollport (normative)
+
+This section is **mandatory** for anyone changing desktop `ReservesTable` layout, overflow, or sticky headers.
+
+#### Why (one-line mental model)
+
+`position: sticky` **`top` is resolved against the element’s nearest scrollport**, not always the viewport. If the scenario bar uses viewport-relative `sticky top-0` (page scroll) while `<thead>` sits inside a wrapper with `overflow-x-auto` (or similar), the header’s `top: …px` is measured from **that wrapper’s top**, not the viewport. The two layers then **misalign**: a **large empty band** appears under the scenario strip, and **tbody content scrolls through that band** above the header (visible “bleed” / clipped row fragments).
+
+#### Rules
+
+1. **Do not** wrap the **entire** `<table>` (including the sticky `<thead>`) in an ancestor with a non-default overflow that creates a **scrollport** between the card and the table—most commonly **`overflow-x-auto`** or **`overflow: hidden`** on a full-table wrapper—while the shared scenario strip above uses **`sticky top-0`** against page scroll and `<thead>` uses **`top: var(--reserves-sticky-scenario-height, …)`** meant to stack under the scenario strip in **viewport** coordinates.
+2. **Do** keep the **reference structure** in `ReservesTable.tsx`:
+   - **`data-reserves-sticky-scenario`**: shared scenario strip, `sticky top-0 z-20`; height measured with **`ResizeObserver`** into **`--reserves-sticky-scenario-height`** on the card (`desktopStickyScenarioRef` / `desktopTableCardRef`).
+   - **`data-reserves-sticky-thead`**: column header `<thead>`, **`sticky`**, **`top: var(--reserves-sticky-scenario-height, 4.5rem)`**, **`z-10`**, **opaque `bg-card`** (not translucent), bottom border / light shadow so tbody does not read through the header.
+3. **Horizontal overflow**: With `table-fixed` and `%` columns, prefer **page-level** horizontal scroll on narrow desktop. If table-local horizontal scrolling is **required**, **do not** reintroduce a full-table `overflow-x-auto` wrapper; use a **documented** pattern instead (e.g. tbody-only scroll with explicit column sync)—not implemented in the reference layout.
+4. **Expand scroll (geometry only)**: `scrollExpandedSimulationIntoView` / `getPinnedRowTopY` in `src/lib/scrollExpandedSimulationIntoView.ts` must stay consistent with the stack: **`max(scenario.bottom, thead.bottom)`** plus gap when pinning the body row. **When** pinning runs is **not** expand-only — see **§ Simulation pin scroll (normative)** above (scenario key + sort order + `expandScrollFollowsScenarioSort`).
+
 ### Desktop reserves table column layout
 
 The desktop reserves table uses `table-fixed` with a `<colgroup>` so column widths and spacing are predictable. When changing column count or visual balance, update all three places: `ReservesTable.tsx` (colgroup + header cells + skeleton row) and `DesktopReserveRow.tsx` (body cells).
+
+Sticky scenario + sticky `<thead>` and **scrollport** constraints are **normative** in **§ Desktop reserves table: sticky stack and scrollport (normative)** above—do not regress them when editing column layout.
 
 **Column order and widths (percentages, sum = 100%):**
 

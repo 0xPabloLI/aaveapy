@@ -112,7 +112,14 @@
 - **勾选**：按 **`campaignId`** 逐项勾选；无 `campaignId` 的白名单条目共用同一 opt-in（在 `whitelistMerklCampaignIds` 内用内部 sentinel，与真实 id 并列）。激励详情 Tooltip 与（若启用）Merkl Forecast 面板对可勾选项统一使用 **「Include as WL user」**，表示用户确认自己是白名单参与者并要把该活动计入汇总。
 - 完整规则与实现位置见 **[frontend-interaction-guardrails.md](frontend-interaction-guardrails.md)** § *Merkl whitelist-only campaigns*。
 
-### 4.8 Tydro 与 Merkl「点数」术语
+### 4.8 桌面 Reserves 表：顶栏双层 sticky
+
+- **第一层**：共享场景输入条 `data-reserves-sticky-scenario`，`sticky top-0 z-20`，高度经 `ResizeObserver` 写入卡片上的 `--reserves-sticky-scenario-height`。
+- **第二层**：列标题行 `data-reserves-sticky-thead`（Token … Borrow），`sticky` 且 `top` 为该 CSS 变量（回退 `4.5rem`），`z-10`，**不透明** `bg-card`。
+- **禁止**用包住整张表（含 `thead`）的 `overflow-x-auto` / 会制造 scrollport 的祖先：`sticky` 的 `top` 相对**最近滚动盒**而非视口，会与 scenario 的视口 `top-0` 错位，出现大段空白与 tbody 从缝里露出。**完整规范（含原因、规则、与展开滚动一致性）**：**[frontend-interaction-guardrails.md](frontend-interaction-guardrails.md) — § Desktop reserves table: sticky stack and scrollport (normative)**。
+- 展开 simulation 后的滚动贴边：`scrollExpandedSimulationIntoView`，与 guardrails 中 **Expandable rows and scroll stability** 一致。
+
+### 4.9 Tydro 与 Merkl「点数」术语
 
 - **Tydro**：仅 **Merkl** 的 API 字段 **`pointsPerThousandUsd`**（按千刀点数）在 `tydro.ts` 中按 Tydro 曲线换算 APR；顶栏 **`tydroPointToUsdRate`** 调节该曲线。详见 **[rate-calculation-formulas.md](../rate-calculation-formulas.md)** § *Terminology: Tydro points vs other “points”*。
 - **不是**所有界面上的「points」都指 Tydro（例如 Ink FDV 滑块上的参考点、CSS `pointer-events` 等与激励无关）。

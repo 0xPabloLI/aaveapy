@@ -9,7 +9,6 @@ import {
   calculateTotalSupplyApy,
   calculateTotalSupplyApr,
   convertAprToApy,
-  formatUsd,
   isMerklWhitelistBreakdownIncluded,
 } from '@/lib/formatters';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
@@ -555,8 +554,6 @@ const meritForecastAprToDisplay = (aprDecimal: number, isApy: boolean): number =
   return isApy ? convertAprToApy(pct) : pct;
 };
 
-const MERIT_SIM_FALLBACK_CAP_NOTE = 'Current APR (est.)';
-
 /** Show per-campaign rows when the user entered a scenario, or when multiple campaigns stack. */
 const shouldExposeCampaignRows = (
   rows: SimulationCampaignDetail[],
@@ -586,8 +583,6 @@ const buildMeritCampaignDetails = (
     if (baseAprPercent > 0) {
       const baseCurrent = meritAprToDisplay(baseAprPercent, isApy);
       let baseAfter: number | null = null;
-      let capNote: string | undefined;
-      const capWarning = false;
       if (inputUsd > 0) {
         const fp = forecastMeritCampaign({
           mode: 'MERIT_BASE',
@@ -600,24 +595,17 @@ const buildMeritCampaignDetails = (
         });
         if (fp) {
           baseAfter = meritForecastAprToDisplay(fp.apr, isApy);
-          if (fp.estimateKind === 'MERIT_BASE' && fp.meritEstimateSource === 'reserve_tvl' && typeof fp.anchorTvlUsd === 'number') {
-            capNote = `TVL ${formatUsd(fp.anchorTvlUsd)} · flat rewards/day`;
-          } else if (fp.estimateKind === 'MERIT_BASE' && fp.meritEstimateSource === 'last_round' && typeof fp.lastRoundRewardUsd === 'number') {
-            capNote = `Last round ${formatUsd(fp.lastRoundRewardUsd)} → est.`;
-          } else if (fp.usesCurrentRateFallback) {
-            capNote = MERIT_SIM_FALLBACK_CAP_NOTE;
-          }
         }
       }
       const delta = baseAfter !== null ? baseAfter - baseCurrent : null;
+      // Merit Base: no capNote — same product rule as Merkl DUTCH_AUCTION (scenario APR only). If Dutch gains a row note, add Merit Base in the same change (see buildMerklCampaignDetails).
       rows.push({
         id: `merit-${meritIndex}-base`,
         label: `${namePrefix}Base`,
         current: baseCurrent,
         after: baseAfter,
         delta,
-        capNote,
-        capWarning,
+        capWarning: false,
       });
     }
 
@@ -647,8 +635,6 @@ const buildMeritCampaignDetails = (
               depositCeilingUsd: fp.selfCapUsd,
             });
             ({ capNote, capWarning } = ceilingEffectToSimulationFields(ceiling));
-          } else if (fp.usesCurrentRateFallback) {
-            capNote = MERIT_SIM_FALLBACK_CAP_NOTE;
           }
         } else {
           selfAfter = selfCurrent;
@@ -717,7 +703,7 @@ const buildMerklCampaignDetails = (
           } else if (merklType === 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE' && forecast.regime === 'APR_CAPPED') {
             ({ capNote, capWarning } = ceilingEffectToSimulationFields(buildMerklAprCeilingEffect()));
           }
-          // DUTCH_AUCTION and other types: no extra capNote here.
+          // DUTCH_AUCTION and other types: no extra capNote here (Merit Base rows follow the same rule).
         }
       }
 

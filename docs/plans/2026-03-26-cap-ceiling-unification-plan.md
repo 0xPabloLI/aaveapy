@@ -113,7 +113,7 @@ export interface IncentiveCeilingEffect {
    - `src/lib/brevisForecast.test.ts`
    - `src/hooks/useRateSimulation.test.ts`
 3. 文案快照/断言
-   - 确认 `capNote` 字符串保持兼容（尤其 `Self ... (cap ...)`, `Max .../user`, `~Nd to cap`）
+   - 确认 `capNote` 字符串保持兼容（尤其 `Eligible deposit capped at …`, `Reward capped at …/user`, `~Nd earn`）
 
 交付标准：
 

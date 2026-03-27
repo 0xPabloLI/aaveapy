@@ -50,9 +50,7 @@ export function buildMeritSelfDepositCeilingEffect(input: {
     kind: 'deposit_ceiling',
     scope: 'per_user',
     window: 'round_cycle',
-    noteParts: [
-      `Self ${formatUsd(selfEligibleUsd)} of ${formatUsd(inputUsd)} (cap ${formatUsd(depositCeilingUsd)})`,
-    ],
+    noteParts: [`Eligible deposit capped at ${formatUsd(depositCeilingUsd)}`],
     warning: inputUsd > depositCeilingUsd,
     metrics: {
       depositCeilingUsd,
@@ -86,8 +84,8 @@ export function buildBrevisRewardCeilingEffect(input: {
   const parts: string[] = [];
   parts.push(
     input.isSharedSupplyBorrow
-      ? `Max ${formatUsd(input.rewardCeilingUsd)}/user for supply + borrow`
-      : `Max ${formatUsd(input.rewardCeilingUsd)}/user`,
+      ? `Reward capped at ${formatUsd(input.rewardCeilingUsd)}/user · supply + borrow`
+      : `Reward capped at ${formatUsd(input.rewardCeilingUsd)}/user`,
   );
   const earnDays = computeBrevisEarnDays(input.daysToHitCap, input.remainingDays);
   if (earnDays !== null) {
