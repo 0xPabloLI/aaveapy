@@ -18,6 +18,7 @@ Optional behavior: synchronize upstream-derived artifacts (`artifacts-*` modes).
 1. Validate repo state before syncing:
    - Run `git status --short` and note unrelated dirty files.
    - Do **not** revert or overwrite unrelated local edits.
+   - In `repo` mode, if the working tree is dirty (tracked or untracked), create a temporary stash (`git stash push --include-untracked`) **before any inbound sync** and record the stash ref for later pop.
 2. Resolve target from argument:
    - `repo` (default): sync local branch with remote tracking branch (inbound + outbound).
    - `artifacts-all`: run all artifact sync targets in safe order.
@@ -33,9 +34,12 @@ Optional behavior: synchronize upstream-derived artifacts (`artifacts-*` modes).
 1. For `repo`:
    - Run `git fetch --all --prune`.
    - Confirm current branch and tracking branch.
-   - Bring remote commits in: prefer `git pull --ff-only`. If fast-forward is not possible and the user wants to reconcile divergent history, use **stash → `git pull --rebase` → stash pop**; **stop for confirmation** on conflicts.
+   - Bring remote commits in with this deterministic order:
+     1) If no divergence, run `git pull --ff-only`.
+     2) If fast-forward is not possible, run `git pull --rebase`.
+   - If a temporary stash was created, run `git stash pop` only after inbound sync succeeds; **stop for confirmation** on conflicts.
    - Publish local commits: after inbound sync succeeds and conflicts are resolved, if the branch is **ahead** of its upstream, run **`git push`**. If the branch is not ahead, skip push and report that remote already has your tip.
-   - If push is rejected because remote advanced, fetch and repeat inbound sync before pushing again.
+   - If push is rejected because remote advanced, run `git fetch --all --prune` and repeat the same inbound flow (including temporary stash handling when dirty) before pushing again.
    - If local history was rewritten (e.g. rebase of commits that were already on the remote), use **`git push --force-with-lease`** only when the user explicitly wants to overwrite the remote tip; otherwise stop and confirm.
 2. For artifact targets, prefer npm scripts (single source of truth), not ad-hoc commands:
    - `token-icons` -> `npm run sync-token-icons`
