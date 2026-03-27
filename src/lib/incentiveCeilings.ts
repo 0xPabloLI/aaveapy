@@ -117,13 +117,16 @@ export function buildBrevisCalendarEndOnlyEffect(remainingDays: number): Incenti
   };
 }
 
-/** Merkl FIX: pool budget horizon at simulated TVL. */
+/**
+ * Merkl FIX: pool budget horizon at hypothetical TVL (scenario deposit folded into `forecastWithTVL`).
+ * Uses the same **`~Nd earn`** surface copy as Brevis reward-horizon notes; semantics differ (pool budget vs per-user cap).
+ */
 export function buildMerklFixPoolBudgetEffect(fixRewardableDays: number): IncentiveCeilingEffect {
   return {
     kind: 'pool_budget',
     scope: 'pool',
     window: 'campaign_lifetime',
-    noteParts: [`~${fixRewardableDays.toFixed(0)}d @ sim`],
+    noteParts: [`~${fixRewardableDays.toFixed(0)}d earn`],
     warning: false,
   };
 }

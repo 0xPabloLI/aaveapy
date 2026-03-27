@@ -319,6 +319,22 @@ Merit Self: parsed `selfCapUsd` in `meritForecast.ts` is a **deposit ceiling** (
 
 **Extending behavior:** Add or adjust incentive-cap simulation copy through `incentiveCeilings.ts` (`IncentiveCeilingEffect` kinds include `deposit_ceiling`, `reward_ceiling`, `pool_budget`, `apr_ceiling`, `informational`). Never merge **deposit ceiling** (Merit Self) semantics with **reward ceiling** (Brevis) in one helper.
 
+### Unified simulation `capNote` strings (`SimulationSubRow`)
+
+All user-visible simulation row notes for incentives should stay discoverable here and implemented via `incentiveCeilings.ts` (or the same vocabulary in `useRateSimulation.ts` where product policy intentionally omits a note). Multiple clauses use **` · `** as the separator.
+
+| Incentive / branch | When shown | `capNote` pattern | `capWarning` |
+|--------------------|------------|-------------------|--------------|
+| **Merkl FIX** | Scenario USD &gt; 0 and `fixRewardableDays` defined after `forecastWithTVL` | **`~Nd earn`** | `false` |
+| **Merkl MAX** | `regime === 'APR_CAPPED'` at hypothetical TVL | **`APR capped for low TVL`** | `true` |
+| **Brevis** (per-user reward cap) | Scenario present, `perUserRewardCapUsd` &gt; 0 | **`Reward capped at $X/user`**; if shared supply+borrow cap: **` · supply + borrow`**; optional horizon: **` · ~Nd earn`** where **`N = min(daysToHitCap, remainingDays)`** (or single bound if only one is positive) | `isCapBinding` |
+| **Brevis** (no per-user cap) | Scenario present, no cap, positive `remainingDays` | **`~Nd to end`** | `false` |
+| **Merit Self** | Self row, forecast resolves `selfCapUsd` + `selfEligibleUsd` | **`Eligible deposit capped at $Z`** | `true` when scenario deposit &gt; ceiling |
+| **Merit Base** | — | *(none — scenario APR only; same product rule as Merkl **DUTCH_AUCTION**)* | — |
+| **Merkl DUTCH_AUCTION** (and other types) | — | *(none)* | — |
+
+**Same label, different math:** **`~Nd earn`** on **Merkl FIX** is “days until pool budget exhaustion at **hypothetical TVL** (latest + scenario USD).” On **Brevis**, it is “shorter of days to hit **per-user reward cap** at nominal daily rate vs days to **endDate**.” Do not infer one from the other.
+
 Incentive programs may impose caps that limit effective APR. There are three distinct cap mechanisms in the pipeline, each acting at a different stage:
 
 ```
@@ -345,6 +361,7 @@ deposit → [deposit cap] → nominal APR (from TVL dilution) → nominal reward
 
 - `fixRewardableDays` / `fixRewardableUntilTs`: derived from `remainingBudget / aprBasedDaily`, capped by `endTimestamp`. These fields indicate how many days the campaign can sustain rewards at the current APR before budget exhaustion.
 - Unlike Brevis, this is a **pool-level** cap (all users share the same budget).
+- **Shared simulation `capNote`:** **`~Nd earn`** — same wording as the Brevis reward-horizon segment; computed at **hypothetical TVL** after the user’s scenario deposit (see unified table above).
 
 ### Merit Base: reserve TVL anchor (preferred)
 

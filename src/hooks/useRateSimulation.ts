@@ -668,8 +668,8 @@ const buildMerklCampaignDetails = (
   const rows: SimulationCampaignDetail[] = [];
   if (!opportunities?.length) return rows;
 
-  // We want user-friendly labels, but also need to disambiguate stacked campaigns when no scenario input exists.
-  // Strategy: collect rows with a base label, then add a "#n" suffix only when the base label repeats.
+  // User-friendly labels; when the same opportunity name appears on multiple rows, add a stable "#n" suffix
+  // (same rule with or without scenario input so the list does not change shape).
   const collected: Array<Omit<SimulationCampaignDetail, 'label'> & { baseLabel: string }> = [];
 
   opportunities.forEach((opportunity, oppIndex) => {
@@ -725,28 +725,20 @@ const buildMerklCampaignDetails = (
 
   if (collected.length === 0) return [];
 
-  if (!hasAnyInput) {
-    const totalsByLabel = new Map<string, number>();
-    for (const item of collected) {
-      totalsByLabel.set(item.baseLabel, (totalsByLabel.get(item.baseLabel) ?? 0) + 1);
-    }
-    const idxByLabel = new Map<string, number>();
-    for (const item of collected) {
-      const total = totalsByLabel.get(item.baseLabel) ?? 0;
-      const nextIdx = (idxByLabel.get(item.baseLabel) ?? 0) + 1;
-      idxByLabel.set(item.baseLabel, nextIdx);
-      rows.push({
-        ...item,
-        label: total > 1 ? `${item.baseLabel} #${nextIdx}` : item.baseLabel,
-      });
-    }
-  } else {
-    for (const item of collected) {
-      rows.push({
-        ...item,
-        label: item.baseLabel,
-      });
-    }
+  const totalsByLabel = new Map<string, number>();
+  for (const item of collected) {
+    totalsByLabel.set(item.baseLabel, (totalsByLabel.get(item.baseLabel) ?? 0) + 1);
+  }
+  const idxByLabel = new Map<string, number>();
+  for (const item of collected) {
+    const total = totalsByLabel.get(item.baseLabel) ?? 0;
+    const nextIdx = (idxByLabel.get(item.baseLabel) ?? 0) + 1;
+    idxByLabel.set(item.baseLabel, nextIdx);
+    const { baseLabel, ...rest } = item;
+    rows.push({
+      ...rest,
+      label: total > 1 ? `${baseLabel} #${nextIdx}` : baseLabel,
+    });
   }
 
   return shouldExposeCampaignRows(rows, hasAnyInput) ? rows : [];

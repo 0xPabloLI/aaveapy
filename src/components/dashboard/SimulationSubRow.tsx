@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'react';
+import { Fragment, useRef, useState, useEffect } from 'react';
 import { AlertTriangle, ExternalLink } from 'lucide-react';
 import { formatPercent, formatScenarioSize, formatScenarioSizeDelta, formatSpread } from '@/lib/formatters';
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
@@ -430,64 +430,75 @@ const SimulationSubRow = ({
     // Supply = green, Borrow = cyan; breakdown rows (Native + Incentive) use same section color
     const rowAccentClass = accentClass;
 
-    /** Align cap note with label text start; note sits outside nested ml/pl so it can use full column width (wraps later). */
+    /** Indent cap note to match label column hierarchy; row uses colspan so note can use full table width. */
     const capNoteAlignClass = isSubBreakdown ? 'pl-6' : isBreakdownItem ? 'pl-4' : '';
+    const labelCellPy = row.capNote ? `${tight ? 'pt-1 pb-0' : 'pt-1.5 pb-0'}` : cellPy;
+    const valueCellPy = row.capNote ? `${tight ? 'pt-1 pb-0' : 'pt-1.5 pb-0'}` : cellPy;
+    const capRowPb = tight ? 'pb-1' : 'pb-1.5';
 
-    return (
-      <tr key={row.rowKey} className={row.warning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
-        <td className={`${cellPy} ${metricCellPx} min-w-0 align-top`}>
-          <div className="flex min-w-0 flex-col gap-0.5">
-            <div className={`min-w-0 ${isBreakdownItem ? `${breakdownIndentClass} ${borderColorClass}` : ''}`}>
-              <div className="flex flex-wrap items-start gap-x-1.5 gap-y-0.5 min-w-0">
-                {row.href ? (
-                  <a
-                    href={row.href}
-                    {...externalLinkTabProps(isMobile)}
-                    onClick={(e) => e.stopPropagation()}
-                    className={`ds-text-12 flex items-center gap-1 min-w-0 break-words ${row.warning ? 'text-amber-700 dark:text-amber-400' : isBreakdownItem ? `${rowAccentClass} hover:opacity-90` : accentClass}`}
-                  >
-                    <span className="break-words">{row.label}</span>
-                    <ExternalLink className="w-3 h-3 flex-shrink-0 opacity-50" />
-                  </a>
-                ) : (
-                  <span
-                    className={`ds-text-12 break-words ${row.warning ? 'text-amber-700 dark:text-amber-400 font-medium' : isBreakdownItem ? rowAccentClass : accentClass}`}
-                  >
-                    {row.label}
-                  </span>
-                )}
-                {row.cap !== null && row.cap !== undefined && (
-                  <span className={`ds-text-11 tabular-nums flex-shrink-0 ${row.warning ? 'text-amber-600' : 'text-muted-foreground/70'}`}>
-                    / Cap {formatScenarioSize(row.cap, { inputMode, tokenPrice: simulation.tokenPrice })}
-                  </span>
-                )}
-              </div>
+    const mainRow = (
+      <tr className={row.warning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
+        <td className={`${labelCellPy} ${metricCellPx} min-w-0 align-top`}>
+          <div className={`min-w-0 ${isBreakdownItem ? `${breakdownIndentClass} ${borderColorClass}` : ''}`}>
+            <div className="flex flex-wrap items-start gap-x-1.5 gap-y-0.5 min-w-0">
+              {row.href ? (
+                <a
+                  href={row.href}
+                  {...externalLinkTabProps(isMobile)}
+                  onClick={(e) => e.stopPropagation()}
+                  className={`ds-text-12 flex items-center gap-1 min-w-0 break-words ${row.warning ? 'text-amber-700 dark:text-amber-400' : isBreakdownItem ? `${rowAccentClass} hover:opacity-90` : accentClass}`}
+                >
+                  <span className="break-words">{row.label}</span>
+                  <ExternalLink className="w-3 h-3 flex-shrink-0 opacity-50" />
+                </a>
+              ) : (
+                <span
+                  className={`ds-text-12 break-words ${row.warning ? 'text-amber-700 dark:text-amber-400 font-medium' : isBreakdownItem ? rowAccentClass : accentClass}`}
+                >
+                  {row.label}
+                </span>
+              )}
+              {row.cap !== null && row.cap !== undefined && (
+                <span className={`ds-text-11 tabular-nums flex-shrink-0 ${row.warning ? 'text-amber-600' : 'text-muted-foreground/70'}`}>
+                  / Cap {formatScenarioSize(row.cap, { inputMode, tokenPrice: simulation.tokenPrice })}
+                </span>
+              )}
             </div>
-            {row.capNote ? (
-              <p
-                className={`ds-text-11 max-w-none leading-snug text-pretty break-normal ${capNoteAlignClass} ${row.capWarning ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}
-              >
-                {row.capNote}
-              </p>
-            ) : null}
           </div>
         </td>
-        <td className={`${cellPy} ${valueCellPx} text-right`}>
+        <td className={`${valueCellPy} ${valueCellPx} text-right align-top`}>
           <span className={`ds-text-12 tabular-nums ${rowAccentClass}`}>
             {formatValue(row.current, row.type)}
           </span>
         </td>
-        <td className={`${cellPy} ${valueCellPx} text-right`}>
+        <td className={`${valueCellPy} ${valueCellPx} text-right align-top`}>
           <span className={`ds-text-12 tabular-nums ${row.after === null ? 'text-muted-foreground' : rowAccentClass}`}>
             {formatValue(row.after, row.type)}
           </span>
         </td>
-        <td className={`${cellPy} ${deltaCellPx} text-right`}>
+        <td className={`${valueCellPy} ${deltaCellPx} text-right align-top`}>
           <span className={`ds-text-12 tabular-nums ${deltaColorClass}`}>
             {formatDeltaValue(row.delta, row.type)}
           </span>
         </td>
       </tr>
+    );
+
+    return (
+      <Fragment key={row.rowKey}>
+        {mainRow}
+        {row.capNote ? (
+          <tr className={row.warning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
+            <td colSpan={4} className={`pt-0 ${capRowPb} ${metricCellPx} min-w-0 align-top`}>
+              <p
+                className={`ds-text-11 min-w-0 w-full max-w-none whitespace-normal break-words leading-snug ${capNoteAlignClass} ${row.capWarning ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}
+              >
+                {row.capNote}
+              </p>
+            </td>
+          </tr>
+        ) : null}
+      </Fragment>
     );
   };
 

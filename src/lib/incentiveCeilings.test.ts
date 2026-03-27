@@ -13,7 +13,7 @@ describe('ceilingEffectToSimulationFields', () => {
   it('joins note parts and passes warning through', () => {
     const eff = buildMerklFixPoolBudgetEffect(12.3);
     expect(ceilingEffectToSimulationFields(eff)).toEqual({
-      capNote: '~12d @ sim',
+      capNote: '~12d earn',
       capWarning: false,
     });
   });
@@ -94,7 +94,7 @@ describe('buildBrevisCalendarEndOnlyEffect', () => {
 
 describe('Merkl ceiling helpers', () => {
   it('buildMerklFixPoolBudgetEffect formats days', () => {
-    expect(ceilingEffectToSimulationFields(buildMerklFixPoolBudgetEffect(7)).capNote).toBe('~7d @ sim');
+    expect(ceilingEffectToSimulationFields(buildMerklFixPoolBudgetEffect(7)).capNote).toBe('~7d earn');
   });
 
   it('buildMerklAprCeilingEffect is warning', () => {
