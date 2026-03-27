@@ -1,7 +1,7 @@
 # Incentive Cap/Ceiling 命名统一方案
 
 > 目标读者：后续负责审查和执行的 coding agents
-> 状态：Draft (for review)
+> 状态：Implemented (Phase 0–2 in repo)
 > 日期：2026-03-26
 
 ## 背景与问题
@@ -163,12 +163,12 @@ export interface IncentiveCeilingEffect {
 
 ## 审查清单（给执行 agent）
 
-- [ ] 未修改后端契约字段名
-- [ ] `capNote/capWarning` 对外接口未破坏
-- [ ] Self 和 Brevis 的 ceiling kind 明确区分
-- [ ] 现有测试全部通过
-- [ ] 新增测试覆盖统一 helper
-- [ ] 文档已同步（`rate-calculation-formulas.md` + `AGENTS.md`）
+- [x] 未修改后端契约字段名
+- [x] `capNote/capWarning` 对外接口未破坏
+- [x] Self 和 Brevis 的 ceiling kind 明确区分
+- [x] 现有测试全部通过
+- [x] 新增测试覆盖统一 helper
+- [x] 文档已同步（`rate-calculation-formulas.md` + `AGENTS.md`）
 
 ## 建议执行顺序
 

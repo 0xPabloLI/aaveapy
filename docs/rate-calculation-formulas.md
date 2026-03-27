@@ -295,6 +295,18 @@ Distribution types (variable / fixed token vs dollar / capped): [Merkl — Distr
 
 ## Incentive Reward Cap Reference
 
+### Naming layers (API / domain / UI)
+
+To keep semantics clear without breaking API contracts or UI props:
+
+| Layer | Role | Examples |
+|-------|------|----------|
+| **API** | Backend field names stay stable | `perUserRewardCapUsd` on `BrevisIncentive` |
+| **Domain** | Prefer *ceiling* vocabulary for new helpers and types | `depositCeilingUsd` (Merit Self), `rewardCeilingUsd` (Brevis, maps from `perUserRewardCapUsd`) |
+| **UI** | Simulation row diagnostics stay `capNote` / `capWarning` | Rendered in `SimulationSubRow` from `useRateSimulation` |
+
+Merit Self: parsed `selfCapUsd` in `meritForecast.ts` is a **deposit ceiling** (eligible deposit only). Brevis: `perUserRewardCapUsd` is a **per-user reward ceiling**. Shared simulation copy is assembled via `src/lib/incentiveCeilings.ts` → `ceilingEffectToSimulationFields`.
+
 Incentive programs may impose caps that limit effective APR. There are three distinct cap mechanisms in the pipeline, each acting at a different stage:
 
 ```
@@ -348,6 +360,7 @@ When **`reserve.reserveSizeUsd`** is present, **supply-side** Merit Base simulat
 - `src/lib/merklForecast.ts` – Merkl `forecastWithTVL` and progress flags
 - `src/lib/merklForecast.test.ts` – Unit tests for forecast branches
 - `src/lib/meritForecast.ts` – Merit forecast (base + self-auth deposit cap)
+- `src/lib/incentiveCeilings.ts` – Domain-layer ceiling effects → simulation `capNote` / `capWarning`
 - `src/lib/brevisForecast.ts` – Brevis per-user reward cap forecast
 - `src/lib/brevisForecast.test.ts` – Unit tests for Brevis cap (shared cap, no endDate, edge cases)
 - `src/lib/tydro.ts` – Tydro points → APR and forecast USD multiplier

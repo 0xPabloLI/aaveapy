@@ -29,6 +29,14 @@ import {
 } from '@/lib/meritForecast';
 import { forecastBrevisAprPercent, forecastBrevisDetailed } from '@/lib/brevisForecast';
 import {
+  buildBrevisCalendarEndOnlyEffect,
+  buildBrevisRewardCeilingEffect,
+  buildMeritSelfDepositCeilingEffect,
+  buildMerklAprCeilingEffect,
+  buildMerklFixPoolBudgetEffect,
+  ceilingEffectToSimulationFields,
+} from '@/lib/incentiveCeilings';
+import {
   getBrevisCampaignApr,
   getBrevisCampaignEndedAt,
   getBrevisCampaignStartedAt,
@@ -547,6 +555,8 @@ const meritForecastAprToDisplay = (aprDecimal: number, isApy: boolean): number =
   return isApy ? convertAprToApy(pct) : pct;
 };
 
+const MERIT_SIM_FALLBACK_CAP_NOTE = 'Current APR (est.)';
+
 /** Show per-campaign rows when the user entered a scenario, or when multiple campaigns stack. */
 const shouldExposeCampaignRows = (
   rows: SimulationCampaignDetail[],
@@ -595,7 +605,7 @@ const buildMeritCampaignDetails = (
           } else if (fp.estimateKind === 'MERIT_BASE' && fp.meritEstimateSource === 'last_round' && typeof fp.lastRoundRewardUsd === 'number') {
             capNote = `Last round ${formatUsd(fp.lastRoundRewardUsd)} → est.`;
           } else if (fp.usesCurrentRateFallback) {
-            capNote = 'Current APR (est.)';
+            capNote = MERIT_SIM_FALLBACK_CAP_NOTE;
           }
         }
       }
@@ -631,10 +641,14 @@ const buildMeritCampaignDetails = (
         if (fp) {
           selfAfter = meritForecastAprToDisplay(fp.apr, isApy);
           if (typeof fp.selfCapUsd === 'number' && typeof fp.selfEligibleUsd === 'number') {
-            capNote = `Self ${formatUsd(fp.selfEligibleUsd)} of ${formatUsd(inputUsd)} (cap ${formatUsd(fp.selfCapUsd)})`;
-            capWarning = inputUsd > fp.selfCapUsd;
+            const ceiling = buildMeritSelfDepositCeilingEffect({
+              inputUsd,
+              selfEligibleUsd: fp.selfEligibleUsd,
+              depositCeilingUsd: fp.selfCapUsd,
+            });
+            ({ capNote, capWarning } = ceilingEffectToSimulationFields(ceiling));
           } else if (fp.usesCurrentRateFallback) {
-            capNote = 'Current APR (est.)';
+            capNote = MERIT_SIM_FALLBACK_CAP_NOTE;
           }
         } else {
           selfAfter = selfCurrent;
@@ -689,24 +703,21 @@ const buildMerklCampaignDetails = (
         after = isApy ? convertAprToApy(forecastAprSan) : forecastAprSan;
 
         const merged = mergeForecastState(bd, forecastStates, tydroPointToUsdRate);
-        if (merged) {
-          if (merged.campaignType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE') {
-            const hypotheticalTvl = Math.max((merged.latestTvl ?? 0) + inputUsd, 0);
-            const forecast = forecastWithTVL(merged, hypotheticalTvl);
-            if (typeof forecast.fixRewardableDays === 'number') {
-              capNote = `~${forecast.fixRewardableDays.toFixed(0)}d @ sim`;
-            }
-          } else if (merged.campaignType === 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE') {
-            const hypotheticalTvl = Math.max((merged.latestTvl ?? 0) + inputUsd, 0);
-            const forecast = forecastWithTVL(merged, hypotheticalTvl);
-            if (forecast.regime === 'APR_CAPPED') {
-              capNote = 'APR capped for low TVL';
-              capWarning = true;
-            }
-          } else if (merged.campaignType === 'DUTCH_AUCTION') {
-            // Dutch campaigns don't show an extra "Dutch / catch-up" UI type note.
-            // Forecast-specific "regime" details remain available via underlying forecasting logic if needed.
+        const merklType = merged?.campaignType;
+        if (
+          merged &&
+          (merklType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE' || merklType === 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE')
+        ) {
+          const hypotheticalTvl = Math.max((merged.latestTvl ?? 0) + inputUsd, 0);
+          const forecast = forecastWithTVL(merged, hypotheticalTvl);
+          if (merklType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE' && typeof forecast.fixRewardableDays === 'number') {
+            ({ capNote, capWarning } = ceilingEffectToSimulationFields(
+              buildMerklFixPoolBudgetEffect(forecast.fixRewardableDays),
+            ));
+          } else if (merklType === 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE' && forecast.regime === 'APR_CAPPED') {
+            ({ capNote, capWarning } = ceilingEffectToSimulationFields(buildMerklAprCeilingEffect()));
           }
+          // DUTCH_AUCTION and other types: no extra capNote here.
         }
       }
 
@@ -785,37 +796,19 @@ const buildBrevisCampaignDetails = (
     if (hasAnyInput && noteDepositUsd > 0) {
       const det = forecastBrevisDetailed(b, noteDepositUsd, Date.now(), combined);
       if (b.perUserRewardCapUsd !== undefined && b.perUserRewardCapUsd > 0) {
-        capWarning = det.isCapBinding;
-        const parts: string[] = [];
-        parts.push(
-          combined !== undefined
-            ? `Max ${formatUsd(b.perUserRewardCapUsd)}/user for supply + borrow`
-            : `Max ${formatUsd(b.perUserRewardCapUsd)}/user`
-        );
-        // Reward window: min(cap hit @ nominal daily rate, calendar days to end) when both exist.
-        const capDays =
-          det.daysToHitCap !== null && Number.isFinite(det.daysToHitCap) && det.daysToHitCap > 0
-            ? det.daysToHitCap
-            : null;
-        const endDays =
-          det.remainingDays !== null && Number.isFinite(det.remainingDays) && det.remainingDays > 0
-            ? det.remainingDays
-            : null;
-        let earnDays: number | null = null;
-        if (capDays !== null && endDays !== null) {
-          earnDays = Math.min(capDays, endDays);
-        } else if (capDays !== null) {
-          earnDays = capDays;
-        } else if (endDays !== null) {
-          earnDays = endDays;
-        }
-        if (earnDays !== null) {
-          parts.push(`~${earnDays.toFixed(0)}d earn`);
-        }
-        capNote = parts.join(' · ');
+        ({ capNote, capWarning } = ceilingEffectToSimulationFields(
+          buildBrevisRewardCeilingEffect({
+            rewardCeilingUsd: b.perUserRewardCapUsd,
+            isSharedSupplyBorrow: combined !== undefined,
+            isCapBinding: det.isCapBinding,
+            daysToHitCap: det.daysToHitCap,
+            remainingDays: det.remainingDays,
+          }),
+        ));
       } else if (det.remainingDays !== null && Number.isFinite(det.remainingDays) && det.remainingDays > 0) {
-        // No per-user cap in payload: calendar window only (same as remainingDays).
-        capNote = `~${det.remainingDays.toFixed(0)}d to end`;
+        ({ capNote, capWarning } = ceilingEffectToSimulationFields(
+          buildBrevisCalendarEndOnlyEffect(det.remainingDays),
+        ));
       }
     }
 
