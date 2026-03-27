@@ -491,7 +491,7 @@ const TopOpportunities = ({
     if (value >= 5) return 'ds-text-teal-500-70';
     if (value >= 2) return 'ds-text-teal-400-70';
     if (value >= 1) return 'ds-text-cyan-500-70';
-    return 'text-muted-foreground/70';
+    return 'ds-text-cyan-500-70';
   };
 
   const getAccentBgClass = (value: number | null) => {
