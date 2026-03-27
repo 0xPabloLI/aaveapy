@@ -36,6 +36,7 @@
 - **Minimum scope**: Prefer opening a PR when there is a meaningful batch (e.g. several related files or 3+ related changes) rather than one-off micro-PRs.
 - **Keep separate**: New features (independent review), bugfixes (fast merge), breaking changes (discuss first), and security updates (immediate) should be separate PRs.
 - **Automerge**: Chore/docs/refactor PRs with no breaking changes and passing CI may use the `automerge` label per repo workflows.
+- **`dev` / `main` same tip after PR merge**: Prefer remote automation via `.github/workflows/sync-dev-with-main.yml` to align `dev` to `main` after merged PRs (`dev` → `main`). `/merge` must still verify `origin/main` and `origin/dev` share one SHA; if automation failed, run fallback `git reset --hard origin/main && git push --force-with-lease origin dev`. Merging `main` into `dev` alone is not enough (tree may match but GitHub still shows “ahead”).
 
 ## API Contract & Dependency Safety
 - When backend API response format changes, follow `docs/conventions/api-contract-checklist.md` to ensure all consumers (types, schemas, hooks, scripts) are updated. If CI live schema fails with Cloudflare 403 from GitHub Actions, see `docs/conventions/ci-live-schema-cloudflare.md`.

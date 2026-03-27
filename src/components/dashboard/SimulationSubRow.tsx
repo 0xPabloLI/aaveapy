@@ -711,6 +711,13 @@ const SimulationSubRow = ({
           </span>
         </div>
       )}
+      {!showEmptyStateNote && (
+        <div className={`${effectiveCompact ? 'mb-2' : 'mb-3'} ${effectiveCompact && embeddedFromTop ? 'px-0' : 'px-1'}`}>
+          <p className="ds-text-11 text-muted-foreground">
+            Simulation is for reference only. Final result depends on on-chain execution.
+          </p>
+        </div>
+      )}
 
       {/* Warnings */}
       {supplyCapExceeded && (
