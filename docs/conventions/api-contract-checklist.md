@@ -12,7 +12,7 @@
 | 防线 | 触发时机 | 检测原理 |
 |------|---------|---------|
 | **运行时 schema 验证** | 每次页面加载 | `useAaveMarkets.ts` 用 `MarketsResponseSchema.safeParse()` 验证 API 响应，schema 过时 = 页面报错 |
-| **Live API 测试** | `main` push | `apiSchemas.live.test.ts` 请求 staging；先 `probe-live-api.mjs`。若被 Cloudflare 拦，按 [ci-live-schema-cloudflare.md](./ci-live-schema-cloudflare.md) 只放宽 **staging** |
+| **Live API 测试** | `main` push / `workflow_dispatch` | `apiSchemas.live.test.ts` 请求 staging 并用 Zod schema 验证；CI 优先走 Railway 直连，若仍需处理 Cloudflare staging 拦截，见 [ci-live-schema-cloudflare.md](./ci-live-schema-cloudflare.md) |
 | **Mock 测试** | 每次 CI build | `apiSchemas.test.ts` 验证 mock payload 格式正确性 |
 | **sync-token-icons --check** | hardcode-drift-check 定时 CI | 脚本解析 API 响应，字段名不对 = 报错 |
 
