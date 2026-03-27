@@ -501,7 +501,7 @@ const TopOpportunities = ({
     if (value >= 5) return 'ds-bg-teal-500-10';
     if (value >= 2) return 'ds-bg-teal-400-10';
     if (value >= 1) return 'ds-bg-cyan-500-10';
-    return 'bg-muted/40';
+    return 'ds-bg-cyan-500-10';
   };
 
 
