@@ -25,6 +25,7 @@ export interface MerklCampaignBreakdown {
   pointsPerThousandUsd?: number;       // Tydro protocol points/1000USD value (optional)
   campaignType?: string;
   totalBudget?: number;
+  /** Max APR cap from API as percent points (e.g. 3.2 means 3.2%), same unit as `campaignApr`. */
   aprCap?: number | null;
   latestTvl?: number;
   plannedDaily?: number;

@@ -4,7 +4,12 @@ import { AlertTriangle, Loader2 } from 'lucide-react';
 import type { ReserveWithSpread, TokenPricesIndex, MerklCampaignBreakdown } from '@/types/aave';
 import { collectMerklCampaignOptions, collectWhitelistOnlyMerklCampaignEntries } from '@/lib/merklCampaigns';
 import { useMerklForecastStates } from '@/hooks/useMerklForecastStates';
-import { deriveForecastProgressFlags, forecastWithTVL, type MerklForecastState } from '@/lib/merklForecast';
+import {
+  deriveForecastProgressFlags,
+  forecastWithTVL,
+  merklAprCapPercentToForecastDecimal,
+  type MerklForecastState,
+} from '@/lib/merklForecast';
 import { resolveForecastTokenPrice, resolveForecastTokenPriceWithBackup } from '@/lib/tokenPriceResolver';
 import { formatPercent, MERKL_WHITELIST_TOGGLE_ARIA, MERKL_WHITELIST_TOGGLE_LABEL } from '@/lib/formatters';
 import { formatNumberInput, parseNumberInput } from '@/lib/numberFormat';
@@ -160,7 +165,7 @@ const MerklForecastPanel = ({
     return {
       campaignType: selectedBreakdown.campaignType,
       totalBudget: normalizeUsdUnit(selectedBreakdown.totalBudget),
-      aprCap: selectedBreakdown.aprCap,
+      aprCap: merklAprCapPercentToForecastDecimal(selectedBreakdown.aprCap),
       latestTvl: normalizeUsdUnit(selectedBreakdown.latestTvl),
       plannedDaily: normalizeUsdUnit(selectedBreakdown.plannedDaily),
       requiredDaily: normalizeUsdUnit(selectedMetrics?.requiredDaily),

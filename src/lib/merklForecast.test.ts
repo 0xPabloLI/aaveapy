@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   deriveForecastProgressFlags,
   forecastWithTVL,
+  merklAprCapPercentToForecastDecimal,
   type MerklForecastProgressState,
   type MerklForecastState,
 } from './merklForecast';
@@ -18,6 +19,18 @@ const baseState: MerklForecastState = {
   endTimestamp: 1771000000,
 };
 const nowTs = 1_771_000_000;
+
+describe('merklAprCapPercentToForecastDecimal', () => {
+  it('maps API percent points to internal annual decimal', () => {
+    expect(merklAprCapPercentToForecastDecimal(3.2)).toBeCloseTo(0.032, 10);
+    expect(merklAprCapPercentToForecastDecimal(10)).toBeCloseTo(0.1, 10);
+  });
+
+  it('preserves null and undefined', () => {
+    expect(merklAprCapPercentToForecastDecimal(null)).toBeNull();
+    expect(merklAprCapPercentToForecastDecimal(undefined)).toBeUndefined();
+  });
+});
 
 describe('forecastWithTVL', () => {
   it('returns PLANNED when requiredDaily equals plannedDaily', () => {

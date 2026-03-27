@@ -56,6 +56,29 @@ grep -rn 'payload\.reserves\|\.reserves\b' src/ scripts/ --include='*.ts' --incl
 
 ## 历史教训
 
+### 2026-03-27: `GET /api/markets` 收益率字段（HTTP 对外语义）
+
+**结论（最重要）**
+
+- `GET /api/markets` 里所有与「收益率」相关的数字，**对外仍是百分数**：例如 `2.07` 表示 **2.07%**，不是 `0.0207`。
+- 本次多为**后端内部**把快照里的收益率统一为年化比例，在**响应序列化时统一 ×100** 再输出。
+- 若前端已按百分数展示（直接拼 `%`、不再乘除 100），**一般无需改逻辑**。
+
+**仍应按「百分数」理解的字段（与文档一致）**
+
+| 区域 | 字段 |
+|------|------|
+| Reserve | `reserves[].supplyApy`、`borrowApy` |
+| Incentives | `reserves[].supplyIncentives[]`、`borrowIncentives[]` |
+| Merit | `reserves[].meritSupplys[]`、`meritBorrows[]` 中的 `apr`、`selfApr`（若有） |
+| Merkl | `reserves[].merkl*[]`（各 Merkl 数组）中 `breakdowns[]` 的 `campaignApr`、`aprCap`（若有；`null` 仍为 `null`） |
+| Brevis | `reserves[].brevisSupplys`、`brevisBorrows` 中的 `campaignApr` |
+
+**前端自检**
+
+1. **不要二次换算**：不要对以上字段再 `*100` 或 `/100`（除非存在单独的「小数比例」状态层，且明确与 API 脱钩）。
+2. **回归核对**：Merkl 的 `campaignApr` / `aprCap`、Brevis 的 `campaignApr` 是否与产品预期一致（后端对 Merkl `campaign.apr` 已固定按上游百分数换算；cap 来自 `distributionSettings.apr` 比例再 ×100 输出）。
+
 ### 2026-03-16: `data` → `reserves` 迁移遗漏
 
 - **问题**：后端将 `{ data: [...], lastUpdated }` 改为 `{ snapshot: { lastUpdated }, reserves: [...] }`

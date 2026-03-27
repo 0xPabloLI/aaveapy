@@ -15,7 +15,11 @@ import {
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
 import { simulateNativeRatesAfterActions, hasRateCalcFields } from '@/lib/interestRateCalculator';
 import type { RateCalcInput } from '@/lib/interestRateCalculator';
-import { forecastWithTVL, type MerklForecastState } from '@/lib/merklForecast';
+import {
+  forecastWithTVL,
+  merklAprCapPercentToForecastDecimal,
+  type MerklForecastState,
+} from '@/lib/merklForecast';
 import { shouldSurfaceForecastError } from '@/lib/merklForecastErrors';
 import {
   extractMeritSelfCapUsd,
@@ -105,7 +109,7 @@ const mergeForecastState = (
   return {
     campaignType: breakdown.campaignType,
     totalBudget: normalizeUsdUnit(breakdown.totalBudget),
-    aprCap: breakdown.aprCap,
+    aprCap: merklAprCapPercentToForecastDecimal(breakdown.aprCap),
     latestTvl: normalizeUsdUnit(breakdown.latestTvl),
     plannedDaily: normalizeUsdUnit(breakdown.plannedDaily),
     requiredDaily: normalizeUsdUnit(metrics?.requiredDaily),
