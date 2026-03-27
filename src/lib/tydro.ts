@@ -24,8 +24,9 @@ const calculateTydroApr = (pointsPerThousandUsd: number, pointToUsdRate = TYDRO_
 };
 
 /**
- * Display APR for a Merkl breakdown. When Merkl provides a positive `campaignApr`, use it first;
- * otherwise derive APR from `pointsPerThousandUsd` (Tydro-style points curve). Merkl may send both.
+ * Display APR for a Merkl breakdown. `campaignApr` from `GET /api/markets` is already **percent points**
+ * (e.g. 5 => 5%/year); do not rescale. When positive, use it first; otherwise derive from
+ * `pointsPerThousandUsd` (Tydro-style points curve). Merkl may send both.
  */
 export const getMerklBreakdownApr = (
   breakdown: MerklCampaignBreakdown,
