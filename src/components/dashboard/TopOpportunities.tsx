@@ -481,7 +481,7 @@ const TopOpportunities = ({
     if (value >= 5) return 'border-l-[4px] border-l-[rgb(var(--ds-teal-500-rgb)/0.7)]';
     if (value >= 2) return 'border-l-[4px] border-l-[rgb(var(--ds-teal-400-rgb)/0.7)]';
     if (value >= 1) return 'border-l-[4px] border-l-[rgb(var(--ds-cyan-500-rgb)/0.7)]';
-    return 'border-l-[4px] border-l-border/60';
+    return 'border-l-[4px] border-l-[rgb(var(--ds-cyan-500-rgb)/0.5)]';
   };
 
   const getAccentTextClass = (value: number | null) => {
