@@ -135,7 +135,7 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
 
   /* Desktop: single row */
   return (
-    <div className="rounded-xl border border-border/60 bg-card/60 backdrop-blur-sm px-[var(--ds-space-2-5)] py-[var(--ds-space-1-5)]">
+    <div className="rounded-xl border border-border/60 bg-card/60 backdrop-blur-sm px-[var(--ds-space-2-5)] py-1">
       <div className="flex items-center gap-[var(--ds-space-1-5)]">
         <div className="flex items-center gap-0.5 bg-muted/60 rounded-lg p-0.5 border border-border/40">
           <button
