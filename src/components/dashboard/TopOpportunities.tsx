@@ -469,8 +469,8 @@ const TopOpportunities = ({
       };
     }
     return {
-      text: 'text-muted-foreground/70',
-      chip: 'bg-muted/40 text-muted-foreground/70 ring-border/40 hover:bg-muted/60',
+      text: 'ds-text-cyan-500-70',
+      chip: 'ds-bg-cyan-500-10 ds-text-cyan-500-70 ds-ring-cyan-500-15 hover:bg-[rgb(var(--ds-cyan-500-rgb)/0.2)]',
     };
   };
 
@@ -481,7 +481,7 @@ const TopOpportunities = ({
     if (value >= 5) return 'border-l-[4px] border-l-[rgb(var(--ds-teal-500-rgb)/0.7)]';
     if (value >= 2) return 'border-l-[4px] border-l-[rgb(var(--ds-teal-400-rgb)/0.7)]';
     if (value >= 1) return 'border-l-[4px] border-l-[rgb(var(--ds-cyan-500-rgb)/0.7)]';
-    return 'border-l-[4px] border-l-border/60';
+    return 'border-l-[4px] border-l-[rgb(var(--ds-cyan-500-rgb)/0.5)]';
   };
 
   const getAccentTextClass = (value: number | null) => {
@@ -491,7 +491,7 @@ const TopOpportunities = ({
     if (value >= 5) return 'ds-text-teal-500-70';
     if (value >= 2) return 'ds-text-teal-400-70';
     if (value >= 1) return 'ds-text-cyan-500-70';
-    return 'text-muted-foreground/70';
+    return 'ds-text-cyan-500-70';
   };
 
   const getAccentBgClass = (value: number | null) => {
@@ -501,7 +501,7 @@ const TopOpportunities = ({
     if (value >= 5) return 'ds-bg-teal-500-10';
     if (value >= 2) return 'ds-bg-teal-400-10';
     if (value >= 1) return 'ds-bg-cyan-500-10';
-    return 'bg-muted/40';
+    return 'ds-bg-cyan-500-10';
   };
 
 
