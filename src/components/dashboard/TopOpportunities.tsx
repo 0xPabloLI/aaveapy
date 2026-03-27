@@ -469,8 +469,8 @@ const TopOpportunities = ({
       };
     }
     return {
-      text: 'text-muted-foreground/70',
-      chip: 'bg-muted/40 text-muted-foreground/70 ring-border/40 hover:bg-muted/60',
+      text: 'ds-text-cyan-500-70',
+      chip: 'ds-bg-cyan-500-10 ds-text-cyan-500-70 ds-ring-cyan-500-15 hover:bg-[rgb(var(--ds-cyan-500-rgb)/0.2)]',
     };
   };
 
