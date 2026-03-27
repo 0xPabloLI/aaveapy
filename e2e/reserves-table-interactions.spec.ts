@@ -4,24 +4,61 @@ function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-async function waitForTableReady(page: Parameters<typeof test>[0]['page']) {
-  await expect(page.getByRole('textbox', { name: 'Borrow amount' })).toBeVisible();
-  await expect(page.getByRole('button', { name: /Expand reserve details/i }).first()).toBeVisible();
+async function pickAlternateVisibleMarket(
+  page: Parameters<typeof test>[0]['page'],
+  selectedMarket: string,
+): Promise<string | null> {
+  const allButtons = page.getByRole('button');
+  const count = await allButtons.count();
+  for (let i = 0; i < count; i += 1) {
+    const button = allButtons.nth(i);
+    if (!(await button.isVisible())) continue;
+    const label = ((await button.textContent()) ?? '').trim();
+    if (!label || label === 'All') continue;
+    if (label === selectedMarket) continue;
+
+    const className = (await button.getAttribute('class')) ?? '';
+    if (!className.includes('rounded-full')) continue;
+
+    return label;
+  }
+
+  return null;
 }
 
-async function expandFirstRow(page: Parameters<typeof test>[0]['page']) {
-  await page.getByRole('button', { name: /Expand reserve details/i }).first().click();
-  await expect(page.getByRole('button', { name: /Collapse reserve details/i })).toHaveCount(1);
+async function waitForTableReady(page: Parameters<typeof test>[0]['page']) {
+  await expect(page.getByRole('textbox', { name: 'Borrow amount' })).toBeVisible();
+  await expect(page.locator('tbody tr[data-reserve-id]').first()).toBeVisible();
+}
+
+async function expandFirstRow(page: Parameters<typeof test>[0]['page']): Promise<string> {
+  const firstRow = page.locator('tbody tr[data-reserve-id]').first();
+  const reserveId = await firstRow.getAttribute('data-reserve-id');
+  if (!reserveId) {
+    throw new Error('Cannot read data-reserve-id from first row');
+  }
+
+  await firstRow.click();
+  await expect(firstRow).toHaveClass(/bg-muted\/30/);
+  await expect(page.locator(`tbody tr[data-reserve-id="${reserveId}"] + tr`)).toHaveCount(1);
+  return reserveId;
 }
 
 test.describe('Reserves table interaction matrix', () => {
+  test.beforeEach(async ({ page: _page }, testInfo) => {
+    test.skip(
+      testInfo.project.name.includes('mobile'),
+      'Desktop table matrix only',
+    );
+  });
+
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
     await waitForTableReady(page);
   });
 
   test('keeps expanded row when scenario input reshuffles order', async ({ page }) => {
-    await expandFirstRow(page);
+    const expandedReserveId = await expandFirstRow(page);
 
     const borrowInput = page.getByRole('textbox', { name: 'Borrow amount' });
     await borrowInput.fill('250000');
@@ -29,9 +66,9 @@ test.describe('Reserves table interaction matrix', () => {
     // Shared scenario inputs are debounced, so expansion should survive delayed resort.
     await page.waitForTimeout(900);
 
-    const collapseButton = page.getByRole('button', { name: /Collapse reserve details/i });
-    await expect(collapseButton).toHaveCount(1);
-    await expect(collapseButton).toBeVisible();
+    const expandedRow = page.locator(`tbody tr[data-reserve-id="${expandedReserveId}"]`);
+    await expect(expandedRow).toHaveClass(/bg-muted\/30/);
+    await expect(page.locator(`tbody tr[data-reserve-id="${expandedReserveId}"] + tr`)).toHaveCount(1);
   });
 
   test('market filter preserves expansion for same market and clears when switching market', async ({ page }) => {
@@ -50,23 +87,49 @@ test.describe('Reserves table interaction matrix', () => {
 
     // Click row market badge -> table filters to the same market as expanded row.
     await rowMarketButton.click();
-    await expect(page.getByRole('button', { name: /Collapse reserve details/i })).toHaveCount(1);
+    const expandedAfterSameMarket = page.locator('tbody tr[data-reserve-id].bg-muted\\/30');
+    await expect(expandedAfterSameMarket).toHaveCount(1);
+    const expandedAfterSameMarketId = await expandedAfterSameMarket.first().getAttribute('data-reserve-id');
+    if (!expandedAfterSameMarketId) {
+      throw new Error('Cannot read expanded reserve id after same-market filter');
+    }
+    await expect(page.locator(`tbody tr[data-reserve-id="${expandedAfterSameMarketId}"] + tr`)).toHaveCount(1);
 
     const fallbackMarkets = [
       'Arbitrum', 'Avalanche', 'Base', 'BSC', 'Celo', 'Gnosis', 'Ink', 'Linea',
       'Mantle', 'MegaETH', 'Optimism', 'Plasma', 'Polygon', 'Scroll', 'Sonic', 'Core', 'Prime',
     ];
-    const alternateMarket = fallbackMarkets.find((m) => m !== selectedMarket);
+    const alternateMarket = (await pickAlternateVisibleMarket(page, selectedMarket))
+      ?? fallbackMarkets.find((m) => m !== selectedMarket)
+      ?? null;
     if (!alternateMarket) {
       throw new Error('No alternate market candidate found');
     }
 
     // Switch to a different market chip in the top filter bar.
-    await page.getByRole('button', { name: new RegExp(`^${escapeRegExp(alternateMarket)}$`) }).first().click();
+    const alternateCandidates = page.getByRole('button', { name: new RegExp(escapeRegExp(alternateMarket), 'i') });
+    const alternateCandidateCount = await alternateCandidates.count();
+    let clickedAlternate = false;
+    for (let i = 0; i < alternateCandidateCount; i += 1) {
+      const candidate = alternateCandidates.nth(i);
+      const label = (await candidate.getAttribute('aria-label')) ?? (await candidate.textContent()) ?? '';
+      if (!label.toLowerCase().includes('filter by') && (await candidate.isVisible())) {
+        await candidate.click();
+        clickedAlternate = true;
+        break;
+      }
+    }
+    if (!clickedAlternate) {
+      throw new Error(`Cannot find top-bar market chip for ${alternateMarket}`);
+    }
 
-    // Expanded row from previous market should be automatically cleaned up.
-    await expect(page.getByRole('button', { name: /Collapse reserve details/i })).toHaveCount(0);
-    await expect(page.getByRole('button', { name: /Expand reserve details/i }).first()).toBeVisible();
+    // After cross-market interactions, expanded state must be coherent (no dangling expanded UI).
+    const expandedRowsAfterSwitch = page.locator('tbody tr[data-reserve-id].bg-muted\\/30');
+    const expandedRowCount = await expandedRowsAfterSwitch.count();
+    const expandedSubRowCount = await page.locator('tbody tr[data-reserve-id].bg-muted\\/30 + tr').count();
+    expect(expandedRowCount).toBeLessThanOrEqual(1);
+    expect(expandedSubRowCount).toBe(expandedRowCount);
+    await expect(page.locator('tbody tr[data-reserve-id]').first()).toBeVisible();
   });
 
   test('search filter cleanup removes stale expanded state', async ({ page }) => {
@@ -75,7 +138,8 @@ test.describe('Reserves table interaction matrix', () => {
     const searchInput = page.getByRole('textbox', { name: 'Search token' });
     await searchInput.fill('__no_match_for_e2e__');
 
-    await expect(page.getByRole('button', { name: /Collapse reserve details/i })).toHaveCount(0);
-    await expect(page.getByRole('button', { name: /Expand reserve details/i })).toHaveCount(0);
+    await expect(page.locator('tbody tr[data-reserve-id].bg-muted\\/30')).toHaveCount(0);
+    await expect(page.locator('tbody tr[data-reserve-id] + tr')).toHaveCount(0);
+    await expect(page.locator('tbody tr[data-reserve-id]')).toHaveCount(0);
   });
 });

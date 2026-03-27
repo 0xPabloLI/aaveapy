@@ -89,9 +89,10 @@ const ReservesTable = ({
   const lastScenarioKeyForPinScrollRef = useRef<string | null>(null);
   const lastSortedIdsForPinScrollRef = useRef<string[]>([]);
   const scenarioPinScrollBaselineReadyRef = useRef(false);
-  const pendingScenarioPinScrollRef = useRef(false);
-  const lastReservesKeyForPinScrollRef = useRef<string | null>(null);
-  const pendingReservesPinScrollRef = useRef(false);
+  const scenarioNeedsPinScrollRef = useRef(false);
+  const lastReservesKeyForFilterPinRef = useRef<string | null>(null);
+  const suppressNextToggleReserveIdRef = useRef<string | null>(null);
+  const pendingMarketFilterPinReserveIdRef = useRef<string | null>(null);
   const [borrowMenuPos, setBorrowMenuPos] = useState<{ top: number; left: number } | null>(null);
   const [supplyMenuPos, setSupplyMenuPos] = useState<{ top: number; left: number } | null>(null);
   const [minVisibleCount, setMinVisibleCount] = useState<number | null>(null);
@@ -135,7 +136,18 @@ const ReservesTable = ({
   }, [showSizeSortMenu]);
 
   const handleToggleExpand = useCallback((reserveId: string) => {
+    if (suppressNextToggleReserveIdRef.current === reserveId) {
+      suppressNextToggleReserveIdRef.current = null;
+      return;
+    }
     setExpandedReserveId((prev) => (prev === reserveId ? null : reserveId));
+  }, []);
+
+  const handleMarketChipClick = useCallback((reserveId: string) => {
+    // Keep the clicked row expanded across filter updates and ignore a bubbled row toggle once.
+    suppressNextToggleReserveIdRef.current = reserveId;
+    pendingMarketFilterPinReserveIdRef.current = reserveId;
+    setExpandedReserveId(reserveId);
   }, []);
 
   const [tooltipState, setTooltipState] = useState<{
@@ -166,6 +178,40 @@ const ReservesTable = ({
     if (col === 'size' && sizeSortMode === 'borrow') return false;
     return true;
   }, [hasSharedScenario, activeSortColumn, sizeSortMode]);
+
+  const schedulePinScrollToReserve = useCallback((reserveId: string, delayMs: number) => {
+    const mode = isMobile ? 'minimal-if-clipped' : 'pin-main-row-top';
+    const escapeId = (raw: string) => (
+      typeof CSS !== 'undefined' && typeof CSS.escape === 'function' ? CSS.escape(raw) : raw
+    );
+    const escapedId = escapeId(reserveId);
+
+    let cancelled = false;
+    let attempt = 0;
+    const maxAttempts = 12;
+    const retryMs = 70;
+
+    const runAttempt = () => {
+      if (cancelled) return;
+      const anchor = document.querySelector(`[data-reserve-expanded-anchor="${escapedId}"]`);
+      const row = document.querySelector(`tr[data-reserve-id="${escapedId}"]`);
+      if (anchor instanceof HTMLElement || row instanceof HTMLElement) {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => scrollExpandedSimulationIntoView(reserveId, { mode }));
+        });
+        return;
+      }
+      attempt += 1;
+      if (attempt >= maxAttempts) return;
+      window.setTimeout(runAttempt, retryMs);
+    };
+
+    const starter = window.setTimeout(runAttempt, delayMs);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(starter);
+    };
+  }, [isMobile]);
 
   const getMarketDisplayName = (reserve: ReserveWithSpread) => {
     if (reserve.chainName === 'Ethereum' && ETHEREUM_MARKET_NAMES[reserve.marketName]) {
@@ -458,7 +504,6 @@ const ReservesTable = ({
    */
   useEffect(() => {
     const scenarioKey = `${debouncedSharedSupplyInput}\0${debouncedSharedBorrowInput}\0${sharedInputMode}`;
-    const reservesKey = reserves.map((r) => getReserveSimulationId(r)).join('\0');
     const ids = sortedData.map((r) => getReserveSimulationId(r));
     const prevIds = lastSortedIdsForPinScrollRef.current;
     const orderChanged =
@@ -466,7 +511,6 @@ const ReservesTable = ({
 
     if (!scenarioPinScrollBaselineReadyRef.current) {
       lastScenarioKeyForPinScrollRef.current = scenarioKey;
-      lastReservesKeyForPinScrollRef.current = reservesKey;
       lastSortedIdsForPinScrollRef.current = ids;
       scenarioPinScrollBaselineReadyRef.current = true;
       return;
@@ -475,41 +519,26 @@ const ReservesTable = ({
     const scenarioChanged = scenarioKey !== lastScenarioKeyForPinScrollRef.current;
     if (scenarioChanged) {
       lastScenarioKeyForPinScrollRef.current = scenarioKey;
-      pendingScenarioPinScrollRef.current = true;
-    }
-    const reservesChanged = reservesKey !== lastReservesKeyForPinScrollRef.current;
-    if (reservesChanged) {
-      lastReservesKeyForPinScrollRef.current = reservesKey;
-      pendingReservesPinScrollRef.current = true;
+      scenarioNeedsPinScrollRef.current = true;
     }
 
-    if ((pendingScenarioPinScrollRef.current || pendingReservesPinScrollRef.current) && !orderChanged) {
+    if (scenarioNeedsPinScrollRef.current && !orderChanged) {
       lastSortedIdsForPinScrollRef.current = ids;
       return;
     }
 
-    if (scenarioChanged || pendingScenarioPinScrollRef.current || pendingReservesPinScrollRef.current) {
+    if (scenarioChanged || scenarioNeedsPinScrollRef.current) {
       lastSortedIdsForPinScrollRef.current = ids;
-      const shouldPinOnScenario = pendingScenarioPinScrollRef.current && expandScrollFollowsScenarioSort;
-      const shouldPinOnReserves = pendingReservesPinScrollRef.current;
       if (
         orderChanged &&
-        (shouldPinOnScenario || shouldPinOnReserves) &&
+        scenarioNeedsPinScrollRef.current &&
+        expandScrollFollowsScenarioSort &&
         expandedReserveId
       ) {
-        pendingScenarioPinScrollRef.current = false;
-        pendingReservesPinScrollRef.current = false;
-        const id = expandedReserveId;
-        const mode = isMobile ? 'minimal-if-clipped' : 'pin-main-row-top';
-        const timer = window.setTimeout(() => {
-          requestAnimationFrame(() => {
-            requestAnimationFrame(() => scrollExpandedSimulationIntoView(id, { mode }));
-          });
-        }, 320);
-        return () => window.clearTimeout(timer);
+        scenarioNeedsPinScrollRef.current = false;
+        return schedulePinScrollToReserve(expandedReserveId, 320);
       }
-      pendingScenarioPinScrollRef.current = false;
-      pendingReservesPinScrollRef.current = false;
+      scenarioNeedsPinScrollRef.current = false;
       return;
     }
 
@@ -520,26 +549,45 @@ const ReservesTable = ({
     sharedInputMode,
     sortedData,
     expandedReserveId,
-    isMobile,
     expandScrollFollowsScenarioSort,
-    reserves,
+    schedulePinScrollToReserve,
   ]);
 
   useEffect(() => {
-    if (!expandedReserveId) return;
-    const existsInReserves = reserves.some((r) => getReserveSimulationId(r) === expandedReserveId);
-    if (existsInReserves) return;
+    const reservesKey = reserves.map((r) => getReserveSimulationId(r)).join('\0');
+    if (lastReservesKeyForFilterPinRef.current === null) {
+      lastReservesKeyForFilterPinRef.current = reservesKey;
+      return;
+    }
+    if (reservesKey === lastReservesKeyForFilterPinRef.current) return;
+    lastReservesKeyForFilterPinRef.current = reservesKey;
 
-    // Filters can cause a brief intermediate list where the expanded row is temporarily missing.
-    // Re-check after a short delay to avoid clearing expanded state prematurely.
-    const timer = window.setTimeout(() => {
-      const stillMissing = !reserves.some((r) => getReserveSimulationId(r) === expandedReserveId);
-      if (stillMissing) {
-        setExpandedReserveId(null);
-      }
-    }, 180);
+    const targetReserveId = pendingMarketFilterPinReserveIdRef.current ?? expandedReserveId;
+    if (!targetReserveId) return;
+    const stillVisible = sortedData.some((r) => getReserveSimulationId(r) === targetReserveId);
+    if (!stillVisible) {
+      pendingMarketFilterPinReserveIdRef.current = null;
+      return;
+    }
 
-    return () => window.clearTimeout(timer);
+    pendingMarketFilterPinReserveIdRef.current = null;
+    return schedulePinScrollToReserve(targetReserveId, 280);
+  }, [reserves, sortedData, expandedReserveId, schedulePinScrollToReserve]);
+
+  useEffect(() => {
+    if (!expandedReserveId) {
+      pendingMarketFilterPinReserveIdRef.current = null;
+      suppressNextToggleReserveIdRef.current = null;
+    }
+  }, [expandedReserveId]);
+
+  useEffect(() => {
+    const existsInReserves = expandedReserveId
+      ? reserves.some((r) => getReserveSimulationId(r) === expandedReserveId)
+      : true;
+    if (!existsInReserves && pendingMarketFilterPinReserveIdRef.current === expandedReserveId) {
+      pendingMarketFilterPinReserveIdRef.current = null;
+    }
   }, [expandedReserveId, reserves]);
 
   const supplySortLabel = {
@@ -1870,6 +1918,7 @@ const ReservesTable = ({
                   isExpanded={expandedReserveId === reserveId}
                   onToggleExpand={handleToggleExpand}
                   onSelectMarket={onSelectMarket}
+                  onMarketChipClick={handleMarketChipClick}
                   onIncentiveClick={handleIncentiveClick}
                   displaySupplyTotal={getDisplaySupplyTotal(reserve)}
                   displaySupplyNative={getDisplaySupplyNative(reserve)}

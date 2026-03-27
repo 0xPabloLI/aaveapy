@@ -39,6 +39,7 @@ interface DesktopReserveRowProps {
   isExpanded: boolean;
   onToggleExpand: (reserveId: string) => void;
   onSelectMarket?: (marketName: string) => void;
+  onMarketChipClick?: (reserveId: string) => void;
   onIncentiveClick: (e: React.MouseEvent, reserve: ReserveWithSpread, type: 'supply' | 'borrow', apy: number | null) => void;
   displaySupplyTotal: number | null;
   displaySupplyNative: number | null;
@@ -64,6 +65,7 @@ const DesktopReserveRow = memo(({
   isExpanded,
   onToggleExpand,
   onSelectMarket,
+  onMarketChipClick,
   onIncentiveClick,
   displaySupplyTotal,
   displaySupplyNative,
@@ -161,6 +163,7 @@ const DesktopReserveRow = memo(({
               type="button"
               onClick={(event) => {
                 event.stopPropagation();
+                onMarketChipClick?.(reserveId);
                 onSelectMarket?.(reserve.marketName);
               }}
               className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)] px-[var(--ds-space-2-5)] py-[var(--ds-space-1)] rounded-full ds-text-13 font-medium bg-muted/50 text-muted-foreground border border-border/60 hover:bg-muted hover:text-foreground hover:border-border/80 active:scale-[0.98] transition-all duration-150"

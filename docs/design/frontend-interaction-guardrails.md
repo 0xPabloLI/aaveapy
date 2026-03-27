@@ -132,7 +132,8 @@ These rules are **product constraints**. Any PR that changes reserve-table scrol
 | Expand / collapse / switch expanded row **without** a change to debounced shared scenario | **MUST NOT** run pinning scroll (no “expand → jump”). |
 | Debounced shared scenario **changes** and `sortedData` **order** (reserve id sequence) **changes** and a row **is expanded** and the active sort is scenario-driven | **MUST** run pinning scroll for that expanded row (desktop: pin below sticky stack; mobile: clip fix only). |
 | Debounced scenario changes but sort order **unchanged** | **MUST NOT** scroll. |
-| Sort order changes **without** a debounced scenario key change (e.g. fresh `reserves` payload, user changed sort column) | **MUST NOT** trigger this pin path (only sync refs; see implementation). |
+| Filter-driven dataset changes (market/search/category), where `reserves` changes and then `sortedData` order changes while a row is expanded | **MUST** run pinning scroll once for the existing expanded row (desktop pin / mobile clip), even when debounced scenario key is unchanged. |
+| Sort order changes from header toggles (`Token` / `Market` / `Price` / etc.) | **MUST NOT** trigger this pin path (header sort still collapses expanded row first). |
 | Tie scroll to `sortedData` index or “every reorder” while expanded | **MUST NOT** (forbidden; see first bullet in this section). |
 
 **Debounced scenario key** (must stay consistent with the effect): `` `${debouncedSharedSupplyInput}\0${debouncedSharedBorrowInput}\0${sharedInputMode}` `` — the same values that feed `useSharedRateSimulations` / table sort dependencies for shared inputs.
@@ -144,11 +145,16 @@ These rules are **product constraints**. Any PR that changes reserve-table scrol
 **Goal:** keep the spec above stable when refactoring; do not “simplify” the effect into expand-only or index-only scroll.
 
 1. **Single call site** for `scrollExpandedSimulationIntoView`: the `useEffect` placed **immediately after** the `sortedData` `useMemo` in `ReservesTable.tsx` (comment: *Pin expanded row only when debounced scenario inputs change…*). Do **not** add a second effect on `expandedReserveId` for pinning.
-2. **Refs** (names matter for grep / review): `lastScenarioKeyForPinScrollRef`, `lastSortedIdsForPinScrollRef`, `scenarioPinScrollBaselineReadyRef`. First run seeds baseline only (no scroll). On each later run: if scenario key **equals** last key, only `lastSortedIdsForPinScrollRef ← current ids` (handles data refresh without false pin). If key **differs**: compare **previous** `lastSortedIdsForPinScrollRef` to **new** `sortedData.map(getReserveSimulationId)`; update key + ids; scroll **iff** `orderChanged && expandScrollFollowsScenarioSort && expandedReserveId`.
-3. **Effect dependency array** must include: `debouncedSharedSupplyInput`, `debouncedSharedBorrowInput`, `sharedInputMode`, `sortedData`, `expandedReserveId`, `isMobile`, `expandScrollFollowsScenarioSort`. If scenario debouncing moves to another layer, keep the **debounced** values here — never the raw typing state.
+2. **Refs** (names matter for grep / review): `lastScenarioKeyForPinScrollRef`, `lastReservesKeyForPinScrollRef`, `lastSortedIdsForPinScrollRef`, `scenarioPinScrollBaselineReadyRef`, `pendingScenarioPinScrollRef`, `pendingReservesPinScrollRef`.  
+   - First run seeds baseline only (no scroll).  
+   - Scenario path: when scenario key changes, mark `pendingScenarioPinScrollRef`; execute pin only after `orderChanged` is observed, gated by `expandScrollFollowsScenarioSort`.  
+   - Filter path: when `reservesKey` changes (market/search/category), mark `pendingReservesPinScrollRef`; execute pin only after `orderChanged` is observed (no scenario-sort gate required).  
+   - Always compare against previous `lastSortedIdsForPinScrollRef` to avoid false positives.
+3. **Effect dependency array** must include: `debouncedSharedSupplyInput`, `debouncedSharedBorrowInput`, `sharedInputMode`, `sortedData`, `expandedReserveId`, `isMobile`, `expandScrollFollowsScenarioSort`, `reserves`. If scenario debouncing moves to another layer, keep the **debounced** values here — never the raw typing state.
    - **`sortedData` useMemo dependency array** must also include **both** `debouncedSharedSupplyInput` **and** `debouncedSharedBorrowInput`. If either is missing, sort order won't update when that input changes, and pin scroll will see a stale `ids` array — effectively disabling the pin for that input side.
 4. **Timing:** `setTimeout(320)` + **two** `requestAnimationFrame` ticks before measuring/scrolling — matches expand row CSS transition (~300ms) so layout matches post-sort DOM. Changing duration in `DesktopReserveRow` / `MobileReserveCard` grid transitions may require retuning this constant in the same PR.
 5. **Scroll implementation** (`src/lib/scrollExpandedSimulationIntoView.ts`): desktop `pin-main-row-top` uses `window.scrollBy` so `tr[data-reserve-id]` top aligns to `getPinnedRowTopY()` = `max(bottom of [data-reserves-sticky-scenario], bottom of [data-reserves-sticky-thead]) + GAP_BELOW_STICKY_STACK_PX`, else `VIEW_MARGIN_PX`. Mobile expanded block: `[data-reserve-expanded-anchor]`. Do not remove these `data-*` hooks from the sticky wrappers without updating this function and this doc.
+6. **Expanded-state cleanup when filtered out:** if expanded row id disappears from `reserves`, clear expansion only after a short delayed re-check (current implementation uses ~180ms) to avoid transient filter/re-sort frames incorrectly dropping expansion.
 
 #### DOM contract (pin scroll)
 

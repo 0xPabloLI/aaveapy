@@ -403,6 +403,7 @@ deposit → [deposit cap] → nominal APR (from TVL dilution) → nominal reward
 ### Merkl FIX reward cap
 
 - `fixRewardableDays` / `fixRewardableUntilTs`: derived from `remainingBudget / aprBasedDaily`, capped by `endTimestamp`. These fields indicate how many days the campaign can sustain rewards at the current APR before budget exhaustion.
+- **Budget observability contrast (vs Brevis)**: Merkl FIX can usually compute `remainingBudget` because forecast payloads include both `totalBudget` and `distributedSoFar`; Brevis often lacks `distributedSoFar`, so remaining budget and exact depletion timing are not reliably inferable there.
 - Unlike Brevis, this is a **pool-level** cap (all users share the same budget).
 - **Shared simulation `capNote`:** **`~Nd earn`** — same wording as the Brevis reward-horizon segment; computed at **hypothetical TVL** after the user’s scenario deposit (see unified table above).
 
