@@ -1,4 +1,5 @@
 import { chainIconMap, normalizeChainName } from './chainIconMap';
+import { TOKEN_ICON_MANIFEST } from './tokenIconManifest.generated';
 
 /**
  * Performance Optimization - Phase 3
@@ -80,6 +81,10 @@ export function getTokenIconSymbolKey(symbol: string): string {
 
 export function getTokenIconSources(symbol: string): string[] {
   const symbolKey = getTokenIconSymbolKey(symbol);
+  const manifestFormats = TOKEN_ICON_MANIFEST[symbolKey];
+  if (manifestFormats && manifestFormats.length > 0) {
+    return manifestFormats.map((fmt) => `/icons/tokens/${symbolKey}.${fmt}`);
+  }
   return TOKEN_ICON_FORMATS.map((fmt) => `/icons/tokens/${symbolKey}.${fmt}`);
 }
 

@@ -93,11 +93,8 @@ describe('preload image fallback tracking', () => {
 
   it('returns only manifest-known formats for symbols that have icons', async () => {
     const { getTokenIconSources } = await import('./preloadUtils');
-    const sources = getTokenIconSources('aammdai');
-    // Manifest has aammdai as png only → no 404s for svg/webp/jpg/jpeg
-    expect(sources).toContain('/icons/tokens/aammdai.png');
-    expect(sources.every((s) => s.startsWith('/icons/tokens/aammdai.'))).toBe(true);
-    expect(sources.length).toBeGreaterThanOrEqual(1);
+    expect(getTokenIconSources('aammdai')).toEqual(['/icons/tokens/aammdai.png']);
+    expect(getTokenIconSources('acred')).toEqual(['/icons/tokens/acred.png']);
   });
 
   it('falls back to all formats for symbols not in manifest', async () => {

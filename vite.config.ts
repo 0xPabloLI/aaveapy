@@ -28,7 +28,7 @@ export default defineConfig(({ mode }) => ({
     },
   },
   test: {
-    exclude: ["**/node_modules/**", "**/dist/**", "**/.worktrees/**"],
+    exclude: ["**/node_modules/**", "**/dist/**", "**/.worktrees/**", "**/e2e/**"],
   },
   build: {
     commonjsOptions: {
