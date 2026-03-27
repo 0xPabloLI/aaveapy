@@ -9,24 +9,15 @@ import {
   setCachedTokenCategories,
 } from '@/lib/cache';
 import { shouldSurfaceForecastError } from '@/lib/merklForecastErrors';
-import type { MerklForecastStateResponse } from '@/types/aave';
+import type { MerklForecastWireItem } from '@/types/aave';
 
 export const SIDE_DATA_META_QUERY_KEY = ['side-data-meta'] as const;
 
-export interface SideDataForecastItem {
-  campaignId: string;
-  campaignType?: string;
-  plannedDaily?: number;
-  requiredDaily?: number;
-  aprCap?: number | null;
-  totalBudget?: number;
-  distributedSoFar?: number;
-  latestTvl?: number;
-  endTimestamp?: number;
-}
+export type SideDataForecastItem = MerklForecastWireItem;
 
 export interface SideDataForecastError {
   campaignId: string;
+  status?: number;
   message: string;
 }
 
@@ -55,7 +46,6 @@ export interface SideDataMetaResponse {
     errors: SideDataForecastError[];
     staleTimeMs: number;
   };
-  errors?: Record<string, string>;
 }
 
 export async function fetchSideDataMeta(): Promise<SideDataMetaResponse> {
@@ -85,7 +75,7 @@ export async function fetchSideDataMeta(): Promise<SideDataMetaResponse> {
   }
 
   if (parsed.forecast) {
-    const states: Record<string, MerklForecastStateResponse> = {};
+    const states: Record<string, MerklForecastWireItem> = {};
     const errors: Record<string, string> = {};
     parsed.forecast.items.forEach((item) => {
       states[item.campaignId] = item;
@@ -130,4 +120,3 @@ export function useSideDataMeta(staleTime: number, retry: number = 1) {
     initialDataUpdatedAt: cachedEntry?.updatedAt,
   });
 }
-

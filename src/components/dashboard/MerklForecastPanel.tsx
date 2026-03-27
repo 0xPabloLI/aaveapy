@@ -1,20 +1,26 @@
 import { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, Loader2 } from 'lucide-react';
 
-import type { ReserveWithSpread, TokenPricesIndex } from '@/types/aave';
-import { collectMerklCampaignOptions } from '@/lib/merklCampaigns';
+import type { ReserveWithSpread, TokenPricesIndex, MerklCampaignBreakdown } from '@/types/aave';
+import { collectMerklCampaignOptions, collectWhitelistOnlyMerklCampaignEntries } from '@/lib/merklCampaigns';
 import { useMerklForecastStates } from '@/hooks/useMerklForecastStates';
-import { deriveForecastProgressFlags, forecastWithTVL } from '@/lib/merklForecast';
+import {
+  deriveForecastProgressFlags,
+  forecastWithTVL,
+  merklAprCapPercentToForecastDecimal,
+  type MerklForecastState,
+} from '@/lib/merklForecast';
 import { resolveForecastTokenPrice, resolveForecastTokenPriceWithBackup } from '@/lib/tokenPriceResolver';
-import { formatPercent } from '@/lib/formatters';
+import { formatPercent, MERKL_WHITELIST_TOGGLE_ARIA, MERKL_WHITELIST_TOGGLE_LABEL } from '@/lib/formatters';
 import { formatNumberInput, parseNumberInput } from '@/lib/numberFormat';
+import { convertMerklPointsAmountToUsd, isMerklPointsCampaign } from '@/lib/tydro';
 
 interface MerklForecastPanelProps {
   reserves: ReserveWithSpread[];
   tokenPrices?: TokenPricesIndex;
   tydroPointToUsdRate: number;
-  includeWhitelistOnlyMerkl: boolean;
-  onToggleWhitelistOnlyMerkl: (next: boolean) => void;
+  whitelistMerklCampaignIds: ReadonlySet<string>;
+  onToggleWhitelistMerklCampaign: (campaignId: string, enabled: boolean) => void;
 }
 
 const formatUsd = (value: number): string =>
@@ -39,20 +45,34 @@ const formatDays = (days: number): string =>
     maximumFractionDigits: days >= 10 ? 1 : 2,
   }).format(days)} day${days >= 1.5 ? 's' : ''}`;
 
+const findBreakdownByCampaignId = (reserves: ReserveWithSpread[], campaignId: string): MerklCampaignBreakdown | undefined => {
+  for (const reserve of reserves) {
+    for (const groups of [reserve.merklSupplys, reserve.merklBorrows, reserve.merklHolds]) {
+      for (const group of groups ?? []) {
+        for (const bd of group.breakdowns ?? []) {
+          if (String(bd.campaignId) === campaignId) return bd;
+        }
+      }
+    }
+  }
+  return undefined;
+};
+
 const MerklForecastPanel = ({
   reserves,
   tokenPrices,
   tydroPointToUsdRate,
-  includeWhitelistOnlyMerkl,
-  onToggleWhitelistOnlyMerkl,
+  whitelistMerklCampaignIds,
+  onToggleWhitelistMerklCampaign,
 }: MerklForecastPanelProps) => {
+  const whitelistEntries = useMemo(() => collectWhitelistOnlyMerklCampaignEntries(reserves), [reserves]);
   const campaignOptions = useMemo(
     () =>
       collectMerklCampaignOptions(reserves, {
-        includeWhitelistOnly: includeWhitelistOnlyMerkl,
+        whitelistMerklCampaignIds,
         activeOnly: true,
       }),
-    [includeWhitelistOnlyMerkl, reserves]
+    [whitelistMerklCampaignIds, reserves]
   );
   const [selectedCampaignId, setSelectedCampaignId] = useState('');
   const [depositInput, setDepositInput] = useState('100,000');
@@ -128,25 +148,47 @@ const MerklForecastPanel = ({
   const depositAssetAmount = useMemo(() => parseNumberInput(depositInput), [depositInput]);
   const depositUsd = tokenPrice ? depositAssetAmount * tokenPrice : 0;
 
-  const selectedState = selectedCampaignId ? states[selectedCampaignId] : undefined;
+  const selectedMetrics = selectedCampaignId ? states[selectedCampaignId] : undefined;
+  const selectedBreakdown = useMemo(
+    () => (selectedCampaignId ? findBreakdownByCampaignId(reserves, selectedCampaignId) : undefined),
+    [reserves, selectedCampaignId]
+  );
+
+  const mergedState: MerklForecastState | undefined = useMemo(() => {
+    if (!selectedBreakdown?.campaignType) return undefined;
+    const normalizeUsdUnit = (value: number | null | undefined): number | undefined => {
+      if (isMerklPointsCampaign(selectedBreakdown)) {
+        return convertMerklPointsAmountToUsd(value, tydroPointToUsdRate);
+      }
+      return value ?? undefined;
+    };
+    return {
+      campaignType: selectedBreakdown.campaignType,
+      totalBudget: normalizeUsdUnit(selectedBreakdown.totalBudget),
+      aprCap: merklAprCapPercentToForecastDecimal(selectedBreakdown.aprCap),
+      latestTvl: normalizeUsdUnit(selectedBreakdown.latestTvl),
+      plannedDaily: normalizeUsdUnit(selectedBreakdown.plannedDaily),
+      requiredDaily: normalizeUsdUnit(selectedMetrics?.requiredDaily),
+      distributedSoFar: normalizeUsdUnit(selectedMetrics?.distributedSoFar),
+      endTimestamp: selectedMetrics?.endTimestamp,
+    };
+  }, [selectedBreakdown, selectedMetrics, tydroPointToUsdRate]);
+
   const forecast = useMemo(() => {
-    if (!selectedState || !selectedOption) return null;
-    const hypotheticalTvl = Math.max(selectedState.latestTvl + depositUsd, 0);
-    const baseForecast = forecastWithTVL(selectedState, hypotheticalTvl);
-    const forecastMultiplier = selectedOption.usesPointToUsdRate
-      ? Math.max(tydroPointToUsdRate, 0)
-      : 1;
-    const progress = deriveForecastProgressFlags(selectedState);
+    if (!mergedState || !selectedOption) return null;
+    const hypotheticalTvl = Math.max((mergedState.latestTvl ?? 0) + depositUsd, 0);
+    const baseForecast = forecastWithTVL(mergedState, hypotheticalTvl);
+    const progress = deriveForecastProgressFlags(mergedState);
     return {
       hypotheticalTvl,
-      dailyRewards: baseForecast.dailyRewards * forecastMultiplier,
-      apr: baseForecast.apr * forecastMultiplier,
+      dailyRewards: baseForecast.dailyRewards,
+      apr: baseForecast.apr,
       regime: baseForecast.regime,
       fixRewardableDays: baseForecast.fixRewardableDays,
       fixRewardableUntilTs: baseForecast.fixRewardableUntilTs,
       ...progress,
     };
-  }, [depositUsd, selectedOption, selectedState, tydroPointToUsdRate]);
+  }, [depositUsd, selectedOption, mergedState]);
 
   if (campaignOptions.length === 0) {
     return null;
@@ -164,15 +206,31 @@ const MerklForecastPanel = ({
         {loading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
       </div>
 
-      <label className="mt-2 inline-flex items-center gap-2 text-xs text-muted-foreground">
-        <input
-          type="checkbox"
-          checked={includeWhitelistOnlyMerkl}
-          onChange={(event) => onToggleWhitelistOnlyMerkl(event.target.checked)}
-          className="h-3.5 w-3.5 rounded border-border bg-background"
-        />
-        Include whitelist-only Merkl campaigns
-      </label>
+      {whitelistEntries.length > 0 && (
+        <div className="mt-2 space-y-2">
+          <p className="text-xs text-muted-foreground">{MERKL_WHITELIST_TOGGLE_LABEL}:</p>
+          <ul className="space-y-1.5">
+            {whitelistEntries.map((entry) => (
+              <li key={entry.campaignId}>
+                <label
+                  className="inline-flex items-start gap-2 text-xs text-muted-foreground"
+                  aria-label={`${MERKL_WHITELIST_TOGGLE_ARIA} ${entry.label}`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={whitelistMerklCampaignIds.has(entry.campaignId)}
+                    onChange={(event) => onToggleWhitelistMerklCampaign(entry.campaignId, event.target.checked)}
+                    className="mt-0.5 h-3.5 w-3.5 shrink-0 rounded border-border bg-background"
+                  />
+                  <span className="min-w-0 break-words" aria-hidden="true">
+                    {entry.label}
+                  </span>
+                </label>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="mt-3 grid gap-3 md:grid-cols-2">
         <label className="text-xs text-muted-foreground">
@@ -222,14 +280,14 @@ const MerklForecastPanel = ({
         </div>
       )}
 
-      {!selectedState && !loading && (
+      {!mergedState && !loading && (
         <p className="mt-3 text-xs text-muted-foreground">
           Forecast state is not available for the selected campaign yet.
           {selectedCampaignId && stateErrors[selectedCampaignId] ? ` (${stateErrors[selectedCampaignId]})` : ''}
         </p>
       )}
 
-      {selectedState && forecast && (
+      {mergedState && forecast && (
         <div className="mt-3 grid gap-2 md:grid-cols-3">
           <div className="rounded-md border border-border/60 bg-muted/20 p-2">
             <p className="text-[11px] text-muted-foreground">Hypothetical Supply</p>
@@ -245,20 +303,21 @@ const MerklForecastPanel = ({
           </div>
           <div className="rounded-md border border-border/60 bg-muted/20 p-2 md:col-span-3">
             <p className="text-[11px] text-muted-foreground">
-              Type: {selectedState.campaignType} · Regime: {forecast.regime} · Ended under-distributed:{' '}
+              Type: {mergedState.campaignType} · Regime: {forecast.regime} · Ended under-distributed:{' '}
               {forecast.isUnderDistributed ? 'Yes' : 'No'}
             </p>
           </div>
-          {selectedState.campaignType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE' &&
+          {mergedState.campaignType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE' &&
             typeof forecast.fixRewardableDays === 'number' &&
-            typeof forecast.fixRewardableUntilTs === 'number' && (
+            typeof forecast.fixRewardableUntilTs === 'number' &&
+            typeof mergedState.endTimestamp === 'number' && (
               <div className="rounded-md border border-border/60 bg-muted/20 p-2 md:col-span-3">
                 <p className="text-[11px] text-muted-foreground">FIX Rewardable Window (campaign-level)</p>
                 <p className="text-sm font-semibold text-foreground mt-1">
                   Now → {formatDateTime(forecast.fixRewardableUntilTs)} ({formatDays(forecast.fixRewardableDays)})
                 </p>
                 <p className="text-[11px] text-muted-foreground mt-1">
-                  Campaign window baseline: Now → {formatDateTime(selectedState.endTimestamp)}
+                  Campaign window baseline: Now → {formatDateTime(mergedState.endTimestamp)}
                 </p>
               </div>
             )}

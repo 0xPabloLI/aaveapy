@@ -23,22 +23,31 @@ export interface MerklCampaignBreakdown {
   campaignId: string;                 // Campaign ID
   whitelistOnly?: boolean;             // Merkl campaign is whitelist-only
   pointsPerThousandUsd?: number;       // Tydro protocol points/1000USD value (optional)
+  campaignType?: string;
+  totalBudget?: number;
+  /** Max APR cap from API as percent points (e.g. 3.2 means 3.2%), same unit as `campaignApr`. */
+  aprCap?: number | null;
+  latestTvl?: number;
+  plannedDaily?: number;
 }
 
 export interface MerklOpportunityGroup {
-  link?: string;                       // Opportunity detail page link (preferred)
-  opportunityLink?: string;            // Backward-compatible link field
+  link?: string;                       // Opportunity detail page link
   name?: string;                       // Opportunity name (optional)
   message?: string;                    // Opportunity message/description (optional)
   breakdowns: MerklCampaignBreakdown[]; // All breakdowns for this opportunity
 }
 
 export interface BrevisIncentive {
-  apr: number;                         // APR percentage value (e.g., 1.5 means 1.5%)
   link: string;                        // Brevis campaign detail link
-  startDate: string;                   // Campaign start date
-  endDate: string;                     // Campaign end date
-  name: string;                        // Campaign name
+  campaignApr: number;                 // Canonical APR field
+  campaignStartedAt: string;           // Canonical start time
+  campaignEndedAt: string;             // Canonical end time
+  message?: string;                    // Preferred description/message field
+  latestTvl?: number;                  // Preferred TVL field
+  totalBudget?: number;                // Preferred total budget field
+  perUserRewardCapUsd?: number;        // Per-user cumulative reward ceiling for the campaign (e.g. 5000)
+  campaignId?: string;                 // Same campaignId across supply/borrow represents one shared Brevis campaign
 }
 
 export interface ReserveWithSpread {
@@ -116,25 +125,23 @@ export interface TokenPriceEntry {
 
 export type TokenPricesIndex = Record<string, TokenPriceEntry>;
 
-export interface MerklForecastStateResponse {
+// Wire contract for forecast side-data endpoints (`/api/campaigns/forecast-states`,
+// `/api/meta/side-data.forecast.items`). Opportunity/static fields still come
+// from the markets breakdowns and are merged in the frontend view model.
+export interface MerklForecastWireItem {
   campaignId: string;
-  campaignType?: string;
-  plannedDaily?: number;
   requiredDaily?: number;
-  aprCap?: number | null;
-  totalBudget?: number;
   distributedSoFar?: number;
-  latestTvl?: number;
   endTimestamp?: number;
 }
 
 export interface MerklForecastStatesBatchResponse {
   requested?: number;
   staleTimeMs?: number;
-  items: MerklForecastStateResponse[];
+  items: MerklForecastWireItem[];
   errors: Array<{
     campaignId: string;
-    status: number;
+    status?: number;
     message: string;
   }>;
 }

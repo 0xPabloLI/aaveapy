@@ -4,7 +4,8 @@ import { TableRow, TableCell } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ReserveWithSpread, ETHEREUM_MARKET_NAMES } from '@/types/aave';
 import { formatPercent, formatScenarioSize, formatSpread, formatUsd } from '@/lib/formatters';
-import { buildAaveReserveUrl } from '@/lib/aaveLinks';
+import { buildAaveMarketUrl, buildAaveReserveUrl } from '@/lib/aaveLinks';
+import { externalLinkTabProps } from '@/lib/externalNavigation';
 import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
@@ -103,6 +104,7 @@ const DesktopReserveRow = memo(({
   });
 
   const aaveUrl = buildAaveReserveUrl({ marketName: reserve.marketName, tokenAddress: reserve.tokenAddress }) || '#';
+  const aaveMarketUrl = buildAaveMarketUrl(reserve.marketName);
 
   const displayTokenPrice = getValidTokenPrice(simulation?.tokenPrice, reserve.tokenPrice);
   const displayReserveSizeUsd = getScenarioSupplySizeUsd({
@@ -154,26 +156,42 @@ const DesktopReserveRow = memo(({
         </TableCell>
         {/* Market — 左侧留白更小，右侧与其余列统一 */}
         <TableCell className="pl-[var(--ds-space-1)] pr-[var(--ds-space-2)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell">
-          <button
-            type="button"
-            onClick={(event) => {
-              event.stopPropagation();
-              onSelectMarket?.(reserve.marketName);
-            }}
-            className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)] px-[var(--ds-space-2-5)] py-[var(--ds-space-1)] rounded-full ds-text-13 font-medium bg-muted/50 text-muted-foreground border border-border/60 hover:bg-muted hover:text-foreground hover:border-border/80 active:scale-[0.98] transition-all duration-150"
-            aria-label={`Filter by ${getMarketDisplayName()} market`}
-            title={`Filter by ${getMarketDisplayName()}`}
-          >
-            <ChainIcon chain={reserve.chainName} />
-            {getMarketDisplayName()}
-          </button>
+          <div className="group/market inline-flex items-center justify-center gap-[var(--ds-space-1)]">
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onSelectMarket?.(reserve.marketName);
+              }}
+              className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)] px-[var(--ds-space-2-5)] py-[var(--ds-space-1)] rounded-full ds-text-13 font-medium bg-muted/50 text-muted-foreground border border-border/60 hover:bg-muted hover:text-foreground hover:border-border/80 active:scale-[0.98] transition-all duration-150"
+              aria-label={`Filter by ${getMarketDisplayName()} market`}
+              title={`Filter by ${getMarketDisplayName()}`}
+            >
+              <ChainIcon chain={reserve.chainName} />
+              {getMarketDisplayName()}
+            </button>
+            {aaveMarketUrl ? (
+              <a
+                href={aaveMarketUrl}
+                {...externalLinkTabProps(isMobile)}
+                onClick={(event) => event.stopPropagation()}
+                className="inline-flex shrink-0 items-center justify-center hover:opacity-80 transition-opacity duration-100"
+                aria-label={`Open ${getMarketDisplayName()} market on Aave`}
+                title="Open market on Aave"
+              >
+                <ExternalLink className="w-3 h-3 text-muted-foreground opacity-0 -ml-0.5 group-hover/market:opacity-70 transition-opacity duration-75" />
+              </a>
+            ) : null}
+          </div>
         </TableCell>
         {/* Size (Supply + Borrow) */}
         <TableCell className="px-[var(--ds-space-2)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell tabular-nums ds-text-13">
           <div className="flex flex-col items-center justify-center gap-[var(--ds-space-0-5)]">
-            {/* Supply Size - Green */}
-            <div className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)] ds-text-emerald-600">
-              <span>{formatScenarioSize(displayReserveSizeUsd, { inputMode, tokenPrice: displayTokenPrice, tokenSymbol: reserve.tokenSymbol })}</span>
+            {/* Supply Size - Green (match Supply APY primary: ds-text-emerald-500) */}
+            <div className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)] ds-text-emerald-500">
+              <span className="font-medium tabular-nums">
+                {formatScenarioSize(displayReserveSizeUsd, { inputMode, tokenPrice: displayTokenPrice, tokenSymbol: reserve.tokenSymbol })}
+              </span>
               <CapProgressRing
                 size={displayReserveSizeUsd}
                 cap={reserve.supplyCapUsd}
@@ -182,9 +200,11 @@ const DesktopReserveRow = memo(({
                 tokenSymbol={reserve.tokenSymbol}
               />
             </div>
-            {/* Borrow Size - Cyan */}
-            <div className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)] ds-text-brand-cyan ds-text-11">
-              <span>{formatScenarioSize(totalBorrowedUsd, { inputMode, tokenPrice: displayTokenPrice, tokenSymbol: reserve.tokenSymbol })}</span>
+            {/* Borrow Size - Cyan (match tooltip: font-medium + ds-text-brand-cyan) */}
+            <div className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)] ds-text-brand-cyan">
+              <span className="font-medium tabular-nums">
+                {formatScenarioSize(totalBorrowedUsd, { inputMode, tokenPrice: displayTokenPrice, tokenSymbol: reserve.tokenSymbol })}
+              </span>
               <BorrowCapProgressRing
                 borrowed={totalBorrowedUsd}
                 cap={reserve.borrowCapUsd}
@@ -227,7 +247,7 @@ const DesktopReserveRow = memo(({
             )}
             {displaySupplyIncentive !== null && (
               <div className="flex items-center gap-[var(--ds-space-0-5)] ds-text-11 justify-center min-h-[1.25rem]">
-                <span className={`tabular-nums ${reserve.supplyDisabled ? 'text-secondary' : 'ds-text-emerald-500-70'}`}>
+                <span className={`tabular-nums font-medium ${reserve.supplyDisabled ? 'text-secondary' : 'ds-text-emerald-500-70'}`}>
                   {formatPercent(displaySupplyNative)}
                 </span>
                 <span className="text-muted-foreground/70">+</span>
@@ -278,7 +298,7 @@ const DesktopReserveRow = memo(({
               <div className="flex items-center gap-[var(--ds-space-0-5)] ds-text-11 justify-center min-h-[1.25rem]">
                 {displayBorrowNative !== null && (
                   <>
-                    <span className={`tabular-nums ${reserve.borrowDisabled ? 'text-secondary' : 'ds-text-brand-cyan-70'}`}>
+                    <span className={`tabular-nums font-medium ${reserve.borrowDisabled ? 'text-secondary' : 'ds-text-brand-cyan-70'}`}>
                       {formatPercent(displayBorrowNative)}
                     </span>
                     <span className="text-muted-foreground/70">-</span>

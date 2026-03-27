@@ -6,6 +6,7 @@ export interface MerklForecastState {
   campaignType?: string;
   plannedDaily?: number;
   requiredDaily?: number;
+  /** Annual rate as a decimal (e.g. 0.032 for 3.2%/year). Not API percent points. */
   aprCap?: number | null;
   distributedSoFar?: number;
   totalBudget?: number;
@@ -28,6 +29,18 @@ export interface MerklForecastProgressFlags {
 }
 
 const safe = (value: number): number => (Number.isFinite(value) ? Math.max(value, 0) : 0);
+
+/**
+ * `aprCap` on Merkl breakdowns from `GET /api/markets` is **percent points** (same unit as `campaignApr`).
+ * `forecastWithTVL` expects an annual rate **decimal** (e.g. 0.032 for 3.2%).
+ */
+export function merklAprCapPercentToForecastDecimal(
+  aprCap: number | null | undefined
+): number | null | undefined {
+  if (aprCap === null || aprCap === undefined) return aprCap;
+  if (!Number.isFinite(aprCap)) return undefined;
+  return aprCap / 100;
+}
 
 export const forecastWithTVL = (
   forecastState: MerklForecastState,

@@ -49,6 +49,26 @@
 - **数值**：一律 `tabular-nums` 保证对齐。
 - **文字与边框**：**强制** — 所有带边框的容器（卡片、表格单元格、警告条、按钮）内，文字与边框之间至少保留 8px（`--ds-space-2`）内边距，不得贴边。
 
+### 数据列层级（Supply / Borrow APY、Size、Util）
+
+与 `docs/design/frontend-interaction-guardrails.md` 中「同色内部少档位」原则一致：
+
+| 层级 | 桌面 Reserves 表 | 移动端储备卡 | 字色 / 说明 |
+|------|------------------|-------------|-------------|
+| 主值（合计 APY） | `ds-text-14` + `font-bold` | hero `ds-text-24` + `font-bold` | Supply `emerald-500`，Borrow `brand-cyan` |
+| **Size**（供给/借出规模） | `ds-text-13` + `font-medium` | 顶行金额 `ds-text-13` + `font-medium` | **满饱和** 同主色（与 APY 主值同色阶，不是 `-70`） |
+| 次级（Native + incentive） | `ds-text-11`；native 可选 `font-medium` | 同左 | 小一号 + `*-70` + pill；**刻意**弱于 Size，不要复用 Size 样式 |
+| Spread | `ds-text-14` + **`font-bold`** | 展开条内 `font-medium` | 紫色语义；桌面与 Supply/Borrow **主数字同档粗体** |
+| Util 迷你条 + 圆点 | 与 Util % 并排 | 同左 | 分区：青/琥珀各一档淡填充；标记点 = **实心圆点**（可略大半径），**不**用描边、不外圈柔光 |
+
+### 可迁移的设计习惯（本项目偏好，可复制到其他项目）
+
+1. **同色少档位**：同一语义色避免堆多种透明度/色阶；Util、APY 次级按 guardrails 即可。
+2. **数据点不靠描边**：小圆点、标记点用更实填充或略大半径；**不**把 `stroke` 外轮廓当默认习惯。
+3. **Spread 与主列同强**：桌面 Spread 列用 **`font-bold`**，与 Supply/Borrow APY 主值同级。
+4. **次级 ≠ Size**：Native/Incentive 是 **分解行**（`ds-text-11` + `*-70`）；Size 是 **主数据**（`ds-text-13` + 满饱和 + `font-medium`）—层级不同，**不是**同一套字体规格。
+5. **移动/桌面 token 对齐**：移动端 Size、tab、cap sheet 与桌面共用 `emerald-500` / `brand-cyan`，避免无端深一档（如 `emerald-600`）。
+
 ---
 
 ## 4. 布局原则
@@ -56,6 +76,7 @@
 - **移动优先**，触控目标 ≥ 44×44px。
 - **多列面板**（如 Supply / Spread / Borrow）：等宽列、统一压缩，不单独给某一列固定或更大宽度。
 - **表格**：表头与占位符（如 `-`）使用相同列宽与对齐，避免表头与内容错位；空间紧张时优先换行而非省略号。
+- **叠层 sticky 表头 + 页面滚动**：若顶栏与 `<thead>` 均 `position: sticky` 且 `top` 意在相对**视口**叠放，**禁止**用包住整张表（含 `thead`）的 `overflow-x-auto` / `overflow: hidden` 等制造**独立 scrollport**，否则 `thead` 的 `top` 会相对该盒计算，与视口 sticky 错位（缝中大段空白、tbody 从缝露出）。本项目细则见 **[frontend-interaction-guardrails.md](frontend-interaction-guardrails.md)** § *Desktop reserves table: sticky stack and scrollport (normative)*。
 - **对称**：成对出现的区块（如 Supply / Borrow）在布局与视觉权重上保持对称。
 
 ---
@@ -92,6 +113,17 @@
 ### 5.5 选中态必须明显
 
 切换/选中状态要有**明确视觉区分**（边框色、背景、描边等），不能只靠轻微透明度或背景变化。
+
+### 5.6 本仓库实现参考
+
+| 用途 | 参考文件 |
+|------|----------|
+| APR/APY 分段 | `AprApyToggle.tsx` |
+| Token / Markets 筛选芯片 | `FilterBar.tsx` |
+| USD/Token 等模式分段 | `ScenarioControls.tsx` |
+| 主题图标切换 | `ThemeToggle.tsx` |
+
+迁移与验收：`ScenarioControls` 的 USD/Token 使用分段控件（非单按钮）；分类筛选用中性 `bg-card` 选中；Markets 多选保留品牌色边框以区分多选状态。
 
 ---
 
@@ -233,6 +265,7 @@ Slider 与紧挨其下的区块（如「Reference FDVs」、说明文字）可�
 - **多列**：等宽、统一内边距；表格留足 padding，文字不贴边。
 - **对称**：成对区块（如 Supply / Borrow）在位置与权重上对称。
 - **几何**：若需求给出具体尺寸/间距，按给定实现（如用 `getBoundingClientRect()` 计算），不随意近似。
+- **轮廓与圆角拼接**：用 SVG 绘制 1px 边框以衔接 CSS 边框时，坐标必须对齐到半像素（如 `0.5`）以避免抗锯齿模糊或变粗；若需修改局部轮廓（如内侧反向圆角），优先使用 `clip-path` 局部切断底层原生边框，并使用单个包含精确几何指令（如 `A` 画圆弧）的 SVG `path` 一次性绘制连续轮廓，严禁使用“原边框 + 补丁层 + mask 遮罩”的多层叠加拼凑做法。
 
 ---
 
@@ -246,44 +279,25 @@ Slider 与紧挨其下的区块（如「Reference FDVs」、说明文字）可�
 
 ---
 
-## 附录 B：移动端卡片排版示意（ASCII）
+## 附录 B：移动端储备卡 ASCII 示意（单一来源）
 
-适用于“区块分隔 + 金额区字重突出”的移动卡片布局参考。
-
-```
-┌─────────────────────────────────────────────────────────┐
-│  (图标)  标题 ↗                      [ 可选标签 ]         │
-├─────────────────────────────────────────────────────────┤
-│  ┌─────────────────────────────────────────────────────┐ │
-│  │            SUPPLY         |         BORROW           │ │
-│  │          $23.61M ○                 $16.66M ○        │ │  ← ds-text-12 略加粗
-│  └─────────────────────────────────────────────────────┘ │
-├ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┤  ← border-t border-border/40
-│  ┌─────────────────────────────────────────────────────┐ │
-│  │  SUPPLY           SPREAD           BORROW           │ │  ← 三列居中或 tabular-nums
-│  │  11.87%          +8.43%            3.44%            │ │
-│  │  (弱化分解行 ds-text-9)                              │ │
-│  └─────────────────────────────────────────────────────┘ │
-├─────────────────────────────────────────────────────────┤
-│  ┌─────────────────────────────────────────────────────┐ │
-│  │              Simulation  ⌄     (min-h-[44px])       │ │
-│  └─────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────┘
-```
-
-图例：`○` 圆环等可选指示；`⌄` 展开/收起；细分隔线用 `border-border/40`。
+**完整版**（含 Current / Proposed、图例与说明）见同目录 **[mobile-reserve-card-ascii-layout.md](mobile-reserve-card-ascii-layout.md)**。请勿在本文件中重复粘贴大段 ASCII，避免双份维护。
 
 ---
 
 ## 文档来源与维护
 
-本参考由以下文档合并而成（现均位于 `docs/design/`），便于在其他项目中复用：
+本参考的主体内容来自 `docs/design/` 下既有规范与实现约定；以下文件为**重定向入口**（保留路径供旧链接与书签），正文以本文档为准：
 
-- `DESIGN.md` — 视觉主题、色彩、排版、组件
-- `toggle-switch-specification.md` — 开关与芯片规范
-- `ui-interaction-patterns.md` — 光标、Tooltip、悬停、禁用、无障碍
-- `frontend-interaction-guardrails.md` — Tooltip/颜色/布局/移动端守则
-- `mobile-reserve-card-ascii-layout.md` — 移动卡片排版示意
-- 仓库根 `AGENTS.md` — Frontend Design & UX、Learned User Preferences 中与设计相关的条目
+- `ui-interaction-patterns.md` → 见上文 **§6–§11**（光标、Tooltip、悬停、禁用、无障碍、暗色等）
+- `toggle-switch-specification.md` → 见上文 **§5**（含 §5.6 本仓库实现参考）
 
-**约定**：一次性设计方案（如某次 Lovable/PR 的 UI 方案）**可以删除原文档**，将其内容总结进本文档与设计规范，把可复用部分抽象成习惯写进对应章节即可。后续新增设计习惯请更新本文档（通用部分）或附录 A（项目特定）。
+仍独立维护、与业务强相关的文档：
+
+- `DESIGN.md` — 本项目视觉主题、品牌色、组件类名（如 `ds-input-surface`）
+- `frontend-interaction-guardrails.md` — Forecast、Reserves、Merkl 等 AaveAPY 专项守则
+- `mobile-reserve-card-ascii-layout.md` — 移动端储备卡 ASCII 详细示意
+
+仓库根 `AGENTS.md` 中与设计相关的条目应与上述文档一致。
+
+**约定**：一次性设计方案可删原文档，将可复用部分抽象进本文档（通用）或附录 A（项目特定）。后续新增通用设计习惯请更新本文档。

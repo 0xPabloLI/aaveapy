@@ -5,9 +5,9 @@ import { ArrowUp, ArrowDown, ChevronDown, ChevronUp } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ReserveWithSpread, ETHEREUM_MARKET_NAMES, TokenPricesIndex } from '@/types/aave';
-import { 
-  formatPercent, 
-  formatSpread, 
+import {
+  formatPercent,
+  formatSpread,
   formatUsd,
   calculateTotalSupplyApr,
   calculateTotalSupplyApy,
@@ -15,7 +15,7 @@ import {
   calculateTotalBorrowApy,
   calculateTotalIncentiveApr,
   calculateTotalIncentiveApy,
-  apyToApr
+  resolveVisibleIncentiveBadgeValue,
 } from '@/lib/formatters';
 import ScenarioControls, { type ScenarioControlsHandle } from './ScenarioControls';
 import { compareIncentiveWithNative } from '@/lib/sorters';
@@ -28,6 +28,7 @@ import DesktopReserveRow from './DesktopReserveRow';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getReserveSimulationId, useSharedRateSimulations } from '@/hooks/useRateSimulation';
 import { getScenarioSupplySizeUsd, getTotalBorrowedUsd as getReserveTotalBorrowedUsd } from '@/lib/scenarioSize';
+import { scrollExpandedSimulationIntoView } from '@/lib/scrollExpandedSimulationIntoView';
 
 interface ReservesTableProps {
   reserves: ReserveWithSpread[];
@@ -38,15 +39,15 @@ interface ReservesTableProps {
   isLoading?: boolean;
   onSelectMarket?: (marketName: string) => void;
   tydroPointToUsdRate: number;
-  includeWhitelistOnlyMerkl: boolean;
-  onToggleWhitelistOnlyMerkl: (next: boolean) => void;
+  whitelistMerklCampaignIds: ReadonlySet<string>;
+  onToggleWhitelistMerklCampaign: (campaignId: string, enabled: boolean) => void;
   tokenPrices?: TokenPricesIndex;
   scrollToReserveId?: string | null;
 }
 
 type SortMode = 'total' | 'native' | 'incentive';
 
-type SortableColumn = 'token' | 'price' | 'size' | 'util' | 'supply' | 'borrow' | 'spread';
+type SortableColumn = 'token' | 'price' | 'market' | 'size' | 'util' | 'supply' | 'borrow' | 'spread';
 
 const DEFAULT_VISIBLE_COUNT = 20;
 
@@ -59,14 +60,15 @@ const ReservesTable = ({
   isLoading,
   onSelectMarket,
   tydroPointToUsdRate,
-  includeWhitelistOnlyMerkl,
-  onToggleWhitelistOnlyMerkl,
+  whitelistMerklCampaignIds,
+  onToggleWhitelistMerklCampaign,
   tokenPrices,
   scrollToReserveId,
 }: ReservesTableProps) => {
   const isMobile = useIsMobile();
   const [activeSortColumn, setActiveSortColumn] = useState<SortableColumn | null>('supply');
   const [tokenSortOrder, setTokenSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [marketSortOrder, setMarketSortOrder] = useState<'asc' | 'desc'>('asc');
   const [priceSortOrder, setPriceSortOrder] = useState<'asc' | 'desc'>('desc');
   const [sizeSortMode, setSizeSortMode] = useState<'supply' | 'borrow'>('supply');
   const [sizeSortOrder, setSizeSortOrder] = useState<'asc' | 'desc'>('desc');
@@ -84,6 +86,9 @@ const ReservesTable = ({
   const borrowSortButtonRef = useRef<HTMLButtonElement>(null);
   const supplySortButtonRef = useRef<HTMLButtonElement>(null);
   const scenarioControlsRef = useRef<ScenarioControlsHandle>(null);
+  const lastScenarioKeyForPinScrollRef = useRef<string | null>(null);
+  const lastSortedIdsForPinScrollRef = useRef<string[]>([]);
+  const scenarioPinScrollBaselineReadyRef = useRef(false);
   const [borrowMenuPos, setBorrowMenuPos] = useState<{ top: number; left: number } | null>(null);
   const [supplyMenuPos, setSupplyMenuPos] = useState<{ top: number; left: number } | null>(null);
   const [minVisibleCount, setMinVisibleCount] = useState<number | null>(null);
@@ -129,6 +134,7 @@ const ReservesTable = ({
   const handleToggleExpand = useCallback((reserveId: string) => {
     setExpandedReserveId((prev) => (prev === reserveId ? null : reserveId));
   }, []);
+
   const [tooltipState, setTooltipState] = useState<{
     reserve: ReserveWithSpread;
     type: 'supply' | 'borrow';
@@ -141,13 +147,22 @@ const ReservesTable = ({
   const { simulationsById, hasAnyInput: hasSharedScenario } = useSharedRateSimulations({
     reserves,
     isApy,
-    includeWhitelistOnlyMerkl,
+    whitelistMerklCampaignIds,
     tydroPointToUsdRate,
     tokenPrices,
     supplyInput: debouncedSharedSupplyInput,
     borrowInput: debouncedSharedBorrowInput,
     inputMode: sharedInputMode,
   });
+
+  /** Scroll-on-expand only when list order can change with shared scenario (matches `pickScenarioValue` / size supply USD). */
+  const expandScrollFollowsScenarioSort = useMemo(() => {
+    if (!hasSharedScenario) return false;
+    const col = activeSortColumn ?? 'supply';
+    if (col === 'token' || col === 'market' || col === 'price') return false;
+    if (col === 'size' && sizeSortMode === 'borrow') return false;
+    return true;
+  }, [hasSharedScenario, activeSortColumn, sizeSortMode]);
 
   const getMarketDisplayName = (reserve: ReserveWithSpread) => {
     if (reserve.chainName === 'Ethereum' && ETHEREUM_MARKET_NAMES[reserve.marketName]) {
@@ -169,7 +184,7 @@ const ReservesTable = ({
         brevisIncentives,
         protocolIncentives,
         tydroPointToUsdRate,
-        { includeWhitelistOnlyMerkl }
+        { whitelistMerklCampaignIds }
       ),
       apy: calculateTotalIncentiveApy(
         meritIncentives,
@@ -177,7 +192,7 @@ const ReservesTable = ({
         brevisIncentives,
         protocolIncentives,
         tydroPointToUsdRate,
-        { includeWhitelistOnlyMerkl }
+        { whitelistMerklCampaignIds }
       ),
     };
   };
@@ -188,10 +203,7 @@ const ReservesTable = ({
   };
 
   const getTotalSupplyApr = (reserve: ReserveWithSpread): number | null => {
-    const nativeApr = reserve.supplyApy !== undefined && reserve.supplyApy !== null
-      ? apyToApr(reserve.supplyApy)
-      : null;
-    return calculateTotalSupplyApr(nativeApr, getIncentiveValues(reserve, 'supply').apr);
+    return calculateTotalSupplyApr(reserve.supplyApy ?? null, getIncentiveValues(reserve, 'supply').apr);
   };
 
   const getTotalBorrowApy = (reserve: ReserveWithSpread): number | null => {
@@ -199,10 +211,7 @@ const ReservesTable = ({
   };
 
   const getTotalBorrowApr = (reserve: ReserveWithSpread): number | null => {
-    const nativeApr = reserve.borrowApy !== undefined && reserve.borrowApy !== null
-      ? apyToApr(reserve.borrowApy)
-      : null;
-    return calculateTotalBorrowApr(nativeApr, getIncentiveValues(reserve, 'borrow').apr);
+    return calculateTotalBorrowApr(reserve.borrowApy ?? null, getIncentiveValues(reserve, 'borrow').apr);
   };
 
   // Calculate native values (already in percentage form, number type)
@@ -242,8 +251,7 @@ const ReservesTable = ({
   const getDisplaySupplyNative = (reserve: ReserveWithSpread): number | null => {
     const simulation = getSimulation(reserve);
     if (!simulation) {
-      const nativeSupplyApy = getNativeSupplyApy(reserve);
-      return isApy ? nativeSupplyApy : nativeSupplyApy !== null ? apyToApr(nativeSupplyApy) : null;
+      return getNativeSupplyApy(reserve);
     }
     return pickScenarioValue(simulation.supply.currentNative, simulation.supply.afterNative);
   };
@@ -251,8 +259,7 @@ const ReservesTable = ({
   const getDisplayBorrowNative = (reserve: ReserveWithSpread): number | null => {
     const simulation = getSimulation(reserve);
     if (!simulation) {
-      const nativeBorrowApy = getNativeBorrowApy(reserve);
-      return isApy ? nativeBorrowApy : nativeBorrowApy !== null ? apyToApr(nativeBorrowApy) : null;
+      return getNativeBorrowApy(reserve);
     }
     return pickScenarioValue(simulation.borrow.currentNative, simulation.borrow.afterNative);
   };
@@ -313,6 +320,12 @@ const ReservesTable = ({
       if (sortColumn === 'token') {
         const order = tokenSortOrder === 'asc' ? 1 : -1;
         return order * (a.tokenSymbol.localeCompare(b.tokenSymbol, undefined, { sensitivity: 'base' }));
+      }
+      if (sortColumn === 'market') {
+        const order = marketSortOrder === 'asc' ? 1 : -1;
+        const byMarket = a.marketName.localeCompare(b.marketName, undefined, { sensitivity: 'base' });
+        if (byMarket !== 0) return order * byMarket;
+        return order * a.tokenSymbol.localeCompare(b.tokenSymbol, undefined, { sensitivity: 'base' });
       }
       if (sortColumn === 'price') {
         const aP = a.tokenPrice ?? -Infinity;
@@ -401,7 +414,58 @@ const ReservesTable = ({
       }
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reserves, activeSortColumn, tokenSortOrder, priceSortOrder, sizeSortMode, sizeSortOrder, utilSortOrder, supplySortMode, supplySortOrder, borrowSortMode, borrowSortOrder, spreadSortOrder, simulationsById, hasSharedScenario, isApy, tydroPointToUsdRate, includeWhitelistOnlyMerkl, debouncedSharedSupplyInput, sharedInputMode]);
+  }, [reserves, activeSortColumn, tokenSortOrder, marketSortOrder, priceSortOrder, sizeSortMode, sizeSortOrder, utilSortOrder, supplySortMode, supplySortOrder, borrowSortMode, borrowSortOrder, spreadSortOrder, simulationsById, hasSharedScenario, isApy, tydroPointToUsdRate, whitelistMerklCampaignIds, debouncedSharedSupplyInput, sharedInputMode]);
+
+  /**
+   * Simulation pin scroll — normative spec + implementation steps:
+   * `docs/design/frontend-interaction-guardrails.md` § "Simulation pin scroll".
+   * Do not move to `expandedReserveId`-only effects or index-based scroll without updating that doc.
+   */
+  useEffect(() => {
+    const scenarioKey = `${debouncedSharedSupplyInput}\0${debouncedSharedBorrowInput}\0${sharedInputMode}`;
+    const ids = sortedData.map((r) => getReserveSimulationId(r));
+
+    if (!scenarioPinScrollBaselineReadyRef.current) {
+      lastScenarioKeyForPinScrollRef.current = scenarioKey;
+      lastSortedIdsForPinScrollRef.current = ids;
+      scenarioPinScrollBaselineReadyRef.current = true;
+      return;
+    }
+
+    if (scenarioKey !== lastScenarioKeyForPinScrollRef.current) {
+      const prevIds = lastSortedIdsForPinScrollRef.current;
+      const orderChanged =
+        prevIds.length !== ids.length || prevIds.some((id, i) => id !== ids[i]);
+      lastScenarioKeyForPinScrollRef.current = scenarioKey;
+      lastSortedIdsForPinScrollRef.current = ids;
+
+      if (
+        orderChanged &&
+        expandScrollFollowsScenarioSort &&
+        expandedReserveId
+      ) {
+        const id = expandedReserveId;
+        const mode = isMobile ? 'minimal-if-clipped' : 'pin-main-row-top';
+        const timer = window.setTimeout(() => {
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => scrollExpandedSimulationIntoView(id, { mode }));
+          });
+        }, 320);
+        return () => window.clearTimeout(timer);
+      }
+      return;
+    }
+
+    lastSortedIdsForPinScrollRef.current = ids;
+  }, [
+    debouncedSharedSupplyInput,
+    debouncedSharedBorrowInput,
+    sharedInputMode,
+    sortedData,
+    expandedReserveId,
+    isMobile,
+    expandScrollFollowsScenarioSort,
+  ]);
 
   const supplySortLabel = {
     total: 'Total',
@@ -450,6 +514,11 @@ const ReservesTable = ({
     collapseExpandedOnSort();
     setActiveSortColumn('token');
     setTokenSortOrder((o) => (o === 'asc' ? 'desc' : 'asc'));
+  };
+  const handleSortMarket = () => {
+    collapseExpandedOnSort();
+    setActiveSortColumn('market');
+    setMarketSortOrder((o) => (o === 'asc' ? 'desc' : 'asc'));
   };
   const handleSortPrice = () => {
     collapseExpandedOnSort();
@@ -573,11 +642,37 @@ const ReservesTable = ({
 
   const scenarioControls = <ScenarioControls ref={scenarioControlsRef} onDebouncedChange={handleScenarioChange} />;
 
+  const desktopTableCardRef = useRef<HTMLDivElement>(null);
+  const desktopStickyScenarioRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isMobile) return;
+    const stickyEl = desktopStickyScenarioRef.current;
+    const card = desktopTableCardRef.current;
+    if (!stickyEl || !card) return undefined;
+    const apply = () => {
+      card.style.setProperty(
+        '--reserves-sticky-scenario-height',
+        `${stickyEl.getBoundingClientRect().height}px`,
+      );
+    };
+    apply();
+    const ro = new ResizeObserver(apply);
+    ro.observe(stickyEl);
+    return () => {
+      ro.disconnect();
+      card.style.removeProperty('--reserves-sticky-scenario-height');
+    };
+  }, [isMobile]);
+
   // Mobile card view — extra bottom padding so content isn't hidden by browser/safe area
   if (isMobile) {
     return (
       <div className="space-y-3 pb-[calc(env(safe-area-inset-bottom,0px)+5rem)]">
-        <div className="sticky top-[env(safe-area-inset-top,0px)] z-20 -mx-[var(--ds-space-3)] px-[var(--ds-space-3)] pt-1 pb-0 bg-background/80 backdrop-blur-sm">
+        <div
+          data-reserves-sticky-scenario
+          className="sticky top-[env(safe-area-inset-top,0px)] z-20 -mx-[var(--ds-space-3)] px-[var(--ds-space-3)] pt-1 pb-0 bg-background/80 backdrop-blur-sm"
+        >
           {scenarioControls}
         </div>
         {/* Header with sorting controls */}
@@ -874,7 +969,11 @@ const ReservesTable = ({
                   const bridgeOnExpandedColumn = leftExpanded || !rightReserve;
 
                   nodes.push(
-                    <div key={`row-${i}`} className="col-span-2">
+                    <div
+                      key={`row-${i}`}
+                      className="col-span-2"
+                      data-reserve-expanded-anchor={activeId}
+                    >
                       <div className="grid grid-cols-2 gap-[var(--ds-space-2)]">
                         <div className="min-w-0">
                           <MobileReserveCard
@@ -882,6 +981,7 @@ const ReservesTable = ({
                             connectedBelow={leftExpanded}
                             reserve={leftReserve}
                             isApy={isApy}
+                            tydroPointToUsdRate={tydroPointToUsdRate}
                             onIncentiveClick={handleMobileIncentiveClick}
                             isSimulationExpanded={isLeftActive}
                             onToggleSimulation={() => handleToggleExpand(leftId)}
@@ -902,6 +1002,7 @@ const ReservesTable = ({
                               connectedBelow={rightExpanded}
                               reserve={rightReserve}
                               isApy={isApy}
+                              tydroPointToUsdRate={tydroPointToUsdRate}
                               onIncentiveClick={handleMobileIncentiveClick}
                               isSimulationExpanded={!isLeftActive}
                               onToggleSimulation={() => handleToggleExpand(rightId!)}
@@ -948,13 +1049,13 @@ const ReservesTable = ({
                         >
                           {bridgeOnExpandedColumn ? (
                             <>
-                              <path d="M 0 0 L 0 9 L 17 9 L 17 8 L 9 8 A 8 8 0 0 1 1 0 Z" style={{ fill: 'hsl(var(--card))' }} />
-                              <path d="M 1.5 0 L 1.5 0.5 A 8 8 0 0 0 9.5 8.5 L 17 8.5" fill="none" style={{ stroke: 'hsl(var(--border) / 0.6)', strokeWidth: 1 }} />
+                              <path d="M 0 0.5 L 0 9 L 17 9 L 17 8 L 8.5 8 A 7.5 7.5 0 0 1 1 0.5 L 0 0.5 Z" style={{ fill: 'hsl(var(--card))' }} />
+                              <path d="M 0.5 0 L 0.5 0.5 A 8 8 0 0 0 8.5 8.5 L 17 8.5" fill="none" style={{ stroke: 'hsl(var(--border) / 0.6)', strokeWidth: 1 }} />
                             </>
                           ) : (
                             <>
-                              <path d="M 17 0 L 17 9 L 0 9 L 0 8 L 8 8 A 8 8 0 0 0 16 0 Z" style={{ fill: 'hsl(var(--card))' }} />
-                              <path d="M 15.5 0 L 15.5 0.5 A 8 8 0 0 1 7.5 8.5 L 0 8.5" fill="none" style={{ stroke: 'hsl(var(--border) / 0.6)', strokeWidth: 1 }} />
+                              <path d="M 17 0.5 L 17 9 L 0 9 L 0 8 L 8.5 8 A 7.5 7.5 0 0 0 16 0.5 L 17 0.5 Z" style={{ fill: 'hsl(var(--card))' }} />
+                              <path d="M 16.5 0 L 16.5 0.5 A 8 8 0 0 1 8.5 8.5 L 0 8.5" fill="none" style={{ stroke: 'hsl(var(--border) / 0.6)', strokeWidth: 1 }} />
                             </>
                           )}
                         </svg>
@@ -974,6 +1075,7 @@ const ReservesTable = ({
                             variant="simulationOnly"
                             reserve={activeReserve}
                             isApy={isApy}
+                            tydroPointToUsdRate={tydroPointToUsdRate}
                             onIncentiveClick={handleMobileIncentiveClick}
                             isSimulationExpanded
                             onToggleSimulation={() => handleToggleExpand(activeId)}
@@ -998,6 +1100,7 @@ const ReservesTable = ({
                         variant="full"
                         reserve={leftReserve}
                         isApy={isApy}
+                        tydroPointToUsdRate={tydroPointToUsdRate}
                         onIncentiveClick={handleMobileIncentiveClick}
                         isSimulationExpanded={false}
                         onToggleSimulation={() => handleToggleExpand(leftId)}
@@ -1019,6 +1122,7 @@ const ReservesTable = ({
                           variant="full"
                           reserve={rightReserve}
                           isApy={isApy}
+                          tydroPointToUsdRate={tydroPointToUsdRate}
                           onIncentiveClick={handleMobileIncentiveClick}
                           isSimulationExpanded={false}
                           onToggleSimulation={() => handleToggleExpand(rightId!)}
@@ -1076,9 +1180,8 @@ const ReservesTable = ({
             onClose={() => setTooltipState(null)}
             isApy={isApy}
             tydroPointToUsdRate={tydroPointToUsdRate}
-            includeWhitelistOnlyMerkl={includeWhitelistOnlyMerkl}
-            onToggleWhitelistOnlyMerkl={onToggleWhitelistOnlyMerkl}
-            tokenPrices={tokenPrices}
+            whitelistMerklCampaignIds={whitelistMerklCampaignIds}
+            onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign}
           />
         )}
       </div>
@@ -1087,12 +1190,24 @@ const ReservesTable = ({
 
 
   return (
-    <div className="bg-card rounded-2xl shadow-sm border border-border/60 relative">
-      <div className="sticky top-0 z-20 border-b border-border/60 p-[var(--ds-space-3)] bg-muted/40 backdrop-blur-sm shadow-[0_1px_3px_0_rgb(0_0_0/0.04)]">
+    <div
+      ref={desktopTableCardRef}
+      className="bg-card rounded-2xl shadow-sm border border-border/60 relative"
+    >
+      <div
+        ref={desktopStickyScenarioRef}
+        data-reserves-sticky-scenario
+        className="sticky top-0 z-20 border-b border-border/60 p-[var(--ds-space-3)] bg-muted/40 backdrop-blur-sm shadow-[0_1px_3px_0_rgb(0_0_0/0.04)]"
+      >
         {scenarioControls}
       </div>
-      <div className="overflow-x-auto">
-        <Table className="w-full table-fixed" wrapperClassName="overflow-visible">
+      {/*
+        Do not wrap the table in overflow-x-auto: that creates a scrollport so thead’s
+        sticky `top` is relative to that box, not the viewport — scenario uses viewport top-0,
+        producing a huge gap and tbody bleeding above the header. Horizontal overflow falls
+        through to the page when the table is wider than the container.
+      */}
+      <Table className="w-full table-fixed min-w-0" wrapperClassName="overflow-visible">
           <colgroup>
             {/* 左边三列再宽松，右边三列（Supply/Spread/Borrow）稍紧凑，合计 100% */}
             <col style={{ width: '13%' }} />
@@ -1104,8 +1219,12 @@ const ReservesTable = ({
             <col style={{ width: '12%' }} />
             <col style={{ width: '14.5%' }} />
           </colgroup>
-          <TableHeader className="overflow-visible">
-            <TableRow className="border-border/50 bg-card/60 overflow-visible">
+          <TableHeader
+            data-reserves-sticky-thead
+            className="overflow-visible sticky z-10 border-b border-border/60 bg-card shadow-[0_1px_2px_0_rgb(0_0_0/0.04)] [&_tr]:border-b-0"
+            style={{ top: 'var(--reserves-sticky-scenario-height, 4.5rem)' }}
+          >
+            <TableRow className="border-0 bg-transparent overflow-visible">
               {/* Token — 大幅收窄 */}
               <TableHead className="pl-[var(--ds-space-1-5)] pr-[var(--ds-space-0-5)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground">
                 <button
@@ -1154,7 +1273,26 @@ const ReservesTable = ({
               </TableHead>
               {/* Market — 大幅收窄 */}
               <TableHead className="pl-[var(--ds-space-0-5)] pr-[var(--ds-space-1)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
-                Market
+                <button
+                  type="button"
+                  onClick={handleSortMarket}
+                  className={`ds-chip-heading md:ds-text-16 gap-[var(--ds-space-1)] transition-all duration-200 ${
+                    activeSortColumn === 'market'
+                      ? 'text-foreground font-bold scale-105'
+                      : 'text-muted-foreground hover:text-foreground/80'
+                  }`}
+                >
+                  <span>Market</span>
+                  {activeSortColumn === 'market' ? (
+                    marketSortOrder === 'asc' ? (
+                      <ArrowUp className="w-3 h-3" />
+                    ) : (
+                      <ArrowDown className="w-3 h-3" />
+                    )
+                  ) : (
+                    <ArrowDown className="w-3 h-3 opacity-50" />
+                  )}
+                </button>
               </TableHead>
               {/* Size */}
               <TableHead className="px-[var(--ds-space-1-5)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
@@ -1628,14 +1766,20 @@ const ReservesTable = ({
             ) : displayData.map((reserve) => {
               const reserveId = getReserveSimulationId(reserve);
               const simulation = simulationsById[reserveId];
-              const displaySupplyIncentive = (() => {
-                const incentive = getDisplaySupplyIncentive(reserve);
-                return incentive === 0 || isNaN(incentive) || incentive < 0.01 ? null : incentive;
-              })();
-              const displayBorrowIncentive = (() => {
-                const incentive = getDisplayBorrowIncentive(reserve);
-                return incentive === 0 || isNaN(incentive) || incentive < 0.01 ? null : incentive;
-              })();
+              const displaySupplyIncentive = resolveVisibleIncentiveBadgeValue(
+                getDisplaySupplyIncentive(reserve),
+                reserve,
+                'supply',
+                isApy,
+                tydroPointToUsdRate,
+              );
+              const displayBorrowIncentive = resolveVisibleIncentiveBadgeValue(
+                getDisplayBorrowIncentive(reserve),
+                reserve,
+                'borrow',
+                isApy,
+                tydroPointToUsdRate,
+              );
               return (
                 <DesktopReserveRow
                   key={reserveId}
@@ -1667,7 +1811,6 @@ const ReservesTable = ({
             }
           </TableBody>
         </Table>
-      </div>
       
       {/* Show More/Less button for desktop */}
       {sortedData.length > displayData.length && (
@@ -1708,9 +1851,8 @@ const ReservesTable = ({
           onClose={() => setTooltipState(null)}
           isApy={isApy}
           tydroPointToUsdRate={tydroPointToUsdRate}
-          includeWhitelistOnlyMerkl={includeWhitelistOnlyMerkl}
-          onToggleWhitelistOnlyMerkl={onToggleWhitelistOnlyMerkl}
-          tokenPrices={tokenPrices}
+          whitelistMerklCampaignIds={whitelistMerklCampaignIds}
+          onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign}
         />
       )}
     </div>

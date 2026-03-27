@@ -4,7 +4,7 @@
 - `src/` contains the React + TypeScript app. Key areas: `src/pages/` for routes, `src/components/` for UI and dashboard pieces, `src/hooks/` for reusable logic, `src/lib/` for helpers, `src/types/` for shared types.
 - `public/` holds static assets (icons, robots.txt, favicon).
 - `dist/` is build output from Vite. Treat as generated.
-- `docs/` holds living implementation notes (e.g. `docs/design/frontend-interaction-guardrails.md` for tooltip/search/forecast UI, `docs/PR_ANALYSIS.md` for PR merge and batching strategy).
+- `docs/` holds living implementation notes (e.g. `docs/design/frontend-interaction-guardrails.md` for tooltip/search/forecast UI, desktop reserves **sticky stack + scrollport**, and **Simulation pin scroll (normative)** — scenario-key + sort-order gated pinning; `docs/PR_ANALYSIS.md` for PR merge and batching strategy).
 
 ## Build, Test, and Development Commands
 - `npm run dev`: start the Vite dev server with hot reload.
@@ -17,6 +17,7 @@
 - Language: TypeScript + React (TSX). Prefer functional components and hooks.
 - Indentation: 2 spaces (match existing TS/TSX files).
 - Naming: `PascalCase` for components/types, `camelCase` for functions/variables, `kebab-case` for asset files.
+- Incentive constraints: keep API field names as returned by the backend (e.g. `perUserRewardCapUsd`). In new domain code, prefer *ceiling* naming (`depositCeilingUsd`, `rewardCeilingUsd`) and route simulation copy through `src/lib/incentiveCeilings.ts`; UI props remain `capNote` / `capWarning` (see `docs/rate-calculation-formulas.md` § Naming layers).
 - Styling: Tailwind CSS classes in components; base styles live in `src/index.css` and `src/App.css`.
 - Linting: ESLint config in `eslint.config.js`; keep `dist/` excluded.
 
@@ -39,6 +40,8 @@
 ## API Contract & Dependency Safety
 - When backend API response format changes, follow `docs/conventions/api-contract-checklist.md` to ensure all consumers (types, schemas, hooks, scripts) are updated. If CI live schema fails with Cloudflare 403 from GitHub Actions, see `docs/conventions/ci-live-schema-cloudflare.md`.
 - When upgrading React or other core libraries, follow `docs/conventions/peer-dependency-guard.md` to prevent version mismatch white-screen issues.
+- Primary app reads from the backend: `GET /markets` and `GET /meta/side-data` (via `VITE_API_BASE_URL` / `src/lib/apiBase.ts`); rate simulation is computed client-side—there is no dedicated simulation endpoint.
+- `forecast.errors[]` in side-data maps to `forecastErrors`; Merkl campaigns without forecast state fall back to current APR in simulation; `forecastUnavailableCampaignCount` signals partial forecast coverage.
 
 ## Configuration & Secrets
 - Use `.env` for local secrets and keep it out of version control.
@@ -52,6 +55,7 @@
 
 ## UI Regression Guardrails
 - When changing incentive tooltip behavior, search filtering, or forecast display semantics, review and update `docs/design/frontend-interaction-guardrails.md` in the same work session.
+- When changing desktop `ReservesTable` **overflow wrappers**, **sticky** scenario/`thead` stacking, **debounced scenario** wiring, **`sortedData` sort**, or **simulation expand scroll**, follow and preserve **§ Desktop reserves table: sticky stack and scrollport (normative)** and **§ Simulation pin scroll (normative)** in `docs/design/frontend-interaction-guardrails.md` (single effect after `sortedData`; `scrollExpandedSimulationIntoView` + `data-reserves-*` DOM contract).
 - Reusable design habits and interaction patterns are consolidated in `docs/design/DESIGN-SYSTEM-REFERENCE.md`; update that doc when adding or changing cross-project design rules.
 
 ---
@@ -118,7 +122,7 @@
   - Desktop: Table layout with sortable columns
   - Always show sort indicators and active state
 - **Tooltips**:
-  - Use `IncentiveTooltip` for detailed incentive breakdowns
+  - Use `IncentiveTooltip` for static incentive breakdowns (dates, messages, Merkl whitelist toggles); do not duplicate text already in campaign messages or put deposit/TVL forecasts here—those belong in the expanded shared simulation (`SimulationSubRow` / `useRateSimulation` per-campaign rows and `capNote`).
   - Position dynamically based on trigger element
   - Close on outside click or Escape key
 
@@ -162,29 +166,29 @@ When implementing mobile carousels:
 7. Use `align: "center"` for centered snap
 
 ## Learned User Preferences
-- Prefer Chinese for collaboration and implementation discussions.
-- Prefer direct execution after confirmation (e.g. "直接执行", "继续", "你来处理"), including verifying and reproducing issues yourself; prefer evidence-based diagnosis with concrete runtime artifacts (CI logs, live API responses) before concluding root cause.
+- Prefer Chinese for collaboration and implementation discussions; prefer direct execution after confirmation (e.g. "直接执行", "继续", "你来处理"), including verifying and reproducing issues yourself; prefer evidence-based diagnosis with concrete runtime artifacts (CI logs, live API responses) before concluding root cause.
 - Avoid default values for missing API or backend fields; keep schema and code minimal.
 - For large design or architectural changes, provide a 方案 (plan) first without modifying code when asked (e.g. "先给我方案不要直接修改").
 - When summarizing many items (APIs, options), use tables for clarity (表格形式，一目了然).
-- Follow explicit visual descriptions precisely (e.g. "竖线" → vertical, "圆环" → ring); when the user caps UI work to named regions and forbids global tokens or unrelated components, keep changes strictly within that scope.
-- Maintain design symmetry when adding complementary UI elements (e.g. Supply and Borrow info placement consistent).
-- Tooltip content should not repeat information already visible in the parent; only show supplementary context.
-- Toggle/selection state changes must be visually obvious; use border color or other clear indicators, not subtle opacity/background only.
-- Reserve semantic colors for their purpose; avoid introducing new colors just to show selection/active state (prefer neutral borders + thickness/contrast). Keep each UI element focused on one semantic role (e.g. amber for alerts only, not regular data). When implementing the same control on mobile and desktop, reuse the same design tokens and visual style; only layout may differ (e.g. vertical vs horizontal). For utilization vs optimal (kink), use borrow-aligned brand cyan for the below-optimal zone (not emerald); keep amber for above-optimal (past kink / tighter pool), not green.
-- Multi-column panels (e.g. simulation Supply/Spread/Borrow): use equal column widths and uniform compression; do not give one column fixed or favored width. Bordered UI (including tables) must keep clear breathing room between text and borders; when space is tight prefer wrapping over ellipsis.
+- Follow explicit visual descriptions and scoped regions precisely (e.g. "竖线" → vertical, "圆环" → ring); keep complementary UI symmetric (e.g. Supply/Borrow placement); when the user caps work to named areas and forbids global tokens or unrelated components, stay within that scope.
+- Tooltip content should not repeat information already visible in the parent; selection and toggle state must be visually obvious (borders/contrast), not subtle opacity or background alone. For paired opt-in states (e.g. Merkl whitelist rows counting toward totals), prefer very short symmetric labels; when the visible label is minimal, give the control a full accessible name via `aria-label`.
+- In simulation incentive breakdown rows, avoid showing opaque identifiers (e.g. `campaignId` suffixes) or campaign-type labels when they don’t help users; when multiple rows share the same display name, use a simple `#1/#2/...` disambiguator regardless of scenario input, and prefer placing outbound incentive links on the specific expanded row rather than the aggregate row. Prefer short, plain-language simulation labels; avoid abstract budget or eligible-ratio lines unless the meaning is obvious to users.
+- Reserve semantic colors for their purpose; avoid introducing new colors just to show selection/active state (prefer neutral borders + thickness/contrast). Keep each UI element focused on one semantic role (e.g. amber for alerts only, not regular data). When implementing the same control on mobile and desktop, reuse the same design tokens and visual style; only layout may differ (e.g. vertical vs horizontal). For utilization vs optimal (kink), use borrow-aligned brand cyan for the below-optimal zone (not emerald); keep amber for above-optimal (past kink / tighter pool), not green. Prefer fewer opacity steps within the same hue for utilization (one zone tint + full semantic for marker and labels; see `docs/design/frontend-interaction-guardrails.md`). **Data markers** (e.g. utilization dot): prefer stronger fill or slightly larger radius—avoid outline/stroke halos as a default decorative habit.
+- Multi-column panels (e.g. simulation Supply/Spread/Borrow): use equal column widths and uniform compression; do not give one column fixed or favored width. Bordered UI (including tables) must keep clear breathing room between text and borders; when space is tight prefer wrapping over ellipsis. For TVL-gated incentive APR cap messaging when current pool TVL is not shown in the same surface, avoid displaying numeric TVL thresholds; use qualitative copy (e.g. APR capped for low TVL) instead of computed dollar cutoffs.
 - Mobile reserve collapsed row and expand affordance should read as opening the full reserve simulation/detail, not only spread; prefer familiar expand patterns over novel decorative divider treatments.
+- **UI geometry & SVG**: Fix root cause with a single contour source—no patch-on-top-of-patch. For 1px strokes use half-pixel alignment; for inner module corners prefer one path (vertical + `A` arc + horizontal) with locally disconnected underlying borders over stacked masks and hand-tuned cubic Béziers when a quarter-circle fits.
+- Repo `/sync` means full **git** sync with remote: `fetch`, inbound update (`pull --ff-only`, or **stash → `pull --rebase` → stash pop** when diverged—**stop for confirmation** on conflicts), then **`git push` when the branch is ahead** of upstream; use **`push --force-with-lease`** only when the user explicitly updates remote after rewriting published history. **Artifact** sync stays separate (`artifacts-all` or individual `sync:*` npm targets). Keep **`.claude/commands/sync.md`** and **`~/.cursor/commands/sync.md`** aligned; treat the repo file as source of truth when they drift.
 
 ## Learned Workspace Facts
 - Mobile overlays (cap details, incentive details) use bottom sheet with title bar and close button, not floating popover; see docs/design/frontend-interaction-guardrails.md.
 - Aave reserve `optimalUsageRate` (and similar on-chain rate fields) is RAY; convert to a display percent with `Number(value) / 1e25` or reuse `simulation.utilization.optimal` from rate simulation—never treat the raw integer as a 0–1 fraction and multiply by 100.
 - Mobile Top Opportunities mini cards do not link out to external Aave URLs; elsewhere, shared helpers in `src/lib/externalNavigation.ts` open external URLs in the same tab on mobile and a new tab on desktop where that pattern is applied.
-- Do not drive full-page `scrollTo` from expanded-row index changes when `sortedData` reorders due to simulation updates; prefer viewport-based behavior if scroll is needed later (see docs/design/frontend-interaction-guardrails.md).
-- Mobile reserve utilization display and `UtilizationIndicator` should use the same scenario-based utilization as desktop/`ReservesTable` when simulating, not only raw on-chain `reserve.utilizationPct`.
+- Mobile reserve simulation: utilization and `UtilizationIndicator` should match desktop/`ReservesTable` scenario-based utilization when simulating; do not drive full-page `scrollTo` from expanded-row index changes when `sortedData` reorders; pinning scroll is only the scenario-key + sort-order path documented as **Simulation pin scroll** in `docs/design/frontend-interaction-guardrails.md`, not expand-only. Desktop pinning is implemented via `scrollExpandedSimulationIntoView` (sticky scenario and thead per the normative desktop reserves table section there). The expanded simulation block should read as one piece with its parent card only—no visual overlap with neighboring cards.
 - `.github/dependabot.yml` uses `open-pull-requests-limit: 0` for npm/github-actions so Dependabot **version** PRs are off (an empty `updates: []` list did not reliably stop version PRs here); security-related dependency PRs can still be opened when Dependabot security updates are enabled in GitHub repo settings (Code security and analysis).
-- Mobile expanded reserve simulation block should read as one piece with its parent card only; avoid visual overlap with neighboring cards (connectors, lines, and fills stay within that card’s column).
-- Prefer deriving values client-side when possible rather than adding backend fields (e.g., totalBorrowedUsd can be computed from reserveSizeUsd × utilizationPct).
-- Borrow availability is constrained by BOTH pool liquidity AND borrow cap: `Available = min(Pool Liquidity, Borrow Cap Remaining)`.
+- Prefer deriving values client-side when possible rather than adding backend fields; borrow availability is `min(Pool Liquidity, Borrow Cap Remaining)` (e.g. totalBorrowedUsd from reserveSizeUsd × utilizationPct).
+- Desktop reserves: **Spread** uses **`font-bold`** and purple semantic color (same weight tier as Supply/Borrow APY totals); **Size** Supply/Borrow amounts use the same tokens as those APY primaries (`ds-text-emerald-500` / `ds-text-brand-cyan`) with `font-medium tabular-nums` next to cap rings; **Native/Incentive** rows under APY use smaller `ds-text-11` + `*-70` (secondary tier—not the same spec as Size).
+- Merkl `whitelistOnly` campaigns are excluded from incentive totals until the user opts in via `whitelistMerklCampaignIds` (per `campaignId`, or a fixed sentinel when `campaignId` is missing after trim); default is none selected; see `docs/design/frontend-interaction-guardrails.md` § Merkl whitelist-only campaigns. For APR from a breakdown, prefer `campaignApr > 0` over Tydro-points conversion when both exist. For points-style Merkl rows (`campaignApr` not positive and `pointsPerThousandUsd` set), treat API budget and flow fields used in forecast (`totalBudget`, `plannedDaily`, `requiredDaily`, `distributedSoFar`, `latestTvl`, etc.) as **points-denominated** until explicitly converted to USD—do not assume USD from the payload alone. In rate simulation, native Aave rates use capped supply and borrow token amounts together; Merit/Merkl incentive forecasts use per-lane USD (`supplyInputUsd` / `borrowInputUsd`) for hypothetical TVL, not a single shared TVL field with native.
+- Desktop `ReservesTable` bridge **inner corners** between hero cards and the list: prefer a single SVG path per corner (local border disconnect + vertical / `A` arc / horizontal) over iterative mask tweaks; half-pixel alignment for 1px strokes.
 - Local git hooks live under the repository `.git/hooks` (local-only, not versioned); pre-push runs lockfile consistency checks before `ci:remote`. When bulk-deleting remote branches with `git push origin --delete`, use `--no-verify` so each delete does not run the pre-push hook (ci:remote).
-- Workflows using `pull_request_target` use the workflow definition on the default branch (`main`), not the PR base branch (e.g. `dev`); merge workflow changes to `main` for them to take effect. In job `if` conditions on pull request payloads, prefer `github.event.pull_request.draft != true` over `draft == false` when `draft` may be missing.
-- This repo has workspace-level `.vscode/settings.json` that can hide dotfiles (e.g. `.env`) via `files.exclude` and can change search ignore behavior via `search.useIgnoreFiles` / `search.useGlobalIgnoreFiles`.
+- Merit Self deposit ceiling (`selfCapUsd`) is parsed from `MeritIncentive.message` via `extractMeritSelfCapUsd` in `meritForecast.ts` (no separate API cap field). Merit Base forecast (`meritForecast.ts`, `useRateSimulation`): when `reserveSizeUsd` is available, anchor daily rewards with reserve TVL × headline Base APR (supply); borrow-side Merit uses `reserveSizeUsd × utilizationPct` as TVL proxy; otherwise fall back to `lastRoundRewardUsd`. See `docs/rate-calculation-formulas.md` § Merit Base reserve TVL anchor and `docs/merit-base-anchor-vs-last-round-staging.md` for anchor vs last-round staging comparison.
+- Brevis incentive forecasting lives in `src/lib/brevisForecast.ts` with per-user reward caps (`perUserRewardCapUsd`), canonical shared campaigns keyed by `campaignId`, and `isCampaignActive(allowOpenEnd: true)` for campaigns without `endDate`. Incentive reward cap taxonomy (pool budget / deposit ceiling / per-user reward ceiling) and rate formulas are documented in `docs/rate-calculation-formulas.md`. When both a per-user reward ceiling and a campaign end date limit the accrual window, use the minimum of the applicable horizons for effective reward-duration semantics.

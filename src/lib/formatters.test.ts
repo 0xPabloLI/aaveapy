@@ -1,8 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
 import * as formatters from './formatters';
-import { calculateTotalIncentiveApr, calculateTotalIncentiveApy, convertAprToApy } from './formatters';
-import type { BrevisIncentive, MeritIncentive, MerklOpportunityGroup } from '@/types/aave';
+import {
+  calculateTotalIncentiveApr,
+  calculateTotalIncentiveApy,
+  convertAprToApy,
+  MERKL_WHITELIST_NO_CAMPAIGN_ID_SENTINEL,
+  resolveVisibleIncentiveBadgeValue,
+} from './formatters';
+import type { BrevisIncentive, MeritIncentive, MerklOpportunityGroup, ReserveWithSpread } from '@/types/aave';
 
 const daysFromNowIso = (days: number): string => {
   const date = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
@@ -54,18 +60,18 @@ describe('incentive calculations only include active campaigns', () => {
 
     const brevisIncentives: BrevisIncentive[] = [
       {
-        apr: 3,
+        campaignApr: 3,
         link: 'https://example.com/active-brevis',
-        startDate: daysFromNowIso(-1),
-        endDate: daysFromNowIso(1),
-        name: 'Active Brevis',
+        campaignStartedAt: daysFromNowIso(-1),
+        campaignEndedAt: daysFromNowIso(1),
+        message: 'Active Brevis',
       },
       {
-        apr: 8,
+        campaignApr: 8,
         link: 'https://example.com/future-brevis',
-        startDate: daysFromNowIso(4),
-        endDate: daysFromNowIso(8),
-        name: 'Future Brevis',
+        campaignStartedAt: daysFromNowIso(4),
+        campaignEndedAt: daysFromNowIso(8),
+        message: 'Future Brevis',
       },
     ];
 
@@ -120,18 +126,18 @@ describe('incentive calculations only include active campaigns', () => {
 
     const brevisIncentives: BrevisIncentive[] = [
       {
-        apr: 3,
+        campaignApr: 3,
         link: 'https://example.com/active-brevis',
-        startDate: daysFromNowIso(-1),
-        endDate: daysFromNowIso(1),
-        name: 'Active Brevis',
+        campaignStartedAt: daysFromNowIso(-1),
+        campaignEndedAt: daysFromNowIso(1),
+        message: 'Active Brevis',
       },
       {
-        apr: 8,
+        campaignApr: 8,
         link: 'https://example.com/future-brevis',
-        startDate: daysFromNowIso(4),
-        endDate: daysFromNowIso(8),
-        name: 'Future Brevis',
+        campaignStartedAt: daysFromNowIso(4),
+        campaignEndedAt: daysFromNowIso(8),
+        message: 'Future Brevis',
       },
     ];
 
@@ -184,9 +190,75 @@ describe('whitelist-only Merkl campaign handling', () => {
 
   it('includes whitelist-only Merkl campaigns when enabled', () => {
     const apr = calculateTotalIncentiveApr([], merklOpportunities, [], [], undefined, {
-      includeWhitelistOnlyMerkl: true,
+      whitelistMerklCampaignIds: new Set(['whitelist-merkl']),
     });
     expect(apr).toBe(11);
+  });
+
+  it('includes whitelist-only Merkl without campaign id when sentinel is enabled', () => {
+    const orphanOpportunities: MerklOpportunityGroup[] = [
+      {
+        breakdowns: [
+          {
+            campaignApr: 3,
+            campaignId: '',
+            campaignStartedAt: daysFromNowIso(-1),
+            campaignEndedAt: daysFromNowIso(2),
+            whitelistOnly: true,
+          },
+        ],
+      },
+    ];
+    const aprDefault = calculateTotalIncentiveApr([], orphanOpportunities, [], []);
+    expect(aprDefault).toBe(0);
+    const aprWithSentinel = calculateTotalIncentiveApr([], orphanOpportunities, [], [], undefined, {
+      whitelistMerklCampaignIds: new Set([MERKL_WHITELIST_NO_CAMPAIGN_ID_SENTINEL]),
+    });
+    expect(aprWithSentinel).toBe(3);
+  });
+});
+
+describe('Brevis open-ended campaign handling', () => {
+  it('includes brevis with no endDate in APR totals', () => {
+    const brevisIncentives: BrevisIncentive[] = [
+      {
+        campaignApr: 5,
+        link: 'https://example.com/brevis-open',
+        campaignStartedAt: daysFromNowIso(-10),
+        campaignEndedAt: '',
+        message: 'Open-ended Brevis',
+      },
+    ];
+    const apr = calculateTotalIncentiveApr([], [], brevisIncentives, []);
+    expect(apr).toBe(5);
+  });
+
+  it('includes brevis with no endDate in APY totals', () => {
+    const brevisIncentives: BrevisIncentive[] = [
+      {
+        campaignApr: 5,
+        link: 'https://example.com/brevis-open',
+        campaignStartedAt: daysFromNowIso(-10),
+        campaignEndedAt: '',
+        message: 'Open-ended Brevis',
+      },
+    ];
+    const apy = calculateTotalIncentiveApy([], [], brevisIncentives, []);
+    expect(apy).toBeCloseTo(convertAprToApy(5), 10);
+  });
+
+  it('excludes brevis with future startDate and no endDate', () => {
+    const brevisIncentives: BrevisIncentive[] = [
+      {
+        campaignApr: 5,
+        link: 'https://example.com/brevis-future',
+        campaignStartedAt: daysFromNowIso(10),
+        campaignEndedAt: '',
+        message: 'Future Brevis',
+      },
+    ];
+    const apr = calculateTotalIncentiveApr([], [], brevisIncentives, []);
+    expect(apr).toBe(0);
   });
 });
 
@@ -231,5 +303,47 @@ describe('scenario size formatting', () => {
       });
 
     expect(result).toBe('-1.25');
+  });
+});
+
+describe('resolveVisibleIncentiveBadgeValue', () => {
+  const minimalReserve = {
+    marketName: 'm',
+    chainName: 'c',
+    chainId: 1,
+    tokenName: 't',
+    tokenSymbol: 'T',
+    tokenAddress: '0x0000000000000000000000000000000000000001',
+  } as ReserveWithSpread;
+
+  it('keeps small positive incentives that were previously hidden by the 0.01% table threshold', () => {
+    expect(resolveVisibleIncentiveBadgeValue(0.005, minimalReserve, 'supply', true, 1)).toBe(0.005);
+  });
+
+  it('keeps 0 when the tooltip still has Merkl rows (e.g. whitelist-only)', () => {
+    const start = daysFromNowIso(-1);
+    const end = daysFromNowIso(1);
+    const reserve = {
+      ...minimalReserve,
+      merklSupplys: [
+        {
+          name: 'op',
+          breakdowns: [
+            {
+              campaignApr: 0,
+              campaignStartedAt: start,
+              campaignEndedAt: end,
+              campaignId: 'wl1',
+              whitelistOnly: true,
+            },
+          ],
+        },
+      ],
+    } as ReserveWithSpread;
+    expect(resolveVisibleIncentiveBadgeValue(0, reserve, 'supply', true, 1)).toBe(0);
+  });
+
+  it('hides 0 when there are no incentive sources', () => {
+    expect(resolveVisibleIncentiveBadgeValue(0, minimalReserve, 'supply', true, 1)).toBe(null);
   });
 });

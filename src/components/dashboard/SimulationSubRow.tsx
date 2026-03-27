@@ -1,12 +1,13 @@
-import { useRef, useState, useEffect } from 'react';
+import { Fragment, useRef, useState, useEffect } from 'react';
 import { AlertTriangle, ExternalLink } from 'lucide-react';
 import { formatPercent, formatScenarioSize, formatScenarioSizeDelta, formatSpread } from '@/lib/formatters';
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
 import { useIsMobile } from '@/hooks/use-mobile';
-import type { RateSimulationResult } from '@/hooks/useRateSimulation';
+import type { RateSimulationResult, SimulationCampaignDetail, SimulationSourceDetail } from '@/hooks/useRateSimulation';
 import type { ReserveWithSpread, MeritIncentive, MerklOpportunityGroup, BrevisIncentive } from '@/types/aave';
 import { ETHEREUM_MARKET_NAMES } from '@/types/aave';
+import { getBrevisCampaignEndedAt, getBrevisCampaignStartedAt } from '@/lib/brevis';
 
 const getFirstMeritLink = (merits?: MeritIncentive[]): string | null => {
   if (!merits || !Array.isArray(merits)) return null;
@@ -25,7 +26,7 @@ const getFirstMerklLink = (opportunities?: MerklOpportunityGroup[]): string | nu
   if (!opportunities || !Array.isArray(opportunities)) return null;
   const now = Date.now();
   for (const opp of opportunities) {
-    const link = opp.link || opp.opportunityLink;
+    const link = opp.link;
     if (!link) continue;
     const hasActive = opp.breakdowns?.some((bd) => {
       const start = Date.parse(bd.campaignStartedAt);
@@ -41,8 +42,8 @@ const getFirstBrevisLink = (brevis?: BrevisIncentive[]): string | null => {
   if (!brevis || !Array.isArray(brevis)) return null;
   const now = Date.now();
   for (const b of brevis) {
-    const start = Date.parse(b.startDate);
-    const end = Date.parse(b.endDate);
+    const start = Date.parse(getBrevisCampaignStartedAt(b) ?? '');
+    const end = Date.parse(getBrevisCampaignEndedAt(b) ?? '');
     if (!Number.isNaN(start) && !Number.isNaN(end) && now >= start && now <= end && b.link) {
       return b.link;
     }
@@ -76,6 +77,7 @@ const hasMeaningfulValue = (value: number | null) =>
 type RowType = 'usd' | 'rate' | 'spread';
 
 interface TableRow {
+  rowKey: string;
   label: string;
   current: number | null;
   after: number | null;
@@ -84,7 +86,67 @@ interface TableRow {
   cap?: number | null;
   href?: string | null;
   isBreakdown?: boolean;
+  /** Nested under ACI / Merkl / Brevis aggregate when per-campaign rows exist */
+  isSubBreakdown?: boolean;
+  capNote?: string;
+  capWarning?: boolean;
   warning?: boolean;
+}
+
+interface IncentiveSourceRow extends SimulationSourceDetail {
+  label: string;
+  href: string | null;
+  /** When one campaign, merge into the source row so capNote shows under the main label (Brevis cap/duration). */
+  mergeSingleCampaignRow?: boolean;
+}
+
+function incentiveSourceToTableRows(src: IncentiveSourceRow, sourceIndex: number, side: 'supply' | 'borrow'): TableRow[] {
+  const prefix = `${side}-${sourceIndex}`;
+  const main: TableRow = {
+    rowKey: `${prefix}-agg`,
+    label: src.label,
+    current: src.current,
+    after: src.after,
+    delta: src.delta,
+    type: 'rate',
+    href: src.href,
+    isBreakdown: true,
+  };
+  const campaigns = src.campaigns;
+  if (!campaigns?.length) return [main];
+  if (campaigns.length === 1 && src.mergeSingleCampaignRow) {
+    const c = campaigns[0];
+    return [
+      {
+        rowKey: `${prefix}-merged`,
+        label: src.label,
+        current: src.current,
+        after: src.after,
+        delta: src.delta,
+        type: 'rate',
+        href: c.href ?? src.href,
+        isBreakdown: true,
+        capNote: c.capNote,
+        capWarning: c.capWarning,
+      },
+    ];
+  }
+  return [
+    main,
+    ...campaigns.map((c: SimulationCampaignDetail, ci: number) => ({
+      rowKey: `${prefix}-c-${ci}-${c.id}`,
+      label: c.label,
+      current: c.current,
+      after: c.after,
+      delta: c.delta,
+      type: 'rate' as RowType,
+      href: c.href ?? null,
+      isBreakdown: true,
+      isSubBreakdown: true,
+      capNote: c.capNote,
+      capWarning: c.capWarning,
+    })),
+  ];
 }
 
 const SimulationSubRow = ({
@@ -226,18 +288,31 @@ const SimulationSubRow = ({
   const borrowBrevisLink = getFirstBrevisLink(reserve.brevisBorrows);
 
   const incentiveLabel = (full: string, short: string) => (effectiveCompact ? short : full);
-  const supplyIncentiveSources = [
+  const supplyMerklHasCampaigns = !!simulation.supply.sources.merkl.campaigns?.length;
+  const supplyIncentiveSources: IncentiveSourceRow[] = [
     { label: incentiveLabel('Protocol Incentive', 'Protocol'), ...simulation.supply.sources.protocol, href: aaveUrl },
     { label: incentiveLabel('ACI Incentive', 'ACI'), ...simulation.supply.sources.merit, href: supplyMeritLink },
-    { label: incentiveLabel('Merkl Incentive', 'Merkl'), ...simulation.supply.sources.merkl, href: supplyMerklLink },
-    { label: incentiveLabel('Brevis Incentive', 'Brevis'), ...simulation.supply.sources.brevis, href: supplyBrevisLink },
+    // If we have per-campaign rows, the more specific campaign rows should own the link.
+    { label: incentiveLabel('Merkl Incentive', 'Merkl'), ...simulation.supply.sources.merkl, href: supplyMerklHasCampaigns ? null : supplyMerklLink },
+    {
+      label: incentiveLabel('Brevis Incentive', 'Brevis'),
+      ...simulation.supply.sources.brevis,
+      href: supplyBrevisLink,
+      mergeSingleCampaignRow: true,
+    },
   ].filter((src) => hasMeaningfulValue(src.current) || hasMeaningfulValue(src.after));
 
-  const borrowIncentiveSources = [
+  const borrowMerklHasCampaigns = !!simulation.borrow.sources.merkl.campaigns?.length;
+  const borrowIncentiveSources: IncentiveSourceRow[] = [
     { label: incentiveLabel('Protocol Incentive', 'Protocol'), ...simulation.borrow.sources.protocol, href: aaveUrl },
     { label: incentiveLabel('ACI Incentive', 'ACI'), ...simulation.borrow.sources.merit, href: borrowMeritLink },
-    { label: incentiveLabel('Merkl Incentive', 'Merkl'), ...simulation.borrow.sources.merkl, href: borrowMerklLink },
-    { label: incentiveLabel('Brevis Incentive', 'Brevis'), ...simulation.borrow.sources.brevis, href: borrowBrevisLink },
+    { label: incentiveLabel('Merkl Incentive', 'Merkl'), ...simulation.borrow.sources.merkl, href: borrowMerklHasCampaigns ? null : borrowMerklLink },
+    {
+      label: incentiveLabel('Brevis Incentive', 'Brevis'),
+      ...simulation.borrow.sources.brevis,
+      href: borrowBrevisLink,
+      mergeSingleCampaignRow: true,
+    },
   ].filter((src) => hasMeaningfulValue(src.current) || hasMeaningfulValue(src.after));
 
   // If only Native (no incentives), put link on APY row directly; otherwise show breakdown
@@ -246,7 +321,8 @@ const SimulationSubRow = ({
 
   const supplyRows: TableRow[] = [
     {
-      label: effectiveCompact ? 'Supplied' : 'Total',
+      rowKey: 'supply-size',
+      label: effectiveCompact ? 'Total supplied' : 'Total',
       current: currentSupplySizeUsd,
       after: afterSupplySizeUsd,
       delta: afterSupplySizeUsd !== null && currentSupplySizeUsd !== null ? afterSupplySizeUsd - currentSupplySizeUsd : null,
@@ -255,6 +331,7 @@ const SimulationSubRow = ({
       warning: supplyCapExceeded,
     },
     {
+      rowKey: 'supply-total-rate',
       label: effectiveCompact ? `Supply ${rateLabel}` : rateLabel,
       current: simulation.supply.currentTotal,
       after: simulation.supply.afterTotal,
@@ -264,29 +341,27 @@ const SimulationSubRow = ({
       href: hasSupplyIncentives ? null : aaveUrl,
     },
     // Only show Native breakdown row if there are incentives to break down
-    ...(hasSupplyIncentives ? [{
-      label: 'Native',
-      current: simulation.supply.currentNative,
-      after: simulation.supply.afterNative,
-      delta: simulation.supply.deltaNative,
-      type: 'rate' as RowType,
-      href: aaveUrl,
-      isBreakdown: true,
-    }] : []),
-    ...supplyIncentiveSources.map((src) => ({
-      label: src.label,
-      current: src.current,
-      after: src.after,
-      delta: src.delta,
-      type: 'rate' as RowType,
-      href: src.href,
-      isBreakdown: true,
-    })),
+    ...(hasSupplyIncentives
+      ? [
+          {
+            rowKey: 'supply-native',
+            label: 'Native',
+            current: simulation.supply.currentNative,
+            after: simulation.supply.afterNative,
+            delta: simulation.supply.deltaNative,
+            type: 'rate' as RowType,
+            href: aaveUrl,
+            isBreakdown: true,
+          },
+        ]
+      : []),
+    ...supplyIncentiveSources.flatMap((src, i) => incentiveSourceToTableRows(src, i, 'supply')),
   ];
 
   const borrowRows: TableRow[] = [
     {
-      label: effectiveCompact ? 'Borrowed' : 'Total',
+      rowKey: 'borrow-size',
+      label: effectiveCompact ? 'Total borrowed' : 'Total',
       current: simulation.marketMetrics.totalBorrowedUsd,
       after: simulation.marketMetrics.totalBorrowedUsdAfter,
       delta: simulation.marketMetrics.totalBorrowedUsdDelta,
@@ -295,6 +370,7 @@ const SimulationSubRow = ({
       warning: borrowCapExceeded && !borrowLimitedByLiquidity,
     },
     {
+      rowKey: 'borrow-total-rate',
       label: effectiveCompact ? `Borrow ${rateLabel}` : rateLabel,
       current: simulation.borrow.currentTotal,
       after: simulation.borrow.afterTotal,
@@ -304,24 +380,21 @@ const SimulationSubRow = ({
       href: hasBorrowIncentives ? null : aaveUrl,
     },
     // Only show Native breakdown row if there are incentives to break down
-    ...(hasBorrowIncentives ? [{
-      label: 'Native',
-      current: simulation.borrow.currentNative,
-      after: simulation.borrow.afterNative,
-      delta: simulation.borrow.deltaNative,
-      type: 'rate' as RowType,
-      href: aaveUrl,
-      isBreakdown: true,
-    }] : []),
-    ...borrowIncentiveSources.map((src) => ({
-      label: src.label,
-      current: src.current,
-      after: src.after,
-      delta: src.delta,
-      type: 'rate' as RowType,
-      href: src.href,
-      isBreakdown: true,
-    })),
+    ...(hasBorrowIncentives
+      ? [
+          {
+            rowKey: 'borrow-native',
+            label: 'Native',
+            current: simulation.borrow.currentNative,
+            after: simulation.borrow.afterNative,
+            delta: simulation.borrow.deltaNative,
+            type: 'rate' as RowType,
+            href: aaveUrl,
+            isBreakdown: true,
+          },
+        ]
+      : []),
+    ...borrowIncentiveSources.flatMap((src, i) => incentiveSourceToTableRows(src, i, 'borrow')),
   ];
 
   const formatValue = (value: number | null, type: RowType) => {
@@ -348,6 +421,8 @@ const SimulationSubRow = ({
   const renderRow = (row: TableRow, accentClass: string, borderColorClass: string, tight = false) => {
     const deltaColorClass = row.delta === null || Number.isNaN(row.delta) ? 'text-muted-foreground' : accentClass;
     const isBreakdownItem = row.isBreakdown;
+    const isSubBreakdown = row.isSubBreakdown === true;
+    const breakdownIndentClass = isSubBreakdown ? 'ml-4 pl-2 border-l' : isBreakdownItem ? 'ml-2 pl-2 border-l' : '';
     const cellPy = tight ? 'py-1' : 'py-1.5';
     const metricCellPx = tight ? 'px-3' : 'px-4';
     const valueCellPx = tight ? 'px-2.5' : 'px-3';
@@ -355,48 +430,75 @@ const SimulationSubRow = ({
     // Supply = green, Borrow = cyan; breakdown rows (Native + Incentive) use same section color
     const rowAccentClass = accentClass;
 
-    return (
-      <tr key={row.label} className={row.warning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
-        <td className={`${cellPy} ${metricCellPx} min-w-0 align-top`}>
-          <div className={`flex flex-wrap items-start gap-x-1.5 gap-y-0.5 min-w-0 ${isBreakdownItem ? `ml-2 pl-2 border-l ${borderColorClass}` : ''}`}>
-            {row.href ? (
-              <a
-                href={row.href}
-                {...externalLinkTabProps(isMobile)}
-                onClick={(e) => e.stopPropagation()}
-                className={`ds-text-12 flex items-center gap-1 min-w-0 break-words ${row.warning ? 'text-amber-700 dark:text-amber-400' : isBreakdownItem ? `${rowAccentClass} hover:opacity-90` : accentClass}`}
-              >
-                <span className="break-words">{row.label}</span>
-                <ExternalLink className="w-3 h-3 flex-shrink-0 opacity-50" />
-              </a>
-            ) : (
-              <span className={`ds-text-12 break-words ${row.warning ? 'text-amber-700 dark:text-amber-400 font-medium' : isBreakdownItem ? rowAccentClass : accentClass}`}>
-                {row.label}
-              </span>
-            )}
-            {row.cap !== null && row.cap !== undefined && (
-              <span className={`ds-text-11 tabular-nums flex-shrink-0 ${row.warning ? 'text-amber-600' : 'text-muted-foreground/70'}`}>
-                / Cap {formatScenarioSize(row.cap, { inputMode, tokenPrice: simulation.tokenPrice })}
-              </span>
-            )}
+    /** Indent cap note to match label column hierarchy; row uses colspan so note can use full table width. */
+    const capNoteAlignClass = isSubBreakdown ? 'pl-6' : isBreakdownItem ? 'pl-4' : '';
+    const labelCellPy = row.capNote ? `${tight ? 'pt-1 pb-0' : 'pt-1.5 pb-0'}` : cellPy;
+    const valueCellPy = row.capNote ? `${tight ? 'pt-1 pb-0' : 'pt-1.5 pb-0'}` : cellPy;
+    const capRowPb = tight ? 'pb-1' : 'pb-1.5';
+
+    const mainRow = (
+      <tr className={row.warning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
+        <td className={`${labelCellPy} ${metricCellPx} min-w-0 align-top`}>
+          <div className={`min-w-0 ${isBreakdownItem ? `${breakdownIndentClass} ${borderColorClass}` : ''}`}>
+            <div className="flex flex-wrap items-start gap-x-1.5 gap-y-0.5 min-w-0">
+              {row.href ? (
+                <a
+                  href={row.href}
+                  {...externalLinkTabProps(isMobile)}
+                  onClick={(e) => e.stopPropagation()}
+                  className={`ds-text-12 flex items-center gap-1 min-w-0 break-words ${row.warning ? 'text-amber-700 dark:text-amber-400' : isBreakdownItem ? `${rowAccentClass} hover:opacity-90` : accentClass}`}
+                >
+                  <span className="break-words">{row.label}</span>
+                  <ExternalLink className="w-3 h-3 flex-shrink-0 opacity-50" />
+                </a>
+              ) : (
+                <span
+                  className={`ds-text-12 break-words ${row.warning ? 'text-amber-700 dark:text-amber-400 font-medium' : isBreakdownItem ? rowAccentClass : accentClass}`}
+                >
+                  {row.label}
+                </span>
+              )}
+              {row.cap !== null && row.cap !== undefined && (
+                <span className={`ds-text-11 tabular-nums flex-shrink-0 ${row.warning ? 'text-amber-600' : 'text-muted-foreground/70'}`}>
+                  / Cap {formatScenarioSize(row.cap, { inputMode, tokenPrice: simulation.tokenPrice })}
+                </span>
+              )}
+            </div>
           </div>
         </td>
-        <td className={`${cellPy} ${valueCellPx} text-right`}>
+        <td className={`${valueCellPy} ${valueCellPx} text-right align-top`}>
           <span className={`ds-text-12 tabular-nums ${rowAccentClass}`}>
             {formatValue(row.current, row.type)}
           </span>
         </td>
-        <td className={`${cellPy} ${valueCellPx} text-right`}>
+        <td className={`${valueCellPy} ${valueCellPx} text-right align-top`}>
           <span className={`ds-text-12 tabular-nums ${row.after === null ? 'text-muted-foreground' : rowAccentClass}`}>
             {formatValue(row.after, row.type)}
           </span>
         </td>
-        <td className={`${cellPy} ${deltaCellPx} text-right`}>
+        <td className={`${valueCellPy} ${deltaCellPx} text-right align-top`}>
           <span className={`ds-text-12 tabular-nums ${deltaColorClass}`}>
             {formatDeltaValue(row.delta, row.type)}
           </span>
         </td>
       </tr>
+    );
+
+    return (
+      <Fragment key={row.rowKey}>
+        {mainRow}
+        {row.capNote ? (
+          <tr className={row.warning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
+            <td colSpan={4} className={`pt-0 ${capRowPb} ${metricCellPx} min-w-0 align-top`}>
+              <p
+                className={`ds-text-11 min-w-0 w-full max-w-none whitespace-normal break-words leading-snug ${capNoteAlignClass} ${row.capWarning ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}
+              >
+                {row.capNote}
+              </p>
+            </td>
+          </tr>
+        ) : null}
+      </Fragment>
     );
   };
 
@@ -416,11 +518,11 @@ const SimulationSubRow = ({
     >
       <table className="w-full min-w-0 table-fixed">
         <colgroup>
-          {/* Percent widths so short labels (e.g. Spread) are not stranded in an oversized first column */}
-          <col style={{ width: '34%' }} />
-          <col style={{ width: '22%' }} />
-          <col style={{ width: '22%' }} />
-          <col style={{ width: '22%' }} />
+          {/* Wide label column: cap notes sit outside nested indent so they use full width (later wrap). */}
+          <col style={{ width: '46%' }} />
+          <col style={{ width: '18%' }} />
+          <col style={{ width: '18%' }} />
+          <col style={{ width: '18%' }} />
         </colgroup>
         <thead>
           <tr className="bg-muted/30 border-b border-border/50">
@@ -491,10 +593,10 @@ const SimulationSubRow = ({
     <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
       <table className="w-full min-w-0 table-fixed">
         <colgroup>
-          <col style={{ width: '38%' }} />
-          <col style={{ width: '20%' }} />
-          <col style={{ width: '20%' }} />
-          <col style={{ width: '22%' }} />
+          <col style={{ width: '46%' }} />
+          <col style={{ width: '18%' }} />
+          <col style={{ width: '18%' }} />
+          <col style={{ width: '18%' }} />
         </colgroup>
         <thead>
           <tr className="bg-muted/30 border-b border-border/50">
@@ -594,28 +696,19 @@ const SimulationSubRow = ({
     </div>
   );
 
-  const showSharedSimulationTitle = !compact;
-  const showHeaderBlock = showSharedSimulationTitle || showEmptyStateNote;
+  const showHeaderBlock = showEmptyStateNote;
 
   return (
     <div ref={containerRef} className={`min-w-0 ${effectiveCompact ? 'p-0' : 'p-0'}`}>
-      {/* Header — title omitted on mobile (compact); toggle row already signals simulation context */}
       {showHeaderBlock && (
         <div
         className={`flex flex-wrap items-baseline gap-x-2 gap-y-1 ${
           effectiveCompact ? (embeddedFromTop ? 'mb-2 px-0' : 'mb-2 px-1') : 'mb-3 px-1'
         }`}
       >
-          {showSharedSimulationTitle && (
-            <span className={effectiveCompact ? 'ds-text-13 font-semibold text-foreground' : 'ds-text-14 font-semibold text-foreground'}>
-              Shared {rateLabel} simulation
-            </span>
-          )}
-          {showEmptyStateNote && (
-            <span className="ds-text-12 text-muted-foreground">
-              Enter supply or borrow amount above to see simulated values.
-            </span>
-          )}
+          <span className="ds-text-12 text-muted-foreground">
+            Enter supply or borrow amount above to see simulated values.
+          </span>
         </div>
       )}
 

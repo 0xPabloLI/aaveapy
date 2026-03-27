@@ -30,11 +30,15 @@ const MerklCampaignBreakdownSchema = z.object({
   campaignId: z.string(),
   whitelistOnly: z.boolean().optional(),
   pointsPerThousandUsd: z.number().optional(),
+  campaignType: z.string().optional(),
+  totalBudget: z.number().optional(),
+  aprCap: z.number().nullable().optional(),
+  latestTvl: z.number().optional(),
+  plannedDaily: z.number().optional(),
 });
 
 const MerklOpportunityGroupSchema = z.object({
   link: z.string().optional(),
-  opportunityLink: z.string().optional(),
   name: z.string().optional(),
   message: z.string().optional(),
   breakdowns: z.array(MerklCampaignBreakdownSchema),
@@ -42,11 +46,15 @@ const MerklOpportunityGroupSchema = z.object({
 
 // ── Brevis incentive ──
 const BrevisIncentiveSchema = z.object({
-  apr: z.number(),
   link: z.string(),
-  startDate: z.string(),
-  endDate: z.string(),
-  name: z.string(),
+  campaignApr: z.number(),
+  campaignStartedAt: z.string(),
+  campaignEndedAt: z.string(),
+  message: z.string().optional(),
+  latestTvl: z.number().optional(),
+  totalBudget: z.number().optional(),
+  perUserRewardCapUsd: z.number().optional(),
+  campaignId: z.string().optional(),
 });
 
 // ── Token price entry ──
@@ -116,18 +124,14 @@ export const CoingeckoCategoriesResponseSchema = z.object({
 
 const MerklForecastItemSchema = z.object({
   campaignId: z.string(),
-  campaignType: z.string().optional(),
-  plannedDaily: z.number().optional(),
   requiredDaily: z.number().optional(),
-  aprCap: z.number().nullable().optional(),
-  totalBudget: z.number().optional(),
   distributedSoFar: z.number().optional(),
-  latestTvl: z.number().optional(),
   endTimestamp: z.number().optional(),
 }).passthrough();
 
 const MerklForecastErrorSchema = z.object({
   campaignId: z.string(),
+  status: z.number().optional(),
   message: z.string(),
 }).passthrough();
 
@@ -150,6 +154,4 @@ export const SideDataMetaResponseSchema = z.object({
     errors: z.array(MerklForecastErrorSchema),
     staleTimeMs: z.number(),
   }).optional(),
-  errors: z.record(z.string(), z.string()).optional(),
 }).passthrough();
-

@@ -21,15 +21,19 @@
 - 品牌渐变：`--ds-brand-magenta-rgb` → `--ds-brand-cyan-rgb`
 
 ### 数据色
-- Supply：`ds-text-emerald-600`、`ds-bg-emerald-500-10`
+- Supply：`ds-text-emerald-500`（桌面端 Reserves 表 **Supply APY 主值** 与 **Supply Size** 同色）、`ds-bg-emerald-500-10`
 - Borrow：`ds-text-brand-cyan`、`ds-bg-brand-cyan-10`
+- 桌面 Reserves **Size** 列 Supply/Borrow 金额：`font-medium tabular-nums`，与 cap 环 Tooltip 内数字权重一致
 - Spread：`ds-text-purple-600`
 - 警告：amber 系
+- **层级**：主 APY 粗体 + 语义色；**Size** 与主色满饱和 + `font-medium`；Native/Incentive 为 `ds-text-11` + `*-70`（**与 Size 不同层级**）；**Spread** 桌面 `font-bold`；Util 圆点略大、**不默认描边**（见 `frontend-interaction-guardrails.md`）
+- **移动/桌面一致**：储备卡 Size、tab、cap sheet 与桌面同一 `emerald-500` / `brand-cyan` token
 
 ## 3. 排版
 - Sans：Source Sans Pro | Mono：Source Code Pro
 - 尺度：`ds-text-11` ~ `ds-text-24`
 - 数值：`tabular-nums`
+- APY：主值 `font-bold`；次级 native 可用 `font-medium`；不堆叠过多同色透明度档位
 
 ## 4. 组件规范
 
@@ -70,6 +74,8 @@
 适用：Token 类别、Markets 筛选
 - 选中：`border-[rgb(var(--ds-brand-magenta-rgb))] ds-text-brand-magenta`
 - 未选中：`border-border text-foreground/80`
+- Markets 选项来源 `buildMarketsList`：按 **`marketName`** 字母序（`localeCompare`，`sensitivity: 'base'`）；`FilterBar` 仍先渲染 Ethereum 再其他链，各段内保持该顺序。
+- 桌面 **Reserves 表**「Market」列表头可点击排序：按 **`marketName`** 字母序，同市场内再按 **`tokenSymbol`**；默认升序，再次点击切换降序（与 Token 列交互一致）。
 
 ### 4.3 卡片
 - 玻璃卡：`glass-card`（blur + 半透明）
@@ -98,6 +104,27 @@
 | **展开模拟区** | 与价格行同一水平常量：**`px-3.5`**，与 `SimulationSubRow` 表格列对齐。 |
 
 **不要**给分段控件再套一层与 `mx-3` 重复的水平边距。Token 标题行仍为 **`px-3`**（图标与名称；可与 segment 左缘差 2px，属预期）。
+
+### 4.7 Merkl 白名单激励（按 campaign）
+
+- 仅 **Merkl 且 `whitelistOnly`** 的活动需用户自行选择是否计入全站激励汇总。
+- **默认**：不勾选任何项（白名单 APR **不计入**表格、Top Opportunities、模拟等）。
+- **勾选**：按 **`campaignId`** 逐项勾选；无 `campaignId` 的白名单条目共用同一 opt-in（在 `whitelistMerklCampaignIds` 内用内部 sentinel，与真实 id 并列）。激励详情 Tooltip 与（若启用）Merkl Forecast 面板对可勾选项统一使用 **「Include as WL user」**，表示用户确认自己是白名单参与者并要把该活动计入汇总。
+- 完整规则与实现位置见 **[frontend-interaction-guardrails.md](frontend-interaction-guardrails.md)** § *Merkl whitelist-only campaigns*。
+
+### 4.8 桌面 Reserves 表：顶栏双层 sticky
+
+- **第一层**：共享场景输入条 `data-reserves-sticky-scenario`，`sticky top-0 z-20`，高度经 `ResizeObserver` 写入卡片上的 `--reserves-sticky-scenario-height`。
+- **第二层**：列标题行 `data-reserves-sticky-thead`（Token … Borrow），`sticky` 且 `top` 为该 CSS 变量（回退 `4.5rem`），`z-10`，**不透明** `bg-card`。
+- **禁止**用包住整张表（含 `thead`）的 `overflow-x-auto` / 会制造 scrollport 的祖先：`sticky` 的 `top` 相对**最近滚动盒**而非视口，会与 scenario 的视口 `top-0` 错位，出现大段空白与 tbody 从缝里露出。**完整规范（含原因、规则、与展开滚动一致性）**：**[frontend-interaction-guardrails.md](frontend-interaction-guardrails.md) — § Desktop reserves table: sticky stack and scrollport (normative)**。
+- 展开 simulation 后的滚动贴边：`scrollExpandedSimulationIntoView`，与 guardrails 中 **Expandable rows and scroll stability** 一致。
+
+### 4.9 Tydro 与 Merkl「点数」术语
+
+- **Tydro**：仅 **Merkl** 的 API 字段 **`pointsPerThousandUsd`**（按千刀点数）在 `tydro.ts` 中按 Tydro 曲线换算 APR；顶栏 **`tydroPointToUsdRate`** 调节该曲线。详见 **[rate-calculation-formulas.md](../rate-calculation-formulas.md)** § *Terminology: Tydro points vs other “points”*。
+- **不是**所有界面上的「points」都指 Tydro（例如 Ink FDV 滑块上的参考点、CSS `pointer-events` 等与激励无关）。
+- **ACI / Brevis / 协议激励**不含 `pointsPerThousandUsd`，不称 Tydro points。
+- **文案**：表格与 Tooltip 常汇总为 **Merkl** / **Merkl Incentive**；不必每条都写「Tydro points」，仅在说明点数曲线或全局点数换算时再用 Tydro。
 
 ## 5. 布局原则
 - **文字与边框须有间距（强制）**：所有带边框的容器内，文字与边框之间必须保留至少 `--ds-space-2`（8px）的内边距，不得贴边。卡片、表格单元格、警告条、按钮等均需遵守。

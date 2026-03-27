@@ -87,10 +87,18 @@ This note records recurring UI/interaction issues found during incentive/forecas
 **Utilization display value (mobile vs desktop)**:
 - Mobile reserve header and bottom sheet must use the same **display** utilization as the desktop Util. column: `hasSharedScenario ? after ?? current : current` from rate simulation (not raw `reserve.utilizationPct` when a scenario is active).
 
-**UtilizationIndicator color scheme**:
-- Below optimal (borrow-friendly / flatter borrow curve): `fill-[rgb(var(--ds-brand-cyan-rgb)/0.32)]` on track; dot `fill-[rgb(var(--ds-brand-cyan-rgb))]` — aligns with Borrow (`ds-text-brand-cyan`), not emerald
-- Above optimal (past kink: higher borrow, tighter liquidity): `fill-amber-500` on track; dot `fill-amber-700`
-- Tooltip: “Below optimal” (cyan) vs “⚠️ Above optimal” (amber)
+**UtilizationIndicator color scheme** (minimize same-hue steps: one **zone tint** + one **full semantic** per state):
+- Below optimal (borrow-friendly / flatter borrow curve): track zone `fill-[rgb(var(--ds-brand-cyan-rgb)/0.32)]`; dot **full** `fill-[rgb(var(--ds-brand-cyan-rgb))]` — same as Borrow (`ds-text-brand-cyan`), not emerald; avoid mixing `-70` text with other cyan opacities
+- Above optimal (past kink): track `fill-amber-500`; dot `fill-amber-600` (same as warning copy), not a third amber step
+- **Dot visibility (no extra hue, no outline habit)**: single **solid** dot (slightly larger radius is OK); **do not** add outer glow discs, `stroke` halos, or extra opacity rings by default
+- Tooltip / mobile sheet: “Below optimal” uses `ds-text-brand-cyan`; “⚠️ Above optimal” uses `text-amber-600`
+
+**Supply / Borrow APY typography (desktop table + mobile hero)** — same hierarchy rules:
+- **Primary total APY**: `font-bold`, `ds-text-14` (desktop) or `ds-text-24` (mobile hero), semantic fill `ds-text-emerald-500` (Supply) / `ds-text-brand-cyan` (Borrow)
+- **Secondary row** (native + incentive): `ds-text-11`, native uses `ds-text-emerald-500-70` / `ds-text-brand-cyan-70` with optional `font-medium`; incentive chips stay on the existing tinted pill pattern (`ds-bg-*-10`, `-70` text). **This row is not the same as Size** (see below).
+- **Size column** (Supply/Borrow amounts): `ds-text-13` + `font-medium` + **full** semantic (`emerald-500` / `brand-cyan`)—aligned with APY **primary** color, **not** with the Native/Incentive row (which is smaller + `-70` by design).
+- **Spread column**: `font-bold` + `ds-text-14` + purple semantic—treated as a **primary numeric** column alongside Supply/Borrow totals.
+- **Mobile parity**: Supply/Borrow tab, **size row**, cap sheets, and incentive chips use the **same** emerald/cyan tokens as desktop (`emerald-500` / `brand-cyan`), not a darker step (e.g. avoid `emerald-600` for Supply size when desktop uses `emerald-500`); utilization figure next to the indicator uses at least `ds-text-11`
 
 **Key principle**: Amber/warning colors must NOT be used for regular data display. This ensures that when amber appears, users immediately recognize it as a warning signal.
 
@@ -114,7 +122,45 @@ This note records recurring UI/interaction issues found during incentive/forecas
 
 - **Do not drive `window` scroll from “row index changed” while simulation is open**: After expanding, shared simulation updates can change computed sort keys (spread, APY, etc.) and reorder the list. Treating “index in `sortedData` changed” like a user re-sort and auto-scrolling to pin the row feels erratic and often fires even when there is already space below the card.
 - **Sort from column headers collapses the expanded row** in `ReservesTable`, so index-based pinning does not correspond to a real “user re-sorted while expanded” flow here.
-- **If** we ever need to keep the expanded panel in view, prefer an **intersection-style check** (e.g. whether the panel’s bottom is clipped by the viewport) before adjusting scroll, rather than index-based `window.scrollTo`.
+
+#### Simulation pin scroll (normative — do not regress)
+
+These rules are **product constraints**. Any PR that changes reserve-table scrolling must preserve them unless there is an explicit spec change and this section is updated in the same work.
+
+| Rule | MUST / MUST NOT |
+|------|-----------------|
+| Expand / collapse / switch expanded row **without** a change to debounced shared scenario | **MUST NOT** run pinning scroll (no “expand → jump”). |
+| Debounced shared scenario **changes** and `sortedData` **order** (reserve id sequence) **changes** and a row **is expanded** and the active sort is scenario-driven | **MUST** run pinning scroll for that expanded row (desktop: pin below sticky stack; mobile: clip fix only). |
+| Debounced scenario changes but sort order **unchanged** | **MUST NOT** scroll. |
+| Sort order changes **without** a debounced scenario key change (e.g. fresh `reserves` payload, user changed sort column) | **MUST NOT** trigger this pin path (only sync refs; see implementation). |
+| Tie scroll to `sortedData` index or “every reorder” while expanded | **MUST NOT** (forbidden; see first bullet in this section). |
+
+**Debounced scenario key** (must stay consistent with the effect): `` `${debouncedSharedSupplyInput}\0${debouncedSharedBorrowInput}\0${sharedInputMode}` `` — the same values that feed `useSharedRateSimulations` / table sort dependencies for shared inputs.
+
+**Scenario-driven sort gate** (`expandScrollFollowsScenarioSort` in `ReservesTable.tsx`): pinning is allowed only when **`hasSharedScenario`** is true **and** the active column can change sort keys from shared scenario (`pickScenarioValue` / supply size USD). **Exclude**: Token, Market, Price; Size when `sizeSortMode === 'borrow'`. **Include**: Supply, Borrow, Spread, Util; Size when `sizeSortMode === 'supply'`. If you add a new sort column that uses scenario-sized or `after` totals, extend this `useMemo` in the same PR.
+
+#### Simulation pin scroll — implementation reference (maintainers)
+
+**Goal:** keep the spec above stable when refactoring; do not “simplify” the effect into expand-only or index-only scroll.
+
+1. **Single call site** for `scrollExpandedSimulationIntoView`: the `useEffect` placed **immediately after** the `sortedData` `useMemo` in `ReservesTable.tsx` (comment: *Pin expanded row only when debounced scenario inputs change…*). Do **not** add a second effect on `expandedReserveId` for pinning.
+2. **Refs** (names matter for grep / review): `lastScenarioKeyForPinScrollRef`, `lastSortedIdsForPinScrollRef`, `scenarioPinScrollBaselineReadyRef`. First run seeds baseline only (no scroll). On each later run: if scenario key **equals** last key, only `lastSortedIdsForPinScrollRef ← current ids` (handles data refresh without false pin). If key **differs**: compare **previous** `lastSortedIdsForPinScrollRef` to **new** `sortedData.map(getReserveSimulationId)`; update key + ids; scroll **iff** `orderChanged && expandScrollFollowsScenarioSort && expandedReserveId`.
+3. **Effect dependency array** must include: `debouncedSharedSupplyInput`, `debouncedSharedBorrowInput`, `sharedInputMode`, `sortedData`, `expandedReserveId`, `isMobile`, `expandScrollFollowsScenarioSort`. If scenario debouncing moves to another layer, keep the **debounced** values here — never the raw typing state.
+4. **Timing:** `setTimeout(320)` + **two** `requestAnimationFrame` ticks before measuring/scrolling — matches expand row CSS transition (~300ms) so layout matches post-sort DOM. Changing duration in `DesktopReserveRow` / `MobileReserveCard` grid transitions may require retuning this constant in the same PR.
+5. **Scroll implementation** (`src/lib/scrollExpandedSimulationIntoView.ts`): desktop `pin-main-row-top` uses `window.scrollBy` so `tr[data-reserve-id]` top aligns to `getPinnedRowTopY()` = `max(bottom of [data-reserves-sticky-scenario], bottom of [data-reserves-sticky-thead]) + GAP_BELOW_STICKY_STACK_PX`, else `VIEW_MARGIN_PX`. Mobile expanded block: `[data-reserve-expanded-anchor]`. Do not remove these `data-*` hooks from the sticky wrappers without updating this function and this doc.
+
+#### DOM contract (pin scroll)
+
+| Attribute | Where | Purpose |
+|-----------|--------|---------|
+| `data-reserves-sticky-scenario` | Sticky wrapper around shared `ScenarioControls` (desktop + mobile table layouts) | Pin scroll vertical offset |
+| `data-reserves-sticky-thead` | Sticky table header row wrapper (desktop) | Same — body row must sit below stacked stickies |
+| `data-reserve-id` | Main `TableRow` in `DesktopReserveRow` | Target row for desktop pin |
+| `data-reserve-expanded-anchor` | Mobile expanded pair + simulation container | Bounds for mobile clip scroll |
+
+**Regression checklist** (before merge if touching reserves table / scroll / scenario debounce): (1) Expand with fixed scenario inputs → no scroll. (2) With expanded row, change debounced scenario so sort order changes (Spread + inputs) → row pins below sticky stack on desktop. (3) Change scenario but sort column is Token → no scroll. (4) Scenario change + sort change but row collapsed → no scroll.
+
+**Related (layout geometry):** § **Desktop reserves table: sticky stack and scrollport (normative)** — `ResizeObserver`, `--reserves-sticky-scenario-height`, scrollport rules, and how sticky `thead` stacks under the scenario strip. `getPinnedRowTopY()` in `scrollExpandedSimulationIntoView.ts` must remain consistent with that stack (and with the `data-reserves-sticky-*` elements).
 
 ### Search behavior
 
@@ -161,8 +207,12 @@ This note records recurring UI/interaction issues found during incentive/forecas
 
 ### Forecast UI consistency
 
-- **APR/APY mode parity**: any forecast number shown inside a tooltip/panel must follow the same APR/APY mode selected in the main UI.
-- **Label user-specific vs campaign-wide values**:
+- **Terminology (Tydro vs Merkl labels)**: only Merkl’s optional `pointsPerThousandUsd` path is treated as Tydro (`src/lib/tydro.ts`, `tydroPointToUsdRate`). `Merit` / `Brevis` / protocol incentives are not Tydro points. Aggregate UI labels can stay as **Merkl** / **Merkl Incentive**; use “Tydro” only when explaining the points-to-APR conversion or the global point-to-USD control. Unrelated “points” (e.g. Ink FDV reference points) are not Tydro.
+- **Incentive tooltip vs shared simulation**: `IncentiveTooltip` shows **static** incentive context (campaign dates, messages, Merkl whitelist opt-in). **Deposit- and TVL-dependent** forecasts (Merkl hypothetical TVL, Merit Self deposit-ceiling lines, FIX rewardable horizon, Brevis per-user cap / days-to-cap, cap-binding warnings, etc.) belong in the **shared rate simulation** UI (`useRateSimulation` per-campaign rows on `SimulationSubRow` via `capNote` / `capWarning`), not inside the tooltip. Merit **Base** and Merkl **DUTCH_AUCTION** use **no** row `capNote` (scenario APR only); keep that policy in sync if it changes. **New** user-visible cap/ceiling lines should be produced via `src/lib/incentiveCeilings.ts` (then mapped to `capNote` / `capWarning`) where applicable—see `docs/rate-calculation-formulas.md` (Incentive Reward Cap Reference, naming layers).
+- **`capNote` copy family**: Prefer a consistent **“capped”** idiom where it fits—e.g. Merkl MAX **`APR capped for low TVL`**, Brevis **`Reward capped at …/user`**, Merit self **`Eligible deposit capped at …`**. Shared horizon phrasing: **`~Nd earn`** (Merkl FIX pool-budget horizon at scenario TVL and Brevis per-user reward horizon) and **`~Nd to end`** (Brevis calendar-only). Join segments with **` · `** when a row combines cap + horizon.
+- **`capNote` layout (`SimulationSubRow`)**: Render `capNote` on a **follow-up `<tr>`** with **`colSpan={4}`** so, in wide layouts, the line can use the **full width** of that Supply/Borrow mini-table (numeric columns stay on the row above). **Still allow multi-line wrap** when the panel is narrow (`whitespace-normal` / `break-words`); do **not** use `whitespace-nowrap`. Avoid `text-pretty` here if it causes premature line breaks on short copy.
+- **APR/APY mode parity**: the global APR/APY toggle applies to **non-native rate displays only**. Headline incentive **percentages** in `IncentiveTooltip`, shared simulation incentive rows, and any other **forecast-derived / incentive-derived** numbers (`MerklForecastPanel`, per-campaign simulation rows, incentive totals) must follow the toggle. **Native Aave supply / borrow rates stay in APY** and do **not** switch to APR in table cells, cards, or shared simulation. `IncentiveTooltip` does not show scenario forecasts.
+- **Label user-specific vs campaign-wide values** (simulation / forecast panels—not static tooltip copy):
   - Merkl forecast rows usually show campaign-wide `Daily Rewards`.
   - Merit self-bonus forecast is user-specific and should be labeled clearly (e.g. `Your Daily Rewards`).
 - **Avoid ambiguous eligibility wording**: if eligibility depends on external user state (e.g. Self verification) and is not known client-side, do not claim the user is currently eligible.
@@ -184,6 +234,19 @@ This note records recurring UI/interaction issues found during incentive/forecas
   - Likewise, adding `Borrow` must not increase that row's simulated `Borrow incentive`.
   - Apply this rule both to the incentive total and each source breakdown row (`ACI`, `Merkl`) so totals and rows stay directionally consistent.
 
+### Merkl whitelist-only campaigns (per `campaignId`)
+
+Merkl may mark a breakdown as **whitelist-only** (`whitelistOnly: true`). The app does **not** assume the viewer is eligible.
+
+| Topic | Behavior |
+|-------|------------|
+| **Default** | **No** whitelist-only campaigns are included in totals. App state is `whitelistMerklCampaignIds: Set<string>` on `Index`, initially **empty**. |
+| **User opt-in** | User checks **per campaign** by **`campaignId`** (same ID can appear on multiple reserves if Merkl reuses it). |
+| **What changes when checked** | That campaign’s Merkl APR/APY counts toward: reserves table numbers, Top Opportunities, incentive totals in `IncentiveTooltip`, and `useRateSimulation` / shared table simulation. |
+| **Where the UI lives** | **Incentive tooltip**: each whitelist Merkl row shows the same checkbox label **“Include as WL user”** (with or without a `campaignId`; no id uses an internal sentinel key in `whitelistMerklCampaignIds`). Full accessible name states that checking confirms whitelist participation and includes the campaign in totals. **Merkl Forecast panel** (dev or `VITE_SHOW_RATE_CHECK`): optional list of active whitelist-only campaigns (including a **“Whitelist Merkl (no campaign ID)”** row when applicable) with the same label as the section header before the list. |
+| **Implementation** | `isMerklWhitelistBreakdownIncluded()` and `MERKL_WHITELIST_NO_CAMPAIGN_ID_SENTINEL` in `formatters.ts`; `useRateSimulation` / `useSharedRateSimulations`; `collectMerklCampaignOptions` / `collectWhitelistOnlyMerklCampaignEntries` in `merklCampaigns.ts`. |
+| **Persistence** | None — selection is **session-only**; reload clears it. |
+
 ### InkAprCalculator mobile (CompactLayout): slider tooltip & Reference FDVs spacing
 
 **文件**：`src/components/dashboard/InkAprCalculator.tsx`，非 XL 的 CompactLayout。
@@ -201,7 +264,7 @@ This note records recurring UI/interaction issues found during incentive/forecas
 When tooltip/forecast behavior looks wrong, check:
 
 1. **Display mode**: APR vs APY toggle consistency
-2. **Source scoping**: current reserve/source only (especially whitelist toggles)
+2. **Merkl whitelist-only**: default **excluded**; opt-in **per `campaignId`** — see § **Merkl whitelist-only campaigns** above
 3. **Forecast source type**: Merkl vs Merit (campaign-wide vs user-specific semantics)
 4. **Viewport constraints**: clipping, scrollability, fixed overlay behavior
 5. **Token normalization**: symbol alias handling in search and display
@@ -247,9 +310,28 @@ When tooltip/forecast behavior looks wrong, check:
 - Hide downstream source rows when both current and simulated values are effectively zero.
 - Use fixed numeric column widths so placeholders align with headers.
 
+### Desktop reserves table: sticky stack and scrollport (normative)
+
+This section is **mandatory** for anyone changing desktop `ReservesTable` layout, overflow, or sticky headers.
+
+#### Why (one-line mental model)
+
+`position: sticky` **`top` is resolved against the element’s nearest scrollport**, not always the viewport. If the scenario bar uses viewport-relative `sticky top-0` (page scroll) while `<thead>` sits inside a wrapper with `overflow-x-auto` (or similar), the header’s `top: …px` is measured from **that wrapper’s top**, not the viewport. The two layers then **misalign**: a **large empty band** appears under the scenario strip, and **tbody content scrolls through that band** above the header (visible “bleed” / clipped row fragments).
+
+#### Rules
+
+1. **Do not** wrap the **entire** `<table>` (including the sticky `<thead>`) in an ancestor with a non-default overflow that creates a **scrollport** between the card and the table—most commonly **`overflow-x-auto`** or **`overflow: hidden`** on a full-table wrapper—while the shared scenario strip above uses **`sticky top-0`** against page scroll and `<thead>` uses **`top: var(--reserves-sticky-scenario-height, …)`** meant to stack under the scenario strip in **viewport** coordinates.
+2. **Do** keep the **reference structure** in `ReservesTable.tsx`:
+   - **`data-reserves-sticky-scenario`**: shared scenario strip, `sticky top-0 z-20`; height measured with **`ResizeObserver`** into **`--reserves-sticky-scenario-height`** on the card (`desktopStickyScenarioRef` / `desktopTableCardRef`).
+   - **`data-reserves-sticky-thead`**: column header `<thead>`, **`sticky`**, **`top: var(--reserves-sticky-scenario-height, 4.5rem)`**, **`z-10`**, **opaque `bg-card`** (not translucent), bottom border / light shadow so tbody does not read through the header.
+3. **Horizontal overflow**: With `table-fixed` and `%` columns, prefer **page-level** horizontal scroll on narrow desktop. If table-local horizontal scrolling is **required**, **do not** reintroduce a full-table `overflow-x-auto` wrapper; use a **documented** pattern instead (e.g. tbody-only scroll with explicit column sync)—not implemented in the reference layout.
+4. **Expand scroll (geometry only)**: `scrollExpandedSimulationIntoView` / `getPinnedRowTopY` in `src/lib/scrollExpandedSimulationIntoView.ts` must stay consistent with the stack: **`max(scenario.bottom, thead.bottom)`** plus gap when pinning the body row. **When** pinning runs is **not** expand-only — see **§ Simulation pin scroll (normative)** above (scenario key + sort order + `expandScrollFollowsScenarioSort`).
+
 ### Desktop reserves table column layout
 
 The desktop reserves table uses `table-fixed` with a `<colgroup>` so column widths and spacing are predictable. When changing column count or visual balance, update all three places: `ReservesTable.tsx` (colgroup + header cells + skeleton row) and `DesktopReserveRow.tsx` (body cells).
+
+Sticky scenario + sticky `<thead>` and **scrollport** constraints are **normative** in **§ Desktop reserves table: sticky stack and scrollport (normative)** above—do not regress them when editing column layout.
 
 **Column order and widths (percentages, sum = 100%):**
 
@@ -301,6 +383,11 @@ Keep header, body, and skeleton row padding in sync so alignment and spacing sta
 - When a card expands to show the simulation panel below, the upper card and lower simulation panel must appear as **one continuous card** with a single unbroken outline.
 - **Upper card**: `rounded-t-xl rounded-b-none border-b-0` — removes bottom rounding and border.
 - **Simulation panel**: `rounded-b-xl` only (NO `rounded-t-xl`) — top corners are straight so they align flush with the card above.
-- The junction mask (concave curve overlay) handles the **inactive side** transition; the active side must be a seamless vertical edge with no rounding or gap.
+- **Inner Corner (Concave curve) Implementation**: The junction where the inactive side connects to the simulation panel must look like a continuous native rounded corner.
+  - **Core Principle (Root Cause Fixes over Patches)**: When facing visual artifacts (residual lines, seams, discontinuity), solve the architectural root cause (e.g., removing the conflicting underlying border) instead of masking the symptom. Do not stack patches on top of patches.
+  - **Avoid Multi-layer Patching**: Do NOT use overlapping masks, CSS boxes, or "background patches" to hide the underlying border. This always leaves 1px residual lines or antialiasing seams.
+  - **Single Source of Truth (Clip-path + SVG)**: Use `clipPath` on the lower container to cleanly cut out its native top border exactly at the connection point. Then, place a single SVG element to draw the entire transition (vertical line → arc → horizontal line).
+  - **Geometric Precision**: Use standard SVG `A` (Arc) commands to draw the curve. Do not use `C` (Cubic Bezier) to hand-tune a fake corner, as it lacks the correct visual rhythm of a native `border-radius`.
+  - **Sub-pixel Alignment & Mirroring Exactness**: When drawing a 1px stroke in SVG to match CSS borders, coordinates must be aligned to `.5` (e.g., `M 0.5 0 L 0.5 0.5 A ...`) to ensure pixel-perfect rendering without blurry antialiased edges. **Crucially, when mirroring the right side of a container, the x-coordinate must be `width - 0.5` (e.g., `16.5` for a `17px` box), not integer-rounded, to prevent 1px offset gaps.**
 - **Rule**: Never add `rounded-t-*` to the simulation panel container; the top edge is always joined to the card above.
-- The simulation sub-row does not repeat the desktop heading “Shared APY/APR simulation” in **compact (mobile)** layout; the card’s Simulation toggle already establishes context.
+- The simulation sub-row does not show a “Shared APY/APR simulation” heading (desktop or mobile); table inputs and the Simulation toggle already establish context.

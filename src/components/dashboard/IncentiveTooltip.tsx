@@ -2,22 +2,26 @@ import { useRef, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ExternalLink, X } from 'lucide-react';
 import { useTheme } from 'next-themes';
-import { ReserveWithSpread, MeritIncentive, MerklOpportunityGroup, BrevisIncentive, TokenPricesIndex } from '@/types/aave';
-import { formatPercent, convertAprToApy, apyToApr } from '@/lib/formatters';
-import { getMerklBreakdownApr, getMerklForecastUsdMultiplier } from '@/lib/tydro';
-import { useMerklForecastStates } from '@/hooks/useMerklForecastStates';
+import { ReserveWithSpread, MeritIncentive, MerklOpportunityGroup, BrevisIncentive } from '@/types/aave';
 import {
-  extractMeritSelfCapUsd,
-  forecastMeritCampaign,
-  splitMeritMessageBySelfAuth,
-} from '@/lib/meritForecast';
-import { deriveForecastProgressFlags, forecastWithTVL } from '@/lib/merklForecast';
-import { resolveForecastTokenPrice, resolveForecastTokenPriceWithBackup } from '@/lib/tokenPriceResolver';
-import { formatNumberInput, parseNumberInput } from '@/lib/numberFormat';
+  formatPercent,
+  convertAprToApy,
+  isMerklWhitelistBreakdownIncluded,
+  MERKL_WHITELIST_NO_CAMPAIGN_ID_SENTINEL,
+  MERKL_WHITELIST_TOGGLE_ARIA,
+  MERKL_WHITELIST_TOGGLE_LABEL,
+} from '@/lib/formatters';
+import { getMerklBreakdownApr } from '@/lib/tydro';
+import { splitMeritMessageBySelfAuth } from '@/lib/meritForecast';
+import {
+  getBrevisCampaignApr,
+  getBrevisCampaignEndedAt,
+  getBrevisCampaignMessage,
+  getBrevisCampaignStartedAt,
+} from '@/lib/brevis';
 import { adjustTooltipAnchorForScroll, getWindowScroll } from '@/lib/tooltipPosition';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
-import { simulateNativeRatesAfterSupply, simulateNativeRatesAfterBorrow, hasRateCalcFields } from '@/lib/interestRateCalculator';
 
 interface IncentiveTooltipProps {
   reserve: ReserveWithSpread;
@@ -40,9 +44,8 @@ interface IncentiveTooltipProps {
   accentTextClass?: string;
   accentBgClass?: string;
   tydroPointToUsdRate: number;
-  includeWhitelistOnlyMerkl: boolean;
-  onToggleWhitelistOnlyMerkl: (next: boolean) => void;
-  tokenPrices?: TokenPricesIndex;
+  whitelistMerklCampaignIds: ReadonlySet<string>;
+  onToggleWhitelistMerklCampaign: (campaignId: string, enabled: boolean) => void;
 }
 
 interface IncentiveSource {
@@ -63,16 +66,9 @@ interface IncentiveSource {
     message?: string | Record<string, unknown> | unknown[];
     campaignId?: string;
     sourceType?: IncentiveSource['sourceType'];
-    forecastMultiplier?: number;
     whitelistOnly?: boolean;
     included?: boolean;
     rawValue?: number;
-    forecastAprPercent?: number;
-    lastRoundRewardUsd?: number;
-    meritForecastMode?: 'MERIT_BASE' | 'MERIT_SELF_CAP';
-    selfCapUsd?: number;
-    meritBaseAprPercent?: number;
-    meritBaseLastRoundRewardUsd?: number;
   }>;
 }
 
@@ -89,20 +85,17 @@ const parseCampaignBoundaryMs = (value: string | undefined, boundary: 'start' | 
   return Number.isNaN(timestamp) ? null : timestamp;
 };
 
-const isCampaignActive = (startDate: string | undefined, endDate: string | undefined, nowMs = Date.now()): boolean => {
+const isCampaignActive = (
+  startDate: string | undefined,
+  endDate: string | undefined,
+  nowMs = Date.now(),
+  allowOpenEnd = false,
+): boolean => {
   const startMs = parseCampaignBoundaryMs(startDate, 'start');
+  if (startMs === null || nowMs < startMs) return false;
   const endMs = parseCampaignBoundaryMs(endDate, 'end');
-  if (startMs === null || endMs === null) return false;
-  return nowMs >= startMs && nowMs <= endMs;
-};
-
-const getCampaignCycleDays = (startDate: string | undefined, endDate: string | undefined): number | null => {
-  if (!startDate || !endDate) return null;
-  const startMs = Date.parse(startDate);
-  const endMs = Date.parse(endDate);
-  if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) return null;
-  const days = (endMs - startMs) / 1000 / 86400;
-  return Number.isFinite(days) && days > 0 ? days : null;
+  if (endMs === null) return allowOpenEnd;
+  return nowMs <= endMs;
 };
 
 const lightSourceIconMap: Record<NonNullable<IncentiveSource['sourceType']>, string> = {
@@ -142,9 +135,8 @@ const IncentiveTooltip = ({
   accentTextClass,
   accentBgClass,
   tydroPointToUsdRate,
-  includeWhitelistOnlyMerkl,
-  onToggleWhitelistOnlyMerkl,
-  tokenPrices,
+  whitelistMerklCampaignIds,
+  onToggleWhitelistMerklCampaign,
 }: IncentiveTooltipProps) => {
   const { resolvedTheme } = useTheme();
   const isMobile = useIsMobile();
@@ -155,9 +147,6 @@ const IncentiveTooltip = ({
   const [tooltipPlacement, setTooltipPlacement] = useState<'top' | 'bottom'>('bottom');
   const [showTooltipArrow, setShowTooltipArrow] = useState(true);
   const [openedAtScroll, setOpenedAtScroll] = useState(() => getWindowScroll());
-  const [depositInput, setDepositInput] = useState('');
-  const [tokenPrice, setTokenPrice] = useState<number | undefined>(undefined);
-  const [tokenPriceLoading, setTokenPriceLoading] = useState(false);
   const portalTarget = typeof document !== 'undefined' ? document.body : null;
   const numberMatch = /^(\d+(?:\.\d+)?%?)$/;
   const currencyMatch = /^[€$£¥]$/;
@@ -207,22 +196,6 @@ const IncentiveTooltip = ({
     if (!startText || !endText) return null;
     return `${startText} - ${endText}`;
   };
-
-  const formatUsd = (value: number): string =>
-    new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      maximumFractionDigits: value >= 1000 ? 0 : 2,
-    }).format(value);
-
-  const formatForecastTimestamp = (unixSeconds: number): string =>
-    new Intl.DateTimeFormat('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-    }).format(new Date(unixSeconds * 1000));
 
   const formatValue = (value: unknown): string => {
     if (value === null || value === undefined) return '';
@@ -279,11 +252,26 @@ const IncentiveTooltip = ({
   } as const;
 
   const getMerklLink = (opportunity: MerklOpportunityGroup): string | undefined => {
-    return opportunity.link || opportunity.opportunityLink;
+    return opportunity.link;
   };
 
-  const buildSourceGroupKey = (source: IncentiveSource): string =>
-    `${source.sourceType ?? 'Unknown'}|${source.name}|${source.link ?? ''}`;
+  /**
+   * Group key for merging duplicate rows. Merkl must include breakdown identity: one opportunity
+   * often has multiple active breakdowns (e.g. Tydro points on a whitelist row + a separate 0% row).
+   * Merging only by name+link collapses those into one row with value 0 and a misleading total.
+   */
+  const buildSourceGroupKey = (source: IncentiveSource): string => {
+    const base = `${source.sourceType ?? 'Unknown'}|${source.name}|${source.link ?? ''}`;
+    if (source.sourceType === 'Merkl') {
+      const c = source.campaigns?.[0];
+      const cid =
+        c?.campaignId != null && String(c.campaignId).trim() !== '' ? String(c.campaignId).trim() : 'noid';
+      const start = c?.startDate ?? '';
+      const end = c?.endDate ?? '';
+      return `${base}|${cid}|${start}|${end}`;
+    }
+    return base;
+  };
 
   const groupIncentiveSources = (sources: IncentiveSource[]): IncentiveSource[] => {
     const grouped = new Map<string, IncentiveSource>();
@@ -305,93 +293,9 @@ const IncentiveTooltip = ({
     return Array.from(grouped.values());
   };
 
-  const tokenSymbol = reserve.tokenSymbol || 'Token';
-
   useEffect(() => {
     setOpenedAtScroll(getWindowScroll());
   }, [position.x, position.y, triggerCenterX, type]);
-
-  useEffect(() => {
-    const lookupInput = {
-      tokenPrices,
-      chainId: reserve.chainId,
-      actionType: type === 'supply' ? 'Supply' : 'Borrow',
-      tokenSymbol: reserve.tokenSymbol,
-      tokenAddress: reserve.tokenAddress,
-      aTokenAddress: reserve.aTokenAddress,
-      vTokenAddress: reserve.vTokenAddress,
-    } as const;
-
-    const localPrice = resolveForecastTokenPrice(lookupInput);
-    if (localPrice !== undefined) {
-      setTokenPrice(localPrice);
-      setTokenPriceLoading(false);
-      return;
-    }
-
-    let cancelled = false;
-    setTokenPrice(undefined);
-    setTokenPriceLoading(true);
-
-    resolveForecastTokenPriceWithBackup(lookupInput)
-      .then((price) => {
-        if (cancelled) return;
-        setTokenPrice(price);
-      })
-      .finally(() => {
-        if (!cancelled) setTokenPriceLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [reserve, type, tokenPrices]);
-
-  const depositAssetAmount = useMemo(() => parseNumberInput(depositInput), [depositInput]);
-  const depositUsd = tokenPrice ? depositAssetAmount * tokenPrice : 0;
-  const reserveRateInput = hasRateCalcFields(reserve) ? reserve : null;
-  const reserveRateInputLoading = false;
-  const reserveRateInputError = null;
-
-  const nativeSimulation = useMemo(() => {
-    if (!reserveRateInput) return null;
-    return type === 'borrow'
-      ? simulateNativeRatesAfterBorrow(reserveRateInput, depositInput)
-      : simulateNativeRatesAfterSupply(reserveRateInput, depositInput);
-  }, [reserveRateInput, depositInput, type]);
-
-  const nativeRateUnitLabel = isApy ? 'APY' : 'APR';
-  const currentNativeApy = type === 'supply' ? reserve.supplyApy ?? null : reserve.borrowApy ?? null;
-  const currentNativeRate = useMemo(() => {
-    if (currentNativeApy === null || currentNativeApy === undefined) return null;
-    return isApy ? currentNativeApy : apyToApr(currentNativeApy);
-  }, [currentNativeApy, isApy]);
-  const simulatedNativeRate = useMemo(() => {
-    if (!nativeSimulation) return null;
-    if (type === 'supply') {
-      return isApy ? nativeSimulation.supplyApyPercent : nativeSimulation.supplyAprPercent;
-    }
-    return isApy ? nativeSimulation.borrowApyPercent : nativeSimulation.borrowAprPercent;
-  }, [nativeSimulation, type, isApy]);
-  const nativeRateDelta =
-    currentNativeRate !== null && simulatedNativeRate !== null
-      ? simulatedNativeRate - currentNativeRate
-      : null;
-
-  const campaignIds = useMemo(() => {
-    const opportunities = type === 'supply' ? reserve.merklSupplys : reserve.merklBorrows;
-    if (!opportunities || !Array.isArray(opportunities)) return [];
-    const ids = new Set<string>();
-    opportunities.forEach((opportunity) => {
-      opportunity.breakdowns?.forEach((breakdown) => {
-        if (!isCampaignActive(breakdown.campaignStartedAt, breakdown.campaignEndedAt)) return;
-        if (breakdown?.campaignId) ids.add(String(breakdown.campaignId));
-      });
-    });
-    return Array.from(ids);
-  }, [reserve, type]);
-
-  const { states: merklForecastStates, errors: merklForecastErrors } = useMerklForecastStates(campaignIds);
 
   // Get detailed incentive sources (unified layout)
   const getIncentiveSources = (): IncentiveSource[] => {
@@ -447,7 +351,6 @@ const IncentiveTooltip = ({
               : 'ACI Incentive';
 
           const { baseMessage, selfMessage } = splitMeritMessageBySelfAuth(merit.message);
-          const selfCapUsd = extractMeritSelfCapUsd(selfMessage);
 
           const meritCampaigns: NonNullable<IncentiveSource['campaigns']> = [];
           if (baseAprPercent > 0) {
@@ -457,9 +360,6 @@ const IncentiveTooltip = ({
               startDate: merit.startDate,
               endDate: merit.endDate,
               message: baseMessage ?? merit.message,
-              forecastAprPercent: baseAprPercent,
-              lastRoundRewardUsd: merit.lastRoundRewardUsd,
-              meritForecastMode: 'MERIT_BASE',
               sourceType: 'ACI',
             });
           }
@@ -470,14 +370,6 @@ const IncentiveTooltip = ({
               startDate: merit.startDate,
               endDate: merit.endDate,
               message: selfMessage,
-              forecastAprPercent: selfAprPercent,
-              meritForecastMode: 'MERIT_SELF_CAP',
-              selfCapUsd: selfCapUsd ?? undefined,
-              meritBaseAprPercent: baseAprPercent > 0 ? baseAprPercent : undefined,
-              meritBaseLastRoundRewardUsd:
-                typeof merit.lastRoundRewardUsd === 'number' && Number.isFinite(merit.lastRoundRewardUsd) && merit.lastRoundRewardUsd > 0
-                  ? merit.lastRoundRewardUsd
-                  : undefined,
               sourceType: 'ACI',
             });
           }
@@ -499,8 +391,6 @@ const IncentiveTooltip = ({
                   startDate: merit.startDate,
                   endDate: merit.endDate,
                   message: merit.message,
-                  forecastAprPercent: totalForecastAprPercent,
-                  lastRoundRewardUsd: merit.lastRoundRewardUsd,
                 }],
           });
         }
@@ -513,22 +403,27 @@ const IncentiveTooltip = ({
 
     if (brevisIncentives && Array.isArray(brevisIncentives) && brevisIncentives.length > 0) {
       brevisIncentives.forEach((brevis) => {
-        if (!isCampaignActive(brevis.startDate, brevis.endDate)) return;
-        const apr = brevis.apr;
+        const startDate = getBrevisCampaignStartedAt(brevis);
+        const endDate = getBrevisCampaignEndedAt(brevis);
+        if (!isCampaignActive(startDate, endDate, Date.now(), true)) return;
+        const apr = getBrevisCampaignApr(brevis);
+        const message = getBrevisCampaignMessage(brevis);
         if (!isNaN(apr) && apr >= 0) {
           sources.push({
-            name: brevis.name || 'Brevis Incentive',
+            name: message || 'Brevis Incentive',
             value: isApy ? convertAprToApy(apr) : apr,
             color: 'text-foreground',
             bgColor: 'bg-muted/60',
             sourceType: 'Brevis',
             link: brevis.link,
-            dateRange: formatDateRange(brevis.startDate, brevis.endDate) || undefined,
+            message,
+            dateRange: formatDateRange(startDate, endDate) || undefined,
             campaigns: [{
               value: isApy ? convertAprToApy(apr) : apr,
-              dateRange: formatDateRange(brevis.startDate, brevis.endDate) || undefined,
-              startDate: brevis.startDate,
-              endDate: brevis.endDate,
+              dateRange: formatDateRange(startDate, endDate) || undefined,
+              startDate,
+              endDate,
+              message,
             }],
           });
         }
@@ -544,7 +439,7 @@ const IncentiveTooltip = ({
           if (!isCampaignActive(breakdown.campaignStartedAt, breakdown.campaignEndedAt)) return;
           const apr = getMerklBreakdownApr(breakdown, tydroPointToUsdRate);
           const whitelistOnly = breakdown.whitelistOnly === true;
-          const included = !whitelistOnly || includeWhitelistOnlyMerkl;
+          const included = isMerklWhitelistBreakdownIncluded(breakdown, whitelistMerklCampaignIds);
           if (!isNaN(apr) && apr >= 0) {
             const displayValue = isApy ? convertAprToApy(apr) : apr;
             sources.push({
@@ -567,7 +462,6 @@ const IncentiveTooltip = ({
                 message: opportunity.message,
                 campaignId: breakdown.campaignId,
                 sourceType: 'Merkl',
-                forecastMultiplier: getMerklForecastUsdMultiplier(breakdown, tydroPointToUsdRate),
               }],
             });
           }
@@ -591,126 +485,6 @@ const IncentiveTooltip = ({
     return [...incentiveSources].sort((a, b) => sourcePriority(a) - sourcePriority(b));
   }, [incentiveSources]);
   const hasDetails = incentiveSources.length > 0;
-  const meritEstimateCampaignCount = useMemo(() => {
-    const merits = type === 'supply' ? reserve.meritSupplys : reserve.meritBorrows;
-    if (!Array.isArray(merits)) return 0;
-    return merits.reduce((count, merit) => {
-      if (!isCampaignActive(merit.startDate, merit.endDate)) return count;
-      if (
-        typeof merit.lastRoundRewardUsd !== 'number' ||
-        !Number.isFinite(merit.lastRoundRewardUsd) ||
-        merit.lastRoundRewardUsd <= 0
-      ) {
-        return count;
-      }
-      const cycleDays = getCampaignCycleDays(merit.startDate, merit.endDate);
-      if (!cycleDays || cycleDays <= 0) return count;
-      const forecastAprPercent = (typeof merit.apr === 'number' ? merit.apr : 0) + (typeof merit.selfApr === 'number' ? merit.selfApr : 0);
-      if (!Number.isFinite(forecastAprPercent) || forecastAprPercent <= 0) {
-        return count;
-      }
-      return count + 1;
-    }, 0);
-  }, [reserve, type]);
-  const showForecastInput =
-    campaignIds.length > 0 ||
-    meritEstimateCampaignCount > 0 ||
-    reserveRateInput !== null ||
-    reserveRateInputLoading ||
-    Boolean(reserveRateInputError);
-  const whitelistOnlyCampaignCount = useMemo(() => {
-    const opportunities = type === 'supply' ? reserve.merklSupplys : reserve.merklBorrows;
-    if (!opportunities || !Array.isArray(opportunities)) return 0;
-    return opportunities.reduce((count, opportunity) => {
-      const breakdowns = opportunity.breakdowns ?? [];
-      return (
-        count +
-        breakdowns.reduce((innerCount, breakdown) => innerCount + (breakdown.whitelistOnly ? 1 : 0), 0)
-      );
-    }, 0);
-  }, [reserve, type]);
-  const showWhitelistToggle = whitelistOnlyCampaignCount > 0;
-  const merklForecastInput = showForecastInput && import.meta.env.DEV ? (
-    <div className="mb-[var(--ds-space-2)] rounded-lg border border-border/60 bg-muted/20 px-[var(--ds-space-2)] py-[var(--ds-space-2)]">
-      <label className="ds-tooltip-body text-muted-foreground block mb-[var(--ds-space-1)]">
-        Incentive Forecast Input (amount in {tokenSymbol})
-      </label>
-      <input
-        value={depositInput}
-        onChange={(event) => setDepositInput(formatNumberInput(event.target.value))}
-        inputMode="decimal"
-        placeholder="e.g. 100,000"
-        className="w-full rounded-md border border-border bg-background px-[var(--ds-space-2)] py-[var(--ds-space-1-5)] ds-tooltip-body text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      />
-      {tokenPrice ? (
-        <p className="mt-[var(--ds-space-1)] ds-tooltip-body text-muted-foreground">
-          ≈ {formatUsd(depositUsd)}
-        </p>
-      ) : tokenPriceLoading ? (
-        <p className="mt-[var(--ds-space-1)] ds-tooltip-body text-muted-foreground">
-          Fetching backup price...
-        </p>
-      ) : (
-        <p className="mt-[var(--ds-space-1)] ds-tooltip-body text-muted-foreground">
-          Price unavailable for {tokenSymbol}; forecast uses current supply.
-        </p>
-      )}
-      <p className="mt-[var(--ds-space-1)] ds-tooltip-body text-muted-foreground">
-        Merkl forecasts support MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE, DUTCH_AUCTION, and FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE.
-        Merit uses latest-round estimates when available.
-      </p>
-      <div className="mt-[var(--ds-space-1-5)] rounded-md border border-border/50 bg-muted/30 px-[var(--ds-space-2)] py-[var(--ds-space-1-5)]">
-        <p className="ds-tooltip-body text-muted-foreground">
-          Native {type === 'supply' ? 'supply' : 'borrow'} {nativeRateUnitLabel} simulation
-        </p>
-        {depositUsd <= 0 ? (
-          <p className="ds-tooltip-body mt-[var(--ds-space-0-5)] text-muted-foreground">
-            Enter amount to simulate.
-          </p>
-        ) : reserveRateInputLoading ? (
-          <p className="ds-tooltip-body mt-[var(--ds-space-0-5)] text-muted-foreground">Loading rate inputs...</p>
-        ) : reserveRateInputError ? (
-          <p className="ds-tooltip-body mt-[var(--ds-space-0-5)] text-amber-600">
-            Native simulation unavailable: {reserveRateInputError instanceof Error ? reserveRateInputError.message : 'failed to fetch rate inputs'}
-          </p>
-        ) : !reserveRateInput || !nativeSimulation ? (
-          <p className="ds-tooltip-body mt-[var(--ds-space-0-5)] text-muted-foreground">
-            Native simulation unavailable for this reserve.
-          </p>
-        ) : (
-          <>
-            {simulatedNativeRate !== null ? (
-              <p className={`ds-tooltip-body mt-[var(--ds-space-0-5)] ${valueAccentClass}`}>
-                Forecast {nativeRateUnitLabel} {formatPercent(simulatedNativeRate)}
-                {nativeRateDelta !== null ? ` (${nativeRateDelta >= 0 ? '+' : ''}${nativeRateDelta.toFixed(2)}%)` : ''}
-              </p>
-            ) : (
-              <p className="ds-tooltip-body mt-[var(--ds-space-0-5)] text-muted-foreground">
-                Enter amount to simulate.
-              </p>
-            )}
-            <p className="ds-tooltip-body mt-[var(--ds-space-0-5)] text-muted-foreground">
-              Utilization {formatPercent(nativeSimulation.utilizationRatePercent)}
-            </p>
-          </>
-        )}
-      </div>
-      {showWhitelistToggle && (
-        <label className="mt-[var(--ds-space-1)] flex items-center gap-[var(--ds-space-1-5)] ds-tooltip-body text-muted-foreground">
-          <input
-            type="checkbox"
-            checked={includeWhitelistOnlyMerkl}
-            onChange={(event) => onToggleWhitelistOnlyMerkl(event.target.checked)}
-            className="h-3.5 w-3.5 rounded border-border bg-background"
-          />
-          <span>
-            Include whitelist-only Merkl campaigns
-            {!includeWhitelistOnlyMerkl && whitelistOnlyCampaignCount > 0 ? ` (${whitelistOnlyCampaignCount} excluded)` : ''}
-          </span>
-        </label>
-      )}
-    </div>
-  ) : null;
 
   const renderSourceCampaigns = (source: IncentiveSource, keyPrefix: string) => {
     const campaignsBase =
@@ -721,97 +495,33 @@ const IncentiveTooltip = ({
       if (aExcluded === bExcluded) return 0;
       return aExcluded ? 1 : -1;
     });
-    const getForecastPreview = (campaign: (typeof campaigns)[number]) => {
-      const campaignSourceType = campaign.sourceType ?? source.sourceType;
-      if (depositUsd <= 0) return null;
-      if (campaignSourceType === 'Merkl' && campaign.campaignId) {
-        if (campaign.whitelistOnly && campaign.included === false) return null;
-        const forecastState = merklForecastStates[campaign.campaignId];
-        if (!forecastState) {
-          const errorMessage = merklForecastErrors[campaign.campaignId];
-          return {
-            unavailable: true,
-            campaignId: campaign.campaignId,
-            message: errorMessage || 'Forecast state unavailable',
-          } as const;
-        }
-
-        const hypotheticalTvl = Math.max(forecastState.latestTvl + depositUsd, 0);
-        const forecast = forecastWithTVL(forecastState, hypotheticalTvl);
-        const multiplier =
-          typeof campaign.forecastMultiplier === 'number' && Number.isFinite(campaign.forecastMultiplier)
-            ? Math.max(campaign.forecastMultiplier, 0)
-            : 1;
-        const progress = deriveForecastProgressFlags(forecastState);
-        return {
-          unavailable: false,
-          hypotheticalTvl,
-          campaignType: forecastState.campaignType,
-          dailyRewards: forecast.dailyRewards * multiplier,
-          apr: forecast.apr * multiplier,
-          regime: forecast.regime,
-          fixRewardableDays: forecast.fixRewardableDays,
-          fixRewardableUntilTs: forecast.fixRewardableUntilTs,
-          ...progress,
-        };
-      }
-
-      if (campaignSourceType === 'ACI') {
-        return forecastMeritCampaign({
-          mode: campaign.meritForecastMode === 'MERIT_SELF_CAP' ? 'MERIT_SELF_CAP' : 'MERIT_BASE',
-          depositUsd,
-          forecastAprPercent: campaign.forecastAprPercent,
-          startDate: campaign.startDate,
-          endDate: campaign.endDate,
-          lastRoundRewardUsd: campaign.lastRoundRewardUsd,
-          selfCapUsd: campaign.selfCapUsd,
-          baseAprPercent: campaign.meritBaseAprPercent,
-          baseLastRoundRewardUsd: campaign.meritBaseLastRoundRewardUsd,
-        });
-      }
-
-      return null;
-    };
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    type AnyForecast = Record<string, any>;
-
-    const toAvailableForecast = (
-      fp: NonNullable<ReturnType<typeof getForecastPreview>>,
-    ): AnyForecast | null => (fp.unavailable ? null : (fp as AnyForecast));
-
-    const getForecastRateDisplay = (fp: AnyForecast) => {
-      const forecastAprPercent = (fp.apr ?? 0) * 100;
-      const displayPercent = isApy ? convertAprToApy(forecastAprPercent) : forecastAprPercent;
-      const isSelfEstimate = typeof fp.selfCapUsd === 'number' || fp.estimateKind === 'MERIT_SELF_CAP';
-      const rateUnitLabel = isApy ? 'APY' : 'APR';
-      return {
-        label:
-          isSelfEstimate || fp.estimateKind === 'MERIT_CURRENT_RATE'
-            ? `Your ${rateUnitLabel}`
-            : `Forecast ${rateUnitLabel}`,
-        valuePercent: displayPercent,
-      };
-    };
-
-    const getForecastDailyRewardsLabel = (fp: AnyForecast) =>
-      typeof fp.selfCapUsd === 'number' || fp.estimateKind === 'MERIT_CURRENT_RATE'
-        ? 'Your Daily Rewards'
-        : 'Total Daily Rewards';
 
     if (campaigns.length === 1) {
       const campaign = campaigns[0];
       const isExcludedWhitelist = campaign.whitelistOnly === true && campaign.included === false;
-      const forecastPreview = getForecastPreview(campaign);
+      const merklWlToggleKey =
+        campaign.whitelistOnly === true
+          ? String(campaign.campaignId ?? '').trim() || MERKL_WHITELIST_NO_CAMPAIGN_ID_SENTINEL
+          : '';
       const messageLines = getMessageLines(campaign.message);
       const campaignAccentClass = isExcludedWhitelist ? 'text-zinc-500' : valueAccentClass;
-      const displayValue = isExcludedWhitelist ? campaign.rawValue ?? campaign.value : campaign.value;
       return (
         <>
-          {isExcludedWhitelist && (
-            <p className="ds-tooltip-body mt-[var(--ds-space-1)] text-zinc-500">
-              Whitelist-only campaign (excluded) · {formatPercent(displayValue)}
-            </p>
+          {campaign.whitelistOnly && (
+            <label
+              className="mt-[var(--ds-space-1)] flex items-start gap-[var(--ds-space-1-5)] ds-tooltip-body text-muted-foreground"
+              aria-label={MERKL_WHITELIST_TOGGLE_ARIA}
+            >
+              <input
+                type="checkbox"
+                checked={whitelistMerklCampaignIds.has(merklWlToggleKey)}
+                onChange={(event) => onToggleWhitelistMerklCampaign(merklWlToggleKey, event.target.checked)}
+                className="mt-0.5 h-3.5 w-3.5 shrink-0 rounded border-border bg-background"
+              />
+              <span aria-hidden="true" className="min-w-0 leading-snug">
+                {MERKL_WHITELIST_TOGGLE_LABEL}
+              </span>
+            </label>
           )}
           {campaign.dateRange && (
             <p className={`ds-tooltip-body mt-[var(--ds-space-1)] break-words ${campaignAccentClass}`}>
@@ -828,60 +538,6 @@ const IncentiveTooltip = ({
               ))}
             </ul>
           )}
-          {forecastPreview && (() => {
-            const fp = toAvailableForecast(forecastPreview);
-            if (!fp) return null;
-            return (
-            <div className="mt-[var(--ds-space-1-5)] rounded-md border border-border/50 bg-muted/30 px-[var(--ds-space-2)] py-[var(--ds-space-1-5)]">
-              <p className="ds-tooltip-body text-muted-foreground">
-                {typeof fp.hypotheticalTvl === 'number'
-                  ? `Forecast at Supply ${formatUsd(fp.hypotheticalTvl)}`
-                  : 'Estimate for your deposit'}
-              </p>
-              {(() => {
-                const rateDisplay = getForecastRateDisplay(fp);
-                if (!rateDisplay) return null;
-                return (
-              <p className={`ds-tooltip-body mt-[var(--ds-space-0-5)] ${valueAccentClass}`}>
-                {rateDisplay.label} {formatPercent(rateDisplay.valuePercent)} · {getForecastDailyRewardsLabel(fp)}{' '}
-                {formatUsd(fp.dailyRewards)}
-                  </p>
-                );
-              })()}
-              {fp.usesCurrentRateFallback && (
-                <p className="ds-tooltip-body text-muted-foreground mt-[var(--ds-space-0-5)]">
-                  Using current APR because latest-round reward data is unavailable.
-                </p>
-              )}
-              {fp.estimateKind === 'MERIT_BASE' ? (
-                <p className="ds-tooltip-body text-muted-foreground mt-[var(--ds-space-0-5)]">
-                  Estimated from last round reward
-                  {typeof fp.lastRoundRewardUsd === 'number'
-                    ? ` (${formatUsd(fp.lastRoundRewardUsd)})`
-                    : ''}.
-                </p>
-              ) : typeof fp.selfCapUsd === 'number' ? (
-                <p className="ds-tooltip-body text-muted-foreground mt-[var(--ds-space-0-5)]">
-                  Self bonus applies to the first {formatUsd(fp.selfCapUsd)} of your deposit.
-                </p>
-              ) : null}
-              {'fixRewardableDays' in fp &&
-                fp.campaignType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE' &&
-                typeof fp.fixRewardableDays === 'number' &&
-                typeof fp.fixRewardableUntilTs === 'number' && (
-                  <p className={`ds-tooltip-body mt-[var(--ds-space-0-5)] font-medium ${valueAccentClass}`}>
-                    Rewardable until: {formatForecastTimestamp(fp.fixRewardableUntilTs)} (
-                    {fp.fixRewardableDays.toFixed(2)}d)
-                  </p>
-                )}
-            </div>
-            );
-          })()}
-          {forecastPreview && forecastPreview.unavailable && (
-            <p className="ds-tooltip-body mt-[var(--ds-space-1)] text-amber-600">
-              Forecast unavailable for campaign {forecastPreview.campaignId}: {forecastPreview.message}
-            </p>
-          )}
         </>
       );
     }
@@ -890,7 +546,10 @@ const IncentiveTooltip = ({
       <div className="mt-[var(--ds-space-1)] space-y-[var(--ds-space-1-5)]">
         {campaigns.map((campaign, campaignIndex) => {
           const isExcludedWhitelist = campaign.whitelistOnly === true && campaign.included === false;
-          const forecastPreview = getForecastPreview(campaign);
+          const merklWlToggleKey =
+            campaign.whitelistOnly === true
+              ? String(campaign.campaignId ?? '').trim() || MERKL_WHITELIST_NO_CAMPAIGN_ID_SENTINEL
+              : '';
           const messageLines = getMessageLines(campaign.message);
           const campaignLabel = campaign.dateRange ? `Campaign time: ${campaign.dateRange}` : 'Campaign time: N/A';
           const campaignAccentClass = isExcludedWhitelist ? 'text-zinc-500' : valueAccentClass;
@@ -900,10 +559,21 @@ const IncentiveTooltip = ({
               key={`${keyPrefix}-campaign-${campaignIndex}`}
               className={campaignIndex > 0 ? 'pt-[var(--ds-space-0-5)]' : ''}
             >
-              {isExcludedWhitelist && (
-                <p className="ds-tooltip-body text-zinc-500 mb-[var(--ds-space-0-5)]">
-                  Whitelist-only campaign (excluded)
-                </p>
+              {campaign.whitelistOnly && (
+                <label
+                  className="flex items-start gap-[var(--ds-space-1-5)] ds-tooltip-body text-muted-foreground mb-[var(--ds-space-0-5)]"
+                  aria-label={MERKL_WHITELIST_TOGGLE_ARIA}
+                >
+                  <input
+                    type="checkbox"
+                    checked={whitelistMerklCampaignIds.has(merklWlToggleKey)}
+                    onChange={(event) => onToggleWhitelistMerklCampaign(merklWlToggleKey, event.target.checked)}
+                    className="mt-0.5 h-3.5 w-3.5 shrink-0 rounded border-border bg-background"
+                  />
+                  <span aria-hidden="true" className="min-w-0 leading-snug">
+                    {MERKL_WHITELIST_TOGGLE_LABEL}
+                  </span>
+                </label>
               )}
               <div className="flex items-start justify-between gap-[var(--ds-space-2)]">
                 <p className={`ds-tooltip-body break-words min-w-0 ${campaignAccentClass}`}>{campaignLabel}</p>
@@ -920,60 +590,6 @@ const IncentiveTooltip = ({
                     </li>
                   ))}
                 </ul>
-              )}
-              {forecastPreview && (() => {
-                const fp = toAvailableForecast(forecastPreview);
-                if (!fp) return null;
-                return (
-                <div className="mt-[var(--ds-space-1-5)] rounded-md border border-border/50 bg-muted/30 px-[var(--ds-space-2)] py-[var(--ds-space-1-5)]">
-                  <p className="ds-tooltip-body text-muted-foreground">
-                    {typeof fp.hypotheticalTvl === 'number'
-                      ? `Forecast at Supply ${formatUsd(fp.hypotheticalTvl)}`
-                      : 'Estimate for your deposit'}
-                  </p>
-                  {(() => {
-                    const rateDisplay = getForecastRateDisplay(fp);
-                    if (!rateDisplay) return null;
-                    return (
-                      <p className={`ds-tooltip-body mt-[var(--ds-space-0-5)] ${valueAccentClass}`}>
-                        {rateDisplay.label} {formatPercent(rateDisplay.valuePercent)} · {getForecastDailyRewardsLabel(fp)}{' '}
-                        {formatUsd(fp.dailyRewards)}
-                      </p>
-                    );
-                  })()}
-                  {fp.usesCurrentRateFallback && (
-                    <p className="ds-tooltip-body text-muted-foreground mt-[var(--ds-space-0-5)]">
-                      Using current APR because latest-round reward data is unavailable.
-                    </p>
-                  )}
-                {fp.estimateKind === 'MERIT_BASE' ? (
-                  <p className="ds-tooltip-body text-muted-foreground mt-[var(--ds-space-0-5)]">
-                    Estimated from last round reward
-                    {typeof fp.lastRoundRewardUsd === 'number'
-                      ? ` (${formatUsd(fp.lastRoundRewardUsd)})`
-                      : ''}.
-                  </p>
-                ) : typeof fp.selfCapUsd === 'number' ? (
-                  <p className="ds-tooltip-body text-muted-foreground mt-[var(--ds-space-0-5)]">
-                    Self bonus applies to the first {formatUsd(fp.selfCapUsd)} of your deposit.
-                  </p>
-                ) : null}
-                  {'fixRewardableDays' in fp &&
-                    fp.campaignType === 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE' &&
-                    typeof fp.fixRewardableDays === 'number' &&
-                    typeof fp.fixRewardableUntilTs === 'number' && (
-                      <p className={`ds-tooltip-body mt-[var(--ds-space-0-5)] font-medium ${valueAccentClass}`}>
-                        Rewardable until: {formatForecastTimestamp(fp.fixRewardableUntilTs)} (
-                        {fp.fixRewardableDays.toFixed(2)}d)
-                      </p>
-                    )}
-                </div>
-                );
-              })()}
-              {forecastPreview && forecastPreview.unavailable && (
-                <p className="ds-tooltip-body mt-[var(--ds-space-1)] text-amber-600">
-                  Forecast unavailable for campaign {forecastPreview.campaignId}: {forecastPreview.message}
-                </p>
               )}
             </div>
           );
@@ -1080,7 +696,7 @@ const IncentiveTooltip = ({
         {/* Bottom sheet with spring-like animation */}
         <div
           ref={tooltipRef}
-          className="fixed bottom-0 left-0 right-0 z-40 rounded-t-2xl border border-border/60 bg-card ds-tooltip-shadow-up max-h-[80vh] overflow-y-auto"
+          className="fixed bottom-0 left-0 right-0 z-40 rounded-t-2xl border border-border/60 bg-card max-h-[80vh] overflow-y-auto"
           style={tooltipSurfaceStyle}
         >
           {/* Handle bar */}
@@ -1097,7 +713,6 @@ const IncentiveTooltip = ({
           </div>
           
           <div className="ds-tooltip-pad pt-[var(--ds-space-3)] pb-[var(--ds-space-3)]">
-            {merklForecastInput}
             {/* Detailed sources */}
             {hasDetails ? (
               <div className="relative my-[var(--ds-space-2)] pl-[var(--ds-space-2)]">
@@ -1200,7 +815,7 @@ const IncentiveTooltip = ({
       {/* Tooltip content with smooth zoom + fade animation */}
       <div
         ref={tooltipRef}
-        className={`fixed z-40 rounded-xl border border-border/60 bg-card ds-tooltip-pad ds-tooltip-shadow max-w-[min(520px,calc(100vw-32px))] w-[min(520px,calc(100vw-32px))] min-w-[320px] animate-in fade-in-0 zoom-in-95 duration-200 ease-out ${
+        className={`fixed z-40 rounded-xl border border-border/60 bg-card ds-tooltip-pad max-w-[min(520px,calc(100vw-32px))] w-[min(520px,calc(100vw-32px))] min-w-[320px] animate-in fade-in-0 zoom-in-95 duration-200 ease-out ${
           tooltipPlacement === 'top' ? 'slide-in-from-bottom-1' : 'slide-in-from-top-1'
         }`}
         style={{ 
@@ -1225,7 +840,6 @@ const IncentiveTooltip = ({
         )}
         {/* Content area */}
         <div className="w-full min-w-0 max-h-[calc(100vh-32px)] overflow-y-auto overscroll-contain pr-1">
-          {merklForecastInput}
           {/* Detailed sources */}
           {hasDetails ? (
             <div className="relative my-[var(--ds-space-2)] pl-[var(--ds-space-2)]">

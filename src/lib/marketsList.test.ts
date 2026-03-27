@@ -43,11 +43,11 @@ const response: MarketsResponse = {
 };
 
 describe('buildMarketsList', () => {
-  it('derives unique market-chain pairs and keeps Ethereum markets first', () => {
+  it('derives unique market-chain pairs and sorts by market name', () => {
     expect(buildMarketsList(response)).toEqual([
-      { marketName: 'AaveV3Ethereum', chainName: 'Ethereum' },
-      { marketName: 'AaveV3Base', chainName: 'Base' },
       { marketName: 'AaveV3Arbitrum', chainName: 'Arbitrum' },
+      { marketName: 'AaveV3Base', chainName: 'Base' },
+      { marketName: 'AaveV3Ethereum', chainName: 'Ethereum' },
     ]);
   });
 });

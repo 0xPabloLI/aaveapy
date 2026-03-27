@@ -50,7 +50,17 @@ const Index = () => {
   const [showCacheWarning, setShowCacheWarning] = useState(false);
   
   const [isRateDragging, setIsRateDragging] = useState(false);
-  const [includeWhitelistOnlyMerkl, setIncludeWhitelistOnlyMerkl] = useState(false);
+  const [whitelistMerklCampaignIds, setWhitelistMerklCampaignIds] = useState<Set<string>>(() => new Set());
+  const toggleWhitelistMerklCampaign = useCallback((campaignId: string, enabled: boolean) => {
+    const id = String(campaignId || '').trim();
+    if (!id) return;
+    setWhitelistMerklCampaignIds((prev) => {
+      const next = new Set(prev);
+      if (enabled) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  }, []);
   const [pendingScrollReserveId, setPendingScrollReserveId] = useState<string | null>(null);
   const [topTooltipState, setTopTooltipState] = useState<{
     reserve: ReserveWithSpread;
@@ -358,7 +368,7 @@ const Index = () => {
               reserves={stableReserves}
               isApy={isApy}
               isRateDragging={isRateDragging}
-              includeWhitelistOnlyMerkl={includeWhitelistOnlyMerkl}
+              whitelistMerklCampaignIds={whitelistMerklCampaignIds}
               categoryGroups={tokenCategoryGroups}
               onIncentiveClick={handleTopIncentiveClick}
               onCardClick={handleTopCardClick}
@@ -393,8 +403,8 @@ const Index = () => {
                 );
               }}
               tydroPointToUsdRate={tydroPointToUsdRate}
-              includeWhitelistOnlyMerkl={includeWhitelistOnlyMerkl}
-              onToggleWhitelistOnlyMerkl={setIncludeWhitelistOnlyMerkl}
+              whitelistMerklCampaignIds={whitelistMerklCampaignIds}
+              onToggleWhitelistMerklCampaign={toggleWhitelistMerklCampaign}
               tokenPrices={tokenPrices}
               scrollToReserveId={pendingScrollReserveId}
             />
@@ -414,9 +424,8 @@ const Index = () => {
                 onClose={() => setTopTooltipState(null)}
                 isApy={isApy}
                 tydroPointToUsdRate={tydroPointToUsdRate}
-                includeWhitelistOnlyMerkl={includeWhitelistOnlyMerkl}
-                onToggleWhitelistOnlyMerkl={setIncludeWhitelistOnlyMerkl}
-                tokenPrices={tokenPrices}
+                whitelistMerklCampaignIds={whitelistMerklCampaignIds}
+                onToggleWhitelistMerklCampaign={toggleWhitelistMerklCampaign}
                 usePortal
               />
           )}
@@ -442,8 +451,8 @@ const Index = () => {
                 <MerklForecastPanel
                   reserves={filteredReserves}
                   tydroPointToUsdRate={tydroPointToUsdRate}
-                  includeWhitelistOnlyMerkl={includeWhitelistOnlyMerkl}
-                  onToggleWhitelistOnlyMerkl={setIncludeWhitelistOnlyMerkl}
+                  whitelistMerklCampaignIds={whitelistMerklCampaignIds}
+                  onToggleWhitelistMerklCampaign={toggleWhitelistMerklCampaign}
                   tokenPrices={tokenPrices}
                 />
               </Suspense>

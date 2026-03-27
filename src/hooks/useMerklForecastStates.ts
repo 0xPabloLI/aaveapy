@@ -2,10 +2,10 @@ import { useMemo } from 'react';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
 import { useSideDataMeta } from '@/hooks/useSideDataMeta';
 import { shouldSurfaceForecastError } from '@/lib/merklForecastErrors';
-import type { MerklForecastStateResponse } from '@/types/aave';
+import type { MerklForecastWireItem } from '@/types/aave';
 
 export interface MerklForecastStatesResult {
-  states: Record<string, MerklForecastStateResponse>;
+  states: Record<string, MerklForecastWireItem>;
   errors: Record<string, string>;
   isLoading: boolean;
   isFetching: boolean;
@@ -21,7 +21,7 @@ export function useMerklForecastStates(campaignIds?: string[]): MerklForecastSta
       return { states: {}, errors: {} };
     }
 
-    const allStates: Record<string, MerklForecastStateResponse> = {};
+    const allStates: Record<string, MerklForecastWireItem> = {};
     const allErrors: Record<string, string> = {};
 
     forecast.items.forEach((item) => {
@@ -39,7 +39,7 @@ export function useMerklForecastStates(campaignIds?: string[]): MerklForecastSta
     }
 
     const idSet = new Set(campaignIds);
-    const filteredStates: Record<string, MerklForecastStateResponse> = {};
+    const filteredStates: Record<string, MerklForecastWireItem> = {};
     const filteredErrors: Record<string, string> = {};
 
     Object.entries(allStates).forEach(([id, state]) => {
