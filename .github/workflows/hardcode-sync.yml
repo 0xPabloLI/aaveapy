@@ -30,6 +30,7 @@ jobs:
       TARGET_BRANCH: >-
         ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.target_branch != '' && github.event.client_payload.target_branch || (github.event_name == 'workflow_dispatch' && github.event.inputs.target_branch != '' && github.event.inputs.target_branch || 'dev') }}
       HAS_HARDCODE_SYNC_PAT: ${{ secrets.HARDCODE_SYNC_PAT != '' }}
+      VITE_API_BASE_URL: ${{ vars.LIVE_TEST_API_BASE_CI != '' && vars.LIVE_TEST_API_BASE_CI || 'https://api.aaveapy.com/api' }}
     steps:
       - name: Checkout target branch
         uses: actions/checkout@v5
@@ -40,6 +41,7 @@ jobs:
         run: |
           echo "event_name=${{ github.event_name }}"
           echo "target_branch=${{ env.TARGET_BRANCH }}"
+          echo "api_base=${{ env.VITE_API_BASE_URL }}"
           echo "client_payload=${{ toJSON(github.event.client_payload) }}"
 
       - name: Setup Node

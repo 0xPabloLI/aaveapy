@@ -15,6 +15,8 @@ import { getMerklBreakdownApr } from '@/lib/tydro';
 import { splitMeritMessageBySelfAuth } from '@/lib/meritForecast';
 import {
   getBrevisCampaignApr,
+  getBrevisCampaignBreakdowns,
+  getBrevisDisplayLabel,
   getBrevisCampaignEndedAt,
   getBrevisCampaignMessage,
   getBrevisCampaignStartedAt,
@@ -403,30 +405,41 @@ const IncentiveTooltip = ({
 
     if (brevisIncentives && Array.isArray(brevisIncentives) && brevisIncentives.length > 0) {
       brevisIncentives.forEach((brevis) => {
-        const startDate = getBrevisCampaignStartedAt(brevis);
-        const endDate = getBrevisCampaignEndedAt(brevis);
-        if (!isCampaignActive(startDate, endDate, Date.now(), true)) return;
-        const apr = getBrevisCampaignApr(brevis);
+        const name = getBrevisDisplayLabel(brevis, 'Brevis Incentive');
         const message = getBrevisCampaignMessage(brevis);
-        if (!isNaN(apr) && apr >= 0) {
-          sources.push({
-            name: message || 'Brevis Incentive',
-            value: isApy ? convertAprToApy(apr) : apr,
-            color: 'text-foreground',
-            bgColor: 'bg-muted/60',
-            sourceType: 'Brevis',
-            link: brevis.link,
-            message,
-            dateRange: formatDateRange(startDate, endDate) || undefined,
-            campaigns: [{
-              value: isApy ? convertAprToApy(apr) : apr,
+        const breakdowns = getBrevisCampaignBreakdowns(brevis);
+        const campaigns = breakdowns
+          .map((breakdown) => {
+            const startDate = breakdown.campaignStartedAt ?? getBrevisCampaignStartedAt(brevis);
+            const endDate = breakdown.campaignEndedAt ?? getBrevisCampaignEndedAt(brevis);
+            if (!isCampaignActive(startDate, endDate, Date.now(), true)) return null;
+            const apr = breakdown.campaignApr ?? getBrevisCampaignApr(brevis);
+            if (isNaN(apr) || apr < 0) return null;
+            const value = isApy ? convertAprToApy(apr) : apr;
+            return {
+              value,
               dateRange: formatDateRange(startDate, endDate) || undefined,
               startDate,
               endDate,
               message,
-            }],
-          });
-        }
+              campaignId: breakdown.campaignId,
+              sourceType: 'Brevis' as const,
+            };
+          })
+          .filter(Boolean) as NonNullable<IncentiveSource['campaigns']>;
+        if (campaigns.length === 0) return;
+        const totalValue = campaigns.reduce((sum, campaign) => sum + campaign.value, 0);
+        sources.push({
+          name,
+          value: totalValue,
+          color: 'text-foreground',
+          bgColor: 'bg-muted/60',
+          sourceType: 'Brevis',
+          link: brevis.link,
+          message,
+          dateRange: campaigns[0]?.dateRange,
+          campaigns,
+        });
       });
     }
 

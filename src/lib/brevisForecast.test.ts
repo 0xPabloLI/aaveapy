@@ -22,6 +22,25 @@ describe('forecastBrevisAprPercent', () => {
     expect(forecastBrevisAprPercent(brevis, 50_000)).toBe(10);
   });
 
+  it('reads per-user cap and dates from breakdowns when top-level fields are absent', () => {
+    const nowMs = Date.now();
+    const brevis = makeBrevis({
+      campaignApr: undefined,
+      campaignStartedAt: undefined,
+      campaignEndedAt: undefined,
+      breakdowns: [
+        {
+          campaignApr: 10,
+          campaignStartedAt: new Date(nowMs - 30 * MS_PER_DAY).toISOString(),
+          campaignEndedAt: new Date(nowMs + 335 * MS_PER_DAY).toISOString(),
+          perUserRewardCapUsd: 5000,
+          campaignId: 'nested',
+        },
+      ],
+    });
+    expect(forecastBrevisAprPercent(brevis, 100_000, nowMs)).toBeCloseTo(5, 0);
+  });
+
   it('returns nominal APR when deposit is zero', () => {
     const brevis = makeBrevis({ perUserRewardCapUsd: 5000 });
     expect(forecastBrevisAprPercent(brevis, 0)).toBe(10);

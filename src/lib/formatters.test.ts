@@ -60,18 +60,28 @@ describe('incentive calculations only include active campaigns', () => {
 
     const brevisIncentives: BrevisIncentive[] = [
       {
-        campaignApr: 3,
         link: 'https://example.com/active-brevis',
-        campaignStartedAt: daysFromNowIso(-1),
-        campaignEndedAt: daysFromNowIso(1),
+        name: 'Brevis Active',
         message: 'Active Brevis',
+        breakdowns: [
+          {
+            campaignApr: 3,
+            campaignStartedAt: daysFromNowIso(-1),
+            campaignEndedAt: daysFromNowIso(1),
+          },
+        ],
       },
       {
-        campaignApr: 8,
         link: 'https://example.com/future-brevis',
-        campaignStartedAt: daysFromNowIso(4),
-        campaignEndedAt: daysFromNowIso(8),
+        name: 'Brevis Future',
         message: 'Future Brevis',
+        breakdowns: [
+          {
+            campaignApr: 8,
+            campaignStartedAt: daysFromNowIso(4),
+            campaignEndedAt: daysFromNowIso(8),
+          },
+        ],
       },
     ];
 

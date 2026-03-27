@@ -483,12 +483,18 @@ describe('buildRateSimulationResult', () => {
       ...baseReserve,
       brevisSupplys: [
         {
-          campaignApr: 10,
           link: 'https://example.com/brevis',
-          campaignStartedAt: '2020-01-01T00:00:00.000Z',
-          campaignEndedAt: endDate,
+          name: 'Brevis Supply',
           message: 'Brevis Supply',
-          perUserRewardCapUsd: 5000,
+          breakdowns: [
+            {
+              campaignApr: 10,
+              campaignStartedAt: '2020-01-01T00:00:00.000Z',
+              campaignEndedAt: endDate,
+              perUserRewardCapUsd: 5000,
+              campaignId: 'brevis-supply',
+            },
+          ],
         },
       ],
     };
@@ -519,12 +525,18 @@ describe('buildRateSimulationResult', () => {
       ...baseReserve,
       brevisSupplys: [
         {
-          campaignApr: 10,
           link: 'https://example.com/brevis',
-          campaignStartedAt: '2020-01-01T00:00:00.000Z',
-          campaignEndedAt: endDate,
+          name: 'Brevis Supply',
           message: 'Brevis Supply',
-          perUserRewardCapUsd: 5000,
+          breakdowns: [
+            {
+              campaignApr: 10,
+              campaignStartedAt: '2020-01-01T00:00:00.000Z',
+              campaignEndedAt: endDate,
+              perUserRewardCapUsd: 5000,
+              campaignId: 'brevis-supply',
+            },
+          ],
         },
       ],
     };

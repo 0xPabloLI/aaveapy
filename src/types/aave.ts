@@ -15,11 +15,22 @@ export interface MeritIncentive {
   lastRoundRewardUsd?: number;         // Latest round total reward in USD
 }
 
+export interface BaseCampaignBreakdown {
+  campaignApr: number;
+  campaignStartedAt: string;
+  campaignEndedAt: string;
+  campaignId?: string;
+}
+
+export interface CampaignGroup<TBreakdown extends BaseCampaignBreakdown = BaseCampaignBreakdown> {
+  link?: string;
+  name?: string;
+  message?: string;
+  breakdowns: TBreakdown[];
+}
+
 // Merkl opportunity data structure
-export interface MerklCampaignBreakdown {
-  campaignApr: number;                 // Campaign APR (percentage value)
-  campaignStartedAt: string;           // Campaign start time (ISO 8601)
-  campaignEndedAt: string;             // Campaign end time (ISO 8601)
+export interface MerklCampaignBreakdown extends BaseCampaignBreakdown {
   campaignId: string;                 // Campaign ID
   whitelistOnly?: boolean;             // Merkl campaign is whitelist-only
   pointsPerThousandUsd?: number;       // Tydro protocol points/1000USD value (optional)
@@ -31,23 +42,24 @@ export interface MerklCampaignBreakdown {
   plannedDaily?: number;
 }
 
-export interface MerklOpportunityGroup {
-  link?: string;                       // Opportunity detail page link
-  name?: string;                       // Opportunity name (optional)
-  message?: string;                    // Opportunity message/description (optional)
-  breakdowns: MerklCampaignBreakdown[]; // All breakdowns for this opportunity
+export type MerklOpportunityGroup = CampaignGroup<MerklCampaignBreakdown>;
+
+export interface BrevisCampaignBreakdown extends BaseCampaignBreakdown {
+  latestTvl?: number;
+  totalBudget?: number;
+  perUserRewardCapUsd?: number;
 }
 
-export interface BrevisIncentive {
+export interface BrevisIncentive extends Omit<CampaignGroup<BrevisCampaignBreakdown>, 'breakdowns' | 'link'> {
   link: string;                        // Brevis campaign detail link
-  campaignApr: number;                 // Canonical APR field
-  campaignStartedAt: string;           // Canonical start time
-  campaignEndedAt: string;             // Canonical end time
-  message?: string;                    // Preferred description/message field
-  latestTvl?: number;                  // Preferred TVL field
-  totalBudget?: number;                // Preferred total budget field
-  perUserRewardCapUsd?: number;        // Per-user cumulative reward ceiling for the campaign (e.g. 5000)
-  campaignId?: string;                 // Same campaignId across supply/borrow represents one shared Brevis campaign
+  breakdowns?: BrevisCampaignBreakdown[]; // Canonical breakdown-level metadata, aligned with Merkl
+  campaignApr?: number;                 // Legacy canonical APR fallback
+  campaignStartedAt?: string;           // Legacy canonical start time fallback
+  campaignEndedAt?: string;             // Legacy canonical end time fallback
+  latestTvl?: number;                  // Legacy preferred TVL field
+  totalBudget?: number;                // Legacy preferred total budget field
+  perUserRewardCapUsd?: number;        // Legacy per-user cumulative reward ceiling
+  campaignId?: string;                 // Legacy shared campaign id fallback
 }
 
 export interface ReserveWithSpread {

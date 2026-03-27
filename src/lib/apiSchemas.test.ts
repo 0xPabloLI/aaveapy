@@ -141,21 +141,25 @@ describe('apiSchemas', () => {
           vTokenAddress: '0x3',
           brevisSupplys: [
             {
-              campaignApr: 2.8,
               link: 'https://example.com/brevis',
-              campaignStartedAt: '2025-08-13T13:00:00.000Z',
-              campaignEndedAt: '2026-08-08T00:00:00.000Z',
+              name: 'Brevis USDC',
               message: 'Aligned message',
-              latestTvl: 4_151_203.07,
-              totalBudget: 25_000,
-              perUserRewardCapUsd: 5000,
-              campaignId: 'linea-usdc',
-              rewardAddressType: 'token',
-              totalRewardAmount: 12345,
-              totalRewardTokenSymbol: 'USDC',
-              description: 'legacy',
-              tvlUsd: 1,
-              totalRewardUsd: 2,
+              breakdowns: [
+                {
+                  campaignApr: 2.8,
+                  campaignStartedAt: '2025-08-13T13:00:00.000Z',
+                  campaignEndedAt: '2026-08-08T00:00:00.000Z',
+                  latestTvl: 4_151_203.07,
+                  totalBudget: 25_000,
+                  perUserRewardCapUsd: 5000,
+                  campaignId: 'linea-usdc',
+                  totalRewardAmount: 12345,
+                  totalRewardTokenSymbol: 'USDC',
+                  description: 'legacy',
+                  tvlUsd: 1,
+                  totalRewardUsd: 2,
+                },
+              ],
             },
           ],
         },
@@ -163,19 +167,19 @@ describe('apiSchemas', () => {
     });
 
     const brevis = parsed.reserves[0].brevisSupplys?.[0];
-    expect(brevis?.campaignApr).toBe(2.8);
-    expect(brevis?.campaignStartedAt).toBe('2025-08-13T13:00:00.000Z');
-    expect(brevis?.campaignEndedAt).toBe('2026-08-08T00:00:00.000Z');
+    expect(brevis?.name).toBe('Brevis USDC');
     expect(brevis?.message).toBe('Aligned message');
-    expect(brevis?.latestTvl).toBe(4_151_203.07);
-    expect(brevis?.totalBudget).toBe(25_000);
-    expect(brevis?.perUserRewardCapUsd).toBe(5000);
-    expect(brevis?.campaignId).toBe('linea-usdc');
-    expect('rewardAddressType' in (brevis ?? {})).toBe(false);
-    expect('totalRewardAmount' in (brevis ?? {})).toBe(false);
-    expect('totalRewardTokenSymbol' in (brevis ?? {})).toBe(false);
-    expect('description' in (brevis ?? {})).toBe(false);
-    expect('tvlUsd' in (brevis ?? {})).toBe(false);
-    expect('totalRewardUsd' in (brevis ?? {})).toBe(false);
+    expect(brevis?.breakdowns?.[0].campaignApr).toBe(2.8);
+    expect(brevis?.breakdowns?.[0].campaignStartedAt).toBe('2025-08-13T13:00:00.000Z');
+    expect(brevis?.breakdowns?.[0].campaignEndedAt).toBe('2026-08-08T00:00:00.000Z');
+    expect(brevis?.breakdowns?.[0].latestTvl).toBe(4_151_203.07);
+    expect(brevis?.breakdowns?.[0].totalBudget).toBe(25_000);
+    expect(brevis?.breakdowns?.[0].perUserRewardCapUsd).toBe(5000);
+    expect(brevis?.breakdowns?.[0].campaignId).toBe('linea-usdc');
+    expect('totalRewardAmount' in (brevis?.breakdowns?.[0] ?? {})).toBe(true);
+    expect('totalRewardTokenSymbol' in (brevis?.breakdowns?.[0] ?? {})).toBe(true);
+    expect('description' in (brevis?.breakdowns?.[0] ?? {})).toBe(true);
+    expect('tvlUsd' in (brevis?.breakdowns?.[0] ?? {})).toBe(true);
+    expect('totalRewardUsd' in (brevis?.breakdowns?.[0] ?? {})).toBe(true);
   });
 });

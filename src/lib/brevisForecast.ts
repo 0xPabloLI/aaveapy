@@ -1,5 +1,5 @@
 import type { BrevisIncentive } from '@/types/aave';
-import { getBrevisCampaignApr, getBrevisCampaignEndedAt } from '@/lib/brevis';
+import { getBrevisCampaignApr, getBrevisCampaignEndedAt, getBrevisPerUserRewardCapUsd } from '@/lib/brevis';
 
 const DAYS_PER_YEAR = 365;
 const MS_PER_DAY = 86_400_000;
@@ -53,7 +53,7 @@ export function forecastBrevisAprPercent(
   if (nominalApr <= 0) return 0;
   if (!Number.isFinite(depositUsd) || depositUsd <= 0) return nominalApr;
 
-  const capUsd = brevis.perUserRewardCapUsd;
+  const capUsd = getBrevisPerUserRewardCapUsd(brevis);
   if (capUsd === undefined || !Number.isFinite(capUsd) || capUsd <= 0) return nominalApr;
 
   const endMs = parseBoundaryMs(getBrevisCampaignEndedAt(brevis), 'end');
@@ -94,7 +94,7 @@ export function forecastBrevisDetailed(
     ? (endMs - nowMs) / MS_PER_DAY
     : null;
 
-  const capUsd = brevis.perUserRewardCapUsd;
+  const capUsd = getBrevisPerUserRewardCapUsd(brevis);
   const hasValidCap = capUsd !== undefined && Number.isFinite(capUsd) && capUsd > 0;
 
   if (!hasValidCap || nominalApr <= 0 || !Number.isFinite(depositUsd) || depositUsd <= 0) {

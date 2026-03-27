@@ -55,10 +55,10 @@ export const apyToApr = (apy: number): number => {
 };
 
 import type { BrevisIncentive, MeritIncentive, MerklOpportunityGroup, ReserveWithSpread } from '@/types/aave';
+import { isCampaignActive, sumActiveCampaignBreakdownValues } from '@/lib/campaignGroups';
 import {
-  getBrevisCampaignApr,
-  getBrevisCampaignEndedAt,
-  getBrevisCampaignStartedAt,
+  getBrevisCampaignBreakdowns,
+  getBrevisResolvedBreakdown,
 } from '@/lib/brevis';
 import { TYDRO_POINT_TO_USD_RATE, getMerklBreakdownApr } from '@/lib/tydro';
 
@@ -98,34 +98,6 @@ export interface IncentiveCalculationOptions {
   /** Merkl campaign IDs the user opted into for whitelist-only APR */
   whitelistMerklCampaignIds?: ReadonlySet<string>;
 }
-
-const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
-
-const parseCampaignBoundaryMs = (value: string | undefined, boundary: 'start' | 'end'): number | null => {
-  if (!value) return null;
-
-  if (DATE_ONLY_PATTERN.test(value)) {
-    const normalized = boundary === 'start' ? `${value}T00:00:00.000Z` : `${value}T23:59:59.999Z`;
-    const timestamp = Date.parse(normalized);
-    return Number.isNaN(timestamp) ? null : timestamp;
-  }
-
-  const timestamp = Date.parse(value);
-  return Number.isNaN(timestamp) ? null : timestamp;
-};
-
-const isCampaignActive = (
-  startDate: string | undefined,
-  endDate: string | undefined,
-  nowMs = Date.now(),
-  allowOpenEnd = false,
-): boolean => {
-  const startMs = parseCampaignBoundaryMs(startDate, 'start');
-  if (startMs === null || nowMs < startMs) return false;
-  const endMs = parseCampaignBoundaryMs(endDate, 'end');
-  if (endMs === null) return allowOpenEnd;
-  return nowMs <= endMs;
-};
 
 /**
  * Helper: Sum valid APR values from an array of numbers
@@ -183,16 +155,16 @@ const sumMerklOpportunities = (
   pointToUsdRate = TYDRO_POINT_TO_USD_RATE,
   options: IncentiveCalculationOptions = {}
 ): number => {
-  if (!opportunities || !Array.isArray(opportunities)) return 0;
-  return opportunities.reduce((sum, opp) => {
-    const breakdownsApr = opp.breakdowns.reduce((breakdownSum, breakdown) => {
-      if (!isCampaignActive(breakdown.campaignStartedAt, breakdown.campaignEndedAt)) return breakdownSum;
-      if (!isMerklWhitelistBreakdownIncluded(breakdown, options.whitelistMerklCampaignIds)) return breakdownSum;
+  return sumActiveCampaignBreakdownValues(opportunities, {
+    getBreakdowns: (group) => group.breakdowns,
+    getStartDate: (_group, breakdown) => breakdown.campaignStartedAt,
+    getEndDate: (_group, breakdown) => breakdown.campaignEndedAt,
+    include: (_group, breakdown) => isMerklWhitelistBreakdownIncluded(breakdown, options.whitelistMerklCampaignIds),
+    mapValue: (_group, breakdown) => {
       const apr = getMerklBreakdownApr(breakdown, pointToUsdRate);
-      return breakdownSum + (!isNaN(apr) && apr >= 0 ? apr : 0);
-    }, 0);
-    return sum + breakdownsApr;
-  }, 0);
+      return !isNaN(apr) && apr >= 0 ? apr : 0;
+    },
+  });
 };
 
 /**
@@ -204,19 +176,16 @@ const sumMerklOpportunitiesApy = (
   pointToUsdRate = TYDRO_POINT_TO_USD_RATE,
   options: IncentiveCalculationOptions = {}
 ): number => {
-  if (!opportunities || !Array.isArray(opportunities)) return 0;
-  return opportunities.reduce((sum, opp) => {
-    const breakdownsApy = opp.breakdowns.reduce((breakdownSum, breakdown) => {
-      if (!isCampaignActive(breakdown.campaignStartedAt, breakdown.campaignEndedAt)) return breakdownSum;
-      if (!isMerklWhitelistBreakdownIncluded(breakdown, options.whitelistMerklCampaignIds)) return breakdownSum;
+  return sumActiveCampaignBreakdownValues(opportunities, {
+    getBreakdowns: (group) => group.breakdowns,
+    getStartDate: (_group, breakdown) => breakdown.campaignStartedAt,
+    getEndDate: (_group, breakdown) => breakdown.campaignEndedAt,
+    include: (_group, breakdown) => isMerklWhitelistBreakdownIncluded(breakdown, options.whitelistMerklCampaignIds),
+    mapValue: (_group, breakdown) => {
       const apr = getMerklBreakdownApr(breakdown, pointToUsdRate);
-      if (!isNaN(apr) && apr >= 0) {
-        return breakdownSum + convertAprToApy(apr);
-      }
-      return breakdownSum;
-    }, 0);
-    return sum + breakdownsApy;
-  }, 0);
+      return !isNaN(apr) && apr >= 0 ? convertAprToApy(apr) : 0;
+    },
+  });
 };
 
 /**
@@ -224,14 +193,16 @@ const sumMerklOpportunitiesApy = (
  * Note: only active campaigns are counted; apr >= 0 keeps zero-APR active campaigns
  */
 const sumBrevisIncentives = (brevis?: BrevisIncentive[]): number => {
-  if (!brevis || !Array.isArray(brevis)) return 0;
-  return brevis.reduce((sum, entry) => {
-    const startDate = getBrevisCampaignStartedAt(entry);
-    const endDate = getBrevisCampaignEndedAt(entry);
-    if (!isCampaignActive(startDate, endDate, Date.now(), true)) return sum;
-    const apr = getBrevisCampaignApr(entry);
-    return sum + (!isNaN(apr) && apr >= 0 ? apr : 0);
-  }, 0);
+  return sumActiveCampaignBreakdownValues(brevis, {
+    allowOpenEnd: true,
+    getBreakdowns: (group) => getBrevisCampaignBreakdowns(group),
+    getStartDate: (group, breakdown) => getBrevisResolvedBreakdown(group, breakdown).campaignStartedAt,
+    getEndDate: (group, breakdown) => getBrevisResolvedBreakdown(group, breakdown).campaignEndedAt,
+    mapValue: (group, breakdown) => {
+      const apr = getBrevisResolvedBreakdown(group, breakdown).campaignApr;
+      return !isNaN(apr) && apr >= 0 ? apr : 0;
+    },
+  });
 };
 
 /**
@@ -239,14 +210,16 @@ const sumBrevisIncentives = (brevis?: BrevisIncentive[]): number => {
  * Note: only active campaigns are counted; apr >= 0 keeps zero-APR active campaigns
  */
 const sumBrevisIncentivesApy = (brevis?: BrevisIncentive[]): number => {
-  if (!brevis || !Array.isArray(brevis)) return 0;
-  return brevis.reduce((sum, entry) => {
-    const startDate = getBrevisCampaignStartedAt(entry);
-    const endDate = getBrevisCampaignEndedAt(entry);
-    if (!isCampaignActive(startDate, endDate, Date.now(), true)) return sum;
-    const apr = getBrevisCampaignApr(entry);
-    return sum + (!isNaN(apr) && apr >= 0 ? convertAprToApy(apr) : 0);
-  }, 0);
+  return sumActiveCampaignBreakdownValues(brevis, {
+    allowOpenEnd: true,
+    getBreakdowns: (group) => getBrevisCampaignBreakdowns(group),
+    getStartDate: (group, breakdown) => getBrevisResolvedBreakdown(group, breakdown).campaignStartedAt,
+    getEndDate: (group, breakdown) => getBrevisResolvedBreakdown(group, breakdown).campaignEndedAt,
+    mapValue: (group, breakdown) => {
+      const apr = getBrevisResolvedBreakdown(group, breakdown).campaignApr;
+      return !isNaN(apr) && apr >= 0 ? convertAprToApy(apr) : 0;
+    },
+  });
 };
 
 /**
@@ -470,10 +443,9 @@ export function reserveHasIncentiveTooltipSources(
   const brevisIncentives = side === 'supply' ? reserve.brevisSupplys : reserve.brevisBorrows;
   if (brevisIncentives?.length) {
     for (const brevis of brevisIncentives) {
-      const startDate = getBrevisCampaignStartedAt(brevis);
-      const endDate = getBrevisCampaignEndedAt(brevis);
-      if (!isCampaignActive(startDate, endDate, Date.now(), true)) continue;
-      const apr = getBrevisCampaignApr(brevis);
+      const resolved = getBrevisResolvedBreakdown(brevis);
+      if (!isCampaignActive(resolved.campaignStartedAt, resolved.campaignEndedAt, Date.now(), true)) continue;
+      const apr = resolved.campaignApr;
       if (!isNaN(apr) && apr >= 0) return true;
     }
   }
