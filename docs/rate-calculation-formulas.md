@@ -293,6 +293,48 @@ This means the toggle changes the **incentive contribution**, not the native bas
 
 Distribution types (variable / fixed token vs dollar / capped): [Merkl — Distribution Types](https://docs.merkl.xyz/merkl-mechanisms/distributions)
 
+## Net Position Eligibility (Scenario Simulation)
+
+When a user enters **both** supply and borrow amounts in the scenario, Merkl and Merit incentive APY is computed on the **net position** rather than the gross input. Brevis (type 3001 "Lend or Borrow") rewards supply and borrow independently and uses the **gross** input.
+
+### Net vs Gross eligibility
+
+| Eligibility mode | Used by | Formula |
+|------------------|---------|---------|
+| **Net** | Merkl (NET_LENDING / NET_BORROWING), Merit | Supply eligible = max(supply − borrow, 0); Borrow eligible = max(borrow − supply, 0) |
+| **Gross** | Brevis (type 3001 — both supply and borrow) | Supply eligible = supply; Borrow eligible = borrow |
+
+### Eligibility ratio discount
+
+The pool-level forecast APR applies to the eligible portion only. To convert to an effective APR on the user's gross capital:
+
+```
+eligibilityRatio = netInputUsd / grossInputUsd    (when grossInputUsd > 0; else 1)
+effectiveAPR     = poolForecastAPR × eligibilityRatio
+```
+
+**Example:** supply $1000, borrow $100 →
+- Supply side: net = $900, ratio = 0.9, effective supply incentive APR = poolAPR × 0.9
+- Borrow side: net = $0, ratio = 0, effective borrow incentive APR = 0 (no net borrowing)
+
+### Where applied in code
+
+All net-position logic is in `buildRateSimulationResult` (`src/hooks/useRateSimulation.ts`):
+
+- `supplyNetInputUsd` / `borrowNetInputUsd` — net eligible amounts
+- `supplyEligibilityRatio` / `borrowEligibilityRatio` — discount factors
+- `buildIncentiveAfter` receives both `netInputUsd` (for TVL dilution) and `grossInputUsd` (for Brevis), plus `eligibilityRatio`
+- `buildMeritCampaignDetails` and `buildMerklCampaignDetails` accept `eligibilityRatio` to scale per-campaign `after` values
+- Brevis paths (`sumForecastBrevisValues`, `buildBrevisCampaignDetails`) remain unaffected — they use `grossInputUsd` without ratio scaling
+
+### Single-input behavior
+
+When only one side has input (supply-only or borrow-only), `netInputUsd === grossInputUsd` and `eligibilityRatio === 1`. Behavior is identical to pre–net-position logic.
+
+### UI: `capNote` net eligibility hint
+
+When `eligibilityRatio < 1`, Merkl and Merit campaign detail rows display a net eligibility note via `capNote`, e.g. **`Net eligible $900.00 of $1,000.00`**. This is appended to any existing `capNote` with ` · ` separator. Built by `buildNetEligibilityNote` in `src/lib/incentiveCeilings.ts`. Brevis rows do not show this note (they use gross eligibility).
+
 ## Incentive Reward Cap Reference
 
 ### Naming layers (API / domain / UI)
@@ -330,8 +372,8 @@ All user-visible simulation row notes for incentives should stay discoverable he
 | **Brevis** (per-user reward cap) | Scenario present, `perUserRewardCapUsd` &gt; 0 | **`Reward capped at $X/user`**; if shared supply+borrow cap: **` · supply + borrow`**; optional horizon: **` · ~Nd earn`** where **`N = min(daysToHitCap, remainingDays)`** (or single bound if only one is positive) | `isCapBinding` |
 | **Brevis** (no per-user cap) | Scenario present, no cap, positive `remainingDays` | **`~Nd to end`** | `false` |
 | **Merit Self** | Self row, forecast resolves `selfCapUsd` + `selfEligibleUsd` | **`Eligible deposit capped at $Z`** | `true` when scenario deposit &gt; ceiling |
-| **Merit Base** | — | *(none — scenario APR only; same product rule as Merkl **DUTCH_AUCTION**)* | — |
-| **Merkl DUTCH_AUCTION** (and other types) | — | *(none)* | — |
+| **Merit Base** | — (net note only when `eligibilityRatio < 1`) | **`Net eligible $X of $Y`** (or none when single-side input) | `false` |
+| **Merkl DUTCH_AUCTION** (and other types) | — (net note only when `eligibilityRatio < 1`) | **`Net eligible $X of $Y`** (or none when single-side input) | `false` |
 
 **Same label, different math:** **`~Nd earn`** on **Merkl FIX** is “days until pool budget exhaustion at **hypothetical TVL** (latest + scenario USD).” On **Brevis**, it is “shorter of days to hit **per-user reward cap** at nominal daily rate vs days to **endDate**.” Do not infer one from the other.
 

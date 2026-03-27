@@ -33,6 +33,7 @@ import {
   buildMeritSelfDepositCeilingEffect,
   buildMerklAprCeilingEffect,
   buildMerklFixPoolBudgetEffect,
+  buildNetEligibilityNote,
   ceilingEffectToSimulationFields,
 } from '@/lib/incentiveCeilings';
 import {
@@ -575,9 +576,17 @@ const buildMeritCampaignDetails = (
   inputUsd: number,
   hasAnyInput: boolean,
   meritAnchorTvlUsd?: number,
+  eligibilityRatio = 1,
+  grossInputUsd?: number,
 ): SimulationCampaignDetail[] => {
   const rows: SimulationCampaignDetail[] = [];
   if (!merits?.length) return rows;
+
+  const netNote = grossInputUsd !== undefined ? buildNetEligibilityNote(inputUsd, grossInputUsd) : null;
+  const appendNetNote = (note: string | undefined): string | undefined => {
+    if (!netNote) return note;
+    return note ? `${note} · ${netNote}` : netNote;
+  };
 
   const activeMerits = merits.filter((m) => isCampaignActive(m.startDate, m.endDate));
   const multiMerit = activeMerits.length > 1;
@@ -603,17 +612,17 @@ const buildMeritCampaignDetails = (
           anchorTvlUsd: meritAnchorTvlUsd,
         });
         if (fp) {
-          baseAfter = meritForecastAprToDisplay(fp.apr, isApy);
+          baseAfter = meritForecastAprToDisplay(fp.apr, isApy) * eligibilityRatio;
         }
       }
       const delta = baseAfter !== null ? baseAfter - baseCurrent : null;
-      // Merit Base: no capNote — same product rule as Merkl DUTCH_AUCTION (scenario APR only). If Dutch gains a row note, add Merit Base in the same change (see buildMerklCampaignDetails).
       rows.push({
         id: `merit-${meritIndex}-base`,
         label: `${namePrefix}Base`,
         current: baseCurrent,
         after: baseAfter,
         delta,
+        capNote: appendNetNote(undefined),
         capWarning: false,
       });
     }
@@ -636,7 +645,7 @@ const buildMeritCampaignDetails = (
           anchorTvlUsd: meritAnchorTvlUsd,
         });
         if (fp) {
-          selfAfter = meritForecastAprToDisplay(fp.apr, isApy);
+          selfAfter = meritForecastAprToDisplay(fp.apr, isApy) * eligibilityRatio;
           if (typeof fp.selfCapUsd === 'number' && typeof fp.selfEligibleUsd === 'number') {
             const ceiling = buildMeritSelfDepositCeilingEffect({
               inputUsd,
@@ -656,7 +665,7 @@ const buildMeritCampaignDetails = (
         current: selfCurrent,
         after: selfAfter,
         delta,
-        capNote,
+        capNote: appendNetNote(capNote),
         capWarning,
       });
     }
@@ -673,8 +682,16 @@ const buildMerklCampaignDetails = (
   whitelistMerklCampaignIds: ReadonlySet<string> | undefined,
   tydroPointToUsdRate: number,
   hasAnyInput: boolean,
+  eligibilityRatio = 1,
+  grossInputUsd?: number,
 ): SimulationCampaignDetail[] => {
   if (!opportunities?.length) return [];
+
+  const netNote = grossInputUsd !== undefined ? buildNetEligibilityNote(inputUsd, grossInputUsd) : null;
+  const appendNetNote = (note: string | undefined): string | undefined => {
+    if (!netNote) return note;
+    return note ? `${note} · ${netNote}` : netNote;
+  };
 
   // User-friendly labels; when the same opportunity name appears on multiple rows, add a stable "#n" suffix
   // (same rule with or without scenario input so the list does not change shape).
@@ -694,7 +711,7 @@ const buildMerklCampaignDetails = (
       if (inputUsd > 0) {
         const forecastApr = forecastBreakdownApr(bd, inputUsd, forecastStates, whitelistMerklCampaignIds, tydroPointToUsdRate);
         const forecastAprSan = sanitizePercent(forecastApr);
-        after = isApy ? convertAprToApy(forecastAprSan) : forecastAprSan;
+        after = (isApy ? convertAprToApy(forecastAprSan) : forecastAprSan) * eligibilityRatio;
 
         const merged = mergeForecastState(bd, forecastStates, tydroPointToUsdRate);
         const merklType = merged?.campaignType;
@@ -711,7 +728,6 @@ const buildMerklCampaignDetails = (
           } else if (merklType === 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE' && forecast.regime === 'APR_CAPPED') {
             ({ capNote, capWarning } = ceilingEffectToSimulationFields(buildMerklAprCeilingEffect()));
           }
-          // DUTCH_AUCTION and other types: no extra capNote here (Merit Base rows follow the same rule).
         }
       }
 
@@ -724,7 +740,7 @@ const buildMerklCampaignDetails = (
         current,
         after,
         delta,
-        capNote,
+        capNote: appendNetNote(capNote),
         capWarning,
         href: oppLink ?? null,
       });
@@ -807,7 +823,9 @@ const buildIncentiveAfter = (
   reserve: ReserveWithSpread,
   side: RateSide,
   isApy: boolean,
-  inputUsd: number,
+  netInputUsd: number,
+  grossInputUsd: number,
+  eligibilityRatio: number,
   forecastStates: Record<string, MerklForecastWireItem>,
   tydroPointToUsdRate: number,
   whitelistMerklCampaignIds: ReadonlySet<string> | undefined,
@@ -819,7 +837,7 @@ const buildIncentiveAfter = (
   const protocol = side === 'supply' ? reserve.supplyIncentives : reserve.borrowIncentives;
   const forecastedMerkl = buildForecastMerklOpportunities({
     opportunities: merkl,
-    inputUsd,
+    inputUsd: netInputUsd,
     forecastStates,
     whitelistMerklCampaignIds,
     tydroPointToUsdRate,
@@ -827,9 +845,9 @@ const buildIncentiveAfter = (
 
   return (
     sumNumberArray(protocol, isApy) +
-    sumForecastMeritValues(merit, isApy, inputUsd, getMeritAnchorTvlUsd(reserve, side)) +
-    sumMerklValues(forecastedMerkl, isApy, tydroPointToUsdRate, whitelistMerklCampaignIds) +
-    sumForecastBrevisValues(brevis, isApy, inputUsd, brevisSharedDepositsByCampaignId)
+    sumForecastMeritValues(merit, isApy, netInputUsd, getMeritAnchorTvlUsd(reserve, side)) * eligibilityRatio +
+    sumMerklValues(forecastedMerkl, isApy, tydroPointToUsdRate, whitelistMerklCampaignIds) * eligibilityRatio +
+    sumForecastBrevisValues(brevis, isApy, grossInputUsd, brevisSharedDepositsByCampaignId)
   );
 };
 
@@ -1011,12 +1029,24 @@ export function buildRateSimulationResult({
     ? computeBrevisSharedCampaignDeposits(reserve, supplyInputUsd, borrowInputUsd)
     : undefined;
 
+  // Net eligible amounts: supply incentive eligible = max(supply - borrow, 0),
+  // borrow incentive eligible = max(borrow - supply, 0).
+  // Gross amounts are used by incentive sources that reward both sides independently.
+  const supplyNetInputUsd = Math.max(supplyInputUsd - borrowInputUsd, 0);
+  const borrowNetInputUsd = Math.max(borrowInputUsd - supplyInputUsd, 0);
+  // Eligibility ratio: fraction of gross capital that is net-eligible.
+  // Pool-level APR applies only to the eligible portion; scale to effective APR on gross capital.
+  const supplyEligibilityRatio = supplyInputUsd > 0 ? supplyNetInputUsd / supplyInputUsd : 1;
+  const borrowEligibilityRatio = borrowInputUsd > 0 ? borrowNetInputUsd / borrowInputUsd : 1;
+
   const supplyAfterIncentiveRaw = hasAnyInput
     ? buildIncentiveAfter(
         reserve,
         'supply',
         isApy,
+        supplyNetInputUsd,
         supplyInputUsd,
+        supplyEligibilityRatio,
         forecastStates,
         tydroPointToUsdRate,
         whitelistMerklCampaignIds,
@@ -1028,7 +1058,9 @@ export function buildRateSimulationResult({
         reserve,
         'borrow',
         isApy,
+        borrowNetInputUsd,
         borrowInputUsd,
+        borrowEligibilityRatio,
         forecastStates,
         tydroPointToUsdRate,
         whitelistMerklCampaignIds,
@@ -1069,11 +1101,11 @@ export function buildRateSimulationResult({
 
   const supplyAfterSources = hasAnyInput
     ? (() => {
-        const meritAfterRaw = sumForecastMeritValues(reserve.meritSupplys, isApy, supplyInputUsd);
+        const meritAfterRaw = sumForecastMeritValues(reserve.meritSupplys, isApy, supplyNetInputUsd) * supplyEligibilityRatio;
         const merklAfterRaw = sumMerklValues(
           buildForecastMerklOpportunities({
             opportunities: reserve.merklSupplys,
-            inputUsd: supplyInputUsd,
+            inputUsd: supplyNetInputUsd,
             forecastStates,
             whitelistMerklCampaignIds,
             tydroPointToUsdRate,
@@ -1081,7 +1113,7 @@ export function buildRateSimulationResult({
           isApy,
           tydroPointToUsdRate,
           whitelistMerklCampaignIds
-        );
+        ) * supplyEligibilityRatio;
         const brevisAfterRaw = sumForecastBrevisValues(
           reserve.brevisSupplys,
           isApy,
@@ -1099,11 +1131,11 @@ export function buildRateSimulationResult({
 
   const borrowAfterSources = hasAnyInput
     ? (() => {
-        const meritAfterRaw = sumForecastMeritValues(reserve.meritBorrows, isApy, borrowInputUsd);
+        const meritAfterRaw = sumForecastMeritValues(reserve.meritBorrows, isApy, borrowNetInputUsd) * borrowEligibilityRatio;
         const merklAfterRaw = sumMerklValues(
           buildForecastMerklOpportunities({
             opportunities: reserve.merklBorrows,
-            inputUsd: borrowInputUsd,
+            inputUsd: borrowNetInputUsd,
             forecastStates,
             whitelistMerklCampaignIds,
             tydroPointToUsdRate,
@@ -1111,7 +1143,7 @@ export function buildRateSimulationResult({
           isApy,
           tydroPointToUsdRate,
           whitelistMerklCampaignIds
-        );
+        ) * borrowEligibilityRatio;
         const brevisAfterRaw = sumForecastBrevisValues(
           reserve.brevisBorrows,
           isApy,
@@ -1130,18 +1162,22 @@ export function buildRateSimulationResult({
   const supplyMeritCampaignRows = buildMeritCampaignDetails(
     reserve.meritSupplys,
     isApy,
-    supplyInputUsd,
+    supplyNetInputUsd,
     hasAnyInput,
     getMeritAnchorTvlUsd(reserve, 'supply'),
+    supplyEligibilityRatio,
+    supplyInputUsd,
   );
   const supplyMerklCampaignRows = buildMerklCampaignDetails(
     reserve.merklSupplys,
     isApy,
-    supplyInputUsd,
+    supplyNetInputUsd,
     forecastStates,
     whitelistMerklCampaignIds,
     tydroPointToUsdRate,
     hasAnyInput,
+    supplyEligibilityRatio,
+    supplyInputUsd,
   );
   const supplyBrevisCampaignRows = buildBrevisCampaignDetails(
     reserve.brevisSupplys,
@@ -1153,18 +1189,22 @@ export function buildRateSimulationResult({
   const borrowMeritCampaignRows = buildMeritCampaignDetails(
     reserve.meritBorrows,
     isApy,
-    borrowInputUsd,
+    borrowNetInputUsd,
     hasAnyInput,
     getMeritAnchorTvlUsd(reserve, 'borrow'),
+    borrowEligibilityRatio,
+    borrowInputUsd,
   );
   const borrowMerklCampaignRows = buildMerklCampaignDetails(
     reserve.merklBorrows,
     isApy,
-    borrowInputUsd,
+    borrowNetInputUsd,
     forecastStates,
     whitelistMerklCampaignIds,
     tydroPointToUsdRate,
     hasAnyInput,
+    borrowEligibilityRatio,
+    borrowInputUsd,
   );
   const borrowBrevisCampaignRows = buildBrevisCampaignDetails(
     reserve.brevisBorrows,

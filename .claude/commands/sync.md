@@ -38,6 +38,10 @@ Optional behavior: synchronize upstream-derived artifacts (`artifacts-*` modes).
      1) If no divergence, run `git pull --ff-only`.
      2) If fast-forward is not possible, run `git pull --rebase`.
    - If a temporary stash was created, run `git stash pop` only after inbound sync succeeds; **stop for confirmation** on conflicts.
+   - Stash cleanup is mandatory:
+     - If `git stash pop` succeeds, verify no temporary sync stash remains.
+     - If `git stash pop` reports conflicts and keeps the stash entry, resolve conflicts first, then explicitly `git stash drop <that-stash-ref>` once those changes are confirmed present in the working tree/index.
+     - Do not leave processed sync stashes behind.
    - Publish local commits: after inbound sync succeeds and conflicts are resolved, if the branch is **ahead** of its upstream, run **`git push`**. If the branch is not ahead, skip push and report that remote already has your tip.
    - If push is rejected because remote advanced, run `git fetch --all --prune` and repeat the same inbound flow (including temporary stash handling when dirty) before pushing again.
    - If local history was rewritten (e.g. rebase of commits that were already on the remote), use **`git push --force-with-lease`** only when the user explicitly wants to overwrite the remote tip; otherwise stop and confirm.

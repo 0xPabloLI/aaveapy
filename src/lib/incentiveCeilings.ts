@@ -141,3 +141,9 @@ export function buildMerklAprCeilingEffect(): IncentiveCeilingEffect {
     warning: true,
   };
 }
+
+/** Net position eligibility: effective incentive is discounted because only the net portion is eligible. */
+export function buildNetEligibilityNote(netUsd: number, grossUsd: number): string | null {
+  if (grossUsd <= 0 || netUsd >= grossUsd) return null;
+  return `Net eligible ${formatUsd(netUsd)} of ${formatUsd(grossUsd)}`;
+}
