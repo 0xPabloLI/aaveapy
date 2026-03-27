@@ -1089,6 +1089,13 @@ const ReservesTable = ({
                             defaultTab={mobileCardDefaultTab}
                           />
                         </div>
+                        {rightReserve ? (
+                          <div
+                            aria-hidden
+                            className={`pointer-events-none absolute top-0 z-[1] h-px bg-border/60 ${leftExpanded ? 'right-0 rounded-tl-xl' : 'left-0 rounded-tr-xl'}`}
+                            style={{ width: pairColWidth }}
+                          />
+                        ) : null}
                       </div>
                     </div>
                   );
