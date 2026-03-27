@@ -396,6 +396,7 @@ deposit → [deposit cap] → nominal APR (from TVL dilution) → nominal reward
 
 - `perUserRewardCapUsd`: cumulative USD reward ceiling for a single user across the entire campaign.
 - **No `endDate`**: Brevis campaigns typically have no explicit end date. When `endDate` is absent, the cap formula cannot determine whether the cap binds (no `remainingYearFraction`), so the nominal APR is returned unchanged (graceful degradation). The diagnostic field `daysToHitCap` is still computable without `endDate`.
+- **`totalBudget` without `distributedSoFar`**: some Brevis payloads include campaign `totalBudget` but do not provide `distributedSoFar`. In that case, the frontend cannot derive `remainingBudget` or estimate the exact budget depletion time. Practically, rewards can be exhausted earlier than the displayed calendar horizon.
 - **Shared cap across supply/borrow** (`campaignId`): When a Brevis supply row and borrow row on the same reserve represent the same campaign, they must carry the same `campaignId` and identical canonical campaign metadata (`campaignApr`, `campaignStartedAt`, `campaignEndedAt`, `latestTvl`, `totalBudget`, `perUserRewardCapUsd`, `message`, `name`, `link`). The simulation sums `supplyInputUsd + borrowInputUsd` as the combined deposit for cap evaluation. If the metadata differ, the frontend treats the payload as inconsistent and skips shared-cap simulation for that `campaignId`.
 - **`isCampaignActive` for Brevis**: uses `allowOpenEnd = true` — a Brevis campaign with a valid past `startDate` and no `endDate` is treated as active.
 

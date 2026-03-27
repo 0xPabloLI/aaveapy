@@ -89,6 +89,9 @@ const ReservesTable = ({
   const lastScenarioKeyForPinScrollRef = useRef<string | null>(null);
   const lastSortedIdsForPinScrollRef = useRef<string[]>([]);
   const scenarioPinScrollBaselineReadyRef = useRef(false);
+  const pendingScenarioPinScrollRef = useRef(false);
+  const lastReservesKeyForPinScrollRef = useRef<string | null>(null);
+  const pendingReservesPinScrollRef = useRef(false);
   const [borrowMenuPos, setBorrowMenuPos] = useState<{ top: number; left: number } | null>(null);
   const [supplyMenuPos, setSupplyMenuPos] = useState<{ top: number; left: number } | null>(null);
   const [minVisibleCount, setMinVisibleCount] = useState<number | null>(null);
@@ -272,12 +275,24 @@ const ReservesTable = ({
     return pickScenarioValue(simulation.supply.currentIncentive, simulation.supply.afterIncentive);
   };
 
+  const hasSupplyIncentiveSource = (reserve: ReserveWithSpread): boolean => {
+    const simulation = getSimulation(reserve);
+    if (simulation) return simulation.supply.currentIncentive > 0;
+    return getIncentiveValues(reserve, 'supply').apy > 0;
+  };
+
   const getDisplayBorrowIncentive = (reserve: ReserveWithSpread): number | null => {
     const simulation = getSimulation(reserve);
     if (!simulation) {
       return isApy ? getIncentiveValues(reserve, 'borrow').apy : getIncentiveValues(reserve, 'borrow').apr;
     }
     return pickScenarioValue(simulation.borrow.currentIncentive, simulation.borrow.afterIncentive);
+  };
+
+  const hasBorrowIncentiveSource = (reserve: ReserveWithSpread): boolean => {
+    const simulation = getSimulation(reserve);
+    if (simulation) return simulation.borrow.currentIncentive > 0;
+    return getIncentiveValues(reserve, 'borrow').apy > 0;
   };
 
   const getDisplaySpread = (reserve: ReserveWithSpread): number | null => {
@@ -366,7 +381,17 @@ const ReservesTable = ({
           const bIncentive = getDisplaySupplyIncentive(b);
           const aNative = getDisplaySupplyNative(a);
           const bNative = getDisplaySupplyNative(b);
-          return compareIncentiveWithNative(aIncentive, bIncentive, aNative, bNative, supplySortOrder);
+          const aHasIncentiveSource = hasSupplyIncentiveSource(a);
+          const bHasIncentiveSource = hasSupplyIncentiveSource(b);
+          return compareIncentiveWithNative(
+            aIncentive,
+            bIncentive,
+            aNative,
+            bNative,
+            supplySortOrder,
+            aHasIncentiveSource,
+            bHasIncentiveSource,
+          );
         } else {
           // Total sorting - use totalSupplyApy (Native + Incentive)
           const aTotal = getDisplaySupplyTotal(a);
@@ -391,7 +416,17 @@ const ReservesTable = ({
           const bIncentive = getDisplayBorrowIncentive(b);
           const aNative = getDisplayBorrowNative(a);
           const bNative = getDisplayBorrowNative(b);
-          return compareIncentiveWithNative(aIncentive, bIncentive, aNative, bNative, borrowSortOrder);
+          const aHasIncentiveSource = hasBorrowIncentiveSource(a);
+          const bHasIncentiveSource = hasBorrowIncentiveSource(b);
+          return compareIncentiveWithNative(
+            aIncentive,
+            bIncentive,
+            aNative,
+            bNative,
+            borrowSortOrder,
+            aHasIncentiveSource,
+            bHasIncentiveSource,
+          );
         } else {
           // Total sorting
           const aTotal = getDisplayBorrowTotal(a);
@@ -423,27 +458,47 @@ const ReservesTable = ({
    */
   useEffect(() => {
     const scenarioKey = `${debouncedSharedSupplyInput}\0${debouncedSharedBorrowInput}\0${sharedInputMode}`;
+    const reservesKey = reserves.map((r) => getReserveSimulationId(r)).join('\0');
     const ids = sortedData.map((r) => getReserveSimulationId(r));
+    const prevIds = lastSortedIdsForPinScrollRef.current;
+    const orderChanged =
+      prevIds.length !== ids.length || prevIds.some((id, i) => id !== ids[i]);
 
     if (!scenarioPinScrollBaselineReadyRef.current) {
       lastScenarioKeyForPinScrollRef.current = scenarioKey;
+      lastReservesKeyForPinScrollRef.current = reservesKey;
       lastSortedIdsForPinScrollRef.current = ids;
       scenarioPinScrollBaselineReadyRef.current = true;
       return;
     }
 
-    if (scenarioKey !== lastScenarioKeyForPinScrollRef.current) {
-      const prevIds = lastSortedIdsForPinScrollRef.current;
-      const orderChanged =
-        prevIds.length !== ids.length || prevIds.some((id, i) => id !== ids[i]);
+    const scenarioChanged = scenarioKey !== lastScenarioKeyForPinScrollRef.current;
+    if (scenarioChanged) {
       lastScenarioKeyForPinScrollRef.current = scenarioKey;
-      lastSortedIdsForPinScrollRef.current = ids;
+      pendingScenarioPinScrollRef.current = true;
+    }
+    const reservesChanged = reservesKey !== lastReservesKeyForPinScrollRef.current;
+    if (reservesChanged) {
+      lastReservesKeyForPinScrollRef.current = reservesKey;
+      pendingReservesPinScrollRef.current = true;
+    }
 
+    if ((pendingScenarioPinScrollRef.current || pendingReservesPinScrollRef.current) && !orderChanged) {
+      lastSortedIdsForPinScrollRef.current = ids;
+      return;
+    }
+
+    if (scenarioChanged || pendingScenarioPinScrollRef.current || pendingReservesPinScrollRef.current) {
+      lastSortedIdsForPinScrollRef.current = ids;
+      const shouldPinOnScenario = pendingScenarioPinScrollRef.current && expandScrollFollowsScenarioSort;
+      const shouldPinOnReserves = pendingReservesPinScrollRef.current;
       if (
         orderChanged &&
-        expandScrollFollowsScenarioSort &&
+        (shouldPinOnScenario || shouldPinOnReserves) &&
         expandedReserveId
       ) {
+        pendingScenarioPinScrollRef.current = false;
+        pendingReservesPinScrollRef.current = false;
         const id = expandedReserveId;
         const mode = isMobile ? 'minimal-if-clipped' : 'pin-main-row-top';
         const timer = window.setTimeout(() => {
@@ -453,6 +508,8 @@ const ReservesTable = ({
         }, 320);
         return () => window.clearTimeout(timer);
       }
+      pendingScenarioPinScrollRef.current = false;
+      pendingReservesPinScrollRef.current = false;
       return;
     }
 
@@ -465,7 +522,25 @@ const ReservesTable = ({
     expandedReserveId,
     isMobile,
     expandScrollFollowsScenarioSort,
+    reserves,
   ]);
+
+  useEffect(() => {
+    if (!expandedReserveId) return;
+    const existsInReserves = reserves.some((r) => getReserveSimulationId(r) === expandedReserveId);
+    if (existsInReserves) return;
+
+    // Filters can cause a brief intermediate list where the expanded row is temporarily missing.
+    // Re-check after a short delay to avoid clearing expanded state prematurely.
+    const timer = window.setTimeout(() => {
+      const stillMissing = !reserves.some((r) => getReserveSimulationId(r) === expandedReserveId);
+      if (stillMissing) {
+        setExpandedReserveId(null);
+      }
+    }, 180);
+
+    return () => window.clearTimeout(timer);
+  }, [expandedReserveId, reserves]);
 
   const supplySortLabel = {
     total: 'Total',
