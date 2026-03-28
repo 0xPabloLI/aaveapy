@@ -798,16 +798,6 @@ const ReservesTable = ({
     const apply = () => {
       const scenarioH = stickyEl.getBoundingClientRect().height;
       card.style.setProperty('--reserves-sticky-scenario-height', `${scenarioH}px`);
-      const theadH =
-        theadEl instanceof HTMLElement ? theadEl.getBoundingClientRect().height : 0;
-      if (theadH > 0) {
-        card.style.setProperty(
-          '--reserves-expanded-main-row-top',
-          `${scenarioH + theadH}px`,
-        );
-      } else {
-        card.style.removeProperty('--reserves-expanded-main-row-top');
-      }
     };
     apply();
     const ro = new ResizeObserver(apply);
@@ -818,7 +808,6 @@ const ReservesTable = ({
     return () => {
       ro.disconnect();
       card.style.removeProperty('--reserves-sticky-scenario-height');
-      card.style.removeProperty('--reserves-expanded-main-row-top');
     };
   }, [isMobile]);
 
