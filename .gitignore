@@ -39,3 +39,6 @@ dist-ssr
 # Test artifacts
 playwright-report/
 test-results/
+
+# Cursor local state
+.cursor/hooks/state/continual-learning.json

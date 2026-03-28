@@ -6,6 +6,9 @@ import { TOKEN_ICON_MANIFEST } from './tokenIconManifest.generated';
  * Preload strategies for images and resources
  */
 
+/** Fallback token icon; preloaded at boot for placeholder + error states. */
+export const TOKEN_ICON_DEFAULT_SRC = '/icons/tokens/default.svg';
+
 // Track preloaded images to avoid duplicates.
 const preloadedImages = new Set<string>();
 let preloadPaused = false;
@@ -242,6 +245,12 @@ export function preloadCriticalImages(srcs: string[]): void {
 
     preloadedImages.add(src);
   });
+}
+
+/** Warm default token icon for TokenIcon underlay + fast fallback (link preload). */
+export function preloadDefaultTokenIcon(): void {
+  if (typeof document === 'undefined') return;
+  preloadCriticalImages([TOKEN_ICON_DEFAULT_SRC]);
 }
 
 /**

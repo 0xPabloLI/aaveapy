@@ -44,6 +44,22 @@ async function expandFirstRow(page: Parameters<typeof test>[0]['page']): Promise
   return reserveId;
 }
 
+async function expectExpandedRowInViewport(
+  page: Parameters<typeof test>[0]['page'],
+  reserveId: string,
+) {
+  const expandedRow = page.locator(`tbody tr[data-reserve-id="${reserveId}"]`);
+  await expect(expandedRow).toHaveClass(/bg-muted\/30/);
+  await expect(page.locator(`tbody tr[data-reserve-id="${reserveId}"] + tr`)).toHaveCount(1);
+
+  const box = await expandedRow.boundingBox();
+  if (!box) {
+    throw new Error(`Expanded row ${reserveId} has no bounding box`);
+  }
+  expect(box.y).toBeGreaterThanOrEqual(0);
+  expect(box.y).toBeLessThan(1100);
+}
+
 test.describe('Reserves table interaction matrix', () => {
   test.beforeEach(async ({ page: _page }, testInfo) => {
     test.skip(
@@ -141,5 +157,20 @@ test.describe('Reserves table interaction matrix', () => {
     await expect(page.locator('tbody tr[data-reserve-id].bg-muted\\/30')).toHaveCount(0);
     await expect(page.locator('tbody tr[data-reserve-id] + tr')).toHaveCount(0);
     await expect(page.locator('tbody tr[data-reserve-id]')).toHaveCount(0);
+  });
+
+  test('market chip toggle keeps expanded row visible when applying and clearing same filter', async ({ page }) => {
+    const reserveId = await expandFirstRow(page);
+
+    const rowMarketButton = page.locator('tbody button[aria-label^="Filter by "]').first();
+    await rowMarketButton.click();
+    await page.waitForTimeout(450);
+    await expectExpandedRowInViewport(page, reserveId);
+
+    // Click the same row chip again to clear that market filter.
+    const sameRowMarketButton = page.locator(`tbody tr[data-reserve-id="${reserveId}"] button[aria-label^="Filter by "]`).first();
+    await sameRowMarketButton.click();
+    await page.waitForTimeout(450);
+    await expectExpandedRowInViewport(page, reserveId);
   });
 });
