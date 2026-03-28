@@ -1361,7 +1361,7 @@ const ReservesTable = ({
           </colgroup>
           <TableHeader
             data-reserves-sticky-thead
-            className="overflow-visible [&_tr]:border-b-0 [&_th]:sticky [&_th]:z-10 [&_th]:border-b [&_th]:border-border/60 [&_th]:bg-card [&_th]:shadow-[0_1px_2px_0_rgb(0_0_0/0.04)] [&_th]:[top:var(--reserves-sticky-scenario-height,4.5rem)]"
+            className="overflow-visible [&_tr]:border-b-0 [&_th]:sticky [&_th]:z-30 [&_th]:border-b [&_th]:border-border/60 [&_th]:bg-card [&_th]:shadow-[0_1px_2px_0_rgb(0_0_0/0.04)] [&_th]:[top:var(--reserves-sticky-scenario-height,4.5rem)]"
           >
             <TableRow className="border-0 bg-card overflow-visible hover:bg-card">
               {/* Token — 大幅收窄 */}
