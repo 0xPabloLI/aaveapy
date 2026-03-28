@@ -24,6 +24,7 @@ import {
 import { adjustTooltipAnchorForScroll, getWindowScroll } from '@/lib/tooltipPosition';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
+import { DS_NATIVE_CHECKBOX_CLASS } from '@/lib/dsNativeCheckbox';
 
 interface IncentiveTooltipProps {
   reserve: ReserveWithSpread;
@@ -529,7 +530,7 @@ const IncentiveTooltip = ({
                 type="checkbox"
                 checked={whitelistMerklCampaignIds.has(merklWlToggleKey)}
                 onChange={(event) => onToggleWhitelistMerklCampaign(merklWlToggleKey, event.target.checked)}
-                className="mt-0.5 h-3.5 w-3.5 shrink-0 rounded border-border bg-background"
+                className={DS_NATIVE_CHECKBOX_CLASS}
               />
               <span aria-hidden="true" className="min-w-0 leading-snug">
                 {MERKL_WHITELIST_TOGGLE_LABEL}
@@ -581,7 +582,7 @@ const IncentiveTooltip = ({
                     type="checkbox"
                     checked={whitelistMerklCampaignIds.has(merklWlToggleKey)}
                     onChange={(event) => onToggleWhitelistMerklCampaign(merklWlToggleKey, event.target.checked)}
-                    className="mt-0.5 h-3.5 w-3.5 shrink-0 rounded border-border bg-background"
+                    className={DS_NATIVE_CHECKBOX_CLASS}
                   />
                   <span aria-hidden="true" className="min-w-0 leading-snug">
                     {MERKL_WHITELIST_TOGGLE_LABEL}

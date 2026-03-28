@@ -65,7 +65,7 @@
 ```
 
 #### 分段控制器（Segmented Control）
-适用：USD/Token、APR/APY 切换
+适用：USD/Token、APR/APY 切换；储备表共享场景条 **激励模拟** 用 **勾选**：勾选＝按 **net lending / net borrowing** 口径，不勾选＝两侧毛 supply / 毛 borrow（Brevis 不受此项影响）
 - 容器：`bg-muted/60 rounded-lg p-0.5 border border-border/40`
 - 选中：`bg-card shadow-sm border border-border/60 font-semibold`
 - 未选中：`text-muted-foreground hover:bg-card/50`

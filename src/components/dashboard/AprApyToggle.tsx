@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Info, X } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { cn } from '@/lib/utils';
 
 interface AprApyToggleProps {
   isApy: boolean;
@@ -57,12 +58,15 @@ export function InfoIconButton({
   isOpen,
   onToggle,
   onClose,
+  variant = 'default',
   children,
 }: {
   'aria-label': string;
   isOpen: boolean;
   onToggle: () => void;
   onClose: () => void;
+  /** `neutral`: muted chrome for dense toolbars (e.g. scenario controls) so supply/borrow semantic colors stay table-only. */
+  variant?: 'default' | 'neutral';
   children: (triggerRect: DOMRect | null) => React.ReactNode;
 }) {
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -132,12 +136,14 @@ export function InfoIconButton({
             onClose();
           }
         }}
-        className="h-4 w-4 rounded-full ds-bg-emerald-500-10 ds-text-emerald-600
-          hover:ds-bg-emerald-500-20 hover:ds-text-emerald-700
-          flex items-center justify-center
-          transition-all duration-200
-          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1
-          cursor-pointer md:cursor-auto"
+        className={cn(
+          'flex h-4 w-4 items-center justify-center rounded-full transition-all duration-200',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
+          'cursor-pointer md:cursor-auto',
+          variant === 'neutral'
+            ? 'bg-muted/70 text-muted-foreground hover:bg-muted hover:text-foreground'
+            : 'ds-bg-emerald-500-10 ds-text-emerald-600 hover:ds-bg-emerald-500-20 hover:ds-text-emerald-700',
+        )}
       >
         <Info className="h-2.5 w-2.5 shrink-0" aria-hidden />
       </button>

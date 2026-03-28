@@ -319,13 +319,14 @@ effectiveAPR     = poolForecastAPR × eligibilityRatio
 
 ### Where applied in code
 
-All net-position logic is in `buildRateSimulationResult` (`src/hooks/useRateSimulation.ts`):
+Net-position logic for **Merit/Merkl** lives in `buildRateSimulationResult` (`src/hooks/useRateSimulation.ts`):
 
 - `supplyNetInputUsd` / `borrowNetInputUsd` — net eligible amounts
 - `supplyEligibilityRatio` / `borrowEligibilityRatio` — discount factors
-- `buildIncentiveAfter` receives both `netInputUsd` (for TVL dilution) and `grossInputUsd` (for Brevis), plus `eligibilityRatio`
-- `buildMeritCampaignDetails` and `buildMerklCampaignDetails` accept `eligibilityRatio` to scale per-campaign `after` values
-- Brevis paths (`sumForecastBrevisValues`, `buildBrevisCampaignDetails`) remain unaffected — they use `grossInputUsd` without ratio scaling
+- `meritMerklNetPosition` (default `true`): when `false`, Merit/Merkl use each side’s full scenario USD (`supplyInputUsd` / `borrowInputUsd`) with eligibility ratio `1` (supply and borrow computed independently). Brevis is unchanged.
+- `buildIncentiveAfter` passes Merit/Merkl basis through the net-or-gross inputs and ratio above; **Brevis** still uses `grossInputUsd` only
+- `buildMeritCampaignDetails` and `buildMerklCampaignDetails` follow the same Merit/Merkl basis
+- Brevis paths (`sumForecastBrevisValues`, `buildBrevisCampaignDetails`) ignore `meritMerklNetPosition` — they always use `grossInputUsd` without ratio scaling
 
 ### Single-input behavior
 

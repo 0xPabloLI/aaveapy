@@ -289,6 +289,12 @@ interface BuildRateSimulationResultParams {
   borrowInput: string;
   inputMode?: ScenarioInputMode;
   forecastStates: Record<string, MerklForecastWireItem>;
+  /**
+   * When true (default), Merit/Merkl hypothetical TVL uses net position per side
+   * (supply net = max(supply−borrow,0), borrow net = max(borrow−supply,0)) with eligibility scaling.
+   * When false, each side uses its full scenario USD independently. Brevis is always gross per side.
+   */
+  meritMerklNetPosition?: boolean;
 }
 
 interface UseRateSimulationParams {
@@ -301,6 +307,7 @@ interface UseRateSimulationParams {
   supplyInput: string;
   borrowInput: string;
   inputMode?: ScenarioInputMode;
+  meritMerklNetPosition?: boolean;
 }
 
 interface UseSharedRateSimulationsParams {
@@ -313,6 +320,7 @@ interface UseSharedRateSimulationsParams {
   supplyInput: string;
   borrowInput: string;
   inputMode?: ScenarioInputMode;
+  meritMerklNetPosition?: boolean;
 }
 
 const buildIncentiveCurrent = (
@@ -614,6 +622,8 @@ const buildMeritCampaignDetails = (
         if (fp) {
           baseAfter = meritForecastAprToDisplay(fp.apr, isApy) * eligibilityRatio;
         }
+      } else if (hasAnyInput) {
+        baseAfter = 0;
       }
       const delta = baseAfter !== null ? baseAfter - baseCurrent : null;
       rows.push({
@@ -657,6 +667,8 @@ const buildMeritCampaignDetails = (
         } else {
           selfAfter = selfCurrent;
         }
+      } else if (hasAnyInput) {
+        selfAfter = 0;
       }
       const delta = selfAfter !== null ? selfAfter - selfCurrent : null;
       rows.push({
@@ -729,6 +741,9 @@ const buildMerklCampaignDetails = (
             ({ capNote, capWarning } = ceilingEffectToSimulationFields(buildMerklAprCeilingEffect()));
           }
         }
+      } else if (hasAnyInput) {
+        // Net-eligible USD is 0 on this lane but the user entered a scenario: show 0% after (matches aggregate Merkl), not em dash.
+        after = 0;
       }
 
       const delta = after !== null ? after - current : null;
@@ -887,6 +902,7 @@ export function buildRateSimulationResult({
   borrowInput,
   inputMode = 'token',
   forecastStates,
+  meritMerklNetPosition = true,
 }: BuildRateSimulationResultParams): RateSimulationComputedResult {
   const rawSupply = parseNumberInput(supplyInput);
   const rawBorrow = parseNumberInput(borrowInput);
@@ -1039,14 +1055,19 @@ export function buildRateSimulationResult({
   const supplyEligibilityRatio = supplyInputUsd > 0 ? supplyNetInputUsd / supplyInputUsd : 1;
   const borrowEligibilityRatio = borrowInputUsd > 0 ? borrowNetInputUsd / borrowInputUsd : 1;
 
+  const supplyMeritMerklInputUsd = meritMerklNetPosition ? supplyNetInputUsd : supplyInputUsd;
+  const borrowMeritMerklInputUsd = meritMerklNetPosition ? borrowNetInputUsd : borrowInputUsd;
+  const supplyMeritMerklEligibilityRatio = meritMerklNetPosition ? supplyEligibilityRatio : 1;
+  const borrowMeritMerklEligibilityRatio = meritMerklNetPosition ? borrowEligibilityRatio : 1;
+
   const supplyAfterIncentiveRaw = hasAnyInput
     ? buildIncentiveAfter(
         reserve,
         'supply',
         isApy,
-        supplyNetInputUsd,
+        supplyMeritMerklInputUsd,
         supplyInputUsd,
-        supplyEligibilityRatio,
+        supplyMeritMerklEligibilityRatio,
         forecastStates,
         tydroPointToUsdRate,
         whitelistMerklCampaignIds,
@@ -1058,9 +1079,9 @@ export function buildRateSimulationResult({
         reserve,
         'borrow',
         isApy,
-        borrowNetInputUsd,
+        borrowMeritMerklInputUsd,
         borrowInputUsd,
-        borrowEligibilityRatio,
+        borrowMeritMerklEligibilityRatio,
         forecastStates,
         tydroPointToUsdRate,
         whitelistMerklCampaignIds,
@@ -1101,11 +1122,12 @@ export function buildRateSimulationResult({
 
   const supplyAfterSources = hasAnyInput
     ? (() => {
-        const meritAfterRaw = sumForecastMeritValues(reserve.meritSupplys, isApy, supplyNetInputUsd) * supplyEligibilityRatio;
+        const meritAfterRaw =
+          sumForecastMeritValues(reserve.meritSupplys, isApy, supplyMeritMerklInputUsd) * supplyMeritMerklEligibilityRatio;
         const merklAfterRaw = sumMerklValues(
           buildForecastMerklOpportunities({
             opportunities: reserve.merklSupplys,
-            inputUsd: supplyNetInputUsd,
+            inputUsd: supplyMeritMerklInputUsd,
             forecastStates,
             whitelistMerklCampaignIds,
             tydroPointToUsdRate,
@@ -1113,7 +1135,7 @@ export function buildRateSimulationResult({
           isApy,
           tydroPointToUsdRate,
           whitelistMerklCampaignIds
-        ) * supplyEligibilityRatio;
+        ) * supplyMeritMerklEligibilityRatio;
         const brevisAfterRaw = sumForecastBrevisValues(
           reserve.brevisSupplys,
           isApy,
@@ -1131,11 +1153,12 @@ export function buildRateSimulationResult({
 
   const borrowAfterSources = hasAnyInput
     ? (() => {
-        const meritAfterRaw = sumForecastMeritValues(reserve.meritBorrows, isApy, borrowNetInputUsd) * borrowEligibilityRatio;
+        const meritAfterRaw =
+          sumForecastMeritValues(reserve.meritBorrows, isApy, borrowMeritMerklInputUsd) * borrowMeritMerklEligibilityRatio;
         const merklAfterRaw = sumMerklValues(
           buildForecastMerklOpportunities({
             opportunities: reserve.merklBorrows,
-            inputUsd: borrowNetInputUsd,
+            inputUsd: borrowMeritMerklInputUsd,
             forecastStates,
             whitelistMerklCampaignIds,
             tydroPointToUsdRate,
@@ -1143,7 +1166,7 @@ export function buildRateSimulationResult({
           isApy,
           tydroPointToUsdRate,
           whitelistMerklCampaignIds
-        ) * borrowEligibilityRatio;
+        ) * borrowMeritMerklEligibilityRatio;
         const brevisAfterRaw = sumForecastBrevisValues(
           reserve.brevisBorrows,
           isApy,
@@ -1162,21 +1185,21 @@ export function buildRateSimulationResult({
   const supplyMeritCampaignRows = buildMeritCampaignDetails(
     reserve.meritSupplys,
     isApy,
-    supplyNetInputUsd,
+    supplyMeritMerklInputUsd,
     hasAnyInput,
     getMeritAnchorTvlUsd(reserve, 'supply'),
-    supplyEligibilityRatio,
+    supplyMeritMerklEligibilityRatio,
     supplyInputUsd,
   );
   const supplyMerklCampaignRows = buildMerklCampaignDetails(
     reserve.merklSupplys,
     isApy,
-    supplyNetInputUsd,
+    supplyMeritMerklInputUsd,
     forecastStates,
     whitelistMerklCampaignIds,
     tydroPointToUsdRate,
     hasAnyInput,
-    supplyEligibilityRatio,
+    supplyMeritMerklEligibilityRatio,
     supplyInputUsd,
   );
   const supplyBrevisCampaignRows = buildBrevisCampaignDetails(
@@ -1189,21 +1212,21 @@ export function buildRateSimulationResult({
   const borrowMeritCampaignRows = buildMeritCampaignDetails(
     reserve.meritBorrows,
     isApy,
-    borrowNetInputUsd,
+    borrowMeritMerklInputUsd,
     hasAnyInput,
     getMeritAnchorTvlUsd(reserve, 'borrow'),
-    borrowEligibilityRatio,
+    borrowMeritMerklEligibilityRatio,
     borrowInputUsd,
   );
   const borrowMerklCampaignRows = buildMerklCampaignDetails(
     reserve.merklBorrows,
     isApy,
-    borrowNetInputUsd,
+    borrowMeritMerklInputUsd,
     forecastStates,
     whitelistMerklCampaignIds,
     tydroPointToUsdRate,
     hasAnyInput,
-    borrowEligibilityRatio,
+    borrowMeritMerklEligibilityRatio,
     borrowInputUsd,
   );
   const borrowBrevisCampaignRows = buildBrevisCampaignDetails(
@@ -1457,6 +1480,7 @@ export const useSharedRateSimulations = ({
   supplyInput,
   borrowInput,
   inputMode = 'token',
+  meritMerklNetPosition = true,
 }: UseSharedRateSimulationsParams) => {
   const hasAnyInput = useMemo(() => parseNumberInput(supplyInput) > 0 || parseNumberInput(borrowInput) > 0, [borrowInput, supplyInput]);
   const needsTokenPrice = inputMode === 'token';
@@ -1553,6 +1577,7 @@ export const useSharedRateSimulations = ({
           borrowInput,
           inputMode,
           forecastStates,
+          meritMerklNetPosition,
         }),
         tokenPriceLoading: tokenPriceLoadingById[reserveId] ?? false,
         reserveRateInputLoading: false,
@@ -1572,6 +1597,7 @@ export const useSharedRateSimulations = ({
     whitelistMerklCampaignIds,
     inputMode,
     isApy,
+    meritMerklNetPosition,
     reserves,
     supplyInput,
     tokenPriceById,
@@ -1598,6 +1624,8 @@ export const useRateSimulation = ({
   enabled = true,
   supplyInput,
   borrowInput,
+  inputMode = 'token',
+  meritMerklNetPosition = true,
 }: UseRateSimulationParams): RateSimulationResult => {
   const reserveId = getReserveSimulationId(reserve);
   const { simulationsById } = useSharedRateSimulations({
@@ -1609,6 +1637,8 @@ export const useRateSimulation = ({
     enabled,
     supplyInput,
     borrowInput,
+    inputMode,
+    meritMerklNetPosition,
   });
 
   return (
@@ -1621,7 +1651,9 @@ export const useRateSimulation = ({
       tokenPrice: resolveLocalReserveTokenPrice(reserve, tokenPrices),
       supplyInput,
       borrowInput,
+      inputMode,
       forecastStates: {},
+      meritMerklNetPosition,
     })
   );
 };

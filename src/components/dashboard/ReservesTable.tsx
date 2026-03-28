@@ -100,6 +100,7 @@ const ReservesTable = ({
   const [debouncedSharedSupplyInput, setDebouncedSharedSupplyInput] = useState('');
   const [debouncedSharedBorrowInput, setDebouncedSharedBorrowInput] = useState('');
   const [sharedInputMode, setSharedInputMode] = useState<import('@/hooks/useRateSimulation').ScenarioInputMode>('usd');
+  const [meritMerklNetPosition, setMeritMerklNetPosition] = useState(true);
   const handleScenarioChange = useCallback((supply: string, borrow: string, mode: import('@/components/dashboard/ScenarioControls').ScenarioInputMode) => {
     setDebouncedSharedSupplyInput(supply);
     setDebouncedSharedBorrowInput(borrow);
@@ -168,6 +169,7 @@ const ReservesTable = ({
     supplyInput: debouncedSharedSupplyInput,
     borrowInput: debouncedSharedBorrowInput,
     inputMode: sharedInputMode,
+    meritMerklNetPosition,
   });
 
   /** Scroll-on-expand only when list order can change with shared scenario (matches `pickScenarioValue` / size supply USD). */
@@ -495,7 +497,7 @@ const ReservesTable = ({
       }
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reserves, activeSortColumn, tokenSortOrder, marketSortOrder, priceSortOrder, sizeSortMode, sizeSortOrder, utilSortOrder, supplySortMode, supplySortOrder, borrowSortMode, borrowSortOrder, spreadSortOrder, simulationsById, hasSharedScenario, isApy, tydroPointToUsdRate, whitelistMerklCampaignIds, debouncedSharedSupplyInput, debouncedSharedBorrowInput, sharedInputMode]);
+  }, [reserves, activeSortColumn, tokenSortOrder, marketSortOrder, priceSortOrder, sizeSortMode, sizeSortOrder, utilSortOrder, supplySortMode, supplySortOrder, borrowSortMode, borrowSortOrder, spreadSortOrder, simulationsById, hasSharedScenario, isApy, tydroPointToUsdRate, whitelistMerklCampaignIds, debouncedSharedSupplyInput, debouncedSharedBorrowInput, sharedInputMode, meritMerklNetPosition]);
 
   /**
    * Simulation pin scroll — normative spec + implementation steps:
@@ -503,7 +505,7 @@ const ReservesTable = ({
    * Do not move to `expandedReserveId`-only effects or index-based scroll without updating that doc.
    */
   useEffect(() => {
-    const scenarioKey = `${debouncedSharedSupplyInput}\0${debouncedSharedBorrowInput}\0${sharedInputMode}`;
+    const scenarioKey = `${debouncedSharedSupplyInput}\0${debouncedSharedBorrowInput}\0${sharedInputMode}\0${meritMerklNetPosition ? '1' : '0'}`;
     const ids = sortedData.map((r) => getReserveSimulationId(r));
     const prevIds = lastSortedIdsForPinScrollRef.current;
     const orderChanged =
@@ -547,6 +549,7 @@ const ReservesTable = ({
     debouncedSharedSupplyInput,
     debouncedSharedBorrowInput,
     sharedInputMode,
+    meritMerklNetPosition,
     sortedData,
     expandedReserveId,
     expandScrollFollowsScenarioSort,
@@ -763,7 +766,14 @@ const ReservesTable = ({
   
   const showAll = minVisibleCount !== null && minVisibleCount >= sortedData.length;
 
-  const scenarioControls = <ScenarioControls ref={scenarioControlsRef} onDebouncedChange={handleScenarioChange} />;
+  const scenarioControls = (
+    <ScenarioControls
+      ref={scenarioControlsRef}
+      onDebouncedChange={handleScenarioChange}
+      meritMerklNetPosition={meritMerklNetPosition}
+      onMeritMerklNetPositionChange={setMeritMerklNetPosition}
+    />
+  );
 
   const desktopTableCardRef = useRef<HTMLDivElement>(null);
   const desktopStickyScenarioRef = useRef<HTMLDivElement>(null);
@@ -1351,10 +1361,9 @@ const ReservesTable = ({
           </colgroup>
           <TableHeader
             data-reserves-sticky-thead
-            className="overflow-visible sticky z-10 border-b border-border/60 bg-card shadow-[0_1px_2px_0_rgb(0_0_0/0.04)] [&_tr]:border-b-0"
-            style={{ top: 'var(--reserves-sticky-scenario-height, 4.5rem)' }}
+            className="overflow-visible [&_tr]:border-b-0 [&_th]:sticky [&_th]:z-10 [&_th]:border-b [&_th]:border-border/60 [&_th]:bg-card [&_th]:shadow-[0_1px_2px_0_rgb(0_0_0/0.04)] [&_th]:[top:var(--reserves-sticky-scenario-height,4.5rem)]"
           >
-            <TableRow className="border-0 bg-transparent overflow-visible">
+            <TableRow className="border-0 bg-card overflow-visible hover:bg-card">
               {/* Token — 大幅收窄 */}
               <TableHead className="pl-[var(--ds-space-1-5)] pr-[var(--ds-space-0-5)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground">
                 <button

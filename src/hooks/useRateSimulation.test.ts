@@ -253,6 +253,60 @@ describe('buildRateSimulationResult', () => {
     expect(result.borrow.currentIncentive).toBe(0.4);
   });
 
+  it('applies Merit/Merkl per-side USD when meritMerklNetPosition is false', () => {
+    const reserve: ReserveWithSpread = {
+      ...baseReserve,
+      merklSupplys: [
+        {
+          name: 'Merkl supply',
+          breakdowns: [
+            {
+              campaignApr: 5,
+              campaignStartedAt: '2020-01-01T00:00:00.000Z',
+              campaignEndedAt: '2099-01-01T00:00:00.000Z',
+              campaignId: 'c-supply',
+              campaignType: 'DUTCH_AUCTION',
+              plannedDaily: 10,
+              aprCap: null,
+              totalBudget: 100000,
+              latestTvl: 1000,
+            },
+          ],
+        },
+      ],
+    };
+
+    const states: Record<string, MerklForecastWireItem> = {
+      'c-supply': {
+        campaignId: 'c-supply',
+        requiredDaily: 10,
+        distributedSoFar: 0,
+        endTimestamp: Math.floor(Date.now() / 1000) + 86400 * 30,
+      },
+    };
+
+    const common = {
+      reserve,
+      reserveRateInput: baseReserve,
+      isApy: false,
+      whitelistMerklCampaignIds: new Set<string>(),
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '1000',
+      borrowInput: '400',
+      forecastStates: states,
+    };
+
+    const netOn = buildRateSimulationResult({ ...common, meritMerklNetPosition: true });
+    const perSide = buildRateSimulationResult({ ...common, meritMerklNetPosition: false });
+
+    const netRow = netOn.supply.sources.merkl.campaigns?.[0];
+    const perRow = perSide.supply.sources.merkl.campaigns?.[0];
+    expect(netRow?.after).not.toBeNull();
+    expect(perRow?.after).not.toBeNull();
+    expect(perRow?.after).not.toBe(netRow?.after);
+  });
+
   it('does not increase supply incentives when a shared supply amount is present', () => {
     const reserve: ReserveWithSpread = {
       ...baseReserve,

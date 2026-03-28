@@ -114,7 +114,21 @@
 
 切换/选中状态要有**明确视觉区分**（边框色、背景、描边等），不能只靠轻微透明度或背景变化。
 
-### 5.6 本仓库实现参考
+### 5.6 原生勾选框（`<input type="checkbox">`）
+
+用于少量内联选项（Merkl 白名单、激励 Tooltip、场景条等），**不**单独引入 shadcn Checkbox 时，统一使用共享类名常量 `DS_NATIVE_CHECKBOX_CLASS`（`src/lib/dsNativeCheckbox.ts`）：
+
+| 规则 | 说明 |
+|------|------|
+| 尺寸 | `h-3.5 w-3.5`（14×14px 框体） |
+| 形状与边框 | `rounded border border-border bg-background` |
+| 与文字行 | `label` 使用 `flex items-start gap-[var(--ds-space-1-5)]`，勾选框加 `mt-0.5` 与首行文字基线对齐（常量已含 `mt-0.5`） |
+| 焦点 | `focus-visible:ring-2 focus-visible:ring-ring`（键盘可见焦点） |
+| 触控 | 小框可接受；**整段 `label` 可点**，满足可点区域 |
+
+选中态依赖浏览器原生勾选样式；若未来需要与品牌色强绑定，再在常量上扩展 `accent-*`（须全站勾选一并评估）。**共享场景条（`ScenarioControls`）** 等对表内 Supply/Borrow 语义色不重复：可在常量后追加 `accent-muted-foreground`，与表头/单元格的 emerald、cyan 分工。
+
+### 5.7 本仓库实现参考
 
 | 用途 | 参考文件 |
 |------|----------|
@@ -122,8 +136,9 @@
 | Token / Markets 筛选芯片 | `FilterBar.tsx` |
 | USD/Token 等模式分段 | `ScenarioControls.tsx` |
 | 主题图标切换 | `ThemeToggle.tsx` |
+| 原生勾选框（Merkl 白名单、场景 net 口径等） | `dsNativeCheckbox.ts` → `IncentiveTooltip.tsx`、`MerklForecastPanel.tsx`、`ScenarioControls.tsx` |
 
-迁移与验收：`ScenarioControls` 的 USD/Token 使用分段控件（非单按钮）；分类筛选用中性 `bg-card` 选中；Markets 多选保留品牌色边框以区分多选状态。
+迁移与验收：`ScenarioControls` 的 USD/Token 使用分段控件（非单按钮）；分类筛选用中性 `bg-card` 选中；Markets 多选保留品牌色边框以区分多选状态；**新增原生勾选框必须复用 `DS_NATIVE_CHECKBOX_CLASS`**。
 
 ---
 

@@ -14,6 +14,7 @@ import { resolveForecastTokenPrice, resolveForecastTokenPriceWithBackup } from '
 import { formatPercent, MERKL_WHITELIST_TOGGLE_ARIA, MERKL_WHITELIST_TOGGLE_LABEL } from '@/lib/formatters';
 import { formatNumberInput, parseNumberInput } from '@/lib/numberFormat';
 import { convertMerklPointsAmountToUsd, isMerklPointsCampaign } from '@/lib/tydro';
+import { DS_NATIVE_CHECKBOX_CLASS } from '@/lib/dsNativeCheckbox';
 
 interface MerklForecastPanelProps {
   reserves: ReserveWithSpread[];
@@ -220,7 +221,7 @@ const MerklForecastPanel = ({
                     type="checkbox"
                     checked={whitelistMerklCampaignIds.has(entry.campaignId)}
                     onChange={(event) => onToggleWhitelistMerklCampaign(entry.campaignId, event.target.checked)}
-                    className="mt-0.5 h-3.5 w-3.5 shrink-0 rounded border-border bg-background"
+                    className={DS_NATIVE_CHECKBOX_CLASS}
                   />
                   <span className="min-w-0 break-words" aria-hidden="true">
                     {entry.label}
