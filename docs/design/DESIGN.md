@@ -42,7 +42,7 @@
 **规范（空态 / 有值 + 底色与边框同色族）**
 
 - **无内容**：**不要**填充底色；边框用**中性**色（`border-border/60`），**不要** Supply/Borrow 的翠绿/青边框（语义色仅在有输入时出现）。
-- **有内容**：填充与**边框同一 token**（中性：`border-border/80` + **`bg-[hsl(var(--border)/0.22)]`**；**Search token**：`surfaceVariant="magenta"` → 品牌紫边框 `rgb(var(--ds-brand-magenta-rgb))` + **`ds-bg-brand-magenta-10`**；Supply / Borrow 仍为翠绿 / 品牌青 + 同系浅底）。
+- **有内容**：填充与**边框同一 token**（中性：`border-border/80` + **`bg-[hsl(var(--border)/0.22)]`**；**Search token**：`surfaceVariant="magenta"` → 品牌紫边框 `rgb(var(--ds-brand-magenta-rgb))` + **`ds-bg-brand-magenta-10`**；Supply / Borrow 仍为翠绿 / 品牌青 + 同系浅底）。**带语义浅底的三种（magenta / supply / borrow）在焦点在框内时用 `focus:bg-card`，浅底在失焦后才稳定呈现**，与 scenario 输入一致。
 - **实现**：TS 里用 **`cnDsInputSurface(hasValue, 'neutral' | 'magenta' | 'supply' | 'borrow')`**（`@/lib/dsInputSurface`）；`hasValue === String(value).trim() !== ''`。
 - **shadcn `Input`**：`surfaceVariant` 默认 `neutral`；**表面类在 `className` 之后合并**。自定义 `className` 不要再用 `bg-*` / `border-*` 顶掉规范。
 - **内联数字壳**（如 INK FDV 芯片）：用 **`cnDsInputNeutralWell(hasValue)`** 包外层，规则与中性输入一致。

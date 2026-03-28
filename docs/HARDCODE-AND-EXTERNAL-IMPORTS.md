@@ -73,6 +73,10 @@
 ## 5. 外部依赖分层
 
 ### 5.1 运行时数据 API
+`sync-coingecko-platform-map.mjs` / `check-coingecko-platform-map-upstream.mjs` 拉取 `/markets` 时：优先读**进程环境变量** `LIVE_TEST_API_BASE_CI`，其次 `VITE_API_BASE_URL`，再回退 `https://api.aaveapy.com/api`。
+
+在 GitHub Actions 里，该名字与 **Repository variable**（`Settings` → `Secrets and variables` → `Actions` → `Variables`，键名 `LIVE_TEST_API_BASE_CI`）一致：workflow 用 `vars.LIVE_TEST_API_BASE_CI` 写入 job 的 `env.LIVE_TEST_API_BASE_CI`，脚本即可读到。未配置变量时，`hardcode-drift-check` / `hardcode-sync` 与 `ci.yml` 的 live-schema 一样回退到 `https://staging-api.aaveapy.com/api`。详见 `docs/conventions/ci-live-schema-cloudflare.md`。
+
 `VITE_API_BASE_URL`（默认 `https://api.aaveapy.com/api`）：
 - `/markets`
 - `/markets/stats`

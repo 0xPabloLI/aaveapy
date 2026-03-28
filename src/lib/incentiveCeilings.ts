@@ -50,7 +50,7 @@ export function buildMeritSelfDepositCeilingEffect(input: {
     kind: 'deposit_ceiling',
     scope: 'per_user',
     window: 'round_cycle',
-    noteParts: [`Eligible deposit capped at ${formatUsd(depositCeilingUsd)}`],
+    noteParts: [`Eligible supply capped at ${formatUsd(depositCeilingUsd)}`],
     warning: inputUsd > depositCeilingUsd,
     metrics: {
       depositCeilingUsd,

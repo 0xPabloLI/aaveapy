@@ -372,7 +372,7 @@ All user-visible simulation row notes for incentives should stay discoverable he
 | **Merkl MAX** | `regime === 'APR_CAPPED'` at hypothetical TVL | **`APR capped for low TVL`** | `true` |
 | **Brevis** (per-user reward cap) | Scenario present, `perUserRewardCapUsd` &gt; 0 | **`Reward capped at $X/user`**; if shared supply+borrow cap: **` · supply + borrow`**; optional horizon: **` · ~Nd earn`** where **`N = min(daysToHitCap, remainingDays)`** (or single bound if only one is positive) | `isCapBinding` |
 | **Brevis** (no per-user cap) | Scenario present, no cap, positive `remainingDays` | **`~Nd to end`** | `false` |
-| **Merit Self** | Self row, forecast resolves `selfCapUsd` + `selfEligibleUsd` | **`Eligible deposit capped at $Z`** | `true` when scenario deposit &gt; ceiling |
+| **Merit Self** | Self row, forecast resolves `selfCapUsd` + `selfEligibleUsd` | **`Eligible supply capped at $Z`** | `true` when scenario deposit &gt; ceiling |
 | **Merit Base** | — (net note only when `eligibilityRatio < 1`) | **`Net eligible $X of $Y`** (or none when single-side input) | `false` |
 | **Merkl DUTCH_AUCTION** (and other types) | — (net note only when `eligibilityRatio < 1`) | **`Net eligible $X of $Y`** (or none when single-side input) | `false` |
 
@@ -424,7 +424,7 @@ When **`reserve.reserveSizeUsd`** is present, **supply-side** Merit Base simulat
 
 - `selfCapUsd`: extracted from campaign `message` text (e.g. "first $1000 USDT supplied per user").
 - Caps the **eligible deposit**, not the reward directly. `eligibleDeposit = min(deposit, selfCapUsd)`.
-- `eligibleDepositUsd` is only used for Merit self-auth campaigns — other incentive types do not use deposit capping. Simulation copy uses **`Eligible deposit capped at $Z`** (same “capped” vocabulary as Merkl APR notes).
+- `eligibleDepositUsd` is only used for Merit self-auth campaigns — other incentive types do not use deposit capping. Simulation copy uses **`Eligible supply capped at $Z`** (same “capped” vocabulary as Merkl APR notes).
 
 ### UI surfaces: Brevis cap (simulation only)
 

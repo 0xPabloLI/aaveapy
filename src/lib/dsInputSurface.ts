@@ -16,14 +16,18 @@ const emptyNeutralBorder =
 const neutralFilledSurface =
   'border-border/80 !bg-[hsl(var(--border)/0.22)] text-foreground';
 
-/** Filter search: focus ring is brand magenta; **filled** border + fill use the same RGB token. */
+/** Filter search: **filled** border + fill use the same RGB token; while **focused**, match scenario inputs (`focus:bg-card`). */
 const magentaFilledSurface =
   'border-[rgb(var(--ds-brand-magenta-rgb)/0.72)] ds-bg-brand-magenta-10 text-foreground';
+
+const magentaFilledFocus =
+  'focus:!border-[rgb(var(--ds-brand-magenta-rgb))] focus:!bg-card focus:text-foreground focus-visible:!ring-[rgb(var(--ds-brand-magenta-rgb)/0.25)]';
 
 /**
  * Text inputs: **empty** → no fill, **neutral** border (`border-border/…`); no supply/borrow **hue** on
  * the border until there is a value. **Has value** → neutral uses `border` tint; **magenta** (search token)
- * uses brand magenta border + `ds-bg-brand-magenta-10`; supply/borrow keep lane tints.
+ * uses brand magenta border + `ds-bg-brand-magenta-10` (tint shows once **blurred**, like supply/borrow);
+ * supply/borrow keep lane tints with the same focus rule.
  * Use with controlled `value` + `hasValue === value.trim() !== ''`.
  */
 export function cnDsInputSurface(hasValue: boolean, variant: DsInputSurfaceVariant = 'neutral'): string {
@@ -43,7 +47,7 @@ export function cnDsInputSurface(hasValue: boolean, variant: DsInputSurfaceVaria
     return cn(
       shell,
       hasValue
-        ? cn(magentaFilledSurface, neutralFocus)
+        ? cn(magentaFilledSurface, magentaFilledFocus)
         : cn(emptyNeutralBorder, neutralFocus),
     );
   }

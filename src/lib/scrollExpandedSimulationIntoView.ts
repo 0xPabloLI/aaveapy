@@ -87,12 +87,12 @@ function escapeReserveId(reserveId: string): string {
  */
 export function scrollExpandedSimulationIntoView(
   reserveId: string,
-  options: { mode: ExpandedSimulationScrollMode },
+  options: { mode: ExpandedSimulationScrollMode; instant?: boolean },
 ): void {
   if (typeof document === 'undefined') return;
 
   const escaped = escapeReserveId(reserveId);
-  const behavior = getScrollBehavior();
+  const behavior = options.instant ? 'auto' as ScrollBehavior : getScrollBehavior();
   const pinnedTopY = getPinnedRowTopY();
   const vBottom = window.innerHeight - VIEW_MARGIN_PX;
 

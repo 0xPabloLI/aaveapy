@@ -133,6 +133,8 @@ const DesktopReserveRow = memo(({
         className={cn(
           'transition-colors duration-150 cursor-pointer hover:bg-muted/60 active:bg-muted/80',
           isExpanded && 'bg-muted/30',
+          isExpanded &&
+            '[&_td]:sticky [&_td]:z-[25] [&_td]:border-b [&_td]:border-border/60 [&_td]:bg-card [&_td]:shadow-[0_1px_2px_0_rgb(0_0_0/0.04)] [&_td]:[top:var(--reserves-expanded-main-row-top,5.75rem)]',
         )}
         onClick={() => onToggleExpand(reserveId)}
       >

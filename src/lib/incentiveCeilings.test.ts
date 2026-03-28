@@ -27,7 +27,7 @@ describe('buildMeritSelfDepositCeilingEffect', () => {
       depositCeilingUsd: 1000,
     });
     expect(ceilingEffectToSimulationFields(under)).toEqual({
-      capNote: 'Eligible deposit capped at $1,000.00',
+      capNote: 'Eligible supply capped at $1,000.00',
       capWarning: false,
     });
 
@@ -37,7 +37,7 @@ describe('buildMeritSelfDepositCeilingEffect', () => {
       depositCeilingUsd: 1000,
     });
     expect(ceilingEffectToSimulationFields(over)).toEqual({
-      capNote: 'Eligible deposit capped at $1,000.00',
+      capNote: 'Eligible supply capped at $1,000.00',
       capWarning: true,
     });
   });

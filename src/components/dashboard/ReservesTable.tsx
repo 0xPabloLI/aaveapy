@@ -182,8 +182,9 @@ const ReservesTable = ({
     return true;
   }, [hasSharedScenario, activeSortColumn, sizeSortMode]);
 
-  const schedulePinScrollToReserve = useCallback((reserveId: string, delayMs: number) => {
+  const schedulePinScrollToReserve = useCallback((reserveId: string, delayMs: number, opts?: { instant?: boolean }) => {
     const mode = isMobile ? 'minimal-if-clipped' : 'pin-main-row-top';
+    const instant = opts?.instant ?? false;
     const escapeId = (raw: string) => (
       typeof CSS !== 'undefined' && typeof CSS.escape === 'function' ? CSS.escape(raw) : raw
     );
@@ -200,7 +201,7 @@ const ReservesTable = ({
       const row = document.querySelector(`tr[data-reserve-id="${escapedId}"]`);
       if (anchor instanceof HTMLElement || row instanceof HTMLElement) {
         requestAnimationFrame(() => {
-          requestAnimationFrame(() => scrollExpandedSimulationIntoView(reserveId, { mode }));
+          requestAnimationFrame(() => scrollExpandedSimulationIntoView(reserveId, { mode, instant }));
         });
         return;
       }
@@ -580,7 +581,7 @@ const ReservesTable = ({
     // (which re-run this effect but bail at the reservesKey guard) do
     // not invoke effect cleanup and cancel the pending scroll.
     cancelFilterPinScrollRef.current?.();
-    cancelFilterPinScrollRef.current = schedulePinScrollToReserve(targetReserveId, 280) ?? null;
+    cancelFilterPinScrollRef.current = schedulePinScrollToReserve(targetReserveId, 280, { instant: true }) ?? null;
   }, [reserves, sortedData, expandedReserveId, schedulePinScrollToReserve]);
 
   useEffect(() => {
@@ -798,6 +799,16 @@ const ReservesTable = ({
     const apply = () => {
       const scenarioH = stickyEl.getBoundingClientRect().height;
       card.style.setProperty('--reserves-sticky-scenario-height', `${scenarioH}px`);
+      const theadH =
+        theadEl instanceof HTMLElement ? theadEl.getBoundingClientRect().height : 0;
+      if (theadH > 0) {
+        card.style.setProperty(
+          '--reserves-expanded-main-row-top',
+          `${scenarioH + theadH}px`,
+        );
+      } else {
+        card.style.removeProperty('--reserves-expanded-main-row-top');
+      }
     };
     apply();
     const ro = new ResizeObserver(apply);
@@ -808,6 +819,7 @@ const ReservesTable = ({
     return () => {
       ro.disconnect();
       card.style.removeProperty('--reserves-sticky-scenario-height');
+      card.style.removeProperty('--reserves-expanded-main-row-top');
     };
   }, [isMobile]);
 

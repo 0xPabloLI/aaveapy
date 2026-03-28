@@ -8,8 +8,19 @@ const LOCAL_RESOLVER_PATH = path.join(ROOT, 'src/lib/tokenPriceResolver.ts');
 const DEFAULT_API_BASE = 'https://api.aaveapy.com/api';
 const COINGECKO_API_BASE = 'https://api.coingecko.com/api/v3';
 
+function normalizeApiBase(value) {
+  if (typeof value !== 'string') return '';
+  const t = value.trim();
+  if (!t) return '';
+  return t.replace(/\/+$/, '');
+}
+
 function getApiBase() {
-  return process.env.VITE_API_BASE_URL || DEFAULT_API_BASE;
+  return (
+    normalizeApiBase(process.env.LIVE_TEST_API_BASE_CI) ||
+    normalizeApiBase(process.env.VITE_API_BASE_URL) ||
+    DEFAULT_API_BASE
+  );
 }
 
 async function fetchJson(url) {
