@@ -135,7 +135,7 @@ const DesktopReserveRow = memo(({
         onClick={() => onToggleExpand(reserveId)}
       >
         {/* Token — 右侧留白更小 */}
-        <TableCell className="pl-[var(--ds-space-3)] pr-[var(--ds-space-1)] ds-row-pad whitespace-nowrap text-center">
+        <TableCell className="pl-[var(--ds-space-3)] pr-[var(--ds-space-1)] ds-row-pad whitespace-nowrap text-center overflow-visible">
           <a
             href={aaveUrl}
             target="_blank"
