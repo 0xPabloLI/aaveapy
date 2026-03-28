@@ -141,8 +141,17 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
     ? 'border-border bg-muted/80 text-foreground hover:bg-accent hover:border-border shadow-sm'
     : '';
 
-  const segmentedSelected = `px-2 py-1 rounded-md ${fontSize} font-semibold bg-card text-foreground shadow-sm border border-border/60 transition-all duration-200`;
-  const segmentedUnselected = `px-2 py-1 rounded-md ${fontSize} font-semibold text-muted-foreground hover:text-foreground hover:bg-card/50 transition-all duration-200`;
+  /**
+   * Segmented control: same metrics as `AprApyToggle` (px-3 py-1, ds-text-12, content-width segments)
+   * so USD/Token matches APR/APY in FilterBar. Pill thumb: DESIGN.md § 4.2.
+   */
+  const segmentedTrack = 'rounded-lg border border-border/40 bg-muted/60 p-0.5 gap-0.5';
+  const segmentedSegment =
+    'flex items-center justify-center rounded-md ds-text-12 font-semibold transition-all duration-200 px-3 py-1';
+  const segmentedSelectedBase =
+    'bg-card text-foreground border border-border/60 shadow-sm';
+  const segmentedUnselectedBase =
+    'text-muted-foreground hover:bg-card/50 hover:text-foreground';
 
   const showMeritMerklMode = typeof onMeritMerklNetPositionChange === 'function';
   const meritMerklCheckboxId = 'scenario-merit-merkl-net-lending-borrowing';
@@ -158,12 +167,20 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
     return (
       <div className="rounded-xl border border-border/60 bg-card/60 backdrop-blur-sm px-1.5 py-1">
         <div className="flex min-w-0 items-center gap-1.5">
-          <div className="flex shrink-0 flex-col self-stretch rounded-lg bg-border/40 p-px">
-            <div className="flex min-h-0 flex-1 flex-col gap-0 rounded-[calc(var(--radius)-1px)] bg-muted/60 p-0.5">
+          <div
+            className={cn(
+              'flex min-h-0 shrink-0 flex-col self-stretch',
+              segmentedTrack,
+            )}
+          >
             <button
               type="button"
               onClick={() => handleModeChange('usd')}
-              className={`min-h-0 flex-1 ${inputMode === 'usd' ? segmentedSelected : segmentedUnselected}`}
+              className={cn(
+                'min-h-0 flex-1',
+                segmentedSegment,
+                inputMode === 'usd' ? segmentedSelectedBase : segmentedUnselectedBase,
+              )}
               aria-pressed={inputMode === 'usd'}
               aria-label="USD mode"
             >
@@ -172,13 +189,16 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
             <button
               type="button"
               onClick={() => handleModeChange('token')}
-              className={`min-h-0 flex-1 ${inputMode === 'token' ? segmentedSelected : segmentedUnselected}`}
+              className={cn(
+                'min-h-0 flex-1',
+                segmentedSegment,
+                inputMode === 'token' ? segmentedSelectedBase : segmentedUnselectedBase,
+              )}
               aria-pressed={inputMode === 'token'}
               aria-label="Token mode"
             >
               Token
             </button>
-            </div>
           </div>
           <div className="flex flex-col gap-1 flex-1 min-w-0">
             <div className="flex min-w-0 items-center gap-1">
@@ -241,12 +261,14 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
   return (
     <div className="w-full min-w-0 rounded-xl bg-card/60 px-[var(--ds-space-2-5)] py-0.5 backdrop-blur-sm">
       <div className="flex w-full min-w-0 items-center gap-[var(--ds-space-1-5)]">
-      <div className="rounded-lg bg-border/40 p-px">
-        <div className="flex items-center gap-0.5 rounded-[calc(var(--radius)-1px)] bg-muted/60 p-0.5">
+      <div className={cn('flex shrink-0 items-center', segmentedTrack)}>
         <button
           type="button"
           onClick={() => handleModeChange('usd')}
-          className={inputMode === 'usd' ? segmentedSelected : segmentedUnselected}
+          className={cn(
+            segmentedSegment,
+            inputMode === 'usd' ? segmentedSelectedBase : segmentedUnselectedBase,
+          )}
           aria-pressed={inputMode === 'usd'}
         >
           USD
@@ -254,12 +276,14 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
         <button
           type="button"
           onClick={() => handleModeChange('token')}
-          className={inputMode === 'token' ? segmentedSelected : segmentedUnselected}
+          className={cn(
+            segmentedSegment,
+            inputMode === 'token' ? segmentedSelectedBase : segmentedUnselectedBase,
+          )}
           aria-pressed={inputMode === 'token'}
         >
           Token
         </button>
-        </div>
       </div>
 
       <div className="flex min-w-0 flex-1 items-center gap-[var(--ds-space-1)]">

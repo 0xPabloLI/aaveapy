@@ -189,6 +189,7 @@ const FilterBar = ({
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/60" />
           <Input
             ref={desktopSearchInputRef}
+            surfaceVariant="magenta"
             placeholder={searchPlaceholder}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -218,6 +219,7 @@ const FilterBar = ({
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
           <Input
             ref={mobileSearchInputRef}
+            surfaceVariant="magenta"
             placeholder={searchPlaceholder}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}

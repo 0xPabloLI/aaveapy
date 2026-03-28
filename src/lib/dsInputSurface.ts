@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils';
 
-export type DsInputSurfaceVariant = 'neutral' | 'supply' | 'borrow';
+export type DsInputSurfaceVariant = 'neutral' | 'supply' | 'borrow' | 'magenta';
 
 const neutralFocus =
   'focus-visible:border-[rgb(var(--ds-brand-magenta-rgb))] focus-visible:ring-[rgb(var(--ds-brand-magenta-rgb)/0.25)]';
@@ -9,9 +9,21 @@ const supplyFocus =
 const borrowFocus =
   'focus:!border-[rgb(var(--ds-brand-cyan-rgb))] focus:bg-card focus:text-foreground focus-visible:!ring-[rgb(var(--ds-brand-cyan-rgb)/0.35)]';
 
+const emptyNeutralBorder =
+  'border-border/60 !bg-transparent text-muted-foreground/90 placeholder:text-muted-foreground/40';
+
+/** Same `--border` token as `border-border/*`; theme stores space-separated HSL components. */
+const neutralFilledSurface =
+  'border-border/80 !bg-[hsl(var(--border)/0.22)] text-foreground';
+
+/** Filter search: focus ring is brand magenta; **filled** border + fill use the same RGB token. */
+const magentaFilledSurface =
+  'border-[rgb(var(--ds-brand-magenta-rgb)/0.72)] ds-bg-brand-magenta-10 text-foreground';
+
 /**
- * Text inputs: **empty** → transparent fill, border only; **has value** → fill is the same color
- * family as the border (low-opacity tint of `border` / emerald / brand cyan).
+ * Text inputs: **empty** → no fill, **neutral** border (`border-border/…`); no supply/borrow **hue** on
+ * the border until there is a value. **Has value** → neutral uses `border` tint; **magenta** (search token)
+ * uses brand magenta border + `ds-bg-brand-magenta-10`; supply/borrow keep lane tints.
  * Use with controlled `value` + `hasValue === value.trim() !== ''`.
  */
 export function cnDsInputSurface(hasValue: boolean, variant: DsInputSurfaceVariant = 'neutral'): string {
@@ -22,11 +34,17 @@ export function cnDsInputSurface(hasValue: boolean, variant: DsInputSurfaceVaria
     return cn(
       shell,
       hasValue
-        ? cn('border-border/80 bg-border/[0.14] text-foreground', neutralFocus)
-        : cn(
-            'border-border/60 !bg-transparent text-muted-foreground/90 placeholder:text-muted-foreground/40',
-            neutralFocus,
-          ),
+        ? cn(neutralFilledSurface, neutralFocus)
+        : cn(emptyNeutralBorder, neutralFocus),
+    );
+  }
+
+  if (variant === 'magenta') {
+    return cn(
+      shell,
+      hasValue
+        ? cn(magentaFilledSurface, neutralFocus)
+        : cn(emptyNeutralBorder, neutralFocus),
     );
   }
 
@@ -35,10 +53,7 @@ export function cnDsInputSurface(hasValue: boolean, variant: DsInputSurfaceVaria
       shell,
       hasValue
         ? cn('border-emerald-500/75 ds-bg-emerald-500-10 text-foreground', supplyFocus)
-        : cn(
-            'border-emerald-500/45 !bg-transparent text-muted-foreground/90 placeholder:text-muted-foreground/40',
-            supplyFocus,
-          ),
+        : cn(emptyNeutralBorder, supplyFocus),
     );
   }
 
@@ -49,10 +64,7 @@ export function cnDsInputSurface(hasValue: boolean, variant: DsInputSurfaceVaria
           'border-[rgb(var(--ds-brand-cyan-rgb)/0.72)] ds-bg-brand-cyan-10 text-foreground',
           borrowFocus,
         )
-      : cn(
-          'border-[rgb(var(--ds-brand-cyan-rgb)/0.45)] !bg-transparent text-muted-foreground/90 placeholder:text-muted-foreground/40',
-          borrowFocus,
-        ),
+      : cn(emptyNeutralBorder, borrowFocus),
   );
 }
 
@@ -63,6 +75,6 @@ export function cnDsInputSurface(hasValue: boolean, variant: DsInputSurfaceVaria
 export function cnDsInputNeutralWell(hasValue: boolean): string {
   return cn(
     'rounded-md border transition-colors',
-    hasValue ? 'border-border/80 bg-border/[0.14]' : 'border-border/60 bg-transparent',
+    hasValue ? 'border-border/80 bg-[hsl(var(--border)/0.22)]' : 'border-border/60 bg-transparent',
   );
 }

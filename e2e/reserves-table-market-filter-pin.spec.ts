@@ -185,4 +185,29 @@ test.describe('Market filter pin scroll (desktop)', () => {
 
     await assertExpandedRowPinnedToAnchor(page, reserveId);
   });
+
+  test('(5) non-first row → apply market filter → pins to top anchor', async ({ page }) => {
+    await page.goto('/');
+    await waitDesktopTable(page);
+
+    // Pick a row deeper in the list (3rd visible row) so the row index
+    // changes after filter — guards against "first row only" assumptions.
+    const rows = page.locator('tbody tr[data-reserve-id]');
+    const rowCount = await rows.count();
+    const targetIndex = Math.min(2, rowCount - 1);
+    const targetRow = rows.nth(targetIndex);
+    const reserveId = await targetRow.getAttribute('data-reserve-id');
+    if (!reserveId) throw new Error(`Missing data-reserve-id for row at index ${targetIndex}`);
+
+    // Scroll down so the row is reachable, then expand it.
+    await targetRow.scrollIntoViewIfNeeded();
+    await targetRow.click();
+    await expect(targetRow).toHaveClass(/bg-muted\/30/);
+
+    await scrollExpandedRowOffPinAnchor(page, reserveId);
+
+    await marketChipForReserve(page, reserveId).click();
+
+    await assertExpandedRowPinnedToAnchor(page, reserveId);
+  });
 });

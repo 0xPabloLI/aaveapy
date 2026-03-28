@@ -41,10 +41,10 @@
 
 **规范（空态 / 有值 + 底色与边框同色族）**
 
-- **无内容**：**不要**填充底色（`transparent` / 无实色块），只保留边框与占位符层次。
-- **有内容**：加上与**边框同色族**的低不透明度填充（中性：`border-border` + `bg-border/[0.14]`；Supply：`border-emerald-*` + `ds-bg-emerald-500-10`；Borrow：`border` 品牌青 + `ds-bg-brand-cyan-10`）。
-- **实现**：TS 里用 **`cnDsInputSurface(hasValue, 'neutral' | 'supply' | 'borrow')`**（`@/lib/dsInputSurface`）；`hasValue === String(value).trim() !== ''`。
-- **shadcn `Input`**：已按受控 `value` 自动套中性 variant；自定义 `className` 时不要再用 `bg-card/50` 盖掉空态。
+- **无内容**：**不要**填充底色；边框用**中性**色（`border-border/60`），**不要** Supply/Borrow 的翠绿/青边框（语义色仅在有输入时出现）。
+- **有内容**：填充与**边框同一 token**（中性：`border-border/80` + **`bg-[hsl(var(--border)/0.22)]`**；**Search token**：`surfaceVariant="magenta"` → 品牌紫边框 `rgb(var(--ds-brand-magenta-rgb))` + **`ds-bg-brand-magenta-10`**；Supply / Borrow 仍为翠绿 / 品牌青 + 同系浅底）。
+- **实现**：TS 里用 **`cnDsInputSurface(hasValue, 'neutral' | 'magenta' | 'supply' | 'borrow')`**（`@/lib/dsInputSurface`）；`hasValue === String(value).trim() !== ''`。
+- **shadcn `Input`**：`surfaceVariant` 默认 `neutral`；**表面类在 `className` 之后合并**。自定义 `className` 不要再用 `bg-*` / `border-*` 顶掉规范。
 - **内联数字壳**（如 INK FDV 芯片）：用 **`cnDsInputNeutralWell(hasValue)`** 包外层，规则与中性输入一致。
 
 **遗留类名 `ds-input-surface`（`index.css`）**：仅作无填充默认边框；新代码优先 `cnDsInputSurface`。
@@ -73,6 +73,7 @@
 #### 分段控制器（Segmented Control）
 适用：USD/Token、APR/APY 切换；储备表共享场景条 **激励模拟** 用 **勾选**：勾选＝按 **net lending / net borrowing** 口径，不勾选＝两侧毛 supply / 毛 borrow（Brevis 不受此项影响）
 - 容器：`bg-muted/60 rounded-lg p-0.5 border border-border/40`
+- 段按钮（**USD/Token 与 APR/APY 同一套**）：`px-3 py-1 rounded-md ds-text-12 font-semibold`；轨道与段之间 `gap-0.5`；段为内容宽度（不要用 `flex-1` 拉满半轨）
 - 选中：`bg-card shadow-sm border border-border/60 font-semibold`
 - 未选中：`text-muted-foreground hover:bg-card/50`
 

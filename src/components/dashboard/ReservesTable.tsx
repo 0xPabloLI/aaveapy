@@ -91,6 +91,7 @@ const ReservesTable = ({
   const scenarioPinScrollBaselineReadyRef = useRef(false);
   const scenarioNeedsPinScrollRef = useRef(false);
   const lastReservesKeyForFilterPinRef = useRef<string | null>(null);
+  const cancelFilterPinScrollRef = useRef<(() => void) | null>(null);
   const suppressNextToggleReserveIdRef = useRef<string | null>(null);
   const pendingMarketFilterPinReserveIdRef = useRef<string | null>(null);
   const [borrowMenuPos, setBorrowMenuPos] = useState<{ top: number; left: number } | null>(null);
@@ -574,8 +575,17 @@ const ReservesTable = ({
     }
 
     pendingMarketFilterPinReserveIdRef.current = null;
-    return schedulePinScrollToReserve(targetReserveId, 280);
+    // Cancel any prior filter-pin scroll, then schedule a new one.
+    // Store the cancel fn in a ref so that unrelated sortedData changes
+    // (which re-run this effect but bail at the reservesKey guard) do
+    // not invoke effect cleanup and cancel the pending scroll.
+    cancelFilterPinScrollRef.current?.();
+    cancelFilterPinScrollRef.current = schedulePinScrollToReserve(targetReserveId, 280) ?? null;
   }, [reserves, sortedData, expandedReserveId, schedulePinScrollToReserve]);
+
+  useEffect(() => {
+    return () => { cancelFilterPinScrollRef.current?.(); };
+  }, []);
 
   useEffect(() => {
     if (!expandedReserveId) {
@@ -1358,7 +1368,7 @@ const ReservesTable = ({
       <div
         ref={desktopStickyScenarioRef}
         data-reserves-sticky-scenario
-        className="sticky top-0 z-20 border-b border-border/60 p-[var(--ds-space-3)] bg-card"
+        className="sticky top-0 z-20 rounded-t-[calc(1rem-1px)] border-b border-border/60 bg-card p-[var(--ds-space-3)]"
       >
         {scenarioControls}
       </div>
