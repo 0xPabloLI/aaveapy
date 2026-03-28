@@ -39,22 +39,26 @@ function IncentiveNetCheckboxTooltip({
             checked={checked}
             onChange={(event) => onCheckedChange(event.target.checked)}
             className={`${DS_NATIVE_CHECKBOX_CLASS} accent-muted-foreground`}
+            aria-label="Net lending and borrowing for incentives (Merit/Merkl); Brevis unchanged"
           />
-          <span className={labelTextClassName}>Net lending & borrowing</span>
+          <span className={labelTextClassName}>Net</span>
         </label>
       </TooltipTrigger>
       <TooltipContent
         side="top"
-        sideOffset={6}
-        className="max-w-[min(17rem,calc(100vw-2rem))] text-left ds-text-13 leading-snug"
+        sideOffset={8}
+        className="max-w-[min(20rem,calc(100vw-2rem))] rounded-xl border border-border bg-card px-4 py-3 text-left shadow-lg leading-normal"
       >
-        <p className="text-muted-foreground">
-          Incentives (e.g. Merit/Merkl) usually follow net lending and net borrowing—overlap does not double-count.
-        </p>
-        <p className="mt-1.5 text-muted-foreground">
-          {'"Off" uses gross supply and borrow per side; may not match how programs pay.'}
-        </p>
-        <p className="mt-1.5 text-muted-foreground">Brevis ignores this.</p>
+        <div className="space-y-2.5">
+          <p className="text-muted-foreground ds-text-12 leading-relaxed">
+            Incentives (e.g. Merit/Merkl) usually follow net lending and net borrowing—overlap does not
+            double-count.
+          </p>
+          <p className="text-muted-foreground ds-text-12 leading-relaxed">
+            &quot;Off&quot; uses gross supply and borrow per side; may not match how programs pay.
+          </p>
+          <p className="text-muted-foreground ds-text-12 leading-relaxed">Brevis ignores this.</p>
+        </div>
       </TooltipContent>
     </Tooltip>
   );
@@ -96,7 +100,7 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
         window.localStorage.setItem(INCENTIVE_NET_UNCHECK_TOAST_STORAGE_KEY, '1');
         toast('Incentives usually follow net lending & borrowing', {
           description:
-            'Turning this off uses gross supply and borrow per side and may not match how programs size rewards. Hover the label for a short note.',
+            'Turning this off uses gross supply and borrow per side and may not match how programs size rewards. Open the tooltip on Net for a short note.',
           duration: 6500,
         });
       }
@@ -311,15 +315,13 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
       </div>
 
       {showMeritMerklMode ? (
-        <div className="flex shrink-0 items-center rounded-lg border border-border/40 bg-muted/60 px-[var(--ds-space-2)] py-0.5">
-          <IncentiveNetCheckboxTooltip
-            id={meritMerklCheckboxId}
-            checked={meritMerklNetPosition}
-            onCheckedChange={handleMeritMerklNetPositionChange}
-            labelClassName="max-w-[13rem] min-w-0 py-0.5"
-            labelTextClassName={`${fontSize} min-w-0 leading-tight text-muted-foreground`}
-          />
-        </div>
+        <IncentiveNetCheckboxTooltip
+          id={meritMerklCheckboxId}
+          checked={meritMerklNetPosition}
+          onCheckedChange={handleMeritMerklNetPositionChange}
+          labelClassName="shrink-0 min-w-0 py-0.5"
+          labelTextClassName={`${fontSize} min-w-0 leading-tight text-muted-foreground`}
+        />
       ) : null}
 
       <button

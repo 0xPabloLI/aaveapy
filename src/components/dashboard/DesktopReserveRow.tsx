@@ -343,18 +343,10 @@ const DesktopReserveRow = memo(({
       </TableRow>
       {isExpanded && (
         <TableRow
-          className="border-0"
+          className="border-0 bg-transparent hover:bg-transparent data-[state=selected]:bg-transparent"
           onClick={(event) => event.stopPropagation()}
         >
-          <TableCell
-            colSpan={8}
-            className="min-w-0 p-0 sticky z-[24] bg-card"
-            style={{
-              top: mainRowHeight > 0
-                ? `calc(var(--reserves-expanded-main-row-top, 5.75rem) + ${mainRowHeight}px)`
-                : undefined,
-            }}
-          >
+          <TableCell colSpan={8} className="min-w-0 p-0">
             <div
               className="overflow-y-auto px-[var(--ds-space-3)] py-[var(--ds-space-3)]"
               style={{

@@ -92,6 +92,7 @@
 ### 4.4 Tooltip
 - 通用提示：`@/components/ui/tooltip`，中性底色
 - 激励详情：`DesktopTooltip`/`MobileTooltip`，品牌底色
+- **多段说明文**（与 FDV 旁信息图标、`AprApyToggle` 公式说明同级）：若仍用 Radix `Tooltip` 承载较长说明，**正文版式**应对齐 portal 信息泡：`rounded-xl border border-border bg-card shadow-lg`，内边距 **`px-4 py-3`**；内层 **`space-y-2.5`**；段落 **`ds-text-12`** + **`leading-relaxed`**（或 `leading-snug`）+ **`text-muted-foreground`**；仅在两段语义需强分隔时用 **`border-t border-border pt-2.5`**，否则用 `space-y-2.5` 即可。避免沿用默认 Tooltip 的偏紧竖向间距 + 多段 `mt-1.5` 堆叠导致拥挤。参考：`InkAprCalculator` 的 `fdvTooltipContent` + `DesktopTooltip`/`MobileTooltip` 内容区；`ScenarioControls` Net 说明。
 
 ### 4.5 信息图标间距
 - 类：`ds-info-inline`

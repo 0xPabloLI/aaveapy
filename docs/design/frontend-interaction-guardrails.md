@@ -16,6 +16,7 @@ This note records recurring UI/interaction issues found during incentive/forecas
   - Global `TooltipProvider` is set to `delayDuration={200}` (200ms) in `App.tsx`.
   - This only affects Radix UI `Tooltip` components (auto-show tooltips).
   - Custom click-to-show components (e.g. `IncentiveTooltip`) manage their own timing and are not affected by this setting.
+- **Multi-paragraph explanatory tooltips** (e.g. scenario strip Net help): When Radix `@/components/ui/tooltip` carries more than a one-line hint, match the **body rhythm** of `DesktopTooltip`/`MobileTooltip` inner content (see `AprApyToggle.tsx`, FDV definition in `InkAprCalculator.tsx`): **`rounded-xl border border-border shadow-lg`**, padding **`px-4 py-3`**, wrapper **`space-y-2.5`**, copy **`ds-text-12`** + **`leading-relaxed`** (or `leading-snug`) + **`text-muted-foreground`**; optional **`border-t border-border pt-2.5`** only when two blocks need a hard visual break. Default TooltipContent padding plus stacked `mt-1.5` paragraphs alone reads cramped—override explicitly. Normative detail: **DESIGN.md §4.4 Tooltip**.
 
 #### Implementation examples
 

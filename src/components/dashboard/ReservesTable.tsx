@@ -2011,6 +2011,11 @@ const ReservesTable = ({
         </div>
       )}
       
+      {/* Spacer: ensures enough scroll room to pin-scroll the last expanded row to the sticky band */}
+      {expandedReserveId && (
+        <div aria-hidden style={{ height: 'calc(100dvh - var(--reserves-expanded-main-row-top, 5.75rem))' }} />
+      )}
+
       {tooltipState && (
         <IncentiveTooltip
           reserve={tooltipState.reserve}

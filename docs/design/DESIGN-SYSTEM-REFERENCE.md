@@ -166,6 +166,8 @@ className="cursor-pointer md:cursor-auto"
 
 只展示**补充信息**，不重复父级已展示的内容。
 
+**多段说明文**（场景条 Net、类 FDV 信息泡）：版式与 `DesktopTooltip`/`MobileTooltip` 正文区对齐，见 **DESIGN.md §4.4 Tooltip**（`px-4 py-3`、`space-y-2.5`、`ds-text-12`、可选顶部分割线）；避免默认 Radix Tooltip 的紧间距堆段。
+
 ### 6.4 Tooltip 定位与视口
 
 - 限制在视口内：使用 `max-h` + 内部 `overflow-y-auto`，避免溢出视口底部。
