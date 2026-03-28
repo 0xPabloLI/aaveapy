@@ -65,8 +65,11 @@ export function InfoIconButton({
   isOpen: boolean;
   onToggle: () => void;
   onClose: () => void;
-  /** `neutral`: muted chrome for dense toolbars (e.g. scenario controls) so supply/borrow semantic colors stay table-only. */
-  variant?: 'default' | 'neutral';
+  /**
+   * `neutral`: muted chrome for dense toolbars (e.g. scenario controls) so supply/borrow semantic colors stay table-only.
+   * `purple`: aligns with INK-branded surfaces (logo + purple tooltips) instead of supply-emerald default.
+   */
+  variant?: 'default' | 'neutral' | 'purple';
   children: (triggerRect: DOMRect | null) => React.ReactNode;
 }) {
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -142,7 +145,9 @@ export function InfoIconButton({
           'cursor-pointer md:cursor-auto',
           variant === 'neutral'
             ? 'border border-border bg-card text-foreground shadow-sm hover:bg-accent/80 hover:border-border'
-            : 'ds-bg-emerald-500-10 ds-text-emerald-600 hover:ds-bg-emerald-500-20 hover:ds-text-emerald-700',
+            : variant === 'purple'
+              ? 'ds-bg-purple-500-10 ds-text-purple-600 shadow-sm hover:bg-[rgb(var(--ds-purple-500-rgb)/0.2)] hover:ds-text-purple-700'
+              : 'ds-bg-emerald-500-10 ds-text-emerald-600 hover:ds-bg-emerald-500-20 hover:ds-text-emerald-700',
         )}
       >
         <Info className="h-2.5 w-2.5 shrink-0" aria-hidden />

@@ -443,6 +443,7 @@ const InkAprCalculator = ({
               </span>
               <InfoIconButton
                 aria-label="Incentive APR formula"
+                variant="purple"
                 isOpen={isAprTooltipOpen}
                 onToggle={() => setIsAprTooltipOpen((o) => !o)}
                 onClose={() => setIsAprTooltipOpen(false)}
@@ -453,6 +454,7 @@ const InkAprCalculator = ({
                       isOpen={isAprTooltipOpen}
                       onClose={() => setIsAprTooltipOpen(false)}
                       title="Incentive APR formula"
+                      variant="purple"
                     >
                       <InkAprTooltipContent formatInkPrice={formatInkPrice} currentFdvBillions={currentFdvBillions} />
                     </MobileTooltip>
@@ -464,6 +466,7 @@ const InkAprCalculator = ({
                       onMouseEnter={() => setIsAprTooltipOpen(true)}
                       onMouseLeave={() => setIsAprTooltipOpen(false)}
                       title="Incentive APR formula"
+                      variant="purple"
                     >
                       <InkAprTooltipContent formatInkPrice={formatInkPrice} currentFdvBillions={currentFdvBillions} />
                     </DesktopTooltip>
@@ -829,6 +832,7 @@ const InkAprCalculator = ({
             </span>
             <InfoIconButton
               aria-label="Incentive APR formula"
+              variant="purple"
               isOpen={isAprTooltipOpen}
               onToggle={() => setIsAprTooltipOpen((o) => !o)}
               onClose={() => setIsAprTooltipOpen(false)}
@@ -839,6 +843,7 @@ const InkAprCalculator = ({
                     isOpen={isAprTooltipOpen}
                     onClose={() => setIsAprTooltipOpen(false)}
                     title="Incentive APR formula"
+                    variant="purple"
                   >
                     <InkAprTooltipContent formatInkPrice={formatInkPrice} currentFdvBillions={currentFdvBillions} />
                   </MobileTooltip>
@@ -850,6 +855,7 @@ const InkAprCalculator = ({
                     onMouseEnter={() => setIsAprTooltipOpen(true)}
                     onMouseLeave={() => setIsAprTooltipOpen(false)}
                     title="Incentive APR formula"
+                    variant="purple"
                   >
                     <InkAprTooltipContent formatInkPrice={formatInkPrice} currentFdvBillions={currentFdvBillions} />
                   </DesktopTooltip>
