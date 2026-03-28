@@ -38,12 +38,18 @@
 ## 4. 组件规范
 
 ### 4.1 输入框
-**CSS 类：`ds-input-surface`**
-```css
-@apply rounded-md border border-border/50 bg-card/50;
-@apply focus:border-[rgb(var(--ds-brand-magenta-rgb))];
-```
-- 高度：移动端 `h-[2.75rem]`，桌面 `h-8` 或 `h-7`
+
+**规范（空态 / 有值 + 底色与边框同色族）**
+
+- **无内容**：**不要**填充底色（`transparent` / 无实色块），只保留边框与占位符层次。
+- **有内容**：加上与**边框同色族**的低不透明度填充（中性：`border-border` + `bg-border/[0.14]`；Supply：`border-emerald-*` + `ds-bg-emerald-500-10`；Borrow：`border` 品牌青 + `ds-bg-brand-cyan-10`）。
+- **实现**：TS 里用 **`cnDsInputSurface(hasValue, 'neutral' | 'supply' | 'borrow')`**（`@/lib/dsInputSurface`）；`hasValue === String(value).trim() !== ''`。
+- **shadcn `Input`**：已按受控 `value` 自动套中性 variant；自定义 `className` 时不要再用 `bg-card/50` 盖掉空态。
+- **内联数字壳**（如 INK FDV 芯片）：用 **`cnDsInputNeutralWell(hasValue)`** 包外层，规则与中性输入一致。
+
+**遗留类名 `ds-input-surface`（`index.css`）**：仅作无填充默认边框；新代码优先 `cnDsInputSurface`。
+
+- 高度：移动端 `h-[2.75rem]`，桌面 `h-8` 或 `h-7`（`Input` 默认 `h-10` 时按场景覆盖）
 - 字号：移动端 `ds-text-11`，桌面 `ds-text-12`
 
 ### 4.2 按钮
@@ -112,10 +118,13 @@
 - **勾选**：按 **`campaignId`** 逐项勾选；无 `campaignId` 的白名单条目共用同一 opt-in（在 `whitelistMerklCampaignIds` 内用内部 sentinel，与真实 id 并列）。激励详情 Tooltip 与（若启用）Merkl Forecast 面板对可勾选项统一使用 **「Include as WL user」**，表示用户确认自己是白名单参与者并要把该活动计入汇总。
 - 完整规则与实现位置见 **[frontend-interaction-guardrails.md](frontend-interaction-guardrails.md)** § *Merkl whitelist-only campaigns*。
 
-### 4.8 桌面 Reserves 表：顶栏双层 sticky
+### 4.8 桌面 Reserves 表：顶栏 sticky 栈（scenario + 表头 + 展开主行）
 
+- **卡片外框**：外层 `rounded-2xl bg-border/60 p-px` + 内层 `rounded-[calc(1rem-1px)] bg-card` 包住 scenario 与表格——连续 1px 描边，**不用** `overflow: hidden`（避免全宽 sticky 子元素的 `bg-card` 盖住父级圆角边框导致顶角「缺线」，且保持视口 sticky）。细则见 **[frontend-interaction-guardrails.md](frontend-interaction-guardrails.md)** 同 §。
+- **ScenarioControls（桌面）**：可用**无框**浅色井（`bg-card/60`、`backdrop-blur-sm`）衬托一行控件；**不要**再给整行加一圈 `border`（外框由 reserves 卡片承担）。Supply / Borrow 输入遵循 **§4.1**（`cnDsInputSurface` + supply/borrow variant）。
 - **第一层**：共享场景输入条 `data-reserves-sticky-scenario`，`sticky top-0 z-20`，高度经 `ResizeObserver` 写入卡片上的 `--reserves-sticky-scenario-height`。
-- **第二层**：列标题行 `data-reserves-sticky-thead`（Token … Borrow），`sticky` 且 `top` 为该 CSS 变量（回退 `4.5rem`），`z-10`，**不透明** `bg-card`。
+- **第二层**：列标题行 `data-reserves-sticky-thead`（Token … Borrow），各 `th` `sticky` 且 `top` 为该 CSS 变量（回退 `4.5rem`），`z-30`，**不透明** `bg-card`（与实现一致；须高于展开主行的 `td`）。
+- **展开 simulation 时（桌面）**：主数据行各 `td` 再叠一层 `sticky`，`top` 为卡片上的 `--reserves-expanded-main-row-top`（scenario + 表头实测高度），`z` 低于表头 `th`，`bg-card`，避免长 simulation 滚动时 Token/市场等主行信息被顶出视口。
 - **禁止**用包住整张表（含 `thead`）的 `overflow-x-auto` / 会制造 scrollport 的祖先：`sticky` 的 `top` 相对**最近滚动盒**而非视口，会与 scenario 的视口 `top-0` 错位，出现大段空白与 tbody 从缝里露出。**完整规范（含原因、规则、与展开滚动一致性）**：**[frontend-interaction-guardrails.md](frontend-interaction-guardrails.md) — § Desktop reserves table: sticky stack and scrollport (normative)**。
 - 展开 simulation 后的滚动贴边：`scrollExpandedSimulationIntoView`，与 guardrails 中 **Expandable rows and scroll stability** 一致。
 

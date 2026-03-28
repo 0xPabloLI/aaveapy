@@ -1,10 +1,15 @@
 import { Fragment, useRef, useState, useEffect } from 'react';
 import { AlertTriangle, ExternalLink } from 'lucide-react';
-import { formatPercent, formatScenarioSize, formatScenarioSizeDelta, formatSpread } from '@/lib/formatters';
+import { formatPercent, formatScenarioSize, formatScenarioSizeDelta, formatSignedUsd, formatSpread } from '@/lib/formatters';
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
 import { useIsMobile } from '@/hooks/use-mobile';
-import type { RateSimulationResult, SimulationCampaignDetail, SimulationSourceDetail } from '@/hooks/useRateSimulation';
+import type {
+  RateSimulationResult,
+  ScenarioUsdAccrualSide,
+  SimulationCampaignDetail,
+  SimulationSourceDetail,
+} from '@/hooks/useRateSimulation';
 import type { ReserveWithSpread, MeritIncentive, MerklOpportunityGroup, BrevisIncentive } from '@/types/aave';
 import { ETHEREUM_MARKET_NAMES } from '@/types/aave';
 import { getFirstActiveBrevisLink } from '@/lib/brevis';
@@ -689,6 +694,59 @@ const SimulationSubRow = ({
 
   const showHeaderBlock = showEmptyStateNote;
 
+  const scenarioAccrual = simulation.scenarioUsdAccrual;
+
+  const renderScenarioUsdAccrual = () => {
+    if (!scenarioAccrual || showEmptyStateNote) return null;
+    const fmt = formatSignedUsd;
+    const pad = effectiveCompact && embeddedFromTop ? 'px-0' : effectiveCompact ? 'px-3' : 'px-4';
+    const renderSide = (title: string, accentClass: string, side: ScenarioUsdAccrualSide, borrowHint?: boolean) => (
+      <div className="min-w-0 flex-1 space-y-1">
+        <div className={`ds-text-12 font-semibold ${accentClass}`}>{title}</div>
+        {borrowHint ? (
+          <p className="ds-text-10 text-muted-foreground leading-snug">
+            Native is interest paid; incentive is rebate (reduces cost).
+          </p>
+        ) : null}
+        <dl className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-0.5 ds-text-11">
+          <dt className="text-muted-foreground">Native</dt>
+          <dd className="text-right tabular-nums text-foreground">{fmt(side.nativeUsdPerDay)}</dd>
+          <dt className="text-muted-foreground">Incentive</dt>
+          <dd className="text-right tabular-nums text-foreground">{fmt(side.incentiveUsdPerDay)}</dd>
+          <dt className={`font-medium text-foreground ${accentClass}`}>Total</dt>
+          <dd className={`text-right tabular-nums font-medium ${accentClass}`}>{fmt(side.totalUsdPerDay)}</dd>
+        </dl>
+      </div>
+    );
+    return (
+      <div
+        className={`rounded-lg border border-border/60 bg-muted/20 dark:bg-muted/10 ${effectiveCompact ? 'mb-2 py-2.5' : 'mb-3 py-3'} ${pad}`}
+        role="region"
+        aria-label="Estimated USD per day"
+      >
+        <p className={`ds-text-11 text-muted-foreground ${effectiveCompact ? 'mb-2' : 'mb-3'}`}>
+          Est. USD / day
+        </p>
+        <div className={`flex flex-col gap-4 ${scenarioAccrual.supply && scenarioAccrual.borrow ? 'sm:flex-row sm:gap-8' : ''}`}>
+          {scenarioAccrual.supply ? renderSide('Supply (earn)', 'ds-text-emerald-600', scenarioAccrual.supply) : null}
+          {scenarioAccrual.borrow
+            ? renderSide('Borrow (carry)', 'ds-text-brand-cyan', scenarioAccrual.borrow, true)
+            : null}
+        </div>
+        {scenarioAccrual.netUsdPerDay != null ? (
+          <div
+            className={`mt-3 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 border-t border-border/50 pt-2 ${effectiveCompact ? '' : ''}`}
+          >
+            <span className="ds-text-12 font-semibold ds-text-purple-600">Net</span>
+            <span className="ds-text-12 tabular-nums font-semibold ds-text-purple-600">
+              {fmt(scenarioAccrual.netUsdPerDay)}
+            </span>
+          </div>
+        ) : null}
+      </div>
+    );
+  };
+
   return (
     <div ref={containerRef} className={`min-w-0 ${effectiveCompact ? 'p-0' : 'p-0'}`}>
       {showHeaderBlock && (
@@ -740,6 +798,8 @@ const SimulationSubRow = ({
           )}
         </div>
       )}
+
+      {renderScenarioUsdAccrual()}
 
       {/* Layout: compact = single table; desktop = 3 columns. Switch to compact when grid overflows (adaptive). */}
       {effectiveCompact ? (

@@ -76,7 +76,7 @@
 - **移动优先**，触控目标 ≥ 44×44px。
 - **多列面板**（如 Supply / Spread / Borrow）：等宽列、统一压缩，不单独给某一列固定或更大宽度。
 - **表格**：表头与占位符（如 `-`）使用相同列宽与对齐，避免表头与内容错位；空间紧张时优先换行而非省略号。
-- **叠层 sticky 表头 + 页面滚动**：若顶栏与 `<thead>` 均 `position: sticky` 且 `top` 意在相对**视口**叠放，**禁止**用包住整张表（含 `thead`）的 `overflow-x-auto` / `overflow: hidden` 等制造**独立 scrollport**，否则 `thead` 的 `top` 会相对该盒计算，与视口 sticky 错位（缝中大段空白、tbody 从缝露出）。本项目细则见 **[frontend-interaction-guardrails.md](frontend-interaction-guardrails.md)** § *Desktop reserves table: sticky stack and scrollport (normative)*。
+- **叠层 sticky 表头 + 页面滚动**：若顶栏与 `<thead>` 均 `position: sticky` 且 `top` 意在相对**视口**叠放，**禁止**用包住整张表（含 `thead`）的 `overflow-x-auto` / `overflow: hidden` 等制造**独立 scrollport**，否则 `thead` 的 `top` 会相对该盒计算，与视口 sticky 错位（缝中大段空白、tbody 从缝露出）。**桌面展开 simulation 时**，主数据行各 `td` 须再叠一层 sticky（`--reserves-expanded-main-row-top`），避免长 simulation 滚动时 Token/市场行消失。本项目细则见 **[frontend-interaction-guardrails.md](frontend-interaction-guardrails.md)** § *Desktop reserves table: sticky stack and scrollport (normative)* 与 *DOM contract / CSS variables*。
 - **对称**：成对出现的区块（如 Supply / Borrow）在布局与视觉权重上保持对称。
 
 ---
@@ -281,6 +281,7 @@ Slider 与紧挨其下的区块（如「Reference FDVs」、说明文字）可�
 - **对称**：成对区块（如 Supply / Borrow）在位置与权重上对称。
 - **几何**：若需求给出具体尺寸/间距，按给定实现（如用 `getBoundingClientRect()` 计算），不随意近似。
 - **轮廓与圆角拼接**：用 SVG 绘制 1px 边框以衔接 CSS 边框时，坐标必须对齐到半像素（如 `0.5`）以避免抗锯齿模糊或变粗；若需修改局部轮廓（如内侧反向圆角），优先使用 `clip-path` 局部切断底层原生边框，并使用单个包含精确几何指令（如 `A` 画圆弧）的 SVG `path` 一次性绘制连续轮廓，严禁使用“原边框 + 补丁层 + mask 遮罩”的多层叠加拼凑做法。
+- **圆角卡片 + 全宽不透明子层**：子元素（尤其 `position: sticky` + `bg-card`）会按绘制顺序盖住父元素圆角处的 **`border`**，顶角看起来像断线。优先用 **`rounded-2xl` 外层 `p-px bg-border/60` + 内层 `rounded-[calc(1rem-1px)] bg-card`** 的 1px 沟槽描边；**不要**为此对含视口 sticky 的卡片使用 `overflow: hidden`（会改变 sticky 参照）。桌面 `ReservesTable` 卡片即此模式。
 
 ---
 
@@ -290,7 +291,7 @@ Slider 与紧挨其下的区块（如「Reference FDVs」、说明文字）可�
 
 - **前端交互守则**：本目录下 `frontend-interaction-guardrails.md`（API 新鲜度、Forecast UI、Reserves 表、InkAprCalculator 等）。
 - **数据加载**：`../frontend-data-loading-matrix.md`（prefetch、staleTime、缓存分层）。
-- **DESIGN.md**：本目录下，本项目视觉主题、品牌色、组件类名（如 `ds-input-surface`、`glass-card`）的具体约定。
+- **DESIGN.md**：本目录下，本项目视觉主题、品牌色、组件类名（如 `ds-input-surface`、`glass-card`）的具体约定；**文本输入空态/有值与底色规则**见 **§4.1**（实现：`@/lib/dsInputSurface` 的 `cnDsInputSurface` / `cnDsInputNeutralWell`）。
 
 ---
 

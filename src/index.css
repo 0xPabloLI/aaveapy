@@ -174,11 +174,11 @@
     align-items: center;
   }
 
-  /* Input base - shared surface styling for all text inputs */
+  /* Ad-hoc inputs; prefer `cnDsInputSurface` from @/lib/dsInputSurface in TS for empty vs filled. */
   .ds-input-surface {
-    @apply rounded-md border border-border/50 bg-card/50 transition-all;
+    @apply rounded-md border border-border/60 bg-transparent transition-all;
     @apply focus:border-[rgb(var(--ds-brand-magenta-rgb))] focus:text-foreground;
-    @apply focus-visible:ring-0 focus-visible:ring-offset-0 outline-none;
+    @apply focus-visible:ring-2 focus-visible:ring-[rgb(var(--ds-brand-magenta-rgb)/0.2)] focus-visible:ring-offset-0 outline-none;
   }
 
   /* Secondary action button (Clear, etc.) */

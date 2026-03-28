@@ -329,6 +329,23 @@ export const formatUsd = (value: number | null | undefined): string => {
   return '$' + value.toFixed(2);
 };
 
+/** Daily fraction of principal from an annual rate expressed as percent (e.g. 5 for 5%). */
+export function annualPercentToDailyFraction(ratePercent: number, isApy: boolean): number {
+  if (!Number.isFinite(ratePercent)) return Number.NaN;
+  if (isApy) {
+    const r = ratePercent / 100;
+    return Math.pow(1 + r, 1 / 365) - 1;
+  }
+  return (ratePercent / 100) / 365;
+}
+
+/** USD with leading + / − (Unicode minus) for signed cashflows; null/NaN → em dash. */
+export function formatSignedUsd(value: number | null | undefined): string {
+  if (value === null || value === undefined || Number.isNaN(value)) return '—';
+  const sign = value > 0 ? '+' : value < 0 ? '−' : '';
+  return `${sign}${formatUsd(Math.abs(value))}`;
+}
+
 // Format reserve size in USD with abbreviation (e.g., 1083255123.44 → "$1.08B", 5200000 → "$5.20M", -18807985.72 → "-$18.81M")
 export const formatReserveSizeUsd = (value: number | null | undefined): string => {
   if (value === null || value === undefined || isNaN(value)) return '-';

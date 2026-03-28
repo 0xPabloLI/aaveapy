@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useQueries } from '@tanstack/react-query';
 import { useSideDataMeta } from '@/hooks/useSideDataMeta';
 import {
+  annualPercentToDailyFraction,
   calculateTotalBorrowApy,
   calculateTotalBorrowApr,
   calculateTotalIncentiveApy,
@@ -227,6 +228,23 @@ export interface SimulationLane {
   };
 }
 
+/** Estimated USD cashflow per day from simulated **after** rates × scenario principal. */
+export interface ScenarioUsdAccrualSide {
+  /** Supply: positive earnings. Borrow native: negative (interest paid). */
+  nativeUsdPerDay: number | null;
+  /** Supply: positive. Borrow: positive (rebate reduces borrow cost). */
+  incentiveUsdPerDay: number | null;
+  /** Net of native + incentive for this side (borrow total uses combined after rate, see build). */
+  totalUsdPerDay: number | null;
+}
+
+export interface ScenarioUsdAccrual {
+  supply: ScenarioUsdAccrualSide | null;
+  borrow: ScenarioUsdAccrualSide | null;
+  /** Sum of supply and borrow totals (supply positive, borrow negative when paying interest). */
+  netUsdPerDay: number | null;
+}
+
 export interface MarketMetrics {
   availableLiquidityUsd: number | null;
   availableLiquidityUsdAfter: number | null;
@@ -265,6 +283,8 @@ export interface RateSimulationComputedResult {
   };
   marketMetrics: MarketMetrics;
   forecastUnavailableCampaignCount: number;
+  /** Present when at least one side has scenario principal; uses after-simulation rates. */
+  scenarioUsdAccrual: ScenarioUsdAccrual | null;
 }
 
 export interface RateSimulationResult extends RateSimulationComputedResult {
@@ -884,6 +904,39 @@ const buildPriceLookup = (reserve: ReserveWithSpread, tokenPrices?: TokenPricesI
   vTokenAddress: reserve.vTokenAddress,
 });
 
+function buildSupplyUsdAccrualSide(
+  principalUsd: number,
+  afterNative: number | null,
+  afterIncentive: number | null,
+  afterTotal: number | null,
+  isApy: boolean
+): ScenarioUsdAccrualSide | null {
+  if (!Number.isFinite(principalUsd) || principalUsd <= 0) return null;
+  const usd = (ratePercent: number) => principalUsd * annualPercentToDailyFraction(ratePercent, isApy);
+  return {
+    nativeUsdPerDay: afterNative !== null ? usd(afterNative) : null,
+    incentiveUsdPerDay: afterIncentive !== null ? usd(afterIncentive) : null,
+    totalUsdPerDay: afterTotal !== null ? usd(afterTotal) : null,
+  };
+}
+
+function buildBorrowUsdAccrualSide(
+  principalUsd: number,
+  afterNative: number | null,
+  afterIncentive: number | null,
+  afterTotal: number | null,
+  isApy: boolean
+): ScenarioUsdAccrualSide | null {
+  if (!Number.isFinite(principalUsd) || principalUsd <= 0) return null;
+  const pay = (ratePercent: number) => -principalUsd * annualPercentToDailyFraction(ratePercent, isApy);
+  const rebate = (ratePercent: number) => principalUsd * annualPercentToDailyFraction(ratePercent, isApy);
+  return {
+    nativeUsdPerDay: afterNative !== null ? pay(afterNative) : null,
+    incentiveUsdPerDay: afterIncentive !== null ? rebate(afterIncentive) : null,
+    totalUsdPerDay: afterTotal !== null ? pay(afterTotal) : null,
+  };
+}
+
 const resolveLocalReserveTokenPrice = (reserve: ReserveWithSpread, tokenPrices?: TokenPricesIndex): number | undefined => {
   return (
     resolveForecastTokenPrice(buildPriceLookup(reserve, tokenPrices, 'Supply')) ??
@@ -1303,6 +1356,45 @@ export function buildRateSimulationResult({
     },
   };
 
+  const supplyUsdAccrualSide =
+    supplyLane.hasInput && supplyLane.inputUsd > 0
+      ? buildSupplyUsdAccrualSide(
+          supplyLane.inputUsd,
+          supplyLane.afterNative,
+          supplyLane.afterIncentive,
+          supplyLane.afterTotal,
+          isApy
+        )
+      : null;
+  const borrowUsdAccrualSide =
+    borrowLane.hasInput && borrowLane.inputUsd > 0
+      ? buildBorrowUsdAccrualSide(
+          borrowLane.inputUsd,
+          borrowLane.afterNative,
+          borrowLane.afterIncentive,
+          borrowLane.afterTotal,
+          isApy
+        )
+      : null;
+
+  let scenarioNetUsdPerDay: number | null = null;
+  if (
+    supplyUsdAccrualSide?.totalUsdPerDay != null ||
+    borrowUsdAccrualSide?.totalUsdPerDay != null
+  ) {
+    scenarioNetUsdPerDay =
+      (supplyUsdAccrualSide?.totalUsdPerDay ?? 0) + (borrowUsdAccrualSide?.totalUsdPerDay ?? 0);
+  }
+
+  const scenarioUsdAccrual: ScenarioUsdAccrual | null =
+    supplyUsdAccrualSide || borrowUsdAccrualSide
+      ? {
+          supply: supplyUsdAccrualSide,
+          borrow: borrowUsdAccrualSide,
+          netUsdPerDay: scenarioNetUsdPerDay,
+        }
+      : null;
+
   const spreadCurrent =
     supplyCurrentTotal !== null && borrowCurrentTotal !== null
       ? supplyCurrentTotal - borrowCurrentTotal
@@ -1451,6 +1543,7 @@ export function buildRateSimulationResult({
     },
     marketMetrics,
     forecastUnavailableCampaignCount,
+    scenarioUsdAccrual,
   };
 }
 

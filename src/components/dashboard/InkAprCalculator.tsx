@@ -7,6 +7,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { useCoingeckoFdv } from '@/hooks/useCoingeckoFdv';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
+import { cn } from '@/lib/utils';
+import { cnDsInputNeutralWell } from '@/lib/dsInputSurface';
 
 interface InkAprCalculatorProps {
   rateInput: string;
@@ -200,6 +202,7 @@ const InkAprCalculator = ({
   const tooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [fdvJustChanged, setFdvJustChanged] = useState(false);
   const prevFdvRef = useRef(DEFAULT_FDV);
+  const fdvFieldHasValue = fdvInputValue.trim() !== '';
 
   const fdvBySymbol = useMemo(() => {
     return new Map(
@@ -471,7 +474,12 @@ const InkAprCalculator = ({
           </div>
           <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 ds-text-11 text-muted-foreground pl-7">
             <span>Enter your estimated <span className="font-semibold">$INK FDV</span></span>
-            <span className="inline-flex items-center bg-muted/30 border border-border/70 rounded-md px-1.5 py-px h-4 focus-within:border-[rgb(var(--ds-brand-magenta-rgb))] transition-colors duration-200 shrink-0 [font-size:11px]">
+            <span
+              className={cn(
+                'inline-flex h-4 shrink-0 items-center rounded-md px-1.5 py-px [font-size:11px] transition-colors duration-200 focus-within:border-[rgb(var(--ds-brand-magenta-rgb))]',
+                cnDsInputNeutralWell(fdvFieldHasValue),
+              )}
+            >
               <span className="inline-flex items-center justify-center !text-[11px] leading-none text-muted-foreground/80">$</span>
               <Input
                 ref={fdvInputRef}
@@ -729,7 +737,12 @@ const InkAprCalculator = ({
   const subtitleWithInput = (
     <div className="flex flex-nowrap items-center gap-x-1.5 ds-text-11 text-muted-foreground overflow-x-auto min-w-0">
       <span className="shrink-0 whitespace-nowrap">Enter your estimated <span className="font-semibold">$INK FDV</span></span>
-      <span className="inline-flex items-center h-7 rounded-md border bg-card/50 border-border/50 pl-[var(--ds-space-1-5)] pr-[var(--ds-space-1-5)] focus-within:border-[rgb(var(--ds-brand-magenta-rgb))] focus-within:ring-0 focus-within:ring-offset-0 transition-colors shrink-0 [font-size:11px] [line-height:1.75rem]">
+      <span
+        className={cn(
+          'inline-flex h-7 shrink-0 items-center rounded-md pl-[var(--ds-space-1-5)] pr-[var(--ds-space-1-5)] [font-size:11px] [line-height:1.75rem] transition-colors focus-within:border-[rgb(var(--ds-brand-magenta-rgb))] focus-within:ring-0 focus-within:ring-offset-0',
+          cnDsInputNeutralWell(fdvFieldHasValue),
+        )}
+      >
         <span className="h-7 inline-flex items-center justify-center !text-[11px] leading-none text-muted-foreground/50 w-[1ch] shrink-0">$</span>
         <Input
           ref={fdvInputRef}

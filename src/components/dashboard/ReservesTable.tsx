@@ -777,24 +777,38 @@ const ReservesTable = ({
 
   const desktopTableCardRef = useRef<HTMLDivElement>(null);
   const desktopStickyScenarioRef = useRef<HTMLDivElement>(null);
+  const desktopStickyTheadRef = useRef<HTMLTableSectionElement>(null);
 
   useEffect(() => {
     if (isMobile) return;
     const stickyEl = desktopStickyScenarioRef.current;
+    const theadEl = desktopStickyTheadRef.current;
     const card = desktopTableCardRef.current;
     if (!stickyEl || !card) return undefined;
     const apply = () => {
-      card.style.setProperty(
-        '--reserves-sticky-scenario-height',
-        `${stickyEl.getBoundingClientRect().height}px`,
-      );
+      const scenarioH = stickyEl.getBoundingClientRect().height;
+      card.style.setProperty('--reserves-sticky-scenario-height', `${scenarioH}px`);
+      const theadH =
+        theadEl instanceof HTMLElement ? theadEl.getBoundingClientRect().height : 0;
+      if (theadH > 0) {
+        card.style.setProperty(
+          '--reserves-expanded-main-row-top',
+          `${scenarioH + theadH}px`,
+        );
+      } else {
+        card.style.removeProperty('--reserves-expanded-main-row-top');
+      }
     };
     apply();
     const ro = new ResizeObserver(apply);
     ro.observe(stickyEl);
+    if (theadEl instanceof HTMLElement) {
+      ro.observe(theadEl);
+    }
     return () => {
       ro.disconnect();
       card.style.removeProperty('--reserves-sticky-scenario-height');
+      card.style.removeProperty('--reserves-expanded-main-row-top');
     };
   }, [isMobile]);
 
@@ -1332,8 +1346,15 @@ const ReservesTable = ({
   return (
     <div
       ref={desktopTableCardRef}
-      className="bg-card rounded-2xl shadow-sm border border-border/60 relative"
+      className="relative min-w-0 w-full rounded-2xl bg-border/60 p-px shadow-sm"
     >
+      {/*
+        1px “gutter” border: native border on a rounded card is painted under full-bleed sticky
+        children, so top corner arcs look broken. Outer p-px + inner smaller radius keeps a
+        continuous ring without overflow:hidden (sticky stack stays viewport-relative).
+        Aligns with DESIGN-SYSTEM-REFERENCE § 轮廓与圆角拼接 (prefer structural fix over masks).
+      */}
+      <div className="min-w-0 w-full overflow-visible rounded-[calc(1rem-1px)] bg-card">
       <div
         ref={desktopStickyScenarioRef}
         data-reserves-sticky-scenario
@@ -1360,6 +1381,7 @@ const ReservesTable = ({
             <col style={{ width: '14.5%' }} />
           </colgroup>
           <TableHeader
+            ref={desktopStickyTheadRef}
             data-reserves-sticky-thead
             className="overflow-visible [&_tr]:border-b-0 [&_th]:sticky [&_th]:z-30 [&_th]:border-b [&_th]:border-border/60 [&_th]:bg-card [&_th]:shadow-[0_1px_2px_0_rgb(0_0_0/0.04)] [&_th]:[top:var(--reserves-sticky-scenario-height,4.5rem)]"
           >
@@ -1995,6 +2017,7 @@ const ReservesTable = ({
           onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign}
         />
       )}
+      </div>
     </div>
   );
 };

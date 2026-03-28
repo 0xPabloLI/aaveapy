@@ -16,6 +16,7 @@ import BorrowCapProgressRing from './BorrowCapProgressRing';
 import UtilizationIndicator from './UtilizationIndicator';
 import type { RateSimulationResult, ScenarioInputMode } from '@/hooks/useRateSimulation';
 import { getPoolLiquidityUsd, getScenarioSupplySizeUsd, getTotalBorrowedUsd, getValidTokenPrice } from '@/lib/scenarioSize';
+import { cn } from '@/lib/utils';
 
 /* ─── Memoised chain icon ─── */
 const ChainIcon = memo(({ chain, className = '' }: { chain: string; className?: string }) => {
@@ -129,9 +130,12 @@ const DesktopReserveRow = memo(({
     <Fragment>
       <TableRow
         data-reserve-id={reserveId}
-        className={`transition-colors duration-150 cursor-pointer hover:bg-muted/60 active:bg-muted/80 ${
-          isExpanded ? 'bg-muted/30' : ''
-        }`}
+        className={cn(
+          'transition-colors duration-150 cursor-pointer hover:bg-muted/60 active:bg-muted/80',
+          isExpanded && 'bg-muted/30',
+          isExpanded &&
+            '[&_td]:sticky [&_td]:z-[25] [&_td]:border-b [&_td]:border-border/60 [&_td]:bg-card [&_td]:shadow-[0_1px_2px_0_rgb(0_0_0/0.04)] [&_td]:[top:var(--reserves-expanded-main-row-top,5.75rem)]',
+        )}
         onClick={() => onToggleExpand(reserveId)}
       >
         {/* Token — 右侧留白更小 */}

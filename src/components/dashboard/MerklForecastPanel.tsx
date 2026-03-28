@@ -15,6 +15,8 @@ import { formatPercent, MERKL_WHITELIST_TOGGLE_ARIA, MERKL_WHITELIST_TOGGLE_LABE
 import { formatNumberInput, parseNumberInput } from '@/lib/numberFormat';
 import { convertMerklPointsAmountToUsd, isMerklPointsCampaign } from '@/lib/tydro';
 import { DS_NATIVE_CHECKBOX_CLASS } from '@/lib/dsNativeCheckbox';
+import { cn } from '@/lib/utils';
+import { cnDsInputSurface } from '@/lib/dsInputSurface';
 
 interface MerklForecastPanelProps {
   reserves: ReserveWithSpread[];
@@ -239,7 +241,10 @@ const MerklForecastPanel = ({
           <select
             value={selectedCampaignId}
             onChange={(event) => setSelectedCampaignId(event.target.value)}
-            className="mt-1 w-full rounded-md border border-border bg-background px-2 py-2 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className={cn(
+              'mt-1 w-full px-2 py-2 text-sm text-foreground outline-none',
+              cnDsInputSurface(true, 'neutral'),
+            )}
           >
             {campaignOptions.map((option) => (
               <option key={option.campaignId} value={option.campaignId}>
@@ -255,7 +260,10 @@ const MerklForecastPanel = ({
             value={depositInput}
             onChange={(event) => setDepositInput(formatNumberInput(event.target.value))}
             inputMode="decimal"
-            className="mt-1 w-full rounded-md border border-border bg-background px-2 py-2 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className={cn(
+              'mt-1 w-full px-2 py-2 text-sm text-foreground outline-none',
+              cnDsInputSurface(Boolean(depositInput.trim()), 'neutral'),
+            )}
             placeholder="e.g. 100,000"
           />
           {tokenPrice ? (
