@@ -1337,7 +1337,7 @@ const ReservesTable = ({
       <div
         ref={desktopStickyScenarioRef}
         data-reserves-sticky-scenario
-        className="sticky top-0 z-20 border-b border-border/60 p-[var(--ds-space-3)] bg-muted/40 backdrop-blur-sm shadow-[0_1px_3px_0_rgb(0_0_0/0.04)]"
+        className="sticky top-0 z-20 border-b border-border/60 p-[var(--ds-space-3)] bg-card"
       >
         {scenarioControls}
       </div>

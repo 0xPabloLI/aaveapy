@@ -23,18 +23,20 @@ const TooltipContent = React.forwardRef<
     "animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2";
 
   return (
-    <TooltipPrimitive.Content
-      ref={ref}
-      sideOffset={sideOffset}
-      // 移动端统一从下往上弹出，避免左右滑动带来的“拉伸”感
-      side={isMobile ? "bottom" : side}
-      className={cn(
-        "z-50 max-w-[18rem] overflow-hidden rounded-md border border-border/50 bg-card px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] ds-text-14 leading-tight text-foreground shadow-sm duration-200",
-        isMobile ? mobileAnimationClasses : desktopAnimationClasses,
-        className,
-      )}
-      {...props}
-    />
+    <TooltipPrimitive.Portal>
+      <TooltipPrimitive.Content
+        ref={ref}
+        sideOffset={sideOffset}
+        // 移动端统一从下往上弹出，避免左右滑动带来的“拉伸”感
+        side={isMobile ? "bottom" : side}
+        className={cn(
+          "z-50 max-w-[18rem] overflow-hidden rounded-md border border-border/50 bg-card px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] ds-text-14 leading-tight text-foreground shadow-sm duration-200",
+          isMobile ? mobileAnimationClasses : desktopAnimationClasses,
+          className,
+        )}
+        {...props}
+      />
+    </TooltipPrimitive.Portal>
   );
 });
 TooltipContent.displayName = TooltipPrimitive.Content.displayName;
