@@ -2,10 +2,11 @@
 import { readFile, writeFile } from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { DEFAULT_STAGING_API_BASE } from './lib/default-api-bases.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LOCAL_RESOLVER_PATH = path.join(ROOT, 'src/lib/tokenPriceResolver.ts');
-const DEFAULT_API_BASE = 'https://api.aaveapy.com/api';
+const DEFAULT_API_BASE = DEFAULT_STAGING_API_BASE;
 const COINGECKO_API_BASE = 'https://api.coingecko.com/api/v3';
 
 function normalizeApiBase(value) {

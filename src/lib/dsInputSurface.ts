@@ -4,10 +4,20 @@ export type DsInputSurfaceVariant = 'neutral' | 'supply' | 'borrow' | 'magenta';
 
 const neutralFocus =
   'focus-visible:border-[rgb(var(--ds-brand-magenta-rgb))] focus-visible:ring-[rgb(var(--ds-brand-magenta-rgb)/0.25)]';
-const supplyFocus =
-  'focus:!border-emerald-600 focus:bg-card focus:text-foreground focus-visible:!ring-emerald-500/30';
-const borrowFocus =
-  'focus:!border-[rgb(var(--ds-brand-cyan-rgb))] focus:bg-card focus:text-foreground focus-visible:!ring-[rgb(var(--ds-brand-cyan-rgb)/0.35)]';
+
+/** Supply / Borrow / Search (filled): card surface while focused; lane border + ring (tint shows after blur). */
+function cnDsLaneFocusOverlay(focusBorder: string, focusVisibleRing: string): string {
+  return cn('focus:!bg-card focus:text-foreground', focusBorder, focusVisibleRing);
+}
+
+const supplyFocus = cnDsLaneFocusOverlay(
+  'focus:!border-emerald-600',
+  'focus-visible:!ring-emerald-500/30',
+);
+const borrowFocus = cnDsLaneFocusOverlay(
+  'focus:!border-[rgb(var(--ds-brand-cyan-rgb))]',
+  'focus-visible:!ring-[rgb(var(--ds-brand-cyan-rgb)/0.35)]',
+);
 
 const emptyNeutralBorder =
   'border-border/60 !bg-transparent text-muted-foreground/90 placeholder:text-muted-foreground/40';
@@ -20,8 +30,10 @@ const neutralFilledSurface =
 const magentaFilledSurface =
   'border-[rgb(var(--ds-brand-magenta-rgb)/0.72)] ds-bg-brand-magenta-10 text-foreground';
 
-const magentaFilledFocus =
-  'focus:!border-[rgb(var(--ds-brand-magenta-rgb))] focus:!bg-card focus:text-foreground focus-visible:!ring-[rgb(var(--ds-brand-magenta-rgb)/0.25)]';
+const magentaFilledFocus = cnDsLaneFocusOverlay(
+  'focus:!border-[rgb(var(--ds-brand-magenta-rgb))]',
+  'focus-visible:!ring-[rgb(var(--ds-brand-magenta-rgb)/0.25)]',
+);
 
 /**
  * Text inputs: **empty** → no fill, **neutral** border (`border-border/…`); no supply/borrow **hue** on

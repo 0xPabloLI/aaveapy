@@ -39,7 +39,7 @@
 - **`dev` / `main` same tip after PR merge**: Prefer remote automation via `.github/workflows/sync-dev-with-main.yml` to align `dev` to `main` after merged PRs (`dev` → `main`). `/merge` must still verify `origin/main` and `origin/dev` share one SHA; if automation failed, run fallback `git reset --hard origin/main && git push --force-with-lease origin dev`. Merging `main` into `dev` alone is not enough (tree may match but GitHub still shows “ahead”).
 
 ## API Contract & Dependency Safety
-- When backend API response format changes, follow `docs/conventions/api-contract-checklist.md` to ensure all consumers (types, schemas, hooks, scripts) are updated. If CI live schema fails with Cloudflare 403 from GitHub Actions, see `docs/conventions/ci-live-schema-cloudflare.md`.
+- When backend API response format changes, follow `docs/conventions/api-contract-checklist.md` to ensure all consumers (types, schemas, hooks, scripts) are updated. API hostnames and env vars (`LIVE_TEST_API_BASE_CI`, etc.) are summarized in `docs/conventions/api-base-urls.md`. If CI live schema fails with Cloudflare 403 from GitHub Actions, see `docs/conventions/ci-live-schema-cloudflare.md`.
 - When upgrading React or other core libraries, follow `docs/conventions/peer-dependency-guard.md` to prevent version mismatch white-screen issues.
 - Primary app reads from the backend: `GET /markets` and `GET /meta/side-data` (via `VITE_API_BASE_URL` / `src/lib/apiBase.ts`); rate simulation is computed client-side—there is no dedicated simulation endpoint.
 - `forecast.errors[]` in side-data maps to `forecastErrors`; Merkl campaigns without forecast state fall back to current APR in simulation; `forecastUnavailableCampaignCount` signals partial forecast coverage.

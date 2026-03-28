@@ -12,7 +12,7 @@ A React dashboard for displaying Aave V3 market data with yield comparisons acro
 - **Yield Comparison**: Compare supply/borrow APYs across all supported chains
 - **Incentive Tracking**: Track additional yield from Merit, Merkl, and Brevis programs
 - **Merkl Forecast**: Estimate next-run Merkl daily rewards/APR for hypothetical deposit amounts
-- **Real-time Data**: Data fetched from [api.aaveapy.com](https://api.aaveapy.com)
+- **Real-time Data**: Fetched from your configured API base (`VITE_API_BASE_URL`); when unset locally, the app defaults to staging (`https://staging-api.aaveapy.com/api`). Production is [api.aaveapy.com](https://api.aaveapy.com).
 - **Mobile Friendly**: Responsive design with optimized mobile experience
 
 ## Tech Stack
@@ -56,7 +56,8 @@ cp .env.example .env.local
 Then update values as needed:
 
 ```bash
-# API base URL (optional, defaults to https://api.aaveapy.com/api)
+# API base URL (optional). If omitted, the app uses staging API (see src/lib/apiBase.ts).
+# Point at production, local backend, or Railway — see docs/conventions/api-base-urls.md
 VITE_API_BASE_URL=http://localhost:3001/api
 ```
 

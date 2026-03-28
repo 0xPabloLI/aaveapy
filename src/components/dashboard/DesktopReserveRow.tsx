@@ -1,4 +1,4 @@
-import { memo, Fragment, useEffect, useState } from 'react';
+import { memo, Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ExternalLink } from 'lucide-react';
 import { TableRow, TableCell } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -86,11 +86,23 @@ const DesktopReserveRow = memo(({
   onCorrectBorrowInput,
 }: DesktopReserveRowProps) => {
   const [hasSimulationMounted, setHasSimulationMounted] = useState(isExpanded);
+  const mainRowRef = useRef<HTMLTableRowElement>(null);
+  const [mainRowHeight, setMainRowHeight] = useState(0);
 
   useEffect(() => {
     if (isExpanded) {
       setHasSimulationMounted(true);
     }
+  }, [isExpanded]);
+
+  useLayoutEffect(() => {
+    if (!isExpanded || !mainRowRef.current) return;
+    const el = mainRowRef.current;
+    const update = () => setMainRowHeight(Math.ceil(el.getBoundingClientRect().height));
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
   }, [isExpanded]);
 
   const getMarketDisplayName = () => {
@@ -129,6 +141,7 @@ const DesktopReserveRow = memo(({
   return (
     <Fragment>
       <TableRow
+        ref={mainRowRef}
         data-reserve-id={reserveId}
         className={cn(
           'transition-colors duration-150 cursor-pointer hover:bg-muted/60 active:bg-muted/80',
@@ -328,35 +341,44 @@ const DesktopReserveRow = memo(({
           </div>
         </TableCell>
       </TableRow>
-      <TableRow
-        className="border-0"
-        onClick={(event) => event.stopPropagation()}
-        style={{ visibility: isExpanded ? 'visible' : 'collapse' }}
-      >
-        <TableCell colSpan={8} className="min-w-0 p-0">
-          <div
-            className="grid transition-[grid-template-rows] duration-300 ease-in-out"
-            style={{ gridTemplateRows: isExpanded ? '1fr' : '0fr' }}
+      {isExpanded && (
+        <TableRow
+          className="border-0"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <TableCell
+            colSpan={8}
+            className="min-w-0 p-0 sticky z-[24] bg-card"
+            style={{
+              top: mainRowHeight > 0
+                ? `calc(var(--reserves-expanded-main-row-top, 5.75rem) + ${mainRowHeight}px)`
+                : undefined,
+            }}
           >
-            <div className="overflow-hidden">
-              <div className="px-[var(--ds-space-3)] py-[var(--ds-space-3)] bg-transparent">
-                {hasSimulationMounted && simulation && (
-                  <SimulationSubRow
-                    reserve={reserve}
-                    simulation={simulation}
-                    isApy={isApy}
-                    supplyInput={supplyInput}
-                    borrowInput={borrowInput}
-                    inputMode={inputMode}
-                    onCorrectSupplyInput={onCorrectSupplyInput}
-                    onCorrectBorrowInput={onCorrectBorrowInput}
-                  />
-                )}
-              </div>
+            <div
+              className="overflow-y-auto px-[var(--ds-space-3)] py-[var(--ds-space-3)]"
+              style={{
+                maxHeight: mainRowHeight > 0
+                  ? `calc(100dvh - var(--reserves-expanded-main-row-top, 5.75rem) - ${mainRowHeight}px)`
+                  : undefined,
+              }}
+            >
+              {hasSimulationMounted && simulation && (
+                <SimulationSubRow
+                  reserve={reserve}
+                  simulation={simulation}
+                  isApy={isApy}
+                  supplyInput={supplyInput}
+                  borrowInput={borrowInput}
+                  inputMode={inputMode}
+                  onCorrectSupplyInput={onCorrectSupplyInput}
+                  onCorrectBorrowInput={onCorrectBorrowInput}
+                />
+              )}
             </div>
-          </div>
-        </TableCell>
-      </TableRow>
+          </TableCell>
+        </TableRow>
+      )}
     </Fragment>
   );
 });

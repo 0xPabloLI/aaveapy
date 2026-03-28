@@ -1,3 +1,4 @@
+/** Keep in sync with `scripts/lib/default-api-bases.mjs` (`DEFAULT_STAGING_API_BASE`). */
 export const DEFAULT_LIVE_API_BASE = 'https://staging-api.aaveapy.com/api';
 
 type LiveEnv = Partial<Record<'LIVE_TEST_API_BASE' | 'VITE_API_BASE_URL', string | undefined>>;
