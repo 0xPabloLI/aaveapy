@@ -480,9 +480,43 @@ const SimulationSubRow = ({
       </tr>
     );
 
+    const capProgressBar = (() => {
+      if (row.cap == null || row.type !== 'usd') return null;
+      const currentVal = row.current ?? 0;
+      const afterVal = row.after;
+      const capVal = row.cap;
+      const currentPct = Math.min((currentVal / capVal) * 100, 100);
+      const afterPct = afterVal != null ? Math.min((afterVal / capVal) * 100, 100) : null;
+      const barColorClass = row.warning
+        ? 'bg-amber-500'
+        : accentClass.includes('emerald') ? 'bg-emerald-500' : 'bg-[rgb(var(--ds-brand-cyan-rgb))]';
+      const afterBarColorClass = row.warning
+        ? 'bg-amber-400/50'
+        : accentClass.includes('emerald') ? 'bg-emerald-400/40' : 'bg-[rgb(var(--ds-brand-cyan-rgb))]/40';
+      return (
+        <tr className={row.warning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
+          <td colSpan={4} className={`pt-0 pb-1 ${metricCellPx}`}>
+            <div className="relative h-1.5 w-full rounded-full bg-muted/40 overflow-hidden">
+              <div
+                className={`absolute inset-y-0 left-0 rounded-full ${barColorClass} transition-all duration-300`}
+                style={{ width: `${currentPct}%` }}
+              />
+              {afterPct != null && afterPct > currentPct && (
+                <div
+                  className={`absolute inset-y-0 rounded-full ${afterBarColorClass} transition-all duration-300`}
+                  style={{ left: `${currentPct}%`, width: `${afterPct - currentPct}%` }}
+                />
+              )}
+            </div>
+          </td>
+        </tr>
+      );
+    })();
+
     return (
       <Fragment key={row.rowKey}>
         {mainRow}
+        {capProgressBar}
         {row.capNote ? (
           <tr className={row.warning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
             <td colSpan={4} className={`pt-0 ${capRowPb} ${metricCellPx} min-w-0 align-top`}>
