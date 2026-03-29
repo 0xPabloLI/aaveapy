@@ -1,6 +1,6 @@
 # Dependabot 行为说明
 
-**当前策略**：已关闭 **Version updates**（不再按周提「有新版本」的 PR），仅保留 **Security updates**（有漏洞时提 PR）。Version updates 由 `.github/dependabot.yml` 的 `updates` 控制（现为空）；Security updates 在 Repo → Settings → Code security and analysis → Dependabot security updates 中单独启用。
+**当前策略**：**npm** 的 routine version PR 已关（`open-pull-requests-limit: 0`）。**GitHub Actions** 每周检查一次，且 `open-pull-requests-limit: 5`，用于在 workflow 里把第三方 action 钉到 **commit SHA** 后仍能通过 Dependabot 收到 SHA/版本 bump PR。**Security updates** 在 Repo → Settings → Code security and analysis → Dependabot security updates 中单独启用。
 
 ---
 
@@ -10,10 +10,10 @@
 
 | 类型 | 谁提的 | 触发条件 |
 |------|--------|----------|
-| **Version updates（版本更新）** | 你在 `.github/dependabot.yml` 里配置的「按周期检查」 | **只要有新版本**就会在 schedule 跑到时提 PR（每周一 03:00 UTC 查 npm，03:15 查 GitHub Actions）。不要求有 CVE。 |
+| **Version updates（版本更新）** | 你在 `.github/dependabot.yml` 里配置的「按周期检查」 | 本仓库：**npm** 为 `open-pull-requests-limit: 0`，**不会**开 routine 版本 PR；**github-actions** 在 schedule 跑到时仍可为钉 SHA 的 action 开 bump PR（最多 5 个并发）。不要求有 CVE。 |
 | **Security updates（安全更新）** | GitHub 的 Dependabot 安全功能（Repo → Settings → Security → Dependabot） | 当某依赖被检出**有已知漏洞**时，会**额外**提一个专门修漏洞的 PR（可能比每周更早、更频繁）。 |
 
-所以：**不是**「只有漏洞才提」；**有漏洞会提**，**没有漏洞但版本更新了也会提**（按你配置的每周一次）。
+所以：**不是**「只有漏洞才提」；**有漏洞会提**。**npm** 的「有更新就提」已关掉；**Actions** 仍可按周收到版本/SHA 更新 PR（在 limit 内）。
 
 ---
 
@@ -21,11 +21,8 @@
 
 看你当前配置：
 
-- **会合并成一批的**：只有 **minor** 和 **patch**。  
-  `dependabot.yml` 里写了 `groups: npm-minor-patch`，且 `update-types: ["minor", "patch"]`，所以同一周期内多个「小版本/补丁」更新会被 **合并成一个或少数几个 PR**（受 `open-pull-requests-limit: 5` 限制）。
-- **不会合并、一个依赖一个 PR 的**：**Major 主版本升级**。  
-  配置里没有把 `major` 放进任何 group，所以每个 major（例如 @eslint/js 9→10、react-resizable-panels 2→4）都会**单独一个 PR**。  
-  因此你会看到 PR 67、66、69、68 等**各自一个**，不会和 minor/patch 混在一起。
+- **npm**：`open-pull-requests-limit: 0`，**不会**按周开 routine 版本 PR（与安全更新无关）。
+- **github-actions**：未配置 `groups`，通常 **每个 action 仓库一条 PR**（受 `open-pull-requests-limit: 5` 限制同时 open 数量）。
 
 ---
 
@@ -35,7 +32,7 @@
 - **Version updates**：只看「有没有新版本」，**不**看是否有 CVE；有新版本就按 schedule 提。  
 - **Security updates**：才是「检测到漏洞才提」；通常会在 Dependency graph 里看到 alert，然后 Dependabot 会开一个修该漏洞的 PR。
 
-所以：**既有「有更新就提」的周更 PR，也有「有漏洞才提」的安全 PR**。
+所以：**Actions 可有周更 bump PR**；**npm routine 版本 PR 无**；**安全 PR** 仍单独存在（若启用 Security updates）。
 
 ---
 
@@ -62,12 +59,12 @@
 
 ## 5. 和你仓库配置的对应关系
 
-- **Schedule**：每周一 03:00 UTC（npm）、03:15（github-actions）。  
-- **合并策略**：仅 **minor + patch** 分组；**major 不分组**，一个依赖一个 PR。  
-- **上限**：npm 最多同时 5 个 open PR（`open-pull-requests-limit: 5`）。  
-- **自动审批**：`dependabot-auto-triage` 只对「patch/minor + 开发依赖」打 `automerge` / 自动 approve；**major 和生产依赖**会打 `manual-review`，需要你人工看。
+- **Schedule**：每周（npm 与 github-actions 在 `dependabot.yml` 中各一条 `schedule: weekly`）。  
+- **npm**：`open-pull-requests-limit: 0` → 无 routine 版本 PR。  
+- **github-actions**：`open-pull-requests-limit: 5` → 第三方 action（钉 SHA）可收到 bump PR。  
+- **自动审批**：`dependabot-auto-triage` 仍按 workflow 逻辑处理 Dependabot PR 标签（见该 workflow）。
 
-总结：**有更新就提（按周） + 有漏洞也会提（安全更新）**；**只有 minor/patch 会合并成批，major 不会**；新包有问题就先用 ignore 或先不合并，等稳定再升。
+总结：**npm 不按周开版本 PR**；**Actions 按周检查并可开最多 5 个相关 PR**；**安全更新**仍可在 Settings 中单独启用。
 
 ---
 

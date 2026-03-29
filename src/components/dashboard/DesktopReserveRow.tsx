@@ -348,6 +348,7 @@ const DesktopReserveRow = memo(({
         >
           <TableCell colSpan={8} className="min-w-0 p-0">
             <div
+              data-reserves-simulation-scrollport
               className="overflow-y-auto px-[var(--ds-space-3)] py-[var(--ds-space-3)]"
               style={{
                 maxHeight: mainRowHeight > 0

@@ -841,6 +841,9 @@ const SimulationSubRow = ({
           )}
         </div>
       )}
+
+      {/* Bottom of scrollable simulation stack — used by E2E to detect inner-pane clipping */}
+      <div data-reserves-simulation-bottom-sentinel aria-hidden className="h-px w-full shrink-0" />
     </div>
   );
 };

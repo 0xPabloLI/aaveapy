@@ -34,7 +34,7 @@ jobs:
       LIVE_TEST_API_BASE_CI: ${{ vars.LIVE_TEST_API_BASE_CI != '' && vars.LIVE_TEST_API_BASE_CI || 'https://staging-api.aaveapy.com/api' }}
     steps:
       - name: Checkout target branch
-        uses: actions/checkout@v5
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
           ref: ${{ env.TARGET_BRANCH }}
 
@@ -46,7 +46,7 @@ jobs:
           echo "client_payload=${{ toJSON(github.event.client_payload) }}"
 
       - name: Setup Node
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
         with:
           node-version: "22"
           cache: "npm"
@@ -93,7 +93,7 @@ jobs:
         if: >
           steps.verify_round1.outputs.passed == 'true' ||
           steps.verify_round2.outputs.passed == 'true'
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@22a9089034f40e5a961c8808d113e2c98fb63676 # v7
         with:
           # Use PAT to ensure pull_request workflows (CI lint/build) are triggered on the created PR.
           # Fallback to GITHUB_TOKEN keeps behavior but may leave required checks in "Expected".
@@ -119,7 +119,7 @@ jobs:
 
       - name: Trigger fallback CI when PAT is missing
         if: steps.cpr.outputs.pull-request-number != '' && env.HAS_HARDCODE_SYNC_PAT != 'true'
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
         with:
           script: |
             const workflowRef = `${{ steps.cpr.outputs.pull-request-branch }}` || 'bot/hardcode-sync';
@@ -139,7 +139,7 @@ jobs:
         if: >
           steps.verify_round1.outputs.passed != 'true' &&
           steps.verify_round2.outputs.passed != 'true'
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
         with:
           script: |
             const title = '[Hardcode Sync] verify failed after retry';
