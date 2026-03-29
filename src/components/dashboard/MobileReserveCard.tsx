@@ -15,6 +15,7 @@ import UtilizationIndicator from './UtilizationIndicator';
 import CapProgressRing from './CapProgressRing';
 import BorrowCapProgressRing from './BorrowCapProgressRing';
 import { formatScenarioSize } from '@/lib/formatters';
+import { formatReserveDeficitModeValue, getReserveDeficitUsdAmount, hasReserveDeficit } from '@/lib/deficit';
 import type { RateSimulationResult } from '@/hooks/useRateSimulation';
 import { getAvailableToBorrowUsd, getPoolLiquidityUsd, getScenarioSupplySizeUsd, getTotalBorrowedUsd, getValidTokenPrice } from '@/lib/scenarioSize';
 
@@ -266,6 +267,12 @@ const MobileReserveCard = memo(({
     reserveSizeUsd: reserve.reserveSizeUsd,
     totalBorrowedUsd,
   });
+  const hasDeficit = hasReserveDeficit(reserve);
+  const deficitUsd = getReserveDeficitUsdAmount(reserve, displayTokenPrice);
+  const deficitInlineValue =
+    deficitUsd != null
+      ? formatScenarioSize(deficitUsd, { inputMode: 'usd' })
+      : formatReserveDeficitModeValue(reserve, 'token', displayTokenPrice);
 
   if (variant === 'simulationOnly') {
     return (
@@ -577,6 +584,11 @@ const MobileReserveCard = memo(({
         {/* Tab content */}
         <div className="flex w-full flex-col">
           {renderAmountRow()}
+          {hasDeficit ? (
+            <p className="mt-0.5 px-4 text-right ds-text-10 tabular-nums text-muted-foreground/75">
+              Deficit {deficitInlineValue}
+            </p>
+          ) : null}
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={activeTab}
@@ -639,7 +651,11 @@ const MobileReserveCard = memo(({
               >
                 <div className="sticky top-0 bg-card border-b border-border px-[var(--ds-space-4)] py-[var(--ds-space-3)] flex items-center justify-between z-10">
                   <h3 id="cap-sheet-title" className="ds-tooltip-title text-foreground">
-                    {capSheet === 'supply' ? 'Supply cap details' : capSheet === 'borrow' ? 'Borrow cap details' : 'Utilization'}
+                    {capSheet === 'supply'
+                      ? 'Supply cap details'
+                      : capSheet === 'borrow'
+                        ? 'Borrow cap details'
+                        : 'Utilization'}
                   </h3>
                   <button
                     type="button"

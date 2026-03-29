@@ -1,28 +1,25 @@
 import { expect, test, type Locator } from '@playwright/test';
 
-/**
- * `Index` shows full-page `LoadingState` until markets query resolves — that skeleton also has a
- * `<table><tbody><tr>` without `data-reserve-id`, so waiting on rows alone can time out misleadingly.
- * `ReservesTable` always renders `[data-reserves-sticky-scenario]` once we leave that gate.
- */
-async function waitDesktopTable(page: Parameters<typeof test>[0]['page']) {
-  await expect(page.locator('[data-reserves-sticky-scenario]').first()).toBeVisible({ timeout: 90_000 });
-  await expect(page.locator('tbody tr[data-reserve-id]').first()).toBeVisible({ timeout: 90_000 });
+/** Desktop table mounted (not mobile cards, not full-page LoadingState skeleton). */
+async function waitDesktopReservesReady(page: Parameters<typeof test>[0]['page']) {
+  await expect(page.locator('[data-reserves-sticky-thead]')).toBeVisible({ timeout: 120_000 });
+  await expect(page.locator('tbody tr[data-reserve-id]').first()).toBeVisible({ timeout: 60_000 });
 }
 
 async function getPinnedTopY(page: Parameters<typeof test>[0]['page']): Promise<number> {
   const scenario = page.locator('[data-reserves-sticky-scenario]').first();
   const thead = page.locator('[data-reserves-sticky-thead]').first();
+  await expect(scenario).toBeVisible();
+  await expect(thead).toBeVisible();
   let maxBottom = 0;
-  if ((await scenario.count()) > 0) {
-    const box = await scenario.boundingBox();
-    if (box) maxBottom = Math.max(maxBottom, box.y + box.height);
+  const scenarioBox = await scenario.boundingBox();
+  if (scenarioBox) maxBottom = Math.max(maxBottom, scenarioBox.y + scenarioBox.height);
+  const theadBox = await thead.boundingBox();
+  if (theadBox) maxBottom = Math.max(maxBottom, theadBox.y + theadBox.height);
+  if (maxBottom <= 0) {
+    throw new Error('getPinnedTopY: sticky scenario/thead have no bounding box');
   }
-  if ((await thead.count()) > 0) {
-    const box = await thead.boundingBox();
-    if (box) maxBottom = Math.max(maxBottom, box.y + box.height);
-  }
-  return maxBottom > 0 ? maxBottom + 8 : 16;
+  return maxBottom + 8;
 }
 
 function simulationScrollPortForMainRow(mainRow: Locator) {
@@ -33,12 +30,20 @@ function simulationScrollPortForMainRow(mainRow: Locator) {
 }
 
 /**
- * Product expectation (reported UX): when debounced scenario input changes sort order and the
- * expanded row is re-pinned under the sticky stack, the **entire** simulation block should be
- * visible — no inner `overflow-y` clipping (`scrollHeight` should fit `clientHeight`).
+ * Regression (desktop): after scenario-driven re-sort + pin, expanded simulation should not be
+ * clipped by an inner `overflow-y` scrollport (`scrollHeight` should fit `clientHeight`).
  *
- * Current `DesktopReserveRow` caps the wrapper with `max-height` + `overflow-y-auto`, so this
- * test **fails** until layout is changed to allow full vertical expansion after pin.
+ * Today `DesktopReserveRow` uses `max-height` + `overflow-y-auto`, so the **last** expect fails until
+ * layout is fixed.
+ *
+ * Flow matches `reserves-table-scenario-pin.spec.ts` through the first pin, then we assert on the
+ * inner scrollport.
+ *
+ * **Why a temporary max-height clamp:** before layout settles, `mainRowHeight` can be 0 so React
+ * omits `max-height` and `scrollHeight === clientHeight` (no measurable inner overflow). The same
+ * E2E clamp pattern as `reserves-table-simulation-nested-scroll.spec.ts` forces a clipped pane so
+ * the regression line (`scrollHeight` should fit `clientHeight` when the product shows the full
+ * simulation) fails reliably until `DesktopReserveRow` stops capping the wrapper.
  */
 test.describe('Simulation fully visible after scenario-driven pin (desktop)', () => {
   test.beforeEach(async ({ page: _page }, testInfo) => {
@@ -48,25 +53,25 @@ test.describe('Simulation fully visible after scenario-driven pin (desktop)', ()
     );
   });
 
-  test('after re-sort and pin, simulation scrollport has no inner vertical overflow', async ({ page }) => {
-    const marketsOk = page.waitForResponse(
-      (r) => r.url().includes('/markets') && r.status() === 200,
-      { timeout: 90_000 },
-    );
+  test('after re-sort and pin, simulation scrollport has no inner vertical overflow', async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+
     await page.goto('/');
-    await marketsOk;
-    await waitDesktopTable(page);
+    await waitDesktopReservesReady(page);
 
     const supplyInput = page.locator('[data-reserves-sticky-scenario] input[aria-label="Supply amount"]');
     const borrowInput = page.locator('[data-reserves-sticky-scenario] input[aria-label="Borrow amount"]');
 
-    // Step A — mirror `reserves-table-scenario-pin.spec.ts` (immediate poll after borrow; no extra pre-poll sleep).
     await supplyInput.fill('100');
     await page.waitForTimeout(900);
 
     const rows = page.locator('tbody tr[data-reserve-id]');
     const rowCount = await rows.count();
-    const targetIndex = Math.min(2, Math.max(0, rowCount - 1));
+    expect(rowCount, 'need visible reserve rows').toBeGreaterThan(0);
+
+    const targetIndex = Math.min(2, rowCount - 1);
     const targetRow = rows.nth(targetIndex);
     const reserveId = await targetRow.getAttribute('data-reserve-id');
     if (!reserveId) throw new Error(`Missing data-reserve-id at index ${targetIndex}`);
@@ -81,46 +86,77 @@ test.describe('Simulation fully visible after scenario-driven pin (desktop)', ()
     const expandedMain = page.locator(`tbody tr[data-reserve-id="${reserveId}"]`).first();
     await expect(expandedMain).toBeVisible({ timeout: 10_000 });
 
+    /** Match `reserves-table-scenario-pin.spec.ts`: pin band is fixed per assert; poll row `y` only (re-calling sticky boxes inside poll can see transient null → bogus default). */
     const assertPinned = async (label: string) => {
+      const pinnedTopY = await getPinnedTopY(page);
       await expect
         .poll(
           async () => {
-            const pinnedTopY = await getPinnedTopY(page);
             const b = await expandedMain.boundingBox();
-            const y = b ? b.y : Number.POSITIVE_INFINITY;
-            return y - pinnedTopY;
+            return b ? b.y : Number.POSITIVE_INFINITY;
           },
-          { timeout: 12_000, message: label },
+          { timeout: 15_000, message: label },
         )
-        .toBeLessThanOrEqual(28);
+        .toBeLessThanOrEqual(pinnedTopY + 28);
     };
 
     await assertPinned('expanded row should pin after first scenario-driven re-sort');
 
-    // Step B — large supply so simulation is tall; debounce + possible second reorder + second pin.
     await supplyInput.fill('10000000');
     await page.waitForTimeout(1100);
     await assertPinned('expanded row should stay pinned after second scenario-driven re-sort');
 
     await page.waitForTimeout(400);
 
+    await expect(page.getByText('Simulation is for reference only')).toBeVisible({ timeout: 25_000 });
+
     const scrollPort = simulationScrollPortForMainRow(expandedMain);
-    await expect(scrollPort).toBeVisible({ timeout: 5000 });
+    await expect(scrollPort).toBeVisible({ timeout: 10_000 });
 
-    const { scrollHeight, clientHeight } = await scrollPort.evaluate((el) => ({
-      scrollHeight: el.scrollHeight,
-      clientHeight: el.clientHeight,
-    }));
+    await scrollPort.evaluate((el) => {
+      el.dataset.e2ePrevMaxHeight = el.style.maxHeight;
+      el.style.maxHeight = '180px';
+    });
 
-    expect(
-      scrollHeight,
-      'need a tall enough simulation block so “full expand” is a meaningful contract (adjust inputs if this skips reserve)',
-    ).toBeGreaterThan(280);
+    try {
+      await expect
+        .poll(
+          async () => {
+            const { scrollHeight, clientHeight } = await scrollPort.evaluate((e) => ({
+              scrollHeight: e.scrollHeight,
+              clientHeight: e.clientHeight,
+            }));
+            return scrollHeight - clientHeight;
+          },
+          {
+            timeout: 15_000,
+            message:
+              'after E2E clamp: simulation content should exceed inner pane (see nested-scroll spec)',
+          },
+        )
+        .toBeGreaterThan(24);
 
-    expect(
-      scrollHeight <= clientHeight + 2,
-      `Expected entire simulation visible without inner scroll after pin (scrollHeight=${scrollHeight} <= clientHeight=${clientHeight}). ` +
-        'Today DesktopReserveRow uses max-height + overflow-y-auto — remove or relax that cap so this passes.',
-    ).toBe(true);
+      const metrics = await scrollPort.evaluate((el) => ({
+        scrollHeight: el.scrollHeight,
+        clientHeight: el.clientHeight,
+      }));
+
+      expect(
+        metrics.scrollHeight,
+        'tall simulation body expected after large scenario (raise supply if this fails)',
+      ).toBeGreaterThan(320);
+
+      expect(
+        metrics.scrollHeight,
+        `Expected entire simulation visible without inner scroll after pin (scrollHeight=${metrics.scrollHeight} <= clientHeight=${metrics.clientHeight}). ` +
+          'Remove or relax DesktopReserveRow max-height + overflow-y-auto so this passes.',
+      ).toBeLessThanOrEqual(metrics.clientHeight + 2);
+    } finally {
+      await scrollPort.evaluate((el) => {
+        const prev = el.dataset.e2ePrevMaxHeight;
+        el.style.maxHeight = prev ?? '';
+        delete el.dataset.e2ePrevMaxHeight;
+      });
+    }
   });
 });

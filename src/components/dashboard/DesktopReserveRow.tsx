@@ -10,6 +10,12 @@ import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { IncentiveIcon } from '@/components/IncentiveIcon';
+import {
+  formatReserveDeficitModeValue,
+  formatReserveDeficitTokenExact,
+  getReserveDeficitUsdAmount,
+  hasReserveDeficit,
+} from '@/lib/deficit';
 import SimulationSubRow from './SimulationSubRow';
 import CapProgressRing from './CapProgressRing';
 import BorrowCapProgressRing from './BorrowCapProgressRing';
@@ -137,6 +143,14 @@ const DesktopReserveRow = memo(({
     reserveSizeUsd: reserve.reserveSizeUsd,
     totalBorrowedUsd,
   });
+  const hasDeficit = hasReserveDeficit(reserve);
+  const deficitUsd = getReserveDeficitUsdAmount(reserve, displayTokenPrice);
+  const deficitInlineValue =
+    deficitUsd != null
+      ? formatScenarioSize(deficitUsd, { inputMode: 'usd' })
+      : formatReserveDeficitModeValue(reserve, 'token', displayTokenPrice);
+  const deficitTokenExact = formatReserveDeficitTokenExact(reserve);
+  const deficitUsdLabel = deficitUsd != null ? formatUsd(deficitUsd) : '— (token price unavailable)';
 
   return (
     <Fragment>
@@ -234,6 +248,35 @@ const DesktopReserveRow = memo(({
                 tokenSymbol={reserve.tokenSymbol}
               />
             </div>
+            {hasDeficit && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={(event) => event.stopPropagation()}
+                    className="ds-text-11 tabular-nums text-muted-foreground/80 hover:text-muted-foreground transition-colors"
+                    aria-label={`Deficit details for ${reserve.tokenSymbol}`}
+                  >
+                    Deficit {deficitInlineValue}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" align="center" className="max-w-[18rem]">
+                  <div className="space-y-1 ds-text-11">
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-muted-foreground">USD</span>
+                      <span className="tabular-nums">{deficitUsdLabel}</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-muted-foreground">Token</span>
+                      <span className="tabular-nums">{deficitTokenExact} {reserve.tokenSymbol}</span>
+                    </div>
+                    <p className="pt-1 border-t border-border/60 text-muted-foreground">
+                      Deficit dilutes supply-side native yield.
+                    </p>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            )}
           </div>
         </TableCell>
         {/* Utilization */}
