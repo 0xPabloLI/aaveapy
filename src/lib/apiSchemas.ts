@@ -47,15 +47,15 @@ const MerklOpportunityGroupSchema = z.object({
 // ── Brevis incentive ──
 const BrevisIncentiveSchema = z.object({
   link: z.string(),
-  campaignApr: z.number(),
-  campaignStartedAt: z.string(),
-  campaignEndedAt: z.string(),
+  campaignApr: z.number().optional(),
+  campaignStartedAt: z.string().optional(),
+  campaignEndedAt: z.string().optional(),
   message: z.string().optional(),
   latestTvl: z.number().optional(),
   totalBudget: z.number().optional(),
   perUserRewardCapUsd: z.number().optional(),
   campaignId: z.string().optional(),
-});
+}).passthrough();
 
 // ── Token price entry ──
 const TokenPriceEntrySchema = z.object({
