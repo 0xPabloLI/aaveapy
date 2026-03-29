@@ -90,6 +90,7 @@ const ReservesTable = ({
   const lastSortedIdsForPinScrollRef = useRef<string[]>([]);
   const scenarioPinScrollBaselineReadyRef = useRef(false);
   const scenarioNeedsPinScrollRef = useRef(false);
+  const cancelScenarioPinScrollRef = useRef<(() => void) | null>(null);
   const lastReservesKeyForFilterPinRef = useRef<string | null>(null);
   const cancelFilterPinScrollRef = useRef<(() => void) | null>(null);
   const suppressNextToggleReserveIdRef = useRef<string | null>(null);
@@ -540,7 +541,9 @@ const ReservesTable = ({
         expandedReserveId
       ) {
         scenarioNeedsPinScrollRef.current = false;
-        return schedulePinScrollToReserve(expandedReserveId, 320);
+        cancelScenarioPinScrollRef.current?.();
+        cancelScenarioPinScrollRef.current = schedulePinScrollToReserve(expandedReserveId, 320) ?? null;
+        return;
       }
       scenarioNeedsPinScrollRef.current = false;
       return;
@@ -585,7 +588,10 @@ const ReservesTable = ({
   }, [reserves, sortedData, expandedReserveId, schedulePinScrollToReserve]);
 
   useEffect(() => {
-    return () => { cancelFilterPinScrollRef.current?.(); };
+    return () => {
+      cancelFilterPinScrollRef.current?.();
+      cancelScenarioPinScrollRef.current?.();
+    };
   }, []);
 
   useEffect(() => {
