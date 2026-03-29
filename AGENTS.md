@@ -192,3 +192,26 @@ When implementing mobile carousels:
 - Local git hooks live under the repository `.git/hooks` (local-only, not versioned); pre-push runs lockfile consistency checks before `ci:remote`. When bulk-deleting remote branches with `git push origin --delete`, use `--no-verify` so each delete does not run the pre-push hook (ci:remote).
 - Merit Self deposit ceiling (`selfCapUsd`) is parsed from `MeritIncentive.message` via `extractMeritSelfCapUsd` in `meritForecast.ts` (no separate API cap field). Merit Base forecast (`meritForecast.ts`, `useRateSimulation`): when `reserveSizeUsd` is available, anchor daily rewards with reserve TVL × headline Base APR (supply); borrow-side Merit uses `reserveSizeUsd × utilizationPct` as TVL proxy; otherwise fall back to `lastRoundRewardUsd`. See `docs/rate-calculation-formulas.md` § Merit Base reserve TVL anchor and `docs/merit-base-anchor-vs-last-round-staging.md` for anchor vs last-round staging comparison.
 - Brevis incentive forecasting lives in `src/lib/brevisForecast.ts` with per-user reward caps (`perUserRewardCapUsd`), canonical shared campaigns keyed by `campaignId`, and `isCampaignActive(allowOpenEnd: true)` for campaigns without `endDate`. Incentive reward cap taxonomy (pool budget / deposit ceiling / per-user reward ceiling) and rate formulas are documented in `docs/rate-calculation-formulas.md`. When both a per-user reward ceiling and a campaign end date limit the accrual window, use the minimum of the applicable horizons for effective reward-duration semantics.
+
+## Cursor Cloud specific instructions
+
+### Services overview
+This is a **client-side only** React SPA (no backend in this repo). The sole required service is the Vite dev server (`npm run dev`, port 8080). All data comes from a remote REST API; with no `.env` file the app defaults to `https://staging-api.aaveapy.com/api` (set in `src/lib/apiBase.ts`), so no local backend or database is needed.
+
+### Quick reference
+| Task | Command |
+|------|---------|
+| Dev server | `npm run dev` (port 8080) |
+| Lint | `npm run lint` |
+| Unit tests | `npm test` (Vitest) |
+| Build | `npm run build` |
+| Live schema tests | `npm run test:live` (hits staging API) |
+
+All commands are documented in the `README.md` Scripts table and `package.json`.
+
+### Non-obvious caveats
+- `npm run dev` runs `scripts/generate-token-icon-manifest.mjs` before starting Vite; if `public/token-icons/` changes, the generated manifest at `src/lib/tokenIconManifest.generated.ts` will be regenerated automatically.
+- No `.env` file is needed for basic development; the staging API fallback is baked into `src/lib/apiBase.ts`. Only create `.env` if you need to override `VITE_API_BASE_URL` (e.g. to point at a local backend).
+- The repo uses local git hooks (`.git/hooks/`) for `pre-commit` and `pre-push` that run `npm run ci:remote`. These hooks are not version-controlled and will not be present in a fresh clone. They are not required for cloud agent operation.
+- `npm run ci:remote` runs lint + test + build + audit sequentially; if it fails, `npm run ci:auto-fix` attempts remediation.
+- Supabase client code exists under `src/integrations/supabase/` but is dead code (not imported by any application module); ignore it.
