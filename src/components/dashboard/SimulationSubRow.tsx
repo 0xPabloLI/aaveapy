@@ -1,12 +1,11 @@
 import { Fragment, useRef, useState, useEffect } from 'react';
 import { AlertTriangle, ExternalLink } from 'lucide-react';
-import { formatPercent, formatScenarioSize, formatScenarioSizeDelta, formatSignedUsd, formatSpread, formatUsd } from '@/lib/formatters';
+import { annualPercentToDailyFraction, formatPercent, formatScenarioSize, formatScenarioSizeDelta, formatSignedUsd, formatSpread, formatUsd } from '@/lib/formatters';
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type {
   RateSimulationResult,
-  ScenarioUsdAccrualSide,
   SimulationCampaignDetail,
   SimulationSourceDetail,
 } from '@/hooks/useRateSimulation';
