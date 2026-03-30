@@ -717,20 +717,6 @@ const SimulationSubRow = ({
       });
     }
 
-    // Spread + Liquidity info rows
-    rows.push({
-      key: 'spread',
-      label: 'Spread',
-      earn: null,
-      cost: null,
-    });
-    rows.push({
-      key: 'liquidity',
-      label: 'Liquidity',
-      earn: null,
-      cost: null,
-    });
-
     // Total
     rows.push({
       key: 'total',
