@@ -124,7 +124,7 @@ describe('apiSchemas', () => {
     expect(item?.endTimestamp).toBe(1774965600);
   });
 
-  it('accepts aligned Brevis fields while dropping deprecated legacy fields', () => {
+  it('accepts aligned Brevis fields while preserving extra legacy fields', () => {
     const parsed = MarketsResponseSchema.parse({
       snapshot: {
         lastUpdated: '2026-03-26T00:00:00.000Z',
@@ -171,11 +171,11 @@ describe('apiSchemas', () => {
     expect(brevis?.totalBudget).toBe(25_000);
     expect(brevis?.perUserRewardCapUsd).toBe(5000);
     expect(brevis?.campaignId).toBe('linea-usdc');
-    expect('rewardAddressType' in (brevis ?? {})).toBe(false);
-    expect('totalRewardAmount' in (brevis ?? {})).toBe(false);
-    expect('totalRewardTokenSymbol' in (brevis ?? {})).toBe(false);
-    expect('description' in (brevis ?? {})).toBe(false);
-    expect('tvlUsd' in (brevis ?? {})).toBe(false);
-    expect('totalRewardUsd' in (brevis ?? {})).toBe(false);
+    expect((brevis as Record<string, unknown>)?.rewardAddressType).toBe('token');
+    expect((brevis as Record<string, unknown>)?.totalRewardAmount).toBe(12345);
+    expect((brevis as Record<string, unknown>)?.totalRewardTokenSymbol).toBe('USDC');
+    expect((brevis as Record<string, unknown>)?.description).toBe('legacy');
+    expect((brevis as Record<string, unknown>)?.tvlUsd).toBe(1);
+    expect((brevis as Record<string, unknown>)?.totalRewardUsd).toBe(2);
   });
 });
