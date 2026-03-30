@@ -832,51 +832,6 @@ const SimulationSubRow = ({
                 );
               }
 
-              // Special: Spread row
-              if (row.key === 'spread') {
-                return (
-                  <tr key={row.key}>
-                    <td className={`${cellPy} ${metricPx}`}>
-                      <span className="ds-text-12 font-medium ds-text-purple-600">Spread</span>
-                    </td>
-                    <td colSpan={2} className={`${cellPy} ${valuePx} text-right`}>
-                      <span className="ds-text-12 tabular-nums ds-text-purple-600">
-                        {formatSpread(simulation.spread.current)}
-                        {simulation.spread.after !== null && (
-                          <>
-                            <span className="text-muted-foreground mx-1">→</span>
-                            {formatSpread(simulation.spread.after)}
-                          </>
-                        )}
-                      </span>
-                    </td>
-                  </tr>
-                );
-              }
-
-              // Special: Liquidity row
-              if (row.key === 'liquidity') {
-                const liqWarning = borrowCapExceeded && borrowLimitedByLiquidity;
-                return (
-                  <tr key={row.key} className={`border-b border-border/50 ${liqWarning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}`}>
-                    <td className={`${cellPy} ${metricPx}`}>
-                      <span className={`ds-text-12 font-medium ${liqWarning ? 'text-amber-700 dark:text-amber-400' : 'ds-text-purple-600'}`}>Liquidity</span>
-                    </td>
-                    <td colSpan={2} className={`${cellPy} ${valuePx} text-right`}>
-                      <span className="ds-text-12 tabular-nums ds-text-purple-600">
-                        {formatScenarioSize(simulation.marketMetrics.availableLiquidityUsd, { inputMode, tokenPrice: simulation.tokenPrice })}
-                        {simulation.marketMetrics.availableLiquidityUsdAfter !== null && (
-                          <>
-                            <span className="text-muted-foreground mx-1">→</span>
-                            {formatScenarioSize(simulation.marketMetrics.availableLiquidityUsdAfter, { inputMode, tokenPrice: simulation.tokenPrice })}
-                          </>
-                        )}
-                      </span>
-                    </td>
-                  </tr>
-                );
-              }
-
               // Data rows: Total / Native / Incentive sources
               const indentClass = row.isSubBreakdown
                 ? 'ml-4 pl-2 border-l border-l-muted-foreground/30'
