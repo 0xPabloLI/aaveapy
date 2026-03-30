@@ -1,12 +1,11 @@
 import { Fragment, useRef, useState, useEffect } from 'react';
 import { AlertTriangle, ExternalLink } from 'lucide-react';
-import { formatPercent, formatScenarioSize, formatScenarioSizeDelta, formatSignedUsd, formatSpread, formatUsd } from '@/lib/formatters';
+import { annualPercentToDailyFraction, formatPercent, formatScenarioSize, formatScenarioSizeDelta, formatSignedUsd, formatSpread, formatUsd } from '@/lib/formatters';
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type {
   RateSimulationResult,
-  ScenarioUsdAccrualSide,
   SimulationCampaignDetail,
   SimulationSourceDetail,
 } from '@/hooks/useRateSimulation';
@@ -667,53 +666,286 @@ const SimulationSubRow = ({
 
   const scenarioAccrual = simulation.scenarioUsdAccrual;
 
-  const renderScenarioUsdAccrual = () => {
+  /** Compute USD/day from an annual rate percent × principal. Supply = positive, Borrow native = negative (cost). */
+  const rateToUsdPerDay = (ratePercent: number | null, principalUsd: number, negate = false): number | null => {
+    if (ratePercent === null || !Number.isFinite(ratePercent)) return null;
+    const daily = principalUsd * annualPercentToDailyFraction(ratePercent, isApy);
+    return negate ? -daily : daily;
+  };
+
+  const renderEarnCostTable = () => {
     if (!scenarioAccrual || showEmptyStateNote) return null;
     const fmt = formatSignedUsd;
-    const pad = effectiveCompact && embeddedFromTop ? 'px-0' : effectiveCompact ? 'px-3' : 'px-4';
-    const renderSide = (title: string, accentClass: string, side: ScenarioUsdAccrualSide, borrowHint?: boolean) => (
-      <div className="min-w-0 flex-1 space-y-1">
-        <div className={`ds-text-12 font-semibold ${accentClass}`}>{title}</div>
-        {borrowHint ? (
-          <p className="ds-text-10 text-muted-foreground leading-snug">
-            Native is interest paid; incentive is rebate (reduces cost).
-          </p>
-        ) : null}
-        <dl className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-0.5 ds-text-11">
-          <dt className="text-muted-foreground">Native</dt>
-          <dd className="text-right tabular-nums text-foreground">{fmt(side.nativeUsdPerDay)}</dd>
-          <dt className="text-muted-foreground">Incentive</dt>
-          <dd className="text-right tabular-nums text-foreground">{fmt(side.incentiveUsdPerDay)}</dd>
-          <dt className={`font-medium text-foreground ${accentClass}`}>Total</dt>
-          <dd className={`text-right tabular-nums font-medium ${accentClass}`}>{fmt(side.totalUsdPerDay)}</dd>
-        </dl>
-      </div>
-    );
+    const supplyPrincipal = simulation.supply.inputUsd;
+    const borrowPrincipal = simulation.borrow.inputUsd;
+    const hasSupply = supplyPrincipal > 0;
+    const hasBorrow = borrowPrincipal > 0;
+    if (!hasSupply && !hasBorrow) return null;
+
+    interface EarnCostRow {
+      key: string;
+      label: string;
+      earn: number | null;
+      cost: number | null;
+      isNet?: boolean;
+      isTotal?: boolean;
+      isBreakdown?: boolean;
+      isSubBreakdown?: boolean;
+      href?: string | null;
+      capNote?: string;
+      capWarning?: boolean;
+    }
+
+    const supplySourceUsd = (src: SimulationSourceDetail, negate = false) =>
+      rateToUsdPerDay(src.after, supplyPrincipal, negate);
+    const borrowSourceUsd = (src: SimulationCampaignDetail | SimulationSourceDetail, negate = true) =>
+      rateToUsdPerDay(src.after, borrowPrincipal, negate);
+    // Borrow incentive is rebate (positive)
+    const borrowIncentiveSourceUsd = (src: SimulationSourceDetail) =>
+      rateToUsdPerDay(src.after, borrowPrincipal, false);
+
+    const rows: EarnCostRow[] = [];
+
+    // Net row (top)
+    if (hasSupply && hasBorrow && scenarioAccrual.netUsdPerDay != null) {
+      rows.push({
+        key: 'net',
+        label: 'Net',
+        earn: null,
+        cost: null,
+        isNet: true,
+      });
+    }
+
+    // Spread + Liquidity info rows
+    rows.push({
+      key: 'spread',
+      label: 'Spread',
+      earn: null,
+      cost: null,
+    });
+    rows.push({
+      key: 'liquidity',
+      label: 'Liquidity',
+      earn: null,
+      cost: null,
+    });
+
+    // Total
+    rows.push({
+      key: 'total',
+      label: 'Total',
+      earn: scenarioAccrual.supply?.totalUsdPerDay ?? null,
+      cost: scenarioAccrual.borrow?.totalUsdPerDay ?? null,
+      isTotal: true,
+    });
+
+    // Native
+    rows.push({
+      key: 'native',
+      label: 'Native',
+      earn: scenarioAccrual.supply?.nativeUsdPerDay ?? null,
+      cost: scenarioAccrual.borrow?.nativeUsdPerDay ?? null,
+      isBreakdown: true,
+      href: aaveUrl,
+    });
+
+    // Per-source incentive rows
+    const incentiveSources = [
+      { key: 'protocol', label: incentiveLabel('Protocol Incentive', 'Protocol'), supply: simulation.supply.sources.protocol, borrow: simulation.borrow.sources.protocol, href: aaveUrl },
+      { key: 'merit', label: incentiveLabel('ACI Incentive', 'ACI'), supply: simulation.supply.sources.merit, borrow: simulation.borrow.sources.merit, href: supplyMeritLink || borrowMeritLink },
+      { key: 'merkl', label: incentiveLabel('Merkl Incentive', 'Merkl'), supply: simulation.supply.sources.merkl, borrow: simulation.borrow.sources.merkl, href: supplyMerklLink || borrowMerklLink },
+      { key: 'brevis', label: incentiveLabel('Brevis Incentive', 'Brevis'), supply: simulation.supply.sources.brevis, borrow: simulation.borrow.sources.brevis, href: supplyBrevisLink || borrowBrevisLink },
+    ];
+
+    for (const src of incentiveSources) {
+      const earnVal = hasSupply ? supplySourceUsd(src.supply) : null;
+      // Incentives on borrow side are rebates (positive)
+      const costVal = hasBorrow ? borrowIncentiveSourceUsd(src.borrow) : null;
+      if (!hasMeaningfulValue(earnVal) && !hasMeaningfulValue(costVal) &&
+          !hasMeaningfulValue(src.supply.after) && !hasMeaningfulValue(src.borrow.after)) continue;
+      rows.push({
+        key: src.key,
+        label: src.label,
+        earn: earnVal,
+        cost: costVal,
+        isBreakdown: true,
+        href: src.href,
+      });
+
+      // Sub-campaign rows
+      const supplyCampaigns = src.supply.campaigns ?? [];
+      const borrowCampaigns = src.borrow.campaigns ?? [];
+      // Merge by campaign id or index
+      const allCampaignKeys = new Set([
+        ...supplyCampaigns.map((c, i) => c.id || `s${i}`),
+        ...borrowCampaigns.map((c, i) => c.id || `b${i}`),
+      ]);
+      if (supplyCampaigns.length > 1 || borrowCampaigns.length > 1) {
+        // Show per-campaign sub-rows
+        const maxLen = Math.max(supplyCampaigns.length, borrowCampaigns.length);
+        for (let i = 0; i < maxLen; i++) {
+          const sc = supplyCampaigns[i];
+          const bc = borrowCampaigns[i];
+          const label = sc?.label || bc?.label || `Campaign #${i + 1}`;
+          rows.push({
+            key: `${src.key}-c${i}`,
+            label,
+            earn: sc ? rateToUsdPerDay(sc.after, supplyPrincipal) : null,
+            cost: bc ? rateToUsdPerDay(bc.after, borrowPrincipal, true) : null,
+            isBreakdown: true,
+            isSubBreakdown: true,
+            capNote: sc?.capNote || bc?.capNote,
+            capWarning: sc?.capWarning || bc?.capWarning,
+            href: sc?.href || bc?.href || null,
+          });
+        }
+      }
+    }
+
+    const cellPy = effectiveCompact ? 'py-1' : 'py-1.5';
+    const metricPx = effectiveCompact ? 'px-3' : 'px-4';
+    const valuePx = effectiveCompact ? 'px-2.5' : 'px-3';
+
     return (
-      <div
-        className={`rounded-lg border border-border/60 bg-muted/20 dark:bg-muted/10 ${effectiveCompact ? 'mb-2 py-2.5' : 'mb-3 py-3'} ${pad}`}
-        role="region"
-        aria-label="Estimated USD per day"
-      >
-        <p className={`ds-text-11 text-muted-foreground ${effectiveCompact ? 'mb-2' : 'mb-3'}`}>
-          Est. USD / day
-        </p>
-        <div className={`flex flex-col gap-4 ${scenarioAccrual.supply && scenarioAccrual.borrow ? 'sm:flex-row sm:gap-8' : ''}`}>
-          {scenarioAccrual.supply ? renderSide('Supply (earn)', 'ds-text-emerald-600', scenarioAccrual.supply) : null}
-          {scenarioAccrual.borrow
-            ? renderSide('Borrow (carry)', 'ds-text-brand-cyan', scenarioAccrual.borrow, true)
-            : null}
-        </div>
-        {scenarioAccrual.netUsdPerDay != null ? (
-          <div
-            className={`mt-3 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 border-t border-border/50 pt-2 ${effectiveCompact ? '' : ''}`}
-          >
-            <span className="ds-text-12 font-semibold ds-text-purple-600">Net</span>
-            <span className="ds-text-12 tabular-nums font-semibold ds-text-purple-600">
-              {fmt(scenarioAccrual.netUsdPerDay)}
-            </span>
-          </div>
-        ) : null}
+      <div className="mb-2 overflow-hidden rounded-lg border border-border/50 bg-muted/20 dark:bg-muted/10">
+        <table className="w-full min-w-0 table-fixed">
+          <colgroup>
+            <col style={{ width: '40%' }} />
+            <col style={{ width: '30%' }} />
+            <col style={{ width: '30%' }} />
+          </colgroup>
+          <thead>
+            <tr className="bg-muted/30 border-b border-border/50">
+              <th className={`${cellPy} ${metricPx} text-left`}>
+                <span className="ds-text-11 text-muted-foreground font-medium">Est. USD / day</span>
+              </th>
+              <th className={`${cellPy} ${valuePx} text-right`}>
+                <span className="ds-text-11 ds-text-emerald-600 font-medium">Earn</span>
+              </th>
+              <th className={`${cellPy} ${valuePx} text-right`}>
+                <span className="ds-text-11 ds-text-brand-cyan font-medium">Cost</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody className="ds-text-12">
+            {rows.map((row) => {
+              // Special: Net row
+              if (row.isNet) {
+                return (
+                  <tr key={row.key} className="border-b border-border/50">
+                    <td className={`${cellPy} ${metricPx}`}>
+                      <span className="ds-text-12 font-bold ds-text-purple-600">{row.label}</span>
+                    </td>
+                    <td colSpan={2} className={`${cellPy} ${valuePx} text-right`}>
+                      <span className="ds-text-12 tabular-nums font-bold ds-text-purple-600">
+                        {fmt(scenarioAccrual!.netUsdPerDay)}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              }
+
+              // Special: Spread row
+              if (row.key === 'spread') {
+                return (
+                  <tr key={row.key}>
+                    <td className={`${cellPy} ${metricPx}`}>
+                      <span className="ds-text-12 font-medium ds-text-purple-600">Spread</span>
+                    </td>
+                    <td colSpan={2} className={`${cellPy} ${valuePx} text-right`}>
+                      <span className="ds-text-12 tabular-nums ds-text-purple-600">
+                        {formatSpread(simulation.spread.current)}
+                        {simulation.spread.after !== null && (
+                          <>
+                            <span className="text-muted-foreground mx-1">→</span>
+                            {formatSpread(simulation.spread.after)}
+                          </>
+                        )}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              }
+
+              // Special: Liquidity row
+              if (row.key === 'liquidity') {
+                const liqWarning = borrowCapExceeded && borrowLimitedByLiquidity;
+                return (
+                  <tr key={row.key} className={`border-b border-border/50 ${liqWarning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}`}>
+                    <td className={`${cellPy} ${metricPx}`}>
+                      <span className={`ds-text-12 font-medium ${liqWarning ? 'text-amber-700 dark:text-amber-400' : 'ds-text-purple-600'}`}>Liquidity</span>
+                    </td>
+                    <td colSpan={2} className={`${cellPy} ${valuePx} text-right`}>
+                      <span className="ds-text-12 tabular-nums ds-text-purple-600">
+                        {formatScenarioSize(simulation.marketMetrics.availableLiquidityUsd, { inputMode, tokenPrice: simulation.tokenPrice })}
+                        {simulation.marketMetrics.availableLiquidityUsdAfter !== null && (
+                          <>
+                            <span className="text-muted-foreground mx-1">→</span>
+                            {formatScenarioSize(simulation.marketMetrics.availableLiquidityUsdAfter, { inputMode, tokenPrice: simulation.tokenPrice })}
+                          </>
+                        )}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              }
+
+              // Data rows: Total / Native / Incentive sources
+              const indentClass = row.isSubBreakdown
+                ? 'ml-4 pl-2 border-l border-l-muted-foreground/30'
+                : row.isBreakdown
+                  ? 'ml-2 pl-2 border-l border-l-muted-foreground/30'
+                  : '';
+              const fontClass = row.isTotal ? 'font-semibold' : row.isBreakdown ? '' : 'font-medium';
+              const textClass = row.isBreakdown ? 'text-muted-foreground' : 'text-foreground';
+              const sizeClass = row.isBreakdown ? 'ds-text-11' : 'ds-text-12';
+
+              return (
+                <Fragment key={row.key}>
+                  <tr className={row.capWarning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
+                    <td className={`${cellPy} ${metricPx} align-top`}>
+                      <div className={indentClass}>
+                        {row.href ? (
+                          <a
+                            href={row.href}
+                            {...externalLinkTabProps(isMobile)}
+                            onClick={(e) => e.stopPropagation()}
+                            className={`${sizeClass} ${fontClass} ${textClass} flex items-center gap-1 hover:opacity-80`}
+                          >
+                            <span>{row.label}</span>
+                            <ExternalLink className="w-3 h-3 opacity-50 shrink-0" />
+                          </a>
+                        ) : (
+                          <span className={`${sizeClass} ${fontClass} ${textClass}`}>{row.label}</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className={`${cellPy} ${valuePx} text-right align-top`}>
+                      <span className={`${sizeClass} tabular-nums ${fontClass} ${hasSupply ? 'ds-text-emerald-600' : 'text-muted-foreground'}`}>
+                        {row.earn !== null ? fmt(row.earn) : '—'}
+                      </span>
+                    </td>
+                    <td className={`${cellPy} ${valuePx} text-right align-top`}>
+                      <span className={`${sizeClass} tabular-nums ${fontClass} ${hasBorrow ? 'ds-text-brand-cyan' : 'text-muted-foreground'}`}>
+                        {row.cost !== null ? fmt(row.cost) : '—'}
+                      </span>
+                    </td>
+                  </tr>
+                  {row.capNote && (
+                    <tr>
+                      <td colSpan={3} className={`pt-0 pb-1 ${metricPx}`}>
+                        <p className={`ds-text-11 ${row.isSubBreakdown ? 'pl-6' : row.isBreakdown ? 'pl-4' : ''} ${row.capWarning ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'} leading-snug`}>
+                          {row.capNote}
+                        </p>
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
     );
   };
@@ -775,60 +1007,13 @@ const SimulationSubRow = ({
         </div>
       )}
 
-      {renderScenarioUsdAccrual()}
+      {renderEarnCostTable()}
 
       {/* Layout: compact = single table; desktop = spread/liquidity bar + 2 columns */}
       {effectiveCompact ? (
         renderCompactLayout()
       ) : (
         <>
-          {/* Spread + Liquidity inline bar */}
-          <div className="flex items-center gap-0 mb-2 rounded-lg border border-border/50 bg-muted/20 dark:bg-muted/10 overflow-hidden min-w-0">
-            {/* Spread */}
-            <div className="flex-1 flex items-center gap-2.5 px-4 py-1.5 min-w-0">
-              <span className="ds-text-12 font-medium ds-text-purple-600 shrink-0">Spread</span>
-              <span className="ds-text-12 tabular-nums ds-text-purple-600">{formatSpread(simulation.spread.current)}</span>
-              <span className="ds-text-11 text-muted-foreground">→</span>
-              <span className={`ds-text-12 tabular-nums ${simulation.spread.after === null ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
-                {formatSpread(simulation.spread.after)}
-              </span>
-              {simulation.spread.delta !== null && (
-                <span className={`ds-text-11 tabular-nums px-1.5 py-0.5 rounded ${
-                  simulation.spread.delta < 0
-                    ? 'text-red-500 bg-red-500/10'
-                    : simulation.spread.delta > 0
-                      ? 'ds-text-emerald-600 bg-emerald-500/10'
-                      : 'text-muted-foreground bg-muted/30'
-                }`}>
-                  {formatDelta(simulation.spread.delta)}
-                </span>
-              )}
-            </div>
-            {/* Divider */}
-            <div className="w-px self-stretch bg-border/50" />
-            {/* Liquidity */}
-            <div className={`flex-1 flex items-center gap-2.5 px-4 py-1.5 min-w-0 ${borrowCapExceeded && borrowLimitedByLiquidity ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}`}>
-              <span className={`ds-text-12 font-medium shrink-0 ${borrowCapExceeded && borrowLimitedByLiquidity ? 'text-amber-700 dark:text-amber-400' : 'ds-text-purple-600'}`}>Liquidity</span>
-              <span className="ds-text-12 tabular-nums ds-text-purple-600">
-                {formatScenarioSize(simulation.marketMetrics.availableLiquidityUsd, { inputMode, tokenPrice: simulation.tokenPrice })}
-              </span>
-              <span className="ds-text-11 text-muted-foreground">→</span>
-              <span className={`ds-text-12 tabular-nums ${simulation.marketMetrics.availableLiquidityUsdAfter === null ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
-                {formatScenarioSize(simulation.marketMetrics.availableLiquidityUsdAfter, { inputMode, tokenPrice: simulation.tokenPrice })}
-              </span>
-              {simulation.marketMetrics.availableLiquidityUsdDelta !== null && (
-                <span className={`ds-text-11 tabular-nums px-1.5 py-0.5 rounded ${
-                  (simulation.marketMetrics.availableLiquidityUsdDelta ?? 0) > 0
-                    ? 'ds-text-emerald-600 bg-emerald-500/10'
-                    : (simulation.marketMetrics.availableLiquidityUsdDelta ?? 0) < 0
-                      ? 'text-red-500 bg-red-500/10'
-                      : 'text-muted-foreground bg-muted/30'
-                }`}>
-                  {formatScenarioSizeDelta(simulation.marketMetrics.availableLiquidityUsdDelta, { inputMode, tokenPrice: simulation.tokenPrice })}
-                </span>
-              )}
-            </div>
-          </div>
           {/* Supply + Borrow 2-column grid */}
           <div ref={gridRef} className="grid grid-cols-2 gap-2 min-w-0 items-stretch overflow-hidden">
             <div className="flex min-w-0 flex-col overflow-hidden">
