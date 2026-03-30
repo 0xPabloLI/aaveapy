@@ -651,80 +651,8 @@ const SimulationSubRow = ({
     </div>
   );
 
-  // Middle column (Spread + Liquidity) - amber border when borrow limited by liquidity
+  // Middle column warning flag (reused in inline bar)
   const middleColumnWarning = borrowCapExceeded && borrowLimitedByLiquidity;
-  const renderMiddleColumn = () => (
-    <div className="flex min-h-0 flex-1 flex-col min-w-0">
-      <table className="w-full min-w-0 table-fixed">
-        <colgroup>
-          <col style={{ width: '26%' }} />
-          <col style={{ width: '24%' }} />
-          <col style={{ width: '24%' }} />
-          <col style={{ width: '26%' }} />
-        </colgroup>
-        <thead>
-          <tr className="bg-muted/30 border-b border-border/50">
-            <th className="px-4 py-2 text-left">
-              {/* Empty title cell for alignment */}
-            </th>
-            <th className="px-3 py-2 text-right">
-              <span className="ds-text-11 text-muted-foreground">Current</span>
-            </th>
-            <th className="px-3 py-2 text-right">
-              <span className="ds-text-11 text-muted-foreground">After</span>
-            </th>
-            <th className="px-4 py-2 text-right">
-              <span className="ds-text-11 text-muted-foreground">Delta</span>
-            </th>
-          </tr>
-        </thead>
-        <tbody className="[&>tr:last-child>td]:pb-2.5">
-          {/* Spread first */}
-          <tr>
-            <td className="py-1.5 px-4">
-              <span className="ds-text-12 ds-text-purple-600">Spread</span>
-            </td>
-            <td className="py-1.5 px-3 text-right">
-              <span className="ds-text-12 tabular-nums ds-text-purple-600">{formatSpread(simulation.spread.current)}</span>
-            </td>
-            <td className="py-1.5 px-3 text-right">
-              <span className={`ds-text-12 tabular-nums ${simulation.spread.after === null ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
-                {formatSpread(simulation.spread.after)}
-              </span>
-            </td>
-            <td className="py-1.5 px-4 text-right">
-              <span className={`ds-text-12 tabular-nums ${simulation.spread.delta === null ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
-                {formatDelta(simulation.spread.delta)}
-              </span>
-            </td>
-          </tr>
-          {/* Liquidity second */}
-          <tr className={borrowCapExceeded && borrowLimitedByLiquidity ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
-            <td className="py-1.5 px-4">
-              <span className={`ds-text-12 ${borrowCapExceeded && borrowLimitedByLiquidity ? 'text-amber-700 dark:text-amber-400 font-medium' : 'ds-text-purple-600'}`}>
-                Liquidity
-              </span>
-            </td>
-            <td className="py-1.5 px-3 text-right">
-              <span className="ds-text-12 tabular-nums ds-text-purple-600">
-                {formatScenarioSize(simulation.marketMetrics.availableLiquidityUsd, { inputMode, tokenPrice: simulation.tokenPrice })}
-              </span>
-            </td>
-            <td className="py-1.5 px-3 text-right">
-              <span className={`ds-text-12 tabular-nums ${simulation.marketMetrics.availableLiquidityUsdAfter === null ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
-                {formatScenarioSize(simulation.marketMetrics.availableLiquidityUsdAfter, { inputMode, tokenPrice: simulation.tokenPrice })}
-              </span>
-            </td>
-            <td className="py-1.5 px-4 text-right">
-              <span className={`ds-text-12 tabular-nums ${simulation.marketMetrics.availableLiquidityUsdDelta === null ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
-                {formatScenarioSizeDelta(simulation.marketMetrics.availableLiquidityUsdDelta, { inputMode, tokenPrice: simulation.tokenPrice })}
-              </span>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  );
 
   const showHeaderBlock = showEmptyStateNote;
 
@@ -835,21 +763,68 @@ const SimulationSubRow = ({
 
       {renderScenarioUsdAccrual()}
 
-      {/* Layout: compact = single table; desktop = 3 columns. Switch to compact when grid overflows (adaptive). */}
+      {/* Layout: compact = single table; desktop = spread/liquidity bar + 2 columns */}
       {effectiveCompact ? (
         renderCompactLayout()
       ) : (
-        <div ref={gridRef} className="grid grid-cols-3 gap-2 min-w-0 items-stretch overflow-hidden">
-          <div className="flex min-w-0 flex-col overflow-hidden">
-            {renderTable('Supply', supplyRows, 'ds-text-emerald-600', 'border-emerald-500/40', 'border-l-[rgb(var(--ds-emerald-500-rgb))]', supplyCapExceeded)}
+        <>
+          {/* Spread + Liquidity inline bar */}
+          <div className="flex items-center gap-0 mb-2 rounded-lg border border-border/50 bg-muted/20 dark:bg-muted/10 overflow-hidden min-w-0">
+            {/* Spread */}
+            <div className="flex-1 flex items-center gap-2.5 px-4 py-1.5 min-w-0">
+              <span className="ds-text-12 font-medium ds-text-purple-600 shrink-0">Spread</span>
+              <span className="ds-text-12 tabular-nums ds-text-purple-600">{formatSpread(simulation.spread.current)}</span>
+              <span className="ds-text-11 text-muted-foreground">→</span>
+              <span className={`ds-text-12 tabular-nums ${simulation.spread.after === null ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
+                {formatSpread(simulation.spread.after)}
+              </span>
+              {simulation.spread.delta !== null && (
+                <span className={`ds-text-11 tabular-nums px-1.5 py-0.5 rounded ${
+                  simulation.spread.delta < 0
+                    ? 'text-red-500 bg-red-500/10'
+                    : simulation.spread.delta > 0
+                      ? 'ds-text-emerald-600 bg-emerald-500/10'
+                      : 'text-muted-foreground bg-muted/30'
+                }`}>
+                  {formatDelta(simulation.spread.delta)}
+                </span>
+              )}
+            </div>
+            {/* Divider */}
+            <div className="w-px self-stretch bg-border/50" />
+            {/* Liquidity */}
+            <div className={`flex-1 flex items-center gap-2.5 px-4 py-1.5 min-w-0 ${borrowCapExceeded && borrowLimitedByLiquidity ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}`}>
+              <span className={`ds-text-12 font-medium shrink-0 ${borrowCapExceeded && borrowLimitedByLiquidity ? 'text-amber-700 dark:text-amber-400' : 'ds-text-purple-600'}`}>Liquidity</span>
+              <span className="ds-text-12 tabular-nums ds-text-purple-600">
+                {formatScenarioSize(simulation.marketMetrics.availableLiquidityUsd, { inputMode, tokenPrice: simulation.tokenPrice })}
+              </span>
+              <span className="ds-text-11 text-muted-foreground">→</span>
+              <span className={`ds-text-12 tabular-nums ${simulation.marketMetrics.availableLiquidityUsdAfter === null ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
+                {formatScenarioSize(simulation.marketMetrics.availableLiquidityUsdAfter, { inputMode, tokenPrice: simulation.tokenPrice })}
+              </span>
+              {simulation.marketMetrics.availableLiquidityUsdDelta !== null && (
+                <span className={`ds-text-11 tabular-nums px-1.5 py-0.5 rounded ${
+                  (simulation.marketMetrics.availableLiquidityUsdDelta ?? 0) > 0
+                    ? 'ds-text-emerald-600 bg-emerald-500/10'
+                    : (simulation.marketMetrics.availableLiquidityUsdDelta ?? 0) < 0
+                      ? 'text-red-500 bg-red-500/10'
+                      : 'text-muted-foreground bg-muted/30'
+                }`}>
+                  {formatScenarioSizeDelta(simulation.marketMetrics.availableLiquidityUsdDelta, { inputMode, tokenPrice: simulation.tokenPrice })}
+                </span>
+              )}
+            </div>
           </div>
-          <div className="flex min-w-0 flex-col overflow-hidden">
-            {renderMiddleColumn()}
+          {/* Supply + Borrow 2-column grid */}
+          <div ref={gridRef} className="grid grid-cols-2 gap-2 min-w-0 items-stretch overflow-hidden">
+            <div className="flex min-w-0 flex-col overflow-hidden">
+              {renderTable('Supply', supplyRows, 'ds-text-emerald-600', 'border-emerald-500/40', 'border-l-[rgb(var(--ds-emerald-500-rgb))]', supplyCapExceeded)}
+            </div>
+            <div className="flex min-w-0 flex-col overflow-hidden">
+              {renderTable('Borrow', borrowRows, 'ds-text-brand-cyan', 'border-[rgb(var(--ds-brand-cyan-rgb))]/40', 'border-l-[rgb(var(--ds-brand-cyan-rgb))]', borrowCapExceeded)}
+            </div>
           </div>
-          <div className="flex min-w-0 flex-col overflow-hidden">
-            {renderTable('Borrow', borrowRows, 'ds-text-brand-cyan', 'border-[rgb(var(--ds-brand-cyan-rgb))]/40', 'border-l-[rgb(var(--ds-brand-cyan-rgb))]', borrowCapExceeded)}
-          </div>
-        </div>
+        </>
       )}
 
       {/* Footer notes */}
