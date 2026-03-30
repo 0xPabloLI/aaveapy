@@ -794,7 +794,7 @@ const SimulationSubRow = ({
     const valuePx = effectiveCompact ? 'px-2.5' : 'px-3';
 
     return (
-      <div className="mb-2 overflow-hidden rounded-lg border border-border/50 bg-muted/20 dark:bg-muted/10">
+      <div className="overflow-hidden rounded-lg border border-border/50 bg-muted/20 dark:bg-muted/10 h-full">
         <table className="w-full min-w-0 table-fixed">
           <colgroup>
             <col style={{ width: '40%' }} />
