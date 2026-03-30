@@ -948,17 +948,47 @@ const SimulationSubRow = ({
         </div>
       )}
 
-      {renderEarnCostTable()}
-
-      {/* Layout: compact = single table; desktop = spread/liquidity bar + 2 columns */}
+      {/* Layout: compact = single table; desktop = spread/liquidity bar + 3 columns */}
       {effectiveCompact ? (
         renderCompactLayout()
       ) : (
         <>
-          {/* Supply + Borrow 2-column grid */}
-          <div ref={gridRef} className="grid grid-cols-2 gap-2 min-w-0 items-stretch overflow-hidden">
+          {/* Spread + Liquidity summary bar */}
+          <div className="flex items-center gap-4 mb-2 px-4 py-1.5 rounded-lg border border-border/50 bg-muted/20 dark:bg-muted/10">
+            <div className="flex items-center gap-1.5">
+              <span className="ds-text-12 font-bold ds-text-purple-600">Spread</span>
+              <span className="ds-text-12 tabular-nums ds-text-purple-600">
+                {formatSpread(simulation.spread.current)}
+                {simulation.spread.after !== null && (
+                  <>
+                    <span className="text-muted-foreground mx-1">→</span>
+                    {formatSpread(simulation.spread.after)}
+                  </>
+                )}
+              </span>
+            </div>
+            <div className="w-px h-4 bg-border/60" />
+            <div className="flex items-center gap-1.5">
+              <span className={`ds-text-12 font-bold ${middleColumnWarning ? 'text-amber-700 dark:text-amber-400' : 'ds-text-purple-600'}`}>Liquidity</span>
+              <span className="ds-text-12 tabular-nums ds-text-purple-600">
+                {formatScenarioSize(simulation.marketMetrics.availableLiquidityUsd, { inputMode, tokenPrice: simulation.tokenPrice })}
+                {simulation.marketMetrics.availableLiquidityUsdAfter !== null && (
+                  <>
+                    <span className="text-muted-foreground mx-1">→</span>
+                    {formatScenarioSize(simulation.marketMetrics.availableLiquidityUsdAfter, { inputMode, tokenPrice: simulation.tokenPrice })}
+                  </>
+                )}
+              </span>
+            </div>
+          </div>
+
+          {/* Supply + Earn/Cost + Borrow 3-column grid */}
+          <div ref={gridRef} className="grid grid-cols-3 gap-2 min-w-0 items-stretch overflow-hidden">
             <div className="flex min-w-0 flex-col overflow-hidden">
               {renderTable('Supply', supplyRows, 'ds-text-emerald-600', 'border-emerald-500/40', 'border-l-[rgb(var(--ds-emerald-500-rgb))]', supplyCapExceeded)}
+            </div>
+            <div className="flex min-w-0 flex-col overflow-hidden">
+              {renderEarnCostTable()}
             </div>
             <div className="flex min-w-0 flex-col overflow-hidden">
               {renderTable('Borrow', borrowRows, 'ds-text-brand-cyan', 'border-[rgb(var(--ds-brand-cyan-rgb))]/40', 'border-l-[rgb(var(--ds-brand-cyan-rgb))]', borrowCapExceeded)}
