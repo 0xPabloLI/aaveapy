@@ -1,5 +1,5 @@
-import { memo, Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { ExternalLink } from 'lucide-react';
+import { memo, Fragment, useEffect, useState } from 'react';
+import { AlertTriangle, ExternalLink } from 'lucide-react';
 import { TableRow, TableCell } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ReserveWithSpread, ETHEREUM_MARKET_NAMES } from '@/types/aave';
@@ -11,11 +11,11 @@ import { getChainIconSrc } from '@/lib/chainIcons';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { IncentiveIcon } from '@/components/IncentiveIcon';
 import {
-  formatReserveDeficitModeValue,
-  formatReserveDeficitTokenExact,
+  formatReserveDeficitTokenCompact,
   getReserveDeficitUsdAmount,
   hasReserveDeficit,
 } from '@/lib/deficit';
+import DeficitLiquidityRing from './DeficitLiquidityRing';
 import SimulationSubRow from './SimulationSubRow';
 import CapProgressRing from './CapProgressRing';
 import BorrowCapProgressRing from './BorrowCapProgressRing';
@@ -92,23 +92,11 @@ const DesktopReserveRow = memo(({
   onCorrectBorrowInput,
 }: DesktopReserveRowProps) => {
   const [hasSimulationMounted, setHasSimulationMounted] = useState(isExpanded);
-  const mainRowRef = useRef<HTMLTableRowElement>(null);
-  const [mainRowHeight, setMainRowHeight] = useState(0);
 
   useEffect(() => {
     if (isExpanded) {
       setHasSimulationMounted(true);
     }
-  }, [isExpanded]);
-
-  useLayoutEffect(() => {
-    if (!isExpanded || !mainRowRef.current) return;
-    const el = mainRowRef.current;
-    const update = () => setMainRowHeight(Math.ceil(el.getBoundingClientRect().height));
-    update();
-    const ro = new ResizeObserver(update);
-    ro.observe(el);
-    return () => ro.disconnect();
   }, [isExpanded]);
 
   const getMarketDisplayName = () => {
@@ -145,17 +133,31 @@ const DesktopReserveRow = memo(({
   });
   const hasDeficit = hasReserveDeficit(reserve);
   const deficitUsd = getReserveDeficitUsdAmount(reserve, displayTokenPrice);
-  const deficitInlineValue =
-    deficitUsd != null
-      ? formatScenarioSize(deficitUsd, { inputMode: 'usd' })
-      : formatReserveDeficitModeValue(reserve, 'token', displayTokenPrice);
-  const deficitTokenExact = formatReserveDeficitTokenExact(reserve);
+  const deficitTokenCompact = formatReserveDeficitTokenCompact(reserve);
+  const deficitInlineValue = inputMode === 'usd'
+    ? (deficitUsd != null ? formatScenarioSize(deficitUsd, { inputMode: 'usd' }) : '-')
+    : deficitTokenCompact;
+  const deficitTokenLabel = deficitTokenCompact !== '-' ? deficitTokenCompact : undefined;
   const deficitUsdLabel = deficitUsd != null ? formatUsd(deficitUsd) : '— (token price unavailable)';
+
+  const supplySizeLabel = formatScenarioSize(displayReserveSizeUsd, {
+    inputMode,
+    tokenPrice: displayTokenPrice,
+    tokenSymbol: reserve.tokenSymbol,
+  });
+  const borrowSizeLabel = formatScenarioSize(totalBorrowedUsd, {
+    inputMode,
+    tokenPrice: displayTokenPrice,
+    tokenSymbol: reserve.tokenSymbol,
+  });
+  const hasSupplyCap =
+    reserve.supplyCapUsd != null && Number.isFinite(reserve.supplyCapUsd) && reserve.supplyCapUsd > 0;
+  const hasBorrowCap =
+    reserve.borrowCapUsd != null && Number.isFinite(reserve.borrowCapUsd) && reserve.borrowCapUsd > 0;
 
   return (
     <Fragment>
       <TableRow
-        ref={mainRowRef}
         data-reserve-id={reserveId}
         className={cn(
           'transition-colors duration-150 cursor-pointer hover:bg-muted/60 active:bg-muted/80',
@@ -222,23 +224,24 @@ const DesktopReserveRow = memo(({
         <TableCell className="px-[var(--ds-space-2)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell tabular-nums ds-text-13">
           <div className="flex flex-col items-center justify-center gap-[var(--ds-space-0-5)]">
             {/* Supply Size - Green (match Supply APY primary: ds-text-emerald-500) */}
-            <div className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)] ds-text-emerald-500">
-              <span className="font-medium tabular-nums">
-                {formatScenarioSize(displayReserveSizeUsd, { inputMode, tokenPrice: displayTokenPrice, tokenSymbol: reserve.tokenSymbol })}
-              </span>
+            {hasSupplyCap ? (
               <CapProgressRing
                 size={displayReserveSizeUsd}
                 cap={reserve.supplyCapUsd}
                 displayMode={inputMode}
                 tokenPrice={displayTokenPrice}
                 tokenSymbol={reserve.tokenSymbol}
+                label={<span className="font-medium tabular-nums">{supplySizeLabel}</span>}
+                triggerClassName="ds-text-emerald-500"
+                triggerAriaLabel={`Supply cap details for ${reserve.tokenSymbol}`}
               />
-            </div>
+            ) : (
+              <div className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)] ds-text-emerald-500">
+                <span className="font-medium tabular-nums">{supplySizeLabel}</span>
+              </div>
+            )}
             {/* Borrow Size - Cyan (match tooltip: font-medium + ds-text-brand-cyan) */}
-            <div className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)] ds-text-brand-cyan">
-              <span className="font-medium tabular-nums">
-                {formatScenarioSize(totalBorrowedUsd, { inputMode, tokenPrice: displayTokenPrice, tokenSymbol: reserve.tokenSymbol })}
-              </span>
+            {hasBorrowCap ? (
               <BorrowCapProgressRing
                 borrowed={totalBorrowedUsd}
                 cap={reserve.borrowCapUsd}
@@ -246,36 +249,63 @@ const DesktopReserveRow = memo(({
                 displayMode={inputMode}
                 tokenPrice={displayTokenPrice}
                 tokenSymbol={reserve.tokenSymbol}
+                label={<span className="font-medium tabular-nums">{borrowSizeLabel}</span>}
+                triggerClassName="ds-text-brand-cyan"
+                triggerAriaLabel={`Borrow cap details for ${reserve.tokenSymbol}`}
               />
-            </div>
+            ) : (
+              <div className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)] ds-text-brand-cyan">
+                <span className="font-medium tabular-nums">{borrowSizeLabel}</span>
+              </div>
+            )}
             {hasDeficit && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    type="button"
-                    onClick={(event) => event.stopPropagation()}
-                    className="ds-text-11 tabular-nums text-muted-foreground/80 hover:text-muted-foreground transition-colors"
-                    aria-label={`Deficit details for ${reserve.tokenSymbol}`}
-                  >
-                    Deficit {deficitInlineValue}
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="top" align="center" className="max-w-[18rem]">
-                  <div className="space-y-1 ds-text-11">
-                    <div className="flex items-center justify-between gap-4">
-                      <span className="text-muted-foreground">USD</span>
-                      <span className="tabular-nums">{deficitUsdLabel}</span>
+              deficitUsd != null ? (
+                <DeficitLiquidityRing
+                  deficitUsd={deficitUsd}
+                  totalSuppliedUsd={displayReserveSizeUsd}
+                  tokenDeficitLabel={deficitTokenLabel}
+                  displayMode={inputMode}
+                  tokenPrice={displayTokenPrice}
+                  tokenSymbol={reserve.tokenSymbol}
+                  label={(
+                    <span className="inline-flex items-center gap-1 ds-text-11 tabular-nums text-amber-600/90">
+                      <AlertTriangle className="h-3 w-3" />
+                      <span>{deficitInlineValue}</span>
+                    </span>
+                  )}
+                  triggerClassName="text-amber-600/90"
+                  triggerAriaLabel={`Deficit share of total supplied plus deficit for ${reserve.tokenSymbol}`}
+                />
+              ) : (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={(event) => event.stopPropagation()}
+                      className="inline-flex items-center gap-1 ds-text-11 tabular-nums text-amber-600/90 hover:text-amber-600 transition-colors"
+                      aria-label={`Deficit details for ${reserve.tokenSymbol}`}
+                    >
+                      <AlertTriangle className="h-3 w-3" />
+                      <span>{deficitInlineValue}</span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" align="center" className="max-w-[18rem]">
+                    <div className="space-y-1 ds-text-11">
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-muted-foreground">USD</span>
+                        <span className="tabular-nums">{deficitUsdLabel}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-muted-foreground">Token</span>
+                        <span className="tabular-nums">{deficitInlineValue}</span>
+                      </div>
+                      <p className="pt-1 border-t border-border/60 text-muted-foreground">
+                        Deficit is tracked separately and dilutes supply-side native yield.
+                      </p>
                     </div>
-                    <div className="flex items-center justify-between gap-4">
-                      <span className="text-muted-foreground">Token</span>
-                      <span className="tabular-nums">{deficitTokenExact} {reserve.tokenSymbol}</span>
-                    </div>
-                    <p className="pt-1 border-t border-border/60 text-muted-foreground">
-                      Deficit dilutes supply-side native yield.
-                    </p>
-                  </div>
-                </TooltipContent>
-              </Tooltip>
+                  </TooltipContent>
+                </Tooltip>
+              )
             )}
           </div>
         </TableCell>
@@ -392,12 +422,7 @@ const DesktopReserveRow = memo(({
           <TableCell colSpan={8} className="min-w-0 p-0">
             <div
               data-reserves-simulation-scrollport
-              className="overflow-y-auto px-[var(--ds-space-3)] py-[var(--ds-space-3)]"
-              style={{
-                maxHeight: mainRowHeight > 0
-                  ? `calc(100dvh - var(--reserves-expanded-main-row-top, 5.75rem) - ${mainRowHeight}px)`
-                  : undefined,
-              }}
+              className="px-[var(--ds-space-3)] py-[var(--ds-space-3)]"
             >
               {hasSimulationMounted && simulation && (
                 <SimulationSubRow

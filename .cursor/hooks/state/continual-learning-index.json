@@ -1,5 +1,6 @@
 {
   "version": 1,
+  "preferenceMining": "Parent session transcripts at .../<uuid>/<uuid>.jsonl are mined for user preferences; subagents/*.jsonl mtimes are tracked but not used for preference mining.",
   "transcripts": {
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/00dc31af-0291-40cd-a5bc-f80038819b73/00dc31af-0291-40cd-a5bc-f80038819b73.jsonl": {
       "mtimeMs": 1774601411143.9802,
@@ -10,12 +11,12 @@
       "lastProcessedAt": "2026-03-29T12:49:17.425Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/02414a08-8643-4b45-a0b6-642cccd29ea4/02414a08-8643-4b45-a0b6-642cccd29ea4.jsonl": {
-      "mtimeMs": 1774788491454.375,
-      "lastProcessedAt": "2026-03-29T12:49:17.425Z"
+      "mtimeMs": 1774792865175.6443,
+      "lastProcessedAt": "2026-03-30T03:25:46.608Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/02414a08-8643-4b45-a0b6-642cccd29ea4/subagents/9d7d4e29-f29a-4249-8c0d-ddeccbe0dca4.jsonl": {
-      "mtimeMs": 1774788527946.4817,
-      "lastProcessedAt": "2026-03-29T12:49:17.425Z"
+      "mtimeMs": 1774788654283.5188,
+      "lastProcessedAt": "2026-03-30T03:25:46.608Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/024c5a73-c5fe-4bc4-8598-175e38d8f559/024c5a73-c5fe-4bc4-8598-175e38d8f559.jsonl": {
       "mtimeMs": 1773587029492.6467,
@@ -52,6 +53,14 @@
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/06a353ac-e522-41ad-b6eb-7a90fe34a943/06a353ac-e522-41ad-b6eb-7a90fe34a943.jsonl": {
       "mtimeMs": 1773484354143.099,
       "lastProcessedAt": "2026-03-29T12:49:17.425Z"
+    },
+    "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/07038763-188c-47ea-9f46-2e95836dab4f/07038763-188c-47ea-9f46-2e95836dab4f.jsonl": {
+      "mtimeMs": 1774841088370.3762,
+      "lastProcessedAt": "2026-03-30T03:25:46.608Z"
+    },
+    "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/07038763-188c-47ea-9f46-2e95836dab4f/subagents/778bfc53-d909-4e59-9b30-3e6a8a2af2c2.jsonl": {
+      "mtimeMs": 1774841116775.9165,
+      "lastProcessedAt": "2026-03-30T03:25:46.608Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/0a4f5c53-7d6e-4a8a-9a66-647542c9dcc8/0a4f5c53-7d6e-4a8a-9a66-647542c9dcc8.jsonl": {
       "mtimeMs": 1774622763956.75,
@@ -232,6 +241,10 @@
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/36afd3ef-936e-446f-b7e7-2a0e4789a0c4/36afd3ef-936e-446f-b7e7-2a0e4789a0c4.jsonl": {
       "mtimeMs": 1774614286422.0574,
       "lastProcessedAt": "2026-03-29T12:49:17.425Z"
+    },
+    "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/36df97d9-cb85-4b79-b740-940d9ed25d2a/36df97d9-cb85-4b79-b740-940d9ed25d2a.jsonl": {
+      "mtimeMs": 1774831580889.0566,
+      "lastProcessedAt": "2026-03-30T03:25:46.608Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/38262718-0f7e-44cd-9f2b-d4d61cfa5c20/38262718-0f7e-44cd-9f2b-d4d61cfa5c20.jsonl": {
       "mtimeMs": 1774681672650.121,
@@ -449,6 +462,10 @@
       "mtimeMs": 1774590058630.814,
       "lastProcessedAt": "2026-03-29T12:49:17.425Z"
     },
+    "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/82e3e981-942b-424e-95f4-48c940d9a13d/82e3e981-942b-424e-95f4-48c940d9a13d.jsonl": {
+      "mtimeMs": 1774833369551.1304,
+      "lastProcessedAt": "2026-03-30T03:25:46.608Z"
+    },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/839e33fb-acf2-4058-887a-8d89ddaa2dc0/839e33fb-acf2-4058-887a-8d89ddaa2dc0.jsonl": {
       "mtimeMs": 1773403504764.4688,
       "lastProcessedAt": "2026-03-29T12:49:17.425Z"
@@ -474,8 +491,8 @@
       "lastProcessedAt": "2026-03-29T12:49:17.425Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/8846d6c8-501c-4b67-9dc1-8a16eba9b127/8846d6c8-501c-4b67-9dc1-8a16eba9b127.jsonl": {
-      "mtimeMs": 1774774760169.6545,
-      "lastProcessedAt": "2026-03-29T12:49:17.425Z"
+      "mtimeMs": 1774793039629.1467,
+      "lastProcessedAt": "2026-03-30T03:25:46.608Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/8846d6c8-501c-4b67-9dc1-8a16eba9b127/subagents/2b437e78-3b79-4229-b779-6245a6651e86.jsonl": {
       "mtimeMs": 1774774125730.8613,
@@ -484,6 +501,10 @@
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/8a088e68-3d7a-469e-b8d3-fe56af833538/8a088e68-3d7a-469e-b8d3-fe56af833538.jsonl": {
       "mtimeMs": 1773454564465.4048,
       "lastProcessedAt": "2026-03-29T12:49:17.425Z"
+    },
+    "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/8c337f1c-21a4-4edf-856c-5b3853295e5d/8c337f1c-21a4-4edf-856c-5b3853295e5d.jsonl": {
+      "mtimeMs": 1774792505855.3403,
+      "lastProcessedAt": "2026-03-30T03:25:46.608Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/8cedca2b-5ba2-4501-b7dc-84f01d7402e4/8cedca2b-5ba2-4501-b7dc-84f01d7402e4.jsonl": {
       "mtimeMs": 1774588754680.2202,
@@ -832,6 +853,10 @@
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/fd3a011c-cdbc-400c-bd2a-e94c8e3659ea/fd3a011c-cdbc-400c-bd2a-e94c8e3659ea.jsonl": {
       "mtimeMs": 1774588481317.098,
       "lastProcessedAt": "2026-03-29T12:49:17.425Z"
+    },
+    "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/fda58e89-e744-4c1f-96dc-0b3a93d6724b/fda58e89-e744-4c1f-96dc-0b3a93d6724b.jsonl": {
+      "mtimeMs": 1774793409479.3442,
+      "lastProcessedAt": "2026-03-30T03:25:46.608Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/fe556f69-59bf-4331-9922-72bc59e39943/fe556f69-59bf-4331-9922-72bc59e39943.jsonl": {
       "mtimeMs": 1774491790245.3584,

@@ -49,7 +49,9 @@ test.describe('Reserves simulation nested scroll (desktop)', () => {
     // Tighten max-height so overflow is deterministic across reserves/API payloads (assertion is wheel routing, not exact layout px).
     await scrollPort.evaluate((el) => {
       el.dataset.e2ePrevMaxHeight = el.style.maxHeight;
+      el.dataset.e2ePrevOverflow = el.style.overflowY;
       el.style.maxHeight = '140px';
+      el.style.overflowY = 'auto';
     });
     const hasOverflow = await scrollPort.evaluate((el) => el.scrollHeight > el.clientHeight + 24);
     expect(hasOverflow, 'simulation scrollport should overflow after E2E max-height clamp').toBe(true);
@@ -98,9 +100,10 @@ test.describe('Reserves simulation nested scroll (desktop)', () => {
       ).toBeLessThan(deltaStrip * 0.85);
     } finally {
       await scrollPort.evaluate((el) => {
-        const prev = el.dataset.e2ePrevMaxHeight;
-        el.style.maxHeight = prev ?? '';
+        el.style.maxHeight = el.dataset.e2ePrevMaxHeight ?? '';
+        el.style.overflowY = el.dataset.e2ePrevOverflow ?? '';
         delete el.dataset.e2ePrevMaxHeight;
+        delete el.dataset.e2ePrevOverflow;
       });
     }
   });
@@ -140,7 +143,9 @@ test.describe('Repro: same-scenario double wheel on simulation (inner scroll adv
 
     await scrollPort.evaluate((el) => {
       el.dataset.e2ePrevMaxHeight = el.style.maxHeight;
+      el.dataset.e2ePrevOverflow = el.style.overflowY;
       el.style.maxHeight = '160px';
+      el.style.overflowY = 'auto';
     });
 
     try {
@@ -200,9 +205,10 @@ test.describe('Repro: same-scenario double wheel on simulation (inner scroll adv
       ).toBe(true);
     } finally {
       await scrollPort.evaluate((el) => {
-        const prev = el.dataset.e2ePrevMaxHeight;
-        el.style.maxHeight = prev ?? '';
+        el.style.maxHeight = el.dataset.e2ePrevMaxHeight ?? '';
+        el.style.overflowY = el.dataset.e2ePrevOverflow ?? '';
         delete el.dataset.e2ePrevMaxHeight;
+        delete el.dataset.e2ePrevOverflow;
       });
     }
   });

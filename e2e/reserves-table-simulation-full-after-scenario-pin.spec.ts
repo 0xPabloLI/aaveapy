@@ -113,50 +113,53 @@ test.describe('Simulation fully visible after scenario-driven pin (desktop)', ()
     const scrollPort = simulationScrollPortForMainRow(expandedMain);
     await expect(scrollPort).toBeVisible({ timeout: 10_000 });
 
+    // 1) E2E clamp: prove simulation content IS tall enough to overflow a small pane.
     await scrollPort.evaluate((el) => {
       el.dataset.e2ePrevMaxHeight = el.style.maxHeight;
+      el.dataset.e2ePrevOverflow = el.style.overflowY;
       el.style.maxHeight = '180px';
+      el.style.overflowY = 'auto';
     });
 
-    try {
-      await expect
-        .poll(
-          async () => {
-            const { scrollHeight, clientHeight } = await scrollPort.evaluate((e) => ({
-              scrollHeight: e.scrollHeight,
-              clientHeight: e.clientHeight,
-            }));
-            return scrollHeight - clientHeight;
-          },
-          {
-            timeout: 15_000,
-            message:
-              'after E2E clamp: simulation content should exceed inner pane (see nested-scroll spec)',
-          },
-        )
-        .toBeGreaterThan(24);
+    await expect
+      .poll(
+        async () => {
+          const { scrollHeight, clientHeight } = await scrollPort.evaluate((e) => ({
+            scrollHeight: e.scrollHeight,
+            clientHeight: e.clientHeight,
+          }));
+          return scrollHeight - clientHeight;
+        },
+        {
+          timeout: 15_000,
+          message:
+            'after E2E clamp: simulation content should exceed inner pane (see nested-scroll spec)',
+        },
+      )
+      .toBeGreaterThan(24);
 
-      const metrics = await scrollPort.evaluate((el) => ({
-        scrollHeight: el.scrollHeight,
-        clientHeight: el.clientHeight,
-      }));
+    // 2) Restore product state (no max-height, no overflow-y) and verify no inner scroll.
+    await scrollPort.evaluate((el) => {
+      el.style.maxHeight = el.dataset.e2ePrevMaxHeight ?? '';
+      el.style.overflowY = el.dataset.e2ePrevOverflow ?? '';
+      delete el.dataset.e2ePrevMaxHeight;
+      delete el.dataset.e2ePrevOverflow;
+    });
 
-      expect(
-        metrics.scrollHeight,
-        'tall simulation body expected after large scenario (raise supply if this fails)',
-      ).toBeGreaterThan(320);
+    const metrics = await scrollPort.evaluate((el) => ({
+      scrollHeight: el.scrollHeight,
+      clientHeight: el.clientHeight,
+    }));
 
-      expect(
-        metrics.scrollHeight,
-        `Expected entire simulation visible without inner scroll after pin (scrollHeight=${metrics.scrollHeight} <= clientHeight=${metrics.clientHeight}). ` +
-          'Remove or relax DesktopReserveRow max-height + overflow-y-auto so this passes.',
-      ).toBeLessThanOrEqual(metrics.clientHeight + 2);
-    } finally {
-      await scrollPort.evaluate((el) => {
-        const prev = el.dataset.e2ePrevMaxHeight;
-        el.style.maxHeight = prev ?? '';
-        delete el.dataset.e2ePrevMaxHeight;
-      });
-    }
+    expect(
+      metrics.scrollHeight,
+      'tall simulation body expected after large scenario (raise supply if this fails)',
+    ).toBeGreaterThan(320);
+
+    expect(
+      metrics.scrollHeight,
+      `Expected entire simulation visible without inner scroll after pin (scrollHeight=${metrics.scrollHeight} <= clientHeight=${metrics.clientHeight}). ` +
+        'Remove or relax DesktopReserveRow max-height + overflow-y-auto so this passes.',
+    ).toBeLessThanOrEqual(metrics.clientHeight + 2);
   });
 });

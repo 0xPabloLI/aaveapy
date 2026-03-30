@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  calculateDeficitShareRatio,
   formatReserveDeficitModeValue,
-  formatReserveDeficitTokenExact,
+  formatReserveDeficitTokenCompact,
   getReserveDeficitTokenAmount,
   getReserveDeficitUsdAmount,
   hasReserveDeficit,
@@ -18,7 +19,7 @@ describe('deficit helpers', () => {
 
     expect(hasReserveDeficit(reserve)).toBe(true);
     expect(getReserveDeficitTokenAmount(reserve)).toBeCloseTo(51198.023044, 6);
-    expect(formatReserveDeficitTokenExact(reserve)).toBe('51198.023044');
+    expect(formatReserveDeficitTokenCompact(reserve)).toBe('51.20K');
   });
 
   it('computes usd deficit when token price is available', () => {
@@ -58,5 +59,10 @@ describe('deficit helpers', () => {
     expect(hasReserveDeficit(noDeficit)).toBe(false);
     expect(formatReserveDeficitModeValue(noDeficit, 'usd', 1800)).toBe('-');
     expect(formatReserveDeficitModeValue(invalidDeficit, 'token', 1800)).toBe('-');
+  });
+
+  it('computes deficit share using deficit + total supplied denominator', () => {
+    expect(calculateDeficitShareRatio({ deficitUsd: 100, totalSuppliedUsd: 900 })).toBeCloseTo(0.1, 10);
+    expect(calculateDeficitShareRatio({ deficitUsd: 100, totalSuppliedUsd: 0 })).toBeCloseTo(1, 10);
   });
 });

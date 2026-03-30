@@ -12,7 +12,7 @@ import type {
 import type { ReserveWithSpread, MeritIncentive, MerklOpportunityGroup, BrevisIncentive } from '@/types/aave';
 import { ETHEREUM_MARKET_NAMES } from '@/types/aave';
 import { getFirstActiveBrevisLink } from '@/lib/brevis';
-import { formatReserveDeficitTokenExact, getReserveDeficitUsdAmount, hasReserveDeficit } from '@/lib/deficit';
+import { formatReserveDeficitTokenCompact, getReserveDeficitUsdAmount, hasReserveDeficit } from '@/lib/deficit';
 
 const getFirstMeritLink = (merits?: MeritIncentive[]): string | null => {
   if (!merits || !Array.isArray(merits)) return null;
@@ -657,11 +657,11 @@ const SimulationSubRow = ({
   const showHeaderBlock = showEmptyStateNote;
   const hasDeficit = hasReserveDeficit(reserve);
   const deficitUsd = getReserveDeficitUsdAmount(reserve, simulation.tokenPrice ?? reserve.tokenPrice);
-  const deficitTokenExact = formatReserveDeficitTokenExact(reserve);
+  const deficitTokenCompact = formatReserveDeficitTokenCompact(reserve);
   const deficitSummary = hasDeficit
     ? deficitUsd != null
-      ? `Reserve deficit: ${formatUsd(deficitUsd)} (${deficitTokenExact} ${reserve.tokenSymbol}). This dilutes supply-side native yield.`
-      : `Reserve deficit: ${deficitTokenExact} ${reserve.tokenSymbol}. USD value unavailable (missing token price). This dilutes supply-side native yield.`
+      ? `Reserve deficit: ${formatUsd(deficitUsd)} (${deficitTokenCompact} ${reserve.tokenSymbol}). This dilutes supply-side native yield.`
+      : `Reserve deficit: ${deficitTokenCompact} ${reserve.tokenSymbol}. USD value unavailable (missing token price). This dilutes supply-side native yield.`
     : null;
 
   const scenarioAccrual = simulation.scenarioUsdAccrual;

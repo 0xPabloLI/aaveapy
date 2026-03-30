@@ -22,7 +22,7 @@ import { compareIncentiveWithNative } from '@/lib/sorters';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
 import { openExternalUrl } from '@/lib/externalNavigation';
-import { getReserveDeficitUsdAmount } from '@/lib/deficit';
+import { calculateDeficitShareRatio, getReserveDeficitUsdAmount } from '@/lib/deficit';
 import IncentiveTooltip from './IncentiveTooltip';
 import MobileReserveCard from './MobileReserveCard';
 import DesktopReserveRow from './DesktopReserveRow';
@@ -71,7 +71,7 @@ const ReservesTable = ({
   const [tokenSortOrder, setTokenSortOrder] = useState<'asc' | 'desc'>('asc');
   const [marketSortOrder, setMarketSortOrder] = useState<'asc' | 'desc'>('asc');
   const [priceSortOrder, setPriceSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [sizeSortMode, setSizeSortMode] = useState<'supply' | 'borrow' | 'deficit'>('supply');
+  const [sizeSortMode, setSizeSortMode] = useState<'supply' | 'borrow' | 'deficitRatio' | 'deficitAmount'>('supply');
   const [sizeSortOrder, setSizeSortOrder] = useState<'asc' | 'desc'>('desc');
   const [utilSortOrder, setUtilSortOrder] = useState<'asc' | 'desc'>('desc');
   const [showSizeSortMenu, setShowSizeSortMenu] = useState(false);
@@ -91,6 +91,8 @@ const ReservesTable = ({
   const lastSortedIdsForPinScrollRef = useRef<string[]>([]);
   const scenarioPinScrollBaselineReadyRef = useRef(false);
   const scenarioNeedsPinScrollRef = useRef(false);
+  const scenarioPinOrderReadyRef = useRef(false);
+  const scenarioPinScheduleTokenRef = useRef(0);
   const cancelScenarioPinScrollRef = useRef<(() => void) | null>(null);
   const lastReservesKeyForFilterPinRef = useRef<string | null>(null);
   const cancelFilterPinScrollRef = useRef<(() => void) | null>(null);
@@ -184,7 +186,7 @@ const ReservesTable = ({
     return true;
   }, [hasSharedScenario, activeSortColumn, sizeSortMode]);
 
-  const schedulePinScrollToReserve = useCallback((reserveId: string, delayMs: number, opts?: { instant?: boolean }) => {
+  const schedulePinScrollToReserve = useCallback((reserveId: string, delayMs: number, opts?: { instant?: boolean; onSettled?: () => void }) => {
     const mode = isMobile ? 'minimal-if-clipped' : 'pin-main-row-top';
     const instant = opts?.instant ?? false;
     const escapeId = (raw: string) => (
@@ -203,12 +205,33 @@ const ReservesTable = ({
       const row = document.querySelector(`tr[data-reserve-id="${escapedId}"]`);
       if (anchor instanceof HTMLElement || row instanceof HTMLElement) {
         requestAnimationFrame(() => {
-          requestAnimationFrame(() => scrollExpandedSimulationIntoView(reserveId, { mode, instant }));
+          requestAnimationFrame(() => {
+            if (cancelled) return;
+            let correctionCount = 0;
+            const maxCorrections = mode === 'pin-main-row-top' ? 9 : 4;
+            const runCorrection = () => {
+              if (cancelled) return;
+              scrollExpandedSimulationIntoView(reserveId, {
+                mode,
+                instant: correctionCount === 0 ? instant : true,
+              });
+              correctionCount += 1;
+              if (correctionCount >= maxCorrections) {
+                opts?.onSettled?.();
+                return;
+              }
+              window.setTimeout(runCorrection, 110);
+            };
+            runCorrection();
+          });
         });
         return;
       }
       attempt += 1;
-      if (attempt >= maxAttempts) return;
+      if (attempt >= maxAttempts) {
+        opts?.onSettled?.();
+        return;
+      }
       window.setTimeout(runAttempt, retryMs);
     };
 
@@ -381,6 +404,13 @@ const ReservesTable = ({
     return getReserveDeficitUsdAmount(reserve, tokenPrice);
   };
 
+  const getDisplayDeficitRatio = (reserve: ReserveWithSpread): number | null => {
+    return calculateDeficitShareRatio({
+      deficitUsd: getDisplayDeficit(reserve),
+      totalSuppliedUsd: getDisplayReserveSizeUsd(reserve),
+    });
+  };
+
   // Sort data based on active column and its sort mode
   const sortedData = useMemo(() => {
     return [...reserves].sort((a, b) => {
@@ -410,7 +440,11 @@ const ReservesTable = ({
           const aT = getTotalBorrowedUsd(a) ?? -Infinity;
           const bT = getTotalBorrowedUsd(b) ?? -Infinity;
           comparison = aT - bT;
-        } else if (sizeSortMode === 'deficit') {
+        } else if (sizeSortMode === 'deficitRatio') {
+          const aT = getDisplayDeficitRatio(a) ?? -Infinity;
+          const bT = getDisplayDeficitRatio(b) ?? -Infinity;
+          comparison = aT - bT;
+        } else if (sizeSortMode === 'deficitAmount') {
           const aT = getDisplayDeficit(a) ?? -Infinity;
           const bT = getDisplayDeficit(b) ?? -Infinity;
           comparison = aT - bT;
@@ -533,11 +567,19 @@ const ReservesTable = ({
 
     const scenarioChanged = scenarioKey !== lastScenarioKeyForPinScrollRef.current;
     if (scenarioChanged) {
+      cancelScenarioPinScrollRef.current?.();
+      cancelScenarioPinScrollRef.current = null;
+      scenarioPinScheduleTokenRef.current += 1;
       lastScenarioKeyForPinScrollRef.current = scenarioKey;
       scenarioNeedsPinScrollRef.current = true;
+      scenarioPinOrderReadyRef.current = false;
     }
 
-    if (scenarioNeedsPinScrollRef.current && !orderChanged) {
+    if (scenarioNeedsPinScrollRef.current && orderChanged) {
+      scenarioPinOrderReadyRef.current = true;
+    }
+
+    if (scenarioNeedsPinScrollRef.current && !scenarioPinOrderReadyRef.current) {
       lastSortedIdsForPinScrollRef.current = ids;
       return;
     }
@@ -545,17 +587,44 @@ const ReservesTable = ({
     if (scenarioChanged || scenarioNeedsPinScrollRef.current) {
       lastSortedIdsForPinScrollRef.current = ids;
       if (
-        orderChanged &&
         scenarioNeedsPinScrollRef.current &&
+        scenarioPinOrderReadyRef.current &&
         expandScrollFollowsScenarioSort &&
         expandedReserveId
       ) {
-        scenarioNeedsPinScrollRef.current = false;
+        const expandedIndex = sortedData.findIndex((r) => getReserveSimulationId(r) === expandedReserveId);
+        if (expandedIndex < 0) {
+          scenarioNeedsPinScrollRef.current = false;
+          scenarioPinOrderReadyRef.current = false;
+          scenarioPinScheduleTokenRef.current += 1;
+          cancelScenarioPinScrollRef.current?.();
+          cancelScenarioPinScrollRef.current = null;
+          return;
+        }
+        const requiredCount = Math.min(expandedIndex + 6, sortedData.length);
+        const currentCount = minVisibleCount ?? DEFAULT_VISIBLE_COUNT;
+        if (currentCount < requiredCount) {
+          // Wait for the expanded-row buffer effect (expanded + 5 rows) so pinning has enough scroll room.
+          return;
+        }
         cancelScenarioPinScrollRef.current?.();
-        cancelScenarioPinScrollRef.current = schedulePinScrollToReserve(expandedReserveId, 320) ?? null;
+        const scheduleToken = scenarioPinScheduleTokenRef.current + 1;
+        scenarioPinScheduleTokenRef.current = scheduleToken;
+        scenarioNeedsPinScrollRef.current = false;
+        scenarioPinOrderReadyRef.current = false;
+        cancelScenarioPinScrollRef.current = schedulePinScrollToReserve(expandedReserveId, 320, {
+          onSettled: () => {
+            if (scenarioPinScheduleTokenRef.current !== scheduleToken) return;
+            cancelScenarioPinScrollRef.current = null;
+          },
+        }) ?? null;
         return;
       }
       scenarioNeedsPinScrollRef.current = false;
+      scenarioPinOrderReadyRef.current = false;
+      scenarioPinScheduleTokenRef.current += 1;
+      cancelScenarioPinScrollRef.current?.();
+      cancelScenarioPinScrollRef.current = null;
       return;
     }
 
@@ -567,6 +636,7 @@ const ReservesTable = ({
     meritMerklNetPosition,
     sortedData,
     expandedReserveId,
+    minVisibleCount,
     expandScrollFollowsScenarioSort,
     schedulePinScrollToReserve,
   ]);
@@ -635,7 +705,8 @@ const ReservesTable = ({
   const sizeSortLabel = {
     supply: 'Supply',
     borrow: 'Borrow',
-    deficit: 'Deficit',
+    deficitRatio: 'Deficit (%)',
+    deficitAmount: 'Deficit (Amount)',
   }[sizeSortMode];
   const sizeSortAccentClass =
     sizeSortMode === 'supply'
@@ -947,24 +1018,52 @@ const ReservesTable = ({
                     <button
                       type="button"
                       onClick={() => {
-                        const isAlreadySelected = sizeSortMode === 'deficit' && activeSortColumn === 'size';
+                        const isAlreadySelected = sizeSortMode === 'deficitAmount' && activeSortColumn === 'size';
                         if (isAlreadySelected && sizeSortOrder === 'desc') {
                           setSizeSortOrder('asc');
                         } else {
-                          setSizeSortMode('deficit');
+                          setSizeSortMode('deficitAmount');
                           setActiveSortColumn('size');
                           setSizeSortOrder('desc');
                         }
                         setShowSizeSortMenu(false);
                       }}
                       className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-13 transition-colors flex items-center justify-between ${
-                        sizeSortMode === 'deficit' && activeSortColumn === 'size'
+                        sizeSortMode === 'deficitAmount' && activeSortColumn === 'size'
                           ? 'text-foreground font-bold bg-card/60'
                           : 'text-muted-foreground'
                       }`}
                     >
                       <span>Deficit</span>
-                      {sizeSortMode === 'deficit' && activeSortColumn === 'size' ? (
+                      {sizeSortMode === 'deficitAmount' && activeSortColumn === 'size' ? (
+                        sizeSortOrder === 'desc' ? (
+                          <ArrowDown className="w-3 h-3 text-foreground" />
+                        ) : (
+                          <ArrowUp className="w-3 h-3 text-foreground" />
+                        )
+                      ) : null}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const isAlreadySelected = sizeSortMode === 'deficitRatio' && activeSortColumn === 'size';
+                        if (isAlreadySelected && sizeSortOrder === 'desc') {
+                          setSizeSortOrder('asc');
+                        } else {
+                          setSizeSortMode('deficitRatio');
+                          setActiveSortColumn('size');
+                          setSizeSortOrder('desc');
+                        }
+                        setShowSizeSortMenu(false);
+                      }}
+                      className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-13 transition-colors flex items-center justify-between ${
+                        sizeSortMode === 'deficitRatio' && activeSortColumn === 'size'
+                          ? 'text-foreground font-bold bg-card/60'
+                          : 'text-muted-foreground'
+                      }`}
+                    >
+                      <span>Deficit (%)</span>
+                      {sizeSortMode === 'deficitRatio' && activeSortColumn === 'size' ? (
                         sizeSortOrder === 'desc' ? (
                           <ArrowDown className="w-3 h-3 text-foreground" />
                         ) : (
@@ -1621,24 +1720,55 @@ const ReservesTable = ({
                               type="button"
                               onClick={() => {
                                 collapseExpandedOnSort();
-                                const isAlreadySelected = sizeSortMode === 'deficit' && activeSortColumn === 'size';
+                                const isAlreadySelected = sizeSortMode === 'deficitAmount' && activeSortColumn === 'size';
                                 if (isAlreadySelected && sizeSortOrder === 'desc') {
                                   setSizeSortOrder('asc');
                                 } else {
-                                  setSizeSortMode('deficit');
+                                  setSizeSortMode('deficitAmount');
                                   setActiveSortColumn('size');
                                   setSizeSortOrder('desc');
                                 }
                                 setShowSizeSortMenu(false);
                               }}
                               className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-12 hover:bg-muted/50 transition-colors flex items-center justify-between ${
-                                sizeSortMode === 'deficit' && activeSortColumn === 'size'
+                                sizeSortMode === 'deficitAmount' && activeSortColumn === 'size'
                                   ? 'text-foreground font-bold bg-card/60'
                                   : 'text-foreground/80'
                               }`}
                             >
                               <span>Sort by Deficit</span>
-                              {sizeSortMode === 'deficit' && activeSortColumn === 'size' ? (
+                              {sizeSortMode === 'deficitAmount' && activeSortColumn === 'size' ? (
+                                sizeSortOrder === 'desc' ? (
+                                  <ArrowDown className="w-3 h-3 text-foreground" />
+                                ) : (
+                                  <ArrowUp className="w-3 h-3 text-foreground" />
+                                )
+                              ) : (
+                                <ArrowDown className="w-3 h-3 text-muted-foreground/70" />
+                              )}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                collapseExpandedOnSort();
+                                const isAlreadySelected = sizeSortMode === 'deficitRatio' && activeSortColumn === 'size';
+                                if (isAlreadySelected && sizeSortOrder === 'desc') {
+                                  setSizeSortOrder('asc');
+                                } else {
+                                  setSizeSortMode('deficitRatio');
+                                  setActiveSortColumn('size');
+                                  setSizeSortOrder('desc');
+                                }
+                                setShowSizeSortMenu(false);
+                              }}
+                              className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-12 hover:bg-muted/50 transition-colors flex items-center justify-between ${
+                                sizeSortMode === 'deficitRatio' && activeSortColumn === 'size'
+                                  ? 'text-foreground font-bold bg-card/60'
+                                  : 'text-foreground/80'
+                              }`}
+                            >
+                              <span>Sort by Deficit (%)</span>
+                              {sizeSortMode === 'deficitRatio' && activeSortColumn === 'size' ? (
                                 sizeSortOrder === 'desc' ? (
                                   <ArrowDown className="w-3 h-3 text-foreground" />
                                 ) : (

@@ -9,6 +9,8 @@ const TOKEN_DECIMAL_FOR_NUMBER = 8;
 
 const isPositiveFinite = (value: number | null | undefined): value is number =>
   value != null && Number.isFinite(value) && value > 0;
+const isNonNegativeFinite = (value: number | null | undefined): value is number =>
+  value != null && Number.isFinite(value) && value >= 0;
 
 const parseNonNegativeBigInt = (value: string | null | undefined): bigint | null => {
   if (!value) return null;
@@ -66,6 +68,14 @@ export const formatReserveDeficitTokenExact = (
   return unitsToDecimalString(raw, decimals, maxFractionDigits);
 };
 
+export const formatReserveDeficitTokenCompact = (
+  reserve: Pick<ReserveWithSpread, 'deficit' | 'decimals'>
+): string => {
+  const tokenAmount = getReserveDeficitTokenAmount(reserve);
+  if (!isPositiveFinite(tokenAmount)) return '-';
+  return formatReserveSizeToken(tokenAmount);
+};
+
 export const getReserveDeficitTokenAmount = (
   reserve: Pick<ReserveWithSpread, 'deficit' | 'decimals'>
 ): number | null => {
@@ -82,6 +92,19 @@ export const getReserveDeficitUsdAmount = (
   const tokenAmount = getReserveDeficitTokenAmount(reserve);
   if (!isPositiveFinite(tokenAmount) || !isPositiveFinite(tokenPrice)) return null;
   return tokenAmount * tokenPrice;
+};
+
+export const calculateDeficitShareRatio = ({
+  deficitUsd,
+  totalSuppliedUsd,
+}: {
+  deficitUsd: number | null | undefined;
+  totalSuppliedUsd: number | null | undefined;
+}): number | null => {
+  if (!isPositiveFinite(deficitUsd) || !isNonNegativeFinite(totalSuppliedUsd)) return null;
+  const denominator = deficitUsd + totalSuppliedUsd;
+  if (!Number.isFinite(denominator) || denominator <= 0) return null;
+  return deficitUsd / denominator;
 };
 
 export const formatReserveDeficitModeValue = (

@@ -1,5 +1,5 @@
 import { memo, useEffect, useState } from 'react';
-import { ExternalLink, ListCollapse, X } from 'lucide-react';
+import { AlertTriangle, ExternalLink, ListCollapse, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ReserveWithSpread, ETHEREUM_MARKET_NAMES } from '@/types/aave';
 import { formatPercent, formatSpread, resolveVisibleIncentiveBadgeValue } from '@/lib/formatters';
@@ -14,8 +14,13 @@ import SimulationSubRow from './SimulationSubRow';
 import UtilizationIndicator from './UtilizationIndicator';
 import CapProgressRing from './CapProgressRing';
 import BorrowCapProgressRing from './BorrowCapProgressRing';
+import DeficitLiquidityRing from './DeficitLiquidityRing';
 import { formatScenarioSize } from '@/lib/formatters';
-import { formatReserveDeficitModeValue, getReserveDeficitUsdAmount, hasReserveDeficit } from '@/lib/deficit';
+import {
+  formatReserveDeficitTokenCompact,
+  getReserveDeficitUsdAmount,
+  hasReserveDeficit,
+} from '@/lib/deficit';
 import type { RateSimulationResult } from '@/hooks/useRateSimulation';
 import { getAvailableToBorrowUsd, getPoolLiquidityUsd, getScenarioSupplySizeUsd, getTotalBorrowedUsd, getValidTokenPrice } from '@/lib/scenarioSize';
 
@@ -269,10 +274,11 @@ const MobileReserveCard = memo(({
   });
   const hasDeficit = hasReserveDeficit(reserve);
   const deficitUsd = getReserveDeficitUsdAmount(reserve, displayTokenPrice);
-  const deficitInlineValue =
-    deficitUsd != null
-      ? formatScenarioSize(deficitUsd, { inputMode: 'usd' })
-      : formatReserveDeficitModeValue(reserve, 'token', displayTokenPrice);
+  const deficitTokenCompact = formatReserveDeficitTokenCompact(reserve);
+  const deficitInlineValue = inputMode === 'usd'
+    ? (deficitUsd != null ? formatScenarioSize(deficitUsd, { inputMode: 'usd' }) : '-')
+    : deficitTokenCompact;
+  const deficitTokenLabel = deficitTokenCompact !== '-' ? deficitTokenCompact : undefined;
 
   if (variant === 'simulationOnly') {
     return (
@@ -585,9 +591,30 @@ const MobileReserveCard = memo(({
         <div className="flex w-full flex-col">
           {renderAmountRow()}
           {hasDeficit ? (
-            <p className="mt-0.5 px-4 text-right ds-text-10 tabular-nums text-muted-foreground/75">
-              Deficit {deficitInlineValue}
-            </p>
+            <div className="mt-0.5 px-4 flex items-center justify-end">
+              {deficitUsd != null ? (
+                <DeficitLiquidityRing
+                  deficitUsd={deficitUsd}
+                  totalSuppliedUsd={displayReserveSizeUsd}
+                  tokenDeficitLabel={deficitTokenLabel}
+                  ringSize={12}
+                  strokeWidth={1.2}
+                  label={(
+                    <span className="inline-flex items-center gap-1 ds-text-10 tabular-nums text-amber-600/90">
+                      <AlertTriangle className="h-3 w-3" />
+                      <span>{deficitInlineValue}</span>
+                    </span>
+                  )}
+                  triggerClassName="text-amber-600/90"
+                  triggerAriaLabel={`Deficit share of total supplied plus deficit for ${reserve.tokenSymbol}`}
+                />
+              ) : (
+                <p className="inline-flex items-center gap-1 text-right ds-text-10 tabular-nums text-amber-600/90">
+                  <AlertTriangle className="h-3 w-3" />
+                  <span>{deficitInlineValue}</span>
+                </p>
+              )}
+            </div>
           ) : null}
           <AnimatePresence mode="wait" initial={false}>
             <motion.div

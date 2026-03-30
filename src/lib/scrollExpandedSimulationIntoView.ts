@@ -124,6 +124,8 @@ export function scrollExpandedSimulationIntoView(
 
   if (options.mode === 'pin-main-row-top') {
     const mainRect = mainRow.getBoundingClientRect();
+    // Always pin main row top to sticky band. The spacer below the table ensures
+    // enough scroll room for the simulation bottom to be in viewport.
     const delta = mainRect.top - pinnedTopY;
     if (Math.abs(delta) > 1) {
       window.scrollBy({ top: delta, behavior });
