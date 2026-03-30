@@ -1,5 +1,5 @@
 import { memo, Fragment, useEffect, useState } from 'react';
-import { AlertTriangle, ExternalLink } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 import { TableRow, TableCell } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ReserveWithSpread, ETHEREUM_MARKET_NAMES } from '@/types/aave';
@@ -11,7 +11,9 @@ import { getChainIconSrc } from '@/lib/chainIcons';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { IncentiveIcon } from '@/components/IncentiveIcon';
 import {
+  calculateDeficitShareRatio,
   formatReserveDeficitTokenCompact,
+  getDeficitSeverity,
   getReserveDeficitUsdAmount,
   hasReserveDeficit,
 } from '@/lib/deficit';
@@ -20,6 +22,7 @@ import SimulationSubRow from './SimulationSubRow';
 import CapProgressRing from './CapProgressRing';
 import BorrowCapProgressRing from './BorrowCapProgressRing';
 import UtilizationIndicator from './UtilizationIndicator';
+import DeficitShieldIcon from './DeficitShieldIcon';
 import type { RateSimulationResult, ScenarioInputMode } from '@/hooks/useRateSimulation';
 import { getPoolLiquidityUsd, getScenarioSupplySizeUsd, getTotalBorrowedUsd, getValidTokenPrice } from '@/lib/scenarioSize';
 import { cn } from '@/lib/utils';
@@ -139,6 +142,17 @@ const DesktopReserveRow = memo(({
     : deficitTokenCompact;
   const deficitTokenLabel = deficitTokenCompact !== '-' ? deficitTokenCompact : undefined;
   const deficitUsdLabel = deficitUsd != null ? formatUsd(deficitUsd) : '— (token price unavailable)';
+  const deficitShareRatio = calculateDeficitShareRatio({
+    deficitUsd,
+    totalSuppliedUsd: displayReserveSizeUsd,
+  });
+  const deficitSeverity = getDeficitSeverity(deficitShareRatio);
+  const isNeutralDeficit = deficitSeverity === 'neutral';
+  const deficitTextClass = deficitSeverity === 'critical'
+    ? 'text-amber-600/90'
+    : deficitSeverity === 'warning'
+      ? 'text-amber-500/90'
+      : 'text-muted-foreground/60';
 
   const supplySizeLabel = formatScenarioSize(displayReserveSizeUsd, {
     inputMode,
@@ -268,12 +282,12 @@ const DesktopReserveRow = memo(({
                   tokenPrice={displayTokenPrice}
                   tokenSymbol={reserve.tokenSymbol}
                   label={(
-                    <span className="inline-flex items-center gap-1 ds-text-11 tabular-nums text-amber-600/90">
-                      <AlertTriangle className="h-3 w-3" />
+                    <span className={cn('inline-flex items-center gap-1 ds-text-11 tabular-nums', deficitTextClass)}>
+                      <DeficitShieldIcon ratio={deficitShareRatio} className={cn(isNeutralDeficit && 'opacity-70')} />
                       <span>{deficitInlineValue}</span>
                     </span>
                   )}
-                  triggerClassName="text-amber-600/90"
+                  triggerClassName={deficitTextClass}
                   triggerAriaLabel={`Deficit share of total supplied plus deficit for ${reserve.tokenSymbol}`}
                 />
               ) : (
@@ -282,10 +296,14 @@ const DesktopReserveRow = memo(({
                     <button
                       type="button"
                       onClick={(event) => event.stopPropagation()}
-                      className="inline-flex items-center gap-1 ds-text-11 tabular-nums text-amber-600/90 hover:text-amber-600 transition-colors"
+                      className={cn(
+                        'inline-flex items-center gap-1 ds-text-11 tabular-nums transition-colors',
+                        deficitTextClass,
+                        isNeutralDeficit ? 'hover:text-muted-foreground/70' : 'hover:text-amber-600',
+                      )}
                       aria-label={`Deficit details for ${reserve.tokenSymbol}`}
                     >
-                      <AlertTriangle className="h-3 w-3" />
+                      <DeficitShieldIcon ratio={deficitShareRatio} />
                       <span>{deficitInlineValue}</span>
                     </button>
                   </TooltipTrigger>

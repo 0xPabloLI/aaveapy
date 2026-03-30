@@ -4,6 +4,7 @@ import {
   calculateDeficitShareRatio,
   formatReserveDeficitModeValue,
   formatReserveDeficitTokenCompact,
+  getDeficitSeverity,
   getReserveDeficitTokenAmount,
   getReserveDeficitUsdAmount,
   hasReserveDeficit,
@@ -64,5 +65,12 @@ describe('deficit helpers', () => {
   it('computes deficit share using deficit + total supplied denominator', () => {
     expect(calculateDeficitShareRatio({ deficitUsd: 100, totalSuppliedUsd: 900 })).toBeCloseTo(0.1, 10);
     expect(calculateDeficitShareRatio({ deficitUsd: 100, totalSuppliedUsd: 0 })).toBeCloseTo(1, 10);
+  });
+
+  it('maps deficit ratio to severity tiers', () => {
+    expect(getDeficitSeverity(null)).toBe('neutral');
+    expect(getDeficitSeverity(0.02)).toBe('neutral');
+    expect(getDeficitSeverity(0.1)).toBe('warning');
+    expect(getDeficitSeverity(0.25)).toBe('critical');
   });
 });

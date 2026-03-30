@@ -2,10 +2,13 @@ import type { ReserveWithSpread } from '@/types/aave';
 import { formatReserveSizeToken, formatReserveSizeUsd } from '@/lib/formatters';
 
 type ScenarioMode = 'usd' | 'token';
+export type DeficitSeverity = 'neutral' | 'warning' | 'critical';
 
 const DEFAULT_DECIMALS = 18;
 const TOKEN_DECIMAL_PREVIEW = 6;
 const TOKEN_DECIMAL_FOR_NUMBER = 8;
+const DEFICIT_WARNING_RATIO = 0.08;
+const DEFICIT_CRITICAL_RATIO = 0.2;
 
 const isPositiveFinite = (value: number | null | undefined): value is number =>
   value != null && Number.isFinite(value) && value > 0;
@@ -105,6 +108,15 @@ export const calculateDeficitShareRatio = ({
   const denominator = deficitUsd + totalSuppliedUsd;
   if (!Number.isFinite(denominator) || denominator <= 0) return null;
   return deficitUsd / denominator;
+};
+
+export const getDeficitSeverity = (
+  ratio: number | null | undefined
+): DeficitSeverity => {
+  if (ratio == null || !Number.isFinite(ratio)) return 'neutral';
+  if (ratio >= DEFICIT_CRITICAL_RATIO) return 'critical';
+  if (ratio >= DEFICIT_WARNING_RATIO) return 'warning';
+  return 'neutral';
 };
 
 export const formatReserveDeficitModeValue = (

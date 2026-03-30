@@ -1,5 +1,5 @@
 import { memo, useEffect, useState } from 'react';
-import { AlertTriangle, ExternalLink, ListCollapse, X } from 'lucide-react';
+import { ExternalLink, ListCollapse, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ReserveWithSpread, ETHEREUM_MARKET_NAMES } from '@/types/aave';
 import { formatPercent, formatSpread, resolveVisibleIncentiveBadgeValue } from '@/lib/formatters';
@@ -15,14 +15,18 @@ import UtilizationIndicator from './UtilizationIndicator';
 import CapProgressRing from './CapProgressRing';
 import BorrowCapProgressRing from './BorrowCapProgressRing';
 import DeficitLiquidityRing from './DeficitLiquidityRing';
+import DeficitShieldIcon from './DeficitShieldIcon';
 import { formatScenarioSize } from '@/lib/formatters';
 import {
+  calculateDeficitShareRatio,
   formatReserveDeficitTokenCompact,
+  getDeficitSeverity,
   getReserveDeficitUsdAmount,
   hasReserveDeficit,
 } from '@/lib/deficit';
 import type { RateSimulationResult } from '@/hooks/useRateSimulation';
 import { getAvailableToBorrowUsd, getPoolLiquidityUsd, getScenarioSupplySizeUsd, getTotalBorrowedUsd, getValidTokenPrice } from '@/lib/scenarioSize';
+import { cn } from '@/lib/utils';
 
 /** Same content as CapProgressRing tooltip; used in mobile bottom sheet. */
 function SupplyCapSheetContent({
@@ -279,6 +283,17 @@ const MobileReserveCard = memo(({
     ? (deficitUsd != null ? formatScenarioSize(deficitUsd, { inputMode: 'usd' }) : '-')
     : deficitTokenCompact;
   const deficitTokenLabel = deficitTokenCompact !== '-' ? deficitTokenCompact : undefined;
+  const deficitShareRatio = calculateDeficitShareRatio({
+    deficitUsd,
+    totalSuppliedUsd: displayReserveSizeUsd,
+  });
+  const deficitSeverity = getDeficitSeverity(deficitShareRatio);
+  const isNeutralDeficit = deficitSeverity === 'neutral';
+  const deficitTextClass = deficitSeverity === 'critical'
+    ? 'text-amber-600/90'
+    : deficitSeverity === 'warning'
+      ? 'text-amber-500/90'
+      : 'text-muted-foreground/60';
 
   if (variant === 'simulationOnly') {
     return (
@@ -600,17 +615,17 @@ const MobileReserveCard = memo(({
                   ringSize={12}
                   strokeWidth={1.2}
                   label={(
-                    <span className="inline-flex items-center gap-1 ds-text-10 tabular-nums text-amber-600/90">
-                      <AlertTriangle className="h-3 w-3" />
+                    <span className={cn('inline-flex items-center gap-1 ds-text-10 tabular-nums', deficitTextClass)}>
+                      <DeficitShieldIcon ratio={deficitShareRatio} className={cn(isNeutralDeficit && 'opacity-70')} />
                       <span>{deficitInlineValue}</span>
                     </span>
                   )}
-                  triggerClassName="text-amber-600/90"
+                  triggerClassName={deficitTextClass}
                   triggerAriaLabel={`Deficit share of total supplied plus deficit for ${reserve.tokenSymbol}`}
                 />
               ) : (
-                <p className="inline-flex items-center gap-1 text-right ds-text-10 tabular-nums text-amber-600/90">
-                  <AlertTriangle className="h-3 w-3" />
+                <p className={cn('inline-flex items-center gap-1 text-right ds-text-10 tabular-nums', deficitTextClass)}>
+                  <DeficitShieldIcon ratio={deficitShareRatio} className={cn(isNeutralDeficit && 'opacity-70')} />
                   <span>{deficitInlineValue}</span>
                 </p>
               )}
