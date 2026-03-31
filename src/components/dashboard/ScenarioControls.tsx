@@ -263,8 +263,8 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
 
   /* Desktop: tinted inner well (no extra outer border — reserves card frame only). */
   return (
-    <div className="w-full min-w-0 rounded-xl bg-card/60 px-[var(--ds-space-2-5)] py-0.5 backdrop-blur-sm">
-      <div className="flex w-full min-w-0 items-center gap-[var(--ds-space-2-5)]">
+    <div className="w-full min-w-0 rounded-xl bg-card/60 px-3 py-0.5 backdrop-blur-sm">
+      <div className="flex w-full min-w-0 items-center gap-3">
       <div className={cn('flex shrink-0 items-center', segmentedTrack)}>
         <button
           type="button"
