@@ -844,6 +844,18 @@ const ReservesTable = ({
   const desktopTableCardRef = useRef<HTMLDivElement>(null);
   const desktopStickyScenarioRef = useRef<HTMLDivElement>(null);
   const desktopStickyTheadRef = useRef<HTMLTableSectionElement>(null);
+  const [tableInView, setTableInView] = useState(false);
+
+  useEffect(() => {
+    const target = isMobile ? mobileTableRef.current : desktopTableCardRef.current;
+    if (!target) return;
+    const io = new IntersectionObserver(
+      ([entry]) => setTableInView(entry.isIntersecting),
+      { threshold: 0 },
+    );
+    io.observe(target);
+    return () => io.disconnect();
+  }, [isMobile]);
 
   useEffect(() => {
     if (isMobile) return;
