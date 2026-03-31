@@ -952,7 +952,7 @@ const SimulationSubRow = ({
     };
 
     return (
-      <div className="overflow-hidden rounded-lg border border-border/50 bg-card w-full px-1.5">
+      <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-border/50 bg-card w-full px-1.5">
         <table className="w-full min-w-0 table-fixed">
           <colgroup>
             <col style={{ width: '56%' }} />
