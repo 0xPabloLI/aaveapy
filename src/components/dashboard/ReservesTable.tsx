@@ -851,7 +851,7 @@ const ReservesTable = ({
     if (!target) return;
     const io = new IntersectionObserver(
       ([entry]) => setTableInView(entry.isIntersecting),
-      { threshold: 0 },
+      { threshold: 0, rootMargin: '200px 0px 200px 0px' },
     );
     io.observe(target);
     return () => io.disconnect();
