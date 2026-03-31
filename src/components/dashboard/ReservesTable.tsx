@@ -840,6 +840,7 @@ const ReservesTable = ({
     />
   );
 
+  const mobileTableRef = useRef<HTMLDivElement>(null);
   const desktopTableCardRef = useRef<HTMLDivElement>(null);
   const desktopStickyScenarioRef = useRef<HTMLDivElement>(null);
   const desktopStickyTheadRef = useRef<HTMLTableSectionElement>(null);
