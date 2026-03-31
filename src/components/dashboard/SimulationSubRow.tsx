@@ -354,7 +354,7 @@ const SimulationSubRow = ({
       delta: simulation.marketMetrics.totalBorrowedUsdDelta,
       type: 'usd',
       cap: borrowCapUsd,
-      warning: borrowCapExceeded && !borrowLimitedByLiquidity,
+      warning: showBorrowCapWarning && !borrowLimitedByLiquidity,
     },
     {
       rowKey: 'borrow-total-rate',
@@ -772,7 +772,7 @@ const SimulationSubRow = ({
         hasCapSpacer: sizeBandMeta.hasCapSpacer,
         hasNoteSpacer: sizeBandMeta.hasNoteSpacer,
         notePlaceholder: sizeBandMeta.notePlaceholder,
-        capWarning: sizeBandMeta.capWarning,
+        capWarning: false,
       },
       {
         key: 'amount',
@@ -864,14 +864,14 @@ const SimulationSubRow = ({
             <tr className="bg-muted/30 border-b border-border/50">
               <th className="px-4 py-2 text-left">
                 <span className="ds-text-13 font-semibold text-muted-foreground whitespace-nowrap">
-                  Accrual /day
+                  Earn /day
                 </span>
               </th>
               <th className="px-3 py-2 text-right">
-                <span className="ds-text-11 ds-text-emerald-600 font-medium">Supply</span>
+                <span className="ds-text-11 ds-text-emerald-600 font-semibold">Supply</span>
               </th>
               <th className="px-3 py-2 text-right">
-                <span className="ds-text-11 ds-text-brand-cyan font-medium">Borrow</span>
+                <span className="ds-text-11 ds-text-brand-cyan font-semibold">Borrow</span>
               </th>
             </tr>
           </thead>
@@ -883,18 +883,23 @@ const SimulationSubRow = ({
                   <Fragment key={row.key}>
                     <tr className={row.capWarning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
                       <td className={`${cellPy} ${metricPx} min-w-0 align-top`}>
-                        <div className="min-w-0">
-                          <div className="flex flex-wrap items-start gap-x-1.5 gap-y-0.5 min-w-0">
+                        <div className="grid min-w-0" style={{ gridTemplateColumns: '1fr', gridTemplateRows: '1fr' }}>
+                          {/* Visible: Net label + value */}
+                          <div className="flex items-baseline gap-x-1.5 min-w-0" style={{ gridArea: '1/1' }}>
                             <span className="ds-text-12 font-bold ds-text-purple-600 break-words">{row.label}</span>
                             <span className="ds-text-12 tabular-nums font-bold ds-text-purple-600 flex-shrink-0">
                               {accrual?.netUsdPerDay != null ? fmt(accrual.netUsdPerDay) : '-'}
                             </span>
-                            {row.hasCapSpacer ? (
-                              <span className="ds-text-11 tabular-nums flex-shrink-0 invisible select-none">
+                          </div>
+                          {/* Invisible height reference: mirrors Supply/Borrow "Total / Cap $X" label to match wrap height */}
+                          {row.hasCapSpacer ? (
+                            <div className="invisible select-none flex flex-wrap items-start gap-x-1.5 gap-y-0.5 min-w-0" style={{ gridArea: '1/1' }} aria-hidden>
+                              <span className="ds-text-12">{row.label}</span>
+                              <span className="ds-text-11 tabular-nums flex-shrink-0">
                                 / Cap {sizeCapPlaceholder}
                               </span>
-                            ) : null}
-                          </div>
+                            </div>
+                          ) : null}
                         </div>
                       </td>
                       <td className={`${cellPy} ${valuePx}`} />
@@ -912,7 +917,7 @@ const SimulationSubRow = ({
                   ? 'ml-2 pl-2 border-l border-l-muted-foreground/30'
                   : '';
               const capNoteAlignClass = row.isSubBreakdown ? 'pl-6' : row.isBreakdown ? 'pl-4' : '';
-              const fontClass = row.isTotal ? 'font-semibold' : row.isBreakdown ? '' : 'font-medium';
+              const fontClass = row.key === 'amount' ? '' : row.isTotal ? 'font-semibold' : row.isBreakdown ? '' : 'font-medium';
               const textClass = row.isBreakdown ? 'text-muted-foreground' : 'text-foreground';
               const sizeClass = 'ds-text-12';
               const labelCellPy = row.hasNoteSpacer ? `${effectiveCompact ? 'pt-1 pb-0' : 'pt-1.5 pb-0'}` : cellPy;
@@ -983,7 +988,7 @@ const SimulationSubRow = ({
       )}
 
       {/* Warnings */}
-      {showSupplyCapWarning && (
+      {simulation.supply.hasInput && showSupplyCapWarning && (
         <div className={`flex items-center gap-3 rounded-lg border border-amber-400/60 bg-amber-50/80 dark:bg-amber-950/30 ${effectiveCompact ? 'mb-2 px-3 py-1.5' : 'mb-3 px-4 py-2'}`}>
           <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
           <p className="flex-1 ds-text-12 text-amber-800 dark:text-amber-300">
@@ -1004,7 +1009,7 @@ const SimulationSubRow = ({
         </div>
       )}
 
-      {showBorrowCapWarning && (
+      {simulation.borrow.hasInput && showBorrowCapWarning && (
         <div className={`flex items-center gap-3 rounded-lg border border-amber-400/60 bg-amber-50/80 dark:bg-amber-950/30 ${effectiveCompact ? 'mb-2 px-3 py-1.5' : 'mb-3 px-4 py-2'}`}>
           <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
           <p className="flex-1 ds-text-12 text-amber-800 dark:text-amber-300">
@@ -1014,7 +1019,10 @@ const SimulationSubRow = ({
               <>Current borrow exceeds cap by {formatScenarioSize(borrowCapBaseExceededByUsd, { inputMode, tokenPrice: simulation.tokenPrice })}</>
             )}
           </p>
-          {onCorrectBorrowInput && availableBorrowRoomUsd !== null && availableBorrowRoomUsd > 0 && (
+          {simulation.borrow.hasInput &&
+            onCorrectBorrowInput &&
+            availableBorrowRoomUsd !== null &&
+            availableBorrowRoomUsd >= 0 && (
             <button type="button" onClick={handleCorrectToMaxBorrow} className="ds-btn-warning ds-text-11 px-3 py-1">
               Adjust to max
             </button>
@@ -1088,7 +1096,7 @@ const SimulationSubRow = ({
               {renderTable('Supply', supplyRows, 'ds-text-emerald-600', 'border-emerald-500/40', 'border-l-[rgb(var(--ds-emerald-500-rgb))]', showSupplyCapWarning, borrowRows)}
             </div>
             <div className="flex min-w-0 flex-col overflow-hidden">
-              {renderTable('Borrow', borrowRows, 'ds-text-brand-cyan', 'border-[rgb(var(--ds-brand-cyan-rgb))]/40', 'border-l-[rgb(var(--ds-brand-cyan-rgb))]', borrowCapExceeded, supplyRows)}
+              {renderTable('Borrow', borrowRows, 'ds-text-brand-cyan', 'border-[rgb(var(--ds-brand-cyan-rgb))]/40', 'border-l-[rgb(var(--ds-brand-cyan-rgb))]', showBorrowCapWarning, supplyRows)}
             </div>
             <div className="flex min-h-0 min-w-0 flex-col overflow-hidden self-stretch">
               {renderEarnCostTable()}
