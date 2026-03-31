@@ -844,6 +844,18 @@ const ReservesTable = ({
   const desktopTableCardRef = useRef<HTMLDivElement>(null);
   const desktopStickyScenarioRef = useRef<HTMLDivElement>(null);
   const desktopStickyTheadRef = useRef<HTMLTableSectionElement>(null);
+  const [tableInView, setTableInView] = useState(false);
+
+  useEffect(() => {
+    const target = isMobile ? mobileTableRef.current : desktopTableCardRef.current;
+    if (!target) return;
+    const io = new IntersectionObserver(
+      ([entry]) => setTableInView(entry.isIntersecting),
+      { threshold: 0 },
+    );
+    io.observe(target);
+    return () => io.disconnect();
+  }, [isMobile]);
 
   useEffect(() => {
     if (isMobile) return;
@@ -1460,6 +1472,7 @@ const ReservesTable = ({
         )}
 
         {/* Floating scroll-to-top / scroll-to-bottom buttons (mobile) */}
+        {tableInView && (
         <div className="fixed right-3 bottom-6 z-30 flex flex-col gap-2">
           <button
             type="button"
@@ -1478,6 +1491,7 @@ const ReservesTable = ({
             <ArrowDown className="h-4 w-4" />
           </button>
         </div>
+        )}
       </div>
     );
   }
@@ -2224,6 +2238,7 @@ const ReservesTable = ({
       )}
 
       {/* Floating scroll-to-top / scroll-to-bottom buttons */}
+      {tableInView && (
       <div className="fixed right-3 bottom-6 z-30 flex flex-col gap-2 md:right-6">
         <button
           type="button"
@@ -2246,6 +2261,7 @@ const ReservesTable = ({
           <ArrowDown className="h-4 w-4" />
         </button>
       </div>
+      )}
       </div>
     </div>
   );
