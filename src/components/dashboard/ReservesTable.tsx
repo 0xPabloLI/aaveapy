@@ -2212,7 +2212,7 @@ const ReservesTable = ({
             }
           </TableBody>
         </Table>
-      
+
       {/* Show More/Less button for desktop */}
       {sortedData.length > displayData.length && (
         <div className="p-[var(--ds-space-4)] border-t border-border">

@@ -82,6 +82,9 @@ const formatDelta = (value: number | null) => {
 };
 
 const normalizeToAfterPlaceholder = (value: string) => (value === '—' ? '-' : value);
+const SIM_NEUTRAL_PRIMARY = 'text-foreground';
+const SIM_NEUTRAL_SECONDARY = 'text-foreground/75';
+const SIM_NEUTRAL_MUTED = 'text-foreground/70';
 
 const hasMeaningfulValue = (value: number | null): boolean => {
   return value !== null && Number.isFinite(value) && Math.abs(value) > 1e-12;
@@ -446,7 +449,7 @@ const SimulationSubRow = ({
     peerCapInfo?: { hasCapBar: boolean; hasCapNote: boolean; capNote?: string },
     alignBand?: DesktopAlignBand | null,
   ) => {
-    const deltaColorClass = row.delta === null || Number.isNaN(row.delta) ? 'text-foreground/75' : accentClass;
+    const deltaColorClass = row.delta === null || Number.isNaN(row.delta) ? SIM_NEUTRAL_MUTED : accentClass;
     const isBreakdownItem = row.isBreakdown;
     const isSubBreakdown = row.isSubBreakdown === true;
     const isNestedUnderIncentive = row.nestedUnderIncentive === true;
@@ -485,7 +488,7 @@ const SimulationSubRow = ({
                 {row.label}
               </span>
               {row.cap !== null && row.cap !== undefined && (
-                <span className={`ds-text-11 tabular-nums flex-shrink-0 ${row.warning ? 'text-amber-600' : 'text-foreground/65'}`}>
+                <span className={`ds-text-11 tabular-nums flex-shrink-0 ${row.warning ? 'text-amber-600' : SIM_NEUTRAL_SECONDARY}`}>
                   / Cap {formatScenarioSize(row.cap, { inputMode, tokenPrice: simulation.tokenPrice })}
                 </span>
               )}
@@ -498,7 +501,7 @@ const SimulationSubRow = ({
           </span>
         </td>
         <td className={`${valueCellPy} ${valueCellPx} text-right align-top`}>
-          <span className={`ds-text-12 tabular-nums ${row.after === null ? 'text-foreground/80' : rowAccentClass}`}>
+          <span className={`ds-text-12 tabular-nums ${row.after === null ? SIM_NEUTRAL_MUTED : rowAccentClass}`}>
             {formatValue(row.after, row.type)}
           </span>
         </td>
@@ -962,7 +965,7 @@ const SimulationSubRow = ({
           <thead>
             <tr className="bg-muted/30 border-b border-border/50">
               <th className="px-4 py-2 text-left">
-                <span className="ds-text-13 font-semibold text-foreground whitespace-nowrap">
+                <span className={`ds-text-13 font-semibold ${SIM_NEUTRAL_SECONDARY} whitespace-nowrap`}>
                   Earn /day
                 </span>
               </th>
@@ -1022,7 +1025,7 @@ const SimulationSubRow = ({
                   : '';
               const capNoteAlignClass = row.isSubBreakdown ? 'pl-6' : row.isBreakdown ? 'pl-4' : '';
               const fontClass = row.key === 'amount' ? '' : row.isTotal ? 'font-semibold' : row.isBreakdown ? '' : 'font-medium';
-              const textClass = row.isBreakdown ? 'text-foreground/80' : 'text-foreground';
+              const textClass = SIM_NEUTRAL_SECONDARY;
               const sizeClass = 'ds-text-12';
               const labelCellPy = row.hasNoteSpacer ? `${effectiveCompact ? 'pt-1 pb-0' : 'pt-1.5 pb-0'}` : cellPy;
               const valueCellPy = row.hasNoteSpacer ? `${effectiveCompact ? 'pt-1 pb-0' : 'pt-1.5 pb-0'}` : cellPy;
@@ -1036,12 +1039,12 @@ const SimulationSubRow = ({
                       </div>
                     </td>
                     <td className={`${valueCellPy} ${valuePx} text-right align-top`}>
-                      <span className={`${sizeClass} tabular-nums ${fontClass} ${hasSupply ? 'ds-text-emerald-600' : 'text-foreground/80'}`}>
+                      <span className={`${sizeClass} tabular-nums ${fontClass} ${hasSupply ? 'ds-text-emerald-600' : SIM_NEUTRAL_SECONDARY}`}>
                         {row.earn !== null ? fmt(row.earn) : '-'}
                       </span>
                     </td>
                     <td className={`${valueCellPy} ${valuePx} text-right align-top`}>
-                      <span className={`${sizeClass} tabular-nums ${fontClass} ${hasBorrow ? 'ds-text-brand-cyan' : 'text-foreground/80'}`}>
+                      <span className={`${sizeClass} tabular-nums ${fontClass} ${hasBorrow ? 'ds-text-brand-cyan' : SIM_NEUTRAL_SECONDARY}`}>
                         {row.cost !== null ? fmt(row.cost) : '-'}
                       </span>
                     </td>
@@ -1064,14 +1067,14 @@ const SimulationSubRow = ({
           effectiveCompact ? (embeddedFromTop ? 'mb-2 px-0' : 'mb-2 px-1') : 'mb-3 px-1'
         }`}
       >
-          <span className="ds-text-12 text-foreground/75">
+          <span className={`ds-text-12 ${SIM_NEUTRAL_SECONDARY}`}>
             Enter supply or borrow amount above to see simulated values.
           </span>
         </div>
       )}
       {!showEmptyStateNote && (
         <div className={`${effectiveCompact ? 'mb-2' : 'mb-3'} ${effectiveCompact && embeddedFromTop ? 'px-0' : 'px-1'}`}>
-          <p className="ds-text-11 text-foreground/70">
+          <p className={`ds-text-11 ${SIM_NEUTRAL_SECONDARY}`}>
             {isMobile
               ? 'Simulation only; final result is on-chain.'
               : 'Simulation is for reference only. Final result depends on on-chain execution.'}
@@ -1135,15 +1138,15 @@ const SimulationSubRow = ({
                 {formatSpread(simulation.spread.current)}
                 {simulation.spread.after !== null && (
                   <>
-                    <span className="text-foreground/65 mx-1">→</span>
+                    <span className={`${SIM_NEUTRAL_SECONDARY} mx-1`}>→</span>
                     {formatSpread(simulation.spread.after)}
                   </>
                 )}
               </span>
               {hasScenarioInput ? (
                 <span className="inline-flex items-center gap-1 pl-1">
-                  <span className="ds-text-11 text-foreground/70">Δ</span>
-                  <span className={`ds-text-11 tabular-nums ${simulation.spread.delta === null ? 'text-foreground/80' : 'ds-text-purple-600'}`}>
+                  <span className={`ds-text-11 ${SIM_NEUTRAL_SECONDARY}`}>Δ</span>
+                  <span className={`ds-text-11 tabular-nums ${simulation.spread.delta === null ? SIM_NEUTRAL_MUTED : 'ds-text-purple-600'}`}>
                     {formatDelta(simulation.spread.delta)}
                   </span>
                 </span>
@@ -1156,18 +1159,18 @@ const SimulationSubRow = ({
                 {formatScenarioSize(simulation.marketMetrics.availableLiquidityUsd, { inputMode, tokenPrice: simulation.tokenPrice })}
                 {simulation.marketMetrics.availableLiquidityUsdAfter !== null && (
                   <>
-                    <span className="text-foreground/65 mx-1">→</span>
+                    <span className={`${SIM_NEUTRAL_SECONDARY} mx-1`}>→</span>
                     {formatScenarioSize(simulation.marketMetrics.availableLiquidityUsdAfter, { inputMode, tokenPrice: simulation.tokenPrice })}
                   </>
                 )}
               </span>
               {hasScenarioInput ? (
                 <span className="inline-flex items-center gap-1 pl-1">
-                  <span className="ds-text-11 text-foreground/70">Δ</span>
+                  <span className={`ds-text-11 ${SIM_NEUTRAL_SECONDARY}`}>Δ</span>
                   <span
                     className={`ds-text-11 tabular-nums ${
                       simulation.marketMetrics.availableLiquidityUsdDelta === null
-                        ? 'text-foreground/80'
+                        ? SIM_NEUTRAL_MUTED
                         : middleColumnWarning
                           ? 'text-amber-700 dark:text-amber-400'
                           : 'ds-text-purple-600'
