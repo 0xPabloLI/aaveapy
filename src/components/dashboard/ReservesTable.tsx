@@ -1472,6 +1472,7 @@ const ReservesTable = ({
         )}
 
         {/* Floating scroll-to-top / scroll-to-bottom buttons (mobile) */}
+        {tableInView && (
         <div className="fixed right-3 bottom-6 z-30 flex flex-col gap-2">
           <button
             type="button"
@@ -1490,6 +1491,7 @@ const ReservesTable = ({
             <ArrowDown className="h-4 w-4" />
           </button>
         </div>
+        )}
       </div>
     );
   }
