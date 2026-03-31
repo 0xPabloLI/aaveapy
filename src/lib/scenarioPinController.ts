@@ -54,13 +54,15 @@ export function transitionScenarioPinController(
   }
 
   const scenarioChanged = input.scenarioKey !== state.lastScenarioKey;
+  const orderChanged = input.sortedIds.length !== state.lastSortedIds.length ||
+    input.sortedIds.some((id, index) => id !== state.lastSortedIds[index]);
   let pendingScenarioPin = state.pendingScenarioPin;
 
   if (scenarioChanged) {
     const shouldFollowScenarioPin =
       input.expandScrollFollowsScenarioSort ||
       (state.lastHasScenarioInput && !input.hasScenarioInput);
-    if (shouldFollowScenarioPin && input.expandedReserveId) {
+    if (shouldFollowScenarioPin && orderChanged && input.expandedReserveId) {
       pendingScenarioPin = {
         scenarioKey: input.scenarioKey,
         reserveId: input.expandedReserveId,

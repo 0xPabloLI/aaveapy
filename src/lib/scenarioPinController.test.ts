@@ -54,7 +54,7 @@ describe('scenario pin controller', () => {
     expect(secondReorder.pinReserveId).toBe('b');
   });
 
-  it('schedules pin when scenario changed even if list order did not change', () => {
+  it('does not schedule pin when scenario changed but list order did not change', () => {
     let state = createScenarioPinControllerState();
     state = step(state, {
       scenarioKey: '100\0',
@@ -75,8 +75,8 @@ describe('scenario pin controller', () => {
       hasRequiredVisibleCount: true,
       isExpandedStillVisible: true,
     });
-    expect(result.shouldSchedulePin).toBe(true);
-    expect(result.pinReserveId).toBe('b');
+    expect(result.shouldSchedulePin).toBe(false);
+    expect(result.pinReserveId).toBeNull();
   });
 
   it('waits for visible-count buffer before scheduling pin for a reorder update', () => {
@@ -116,7 +116,7 @@ describe('scenario pin controller', () => {
     expect(scheduleAfterBuffer.pinReserveId).toBe('b');
   });
 
-  it('keeps pin active when scenario input is cleared to empty', () => {
+  it('keeps pin inactive when scenario input is cleared to empty without reordering', () => {
     let state = createScenarioPinControllerState();
     const scenarioWithInput = ['100', '', 'usd', '1'].join('\0');
     const scenarioCleared = ['', '', 'usd', '1'].join('\0');
@@ -133,6 +133,33 @@ describe('scenario pin controller', () => {
     const cleared = step(state, {
       scenarioKey: scenarioCleared,
       sortedIds: ['a', 'b', 'c'],
+      expandedReserveId: 'b',
+      hasScenarioInput: false,
+      expandScrollFollowsScenarioSort: false,
+      hasRequiredVisibleCount: true,
+      isExpandedStillVisible: true,
+    });
+    expect(cleared.shouldSchedulePin).toBe(false);
+    expect(cleared.pinReserveId).toBeNull();
+  });
+
+  it('schedules pin when scenario input is cleared to empty and list reorders', () => {
+    let state = createScenarioPinControllerState();
+    const scenarioWithInput = ['100', '', 'usd', '1'].join('\0');
+    const scenarioCleared = ['', '', 'usd', '1'].join('\0');
+    state = step(state, {
+      scenarioKey: scenarioWithInput,
+      sortedIds: ['a', 'b', 'c'],
+      expandedReserveId: 'b',
+      hasScenarioInput: true,
+      expandScrollFollowsScenarioSort: true,
+      hasRequiredVisibleCount: true,
+      isExpandedStillVisible: true,
+    }).nextState;
+
+    const cleared = step(state, {
+      scenarioKey: scenarioCleared,
+      sortedIds: ['b', 'a', 'c'],
       expandedReserveId: 'b',
       hasScenarioInput: false,
       expandScrollFollowsScenarioSort: false,

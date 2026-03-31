@@ -585,6 +585,8 @@ const ReservesTable = ({
 
     if (!controllerResult.shouldSchedulePin || !controllerResult.pinReserveId) return;
 
+    cancelFilterPinScrollRef.current?.();
+    cancelFilterPinScrollRef.current = null;
     cancelScenarioPinScrollRef.current?.();
     const scheduleToken = scenarioPinScheduleTokenRef.current + 1;
     scenarioPinScheduleTokenRef.current = scheduleToken;
@@ -632,10 +634,12 @@ const ReservesTable = ({
     }
 
     pendingMarketFilterPinReserveIdRef.current = null;
-    // Cancel any prior filter-pin scroll, then schedule a new one.
+    // Cancel any prior scheduled pin so filter-driven pin is the only jump.
     // Store the cancel fn in a ref so that unrelated sortedData changes
     // (which re-run this effect but bail at the reservesKey guard) do
     // not invoke effect cleanup and cancel the pending scroll.
+    cancelScenarioPinScrollRef.current?.();
+    cancelScenarioPinScrollRef.current = null;
     cancelFilterPinScrollRef.current?.();
     cancelFilterPinScrollRef.current = schedulePinScrollToReserve(targetReserveId, 280, { instant: true }) ?? null;
   }, [reserves, sortedData, expandedReserveId, schedulePinScrollToReserve]);
