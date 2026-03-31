@@ -28,7 +28,6 @@ import {
 import type { ReserveWithSpread, MeritIncentive, MerklOpportunityGroup, BrevisIncentive } from '@/types/aave';
 import { ETHEREUM_MARKET_NAMES } from '@/types/aave';
 import { getFirstActiveBrevisLink } from '@/lib/brevis';
-import { formatReserveDeficitTokenCompact, getReserveDeficitUsdAmount, hasReserveDeficit } from '@/lib/deficit';
 
 const getFirstMeritLink = (merits?: MeritIncentive[]): string | null => {
   if (!merits || !Array.isArray(merits)) return null;
@@ -188,32 +187,14 @@ const SimulationSubRow = ({
 
   const handleCorrectToMaxSupply = () => {
     if (!onCorrectSupplyInput || availableSupplyRoomUsd === null) return;
-    if (inputMode === 'usd') {
-      const corrected = Math.max(0, Math.floor(availableSupplyRoomUsd));
-      onCorrectSupplyInput(corrected.toLocaleString('en-US'));
-    } else if (simulation.tokenPrice && simulation.tokenPrice > 0) {
-      const correctedTokens = Math.max(0, availableSupplyRoomUsd / simulation.tokenPrice);
-      const formatted = correctedTokens >= 1
-        ? correctedTokens.toLocaleString('en-US', { maximumFractionDigits: 2 })
-        : correctedTokens.toPrecision(4);
-      onCorrectSupplyInput(formatted);
-    }
+    onCorrectSupplyInput('');
   };
 
   const { borrowCapExceeded, availableBorrowRoomUsd, borrowCapExceededByUsd, borrowCapUsd, borrowLimitedByLiquidity } = simulation.marketMetrics;
 
   const handleCorrectToMaxBorrow = () => {
     if (!onCorrectBorrowInput || availableBorrowRoomUsd === null) return;
-    if (inputMode === 'usd') {
-      const corrected = Math.max(0, Math.floor(availableBorrowRoomUsd));
-      onCorrectBorrowInput(corrected.toLocaleString('en-US'));
-    } else if (simulation.tokenPrice && simulation.tokenPrice > 0) {
-      const correctedTokens = Math.max(0, availableBorrowRoomUsd / simulation.tokenPrice);
-      const formatted = correctedTokens >= 1
-        ? correctedTokens.toLocaleString('en-US', { maximumFractionDigits: 2 })
-        : correctedTokens.toPrecision(4);
-      onCorrectBorrowInput(formatted);
-    }
+    onCorrectBorrowInput('');
   };
 
   const currentSupplySizeUsd =
@@ -222,6 +203,20 @@ const SimulationSubRow = ({
     currentSupplySizeUsd !== null && simulation.supply.inputUsd > 0
       ? currentSupplySizeUsd + simulation.supply.inputUsd
       : null;
+  const supplyCapBaseExceeded =
+    supplyCapUsd !== null && currentSupplySizeUsd !== null && currentSupplySizeUsd > supplyCapUsd;
+  const supplyCapBaseExceededByUsd =
+    supplyCapBaseExceeded ? currentSupplySizeUsd - supplyCapUsd : null;
+  const showSupplyCapWarning = supplyCapExceeded || supplyCapBaseExceeded;
+  const currentBorrowedSizeUsd =
+    simulation.marketMetrics.totalBorrowedUsd != null && Number.isFinite(simulation.marketMetrics.totalBorrowedUsd)
+      ? simulation.marketMetrics.totalBorrowedUsd
+      : null;
+  const borrowCapBaseExceeded =
+    borrowCapUsd !== null && currentBorrowedSizeUsd !== null && currentBorrowedSizeUsd > borrowCapUsd;
+  const borrowCapBaseExceededByUsd =
+    borrowCapBaseExceeded ? currentBorrowedSizeUsd - borrowCapUsd : null;
+  const showBorrowCapWarning = borrowCapExceeded || borrowCapBaseExceeded;
 
   const supplyMeritLink = getFirstMeritLink(reserve.meritSupplys);
   const supplyMerklLink = getFirstMerklLink(reserve.merklSupplys);
@@ -310,7 +305,7 @@ const SimulationSubRow = ({
       delta: afterSupplySizeUsd !== null && currentSupplySizeUsd !== null ? afterSupplySizeUsd - currentSupplySizeUsd : null,
       type: 'usd',
       cap: supplyCapUsd,
-      warning: supplyCapExceeded,
+      warning: showSupplyCapWarning,
     },
     {
       rowKey: 'supply-total-rate',
@@ -420,7 +415,7 @@ const SimulationSubRow = ({
     return formatDelta(value);
   };
 
-  const renderRow = (row: TableRow, accentClass: string, borderColorClass: string, tight = false) => {
+  const renderRow = (row: TableRow, accentClass: string, borderColorClass: string, tight = false, peerCapInfo?: { hasCapBar: boolean; hasCapNote: boolean; capNote?: string }) => {
     const deltaColorClass = row.delta === null || Number.isNaN(row.delta) ? 'text-muted-foreground' : accentClass;
     const isBreakdownItem = row.isBreakdown;
     const isSubBreakdown = row.isSubBreakdown === true;
@@ -526,10 +521,30 @@ const SimulationSubRow = ({
       );
     })();
 
+    /* When the peer side (Supply↔Borrow) has a cap bar but this side doesn't,
+       render an invisible placeholder bar to keep row heights aligned. */
+    const capBarPlaceholder = !capProgressBar && peerCapInfo?.hasCapBar ? (
+      <tr aria-hidden>
+        <td colSpan={4} className={`pt-0 pb-1 ${deltaCellPx}`}>
+          <div className="relative h-1.5 w-full rounded-full bg-muted/40 opacity-0" />
+        </td>
+      </tr>
+    ) : null;
+
+    const capNotePlaceholder = !row.capNote && peerCapInfo?.hasCapNote ? (
+      <tr aria-hidden>
+        <td colSpan={4} className={`pt-0 ${capRowPb} ${metricCellPx} min-w-0 align-top`}>
+          <p className="ds-text-11 min-w-0 w-full max-w-none whitespace-normal break-words leading-snug text-transparent select-none">
+            {peerCapInfo.capNote ?? '.'}
+          </p>
+        </td>
+      </tr>
+    ) : null;
+
     return (
       <Fragment key={row.rowKey}>
         {mainRow}
-        {capProgressBar}
+        {capProgressBar ?? capBarPlaceholder}
         {row.capNote ? (
           <tr className={row.warning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
             <td colSpan={4} className={`pt-0 ${capRowPb} ${metricCellPx} min-w-0 align-top`}>
@@ -540,7 +555,7 @@ const SimulationSubRow = ({
               </p>
             </td>
           </tr>
-        ) : null}
+        ) : capNotePlaceholder}
       </Fragment>
     );
   };
@@ -636,7 +651,17 @@ const SimulationSubRow = ({
     );
   };
 
-  const renderTable = (title: string, rows: TableRow[], accentClass: string, borderClass: string, indentBorderClass: string, isWarning?: boolean) => (
+  /** Map rowKey "supply-*" ↔ "borrow-*" to find the corresponding peer row. */
+  const findPeerRow = (rowKey: string, peerRows: TableRow[]): TableRow | undefined => {
+    const peerKey = rowKey.startsWith('supply-')
+      ? rowKey.replace('supply-', 'borrow-')
+      : rowKey.startsWith('borrow-')
+        ? rowKey.replace('borrow-', 'supply-')
+        : null;
+    return peerKey ? peerRows.find((r) => r.rowKey === peerKey) : undefined;
+  };
+
+  const renderTable = (title: string, rows: TableRow[], accentClass: string, borderClass: string, indentBorderClass: string, isWarning?: boolean, peerRows?: TableRow[]) => (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
       <table className="w-full min-w-0 table-fixed">
         <colgroup>
@@ -662,7 +687,15 @@ const SimulationSubRow = ({
           </tr>
         </thead>
         <tbody className="[&>tr:last-child>td]:pb-2.5">
-          {rows.map((row) => renderRow(row, accentClass, indentBorderClass))}
+          {rows.map((row) => {
+            const peer = peerRows ? findPeerRow(row.rowKey, peerRows) : undefined;
+            const peerHasCapBar = peer != null && peer.cap != null && peer.type === 'usd';
+            const peerHasCapNote = Boolean(peer?.capNote);
+            const peerCapInfo = peerHasCapBar || peerHasCapNote
+              ? { hasCapBar: peerHasCapBar, hasCapNote: peerHasCapNote, capNote: peer?.capNote }
+              : undefined;
+            return renderRow(row, accentClass, indentBorderClass, false, peerCapInfo);
+          })}
         </tbody>
       </table>
     </div>
@@ -672,15 +705,6 @@ const SimulationSubRow = ({
   const middleColumnWarning = borrowCapExceeded && borrowLimitedByLiquidity;
 
   const showHeaderBlock = showEmptyStateNote;
-  const hasDeficit = hasReserveDeficit(reserve);
-  const deficitUsd = getReserveDeficitUsdAmount(reserve, simulation.tokenPrice ?? reserve.tokenPrice);
-  const deficitTokenCompact = formatReserveDeficitTokenCompact(reserve);
-  const deficitSummary = hasDeficit
-    ? deficitUsd != null
-      ? `Reserve deficit: ${formatUsd(deficitUsd)} (${deficitTokenCompact} ${reserve.tokenSymbol}). This dilutes supply-side native yield.`
-      : `Reserve deficit: ${deficitTokenCompact} ${reserve.tokenSymbol}. USD value unavailable (missing token price). This dilutes supply-side native yield.`
-    : null;
-
   const scenarioAccrual = simulation.scenarioUsdAccrual;
 
   const renderEarnCostTable = () => {
@@ -840,7 +864,7 @@ const SimulationSubRow = ({
             <tr className="bg-muted/30 border-b border-border/50">
               <th className="px-4 py-2 text-left">
                 <span className="ds-text-13 font-semibold text-muted-foreground whitespace-nowrap">
-                  Net Flow
+                  Accrual /day
                 </span>
               </th>
               <th className="px-3 py-2 text-right">
@@ -862,6 +886,9 @@ const SimulationSubRow = ({
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-start gap-x-1.5 gap-y-0.5 min-w-0">
                             <span className="ds-text-12 font-bold ds-text-purple-600 break-words">{row.label}</span>
+                            <span className="ds-text-12 tabular-nums font-bold ds-text-purple-600 flex-shrink-0">
+                              {accrual?.netUsdPerDay != null ? fmt(accrual.netUsdPerDay) : '-'}
+                            </span>
                             {row.hasCapSpacer ? (
                               <span className="ds-text-11 tabular-nums flex-shrink-0 invisible select-none">
                                 / Cap {sizeCapPlaceholder}
@@ -870,11 +897,8 @@ const SimulationSubRow = ({
                           </div>
                         </div>
                       </td>
-                      <td colSpan={2} className={`${cellPy} ${valuePx} text-right align-top`}>
-                        <span className="ds-text-12 tabular-nums font-bold ds-text-purple-600">
-                          {accrual?.netUsdPerDay != null ? fmt(accrual.netUsdPerDay) : '-'}
-                        </span>
-                      </td>
+                      <td className={`${cellPy} ${valuePx}`} />
+                      <td className={`${cellPy} ${valuePx}`} />
                     </tr>
                     {renderBandSpacerRows(row)}
                   </Fragment>
@@ -955,34 +979,40 @@ const SimulationSubRow = ({
               ? 'Simulation only; final result is on-chain.'
               : 'Simulation is for reference only. Final result depends on on-chain execution.'}
           </p>
-          {deficitSummary ? (
-            <p className="ds-text-11 text-muted-foreground mt-1">
-              {deficitSummary}
-            </p>
-          ) : null}
         </div>
       )}
 
       {/* Warnings */}
-      {supplyCapExceeded && (
+      {showSupplyCapWarning && (
         <div className={`flex items-center gap-3 rounded-lg border border-amber-400/60 bg-amber-50/80 dark:bg-amber-950/30 ${effectiveCompact ? 'mb-2 px-3 py-1.5' : 'mb-3 px-4 py-2'}`}>
           <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
           <p className="flex-1 ds-text-12 text-amber-800 dark:text-amber-300">
-            Supply exceeds cap by {formatScenarioSize(supplyCapExceededByUsd, { inputMode, tokenPrice: simulation.tokenPrice })}
+            {simulation.supply.hasInput && supplyCapExceeded ? (
+              <>Supply exceeds cap by {formatScenarioSize(supplyCapExceededByUsd, { inputMode, tokenPrice: simulation.tokenPrice })}</>
+            ) : (
+              <>Current supply exceeds cap by {formatScenarioSize(supplyCapBaseExceededByUsd, { inputMode, tokenPrice: simulation.tokenPrice })}</>
+            )}
           </p>
-          {onCorrectSupplyInput && availableSupplyRoomUsd !== null && availableSupplyRoomUsd > 0 && (
+          {simulation.supply.hasInput &&
+            onCorrectSupplyInput &&
+            availableSupplyRoomUsd !== null &&
+            availableSupplyRoomUsd >= 0 && (
             <button type="button" onClick={handleCorrectToMaxSupply} className="ds-btn-warning ds-text-11 px-3 py-1">
               Adjust to max
             </button>
-          )}
+            )}
         </div>
       )}
 
-      {borrowCapExceeded && (
+      {showBorrowCapWarning && (
         <div className={`flex items-center gap-3 rounded-lg border border-amber-400/60 bg-amber-50/80 dark:bg-amber-950/30 ${effectiveCompact ? 'mb-2 px-3 py-1.5' : 'mb-3 px-4 py-2'}`}>
           <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
           <p className="flex-1 ds-text-12 text-amber-800 dark:text-amber-300">
-            Borrow exceeds {borrowLimitedByLiquidity ? 'liquidity' : 'cap'} by {formatScenarioSize(borrowCapExceededByUsd, { inputMode, tokenPrice: simulation.tokenPrice })}
+            {simulation.borrow.hasInput && borrowCapExceeded ? (
+              <>Borrow exceeds {borrowLimitedByLiquidity ? 'liquidity' : 'cap'} by {formatScenarioSize(borrowCapExceededByUsd, { inputMode, tokenPrice: simulation.tokenPrice })}</>
+            ) : (
+              <>Current borrow exceeds cap by {formatScenarioSize(borrowCapBaseExceededByUsd, { inputMode, tokenPrice: simulation.tokenPrice })}</>
+            )}
           </p>
           {onCorrectBorrowInput && availableBorrowRoomUsd !== null && availableBorrowRoomUsd > 0 && (
             <button type="button" onClick={handleCorrectToMaxBorrow} className="ds-btn-warning ds-text-11 px-3 py-1">
@@ -1055,10 +1085,10 @@ const SimulationSubRow = ({
           {/* Supply + Borrow + Earn/Cost 3-column grid */}
           <div ref={gridRef} className="grid grid-cols-3 gap-2 min-w-0 items-stretch overflow-hidden">
             <div className="flex min-w-0 flex-col overflow-hidden">
-              {renderTable('Supply', supplyRows, 'ds-text-emerald-600', 'border-emerald-500/40', 'border-l-[rgb(var(--ds-emerald-500-rgb))]', supplyCapExceeded)}
+              {renderTable('Supply', supplyRows, 'ds-text-emerald-600', 'border-emerald-500/40', 'border-l-[rgb(var(--ds-emerald-500-rgb))]', showSupplyCapWarning, borrowRows)}
             </div>
             <div className="flex min-w-0 flex-col overflow-hidden">
-              {renderTable('Borrow', borrowRows, 'ds-text-brand-cyan', 'border-[rgb(var(--ds-brand-cyan-rgb))]/40', 'border-l-[rgb(var(--ds-brand-cyan-rgb))]', borrowCapExceeded)}
+              {renderTable('Borrow', borrowRows, 'ds-text-brand-cyan', 'border-[rgb(var(--ds-brand-cyan-rgb))]/40', 'border-l-[rgb(var(--ds-brand-cyan-rgb))]', borrowCapExceeded, supplyRows)}
             </div>
             <div className="flex min-h-0 min-w-0 flex-col overflow-hidden self-stretch">
               {renderEarnCostTable()}

@@ -59,6 +59,9 @@
 - Before any stash/checkout operation, ask for clear approval and wait for a direct confirmation (for example: "确认执行" / "yes, proceed").
 - If the user has not explicitly approved the stash/checkout action, do not execute it.
 
+## Session Bootstrap (Mandatory)
+- On every new session, invoke superpowers before any other work: `~/.codex/superpowers/.codex/superpowers-codex bootstrap`, then `~/.codex/superpowers/.codex/superpowers-codex use-skill thread-tracker`, then `~/.codex/superpowers/.codex/superpowers-codex use-skill brainstorming`.
+
 ## UI Regression Guardrails
 - When changing incentive tooltip behavior, search filtering, or forecast display semantics, review and update `docs/design/frontend-interaction-guardrails.md` in the same work session.
 - When changing desktop `ReservesTable` **overflow wrappers**, **sticky** scenario/`thead`/expanded-main-row stacking, **`ResizeObserver`** on scenario + `thead`, **debounced scenario** wiring, **`sortedData` sort**, or **simulation expand scroll**, follow and preserve **§ Desktop reserves table: sticky stack and scrollport (normative)** and **§ Simulation pin scroll (normative)** in `docs/design/frontend-interaction-guardrails.md` (single effect after `sortedData`; `scrollExpandedSimulationIntoView` + `data-reserves-*` DOM contract + **CSS variables table** for `--reserves-expanded-main-row-top`). **Do not** remove expanded-row sticky `td` in `DesktopReserveRow` or observe only the scenario strip without the sticky `thead`.

@@ -29,7 +29,10 @@ import DesktopReserveRow from './DesktopReserveRow';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getReserveSimulationId, useSharedRateSimulations } from '@/hooks/useRateSimulation';
 import { getScenarioSupplySizeUsd, getTotalBorrowedUsd as getReserveTotalBorrowedUsd } from '@/lib/scenarioSize';
-import { scrollExpandedSimulationIntoView } from '@/lib/scrollExpandedSimulationIntoView';
+import {
+  scrollExpandedSimulationIntoView,
+  shouldScrollExpandedSimulationIntoView,
+} from '@/lib/scrollExpandedSimulationIntoView';
 import { createScenarioPinControllerState, transitionScenarioPinController } from '@/lib/scenarioPinController';
 
 interface ReservesTableProps {
@@ -207,6 +210,10 @@ const ReservesTable = ({
             // Keep pin-scroll deterministic: one primary pass + at most one
             // follow-up correction after layout settles. Repeated corrections
             // create visible "stair-step" jank on long pages.
+            if (!shouldScrollExpandedSimulationIntoView(reserveId, { mode })) {
+              opts?.onSettled?.();
+              return;
+            }
             scrollExpandedSimulationIntoView(reserveId, {
               mode,
               instant,
@@ -558,6 +565,7 @@ const ReservesTable = ({
         scenarioKey,
         sortedIds: ids,
         expandedReserveId,
+        hasScenarioInput: hasSharedScenario,
         expandScrollFollowsScenarioSort,
         hasRequiredVisibleCount,
         isExpandedStillVisible: expandedIndex >= 0,
@@ -591,6 +599,7 @@ const ReservesTable = ({
     sortedData,
     expandedReserveId,
     minVisibleCount,
+    hasSharedScenario,
     expandScrollFollowsScenarioSort,
     schedulePinScrollToReserve,
   ]);

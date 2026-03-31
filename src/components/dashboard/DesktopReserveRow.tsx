@@ -317,9 +317,6 @@ const DesktopReserveRow = memo(({
                         <span className="text-muted-foreground">Token</span>
                         <span className="tabular-nums">{deficitInlineValue}</span>
                       </div>
-                      <p className="pt-1 border-t border-border/60 text-muted-foreground">
-                        Deficit is tracked separately and dilutes supply-side native yield.
-                      </p>
                     </div>
                   </TooltipContent>
                 </Tooltip>

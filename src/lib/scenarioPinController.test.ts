@@ -20,6 +20,7 @@ describe('scenario pin controller', () => {
       scenarioKey: '100\0',
       sortedIds: ['a', 'b', 'c'],
       expandedReserveId: 'b',
+      hasScenarioInput: true,
       expandScrollFollowsScenarioSort: true,
       hasRequiredVisibleCount: true,
       isExpandedStillVisible: true,
@@ -31,6 +32,7 @@ describe('scenario pin controller', () => {
       scenarioKey: '200\0',
       sortedIds: ['b', 'a', 'c'],
       expandedReserveId: 'b',
+      hasScenarioInput: true,
       expandScrollFollowsScenarioSort: true,
       hasRequiredVisibleCount: true,
       isExpandedStillVisible: true,
@@ -43,6 +45,7 @@ describe('scenario pin controller', () => {
       scenarioKey: '300\0',
       sortedIds: ['a', 'c', 'b'],
       expandedReserveId: 'b',
+      hasScenarioInput: true,
       expandScrollFollowsScenarioSort: true,
       hasRequiredVisibleCount: true,
       isExpandedStillVisible: true,
@@ -51,12 +54,13 @@ describe('scenario pin controller', () => {
     expect(secondReorder.pinReserveId).toBe('b');
   });
 
-  it('does not schedule pin when scenario changed but list order did not change', () => {
+  it('schedules pin when scenario changed even if list order did not change', () => {
     let state = createScenarioPinControllerState();
     state = step(state, {
       scenarioKey: '100\0',
       sortedIds: ['a', 'b', 'c'],
       expandedReserveId: 'b',
+      hasScenarioInput: true,
       expandScrollFollowsScenarioSort: true,
       hasRequiredVisibleCount: true,
       isExpandedStillVisible: true,
@@ -66,12 +70,13 @@ describe('scenario pin controller', () => {
       scenarioKey: '101\0',
       sortedIds: ['a', 'b', 'c'],
       expandedReserveId: 'b',
+      hasScenarioInput: true,
       expandScrollFollowsScenarioSort: true,
       hasRequiredVisibleCount: true,
       isExpandedStillVisible: true,
     });
-    expect(result.shouldSchedulePin).toBe(false);
-    expect(result.pinReserveId).toBeNull();
+    expect(result.shouldSchedulePin).toBe(true);
+    expect(result.pinReserveId).toBe('b');
   });
 
   it('waits for visible-count buffer before scheduling pin for a reorder update', () => {
@@ -80,6 +85,7 @@ describe('scenario pin controller', () => {
       scenarioKey: '100\0',
       sortedIds: ['a', 'b', 'c'],
       expandedReserveId: 'b',
+      hasScenarioInput: true,
       expandScrollFollowsScenarioSort: true,
       hasRequiredVisibleCount: true,
       isExpandedStillVisible: true,
@@ -89,6 +95,7 @@ describe('scenario pin controller', () => {
       scenarioKey: '200\0',
       sortedIds: ['b', 'a', 'c'],
       expandedReserveId: 'b',
+      hasScenarioInput: true,
       expandScrollFollowsScenarioSort: true,
       hasRequiredVisibleCount: false,
       isExpandedStillVisible: true,
@@ -100,11 +107,39 @@ describe('scenario pin controller', () => {
       scenarioKey: '200\0',
       sortedIds: ['b', 'a', 'c'],
       expandedReserveId: 'b',
+      hasScenarioInput: true,
       expandScrollFollowsScenarioSort: true,
       hasRequiredVisibleCount: true,
       isExpandedStillVisible: true,
     });
     expect(scheduleAfterBuffer.shouldSchedulePin).toBe(true);
     expect(scheduleAfterBuffer.pinReserveId).toBe('b');
+  });
+
+  it('keeps pin active when scenario input is cleared to empty', () => {
+    let state = createScenarioPinControllerState();
+    const scenarioWithInput = ['100', '', 'usd', '1'].join('\0');
+    const scenarioCleared = ['', '', 'usd', '1'].join('\0');
+    state = step(state, {
+      scenarioKey: scenarioWithInput,
+      sortedIds: ['a', 'b', 'c'],
+      expandedReserveId: 'b',
+      hasScenarioInput: true,
+      expandScrollFollowsScenarioSort: true,
+      hasRequiredVisibleCount: true,
+      isExpandedStillVisible: true,
+    }).nextState;
+
+    const cleared = step(state, {
+      scenarioKey: scenarioCleared,
+      sortedIds: ['a', 'b', 'c'],
+      expandedReserveId: 'b',
+      hasScenarioInput: false,
+      expandScrollFollowsScenarioSort: false,
+      hasRequiredVisibleCount: true,
+      isExpandedStillVisible: true,
+    });
+    expect(cleared.shouldSchedulePin).toBe(true);
+    expect(cleared.pinReserveId).toBe('b');
   });
 });

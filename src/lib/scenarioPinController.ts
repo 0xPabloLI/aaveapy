@@ -1,11 +1,11 @@
 export interface ScenarioPinControllerState {
   baselineReady: boolean;
   lastScenarioKey: string | null;
+  lastHasScenarioInput: boolean;
   lastSortedIds: string[];
   pendingScenarioPin: {
     scenarioKey: string;
     reserveId: string;
-    baselineSortedIds: string[];
   } | null;
 }
 
@@ -13,6 +13,7 @@ export interface ScenarioPinControllerInput {
   scenarioKey: string;
   sortedIds: string[];
   expandedReserveId: string | null;
+  hasScenarioInput: boolean;
   expandScrollFollowsScenarioSort: boolean;
   hasRequiredVisibleCount: boolean;
   isExpandedStillVisible: boolean;
@@ -24,14 +25,11 @@ export interface ScenarioPinControllerResult {
   pinReserveId: string | null;
 }
 
-function didOrderChange(prevIds: string[], nextIds: string[]): boolean {
-  return prevIds.length !== nextIds.length || prevIds.some((id, index) => id !== nextIds[index]);
-}
-
 export function createScenarioPinControllerState(): ScenarioPinControllerState {
   return {
     baselineReady: false,
     lastScenarioKey: null,
+    lastHasScenarioInput: false,
     lastSortedIds: [],
     pendingScenarioPin: null,
   };
@@ -46,6 +44,7 @@ export function transitionScenarioPinController(
       nextState: {
         baselineReady: true,
         lastScenarioKey: input.scenarioKey,
+        lastHasScenarioInput: input.hasScenarioInput,
         lastSortedIds: input.sortedIds,
         pendingScenarioPin: null,
       },
@@ -58,11 +57,13 @@ export function transitionScenarioPinController(
   let pendingScenarioPin = state.pendingScenarioPin;
 
   if (scenarioChanged) {
-    if (input.expandScrollFollowsScenarioSort && input.expandedReserveId) {
+    const shouldFollowScenarioPin =
+      input.expandScrollFollowsScenarioSort ||
+      (state.lastHasScenarioInput && !input.hasScenarioInput);
+    if (shouldFollowScenarioPin && input.expandedReserveId) {
       pendingScenarioPin = {
         scenarioKey: input.scenarioKey,
         reserveId: input.expandedReserveId,
-        baselineSortedIds: state.lastSortedIds,
       };
     } else {
       pendingScenarioPin = null;
@@ -73,14 +74,9 @@ export function transitionScenarioPinController(
   let pinReserveId: string | null = null;
 
   if (pendingScenarioPin) {
-    const orderChangedForPending = didOrderChange(
-      pendingScenarioPin.baselineSortedIds,
-      input.sortedIds,
-    );
     const expandedMatches = input.expandedReserveId === pendingScenarioPin.reserveId;
     const canSchedule =
       pendingScenarioPin.scenarioKey === input.scenarioKey &&
-      orderChangedForPending &&
       expandedMatches &&
       input.isExpandedStillVisible &&
       input.hasRequiredVisibleCount;
@@ -101,6 +97,7 @@ export function transitionScenarioPinController(
     nextState: {
       baselineReady: true,
       lastScenarioKey: input.scenarioKey,
+      lastHasScenarioInput: input.hasScenarioInput,
       lastSortedIds: input.sortedIds,
       pendingScenarioPin,
     },

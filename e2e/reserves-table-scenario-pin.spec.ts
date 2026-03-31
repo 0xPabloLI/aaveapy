@@ -317,4 +317,75 @@ test.describe('Scenario input pin scroll (desktop)', () => {
     const stableOffset = await getMainRowOffsetFromPinBand(page, reserveId);
     expect(Math.abs(stableOffset), 'same scenario inputs should keep row away from pin band').toBeGreaterThanOrEqual(120);
   });
+
+  test('clearing scenario input keeps expanded reserve pinned', async ({ page }) => {
+    test.setTimeout(120_000);
+
+    await page.goto('/');
+    await waitDesktopTable(page);
+    await installScrollByProbe(page);
+
+    // Start from non-empty scenario so clearing path (has input -> empty) is exercised.
+    await setScenarioInputs(page, { supply: '1200', borrow: '' });
+    await page.waitForTimeout(900);
+    await maybeExpandDesktopRowsToFullList(page);
+
+    const rows = page.locator('tbody tr[data-reserve-id]');
+    const rowCount = await rows.count();
+    const targetIndex = Math.min(8, rowCount - 1);
+    const targetRow = rows.nth(targetIndex);
+    const reserveId = await targetRow.getAttribute('data-reserve-id');
+    if (!reserveId) throw new Error(`Missing data-reserve-id at index ${targetIndex}`);
+
+    await targetRow.scrollIntoViewIfNeeded();
+    await targetRow.click();
+    await expect(targetRow).toHaveClass(/bg-muted\/30/);
+    await page.waitForTimeout(500);
+
+    // Path A: remove supply value directly (equivalent to deleting supply input).
+    await moveExpandedRowAwayFromPinBand(page, reserveId);
+    await resetScrollByProbe(page);
+    await setScenarioInputs(page, { supply: '', borrow: '' });
+    await expectRowPinnedNearStickyBand(
+      page,
+      reserveId,
+      'expanded row should pin near sticky band after deleting supply to empty',
+    );
+    await expect(page.locator(`tbody tr[data-reserve-id="${reserveId}"] + tr`)).toBeVisible({
+      timeout: 10_000,
+    });
+    await expect
+      .poll(() => getScrollByProbeCount(page), {
+        timeout: 9000,
+        message: 'delete supply to empty should eventually trigger pin scroll',
+      })
+      .toBeGreaterThan(0);
+
+    // Restore a non-empty scenario, then verify Clear button path.
+    await setScenarioInputs(page, { supply: '900', borrow: '' });
+    await page.waitForTimeout(900);
+    await moveExpandedRowAwayFromPinBand(page, reserveId);
+    await resetScrollByProbe(page);
+
+    const clearButton = page
+      .locator('[data-reserves-sticky-scenario] button[aria-label="Clear scenario inputs"]')
+      .first();
+    await expect(clearButton).toBeVisible();
+    await clearButton.click();
+
+    await expectRowPinnedNearStickyBand(
+      page,
+      reserveId,
+      'expanded row should pin near sticky band after pressing clear',
+    );
+    await expect(page.locator(`tbody tr[data-reserve-id="${reserveId}"] + tr`)).toBeVisible({
+      timeout: 10_000,
+    });
+    await expect
+      .poll(() => getScrollByProbeCount(page), {
+        timeout: 9000,
+        message: 'clear button should eventually trigger pin scroll',
+      })
+      .toBeGreaterThan(0);
+  });
 });

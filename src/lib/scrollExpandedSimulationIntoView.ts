@@ -156,3 +156,48 @@ export function scrollExpandedSimulationIntoView(
     window.scrollBy({ top: clipTopDelta, behavior });
   }
 }
+
+/**
+ * Fast pre-check to avoid no-op pin corrections when the target is already aligned.
+ * Uses the same clipping/alignment thresholds as `scrollExpandedSimulationIntoView`.
+ */
+export function shouldScrollExpandedSimulationIntoView(
+  reserveId: string,
+  options: { mode: ExpandedSimulationScrollMode },
+): boolean {
+  if (typeof document === 'undefined') return false;
+
+  const escaped = escapeReserveId(reserveId);
+  const pinnedTopY = getPinnedRowTopY();
+  const vBottom = window.innerHeight - VIEW_MARGIN_PX;
+  const mobileAnchor = document.querySelector(`[data-reserve-expanded-anchor="${escaped}"]`);
+
+  if (mobileAnchor instanceof HTMLElement) {
+    const r = mobileAnchor.getBoundingClientRect();
+    const top = r.top;
+    const bottom = r.bottom;
+    if (options.mode === 'pin-main-row-top') {
+      return Math.abs(top - pinnedTopY) >= MIN_SCROLL_DELTA_PX;
+    }
+    if (bottom - vBottom >= MIN_SCROLL_DELTA_PX) return true;
+    if (top - pinnedTopY <= -MIN_SCROLL_DELTA_PX) return true;
+    return false;
+  }
+
+  const mainRow = document.querySelector(`tr[data-reserve-id="${escaped}"]`);
+  if (!(mainRow instanceof HTMLElement)) return false;
+  const mainRect = mainRow.getBoundingClientRect();
+  if (options.mode === 'pin-main-row-top') {
+    return Math.abs(mainRect.top - pinnedTopY) >= MIN_SCROLL_DELTA_PX;
+  }
+
+  let bottom = mainRect.bottom;
+  const subRow = mainRow.nextElementSibling;
+  if (subRow instanceof HTMLElement) {
+    const subRect = subRow.getBoundingClientRect();
+    bottom = Math.max(bottom, subRect.bottom);
+  }
+  if (bottom - vBottom >= MIN_SCROLL_DELTA_PX) return true;
+  if (mainRect.top - pinnedTopY <= -MIN_SCROLL_DELTA_PX) return true;
+  return false;
+}
