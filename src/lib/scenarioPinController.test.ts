@@ -116,6 +116,43 @@ describe('scenario pin controller', () => {
     expect(scheduleAfterBuffer.pinReserveId).toBe('b');
   });
 
+  it('waits for delayed reorder after scenario change and then schedules pin', () => {
+    let state = createScenarioPinControllerState();
+    state = step(state, {
+      scenarioKey: '100\0',
+      sortedIds: ['a', 'b', 'c'],
+      expandedReserveId: 'b',
+      hasScenarioInput: true,
+      expandScrollFollowsScenarioSort: true,
+      hasRequiredVisibleCount: true,
+      isExpandedStillVisible: true,
+    }).nextState;
+
+    const changedNoReorder = step(state, {
+      scenarioKey: '200\0',
+      sortedIds: ['a', 'b', 'c'],
+      expandedReserveId: 'b',
+      hasScenarioInput: true,
+      expandScrollFollowsScenarioSort: true,
+      hasRequiredVisibleCount: true,
+      isExpandedStillVisible: true,
+    });
+    state = changedNoReorder.nextState;
+    expect(changedNoReorder.shouldSchedulePin).toBe(false);
+
+    const delayedReorder = step(state, {
+      scenarioKey: '200\0',
+      sortedIds: ['b', 'a', 'c'],
+      expandedReserveId: 'b',
+      hasScenarioInput: true,
+      expandScrollFollowsScenarioSort: true,
+      hasRequiredVisibleCount: true,
+      isExpandedStillVisible: true,
+    });
+    expect(delayedReorder.shouldSchedulePin).toBe(true);
+    expect(delayedReorder.pinReserveId).toBe('b');
+  });
+
   it('keeps pin inactive when scenario input is cleared to empty without reordering', () => {
     let state = createScenarioPinControllerState();
     const scenarioWithInput = ['100', '', 'usd', '1'].join('\0');

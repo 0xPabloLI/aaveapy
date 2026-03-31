@@ -85,6 +85,7 @@ const normalizeToAfterPlaceholder = (value: string) => (value === '—' ? '-' : 
 const SIM_NEUTRAL_PRIMARY = 'text-foreground';
 const SIM_NEUTRAL_SECONDARY = 'text-foreground/75';
 const SIM_NEUTRAL_MUTED = 'text-foreground/70';
+const EARN_NEUTRAL_TEXT_CLASS = 'text-foreground';
 
 const hasMeaningfulValue = (value: number | null): boolean => {
   return value !== null && Number.isFinite(value) && Math.abs(value) > 1e-12;
@@ -965,7 +966,7 @@ const SimulationSubRow = ({
           <thead>
             <tr className="bg-muted/30 border-b border-border/50">
               <th className="px-4 py-2 text-left">
-                <span className={`ds-text-13 font-semibold ${SIM_NEUTRAL_SECONDARY} whitespace-nowrap`}>
+                <span className={`ds-text-13 font-semibold ${EARN_NEUTRAL_TEXT_CLASS} whitespace-nowrap`}>
                   Earn /day
                 </span>
               </th>
@@ -1025,7 +1026,7 @@ const SimulationSubRow = ({
                   : '';
               const capNoteAlignClass = row.isSubBreakdown ? 'pl-6' : row.isBreakdown ? 'pl-4' : '';
               const fontClass = row.key === 'amount' ? '' : row.isTotal ? 'font-semibold' : row.isBreakdown ? '' : 'font-medium';
-              const textClass = SIM_NEUTRAL_SECONDARY;
+              const textClass = EARN_NEUTRAL_TEXT_CLASS;
               const sizeClass = 'ds-text-12';
               const labelCellPy = row.hasNoteSpacer ? `${effectiveCompact ? 'pt-1 pb-0' : 'pt-1.5 pb-0'}` : cellPy;
               const valueCellPy = row.hasNoteSpacer ? `${effectiveCompact ? 'pt-1 pb-0' : 'pt-1.5 pb-0'}` : cellPy;
@@ -1039,12 +1040,12 @@ const SimulationSubRow = ({
                       </div>
                     </td>
                     <td className={`${valueCellPy} ${valuePx} text-right align-top`}>
-                      <span className={`${sizeClass} tabular-nums ${fontClass} ${hasSupply ? 'ds-text-emerald-600' : SIM_NEUTRAL_SECONDARY}`}>
+                      <span className={`${sizeClass} tabular-nums ${fontClass} ${hasSupply ? 'ds-text-emerald-600' : EARN_NEUTRAL_TEXT_CLASS}`}>
                         {row.earn !== null ? fmt(row.earn) : '-'}
                       </span>
                     </td>
                     <td className={`${valueCellPy} ${valuePx} text-right align-top`}>
-                      <span className={`${sizeClass} tabular-nums ${fontClass} ${hasBorrow ? 'ds-text-brand-cyan' : SIM_NEUTRAL_SECONDARY}`}>
+                      <span className={`${sizeClass} tabular-nums ${fontClass} ${hasBorrow ? 'ds-text-brand-cyan' : EARN_NEUTRAL_TEXT_CLASS}`}>
                         {row.cost !== null ? fmt(row.cost) : '-'}
                       </span>
                     </td>

@@ -198,13 +198,11 @@ const ReservesTable = ({
     let attempt = 0;
     const maxAttempts = 12;
     const retryMs = 70;
-    setPinScrollSpacerVisible(true);
     let finalized = false;
 
     const finalizeAttempt = () => {
       if (finalized) return;
       finalized = true;
-      setPinScrollSpacerVisible(false);
       opts?.onSettled?.();
     };
 
@@ -594,9 +592,8 @@ const ReservesTable = ({
       controllerResult.pinReserveId,
       320,
       {
-        // Scenario-driven resort can trigger while measurements are settling;
-        // use instant pinning to avoid chained smooth-scroll stutter.
-        instant: true,
+        // Keep first pass smooth; follow-up corrections (if any) remain instant.
+        instant: false,
         onSettled: () => {
           if (scenarioPinScheduleTokenRef.current !== scheduleToken) return;
           cancelScenarioPinScrollRef.current = null;
@@ -869,7 +866,6 @@ const ReservesTable = ({
   const desktopStickyScenarioRef = useRef<HTMLDivElement>(null);
   const desktopStickyTheadRef = useRef<HTMLTableSectionElement>(null);
   const [tableInView, setTableInView] = useState(false);
-  const [pinScrollSpacerVisible, setPinScrollSpacerVisible] = useState(false);
 
   useEffect(() => {
     const target = isMobile ? mobileTableRef.current : desktopTableCardRef.current;
@@ -2242,7 +2238,7 @@ const ReservesTable = ({
       <div ref={desktopTableBottomAnchorRef} aria-hidden className="h-px w-full" />
 
       {/* Spacer: ensures enough scroll room to pin-scroll the last expanded row to the sticky band */}
-      {expandedReserveId && pinScrollSpacerVisible && (
+      {expandedReserveId && (
         <div aria-hidden style={{ height: 'calc(100dvh - var(--reserves-expanded-main-row-top, 5.75rem))' }} />
       )}
 

@@ -6,6 +6,7 @@ export interface ScenarioPinControllerState {
   pendingScenarioPin: {
     scenarioKey: string;
     reserveId: string;
+    baselineSortedIds: string[];
   } | null;
 }
 
@@ -54,18 +55,17 @@ export function transitionScenarioPinController(
   }
 
   const scenarioChanged = input.scenarioKey !== state.lastScenarioKey;
-  const orderChanged = input.sortedIds.length !== state.lastSortedIds.length ||
-    input.sortedIds.some((id, index) => id !== state.lastSortedIds[index]);
   let pendingScenarioPin = state.pendingScenarioPin;
 
   if (scenarioChanged) {
     const shouldFollowScenarioPin =
       input.expandScrollFollowsScenarioSort ||
       (state.lastHasScenarioInput && !input.hasScenarioInput);
-    if (shouldFollowScenarioPin && orderChanged && input.expandedReserveId) {
+    if (shouldFollowScenarioPin && input.expandedReserveId) {
       pendingScenarioPin = {
         scenarioKey: input.scenarioKey,
         reserveId: input.expandedReserveId,
+        baselineSortedIds: state.lastSortedIds,
       };
     } else {
       pendingScenarioPin = null;
@@ -76,9 +76,13 @@ export function transitionScenarioPinController(
   let pinReserveId: string | null = null;
 
   if (pendingScenarioPin) {
+    const orderChangedForPending =
+      input.sortedIds.length !== pendingScenarioPin.baselineSortedIds.length ||
+      input.sortedIds.some((id, index) => id !== pendingScenarioPin.baselineSortedIds[index]);
     const expandedMatches = input.expandedReserveId === pendingScenarioPin.reserveId;
     const canSchedule =
       pendingScenarioPin.scenarioKey === input.scenarioKey &&
+      orderChangedForPending &&
       expandedMatches &&
       input.isExpandedStillVisible &&
       input.hasRequiredVisibleCount;
