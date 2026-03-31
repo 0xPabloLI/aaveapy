@@ -687,9 +687,9 @@ const SimulationSubRow = ({
     <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-border/50 bg-card">
       <table className="w-full min-w-0 table-fixed">
         <colgroup>
-          <col style={{ width: '46%' }} />
-          <col style={{ width: '18%' }} />
-          <col style={{ width: '18%' }} />
+          <col style={{ width: '44%' }} />
+          <col style={{ width: '19%' }} />
+          <col style={{ width: '19%' }} />
           <col style={{ width: '18%' }} />
         </colgroup>
         <thead>
@@ -955,9 +955,9 @@ const SimulationSubRow = ({
       <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-border/50 bg-card w-full">
         <table className="w-full min-w-0 table-fixed">
           <colgroup>
-            <col style={{ width: '56%' }} />
-            <col style={{ width: '22%' }} />
-            <col style={{ width: '22%' }} />
+            <col style={{ width: '52%' }} />
+            <col style={{ width: '24%' }} />
+            <col style={{ width: '24%' }} />
           </colgroup>
           <thead>
             <tr className="bg-muted/30 border-b border-border/50">
@@ -987,7 +987,7 @@ const SimulationSubRow = ({
                         <div className="grid min-w-0" style={{ gridTemplateColumns: '1fr', gridTemplateRows: '1fr' }}>
                           {/* Visible: Net label + value */}
                           <div
-                            className={`flex items-baseline gap-x-2 min-w-0 ${row.hasCapSpacer ? 'translate-y-[4px]' : ''}`}
+                            className={`flex items-baseline gap-x-2 min-w-0 ${row.hasCapSpacer ? 'translate-y-[6px]' : ''}`}
                             style={{ gridArea: '1/1' }}
                           >
                             <span className="ds-text-16 font-bold ds-text-purple-600 break-words">{row.label}</span>
