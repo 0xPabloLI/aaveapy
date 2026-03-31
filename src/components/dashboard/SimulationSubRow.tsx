@@ -684,7 +684,7 @@ const SimulationSubRow = ({
   };
 
   const renderTable = (title: string, rows: TableRow[], accentClass: string, borderClass: string, indentBorderClass: string, isWarning?: boolean, peerRows?: TableRow[]) => (
-    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-border/50 bg-card px-1.5">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-border/50 bg-card">
       <table className="w-full min-w-0 table-fixed">
         <colgroup>
           <col style={{ width: '46%' }} />
@@ -952,7 +952,7 @@ const SimulationSubRow = ({
     };
 
     return (
-      <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-border/50 bg-card w-full px-1.5">
+      <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-border/50 bg-card w-full">
         <table className="w-full min-w-0 table-fixed">
           <colgroup>
             <col style={{ width: '56%' }} />
