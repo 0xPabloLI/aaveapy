@@ -90,6 +90,30 @@ const hasMeaningfulValue = (value: number | null): boolean => {
 
 type RowType = 'usd' | 'rate' | 'spread';
 type TableRow = SimulationTableRow;
+type DesktopAlignBand = 'size' | 'total-rate' | 'native' | 'incentive-total';
+type DesktopAlignSegment = 'main' | 'cap' | 'note';
+
+const DESKTOP_BAND_TO_ROW_KEY_SUFFIX: Readonly<Record<DesktopAlignBand, string>> = {
+  size: 'size',
+  'total-rate': 'total-rate',
+  native: 'native',
+  'incentive-total': 'incentive-total',
+};
+
+const getDesktopAlignBandFromRowKey = (rowKey: string): DesktopAlignBand | null => {
+  const normalized = rowKey.startsWith('supply-')
+    ? rowKey.slice('supply-'.length)
+    : rowKey.startsWith('borrow-')
+      ? rowKey.slice('borrow-'.length)
+      : rowKey;
+
+  return (Object.entries(DESKTOP_BAND_TO_ROW_KEY_SUFFIX).find(([, suffix]) => normalized === suffix)?.[0] as DesktopAlignBand | undefined) ?? null;
+};
+
+const getDesktopAlignKey = (
+  band: DesktopAlignBand | null | undefined,
+  segment: DesktopAlignSegment,
+) => (band ? `${band}:${segment}` : undefined);
 
 const SimulationSubRow = ({
   reserve,
@@ -415,7 +439,14 @@ const SimulationSubRow = ({
     return formatDelta(value);
   };
 
-  const renderRow = (row: TableRow, accentClass: string, borderColorClass: string, tight = false, peerCapInfo?: { hasCapBar: boolean; hasCapNote: boolean; capNote?: string }) => {
+  const renderRow = (
+    row: TableRow,
+    accentClass: string,
+    borderColorClass: string,
+    tight = false,
+    peerCapInfo?: { hasCapBar: boolean; hasCapNote: boolean; capNote?: string },
+    alignBand?: DesktopAlignBand | null,
+  ) => {
     const deltaColorClass = row.delta === null || Number.isNaN(row.delta) ? 'text-muted-foreground' : accentClass;
     const isBreakdownItem = row.isBreakdown;
     const isSubBreakdown = row.isSubBreakdown === true;
@@ -439,9 +470,13 @@ const SimulationSubRow = ({
     const labelCellPy = row.capNote ? `${tight ? 'pt-1 pb-0' : 'pt-1.5 pb-0'}` : cellPy;
     const valueCellPy = row.capNote ? `${tight ? 'pt-1 pb-0' : 'pt-1.5 pb-0'}` : cellPy;
     const capRowPb = tight ? 'pb-1' : 'pb-1.5';
+    const resolvedAlignBand = alignBand ?? getDesktopAlignBandFromRowKey(row.rowKey);
+    const mainAlignKey = getDesktopAlignKey(resolvedAlignBand, 'main');
+    const capAlignKey = getDesktopAlignKey(resolvedAlignBand, 'cap');
+    const noteAlignKey = getDesktopAlignKey(resolvedAlignBand, 'note');
 
     const mainRow = (
-      <tr className={row.warning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
+      <tr data-align-key={mainAlignKey} className={row.warning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
         <td className={`${labelCellPy} ${metricCellPx} min-w-0 align-top`}>
           <div className={`min-w-0 ${isBreakdownItem ? `${breakdownIndentClass} ${borderColorClass}` : ''}`}>
             <div className="flex flex-wrap items-start gap-x-1.5 gap-y-0.5 min-w-0">
@@ -502,7 +537,7 @@ const SimulationSubRow = ({
         ? 'bg-amber-400/50'
         : accentClass.includes('emerald') ? 'bg-emerald-400/40' : 'bg-[rgb(var(--ds-brand-cyan-rgb))]/40';
       return (
-        <tr className={row.warning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
+        <tr data-align-key={capAlignKey} className={row.warning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
           <td colSpan={4} className={`pt-0 pb-1 ${deltaCellPx}`}>
             <div className="relative h-1.5 w-full rounded-full bg-muted/40 overflow-hidden">
               <div
@@ -524,7 +559,7 @@ const SimulationSubRow = ({
     /* When the peer side (Supply↔Borrow) has a cap bar but this side doesn't,
        render an invisible placeholder bar to keep row heights aligned. */
     const capBarPlaceholder = !capProgressBar && peerCapInfo?.hasCapBar ? (
-      <tr aria-hidden>
+      <tr data-align-key={capAlignKey} aria-hidden>
         <td colSpan={4} className={`pt-0 pb-1 ${deltaCellPx}`}>
           <div className="relative h-1.5 w-full rounded-full bg-muted/40 opacity-0" />
         </td>
@@ -532,7 +567,7 @@ const SimulationSubRow = ({
     ) : null;
 
     const capNotePlaceholder = !row.capNote && peerCapInfo?.hasCapNote ? (
-      <tr aria-hidden>
+      <tr data-align-key={noteAlignKey} aria-hidden>
         <td colSpan={4} className={`pt-0 ${capRowPb} ${metricCellPx} min-w-0 align-top`}>
           <p className="ds-text-11 min-w-0 w-full max-w-none whitespace-normal break-words leading-snug text-transparent select-none">
             {peerCapInfo.capNote ?? '.'}
@@ -546,7 +581,7 @@ const SimulationSubRow = ({
         {mainRow}
         {capProgressBar ?? capBarPlaceholder}
         {row.capNote ? (
-          <tr className={row.warning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
+          <tr data-align-key={noteAlignKey} className={row.warning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
             <td colSpan={4} className={`pt-0 ${capRowPb} ${metricCellPx} min-w-0 align-top`}>
               <p
                 className={`ds-text-11 min-w-0 w-full max-w-none whitespace-normal break-words leading-snug ${capNoteAlignClass} ${row.capWarning ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}
@@ -706,6 +741,71 @@ const SimulationSubRow = ({
 
   const showHeaderBlock = showEmptyStateNote;
   const scenarioAccrual = simulation.scenarioUsdAccrual;
+  const supplyDesktopAlignSignature = supplyRows
+    .map((row) => `${row.rowKey}:${row.cap != null ? '1' : '0'}:${row.capNote ?? ''}`)
+    .join('|');
+  const borrowDesktopAlignSignature = borrowRows
+    .map((row) => `${row.rowKey}:${row.cap != null ? '1' : '0'}:${row.capNote ?? ''}`)
+    .join('|');
+
+  useEffect(() => {
+    if (effectiveCompact) return;
+    const grid = gridRef.current;
+    if (!grid) return;
+
+    const clearSyncedHeights = () => {
+      grid.querySelectorAll<HTMLTableRowElement>('tr[data-align-key]').forEach((row) => {
+        row.style.removeProperty('height');
+      });
+    };
+
+    const syncDesktopBandHeights = () => {
+      const rows = Array.from(grid.querySelectorAll<HTMLTableRowElement>('tr[data-align-key]'));
+      if (rows.length === 0) return;
+
+      clearSyncedHeights();
+
+      const byAlignKey = new Map<string, HTMLTableRowElement[]>();
+      rows.forEach((row) => {
+        const alignKey = row.dataset.alignKey;
+        if (!alignKey) return;
+        const bucket = byAlignKey.get(alignKey);
+        if (bucket) {
+          bucket.push(row);
+        } else {
+          byAlignKey.set(alignKey, [row]);
+        }
+      });
+
+      byAlignKey.forEach((groupRows) => {
+        if (groupRows.length <= 1) return;
+        const maxHeight = groupRows.reduce((max, row) => Math.max(max, row.getBoundingClientRect().height), 0);
+        if (!Number.isFinite(maxHeight) || maxHeight <= 0) return;
+        const rounded = Math.ceil(maxHeight);
+        groupRows.forEach((row) => {
+          row.style.height = `${rounded}px`;
+        });
+      });
+    };
+
+    let rafId: number | null = null;
+    const scheduleSync = () => {
+      if (rafId != null) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        syncDesktopBandHeights();
+      });
+    };
+
+    scheduleSync();
+    window.addEventListener('resize', scheduleSync);
+
+    return () => {
+      window.removeEventListener('resize', scheduleSync);
+      if (rafId != null) cancelAnimationFrame(rafId);
+      clearSyncedHeights();
+    };
+  }, [effectiveCompact, supplyDesktopAlignSignature, borrowDesktopAlignSignature, scenarioAccrual]);
 
   const renderEarnCostTable = () => {
     const tokenPrice = simulation.tokenPrice ?? reserve.tokenPrice;
@@ -829,17 +929,28 @@ const SimulationSubRow = ({
     const valuePx = effectiveCompact ? 'px-2.5' : 'px-3';
     const capRowPb = effectiveCompact ? 'pb-1' : 'pb-1.5';
 
-    const renderBandSpacerRows = (row: EarnCostRow, noteIndentClass = '') => (
+    const rowBandByKey: Readonly<Partial<Record<EarnCostRow['key'], DesktopAlignBand>>> = {
+      net: 'size',
+      amount: 'total-rate',
+      native: 'native',
+      incentive: 'incentive-total',
+    };
+
+    const renderBandSpacerRows = (row: EarnCostRow, noteIndentClass = '') => {
+      const alignBand = rowBandByKey[row.key];
+      const capAlignKey = getDesktopAlignKey(alignBand, 'cap');
+      const noteAlignKey = getDesktopAlignKey(alignBand, 'note');
+      return (
       <>
         {row.hasCapSpacer ? (
-          <tr aria-hidden className={row.capWarning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
+          <tr data-align-key={capAlignKey} aria-hidden className={row.capWarning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
             <td colSpan={3} className={`pt-0 pb-1 ${valuePx}`}>
               <div className="relative h-1.5 w-full rounded-full bg-muted/40 opacity-0" />
             </td>
           </tr>
         ) : null}
         {row.hasNoteSpacer ? (
-          <tr aria-hidden className={row.capWarning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
+          <tr data-align-key={noteAlignKey} aria-hidden className={row.capWarning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
             <td colSpan={3} className={`pt-0 ${capRowPb} ${metricPx} min-w-0 align-top`}>
               <p
                 className={`ds-text-11 min-w-0 w-full max-w-none whitespace-normal break-words leading-snug text-transparent select-none ${noteIndentClass}`}
@@ -850,7 +961,8 @@ const SimulationSubRow = ({
           </tr>
         ) : null}
       </>
-    );
+      );
+    };
 
     return (
       <div className="overflow-hidden rounded-lg border border-border/50 bg-muted/20 dark:bg-muted/10 w-full">
@@ -877,11 +989,13 @@ const SimulationSubRow = ({
           </thead>
           <tbody className="ds-text-12 [&>tr:last-child>td]:pb-2.5">
             {rows.map((row) => {
+              const alignBand = rowBandByKey[row.key];
+              const mainAlignKey = getDesktopAlignKey(alignBand, 'main');
               // Special: Net row
               if (row.isNet) {
                 return (
                   <Fragment key={row.key}>
-                    <tr className={row.capWarning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
+                    <tr data-align-key={mainAlignKey} className={row.capWarning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
                       <td className={`${cellPy} ${metricPx} min-w-0 align-top`}>
                         <div className="grid min-w-0" style={{ gridTemplateColumns: '1fr', gridTemplateRows: '1fr' }}>
                           {/* Visible: Net label + value */}
@@ -925,7 +1039,7 @@ const SimulationSubRow = ({
 
               return (
                 <Fragment key={row.key}>
-                  <tr className={row.capWarning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
+                  <tr data-align-key={mainAlignKey} className={row.capWarning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
                     <td className={`${labelCellPy} ${metricPx} min-w-0 align-top`}>
                       <div className={`min-w-0 ${indentClass}`}>
                         {row.href ? (

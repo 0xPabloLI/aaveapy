@@ -51,13 +51,14 @@ function IncentiveNetCheckboxTooltip({
       >
         <div className="space-y-2.5">
           <p className="text-muted-foreground ds-text-12 leading-relaxed">
-            Incentives (e.g. Merit/Merkl) usually follow net lending and net borrowing—overlap does not
-            double-count.
+            Net on: overlapping supply and borrow offset each other first.
           </p>
           <p className="text-muted-foreground ds-text-12 leading-relaxed">
-            &quot;Off&quot; uses gross supply and borrow per side; may not match how programs pay.
+            Net off: both sides are counted in full, which may overestimate incentives.
           </p>
-          <p className="text-muted-foreground ds-text-12 leading-relaxed">Brevis ignores this.</p>
+          <p className="text-muted-foreground ds-text-12 leading-relaxed">
+            Brevis campaigns use separate rules and are not affected by this switch.
+          </p>
         </div>
       </TooltipContent>
     </Tooltip>

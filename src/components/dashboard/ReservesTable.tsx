@@ -198,6 +198,7 @@ const ReservesTable = ({
     let attempt = 0;
     const maxAttempts = 12;
     const retryMs = 70;
+    setPinScrollSpacerVisible(true);
 
     const runAttempt = () => {
       if (cancelled) return;
@@ -211,6 +212,7 @@ const ReservesTable = ({
             // follow-up correction after layout settles. Repeated corrections
             // create visible "stair-step" jank on long pages.
             if (!shouldScrollExpandedSimulationIntoView(reserveId, { mode })) {
+              setPinScrollSpacerVisible(false);
               opts?.onSettled?.();
               return;
             }
@@ -218,6 +220,7 @@ const ReservesTable = ({
               mode,
               instant,
             });
+            setPinScrollSpacerVisible(false);
             opts?.onSettled?.();
           });
         });
@@ -225,6 +228,7 @@ const ReservesTable = ({
       }
       attempt += 1;
       if (attempt >= maxAttempts) {
+        setPinScrollSpacerVisible(false);
         opts?.onSettled?.();
         return;
       }
@@ -235,6 +239,7 @@ const ReservesTable = ({
     return () => {
       cancelled = true;
       window.clearTimeout(starter);
+      setPinScrollSpacerVisible(false);
     };
   }, [isMobile]);
 
@@ -851,9 +856,11 @@ const ReservesTable = ({
 
   const mobileTableRef = useRef<HTMLDivElement>(null);
   const desktopTableCardRef = useRef<HTMLDivElement>(null);
+  const desktopTableBottomAnchorRef = useRef<HTMLDivElement>(null);
   const desktopStickyScenarioRef = useRef<HTMLDivElement>(null);
   const desktopStickyTheadRef = useRef<HTMLTableSectionElement>(null);
   const [tableInView, setTableInView] = useState(false);
+  const [pinScrollSpacerVisible, setPinScrollSpacerVisible] = useState(false);
 
   useEffect(() => {
     const target = isMobile ? mobileTableRef.current : desktopTableCardRef.current;
@@ -2223,8 +2230,10 @@ const ReservesTable = ({
         </div>
       )}
       
+      <div ref={desktopTableBottomAnchorRef} aria-hidden className="h-px w-full" />
+
       {/* Spacer: ensures enough scroll room to pin-scroll the last expanded row to the sticky band */}
-      {expandedReserveId && (
+      {expandedReserveId && pinScrollSpacerVisible && (
         <div aria-hidden style={{ height: 'calc(100dvh - var(--reserves-expanded-main-row-top, 5.75rem))' }} />
       )}
 
@@ -2263,7 +2272,8 @@ const ReservesTable = ({
           type="button"
           aria-label="Scroll to table bottom"
           onClick={() => {
-            desktopTableCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+            const target = desktopTableBottomAnchorRef.current ?? desktopTableCardRef.current;
+            target?.scrollIntoView({ behavior: 'smooth', block: 'end' });
           }}
           className="flex h-9 w-9 items-center justify-center rounded-full border border-border/60 bg-card/90 shadow-md backdrop-blur-sm text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
         >
