@@ -2201,6 +2201,30 @@ const ReservesTable = ({
           onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign}
         />
       )}
+
+      {/* Floating scroll-to-top / scroll-to-bottom buttons */}
+      <div className="fixed right-3 bottom-6 z-30 flex flex-col gap-2 md:right-6">
+        <button
+          type="button"
+          aria-label="Scroll to table top"
+          onClick={() => {
+            desktopTableCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }}
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-border/60 bg-card/90 shadow-md backdrop-blur-sm text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
+        >
+          <ArrowUp className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          aria-label="Scroll to table bottom"
+          onClick={() => {
+            desktopTableCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+          }}
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-border/60 bg-card/90 shadow-md backdrop-blur-sm text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
+        >
+          <ArrowDown className="h-4 w-4" />
+        </button>
+      </div>
       </div>
     </div>
   );
