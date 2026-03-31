@@ -11,6 +11,7 @@ node_modules
 dist
 .worktrees
 src/lib/tokenIconManifest.generated.ts
+src/lib/chainIconManifest.generated.ts
 dist-ssr
 *.local
 .npmrc.local

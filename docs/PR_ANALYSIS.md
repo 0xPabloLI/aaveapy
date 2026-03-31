@@ -2,6 +2,9 @@
 
 本文档基于近期 PR 分析（见 PR #70），作为仓库的 **PR 合并策略** 与 **频率优化** 参考。
 
+> Status: **Active policy document** for PR batching/merge decisions in this repository.
+> Historical examples in this file are illustrative; operational rules above them are canonical.
+
 ---
 
 ## Breaking Changes 判定

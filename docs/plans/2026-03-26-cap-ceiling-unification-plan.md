@@ -1,5 +1,8 @@
 # Incentive Cap/Ceiling 命名统一方案
 
+> Historical implementation plan (already implemented).  
+> Canonical current rules live in [`docs/rate-calculation-formulas.md`](../rate-calculation-formulas.md) and repo-level `AGENTS.md`.
+
 > 目标读者：后续负责审查和执行的 coding agents
 > 状态：Implemented (Phase 0–2 in repo)
 > 日期：2026-03-26

@@ -1,6 +1,8 @@
 const VIEW_MARGIN_PX = 16;
 /** Breathing room below the stacked sticky strips (scenario + optional thead) before the body row. */
 const GAP_BELOW_STICKY_STACK_PX = 8;
+/** Ignore micro scroll corrections that only create visible jitter. */
+const MIN_SCROLL_DELTA_PX = 10;
 
 export type ExpandedSimulationScrollMode = 'pin-main-row-top' | 'minimal-if-clipped';
 
@@ -104,17 +106,19 @@ export function scrollExpandedSimulationIntoView(
     const bottom = r.bottom;
     if (options.mode === 'pin-main-row-top') {
       const delta = top - pinnedTopY;
-      if (Math.abs(delta) > 1) {
+      if (Math.abs(delta) >= MIN_SCROLL_DELTA_PX) {
         window.scrollBy({ top: delta, behavior });
       }
       return;
     }
-    if (bottom > vBottom) {
-      window.scrollBy({ top: bottom - vBottom, behavior });
+    const clipBottomDelta = bottom - vBottom;
+    if (clipBottomDelta >= MIN_SCROLL_DELTA_PX) {
+      window.scrollBy({ top: clipBottomDelta, behavior });
       return;
     }
-    if (top < pinnedTopY) {
-      window.scrollBy({ top: top - pinnedTopY, behavior });
+    const clipTopDelta = top - pinnedTopY;
+    if (clipTopDelta <= -MIN_SCROLL_DELTA_PX) {
+      window.scrollBy({ top: clipTopDelta, behavior });
     }
     return;
   }
@@ -127,7 +131,7 @@ export function scrollExpandedSimulationIntoView(
     // Always pin main row top to sticky band. The spacer below the table ensures
     // enough scroll room for the simulation bottom to be in viewport.
     const delta = mainRect.top - pinnedTopY;
-    if (Math.abs(delta) > 1) {
+    if (Math.abs(delta) >= MIN_SCROLL_DELTA_PX) {
       window.scrollBy({ top: delta, behavior });
     }
     return;
@@ -142,11 +146,13 @@ export function scrollExpandedSimulationIntoView(
     bottom = Math.max(bottom, subRect.bottom);
   }
 
-  if (bottom > vBottom) {
-    window.scrollBy({ top: bottom - vBottom, behavior });
+  const clipBottomDelta = bottom - vBottom;
+  if (clipBottomDelta >= MIN_SCROLL_DELTA_PX) {
+    window.scrollBy({ top: clipBottomDelta, behavior });
     return;
   }
-  if (top < pinnedTopY) {
-    window.scrollBy({ top: top - pinnedTopY, behavior });
+  const clipTopDelta = top - pinnedTopY;
+  if (clipTopDelta <= -MIN_SCROLL_DELTA_PX) {
+    window.scrollBy({ top: clipTopDelta, behavior });
   }
 }

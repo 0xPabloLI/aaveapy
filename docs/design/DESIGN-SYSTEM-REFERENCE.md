@@ -135,6 +135,12 @@
 | APR/APY 分段 | `AprApyToggle.tsx` |
 | Token / Markets 筛选芯片 | `FilterBar.tsx` |
 | USD/Token 等模式分段 | `ScenarioControls.tsx` |
+
+### 5.8 Pill 与可点击性
+
+- **统一规则**：产品内凡是 **pill** 形态，都定义为可点击交互元素。
+- **语义要求**：pill 必须使用交互语义（`button`/`a`）、可见 hover/focus、明确点击反馈与可访问名称。
+- **只读数据**：禁止使用 pill 视觉；改用普通文本或非-pill标签样式，避免与交互控件冲突。
 | 主题图标切换 | `ThemeToggle.tsx` |
 | 原生勾选框（Merkl 白名单、场景 net 口径等） | `dsNativeCheckbox.ts` → `IncentiveTooltip.tsx`、`MerklForecastPanel.tsx`、`ScenarioControls.tsx` |
 

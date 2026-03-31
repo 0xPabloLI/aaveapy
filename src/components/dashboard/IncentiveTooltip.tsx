@@ -258,22 +258,8 @@ const IncentiveTooltip = ({
     return opportunity.link;
   };
 
-  /**
-   * Group key for merging duplicate rows. Merkl must include breakdown identity: one opportunity
-   * often has multiple active breakdowns (e.g. Tydro points on a whitelist row + a separate 0% row).
-   * Merging only by name+link collapses those into one row with value 0 and a misleading total.
-   */
   const buildSourceGroupKey = (source: IncentiveSource): string => {
-    const base = `${source.sourceType ?? 'Unknown'}|${source.name}|${source.link ?? ''}`;
-    if (source.sourceType === 'Merkl') {
-      const c = source.campaigns?.[0];
-      const cid =
-        c?.campaignId != null && String(c.campaignId).trim() !== '' ? String(c.campaignId).trim() : 'noid';
-      const start = c?.startDate ?? '';
-      const end = c?.endDate ?? '';
-      return `${base}|${cid}|${start}|${end}`;
-    }
-    return base;
+    return `${source.sourceType ?? 'Unknown'}|${source.name}|${source.link ?? ''}`;
   };
 
   const groupIncentiveSources = (sources: IncentiveSource[]): IncentiveSource[] => {

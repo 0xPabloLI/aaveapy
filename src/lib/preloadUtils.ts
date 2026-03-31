@@ -1,4 +1,4 @@
-import { chainIconMap, normalizeChainName } from './chainIconMap';
+import { getChainIconSrc } from './chainIcons';
 import { TOKEN_ICON_MANIFEST } from './tokenIconManifest.generated';
 
 /**
@@ -219,11 +219,7 @@ export function preloadTokenIcons(symbols: string[]): void {
  * Preload chain/network icons
  */
 export function preloadChainIcons(chains: string[]): void {
-  const iconSrcs = chains
-    .map(normalizeChainName)
-    .map((normalized) => chainIconMap[normalized])
-    .filter((iconName): iconName is string => !!iconName)
-    .map((iconName) => `/icons/networks/${iconName}.svg`);
+  const iconSrcs = chains.map((chain) => getChainIconSrc(chain)).filter((src): src is string => !!src);
 
   preloadImagesIdle([...new Set(iconSrcs)]);
 }

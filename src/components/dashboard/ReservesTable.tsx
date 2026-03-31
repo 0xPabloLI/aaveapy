@@ -30,6 +30,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { getReserveSimulationId, useSharedRateSimulations } from '@/hooks/useRateSimulation';
 import { getScenarioSupplySizeUsd, getTotalBorrowedUsd as getReserveTotalBorrowedUsd } from '@/lib/scenarioSize';
 import { scrollExpandedSimulationIntoView } from '@/lib/scrollExpandedSimulationIntoView';
+import { createScenarioPinControllerState, transitionScenarioPinController } from '@/lib/scenarioPinController';
 
 interface ReservesTableProps {
   reserves: ReserveWithSpread[];
@@ -87,11 +88,7 @@ const ReservesTable = ({
   const borrowSortButtonRef = useRef<HTMLButtonElement>(null);
   const supplySortButtonRef = useRef<HTMLButtonElement>(null);
   const scenarioControlsRef = useRef<ScenarioControlsHandle>(null);
-  const lastScenarioKeyForPinScrollRef = useRef<string | null>(null);
-  const lastSortedIdsForPinScrollRef = useRef<string[]>([]);
-  const scenarioPinScrollBaselineReadyRef = useRef(false);
-  const scenarioNeedsPinScrollRef = useRef(false);
-  const scenarioPinOrderReadyRef = useRef(false);
+  const scenarioPinControllerRef = useRef(createScenarioPinControllerState());
   const scenarioPinScheduleTokenRef = useRef(0);
   const cancelScenarioPinScrollRef = useRef<(() => void) | null>(null);
   const lastReservesKeyForFilterPinRef = useRef<string | null>(null);
@@ -207,22 +204,14 @@ const ReservesTable = ({
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
             if (cancelled) return;
-            let correctionCount = 0;
-            const maxCorrections = mode === 'pin-main-row-top' ? 9 : 4;
-            const runCorrection = () => {
-              if (cancelled) return;
-              scrollExpandedSimulationIntoView(reserveId, {
-                mode,
-                instant: correctionCount === 0 ? instant : true,
-              });
-              correctionCount += 1;
-              if (correctionCount >= maxCorrections) {
-                opts?.onSettled?.();
-                return;
-              }
-              window.setTimeout(runCorrection, 110);
-            };
-            runCorrection();
+            // Keep pin-scroll deterministic: one primary pass + at most one
+            // follow-up correction after layout settles. Repeated corrections
+            // create visible "stair-step" jank on long pages.
+            scrollExpandedSimulationIntoView(reserveId, {
+              mode,
+              instant,
+            });
+            opts?.onSettled?.();
           });
         });
         return;
@@ -554,81 +543,46 @@ const ReservesTable = ({
   useEffect(() => {
     const scenarioKey = `${debouncedSharedSupplyInput}\0${debouncedSharedBorrowInput}\0${sharedInputMode}\0${meritMerklNetPosition ? '1' : '0'}`;
     const ids = sortedData.map((r) => getReserveSimulationId(r));
-    const prevIds = lastSortedIdsForPinScrollRef.current;
-    const orderChanged =
-      prevIds.length !== ids.length || prevIds.some((id, i) => id !== ids[i]);
+    const expandedIndex = expandedReserveId
+      ? sortedData.findIndex((r) => getReserveSimulationId(r) === expandedReserveId)
+      : -1;
+    const currentCount = minVisibleCount ?? DEFAULT_VISIBLE_COUNT;
+    const requiredCount =
+      expandedIndex >= 0 ? Math.min(expandedIndex + 6, sortedData.length) : 0;
+    const hasRequiredVisibleCount =
+      expandedIndex >= 0 ? currentCount >= requiredCount : false;
 
-    if (!scenarioPinScrollBaselineReadyRef.current) {
-      lastScenarioKeyForPinScrollRef.current = scenarioKey;
-      lastSortedIdsForPinScrollRef.current = ids;
-      scenarioPinScrollBaselineReadyRef.current = true;
-      return;
-    }
+    const controllerResult = transitionScenarioPinController(
+      scenarioPinControllerRef.current,
+      {
+        scenarioKey,
+        sortedIds: ids,
+        expandedReserveId,
+        expandScrollFollowsScenarioSort,
+        hasRequiredVisibleCount,
+        isExpandedStillVisible: expandedIndex >= 0,
+      },
+    );
+    scenarioPinControllerRef.current = controllerResult.nextState;
 
-    const scenarioChanged = scenarioKey !== lastScenarioKeyForPinScrollRef.current;
-    if (scenarioChanged) {
-      cancelScenarioPinScrollRef.current?.();
-      cancelScenarioPinScrollRef.current = null;
-      scenarioPinScheduleTokenRef.current += 1;
-      lastScenarioKeyForPinScrollRef.current = scenarioKey;
-      scenarioNeedsPinScrollRef.current = true;
-      scenarioPinOrderReadyRef.current = false;
-    }
+    if (!controllerResult.shouldSchedulePin || !controllerResult.pinReserveId) return;
 
-    if (scenarioNeedsPinScrollRef.current && orderChanged) {
-      scenarioPinOrderReadyRef.current = true;
-    }
-
-    if (scenarioNeedsPinScrollRef.current && !scenarioPinOrderReadyRef.current) {
-      lastSortedIdsForPinScrollRef.current = ids;
-      return;
-    }
-
-    if (scenarioChanged || scenarioNeedsPinScrollRef.current) {
-      lastSortedIdsForPinScrollRef.current = ids;
-      if (
-        scenarioNeedsPinScrollRef.current &&
-        scenarioPinOrderReadyRef.current &&
-        expandScrollFollowsScenarioSort &&
-        expandedReserveId
-      ) {
-        const expandedIndex = sortedData.findIndex((r) => getReserveSimulationId(r) === expandedReserveId);
-        if (expandedIndex < 0) {
-          scenarioNeedsPinScrollRef.current = false;
-          scenarioPinOrderReadyRef.current = false;
-          scenarioPinScheduleTokenRef.current += 1;
-          cancelScenarioPinScrollRef.current?.();
+    cancelScenarioPinScrollRef.current?.();
+    const scheduleToken = scenarioPinScheduleTokenRef.current + 1;
+    scenarioPinScheduleTokenRef.current = scheduleToken;
+    cancelScenarioPinScrollRef.current = schedulePinScrollToReserve(
+      controllerResult.pinReserveId,
+      320,
+      {
+        // Scenario-driven resort can trigger while measurements are settling;
+        // use instant pinning to avoid chained smooth-scroll stutter.
+        instant: true,
+        onSettled: () => {
+          if (scenarioPinScheduleTokenRef.current !== scheduleToken) return;
           cancelScenarioPinScrollRef.current = null;
-          return;
-        }
-        const requiredCount = Math.min(expandedIndex + 6, sortedData.length);
-        const currentCount = minVisibleCount ?? DEFAULT_VISIBLE_COUNT;
-        if (currentCount < requiredCount) {
-          // Wait for the expanded-row buffer effect (expanded + 5 rows) so pinning has enough scroll room.
-          return;
-        }
-        cancelScenarioPinScrollRef.current?.();
-        const scheduleToken = scenarioPinScheduleTokenRef.current + 1;
-        scenarioPinScheduleTokenRef.current = scheduleToken;
-        scenarioNeedsPinScrollRef.current = false;
-        scenarioPinOrderReadyRef.current = false;
-        cancelScenarioPinScrollRef.current = schedulePinScrollToReserve(expandedReserveId, 320, {
-          onSettled: () => {
-            if (scenarioPinScheduleTokenRef.current !== scheduleToken) return;
-            cancelScenarioPinScrollRef.current = null;
-          },
-        }) ?? null;
-        return;
-      }
-      scenarioNeedsPinScrollRef.current = false;
-      scenarioPinOrderReadyRef.current = false;
-      scenarioPinScheduleTokenRef.current += 1;
-      cancelScenarioPinScrollRef.current?.();
-      cancelScenarioPinScrollRef.current = null;
-      return;
-    }
-
-    lastSortedIdsForPinScrollRef.current = ids;
+        },
+      },
+    ) ?? null;
   }, [
     debouncedSharedSupplyInput,
     debouncedSharedBorrowInput,

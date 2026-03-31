@@ -1,6 +1,14 @@
 import { Fragment, useRef, useState, useEffect } from 'react';
 import { AlertTriangle, ExternalLink } from 'lucide-react';
-import { annualPercentToDailyFraction, formatPercent, formatScenarioSize, formatScenarioSizeDelta, formatSignedUsd, formatSpread, formatUsd } from '@/lib/formatters';
+import {
+  annualPercentToDailyFraction,
+  formatPercent,
+  formatScenarioSize,
+  formatScenarioSizeDelta,
+  formatSignedScenarioDailyCashflow,
+  formatSpread,
+  formatUsd,
+} from '@/lib/formatters';
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -9,6 +17,14 @@ import type {
   SimulationCampaignDetail,
   SimulationSourceDetail,
 } from '@/hooks/useRateSimulation';
+import {
+  hasAnyIncentiveBreakdownHref,
+  includeIncentiveSourceInBreakdown,
+  incentiveSourceToTableRows,
+  resolveFirstIncentiveSourceHref,
+  type IncentiveSourceRow,
+  type SimulationTableRow,
+} from '@/lib/simulationIncentiveTableRows';
 import type { ReserveWithSpread, MeritIncentive, MerklOpportunityGroup, BrevisIncentive } from '@/types/aave';
 import { ETHEREUM_MARKET_NAMES } from '@/types/aave';
 import { getFirstActiveBrevisLink } from '@/lib/brevis';
@@ -62,88 +78,19 @@ interface SimulationSubRowProps {
 }
 
 const formatDelta = (value: number | null) => {
-  if (value === null || Number.isNaN(value)) return '—';
+  if (value === null || Number.isNaN(value)) return '-';
   const prefix = value > 0 ? '+' : '';
   return `${prefix}${value.toFixed(2)}%`;
 };
 
-const hasMeaningfulValue = (value: number | null) =>
-  value !== null && Number.isFinite(value) && Math.abs(value) >= 0.005;
+const normalizeToAfterPlaceholder = (value: string) => (value === '—' ? '-' : value);
+
+const hasMeaningfulValue = (value: number | null): boolean => {
+  return value !== null && Number.isFinite(value) && Math.abs(value) > 1e-12;
+};
 
 type RowType = 'usd' | 'rate' | 'spread';
-
-interface TableRow {
-  rowKey: string;
-  label: string;
-  current: number | null;
-  after: number | null;
-  delta: number | null;
-  type: RowType;
-  cap?: number | null;
-  href?: string | null;
-  isBreakdown?: boolean;
-  /** Nested under ACI / Merkl / Brevis aggregate when per-campaign rows exist */
-  isSubBreakdown?: boolean;
-  capNote?: string;
-  capWarning?: boolean;
-  warning?: boolean;
-}
-
-interface IncentiveSourceRow extends SimulationSourceDetail {
-  label: string;
-  href: string | null;
-  /** When one campaign, merge into the source row so capNote shows under the main label (Brevis cap/duration). */
-  mergeSingleCampaignRow?: boolean;
-}
-
-function incentiveSourceToTableRows(src: IncentiveSourceRow, sourceIndex: number, side: 'supply' | 'borrow'): TableRow[] {
-  const prefix = `${side}-${sourceIndex}`;
-  const main: TableRow = {
-    rowKey: `${prefix}-agg`,
-    label: src.label,
-    current: src.current,
-    after: src.after,
-    delta: src.delta,
-    type: 'rate',
-    href: src.href,
-    isBreakdown: true,
-  };
-  const campaigns = src.campaigns;
-  if (!campaigns?.length) return [main];
-  if (campaigns.length === 1 && src.mergeSingleCampaignRow) {
-    const c = campaigns[0];
-    return [
-      {
-        rowKey: `${prefix}-merged`,
-        label: src.label,
-        current: src.current,
-        after: src.after,
-        delta: src.delta,
-        type: 'rate',
-        href: c.href ?? src.href,
-        isBreakdown: true,
-        capNote: c.capNote,
-        capWarning: c.capWarning,
-      },
-    ];
-  }
-  return [
-    main,
-    ...campaigns.map((c: SimulationCampaignDetail, ci: number) => ({
-      rowKey: `${prefix}-c-${ci}-${c.id}`,
-      label: c.label,
-      current: c.current,
-      after: c.after,
-      delta: c.delta,
-      type: 'rate' as RowType,
-      href: c.href ?? null,
-      isBreakdown: true,
-      isSubBreakdown: true,
-      capNote: c.capNote,
-      capWarning: c.capWarning,
-    })),
-  ];
-}
+type TableRow = SimulationTableRow;
 
 const SimulationSubRow = ({
   reserve,
@@ -227,6 +174,7 @@ const SimulationSubRow = ({
     (simulation.supply.hasInput || simulation.borrow.hasInput) &&
     !simulation.tokenPrice &&
     !simulation.tokenPriceLoading;
+  const hasScenarioInput = simulation.supply.hasInput || simulation.borrow.hasInput;
   const showEmptyStateNote = !simulation.supply.hasInput && !simulation.borrow.hasInput;
 
   const aaveUrl = buildAaveReserveUrl({ marketName: reserve.marketName, tokenAddress: reserve.tokenAddress });
@@ -284,32 +232,70 @@ const SimulationSubRow = ({
   const borrowBrevisLink = getFirstBrevisLink(reserve.brevisBorrows);
 
   const incentiveLabel = (full: string, short: string) => (effectiveCompact ? short : full);
-  const supplyMerklHasCampaigns = !!simulation.supply.sources.merkl.campaigns?.length;
   const supplyIncentiveSources: IncentiveSourceRow[] = [
-    { label: incentiveLabel('Protocol Incentive', 'Protocol'), ...simulation.supply.sources.protocol, href: aaveUrl },
-    { label: incentiveLabel('ACI Incentive', 'ACI'), ...simulation.supply.sources.merit, href: supplyMeritLink },
-    // If we have per-campaign rows, the more specific campaign rows should own the link.
-    { label: incentiveLabel('Merkl Incentive', 'Merkl'), ...simulation.supply.sources.merkl, href: supplyMerklHasCampaigns ? null : supplyMerklLink },
+    {
+      label: incentiveLabel('Protocol Incentive', 'Protocol'),
+      ...simulation.supply.sources.protocol,
+      href: aaveUrl,
+      hideAggregateWhenCampaigns: true,
+    },
+    {
+      label: incentiveLabel('ACI Incentive', 'ACI'),
+      ...simulation.supply.sources.merit,
+      href: supplyMeritLink,
+      hideAggregateWhenCampaigns: true,
+    },
+    {
+      label: incentiveLabel('Merkl Incentive', 'Merkl'),
+      ...simulation.supply.sources.merkl,
+      href: supplyMerklLink,
+      hideAggregateWhenCampaigns: true,
+    },
     {
       label: incentiveLabel('Brevis Incentive', 'Brevis'),
       ...simulation.supply.sources.brevis,
       href: supplyBrevisLink,
       mergeSingleCampaignRow: true,
+      hideAggregateWhenCampaigns: true,
     },
-  ].filter((src) => hasMeaningfulValue(src.current) || hasMeaningfulValue(src.after));
+  ].filter(includeIncentiveSourceInBreakdown);
 
-  const borrowMerklHasCampaigns = !!simulation.borrow.sources.merkl.campaigns?.length;
   const borrowIncentiveSources: IncentiveSourceRow[] = [
-    { label: incentiveLabel('Protocol Incentive', 'Protocol'), ...simulation.borrow.sources.protocol, href: aaveUrl },
-    { label: incentiveLabel('ACI Incentive', 'ACI'), ...simulation.borrow.sources.merit, href: borrowMeritLink },
-    { label: incentiveLabel('Merkl Incentive', 'Merkl'), ...simulation.borrow.sources.merkl, href: borrowMerklHasCampaigns ? null : borrowMerklLink },
+    {
+      label: incentiveLabel('Protocol Incentive', 'Protocol'),
+      ...simulation.borrow.sources.protocol,
+      href: aaveUrl,
+      hideAggregateWhenCampaigns: true,
+    },
+    {
+      label: incentiveLabel('ACI Incentive', 'ACI'),
+      ...simulation.borrow.sources.merit,
+      href: borrowMeritLink,
+      hideAggregateWhenCampaigns: true,
+    },
+    {
+      label: incentiveLabel('Merkl Incentive', 'Merkl'),
+      ...simulation.borrow.sources.merkl,
+      href: borrowMerklLink,
+      hideAggregateWhenCampaigns: true,
+    },
     {
       label: incentiveLabel('Brevis Incentive', 'Brevis'),
       ...simulation.borrow.sources.brevis,
       href: borrowBrevisLink,
       mergeSingleCampaignRow: true,
+      hideAggregateWhenCampaigns: true,
     },
-  ].filter((src) => hasMeaningfulValue(src.current) || hasMeaningfulValue(src.after));
+  ].filter(includeIncentiveSourceInBreakdown);
+
+  const supplyIncentiveJumpHref = resolveFirstIncentiveSourceHref(supplyIncentiveSources, aaveUrl);
+  const borrowIncentiveJumpHref = resolveFirstIncentiveSourceHref(borrowIncentiveSources, aaveUrl);
+  const earnCostIncentiveJumpHref = (() => {
+    const fromSupply = resolveFirstIncentiveSourceHref(supplyIncentiveSources, '');
+    return fromSupply || resolveFirstIncentiveSourceHref(borrowIncentiveSources, aaveUrl);
+  })();
+  const hasSupplyBreakdownLevelHref = hasAnyIncentiveBreakdownHref(supplyIncentiveSources);
+  const hasBorrowBreakdownLevelHref = hasAnyIncentiveBreakdownHref(borrowIncentiveSources);
 
   // If only Native (no incentives), put link on APY row directly; otherwise show breakdown
   const hasSupplyIncentives = supplyIncentiveSources.length > 0;
@@ -349,9 +335,19 @@ const SimulationSubRow = ({
             href: aaveUrl,
             isBreakdown: true,
           },
+          {
+            rowKey: 'supply-incentive-total',
+            label: 'Incentive',
+            current: simulation.supply.currentIncentive,
+            after: simulation.supply.afterIncentive,
+            delta: simulation.supply.deltaIncentive,
+            type: 'rate' as RowType,
+            isBreakdown: true,
+            href: hasSupplyBreakdownLevelHref ? null : supplyIncentiveJumpHref,
+          },
         ]
       : []),
-    ...supplyIncentiveSources.flatMap((src, i) => incentiveSourceToTableRows(src, i, 'supply')),
+    ...supplyIncentiveSources.flatMap((src, i) => incentiveSourceToTableRows(src, i, 'supply', true)),
   ];
 
   const borrowRows: TableRow[] = [
@@ -388,9 +384,19 @@ const SimulationSubRow = ({
             href: aaveUrl,
             isBreakdown: true,
           },
+          {
+            rowKey: 'borrow-incentive-total',
+            label: 'Incentive',
+            current: simulation.borrow.currentIncentive,
+            after: simulation.borrow.afterIncentive,
+            delta: simulation.borrow.deltaIncentive,
+            type: 'rate' as RowType,
+            isBreakdown: true,
+            href: hasBorrowBreakdownLevelHref ? null : borrowIncentiveJumpHref,
+          },
         ]
       : []),
-    ...borrowIncentiveSources.flatMap((src, i) => incentiveSourceToTableRows(src, i, 'borrow')),
+    ...borrowIncentiveSources.flatMap((src, i) => incentiveSourceToTableRows(src, i, 'borrow', true)),
   ];
 
   const formatValue = (value: number | null, type: RowType) => {
@@ -406,10 +412,10 @@ const SimulationSubRow = ({
 
   const formatDeltaValue = (value: number | null, type: RowType) => {
     if (type === 'usd') {
-      return formatScenarioSizeDelta(value, {
+      return normalizeToAfterPlaceholder(formatScenarioSizeDelta(value, {
         inputMode,
         tokenPrice: simulation.tokenPrice,
-      });
+      }));
     }
     return formatDelta(value);
   };
@@ -418,7 +424,14 @@ const SimulationSubRow = ({
     const deltaColorClass = row.delta === null || Number.isNaN(row.delta) ? 'text-muted-foreground' : accentClass;
     const isBreakdownItem = row.isBreakdown;
     const isSubBreakdown = row.isSubBreakdown === true;
-    const breakdownIndentClass = isSubBreakdown ? 'ml-4 pl-2 border-l' : isBreakdownItem ? 'ml-2 pl-2 border-l' : '';
+    const isNestedUnderIncentive = row.nestedUnderIncentive === true;
+    const breakdownIndentClass = isSubBreakdown
+      ? 'ml-4 pl-2 border-l'
+      : isBreakdownItem
+        ? isNestedUnderIncentive
+          ? 'ml-3 pl-2 border-l'
+          : 'ml-2 pl-2 border-l'
+        : '';
     const cellPy = tight ? 'py-1' : 'py-1.5';
     const metricCellPx = tight ? 'px-3' : 'px-4';
     const valueCellPx = tight ? 'px-2.5' : 'px-3';
@@ -585,9 +598,11 @@ const SimulationSubRow = ({
               </span>
             </td>
             <td className={`${compactCellPy} ${compactDeltaCell} text-right`}>
-              <span className={`ds-text-12 tabular-nums ${simulation.spread.delta === null ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
-                {formatDelta(simulation.spread.delta)}
-              </span>
+              {hasScenarioInput ? (
+                <span className={`ds-text-12 tabular-nums ${simulation.spread.delta === null ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
+                  {formatDelta(simulation.spread.delta)}
+                </span>
+              ) : null}
             </td>
           </tr>
           <tr className={borrowCapExceeded && borrowLimitedByLiquidity ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
@@ -607,9 +622,11 @@ const SimulationSubRow = ({
               </span>
             </td>
             <td className={`${compactCellPy} ${compactDeltaCell} text-right`}>
-              <span className={`ds-text-12 tabular-nums ${simulation.marketMetrics.availableLiquidityUsdDelta === null ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
-                {formatScenarioSizeDelta(simulation.marketMetrics.availableLiquidityUsdDelta, { inputMode, tokenPrice: simulation.tokenPrice })}
-              </span>
+              {hasScenarioInput ? (
+                <span className={`ds-text-12 tabular-nums ${simulation.marketMetrics.availableLiquidityUsdDelta === null ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
+                  {formatScenarioSizeDelta(simulation.marketMetrics.availableLiquidityUsdDelta, { inputMode, tokenPrice: simulation.tokenPrice })}
+                </span>
+              ) : null}
             </td>
           </tr>
           {borrowRows.map((row) => renderRow(row, 'ds-text-brand-cyan', 'border-l-[rgb(var(--ds-brand-cyan-rgb))]', true))}
@@ -666,21 +683,15 @@ const SimulationSubRow = ({
 
   const scenarioAccrual = simulation.scenarioUsdAccrual;
 
-  /** Compute USD/day from an annual rate percent × principal. Supply = positive, Borrow native = negative (cost). */
-  const rateToUsdPerDay = (ratePercent: number | null, principalUsd: number, negate = false): number | null => {
-    if (ratePercent === null || !Number.isFinite(ratePercent)) return null;
-    const daily = principalUsd * annualPercentToDailyFraction(ratePercent, isApy);
-    return negate ? -daily : daily;
-  };
-
   const renderEarnCostTable = () => {
-    if (!scenarioAccrual || showEmptyStateNote) return null;
-    const fmt = formatSignedUsd;
+    const tokenPrice = simulation.tokenPrice ?? reserve.tokenPrice;
+    const fmt = (value: number | null) =>
+      formatSignedScenarioDailyCashflow(value, { inputMode, tokenPrice });
     const supplyPrincipal = simulation.supply.inputUsd;
     const borrowPrincipal = simulation.borrow.inputUsd;
     const hasSupply = supplyPrincipal > 0;
     const hasBorrow = borrowPrincipal > 0;
-    if (!hasSupply && !hasBorrow) return null;
+    const accrual = scenarioAccrual;
 
     interface EarnCostRow {
       key: string;
@@ -696,97 +707,44 @@ const SimulationSubRow = ({
       capWarning?: boolean;
     }
 
-    const supplySourceUsd = (src: SimulationSourceDetail, negate = false) =>
-      rateToUsdPerDay(src.after, supplyPrincipal, negate);
-    const borrowSourceUsd = (src: SimulationCampaignDetail | SimulationSourceDetail, negate = true) =>
-      rateToUsdPerDay(src.after, borrowPrincipal, negate);
-    // Borrow incentive is rebate (positive)
-    const borrowIncentiveSourceUsd = (src: SimulationSourceDetail) =>
-      rateToUsdPerDay(src.after, borrowPrincipal, false);
-
     const rows: EarnCostRow[] = [];
 
-    // Net row (top)
-    if (hasSupply && hasBorrow && scenarioAccrual.netUsdPerDay != null) {
-      rows.push({
-        key: 'net',
-        label: 'Net',
-        earn: null,
-        cost: null,
-        isNet: true,
-      });
-    }
-
-    // Total
+    // Net row (top) - always render structure, use placeholder when unavailable.
     rows.push({
-      key: 'total',
-      label: 'Total',
-      earn: scenarioAccrual.supply?.totalUsdPerDay ?? null,
-      cost: scenarioAccrual.borrow?.totalUsdPerDay ?? null,
+      key: 'net',
+      label: 'Net',
+      earn: null,
+      cost: null,
+      isNet: true,
+    });
+
+    // Amount
+    rows.push({
+      key: 'amount',
+      label: 'Amount',
+      earn: accrual?.supply?.totalUsdPerDay ?? null,
+      cost: accrual?.borrow?.totalUsdPerDay ?? null,
       isTotal: true,
     });
 
-    // Native
-    rows.push({
-      key: 'native',
-      label: 'Native',
-      earn: scenarioAccrual.supply?.nativeUsdPerDay ?? null,
-      cost: scenarioAccrual.borrow?.nativeUsdPerDay ?? null,
-      isBreakdown: true,
-      href: aaveUrl,
-    });
-
-    // Per-source incentive rows
-    const incentiveSources = [
-      { key: 'protocol', label: incentiveLabel('Protocol Incentive', 'Protocol'), supply: simulation.supply.sources.protocol, borrow: simulation.borrow.sources.protocol, href: aaveUrl },
-      { key: 'merit', label: incentiveLabel('ACI Incentive', 'ACI'), supply: simulation.supply.sources.merit, borrow: simulation.borrow.sources.merit, href: supplyMeritLink || borrowMeritLink },
-      { key: 'merkl', label: incentiveLabel('Merkl Incentive', 'Merkl'), supply: simulation.supply.sources.merkl, borrow: simulation.borrow.sources.merkl, href: supplyMerklLink || borrowMerklLink },
-      { key: 'brevis', label: incentiveLabel('Brevis Incentive', 'Brevis'), supply: simulation.supply.sources.brevis, borrow: simulation.borrow.sources.brevis, href: supplyBrevisLink || borrowBrevisLink },
-    ];
-
-    for (const src of incentiveSources) {
-      const earnVal = hasSupply ? supplySourceUsd(src.supply) : null;
-      // Incentives on borrow side are rebates (positive)
-      const costVal = hasBorrow ? borrowIncentiveSourceUsd(src.borrow) : null;
-      if (!hasMeaningfulValue(earnVal) && !hasMeaningfulValue(costVal) &&
-          !hasMeaningfulValue(src.supply.after) && !hasMeaningfulValue(src.borrow.after)) continue;
+    // Only split Native/Incentive when either side has incentives.
+    if (hasSupplyIncentives || hasBorrowIncentives) {
       rows.push({
-        key: src.key,
-        label: src.label,
-        earn: earnVal,
-        cost: costVal,
+        key: 'native',
+        label: 'Native',
+        earn: accrual?.supply?.nativeUsdPerDay ?? null,
+        cost: accrual?.borrow?.nativeUsdPerDay ?? null,
         isBreakdown: true,
-        href: src.href,
+        href: aaveUrl,
       });
-
-      // Sub-campaign rows
-      const supplyCampaigns = src.supply.campaigns ?? [];
-      const borrowCampaigns = src.borrow.campaigns ?? [];
-      // Merge by campaign id or index
-      const allCampaignKeys = new Set([
-        ...supplyCampaigns.map((c, i) => c.id || `s${i}`),
-        ...borrowCampaigns.map((c, i) => c.id || `b${i}`),
-      ]);
-      if (supplyCampaigns.length > 1 || borrowCampaigns.length > 1) {
-        // Show per-campaign sub-rows
-        const maxLen = Math.max(supplyCampaigns.length, borrowCampaigns.length);
-        for (let i = 0; i < maxLen; i++) {
-          const sc = supplyCampaigns[i];
-          const bc = borrowCampaigns[i];
-          const label = sc?.label || bc?.label || `Campaign #${i + 1}`;
-          rows.push({
-            key: `${src.key}-c${i}`,
-            label,
-            earn: sc ? rateToUsdPerDay(sc.after, supplyPrincipal) : null,
-            cost: bc ? rateToUsdPerDay(bc.after, borrowPrincipal, true) : null,
-            isBreakdown: true,
-            isSubBreakdown: true,
-            capNote: sc?.capNote || bc?.capNote,
-            capWarning: sc?.capWarning || bc?.capWarning,
-            href: sc?.href || bc?.href || null,
-          });
-        }
-      }
+      rows.push({
+        key: 'incentive',
+        label: 'Incentive',
+        earn: accrual?.supply?.incentiveUsdPerDay ?? null,
+        cost: accrual?.borrow?.incentiveUsdPerDay ?? null,
+        isBreakdown: true,
+        href: earnCostIncentiveJumpHref,
+      });
     }
 
     const cellPy = effectiveCompact ? 'py-1' : 'py-1.5';
@@ -797,19 +755,21 @@ const SimulationSubRow = ({
       <div className="overflow-hidden rounded-lg border border-border/50 bg-muted/20 dark:bg-muted/10 h-full">
         <table className="w-full min-w-0 table-fixed">
           <colgroup>
-            <col style={{ width: '40%' }} />
-            <col style={{ width: '30%' }} />
-            <col style={{ width: '30%' }} />
+            <col style={{ width: '56%' }} />
+            <col style={{ width: '22%' }} />
+            <col style={{ width: '22%' }} />
           </colgroup>
           <thead>
             <tr className="bg-muted/30 border-b border-border/50">
-              <th className={`${cellPy} ${metricPx} text-left`}>
-                <span className="ds-text-11 text-muted-foreground font-medium">Est. USD / day</span>
+              <th className="px-4 py-2 text-left">
+                <span className="ds-text-13 font-semibold text-muted-foreground whitespace-nowrap">
+                  Daily reward
+                </span>
               </th>
-              <th className={`${cellPy} ${valuePx} text-right`}>
+              <th className="px-3 py-2 text-right">
                 <span className="ds-text-11 ds-text-emerald-600 font-medium">Earn</span>
               </th>
-              <th className={`${cellPy} ${valuePx} text-right`}>
+              <th className="px-3 py-2 text-right">
                 <span className="ds-text-11 ds-text-brand-cyan font-medium">Cost</span>
               </th>
             </tr>
@@ -823,16 +783,19 @@ const SimulationSubRow = ({
                     <td className={`${cellPy} ${metricPx}`}>
                       <span className="ds-text-12 font-bold ds-text-purple-600">{row.label}</span>
                     </td>
-                    <td colSpan={2} className={`${cellPy} ${valuePx} text-right`}>
+                    <td className={`${cellPy} ${valuePx} text-right`}>
+                      <span className="ds-text-11 text-muted-foreground">-</span>
+                    </td>
+                    <td className={`${cellPy} ${valuePx} text-right`}>
                       <span className="ds-text-12 tabular-nums font-bold ds-text-purple-600">
-                        {fmt(scenarioAccrual!.netUsdPerDay)}
+                        {accrual?.netUsdPerDay != null ? fmt(accrual.netUsdPerDay) : '-'}
                       </span>
                     </td>
                   </tr>
                 );
               }
 
-              // Data rows: Total / Native / Incentive sources
+              // Data rows: Amount / Native / Incentive
               const indentClass = row.isSubBreakdown
                 ? 'ml-4 pl-2 border-l border-l-muted-foreground/30'
                 : row.isBreakdown
@@ -864,12 +827,12 @@ const SimulationSubRow = ({
                     </td>
                     <td className={`${cellPy} ${valuePx} text-right align-top`}>
                       <span className={`${sizeClass} tabular-nums ${fontClass} ${hasSupply ? 'ds-text-emerald-600' : 'text-muted-foreground'}`}>
-                        {row.earn !== null ? fmt(row.earn) : '—'}
+                        {row.earn !== null ? fmt(row.earn) : '-'}
                       </span>
                     </td>
                     <td className={`${cellPy} ${valuePx} text-right align-top`}>
                       <span className={`${sizeClass} tabular-nums ${fontClass} ${hasBorrow ? 'ds-text-brand-cyan' : 'text-muted-foreground'}`}>
-                        {row.cost !== null ? fmt(row.cost) : '—'}
+                        {row.cost !== null ? fmt(row.cost) : '-'}
                       </span>
                     </td>
                   </tr>
@@ -966,6 +929,14 @@ const SimulationSubRow = ({
                   </>
                 )}
               </span>
+              {hasScenarioInput ? (
+                <span className="inline-flex items-center gap-1 pl-1">
+                  <span className="ds-text-11 text-muted-foreground">Δ</span>
+                  <span className={`ds-text-11 tabular-nums ${simulation.spread.delta === null ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
+                    {formatDelta(simulation.spread.delta)}
+                  </span>
+                </span>
+              ) : null}
             </div>
             <div className="w-px h-4 bg-border/60" />
             <div className="flex items-center gap-1.5">
@@ -979,19 +950,37 @@ const SimulationSubRow = ({
                   </>
                 )}
               </span>
+              {hasScenarioInput ? (
+                <span className="inline-flex items-center gap-1 pl-1">
+                  <span className="ds-text-11 text-muted-foreground">Δ</span>
+                  <span
+                    className={`ds-text-11 tabular-nums ${
+                      simulation.marketMetrics.availableLiquidityUsdDelta === null
+                        ? 'text-muted-foreground'
+                        : middleColumnWarning
+                          ? 'text-amber-700 dark:text-amber-400'
+                          : 'ds-text-purple-600'
+                    }`}
+                  >
+                    {normalizeToAfterPlaceholder(
+                      formatScenarioSizeDelta(simulation.marketMetrics.availableLiquidityUsdDelta, { inputMode, tokenPrice: simulation.tokenPrice })
+                    )}
+                  </span>
+                </span>
+              ) : null}
             </div>
           </div>
 
-          {/* Supply + Earn/Cost + Borrow 3-column grid */}
+          {/* Supply + Borrow + Earn/Cost 3-column grid */}
           <div ref={gridRef} className="grid grid-cols-3 gap-2 min-w-0 items-stretch overflow-hidden">
             <div className="flex min-w-0 flex-col overflow-hidden">
               {renderTable('Supply', supplyRows, 'ds-text-emerald-600', 'border-emerald-500/40', 'border-l-[rgb(var(--ds-emerald-500-rgb))]', supplyCapExceeded)}
             </div>
             <div className="flex min-w-0 flex-col overflow-hidden">
-              {renderEarnCostTable()}
-            </div>
-            <div className="flex min-w-0 flex-col overflow-hidden">
               {renderTable('Borrow', borrowRows, 'ds-text-brand-cyan', 'border-[rgb(var(--ds-brand-cyan-rgb))]/40', 'border-l-[rgb(var(--ds-brand-cyan-rgb))]', borrowCapExceeded)}
+            </div>
+            <div className="flex min-h-0 min-w-0 flex-col justify-center overflow-hidden self-stretch">
+              {renderEarnCostTable()}
             </div>
           </div>
         </>

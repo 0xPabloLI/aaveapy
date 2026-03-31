@@ -199,7 +199,7 @@ export interface SimulationCampaignDetail {
   delta: number | null;
   capNote?: string;
   capWarning?: boolean;
-  /** Optional deep-link for the specific Merkl opportunity/breakdown row. */
+  /** Optional deep-link (Merit incentive, Merkl opportunity, or Brevis campaign). */
   href?: string | null;
 }
 
@@ -598,6 +598,27 @@ const finalizeCampaignDetailRows = (
   return shouldExposeCampaignRows(rows, hasAnyInput) ? rows : [];
 };
 
+const extractActionLabelFromMeritMessage = (message: MeritIncentive['message']): string | null => {
+  if (!message) return null;
+  if (Array.isArray(message)) {
+    for (const item of message) {
+      const label = extractActionLabelFromMeritMessage(item as MeritIncentive['message']);
+      if (label) return label;
+    }
+    return null;
+  }
+  if (typeof message === 'object') {
+    const actionValue = (message as Record<string, unknown>).action;
+    if (typeof actionValue === 'string' && actionValue.trim()) return actionValue.trim();
+    for (const value of Object.values(message)) {
+      const label = extractActionLabelFromMeritMessage(value as MeritIncentive['message']);
+      if (label) return label;
+    }
+    return null;
+  }
+  return null;
+};
+
 const buildMeritCampaignDetails = (
   merits: MeritIncentive[] | undefined,
   isApy: boolean,
@@ -617,14 +638,17 @@ const buildMeritCampaignDetails = (
   };
 
   const activeMerits = merits.filter((m) => isCampaignActive(m.startDate, m.endDate));
-  const multiMerit = activeMerits.length > 1;
 
   activeMerits.forEach((merit, meritIndex) => {
-    const { selfMessage } = splitMeritMessageBySelfAuth(merit.message);
+    const { baseMessage, selfMessage } = splitMeritMessageBySelfAuth(merit.message);
     const selfCapUsd = extractMeritSelfCapUsd(selfMessage);
     const baseAprPercent = sanitizePercent(merit.apr);
     const selfAprPercent = sanitizePercent(merit.selfApr ?? 0);
-    const namePrefix = multiMerit && merit.name ? `${merit.name} · ` : '';
+    const meritName = (merit.name?.trim() || 'Merit');
+    const hasBaseLeg = baseAprPercent > 0;
+    const baseLabel = extractActionLabelFromMeritMessage(baseMessage) ?? meritName;
+    const selfLabel = extractActionLabelFromMeritMessage(selfMessage) ?? (hasBaseLeg ? `${baseLabel} #2` : meritName);
+    const meritHref = typeof merit.link === 'string' && merit.link.trim() ? merit.link.trim() : null;
 
     if (baseAprPercent > 0) {
       const baseCurrent = meritAprToDisplay(baseAprPercent, isApy);
@@ -648,12 +672,13 @@ const buildMeritCampaignDetails = (
       const delta = baseAfter !== null ? baseAfter - baseCurrent : null;
       rows.push({
         id: `merit-${meritIndex}-base`,
-        label: `${namePrefix}Base`,
+        label: baseLabel,
         current: baseCurrent,
         after: baseAfter,
         delta,
         capNote: appendNetNote(undefined),
         capWarning: false,
+        href: meritHref,
       });
     }
 
@@ -693,12 +718,13 @@ const buildMeritCampaignDetails = (
       const delta = selfAfter !== null ? selfAfter - selfCurrent : null;
       rows.push({
         id: `merit-${meritIndex}-self`,
-        label: `${namePrefix}Self`,
+        label: selfLabel,
         current: selfCurrent,
         after: selfAfter,
         delta,
         capNote: appendNetNote(capNote),
         capWarning,
+        href: meritHref,
       });
     }
   });
@@ -908,11 +934,11 @@ function buildSupplyUsdAccrualSide(
   principalUsd: number,
   afterNative: number | null,
   afterIncentive: number | null,
-  afterTotal: number | null,
-  isApy: boolean
+  afterTotal: number | null
 ): ScenarioUsdAccrualSide | null {
   if (!Number.isFinite(principalUsd) || principalUsd <= 0) return null;
-  const usd = (ratePercent: number) => principalUsd * annualPercentToDailyFraction(ratePercent, isApy);
+  // Daily cashflow uses APR-linear normalization regardless of display mode.
+  const usd = (ratePercent: number) => principalUsd * annualPercentToDailyFraction(ratePercent, false);
   return {
     nativeUsdPerDay: afterNative !== null ? usd(afterNative) : null,
     incentiveUsdPerDay: afterIncentive !== null ? usd(afterIncentive) : null,
@@ -924,12 +950,12 @@ function buildBorrowUsdAccrualSide(
   principalUsd: number,
   afterNative: number | null,
   afterIncentive: number | null,
-  afterTotal: number | null,
-  isApy: boolean
+  afterTotal: number | null
 ): ScenarioUsdAccrualSide | null {
   if (!Number.isFinite(principalUsd) || principalUsd <= 0) return null;
-  const pay = (ratePercent: number) => -principalUsd * annualPercentToDailyFraction(ratePercent, isApy);
-  const rebate = (ratePercent: number) => principalUsd * annualPercentToDailyFraction(ratePercent, isApy);
+  // Daily cashflow uses APR-linear normalization regardless of display mode.
+  const pay = (ratePercent: number) => -principalUsd * annualPercentToDailyFraction(ratePercent, false);
+  const rebate = (ratePercent: number) => principalUsd * annualPercentToDailyFraction(ratePercent, false);
   return {
     nativeUsdPerDay: afterNative !== null ? pay(afterNative) : null,
     incentiveUsdPerDay: afterIncentive !== null ? rebate(afterIncentive) : null,
@@ -1362,8 +1388,7 @@ export function buildRateSimulationResult({
           supplyLane.inputUsd,
           supplyLane.afterNative,
           supplyLane.afterIncentive,
-          supplyLane.afterTotal,
-          isApy
+          supplyLane.afterTotal
         )
       : null;
   const borrowUsdAccrualSide =
@@ -1372,8 +1397,7 @@ export function buildRateSimulationResult({
           borrowLane.inputUsd,
           borrowLane.afterNative,
           borrowLane.afterIncentive,
-          borrowLane.afterTotal,
-          isApy
+          borrowLane.afterTotal
         )
       : null;
 
@@ -1428,11 +1452,14 @@ export function buildRateSimulationResult({
           supplyCapExceededByUsd: null,
         };
       }
-      // Use raw input to check if exceeded
-      const rawAfterSizeUsd = currentReserveSizeUsd !== null 
-        ? currentReserveSizeUsd + rawSupplyInputUsd 
-        : null;
-      const exceeded = rawAfterSizeUsd !== null && rawAfterSizeUsd > supplyCapUsd;
+      // Use raw input to check if exceeded (only when user entered scenario supply).
+      // On-chain reserve can already be above cap; without a scenario amount we do not warn.
+      const rawAfterSizeUsd =
+        currentReserveSizeUsd !== null ? currentReserveSizeUsd + rawSupplyInputUsd : null;
+      const exceeded =
+        rawSupplyInputUsd > 0 &&
+        rawAfterSizeUsd !== null &&
+        rawAfterSizeUsd > supplyCapUsd;
       const exceededBy = exceeded ? rawAfterSizeUsd - supplyCapUsd : null;
       return {
         availableSupplyRoomUsd: availableSupplyRoomUsd,

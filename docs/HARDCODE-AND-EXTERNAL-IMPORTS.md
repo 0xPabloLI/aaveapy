@@ -9,7 +9,7 @@
 |---|---|---|---|
 | reserve patch（地址级 symbol/name/logo 修正） | `aave/interface/src/ui-config/reservePatches.ts` | `src/ui-config/reservePatches.ts` | `fetchIconSymbolAndName()` |
 | 市场名映射 | `aave/interface/src/ui-config/marketsConfig.tsx` | `src/lib/aaveLinks.ts` (`MARKET_NAME_MAP`) | `buildAaveReserveUrl()` |
-| 链图标映射 | `aave/interface/src/ui-config/networksConfig.ts` | `src/lib/chainIconMap.ts` | `getChainIconSrc()` |
+| 链图标映射 | `aave/interface/src/ui-config/networksConfig.ts` | `src/lib/chainIconMap.ts` + `scripts/generate-chain-icon-manifest.mjs` → `chainIconManifest.generated.ts` | `getChainIconSrc()`（仅当 `public/icons/networks/` 下确有文件时才返回 URL；缺图可走 `scripts/data/pending-chain-icon-bases.json` 允许校验通过） |
 | token icon 候选集合 | reservePatches + SYMBOL_MAP + 运行时 `/markets` | `scripts/lib/token-icon-symbols.mjs` | `sync-token-icons.mjs` 计算 required symbols |
 
 关键点：
@@ -38,7 +38,7 @@
 |---|---|---|
 | reserve patches | `scripts/sync-reserve-patches-upstream.mjs` | `scripts/check-reserve-patches-upstream.mjs` |
 | market name map | `scripts/sync-market-name-map-upstream.mjs` | `scripts/check-market-name-map-upstream.mjs` |
-| chain icon map | `scripts/sync-chain-icon-map-upstream.mjs` | `scripts/check-chain-icon-map-upstream.mjs` |
+| chain icon map | `scripts/sync-chain-icon-map-upstream.mjs` | `scripts/check-chain-icon-map-upstream.mjs`（映射须覆盖上游；磁盘缺图时可列入 `scripts/data/pending-chain-icon-bases.json`） |
 | token icons | `scripts/sync-token-icons.mjs` | `scripts/sync-token-icons.mjs --check` + `scripts/check-hardcode-icons.mjs` |
 
 `hardcode:verify` 当前命令链：

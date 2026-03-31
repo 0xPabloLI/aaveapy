@@ -260,6 +260,34 @@ describe('buildRateSimulationResult', () => {
     );
   });
 
+  it('keeps scenarioUsdAccrual on APR-linear daily USD even when isApy is true', () => {
+    const result = buildRateSimulationResult({
+      reserve: baseReserve,
+      reserveRateInput: baseReserve,
+      isApy: true,
+      whitelistMerklCampaignIds: new Set(),
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '36500',
+      borrowInput: '3650',
+      forecastStates: {},
+    });
+
+    expect(result.scenarioUsdAccrual).not.toBeNull();
+    const acc = result.scenarioUsdAccrual!;
+    expect(acc.supply).not.toBeNull();
+    expect(acc.borrow).not.toBeNull();
+    const supplyNative = result.supply.afterNative;
+    const borrowNative = result.borrow.afterNative;
+    const borrowIncentive = result.borrow.afterIncentive;
+    expect(supplyNative).not.toBeNull();
+    expect(borrowNative).not.toBeNull();
+    expect(borrowIncentive).not.toBeNull();
+    expect(acc.supply!.nativeUsdPerDay).toBeCloseTo((36500 * supplyNative!) / 100 / 365, 5);
+    expect(acc.borrow!.nativeUsdPerDay).toBeCloseTo(-(3650 * borrowNative!) / 100 / 365, 5);
+    expect(acc.borrow!.incentiveUsdPerDay).toBeCloseTo((3650 * borrowIncentive!) / 100 / 365, 5);
+  });
+
   it('keeps native rates in APY even when display mode switches incentive values to APR', () => {
     const reserve: ReserveWithSpread = {
       ...baseReserve,

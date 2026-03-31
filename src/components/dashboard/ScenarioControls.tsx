@@ -29,7 +29,7 @@ function IncentiveNetCheckboxTooltip({
         <label
           htmlFor={id}
           className={cn(
-            'flex min-w-0 cursor-pointer items-start gap-[var(--ds-space-1-5)] rounded-md px-0.5 py-0.5 transition-colors hover:bg-muted/50',
+            'flex min-w-0 cursor-pointer items-center gap-[var(--ds-space-1-5)] rounded-md px-0.5 py-0.5 transition-colors hover:bg-muted/50',
             labelClassName,
           )}
         >
@@ -38,7 +38,7 @@ function IncentiveNetCheckboxTooltip({
             type="checkbox"
             checked={checked}
             onChange={(event) => onCheckedChange(event.target.checked)}
-            className={`${DS_NATIVE_CHECKBOX_CLASS} accent-muted-foreground`}
+            className={cn(DS_NATIVE_CHECKBOX_CLASS, 'mt-0 accent-muted-foreground')}
             aria-label="Net lending and borrowing for incentives (Merit/Merkl); Brevis unchanged"
           />
           <span className={labelTextClassName}>Net</span>

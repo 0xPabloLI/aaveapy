@@ -379,6 +379,32 @@ export const formatReserveSizeToken = (value: number | null | undefined): string
   return sign + absValue.toFixed(2);
 };
 
+/**
+ * Signed daily scenario cashflow: USD when `inputMode` is `usd`, token/day (USD ÷ price) when `token`.
+ * Matches `formatScenarioSize` semantics when token price is missing in token mode.
+ */
+export function formatSignedScenarioDailyCashflow(
+  valueUsd: number | null | undefined,
+  options: { inputMode?: 'usd' | 'token'; tokenPrice?: number | null } = {},
+): string {
+  const { inputMode = 'usd', tokenPrice } = options;
+  if (valueUsd === null || valueUsd === undefined || Number.isNaN(valueUsd)) return '—';
+  if (inputMode === 'usd') {
+    return formatSignedUsd(valueUsd);
+  }
+  if (
+    tokenPrice === null ||
+    tokenPrice === undefined ||
+    !Number.isFinite(tokenPrice) ||
+    tokenPrice <= 0
+  ) {
+    return '—';
+  }
+  const tokenAmount = valueUsd / tokenPrice;
+  const sign = tokenAmount > 0 ? '+' : tokenAmount < 0 ? '−' : '';
+  return `${sign}${formatReserveSizeToken(Math.abs(tokenAmount))}`;
+}
+
 interface FormatScenarioSizeOptions {
   inputMode?: 'usd' | 'token';
   tokenPrice?: number | null;
