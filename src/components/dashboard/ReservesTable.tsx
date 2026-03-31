@@ -840,6 +840,7 @@ const ReservesTable = ({
     />
   );
 
+  const mobileTableRef = useRef<HTMLDivElement>(null);
   const desktopTableCardRef = useRef<HTMLDivElement>(null);
   const desktopStickyScenarioRef = useRef<HTMLDivElement>(null);
   const desktopStickyTheadRef = useRef<HTMLTableSectionElement>(null);
@@ -880,7 +881,7 @@ const ReservesTable = ({
   // Mobile card view — extra bottom padding so content isn't hidden by browser/safe area
   if (isMobile) {
     return (
-      <div className="space-y-3 pb-[calc(env(safe-area-inset-bottom,0px)+5rem)]">
+      <div ref={mobileTableRef} className="space-y-3 pb-[calc(env(safe-area-inset-bottom,0px)+5rem)]">
         <div
           data-reserves-sticky-scenario
           className="sticky top-[env(safe-area-inset-top,0px)] z-20 -mx-[var(--ds-space-3)] px-[var(--ds-space-3)] pt-1 pb-0 bg-background/80 backdrop-blur-sm"
@@ -1457,6 +1458,26 @@ const ReservesTable = ({
             onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign}
           />
         )}
+
+        {/* Floating scroll-to-top / scroll-to-bottom buttons (mobile) */}
+        <div className="fixed right-3 bottom-6 z-30 flex flex-col gap-2">
+          <button
+            type="button"
+            aria-label="Scroll to table top"
+            onClick={() => mobileTableRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-border/60 bg-card/90 shadow-md backdrop-blur-sm text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
+          >
+            <ArrowUp className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            aria-label="Scroll to table bottom"
+            onClick={() => mobileTableRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })}
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-border/60 bg-card/90 shadow-md backdrop-blur-sm text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
+          >
+            <ArrowDown className="h-4 w-4" />
+          </button>
+        </div>
       </div>
     );
   }
@@ -2201,6 +2222,30 @@ const ReservesTable = ({
           onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign}
         />
       )}
+
+      {/* Floating scroll-to-top / scroll-to-bottom buttons */}
+      <div className="fixed right-3 bottom-6 z-30 flex flex-col gap-2 md:right-6">
+        <button
+          type="button"
+          aria-label="Scroll to table top"
+          onClick={() => {
+            desktopTableCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }}
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-border/60 bg-card/90 shadow-md backdrop-blur-sm text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
+        >
+          <ArrowUp className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          aria-label="Scroll to table bottom"
+          onClick={() => {
+            desktopTableCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+          }}
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-border/60 bg-card/90 shadow-md backdrop-blur-sm text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
+        >
+          <ArrowDown className="h-4 w-4" />
+        </button>
+      </div>
       </div>
     </div>
   );
