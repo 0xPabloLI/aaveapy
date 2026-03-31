@@ -881,7 +881,7 @@ const ReservesTable = ({
   // Mobile card view — extra bottom padding so content isn't hidden by browser/safe area
   if (isMobile) {
     return (
-      <div className="space-y-3 pb-[calc(env(safe-area-inset-bottom,0px)+5rem)]">
+      <div ref={mobileTableRef} className="space-y-3 pb-[calc(env(safe-area-inset-bottom,0px)+5rem)]">
         <div
           data-reserves-sticky-scenario
           className="sticky top-[env(safe-area-inset-top,0px)] z-20 -mx-[var(--ds-space-3)] px-[var(--ds-space-3)] pt-1 pb-0 bg-background/80 backdrop-blur-sm"
