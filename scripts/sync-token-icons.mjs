@@ -28,13 +28,6 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 const TOKENS_DIR = path.join(ROOT, 'public', 'icons', 'tokens');
 const RESERVE_PATCHES_PATH = getReservePatchesPath(ROOT);
-const TOKENLIST_PATH = path.join(
-  ROOT,
-  'node_modules',
-  '@bgd-labs',
-  'aave-address-book',
-  'tokenlist.json'
-);
 const COINGECKO_SEARCH = 'https://api.coingecko.com/api/v3/search';
 const MARKETS_API_URLS = (process.env.SYNC_TOKEN_ICONS_MARKETS_API || 'https://api.aaveapy.com/api/markets')
   .split(',')
@@ -50,28 +43,6 @@ function sleep(ms) {
 function getExistingIconBaseSet() {
   const files = fs.existsSync(TOKENS_DIR) ? fs.readdirSync(TOKENS_DIR) : [];
   return new Set(files.map((f) => path.basename(f, path.extname(f)).toLowerCase()));
-}
-
-function loadTokenLogoByAddress() {
-  if (!fs.existsSync(TOKENLIST_PATH)) {
-    return { tokenLogoByAddress: new Map(), tokenSymbols: [] };
-  }
-
-  const payload = JSON.parse(fs.readFileSync(TOKENLIST_PATH, 'utf8'));
-  const rows = Array.isArray(payload?.tokens) ? payload.tokens : [];
-  const tokenLogoByAddress = new Map();
-  const tokenSymbols = [];
-
-  for (const row of rows) {
-    const address = String(row?.address || '').trim().toLowerCase();
-    const logoURI = String(row?.logoURI || '').trim();
-    const symbol = String(row?.symbol || '').trim();
-    if (symbol) tokenSymbols.push(symbol);
-    if (!address || !logoURI) continue;
-    tokenLogoByAddress.set(address, logoURI);
-  }
-
-  return { tokenLogoByAddress, tokenSymbols };
 }
 
 async function fetchMarketsFromUrl(url) {
@@ -110,31 +81,29 @@ async function loadMarketsRows() {
     }
   }
 
-  console.warn('all markets API endpoints exhausted, continuing with tokenlist fallback symbols');
-  return { rows: [], unavailable: true };
+  throw new Error('all markets API endpoints exhausted');
 }
 
 async function getMissingSymbols() {
   const reservePatchesContent = fs.readFileSync(RESERVE_PATCHES_PATH, 'utf8');
-  const { rows: marketsRows, unavailable: marketsUnavailable } = await loadMarketsRows();
-  const { tokenLogoByAddress, tokenSymbols } = loadTokenLogoByAddress();
+  const { rows: marketsRows } = await loadMarketsRows();
 
   const requiredSymbols = collectRequiredIconSymbols({
     reservePatchesContent,
     marketsRows,
-    tokenListSymbols: marketsUnavailable ? tokenSymbols : [],
+    tokenListSymbols: [],
     addressBookContext: addressBook,
   });
   const logoHints = collectIconSymbolLogoHints({
     reservePatchesContent,
     marketsRows,
     addressBookContext: addressBook,
-    tokenLogoByAddress,
+    tokenLogoByAddress: new Map(),
   });
 
   const existing = getExistingIconBaseSet();
   const missing = toSortedArray(requiredSymbols).filter((symbol) => !existing.has(symbol));
-  return { missing, logoHints, usedTokenlistFallback: marketsUnavailable };
+  return { missing, logoHints };
 }
 
 async function fetchCoingeckoImageUrl(symbol) {
@@ -224,20 +193,13 @@ async function main() {
     console.warn('--extra-only is deprecated and ignored. Symbols are now derived from used interface resources.');
   }
 
-  const { missing, logoHints, usedTokenlistFallback } = await getMissingSymbols();
+  const { missing, logoHints } = await getMissingSymbols();
   if (missing.length === 0) {
     console.log('No missing token icons.');
     return;
   }
 
   if (checkOnly) {
-    if (usedTokenlistFallback) {
-      console.warn(
-        `⚠ Markets API unavailable (tokenlist fallback active) – skipping icon check (${missing.length} unverifiable symbol(s))`
-      );
-      return;
-    }
-
     const { syncable, syncableFromLogo, unsyncable } = await classifyMissingSymbols(
       missing,
       logoHints

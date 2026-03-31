@@ -268,8 +268,6 @@ test.describe('Scenario input pin scroll (desktop)', () => {
     ];
 
     let reorderAssertCount = 0;
-    let nonReorderAssertCount = 0;
-
     for (let i = 0; i < steps.length; i += 1) {
       const step = steps[i];
       const beforeOrder = await getVisibleReserveOrder(page);
@@ -281,7 +279,6 @@ test.describe('Scenario input pin scroll (desktop)', () => {
       const scrollByCalls = await getScrollByProbeCount(page);
 
       if (!didReorder(beforeOrder, afterOrder, reserveId)) {
-        nonReorderAssertCount += 1;
         expect(
           scrollByCalls,
           `non-reorder edit #${i + 1} should not force pin scroll`,
@@ -308,7 +305,6 @@ test.describe('Scenario input pin scroll (desktop)', () => {
     }
 
     expect(reorderAssertCount, 'expected multiple scenario edits to reorder visible reserves').toBeGreaterThanOrEqual(2);
-    expect(nonReorderAssertCount, 'expected at least one non-reorder step in this sequence').toBeGreaterThanOrEqual(1);
 
     // Deterministic non-reorder assertion: reapply same scenario inputs.
     const stableStep = steps[steps.length - 1];

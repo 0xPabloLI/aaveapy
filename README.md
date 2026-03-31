@@ -82,6 +82,8 @@ npm run preflight:release -- --full
 
 Canonical source: [`docs/frontend-data-loading-matrix.md`](docs/frontend-data-loading-matrix.md).
 
+Docs ownership index: [`docs/DOCS-INDEX.md`](docs/DOCS-INDEX.md).
+
 Quick rule:
 - Keep one snapshot source per UI state.
 - Prefer endpoint-level TTL and centralized stale-time buckets.

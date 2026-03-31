@@ -703,56 +703,133 @@ const SimulationSubRow = ({
       isBreakdown?: boolean;
       isSubBreakdown?: boolean;
       href?: string | null;
-      capNote?: string;
+      hasCapSpacer?: boolean;
+      hasNoteSpacer?: boolean;
+      notePlaceholder?: string;
       capWarning?: boolean;
     }
 
-    const rows: EarnCostRow[] = [];
+    const getLongestNote = (notes: Array<string | undefined>) => {
+      const valid = notes.filter((note): note is string => Boolean(note && note.trim().length > 0));
+      if (valid.length === 0) return undefined;
+      return valid.reduce((longest, current) => (current.length > longest.length ? current : longest));
+    };
 
-    // Net row (top) - always render structure, use placeholder when unavailable.
-    rows.push({
-      key: 'net',
-      label: 'Net',
-      earn: null,
-      cost: null,
-      isNet: true,
+    const supplyRowByKey = new Map(supplyRows.map((row) => [row.rowKey, row]));
+    const borrowRowByKey = new Map(borrowRows.map((row) => [row.rowKey, row]));
+
+    const getBandMeta = (supplyKey: string, borrowKey: string) => {
+      const supplyRow = supplyRowByKey.get(supplyKey);
+      const borrowRow = borrowRowByKey.get(borrowKey);
+      return {
+        hasCapSpacer: supplyRow?.cap != null || borrowRow?.cap != null,
+        hasNoteSpacer: Boolean(supplyRow?.capNote || borrowRow?.capNote),
+        notePlaceholder: getLongestNote([supplyRow?.capNote, borrowRow?.capNote]),
+        capWarning: Boolean(supplyRow?.warning || borrowRow?.warning),
+        maxCap: Math.max(supplyRow?.cap ?? 0, borrowRow?.cap ?? 0),
+      };
+    };
+
+    const sizeBandMeta = getBandMeta('supply-size', 'borrow-size');
+    const amountBandMeta = getBandMeta('supply-total-rate', 'borrow-total-rate');
+    const nativeBandMeta = getBandMeta('supply-native', 'borrow-native');
+    const incentiveBandMeta = getBandMeta('supply-incentive-total', 'borrow-incentive-total');
+    const hasNativeBand = supplyRowByKey.has('supply-native') || borrowRowByKey.has('borrow-native');
+    const hasIncentiveBand =
+      supplyRowByKey.has('supply-incentive-total') || borrowRowByKey.has('borrow-incentive-total');
+
+    const rows: EarnCostRow[] = [
+      {
+        key: 'net',
+        label: 'Net',
+        earn: null,
+        cost: null,
+        isNet: true,
+        hasCapSpacer: sizeBandMeta.hasCapSpacer,
+        hasNoteSpacer: sizeBandMeta.hasNoteSpacer,
+        notePlaceholder: sizeBandMeta.notePlaceholder,
+        capWarning: sizeBandMeta.capWarning,
+      },
+      {
+        key: 'amount',
+        label: 'Amount',
+        earn: accrual?.supply?.totalUsdPerDay ?? null,
+        cost: accrual?.borrow?.totalUsdPerDay ?? null,
+        isTotal: true,
+        hasCapSpacer: amountBandMeta.hasCapSpacer,
+        hasNoteSpacer: amountBandMeta.hasNoteSpacer,
+        notePlaceholder: amountBandMeta.notePlaceholder,
+        capWarning: amountBandMeta.capWarning,
+      },
+      ...(hasNativeBand
+        ? [
+            {
+              key: 'native',
+              label: 'Native',
+              earn: accrual?.supply?.nativeUsdPerDay ?? null,
+              cost: accrual?.borrow?.nativeUsdPerDay ?? null,
+              isBreakdown: true,
+              href: aaveUrl,
+              hasCapSpacer: nativeBandMeta.hasCapSpacer,
+              hasNoteSpacer: nativeBandMeta.hasNoteSpacer,
+              notePlaceholder: nativeBandMeta.notePlaceholder,
+              capWarning: nativeBandMeta.capWarning,
+            } as EarnCostRow,
+          ]
+        : []),
+      ...(hasIncentiveBand
+        ? [
+            {
+              key: 'incentive',
+              label: 'Incentive',
+              earn: accrual?.supply?.incentiveUsdPerDay ?? null,
+              cost: accrual?.borrow?.incentiveUsdPerDay ?? null,
+              isBreakdown: true,
+              href: earnCostIncentiveJumpHref,
+              hasCapSpacer: incentiveBandMeta.hasCapSpacer,
+              hasNoteSpacer: incentiveBandMeta.hasNoteSpacer,
+              notePlaceholder: incentiveBandMeta.notePlaceholder,
+              capWarning: incentiveBandMeta.capWarning,
+            } as EarnCostRow,
+          ]
+        : []),
+    ];
+
+    const sizeCapPlaceholder = formatScenarioSize(sizeBandMeta.maxCap, {
+      inputMode,
+      tokenPrice: simulation.tokenPrice,
     });
-
-    // Amount
-    rows.push({
-      key: 'amount',
-      label: 'Amount',
-      earn: accrual?.supply?.totalUsdPerDay ?? null,
-      cost: accrual?.borrow?.totalUsdPerDay ?? null,
-      isTotal: true,
-    });
-
-    // Only split Native/Incentive when either side has incentives.
-    if (hasSupplyIncentives || hasBorrowIncentives) {
-      rows.push({
-        key: 'native',
-        label: 'Native',
-        earn: accrual?.supply?.nativeUsdPerDay ?? null,
-        cost: accrual?.borrow?.nativeUsdPerDay ?? null,
-        isBreakdown: true,
-        href: aaveUrl,
-      });
-      rows.push({
-        key: 'incentive',
-        label: 'Incentive',
-        earn: accrual?.supply?.incentiveUsdPerDay ?? null,
-        cost: accrual?.borrow?.incentiveUsdPerDay ?? null,
-        isBreakdown: true,
-        href: earnCostIncentiveJumpHref,
-      });
-    }
 
     const cellPy = effectiveCompact ? 'py-1' : 'py-1.5';
     const metricPx = effectiveCompact ? 'px-3' : 'px-4';
     const valuePx = effectiveCompact ? 'px-2.5' : 'px-3';
+    const capRowPb = effectiveCompact ? 'pb-1' : 'pb-1.5';
+
+    const renderBandSpacerRows = (row: EarnCostRow, noteIndentClass = '') => (
+      <>
+        {row.hasCapSpacer ? (
+          <tr aria-hidden className={row.capWarning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
+            <td colSpan={3} className={`pt-0 pb-1 ${valuePx}`}>
+              <div className="relative h-1.5 w-full rounded-full bg-muted/40 opacity-0" />
+            </td>
+          </tr>
+        ) : null}
+        {row.hasNoteSpacer ? (
+          <tr aria-hidden className={row.capWarning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
+            <td colSpan={3} className={`pt-0 ${capRowPb} ${metricPx} min-w-0 align-top`}>
+              <p
+                className={`ds-text-11 min-w-0 w-full max-w-none whitespace-normal break-words leading-snug text-transparent select-none ${noteIndentClass}`}
+              >
+                {row.notePlaceholder ?? '.'}
+              </p>
+            </td>
+          </tr>
+        ) : null}
+      </>
+    );
 
     return (
-      <div className="overflow-hidden rounded-lg border border-border/50 bg-muted/20 dark:bg-muted/10 h-full">
+      <div className="overflow-hidden rounded-lg border border-border/50 bg-muted/20 dark:bg-muted/10 w-full">
         <table className="w-full min-w-0 table-fixed">
           <colgroup>
             <col style={{ width: '56%' }} />
@@ -763,35 +840,44 @@ const SimulationSubRow = ({
             <tr className="bg-muted/30 border-b border-border/50">
               <th className="px-4 py-2 text-left">
                 <span className="ds-text-13 font-semibold text-muted-foreground whitespace-nowrap">
-                  Daily reward
+                  Net Flow
                 </span>
               </th>
               <th className="px-3 py-2 text-right">
-                <span className="ds-text-11 ds-text-emerald-600 font-medium">Earn</span>
+                <span className="ds-text-11 ds-text-emerald-600 font-medium">Supply</span>
               </th>
               <th className="px-3 py-2 text-right">
-                <span className="ds-text-11 ds-text-brand-cyan font-medium">Cost</span>
+                <span className="ds-text-11 ds-text-brand-cyan font-medium">Borrow</span>
               </th>
             </tr>
           </thead>
-          <tbody className="ds-text-12">
+          <tbody className="ds-text-12 [&>tr:last-child>td]:pb-2.5">
             {rows.map((row) => {
               // Special: Net row
               if (row.isNet) {
                 return (
-                  <tr key={row.key} className="border-b border-border/50">
-                    <td className={`${cellPy} ${metricPx}`}>
-                      <span className="ds-text-12 font-bold ds-text-purple-600">{row.label}</span>
-                    </td>
-                    <td className={`${cellPy} ${valuePx} text-right`}>
-                      <span className="ds-text-11 text-muted-foreground">-</span>
-                    </td>
-                    <td className={`${cellPy} ${valuePx} text-right`}>
-                      <span className="ds-text-12 tabular-nums font-bold ds-text-purple-600">
-                        {accrual?.netUsdPerDay != null ? fmt(accrual.netUsdPerDay) : '-'}
-                      </span>
-                    </td>
-                  </tr>
+                  <Fragment key={row.key}>
+                    <tr className={row.capWarning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
+                      <td className={`${cellPy} ${metricPx} min-w-0 align-top`}>
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-start gap-x-1.5 gap-y-0.5 min-w-0">
+                            <span className="ds-text-12 font-bold ds-text-purple-600 break-words">{row.label}</span>
+                            {row.hasCapSpacer ? (
+                              <span className="ds-text-11 tabular-nums flex-shrink-0 invisible select-none">
+                                / Cap {sizeCapPlaceholder}
+                              </span>
+                            ) : null}
+                          </div>
+                        </div>
+                      </td>
+                      <td colSpan={2} className={`${cellPy} ${valuePx} text-right align-top`}>
+                        <span className="ds-text-12 tabular-nums font-bold ds-text-purple-600">
+                          {accrual?.netUsdPerDay != null ? fmt(accrual.netUsdPerDay) : '-'}
+                        </span>
+                      </td>
+                    </tr>
+                    {renderBandSpacerRows(row)}
+                  </Fragment>
                 );
               }
 
@@ -801,50 +887,45 @@ const SimulationSubRow = ({
                 : row.isBreakdown
                   ? 'ml-2 pl-2 border-l border-l-muted-foreground/30'
                   : '';
+              const capNoteAlignClass = row.isSubBreakdown ? 'pl-6' : row.isBreakdown ? 'pl-4' : '';
               const fontClass = row.isTotal ? 'font-semibold' : row.isBreakdown ? '' : 'font-medium';
               const textClass = row.isBreakdown ? 'text-muted-foreground' : 'text-foreground';
-              const sizeClass = row.isBreakdown ? 'ds-text-11' : 'ds-text-12';
+              const sizeClass = 'ds-text-12';
+              const labelCellPy = row.hasNoteSpacer ? `${effectiveCompact ? 'pt-1 pb-0' : 'pt-1.5 pb-0'}` : cellPy;
+              const valueCellPy = row.hasNoteSpacer ? `${effectiveCompact ? 'pt-1 pb-0' : 'pt-1.5 pb-0'}` : cellPy;
 
               return (
                 <Fragment key={row.key}>
                   <tr className={row.capWarning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
-                    <td className={`${cellPy} ${metricPx} align-top`}>
-                      <div className={indentClass}>
+                    <td className={`${labelCellPy} ${metricPx} min-w-0 align-top`}>
+                      <div className={`min-w-0 ${indentClass}`}>
                         {row.href ? (
                           <a
                             href={row.href}
                             {...externalLinkTabProps(isMobile)}
                             onClick={(e) => e.stopPropagation()}
-                            className={`${sizeClass} ${fontClass} ${textClass} flex items-center gap-1 hover:opacity-80`}
+                            className={`${sizeClass} ${fontClass} ${textClass} flex items-center gap-1 min-w-0 hover:opacity-80`}
                           >
-                            <span>{row.label}</span>
+                            <span className="break-words">{row.label}</span>
                             <ExternalLink className="w-3 h-3 opacity-50 shrink-0" />
                           </a>
                         ) : (
-                          <span className={`${sizeClass} ${fontClass} ${textClass}`}>{row.label}</span>
+                          <span className={`${sizeClass} ${fontClass} ${textClass} break-words`}>{row.label}</span>
                         )}
                       </div>
                     </td>
-                    <td className={`${cellPy} ${valuePx} text-right align-top`}>
+                    <td className={`${valueCellPy} ${valuePx} text-right align-top`}>
                       <span className={`${sizeClass} tabular-nums ${fontClass} ${hasSupply ? 'ds-text-emerald-600' : 'text-muted-foreground'}`}>
                         {row.earn !== null ? fmt(row.earn) : '-'}
                       </span>
                     </td>
-                    <td className={`${cellPy} ${valuePx} text-right align-top`}>
+                    <td className={`${valueCellPy} ${valuePx} text-right align-top`}>
                       <span className={`${sizeClass} tabular-nums ${fontClass} ${hasBorrow ? 'ds-text-brand-cyan' : 'text-muted-foreground'}`}>
                         {row.cost !== null ? fmt(row.cost) : '-'}
                       </span>
                     </td>
                   </tr>
-                  {row.capNote && (
-                    <tr>
-                      <td colSpan={3} className={`pt-0 pb-1 ${metricPx}`}>
-                        <p className={`ds-text-11 ${row.isSubBreakdown ? 'pl-6' : row.isBreakdown ? 'pl-4' : ''} ${row.capWarning ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'} leading-snug`}>
-                          {row.capNote}
-                        </p>
-                      </td>
-                    </tr>
-                  )}
+                  {renderBandSpacerRows(row, capNoteAlignClass)}
                 </Fragment>
               );
             })}
@@ -979,7 +1060,7 @@ const SimulationSubRow = ({
             <div className="flex min-w-0 flex-col overflow-hidden">
               {renderTable('Borrow', borrowRows, 'ds-text-brand-cyan', 'border-[rgb(var(--ds-brand-cyan-rgb))]/40', 'border-l-[rgb(var(--ds-brand-cyan-rgb))]', borrowCapExceeded)}
             </div>
-            <div className="flex min-h-0 min-w-0 flex-col justify-center overflow-hidden self-stretch">
+            <div className="flex min-h-0 min-w-0 flex-col overflow-hidden self-stretch">
               {renderEarnCostTable()}
             </div>
           </div>

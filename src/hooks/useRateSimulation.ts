@@ -576,17 +576,13 @@ const meritForecastAprToDisplay = (aprDecimal: number, isApy: boolean): number =
   return isApy ? convertAprToApy(pct) : pct;
 };
 
-/** Show per-campaign rows when the user entered a scenario, or when multiple campaigns stack. */
-const shouldExposeCampaignRows = (
-  rows: SimulationCampaignDetail[],
-  hasAnyInput: boolean,
-): boolean => rows.length > 1 || (hasAnyInput && rows.length > 0);
+/** Show per-campaign rows whenever campaign details exist (even without scenario input). */
+const shouldExposeCampaignRows = (rows: SimulationCampaignDetail[]): boolean => rows.length > 0;
 
 type LabeledCampaignRow = Omit<SimulationCampaignDetail, 'label'> & { baseLabel: string };
 
 const finalizeCampaignDetailRows = (
   collected: LabeledCampaignRow[],
-  hasAnyInput: boolean,
 ): SimulationCampaignDetail[] => {
   if (collected.length === 0) return [];
   const rows = applyStableCampaignLabels(
@@ -595,7 +591,7 @@ const finalizeCampaignDetailRows = (
       label: baseLabel,
     }))
   );
-  return shouldExposeCampaignRows(rows, hasAnyInput) ? rows : [];
+  return shouldExposeCampaignRows(rows) ? rows : [];
 };
 
 const extractActionLabelFromMeritMessage = (message: MeritIncentive['message']): string | null => {
@@ -729,7 +725,7 @@ const buildMeritCampaignDetails = (
     }
   });
 
-  return shouldExposeCampaignRows(rows, hasAnyInput) ? rows : [];
+  return shouldExposeCampaignRows(rows) ? rows : [];
 };
 
 const buildMerklCampaignDetails = (
@@ -808,7 +804,7 @@ const buildMerklCampaignDetails = (
     });
   });
 
-  return finalizeCampaignDetailRows(collected, hasAnyInput);
+  return finalizeCampaignDetailRows(collected);
 };
 
 const buildBrevisCampaignDetails = (
@@ -871,7 +867,7 @@ const buildBrevisCampaignDetails = (
     });
   });
 
-  return finalizeCampaignDetailRows(collected, hasAnyInput);
+  return finalizeCampaignDetailRows(collected);
 };
 
 const attachCampaigns = (
