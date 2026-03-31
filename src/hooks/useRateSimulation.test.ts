@@ -427,8 +427,8 @@ describe('buildRateSimulationResult', () => {
           breakdowns: [
             {
               campaignApr: 0,
-              campaignStartedAt: '2026-03-24T14:00:00.000Z',
-              campaignEndedAt: '2026-03-31T14:00:00.000Z',
+              campaignStartedAt: '2020-03-24T14:00:00.000Z',
+              campaignEndedAt: '2099-03-31T14:00:00.000Z',
               campaignId: '16403393592832236981',
               campaignType: 'DUTCH_AUCTION',
               plannedDaily: 11312,
@@ -447,7 +447,7 @@ describe('buildRateSimulationResult', () => {
         campaignId: '16403393592832236981',
         requiredDaily: 11312,
         distributedSoFar: 0,
-        endTimestamp: 1774965600,
+        endTimestamp: 4070901600,
       },
     };
 
@@ -480,8 +480,8 @@ describe('buildRateSimulationResult', () => {
           breakdowns: [
             {
               campaignApr: 0,
-              campaignStartedAt: '2026-03-24T14:00:00.000Z',
-              campaignEndedAt: '2026-03-31T14:00:00.000Z',
+              campaignStartedAt: '2020-03-24T14:00:00.000Z',
+              campaignEndedAt: '2099-03-31T14:00:00.000Z',
               campaignId: '16403393592832236981',
               campaignType: 'DUTCH_AUCTION',
               plannedDaily: 11312,
@@ -500,7 +500,7 @@ describe('buildRateSimulationResult', () => {
         campaignId: '16403393592832236981',
         requiredDaily: 11312,
         distributedSoFar: 0,
-        endTimestamp: 1774965600,
+        endTimestamp: 4070901600,
       },
     };
 

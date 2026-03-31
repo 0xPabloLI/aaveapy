@@ -199,6 +199,14 @@ const ReservesTable = ({
     const maxAttempts = 12;
     const retryMs = 70;
     setPinScrollSpacerVisible(true);
+    let finalized = false;
+
+    const finalizeAttempt = () => {
+      if (finalized) return;
+      finalized = true;
+      setPinScrollSpacerVisible(false);
+      opts?.onSettled?.();
+    };
 
     const runAttempt = () => {
       if (cancelled) return;
@@ -212,24 +220,21 @@ const ReservesTable = ({
             // follow-up correction after layout settles. Repeated corrections
             // create visible "stair-step" jank on long pages.
             if (!shouldScrollExpandedSimulationIntoView(reserveId, { mode })) {
-              setPinScrollSpacerVisible(false);
-              opts?.onSettled?.();
+              finalizeAttempt();
               return;
             }
             scrollExpandedSimulationIntoView(reserveId, {
               mode,
               instant,
             });
-            setPinScrollSpacerVisible(false);
-            opts?.onSettled?.();
+            finalizeAttempt();
           });
         });
         return;
       }
       attempt += 1;
       if (attempt >= maxAttempts) {
-        setPinScrollSpacerVisible(false);
-        opts?.onSettled?.();
+        finalizeAttempt();
         return;
       }
       window.setTimeout(runAttempt, retryMs);
@@ -239,7 +244,7 @@ const ReservesTable = ({
     return () => {
       cancelled = true;
       window.clearTimeout(starter);
-      setPinScrollSpacerVisible(false);
+      finalizeAttempt();
     };
   }, [isMobile]);
 

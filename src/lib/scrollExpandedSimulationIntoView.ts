@@ -6,8 +6,11 @@ const MIN_SCROLL_DELTA_PX = 10;
 
 export type ExpandedSimulationScrollMode = 'pin-main-row-top' | 'minimal-if-clipped';
 
-/** Y in viewport where the reserve row top should sit: below scenario strip and sticky thead when present. */
-function getPinnedRowTopY(): number {
+/**
+ * Current sticky stack bottom in viewport coordinates.
+ * Used for clipping checks where the stack may legitimately still be lower in the page.
+ */
+function getCurrentStickyStackBottomY(): number {
   const scenario = document.querySelector('[data-reserves-sticky-scenario]');
   const thead = document.querySelector('[data-reserves-sticky-thead]');
   let maxBottom = 0;
@@ -21,6 +24,27 @@ function getPinnedRowTopY(): number {
   }
   if (maxBottom > 0) return maxBottom + GAP_BELOW_STICKY_STACK_PX;
   return VIEW_MARGIN_PX;
+}
+
+/**
+ * Final desktop pin target after the scenario strip + thead have fully engaged their sticky tops.
+ * Using current viewport bottoms under-scrolls when the table has not reached the sticky region yet,
+ * because the row and the stack move together until the stack is actually stuck.
+ */
+function getDesktopPinnedRowTopY(): number {
+  const scenario = document.querySelector('[data-reserves-sticky-scenario]');
+  const thead = document.querySelector('[data-reserves-sticky-thead]');
+  let stackedHeight = 0;
+  if (scenario instanceof HTMLElement) {
+    const h = scenario.getBoundingClientRect().height;
+    if (Number.isFinite(h) && h > 0) stackedHeight += h;
+  }
+  if (thead instanceof HTMLElement) {
+    const h = thead.getBoundingClientRect().height;
+    if (Number.isFinite(h) && h > 0) stackedHeight += h;
+  }
+  if (stackedHeight > 0) return stackedHeight + GAP_BELOW_STICKY_STACK_PX;
+  return getCurrentStickyStackBottomY();
 }
 
 function getScrollBehavior(): ScrollBehavior {
@@ -95,7 +119,8 @@ export function scrollExpandedSimulationIntoView(
 
   const escaped = escapeReserveId(reserveId);
   const behavior = options.instant ? 'auto' as ScrollBehavior : getScrollBehavior();
-  const pinnedTopY = getPinnedRowTopY();
+  const pinnedTopY =
+    options.mode === 'pin-main-row-top' ? getDesktopPinnedRowTopY() : getCurrentStickyStackBottomY();
   const vBottom = window.innerHeight - VIEW_MARGIN_PX;
 
   const mobileAnchor = document.querySelector(`[data-reserve-expanded-anchor="${escaped}"]`);
@@ -168,7 +193,8 @@ export function shouldScrollExpandedSimulationIntoView(
   if (typeof document === 'undefined') return false;
 
   const escaped = escapeReserveId(reserveId);
-  const pinnedTopY = getPinnedRowTopY();
+  const pinnedTopY =
+    options.mode === 'pin-main-row-top' ? getDesktopPinnedRowTopY() : getCurrentStickyStackBottomY();
   const vBottom = window.innerHeight - VIEW_MARGIN_PX;
   const mobileAnchor = document.querySelector(`[data-reserve-expanded-anchor="${escaped}"]`);
 

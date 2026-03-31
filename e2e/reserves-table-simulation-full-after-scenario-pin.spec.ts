@@ -8,16 +8,16 @@ async function waitDesktopReservesReady(page: Parameters<typeof test>[0]['page']
 
 async function getPinnedTopY(page: Parameters<typeof test>[0]['page']): Promise<number> {
   const scenario = page.locator('[data-reserves-sticky-scenario]').first();
-  const thead = page.locator('[data-reserves-sticky-thead]').first();
+  const firstStickyHeader = page.locator('[data-reserves-sticky-thead] th').first();
   await expect(scenario).toBeVisible();
-  await expect(thead).toBeVisible();
+  await expect(firstStickyHeader).toBeVisible();
   let maxBottom = 0;
   const scenarioBox = await scenario.boundingBox();
   if (scenarioBox) maxBottom = Math.max(maxBottom, scenarioBox.y + scenarioBox.height);
-  const theadBox = await thead.boundingBox();
-  if (theadBox) maxBottom = Math.max(maxBottom, theadBox.y + theadBox.height);
+  const headerBox = await firstStickyHeader.boundingBox();
+  if (headerBox) maxBottom = Math.max(maxBottom, headerBox.y + headerBox.height);
   if (maxBottom <= 0) {
-    throw new Error('getPinnedTopY: sticky scenario/thead have no bounding box');
+    throw new Error('getPinnedTopY: sticky scenario/header have no bounding box');
   }
   return maxBottom + 8;
 }

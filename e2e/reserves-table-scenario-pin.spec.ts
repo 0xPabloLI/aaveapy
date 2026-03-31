@@ -6,14 +6,14 @@ async function waitDesktopTable(page: Parameters<typeof test>[0]['page']) {
 
 async function getPinnedTopY(page: Parameters<typeof test>[0]['page']): Promise<number> {
   const scenario = page.locator('[data-reserves-sticky-scenario]').first();
-  const thead = page.locator('[data-reserves-sticky-thead]').first();
+  const firstStickyHeader = page.locator('[data-reserves-sticky-thead] th').first();
   let maxBottom = 0;
   if ((await scenario.count()) > 0) {
     const box = await scenario.boundingBox();
     if (box) maxBottom = Math.max(maxBottom, box.y + box.height);
   }
-  if ((await thead.count()) > 0) {
-    const box = await thead.boundingBox();
+  if ((await firstStickyHeader.count()) > 0) {
+    const box = await firstStickyHeader.boundingBox();
     if (box) maxBottom = Math.max(maxBottom, box.y + box.height);
   }
   return maxBottom > 0 ? maxBottom + 8 : 16;

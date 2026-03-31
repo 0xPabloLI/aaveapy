@@ -1,5 +1,5 @@
 import { Fragment, useRef, useState, useEffect } from 'react';
-import { AlertTriangle, ExternalLink } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import {
   annualPercentToDailyFraction,
   formatPercent,
@@ -10,7 +10,6 @@ import {
   formatUsd,
 } from '@/lib/formatters';
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
-import { externalLinkTabProps } from '@/lib/externalNavigation';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type {
   RateSimulationResult,
@@ -447,7 +446,7 @@ const SimulationSubRow = ({
     peerCapInfo?: { hasCapBar: boolean; hasCapNote: boolean; capNote?: string },
     alignBand?: DesktopAlignBand | null,
   ) => {
-    const deltaColorClass = row.delta === null || Number.isNaN(row.delta) ? 'text-muted-foreground' : accentClass;
+    const deltaColorClass = row.delta === null || Number.isNaN(row.delta) ? 'text-foreground/75' : accentClass;
     const isBreakdownItem = row.isBreakdown;
     const isSubBreakdown = row.isSubBreakdown === true;
     const isNestedUnderIncentive = row.nestedUnderIncentive === true;
@@ -480,25 +479,13 @@ const SimulationSubRow = ({
         <td className={`${labelCellPy} ${metricCellPx} min-w-0 align-top`}>
           <div className={`min-w-0 ${isBreakdownItem ? `${breakdownIndentClass} ${borderColorClass}` : ''}`}>
             <div className="flex flex-wrap items-start gap-x-1.5 gap-y-0.5 min-w-0">
-              {row.href ? (
-                <a
-                  href={row.href}
-                  {...externalLinkTabProps(isMobile)}
-                  onClick={(e) => e.stopPropagation()}
-                  className={`ds-text-12 flex items-center gap-1 min-w-0 break-words ${row.warning ? 'text-amber-700 dark:text-amber-400' : isBreakdownItem ? `${rowAccentClass} hover:opacity-90` : accentClass}`}
-                >
-                  <span className="break-words">{row.label}</span>
-                  <ExternalLink className="w-3 h-3 flex-shrink-0 opacity-50" />
-                </a>
-              ) : (
-                <span
-                  className={`ds-text-12 break-words ${row.warning ? 'text-amber-700 dark:text-amber-400 font-medium' : isBreakdownItem ? rowAccentClass : accentClass}`}
-                >
-                  {row.label}
-                </span>
-              )}
+              <span
+                className={`ds-text-12 break-words ${row.warning ? 'text-amber-700 dark:text-amber-400 font-medium' : isBreakdownItem ? rowAccentClass : accentClass}`}
+              >
+                {row.label}
+              </span>
               {row.cap !== null && row.cap !== undefined && (
-                <span className={`ds-text-11 tabular-nums flex-shrink-0 ${row.warning ? 'text-amber-600' : 'text-muted-foreground/70'}`}>
+                <span className={`ds-text-11 tabular-nums flex-shrink-0 ${row.warning ? 'text-amber-600' : 'text-foreground/65'}`}>
                   / Cap {formatScenarioSize(row.cap, { inputMode, tokenPrice: simulation.tokenPrice })}
                 </span>
               )}
@@ -511,7 +498,7 @@ const SimulationSubRow = ({
           </span>
         </td>
         <td className={`${valueCellPy} ${valueCellPx} text-right align-top`}>
-          <span className={`ds-text-12 tabular-nums ${row.after === null ? 'text-muted-foreground' : rowAccentClass}`}>
+          <span className={`ds-text-12 tabular-nums ${row.after === null ? 'text-foreground/80' : rowAccentClass}`}>
             {formatValue(row.after, row.type)}
           </span>
         </td>
@@ -697,7 +684,7 @@ const SimulationSubRow = ({
   };
 
   const renderTable = (title: string, rows: TableRow[], accentClass: string, borderClass: string, indentBorderClass: string, isWarning?: boolean, peerRows?: TableRow[]) => (
-    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-border/50 bg-card px-1.5">
       <table className="w-full min-w-0 table-fixed">
         <colgroup>
           <col style={{ width: '46%' }} />
@@ -965,7 +952,7 @@ const SimulationSubRow = ({
     };
 
     return (
-      <div className="overflow-hidden rounded-lg border border-border/50 bg-muted/20 dark:bg-muted/10 w-full">
+      <div className="overflow-hidden rounded-lg border border-border/50 bg-card w-full px-1.5">
         <table className="w-full min-w-0 table-fixed">
           <colgroup>
             <col style={{ width: '56%' }} />
@@ -975,7 +962,7 @@ const SimulationSubRow = ({
           <thead>
             <tr className="bg-muted/30 border-b border-border/50">
               <th className="px-4 py-2 text-left">
-                <span className="ds-text-13 font-semibold text-muted-foreground whitespace-nowrap">
+                <span className="ds-text-13 font-semibold text-foreground whitespace-nowrap">
                   Earn /day
                 </span>
               </th>
@@ -996,12 +983,15 @@ const SimulationSubRow = ({
                 return (
                   <Fragment key={row.key}>
                     <tr data-align-key={mainAlignKey} className={row.capWarning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
-                      <td className={`${cellPy} ${metricPx} min-w-0 align-top`}>
+                      <td className={`${cellPy} ${metricPx} min-w-0 align-middle`}>
                         <div className="grid min-w-0" style={{ gridTemplateColumns: '1fr', gridTemplateRows: '1fr' }}>
                           {/* Visible: Net label + value */}
-                          <div className="flex items-baseline gap-x-1.5 min-w-0" style={{ gridArea: '1/1' }}>
-                            <span className="ds-text-12 font-bold ds-text-purple-600 break-words">{row.label}</span>
-                            <span className="ds-text-12 tabular-nums font-bold ds-text-purple-600 flex-shrink-0">
+                          <div
+                            className={`flex items-baseline gap-x-2 min-w-0 ${row.hasCapSpacer ? 'translate-y-[4px]' : ''}`}
+                            style={{ gridArea: '1/1' }}
+                          >
+                            <span className="ds-text-16 font-bold ds-text-purple-600 break-words">{row.label}</span>
+                            <span className="ds-text-16 tabular-nums font-bold ds-text-purple-600 flex-shrink-0">
                               {accrual?.netUsdPerDay != null ? fmt(accrual.netUsdPerDay) : '-'}
                             </span>
                           </div>
@@ -1026,13 +1016,13 @@ const SimulationSubRow = ({
 
               // Data rows: Amount / Native / Incentive
               const indentClass = row.isSubBreakdown
-                ? 'ml-4 pl-2 border-l border-l-muted-foreground/30'
+                ? 'ml-4 pl-2 border-l border-l-foreground/80'
                 : row.isBreakdown
-                  ? 'ml-2 pl-2 border-l border-l-muted-foreground/30'
+                  ? 'ml-2 pl-2 border-l border-l-foreground/80'
                   : '';
               const capNoteAlignClass = row.isSubBreakdown ? 'pl-6' : row.isBreakdown ? 'pl-4' : '';
               const fontClass = row.key === 'amount' ? '' : row.isTotal ? 'font-semibold' : row.isBreakdown ? '' : 'font-medium';
-              const textClass = row.isBreakdown ? 'text-muted-foreground' : 'text-foreground';
+              const textClass = row.isBreakdown ? 'text-foreground/80' : 'text-foreground';
               const sizeClass = 'ds-text-12';
               const labelCellPy = row.hasNoteSpacer ? `${effectiveCompact ? 'pt-1 pb-0' : 'pt-1.5 pb-0'}` : cellPy;
               const valueCellPy = row.hasNoteSpacer ? `${effectiveCompact ? 'pt-1 pb-0' : 'pt-1.5 pb-0'}` : cellPy;
@@ -1042,28 +1032,16 @@ const SimulationSubRow = ({
                   <tr data-align-key={mainAlignKey} className={row.capWarning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
                     <td className={`${labelCellPy} ${metricPx} min-w-0 align-top`}>
                       <div className={`min-w-0 ${indentClass}`}>
-                        {row.href ? (
-                          <a
-                            href={row.href}
-                            {...externalLinkTabProps(isMobile)}
-                            onClick={(e) => e.stopPropagation()}
-                            className={`${sizeClass} ${fontClass} ${textClass} flex items-center gap-1 min-w-0 hover:opacity-80`}
-                          >
-                            <span className="break-words">{row.label}</span>
-                            <ExternalLink className="w-3 h-3 opacity-50 shrink-0" />
-                          </a>
-                        ) : (
-                          <span className={`${sizeClass} ${fontClass} ${textClass} break-words`}>{row.label}</span>
-                        )}
+                        <span className={`${sizeClass} ${fontClass} ${textClass} break-words`}>{row.label}</span>
                       </div>
                     </td>
                     <td className={`${valueCellPy} ${valuePx} text-right align-top`}>
-                      <span className={`${sizeClass} tabular-nums ${fontClass} ${hasSupply ? 'ds-text-emerald-600' : 'text-muted-foreground'}`}>
+                      <span className={`${sizeClass} tabular-nums ${fontClass} ${hasSupply ? 'ds-text-emerald-600' : 'text-foreground/80'}`}>
                         {row.earn !== null ? fmt(row.earn) : '-'}
                       </span>
                     </td>
                     <td className={`${valueCellPy} ${valuePx} text-right align-top`}>
-                      <span className={`${sizeClass} tabular-nums ${fontClass} ${hasBorrow ? 'ds-text-brand-cyan' : 'text-muted-foreground'}`}>
+                      <span className={`${sizeClass} tabular-nums ${fontClass} ${hasBorrow ? 'ds-text-brand-cyan' : 'text-foreground/80'}`}>
                         {row.cost !== null ? fmt(row.cost) : '-'}
                       </span>
                     </td>
@@ -1086,14 +1064,14 @@ const SimulationSubRow = ({
           effectiveCompact ? (embeddedFromTop ? 'mb-2 px-0' : 'mb-2 px-1') : 'mb-3 px-1'
         }`}
       >
-          <span className="ds-text-12 text-muted-foreground">
+          <span className="ds-text-12 text-foreground/75">
             Enter supply or borrow amount above to see simulated values.
           </span>
         </div>
       )}
       {!showEmptyStateNote && (
         <div className={`${effectiveCompact ? 'mb-2' : 'mb-3'} ${effectiveCompact && embeddedFromTop ? 'px-0' : 'px-1'}`}>
-          <p className="ds-text-11 text-muted-foreground">
+          <p className="ds-text-11 text-foreground/70">
             {isMobile
               ? 'Simulation only; final result is on-chain.'
               : 'Simulation is for reference only. Final result depends on on-chain execution.'}
@@ -1150,22 +1128,22 @@ const SimulationSubRow = ({
       ) : (
         <>
           {/* Spread + Liquidity summary bar */}
-          <div className="flex items-center gap-4 mb-2 px-4 py-1.5 rounded-lg border border-border/50 bg-muted/20 dark:bg-muted/10">
+          <div className="flex items-center gap-4 mb-2 px-4 py-1.5 rounded-lg border border-border/50 bg-card">
             <div className="flex items-center gap-1.5">
               <span className="ds-text-12 font-bold ds-text-purple-600">Spread</span>
               <span className="ds-text-12 tabular-nums ds-text-purple-600">
                 {formatSpread(simulation.spread.current)}
                 {simulation.spread.after !== null && (
                   <>
-                    <span className="text-muted-foreground mx-1">→</span>
+                    <span className="text-foreground/65 mx-1">→</span>
                     {formatSpread(simulation.spread.after)}
                   </>
                 )}
               </span>
               {hasScenarioInput ? (
                 <span className="inline-flex items-center gap-1 pl-1">
-                  <span className="ds-text-11 text-muted-foreground">Δ</span>
-                  <span className={`ds-text-11 tabular-nums ${simulation.spread.delta === null ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
+                  <span className="ds-text-11 text-foreground/70">Δ</span>
+                  <span className={`ds-text-11 tabular-nums ${simulation.spread.delta === null ? 'text-foreground/80' : 'ds-text-purple-600'}`}>
                     {formatDelta(simulation.spread.delta)}
                   </span>
                 </span>
@@ -1178,18 +1156,18 @@ const SimulationSubRow = ({
                 {formatScenarioSize(simulation.marketMetrics.availableLiquidityUsd, { inputMode, tokenPrice: simulation.tokenPrice })}
                 {simulation.marketMetrics.availableLiquidityUsdAfter !== null && (
                   <>
-                    <span className="text-muted-foreground mx-1">→</span>
+                    <span className="text-foreground/65 mx-1">→</span>
                     {formatScenarioSize(simulation.marketMetrics.availableLiquidityUsdAfter, { inputMode, tokenPrice: simulation.tokenPrice })}
                   </>
                 )}
               </span>
               {hasScenarioInput ? (
                 <span className="inline-flex items-center gap-1 pl-1">
-                  <span className="ds-text-11 text-muted-foreground">Δ</span>
+                  <span className="ds-text-11 text-foreground/70">Δ</span>
                   <span
                     className={`ds-text-11 tabular-nums ${
                       simulation.marketMetrics.availableLiquidityUsdDelta === null
-                        ? 'text-muted-foreground'
+                        ? 'text-foreground/80'
                         : middleColumnWarning
                           ? 'text-amber-700 dark:text-amber-400'
                           : 'ds-text-purple-600'
@@ -1205,7 +1183,10 @@ const SimulationSubRow = ({
           </div>
 
           {/* Supply + Borrow + Earn/Cost 3-column grid */}
-          <div ref={gridRef} className="grid grid-cols-3 gap-2 min-w-0 items-stretch overflow-hidden">
+          <div
+            ref={gridRef}
+            className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_clamp(14.5rem,24.5vw,18rem)] gap-2 min-w-0 items-stretch overflow-hidden"
+          >
             <div className="flex min-w-0 flex-col overflow-hidden">
               {renderTable('Supply', supplyRows, 'ds-text-emerald-600', 'border-emerald-500/40', 'border-l-[rgb(var(--ds-emerald-500-rgb))]', showSupplyCapWarning, borrowRows)}
             </div>
