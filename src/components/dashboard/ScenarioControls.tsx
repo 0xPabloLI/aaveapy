@@ -86,10 +86,10 @@ function MobileNetCollapsible({
       >
         <div className="overflow-hidden">
           <div className="px-1 pb-1.5 pt-1">
-            <div className="mx-auto w-[min(16.75rem,calc(100%-0.5rem))] rounded-xl border border-border/55 bg-card/55 px-1.5 py-1.5">
+            <div className="mx-auto w-[min(16.25rem,calc(100%-0.75rem))] rounded-lg border border-border/45 bg-card/35 px-1.5 py-1.25">
               <label
                 htmlFor={id}
-                className="mx-auto flex w-fit max-w-full min-w-0 cursor-pointer items-center justify-center gap-[var(--ds-space-1-5)] rounded-full border border-border/60 bg-card/75 px-2.5 py-1 shadow-sm"
+                className="mx-auto flex w-fit max-w-full min-w-0 cursor-pointer items-center justify-center gap-[var(--ds-space-1-5)] rounded-full border border-border/55 bg-card/70 px-2 py-0.75 shadow-sm"
               >
                 <input
                   id={id}
@@ -101,14 +101,14 @@ function MobileNetCollapsible({
                 />
                 <span className={`${fontSize} whitespace-nowrap text-foreground`}>Net lending &amp; borrowing</span>
               </label>
-              <div className="mt-1.5 space-y-1.5 px-0.5">
-                <p className="text-muted-foreground ds-text-11 leading-snug">
+              <div className="mt-1.25 space-y-1 px-0.5">
+                <p className="text-muted-foreground/90 ds-text-10 leading-snug">
                   Net on: overlapping supply and borrow offset each other first.
                 </p>
-                <p className="text-muted-foreground ds-text-11 leading-snug">
+                <p className="text-muted-foreground/90 ds-text-10 leading-snug">
                   Net off: both sides are counted in full, which may overestimate incentives.
                 </p>
-                <p className="text-muted-foreground ds-text-11 leading-snug">
+                <p className="text-muted-foreground/90 ds-text-10 leading-snug">
                   Brevis campaigns use separate rules and are not affected by this switch.
                 </p>
               </div>
@@ -120,14 +120,14 @@ function MobileNetCollapsible({
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className="mt-0.5 flex h-5 w-full items-center justify-center rounded-sm"
+        className="mt-0.5 flex h-6 w-full items-center justify-center rounded-sm"
         aria-label={open ? 'Collapse net lending and borrowing controls' : 'Expand net lending and borrowing controls'}
         aria-expanded={open}
       >
         <span
           className={cn(
             'h-0.5 rounded-full transition-all duration-200',
-            open ? 'w-7 bg-muted-foreground/70' : 'w-8 bg-border/80',
+            open ? 'w-5 bg-muted-foreground/70' : 'w-6 bg-border/80',
           )}
           aria-hidden
         />

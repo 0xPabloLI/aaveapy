@@ -1351,12 +1351,12 @@ const ReservesTable = ({
                           {bridgeOnExpandedColumn ? (
                             <>
                               <path d="M 0 0 L 0 13 L 17 13 L 17 12 L 8.5 12 A 8 8 0 0 1 0.5 4 L 0.5 0 L 0 0 Z" style={{ fill: 'hsl(var(--card))' }} />
-                              <path d="M 0.5 4 L 0.5 4.5 A 8 8 0 0 0 8.5 12.5 L 17 12.5" fill="none" style={{ stroke: 'hsl(var(--border) / 0.6)', strokeWidth: 1 }} />
+                              <path d="M 0.5 0 L 0.5 4.5 A 8 8 0 0 0 8.5 12.5 L 17 12.5" fill="none" style={{ stroke: 'hsl(var(--border) / 0.6)', strokeWidth: 1 }} />
                             </>
                           ) : (
                             <>
                               <path d="M 17 0 L 17 13 L 0 13 L 0 12 L 8.5 12 A 8 8 0 0 0 16.5 4 L 16.5 0 L 17 0 Z" style={{ fill: 'hsl(var(--card))' }} />
-                              <path d="M 16.5 4 L 16.5 4.5 A 8 8 0 0 1 8.5 12.5 L 0 12.5" fill="none" style={{ stroke: 'hsl(var(--border) / 0.6)', strokeWidth: 1 }} />
+                              <path d="M 16.5 0 L 16.5 4.5 A 8 8 0 0 1 8.5 12.5 L 0 12.5" fill="none" style={{ stroke: 'hsl(var(--border) / 0.6)', strokeWidth: 1 }} />
                             </>
                           )}
                         </svg>
