@@ -37,7 +37,17 @@
 
 | 目标 | 同步脚本 | 校验脚本 |
 |---|---|---|
-| reserve patches | `scripts/sync-reserve-patches-upstream.mjs` | `scripts/check-reserve-patches-upstream.mjs` |
+| reserve patches（含 `SYMBOL_MAP` 合并 + `underlyingAssetMap` 追加） | `scripts/sync-reserve-patches-upstream.mjs` | `scripts/check-reserve-patches-upstream.mjs` |
+
+### 3.1 `reservePatches.ts` 与 interface 对齐规则
+
+- **`SYMBOL_MAP`**（实现：`scripts/lib/reserve-patches-symbol-map.mjs`）  
+  - **自动合并**：上游 `aave/interface` 的每个 key→value **覆盖**本地同名 key；**仅本地存在的 key**（例如 `USD₮0`）**保留**。  
+  - **写出条件**：仅当合并后的 Map 与当前文件解析结果**在语义上不一致**时才重写 `SYMBOL_MAP` 块（避免无意义抖动）。重写时会按「上游 key 顺序 + 本地独有 key 排序」排版；**块内注释**（如 `// avalanche`）在发生重写时可能消失，属可接受取舍。  
+  - **校验**：`check-reserve-patches-upstream` 要求上游每个 `SYMBOL_MAP` 条目在本地**存在且 value 一致**；本地多出的 key 仅 **warning**。
+- **`underlyingAssetMap`**（既有行为）  
+  - **同步**：把上游有、本地缺的 **地址键 / 表达式键** 条目**追加**进本地 map。  
+  - **校验**：上游有的键本地必须有；仅本地有的键 **warning**。
 | market name map | `scripts/sync-market-name-map-upstream.mjs` | `scripts/check-market-name-map-upstream.mjs` |
 | chain icon map | `scripts/sync-chain-icon-map-upstream.mjs` | `scripts/check-chain-icon-map-upstream.mjs`（映射须覆盖上游；磁盘缺图时可列入 `scripts/data/pending-chain-icon-bases.json`） |
 | CoinGecko `chainId` → platform id（随 `/markets` 出现的新链） | `scripts/sync-coingecko-platform-map.mjs` | `scripts/check-coingecko-platform-map-upstream.mjs` |
@@ -98,7 +108,7 @@
 - 离线落盘：`sync-token-icons.mjs` 在 **interface 静态目录未命中** 后使用同一搜索接口
 
 ### 5.3 上游源码与静态资源抓取（脚本）
-- `https://raw.githubusercontent.com/aave/interface/main/src/ui-config/reservePatches.ts`
+- `https://raw.githubusercontent.com/aave/interface/main/src/ui-config/reservePatches.ts`（`SYMBOL_MAP` 合并逻辑见 `scripts/lib/reserve-patches-symbol-map.mjs`）
 - `https://raw.githubusercontent.com/aave/interface/main/src/ui-config/marketsConfig.tsx`
 - `https://raw.githubusercontent.com/aave/interface/main/src/ui-config/networksConfig.ts`
 - `https://raw.githubusercontent.com/aave/interface/main/public/icons/tokens/`（`sync-token-icons.mjs` 按 symbol 试 `svg` → `png` → `webp` → `jpg`；可用 `INTERFACE_TOKEN_ICONS_BASE` 覆盖 base）
@@ -126,6 +136,6 @@ npm run sync-token-icons -- --check
 
 ## 8. 当前状态结论
 
-- 映射同步：reserve patches / market map / chain map 均已对齐校验。
+- 映射同步：reserve patches（含 **`SYMBOL_MAP` 自动合并** + `underlyingAssetMap` 追加）/ market map / chain map 均已对齐校验。
 - token icon：已采用 **interface 静态目录优先**，再 **CoinGecko** + **logoURI** 回退。
 - workflow：以 `hardcode-sync.yml` 为单一自动化入口。
