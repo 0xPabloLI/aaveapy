@@ -60,7 +60,7 @@ const simulation: RateSimulationResult = {
     deltaIncentive: 0.1,
     deltaTotal: 0.5,
     inputUsd: 1000,
-    inputToken: 1000,
+    inputAmount: 1000,
     hasInput: true,
     sources: {
       protocol: emptySource,
@@ -80,7 +80,7 @@ const simulation: RateSimulationResult = {
     deltaIncentive: -0.1,
     deltaTotal: 0.4,
     inputUsd: 500,
-    inputToken: 500,
+    inputAmount: 500,
     hasInput: true,
     sources: {
       protocol: emptySource,
@@ -102,9 +102,6 @@ const simulation: RateSimulationResult = {
     optimal: 80,
   },
   marketMetrics: {
-    reserveSizeUsd: 1_000_000,
-    reserveSizeUsdAfter: 1_001_000,
-    reserveSizeUsdDelta: 1_000,
     availableLiquidityUsd: 550_000,
     availableLiquidityUsdAfter: 549_000,
     availableLiquidityUsdDelta: -1_000,

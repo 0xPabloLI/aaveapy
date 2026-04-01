@@ -14,7 +14,7 @@ import SimulationSubRow from './SimulationSubRow';
 import UtilizationIndicator from './UtilizationIndicator';
 import CapProgressRing from './CapProgressRing';
 import BorrowCapProgressRing from './BorrowCapProgressRing';
-import DeficitLiquidityRing from './DeficitLiquidityRing';
+
 import DeficitShieldIcon from './DeficitShieldIcon';
 import { formatScenarioSize } from '@/lib/formatters';
 import {
@@ -147,6 +147,55 @@ function UtilizationSheetContent({ current, optimal }: { current: number; optima
   );
 }
 
+/** Deficit details bottom sheet content */
+function DeficitSheetContent({
+  deficitUsd,
+  totalSuppliedUsd,
+  deficitTokenLabel,
+  inputMode,
+  tokenPrice,
+  tokenSymbol,
+}: {
+  deficitUsd: number;
+  totalSuppliedUsd: number | null | undefined;
+  deficitTokenLabel?: string;
+  inputMode: 'usd' | 'token';
+  tokenPrice?: number | null;
+  tokenSymbol?: string | null;
+}) {
+  const ratio = calculateDeficitShareRatio({ deficitUsd, totalSuppliedUsd });
+  const percentage = ratio != null ? Math.min(Math.max(ratio * 100, 0), 100) : null;
+  const severity = getDeficitSeverity(ratio);
+  const percentColorClass =
+    severity === 'critical' ? 'text-amber-600' : severity === 'warning' ? 'text-amber-500' : 'text-muted-foreground/60';
+
+  const deficitDisplay = inputMode === 'token' && deficitTokenLabel
+    ? deficitTokenLabel
+    : formatScenarioSize(deficitUsd, { inputMode: 'usd' });
+  const totalDisplay = totalSuppliedUsd != null
+    ? formatScenarioSize(totalSuppliedUsd, { inputMode, tokenPrice, tokenSymbol })
+    : '—';
+
+  return (
+    <div className="space-y-1 ds-text-12">
+      <div className="flex justify-between gap-3">
+        <span className="text-muted-foreground">Deficit</span>
+        <span className="font-medium tabular-nums">{deficitDisplay}</span>
+      </div>
+      <div className="flex justify-between gap-3">
+        <span className="text-muted-foreground">Total supplied</span>
+        <span className="font-medium tabular-nums">{totalDisplay}</span>
+      </div>
+      <div className="flex items-center justify-between gap-3 pt-1 border-t border-border/50">
+        <span className="text-muted-foreground">% of total (incl. deficit)</span>
+        <span className={`font-bold tabular-nums ${percentColorClass}`}>
+          {percentage != null ? `${percentage.toFixed(2)}%` : '—'}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 interface MobileReserveCardProps {
   reserve: ReserveWithSpread;
   isApy: boolean;
@@ -193,7 +242,7 @@ const MobileReserveCard = memo(({
   connectedBelow = false,
   defaultTab,
 }: MobileReserveCardProps) => {
-  const [capSheet, setCapSheet] = useState<'supply' | 'borrow' | 'utilization' | null>(null);
+  const [capSheet, setCapSheet] = useState<'supply' | 'borrow' | 'utilization' | 'deficit' | null>(null);
   const [hasSimulationMounted, setHasSimulationMounted] = useState(isSimulationExpanded);
   const [activeTab, setActiveTab] = useState<'supply' | 'borrow'>(defaultTab ?? 'supply');
 
@@ -279,9 +328,6 @@ const MobileReserveCard = memo(({
   const hasDeficit = hasReserveDeficit(reserve);
   const deficitUsd = getReserveDeficitUsdAmount(reserve, displayTokenPrice);
   const deficitTokenCompact = formatReserveDeficitTokenCompact(reserve);
-  const deficitInlineValue = inputMode === 'usd'
-    ? (deficitUsd != null ? formatScenarioSize(deficitUsd, { inputMode: 'usd' }) : '-')
-    : deficitTokenCompact;
   const deficitTokenLabel = deficitTokenCompact !== '-' ? deficitTokenCompact : undefined;
   const deficitShareRatio = calculateDeficitShareRatio({
     deficitUsd,
@@ -333,30 +379,21 @@ const MobileReserveCard = memo(({
       return (
         <div className="flex w-full min-w-0 flex-nowrap items-center gap-1.5 px-4">
           {priceEl}
-          {/* Deficit indicator inline — only on supply tab */}
-          {hasDeficit && deficitUsd != null && activeTab === 'supply' ? (
-            <DeficitLiquidityRing
-              deficitUsd={deficitUsd}
-              totalSuppliedUsd={displayReserveSizeUsd}
-              tokenDeficitLabel={deficitTokenLabel}
-              ringSize={12}
-              strokeWidth={1.2}
-              label={(
-                <span className={cn('inline-flex items-center gap-0.5 ds-text-10 tabular-nums', deficitTextClass)}>
-                  <DeficitShieldIcon ratio={deficitShareRatio} className={cn('h-2.5 w-2.5', isNeutralDeficit && 'opacity-70')} />
-                  <span>{deficitInlineValue}</span>
-                </span>
-              )}
-              triggerClassName={deficitTextClass}
-              triggerAriaLabel={`Deficit share of total supplied plus deficit for ${reserve.tokenSymbol}`}
-            />
-          ) : hasDeficit && activeTab === 'supply' ? (
-            <span className={cn('inline-flex items-center gap-0.5 ds-text-10 tabular-nums', deficitTextClass)}>
-              <DeficitShieldIcon ratio={deficitShareRatio} className={cn('h-2.5 w-2.5', isNeutralDeficit && 'opacity-70')} />
-              <span>{deficitInlineValue}</span>
-            </span>
-          ) : null}
           <div className="ml-auto flex min-w-0 items-center justify-end gap-1">
+            {/* Deficit icon — tap opens bottom sheet */}
+            {hasDeficit && deficitUsd != null ? (
+              <button
+                type="button"
+                className={cn(
+                  'inline-flex items-center justify-center rounded-md p-0.5 transition-colors hover:bg-muted/50 active:scale-[0.97]',
+                  deficitTextClass,
+                )}
+                aria-label={`Show deficit details for ${reserve.tokenSymbol}`}
+                onClick={() => setCapSheet('deficit')}
+              >
+                <DeficitShieldIcon ratio={deficitShareRatio} className={cn('h-3 w-3', isNeutralDeficit && 'opacity-70')} />
+              </button>
+            ) : null}
             {hasSupplyCap ? (
               <button
                 type="button"
@@ -694,7 +731,9 @@ const MobileReserveCard = memo(({
                       ? 'Supply cap details'
                       : capSheet === 'borrow'
                         ? 'Borrow cap details'
-                        : 'Utilization'}
+                        : capSheet === 'deficit'
+                          ? 'Deficit details'
+                          : 'Utilization'}
                   </h3>
                   <button
                     type="button"
@@ -729,6 +768,16 @@ const MobileReserveCard = memo(({
                     <UtilizationSheetContent
                       current={displayUtilization}
                       optimal={optimalPct}
+                    />
+                  )}
+                  {capSheet === 'deficit' && deficitUsd != null && (
+                    <DeficitSheetContent
+                      deficitUsd={deficitUsd}
+                      totalSuppliedUsd={displayReserveSizeUsd}
+                      deficitTokenLabel={deficitTokenLabel}
+                      inputMode={inputMode}
+                      tokenPrice={displayTokenPrice}
+                      tokenSymbol={reserve.tokenSymbol}
                     />
                   )}
                 </div>
