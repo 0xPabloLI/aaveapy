@@ -2,6 +2,10 @@
   "version": 1,
   "preferenceMining": "Parent session transcripts at .../<uuid>/<uuid>.jsonl are mined for user preferences; subagent paths are not tracked in this index.",
   "transcripts": {
+    "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/002e551e-a0a4-4f07-9db0-8521bf0936dd/002e551e-a0a4-4f07-9db0-8521bf0936dd.jsonl": {
+      "mtimeMs": 1775056770588.2063,
+      "lastProcessedAt": "2026-04-01T15:20:36.250Z"
+    },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/00dc31af-0291-40cd-a5bc-f80038819b73/00dc31af-0291-40cd-a5bc-f80038819b73.jsonl": {
       "mtimeMs": 1774601411143.9802,
       "lastProcessedAt": "2026-04-01T05:00:37.650Z"
@@ -15,7 +19,7 @@
       "lastProcessedAt": "2026-04-01T05:00:37.650Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/024c5a73-c5fe-4bc4-8598-175e38d8f559/024c5a73-c5fe-4bc4-8598-175e38d8f559.jsonl": {
-      "mtimeMs": 1773587029492.647,
+      "mtimeMs": 1773587029492.6467,
       "lastProcessedAt": "2026-04-01T11:18:48Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/0296ee67-c7c5-430d-8753-90cebd5ca292/0296ee67-c7c5-430d-8753-90cebd5ca292.jsonl": {
@@ -35,7 +39,7 @@
       "lastProcessedAt": "2026-04-01T05:00:37.650Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/0578ba3a-a808-4cda-9877-bfc0d2fd898c/0578ba3a-a808-4cda-9877-bfc0d2fd898c.jsonl": {
-      "mtimeMs": 1774715007608.5125,
+      "mtimeMs": 1774715007608.5122,
       "lastProcessedAt": "2026-04-01T11:18:48Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/05921cef-da14-412a-ad51-9416b6bdbf75/05921cef-da14-412a-ad51-9416b6bdbf75.jsonl": {
@@ -51,11 +55,11 @@
       "lastProcessedAt": "2026-04-01T05:00:37.650Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/064f54a0-1780-4397-a285-e5e0ba308d53/064f54a0-1780-4397-a285-e5e0ba308d53.jsonl": {
-      "mtimeMs": 1774879542914.5132,
+      "mtimeMs": 1774879542914.513,
       "lastProcessedAt": "2026-04-01T11:18:48Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/0661d7f3-37fd-476d-a1e4-b9e3215c5712/0661d7f3-37fd-476d-a1e4-b9e3215c5712.jsonl": {
-      "mtimeMs": 1774487683159.6487,
+      "mtimeMs": 1774487683159.6484,
       "lastProcessedAt": "2026-04-01T11:18:48Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/06630f36-05f7-4c6a-bf1e-e0a8b57c3c61/06630f36-05f7-4c6a-bf1e-e0a8b57c3c61.jsonl": {
@@ -87,7 +91,7 @@
       "lastProcessedAt": "2026-04-01T05:00:37.650Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/0d23523b-2eb3-4534-ba49-00054472dbf1/0d23523b-2eb3-4534-ba49-00054472dbf1.jsonl": {
-      "mtimeMs": 1775016116234.033,
+      "mtimeMs": 1775016116234.0327,
       "lastProcessedAt": "2026-04-01T11:18:48Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/0d9a488b-c949-49ab-bd1c-fef434f4df4f/0d9a488b-c949-49ab-bd1c-fef434f4df4f.jsonl": {
@@ -99,7 +103,7 @@
       "lastProcessedAt": "2026-04-01T05:00:37.650Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/0f1f380d-670e-4311-af3d-a50ae6a30297/0f1f380d-670e-4311-af3d-a50ae6a30297.jsonl": {
-      "mtimeMs": 1773452353639.5925,
+      "mtimeMs": 1773452353639.5923,
       "lastProcessedAt": "2026-04-01T11:18:48Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/0f6eccb2-d6eb-4574-8ca8-9b56da2ceed9/0f6eccb2-d6eb-4574-8ca8-9b56da2ceed9.jsonl": {
@@ -142,6 +146,10 @@
       "mtimeMs": 1774958622527.184,
       "lastProcessedAt": "2026-04-01T05:00:37.650Z"
     },
+    "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/176087db-ad3c-4dac-a142-45d539132991/176087db-ad3c-4dac-a142-45d539132991.jsonl": {
+      "mtimeMs": 1775043830140.9805,
+      "lastProcessedAt": "2026-04-01T15:20:36.250Z"
+    },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/1a6f369b-7df6-4669-a2d2-d1c3bc0cebf2/1a6f369b-7df6-4669-a2d2-d1c3bc0cebf2.jsonl": {
       "mtimeMs": 1774623157343.8918,
       "lastProcessedAt": "2026-04-01T05:00:37.650Z"
@@ -154,8 +162,16 @@
       "mtimeMs": 1773474782256.5002,
       "lastProcessedAt": "2026-04-01T05:00:37.650Z"
     },
+    "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/1c977fc6-0663-46db-a85f-49bd53a2720d/1c977fc6-0663-46db-a85f-49bd53a2720d.jsonl": {
+      "mtimeMs": 1775041834023.714,
+      "lastProcessedAt": "2026-04-01T11:18:48Z"
+    },
+    "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/1cf567cc-0b55-4742-8013-d9764b305f82/1cf567cc-0b55-4742-8013-d9764b305f82.jsonl": {
+      "mtimeMs": 1775044579864.1912,
+      "lastProcessedAt": "2026-04-01T15:20:36.250Z"
+    },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/1e2dc2df-9ba4-420c-9200-33313545044f/1e2dc2df-9ba4-420c-9200-33313545044f.jsonl": {
-      "mtimeMs": 1774349583229.446,
+      "mtimeMs": 1774349583229.4458,
       "lastProcessedAt": "2026-04-01T11:18:48Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/1ea5061b-4fd3-4210-bde3-bcb0df3991f4/1ea5061b-4fd3-4210-bde3-bcb0df3991f4.jsonl": {
@@ -163,7 +179,7 @@
       "lastProcessedAt": "2026-04-01T05:00:37.650Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/1edebeb7-b230-4ed2-a099-7f8a9fdcf6ed/1edebeb7-b230-4ed2-a099-7f8a9fdcf6ed.jsonl": {
-      "mtimeMs": 1774958701431.2778,
+      "mtimeMs": 1774958701431.2776,
       "lastProcessedAt": "2026-04-01T11:18:48Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/1f26c559-8437-4620-9a31-52d8772b1aea/1f26c559-8437-4620-9a31-52d8772b1aea.jsonl": {
@@ -179,11 +195,11 @@
       "lastProcessedAt": "2026-04-01T05:00:37.650Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/20e8bcf1-43c0-431c-be5c-a5abcfe30ec6/20e8bcf1-43c0-431c-be5c-a5abcfe30ec6.jsonl": {
-      "mtimeMs": 1774692249988.8547,
+      "mtimeMs": 1774692249988.8545,
       "lastProcessedAt": "2026-04-01T11:18:48Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/21a9327c-fe2f-4b50-84ac-d5b5884880cc/21a9327c-fe2f-4b50-84ac-d5b5884880cc.jsonl": {
-      "mtimeMs": 1773589376872.7957,
+      "mtimeMs": 1773589376872.7954,
       "lastProcessedAt": "2026-04-01T11:18:48Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/234ced22-9ec6-4407-b289-7bcaae934d81/234ced22-9ec6-4407-b289-7bcaae934d81.jsonl": {
@@ -218,16 +234,20 @@
       "mtimeMs": 1774588567717.759,
       "lastProcessedAt": "2026-04-01T05:00:37.650Z"
     },
+    "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/28e23b21-004b-4fb8-ad4d-79ee9da3b3a6/28e23b21-004b-4fb8-ad4d-79ee9da3b3a6.jsonl": {
+      "mtimeMs": 1775044679277.3164,
+      "lastProcessedAt": "2026-04-01T15:20:36.250Z"
+    },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/29b11366-4d9e-4ee3-8122-aaafca32d2db/29b11366-4d9e-4ee3-8122-aaafca32d2db.jsonl": {
       "mtimeMs": 1773667790978.6572,
       "lastProcessedAt": "2026-04-01T05:00:37.650Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/2ae86261-1291-4a61-b575-0d4ca74bfa92/2ae86261-1291-4a61-b575-0d4ca74bfa92.jsonl": {
-      "mtimeMs": 1774313433386.1626,
+      "mtimeMs": 1774313433386.1624,
       "lastProcessedAt": "2026-04-01T11:18:48Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/2d042a04-0b94-418d-a971-8e341842ac32/2d042a04-0b94-418d-a971-8e341842ac32.jsonl": {
-      "mtimeMs": 1774687304556.0342,
+      "mtimeMs": 1774687304556.034,
       "lastProcessedAt": "2026-04-01T11:18:48Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/2d79e344-e6db-4286-8704-04ed39416e5b/2d79e344-e6db-4286-8704-04ed39416e5b.jsonl": {
@@ -247,11 +267,11 @@
       "lastProcessedAt": "2026-04-01T05:00:37.650Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/2ff3788b-9fbf-4512-9f5f-db99b4e91a0c/2ff3788b-9fbf-4512-9f5f-db99b4e91a0c.jsonl": {
-      "mtimeMs": 1773585657187.6877,
+      "mtimeMs": 1773585657187.6875,
       "lastProcessedAt": "2026-04-01T11:18:48Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/3203a70a-53b3-4c57-a2b7-0cbb06951cc8/3203a70a-53b3-4c57-a2b7-0cbb06951cc8.jsonl": {
-      "mtimeMs": 1775013754287.3882,
+      "mtimeMs": 1775013754287.388,
       "lastProcessedAt": "2026-04-01T11:18:48Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/32b0bd91-98cb-4350-a4ad-dd969914aa52/32b0bd91-98cb-4350-a4ad-dd969914aa52.jsonl": {
@@ -269,6 +289,10 @@
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/33a13d1a-1ef6-464a-a072-c160dd4be9b5/33a13d1a-1ef6-464a-a072-c160dd4be9b5.jsonl": {
       "mtimeMs": 1774959911256.8433,
       "lastProcessedAt": "2026-04-01T05:00:37.650Z"
+    },
+    "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/33f4b9e6-7607-48ae-b770-3e405ec8ec54/33f4b9e6-7607-48ae-b770-3e405ec8ec54.jsonl": {
+      "mtimeMs": 1775043058895.5376,
+      "lastProcessedAt": "2026-04-01T15:20:36.250Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/348aa73e-6618-4914-a937-d7ede519e995/348aa73e-6618-4914-a937-d7ede519e995.jsonl": {
       "mtimeMs": 1775011924046.4597,
@@ -298,6 +322,10 @@
       "mtimeMs": 1774874111984.7693,
       "lastProcessedAt": "2026-04-01T05:00:37.650Z"
     },
+    "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/3b3c06a2-b678-46b1-a506-e0c683f02ae0/3b3c06a2-b678-46b1-a506-e0c683f02ae0.jsonl": {
+      "mtimeMs": 1775056658912.3186,
+      "lastProcessedAt": "2026-04-01T15:20:36.250Z"
+    },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/3b9e482a-d662-40ee-9bd4-14e0e4156afe/3b9e482a-d662-40ee-9bd4-14e0e4156afe.jsonl": {
       "mtimeMs": 1774971173967.9429,
       "lastProcessedAt": "2026-04-01T05:00:37.650Z"
@@ -311,11 +339,11 @@
       "lastProcessedAt": "2026-04-01T05:00:37.650Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/41cfee81-3341-4e21-a53a-08425d89d0f9/41cfee81-3341-4e21-a53a-08425d89d0f9.jsonl": {
-      "mtimeMs": 1773637187021.5083,
+      "mtimeMs": 1773637187021.508,
       "lastProcessedAt": "2026-04-01T11:18:48Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/42623d19-9e79-4977-822b-e1e8bbcdabdf/42623d19-9e79-4977-822b-e1e8bbcdabdf.jsonl": {
-      "mtimeMs": 1773572695892.559,
+      "mtimeMs": 1773572695892.5588,
       "lastProcessedAt": "2026-04-01T11:18:48Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/430eb354-8b8f-4f9e-a3c5-a1f329a771be/430eb354-8b8f-4f9e-a3c5-a1f329a771be.jsonl": {
@@ -443,7 +471,7 @@
       "lastProcessedAt": "2026-04-01T05:00:37.650Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/63f92c67-91c5-47de-a131-875658c572e8/63f92c67-91c5-47de-a131-875658c572e8.jsonl": {
-      "mtimeMs": 1774620865016.9014,
+      "mtimeMs": 1774620865016.9011,
       "lastProcessedAt": "2026-04-01T11:18:48Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/647a0c0d-098e-41db-b1ca-d2f270ae0393/647a0c0d-098e-41db-b1ca-d2f270ae0393.jsonl": {
@@ -479,7 +507,7 @@
       "lastProcessedAt": "2026-04-01T05:00:37.650Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/6c3dd782-7493-4ea7-aff6-26ef3a436c1f/6c3dd782-7493-4ea7-aff6-26ef3a436c1f.jsonl": {
-      "mtimeMs": 1774537707056.3489,
+      "mtimeMs": 1774537707056.3486,
       "lastProcessedAt": "2026-04-01T11:18:48Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/6c6a56d1-c543-45d0-aa8c-da16166c4e7b/6c6a56d1-c543-45d0-aa8c-da16166c4e7b.jsonl": {
@@ -493,6 +521,10 @@
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/6d69274b-8e5a-4584-800c-0d6fd1b10d46/6d69274b-8e5a-4584-800c-0d6fd1b10d46.jsonl": {
       "mtimeMs": 1774328483909.2456,
       "lastProcessedAt": "2026-04-01T05:00:37.650Z"
+    },
+    "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/711e6292-0782-47e9-a2b2-5b4f3e464470/711e6292-0782-47e9-a2b2-5b4f3e464470.jsonl": {
+      "mtimeMs": 1775042310261.4192,
+      "lastProcessedAt": "2026-04-01T11:18:48Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/71252b9f-638c-4eb5-b946-bc397fa50100/71252b9f-638c-4eb5-b946-bc397fa50100.jsonl": {
       "mtimeMs": 1774612655487.9688,
@@ -511,12 +543,16 @@
       "lastProcessedAt": "2026-04-01T05:00:37.650Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/7a2fd23d-ce99-4dd1-bc78-ebd7dd626c76/7a2fd23d-ce99-4dd1-bc78-ebd7dd626c76.jsonl": {
-      "mtimeMs": 1773624211122.7148,
+      "mtimeMs": 1773624211122.7146,
       "lastProcessedAt": "2026-04-01T11:18:48Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/7a62c513-94e5-4f1e-a6ce-09e3150bf05c/7a62c513-94e5-4f1e-a6ce-09e3150bf05c.jsonl": {
       "mtimeMs": 1774013455584.3542,
       "lastProcessedAt": "2026-04-01T05:00:37.650Z"
+    },
+    "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/7a938a33-37a0-4f8c-ba88-6f11d02fafdc/7a938a33-37a0-4f8c-ba88-6f11d02fafdc.jsonl": {
+      "mtimeMs": 1775047242052.8032,
+      "lastProcessedAt": "2026-04-01T15:20:36.250Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/7b2e2d46-e257-462f-9d36-af4b224c4a69/7b2e2d46-e257-462f-9d36-af4b224c4a69.jsonl": {
       "mtimeMs": 1773583189198.2222,
@@ -538,6 +574,10 @@
       "mtimeMs": 1774590058630.814,
       "lastProcessedAt": "2026-04-01T05:00:37.650Z"
     },
+    "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/811630e8-d19e-48c5-94c2-ed6d2046d05d/811630e8-d19e-48c5-94c2-ed6d2046d05d.jsonl": {
+      "mtimeMs": 1775043276274.966,
+      "lastProcessedAt": "2026-04-01T15:20:36.250Z"
+    },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/81c5c742-784f-4542-8eed-b1c43d04049b/81c5c742-784f-4542-8eed-b1c43d04049b.jsonl": {
       "mtimeMs": 1774869435992.8987,
       "lastProcessedAt": "2026-04-01T05:00:37.650Z"
@@ -547,11 +587,11 @@
       "lastProcessedAt": "2026-04-01T05:00:37.650Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/839e33fb-acf2-4058-887a-8d89ddaa2dc0/839e33fb-acf2-4058-887a-8d89ddaa2dc0.jsonl": {
-      "mtimeMs": 1773403504764.469,
+      "mtimeMs": 1773403504764.4688,
       "lastProcessedAt": "2026-04-01T11:18:48Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/83a8b32b-8980-4e9d-8ed7-1dd377b5e33c/83a8b32b-8980-4e9d-8ed7-1dd377b5e33c.jsonl": {
-      "mtimeMs": 1774851840032.566,
+      "mtimeMs": 1774851840032.5657,
       "lastProcessedAt": "2026-04-01T11:18:48Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/84a4aab4-5c67-46f0-b302-5b0b8f863537/84a4aab4-5c67-46f0-b302-5b0b8f863537.jsonl": {
@@ -570,6 +610,10 @@
       "mtimeMs": 1774452044916.6646,
       "lastProcessedAt": "2026-04-01T05:00:37.650Z"
     },
+    "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/87681089-7c40-4fae-88ac-f8bf80b41190/87681089-7c40-4fae-88ac-f8bf80b41190.jsonl": {
+      "mtimeMs": 1775056776487.5574,
+      "lastProcessedAt": "2026-04-01T15:20:36.250Z"
+    },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/88138937-2794-4471-a43b-3b8cf6ac6d4a/88138937-2794-4471-a43b-3b8cf6ac6d4a.jsonl": {
       "mtimeMs": 1773499401620.6982,
       "lastProcessedAt": "2026-04-01T05:00:37.650Z"
@@ -583,7 +627,7 @@
       "lastProcessedAt": "2026-04-01T05:00:37.650Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/8c337f1c-21a4-4edf-856c-5b3853295e5d/8c337f1c-21a4-4edf-856c-5b3853295e5d.jsonl": {
-      "mtimeMs": 1774792505855.3406,
+      "mtimeMs": 1774792505855.3403,
       "lastProcessedAt": "2026-04-01T11:18:48Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/8c65dbb8-528a-4e1d-ba56-3805a0d629ee/8c65dbb8-528a-4e1d-ba56-3805a0d629ee.jsonl": {
@@ -591,7 +635,7 @@
       "lastProcessedAt": "2026-04-01T05:00:37.650Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/8cedca2b-5ba2-4501-b7dc-84f01d7402e4/8cedca2b-5ba2-4501-b7dc-84f01d7402e4.jsonl": {
-      "mtimeMs": 1774588754680.2205,
+      "mtimeMs": 1774588754680.2202,
       "lastProcessedAt": "2026-04-01T11:18:48Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/8d3ba07a-1c5f-4eda-89d5-e4a078ff57ad/8d3ba07a-1c5f-4eda-89d5-e4a078ff57ad.jsonl": {
@@ -626,6 +670,10 @@
       "mtimeMs": 1774716398119.766,
       "lastProcessedAt": "2026-04-01T05:00:37.650Z"
     },
+    "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/94e28f6a-7364-4f62-a80f-1890b78e041b/94e28f6a-7364-4f62-a80f-1890b78e041b.jsonl": {
+      "mtimeMs": 1775043414093.358,
+      "lastProcessedAt": "2026-04-01T15:20:36.250Z"
+    },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/950b20da-c241-4f47-a4e1-92bc0f16d427/950b20da-c241-4f47-a4e1-92bc0f16d427.jsonl": {
       "mtimeMs": 1773471175821.2954,
       "lastProcessedAt": "2026-04-01T05:00:37.650Z"
@@ -635,7 +683,7 @@
       "lastProcessedAt": "2026-04-01T05:00:37.650Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/97282ca9-742c-4e7f-ad69-d17df29f3aff/97282ca9-742c-4e7f-ad69-d17df29f3aff.jsonl": {
-      "mtimeMs": 1774776336493.606,
+      "mtimeMs": 1774776336493.6057,
       "lastProcessedAt": "2026-04-01T11:18:48Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/98354ed4-8893-44eb-8df1-b5d418f7cf02/98354ed4-8893-44eb-8df1-b5d418f7cf02.jsonl": {
@@ -663,7 +711,7 @@
       "lastProcessedAt": "2026-04-01T05:00:37.650Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/9d95bdca-e979-4f29-8c29-c153f590f368/9d95bdca-e979-4f29-8c29-c153f590f368.jsonl": {
-      "mtimeMs": 1774362741164.7168,
+      "mtimeMs": 1774362741164.7166,
       "lastProcessedAt": "2026-04-01T11:18:48Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/9dd4a549-7a17-4cd0-97b1-59df00c5e512/9dd4a549-7a17-4cd0-97b1-59df00c5e512.jsonl": {
@@ -719,7 +767,7 @@
       "lastProcessedAt": "2026-04-01T05:00:37.650Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/a7b6fd0b-40e8-469c-8190-67e9ec93a466/a7b6fd0b-40e8-469c-8190-67e9ec93a466.jsonl": {
-      "mtimeMs": 1774613842089.3086,
+      "mtimeMs": 1774613842089.3083,
       "lastProcessedAt": "2026-04-01T11:18:48Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/a7e3a1d4-93e2-4bd7-9fdd-019181e26cd4/a7e3a1d4-93e2-4bd7-9fdd-019181e26cd4.jsonl": {
@@ -727,11 +775,11 @@
       "lastProcessedAt": "2026-04-01T05:00:37.650Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/a8552d96-c64b-4092-b034-f3eddaa03637/a8552d96-c64b-4092-b034-f3eddaa03637.jsonl": {
-      "mtimeMs": 1773628391458.529,
+      "mtimeMs": 1773628391458.5288,
       "lastProcessedAt": "2026-04-01T11:18:48Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/a9944147-cd6a-4245-a93c-0259d5b3a788/a9944147-cd6a-4245-a93c-0259d5b3a788.jsonl": {
-      "mtimeMs": 1774972548645.8066,
+      "mtimeMs": 1774972548645.8064,
       "lastProcessedAt": "2026-04-01T11:18:48Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/aa0f2931-1067-42bf-a760-17367be62b5e/aa0f2931-1067-42bf-a760-17367be62b5e.jsonl": {
@@ -759,7 +807,7 @@
       "lastProcessedAt": "2026-04-01T05:00:37.650Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/b010a5d1-5eaa-46b2-aade-bce67f3b1dce/b010a5d1-5eaa-46b2-aade-bce67f3b1dce.jsonl": {
-      "mtimeMs": 1774923296266.6772,
+      "mtimeMs": 1774923296266.677,
       "lastProcessedAt": "2026-04-01T11:18:48Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/b0b1e8df-11e1-4d87-a502-ee9a189a3631/b0b1e8df-11e1-4d87-a502-ee9a189a3631.jsonl": {
@@ -767,11 +815,11 @@
       "lastProcessedAt": "2026-04-01T05:00:37.650Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/b1351b82-37fb-4cf2-b6bf-cda73b5e0f77/b1351b82-37fb-4cf2-b6bf-cda73b5e0f77.jsonl": {
-      "mtimeMs": 1774282788431.1262,
+      "mtimeMs": 1774282788431.126,
       "lastProcessedAt": "2026-04-01T11:18:48Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/b144fb69-cffd-4264-8bb4-d41737d063cc/b144fb69-cffd-4264-8bb4-d41737d063cc.jsonl": {
-      "mtimeMs": 1774592089759.8792,
+      "mtimeMs": 1774592089759.879,
       "lastProcessedAt": "2026-04-01T11:18:48Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/b15dc81a-5548-400f-b937-5dde5c522f0e/b15dc81a-5548-400f-b937-5dde5c522f0e.jsonl": {
@@ -811,7 +859,7 @@
       "lastProcessedAt": "2026-04-01T05:00:37.650Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/be287023-1e62-4a82-b39d-6f98d36a94ee/be287023-1e62-4a82-b39d-6f98d36a94ee.jsonl": {
-      "mtimeMs": 1774403389013.9104,
+      "mtimeMs": 1774403389013.9102,
       "lastProcessedAt": "2026-04-01T11:18:48Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/bfc7335e-8fc9-4877-b679-ce8d9b764493/bfc7335e-8fc9-4877-b679-ce8d9b764493.jsonl": {
@@ -819,11 +867,11 @@
       "lastProcessedAt": "2026-04-01T05:00:37.650Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/bfcb1c43-c91f-4b33-be74-585203444c81/bfcb1c43-c91f-4b33-be74-585203444c81.jsonl": {
-      "mtimeMs": 1773588268038.943,
+      "mtimeMs": 1773588268038.9429,
       "lastProcessedAt": "2026-04-01T11:18:48Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/bfda6a26-08e0-4bf5-873e-1984db2b053c/bfda6a26-08e0-4bf5-873e-1984db2b053c.jsonl": {
-      "mtimeMs": 1774576820789.3423,
+      "mtimeMs": 1774576820789.342,
       "lastProcessedAt": "2026-04-01T11:18:48Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/c087bbab-ba4e-431d-89ca-795dcf7e86eb/c087bbab-ba4e-431d-89ca-795dcf7e86eb.jsonl": {
@@ -851,7 +899,7 @@
       "lastProcessedAt": "2026-04-01T05:00:37.650Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/c9bcc092-b4ae-4143-9ab6-4e50ab380ac7/c9bcc092-b4ae-4143-9ab6-4e50ab380ac7.jsonl": {
-      "mtimeMs": 1774262060800.5098,
+      "mtimeMs": 1774262060800.5095,
       "lastProcessedAt": "2026-04-01T11:18:48Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/c9fb7d23-09d8-4fda-9bf4-ace1ab439fe5/c9fb7d23-09d8-4fda-9bf4-ace1ab439fe5.jsonl": {
@@ -918,6 +966,10 @@
       "mtimeMs": 1774601376692.0188,
       "lastProcessedAt": "2026-04-01T05:00:37.650Z"
     },
+    "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/dafbce5d-23a9-4b9b-8ea9-76df930344ab/dafbce5d-23a9-4b9b-8ea9-76df930344ab.jsonl": {
+      "mtimeMs": 1775044422480.8374,
+      "lastProcessedAt": "2026-04-01T15:20:36.250Z"
+    },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/dcc9cc98-ca60-4f56-a189-49b9284a6f28/dcc9cc98-ca60-4f56-a189-49b9284a6f28.jsonl": {
       "mtimeMs": 1773365258566.7532,
       "lastProcessedAt": "2026-04-01T05:00:37.650Z"
@@ -935,7 +987,7 @@
       "lastProcessedAt": "2026-04-01T05:00:37.650Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/e07f785d-dbd7-4545-a42e-6169b9674415/e07f785d-dbd7-4545-a42e-6169b9674415.jsonl": {
-      "mtimeMs": 1773475051503.433,
+      "mtimeMs": 1773475051503.4329,
       "lastProcessedAt": "2026-04-01T11:18:48Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/e10629d8-bdff-45ad-94c4-f71b976765d2/e10629d8-bdff-45ad-94c4-f71b976765d2.jsonl": {
@@ -1003,7 +1055,7 @@
       "lastProcessedAt": "2026-04-01T05:00:37.650Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/f07b5b22-3199-48d8-945e-0cf85dcafefa/f07b5b22-3199-48d8-945e-0cf85dcafefa.jsonl": {
-      "mtimeMs": 1774607727926.72,
+      "mtimeMs": 1774607727926.7197,
       "lastProcessedAt": "2026-04-01T11:18:48Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/f0f45bd9-2c86-4e41-8618-26896eab313f/f0f45bd9-2c86-4e41-8618-26896eab313f.jsonl": {
@@ -1031,7 +1083,7 @@
       "lastProcessedAt": "2026-04-01T05:00:37.650Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/f6c8b2cf-be59-489e-accb-fc3fbe510634/f6c8b2cf-be59-489e-accb-fc3fbe510634.jsonl": {
-      "mtimeMs": 1773415239885.317,
+      "mtimeMs": 1773415239885.3167,
       "lastProcessedAt": "2026-04-01T11:18:48Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/f739e59f-4d58-47d3-a5a1-89b33c9a00b5/f739e59f-4d58-47d3-a5a1-89b33c9a00b5.jsonl": {
@@ -1043,11 +1095,11 @@
       "lastProcessedAt": "2026-04-01T05:00:37.650Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/f84c87ae-3da6-4dba-8ad4-c7e5a8845870/f84c87ae-3da6-4dba-8ad4-c7e5a8845870.jsonl": {
-      "mtimeMs": 1773578080494.021,
+      "mtimeMs": 1773578080494.0208,
       "lastProcessedAt": "2026-04-01T11:18:48Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/f939f512-bfce-4acb-8c0c-a4a814279a60/f939f512-bfce-4acb-8c0c-a4a814279a60.jsonl": {
-      "mtimeMs": 1773671487879.1123,
+      "mtimeMs": 1773671487879.112,
       "lastProcessedAt": "2026-04-01T11:18:48Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/fa4395e7-09b6-4c5d-98fb-0e7b2ca3b998/fa4395e7-09b6-4c5d-98fb-0e7b2ca3b998.jsonl": {
@@ -1067,7 +1119,7 @@
       "lastProcessedAt": "2026-04-01T05:00:37.650Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/fda58e89-e744-4c1f-96dc-0b3a93d6724b/fda58e89-e744-4c1f-96dc-0b3a93d6724b.jsonl": {
-      "mtimeMs": 1774793409479.3445,
+      "mtimeMs": 1774793409479.3442,
       "lastProcessedAt": "2026-04-01T11:18:48Z"
     },
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/fe50fcf7-6abb-430b-89f2-32960e860f8f/fe50fcf7-6abb-430b-89f2-32960e860f8f.jsonl": {
@@ -1085,22 +1137,6 @@
     "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/ff83d901-901c-410f-9271-37bc8c47cd2f/ff83d901-901c-410f-9271-37bc8c47cd2f.jsonl": {
       "mtimeMs": 1774508812164.4958,
       "lastProcessedAt": "2026-04-01T05:00:37.650Z"
-    },
-    "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/1c977fc6-0663-46db-a85f-49bd53a2720d/1c977fc6-0663-46db-a85f-49bd53a2720d.jsonl": {
-      "mtimeMs": 1775041834023.714,
-      "lastProcessedAt": "2026-04-01T11:18:48Z"
-    },
-    "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/33f4b9e6-7607-48ae-b770-3e405ec8ec54/33f4b9e6-7607-48ae-b770-3e405ec8ec54.jsonl": {
-      "mtimeMs": 1775042185018.5796,
-      "lastProcessedAt": "2026-04-01T11:18:48Z"
-    },
-    "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/711e6292-0782-47e9-a2b2-5b4f3e464470/711e6292-0782-47e9-a2b2-5b4f3e464470.jsonl": {
-      "mtimeMs": 1775042310261.419,
-      "lastProcessedAt": "2026-04-01T11:18:48Z"
-    },
-    "/Users/pabloli/.cursor/projects/Users-pabloli-Documents-aaveapy/agent-transcripts/811630e8-d19e-48c5-94c2-ed6d2046d05d/811630e8-d19e-48c5-94c2-ed6d2046d05d.jsonl": {
-      "mtimeMs": 1775042307032.6072,
-      "lastProcessedAt": "2026-04-01T11:18:48Z"
     }
   }
 }

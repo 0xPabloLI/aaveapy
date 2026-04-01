@@ -4,6 +4,10 @@ This index is the source of truth for doc ownership in this repository.
 
 Use it to avoid duplicate policy text and to keep each topic in one canonical location.
 
+**Entry points:** [`README.md`](../README.md) (onboarding), root [`DESIGN.md`](../DESIGN.md) (design links table), this file (full map).
+
+_Last inventory pass: 2026-04-01._
+
 ## Canonical Structure
 
 ### Product and repo operation
@@ -32,7 +36,7 @@ Use it to avoid duplicate policy text and to keep each topic in one canonical lo
 - Canonical (reusable system rules): `docs/design/DESIGN-SYSTEM-REFERENCE.md`
 - Canonical (product-critical interaction guardrails): `docs/design/frontend-interaction-guardrails.md`
 - Canonical (mobile ASCII reference): `docs/design/mobile-reserve-card-ascii-layout.md`
-- Redirect stubs (do not expand): `docs/design/ui-interaction-patterns.md`, `docs/design/toggle-switch-specification.md`, `docs/design/README.md`
+- Redirect stubs (do not expand; see inventory table): `docs/design/ui-interaction-patterns.md`, `docs/design/toggle-switch-specification.md`, `docs/design/README.md`
 
 ### Ops and historical plans
 
@@ -52,14 +56,12 @@ Use it to avoid duplicate policy text and to keep each topic in one canonical lo
 | `docs/merit-base-anchor-vs-last-round-staging.md` | Historical empirical snapshot | 2026-03-31 | Historical supporting note | `docs/rate-calculation-formulas.md` | keep |
 | `docs/HARDCODE-AND-EXTERNAL-IMPORTS.md` | Upstream sync and hardcode map | 2026-03-31 | Canonical | none significant | keep |
 | `docs/ci-remediation-automation.md` | CI auto-remediation workflow | 2026-03-15 | Canonical | none significant | keep |
-| `docs/plans/2026-03-26-cap-ceiling-unification-plan.md` | Historical implementation plan | 2026-03-31 | Historical (implemented) | `docs/rate-calculation-formulas.md` | merge |
+| `docs/plans/2026-03-26-cap-ceiling-unification-plan.md` | Archived cap/ceiling plan (summary only) | 2026-03-31 | Historical archive | `docs/rate-calculation-formulas.md`, `AGENTS.md` | keep |
 | `docs/design/DESIGN.md` | Project-specific design defaults | 2026-03-31 | Canonical | `docs/design/DESIGN-SYSTEM-REFERENCE.md` | keep |
 | `docs/design/DESIGN-SYSTEM-REFERENCE.md` | Reusable design/interaction rules | 2026-03-31 | Canonical | old design split docs | keep |
 | `docs/design/frontend-interaction-guardrails.md` | Product-critical normative interaction rules | 2026-03-31 | Canonical | parts of design docs | keep |
 | `docs/design/mobile-reserve-card-ascii-layout.md` | Mobile reserve card ASCII reference | 2026-03-16 | Canonical | appendix references in DSR | keep |
-| `docs/design/ui-interaction-patterns.md` | Legacy split path | 2026-03-27 | Redirect stub | `docs/design/DESIGN-SYSTEM-REFERENCE.md` | keep |
-| `docs/design/toggle-switch-specification.md` | Legacy split path | 2026-03-27 | Redirect stub | `docs/design/DESIGN-SYSTEM-REFERENCE.md` | keep |
-| `docs/design/README.md` | Design index pointer | 2026-03-27 | Redirect stub | root `DESIGN.md` | keep |
+| `docs/design/ui-interaction-patterns.md`, `toggle-switch-specification.md`, `README.md` | Legacy paths / short pointers (do not expand) | 2026-03-27 | Redirect stubs | `docs/design/DESIGN-SYSTEM-REFERENCE.md`, root `DESIGN.md`, `docs/design/DESIGN.md` | keep |
 | `docs/conventions/*` | API/CI/process conventions | 2026-03-16..2026-03-29 | Canonical set | small references in README/AGENTS | keep |
 
 ## Redirect Rule
