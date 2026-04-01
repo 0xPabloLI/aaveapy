@@ -328,9 +328,6 @@ const MobileReserveCard = memo(({
   const hasDeficit = hasReserveDeficit(reserve);
   const deficitUsd = getReserveDeficitUsdAmount(reserve, displayTokenPrice);
   const deficitTokenCompact = formatReserveDeficitTokenCompact(reserve);
-  const deficitInlineValue = inputMode === 'usd'
-    ? (deficitUsd != null ? formatScenarioSize(deficitUsd, { inputMode: 'usd' }) : '-')
-    : deficitTokenCompact;
   const deficitTokenLabel = deficitTokenCompact !== '-' ? deficitTokenCompact : undefined;
   const deficitShareRatio = calculateDeficitShareRatio({
     deficitUsd,
