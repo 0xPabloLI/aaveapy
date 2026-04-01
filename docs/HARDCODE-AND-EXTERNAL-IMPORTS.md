@@ -1,6 +1,6 @@
 # 硬编码与外部依赖清单（前端）
 
-更新时间：2026-03-13  
+更新时间：2026-04-01  
 适用仓库：`aaveapy`（前端）
 
 ## 1. 本仓库实际消费的 interface 映射资源
@@ -10,7 +10,7 @@
 | reserve patch（地址级 symbol/name/logo 修正） | `aave/interface/src/ui-config/reservePatches.ts` | `src/ui-config/reservePatches.ts` | `fetchIconSymbolAndName()` |
 | 市场名映射 | `aave/interface/src/ui-config/marketsConfig.tsx` | `src/lib/aaveLinks.ts` (`MARKET_NAME_MAP`) | `buildAaveReserveUrl()` |
 | 链图标映射 | `aave/interface/src/ui-config/networksConfig.ts` | `src/lib/chainIconMap.ts` + `scripts/generate-chain-icon-manifest.mjs` → `chainIconManifest.generated.ts` | `getChainIconSrc()`（仅当 `public/icons/networks/` 下确有文件时才返回 URL；缺图可走 `scripts/data/pending-chain-icon-bases.json` 允许校验通过） |
-| token icon 候选集合 | reservePatches + SYMBOL_MAP + 运行时 `/markets` | `scripts/lib/token-icon-symbols.mjs` | `sync-token-icons.mjs` 计算 required symbols |
+| token icon 候选集合 | reservePatches + SYMBOL_MAP + 运行时 `/markets` | `scripts/lib/token-icon-symbols.mjs` | `sync-token-icons.mjs` 计算 required symbols；**落盘顺序**见 §4.2（优先 mirror `aave/interface` 的 `public/icons/tokens`） |
 
 关键点：
 - token icons 不再靠手工 `EXTRA_SYMBOLS`。
@@ -59,18 +59,24 @@
 2. `SYMBOL_MAP` 映射值
 3. 运行时 `/markets` 返回 token（按与前端一致规则映射后得到 icon key）
 
-### 4.2 下载策略（backup-first）
-对缺失的 required symbol：
-1. 先用 CoinGecko symbol 精确匹配下载
-2. 若 CoinGecko 查不到，回退到地址级 `logoURI`（tokenlist 或 reservePatches）下载
-3. 最终落盘到 `public/icons/tokens/`（扩展名按响应自动判断，如 `.png/.svg`）
+### 4.2 下载策略（interface-first，再公开 API / logo）
+对缺失的 required symbol（小写文件名 stem，与现有 `public/icons/tokens/` 一致）：
+1. **`aave/interface` 静态目录**：`public/icons/tokens/<symbol>.{svg,png,webp,jpg}`，通过 `raw.githubusercontent.com/aave/interface/main/public/icons/tokens/` 拉取（与官方 App 资产对齐；新链包装资产常已在此出现而 CoinGecko ticker 对不上）。
+2. **CoinGecko**：`api/v3/search` 上 **symbol 精确匹配** 后的 `large`/`thumb` 图。
+3. **`logoURI` 回退**：地址级图标（address-book tokenlist、`reservePatches`、或 `/markets` 行内若存在 `logoURI`）。
+
+最终落盘到 `public/icons/tokens/`（扩展名按响应 `Content-Type` 与 URL 推断，如 `.png` / `.svg`）。
+
+环境变量 **`INTERFACE_TOKEN_ICONS_BASE`** 可覆盖步骤 1 的 base URL（默认即 interface `main` 分支 raw 路径；去掉末尾 `/`）。
 
 这保证了：
-- 本地静态 backup 目标不丢
-- `wrapped`/RWA 等 symbol 不标准的资产也可通过地址级 logo 补齐
+- 与 **Aave Interface** 已提交的 token 图优先一致
+- 本地静态 backup 仍覆盖 **interface 尚未收录** 的 symbol
+- `wrapped` / RWA 等 ticker 不标准时仍可靠 **logoURI** 补齐
 
 ### 4.3 `--check` 语义
-- 只要存在“缺失但可同步”的图标（CoinGecko 或 logoURI 可拿到），`--check` 就会 fail。
+- 只要存在“缺失但可同步”的图标（**interface 静态文件**、**CoinGecko** 或 **logoURI** 任一可拿到），`--check` 就会 fail。
+- 仅当三类都不可用（且本地仍缺文件）时，该 symbol 记为 **unsyncable**（warning，不单独因 unsyncable 让 `--check` 失败；与此前行为一致）。
 - 所有可同步项都补齐后，`--check` 才通过。
 
 ## 5. 外部依赖分层
@@ -89,12 +95,13 @@
 
 ### 5.2 CoinGecko
 - 运行时兜底：`https://api.coingecko.com/api/v3/search`（`useCoingeckoTokenImage`）
-- 离线落盘：`sync-token-icons.mjs` 同一搜索接口
+- 离线落盘：`sync-token-icons.mjs` 在 **interface 静态目录未命中** 后使用同一搜索接口
 
-### 5.3 上游源码抓取（脚本）
+### 5.3 上游源码与静态资源抓取（脚本）
 - `https://raw.githubusercontent.com/aave/interface/main/src/ui-config/reservePatches.ts`
 - `https://raw.githubusercontent.com/aave/interface/main/src/ui-config/marketsConfig.tsx`
 - `https://raw.githubusercontent.com/aave/interface/main/src/ui-config/networksConfig.ts`
+- `https://raw.githubusercontent.com/aave/interface/main/public/icons/tokens/`（`sync-token-icons.mjs` 按 symbol 试 `svg` → `png` → `webp` → `jpg`；可用 `INTERFACE_TOKEN_ICONS_BASE` 覆盖 base）
 
 ### 5.4 外链（非数据依赖）
 - `app.aave.com`、`app.merkl.xyz`、`apps.aavechan.com`、`incentra.brevis.network`
@@ -120,5 +127,5 @@ npm run sync-token-icons -- --check
 ## 8. 当前状态结论
 
 - 映射同步：reserve patches / market map / chain map 均已对齐校验。
-- token icon：已采用 backup-first 策略，支持 CoinGecko + logoURI 回退。
+- token icon：已采用 **interface 静态目录优先**，再 **CoinGecko** + **logoURI** 回退。
 - workflow：以 `hardcode-sync.yml` 为单一自动化入口。
