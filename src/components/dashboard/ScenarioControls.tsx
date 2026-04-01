@@ -8,8 +8,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { cn } from '@/lib/utils';
 import { cnDsInputSurface } from '@/lib/dsInputSurface';
 
-const INCENTIVE_NET_UNCHECK_TOAST_STORAGE_KEY = 'aaveapy:scenario-incentive-net-uncheck-tip';
-
 function IncentiveNetCheckboxTooltip({
   id,
   checked,
@@ -41,7 +39,7 @@ function IncentiveNetCheckboxTooltip({
             className={cn(DS_NATIVE_CHECKBOX_CLASS, 'mt-0 accent-muted-foreground')}
             aria-label="Net lending and borrowing for incentives (Merit/Merkl); Brevis unchanged"
           />
-          <span className={labelTextClassName}>Net</span>
+          <span className={cn(labelTextClassName, 'whitespace-nowrap')}>Net lending &amp; borrowing</span>
         </label>
       </TooltipTrigger>
       <TooltipContent
@@ -87,32 +85,33 @@ function MobileNetCollapsible({
         )}
       >
         <div className="overflow-hidden">
-          <div className="space-y-1.5 px-1 pb-1.5 pt-1">
-            <label
-              htmlFor={id}
-              className="mx-auto flex w-fit max-w-full min-w-0 cursor-pointer items-center gap-[var(--ds-space-1-5)] rounded-full border border-border/60 bg-card/70 px-2.5 py-1 shadow-sm"
-            >
-              <input
-                id={id}
-                type="checkbox"
-                checked={checked}
-                onChange={(event) => onCheckedChange(event.target.checked)}
-                className={cn(DS_NATIVE_CHECKBOX_CLASS, 'mt-0 accent-muted-foreground')}
-                aria-label="Net lending and borrowing for incentives"
-              />
-              <span className={`${fontSize} whitespace-nowrap text-foreground`}>Net lending &amp; borrowing</span>
-            </label>
-
-            <div className="space-y-1 px-1">
-              <p className="text-center text-muted-foreground ds-text-11 leading-snug">
-                Net on: overlapping supply and borrow offset first.
-              </p>
-              <p className="text-center text-muted-foreground ds-text-11 leading-snug">
-                Net off: both sides are counted in full, often overestimating incentives.
-              </p>
-              <p className="text-center text-muted-foreground ds-text-11 leading-snug">
-                Brevis campaigns are independent of this switch.
-              </p>
+          <div className="px-1 pb-1.5 pt-1">
+            <div className="mx-auto w-[min(16.75rem,calc(100%-0.5rem))] rounded-xl border border-border/55 bg-card/55 px-1.5 py-1.5">
+              <label
+                htmlFor={id}
+                className="mx-auto flex w-fit max-w-full min-w-0 cursor-pointer items-center justify-center gap-[var(--ds-space-1-5)] rounded-full border border-border/60 bg-card/75 px-2.5 py-1 shadow-sm"
+              >
+                <input
+                  id={id}
+                  type="checkbox"
+                  checked={checked}
+                  onChange={(event) => onCheckedChange(event.target.checked)}
+                  className={cn(DS_NATIVE_CHECKBOX_CLASS, 'mt-0 accent-muted-foreground')}
+                  aria-label="Net lending and borrowing for incentives"
+                />
+                <span className={`${fontSize} whitespace-nowrap text-foreground`}>Net lending &amp; borrowing</span>
+              </label>
+              <div className="mt-1.5 space-y-1.5 px-0.5">
+                <p className="text-muted-foreground ds-text-11 leading-snug">
+                  Net on: overlapping supply and borrow offset each other first.
+                </p>
+                <p className="text-muted-foreground ds-text-11 leading-snug">
+                  Net off: both sides are counted in full, which may overestimate incentives.
+                </p>
+                <p className="text-muted-foreground ds-text-11 leading-snug">
+                  Brevis campaigns use separate rules and are not affected by this switch.
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -121,14 +120,14 @@ function MobileNetCollapsible({
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className="mt-0.5 flex h-8 w-full items-center justify-center rounded-md transition-colors hover:bg-muted/30"
+        className="mt-0.5 flex h-5 w-full items-center justify-center rounded-sm"
         aria-label={open ? 'Collapse net lending and borrowing controls' : 'Expand net lending and borrowing controls'}
         aria-expanded={open}
       >
         <span
           className={cn(
-            'h-1 rounded-full transition-all duration-200',
-            open ? 'w-8 bg-muted-foreground/70' : 'w-10 bg-border',
+            'h-0.5 rounded-full transition-all duration-200',
+            open ? 'w-7 bg-muted-foreground/70' : 'w-8 bg-border/80',
           )}
           aria-hidden
         />
@@ -166,21 +165,16 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
   const handleMeritMerklNetPositionChange = useCallback(
     (next: boolean) => {
       if (!onMeritMerklNetPositionChange) return;
-      if (
-        !next &&
-        typeof window !== 'undefined' &&
-        window.localStorage.getItem(INCENTIVE_NET_UNCHECK_TOAST_STORAGE_KEY) !== '1'
-      ) {
-        window.localStorage.setItem(INCENTIVE_NET_UNCHECK_TOAST_STORAGE_KEY, '1');
+      if (!next && !isMobile) {
         toast('Incentives usually follow net lending & borrowing', {
           description:
             'Turning this off uses gross supply and borrow per side and may not match how programs size rewards. Open the tooltip on Net for a short note.',
-          duration: 6500,
+          duration: 4500,
         });
       }
       onMeritMerklNetPositionChange(next);
     },
-    [onMeritMerklNetPositionChange],
+    [onMeritMerklNetPositionChange, isMobile],
   );
 
   useImperativeHandle(ref, () => ({

@@ -1327,8 +1327,8 @@ const ReservesTable = ({
                           aria-hidden
                           className={`pointer-events-none absolute z-10 border-border/60 bg-card border-x ${bridgeOnExpandedColumn ? 'left-0' : 'right-0'}`}
                           style={{
-                            top: 'calc(-1 * var(--ds-space-2))',
-                            height: 'calc(var(--ds-space-2) + 1px)',
+                            top: 'calc(-1 * var(--ds-space-2) - 4px)',
+                            height: 'calc(var(--ds-space-2) + 5px)',
                             width: pairColWidth,
                           }}
                         />
@@ -1338,10 +1338,10 @@ const ReservesTable = ({
                         <svg
                           className="absolute pointer-events-none z-10 overflow-visible"
                           width="17"
-                          height="9"
-                          viewBox="0 0 17 9"
+                          height="13"
+                          viewBox="0 0 17 13"
                           style={{
-                            top: 'calc(-1 * var(--ds-space-2))',
+                            top: 'calc(-1 * var(--ds-space-2) - 4px)',
                             ...(bridgeOnExpandedColumn 
                               ? { left: `calc(${pairColWidth} - 1px)` } 
                               : { right: `calc(${pairColWidth} - 1px)` })
@@ -1350,13 +1350,13 @@ const ReservesTable = ({
                         >
                           {bridgeOnExpandedColumn ? (
                             <>
-                              <path d="M 0 0 L 0 9 L 17 9 L 17 8 L 8.5 8 A 8 8 0 0 1 0.5 0 L 0 0 Z" style={{ fill: 'hsl(var(--card))' }} />
-                              <path d="M 0.5 0 L 0.5 0.5 A 8 8 0 0 0 8.5 8.5 L 17 8.5" fill="none" style={{ stroke: 'hsl(var(--border) / 0.6)', strokeWidth: 1 }} />
+                              <path d="M 0 0 L 0 13 L 17 13 L 17 12 L 8.5 12 A 8 8 0 0 1 0.5 4 L 0.5 0 L 0 0 Z" style={{ fill: 'hsl(var(--card))' }} />
+                              <path d="M 0.5 4 L 0.5 4.5 A 8 8 0 0 0 8.5 12.5 L 17 12.5" fill="none" style={{ stroke: 'hsl(var(--border) / 0.6)', strokeWidth: 1 }} />
                             </>
                           ) : (
                             <>
-                              <path d="M 17 0 L 17 9 L 0 9 L 0 8 L 8.5 8 A 8 8 0 0 0 16.5 0 L 17 0 Z" style={{ fill: 'hsl(var(--card))' }} />
-                              <path d="M 16.5 0 L 16.5 0.5 A 8 8 0 0 1 8.5 8.5 L 0 8.5" fill="none" style={{ stroke: 'hsl(var(--border) / 0.6)', strokeWidth: 1 }} />
+                              <path d="M 17 0 L 17 13 L 0 13 L 0 12 L 8.5 12 A 8 8 0 0 0 16.5 4 L 16.5 0 L 17 0 Z" style={{ fill: 'hsl(var(--card))' }} />
+                              <path d="M 16.5 4 L 16.5 4.5 A 8 8 0 0 1 8.5 12.5 L 0 12.5" fill="none" style={{ stroke: 'hsl(var(--border) / 0.6)', strokeWidth: 1 }} />
                             </>
                           )}
                         </svg>
