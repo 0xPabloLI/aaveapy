@@ -249,15 +249,12 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
           </button>
         </div>
         {showMeritMerklMode ? (
-          <div className="mt-1 border-t border-border/40 pt-1">
-            <IncentiveNetCheckboxTooltip
-              id={meritMerklCheckboxId}
-              checked={meritMerklNetPosition}
-              onCheckedChange={handleMeritMerklNetPositionChange}
-              labelClassName="min-w-0 flex-1 py-1.5 pl-0.5"
-              labelTextClassName={`${fontSize} min-w-0 leading-snug text-muted-foreground`}
-            />
-          </div>
+          <MobileNetCollapsible
+            id={meritMerklCheckboxId}
+            checked={meritMerklNetPosition}
+            onCheckedChange={handleMeritMerklNetPositionChange}
+            fontSize={fontSize}
+          />
         ) : null}
       </div>
     );
