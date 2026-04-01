@@ -734,7 +734,9 @@ const MobileReserveCard = memo(({
                       ? 'Supply cap details'
                       : capSheet === 'borrow'
                         ? 'Borrow cap details'
-                        : 'Utilization'}
+                        : capSheet === 'deficit'
+                          ? 'Deficit details'
+                          : 'Utilization'}
                   </h3>
                   <button
                     type="button"
