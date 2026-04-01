@@ -193,7 +193,7 @@ const MobileReserveCard = memo(({
   connectedBelow = false,
   defaultTab,
 }: MobileReserveCardProps) => {
-  const [capSheet, setCapSheet] = useState<'supply' | 'borrow' | 'utilization' | null>(null);
+  const [capSheet, setCapSheet] = useState<'supply' | 'borrow' | 'utilization' | 'deficit' | null>(null);
   const [hasSimulationMounted, setHasSimulationMounted] = useState(isSimulationExpanded);
   const [activeTab, setActiveTab] = useState<'supply' | 'borrow'>(defaultTab ?? 'supply');
 
