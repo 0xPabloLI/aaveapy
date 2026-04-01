@@ -1318,22 +1318,23 @@ const ReservesTable = ({
                           </div>
                         ) : null}
                       </div>
-                      {/* Full-width simulation (table needs width). mt clears peer card; bridge fills gap on expanded column only. */}
+                      {/* Simulation panel — bridge (z-10) + SVG fill cover panel's top border
+                           on the expanded side so card + panel read as one piece. */}
                       <div className="relative isolate mt-[var(--ds-space-2)]">
-                        {/* Bridge background and outer border */}
+                        {/* Bridge: bg-card rect covering the gap + 1px overlap into the panel.
+                             border-x continues the card's L/R borders through the gap. */}
                         <div
                           aria-hidden
-                          className={`pointer-events-none absolute z-10 border-border/60 bg-card ${bridgeOnExpandedColumn ? 'left-0 border-l' : 'right-0 border-r'}`}
+                          className={`pointer-events-none absolute z-10 border-border/60 bg-card border-x ${bridgeOnExpandedColumn ? 'left-0' : 'right-0'}`}
                           style={{
                             top: 'calc(-1 * var(--ds-space-2))',
                             height: 'calc(var(--ds-space-2) + 1px)',
                             width: pairColWidth,
-                            borderBottom: 'none',
-                            borderTop: 'none',
                           }}
                         />
                         
-                        {/* Single continuous SVG for Inner Fillet + Horizontal connection */}
+                        {/* SVG fillet — fill covers gap top-to-bottom (y 0→9) so no sub-px
+                             seam; stroke draws the concave inner corner. */}
                         <svg
                           className="absolute pointer-events-none z-10 overflow-visible"
                           width="17"
@@ -1349,12 +1350,12 @@ const ReservesTable = ({
                         >
                           {bridgeOnExpandedColumn ? (
                             <>
-                              <path d="M 0 0.5 L 0 9 L 17 9 L 17 8 L 8.5 8 A 7.5 7.5 0 0 1 1 0.5 L 0 0.5 Z" style={{ fill: 'hsl(var(--card))' }} />
+                              <path d="M 0 0 L 0 9 L 17 9 L 17 8 L 8.5 8 A 8 8 0 0 1 0.5 0 L 0 0 Z" style={{ fill: 'hsl(var(--card))' }} />
                               <path d="M 0.5 0 L 0.5 0.5 A 8 8 0 0 0 8.5 8.5 L 17 8.5" fill="none" style={{ stroke: 'hsl(var(--border) / 0.6)', strokeWidth: 1 }} />
                             </>
                           ) : (
                             <>
-                              <path d="M 17 0.5 L 17 9 L 0 9 L 0 8 L 8.5 8 A 7.5 7.5 0 0 0 16 0.5 L 17 0.5 Z" style={{ fill: 'hsl(var(--card))' }} />
+                              <path d="M 17 0 L 17 9 L 0 9 L 0 8 L 8.5 8 A 8 8 0 0 0 16.5 0 L 17 0 Z" style={{ fill: 'hsl(var(--card))' }} />
                               <path d="M 16.5 0 L 16.5 0.5 A 8 8 0 0 1 8.5 8.5 L 0 8.5" fill="none" style={{ stroke: 'hsl(var(--border) / 0.6)', strokeWidth: 1 }} />
                             </>
                           )}
@@ -1364,12 +1365,7 @@ const ReservesTable = ({
                           className={`relative z-0 overflow-hidden rounded-b-xl border border-border/60 bg-card ds-card-pad-sm ${
                             bridgeOnExpandedColumn ? 'rounded-tr-xl rounded-tl-none' : 'rounded-tl-xl rounded-tr-none'
                           }`}
-                          style={{
-                            paddingTop: 'var(--ds-space-2)',
-                            clipPath: bridgeOnExpandedColumn 
-                              ? `polygon(0 1px, calc(${pairColWidth} + 16px) 1px, calc(${pairColWidth} + 16px) 0, 100% 0, 100% 100%, 0 100%)`
-                              : `polygon(0 0, calc(100% - ${pairColWidth} - 16px) 0, calc(100% - ${pairColWidth} - 16px) 1px, 100% 1px, 100% 100%, 0 100%)`
-                          }}
+                          style={{ paddingTop: 'var(--ds-space-2)' }}
                         >
                           <MobileReserveCard
                             variant="simulationOnly"
@@ -1389,13 +1385,6 @@ const ReservesTable = ({
                             defaultTab={mobileCardDefaultTab}
                           />
                         </div>
-                        {rightReserve ? (
-                          <div
-                            aria-hidden
-                            className={`pointer-events-none absolute top-0 z-[1] h-px bg-border/60 ${leftExpanded ? 'right-0 rounded-tl-xl' : 'left-0 rounded-tr-xl'}`}
-                            style={{ width: pairColWidth }}
-                          />
-                        ) : null}
                       </div>
                     </div>
                   );

@@ -1,5 +1,4 @@
 import { useState, useEffect, memo, forwardRef, useImperativeHandle, useCallback } from 'react';
-import { ChevronDown } from 'lucide-react';
 import { Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatNumberInput } from '@/lib/numberFormat';
@@ -80,22 +79,7 @@ function MobileNetCollapsible({
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="mt-1 border-t border-border/40 pt-1">
-      <button
-        type="button"
-        onClick={() => setOpen((prev) => !prev)}
-        className="flex w-full items-center gap-1.5 rounded-md px-0.5 py-1.5 transition-colors hover:bg-muted/50"
-      >
-        <ChevronDown
-          className={cn(
-            'size-3.5 shrink-0 text-muted-foreground transition-transform duration-200',
-            open && 'rotate-180',
-          )}
-          aria-hidden
-        />
-        <span className={`${fontSize} text-muted-foreground`}>Net lending &amp; borrowing</span>
-      </button>
-
+    <div className="mt-1 border-t border-border/40 pt-0.5">
       <div
         className={cn(
           'grid transition-[grid-template-rows] duration-200 ease-out',
@@ -103,10 +87,10 @@ function MobileNetCollapsible({
         )}
       >
         <div className="overflow-hidden">
-          <div className="px-1 pb-2 pt-1 space-y-2">
+          <div className="space-y-1.5 px-1 pb-1.5 pt-1">
             <label
               htmlFor={id}
-              className="flex min-w-0 cursor-pointer items-center gap-[var(--ds-space-1-5)] rounded-md px-0.5 py-1"
+              className="mx-auto flex w-fit max-w-full min-w-0 cursor-pointer items-center gap-[var(--ds-space-1-5)] rounded-full border border-border/60 bg-card/70 px-2.5 py-1 shadow-sm"
             >
               <input
                 id={id}
@@ -116,25 +100,39 @@ function MobileNetCollapsible({
                 className={cn(DS_NATIVE_CHECKBOX_CLASS, 'mt-0 accent-muted-foreground')}
                 aria-label="Net lending and borrowing for incentives"
               />
-              <span className={`${fontSize} text-foreground`}>
-                {checked ? 'On' : 'Off'}
-              </span>
+              <span className={`${fontSize} whitespace-nowrap text-foreground`}>Net lending &amp; borrowing</span>
             </label>
 
-            <div className="space-y-1.5 px-0.5">
-              <p className="text-muted-foreground ds-text-11 leading-relaxed">
-                Net on: overlapping supply and borrow offset each other first.
+            <div className="space-y-1 px-1">
+              <p className="text-center text-muted-foreground ds-text-11 leading-snug">
+                Net on: overlapping supply and borrow offset first.
               </p>
-              <p className="text-muted-foreground ds-text-11 leading-relaxed">
-                Net off: both sides are counted in full, which may overestimate incentives.
+              <p className="text-center text-muted-foreground ds-text-11 leading-snug">
+                Net off: both sides are counted in full, often overestimating incentives.
               </p>
-              <p className="text-muted-foreground ds-text-11 leading-relaxed">
-                Brevis campaigns use separate rules and are not affected by this switch.
+              <p className="text-center text-muted-foreground ds-text-11 leading-snug">
+                Brevis campaigns are independent of this switch.
               </p>
             </div>
           </div>
         </div>
       </div>
+
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className="mt-0.5 flex h-8 w-full items-center justify-center rounded-md transition-colors hover:bg-muted/30"
+        aria-label={open ? 'Collapse net lending and borrowing controls' : 'Expand net lending and borrowing controls'}
+        aria-expanded={open}
+      >
+        <span
+          className={cn(
+            'h-1 rounded-full transition-all duration-200',
+            open ? 'w-8 bg-muted-foreground/70' : 'w-10 bg-border',
+          )}
+          aria-hidden
+        />
+      </button>
     </div>
   );
 }
