@@ -1,4 +1,5 @@
 import { useState, useEffect, memo, forwardRef, useImperativeHandle, useCallback } from 'react';
+import { ChevronDown } from 'lucide-react';
 import { Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatNumberInput } from '@/lib/numberFormat';
