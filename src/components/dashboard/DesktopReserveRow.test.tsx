@@ -60,7 +60,7 @@ const simulation: RateSimulationResult = {
     deltaIncentive: 0.1,
     deltaTotal: 0.5,
     inputUsd: 1000,
-    inputToken: 1000,
+    inputAmount: 1000,
     hasInput: true,
     sources: {
       protocol: emptySource,
