@@ -102,9 +102,6 @@ const simulation: RateSimulationResult = {
     optimal: 80,
   },
   marketMetrics: {
-    reserveSizeUsd: 1_000_000,
-    reserveSizeUsdAfter: 1_001_000,
-    reserveSizeUsdDelta: 1_000,
     availableLiquidityUsd: 550_000,
     availableLiquidityUsdAfter: 549_000,
     availableLiquidityUsdDelta: -1_000,
