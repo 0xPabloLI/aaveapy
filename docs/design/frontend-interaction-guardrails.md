@@ -412,3 +412,59 @@ Keep header, body, and skeleton row padding in sync so alignment and spacing sta
   - **Sub-pixel Alignment & Mirroring Exactness**: When drawing a 1px stroke in SVG to match CSS borders, coordinates must be aligned to `.5` (e.g., `M 0.5 0 L 0.5 0.5 A ...`) to ensure pixel-perfect rendering without blurry antialiased edges. **Crucially, when mirroring the right side of a container, the x-coordinate must be `width - 0.5` (e.g., `16.5` for a `17px` box), not integer-rounded, to prevent 1px offset gaps.**
 - **Rule**: Never add `rounded-t-*` to the simulation panel container; the top edge is always joined to the card above.
 - The simulation sub-row does not show a “Shared APY/APR simulation” heading (desktop or mobile); table inputs and the Simulation toggle already establish context.
+
+#### Bridge + SVG junction debugging playbook (normative)
+
+When the expanded-card / simulation-panel junction shows visual artifacts (seam lines, corner notches, gaps), follow this checklist **in order**. Each item is a known root cause discovered through systematic debugging.
+
+##### 1. Bridge must cover the panel's top border (z-10 overlay approach)
+
+The bridge div (`bg-card`, `position: absolute`, `z-10`) sits above the simulation panel (`z-0`) and physically covers the panel's `border-top` on the expanded side. **Do NOT use `clipPath` to hide the panel's top border** -- clipPath anti-aliasing creates a visible seam line even when covered by a z-10 bridge. Instead, let the bridge's opaque `bg-card` at a higher z-index simply paint over the panel's border.
+
+##### 2. Bridge `border-x` -- both L and R borders required
+
+The bridge must have `border-x` (both `border-l` and `border-r`) to continue the expanded card's left AND right borders through the gap. Missing `border-r` causes a visible gap on the inner edge (fillet side) where the card's right border abruptly ends.
+
+##### 3. Bridge height must account for grid row height mismatch
+
+**Key pitfall**: In the `grid-cols-2` layout, the `variant="upperOnly"` card (expanded) is shorter than the `variant="full"` card (inactive) because the inactive card includes a collapsed simulation grid container (`gridTemplateRows: '0fr'`). CSS grid stretches both cell wrappers to the taller row height, creating **invisible extra space below the shorter card**.
+
+The bridge's `top: calc(-1 * var(--ds-space-2))` only reaches the grid row bottom, NOT the expanded card's actual bottom. This leaves a gap where page background shows as a visible horizontal line.
+
+**Fix**: Extend the bridge upward by an extra margin (currently `4px`) beyond the `mt` gap:
+```css
+top:    calc(-1 * var(--ds-space-2) - 4px)
+height: calc(var(--ds-space-2) + 5px)      /* gap + overlap + extra */
+```
+Since both card and bridge use `bg-card`, the overlap into the card area is invisible.
+
+**Diagnostic technique**: Temporarily set the bridge to `bg-red-500` to visualise its exact coverage. If the red area sits below the visible line, the bridge isn't reaching far enough -- increase the upward extension.
+
+##### 4. SVG fill must start at y=0 -- no sub-pixel gap at top
+
+The SVG fill path must extend to the SVG's top edge (`y=0`), not start at `y=0.5`. A `0.5px` unfilled strip at the top creates a visible notch where the bridge's right border meets the SVG.
+
+##### 5. SVG stroke must start at y=0 -- continuous vertical line
+
+The SVG stroke path must begin at `y=0` (e.g., `M 0.5 0 L 0.5 4.5 A ...`), drawing the vertical border line from the SVG top all the way down to the arc start. If the stroke begins at the arc start (e.g., `M 0.5 4`), the gap between `y=0` and `y=4` has only a fill edge with no stroke, creating a visible notch at the fillet's starting point.
+
+##### 6. SVG dimensions must match bridge extensions
+
+When the bridge is extended (e.g., extra 4px upward), the SVG must be extended by the same amount:
+- `viewBox` and `height`: increase to match (e.g., `0 0 17 13` for a 13px-tall SVG)
+- `top`: same as bridge top (e.g., `calc(-1 * var(--ds-space-2) - 4px)`)
+- Fill and stroke y-coordinates: shift the arc/horizontal portions down by the same offset (e.g., arc at `y=12.5` instead of `y=8.5`)
+
+##### Summary of current implementation values
+
+| Element | Property | Value | Reason |
+|---------|----------|-------|--------|
+| Bridge | `top` | `calc(-1 * var(--ds-space-2) - 4px)` | Covers grid row height mismatch |
+| Bridge | `height` | `calc(var(--ds-space-2) + 5px)` | Gap (8px) + panel overlap (1px) + extra (4px) |
+| Bridge | `border` | `border-x border-border/60` | L+R borders, no T/B |
+| SVG | `viewBox` | `0 0 17 13` | Matches bridge height |
+| SVG | `top` | Same as bridge | Aligned with bridge |
+| SVG fill | Start | `y=0` | No sub-pixel gap |
+| SVG stroke | Start | `M 0.5 0` / `M 16.5 0` | Continuous vertical line |
+| Panel | `clipPath` | **None** | Removed -- bridge covers top border |
+| Panel | `border` | `border border-border/60` | Full border; bridge hides top on expanded side |
