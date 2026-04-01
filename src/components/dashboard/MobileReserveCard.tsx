@@ -333,6 +333,29 @@ const MobileReserveCard = memo(({
       return (
         <div className="flex w-full min-w-0 flex-nowrap items-center gap-1.5 px-4">
           {priceEl}
+          {/* Deficit indicator inline — only on supply tab */}
+          {hasDeficit && deficitUsd != null && activeTab === 'supply' ? (
+            <DeficitLiquidityRing
+              deficitUsd={deficitUsd}
+              totalSuppliedUsd={displayReserveSizeUsd}
+              tokenDeficitLabel={deficitTokenLabel}
+              ringSize={12}
+              strokeWidth={1.2}
+              label={(
+                <span className={cn('inline-flex items-center gap-0.5 ds-text-10 tabular-nums', deficitTextClass)}>
+                  <DeficitShieldIcon ratio={deficitShareRatio} className={cn('h-2.5 w-2.5', isNeutralDeficit && 'opacity-70')} />
+                  <span>{deficitInlineValue}</span>
+                </span>
+              )}
+              triggerClassName={deficitTextClass}
+              triggerAriaLabel={`Deficit share of total supplied plus deficit for ${reserve.tokenSymbol}`}
+            />
+          ) : hasDeficit && activeTab === 'supply' ? (
+            <span className={cn('inline-flex items-center gap-0.5 ds-text-10 tabular-nums', deficitTextClass)}>
+              <DeficitShieldIcon ratio={deficitShareRatio} className={cn('h-2.5 w-2.5', isNeutralDeficit && 'opacity-70')} />
+              <span>{deficitInlineValue}</span>
+            </span>
+          ) : null}
           <div className="ml-auto flex min-w-0 items-center justify-end gap-1">
             {hasSupplyCap ? (
               <button
