@@ -461,7 +461,7 @@ const SimulationSubRow = ({
           ? 'ml-3 pl-2 border-l'
           : 'ml-2 pl-2 border-l'
         : '';
-    const cellPy = tight ? 'py-1' : 'py-1.5';
+    const cellPy = tight ? 'py-0.5' : 'py-1';
     const metricCellPx = tight ? 'px-3' : 'px-4';
     const valueCellPx = tight ? 'px-2.5' : 'px-3';
     const deltaCellPx = tight ? 'px-3' : 'px-4';
@@ -470,9 +470,9 @@ const SimulationSubRow = ({
 
     /** Indent cap note to match label column hierarchy; row uses colspan so note can use full table width. */
     const capNoteAlignClass = isSubBreakdown ? 'pl-6' : isBreakdownItem ? 'pl-4' : '';
-    const labelCellPy = row.capNote ? `${tight ? 'pt-1 pb-0' : 'pt-1.5 pb-0'}` : cellPy;
-    const valueCellPy = row.capNote ? `${tight ? 'pt-1 pb-0' : 'pt-1.5 pb-0'}` : cellPy;
-    const capRowPb = tight ? 'pb-1' : 'pb-1.5';
+    const labelCellPy = row.capNote ? `${tight ? 'pt-0.5 pb-0' : 'pt-1 pb-0'}` : cellPy;
+    const valueCellPy = row.capNote ? `${tight ? 'pt-0.5 pb-0' : 'pt-1 pb-0'}` : cellPy;
+    const capRowPb = tight ? 'pb-0.5' : 'pb-1';
     const resolvedAlignBand = alignBand ?? getDesktopAlignBandFromRowKey(row.rowKey);
     const mainAlignKey = getDesktopAlignKey(resolvedAlignBand, 'main');
     const capAlignKey = getDesktopAlignKey(resolvedAlignBand, 'cap');
@@ -698,21 +698,21 @@ const SimulationSubRow = ({
         </colgroup>
         <thead>
           <tr className="bg-muted/30 border-b border-border/50">
-            <th className="px-4 py-2 text-left">
+            <th className="px-4 py-1.5 text-left">
               <span className={`ds-text-13 font-semibold ${accentClass}`}>{title}</span>
             </th>
-            <th className="px-3 py-2 text-right">
+            <th className="px-3 py-1.5 text-right">
               <span className="ds-text-11 text-muted-foreground">Current</span>
             </th>
-            <th className="px-3 py-2 text-right">
+            <th className="px-3 py-1.5 text-right">
               <span className="ds-text-11 text-muted-foreground">After</span>
             </th>
-            <th className="px-4 py-2 text-right">
+            <th className="px-4 py-1.5 text-right">
               <span className="ds-text-11 text-muted-foreground">Delta</span>
             </th>
           </tr>
         </thead>
-        <tbody className="[&>tr:last-child>td]:pb-2.5">
+        <tbody className="[&>tr:last-child>td]:pb-2">
           {rows.map((row) => {
             const peer = peerRows ? findPeerRow(row.rowKey, peerRows) : undefined;
             const peerHasCapBar = peer != null && peer.cap != null && peer.type === 'usd';
@@ -915,10 +915,10 @@ const SimulationSubRow = ({
       tokenPrice: simulation.tokenPrice,
     });
 
-    const cellPy = effectiveCompact ? 'py-1' : 'py-1.5';
+    const cellPy = effectiveCompact ? 'py-0.5' : 'py-1';
     const metricPx = effectiveCompact ? 'px-3' : 'px-4';
     const valuePx = effectiveCompact ? 'px-2.5' : 'px-3';
-    const capRowPb = effectiveCompact ? 'pb-1' : 'pb-1.5';
+    const capRowPb = effectiveCompact ? 'pb-0.5' : 'pb-1';
 
     const rowBandByKey: Readonly<Partial<Record<EarnCostRow['key'], DesktopAlignBand>>> = {
       net: 'size',
@@ -965,20 +965,20 @@ const SimulationSubRow = ({
           </colgroup>
           <thead>
             <tr className="bg-muted/30 border-b border-border/50">
-              <th className="px-4 py-2 text-left">
+              <th className="px-4 py-1.5 text-left">
                 <span className={`ds-text-13 font-semibold ${EARN_NEUTRAL_TEXT_CLASS} whitespace-nowrap`}>
                   Earn /day
                 </span>
               </th>
-              <th className="px-3 py-2 text-right">
+              <th className="px-3 py-1.5 text-right">
                 <span className="ds-text-11 ds-text-emerald-600 font-semibold">Supply</span>
               </th>
-              <th className="px-3 py-2 text-right">
+              <th className="px-3 py-1.5 text-right">
                 <span className="ds-text-11 ds-text-brand-cyan font-semibold">Borrow</span>
               </th>
             </tr>
           </thead>
-          <tbody className="ds-text-12 [&>tr:last-child>td]:pb-2.5">
+          <tbody className="ds-text-12 [&>tr:last-child>td]:pb-2">
             {rows.map((row) => {
               const alignBand = rowBandByKey[row.key];
               const mainAlignKey = getDesktopAlignKey(alignBand, 'main');
@@ -1028,8 +1028,8 @@ const SimulationSubRow = ({
               const fontClass = row.key === 'amount' ? '' : row.isTotal ? 'font-semibold' : row.isBreakdown ? '' : 'font-medium';
               const textClass = EARN_NEUTRAL_TEXT_CLASS;
               const sizeClass = 'ds-text-12';
-              const labelCellPy = row.hasNoteSpacer ? `${effectiveCompact ? 'pt-1 pb-0' : 'pt-1.5 pb-0'}` : cellPy;
-              const valueCellPy = row.hasNoteSpacer ? `${effectiveCompact ? 'pt-1 pb-0' : 'pt-1.5 pb-0'}` : cellPy;
+              const labelCellPy = row.hasNoteSpacer ? `${effectiveCompact ? 'pt-0.5 pb-0' : 'pt-1 pb-0'}` : cellPy;
+              const valueCellPy = row.hasNoteSpacer ? `${effectiveCompact ? 'pt-0.5 pb-0' : 'pt-1 pb-0'}` : cellPy;
 
               return (
                 <Fragment key={row.key}>
