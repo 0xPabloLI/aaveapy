@@ -243,93 +243,118 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
   const fieldLabelSupplyDesktop = `${fontSize} font-semibold shrink-0 ds-text-emerald-600`;
   const fieldLabelBorrowDesktop = `${fontSize} font-semibold shrink-0 ds-text-brand-cyan`;
 
+  const [mobileExpanded, setMobileExpanded] = useState(true);
+
   if (isMobile) {
     return (
-      <div className="rounded-xl border border-border/60 bg-card/60 backdrop-blur-sm px-1.5 py-1">
-        <div className="flex min-w-0 items-center gap-1.5">
-          <div
-            className={cn(
-              'flex min-h-0 shrink-0 flex-col self-stretch',
-              segmentedTrack,
-            )}
-          >
-            <button
-              type="button"
-              onClick={() => handleModeChange('usd')}
-              className={cn(
-                'min-h-0 flex-1',
-                segmentedSegment,
-                inputMode === 'usd' ? segmentedSelectedBase : segmentedUnselectedBase,
-              )}
-              aria-pressed={inputMode === 'usd'}
-              aria-label="USD mode"
-            >
-              USD
-            </button>
-            <button
-              type="button"
-              onClick={() => handleModeChange('token')}
-              className={cn(
-                'min-h-0 flex-1',
-                segmentedSegment,
-                inputMode === 'token' ? segmentedSelectedBase : segmentedUnselectedBase,
-              )}
-              aria-pressed={inputMode === 'token'}
-              aria-label="Token mode"
-            >
-              Token
-            </button>
-          </div>
-          <div className="flex flex-col gap-1 flex-1 min-w-0">
-            <div className="flex min-w-0 items-center gap-1">
-              <span className={`${fieldLabelMobileSupply} w-10 shrink-0`}>Supply</span>
-              <input
-                value={supplyInput}
-                onChange={(event) => setSupplyInput(formatNumberInput(event.target.value))}
-                inputMode="decimal"
-                placeholder={inputMode === 'usd' ? '100,000' : '50'}
-                className={cn(
-                  inputBase,
-                  cnDsInputSurface(Boolean(supplyInput.trim()), 'supply'),
-                  'min-w-0 flex-1',
-                )}
-                aria-label="Supply amount"
-              />
+      <div className="rounded-xl border border-border/60 bg-card/60 backdrop-blur-sm">
+        {/* Collapsible body */}
+        <div
+          className={cn(
+            'grid transition-[grid-template-rows] duration-200 ease-out',
+            mobileExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]',
+          )}
+        >
+          <div className="overflow-hidden">
+            <div className="px-1.5 pt-1 pb-0.5">
+              <div className="flex min-w-0 items-center gap-1.5">
+                <div
+                  className={cn(
+                    'flex min-h-0 shrink-0 flex-col self-stretch',
+                    segmentedTrack,
+                  )}
+                >
+                  <button
+                    type="button"
+                    onClick={() => handleModeChange('usd')}
+                    className={cn(
+                      'min-h-0 flex-1',
+                      segmentedSegment,
+                      inputMode === 'usd' ? segmentedSelectedBase : segmentedUnselectedBase,
+                    )}
+                    aria-pressed={inputMode === 'usd'}
+                    aria-label="USD mode"
+                  >
+                    USD
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleModeChange('token')}
+                    className={cn(
+                      'min-h-0 flex-1',
+                      segmentedSegment,
+                      inputMode === 'token' ? segmentedSelectedBase : segmentedUnselectedBase,
+                    )}
+                    aria-pressed={inputMode === 'token'}
+                    aria-label="Token mode"
+                  >
+                    Token
+                  </button>
+                </div>
+                <div className="flex flex-col gap-1 flex-1 min-w-0">
+                  <div className="flex min-w-0 items-center gap-1">
+                    <span className={`${fieldLabelMobileSupply} w-10 shrink-0`}>Supply</span>
+                    <input
+                      value={supplyInput}
+                      onChange={(event) => setSupplyInput(formatNumberInput(event.target.value))}
+                      inputMode="decimal"
+                      placeholder={inputMode === 'usd' ? '100,000' : '50'}
+                      className={cn(
+                        inputBase,
+                        cnDsInputSurface(Boolean(supplyInput.trim()), 'supply'),
+                        'min-w-0 flex-1',
+                      )}
+                      aria-label="Supply amount"
+                    />
+                  </div>
+                  <div className="flex min-w-0 items-center gap-1">
+                    <span className={`${fieldLabelMobileBorrow} w-10 shrink-0`}>Borrow</span>
+                    <input
+                      value={borrowInput}
+                      onChange={(event) => setBorrowInput(formatNumberInput(event.target.value))}
+                      inputMode="decimal"
+                      placeholder={inputMode === 'usd' ? '20,000' : '10'}
+                      className={cn(
+                        inputBase,
+                        cnDsInputSurface(Boolean(borrowInput.trim()), 'borrow'),
+                        'min-w-0 flex-1',
+                      )}
+                      aria-label="Borrow amount"
+                    />
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => { setSupplyInput(''); setBorrowInput(''); }}
+                  disabled={!hasInput}
+                  className={`${clearBtnBase} ${clearBtnState} shrink-0`}
+                  aria-label="Clear scenario inputs"
+                >
+                  <Trash2 className="size-4 shrink-0" aria-hidden />
+                </button>
+              </div>
+              {showMeritMerklMode ? (
+                <MobileNetCollapsible
+                  id={meritMerklCheckboxId}
+                  checked={meritMerklNetPosition}
+                  onCheckedChange={handleMeritMerklNetPositionChange}
+                  fontSize={fontSize}
+                />
+              ) : null}
             </div>
-            <div className="flex min-w-0 items-center gap-1">
-              <span className={`${fieldLabelMobileBorrow} w-10 shrink-0`}>Borrow</span>
-              <input
-                value={borrowInput}
-                onChange={(event) => setBorrowInput(formatNumberInput(event.target.value))}
-                inputMode="decimal"
-                placeholder={inputMode === 'usd' ? '20,000' : '10'}
-                className={cn(
-                  inputBase,
-                  cnDsInputSurface(Boolean(borrowInput.trim()), 'borrow'),
-                  'min-w-0 flex-1',
-                )}
-                aria-label="Borrow amount"
-              />
-            </div>
           </div>
-          <button
-            type="button"
-            onClick={() => { setSupplyInput(''); setBorrowInput(''); }}
-            disabled={!hasInput}
-            className={`${clearBtnBase} ${clearBtnState} shrink-0`}
-            aria-label="Clear scenario inputs"
-          >
-            <Trash2 className="size-4 shrink-0" aria-hidden />
-          </button>
         </div>
-        {showMeritMerklMode ? (
-          <MobileNetCollapsible
-            id={meritMerklCheckboxId}
-            checked={meritMerklNetPosition}
-            onCheckedChange={handleMeritMerklNetPositionChange}
-            fontSize={fontSize}
-          />
-        ) : null}
+
+        {/* Grip handle to toggle collapse */}
+        <button
+          type="button"
+          onClick={() => setMobileExpanded((prev) => !prev)}
+          className="flex w-full items-center justify-center py-1 active:scale-[0.97] transition-transform"
+          aria-label={mobileExpanded ? 'Collapse scenario controls' : 'Expand scenario controls'}
+          aria-expanded={mobileExpanded}
+        >
+          <span className="block h-[3px] w-8 rounded-full bg-muted-foreground/40" />
+        </button>
       </div>
     );
   }
