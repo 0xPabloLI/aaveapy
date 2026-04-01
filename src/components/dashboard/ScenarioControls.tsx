@@ -1,5 +1,5 @@
 import { useState, useEffect, memo, forwardRef, useImperativeHandle, useCallback } from 'react';
-import { Trash2 } from 'lucide-react';
+import { SlidersHorizontal, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatNumberInput } from '@/lib/numberFormat';
 import { DS_NATIVE_CHECKBOX_CLASS } from '@/lib/dsNativeCheckbox';
@@ -27,7 +27,7 @@ function IncentiveNetCheckboxTooltip({
         <label
           htmlFor={id}
           className={cn(
-            'flex min-w-0 cursor-pointer items-center gap-[var(--ds-space-1-5)] rounded-md px-0.5 py-0.5 transition-colors hover:bg-muted/50',
+            'flex min-w-0 cursor-pointer items-center gap-[var(--ds-space-1-5)] rounded-md px-0.5 py-0.5 transition-colors',
             labelClassName,
           )}
         >
@@ -36,7 +36,10 @@ function IncentiveNetCheckboxTooltip({
             type="checkbox"
             checked={checked}
             onChange={(event) => onCheckedChange(event.target.checked)}
-            className={cn(DS_NATIVE_CHECKBOX_CLASS, 'mt-0 accent-muted-foreground')}
+            className={cn(
+              DS_NATIVE_CHECKBOX_CLASS,
+              'mt-0 accent-muted-foreground shadow-none focus-visible:ring-0 focus-visible:ring-offset-0',
+            )}
             aria-label="Net lending and borrowing for incentives (Merit/Merkl); Brevis unchanged"
           />
           <span className={cn(labelTextClassName, 'whitespace-nowrap')}>Net lending &amp; borrowing</span>
@@ -60,82 +63,6 @@ function IncentiveNetCheckboxTooltip({
         </div>
       </TooltipContent>
     </Tooltip>
-  );
-}
-
-function MobileNetCollapsible({
-  id,
-  checked,
-  onCheckedChange,
-  fontSize,
-}: {
-  id: string;
-  checked: boolean;
-  onCheckedChange: (next: boolean) => void;
-  fontSize: string;
-}) {
-  const [open, setOpen] = useState(false);
-
-  return (
-    <div className="mt-1 border-t border-border/40 pt-0.5">
-      <div
-        className={cn(
-          'grid transition-[grid-template-rows] duration-200 ease-out',
-          open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]',
-        )}
-      >
-        <div className="overflow-hidden">
-          <div className="px-1 pb-1.5 pt-1">
-            <div className="mx-auto w-[min(15.75rem,calc(100%-1rem))] px-0.5 py-0.5">
-              <label
-                htmlFor={id}
-                className="mx-auto flex w-fit max-w-full min-w-0 cursor-pointer items-center justify-center gap-[var(--ds-space-1-5)] rounded-md px-1.5 py-0.5 transition-colors hover:bg-muted/35"
-              >
-                <input
-                  id={id}
-                  type="checkbox"
-                  checked={checked}
-                  onChange={(event) => onCheckedChange(event.target.checked)}
-                  className={cn(DS_NATIVE_CHECKBOX_CLASS, 'mt-0 accent-muted-foreground')}
-                  aria-label="Net lending and borrowing for incentives"
-                />
-                <span className={`${fontSize} whitespace-nowrap text-foreground`}>Net lending &amp; borrowing</span>
-              </label>
-              <ul className="mt-1.25 space-y-1 px-0.25 text-muted-foreground/90 ds-text-10 leading-snug">
-                <li className="flex items-start gap-1.5">
-                  <span aria-hidden className="mt-1 h-1 w-1 shrink-0 rounded-full bg-border/90" />
-                  <span><span className="text-foreground/90">Net on:</span> overlapping supply and borrow offset each other first.</span>
-                </li>
-                <li className="flex items-start gap-1.5">
-                  <span aria-hidden className="mt-1 h-1 w-1 shrink-0 rounded-full bg-border/90" />
-                  <span><span className="text-foreground/90">Net off:</span> both sides are counted in full, which may overestimate incentives.</span>
-                </li>
-                <li className="flex items-start gap-1.5">
-                  <span aria-hidden className="mt-1 h-1 w-1 shrink-0 rounded-full bg-border/90" />
-                  <span>Brevis campaigns use separate rules and are not affected by this switch.</span>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <button
-        type="button"
-        onClick={() => setOpen((prev) => !prev)}
-        className="mt-0.5 flex h-6 w-full items-center justify-center rounded-sm"
-        aria-label={open ? 'Collapse net lending and borrowing controls' : 'Expand net lending and borrowing controls'}
-        aria-expanded={open}
-      >
-        <span
-          className={cn(
-            'h-0.5 rounded-full transition-all duration-200',
-            open ? 'w-4 bg-muted-foreground/70' : 'w-5 bg-border/80',
-          )}
-          aria-hidden
-        />
-      </button>
-    </div>
   );
 }
 
@@ -165,6 +92,7 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
   const [supplyInput, setSupplyInput] = useState('');
   const [borrowInput, setBorrowInput] = useState('');
   const [inputMode, setInputMode] = useState<ScenarioInputMode>('usd');
+  const [mobileNetOpen, setMobileNetOpen] = useState(false);
   const handleMeritMerklNetPositionChange = useCallback(
     (next: boolean) => {
       if (!onMeritMerklNetPositionChange) return;
@@ -215,14 +143,18 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
   const clearBtnState = hasInput
     ? 'border-border bg-muted/80 text-foreground hover:bg-accent hover:border-border shadow-sm'
     : '';
+  const clearBtnMobileStyle =
+    'inline-flex h-9 w-9 items-center justify-center rounded-md border-0 bg-transparent p-0 text-muted-foreground/70 shadow-none ring-0 outline-none transition-colors hover:bg-muted/45 hover:text-foreground disabled:text-muted-foreground/35 disabled:hover:bg-transparent';
 
   /**
    * Segmented control: same metrics as `AprApyToggle` (px-3 py-1, ds-text-12, content-width segments)
    * so USD/Token matches APR/APY in FilterBar. Pill thumb: DESIGN.md § 4.2.
    */
   const segmentedTrack = 'rounded-lg border border-border/40 bg-muted/60 p-0.5 gap-0.5';
+  const segmentedFontSize = isMobile ? 'ds-text-11' : 'ds-text-12';
+  const segmentedUsdLabelSize = isMobile ? 'text-[12px]' : 'text-[13px]';
   const segmentedSegment =
-    'flex items-center justify-center rounded-md ds-text-12 font-semibold transition-all duration-200 px-3 py-1';
+    `flex items-center justify-center rounded-md ${segmentedFontSize} font-semibold transition-all duration-200 px-3 py-1`;
   const segmentedSelectedBase =
     'bg-card text-foreground border border-border/60 shadow-sm';
   const segmentedUnselectedBase =
@@ -232,9 +164,9 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
   const meritMerklCheckboxId = 'scenario-merit-merkl-net-lending-borrowing';
 
   const fieldLabelMobileSupply =
-    'text-[9px] font-semibold uppercase tracking-wider ds-text-emerald-600 shrink-0';
+    'ds-text-11 font-semibold uppercase tracking-wide ds-text-emerald-600 shrink-0';
   const fieldLabelMobileBorrow =
-    'text-[9px] font-semibold uppercase tracking-wider ds-text-brand-cyan shrink-0';
+    'ds-text-11 font-semibold uppercase tracking-wide ds-text-brand-cyan shrink-0';
   const fieldLabelSupplyDesktop = `${fontSize} font-semibold shrink-0 ds-text-emerald-600`;
   const fieldLabelBorrowDesktop = `${fontSize} font-semibold shrink-0 ds-text-brand-cyan`;
 
@@ -259,7 +191,7 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
               aria-pressed={inputMode === 'usd'}
               aria-label="USD mode"
             >
-              USD
+              <span className={segmentedUsdLabelSize}>USD</span>
             </button>
             <button
               type="button"
@@ -272,12 +204,12 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
               aria-pressed={inputMode === 'token'}
               aria-label="Token mode"
             >
-              Token
+              <span className={segmentedUsdLabelSize}>Token</span>
             </button>
           </div>
           <div className="flex flex-col gap-1 flex-1 min-w-0">
             <div className="flex min-w-0 items-center gap-1">
-              <span className={`${fieldLabelMobileSupply} w-10 shrink-0`}>Supply</span>
+              <span className={`${fieldLabelMobileSupply} w-11 shrink-0`}>Supply</span>
               <input
                 value={supplyInput}
                 onChange={(event) => setSupplyInput(formatNumberInput(event.target.value))}
@@ -292,7 +224,7 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
               />
             </div>
             <div className="flex min-w-0 items-center gap-1">
-              <span className={`${fieldLabelMobileBorrow} w-10 shrink-0`}>Borrow</span>
+              <span className={`${fieldLabelMobileBorrow} w-11 shrink-0`}>Borrow</span>
               <input
                 value={borrowInput}
                 onChange={(event) => setBorrowInput(formatNumberInput(event.target.value))}
@@ -307,23 +239,67 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
               />
             </div>
           </div>
-          <button
-            type="button"
-            onClick={() => { setSupplyInput(''); setBorrowInput(''); }}
-            disabled={!hasInput}
-            className={`${clearBtnBase} ${clearBtnState} shrink-0`}
-            aria-label="Clear scenario inputs"
-          >
-            <Trash2 className="size-4 shrink-0" aria-hidden />
-          </button>
+          <div className="relative flex w-8 shrink-0 flex-col items-center self-stretch">
+            <div className="absolute left-[44%] top-1/2 -translate-x-1/2 -translate-y-1/2">
+              <button
+                type="button"
+                onClick={() => { setSupplyInput(''); setBorrowInput(''); }}
+                disabled={!hasInput}
+                className={cn(clearBtnMobileStyle, 'shrink-0')}
+                aria-label="Clear supply and borrow scenario inputs"
+              >
+                <Trash2 className="size-[18px] shrink-0" aria-hidden />
+              </button>
+            </div>
+            {showMeritMerklMode ? (
+              <button
+                type="button"
+                onClick={() => setMobileNetOpen((prev) => !prev)}
+                className={cn(
+                  'absolute -right-1.5 -bottom-1 inline-flex h-8 w-8 items-center justify-center text-muted-foreground/65 transition-colors',
+                  mobileNetOpen
+                    ? 'text-foreground'
+                    : 'hover:text-foreground/85',
+                )}
+                aria-label={mobileNetOpen ? 'Close advanced scenario controls' : 'Open advanced scenario controls'}
+                aria-expanded={mobileNetOpen}
+              >
+                <SlidersHorizontal className="size-3.5" aria-hidden />
+              </button>
+            ) : null}
+          </div>
         </div>
-        {showMeritMerklMode ? (
-          <MobileNetCollapsible
-            id={meritMerklCheckboxId}
-            checked={meritMerklNetPosition}
-            onCheckedChange={handleMeritMerklNetPositionChange}
-            fontSize={fontSize}
-          />
+        {showMeritMerklMode && mobileNetOpen ? (
+          <div className="mt-1.5 px-0.5 pb-0.5">
+            <label
+              htmlFor={meritMerklCheckboxId}
+              className="mx-auto flex w-fit max-w-full min-w-0 cursor-pointer items-center justify-center gap-[var(--ds-space-1-5)] rounded-md px-1.5 py-0.5 transition-colors"
+            >
+              <input
+                id={meritMerklCheckboxId}
+                type="checkbox"
+                checked={meritMerklNetPosition}
+                onChange={(event) => handleMeritMerklNetPositionChange(event.target.checked)}
+                className={cn(
+                  DS_NATIVE_CHECKBOX_CLASS,
+                  'mt-0 accent-muted-foreground shadow-none focus-visible:ring-0 focus-visible:ring-offset-0',
+                )}
+                aria-label="Net lending and borrowing for incentives"
+              />
+              <span className={`${fontSize} whitespace-nowrap text-foreground`}>Net lending &amp; borrowing</span>
+            </label>
+            <div className="mt-1 border-t border-border/20 pt-1">
+              <div className="space-y-0.5 px-0.5 text-left text-muted-foreground/60 ds-text-10 leading-snug">
+                <p>
+                  <span className="text-muted-foreground/75">Net on:</span> overlapping supply and borrow offset each other first.
+                </p>
+                <p>
+                  <span className="text-muted-foreground/75">Net off:</span> both sides are counted in full, which may overestimate incentives.
+                </p>
+                <p>Brevis campaigns use separate rules and are not affected by this switch.</p>
+              </div>
+            </div>
+          </div>
         ) : null}
       </div>
     );
@@ -343,7 +319,7 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
           )}
           aria-pressed={inputMode === 'usd'}
         >
-          USD
+          <span className={segmentedUsdLabelSize}>USD</span>
         </button>
         <button
           type="button"
@@ -354,7 +330,7 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
           )}
           aria-pressed={inputMode === 'token'}
         >
-          Token
+          <span className={segmentedUsdLabelSize}>Token</span>
         </button>
       </div>
 

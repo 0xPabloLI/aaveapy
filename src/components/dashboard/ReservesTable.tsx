@@ -1325,7 +1325,7 @@ const ReservesTable = ({
                              border-x continues the card's L/R borders through the gap. */}
                         <div
                           aria-hidden
-                          className={`pointer-events-none absolute z-10 border-border/60 bg-card border-x ${bridgeOnExpandedColumn ? 'left-0' : 'right-0'}`}
+                          className={`pointer-events-none absolute z-10 border-border/60 bg-card ${bridgeOnExpandedColumn ? 'left-0 border-l' : 'right-0 border-r'}`}
                           style={{
                             top: 'calc(-1 * var(--ds-space-2) - 4px)',
                             height: 'calc(var(--ds-space-2) + 5px)',

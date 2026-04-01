@@ -421,9 +421,9 @@ When the expanded-card / simulation-panel junction shows visual artifacts (seam 
 
 The bridge div (`bg-card`, `position: absolute`, `z-10`) sits above the simulation panel (`z-0`) and physically covers the panel's `border-top` on the expanded side. **Do NOT use `clipPath` to hide the panel's top border** -- clipPath anti-aliasing creates a visible seam line even when covered by a z-10 bridge. Instead, let the bridge's opaque `bg-card` at a higher z-index simply paint over the panel's border.
 
-##### 2. Bridge `border-x` -- both L and R borders required
+##### 2. Bridge border -- outer side only, inner side drawn by SVG
 
-The bridge must have `border-x` (both `border-l` and `border-r`) to continue the expanded card's left AND right borders through the gap. Missing `border-r` causes a visible gap on the inner edge (fillet side) where the card's right border abruptly ends.
+The bridge must have only the **outer** border (`border-l` when expanded card is on the left, `border-r` when on the right) to continue the expanded card's outer border through the gap. The **inner** border (fillet side) must NOT be on the bridge -- the SVG stroke already draws that vertical line and continues it into the arc. If both the bridge CSS border and the SVG stroke draw at the same x-coordinate, **Safari/WebKit renders a doubled vertical line** (sub-pixel overlap artifact) that is invisible on desktop and Android but visible on iPhone.
 
 ##### 3. Bridge height must account for grid row height mismatch
 
@@ -461,7 +461,7 @@ When the bridge is extended (e.g., extra 4px upward), the SVG must be extended b
 |---------|----------|-------|--------|
 | Bridge | `top` | `calc(-1 * var(--ds-space-2) - 4px)` | Covers grid row height mismatch |
 | Bridge | `height` | `calc(var(--ds-space-2) + 5px)` | Gap (8px) + panel overlap (1px) + extra (4px) |
-| Bridge | `border` | `border-x border-border/60` | L+R borders, no T/B |
+| Bridge | `border` | `border-l` or `border-r` (outer only) | Inner side drawn by SVG; `border-x` causes Safari doubled-line |
 | SVG | `viewBox` | `0 0 17 13` | Matches bridge height |
 | SVG | `top` | Same as bridge | Aligned with bridge |
 | SVG fill | Start | `y=0` | No sub-pixel gap |
