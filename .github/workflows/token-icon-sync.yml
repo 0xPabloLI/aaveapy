@@ -65,9 +65,8 @@ jobs:
           base: ${{ matrix.target_branch }}
           delete-branch: true
           labels: |
-            automation
-            assets
             automerge
+            assets
 
       - name: Warn when PAT is missing
         if: steps.cpr.outputs.pull-request-number != '' && env.HAS_SYNC_PAT != 'true'

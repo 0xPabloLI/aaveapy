@@ -108,7 +108,7 @@ jobs:
           base: ${{ env.TARGET_BRANCH }}
           delete-branch: true
           labels: |
-            automation
+            automerge
             hardcode
 
       - name: Warn when PAT is missing
@@ -158,7 +158,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               state: 'open',
-              labels: 'automation,hardcode,drift',
+              labels: 'hardcode,drift',
               per_page: 100
             });
             const existing = issues.find((issue) => issue.title === title);
@@ -176,7 +176,7 @@ jobs:
                 repo: context.repo.repo,
                 title,
                 body,
-                labels: ['automation', 'hardcode', 'drift']
+                labels: ['hardcode', 'drift']
               });
               core.info('Created a new hardcode verify failure issue');
             }
