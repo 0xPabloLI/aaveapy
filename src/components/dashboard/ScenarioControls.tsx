@@ -261,10 +261,13 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
                     ? 'text-foreground'
                     : 'hover:text-foreground/85',
                 )}
-                aria-label={mobileNetOpen ? 'Close advanced scenario controls' : 'Open advanced scenario controls'}
+                aria-label={mobileNetOpen ? 'Collapse advanced controls' : 'Expand advanced controls'}
                 aria-expanded={mobileNetOpen}
               >
-                <SlidersHorizontal className="size-3.5" aria-hidden />
+                <SlidersHorizontal
+                  className={cn('size-3.5 transition-transform duration-300', mobileNetOpen && 'rotate-180')}
+                  aria-hidden
+                />
               </button>
             ) : null}
           </div>

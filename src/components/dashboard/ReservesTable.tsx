@@ -1260,169 +1260,32 @@ const ReservesTable = ({
                 const rightExpanded = rightId !== null && rightId === expandedReserveId;
                 const rowHasExpanded = leftExpanded || rightExpanded;
 
-                if (rowHasExpanded) {
-                  const isLeftActive = leftExpanded;
-                  const activeReserve = isLeftActive ? leftReserve : rightReserve!;
-                  const activeId = isLeftActive ? leftId : rightId!;
-                  /** Matches `grid-cols-2 gap-[--ds-space-2]`: one column width (connector under expanded card only). */
-                  const pairColWidth = 'calc((100% - var(--ds-space-2)) / 2)';
-                  const bridgeOnExpandedColumn = leftExpanded || !rightReserve;
+                const isLeftActive = leftExpanded;
+                const isRightActive = rightExpanded;
+                const activeReserve = isLeftActive ? leftReserve : rightReserve;
+                const activeId = isLeftActive ? leftId : rightId;
+                /** Matches `grid-cols-2 gap-[--ds-space-2]`: one column width (connector under expanded card only). */
+                const pairColWidth = 'calc((100% - var(--ds-space-2)) / 2)';
+                const bridgeOnExpandedColumn = leftExpanded || !rightReserve;
 
-                  nodes.push(
-                    <div
-                      key={`row-${i}`}
-                      className="col-span-2"
-                      data-reserve-expanded-anchor={activeId}
-                    >
-                      <div className="grid grid-cols-2 gap-[var(--ds-space-2)]">
-                        <div className="min-w-0">
-                          <MobileReserveCard
-                            variant={isLeftActive ? 'upperOnly' : 'full'}
-                            connectedBelow={leftExpanded}
-                            reserve={leftReserve}
-                            isApy={isApy}
-                            tydroPointToUsdRate={tydroPointToUsdRate}
-                            onIncentiveClick={handleMobileIncentiveClick}
-                            isSimulationExpanded={isLeftActive}
-                            onToggleSimulation={() => handleToggleExpand(leftId)}
-                            simulation={simulationsById[leftId]}
-                            supplyInput={debouncedSharedSupplyInput}
-                            borrowInput={debouncedSharedBorrowInput}
-                            hasSharedScenario={hasSharedScenario}
-                            inputMode={sharedInputMode}
-                            onCorrectSupplyInput={handleCorrectSupplyInput}
-                            onCorrectBorrowInput={handleCorrectBorrowInput}
-                            defaultTab={mobileCardDefaultTab}
-                          />
-                        </div>
-                        {rightReserve ? (
-                          <div className="min-w-0">
-                            <MobileReserveCard
-                              variant={!isLeftActive ? 'upperOnly' : 'full'}
-                              connectedBelow={rightExpanded}
-                              reserve={rightReserve}
-                              isApy={isApy}
-                              tydroPointToUsdRate={tydroPointToUsdRate}
-                              onIncentiveClick={handleMobileIncentiveClick}
-                              isSimulationExpanded={!isLeftActive}
-                              onToggleSimulation={() => handleToggleExpand(rightId!)}
-                              simulation={simulationsById[rightId!]}
-                              supplyInput={debouncedSharedSupplyInput}
-                              borrowInput={debouncedSharedBorrowInput}
-                              hasSharedScenario={hasSharedScenario}
-                              inputMode={sharedInputMode}
-                              onCorrectSupplyInput={handleCorrectSupplyInput}
-                              onCorrectBorrowInput={handleCorrectBorrowInput}
-                              defaultTab={mobileCardDefaultTab}
-                            />
-                          </div>
-                        ) : null}
-                      </div>
-                      {/* Simulation panel — bridge (z-10) + SVG fill cover panel's top border
-                           on the expanded side so card + panel read as one piece. */}
-                      <div className="relative isolate mt-[var(--ds-space-2)]">
-                        {/* Bridge: bg-card rect covering the gap + 1px overlap into the panel.
-                             border-x continues the card's L/R borders through the gap. */}
-                        <div
-                          aria-hidden
-                          className={`pointer-events-none absolute z-10 border-border/60 bg-card ${bridgeOnExpandedColumn ? 'left-0 border-l' : 'right-0 border-r'}`}
-                          style={{
-                            top: 'calc(-1 * var(--ds-space-2) - 4px)',
-                            height: 'calc(var(--ds-space-2) + 5px)',
-                            width: pairColWidth,
-                          }}
-                        />
-                        
-                        {/* SVG fillet — fill covers gap top-to-bottom (y 0→9) so no sub-px
-                             seam; stroke draws the concave inner corner. */}
-                        <svg
-                          className="absolute pointer-events-none z-10 overflow-visible"
-                          width="17"
-                          height="13"
-                          viewBox="0 0 17 13"
-                          style={{
-                            top: 'calc(-1 * var(--ds-space-2) - 4px)',
-                            ...(bridgeOnExpandedColumn 
-                              ? { left: `calc(${pairColWidth} - 1px)` } 
-                              : { right: `calc(${pairColWidth} - 1px)` })
-                          }}
-                          aria-hidden="true"
-                        >
-                          {bridgeOnExpandedColumn ? (
-                            <>
-                              <path d="M 0 0 L 0 13 L 17 13 L 17 12 L 8.5 12 A 8 8 0 0 1 0.5 4 L 0.5 0 L 0 0 Z" style={{ fill: 'hsl(var(--card))' }} />
-                              <path d="M 0.5 0 L 0.5 4.5 A 8 8 0 0 0 8.5 12.5 L 17 12.5" fill="none" style={{ stroke: 'hsl(var(--border) / 0.6)', strokeWidth: 1 }} />
-                            </>
-                          ) : (
-                            <>
-                              <path d="M 17 0 L 17 13 L 0 13 L 0 12 L 8.5 12 A 8 8 0 0 0 16.5 4 L 16.5 0 L 17 0 Z" style={{ fill: 'hsl(var(--card))' }} />
-                              <path d="M 16.5 0 L 16.5 4.5 A 8 8 0 0 1 8.5 12.5 L 0 12.5" fill="none" style={{ stroke: 'hsl(var(--border) / 0.6)', strokeWidth: 1 }} />
-                            </>
-                          )}
-                        </svg>
-
-                        <div
-                          className={`relative z-0 overflow-hidden rounded-b-xl border border-border/60 bg-card ds-card-pad-sm ${
-                            bridgeOnExpandedColumn ? 'rounded-tr-xl rounded-tl-none' : 'rounded-tl-xl rounded-tr-none'
-                          }`}
-                          style={{ paddingTop: 'var(--ds-space-2)' }}
-                        >
-                          <MobileReserveCard
-                            variant="simulationOnly"
-                            reserve={activeReserve}
-                            isApy={isApy}
-                            tydroPointToUsdRate={tydroPointToUsdRate}
-                            onIncentiveClick={handleMobileIncentiveClick}
-                            isSimulationExpanded
-                            onToggleSimulation={() => handleToggleExpand(activeId)}
-                            simulation={simulationsById[activeId]}
-                            supplyInput={debouncedSharedSupplyInput}
-                            borrowInput={debouncedSharedBorrowInput}
-                            hasSharedScenario={hasSharedScenario}
-                            inputMode={sharedInputMode}
-                            onCorrectSupplyInput={handleCorrectSupplyInput}
-                            onCorrectBorrowInput={handleCorrectBorrowInput}
-                            defaultTab={mobileCardDefaultTab}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  );
-                } else {
-                  // Normal pair — no expansion
-                  nodes.push(
-                    <div key={leftId}>
-                      <MobileReserveCard
-                        variant="full"
-                        reserve={leftReserve}
-                        isApy={isApy}
-                        tydroPointToUsdRate={tydroPointToUsdRate}
-                        onIncentiveClick={handleMobileIncentiveClick}
-                        isSimulationExpanded={false}
-                        onToggleSimulation={() => handleToggleExpand(leftId)}
-                        simulation={simulationsById[leftId]}
-                        supplyInput={debouncedSharedSupplyInput}
-                        borrowInput={debouncedSharedBorrowInput}
-                        hasSharedScenario={hasSharedScenario}
-                        inputMode={sharedInputMode}
-                        onCorrectSupplyInput={handleCorrectSupplyInput}
-                        onCorrectBorrowInput={handleCorrectBorrowInput}
-                        defaultTab={mobileCardDefaultTab}
-                      />
-                    </div>
-                  );
-                  if (rightReserve) {
-                    nodes.push(
-                      <div key={rightId}>
+                nodes.push(
+                  <div
+                    key={`row-${i}`}
+                    className="col-span-2"
+                    data-reserve-expanded-anchor={activeId ?? undefined}
+                  >
+                    <div className="grid grid-cols-2 gap-[var(--ds-space-2)]">
+                      <div className="min-w-0">
                         <MobileReserveCard
-                          variant="full"
-                          reserve={rightReserve}
+                          variant={isLeftActive ? 'upperOnly' : 'full'}
+                          connectedBelow={leftExpanded}
+                          reserve={leftReserve}
                           isApy={isApy}
                           tydroPointToUsdRate={tydroPointToUsdRate}
                           onIncentiveClick={handleMobileIncentiveClick}
-                          isSimulationExpanded={false}
-                          onToggleSimulation={() => handleToggleExpand(rightId!)}
-                          simulation={simulationsById[rightId!]}
+                          isSimulationExpanded={isLeftActive}
+                          onToggleSimulation={() => handleToggleExpand(leftId)}
+                          simulation={simulationsById[leftId]}
                           supplyInput={debouncedSharedSupplyInput}
                           borrowInput={debouncedSharedBorrowInput}
                           hasSharedScenario={hasSharedScenario}
@@ -1432,9 +1295,103 @@ const ReservesTable = ({
                           defaultTab={mobileCardDefaultTab}
                         />
                       </div>
-                    );
-                  }
-                }
+                      {rightReserve ? (
+                        <div className="min-w-0">
+                          <MobileReserveCard
+                            variant={isRightActive ? 'upperOnly' : 'full'}
+                            connectedBelow={rightExpanded}
+                            reserve={rightReserve}
+                            isApy={isApy}
+                            tydroPointToUsdRate={tydroPointToUsdRate}
+                            onIncentiveClick={handleMobileIncentiveClick}
+                            isSimulationExpanded={isRightActive}
+                            onToggleSimulation={() => handleToggleExpand(rightId!)}
+                            simulation={simulationsById[rightId!]}
+                            supplyInput={debouncedSharedSupplyInput}
+                            borrowInput={debouncedSharedBorrowInput}
+                            hasSharedScenario={hasSharedScenario}
+                            inputMode={sharedInputMode}
+                            onCorrectSupplyInput={handleCorrectSupplyInput}
+                            onCorrectBorrowInput={handleCorrectBorrowInput}
+                            defaultTab={mobileCardDefaultTab}
+                          />
+                        </div>
+                      ) : null}
+                    </div>
+                    {rowHasExpanded && activeReserve && activeId ? (
+                      <>
+                        {/* Simulation panel — bridge (z-10) + SVG fill cover panel's top border
+                           on the expanded side so card + panel read as one piece. */}
+                        <div className="relative isolate mt-[var(--ds-space-2)]">
+                          {/* Bridge: bg-card rect covering the gap + 1px overlap into the panel.
+                               border-x continues the card's L/R borders through the gap. */}
+                          <div
+                            aria-hidden
+                            className={`pointer-events-none absolute z-10 border-border/60 bg-card ${bridgeOnExpandedColumn ? 'left-0 border-l' : 'right-0 border-r'}`}
+                            style={{
+                              top: 'calc(-1 * var(--ds-space-2) - 4px)',
+                              height: 'calc(var(--ds-space-2) + 5px)',
+                              width: pairColWidth,
+                            }}
+                          />
+                          
+                          {/* SVG fillet — fill covers gap top-to-bottom (y 0→9) so no sub-px
+                               seam; stroke draws the concave inner corner. */}
+                          <svg
+                            className="absolute pointer-events-none z-10 overflow-visible"
+                            width="17"
+                            height="13"
+                            viewBox="0 0 17 13"
+                            style={{
+                              top: 'calc(-1 * var(--ds-space-2) - 4px)',
+                              ...(bridgeOnExpandedColumn
+                                ? { left: `calc(${pairColWidth} - 1px)` }
+                                : { right: `calc(${pairColWidth} - 1px)` })
+                            }}
+                            aria-hidden="true"
+                          >
+                            {bridgeOnExpandedColumn ? (
+                              <>
+                                <path d="M 0 0 L 0 13 L 17 13 L 17 12 L 8.5 12 A 8 8 0 0 1 0.5 4 L 0.5 0 L 0 0 Z" style={{ fill: 'hsl(var(--card))' }} />
+                                <path d="M 0.5 0 L 0.5 4.5 A 8 8 0 0 0 8.5 12.5 L 17 12.5" fill="none" style={{ stroke: 'hsl(var(--border) / 0.6)', strokeWidth: 1 }} />
+                              </>
+                            ) : (
+                              <>
+                                <path d="M 17 0 L 17 13 L 0 13 L 0 12 L 8.5 12 A 8 8 0 0 0 16.5 4 L 16.5 0 L 17 0 Z" style={{ fill: 'hsl(var(--card))' }} />
+                                <path d="M 16.5 0 L 16.5 4.5 A 8 8 0 0 1 8.5 12.5 L 0 12.5" fill="none" style={{ stroke: 'hsl(var(--border) / 0.6)', strokeWidth: 1 }} />
+                              </>
+                            )}
+                          </svg>
+
+                          <div
+                            className={`relative z-0 overflow-hidden rounded-b-xl border border-border/60 bg-card ds-card-pad-sm ${
+                              bridgeOnExpandedColumn ? 'rounded-tr-xl rounded-tl-none' : 'rounded-tl-xl rounded-tr-none'
+                            }`}
+                            style={{ paddingTop: 'var(--ds-space-2)' }}
+                          >
+                            <MobileReserveCard
+                              variant="simulationOnly"
+                              reserve={activeReserve}
+                              isApy={isApy}
+                              tydroPointToUsdRate={tydroPointToUsdRate}
+                              onIncentiveClick={handleMobileIncentiveClick}
+                              isSimulationExpanded
+                              onToggleSimulation={() => handleToggleExpand(activeId)}
+                              simulation={simulationsById[activeId]}
+                              supplyInput={debouncedSharedSupplyInput}
+                              borrowInput={debouncedSharedBorrowInput}
+                              hasSharedScenario={hasSharedScenario}
+                              inputMode={sharedInputMode}
+                              onCorrectSupplyInput={handleCorrectSupplyInput}
+                              onCorrectBorrowInput={handleCorrectBorrowInput}
+                              defaultTab={mobileCardDefaultTab}
+                            />
+                          </div>
+                        </div>
+                      </>
+                    ) : null}
+                  </div>
+                );
               }
               return nodes;
             })()

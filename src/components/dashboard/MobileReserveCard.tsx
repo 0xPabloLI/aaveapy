@@ -684,7 +684,7 @@ const MobileReserveCard = memo(({
               type="button"
               onClick={onToggleSimulation}
               aria-expanded={isSimulationExpanded}
-              aria-label={isSimulationExpanded ? 'Collapse reserve details' : 'Expand reserve details'}
+              aria-label={isSimulationExpanded ? 'Collapse details panel' : 'Expand details panel'}
               className={`inline-flex w-full items-center justify-between gap-2 rounded-lg px-3 py-1.5 ds-text-12 text-muted-foreground transition-all duration-200 ${
                 isSimulationExpanded
                   ? 'border border-foreground/25 bg-muted/60 shadow-sm dark:border-foreground/20 dark:bg-muted/40'
