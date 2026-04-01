@@ -773,6 +773,16 @@ const MobileReserveCard = memo(({
                       optimal={optimalPct}
                     />
                   )}
+                  {capSheet === 'deficit' && deficitUsd != null && (
+                    <DeficitSheetContent
+                      deficitUsd={deficitUsd}
+                      totalSuppliedUsd={displayReserveSizeUsd}
+                      deficitTokenLabel={deficitTokenLabel}
+                      inputMode={inputMode}
+                      tokenPrice={displayTokenPrice}
+                      tokenSymbol={reserve.tokenSymbol}
+                    />
+                  )}
                 </div>
               </motion.div>
             </>
