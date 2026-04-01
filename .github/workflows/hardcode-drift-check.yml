@@ -1,3 +1,5 @@
+# Read-only guard on the default branch. When live /markets gains a new chainId, merge the bot PR from
+# Hardcode Sync (schedule targets the same default branch) or run sync locally—main stays red until then.
 name: Hardcode Drift Check
 
 on:
@@ -5,8 +7,8 @@ on:
   repository_dispatch:
     types: [upstream-change]
   schedule:
-    # Every day at 04:40 UTC
-    - cron: "40 4 * * *"
+    # After Hardcode Sync (04:20 UTC) so automated sync + PR land first; merge bot PRs to clear drift.
+    - cron: "0 5 * * *"
 
 jobs:
   check-hardcode-icons:

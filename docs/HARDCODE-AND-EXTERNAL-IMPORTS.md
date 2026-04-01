@@ -22,15 +22,16 @@
 - `.github/workflows/hardcode-sync.yml`
 
 触发：
-- `schedule`: `20 4 * * *`（每日 04:20 UTC）
-- `workflow_dispatch`
-- `repository_dispatch`（`types: [upstream-change]`）
+- `schedule` / `workflow_dispatch` / `repository_dispatch`：使用 **matrix** 在 **`dev`** 与 **`main`** 上各跑一遍（两个 job）；PR 头分支为 `bot/hardcode-sync-dev` / `bot/hardcode-sync-main`，base 分别为对应分支。
+- `schedule` cron：`20 4 * * *`（每日 04:20 UTC）。
 
 执行步骤（核心）：
 1. `npm run hardcode:sync`
 2. `npm run hardcode:verify`
 3. 失败后再做一轮 sync + verify
 4. verify 通过则自动建 PR；持续失败则建 issue 并 fail job
+
+只读校验（默认分支，无自动改文件）：`.github/workflows/hardcode-drift-check.yml`，`schedule` 当前为每日 **05:00 UTC**（晚于 sync，便于先出 bot PR）。**在合并该 PR 之前**，默认分支仍可能对「新链」报错——属于预期；合并后即与 live `/markets` 对齐。
 
 ## 3. 同步与校验脚本分工
 
@@ -39,6 +40,7 @@
 | reserve patches | `scripts/sync-reserve-patches-upstream.mjs` | `scripts/check-reserve-patches-upstream.mjs` |
 | market name map | `scripts/sync-market-name-map-upstream.mjs` | `scripts/check-market-name-map-upstream.mjs` |
 | chain icon map | `scripts/sync-chain-icon-map-upstream.mjs` | `scripts/check-chain-icon-map-upstream.mjs`（映射须覆盖上游；磁盘缺图时可列入 `scripts/data/pending-chain-icon-bases.json`） |
+| CoinGecko `chainId` → platform id（随 `/markets` 出现的新链） | `scripts/sync-coingecko-platform-map.mjs` | `scripts/check-coingecko-platform-map-upstream.mjs` |
 | token icons | `scripts/sync-token-icons.mjs` | `scripts/sync-token-icons.mjs --check` + `scripts/check-hardcode-icons.mjs` |
 
 `hardcode:verify` 当前命令链：
@@ -46,6 +48,7 @@
 - `check:reserve-patches-upstream`
 - `check:market-name-map-upstream`
 - `check:chain-icons-upstream`
+- `check:coingecko-platform-map-upstream`
 - `sync-token-icons -- --check`
 
 ## 4. Token Icon Backup 策略（当前实现）

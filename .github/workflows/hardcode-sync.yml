@@ -2,15 +2,10 @@ name: Hardcode Sync
 
 on:
   workflow_dispatch:
-    inputs:
-      target_branch:
-        description: "Branch to run hardcode sync on (defaults to dev)"
-        required: false
-        type: string
   repository_dispatch:
     types: [upstream-change]
   schedule:
-    # Every day at 04:20 UTC
+    # Every day at 04:20 UTC (runs against dev and main — see matrix)
     - cron: "20 4 * * *"
 
 permissions:
@@ -24,11 +19,15 @@ jobs:
     if: >
       github.event_name == 'workflow_dispatch' ||
       github.event_name == 'repository_dispatch' ||
-      github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+      github.event_name == 'schedule'
+    strategy:
+      fail-fast: false
+      matrix:
+        target_branch: [dev, main]
     runs-on: ubuntu-latest
     env:
-      TARGET_BRANCH: >-
-        ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.target_branch != '' && github.event.client_payload.target_branch || (github.event_name == 'workflow_dispatch' && github.event.inputs.target_branch != '' && github.event.inputs.target_branch || 'dev') }}
+      # One job per branch: drift on `main` and integration on `dev` both get matching bot PRs.
+      TARGET_BRANCH: ${{ matrix.target_branch }}
       HAS_HARDCODE_SYNC_PAT: ${{ secrets.HARDCODE_SYNC_PAT != '' }}
       # Repository variable LIVE_TEST_API_BASE_CI (Settings → Actions → Variables)
       LIVE_TEST_API_BASE_CI: ${{ vars.LIVE_TEST_API_BASE_CI != '' && vars.LIVE_TEST_API_BASE_CI || 'https://staging-api.aaveapy.com/api' }}
@@ -105,7 +104,7 @@ jobs:
 
             Verification:
             - `npm run hardcode:verify`
-          branch: "bot/hardcode-sync"
+          branch: bot/hardcode-sync-${{ matrix.target_branch }}
           base: ${{ env.TARGET_BRANCH }}
           delete-branch: true
           labels: |
@@ -122,7 +121,7 @@ jobs:
         uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
         with:
           script: |
-            const workflowRef = `${{ steps.cpr.outputs.pull-request-branch }}` || 'bot/hardcode-sync';
+            const workflowRef = `${{ steps.cpr.outputs.pull-request-branch }}` || 'bot/hardcode-sync-${{ matrix.target_branch }}';
             const targetRef = `${{ steps.cpr.outputs.pull-request-head-sha }}` || workflowRef;
             await github.rest.actions.createWorkflowDispatch({
               owner: context.repo.owner,
