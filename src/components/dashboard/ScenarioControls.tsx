@@ -66,7 +66,81 @@ function IncentiveNetCheckboxTooltip({
   );
 }
 
+function MobileNetCollapsible({
+  id,
+  checked,
+  onCheckedChange,
+  fontSize,
+}: {
+  id: string;
+  checked: boolean;
+  onCheckedChange: (next: boolean) => void;
+  fontSize: string;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="mt-1 border-t border-border/40 pt-1">
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className="flex w-full items-center gap-1.5 rounded-md px-0.5 py-1.5 transition-colors hover:bg-muted/50"
+      >
+        <ChevronDown
+          className={cn(
+            'size-3.5 shrink-0 text-muted-foreground transition-transform duration-200',
+            open && 'rotate-180',
+          )}
+          aria-hidden
+        />
+        <span className={`${fontSize} text-muted-foreground`}>Net lending &amp; borrowing</span>
+      </button>
+
+      <div
+        className={cn(
+          'grid transition-[grid-template-rows] duration-200 ease-out',
+          open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]',
+        )}
+      >
+        <div className="overflow-hidden">
+          <div className="px-1 pb-2 pt-1 space-y-2">
+            <label
+              htmlFor={id}
+              className="flex min-w-0 cursor-pointer items-center gap-[var(--ds-space-1-5)] rounded-md px-0.5 py-1"
+            >
+              <input
+                id={id}
+                type="checkbox"
+                checked={checked}
+                onChange={(event) => onCheckedChange(event.target.checked)}
+                className={cn(DS_NATIVE_CHECKBOX_CLASS, 'mt-0 accent-muted-foreground')}
+                aria-label="Net lending and borrowing for incentives"
+              />
+              <span className={`${fontSize} text-foreground`}>
+                {checked ? 'On' : 'Off'}
+              </span>
+            </label>
+
+            <div className="space-y-1.5 px-0.5">
+              <p className="text-muted-foreground ds-text-11 leading-relaxed">
+                Net on: overlapping supply and borrow offset each other first.
+              </p>
+              <p className="text-muted-foreground ds-text-11 leading-relaxed">
+                Net off: both sides are counted in full, which may overestimate incentives.
+              </p>
+              <p className="text-muted-foreground ds-text-11 leading-relaxed">
+                Brevis campaigns use separate rules and are not affected by this switch.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const INPUT_DEBOUNCE_MS = 300;
+
 
 export type ScenarioInputMode = 'usd' | 'token';
 
