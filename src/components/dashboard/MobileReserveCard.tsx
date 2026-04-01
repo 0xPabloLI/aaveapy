@@ -14,7 +14,7 @@ import SimulationSubRow from './SimulationSubRow';
 import UtilizationIndicator from './UtilizationIndicator';
 import CapProgressRing from './CapProgressRing';
 import BorrowCapProgressRing from './BorrowCapProgressRing';
-import DeficitLiquidityRing from './DeficitLiquidityRing';
+
 import DeficitShieldIcon from './DeficitShieldIcon';
 import { formatScenarioSize } from '@/lib/formatters';
 import {
