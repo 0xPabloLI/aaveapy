@@ -628,32 +628,6 @@ const MobileReserveCard = memo(({
         {/* Tab content */}
         <div className="flex w-full flex-col">
           {renderAmountRow()}
-          {hasDeficit ? (
-            <div className="mt-0.5 px-4 flex items-center justify-end">
-              {deficitUsd != null ? (
-                <DeficitLiquidityRing
-                  deficitUsd={deficitUsd}
-                  totalSuppliedUsd={displayReserveSizeUsd}
-                  tokenDeficitLabel={deficitTokenLabel}
-                  ringSize={12}
-                  strokeWidth={1.2}
-                  label={(
-                    <span className={cn('inline-flex items-center gap-1 ds-text-10 tabular-nums', deficitTextClass)}>
-                      <DeficitShieldIcon ratio={deficitShareRatio} className={cn(isNeutralDeficit && 'opacity-70')} />
-                      <span>{deficitInlineValue}</span>
-                    </span>
-                  )}
-                  triggerClassName={deficitTextClass}
-                  triggerAriaLabel={`Deficit share of total supplied plus deficit for ${reserve.tokenSymbol}`}
-                />
-              ) : (
-                <p className={cn('inline-flex items-center gap-1 text-right ds-text-10 tabular-nums', deficitTextClass)}>
-                  <DeficitShieldIcon ratio={deficitShareRatio} className={cn(isNeutralDeficit && 'opacity-70')} />
-                  <span>{deficitInlineValue}</span>
-                </p>
-              )}
-            </div>
-          ) : null}
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={activeTab}
