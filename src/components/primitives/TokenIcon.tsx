@@ -1,7 +1,19 @@
-import { useEffect, useMemo, useState, memo, useCallback } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useState,
+  memo,
+  useCallback,
+  useRef,
+  useLayoutEffect,
+} from 'react';
 import { cn } from '@/lib/utils';
 import { useCoingeckoTokenImage } from '@/hooks/useCoingeckoTokenImage';
-import { getPreloadedImageSource, getTokenIconSources } from '@/lib/preloadUtils';
+import {
+  getPreloadedImageSource,
+  getTokenIconSources,
+  TOKEN_ICON_DEFAULT_SRC,
+} from '@/lib/preloadUtils';
 
 interface TokenIconProps {
   symbol: string;
@@ -10,8 +22,6 @@ interface TokenIconProps {
   loading?: 'lazy' | 'eager';
   logoURI?: string;
 }
-
-const DEFAULT_SRC = '/icons/tokens/default.svg';
 
 // Global cache: maps symbolKey → verified working src URL.
 // Survives across component mount/unmount cycles so re-mounted icons
@@ -87,12 +97,29 @@ const TokenImage = memo(({
     if (coingeckoImageUrl) {
       setSrc(coingeckoImageUrl);
     } else if (coingeckoFetched) {
-      setSrc(DEFAULT_SRC);
+      setSrc(TOKEN_ICON_DEFAULT_SRC);
     }
   }, [needCoingeckoFallback, coingeckoImageUrl, coingeckoFetched]);
 
+  const imgRef = useRef<HTMLImageElement>(null);
+  const [foregroundLoaded, setForegroundLoaded] = useState(false);
+
+  useLayoutEffect(() => {
+    const el = imgRef.current;
+    if (!el) {
+      setForegroundLoaded(false);
+      return;
+    }
+    if (el.complete && el.naturalWidth > 0) {
+      setForegroundLoaded(true);
+    } else {
+      setForegroundLoaded(false);
+    }
+  }, [src]);
+
   const handleLoad = useCallback(() => {
-    if (src && src !== DEFAULT_SRC) {
+    setForegroundLoaded(true);
+    if (src && src !== TOKEN_ICON_DEFAULT_SRC) {
       resolvedSrcCache.set(symbolKey, src);
     }
   }, [symbolKey, src]);
@@ -106,20 +133,20 @@ const TokenImage = memo(({
 
     // 2. Try next local format (order from getTokenIconSources / manifest)
     const nextIndex = formatIndex + 1;
-    if (nextIndex < localSources.length && src !== DEFAULT_SRC) {
+    if (nextIndex < localSources.length && src !== TOKEN_ICON_DEFAULT_SRC) {
       setFormatIndex(nextIndex);
       setSrc(localSources[nextIndex]);
       return;
     }
 
     // 3. Try CoinGecko as last resort
-    if (src !== DEFAULT_SRC && !needCoingeckoFallback) {
+    if (src !== TOKEN_ICON_DEFAULT_SRC && !needCoingeckoFallback) {
       setNeedCoingeckoFallback(true);
       return;
     }
 
     // 4. Fall back to default icon — log once per symbol after all formats tried
-    if (src !== DEFAULT_SRC) {
+    if (src !== TOKEN_ICON_DEFAULT_SRC) {
       if (!missingIconLogged.has(symbolKey)) {
         missingIconLogged.add(symbolKey);
         const tried = [...localSources];
@@ -128,22 +155,46 @@ const TokenImage = memo(({
           `[TokenIcon] No icon found for "${symbol}" (tried: ${tried.join(', ')}; using default).`
         );
       }
-      setSrc(DEFAULT_SRC);
+      setSrc(TOKEN_ICON_DEFAULT_SRC);
     }
   }, [symbol, symbolKey, logoURI, src, formatIndex, localSources, needCoingeckoFallback]);
 
+  const showDefaultUnderlay = src !== TOKEN_ICON_DEFAULT_SRC;
+
   return (
-    <img
-      src={src}
-      alt={`${symbol} icon`}
-      width={size}
-      height={size}
-      loading={effectiveLoading}
-      decoding="async"
-      onLoad={handleLoad}
-      onError={handleError}
-      className={cn('rounded-full object-contain', className)}
-    />
+    <div
+      className={cn('relative inline-block shrink-0 rounded-full', className)}
+      style={{ width: size, height: size }}
+    >
+      {showDefaultUnderlay ? (
+        <img
+          src={TOKEN_ICON_DEFAULT_SRC}
+          alt=""
+          aria-hidden
+          width={size}
+          height={size}
+          loading="eager"
+          decoding="async"
+          className="pointer-events-none absolute inset-0 size-full rounded-full object-contain opacity-25 saturate-0"
+        />
+      ) : null}
+      <img
+        ref={imgRef}
+        src={src}
+        alt={`${symbol} icon`}
+        width={size}
+        height={size}
+        loading={effectiveLoading}
+        decoding="async"
+        onLoad={handleLoad}
+        onError={handleError}
+        className={cn(
+          'relative z-10 size-full rounded-full object-contain',
+          showDefaultUnderlay && 'transition-opacity duration-150 ease-out',
+          showDefaultUnderlay && !foregroundLoaded ? 'opacity-0' : 'opacity-100',
+        )}
+      />
+    </div>
   );
 });
 

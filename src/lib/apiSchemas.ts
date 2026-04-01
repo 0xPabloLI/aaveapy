@@ -44,18 +44,71 @@ const MerklOpportunityGroupSchema = z.object({
   breakdowns: z.array(MerklCampaignBreakdownSchema),
 });
 
-// ── Brevis incentive ──
-const BrevisIncentiveSchema = z.object({
-  link: z.string(),
+const BrevisCampaignBreakdownSchema = z.object({
   campaignApr: z.number(),
   campaignStartedAt: z.string(),
   campaignEndedAt: z.string(),
-  message: z.string().optional(),
   latestTvl: z.number().optional(),
   totalBudget: z.number().optional(),
   perUserRewardCapUsd: z.number().optional(),
   campaignId: z.string().optional(),
-});
+}).passthrough();
+
+// ── Brevis incentive ──
+const BrevisIncentiveSchema = z.object({
+  link: z.string(),
+  name: z.string().optional(),
+  message: z.string().optional(),
+  breakdowns: z.array(BrevisCampaignBreakdownSchema).optional(),
+  campaignApr: z.number().optional(),
+  campaignStartedAt: z.string().optional(),
+  campaignEndedAt: z.string().optional(),
+  latestTvl: z.number().optional(),
+  totalBudget: z.number().optional(),
+  perUserRewardCapUsd: z.number().optional(),
+  campaignId: z.string().optional(),
+}).passthrough();
+
+const BrevisGroupedIncentiveSchema = z.object({
+  link: z.string(),
+  name: z.string().optional(),
+  message: z.string().optional(),
+  breakdowns: z.array(BrevisCampaignBreakdownSchema),
+}).passthrough();
+
+const BrevisRawIncentiveSchema = z.union([
+  BrevisGroupedIncentiveSchema,
+  BrevisIncentiveSchema,
+]);
+
+type BrevisRawIncentive = z.infer<typeof BrevisRawIncentiveSchema>;
+type BrevisIncentive = z.infer<typeof BrevisIncentiveSchema>;
+
+const isBrevisGroupedIncentive = (
+  entry: BrevisRawIncentive
+): entry is z.infer<typeof BrevisGroupedIncentiveSchema> =>
+  Object.prototype.hasOwnProperty.call(entry, 'breakdowns');
+
+const normalizeBrevisIncentives = (
+  entries: BrevisRawIncentive[] | undefined,
+): BrevisIncentive[] | undefined => {
+  if (!entries?.length) return undefined;
+  const normalized: BrevisIncentive[] = [];
+  for (const entry of entries) {
+    if (isBrevisGroupedIncentive(entry)) {
+      const { breakdowns, ...groupFields } = entry;
+      for (const breakdown of breakdowns) {
+        normalized.push({
+          ...groupFields,
+          ...breakdown,
+        });
+      }
+      continue;
+    }
+    normalized.push(entry);
+  }
+  return normalized.length > 0 ? normalized : undefined;
+};
 
 // ── Token price entry ──
 const TokenPriceEntrySchema = z.object({
@@ -89,8 +142,8 @@ const ReserveWithSpreadSchema = z.object({
   merklSupplys: z.array(MerklOpportunityGroupSchema).optional(),
   merklBorrows: z.array(MerklOpportunityGroupSchema).optional(),
   merklHolds: z.array(MerklOpportunityGroupSchema).optional(),
-  brevisSupplys: z.array(BrevisIncentiveSchema).optional(),
-  brevisBorrows: z.array(BrevisIncentiveSchema).optional(),
+  brevisSupplys: z.array(BrevisRawIncentiveSchema).optional().transform(normalizeBrevisIncentives),
+  brevisBorrows: z.array(BrevisRawIncentiveSchema).optional().transform(normalizeBrevisIncentives),
 }).passthrough(); // allow extra fields from API without breaking
 
 // ── Markets response ── (current API: { snapshot, reserves })

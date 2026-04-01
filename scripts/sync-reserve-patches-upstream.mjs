@@ -1,8 +1,14 @@
 #!/usr/bin/env node
+/**
+ * Merges aave/interface reservePatches drift into local `reservePatches.ts`:
+ * - SYMBOL_MAP: upstream values win on shared keys; local-only keys preserved (see reserve-patches-symbol-map.mjs).
+ * - underlyingAssetMap: append upstream entries missing locally (address / expression keys).
+ */
 import { readFile, writeFile } from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { fetchWithTimeout } from './lib/fetch-utils.mjs';
+import { mergeSymbolMapInContent } from './lib/reserve-patches-symbol-map.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const UPSTREAM_RESERVE_PATCHES_URL =
@@ -182,12 +188,7 @@ function alignEntryIndent(entry) {
     .join('\n');
 }
 
-async function main() {
-  const [localContent, upstreamContent] = await Promise.all([
-    readFile(LOCAL_RESERVE_PATCHES_PATH, 'utf8'),
-    fetchWithTimeout(UPSTREAM_RESERVE_PATCHES_URL),
-  ]);
-
+function applyUnderlyingAssetMapMerge(localContent, upstreamContent) {
   const localBounds = findUnderlyingAssetMapBounds(localContent);
   const upstreamBounds = findUnderlyingAssetMapBounds(upstreamContent);
 
@@ -208,17 +209,50 @@ async function main() {
   }
 
   if (missingEntries.length === 0) {
-    console.log('reservePatches is already aligned for upstream keys (no missing entries).');
-    return;
+    return { content: localContent, changed: false, addedCount: 0 };
   }
 
   const insertion = `${missingEntries.join(',\n')},\n`;
   const beforeClose = localContent.slice(0, localBounds.closeIndex);
   const afterClose = localContent.slice(localBounds.closeIndex);
-  const nextContent = `${beforeClose}${insertion}${afterClose}`;
+  return {
+    content: `${beforeClose}${insertion}${afterClose}`,
+    changed: true,
+    addedCount: missingEntries.length,
+  };
+}
 
-  await writeFile(LOCAL_RESERVE_PATCHES_PATH, nextContent, 'utf8');
-  console.log(`Added ${missingEntries.length} missing reservePatches entries from upstream.`);
+async function main() {
+  const [localContent, upstreamContent] = await Promise.all([
+    readFile(LOCAL_RESERVE_PATCHES_PATH, 'utf8'),
+    fetchWithTimeout(UPSTREAM_RESERVE_PATCHES_URL),
+  ]);
+
+  let next = localContent;
+  const notes = [];
+
+  const symbolMerge = mergeSymbolMapInContent(next, upstreamContent);
+  if (symbolMerge.changed) {
+    next = symbolMerge.content;
+    notes.push('SYMBOL_MAP merged from upstream (local-only keys preserved)');
+  }
+
+  const underlyingMerge = applyUnderlyingAssetMapMerge(next, upstreamContent);
+  if (underlyingMerge.changed) {
+    next = underlyingMerge.content;
+    notes.push(`underlyingAssetMap: added ${underlyingMerge.addedCount} missing entr(y/ies)`);
+  }
+
+  if (!symbolMerge.changed && !underlyingMerge.changed) {
+    console.log('reservePatches is already aligned (SYMBOL_MAP + underlyingAssetMap).');
+    return;
+  }
+
+  await writeFile(LOCAL_RESERVE_PATCHES_PATH, next, 'utf8');
+  for (const line of notes) {
+    console.log(line);
+  }
+  console.log('Updated src/ui-config/reservePatches.ts');
 }
 
 main().catch((error) => {

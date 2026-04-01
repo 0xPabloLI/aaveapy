@@ -50,7 +50,7 @@ export function buildMeritSelfDepositCeilingEffect(input: {
     kind: 'deposit_ceiling',
     scope: 'per_user',
     window: 'round_cycle',
-    noteParts: [`Eligible deposit capped at ${formatUsd(depositCeilingUsd)}`],
+    noteParts: [`Eligible supply capped at ${formatUsd(depositCeilingUsd)}`],
     warning: inputUsd > depositCeilingUsd,
     metrics: {
       depositCeilingUsd,
@@ -140,4 +140,10 @@ export function buildMerklAprCeilingEffect(): IncentiveCeilingEffect {
     noteParts: ['APR capped for low TVL'],
     warning: true,
   };
+}
+
+/** Net position eligibility: effective incentive is discounted because only the net portion is eligible. */
+export function buildNetEligibilityNote(netUsd: number, grossUsd: number): string | null {
+  if (grossUsd <= 0 || netUsd >= grossUsd) return null;
+  return `Net eligible ${formatUsd(netUsd)} of ${formatUsd(grossUsd)}`;
 }

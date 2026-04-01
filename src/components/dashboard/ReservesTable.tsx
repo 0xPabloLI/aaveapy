@@ -22,13 +22,18 @@ import { compareIncentiveWithNative } from '@/lib/sorters';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
 import { openExternalUrl } from '@/lib/externalNavigation';
+import { calculateDeficitShareRatio, getReserveDeficitUsdAmount } from '@/lib/deficit';
 import IncentiveTooltip from './IncentiveTooltip';
 import MobileReserveCard from './MobileReserveCard';
 import DesktopReserveRow from './DesktopReserveRow';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getReserveSimulationId, useSharedRateSimulations } from '@/hooks/useRateSimulation';
 import { getScenarioSupplySizeUsd, getTotalBorrowedUsd as getReserveTotalBorrowedUsd } from '@/lib/scenarioSize';
-import { scrollExpandedSimulationIntoView } from '@/lib/scrollExpandedSimulationIntoView';
+import {
+  scrollExpandedSimulationIntoView,
+  shouldScrollExpandedSimulationIntoView,
+} from '@/lib/scrollExpandedSimulationIntoView';
+import { createScenarioPinControllerState, transitionScenarioPinController } from '@/lib/scenarioPinController';
 
 interface ReservesTableProps {
   reserves: ReserveWithSpread[];
@@ -70,7 +75,7 @@ const ReservesTable = ({
   const [tokenSortOrder, setTokenSortOrder] = useState<'asc' | 'desc'>('asc');
   const [marketSortOrder, setMarketSortOrder] = useState<'asc' | 'desc'>('asc');
   const [priceSortOrder, setPriceSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [sizeSortMode, setSizeSortMode] = useState<'supply' | 'borrow'>('supply');
+  const [sizeSortMode, setSizeSortMode] = useState<'supply' | 'borrow' | 'deficitRatio' | 'deficitAmount'>('supply');
   const [sizeSortOrder, setSizeSortOrder] = useState<'asc' | 'desc'>('desc');
   const [utilSortOrder, setUtilSortOrder] = useState<'asc' | 'desc'>('desc');
   const [showSizeSortMenu, setShowSizeSortMenu] = useState(false);
@@ -86,9 +91,13 @@ const ReservesTable = ({
   const borrowSortButtonRef = useRef<HTMLButtonElement>(null);
   const supplySortButtonRef = useRef<HTMLButtonElement>(null);
   const scenarioControlsRef = useRef<ScenarioControlsHandle>(null);
-  const lastScenarioKeyForPinScrollRef = useRef<string | null>(null);
-  const lastSortedIdsForPinScrollRef = useRef<string[]>([]);
-  const scenarioPinScrollBaselineReadyRef = useRef(false);
+  const scenarioPinControllerRef = useRef(createScenarioPinControllerState());
+  const scenarioPinScheduleTokenRef = useRef(0);
+  const cancelScenarioPinScrollRef = useRef<(() => void) | null>(null);
+  const lastReservesKeyForFilterPinRef = useRef<string | null>(null);
+  const cancelFilterPinScrollRef = useRef<(() => void) | null>(null);
+  const suppressNextToggleReserveIdRef = useRef<string | null>(null);
+  const pendingMarketFilterPinReserveIdRef = useRef<string | null>(null);
   const [borrowMenuPos, setBorrowMenuPos] = useState<{ top: number; left: number } | null>(null);
   const [supplyMenuPos, setSupplyMenuPos] = useState<{ top: number; left: number } | null>(null);
   const [minVisibleCount, setMinVisibleCount] = useState<number | null>(null);
@@ -96,6 +105,7 @@ const ReservesTable = ({
   const [debouncedSharedSupplyInput, setDebouncedSharedSupplyInput] = useState('');
   const [debouncedSharedBorrowInput, setDebouncedSharedBorrowInput] = useState('');
   const [sharedInputMode, setSharedInputMode] = useState<import('@/hooks/useRateSimulation').ScenarioInputMode>('usd');
+  const [meritMerklNetPosition, setMeritMerklNetPosition] = useState(true);
   const handleScenarioChange = useCallback((supply: string, borrow: string, mode: import('@/components/dashboard/ScenarioControls').ScenarioInputMode) => {
     setDebouncedSharedSupplyInput(supply);
     setDebouncedSharedBorrowInput(borrow);
@@ -132,7 +142,18 @@ const ReservesTable = ({
   }, [showSizeSortMenu]);
 
   const handleToggleExpand = useCallback((reserveId: string) => {
+    if (suppressNextToggleReserveIdRef.current === reserveId) {
+      suppressNextToggleReserveIdRef.current = null;
+      return;
+    }
     setExpandedReserveId((prev) => (prev === reserveId ? null : reserveId));
+  }, []);
+
+  const handleMarketChipClick = useCallback((reserveId: string) => {
+    // Keep the clicked row expanded across filter updates and ignore a bubbled row toggle once.
+    suppressNextToggleReserveIdRef.current = reserveId;
+    pendingMarketFilterPinReserveIdRef.current = reserveId;
+    setExpandedReserveId(reserveId);
   }, []);
 
   const [tooltipState, setTooltipState] = useState<{
@@ -153,6 +174,7 @@ const ReservesTable = ({
     supplyInput: debouncedSharedSupplyInput,
     borrowInput: debouncedSharedBorrowInput,
     inputMode: sharedInputMode,
+    meritMerklNetPosition,
   });
 
   /** Scroll-on-expand only when list order can change with shared scenario (matches `pickScenarioValue` / size supply USD). */
@@ -160,9 +182,69 @@ const ReservesTable = ({
     if (!hasSharedScenario) return false;
     const col = activeSortColumn ?? 'supply';
     if (col === 'token' || col === 'market' || col === 'price') return false;
-    if (col === 'size' && sizeSortMode === 'borrow') return false;
+    if (col === 'size' && sizeSortMode !== 'supply') return false;
     return true;
   }, [hasSharedScenario, activeSortColumn, sizeSortMode]);
+
+  const schedulePinScrollToReserve = useCallback((reserveId: string, delayMs: number, opts?: { instant?: boolean; onSettled?: () => void }) => {
+    const mode = isMobile ? 'minimal-if-clipped' : 'pin-main-row-top';
+    const instant = opts?.instant ?? false;
+    const escapeId = (raw: string) => (
+      typeof CSS !== 'undefined' && typeof CSS.escape === 'function' ? CSS.escape(raw) : raw
+    );
+    const escapedId = escapeId(reserveId);
+
+    let cancelled = false;
+    let attempt = 0;
+    const maxAttempts = 12;
+    const retryMs = 70;
+    let finalized = false;
+
+    const finalizeAttempt = () => {
+      if (finalized) return;
+      finalized = true;
+      opts?.onSettled?.();
+    };
+
+    const runAttempt = () => {
+      if (cancelled) return;
+      const anchor = document.querySelector(`[data-reserve-expanded-anchor="${escapedId}"]`);
+      const row = document.querySelector(`tr[data-reserve-id="${escapedId}"]`);
+      if (anchor instanceof HTMLElement || row instanceof HTMLElement) {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            if (cancelled) return;
+            // Keep pin-scroll deterministic: one primary pass + at most one
+            // follow-up correction after layout settles. Repeated corrections
+            // create visible "stair-step" jank on long pages.
+            if (!shouldScrollExpandedSimulationIntoView(reserveId, { mode })) {
+              finalizeAttempt();
+              return;
+            }
+            scrollExpandedSimulationIntoView(reserveId, {
+              mode,
+              instant,
+            });
+            finalizeAttempt();
+          });
+        });
+        return;
+      }
+      attempt += 1;
+      if (attempt >= maxAttempts) {
+        finalizeAttempt();
+        return;
+      }
+      window.setTimeout(runAttempt, retryMs);
+    };
+
+    const starter = window.setTimeout(runAttempt, delayMs);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(starter);
+      finalizeAttempt();
+    };
+  }, [isMobile]);
 
   const getMarketDisplayName = (reserve: ReserveWithSpread) => {
     if (reserve.chainName === 'Ethereum' && ETHEREUM_MARKET_NAMES[reserve.marketName]) {
@@ -272,12 +354,24 @@ const ReservesTable = ({
     return pickScenarioValue(simulation.supply.currentIncentive, simulation.supply.afterIncentive);
   };
 
+  const hasSupplyIncentiveSource = (reserve: ReserveWithSpread): boolean => {
+    const simulation = getSimulation(reserve);
+    if (simulation) return simulation.supply.currentIncentive > 0;
+    return getIncentiveValues(reserve, 'supply').apy > 0;
+  };
+
   const getDisplayBorrowIncentive = (reserve: ReserveWithSpread): number | null => {
     const simulation = getSimulation(reserve);
     if (!simulation) {
       return isApy ? getIncentiveValues(reserve, 'borrow').apy : getIncentiveValues(reserve, 'borrow').apr;
     }
     return pickScenarioValue(simulation.borrow.currentIncentive, simulation.borrow.afterIncentive);
+  };
+
+  const hasBorrowIncentiveSource = (reserve: ReserveWithSpread): boolean => {
+    const simulation = getSimulation(reserve);
+    if (simulation) return simulation.borrow.currentIncentive > 0;
+    return getIncentiveValues(reserve, 'borrow').apy > 0;
   };
 
   const getDisplaySpread = (reserve: ReserveWithSpread): number | null => {
@@ -306,6 +400,18 @@ const ReservesTable = ({
     return getReserveTotalBorrowedUsd({
       reserveSizeUsd: reserve.reserveSizeUsd,
       utilizationPct: reserve.utilizationPct,
+    });
+  };
+
+  const getDisplayDeficit = (reserve: ReserveWithSpread): number | null => {
+    const tokenPrice = getSimulation(reserve)?.tokenPrice ?? reserve.tokenPrice;
+    return getReserveDeficitUsdAmount(reserve, tokenPrice);
+  };
+
+  const getDisplayDeficitRatio = (reserve: ReserveWithSpread): number | null => {
+    return calculateDeficitShareRatio({
+      deficitUsd: getDisplayDeficit(reserve),
+      totalSuppliedUsd: getDisplayReserveSizeUsd(reserve),
     });
   };
 
@@ -338,6 +444,14 @@ const ReservesTable = ({
           const aT = getTotalBorrowedUsd(a) ?? -Infinity;
           const bT = getTotalBorrowedUsd(b) ?? -Infinity;
           comparison = aT - bT;
+        } else if (sizeSortMode === 'deficitRatio') {
+          const aT = getDisplayDeficitRatio(a) ?? -Infinity;
+          const bT = getDisplayDeficitRatio(b) ?? -Infinity;
+          comparison = aT - bT;
+        } else if (sizeSortMode === 'deficitAmount') {
+          const aT = getDisplayDeficit(a) ?? -Infinity;
+          const bT = getDisplayDeficit(b) ?? -Infinity;
+          comparison = aT - bT;
         } else {
           const aT = getDisplayReserveSizeUsd(a) ?? -Infinity;
           const bT = getDisplayReserveSizeUsd(b) ?? -Infinity;
@@ -366,7 +480,17 @@ const ReservesTable = ({
           const bIncentive = getDisplaySupplyIncentive(b);
           const aNative = getDisplaySupplyNative(a);
           const bNative = getDisplaySupplyNative(b);
-          return compareIncentiveWithNative(aIncentive, bIncentive, aNative, bNative, supplySortOrder);
+          const aHasIncentiveSource = hasSupplyIncentiveSource(a);
+          const bHasIncentiveSource = hasSupplyIncentiveSource(b);
+          return compareIncentiveWithNative(
+            aIncentive,
+            bIncentive,
+            aNative,
+            bNative,
+            supplySortOrder,
+            aHasIncentiveSource,
+            bHasIncentiveSource,
+          );
         } else {
           // Total sorting - use totalSupplyApy (Native + Incentive)
           const aTotal = getDisplaySupplyTotal(a);
@@ -391,7 +515,17 @@ const ReservesTable = ({
           const bIncentive = getDisplayBorrowIncentive(b);
           const aNative = getDisplayBorrowNative(a);
           const bNative = getDisplayBorrowNative(b);
-          return compareIncentiveWithNative(aIncentive, bIncentive, aNative, bNative, borrowSortOrder);
+          const aHasIncentiveSource = hasBorrowIncentiveSource(a);
+          const bHasIncentiveSource = hasBorrowIncentiveSource(b);
+          return compareIncentiveWithNative(
+            aIncentive,
+            bIncentive,
+            aNative,
+            bNative,
+            borrowSortOrder,
+            aHasIncentiveSource,
+            bHasIncentiveSource,
+          );
         } else {
           // Total sorting
           const aTotal = getDisplayBorrowTotal(a);
@@ -414,7 +548,7 @@ const ReservesTable = ({
       }
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reserves, activeSortColumn, tokenSortOrder, marketSortOrder, priceSortOrder, sizeSortMode, sizeSortOrder, utilSortOrder, supplySortMode, supplySortOrder, borrowSortMode, borrowSortOrder, spreadSortOrder, simulationsById, hasSharedScenario, isApy, tydroPointToUsdRate, whitelistMerklCampaignIds, debouncedSharedSupplyInput, sharedInputMode]);
+  }, [reserves, activeSortColumn, tokenSortOrder, marketSortOrder, priceSortOrder, sizeSortMode, sizeSortOrder, utilSortOrder, supplySortMode, supplySortOrder, borrowSortMode, borrowSortOrder, spreadSortOrder, simulationsById, hasSharedScenario, isApy, tydroPointToUsdRate, whitelistMerklCampaignIds, debouncedSharedSupplyInput, debouncedSharedBorrowInput, sharedInputMode, meritMerklNetPosition]);
 
   /**
    * Simulation pin scroll — normative spec + implementation steps:
@@ -422,50 +556,113 @@ const ReservesTable = ({
    * Do not move to `expandedReserveId`-only effects or index-based scroll without updating that doc.
    */
   useEffect(() => {
-    const scenarioKey = `${debouncedSharedSupplyInput}\0${debouncedSharedBorrowInput}\0${sharedInputMode}`;
+    const scenarioKey = `${debouncedSharedSupplyInput}\0${debouncedSharedBorrowInput}\0${sharedInputMode}\0${meritMerklNetPosition ? '1' : '0'}`;
     const ids = sortedData.map((r) => getReserveSimulationId(r));
+    const expandedIndex = expandedReserveId
+      ? sortedData.findIndex((r) => getReserveSimulationId(r) === expandedReserveId)
+      : -1;
+    const currentCount = minVisibleCount ?? DEFAULT_VISIBLE_COUNT;
+    const requiredCount =
+      expandedIndex >= 0 ? Math.min(expandedIndex + 6, sortedData.length) : 0;
+    const hasRequiredVisibleCount =
+      expandedIndex >= 0 ? currentCount >= requiredCount : false;
 
-    if (!scenarioPinScrollBaselineReadyRef.current) {
-      lastScenarioKeyForPinScrollRef.current = scenarioKey;
-      lastSortedIdsForPinScrollRef.current = ids;
-      scenarioPinScrollBaselineReadyRef.current = true;
-      return;
-    }
+    const controllerResult = transitionScenarioPinController(
+      scenarioPinControllerRef.current,
+      {
+        scenarioKey,
+        sortedIds: ids,
+        expandedReserveId,
+        hasScenarioInput: hasSharedScenario,
+        expandScrollFollowsScenarioSort,
+        hasRequiredVisibleCount,
+        isExpandedStillVisible: expandedIndex >= 0,
+      },
+    );
+    scenarioPinControllerRef.current = controllerResult.nextState;
 
-    if (scenarioKey !== lastScenarioKeyForPinScrollRef.current) {
-      const prevIds = lastSortedIdsForPinScrollRef.current;
-      const orderChanged =
-        prevIds.length !== ids.length || prevIds.some((id, i) => id !== ids[i]);
-      lastScenarioKeyForPinScrollRef.current = scenarioKey;
-      lastSortedIdsForPinScrollRef.current = ids;
+    if (!controllerResult.shouldSchedulePin || !controllerResult.pinReserveId) return;
 
-      if (
-        orderChanged &&
-        expandScrollFollowsScenarioSort &&
-        expandedReserveId
-      ) {
-        const id = expandedReserveId;
-        const mode = isMobile ? 'minimal-if-clipped' : 'pin-main-row-top';
-        const timer = window.setTimeout(() => {
-          requestAnimationFrame(() => {
-            requestAnimationFrame(() => scrollExpandedSimulationIntoView(id, { mode }));
-          });
-        }, 320);
-        return () => window.clearTimeout(timer);
-      }
-      return;
-    }
-
-    lastSortedIdsForPinScrollRef.current = ids;
+    cancelFilterPinScrollRef.current?.();
+    cancelFilterPinScrollRef.current = null;
+    cancelScenarioPinScrollRef.current?.();
+    const scheduleToken = scenarioPinScheduleTokenRef.current + 1;
+    scenarioPinScheduleTokenRef.current = scheduleToken;
+    cancelScenarioPinScrollRef.current = schedulePinScrollToReserve(
+      controllerResult.pinReserveId,
+      320,
+      {
+        // Keep first pass smooth; follow-up corrections (if any) remain instant.
+        instant: false,
+        onSettled: () => {
+          if (scenarioPinScheduleTokenRef.current !== scheduleToken) return;
+          cancelScenarioPinScrollRef.current = null;
+        },
+      },
+    ) ?? null;
   }, [
     debouncedSharedSupplyInput,
     debouncedSharedBorrowInput,
     sharedInputMode,
+    meritMerklNetPosition,
     sortedData,
     expandedReserveId,
-    isMobile,
+    minVisibleCount,
+    hasSharedScenario,
     expandScrollFollowsScenarioSort,
+    schedulePinScrollToReserve,
   ]);
+
+  useEffect(() => {
+    const reservesKey = reserves.map((r) => getReserveSimulationId(r)).join('\0');
+    if (lastReservesKeyForFilterPinRef.current === null) {
+      lastReservesKeyForFilterPinRef.current = reservesKey;
+      return;
+    }
+    if (reservesKey === lastReservesKeyForFilterPinRef.current) return;
+    lastReservesKeyForFilterPinRef.current = reservesKey;
+
+    const targetReserveId = pendingMarketFilterPinReserveIdRef.current ?? expandedReserveId;
+    if (!targetReserveId) return;
+    const stillVisible = sortedData.some((r) => getReserveSimulationId(r) === targetReserveId);
+    if (!stillVisible) {
+      pendingMarketFilterPinReserveIdRef.current = null;
+      return;
+    }
+
+    pendingMarketFilterPinReserveIdRef.current = null;
+    // Cancel any prior scheduled pin so filter-driven pin is the only jump.
+    // Store the cancel fn in a ref so that unrelated sortedData changes
+    // (which re-run this effect but bail at the reservesKey guard) do
+    // not invoke effect cleanup and cancel the pending scroll.
+    cancelScenarioPinScrollRef.current?.();
+    cancelScenarioPinScrollRef.current = null;
+    cancelFilterPinScrollRef.current?.();
+    cancelFilterPinScrollRef.current = schedulePinScrollToReserve(targetReserveId, 280, { instant: true }) ?? null;
+  }, [reserves, sortedData, expandedReserveId, schedulePinScrollToReserve]);
+
+  useEffect(() => {
+    return () => {
+      cancelFilterPinScrollRef.current?.();
+      cancelScenarioPinScrollRef.current?.();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!expandedReserveId) {
+      pendingMarketFilterPinReserveIdRef.current = null;
+      suppressNextToggleReserveIdRef.current = null;
+    }
+  }, [expandedReserveId]);
+
+  useEffect(() => {
+    const existsInReserves = expandedReserveId
+      ? reserves.some((r) => getReserveSimulationId(r) === expandedReserveId)
+      : true;
+    if (!existsInReserves && pendingMarketFilterPinReserveIdRef.current === expandedReserveId) {
+      pendingMarketFilterPinReserveIdRef.current = null;
+    }
+  }, [expandedReserveId, reserves]);
 
   const supplySortLabel = {
     total: 'Total',
@@ -482,7 +679,21 @@ const ReservesTable = ({
   const sizeSortLabel = {
     supply: 'Supply',
     borrow: 'Borrow',
+    deficitRatio: 'Deficit (%)',
+    deficitAmount: 'Deficit (Amount)',
   }[sizeSortMode];
+  const sizeSortAccentClass =
+    sizeSortMode === 'supply'
+      ? 'ds-text-emerald-700'
+      : sizeSortMode === 'borrow'
+        ? 'ds-text-brand-cyan'
+        : 'text-foreground';
+  const sizeSortActiveHeadingClass =
+    sizeSortMode === 'supply'
+      ? 'ds-text-emerald-600 font-bold scale-105'
+      : sizeSortMode === 'borrow'
+        ? 'ds-text-brand-cyan font-bold scale-105'
+        : 'text-foreground font-bold scale-105';
   const mobileCardDefaultTab: 'supply' | 'borrow' =
     activeSortColumn === 'borrow' || (activeSortColumn === 'size' && sizeSortMode === 'borrow')
       ? 'borrow'
@@ -640,35 +851,70 @@ const ReservesTable = ({
   
   const showAll = minVisibleCount !== null && minVisibleCount >= sortedData.length;
 
-  const scenarioControls = <ScenarioControls ref={scenarioControlsRef} onDebouncedChange={handleScenarioChange} />;
+  const scenarioControls = (
+    <ScenarioControls
+      ref={scenarioControlsRef}
+      onDebouncedChange={handleScenarioChange}
+      meritMerklNetPosition={meritMerklNetPosition}
+      onMeritMerklNetPositionChange={setMeritMerklNetPosition}
+    />
+  );
 
+  const mobileTableRef = useRef<HTMLDivElement>(null);
   const desktopTableCardRef = useRef<HTMLDivElement>(null);
+  const desktopTableBottomAnchorRef = useRef<HTMLDivElement>(null);
   const desktopStickyScenarioRef = useRef<HTMLDivElement>(null);
+  const desktopStickyTheadRef = useRef<HTMLTableSectionElement>(null);
+  const [tableInView, setTableInView] = useState(false);
+
+  useEffect(() => {
+    const target = isMobile ? mobileTableRef.current : desktopTableCardRef.current;
+    if (!target) return;
+    const io = new IntersectionObserver(
+      ([entry]) => setTableInView(entry.isIntersecting),
+      { threshold: 0, rootMargin: '200px 0px 200px 0px' },
+    );
+    io.observe(target);
+    return () => io.disconnect();
+  }, [isMobile]);
 
   useEffect(() => {
     if (isMobile) return;
     const stickyEl = desktopStickyScenarioRef.current;
+    const theadEl = desktopStickyTheadRef.current;
     const card = desktopTableCardRef.current;
     if (!stickyEl || !card) return undefined;
     const apply = () => {
-      card.style.setProperty(
-        '--reserves-sticky-scenario-height',
-        `${stickyEl.getBoundingClientRect().height}px`,
-      );
+      const scenarioH = stickyEl.getBoundingClientRect().height;
+      card.style.setProperty('--reserves-sticky-scenario-height', `${scenarioH}px`);
+      const theadH =
+        theadEl instanceof HTMLElement ? theadEl.getBoundingClientRect().height : 0;
+      if (theadH > 0) {
+        card.style.setProperty(
+          '--reserves-expanded-main-row-top',
+          `${scenarioH + theadH}px`,
+        );
+      } else {
+        card.style.removeProperty('--reserves-expanded-main-row-top');
+      }
     };
     apply();
     const ro = new ResizeObserver(apply);
     ro.observe(stickyEl);
+    if (theadEl instanceof HTMLElement) {
+      ro.observe(theadEl);
+    }
     return () => {
       ro.disconnect();
       card.style.removeProperty('--reserves-sticky-scenario-height');
+      card.style.removeProperty('--reserves-expanded-main-row-top');
     };
   }, [isMobile]);
 
   // Mobile card view — extra bottom padding so content isn't hidden by browser/safe area
   if (isMobile) {
     return (
-      <div className="space-y-3 pb-[calc(env(safe-area-inset-bottom,0px)+5rem)]">
+      <div ref={mobileTableRef} className="space-y-3 pb-[calc(env(safe-area-inset-bottom,0px)+5rem)]">
         <div
           data-reserves-sticky-scenario
           className="sticky top-[env(safe-area-inset-top,0px)] z-20 -mx-[var(--ds-space-3)] px-[var(--ds-space-3)] pt-1 pb-0 bg-background/80 backdrop-blur-sm"
@@ -690,9 +936,7 @@ const ReservesTable = ({
                 }}
                 className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-lg border transition-colors ${
                   activeSortColumn === 'size'
-                    ? sizeSortMode === 'supply'
-                      ? 'bg-card/60 border-border/70 ds-text-emerald-700 font-semibold'
-                      : 'bg-card/60 border-border/70 ds-text-brand-cyan font-semibold'
+                    ? `bg-card/60 border-border/70 ${sizeSortAccentClass} font-semibold`
                     : 'bg-card border-border text-muted-foreground font-medium'
                 }`}
               >
@@ -756,6 +1000,62 @@ const ReservesTable = ({
                           <ArrowDown className="w-3 h-3 ds-text-brand-cyan" />
                         ) : (
                           <ArrowUp className="w-3 h-3 ds-text-brand-cyan" />
+                        )
+                      ) : null}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const isAlreadySelected = sizeSortMode === 'deficitAmount' && activeSortColumn === 'size';
+                        if (isAlreadySelected && sizeSortOrder === 'desc') {
+                          setSizeSortOrder('asc');
+                        } else {
+                          setSizeSortMode('deficitAmount');
+                          setActiveSortColumn('size');
+                          setSizeSortOrder('desc');
+                        }
+                        setShowSizeSortMenu(false);
+                      }}
+                      className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-13 transition-colors flex items-center justify-between ${
+                        sizeSortMode === 'deficitAmount' && activeSortColumn === 'size'
+                          ? 'text-foreground font-bold bg-card/60'
+                          : 'text-muted-foreground'
+                      }`}
+                    >
+                      <span>Deficit</span>
+                      {sizeSortMode === 'deficitAmount' && activeSortColumn === 'size' ? (
+                        sizeSortOrder === 'desc' ? (
+                          <ArrowDown className="w-3 h-3 text-foreground" />
+                        ) : (
+                          <ArrowUp className="w-3 h-3 text-foreground" />
+                        )
+                      ) : null}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const isAlreadySelected = sizeSortMode === 'deficitRatio' && activeSortColumn === 'size';
+                        if (isAlreadySelected && sizeSortOrder === 'desc') {
+                          setSizeSortOrder('asc');
+                        } else {
+                          setSizeSortMode('deficitRatio');
+                          setActiveSortColumn('size');
+                          setSizeSortOrder('desc');
+                        }
+                        setShowSizeSortMenu(false);
+                      }}
+                      className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-13 transition-colors flex items-center justify-between ${
+                        sizeSortMode === 'deficitRatio' && activeSortColumn === 'size'
+                          ? 'text-foreground font-bold bg-card/60'
+                          : 'text-muted-foreground'
+                      }`}
+                    >
+                      <span>Deficit (%)</span>
+                      {sizeSortMode === 'deficitRatio' && activeSortColumn === 'size' ? (
+                        sizeSortOrder === 'desc' ? (
+                          <ArrowDown className="w-3 h-3 text-foreground" />
+                        ) : (
+                          <ArrowUp className="w-3 h-3 text-foreground" />
                         )
                       ) : null}
                     </button>
@@ -960,173 +1260,32 @@ const ReservesTable = ({
                 const rightExpanded = rightId !== null && rightId === expandedReserveId;
                 const rowHasExpanded = leftExpanded || rightExpanded;
 
-                if (rowHasExpanded) {
-                  const isLeftActive = leftExpanded;
-                  const activeReserve = isLeftActive ? leftReserve : rightReserve!;
-                  const activeId = isLeftActive ? leftId : rightId!;
-                  /** Matches `grid-cols-2 gap-[--ds-space-2]`: one column width (connector under expanded card only). */
-                  const pairColWidth = 'calc((100% - var(--ds-space-2)) / 2)';
-                  const bridgeOnExpandedColumn = leftExpanded || !rightReserve;
+                const isLeftActive = leftExpanded;
+                const isRightActive = rightExpanded;
+                const activeReserve = isLeftActive ? leftReserve : rightReserve;
+                const activeId = isLeftActive ? leftId : rightId;
+                /** Matches `grid-cols-2 gap-[--ds-space-2]`: one column width (connector under expanded card only). */
+                const pairColWidth = 'calc((100% - var(--ds-space-2)) / 2)';
+                const bridgeOnExpandedColumn = leftExpanded || !rightReserve;
 
-                  nodes.push(
-                    <div
-                      key={`row-${i}`}
-                      className="col-span-2"
-                      data-reserve-expanded-anchor={activeId}
-                    >
-                      <div className="grid grid-cols-2 gap-[var(--ds-space-2)]">
-                        <div className="min-w-0">
-                          <MobileReserveCard
-                            variant={isLeftActive ? 'upperOnly' : 'full'}
-                            connectedBelow={leftExpanded}
-                            reserve={leftReserve}
-                            isApy={isApy}
-                            tydroPointToUsdRate={tydroPointToUsdRate}
-                            onIncentiveClick={handleMobileIncentiveClick}
-                            isSimulationExpanded={isLeftActive}
-                            onToggleSimulation={() => handleToggleExpand(leftId)}
-                            simulation={simulationsById[leftId]}
-                            supplyInput={debouncedSharedSupplyInput}
-                            borrowInput={debouncedSharedBorrowInput}
-                            hasSharedScenario={hasSharedScenario}
-                            inputMode={sharedInputMode}
-                            onCorrectSupplyInput={handleCorrectSupplyInput}
-                            onCorrectBorrowInput={handleCorrectBorrowInput}
-                            defaultTab={mobileCardDefaultTab}
-                          />
-                        </div>
-                        {rightReserve ? (
-                          <div className="min-w-0">
-                            <MobileReserveCard
-                              variant={!isLeftActive ? 'upperOnly' : 'full'}
-                              connectedBelow={rightExpanded}
-                              reserve={rightReserve}
-                              isApy={isApy}
-                              tydroPointToUsdRate={tydroPointToUsdRate}
-                              onIncentiveClick={handleMobileIncentiveClick}
-                              isSimulationExpanded={!isLeftActive}
-                              onToggleSimulation={() => handleToggleExpand(rightId!)}
-                              simulation={simulationsById[rightId!]}
-                              supplyInput={debouncedSharedSupplyInput}
-                              borrowInput={debouncedSharedBorrowInput}
-                              hasSharedScenario={hasSharedScenario}
-                              inputMode={sharedInputMode}
-                              onCorrectSupplyInput={handleCorrectSupplyInput}
-                              onCorrectBorrowInput={handleCorrectBorrowInput}
-                              defaultTab={mobileCardDefaultTab}
-                            />
-                          </div>
-                        ) : null}
-                      </div>
-                      {/* Full-width simulation (table needs width). mt clears peer card; bridge fills gap on expanded column only. */}
-                      <div className="relative isolate mt-[var(--ds-space-2)]">
-                        {/* Bridge background and outer border */}
-                        <div
-                          aria-hidden
-                          className={`pointer-events-none absolute z-10 border-border/60 bg-card ${bridgeOnExpandedColumn ? 'left-0 border-l' : 'right-0 border-r'}`}
-                          style={{
-                            top: 'calc(-1 * var(--ds-space-2))',
-                            height: 'calc(var(--ds-space-2) + 1px)',
-                            width: pairColWidth,
-                            borderBottom: 'none',
-                            borderTop: 'none',
-                          }}
-                        />
-                        
-                        {/* Single continuous SVG for Inner Fillet + Horizontal connection */}
-                        <svg
-                          className="absolute pointer-events-none z-10 overflow-visible"
-                          width="17"
-                          height="9"
-                          viewBox="0 0 17 9"
-                          style={{
-                            top: 'calc(-1 * var(--ds-space-2))',
-                            ...(bridgeOnExpandedColumn 
-                              ? { left: `calc(${pairColWidth} - 1px)` } 
-                              : { right: `calc(${pairColWidth} - 1px)` })
-                          }}
-                          aria-hidden="true"
-                        >
-                          {bridgeOnExpandedColumn ? (
-                            <>
-                              <path d="M 0 0.5 L 0 9 L 17 9 L 17 8 L 8.5 8 A 7.5 7.5 0 0 1 1 0.5 L 0 0.5 Z" style={{ fill: 'hsl(var(--card))' }} />
-                              <path d="M 0.5 0 L 0.5 0.5 A 8 8 0 0 0 8.5 8.5 L 17 8.5" fill="none" style={{ stroke: 'hsl(var(--border) / 0.6)', strokeWidth: 1 }} />
-                            </>
-                          ) : (
-                            <>
-                              <path d="M 17 0.5 L 17 9 L 0 9 L 0 8 L 8.5 8 A 7.5 7.5 0 0 0 16 0.5 L 17 0.5 Z" style={{ fill: 'hsl(var(--card))' }} />
-                              <path d="M 16.5 0 L 16.5 0.5 A 8 8 0 0 1 8.5 8.5 L 0 8.5" fill="none" style={{ stroke: 'hsl(var(--border) / 0.6)', strokeWidth: 1 }} />
-                            </>
-                          )}
-                        </svg>
-
-                        <div
-                          className={`relative z-0 overflow-hidden rounded-b-xl border border-border/60 bg-card ds-card-pad-sm ${
-                            bridgeOnExpandedColumn ? 'rounded-tr-xl rounded-tl-none' : 'rounded-tl-xl rounded-tr-none'
-                          }`}
-                          style={{
-                            paddingTop: 'var(--ds-space-2)',
-                            clipPath: bridgeOnExpandedColumn 
-                              ? `polygon(0 1px, calc(${pairColWidth} + 16px) 1px, calc(${pairColWidth} + 16px) 0, 100% 0, 100% 100%, 0 100%)`
-                              : `polygon(0 0, calc(100% - ${pairColWidth} - 16px) 0, calc(100% - ${pairColWidth} - 16px) 1px, 100% 1px, 100% 100%, 0 100%)`
-                          }}
-                        >
-                          <MobileReserveCard
-                            variant="simulationOnly"
-                            reserve={activeReserve}
-                            isApy={isApy}
-                            tydroPointToUsdRate={tydroPointToUsdRate}
-                            onIncentiveClick={handleMobileIncentiveClick}
-                            isSimulationExpanded
-                            onToggleSimulation={() => handleToggleExpand(activeId)}
-                            simulation={simulationsById[activeId]}
-                            supplyInput={debouncedSharedSupplyInput}
-                            borrowInput={debouncedSharedBorrowInput}
-                            hasSharedScenario={hasSharedScenario}
-                            inputMode={sharedInputMode}
-                            onCorrectSupplyInput={handleCorrectSupplyInput}
-                            onCorrectBorrowInput={handleCorrectBorrowInput}
-                            defaultTab={mobileCardDefaultTab}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  );
-                } else {
-                  // Normal pair — no expansion
-                  nodes.push(
-                    <div key={leftId}>
-                      <MobileReserveCard
-                        variant="full"
-                        reserve={leftReserve}
-                        isApy={isApy}
-                        tydroPointToUsdRate={tydroPointToUsdRate}
-                        onIncentiveClick={handleMobileIncentiveClick}
-                        isSimulationExpanded={false}
-                        onToggleSimulation={() => handleToggleExpand(leftId)}
-                        simulation={simulationsById[leftId]}
-                        supplyInput={debouncedSharedSupplyInput}
-                        borrowInput={debouncedSharedBorrowInput}
-                        hasSharedScenario={hasSharedScenario}
-                        inputMode={sharedInputMode}
-                        onCorrectSupplyInput={handleCorrectSupplyInput}
-                        onCorrectBorrowInput={handleCorrectBorrowInput}
-                        defaultTab={mobileCardDefaultTab}
-                      />
-                    </div>
-                  );
-                  if (rightReserve) {
-                    nodes.push(
-                      <div key={rightId}>
+                nodes.push(
+                  <div
+                    key={`row-${i}`}
+                    className="col-span-2"
+                    data-reserve-expanded-anchor={activeId ?? undefined}
+                  >
+                    <div className="grid grid-cols-2 gap-[var(--ds-space-2)]">
+                      <div className="min-w-0">
                         <MobileReserveCard
-                          variant="full"
-                          reserve={rightReserve}
+                          variant={isLeftActive ? 'upperOnly' : 'full'}
+                          connectedBelow={leftExpanded}
+                          reserve={leftReserve}
                           isApy={isApy}
                           tydroPointToUsdRate={tydroPointToUsdRate}
                           onIncentiveClick={handleMobileIncentiveClick}
-                          isSimulationExpanded={false}
-                          onToggleSimulation={() => handleToggleExpand(rightId!)}
-                          simulation={simulationsById[rightId!]}
+                          isSimulationExpanded={isLeftActive}
+                          onToggleSimulation={() => handleToggleExpand(leftId)}
+                          simulation={simulationsById[leftId]}
                           supplyInput={debouncedSharedSupplyInput}
                           borrowInput={debouncedSharedBorrowInput}
                           hasSharedScenario={hasSharedScenario}
@@ -1136,9 +1295,103 @@ const ReservesTable = ({
                           defaultTab={mobileCardDefaultTab}
                         />
                       </div>
-                    );
-                  }
-                }
+                      {rightReserve ? (
+                        <div className="min-w-0">
+                          <MobileReserveCard
+                            variant={isRightActive ? 'upperOnly' : 'full'}
+                            connectedBelow={rightExpanded}
+                            reserve={rightReserve}
+                            isApy={isApy}
+                            tydroPointToUsdRate={tydroPointToUsdRate}
+                            onIncentiveClick={handleMobileIncentiveClick}
+                            isSimulationExpanded={isRightActive}
+                            onToggleSimulation={() => handleToggleExpand(rightId!)}
+                            simulation={simulationsById[rightId!]}
+                            supplyInput={debouncedSharedSupplyInput}
+                            borrowInput={debouncedSharedBorrowInput}
+                            hasSharedScenario={hasSharedScenario}
+                            inputMode={sharedInputMode}
+                            onCorrectSupplyInput={handleCorrectSupplyInput}
+                            onCorrectBorrowInput={handleCorrectBorrowInput}
+                            defaultTab={mobileCardDefaultTab}
+                          />
+                        </div>
+                      ) : null}
+                    </div>
+                    {rowHasExpanded && activeReserve && activeId ? (
+                      <>
+                        {/* Simulation panel — bridge (z-10) + SVG fill cover panel's top border
+                           on the expanded side so card + panel read as one piece. */}
+                        <div className="relative isolate mt-[var(--ds-space-2)]">
+                          {/* Bridge: bg-card rect covering the gap + 1px overlap into the panel.
+                               border-x continues the card's L/R borders through the gap. */}
+                          <div
+                            aria-hidden
+                            className={`pointer-events-none absolute z-10 border-border/60 bg-card ${bridgeOnExpandedColumn ? 'left-0 border-l' : 'right-0 border-r'}`}
+                            style={{
+                              top: 'calc(-1 * var(--ds-space-2) - 4px)',
+                              height: 'calc(var(--ds-space-2) + 5px)',
+                              width: pairColWidth,
+                            }}
+                          />
+                          
+                          {/* SVG fillet — fill covers gap top-to-bottom (y 0→9) so no sub-px
+                               seam; stroke draws the concave inner corner. */}
+                          <svg
+                            className="absolute pointer-events-none z-10 overflow-visible"
+                            width="17"
+                            height="13"
+                            viewBox="0 0 17 13"
+                            style={{
+                              top: 'calc(-1 * var(--ds-space-2) - 4px)',
+                              ...(bridgeOnExpandedColumn
+                                ? { left: `calc(${pairColWidth} - 1px)` }
+                                : { right: `calc(${pairColWidth} - 1px)` })
+                            }}
+                            aria-hidden="true"
+                          >
+                            {bridgeOnExpandedColumn ? (
+                              <>
+                                <path d="M 0 0 L 0 13 L 17 13 L 17 12 L 8.5 12 A 8 8 0 0 1 0.5 4 L 0.5 0 L 0 0 Z" style={{ fill: 'hsl(var(--card))' }} />
+                                <path d="M 0.5 0 L 0.5 4.5 A 8 8 0 0 0 8.5 12.5 L 17 12.5" fill="none" style={{ stroke: 'hsl(var(--border) / 0.6)', strokeWidth: 1 }} />
+                              </>
+                            ) : (
+                              <>
+                                <path d="M 17 0 L 17 13 L 0 13 L 0 12 L 8.5 12 A 8 8 0 0 0 16.5 4 L 16.5 0 L 17 0 Z" style={{ fill: 'hsl(var(--card))' }} />
+                                <path d="M 16.5 0 L 16.5 4.5 A 8 8 0 0 1 8.5 12.5 L 0 12.5" fill="none" style={{ stroke: 'hsl(var(--border) / 0.6)', strokeWidth: 1 }} />
+                              </>
+                            )}
+                          </svg>
+
+                          <div
+                            className={`relative z-0 overflow-hidden rounded-b-xl border border-border/60 bg-card ds-card-pad-sm ${
+                              bridgeOnExpandedColumn ? 'rounded-tr-xl rounded-tl-none' : 'rounded-tl-xl rounded-tr-none'
+                            }`}
+                            style={{ paddingTop: 'var(--ds-space-2)' }}
+                          >
+                            <MobileReserveCard
+                              variant="simulationOnly"
+                              reserve={activeReserve}
+                              isApy={isApy}
+                              tydroPointToUsdRate={tydroPointToUsdRate}
+                              onIncentiveClick={handleMobileIncentiveClick}
+                              isSimulationExpanded
+                              onToggleSimulation={() => handleToggleExpand(activeId)}
+                              simulation={simulationsById[activeId]}
+                              supplyInput={debouncedSharedSupplyInput}
+                              borrowInput={debouncedSharedBorrowInput}
+                              hasSharedScenario={hasSharedScenario}
+                              inputMode={sharedInputMode}
+                              onCorrectSupplyInput={handleCorrectSupplyInput}
+                              onCorrectBorrowInput={handleCorrectBorrowInput}
+                              defaultTab={mobileCardDefaultTab}
+                            />
+                          </div>
+                        </div>
+                      </>
+                    ) : null}
+                  </div>
+                );
               }
               return nodes;
             })()
@@ -1184,6 +1437,28 @@ const ReservesTable = ({
             onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign}
           />
         )}
+
+        {/* Floating scroll-to-top / scroll-to-bottom buttons (mobile) */}
+        {tableInView && (
+        <div className="fixed right-3 bottom-6 z-30 flex flex-col gap-2">
+          <button
+            type="button"
+            aria-label="Scroll to table top"
+            onClick={() => mobileTableRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-border/60 bg-card/90 shadow-md backdrop-blur-sm text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
+          >
+            <ArrowUp className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            aria-label="Scroll to table bottom"
+            onClick={() => mobileTableRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })}
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-border/60 bg-card/90 shadow-md backdrop-blur-sm text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
+          >
+            <ArrowDown className="h-4 w-4" />
+          </button>
+        </div>
+        )}
       </div>
     );
   }
@@ -1192,12 +1467,19 @@ const ReservesTable = ({
   return (
     <div
       ref={desktopTableCardRef}
-      className="bg-card rounded-2xl shadow-sm border border-border/60 relative"
+      className="relative min-w-0 w-full rounded-2xl bg-border/60 p-px shadow-sm"
     >
+      {/*
+        1px “gutter” border: native border on a rounded card is painted under full-bleed sticky
+        children, so top corner arcs look broken. Outer p-px + inner smaller radius keeps a
+        continuous ring without overflow:hidden (sticky stack stays viewport-relative).
+        Aligns with DESIGN-SYSTEM-REFERENCE § 轮廓与圆角拼接 (prefer structural fix over masks).
+      */}
+      <div className="min-w-0 w-full overflow-visible rounded-[calc(1rem-1px)] bg-card">
       <div
         ref={desktopStickyScenarioRef}
         data-reserves-sticky-scenario
-        className="sticky top-0 z-20 border-b border-border/60 p-[var(--ds-space-3)] bg-muted/40 backdrop-blur-sm shadow-[0_1px_3px_0_rgb(0_0_0/0.04)]"
+        className="sticky top-0 z-20 rounded-t-[calc(1rem-1px)] border-b border-border/60 bg-card p-[var(--ds-space-3)]"
       >
         {scenarioControls}
       </div>
@@ -1220,11 +1502,11 @@ const ReservesTable = ({
             <col style={{ width: '14.5%' }} />
           </colgroup>
           <TableHeader
+            ref={desktopStickyTheadRef}
             data-reserves-sticky-thead
-            className="overflow-visible sticky z-10 border-b border-border/60 bg-card shadow-[0_1px_2px_0_rgb(0_0_0/0.04)] [&_tr]:border-b-0"
-            style={{ top: 'var(--reserves-sticky-scenario-height, 4.5rem)' }}
+            className="overflow-visible [&_tr]:border-b-0 [&_th]:sticky [&_th]:z-30 [&_th]:border-b [&_th]:border-border/60 [&_th]:bg-card [&_th]:shadow-[0_1px_2px_0_rgb(0_0_0/0.04)] [&_th]:[top:var(--reserves-sticky-scenario-height,4.5rem)]"
           >
-            <TableRow className="border-0 bg-transparent overflow-visible">
+            <TableRow className="border-0 bg-card overflow-visible hover:bg-card">
               {/* Token — 大幅收窄 */}
               <TableHead className="pl-[var(--ds-space-1-5)] pr-[var(--ds-space-0-5)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground">
                 <button
@@ -1299,7 +1581,7 @@ const ReservesTable = ({
                 <div className="flex items-center justify-center gap-[var(--ds-space-2)]">
                   <div className="flex items-center gap-[var(--ds-space-1-5)]">
                     <span
-                      className={`transition-all duration-200 ${activeSortColumn === 'size' ? (sizeSortMode === 'supply' ? 'ds-text-emerald-600 font-bold scale-105' : 'ds-text-brand-cyan font-bold scale-105') : 'text-muted-foreground'}`}
+                      className={`transition-all duration-200 ${activeSortColumn === 'size' ? sizeSortActiveHeadingClass : 'text-muted-foreground'}`}
                     >
                       Size
                     </span>
@@ -1310,9 +1592,7 @@ const ReservesTable = ({
                         onClick={() => setShowSizeSortMenu(!showSizeSortMenu)}
                         className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-lg border transition-colors ${
                           showSizeSortMenu || activeSortColumn === 'size'
-                            ? sizeSortMode === 'supply'
-                              ? 'bg-card/60 border-border/70 ds-text-emerald-700'
-                              : 'bg-card/60 border-border/70 ds-text-brand-cyan'
+                            ? `bg-card/60 border-border/70 ${sizeSortAccentClass}`
                             : 'bg-card/60 border-border/70 text-muted-foreground'
                         }`}
                         title="Select sort field"
@@ -1387,6 +1667,68 @@ const ReservesTable = ({
                                   <ArrowDown className="w-3 h-3 ds-text-brand-cyan" />
                                 ) : (
                                   <ArrowUp className="w-3 h-3 ds-text-brand-cyan" />
+                                )
+                              ) : (
+                                <ArrowDown className="w-3 h-3 text-muted-foreground/70" />
+                              )}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                collapseExpandedOnSort();
+                                const isAlreadySelected = sizeSortMode === 'deficitAmount' && activeSortColumn === 'size';
+                                if (isAlreadySelected && sizeSortOrder === 'desc') {
+                                  setSizeSortOrder('asc');
+                                } else {
+                                  setSizeSortMode('deficitAmount');
+                                  setActiveSortColumn('size');
+                                  setSizeSortOrder('desc');
+                                }
+                                setShowSizeSortMenu(false);
+                              }}
+                              className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-12 hover:bg-muted/50 transition-colors flex items-center justify-between ${
+                                sizeSortMode === 'deficitAmount' && activeSortColumn === 'size'
+                                  ? 'text-foreground font-bold bg-card/60'
+                                  : 'text-foreground/80'
+                              }`}
+                            >
+                              <span>Sort by Deficit</span>
+                              {sizeSortMode === 'deficitAmount' && activeSortColumn === 'size' ? (
+                                sizeSortOrder === 'desc' ? (
+                                  <ArrowDown className="w-3 h-3 text-foreground" />
+                                ) : (
+                                  <ArrowUp className="w-3 h-3 text-foreground" />
+                                )
+                              ) : (
+                                <ArrowDown className="w-3 h-3 text-muted-foreground/70" />
+                              )}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                collapseExpandedOnSort();
+                                const isAlreadySelected = sizeSortMode === 'deficitRatio' && activeSortColumn === 'size';
+                                if (isAlreadySelected && sizeSortOrder === 'desc') {
+                                  setSizeSortOrder('asc');
+                                } else {
+                                  setSizeSortMode('deficitRatio');
+                                  setActiveSortColumn('size');
+                                  setSizeSortOrder('desc');
+                                }
+                                setShowSizeSortMenu(false);
+                              }}
+                              className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-12 hover:bg-muted/50 transition-colors flex items-center justify-between ${
+                                sizeSortMode === 'deficitRatio' && activeSortColumn === 'size'
+                                  ? 'text-foreground font-bold bg-card/60'
+                                  : 'text-foreground/80'
+                              }`}
+                            >
+                              <span>Sort by Deficit (%)</span>
+                              {sizeSortMode === 'deficitRatio' && activeSortColumn === 'size' ? (
+                                sizeSortOrder === 'desc' ? (
+                                  <ArrowDown className="w-3 h-3 text-foreground" />
+                                ) : (
+                                  <ArrowUp className="w-3 h-3 text-foreground" />
                                 )
                               ) : (
                                 <ArrowDown className="w-3 h-3 text-muted-foreground/70" />
@@ -1788,6 +2130,7 @@ const ReservesTable = ({
                   isExpanded={expandedReserveId === reserveId}
                   onToggleExpand={handleToggleExpand}
                   onSelectMarket={onSelectMarket}
+                  onMarketChipClick={handleMarketChipClick}
                   onIncentiveClick={handleIncentiveClick}
                   displaySupplyTotal={getDisplaySupplyTotal(reserve)}
                   displaySupplyNative={getDisplaySupplyNative(reserve)}
@@ -1811,7 +2154,7 @@ const ReservesTable = ({
             }
           </TableBody>
         </Table>
-      
+
       {/* Show More/Less button for desktop */}
       {sortedData.length > displayData.length && (
         <div className="p-[var(--ds-space-4)] border-t border-border">
@@ -1838,6 +2181,13 @@ const ReservesTable = ({
         </div>
       )}
       
+      <div ref={desktopTableBottomAnchorRef} aria-hidden className="h-px w-full" />
+
+      {/* Spacer: ensures enough scroll room to pin-scroll the last expanded row to the sticky band */}
+      {expandedReserveId && (
+        <div aria-hidden style={{ height: 'calc(100dvh - var(--reserves-expanded-main-row-top, 5.75rem))' }} />
+      )}
+
       {tooltipState && (
         <IncentiveTooltip
           reserve={tooltipState.reserve}
@@ -1855,6 +2205,34 @@ const ReservesTable = ({
           onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign}
         />
       )}
+
+      {/* Floating scroll-to-top / scroll-to-bottom buttons */}
+      {tableInView && (
+      <div className="fixed right-3 bottom-6 z-30 flex flex-col gap-2 md:right-6">
+        <button
+          type="button"
+          aria-label="Scroll to table top"
+          onClick={() => {
+            desktopTableCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }}
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-border/60 bg-card/90 shadow-md backdrop-blur-sm text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
+        >
+          <ArrowUp className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          aria-label="Scroll to table bottom"
+          onClick={() => {
+            const target = desktopTableBottomAnchorRef.current ?? desktopTableCardRef.current;
+            target?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+          }}
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-border/60 bg-card/90 shadow-md backdrop-blur-sm text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
+        >
+          <ArrowDown className="h-4 w-4" />
+        </button>
+      </div>
+      )}
+      </div>
     </div>
   );
 };

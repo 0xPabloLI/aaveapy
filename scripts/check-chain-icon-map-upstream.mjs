@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import fs from 'fs';
 import { readFile } from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -8,6 +9,13 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const REMOTE_NETWORKS_CONFIG_URL =
   'https://raw.githubusercontent.com/aave/interface/main/src/ui-config/networksConfig.ts';
 const LOCAL_CHAIN_ICONS_PATH = path.join(ROOT, 'src/lib/chainIconMap.ts');
+const NETWORKS_ICONS_DIR = path.join(ROOT, 'public', 'icons', 'networks');
+const PENDING_CHAIN_ICON_BASES_PATH = path.join(
+  ROOT,
+  'scripts',
+  'data',
+  'pending-chain-icon-bases.json'
+);
 
 async function loadUpstreamNetworksConfig() {
   return await fetchWithTimeout(REMOTE_NETWORKS_CONFIG_URL);
@@ -108,10 +116,36 @@ function iconBaseFromPath(iconPath) {
   return path.basename(iconPath).replace(/\.[^.]+$/, '');
 }
 
+/** Lowercase base names that have at least one icon file on disk. */
+function listLocalNetworkIconBases() {
+  const bases = new Set();
+  if (!fs.existsSync(NETWORKS_ICONS_DIR)) {
+    return bases;
+  }
+  for (const ent of fs.readdirSync(NETWORKS_ICONS_DIR, { withFileTypes: true })) {
+    if (!ent.isFile()) continue;
+    const ext = path.extname(ent.name).slice(1).toLowerCase();
+    if (!ext) continue;
+    const base = path.basename(ent.name, path.extname(ent.name)).toLowerCase();
+    bases.add(base);
+  }
+  return bases;
+}
+
+async function loadPendingIconBases() {
+  const raw = await readFile(PENDING_CHAIN_ICON_BASES_PATH, 'utf8');
+  const data = JSON.parse(raw);
+  if (!Array.isArray(data)) {
+    throw new Error('pending-chain-icon-bases.json must be a JSON array of strings');
+  }
+  return new Set(data.map((x) => String(x).toLowerCase()));
+}
+
 async function main() {
-  const [upstreamContent, localContent] = await Promise.all([
+  const [upstreamContent, localContent, pendingBases] = await Promise.all([
     loadUpstreamNetworksConfig(),
     readFile(LOCAL_CHAIN_ICONS_PATH, 'utf8'),
+    loadPendingIconBases(),
   ]);
 
   const localMap = parseLocalChainIconMap(localContent);
@@ -128,27 +162,48 @@ async function main() {
   // Build a set of icon base names the local map covers.
   // This avoids maintaining a manual alias table for upstream chain name variants.
   const localIconValues = new Set(localMap.values());
-  const errors = [];
+  const mappingErrors = [];
+  const assetErrors = [];
+
+  const onDiskBases = listLocalNetworkIconBases();
 
   for (const network of expectedNetworks) {
     const iconBase = iconBaseFromPath(network.networkLogoPath);
     if (!localIconValues.has(iconBase)) {
-      errors.push({ name: network.name, iconBase });
+      mappingErrors.push({ name: network.name, iconBase, kind: 'mapping' });
+      continue;
+    }
+    const key = iconBase.toLowerCase();
+    if (!onDiskBases.has(key) && !pendingBases.has(key)) {
+      assetErrors.push({ name: network.name, iconBase: key, kind: 'asset' });
     }
   }
 
   console.log(`Upstream prod networks parsed: ${expectedNetworks.length}`);
   console.log(`Local chainIconMap icon values: ${localIconValues.size}`);
+  console.log(`Local network icon files (bases): ${onDiskBases.size}`);
+  console.log(`Pending icon bases (allowed without file): ${pendingBases.size}`);
 
-  if (errors.length > 0) {
+  if (mappingErrors.length > 0) {
     console.error('\nchainIconMap missing upstream network icons:');
-    for (const item of errors) {
+    for (const item of mappingErrors) {
       console.error(`- ${item.name}: needs icon '${item.iconBase}' in chainIconMap`);
     }
     process.exit(1);
   }
 
+  if (assetErrors.length > 0) {
+    console.error(
+      '\nMissing on-disk network icon (add public/icons/networks/<base>.* or list base in scripts/data/pending-chain-icon-bases.json):'
+    );
+    for (const item of assetErrors) {
+      console.error(`- ${item.name}: expected file for base '${item.iconBase}'`);
+    }
+    process.exit(1);
+  }
+
   console.log('chainIconMap covers all upstream prod network icons.');
+  console.log('On-disk network icons (or pending allowlist) cover all mapped bases.');
 }
 
 main().catch((error) => {

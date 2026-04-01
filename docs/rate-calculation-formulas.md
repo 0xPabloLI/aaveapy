@@ -293,6 +293,49 @@ This means the toggle changes the **incentive contribution**, not the native bas
 
 Distribution types (variable / fixed token vs dollar / capped): [Merkl — Distribution Types](https://docs.merkl.xyz/merkl-mechanisms/distributions)
 
+## Net Position Eligibility (Scenario Simulation)
+
+When a user enters **both** supply and borrow amounts in the scenario, Merkl and Merit incentive APY is computed on the **net position** rather than the gross input. Brevis (type 3001 "Lend or Borrow") rewards supply and borrow independently and uses the **gross** input.
+
+### Net vs Gross eligibility
+
+| Eligibility mode | Used by | Formula |
+|------------------|---------|---------|
+| **Net** | Merkl (NET_LENDING / NET_BORROWING), Merit | Supply eligible = max(supply − borrow, 0); Borrow eligible = max(borrow − supply, 0) |
+| **Gross** | Brevis (type 3001 — both supply and borrow) | Supply eligible = supply; Borrow eligible = borrow |
+
+### Eligibility ratio discount
+
+The pool-level forecast APR applies to the eligible portion only. To convert to an effective APR on the user's gross capital:
+
+```
+eligibilityRatio = netInputUsd / grossInputUsd    (when grossInputUsd > 0; else 1)
+effectiveAPR     = poolForecastAPR × eligibilityRatio
+```
+
+**Example:** supply $1000, borrow $100 →
+- Supply side: net = $900, ratio = 0.9, effective supply incentive APR = poolAPR × 0.9
+- Borrow side: net = $0, ratio = 0, effective borrow incentive APR = 0 (no net borrowing)
+
+### Where applied in code
+
+Net-position logic for **Merit/Merkl** lives in `buildRateSimulationResult` (`src/hooks/useRateSimulation.ts`):
+
+- `supplyNetInputUsd` / `borrowNetInputUsd` — net eligible amounts
+- `supplyEligibilityRatio` / `borrowEligibilityRatio` — discount factors
+- `meritMerklNetPosition` (default `true`): when `false`, Merit/Merkl use each side’s full scenario USD (`supplyInputUsd` / `borrowInputUsd`) with eligibility ratio `1` (supply and borrow computed independently). Brevis is unchanged.
+- `buildIncentiveAfter` passes Merit/Merkl basis through the net-or-gross inputs and ratio above; **Brevis** still uses `grossInputUsd` only
+- `buildMeritCampaignDetails` and `buildMerklCampaignDetails` follow the same Merit/Merkl basis
+- Brevis paths (`sumForecastBrevisValues`, `buildBrevisCampaignDetails`) ignore `meritMerklNetPosition` — they always use `grossInputUsd` without ratio scaling
+
+### Single-input behavior
+
+When only one side has input (supply-only or borrow-only), `netInputUsd === grossInputUsd` and `eligibilityRatio === 1`. Behavior is identical to pre–net-position logic.
+
+### UI: `capNote` net eligibility hint
+
+When `eligibilityRatio < 1`, Merkl and Merit campaign detail rows display a net eligibility note via `capNote`, e.g. **`Net eligible $900.00 of $1,000.00`**. This is appended to any existing `capNote` with ` · ` separator. Built by `buildNetEligibilityNote` in `src/lib/incentiveCeilings.ts`. Brevis rows do not show this note (they use gross eligibility).
+
 ## Incentive Reward Cap Reference
 
 ### Naming layers (API / domain / UI)
@@ -329,9 +372,9 @@ All user-visible simulation row notes for incentives should stay discoverable he
 | **Merkl MAX** | `regime === 'APR_CAPPED'` at hypothetical TVL | **`APR capped for low TVL`** | `true` |
 | **Brevis** (per-user reward cap) | Scenario present, `perUserRewardCapUsd` &gt; 0 | **`Reward capped at $X/user`**; if shared supply+borrow cap: **` · supply + borrow`**; optional horizon: **` · ~Nd earn`** where **`N = min(daysToHitCap, remainingDays)`** (or single bound if only one is positive) | `isCapBinding` |
 | **Brevis** (no per-user cap) | Scenario present, no cap, positive `remainingDays` | **`~Nd to end`** | `false` |
-| **Merit Self** | Self row, forecast resolves `selfCapUsd` + `selfEligibleUsd` | **`Eligible deposit capped at $Z`** | `true` when scenario deposit &gt; ceiling |
-| **Merit Base** | — | *(none — scenario APR only; same product rule as Merkl **DUTCH_AUCTION**)* | — |
-| **Merkl DUTCH_AUCTION** (and other types) | — | *(none)* | — |
+| **Merit Self** | Self row, forecast resolves `selfCapUsd` + `selfEligibleUsd` | **`Eligible supply capped at $Z`** | `true` when scenario deposit &gt; ceiling |
+| **Merit Base** | — (net note only when `eligibilityRatio < 1`) | **`Net eligible $X of $Y`** (or none when single-side input) | `false` |
+| **Merkl DUTCH_AUCTION** (and other types) | — (net note only when `eligibilityRatio < 1`) | **`Net eligible $X of $Y`** (or none when single-side input) | `false` |
 
 **Same label, different math:** **`~Nd earn`** on **Merkl FIX** is “days until pool budget exhaustion at **hypothetical TVL** (latest + scenario USD).” On **Brevis**, it is “shorter of days to hit **per-user reward cap** at nominal daily rate vs days to **endDate**.” Do not infer one from the other.
 
@@ -354,12 +397,14 @@ deposit → [deposit cap] → nominal APR (from TVL dilution) → nominal reward
 
 - `perUserRewardCapUsd`: cumulative USD reward ceiling for a single user across the entire campaign.
 - **No `endDate`**: Brevis campaigns typically have no explicit end date. When `endDate` is absent, the cap formula cannot determine whether the cap binds (no `remainingYearFraction`), so the nominal APR is returned unchanged (graceful degradation). The diagnostic field `daysToHitCap` is still computable without `endDate`.
+- **`totalBudget` without `distributedSoFar`**: some Brevis payloads include campaign `totalBudget` but do not provide `distributedSoFar`. In that case, the frontend cannot derive `remainingBudget` or estimate the exact budget depletion time. Practically, rewards can be exhausted earlier than the displayed calendar horizon.
 - **Shared cap across supply/borrow** (`campaignId`): When a Brevis supply row and borrow row on the same reserve represent the same campaign, they must carry the same `campaignId` and identical canonical campaign metadata (`campaignApr`, `campaignStartedAt`, `campaignEndedAt`, `latestTvl`, `totalBudget`, `perUserRewardCapUsd`, `message`, `name`, `link`). The simulation sums `supplyInputUsd + borrowInputUsd` as the combined deposit for cap evaluation. If the metadata differ, the frontend treats the payload as inconsistent and skips shared-cap simulation for that `campaignId`.
 - **`isCampaignActive` for Brevis**: uses `allowOpenEnd = true` — a Brevis campaign with a valid past `startDate` and no `endDate` is treated as active.
 
 ### Merkl FIX reward cap
 
 - `fixRewardableDays` / `fixRewardableUntilTs`: derived from `remainingBudget / aprBasedDaily`, capped by `endTimestamp`. These fields indicate how many days the campaign can sustain rewards at the current APR before budget exhaustion.
+- **Budget observability contrast (vs Brevis)**: Merkl FIX can usually compute `remainingBudget` because forecast payloads include both `totalBudget` and `distributedSoFar`; Brevis often lacks `distributedSoFar`, so remaining budget and exact depletion timing are not reliably inferable there.
 - Unlike Brevis, this is a **pool-level** cap (all users share the same budget).
 - **Shared simulation `capNote`:** **`~Nd earn`** — same wording as the Brevis reward-horizon segment; computed at **hypothetical TVL** after the user’s scenario deposit (see unified table above).
 
@@ -379,7 +424,7 @@ When **`reserve.reserveSizeUsd`** is present, **supply-side** Merit Base simulat
 
 - `selfCapUsd`: extracted from campaign `message` text (e.g. "first $1000 USDT supplied per user").
 - Caps the **eligible deposit**, not the reward directly. `eligibleDeposit = min(deposit, selfCapUsd)`.
-- `eligibleDepositUsd` is only used for Merit self-auth campaigns — other incentive types do not use deposit capping. Simulation copy uses **`Eligible deposit capped at $Z`** (same “capped” vocabulary as Merkl APR notes).
+- `eligibleDepositUsd` is only used for Merit self-auth campaigns — other incentive types do not use deposit capping. Simulation copy uses **`Eligible supply capped at $Z`** (same “capped” vocabulary as Merkl APR notes).
 
 ### UI surfaces: Brevis cap (simulation only)
 

@@ -25,6 +25,7 @@ export const chainIconMap: Record<string, string> = {
   ink: 'ink',
   mantle: 'mantle',
   megaeth: 'megaeth',
+  xlayer: 'xlayer',
 };
 
 export const normalizeChainName = (chain: string) =>

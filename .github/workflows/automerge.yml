@@ -12,10 +12,7 @@ permissions:
 jobs:
   enable-automerge:
     if: >-
-      (
-        contains(github.event.pull_request.labels.*.name, 'automerge') ||
-        contains(github.event.pull_request.labels.*.name, 'automation')
-      ) &&
+      contains(github.event.pull_request.labels.*.name, 'automerge') &&
       github.event.pull_request.draft != true
     runs-on: ubuntu-latest
     steps:
@@ -23,7 +20,7 @@ jobs:
         run: sleep 180
 
       - name: Enable auto-merge when checks pass
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |

@@ -1,9 +1,11 @@
+import { DEFAULT_STAGING_API_BASE } from './lib/default-api-bases.mjs';
+
 /**
  * One-off / CI-helper: fetch live /markets and compare Merit Base APR
  * (reserve TVL anchor vs last-round implied TVL) using the same math as meritForecast.ts.
  *
  * Usage: node scripts/compare-merit-forecast-paths.mjs
- * Env:   MERIT_COMPARE_API_BASE (default https://api.aaveapy.com/api)
+ * Env:   MERIT_COMPARE_API_BASE (default staging; set to production or Railway URL when needed)
  *        MERIT_COMPARE_DEPOSIT_USD (default 100000)
  */
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
@@ -71,7 +73,7 @@ function bpDelta(anchorDec, lastDec) {
   return (lastDec - anchorDec) * 10000;
 }
 
-const API_BASE = process.env.MERIT_COMPARE_API_BASE || 'https://api.aaveapy.com/api';
+const API_BASE = process.env.MERIT_COMPARE_API_BASE || DEFAULT_STAGING_API_BASE;
 const DEPOSIT = Number(process.env.MERIT_COMPARE_DEPOSIT_USD || '100000');
 
 const res = await fetch(`${API_BASE}/markets`);

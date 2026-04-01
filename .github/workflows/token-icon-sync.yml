@@ -4,14 +4,14 @@ on:
   workflow_dispatch:
     inputs:
       target_branch:
-        description: "Target base branch for the sync PR (default: dev)"
+        description: "Target base branch for the sync PR (default: dev). Scheduled runs use dev and main."
         required: false
         default: "dev"
         type: string
   repository_dispatch:
     types: [upstream-change]
   schedule:
-    # Every day at 04:20 UTC
+    # Every day at 04:20 UTC — runs against dev and main (matrix).
     - cron: "20 4 * * *"
 
 permissions:
@@ -22,21 +22,24 @@ permissions:
 jobs:
   sync-token-icons:
     env:
-      TARGET_BRANCH: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.target_branch || github.event_name == 'repository_dispatch' && github.event.client_payload.target_branch || 'dev' }}
       HAS_SYNC_PAT: ${{ secrets.TOKEN_ICON_SYNC_PAT != '' || secrets.HARDCODE_SYNC_PAT != '' }}
     if: >
       github.event_name == 'workflow_dispatch' ||
       github.event_name == 'repository_dispatch' ||
       github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target_branch: ${{ github.event_name == 'schedule' && fromJSON('["dev","main"]') || fromJSON(format('["{0}"]', (github.event_name == 'repository_dispatch' && github.event.client_payload.target_branch != '' && github.event.client_payload.target_branch) || (github.event_name == 'workflow_dispatch' && github.event.inputs.target_branch != '' && github.event.inputs.target_branch) || 'dev')) }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
-          ref: ${{ env.TARGET_BRANCH }}
+          ref: ${{ matrix.target_branch }}
 
       - name: Setup Node
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
         with:
           node-version: "22"
           cache: "npm"
@@ -49,7 +52,7 @@ jobs:
 
       - name: Create PR when icons changed
         id: cpr
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@22a9089034f40e5a961c8808d113e2c98fb63676 # v7
         with:
           # Use PAT to ensure pull_request workflows (CI lint/build) are triggered on created PRs.
           # Fallback to GITHUB_TOKEN keeps behavior but may leave required checks in "Expected".
@@ -58,13 +61,12 @@ jobs:
           title: "chore(icons): sync token icons"
           body: |
             Automated update from `npm run sync-token-icons`.
-          branch: "bot/token-icon-sync-${{ env.TARGET_BRANCH }}-${{ github.run_id }}"
-          base: ${{ env.TARGET_BRANCH }}
+          branch: "bot/token-icon-sync-${{ matrix.target_branch }}-${{ github.run_id }}"
+          base: ${{ matrix.target_branch }}
           delete-branch: true
           labels: |
-            automation
-            assets
             automerge
+            assets
 
       - name: Warn when PAT is missing
         if: steps.cpr.outputs.pull-request-number != '' && env.HAS_SYNC_PAT != 'true'
@@ -73,7 +75,7 @@ jobs:
 
       - name: Trigger fallback CI when PAT is missing
         if: steps.cpr.outputs.pull-request-number != '' && env.HAS_SYNC_PAT != 'true'
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
         with:
           script: |
             const workflowRef = `${{ steps.cpr.outputs.pull-request-branch }}`;

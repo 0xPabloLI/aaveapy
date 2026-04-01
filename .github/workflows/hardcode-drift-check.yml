@@ -1,3 +1,5 @@
+# Read-only guard on the default branch. When live /markets gains a new chainId, merge the bot PR from
+# Hardcode Sync (schedule targets the same default branch) or run sync locally—main stays red until then.
 name: Hardcode Drift Check
 
 on:
@@ -5,8 +7,8 @@ on:
   repository_dispatch:
     types: [upstream-change]
   schedule:
-    # Every day at 04:40 UTC
-    - cron: "40 4 * * *"
+    # After Hardcode Sync (04:20 UTC) so automated sync + PR land first; merge bot PRs to clear drift.
+    - cron: "0 5 * * *"
 
 jobs:
   check-hardcode-icons:
@@ -14,12 +16,15 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     runs-on: ubuntu-latest
+    # Repository variable LIVE_TEST_API_BASE_CI (Settings → Actions → Variables)
+    env:
+      LIVE_TEST_API_BASE_CI: ${{ vars.LIVE_TEST_API_BASE_CI != '' && vars.LIVE_TEST_API_BASE_CI || 'https://staging-api.aaveapy.com/api' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
 
       - name: Setup Node
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
         with:
           node-version: "22"
           cache: "npm"

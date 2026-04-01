@@ -228,6 +228,66 @@ describe('buildRateSimulationResult', () => {
     expect(result.utilization.after).not.toBe(result.utilization.current);
   });
 
+  it('exposes scenarioUsdAccrual: supply earn, borrow native outflow + incentive rebate, APR-linear daily USD', () => {
+    const result = buildRateSimulationResult({
+      reserve: baseReserve,
+      reserveRateInput: baseReserve,
+      isApy: false,
+      whitelistMerklCampaignIds: new Set(),
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '36500',
+      borrowInput: '3650',
+      forecastStates: {},
+    });
+
+    expect(result.scenarioUsdAccrual).not.toBeNull();
+    const acc = result.scenarioUsdAccrual!;
+    expect(acc.supply).not.toBeNull();
+    expect(acc.borrow).not.toBeNull();
+    const supplyNative = result.supply.afterNative;
+    const borrowNative = result.borrow.afterNative;
+    const borrowIncentive = result.borrow.afterIncentive;
+    expect(supplyNative).not.toBeNull();
+    expect(borrowNative).not.toBeNull();
+    expect(borrowIncentive).not.toBeNull();
+    expect(acc.supply!.nativeUsdPerDay).toBeCloseTo((36500 * supplyNative!) / 100 / 365, 5);
+    expect(acc.borrow!.nativeUsdPerDay).toBeCloseTo(-(3650 * borrowNative!) / 100 / 365, 5);
+    expect(acc.borrow!.incentiveUsdPerDay).toBeCloseTo((3650 * borrowIncentive!) / 100 / 365, 5);
+    expect(acc.netUsdPerDay).toBeCloseTo(
+      (acc.supply!.totalUsdPerDay ?? 0) + (acc.borrow!.totalUsdPerDay ?? 0),
+      5
+    );
+  });
+
+  it('keeps scenarioUsdAccrual on APR-linear daily USD even when isApy is true', () => {
+    const result = buildRateSimulationResult({
+      reserve: baseReserve,
+      reserveRateInput: baseReserve,
+      isApy: true,
+      whitelistMerklCampaignIds: new Set(),
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '36500',
+      borrowInput: '3650',
+      forecastStates: {},
+    });
+
+    expect(result.scenarioUsdAccrual).not.toBeNull();
+    const acc = result.scenarioUsdAccrual!;
+    expect(acc.supply).not.toBeNull();
+    expect(acc.borrow).not.toBeNull();
+    const supplyNative = result.supply.afterNative;
+    const borrowNative = result.borrow.afterNative;
+    const borrowIncentive = result.borrow.afterIncentive;
+    expect(supplyNative).not.toBeNull();
+    expect(borrowNative).not.toBeNull();
+    expect(borrowIncentive).not.toBeNull();
+    expect(acc.supply!.nativeUsdPerDay).toBeCloseTo((36500 * supplyNative!) / 100 / 365, 5);
+    expect(acc.borrow!.nativeUsdPerDay).toBeCloseTo(-(3650 * borrowNative!) / 100 / 365, 5);
+    expect(acc.borrow!.incentiveUsdPerDay).toBeCloseTo((3650 * borrowIncentive!) / 100 / 365, 5);
+  });
+
   it('keeps native rates in APY even when display mode switches incentive values to APR', () => {
     const reserve: ReserveWithSpread = {
       ...baseReserve,
@@ -251,6 +311,60 @@ describe('buildRateSimulationResult', () => {
     expect(result.borrow.currentNative).toBe(baseReserve.borrowApy);
     expect(result.supply.currentIncentive).toBe(1.1);
     expect(result.borrow.currentIncentive).toBe(0.4);
+  });
+
+  it('applies Merit/Merkl per-side USD when meritMerklNetPosition is false', () => {
+    const reserve: ReserveWithSpread = {
+      ...baseReserve,
+      merklSupplys: [
+        {
+          name: 'Merkl supply',
+          breakdowns: [
+            {
+              campaignApr: 5,
+              campaignStartedAt: '2020-01-01T00:00:00.000Z',
+              campaignEndedAt: '2099-01-01T00:00:00.000Z',
+              campaignId: 'c-supply',
+              campaignType: 'DUTCH_AUCTION',
+              plannedDaily: 10,
+              aprCap: null,
+              totalBudget: 100000,
+              latestTvl: 1000,
+            },
+          ],
+        },
+      ],
+    };
+
+    const states: Record<string, MerklForecastWireItem> = {
+      'c-supply': {
+        campaignId: 'c-supply',
+        requiredDaily: 10,
+        distributedSoFar: 0,
+        endTimestamp: Math.floor(Date.now() / 1000) + 86400 * 30,
+      },
+    };
+
+    const common = {
+      reserve,
+      reserveRateInput: baseReserve,
+      isApy: false,
+      whitelistMerklCampaignIds: new Set<string>(),
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '1000',
+      borrowInput: '400',
+      forecastStates: states,
+    };
+
+    const netOn = buildRateSimulationResult({ ...common, meritMerklNetPosition: true });
+    const perSide = buildRateSimulationResult({ ...common, meritMerklNetPosition: false });
+
+    const netRow = netOn.supply.sources.merkl.campaigns?.[0];
+    const perRow = perSide.supply.sources.merkl.campaigns?.[0];
+    expect(netRow?.after).not.toBeNull();
+    expect(perRow?.after).not.toBeNull();
+    expect(perRow?.after).not.toBe(netRow?.after);
   });
 
   it('does not increase supply incentives when a shared supply amount is present', () => {
@@ -313,8 +427,8 @@ describe('buildRateSimulationResult', () => {
           breakdowns: [
             {
               campaignApr: 0,
-              campaignStartedAt: '2026-03-24T14:00:00.000Z',
-              campaignEndedAt: '2026-03-31T14:00:00.000Z',
+              campaignStartedAt: '2020-03-24T14:00:00.000Z',
+              campaignEndedAt: '2099-03-31T14:00:00.000Z',
               campaignId: '16403393592832236981',
               campaignType: 'DUTCH_AUCTION',
               plannedDaily: 11312,
@@ -333,7 +447,7 @@ describe('buildRateSimulationResult', () => {
         campaignId: '16403393592832236981',
         requiredDaily: 11312,
         distributedSoFar: 0,
-        endTimestamp: 1774965600,
+        endTimestamp: 4070901600,
       },
     };
 
@@ -366,8 +480,8 @@ describe('buildRateSimulationResult', () => {
           breakdowns: [
             {
               campaignApr: 0,
-              campaignStartedAt: '2026-03-24T14:00:00.000Z',
-              campaignEndedAt: '2026-03-31T14:00:00.000Z',
+              campaignStartedAt: '2020-03-24T14:00:00.000Z',
+              campaignEndedAt: '2099-03-31T14:00:00.000Z',
               campaignId: '16403393592832236981',
               campaignType: 'DUTCH_AUCTION',
               plannedDaily: 11312,
@@ -386,7 +500,7 @@ describe('buildRateSimulationResult', () => {
         campaignId: '16403393592832236981',
         requiredDaily: 11312,
         distributedSoFar: 0,
-        endTimestamp: 1774965600,
+        endTimestamp: 4070901600,
       },
     };
 
@@ -483,12 +597,18 @@ describe('buildRateSimulationResult', () => {
       ...baseReserve,
       brevisSupplys: [
         {
-          campaignApr: 10,
           link: 'https://example.com/brevis',
-          campaignStartedAt: '2020-01-01T00:00:00.000Z',
-          campaignEndedAt: endDate,
+          name: 'Brevis Supply',
           message: 'Brevis Supply',
-          perUserRewardCapUsd: 5000,
+          breakdowns: [
+            {
+              campaignApr: 10,
+              campaignStartedAt: '2020-01-01T00:00:00.000Z',
+              campaignEndedAt: endDate,
+              perUserRewardCapUsd: 5000,
+              campaignId: 'brevis-supply',
+            },
+          ],
         },
       ],
     };
@@ -519,12 +639,18 @@ describe('buildRateSimulationResult', () => {
       ...baseReserve,
       brevisSupplys: [
         {
-          campaignApr: 10,
           link: 'https://example.com/brevis',
-          campaignStartedAt: '2020-01-01T00:00:00.000Z',
-          campaignEndedAt: endDate,
+          name: 'Brevis Supply',
           message: 'Brevis Supply',
-          perUserRewardCapUsd: 5000,
+          breakdowns: [
+            {
+              campaignApr: 10,
+              campaignStartedAt: '2020-01-01T00:00:00.000Z',
+              campaignEndedAt: endDate,
+              perUserRewardCapUsd: 5000,
+              campaignId: 'brevis-supply',
+            },
+          ],
         },
       ],
     };

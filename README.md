@@ -12,7 +12,7 @@ A React dashboard for displaying Aave V3 market data with yield comparisons acro
 - **Yield Comparison**: Compare supply/borrow APYs across all supported chains
 - **Incentive Tracking**: Track additional yield from Merit, Merkl, and Brevis programs
 - **Merkl Forecast**: Estimate next-run Merkl daily rewards/APR for hypothetical deposit amounts
-- **Real-time Data**: Data fetched from [api.aaveapy.com](https://api.aaveapy.com)
+- **Real-time Data**: Fetched from your configured API base (`VITE_API_BASE_URL`); when unset locally, the app defaults to staging (`https://staging-api.aaveapy.com/api`). Production is [api.aaveapy.com](https://api.aaveapy.com).
 - **Mobile Friendly**: Responsive design with optimized mobile experience
 
 ## Tech Stack
@@ -56,7 +56,8 @@ cp .env.example .env.local
 Then update values as needed:
 
 ```bash
-# API base URL (optional, defaults to https://api.aaveapy.com/api)
+# API base URL (optional). If omitted, the app uses staging API (see src/lib/apiBase.ts).
+# Point at production, local backend, or Railway — see docs/conventions/api-base-urls.md
 VITE_API_BASE_URL=http://localhost:3001/api
 ```
 
@@ -79,22 +80,13 @@ npm run preflight:release -- --full
 
 ## Data Freshness Policy (Frontend)
 
-React Query staleTime config is centralized in `src/config/queryStaleTimes.ts`.
+Canonical source: [`docs/frontend-data-loading-matrix.md`](docs/frontend-data-loading-matrix.md).
 
-| Bucket | staleTime | Scope | Reasoning |
-|---|---:|---|---|
-| `coreSnapshotApi` | 1m | `/markets` `/rate-inputs` snapshot | Same backend snapshot family; aligned with backend soft TTL (realtimeFamily=60s) to reduce cross-end freshness drift. |
-| `coingeckoFdv` | 10m | `/coingecko-fdv` | Relevant for ranking/valuation UX, but not execution-critical; reduces external API pressure. |
-| `tokenCategories` | 6h | `/coingecko-categories` | Low-change metadata, long cache window is acceptable. |
-| `coingeckoTokenImage` | 24h | Coin symbol -> image lookup | Icon changes are infrequent; long cache + long GC avoids repeated fetches. |
+Docs ownership index: [`docs/DOCS-INDEX.md`](docs/DOCS-INDEX.md).
 
-Rule of thumb:
-- Same-source snapshot data should share staleTime.
-- External-source data should be bucketed by change frequency and quota cost.
-
-Market filter source of truth:
-- The home page derives unique `{ marketName, chainName }` filter options directly from `/markets.data`.
-- Do not add a separate `markets/list` fetch for this screen; it creates a second snapshot path for the same UI state.
+Quick rule:
+- Keep one snapshot source per UI state.
+- Prefer endpoint-level TTL and centralized stale-time buckets.
 
 ## Security
 
@@ -102,20 +94,16 @@ See [SECURITY.md](SECURITY.md) for vulnerability reporting and a public-release 
 
 ## Merkl Forecast Notes
 
-- Forecast state is loaded from backend:
-  - `GET /api/campaigns/forecast-states`
-  - `GET /api/campaigns/:campaignId/forecast-state`
+- Forecast state is loaded from `GET /meta/side-data` (`forecast.items`).
 - Frontend forecast math only changes hypothetical TVL (based on user input amount * token price).
-- Token price is resolved from `/api/markets` `tokenPrices` first, with backup lookup if missing.
-- Campaign type and regime are rendered from forecast-state + local calculation (`APR_CAPPED`, `CATCHING_UP`, `PLANNED`).
+- Campaign type and regime are rendered from forecast state + local calculation (`APR_CAPPED`, `CATCHING_UP`, `PLANNED`).
+- Canonical formulas and semantics: [`docs/rate-calculation-formulas.md`](docs/rate-calculation-formulas.md).
 
 ## CoinGecko Token Price Fallback
 
-- Primary source is backend snapshot `tokenPrices` from `GET /api/markets`.
-- CoinGecko fallback runs only when the required reserve token price is missing from snapshot data.
-- Runtime safeguards in resolver: concurrency limiter, in-flight request dedupe, and TTL cache to reduce duplicate calls and API pressure.
-- Implementation entry: `resolveForecastTokenPriceWithBackup` in `src/lib/tokenPriceResolver.ts`.
-- Canonical behavior and endpoint-level differences: `docs/frontend-data-loading-matrix.md` -> `Forecast Token Price Backup`.
+- Primary source is backend snapshot token prices from `GET /markets`.
+- CoinGecko fallback runs only when required reserve token prices are missing from snapshot data.
+- Canonical behavior and endpoint details: [`docs/frontend-data-loading-matrix.md`](docs/frontend-data-loading-matrix.md) (`Forecast Token Price Backup`).
 
 ## License
 

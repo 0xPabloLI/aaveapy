@@ -76,7 +76,7 @@
 - **移动优先**，触控目标 ≥ 44×44px。
 - **多列面板**（如 Supply / Spread / Borrow）：等宽列、统一压缩，不单独给某一列固定或更大宽度。
 - **表格**：表头与占位符（如 `-`）使用相同列宽与对齐，避免表头与内容错位；空间紧张时优先换行而非省略号。
-- **叠层 sticky 表头 + 页面滚动**：若顶栏与 `<thead>` 均 `position: sticky` 且 `top` 意在相对**视口**叠放，**禁止**用包住整张表（含 `thead`）的 `overflow-x-auto` / `overflow: hidden` 等制造**独立 scrollport**，否则 `thead` 的 `top` 会相对该盒计算，与视口 sticky 错位（缝中大段空白、tbody 从缝露出）。本项目细则见 **[frontend-interaction-guardrails.md](frontend-interaction-guardrails.md)** § *Desktop reserves table: sticky stack and scrollport (normative)*。
+- **叠层 sticky 表头 + 页面滚动**：若顶栏与 `<thead>` 均 `position: sticky` 且 `top` 意在相对**视口**叠放，**禁止**用包住整张表（含 `thead`）的 `overflow-x-auto` / `overflow: hidden` 等制造**独立 scrollport**，否则 `thead` 的 `top` 会相对该盒计算，与视口 sticky 错位（缝中大段空白、tbody 从缝露出）。**桌面展开 simulation 时**，主数据行各 `td` 须再叠一层 sticky（`--reserves-expanded-main-row-top`），避免长 simulation 滚动时 Token/市场行消失。本项目细则见 **[frontend-interaction-guardrails.md](frontend-interaction-guardrails.md)** § *Desktop reserves table: sticky stack and scrollport (normative)* 与 *DOM contract / CSS variables*。
 - **对称**：成对出现的区块（如 Supply / Borrow）在布局与视觉权重上保持对称。
 
 ---
@@ -114,16 +114,37 @@
 
 切换/选中状态要有**明确视觉区分**（边框色、背景、描边等），不能只靠轻微透明度或背景变化。
 
-### 5.6 本仓库实现参考
+### 5.6 原生勾选框（`<input type="checkbox">`）
+
+用于少量内联选项（Merkl 白名单、激励 Tooltip、场景条等），**不**单独引入 shadcn Checkbox 时，统一使用共享类名常量 `DS_NATIVE_CHECKBOX_CLASS`（`src/lib/dsNativeCheckbox.ts`）：
+
+| 规则 | 说明 |
+|------|------|
+| 尺寸 | `h-3.5 w-3.5`（14×14px 框体） |
+| 形状与边框 | `rounded border border-border bg-background` |
+| 与文字行 | `label` 使用 `flex items-start gap-[var(--ds-space-1-5)]`，勾选框加 `mt-0.5` 与首行文字基线对齐（常量已含 `mt-0.5`） |
+| 焦点 | `focus-visible:ring-2 focus-visible:ring-ring`（键盘可见焦点） |
+| 触控 | 小框可接受；**整段 `label` 可点**，满足可点区域 |
+
+选中态依赖浏览器原生勾选样式；若未来需要与品牌色强绑定，再在常量上扩展 `accent-*`（须全站勾选一并评估）。**共享场景条（`ScenarioControls`）** 等对表内 Supply/Borrow 语义色不重复：可在常量后追加 `accent-muted-foreground`，与表头/单元格的 emerald、cyan 分工。
+
+### 5.7 本仓库实现参考
 
 | 用途 | 参考文件 |
 |------|----------|
 | APR/APY 分段 | `AprApyToggle.tsx` |
 | Token / Markets 筛选芯片 | `FilterBar.tsx` |
 | USD/Token 等模式分段 | `ScenarioControls.tsx` |
-| 主题图标切换 | `ThemeToggle.tsx` |
 
-迁移与验收：`ScenarioControls` 的 USD/Token 使用分段控件（非单按钮）；分类筛选用中性 `bg-card` 选中；Markets 多选保留品牌色边框以区分多选状态。
+### 5.8 Pill 与可点击性
+
+- **统一规则**：产品内凡是 **pill** 形态，都定义为可点击交互元素。
+- **语义要求**：pill 必须使用交互语义（`button`/`a`）、可见 hover/focus、明确点击反馈与可访问名称。
+- **只读数据**：禁止使用 pill 视觉；改用普通文本或非-pill标签样式，避免与交互控件冲突。
+| 主题图标切换 | `ThemeToggle.tsx` |
+| 原生勾选框（Merkl 白名单、场景 net 口径等） | `dsNativeCheckbox.ts` → `IncentiveTooltip.tsx`、`MerklForecastPanel.tsx`、`ScenarioControls.tsx` |
+
+迁移与验收：`ScenarioControls` 的 USD/Token 使用分段控件（非单按钮）；分类筛选用中性 `bg-card` 选中；Markets 多选保留品牌色边框以区分多选状态；**新增原生勾选框必须复用 `DS_NATIVE_CHECKBOX_CLASS`**。
 
 ---
 
@@ -150,6 +171,8 @@ className="cursor-pointer md:cursor-auto"
 ### 6.3 Tooltip 内容
 
 只展示**补充信息**，不重复父级已展示的内容。
+
+**多段说明文**（场景条 Net、类 FDV 信息泡）：版式与 `DesktopTooltip`/`MobileTooltip` 正文区对齐，见 **DESIGN.md §4.4 Tooltip**（`px-4 py-3`、`space-y-2.5`、`ds-text-12`、可选顶部分割线）；避免默认 Radix Tooltip 的紧间距堆段。
 
 ### 6.4 Tooltip 定位与视口
 
@@ -266,6 +289,7 @@ Slider 与紧挨其下的区块（如「Reference FDVs」、说明文字）可�
 - **对称**：成对区块（如 Supply / Borrow）在位置与权重上对称。
 - **几何**：若需求给出具体尺寸/间距，按给定实现（如用 `getBoundingClientRect()` 计算），不随意近似。
 - **轮廓与圆角拼接**：用 SVG 绘制 1px 边框以衔接 CSS 边框时，坐标必须对齐到半像素（如 `0.5`）以避免抗锯齿模糊或变粗；若需修改局部轮廓（如内侧反向圆角），优先使用 `clip-path` 局部切断底层原生边框，并使用单个包含精确几何指令（如 `A` 画圆弧）的 SVG `path` 一次性绘制连续轮廓，严禁使用“原边框 + 补丁层 + mask 遮罩”的多层叠加拼凑做法。
+- **圆角卡片 + 全宽不透明子层**：子元素（尤其 `position: sticky` + `bg-card`）会按绘制顺序盖住父元素圆角处的 **`border`**，顶角看起来像断线。优先用 **`rounded-2xl` 外层 `p-px bg-border/60` + 内层 `rounded-[calc(1rem-1px)] bg-card`** 的 1px 沟槽描边；**不要**为此对含视口 sticky 的卡片使用 `overflow: hidden`（会改变 sticky 参照）。桌面 `ReservesTable` 卡片即此模式。
 
 ---
 
@@ -275,7 +299,7 @@ Slider 与紧挨其下的区块（如「Reference FDVs」、说明文字）可�
 
 - **前端交互守则**：本目录下 `frontend-interaction-guardrails.md`（API 新鲜度、Forecast UI、Reserves 表、InkAprCalculator 等）。
 - **数据加载**：`../frontend-data-loading-matrix.md`（prefetch、staleTime、缓存分层）。
-- **DESIGN.md**：本目录下，本项目视觉主题、品牌色、组件类名（如 `ds-input-surface`、`glass-card`）的具体约定。
+- **DESIGN.md**：本目录下，本项目视觉主题、品牌色、组件类名（如 `ds-input-surface`、`glass-card`）的具体约定；**文本输入空态/有值与底色规则**见 **§4.1**（实现：`@/lib/dsInputSurface` 的 `cnDsInputSurface` / `cnDsInputNeutralWell`）。
 
 ---
 

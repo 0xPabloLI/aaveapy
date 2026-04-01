@@ -10,12 +10,22 @@ import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { IncentiveIcon } from '@/components/IncentiveIcon';
+import {
+  calculateDeficitShareRatio,
+  formatReserveDeficitTokenCompact,
+  getDeficitSeverity,
+  getReserveDeficitUsdAmount,
+  hasReserveDeficit,
+} from '@/lib/deficit';
+import DeficitLiquidityRing from './DeficitLiquidityRing';
 import SimulationSubRow from './SimulationSubRow';
 import CapProgressRing from './CapProgressRing';
 import BorrowCapProgressRing from './BorrowCapProgressRing';
 import UtilizationIndicator from './UtilizationIndicator';
+import DeficitShieldIcon from './DeficitShieldIcon';
 import type { RateSimulationResult, ScenarioInputMode } from '@/hooks/useRateSimulation';
 import { getPoolLiquidityUsd, getScenarioSupplySizeUsd, getTotalBorrowedUsd, getValidTokenPrice } from '@/lib/scenarioSize';
+import { cn } from '@/lib/utils';
 
 /* ─── Memoised chain icon ─── */
 const ChainIcon = memo(({ chain, className = '' }: { chain: string; className?: string }) => {
@@ -39,6 +49,7 @@ interface DesktopReserveRowProps {
   isExpanded: boolean;
   onToggleExpand: (reserveId: string) => void;
   onSelectMarket?: (marketName: string) => void;
+  onMarketChipClick?: (reserveId: string) => void;
   onIncentiveClick: (e: React.MouseEvent, reserve: ReserveWithSpread, type: 'supply' | 'borrow', apy: number | null) => void;
   displaySupplyTotal: number | null;
   displaySupplyNative: number | null;
@@ -64,6 +75,7 @@ const DesktopReserveRow = memo(({
   isExpanded,
   onToggleExpand,
   onSelectMarket,
+  onMarketChipClick,
   onIncentiveClick,
   displaySupplyTotal,
   displaySupplyNative,
@@ -122,14 +134,51 @@ const DesktopReserveRow = memo(({
     reserveSizeUsd: reserve.reserveSizeUsd,
     totalBorrowedUsd,
   });
+  const hasDeficit = hasReserveDeficit(reserve);
+  const deficitUsd = getReserveDeficitUsdAmount(reserve, displayTokenPrice);
+  const deficitTokenCompact = formatReserveDeficitTokenCompact(reserve);
+  const deficitInlineValue = inputMode === 'usd'
+    ? (deficitUsd != null ? formatScenarioSize(deficitUsd, { inputMode: 'usd' }) : '-')
+    : deficitTokenCompact;
+  const deficitTokenLabel = deficitTokenCompact !== '-' ? deficitTokenCompact : undefined;
+  const deficitUsdLabel = deficitUsd != null ? formatUsd(deficitUsd) : '— (token price unavailable)';
+  const deficitShareRatio = calculateDeficitShareRatio({
+    deficitUsd,
+    totalSuppliedUsd: displayReserveSizeUsd,
+  });
+  const deficitSeverity = getDeficitSeverity(deficitShareRatio);
+  const isNeutralDeficit = deficitSeverity === 'neutral';
+  const deficitTextClass = deficitSeverity === 'critical'
+    ? 'text-amber-600/90'
+    : deficitSeverity === 'warning'
+      ? 'text-amber-500/90'
+      : 'text-muted-foreground/60';
+
+  const supplySizeLabel = formatScenarioSize(displayReserveSizeUsd, {
+    inputMode,
+    tokenPrice: displayTokenPrice,
+    tokenSymbol: reserve.tokenSymbol,
+  });
+  const borrowSizeLabel = formatScenarioSize(totalBorrowedUsd, {
+    inputMode,
+    tokenPrice: displayTokenPrice,
+    tokenSymbol: reserve.tokenSymbol,
+  });
+  const hasSupplyCap =
+    reserve.supplyCapUsd != null && Number.isFinite(reserve.supplyCapUsd) && reserve.supplyCapUsd > 0;
+  const hasBorrowCap =
+    reserve.borrowCapUsd != null && Number.isFinite(reserve.borrowCapUsd) && reserve.borrowCapUsd > 0;
 
   return (
     <Fragment>
       <TableRow
         data-reserve-id={reserveId}
-        className={`transition-colors duration-150 cursor-pointer hover:bg-muted/60 active:bg-muted/80 ${
-          isExpanded ? 'bg-muted/30' : ''
-        }`}
+        className={cn(
+          'transition-colors duration-150 cursor-pointer hover:bg-muted/60 active:bg-muted/80',
+          isExpanded && 'bg-muted/30',
+          isExpanded &&
+            '[&_td]:sticky [&_td]:z-[25] [&_td]:border-b [&_td]:border-border/60 [&_td]:bg-card [&_td]:shadow-[0_1px_2px_0_rgb(0_0_0/0.04)] [&_td]:[top:var(--reserves-expanded-main-row-top,5.75rem)]',
+        )}
         onClick={() => onToggleExpand(reserveId)}
       >
         {/* Token — 右侧留白更小 */}
@@ -161,6 +210,7 @@ const DesktopReserveRow = memo(({
               type="button"
               onClick={(event) => {
                 event.stopPropagation();
+                onMarketChipClick?.(reserveId);
                 onSelectMarket?.(reserve.marketName);
               }}
               className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)] px-[var(--ds-space-2-5)] py-[var(--ds-space-1)] rounded-full ds-text-13 font-medium bg-muted/50 text-muted-foreground border border-border/60 hover:bg-muted hover:text-foreground hover:border-border/80 active:scale-[0.98] transition-all duration-150"
@@ -188,23 +238,24 @@ const DesktopReserveRow = memo(({
         <TableCell className="px-[var(--ds-space-2)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell tabular-nums ds-text-13">
           <div className="flex flex-col items-center justify-center gap-[var(--ds-space-0-5)]">
             {/* Supply Size - Green (match Supply APY primary: ds-text-emerald-500) */}
-            <div className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)] ds-text-emerald-500">
-              <span className="font-medium tabular-nums">
-                {formatScenarioSize(displayReserveSizeUsd, { inputMode, tokenPrice: displayTokenPrice, tokenSymbol: reserve.tokenSymbol })}
-              </span>
+            {hasSupplyCap ? (
               <CapProgressRing
                 size={displayReserveSizeUsd}
                 cap={reserve.supplyCapUsd}
                 displayMode={inputMode}
                 tokenPrice={displayTokenPrice}
                 tokenSymbol={reserve.tokenSymbol}
+                label={<span className="font-medium tabular-nums">{supplySizeLabel}</span>}
+                triggerClassName="ds-text-emerald-500"
+                triggerAriaLabel={`Supply cap details for ${reserve.tokenSymbol}`}
               />
-            </div>
+            ) : (
+              <div className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)] ds-text-emerald-500">
+                <span className="font-medium tabular-nums">{supplySizeLabel}</span>
+              </div>
+            )}
             {/* Borrow Size - Cyan (match tooltip: font-medium + ds-text-brand-cyan) */}
-            <div className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)] ds-text-brand-cyan">
-              <span className="font-medium tabular-nums">
-                {formatScenarioSize(totalBorrowedUsd, { inputMode, tokenPrice: displayTokenPrice, tokenSymbol: reserve.tokenSymbol })}
-              </span>
+            {hasBorrowCap ? (
               <BorrowCapProgressRing
                 borrowed={totalBorrowedUsd}
                 cap={reserve.borrowCapUsd}
@@ -212,8 +263,65 @@ const DesktopReserveRow = memo(({
                 displayMode={inputMode}
                 tokenPrice={displayTokenPrice}
                 tokenSymbol={reserve.tokenSymbol}
+                label={<span className="font-medium tabular-nums">{borrowSizeLabel}</span>}
+                triggerClassName="ds-text-brand-cyan"
+                triggerAriaLabel={`Borrow cap details for ${reserve.tokenSymbol}`}
               />
-            </div>
+            ) : (
+              <div className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)] ds-text-brand-cyan">
+                <span className="font-medium tabular-nums">{borrowSizeLabel}</span>
+              </div>
+            )}
+            {hasDeficit && (
+              deficitUsd != null ? (
+                <DeficitLiquidityRing
+                  deficitUsd={deficitUsd}
+                  totalSuppliedUsd={displayReserveSizeUsd}
+                  tokenDeficitLabel={deficitTokenLabel}
+                  displayMode={inputMode}
+                  tokenPrice={displayTokenPrice}
+                  tokenSymbol={reserve.tokenSymbol}
+                  label={(
+                    <span className={cn('inline-flex items-center gap-1 ds-text-11 tabular-nums', deficitTextClass)}>
+                      <DeficitShieldIcon ratio={deficitShareRatio} className={cn(isNeutralDeficit && 'opacity-70')} />
+                      <span>{deficitInlineValue}</span>
+                    </span>
+                  )}
+                  triggerClassName={deficitTextClass}
+                  triggerAriaLabel={`Deficit share of total supplied plus deficit for ${reserve.tokenSymbol}`}
+                />
+              ) : (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={(event) => event.stopPropagation()}
+                      className={cn(
+                        'inline-flex items-center gap-1 ds-text-11 tabular-nums transition-colors',
+                        deficitTextClass,
+                        isNeutralDeficit ? 'hover:text-muted-foreground/70' : 'hover:text-amber-600',
+                      )}
+                      aria-label={`Deficit details for ${reserve.tokenSymbol}`}
+                    >
+                      <DeficitShieldIcon ratio={deficitShareRatio} />
+                      <span>{deficitInlineValue}</span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" align="center" className="max-w-[18rem]">
+                    <div className="space-y-1 ds-text-11">
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-muted-foreground">USD</span>
+                        <span className="tabular-nums">{deficitUsdLabel}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-muted-foreground">Token</span>
+                        <span className="tabular-nums">{deficitInlineValue}</span>
+                      </div>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              )
+            )}
           </div>
         </TableCell>
         {/* Utilization */}
@@ -321,35 +429,32 @@ const DesktopReserveRow = memo(({
           </div>
         </TableCell>
       </TableRow>
-      <TableRow
-        className="border-0"
-        onClick={(event) => event.stopPropagation()}
-        style={{ visibility: isExpanded ? 'visible' : 'collapse' }}
-      >
-        <TableCell colSpan={8} className="min-w-0 p-0">
-          <div
-            className="grid transition-[grid-template-rows] duration-300 ease-in-out"
-            style={{ gridTemplateRows: isExpanded ? '1fr' : '0fr' }}
-          >
-            <div className="overflow-hidden">
-              <div className="px-[var(--ds-space-3)] py-[var(--ds-space-3)] bg-transparent">
-                {hasSimulationMounted && simulation && (
-                  <SimulationSubRow
-                    reserve={reserve}
-                    simulation={simulation}
-                    isApy={isApy}
-                    supplyInput={supplyInput}
-                    borrowInput={borrowInput}
-                    inputMode={inputMode}
-                    onCorrectSupplyInput={onCorrectSupplyInput}
-                    onCorrectBorrowInput={onCorrectBorrowInput}
-                  />
-                )}
-              </div>
+      {isExpanded && (
+        <TableRow
+          className="border-0 bg-transparent hover:bg-transparent data-[state=selected]:bg-transparent"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <TableCell colSpan={8} className="min-w-0 p-0">
+            <div
+              data-reserves-simulation-scrollport
+              className="px-[var(--ds-space-3)] py-[var(--ds-space-3)]"
+            >
+              {hasSimulationMounted && simulation && (
+                <SimulationSubRow
+                  reserve={reserve}
+                  simulation={simulation}
+                  isApy={isApy}
+                  supplyInput={supplyInput}
+                  borrowInput={borrowInput}
+                  inputMode={inputMode}
+                  onCorrectSupplyInput={onCorrectSupplyInput}
+                  onCorrectBorrowInput={onCorrectBorrowInput}
+                />
+              )}
             </div>
-          </div>
-        </TableCell>
-      </TableRow>
+          </TableCell>
+        </TableRow>
+      )}
     </Fragment>
   );
 });

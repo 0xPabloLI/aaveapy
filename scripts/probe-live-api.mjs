@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+import { DEFAULT_STAGING_API_BASE } from './lib/default-api-bases.mjs';
+
 /**
  * Probe staging/live API from CI before running apiSchemas.live.test.ts.
  *
@@ -10,7 +12,7 @@
  * Env:
  *   LIVE_TEST_API_BASE — same as apiSchemas.live.helpers (default: staging)
  */
-const DEFAULT_BASE = 'https://staging-api.aaveapy.com/api';
+const DEFAULT_BASE = DEFAULT_STAGING_API_BASE;
 
 function isLikelyCloudflareChallenge(snippet) {
   const s = snippet.toLowerCase();

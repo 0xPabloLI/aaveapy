@@ -1,5 +1,8 @@
 # Merit Base: anchor vs last-round paths (staging snapshot)
 
+> Historical analysis note (dated snapshot).  
+> Canonical current behavior lives in [`docs/rate-calculation-formulas.md`](./rate-calculation-formulas.md).
+
 This note records a **one-off empirical comparison** between two ways to fix **daily USD rewards** for Merit **Base** simulation, using the **same formulas** as `src/lib/meritForecast.ts`. It is **not** a live dashboard; re-fetch `GET /markets` if you need current numbers.
 
 ## How the app chooses (production code)

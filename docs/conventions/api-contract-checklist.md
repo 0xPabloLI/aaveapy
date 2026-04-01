@@ -3,6 +3,8 @@
 > 当后端 API 做 breaking change 时，确保前端/脚本全部同步。
 > 可直接复制到其他项目使用。
 
+**API 主机 / 环境变量总表**：[api-base-urls.md](./api-base-urls.md)。
+
 ---
 
 ## 自动防护（已落实）

@@ -15,6 +15,8 @@ import { getMerklBreakdownApr } from '@/lib/tydro';
 import { splitMeritMessageBySelfAuth } from '@/lib/meritForecast';
 import {
   getBrevisCampaignApr,
+  getBrevisCampaignBreakdowns,
+  getBrevisDisplayLabel,
   getBrevisCampaignEndedAt,
   getBrevisCampaignMessage,
   getBrevisCampaignStartedAt,
@@ -22,6 +24,7 @@ import {
 import { adjustTooltipAnchorForScroll, getWindowScroll } from '@/lib/tooltipPosition';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
+import { DS_NATIVE_CHECKBOX_CLASS } from '@/lib/dsNativeCheckbox';
 
 interface IncentiveTooltipProps {
   reserve: ReserveWithSpread;
@@ -255,22 +258,8 @@ const IncentiveTooltip = ({
     return opportunity.link;
   };
 
-  /**
-   * Group key for merging duplicate rows. Merkl must include breakdown identity: one opportunity
-   * often has multiple active breakdowns (e.g. Tydro points on a whitelist row + a separate 0% row).
-   * Merging only by name+link collapses those into one row with value 0 and a misleading total.
-   */
   const buildSourceGroupKey = (source: IncentiveSource): string => {
-    const base = `${source.sourceType ?? 'Unknown'}|${source.name}|${source.link ?? ''}`;
-    if (source.sourceType === 'Merkl') {
-      const c = source.campaigns?.[0];
-      const cid =
-        c?.campaignId != null && String(c.campaignId).trim() !== '' ? String(c.campaignId).trim() : 'noid';
-      const start = c?.startDate ?? '';
-      const end = c?.endDate ?? '';
-      return `${base}|${cid}|${start}|${end}`;
-    }
-    return base;
+    return `${source.sourceType ?? 'Unknown'}|${source.name}|${source.link ?? ''}`;
   };
 
   const groupIncentiveSources = (sources: IncentiveSource[]): IncentiveSource[] => {
@@ -403,30 +392,41 @@ const IncentiveTooltip = ({
 
     if (brevisIncentives && Array.isArray(brevisIncentives) && brevisIncentives.length > 0) {
       brevisIncentives.forEach((brevis) => {
-        const startDate = getBrevisCampaignStartedAt(brevis);
-        const endDate = getBrevisCampaignEndedAt(brevis);
-        if (!isCampaignActive(startDate, endDate, Date.now(), true)) return;
-        const apr = getBrevisCampaignApr(brevis);
+        const name = getBrevisDisplayLabel(brevis, 'Brevis Incentive');
         const message = getBrevisCampaignMessage(brevis);
-        if (!isNaN(apr) && apr >= 0) {
-          sources.push({
-            name: message || 'Brevis Incentive',
-            value: isApy ? convertAprToApy(apr) : apr,
-            color: 'text-foreground',
-            bgColor: 'bg-muted/60',
-            sourceType: 'Brevis',
-            link: brevis.link,
-            message,
-            dateRange: formatDateRange(startDate, endDate) || undefined,
-            campaigns: [{
-              value: isApy ? convertAprToApy(apr) : apr,
+        const breakdowns = getBrevisCampaignBreakdowns(brevis);
+        const campaigns = breakdowns
+          .map((breakdown) => {
+            const startDate = breakdown.campaignStartedAt ?? getBrevisCampaignStartedAt(brevis);
+            const endDate = breakdown.campaignEndedAt ?? getBrevisCampaignEndedAt(brevis);
+            if (!isCampaignActive(startDate, endDate, Date.now(), true)) return null;
+            const apr = breakdown.campaignApr ?? getBrevisCampaignApr(brevis);
+            if (isNaN(apr) || apr < 0) return null;
+            const value = isApy ? convertAprToApy(apr) : apr;
+            return {
+              value,
               dateRange: formatDateRange(startDate, endDate) || undefined,
               startDate,
               endDate,
               message,
-            }],
-          });
-        }
+              campaignId: breakdown.campaignId,
+              sourceType: 'Brevis' as const,
+            };
+          })
+          .filter(Boolean) as NonNullable<IncentiveSource['campaigns']>;
+        if (campaigns.length === 0) return;
+        const totalValue = campaigns.reduce((sum, campaign) => sum + campaign.value, 0);
+        sources.push({
+          name,
+          value: totalValue,
+          color: 'text-foreground',
+          bgColor: 'bg-muted/60',
+          sourceType: 'Brevis',
+          link: brevis.link,
+          message,
+          dateRange: campaigns[0]?.dateRange,
+          campaigns,
+        });
       });
     }
 
@@ -516,7 +516,7 @@ const IncentiveTooltip = ({
                 type="checkbox"
                 checked={whitelistMerklCampaignIds.has(merklWlToggleKey)}
                 onChange={(event) => onToggleWhitelistMerklCampaign(merklWlToggleKey, event.target.checked)}
-                className="mt-0.5 h-3.5 w-3.5 shrink-0 rounded border-border bg-background"
+                className={DS_NATIVE_CHECKBOX_CLASS}
               />
               <span aria-hidden="true" className="min-w-0 leading-snug">
                 {MERKL_WHITELIST_TOGGLE_LABEL}
@@ -568,7 +568,7 @@ const IncentiveTooltip = ({
                     type="checkbox"
                     checked={whitelistMerklCampaignIds.has(merklWlToggleKey)}
                     onChange={(event) => onToggleWhitelistMerklCampaign(merklWlToggleKey, event.target.checked)}
-                    className="mt-0.5 h-3.5 w-3.5 shrink-0 rounded border-border bg-background"
+                    className={DS_NATIVE_CHECKBOX_CLASS}
                   />
                   <span aria-hidden="true" className="min-w-0 leading-snug">
                     {MERKL_WHITELIST_TOGGLE_LABEL}

@@ -1,9 +1,13 @@
-import { chainIconMap, normalizeChainName } from './chainIconMap';
+import { getChainIconSrc } from './chainIcons';
+import { TOKEN_ICON_MANIFEST } from './tokenIconManifest.generated';
 
 /**
  * Performance Optimization - Phase 3
  * Preload strategies for images and resources
  */
+
+/** Fallback token icon; preloaded at boot for placeholder + error states. */
+export const TOKEN_ICON_DEFAULT_SRC = '/icons/tokens/default.svg';
 
 // Track preloaded images to avoid duplicates.
 const preloadedImages = new Set<string>();
@@ -80,6 +84,10 @@ export function getTokenIconSymbolKey(symbol: string): string {
 
 export function getTokenIconSources(symbol: string): string[] {
   const symbolKey = getTokenIconSymbolKey(symbol);
+  const manifestFormats = TOKEN_ICON_MANIFEST[symbolKey];
+  if (manifestFormats && manifestFormats.length > 0) {
+    return manifestFormats.map((fmt) => `/icons/tokens/${symbolKey}.${fmt}`);
+  }
   return TOKEN_ICON_FORMATS.map((fmt) => `/icons/tokens/${symbolKey}.${fmt}`);
 }
 
@@ -211,11 +219,7 @@ export function preloadTokenIcons(symbols: string[]): void {
  * Preload chain/network icons
  */
 export function preloadChainIcons(chains: string[]): void {
-  const iconSrcs = chains
-    .map(normalizeChainName)
-    .map((normalized) => chainIconMap[normalized])
-    .filter((iconName): iconName is string => !!iconName)
-    .map((iconName) => `/icons/networks/${iconName}.svg`);
+  const iconSrcs = chains.map((chain) => getChainIconSrc(chain)).filter((src): src is string => !!src);
 
   preloadImagesIdle([...new Set(iconSrcs)]);
 }
@@ -237,6 +241,12 @@ export function preloadCriticalImages(srcs: string[]): void {
 
     preloadedImages.add(src);
   });
+}
+
+/** Warm default token icon for TokenIcon underlay + fast fallback (link preload). */
+export function preloadDefaultTokenIcon(): void {
+  if (typeof document === 'undefined') return;
+  preloadCriticalImages([TOKEN_ICON_DEFAULT_SRC]);
 }
 
 /**

@@ -2,15 +2,10 @@ name: Hardcode Sync
 
 on:
   workflow_dispatch:
-    inputs:
-      target_branch:
-        description: "Branch to run hardcode sync on (defaults to dev)"
-        required: false
-        type: string
   repository_dispatch:
     types: [upstream-change]
   schedule:
-    # Every day at 04:20 UTC
+    # Every day at 04:20 UTC (runs against dev and main — see matrix)
     - cron: "20 4 * * *"
 
 permissions:
@@ -24,15 +19,21 @@ jobs:
     if: >
       github.event_name == 'workflow_dispatch' ||
       github.event_name == 'repository_dispatch' ||
-      github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+      github.event_name == 'schedule'
+    strategy:
+      fail-fast: false
+      matrix:
+        target_branch: [dev, main]
     runs-on: ubuntu-latest
     env:
-      TARGET_BRANCH: >-
-        ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.target_branch != '' && github.event.client_payload.target_branch || (github.event_name == 'workflow_dispatch' && github.event.inputs.target_branch != '' && github.event.inputs.target_branch || 'dev') }}
+      # One job per branch: drift on `main` and integration on `dev` both get matching bot PRs.
+      TARGET_BRANCH: ${{ matrix.target_branch }}
       HAS_HARDCODE_SYNC_PAT: ${{ secrets.HARDCODE_SYNC_PAT != '' }}
+      # Repository variable LIVE_TEST_API_BASE_CI (Settings → Actions → Variables)
+      LIVE_TEST_API_BASE_CI: ${{ vars.LIVE_TEST_API_BASE_CI != '' && vars.LIVE_TEST_API_BASE_CI || 'https://staging-api.aaveapy.com/api' }}
     steps:
       - name: Checkout target branch
-        uses: actions/checkout@v5
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
           ref: ${{ env.TARGET_BRANCH }}
 
@@ -40,10 +41,11 @@ jobs:
         run: |
           echo "event_name=${{ github.event_name }}"
           echo "target_branch=${{ env.TARGET_BRANCH }}"
+          echo "api_base=${{ env.LIVE_TEST_API_BASE_CI }}"
           echo "client_payload=${{ toJSON(github.event.client_payload) }}"
 
       - name: Setup Node
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
         with:
           node-version: "22"
           cache: "npm"
@@ -90,7 +92,7 @@ jobs:
         if: >
           steps.verify_round1.outputs.passed == 'true' ||
           steps.verify_round2.outputs.passed == 'true'
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@22a9089034f40e5a961c8808d113e2c98fb63676 # v7
         with:
           # Use PAT to ensure pull_request workflows (CI lint/build) are triggered on the created PR.
           # Fallback to GITHUB_TOKEN keeps behavior but may leave required checks in "Expected".
@@ -102,11 +104,11 @@ jobs:
 
             Verification:
             - `npm run hardcode:verify`
-          branch: "bot/hardcode-sync"
+          branch: bot/hardcode-sync-${{ matrix.target_branch }}
           base: ${{ env.TARGET_BRANCH }}
           delete-branch: true
           labels: |
-            automation
+            automerge
             hardcode
 
       - name: Warn when PAT is missing
@@ -116,10 +118,10 @@ jobs:
 
       - name: Trigger fallback CI when PAT is missing
         if: steps.cpr.outputs.pull-request-number != '' && env.HAS_HARDCODE_SYNC_PAT != 'true'
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
         with:
           script: |
-            const workflowRef = `${{ steps.cpr.outputs.pull-request-branch }}` || 'bot/hardcode-sync';
+            const workflowRef = `${{ steps.cpr.outputs.pull-request-branch }}` || 'bot/hardcode-sync-${{ matrix.target_branch }}';
             const targetRef = `${{ steps.cpr.outputs.pull-request-head-sha }}` || workflowRef;
             await github.rest.actions.createWorkflowDispatch({
               owner: context.repo.owner,
@@ -136,7 +138,7 @@ jobs:
         if: >
           steps.verify_round1.outputs.passed != 'true' &&
           steps.verify_round2.outputs.passed != 'true'
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
         with:
           script: |
             const title = '[Hardcode Sync] verify failed after retry';
@@ -156,7 +158,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               state: 'open',
-              labels: 'automation,hardcode,drift',
+              labels: 'hardcode,drift',
               per_page: 100
             });
             const existing = issues.find((issue) => issue.title === title);
@@ -174,7 +176,7 @@ jobs:
                 repo: context.repo.repo,
                 title,
                 body,
-                labels: ['automation', 'hardcode', 'drift']
+                labels: ['hardcode', 'drift']
               });
               core.info('Created a new hardcode verify failure issue');
             }

@@ -2,6 +2,9 @@
 
 本文档基于近期 PR 分析（见 PR #70），作为仓库的 **PR 合并策略** 与 **频率优化** 参考。
 
+> Status: **Active policy document** for PR batching/merge decisions in this repository.
+> Historical examples in this file are illustrative; operational rules above them are canonical.
+
 ---
 
 ## Breaking Changes 判定
@@ -26,7 +29,8 @@
 ### 建议条件（与现有 `.github/workflows/automerge.yml` 一致）
 
 - CI 通过
-- 变更类型为 chore / docs / refactor 时优先考虑 automerge
+- `automerge.yml` 仅对 **`automerge`** 标签生效（与 GitHub「Auto-merge」能力同名，便于和文档/示例对齐）
+- 变更类型为 chore / docs / refactor 时优先考虑打 `automerge`
 - 新功能、大重构需人工 review，不依赖 automerge
 
 ---

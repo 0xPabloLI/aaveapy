@@ -141,21 +141,25 @@ describe('apiSchemas', () => {
           vTokenAddress: '0x3',
           brevisSupplys: [
             {
-              campaignApr: 2.8,
               link: 'https://example.com/brevis',
-              campaignStartedAt: '2025-08-13T13:00:00.000Z',
-              campaignEndedAt: '2026-08-08T00:00:00.000Z',
+              name: 'Brevis USDC',
               message: 'Aligned message',
-              latestTvl: 4_151_203.07,
-              totalBudget: 25_000,
-              perUserRewardCapUsd: 5000,
-              campaignId: 'linea-usdc',
-              rewardAddressType: 'token',
-              totalRewardAmount: 12345,
-              totalRewardTokenSymbol: 'USDC',
-              description: 'legacy',
-              tvlUsd: 1,
-              totalRewardUsd: 2,
+              breakdowns: [
+                {
+                  campaignApr: 2.8,
+                  campaignStartedAt: '2025-08-13T13:00:00.000Z',
+                  campaignEndedAt: '2026-08-08T00:00:00.000Z',
+                  latestTvl: 4_151_203.07,
+                  totalBudget: 25_000,
+                  perUserRewardCapUsd: 5000,
+                  campaignId: 'linea-usdc',
+                  totalRewardAmount: 12345,
+                  totalRewardTokenSymbol: 'USDC',
+                  description: 'legacy',
+                  tvlUsd: 1,
+                  totalRewardUsd: 2,
+                },
+              ],
             },
           ],
         },
@@ -163,19 +167,79 @@ describe('apiSchemas', () => {
     });
 
     const brevis = parsed.reserves[0].brevisSupplys?.[0];
+    expect(brevis?.name).toBe('Brevis USDC');
+    expect(brevis?.message).toBe('Aligned message');
+    // Grouped Brevis payloads are normalized to flat incentives (breakdown fields merged up).
     expect(brevis?.campaignApr).toBe(2.8);
     expect(brevis?.campaignStartedAt).toBe('2025-08-13T13:00:00.000Z');
     expect(brevis?.campaignEndedAt).toBe('2026-08-08T00:00:00.000Z');
-    expect(brevis?.message).toBe('Aligned message');
     expect(brevis?.latestTvl).toBe(4_151_203.07);
     expect(brevis?.totalBudget).toBe(25_000);
     expect(brevis?.perUserRewardCapUsd).toBe(5000);
     expect(brevis?.campaignId).toBe('linea-usdc');
-    expect('rewardAddressType' in (brevis ?? {})).toBe(false);
-    expect('totalRewardAmount' in (brevis ?? {})).toBe(false);
-    expect('totalRewardTokenSymbol' in (brevis ?? {})).toBe(false);
-    expect('description' in (brevis ?? {})).toBe(false);
-    expect('tvlUsd' in (brevis ?? {})).toBe(false);
-    expect('totalRewardUsd' in (brevis ?? {})).toBe(false);
+    expect('totalRewardAmount' in (brevis ?? {})).toBe(true);
+    expect('totalRewardTokenSymbol' in (brevis ?? {})).toBe(true);
+    expect('description' in (brevis ?? {})).toBe(true);
+    expect('tvlUsd' in (brevis ?? {})).toBe(true);
+    expect('totalRewardUsd' in (brevis ?? {})).toBe(true);
+  });
+
+  it('normalizes grouped Brevis breakdowns from /markets into flat Brevis incentives', () => {
+    const parsed = MarketsResponseSchema.parse({
+      snapshot: {
+        lastUpdated: '2026-03-31T00:00:00.000Z',
+      },
+      reserves: [
+        {
+          marketName: 'AaveV3Linea',
+          chainName: 'Linea',
+          chainId: 59144,
+          tokenName: 'USDC',
+          tokenSymbol: 'USDC',
+          tokenAddress: '0x1',
+          aTokenAddress: '0x2',
+          vTokenAddress: '0x3',
+          brevisSupplys: [
+            {
+              link: 'https://example.com/brevis-group',
+              name: 'Grouped Brevis',
+              message: 'Group-level message',
+              breakdowns: [
+                {
+                  campaignApr: 2.4,
+                  campaignStartedAt: '2025-08-13T13:00:00.000Z',
+                  campaignEndedAt: '2026-08-08T00:00:00.000Z',
+                  latestTvl: 3_784_092,
+                  totalBudget: 9_996_400.6,
+                  perUserRewardCapUsd: 5000,
+                  campaignId: '1754995104',
+                  customBreakdownField: 'from-breakdown',
+                },
+                {
+                  campaignApr: 1.2,
+                  campaignStartedAt: '2025-09-01T00:00:00.000Z',
+                  campaignEndedAt: '2026-01-01T00:00:00.000Z',
+                  campaignId: '1754995105',
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+    const brevisSupplys = parsed.reserves[0].brevisSupplys ?? [];
+    expect(brevisSupplys).toHaveLength(2);
+    expect(brevisSupplys[0]?.campaignApr).toBe(2.4);
+    expect(brevisSupplys[0]?.campaignStartedAt).toBe('2025-08-13T13:00:00.000Z');
+    expect(brevisSupplys[0]?.campaignEndedAt).toBe('2026-08-08T00:00:00.000Z');
+    expect(brevisSupplys[0]?.campaignId).toBe('1754995104');
+    expect(brevisSupplys[0]?.link).toBe('https://example.com/brevis-group');
+    expect(brevisSupplys[0]?.message).toBe('Group-level message');
+    expect((brevisSupplys[0] as Record<string, unknown>)?.customBreakdownField).toBe('from-breakdown');
+    expect(brevisSupplys[1]?.campaignApr).toBe(1.2);
+    expect(brevisSupplys[1]?.campaignId).toBe('1754995105');
+    expect(brevisSupplys[1]?.link).toBe('https://example.com/brevis-group');
+    expect(brevisSupplys[1]?.message).toBe('Group-level message');
   });
 });

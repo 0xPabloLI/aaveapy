@@ -3,6 +3,7 @@ import { readFile } from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { fetchWithTimeout } from './lib/fetch-utils.mjs';
+import { checkSymbolMapAgainstUpstream } from './lib/reserve-patches-symbol-map.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const UPSTREAM_RESERVE_PATCHES_URL =
@@ -79,6 +80,9 @@ async function main() {
   console.log(`local-only address keys: ${localOnly.length}`);
   console.log(`local-only expression keys: ${localOnlyExpr.length}`);
 
+  const symCheck = checkSymbolMapAgainstUpstream(localContent, upstreamContent);
+  console.log(`SYMBOL_MAP local-only keys (vs upstream): ${symCheck.localOnlyKeys.length}`);
+
   let hasDrift = false;
 
   if (missingFromLocal.length > 0) {
@@ -108,6 +112,27 @@ async function main() {
     console.warn('\nLocal-only expression keys (keep if intentional local extension):');
     for (const key of localOnlyExpr) {
       console.warn(`- [${key}]`);
+    }
+  }
+
+  if (symCheck.localOnlyKeys.length > 0) {
+    console.warn('\nLocal-only SYMBOL_MAP keys (preserved by sync merge):');
+    for (const key of symCheck.localOnlyKeys) {
+      console.warn(`- ${key}`);
+    }
+  }
+
+  if (symCheck.errors.length > 0) {
+    hasDrift = true;
+    console.error('\nSYMBOL_MAP drift vs upstream:');
+    for (const e of symCheck.errors) {
+      if (e.type === 'missing') {
+        console.error(`- missing key ${e.key} (upstream maps to '${e.upstreamValue}')`);
+      } else {
+        console.error(
+          `- key ${e.key}: local '${e.localValue}' ≠ upstream '${e.upstreamValue}'`
+        );
+      }
     }
   }
 

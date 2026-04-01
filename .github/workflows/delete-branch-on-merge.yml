@@ -1,4 +1,4 @@
-# 仅在带 automerge 标签的 PR 合并后删除 head 分支；dev 与默认分支永不删除
+# 在带 automerge 标签的 PR 合并后删除 head 分支（与 automerge.yml 一致）；dev 与默认分支永不删除
 name: Delete branch on merge
 
 on:
@@ -18,7 +18,7 @@ jobs:
       contents: write
     steps:
       - name: Delete head branch
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |

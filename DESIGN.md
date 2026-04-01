@@ -1,5 +1,7 @@
 # Design System: Aave APY
 
+本文件为**入口索引**（避免与 `docs/design/DESIGN.md` 正文重复维护）。完整文档归属表见 [`docs/DOCS-INDEX.md`](docs/DOCS-INDEX.md)。
+
 本项目的设计文档与规范集中在 **`docs/design/`** 目录：
 
 | 文档 | 说明 |

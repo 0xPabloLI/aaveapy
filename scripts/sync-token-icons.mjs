@@ -1,16 +1,21 @@
 #!/usr/bin/env node
 /**
- * Syncs missing token icons from CoinGecko into public/icons/tokens/.
+ * Syncs missing token icons into public/icons/tokens/.
  * Candidate symbols are derived from resources this repo actually consumes:
  * - reservePatches.ts (upstream interface sync target)
  * - SYMBOL_MAP in reservePatches.ts
  * - runtime /markets token symbols resolved through the same mapping rules
+ *
+ * Download order (per symbol): aave/interface public/icons/tokens → CoinGecko → logoURI.
  *
  * Usage: node scripts/sync-token-icons.mjs [--check]
  *   Default: fetch and write missing icons.
  *   --check: do not write files; exit 1 when syncable icons are missing.
  *   --extra-only: deprecated and ignored (kept for backwards compatibility).
  *   SKIP_SYNC_TOKEN_ICONS=1: no-op.
+ *
+ * Env:
+ *   INTERFACE_TOKEN_ICONS_BASE — override static token icon base (default: raw GitHub main branch).
  */
 
 import fs from 'fs';
@@ -28,14 +33,13 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 const TOKENS_DIR = path.join(ROOT, 'public', 'icons', 'tokens');
 const RESERVE_PATCHES_PATH = getReservePatchesPath(ROOT);
-const TOKENLIST_PATH = path.join(
-  ROOT,
-  'node_modules',
-  '@bgd-labs',
-  'aave-address-book',
-  'tokenlist.json'
-);
 const COINGECKO_SEARCH = 'https://api.coingecko.com/api/v3/search';
+const INTERFACE_TOKEN_ICONS_BASE = String(
+  process.env.INTERFACE_TOKEN_ICONS_BASE ||
+    'https://raw.githubusercontent.com/aave/interface/main/public/icons/tokens'
+).replace(/\/$/, '');
+/** Prefer vector first (matches upstream layout). */
+const INTERFACE_ICON_EXTENSIONS = ['svg', 'png', 'webp', 'jpg'];
 const MARKETS_API_URLS = (process.env.SYNC_TOKEN_ICONS_MARKETS_API || 'https://api.aaveapy.com/api/markets')
   .split(',')
   .concat('https://staging-api.aaveapy.com/api/markets');
@@ -47,31 +51,56 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function* interfaceTokenCandidateUrls(symbol) {
+  const key = String(symbol || '').trim().toLowerCase();
+  if (!key) return;
+  for (const ext of INTERFACE_ICON_EXTENSIONS) {
+    yield `${INTERFACE_TOKEN_ICONS_BASE}/${key}.${ext}`;
+  }
+}
+
+/**
+ * True if aave/interface hosts a static file for this icon key (HEAD, with GET fallback).
+ */
+async function hasInterfaceTokenIcon(symbol) {
+  for (const url of interfaceTokenCandidateUrls(symbol)) {
+    try {
+      let res = await fetch(url, { method: 'HEAD' });
+      if (res.ok) return true;
+      if (res.status === 404) continue;
+      res = await fetch(url);
+      if (res.ok) return true;
+    } catch {
+      // try next extension
+    }
+  }
+  return false;
+}
+
+/**
+ * Download first matching file from interface static tokens dir; returns output path or null.
+ */
+async function trySyncFromInterface(symbol, basePathWithoutExt) {
+  for (const url of interfaceTokenCandidateUrls(symbol)) {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) continue;
+      const buf = Buffer.from(await res.arrayBuffer());
+      const pathExt = inferExtensionFromUrl(url);
+      const outExt = inferExtensionFromContentType(res.headers.get('content-type'), pathExt);
+      const outPath = `${basePathWithoutExt}.${outExt}`;
+      fs.writeFileSync(outPath, buf);
+      return outPath;
+    } catch {
+      // try next extension
+    }
+  }
+  return null;
+}
+
 function getExistingIconBaseSet() {
   const files = fs.existsSync(TOKENS_DIR) ? fs.readdirSync(TOKENS_DIR) : [];
   return new Set(files.map((f) => path.basename(f, path.extname(f)).toLowerCase()));
-}
-
-function loadTokenLogoByAddress() {
-  if (!fs.existsSync(TOKENLIST_PATH)) {
-    return { tokenLogoByAddress: new Map(), tokenSymbols: [] };
-  }
-
-  const payload = JSON.parse(fs.readFileSync(TOKENLIST_PATH, 'utf8'));
-  const rows = Array.isArray(payload?.tokens) ? payload.tokens : [];
-  const tokenLogoByAddress = new Map();
-  const tokenSymbols = [];
-
-  for (const row of rows) {
-    const address = String(row?.address || '').trim().toLowerCase();
-    const logoURI = String(row?.logoURI || '').trim();
-    const symbol = String(row?.symbol || '').trim();
-    if (symbol) tokenSymbols.push(symbol);
-    if (!address || !logoURI) continue;
-    tokenLogoByAddress.set(address, logoURI);
-  }
-
-  return { tokenLogoByAddress, tokenSymbols };
 }
 
 async function fetchMarketsFromUrl(url) {
@@ -110,31 +139,29 @@ async function loadMarketsRows() {
     }
   }
 
-  console.warn('all markets API endpoints exhausted, continuing with tokenlist fallback symbols');
-  return { rows: [], unavailable: true };
+  throw new Error('all markets API endpoints exhausted');
 }
 
 async function getMissingSymbols() {
   const reservePatchesContent = fs.readFileSync(RESERVE_PATCHES_PATH, 'utf8');
-  const { rows: marketsRows, unavailable: marketsUnavailable } = await loadMarketsRows();
-  const { tokenLogoByAddress, tokenSymbols } = loadTokenLogoByAddress();
+  const { rows: marketsRows } = await loadMarketsRows();
 
   const requiredSymbols = collectRequiredIconSymbols({
     reservePatchesContent,
     marketsRows,
-    tokenListSymbols: marketsUnavailable ? tokenSymbols : [],
+    tokenListSymbols: [],
     addressBookContext: addressBook,
   });
   const logoHints = collectIconSymbolLogoHints({
     reservePatchesContent,
     marketsRows,
     addressBookContext: addressBook,
-    tokenLogoByAddress,
+    tokenLogoByAddress: new Map(),
   });
 
   const existing = getExistingIconBaseSet();
   const missing = toSortedArray(requiredSymbols).filter((symbol) => !existing.has(symbol));
-  return { missing, logoHints, usedTokenlistFallback: marketsUnavailable };
+  return { missing, logoHints };
 }
 
 async function fetchCoingeckoImageUrl(symbol) {
@@ -192,16 +219,22 @@ async function downloadToFile(url, basePathWithoutExt) {
 }
 
 async function classifyMissingSymbols(missingSymbols, logoHints) {
-  const syncable = [];
-  const unsyncable = [];
+  const syncableFromInterface = [];
+  const syncableFromCoingecko = [];
   const syncableFromLogo = [];
+  const unsyncable = [];
+  let coingeckoCallIndex = 0;
 
-  for (let i = 0; i < missingSymbols.length; i++) {
-    const symbol = missingSymbols[i];
-    await sleep(i > 0 ? RATE_LIMIT_MS : 0);
+  for (const symbol of missingSymbols) {
+    if (await hasInterfaceTokenIcon(symbol)) {
+      syncableFromInterface.push(symbol);
+      continue;
+    }
+    if (coingeckoCallIndex > 0) await sleep(RATE_LIMIT_MS);
     const imageUrl = await fetchCoingeckoImageUrl(symbol);
+    coingeckoCallIndex += 1;
     if (imageUrl) {
-      syncable.push(symbol);
+      syncableFromCoingecko.push(symbol);
     } else if (logoHints.has(symbol)) {
       syncableFromLogo.push(symbol);
     } else {
@@ -209,7 +242,7 @@ async function classifyMissingSymbols(missingSymbols, logoHints) {
     }
   }
 
-  return { syncable, syncableFromLogo, unsyncable };
+  return { syncableFromInterface, syncableFromCoingecko, syncableFromLogo, unsyncable };
 }
 
 async function main() {
@@ -224,33 +257,38 @@ async function main() {
     console.warn('--extra-only is deprecated and ignored. Symbols are now derived from used interface resources.');
   }
 
-  const { missing, logoHints, usedTokenlistFallback } = await getMissingSymbols();
+  const { missing, logoHints } = await getMissingSymbols();
   if (missing.length === 0) {
     console.log('No missing token icons.');
     return;
   }
 
   if (checkOnly) {
-    if (usedTokenlistFallback) {
-      console.warn(
-        `⚠ Markets API unavailable (tokenlist fallback active) – skipping icon check (${missing.length} unverifiable symbol(s))`
-      );
-      return;
-    }
-
-    const { syncable, syncableFromLogo, unsyncable } = await classifyMissingSymbols(
-      missing,
-      logoHints
-    );
+    const {
+      syncableFromInterface,
+      syncableFromCoingecko,
+      syncableFromLogo,
+      unsyncable,
+    } = await classifyMissingSymbols(missing, logoHints);
 
     if (unsyncable.length > 0) {
       console.warn(
-        `Unsyncable token icons (no exact CoinGecko symbol match): ${unsyncable.join(', ')}`
+        `Unsyncable token icons (no aave/interface file, no exact CoinGecko symbol match, and no logoURI): ${unsyncable.join(', ')}`
       );
     }
 
-    if (syncable.length > 0) {
-      console.error(`Missing ${syncable.length} syncable token icon(s): ${syncable.join(', ')}`);
+    const syncableStatic = [...syncableFromInterface, ...syncableFromCoingecko];
+    if (syncableStatic.length > 0) {
+      if (syncableFromInterface.length > 0) {
+        console.error(
+          `Missing ${syncableFromInterface.length} token icon(s) available on aave/interface: ${syncableFromInterface.join(', ')}`
+        );
+      }
+      if (syncableFromCoingecko.length > 0) {
+        console.error(
+          `Missing ${syncableFromCoingecko.length} token icon(s) available via CoinGecko: ${syncableFromCoingecko.join(', ')}`
+        );
+      }
       process.exit(1);
     }
 
@@ -265,19 +303,30 @@ async function main() {
     return;
   }
 
-  console.log(`Fetching ${missing.length} missing icon(s) from CoinGecko...`);
+  console.log(
+    `Fetching ${missing.length} missing icon(s) (aave/interface → CoinGecko → logoURI)...`
+  );
   const unresolved = [];
+  let coingeckoCallIndex = 0;
 
-  for (let i = 0; i < missing.length; i++) {
-    const symbol = missing[i];
+  for (const symbol of missing) {
     try {
-      await sleep(i > 0 ? RATE_LIMIT_MS : 0);
+      const ifacePath = await trySyncFromInterface(symbol, path.join(TOKENS_DIR, symbol));
+      if (ifacePath) {
+        console.log(`  saved ${symbol} (interface) -> ${path.relative(ROOT, ifacePath)}`);
+        continue;
+      }
+
+      if (coingeckoCallIndex > 0) await sleep(RATE_LIMIT_MS);
       const imageUrl = await fetchCoingeckoImageUrl(symbol);
+      coingeckoCallIndex += 1;
       const fallbackLogoUrl = logoHints.get(symbol);
       const sourceUrl = imageUrl || fallbackLogoUrl;
       if (!sourceUrl) {
         unresolved.push(symbol);
-        console.warn(`  skip ${symbol}: no exact CoinGecko symbol match and no logoURI fallback`);
+        console.warn(
+          `  skip ${symbol}: no interface file, no exact CoinGecko symbol match, and no logoURI fallback`
+        );
         continue;
       }
 

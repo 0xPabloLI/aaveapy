@@ -50,7 +50,9 @@ export const getScenarioSupplySizeUsd = ({
 
   const rawAfterSize = reserveSizeUsd + supplyInputUsd;
   if (supplyCapUsd != null && Number.isFinite(supplyCapUsd) && supplyCapUsd > 0 && rawAfterSize > supplyCapUsd) {
-    return supplyCapUsd;
+    // Never shrink the displayed pool size when the current reserve is already above cap.
+    // In that case, additional scenario input should keep the displayed size at least at current.
+    return Math.max(reserveSizeUsd, supplyCapUsd);
   }
 
   return rawAfterSize;

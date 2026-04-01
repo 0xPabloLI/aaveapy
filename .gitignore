@@ -11,6 +11,7 @@ node_modules
 dist
 .worktrees
 src/lib/tokenIconManifest.generated.ts
+src/lib/chainIconManifest.generated.ts
 dist-ssr
 *.local
 .npmrc.local
@@ -35,3 +36,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Test artifacts
+playwright-report/
+test-results/
+.playwright-mcp/
+
+# Cursor local state
+.cursor/hooks/state/continual-learning.json

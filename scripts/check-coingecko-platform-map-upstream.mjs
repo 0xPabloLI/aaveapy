@@ -2,20 +2,36 @@
 import { readFile } from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { DEFAULT_STAGING_API_BASE } from './lib/default-api-bases.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LOCAL_RESOLVER_PATH = path.join(ROOT, 'src/lib/tokenPriceResolver.ts');
-const DEFAULT_API_BASE = 'https://api.aaveapy.com/api';
+// Prefer LIVE_TEST_API_BASE_CI (e.g. Railway URL). Last resort: staging (see docs/conventions/api-base-urls.md).
+const DEFAULT_API_BASE = DEFAULT_STAGING_API_BASE;
 const COINGECKO_API_BASE = 'https://api.coingecko.com/api/v3';
 
+function normalizeApiBase(value) {
+  if (typeof value !== 'string') return '';
+  const t = value.trim();
+  if (!t) return '';
+  return t.replace(/\/+$/, '');
+}
+
 function getApiBase() {
-  return process.env.VITE_API_BASE_URL || DEFAULT_API_BASE;
+  return (
+    normalizeApiBase(process.env.LIVE_TEST_API_BASE_CI) ||
+    normalizeApiBase(process.env.VITE_API_BASE_URL) ||
+    DEFAULT_API_BASE
+  );
 }
 
 async function fetchJson(url) {
   const response = await fetch(url);
   if (!response.ok) {
-    throw new Error(`Request failed: ${url} (${response.status})`);
+    const error = new Error(`Request failed: ${url} (${response.status})`);
+    error.status = response.status;
+    error.url = url;
+    throw error;
   }
   return await response.json();
 }
@@ -68,19 +84,38 @@ function parseLocalHardcodedMap(content) {
   return local;
 }
 
+function isCiMarkets403(error) {
+  return (
+    process.env.CI === 'true' &&
+    error &&
+    typeof error === 'object' &&
+    Number(error.status) === 403 &&
+    typeof error.url === 'string' &&
+    error.url.endsWith('/markets')
+  );
+}
+
 async function main() {
-  const [resolverContent, marketChainIds, coingeckoMap] = await Promise.all([
-    readFile(LOCAL_RESOLVER_PATH, 'utf8'),
-    loadMarketChainIds(),
-    loadCoingeckoPlatformMap(),
-  ]);
+  const resolverContent = await readFile(LOCAL_RESOLVER_PATH, 'utf8');
+  const coingeckoMap = await loadCoingeckoPlatformMap();
+  const local = parseLocalHardcodedMap(resolverContent);
+
+  let marketChainIds;
+  try {
+    marketChainIds = await loadMarketChainIds();
+  } catch (error) {
+    if (!isCiMarkets403(error)) throw error;
+    marketChainIds = Array.from(local.keys()).sort((a, b) => a - b);
+    console.warn(
+      'Warning: /markets returned 403 in CI. Falling back to local HARDCODED_PLATFORM_BY_CHAIN_ID chainIds.'
+    );
+  }
 
   if (marketChainIds.length === 0) {
     console.error('No chainId found from /markets payload.');
     process.exit(1);
   }
 
-  const local = parseLocalHardcodedMap(resolverContent);
   if (local.size === 0) {
     console.error('Local HARDCODED_PLATFORM_BY_CHAIN_ID is empty.');
     process.exit(1);
