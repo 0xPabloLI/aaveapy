@@ -86,7 +86,7 @@ This note records recurring UI/interaction issues found during incentive/forecas
 | Secondary/muted info | `text-muted-foreground`, `text-secondary` | Labels, descriptions |
 
 **Utilization display value (mobile vs desktop)**:
-- Mobile reserve header and bottom sheet must use the same **display** utilization as the desktop Util. column: `hasSharedScenario ? after ?? current : current` from rate simulation (not raw `reserve.utilizationPct` when a scenario is active).
+- Mobile reserve header and bottom sheet must use the same **display** utilization as the desktop Utilization column: `hasSharedScenario ? after ?? current : current` from rate simulation (not raw `reserve.utilizationPct` when a scenario is active).
 
 **UtilizationIndicator color scheme** (minimize same-hue steps: one **zone tint** + one **full semantic** per state):
 - Below optimal (borrow-friendly / flatter borrow curve): track zone `fill-[rgb(var(--ds-brand-cyan-rgb)/0.32)]`; dot **full** `fill-[rgb(var(--ds-brand-cyan-rgb))]` — same as Borrow (`ds-text-brand-cyan`), not emerald; avoid mixing `-70` text with other cyan opacities
@@ -101,6 +101,7 @@ This note records recurring UI/interaction issues found during incentive/forecas
 - **Size column** (Supply/Borrow amounts): `ds-text-13` + `font-medium` + **full** semantic (`emerald-500` / `brand-cyan`)—aligned with APY **primary** color, **not** with the Native/Incentive row (which is smaller + `-70` by design).
 - **Spread column**: `font-bold` + `ds-text-14` + purple semantic—treated as a **primary numeric** column alongside Supply/Borrow totals.
 - **Mobile parity**: Supply/Borrow tab, **size row**, cap sheets, and incentive chips use the **same** emerald/cyan tokens as desktop (`emerald-500` / `brand-cyan`), not a darker step (e.g. avoid `emerald-600` for Supply size when desktop uses `emerald-500`); utilization figure next to the indicator uses at least `ds-text-11`
+- **Mobile reserves sort strip**: Size, Supply, and Borrow remain separate dropdown chips; the trailing control is a **Spread** dropdown that also lists Token, Market, Price, and Utilization (same `activeSortColumn` keys as desktop). Re-selecting the active menu row toggles ascending/descending, matching the desktop header behavior.
 
 **Key principle**: Amber/warning colors must NOT be used for regular data display. This ensures that when amber appears, users immediately recognize it as a warning signal.
 
@@ -362,7 +363,7 @@ Sticky scenario + sticky `<thead>` and **scrollport** constraints are **normativ
 | Price   | 10.5% | |
 | Market  | 11.5% | |
 | Size    | 13%   | |
-| Util.   | 12%   | |
+| Utilization | 12%   | |
 | Supply  | 13.5% | Right three (Supply / Spread / Borrow) slightly tighter |
 | Spread  | 12%   | |
 | Borrow  | 14.5% | |
@@ -372,7 +373,7 @@ Sticky scenario + sticky `<thead>` and **scrollport** constraints are **normativ
 - **Token**: `pl-[var(--ds-space-1-5)] pr-[var(--ds-space-0-5)]` — tight right so Token and Price sit close.
 - **Price**: `px-[var(--ds-space-0-5)]` — minimal so Price/Market gap stays small.
 - **Market**: `pl-[var(--ds-space-0-5)] pr-[var(--ds-space-1)]` — tight left; right bridges to Size.
-- **Size, Util, Supply, Spread**: `px-[var(--ds-space-1-5)]` — uniform.
+- **Size, Utilization, Supply, Spread**: `px-[var(--ds-space-1-5)]` — uniform.
 - **Borrow**: `pl-[var(--ds-space-1-5)] pr-[var(--ds-space-2)]` — right keeps a small outer margin.
 
 Keep header, body, and skeleton row padding in sync so alignment and spacing stay consistent.

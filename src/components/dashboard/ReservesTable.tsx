@@ -88,6 +88,7 @@ const ReservesTable = ({
   const [spreadSortOrder, setSpreadSortOrder] = useState<'asc' | 'desc'>('desc');
   const [showSupplySortMenu, setShowSupplySortMenu] = useState(false);
   const [showBorrowSortMenu, setShowBorrowSortMenu] = useState(false);
+  const [showExtraSortMenu, setShowExtraSortMenu] = useState(false);
   const borrowSortButtonRef = useRef<HTMLButtonElement>(null);
   const supplySortButtonRef = useRef<HTMLButtonElement>(null);
   const scenarioControlsRef = useRef<ScenarioControlsHandle>(null);
@@ -699,6 +700,26 @@ const ReservesTable = ({
       ? 'borrow'
       : 'supply';
 
+  const mobileExtraSortChipLabel =
+    activeSortColumn === 'spread'
+      ? 'Spread'
+      : activeSortColumn === 'token'
+        ? 'Token'
+        : activeSortColumn === 'market'
+          ? 'Market'
+          : activeSortColumn === 'price'
+            ? 'Price'
+            : activeSortColumn === 'util'
+              ? 'Utilization'
+              : 'Spread';
+
+  const mobileExtraSortActive =
+    activeSortColumn === 'spread' ||
+    activeSortColumn === 'token' ||
+    activeSortColumn === 'market' ||
+    activeSortColumn === 'price' ||
+    activeSortColumn === 'util';
+
   const toggleSupplySortOrder = () => {
     collapseExpandedOnSort();
     setActiveSortColumn('supply');
@@ -933,6 +954,7 @@ const ReservesTable = ({
                   setShowSizeSortMenu(!showSizeSortMenu);
                   setShowSupplySortMenu(false);
                   setShowBorrowSortMenu(false);
+                  setShowExtraSortMenu(false);
                 }}
                 className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-lg border transition-colors ${
                   activeSortColumn === 'size'
@@ -946,7 +968,7 @@ const ReservesTable = ({
               {showSizeSortMenu && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setShowSizeSortMenu(false)} />
-                  <div className="absolute right-0 top-full mt-[var(--ds-space-1)] bg-card border border-border rounded-lg shadow-lg py-[var(--ds-space-1)] z-20 min-w-[130px]">
+                  <div className="absolute right-0 top-full mt-1 bg-card border border-border rounded-lg shadow-lg py-0.5 z-20 w-max min-w-[6.25rem] max-w-[min(18rem,calc(100vw-1.5rem))]">
                     <button
                       type="button"
                       onClick={() => {
@@ -960,7 +982,7 @@ const ReservesTable = ({
                         }
                         setShowSizeSortMenu(false);
                       }}
-                      className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-13 transition-colors flex items-center justify-between ${
+                      className={`w-full px-2 py-0.5 text-left ds-text-13 transition-colors flex items-center justify-start gap-1.5 ${
                         sizeSortMode === 'supply' && activeSortColumn === 'size'
                           ? 'ds-text-emerald-600 font-bold bg-card/60'
                           : 'text-muted-foreground'
@@ -988,7 +1010,7 @@ const ReservesTable = ({
                         }
                         setShowSizeSortMenu(false);
                       }}
-                      className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-13 transition-colors flex items-center justify-between ${
+                      className={`w-full px-2 py-0.5 text-left ds-text-13 transition-colors flex items-center justify-start gap-1.5 ${
                         sizeSortMode === 'borrow' && activeSortColumn === 'size'
                           ? 'ds-text-brand-cyan font-bold bg-card/60'
                           : 'text-muted-foreground'
@@ -1016,7 +1038,7 @@ const ReservesTable = ({
                         }
                         setShowSizeSortMenu(false);
                       }}
-                      className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-13 transition-colors flex items-center justify-between ${
+                      className={`w-full px-2 py-0.5 text-left ds-text-13 transition-colors flex items-center justify-start gap-1.5 ${
                         sizeSortMode === 'deficitAmount' && activeSortColumn === 'size'
                           ? 'text-foreground font-bold bg-card/60'
                           : 'text-muted-foreground'
@@ -1044,7 +1066,7 @@ const ReservesTable = ({
                         }
                         setShowSizeSortMenu(false);
                       }}
-                      className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-13 transition-colors flex items-center justify-between ${
+                      className={`w-full px-2 py-0.5 text-left ds-text-13 transition-colors flex items-center justify-start gap-1.5 ${
                         sizeSortMode === 'deficitRatio' && activeSortColumn === 'size'
                           ? 'text-foreground font-bold bg-card/60'
                           : 'text-muted-foreground'
@@ -1071,6 +1093,8 @@ const ReservesTable = ({
                 onClick={() => {
                   setShowSupplySortMenu(!showSupplySortMenu);
                   setShowBorrowSortMenu(false);
+                  setShowSizeSortMenu(false);
+                  setShowExtraSortMenu(false);
                 }}
                 className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-lg border transition-colors ${
                   activeSortColumn === 'supply'
@@ -1084,7 +1108,7 @@ const ReservesTable = ({
               {showSupplySortMenu && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setShowSupplySortMenu(false)} />
-                  <div className="absolute right-0 top-full mt-[var(--ds-space-1)] bg-card border border-border rounded-lg shadow-lg py-[var(--ds-space-1)] z-20 min-w-[130px]">
+                  <div className="absolute right-0 top-full mt-1 bg-card border border-border rounded-lg shadow-lg py-0.5 z-20 w-max min-w-[6.25rem] max-w-[min(18rem,calc(100vw-1.5rem))]">
                     {(['total', 'native', 'incentive'] as SortMode[]).map((mode) => {
                       const isAlreadySelected = supplySortMode === mode && activeSortColumn === 'supply';
                       const getColorClass = () => 'ds-text-emerald-600';
@@ -1102,7 +1126,7 @@ const ReservesTable = ({
                             }
                             setShowSupplySortMenu(false);
                           }}
-                          className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-13 transition-colors flex items-center justify-between ${
+                          className={`w-full px-2 py-0.5 text-left ds-text-13 transition-colors flex items-center justify-start gap-1.5 ${
                             isAlreadySelected
                               ? `${getColorClass()} font-bold bg-card/60`
                               : 'text-muted-foreground'
@@ -1131,6 +1155,8 @@ const ReservesTable = ({
                 onClick={() => {
                   setShowBorrowSortMenu(!showBorrowSortMenu);
                   setShowSupplySortMenu(false);
+                  setShowSizeSortMenu(false);
+                  setShowExtraSortMenu(false);
                 }}
                 className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-lg border transition-colors ${
                   activeSortColumn === 'borrow'
@@ -1144,7 +1170,7 @@ const ReservesTable = ({
               {showBorrowSortMenu && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setShowBorrowSortMenu(false)} />
-                  <div className="absolute right-0 top-full mt-[var(--ds-space-1)] bg-card border border-border rounded-lg shadow-lg py-[var(--ds-space-1)] z-20 min-w-[130px]">
+                  <div className="absolute right-0 top-full mt-1 bg-card border border-border rounded-lg shadow-lg py-0.5 z-20 w-max min-w-[6.25rem] max-w-[min(18rem,calc(100vw-1.5rem))]">
                     {(['total', 'native', 'incentive'] as SortMode[]).map((mode) => {
                       const isAlreadySelected = borrowSortMode === mode && activeSortColumn === 'borrow';
                       const getColorClass = () => 'ds-text-brand-cyan';
@@ -1162,7 +1188,7 @@ const ReservesTable = ({
                             }
                             setShowBorrowSortMenu(false);
                           }}
-                          className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-13 transition-colors flex items-center justify-between ${
+                          className={`w-full px-2 py-0.5 text-left ds-text-13 transition-colors flex items-center justify-start gap-1.5 ${
                             isAlreadySelected
                               ? `${getColorClass()} font-bold bg-card/60`
                               : 'text-muted-foreground'
@@ -1184,34 +1210,176 @@ const ReservesTable = ({
               )}
             </div>
 
-            {/* Spread sort button */}
-            <button
-              type="button"
-              onClick={() => {
-                if (activeSortColumn === 'spread') {
-                  toggleSpreadSortOrder();
-                } else {
-                  setActiveSortColumn('spread');
-                  setSpreadSortOrder('desc');
-                }
-              }}
-              className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-lg border transition-colors ${
-                activeSortColumn === 'spread'
-                  ? 'bg-card/60 border-border/70 ds-text-purple-700 font-semibold'
-                  : 'bg-card border-border text-muted-foreground hover:bg-muted/60 font-medium'
-              }`}
-            >
-              <span>Spread</span>
-              {activeSortColumn === 'spread' ? (
-                spreadSortOrder === 'desc' ? (
-                  <ArrowDown className="w-3 h-3" />
-                ) : (
-                  <ArrowUp className="w-3 h-3" />
-                )
-              ) : (
-                <ArrowDown className="w-3 h-3 opacity-50" />
+            {/* Spread + desktop-only columns (token, market, price, utilization) */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowExtraSortMenu(!showExtraSortMenu);
+                  setShowSizeSortMenu(false);
+                  setShowSupplySortMenu(false);
+                  setShowBorrowSortMenu(false);
+                }}
+                className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-lg border transition-colors max-w-[7.5rem] ${
+                  activeSortColumn === 'spread'
+                    ? 'bg-card/60 border-border/70 ds-text-purple-700 font-semibold'
+                    : mobileExtraSortActive && activeSortColumn !== 'spread'
+                      ? 'bg-card/60 border-border/70 text-foreground font-semibold'
+                      : 'bg-card border-border text-muted-foreground font-medium'
+                }`}
+                aria-label="Sort by spread, token, market, price, or utilization"
+              >
+                <span className="truncate">{mobileExtraSortChipLabel}</span>
+                <ChevronDown className="w-3 h-3 shrink-0" />
+              </button>
+              {showExtraSortMenu && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setShowExtraSortMenu(false)} />
+                  <div className="absolute right-0 top-full mt-1 bg-card border border-border rounded-lg shadow-lg py-0.5 z-20 w-max min-w-[7.5rem] max-w-[min(18rem,calc(100vw-1.5rem))]">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        collapseExpandedOnSort();
+                        const isAlreadySelected = activeSortColumn === 'spread';
+                        if (isAlreadySelected && spreadSortOrder === 'desc') {
+                          setSpreadSortOrder('asc');
+                        } else {
+                          setActiveSortColumn('spread');
+                          setSpreadSortOrder('desc');
+                        }
+                        setShowExtraSortMenu(false);
+                      }}
+                      className={`w-full px-2 py-0.5 text-left ds-text-13 transition-colors flex items-center justify-start gap-1.5 ${
+                        activeSortColumn === 'spread'
+                          ? 'ds-text-purple-600 font-bold bg-card/60'
+                          : 'text-muted-foreground'
+                      }`}
+                    >
+                      <span>Spread</span>
+                      {activeSortColumn === 'spread' ? (
+                        spreadSortOrder === 'desc' ? (
+                          <ArrowDown className="w-3 h-3 ds-text-purple-600" />
+                        ) : (
+                          <ArrowUp className="w-3 h-3 ds-text-purple-600" />
+                        )
+                      ) : null}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        collapseExpandedOnSort();
+                        const isAlreadySelected = activeSortColumn === 'token';
+                        if (isAlreadySelected && tokenSortOrder === 'asc') {
+                          setTokenSortOrder('desc');
+                        } else {
+                          setActiveSortColumn('token');
+                          setTokenSortOrder('asc');
+                        }
+                        setShowExtraSortMenu(false);
+                      }}
+                      className={`w-full px-2 py-0.5 text-left ds-text-13 transition-colors flex items-center justify-start gap-1.5 ${
+                        activeSortColumn === 'token'
+                          ? 'text-foreground font-bold bg-card/60'
+                          : 'text-muted-foreground'
+                      }`}
+                    >
+                      <span>Token</span>
+                      {activeSortColumn === 'token' ? (
+                        tokenSortOrder === 'asc' ? (
+                          <ArrowUp className="w-3 h-3 text-foreground" />
+                        ) : (
+                          <ArrowDown className="w-3 h-3 text-foreground" />
+                        )
+                      ) : null}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        collapseExpandedOnSort();
+                        const isAlreadySelected = activeSortColumn === 'market';
+                        if (isAlreadySelected && marketSortOrder === 'asc') {
+                          setMarketSortOrder('desc');
+                        } else {
+                          setActiveSortColumn('market');
+                          setMarketSortOrder('asc');
+                        }
+                        setShowExtraSortMenu(false);
+                      }}
+                      className={`w-full px-2 py-0.5 text-left ds-text-13 transition-colors flex items-center justify-start gap-1.5 ${
+                        activeSortColumn === 'market'
+                          ? 'text-foreground font-bold bg-card/60'
+                          : 'text-muted-foreground'
+                      }`}
+                    >
+                      <span>Market</span>
+                      {activeSortColumn === 'market' ? (
+                        marketSortOrder === 'asc' ? (
+                          <ArrowUp className="w-3 h-3 text-foreground" />
+                        ) : (
+                          <ArrowDown className="w-3 h-3 text-foreground" />
+                        )
+                      ) : null}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        collapseExpandedOnSort();
+                        const isAlreadySelected = activeSortColumn === 'price';
+                        if (isAlreadySelected && priceSortOrder === 'desc') {
+                          setPriceSortOrder('asc');
+                        } else {
+                          setActiveSortColumn('price');
+                          setPriceSortOrder('desc');
+                        }
+                        setShowExtraSortMenu(false);
+                      }}
+                      className={`w-full px-2 py-0.5 text-left ds-text-13 transition-colors flex items-center justify-start gap-1.5 ${
+                        activeSortColumn === 'price'
+                          ? 'text-foreground font-bold bg-card/60'
+                          : 'text-muted-foreground'
+                      }`}
+                    >
+                      <span>Price</span>
+                      {activeSortColumn === 'price' ? (
+                        priceSortOrder === 'desc' ? (
+                          <ArrowDown className="w-3 h-3 text-foreground" />
+                        ) : (
+                          <ArrowUp className="w-3 h-3 text-foreground" />
+                        )
+                      ) : null}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        collapseExpandedOnSort();
+                        const isAlreadySelected = activeSortColumn === 'util';
+                        if (isAlreadySelected && utilSortOrder === 'desc') {
+                          setUtilSortOrder('asc');
+                        } else {
+                          setActiveSortColumn('util');
+                          setUtilSortOrder('desc');
+                        }
+                        setShowExtraSortMenu(false);
+                      }}
+                      className={`w-full px-2 py-0.5 text-left ds-text-13 transition-colors flex items-center justify-start gap-1.5 ${
+                        activeSortColumn === 'util'
+                          ? 'text-foreground font-bold bg-card/60'
+                          : 'text-muted-foreground'
+                      }`}
+                    >
+                      <span>Utilization</span>
+                      {activeSortColumn === 'util' ? (
+                        utilSortOrder === 'desc' ? (
+                          <ArrowDown className="w-3 h-3 text-foreground" />
+                        ) : (
+                          <ArrowUp className="w-3 h-3 text-foreground" />
+                        )
+                      ) : null}
+                    </button>
+                  </div>
+                </>
               )}
-            </button>
+            </div>
           </div>
         </div>
         
@@ -1753,7 +1921,7 @@ const ReservesTable = ({
                       : 'text-muted-foreground hover:text-foreground/80'
                   }`}
                 >
-                  <span>Util.</span>
+                  <span>Utilization</span>
                   {activeSortColumn === 'util' ? (
                     utilSortOrder === 'desc' ? (
                       <ArrowDown className="w-3 h-3" />

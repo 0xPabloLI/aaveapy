@@ -613,7 +613,7 @@ const MobileReserveCard = memo(({
               </div>
             </div>
           </a>
-          {/* Utilization indicator - clickable (values match desktop Util. column + UtilizationIndicator) */}
+          {/* Utilization indicator - clickable (values match desktop Utilization column + UtilizationIndicator) */}
           {displayUtilization != null && optimalPct != null && (
             <button
               type="button"
