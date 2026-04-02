@@ -581,7 +581,7 @@ const MobileReserveCard = memo(({
       {/* Card upper part */}
       <div
         className={`bg-card border border-border/60 py-3 transition-all duration-300 ${
-          connectedBelow || (isSimulationExpanded && !showUpperOnly) ? 'rounded-t-xl rounded-b-none border-b-0' : 'rounded-xl shadow-sm'
+          connectedBelow || (isSimulationExpanded && !showUpperOnly) ? 'rounded-t-xl rounded-b-none border-b-transparent' : 'rounded-xl shadow-sm'
         }`}
       >
         {/* Token header */}
