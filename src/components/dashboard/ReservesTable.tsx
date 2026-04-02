@@ -1223,7 +1223,7 @@ const ReservesTable = ({
                 className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-lg border transition-colors max-w-[7.5rem] ${
                   activeSortColumn === 'spread'
                     ? 'bg-card/60 border-border/70 ds-text-purple-700 font-semibold'
-                    : mobileExtraSortActive && activeSortColumn !== 'spread'
+                    : mobileExtraSortActive
                       ? 'bg-card/60 border-border/70 text-foreground font-semibold'
                       : 'bg-card border-border text-muted-foreground font-medium'
                 }`}
