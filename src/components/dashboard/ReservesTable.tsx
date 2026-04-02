@@ -34,6 +34,10 @@ import {
   shouldScrollExpandedSimulationIntoView,
 } from '@/lib/scrollExpandedSimulationIntoView';
 import { createScenarioPinControllerState, transitionScenarioPinController } from '@/lib/scenarioPinController';
+import {
+  MOBILE_SIMULATION_JUNCTION_GEOMETRY,
+  getMobileSimulationJunctionFilletPaths,
+} from '@/lib/mobileSimulationJunction';
 
 interface ReservesTableProps {
   reserves: ReserveWithSpread[];
@@ -1435,6 +1439,7 @@ const ReservesTable = ({
                 /** Matches `grid-cols-2 gap-[--ds-space-2]`: one column width (connector under expanded card only). */
                 const pairColWidth = 'calc((100% - var(--ds-space-2)) / 2)';
                 const bridgeOnExpandedColumn = leftExpanded || !rightReserve;
+                const filletPaths = getMobileSimulationJunctionFilletPaths(bridgeOnExpandedColumn);
 
                 nodes.push(
                   <div
@@ -1498,37 +1503,36 @@ const ReservesTable = ({
                             aria-hidden
                             className={`pointer-events-none absolute z-10 border-border/60 bg-card ${bridgeOnExpandedColumn ? 'left-0 border-l' : 'right-0 border-r'}`}
                             style={{
-                              top: 'calc(-1 * var(--ds-space-2) - 8px)',
-                              height: 'calc(var(--ds-space-2) + 9px)',
+                              top: MOBILE_SIMULATION_JUNCTION_GEOMETRY.bridgeTop,
+                              height: MOBILE_SIMULATION_JUNCTION_GEOMETRY.bridgeHeight,
                               width: pairColWidth,
                             }}
                           />
 
-                          {/* Concave inner corner: pure CSS border to avoid iOS WebKit SVG seams. */}
-                          <div
-                            aria-hidden
-                            className="pointer-events-none absolute z-10 overflow-hidden"
+                          <svg
+                            aria-hidden="true"
+                            className="pointer-events-none absolute z-10 overflow-visible"
+                            width={MOBILE_SIMULATION_JUNCTION_GEOMETRY.filletWidth}
+                            height={MOBILE_SIMULATION_JUNCTION_GEOMETRY.filletHeight}
+                            viewBox={`0 0 ${MOBILE_SIMULATION_JUNCTION_GEOMETRY.filletWidth} ${MOBILE_SIMULATION_JUNCTION_GEOMETRY.filletHeight}`}
                             style={{
-                              top: 'calc(-1 * var(--ds-space-2) - 8px)',
-                              height: '17px',
-                              width: '17px',
+                              top: MOBILE_SIMULATION_JUNCTION_GEOMETRY.filletTop,
                               ...(bridgeOnExpandedColumn
                                 ? { left: `calc(${pairColWidth} - 1px)` }
                                 : { right: `calc(${pairColWidth} - 1px)` })
                             }}
                           >
-                            <div
-                              className={`h-full w-full border-border/60 bg-card ${
-                                bridgeOnExpandedColumn
-                                  ? 'rounded-bl-[8px] border-b border-l'
-                                  : 'rounded-br-[8px] border-b border-r'
-                              }`}
+                            <path d={filletPaths.fillPath} style={{ fill: 'hsl(var(--card))' }} />
+                            <path
+                              d={filletPaths.strokePath}
+                              fill="none"
+                              style={{ stroke: 'hsl(var(--border) / 0.6)', strokeWidth: 1 }}
                             />
-                          </div>
+                          </svg>
 
                           <div
                             className={`relative z-0 overflow-hidden rounded-b-xl border border-border/60 bg-card ds-card-pad-sm ${
-                              bridgeOnExpandedColumn ? 'rounded-tr-xl rounded-tl-none border-t-0' : 'rounded-tl-xl rounded-tr-none border-t-0'
+                              bridgeOnExpandedColumn ? 'rounded-tr-xl rounded-tl-none' : 'rounded-tl-xl rounded-tr-none'
                             }`}
                             style={{ paddingTop: 'var(--ds-space-2)' }}
                           >

@@ -1,7 +1,12 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
+import { fileURLToPath } from "node:url";
 import { componentTagger } from "lovable-tagger";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const reactRoot = path.resolve(__dirname, "node_modules/react");
+const reactDomRoot = path.resolve(__dirname, "node_modules/react-dom");
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -16,8 +21,7 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   optimizeDeps: {
-    include: ["react", "react-dom"],
-    force: true,
+    include: ["react", "react-dom", "react/jsx-runtime", "react/jsx-dev-runtime"],
   },
   resolve: {
     // Fixes "Cannot read properties of null (reading 'useMemo')" crashes
@@ -25,6 +29,10 @@ export default defineConfig(({ mode }) => ({
     dedupe: ["react", "react-dom", "react/jsx-runtime", "react/jsx-dev-runtime"],
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      react: reactRoot,
+      "react-dom": reactDomRoot,
+      "react/jsx-runtime": path.join(reactRoot, "jsx-runtime.js"),
+      "react/jsx-dev-runtime": path.join(reactRoot, "jsx-dev-runtime.js"),
     },
   },
   test: {

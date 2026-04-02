@@ -795,7 +795,7 @@ const MobileReserveCard = memo(({
         >
           <div className="overflow-hidden">
             {hasSimulationMounted && (
-              <div className="-mt-px bg-card border border-border/60 border-t-0 rounded-b-xl rounded-t-none pb-3 pt-0">
+              <div className="bg-card border border-border/60 border-t-transparent rounded-b-xl rounded-t-none pb-3 pt-0">
                 <div className="px-3">
                   <SimulationSubRow
                     reserve={reserve}

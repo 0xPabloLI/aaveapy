@@ -289,6 +289,16 @@ Where `incentiveDisplayValue` is:
 
 This means the toggle changes the **incentive contribution**, not the native base rate.
 
+### Scenario USD/day (`scenarioUsdAccrual`) semantics
+
+`scenarioUsdAccrual` is a cashflow view, so it uses fixed daily normalization rules and should stay stable when users toggle APR/APY display mode:
+
+- **Native daily USD**: derived from the simulated **native APR** with Aave per-second compounding semantics (consistent with native APY construction), then converted to per-day cashflow.
+- **Incentive daily USD**: fixed **APR-linear** daily conversion (`aprPercent / 100 / 365`).
+- **Total daily USD**: `nativeUsdPerDay + incentiveUsdPerDay` (sum of cashflow legs, not a re-converted total rate).
+
+As a result, toggling APR/APY changes annualized percentage displays, but should not change `scenarioUsdAccrual` daily USD outputs.
+
 ### Merkl product docs (concepts)
 
 Distribution types (variable / fixed token vs dollar / capped): [Merkl — Distribution Types](https://docs.merkl.xyz/merkl-mechanisms/distributions)

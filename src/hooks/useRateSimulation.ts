@@ -926,36 +926,55 @@ const buildPriceLookup = (reserve: ReserveWithSpread, tokenPrices?: TokenPricesI
   vTokenAddress: reserve.vTokenAddress,
 });
 
+const SECONDS_PER_YEAR = 365 * 24 * 60 * 60;
+
+function nativeAprPercentToApyPercent(aprPercent: number): number {
+  if (!Number.isFinite(aprPercent) || aprPercent <= 0) return 0;
+  const aprDecimal = aprPercent / 100;
+  const apyDecimal = Math.pow(1 + aprDecimal / SECONDS_PER_YEAR, SECONDS_PER_YEAR) - 1;
+  return apyDecimal * 100;
+}
+
 function buildSupplyUsdAccrualSide(
   principalUsd: number,
-  afterNative: number | null,
-  afterIncentive: number | null,
-  afterTotal: number | null
+  nativeAprPercent: number | null,
+  incentiveAprPercent: number | null
 ): ScenarioUsdAccrualSide | null {
   if (!Number.isFinite(principalUsd) || principalUsd <= 0) return null;
-  // Daily cashflow uses APR-linear normalization regardless of display mode.
-  const usd = (ratePercent: number) => principalUsd * annualPercentToDailyFraction(ratePercent, false);
+  const nativeUsd = (ratePercent: number) =>
+    principalUsd * annualPercentToDailyFraction(nativeAprPercentToApyPercent(ratePercent), true);
+  const incentiveUsd = (ratePercent: number) => principalUsd * annualPercentToDailyFraction(ratePercent, false);
+  const nativeUsdPerDay = nativeAprPercent !== null ? nativeUsd(nativeAprPercent) : null;
+  const incentiveUsdPerDay = incentiveAprPercent !== null ? incentiveUsd(incentiveAprPercent) : null;
   return {
-    nativeUsdPerDay: afterNative !== null ? usd(afterNative) : null,
-    incentiveUsdPerDay: afterIncentive !== null ? usd(afterIncentive) : null,
-    totalUsdPerDay: afterTotal !== null ? usd(afterTotal) : null,
+    nativeUsdPerDay,
+    incentiveUsdPerDay,
+    totalUsdPerDay:
+      nativeUsdPerDay !== null || incentiveUsdPerDay !== null
+        ? (nativeUsdPerDay ?? 0) + (incentiveUsdPerDay ?? 0)
+        : null,
   };
 }
 
 function buildBorrowUsdAccrualSide(
   principalUsd: number,
-  afterNative: number | null,
-  afterIncentive: number | null,
-  afterTotal: number | null
+  nativeAprPercent: number | null,
+  incentiveAprPercent: number | null
 ): ScenarioUsdAccrualSide | null {
   if (!Number.isFinite(principalUsd) || principalUsd <= 0) return null;
-  // Daily cashflow uses APR-linear normalization regardless of display mode.
-  const pay = (ratePercent: number) => -principalUsd * annualPercentToDailyFraction(ratePercent, false);
-  const rebate = (ratePercent: number) => principalUsd * annualPercentToDailyFraction(ratePercent, false);
+  const nativePay = (ratePercent: number) =>
+    -principalUsd * annualPercentToDailyFraction(nativeAprPercentToApyPercent(ratePercent), true);
+  const incentiveRebate = (ratePercent: number) =>
+    principalUsd * annualPercentToDailyFraction(ratePercent, false);
+  const nativeUsdPerDay = nativeAprPercent !== null ? nativePay(nativeAprPercent) : null;
+  const incentiveUsdPerDay = incentiveAprPercent !== null ? incentiveRebate(incentiveAprPercent) : null;
   return {
-    nativeUsdPerDay: afterNative !== null ? pay(afterNative) : null,
-    incentiveUsdPerDay: afterIncentive !== null ? rebate(afterIncentive) : null,
-    totalUsdPerDay: afterTotal !== null ? pay(afterTotal) : null,
+    nativeUsdPerDay,
+    incentiveUsdPerDay,
+    totalUsdPerDay:
+      nativeUsdPerDay !== null || incentiveUsdPerDay !== null
+        ? (nativeUsdPerDay ?? 0) + (incentiveUsdPerDay ?? 0)
+        : null,
   };
 }
 
@@ -1097,6 +1116,20 @@ export function buildRateSimulationResult({
     tydroPointToUsdRate,
     whitelistMerklCampaignIds
   );
+  const supplyCurrentIncentiveApr = buildIncentiveCurrent(
+    reserve,
+    'supply',
+    false,
+    tydroPointToUsdRate,
+    whitelistMerklCampaignIds
+  );
+  const borrowCurrentIncentiveApr = buildIncentiveCurrent(
+    reserve,
+    'borrow',
+    false,
+    tydroPointToUsdRate,
+    whitelistMerklCampaignIds
+  );
 
   const supplyCurrentTotal = isApy
     ? calculateTotalSupplyApy(reserve.supplyApy, supplyCurrentIncentive)
@@ -1163,11 +1196,47 @@ export function buildRateSimulationResult({
         brevisSharedDepositsByCampaignId,
       )
     : null;
+  const supplyAfterIncentiveAprRaw = hasAnyInput
+    ? buildIncentiveAfter(
+        reserve,
+        'supply',
+        false,
+        supplyMeritMerklInputUsd,
+        supplyInputUsd,
+        supplyMeritMerklEligibilityRatio,
+        forecastStates,
+        tydroPointToUsdRate,
+        whitelistMerklCampaignIds,
+        brevisSharedDepositsByCampaignId,
+      )
+    : null;
+  const borrowAfterIncentiveAprRaw = hasAnyInput
+    ? buildIncentiveAfter(
+        reserve,
+        'borrow',
+        false,
+        borrowMeritMerklInputUsd,
+        borrowInputUsd,
+        borrowMeritMerklEligibilityRatio,
+        forecastStates,
+        tydroPointToUsdRate,
+        whitelistMerklCampaignIds,
+        brevisSharedDepositsByCampaignId,
+      )
+    : null;
   // Shared scenario represents extra market-side size, so same-side incentive should not increase.
   const supplyAfterIncentive =
     supplyAfterIncentiveRaw !== null ? Math.min(supplyAfterIncentiveRaw, supplyCurrentIncentive) : null;
   const borrowAfterIncentive =
     borrowAfterIncentiveRaw !== null ? Math.min(borrowAfterIncentiveRaw, borrowCurrentIncentive) : null;
+  const supplyAfterIncentiveApr =
+    supplyAfterIncentiveAprRaw !== null
+      ? Math.min(supplyAfterIncentiveAprRaw, supplyCurrentIncentiveApr)
+      : null;
+  const borrowAfterIncentiveApr =
+    borrowAfterIncentiveAprRaw !== null
+      ? Math.min(borrowAfterIncentiveAprRaw, borrowCurrentIncentiveApr)
+      : null;
 
   const supplyAfterTotal =
     hasAnyInput && supplyAfterNative !== null && supplyAfterIncentive !== null
@@ -1382,18 +1451,16 @@ export function buildRateSimulationResult({
     supplyLane.hasInput && supplyLane.inputUsd > 0
       ? buildSupplyUsdAccrualSide(
           supplyLane.inputUsd,
-          supplyLane.afterNative,
-          supplyLane.afterIncentive,
-          supplyLane.afterTotal
+          combinedNativeSimulation?.supplyAprPercent ?? null,
+          supplyAfterIncentiveApr
         )
       : null;
   const borrowUsdAccrualSide =
     borrowLane.hasInput && borrowLane.inputUsd > 0
       ? buildBorrowUsdAccrualSide(
           borrowLane.inputUsd,
-          borrowLane.afterNative,
-          borrowLane.afterIncentive,
-          borrowLane.afterTotal
+          combinedNativeSimulation?.borrowAprPercent ?? null,
+          borrowAfterIncentiveApr
         )
       : null;
 
