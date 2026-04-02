@@ -1488,8 +1488,8 @@ const ReservesTable = ({
                     </div>
                     {rowHasExpanded && activeReserve && activeId ? (
                       <>
-                        {/* Simulation panel — bridge (z-10) + SVG fill cover panel's top border
-                           on the expanded side so card + panel read as one piece. */}
+                        {/* Simulation panel — keep the expanded-side gap filled and use a single CSS
+                           border contour for the collapsed-side inner corner to avoid WebKit seams. */}
                         <div className="relative isolate mt-[var(--ds-space-2)]">
                           {/* Bridge: bg-card rect covering the gap + 1px overlap into the panel.
                                border-x continues the card's L/R borders through the gap. */}
@@ -1502,34 +1502,29 @@ const ReservesTable = ({
                               width: pairColWidth,
                             }}
                           />
-                          
-                          {/* SVG fillet — fill covers gap top-to-bottom (y 0→9) so no sub-px
-                               seam; stroke draws the concave inner corner. */}
-                          <svg
-                            className="absolute pointer-events-none z-10 overflow-visible"
-                            width="17"
-                            height="13"
-                            viewBox="0 0 17 13"
+
+                          {/* Concave inner corner: one continuous CSS border path is more stable than
+                               a separate SVG stroke on iOS WebKit. */}
+                          <div
+                            aria-hidden
+                            className="pointer-events-none absolute z-10 overflow-hidden"
                             style={{
                               top: 'calc(-1 * var(--ds-space-2) - 4px)',
+                              height: '13px',
+                              width: '17px',
                               ...(bridgeOnExpandedColumn
                                 ? { left: `calc(${pairColWidth} - 1px)` }
                                 : { right: `calc(${pairColWidth} - 1px)` })
                             }}
-                            aria-hidden="true"
                           >
-                            {bridgeOnExpandedColumn ? (
-                              <>
-                                <path d="M 0 0 L 0 13 L 17 13 L 17 12 L 8.5 12 A 8 8 0 0 1 0.5 4 L 0.5 0 L 0 0 Z" style={{ fill: 'hsl(var(--card))' }} />
-                                <path d="M 0.5 0 L 0.5 4.5 A 8 8 0 0 0 8.5 12.5 L 17 12.5" fill="none" style={{ stroke: 'hsl(var(--border) / 0.6)', strokeWidth: 1 }} />
-                              </>
-                            ) : (
-                              <>
-                                <path d="M 17 0 L 17 13 L 0 13 L 0 12 L 8.5 12 A 8 8 0 0 0 16.5 4 L 16.5 0 L 17 0 Z" style={{ fill: 'hsl(var(--card))' }} />
-                                <path d="M 16.5 0 L 16.5 4.5 A 8 8 0 0 1 8.5 12.5 L 0 12.5" fill="none" style={{ stroke: 'hsl(var(--border) / 0.6)', strokeWidth: 1 }} />
-                              </>
-                            )}
-                          </svg>
+                            <div
+                              className={`h-full w-full border-border/60 bg-card ${
+                                bridgeOnExpandedColumn
+                                  ? 'rounded-bl-[8px] border-b border-l'
+                                  : 'rounded-br-[8px] border-b border-r'
+                              }`}
+                            />
+                          </div>
 
                           <div
                             className={`relative z-0 overflow-hidden rounded-b-xl border border-border/60 bg-card ds-card-pad-sm ${
