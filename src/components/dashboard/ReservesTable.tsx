@@ -1491,26 +1491,26 @@ const ReservesTable = ({
                         {/* Simulation panel — keep the expanded-side gap filled and use a single CSS
                            border contour for the collapsed-side inner corner to avoid WebKit seams. */}
                         <div className="relative isolate mt-[var(--ds-space-2)]">
-                          {/* Bridge: bg-card rect covering the gap + 1px overlap into the panel.
+                          {/* Bridge: bg-card rect covering the gap between card bottom and panel top.
+                               Extends well into the card to prevent subpixel seams on iOS WebKit.
                                border-x continues the card's L/R borders through the gap. */}
                           <div
                             aria-hidden
                             className={`pointer-events-none absolute z-10 border-border/60 bg-card ${bridgeOnExpandedColumn ? 'left-0 border-l' : 'right-0 border-r'}`}
                             style={{
-                              top: 'calc(-1 * var(--ds-space-2) - 4px)',
-                              height: 'calc(var(--ds-space-2) + 5px)',
+                              top: 'calc(-1 * var(--ds-space-2) - 8px)',
+                              height: 'calc(var(--ds-space-2) + 9px)',
                               width: pairColWidth,
                             }}
                           />
 
-                          {/* Concave inner corner: one continuous CSS border path is more stable than
-                               a separate SVG stroke on iOS WebKit. */}
+                          {/* Concave inner corner: pure CSS border to avoid iOS WebKit SVG seams. */}
                           <div
                             aria-hidden
                             className="pointer-events-none absolute z-10 overflow-hidden"
                             style={{
-                              top: 'calc(-1 * var(--ds-space-2) - 4px)',
-                              height: '13px',
+                              top: 'calc(-1 * var(--ds-space-2) - 8px)',
+                              height: '17px',
                               width: '17px',
                               ...(bridgeOnExpandedColumn
                                 ? { left: `calc(${pairColWidth} - 1px)` }
@@ -1528,7 +1528,7 @@ const ReservesTable = ({
 
                           <div
                             className={`relative z-0 overflow-hidden rounded-b-xl border border-border/60 bg-card ds-card-pad-sm ${
-                              bridgeOnExpandedColumn ? 'rounded-tr-xl rounded-tl-none' : 'rounded-tl-xl rounded-tr-none'
+                              bridgeOnExpandedColumn ? 'rounded-tr-xl rounded-tl-none border-t-0' : 'rounded-tl-xl rounded-tr-none border-t-0'
                             }`}
                             style={{ paddingTop: 'var(--ds-space-2)' }}
                           >
