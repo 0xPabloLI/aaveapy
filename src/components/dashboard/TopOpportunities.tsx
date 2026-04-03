@@ -566,17 +566,18 @@ const TopOpportunities = ({
       name: reserve.tokenName,
     });
     const marketDisplayName = getMarketDisplayName(reserve);
+    const Wrapper = disableMotion ? 'div' : motion.div;
     return (
-      <motion.div
+      <Wrapper
         {...(disableMotion
-          ? { initial: false, animate: false as const }
+          ? {}
           : {
           custom: index,
           initial: false,
           animate: 'visible',
           variants: itemVariants,
         })}
-        className="rounded-xl border ds-card-pad-sm cursor-pointer transition-colors bg-card border-border/60 active:bg-muted/60 h-[68px] flex flex-col justify-between"
+        className="rounded-xl border ds-card-pad-sm cursor-pointer bg-card border-border/60 active:bg-muted/60 h-[68px] flex flex-col justify-between"
         onClick={() => handleCardClick(reserve)}
       >
         <ReserveIdentity
