@@ -69,11 +69,7 @@ Optional behavior: synchronize upstream-derived artifacts (`artifacts-*` modes).
 3. For artifact targets, run repository validation:
    - `npm run lint`
    - If present, run CI parity script (for example `npm run ci:remote`).
-4. **Session docs impact check (mandatory)**:
-   - Inspect current-session changes (`git diff --name-only`, plus touched paths in this session) and decide whether behavior/policy changes require doc updates.
-   - If yes, update canonical docs in the same run (for example `docs/design/frontend-interaction-guardrails.md`, `docs/design/DESIGN-SYSTEM-REFERENCE.md`, `docs/rate-calculation-formulas.md`, `docs/DOCS-INDEX.md`).
-   - If no doc update is needed, explicitly record “No docs update required” with a brief reason in the final report.
-5. Stop and report immediately if any command fails.
+4. Stop and report immediately if any command fails.
 
 ### Step 4: Review and summarize
 
@@ -84,7 +80,6 @@ Optional behavior: synchronize upstream-derived artifacts (`artifacts-*` modes).
    - Target(s) executed
    - Files changed
    - Checks run and pass/fail
-   - Session docs impact (updated / not needed + reason)
    - Follow-up actions if blocked
 
 ## Output Format
@@ -94,8 +89,7 @@ Use this structure in the final output:
 1. **Targets**
 2. **Changed Files**
 3. **Verification**
-4. **Session Docs Impact**
-5. **Risks / Follow-ups**
+4. **Risks / Follow-ups**
 
 ## Constraints
 
@@ -109,7 +103,6 @@ Synchronize local repo with remote by default (fetch, pull, push when ahead); su
 - Keep operations deterministic and reproducible.
 - Preserve unrelated user changes.
 - Always provide a verification summary.
-- Always perform and report a current-session documentation impact check.
 </requirements>
 
 <constraints>
@@ -123,5 +116,4 @@ Synchronize local repo with remote by default (fetch, pull, push when ahead); su
 - [ ] Requested sync target completed.
 - [ ] Relevant verification completed and reported.
 - [ ] No unrelated files were modified intentionally.
-- [ ] Current-session doc impact evaluated and reported.
 - [ ] Final report clearly lists what changed and why.
