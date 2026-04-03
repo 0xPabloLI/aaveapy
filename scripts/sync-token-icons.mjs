@@ -16,12 +16,19 @@
  *
  * Env:
  *   INTERFACE_TOKEN_ICONS_BASE — override static token icon base (default: raw GitHub main branch).
+ *   LIVE_TEST_API_BASE_CI / VITE_API_BASE_URL — /markets base resolution (same order as sync-coingecko-platform-map.mjs;
+ *     see docs/conventions/api-base-urls.md). Default list ends with staging then production.
+ *   SYNC_TOKEN_ICONS_MARKETS_API — comma-separated full /markets URLs; if set, those URLs are tried first, then staging.
  */
 
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import * as addressBook from '@bgd-labs/aave-address-book';
+import {
+  DEFAULT_PRODUCTION_API_BASE,
+  DEFAULT_STAGING_API_BASE,
+} from './lib/default-api-bases.mjs';
 import {
   collectRequiredIconSymbols,
   collectIconSymbolLogoHints,
@@ -40,12 +47,52 @@ const INTERFACE_TOKEN_ICONS_BASE = String(
 ).replace(/\/$/, '');
 /** Prefer vector first (matches upstream layout). */
 const INTERFACE_ICON_EXTENSIONS = ['svg', 'png', 'webp', 'jpg'];
-const MARKETS_API_URLS = (process.env.SYNC_TOKEN_ICONS_MARKETS_API || 'https://api.aaveapy.com/api/markets')
-  .split(',')
-  .concat('https://staging-api.aaveapy.com/api/markets');
 const MARKETS_RETRY_COUNT = 2;
 const MARKETS_RETRY_DELAY_MS = 3000;
 const RATE_LIMIT_MS = 1500;
+
+function normalizeApiBase(value) {
+  if (typeof value !== 'string') return '';
+  const t = value.trim();
+  if (!t) return '';
+  return t.replace(/\/+$/, '');
+}
+
+function marketsUrlFromBase(base) {
+  const b = normalizeApiBase(base);
+  return b ? `${b}/markets` : '';
+}
+
+/**
+ * Same priority as getApiBase() in sync-coingecko-platform-map.mjs, plus production as last resort.
+ */
+function getDefaultMarketsUrls() {
+  const urls = [];
+  const seen = new Set();
+  const push = (u) => {
+    if (!u || seen.has(u)) return;
+    seen.add(u);
+    urls.push(u);
+  };
+  push(marketsUrlFromBase(process.env.LIVE_TEST_API_BASE_CI));
+  push(marketsUrlFromBase(process.env.VITE_API_BASE_URL));
+  push(`${DEFAULT_STAGING_API_BASE}/markets`);
+  push(`${DEFAULT_PRODUCTION_API_BASE}/markets`);
+  return urls;
+}
+
+function getMarketsUrlsToTry() {
+  const explicit = process.env.SYNC_TOKEN_ICONS_MARKETS_API;
+  if (explicit && explicit.trim()) {
+    const fromEnv = [...new Set(explicit.split(',').map((s) => s.trim()).filter(Boolean))];
+    const stagingMarkets = `${DEFAULT_STAGING_API_BASE}/markets`;
+    if (!fromEnv.includes(stagingMarkets)) {
+      fromEnv.push(stagingMarkets);
+    }
+    return fromEnv;
+  }
+  return getDefaultMarketsUrls();
+}
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -106,20 +153,25 @@ function getExistingIconBaseSet() {
 async function fetchMarketsFromUrl(url) {
   const res = await fetch(url);
   if (!res.ok) {
-    throw new Error(`HTTP ${res.status}`);
+    const err = new Error(`HTTP ${res.status}`);
+    err.status = res.status;
+    err.url = url;
+    throw err;
   }
   const payload = await res.json();
   const rows = Array.isArray(payload?.reserves) ? payload.reserves
     : Array.isArray(payload?.data) ? payload.data
     : null;
   if (!rows) {
-    throw new Error('response missing reserves/data array');
+    const err = new Error('response missing reserves/data array');
+    err.url = url;
+    throw err;
   }
   return rows;
 }
 
 async function loadMarketsRows() {
-  const urls = [...new Set(MARKETS_API_URLS)];
+  const urls = getMarketsUrlsToTry();
 
   for (const url of urls) {
     for (let attempt = 1; attempt <= MARKETS_RETRY_COUNT; attempt++) {

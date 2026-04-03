@@ -16,7 +16,8 @@ This note records recurring UI/interaction issues found during incentive/forecas
   - Global `TooltipProvider` is set to `delayDuration={200}` (200ms) in `App.tsx`.
   - This only affects Radix UI `Tooltip` components (auto-show tooltips).
   - Custom click-to-show components (e.g. `IncentiveTooltip`) manage their own timing and are not affected by this setting.
-- **Multi-paragraph explanatory tooltips** (e.g. scenario strip Net help): When Radix `@/components/ui/tooltip` carries more than a one-line hint, match the **body rhythm** of `DesktopTooltip`/`MobileTooltip` inner content (see `AprApyToggle.tsx`, FDV definition in `InkAprCalculator.tsx`): **`rounded-xl border border-border shadow-lg`**, padding **`px-4 py-3`**, wrapper **`space-y-2.5`**, copy **`ds-text-12`** + **`leading-relaxed`** (or `leading-snug`) + **`text-muted-foreground`**; optional **`border-t border-border pt-2.5`** only when two blocks need a hard visual break. Default TooltipContent padding plus stacked `mt-1.5` paragraphs alone reads cramped—override explicitly. Normative detail: **DESIGN.md §4.4 Tooltip**.
+- **Multi-paragraph explanatory tooltips** (e.g. scenario strip Net help): When Radix `@/components/ui/tooltip` carries more than a one-line hint, match the **body rhythm** of `DesktopTooltip`/`MobileTooltip` inner content (see `AprApyToggle.tsx`, `FormulaBlock` + `InkAprCalculator.tsx`): **`rounded-xl border border-border shadow-lg`**, padding **`px-4 py-3`**, wrapper **`space-y-2.5`** (desktop shell between multiple direct children; mobile body often **`space-y-3`**), inner columns often **`space-y-3`**, copy **`ds-text-12`** + **`leading-relaxed`** (or `leading-snug`) + **`text-muted-foreground`**; optional **`border-t border-border pt-2.5`** only when two blocks need a hard visual break. Default TooltipContent padding plus stacked `mt-1.5` paragraphs alone reads cramped—override explicitly. **Cursor types, delays, and short summary:** **DESIGN-SYSTEM-REFERENCE.md** §6.
+- **Ink incentive APR formula tooltip order** (`InkAprCalculator.tsx`): keep content in this order: **(1)** INK price row (`INK $x.xx`) **above**, **(2)** formula block (`APR = daily_points × $INK × 365%`) **below**. Use shared `FormulaBlock` chrome for the formula line.
 
 #### Implementation examples
 
@@ -57,7 +58,7 @@ This note records recurring UI/interaction issues found during incentive/forecas
 
 ### Text-to-border spacing (mandatory)
 
-- **Text must never touch borders**: Any bordered container (cards, table cells, warning banners, buttons) must have at least `--ds-space-2` (8px) padding between text and the border. See DESIGN.md §5 布局原则.
+- **Text must never touch borders**: Any bordered container (cards, table cells, warning banners, buttons) must have at least `--ds-space-2` (8px) padding between text and the border. See **DESIGN-SYSTEM-REFERENCE.md** §3（文字与边框）and §4（布局原则）.
 
 ### Visual consistency
 
@@ -278,6 +279,7 @@ Merkl may mark a breakdown as **whitelist-only** (`whitelistOnly: true`). The ap
   - 可加 `transition-[top] duration-150` 使切换自然。
 - **Reference FDVs 区块**：紧贴 slider 下方的 Collapsible 使用 `mt-[var(--ds-space-0-5)]`（2px）；触控热区与可点击性保持不变。
 - **验收**：拖动时 tooltip 与 thumb 间有明显空隙；松手后 tooltip 不贴 thumb 也不过高；slider 与 Reference 区更紧凑且仍易点。
+- **Incentive APR formula tooltip**：在该卡片内保持「**INK 价格行在上、公式在下**」；公式用共享 `FormulaBlock`，与 APR/APY 说明弹窗的公式块样式一致。
 
 ## Debugging checklist for incentive UI regressions
 

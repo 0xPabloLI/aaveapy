@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, ExternalLink, Info } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
-import { InfoIconButton, DesktopTooltip, MobileTooltip } from '@/components/dashboard/AprApyToggle';
+import { FormulaBlock, InfoIconButton, DesktopTooltip, MobileTooltip } from '@/components/dashboard/AprApyToggle';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useCoingeckoFdv } from '@/hooks/useCoingeckoFdv';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -158,15 +158,8 @@ function InkAprTooltipContent({
   currentFdvBillions: number;
 }) {
   return (
-    <>
-      <div className="flex justify-center">
-        <div className="bg-muted/50 rounded-lg border border-border px-3 py-2">
-          <code className="ds-text-12 font-mono font-medium text-foreground whitespace-nowrap">
-            APR = daily_points × $INK × 365%
-          </code>
-        </div>
-      </div>
-      <div className="flex items-center justify-center gap-1.5 ds-text-12 text-muted-foreground">
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 ds-text-12 text-muted-foreground leading-relaxed">
         <img
           src="/icons/partners/inktoken.svg"
           alt="INK"
@@ -175,7 +168,8 @@ function InkAprTooltipContent({
         <span>INK</span>
         <span className="tabular-nums">${formatInkPrice(currentFdvBillions)}</span>
       </div>
-    </>
+      <FormulaBlock>APR = daily_points × $INK × 365%</FormulaBlock>
+    </div>
   );
 }
 

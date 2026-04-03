@@ -23,6 +23,8 @@ jobs:
   sync-token-icons:
     env:
       HAS_SYNC_PAT: ${{ secrets.TOKEN_ICON_SYNC_PAT != '' || secrets.HARDCODE_SYNC_PAT != '' }}
+      # Same as hardcode-drift / hardcode-sync: Railway or staging fallback so /markets is not production-first in CI.
+      LIVE_TEST_API_BASE_CI: ${{ vars.LIVE_TEST_API_BASE_CI != '' && vars.LIVE_TEST_API_BASE_CI || 'https://staging-api.aaveapy.com/api' }}
     if: >
       github.event_name == 'workflow_dispatch' ||
       github.event_name == 'repository_dispatch' ||
