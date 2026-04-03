@@ -614,7 +614,7 @@ const TopOpportunities = ({
             </span>
           )}
         </div>
-      </motion.div>
+      </Wrapper>
     );
   };
 
