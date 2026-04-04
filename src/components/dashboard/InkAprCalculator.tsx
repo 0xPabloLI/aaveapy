@@ -495,7 +495,7 @@ const InkAprCalculator = ({
                 onBlur={handleFdvInputBlur}
                 onKeyDown={handleFdvInputKeyDown}
                 placeholder={isFdvInputFocused ? '' : '1.00'}
-                className={`w-8 min-w-0 px-0.5 !text-[11px] font-medium tabular-nums bg-transparent border-0 shadow-none outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 h-full min-h-0 p-0 text-center appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-colors duration-300 [line-height:1rem] ${fdvJustChanged ? 'text-[rgb(var(--ds-brand-magenta-rgb))]' : 'text-muted-foreground/80 focus:text-muted-foreground/50'}`}
+                className={`w-8 min-w-0 px-0.5 !text-[11px] font-medium tabular-nums bg-transparent border-0 shadow-none outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 h-4 min-h-0 py-0 text-center appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-colors duration-300 leading-4 ${fdvJustChanged ? 'text-[rgb(var(--ds-brand-magenta-rgb))]' : 'text-muted-foreground/80 focus:text-muted-foreground/50'}`}
                 aria-label="Estimated $INK FDV in billions"
               />
               <span className="inline-flex items-center justify-center !text-[11px] leading-none text-muted-foreground/80">B</span>
@@ -759,7 +759,7 @@ const InkAprCalculator = ({
           onBlur={handleFdvInputBlur}
           onKeyDown={handleFdvInputKeyDown}
           placeholder={isFdvInputFocused ? '' : '1.00'}
-          className={`w-9 min-w-0 px-1 !text-[11px] font-normal tabular-nums bg-transparent border-0 shadow-none outline-none focus:outline-none focus-visible:outline-none placeholder:text-muted-foreground/50 focus:text-foreground focus-visible:ring-0 focus-visible:ring-offset-0 h-7 min-h-0 py-0 text-center appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [line-height:1.75rem] transition-colors duration-300 ${fdvJustChanged ? 'text-[rgb(var(--ds-brand-magenta-rgb))]' : 'text-muted-foreground/80'}`}
+          className={`w-9 min-w-0 px-1 !text-[11px] font-normal tabular-nums bg-transparent border-0 shadow-none outline-none focus:outline-none focus-visible:outline-none placeholder:text-muted-foreground/50 focus:text-foreground focus-visible:ring-0 focus-visible:ring-offset-0 h-7 min-h-0 py-0 text-center appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none leading-7 transition-colors duration-300 ${fdvJustChanged ? 'text-[rgb(var(--ds-brand-magenta-rgb))]' : 'text-muted-foreground/80'}`}
           aria-label="Estimated $INK FDV in billions"
         />
         <span className="h-7 inline-flex items-center justify-center !text-[11px] leading-none text-muted-foreground/50 w-[1ch] shrink-0">B</span>
