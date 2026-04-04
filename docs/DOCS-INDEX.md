@@ -6,7 +6,7 @@ Use it to avoid duplicate policy text and to keep each topic in one canonical lo
 
 **Entry points:** [`README.md`](../README.md) (onboarding), root [`DESIGN.md`](../DESIGN.md) (design links table), this file (full map).
 
-_Last inventory pass: 2026-04-01._
+_Last inventory pass: 2026-04-03._
 
 ## Canonical Structure
 
@@ -67,4 +67,9 @@ _Last inventory pass: 2026-04-01._
 ## Redirect Rule
 
 If a topic is historical or split-legacy, keep a short pointer page and move all normative content to one canonical file only.
+
+## Cross-reference hygiene
+
+- Prefer **existing** headings: `docs/design/DESIGN.md` is a short project profile (§1–§4 only). Do not cite phantom sections (e.g. old “§4.4 Tooltip”).
+- **Tooltip layout (multi-paragraph + Radix density):** canonical detail in `docs/design/frontend-interaction-guardrails.md` § A · Tooltip/Overlay; cursor/delay summary in `docs/design/DESIGN-SYSTEM-REFERENCE.md` §6.
 

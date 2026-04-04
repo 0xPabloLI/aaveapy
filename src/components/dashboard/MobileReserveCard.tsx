@@ -577,11 +577,15 @@ const MobileReserveCard = memo(({
     : simulation.utilization.current;
 
   return (
-    <div data-reserve-id={`${reserve.marketName}-${reserve.tokenAddress}`} className={isSimulationExpanded && !showUpperOnly ? 'shadow-sm rounded-xl' : ''}>
+    <div data-reserve-id={`${reserve.marketName}-${reserve.tokenAddress}`} className={isSimulationExpanded && !showUpperOnly ? 'shadow-sm rounded-xl border border-border/60 bg-card' : ''}>
       {/* Card upper part */}
       <div
-        className={`bg-card border border-border/60 py-3 transition-all duration-300 ${
-          connectedBelow || (isSimulationExpanded && !showUpperOnly) ? 'rounded-t-xl rounded-b-none border-b-0' : 'rounded-xl shadow-sm'
+        className={`bg-card py-3 transition-all duration-300 ${
+          isSimulationExpanded && !showUpperOnly
+            ? 'rounded-t-xl rounded-b-none'
+            : connectedBelow
+              ? 'border border-border/60 rounded-t-xl rounded-b-none border-b-0 shadow-sm'
+              : 'border border-border/60 rounded-xl shadow-sm'
         }`}
       >
         {/* Token header */}
@@ -613,7 +617,7 @@ const MobileReserveCard = memo(({
               </div>
             </div>
           </a>
-          {/* Utilization indicator - clickable (values match desktop Util. column + UtilizationIndicator) */}
+          {/* Utilization indicator - clickable (values match desktop Utilization column + UtilizationIndicator) */}
           {displayUtilization != null && optimalPct != null && (
             <button
               type="button"
@@ -795,7 +799,7 @@ const MobileReserveCard = memo(({
         >
           <div className="overflow-hidden">
             {hasSimulationMounted && (
-              <div className="-mt-px bg-card border border-border/60 border-t-0 rounded-b-xl rounded-t-none pb-3 pt-0">
+              <div className="bg-card rounded-b-xl rounded-t-none pb-3 pt-0">
                 <div className="px-3">
                   <SimulationSubRow
                     reserve={reserve}

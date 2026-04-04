@@ -566,17 +566,18 @@ const TopOpportunities = ({
       name: reserve.tokenName,
     });
     const marketDisplayName = getMarketDisplayName(reserve);
+    const Wrapper = disableMotion ? 'div' : motion.div;
     return (
-      <motion.div
+      <Wrapper
         {...(disableMotion
-          ? { initial: false, animate: false as const }
+          ? {}
           : {
           custom: index,
           initial: false,
           animate: 'visible',
           variants: itemVariants,
         })}
-        className="rounded-xl border ds-card-pad-sm cursor-pointer transition-colors bg-card border-border/60 active:bg-muted/60 h-[68px] flex flex-col justify-between"
+        className="rounded-xl border ds-card-pad-sm cursor-pointer bg-card border-border/60 active:bg-muted/60 h-[68px] flex flex-col justify-between"
         onClick={() => handleCardClick(reserve)}
       >
         <ReserveIdentity
@@ -613,7 +614,7 @@ const TopOpportunities = ({
             </span>
           )}
         </div>
-      </motion.div>
+      </Wrapper>
     );
   };
 
@@ -971,7 +972,7 @@ const TopOpportunities = ({
             </button>
           </div>
         )}
-        <CarouselContent className="-ml-[var(--ds-space-2)]">
+        <CarouselContent className="-ml-[var(--ds-space-2)] will-change-transform">
           {mobilePages.map((pageCats, pageIndex) => (
             <CarouselItem key={pageIndex} className="pl-[var(--ds-space-2)] basis-full">
               <div className="grid grid-cols-2 gap-[var(--ds-space-2)]">

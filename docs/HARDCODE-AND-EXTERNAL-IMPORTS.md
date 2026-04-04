@@ -96,6 +96,8 @@
 
 在 GitHub Actions 里：`vars.LIVE_TEST_API_BASE_CI` → job `env.LIVE_TEST_API_BASE_CI`；未配置变量时 workflow 表达式仍回退 staging（与 `ci.yml` live-schema 一致）。总表见 `docs/conventions/api-base-urls.md`；Cloudflare 排障见 `docs/conventions/ci-live-schema-cloudflare.md`。
 
+`sync-token-icons.mjs` 拉取 `/markets` 时使用与上面相同的基址优先级（`LIVE_TEST_API_BASE_CI` → `VITE_API_BASE_URL` → staging → production），并可用 `SYNC_TOKEN_ICONS_MARKETS_API` 覆盖为首段 URL 列表（仍会追加 staging 作为后备）。`token-icon-sync.yml` 为 job 注入与 hardcode 工作流一致的 `LIVE_TEST_API_BASE_CI`。
+
 `VITE_API_BASE_URL`（前端构建/运行时；未设置时见 `src/lib/apiBase.ts` 默认）：
 - `/markets`
 - `/markets/stats`

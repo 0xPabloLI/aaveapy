@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, ExternalLink, Info } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
-import { InfoIconButton, DesktopTooltip, MobileTooltip } from '@/components/dashboard/AprApyToggle';
+import { FormulaBlock, InfoIconButton, DesktopTooltip, MobileTooltip } from '@/components/dashboard/AprApyToggle';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useCoingeckoFdv } from '@/hooks/useCoingeckoFdv';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -158,15 +158,8 @@ function InkAprTooltipContent({
   currentFdvBillions: number;
 }) {
   return (
-    <>
-      <div className="flex justify-center">
-        <div className="bg-muted/50 rounded-lg border border-border px-3 py-2">
-          <code className="ds-text-12 font-mono font-medium text-foreground whitespace-nowrap">
-            APR = daily_points × $INK × 365%
-          </code>
-        </div>
-      </div>
-      <div className="flex items-center justify-center gap-1.5 ds-text-12 text-muted-foreground">
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 ds-text-12 text-muted-foreground leading-relaxed">
         <img
           src="/icons/partners/inktoken.svg"
           alt="INK"
@@ -175,7 +168,8 @@ function InkAprTooltipContent({
         <span>INK</span>
         <span className="tabular-nums">${formatInkPrice(currentFdvBillions)}</span>
       </div>
-    </>
+      <FormulaBlock>APR = daily_points × $INK × 365%</FormulaBlock>
+    </div>
   );
 }
 
@@ -501,7 +495,7 @@ const InkAprCalculator = ({
                 onBlur={handleFdvInputBlur}
                 onKeyDown={handleFdvInputKeyDown}
                 placeholder={isFdvInputFocused ? '' : '1.00'}
-                className={`w-8 min-w-0 px-0.5 !text-[11px] font-medium tabular-nums bg-transparent border-0 shadow-none outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 h-full min-h-0 p-0 text-center appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-colors duration-300 [line-height:1rem] ${fdvJustChanged ? 'text-[rgb(var(--ds-brand-magenta-rgb))]' : 'text-muted-foreground/80 focus:text-muted-foreground/50'}`}
+                className={`w-8 min-w-0 px-0.5 !text-[11px] font-medium tabular-nums bg-transparent border-0 shadow-none outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 h-4 min-h-0 py-0 text-center appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-colors duration-300 leading-4 ${fdvJustChanged ? 'text-[rgb(var(--ds-brand-magenta-rgb))]' : 'text-muted-foreground/80 focus:text-muted-foreground/50'}`}
                 aria-label="Estimated $INK FDV in billions"
               />
               <span className="inline-flex items-center justify-center !text-[11px] leading-none text-muted-foreground/80">B</span>
@@ -765,7 +759,7 @@ const InkAprCalculator = ({
           onBlur={handleFdvInputBlur}
           onKeyDown={handleFdvInputKeyDown}
           placeholder={isFdvInputFocused ? '' : '1.00'}
-          className={`w-9 min-w-0 px-1 !text-[11px] font-normal tabular-nums bg-transparent border-0 shadow-none outline-none focus:outline-none focus-visible:outline-none placeholder:text-muted-foreground/50 focus:text-foreground focus-visible:ring-0 focus-visible:ring-offset-0 h-7 min-h-0 py-0 text-center appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [line-height:1.75rem] transition-colors duration-300 ${fdvJustChanged ? 'text-[rgb(var(--ds-brand-magenta-rgb))]' : 'text-muted-foreground/80'}`}
+          className={`w-9 min-w-0 px-1 !text-[11px] font-normal tabular-nums bg-transparent border-0 shadow-none outline-none focus:outline-none focus-visible:outline-none placeholder:text-muted-foreground/50 focus:text-foreground focus-visible:ring-0 focus-visible:ring-offset-0 h-7 min-h-0 py-0 text-center appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none leading-7 transition-colors duration-300 ${fdvJustChanged ? 'text-[rgb(var(--ds-brand-magenta-rgb))]' : 'text-muted-foreground/80'}`}
           aria-label="Estimated $INK FDV in billions"
         />
         <span className="h-7 inline-flex items-center justify-center !text-[11px] leading-none text-muted-foreground/50 w-[1ch] shrink-0">B</span>

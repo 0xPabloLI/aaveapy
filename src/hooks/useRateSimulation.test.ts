@@ -39,6 +39,13 @@ const baseReserve: ReserveWithSpread & RateCalcInput = {
   optimalUsageRate: '800000000000000000000000000',
 };
 
+const SECONDS_PER_YEAR = 365 * 24 * 60 * 60;
+
+function nativeAprToDailyFractionViaPerSecondCompounding(aprPercent: number): number {
+  const aprDecimal = aprPercent / 100;
+  return Math.pow(1 + aprDecimal / SECONDS_PER_YEAR, 60 * 60 * 24) - 1;
+}
+
 describe('buildForecastMerklOpportunities', () => {
   it('uses forecast APR when campaign state exists and amount is provided', () => {
     const opportunities: MerklOpportunityGroup[] = [
@@ -228,8 +235,8 @@ describe('buildRateSimulationResult', () => {
     expect(result.utilization.after).not.toBe(result.utilization.current);
   });
 
-  it('exposes scenarioUsdAccrual: supply earn, borrow native outflow + incentive rebate, APR-linear daily USD', () => {
-    const result = buildRateSimulationResult({
+  it('uses native APY for scenarioUsdAccrual daily cashflow regardless of display mode', () => {
+    const aprModeResult = buildRateSimulationResult({
       reserve: baseReserve,
       reserveRateInput: baseReserve,
       isApy: false,
@@ -240,28 +247,7 @@ describe('buildRateSimulationResult', () => {
       borrowInput: '3650',
       forecastStates: {},
     });
-
-    expect(result.scenarioUsdAccrual).not.toBeNull();
-    const acc = result.scenarioUsdAccrual!;
-    expect(acc.supply).not.toBeNull();
-    expect(acc.borrow).not.toBeNull();
-    const supplyNative = result.supply.afterNative;
-    const borrowNative = result.borrow.afterNative;
-    const borrowIncentive = result.borrow.afterIncentive;
-    expect(supplyNative).not.toBeNull();
-    expect(borrowNative).not.toBeNull();
-    expect(borrowIncentive).not.toBeNull();
-    expect(acc.supply!.nativeUsdPerDay).toBeCloseTo((36500 * supplyNative!) / 100 / 365, 5);
-    expect(acc.borrow!.nativeUsdPerDay).toBeCloseTo(-(3650 * borrowNative!) / 100 / 365, 5);
-    expect(acc.borrow!.incentiveUsdPerDay).toBeCloseTo((3650 * borrowIncentive!) / 100 / 365, 5);
-    expect(acc.netUsdPerDay).toBeCloseTo(
-      (acc.supply!.totalUsdPerDay ?? 0) + (acc.borrow!.totalUsdPerDay ?? 0),
-      5
-    );
-  });
-
-  it('keeps scenarioUsdAccrual on APR-linear daily USD even when isApy is true', () => {
-    const result = buildRateSimulationResult({
+    const apyModeResult = buildRateSimulationResult({
       reserve: baseReserve,
       reserveRateInput: baseReserve,
       isApy: true,
@@ -273,19 +259,68 @@ describe('buildRateSimulationResult', () => {
       forecastStates: {},
     });
 
-    expect(result.scenarioUsdAccrual).not.toBeNull();
-    const acc = result.scenarioUsdAccrual!;
+    expect(aprModeResult.scenarioUsdAccrual).not.toBeNull();
+    expect(apyModeResult.scenarioUsdAccrual).not.toBeNull();
+    const aprAcc = aprModeResult.scenarioUsdAccrual!;
+    const apyAcc = apyModeResult.scenarioUsdAccrual!;
+    expect(aprAcc.supply).not.toBeNull();
+    expect(aprAcc.borrow).not.toBeNull();
+    expect(apyAcc.supply).not.toBeNull();
+    expect(apyAcc.borrow).not.toBeNull();
+    expect(aprAcc.supply!.nativeUsdPerDay).toBeCloseTo(apyAcc.supply!.nativeUsdPerDay!, 5);
+    expect(aprAcc.borrow!.nativeUsdPerDay).toBeCloseTo(apyAcc.borrow!.nativeUsdPerDay!, 5);
+    expect(aprAcc.borrow!.incentiveUsdPerDay).toBeCloseTo(apyAcc.borrow!.incentiveUsdPerDay!, 5);
+    const supplyNativeApr = aprModeResult.supply.afterNative;
+    const borrowNativeApr = aprModeResult.borrow.afterNative;
+    expect(supplyNativeApr).not.toBeNull();
+    expect(borrowNativeApr).not.toBeNull();
+    expect(aprAcc.supply!.nativeUsdPerDay).toBeCloseTo(
+      36500 * nativeAprToDailyFractionViaPerSecondCompounding(supplyNativeApr!),
+      5
+    );
+    expect(aprAcc.borrow!.nativeUsdPerDay).toBeCloseTo(
+      -3650 * nativeAprToDailyFractionViaPerSecondCompounding(borrowNativeApr!),
+      5
+    );
+    expect(aprAcc.netUsdPerDay).toBeCloseTo(
+      (aprAcc.supply!.totalUsdPerDay ?? 0) + (aprAcc.borrow!.totalUsdPerDay ?? 0),
+      5
+    );
+  });
+
+  it('keeps incentive scenarioUsdAccrual on fixed APR-linear daily USD in APY mode', () => {
+    const apyModeResult = buildRateSimulationResult({
+      reserve: baseReserve,
+      reserveRateInput: baseReserve,
+      isApy: true,
+      whitelistMerklCampaignIds: new Set(),
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '36500',
+      borrowInput: '3650',
+      forecastStates: {},
+    });
+    const aprModeResult = buildRateSimulationResult({
+      reserve: baseReserve,
+      reserveRateInput: baseReserve,
+      isApy: false,
+      whitelistMerklCampaignIds: new Set(),
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '36500',
+      borrowInput: '3650',
+      forecastStates: {},
+    });
+
+    expect(apyModeResult.scenarioUsdAccrual).not.toBeNull();
+    expect(aprModeResult.scenarioUsdAccrual).not.toBeNull();
+    const acc = apyModeResult.scenarioUsdAccrual!;
+    const aprAcc = aprModeResult.scenarioUsdAccrual!;
     expect(acc.supply).not.toBeNull();
     expect(acc.borrow).not.toBeNull();
-    const supplyNative = result.supply.afterNative;
-    const borrowNative = result.borrow.afterNative;
-    const borrowIncentive = result.borrow.afterIncentive;
-    expect(supplyNative).not.toBeNull();
-    expect(borrowNative).not.toBeNull();
-    expect(borrowIncentive).not.toBeNull();
-    expect(acc.supply!.nativeUsdPerDay).toBeCloseTo((36500 * supplyNative!) / 100 / 365, 5);
-    expect(acc.borrow!.nativeUsdPerDay).toBeCloseTo(-(3650 * borrowNative!) / 100 / 365, 5);
-    expect(acc.borrow!.incentiveUsdPerDay).toBeCloseTo((3650 * borrowIncentive!) / 100 / 365, 5);
+    expect(aprAcc.borrow).not.toBeNull();
+    expect(acc.supply!.incentiveUsdPerDay).toBeCloseTo(aprAcc.supply!.incentiveUsdPerDay!, 5);
+    expect(acc.borrow!.incentiveUsdPerDay).toBeCloseTo(aprAcc.borrow!.incentiveUsdPerDay!, 5);
   });
 
   it('keeps native rates in APY even when display mode switches incentive values to APR', () => {

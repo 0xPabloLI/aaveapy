@@ -49,6 +49,24 @@ jobs:
       - name: Check for peer dependency conflicts
         run: npm ls --all 2>&1 | grep -i "invalid" && exit 1 || echo "No peer dep conflicts"
 
+  socket-firewall:
+    name: socket-firewall
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - name: Setup Node
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Setup Socket Firewall
+        uses: socketdev/action@v1
+        with:
+          mode: firewall
+      - name: Install dependencies through Socket Firewall
+        run: sfw npm ci
+
   lint:
     name: lint
     runs-on: ubuntu-latest

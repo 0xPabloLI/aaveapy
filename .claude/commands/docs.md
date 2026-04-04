@@ -53,10 +53,15 @@ Implement documentation deduplication, deprecation cleanup, and merge following 
 
 1. Verify no broken markdown links in touched docs.
 2. Run project lint/doc checks if available.
-3. Produce a concise change report:
+3. **Current-session docs impact check (mandatory)**:
+   - Review current-session changes (`git diff --name-only`, plus paths touched in this session) and confirm whether additional documentation updates are required beyond the scoped edits.
+   - If yes, update the corresponding canonical doc(s) in the same run.
+   - If no, explicitly report: `No additional session-doc updates required` with a short reason.
+4. Produce a concise change report:
    - Files merged
    - Files removed
    - Canonical docs created/updated
+   - Session docs impact (updated / not needed + reason)
    - Open follow-ups (if any)
 
 ## Constraints
@@ -70,6 +75,7 @@ Focus only on documentation deduplication, deprecation cleanup, and content merg
 - Keep one source of truth per topic.
 - Preserve critical technical details and edge cases.
 - Keep historical context only when it affects current decisions.
+- Always evaluate and report current-session documentation impact.
 </requirements>
 
 <constraints>
@@ -84,4 +90,5 @@ Focus only on documentation deduplication, deprecation cleanup, and content merg
 - [ ] Outdated content is pruned or clearly marked.
 - [ ] Each topic has one canonical document location.
 - [ ] Internal links and references are valid.
+- [ ] Current-session doc impact is evaluated and reported.
 - [ ] Final report lists what was merged, removed, and retained.

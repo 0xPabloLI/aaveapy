@@ -172,7 +172,9 @@ className="cursor-pointer md:cursor-auto"
 
 只展示**补充信息**，不重复父级已展示的内容。
 
-**多段说明文**（场景条 Net、类 FDV 信息泡）：版式与 `DesktopTooltip`/`MobileTooltip` 正文区对齐，见 **DESIGN.md §4.4 Tooltip**（`px-4 py-3`、`space-y-2.5`、`ds-text-12`、可选顶部分割线）；避免默认 Radix Tooltip 的紧间距堆段。
+**多段说明文**（场景条 Net、类 FDV 信息泡）：与 `DesktopTooltip`/`MobileTooltip` 正文区 rhythm 对齐（`px-4 py-3` 量级、`ds-text-12`、可选顶部分割线）。**Radix 多段密度、壳层 `space-y-*`、参考实现**见 [frontend-interaction-guardrails.md](./frontend-interaction-guardrails.md) § A · Tooltip/Overlay（`AprApyToggle.tsx`、`InkAprCalculator.tsx`）。避免默认 Radix Tooltip 的紧间距堆段。
+
+`InkAprCalculator` 的 `Incentive APR formula` 弹窗内文顺序固定为：**INK 价格行在上，公式块在下**；公式行复用共享 `FormulaBlock` 样式，避免同类说明弹窗出现不同公式容器风格。
 
 ### 6.4 Tooltip 定位与视口
 

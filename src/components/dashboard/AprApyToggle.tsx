@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Info, X } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -302,74 +302,60 @@ export function DesktopTooltip({
   );
 }
 
+function EarnPerDayFootnote() {
+  return (
+    <div className="rounded-md border border-border/80 bg-muted/30 px-3 py-2 ds-text-11 text-muted-foreground leading-snug">
+      <span className="font-medium text-foreground">Earn /day</span> — same in APR and APY mode. Native uses
+      Aave&apos;s per-second rate; incentive uses APR ÷ 365.
+    </div>
+  );
+}
+
+function TooltipModeRow({ mode, hint }: { mode: string; hint: string }) {
+  return (
+    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+      <span className="inline-flex min-w-[2.25rem] justify-center rounded border border-border bg-muted/50 px-2 py-0.5 ds-text-11 font-semibold tabular-nums text-foreground">
+        {mode}
+      </span>
+      <span className="ds-text-11 text-muted-foreground leading-snug">{hint}</span>
+    </div>
+  );
+}
+
+/** Shared formula chrome for help tooltips (AprApyToggle, InkAprCalculator, etc.). */
+export function FormulaBlock({ children }: { children: ReactNode }) {
+  return (
+    <div className="rounded-lg border border-border bg-muted/40 px-3 py-2">
+      <code className="ds-text-12 font-mono font-medium text-foreground block break-all leading-snug">{children}</code>
+    </div>
+  );
+}
+
 function AprTooltipContent() {
   return (
-    <>
-      <div className="bg-muted/50 rounded-lg border border-border px-3 py-2">
-        <code className="ds-text-12 font-mono font-medium text-foreground whitespace-nowrap">
-          APR = Native APY + Incentive APR
-        </code>
-      </div>
-      <ul className="space-y-1.5 ds-text-12 text-muted-foreground">
-        <li className="flex gap-2 items-start">
-          <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ds-bg-emerald-500-20 ring-1 ring-[rgb(var(--ds-emerald-500-rgb)/0.4)]" aria-hidden />
-          <span>
-            <strong className="font-semibold ds-text-emerald-600">Native APY:</strong>{' '}
-            Auto-compounded by Aave
-          </span>
-        </li>
-        <li className="flex gap-2 items-start">
-          <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ds-bg-emerald-500-20 ring-1 ring-[rgb(var(--ds-emerald-500-rgb)/0.4)]" aria-hidden />
-          <span>
-            <strong className="font-semibold ds-text-emerald-600">Incentive:</strong>{' '}
-            Requires manual claiming
-          </span>
-        </li>
-      </ul>
-      <div className="border-t border-border pt-2">
-        <p className="ds-text-11 text-muted-foreground">
-          Use APR if you don&apos;t reinvest incentive
-        </p>
-      </div>
-    </>
+    <div className="space-y-3">
+      <TooltipModeRow mode="APR" hint="Linear incentive annual %" />
+      <FormulaBlock>APR = Native APY + Incentive APR</FormulaBlock>
+      <p className="ds-text-12 text-muted-foreground leading-relaxed">
+        Only incentive annual % follows this switch; native stays APY. Incentive here is linear APR (no reinvest
+        assumption).
+      </p>
+      <EarnPerDayFootnote />
+    </div>
   );
 }
 
 function ApyTooltipContent() {
   return (
-    <>
-      <div className="bg-muted/50 rounded-lg border border-border px-3 py-2">
-        <code className="ds-text-12 font-mono font-medium text-foreground whitespace-nowrap">
-          APY = Native APY + Incentive APY
-        </code>
-      </div>
-      <ul className="space-y-1.5 ds-text-12 text-muted-foreground">
-        <li className="flex gap-2 items-start">
-          <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ds-bg-emerald-500-20 ring-1 ring-[rgb(var(--ds-emerald-500-rgb)/0.4)]" aria-hidden />
-          <span>
-            <strong className="font-semibold ds-text-emerald-600">Native APY:</strong>{' '}
-            Auto-compounded by Aave
-          </span>
-        </li>
-        <li className="flex gap-2 items-start">
-          <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ds-bg-emerald-500-20 ring-1 ring-[rgb(var(--ds-emerald-500-rgb)/0.4)]" aria-hidden />
-          <span>
-            <strong className="font-semibold ds-text-emerald-600">Incentive:</strong>{' '}
-            Monthly reinvesting assumed
-          </span>
-        </li>
-      </ul>
-      <div className="ds-bg-emerald-500-10 border ds-border-emerald-200 rounded-lg px-3 py-2">
-        <code className="ds-text-11 font-mono font-medium ds-text-emerald-700 whitespace-nowrap">
-          Incentive APY = (1 + APR/12)¹² − 1
-        </code>
-      </div>
-      <div className="border-t border-border pt-2">
-        <p className="ds-text-11 text-muted-foreground">
-          Use APY if you reinvest the incentive monthly
-        </p>
-      </div>
-    </>
+    <div className="space-y-3">
+      <TooltipModeRow mode="APY" hint="Compounded incentive annual %" />
+      <FormulaBlock>APY = Native APY + Incentive APY</FormulaBlock>
+      <p className="ds-text-12 text-muted-foreground leading-relaxed">
+        Only incentive annual % follows this switch; native stays APY. Incentive APY assumes ~monthly reinvest.
+      </p>
+      <FormulaBlock>(1 + APR/12)¹² − 1</FormulaBlock>
+      <EarnPerDayFootnote />
+    </div>
   );
 }
 
@@ -391,7 +377,7 @@ export function AprApyToggle({ isApy, setIsApy }: AprApyToggleProps) {
             <MobileTooltip
               isOpen={aprOpen}
               onClose={() => setAprOpen(false)}
-              title="APR (Annual Percentage Rate)"
+              title="APR · linear incentives"
             >
               <AprTooltipContent />
             </MobileTooltip>
@@ -402,7 +388,7 @@ export function AprApyToggle({ isApy, setIsApy }: AprApyToggleProps) {
               triggerRect={triggerRect}
               onMouseEnter={() => setAprOpen(true)}
               onMouseLeave={() => setAprOpen(false)}
-              title="APR (Annual Percentage Rate)"
+              title="APR · linear incentives"
             >
               <AprTooltipContent />
             </DesktopTooltip>
@@ -453,7 +439,7 @@ export function AprApyToggle({ isApy, setIsApy }: AprApyToggleProps) {
             <MobileTooltip
               isOpen={apyOpen}
               onClose={() => setApyOpen(false)}
-              title="APY (Annual Percentage Yield)"
+              title="APY · compounded incentives"
             >
               <ApyTooltipContent />
             </MobileTooltip>
@@ -464,7 +450,7 @@ export function AprApyToggle({ isApy, setIsApy }: AprApyToggleProps) {
               triggerRect={triggerRect}
               onMouseEnter={() => setApyOpen(true)}
               onMouseLeave={() => setApyOpen(false)}
-              title="APY (Annual Percentage Yield)"
+              title="APY · compounded incentives"
             >
               <ApyTooltipContent />
             </DesktopTooltip>

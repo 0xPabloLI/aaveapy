@@ -148,7 +148,7 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
 
   /**
    * Segmented control: same metrics as `AprApyToggle` (px-3 py-1, ds-text-12, content-width segments)
-   * so USD/Token matches APR/APY in FilterBar. Pill thumb: DESIGN.md § 4.2.
+   * so USD/Token matches APR/APY in FilterBar. Spec: DESIGN-SYSTEM-REFERENCE.md §5.1 (segmented control).
    */
   const segmentedTrack = 'rounded-lg border border-border/40 bg-muted/60 p-0.5 gap-0.5';
   const segmentedFontSize = isMobile ? 'ds-text-11' : 'ds-text-12';

@@ -243,10 +243,12 @@ export function preloadCriticalImages(srcs: string[]): void {
   });
 }
 
-/** Warm default token icon for TokenIcon underlay + fast fallback (link preload). */
+/** Warm default token icon for TokenIcon underlay + fast fallback (Image fetch, no `<link rel=preload>`). */
 export function preloadDefaultTokenIcon(): void {
   if (typeof document === 'undefined') return;
-  preloadCriticalImages([TOKEN_ICON_DEFAULT_SRC]);
+  void preloadImage(TOKEN_ICON_DEFAULT_SRC).catch(() => {
+    // Missing asset or network; TokenIcon still applies fallback path.
+  });
 }
 
 /**

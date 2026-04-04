@@ -21,9 +21,13 @@
   "type": "module",
   "scripts": {
     "dev": "node scripts/generate-token-icon-manifest.mjs && node scripts/generate-chain-icon-manifest.mjs && vite",
-    "dev:staging": "VITE_API_BASE_URL=https://staging-api.aaveapy.com/api vite --mode staging",
+    "vite:clear-cache": "node scripts/clear-vite-cache.mjs",
+    "dev:fresh": "npm run vite:clear-cache && npm run dev",
+    "dev:fresh:staging": "npm run vite:clear-cache && npm run dev:staging",
+    "postinstall": "node scripts/clear-vite-cache.mjs",
+    "dev:staging": "node scripts/generate-token-icon-manifest.mjs && node scripts/generate-chain-icon-manifest.mjs && VITE_API_BASE_URL=https://staging-api.aaveapy.com/api vite --mode staging",
     "dev:production": "vite --mode production",
-    "ci:remote": "npm run lint && npm test && npm run build && npm audit --omit=dev --audit-level=high",
+    "ci:remote": "npm run lint && npm run check:react-singleton && npm test && npm run build && npm audit --omit=dev --audit-level=high",
     "ci:auto-fix": "npm audit fix --omit=dev || true && npm ci",
     "build": "node scripts/generate-token-icon-manifest.mjs && node scripts/generate-chain-icon-manifest.mjs && vite build",
     "build:dev": "node scripts/generate-token-icon-manifest.mjs && node scripts/generate-chain-icon-manifest.mjs && vite build --mode development",
@@ -53,7 +57,8 @@
     "test:live": "LIVE_TEST_API_BASE=https://staging-api.aaveapy.com/api RUN_LIVE_TESTS=true vitest run src/lib/apiSchemas.live.test.ts",
     "test:live:staging": "LIVE_TEST_API_BASE=https://staging-api.aaveapy.com/api RUN_LIVE_TESTS=true vitest run src/lib/apiSchemas.live.test.ts",
     "probe:live-api": "node scripts/probe-live-api.mjs",
-    "ci:lockcheck": "npm ci"
+    "ci:lockcheck": "npm ci",
+    "check:react-singleton": "node scripts/check-react-singleton.mjs"
   },
   "dependencies": {
     "@bgd-labs/aave-address-book": "^4.38.0",

@@ -16,7 +16,8 @@ This note records recurring UI/interaction issues found during incentive/forecas
   - Global `TooltipProvider` is set to `delayDuration={200}` (200ms) in `App.tsx`.
   - This only affects Radix UI `Tooltip` components (auto-show tooltips).
   - Custom click-to-show components (e.g. `IncentiveTooltip`) manage their own timing and are not affected by this setting.
-- **Multi-paragraph explanatory tooltips** (e.g. scenario strip Net help): When Radix `@/components/ui/tooltip` carries more than a one-line hint, match the **body rhythm** of `DesktopTooltip`/`MobileTooltip` inner content (see `AprApyToggle.tsx`, FDV definition in `InkAprCalculator.tsx`): **`rounded-xl border border-border shadow-lg`**, padding **`px-4 py-3`**, wrapper **`space-y-2.5`**, copy **`ds-text-12`** + **`leading-relaxed`** (or `leading-snug`) + **`text-muted-foreground`**; optional **`border-t border-border pt-2.5`** only when two blocks need a hard visual break. Default TooltipContent padding plus stacked `mt-1.5` paragraphs alone reads cramped—override explicitly. Normative detail: **DESIGN.md §4.4 Tooltip**.
+- **Multi-paragraph explanatory tooltips** (e.g. scenario strip Net help): When Radix `@/components/ui/tooltip` carries more than a one-line hint, match the **body rhythm** of `DesktopTooltip`/`MobileTooltip` inner content (see `AprApyToggle.tsx`, `FormulaBlock` + `InkAprCalculator.tsx`): **`rounded-xl border border-border shadow-lg`**, padding **`px-4 py-3`**, wrapper **`space-y-2.5`** (desktop shell between multiple direct children; mobile body often **`space-y-3`**), inner columns often **`space-y-3`**, copy **`ds-text-12`** + **`leading-relaxed`** (or `leading-snug`) + **`text-muted-foreground`**; optional **`border-t border-border pt-2.5`** only when two blocks need a hard visual break. Default TooltipContent padding plus stacked `mt-1.5` paragraphs alone reads cramped—override explicitly. **Cursor types, delays, and short summary:** **DESIGN-SYSTEM-REFERENCE.md** §6.
+- **Ink incentive APR formula tooltip order** (`InkAprCalculator.tsx`): keep content in this order: **(1)** INK price row (`INK $x.xx`) **above**, **(2)** formula block (`APR = daily_points × $INK × 365%`) **below**. Use shared `FormulaBlock` chrome for the formula line.
 
 #### Implementation examples
 
@@ -57,7 +58,7 @@ This note records recurring UI/interaction issues found during incentive/forecas
 
 ### Text-to-border spacing (mandatory)
 
-- **Text must never touch borders**: Any bordered container (cards, table cells, warning banners, buttons) must have at least `--ds-space-2` (8px) padding between text and the border. See DESIGN.md §5 布局原则.
+- **Text must never touch borders**: Any bordered container (cards, table cells, warning banners, buttons) must have at least `--ds-space-2` (8px) padding between text and the border. See **DESIGN-SYSTEM-REFERENCE.md** §3（文字与边框）and §4（布局原则）.
 
 ### Visual consistency
 
@@ -86,7 +87,7 @@ This note records recurring UI/interaction issues found during incentive/forecas
 | Secondary/muted info | `text-muted-foreground`, `text-secondary` | Labels, descriptions |
 
 **Utilization display value (mobile vs desktop)**:
-- Mobile reserve header and bottom sheet must use the same **display** utilization as the desktop Util. column: `hasSharedScenario ? after ?? current : current` from rate simulation (not raw `reserve.utilizationPct` when a scenario is active).
+- Mobile reserve header and bottom sheet must use the same **display** utilization as the desktop Utilization column: `hasSharedScenario ? after ?? current : current` from rate simulation (not raw `reserve.utilizationPct` when a scenario is active).
 
 **UtilizationIndicator color scheme** (minimize same-hue steps: one **zone tint** + one **full semantic** per state):
 - Below optimal (borrow-friendly / flatter borrow curve): track zone `fill-[rgb(var(--ds-brand-cyan-rgb)/0.32)]`; dot **full** `fill-[rgb(var(--ds-brand-cyan-rgb))]` — same as Borrow (`ds-text-brand-cyan`), not emerald; avoid mixing `-70` text with other cyan opacities
@@ -101,6 +102,7 @@ This note records recurring UI/interaction issues found during incentive/forecas
 - **Size column** (Supply/Borrow amounts): `ds-text-13` + `font-medium` + **full** semantic (`emerald-500` / `brand-cyan`)—aligned with APY **primary** color, **not** with the Native/Incentive row (which is smaller + `-70` by design).
 - **Spread column**: `font-bold` + `ds-text-14` + purple semantic—treated as a **primary numeric** column alongside Supply/Borrow totals.
 - **Mobile parity**: Supply/Borrow tab, **size row**, cap sheets, and incentive chips use the **same** emerald/cyan tokens as desktop (`emerald-500` / `brand-cyan`), not a darker step (e.g. avoid `emerald-600` for Supply size when desktop uses `emerald-500`); utilization figure next to the indicator uses at least `ds-text-11`
+- **Mobile reserves sort strip**: Size, Supply, and Borrow remain separate dropdown chips; the trailing control is a **Spread** dropdown that also lists Token, Market, Price, and Utilization (same `activeSortColumn` keys as desktop). Re-selecting the active menu row toggles ascending/descending, matching the desktop header behavior.
 
 **Key principle**: Amber/warning colors must NOT be used for regular data display. This ensures that when amber appears, users immediately recognize it as a warning signal.
 
@@ -277,6 +279,7 @@ Merkl may mark a breakdown as **whitelist-only** (`whitelistOnly: true`). The ap
   - 可加 `transition-[top] duration-150` 使切换自然。
 - **Reference FDVs 区块**：紧贴 slider 下方的 Collapsible 使用 `mt-[var(--ds-space-0-5)]`（2px）；触控热区与可点击性保持不变。
 - **验收**：拖动时 tooltip 与 thumb 间有明显空隙；松手后 tooltip 不贴 thumb 也不过高；slider 与 Reference 区更紧凑且仍易点。
+- **Incentive APR formula tooltip**：在该卡片内保持「**INK 价格行在上、公式在下**」；公式用共享 `FormulaBlock`，与 APR/APY 说明弹窗的公式块样式一致。
 
 ## Debugging checklist for incentive UI regressions
 
@@ -362,7 +365,7 @@ Sticky scenario + sticky `<thead>` and **scrollport** constraints are **normativ
 | Price   | 10.5% | |
 | Market  | 11.5% | |
 | Size    | 13%   | |
-| Util.   | 12%   | |
+| Utilization | 12%   | |
 | Supply  | 13.5% | Right three (Supply / Spread / Borrow) slightly tighter |
 | Spread  | 12%   | |
 | Borrow  | 14.5% | |
@@ -372,7 +375,7 @@ Sticky scenario + sticky `<thead>` and **scrollport** constraints are **normativ
 - **Token**: `pl-[var(--ds-space-1-5)] pr-[var(--ds-space-0-5)]` — tight right so Token and Price sit close.
 - **Price**: `px-[var(--ds-space-0-5)]` — minimal so Price/Market gap stays small.
 - **Market**: `pl-[var(--ds-space-0-5)] pr-[var(--ds-space-1)]` — tight left; right bridges to Size.
-- **Size, Util, Supply, Spread**: `px-[var(--ds-space-1-5)]` — uniform.
+- **Size, Utilization, Supply, Spread**: `px-[var(--ds-space-1-5)]` — uniform.
 - **Borrow**: `pl-[var(--ds-space-1-5)] pr-[var(--ds-space-2)]` — right keeps a small outer margin.
 
 Keep header, body, and skeleton row padding in sync so alignment and spacing stay consistent.
