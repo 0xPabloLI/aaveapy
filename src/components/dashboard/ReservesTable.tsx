@@ -25,6 +25,7 @@ import { openExternalUrl } from '@/lib/externalNavigation';
 import { calculateDeficitShareRatio, getReserveDeficitUsdAmount } from '@/lib/deficit';
 import IncentiveTooltip from './IncentiveTooltip';
 import MobileReserveCard from './MobileReserveCard';
+import MobileExpandedReserveShell from './MobileExpandedReserveShell';
 import DesktopReserveRow from './DesktopReserveRow';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getReserveSimulationId, useSharedRateSimulations } from '@/hooks/useRateSimulation';
@@ -34,10 +35,6 @@ import {
   shouldScrollExpandedSimulationIntoView,
 } from '@/lib/scrollExpandedSimulationIntoView';
 import { createScenarioPinControllerState, transitionScenarioPinController } from '@/lib/scenarioPinController';
-import {
-  MOBILE_SIMULATION_JUNCTION_GEOMETRY,
-  getMobileSimulationJunctionFilletPaths,
-} from '@/lib/mobileSimulationJunction';
 
 interface ReservesTableProps {
   reserves: ReserveWithSpread[];
