@@ -584,7 +584,7 @@ const MobileReserveCard = memo(({
           isSimulationExpanded && !showUpperOnly
             ? 'rounded-t-xl rounded-b-none'
             : connectedBelow
-              ? 'border border-border/60 rounded-t-xl rounded-b-none border-b-transparent'
+              ? 'border border-border/60 rounded-t-xl rounded-b-none border-b-0 shadow-sm'
               : 'border border-border/60 rounded-xl shadow-sm'
         }`}
       >
