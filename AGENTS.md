@@ -49,6 +49,7 @@
 - Primary app reads from the backend: `GET /markets` and `GET /meta/side-data` (via `VITE_API_BASE_URL` / `src/lib/apiBase.ts`); rate simulation is computed client-side—there is no dedicated simulation endpoint.
 - `forecast.errors[]` in side-data maps to `forecastErrors`; Merkl campaigns without forecast state fall back to current APR in simulation; `forecastUnavailableCampaignCount` signals partial forecast coverage.
 - Scheduled **Hardcode Drift Check** (`.github/workflows/hardcode-drift-check.yml`) runs `npm run check:coingecko-platform-map-upstream` against live `GET /markets` (via `LIVE_TEST_API_BASE_CI` when set): every `chainId` seen in reserves must have a matching entry in `HARDCODED_PLATFORM_BY_CHAIN_ID` in `src/lib/tokenPriceResolver.ts` consistent with CoinGecko `asset_platforms`, or CI fails.
+- **Vercel deployment smoke test** (`.github/workflows/deployment-smoke-test.yml`): post-deploy checks, deploy SHA meta in `index.html`, and production-only instant rollback. When changing rollback candidate selection, follow `docs/conventions/vercel-deployment-smoke-test.md` (GitHub `ref_name` vs Vercel `meta.githubCommitRef` must be normalized, not compared raw).
 
 ## Configuration & Secrets
 - Use `.env` for local secrets and keep it out of version control.

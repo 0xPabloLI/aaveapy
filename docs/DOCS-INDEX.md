@@ -21,6 +21,7 @@ _Last inventory pass: 2026-04-05._
 
 - Canonical: `docs/conventions/api-contract-checklist.md`
 - Canonical: `docs/conventions/api-base-urls.md`
+- Canonical: `docs/conventions/vercel-deployment-smoke-test.md` (post-deploy smoke + rollback; ref normalization vs Vercel metadata)
 - Canonical: `docs/conventions/ci-live-schema-cloudflare.md`
 - Canonical: `docs/conventions/peer-dependency-guard.md`
 - Canonical: `docs/conventions/merge-summary.md`
@@ -63,7 +64,8 @@ _Last inventory pass: 2026-04-05._
 | `docs/design/frontend-interaction-guardrails.md` | Product-critical normative interaction rules | 2026-03-31 | Canonical | parts of design docs | keep |
 | `docs/design/mobile-reserve-card-ascii-layout.md` | Mobile reserve card ASCII reference | 2026-03-16 | Canonical | appendix references in DSR | keep |
 | `docs/design/ui-interaction-patterns.md`, `toggle-switch-specification.md`, `README.md` | Legacy paths / short pointers (do not expand) | 2026-03-27 | Redirect stubs | `docs/design/DESIGN-SYSTEM-REFERENCE.md`, root `DESIGN.md`, `docs/design/DESIGN.md` | keep |
-| `docs/conventions/*` | API/CI/process conventions | 2026-03-16..2026-03-29 | Canonical set | small references in README/AGENTS | keep |
+| `docs/conventions/vercel-deployment-smoke-test.md` | Vercel smoke test workflow, deploy SHA meta, rollback ref rules | 2026-04-05 | Canonical | `.github/workflows/deployment-smoke-test.yml` | keep |
+| `docs/conventions/*` | API/CI/process conventions | 2026-03-16..2026-04-05 | Canonical set | small references in README/AGENTS | keep |
 
 ## Redirect Rule
 
