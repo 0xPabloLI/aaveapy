@@ -199,6 +199,17 @@ jobs:
         run: |
           if [ -z "$VERCEL_TOKEN" ]; then
             echo "⚠️ VERCEL_TOKEN not configured — skipping auto-rollback"
+            echo "skipped=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          REF_NAME="${{ github.ref_name }}"
+
+          # Instant project rollback aliases production; preview deployments are not safe targets.
+          if [ "$REF_NAME" != "main" ]; then
+            echo "⚠️ Branch ${REF_NAME} uses Vercel preview — skipping instant project rollback."
+            echo "💡 Redeploy or promote a known-good preview manually if needed."
+            echo "skipped=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
@@ -211,22 +222,28 @@ jobs:
 
           DEPLOYMENTS=$(curl -s --max-time 15 \
             -H "Authorization: Bearer $VERCEL_TOKEN" \
-            "https://api.vercel.com/v6/deployments?projectId=${VERCEL_PROJECT_ID}&target=${{ env.VERCEL_TARGET }}&state=READY&limit=5${TEAM_PARAM}")
+            "https://api.vercel.com/v6/deployments?projectId=${VERCEL_PROJECT_ID}&target=${{ env.VERCEL_TARGET }}&state=READY&limit=20${TEAM_PARAM}")
 
           echo "Recent deployments:"
-          echo "$DEPLOYMENTS" | jq '[.deployments[] | {uid: .uid[0:12], state, url, created: .created, sha: .meta.githubCommitSha[0:7]}]' 2>/dev/null
+          echo "$DEPLOYMENTS" | jq '[.deployments[] | {uid: .uid[0:12], state, url, created: .created, sha: (.meta.githubCommitSha // "")[0:7], ref: .meta.githubCommitRef}]' 2>/dev/null
 
-          # Find the previous READY deployment (skip the one matching current SHA)
+          # Previous READY deployment on the same Git ref only (avoid unrelated branch SHAs).
           CURRENT_SHA="${{ github.sha }}"
           ROLLBACK_ID=$(echo "$DEPLOYMENTS" | jq -r \
             --arg sha "$CURRENT_SHA" \
-            '[.deployments[] | select(.state == "READY" and .meta.githubCommitSha != $sha)] | .[0].uid // empty')
+            --arg ref "$REF_NAME" \
+            '[.deployments[] | select(
+              .state == "READY"
+              and (.meta.githubCommitSha // "") != $sha
+              and (.meta.githubCommitRef // "") == $ref
+            )] | .[0].uid // empty')
 
           if [ -z "$ROLLBACK_ID" ]; then
-            echo "❌ No rollback-eligible deployment found for ${{ env.ENV_LABEL }}"
+            echo "❌ No rollback-eligible deployment found for ${{ env.ENV_LABEL }} (ref=${REF_NAME})"
             exit 1
           fi
 
+          echo "skipped=false" >> "$GITHUB_OUTPUT"
           echo "🔄 Rolling back ${{ env.ENV_LABEL }} to deployment: ${ROLLBACK_ID:0:12}..."
 
           TEAM_QS=""
@@ -259,9 +276,15 @@ jobs:
             const sha = '${{ github.sha }}';
             const runUrl = '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}';
             const rollbackOutcome = '${{ steps.rollback.outcome }}' || 'unknown';
-            const rollbackStatus = rollbackOutcome === 'success'
-              ? '✅ Auto-rollback initiated — previous deployment being restored'
-              : '❌ Auto-rollback failed — manual intervention required';
+            const rollbackSkipped = '${{ steps.rollback.outputs.skipped }}' === 'true';
+            let rollbackStatus;
+            if (rollbackSkipped) {
+              rollbackStatus = '⏭️ Auto-rollback skipped (preview branch or token missing) — manual recovery if needed';
+            } else if (rollbackOutcome === 'success') {
+              rollbackStatus = '✅ Auto-rollback initiated — previous deployment being restored';
+            } else {
+              rollbackStatus = '❌ Auto-rollback failed — manual intervention required';
+            }
 
             await github.rest.issues.create({
               owner: context.repo.owner,
