@@ -115,7 +115,18 @@ jobs:
             exit 1
           fi
 
-          echo "✅ ${{ env.SITE_URL }} accessible and serving SPA"
+          # Ensure custom domain serves this push's build (not a stale alias)
+          EXPECTED_SHA="${{ github.sha }}"
+          if ! grep -Fq 'name="aaveapy-deploy-sha"' /tmp/page.html; then
+            echo "❌ Page missing aaveapy-deploy-sha meta — redeploy with current build pipeline"
+            exit 1
+          fi
+          if ! grep -Fq "content=\"${EXPECTED_SHA}\"" /tmp/page.html; then
+            echo "❌ SITE_URL does not expose expected commit ${EXPECTED_SHA:0:7} — domain may still point at an older deployment"
+            exit 1
+          fi
+
+          echo "✅ ${{ env.SITE_URL }} accessible, SPA OK, deploy SHA matches push"
 
       - name: Check API connectivity from frontend
         id: api_check
@@ -228,15 +239,22 @@ jobs:
           echo "$DEPLOYMENTS" | jq '[.deployments[] | {uid: .uid[0:12], state, url, created: .created, sha: (.meta.githubCommitSha // "")[0:7], ref: .meta.githubCommitRef}]' 2>/dev/null
 
           # Previous READY deployment on the same Git ref only (avoid unrelated branch SHAs).
+          # Normalize refs: GitHub exposes github.ref_name as "main" while Vercel meta.githubCommitRef is often "refs/heads/main".
           CURRENT_SHA="${{ github.sha }}"
           ROLLBACK_ID=$(echo "$DEPLOYMENTS" | jq -r \
             --arg sha "$CURRENT_SHA" \
             --arg ref "$REF_NAME" \
-            '[.deployments[] | select(
+            '
+            def norm:
+              if . == "" then ""
+              elif startswith("refs/heads/") then .[11:]
+              else . end;
+            [.deployments[] | select(
               .state == "READY"
               and (.meta.githubCommitSha // "") != $sha
-              and (.meta.githubCommitRef // "") == $ref
-            )] | .[0].uid // empty')
+              and ((.meta.githubCommitRef // "") | norm) == ($ref | norm)
+            )] | .[0].uid // empty
+            ')
 
           if [ -z "$ROLLBACK_ID" ]; then
             echo "❌ No rollback-eligible deployment found for ${{ env.ENV_LABEL }} (ref=${REF_NAME})"
@@ -251,20 +269,33 @@ jobs:
             TEAM_QS="?teamId=${VERCEL_TEAM_ID}"
           fi
 
-          ROLLBACK_RESULT=$(curl -s -X POST \
+          HTTP_CODE=$(curl -sS -o /tmp/rollback.json -w "%{http_code}" -X POST \
             -H "Authorization: Bearer $VERCEL_TOKEN" \
             -H "Content-Type: application/json" \
             "https://api.vercel.com/v1/projects/${VERCEL_PROJECT_ID}/rollback/${ROLLBACK_ID}${TEAM_QS}")
+          ROLLBACK_RESULT=$(cat /tmp/rollback.json)
 
-          # v1/rollback returns 200 with job info on success
+          if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
+            echo "❌ Rollback HTTP ${HTTP_CODE}"
+            echo "$ROLLBACK_RESULT" | jq . 2>/dev/null || echo "$ROLLBACK_RESULT"
+            exit 1
+          fi
+
+          if echo "$ROLLBACK_RESULT" | jq -e '.error' > /dev/null 2>&1; then
+            echo "❌ Rollback API returned an error object"
+            echo "$ROLLBACK_RESULT" | jq . 2>/dev/null || echo "$ROLLBACK_RESULT"
+            exit 1
+          fi
+
+          # v1/rollback returns 2xx with job info on success
           if echo "$ROLLBACK_RESULT" | jq -e '.jobId' > /dev/null 2>&1; then
             echo "✅ Vercel ${{ env.ENV_LABEL }} rollback initiated (jobId: $(echo "$ROLLBACK_RESULT" | jq -r '.jobId'))"
           elif echo "$ROLLBACK_RESULT" | jq -e '.status' > /dev/null 2>&1; then
             echo "✅ Vercel ${{ env.ENV_LABEL }} rollback request accepted"
           else
-            echo "⚠️ Rollback response:"
+            echo "❌ Unrecognized rollback response (no jobId/status) — treating as failure"
             echo "$ROLLBACK_RESULT" | jq . 2>/dev/null || echo "$ROLLBACK_RESULT"
-            # Don't fail — the rollback may still proceed
+            exit 1
           fi
 
       - name: Create rollback notification issue
