@@ -90,7 +90,20 @@ jobs:
           fi
       - name: Install dependencies
         run: npm run ci:lockcheck
-      - name: Run lint
+      # PR: one ESLint pass with Reviewdog annotations (avoids a duplicate workflow + second npm ci).
+      # push / workflow_dispatch: plain eslint (Reviewdog reporter is PR-only).
+      - name: Run ESLint (Reviewdog)
+        if: github.event_name == 'pull_request'
+        uses: reviewdog/action-eslint@556a3fdaf8b4201d4d74d406013386aa4f7dab96 # v1
+        env:
+          REVIEWDOG_VERSION: v0.20.3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          reporter: github-pr-review
+          eslint_flags: '.'
+          fail_level: error
+      - name: Run ESLint
+        if: github.event_name != 'pull_request'
         run: npm run lint
 
   build:

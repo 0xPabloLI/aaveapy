@@ -82,9 +82,17 @@ git rev-parse origin/main "origin/$BRANCH"
 git diff origin/main "origin/$BRANCH"
 ```
 
-Expect same SHA and empty diff. If mismatch and no successful sync workflow, fallback:
+Expect same SHA and empty diff.
+
+**Race with `Sync dev with main` (when `$BRANCH` is `dev`):** After `gh pr merge`, that workflow runs asynchronously (often ~10–20s). A single immediate `fetch` can falsely show `origin/dev` behind `origin/main`. Before fallback:
+
+1. **Poll refs** (preferred, no extra API coupling): up to **15** attempts, **3s** sleep between attempts — each time `git fetch origin main dev`, then compare `origin/main` and `origin/dev`. Stop when SHAs match.
+2. Optionally, if a repo has `.github/workflows/sync-dev-with-main.yml`, **`gh run watch`** on the newest **Sync dev with main** run (from `gh run list --workflow "Sync dev with main" --limit 1 --json databaseId,status`) can be used instead of or after polling; treat `failure` / `cancelled` as automation not having aligned `dev`.
+3. **Fallback** only if still mismatched after polling timeout **or** the sync workflow completed unsuccessfully:
 
 `git push --force-with-lease origin "origin/main:refs/heads/$BRANCH"`
+
+**When `$BRANCH` is not `dev`:** There is no `Sync dev with main` alignment; use a single fetch + compare. (After a **squash** merge, `origin/$BRANCH` and `origin/main` often differ until you reset or delete the head branch — do not force-sync a feature branch to `main` unless that is explicitly intended.)
 
 ### Step 8: Align local `$BRANCH` to remote (required after Step 7)
 
