@@ -14,6 +14,7 @@ _Last inventory pass: 2026-04-03._
 
 - Canonical: `README.md` (project onboarding, scripts, high-level behavior)
 - Canonical: `docs/PR_ANALYSIS.md` (PR batching/automerge policy)
+- Canonical: `AGENTS.md` → **PR review threads: no cosmetic resolve** (merge / `resolveReviewThread` policy); workflow copy: `.claude/commands/merge.md` (keep aligned with `~/.cursor/commands/merge.md`)
 - Canonical: `docs/dependabot-behavior.md` (Dependabot behavior summary + pointers)
 
 ### API, contracts, and CI conventions
