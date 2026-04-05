@@ -3,6 +3,7 @@ import { readFile, writeFile } from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { DEFAULT_STAGING_API_BASE } from './lib/default-api-bases.mjs';
+import { safeUrlForLog } from './lib/fetch-utils.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LOCAL_RESOLVER_PATH = path.join(ROOT, 'src/lib/tokenPriceResolver.ts');
@@ -27,7 +28,7 @@ function getApiBase() {
 async function fetchJson(url) {
   const response = await fetch(url);
   if (!response.ok) {
-    const error = new Error(`Request failed: ${url} (${response.status})`);
+    const error = new Error(`Request failed: ${safeUrlForLog(url)} (${response.status})`);
     error.status = response.status;
     error.url = url;
     throw error;

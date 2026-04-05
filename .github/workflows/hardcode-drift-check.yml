@@ -16,9 +16,6 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     runs-on: ubuntu-latest
-    # Repository variable LIVE_TEST_API_BASE_CI (Settings → Actions → Variables)
-    env:
-      LIVE_TEST_API_BASE_CI: ${{ vars.LIVE_TEST_API_BASE_CI != '' && vars.LIVE_TEST_API_BASE_CI || 'https://staging-api.aaveapy.com/api' }}
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -45,4 +42,7 @@ jobs:
         run: npm run check:chain-icons-upstream
 
       - name: Check CoinGecko platform map drift for market chainIds
+        env:
+          # Repository variable LIVE_TEST_API_BASE_CI (Settings → Actions → Variables); scoped here so checkout logs stay clean.
+          LIVE_TEST_API_BASE_CI: ${{ vars.LIVE_TEST_API_BASE_CI != '' && vars.LIVE_TEST_API_BASE_CI || 'https://staging-api.aaveapy.com/api' }}
         run: npm run check:coingecko-platform-map-upstream
