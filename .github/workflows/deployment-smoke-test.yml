@@ -1,0 +1,286 @@
+# Post-deployment smoke test for Vercel frontend
+# Polls Vercel API until the new deployment for this commit is READY,
+# then checks that critical pages return HTTP 200 with valid HTML.
+# On failure: auto-rollback via Vercel REST API → create GitHub Issue.
+#
+# Required GitHub secrets:
+#   VERCEL_TOKEN          — Vercel API token (Account Settings → Tokens)
+#   VERCEL_PROJECT_ID     — Vercel project ID (Project Settings → General)
+#   VERCEL_TEAM_ID        — Vercel team ID (optional, omit for personal account)
+name: Deployment Smoke Test
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+
+permissions:
+  contents: read
+  issues: write
+
+# Cancel in-progress runs on same branch (only latest push matters)
+concurrency:
+  group: smoke-test-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  smoke-test:
+    runs-on: ubuntu-latest
+    env:
+      # Map branch → site URL and environment target
+      SITE_URL: ${{ github.ref_name == 'main' && 'https://aaveapy.com' || 'https://staging.aaveapy.com' }}
+      ENV_LABEL: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
+      VERCEL_TARGET: ${{ github.ref_name == 'main' && 'production' || 'preview' }}
+
+    steps:
+      - name: Wait for Vercel deployment (poll commit SHA via API)
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "⚠️ VERCEL_TOKEN secret not configured — skipping smoke test"
+            echo "💡 To enable, add these GitHub repo secrets:"
+            echo "   VERCEL_TOKEN, VERCEL_PROJECT_ID"
+            exit 0
+          fi
+
+          EXPECTED_SHA="${{ github.sha }}"
+          MAX_WAIT=600   # 10 minutes
+          INTERVAL=15
+          ELAPSED=0
+          TEAM_PARAM=""
+          if [ -n "$VERCEL_TEAM_ID" ]; then
+            TEAM_PARAM="&teamId=${VERCEL_TEAM_ID}"
+          fi
+
+          echo "⏳ Waiting for ${{ env.ENV_LABEL }} deployment of commit ${EXPECTED_SHA:0:7}..."
+
+          while [ $ELAPSED -lt $MAX_WAIT ]; do
+            RESPONSE=$(curl -s --max-time 15 \
+              -H "Authorization: Bearer $VERCEL_TOKEN" \
+              "https://api.vercel.com/v6/deployments?projectId=${VERCEL_PROJECT_ID}&target=${{ env.VERCEL_TARGET }}&limit=5${TEAM_PARAM}")
+
+            # Find deployment matching our commit SHA
+            DEPLOY_STATE=$(echo "$RESPONSE" | jq -r \
+              --arg sha "$EXPECTED_SHA" \
+              '[.deployments[] | select(.meta.githubCommitSha == $sha)] | .[0].state // empty')
+
+            DEPLOY_URL=$(echo "$RESPONSE" | jq -r \
+              --arg sha "$EXPECTED_SHA" \
+              '[.deployments[] | select(.meta.githubCommitSha == $sha)] | .[0].url // empty')
+
+            DEPLOY_ID=$(echo "$RESPONSE" | jq -r \
+              --arg sha "$EXPECTED_SHA" \
+              '[.deployments[] | select(.meta.githubCommitSha == $sha)] | .[0].uid // empty')
+
+            if [ "$DEPLOY_STATE" = "READY" ]; then
+              echo "✅ Deployment ready after ${ELAPSED}s (SHA: ${EXPECTED_SHA:0:7}, URL: ${DEPLOY_URL})"
+              echo "DEPLOY_ID=${DEPLOY_ID}" >> "$GITHUB_ENV"
+              echo "DEPLOY_URL=${DEPLOY_URL}" >> "$GITHUB_ENV"
+              exit 0
+            elif [ "$DEPLOY_STATE" = "ERROR" ] || [ "$DEPLOY_STATE" = "CANCELED" ]; then
+              echo "❌ Deployment entered $DEPLOY_STATE state for commit ${EXPECTED_SHA:0:7}"
+              exit 1
+            fi
+
+            echo "   ${ELAPSED}s — state: ${DEPLOY_STATE:-(not found yet)}"
+            sleep $INTERVAL
+            ELAPSED=$((ELAPSED + INTERVAL))
+          done
+
+          echo "❌ Timeout: deployment did not become READY within ${MAX_WAIT}s"
+          exit 1
+
+      - name: Check production domain
+        id: site_check
+        run: |
+          echo "🌐 Checking ${{ env.ENV_LABEL }} site (${{ env.SITE_URL }})..."
+          HTTP_CODE=$(curl -s -o /tmp/page.html -w "%{http_code}" \
+            --max-time 30 --retry 3 --retry-delay 10 --retry-all-errors \
+            -L "${{ env.SITE_URL }}")
+
+          echo "HTTP status: $HTTP_CODE"
+
+          if [ "$HTTP_CODE" -ne 200 ]; then
+            echo "❌ ${{ env.SITE_URL }} returned HTTP $HTTP_CODE"
+            exit 1
+          fi
+
+          # Verify it's our SPA (check for root div and module script)
+          if ! grep -q 'id="root"' /tmp/page.html; then
+            echo "❌ Page missing #root element — not our SPA"
+            exit 1
+          fi
+
+          echo "✅ ${{ env.SITE_URL }} accessible and serving SPA"
+
+      - name: Check API connectivity from frontend
+        id: api_check
+        run: |
+          echo "📊 Checking backend API from frontend context..."
+          API_BASE="${{ github.ref_name == 'main' && 'https://api.aaveapy.com' || 'https://staging-api.aaveapy.com' }}"
+
+          HTTP_CODE=$(curl -s -o /tmp/markets.json -w "%{http_code}" \
+            --max-time 60 --retry 3 --retry-delay 30 --retry-all-errors \
+            "${API_BASE}/api/markets")
+
+          echo "HTTP status: $HTTP_CODE"
+
+          if [ "$HTTP_CODE" -ne 200 ]; then
+            echo "⚠️ Backend API returned HTTP $HTTP_CODE (frontend may still work with cached data)"
+          else
+            RESERVE_COUNT=$(jq '.reserves | length' /tmp/markets.json 2>/dev/null || echo "0")
+            echo "Reserve count: $RESERVE_COUNT"
+
+            if [ "$RESERVE_COUNT" -lt 50 ]; then
+              echo "⚠️ Low reserve count ($RESERVE_COUNT), data may be incomplete"
+            else
+              echo "✅ Backend API OK — $RESERVE_COUNT reserves"
+            fi
+          fi
+
+      - name: Check Vercel deployment URL
+        id: deploy_url_check
+        run: |
+          if [ -z "${{ env.DEPLOY_URL }}" ]; then
+            echo "⚠️ No deploy URL available — skipping"
+            exit 0
+          fi
+
+          echo "🔗 Checking Vercel deployment URL (https://${{ env.DEPLOY_URL }})..."
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+            --max-time 30 --retry 2 --retry-delay 10 --retry-all-errors \
+            -L "https://${{ env.DEPLOY_URL }}")
+
+          echo "HTTP status: $HTTP_CODE"
+
+          if [ "$HTTP_CODE" -ne 200 ]; then
+            echo "❌ Deployment URL returned HTTP $HTTP_CODE"
+            exit 1
+          fi
+
+          echo "✅ Deployment URL accessible"
+
+      - name: Summary
+        if: always()
+        run: |
+          echo ""
+          echo "========================================"
+          echo "  Smoke Test Summary (${{ env.ENV_LABEL }})"
+          echo "========================================"
+          echo "  Branch:         ${{ github.ref_name }}"
+          echo "  Commit:         ${{ github.sha }}"
+          echo "  Site URL:       ${{ env.SITE_URL }}"
+          echo "  Deploy URL:     ${{ env.DEPLOY_URL }}"
+          echo "  Deploy ID:      ${{ env.DEPLOY_ID }}"
+          echo "  Site Check:     ${{ steps.site_check.outcome }}"
+          echo "  API Check:      ${{ steps.api_check.outcome }}"
+          echo "  Deploy Check:   ${{ steps.deploy_url_check.outcome }}"
+          echo "========================================"
+
+  # ── Auto-rollback on smoke test failure ──
+  rollback:
+    needs: smoke-test
+    if: failure()
+    runs-on: ubuntu-latest
+    env:
+      ENV_LABEL: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
+      VERCEL_TARGET: ${{ github.ref_name == 'main' && 'production' || 'preview' }}
+    steps:
+      - name: Rollback Vercel deployment
+        id: rollback
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "⚠️ VERCEL_TOKEN not configured — skipping auto-rollback"
+            exit 0
+          fi
+
+          TEAM_PARAM=""
+          if [ -n "$VERCEL_TEAM_ID" ]; then
+            TEAM_PARAM="&teamId=${VERCEL_TEAM_ID}"
+          fi
+
+          echo "🔍 Fetching recent ${{ env.ENV_LABEL }} deployments..."
+
+          DEPLOYMENTS=$(curl -s --max-time 15 \
+            -H "Authorization: Bearer $VERCEL_TOKEN" \
+            "https://api.vercel.com/v6/deployments?projectId=${VERCEL_PROJECT_ID}&target=${{ env.VERCEL_TARGET }}&state=READY&limit=5${TEAM_PARAM}")
+
+          echo "Recent deployments:"
+          echo "$DEPLOYMENTS" | jq '[.deployments[] | {uid: .uid[0:12], state, url, created: .created, sha: .meta.githubCommitSha[0:7]}]' 2>/dev/null
+
+          # Find the previous READY deployment (skip the one matching current SHA)
+          CURRENT_SHA="${{ github.sha }}"
+          ROLLBACK_ID=$(echo "$DEPLOYMENTS" | jq -r \
+            --arg sha "$CURRENT_SHA" \
+            '[.deployments[] | select(.state == "READY" and .meta.githubCommitSha != $sha)] | .[0].uid // empty')
+
+          if [ -z "$ROLLBACK_ID" ]; then
+            echo "❌ No rollback-eligible deployment found for ${{ env.ENV_LABEL }}"
+            exit 1
+          fi
+
+          echo "🔄 Rolling back ${{ env.ENV_LABEL }} to deployment: ${ROLLBACK_ID:0:12}..."
+
+          TEAM_QS=""
+          if [ -n "$VERCEL_TEAM_ID" ]; then
+            TEAM_QS="?teamId=${VERCEL_TEAM_ID}"
+          fi
+
+          ROLLBACK_RESULT=$(curl -s -X POST \
+            -H "Authorization: Bearer $VERCEL_TOKEN" \
+            -H "Content-Type: application/json" \
+            "https://api.vercel.com/v1/projects/${VERCEL_PROJECT_ID}/rollback/${ROLLBACK_ID}${TEAM_QS}")
+
+          # v1/rollback returns 200 with job info on success
+          if echo "$ROLLBACK_RESULT" | jq -e '.jobId' > /dev/null 2>&1; then
+            echo "✅ Vercel ${{ env.ENV_LABEL }} rollback initiated (jobId: $(echo "$ROLLBACK_RESULT" | jq -r '.jobId'))"
+          elif echo "$ROLLBACK_RESULT" | jq -e '.status' > /dev/null 2>&1; then
+            echo "✅ Vercel ${{ env.ENV_LABEL }} rollback request accepted"
+          else
+            echo "⚠️ Rollback response:"
+            echo "$ROLLBACK_RESULT" | jq . 2>/dev/null || echo "$ROLLBACK_RESULT"
+            # Don't fail — the rollback may still proceed
+          fi
+
+      - name: Create rollback notification issue
+        if: always()
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7
+        with:
+          script: |
+            const env = '${{ env.ENV_LABEL }}';
+            const sha = '${{ github.sha }}';
+            const runUrl = '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}';
+            const rollbackOutcome = '${{ steps.rollback.outcome }}' || 'unknown';
+            const rollbackStatus = rollbackOutcome === 'success'
+              ? '✅ Auto-rollback initiated — previous deployment being restored'
+              : '❌ Auto-rollback failed — manual intervention required';
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🚨 ${env} smoke test failed — deployment rolled back`,
+              body: [
+                `## Smoke Test Failure (${env})`,
+                '',
+                `| Field | Value |`,
+                `|-------|-------|`,
+                `| Environment | **${env}** |`,
+                `| Commit | \`${sha.slice(0, 7)}\` |`,
+                `| Rollback | ${rollbackStatus} |`,
+                `| Workflow Run | [View logs](${runUrl}) |`,
+                '',
+                'Check the workflow logs for details on which check failed.',
+                '',
+                '> **Note:** After rollback, Vercel disables auto-assignment of production domains.',
+                '> Push a fix and then run `vercel promote` or re-enable auto-assign in project settings.',
+              ].join('\n'),
+              labels: ['smoke-test-failure'],
+            });
