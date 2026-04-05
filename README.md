@@ -84,6 +84,10 @@ Canonical source: [`docs/frontend-data-loading-matrix.md`](docs/frontend-data-lo
 
 Docs ownership index: [`docs/DOCS-INDEX.md`](docs/DOCS-INDEX.md).
 
+PR batching and automerge conventions: [`docs/PR_ANALYSIS.md`](docs/PR_ANALYSIS.md). Merge hygiene, `/merge`, and review-thread rules: [`AGENTS.md`](AGENTS.md) (see Commit & Pull Request Guidelines).
+
+Vercel post-deploy smoke test, deploy SHA meta tag, and rollback behavior: [`docs/conventions/vercel-deployment-smoke-test.md`](docs/conventions/vercel-deployment-smoke-test.md).
+
 Quick rule:
 - Keep one snapshot source per UI state.
 - Prefer endpoint-level TTL and centralized stale-time buckets.

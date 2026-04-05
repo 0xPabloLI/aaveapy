@@ -8,6 +8,25 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const reactRoot = path.resolve(__dirname, "node_modules/react");
 const reactDomRoot = path.resolve(__dirname, "node_modules/react-dom");
 
+/** Embed git SHA in index.html for deploy smoke tests (Vercel / GitHub Actions). */
+function deployShaMetaPlugin() {
+  const sha =
+    process.env.VERCEL_GIT_COMMIT_SHA ||
+    process.env.GITHUB_SHA ||
+    process.env.CF_PAGES_COMMIT_SHA ||
+    "";
+  return {
+    name: "deploy-sha-meta",
+    transformIndexHtml(html: string) {
+      if (!sha) return html;
+      return html.replace(
+        "</head>",
+        `    <meta name="aaveapy-deploy-sha" content="${sha}" />\n  </head>`,
+      );
+    },
+  };
+}
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   base: '/',
@@ -19,7 +38,11 @@ export default defineConfig(({ mode }) => ({
     host: true,
     port: Number(process.env.PORT) || 4173,
   },
-  plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
+  plugins: [
+    react(),
+    deployShaMetaPlugin(),
+    mode === "development" && componentTagger(),
+  ].filter(Boolean),
   optimizeDeps: {
     include: ["react", "react-dom", "react/jsx-runtime", "react/jsx-dev-runtime"],
   },

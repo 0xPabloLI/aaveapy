@@ -6,7 +6,7 @@ Use it to avoid duplicate policy text and to keep each topic in one canonical lo
 
 **Entry points:** [`README.md`](../README.md) (onboarding), root [`DESIGN.md`](../DESIGN.md) (design links table), this file (full map).
 
-_Last inventory pass: 2026-04-03._
+_Last inventory pass: 2026-04-05._
 
 ## Canonical Structure
 
@@ -14,12 +14,14 @@ _Last inventory pass: 2026-04-03._
 
 - Canonical: `README.md` (project onboarding, scripts, high-level behavior)
 - Canonical: `docs/PR_ANALYSIS.md` (PR batching/automerge policy)
+- Canonical: `AGENTS.md` → **PR review threads: no cosmetic resolve** (merge / `resolveReviewThread` policy); workflow copy: `.claude/commands/merge.md` (keep aligned with `~/.cursor/commands/merge.md`)
 - Canonical: `docs/dependabot-behavior.md` (Dependabot behavior summary + pointers)
 
 ### API, contracts, and CI conventions
 
 - Canonical: `docs/conventions/api-contract-checklist.md`
 - Canonical: `docs/conventions/api-base-urls.md`
+- Canonical: `docs/conventions/vercel-deployment-smoke-test.md` (post-deploy smoke + rollback; ref normalization vs Vercel metadata)
 - Canonical: `docs/conventions/ci-live-schema-cloudflare.md`
 - Canonical: `docs/conventions/peer-dependency-guard.md`
 - Canonical: `docs/conventions/merge-summary.md`
@@ -49,7 +51,7 @@ _Last inventory pass: 2026-04-03._
 | Document | Purpose / audience | Last meaningful update | Canonicality | Overlap candidates | Action |
 | --- | --- | --- | --- | --- | --- |
 | `README.md` | Project onboarding and scripts | 2026-03-31 | Canonical | `docs/frontend-data-loading-matrix.md`, `docs/rate-calculation-formulas.md` | keep |
-| `docs/PR_ANALYSIS.md` | PR/merge policy | 2026-03-31 | Canonical | `docs/dependabot-behavior.md` | keep |
+| `docs/PR_ANALYSIS.md` | PR batching / automerge / when to split PRs | 2026-04-05 | Canonical | `docs/dependabot-behavior.md`; merge execution + review-thread rules live in `AGENTS.md` / `.claude/commands/merge.md` | keep |
 | `docs/dependabot-behavior.md` | Dependabot summary | 2026-03-31 | Derivative pointer | `.github/dependabot.yml`, `docs/PR_ANALYSIS.md` | keep |
 | `docs/frontend-data-loading-matrix.md` | Data-loading architecture | 2026-03-27 | Canonical | `README.md` freshness notes | keep |
 | `docs/rate-calculation-formulas.md` | Simulation formulas and cap semantics | 2026-03-28 | Canonical | `docs/plans/2026-03-26-cap-ceiling-unification-plan.md`, `docs/merit-base-anchor-vs-last-round-staging.md` | keep |
@@ -62,7 +64,8 @@ _Last inventory pass: 2026-04-03._
 | `docs/design/frontend-interaction-guardrails.md` | Product-critical normative interaction rules | 2026-03-31 | Canonical | parts of design docs | keep |
 | `docs/design/mobile-reserve-card-ascii-layout.md` | Mobile reserve card ASCII reference | 2026-03-16 | Canonical | appendix references in DSR | keep |
 | `docs/design/ui-interaction-patterns.md`, `toggle-switch-specification.md`, `README.md` | Legacy paths / short pointers (do not expand) | 2026-03-27 | Redirect stubs | `docs/design/DESIGN-SYSTEM-REFERENCE.md`, root `DESIGN.md`, `docs/design/DESIGN.md` | keep |
-| `docs/conventions/*` | API/CI/process conventions | 2026-03-16..2026-03-29 | Canonical set | small references in README/AGENTS | keep |
+| `docs/conventions/vercel-deployment-smoke-test.md` | Vercel smoke test workflow, deploy SHA meta, rollback ref rules | 2026-04-05 | Canonical | `.github/workflows/deployment-smoke-test.yml` | keep |
+| `docs/conventions/*` | API/CI/process conventions | 2026-03-16..2026-04-05 | Canonical set | small references in README/AGENTS | keep |
 
 ## Redirect Rule
 
