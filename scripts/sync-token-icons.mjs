@@ -19,6 +19,7 @@
  *   LIVE_TEST_API_BASE_CI / VITE_API_BASE_URL — /markets base resolution (same order as sync-coingecko-platform-map.mjs;
  *     see docs/conventions/api-base-urls.md). Default list ends with staging then production.
  *   SYNC_TOKEN_ICONS_MARKETS_API — comma-separated full /markets URLs; if set, those URLs are tried first, then staging.
+ *   SYNC_TOKEN_ICONS_DEBUG_URLS=1 — log every /markets retry and append origin+path (still omits query); default logs only the last failed attempt per endpoint.
  */
 
 import fs from 'fs';
@@ -29,6 +30,7 @@ import {
   DEFAULT_PRODUCTION_API_BASE,
   DEFAULT_STAGING_API_BASE,
 } from './lib/default-api-bases.mjs';
+import { safeUrlForLog } from './lib/fetch-utils.mjs';
 import {
   collectRequiredIconSymbols,
   collectIconSymbolLogoHints,
@@ -92,6 +94,20 @@ function getMarketsUrlsToTry() {
     return fromEnv;
   }
   return getDefaultMarketsUrls();
+}
+
+/** Short label for logs — avoids printing full custom/Railway URLs in CI. */
+function labelMarketsEndpoint(url, urlIndex) {
+  const fromCi = marketsUrlFromBase(process.env.LIVE_TEST_API_BASE_CI);
+  const fromVite = marketsUrlFromBase(process.env.VITE_API_BASE_URL);
+  if (fromCi && url === fromCi) return 'LIVE_TEST_API_BASE_CI';
+  if (fromVite && url === fromVite) return 'VITE_API_BASE_URL';
+  if (url === `${DEFAULT_STAGING_API_BASE}/markets`) return 'staging (default fallback)';
+  if (url === `${DEFAULT_PRODUCTION_API_BASE}/markets`) return 'production (default fallback)';
+  if (process.env.SYNC_TOKEN_ICONS_MARKETS_API?.trim()) {
+    return `SYNC_TOKEN_ICONS_MARKETS_API[${urlIndex}]`;
+  }
+  return `custom[${urlIndex}]`;
 }
 
 function sleep(ms) {
@@ -173,17 +189,25 @@ async function fetchMarketsFromUrl(url) {
 async function loadMarketsRows() {
   const urls = getMarketsUrlsToTry();
 
-  for (const url of urls) {
+  for (let urlIndex = 0; urlIndex < urls.length; urlIndex++) {
+    const url = urls[urlIndex];
+    const label = labelMarketsEndpoint(url, urlIndex);
     for (let attempt = 1; attempt <= MARKETS_RETRY_COUNT; attempt++) {
       try {
         const rows = await fetchMarketsFromUrl(url);
-        if (attempt > 1 || urls.indexOf(url) > 0) {
-          console.log(`markets API OK: ${url} (attempt ${attempt})`);
+        if (attempt > 1 || urlIndex > 0) {
+          console.log(`markets API OK: ${label} (${urlIndex + 1}/${urls.length}, attempt ${attempt})`);
         }
         return { rows, unavailable: false };
       } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
-        console.warn(`markets API ${url} attempt ${attempt}/${MARKETS_RETRY_COUNT} failed: ${msg}`);
+        const debugUrls = process.env.SYNC_TOKEN_ICONS_DEBUG_URLS === '1';
+        if (debugUrls || attempt === MARKETS_RETRY_COUNT) {
+          const where = debugUrls ? ` ${safeUrlForLog(url)}` : '';
+          console.warn(
+            `markets API ${label}${where} (${urlIndex + 1}/${urls.length}) attempt ${attempt}/${MARKETS_RETRY_COUNT} failed: ${msg}`
+          );
+        }
         if (attempt < MARKETS_RETRY_COUNT) {
           await sleep(MARKETS_RETRY_DELAY_MS);
         }
@@ -191,7 +215,7 @@ async function loadMarketsRows() {
     }
   }
 
-  throw new Error('all markets API endpoints exhausted');
+  throw new Error(`all markets API endpoints exhausted (tried ${urls.length} base(s))`);
 }
 
 async function getMissingSymbols() {

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { DEFAULT_STAGING_API_BASE } from './lib/default-api-bases.mjs';
+import { safeUrlForLog } from './lib/fetch-utils.mjs';
 
 /**
  * Probe staging/live API from CI before running apiSchemas.live.test.ts.
@@ -26,6 +27,7 @@ function isLikelyCloudflareChallenge(snippet) {
 
 const base = (process.env.LIVE_TEST_API_BASE || DEFAULT_BASE).replace(/\/$/, '');
 const url = `${base}/markets`;
+const urlForLog = safeUrlForLog(url);
 
 async function main() {
   let res;
@@ -42,12 +44,12 @@ async function main() {
   const snippet = text.slice(0, 800);
 
   if (res.status === 403 && isLikelyCloudflareChallenge(snippet)) {
-    console.error('probe-live-api: Cloudflare challenge (403), url:', url);
+    console.error('probe-live-api: Cloudflare challenge (403), endpoint:', urlForLog);
     process.exit(2);
   }
 
   if (!res.ok) {
-    console.error(`probe-live-api: HTTP ${res.status} ${res.statusText}, url:`, url);
+    console.error(`probe-live-api: HTTP ${res.status} ${res.statusText}, endpoint:`, urlForLog);
     console.error(snippet.slice(0, 300));
     process.exit(1);
   }

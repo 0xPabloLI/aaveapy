@@ -27,6 +27,9 @@ jobs:
 
       - name: Run reviewdog on ESLint
         uses: reviewdog/action-eslint@556a3fdaf8b4201d4d74d406013386aa4f7dab96 # v1
+        env:
+          # action default v0.21.0 intermittently fails install on runners; pin known-good binary
+          REVIEWDOG_VERSION: v0.20.3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           reporter: github-pr-review

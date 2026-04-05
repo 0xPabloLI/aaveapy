@@ -3,6 +3,21 @@
  */
 
 /**
+ * Origin + pathname only (no query/hash) so logs and Error messages do not leak URL tokens.
+ * @param {string} url
+ * @returns {string}
+ */
+export function safeUrlForLog(url) {
+  if (typeof url !== 'string' || !url.trim()) return '(no url)';
+  try {
+    const u = new URL(url);
+    return `${u.origin}${u.pathname || '/'}`;
+  } catch {
+    return '(unparseable url)';
+  }
+}
+
+/**
  * Fetch a URL with an AbortController-based timeout.
  * @param {string} url
  * @param {number} timeoutMs
