@@ -27,9 +27,13 @@ jobs:
   peer-dep-check:
     name: peer-dep-check
     runs-on: ubuntu-latest
+    env:
+      CI_REF: ${{ github.event.pull_request.head.sha || github.event.inputs.target_ref || github.sha }}
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ env.CI_REF }}
       - name: Setup Node
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
@@ -52,11 +56,15 @@ jobs:
   socket-firewall:
     name: socket-firewall
     runs-on: ubuntu-latest
+    env:
+      CI_REF: ${{ github.event.pull_request.head.sha || github.event.inputs.target_ref || github.sha }}
     steps:
       - name: Checkout
-        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ env.CI_REF }}
       - name: Setup Node
-        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: "22"
           cache: npm
@@ -138,9 +146,13 @@ jobs:
     name: live-schema-validation
     if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
+    env:
+      CI_REF: ${{ github.event.pull_request.head.sha || github.event.inputs.target_ref || github.sha }}
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ env.CI_REF }}
       - name: Setup Node
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
@@ -157,9 +169,13 @@ jobs:
   security-audit:
     name: security-audit
     runs-on: ubuntu-latest
+    env:
+      CI_REF: ${{ github.event.pull_request.head.sha || github.event.inputs.target_ref || github.sha }}
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ env.CI_REF }}
       - name: Setup Node
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
