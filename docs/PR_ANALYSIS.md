@@ -5,6 +5,8 @@
 > Status: **Active policy document** for PR batching/merge decisions in this repository.
 > Historical examples in this file are illustrative; operational rules above them are canonical.
 
+**Scope split:** This file is canonical for **when to batch PRs**, **automerge labeling**, and **independent vs combined PRs**. For **GitHub merge execution** (`/merge`), **`dev`/`main` tip alignment after merge**, and **forbidden cosmetic resolution of PR review threads** (`resolveReviewThread` / bulk Resolve without fixes), see root **`AGENTS.md`** (Commit & Pull Request Guidelines) and **`.claude/commands/merge.md`** (keep aligned with `~/.cursor/commands/merge.md`). Doc map: **`docs/DOCS-INDEX.md`**.
+
 ---
 
 ## Breaking Changes 判定
