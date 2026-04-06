@@ -188,6 +188,29 @@ const DesktopReserveRow = memo(({
       >
         {/* Token — 右侧留白更小 */}
         <TableCell className="pl-[var(--ds-space-3)] pr-[var(--ds-space-1)] ds-row-pad whitespace-nowrap text-center">
+          <div className="inline-flex items-center justify-center gap-[var(--ds-space-2)]">
+          {isPortfolioMode && onPortfolioToggle && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onPortfolioToggle(reserveId, reserve);
+              }}
+              className={cn(
+                'flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-all duration-150',
+                isInPortfolio
+                  ? 'bg-primary/15 border-primary/40 text-primary'
+                  : 'border-border/60 text-muted-foreground/40 hover:border-primary/40 hover:text-primary/60',
+              )}
+              aria-label={isInPortfolio ? `Remove ${reserve.tokenSymbol} from portfolio` : `Add ${reserve.tokenSymbol} to portfolio`}
+            >
+              {isInPortfolio ? (
+                <span className="ds-text-11 font-bold leading-none">✓</span>
+              ) : (
+                <Plus className="h-3 w-3" />
+              )}
+            </button>
+          )}
           <a
             href={aaveUrl}
             target="_blank"
