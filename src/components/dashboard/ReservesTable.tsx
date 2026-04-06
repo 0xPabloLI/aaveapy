@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback, memo, useRef } from 'react';
+import { useState, useMemo, useEffect, useCallback, memo, useRef, lazy, Suspense } from 'react';
 
 import { createPortal } from 'react-dom';
 import { ArrowUp, ArrowDown, ChevronDown, ChevronUp } from 'lucide-react';
