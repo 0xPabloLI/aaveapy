@@ -1,19 +1,21 @@
 /**
  * PortfolioPanel — portfolio management panel with token search,
- * position list, summary card, and results table.
+ * position list, summary card, results table, and snapshot comparison.
  */
-import { useState, useMemo, memo, useCallback } from 'react';
-import { Search, Plus, X, Layers, Trash2 } from 'lucide-react';
+import { useState, useMemo, memo, useCallback, lazy, Suspense } from 'react';
+import { Search, Plus, X, Layers, Trash2, Save, ArrowRightLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { ReserveWithSpread } from '@/types/aave';
-import type { PortfolioPosition, PortfolioInputMode, PortfolioSide, PortfolioPositionResult, PortfolioSummary } from '@/types/portfolio';
+import type { PortfolioPosition, PortfolioInputMode, PortfolioSide, PortfolioPositionResult, PortfolioSummary, PortfolioSnapshot } from '@/types/portfolio';
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
 import { normalizeTokenSymbolForSearch } from '@/lib/tokenSymbolNormalization';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import PortfolioPositionRow from './PortfolioPositionRow';
 import PortfolioSummaryCard from './PortfolioSummaryCard';
 import PortfolioResultsTable from './PortfolioResultsTable';
+
+const PortfolioCompareView = lazy(() => import('./PortfolioCompareView'));
 
 interface PortfolioPanelProps {
   positions: PortfolioPosition[];
@@ -23,6 +25,8 @@ interface PortfolioPanelProps {
   positionResults?: PortfolioPositionResult[];
   /** Aggregated portfolio summary (computed externally). */
   summary?: PortfolioSummary;
+  /** Saved snapshots. */
+  snapshots?: PortfolioSnapshot[];
 }
 
 /** Search result row with quick add buttons. */
@@ -88,16 +92,70 @@ function SearchResultRow({
   );
 }
 
+/** Snapshot list item with compare / delete actions. */
+const SnapshotItem = memo(function SnapshotItem({
+  snapshot,
+  isSelectedForCompare,
+  onToggleCompare,
+  onDelete,
+}: {
+  snapshot: PortfolioSnapshot;
+  isSelectedForCompare: boolean;
+  onToggleCompare: (id: string) => void;
+  onDelete: (id: string) => void;
+}) {
+  const date = new Date(snapshot.createdAt);
+  const timeStr = `${date.getMonth() + 1}/${date.getDate()} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+
+  return (
+    <div className={cn(
+      'flex items-center gap-2 rounded-lg px-2.5 py-1.5 border transition-colors',
+      isSelectedForCompare ? 'border-primary/40 bg-primary/5' : 'border-border/30 hover:bg-muted/40',
+    )}>
+      <button
+        type="button"
+        onClick={() => onToggleCompare(snapshot.id)}
+        className={cn(
+          'size-4 rounded border flex items-center justify-center transition-colors shrink-0',
+          isSelectedForCompare
+            ? 'border-primary bg-primary text-primary-foreground'
+            : 'border-border/60 hover:border-primary/40',
+        )}
+        aria-label={`${isSelectedForCompare ? 'Deselect' : 'Select'} ${snapshot.label} for comparison`}
+      >
+        {isSelectedForCompare && <span className="ds-text-10 font-bold">✓</span>}
+      </button>
+      <div className="flex-1 min-w-0">
+        <span className="ds-text-11 font-semibold text-foreground truncate block">{snapshot.label}</span>
+        <span className="ds-text-10 text-muted-foreground">{timeStr} · {snapshot.positions.length} positions</span>
+      </div>
+      <button
+        type="button"
+        onClick={() => onDelete(snapshot.id)}
+        className="rounded p-1 text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-colors"
+        aria-label={`Delete snapshot ${snapshot.label}`}
+      >
+        <X className="size-3" aria-hidden />
+      </button>
+    </div>
+  );
+});
+
 const PortfolioPanel = memo(function PortfolioPanel({
   positions,
   actions,
   reserves,
   positionResults,
   summary,
+  snapshots = [],
 }: PortfolioPanelProps) {
   const isMobile = useIsMobile();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
+  const [snapshotName, setSnapshotName] = useState('');
+  const [showSaveInput, setShowSaveInput] = useState(false);
+  const [compareIds, setCompareIds] = useState<string[]>([]);
+  const [showCompare, setShowCompare] = useState(false);
 
   const filteredReserves = useMemo(() => {
     if (!searchQuery.trim()) return [];
@@ -129,160 +187,276 @@ const PortfolioPanel = memo(function PortfolioPanel({
     [reserves, actions],
   );
 
+  const handleSaveSnapshot = useCallback(() => {
+    const label = snapshotName.trim() || `Snapshot ${snapshots.length + 1}`;
+    actions.saveSnapshot(label);
+    setSnapshotName('');
+    setShowSaveInput(false);
+  }, [snapshotName, snapshots.length, actions]);
+
+  const handleToggleCompare = useCallback((id: string) => {
+    setCompareIds((prev) => {
+      if (prev.includes(id)) return prev.filter((x) => x !== id);
+      if (prev.length >= 2) return [prev[1], id];
+      return [...prev, id];
+    });
+  }, []);
+
+  const canCompare = compareIds.length === 2;
+  const compareSnapshots = useMemo(() => {
+    if (!canCompare) return null;
+    const a = snapshots.find((s) => s.id === compareIds[0]);
+    const b = snapshots.find((s) => s.id === compareIds[1]);
+    if (!a || !b) return null;
+    return { a, b };
+  }, [canCompare, compareIds, snapshots]);
+
   const supplyPositions = positions.filter((p) => p.side === 'supply');
   const borrowPositions = positions.filter((p) => p.side === 'borrow');
 
   return (
-    <div
-      className={cn(
-        'rounded-xl border border-border/60 bg-card/80 backdrop-blur-sm',
-        isMobile ? 'px-2.5 py-2.5' : 'px-4 py-3',
-      )}
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between mb-2.5">
-        <div className="flex items-center gap-2">
-          <Layers className="size-4 text-primary" aria-hidden />
-          <span className="ds-text-14 font-semibold text-foreground">
-            Portfolio
-          </span>
-          {positions.length > 0 && (
-            <span className="rounded-full bg-primary/10 px-1.5 py-0.5 ds-text-10 font-bold tabular-nums text-primary">
-              {positions.length}
+    <div className="space-y-3">
+      <div
+        className={cn(
+          'rounded-xl border border-border/60 bg-card/80 backdrop-blur-sm',
+          isMobile ? 'px-2.5 py-2.5' : 'px-4 py-3',
+        )}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between mb-2.5">
+          <div className="flex items-center gap-2">
+            <Layers className="size-4 text-primary" aria-hidden />
+            <span className="ds-text-14 font-semibold text-foreground">
+              Portfolio
             </span>
-          )}
-        </div>
-        <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            onClick={() => setSearchOpen((p) => !p)}
-            className={cn(
-              'rounded-md p-1.5 transition-colors',
-              searchOpen
-                ? 'bg-muted text-foreground'
-                : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground',
+            {positions.length > 0 && (
+              <span className="rounded-full bg-primary/10 px-1.5 py-0.5 ds-text-10 font-bold tabular-nums text-primary">
+                {positions.length}
+              </span>
             )}
-            aria-label={searchOpen ? 'Close search' : 'Search tokens'}
-          >
-            {searchOpen ? (
-              <X className="size-3.5" aria-hidden />
-            ) : (
-              <Search className="size-3.5" aria-hidden />
+          </div>
+          <div className="flex items-center gap-1.5">
+            {/* Save snapshot */}
+            {positions.length > 0 && summary && (
+              <button
+                type="button"
+                onClick={() => setShowSaveInput((p) => !p)}
+                className={cn(
+                  'rounded-md p-1.5 transition-colors',
+                  showSaveInput
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground',
+                )}
+                aria-label="Save snapshot"
+              >
+                <Save className="size-3.5" aria-hidden />
+              </button>
             )}
-          </button>
-          {positions.length > 0 && (
             <button
               type="button"
-              onClick={() => actions.clearAll()}
-              className="rounded-md p-1.5 text-muted-foreground/60 transition-colors hover:bg-destructive/10 hover:text-destructive"
-              aria-label="Clear all positions"
+              onClick={() => setSearchOpen((p) => !p)}
+              className={cn(
+                'rounded-md p-1.5 transition-colors',
+                searchOpen
+                  ? 'bg-muted text-foreground'
+                  : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground',
+              )}
+              aria-label={searchOpen ? 'Close search' : 'Search tokens'}
             >
-              <Trash2 className="size-3.5" aria-hidden />
+              {searchOpen ? (
+                <X className="size-3.5" aria-hidden />
+              ) : (
+                <Search className="size-3.5" aria-hidden />
+              )}
             </button>
-          )}
+            {positions.length > 0 && (
+              <button
+                type="button"
+                onClick={() => actions.clearAll()}
+                className="rounded-md p-1.5 text-muted-foreground/60 transition-colors hover:bg-destructive/10 hover:text-destructive"
+                aria-label="Clear all positions"
+              >
+                <Trash2 className="size-3.5" aria-hidden />
+              </button>
+            )}
+          </div>
         </div>
+
+        {/* Save snapshot input */}
+        {showSaveInput && (
+          <div className="flex items-center gap-2 mb-2.5">
+            <input
+              value={snapshotName}
+              onChange={(e) => setSnapshotName(e.target.value)}
+              placeholder={`Snapshot ${snapshots.length + 1}`}
+              autoFocus
+              onKeyDown={(e) => e.key === 'Enter' && handleSaveSnapshot()}
+              className={cn(
+                'h-7 flex-1 rounded-lg border border-border/50 bg-muted/40 px-2.5 ds-text-11 text-foreground placeholder:text-muted-foreground/50',
+                'focus:border-primary/40 focus:outline-none focus:ring-1 focus:ring-primary/20',
+              )}
+              aria-label="Snapshot name"
+            />
+            <button
+              type="button"
+              onClick={handleSaveSnapshot}
+              className="rounded-lg bg-primary/10 px-3 py-1 ds-text-11 font-semibold text-primary hover:bg-primary/20 transition-colors"
+            >
+              Save
+            </button>
+          </div>
+        )}
+
+        {/* Search */}
+        {searchOpen && (
+          <div className="mb-2.5">
+            <input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search token…"
+              autoFocus
+              className={cn(
+                'h-8 w-full rounded-lg border border-border/50 bg-muted/40 px-3 ds-text-12 text-foreground placeholder:text-muted-foreground/50 placeholder:italic',
+                'focus:border-primary/40 focus:outline-none focus:ring-1 focus:ring-primary/20',
+              )}
+              aria-label="Search tokens to add"
+            />
+            {filteredReserves.length > 0 && (
+              <div className="mt-1.5 max-h-[200px] overflow-y-auto rounded-lg border border-border/40 bg-card py-1">
+                {filteredReserves.map((r) => (
+                  <SearchResultRow
+                    key={`${r.marketName}-${r.tokenAddress}`}
+                    reserve={r}
+                    onAdd={handleAddFromSearch}
+                    existingPositions={positions}
+                  />
+                ))}
+              </div>
+            )}
+            {searchQuery.trim() && filteredReserves.length === 0 && (
+              <p className="mt-1.5 px-2 ds-text-11 text-muted-foreground italic">
+                No tokens found
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Position list */}
+        {positions.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-6 text-center">
+            <p className="ds-text-12 text-muted-foreground">
+              No positions yet
+            </p>
+            <p className="ds-text-11 text-muted-foreground/60 mt-1">
+              Use the search above to add tokens
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {/* Supply section */}
+            {supplyPositions.length > 0 && (
+              <div className="space-y-1.5">
+                <span className="ds-text-10 font-semibold uppercase tracking-wide ds-text-emerald-600">
+                  Supply ({supplyPositions.length})
+                </span>
+                <div className="space-y-1">
+                  {supplyPositions.map((p) => (
+                    <PortfolioPositionRow
+                      key={p.positionId}
+                      position={p}
+                      onRemove={actions.removePosition}
+                      onUpdateAmount={actions.updateAmount}
+                      onUpdateInputMode={actions.updateInputMode}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Borrow section */}
+            {borrowPositions.length > 0 && (
+              <div className="space-y-1.5">
+                <span className="ds-text-10 font-semibold uppercase tracking-wide ds-text-brand-cyan">
+                  Borrow ({borrowPositions.length})
+                </span>
+                <div className="space-y-1">
+                  {borrowPositions.map((p) => (
+                    <PortfolioPositionRow
+                      key={p.positionId}
+                      position={p}
+                      onRemove={actions.removePosition}
+                      onUpdateAmount={actions.updateAmount}
+                      onUpdateInputMode={actions.updateInputMode}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Summary card */}
+        {summary && positions.length > 0 && (
+          <div className="mt-3">
+            <PortfolioSummaryCard summary={summary} />
+          </div>
+        )}
+
+        {/* Per-token results table */}
+        {positionResults && positionResults.length > 0 && (
+          <div className="mt-2.5">
+            <PortfolioResultsTable positions={positions} results={positionResults} />
+          </div>
+        )}
       </div>
 
-      {/* Search */}
-      {searchOpen && (
-        <div className="mb-2.5">
-          <input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search token…"
-            autoFocus
-            className={cn(
-              'h-8 w-full rounded-lg border border-border/50 bg-muted/40 px-3 ds-text-12 text-foreground placeholder:text-muted-foreground/50 placeholder:italic',
-              'focus:border-primary/40 focus:outline-none focus:ring-1 focus:ring-primary/20',
+      {/* Saved Snapshots */}
+      {snapshots.length > 0 && (
+        <div className={cn(
+          'rounded-xl border border-border/60 bg-card/80 backdrop-blur-sm',
+          isMobile ? 'px-2.5 py-2.5' : 'px-4 py-3',
+        )}>
+          <div className="flex items-center justify-between mb-2">
+            <span className="ds-text-12 font-semibold text-foreground">
+              Saved Snapshots ({snapshots.length})
+            </span>
+            {canCompare && (
+              <button
+                type="button"
+                onClick={() => setShowCompare(true)}
+                className="flex items-center gap-1 rounded-lg bg-primary/10 px-2.5 py-1 ds-text-11 font-semibold text-primary hover:bg-primary/20 transition-colors"
+              >
+                <ArrowRightLeft className="size-3" aria-hidden />
+                Compare
+              </button>
             )}
-            aria-label="Search tokens to add"
+          </div>
+          <p className="ds-text-10 text-muted-foreground mb-2">
+            Select 2 snapshots to compare
+          </p>
+          <div className="space-y-1.5">
+            {snapshots.map((s) => (
+              <SnapshotItem
+                key={s.id}
+                snapshot={s}
+                isSelectedForCompare={compareIds.includes(s.id)}
+                onToggleCompare={handleToggleCompare}
+                onDelete={actions.deleteSnapshot}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Compare view */}
+      {showCompare && compareSnapshots && (
+        <Suspense fallback={<div className="h-20 rounded-xl bg-muted/50 animate-pulse" />}>
+          <PortfolioCompareView
+            snapshotA={compareSnapshots.a}
+            snapshotB={compareSnapshots.b}
+            onClose={() => setShowCompare(false)}
           />
-          {filteredReserves.length > 0 && (
-            <div className="mt-1.5 max-h-[200px] overflow-y-auto rounded-lg border border-border/40 bg-card py-1">
-              {filteredReserves.map((r) => (
-                <SearchResultRow
-                  key={`${r.marketName}-${r.tokenAddress}`}
-                  reserve={r}
-                  onAdd={handleAddFromSearch}
-                  existingPositions={positions}
-                />
-              ))}
-            </div>
-          )}
-          {searchQuery.trim() && filteredReserves.length === 0 && (
-            <p className="mt-1.5 px-2 ds-text-11 text-muted-foreground italic">
-              No tokens found
-            </p>
-          )}
-        </div>
-      )}
-
-      {/* Position list */}
-      {positions.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-6 text-center">
-          <p className="ds-text-12 text-muted-foreground">
-            No positions yet
-          </p>
-          <p className="ds-text-11 text-muted-foreground/60 mt-1">
-            Use the search above to add tokens
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {/* Supply section */}
-          {supplyPositions.length > 0 && (
-            <div className="space-y-1.5">
-              <span className="ds-text-10 font-semibold uppercase tracking-wide ds-text-emerald-600">
-                Supply ({supplyPositions.length})
-              </span>
-              <div className="space-y-1">
-                {supplyPositions.map((p) => (
-                  <PortfolioPositionRow
-                    key={p.positionId}
-                    position={p}
-                    onRemove={actions.removePosition}
-                    onUpdateAmount={actions.updateAmount}
-                    onUpdateInputMode={actions.updateInputMode}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Borrow section */}
-          {borrowPositions.length > 0 && (
-            <div className="space-y-1.5">
-              <span className="ds-text-10 font-semibold uppercase tracking-wide ds-text-brand-cyan">
-                Borrow ({borrowPositions.length})
-              </span>
-              <div className="space-y-1">
-                {borrowPositions.map((p) => (
-                  <PortfolioPositionRow
-                    key={p.positionId}
-                    position={p}
-                    onRemove={actions.removePosition}
-                    onUpdateAmount={actions.updateAmount}
-                    onUpdateInputMode={actions.updateInputMode}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Summary card */}
-      {summary && positions.length > 0 && (
-        <div className="mt-3">
-          <PortfolioSummaryCard summary={summary} />
-        </div>
-      )}
-
-      {/* Per-token results table */}
-      {positionResults && positionResults.length > 0 && (
-        <div className="mt-2.5">
-          <PortfolioResultsTable positions={positions} results={positionResults} />
-        </div>
+        </Suspense>
       )}
     </div>
   );
