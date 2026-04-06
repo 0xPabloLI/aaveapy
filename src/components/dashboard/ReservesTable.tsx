@@ -83,6 +83,10 @@ const ReservesTable = ({
   onToggleWhitelistMerklCampaign,
   tokenPrices,
   scrollToReserveId,
+  simulationMode = 'single',
+  onSimulationModeChange,
+  portfolioPositions,
+  portfolioActions,
 }: ReservesTableProps) => {
   const isMobile = useIsMobile();
   const [activeSortColumn, setActiveSortColumn] = useState<SortableColumn | null>('supply');
