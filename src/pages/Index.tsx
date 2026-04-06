@@ -52,6 +52,8 @@ const Index = () => {
   const [showCacheWarning, setShowCacheWarning] = useState(false);
   
   const [isRateDragging, setIsRateDragging] = useState(false);
+  const [simulationMode, setSimulationMode] = useState<SimulationMode>('single');
+  const portfolio = usePortfolioSimulation();
   const [whitelistMerklCampaignIds, setWhitelistMerklCampaignIds] = useState<Set<string>>(() => new Set());
   const toggleWhitelistMerklCampaign = useCallback((campaignId: string, enabled: boolean) => {
     const id = String(campaignId || '').trim();
