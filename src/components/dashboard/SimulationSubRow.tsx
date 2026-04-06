@@ -131,6 +131,8 @@ const SimulationSubRow = ({
   embeddedFromTop = false,
   onCorrectSupplyInput,
   onCorrectBorrowInput,
+  showAddToPortfolio,
+  onAddToPortfolio,
 }: SimulationSubRowProps) => {
   const isMobile = useIsMobile();
   const containerRef = useRef<HTMLDivElement>(null);

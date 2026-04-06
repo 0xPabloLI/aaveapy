@@ -478,6 +478,8 @@ const DesktopReserveRow = memo(({
                   inputMode={inputMode}
                   onCorrectSupplyInput={onCorrectSupplyInput}
                   onCorrectBorrowInput={onCorrectBorrowInput}
+                  showAddToPortfolio={isPortfolioMode}
+                  onAddToPortfolio={onAddToPortfolio}
                 />
               )}
             </div>
