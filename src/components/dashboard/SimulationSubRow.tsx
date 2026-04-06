@@ -73,6 +73,10 @@ interface SimulationSubRowProps {
   embeddedFromTop?: boolean;
   onCorrectSupplyInput?: (correctedValue: string) => void;
   onCorrectBorrowInput?: (correctedValue: string) => void;
+  /** When true, show "Add to Portfolio" button at the bottom. */
+  showAddToPortfolio?: boolean;
+  /** Callback when user clicks "Add to Portfolio". */
+  onAddToPortfolio?: (reserve: ReserveWithSpread, side: 'supply' | 'borrow') => void;
 }
 
 const formatDelta = (value: number | null) => {

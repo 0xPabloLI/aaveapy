@@ -67,6 +67,14 @@ interface DesktopReserveRowProps {
   isMobile: boolean;
   onCorrectSupplyInput?: (correctedValue: string) => void;
   onCorrectBorrowInput?: (correctedValue: string) => void;
+  /** Portfolio mode: show checkbox for adding to portfolio. */
+  isPortfolioMode?: boolean;
+  /** Whether this reserve is already in the portfolio. */
+  isInPortfolio?: boolean;
+  /** Callback to add/remove from portfolio. */
+  onPortfolioToggle?: (reserveId: string, reserve: ReserveWithSpread) => void;
+  /** Callback from SimulationSubRow "Add to Portfolio" button. */
+  onAddToPortfolio?: (reserve: ReserveWithSpread, side: 'supply' | 'borrow') => void;
 }
 
 const DesktopReserveRow = memo(({
