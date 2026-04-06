@@ -2137,6 +2137,10 @@ const ReservesTable = ({
                   isMobile={isMobile}
                   onCorrectSupplyInput={handleCorrectSupplyInput}
                   onCorrectBorrowInput={handleCorrectBorrowInput}
+                  isPortfolioMode={isPortfolioMode}
+                  isInPortfolio={portfolioReserveIds.has(reserveId)}
+                  onPortfolioToggle={handlePortfolioToggle}
+                  onAddToPortfolio={handleAddToPortfolio}
                 />
               );
             })
