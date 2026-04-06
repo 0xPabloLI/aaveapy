@@ -1,4 +1,6 @@
 import { lazy, Suspense, useState, useMemo, useCallback, useEffect } from 'react';
+import type { SimulationMode } from '@/components/dashboard/PortfolioModeToggle';
+import { usePortfolioSimulation } from '@/hooks/usePortfolioSimulation';
 import { useIsFetching } from '@tanstack/react-query';
 import { useAaveMarkets } from '@/hooks/useAaveMarkets';
 import { useTokenCategories } from '@/hooks/useTokenCategories';
