@@ -189,10 +189,10 @@ const PortfolioPanel = memo(function PortfolioPanel({
 
   const handleSaveSnapshot = useCallback(() => {
     const label = snapshotName.trim() || `Snapshot ${snapshots.length + 1}`;
-    actions.saveSnapshot(label);
+    actions.saveSnapshot(label, positionResults, summary);
     setSnapshotName('');
     setShowSaveInput(false);
-  }, [snapshotName, snapshots.length, actions]);
+  }, [snapshotName, snapshots.length, actions, positionResults, summary]);
 
   const handleToggleCompare = useCallback((id: string) => {
     setCompareIds((prev) => {
