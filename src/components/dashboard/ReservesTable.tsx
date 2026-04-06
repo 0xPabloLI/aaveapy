@@ -1127,6 +1127,7 @@ const ReservesTable = ({
             reserves={reserves}
             positionResults={portfolioResults}
             summary={portfolioSummary}
+            snapshots={portfolioSnapshots}
           />
         </Suspense>
       )}
