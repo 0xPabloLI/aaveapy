@@ -75,10 +75,12 @@
 
 ### 未完成项 A：文件体积继续瘦身
 - 现状：
-  - `ReservesTable.tsx`: 2241 行
+  - `ReservesTable.tsx`: 2111 行
+  - `ReservesTableMobileSortBar.tsx`: 186 行
   - `TopOpportunities.tsx`: 1092 行
   - `MobileReserveCard.tsx`: 825 行
 - 说明：`ReservesTable` 已因菜单去重小幅瘦身；`TopOpportunities` 因文件级组件上提后显式 props 变多，行数暂时上升，但组件重建问题已消除。
+- 补充：移动端排序条已进一步抽到独立组件 `ReservesTableMobileSortBar.tsx`，`ReservesTable` 的移动端分支已明显变短；这一步属于纯展示层拆分，排序状态仍保留在父组件。
 - 建议：按“状态逻辑/视图逻辑/菜单逻辑”三段拆分，分批执行，避免一次性大重构风险。
 
 ---

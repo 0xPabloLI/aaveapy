@@ -26,6 +26,10 @@ import IncentiveTooltip from './IncentiveTooltip';
 import MobileReserveCard from './MobileReserveCard';
 import MobileExpandedReserveShell from './MobileExpandedReserveShell';
 import DesktopReserveRow from './DesktopReserveRow';
+import ReservesTableMobileSortBar, {
+  type MobileSortMenuKey,
+  type MobileSortOption,
+} from './ReservesTableMobileSortBar';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getReserveSimulationId, useSharedRateSimulations } from '@/hooks/useRateSimulation';
 import { getScenarioSupplySizeUsd, getTotalBorrowedUsd as getReserveTotalBorrowedUsd } from '@/lib/scenarioSize';
@@ -54,65 +58,7 @@ type SortMode = 'total' | 'native' | 'incentive';
 
 type SortableColumn = 'token' | 'price' | 'market' | 'size' | 'util' | 'supply' | 'borrow' | 'spread';
 
-type MobileSortMenuKey = 'size' | 'supply' | 'borrow' | 'extra';
-
-type MobileSortOrder = 'asc' | 'desc';
-
-interface MobileSortOption {
-  key: string;
-  label: string;
-  isSelected: boolean;
-  order: MobileSortOrder;
-  activeClassName: string;
-  onSelect: () => void;
-}
-
 const DEFAULT_VISIBLE_COUNT = 20;
-
-const MobileSortMenu = ({
-  open,
-  onClose,
-  options,
-  minWidthClassName = 'min-w-[6.25rem]',
-}: {
-  open: boolean;
-  onClose: () => void;
-  options: MobileSortOption[];
-  minWidthClassName?: string;
-}) => {
-  if (!open) return null;
-
-  return (
-    <>
-      <div className="fixed inset-0 z-10" onClick={onClose} />
-      <div
-        className={`absolute right-0 top-full mt-1 bg-card border border-border rounded-lg shadow-lg py-0.5 z-20 w-max ${minWidthClassName} max-w-[min(18rem,calc(100vw-1.5rem))]`}
-      >
-        {options.map((option) => (
-          <button
-            type="button"
-            key={option.key}
-            onClick={option.onSelect}
-            className={`w-full px-2 py-0.5 text-left ds-text-13 transition-colors flex items-center justify-start gap-1.5 ${
-              option.isSelected
-                ? `${option.activeClassName} font-bold bg-card/60`
-                : 'text-muted-foreground'
-            }`}
-          >
-            <span>{option.label}</span>
-            {option.isSelected ? (
-              option.order === 'desc' ? (
-                <ArrowDown className={`w-3 h-3 ${option.activeClassName}`} />
-              ) : (
-                <ArrowUp className={`w-3 h-3 ${option.activeClassName}`} />
-              )
-            ) : null}
-          </button>
-        ))}
-      </div>
-    </>
-  );
-};
 
 const ReservesTable = ({
   reserves,
@@ -1170,99 +1116,23 @@ const ReservesTable = ({
         >
           {scenarioControls}
         </div>
-        {/* Header with sorting controls */}
-        <div className="flex justify-between items-center px-[var(--ds-space-1)]">
-          <h3 className="ds-text-14 font-bold text-foreground">{reserves.length} Reserves</h3>
-          <div className="flex items-center gap-[var(--ds-space-1-5)]">
-            {/* Size sort dropdown */}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => toggleMobileSortMenu('size')}
-                className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-lg border transition-colors ${
-                  activeSortColumn === 'size'
-                    ? `bg-card/60 border-border/70 ${sizeSortAccentClass} font-semibold`
-                    : 'bg-card border-border text-muted-foreground font-medium'
-                }`}
-              >
-                <span>Size</span>
-                <ChevronDown className="w-3 h-3" />
-              </button>
-              <MobileSortMenu
-                open={showSizeSortMenu}
-                onClose={closeAllMobileSortMenus}
-                options={sizeSortOptions}
-              />
-            </div>
-
-            {/* Supply sort dropdown */}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => toggleMobileSortMenu('supply')}
-                className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-lg border transition-colors ${
-                  activeSortColumn === 'supply'
-                    ? 'bg-card/60 border-border/70 ds-text-emerald-700 font-semibold'
-                    : 'bg-card border-border text-muted-foreground font-medium'
-                }`}
-              >
-                <span>Supply</span>
-                <ChevronDown className="w-3 h-3" />
-              </button>
-              <MobileSortMenu
-                open={showSupplySortMenu}
-                onClose={closeAllMobileSortMenus}
-                options={supplySortOptions}
-              />
-            </div>
-            
-            {/* Borrow sort dropdown */}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => toggleMobileSortMenu('borrow')}
-                className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-lg border transition-colors ${
-                  activeSortColumn === 'borrow'
-                    ? 'bg-card/60 border-border/70 ds-text-brand-cyan font-semibold'
-                    : 'bg-card border-border text-muted-foreground font-medium'
-                }`}
-              >
-                <span>Borrow</span>
-                <ChevronDown className="w-3 h-3" />
-              </button>
-              <MobileSortMenu
-                open={showBorrowSortMenu}
-                onClose={closeAllMobileSortMenus}
-                options={borrowSortOptions}
-              />
-            </div>
-
-            {/* Spread + desktop-only columns (token, market, price, utilization) */}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => toggleMobileSortMenu('extra')}
-                className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-lg border transition-colors max-w-[7.5rem] ${
-                  activeSortColumn === 'spread'
-                    ? 'bg-card/60 border-border/70 ds-text-purple-700 font-semibold'
-                    : mobileExtraSortActive
-                      ? 'bg-card/60 border-border/70 text-foreground font-semibold'
-                      : 'bg-card border-border text-muted-foreground font-medium'
-                }`}
-                aria-label="Sort by spread, token, market, price, or utilization"
-              >
-                <span className="truncate">{mobileExtraSortChipLabel}</span>
-                <ChevronDown className="w-3 h-3 shrink-0" />
-              </button>
-              <MobileSortMenu
-                open={showExtraSortMenu}
-                onClose={closeAllMobileSortMenus}
-                options={extraSortOptions}
-                minWidthClassName="min-w-[7.5rem]"
-              />
-            </div>
-          </div>
-        </div>
+        <ReservesTableMobileSortBar
+          reservesCount={reserves.length}
+          activeSortColumn={activeSortColumn}
+          sizeSortAccentClass={sizeSortAccentClass}
+          mobileExtraSortActive={mobileExtraSortActive}
+          mobileExtraSortChipLabel={mobileExtraSortChipLabel}
+          showSizeSortMenu={showSizeSortMenu}
+          showSupplySortMenu={showSupplySortMenu}
+          showBorrowSortMenu={showBorrowSortMenu}
+          showExtraSortMenu={showExtraSortMenu}
+          sizeSortOptions={sizeSortOptions}
+          supplySortOptions={supplySortOptions}
+          borrowSortOptions={borrowSortOptions}
+          extraSortOptions={extraSortOptions}
+          onToggleMenu={toggleMobileSortMenu}
+          onCloseMenus={closeAllMobileSortMenus}
+        />
         
         {/* 2x2 Grid layout for mobile */}
         <div className="grid grid-cols-2 gap-[var(--ds-space-2)]">
