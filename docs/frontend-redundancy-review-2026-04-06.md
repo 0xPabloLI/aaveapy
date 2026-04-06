@@ -83,6 +83,21 @@
 - 已执行：`localhost:8080` 页面加载检查
 - 结果：通过；`localhost:8080` 控制台 error 为 staging API 的 CORS 噪音，不是本轮 `TopOpportunities` 抽离导致的运行时异常
 
+### 3.11 完成 `MobileReserveCard` 展示层块外提
+- `MobileReserveCard` 中的 `renderAmountRow` 与 `renderHeroApy` 已上提为文件级展示组件
+- 本轮只移动展示层结构，不改 `activeTab`、`capSheet`、`isSimulationExpanded`、`SimulationSubRow` 等交互状态路径
+- 目的：继续缩小主组件函数体，降低每次阅读和后续拆分的复杂度
+
+### 3.12 本轮验证补充
+- 已执行：`npm run lint`
+- 已执行：`npm run build`
+- 已执行：`npx playwright test e2e/reserves-table-interactions.spec.ts --project=chromium`
+- 已执行：`localhost:8080` 页面加载检查
+- 结果：
+  - `lint` / `build` 通过
+  - `reserves-table-interactions`：`4 passed`
+  - `localhost:8080` 无新的 runtime error；现有控制台 error 仍为 staging API 的 CORS 噪音
+
 ---
 
 ## 4. 什么还没改（待办）
@@ -97,6 +112,7 @@
 - 补充：移动端排序条已进一步抽到独立组件 `ReservesTableMobileSortBar.tsx`，`ReservesTable` 的移动端分支已明显变短；这一步属于纯展示层拆分，排序状态仍保留在父组件。
 - 补充：桌面端 `ReservesTableDesktopHeader.tsx` 的三组 sort menu portal/render 逻辑也已收敛成共享渲染器；当前改动仍未触碰排序算法、sticky 计算和 expanded-row pin 逻辑。
 - 补充：`TopOpportunities` 现在只剩体量问题，内部 helper 与 `CategoryCard` 的重建已消除；后续若继续拆，重点应转向视觉配置常量或按卡片类型拆文件，而不是再碰现有交互。
+- 补充：`MobileReserveCard` 已先完成两块最独立的展示层抽离；后续若再拆，建议优先考虑 token header / mobile sheet 容器等纯视图块，继续避免碰 simulation 展开链路。
 - 建议：按“状态逻辑/视图逻辑/菜单逻辑”三段拆分，分批执行，避免一次性大重构风险。
 
 ---
@@ -118,4 +134,4 @@
 ### 6.1 更新后的下一步
 1. 保留当前这批低风险精简，完成 lint / build / 桌面交互 e2e 验证  
 2. 下一批单独处理 `ReservesTable` 模块拆分（状态逻辑 / 桌面 table body / tooltip 状态协调）  
-3. 若继续推进，可顺手评估 `MobileReserveCard` 的 sheet/详情块是否值得拆子模块  
+3. `MobileReserveCard` 若继续推进，优先拆 token header 或 bottom sheet 容器，暂不触碰 simulation 展开/折叠状态链  
