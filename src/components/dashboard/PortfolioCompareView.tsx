@@ -206,7 +206,7 @@ const PortfolioCompareView = memo(function PortfolioCompareView({
             <span className="ds-text-10 font-semibold text-muted-foreground text-right">Δ USD/d</span>
           </div>
           {Array.from(tokenMap.values()).map((t, i) => (
-            <TokenCompareRow key={i} {...t} />
+            <TokenCompareRow key={i} tokenSymbol={t.symbol} side={t.side} aprA={t.aprA} aprB={t.aprB} usdDayA={t.usdDayA} usdDayB={t.usdDayB} />
           ))}
         </div>
       )}
