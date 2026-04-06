@@ -1,5 +1,5 @@
 import { Fragment, useRef, useState, useEffect } from 'react';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Plus } from 'lucide-react';
 import {
   annualPercentToDailyFraction,
   formatPercent,
