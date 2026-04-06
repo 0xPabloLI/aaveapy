@@ -92,6 +92,8 @@ const PortfolioPanel = memo(function PortfolioPanel({
   positions,
   actions,
   reserves,
+  positionResults,
+  summary,
 }: PortfolioPanelProps) {
   const isMobile = useIsMobile();
   const [searchQuery, setSearchQuery] = useState('');
