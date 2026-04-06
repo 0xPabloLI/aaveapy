@@ -225,7 +225,8 @@ const DesktopReserveRow = memo(({
               {reserve.tokenSymbol}
             </span>
             <ExternalLink className="w-3 h-3 text-muted-foreground opacity-0 -ml-1 group-hover/token:opacity-70 transition-opacity duration-150" />
-          </a>
+           </a>
+          </div>
         </TableCell>
         {/* Price — 左右留白更小 */}
         <TableCell className="px-[var(--ds-space-1)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell tabular-nums text-muted-foreground ds-text-13">
