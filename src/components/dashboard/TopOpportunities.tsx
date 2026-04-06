@@ -334,7 +334,7 @@ interface ReserveItemProps {
   getApyColorClass: (value: number | null) => string;
   getSpreadColorClass: (value: number | null, index?: number, total?: number) => string;
   getSpreadAccentClass: (value: number | null, index?: number, total?: number) => string;
-  itemVariants: Record<string, unknown>;
+  itemVariants: import('framer-motion').Variants;
 }
 
 const ReserveItem = forwardRef<HTMLDivElement, ReserveItemProps>(function ReserveItem({
