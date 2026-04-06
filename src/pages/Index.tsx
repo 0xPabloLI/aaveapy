@@ -415,6 +415,7 @@ const Index = () => {
               onSimulationModeChange={setSimulationMode}
               portfolioPositions={portfolio.positions}
               portfolioActions={portfolio.actions}
+              portfolioSnapshots={portfolio.snapshots}
             />
           </div>
 
