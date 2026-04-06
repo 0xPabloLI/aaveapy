@@ -1,17 +1,19 @@
 /**
  * PortfolioPanel — portfolio management panel with token search,
- * position list, and summary cards.
+ * position list, summary card, and results table.
  */
 import { useState, useMemo, memo, useCallback } from 'react';
 import { Search, Plus, X, Layers, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { ReserveWithSpread } from '@/types/aave';
-import type { PortfolioPosition, PortfolioInputMode, PortfolioSide } from '@/types/portfolio';
+import type { PortfolioPosition, PortfolioInputMode, PortfolioSide, PortfolioPositionResult, PortfolioSummary } from '@/types/portfolio';
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
 import { normalizeTokenSymbolForSearch } from '@/lib/tokenSymbolNormalization';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import PortfolioPositionRow from './PortfolioPositionRow';
+import PortfolioSummaryCard from './PortfolioSummaryCard';
+import PortfolioResultsTable from './PortfolioResultsTable';
 
 interface PortfolioPanelProps {
   positions: PortfolioPosition[];
