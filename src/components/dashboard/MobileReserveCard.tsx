@@ -365,6 +365,8 @@ const MobileReserveCard = memo(({
           embeddedFromTop
           onCorrectSupplyInput={onCorrectSupplyInput}
           onCorrectBorrowInput={onCorrectBorrowInput}
+          showAddToPortfolio={isPortfolioMode}
+          onAddToPortfolio={onAddToPortfolio}
         />
       </div>
     );
