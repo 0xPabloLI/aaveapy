@@ -1066,6 +1066,43 @@ const ReservesTable = ({
 
   const isPortfolioMode = simulationMode === 'portfolio';
 
+  // Set of reserveIds currently in the portfolio
+  const portfolioReserveIds = useMemo(() => {
+    if (!portfolioPositions) return new Set<string>();
+    return new Set(portfolioPositions.map((p) => p.reserveId));
+  }, [portfolioPositions]);
+
+  // Callback: toggle a reserve in/out of portfolio (adds as supply by default)
+  const handlePortfolioToggle = useCallback((reserveId: string, reserve: ReserveWithSpread) => {
+    if (!portfolioActions) return;
+    if (portfolioReserveIds.has(reserveId)) {
+      // Remove all positions for this reserve
+      const toRemove = portfolioPositions?.filter((p) => p.reserveId === reserveId) ?? [];
+      toRemove.forEach((p) => portfolioActions.removePosition(p.positionId));
+    } else {
+      portfolioActions.addPosition({
+        reserveId,
+        marketName: reserve.marketName,
+        chainName: reserve.chainName,
+        tokenSymbol: reserve.tokenSymbol,
+        side: 'supply',
+      });
+    }
+  }, [portfolioActions, portfolioPositions, portfolioReserveIds]);
+
+  // Callback: add from expanded simulation panel
+  const handleAddToPortfolio = useCallback((reserve: ReserveWithSpread, side: 'supply' | 'borrow') => {
+    if (!portfolioActions) return;
+    const reserveId = `${reserve.marketName}-${reserve.tokenAddress}`;
+    portfolioActions.addPosition({
+      reserveId,
+      marketName: reserve.marketName,
+      chainName: reserve.chainName,
+      tokenSymbol: reserve.tokenSymbol,
+      side,
+    });
+  }, [portfolioActions]);
+
   // Portfolio results computation (Phase 3)
   const { portfolioResults, portfolioSummary } = useMemo<{
     portfolioResults: PortfolioPositionResult[];
