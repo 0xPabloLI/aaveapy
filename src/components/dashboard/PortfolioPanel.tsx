@@ -1,22 +1,28 @@
 /**
  * PortfolioPanel — portfolio management panel with token search,
- * position list, and summary cards.
+ * position list, summary card, and results table.
  */
 import { useState, useMemo, memo, useCallback } from 'react';
 import { Search, Plus, X, Layers, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { ReserveWithSpread } from '@/types/aave';
-import type { PortfolioPosition, PortfolioInputMode, PortfolioSide } from '@/types/portfolio';
+import type { PortfolioPosition, PortfolioInputMode, PortfolioSide, PortfolioPositionResult, PortfolioSummary } from '@/types/portfolio';
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
 import { normalizeTokenSymbolForSearch } from '@/lib/tokenSymbolNormalization';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import PortfolioPositionRow from './PortfolioPositionRow';
+import PortfolioSummaryCard from './PortfolioSummaryCard';
+import PortfolioResultsTable from './PortfolioResultsTable';
 
 interface PortfolioPanelProps {
   positions: PortfolioPosition[];
   actions: PortfolioSimulationActions;
   reserves: ReserveWithSpread[];
+  /** Per-position simulation results (computed externally). */
+  positionResults?: PortfolioPositionResult[];
+  /** Aggregated portfolio summary (computed externally). */
+  summary?: PortfolioSummary;
 }
 
 /** Search result row with quick add buttons. */
@@ -86,6 +92,8 @@ const PortfolioPanel = memo(function PortfolioPanel({
   positions,
   actions,
   reserves,
+  positionResults,
+  summary,
 }: PortfolioPanelProps) {
   const isMobile = useIsMobile();
   const [searchQuery, setSearchQuery] = useState('');
@@ -260,6 +268,20 @@ const PortfolioPanel = memo(function PortfolioPanel({
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Summary card */}
+      {summary && positions.length > 0 && (
+        <div className="mt-3">
+          <PortfolioSummaryCard summary={summary} />
+        </div>
+      )}
+
+      {/* Per-token results table */}
+      {positionResults && positionResults.length > 0 && (
+        <div className="mt-2.5">
+          <PortfolioResultsTable positions={positions} results={positionResults} />
         </div>
       )}
     </div>

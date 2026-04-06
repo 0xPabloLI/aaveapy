@@ -40,8 +40,10 @@ import {
 import { createScenarioPinControllerState, transitionScenarioPinController } from '@/lib/scenarioPinController';
 
 import PortfolioModeToggle, { type SimulationMode } from './PortfolioModeToggle';
-import type { PortfolioPosition } from '@/types/portfolio';
+import type { PortfolioPosition, PortfolioPositionResult, PortfolioSummary } from '@/types/portfolio';
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
+import { resolvePositionAmountUsd, buildPortfolioPositionResult } from '@/hooks/usePortfolioSimulation';
+import { aggregatePortfolioSummary } from '@/lib/portfolioCalculator';
 const PortfolioPanel = lazy(() => import('./PortfolioPanel'));
 
 interface ReservesTableProps {
@@ -1062,6 +1064,40 @@ const ReservesTable = ({
 
   const isPortfolioMode = simulationMode === 'portfolio';
 
+  // Portfolio results computation (Phase 3)
+  const { portfolioResults, portfolioSummary } = useMemo<{
+    portfolioResults: PortfolioPositionResult[];
+    portfolioSummary: PortfolioSummary;
+  }>(() => {
+    if (!isPortfolioMode || !portfolioPositions || portfolioPositions.length === 0) {
+      return { portfolioResults: [], portfolioSummary: aggregatePortfolioSummary([]) };
+    }
+    const reserveMap = new Map(
+      reserves.map((r) => [`${r.marketName}-${r.tokenAddress}`, r]),
+    );
+    const results: PortfolioPositionResult[] = portfolioPositions
+      .map((pos) => {
+        const reserve = reserveMap.get(pos.reserveId);
+        const amountUsd = resolvePositionAmountUsd(pos, reserve);
+        if (amountUsd <= 0 || !reserve) return null;
+        // Use current reserve APY as baseline (full sim integration in later phase)
+        const nativePercent = pos.side === 'supply'
+          ? (reserve.supplyApy ?? 0)
+          : (reserve.borrowApy ?? 0);
+        // Sum incentive arrays
+        const incentiveArr = pos.side === 'supply'
+          ? (reserve.supplyIncentives ?? [])
+          : (reserve.borrowIncentives ?? []);
+        const incentivePercent = incentiveArr.reduce((s, v) => s + v, 0);
+        return buildPortfolioPositionResult(pos, amountUsd, nativePercent, incentivePercent);
+      })
+      .filter((r): r is PortfolioPositionResult => r !== null);
+    return {
+      portfolioResults: results,
+      portfolioSummary: aggregatePortfolioSummary(results),
+    };
+  }, [isPortfolioMode, portfolioPositions, reserves]);
+
   const scenarioControls = (
     <div className="space-y-2">
       <div className="flex items-center gap-2">
@@ -1089,6 +1125,8 @@ const ReservesTable = ({
             positions={portfolioPositions}
             actions={portfolioActions}
             reserves={reserves}
+            positionResults={portfolioResults}
+            summary={portfolioSummary}
           />
         </Suspense>
       )}
