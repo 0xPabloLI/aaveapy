@@ -101,6 +101,10 @@ const DesktopReserveRow = memo(({
   isMobile,
   onCorrectSupplyInput,
   onCorrectBorrowInput,
+  isPortfolioMode,
+  isInPortfolio,
+  onPortfolioToggle,
+  onAddToPortfolio,
 }: DesktopReserveRowProps) => {
   const [hasSimulationMounted, setHasSimulationMounted] = useState(isExpanded);
 
