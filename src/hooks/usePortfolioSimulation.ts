@@ -52,8 +52,8 @@ export interface PortfolioSimulationActions {
   updateInputMode: (positionId: string, mode: PortfolioInputMode) => void;
   /** Remove all positions. */
   clearAll: () => void;
-  /** Save current state as a named snapshot. */
-  saveSnapshot: (label: string) => void;
+  /** Save current state as a named snapshot (with pre-computed results). */
+  saveSnapshot: (label: string, results?: PortfolioPositionResult[], summary?: PortfolioSummary) => void;
   /** Delete a saved snapshot. */
   deleteSnapshot: (snapshotId: string) => void;
 }
