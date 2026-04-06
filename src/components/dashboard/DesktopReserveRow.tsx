@@ -2,8 +2,8 @@ import { memo, Fragment, useEffect, useState } from 'react';
 import { ExternalLink } from 'lucide-react';
 import { TableRow, TableCell } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { ReserveWithSpread, ETHEREUM_MARKET_NAMES } from '@/types/aave';
-import { formatPercent, formatScenarioSize, formatSpread, formatUsd } from '@/lib/formatters';
+import { ReserveWithSpread } from '@/types/aave';
+import { formatPercent, formatScenarioSize, formatSpread, formatUsd, getReserveMarketDisplayName } from '@/lib/formatters';
 import { buildAaveMarketUrl, buildAaveReserveUrl } from '@/lib/aaveLinks';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
 import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
@@ -101,13 +101,6 @@ const DesktopReserveRow = memo(({
       setHasSimulationMounted(true);
     }
   }, [isExpanded]);
-
-  const getMarketDisplayName = () => {
-    if (reserve.chainName === 'Ethereum' && ETHEREUM_MARKET_NAMES[reserve.marketName]) {
-      return ETHEREUM_MARKET_NAMES[reserve.marketName];
-    }
-    return reserve.chainName;
-  };
 
   const { iconSymbol, logoURI } = fetchIconSymbolAndName({
     underlyingAsset: reserve.tokenAddress,
@@ -214,11 +207,11 @@ const DesktopReserveRow = memo(({
                 onSelectMarket?.(reserve.marketName);
               }}
               className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)] px-[var(--ds-space-2-5)] py-[var(--ds-space-1)] rounded-full ds-text-13 font-medium bg-muted/50 text-muted-foreground border border-border/60 hover:bg-muted hover:text-foreground hover:border-border/80 active:scale-[0.98] transition-all duration-150"
-              aria-label={`Filter by ${getMarketDisplayName()} market`}
-              title={`Filter by ${getMarketDisplayName()}`}
+              aria-label={`Filter by ${getReserveMarketDisplayName(reserve)} market`}
+              title={`Filter by ${getReserveMarketDisplayName(reserve)}`}
             >
               <ChainIcon chain={reserve.chainName} />
-              {getMarketDisplayName()}
+              {getReserveMarketDisplayName(reserve)}
             </button>
             {aaveMarketUrl ? (
               <a
@@ -226,7 +219,7 @@ const DesktopReserveRow = memo(({
                 {...externalLinkTabProps(isMobile)}
                 onClick={(event) => event.stopPropagation()}
                 className="inline-flex shrink-0 items-center justify-center hover:opacity-80 transition-opacity duration-100"
-                aria-label={`Open ${getMarketDisplayName()} market on Aave`}
+                aria-label={`Open ${getReserveMarketDisplayName(reserve)} market on Aave`}
                 title="Open market on Aave"
               >
                 <ExternalLink className="w-3 h-3 text-muted-foreground opacity-0 -ml-0.5 group-hover/market:opacity-70 transition-opacity duration-75" />

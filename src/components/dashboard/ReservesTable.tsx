@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import { ArrowUp, ArrowDown, ChevronDown, ChevronUp } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ReserveWithSpread, ETHEREUM_MARKET_NAMES, TokenPricesIndex } from '@/types/aave';
+import { ReserveWithSpread, TokenPricesIndex } from '@/types/aave';
 import {
   formatPercent,
   formatSpread,
@@ -13,8 +13,7 @@ import {
   calculateTotalSupplyApy,
   calculateTotalBorrowApr,
   calculateTotalBorrowApy,
-  calculateTotalIncentiveApr,
-  calculateTotalIncentiveApy,
+  getReserveIncentiveValues,
   resolveVisibleIncentiveBadgeValue,
 } from '@/lib/formatters';
 import ScenarioControls, { type ScenarioControlsHandle } from './ScenarioControls';
@@ -55,7 +54,65 @@ type SortMode = 'total' | 'native' | 'incentive';
 
 type SortableColumn = 'token' | 'price' | 'market' | 'size' | 'util' | 'supply' | 'borrow' | 'spread';
 
+type MobileSortMenuKey = 'size' | 'supply' | 'borrow' | 'extra';
+
+type MobileSortOrder = 'asc' | 'desc';
+
+interface MobileSortOption {
+  key: string;
+  label: string;
+  isSelected: boolean;
+  order: MobileSortOrder;
+  activeClassName: string;
+  onSelect: () => void;
+}
+
 const DEFAULT_VISIBLE_COUNT = 20;
+
+const MobileSortMenu = ({
+  open,
+  onClose,
+  options,
+  minWidthClassName = 'min-w-[6.25rem]',
+}: {
+  open: boolean;
+  onClose: () => void;
+  options: MobileSortOption[];
+  minWidthClassName?: string;
+}) => {
+  if (!open) return null;
+
+  return (
+    <>
+      <div className="fixed inset-0 z-10" onClick={onClose} />
+      <div
+        className={`absolute right-0 top-full mt-1 bg-card border border-border rounded-lg shadow-lg py-0.5 z-20 w-max ${minWidthClassName} max-w-[min(18rem,calc(100vw-1.5rem))]`}
+      >
+        {options.map((option) => (
+          <button
+            type="button"
+            key={option.key}
+            onClick={option.onSelect}
+            className={`w-full px-2 py-0.5 text-left ds-text-13 transition-colors flex items-center justify-start gap-1.5 ${
+              option.isSelected
+                ? `${option.activeClassName} font-bold bg-card/60`
+                : 'text-muted-foreground'
+            }`}
+          >
+            <span>{option.label}</span>
+            {option.isSelected ? (
+              option.order === 'desc' ? (
+                <ArrowDown className={`w-3 h-3 ${option.activeClassName}`} />
+              ) : (
+                <ArrowUp className={`w-3 h-3 ${option.activeClassName}`} />
+              )
+            ) : null}
+          </button>
+        ))}
+      </div>
+    </>
+  );
+};
 
 const ReservesTable = ({
   reserves,
@@ -248,38 +305,9 @@ const ReservesTable = ({
     };
   }, [isMobile]);
 
-  const getMarketDisplayName = (reserve: ReserveWithSpread) => {
-    if (reserve.chainName === 'Ethereum' && ETHEREUM_MARKET_NAMES[reserve.marketName]) {
-      return ETHEREUM_MARKET_NAMES[reserve.marketName];
-    }
-    return reserve.chainName;
-  };
-
   // Helper: Get incentive values for a reserve (supply or borrow)
-  const getIncentiveValues = (reserve: ReserveWithSpread, type: 'supply' | 'borrow') => {
-    const protocolIncentives = type === 'supply' ? reserve.supplyIncentives : reserve.borrowIncentives;
-    const meritIncentives = type === 'supply' ? reserve.meritSupplys : reserve.meritBorrows;
-    const merklOpportunities = type === 'supply' ? reserve.merklSupplys : reserve.merklBorrows;
-    const brevisIncentives = type === 'supply' ? reserve.brevisSupplys : reserve.brevisBorrows;
-    return {
-      apr: calculateTotalIncentiveApr(
-        meritIncentives,
-        merklOpportunities,
-        brevisIncentives,
-        protocolIncentives,
-        tydroPointToUsdRate,
-        { whitelistMerklCampaignIds }
-      ),
-      apy: calculateTotalIncentiveApy(
-        meritIncentives,
-        merklOpportunities,
-        brevisIncentives,
-        protocolIncentives,
-        tydroPointToUsdRate,
-        { whitelistMerklCampaignIds }
-      ),
-    };
-  };
+  const getIncentiveValues = (reserve: ReserveWithSpread, type: 'supply' | 'borrow') =>
+    getReserveIncentiveValues(reserve, type, tydroPointToUsdRate, { whitelistMerklCampaignIds });
 
   // Calculate totals for a reserve (frontend calculates incentive totals from details)
   const getTotalSupplyApy = (reserve: ReserveWithSpread): number | null => {
@@ -769,6 +797,232 @@ const ReservesTable = ({
     setUtilSortOrder((o) => (o === 'desc' ? 'asc' : 'desc'));
   };
 
+  const closeAllMobileSortMenus = useCallback((except: MobileSortMenuKey | null = null) => {
+    if (except !== 'size') setShowSizeSortMenu(false);
+    if (except !== 'supply') setShowSupplySortMenu(false);
+    if (except !== 'borrow') setShowBorrowSortMenu(false);
+    if (except !== 'extra') setShowExtraSortMenu(false);
+  }, []);
+
+  const toggleMobileSortMenu = useCallback((menu: MobileSortMenuKey) => {
+    closeAllMobileSortMenus(menu);
+    switch (menu) {
+      case 'size':
+        setShowSizeSortMenu((prev) => !prev);
+        break;
+      case 'supply':
+        setShowSupplySortMenu((prev) => !prev);
+        break;
+      case 'borrow':
+        setShowBorrowSortMenu((prev) => !prev);
+        break;
+      case 'extra':
+        setShowExtraSortMenu((prev) => !prev);
+        break;
+    }
+  }, [closeAllMobileSortMenus]);
+
+  const sizeSortOptions: MobileSortOption[] = [
+    {
+      key: 'supply',
+      label: 'Supply',
+      isSelected: sizeSortMode === 'supply' && activeSortColumn === 'size',
+      order: sizeSortOrder,
+      activeClassName: 'ds-text-emerald-600',
+      onSelect: () => {
+        const isAlreadySelected = sizeSortMode === 'supply' && activeSortColumn === 'size';
+        if (isAlreadySelected && sizeSortOrder === 'desc') {
+          setSizeSortOrder('asc');
+        } else {
+          setSizeSortMode('supply');
+          setActiveSortColumn('size');
+          setSizeSortOrder('desc');
+        }
+        closeAllMobileSortMenus();
+      },
+    },
+    {
+      key: 'borrow',
+      label: 'Borrow',
+      isSelected: sizeSortMode === 'borrow' && activeSortColumn === 'size',
+      order: sizeSortOrder,
+      activeClassName: 'ds-text-brand-cyan',
+      onSelect: () => {
+        const isAlreadySelected = sizeSortMode === 'borrow' && activeSortColumn === 'size';
+        if (isAlreadySelected && sizeSortOrder === 'desc') {
+          setSizeSortOrder('asc');
+        } else {
+          setSizeSortMode('borrow');
+          setActiveSortColumn('size');
+          setSizeSortOrder('desc');
+        }
+        closeAllMobileSortMenus();
+      },
+    },
+    {
+      key: 'deficitAmount',
+      label: 'Deficit',
+      isSelected: sizeSortMode === 'deficitAmount' && activeSortColumn === 'size',
+      order: sizeSortOrder,
+      activeClassName: 'text-foreground',
+      onSelect: () => {
+        const isAlreadySelected = sizeSortMode === 'deficitAmount' && activeSortColumn === 'size';
+        if (isAlreadySelected && sizeSortOrder === 'desc') {
+          setSizeSortOrder('asc');
+        } else {
+          setSizeSortMode('deficitAmount');
+          setActiveSortColumn('size');
+          setSizeSortOrder('desc');
+        }
+        closeAllMobileSortMenus();
+      },
+    },
+    {
+      key: 'deficitRatio',
+      label: 'Deficit (%)',
+      isSelected: sizeSortMode === 'deficitRatio' && activeSortColumn === 'size',
+      order: sizeSortOrder,
+      activeClassName: 'text-foreground',
+      onSelect: () => {
+        const isAlreadySelected = sizeSortMode === 'deficitRatio' && activeSortColumn === 'size';
+        if (isAlreadySelected && sizeSortOrder === 'desc') {
+          setSizeSortOrder('asc');
+        } else {
+          setSizeSortMode('deficitRatio');
+          setActiveSortColumn('size');
+          setSizeSortOrder('desc');
+        }
+        closeAllMobileSortMenus();
+      },
+    },
+  ];
+
+  const supplySortOptions: MobileSortOption[] = (['total', 'native', 'incentive'] as SortMode[]).map((mode) => ({
+    key: mode,
+    label: mode.charAt(0).toUpperCase() + mode.slice(1),
+    isSelected: supplySortMode === mode && activeSortColumn === 'supply',
+    order: supplySortOrder,
+    activeClassName: 'ds-text-emerald-600',
+    onSelect: () => {
+      const isAlreadySelected = supplySortMode === mode && activeSortColumn === 'supply';
+      if (isAlreadySelected && supplySortOrder === 'desc') {
+        setSupplySortOrder('asc');
+      } else {
+        setSupplySortMode(mode);
+        setActiveSortColumn('supply');
+        setSupplySortOrder('desc');
+      }
+      closeAllMobileSortMenus();
+    },
+  }));
+
+  const borrowSortOptions: MobileSortOption[] = (['total', 'native', 'incentive'] as SortMode[]).map((mode) => ({
+    key: mode,
+    label: mode.charAt(0).toUpperCase() + mode.slice(1),
+    isSelected: borrowSortMode === mode && activeSortColumn === 'borrow',
+    order: borrowSortOrder,
+    activeClassName: 'ds-text-brand-cyan',
+    onSelect: () => {
+      const isAlreadySelected = borrowSortMode === mode && activeSortColumn === 'borrow';
+      if (isAlreadySelected && borrowSortOrder === 'desc') {
+        setBorrowSortOrder('asc');
+      } else {
+        setBorrowSortMode(mode);
+        setActiveSortColumn('borrow');
+        setBorrowSortOrder('desc');
+      }
+      closeAllMobileSortMenus();
+    },
+  }));
+
+  const extraSortOptions: MobileSortOption[] = [
+    {
+      key: 'spread',
+      label: 'Spread',
+      isSelected: activeSortColumn === 'spread',
+      order: spreadSortOrder,
+      activeClassName: 'ds-text-purple-600',
+      onSelect: () => {
+        collapseExpandedOnSort();
+        if (activeSortColumn === 'spread' && spreadSortOrder === 'desc') {
+          setSpreadSortOrder('asc');
+        } else {
+          setActiveSortColumn('spread');
+          setSpreadSortOrder('desc');
+        }
+        closeAllMobileSortMenus();
+      },
+    },
+    {
+      key: 'token',
+      label: 'Token',
+      isSelected: activeSortColumn === 'token',
+      order: tokenSortOrder,
+      activeClassName: 'text-foreground',
+      onSelect: () => {
+        collapseExpandedOnSort();
+        if (activeSortColumn === 'token' && tokenSortOrder === 'asc') {
+          setTokenSortOrder('desc');
+        } else {
+          setActiveSortColumn('token');
+          setTokenSortOrder('asc');
+        }
+        closeAllMobileSortMenus();
+      },
+    },
+    {
+      key: 'market',
+      label: 'Market',
+      isSelected: activeSortColumn === 'market',
+      order: marketSortOrder,
+      activeClassName: 'text-foreground',
+      onSelect: () => {
+        collapseExpandedOnSort();
+        if (activeSortColumn === 'market' && marketSortOrder === 'asc') {
+          setMarketSortOrder('desc');
+        } else {
+          setActiveSortColumn('market');
+          setMarketSortOrder('asc');
+        }
+        closeAllMobileSortMenus();
+      },
+    },
+    {
+      key: 'price',
+      label: 'Price',
+      isSelected: activeSortColumn === 'price',
+      order: priceSortOrder,
+      activeClassName: 'text-foreground',
+      onSelect: () => {
+        collapseExpandedOnSort();
+        if (activeSortColumn === 'price' && priceSortOrder === 'desc') {
+          setPriceSortOrder('asc');
+        } else {
+          setActiveSortColumn('price');
+          setPriceSortOrder('desc');
+        }
+        closeAllMobileSortMenus();
+      },
+    },
+    {
+      key: 'util',
+      label: 'Utilization',
+      isSelected: activeSortColumn === 'util',
+      order: utilSortOrder,
+      activeClassName: 'text-foreground',
+      onSelect: () => {
+        collapseExpandedOnSort();
+        if (activeSortColumn === 'util' && utilSortOrder === 'desc') {
+          setUtilSortOrder('asc');
+        } else {
+          setActiveSortColumn('util');
+          setUtilSortOrder('desc');
+        }
+        closeAllMobileSortMenus();
+      },
+    },
+  ];
+
   const handleIncentiveClick = useCallback((
     e: React.MouseEvent,
     reserve: ReserveWithSpread,
@@ -806,33 +1060,6 @@ const ReservesTable = ({
     if (url) {
       openExternalUrl(url, isMobile);
     }
-  };
-
-  // Mobile card view with tooltip support
-  const handleMobileIncentiveClick = (
-    e: React.MouseEvent,
-    reserve: ReserveWithSpread,
-    type: 'supply' | 'borrow',
-    apy: number | null
-  ) => {
-    if (apy === null || isNaN(apy)) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const triggerCenterX = rect.left + rect.width / 2;
-    setTooltipState({
-      reserve,
-      type,
-      position: { x: rect.left, y: rect.bottom },
-      triggerCenterX,
-      triggerHeight: rect.height,
-      triggerRect: {
-        top: rect.top,
-        bottom: rect.bottom,
-        left: rect.left,
-        right: rect.right,
-        width: rect.width,
-        height: rect.height,
-      },
-    });
   };
 
   // Auto-expand to target reserve + 5 rows buffer when scrolling to a specific reserve
@@ -951,12 +1178,7 @@ const ReservesTable = ({
             <div className="relative">
               <button
                 type="button"
-                onClick={() => {
-                  setShowSizeSortMenu(!showSizeSortMenu);
-                  setShowSupplySortMenu(false);
-                  setShowBorrowSortMenu(false);
-                  setShowExtraSortMenu(false);
-                }}
+                onClick={() => toggleMobileSortMenu('size')}
                 className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-lg border transition-colors ${
                   activeSortColumn === 'size'
                     ? `bg-card/60 border-border/70 ${sizeSortAccentClass} font-semibold`
@@ -966,137 +1188,18 @@ const ReservesTable = ({
                 <span>Size</span>
                 <ChevronDown className="w-3 h-3" />
               </button>
-              {showSizeSortMenu && (
-                <>
-                  <div className="fixed inset-0 z-10" onClick={() => setShowSizeSortMenu(false)} />
-                  <div className="absolute right-0 top-full mt-1 bg-card border border-border rounded-lg shadow-lg py-0.5 z-20 w-max min-w-[6.25rem] max-w-[min(18rem,calc(100vw-1.5rem))]">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const isAlreadySelected = sizeSortMode === 'supply' && activeSortColumn === 'size';
-                        if (isAlreadySelected && sizeSortOrder === 'desc') {
-                          setSizeSortOrder('asc');
-                        } else {
-                          setSizeSortMode('supply');
-                          setActiveSortColumn('size');
-                          setSizeSortOrder('desc');
-                        }
-                        setShowSizeSortMenu(false);
-                      }}
-                      className={`w-full px-2 py-0.5 text-left ds-text-13 transition-colors flex items-center justify-start gap-1.5 ${
-                        sizeSortMode === 'supply' && activeSortColumn === 'size'
-                          ? 'ds-text-emerald-600 font-bold bg-card/60'
-                          : 'text-muted-foreground'
-                      }`}
-                    >
-                      <span>Supply</span>
-                      {sizeSortMode === 'supply' && activeSortColumn === 'size' ? (
-                        sizeSortOrder === 'desc' ? (
-                          <ArrowDown className="w-3 h-3 ds-text-emerald-600" />
-                        ) : (
-                          <ArrowUp className="w-3 h-3 ds-text-emerald-600" />
-                        )
-                      ) : null}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const isAlreadySelected = sizeSortMode === 'borrow' && activeSortColumn === 'size';
-                        if (isAlreadySelected && sizeSortOrder === 'desc') {
-                          setSizeSortOrder('asc');
-                        } else {
-                          setSizeSortMode('borrow');
-                          setActiveSortColumn('size');
-                          setSizeSortOrder('desc');
-                        }
-                        setShowSizeSortMenu(false);
-                      }}
-                      className={`w-full px-2 py-0.5 text-left ds-text-13 transition-colors flex items-center justify-start gap-1.5 ${
-                        sizeSortMode === 'borrow' && activeSortColumn === 'size'
-                          ? 'ds-text-brand-cyan font-bold bg-card/60'
-                          : 'text-muted-foreground'
-                      }`}
-                    >
-                      <span>Borrow</span>
-                      {sizeSortMode === 'borrow' && activeSortColumn === 'size' ? (
-                        sizeSortOrder === 'desc' ? (
-                          <ArrowDown className="w-3 h-3 ds-text-brand-cyan" />
-                        ) : (
-                          <ArrowUp className="w-3 h-3 ds-text-brand-cyan" />
-                        )
-                      ) : null}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const isAlreadySelected = sizeSortMode === 'deficitAmount' && activeSortColumn === 'size';
-                        if (isAlreadySelected && sizeSortOrder === 'desc') {
-                          setSizeSortOrder('asc');
-                        } else {
-                          setSizeSortMode('deficitAmount');
-                          setActiveSortColumn('size');
-                          setSizeSortOrder('desc');
-                        }
-                        setShowSizeSortMenu(false);
-                      }}
-                      className={`w-full px-2 py-0.5 text-left ds-text-13 transition-colors flex items-center justify-start gap-1.5 ${
-                        sizeSortMode === 'deficitAmount' && activeSortColumn === 'size'
-                          ? 'text-foreground font-bold bg-card/60'
-                          : 'text-muted-foreground'
-                      }`}
-                    >
-                      <span>Deficit</span>
-                      {sizeSortMode === 'deficitAmount' && activeSortColumn === 'size' ? (
-                        sizeSortOrder === 'desc' ? (
-                          <ArrowDown className="w-3 h-3 text-foreground" />
-                        ) : (
-                          <ArrowUp className="w-3 h-3 text-foreground" />
-                        )
-                      ) : null}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const isAlreadySelected = sizeSortMode === 'deficitRatio' && activeSortColumn === 'size';
-                        if (isAlreadySelected && sizeSortOrder === 'desc') {
-                          setSizeSortOrder('asc');
-                        } else {
-                          setSizeSortMode('deficitRatio');
-                          setActiveSortColumn('size');
-                          setSizeSortOrder('desc');
-                        }
-                        setShowSizeSortMenu(false);
-                      }}
-                      className={`w-full px-2 py-0.5 text-left ds-text-13 transition-colors flex items-center justify-start gap-1.5 ${
-                        sizeSortMode === 'deficitRatio' && activeSortColumn === 'size'
-                          ? 'text-foreground font-bold bg-card/60'
-                          : 'text-muted-foreground'
-                      }`}
-                    >
-                      <span>Deficit (%)</span>
-                      {sizeSortMode === 'deficitRatio' && activeSortColumn === 'size' ? (
-                        sizeSortOrder === 'desc' ? (
-                          <ArrowDown className="w-3 h-3 text-foreground" />
-                        ) : (
-                          <ArrowUp className="w-3 h-3 text-foreground" />
-                        )
-                      ) : null}
-                    </button>
-                  </div>
-                </>
-              )}
+              <MobileSortMenu
+                open={showSizeSortMenu}
+                onClose={closeAllMobileSortMenus}
+                options={sizeSortOptions}
+              />
             </div>
 
             {/* Supply sort dropdown */}
             <div className="relative">
               <button
                 type="button"
-                onClick={() => {
-                  setShowSupplySortMenu(!showSupplySortMenu);
-                  setShowBorrowSortMenu(false);
-                  setShowSizeSortMenu(false);
-                  setShowExtraSortMenu(false);
-                }}
+                onClick={() => toggleMobileSortMenu('supply')}
                 className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-lg border transition-colors ${
                   activeSortColumn === 'supply'
                     ? 'bg-card/60 border-border/70 ds-text-emerald-700 font-semibold'
@@ -1106,59 +1209,18 @@ const ReservesTable = ({
                 <span>Supply</span>
                 <ChevronDown className="w-3 h-3" />
               </button>
-              {showSupplySortMenu && (
-                <>
-                  <div className="fixed inset-0 z-10" onClick={() => setShowSupplySortMenu(false)} />
-                  <div className="absolute right-0 top-full mt-1 bg-card border border-border rounded-lg shadow-lg py-0.5 z-20 w-max min-w-[6.25rem] max-w-[min(18rem,calc(100vw-1.5rem))]">
-                    {(['total', 'native', 'incentive'] as SortMode[]).map((mode) => {
-                      const isAlreadySelected = supplySortMode === mode && activeSortColumn === 'supply';
-                      const getColorClass = () => 'ds-text-emerald-600';
-                      return (
-                      <button
-                          type="button"
-                          key={mode}
-                          onClick={() => {
-                            if (isAlreadySelected && supplySortOrder === 'desc') {
-                              setSupplySortOrder('asc');
-                            } else {
-                              setSupplySortMode(mode);
-                              setActiveSortColumn('supply');
-                              setSupplySortOrder('desc');
-                            }
-                            setShowSupplySortMenu(false);
-                          }}
-                          className={`w-full px-2 py-0.5 text-left ds-text-13 transition-colors flex items-center justify-start gap-1.5 ${
-                            isAlreadySelected
-                              ? `${getColorClass()} font-bold bg-card/60`
-                              : 'text-muted-foreground'
-                          }`}
-                        >
-                          <span>{mode.charAt(0).toUpperCase() + mode.slice(1)}</span>
-                          {isAlreadySelected && (
-                            supplySortOrder === 'desc' ? (
-                              <ArrowDown className={`w-3 h-3 ${getColorClass()}`} />
-                            ) : (
-                              <ArrowUp className={`w-3 h-3 ${getColorClass()}`} />
-                            )
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </>
-              )}
+              <MobileSortMenu
+                open={showSupplySortMenu}
+                onClose={closeAllMobileSortMenus}
+                options={supplySortOptions}
+              />
             </div>
             
             {/* Borrow sort dropdown */}
             <div className="relative">
               <button
                 type="button"
-                onClick={() => {
-                  setShowBorrowSortMenu(!showBorrowSortMenu);
-                  setShowSupplySortMenu(false);
-                  setShowSizeSortMenu(false);
-                  setShowExtraSortMenu(false);
-                }}
+                onClick={() => toggleMobileSortMenu('borrow')}
                 className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-lg border transition-colors ${
                   activeSortColumn === 'borrow'
                     ? 'bg-card/60 border-border/70 ds-text-brand-cyan font-semibold'
@@ -1168,59 +1230,18 @@ const ReservesTable = ({
                 <span>Borrow</span>
                 <ChevronDown className="w-3 h-3" />
               </button>
-              {showBorrowSortMenu && (
-                <>
-                  <div className="fixed inset-0 z-10" onClick={() => setShowBorrowSortMenu(false)} />
-                  <div className="absolute right-0 top-full mt-1 bg-card border border-border rounded-lg shadow-lg py-0.5 z-20 w-max min-w-[6.25rem] max-w-[min(18rem,calc(100vw-1.5rem))]">
-                    {(['total', 'native', 'incentive'] as SortMode[]).map((mode) => {
-                      const isAlreadySelected = borrowSortMode === mode && activeSortColumn === 'borrow';
-                      const getColorClass = () => 'ds-text-brand-cyan';
-                      return (
-                      <button
-                          type="button"
-                          key={mode}
-                          onClick={() => {
-                            if (isAlreadySelected && borrowSortOrder === 'desc') {
-                              setBorrowSortOrder('asc');
-                            } else {
-                              setBorrowSortMode(mode);
-                              setActiveSortColumn('borrow');
-                              setBorrowSortOrder('desc');
-                            }
-                            setShowBorrowSortMenu(false);
-                          }}
-                          className={`w-full px-2 py-0.5 text-left ds-text-13 transition-colors flex items-center justify-start gap-1.5 ${
-                            isAlreadySelected
-                              ? `${getColorClass()} font-bold bg-card/60`
-                              : 'text-muted-foreground'
-                          }`}
-                        >
-                          <span>{mode.charAt(0).toUpperCase() + mode.slice(1)}</span>
-                          {isAlreadySelected && (
-                            borrowSortOrder === 'desc' ? (
-                              <ArrowDown className={`w-3 h-3 ${getColorClass()}`} />
-                            ) : (
-                              <ArrowUp className={`w-3 h-3 ${getColorClass()}`} />
-                            )
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </>
-              )}
+              <MobileSortMenu
+                open={showBorrowSortMenu}
+                onClose={closeAllMobileSortMenus}
+                options={borrowSortOptions}
+              />
             </div>
 
             {/* Spread + desktop-only columns (token, market, price, utilization) */}
             <div className="relative">
               <button
                 type="button"
-                onClick={() => {
-                  setShowExtraSortMenu(!showExtraSortMenu);
-                  setShowSizeSortMenu(false);
-                  setShowSupplySortMenu(false);
-                  setShowBorrowSortMenu(false);
-                }}
+                onClick={() => toggleMobileSortMenu('extra')}
                 className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-lg border transition-colors max-w-[7.5rem] ${
                   activeSortColumn === 'spread'
                     ? 'bg-card/60 border-border/70 ds-text-purple-700 font-semibold'
@@ -1233,153 +1254,12 @@ const ReservesTable = ({
                 <span className="truncate">{mobileExtraSortChipLabel}</span>
                 <ChevronDown className="w-3 h-3 shrink-0" />
               </button>
-              {showExtraSortMenu && (
-                <>
-                  <div className="fixed inset-0 z-10" onClick={() => setShowExtraSortMenu(false)} />
-                  <div className="absolute right-0 top-full mt-1 bg-card border border-border rounded-lg shadow-lg py-0.5 z-20 w-max min-w-[7.5rem] max-w-[min(18rem,calc(100vw-1.5rem))]">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        collapseExpandedOnSort();
-                        const isAlreadySelected = activeSortColumn === 'spread';
-                        if (isAlreadySelected && spreadSortOrder === 'desc') {
-                          setSpreadSortOrder('asc');
-                        } else {
-                          setActiveSortColumn('spread');
-                          setSpreadSortOrder('desc');
-                        }
-                        setShowExtraSortMenu(false);
-                      }}
-                      className={`w-full px-2 py-0.5 text-left ds-text-13 transition-colors flex items-center justify-start gap-1.5 ${
-                        activeSortColumn === 'spread'
-                          ? 'ds-text-purple-600 font-bold bg-card/60'
-                          : 'text-muted-foreground'
-                      }`}
-                    >
-                      <span>Spread</span>
-                      {activeSortColumn === 'spread' ? (
-                        spreadSortOrder === 'desc' ? (
-                          <ArrowDown className="w-3 h-3 ds-text-purple-600" />
-                        ) : (
-                          <ArrowUp className="w-3 h-3 ds-text-purple-600" />
-                        )
-                      ) : null}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        collapseExpandedOnSort();
-                        const isAlreadySelected = activeSortColumn === 'token';
-                        if (isAlreadySelected && tokenSortOrder === 'asc') {
-                          setTokenSortOrder('desc');
-                        } else {
-                          setActiveSortColumn('token');
-                          setTokenSortOrder('asc');
-                        }
-                        setShowExtraSortMenu(false);
-                      }}
-                      className={`w-full px-2 py-0.5 text-left ds-text-13 transition-colors flex items-center justify-start gap-1.5 ${
-                        activeSortColumn === 'token'
-                          ? 'text-foreground font-bold bg-card/60'
-                          : 'text-muted-foreground'
-                      }`}
-                    >
-                      <span>Token</span>
-                      {activeSortColumn === 'token' ? (
-                        tokenSortOrder === 'asc' ? (
-                          <ArrowUp className="w-3 h-3 text-foreground" />
-                        ) : (
-                          <ArrowDown className="w-3 h-3 text-foreground" />
-                        )
-                      ) : null}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        collapseExpandedOnSort();
-                        const isAlreadySelected = activeSortColumn === 'market';
-                        if (isAlreadySelected && marketSortOrder === 'asc') {
-                          setMarketSortOrder('desc');
-                        } else {
-                          setActiveSortColumn('market');
-                          setMarketSortOrder('asc');
-                        }
-                        setShowExtraSortMenu(false);
-                      }}
-                      className={`w-full px-2 py-0.5 text-left ds-text-13 transition-colors flex items-center justify-start gap-1.5 ${
-                        activeSortColumn === 'market'
-                          ? 'text-foreground font-bold bg-card/60'
-                          : 'text-muted-foreground'
-                      }`}
-                    >
-                      <span>Market</span>
-                      {activeSortColumn === 'market' ? (
-                        marketSortOrder === 'asc' ? (
-                          <ArrowUp className="w-3 h-3 text-foreground" />
-                        ) : (
-                          <ArrowDown className="w-3 h-3 text-foreground" />
-                        )
-                      ) : null}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        collapseExpandedOnSort();
-                        const isAlreadySelected = activeSortColumn === 'price';
-                        if (isAlreadySelected && priceSortOrder === 'desc') {
-                          setPriceSortOrder('asc');
-                        } else {
-                          setActiveSortColumn('price');
-                          setPriceSortOrder('desc');
-                        }
-                        setShowExtraSortMenu(false);
-                      }}
-                      className={`w-full px-2 py-0.5 text-left ds-text-13 transition-colors flex items-center justify-start gap-1.5 ${
-                        activeSortColumn === 'price'
-                          ? 'text-foreground font-bold bg-card/60'
-                          : 'text-muted-foreground'
-                      }`}
-                    >
-                      <span>Price</span>
-                      {activeSortColumn === 'price' ? (
-                        priceSortOrder === 'desc' ? (
-                          <ArrowDown className="w-3 h-3 text-foreground" />
-                        ) : (
-                          <ArrowUp className="w-3 h-3 text-foreground" />
-                        )
-                      ) : null}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        collapseExpandedOnSort();
-                        const isAlreadySelected = activeSortColumn === 'util';
-                        if (isAlreadySelected && utilSortOrder === 'desc') {
-                          setUtilSortOrder('asc');
-                        } else {
-                          setActiveSortColumn('util');
-                          setUtilSortOrder('desc');
-                        }
-                        setShowExtraSortMenu(false);
-                      }}
-                      className={`w-full px-2 py-0.5 text-left ds-text-13 transition-colors flex items-center justify-start gap-1.5 ${
-                        activeSortColumn === 'util'
-                          ? 'text-foreground font-bold bg-card/60'
-                          : 'text-muted-foreground'
-                      }`}
-                    >
-                      <span>Utilization</span>
-                      {activeSortColumn === 'util' ? (
-                        utilSortOrder === 'desc' ? (
-                          <ArrowDown className="w-3 h-3 text-foreground" />
-                        ) : (
-                          <ArrowUp className="w-3 h-3 text-foreground" />
-                        )
-                      ) : null}
-                    </button>
-                  </div>
-                </>
-              )}
+              <MobileSortMenu
+                open={showExtraSortMenu}
+                onClose={closeAllMobileSortMenus}
+                options={extraSortOptions}
+                minWidthClassName="min-w-[7.5rem]"
+              />
             </div>
           </div>
         </div>
@@ -1440,7 +1320,7 @@ const ReservesTable = ({
                     reserve={leftReserve}
                     isApy={isApy}
                     tydroPointToUsdRate={tydroPointToUsdRate}
-                    onIncentiveClick={handleMobileIncentiveClick}
+                    onIncentiveClick={handleIncentiveClick}
                     isSimulationExpanded={isLeftActive}
                     onToggleSimulation={() => handleToggleExpand(leftId)}
                     simulation={simulationsById[leftId]}
@@ -1460,7 +1340,7 @@ const ReservesTable = ({
                     reserve={rightReserve}
                     isApy={isApy}
                     tydroPointToUsdRate={tydroPointToUsdRate}
-                    onIncentiveClick={handleMobileIncentiveClick}
+                    onIncentiveClick={handleIncentiveClick}
                     isSimulationExpanded={isRightActive}
                     onToggleSimulation={() => handleToggleExpand(rightId!)}
                     simulation={simulationsById[rightId!]}
@@ -1491,7 +1371,7 @@ const ReservesTable = ({
                             reserve={activeReserve}
                             isApy={isApy}
                             tydroPointToUsdRate={tydroPointToUsdRate}
-                            onIncentiveClick={handleMobileIncentiveClick}
+                            onIncentiveClick={handleIncentiveClick}
                             isSimulationExpanded
                             onToggleSimulation={() => handleToggleExpand(activeId)}
                             simulation={simulationsById[activeId]}

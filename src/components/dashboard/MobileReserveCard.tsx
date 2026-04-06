@@ -1,8 +1,14 @@
 import { memo, useEffect, useState } from 'react';
 import { ExternalLink, ListCollapse, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ReserveWithSpread, ETHEREUM_MARKET_NAMES } from '@/types/aave';
-import { formatPercent, formatSpread, resolveVisibleIncentiveBadgeValue } from '@/lib/formatters';
+import { ReserveWithSpread } from '@/types/aave';
+import {
+  formatPercent,
+  formatScenarioSize,
+  formatSpread,
+  getReserveMarketDisplayName,
+  resolveVisibleIncentiveBadgeValue,
+} from '@/lib/formatters';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
@@ -16,7 +22,6 @@ import CapProgressRing from './CapProgressRing';
 import BorrowCapProgressRing from './BorrowCapProgressRing';
 
 import DeficitShieldIcon from './DeficitShieldIcon';
-import { formatScenarioSize } from '@/lib/formatters';
 import {
   calculateDeficitShareRatio,
   formatReserveDeficitTokenCompact,
@@ -257,13 +262,6 @@ const MobileReserveCard = memo(({
       setHasSimulationMounted(true);
     }
   }, [isSimulationExpanded]);
-
-  const getMarketDisplayName = () => {
-    if (reserve.chainName === 'Ethereum' && ETHEREUM_MARKET_NAMES[reserve.marketName]) {
-      return ETHEREUM_MARKET_NAMES[reserve.marketName];
-    }
-    return reserve.chainName;
-  };
 
   const displaySupplyTotal = hasSharedScenario
     ? simulation.supply.afterTotal ?? simulation.supply.currentTotal
@@ -613,7 +611,7 @@ const MobileReserveCard = memo(({
                 {chainIconSrc && (
                   <img src={chainIconSrc} alt={reserve.chainName} className="w-3 h-3 opacity-80" />
                 )}
-                <span className="truncate">{getMarketDisplayName()}</span>
+                <span className="truncate">{getReserveMarketDisplayName(reserve)}</span>
               </div>
             </div>
           </a>

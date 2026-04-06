@@ -54,7 +54,13 @@ export const apyToApr = (apy: number): number => {
   return aprDecimal * 100;
 };
 
-import type { BrevisIncentive, MeritIncentive, MerklOpportunityGroup, ReserveWithSpread } from '@/types/aave';
+import {
+  ETHEREUM_MARKET_NAMES,
+  type BrevisIncentive,
+  type MeritIncentive,
+  type MerklOpportunityGroup,
+  type ReserveWithSpread,
+} from '@/types/aave';
 import { isCampaignActive, sumActiveCampaignBreakdownValues } from '@/lib/campaignGroups';
 import {
   getBrevisCampaignBreakdowns,
@@ -97,6 +103,16 @@ export function isMerklWhitelistBreakdownIncluded(
 export interface IncentiveCalculationOptions {
   /** Merkl campaign IDs the user opted into for whitelist-only APR */
   whitelistMerklCampaignIds?: ReadonlySet<string>;
+}
+
+/** Shared market label rendering: Ethereum sub-markets use canonical market names, others use chain name. */
+export function getReserveMarketDisplayName(
+  market: Pick<ReserveWithSpread, 'chainName' | 'marketName'>
+): string {
+  if (market.chainName === 'Ethereum' && ETHEREUM_MARKET_NAMES[market.marketName]) {
+    return ETHEREUM_MARKET_NAMES[market.marketName];
+  }
+  return market.chainName;
 }
 
 /**
@@ -279,6 +295,40 @@ export const calculateTotalIncentiveApy = (
   
   return meritApy + merklApy + protocolApy + brevisApy;
 };
+
+/**
+ * Aggregate incentive APR/APY for one reserve side, used by reserves table and top opportunities.
+ */
+export function getReserveIncentiveValues(
+  reserve: ReserveWithSpread,
+  side: 'supply' | 'borrow',
+  tydroPointToUsdRate = TYDRO_POINT_TO_USD_RATE,
+  options: IncentiveCalculationOptions = {}
+): { apr: number; apy: number } {
+  const protocolIncentives = side === 'supply' ? reserve.supplyIncentives : reserve.borrowIncentives;
+  const meritIncentives = side === 'supply' ? reserve.meritSupplys : reserve.meritBorrows;
+  const merklOpportunities = side === 'supply' ? reserve.merklSupplys : reserve.merklBorrows;
+  const brevisIncentives = side === 'supply' ? reserve.brevisSupplys : reserve.brevisBorrows;
+
+  return {
+    apr: calculateTotalIncentiveApr(
+      meritIncentives,
+      merklOpportunities,
+      brevisIncentives,
+      protocolIncentives,
+      tydroPointToUsdRate,
+      options
+    ),
+    apy: calculateTotalIncentiveApy(
+      meritIncentives,
+      merklOpportunities,
+      brevisIncentives,
+      protocolIncentives,
+      tydroPointToUsdRate,
+      options
+    ),
+  };
+}
 
 // Calculate total Supply APR (native + incentive)
 export const calculateTotalSupplyApr = (nativeSupplyApr: number | null | undefined, incentiveApr: number): number | null => {
