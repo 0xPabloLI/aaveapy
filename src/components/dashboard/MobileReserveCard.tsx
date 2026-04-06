@@ -227,6 +227,14 @@ interface MobileReserveCardProps {
   connectedBelow?: boolean;
   /** Override the default active tab from parent (e.g. based on sort column). */
   defaultTab?: 'supply' | 'borrow';
+  /** Portfolio mode: show checkbox overlay. */
+  isPortfolioMode?: boolean;
+  /** Whether this reserve is already in the portfolio. */
+  isInPortfolio?: boolean;
+  /** Callback to add/remove from portfolio. */
+  onPortfolioToggle?: (reserveId: string, reserve: ReserveWithSpread) => void;
+  /** Callback from SimulationSubRow "Add to Portfolio" button. */
+  onAddToPortfolio?: (reserve: ReserveWithSpread, side: 'supply' | 'borrow') => void;
 }
 
 const MobileReserveCard = memo(({
@@ -246,6 +254,10 @@ const MobileReserveCard = memo(({
   variant = 'full',
   connectedBelow = false,
   defaultTab,
+  isPortfolioMode,
+  isInPortfolio,
+  onPortfolioToggle,
+  onAddToPortfolio,
 }: MobileReserveCardProps) => {
   const [capSheet, setCapSheet] = useState<'supply' | 'borrow' | 'utilization' | 'deficit' | null>(null);
   const [hasSimulationMounted, setHasSimulationMounted] = useState(isSimulationExpanded);
