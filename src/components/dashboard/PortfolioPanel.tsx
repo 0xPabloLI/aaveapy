@@ -270,6 +270,20 @@ const PortfolioPanel = memo(function PortfolioPanel({
           )}
         </div>
       )}
+
+      {/* Summary card */}
+      {summary && positions.length > 0 && (
+        <div className="mt-3">
+          <PortfolioSummaryCard summary={summary} />
+        </div>
+      )}
+
+      {/* Per-token results table */}
+      {positionResults && positionResults.length > 0 && (
+        <div className="mt-2.5">
+          <PortfolioResultsTable positions={positions} results={positionResults} />
+        </div>
+      )}
     </div>
   );
 });
