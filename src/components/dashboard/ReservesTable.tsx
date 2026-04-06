@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback, memo, useRef } from 'react';
+import { useState, useMemo, useEffect, useCallback, memo, useRef, lazy, Suspense } from 'react';
 
 import { createPortal } from 'react-dom';
 import { ArrowUp, ArrowDown, ChevronDown, ChevronUp } from 'lucide-react';
@@ -39,6 +39,11 @@ import {
 } from '@/lib/scrollExpandedSimulationIntoView';
 import { createScenarioPinControllerState, transitionScenarioPinController } from '@/lib/scenarioPinController';
 
+import PortfolioModeToggle, { type SimulationMode } from './PortfolioModeToggle';
+import type { PortfolioPosition } from '@/types/portfolio';
+import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
+const PortfolioPanel = lazy(() => import('./PortfolioPanel'));
+
 interface ReservesTableProps {
   reserves: ReserveWithSpread[];
   sortField: 'totalSupplyApy' | 'totalBorrowApy' | 'apySpread' | null;
@@ -52,6 +57,11 @@ interface ReservesTableProps {
   onToggleWhitelistMerklCampaign: (campaignId: string, enabled: boolean) => void;
   tokenPrices?: TokenPricesIndex;
   scrollToReserveId?: string | null;
+  /** Portfolio simulation mode. */
+  simulationMode?: SimulationMode;
+  onSimulationModeChange?: (mode: SimulationMode) => void;
+  portfolioPositions?: PortfolioPosition[];
+  portfolioActions?: PortfolioSimulationActions;
 }
 
 type SortMode = 'total' | 'native' | 'incentive';
@@ -73,6 +83,10 @@ const ReservesTable = ({
   onToggleWhitelistMerklCampaign,
   tokenPrices,
   scrollToReserveId,
+  simulationMode = 'single',
+  onSimulationModeChange,
+  portfolioPositions,
+  portfolioActions,
 }: ReservesTableProps) => {
   const isMobile = useIsMobile();
   const [activeSortColumn, setActiveSortColumn] = useState<SortableColumn | null>('supply');
@@ -1046,13 +1060,39 @@ const ReservesTable = ({
   
   const showAll = minVisibleCount !== null && minVisibleCount >= sortedData.length;
 
+  const isPortfolioMode = simulationMode === 'portfolio';
+
   const scenarioControls = (
-    <ScenarioControls
-      ref={scenarioControlsRef}
-      onDebouncedChange={handleScenarioChange}
-      meritMerklNetPosition={meritMerklNetPosition}
-      onMeritMerklNetPositionChange={setMeritMerklNetPosition}
-    />
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
+        {onSimulationModeChange && (
+          <PortfolioModeToggle
+            mode={simulationMode}
+            onModeChange={onSimulationModeChange}
+            positionCount={portfolioPositions?.length}
+          />
+        )}
+        {!isPortfolioMode && (
+          <div className="flex-1 min-w-0">
+            <ScenarioControls
+              ref={scenarioControlsRef}
+              onDebouncedChange={handleScenarioChange}
+              meritMerklNetPosition={meritMerklNetPosition}
+              onMeritMerklNetPositionChange={setMeritMerklNetPosition}
+            />
+          </div>
+        )}
+      </div>
+      {isPortfolioMode && portfolioPositions && portfolioActions && (
+        <Suspense fallback={<div className="h-20 rounded-xl bg-muted/50 animate-pulse" />}>
+          <PortfolioPanel
+            positions={portfolioPositions}
+            actions={portfolioActions}
+            reserves={reserves}
+          />
+        </Suspense>
+      )}
+    </div>
   );
 
   const mobileTableRef = useRef<HTMLDivElement>(null);

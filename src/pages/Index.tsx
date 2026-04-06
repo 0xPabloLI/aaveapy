@@ -1,4 +1,6 @@
 import { lazy, Suspense, useState, useMemo, useCallback, useEffect } from 'react';
+import type { SimulationMode } from '@/components/dashboard/PortfolioModeToggle';
+import { usePortfolioSimulation } from '@/hooks/usePortfolioSimulation';
 import { useIsFetching } from '@tanstack/react-query';
 import { useAaveMarkets } from '@/hooks/useAaveMarkets';
 import { useTokenCategories } from '@/hooks/useTokenCategories';
@@ -50,6 +52,8 @@ const Index = () => {
   const [showCacheWarning, setShowCacheWarning] = useState(false);
   
   const [isRateDragging, setIsRateDragging] = useState(false);
+  const [simulationMode, setSimulationMode] = useState<SimulationMode>('single');
+  const portfolio = usePortfolioSimulation();
   const [whitelistMerklCampaignIds, setWhitelistMerklCampaignIds] = useState<Set<string>>(() => new Set());
   const toggleWhitelistMerklCampaign = useCallback((campaignId: string, enabled: boolean) => {
     const id = String(campaignId || '').trim();
@@ -407,6 +411,10 @@ const Index = () => {
               onToggleWhitelistMerklCampaign={toggleWhitelistMerklCampaign}
               tokenPrices={tokenPrices}
               scrollToReserveId={pendingScrollReserveId}
+              simulationMode={simulationMode}
+              onSimulationModeChange={setSimulationMode}
+              portfolioPositions={portfolio.positions}
+              portfolioActions={portfolio.actions}
             />
           </div>
 
