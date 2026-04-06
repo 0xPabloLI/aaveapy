@@ -411,6 +411,10 @@ const Index = () => {
               onToggleWhitelistMerklCampaign={toggleWhitelistMerklCampaign}
               tokenPrices={tokenPrices}
               scrollToReserveId={pendingScrollReserveId}
+              simulationMode={simulationMode}
+              onSimulationModeChange={setSimulationMode}
+              portfolioPositions={portfolio.positions}
+              portfolioActions={portfolio.actions}
             />
           </div>
 
