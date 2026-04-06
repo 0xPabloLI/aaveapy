@@ -19,6 +19,10 @@ interface PortfolioPanelProps {
   positions: PortfolioPosition[];
   actions: PortfolioSimulationActions;
   reserves: ReserveWithSpread[];
+  /** Per-position simulation results (computed externally). */
+  positionResults?: PortfolioPositionResult[];
+  /** Aggregated portfolio summary (computed externally). */
+  summary?: PortfolioSummary;
 }
 
 /** Search result row with quick add buttons. */
