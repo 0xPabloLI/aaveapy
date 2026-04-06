@@ -1234,6 +1234,28 @@ const SimulationSubRow = ({
         </div>
       )}
 
+      {/* Add to Portfolio button */}
+      {showAddToPortfolio && onAddToPortfolio && (
+        <div className={`mt-3 flex items-center gap-2 ${effectiveCompact && embeddedFromTop ? 'px-0' : 'px-1'}`}>
+          <button
+            type="button"
+            onClick={() => onAddToPortfolio(reserve, 'supply')}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border/60 bg-muted/30 px-3 py-1.5 ds-text-12 font-medium text-foreground/80 transition-all hover:bg-muted/60 hover:border-primary/40 hover:text-primary active:scale-[0.98]"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            <span>+ Supply to Portfolio</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => onAddToPortfolio(reserve, 'borrow')}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border/60 bg-muted/30 px-3 py-1.5 ds-text-12 font-medium text-foreground/80 transition-all hover:bg-muted/60 hover:border-primary/40 hover:text-primary active:scale-[0.98]"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            <span>+ Borrow to Portfolio</span>
+          </button>
+        </div>
+      )}
+
       {/* Bottom of scrollable simulation stack — used by E2E to detect inner-pane clipping */}
       <div data-reserves-simulation-bottom-sentinel aria-hidden className="h-px w-full shrink-0" />
     </div>
