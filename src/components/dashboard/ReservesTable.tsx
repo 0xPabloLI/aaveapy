@@ -1060,13 +1060,39 @@ const ReservesTable = ({
   
   const showAll = minVisibleCount !== null && minVisibleCount >= sortedData.length;
 
+  const isPortfolioMode = simulationMode === 'portfolio';
+
   const scenarioControls = (
-    <ScenarioControls
-      ref={scenarioControlsRef}
-      onDebouncedChange={handleScenarioChange}
-      meritMerklNetPosition={meritMerklNetPosition}
-      onMeritMerklNetPositionChange={setMeritMerklNetPosition}
-    />
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
+        {onSimulationModeChange && (
+          <PortfolioModeToggle
+            mode={simulationMode}
+            onModeChange={onSimulationModeChange}
+            positionCount={portfolioPositions?.length}
+          />
+        )}
+        {!isPortfolioMode && (
+          <div className="flex-1 min-w-0">
+            <ScenarioControls
+              ref={scenarioControlsRef}
+              onDebouncedChange={handleScenarioChange}
+              meritMerklNetPosition={meritMerklNetPosition}
+              onMeritMerklNetPositionChange={setMeritMerklNetPosition}
+            />
+          </div>
+        )}
+      </div>
+      {isPortfolioMode && portfolioPositions && portfolioActions && (
+        <Suspense fallback={<div className="h-20 rounded-xl bg-muted/50 animate-pulse" />}>
+          <PortfolioPanel
+            positions={portfolioPositions}
+            actions={portfolioActions}
+            reserves={reserves}
+          />
+        </Suspense>
+      )}
+    </div>
   );
 
   const mobileTableRef = useRef<HTMLDivElement>(null);
