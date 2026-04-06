@@ -1,5 +1,5 @@
 import { memo, useEffect, useState } from 'react';
-import { ExternalLink, ListCollapse, X } from 'lucide-react';
+import { ExternalLink, ListCollapse, Plus, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ReserveWithSpread } from '@/types/aave';
 import {
@@ -227,6 +227,14 @@ interface MobileReserveCardProps {
   connectedBelow?: boolean;
   /** Override the default active tab from parent (e.g. based on sort column). */
   defaultTab?: 'supply' | 'borrow';
+  /** Portfolio mode: show checkbox overlay. */
+  isPortfolioMode?: boolean;
+  /** Whether this reserve is already in the portfolio. */
+  isInPortfolio?: boolean;
+  /** Callback to add/remove from portfolio. */
+  onPortfolioToggle?: (reserveId: string, reserve: ReserveWithSpread) => void;
+  /** Callback from SimulationSubRow "Add to Portfolio" button. */
+  onAddToPortfolio?: (reserve: ReserveWithSpread, side: 'supply' | 'borrow') => void;
 }
 
 const MobileReserveCard = memo(({
@@ -246,6 +254,10 @@ const MobileReserveCard = memo(({
   variant = 'full',
   connectedBelow = false,
   defaultTab,
+  isPortfolioMode,
+  isInPortfolio,
+  onPortfolioToggle,
+  onAddToPortfolio,
 }: MobileReserveCardProps) => {
   const [capSheet, setCapSheet] = useState<'supply' | 'borrow' | 'utilization' | 'deficit' | null>(null);
   const [hasSimulationMounted, setHasSimulationMounted] = useState(isSimulationExpanded);
@@ -353,6 +365,8 @@ const MobileReserveCard = memo(({
           embeddedFromTop
           onCorrectSupplyInput={onCorrectSupplyInput}
           onCorrectBorrowInput={onCorrectBorrowInput}
+          showAddToPortfolio={isPortfolioMode}
+          onAddToPortfolio={onAddToPortfolio}
         />
       </div>
     );
@@ -588,6 +602,29 @@ const MobileReserveCard = memo(({
       >
         {/* Token header */}
         <div className="flex items-center gap-[var(--ds-space-2)] mb-1.5 min-h-[36px] px-3">
+          {isPortfolioMode && onPortfolioToggle && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                const rid = `${reserve.marketName}-${reserve.tokenAddress}`;
+                onPortfolioToggle(rid, reserve);
+              }}
+              className={cn(
+                'flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-all duration-150',
+                isInPortfolio
+                  ? 'bg-primary/15 border-primary/40 text-primary'
+                  : 'border-border/60 text-muted-foreground/40',
+              )}
+              aria-label={isInPortfolio ? `Remove ${reserve.tokenSymbol} from portfolio` : `Add ${reserve.tokenSymbol} to portfolio`}
+            >
+              {isInPortfolio ? (
+                <span className="ds-text-11 font-bold leading-none">✓</span>
+              ) : (
+                <Plus className="h-3 w-3" />
+              )}
+            </button>
+          )}
           <a
             href={buildAaveReserveUrl({ marketName: reserve.marketName, tokenAddress: reserve.tokenAddress }) || '#'}
             {...externalLinkTabProps(true)}
@@ -810,6 +847,8 @@ const MobileReserveCard = memo(({
                     embeddedFromTop
                     onCorrectSupplyInput={onCorrectSupplyInput}
                     onCorrectBorrowInput={onCorrectBorrowInput}
+                    showAddToPortfolio={isPortfolioMode}
+                    onAddToPortfolio={onAddToPortfolio}
                   />
                 </div>
               </div>

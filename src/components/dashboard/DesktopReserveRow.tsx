@@ -1,5 +1,5 @@
-import { memo, Fragment, useEffect, useState } from 'react';
-import { ExternalLink } from 'lucide-react';
+import { memo, Fragment, useEffect, useState, useCallback } from 'react';
+import { ExternalLink, Plus } from 'lucide-react';
 import { TableRow, TableCell } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ReserveWithSpread } from '@/types/aave';
@@ -67,6 +67,14 @@ interface DesktopReserveRowProps {
   isMobile: boolean;
   onCorrectSupplyInput?: (correctedValue: string) => void;
   onCorrectBorrowInput?: (correctedValue: string) => void;
+  /** Portfolio mode: show checkbox for adding to portfolio. */
+  isPortfolioMode?: boolean;
+  /** Whether this reserve is already in the portfolio. */
+  isInPortfolio?: boolean;
+  /** Callback to add/remove from portfolio. */
+  onPortfolioToggle?: (reserveId: string, reserve: ReserveWithSpread) => void;
+  /** Callback from SimulationSubRow "Add to Portfolio" button. */
+  onAddToPortfolio?: (reserve: ReserveWithSpread, side: 'supply' | 'borrow') => void;
 }
 
 const DesktopReserveRow = memo(({
@@ -93,6 +101,10 @@ const DesktopReserveRow = memo(({
   isMobile,
   onCorrectSupplyInput,
   onCorrectBorrowInput,
+  isPortfolioMode,
+  isInPortfolio,
+  onPortfolioToggle,
+  onAddToPortfolio,
 }: DesktopReserveRowProps) => {
   const [hasSimulationMounted, setHasSimulationMounted] = useState(isExpanded);
 
@@ -176,6 +188,29 @@ const DesktopReserveRow = memo(({
       >
         {/* Token — 右侧留白更小 */}
         <TableCell className="pl-[var(--ds-space-3)] pr-[var(--ds-space-1)] ds-row-pad whitespace-nowrap text-center">
+          <div className="inline-flex items-center justify-center gap-[var(--ds-space-2)]">
+          {isPortfolioMode && onPortfolioToggle && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onPortfolioToggle(reserveId, reserve);
+              }}
+              className={cn(
+                'flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-all duration-150',
+                isInPortfolio
+                  ? 'bg-primary/15 border-primary/40 text-primary'
+                  : 'border-border/60 text-muted-foreground/40 hover:border-primary/40 hover:text-primary/60',
+              )}
+              aria-label={isInPortfolio ? `Remove ${reserve.tokenSymbol} from portfolio` : `Add ${reserve.tokenSymbol} to portfolio`}
+            >
+              {isInPortfolio ? (
+                <span className="ds-text-11 font-bold leading-none">✓</span>
+              ) : (
+                <Plus className="h-3 w-3" />
+              )}
+            </button>
+          )}
           <a
             href={aaveUrl}
             target="_blank"
@@ -190,7 +225,8 @@ const DesktopReserveRow = memo(({
               {reserve.tokenSymbol}
             </span>
             <ExternalLink className="w-3 h-3 text-muted-foreground opacity-0 -ml-1 group-hover/token:opacity-70 transition-opacity duration-150" />
-          </a>
+           </a>
+          </div>
         </TableCell>
         {/* Price — 左右留白更小 */}
         <TableCell className="px-[var(--ds-space-1)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell tabular-nums text-muted-foreground ds-text-13">
@@ -442,6 +478,8 @@ const DesktopReserveRow = memo(({
                   inputMode={inputMode}
                   onCorrectSupplyInput={onCorrectSupplyInput}
                   onCorrectBorrowInput={onCorrectBorrowInput}
+                  showAddToPortfolio={isPortfolioMode}
+                  onAddToPortfolio={onAddToPortfolio}
                 />
               )}
             </div>
