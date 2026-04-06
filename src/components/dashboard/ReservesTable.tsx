@@ -39,6 +39,11 @@ import {
 } from '@/lib/scrollExpandedSimulationIntoView';
 import { createScenarioPinControllerState, transitionScenarioPinController } from '@/lib/scenarioPinController';
 
+import PortfolioModeToggle, { type SimulationMode } from './PortfolioModeToggle';
+import type { PortfolioPosition } from '@/types/portfolio';
+import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
+const PortfolioPanel = lazy(() => import('./PortfolioPanel'));
+
 interface ReservesTableProps {
   reserves: ReserveWithSpread[];
   sortField: 'totalSupplyApy' | 'totalBorrowApy' | 'apySpread' | null;
@@ -52,6 +57,11 @@ interface ReservesTableProps {
   onToggleWhitelistMerklCampaign: (campaignId: string, enabled: boolean) => void;
   tokenPrices?: TokenPricesIndex;
   scrollToReserveId?: string | null;
+  /** Portfolio simulation mode. */
+  simulationMode?: SimulationMode;
+  onSimulationModeChange?: (mode: SimulationMode) => void;
+  portfolioPositions?: PortfolioPosition[];
+  portfolioActions?: PortfolioSimulationActions;
 }
 
 type SortMode = 'total' | 'native' | 'incentive';
