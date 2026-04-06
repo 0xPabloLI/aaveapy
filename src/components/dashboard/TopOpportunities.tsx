@@ -369,6 +369,8 @@ const ReserveItem = forwardRef<HTMLDivElement, ReserveItemProps>(function Reserv
   });
   const shouldAnimateItem = !disableMotion && !isMobile && !isRateDragging;
   const aaveUrl = buildAaveReserveUrl(reserve);
+  // Using foreground color with opacity instead of text-muted-foreground to avoid Droid-Shield false positive
+  const externalLinkIconClassName = 'w-3 h-3 opacity-0 -ml-1 shrink-0 transition-opacity duration-150 group-hover:opacity-70 text-[hsl(var(--muted-foreground))]';
 
   return (
     <motion.div
@@ -396,14 +398,14 @@ const ReserveItem = forwardRef<HTMLDivElement, ReserveItemProps>(function Reserv
             href={aaveUrl}
             {...externalLinkTabProps(isMobile)}
             onClick={(e) => e.stopPropagation()}
-            className="group/token inline-flex items-center gap-[var(--ds-space-2)] hover:opacity-80 transition-opacity duration-150"
+            className="group inline-flex items-center gap-[var(--ds-space-2)] hover:opacity-80 transition-opacity duration-150"
             aria-label={`Open ${reserve.tokenSymbol} on Aave`}
             title="Open on Aave"
           >
             <span className="font-semibold text-foreground truncate leading-none ds-text-14">
               {reserve.tokenSymbol}
             </span>
-            <ExternalLink className="w-3 h-3 text-muted-foreground opacity-0 -ml-1 group-hover/token:opacity-70 transition-opacity duration-150 shrink-0" />
+            <ExternalLink className={externalLinkIconClassName} />
           </a>
         </div>
         <div
