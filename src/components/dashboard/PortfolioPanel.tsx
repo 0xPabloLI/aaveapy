@@ -10,7 +10,7 @@ import type { ReserveWithSpread } from '@/types/aave';
 import type { PortfolioPosition, PortfolioInputMode, PortfolioSide } from '@/types/portfolio';
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
 import { normalizeTokenSymbolForSearch } from '@/lib/tokenSymbolNormalization';
-import TokenIcon from '@/components/primitives/TokenIcon';
+import { TokenIcon } from '@/components/primitives/TokenIcon';
 import PortfolioPositionRow from './PortfolioPositionRow';
 
 interface PortfolioPanelProps {

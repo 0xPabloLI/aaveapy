@@ -6,7 +6,7 @@ import { Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatNumberInput } from '@/lib/numberFormat';
 import { cnDsInputSurface } from '@/lib/dsInputSurface';
-import TokenIcon from '@/components/primitives/TokenIcon';
+import { TokenIcon } from '@/components/primitives/TokenIcon';
 import type { PortfolioPosition, PortfolioInputMode } from '@/types/portfolio';
 
 interface PortfolioPositionRowProps {
