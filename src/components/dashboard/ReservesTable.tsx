@@ -64,6 +64,7 @@ interface ReservesTableProps {
   onSimulationModeChange?: (mode: SimulationMode) => void;
   portfolioPositions?: PortfolioPosition[];
   portfolioActions?: PortfolioSimulationActions;
+  portfolioSnapshots?: import('@/types/portfolio').PortfolioSnapshot[];
 }
 
 type SortMode = 'total' | 'native' | 'incentive';
@@ -89,6 +90,7 @@ const ReservesTable = ({
   onSimulationModeChange,
   portfolioPositions,
   portfolioActions,
+  portfolioSnapshots,
 }: ReservesTableProps) => {
   const isMobile = useIsMobile();
   const [activeSortColumn, setActiveSortColumn] = useState<SortableColumn | null>('supply');
@@ -1127,6 +1129,7 @@ const ReservesTable = ({
             reserves={reserves}
             positionResults={portfolioResults}
             summary={portfolioSummary}
+            snapshots={portfolioSnapshots}
           />
         </Suspense>
       )}
