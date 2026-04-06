@@ -13,6 +13,8 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+import { writeGeneratedFileIfChanged } from './lib/write-generated-file-if-changed.mjs';
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 const TOKENS_DIR = path.join(ROOT, 'public', 'icons', 'tokens');
@@ -61,5 +63,6 @@ ${entries.join(',\n')}
 
 const manifest = collectManifest();
 const ts = generateTs(manifest);
-fs.writeFileSync(OUT_PATH, ts, 'utf8');
-console.log(`[generate-token-icon-manifest] Wrote ${Object.keys(manifest).length} symbols to ${path.relative(ROOT, OUT_PATH)}`);
+if (writeGeneratedFileIfChanged(OUT_PATH, ts)) {
+  console.log(`[generate-token-icon-manifest] Wrote ${Object.keys(manifest).length} symbols to ${path.relative(ROOT, OUT_PATH)}`);
+}
