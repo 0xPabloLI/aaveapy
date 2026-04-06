@@ -1378,6 +1378,10 @@ const ReservesTable = ({
                             onCorrectSupplyInput={handleCorrectSupplyInput}
                             onCorrectBorrowInput={handleCorrectBorrowInput}
                             defaultTab={mobileCardDefaultTab}
+                            isPortfolioMode={isPortfolioMode}
+                            isInPortfolio={portfolioReserveIds.has(activeId)}
+                            onPortfolioToggle={handlePortfolioToggle}
+                            onAddToPortfolio={handleAddToPortfolio}
                           />
                         }
                       />
