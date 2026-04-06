@@ -600,6 +600,29 @@ const MobileReserveCard = memo(({
       >
         {/* Token header */}
         <div className="flex items-center gap-[var(--ds-space-2)] mb-1.5 min-h-[36px] px-3">
+          {isPortfolioMode && onPortfolioToggle && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                const rid = `${reserve.marketName}-${reserve.tokenAddress}`;
+                onPortfolioToggle(rid, reserve);
+              }}
+              className={cn(
+                'flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-all duration-150',
+                isInPortfolio
+                  ? 'bg-primary/15 border-primary/40 text-primary'
+                  : 'border-border/60 text-muted-foreground/40',
+              )}
+              aria-label={isInPortfolio ? `Remove ${reserve.tokenSymbol} from portfolio` : `Add ${reserve.tokenSymbol} to portfolio`}
+            >
+              {isInPortfolio ? (
+                <span className="ds-text-11 font-bold leading-none">✓</span>
+              ) : (
+                <Plus className="h-3 w-3" />
+              )}
+            </button>
+          )}
           <a
             href={buildAaveReserveUrl({ marketName: reserve.marketName, tokenAddress: reserve.tokenAddress }) || '#'}
             {...externalLinkTabProps(true)}
