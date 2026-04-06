@@ -40,8 +40,10 @@ import {
 import { createScenarioPinControllerState, transitionScenarioPinController } from '@/lib/scenarioPinController';
 
 import PortfolioModeToggle, { type SimulationMode } from './PortfolioModeToggle';
-import type { PortfolioPosition } from '@/types/portfolio';
+import type { PortfolioPosition, PortfolioPositionResult, PortfolioSummary } from '@/types/portfolio';
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
+import { resolvePositionAmountUsd, buildPortfolioPositionResult } from '@/hooks/usePortfolioSimulation';
+import { aggregatePortfolioSummary } from '@/lib/portfolioCalculator';
 const PortfolioPanel = lazy(() => import('./PortfolioPanel'));
 
 interface ReservesTableProps {
