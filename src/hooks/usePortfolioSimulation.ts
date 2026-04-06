@@ -124,18 +124,18 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
   }, []);
 
   const saveSnapshot = useCallback(
-    (label: string) => {
+    (label: string, results?: PortfolioPositionResult[], summary?: PortfolioSummary) => {
       const snapshot: PortfolioSnapshot = {
         id: generateSnapshotId(),
         label,
         createdAt: Date.now(),
         positions: [...positions],
-        summary: aggregatePortfolioSummary([]),
-        positionResults: [],
+        summary: summary ?? aggregatePortfolioSummary([]),
+        positionResults: results ?? [],
       };
       setSnapshots((prev) => [...prev, snapshot]);
     },
-    [positions]
+    [positions],
   );
 
   const deleteSnapshot = useCallback((snapshotId: string) => {
