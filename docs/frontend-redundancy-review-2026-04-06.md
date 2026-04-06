@@ -68,6 +68,8 @@
 - `src/components/dashboard/TopOpportunities.tsx`
 - `src/components/dashboard/MobileReserveCard.tsx`
 - `src/components/dashboard/DesktopReserveRow.tsx`
+- `src/components/dashboard/ReservesTableDesktopHeader.tsx`
+- `src/components/dashboard/ReservesTableMobileSortBar.tsx`
 
 ---
 
@@ -81,6 +83,7 @@
   - `MobileReserveCard.tsx`: 825 行
 - 说明：`ReservesTable` 已因菜单去重小幅瘦身；`TopOpportunities` 因文件级组件上提后显式 props 变多，行数暂时上升，但组件重建问题已消除。
 - 补充：移动端排序条已进一步抽到独立组件 `ReservesTableMobileSortBar.tsx`，`ReservesTable` 的移动端分支已明显变短；这一步属于纯展示层拆分，排序状态仍保留在父组件。
+- 补充：桌面端 `ReservesTableDesktopHeader.tsx` 的三组 sort menu portal/render 逻辑也已收敛成共享渲染器；当前改动仍未触碰排序算法、sticky 计算和 expanded-row pin 逻辑。
 - 建议：按“状态逻辑/视图逻辑/菜单逻辑”三段拆分，分批执行，避免一次性大重构风险。
 
 ---
@@ -100,6 +103,6 @@
 3. 最后按模块拆分 `ReservesTable`（较大改动，单独 PR）  
 
 ### 6.1 更新后的下一步
-1. 保留当前这批低风险精简，完成 lint/回归验证  
-2. 下一批单独处理 `ReservesTable` 模块拆分（状态逻辑 / 移动端菜单区 / 桌面表格区）  
+1. 保留当前这批低风险精简，完成 lint / build / 桌面交互 e2e 验证  
+2. 下一批单独处理 `ReservesTable` 模块拆分（状态逻辑 / 桌面 table body / tooltip 状态协调）  
 3. 若继续推进，可顺手评估 `MobileReserveCard` 的 sheet/详情块是否值得拆子模块  

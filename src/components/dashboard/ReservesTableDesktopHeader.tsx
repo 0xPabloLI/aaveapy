@@ -12,6 +12,70 @@ interface MenuPos {
   left: number;
 }
 
+interface DesktopSortMenuOption {
+  key: string;
+  label: string;
+  isSelected: boolean;
+  order: 'asc' | 'desc';
+  activeClassName: string;
+  hoverClassName: string;
+  onSelect: () => void;
+}
+
+const DesktopSortMenuPortal = ({
+  open,
+  menuPos,
+  onClose,
+  options,
+  minWidth = 140,
+}: {
+  open: boolean;
+  menuPos: MenuPos | null;
+  onClose: () => void;
+  options: DesktopSortMenuOption[];
+  minWidth?: number;
+}) => {
+  if (!open || !menuPos) return null;
+
+  return createPortal(
+    <>
+      <div
+        className="fixed inset-0 z-[9999]"
+        onClick={onClose}
+      />
+      <div
+        className="fixed bg-card border border-border rounded-lg shadow-lg py-[var(--ds-space-1)] z-[10000]"
+        style={{ top: menuPos.top, left: menuPos.left, minWidth: `${minWidth}px` }}
+      >
+        {options.map((option) => (
+          <button
+            type="button"
+            key={option.key}
+            onClick={option.onSelect}
+            className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-12 transition-colors flex items-center justify-between ${
+              option.isSelected
+                ? `${option.activeClassName} font-bold bg-card/60`
+                : `text-foreground/80 ${option.hoverClassName}`
+            }`}
+          >
+            <span>{option.label}</span>
+            {option.isSelected ? (
+              option.order === 'desc' ? (
+                <ArrowDown className={`w-3 h-3 ${option.activeClassName}`} />
+              ) : (
+                <ArrowUp className={`w-3 h-3 ${option.activeClassName}`} />
+              )
+            ) : (
+              <ArrowDown className="w-3 h-3 text-muted-foreground/70" />
+            )}
+          </button>
+        ))}
+      </div>
+    </>,
+    document.body,
+  );
+};
+
 interface ReservesTableDesktopHeaderProps {
   tableHeaderRef: RefObject<HTMLTableSectionElement | null>;
   tableHeaderClassName: string;
@@ -111,6 +175,105 @@ export default function ReservesTableDesktopHeader({
   onSelectBorrowSortNative,
   onSelectBorrowSortIncentive,
 }: ReservesTableDesktopHeaderProps) {
+  const sizeSortOptions: DesktopSortMenuOption[] = [
+    {
+      key: 'supply',
+      label: 'Sort by Supply',
+      isSelected: sizeSortMode === 'supply' && activeSortColumn === 'size',
+      order: sizeSortOrder,
+      activeClassName: 'ds-text-emerald-600',
+      hoverClassName: 'hover:bg-[rgb(var(--ds-emerald-50-rgb)/0.5)]',
+      onSelect: onSelectSizeSortSupply,
+    },
+    {
+      key: 'borrow',
+      label: 'Sort by Borrow',
+      isSelected: sizeSortMode === 'borrow' && activeSortColumn === 'size',
+      order: sizeSortOrder,
+      activeClassName: 'ds-text-brand-cyan',
+      hoverClassName: 'hover:bg-[rgb(var(--ds-brand-cyan-rgb)/0.1)]',
+      onSelect: onSelectSizeSortBorrow,
+    },
+    {
+      key: 'deficitAmount',
+      label: 'Sort by Deficit',
+      isSelected: sizeSortMode === 'deficitAmount' && activeSortColumn === 'size',
+      order: sizeSortOrder,
+      activeClassName: 'text-foreground',
+      hoverClassName: 'hover:bg-muted/50',
+      onSelect: onSelectSizeSortDeficitAmount,
+    },
+    {
+      key: 'deficitRatio',
+      label: 'Sort by Deficit (%)',
+      isSelected: sizeSortMode === 'deficitRatio' && activeSortColumn === 'size',
+      order: sizeSortOrder,
+      activeClassName: 'text-foreground',
+      hoverClassName: 'hover:bg-muted/50',
+      onSelect: onSelectSizeSortDeficitRatio,
+    },
+  ];
+
+  const supplySortOptions: DesktopSortMenuOption[] = [
+    {
+      key: 'total',
+      label: 'Sort by Total',
+      isSelected: supplySortMode === 'total' && activeSortColumn === 'supply',
+      order: supplySortOrder,
+      activeClassName: 'ds-text-emerald-600',
+      hoverClassName: 'hover:bg-[rgb(var(--ds-emerald-50-rgb)/0.5)]',
+      onSelect: onSelectSupplySortTotal,
+    },
+    {
+      key: 'native',
+      label: 'Sort by Native',
+      isSelected: supplySortMode === 'native' && activeSortColumn === 'supply',
+      order: supplySortOrder,
+      activeClassName: 'ds-text-emerald-600',
+      hoverClassName: 'hover:bg-[rgb(var(--ds-emerald-50-rgb)/0.5)]',
+      onSelect: onSelectSupplySortNative,
+    },
+    {
+      key: 'incentive',
+      label: 'Sort by Incentive',
+      isSelected: supplySortMode === 'incentive' && activeSortColumn === 'supply',
+      order: supplySortOrder,
+      activeClassName: 'ds-text-emerald-600',
+      hoverClassName: 'hover:bg-[rgb(var(--ds-emerald-50-rgb)/0.5)]',
+      onSelect: onSelectSupplySortIncentive,
+    },
+  ];
+
+  const borrowSortOptions: DesktopSortMenuOption[] = [
+    {
+      key: 'total',
+      label: 'Sort by Total',
+      isSelected: borrowSortMode === 'total' && activeSortColumn === 'borrow',
+      order: borrowSortOrder,
+      activeClassName: 'ds-text-brand-cyan',
+      hoverClassName: 'hover:bg-[rgb(var(--ds-brand-cyan-rgb)/0.1)]',
+      onSelect: onSelectBorrowSortTotal,
+    },
+    {
+      key: 'native',
+      label: 'Sort by Native',
+      isSelected: borrowSortMode === 'native' && activeSortColumn === 'borrow',
+      order: borrowSortOrder,
+      activeClassName: 'ds-text-brand-cyan',
+      hoverClassName: 'hover:bg-[rgb(var(--ds-brand-cyan-rgb)/0.1)]',
+      onSelect: onSelectBorrowSortNative,
+    },
+    {
+      key: 'incentive',
+      label: 'Sort by Incentive',
+      isSelected: borrowSortMode === 'incentive' && activeSortColumn === 'borrow',
+      order: borrowSortOrder,
+      activeClassName: 'ds-text-brand-cyan',
+      hoverClassName: 'hover:bg-[rgb(var(--ds-brand-cyan-rgb)/0.1)]',
+      onSelect: onSelectBorrowSortIncentive,
+    },
+  ];
+
   return (
     <TableHeader
       ref={tableHeaderRef}
@@ -215,100 +378,13 @@ export default function ReservesTableDesktopHeader({
                   </span>
                   <ChevronDown className="w-2.5 h-2.5" />
                 </button>
-                {showSizeSortMenu && sizeMenuPos && createPortal(
-                  <>
-                    <div
-                      className="fixed inset-0 z-[9999]"
-                      onClick={onCloseSizeMenu}
-                    />
-                    <div
-                      className="fixed bg-card border border-border rounded-lg shadow-lg py-[var(--ds-space-1)] z-[10000] min-w-[160px]"
-                      style={{ top: sizeMenuPos.top, left: sizeMenuPos.left }}
-                    >
-                      <button
-                        type="button"
-                        onClick={onSelectSizeSortSupply}
-                        className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-12 hover:bg-[rgb(var(--ds-emerald-50-rgb)/0.5)] transition-colors flex items-center justify-between ${
-                          sizeSortMode === 'supply' && activeSortColumn === 'size'
-                            ? 'ds-text-emerald-600 font-bold bg-card/60'
-                            : 'text-foreground/80'
-                        }`}
-                      >
-                        <span>Sort by Supply</span>
-                        {sizeSortMode === 'supply' && activeSortColumn === 'size' ? (
-                          sizeSortOrder === 'desc' ? (
-                            <ArrowDown className="w-3 h-3 ds-text-emerald-600" />
-                          ) : (
-                            <ArrowUp className="w-3 h-3 ds-text-emerald-600" />
-                          )
-                        ) : (
-                          <ArrowDown className="w-3 h-3 text-muted-foreground/70" />
-                        )}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={onSelectSizeSortBorrow}
-                        className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-12 hover:bg-[rgb(var(--ds-brand-cyan-rgb)/0.1)] transition-colors flex items-center justify-between ${
-                          sizeSortMode === 'borrow' && activeSortColumn === 'size'
-                            ? 'ds-text-brand-cyan font-bold bg-card/60'
-                            : 'text-foreground/80'
-                        }`}
-                      >
-                        <span>Sort by Borrow</span>
-                        {sizeSortMode === 'borrow' && activeSortColumn === 'size' ? (
-                          sizeSortOrder === 'desc' ? (
-                            <ArrowDown className="w-3 h-3 ds-text-brand-cyan" />
-                          ) : (
-                            <ArrowUp className="w-3 h-3 ds-text-brand-cyan" />
-                          )
-                        ) : (
-                          <ArrowDown className="w-3 h-3 text-muted-foreground/70" />
-                        )}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={onSelectSizeSortDeficitAmount}
-                        className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-12 hover:bg-muted/50 transition-colors flex items-center justify-between ${
-                          sizeSortMode === 'deficitAmount' && activeSortColumn === 'size'
-                            ? 'text-foreground font-bold bg-card/60'
-                            : 'text-foreground/80'
-                        }`}
-                      >
-                        <span>Sort by Deficit</span>
-                        {sizeSortMode === 'deficitAmount' && activeSortColumn === 'size' ? (
-                          sizeSortOrder === 'desc' ? (
-                            <ArrowDown className="w-3 h-3 text-foreground" />
-                          ) : (
-                            <ArrowUp className="w-3 h-3 text-foreground" />
-                          )
-                        ) : (
-                          <ArrowDown className="w-3 h-3 text-muted-foreground/70" />
-                        )}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={onSelectSizeSortDeficitRatio}
-                        className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-12 hover:bg-muted/50 transition-colors flex items-center justify-between ${
-                          sizeSortMode === 'deficitRatio' && activeSortColumn === 'size'
-                            ? 'text-foreground font-bold bg-card/60'
-                            : 'text-foreground/80'
-                        }`}
-                      >
-                        <span>Sort by Deficit (%)</span>
-                        {sizeSortMode === 'deficitRatio' && activeSortColumn === 'size' ? (
-                          sizeSortOrder === 'desc' ? (
-                            <ArrowDown className="w-3 h-3 text-foreground" />
-                          ) : (
-                            <ArrowUp className="w-3 h-3 text-foreground" />
-                          )
-                        ) : (
-                          <ArrowDown className="w-3 h-3 text-muted-foreground/70" />
-                        )}
-                      </button>
-                    </div>
-                  </>,
-                  document.body,
-                )}
+                <DesktopSortMenuPortal
+                  open={showSizeSortMenu}
+                  menuPos={sizeMenuPos}
+                  onClose={onCloseSizeMenu}
+                  options={sizeSortOptions}
+                  minWidth={160}
+                />
               </div>
             </div>
           </div>
@@ -358,80 +434,12 @@ export default function ReservesTableDesktopHeader({
                   <span className="font-semibold">{supplySortLabel}</span>
                   <ChevronDown className="w-2.5 h-2.5" />
                 </button>
-                {showSupplySortMenu && supplyMenuPos && createPortal(
-                  <>
-                    <div
-                      className="fixed inset-0 z-[9999]"
-                      onClick={onCloseSupplyMenu}
-                    />
-                    <div
-                      className="fixed bg-card border border-border rounded-lg shadow-lg py-[var(--ds-space-1)] z-[10000] min-w-[140px]"
-                      style={{ top: supplyMenuPos.top, left: supplyMenuPos.left }}
-                    >
-                      <button
-                        type="button"
-                        onClick={onSelectSupplySortTotal}
-                        className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-12 hover:bg-[rgb(var(--ds-emerald-50-rgb)/0.5)] transition-colors flex items-center justify-between ${
-                          supplySortMode === 'total' && activeSortColumn === 'supply'
-                            ? 'ds-text-emerald-600 font-bold bg-card/60'
-                            : 'text-foreground/80'
-                        }`}
-                      >
-                        <span>Sort by Total</span>
-                        {supplySortMode === 'total' && activeSortColumn === 'supply' ? (
-                          supplySortOrder === 'desc' ? (
-                            <ArrowDown className="w-3 h-3 ds-text-emerald-600" />
-                          ) : (
-                            <ArrowUp className="w-3 h-3 ds-text-emerald-600" />
-                          )
-                        ) : (
-                          <ArrowDown className="w-3 h-3 text-muted-foreground/70" />
-                        )}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={onSelectSupplySortNative}
-                        className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-12 hover:bg-[rgb(var(--ds-emerald-50-rgb)/0.5)] transition-colors flex items-center justify-between ${
-                          supplySortMode === 'native' && activeSortColumn === 'supply'
-                            ? 'ds-text-emerald-600 font-bold bg-card/60'
-                            : 'text-foreground/80'
-                        }`}
-                      >
-                        <span>Sort by Native</span>
-                        {supplySortMode === 'native' && activeSortColumn === 'supply' ? (
-                          supplySortOrder === 'desc' ? (
-                            <ArrowDown className="w-3 h-3 ds-text-emerald-600" />
-                          ) : (
-                            <ArrowUp className="w-3 h-3 ds-text-emerald-600" />
-                          )
-                        ) : (
-                          <ArrowDown className="w-3 h-3 text-muted-foreground/70" />
-                        )}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={onSelectSupplySortIncentive}
-                        className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-12 hover:bg-[rgb(var(--ds-emerald-50-rgb)/0.5)] transition-colors flex items-center justify-between ${
-                          supplySortMode === 'incentive' && activeSortColumn === 'supply'
-                            ? 'ds-text-emerald-600 font-bold bg-card/60'
-                            : 'text-foreground/80'
-                        }`}
-                      >
-                        <span>Sort by Incentive</span>
-                        {supplySortMode === 'incentive' && activeSortColumn === 'supply' ? (
-                          supplySortOrder === 'desc' ? (
-                            <ArrowDown className="w-3 h-3 ds-text-emerald-600" />
-                          ) : (
-                            <ArrowUp className="w-3 h-3 ds-text-emerald-600" />
-                          )
-                        ) : (
-                          <ArrowDown className="w-3 h-3 text-muted-foreground/70" />
-                        )}
-                      </button>
-                    </div>
-                  </>,
-                  document.body,
-                )}
+                <DesktopSortMenuPortal
+                  open={showSupplySortMenu}
+                  menuPos={supplyMenuPos}
+                  onClose={onCloseSupplyMenu}
+                  options={supplySortOptions}
+                />
               </div>
             </div>
           </div>
@@ -479,80 +487,12 @@ export default function ReservesTableDesktopHeader({
                   <span className="font-semibold">{borrowSortLabel}</span>
                   <ChevronDown className="w-2.5 h-2.5" />
                 </button>
-                {showBorrowSortMenu && borrowMenuPos && createPortal(
-                  <>
-                    <div
-                      className="fixed inset-0 z-[9999]"
-                      onClick={onCloseBorrowMenu}
-                    />
-                    <div
-                      className="fixed bg-card border border-border rounded-lg shadow-lg py-[var(--ds-space-1)] z-[10000] min-w-[140px]"
-                      style={{ top: borrowMenuPos.top, left: borrowMenuPos.left }}
-                    >
-                      <button
-                        type="button"
-                        onClick={onSelectBorrowSortTotal}
-                        className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-12 hover:bg-[rgb(var(--ds-brand-cyan-rgb)/0.1)] transition-colors flex items-center justify-between ${
-                          borrowSortMode === 'total' && activeSortColumn === 'borrow'
-                            ? 'ds-text-brand-cyan font-bold bg-card/60'
-                            : 'text-foreground/80'
-                        }`}
-                      >
-                        <span>Sort by Total</span>
-                        {borrowSortMode === 'total' && activeSortColumn === 'borrow' ? (
-                          borrowSortOrder === 'desc' ? (
-                            <ArrowDown className="w-3 h-3 ds-text-brand-cyan" />
-                          ) : (
-                            <ArrowUp className="w-3 h-3 ds-text-brand-cyan" />
-                          )
-                        ) : (
-                          <ArrowDown className="w-3 h-3 text-muted-foreground/70" />
-                        )}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={onSelectBorrowSortNative}
-                        className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-12 hover:bg-[rgb(var(--ds-brand-cyan-rgb)/0.1)] transition-colors flex items-center justify-between ${
-                          borrowSortMode === 'native' && activeSortColumn === 'borrow'
-                            ? 'ds-text-brand-cyan font-bold bg-card/60'
-                            : 'text-foreground/80'
-                        }`}
-                      >
-                        <span>Sort by Native</span>
-                        {borrowSortMode === 'native' && activeSortColumn === 'borrow' ? (
-                          borrowSortOrder === 'desc' ? (
-                            <ArrowDown className="w-3 h-3 ds-text-brand-cyan" />
-                          ) : (
-                            <ArrowUp className="w-3 h-3 ds-text-brand-cyan" />
-                          )
-                        ) : (
-                          <ArrowDown className="w-3 h-3 text-muted-foreground/70" />
-                        )}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={onSelectBorrowSortIncentive}
-                        className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-12 hover:bg-[rgb(var(--ds-brand-cyan-rgb)/0.1)] transition-colors flex items-center justify-between ${
-                          borrowSortMode === 'incentive' && activeSortColumn === 'borrow'
-                            ? 'ds-text-brand-cyan font-bold bg-card/60'
-                            : 'text-foreground/80'
-                        }`}
-                      >
-                        <span>Sort by Incentive</span>
-                        {borrowSortMode === 'incentive' && activeSortColumn === 'borrow' ? (
-                          borrowSortOrder === 'desc' ? (
-                            <ArrowDown className="w-3 h-3 ds-text-brand-cyan" />
-                          ) : (
-                            <ArrowUp className="w-3 h-3 ds-text-brand-cyan" />
-                          )
-                        ) : (
-                          <ArrowDown className="w-3 h-3 text-muted-foreground/70" />
-                        )}
-                      </button>
-                    </div>
-                  </>,
-                  document.body,
-                )}
+                <DesktopSortMenuPortal
+                  open={showBorrowSortMenu}
+                  menuPos={borrowMenuPos}
+                  onClose={onCloseBorrowMenu}
+                  options={borrowSortOptions}
+                />
               </div>
             </div>
           </div>
