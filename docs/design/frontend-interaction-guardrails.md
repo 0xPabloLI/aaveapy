@@ -471,3 +471,16 @@ When the bridge is extended (e.g., extra 4px upward), the SVG must be extended b
 | SVG stroke | Start | `M 0.5 0` / `M 16.5 0` | Continuous vertical line |
 | Panel | `clipPath` | **None** | Removed -- bridge covers top border |
 | Panel | `border` | `border border-border/60` | Full border; bridge hides top on expanded side |
+
+##### Component extraction safety checklist (normative)
+
+When extracting the card–panel junction into a separate component (e.g. `MobileExpandedReserveShell`), every visual contract listed above must be preserved. The following items have been lost in past refactors and caused regressions:
+
+| Must preserve | What to check | Why it breaks if lost |
+|---|---|---|
+| **Bridge `border-l` / `border-r`** | Bridge div must have the outer-side CSS border class | Without it, the expanded card's outer border is not continued through the gap — visible gap on all browsers |
+| **SVG fillet** | Must import and render `getMobileSimulationJunctionFilletPaths` + `MOBILE_SIMULATION_JUNCTION_GEOMETRY` from `mobileSimulationJunction.ts` | Without it, the inner concave corner is a hard right angle — breaks the continuous-card illusion |
+| **Bridge geometry constants** | Must use `MOBILE_SIMULATION_JUNCTION_GEOMETRY` (`bridgeTop`, `bridgeHeight`, `filletTop`, `filletWidth`, `filletHeight`), not simplified values | Simplified values (e.g. `calc(-1 * var(--ds-space-2))` without the extra `4px`) do not cover the grid row height mismatch — causes iOS Safari subpixel seam |
+| **`border-b-transparent`** on upper card | The `connectedBelow` branch in `MobileReserveCard` must use `border-b-transparent`, **not** `border-b-0` | `border-b-0` removes border width from the box model, shifting layout by 1px; `border-b-transparent` keeps width and only hides the color |
+
+**Rule**: When refactoring visual junction code into a new component, diff the old inline rendering output against the new component's output. Every `className`, `style`, and SVG element in the junction area must produce identical DOM. A visual-only refactor must not change any computed style.
