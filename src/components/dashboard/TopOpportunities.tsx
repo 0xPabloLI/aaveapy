@@ -144,7 +144,7 @@ const ReserveIdentity = memo(({
 }: ReserveIdentityProps) => {
   if (mini) {
     return (
-      <div className="flex items-center gap-[var(--ds-space-2)]">
+      <div className="flex items-center gap-[var(--ds-space-1)]">
         <TokenIcon
           symbol={iconSymbol}
           size={24}
@@ -303,21 +303,21 @@ const MiniReserveCard = ({
 
       <div className="flex items-baseline justify-end gap-[var(--ds-space-1)] mt-[var(--ds-space-0-5)]">
         {!isLeverage && hasIncentive && (
-          <span className={`ds-text-9 tabular-nums ${apyAccent.text}`}>
+          <span className={`ds-text-11 tabular-nums ${apyAccent.text}`}>
             {formatPercent(nativeValue ?? null)}
           </span>
         )}
         {!isLeverage && hasIncentive && (
-          <span className="text-muted-foreground ds-text-9">+</span>
+          <span className="text-muted-foreground ds-text-11">+</span>
         )}
         {!isLeverage && hasIncentive && (
           <button
             type="button"
             onClick={(e) => onIncentiveClick(e, reserve, 'supply', incentiveValue, mainValue)}
-            className={`inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-1)] py-[var(--ds-space-0-5)] rounded-full ring-1 transition-colors cursor-pointer tabular-nums ds-text-9 ${apyAccent.chip}`}
+            className={`inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-0-5)] py-px rounded-full ring-1 transition-colors cursor-pointer tabular-nums ds-text-11 ${apyAccent.chip}`}
           >
-            <span>+{formatPercent(incentiveValue)}</span>
-            <IncentiveIcon width={7} height={7} />
+            <span>{formatPercent(incentiveValue)}</span>
+            <IncentiveIcon width={8} height={8} />
           </button>
         )}
         {isLeverage && (
