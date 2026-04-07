@@ -1003,6 +1003,15 @@ const TopOpportunities = ({
             categoryKey={category.categoryKey}
             type={category.type}
             emptyMessage={category.emptyMessage}
+            isMobile={isMobile}
+            isApy={isApy}
+            isApyChanged={isApyChanged}
+            isRateDragging={isRateDragging}
+            headerVariants={headerVariants}
+            iconVariants={iconVariants}
+            itemVariants={itemVariants}
+            onCardClick={handleCardClick}
+            onIncentiveClick={handleIncentiveClick}
           />
         ))}
       </div>
@@ -1071,6 +1080,15 @@ const TopOpportunities = ({
                     categoryKey={category.categoryKey}
                     type={category.type}
                     emptyMessage={category.emptyMessage}
+                    isMobile={isMobile}
+                    isApy={isApy}
+                    isApyChanged={isApyChanged}
+                    isRateDragging={isRateDragging}
+                    headerVariants={headerVariants}
+                    iconVariants={iconVariants}
+                    itemVariants={itemVariants}
+                    onCardClick={handleCardClick}
+                    onIncentiveClick={handleIncentiveClick}
                   />
                 ))}
               </div>
