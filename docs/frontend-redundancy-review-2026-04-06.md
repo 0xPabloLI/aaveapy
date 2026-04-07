@@ -62,7 +62,7 @@
 - 已执行：`npm run lint`
 - 结果：通过（`eslint .` 无错误）
 
-### 3.8 当前改动文件（未提交）
+### 3.8 这一轮涉及的主要文件
 - `src/lib/formatters.ts`
 - `src/components/dashboard/ReservesTable.tsx`
 - `src/components/dashboard/TopOpportunities.tsx`
@@ -111,13 +111,48 @@
   - `lint` / `build` 通过
   - `reserves-table-interactions`：`4 passed`
 
+### 3.15 按 commit 分批次回溯
+
+| Commit | 批次主题 | 主要改动 | 验证 |
+| --- | --- | --- | --- |
+| `b53d355` | reserve redundancy helpers | 新增共享 helper：`getReserveMarketDisplayName(...)`、`getReserveIncentiveValues(...)`；`ReservesTable` / `TopOpportunities` / `MobileReserveCard` / `DesktopReserveRow` 接入共享逻辑；删除 `ReservesTable` 重复 incentive click 处理 | 提交时通过本地 hook 自动执行的 `npm run ci:remote` |
+| `363d4a1` | mobile reserves sort bar | 抽出 `ReservesTableMobileSortBar.tsx`；将移动端 `Size / Supply / Borrow / Extra` 排序菜单改成配置驱动；统一菜单开关逻辑 | 提交时通过本地 hook 自动执行的 `npm run ci:remote` |
+| `4fcee47` | desktop sort menu rendering | `ReservesTableDesktopHeader.tsx` 三组桌面 sort menu portal/render 逻辑去重，收敛到共享渲染器；不改排序算法、sticky 计算、expanded-row pin | `npm run lint`；`npm run build`；`src/components/dashboard/ReservesTableDesktopHeader.test.tsx`；`npx playwright test e2e/reserves-table-interactions.spec.ts --project=chromium`（`4 passed`）；提交时通过 `ci:remote` |
+| `d8ded08` | top opportunities helpers | `TopOpportunities` 中色阶 / accent helper 提到文件级；`CategoryCard` 外提为文件级组件，避免随父组件重建 | `npm run lint`；`npm run build`；`npx vitest run src/lib/topOpportunitiesMemo.test.ts`；`localhost:8080` 页面加载检查；提交时通过 `ci:remote` |
+| `2840be9` | mobile reserve display blocks | `MobileReserveCard` 中 `renderAmountRow` 与 `renderHeroApy` 上提为文件级展示组件；保留 `activeTab`、`capSheet`、`isSimulationExpanded`、`SimulationSubRow` 的原交互路径 | `npm run lint`；`npm run build`；`npx playwright test e2e/reserves-table-interactions.spec.ts --project=chromium`（`4 passed`）；`localhost:8080` 页面加载检查；提交时通过 `ci:remote` |
+| `87d9343` | mobile reserves grid layout | 新增 `ReservesTableMobileGrid.tsx`；将移动端 2x2 卡片网格、expanded shell 拼装、skeleton 布局从 `ReservesTable` 主组件中移出；父组件保留排序、scenario、tooltip、expanded state 与 pin-scroll 逻辑 | `npm run lint`；`npm run build`；`npx playwright test e2e/reserves-table-interactions.spec.ts --project=chromium`（`4 passed`）；提交时通过 `ci:remote` |
+
+### 3.16 回溯说明
+- 上表只记录这轮“前端冗余与精简”主线程里的独立批次 commit，便于后续按批次回退或 bisect。
+- 其中 `b53d355` 与 `363d4a1` 属于最早两批低风险公共逻辑/移动排序精简；后续批次开始逐步转向组件体积瘦身。
+- `localhost:8080` 的页面检查结果需要结合当前本地 API/CORS 环境解读；若控制台仍出现 staging API 的 CORS 噪音，不应直接视为本轮重构回归。
+
+### 3.17 Harness 补强（2026-04-07）
+- 修复 `e2e/reserves-table-mobile-interactions.spec.ts` 中过期 selector：mobile 卡片 expand/collapse 按钮文案已切换为 `Expand details panel` / `Collapse details panel`
+- mobile e2e 现已可在 `mobile-chromium` 项目下真实执行，不再因为旧 aria-label 导致全量假失败
+- 新增 `src/components/dashboard/MobileReserveCard.test.tsx`
+- 新组件测试当前固定两条 contract：
+  - collapsed 状态渲染 `aria-label="Expand details panel"`
+  - expanded 状态渲染 `aria-label="Collapse details panel"`
+
+### 3.18 当前推荐 Harness 命令
+- 组件级最小回归：
+  - `npx vitest run src/components/dashboard/MobileReserveCard.test.tsx src/components/dashboard/TopOpportunities.test.tsx`
+- reserves 桌面/移动主交互：
+  - `npx playwright test e2e/reserves-table-mobile-interactions.spec.ts e2e/reserves-table-interactions.spec.ts`
+- 单独跑移动端：
+  - `npx playwright test e2e/reserves-table-mobile-interactions.spec.ts --project=mobile-chromium`
+- 单独跑桌面端：
+  - `npx playwright test e2e/reserves-table-interactions.spec.ts --project=chromium`
+
 ---
 
 ## 4. 什么还没改（待办）
 
 ### 未完成项 A：文件体积继续瘦身
 - 现状：
-  - `ReservesTable.tsx`: 2111 行
+  - `ReservesTable.tsx`: 1592 行
+  - `ReservesTableMobileGrid.tsx`: 189 行
   - `ReservesTableMobileSortBar.tsx`: 186 行
   - `TopOpportunities.tsx`: 1106 行
   - `MobileReserveCard.tsx`: 825 行
@@ -133,10 +168,15 @@
 
 ## 5. 风险与注意事项
 - 本次改造只做了逻辑抽取和复用，不改业务语义，风险较低。
+- 当前最值得信的 UI 护栏是 reserves harness，而不是 `localhost:8080` 的裸页面检查；后者仍可能被 staging API 的 CORS 噪音干扰。
 - 后续上提 `TopOpportunities` 子组件时，需要重点验证：
   - 动画行为（`motion` + `AnimatePresence`）是否与当前一致
   - `onIncentiveClick` 的事件冒泡控制与 tooltip 定位是否一致
   - 移动端/桌面端差异分支是否保持原行为
+- 后续若继续拆 `ReservesTable`，优先保持以下 harness 为绿：
+  - `e2e/reserves-table-interactions.spec.ts`
+  - `e2e/reserves-table-mobile-interactions.spec.ts`
+  - `src/components/dashboard/MobileReserveCard.test.tsx`
 
 ---
 
@@ -149,3 +189,19 @@
 1. 保留当前这批低风险精简，完成 lint / build / 桌面交互 e2e 验证  
 2. 下一批单独处理 `ReservesTable` 桌面骨架拆分（desktop body / desktop shell / tooltip 容器三选一，继续避开 sticky 计算）  
 3. `MobileReserveCard` 若继续推进，优先拆 token header 或 bottom sheet 容器，暂不触碰 simulation 展开/折叠状态链  
+
+### 6.2 新 Session 接手建议
+1. 先读本文件第 3.15–3.18 节，确认最近批次、当前 harness、推荐命令
+2. 新 session 第一轮不要继续拆移动端；移动端网格和卡片的低风险块已经拆到位
+3. 若继续精简，优先从 `ReservesTable` 桌面骨架下手，候选顺序：
+   - desktop body/skeleton 区
+   - desktop tooltip 容器区
+   - desktop show-more / floating scroll button 区
+4. 明确禁止本轮同时触碰：
+   - sticky scenario / sticky `thead`
+   - expanded main row sticky `td`
+   - scenario pin scroll / filter pin scroll
+5. 每一批继续保持：
+   - 单独 commit
+   - 先跑相关 harness，再跑 `ci:remote`
+   - 同步更新本文件

@@ -6,7 +6,7 @@ Use it to avoid duplicate policy text and to keep each topic in one canonical lo
 
 **Entry points:** [`README.md`](../README.md) (onboarding), root [`DESIGN.md`](../DESIGN.md) (design links table), this file (full map).
 
-_Last inventory pass: 2026-04-05._
+_Last inventory pass: 2026-04-07._
 
 ## Canonical Structure
 
@@ -31,6 +31,7 @@ _Last inventory pass: 2026-04-05._
 - Canonical: `docs/frontend-data-loading-matrix.md`
 - Canonical: `docs/rate-calculation-formulas.md`
 - Supporting snapshot note: `docs/merit-base-anchor-vs-last-round-staging.md`
+- Historical execution archive: `docs/frontend-redundancy-review-2026-04-06.md`
 
 ### Design system and interaction
 
