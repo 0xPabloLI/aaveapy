@@ -96,6 +96,17 @@ Quick rule:
 
 See [SECURITY.md](SECURITY.md) for vulnerability reporting and a public-release security checklist.
 
+## Docs Quick Start
+
+| If you need... | Read this first |
+|---|---|
+| Project look and feel | [`docs/design/DESIGN.md`](docs/design/DESIGN.md) |
+| Reusable design rules | [`docs/design/DESIGN-SYSTEM-REFERENCE.md`](docs/design/DESIGN-SYSTEM-REFERENCE.md) |
+| Project-specific UI behavior | [`docs/design/frontend-interaction-guardrails.md`](docs/design/frontend-interaction-guardrails.md) |
+| Engineering conventions to migrate | [`docs/conventions/README.md`](docs/conventions/README.md) |
+| Docs ownership map | [`docs/DOCS-INDEX.md`](docs/DOCS-INDEX.md) |
+| **Reusable docs index (what to migrate)** | [`docs/transferable-docs.md`](docs/transferable-docs.md) |
+
 ## Merkl Forecast Notes
 
 - Forecast state is loaded from `GET /meta/side-data` (`forecast.items`).

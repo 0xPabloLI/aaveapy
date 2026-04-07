@@ -2,6 +2,8 @@
 
 This note records recurring UI/interaction issues found during incentive/forecast work, so future changes keep behavior consistent.
 
+This is a project-specific guardrail file, not the reusable design reference. If a rule is generic across projects, move it to `DESIGN-SYSTEM-REFERENCE.md`.
+
 ## A. Frontend-wide guardrails (generic)
 
 ### Tooltip / Overlay behavior
