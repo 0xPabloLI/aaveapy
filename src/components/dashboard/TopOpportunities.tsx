@@ -303,14 +303,14 @@ const MiniReserveCard = ({
 
       <div className="flex items-baseline justify-end gap-[var(--ds-space-1)]">
         {!isLeverage && (
-          <span className={`ds-text-11 tabular-nums ${apyAccent.text}`}>
+          <span className={`ds-text-11 tabular-nums ${apyAccent.text} ${hasIncentive ? '' : 'invisible'}`}>
             {formatPercent(nativeValue ?? null)}
           </span>
         )}
-        {!isLeverage && (
-          <span className={`text-muted-foreground ds-text-11 ${hasIncentive ? '' : 'invisible'}`}>+</span>
+        {!isLeverage && hasIncentive && (
+          <span className="text-muted-foreground ds-text-11">+</span>
         )}
-        {!isLeverage && (
+        {!isLeverage && hasIncentive && (
           <button
             type="button"
             onClick={hasIncentive ? (e) => onIncentiveClick(e, reserve, 'supply', incentiveValue, mainValue) : undefined}
