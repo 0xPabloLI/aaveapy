@@ -24,6 +24,7 @@
 ## Testing Guidelines
 - No test runner is configured in `package.json`. If you add tests, document the framework and add a script (e.g., `npm test`).
 - Suggested conventions: co-locate tests under `src/` with `.test.ts(x)` names.
+- For dashboard display-layer refactors and UI extraction work, follow `docs/conventions/frontend-regression-checklist.md` before calling the change verified.
 
 ## Commit & Pull Request Guidelines
 - Commit messages use short, imperative subjects with initial caps (e.g., `Fix leverage opportunity spread sign`, `Add logos to all markets`).
@@ -70,6 +71,12 @@
 - On every new session, invoke superpowers before any other work: `~/.codex/superpowers/.codex/superpowers-codex bootstrap`, then `~/.codex/superpowers/.codex/superpowers-codex use-skill thread-tracker`, then `~/.codex/superpowers/.codex/superpowers-codex use-skill brainstorming`.
 
 ## UI Regression Guardrails
+- For `TopOpportunities`, `MobileReserveCard`, `MobileExpandedReserveShell`, and `ReservesTable` refactors, run the full checklist in `docs/conventions/frontend-regression-checklist.md`:
+  - targeted regression test
+  - `npm run lint`
+  - `npm run build`
+  - mobile / tablet / desktop browser pass on a valid local instance
+- When a refactor mainly moves JSX or helpers without changing types, still treat prop plumbing and render-branch selection as high-risk. The checklist above is mandatory precisely because static checks can miss those regressions.
 - When changing incentive tooltip behavior, search filtering, or forecast display semantics, review and update `docs/design/frontend-interaction-guardrails.md` in the same work session.
 - When changing desktop `ReservesTable` **overflow wrappers**, **sticky** scenario/`thead`/expanded-main-row stacking, **`ResizeObserver`** on scenario + `thead`, **debounced scenario** wiring, **`sortedData` sort**, or **simulation expand scroll**, follow and preserve **§ Desktop reserves table: sticky stack and scrollport (normative)** and **§ Simulation pin scroll (normative)** in `docs/design/frontend-interaction-guardrails.md` (single effect after `sortedData`; `scrollExpandedSimulationIntoView` + `data-reserves-*` DOM contract + **CSS variables table** for `--reserves-expanded-main-row-top`). **Do not** remove expanded-row sticky `td` in `DesktopReserveRow` or observe only the scenario strip without the sticky `thead`.
 - Reusable design habits and interaction patterns are consolidated in `docs/design/DESIGN-SYSTEM-REFERENCE.md`; update that doc when adding or changing cross-project design rules.
