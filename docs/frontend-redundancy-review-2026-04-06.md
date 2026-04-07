@@ -98,6 +98,19 @@
   - `reserves-table-interactions`：`4 passed`
   - `localhost:8080` 无新的 runtime error；现有控制台 error 仍为 staging API 的 CORS 噪音
 
+### 3.13 完成 `ReservesTable` 移动端网格块外提
+- 新增 `src/components/dashboard/ReservesTableMobileGrid.tsx`
+- 将 `ReservesTable` 中移动端 2x2 卡片网格、expanded shell 拼装、skeleton 布局从主组件中移出
+- 父组件继续保留排序、scenario、tooltip、expanded state 和 pin-scroll 逻辑；本轮不触碰 desktop sticky header / expanded main row / sort 算法
+
+### 3.14 本轮验证补充
+- 已执行：`npm run lint`
+- 已执行：`npm run build`
+- 已执行：`npx playwright test e2e/reserves-table-interactions.spec.ts --project=chromium`
+- 结果：
+  - `lint` / `build` 通过
+  - `reserves-table-interactions`：`4 passed`
+
 ---
 
 ## 4. 什么还没改（待办）
@@ -113,6 +126,7 @@
 - 补充：桌面端 `ReservesTableDesktopHeader.tsx` 的三组 sort menu portal/render 逻辑也已收敛成共享渲染器；当前改动仍未触碰排序算法、sticky 计算和 expanded-row pin 逻辑。
 - 补充：`TopOpportunities` 现在只剩体量问题，内部 helper 与 `CategoryCard` 的重建已消除；后续若继续拆，重点应转向视觉配置常量或按卡片类型拆文件，而不是再碰现有交互。
 - 补充：`MobileReserveCard` 已先完成两块最独立的展示层抽离；后续若再拆，建议优先考虑 token header / mobile sheet 容器等纯视图块，继续避免碰 simulation 展开链路。
+- 补充：`ReservesTable` 的移动端网格编排已经独立成组件；主文件后续若继续瘦身，应优先看桌面骨架、show-more 区块或 tooltip 容器，而不是回头重拆移动卡片拼装。
 - 建议：按“状态逻辑/视图逻辑/菜单逻辑”三段拆分，分批执行，避免一次性大重构风险。
 
 ---
@@ -133,5 +147,5 @@
 
 ### 6.1 更新后的下一步
 1. 保留当前这批低风险精简，完成 lint / build / 桌面交互 e2e 验证  
-2. 下一批单独处理 `ReservesTable` 模块拆分（状态逻辑 / 桌面 table body / tooltip 状态协调）  
+2. 下一批单独处理 `ReservesTable` 桌面骨架拆分（desktop body / desktop shell / tooltip 容器三选一，继续避开 sticky 计算）  
 3. `MobileReserveCard` 若继续推进，优先拆 token header 或 bottom sheet 容器，暂不触碰 simulation 展开/折叠状态链  

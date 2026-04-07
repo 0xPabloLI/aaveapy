@@ -1,7 +1,6 @@
 import { useState, useMemo, useEffect, useCallback, memo, useRef } from 'react';
 
 import { ArrowUp, ArrowDown, ChevronDown, ChevronUp } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
 import { ReserveWithSpread, TokenPricesIndex } from '@/types/aave';
 import {
@@ -22,10 +21,9 @@ import { buildAaveReserveUrl } from '@/lib/aaveLinks';
 import { openExternalUrl } from '@/lib/externalNavigation';
 import { calculateDeficitShareRatio, getReserveDeficitUsdAmount } from '@/lib/deficit';
 import IncentiveTooltip from './IncentiveTooltip';
-import MobileReserveCard from './MobileReserveCard';
-import MobileExpandedReserveShell from './MobileExpandedReserveShell';
 import DesktopReserveRow from './DesktopReserveRow';
 import ReservesTableDesktopHeader from './ReservesTableDesktopHeader';
+import ReservesTableMobileGrid from './ReservesTableMobileGrid';
 import ReservesTableMobileSortBar, {
   type MobileSortMenuKey,
   type MobileSortOption,
@@ -1130,137 +1128,24 @@ const ReservesTable = ({
         
         {/* 2x2 Grid layout for mobile */}
         <div className="grid grid-cols-2 gap-[var(--ds-space-2)]">
-          {isLoading && reserves.length === 0 ? (
-            Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="bg-card rounded-xl border border-border/60 ds-card-pad-sm">
-                <div className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-3)]">
-                  <Skeleton variant="gradient" className="w-8 h-8 rounded-full border-transparent shrink-0" />
-                  <div className="space-y-1 flex-1 min-w-0">
-                    <Skeleton variant="gradient" className="h-4 w-14 rounded-md" />
-                    <Skeleton variant="subtle" className="h-3 w-20 rounded-md" />
-                  </div>
-                  <Skeleton variant="subtle" className="w-7 h-7 rounded-full border-border/60 shrink-0" />
-                </div>
-                <div className="grid grid-cols-3 gap-[var(--ds-space-2)]">
-                  <div className="space-y-1">
-                    <Skeleton variant="subtle" className="h-2 w-10 rounded-md" />
-                    <Skeleton variant="gradient" className="h-5 w-14 rounded-md" />
-                    <Skeleton variant="subtle" className="h-3 w-16 rounded-full border-transparent" />
-                  </div>
-                  <div className="space-y-1 items-center flex flex-col">
-                    <Skeleton variant="subtle" className="h-2 w-10 rounded-md" />
-                    <Skeleton variant="subtle" className="h-4 w-14 rounded-md" />
-                  </div>
-                  <div className="space-y-1 flex flex-col items-end">
-                    <Skeleton variant="subtle" className="h-2 w-10 rounded-md" />
-                    <Skeleton variant="gradient" className="h-5 w-14 rounded-md" />
-                    <Skeleton variant="subtle" className="h-3 w-16 rounded-full border-transparent" />
-                  </div>
-                </div>
-              </div>
-            ))
-          ) : (
-            (() => {
-              const nodes: React.ReactNode[] = [];
-              // Process cards in pairs (rows of 2) for connected layout
-              for (let i = 0; i < displayData.length; i += 2) {
-                const leftReserve = displayData[i];
-                const leftId = `${leftReserve.marketName}-${leftReserve.tokenAddress}`;
-                const rightReserve = i + 1 < displayData.length ? displayData[i + 1] : null;
-                const rightId = rightReserve ? `${rightReserve.marketName}-${rightReserve.tokenAddress}` : null;
-
-                const leftExpanded = leftId === expandedReserveId;
-                const rightExpanded = rightId !== null && rightId === expandedReserveId;
-                const rowHasExpanded = leftExpanded || rightExpanded;
-
-                const isLeftActive = leftExpanded;
-                const isRightActive = rightExpanded;
-                const activeReserve = isLeftActive ? leftReserve : rightReserve;
-                const activeId = isLeftActive ? leftId : rightId;
-                const leftCard = (
-                  <MobileReserveCard
-                    variant={isLeftActive ? 'upperOnly' : 'full'}
-                    connectedBelow={leftExpanded}
-                    reserve={leftReserve}
-                    isApy={isApy}
-                    tydroPointToUsdRate={tydroPointToUsdRate}
-                    onIncentiveClick={handleIncentiveClick}
-                    isSimulationExpanded={isLeftActive}
-                    onToggleSimulation={() => handleToggleExpand(leftId)}
-                    simulation={simulationsById[leftId]}
-                    supplyInput={debouncedSharedSupplyInput}
-                    borrowInput={debouncedSharedBorrowInput}
-                    hasSharedScenario={hasSharedScenario}
-                    inputMode={sharedInputMode}
-                    onCorrectSupplyInput={handleCorrectSupplyInput}
-                    onCorrectBorrowInput={handleCorrectBorrowInput}
-                    defaultTab={mobileCardDefaultTab}
-                  />
-                );
-                const rightCard = rightReserve ? (
-                  <MobileReserveCard
-                    variant={isRightActive ? 'upperOnly' : 'full'}
-                    connectedBelow={rightExpanded}
-                    reserve={rightReserve}
-                    isApy={isApy}
-                    tydroPointToUsdRate={tydroPointToUsdRate}
-                    onIncentiveClick={handleIncentiveClick}
-                    isSimulationExpanded={isRightActive}
-                    onToggleSimulation={() => handleToggleExpand(rightId!)}
-                    simulation={simulationsById[rightId!]}
-                    supplyInput={debouncedSharedSupplyInput}
-                    borrowInput={debouncedSharedBorrowInput}
-                    hasSharedScenario={hasSharedScenario}
-                    inputMode={sharedInputMode}
-                    onCorrectSupplyInput={handleCorrectSupplyInput}
-                    onCorrectBorrowInput={handleCorrectBorrowInput}
-                    defaultTab={mobileCardDefaultTab}
-                  />
-                ) : null;
-
-                nodes.push(
-                  <div
-                    key={`row-${i}`}
-                    className="col-span-2"
-                    data-reserve-expanded-anchor={activeId ?? undefined}
-                  >
-                    {rowHasExpanded && activeReserve && activeId ? (
-                      <MobileExpandedReserveShell
-                        side={leftExpanded ? 'left' : 'right'}
-                        upper={leftExpanded ? leftCard : rightCard}
-                        sibling={leftExpanded ? rightCard : leftCard}
-                        panel={
-                          <MobileReserveCard
-                            variant="simulationOnly"
-                            reserve={activeReserve}
-                            isApy={isApy}
-                            tydroPointToUsdRate={tydroPointToUsdRate}
-                            onIncentiveClick={handleIncentiveClick}
-                            isSimulationExpanded
-                            onToggleSimulation={() => handleToggleExpand(activeId)}
-                            simulation={simulationsById[activeId]}
-                            supplyInput={debouncedSharedSupplyInput}
-                            borrowInput={debouncedSharedBorrowInput}
-                            hasSharedScenario={hasSharedScenario}
-                            inputMode={sharedInputMode}
-                            onCorrectSupplyInput={handleCorrectSupplyInput}
-                            onCorrectBorrowInput={handleCorrectBorrowInput}
-                            defaultTab={mobileCardDefaultTab}
-                          />
-                        }
-                      />
-                    ) : (
-                      <div className="grid grid-cols-2 gap-[var(--ds-space-2)]">
-                        <div className="min-w-0">{leftCard}</div>
-                        {rightCard ? <div className="min-w-0">{rightCard}</div> : null}
-                      </div>
-                    )}
-                  </div>
-                );
-              }
-              return nodes;
-            })()
-          )}
+          <ReservesTableMobileGrid
+            displayData={displayData}
+            expandedReserveId={expandedReserveId}
+            isLoading={isLoading}
+            reservesCount={reserves.length}
+            isApy={isApy}
+            tydroPointToUsdRate={tydroPointToUsdRate}
+            hasSharedScenario={hasSharedScenario}
+            inputMode={sharedInputMode}
+            supplyInput={debouncedSharedSupplyInput}
+            borrowInput={debouncedSharedBorrowInput}
+            mobileCardDefaultTab={mobileCardDefaultTab}
+            simulationsById={simulationsById}
+            onIncentiveClick={handleIncentiveClick}
+            onToggleExpand={handleToggleExpand}
+            onCorrectSupplyInput={handleCorrectSupplyInput}
+            onCorrectBorrowInput={handleCorrectBorrowInput}
+          />
         </div>
         
         {/* Show More/Less button for mobile */}
