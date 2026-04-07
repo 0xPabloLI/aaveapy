@@ -286,7 +286,7 @@ const MiniReserveCard = ({
             animate: 'visible',
             variants: itemVariants,
           })}
-      className="rounded-xl border ds-card-pad-sm cursor-pointer bg-card border-border/60 active:bg-muted/60 h-[68px] flex flex-col justify-between"
+      className="rounded-xl border ds-card-pad-sm cursor-pointer bg-card border-border/60 active:bg-muted/60 h-[60px] flex flex-col justify-center gap-[var(--ds-space-0-5)]"
       onClick={() => onCardClick(reserve)}
     >
       <ReserveIdentity
@@ -301,22 +301,25 @@ const MiniReserveCard = ({
         miniRightContent={mainValueNode}
       />
 
-      <div className="flex items-baseline justify-end gap-[var(--ds-space-1)] mt-[var(--ds-space-0-5)]">
-        {!isLeverage && hasIncentive && (
+      <div className="flex items-baseline justify-end gap-[var(--ds-space-1)]">
+        {!isLeverage && (
           <span className={`ds-text-11 tabular-nums ${apyAccent.text}`}>
             {formatPercent(nativeValue ?? null)}
           </span>
         )}
-        {!isLeverage && hasIncentive && (
-          <span className="text-muted-foreground ds-text-11">+</span>
+        {!isLeverage && (
+          <span className={`text-muted-foreground ds-text-11 ${hasIncentive ? '' : 'invisible'}`}>+</span>
         )}
-        {!isLeverage && hasIncentive && (
+        {!isLeverage && (
           <button
             type="button"
-            onClick={(e) => onIncentiveClick(e, reserve, 'supply', incentiveValue, mainValue)}
-            className={`inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-0-5)] py-px rounded-full ring-1 transition-colors cursor-pointer tabular-nums ds-text-11 ${apyAccent.chip}`}
+            onClick={hasIncentive ? (e) => onIncentiveClick(e, reserve, 'supply', incentiveValue, mainValue) : undefined}
+            disabled={!hasIncentive}
+            aria-hidden={!hasIncentive}
+            tabIndex={hasIncentive ? 0 : -1}
+            className={`inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-1)] py-px rounded-full ring-1 transition-colors tabular-nums ds-text-11 ${apyAccent.chip} ${hasIncentive ? 'cursor-pointer' : 'invisible pointer-events-none'}`}
           >
-            <span>{formatPercent(incentiveValue)}</span>
+            <span>{formatPercent(incentiveValue ?? 0)}</span>
             <IncentiveIcon width={8} height={8} />
           </button>
         )}
@@ -402,7 +405,7 @@ const ReserveItem = forwardRef<HTMLDivElement, ReserveItemProps>(function Reserv
       } ${isMobile ? 'px-[var(--ds-space-2-5)] gap-[var(--ds-space-2)]' : 'px-[var(--ds-space-3)] gap-[var(--ds-space-2)]'}`}
       onClick={() => onCardClick(reserve)}
     >
-      <div className="grid grid-cols-[auto,1fr,auto] grid-rows-[auto,auto] content-center items-center gap-x-[var(--ds-space-2)] gap-y-[var(--ds-space-1)] flex-1 min-w-0 h-full">
+      <div className={`grid grid-cols-[auto,1fr,auto] grid-rows-[auto,auto] content-center items-center gap-x-[var(--ds-space-2)] ${isMobile ? 'gap-y-[var(--ds-space-0-5)]' : 'gap-y-[var(--ds-space-1)]'} flex-1 min-w-0 h-full`}>
         <TokenIcon
           symbol={iconSymbol}
           size={isMobile ? 28 : 32}
