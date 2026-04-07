@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo, useRef, memo, forwardRef } from 'react';
-import { TrendingUp, Zap, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ExternalLink } from 'lucide-react';
+import { useState, useEffect, useMemo, useRef, memo, forwardRef, useCallback, type ReactNode } from 'react';
+import { TrendingUp, Zap, ChevronLeft, ChevronsLeft, ChevronsRight, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ReserveWithSpread } from '@/types/aave';
 import {
@@ -30,27 +30,30 @@ import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
 import { Carousel, CarouselContent, CarouselItem, CarouselApi } from '@/components/ui/carousel';
 import { Button } from '@/components/ui/button';
 import { shouldSkipTopOpportunitiesRender } from '@/lib/topOpportunitiesMemo';
+import IncentiveTooltip from '@/components/dashboard/IncentiveTooltip';
 
 interface TopOpportunitiesProps {
   reserves: ReserveWithSpread[];
   isApy: boolean;
   isRateDragging?: boolean;
   whitelistMerklCampaignIds: ReadonlySet<string>;
+  onToggleWhitelistMerklCampaign: (campaignId: string, enabled: boolean) => void;
   categoryGroups: TokenCategoryGroups;
-  onIncentiveClick?: (payload: {
-    reserve: ReserveWithSpread;
-    type: 'supply' | 'borrow';
-    position: { x: number; y: number };
-    triggerCenterX: number;
-    triggerHeight: number;
-    triggerRect: { top: number; bottom: number; left: number; right: number; width: number; height: number };
-    accentBorderClass?: string;
-    accentTextClass?: string;
-    accentBgClass?: string;
-  }) => void;
   onCardClick?: (reserve: Pick<ReserveWithSpread, 'marketName' | 'tokenAddress'>) => void;
   tydroPointToUsdRate: number;
 }
+
+type TopOpportunitiesTooltipState = {
+  reserve: ReserveWithSpread;
+  type: 'supply' | 'borrow';
+  position: { x: number; y: number };
+  triggerCenterX: number;
+  triggerHeight: number;
+  triggerRect: { top: number; bottom: number; left: number; right: number; width: number; height: number };
+  accentBorderClass?: string;
+  accentTextClass?: string;
+  accentBgClass?: string;
+};
 
 const DISPLAY_COUNT = 5;
 
@@ -124,6 +127,7 @@ interface ReserveIdentityProps {
   isMobile: boolean;
   mini?: boolean;
   aaveUrl?: string;
+  miniRightContent?: ReactNode;
 }
 
 const ReserveIdentity = memo(({
@@ -136,6 +140,7 @@ const ReserveIdentity = memo(({
   isMobile,
   mini = false,
   aaveUrl,
+  miniRightContent,
 }: ReserveIdentityProps) => {
   if (mini) {
     return (
@@ -158,7 +163,7 @@ const ReserveIdentity = memo(({
             <span className="truncate">{marketDisplayName}</span>
           </div>
         </div>
-        <ChevronRight className="w-4 h-4 text-muted-foreground/50 shrink-0" />
+        {miniRightContent ? <div className="shrink-0 tabular-nums text-right">{miniRightContent}</div> : null}
       </div>
     );
   }
@@ -253,9 +258,15 @@ const MiniReserveCard = ({
   const mainValue = isLeverage
     ? (isApy ? reserve.apySpread : reserve.aprSpread)
     : (isApy ? reserve.totalSupplyApy : reserve.totalSupplyApr);
+  const nativeValue = reserve.supplyApy ?? null;
   const incentiveValue = isApy ? reserve.supplyIncentiveApy : reserve.supplyIncentiveApr;
   const hasIncentive = incentiveValue !== null && !isNaN(incentiveValue) && incentiveValue >= 0.01;
   const apyAccent = getApyAccentClasses(mainValue);
+  const mainValueNode = (
+    <span className={`font-bold ds-text-14 tabular-nums ${isLeverage ? getSpreadColorClass(mainValue, index, totalItems) : getApyColorClass(mainValue)}`}>
+      {isLeverage ? formatSpread(mainValue) : formatPercent(mainValue)}
+    </span>
+  );
   const chainIconSrc = getChainIconSrc(reserve.chainName);
   const { iconSymbol, logoURI } = fetchIconSymbolAndName({
     underlyingAsset: reserve.tokenAddress,
@@ -287,12 +298,18 @@ const MiniReserveCard = ({
         chainIconSrc={chainIconSrc}
         marketDisplayName={marketDisplayName}
         isMobile={isMobile}
+        miniRightContent={mainValueNode}
       />
 
-      <div className="flex items-baseline justify-between gap-[var(--ds-space-1)] mt-[var(--ds-space-0-5)]">
-        <span className={`font-bold ds-text-14 tabular-nums ${isLeverage ? getSpreadColorClass(mainValue, index, totalItems) : getApyColorClass(mainValue)}`}>
-          {isLeverage ? formatSpread(mainValue) : formatPercent(mainValue)}
-        </span>
+      <div className="flex items-baseline justify-end gap-[var(--ds-space-1)] mt-[var(--ds-space-0-5)]">
+        {!isLeverage && hasIncentive && (
+          <span className={`ds-text-9 tabular-nums ${apyAccent.text}`}>
+            {formatPercent(nativeValue ?? null)}
+          </span>
+        )}
+        {!isLeverage && hasIncentive && (
+          <span className="text-muted-foreground ds-text-9">+</span>
+        )}
         {!isLeverage && hasIncentive && (
           <button
             type="button"
@@ -455,13 +472,14 @@ const TopOpportunities = ({
   isApy,
   isRateDragging = false,
   whitelistMerklCampaignIds,
+  onToggleWhitelistMerklCampaign,
   categoryGroups,
-  onIncentiveClick,
   onCardClick,
   tydroPointToUsdRate,
 }: TopOpportunitiesProps) => {
   const isMobile = useIsMobile();
   const [isXl, setIsXl] = useState(false);
+  const [tooltipState, setTooltipState] = useState<TopOpportunitiesTooltipState | null>(null);
   const prevIsApyRef = useRef(isApy);
 
   useEffect(() => {
@@ -605,47 +623,6 @@ const TopOpportunities = ({
     }
   };
 
-  const handleIncentiveClick = (
-    e: React.MouseEvent,
-    reserve: ReserveWithSpread,
-    type: 'supply' | 'borrow',
-    incentiveValue: number | null,
-    accentValue: number | null,
-  ) => {
-    e.stopPropagation();
-    if (incentiveValue === null || isNaN(incentiveValue) || incentiveValue < 0.01) return;
-    if (!onIncentiveClick) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const triggerCenterX = rect.left + rect.width / 2;
-    if (import.meta.env.DEV) {
-      const target = e.currentTarget as HTMLElement;
-      const style = window.getComputedStyle(target);
-      const parent = target.parentElement;
-      const parentStyle = parent ? window.getComputedStyle(parent) : null;
-      console.debug('[TopOpportunities] Incentive rect', rect);
-      console.debug('[TopOpportunities] Incentive transform', style.transform);
-      console.debug('[TopOpportunities] Parent transform', parentStyle?.transform || 'none');
-    }
-    onIncentiveClick({
-      reserve,
-      type,
-      position: { x: rect.left, y: rect.bottom },
-      triggerCenterX,
-      triggerHeight: rect.height,
-      triggerRect: {
-        top: rect.top,
-        bottom: rect.bottom,
-        left: rect.left,
-        right: rect.right,
-        width: rect.width,
-        height: rect.height,
-      },
-      accentBorderClass: getAccentBorderClass(accentValue),
-      accentTextClass: getAccentTextClass(accentValue),
-      accentBgClass: getAccentBgClass(accentValue),
-    });
-  };
-
   const getApyColorClass = (value: number | null) => {
     if (value === null) return 'text-muted-foreground';
     if (value >= 15) return 'ds-text-emerald-600';
@@ -728,6 +705,46 @@ const TopOpportunities = ({
     if (value >= 1) return 'ds-bg-cyan-500-10';
     return 'ds-bg-cyan-500-10';
   };
+
+  const handleIncentiveClick = useCallback((
+    e: React.MouseEvent,
+    reserve: ReserveWithSpread,
+    type: 'supply' | 'borrow',
+    incentiveValue: number | null,
+    accentValue: number | null,
+  ) => {
+    e.stopPropagation();
+    if (incentiveValue === null || isNaN(incentiveValue) || incentiveValue < 0.01) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const triggerCenterX = rect.left + rect.width / 2;
+    if (import.meta.env.DEV) {
+      const target = e.currentTarget as HTMLElement;
+      const style = window.getComputedStyle(target);
+      const parent = target.parentElement;
+      const parentStyle = parent ? window.getComputedStyle(parent) : null;
+      console.debug('[TopOpportunities] Incentive rect', rect);
+      console.debug('[TopOpportunities] Incentive transform', style.transform);
+      console.debug('[TopOpportunities] Parent transform', parentStyle?.transform || 'none');
+    }
+    setTooltipState({
+      reserve,
+      type,
+      position: { x: rect.left, y: rect.bottom },
+      triggerCenterX,
+      triggerHeight: rect.height,
+      triggerRect: {
+        top: rect.top,
+        bottom: rect.bottom,
+        left: rect.left,
+        right: rect.right,
+        width: rect.width,
+        height: rect.height,
+      },
+      accentBorderClass: getAccentBorderClass(accentValue),
+      accentTextClass: getAccentTextClass(accentValue),
+      accentBgClass: getAccentBgClass(accentValue),
+    });
+  }, []);
 
 
   const getSpreadColorClass = (value: number | null, index: number = 0, total: number = 5) => {
@@ -977,23 +994,44 @@ const TopOpportunities = ({
   // Desktop only (xl+): grid layout. Mobile + tablet: carousel (swipe) below.
   if (isXl) {
     return (
-      <div className="grid gap-[var(--ds-space-3)] md:gap-[var(--ds-space-4)] grid-cols-2 lg:grid-cols-4">
-        {categories.map((category) => (
-          <CategoryCard
-            key={category.categoryKey}
-            title={category.title}
-            shortTitle={category.shortTitle}
-            subtitle={category.subtitle}
-            icon={category.icon}
-            iconColorClass={category.iconColorClass}
-            bgColorClass={category.bgColorClass}
-            reserves={category.reserves}
-            categoryKey={category.categoryKey}
-            type={category.type}
-            emptyMessage={category.emptyMessage}
+      <>
+        <div className="grid gap-[var(--ds-space-3)] md:gap-[var(--ds-space-4)] grid-cols-2 lg:grid-cols-4">
+          {categories.map((category) => (
+            <CategoryCard
+              key={category.categoryKey}
+              title={category.title}
+              shortTitle={category.shortTitle}
+              subtitle={category.subtitle}
+              icon={category.icon}
+              iconColorClass={category.iconColorClass}
+              bgColorClass={category.bgColorClass}
+              reserves={category.reserves}
+              categoryKey={category.categoryKey}
+              type={category.type}
+              emptyMessage={category.emptyMessage}
+            />
+          ))}
+        </div>
+        {tooltipState && (
+          <IncentiveTooltip
+            reserve={tooltipState.reserve}
+            type={tooltipState.type}
+            position={tooltipState.position}
+            triggerCenterX={tooltipState.triggerCenterX}
+            triggerHeight={tooltipState.triggerHeight}
+            triggerRect={tooltipState.triggerRect}
+            accentBorderClass={tooltipState.accentBorderClass}
+            accentTextClass={tooltipState.accentTextClass}
+            accentBgClass={tooltipState.accentBgClass}
+            onClose={() => setTooltipState(null)}
+            isApy={isApy}
+            tydroPointToUsdRate={tydroPointToUsdRate}
+            whitelistMerklCampaignIds={whitelistMerklCampaignIds}
+            onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign}
+            usePortal
           />
-        ))}
-      </div>
+        )}
+      </>
     );
   }
 
@@ -1004,17 +1042,18 @@ const TopOpportunities = ({
   ];
 
   return (
-    <div className="relative overflow-x-hidden">
-      <Carousel
-        setApi={setApi}
-        opts={{
-          align: "start",
-          loop: false,
-          dragFree: false,
-          containScroll: "trimSnaps",
-        }}
-        className="w-full"
-      >
+    <>
+      <div className="relative overflow-x-hidden">
+        <Carousel
+          setApi={setApi}
+          opts={{
+            align: "start",
+            loop: false,
+            dragFree: false,
+            containScroll: "trimSnaps",
+          }}
+          className="w-full"
+        >
         {/* Edge light-bands + double chevrons to hint horizontal scroll */}
         {canScrollPrev && (
           <div className="pointer-events-none absolute -left-[2rem] top-0 h-full w-[2.5rem] z-10">
@@ -1042,50 +1081,70 @@ const TopOpportunities = ({
             </button>
           </div>
         )}
-        <CarouselContent className="-ml-[var(--ds-space-2)] will-change-transform">
-          {mobilePages.map((pageCats, pageIndex) => (
-            <CarouselItem key={pageIndex} className="pl-[var(--ds-space-2)] basis-full">
-              <div className="grid grid-cols-2 gap-[var(--ds-space-2)]">
-                {pageCats.map((category) => (
-                  <CategoryCard
-                    key={category.categoryKey}
-                    title={category.title}
-                    shortTitle={category.shortTitle}
-                    subtitle={category.subtitle}
-                    icon={category.icon}
-                    iconColorClass={category.iconColorClass}
-                    bgColorClass={category.bgColorClass}
-                    reserves={category.reserves}
-                    categoryKey={category.categoryKey}
-                    type={category.type}
-                    emptyMessage={category.emptyMessage}
-                  />
-                ))}
-              </div>
-            </CarouselItem>
-          ))}
-        </CarouselContent>
+          <CarouselContent className="-ml-[var(--ds-space-2)] will-change-transform">
+            {mobilePages.map((pageCats, pageIndex) => (
+              <CarouselItem key={pageIndex} className="pl-[var(--ds-space-2)] basis-full">
+                <div className="grid grid-cols-2 gap-[var(--ds-space-2)]">
+                  {pageCats.map((category) => (
+                    <CategoryCard
+                      key={category.categoryKey}
+                      title={category.title}
+                      shortTitle={category.shortTitle}
+                      subtitle={category.subtitle}
+                      icon={category.icon}
+                      iconColorClass={category.iconColorClass}
+                      bgColorClass={category.bgColorClass}
+                      reserves={category.reserves}
+                      categoryKey={category.categoryKey}
+                      type={category.type}
+                      emptyMessage={category.emptyMessage}
+                    />
+                  ))}
+                </div>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
 
         {/* Navigation arrows integrated into edge bands */}
-      </Carousel>
+        </Carousel>
 
-      {/* Pagination indicators - 2 dots for 2 pages */}
-      <div className="flex justify-center items-center gap-[var(--ds-space-2)] mt-[var(--ds-space-4)] [--ds-dot:0.375rem] [--ds-dot-active:0.5rem]">
-        {mobilePages.map((_, index) => (
-          <button
-            type="button"
-            key={index}
-            className={`transition-all rounded-full ${
-              current === index
-                ? 'ds-dot-active bg-[rgb(var(--ds-brand-magenta-rgb))] shadow-[0_0_0_3px_rgba(0,0,0,0.04)] dark:shadow-[0_0_0_3px_rgba(0,0,0,0.4)]'
-                : 'ds-dot bg-[rgb(var(--ds-brand-magenta-rgb)/0.25)] hover:bg-[rgb(var(--ds-brand-magenta-rgb)/0.45)]'
-            }`}
-            onClick={() => api?.scrollTo(index)}
-            aria-label={`Go to page ${index + 1}`}
-          />
-        ))}
+        {/* Pagination indicators - 2 dots for 2 pages */}
+        <div className="flex justify-center items-center gap-[var(--ds-space-2)] mt-[var(--ds-space-4)] [--ds-dot:0.375rem] [--ds-dot-active:0.5rem]">
+          {mobilePages.map((_, index) => (
+            <button
+              type="button"
+              key={index}
+              className={`transition-all rounded-full ${
+                current === index
+                  ? 'ds-dot-active bg-[rgb(var(--ds-brand-magenta-rgb))] shadow-[0_0_0_3px_rgba(0,0,0,0.04)] dark:shadow-[0_0_0_3px_rgba(0,0,0,0.4)]'
+                  : 'ds-dot bg-[rgb(var(--ds-brand-magenta-rgb)/0.25)] hover:bg-[rgb(var(--ds-brand-magenta-rgb)/0.45)]'
+              }`}
+              onClick={() => api?.scrollTo(index)}
+              aria-label={`Go to page ${index + 1}`}
+            />
+          ))}
+        </div>
       </div>
-    </div>
+      {tooltipState && (
+        <IncentiveTooltip
+          reserve={tooltipState.reserve}
+          type={tooltipState.type}
+          position={tooltipState.position}
+          triggerCenterX={tooltipState.triggerCenterX}
+          triggerHeight={tooltipState.triggerHeight}
+          triggerRect={tooltipState.triggerRect}
+          accentBorderClass={tooltipState.accentBorderClass}
+          accentTextClass={tooltipState.accentTextClass}
+          accentBgClass={tooltipState.accentBgClass}
+          onClose={() => setTooltipState(null)}
+          isApy={isApy}
+          tydroPointToUsdRate={tydroPointToUsdRate}
+          whitelistMerklCampaignIds={whitelistMerklCampaignIds}
+          onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign}
+          usePortal
+        />
+      )}
+    </>
   );
 };
 
