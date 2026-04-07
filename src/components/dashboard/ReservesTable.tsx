@@ -1,7 +1,7 @@
-import { useState, useMemo, useEffect, useCallback, memo, useRef } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 
-import { ArrowUp, ArrowDown, ChevronDown, ChevronUp } from 'lucide-react';
-import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
+import { ReservesTableShowMore, ReservesTableFloatingScroll } from './ReservesTablePagination';
+import { Table, TableBody } from '@/components/ui/table';
 import { ReserveWithSpread, TokenPricesIndex } from '@/types/aave';
 import {
   formatPercent,
@@ -20,7 +20,7 @@ import { getChainIconSrc } from '@/lib/chainIcons';
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
 import { openExternalUrl } from '@/lib/externalNavigation';
 import { calculateDeficitShareRatio, getReserveDeficitUsdAmount } from '@/lib/deficit';
-import IncentiveTooltip from './IncentiveTooltip';
+import ReservesTableTooltipOverlay, { type TooltipState } from './ReservesTableTooltipOverlay';
 import DesktopReserveRow from './DesktopReserveRow';
 import ReservesTableDesktopHeader from './ReservesTableDesktopHeader';
 import ReservesTableMobileGrid from './ReservesTableMobileGrid';
@@ -36,6 +36,7 @@ import {
   shouldScrollExpandedSimulationIntoView,
 } from '@/lib/scrollExpandedSimulationIntoView';
 import { createScenarioPinControllerState, transitionScenarioPinController } from '@/lib/scenarioPinController';
+import ReservesTableDesktopSkeleton from './ReservesTableDesktopSkeleton';
 
 interface ReservesTableProps {
   reserves: ReserveWithSpread[];
@@ -159,14 +160,7 @@ const ReservesTable = ({
     setExpandedReserveId(reserveId);
   }, []);
 
-  const [tooltipState, setTooltipState] = useState<{
-    reserve: ReserveWithSpread;
-    type: 'supply' | 'borrow';
-    position: { x: number; y: number };
-    triggerCenterX: number;
-    triggerHeight: number;
-    triggerRect: { top: number; bottom: number; left: number; right: number; width: number; height: number };
-  } | null>(null);
+  const [tooltipState, setTooltipState] = useState<TooltipState | null>(null);
 
   const { simulationsById, hasAnyInput: hasSharedScenario } = useSharedRateSimulations({
     reserves,
@@ -1148,67 +1142,24 @@ const ReservesTable = ({
           />
         </div>
         
-        {/* Show More/Less button for mobile */}
-        {sortedData.length > displayData.length && (
-          <button
-            type="button"
-            onClick={() => setMinVisibleCount(sortedData.length)}
-            className="w-full mt-[var(--ds-space-4)] ds-button ds-text-14 md:ds-text-16 gap-[var(--ds-space-2)] border border-border bg-card hover:bg-muted/50 transition-colors text-foreground font-semibold"
-          >
-            <span>{`Show ${sortedData.length - displayData.length} More Reserves`}</span>
-            <ChevronDown className="w-4 h-4" />
-          </button>
-        )}
-        {showAll && sortedData.length > DEFAULT_VISIBLE_COUNT && (
-          <button
-            type="button"
-            onClick={() => setMinVisibleCount(null)}
-            className="w-full mt-[var(--ds-space-4)] ds-button ds-text-14 md:ds-text-16 gap-[var(--ds-space-2)] border border-border bg-card hover:bg-muted/50 transition-colors text-foreground font-semibold"
-          >
-            <span>Show Less</span>
-            <ChevronUp className="w-4 h-4" />
-          </button>
-        )}
+        <ReservesTableShowMore
+          totalCount={sortedData.length}
+          displayCount={displayData.length}
+          showAll={showAll}
+          defaultVisibleCount={DEFAULT_VISIBLE_COUNT}
+          variant="mobile"
+          onShowAll={() => setMinVisibleCount(sortedData.length)}
+          onShowLess={() => setMinVisibleCount(null)}
+        />
         
-        {tooltipState && (
-          <IncentiveTooltip
-            reserve={tooltipState.reserve}
-            type={tooltipState.type}
-            position={tooltipState.position}
-            triggerCenterX={tooltipState.triggerCenterX}
-            triggerHeight={tooltipState.triggerHeight}
-            triggerRect={tooltipState.triggerRect}
-            accentTextClass={tooltipState.type === 'supply' ? 'ds-text-emerald-600' : 'ds-text-brand-cyan'}
-            accentBgClass={tooltipState.type === 'supply' ? 'ds-bg-emerald-500-10' : 'ds-bg-brand-cyan-10'}
-            onClose={() => setTooltipState(null)}
-            isApy={isApy}
-            tydroPointToUsdRate={tydroPointToUsdRate}
-            whitelistMerklCampaignIds={whitelistMerklCampaignIds}
-            onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign}
-          />
-        )}
+        <ReservesTableTooltipOverlay tooltipState={tooltipState} onClose={() => setTooltipState(null)} isApy={isApy} tydroPointToUsdRate={tydroPointToUsdRate} whitelistMerklCampaignIds={whitelistMerklCampaignIds} onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign} />
 
-        {/* Floating scroll-to-top / scroll-to-bottom buttons (mobile) */}
-        {tableInView && (
-        <div className="fixed right-3 bottom-6 z-30 flex flex-col gap-2">
-          <button
-            type="button"
-            aria-label="Scroll to table top"
-            onClick={() => mobileTableRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-border/60 bg-card/90 shadow-md backdrop-blur-sm text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
-          >
-            <ArrowUp className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            aria-label="Scroll to table bottom"
-            onClick={() => mobileTableRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })}
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-border/60 bg-card/90 shadow-md backdrop-blur-sm text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
-          >
-            <ArrowDown className="h-4 w-4" />
-          </button>
-        </div>
-        )}
+        <ReservesTableFloatingScroll
+          tableInView={tableInView}
+          variant="mobile"
+          onScrollToTop={() => mobileTableRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+          onScrollToBottom={() => mobileTableRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })}
+        />
       </div>
     );
   }
@@ -1420,43 +1371,7 @@ const ReservesTable = ({
           />
           <TableBody>
             {isLoading && reserves.length === 0 ? (
-              Array.from({ length: 10 }).map((_, i) => (
-                <TableRow key={i} className="border-b border-border/30">
-                  <TableCell className="pl-[var(--ds-space-1-5)] pr-[var(--ds-space-0-5)] ds-row-pad text-center">
-                    <div className="flex items-center justify-center gap-[var(--ds-space-2)]">
-                      <Skeleton variant="gradient" className="w-7 h-7 rounded-full border-transparent" />
-                      <Skeleton variant="default" className="h-4 w-14 rounded-md" />
-                    </div>
-                  </TableCell>
-                  <TableCell className="px-[var(--ds-space-0-5)] ds-row-pad text-center hidden md:table-cell">
-                    <Skeleton variant="subtle" className="h-4 w-16 rounded-md mx-auto" />
-                  </TableCell>
-                  <TableCell className="pl-[var(--ds-space-0-5)] pr-[var(--ds-space-1)] ds-row-pad text-center hidden md:table-cell">
-                    <Skeleton variant="subtle" className="h-6 w-20 rounded-full mx-auto" />
-                  </TableCell>
-                  <TableCell className="px-[var(--ds-space-1-5)] ds-row-pad text-center hidden md:table-cell">
-                    <Skeleton variant="subtle" className="h-4 w-16 rounded-md mx-auto" />
-                  </TableCell>
-                  <TableCell className="px-[var(--ds-space-1-5)] ds-row-pad text-center">
-                    <div className="flex flex-col items-center gap-[var(--ds-space-1)]">
-                      <Skeleton variant="gradient" className={`h-5 rounded-md ${i % 2 === 0 ? 'w-16' : 'w-[4.5rem]'}`} />
-                      <Skeleton variant="subtle" className={`h-3 rounded-full border-transparent ${i % 2 === 0 ? 'w-20' : 'w-[4.5rem]'}`} />
-                    </div>
-                  </TableCell>
-                  <TableCell className="px-[var(--ds-space-1-5)] ds-row-pad text-center hidden md:table-cell">
-                    <Skeleton variant="subtle" className={`h-5 rounded-md mx-auto ${i % 2 === 0 ? 'w-16' : 'w-14'}`} />
-                  </TableCell>
-                  <TableCell className="px-[var(--ds-space-1-5)] ds-row-pad text-center">
-                    <div className="flex flex-col items-center gap-[var(--ds-space-1)]">
-                      <Skeleton variant="gradient" className={`h-5 rounded-md ${i % 3 === 0 ? 'w-16' : 'w-[4.5rem]'}`} />
-                      <Skeleton variant="subtle" className={`h-3 rounded-full border-transparent ${i % 3 === 0 ? 'w-20' : 'w-[4.5rem]'}`} />
-                    </div>
-                  </TableCell>
-                  <TableCell className="pl-[var(--ds-space-1-5)] pr-[var(--ds-space-2)] ds-row-pad text-center hidden md:table-cell">
-                    <Skeleton variant="subtle" className="h-4 w-12 rounded-md mx-auto" />
-                  </TableCell>
-                </TableRow>
-              ))
+              <ReservesTableDesktopSkeleton />
             ) : displayData.map((reserve) => {
               const reserveId = getReserveSimulationId(reserve);
               const simulation = simulationsById[reserveId];
@@ -1507,31 +1422,15 @@ const ReservesTable = ({
           </TableBody>
         </Table>
 
-      {/* Show More/Less button for desktop */}
-      {sortedData.length > displayData.length && (
-        <div className="p-[var(--ds-space-4)] border-t border-border">
-          <button
-            type="button"
-            onClick={() => setMinVisibleCount(sortedData.length)}
-            className="w-full ds-button ds-text-14 md:ds-text-16 gap-[var(--ds-space-2)] border border-border bg-muted/30 hover:bg-muted/50 transition-colors text-foreground font-semibold"
-          >
-            <span>{`Show ${sortedData.length - displayData.length} More Reserves`}</span>
-            <ChevronDown className="w-4 h-4" />
-          </button>
-        </div>
-      )}
-      {showAll && sortedData.length > DEFAULT_VISIBLE_COUNT && (
-        <div className="p-[var(--ds-space-4)] border-t border-border">
-          <button
-            type="button"
-            onClick={() => setMinVisibleCount(null)}
-            className="w-full ds-button ds-text-14 md:ds-text-16 gap-[var(--ds-space-2)] border border-border bg-muted/30 hover:bg-muted/50 transition-colors text-foreground font-semibold"
-          >
-            <span>Show Less</span>
-            <ChevronUp className="w-4 h-4" />
-          </button>
-        </div>
-      )}
+      <ReservesTableShowMore
+        totalCount={sortedData.length}
+        displayCount={displayData.length}
+        showAll={showAll}
+        defaultVisibleCount={DEFAULT_VISIBLE_COUNT}
+        variant="desktop"
+        onShowAll={() => setMinVisibleCount(sortedData.length)}
+        onShowLess={() => setMinVisibleCount(null)}
+      />
       
       <div ref={desktopTableBottomAnchorRef} aria-hidden className="h-px w-full" />
 
@@ -1540,50 +1439,17 @@ const ReservesTable = ({
         <div aria-hidden style={{ height: 'calc(100dvh - var(--reserves-expanded-main-row-top, 5.75rem))' }} />
       )}
 
-      {tooltipState && (
-        <IncentiveTooltip
-          reserve={tooltipState.reserve}
-          type={tooltipState.type}
-          position={tooltipState.position}
-          triggerCenterX={tooltipState.triggerCenterX}
-          triggerHeight={tooltipState.triggerHeight}
-          triggerRect={tooltipState.triggerRect}
-          accentTextClass={tooltipState.type === 'supply' ? 'ds-text-emerald-600' : 'ds-text-brand-cyan'}
-          accentBgClass={tooltipState.type === 'supply' ? 'ds-bg-emerald-500-10' : 'ds-bg-brand-cyan-10'}
-          onClose={() => setTooltipState(null)}
-          isApy={isApy}
-          tydroPointToUsdRate={tydroPointToUsdRate}
-          whitelistMerklCampaignIds={whitelistMerklCampaignIds}
-          onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign}
-        />
-      )}
+      <ReservesTableTooltipOverlay tooltipState={tooltipState} onClose={() => setTooltipState(null)} isApy={isApy} tydroPointToUsdRate={tydroPointToUsdRate} whitelistMerklCampaignIds={whitelistMerklCampaignIds} onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign} />
 
-      {/* Floating scroll-to-top / scroll-to-bottom buttons */}
-      {tableInView && (
-      <div className="fixed right-3 bottom-6 z-30 flex flex-col gap-2 md:right-6">
-        <button
-          type="button"
-          aria-label="Scroll to table top"
-          onClick={() => {
-            desktopTableCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }}
-          className="flex h-9 w-9 items-center justify-center rounded-full border border-border/60 bg-card/90 shadow-md backdrop-blur-sm text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
-        >
-          <ArrowUp className="h-4 w-4" />
-        </button>
-        <button
-          type="button"
-          aria-label="Scroll to table bottom"
-          onClick={() => {
-            const target = desktopTableBottomAnchorRef.current ?? desktopTableCardRef.current;
-            target?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-          }}
-          className="flex h-9 w-9 items-center justify-center rounded-full border border-border/60 bg-card/90 shadow-md backdrop-blur-sm text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
-        >
-          <ArrowDown className="h-4 w-4" />
-        </button>
-      </div>
-      )}
+      <ReservesTableFloatingScroll
+        tableInView={tableInView}
+        variant="desktop"
+        onScrollToTop={() => desktopTableCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+        onScrollToBottom={() => {
+          const target = desktopTableBottomAnchorRef.current ?? desktopTableCardRef.current;
+          target?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }}
+      />
       </div>
     </div>
   );

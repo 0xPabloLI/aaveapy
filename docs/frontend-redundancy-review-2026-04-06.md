@@ -135,7 +135,36 @@
   - collapsed 状态渲染 `aria-label="Expand details panel"`
   - expanded 状态渲染 `aria-label="Collapse details panel"`
 
-### 3.18 当前推荐 Harness 命令
+### 3.19 桌面骨架 / 分页 / 浮动按钮外提（2026-04-07）
+- 新增 `src/components/dashboard/ReservesTableDesktopSkeleton.tsx`：将桌面端 10 行 skeleton loading rows 从 `ReservesTable` 主组件中移出；修复了原 `ReservesTable` 中 `Skeleton` 未 import 的隐患
+- 新增 `src/components/dashboard/ReservesTablePagination.tsx`：将 Show More/Show Less 按钮和浮动 scroll-to-top/bottom 按钮合并为共享组件（`ReservesTableShowMore` + `ReservesTableFloatingScroll`），移动端和桌面端共用，通过 `variant` prop 区分样式差异
+- `ReservesTable.tsx` 从 1592 行瘦身至 ~1497 行（-95 行）
+- 不触碰：sticky scenario / sticky `thead` / expanded main row sticky `td` / scenario pin scroll / filter pin scroll
+- 清除了 `ReservesTable.tsx` 中不再使用的 `memo`、`TableCell`、`TableRow`、`ArrowUp`、`ArrowDown`、`ChevronDown`、`ChevronUp` import
+
+### 3.20 本轮验证
+- 已执行：`npm run lint` — 通过
+- 已执行：`npm run build` — 通过
+- 已执行：`npx playwright test e2e/reserves-table-interactions.spec.ts --project=chromium` — `4 passed`
+- 已执行：`npx vitest run src/components/dashboard/MobileReserveCard.test.tsx src/components/dashboard/TopOpportunities.test.tsx` — `4 passed`
+
+### 3.22 tooltip 容器 / mobile sheet / color helpers 外提（2026-04-07）
+- 新增 `src/components/dashboard/ReservesTableTooltipOverlay.tsx`（48 行）：将 `ReservesTable` 中移动端和桌面端重复的 `IncentiveTooltip` 渲染合并为共享组件；导出 `TooltipState` 类型
+- 新增 `src/components/dashboard/MobileReserveSheetContent.tsx`（177 行）：将 `MobileReserveCard` 中四个 bottom sheet 内容组件（`SupplyCapSheetContent` / `BorrowCapSheetContent` / `UtilizationSheetContent` / `DeficitSheetContent`）移出
+- 新增 `src/components/dashboard/topOpportunitiesColors.ts`（102 行）：将 `TopOpportunities` 中 7 个纯色阶/accent helper 函数移出
+- 文件行数变化：
+  - `ReservesTable.tsx`: 1497 → ~1458（-39 行）
+  - `MobileReserveCard.tsx`: 926 → ~764（-162 行）
+  - `TopOpportunities.tsx`: 1124 → ~1030（-94 行）
+- 不触碰：sticky scenario / sticky `thead` / expanded main row sticky `td` / scenario pin scroll / filter pin scroll / simulation 展开状态链
+
+### 3.23 本轮验证
+- 已执行：`npm run lint` — 通过
+- 已执行：`npm run build` — 通过
+- 已执行：`npx vitest run src/components/dashboard/MobileReserveCard.test.tsx src/components/dashboard/TopOpportunities.test.tsx` — `4 passed`
+- E2E（`reserves-table-interactions` / `reserves-table-mobile-interactions`）：因本地 API 服务 (localhost:3001) 未运行导致全量超时失败，不是本轮代码回归；之前同一代码通过 e2e 的前提是 API 在线
+
+### 3.24 当前推荐 Harness 命令
 - 组件级最小回归：
   - `npx vitest run src/components/dashboard/MobileReserveCard.test.tsx src/components/dashboard/TopOpportunities.test.tsx`
 - reserves 桌面/移动主交互：
@@ -151,11 +180,16 @@
 
 ### 未完成项 A：文件体积继续瘦身
 - 现状：
-  - `ReservesTable.tsx`: 1592 行
+  - `ReservesTable.tsx`: ~1458 行
+  - `ReservesTableDesktopSkeleton.tsx`: 46 行
+  - `ReservesTablePagination.tsx`: 93 行
+  - `ReservesTableTooltipOverlay.tsx`: 48 行
   - `ReservesTableMobileGrid.tsx`: 189 行
   - `ReservesTableMobileSortBar.tsx`: 186 行
-  - `TopOpportunities.tsx`: 1106 行
-  - `MobileReserveCard.tsx`: 825 行
+  - `TopOpportunities.tsx`: ~1030 行
+  - `topOpportunitiesColors.ts`: 102 行
+  - `MobileReserveCard.tsx`: ~764 行
+  - `MobileReserveSheetContent.tsx`: 177 行
 - 说明：`ReservesTable` 已因菜单去重小幅瘦身；`TopOpportunities` 因文件级组件上提后显式 props 变多，行数暂时上升，但组件重建问题已消除。
 - 补充：移动端排序条已进一步抽到独立组件 `ReservesTableMobileSortBar.tsx`，`ReservesTable` 的移动端分支已明显变短；这一步属于纯展示层拆分，排序状态仍保留在父组件。
 - 补充：桌面端 `ReservesTableDesktopHeader.tsx` 的三组 sort menu portal/render 逻辑也已收敛成共享渲染器；当前改动仍未触碰排序算法、sticky 计算和 expanded-row pin 逻辑。
