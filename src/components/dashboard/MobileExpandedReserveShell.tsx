@@ -1,9 +1,11 @@
 import type { ReactNode } from 'react';
 
 import { cn } from '@/lib/utils';
+import {
+  MOBILE_SIMULATION_JUNCTION_GEOMETRY,
+  getMobileSimulationJunctionFilletPaths,
+} from '@/lib/mobileSimulationJunction';
 
-const MOBILE_EXPANDED_CONNECTOR_TOP = 'calc(-1 * var(--ds-space-2))';
-const MOBILE_EXPANDED_CONNECTOR_HEIGHT = 'calc(var(--ds-space-2) + 1px)';
 const MOBILE_EXPANDED_COLUMN_WIDTH = 'calc((100% - var(--ds-space-2)) / 2)';
 
 type MobileExpandedReserveShellProps = {
@@ -20,6 +22,7 @@ export default function MobileExpandedReserveShell({
   panel,
 }: MobileExpandedReserveShellProps) {
   const connectorOnLeft = side === 'left';
+  const filletPaths = getMobileSimulationJunctionFilletPaths(connectorOnLeft);
 
   return (
     <div className="col-span-2" data-mobile-expanded-shell="true">
@@ -38,27 +41,40 @@ export default function MobileExpandedReserveShell({
       </div>
 
       <div className="relative isolate mt-[var(--ds-space-2)]" data-mobile-expanded-connector="true">
+        {/* Bridge: bg-card rect covering the gap between card bottom and panel top.
+             Extends well into the card to prevent subpixel seams on iOS WebKit.
+             border-x continues the card's L/R borders through the gap. */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute z-10 bg-card"
+          className={`pointer-events-none absolute z-10 border-border/60 bg-card ${connectorOnLeft ? 'left-0 border-l' : 'right-0 border-r'}`}
           style={{
-            top: MOBILE_EXPANDED_CONNECTOR_TOP,
-            height: MOBILE_EXPANDED_CONNECTOR_HEIGHT,
+            top: MOBILE_SIMULATION_JUNCTION_GEOMETRY.bridgeTop,
+            height: MOBILE_SIMULATION_JUNCTION_GEOMETRY.bridgeHeight,
             width: MOBILE_EXPANDED_COLUMN_WIDTH,
-            ...(connectorOnLeft ? { left: 0 } : { right: 0 }),
           }}
         />
-        <div
+
+        <svg
           aria-hidden="true"
-          className={cn(
-            'pointer-events-none absolute z-10 w-px bg-border/60',
-            connectorOnLeft ? 'left-0' : 'right-0',
-          )}
+          className="pointer-events-none absolute z-10 overflow-visible"
+          width={MOBILE_SIMULATION_JUNCTION_GEOMETRY.filletWidth}
+          height={MOBILE_SIMULATION_JUNCTION_GEOMETRY.filletHeight}
+          viewBox={`0 0 ${MOBILE_SIMULATION_JUNCTION_GEOMETRY.filletWidth} ${MOBILE_SIMULATION_JUNCTION_GEOMETRY.filletHeight}`}
           style={{
-            top: MOBILE_EXPANDED_CONNECTOR_TOP,
-            height: MOBILE_EXPANDED_CONNECTOR_HEIGHT,
+            top: MOBILE_SIMULATION_JUNCTION_GEOMETRY.filletTop,
+            ...(connectorOnLeft
+              ? { left: `calc(${MOBILE_EXPANDED_COLUMN_WIDTH} - 1px)` }
+              : { right: `calc(${MOBILE_EXPANDED_COLUMN_WIDTH} - 1px)` }),
           }}
-        />
+        >
+          <path d={filletPaths.fillPath} style={{ fill: 'hsl(var(--card))' }} />
+          <path
+            d={filletPaths.strokePath}
+            fill="none"
+            style={{ stroke: 'hsl(var(--border) / 0.6)', strokeWidth: 1 }}
+          />
+        </svg>
+
         <div
           className={cn(
             'relative z-0 overflow-hidden rounded-b-xl border border-border/60 bg-card ds-card-pad-sm',

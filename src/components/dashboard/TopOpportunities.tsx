@@ -31,6 +31,15 @@ import { Carousel, CarouselContent, CarouselItem, CarouselApi } from '@/componen
 import { Button } from '@/components/ui/button';
 import { shouldSkipTopOpportunitiesRender } from '@/lib/topOpportunitiesMemo';
 import IncentiveTooltip from '@/components/dashboard/IncentiveTooltip';
+import {
+  getApyColorClass,
+  getApyAccentClasses,
+  getAccentBorderClass,
+  getAccentTextClass,
+  getAccentBgClass,
+  getSpreadColorClass,
+  getSpreadAccentClass,
+} from './topOpportunitiesColors';
 
 interface TopOpportunitiesProps {
   reserves: ReserveWithSpread[];
@@ -525,6 +534,170 @@ const ReserveItem = forwardRef<HTMLDivElement, ReserveItemProps>(function Reserv
   );
 });
 
+interface CategoryCardProps {
+  title: string;
+  shortTitle?: string;
+  subtitle: string;
+  icon: typeof TrendingUp;
+  iconColorClass: string;
+  bgColorClass: string;
+  reserves: ReserveWithTotals[];
+  categoryKey: string;
+  type: 'supply' | 'leverage';
+  emptyMessage: string;
+  isMobile: boolean;
+  isApy: boolean;
+  isApyChanged: boolean;
+  isRateDragging: boolean;
+  headerVariants: Record<string, unknown>;
+  iconVariants: Record<string, unknown>;
+  itemVariants: Record<string, unknown>;
+  onCardClick: (reserve: Pick<ReserveWithSpread, 'marketName' | 'tokenAddress'>) => void;
+  onIncentiveClick: (
+    e: React.MouseEvent,
+    reserve: ReserveWithSpread,
+    type: 'supply' | 'borrow',
+    incentiveValue: number | null,
+    accentValue: number | null
+  ) => void;
+}
+
+const CategoryCard = ({
+  title,
+  shortTitle,
+  subtitle,
+  icon: Icon,
+  iconColorClass,
+  bgColorClass,
+  reserves: categoryReserves,
+  categoryKey,
+  type,
+  emptyMessage,
+  isMobile,
+  isApy,
+  isApyChanged,
+  isRateDragging,
+  headerVariants,
+  iconVariants,
+  itemVariants,
+  onCardClick,
+  onIncentiveClick,
+}: CategoryCardProps) => {
+  const shouldAnimateHeader = false;
+  const shouldAnimateList = !isMobile && !isApyChanged;
+
+  return (
+    <div className={`bg-card border border-border/60 rounded-xl ${isMobile ? 'ds-card-pad-sm' : 'ds-card-pad'} ${isMobile ? 'col-span-1' : ''} flex flex-col`}>
+      <CategoryCardHeader
+        title={title}
+        shortTitle={shortTitle}
+        subtitle={subtitle}
+        icon={Icon}
+        iconColorClass={iconColorClass}
+        bgColorClass={bgColorClass}
+        isMobile={isMobile}
+        shouldAnimateHeader={shouldAnimateHeader}
+        headerVariants={headerVariants}
+        iconVariants={iconVariants}
+      />
+
+      <div className={`flex-1 ${isMobile ? 'space-y-[var(--ds-space-1)]' : 'space-y-[var(--ds-space-1-5)]'}`}>
+        {categoryReserves.length > 0 ? (
+          shouldAnimateList ? (
+            <AnimatePresence mode="popLayout">
+              {categoryReserves.map((reserve, i) => (
+                isMobile ? (
+                  <MiniReserveCard
+                    key={`${categoryKey}-${reserve.marketName}-${reserve.tokenSymbol}`}
+                    reserve={reserve}
+                    index={i}
+                    type={type}
+                    totalItems={categoryReserves.length}
+                    disableMotion={isRateDragging || !shouldAnimateList}
+                    isApy={isApy}
+                    isMobile={isMobile}
+                    onCardClick={onCardClick}
+                    onIncentiveClick={onIncentiveClick}
+                    getApyAccentClasses={getApyAccentClasses}
+                    getApyColorClass={getApyColorClass}
+                    getSpreadColorClass={getSpreadColorClass}
+                    getSpreadAccentClass={getSpreadAccentClass}
+                    itemVariants={itemVariants}
+                  />
+                ) : (
+                  <ReserveItem
+                    key={`${categoryKey}-${reserve.marketName}-${reserve.tokenSymbol}`}
+                    reserve={reserve}
+                    index={i}
+                    type={type}
+                    totalItems={categoryReserves.length}
+                    disableMotion={isRateDragging}
+                    isApy={isApy}
+                    isMobile={isMobile}
+                    isRateDragging={isRateDragging}
+                    onCardClick={onCardClick}
+                    onIncentiveClick={onIncentiveClick}
+                    getApyAccentClasses={getApyAccentClasses}
+                    getApyColorClass={getApyColorClass}
+                    getSpreadColorClass={getSpreadColorClass}
+                    getSpreadAccentClass={getSpreadAccentClass}
+                    itemVariants={itemVariants}
+                  />
+                )
+              ))}
+            </AnimatePresence>
+          ) : (
+            categoryReserves.map((reserve, i) => (
+              isMobile ? (
+                <MiniReserveCard
+                  key={`${categoryKey}-${reserve.marketName}-${reserve.tokenSymbol}`}
+                  reserve={reserve}
+                  index={i}
+                  type={type}
+                  totalItems={categoryReserves.length}
+                  disableMotion
+                  isApy={isApy}
+                  isMobile={isMobile}
+                  onCardClick={onCardClick}
+                  onIncentiveClick={onIncentiveClick}
+                  getApyAccentClasses={getApyAccentClasses}
+                  getApyColorClass={getApyColorClass}
+                  getSpreadColorClass={getSpreadColorClass}
+                  getSpreadAccentClass={getSpreadAccentClass}
+                  itemVariants={itemVariants}
+                />
+              ) : (
+                <ReserveItem
+                  key={`${categoryKey}-${reserve.marketName}-${reserve.tokenSymbol}`}
+                  reserve={reserve}
+                  index={i}
+                  type={type}
+                  totalItems={categoryReserves.length}
+                  disableMotion
+                  isApy={isApy}
+                  isMobile={isMobile}
+                  isRateDragging={isRateDragging}
+                  onCardClick={onCardClick}
+                  onIncentiveClick={onIncentiveClick}
+                  getApyAccentClasses={getApyAccentClasses}
+                  getApyColorClass={getApyColorClass}
+                  getSpreadColorClass={getSpreadColorClass}
+                  getSpreadAccentClass={getSpreadAccentClass}
+                  itemVariants={itemVariants}
+                />
+              )
+            ))
+          )
+        ) : (
+          <div className="text-center py-[var(--ds-space-6)] text-muted-foreground">
+            <p className="ds-text-11">{emptyMessage}</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const TopOpportunities = ({
   reserves,
   isApy,
@@ -681,89 +854,6 @@ const TopOpportunities = ({
     }
   };
 
-  const getApyColorClass = (value: number | null) => {
-    if (value === null) return 'text-muted-foreground';
-    if (value >= 15) return 'ds-text-emerald-600';
-    if (value >= 10) return 'ds-text-emerald-500';
-    if (value >= 5) return 'ds-text-teal-500-70';
-    if (value >= 2) return 'ds-text-teal-400-70';
-    if (value >= 1) return 'ds-text-cyan-500-70';
-    return 'text-muted-foreground/70';
-  };
-
-  const getApyAccentClasses = (value: number | null) => {
-    if (value === null) {
-      return {
-        text: 'text-muted-foreground',
-        chip: 'bg-muted text-muted-foreground/70 ring-border/70 hover:bg-muted/80',
-      };
-    }
-    if (value >= 15) {
-      return {
-        text: 'ds-text-emerald-600-70',
-        chip: 'ds-bg-emerald-500-10 ds-text-emerald-600-70 ds-ring-emerald-500-15 hover:bg-[rgb(var(--ds-emerald-500-rgb)/0.2)]',
-      };
-    }
-    if (value >= 10) {
-      return {
-        text: 'ds-text-emerald-500-70',
-        chip: 'ds-bg-emerald-500-10 ds-text-emerald-500-70 ds-ring-emerald-500-15 hover:bg-[rgb(var(--ds-emerald-500-rgb)/0.2)]',
-      };
-    }
-    if (value >= 5) {
-      return {
-        text: 'ds-text-teal-500-70',
-        chip: 'ds-bg-teal-500-10 ds-text-teal-500-70 ds-ring-teal-500-15 hover:bg-[rgb(var(--ds-teal-500-rgb)/0.2)]',
-      };
-    }
-    if (value >= 2) {
-      return {
-        text: 'ds-text-teal-400-70',
-        chip: 'ds-bg-teal-400-10 ds-text-teal-400-70 ds-ring-teal-400-15 hover:bg-[rgb(var(--ds-teal-400-rgb)/0.2)]',
-      };
-    }
-    if (value >= 1) {
-      return {
-        text: 'ds-text-cyan-500-70',
-        chip: 'ds-bg-cyan-500-10 ds-text-cyan-500-70 ds-ring-cyan-500-15 hover:bg-[rgb(var(--ds-cyan-500-rgb)/0.2)]',
-      };
-    }
-    return {
-      text: 'ds-text-cyan-500-70',
-      chip: 'ds-bg-cyan-500-10 ds-text-cyan-500-70 ds-ring-cyan-500-15 hover:bg-[rgb(var(--ds-cyan-500-rgb)/0.2)]',
-    };
-  };
-
-  const getAccentBorderClass = (value: number | null) => {
-    if (value === null) return 'border-l-[4px] border-l-border/60';
-    if (value >= 15) return 'border-l-[4px] border-l-[rgb(var(--ds-emerald-600-rgb)/0.7)]';
-    if (value >= 10) return 'border-l-[4px] border-l-[rgb(var(--ds-emerald-500-rgb)/0.7)]';
-    if (value >= 5) return 'border-l-[4px] border-l-[rgb(var(--ds-teal-500-rgb)/0.7)]';
-    if (value >= 2) return 'border-l-[4px] border-l-[rgb(var(--ds-teal-400-rgb)/0.7)]';
-    if (value >= 1) return 'border-l-[4px] border-l-[rgb(var(--ds-cyan-500-rgb)/0.7)]';
-    return 'border-l-[4px] border-l-[rgb(var(--ds-cyan-500-rgb)/0.5)]';
-  };
-
-  const getAccentTextClass = (value: number | null) => {
-    if (value === null) return 'text-muted-foreground';
-    if (value >= 15) return 'ds-text-emerald-600';
-    if (value >= 10) return 'ds-text-emerald-500';
-    if (value >= 5) return 'ds-text-teal-500-70';
-    if (value >= 2) return 'ds-text-teal-400-70';
-    if (value >= 1) return 'ds-text-cyan-500-70';
-    return 'ds-text-cyan-500-70';
-  };
-
-  const getAccentBgClass = (value: number | null) => {
-    if (value === null) return 'bg-muted/40';
-    if (value >= 15) return 'ds-bg-emerald-500-10';
-    if (value >= 10) return 'ds-bg-emerald-500-10';
-    if (value >= 5) return 'ds-bg-teal-500-10';
-    if (value >= 2) return 'ds-bg-teal-400-10';
-    if (value >= 1) return 'ds-bg-cyan-500-10';
-    return 'ds-bg-cyan-500-10';
-  };
-
   const handleIncentiveClick = useCallback((
     e: React.MouseEvent,
     reserve: ReserveWithTotals,
@@ -803,178 +893,6 @@ const TopOpportunities = ({
       accentBgClass: getAccentBgClass(accentValue),
     });
   }, []);
-
-
-  const getSpreadColorClass = (value: number | null, index: number = 0, total: number = 5) => {
-    if (value === null) return 'text-muted-foreground';
-    // Create gradient from high to low: darker purple for high values, lighter pink for low values
-    // Index 0 = highest value (darkest), index 4 = lowest value (lightest)
-    const intensity = 1 - (index / Math.max(total - 1, 1)); // 1.0 for first item, 0.0 for last item
-    
-    if (intensity >= 0.8) {
-      // Highest values: deep purple
-      return 'bg-gradient-to-r from-purple-700 via-purple-600 to-purple-600 text-transparent bg-clip-text';
-    } else if (intensity >= 0.6) {
-      // High values: purple
-      return 'bg-gradient-to-r from-purple-600 via-purple-500 to-fuchsia-500 text-transparent bg-clip-text';
-    } else if (intensity >= 0.4) {
-      // Medium values: purple to fuchsia
-      return 'bg-gradient-to-r from-purple-500 via-fuchsia-500 to-fuchsia-500 text-transparent bg-clip-text';
-    } else if (intensity >= 0.2) {
-      // Low values: fuchsia to pink
-      return 'bg-gradient-to-r from-fuchsia-500 via-fuchsia-400 to-pink-500 text-transparent bg-clip-text';
-    } else {
-      // Lowest values: light pink
-      return 'bg-gradient-to-r from-fuchsia-400 via-pink-400 to-pink-400 text-transparent bg-clip-text';
-    }
-  };
-
-  const getSpreadAccentClass = (value: number | null, index: number = 0, total: number = 5) => {
-    if (value === null) return 'text-muted-foreground';
-    const intensity = 1 - (index / Math.max(total - 1, 1));
-    if (intensity >= 0.8) return 'ds-text-purple-600-70';
-    if (intensity >= 0.6) return 'ds-text-purple-500-70';
-    if (intensity >= 0.4) return 'text-fuchsia-500/70';
-    if (intensity >= 0.2) return 'text-fuchsia-400/70';
-    return 'ds-text-pink-400-70';
-  };
-  // Category card component (simplified - no expand/collapse)
-  const CategoryCard = ({
-    title,
-    shortTitle,
-    subtitle,
-    icon: Icon,
-    iconColorClass,
-    bgColorClass,
-    reserves: categoryReserves,
-    categoryKey,
-    type,
-    emptyMessage
-  }: {
-    title: string;
-    shortTitle?: string;
-    subtitle: string;
-    icon: typeof TrendingUp;
-    iconColorClass: string;
-    bgColorClass: string;
-    reserves: ReserveWithTotals[];
-    categoryKey: string;
-    type: 'supply' | 'leverage';
-    emptyMessage: string;
-  }) => {
-    const shouldAnimateHeader = false;
-    const shouldAnimateList = !isMobile && !isApyChanged;
-    return (
-        <div className={`bg-card border border-border/60 rounded-xl ${isMobile ? 'ds-card-pad-sm' : 'ds-card-pad'} ${isMobile ? 'col-span-1' : ''} flex flex-col`}>
-        <CategoryCardHeader
-          title={title}
-          shortTitle={shortTitle}
-          subtitle={subtitle}
-          icon={Icon}
-          iconColorClass={iconColorClass}
-          bgColorClass={bgColorClass}
-          isMobile={isMobile}
-          shouldAnimateHeader={shouldAnimateHeader}
-          headerVariants={headerVariants}
-          iconVariants={iconVariants}
-        />
-
-        <div className={`flex-1 ${isMobile ? 'space-y-[var(--ds-space-1)]' : 'space-y-[var(--ds-space-1-5)]'}`}>
-          {categoryReserves.length > 0 ? (
-            shouldAnimateList ? (
-              <AnimatePresence mode="popLayout">
-                {categoryReserves.map((reserve, i) => (
-                  isMobile ? (
-                    <MiniReserveCard
-                      key={`${categoryKey}-${reserve.marketName}-${reserve.tokenSymbol}`}
-                      reserve={reserve}
-                      index={i}
-                      type={type}
-                      totalItems={categoryReserves.length}
-                      disableMotion={isRateDragging || !shouldAnimateList}
-                      isApy={isApy}
-                      isMobile={isMobile}
-                      onCardClick={handleCardClick}
-                      onIncentiveClick={handleIncentiveClick}
-                      getApyAccentClasses={getApyAccentClasses}
-                      getApyColorClass={getApyColorClass}
-                      getSpreadColorClass={getSpreadColorClass}
-                      getSpreadAccentClass={getSpreadAccentClass}
-                      itemVariants={itemVariants}
-                    />
-                  ) : (
-                    <ReserveItem
-                      key={`${categoryKey}-${reserve.marketName}-${reserve.tokenSymbol}`}
-                      reserve={reserve} 
-                      index={i} 
-                      type={type}
-                      totalItems={categoryReserves.length}
-                      disableMotion={isRateDragging}
-                      isApy={isApy}
-                      isMobile={isMobile}
-                      isRateDragging={isRateDragging}
-                      onCardClick={handleCardClick}
-                      onIncentiveClick={handleIncentiveClick}
-                      getApyAccentClasses={getApyAccentClasses}
-                      getApyColorClass={getApyColorClass}
-                      getSpreadColorClass={getSpreadColorClass}
-                      getSpreadAccentClass={getSpreadAccentClass}
-                      itemVariants={itemVariants}
-                    />
-                  )
-                ))}
-              </AnimatePresence>
-            ) : (
-              categoryReserves.map((reserve, i) => (
-                isMobile ? (
-                  <MiniReserveCard
-                    key={`${categoryKey}-${reserve.marketName}-${reserve.tokenSymbol}`}
-                    reserve={reserve}
-                    index={i}
-                    type={type}
-                    totalItems={categoryReserves.length}
-                    disableMotion
-                    isApy={isApy}
-                    isMobile={isMobile}
-                    onCardClick={handleCardClick}
-                    onIncentiveClick={handleIncentiveClick}
-                    getApyAccentClasses={getApyAccentClasses}
-                    getApyColorClass={getApyColorClass}
-                    getSpreadColorClass={getSpreadColorClass}
-                    getSpreadAccentClass={getSpreadAccentClass}
-                    itemVariants={itemVariants}
-                  />
-                ) : (
-                  <ReserveItem
-                    key={`${categoryKey}-${reserve.marketName}-${reserve.tokenSymbol}`}
-                    reserve={reserve}
-                    index={i}
-                    type={type}
-                    totalItems={categoryReserves.length}
-                    disableMotion
-                    isApy={isApy}
-                    isMobile={isMobile}
-                    isRateDragging={isRateDragging}
-                    onCardClick={handleCardClick}
-                    onIncentiveClick={handleIncentiveClick}
-                    getApyAccentClasses={getApyAccentClasses}
-                    getApyColorClass={getApyColorClass}
-                    getSpreadColorClass={getSpreadColorClass}
-                    getSpreadAccentClass={getSpreadAccentClass}
-                    itemVariants={itemVariants}
-                  />
-                )
-              ))
-            )
-          ) : (
-            <div className="text-center py-[var(--ds-space-6)] text-muted-foreground">
-              <p className="ds-text-11">{emptyMessage}</p>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
 
   // Mobile carousel state
   const [api, setApi] = useState<CarouselApi>();
@@ -1067,6 +985,15 @@ const TopOpportunities = ({
               categoryKey={category.categoryKey}
               type={category.type}
               emptyMessage={category.emptyMessage}
+              isMobile={isMobile}
+              isApy={isApy}
+              isApyChanged={isApyChanged}
+              isRateDragging={isRateDragging}
+              headerVariants={headerVariants}
+              iconVariants={iconVariants}
+              itemVariants={itemVariants}
+              onCardClick={handleCardClick}
+              onIncentiveClick={handleIncentiveClick}
             />
           ))}
         </div>
@@ -1139,29 +1066,38 @@ const TopOpportunities = ({
             </button>
           </div>
         )}
-          <CarouselContent className="-ml-[var(--ds-space-2)] will-change-transform">
-            {mobilePages.map((pageCats, pageIndex) => (
-              <CarouselItem key={pageIndex} className="pl-[var(--ds-space-2)] basis-full">
-                <div className="grid grid-cols-2 gap-[var(--ds-space-2)]">
-                  {pageCats.map((category) => (
-                    <CategoryCard
-                      key={category.categoryKey}
-                      title={category.title}
-                      shortTitle={category.shortTitle}
-                      subtitle={category.subtitle}
-                      icon={category.icon}
-                      iconColorClass={category.iconColorClass}
-                      bgColorClass={category.bgColorClass}
-                      reserves={category.reserves}
-                      categoryKey={category.categoryKey}
-                      type={category.type}
-                      emptyMessage={category.emptyMessage}
-                    />
-                  ))}
-                </div>
-              </CarouselItem>
-            ))}
-          </CarouselContent>
+        <CarouselContent className="-ml-[var(--ds-space-2)] will-change-transform">
+          {mobilePages.map((pageCats, pageIndex) => (
+            <CarouselItem key={pageIndex} className="pl-[var(--ds-space-2)] basis-full">
+              <div className="grid grid-cols-2 gap-[var(--ds-space-2)]">
+                {pageCats.map((category) => (
+                  <CategoryCard
+                    key={category.categoryKey}
+                    title={category.title}
+                    shortTitle={category.shortTitle}
+                    subtitle={category.subtitle}
+                    icon={category.icon}
+                    iconColorClass={category.iconColorClass}
+                    bgColorClass={category.bgColorClass}
+                    reserves={category.reserves}
+                    categoryKey={category.categoryKey}
+                    type={category.type}
+                    emptyMessage={category.emptyMessage}
+                    isMobile={isMobile}
+                    isApy={isApy}
+                    isApyChanged={isApyChanged}
+                    isRateDragging={isRateDragging}
+                    headerVariants={headerVariants}
+                    iconVariants={iconVariants}
+                    itemVariants={itemVariants}
+                    onCardClick={handleCardClick}
+                    onIncentiveClick={handleIncentiveClick}
+                  />
+                ))}
+              </div>
+            </CarouselItem>
+          ))}
+        </CarouselContent>
 
         {/* Navigation arrows integrated into edge bands */}
         </Carousel>

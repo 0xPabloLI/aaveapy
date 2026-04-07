@@ -1,9 +1,7 @@
-import { useState, useMemo, useEffect, useCallback, memo, useRef, lazy, Suspense } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
 
-import { createPortal } from 'react-dom';
-import { ArrowUp, ArrowDown, ChevronDown, ChevronUp } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ReservesTableShowMore, ReservesTableFloatingScroll } from './ReservesTablePagination';
+import { Table, TableBody } from '@/components/ui/table';
 import { ReserveWithSpread, TokenPricesIndex } from '@/types/aave';
 import {
   formatPercent,
@@ -22,10 +20,10 @@ import { getChainIconSrc } from '@/lib/chainIcons';
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
 import { openExternalUrl } from '@/lib/externalNavigation';
 import { calculateDeficitShareRatio, getReserveDeficitUsdAmount } from '@/lib/deficit';
-import IncentiveTooltip from './IncentiveTooltip';
-import MobileReserveCard from './MobileReserveCard';
-import MobileExpandedReserveShell from './MobileExpandedReserveShell';
+import ReservesTableTooltipOverlay, { type TooltipState } from './ReservesTableTooltipOverlay';
 import DesktopReserveRow from './DesktopReserveRow';
+import ReservesTableDesktopHeader from './ReservesTableDesktopHeader';
+import ReservesTableMobileGrid from './ReservesTableMobileGrid';
 import ReservesTableMobileSortBar, {
   type MobileSortMenuKey,
   type MobileSortOption,
@@ -38,6 +36,7 @@ import {
   shouldScrollExpandedSimulationIntoView,
 } from '@/lib/scrollExpandedSimulationIntoView';
 import { createScenarioPinControllerState, transitionScenarioPinController } from '@/lib/scenarioPinController';
+import ReservesTableDesktopSkeleton from './ReservesTableDesktopSkeleton';
 
 import PortfolioModeToggle, { type SimulationMode } from './PortfolioModeToggle';
 import type { PortfolioPosition, PortfolioPositionResult, PortfolioSummary } from '@/types/portfolio';
@@ -179,14 +178,7 @@ const ReservesTable = ({
     setExpandedReserveId(reserveId);
   }, []);
 
-  const [tooltipState, setTooltipState] = useState<{
-    reserve: ReserveWithSpread;
-    type: 'supply' | 'borrow';
-    position: { x: number; y: number };
-    triggerCenterX: number;
-    triggerHeight: number;
-    triggerRect: { top: number; bottom: number; left: number; right: number; width: number; height: number };
-  } | null>(null);
+  const [tooltipState, setTooltipState] = useState<TooltipState | null>(null);
 
   const { simulationsById, hasAnyInput: hasSharedScenario } = useSharedRateSimulations({
     reserves,
@@ -670,12 +662,6 @@ const ReservesTable = ({
     incentive: 'Incentive',
   }[borrowSortMode];
 
-  const sizeSortLabel = {
-    supply: 'Supply',
-    borrow: 'Borrow',
-    deficitRatio: 'Deficit (%)',
-    deficitAmount: 'Deficit (Amount)',
-  }[sizeSortMode];
   const sizeSortAccentClass =
     sizeSortMode === 'supply'
       ? 'ds-text-emerald-700'
@@ -1254,212 +1240,44 @@ const ReservesTable = ({
         
         {/* 2x2 Grid layout for mobile */}
         <div className="grid grid-cols-2 gap-[var(--ds-space-2)]">
-          {isLoading && reserves.length === 0 ? (
-            Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="bg-card rounded-xl border border-border/60 ds-card-pad-sm">
-                <div className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-3)]">
-                  <Skeleton variant="gradient" className="w-8 h-8 rounded-full border-transparent shrink-0" />
-                  <div className="space-y-1 flex-1 min-w-0">
-                    <Skeleton variant="gradient" className="h-4 w-14 rounded-md" />
-                    <Skeleton variant="subtle" className="h-3 w-20 rounded-md" />
-                  </div>
-                  <Skeleton variant="subtle" className="w-7 h-7 rounded-full border-border/60 shrink-0" />
-                </div>
-                <div className="grid grid-cols-3 gap-[var(--ds-space-2)]">
-                  <div className="space-y-1">
-                    <Skeleton variant="subtle" className="h-2 w-10 rounded-md" />
-                    <Skeleton variant="gradient" className="h-5 w-14 rounded-md" />
-                    <Skeleton variant="subtle" className="h-3 w-16 rounded-full border-transparent" />
-                  </div>
-                  <div className="space-y-1 items-center flex flex-col">
-                    <Skeleton variant="subtle" className="h-2 w-10 rounded-md" />
-                    <Skeleton variant="subtle" className="h-4 w-14 rounded-md" />
-                  </div>
-                  <div className="space-y-1 flex flex-col items-end">
-                    <Skeleton variant="subtle" className="h-2 w-10 rounded-md" />
-                    <Skeleton variant="gradient" className="h-5 w-14 rounded-md" />
-                    <Skeleton variant="subtle" className="h-3 w-16 rounded-full border-transparent" />
-                  </div>
-                </div>
-              </div>
-            ))
-          ) : (
-            (() => {
-              const nodes: React.ReactNode[] = [];
-              // Process cards in pairs (rows of 2) for connected layout
-              for (let i = 0; i < displayData.length; i += 2) {
-                const leftReserve = displayData[i];
-                const leftId = `${leftReserve.marketName}-${leftReserve.tokenAddress}`;
-                const rightReserve = i + 1 < displayData.length ? displayData[i + 1] : null;
-                const rightId = rightReserve ? `${rightReserve.marketName}-${rightReserve.tokenAddress}` : null;
-
-                const leftExpanded = leftId === expandedReserveId;
-                const rightExpanded = rightId !== null && rightId === expandedReserveId;
-                const rowHasExpanded = leftExpanded || rightExpanded;
-
-                const isLeftActive = leftExpanded;
-                const isRightActive = rightExpanded;
-                const activeReserve = isLeftActive ? leftReserve : rightReserve;
-                const activeId = isLeftActive ? leftId : rightId;
-                const leftCard = (
-                  <MobileReserveCard
-                    variant={isLeftActive ? 'upperOnly' : 'full'}
-                    connectedBelow={leftExpanded}
-                    reserve={leftReserve}
-                    isApy={isApy}
-                    tydroPointToUsdRate={tydroPointToUsdRate}
-                    onIncentiveClick={handleIncentiveClick}
-                    isSimulationExpanded={isLeftActive}
-                    onToggleSimulation={() => handleToggleExpand(leftId)}
-                    simulation={simulationsById[leftId]}
-                    supplyInput={debouncedSharedSupplyInput}
-                    borrowInput={debouncedSharedBorrowInput}
-                    hasSharedScenario={hasSharedScenario}
-                    inputMode={sharedInputMode}
-                    onCorrectSupplyInput={handleCorrectSupplyInput}
-                    onCorrectBorrowInput={handleCorrectBorrowInput}
-                    defaultTab={mobileCardDefaultTab}
-                    isPortfolioMode={isPortfolioMode}
-                    isInPortfolio={portfolioReserveIds.has(leftId)}
-                    onPortfolioToggle={handlePortfolioToggle}
-                    onAddToPortfolio={handleAddToPortfolio}
-                  />
-                );
-                const rightCard = rightReserve ? (
-                  <MobileReserveCard
-                    variant={isRightActive ? 'upperOnly' : 'full'}
-                    connectedBelow={rightExpanded}
-                    reserve={rightReserve}
-                    isApy={isApy}
-                    tydroPointToUsdRate={tydroPointToUsdRate}
-                    onIncentiveClick={handleIncentiveClick}
-                    isSimulationExpanded={isRightActive}
-                    onToggleSimulation={() => handleToggleExpand(rightId!)}
-                    simulation={simulationsById[rightId!]}
-                    supplyInput={debouncedSharedSupplyInput}
-                    borrowInput={debouncedSharedBorrowInput}
-                    hasSharedScenario={hasSharedScenario}
-                    inputMode={sharedInputMode}
-                    onCorrectSupplyInput={handleCorrectSupplyInput}
-                    onCorrectBorrowInput={handleCorrectBorrowInput}
-                    defaultTab={mobileCardDefaultTab}
-                    isPortfolioMode={isPortfolioMode}
-                    isInPortfolio={rightId ? portfolioReserveIds.has(rightId) : false}
-                    onPortfolioToggle={handlePortfolioToggle}
-                    onAddToPortfolio={handleAddToPortfolio}
-                  />
-                ) : null;
-
-                nodes.push(
-                  <div
-                    key={`row-${i}`}
-                    className="col-span-2"
-                    data-reserve-expanded-anchor={activeId ?? undefined}
-                  >
-                    {rowHasExpanded && activeReserve && activeId ? (
-                      <MobileExpandedReserveShell
-                        side={leftExpanded ? 'left' : 'right'}
-                        upper={leftExpanded ? leftCard : rightCard}
-                        sibling={leftExpanded ? rightCard : leftCard}
-                        panel={
-                          <MobileReserveCard
-                            variant="simulationOnly"
-                            reserve={activeReserve}
-                            isApy={isApy}
-                            tydroPointToUsdRate={tydroPointToUsdRate}
-                            onIncentiveClick={handleIncentiveClick}
-                            isSimulationExpanded
-                            onToggleSimulation={() => handleToggleExpand(activeId)}
-                            simulation={simulationsById[activeId]}
-                            supplyInput={debouncedSharedSupplyInput}
-                            borrowInput={debouncedSharedBorrowInput}
-                            hasSharedScenario={hasSharedScenario}
-                            inputMode={sharedInputMode}
-                            onCorrectSupplyInput={handleCorrectSupplyInput}
-                            onCorrectBorrowInput={handleCorrectBorrowInput}
-                            defaultTab={mobileCardDefaultTab}
-                            isPortfolioMode={isPortfolioMode}
-                            isInPortfolio={portfolioReserveIds.has(activeId)}
-                            onPortfolioToggle={handlePortfolioToggle}
-                            onAddToPortfolio={handleAddToPortfolio}
-                          />
-                        }
-                      />
-                    ) : (
-                      <div className="grid grid-cols-2 gap-[var(--ds-space-2)]">
-                        <div className="min-w-0">{leftCard}</div>
-                        {rightCard ? <div className="min-w-0">{rightCard}</div> : null}
-                      </div>
-                    )}
-                  </div>
-                );
-              }
-              return nodes;
-            })()
-          )}
-        </div>
-        
-        {/* Show More/Less button for mobile */}
-        {sortedData.length > displayData.length && (
-          <button
-            type="button"
-            onClick={() => setMinVisibleCount(sortedData.length)}
-            className="w-full mt-[var(--ds-space-4)] ds-button ds-text-14 md:ds-text-16 gap-[var(--ds-space-2)] border border-border bg-card hover:bg-muted/50 transition-colors text-foreground font-semibold"
-          >
-            <span>{`Show ${sortedData.length - displayData.length} More Reserves`}</span>
-            <ChevronDown className="w-4 h-4" />
-          </button>
-        )}
-        {showAll && sortedData.length > DEFAULT_VISIBLE_COUNT && (
-          <button
-            type="button"
-            onClick={() => setMinVisibleCount(null)}
-            className="w-full mt-[var(--ds-space-4)] ds-button ds-text-14 md:ds-text-16 gap-[var(--ds-space-2)] border border-border bg-card hover:bg-muted/50 transition-colors text-foreground font-semibold"
-          >
-            <span>Show Less</span>
-            <ChevronUp className="w-4 h-4" />
-          </button>
-        )}
-        
-        {tooltipState && (
-          <IncentiveTooltip
-            reserve={tooltipState.reserve}
-            type={tooltipState.type}
-            position={tooltipState.position}
-            triggerCenterX={tooltipState.triggerCenterX}
-            triggerHeight={tooltipState.triggerHeight}
-            triggerRect={tooltipState.triggerRect}
-            accentTextClass={tooltipState.type === 'supply' ? 'ds-text-emerald-600' : 'ds-text-brand-cyan'}
-            accentBgClass={tooltipState.type === 'supply' ? 'ds-bg-emerald-500-10' : 'ds-bg-brand-cyan-10'}
-            onClose={() => setTooltipState(null)}
+          <ReservesTableMobileGrid
+            displayData={displayData}
+            expandedReserveId={expandedReserveId}
+            isLoading={isLoading}
+            reservesCount={reserves.length}
             isApy={isApy}
             tydroPointToUsdRate={tydroPointToUsdRate}
-            whitelistMerklCampaignIds={whitelistMerklCampaignIds}
-            onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign}
+            hasSharedScenario={hasSharedScenario}
+            inputMode={sharedInputMode}
+            supplyInput={debouncedSharedSupplyInput}
+            borrowInput={debouncedSharedBorrowInput}
+            mobileCardDefaultTab={mobileCardDefaultTab}
+            simulationsById={simulationsById}
+            onIncentiveClick={handleIncentiveClick}
+            onToggleExpand={handleToggleExpand}
+            onCorrectSupplyInput={handleCorrectSupplyInput}
+            onCorrectBorrowInput={handleCorrectBorrowInput}
           />
-        )}
-
-        {/* Floating scroll-to-top / scroll-to-bottom buttons (mobile) */}
-        {tableInView && (
-        <div className="fixed right-3 bottom-6 z-30 flex flex-col gap-2">
-          <button
-            type="button"
-            aria-label="Scroll to table top"
-            onClick={() => mobileTableRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-border/60 bg-card/90 shadow-md backdrop-blur-sm text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
-          >
-            <ArrowUp className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            aria-label="Scroll to table bottom"
-            onClick={() => mobileTableRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })}
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-border/60 bg-card/90 shadow-md backdrop-blur-sm text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
-          >
-            <ArrowDown className="h-4 w-4" />
-          </button>
         </div>
-        )}
+        
+        <ReservesTableShowMore
+          totalCount={sortedData.length}
+          displayCount={displayData.length}
+          showAll={showAll}
+          defaultVisibleCount={DEFAULT_VISIBLE_COUNT}
+          variant="mobile"
+          onShowAll={() => setMinVisibleCount(sortedData.length)}
+          onShowLess={() => setMinVisibleCount(null)}
+        />
+        
+        <ReservesTableTooltipOverlay tooltipState={tooltipState} onClose={() => setTooltipState(null)} isApy={isApy} tydroPointToUsdRate={tydroPointToUsdRate} whitelistMerklCampaignIds={whitelistMerklCampaignIds} onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign} />
+
+        <ReservesTableFloatingScroll
+          tableInView={tableInView}
+          variant="mobile"
+          onScrollToTop={() => mobileTableRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+          onScrollToBottom={() => mobileTableRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })}
+        />
       </div>
     );
   }
@@ -1502,610 +1320,176 @@ const ReservesTable = ({
             <col style={{ width: '12%' }} />
             <col style={{ width: '14.5%' }} />
           </colgroup>
-          <TableHeader
-            ref={desktopStickyTheadRef}
-            data-reserves-sticky-thead
-            className="overflow-visible [&_tr]:border-b-0 [&_th]:sticky [&_th]:z-30 [&_th]:border-b [&_th]:border-border/60 [&_th]:bg-card [&_th]:shadow-[0_1px_2px_0_rgb(0_0_0/0.04)] [&_th]:[top:var(--reserves-sticky-scenario-height,4.5rem)]"
-          >
-            <TableRow className="border-0 bg-card overflow-visible hover:bg-card">
-              {/* Token — 大幅收窄 */}
-              <TableHead className="pl-[var(--ds-space-1-5)] pr-[var(--ds-space-0-5)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground">
-                <button
-                  type="button"
-                  onClick={handleSortToken}
-                  className={`ds-chip-heading md:ds-text-16 gap-[var(--ds-space-1)] transition-all duration-200 ${
-                    activeSortColumn === 'token' 
-                      ? 'text-foreground font-bold scale-105' 
-                      : 'text-muted-foreground hover:text-foreground/80'
-                  }`}
-                >
-                  <span>Token</span>
-                  {activeSortColumn === 'token' ? (
-                    tokenSortOrder === 'asc' ? (
-                      <ArrowUp className="w-3 h-3" />
-                    ) : (
-                      <ArrowDown className="w-3 h-3" />
-                    )
-                  ) : (
-                    <ArrowDown className="w-3 h-3 opacity-50" />
-                  )}
-                </button>
-              </TableHead>
-              {/* Price — 大幅收窄 */}
-              <TableHead className="px-[var(--ds-space-0-5)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
-                <button
-                  type="button"
-                  onClick={handleSortPrice}
-                  className={`ds-chip-heading md:ds-text-16 gap-[var(--ds-space-1)] transition-all duration-200 ${
-                    activeSortColumn === 'price' 
-                      ? 'text-foreground font-bold scale-105' 
-                      : 'text-muted-foreground hover:text-foreground/80'
-                  }`}
-                >
-                  <span>Price</span>
-                  {activeSortColumn === 'price' ? (
-                    priceSortOrder === 'desc' ? (
-                      <ArrowDown className="w-3 h-3" />
-                    ) : (
-                      <ArrowUp className="w-3 h-3" />
-                    )
-                  ) : (
-                    <ArrowDown className="w-3 h-3 opacity-50" />
-                  )}
-                </button>
-              </TableHead>
-              {/* Market — 大幅收窄 */}
-              <TableHead className="pl-[var(--ds-space-0-5)] pr-[var(--ds-space-1)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
-                <button
-                  type="button"
-                  onClick={handleSortMarket}
-                  className={`ds-chip-heading md:ds-text-16 gap-[var(--ds-space-1)] transition-all duration-200 ${
-                    activeSortColumn === 'market'
-                      ? 'text-foreground font-bold scale-105'
-                      : 'text-muted-foreground hover:text-foreground/80'
-                  }`}
-                >
-                  <span>Market</span>
-                  {activeSortColumn === 'market' ? (
-                    marketSortOrder === 'asc' ? (
-                      <ArrowUp className="w-3 h-3" />
-                    ) : (
-                      <ArrowDown className="w-3 h-3" />
-                    )
-                  ) : (
-                    <ArrowDown className="w-3 h-3 opacity-50" />
-                  )}
-                </button>
-              </TableHead>
-              {/* Size */}
-              <TableHead className="px-[var(--ds-space-1-5)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
-                <div className="flex items-center justify-center gap-[var(--ds-space-2)]">
-                  <div className="flex items-center gap-[var(--ds-space-1-5)]">
-                    <span
-                      className={`transition-all duration-200 ${activeSortColumn === 'size' ? sizeSortActiveHeadingClass : 'text-muted-foreground'}`}
-                    >
-                      Size
-                    </span>
-                    <div className="relative">
-                      <button
-                        ref={sizeSortButtonRef}
-                        type="button"
-                        onClick={() => setShowSizeSortMenu(!showSizeSortMenu)}
-                        className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-lg border transition-colors ${
-                          showSizeSortMenu || activeSortColumn === 'size'
-                            ? `bg-card/60 border-border/70 ${sizeSortAccentClass}`
-                            : 'bg-card/60 border-border/70 text-muted-foreground'
-                        }`}
-                        title="Select sort field"
-                      >
-                        <span className="font-semibold">{sizeSortLabel}</span>
-                        <ChevronDown className="w-2.5 h-2.5" />
-                      </button>
-                      {showSizeSortMenu && sizeMenuPos && createPortal(
-                        <>
-                          <div
-                            className="fixed inset-0 z-[9999]"
-                            onClick={() => setShowSizeSortMenu(false)}
-                          />
-                          <div 
-                            className="fixed bg-card border border-border rounded-lg shadow-lg py-[var(--ds-space-1)] z-[10000] min-w-[140px]"
-                            style={{ top: sizeMenuPos.top, left: sizeMenuPos.left }}
-                          >
-                            <button
-                              type="button"
-                              onClick={() => {
-                                collapseExpandedOnSort();
-                                const isAlreadySelected = sizeSortMode === 'supply' && activeSortColumn === 'size';
-                                if (isAlreadySelected && sizeSortOrder === 'desc') {
-                                  setSizeSortOrder('asc');
-                                } else {
-                                  setSizeSortMode('supply');
-                                  setActiveSortColumn('size');
-                                  setSizeSortOrder('desc');
-                                }
-                                setShowSizeSortMenu(false);
-                              }}
-                              className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-12 hover:bg-[rgb(var(--ds-emerald-50-rgb)/0.5)] transition-colors flex items-center justify-between ${
-                                sizeSortMode === 'supply' && activeSortColumn === 'size'
-                                  ? 'ds-text-emerald-600 font-bold bg-card/60'
-                                  : 'text-foreground/80'
-                              }`}
-                            >
-                              <span>Sort by Supply</span>
-                              {sizeSortMode === 'supply' && activeSortColumn === 'size' ? (
-                                sizeSortOrder === 'desc' ? (
-                                  <ArrowDown className="w-3 h-3 ds-text-emerald-600" />
-                                ) : (
-                                  <ArrowUp className="w-3 h-3 ds-text-emerald-600" />
-                                )
-                              ) : (
-                                <ArrowDown className="w-3 h-3 text-muted-foreground/70" />
-                              )}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                collapseExpandedOnSort();
-                                const isAlreadySelected = sizeSortMode === 'borrow' && activeSortColumn === 'size';
-                                if (isAlreadySelected && sizeSortOrder === 'desc') {
-                                  setSizeSortOrder('asc');
-                                } else {
-                                  setSizeSortMode('borrow');
-                                  setActiveSortColumn('size');
-                                  setSizeSortOrder('desc');
-                                }
-                                setShowSizeSortMenu(false);
-                              }}
-                              className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-12 hover:bg-[rgb(var(--ds-brand-cyan-rgb)/0.1)] transition-colors flex items-center justify-between ${
-                                sizeSortMode === 'borrow' && activeSortColumn === 'size'
-                                  ? 'ds-text-brand-cyan font-bold bg-card/60'
-                                  : 'text-foreground/80'
-                              }`}
-                            >
-                              <span>Sort by Borrow</span>
-                              {sizeSortMode === 'borrow' && activeSortColumn === 'size' ? (
-                                sizeSortOrder === 'desc' ? (
-                                  <ArrowDown className="w-3 h-3 ds-text-brand-cyan" />
-                                ) : (
-                                  <ArrowUp className="w-3 h-3 ds-text-brand-cyan" />
-                                )
-                              ) : (
-                                <ArrowDown className="w-3 h-3 text-muted-foreground/70" />
-                              )}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                collapseExpandedOnSort();
-                                const isAlreadySelected = sizeSortMode === 'deficitAmount' && activeSortColumn === 'size';
-                                if (isAlreadySelected && sizeSortOrder === 'desc') {
-                                  setSizeSortOrder('asc');
-                                } else {
-                                  setSizeSortMode('deficitAmount');
-                                  setActiveSortColumn('size');
-                                  setSizeSortOrder('desc');
-                                }
-                                setShowSizeSortMenu(false);
-                              }}
-                              className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-12 hover:bg-muted/50 transition-colors flex items-center justify-between ${
-                                sizeSortMode === 'deficitAmount' && activeSortColumn === 'size'
-                                  ? 'text-foreground font-bold bg-card/60'
-                                  : 'text-foreground/80'
-                              }`}
-                            >
-                              <span>Sort by Deficit</span>
-                              {sizeSortMode === 'deficitAmount' && activeSortColumn === 'size' ? (
-                                sizeSortOrder === 'desc' ? (
-                                  <ArrowDown className="w-3 h-3 text-foreground" />
-                                ) : (
-                                  <ArrowUp className="w-3 h-3 text-foreground" />
-                                )
-                              ) : (
-                                <ArrowDown className="w-3 h-3 text-muted-foreground/70" />
-                              )}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                collapseExpandedOnSort();
-                                const isAlreadySelected = sizeSortMode === 'deficitRatio' && activeSortColumn === 'size';
-                                if (isAlreadySelected && sizeSortOrder === 'desc') {
-                                  setSizeSortOrder('asc');
-                                } else {
-                                  setSizeSortMode('deficitRatio');
-                                  setActiveSortColumn('size');
-                                  setSizeSortOrder('desc');
-                                }
-                                setShowSizeSortMenu(false);
-                              }}
-                              className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-12 hover:bg-muted/50 transition-colors flex items-center justify-between ${
-                                sizeSortMode === 'deficitRatio' && activeSortColumn === 'size'
-                                  ? 'text-foreground font-bold bg-card/60'
-                                  : 'text-foreground/80'
-                              }`}
-                            >
-                              <span>Sort by Deficit (%)</span>
-                              {sizeSortMode === 'deficitRatio' && activeSortColumn === 'size' ? (
-                                sizeSortOrder === 'desc' ? (
-                                  <ArrowDown className="w-3 h-3 text-foreground" />
-                                ) : (
-                                  <ArrowUp className="w-3 h-3 text-foreground" />
-                                )
-                              ) : (
-                                <ArrowDown className="w-3 h-3 text-muted-foreground/70" />
-                              )}
-                            </button>
-                          </div>
-                        </>,
-                        document.body
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </TableHead>
-              {/* Utilization */}
-              <TableHead className="px-[var(--ds-space-1-5)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
-                <button
-                  type="button"
-                  onClick={handleSortUtil}
-                  className={`ds-chip-heading md:ds-text-16 gap-[var(--ds-space-1)] transition-all duration-200 ${
-                    activeSortColumn === 'util' 
-                      ? 'text-foreground font-bold scale-105' 
-                      : 'text-muted-foreground hover:text-foreground/80'
-                  }`}
-                >
-                  <span>Utilization</span>
-                  {activeSortColumn === 'util' ? (
-                    utilSortOrder === 'desc' ? (
-                      <ArrowDown className="w-3 h-3" />
-                    ) : (
-                      <ArrowUp className="w-3 h-3" />
-                    )
-                  ) : (
-                    <ArrowDown className="w-3 h-3 opacity-50" />
-                  )}
-                </button>
-              </TableHead>
-              {/* Supply */}
-              <TableHead className="px-[var(--ds-space-1-5)] py-[var(--ds-space-3)] ds-text-14 md:ds-text-16 font-semibold text-muted-foreground text-center">
-                <div className="flex items-center justify-center gap-[var(--ds-space-2)]">
-                  <div className="flex items-center gap-[var(--ds-space-1-5)]">
-                    <span
-                      className={`transition-all duration-200 ${activeSortColumn === 'supply' ? 'ds-text-emerald-600 font-bold scale-105' : 'text-muted-foreground'}`}
-                    >
-                      Supply
-                    </span>
-                    <div className="relative">
-                      <button
-                        ref={supplySortButtonRef}
-                        type="button"
-                        onClick={() => setShowSupplySortMenu(!showSupplySortMenu)}
-                        className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-lg border transition-colors ${
-                          showSupplySortMenu || activeSortColumn === 'supply'
-                            ? 'bg-card/60 border-border/70 ds-text-emerald-700'
-                            : 'bg-card/60 border-border/70 text-muted-foreground'
-                        }`}
-                        title="Select sort field"
-                      >
-                        <span className="font-semibold">{supplySortLabel}</span>
-                        <ChevronDown className="w-2.5 h-2.5" />
-                      </button>
-                      {showSupplySortMenu && supplyMenuPos && createPortal(
-                        <>
-                          <div
-                            className="fixed inset-0 z-[9999]"
-                            onClick={() => setShowSupplySortMenu(false)}
-                          />
-                          <div 
-                            className="fixed bg-card border border-border rounded-lg shadow-lg py-[var(--ds-space-1)] z-[10000] min-w-[140px]"
-                            style={{ top: supplyMenuPos.top, left: supplyMenuPos.left }}
-                          >
-                            <button
-                              type="button"
-                              onClick={() => {
-                                collapseExpandedOnSort();
-                                const isAlreadySelected = supplySortMode === 'total' && activeSortColumn === 'supply';
-                                if (isAlreadySelected && supplySortOrder === 'desc') {
-                                  setSupplySortOrder('asc');
-                                } else {
-                                  setSupplySortMode('total');
-                                  setActiveSortColumn('supply');
-                                  setSupplySortOrder('desc');
-                                }
-                                setShowSupplySortMenu(false);
-                              }}
-                              className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-12 hover:bg-[rgb(var(--ds-emerald-50-rgb)/0.5)] transition-colors flex items-center justify-between ${
-                                supplySortMode === 'total' && activeSortColumn === 'supply'
-                                  ? 'ds-text-emerald-600 font-bold bg-card/60'
-                                  : 'text-foreground/80'
-                              }`}
-                            >
-                              <span>Sort by Total</span>
-                              {supplySortMode === 'total' && activeSortColumn === 'supply' ? (
-                                supplySortOrder === 'desc' ? (
-                                  <ArrowDown className="w-3 h-3 ds-text-emerald-600" />
-                                ) : (
-                                  <ArrowUp className="w-3 h-3 ds-text-emerald-600" />
-                                )
-                              ) : (
-                                <ArrowDown className="w-3 h-3 text-muted-foreground/70" />
-                              )}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                collapseExpandedOnSort();
-                                const isAlreadySelected = supplySortMode === 'native' && activeSortColumn === 'supply';
-                                if (isAlreadySelected && supplySortOrder === 'desc') {
-                                  setSupplySortOrder('asc');
-                                } else {
-                                  setSupplySortMode('native');
-                                  setActiveSortColumn('supply');
-                                  setSupplySortOrder('desc');
-                                }
-                                setShowSupplySortMenu(false);
-                              }}
-                              className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-12 hover:bg-[rgb(var(--ds-emerald-50-rgb)/0.5)] transition-colors flex items-center justify-between ${
-                                supplySortMode === 'native' && activeSortColumn === 'supply'
-                                  ? 'ds-text-emerald-600 font-bold bg-card/60'
-                                  : 'text-foreground/80'
-                              }`}
-                            >
-                              <span>Sort by Native</span>
-                              {supplySortMode === 'native' && activeSortColumn === 'supply' ? (
-                                supplySortOrder === 'desc' ? (
-                                  <ArrowDown className="w-3 h-3 ds-text-emerald-600" />
-                                ) : (
-                                  <ArrowUp className="w-3 h-3 ds-text-emerald-600" />
-                                )
-                              ) : (
-                                <ArrowDown className="w-3 h-3 text-muted-foreground/70" />
-                              )}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                collapseExpandedOnSort();
-                                const isAlreadySelected = supplySortMode === 'incentive' && activeSortColumn === 'supply';
-                                if (isAlreadySelected && supplySortOrder === 'desc') {
-                                  setSupplySortOrder('asc');
-                                } else {
-                                  setSupplySortMode('incentive');
-                                  setActiveSortColumn('supply');
-                                  setSupplySortOrder('desc');
-                                }
-                                setShowSupplySortMenu(false);
-                              }}
-                              className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-12 hover:bg-[rgb(var(--ds-emerald-50-rgb)/0.5)] transition-colors flex items-center justify-between ${
-                                supplySortMode === 'incentive' && activeSortColumn === 'supply'
-                                  ? 'ds-text-emerald-600 font-bold bg-card/60'
-                                  : 'text-foreground/80'
-                              }`}
-                            >
-                              <span>Sort by Incentive</span>
-                              {supplySortMode === 'incentive' && activeSortColumn === 'supply' ? (
-                                supplySortOrder === 'desc' ? (
-                                  <ArrowDown className="w-3 h-3 ds-text-emerald-600" />
-                                ) : (
-                                  <ArrowUp className="w-3 h-3 ds-text-emerald-600" />
-                                )
-                              ) : (
-                                <ArrowDown className="w-3 h-3 text-muted-foreground/70" />
-                              )}
-                            </button>
-                          </div>
-                        </>,
-                        document.body
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </TableHead>
-              {/* Spread */}
-              <TableHead className="px-[var(--ds-space-1-5)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (activeSortColumn === 'spread') {
-                      toggleSpreadSortOrder();
-                    } else {
-                      collapseExpandedOnSort();
-                      setActiveSortColumn('spread');
-                      setSpreadSortOrder('desc');
-                    }
-                  }}
-                  className={`ds-chip-heading md:ds-text-16 gap-[var(--ds-space-1)] transition-all duration-200 ${
-                    activeSortColumn === 'spread' ? 'ds-text-purple-600 font-bold scale-105' : 'text-muted-foreground'
-                  }`}
-                >
-                  <span>Spread</span>
-                  {activeSortColumn === 'spread' ? (
-                    spreadSortOrder === 'desc' ? (
-                      <ArrowDown className="w-3 h-3" />
-                    ) : (
-                      <ArrowUp className="w-3 h-3" />
-                    )
-                  ) : (
-                    <ArrowDown className="w-3 h-3 opacity-50" />
-                  )}
-                </button>
-              </TableHead>
-              {/* Borrow */}
-              <TableHead className="pl-[var(--ds-space-1-5)] pr-[var(--ds-space-2)] py-[var(--ds-space-3)] ds-text-14 md:ds-text-16 font-semibold text-muted-foreground text-center">
-                <div className="flex items-center justify-center gap-[var(--ds-space-2)]">
-                  <div className="flex items-center gap-[var(--ds-space-1-5)]">
-                    <span
-                      className={`transition-all duration-200 ${activeSortColumn === 'borrow' ? 'ds-text-brand-cyan font-bold scale-105' : 'text-muted-foreground'}`}
-                    >
-                      Borrow
-                    </span>
-                    <div className="relative">
-                      <button
-                        ref={borrowSortButtonRef}
-                        type="button"
-                        onClick={() => setShowBorrowSortMenu(!showBorrowSortMenu)}
-                        className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-lg border transition-colors ${
-                          showBorrowSortMenu || activeSortColumn === 'borrow'
-                            ? 'bg-card/60 border-border/70 ds-text-brand-cyan'
-                            : 'bg-card/60 border-border/70 text-muted-foreground'
-                        }`}
-                        title="Select sort field"
-                      >
-                        <span className="font-semibold">{borrowSortLabel}</span>
-                        <ChevronDown className="w-2.5 h-2.5" />
-                      </button>
-                        {showBorrowSortMenu && borrowMenuPos && createPortal(
-                          <>
-                            <div
-                              className="fixed inset-0 z-[9999]"
-                              onClick={() => setShowBorrowSortMenu(false)}
-                            />
-                            <div 
-                              className="fixed bg-card border border-border rounded-lg shadow-lg py-[var(--ds-space-1)] z-[10000] min-w-[140px]"
-                              style={{ top: borrowMenuPos.top, left: borrowMenuPos.left }}
-                            >
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  collapseExpandedOnSort();
-                                  const isAlreadySelected = borrowSortMode === 'total' && activeSortColumn === 'borrow';
-                                  if (isAlreadySelected && borrowSortOrder === 'desc') {
-                                    setBorrowSortOrder('asc');
-                                  } else {
-                                    setBorrowSortMode('total');
-                                    setActiveSortColumn('borrow');
-                                    setBorrowSortOrder('desc');
-                                  }
-                                  setShowBorrowSortMenu(false);
-                                }}
-                                className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-12 hover:bg-[rgb(var(--ds-brand-cyan-rgb)/0.1)] transition-colors flex items-center justify-between ${
-                                  borrowSortMode === 'total' && activeSortColumn === 'borrow'
-                                    ? 'ds-text-brand-cyan font-bold bg-card/60'
-                                    : 'text-foreground/80'
-                                }`}
-                              >
-                                <span>Sort by Total</span>
-                                {borrowSortMode === 'total' && activeSortColumn === 'borrow' ? (
-                                  borrowSortOrder === 'desc' ? (
-                                    <ArrowDown className="w-3 h-3 ds-text-brand-cyan" />
-                                  ) : (
-                                    <ArrowUp className="w-3 h-3 ds-text-brand-cyan" />
-                                  )
-                                ) : (
-                                  <ArrowDown className="w-3 h-3 text-muted-foreground/70" />
-                                )}
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  collapseExpandedOnSort();
-                                  const isAlreadySelected = borrowSortMode === 'native' && activeSortColumn === 'borrow';
-                                  if (isAlreadySelected && borrowSortOrder === 'desc') {
-                                    setBorrowSortOrder('asc');
-                                  } else {
-                                    setBorrowSortMode('native');
-                                    setActiveSortColumn('borrow');
-                                    setBorrowSortOrder('desc');
-                                  }
-                                  setShowBorrowSortMenu(false);
-                                }}
-                                className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-12 hover:bg-[rgb(var(--ds-brand-cyan-rgb)/0.1)] transition-colors flex items-center justify-between ${
-                                  borrowSortMode === 'native' && activeSortColumn === 'borrow'
-                                    ? 'ds-text-brand-cyan font-bold bg-card/60'
-                                    : 'text-foreground/80'
-                                }`}
-                              >
-                                <span>Sort by Native</span>
-                                {borrowSortMode === 'native' && activeSortColumn === 'borrow' ? (
-                                  borrowSortOrder === 'desc' ? (
-                                    <ArrowDown className="w-3 h-3 ds-text-brand-cyan" />
-                                  ) : (
-                                    <ArrowUp className="w-3 h-3 ds-text-brand-cyan" />
-                                  )
-                                ) : (
-                                  <ArrowDown className="w-3 h-3 text-muted-foreground/70" />
-                                )}
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  collapseExpandedOnSort();
-                                  const isAlreadySelected = borrowSortMode === 'incentive' && activeSortColumn === 'borrow';
-                                  if (isAlreadySelected && borrowSortOrder === 'desc') {
-                                    setBorrowSortOrder('asc');
-                                  } else {
-                                    setBorrowSortMode('incentive');
-                                    setActiveSortColumn('borrow');
-                                    setBorrowSortOrder('desc');
-                                  }
-                                  setShowBorrowSortMenu(false);
-                                }}
-                                className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-12 hover:bg-[rgb(var(--ds-brand-cyan-rgb)/0.1)] transition-colors flex items-center justify-between ${
-                                  borrowSortMode === 'incentive' && activeSortColumn === 'borrow'
-                                    ? 'ds-text-brand-cyan font-bold bg-card/60'
-                                    : 'text-foreground/80'
-                                }`}
-                              >
-                                <span>Sort by Incentive</span>
-                                {borrowSortMode === 'incentive' && activeSortColumn === 'borrow' ? (
-                                  borrowSortOrder === 'desc' ? (
-                                    <ArrowDown className="w-3 h-3 ds-text-brand-cyan" />
-                                  ) : (
-                                    <ArrowUp className="w-3 h-3 ds-text-brand-cyan" />
-                                  )
-                                ) : (
-                                  <ArrowDown className="w-3 h-3 text-muted-foreground/70" />
-                                )}
-                              </button>
-                            </div>
-                          </>,
-                          document.body
-                        )}
-                      </div>
-                    </div>
-                </div>
-              </TableHead>
-            </TableRow>
-          </TableHeader>
+          <ReservesTableDesktopHeader
+            tableHeaderRef={desktopStickyTheadRef}
+            tableHeaderClassName="overflow-visible [&_tr]:border-b-0 [&_th]:sticky [&_th]:z-30 [&_th]:border-b [&_th]:border-border/60 [&_th]:bg-card [&_th]:shadow-[0_1px_2px_0_rgb(0_0_0/0.04)] [&_th]:[top:var(--reserves-sticky-scenario-height,4.5rem)]"
+            activeSortColumn={activeSortColumn}
+            tokenSortOrder={tokenSortOrder}
+            marketSortOrder={marketSortOrder}
+            priceSortOrder={priceSortOrder}
+            sizeSortMode={sizeSortMode}
+            sizeSortOrder={sizeSortOrder}
+            sizeSortActiveHeadingClass={sizeSortActiveHeadingClass}
+            utilSortOrder={utilSortOrder}
+            supplySortLabel={supplySortLabel}
+            supplySortMode={supplySortMode}
+            supplySortOrder={supplySortOrder}
+            showSupplySortMenu={showSupplySortMenu}
+            supplyMenuPos={supplyMenuPos}
+            borrowSortLabel={borrowSortLabel}
+            borrowSortMode={borrowSortMode}
+            borrowSortOrder={borrowSortOrder}
+            showBorrowSortMenu={showBorrowSortMenu}
+            borrowMenuPos={borrowMenuPos}
+            spreadSortOrder={spreadSortOrder}
+            showSizeSortMenu={showSizeSortMenu}
+            sizeMenuPos={sizeMenuPos}
+            sizeSortButtonRef={sizeSortButtonRef}
+            supplySortButtonRef={supplySortButtonRef}
+            borrowSortButtonRef={borrowSortButtonRef}
+            onSortToken={handleSortToken}
+            onSortMarket={handleSortMarket}
+            onSortPrice={handleSortPrice}
+            onSortUtil={handleSortUtil}
+            onToggleSpreadSort={() => {
+              if (activeSortColumn === 'spread') {
+                toggleSpreadSortOrder();
+              } else {
+                collapseExpandedOnSort();
+                setActiveSortColumn('spread');
+                setSpreadSortOrder('desc');
+              }
+            }}
+            onToggleSizeMenu={() => setShowSizeSortMenu(!showSizeSortMenu)}
+            onCloseSizeMenu={() => setShowSizeSortMenu(false)}
+            onSelectSizeSortSupply={() => {
+              collapseExpandedOnSort();
+              const isAlreadySelected = sizeSortMode === 'supply' && activeSortColumn === 'size';
+              if (isAlreadySelected && sizeSortOrder === 'desc') {
+                setSizeSortOrder('asc');
+              } else {
+                setSizeSortMode('supply');
+                setActiveSortColumn('size');
+                setSizeSortOrder('desc');
+              }
+              setShowSizeSortMenu(false);
+            }}
+            onSelectSizeSortBorrow={() => {
+              collapseExpandedOnSort();
+              const isAlreadySelected = sizeSortMode === 'borrow' && activeSortColumn === 'size';
+              if (isAlreadySelected && sizeSortOrder === 'desc') {
+                setSizeSortOrder('asc');
+              } else {
+                setSizeSortMode('borrow');
+                setActiveSortColumn('size');
+                setSizeSortOrder('desc');
+              }
+              setShowSizeSortMenu(false);
+            }}
+            onSelectSizeSortDeficitAmount={() => {
+              collapseExpandedOnSort();
+              const isAlreadySelected = sizeSortMode === 'deficitAmount' && activeSortColumn === 'size';
+              if (isAlreadySelected && sizeSortOrder === 'desc') {
+                setSizeSortOrder('asc');
+              } else {
+                setSizeSortMode('deficitAmount');
+                setActiveSortColumn('size');
+                setSizeSortOrder('desc');
+              }
+              setShowSizeSortMenu(false);
+            }}
+            onSelectSizeSortDeficitRatio={() => {
+              collapseExpandedOnSort();
+              const isAlreadySelected = sizeSortMode === 'deficitRatio' && activeSortColumn === 'size';
+              if (isAlreadySelected && sizeSortOrder === 'desc') {
+                setSizeSortOrder('asc');
+              } else {
+                setSizeSortMode('deficitRatio');
+                setActiveSortColumn('size');
+                setSizeSortOrder('desc');
+              }
+              setShowSizeSortMenu(false);
+            }}
+            onToggleSupplyMenu={() => setShowSupplySortMenu(!showSupplySortMenu)}
+            onCloseSupplyMenu={() => setShowSupplySortMenu(false)}
+            onSelectSupplySortTotal={() => {
+              collapseExpandedOnSort();
+              const isAlreadySelected = supplySortMode === 'total' && activeSortColumn === 'supply';
+              if (isAlreadySelected && supplySortOrder === 'desc') {
+                setSupplySortOrder('asc');
+              } else {
+                setSupplySortMode('total');
+                setActiveSortColumn('supply');
+                setSupplySortOrder('desc');
+              }
+              setShowSupplySortMenu(false);
+            }}
+            onSelectSupplySortNative={() => {
+              collapseExpandedOnSort();
+              const isAlreadySelected = supplySortMode === 'native' && activeSortColumn === 'supply';
+              if (isAlreadySelected && supplySortOrder === 'desc') {
+                setSupplySortOrder('asc');
+              } else {
+                setSupplySortMode('native');
+                setActiveSortColumn('supply');
+                setSupplySortOrder('desc');
+              }
+              setShowSupplySortMenu(false);
+            }}
+            onSelectSupplySortIncentive={() => {
+              collapseExpandedOnSort();
+              const isAlreadySelected = supplySortMode === 'incentive' && activeSortColumn === 'supply';
+              if (isAlreadySelected && supplySortOrder === 'desc') {
+                setSupplySortOrder('asc');
+              } else {
+                setSupplySortMode('incentive');
+                setActiveSortColumn('supply');
+                setSupplySortOrder('desc');
+              }
+              setShowSupplySortMenu(false);
+            }}
+            onToggleBorrowMenu={() => setShowBorrowSortMenu(!showBorrowSortMenu)}
+            onCloseBorrowMenu={() => setShowBorrowSortMenu(false)}
+            onSelectBorrowSortTotal={() => {
+              collapseExpandedOnSort();
+              const isAlreadySelected = borrowSortMode === 'total' && activeSortColumn === 'borrow';
+              if (isAlreadySelected && borrowSortOrder === 'desc') {
+                setBorrowSortOrder('asc');
+              } else {
+                setBorrowSortMode('total');
+                setActiveSortColumn('borrow');
+                setBorrowSortOrder('desc');
+              }
+              setShowBorrowSortMenu(false);
+            }}
+            onSelectBorrowSortNative={() => {
+              collapseExpandedOnSort();
+              const isAlreadySelected = borrowSortMode === 'native' && activeSortColumn === 'borrow';
+              if (isAlreadySelected && borrowSortOrder === 'desc') {
+                setBorrowSortOrder('asc');
+              } else {
+                setBorrowSortMode('native');
+                setActiveSortColumn('borrow');
+                setBorrowSortOrder('desc');
+              }
+              setShowBorrowSortMenu(false);
+            }}
+            onSelectBorrowSortIncentive={() => {
+              collapseExpandedOnSort();
+              const isAlreadySelected = borrowSortMode === 'incentive' && activeSortColumn === 'borrow';
+              if (isAlreadySelected && borrowSortOrder === 'desc') {
+                setBorrowSortOrder('asc');
+              } else {
+                setBorrowSortMode('incentive');
+                setActiveSortColumn('borrow');
+                setBorrowSortOrder('desc');
+              }
+              setShowBorrowSortMenu(false);
+            }}
+          />
           <TableBody>
             {isLoading && reserves.length === 0 ? (
-              Array.from({ length: 10 }).map((_, i) => (
-                <TableRow key={i} className="border-b border-border/30">
-                  <TableCell className="pl-[var(--ds-space-1-5)] pr-[var(--ds-space-0-5)] ds-row-pad text-center">
-                    <div className="flex items-center justify-center gap-[var(--ds-space-2)]">
-                      <Skeleton variant="gradient" className="w-7 h-7 rounded-full border-transparent" />
-                      <Skeleton variant="default" className="h-4 w-14 rounded-md" />
-                    </div>
-                  </TableCell>
-                  <TableCell className="px-[var(--ds-space-0-5)] ds-row-pad text-center hidden md:table-cell">
-                    <Skeleton variant="subtle" className="h-4 w-16 rounded-md mx-auto" />
-                  </TableCell>
-                  <TableCell className="pl-[var(--ds-space-0-5)] pr-[var(--ds-space-1)] ds-row-pad text-center hidden md:table-cell">
-                    <Skeleton variant="subtle" className="h-6 w-20 rounded-full mx-auto" />
-                  </TableCell>
-                  <TableCell className="px-[var(--ds-space-1-5)] ds-row-pad text-center hidden md:table-cell">
-                    <Skeleton variant="subtle" className="h-4 w-16 rounded-md mx-auto" />
-                  </TableCell>
-                  <TableCell className="px-[var(--ds-space-1-5)] ds-row-pad text-center">
-                    <div className="flex flex-col items-center gap-[var(--ds-space-1)]">
-                      <Skeleton variant="gradient" className={`h-5 rounded-md ${i % 2 === 0 ? 'w-16' : 'w-[4.5rem]'}`} />
-                      <Skeleton variant="subtle" className={`h-3 rounded-full border-transparent ${i % 2 === 0 ? 'w-20' : 'w-[4.5rem]'}`} />
-                    </div>
-                  </TableCell>
-                  <TableCell className="px-[var(--ds-space-1-5)] ds-row-pad text-center hidden md:table-cell">
-                    <Skeleton variant="subtle" className={`h-5 rounded-md mx-auto ${i % 2 === 0 ? 'w-16' : 'w-14'}`} />
-                  </TableCell>
-                  <TableCell className="px-[var(--ds-space-1-5)] ds-row-pad text-center">
-                    <div className="flex flex-col items-center gap-[var(--ds-space-1)]">
-                      <Skeleton variant="gradient" className={`h-5 rounded-md ${i % 3 === 0 ? 'w-16' : 'w-[4.5rem]'}`} />
-                      <Skeleton variant="subtle" className={`h-3 rounded-full border-transparent ${i % 3 === 0 ? 'w-20' : 'w-[4.5rem]'}`} />
-                    </div>
-                  </TableCell>
-                  <TableCell className="pl-[var(--ds-space-1-5)] pr-[var(--ds-space-2)] ds-row-pad text-center hidden md:table-cell">
-                    <Skeleton variant="subtle" className="h-4 w-12 rounded-md mx-auto" />
-                  </TableCell>
-                </TableRow>
-              ))
+              <ReservesTableDesktopSkeleton />
             ) : displayData.map((reserve) => {
               const reserveId = getReserveSimulationId(reserve);
               const simulation = simulationsById[reserveId];
@@ -2160,31 +1544,15 @@ const ReservesTable = ({
           </TableBody>
         </Table>
 
-      {/* Show More/Less button for desktop */}
-      {sortedData.length > displayData.length && (
-        <div className="p-[var(--ds-space-4)] border-t border-border">
-          <button
-            type="button"
-            onClick={() => setMinVisibleCount(sortedData.length)}
-            className="w-full ds-button ds-text-14 md:ds-text-16 gap-[var(--ds-space-2)] border border-border bg-muted/30 hover:bg-muted/50 transition-colors text-foreground font-semibold"
-          >
-            <span>{`Show ${sortedData.length - displayData.length} More Reserves`}</span>
-            <ChevronDown className="w-4 h-4" />
-          </button>
-        </div>
-      )}
-      {showAll && sortedData.length > DEFAULT_VISIBLE_COUNT && (
-        <div className="p-[var(--ds-space-4)] border-t border-border">
-          <button
-            type="button"
-            onClick={() => setMinVisibleCount(null)}
-            className="w-full ds-button ds-text-14 md:ds-text-16 gap-[var(--ds-space-2)] border border-border bg-muted/30 hover:bg-muted/50 transition-colors text-foreground font-semibold"
-          >
-            <span>Show Less</span>
-            <ChevronUp className="w-4 h-4" />
-          </button>
-        </div>
-      )}
+      <ReservesTableShowMore
+        totalCount={sortedData.length}
+        displayCount={displayData.length}
+        showAll={showAll}
+        defaultVisibleCount={DEFAULT_VISIBLE_COUNT}
+        variant="desktop"
+        onShowAll={() => setMinVisibleCount(sortedData.length)}
+        onShowLess={() => setMinVisibleCount(null)}
+      />
       
       <div ref={desktopTableBottomAnchorRef} aria-hidden className="h-px w-full" />
 
@@ -2193,50 +1561,17 @@ const ReservesTable = ({
         <div aria-hidden style={{ height: 'calc(100dvh - var(--reserves-expanded-main-row-top, 5.75rem))' }} />
       )}
 
-      {tooltipState && (
-        <IncentiveTooltip
-          reserve={tooltipState.reserve}
-          type={tooltipState.type}
-          position={tooltipState.position}
-          triggerCenterX={tooltipState.triggerCenterX}
-          triggerHeight={tooltipState.triggerHeight}
-          triggerRect={tooltipState.triggerRect}
-          accentTextClass={tooltipState.type === 'supply' ? 'ds-text-emerald-600' : 'ds-text-brand-cyan'}
-          accentBgClass={tooltipState.type === 'supply' ? 'ds-bg-emerald-500-10' : 'ds-bg-brand-cyan-10'}
-          onClose={() => setTooltipState(null)}
-          isApy={isApy}
-          tydroPointToUsdRate={tydroPointToUsdRate}
-          whitelistMerklCampaignIds={whitelistMerklCampaignIds}
-          onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign}
-        />
-      )}
+      <ReservesTableTooltipOverlay tooltipState={tooltipState} onClose={() => setTooltipState(null)} isApy={isApy} tydroPointToUsdRate={tydroPointToUsdRate} whitelistMerklCampaignIds={whitelistMerklCampaignIds} onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign} />
 
-      {/* Floating scroll-to-top / scroll-to-bottom buttons */}
-      {tableInView && (
-      <div className="fixed right-3 bottom-6 z-30 flex flex-col gap-2 md:right-6">
-        <button
-          type="button"
-          aria-label="Scroll to table top"
-          onClick={() => {
-            desktopTableCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }}
-          className="flex h-9 w-9 items-center justify-center rounded-full border border-border/60 bg-card/90 shadow-md backdrop-blur-sm text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
-        >
-          <ArrowUp className="h-4 w-4" />
-        </button>
-        <button
-          type="button"
-          aria-label="Scroll to table bottom"
-          onClick={() => {
-            const target = desktopTableBottomAnchorRef.current ?? desktopTableCardRef.current;
-            target?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-          }}
-          className="flex h-9 w-9 items-center justify-center rounded-full border border-border/60 bg-card/90 shadow-md backdrop-blur-sm text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
-        >
-          <ArrowDown className="h-4 w-4" />
-        </button>
-      </div>
-      )}
+      <ReservesTableFloatingScroll
+        tableInView={tableInView}
+        variant="desktop"
+        onScrollToTop={() => desktopTableCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+        onScrollToBottom={() => {
+          const target = desktopTableBottomAnchorRef.current ?? desktopTableCardRef.current;
+          target?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }}
+      />
       </div>
     </div>
   );

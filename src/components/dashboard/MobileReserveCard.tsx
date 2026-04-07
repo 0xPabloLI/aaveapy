@@ -30,176 +30,14 @@ import {
   hasReserveDeficit,
 } from '@/lib/deficit';
 import type { RateSimulationResult } from '@/hooks/useRateSimulation';
-import { getAvailableToBorrowUsd, getPoolLiquidityUsd, getScenarioSupplySizeUsd, getTotalBorrowedUsd, getValidTokenPrice } from '@/lib/scenarioSize';
+import { getPoolLiquidityUsd, getScenarioSupplySizeUsd, getTotalBorrowedUsd, getValidTokenPrice } from '@/lib/scenarioSize';
 import { cn } from '@/lib/utils';
-
-/** Same content as CapProgressRing tooltip; used in mobile bottom sheet. */
-function SupplyCapSheetContent({
-  currentSize,
-  cap,
-  inputMode,
-  tokenPrice,
-  tokenSymbol,
-}: {
-  currentSize: number;
-  cap: number;
-  inputMode: 'usd' | 'token';
-  tokenPrice?: number | null;
-  tokenSymbol?: string | null;
-}) {
-  const percentage = Math.min((currentSize / cap) * 100, 100);
-  const colorClass =
-    percentage >= 95 ? 'text-amber-600' : percentage >= 80 ? 'text-amber-500' : 'ds-text-emerald-500';
-  return (
-    <div className="space-y-1 ds-text-12">
-      <div className="flex justify-between gap-3">
-        <span className="text-muted-foreground">Total supplied</span>
-        <span className="font-medium tabular-nums ds-text-emerald-500">
-          {formatScenarioSize(currentSize, { inputMode, tokenPrice, tokenSymbol })}
-        </span>
-      </div>
-      <div className="flex justify-between gap-3">
-        <span className="text-muted-foreground">Supply cap</span>
-        <span className="font-medium tabular-nums ds-text-emerald-500">
-          {formatScenarioSize(cap, { inputMode, tokenPrice, tokenSymbol })}
-        </span>
-      </div>
-      <div className="flex justify-between gap-3">
-        <span className="text-muted-foreground">Available to supply</span>
-        <span className="font-medium tabular-nums ds-text-emerald-500">
-          {formatScenarioSize(Math.max(0, cap - currentSize), { inputMode, tokenPrice, tokenSymbol })}
-        </span>
-      </div>
-      <div className="flex justify-between gap-3 pt-1 border-t border-border/50">
-        <span className="text-muted-foreground">% of cap</span>
-        <span className={`font-bold tabular-nums ${colorClass}`}>{percentage.toFixed(1)}%</span>
-      </div>
-    </div>
-  );
-}
-
-/** Same content as BorrowCapProgressRing tooltip; used in mobile bottom sheet. */
-function BorrowCapSheetContent({
-  borrowed,
-  cap,
-  poolLiquidity,
-  inputMode,
-  tokenPrice,
-  tokenSymbol,
-}: {
-  borrowed: number;
-  cap: number;
-  poolLiquidity: number;
-  inputMode: 'usd' | 'token';
-  tokenPrice?: number | null;
-  tokenSymbol?: string | null;
-}) {
-  const percentage = Math.min((borrowed / cap) * 100, 100);
-  const availableToBorrow = getAvailableToBorrowUsd({
-    borrowedUsd: borrowed,
-    borrowCapUsd: cap,
-    poolLiquidityUsd: poolLiquidity,
-  }) ?? 0;
-  const colorClass =
-    percentage >= 95 ? 'text-amber-600' : percentage >= 80 ? 'text-amber-500' : 'ds-text-brand-cyan';
-  return (
-    <div className="space-y-1 ds-text-12">
-      <div className="flex justify-between gap-3">
-        <span className="text-muted-foreground">Total borrowed</span>
-        <span className="font-medium tabular-nums ds-text-brand-cyan">
-          {formatScenarioSize(borrowed, { inputMode, tokenPrice, tokenSymbol })}
-        </span>
-      </div>
-      <div className="flex justify-between gap-3">
-        <span className="text-muted-foreground">Borrow cap</span>
-        <span className="font-medium tabular-nums ds-text-brand-cyan">
-          {formatScenarioSize(cap, { inputMode, tokenPrice, tokenSymbol })}
-        </span>
-      </div>
-      <div className="flex justify-between gap-3">
-        <span className="text-muted-foreground">Available to borrow</span>
-        <span className="font-medium tabular-nums ds-text-brand-cyan">
-          {formatScenarioSize(availableToBorrow, { inputMode, tokenPrice, tokenSymbol })}
-        </span>
-      </div>
-      <div className="flex justify-between gap-3 pt-1 border-t border-border/50">
-        <span className="text-muted-foreground">% of cap</span>
-        <span className={`font-bold tabular-nums ${colorClass}`}>{percentage.toFixed(1)}%</span>
-      </div>
-    </div>
-  );
-}
-
-/** Utilization bottom sheet content */
-function UtilizationSheetContent({ current, optimal }: { current: number; optimal: number }) {
-  const isOverOptimal = current > optimal;
-  return (
-    <div className="space-y-2 ds-text-12">
-      <div className="flex justify-between gap-4">
-        <span className="text-muted-foreground">Optimal</span>
-        <span className="font-medium tabular-nums">{formatPercent(optimal)}</span>
-      </div>
-      {isOverOptimal ? (
-        <p className="text-amber-600 ds-text-11 pt-2 border-t border-border/50">
-          ⚠️ Above optimal
-        </p>
-      ) : (
-        <p className="ds-text-brand-cyan ds-text-11 pt-2 border-t border-border/50">
-          Below optimal
-        </p>
-      )}
-    </div>
-  );
-}
-
-/** Deficit details bottom sheet content */
-function DeficitSheetContent({
-  deficitUsd,
-  totalSuppliedUsd,
-  deficitTokenLabel,
-  inputMode,
-  tokenPrice,
-  tokenSymbol,
-}: {
-  deficitUsd: number;
-  totalSuppliedUsd: number | null | undefined;
-  deficitTokenLabel?: string;
-  inputMode: 'usd' | 'token';
-  tokenPrice?: number | null;
-  tokenSymbol?: string | null;
-}) {
-  const ratio = calculateDeficitShareRatio({ deficitUsd, totalSuppliedUsd });
-  const percentage = ratio != null ? Math.min(Math.max(ratio * 100, 0), 100) : null;
-  const severity = getDeficitSeverity(ratio);
-  const percentColorClass =
-    severity === 'critical' ? 'text-amber-600' : severity === 'warning' ? 'text-amber-500' : 'text-muted-foreground/60';
-
-  const deficitDisplay = inputMode === 'token' && deficitTokenLabel
-    ? deficitTokenLabel
-    : formatScenarioSize(deficitUsd, { inputMode: 'usd' });
-  const totalDisplay = totalSuppliedUsd != null
-    ? formatScenarioSize(totalSuppliedUsd, { inputMode, tokenPrice, tokenSymbol })
-    : '—';
-
-  return (
-    <div className="space-y-1 ds-text-12">
-      <div className="flex justify-between gap-3">
-        <span className="text-muted-foreground">Deficit</span>
-        <span className="font-medium tabular-nums">{deficitDisplay}</span>
-      </div>
-      <div className="flex justify-between gap-3">
-        <span className="text-muted-foreground">Total supplied</span>
-        <span className="font-medium tabular-nums">{totalDisplay}</span>
-      </div>
-      <div className="flex items-center justify-between gap-3 pt-1 border-t border-border/50">
-        <span className="text-muted-foreground">% of total (incl. deficit)</span>
-        <span className={`font-bold tabular-nums ${percentColorClass}`}>
-          {percentage != null ? `${percentage.toFixed(2)}%` : '—'}
-        </span>
-      </div>
-    </div>
-  );
-}
+import {
+  SupplyCapSheetContent,
+  BorrowCapSheetContent,
+  UtilizationSheetContent,
+  DeficitSheetContent,
+} from './MobileReserveSheetContent';
 
 interface MobileReserveCardProps {
   reserve: ReserveWithSpread;
@@ -235,6 +73,282 @@ interface MobileReserveCardProps {
   onPortfolioToggle?: (reserveId: string, reserve: ReserveWithSpread) => void;
   /** Callback from SimulationSubRow "Add to Portfolio" button. */
   onAddToPortfolio?: (reserve: ReserveWithSpread, side: 'supply' | 'borrow') => void;
+}
+
+interface MobileReserveAmountRowProps {
+  activeTab: 'supply' | 'borrow';
+  reserve: ReserveWithSpread;
+  inputMode: 'usd' | 'token';
+  displayTokenPrice?: number | null;
+  displayReserveSizeUsd: number | null;
+  totalBorrowedUsd: number;
+  poolLiquidity: number;
+  hasDeficit: boolean;
+  deficitUsd: number | null;
+  deficitShareRatio: number | null;
+  deficitTextClass: string;
+  isNeutralDeficit: boolean;
+  onShowSupplyCap: () => void;
+  onShowBorrowCap: () => void;
+  onShowDeficit: () => void;
+}
+
+function MobileReserveAmountRow({
+  activeTab,
+  reserve,
+  inputMode,
+  displayTokenPrice,
+  displayReserveSizeUsd,
+  totalBorrowedUsd,
+  poolLiquidity,
+  hasDeficit,
+  deficitUsd,
+  deficitShareRatio,
+  deficitTextClass,
+  isNeutralDeficit,
+  onShowSupplyCap,
+  onShowBorrowCap,
+  onShowDeficit,
+}: MobileReserveAmountRowProps) {
+  const tp = reserve.tokenPrice;
+  const priceEl =
+    tp != null && Number.isFinite(tp) ? (
+      <span className="ds-text-10 text-muted-foreground/60 tabular-nums shrink-0 leading-none sm:ds-text-11">
+        {`$${tp < 0.01 ? tp.toExponential(1) : tp < 100 ? tp.toFixed(2) : tp.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+      </span>
+    ) : null;
+
+  if (activeTab === 'supply') {
+    const hasSupplyCap =
+      reserve.supplyCapUsd != null && Number.isFinite(reserve.supplyCapUsd) && reserve.supplyCapUsd > 0;
+
+    return (
+      <div className="flex w-full min-w-0 flex-nowrap items-center gap-1.5 px-4">
+        {priceEl}
+        <div className="ml-auto flex min-w-0 items-center justify-end gap-1">
+          {hasDeficit && deficitUsd != null ? (
+            <button
+              type="button"
+              className={cn(
+                'inline-flex items-center justify-center rounded-md p-0.5 transition-colors hover:bg-muted/50 active:scale-[0.97]',
+                deficitTextClass,
+              )}
+              aria-label={`Show deficit details for ${reserve.tokenSymbol}`}
+              onClick={onShowDeficit}
+            >
+              <DeficitShieldIcon ratio={deficitShareRatio} className={cn('h-3 w-3', isNeutralDeficit && 'opacity-70')} />
+            </button>
+          ) : null}
+          {hasSupplyCap ? (
+            <button
+              type="button"
+              className="flex min-w-0 items-center gap-1 rounded-md py-0 pl-1 pr-0 ds-text-emerald-500 transition-all hover:bg-muted/50 active:scale-[0.98] cursor-pointer"
+              aria-label="Show supply cap details"
+              onClick={onShowSupplyCap}
+            >
+              <span className="ds-text-13 font-medium tabular-nums leading-none truncate">
+                {formatScenarioSize(displayReserveSizeUsd, {
+                  inputMode,
+                  tokenPrice: displayTokenPrice,
+                  tokenSymbol: reserve.tokenSymbol,
+                })}
+              </span>
+              <CapProgressRing
+                size={displayReserveSizeUsd}
+                cap={reserve.supplyCapUsd}
+                displayMode={inputMode}
+                tokenPrice={displayTokenPrice}
+                tokenSymbol={reserve.tokenSymbol}
+                ringSize={12}
+                strokeWidth={1.2}
+                disableTooltip
+              />
+            </button>
+          ) : (
+            <span className="ds-text-13 font-medium tabular-nums leading-none ds-text-emerald-500 truncate">
+              {formatScenarioSize(displayReserveSizeUsd, {
+                inputMode,
+                tokenPrice: displayTokenPrice,
+                tokenSymbol: reserve.tokenSymbol,
+              })}
+            </span>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  const hasBorrowCap = reserve.borrowCapUsd != null && Number.isFinite(reserve.borrowCapUsd) && reserve.borrowCapUsd > 0;
+
+  return (
+    <div className="flex w-full min-w-0 flex-nowrap items-center gap-1.5 px-4">
+      {priceEl}
+      <div className="ml-auto flex min-w-0 items-center justify-end gap-1">
+        {hasBorrowCap ? (
+          <button
+            type="button"
+            className="flex min-w-0 items-center gap-1 rounded-md py-0 pl-1 pr-0 ds-text-brand-cyan transition-all hover:bg-muted/50 active:scale-[0.98] cursor-pointer"
+            aria-label="Show borrow cap details"
+            onClick={onShowBorrowCap}
+          >
+            <span className="ds-text-13 font-medium tabular-nums leading-none truncate">
+              {formatScenarioSize(totalBorrowedUsd, {
+                inputMode,
+                tokenPrice: displayTokenPrice,
+                tokenSymbol: reserve.tokenSymbol,
+              })}
+            </span>
+            <BorrowCapProgressRing
+              borrowed={totalBorrowedUsd}
+              cap={reserve.borrowCapUsd}
+              poolLiquidity={poolLiquidity}
+              displayMode={inputMode}
+              tokenPrice={displayTokenPrice}
+              tokenSymbol={reserve.tokenSymbol}
+              ringSize={12}
+              strokeWidth={1.2}
+              disableTooltip
+            />
+          </button>
+        ) : (
+          <span className="ds-text-13 font-medium tabular-nums leading-none ds-text-brand-cyan truncate">
+            {formatScenarioSize(totalBorrowedUsd, {
+              inputMode,
+              tokenPrice: displayTokenPrice,
+              tokenSymbol: reserve.tokenSymbol,
+            })}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+interface MobileReserveHeroApyProps {
+  activeTab: 'supply' | 'borrow';
+  reserve: ReserveWithSpread;
+  displaySupplyTotal: number | null;
+  displaySupplyNative: number | null;
+  visibleSupplyIncentive: number | null;
+  displayBorrowTotal: number | null;
+  displayBorrowNative: number | null;
+  visibleBorrowIncentive: number | null;
+  onIncentiveClick: (
+    e: React.MouseEvent,
+    reserve: ReserveWithSpread,
+    type: 'supply' | 'borrow',
+    apy: number | null
+  ) => void;
+}
+
+function MobileReserveHeroApy({
+  activeTab,
+  reserve,
+  displaySupplyTotal,
+  displaySupplyNative,
+  visibleSupplyIncentive,
+  displayBorrowTotal,
+  displayBorrowNative,
+  visibleBorrowIncentive,
+  onIncentiveClick,
+}: MobileReserveHeroApyProps) {
+  if (activeTab === 'supply') {
+    const heroValue = displaySupplyTotal;
+    const isDisabled = reserve.supplyDisabled;
+    const heroColorClass = heroValue === null || isDisabled ? 'text-secondary' : 'ds-text-emerald-500';
+
+    return (
+      <div className="flex flex-col items-center gap-0.5">
+        {isDisabled ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <p className={`ds-text-24 font-bold tabular-nums ${heroColorClass} cursor-auto`}>
+                {formatPercent(heroValue)}
+              </p>
+            </TooltipTrigger>
+            <TooltipContent>Supply unavailable</TooltipContent>
+          </Tooltip>
+        ) : (
+          <p className={`ds-text-24 font-bold tabular-nums ${heroColorClass}`}>
+            {formatPercent(heroValue)}
+          </p>
+        )}
+        <div className="min-h-[1rem]">
+          {visibleSupplyIncentive !== null && (
+            <div className="flex items-center gap-[var(--ds-space-1)] ds-text-11">
+              <span className={isDisabled ? 'text-secondary' : 'ds-text-emerald-500-70 font-medium'}>
+                {formatPercent(displaySupplyNative)}
+              </span>
+              <span className="text-muted-foreground/70">+</span>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onIncentiveClick(e, reserve, 'supply', visibleSupplyIncentive);
+                }}
+                className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-px shrink-0 ring-1 active:scale-95 transition-all hover:ring-2 ${
+                  isDisabled
+                    ? 'text-secondary bg-secondary/10 ring-secondary/20 hover:bg-secondary/20 hover:ring-secondary/30'
+                    : 'ds-text-emerald-500 bg-gradient-to-r from-[rgb(var(--ds-emerald-500-rgb)/0.08)] to-[rgb(var(--ds-emerald-500-rgb)/0.15)] hover:from-[rgb(var(--ds-emerald-500-rgb)/0.15)] hover:to-[rgb(var(--ds-emerald-500-rgb)/0.25)] ds-ring-emerald-500-15 hover:ring-[rgb(var(--ds-emerald-500-rgb)/0.35)]'
+                }`}
+              >
+                <span>{formatPercent(visibleSupplyIncentive)}</span>
+                <IncentiveIcon width={8} height={8} />
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  const heroValue = displayBorrowTotal;
+  const isDisabled = reserve.borrowDisabled;
+  const heroColorClass = heroValue === null || isDisabled ? 'text-secondary' : 'ds-text-brand-cyan';
+
+  return (
+    <div className="flex flex-col items-center gap-0.5">
+      {isDisabled ? (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <p className={`ds-text-24 font-bold tabular-nums ${heroColorClass} cursor-auto`}>
+              {formatPercent(heroValue)}
+            </p>
+          </TooltipTrigger>
+          <TooltipContent>Borrow disabled</TooltipContent>
+        </Tooltip>
+      ) : (
+        <p className={`ds-text-24 font-bold tabular-nums ${heroColorClass}`}>
+          {formatPercent(heroValue)}
+        </p>
+      )}
+      <div className="min-h-[1rem]">
+        {visibleBorrowIncentive !== null && (
+          <div className="flex items-center gap-[var(--ds-space-1)] ds-text-11">
+            <span className={isDisabled ? 'text-secondary' : 'ds-text-brand-cyan-70 font-medium'}>
+              {formatPercent(displayBorrowNative)}
+            </span>
+            <span className="text-muted-foreground/70">-</span>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onIncentiveClick(e, reserve, 'borrow', visibleBorrowIncentive);
+              }}
+              className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-px shrink-0 ring-1 active:scale-95 transition-all hover:ring-2 ${
+                isDisabled
+                  ? 'text-secondary bg-secondary/10 ring-secondary/20 hover:bg-secondary/20 hover:ring-secondary/30'
+                  : 'ds-text-brand-cyan bg-gradient-to-r from-[rgb(var(--ds-brand-cyan-rgb)/0.08)] to-[rgb(var(--ds-brand-cyan-rgb)/0.15)] hover:from-[rgb(var(--ds-brand-cyan-rgb)/0.15)] hover:to-[rgb(var(--ds-brand-cyan-rgb)/0.25)] ds-ring-brand-cyan-15 hover:ring-[rgb(var(--ds-brand-cyan-rgb)/0.35)]'
+              }`}
+            >
+              <span>{formatPercent(visibleBorrowIncentive)}</span>
+              <IncentiveIcon width={8} height={8} />
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 const MobileReserveCard = memo(({
@@ -374,207 +488,6 @@ const MobileReserveCard = memo(({
 
   const showUpperOnly = variant === 'upperOnly';
 
-  /**
-   * Single compact row: optional @ price, then amount (+ cap ring) — no "Size" label; ring stays 12px for tap targets.
-   */
-  const renderAmountRow = () => {
-    const tp = reserve.tokenPrice;
-    const priceEl =
-      tp != null && Number.isFinite(tp) ? (
-        <span className="ds-text-10 text-muted-foreground/60 tabular-nums shrink-0 leading-none sm:ds-text-11">
-          {`$${tp < 0.01 ? tp.toExponential(1) : tp < 100 ? tp.toFixed(2) : tp.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
-        </span>
-      ) : null;
-
-    if (activeTab === 'supply') {
-      const hasSupplyCap = reserve.supplyCapUsd != null && Number.isFinite(reserve.supplyCapUsd) && reserve.supplyCapUsd > 0;
-      return (
-        <div className="flex w-full min-w-0 flex-nowrap items-center gap-1.5 px-4">
-          {priceEl}
-          <div className="ml-auto flex min-w-0 items-center justify-end gap-1">
-            {/* Deficit icon — tap opens bottom sheet */}
-            {hasDeficit && deficitUsd != null ? (
-              <button
-                type="button"
-                className={cn(
-                  'inline-flex items-center justify-center rounded-md p-0.5 transition-colors hover:bg-muted/50 active:scale-[0.97]',
-                  deficitTextClass,
-                )}
-                aria-label={`Show deficit details for ${reserve.tokenSymbol}`}
-                onClick={() => setCapSheet('deficit')}
-              >
-                <DeficitShieldIcon ratio={deficitShareRatio} className={cn('h-3 w-3', isNeutralDeficit && 'opacity-70')} />
-              </button>
-            ) : null}
-            {hasSupplyCap ? (
-              <button
-                type="button"
-                className="flex min-w-0 items-center gap-1 rounded-md py-0 pl-1 pr-0 ds-text-emerald-500 transition-all hover:bg-muted/50 active:scale-[0.98] cursor-pointer"
-                aria-label="Show supply cap details"
-                onClick={() => setCapSheet('supply')}
-              >
-                <span className="ds-text-13 font-medium tabular-nums leading-none truncate">
-                  {formatScenarioSize(displayReserveSizeUsd, { inputMode, tokenPrice: displayTokenPrice, tokenSymbol: reserve.tokenSymbol })}
-                </span>
-                <CapProgressRing
-                  size={displayReserveSizeUsd}
-                  cap={reserve.supplyCapUsd!}
-                  displayMode={inputMode}
-                  tokenPrice={displayTokenPrice}
-                  tokenSymbol={reserve.tokenSymbol}
-                  ringSize={12}
-                  strokeWidth={1.2}
-                  disableTooltip
-                />
-              </button>
-            ) : (
-              <span className="ds-text-13 font-medium tabular-nums leading-none ds-text-emerald-500 truncate">
-                {formatScenarioSize(displayReserveSizeUsd, { inputMode, tokenPrice: displayTokenPrice, tokenSymbol: reserve.tokenSymbol })}
-              </span>
-            )}
-          </div>
-        </div>
-      );
-    }
-    const hasBorrowCap = reserve.borrowCapUsd != null && Number.isFinite(reserve.borrowCapUsd) && reserve.borrowCapUsd > 0;
-    return (
-      <div className="flex w-full min-w-0 flex-nowrap items-center gap-1.5 px-4">
-        {priceEl}
-        <div className="ml-auto flex min-w-0 items-center justify-end gap-1">
-          {hasBorrowCap ? (
-            <button
-              type="button"
-              className="flex min-w-0 items-center gap-1 rounded-md py-0 pl-1 pr-0 ds-text-brand-cyan transition-all hover:bg-muted/50 active:scale-[0.98] cursor-pointer"
-              aria-label="Show borrow cap details"
-              onClick={() => setCapSheet('borrow')}
-            >
-              <span className="ds-text-13 font-medium tabular-nums leading-none truncate">
-                {formatScenarioSize(totalBorrowedUsd, { inputMode, tokenPrice: displayTokenPrice, tokenSymbol: reserve.tokenSymbol })}
-              </span>
-              <BorrowCapProgressRing
-                borrowed={totalBorrowedUsd}
-                cap={reserve.borrowCapUsd!}
-                poolLiquidity={poolLiquidity}
-                displayMode={inputMode}
-                tokenPrice={displayTokenPrice}
-                tokenSymbol={reserve.tokenSymbol}
-                ringSize={12}
-                strokeWidth={1.2}
-                disableTooltip
-              />
-            </button>
-          ) : (
-            <span className="ds-text-13 font-medium tabular-nums leading-none ds-text-brand-cyan truncate">
-              {formatScenarioSize(totalBorrowedUsd, { inputMode, tokenPrice: displayTokenPrice, tokenSymbol: reserve.tokenSymbol })}
-            </span>
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  /** Render the hero APY section — no label, just the number */
-  const renderHeroApy = () => {
-    if (activeTab === 'supply') {
-      const heroValue = displaySupplyTotal;
-      const isDisabled = reserve.supplyDisabled;
-      const heroColorClass = heroValue === null || isDisabled ? 'text-secondary' : 'ds-text-emerald-500';
-      return (
-        <div className="flex flex-col items-center gap-0.5">
-          {isDisabled ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <p className={`ds-text-24 font-bold tabular-nums ${heroColorClass} cursor-auto`}>
-                  {formatPercent(heroValue)}
-                </p>
-              </TooltipTrigger>
-              <TooltipContent>Supply unavailable</TooltipContent>
-            </Tooltip>
-          ) : (
-            <p className={`ds-text-24 font-bold tabular-nums ${heroColorClass}`}>
-              {formatPercent(heroValue)}
-            </p>
-          )}
-          {/* APY breakdown: native + incentive */}
-          <div className="min-h-[1rem]">
-            {visibleSupplyIncentive !== null && (
-              <div className="flex items-center gap-[var(--ds-space-1)] ds-text-11">
-                <span className={isDisabled ? 'text-secondary' : 'ds-text-emerald-500-70 font-medium'}>
-                  {formatPercent(displaySupplyNative)}
-                </span>
-                <span className="text-muted-foreground/70">+</span>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onIncentiveClick(e, reserve, 'supply', visibleSupplyIncentive);
-                  }}
-                  className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-px shrink-0 ring-1 active:scale-95 transition-all hover:ring-2 ${
-                    isDisabled
-                      ? 'text-secondary bg-secondary/10 ring-secondary/20 hover:bg-secondary/20 hover:ring-secondary/30'
-                      : 'ds-text-emerald-500 bg-gradient-to-r from-[rgb(var(--ds-emerald-500-rgb)/0.08)] to-[rgb(var(--ds-emerald-500-rgb)/0.15)] hover:from-[rgb(var(--ds-emerald-500-rgb)/0.15)] hover:to-[rgb(var(--ds-emerald-500-rgb)/0.25)] ds-ring-emerald-500-15 hover:ring-[rgb(var(--ds-emerald-500-rgb)/0.35)]'
-                  }`}
-                >
-                  <span>{formatPercent(visibleSupplyIncentive)}</span>
-                  <IncentiveIcon width={8} height={8} />
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      );
-    }
-
-    // Borrow tab
-    const heroValue = displayBorrowTotal;
-    const isDisabled = reserve.borrowDisabled;
-    const heroColorClass = heroValue === null || isDisabled ? 'text-secondary' : 'ds-text-brand-cyan';
-    return (
-        <div className="flex flex-col items-center gap-0.5">
-        {isDisabled ? (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <p className={`ds-text-24 font-bold tabular-nums ${heroColorClass} cursor-auto`}>
-                {formatPercent(heroValue)}
-              </p>
-            </TooltipTrigger>
-            <TooltipContent>Borrow disabled</TooltipContent>
-          </Tooltip>
-        ) : (
-          <p className={`ds-text-24 font-bold tabular-nums ${heroColorClass}`}>
-            {formatPercent(heroValue)}
-          </p>
-        )}
-        {/* Invisible spacer to match supply breakdown height and prevent jitter */}
-        <div className="min-h-[1rem]">
-          {visibleBorrowIncentive !== null && (
-            <div className="flex items-center gap-[var(--ds-space-1)] ds-text-11">
-              <span className={isDisabled ? 'text-secondary' : 'ds-text-brand-cyan-70 font-medium'}>
-                {formatPercent(displayBorrowNative)}
-              </span>
-              <span className="text-muted-foreground/70">-</span>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onIncentiveClick(e, reserve, 'borrow', visibleBorrowIncentive);
-                }}
-                className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-px shrink-0 ring-1 active:scale-95 transition-all hover:ring-2 ${
-                  isDisabled
-                    ? 'text-secondary bg-secondary/10 ring-secondary/20 hover:bg-secondary/20 hover:ring-secondary/30'
-                    : 'ds-text-brand-cyan bg-gradient-to-r from-[rgb(var(--ds-brand-cyan-rgb)/0.08)] to-[rgb(var(--ds-brand-cyan-rgb)/0.15)] hover:from-[rgb(var(--ds-brand-cyan-rgb)/0.15)] hover:to-[rgb(var(--ds-brand-cyan-rgb)/0.25)] ds-ring-brand-cyan-15 hover:ring-[rgb(var(--ds-brand-cyan-rgb)/0.35)]'
-                }`}
-              >
-                <span>{formatPercent(visibleBorrowIncentive)}</span>
-                <IncentiveIcon width={8} height={8} />
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
-
   /** RAY → display %; must match `interestRateCalculator` / desktop `simulation.utilization.optimal`. */
   const RAY_TO_PERCENT_DIVISOR = 1e25;
   const optimalPctFromReserve =
@@ -596,7 +509,7 @@ const MobileReserveCard = memo(({
           isSimulationExpanded && !showUpperOnly
             ? 'rounded-t-xl rounded-b-none'
             : connectedBelow
-              ? 'border border-border/60 rounded-t-xl rounded-b-none border-b-0 shadow-sm'
+              ? 'border border-border/60 rounded-t-xl rounded-b-none border-b-transparent shadow-sm'
               : 'border border-border/60 rounded-xl shadow-sm'
         }`}
       >
@@ -703,7 +616,23 @@ const MobileReserveCard = memo(({
 
         {/* Tab content */}
         <div className="flex w-full flex-col">
-          {renderAmountRow()}
+          <MobileReserveAmountRow
+            activeTab={activeTab}
+            reserve={reserve}
+            inputMode={inputMode}
+            displayTokenPrice={displayTokenPrice}
+            displayReserveSizeUsd={displayReserveSizeUsd}
+            totalBorrowedUsd={totalBorrowedUsd}
+            poolLiquidity={poolLiquidity}
+            hasDeficit={hasDeficit}
+            deficitUsd={deficitUsd}
+            deficitShareRatio={deficitShareRatio}
+            deficitTextClass={deficitTextClass}
+            isNeutralDeficit={isNeutralDeficit}
+            onShowSupplyCap={() => setCapSheet('supply')}
+            onShowBorrowCap={() => setCapSheet('borrow')}
+            onShowDeficit={() => setCapSheet('deficit')}
+          />
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={activeTab}
@@ -713,7 +642,17 @@ const MobileReserveCard = memo(({
               transition={{ duration: 0.18, ease: [0.25, 0.1, 0.25, 1] }}
               className="mt-1"
             >
-              {renderHeroApy()}
+              <MobileReserveHeroApy
+                activeTab={activeTab}
+                reserve={reserve}
+                displaySupplyTotal={displaySupplyTotal}
+                displaySupplyNative={displaySupplyNative}
+                visibleSupplyIncentive={visibleSupplyIncentive}
+                displayBorrowTotal={displayBorrowTotal}
+                displayBorrowNative={displayBorrowNative}
+                visibleBorrowIncentive={visibleBorrowIncentive}
+                onIncentiveClick={onIncentiveClick}
+              />
             </motion.div>
           </AnimatePresence>
 
