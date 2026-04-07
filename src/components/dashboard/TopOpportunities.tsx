@@ -44,7 +44,7 @@ interface TopOpportunitiesProps {
 }
 
 type TopOpportunitiesTooltipState = {
-  reserve: ReserveWithSpread;
+  reserve: ReserveWithTotals;
   type: 'supply' | 'borrow';
   position: { x: number; y: number };
   triggerCenterX: number;
@@ -215,6 +215,72 @@ type ReserveWithTotals = ReserveWithSpread & {
   aprSpread: number | null;
 };
 
+interface MiniReserveApyRowProps {
+  isLeverage: boolean;
+  hasIncentive: boolean;
+  apyAccentText: string;
+  apyAccentChip: string;
+  nativeValue: number | null;
+  incentiveValue: number | null;
+  mainValue: number | null;
+  index: number;
+  totalItems: number;
+  isApy: boolean;
+  reserve: ReserveWithTotals;
+  onIncentiveClick: (
+    e: React.MouseEvent,
+    reserve: ReserveWithTotals,
+    type: 'supply' | 'borrow',
+    incentiveValue: number | null,
+    accentValue: number | null
+  ) => void;
+  getSpreadAccentClass: (value: number | null, index?: number, total?: number) => string;
+}
+
+const MiniReserveApyRow = ({
+  isLeverage,
+  hasIncentive,
+  apyAccentText,
+  apyAccentChip,
+  nativeValue,
+  incentiveValue,
+  mainValue,
+  index,
+  totalItems,
+  isApy,
+  reserve,
+  onIncentiveClick,
+  getSpreadAccentClass,
+}: MiniReserveApyRowProps) => {
+  if (isLeverage) {
+    return (
+      <span className={`${getSpreadAccentClass(mainValue, index, totalItems)} tabular-nums ds-text-9`}>
+        {formatPercent(isApy ? reserve.totalSupplyApy : reserve.totalSupplyApr)} - {formatPercent(isApy ? reserve.totalBorrowApy : reserve.totalBorrowApr)}
+      </span>
+    );
+  }
+
+  return (
+    <>
+      <span className={`ds-text-11 tabular-nums ${apyAccentText} ${hasIncentive ? '' : 'invisible'}`}>
+        {formatPercent(nativeValue ?? null)}
+      </span>
+      {hasIncentive && <span className="text-muted-foreground ds-text-11">+</span>}
+      <button
+        type="button"
+        onClick={hasIncentive ? (e) => onIncentiveClick(e, reserve, 'supply', incentiveValue, mainValue) : undefined}
+        disabled={!hasIncentive}
+        aria-hidden={!hasIncentive}
+        tabIndex={hasIncentive ? 0 : -1}
+        className={`inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-1)] py-px rounded-full ring-1 transition-colors tabular-nums ds-text-11 ${apyAccentChip} ${hasIncentive ? 'cursor-pointer' : 'invisible pointer-events-none'}`}
+      >
+        <span>{formatPercent(incentiveValue ?? 0)}</span>
+        <IncentiveIcon width={8} height={8} />
+      </button>
+    </>
+  );
+};
+
 interface MiniReserveCardProps {
   reserve: ReserveWithTotals;
   index: number;
@@ -302,32 +368,21 @@ const MiniReserveCard = ({
       />
 
       <div className="flex items-baseline justify-end gap-[var(--ds-space-1)]">
-        {!isLeverage && (
-          <span className={`ds-text-11 tabular-nums ${apyAccent.text} ${hasIncentive ? '' : 'invisible'}`}>
-            {formatPercent(nativeValue ?? null)}
-          </span>
-        )}
-        {!isLeverage && hasIncentive && (
-          <span className="text-muted-foreground ds-text-11">+</span>
-        )}
-        {!isLeverage && hasIncentive && (
-          <button
-            type="button"
-            onClick={hasIncentive ? (e) => onIncentiveClick(e, reserve, 'supply', incentiveValue, mainValue) : undefined}
-            disabled={!hasIncentive}
-            aria-hidden={!hasIncentive}
-            tabIndex={hasIncentive ? 0 : -1}
-            className={`inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-1)] py-px rounded-full ring-1 transition-colors tabular-nums ds-text-11 ${apyAccent.chip} ${hasIncentive ? 'cursor-pointer' : 'invisible pointer-events-none'}`}
-          >
-            <span>{formatPercent(incentiveValue ?? 0)}</span>
-            <IncentiveIcon width={8} height={8} />
-          </button>
-        )}
-        {isLeverage && (
-          <span className={`${getSpreadAccentClass(mainValue, index, totalItems)} tabular-nums ds-text-9`}>
-            {formatPercent(isApy ? reserve.totalSupplyApy : reserve.totalSupplyApr)} - {formatPercent(isApy ? reserve.totalBorrowApy : reserve.totalBorrowApr)}
-          </span>
-        )}
+        <MiniReserveApyRow
+          isLeverage={isLeverage}
+          hasIncentive={hasIncentive}
+          apyAccentText={apyAccent.text}
+          apyAccentChip={apyAccent.chip}
+          nativeValue={nativeValue}
+          incentiveValue={incentiveValue}
+          mainValue={mainValue}
+          index={index}
+          totalItems={totalItems}
+          isApy={isApy}
+          reserve={reserve}
+          onIncentiveClick={onIncentiveClick}
+          getSpreadAccentClass={getSpreadAccentClass}
+        />
       </div>
     </Wrapper>
   );
@@ -711,7 +766,7 @@ const TopOpportunities = ({
 
   const handleIncentiveClick = useCallback((
     e: React.MouseEvent,
-    reserve: ReserveWithSpread,
+    reserve: ReserveWithTotals,
     type: 'supply' | 'borrow',
     incentiveValue: number | null,
     accentValue: number | null,

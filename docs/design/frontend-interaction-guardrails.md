@@ -120,6 +120,7 @@ This note records recurring UI/interaction issues found during incentive/forecas
   - Add a flip threshold (not just `space < height`) to avoid jitter near the viewport midpoint.
   - If the tooltip is heavily clamped and the arrow can no longer point cleanly to the trigger, hide the arrow rather than showing a misleading one.
 - **Do not rely on page scroll for fixed overlays**: fixed-position tooltip content should remain usable even when the underlying page cannot scroll.
+- **Scope local overlay state to the owning subtree**: clicking a local trigger (for example the `TopOpportunities` incentive badge) must not update page-root state or cause the whole page shell to re-render. Keep open/close state in the smallest component that owns the trigger + overlay pair; use a portal for layering, not top-level page state.
 - **Whitelist toggles must be scoped**: only show per-tooltip controls when the current reserve/source actually has applicable items (avoid leaking global state into unrelated tooltips).
 
 ### Expandable rows and scroll stability

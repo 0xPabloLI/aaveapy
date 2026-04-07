@@ -6,7 +6,7 @@ const makeProps = () => ({
   isApy: true,
   tydroPointToUsdRate: 1,
   isRateDragging: false,
-  onIncentiveClick: undefined,
+  onToggleWhitelistMerklCampaign: undefined,
   categoryGroups: {},
   whitelistMerklCampaignIds: new Set<string>(),
   reserves: [

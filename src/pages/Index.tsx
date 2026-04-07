@@ -32,7 +32,6 @@ import { normalizeTokenSymbolForSearch } from '@/lib/tokenSymbolNormalization';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
 
-import IncentiveTooltip from '@/components/dashboard/IncentiveTooltip';
 import InkAprCalculator from '@/components/dashboard/InkAprCalculator';
 import { RateInputsVsMarketCheck } from '@/components/dev/RateInputsVsMarketCheck';
 const MerklForecastPanel = lazy(() => import('@/components/dashboard/MerklForecastPanel'));
@@ -66,17 +65,6 @@ const Index = () => {
     });
   }, []);
   const [pendingScrollReserveId, setPendingScrollReserveId] = useState<string | null>(null);
-  const [topTooltipState, setTopTooltipState] = useState<{
-    reserve: ReserveWithSpread;
-    type: 'supply' | 'borrow';
-    position: { x: number; y: number };
-    triggerCenterX: number;
-    triggerHeight: number;
-    triggerRect: { top: number; bottom: number; left: number; right: number; width: number; height: number };
-    accentBorderClass?: string;
-    accentTextClass?: string;
-    accentBgClass?: string;
-  } | null>(null);
   // Always start at FDV default 1 on load/refresh (do not restore from cache)
   const [tydroPointToUsdRateInput, setTydroPointToUsdRateInput] = useState('1.0000');
   const tydroPointToUsdRate = useMemo(() => {
@@ -206,30 +194,6 @@ const Index = () => {
     }, 200);
     return () => clearTimeout(timer);
   }, [pendingScrollReserveId, scrollToReserveElement]);
-
-  const handleTopIncentiveClick = useCallback((payload: {
-    reserve: ReserveWithSpread;
-    type: 'supply' | 'borrow';
-    position: { x: number; y: number };
-    triggerCenterX: number;
-    triggerHeight: number;
-    triggerRect: { top: number; bottom: number; left: number; right: number; width: number; height: number };
-    accentBorderClass?: string;
-    accentTextClass?: string;
-    accentBgClass?: string;
-  }) => {
-    setTopTooltipState({
-      reserve: payload.reserve,
-      type: payload.type,
-      position: payload.position,
-      triggerCenterX: payload.triggerCenterX,
-      triggerHeight: payload.triggerHeight,
-      triggerRect: payload.triggerRect,
-      accentBorderClass: payload.accentBorderClass,
-      accentTextClass: payload.accentTextClass,
-      accentBgClass: payload.accentBgClass,
-    });
-  }, []);
 
   // Handle sort
   const handleSort = (field: SortField) => {
@@ -373,8 +337,8 @@ const Index = () => {
               isApy={isApy}
               isRateDragging={isRateDragging}
               whitelistMerklCampaignIds={whitelistMerklCampaignIds}
+              onToggleWhitelistMerklCampaign={toggleWhitelistMerklCampaign}
               categoryGroups={tokenCategoryGroups}
-              onIncentiveClick={handleTopIncentiveClick}
               onCardClick={handleTopCardClick}
               tydroPointToUsdRate={tydroPointToUsdRate}
             />
@@ -418,26 +382,6 @@ const Index = () => {
               portfolioSnapshots={portfolio.snapshots}
             />
           </div>
-
-          {topTooltipState && (
-              <IncentiveTooltip
-                reserve={topTooltipState.reserve}
-                type={topTooltipState.type}
-                position={topTooltipState.position}
-                triggerCenterX={topTooltipState.triggerCenterX}
-                triggerHeight={topTooltipState.triggerHeight}
-                triggerRect={topTooltipState.triggerRect}
-                accentBorderClass={topTooltipState.accentBorderClass}
-                accentTextClass={topTooltipState.accentTextClass}
-                accentBgClass={topTooltipState.accentBgClass}
-                onClose={() => setTopTooltipState(null)}
-                isApy={isApy}
-                tydroPointToUsdRate={tydroPointToUsdRate}
-                whitelistMerklCampaignIds={whitelistMerklCampaignIds}
-                onToggleWhitelistMerklCampaign={toggleWhitelistMerklCampaign}
-                usePortal
-              />
-          )}
 
           {/* Empty state */}
           {filteredReserves.length === 0 && effectiveReservesData && !isLoading && (

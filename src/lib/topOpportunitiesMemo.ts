@@ -15,7 +15,7 @@ export interface TopOpportunitiesMemoProps {
   isApy: boolean;
   tydroPointToUsdRate: number;
   isRateDragging?: boolean;
-  onIncentiveClick?: unknown;
+  onToggleWhitelistMerklCampaign?: unknown;
   onCardClick?: unknown;
   categoryGroups: unknown;
   whitelistMerklCampaignIds: ReadonlySet<string>;
@@ -29,7 +29,7 @@ export const shouldSkipTopOpportunitiesRender = (
   if (prevProps.isApy !== nextProps.isApy) return false;
   if (prevProps.tydroPointToUsdRate !== nextProps.tydroPointToUsdRate) return false;
   if (prevProps.isRateDragging !== nextProps.isRateDragging) return false;
-  if (prevProps.onIncentiveClick !== nextProps.onIncentiveClick) return false;
+  if (prevProps.onToggleWhitelistMerklCampaign !== nextProps.onToggleWhitelistMerklCampaign) return false;
   if (prevProps.onCardClick !== nextProps.onCardClick) return false;
   if (prevProps.categoryGroups !== nextProps.categoryGroups) return false;
   if (!whitelistMerklSetsEqual(prevProps.whitelistMerklCampaignIds, nextProps.whitelistMerklCampaignIds))
