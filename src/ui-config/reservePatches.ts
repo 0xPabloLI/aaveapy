@@ -281,6 +281,16 @@ export function fetchIconSymbolAndName({ underlyingAsset, symbol, name }: IconSy
       name: 'Wrapped XLP',
       iconSymbol: 'wxlp',
     },
+    '0x23b17d3944742ace3d0c71586fcb320d1e4a1ed2': {
+      symbol: 'PT USDe June 18th 2026',
+      name: 'PT USDe June 2026',
+      iconSymbol: 'ptusde',
+    },
+    '0x30559e3d35e33ab69399a3fe9f383d32bd3c016e': {
+      symbol: 'PT sUSDe June 18th 2026',
+      name: 'PT sUSDe June 2026',
+      iconSymbol: 'ptsusde',
+    },
 };
 
   const lowerUnderlyingAsset = underlyingAsset?.toLowerCase();
