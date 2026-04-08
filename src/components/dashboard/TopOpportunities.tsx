@@ -549,9 +549,9 @@ interface CategoryCardProps {
   isApy: boolean;
   isApyChanged: boolean;
   isRateDragging: boolean;
-  headerVariants: Record<string, unknown>;
-  iconVariants: Record<string, unknown>;
-  itemVariants: Record<string, unknown>;
+  headerVariants: import('framer-motion').Variants;
+  iconVariants: import('framer-motion').Variants;
+  itemVariants: import('framer-motion').Variants;
   onCardClick: (reserve: Pick<ReserveWithSpread, 'marketName' | 'tokenAddress'>) => void;
   onIncentiveClick: (
     e: React.MouseEvent,
