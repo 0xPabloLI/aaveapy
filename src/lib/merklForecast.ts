@@ -69,12 +69,10 @@ export const forecastWithTVL = (
     return { dailyRewards: plannedDaily, apr, regime: 'PLANNED' as const };
   }
 
-  const requiredDaily = safe(forecastState.requiredDaily ?? plannedDaily);
   const remainingBudget = safe((forecastState.totalBudget ?? 0) - (forecastState.distributedSoFar ?? 0));
   const remainingDays = Math.max((safe(forecastState.endTimestamp) - safe(nowTs)) / SECONDS_PER_DAY, 0);
-
   const aprCap = safe(forecastState.aprCap ?? 0);
-  const aprBasedDaily = isRateLimitedCampaign ? (safeTvl * aprCap) / DAYS_PER_YEAR : Number.POSITIVE_INFINITY;
+  const aprBasedDaily = (safeTvl * aprCap) / DAYS_PER_YEAR;
 
   if (isFixAprCampaign) {
     const dailyRewards = Math.min(aprBasedDaily, remainingBudget);
@@ -98,6 +96,7 @@ export const forecastWithTVL = (
   }
 
   // MAX_REWARD path: requiredDaily may diverge from plannedDaily (catch-up).
+  const requiredDaily = safe(forecastState.requiredDaily ?? plannedDaily);
   const dailyRewards = Math.min(requiredDaily, aprBasedDaily);
   const apr = (dailyRewards * DAYS_PER_YEAR) / safeTvl;
   const capBinding = aprBasedDaily < requiredDaily;
