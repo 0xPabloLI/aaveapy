@@ -57,6 +57,7 @@
     "test:live": "LIVE_TEST_API_BASE=https://staging-api.aaveapy.com/api RUN_LIVE_TESTS=true vitest run src/lib/apiSchemas.live.test.ts",
     "test:live:staging": "LIVE_TEST_API_BASE=https://staging-api.aaveapy.com/api RUN_LIVE_TESTS=true vitest run src/lib/apiSchemas.live.test.ts",
     "probe:live-api": "node scripts/probe-live-api.mjs",
+    "check:campaign-apr-reconcile": "node scripts/reconcile-campaign-apr.mjs",
     "ci:lockcheck": "npm ci",
     "check:react-singleton": "node scripts/check-react-singleton.mjs"
   },

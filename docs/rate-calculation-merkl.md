@@ -65,6 +65,40 @@ impliedAprPercent = plannedDaily * 365 / tvl * 100
 
 一个经验可复现结果（按当前快照）是：非零 `campaignApr` 中，主要偏差都发生在 MAX/FIX 分支；points 模式常见 `campaignApr=0`、`pointsPerThousandUsd>0` 且 `impliedAprPercent` 为正值，不应判定为异常。
 
+## 对账输出建议（`campaignApr` vs `planned+TVL`）
+
+建议把每条活动按以下三类输出，便于判断是否异常：
+
+- `plain-match`
+  - `campaignType` 非 MAX/FIX（通常是 DUTCH_AUCTION）
+  - 且 `|impliedAprPercent - campaignApr| <= tolerance`
+  - 或者 `campaignApr == 0` + `pointsPerThousandUsd > 0` 且 `campaignApr` 被规则定义为 points 模式
+
+- `capped-required`
+  - `campaignType` 为 `MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE` 或 `FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE`
+  - 需要用 `requiredDaily`/`aprCap`/`remainingBudget` 重建 `campaignAprEff`
+  - 与 `campaignAprEff` 比较
+
+- `needs-data-check`
+  - 缺失关键字段：`latestTvl`、`requiredDaily`、`aprCap`、`totalBudget/distributedSoFar`
+  - 或者 `tvl <= 0`
+
+简化脚本输出样例：
+
+```text
+campaignId=... chain=... token=... side=... type=... category=plain-match | tol=0.0001
+  campaignApr=1.05% | implied=1.0500% | diff=+0.0000pp
+
+campaignId=... type=MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE category=capped-required
+  campaignApr=1.75% | projectedApr=1.78% | diff=+0.03pp | requiredDaily=... | aprCap=...
+
+campaignId=... category=needs-data-check
+  miss=latestTvl=0 or requiredDaily missing
+```
+
+用于你这次结论时：先看 `category`，再看 `type`。
+
+
 ## FIX branch
 
 ```text

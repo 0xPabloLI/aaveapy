@@ -46,6 +46,12 @@ See [`rate-calculation-merkl.md`](./rate-calculation-merkl.md).
 
 对于当前环境的实际对账，非零 `campaignApr` 中，明显偏差主要集中在 MAX/FIX 类；`campaignApr=0 & pointsPerThousandUsd>0` 常见于 points 语义，不是普通 APR 反推错误。
 
+### 结论速记（通用）
+
+- `DUTCH_AUCTION`（以及其他非 MAX/FIX）通常可用 `plannedDaily + latestTvl` 反推 APR 做对账。
+- `MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE` / `FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE` 不能只用 `plannedDaily` 反推；必须走 capped 分支（`requiredDaily`、`aprCap`，以及 FIX 的 `remainingBudget`）。
+- `campaignApr == 0` 且 `pointsPerThousandUsd > 0` 视为 points 模式，不按常规 APR 反推判错。
+
 ## APR/APY display semantics
 
 See [`rate-calculation-display.md`](./rate-calculation-display.md).
