@@ -5,6 +5,7 @@ const EPSILON = 1e-9;
 export interface MerklForecastState {
   campaignType?: string;
   plannedDaily?: number;
+  /** Dynamic daily target for remaining time. Only used by non-DUTCH types (MAX/FIX). */
   requiredDaily?: number;
   /** Annual rate as a decimal (e.g. 0.032 for 3.2%/year). Not API percent points. */
   aprCap?: number | null;
@@ -61,6 +62,13 @@ export const forecastWithTVL = (
   }
 
   const plannedDaily = safe(forecastState.plannedDaily ?? 0);
+
+  // DUTCH_AUCTION: no APR cap, no catch-up; dailyRewards = plannedDaily.
+  if (forecastState.campaignType === 'DUTCH_AUCTION') {
+    const apr = (plannedDaily * DAYS_PER_YEAR) / safeTvl;
+    return { dailyRewards: plannedDaily, apr, regime: 'PLANNED' as const };
+  }
+
   const requiredDaily = safe(forecastState.requiredDaily ?? plannedDaily);
   const remainingBudget = safe((forecastState.totalBudget ?? 0) - (forecastState.distributedSoFar ?? 0));
   const remainingDays = Math.max((safe(forecastState.endTimestamp) - safe(nowTs)) / SECONDS_PER_DAY, 0);
@@ -89,11 +97,11 @@ export const forecastWithTVL = (
     };
   }
 
+  // MAX_REWARD path: requiredDaily may diverge from plannedDaily (catch-up).
   const dailyRewards = Math.min(requiredDaily, aprBasedDaily);
   const apr = (dailyRewards * DAYS_PER_YEAR) / safeTvl;
-  const capBinding = isMaxAprCampaign && aprBasedDaily < requiredDaily;
-  // DUTCH_AUCTION: requiredDaily === plannedDaily (no catch-up possible); regime is always PLANNED.
-  const isCatchingUp = requiredDaily > plannedDaily * 1.01; // 1% tolerance for floating point
+  const capBinding = aprBasedDaily < requiredDaily;
+  const isCatchingUp = requiredDaily > plannedDaily * 1.01;
 
   let regime: 'APR_CAPPED' | 'CATCHING_UP' | 'PLANNED';
   if (capBinding) {

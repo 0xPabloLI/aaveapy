@@ -70,6 +70,14 @@
 ## Session Bootstrap (Mandatory)
 - On every new session, invoke superpowers before any other work: `~/.codex/superpowers/.codex/superpowers-codex bootstrap`, then `~/.codex/superpowers/.codex/superpowers-codex use-skill thread-tracker`, then `~/.codex/superpowers/.codex/superpowers-codex use-skill brainstorming`.
 
+## Session Coordination (Mandatory)
+- **Before starting any work**, read [`SESSION-BOARD.md`](SESSION-BOARD.md) and follow the protocol:
+  1. Register your session (task, files you plan to touch, status).
+  2. Check all `active` sessions for file-level conflicts.
+  3. If conflict exists → set yourself to `blocked`, only plan / read / analyze — **do not write conflicting files**.
+  4. When your task is complete, **deregister** (delete your row or set status to `done`) so blocked sessions can proceed.
+- See `SESSION-BOARD.md` for full protocol details and conflict-area reference table.
+
 ## UI Regression Guardrails
 - For `TopOpportunities`, `MobileReserveCard`, `MobileExpandedReserveShell`, and `ReservesTable` refactors, run the full checklist in `docs/conventions/frontend-regression-checklist.md`:
   - targeted regression test
