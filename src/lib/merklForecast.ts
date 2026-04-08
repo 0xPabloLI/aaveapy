@@ -92,6 +92,7 @@ export const forecastWithTVL = (
   const dailyRewards = Math.min(requiredDaily, aprBasedDaily);
   const apr = (dailyRewards * DAYS_PER_YEAR) / safeTvl;
   const capBinding = isMaxAprCampaign && aprBasedDaily < requiredDaily;
+  // DUTCH_AUCTION: requiredDaily === plannedDaily (no catch-up possible); regime is always PLANNED.
   const isCatchingUp = requiredDaily > plannedDaily * 1.01; // 1% tolerance for floating point
 
   let regime: 'APR_CAPPED' | 'CATCHING_UP' | 'PLANNED';

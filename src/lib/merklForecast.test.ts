@@ -82,7 +82,7 @@ describe('forecastWithTVL', () => {
       campaignType: 'DUTCH_AUCTION',
       aprCap: null,
       plannedDaily: 500,
-      requiredDaily: 500,
+      requiredDaily: undefined, // DUTCH — falls back to plannedDaily
     };
 
     const result = forecastWithTVL(dutchState, 100_000, nowTs);

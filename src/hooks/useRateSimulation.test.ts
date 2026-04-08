@@ -70,7 +70,6 @@ describe('buildForecastMerklOpportunities', () => {
     const states: Record<string, MerklForecastWireItem> = {
       c1: {
         campaignId: 'c1',
-        requiredDaily: 10,
         distributedSoFar: 0,
         endTimestamp: Math.floor(Date.now() / 1000) + 86400 * 30,
       },
@@ -112,7 +111,6 @@ describe('buildForecastMerklOpportunities', () => {
     const states: Record<string, MerklForecastWireItem> = {
       c2: {
         campaignId: 'c2',
-        requiredDaily: 100,
         distributedSoFar: 0,
         endTimestamp: Math.floor(Date.now() / 1000) + 86400 * 30,
       },
@@ -374,7 +372,6 @@ describe('buildRateSimulationResult', () => {
     const states: Record<string, MerklForecastWireItem> = {
       'c-supply': {
         campaignId: 'c-supply',
-        requiredDaily: 10,
         distributedSoFar: 0,
         endTimestamp: Math.floor(Date.now() / 1000) + 86400 * 30,
       },
@@ -428,7 +425,6 @@ describe('buildRateSimulationResult', () => {
     const states: Record<string, MerklForecastWireItem> = {
       c1: {
         campaignId: 'c1',
-        requiredDaily: 10,
         distributedSoFar: 0,
         endTimestamp: Math.floor(Date.now() / 1000) + 86400 * 30,
       },
@@ -1092,7 +1088,7 @@ describe('buildRateSimulationResult', () => {
     expect(result.supply.currentIncentive).toBeGreaterThan(0);
   });
 
-  it('adds a short cap note for Merkl DUTCH_AUCTION (and catch-up when required exceeds planned)', () => {
+  it('adds no cap note for Merkl DUTCH_AUCTION', () => {
     const merkl: MerklOpportunityGroup[] = [
       {
         name: 'Dutch opp',
@@ -1126,13 +1122,11 @@ describe('buildRateSimulationResult', () => {
     const states: Record<string, MerklForecastWireItem> = {
       dutch1: {
         campaignId: 'dutch1',
-        requiredDaily: 10,
         distributedSoFar: 0,
         endTimestamp: Math.floor(Date.now() / 1000) + 86400 * 30,
       },
       dutch2: {
         campaignId: 'dutch2',
-        requiredDaily: 50,
         distributedSoFar: 0,
         endTimestamp: Math.floor(Date.now() / 1000) + 86400 * 30,
       },
