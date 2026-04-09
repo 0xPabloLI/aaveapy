@@ -25,6 +25,8 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const pr = context.payload.pull_request;
+            const maxAttempts = 12;
+            const baseDelayMs = 15000;
             const query = `
               query($owner: String!, $repo: String!, $number: Int!) {
                 repository(owner: $owner, name: $repo) {
@@ -32,6 +34,7 @@ jobs:
                     id
                     number
                     reviewDecision
+                    mergeStateStatus
                     autoMergeRequest {
                       enabledAt
                     }
@@ -44,41 +47,60 @@ jobs:
                 }
               }
             `;
-            const data = await github.graphql(query, {
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              number: pr.number
-            });
-            const prInfo = data.repository.pullRequest;
-            const unresolvedThreads = prInfo.reviewThreads.nodes.filter((thread) => !thread.isResolved).length;
-            if (prInfo.reviewDecision === 'CHANGES_REQUESTED' || prInfo.reviewDecision === 'REVIEW_REQUIRED' || unresolvedThreads > 0) {
-              core.notice(
-                `Skip enabling auto-merge for PR #${pr.number}: reviewDecision=${prInfo.reviewDecision || 'NONE'}, unresolvedThreads=${unresolvedThreads}`
-              );
-              return;
-            }
-            if (prInfo.autoMergeRequest) {
-              core.info(`Auto-merge already enabled for PR #${pr.number}`);
-              return;
-            }
-            const enableAutoMergeMutation = `
-              mutation($pullRequestId: ID!) {
-                enablePullRequestAutoMerge(input: {
-                  pullRequestId: $pullRequestId,
-                  mergeMethod: SQUASH
-                }) {
-                  pullRequest {
-                    number
-                    autoMergeRequest {
-                      enabledAt
+            for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+              const data = await github.graphql(query, {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                number: pr.number
+              });
+              const prInfo = data.repository.pullRequest;
+              const unresolvedThreads = prInfo.reviewThreads.nodes.filter((thread) => !thread.isResolved).length;
+
+              if (prInfo.reviewDecision === 'CHANGES_REQUESTED' || prInfo.reviewDecision === 'REVIEW_REQUIRED' || unresolvedThreads > 0) {
+                core.notice(
+                  `Skip enabling auto-merge for PR #${pr.number}: reviewDecision=${prInfo.reviewDecision || 'NONE'}, unresolvedThreads=${unresolvedThreads}`
+                );
+                return;
+              }
+
+              if (prInfo.autoMergeRequest) {
+                core.info(`Auto-merge already enabled for PR #${pr.number}`);
+                return;
+              }
+
+              if (prInfo.mergeStateStatus !== 'CLEAN') {
+                const isLastAttempt = attempt === maxAttempts;
+                if (isLastAttempt) {
+                  core.notice(
+                    `Skip enabling auto-merge for PR #${pr.number}: mergeStateStatus=${prInfo.mergeStateStatus}`
+                  );
+                  return;
+                }
+
+                const waitMs = baseDelayMs * attempt;
+                core.warning(
+                  `PR #${pr.number} merge state is ${prInfo.mergeStateStatus} (attempt ${attempt}/${maxAttempts}). Retrying in ${waitMs / 1000}s.`
+                );
+                await new Promise((resolve) => setTimeout(resolve, waitMs));
+                continue;
+              }
+
+              const enableAutoMergeMutation = `
+                mutation($pullRequestId: ID!) {
+                  enablePullRequestAutoMerge(input: {
+                    pullRequestId: $pullRequestId,
+                    mergeMethod: SQUASH
+                  }) {
+                    pullRequest {
+                      number
+                      autoMergeRequest {
+                        enabledAt
+                      }
                     }
                   }
                 }
-              }
-            `;
-            const maxAttempts = 3;
-            const baseDelayMs = 60000;
-            for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+              `;
+
               try {
                 await github.graphql(enableAutoMergeMutation, { pullRequestId: prInfo.id });
                 core.info(`Enabled auto-merge for PR #${pr.number} on attempt ${attempt}/${maxAttempts}`);
@@ -90,6 +112,7 @@ jobs:
                 if (!isUnstable || isLastAttempt) {
                   throw error;
                 }
+
                 const waitMs = baseDelayMs * attempt;
                 core.warning(
                   `PR #${pr.number} is in unstable status (attempt ${attempt}/${maxAttempts}). Retrying in ${waitMs / 1000}s.`
