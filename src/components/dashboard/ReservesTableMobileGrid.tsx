@@ -26,6 +26,10 @@ interface ReservesTableMobileGridProps {
   onToggleExpand: (reserveId: string) => void;
   onCorrectSupplyInput?: (correctedValue: string) => void;
   onCorrectBorrowInput?: (correctedValue: string) => void;
+  isPortfolioMode?: boolean;
+  portfolioReserveIds?: Set<string>;
+  onPortfolioToggle?: (reserveId: string, reserve: ReserveWithSpread) => void;
+  onAddToPortfolio?: (reserve: ReserveWithSpread, side: 'supply' | 'borrow') => void;
 }
 
 function MobileReservesSkeletonGrid() {
