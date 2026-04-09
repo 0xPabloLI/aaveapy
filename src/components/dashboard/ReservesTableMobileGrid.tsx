@@ -84,6 +84,10 @@ export default function ReservesTableMobileGrid({
   onToggleExpand,
   onCorrectSupplyInput,
   onCorrectBorrowInput,
+  isPortfolioMode,
+  portfolioReserveIds,
+  onPortfolioToggle,
+  onAddToPortfolio,
 }: ReservesTableMobileGridProps) {
   if (isLoading && reservesCount === 0) {
     return <MobileReservesSkeletonGrid />;
