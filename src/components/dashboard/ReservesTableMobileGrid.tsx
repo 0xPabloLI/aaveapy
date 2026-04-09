@@ -189,6 +189,7 @@ export default function ReservesTableMobileGrid({
                 onCorrectSupplyInput={onCorrectSupplyInput}
                 onCorrectBorrowInput={onCorrectBorrowInput}
                 defaultTab={mobileCardDefaultTab}
+                {...portfolioProps(activeId, activeReserve)}
               />
             }
           />
