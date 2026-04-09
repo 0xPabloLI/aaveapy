@@ -226,6 +226,7 @@ Current source wiring:
 - `src/hooks/useRateSimulation.ts` and `src/components/dashboard/MerklForecastPanel.tsx` both merge `requiredDaily` from `/meta/side-data` into the forecast state.
 - `src/lib/merklForecast.ts` still resolves `requiredDaily ?? plannedDaily` on the MAX path only.
 - If `requiredDaily` is absent, the fallback is `plannedDaily`; if that is also missing, the safe value becomes `0`.
+- `/markets` does **not** return `requiredDaily` for `DUTCH_AUCTION`; that campaign type uses the Dutch-auction fallback path only and does not depend on side-data.
 
 ### `campaignApr` 与 `plannedDaily + TVL` 的一致性核对
 
