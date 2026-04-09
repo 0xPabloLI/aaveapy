@@ -85,6 +85,9 @@ async function main() {
 
   let hasDrift = false;
 
+  // Local-only keys are intentional extensions and only warn.
+  // The check fails on missing upstream keys or SYMBOL_MAP mismatches.
+
   if (missingFromLocal.length > 0) {
     hasDrift = true;
     console.error('\nMissing addresses (present in upstream, absent locally):');
@@ -145,4 +148,3 @@ main().catch((error) => {
   console.error(error instanceof Error ? error.stack || error.message : String(error));
   process.exit(1);
 });
-

@@ -46,7 +46,6 @@
 
 | session-id | agent | task | touch-files | status | registered | notes |
 |------------|-------|------|-------------|--------|------------|-------|
-| _(空 — 当前无活跃 session)_ | | | | | | |
 
 ---
 
