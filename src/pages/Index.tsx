@@ -28,6 +28,7 @@ import {
 } from '@/lib/preloadUtils';
 import { usePreloadReserveAssets } from '@/hooks/usePreloadReserveAssets';
 import { buildMarketsList } from '@/lib/marketsList';
+import { getReserveKey } from '@/lib/reserveKey';
 import { normalizeTokenSymbolForSearch } from '@/lib/tokenSymbolNormalization';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
@@ -177,8 +178,8 @@ const Index = () => {
     return true;
   }, []);
 
-  const handleTopCardClick = useCallback((reserve: Pick<ReserveWithSpread, 'marketName' | 'tokenAddress'>) => {
-    const id = `${reserve.marketName}-${reserve.tokenAddress}`;
+  const handleTopCardClick = useCallback((reserve: ReserveWithSpread) => {
+    const id = getReserveKey(reserve);
     setSearchQuery('');
     setSelectedMarkets([]);
     setSelectedCategory('all');

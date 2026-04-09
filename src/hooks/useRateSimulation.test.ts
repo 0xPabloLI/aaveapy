@@ -9,6 +9,7 @@ import type { RateCalcInput } from '@/lib/interestRateCalculator';
 import { buildForecastMerklOpportunities, buildRateSimulationResult } from '@/hooks/useRateSimulation';
 
 const baseReserve: ReserveWithSpread & RateCalcInput = {
+  reserveId: 'Core-0x0000000000000000000000000000000000000001',
   marketName: 'Core',
   chainName: 'Ethereum',
   chainId: 1,

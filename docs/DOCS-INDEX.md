@@ -7,7 +7,7 @@ Use it to avoid duplicate policy text and to keep each topic in one canonical lo
 **Entry points:** [`README.md`](../README.md) (onboarding), root [`DESIGN.md`](../DESIGN.md) (design links table), this file (full map).
 **Migration index:** [`docs/transferable-docs.md`](./transferable-docs.md) (which docs are reusable).
 
-_Last inventory pass: 2026-04-08._
+_Last inventory pass: 2026-04-09._
 
 ## Canonical Structure
 
@@ -58,6 +58,7 @@ _Last inventory pass: 2026-04-08._
 - Module docs: `docs/rate-calculation-native.md`, `docs/rate-calculation-merkl.md`, `docs/rate-calculation-display.md`, `docs/rate-calculation-cap-reference.md`
 - Supporting snapshot note: `docs/merit-base-anchor-vs-last-round-staging.md`
 - Historical execution archive: `docs/frontend-redundancy-review-2026-04-06.md`
+- Supporting implementation note: `docs/plans/2026-04-09-reserve-id-canonical-key.md`
 
 ### Design system and interaction
 
@@ -92,6 +93,7 @@ _Last inventory pass: 2026-04-08._
 | `docs/HARDCODE-AND-EXTERNAL-IMPORTS.md` | Upstream sync and hardcode map | 2026-03-31 | Canonical | none significant | keep |
 | `docs/ci-remediation-automation.md` | CI auto-remediation workflow | 2026-03-15 | Canonical | none significant | keep |
 | `docs/plans/2026-03-26-cap-ceiling-unification-plan.md` | Archived cap/ceiling plan (summary only) | 2026-03-31 | Historical archive | `docs/rate-calculation-formulas.md`, `AGENTS.md` | keep |
+| `docs/plans/2026-04-09-reserve-id-canonical-key.md` | Reserve key canonicalization note | 2026-04-09 | Supporting implementation note | `src/lib/reserveKey.ts`, `src/hooks/useRateSimulation.ts` | keep |
 | `docs/design/DESIGN.md` | Project-specific design defaults | 2026-03-31 | Canonical | `docs/design/DESIGN-SYSTEM-REFERENCE.md` | keep |
 | `docs/design/DESIGN-SYSTEM-REFERENCE.md` | Reusable design/interaction rules | 2026-03-31 | Canonical | old design split docs | keep |
 | `docs/design/frontend-interaction-guardrails.md` | Product-critical normative interaction rules | 2026-03-31 | Canonical | parts of design docs | keep |

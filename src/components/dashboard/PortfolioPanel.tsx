@@ -10,6 +10,7 @@ import type { ReserveWithSpread } from '@/types/aave';
 import type { PortfolioPosition, PortfolioInputMode, PortfolioSide, PortfolioPositionResult, PortfolioSummary, PortfolioSnapshot } from '@/types/portfolio';
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
 import { normalizeTokenSymbolForSearch } from '@/lib/tokenSymbolNormalization';
+import { getReserveKey } from '@/lib/reserveKey';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import PortfolioPositionRow from './PortfolioPositionRow';
 import PortfolioSummaryCard from './PortfolioSummaryCard';
@@ -39,7 +40,7 @@ function SearchResultRow({
   onAdd: (reserveId: string, side: PortfolioSide) => void;
   existingPositions: PortfolioPosition[];
 }) {
-  const reserveId = `${reserve.marketName}-${reserve.tokenAddress}`;
+  const reserveId = getReserveKey(reserve);
   const hasSupply = existingPositions.some(
     (p) => p.reserveId === reserveId && p.side === 'supply',
   );
@@ -173,7 +174,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
   const handleAddFromSearch = useCallback(
     (reserveId: string, side: PortfolioSide) => {
       const reserve = reserves.find(
-        (r) => `${r.marketName}-${r.tokenAddress}` === reserveId,
+        (r) => getReserveKey(r) === reserveId,
       );
       if (!reserve) return;
       actions.addPosition({
@@ -325,7 +326,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
               <div className="mt-1.5 max-h-[200px] overflow-y-auto rounded-lg border border-border/40 bg-card py-1">
                 {filteredReserves.map((r) => (
                   <SearchResultRow
-                    key={`${r.marketName}-${r.tokenAddress}`}
+                    key={getReserveKey(r)}
                     reserve={r}
                     onAdd={handleAddFromSearch}
                     existingPositions={positions}

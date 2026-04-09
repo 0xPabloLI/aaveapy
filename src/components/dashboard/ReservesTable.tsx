@@ -20,6 +20,7 @@ import { getChainIconSrc } from '@/lib/chainIcons';
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
 import { openExternalUrl } from '@/lib/externalNavigation';
 import { calculateDeficitShareRatio, getReserveDeficitUsdAmount } from '@/lib/deficit';
+import { getReserveKey } from '@/lib/reserveKey';
 import ReservesTableTooltipOverlay, { type TooltipState } from './ReservesTableTooltipOverlay';
 import DesktopReserveRow from './DesktopReserveRow';
 import ReservesTableDesktopHeader from './ReservesTableDesktopHeader';
@@ -1016,7 +1017,7 @@ const ReservesTable = ({
   useEffect(() => {
     if (scrollToReserveId) {
       const targetIndex = sortedData.findIndex(
-        (r) => `${r.marketName}-${r.tokenAddress}` === scrollToReserveId
+        (r) => getReserveKey(r) === scrollToReserveId
       );
       if (targetIndex >= 0) {
         const neededCount = targetIndex + 6; // target row + 5 buffer rows
@@ -1079,7 +1080,7 @@ const ReservesTable = ({
   // Callback: add from expanded simulation panel
   const handleAddToPortfolio = useCallback((reserve: ReserveWithSpread, side: 'supply' | 'borrow') => {
     if (!portfolioActions) return;
-    const reserveId = `${reserve.marketName}-${reserve.tokenAddress}`;
+    const reserveId = getReserveKey(reserve);
     portfolioActions.addPosition({
       reserveId,
       marketName: reserve.marketName,
@@ -1098,7 +1099,7 @@ const ReservesTable = ({
       return { portfolioResults: [], portfolioSummary: aggregatePortfolioSummary([]) };
     }
     const reserveMap = new Map(
-      reserves.map((r) => [`${r.marketName}-${r.tokenAddress}`, r]),
+      reserves.map((r) => [getReserveKey(r), r]),
     );
     const results: PortfolioPositionResult[] = portfolioPositions
       .map((pos) => {

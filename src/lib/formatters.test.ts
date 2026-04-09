@@ -318,6 +318,7 @@ describe('scenario size formatting', () => {
 
 describe('resolveVisibleIncentiveBadgeValue', () => {
   const minimalReserve = {
+    reserveId: 'm-0x0000000000000000000000000000000000000001',
     marketName: 'm',
     chainName: 'c',
     chainId: 1,

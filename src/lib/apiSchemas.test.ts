@@ -6,11 +6,12 @@ const buildMarketsPayload = (message: unknown) => ({
     lastUpdated: '2026-03-09T00:00:00.000Z',
     version: '1.0.0',
   },
-  reserves: [
-    {
-      marketName: 'AaveV3Celo',
-      chainName: 'Celo',
-      chainId: 42220,
+    reserves: [
+      {
+        reserveId: 'AaveV3Celo-0x1234',
+        marketName: 'AaveV3Celo',
+        chainName: 'Celo',
+        chainId: 42220,
       tokenName: 'Tether USD',
       tokenSymbol: 'USDT',
       tokenAddress: '0x1234',
@@ -59,9 +60,11 @@ describe('apiSchemas', () => {
     const parsed = MarketsResponseSchema.parse({
       snapshot: {
         lastUpdated: '2026-03-25T00:00:00.000Z',
+        version: '1.0.0',
       },
       reserves: [
         {
+          reserveId: 'AaveV3Ink-0x1',
           marketName: 'AaveV3Ink',
           chainName: 'Ink',
           chainId: 57073,
@@ -128,9 +131,11 @@ describe('apiSchemas', () => {
     const parsed = MarketsResponseSchema.parse({
       snapshot: {
         lastUpdated: '2026-03-26T00:00:00.000Z',
+        version: '1.0.0',
       },
       reserves: [
         {
+          reserveId: 'AaveV3Linea-0x1',
           marketName: 'AaveV3Linea',
           chainName: 'Linea',
           chainId: 59144,
@@ -188,9 +193,11 @@ describe('apiSchemas', () => {
     const parsed = MarketsResponseSchema.parse({
       snapshot: {
         lastUpdated: '2026-03-31T00:00:00.000Z',
+        version: '1.0.0',
       },
       reserves: [
         {
+          reserveId: 'AaveV3Linea-0x1',
           marketName: 'AaveV3Linea',
           chainName: 'Linea',
           chainId: 59144,

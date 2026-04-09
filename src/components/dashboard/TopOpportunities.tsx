@@ -48,7 +48,7 @@ interface TopOpportunitiesProps {
   whitelistMerklCampaignIds: ReadonlySet<string>;
   onToggleWhitelistMerklCampaign: (campaignId: string, enabled: boolean) => void;
   categoryGroups: TokenCategoryGroups;
-  onCardClick?: (reserve: Pick<ReserveWithSpread, 'marketName' | 'tokenAddress'>) => void;
+  onCardClick?: (reserve: ReserveWithSpread) => void;
   tydroPointToUsdRate: number;
 }
 
@@ -298,7 +298,7 @@ interface MiniReserveCardProps {
   disableMotion?: boolean;
   isApy: boolean;
   isMobile: boolean;
-  onCardClick: (reserve: Pick<ReserveWithSpread, 'marketName' | 'tokenAddress'>) => void;
+  onCardClick: (reserve: ReserveWithSpread) => void;
   onIncentiveClick: (
     e: React.MouseEvent,
     reserve: ReserveWithSpread,
@@ -406,7 +406,7 @@ interface ReserveItemProps {
   isApy: boolean;
   isMobile: boolean;
   isRateDragging: boolean;
-  onCardClick: (reserve: Pick<ReserveWithSpread, 'marketName' | 'tokenAddress'>) => void;
+  onCardClick: (reserve: ReserveWithSpread) => void;
   onIncentiveClick: (
     e: React.MouseEvent,
     reserve: ReserveWithSpread,
@@ -552,7 +552,7 @@ interface CategoryCardProps {
   headerVariants: import('framer-motion').Variants;
   iconVariants: import('framer-motion').Variants;
   itemVariants: import('framer-motion').Variants;
-  onCardClick: (reserve: Pick<ReserveWithSpread, 'marketName' | 'tokenAddress'>) => void;
+  onCardClick: (reserve: ReserveWithSpread) => void;
   onIncentiveClick: (
     e: React.MouseEvent,
     reserve: ReserveWithSpread,
@@ -842,7 +842,7 @@ const TopOpportunities = ({
     })
   };
 
-  const handleCardClick = (reserve: Pick<ReserveWithSpread, 'marketName' | 'tokenAddress'>) => {
+  const handleCardClick = (reserve: ReserveWithSpread) => {
     if (onCardClick) {
       onCardClick(reserve);
       return;

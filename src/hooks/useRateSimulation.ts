@@ -42,6 +42,7 @@ import {
   getBrevisCampaignId,
   getBrevisResolvedBreakdown,
 } from '@/lib/brevis';
+import { getReserveKey } from '@/lib/reserveKey';
 import {
   applyStableCampaignLabels,
   flattenCampaignBreakdowns,
@@ -913,8 +914,8 @@ const toDisplayNative = (rawApy: number | null | undefined): number | null => {
   return rawApy;
 };
 
-export const getReserveSimulationId = (reserve: Pick<ReserveWithSpread, 'marketName' | 'tokenAddress'>): string =>
-  `${reserve.marketName}-${reserve.tokenAddress}`;
+export const getReserveSimulationId = (reserve: Pick<ReserveWithSpread, 'reserveId'>): string =>
+  getReserveKey(reserve);
 
 const buildPriceLookup = (reserve: ReserveWithSpread, tokenPrices?: TokenPricesIndex, actionType: 'Supply' | 'Borrow' = 'Supply') => ({
   tokenPrices,

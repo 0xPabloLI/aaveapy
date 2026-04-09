@@ -7,7 +7,7 @@ export type PortfolioInputMode = 'usd' | 'token';
 export interface PortfolioPosition {
   /** Unique key for this position within the portfolio (client-generated). */
   positionId: string;
-  /** `reserveId` or composite key to locate the reserve in market data. */
+  /** Canonical reserve key from market data; frontend falls back to the composite key when missing. */
   reserveId: string;
   /** Market name for display and lookup (e.g. "AaveV3Ethereum"). */
   marketName: string;

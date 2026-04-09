@@ -12,6 +12,7 @@ import {
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
+import { getReserveKey } from '@/lib/reserveKey';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { IncentiveIcon } from '@/components/IncentiveIcon';
 import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
@@ -495,6 +496,7 @@ const MobileReserveCard = memo(({
       ? Number(reserve.optimalUsageRate) / RAY_TO_PERCENT_DIVISOR
       : null;
   const optimalPct = simulation.utilization.optimal ?? optimalPctFromReserve;
+  const reserveId = getReserveKey(reserve);
 
   /** Same rule as `ReservesTable.getDisplayUtilization` / desktop row: scenario uses after when shared inputs exist. */
   const displayUtilization = hasSharedScenario
@@ -502,7 +504,7 @@ const MobileReserveCard = memo(({
     : simulation.utilization.current;
 
   return (
-    <div data-reserve-id={`${reserve.marketName}-${reserve.tokenAddress}`} className={isSimulationExpanded && !showUpperOnly ? 'shadow-sm rounded-xl border border-border/60 bg-card' : ''}>
+    <div data-reserve-id={reserveId} className={isSimulationExpanded && !showUpperOnly ? 'shadow-sm rounded-xl border border-border/60 bg-card' : ''}>
       {/* Card upper part */}
       <div
         className={`bg-card py-3 transition-all duration-300 ${
@@ -520,8 +522,7 @@ const MobileReserveCard = memo(({
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                const rid = `${reserve.marketName}-${reserve.tokenAddress}`;
-                onPortfolioToggle(rid, reserve);
+                onPortfolioToggle(reserveId, reserve);
               }}
               className={cn(
                 'flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-all duration-150',

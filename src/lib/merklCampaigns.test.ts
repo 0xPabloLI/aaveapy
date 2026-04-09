@@ -11,6 +11,7 @@ const daysFromNowIso = (days: number): string => {
 
 const makeReserve = (overrides: Partial<ReserveWithSpread> = {}): ReserveWithSpread =>
   ({
+    reserveId: 'AaveV3Ink-0xToken',
     marketName: 'AaveV3Ink',
     chainName: 'Ink',
     chainId: 57073,

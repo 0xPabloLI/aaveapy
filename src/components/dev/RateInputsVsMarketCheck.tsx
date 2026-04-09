@@ -8,6 +8,7 @@ import React, { useState, useMemo } from 'react';
 import { useAaveMarkets } from '@/hooks/useAaveMarkets';
 import { simulateNativeRatesAfterActions, hasRateCalcFields } from '@/lib/interestRateCalculator';
 import type { NativeRateSimulation } from '@/lib/interestRateCalculator';
+import { getReserveKey } from '@/lib/reserveKey';
 import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
 import type { ReserveWithSpread } from '@/types/aave';
 
@@ -173,7 +174,7 @@ export function RateInputsVsMarketCheck() {
                       const str = n.toString();
                       return str.length > 12 ? `${str.slice(0, 6)}…e${str.length - 1}` : str;
                     };
-                    const rowKey = `${m.reserve.chainId}-${m.reserve.marketName}-${m.reserve.tokenAddress}`;
+                    const rowKey = `${m.reserve.chainId}-${getReserveKey(m.reserve)}`;
                     return (
                       <React.Fragment key={rowKey}>
                         <tr className="border-b border-amber-100">

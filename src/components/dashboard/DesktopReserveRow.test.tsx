@@ -8,6 +8,7 @@ import type { ReserveWithSpread } from '@/types/aave';
 import type { RateSimulationResult } from '@/hooks/useRateSimulation';
 
 const reserve: ReserveWithSpread = {
+  reserveId: 'AaveV3Ethereum-0x0000000000000000000000000000000000000001',
   marketName: 'AaveV3Ethereum',
   chainName: 'Ethereum',
   chainId: 1,

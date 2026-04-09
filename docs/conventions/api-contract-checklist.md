@@ -90,3 +90,8 @@ grep -rn 'payload\.reserves\|\.reserves\b' src/ scripts/ --include='*.ts' --incl
   - Schema 测试假绿（用旧格式 mock 验证旧 schema，永远 pass）
   - CI hardcode-drift-check 永远失败（API 200 但解析为空 → fallback → 474 假缺失 → issue）
 - **修复后新增防线**：运行时 safeParse + live API test + schema 作为唯一真相源
+
+### Reserve key contract
+
+- `reserves[].reserveId` is required in API payloads and TypeScript types.
+- Frontend keying logic should use `reserveId` directly; do not introduce composite fallback paths.

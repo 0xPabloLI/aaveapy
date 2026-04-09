@@ -72,7 +72,8 @@ export interface ReserveWithSpread {
   tokenAddress: string;
   aTokenAddress?: string | null;
   vTokenAddress?: string | null;
-  reserveId?: string;
+  /** Canonical backend reserve key. */
+  reserveId: string;
   
   // Base APY (percentage value, e.g., 2.07 means 2.07%)
   supplyApy?: number;
@@ -120,7 +121,7 @@ export interface ReserveWithSpread {
 export interface MarketsResponse {
   snapshot: {
     lastUpdated: string;
-    version: string;
+    version?: string;
     staleTimeMs?: number;
   };
   reserves: ReserveWithSpread[];

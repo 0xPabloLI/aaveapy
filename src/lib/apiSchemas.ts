@@ -117,7 +117,7 @@ const TokenPriceEntrySchema = z.object({
 
 // ── Reserve ── (matches backend /markets reserves[])
 const ReserveWithSpreadSchema = z.object({
-  reserveId: z.string().optional(),
+  reserveId: z.string(),
   marketName: z.string(),
   chainName: z.string(),
   chainId: z.number(),

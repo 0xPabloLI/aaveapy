@@ -21,6 +21,7 @@ vi.mock('@/components/ui/carousel', () => ({
 }));
 
 const reserve: ReserveWithSpread = {
+  reserveId: 'AaveV3Ethereum-0x0000000000000000000000000000000000000001',
   marketName: 'AaveV3Ethereum',
   chainName: 'Ethereum',
   chainId: 1,

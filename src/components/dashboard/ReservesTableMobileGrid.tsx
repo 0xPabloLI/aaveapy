@@ -1,5 +1,6 @@
 import type { ScenarioInputMode, RateSimulationResult } from '@/hooks/useRateSimulation';
 import type { ReserveWithSpread } from '@/types/aave';
+import { getReserveKey } from '@/lib/reserveKey';
 import { Skeleton } from '@/components/ui/skeleton';
 import MobileReserveCard from './MobileReserveCard';
 import MobileExpandedReserveShell from './MobileExpandedReserveShell';
@@ -97,9 +98,9 @@ export default function ReservesTableMobileGrid({
 
   for (let i = 0; i < displayData.length; i += 2) {
     const leftReserve = displayData[i];
-    const leftId = `${leftReserve.marketName}-${leftReserve.tokenAddress}`;
+    const leftId = getReserveKey(leftReserve);
     const rightReserve = i + 1 < displayData.length ? displayData[i + 1] : null;
-    const rightId = rightReserve ? `${rightReserve.marketName}-${rightReserve.tokenAddress}` : null;
+    const rightId = rightReserve ? getReserveKey(rightReserve) : null;
 
     const leftExpanded = leftId === expandedReserveId;
     const rightExpanded = rightId !== null && rightId === expandedReserveId;
