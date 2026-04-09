@@ -1257,6 +1257,10 @@ const ReservesTable = ({
             onToggleExpand={handleToggleExpand}
             onCorrectSupplyInput={handleCorrectSupplyInput}
             onCorrectBorrowInput={handleCorrectBorrowInput}
+            isPortfolioMode={isPortfolioMode}
+            portfolioReserveIds={portfolioReserveIds}
+            onPortfolioToggle={handlePortfolioToggle}
+            onAddToPortfolio={handleAddToPortfolio}
           />
         </div>
         

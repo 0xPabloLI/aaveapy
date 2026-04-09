@@ -26,6 +26,10 @@ interface ReservesTableMobileGridProps {
   onToggleExpand: (reserveId: string) => void;
   onCorrectSupplyInput?: (correctedValue: string) => void;
   onCorrectBorrowInput?: (correctedValue: string) => void;
+  isPortfolioMode?: boolean;
+  portfolioReserveIds?: Set<string>;
+  onPortfolioToggle?: (reserveId: string, reserve: ReserveWithSpread) => void;
+  onAddToPortfolio?: (reserve: ReserveWithSpread, side: 'supply' | 'borrow') => void;
 }
 
 function MobileReservesSkeletonGrid() {
@@ -80,6 +84,10 @@ export default function ReservesTableMobileGrid({
   onToggleExpand,
   onCorrectSupplyInput,
   onCorrectBorrowInput,
+  isPortfolioMode,
+  portfolioReserveIds,
+  onPortfolioToggle,
+  onAddToPortfolio,
 }: ReservesTableMobileGridProps) {
   if (isLoading && reservesCount === 0) {
     return <MobileReservesSkeletonGrid />;
@@ -102,6 +110,13 @@ export default function ReservesTableMobileGrid({
     const activeReserve = isLeftActive ? leftReserve : rightReserve;
     const activeId = isLeftActive ? leftId : rightId;
 
+    const portfolioProps = (id: string, reserve: ReserveWithSpread) => ({
+      isPortfolioMode: isPortfolioMode ?? false,
+      isInPortfolio: portfolioReserveIds?.has(id) ?? false,
+      onPortfolioToggle,
+      onAddToPortfolio,
+    });
+
     const leftCard = (
       <MobileReserveCard
         variant={isLeftActive ? 'upperOnly' : 'full'}
@@ -120,6 +135,7 @@ export default function ReservesTableMobileGrid({
         onCorrectSupplyInput={onCorrectSupplyInput}
         onCorrectBorrowInput={onCorrectBorrowInput}
         defaultTab={mobileCardDefaultTab}
+        {...portfolioProps(leftId, leftReserve)}
       />
     );
 
@@ -141,6 +157,7 @@ export default function ReservesTableMobileGrid({
         onCorrectSupplyInput={onCorrectSupplyInput}
         onCorrectBorrowInput={onCorrectBorrowInput}
         defaultTab={mobileCardDefaultTab}
+        {...portfolioProps(rightId!, rightReserve)}
       />
     ) : null;
 
@@ -172,6 +189,7 @@ export default function ReservesTableMobileGrid({
                 onCorrectSupplyInput={onCorrectSupplyInput}
                 onCorrectBorrowInput={onCorrectBorrowInput}
                 defaultTab={mobileCardDefaultTab}
+                {...portfolioProps(activeId, activeReserve)}
               />
             }
           />
