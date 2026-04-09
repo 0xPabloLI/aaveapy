@@ -110,6 +110,13 @@ export default function ReservesTableMobileGrid({
     const activeReserve = isLeftActive ? leftReserve : rightReserve;
     const activeId = isLeftActive ? leftId : rightId;
 
+    const portfolioProps = (id: string, reserve: ReserveWithSpread) => ({
+      isPortfolioMode: isPortfolioMode ?? false,
+      isInPortfolio: portfolioReserveIds?.has(id) ?? false,
+      onPortfolioToggle,
+      onAddToPortfolio,
+    });
+
     const leftCard = (
       <MobileReserveCard
         variant={isLeftActive ? 'upperOnly' : 'full'}
@@ -128,6 +135,7 @@ export default function ReservesTableMobileGrid({
         onCorrectSupplyInput={onCorrectSupplyInput}
         onCorrectBorrowInput={onCorrectBorrowInput}
         defaultTab={mobileCardDefaultTab}
+        {...portfolioProps(leftId, leftReserve)}
       />
     );
 
