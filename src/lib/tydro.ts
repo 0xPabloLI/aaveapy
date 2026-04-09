@@ -3,6 +3,9 @@ import type { MerklCampaignBreakdown } from '@/types/aave';
 // Frontend-configurable rate: 1 Tydro point = 1 USD (default)
 export const TYDRO_POINT_TO_USD_RATE = 1;
 
+const hasPointsField = (breakdown: Pick<MerklCampaignBreakdown, 'pointsPerThousandUsd'>): boolean =>
+  Object.prototype.hasOwnProperty.call(breakdown, 'pointsPerThousandUsd');
+
 /** Coerce API/cache values that may arrive as numeric strings. */
 function parseMerklNumeric(value: unknown): number | undefined {
   if (value === null || value === undefined) return undefined;
@@ -18,9 +21,23 @@ function safePointToUsdRate(pointToUsdRate: number): number {
   return Number.isFinite(pointToUsdRate) && pointToUsdRate > 0 ? pointToUsdRate : TYDRO_POINT_TO_USD_RATE;
 }
 
-const calculateTydroApr = (pointsPerThousandUsd: number, pointToUsdRate = TYDRO_POINT_TO_USD_RATE): number => {
+const calculatePointsApr = (pointsPerThousandUsd: number, pointToUsdRate = TYDRO_POINT_TO_USD_RATE): number => {
   if (isNaN(pointsPerThousandUsd) || pointsPerThousandUsd <= 0) return 0;
   return pointsPerThousandUsd * pointToUsdRate * 36.5;
+};
+
+const calculateDutchAuctionFallbackApr = (
+  plannedDaily: number | undefined,
+  latestTvl: number | undefined,
+  pointToUsdRate: number
+): number | undefined => {
+  if (!Number.isFinite(plannedDaily) || !Number.isFinite(latestTvl) || (latestTvl ?? 0) <= 0) return undefined;
+
+  const plannedDailyUsd = convertMerklPointsAmountToUsd(plannedDaily, safePointToUsdRate(pointToUsdRate));
+  if (plannedDailyUsd === undefined) return undefined;
+
+  const impliedApr = (plannedDailyUsd * 365 * 100) / latestTvl;
+  return Number.isFinite(impliedApr) && impliedApr >= 0 ? impliedApr : undefined;
 };
 
 /**
@@ -36,11 +53,37 @@ export const getMerklBreakdownApr = (
   if (campaignApr !== undefined && campaignApr > 0) {
     return campaignApr;
   }
+
+  const pointsField = hasPointsField(breakdown);
   const points = parseMerklNumeric(breakdown.pointsPerThousandUsd);
+
+  if (pointsField) {
+    if (points !== undefined && points > 0) {
+      const tydroApr = calculatePointsApr(points, safePointToUsdRate(pointToUsdRate));
+      if (tydroApr > 0) return tydroApr;
+    }
+
+    // Only Dutch auction rows use the plannedDaily/TVL fallback when the points field exists
+    // but the points value itself is missing or unusable.
+    if (breakdown.campaignType === 'DUTCH_AUCTION') {
+      const fallbackApr = calculateDutchAuctionFallbackApr(
+        parseMerklNumeric(breakdown.plannedDaily),
+        parseMerklNumeric(breakdown.latestTvl),
+        pointToUsdRate
+      );
+      if (fallbackApr !== undefined) {
+        return fallbackApr;
+      }
+    }
+
+    return 0;
+  }
+
   if (points !== undefined && points > 0) {
-    const tydroApr = calculateTydroApr(points, safePointToUsdRate(pointToUsdRate));
+    const tydroApr = calculatePointsApr(points, safePointToUsdRate(pointToUsdRate));
     if (tydroApr > 0) return tydroApr;
   }
+
   return campaignApr ?? 0;
 };
 
@@ -48,7 +91,7 @@ export const getMerklForecastUsdMultiplier = (
   breakdown: MerklCampaignBreakdown,
   pointToUsdRate = TYDRO_POINT_TO_USD_RATE
 ): number => {
-  if (breakdown.pointsPerThousandUsd === undefined || isNaN(breakdown.pointsPerThousandUsd)) {
+  if (!hasPointsField(breakdown)) {
     return 1;
   }
   return safePointToUsdRate(pointToUsdRate) / TYDRO_POINT_TO_USD_RATE;
@@ -63,8 +106,9 @@ export const isMerklPointsCampaign = (
   breakdown: Pick<MerklCampaignBreakdown, 'campaignApr' | 'pointsPerThousandUsd'>
 ): boolean => {
   const campaignApr = parseMerklNumeric(breakdown.campaignApr);
-  const points = parseMerklNumeric(breakdown.pointsPerThousandUsd);
-  return (campaignApr ?? 0) <= 0 && (points ?? 0) > 0;
+  const hasPoints = hasPointsField(breakdown);
+  if (!hasPoints) return false;
+  return (campaignApr ?? 0) <= 0;
 };
 
 export const convertMerklPointsAmountToUsd = (
