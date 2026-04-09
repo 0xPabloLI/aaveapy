@@ -105,14 +105,14 @@ See [SECURITY.md](SECURITY.md) for vulnerability reporting and a public-release 
 | Project-specific UI behavior | [`docs/design/frontend-interaction-guardrails.md`](docs/design/frontend-interaction-guardrails.md) |
 | Engineering conventions to migrate | [`docs/conventions/README.md`](docs/conventions/README.md) |
 | Docs ownership map | [`docs/DOCS-INDEX.md`](docs/DOCS-INDEX.md) |
-| **Reusable docs index (what to migrate)** | [`docs/transferable-docs.md`](docs/transferable-docs.md) |
+| **Reusable docs index (what to migrate)** | [`docs/DOCS-INDEX.md`](docs/DOCS-INDEX.md) |
 
 ## Merkl Forecast Notes
 
 - Forecast state is loaded from `GET /meta/side-data` (`forecast.items`).
 - Frontend forecast math only changes hypothetical TVL (based on user input amount * token price).
 - Campaign type and regime are rendered from forecast state + local calculation (`APR_CAPPED`, `CATCHING_UP`, `PLANNED`).
-- Canonical formulas and semantics: [`docs/rate-calculation-formulas.md`](docs/rate-calculation-formulas.md).
+- Canonical formulas and semantics: [`docs/rate-calculation.md`](docs/rate-calculation.md).
 
 ## CoinGecko Token Price Fallback
 

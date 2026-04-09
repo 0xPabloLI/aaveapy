@@ -44,7 +44,7 @@ For non-zero `campaignApr` rows only:
 
 ## Classification view
 
-Following `docs/rate-calculation-merkl.md` categories:
+Following `docs/rate-calculation.md` categories:
 
 - `plain-match`: mostly non-MAX/FIX rows where implied APR aligns (or only float noise)
 - `capped-required`: MAX/FIX rows where `plannedDaily` alone is insufficient (must use branch logic)
@@ -87,7 +87,7 @@ Use script `scripts/reconcile-campaign-apr.mjs` to regenerate summary and mismat
 
 ```bash
 npm run check:campaign-apr-reconcile
-node scripts/reconcile-campaign-apr.mjs --output docs/notes/2026-04-08-campaign-apr-reconciliation-script.md
+node scripts/reconcile-campaign-apr.mjs --output docs/archive/2026-04-08-campaign-apr-reconciliation-script.md
 ```
 
 Env options:

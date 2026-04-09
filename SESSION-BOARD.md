@@ -46,6 +46,7 @@
 
 | session-id | agent | task | touch-files | status | registered | notes |
 |------------|-------|------|-------------|--------|------------|-------|
+| codex-0409a | Codex | 整理 Merkl forecast 文档表 | docs/rate-calculation.md, SESSION-BOARD.md | done | 2026-04-09T00:00:00Z | 文档已更新 |
 
 ---
 

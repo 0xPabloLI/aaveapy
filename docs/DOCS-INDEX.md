@@ -5,7 +5,7 @@ This index is the source of truth for doc ownership in this repository.
 Use it to avoid duplicate policy text and to keep each topic in one canonical location.
 
 **Entry points:** [`README.md`](../README.md) (onboarding), root [`DESIGN.md`](../DESIGN.md) (design links table), this file (full map).
-**Migration index:** [`docs/transferable-docs.md`](./transferable-docs.md) (which docs are reusable).
+**Reusable templates:** [`docs/reusable/`](./reusable/) (project-agnostic engineering patterns, portable to any repo).
 
 _Last inventory pass: 2026-04-09._
 
@@ -20,7 +20,7 @@ _Last inventory pass: 2026-04-09._
 
 ### API, contracts, and CI conventions
 
-- Supporting index: `docs/conventions/README.md` (migration fit map for engineering conventions)
+- Supporting index: `docs/conventions/README.md` (stub pointer to conventions; migration fit now in this file)
 - Canonical: `docs/conventions/api-contract-checklist.md`
 - Canonical: `docs/conventions/api-base-urls.md`
 - Canonical: `docs/conventions/vercel-deployment-smoke-test.md` (post-deploy smoke + rollback; ref normalization vs Vercel metadata)
@@ -54,11 +54,10 @@ _Last inventory pass: 2026-04-09._
 ### Frontend runtime/data/simulation
 
 - Canonical: `docs/frontend-data-loading-matrix.md`
-- Canonical index: `docs/rate-calculation-formulas.md`
-- Module docs: `docs/rate-calculation-native.md`, `docs/rate-calculation-merkl.md`, `docs/rate-calculation-display.md`, `docs/rate-calculation-cap-reference.md`
-- Supporting snapshot note: `docs/merit-base-anchor-vs-last-round-staging.md`
-- Historical execution archive: `docs/frontend-redundancy-review-2026-04-06.md`
-- Supporting implementation note: `docs/plans/2026-04-09-reserve-id-canonical-key.md`
+- Canonical: `docs/rate-calculation.md`
+- Historical supporting note: `docs/archive/merit-base-anchor-vs-last-round-staging.md`
+- Historical execution archive: `docs/archive/frontend-redundancy-review-2026-04-06.md`
+- Supporting implementation note: `docs/archive/2026-04-09-reserve-id-canonical-key.md`
 
 ### Design system and interaction
 
@@ -74,26 +73,24 @@ _Last inventory pass: 2026-04-09._
 
 - Canonical: `docs/HARDCODE-AND-EXTERNAL-IMPORTS.md`
 - Canonical: `docs/ci-remediation-automation.md`
-- Historical archive: `docs/plans/2026-03-26-cap-ceiling-unification-plan.md`
+- Historical archive: `docs/archive/2026-03-26-cap-ceiling-unification-plan.md`
+- Archive folder: `docs/archive/` (historical notes, plans, and execution snapshots)
 
 ## Inventory and Action Classification
 
 | Document | Purpose / audience | Last meaningful update | Canonicality | Overlap candidates | Action |
 | --- | --- | --- | --- | --- | --- |
-| `README.md` | Project onboarding and scripts | 2026-03-31 | Canonical | `docs/frontend-data-loading-matrix.md`, `docs/rate-calculation-formulas.md` | keep |
+| `README.md` | Project onboarding and scripts | 2026-03-31 | Canonical | `docs/frontend-data-loading-matrix.md`, `docs/rate-calculation.md` | keep |
 | `docs/PR_ANALYSIS.md` | PR batching / automerge / when to split PRs | 2026-04-05 | Canonical | `docs/dependabot-behavior.md`; merge execution + review-thread rules live in `AGENTS.md` / `.claude/commands/merge.md` | keep |
 | `docs/dependabot-behavior.md` | Dependabot summary | 2026-03-31 | Derivative pointer | `.github/dependabot.yml`, `docs/PR_ANALYSIS.md` | keep |
 | `docs/frontend-data-loading-matrix.md` | Data-loading architecture | 2026-03-27 | Canonical | `README.md` freshness notes | keep |
-| `docs/rate-calculation-formulas.md` | Simulation formulas index | 2026-04-08 | Canonical index | module docs below | keep |
-| `docs/rate-calculation-native.md` | Native rate math | 2026-04-08 | Canonical module | `docs/rate-calculation-formulas.md` | keep |
-| `docs/rate-calculation-merkl.md` | Merkl forecast math | 2026-04-08 | Canonical module | `docs/rate-calculation-formulas.md` | keep |
-| `docs/rate-calculation-display.md` | APR/APY display + net eligibility | 2026-04-08 | Canonical module | `docs/rate-calculation-formulas.md` | keep |
-| `docs/rate-calculation-cap-reference.md` | Incentive cap / ceiling reference | 2026-04-08 | Canonical module | `docs/rate-calculation-formulas.md` | keep |
-| `docs/merit-base-anchor-vs-last-round-staging.md` | Historical empirical snapshot | 2026-03-31 | Historical supporting note | `docs/rate-calculation-formulas.md` | keep |
+| `docs/rate-calculation.md` | Unified rate simulation formulas (native, Merkl, display, cap/ceiling) | 2026-04-09 | Canonical | none (consolidated) | keep |
+| `docs/archive/merit-base-anchor-vs-last-round-staging.md` | Historical empirical snapshot | 2026-03-31 | Historical supporting note | `docs/rate-calculation.md` | keep |
 | `docs/HARDCODE-AND-EXTERNAL-IMPORTS.md` | Upstream sync and hardcode map | 2026-03-31 | Canonical | none significant | keep |
 | `docs/ci-remediation-automation.md` | CI auto-remediation workflow | 2026-03-15 | Canonical | none significant | keep |
-| `docs/plans/2026-03-26-cap-ceiling-unification-plan.md` | Archived cap/ceiling plan (summary only) | 2026-03-31 | Historical archive | `docs/rate-calculation-formulas.md`, `AGENTS.md` | keep |
-| `docs/plans/2026-04-09-reserve-id-canonical-key.md` | Reserve key canonicalization note | 2026-04-09 | Supporting implementation note | `src/lib/reserveKey.ts`, `src/hooks/useRateSimulation.ts` | keep |
+| `docs/archive/2026-03-26-cap-ceiling-unification-plan.md` | Archived cap/ceiling plan (summary only) | 2026-03-31 | Historical archive | `docs/rate-calculation.md`, `AGENTS.md` | keep |
+| `docs/archive/2026-04-09-reserve-id-canonical-key.md` | Reserve key canonicalization note | 2026-04-09 | Supporting implementation note | `src/lib/reserveKey.ts`, `src/hooks/useRateSimulation.ts` | keep |
+| `docs/archive/frontend-redundancy-review-2026-04-06.md` | Frontend redundancy review | 2026-04-06 | Historical archive | none significant | keep |
 | `docs/design/DESIGN.md` | Project-specific design defaults | 2026-03-31 | Canonical | `docs/design/DESIGN-SYSTEM-REFERENCE.md` | keep |
 | `docs/design/DESIGN-SYSTEM-REFERENCE.md` | Reusable design/interaction rules | 2026-03-31 | Canonical | old design split docs | keep |
 | `docs/design/frontend-interaction-guardrails.md` | Product-critical normative interaction rules | 2026-03-31 | Canonical | parts of design docs | keep |
@@ -102,11 +99,36 @@ _Last inventory pass: 2026-04-09._
 | `docs/conventions/vercel-deployment-smoke-test.md` | Vercel smoke test workflow, deploy SHA meta, rollback ref rules | 2026-04-05 | Canonical | `.github/workflows/deployment-smoke-test.yml` | keep |
 | `docs/conventions/*` | API/CI/process conventions | 2026-03-16..2026-04-05 | Canonical set | small references in README/AGENTS | keep |
 
+## Migration Fit (Transferability)
+
+Documents classified by portability to other projects.
+
+### High (directly reusable)
+
+- `docs/conventions/api-contract-checklist.md` — Generic API breaking-change checklist
+- `docs/conventions/peer-dependency-guard.md` — Generic React version-safety pattern
+- `docs/conventions/merge-summary.md` — Project-agnostic merge hygiene
+
+### Medium (reusable with context adaptation)
+
+- `docs/conventions/api-base-urls.md` — Multi-env app URL conventions; replace hostnames
+- `docs/conventions/vercel-deployment-smoke-test.md` — Transferable if deploying on Vercel
+- `docs/conventions/frontend-regression-checklist.md` — UI refactor checklist; adapt component names
+- `docs/rate-calculation.md` — Rate simulation reference; adapt formulas to new domain
+- `docs/frontend-data-loading-matrix.md` — Data loading architecture; adapt endpoints
+
+### Low (project/platform specific)
+
+- `docs/conventions/ci-live-schema-cloudflare.md` — Cloudflare-specific edge mitigation
+- `docs/design/DESIGN.md` — Project-specific design defaults
+- `docs/design/frontend-interaction-guardrails.md` — Product-specific interaction rules
+- `docs/design/mobile-reserve-card-ascii-layout.md` — Product-specific mobile layout
+
 ## Redirect Rule
 
 If a topic is historical or split-legacy, keep a short pointer page and move all normative content to one canonical file only.
 
 ## Cross-reference hygiene
 
-- Prefer **existing** headings: `docs/design/DESIGN.md` is a short project profile (§1–§4 only). Do not cite phantom sections (e.g. old “§4.4 Tooltip”).
+- Prefer **existing** headings: `docs/design/DESIGN.md` is a short project profile (§1–§4 only). Do not cite phantom sections (e.g. old "§4.4 Tooltip").
 - **Tooltip layout (multi-paragraph + Radix density):** canonical detail in `docs/design/frontend-interaction-guardrails.md` § A · Tooltip/Overlay; cursor/delay summary in `docs/design/DESIGN-SYSTEM-REFERENCE.md` §6.

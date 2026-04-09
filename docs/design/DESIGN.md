@@ -96,7 +96,7 @@ Use this file as an index, not a full rulebook:
 
 - Full reusable component/spacing/typography patterns: [DESIGN-SYSTEM-REFERENCE.md](./DESIGN-SYSTEM-REFERENCE.md)
 - Product-critical reserve interactions (sticky stack, simulation scroll, whitelist behavior): [frontend-interaction-guardrails.md](./frontend-interaction-guardrails.md)
-- Incentive terminology and Tydro points semantics: [../rate-calculation-formulas.md](../rate-calculation-formulas.md)
+- Incentive terminology and Tydro points semantics: [../rate-calculation.md](../rate-calculation.md)
 
 ## Quick Decision Rules
 

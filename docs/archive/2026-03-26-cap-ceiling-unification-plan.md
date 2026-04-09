@@ -4,7 +4,7 @@ Historical implementation plan (dated 2026-03-26).
 
 Status: Implemented. Detailed normative behavior now lives in canonical docs:
 
-- `docs/rate-calculation-formulas.md` (cap taxonomy, naming layers, UI-facing semantics)
+- `docs/rate-calculation.md` (cap taxonomy, naming layers, UI-facing semantics)
 - `AGENTS.md` (repo-level naming and implementation constraints)
 
 ## What this plan decided (retained summary)
