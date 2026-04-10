@@ -47,6 +47,7 @@
 | session-id | agent | task | touch-files | status | registered | notes |
 |------------|-------|------|-------------|--------|------------|-------|
 | codex-0409a | Codex | 整理 Merkl forecast 文档表 | docs/rate-calculation.md, SESSION-BOARD.md | done | 2026-04-09T00:00:00Z | 文档已更新 |
+| codex-0410a | Codex | 前端收口 Merkl API contract 对齐 | src/lib/apiSchemas.ts, src/types/aave.ts, src/lib/tydro.ts, src/lib/tydro.test.ts, src/hooks/useRateSimulation.ts, src/hooks/useRateSimulation.test.ts, src/lib/apiSchemas.test.ts, SESSION-BOARD.md | done | 2026-04-10T00:00:00Z | 承接中断修改，补齐前端契约行为；本地验证通过 |
 
 ---
 

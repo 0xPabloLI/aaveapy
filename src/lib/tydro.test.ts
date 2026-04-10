@@ -88,6 +88,18 @@ describe('getMerklBreakdownApr', () => {
     expect(apr).toBeCloseTo(0.73, 10);
   });
 
+  it('uses the Dutch auction fallback when points field is absent and campaignApr is zero', () => {
+    const apr = getMerklBreakdownApr({
+      ...baseBreakdown,
+      campaignApr: 0,
+      campaignType: 'DUTCH_AUCTION',
+      plannedDaily: 500,
+      latestTvl: 100_000,
+    });
+    // plannedDaily already in USD (no points field), rate=1: (500 * 365 * 100) / 100_000 = 182.5
+    expect(apr).toBeCloseTo(182.5, 10);
+  });
+
   it('does not use the Dutch auction fallback for non-DUTCH campaigns', () => {
     const apr = getMerklBreakdownApr(
       pointsAwareCampaign({

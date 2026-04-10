@@ -174,12 +174,13 @@ export const CoingeckoCategoriesResponseSchema = z.object({
   uniqueSymbolsStablecoins: z.array(z.string()).optional(),
   uniqueSymbolsEth: z.array(z.string()).optional(),
 }).passthrough();
-
+// Schema accepts the union shape: MAX has requiredDaily; FIX omits it.
+// Both have distributedSoFar and endTimestamp.
 const MerklForecastItemSchema = z.object({
   campaignId: z.string(),
   requiredDaily: z.number().optional(),
-  distributedSoFar: z.number().optional(),
-  endTimestamp: z.number().optional(),
+  distributedSoFar: z.number(),
+  endTimestamp: z.number(),
 }).passthrough();
 
 const MerklForecastErrorSchema = z.object({

@@ -141,12 +141,19 @@ export type TokenPricesIndex = Record<string, TokenPriceEntry>;
 // Wire contract for forecast side-data endpoints (`/api/campaigns/forecast-states`,
 // `/api/meta/side-data.forecast.items`). Opportunity/static fields still come
 // from the markets breakdowns and are merged in the frontend view model.
-export interface MerklForecastWireItem {
-  campaignId: string;
-  requiredDaily?: number;
-  distributedSoFar?: number;
-  endTimestamp?: number;
-}
+export type MerklForecastWireItem =
+  | {
+      campaignId: string;
+      requiredDaily: number;
+      distributedSoFar: number;
+      endTimestamp: number;
+    }
+  | {
+      campaignId: string;
+      requiredDaily?: undefined;
+      distributedSoFar: number;
+      endTimestamp: number;
+    };
 
 export interface MerklForecastStatesBatchResponse {
   requested?: number;

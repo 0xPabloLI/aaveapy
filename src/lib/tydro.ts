@@ -42,8 +42,14 @@ const calculateDutchAuctionFallbackApr = (
 
 /**
  * Display APR for a Merkl breakdown. `campaignApr` from `GET /api/markets` is already **percent points**
- * (e.g. 5 => 5%/year); do not rescale. When positive, use it first; otherwise derive from
- * `pointsPerThousandUsd` (Tydro-style points curve). Merkl may send both.
+ * (e.g. 5 => 5%/year); do not rescale.
+ *
+ * Precedence:
+ * 1. `campaignApr > 0` → use directly
+ * 2. `pointsPerThousandUsd` present and positive → Tydro points formula
+ * 3. `DUTCH_AUCTION` → implied APR from `plannedDaily / latestTvl`
+ *    (points-to-USD conversion applied only when points field is present)
+ * 4. Return 0 (MAX/FIX capped fallbacks are handled by `forecastWithTVL`, not here)
  */
 export const getMerklBreakdownApr = (
   breakdown: MerklCampaignBreakdown,
@@ -54,37 +60,27 @@ export const getMerklBreakdownApr = (
     return campaignApr;
   }
 
-  const pointsField = hasPointsField(breakdown);
   const points = parseMerklNumeric(breakdown.pointsPerThousandUsd);
-
-  if (pointsField) {
-    if (points !== undefined && points > 0) {
-      const tydroApr = calculatePointsApr(points, safePointToUsdRate(pointToUsdRate));
-      if (tydroApr > 0) return tydroApr;
-    }
-
-    // Only Dutch auction rows use the plannedDaily/TVL fallback when the points field exists
-    // but the points value itself is missing or unusable.
-    if (breakdown.campaignType === 'DUTCH_AUCTION') {
-      const fallbackApr = calculateDutchAuctionFallbackApr(
-        parseMerklNumeric(breakdown.plannedDaily),
-        parseMerklNumeric(breakdown.latestTvl),
-        pointToUsdRate
-      );
-      if (fallbackApr !== undefined) {
-        return fallbackApr;
-      }
-    }
-
-    return 0;
-  }
-
   if (points !== undefined && points > 0) {
     const tydroApr = calculatePointsApr(points, safePointToUsdRate(pointToUsdRate));
     if (tydroApr > 0) return tydroApr;
   }
 
-  return campaignApr ?? 0;
+  if (breakdown.campaignType === 'DUTCH_AUCTION') {
+    // For points campaigns plannedDaily is in points; convert to USD.
+    // For non-points campaigns plannedDaily is already USD; use neutral rate (1).
+    const effectiveRate = hasPointsField(breakdown) ? pointToUsdRate : TYDRO_POINT_TO_USD_RATE;
+    const fallbackApr = calculateDutchAuctionFallbackApr(
+      parseMerklNumeric(breakdown.plannedDaily),
+      parseMerklNumeric(breakdown.latestTvl),
+      effectiveRate
+    );
+    if (fallbackApr !== undefined) {
+      return fallbackApr;
+    }
+  }
+
+  return 0;
 };
 
 export const getMerklForecastUsdMultiplier = (

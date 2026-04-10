@@ -188,21 +188,23 @@ hypotheticalTvl = max(0, latestTvl + inputUsd)
 
 `getMerklBreakdownApr` precedence:
 
-1. Use `campaignApr > 0`
-2. Else if `pointsPerThousandUsd` exists:
-   - If positive, use Tydro math (`points × TYDRO_POINT_TO_USD_RATE × 36.5`)
-   - If `0` / invalid, only `DUTCH_AUCTION` may use the Dutch-auction fallback below
-3. Else fallback to `campaignApr` coerced to number or `0`
+1. `campaignApr > 0` → use directly
+2. `pointsPerThousandUsd` present and positive → Tydro points formula (`points × pointToUsdRate × 36.5`)
+3. `DUTCH_AUCTION` → implied APR from `plannedDaily / latestTvl × 365 × 100`
+   (points-to-USD conversion applied only when `pointsPerThousandUsd` field is present;
+   non-points campaigns use neutral rate 1)
+4. Return `0` (MAX/FIX capped fallbacks are handled by `forecastWithTVL`, not here)
 
 ### Dutch auction fallback rule
 
-`DUTCH_AUCTION` can use a fallback APR when the points field exists but the points value is unusable.
+`DUTCH_AUCTION` uses a fallback APR from `plannedDaily / latestTvl` when `campaignApr` and Tydro points are both unusable.
 
 - Scope: `campaignType === 'DUTCH_AUCTION'` only
 - Inputs: `plannedDaily`, `latestTvl`
-- Purpose: keep Dutch auction APR display stable when points metadata is present but not usable
-- Non-DUTCH campaign types do **not** use this fallback path, even if `pointsPerThousandUsd` exists
-- If another campaign type needs a fallback later, define a separate type-specific rule
+- Applies regardless of whether `pointsPerThousandUsd` field is present
+- When the points field is present, `plannedDaily` is treated as points and converted to USD via `pointToUsdRate`
+- When the points field is absent, `plannedDaily` is already in USD (neutral rate 1)
+- Non-DUTCH campaign types do **not** use this fallback path; MAX/FIX rely on `forecastWithTVL`
 
 ### Symbols
 
