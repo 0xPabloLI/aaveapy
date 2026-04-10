@@ -291,6 +291,11 @@ export function fetchIconSymbolAndName({ underlyingAsset, symbol, name }: IconSy
       name: 'PT sUSDe June 2026',
       iconSymbol: 'ptsusde',
     },
+    '0x619d75e3b790ebc21c289f2805bb7177a7d732e2': {
+      symbol: 'PT Strata Senior USDe June 25th 2026',
+      name: 'PT Strata Senior USDe June 2026',
+      iconSymbol: 'ptsrusde',
+    },
 };
 
   const lowerUnderlyingAsset = underlyingAsset?.toLowerCase();
