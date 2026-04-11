@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import type { SimulationMode } from '@/components/dashboard/PortfolioModeToggle';
 import { usePortfolioSimulation } from '@/hooks/usePortfolioSimulation';
 import { useIsFetching } from '@tanstack/react-query';
@@ -34,8 +34,6 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
 
 import InkAprCalculator from '@/components/dashboard/InkAprCalculator';
-import { RateInputsVsMarketCheck } from '@/components/dev/RateInputsVsMarketCheck';
-const MerklForecastPanel = lazy(() => import('@/components/dashboard/MerklForecastPanel'));
 
 const Index = () => {
   const activeQueryCount = useIsFetching();
@@ -396,24 +394,6 @@ const Index = () => {
           {!effectiveReservesData && !isLoading && !!error && (
             <div className="text-center py-[var(--ds-space-12)]">
               <p className="text-muted-foreground">No data to display</p>
-            </div>
-          )}
-
-          {/* Dev-only debug panels: Merkl Forecast + Rate vs Market check */}
-          {(import.meta.env.DEV || import.meta.env.VITE_SHOW_RATE_CHECK === 'true') && (
-            <div className="space-y-4">
-              <Suspense fallback={<div className="h-[120px] rounded-xl bg-muted/50 animate-pulse" />}>
-                <MerklForecastPanel
-                  reserves={filteredReserves}
-                  tydroPointToUsdRate={tydroPointToUsdRate}
-                  whitelistMerklCampaignIds={whitelistMerklCampaignIds}
-                  onToggleWhitelistMerklCampaign={toggleWhitelistMerklCampaign}
-                  tokenPrices={tokenPrices}
-                />
-              </Suspense>
-              <div className="max-w-4xl mx-auto">
-                <RateInputsVsMarketCheck />
-              </div>
             </div>
           )}
 
