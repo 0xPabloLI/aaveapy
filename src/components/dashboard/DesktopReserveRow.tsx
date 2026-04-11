@@ -224,7 +224,7 @@ const DesktopReserveRow = memo(({
             <span className="font-semibold text-foreground ds-text-13">
               {reserve.tokenSymbol}
             </span>
-            <ExternalLink className="w-3 h-3 text-muted-foreground opacity-50 -ml-1 shrink-0" />
+            <ExternalLink className="w-2.5 h-2.5 text-muted-foreground/40 -ml-1 shrink-0" />
            </a>
           </div>
         </TableCell>
