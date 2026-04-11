@@ -66,7 +66,9 @@ import {
   getBrevisCampaignBreakdowns,
   getBrevisResolvedBreakdown,
 } from '@/lib/brevis';
-import { TYDRO_POINT_TO_USD_RATE, getMerklBreakdownApr } from '@/lib/tydro';
+import { TYDRO_POINT_TO_USD_RATE } from '@/lib/tydro';
+import { getMerklBreakdownApr, forecastBreakdownApr, sanitizePercent } from '@/lib/merklForecast';
+import type { MerklForecastWireItem } from '@/types/aave';
 
 /**
  * Opt-in key for whitelist-only Merkl breakdowns that have no usable `campaignId` (empty after trim).
@@ -103,6 +105,8 @@ export function isMerklWhitelistBreakdownIncluded(
 export interface IncentiveCalculationOptions {
   /** Merkl campaign IDs the user opted into for whitelist-only APR */
   whitelistMerklCampaignIds?: ReadonlySet<string>;
+  /** When provided, enables forecastWithTVL-based fallback for campaigns where getMerklBreakdownApr returns 0. */
+  forecastStates?: Record<string, MerklForecastWireItem>;
 }
 
 /** Shared market label rendering: Ethereum sub-markets use canonical market names, others use chain name. */
@@ -177,7 +181,9 @@ const sumMerklOpportunities = (
     getEndDate: (_group, breakdown) => breakdown.campaignEndedAt,
     include: (_group, breakdown) => isMerklWhitelistBreakdownIncluded(breakdown, options.whitelistMerklCampaignIds),
     mapValue: (_group, breakdown) => {
-      const apr = getMerklBreakdownApr(breakdown, pointToUsdRate);
+      const apr = options.forecastStates
+        ? sanitizePercent(forecastBreakdownApr(breakdown, 0, options.forecastStates, pointToUsdRate))
+        : getMerklBreakdownApr(breakdown, pointToUsdRate);
       return !isNaN(apr) && apr >= 0 ? apr : 0;
     },
   });
@@ -198,7 +204,9 @@ const sumMerklOpportunitiesApy = (
     getEndDate: (_group, breakdown) => breakdown.campaignEndedAt,
     include: (_group, breakdown) => isMerklWhitelistBreakdownIncluded(breakdown, options.whitelistMerklCampaignIds),
     mapValue: (_group, breakdown) => {
-      const apr = getMerklBreakdownApr(breakdown, pointToUsdRate);
+      const apr = options.forecastStates
+        ? sanitizePercent(forecastBreakdownApr(breakdown, 0, options.forecastStates, pointToUsdRate))
+        : getMerklBreakdownApr(breakdown, pointToUsdRate);
       return !isNaN(apr) && apr >= 0 ? convertAprToApy(apr) : 0;
     },
   });

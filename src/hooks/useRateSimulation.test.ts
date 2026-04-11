@@ -88,7 +88,7 @@ describe('buildForecastMerklOpportunities', () => {
     expect(result[0].breakdowns[0].pointsPerThousandUsd).toBeUndefined();
   });
 
-  it('keeps whitelist-only campaign APR unchanged when excluded', () => {
+  it('computes forecast APR for whitelist-only campaigns regardless of exclusion (filtering at sum level)', () => {
     const opportunities: MerklOpportunityGroup[] = [
       {
         name: 'Whitelist campaign',
@@ -125,7 +125,8 @@ describe('buildForecastMerklOpportunities', () => {
       tydroPointToUsdRate: 1,
     });
 
-    expect(result[0].breakdowns[0].campaignApr).toBe(33);
+    // DUTCH_AUCTION forecast: plannedDaily(100) * 365 / (latestTvl(1000) + inputUsd(5000)) * 100
+    expect(result[0].breakdowns[0].campaignApr).toBeCloseTo(608.33, 1);
   });
 
   it('applies MAX reward campaign constraints to points-based breakdowns using the actual campaign type', () => {

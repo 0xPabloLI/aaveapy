@@ -11,7 +11,8 @@ import {
   MERKL_WHITELIST_TOGGLE_ARIA,
   MERKL_WHITELIST_TOGGLE_LABEL,
 } from '@/lib/formatters';
-import { getMerklBreakdownApr } from '@/lib/tydro';
+import { getMerklBreakdownApr, forecastBreakdownApr, sanitizePercent } from '@/lib/merklForecast';
+import type { MerklForecastWireItem } from '@/types/aave';
 import { splitMeritMessageBySelfAuth } from '@/lib/meritForecast';
 import {
   getBrevisCampaignApr,
@@ -49,6 +50,7 @@ interface IncentiveTooltipProps {
   tydroPointToUsdRate: number;
   whitelistMerklCampaignIds: ReadonlySet<string>;
   onToggleWhitelistMerklCampaign: (campaignId: string, enabled: boolean) => void;
+  forecastStates?: Record<string, MerklForecastWireItem>;
 }
 
 interface IncentiveSource {
@@ -140,6 +142,7 @@ const IncentiveTooltip = ({
   tydroPointToUsdRate,
   whitelistMerklCampaignIds,
   onToggleWhitelistMerklCampaign,
+  forecastStates,
 }: IncentiveTooltipProps) => {
   const { resolvedTheme } = useTheme();
   const isMobile = useIsMobile();
@@ -437,7 +440,9 @@ const IncentiveTooltip = ({
         if (!opportunity.breakdowns || !Array.isArray(opportunity.breakdowns)) return;
         opportunity.breakdowns.forEach((breakdown) => {
           if (!isCampaignActive(breakdown.campaignStartedAt, breakdown.campaignEndedAt)) return;
-          const apr = getMerklBreakdownApr(breakdown, tydroPointToUsdRate);
+          const apr = forecastStates
+            ? sanitizePercent(forecastBreakdownApr(breakdown, 0, forecastStates, tydroPointToUsdRate))
+            : getMerklBreakdownApr(breakdown, tydroPointToUsdRate);
           const whitelistOnly = breakdown.whitelistOnly === true;
           const included = isMerklWhitelistBreakdownIncluded(breakdown, whitelistMerklCampaignIds);
           if (!isNaN(apr) && apr >= 0) {

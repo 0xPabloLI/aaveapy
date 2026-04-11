@@ -74,33 +74,7 @@ describe('getMerklBreakdownApr', () => {
     expect(apr).toBe(4.2);
   });
 
-  it('uses the Dutch auction plannedDaily fallback when points are present but invalid', () => {
-    const apr = getMerklBreakdownApr(
-      pointsAwareCampaign({
-        campaignApr: 0,
-        campaignType: 'DUTCH_AUCTION',
-        pointsPerThousandUsd: 0,
-        plannedDaily: 1,
-        latestTvl: 100_000,
-      }),
-      2
-    );
-    expect(apr).toBeCloseTo(0.73, 10);
-  });
-
-  it('uses the Dutch auction fallback when points field is absent and campaignApr is zero', () => {
-    const apr = getMerklBreakdownApr({
-      ...baseBreakdown,
-      campaignApr: 0,
-      campaignType: 'DUTCH_AUCTION',
-      plannedDaily: 500,
-      latestTvl: 100_000,
-    });
-    // plannedDaily already in USD (no points field), rate=1: (500 * 365 * 100) / 100_000 = 182.5
-    expect(apr).toBeCloseTo(182.5, 10);
-  });
-
-  it('does not use the Dutch auction fallback for non-DUTCH campaigns', () => {
+  it('returns 0 for non-DUTCH campaigns without campaignApr or points', () => {
     const apr = getMerklBreakdownApr(
       pointsAwareCampaign({
         campaignApr: 0,
@@ -111,21 +85,5 @@ describe('getMerklBreakdownApr', () => {
       })
     );
     expect(apr).toBe(0);
-  });
-
-  it('keeps implied APR aligned with traditional points APR for a real points campaign fixture', () => {
-    const breakdown = pointsAwareCampaign({
-      campaignApr: 0,
-      campaignType: 'DUTCH_AUCTION',
-      plannedDaily: 11312,
-      latestTvl: 23_586_552.55647095,
-      pointsPerThousandUsd: 0.4795953106295122,
-    });
-
-    const impliedAprPercent = getMerklBreakdownApr(breakdown, 1);
-    const traditionalPointsApr = 0.4795953106295122 * 36.5;
-
-    expect(impliedAprPercent).toBeCloseTo(traditionalPointsApr, 10);
-    expect(impliedAprPercent).toBeCloseTo(17.505228837977196, 10);
   });
 });

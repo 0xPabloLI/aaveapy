@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef, memo, forwardRef, useCallback, type ReactNode } from 'react';
 import { TrendingUp, Zap, ChevronLeft, ChevronsLeft, ChevronsRight, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ReserveWithSpread } from '@/types/aave';
+import { ReserveWithSpread, MerklForecastWireItem } from '@/types/aave';
 import {
   isStablecoinSymbol,
   isEthRelatedSymbol,
@@ -31,6 +31,8 @@ import { Carousel, CarouselContent, CarouselItem, CarouselApi } from '@/componen
 import { Button } from '@/components/ui/button';
 import { shouldSkipTopOpportunitiesRender } from '@/lib/topOpportunitiesMemo';
 import IncentiveTooltip from '@/components/dashboard/IncentiveTooltip';
+import { useSideDataMeta } from '@/hooks/useSideDataMeta';
+import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
 import {
   getApyColorClass,
   getApyAccentClasses,
@@ -709,6 +711,16 @@ const TopOpportunities = ({
   tydroPointToUsdRate,
 }: TopOpportunitiesProps) => {
   const isMobile = useIsMobile();
+
+  const sideDataMetaQuery = useSideDataMeta(QUERY_STALE_TIMES.sideDataMeta);
+  const forecastStates = useMemo<Record<string, MerklForecastWireItem>>(() => {
+    const forecast = sideDataMetaQuery.data?.forecast;
+    if (!forecast) return {};
+    const states: Record<string, MerklForecastWireItem> = {};
+    forecast.items.forEach((item) => { states[item.campaignId] = item; });
+    return states;
+  }, [sideDataMetaQuery.data?.forecast]);
+
   const [isXl, setIsXl] = useState(false);
   const [tooltipState, setTooltipState] = useState<TopOpportunitiesTooltipState | null>(null);
   const prevIsApyRef = useRef(isApy);
@@ -1013,6 +1025,7 @@ const TopOpportunities = ({
             tydroPointToUsdRate={tydroPointToUsdRate}
             whitelistMerklCampaignIds={whitelistMerklCampaignIds}
             onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign}
+            forecastStates={forecastStates}
             usePortal
           />
         )}
@@ -1135,6 +1148,7 @@ const TopOpportunities = ({
           tydroPointToUsdRate={tydroPointToUsdRate}
           whitelistMerklCampaignIds={whitelistMerklCampaignIds}
           onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign}
+          forecastStates={forecastStates}
           usePortal
         />
       )}

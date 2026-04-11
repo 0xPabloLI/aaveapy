@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useCallback, useRef, lazy, Suspense } fro
 
 import { ReservesTableShowMore, ReservesTableFloatingScroll } from './ReservesTablePagination';
 import { Table, TableBody } from '@/components/ui/table';
-import { ReserveWithSpread, TokenPricesIndex } from '@/types/aave';
+import { ReserveWithSpread, TokenPricesIndex, MerklForecastWireItem } from '@/types/aave';
 import {
   formatPercent,
   formatSpread,
@@ -31,6 +31,8 @@ import ReservesTableMobileSortBar, {
 } from './ReservesTableMobileSortBar';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getReserveSimulationId, useSharedRateSimulations } from '@/hooks/useRateSimulation';
+import { useSideDataMeta } from '@/hooks/useSideDataMeta';
+import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
 import { getScenarioSupplySizeUsd, getTotalBorrowedUsd as getReserveTotalBorrowedUsd } from '@/lib/scenarioSize';
 import {
   scrollExpandedSimulationIntoView,
@@ -95,6 +97,17 @@ const ReservesTable = ({
   onRefresh,
 }: ReservesTableProps) => {
   const isMobile = useIsMobile();
+
+  // Extract forecastStates from side-data (React Query cache — no extra fetch).
+  const sideDataMetaQuery = useSideDataMeta(QUERY_STALE_TIMES.sideDataMeta);
+  const forecastStates = useMemo<Record<string, MerklForecastWireItem>>(() => {
+    const forecast = sideDataMetaQuery.data?.forecast;
+    if (!forecast) return {};
+    const states: Record<string, MerklForecastWireItem> = {};
+    forecast.items.forEach((item) => { states[item.campaignId] = item; });
+    return states;
+  }, [sideDataMetaQuery.data?.forecast]);
+
   const [activeSortColumn, setActiveSortColumn] = useState<SortableColumn | null>('supply');
   const [tokenSortOrder, setTokenSortOrder] = useState<'asc' | 'desc'>('asc');
   const [marketSortOrder, setMarketSortOrder] = useState<'asc' | 'desc'>('asc');
@@ -1277,7 +1290,7 @@ const ReservesTable = ({
           onShowLess={() => setMinVisibleCount(null)}
         />
         
-        <ReservesTableTooltipOverlay tooltipState={tooltipState} onClose={() => setTooltipState(null)} isApy={isApy} tydroPointToUsdRate={tydroPointToUsdRate} whitelistMerklCampaignIds={whitelistMerklCampaignIds} onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign} />
+        <ReservesTableTooltipOverlay tooltipState={tooltipState} onClose={() => setTooltipState(null)} isApy={isApy} tydroPointToUsdRate={tydroPointToUsdRate} whitelistMerklCampaignIds={whitelistMerklCampaignIds} onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign} forecastStates={forecastStates} />
 
         <ReservesTableFloatingScroll
           tableInView={tableInView}
@@ -1569,7 +1582,7 @@ const ReservesTable = ({
         <div aria-hidden style={{ height: 'calc(100dvh - var(--reserves-expanded-main-row-top, 5.75rem))' }} />
       )}
 
-      <ReservesTableTooltipOverlay tooltipState={tooltipState} onClose={() => setTooltipState(null)} isApy={isApy} tydroPointToUsdRate={tydroPointToUsdRate} whitelistMerklCampaignIds={whitelistMerklCampaignIds} onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign} />
+      <ReservesTableTooltipOverlay tooltipState={tooltipState} onClose={() => setTooltipState(null)} isApy={isApy} tydroPointToUsdRate={tydroPointToUsdRate} whitelistMerklCampaignIds={whitelistMerklCampaignIds} onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign} forecastStates={forecastStates} />
 
       <ReservesTableFloatingScroll
         tableInView={tableInView}
