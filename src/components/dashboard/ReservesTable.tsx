@@ -1284,6 +1284,7 @@ const ReservesTable = ({
           variant="mobile"
           onScrollToTop={() => mobileTableRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
           onScrollToBottom={() => mobileTableRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })}
+          onRefresh={onRefresh}
         />
       </div>
     );
@@ -1578,6 +1579,7 @@ const ReservesTable = ({
           const target = desktopTableBottomAnchorRef.current ?? desktopTableCardRef.current;
           target?.scrollIntoView({ behavior: 'smooth', block: 'end' });
         }}
+        onRefresh={onRefresh}
       />
       </div>
     </div>
