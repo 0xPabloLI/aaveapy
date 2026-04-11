@@ -1,4 +1,5 @@
-import { ArrowUp, ArrowDown, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowUp, ArrowDown, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
+import { useState, useCallback } from 'react';
 
 interface ReservesTableShowMoreProps {
   totalCount: number;
@@ -62,6 +63,7 @@ interface ReservesTableFloatingScrollProps {
   variant: 'desktop' | 'mobile';
   onScrollToTop: () => void;
   onScrollToBottom: () => void;
+  onRefresh?: () => Promise<void>;
 }
 
 export function ReservesTableFloatingScroll({
@@ -69,7 +71,20 @@ export function ReservesTableFloatingScroll({
   variant,
   onScrollToTop,
   onScrollToBottom,
+  onRefresh,
 }: ReservesTableFloatingScrollProps) {
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefresh = useCallback(async () => {
+    if (!onRefresh || isRefreshing) return;
+    setIsRefreshing(true);
+    try {
+      await onRefresh();
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [onRefresh, isRefreshing]);
+
   if (!tableInView) return null;
 
   const wrapperClass =
@@ -84,6 +99,15 @@ export function ReservesTableFloatingScroll({
     <div className={wrapperClass}>
       <button type="button" aria-label="Scroll to table top" onClick={onScrollToTop} className={btnClass}>
         <ArrowUp className="h-4 w-4" />
+      </button>
+      <button
+        type="button"
+        aria-label="Refresh data"
+        onClick={handleRefresh}
+        disabled={isRefreshing}
+        className={`${btnClass} ${isRefreshing ? 'pointer-events-none opacity-60' : ''}`}
+      >
+        <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
       </button>
       <button type="button" aria-label="Scroll to table bottom" onClick={onScrollToBottom} className={btnClass}>
         <ArrowDown className="h-4 w-4" />
