@@ -65,6 +65,7 @@ interface ReservesTableProps {
   portfolioPositions?: PortfolioPosition[];
   portfolioActions?: PortfolioSimulationActions;
   portfolioSnapshots?: import('@/types/portfolio').PortfolioSnapshot[];
+  onRefresh?: () => Promise<void>;
 }
 
 type SortMode = 'total' | 'native' | 'incentive';
@@ -91,6 +92,7 @@ const ReservesTable = ({
   portfolioPositions,
   portfolioActions,
   portfolioSnapshots,
+  onRefresh,
 }: ReservesTableProps) => {
   const isMobile = useIsMobile();
   const [activeSortColumn, setActiveSortColumn] = useState<SortableColumn | null>('supply');
@@ -1282,6 +1284,7 @@ const ReservesTable = ({
           variant="mobile"
           onScrollToTop={() => mobileTableRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
           onScrollToBottom={() => mobileTableRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })}
+          onRefresh={onRefresh}
         />
       </div>
     );
@@ -1576,6 +1579,7 @@ const ReservesTable = ({
           const target = desktopTableBottomAnchorRef.current ?? desktopTableCardRef.current;
           target?.scrollIntoView({ behavior: 'smooth', block: 'end' });
         }}
+        onRefresh={onRefresh}
       />
       </div>
     </div>

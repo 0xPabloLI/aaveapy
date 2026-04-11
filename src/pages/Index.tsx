@@ -381,6 +381,7 @@ const Index = () => {
               portfolioPositions={portfolio.positions}
               portfolioActions={portfolio.actions}
               portfolioSnapshots={portfolio.snapshots}
+              onRefresh={handleRefresh}
             />
           </div>
 
