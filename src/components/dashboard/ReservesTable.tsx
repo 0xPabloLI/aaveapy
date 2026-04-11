@@ -65,6 +65,7 @@ interface ReservesTableProps {
   portfolioPositions?: PortfolioPosition[];
   portfolioActions?: PortfolioSimulationActions;
   portfolioSnapshots?: import('@/types/portfolio').PortfolioSnapshot[];
+  onRefresh?: () => Promise<void>;
 }
 
 type SortMode = 'total' | 'native' | 'incentive';
