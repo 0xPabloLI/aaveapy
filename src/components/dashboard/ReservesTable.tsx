@@ -92,6 +92,7 @@ const ReservesTable = ({
   portfolioPositions,
   portfolioActions,
   portfolioSnapshots,
+  onRefresh,
 }: ReservesTableProps) => {
   const isMobile = useIsMobile();
   const [activeSortColumn, setActiveSortColumn] = useState<SortableColumn | null>('supply');
