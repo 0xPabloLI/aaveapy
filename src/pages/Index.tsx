@@ -81,7 +81,7 @@ const Index = () => {
   }, [tydroPointToUsdRateInput]);
 
   // Fetch data - API returns { snapshot, reserves } (breaking change)
-  const { data, isLoading, error, isError, refetch } = useAaveMarkets();
+  const { data, isLoading, error, isError, refetch, dataUpdatedAt } = useAaveMarkets();
   const { data: tokenCategoryOverrides } = useTokenCategories();
 
   const cachedMarkets = useMemo(() => getCachedMarkets(), []);
@@ -380,6 +380,7 @@ const Index = () => {
               portfolioActions={portfolio.actions}
               portfolioSnapshots={portfolio.snapshots}
               onRefresh={handleRefresh}
+              dataUpdatedAt={dataUpdatedAt}
             />
           </div>
 
