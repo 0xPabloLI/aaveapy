@@ -131,14 +131,16 @@ const DesktopReserveRow = memo(({
     inputMode,
     tokenPrice: displayTokenPrice,
   });
-  const totalBorrowedUsd = getTotalBorrowedUsd({
+  const baseTotalBorrowedUsd = getTotalBorrowedUsd({
     reserveSizeUsd: reserve.reserveSizeUsd,
     utilizationPct: reserve.utilizationPct,
   });
-  const poolLiquidity = getPoolLiquidityUsd({
+  const totalBorrowedUsd = simulation?.marketMetrics.totalBorrowedUsdAfter ?? baseTotalBorrowedUsd;
+  const basePoolLiquidity = getPoolLiquidityUsd({
     reserveSizeUsd: reserve.reserveSizeUsd,
-    totalBorrowedUsd,
+    totalBorrowedUsd: baseTotalBorrowedUsd,
   });
+  const poolLiquidity = simulation?.marketMetrics.availableLiquidityUsdAfter ?? basePoolLiquidity;
   const hasDeficit = hasReserveDeficit(reserve);
   const deficitUsd = getReserveDeficitUsdAmount(reserve, displayTokenPrice);
   const deficitTokenCompact = formatReserveDeficitTokenCompact(reserve);

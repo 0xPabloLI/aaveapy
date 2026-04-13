@@ -26,6 +26,18 @@ export const getScenarioInputUsd = ({
   return tokenPrice != null && Number.isFinite(tokenPrice) && tokenPrice > 0 ? parsed * tokenPrice : 0;
 };
 
+export const convertUsdToInputValue = (
+  usd: number,
+  inputMode: ScenarioDisplayMode,
+  tokenPrice: number | null | undefined,
+): string => {
+  if (usd <= 0) return '';
+  if (inputMode === 'token' && tokenPrice != null && Number.isFinite(tokenPrice) && tokenPrice > 0) {
+    return String(usd / tokenPrice);
+  }
+  return String(usd);
+};
+
 export const getScenarioSupplySizeUsd = ({
   reserveSizeUsd,
   supplyCapUsd,

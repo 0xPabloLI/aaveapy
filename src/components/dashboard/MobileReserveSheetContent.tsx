@@ -92,6 +92,12 @@ export function BorrowCapSheetContent({
         </span>
       </div>
       <div className="flex justify-between gap-3">
+        <span className="text-muted-foreground">Pool liquidity</span>
+        <span className="font-medium tabular-nums ds-text-purple-600">
+          {formatScenarioSize(poolLiquidity, { inputMode, tokenPrice, tokenSymbol })}
+        </span>
+      </div>
+      <div className="flex justify-between gap-3">
         <span className="text-muted-foreground">Available to borrow</span>
         <span className="font-medium tabular-nums ds-text-brand-cyan">
           {formatScenarioSize(availableToBorrow, { inputMode, tokenPrice, tokenSymbol })}

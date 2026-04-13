@@ -10,6 +10,7 @@ import {
   formatUsd,
 } from '@/lib/formatters';
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
+import { convertUsdToInputValue } from '@/lib/scenarioSize';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type {
   RateSimulationResult,
@@ -220,14 +221,14 @@ const SimulationSubRow = ({
 
   const handleCorrectToMaxSupply = () => {
     if (!onCorrectSupplyInput || availableSupplyRoomUsd === null) return;
-    onCorrectSupplyInput('');
+    onCorrectSupplyInput(convertUsdToInputValue(availableSupplyRoomUsd, inputMode, simulation.tokenPrice));
   };
 
   const { borrowCapExceeded, availableBorrowRoomUsd, borrowCapExceededByUsd, borrowCapUsd, borrowLimitedByLiquidity } = simulation.marketMetrics;
 
   const handleCorrectToMaxBorrow = () => {
     if (!onCorrectBorrowInput || availableBorrowRoomUsd === null) return;
-    onCorrectBorrowInput('');
+    onCorrectBorrowInput(convertUsdToInputValue(availableBorrowRoomUsd, inputMode, simulation.tokenPrice));
   };
 
   const currentSupplySizeUsd =

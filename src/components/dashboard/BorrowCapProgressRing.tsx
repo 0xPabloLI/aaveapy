@@ -77,6 +77,12 @@ const BorrowCapProgressRing = memo(({
           </span>
         </div>
         <div className="flex justify-between gap-3">
+          <span className="text-muted-foreground">Pool liquidity</span>
+          <span className="font-medium tabular-nums ds-text-purple-600">
+            {formatScenarioSize(liquidityRemaining, { inputMode: displayMode, tokenPrice, tokenSymbol })}
+          </span>
+        </div>
+        <div className="flex justify-between gap-3">
           <span className="text-muted-foreground">Available to borrow</span>
           <span className="font-medium tabular-nums ds-text-brand-cyan">
             {formatScenarioSize(availableToBorrow, { inputMode: displayMode, tokenPrice, tokenSymbol })}
