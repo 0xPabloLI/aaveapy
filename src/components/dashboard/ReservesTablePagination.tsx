@@ -116,11 +116,15 @@ export function ReservesTableFloatingScroll({
   const freshness = Math.min(ageS / FRESHNESS_MAX_AGE_S, 1);
 
   const refreshBtnStyle = useMemo(() => {
-    // Interpolate from brand cyan (fresh) → transparent (stale)
-    // Wider range for visible change: 0.50 (just refreshed) → 0.08 (fully stale)
-    const opacity = ((1 - freshness) * 0.42 + 0.08).toFixed(2);
+    // Interpolate from brand cyan (fresh) → nearly invisible (stale)
+    // Range: 0.80 (just refreshed) → 0.05 (fully stale) — very noticeable fade
+    const bgOpacity = ((1 - freshness) * 0.75 + 0.05).toFixed(2);
+    // Icon also gains brightness when fresh
+    const iconOpacity = ((1 - freshness) * 0.4 + 0.6).toFixed(2);
     return {
-      background: `rgb(var(--ds-brand-cyan-rgb) / ${opacity})`,
+      background: `rgb(var(--ds-brand-cyan-rgb) / ${bgOpacity})`,
+      color: `rgb(var(--ds-brand-cyan-rgb) / ${iconOpacity})`,
+      borderColor: `rgb(var(--ds-brand-cyan-rgb) / ${(Number(bgOpacity) * 0.6).toFixed(2)})`,
     };
   }, [freshness]);
 
