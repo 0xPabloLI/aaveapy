@@ -131,7 +131,7 @@ export function ReservesTableFloatingScroll({
       : 'fixed right-3 bottom-6 z-30 flex flex-col gap-2';
 
   const btnClass =
-    'flex h-9 w-9 items-center justify-center rounded-full border border-border/60 bg-card/90 shadow-md backdrop-blur-sm text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors';
+    'flex h-9 w-9 items-center justify-center rounded-full border border-border/40 bg-card/60 shadow-md backdrop-blur-sm text-muted-foreground/70 hover:text-foreground hover:bg-muted/70 transition-colors';
 
   const isStale = freshness >= 1;
 
