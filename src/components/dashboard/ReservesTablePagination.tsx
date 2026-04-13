@@ -1,5 +1,5 @@
 import { ArrowUp, ArrowDown, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 
 interface ReservesTableShowMoreProps {
   totalCount: number;
@@ -112,33 +112,7 @@ export function ReservesTableFloatingScroll({
     }
   }, [onRefresh, isRefreshing]);
 
-  // Freshness ratio: 0 = just updated, 1 = fully stale
-  const freshness = Math.min(ageS / FRESHNESS_MAX_AGE_S, 1);
-
-  const refreshBtnStyle = useMemo(() => {
-    // Interpolate from brand cyan (fresh) → nearly invisible (stale)
-    // Range: 0.80 (just refreshed) → 0.05 (fully stale) — very noticeable fade
-    const bgOpacity = ((1 - freshness) * 0.75 + 0.05).toFixed(2);
-    // Icon also gains brightness when fresh
-    const iconOpacity = ((1 - freshness) * 0.4 + 0.6).toFixed(2);
-    return {
-      background: `rgb(var(--ds-brand-cyan-rgb) / ${bgOpacity})`,
-      color: `rgb(var(--ds-brand-cyan-rgb) / ${iconOpacity})`,
-      borderColor: `rgb(var(--ds-brand-cyan-rgb) / ${(Number(bgOpacity) * 0.6).toFixed(2)})`,
-    };
-  }, [freshness]);
-
   if (!tableInView) return null;
-
-  const wrapperClass =
-    variant === 'desktop'
-      ? 'fixed right-3 bottom-6 z-30 flex flex-col gap-2 md:right-6'
-      : 'fixed right-3 bottom-6 z-30 flex flex-col gap-2';
-
-  const btnClass =
-    'flex h-9 w-9 items-center justify-center rounded-full border border-border/30 bg-card/40 shadow-md backdrop-blur-sm text-muted-foreground/60 hover:text-foreground hover:bg-muted/60 transition-colors';
-
-  const isStale = freshness >= 1;
 
   return (
     <div className={wrapperClass}>
@@ -151,8 +125,7 @@ export function ReservesTableFloatingScroll({
           aria-label={`Refresh data (updated ${formatAge(ageS)})`}
           onClick={handleRefresh}
           disabled={isRefreshing}
-          className={`${btnClass} !bg-transparent transition-all duration-500 ${isRefreshing ? 'pointer-events-none opacity-60' : ''}`}
-          style={refreshBtnStyle}
+          className={`${btnClass} ${isRefreshing ? 'pointer-events-none opacity-60' : ''}`}
         >
           <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
         </button>
