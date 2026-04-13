@@ -114,6 +114,14 @@ export function ReservesTableFloatingScroll({
 
   if (!tableInView) return null;
 
+  const wrapperClass =
+    variant === 'desktop'
+      ? 'fixed right-3 bottom-6 z-30 flex flex-col gap-2 md:right-6'
+      : 'fixed right-3 bottom-6 z-30 flex flex-col gap-2';
+
+  const btnClass =
+    'flex h-9 w-9 items-center justify-center rounded-full border border-border/30 bg-card/40 shadow-md backdrop-blur-sm text-muted-foreground/60 hover:text-foreground hover:bg-muted/60 transition-colors';
+
   return (
     <div className={wrapperClass}>
       <button type="button" aria-label="Scroll to table top" onClick={onScrollToTop} className={btnClass}>
