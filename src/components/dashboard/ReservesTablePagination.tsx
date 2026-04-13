@@ -131,7 +131,7 @@ export function ReservesTableFloatingScroll({
       : 'fixed right-3 bottom-6 z-30 flex flex-col gap-2';
 
   const btnClass =
-    'flex h-9 w-9 items-center justify-center rounded-full border border-border/60 bg-card/90 shadow-md backdrop-blur-sm text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors';
+    'flex h-9 w-9 items-center justify-center rounded-full border border-border/40 bg-card/60 shadow-md backdrop-blur-sm text-muted-foreground/70 hover:text-foreground hover:bg-muted/70 transition-colors';
 
   const isStale = freshness >= 1;
 
@@ -146,7 +146,7 @@ export function ReservesTableFloatingScroll({
           aria-label={`Refresh data (updated ${formatAge(ageS)})`}
           onClick={handleRefresh}
           disabled={isRefreshing}
-          className={`${btnClass} !bg-transparent transition-all duration-500 ${isRefreshing ? 'pointer-events-none opacity-60' : ''} ${isStale ? 'animate-pulse' : ''}`}
+          className={`${btnClass} !bg-transparent transition-all duration-500 ${isRefreshing ? 'pointer-events-none opacity-60' : ''}`}
           style={refreshBtnStyle}
         >
           <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
