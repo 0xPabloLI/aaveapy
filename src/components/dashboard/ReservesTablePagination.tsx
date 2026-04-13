@@ -146,7 +146,7 @@ export function ReservesTableFloatingScroll({
           aria-label={`Refresh data (updated ${formatAge(ageS)})`}
           onClick={handleRefresh}
           disabled={isRefreshing}
-          className={`${btnClass} !bg-transparent transition-all duration-500 ${isRefreshing ? 'pointer-events-none opacity-60' : ''} ${isStale ? 'animate-pulse' : ''}`}
+          className={`${btnClass} !bg-transparent transition-all duration-500 ${isRefreshing ? 'pointer-events-none opacity-60' : ''}`}
           style={refreshBtnStyle}
         >
           <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
