@@ -48,12 +48,13 @@ Browser-level `<link rel="preload" as="fetch">` could start API requests during 
 
 ## Home Page API Matrix
 
-| API | Trigger type | Current trigger point | TTL / staleTime | Caches used | Notes |
-| --- | --- | --- | --- | --- | --- |
-| `/markets` | App-level prefetch + hook query | `App.tsx` prefetch + `useAaveMarkets` in `Index` | 1 min (`coreSnapshotApi`) | React Query + localStorage | Core snapshot. |
-| `/meta/side-data` | App-level prefetch + hook query | `App.tsx` prefetch + `useSideDataMeta` (consumed by `useTokenCategories`, `useCoingeckoFdv`, `useRateSimulation`) | 5 min (`sideDataMeta`); backend TTL overrides (categories 6h, FDV 5m, forecast 10m) | React Query + localStorage | Merged endpoint for categories, FDV, and forecast. Merkl campaign state for incentive simulation: formulas in [`rate-calculation.md` § Merkl incentive forecast](./rate-calculation.md#part-2-merkl-incentive-forecast). |
-| `/rate-inputs` | App-level prefetch + hook query | `App.tsx` prefetch + `useReserveRateInputs` in simulation hooks | 1 min (`coreSnapshotApi`) | React Query + localStorage | Used for native rate simulation. |
-| CoinGecko `/search` | Hook query (third-party) | `useCoingeckoTokenImage` fallback only | 24 hours | React Query + localStorage | Icon fallback when local/logo URI misses. |
+| API | Trigger type | Current trigger point | TTL / staleTime | gcTime | Caches used | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| `/markets` | App-level prefetch + hook query | `App.tsx` prefetch + `useAaveMarkets` in `Index` | 1 min (`coreSnapshotApi`) | default (5 min) | React Query + localStorage | Core snapshot. |
+| `/meta/side-data` | App-level prefetch + hook query | `App.tsx` prefetch + `useSideDataMeta` (consumed by `useTokenCategories`, `useCoingeckoFdv`, `useRateSimulation`) | 5 min (`sideDataMeta`); backend TTL overrides (categories 6h, FDV 5m, forecast 10m) | 15 min | React Query + localStorage | Merged endpoint for categories, FDV, and forecast. Merkl campaign state for incentive simulation: formulas in [`rate-calculation.md` § Merkl incentive forecast](./rate-calculation.md#part-2-merkl-incentive-forecast). |
+| `/rate-inputs` | App-level prefetch + hook query | `App.tsx` prefetch + `useReserveRateInputs` in simulation hooks | 1 min (`coreSnapshotApi`) | default (5 min) | React Query + localStorage | Used for native rate simulation. |
+| CoinGecko `/search` | Hook query (third-party) | `useCoingeckoTokenImage` fallback only | 24 hours | 30 min | React Query + localStorage | Icon fallback when local/logo URI misses. |
+| Forecast token price | Hook query (third-party) | `useRateSimulation` priceQueries (token mode only) | 5 min (`default`) | default (5 min) | React Query only | Transient; no localStorage persistence. |
 
 ## Forecast Token Price Backup
 

@@ -228,6 +228,15 @@ Set on the desktop table card (`desktopTableCardRef` in `ReservesTable.tsx`). **
 - For side-data (lower business criticality), TTL caching is acceptable and can be longer than core APIs.
 - If strict freshness is required for a view, do not rely on strong cache hit behavior (`max-age` only) for its primary data path.
 
+### Garbage-collection time (`gcTime`) convention
+
+- **Default is enough for most queries.** TanStack Query's default `gcTime` (5 min) is fine for queries whose `staleTime` ≤ 5 min—do not set `gcTime` explicitly in those cases.
+- **Set explicit `gcTime` when:**
+  - The query has localStorage persistence (`initialData` + `getCached*`). After GC the next mount restores from localStorage, so `gcTime` can be **shorter** than `staleTime` (e.g. `coingeckoTokenImage`: staleTime 24 h, gcTime 30 min).
+  - The query's `staleTime` is significantly longer than 5 min and you want to keep data in memory between navigations (e.g. `sideDataMeta`: staleTime 5 min, gcTime 15 min).
+- **Do not set `gcTime` for transient / on-demand queries** (e.g. `useRateSimulation` price queries)—default is appropriate.
+- All `gcTime` values live in `QUERY_GC_TIMES` in `src/config/queryStaleTimes.ts`.
+
 ### Forecast UI consistency
 
 - **Terminology (Tydro vs Merkl labels)**: only Merkl’s optional `pointsPerThousandUsd` path is treated as Tydro (`src/lib/tydro.ts`, `tydroPointToUsdRate`). `Merit` / `Brevis` / protocol incentives are not Tydro points. Aggregate UI labels can stay as **Merkl** / **Merkl Incentive**; use “Tydro” only when explaining the points-to-APR conversion or the global point-to-USD control. Unrelated “points” (e.g. Ink FDV reference points) are not Tydro.

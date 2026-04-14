@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { API_BASE } from '@/lib/apiBase';
+import { QUERY_GC_TIMES } from '@/config/queryStaleTimes';
 import { SideDataMetaResponseSchema } from '@/lib/apiSchemas';
 import {
   getCachedSideDataMetaEntry,
@@ -115,6 +116,7 @@ export function useSideDataMeta(staleTime: number, retry: number = 1) {
     queryKey: SIDE_DATA_META_QUERY_KEY,
     queryFn: fetchSideDataMeta,
     staleTime: derivedStaleTime,
+    gcTime: QUERY_GC_TIMES.sideDataMeta,
     retry,
     initialData: cachedEntry?.data,
     initialDataUpdatedAt: cachedEntry?.updatedAt,
