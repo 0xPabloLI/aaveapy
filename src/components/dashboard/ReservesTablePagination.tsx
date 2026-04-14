@@ -144,6 +144,12 @@ export function ReservesTableFloatingScroll({
         >
           <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
         </button>
+        {/* Freshness dot */}
+        {dataUpdatedAt != null && !isRefreshing && (
+          <span
+            className={`absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border border-card/80 ${freshnessColor(ageS)} transition-colors duration-700`}
+          />
+        )}
         {/* Hover tooltip showing age */}
         {dataUpdatedAt != null && (
           <div className="pointer-events-none absolute right-full mr-2 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-md bg-card border border-border/60 px-2 py-1 text-xs text-muted-foreground shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200">
