@@ -86,12 +86,11 @@ const Header = ({ lastUpdated }: HeaderProps) => {
           <span>FAQ</span>
         </a>
 
-        {/* Desktop: Last Updated */}
+        {/* Desktop: Last Updated (plain text, no icon) */}
         {lastUpdated && (
-          <div className="flex items-center gap-[var(--ds-space-2)] ds-text-11 text-muted-foreground shrink-0">
-            <Clock className="w-4 h-4" />
-            <span>Updated {formatRelativeTime(lastUpdated)}</span>
-          </div>
+          <span className="ds-text-11 text-muted-foreground shrink-0">
+            Updated {formatRelativeTime(lastUpdated)}
+          </span>
         )}
         
         {/* Desktop: Theme Toggle */}
