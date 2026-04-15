@@ -16,6 +16,10 @@ const FAQ_ITEMS = [
     a: 'These are additional reward programs on top of native Aave rates. Merit rewards loyal Aave users, Merkl distributes token incentives for specific markets, and Brevis provides ZK-proof based rewards. Click the incentive badges on any reserve to see details.',
   },
   {
+    q: 'How does the Scenario Simulation work?',
+    a: 'Click any reserve row to expand it, then enter a hypothetical supply or borrow amount. The simulator recalculates interest rates based on the new utilization, showing you how your deposit/borrow would shift the market rate.',
+  },
+  {
     q: 'What is APY vs APR?',
     a: 'APR (Annual Percentage Rate) is the simple interest rate. APY (Annual Percentage Yield) includes compound interest. You can toggle between them using the APY/APR switch in the filter bar.',
   },
@@ -26,10 +30,6 @@ const FAQ_ITEMS = [
   {
     q: 'What is the Spread column?',
     a: 'Spread = Supply APY − Borrow APY. A positive spread means you can earn more by supplying than you pay to borrow the same asset — useful for identifying leverage (looping) opportunities.',
-  },
-  {
-    q: 'How does the Scenario Simulation work?',
-    a: 'Click any reserve row to expand it, then enter a hypothetical supply or borrow amount. The simulator recalculates interest rates based on the new utilization, showing you how your deposit/borrow would shift the market rate.',
   },
   {
     q: 'How fresh is the data?',
