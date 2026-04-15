@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Clock, HelpCircle } from 'lucide-react';
+import { HelpCircle } from 'lucide-react';
 import { formatRelativeTime } from '@/lib/formatters';
 import {
   Popover,
