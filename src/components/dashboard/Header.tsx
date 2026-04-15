@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Clock } from 'lucide-react';
+import { Clock, HelpCircle } from 'lucide-react';
 import { formatRelativeTime } from '@/lib/formatters';
 import {
   Popover,
@@ -63,13 +63,30 @@ const Header = ({ lastUpdated }: HeaderProps) => {
         
         {/* Mobile: Theme toggle aligned with title */}
         <div className="md:hidden shrink-0 flex items-center gap-[var(--ds-space-2)]">
+          <a
+            href="#faq"
+            className="flex items-center justify-center w-8 h-8 rounded-full bg-card/60 border border-border/40 text-muted-foreground hover:bg-muted/60 hover:border-border touch-manipulation"
+            aria-label="FAQ"
+          >
+            <HelpCircle className="w-4 h-4" />
+          </a>
           <ThemeToggle />
         </div>
       </div>
 
       {/* Desktop Right side: Last Updated + Theme toggle */}
       <div className="hidden md:flex items-center gap-[var(--ds-space-3)]">
-        {/* Desktop: Last Updated first */}
+        {/* Desktop: FAQ link */}
+        <a
+          href="#faq"
+          className="flex items-center gap-[var(--ds-space-1)] ds-text-11 text-muted-foreground hover:text-foreground transition-colors shrink-0"
+          aria-label="FAQ"
+        >
+          <HelpCircle className="w-4 h-4" />
+          <span>FAQ</span>
+        </a>
+
+        {/* Desktop: Last Updated */}
         {lastUpdated && (
           <div className="flex items-center gap-[var(--ds-space-2)] ds-text-11 text-muted-foreground shrink-0">
             <Clock className="w-4 h-4" />
