@@ -1,3 +1,4 @@
+import { ExternalLink } from 'lucide-react';
 import {
   formatPercent,
   formatScenarioSize,
@@ -148,6 +149,7 @@ export function DeficitSheetContent({
   inputMode: 'usd' | 'token';
   tokenPrice?: number | null;
   tokenSymbol?: string | null;
+  poolExplorerUrl?: string | null;
 }) {
   const ratio = calculateDeficitShareRatio({ deficitUsd, totalSuppliedUsd });
   const percentage = ratio != null ? Math.min(Math.max(ratio * 100, 0), 100) : null;
@@ -164,8 +166,21 @@ export function DeficitSheetContent({
 
   return (
     <div className="space-y-1 ds-text-12">
-      <div className="flex justify-between gap-3">
-        <span className="text-muted-foreground">Deficit</span>
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-muted-foreground flex items-center gap-1">
+          Deficit
+          {poolExplorerUrl && (
+            <a
+              href={poolExplorerUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-muted-foreground/60 hover:text-foreground transition-colors"
+              aria-label="Verify on-chain"
+            >
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          )}
+        </span>
         <span className="font-medium tabular-nums">{deficitDisplay}</span>
       </div>
       <div className="flex justify-between gap-3">
@@ -173,7 +188,21 @@ export function DeficitSheetContent({
         <span className="font-medium tabular-nums">{totalDisplay}</span>
       </div>
       <div className="flex items-center justify-between gap-3 pt-1 border-t border-border/50">
-        <span className="text-muted-foreground">% of total (incl. deficit)</span>
+        <span className="text-muted-foreground flex items-center gap-1">
+          % of total (incl. deficit)
+          {poolExplorerUrl && (
+            <a
+              href={poolExplorerUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-muted-foreground/60 hover:text-foreground transition-colors"
+              onClick={(e) => e.stopPropagation()}
+              aria-label="Verify on-chain"
+            >
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          )}
+        </span>
         <span className={`font-bold tabular-nums ${percentColorClass}`}>
           {percentage != null ? `${percentage.toFixed(2)}%` : '—'}
         </span>

@@ -32,6 +32,7 @@ import {
 } from '@/lib/deficit';
 import type { RateSimulationResult } from '@/hooks/useRateSimulation';
 import { getPoolLiquidityUsd, getScenarioSupplySizeUsd, getTotalBorrowedUsd, getValidTokenPrice } from '@/lib/scenarioSize';
+import { buildPoolExplorerUrl } from '@/lib/poolExplorerLinks';
 import { cn } from '@/lib/utils';
 import {
   SupplyCapSheetContent,
@@ -759,6 +760,7 @@ const MobileReserveCard = memo(({
                       inputMode={inputMode}
                       tokenPrice={displayTokenPrice}
                       tokenSymbol={reserve.tokenSymbol}
+                      poolExplorerUrl={buildPoolExplorerUrl(reserve.marketName)}
                     />
                   )}
                 </div>

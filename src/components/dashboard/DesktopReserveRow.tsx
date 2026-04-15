@@ -5,6 +5,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { ReserveWithSpread } from '@/types/aave';
 import { formatPercent, formatScenarioSize, formatSpread, formatUsd, getReserveMarketDisplayName } from '@/lib/formatters';
 import { buildAaveMarketUrl, buildAaveReserveUrl } from '@/lib/aaveLinks';
+import { buildPoolExplorerUrl } from '@/lib/poolExplorerLinks';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
 import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
 import { getChainIconSrc } from '@/lib/chainIcons';
@@ -122,6 +123,7 @@ const DesktopReserveRow = memo(({
 
   const aaveUrl = buildAaveReserveUrl({ marketName: reserve.marketName, tokenAddress: reserve.tokenAddress }) || '#';
   const aaveMarketUrl = buildAaveMarketUrl(reserve.marketName);
+  const poolExplorerUrl = buildPoolExplorerUrl(reserve.marketName);
 
   const displayTokenPrice = getValidTokenPrice(simulation?.tokenPrice, reserve.tokenPrice);
   const displayReserveSizeUsd = getScenarioSupplySizeUsd({
@@ -320,6 +322,7 @@ const DesktopReserveRow = memo(({
                   )}
                   triggerClassName={deficitTextClass}
                   triggerAriaLabel={`Deficit share of total supplied plus deficit for ${reserve.tokenSymbol}`}
+                  poolExplorerUrl={poolExplorerUrl}
                 />
               ) : (
                 <Tooltip>

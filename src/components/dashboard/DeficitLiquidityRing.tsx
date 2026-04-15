@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { memo } from 'react';
+import { ExternalLink } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { formatScenarioSize } from '@/lib/formatters';
 import { calculateDeficitShareRatio, getDeficitSeverity } from '@/lib/deficit';
@@ -18,6 +19,7 @@ interface DeficitLiquidityRingProps {
   label?: ReactNode;
   triggerClassName?: string;
   triggerAriaLabel?: string;
+  poolExplorerUrl?: string | null;
 }
 
 const DeficitLiquidityRing = memo(({
@@ -33,6 +35,7 @@ const DeficitLiquidityRing = memo(({
   label,
   triggerClassName,
   triggerAriaLabel,
+  poolExplorerUrl,
 }: DeficitLiquidityRingProps) => {
   const hasDeficit = deficitUsd != null && Number.isFinite(deficitUsd) && deficitUsd > 0;
   const hasTotalSupplied = totalSuppliedUsd != null && Number.isFinite(totalSuppliedUsd) && totalSuppliedUsd >= 0;
@@ -69,8 +72,22 @@ const DeficitLiquidityRing = memo(({
   const tooltipContent = (
     <TooltipContent side="top" className="max-w-[240px]">
       <div className="space-y-1 ds-text-12">
-        <div className="flex justify-between gap-3">
-          <span className="text-muted-foreground">Deficit</span>
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-muted-foreground flex items-center gap-1">
+            Deficit
+            {poolExplorerUrl && (
+              <a
+                href={poolExplorerUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-muted-foreground/60 hover:text-foreground transition-colors"
+                onClick={(e) => e.stopPropagation()}
+                aria-label="Verify on-chain"
+              >
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            )}
+          </span>
           <span className="font-medium tabular-nums">
             {deficitDisplayValue}
           </span>
