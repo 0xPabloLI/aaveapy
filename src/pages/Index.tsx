@@ -34,6 +34,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
 
 import InkAprCalculator from '@/components/dashboard/InkAprCalculator';
+import FaqSection from '@/components/dashboard/FaqSection';
 
 const Index = () => {
   const activeQueryCount = useIsFetching();
@@ -397,6 +398,9 @@ const Index = () => {
               <p className="text-muted-foreground">No data to display</p>
             </div>
           )}
+
+          {/* FAQ */}
+          <FaqSection />
 
           {/* Footer */}
           <footer className="border-t border-border/50 py-[var(--ds-space-8)]">
