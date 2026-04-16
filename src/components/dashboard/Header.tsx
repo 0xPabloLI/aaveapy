@@ -35,9 +35,10 @@ const Header = ({ lastUpdated }: HeaderProps) => {
             <h1 className="ds-title whitespace-nowrap">
               <span className="gradient-text">Aave APY</span>
             </h1>
-            {/* Updated: always next to title */}
+            {/* Desktop: Updated text with clock icon next to title */}
             {lastUpdated && (
-              <span className="ds-text-11 text-muted-foreground shrink-0">
+              <span className="hidden md:inline-flex items-center gap-[var(--ds-space-1)] ds-text-11 text-muted-foreground shrink-0">
+                <Clock className="w-3 h-3" />
                 Updated {formatRelativeTime(lastUpdated)}
               </span>
             )}
@@ -50,11 +51,27 @@ const Header = ({ lastUpdated }: HeaderProps) => {
           </p>
         </div>
         
-        {/* Mobile: FAQ + Theme toggle */}
+        {/* Mobile: Updated clock + FAQ + Theme toggle */}
         <div className="md:hidden shrink-0 flex items-center gap-[var(--ds-space-2)]">
+          {lastUpdated && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className="flex items-center justify-center w-8 h-8 rounded-full bg-card/60 border border-border/40 text-muted-foreground touch-manipulation hover:bg-muted/60 hover:border-border focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  aria-label={`Last updated ${formatRelativeTime(lastUpdated)}`}
+                >
+                  <Clock className="w-3.5 h-3.5" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent side="bottom" align="start" sideOffset={6} className="w-auto py-2 px-3 ds-text-11">
+                Updated {formatRelativeTime(lastUpdated)}
+              </PopoverContent>
+            </Popover>
+          )}
           <a
             href="#faq"
-            className="flex items-center justify-center w-8 h-8 rounded-full bg-card/60 border border-border/40 text-muted-foreground hover:bg-muted/60 hover:border-border touch-manipulation"
+            className="flex items-center justify-center w-8 h-8 rounded-full bg-card/60 border border-border/40 text-muted-foreground hover-gradient-text hover:bg-muted/60 hover:border-border touch-manipulation"
             aria-label="FAQ"
           >
             <HelpCircle className="w-4 h-4" />
@@ -68,7 +85,7 @@ const Header = ({ lastUpdated }: HeaderProps) => {
         {/* Desktop: FAQ link with gradient hover */}
         <a
           href="#faq"
-          className="flex items-center gap-[var(--ds-space-1)] ds-text-11 text-muted-foreground hover-gradient-text transition-colors shrink-0"
+          className="flex items-center gap-[var(--ds-space-1)] ds-text-14 text-muted-foreground hover-gradient-text transition-colors shrink-0"
           aria-label="FAQ"
         >
           <HelpCircle className="w-4 h-4" />
