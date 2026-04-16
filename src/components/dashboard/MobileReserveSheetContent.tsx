@@ -142,6 +142,7 @@ export function DeficitSheetContent({
   inputMode,
   tokenPrice,
   tokenSymbol,
+  poolExplorerUrl,
 }: {
   deficitUsd: number;
   totalSuppliedUsd: number | null | undefined;
