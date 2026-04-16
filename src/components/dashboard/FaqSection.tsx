@@ -46,7 +46,7 @@ const FaqSection = memo(function FaqSection() {
       <Accordion type="single" collapsible className="w-full">
         {FAQ_ITEMS.map((item, i) => (
           <AccordionItem key={i} value={`faq-${i}`} className="border-border/40">
-            <AccordionTrigger className="ds-text-14 text-foreground hover:no-underline hover:text-primary gap-[var(--ds-space-3)] text-left">
+            <AccordionTrigger className="ds-text-14 text-foreground hover:no-underline hover:text-interactive gap-[var(--ds-space-3)] text-left">
               {item.q}
             </AccordionTrigger>
             <AccordionContent className="ds-text-14 text-muted-foreground leading-relaxed">
