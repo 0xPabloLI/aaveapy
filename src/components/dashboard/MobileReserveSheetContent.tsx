@@ -151,6 +151,7 @@ export function DeficitSheetContent({
   tokenSymbol?: string | null;
   poolExplorerUrl?: string | null;
 }) {
+  const _poolExplorerUrl = arguments[0]?.poolExplorerUrl;
   const ratio = calculateDeficitShareRatio({ deficitUsd, totalSuppliedUsd });
   const percentage = ratio != null ? Math.min(Math.max(ratio * 100, 0), 100) : null;
   const severity = getDeficitSeverity(ratio);
