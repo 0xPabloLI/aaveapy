@@ -27,7 +27,7 @@ const Header = ({ lastUpdated }: HeaderProps) => {
 
   return (
     <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-[var(--ds-space-3)] md:gap-[var(--ds-space-4)]">
-      {/* Left side: Logo + Title + Mobile theme toggle */}
+      {/* Left side: Logo + Title + Updated */}
       <div className="flex items-center gap-[var(--ds-space-3)] md:gap-[var(--ds-space-4)]">
         <img src="/aave_apy_logo.png" alt="Aave APY logo" className="w-12 h-12 md:w-16 md:h-16 object-contain" />
         <div className="flex-1 min-w-0">
@@ -35,22 +35,11 @@ const Header = ({ lastUpdated }: HeaderProps) => {
             <h1 className="ds-title whitespace-nowrap">
               <span className="gradient-text">Aave APY</span>
             </h1>
-            {/* Mobile: Last Updated as clickable icon; click opens small popover */}
+            {/* Updated: always next to title */}
             {lastUpdated && (
-              <Popover>
-                <PopoverTrigger asChild>
-                  <button
-                    type="button"
-                    className="md:hidden flex items-center justify-center w-6 h-6 rounded-full bg-card/60 border border-border/40 text-muted-foreground touch-manipulation hover:bg-muted/60 hover:border-border focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                    aria-label={`Last updated ${formatRelativeTime(lastUpdated)}`}
-                  >
-                    <Clock className="w-3 h-3" />
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent side="bottom" align="start" sideOffset={6} className="w-auto py-2 px-3 ds-text-11">
-                  Updated {formatRelativeTime(lastUpdated)}
-                </PopoverContent>
-              </Popover>
+              <span className="ds-text-11 text-muted-foreground shrink-0">
+                Updated {formatRelativeTime(lastUpdated)}
+              </span>
             )}
           </div>
           <p className="ds-text-11 text-muted-foreground mt-[var(--ds-space-1)] sm:hidden">
@@ -61,7 +50,7 @@ const Header = ({ lastUpdated }: HeaderProps) => {
           </p>
         </div>
         
-        {/* Mobile: Theme toggle aligned with title */}
+        {/* Mobile: FAQ + Theme toggle */}
         <div className="md:hidden shrink-0 flex items-center gap-[var(--ds-space-2)]">
           <a
             href="#faq"
@@ -74,24 +63,17 @@ const Header = ({ lastUpdated }: HeaderProps) => {
         </div>
       </div>
 
-      {/* Desktop Right side: Last Updated + Theme toggle */}
+      {/* Desktop Right side: FAQ + Theme toggle */}
       <div className="hidden md:flex items-center gap-[var(--ds-space-3)]">
-        {/* Desktop: FAQ link */}
+        {/* Desktop: FAQ link with gradient hover */}
         <a
           href="#faq"
-          className="flex items-center gap-[var(--ds-space-1)] ds-text-11 text-muted-foreground hover:text-foreground transition-colors shrink-0"
+          className="flex items-center gap-[var(--ds-space-1)] ds-text-11 text-muted-foreground hover-gradient-text transition-colors shrink-0"
           aria-label="FAQ"
         >
           <HelpCircle className="w-4 h-4" />
           <span>FAQ</span>
         </a>
-
-        {/* Desktop: Last Updated (plain text, no icon) */}
-        {lastUpdated && (
-          <span className="ds-text-11 text-muted-foreground shrink-0">
-            Updated {formatRelativeTime(lastUpdated)}
-          </span>
-        )}
         
         {/* Desktop: Theme Toggle */}
         <ThemeToggle />
