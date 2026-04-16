@@ -85,11 +85,11 @@ const Header = ({ lastUpdated }: HeaderProps) => {
         {/* Desktop: FAQ link with gradient hover */}
         <a
           href="#faq"
-          className="flex items-center gap-[var(--ds-space-1)] ds-text-14 text-muted-foreground hover-gradient-text transition-colors shrink-0"
+          className="group flex items-center gap-[var(--ds-space-1)] ds-text-14 text-muted-foreground transition-colors shrink-0"
           aria-label="FAQ"
         >
-          <HelpCircle className="w-4 h-4" />
-          <span>FAQ</span>
+          <HelpCircle className="w-4 h-4 transition-colors group-hover:text-[hsl(var(--ds-gradient-primary))]" />
+          <span className="group-hover-gradient-text">FAQ</span>
         </a>
         
         {/* Desktop: Theme Toggle */}
