@@ -333,12 +333,9 @@ Slider 与紧挨其下的区块（如「Reference FDVs」、说明文字）可�
 
 ## 文档来源与维护
 
-本参考的主体内容来自 `docs/design/` 下既有规范与实现约定；以下文件为**重定向入口**（保留路径供旧链接与书签），正文以本文档为准：
+本参考的主体内容来自 `docs/design/` 下既有规范与实现约定。
 
-- `ui-interaction-patterns.md` → 见上文 **§6–§11**（光标、Tooltip、悬停、禁用、无障碍、暗色等）
-- `toggle-switch-specification.md` → 见上文 **§5**（含 §5.6 本仓库实现参考）
-
-仍独立维护、与业务强相关的文档：
+独立维护、与业务强相关的文档：
 
 - `DESIGN.md` — 本项目视觉主题、品牌色、组件类名（如 `ds-input-surface`）
 - `frontend-interaction-guardrails.md` — Forecast、Reserves、Merkl 等 AaveAPY 专项守则

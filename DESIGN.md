@@ -11,6 +11,4 @@
 | [docs/design/frontend-interaction-guardrails.md](docs/design/frontend-interaction-guardrails.md) | 前端交互守则（含 AaveAPY 专项：Forecast UI、Reserves 表、InkAprCalculator、**Merkl whitelist（按 campaignId）** 等） |
 | [docs/design/mobile-reserve-card-ascii-layout.md](docs/design/mobile-reserve-card-ascii-layout.md) | 移动端储备卡排版 ASCII（含 Current / Proposed） |
 
-以下路径保留为重定向，正文已并入 `DESIGN-SYSTEM-REFERENCE.md`：[ui-interaction-patterns.md](docs/design/ui-interaction-patterns.md)、[toggle-switch-specification.md](docs/design/toggle-switch-specification.md)。
-
 修改 tooltip/筛选/forecast 等交互时，请同步更新 `docs/design/frontend-interaction-guardrails.md`；新增可复用设计习惯请更新 `docs/design/DESIGN-SYSTEM-REFERENCE.md`。

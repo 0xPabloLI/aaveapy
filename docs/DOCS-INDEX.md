@@ -65,7 +65,7 @@ _Last inventory pass: 2026-04-09._
 - Canonical (reusable system rules): `docs/design/DESIGN-SYSTEM-REFERENCE.md`
 - Canonical (product-critical interaction guardrails): `docs/design/frontend-interaction-guardrails.md`
 - Canonical (mobile ASCII reference): `docs/design/mobile-reserve-card-ascii-layout.md`
-- Redirect stubs (do not expand; see inventory table): `docs/design/ui-interaction-patterns.md`, `docs/design/toggle-switch-specification.md`, `docs/design/README.md`
+- Entry stub: `docs/design/README.md` (index page only)
 
   > `frontend-interaction-guardrails.md` is *not* under `docs/conventions/` because it is a product-behavior rulebook, not a repo-process convention.
 
@@ -95,7 +95,7 @@ _Last inventory pass: 2026-04-09._
 | `docs/design/DESIGN-SYSTEM-REFERENCE.md` | Reusable design/interaction rules | 2026-03-31 | Canonical | old design split docs | keep |
 | `docs/design/frontend-interaction-guardrails.md` | Product-critical normative interaction rules | 2026-03-31 | Canonical | parts of design docs | keep |
 | `docs/design/mobile-reserve-card-ascii-layout.md` | Mobile reserve card ASCII reference | 2026-03-16 | Canonical | appendix references in DSR | keep |
-| `docs/design/ui-interaction-patterns.md`, `toggle-switch-specification.md`, `README.md` | Legacy paths / short pointers (do not expand) | 2026-03-27 | Redirect stubs | `docs/design/DESIGN-SYSTEM-REFERENCE.md`, root `DESIGN.md`, `docs/design/DESIGN.md` | keep |
+| `docs/design/README.md` | Design docs entry/index page | 2026-03-27 | Entry stub | `docs/design/DESIGN-SYSTEM-REFERENCE.md`, root `DESIGN.md`, `docs/design/DESIGN.md` | keep |
 | `docs/conventions/vercel-deployment-smoke-test.md` | Vercel smoke test workflow, deploy SHA meta, rollback ref rules | 2026-04-05 | Canonical | `.github/workflows/deployment-smoke-test.yml` | keep |
 | `docs/conventions/*` | API/CI/process conventions | 2026-03-16..2026-04-05 | Canonical set | small references in README/AGENTS | keep |
 
