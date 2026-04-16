@@ -13,7 +13,7 @@ import {
 // read-as-proxy function. The mechanism differs per explorer family:
 //
 //   etherscan  → #readProxyContract#F23  (F23 = getReserveData position)
-//   routescan  → /contract/{chainId}#readProxyContract#F23
+//   routescan  → /contract/{chainId}/readProxyContract#F23
 //   blockscout → ?tab=read_proxy#0xc952485d  (function selector)
 //   oklink     → #category=proxy-read&id=22
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -47,9 +47,9 @@ describe('Every market deep-links to getReserveData', () => {
         expect(url).toContain('#readProxyContract#' + ETHERSCAN_FUNCTION_INDEX);
         break;
       case 'routescan':
-        // Must contain /contract/{chainId} path AND #readProxyContract#F23
+        // Must contain /contract/{chainId}/readProxyContract path AND #F23
         expect(url).toMatch(/\/contract\/\d+/);
-        expect(url).toContain('#readProxyContract#' + ETHERSCAN_FUNCTION_INDEX);
+        expect(url).toMatch(new RegExp('/readProxyContract#' + ETHERSCAN_FUNCTION_INDEX));
         break;
       case 'blockscout':
         // Must contain ?tab=read_proxy to open the proxy tab
@@ -89,11 +89,11 @@ describe('Routescan family URL format', () => {
   );
 
   it.each(routescanMarkets)(
-    '%s follows https://{explorer}/address/{pool}/contract/{chainId}#readProxyContract#F23',
+    '%s follows https://{explorer}/address/{pool}/contract/{chainId}/readProxyContract#F23',
     (market) => {
       const url = buildPoolExplorerUrl(market)!;
       expect(url).toMatch(
-        /^https:\/\/[^/]+\/address\/0x[a-fA-F0-9]{40}\/contract\/\d+#readProxyContract#F23$/
+        /^https:\/\/[^/]+\/address\/0x[a-fA-F0-9]{40}\/contract\/\d+\/readProxyContract#F23$/
       );
     }
   );
@@ -182,9 +182,9 @@ describe('Specific URL snapshots', () => {
     );
   });
 
-  it('Metis uses /contract/1088', () => {
+  it('Metis uses /contract/1088/readProxyContract#F23', () => {
     expect(buildPoolExplorerUrl('AaveV3Metis')).toBe(
-      'https://metisscan.info/address/0x90df02551bB792286e8D4f13E0e357b4Bf1D6a57/contract/1088#readProxyContract#F23'
+      'https://metisscan.info/address/0x90df02551bB792286e8D4f13E0e357b4Bf1D6a57/contract/1088/readProxyContract#F23'
     );
   });
 

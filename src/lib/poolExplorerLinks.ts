@@ -269,8 +269,8 @@ const POOL_EXPLORER_MAP: Record<string, PoolExplorerEntry> = {
     explorers: [{
       base: 'https://metisscan.info',
       family: 'routescan',
-      pathFormat: '/address/{pool}/contract/1088',
-      deepLink: '#readProxyContract#F23',
+      pathFormat: '/address/{pool}/contract/1088/readProxyContract',
+      deepLink: '#F23',
     }],
   },
 

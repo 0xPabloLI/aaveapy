@@ -4,6 +4,44 @@
 
 本系统为 Aave V3 市场提供区块链浏览器深度链接，直接跳转到 Pool 合约的 `getReserveData` 读取函数。
 
+## 架构
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    bgd-labs/aave-address-book               │
+│              (Source of Truth - Pool Addresses)             │
+│           https://github.com/bgd-labs/aave-address-book     │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              │ (GitHub API / raw.githubusercontent.com)
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│         scripts/sync-pool-addresses-upstream.mjs            │
+│         - Fetch Solidity files from address-book            │
+│         - Parse POOL constant                               │
+│         - Update poolExplorerLinks.ts                       │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│              src/lib/poolExplorerLinks.ts                   │
+│         (Local hardcoded mapping - auto-generated)          │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## 地址来源
+
+所有 Pool 地址来自官方 **bgd-labs/aave-address-book**：
+- GitHub: https://github.com/bgd-labs/aave-address-book
+- npm: `@bgd-labs/aave-address-book`
+- UI: https://search.onaave.com/
+
+### 验证渠道优先级
+
+1. **Primary**: bgd-labs/aave-address-book (GitHub/npm)
+2. **Secondary**: search.onaave.com (UI 验证)
+3. **Tertiary**: 各链官方 explorer 人工验证
+
 ## Explorer Family 分类
 
 我们支持 4 种 explorer 架构，每种有不同的 deep-link 格式：
@@ -27,6 +65,31 @@
 - **格式**: `…/address/{pool}/contract#category=proxy-read&id=22`
 - **说明**: 自定义格式，支持 proxy-read 分类
 - **支持链**: XLayer
+
+### 各链 Explorer 类型确认
+
+| 链 | Explorer | 类型 | Deep-link 格式 |
+|---|----------|------|----------------|
+| Ethereum | etherscan.io | Etherscan | `#readProxyContract#F23` |
+| Arbitrum | arbiscan.io | Etherscan | `#readProxyContract#F23` |
+| Optimism | optimistic.etherscan.io | Etherscan | `#readProxyContract#F23` |
+| Polygon | polygonscan.com | Etherscan | `#readProxyContract#F23` |
+| Base | basescan.org | Etherscan | `#readProxyContract#F23` |
+| Gnosis | gnosisscan.io | Etherscan | `#readProxyContract#F23` |
+| BNB | bscscan.com | Etherscan | `#readProxyContract#F23` |
+| Linea | lineascan.build | Etherscan | `#readProxyContract#F23` |
+| Sonic | sonicscan.org | Etherscan | `#readProxyContract#F23` |
+| Celo | celoscan.io | Etherscan | `#readProxyContract#F23` |
+| MegaETH | mega.etherscan.io | Etherscan | `#readProxyContract#F23` |
+| Avalanche | snowscan.xyz | **Etherscan** | `#readProxyContract#F23` |
+| Metis | metisscan.info | **Routescan** | `/contract/{chainId}/readProxyContract#F23` |
+| Scroll | scrollscan.com | **Blockscout** | `?tab=read_proxy#0xc952485d` |
+| ZkSync | zksync.blockscout.com | **Blockscout** | `?tab=read_proxy#0xc952485d` |
+| Soneium | soneium.blockscout.com | **Blockscout** | `?tab=read_proxy#0xc952485d` |
+| Ink | explorer.inkonchain.com | **Blockscout** | `?tab=read_proxy#0xc952485d` |
+| Mantle | mantlescan.xyz | **Etherscan** | `#readProxyContract#F23` |
+| Plasma | plasmascan.to | **Etherscan** | `#readProxyContract#F23` |
+| XLayer | oklink.com | OKLink | 自定义格式 |
 
 ## 完整市场链接列表
 
@@ -79,34 +142,80 @@
 |------|-----------|----------|----------|
 | AaveV3XLayer | 0xE3F3Caefdd7180F884c01E57f65Df979Af84f116 | oklink.com | https://www.oklink.com/x-layer/address/0xE3F3Caefdd7180F884c01E57f65Df979Af84f116/contract#category=proxy-read&id=22 |
 
-## 地址来源
+## 自动化同步流程
 
-所有 Pool 地址来自官方 **bgd-labs/aave-address-book**：
-- GitHub: https://github.com/bgd-labs/aave-address-book
-- npm: `@bgd-labs/aave-address-book`
-- UI: https://search.onaave.com/
-
-## 同步脚本
-
-使用 `scripts/sync-pool-addresses-upstream.mjs` 从上游同步最新地址：
-
+### 手动触发同步
 ```bash
 node scripts/sync-pool-addresses-upstream.mjs
 ```
 
+### GitHub Actions 定时同步
+- 通过 `hardcode-sync` / `hardcode:verify` 链路接入
+- `hardcode:sync` 包含 `npm run sync:pool-addresses-upstream`
+- `hardcode:verify` 包含 `npm run check:pool-addresses-upstream`
+- 校验源优先读本地 `@bgd-labs/aave-address-book` npm 包，缺失文件时 fallback 到 GitHub raw `src/{Market}.sol`
+
 ## 验证测试
 
-使用以下两层验证：
+### 两层验证体系
 
-1. 结构/映射校验：
+1. **结构/映射校验**（快速）：
 ```bash
 npx tsx scripts/verify-explorer-links.ts
 ```
 
-2. 真实浏览器 DOM + 截图校验：
+2. **真实浏览器 DOM + 截图校验**（完整）：
 ```bash
 npx playwright test e2e/explorer-links-live-dom.spec.ts --project=chromium
 ```
+
+### 测试结果分类
+
+| 图标 | 含义 |
+|------|------|
+| ✅ | 已验证可用，getReserveData 可见 |
+| ⚠️ | 页面加载但被 Cloudflare 阻挡（需人工验证） |
+| ❌ | 链接无效或页面不存在 |
+| ❓ | 未测试 |
+
+### 当前验证状态 (2026-04-15)
+
+**✅ 深度链接验证通过 (10个市场)**
+
+这些市场的 explorer 页面能正常加载，且 Read Proxy / getReserveData 功能可访问：
+
+- AaveV3Ethereum / EthereumLido / EthereumEtherFi / EthereumHorizon (Etherscan)
+- AaveV3Optimism (Etherscan)
+- AaveV3BNB (Etherscan)
+- AaveV3MegaEth (Etherscan)
+- AaveV3Ink / InkWhitelabel (Blockscout)
+- AaveV3XLayer (OKLink)
+
+**⚠️ Cloudflare 安全验证阻挡 (9个市场)**
+
+这些市场的 explorer 启用了 Cloudflare 反爬虫保护，自动化测试无法验证：
+Arbitrum, Polygon, Base, Gnosis, Linea, Sonic, Celo, Mantle, Plasma
+
+**🔍 需要修复/确认的市场**
+
+- **AaveV3Scroll**: 实际使用 Blockscout 架构而非 Etherscan 格式
+- **AaveV3Metis**: Metisscan 使用自定义路径格式
+- **AaveV3ZkSync**: 已更新为 `zksync.blockscout.com`
+- **AaveV3Avalanche**: Snowtrace 架构确认
+
+## 历史修复记录
+
+### 2026-04-15 修复
+
+| 市场 | 问题 | 修复 |
+|------|------|------|
+| AaveV3Avalanche | family 错标为 etherscan → 改为 routescan → 再改为 etherscan | 最终改为 `etherscan (snowscan.xyz)`，原 routescan (snowtrace.io) 已弃用 |
+| AaveV3Metis | family 错标为 etherscan | 改为 `routescan` |
+| AaveV3Scroll | family 错标为 etherscan | 改为 `blockscout` |
+| AaveV3Plasma | family 错标为 blockscout | 改为 `etherscan` |
+| AaveV3ZkSync | explorerBase 错误 | 改为 `zksync.blockscout.com`, family `blockscout` |
+| AaveV3Linea | Pool 地址错误 | 修正为 `0xc47b8C00…` |
+| AaveV3Mantle | Pool 地址错误 + family 错标为 routescan | 地址修正为 `0x458F2934…`，family 改为 `etherscan` |
 
 ## 多 Explorer 支持
 
@@ -120,10 +229,3 @@ npx playwright test e2e/explorer-links-live-dom.spec.ts --project=chromium
 | Metis | metisscan.info (Routescan) | blockscout.metis.io |
 
 默认使用 deep-link 支持最好的 explorer。
-
-## 验证状态图例
-
-- ✅ = 已验证可用，getReserveData 可见
-- ⚠️ = 页面加载但被 Cloudflare 阻挡（需人工验证）
-- ❌ = 链接无效或页面不存在
-- ❓ = 未测试
