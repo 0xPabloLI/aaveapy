@@ -89,7 +89,7 @@ const Header = ({ lastUpdated }: HeaderProps) => {
           aria-label="FAQ"
         >
           <HelpCircle className="w-4 h-4 transition-colors group-hover:text-[hsl(var(--ds-gradient-primary))]" />
-          <span className="hover-gradient-text">FAQ</span>
+          <span className="group-hover-gradient-text">FAQ</span>
         </a>
         
         {/* Desktop: Theme Toggle */}
