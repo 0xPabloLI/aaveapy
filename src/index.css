@@ -767,14 +767,14 @@
   }
   .hover-gradient-text:hover,
   .group:hover .group-hover-gradient-text {
-    background: linear-gradient(135deg, hsl(308 75% 48%) 0%, hsl(180 80% 38%) 100%);
+    background: linear-gradient(135deg, hsl(308 78% 48%) 0%, hsl(178 82% 38%) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
   .dark .hover-gradient-text:hover,
   .dark .group:hover .group-hover-gradient-text {
-    background: linear-gradient(135deg, hsl(308 90% 82%) 0%, hsl(175 95% 72%) 100%);
+    background: linear-gradient(135deg, hsl(308 80% 78%) 0%, hsl(178 85% 68%) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
