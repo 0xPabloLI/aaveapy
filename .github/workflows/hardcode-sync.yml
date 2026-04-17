@@ -126,7 +126,7 @@ jobs:
         if: >
           steps.verify_round1.outputs.passed == 'true' ||
           steps.verify_round2.outputs.passed == 'true'
-        uses: peter-evans/create-pull-request@c0f553fe549906ede9cf27b5156039d195d2ece0 # v8.1.0
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
           # Use PAT to ensure pull_request workflows (CI lint/build) are triggered on the created PR.
           # Fallback to GITHUB_TOKEN keeps behavior but may leave required checks in "Expected".
