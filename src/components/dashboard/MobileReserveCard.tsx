@@ -21,6 +21,7 @@ import SimulationSubRow from './SimulationSubRow';
 import UtilizationIndicator from './UtilizationIndicator';
 import CapProgressRing from './CapProgressRing';
 import BorrowCapProgressRing from './BorrowCapProgressRing';
+import CopyAddressButton from './CopyAddressButton';
 
 import DeficitShieldIcon from './DeficitShieldIcon';
 import {
