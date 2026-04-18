@@ -560,6 +560,12 @@ const MobileReserveCard = memo(({
               <div className="flex items-center gap-1">
                 <p className="font-bold text-foreground ds-text-14 truncate">{reserve.tokenSymbol}</p>
                 <ExternalLink className="w-2.5 h-2.5 text-muted-foreground/40 shrink-0" />
+                <CopyAddressButton
+                  address={reserve.tokenAddress}
+                  tokenSymbol={reserve.tokenSymbol}
+                  iconSize={11}
+                  className="shrink-0 -ml-0.5"
+                />
               </div>
               <div className="flex items-center gap-1 ds-text-11 text-muted-foreground/80">
                 {chainIconSrc && (
