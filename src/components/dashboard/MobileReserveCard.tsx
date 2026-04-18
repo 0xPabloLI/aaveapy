@@ -1,5 +1,5 @@
 import { memo, useEffect, useState } from 'react';
-import { ExternalLink, ListCollapse, Plus, X } from 'lucide-react';
+import { ListCollapse, Plus, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ReserveWithSpread } from '@/types/aave';
 import {
@@ -10,8 +10,6 @@ import {
   resolveVisibleIncentiveBadgeValue,
 } from '@/lib/formatters';
 import { getChainIconSrc } from '@/lib/chainIcons';
-import { buildAaveReserveUrl } from '@/lib/aaveLinks';
-import { externalLinkTabProps } from '@/lib/externalNavigation';
 import { getReserveKey } from '@/lib/reserveKey';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { IncentiveIcon } from '@/components/IncentiveIcon';
@@ -21,7 +19,7 @@ import SimulationSubRow from './SimulationSubRow';
 import UtilizationIndicator from './UtilizationIndicator';
 import CapProgressRing from './CapProgressRing';
 import BorrowCapProgressRing from './BorrowCapProgressRing';
-import CopyAddressButton from './CopyAddressButton';
+import AssetActionMenu from './AssetActionMenu';
 
 import DeficitShieldIcon from './DeficitShieldIcon';
 import {
@@ -543,13 +541,7 @@ const MobileReserveCard = memo(({
               )}
             </button>
           )}
-          <a
-            href={buildAaveReserveUrl({ marketName: reserve.marketName, tokenAddress: reserve.tokenAddress }) || '#'}
-            {...externalLinkTabProps(true)}
-            onClick={(e) => e.stopPropagation()}
-            className="flex items-center gap-2.5 min-w-0 flex-1 active:opacity-70 transition-opacity"
-            aria-label={`Open ${reserve.tokenSymbol} on Aave`}
-          >
+          <div className="flex items-center gap-2.5 min-w-0 flex-1">
             <TokenIcon
               symbol={iconSymbol}
               size={28}
@@ -560,12 +552,13 @@ const MobileReserveCard = memo(({
             <div className="min-w-0">
               <div className="flex items-center gap-1">
                 <p className="font-bold text-foreground ds-text-14 truncate">{reserve.tokenSymbol}</p>
-                <ExternalLink className="w-2.5 h-2.5 text-muted-foreground/40 shrink-0" />
-                <CopyAddressButton
-                  address={reserve.tokenAddress}
+                <AssetActionMenu
                   tokenSymbol={reserve.tokenSymbol}
-                  iconSize={11}
-                  className="shrink-0 -ml-0.5"
+                  tokenAddress={reserve.tokenAddress}
+                  marketName={reserve.marketName}
+                  isMobile
+                  triggerSize={13}
+                  triggerClassName="shrink-0"
                 />
               </div>
               <div className="flex items-center gap-1 ds-text-11 text-muted-foreground/80">
@@ -575,7 +568,7 @@ const MobileReserveCard = memo(({
                 <span className="truncate">{getReserveMarketDisplayName(reserve)}</span>
               </div>
             </div>
-          </a>
+          </div>
           {/* Utilization indicator - clickable (values match desktop Utilization column + UtilizationIndicator) */}
           {displayUtilization != null && optimalPct != null && (
             <button

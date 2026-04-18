@@ -24,6 +24,7 @@ import CapProgressRing from './CapProgressRing';
 import BorrowCapProgressRing from './BorrowCapProgressRing';
 import UtilizationIndicator from './UtilizationIndicator';
 import DeficitShieldIcon from './DeficitShieldIcon';
+import AssetActionMenu from './AssetActionMenu';
 import type { RateSimulationResult, ScenarioInputMode } from '@/hooks/useRateSimulation';
 import { getPoolLiquidityUsd, getScenarioSupplySizeUsd, getTotalBorrowedUsd, getValidTokenPrice } from '@/lib/scenarioSize';
 import { cn } from '@/lib/utils';
@@ -215,21 +216,20 @@ const DesktopReserveRow = memo(({
               )}
             </button>
           )}
-          <a
-            href={aaveUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(event) => event.stopPropagation()}
-            className="group/token inline-flex items-center justify-center gap-[var(--ds-space-2)] hover:opacity-80 transition-opacity duration-150"
-            aria-label={`Open ${reserve.tokenSymbol} on Aave`}
-            title="Open on Aave"
-          >
+          <div className="group/token inline-flex items-center justify-center gap-[var(--ds-space-1-5)]">
             <TokenIcon symbol={iconSymbol} size={28} loading="eager" logoURI={logoURI} />
             <span className="font-semibold text-foreground ds-text-13">
               {reserve.tokenSymbol}
             </span>
-            <ExternalLink className="w-2.5 h-2.5 text-muted-foreground/40 -ml-1 shrink-0" />
-           </a>
+            <AssetActionMenu
+              tokenSymbol={reserve.tokenSymbol}
+              tokenAddress={reserve.tokenAddress}
+              marketName={reserve.marketName}
+              isMobile={isMobile}
+              triggerSize={12}
+              triggerClassName="opacity-0 group-hover/token:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100 transition-opacity"
+            />
+          </div>
           </div>
         </TableCell>
         {/* Price — 左右留白更小 */}
