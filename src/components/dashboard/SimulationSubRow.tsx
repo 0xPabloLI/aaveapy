@@ -28,7 +28,6 @@ import {
 import type { ReserveWithSpread, MeritIncentive, MerklOpportunityGroup, BrevisIncentive } from '@/types/aave';
 import { ETHEREUM_MARKET_NAMES } from '@/types/aave';
 import { getFirstActiveBrevisLink } from '@/lib/brevis';
-import CopyAddressButton from './CopyAddressButton';
 
 const getFirstMeritLink = (merits?: MeritIncentive[]): string | null => {
   if (!merits || !Array.isArray(merits)) return null;
@@ -1141,14 +1140,6 @@ const SimulationSubRow = ({
         <>
           {/* Spread + Liquidity summary bar */}
           <div className="flex items-center gap-4 mb-2 px-4 py-1.5 rounded-lg border border-border/50 bg-card">
-            <CopyAddressButton
-              address={reserve.tokenAddress}
-              tokenSymbol={reserve.tokenSymbol}
-              iconSize={12}
-              label={`${reserve.tokenSymbol} address`}
-              className="shrink-0 -ml-1"
-            />
-            <div className="w-px h-4 bg-border/60" />
             <div className="flex items-center gap-1.5">
               <span className="ds-text-12 font-bold ds-text-purple-600">Spread</span>
               <span className="ds-text-12 tabular-nums ds-text-purple-600">

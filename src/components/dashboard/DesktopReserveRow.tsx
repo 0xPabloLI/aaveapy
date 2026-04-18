@@ -24,6 +24,7 @@ import CapProgressRing from './CapProgressRing';
 import BorrowCapProgressRing from './BorrowCapProgressRing';
 import UtilizationIndicator from './UtilizationIndicator';
 import DeficitShieldIcon from './DeficitShieldIcon';
+import AssetActionMenu from './AssetActionMenu';
 import type { RateSimulationResult, ScenarioInputMode } from '@/hooks/useRateSimulation';
 import { getPoolLiquidityUsd, getScenarioSupplySizeUsd, getTotalBorrowedUsd, getValidTokenPrice } from '@/lib/scenarioSize';
 import { cn } from '@/lib/utils';

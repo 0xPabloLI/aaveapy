@@ -1,5 +1,5 @@
 import { memo, useEffect, useState } from 'react';
-import { ExternalLink, ListCollapse, Plus, X } from 'lucide-react';
+import { ListCollapse, Plus, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ReserveWithSpread } from '@/types/aave';
 import {
@@ -10,8 +10,6 @@ import {
   resolveVisibleIncentiveBadgeValue,
 } from '@/lib/formatters';
 import { getChainIconSrc } from '@/lib/chainIcons';
-import { buildAaveReserveUrl } from '@/lib/aaveLinks';
-import { externalLinkTabProps } from '@/lib/externalNavigation';
 import { getReserveKey } from '@/lib/reserveKey';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { IncentiveIcon } from '@/components/IncentiveIcon';
