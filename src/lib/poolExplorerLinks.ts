@@ -419,3 +419,26 @@ export function getExplorerFamily(marketName: string): string | null {
 export function getExplorerMarketNames(): string[] {
   return Object.keys(POOL_EXPLORER_MAP);
 }
+
+/**
+ * Build an explorer URL for an arbitrary token (underlying asset) address on the
+ * same chain as the given Aave market. Reuses the market's primary explorer base
+ * (and routescan pathFormat where applicable) but drops the `getReserveData` deep
+ * link since token contracts have a different ABI.
+ *
+ * Returns `null` when the market isn't mapped or the token address is missing.
+ */
+export function buildTokenExplorerUrl(
+  marketName: string,
+  tokenAddress: string | null | undefined,
+): string | null {
+  if (!tokenAddress) return null;
+  const entry = POOL_EXPLORER_MAP[marketName];
+  if (!entry || entry.explorers.length === 0) return null;
+  const explorer = entry.explorers[0];
+  let path = '/address/' + tokenAddress;
+  if (explorer.pathFormat) {
+    path = explorer.pathFormat.replace('{pool}', tokenAddress);
+  }
+  return `${explorer.base}${path}`;
+}
