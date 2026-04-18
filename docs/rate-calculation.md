@@ -19,6 +19,18 @@ Source: `src/lib/interestRateCalculator.ts`.
 
 This section covers the native Aave interest-rate math used for supply / borrow simulation.
 
+### Terminology Mapping
+
+| Term / Variable | Alias | Context | Description |
+|-----------------|-------|---------|-------------|
+| `liquidityRate` | `supplyRate` | Internal calculation | Aave protocol term for supplier yield |
+| `supplyAprPercent` | — | Output/display | Same as `liquidityRate`, converted to % |
+| `supplyApyPercent` | — | Output/display | `liquidityRate` with compounding, as % |
+| `reserveFactor` | Protocol fee | Input parameter | Fee deducted from interest (bps, 0-10000) |
+| `variableBorrowRate` | Borrow rate | Calculation | Interest rate charged to borrowers |
+
+**Key relationship**: `liquidityRate` (internal) = `supplyAprPercent` (output)
+
 ### Constants
 
 | Name | Value | Usage |
