@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Check, ChevronDown, Copy, ExternalLink, X } from 'lucide-react';
+import { Check, Copy, ExternalLink, SquareArrowOutUpRight, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
@@ -231,9 +231,9 @@ export function AssetActionMenu({
           triggerClassName,
         )}
       >
-        <ChevronDown
+        <SquareArrowOutUpRight
           style={{ width: triggerSize, height: triggerSize }}
-          className={cn('transition-transform duration-200', open && 'rotate-180')}
+          className="transition-transform duration-200"
         />
       </button>
 
