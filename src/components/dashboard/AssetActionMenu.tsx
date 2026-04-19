@@ -224,7 +224,7 @@ export function AssetActionMenu({
         aria-expanded={open}
         aria-haspopup="menu"
         className={cn(
-          'inline-flex items-center justify-center rounded-md p-0.5 text-muted-foreground/70',
+          'inline-flex items-center justify-center rounded-md p-0.5 text-foreground/60',
           'transition-colors hover:text-foreground hover:bg-muted/60 active:scale-[0.97]',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
           open && 'text-foreground bg-muted/60',

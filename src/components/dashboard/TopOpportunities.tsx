@@ -203,19 +203,9 @@ const ReserveIdentity = memo(({
         logoURI={logoURI}
       />
       <div className="flex items-center min-w-0 gap-[var(--ds-space-1)]">
-        <a
-          href={aaveUrl}
-          {...externalLinkTabProps(isMobile)}
-          onClick={(e) => e.stopPropagation()}
-          className="group/token inline-flex items-center gap-[var(--ds-space-2)] hover:opacity-80 transition-opacity duration-150"
-          aria-label={`Open ${tokenSymbol} on Aave`}
-          title="Open on Aave"
-        >
-          <span className="font-semibold text-foreground truncate leading-none ds-text-14">
-            {tokenSymbol}
-          </span>
-          <ExternalLink className="w-3 h-3 text-muted-foreground opacity-0 -ml-1 group-hover/token:opacity-70 transition-opacity duration-150 shrink-0" />
-        </a>
+        <span className="font-semibold text-foreground truncate leading-none ds-text-14">
+          {tokenSymbol}
+        </span>
         {marketName && tokenAddress ? (
           <AssetActionMenu
             tokenSymbol={tokenSymbol}
@@ -478,9 +468,6 @@ const ReserveItem = forwardRef<HTMLDivElement, ReserveItemProps>(function Reserv
     name: reserve.tokenName,
   });
   const shouldAnimateItem = !disableMotion && !isMobile && !isRateDragging;
-  const aaveUrl = buildAaveReserveUrl(reserve);
-  // Using foreground color with opacity instead of text-muted-foreground to avoid Droid-Shield false positive
-  const externalLinkIconClassName = 'w-3 h-3 opacity-0 -ml-1 shrink-0 transition-opacity duration-150 group-hover:opacity-70 text-[hsl(var(--muted-foreground))]';
 
   return (
     <motion.div
@@ -504,19 +491,9 @@ const ReserveItem = forwardRef<HTMLDivElement, ReserveItemProps>(function Reserv
           logoURI={logoURI}
         />
         <div className="flex items-center min-w-0 gap-[var(--ds-space-1)]">
-          <a
-            href={aaveUrl}
-            {...externalLinkTabProps(isMobile)}
-            onClick={(e) => e.stopPropagation()}
-            className="group inline-flex items-center gap-[var(--ds-space-2)] hover:opacity-80 transition-opacity duration-150"
-            aria-label={`Open ${reserve.tokenSymbol} on Aave`}
-            title="Open on Aave"
-          >
-            <span className="font-semibold text-foreground truncate leading-none ds-text-14">
-              {reserve.tokenSymbol}
-            </span>
-            <ExternalLink className={externalLinkIconClassName} />
-          </a>
+          <span className="font-semibold text-foreground truncate leading-none ds-text-14">
+            {reserve.tokenSymbol}
+          </span>
           {reserve.marketName && reserve.tokenAddress ? (
             <AssetActionMenu
               tokenSymbol={reserve.tokenSymbol}
