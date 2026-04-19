@@ -6,7 +6,13 @@ import { toast } from 'sonner';
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
 import { buildPoolExplorerUrl, buildTokenExplorerUrl } from '@/lib/poolExplorerLinks';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
+import { getChainIconSrc } from '@/lib/chainIcons';
 import { cn } from '@/lib/utils';
+
+/** Strip Aave market prefix to get the chain name (e.g. "AaveV3Arbitrum" → "Arbitrum"). */
+function deriveChainFromMarketName(marketName: string): string {
+  return marketName.replace(/^Aave(V\d+)?/i, '') || marketName;
+}
 
 export interface AssetActionMenuProps {
   /** Reserve token symbol (display + aria). */
@@ -101,6 +107,8 @@ export function AssetActionMenu({
   const aaveUrl = buildAaveReserveUrl({ marketName, tokenAddress });
   const tokenExplorerUrl = buildTokenExplorerUrl(marketName, tokenAddress);
   const poolExplorerUrl = buildPoolExplorerUrl(marketName, { deepLink: false });
+  const chainName = deriveChainFromMarketName(marketName);
+  const chainIconSrc = getChainIconSrc(chainName);
 
   const handleCopy = async () => {
     try {
@@ -142,9 +150,18 @@ export function AssetActionMenu({
       'transition-colors hover:bg-muted/70 active:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
     );
     const truncatedAddress = `${tokenAddress.slice(0, 6)}…${tokenAddress.slice(-4)}`;
+    const isExplorerItem = item.key === 'token-explorer' || item.key === 'pool-explorer';
     const trailing =
       item.key === 'copy' ? (
         <span className="ds-text-11 text-muted-foreground/70 tabular-nums">{truncatedAddress}</span>
+      ) : isExplorerItem && chainIconSrc ? (
+        <img
+          src={chainIconSrc}
+          alt={chainName}
+          title={chainName}
+          className="h-3.5 w-3.5 rounded-full opacity-80"
+          loading="lazy"
+        />
       ) : null;
     if (item.href) {
       return (
