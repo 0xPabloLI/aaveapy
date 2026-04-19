@@ -345,19 +345,28 @@ const POOL_EXPLORER_MAP: Record<string, PoolExplorerEntry> = {
  *
  * Returns `null` when the market isn't mapped (e.g. testnets, V2).
  */
-export function buildPoolExplorerUrl(marketName: string): string | null {
+export function buildPoolExplorerUrl(
+  marketName: string,
+  options: { deepLink?: boolean } = {},
+): string | null {
+  const { deepLink = true } = options;
   const entry = POOL_EXPLORER_MAP[marketName];
   if (!entry || entry.explorers.length === 0) return null;
-  
+
   // Use first (default) explorer
   const explorer = entry.explorers[0];
-  
+
   // Build path
   let path = '/address/' + entry.pool;
   if (explorer.pathFormat) {
     path = explorer.pathFormat.replace('{pool}', entry.pool);
   }
-  
+
+  // When deepLink is disabled, return the plain address page (no read-proxy anchor).
+  if (!deepLink) {
+    return `${explorer.base}${path}`;
+  }
+
   // Build query/anchor based on family
   let suffix = '';
   if (explorer.family === 'etherscan' || explorer.family === 'routescan') {
@@ -367,7 +376,7 @@ export function buildPoolExplorerUrl(marketName: string): string | null {
   } else if (explorer.family === 'oklink') {
     suffix = explorer.deepLink || '';
   }
-  
+
   return `${explorer.base}${path}${suffix}`;
 }
 
