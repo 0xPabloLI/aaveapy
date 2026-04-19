@@ -31,6 +31,7 @@ import { Carousel, CarouselContent, CarouselItem, CarouselApi } from '@/componen
 import { Button } from '@/components/ui/button';
 import { shouldSkipTopOpportunitiesRender } from '@/lib/topOpportunitiesMemo';
 import IncentiveTooltip from '@/components/dashboard/IncentiveTooltip';
+import AssetActionMenu from '@/components/dashboard/AssetActionMenu';
 import { useSideDataMeta } from '@/hooks/useSideDataMeta';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
 import {
