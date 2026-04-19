@@ -398,6 +398,8 @@ const MiniReserveCard = ({
         marketDisplayName={marketDisplayName}
         isMobile={isMobile}
         miniRightContent={mainValueNode}
+        marketName={reserve.marketName}
+        tokenAddress={reserve.tokenAddress}
       />
 
       <div className="flex items-baseline justify-end gap-[var(--ds-space-1)]">
