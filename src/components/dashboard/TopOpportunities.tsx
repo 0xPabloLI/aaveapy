@@ -501,7 +501,7 @@ const ReserveItem = forwardRef<HTMLDivElement, ReserveItemProps>(function Reserv
           className="shrink-0 row-span-2"
           logoURI={logoURI}
         />
-        <div className="flex items-center min-w-0">
+        <div className="flex items-center min-w-0 gap-[var(--ds-space-1)]">
           <a
             href={aaveUrl}
             {...externalLinkTabProps(isMobile)}
@@ -515,6 +515,14 @@ const ReserveItem = forwardRef<HTMLDivElement, ReserveItemProps>(function Reserv
             </span>
             <ExternalLink className={externalLinkIconClassName} />
           </a>
+          {reserve.marketName && reserve.tokenAddress ? (
+            <AssetActionMenu
+              tokenSymbol={reserve.tokenSymbol}
+              tokenAddress={reserve.tokenAddress}
+              marketName={reserve.marketName}
+              isMobile={isMobile}
+            />
+          ) : null}
         </div>
         <div
           className={`${(isLeverage ? getSpreadColorClass(mainValue, index, totalItems) : getApyColorClass(mainValue))} font-bold tabular-nums text-right leading-none ${isMobile ? 'ds-text-16' : 'ds-text-18'} ${!isLeverage && !hasIncentive ? 'row-span-2 self-center' : ''}`}
