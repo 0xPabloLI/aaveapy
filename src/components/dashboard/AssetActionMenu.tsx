@@ -231,7 +231,10 @@ export function AssetActionMenu({
           triggerClassName,
         )}
       >
-        <MoreHorizontal style={{ width: triggerSize, height: triggerSize }} />
+        <ChevronDown
+          style={{ width: triggerSize, height: triggerSize }}
+          className={cn('transition-transform duration-200', open && 'rotate-180')}
+        />
       </button>
 
       {/* Desktop popover (portal) */}
