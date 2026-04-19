@@ -31,6 +31,7 @@ import { Carousel, CarouselContent, CarouselItem, CarouselApi } from '@/componen
 import { Button } from '@/components/ui/button';
 import { shouldSkipTopOpportunitiesRender } from '@/lib/topOpportunitiesMemo';
 import IncentiveTooltip from '@/components/dashboard/IncentiveTooltip';
+import AssetActionMenu from '@/components/dashboard/AssetActionMenu';
 import { useSideDataMeta } from '@/hooks/useSideDataMeta';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
 import {
@@ -139,6 +140,8 @@ interface ReserveIdentityProps {
   mini?: boolean;
   aaveUrl?: string;
   miniRightContent?: ReactNode;
+  marketName?: string;
+  tokenAddress?: string | null;
 }
 
 const ReserveIdentity = memo(({
@@ -152,6 +155,8 @@ const ReserveIdentity = memo(({
   mini = false,
   aaveUrl,
   miniRightContent,
+  marketName,
+  tokenAddress,
 }: ReserveIdentityProps) => {
   if (mini) {
     return (
@@ -164,8 +169,17 @@ const ReserveIdentity = memo(({
           logoURI={logoURI}
         />
         <div className="min-w-0 flex-1">
-          <div className="flex items-center">
+          <div className="flex items-center gap-[var(--ds-space-0-5)]">
             <span className="font-bold text-foreground ds-text-12 truncate">{tokenSymbol}</span>
+            {marketName && tokenAddress ? (
+              <AssetActionMenu
+                tokenSymbol={tokenSymbol}
+                tokenAddress={tokenAddress}
+                marketName={marketName}
+                isMobile={isMobile}
+                triggerSize={11}
+              />
+            ) : null}
           </div>
           <div className="flex items-center gap-[var(--ds-space-1)] ds-text-9 text-muted-foreground">
             {chainIconSrc && (
@@ -188,7 +202,7 @@ const ReserveIdentity = memo(({
         className="shrink-0 row-span-2"
         logoURI={logoURI}
       />
-      <div className="flex items-center min-w-0">
+      <div className="flex items-center min-w-0 gap-[var(--ds-space-1)]">
         <a
           href={aaveUrl}
           {...externalLinkTabProps(isMobile)}
@@ -202,6 +216,14 @@ const ReserveIdentity = memo(({
           </span>
           <ExternalLink className="w-3 h-3 text-muted-foreground opacity-0 -ml-1 group-hover/token:opacity-70 transition-opacity duration-150 shrink-0" />
         </a>
+        {marketName && tokenAddress ? (
+          <AssetActionMenu
+            tokenSymbol={tokenSymbol}
+            tokenAddress={tokenAddress}
+            marketName={marketName}
+            isMobile={isMobile}
+          />
+        ) : null}
       </div>
       <div className="flex items-center gap-[var(--ds-space-1)] min-w-0 leading-none">
         {chainIconSrc && (
@@ -376,6 +398,8 @@ const MiniReserveCard = ({
         marketDisplayName={marketDisplayName}
         isMobile={isMobile}
         miniRightContent={mainValueNode}
+        marketName={reserve.marketName}
+        tokenAddress={reserve.tokenAddress}
       />
 
       <div className="flex items-baseline justify-end gap-[var(--ds-space-1)]">
@@ -479,7 +503,7 @@ const ReserveItem = forwardRef<HTMLDivElement, ReserveItemProps>(function Reserv
           className="shrink-0 row-span-2"
           logoURI={logoURI}
         />
-        <div className="flex items-center min-w-0">
+        <div className="flex items-center min-w-0 gap-[var(--ds-space-1)]">
           <a
             href={aaveUrl}
             {...externalLinkTabProps(isMobile)}
@@ -493,6 +517,14 @@ const ReserveItem = forwardRef<HTMLDivElement, ReserveItemProps>(function Reserv
             </span>
             <ExternalLink className={externalLinkIconClassName} />
           </a>
+          {reserve.marketName && reserve.tokenAddress ? (
+            <AssetActionMenu
+              tokenSymbol={reserve.tokenSymbol}
+              tokenAddress={reserve.tokenAddress}
+              marketName={reserve.marketName}
+              isMobile={isMobile}
+            />
+          ) : null}
         </div>
         <div
           className={`${(isLeverage ? getSpreadColorClass(mainValue, index, totalItems) : getApyColorClass(mainValue))} font-bold tabular-nums text-right leading-none ${isMobile ? 'ds-text-16' : 'ds-text-18'} ${!isLeverage && !hasIncentive ? 'row-span-2 self-center' : ''}`}
