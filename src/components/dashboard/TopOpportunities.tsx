@@ -140,6 +140,8 @@ interface ReserveIdentityProps {
   mini?: boolean;
   aaveUrl?: string;
   miniRightContent?: ReactNode;
+  marketName?: string;
+  tokenAddress?: string | null;
 }
 
 const ReserveIdentity = memo(({
@@ -153,6 +155,8 @@ const ReserveIdentity = memo(({
   mini = false,
   aaveUrl,
   miniRightContent,
+  marketName,
+  tokenAddress,
 }: ReserveIdentityProps) => {
   if (mini) {
     return (
@@ -165,8 +169,17 @@ const ReserveIdentity = memo(({
           logoURI={logoURI}
         />
         <div className="min-w-0 flex-1">
-          <div className="flex items-center">
+          <div className="flex items-center gap-[var(--ds-space-0-5)]">
             <span className="font-bold text-foreground ds-text-12 truncate">{tokenSymbol}</span>
+            {marketName && tokenAddress ? (
+              <AssetActionMenu
+                tokenSymbol={tokenSymbol}
+                tokenAddress={tokenAddress}
+                marketName={marketName}
+                isMobile={isMobile}
+                triggerSize={11}
+              />
+            ) : null}
           </div>
           <div className="flex items-center gap-[var(--ds-space-1)] ds-text-9 text-muted-foreground">
             {chainIconSrc && (
@@ -189,7 +202,7 @@ const ReserveIdentity = memo(({
         className="shrink-0 row-span-2"
         logoURI={logoURI}
       />
-      <div className="flex items-center min-w-0">
+      <div className="flex items-center min-w-0 gap-[var(--ds-space-1)]">
         <a
           href={aaveUrl}
           {...externalLinkTabProps(isMobile)}
@@ -203,6 +216,14 @@ const ReserveIdentity = memo(({
           </span>
           <ExternalLink className="w-3 h-3 text-muted-foreground opacity-0 -ml-1 group-hover/token:opacity-70 transition-opacity duration-150 shrink-0" />
         </a>
+        {marketName && tokenAddress ? (
+          <AssetActionMenu
+            tokenSymbol={tokenSymbol}
+            tokenAddress={tokenAddress}
+            marketName={marketName}
+            isMobile={isMobile}
+          />
+        ) : null}
       </div>
       <div className="flex items-center gap-[var(--ds-space-1)] min-w-0 leading-none">
         {chainIconSrc && (
