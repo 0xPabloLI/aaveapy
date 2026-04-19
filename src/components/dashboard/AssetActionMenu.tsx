@@ -6,7 +6,13 @@ import { toast } from 'sonner';
 import { buildAaveReserveUrl } from '@/lib/aaveLinks';
 import { buildPoolExplorerUrl, buildTokenExplorerUrl } from '@/lib/poolExplorerLinks';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
+import { getChainIconSrc } from '@/lib/chainIcons';
 import { cn } from '@/lib/utils';
+
+/** Strip Aave market prefix to get the chain name (e.g. "AaveV3Arbitrum" → "Arbitrum"). */
+function deriveChainFromMarketName(marketName: string): string {
+  return marketName.replace(/^Aave(V\d+)?/i, '') || marketName;
+}
 
 export interface AssetActionMenuProps {
   /** Reserve token symbol (display + aria). */
