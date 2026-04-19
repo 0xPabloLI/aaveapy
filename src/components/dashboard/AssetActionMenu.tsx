@@ -107,6 +107,8 @@ export function AssetActionMenu({
   const aaveUrl = buildAaveReserveUrl({ marketName, tokenAddress });
   const tokenExplorerUrl = buildTokenExplorerUrl(marketName, tokenAddress);
   const poolExplorerUrl = buildPoolExplorerUrl(marketName, { deepLink: false });
+  const chainName = deriveChainFromMarketName(marketName);
+  const chainIconSrc = getChainIconSrc(chainName);
 
   const handleCopy = async () => {
     try {
