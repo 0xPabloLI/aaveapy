@@ -231,9 +231,9 @@ export function AssetActionMenu({
           triggerClassName,
         )}
       >
-        <ChevronDown
+        <SquareArrowOutUpRight
           style={{ width: triggerSize, height: triggerSize }}
-          className={cn('transition-transform duration-200', open && 'rotate-180')}
+          className="transition-transform duration-200"
         />
       </button>
 
