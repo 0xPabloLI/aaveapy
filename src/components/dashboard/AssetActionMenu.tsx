@@ -279,10 +279,7 @@ export function AssetActionMenu({
                   aria-labelledby="asset-action-sheet-title"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <div className="flex items-center justify-between border-b border-border px-[var(--ds-space-4)] py-[var(--ds-space-3)]">
-                    <h3 id="asset-action-sheet-title" className="ds-tooltip-title text-foreground">
-                      {tokenSymbol}
-                    </h3>
+                  <div className="flex items-center justify-end border-b border-border px-[var(--ds-space-2)] py-[var(--ds-space-2)]">
                     <button
                       type="button"
                       onClick={() => setOpen(false)}
