@@ -269,6 +269,8 @@ const FilterBar = ({
           const info = getMarketInfo(market);
           const isSelected = selectedMarkets.includes(market.marketName);
           const isEthereum = market.chainName === 'Ethereum';
+          const version = getProtocolVersion(market.marketName);
+          const isV4 = version === 'v4';
           return (
             <button
               key={market.marketName}
@@ -278,13 +280,47 @@ const FilterBar = ({
                   ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
                   : 'text-foreground/80 border border-border hover:text-foreground'
               }`}
-              title={isEthereum ? `Ethereum ${info.label}` : market.chainName}
+              title={`${isEthereum ? `Ethereum ${info.label}` : market.chainName} · ${isV4 ? 'V4' : 'V3'}`}
             >
               <ChainIcon chain={market.chainName} />
               <span>{isEthereum ? info.label : market.chainName}</span>
+              <span
+                className={`ml-0.5 inline-flex items-center px-1 rounded ds-text-9 font-semibold leading-none py-0.5 ${
+                  isV4
+                    ? 'text-foreground border border-transparent gradient-border bg-gradient-to-r from-[rgb(var(--ds-brand-magenta-rgb))]/15 to-[rgb(var(--ds-brand-cyan-rgb))]/15'
+                    : 'text-muted-foreground/70 border border-border/60 bg-muted/30'
+                }`}
+              >
+                {isV4 ? 'V4' : 'V3'}
+              </span>
             </button>
           );
         })}
+
+        {hasV4Market && setVersionFilter && (
+          <div className="ml-auto inline-flex items-center rounded-md border border-border/60 bg-card/40 p-0.5">
+            {(['all', 'v3', 'v4'] as const).map((v) => {
+              const active = versionFilter === v;
+              const label = v === 'all' ? 'All' : v.toUpperCase();
+              return (
+                <button
+                  key={v}
+                  onClick={() => setVersionFilter(v)}
+                  className={`px-2 py-0.5 rounded ds-text-11 font-medium transition-colors ${
+                    active
+                      ? v === 'v4'
+                        ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] bg-card'
+                        : 'text-foreground bg-card border border-border/60'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                  aria-pressed={active}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
