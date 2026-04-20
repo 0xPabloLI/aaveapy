@@ -226,6 +226,7 @@ const DesktopReserveRow = memo(({
               tokenAddress={reserve.tokenAddress}
               marketName={reserve.marketName}
               aaveProReserveId={reserve.aaveProReserveId}
+              chainName={reserve.chainName}
               isMobile={isMobile}
               triggerSize={12}
             />

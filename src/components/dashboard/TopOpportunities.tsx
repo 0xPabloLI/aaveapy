@@ -179,6 +179,7 @@ const ReserveIdentity = memo(({
                 tokenAddress={tokenAddress}
                 marketName={marketName}
                 aaveProReserveId={aaveProReserveId}
+                chainName={chainName}
                 isMobile={isMobile}
                 triggerSize={11}
               />
@@ -505,6 +506,7 @@ const ReserveItem = forwardRef<HTMLDivElement, ReserveItemProps>(function Reserv
               tokenAddress={reserve.tokenAddress}
               marketName={reserve.marketName}
               aaveProReserveId={reserve.aaveProReserveId}
+              chainName={reserve.chainName}
               isMobile={isMobile}
             />
           ) : null}

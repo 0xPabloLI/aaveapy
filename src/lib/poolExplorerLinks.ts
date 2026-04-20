@@ -21,13 +21,13 @@ interface PoolExplorerEntry {
 }
 
 interface ExplorerConfig {
-  /** Explorer base URL (e.g. `https://etherscan.io`). */
+  /** explorer base URL (e.g. `https://etherscan.io`). */
   base: string;
-  
-  /** 
+
+  /**
    * Explorer family determines the URL fragment used to deep-link to
    * `getReserveData`.
-   * 
+   *
    * Families:
    * - `etherscan`  → Uses `#readProxyContract#F23` anchor
    * - `routescan`  → Uses custom path format with `#readProxyContract#F23`
@@ -35,15 +35,63 @@ interface ExplorerConfig {
    * - `oklink`     → Uses custom query params (no standard deep-link)
    */
   family: 'etherscan' | 'routescan' | 'blockscout' | 'oklink';
-  
-  /** 
+
+  /**
    * Optional custom path format (for explorers with non-standard URLs).
    * Use `{pool}` as placeholder for the contract address.
    */
   pathFormat?: string;
-  
+
   /** Deep-link anchor/query for getReserveData function */
   deepLink?: string;
+}
+
+/**
+ * Chain-level explorer mapping for V4 markets.
+ * Maps chainName (from API) to the explorer base URL.
+ *
+ * Structure mirrors the `explorers[0]` format from POOL_EXPLORER_MAP
+ * to allow seamless fallback when marketName is not mapped (e.g. V4).
+ */
+const CHAIN_EXPLORER_MAP: Record<string, ExplorerConfig> = {
+  // Etherscan family
+  Ethereum: { base: 'https://etherscan.io', family: 'etherscan', deepLink: '#readProxyContract#F23' },
+  Arbitrum: { base: 'https://arbiscan.io', family: 'etherscan', deepLink: '#readProxyContract#F23' },
+  Optimism: { base: 'https://optimistic.etherscan.io', family: 'etherscan', deepLink: '#readProxyContract#F23' },
+  Polygon: { base: 'https://polygonscan.com', family: 'etherscan', deepLink: '#readProxyContract#F23' },
+  Base: { base: 'https://basescan.org', family: 'etherscan', deepLink: '#readProxyContract#F23' },
+  Gnosis: { base: 'https://gnosisscan.io', family: 'etherscan', deepLink: '#readProxyContract#F23' },
+  BNB: { base: 'https://bscscan.com', family: 'etherscan', deepLink: '#readProxyContract#F23' },
+  Avalanche: { base: 'https://snowscan.xyz', family: 'etherscan', deepLink: '#readProxyContract#F23' },
+  Linea: { base: 'https://lineascan.build', family: 'etherscan', deepLink: '#readProxyContract#F23' },
+  Scroll: { base: 'https://scrollscan.com', family: 'blockscout', deepLink: '#0xc952485d' },
+  ZkSync: { base: 'https://zksync.blockscout.com', family: 'blockscout', deepLink: '#0xc952485d' },
+  Metis: { base: 'https://metisscan.info', family: 'routescan', pathFormat: '/address/{pool}/contract/1088/readProxyContract', deepLink: '#F23' },
+  // Add more chains as needed for V4
+};
+
+// ───────────────────────────────────────────────────────────────────────────────
+// V4 ARCHITECTURE NOTE:
+// V4 uses a Hub & Spoke architecture, completely different from V3's single Pool.
+// There is no single "Pool" contract for V4 markets.
+// 
+// V4 contract types from aave-address-book:
+// - Hubs (on Ethereum mainnet): CORE_HUB, PLUS_HUB, PRIME_HUB
+// - Spokes (per chain): BLUECHIP_SPOKE, LIDO_E_SPOKE, ETHENA_CORRELATED_SPOKE, etc.
+// 
+// Therefore, V4 assets will NOT show a "View pool on explorer" link.
+// Only "View token on explorer" links are provided for V4.
+// ───────────────────────────────────────────────────────────────────────────────
+
+interface PoolExplorerEntry {
+  /** Pool proxy contract address (checksummed). */
+  pool: string;
+
+  /**
+   * Explorer configurations - markets may have multiple explorers.
+   * First entry is the default used for deep-linking.
+   */
+  explorers: ExplorerConfig[];
 }
 
 /**
@@ -343,41 +391,45 @@ const POOL_EXPLORER_MAP: Record<string, PoolExplorerEntry> = {
  *   (`0xc952485d` = function selector of `getReserveData(address)`)
  * - OKLink: `…/x-layer/address/{pool}/contract#category=proxy-read&id=22`
  *
- * Returns `null` when the market isn't mapped (e.g. testnets, V2).
+ * For V4 markets not in POOL_EXPLORER_MAP, falls back to chain-level explorer
+ * using chainName.
  */
 export function buildPoolExplorerUrl(
   marketName: string,
-  options: { deepLink?: boolean } = {},
+  options: { deepLink?: boolean; chainName?: string } = {},
 ): string | null {
   const { deepLink = true } = options;
+  
+  // Try V3 market mapping first
   const entry = POOL_EXPLORER_MAP[marketName];
-  if (!entry || entry.explorers.length === 0) return null;
+  if (entry && entry.explorers.length > 0) {
+    const explorer = entry.explorers[0];
+    let path = '/address/' + entry.pool;
+    if (explorer.pathFormat) {
+      path = explorer.pathFormat.replace('{pool}', entry.pool);
+    }
 
-  // Use first (default) explorer
-  const explorer = entry.explorers[0];
+    // When deepLink is disabled, return the plain address page (no read-proxy anchor).
+    if (!deepLink) {
+      return `${explorer.base}${path}`;
+    }
 
-  // Build path
-  let path = '/address/' + entry.pool;
-  if (explorer.pathFormat) {
-    path = explorer.pathFormat.replace('{pool}', entry.pool);
+    // Build query/anchor based on family
+    let suffix = '';
+    if (explorer.family === 'etherscan' || explorer.family === 'routescan') {
+      suffix = explorer.deepLink || '#readProxyContract#F23';
+    } else if (explorer.family === 'blockscout') {
+      suffix = '?tab=read_proxy' + (explorer.deepLink || '#0xc952485d');
+    } else if (explorer.family === 'oklink') {
+      suffix = explorer.deepLink || '';
+    }
+
+    return `${explorer.base}${path}${suffix}`;
   }
 
-  // When deepLink is disabled, return the plain address page (no read-proxy anchor).
-  if (!deepLink) {
-    return `${explorer.base}${path}`;
-  }
-
-  // Build query/anchor based on family
-  let suffix = '';
-  if (explorer.family === 'etherscan' || explorer.family === 'routescan') {
-    suffix = explorer.deepLink || '#readProxyContract#F23';
-  } else if (explorer.family === 'blockscout') {
-    suffix = '?tab=read_proxy' + (explorer.deepLink || '#0xc952485d');
-  } else if (explorer.family === 'oklink') {
-    suffix = explorer.deepLink || '';
-  }
-
-  return `${explorer.base}${path}${suffix}`;
+  // V4 markets don't have a single Pool contract (they use Hub & Spoke architecture)
+  // so we return null here. Only token explorer links are provided for V4.
+  return null;
 }
 
 /**
@@ -435,19 +487,37 @@ export function getExplorerMarketNames(): string[] {
  * (and routescan pathFormat where applicable) but drops the `getReserveData` deep
  * link since token contracts have a different ABI.
  *
- * Returns `null` when the market isn't mapped or the token address is missing.
+ * For V4 markets not in POOL_EXPLORER_MAP, falls back to chain-level explorer
+ * using chainName.
  */
 export function buildTokenExplorerUrl(
   marketName: string,
   tokenAddress: string | null | undefined,
+  options: { chainName?: string } = {},
 ): string | null {
   if (!tokenAddress) return null;
+  
+  // Try V3 market mapping first
   const entry = POOL_EXPLORER_MAP[marketName];
-  if (!entry || entry.explorers.length === 0) return null;
-  const explorer = entry.explorers[0];
-  let path = '/address/' + tokenAddress;
-  if (explorer.pathFormat) {
-    path = explorer.pathFormat.replace('{pool}', tokenAddress);
+  if (entry && entry.explorers.length > 0) {
+    const explorer = entry.explorers[0];
+    let path = '/address/' + tokenAddress;
+    if (explorer.pathFormat) {
+      path = explorer.pathFormat.replace('{pool}', tokenAddress);
+    }
+    return `${explorer.base}${path}`;
   }
-  return `${explorer.base}${path}`;
+  
+  // Fallback for V4 markets: use chainName to build explorer URL
+  const chainName = options.chainName;
+  if (chainName && CHAIN_EXPLORER_MAP[chainName]) {
+    const explorer = CHAIN_EXPLORER_MAP[chainName];
+    let path = '/address/' + tokenAddress;
+    if (explorer.pathFormat) {
+      path = explorer.pathFormat.replace('{pool}', tokenAddress);
+    }
+    return `${explorer.base}${path}`;
+  }
+
+  return null;
 }

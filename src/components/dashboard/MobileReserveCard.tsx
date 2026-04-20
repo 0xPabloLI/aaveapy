@@ -557,6 +557,7 @@ const MobileReserveCard = memo(({
                   tokenAddress={reserve.tokenAddress}
                   marketName={reserve.marketName}
                   aaveProReserveId={reserve.aaveProReserveId}
+                  chainName={reserve.chainName}
                   isMobile
                   triggerSize={13}
                   triggerClassName="shrink-0"

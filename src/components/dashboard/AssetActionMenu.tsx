@@ -23,6 +23,8 @@ export interface AssetActionMenuProps {
   marketName: string;
   /** V4 SDK ReserveId for pro.aave.com deep-links. */
   aaveProReserveId?: string;
+  /** Chain name for explorer URL fallback (needed for V4 markets). */
+  chainName?: string;
   /** When true, render bottom-sheet style; otherwise render desktop popover. */
   isMobile: boolean;
   /** Optional extra classes for the trigger button. */
@@ -55,6 +57,7 @@ export function AssetActionMenu({
   tokenAddress,
   marketName,
   aaveProReserveId,
+  chainName: reserveChainName,
   isMobile,
   triggerClassName,
   triggerSize = 12,
@@ -108,9 +111,9 @@ export function AssetActionMenu({
   if (!tokenAddress) return null;
 
   const aaveUrl = buildAaveUrl({ marketName, tokenAddress, aaveProReserveId });
-  const tokenExplorerUrl = buildTokenExplorerUrl(marketName, tokenAddress);
-  const poolExplorerUrl = buildPoolExplorerUrl(marketName, { deepLink: false });
-  const chainName = deriveChainFromMarketName(marketName);
+  const tokenExplorerUrl = buildTokenExplorerUrl(marketName, tokenAddress, { chainName: reserveChainName });
+  const poolExplorerUrl = buildPoolExplorerUrl(marketName, { deepLink: false, chainName: reserveChainName });
+  const chainName = reserveChainName ?? deriveChainFromMarketName(marketName);
   const chainIconSrc = getChainIconSrc(chainName);
 
   const handleCopy = async () => {
