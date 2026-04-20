@@ -104,6 +104,12 @@ const FilterBar = ({
   const otherMarkets = marketsList?.filter(m => m.chainName !== 'Ethereum') || [];
   const allMarkets = [...ethereumMarkets, ...otherMarkets];
 
+  // Show V3/V4 toggle only when at least one V4 market exists
+  const hasV4Market = useMemo(
+    () => (marketsList ?? []).some((m) => getProtocolVersion(m.marketName) === 'v4'),
+    [marketsList],
+  );
+
   // Auto-adapt search placeholder based on input width
   useEffect(() => {
     const canvas = document.createElement('canvas');
