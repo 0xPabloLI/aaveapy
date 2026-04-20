@@ -109,13 +109,35 @@ export interface IncentiveCalculationOptions {
   forecastStates?: Record<string, MerklForecastWireItem>;
 }
 
-/** Shared market label rendering: Ethereum sub-markets use canonical market names, others use chain name. */
+/** Shared market label rendering:
+ *  - V4 markets: extract suffix from marketName (e.g., "AaveV4EthereumLido" → "Ethereum Lido")
+ *  - V3 Ethereum: use canonical mapped names (Core, Prime, etc.)
+ *  - V3 non-Ethereum: extract suffix from marketName (e.g., "AaveV3Base" → "Base")
+ *    This ensures consistency with V4 and supports future sub-markets.
+ */
 export function getReserveMarketDisplayName(
   market: Pick<ReserveWithSpread, 'chainName' | 'marketName'>
 ): string {
+  // V4 markets: extract everything after "AaveV4" prefix
+  if (market.marketName?.startsWith('AaveV4')) {
+    const withoutPrefix = market.marketName.replace(/^AaveV4/i, '');
+    // Insert space between camelCase segments (e.g., "EthereumLido" → "Ethereum Lido")
+    return withoutPrefix.replace(/([a-z])([A-Z])/g, '$1 $2');
+  }
+  
+  // V3 Ethereum: use canonical mapped names
   if (market.chainName === 'Ethereum' && ETHEREUM_MARKET_NAMES[market.marketName]) {
     return ETHEREUM_MARKET_NAMES[market.marketName];
   }
+  
+  // V3 non-Ethereum: extract suffix from marketName (consistent with V4 approach)
+  // e.g., "AaveV3Base" → "Base", "AaveV3ArbitrumNova" → "Arbitrum Nova"
+  if (market.marketName?.startsWith('AaveV3')) {
+    const withoutPrefix = market.marketName.replace(/^AaveV3/i, '');
+    return withoutPrefix.replace(/([a-z])([A-Z])/g, '$1 $2');
+  }
+  
+  // Fallback for unexpected marketName formats
   return market.chainName;
 }
 

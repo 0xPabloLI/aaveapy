@@ -51,6 +51,20 @@ const ChainIcon = memo(({ chain, className = "" }: { chain: string; className?: 
 });
 
 const getMarketInfo = (market: MarketListItem) => {
+  const version = getProtocolVersion(market.marketName);
+  
+  // V4 markets: extract suffix from marketName
+  if (version === 'v4') {
+    const withoutPrefix = market.marketName.replace(/^AaveV4/i, '');
+    const label = withoutPrefix.replace(/([a-z])([A-Z])/g, '$1 $2');
+    return {
+      label,
+      chain: market.chainName,
+      isEthereum: market.chainName === 'Ethereum',
+    };
+  }
+  
+  // V3 Ethereum: use canonical mapped names
   if (market.chainName === 'Ethereum' && ETHEREUM_MARKET_NAMES[market.marketName]) {
     return {
       label: ETHEREUM_MARKET_NAMES[market.marketName],
@@ -58,6 +72,20 @@ const getMarketInfo = (market: MarketListItem) => {
       isEthereum: true,
     };
   }
+  
+  // V3 non-Ethereum: extract suffix from marketName (consistent with V4)
+  // e.g., "AaveV3Base" → "Base", "AaveV3ArbitrumNova" → "Arbitrum Nova"
+  if (market.marketName?.startsWith('AaveV3')) {
+    const withoutPrefix = market.marketName.replace(/^AaveV3/i, '');
+    const label = withoutPrefix.replace(/([a-z])([A-Z])/g, '$1 $2');
+    return {
+      label,
+      chain: market.chainName,
+      isEthereum: false,
+    };
+  }
+  
+  // Fallback for unexpected formats
   return {
     label: market.chainName,
     chain: market.chainName,

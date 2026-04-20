@@ -27,6 +27,7 @@ import {
 } from '@/lib/simulationIncentiveTableRows';
 import type { ReserveWithSpread, MeritIncentive, MerklOpportunityGroup, BrevisIncentive } from '@/types/aave';
 import { ETHEREUM_MARKET_NAMES } from '@/types/aave';
+import { getProtocolVersion } from '@/lib/protocolVersion';
 import { getFirstActiveBrevisLink } from '@/lib/brevis';
 
 const getFirstMeritLink = (merits?: MeritIncentive[]): string | null => {
@@ -212,10 +213,22 @@ const SimulationSubRow = ({
 
   const aaveUrl = buildAaveUrl({ marketName: reserve.marketName, tokenAddress: reserve.tokenAddress, aaveProReserveId: reserve.aaveProReserveId });
 
-  const tokenOnChainLabel =
-    reserve.chainName === 'Ethereum' && ETHEREUM_MARKET_NAMES[reserve.marketName]
-      ? `${reserve.tokenSymbol} · ${ETHEREUM_MARKET_NAMES[reserve.marketName]}`
-      : `${reserve.tokenSymbol} · ${reserve.chainName}`;
+  const tokenOnChainLabel = (() => {
+    const version = getProtocolVersion(reserve.marketName);
+    // V4 and V3 non-Ethereum: extract display name from marketName suffix
+    // e.g., "AaveV4EthereumLido" → "Ethereum Lido", "AaveV3Base" → "Base"
+    if (version === 'v4' || (reserve.marketName?.startsWith('AaveV3') && reserve.chainName !== 'Ethereum')) {
+      const prefix = version === 'v4' ? 'AaveV4' : 'AaveV3';
+      const withoutPrefix = reserve.marketName.replace(new RegExp(`^${prefix}`, 'i'), '');
+      const marketDisplay = withoutPrefix.replace(/([a-z])([A-Z])/g, '$1 $2');
+      return `${reserve.tokenSymbol} · ${marketDisplay}`;
+    }
+    // V3 Ethereum: keep original logic with canonical names
+    if (reserve.chainName === 'Ethereum' && ETHEREUM_MARKET_NAMES[reserve.marketName]) {
+      return `${reserve.tokenSymbol} · ${ETHEREUM_MARKET_NAMES[reserve.marketName]}`;
+    }
+    return `${reserve.tokenSymbol} · ${reserve.chainName}`;
+  })();
 
   const { supplyCapExceeded, availableSupplyRoomUsd, supplyCapExceededByUsd, supplyCapUsd } = simulation.marketMetrics;
 
