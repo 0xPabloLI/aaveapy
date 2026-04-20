@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Search, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { TokenCategory, MarketListItem, ETHEREUM_MARKET_NAMES } from '@/types/aave';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { useIsMobile } from '@/hooks/use-mobile';
 import AprApyToggle from '@/components/dashboard/AprApyToggle';
+import { getProtocolVersion, type ProtocolVersionFilter } from '@/lib/protocolVersion';
 import { memo } from 'react';
 
 interface FilterBarProps {
@@ -17,6 +18,8 @@ interface FilterBarProps {
   isApy: boolean;
   setIsApy: (isApy: boolean) => void;
   marketsList?: MarketListItem[];
+  versionFilter?: ProtocolVersionFilter;
+  setVersionFilter?: (v: ProtocolVersionFilter) => void;
 }
 
 const categories: { value: TokenCategory; label: string }[] = [
