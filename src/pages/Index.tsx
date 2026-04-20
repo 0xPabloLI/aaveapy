@@ -236,6 +236,13 @@ const Index = () => {
         }
       }
 
+      // Protocol version filter (V3 / V4)
+      if (versionFilter !== 'all') {
+        if (getProtocolVersion(reserve.marketName) !== versionFilter) {
+          return false;
+        }
+      }
+
       // Category filter
       if (selectedCategory !== 'all') {
         const symbol = reserve.tokenSymbol.toUpperCase();
@@ -257,7 +264,7 @@ const Index = () => {
 
       return true;
     });
-  }, [effectiveReservesData?.reserves, searchQuery, selectedMarkets, selectedCategory, tokenCategoryGroups]);
+  }, [effectiveReservesData?.reserves, searchQuery, selectedMarkets, versionFilter, selectedCategory, tokenCategoryGroups]);
 
   if (isLoading && !effectiveReservesData) {
     return <LoadingState />;
