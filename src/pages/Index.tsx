@@ -30,7 +30,7 @@ import { usePreloadReserveAssets } from '@/hooks/usePreloadReserveAssets';
 import { buildMarketsList } from '@/lib/marketsList';
 import { getReserveKey } from '@/lib/reserveKey';
 import { normalizeTokenSymbolForSearch } from '@/lib/tokenSymbolNormalization';
-import { getProtocolVersion, type ProtocolVersionFilter } from '@/lib/protocolVersion';
+import { getProtocolVersion } from '@/lib/protocolVersion';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
 
@@ -47,8 +47,7 @@ const Index = () => {
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMarkets, setSelectedMarkets] = useState<string[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<TokenCategory>('all');
-  const [versionFilter, setVersionFilter] = useState<ProtocolVersionFilter>('all');
+const [selectedCategory, setSelectedCategory] = useState<TokenCategory>('all');
   const [isApy, setIsApy] = useState(true);
   const [showCacheWarning, setShowCacheWarning] = useState(false);
   
@@ -236,13 +235,6 @@ const Index = () => {
         }
       }
 
-      // Protocol version filter (V3 / V4)
-      if (versionFilter !== 'all') {
-        if (getProtocolVersion(reserve.marketName) !== versionFilter) {
-          return false;
-        }
-      }
-
       // Category filter
       if (selectedCategory !== 'all') {
         const symbol = reserve.tokenSymbol.toUpperCase();
@@ -264,7 +256,7 @@ const Index = () => {
 
       return true;
     });
-  }, [effectiveReservesData?.reserves, searchQuery, selectedMarkets, versionFilter, selectedCategory, tokenCategoryGroups]);
+  }, [effectiveReservesData?.reserves, searchQuery, selectedMarkets, selectedCategory, tokenCategoryGroups]);
 
   if (isLoading && !effectiveReservesData) {
     return <LoadingState />;
@@ -365,8 +357,6 @@ const Index = () => {
               isApy={isApy}
               setIsApy={setIsApy}
               marketsList={effectiveMarketsList}
-              versionFilter={versionFilter}
-              setVersionFilter={setVersionFilter}
             />
 
             <ReservesTable
