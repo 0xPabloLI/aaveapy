@@ -18,8 +18,6 @@ interface FilterBarProps {
   isApy: boolean;
   setIsApy: (isApy: boolean) => void;
   marketsList?: MarketListItem[];
-  versionFilter?: ProtocolVersionFilter;
-  setVersionFilter?: (v: ProtocolVersionFilter) => void;
 }
 
 const categories: { value: TokenCategory; label: string }[] = [
