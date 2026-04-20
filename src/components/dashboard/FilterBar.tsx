@@ -75,8 +75,6 @@ const FilterBar = ({
   isApy,
   setIsApy,
   marketsList,
-  versionFilter = 'all',
-  setVersionFilter,
 }: FilterBarProps) => {
   const isMobile = useIsMobile();
   const [searchPlaceholder, setSearchPlaceholder] = useState('Search token');
