@@ -30,7 +30,7 @@ import { usePreloadReserveAssets } from '@/hooks/usePreloadReserveAssets';
 import { buildMarketsList } from '@/lib/marketsList';
 import { getReserveKey } from '@/lib/reserveKey';
 import { normalizeTokenSymbolForSearch } from '@/lib/tokenSymbolNormalization';
-import { getProtocolVersion, type ProtocolVersionFilter } from '@/lib/protocolVersion';
+import { getProtocolVersion } from '@/lib/protocolVersion';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
 
