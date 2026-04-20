@@ -248,9 +248,6 @@ export function AssetActionMenu({
             className="z-50 rounded-lg border border-border/60 bg-card p-1 shadow-md animate-in fade-in-0 zoom-in-95"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="px-3 pt-2 pb-1 ds-text-11 font-medium uppercase tracking-wide text-muted-foreground/70">
-              {tokenSymbol}
-            </div>
             <div className="flex flex-col">{items.map(renderItem)}</div>
           </div>,
           document.body,
@@ -282,10 +279,7 @@ export function AssetActionMenu({
                   aria-labelledby="asset-action-sheet-title"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <div className="flex items-center justify-between border-b border-border px-[var(--ds-space-4)] py-[var(--ds-space-3)]">
-                    <h3 id="asset-action-sheet-title" className="ds-tooltip-title text-foreground">
-                      {tokenSymbol}
-                    </h3>
+                  <div className="flex items-center justify-end border-b border-border px-[var(--ds-space-2)] py-[var(--ds-space-2)]">
                     <button
                       type="button"
                       onClick={() => setOpen(false)}

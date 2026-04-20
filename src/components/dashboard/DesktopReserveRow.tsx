@@ -227,7 +227,6 @@ const DesktopReserveRow = memo(({
               marketName={reserve.marketName}
               isMobile={isMobile}
               triggerSize={12}
-              triggerClassName="opacity-0 group-hover/token:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100 transition-opacity"
             />
           </div>
           </div>
