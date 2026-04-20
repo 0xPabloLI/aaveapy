@@ -365,6 +365,8 @@ const Index = () => {
               isApy={isApy}
               setIsApy={setIsApy}
               marketsList={effectiveMarketsList}
+              versionFilter={versionFilter}
+              setVersionFilter={setVersionFilter}
             />
 
             <ReservesTable
