@@ -248,9 +248,6 @@ export function AssetActionMenu({
             className="z-50 rounded-lg border border-border/60 bg-card p-1 shadow-md animate-in fade-in-0 zoom-in-95"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="px-3 pt-2 pb-1 ds-text-11 font-medium uppercase tracking-wide text-muted-foreground/70">
-              {tokenSymbol}
-            </div>
             <div className="flex flex-col">{items.map(renderItem)}</div>
           </div>,
           document.body,
