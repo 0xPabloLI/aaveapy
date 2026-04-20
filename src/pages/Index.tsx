@@ -47,8 +47,7 @@ const Index = () => {
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMarkets, setSelectedMarkets] = useState<string[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<TokenCategory>('all');
-  const [versionFilter, setVersionFilter] = useState<ProtocolVersionFilter>('all');
+const [selectedCategory, setSelectedCategory] = useState<TokenCategory>('all');
   const [isApy, setIsApy] = useState(true);
   const [showCacheWarning, setShowCacheWarning] = useState(false);
   
