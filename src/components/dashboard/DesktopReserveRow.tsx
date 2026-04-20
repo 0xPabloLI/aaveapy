@@ -4,7 +4,7 @@ import { TableRow, TableCell } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ReserveWithSpread } from '@/types/aave';
 import { formatPercent, formatScenarioSize, formatSpread, formatUsd, getReserveMarketDisplayName } from '@/lib/formatters';
-import { buildAaveMarketUrl, buildAaveReserveUrl } from '@/lib/aaveLinks';
+import { buildAaveMarketUrl, buildAaveUrl } from '@/lib/aaveLinks';
 import { buildPoolExplorerUrl } from '@/lib/poolExplorerLinks';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
 import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
@@ -122,7 +122,7 @@ const DesktopReserveRow = memo(({
     name: reserve.tokenName,
   });
 
-  const aaveUrl = buildAaveReserveUrl({ marketName: reserve.marketName, tokenAddress: reserve.tokenAddress }) || '#';
+  const aaveUrl = buildAaveUrl({ marketName: reserve.marketName, tokenAddress: reserve.tokenAddress, aaveProReserveId: reserve.aaveProReserveId }) || '#';
   const aaveMarketUrl = buildAaveMarketUrl(reserve.marketName);
   const poolExplorerUrl = buildPoolExplorerUrl(reserve.marketName);
 
@@ -225,6 +225,7 @@ const DesktopReserveRow = memo(({
               tokenSymbol={reserve.tokenSymbol}
               tokenAddress={reserve.tokenAddress}
               marketName={reserve.marketName}
+              aaveProReserveId={reserve.aaveProReserveId}
               isMobile={isMobile}
               triggerSize={12}
             />

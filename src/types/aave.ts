@@ -74,6 +74,8 @@ export interface ReserveWithSpread {
   vTokenAddress?: string | null;
   /** Canonical backend reserve key. */
   reserveId: string;
+  /** V4 SDK ReserveId for pro.aave.com deep-links. */
+  aaveProReserveId?: string;
   
   // Base APY (percentage value, e.g., 2.07 means 2.07%)
   supplyApy?: number;

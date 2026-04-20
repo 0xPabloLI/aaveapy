@@ -9,7 +9,7 @@ import {
   formatSpread,
   formatUsd,
 } from '@/lib/formatters';
-import { buildAaveReserveUrl } from '@/lib/aaveLinks';
+import { buildAaveUrl } from '@/lib/aaveLinks';
 import { convertUsdToInputValue } from '@/lib/scenarioSize';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type {
@@ -210,7 +210,7 @@ const SimulationSubRow = ({
   const hasScenarioInput = simulation.supply.hasInput || simulation.borrow.hasInput;
   const showEmptyStateNote = !simulation.supply.hasInput && !simulation.borrow.hasInput;
 
-  const aaveUrl = buildAaveReserveUrl({ marketName: reserve.marketName, tokenAddress: reserve.tokenAddress });
+  const aaveUrl = buildAaveUrl({ marketName: reserve.marketName, tokenAddress: reserve.tokenAddress, aaveProReserveId: reserve.aaveProReserveId });
 
   const tokenOnChainLabel =
     reserve.chainName === 'Ethereum' && ETHEREUM_MARKET_NAMES[reserve.marketName]

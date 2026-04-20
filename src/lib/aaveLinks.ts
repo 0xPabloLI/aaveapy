@@ -69,3 +69,27 @@ export function buildAaveMarketUrl(marketName: string): string | null {
   if (!resolvedMarketName) return null;
   return `${AAVE_APP_BASE}/markets/?marketName=${encodeURIComponent(resolvedMarketName)}`;
 }
+
+const AAVE_PRO_BASE = 'https://pro.aave.com';
+
+/** Build a pro.aave.com deep-link for a V4 reserve. Returns null for non-V4 reserves. */
+export function buildAaveProUrl(reserve: {
+  aaveProReserveId?: string;
+}): string | null {
+  if (reserve.aaveProReserveId) {
+    return `${AAVE_PRO_BASE}/explore/reserve/${reserve.aaveProReserveId}`;
+  }
+  return null;
+}
+
+/**
+ * Best-effort Aave link: returns app.aave.com for V3, pro.aave.com for V4, or null.
+ * Use this as the single entry-point for "Open on Aave" actions.
+ */
+export function buildAaveUrl(reserve: {
+  marketName: string;
+  tokenAddress: string;
+  aaveProReserveId?: string;
+}): string | null {
+  return buildAaveReserveUrl(reserve) ?? buildAaveProUrl(reserve);
+}

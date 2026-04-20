@@ -17,7 +17,7 @@ import {
 import ScenarioControls, { type ScenarioControlsHandle } from './ScenarioControls';
 import { compareIncentiveWithNative } from '@/lib/sorters';
 import { getChainIconSrc } from '@/lib/chainIcons';
-import { buildAaveReserveUrl } from '@/lib/aaveLinks';
+import { buildAaveUrl } from '@/lib/aaveLinks';
 import { openExternalUrl } from '@/lib/externalNavigation';
 import { calculateDeficitShareRatio, getReserveDeficitUsdAmount } from '@/lib/deficit';
 import { getReserveKey } from '@/lib/reserveKey';
@@ -1021,9 +1021,10 @@ const ReservesTable = ({
   
 
   const handleRowClick = (reserve: ReserveWithSpread) => {
-    const url = buildAaveReserveUrl({
+    const url = buildAaveUrl({
       marketName: reserve.marketName,
       tokenAddress: reserve.tokenAddress,
+      aaveProReserveId: reserve.aaveProReserveId,
     });
     if (url) {
       openExternalUrl(url, isMobile);

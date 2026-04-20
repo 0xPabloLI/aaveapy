@@ -20,7 +20,7 @@ import {
   getReserveIncentiveValues,
   getReserveMarketDisplayName,
 } from '@/lib/formatters';
-import { buildAaveReserveUrl } from '@/lib/aaveLinks';
+import { buildAaveUrl } from '@/lib/aaveLinks';
 import { externalLinkTabProps, openExternalUrl } from '@/lib/externalNavigation';
 import { IncentiveIcon } from '@/components/IncentiveIcon';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -142,6 +142,7 @@ interface ReserveIdentityProps {
   miniRightContent?: ReactNode;
   marketName?: string;
   tokenAddress?: string | null;
+  aaveProReserveId?: string;
 }
 
 const ReserveIdentity = memo(({
@@ -157,6 +158,7 @@ const ReserveIdentity = memo(({
   miniRightContent,
   marketName,
   tokenAddress,
+  aaveProReserveId,
 }: ReserveIdentityProps) => {
   if (mini) {
     return (
@@ -176,6 +178,7 @@ const ReserveIdentity = memo(({
                 tokenSymbol={tokenSymbol}
                 tokenAddress={tokenAddress}
                 marketName={marketName}
+                aaveProReserveId={aaveProReserveId}
                 isMobile={isMobile}
                 triggerSize={11}
               />
@@ -211,6 +214,7 @@ const ReserveIdentity = memo(({
             tokenSymbol={tokenSymbol}
             tokenAddress={tokenAddress}
             marketName={marketName}
+            aaveProReserveId={aaveProReserveId}
             isMobile={isMobile}
           />
         ) : null}
@@ -390,6 +394,7 @@ const MiniReserveCard = ({
         miniRightContent={mainValueNode}
         marketName={reserve.marketName}
         tokenAddress={reserve.tokenAddress}
+        aaveProReserveId={reserve.aaveProReserveId}
       />
 
       <div className="flex items-baseline justify-end gap-[var(--ds-space-1)]">
@@ -499,6 +504,7 @@ const ReserveItem = forwardRef<HTMLDivElement, ReserveItemProps>(function Reserv
               tokenSymbol={reserve.tokenSymbol}
               tokenAddress={reserve.tokenAddress}
               marketName={reserve.marketName}
+              aaveProReserveId={reserve.aaveProReserveId}
               isMobile={isMobile}
             />
           ) : null}
@@ -869,7 +875,7 @@ const TopOpportunities = ({
       return;
     }
     if (isMobile) return;
-    const url = buildAaveReserveUrl(reserve);
+    const url = buildAaveUrl(reserve);
     if (url) {
       openExternalUrl(url, false);
     }

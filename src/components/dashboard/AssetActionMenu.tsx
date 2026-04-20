@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { Check, Copy, ExternalLink, SquareArrowOutUpRight, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { toast } from 'sonner';
-import { buildAaveReserveUrl } from '@/lib/aaveLinks';
+import { buildAaveUrl } from '@/lib/aaveLinks';
 import { buildPoolExplorerUrl, buildTokenExplorerUrl } from '@/lib/poolExplorerLinks';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
 import { getChainIconSrc } from '@/lib/chainIcons';
@@ -21,6 +21,8 @@ export interface AssetActionMenuProps {
   tokenAddress: string | null | undefined;
   /** Aave market name (e.g. AaveV3Ethereum) — used to build links. */
   marketName: string;
+  /** V4 SDK ReserveId for pro.aave.com deep-links. */
+  aaveProReserveId?: string;
   /** When true, render bottom-sheet style; otherwise render desktop popover. */
   isMobile: boolean;
   /** Optional extra classes for the trigger button. */
@@ -52,6 +54,7 @@ export function AssetActionMenu({
   tokenSymbol,
   tokenAddress,
   marketName,
+  aaveProReserveId,
   isMobile,
   triggerClassName,
   triggerSize = 12,
@@ -104,7 +107,7 @@ export function AssetActionMenu({
 
   if (!tokenAddress) return null;
 
-  const aaveUrl = buildAaveReserveUrl({ marketName, tokenAddress });
+  const aaveUrl = buildAaveUrl({ marketName, tokenAddress, aaveProReserveId });
   const tokenExplorerUrl = buildTokenExplorerUrl(marketName, tokenAddress);
   const poolExplorerUrl = buildPoolExplorerUrl(marketName, { deepLink: false });
   const chainName = deriveChainFromMarketName(marketName);
