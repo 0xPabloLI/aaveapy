@@ -30,6 +30,7 @@ import { usePreloadReserveAssets } from '@/hooks/usePreloadReserveAssets';
 import { buildMarketsList } from '@/lib/marketsList';
 import { getReserveKey } from '@/lib/reserveKey';
 import { normalizeTokenSymbolForSearch } from '@/lib/tokenSymbolNormalization';
+import { getProtocolVersion, type ProtocolVersionFilter } from '@/lib/protocolVersion';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
 
@@ -47,6 +48,7 @@ const Index = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMarkets, setSelectedMarkets] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<TokenCategory>('all');
+  const [versionFilter, setVersionFilter] = useState<ProtocolVersionFilter>('all');
   const [isApy, setIsApy] = useState(true);
   const [showCacheWarning, setShowCacheWarning] = useState(false);
   
