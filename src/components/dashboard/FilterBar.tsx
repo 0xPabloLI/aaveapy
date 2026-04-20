@@ -297,30 +297,6 @@ const FilterBar = ({
           );
         })}
 
-        {hasV4Market && setVersionFilter && (
-          <div className="ml-auto inline-flex items-center rounded-md border border-border/60 bg-card/40 p-0.5">
-            {(['all', 'v3', 'v4'] as const).map((v) => {
-              const active = versionFilter === v;
-              const label = v === 'all' ? 'All' : v.toUpperCase();
-              return (
-                <button
-                  key={v}
-                  onClick={() => setVersionFilter(v)}
-                  className={`px-2 py-0.5 rounded ds-text-11 font-medium transition-colors ${
-                    active
-                      ? v === 'v4'
-                        ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] bg-card'
-                        : 'text-foreground bg-card border border-border/60'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                  aria-pressed={active}
-                >
-                  {label}
-                </button>
-              );
-            })}
-          </div>
-        )}
       </div>
     </div>
   );
