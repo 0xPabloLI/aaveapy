@@ -581,16 +581,17 @@ const MobileReserveCard = memo(({
                       </span>
                     )}
                   </div>
-                  {/* V4 Hub Info — pill aligned with the V4 market label above */}
+                  {/* Hub Info — V4 uses brand gradient emphasis, V3 uses plain style */}
                   {reserve.hubName && (
                     <div className="flex items-center gap-1 mt-0.5">
                       {(() => {
                         const aaveProHubUrl = buildAaveProHubUrl(reserve);
+                        const isV4 = getProtocolVersion(reserve.marketName) === 'v4';
                         const inner = (
-                          <>
-                            <span className="ds-text-9 uppercase tracking-wide text-muted-foreground/70">Hub</span>
-                            <span className="text-muted-foreground/90 truncate">{reserve.hubName}</span>
-                          </>
+                          <span className={cn(
+                            "truncate",
+                            isV4 ? "text-foreground/90" : "text-muted-foreground/90"
+                          )}>{reserve.hubName}</span>
                         );
                         return aaveProHubUrl ? (
                           <a
@@ -598,13 +599,27 @@ const MobileReserveCard = memo(({
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
-                            className="inline-flex items-center gap-1 px-1.5 py-[1px] rounded-full ds-text-10 font-medium text-muted-foreground border border-border/50 bg-muted/25 max-w-full"
+                            className={cn(
+                              "inline-flex items-center gap-1 px-1.5 py-[1px] rounded-full ds-text-10 font-medium max-w-full group/hub",
+                              isV4
+                                ? "text-foreground border border-transparent gradient-border bg-gradient-to-r from-[rgb(var(--ds-brand-magenta-rgb))]/15 to-[rgb(var(--ds-brand-cyan-rgb))]/15"
+                                : "text-muted-foreground border border-border/50 bg-muted/25"
+                            )}
                             aria-label={`View ${reserve.hubName} hub on Aave Pro`}
                           >
                             {inner}
+                            <ExternalLink className={cn(
+                              "w-2.5 h-2.5 opacity-0 group-hover/hub:opacity-100 transition-opacity duration-100",
+                              isV4 ? "text-foreground/60" : "text-muted-foreground/60"
+                            )} />
                           </a>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-1.5 py-[1px] rounded-full ds-text-10 font-medium text-muted-foreground border border-border/50 bg-muted/25 max-w-full">
+                          <span className={cn(
+                            "inline-flex items-center gap-1 px-1.5 py-[1px] rounded-full ds-text-10 font-medium max-w-full",
+                            isV4
+                              ? "text-foreground border border-transparent gradient-border bg-gradient-to-r from-[rgb(var(--ds-brand-magenta-rgb))]/15 to-[rgb(var(--ds-brand-cyan-rgb))]/15"
+                              : "text-muted-foreground border border-border/50 bg-muted/25"
+                          )}>
                             {inner}
                           </span>
                         );
