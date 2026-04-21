@@ -60,6 +60,10 @@ export default defineConfig(({ mode }) => ({
   },
   test: {
     exclude: ["**/node_modules/**", "**/dist/**", "**/.worktrees/**", "**/e2e/**"],
+    // Default environment stays `node` for fast/pure tests. Component tests
+    // that need a DOM opt-in via the file-level pragma
+    // `// @vitest-environment happy-dom`.
+    setupFiles: ["./src/test/setup.ts"],
   },
   build: {
     commonjsOptions: {

@@ -1,5 +1,6 @@
-import { describe, expect, it, vi } from 'vitest';
-import { renderToString } from 'react-dom/server';
+// @vitest-environment happy-dom
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { cleanup, render } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import MobileReserveCard from './MobileReserveCard';
@@ -129,7 +130,7 @@ const simulation: RateSimulationResult = {
 function renderCard(isSimulationExpanded: boolean) {
   const queryClient = new QueryClient();
 
-  return renderToString(
+  return render(
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <MobileReserveCard
@@ -151,16 +152,18 @@ function renderCard(isSimulationExpanded: boolean) {
 }
 
 describe('MobileReserveCard', () => {
-  it('renders expand details panel label when collapsed', () => {
-    const html = renderCard(false);
+  afterEach(() => cleanup());
 
-    expect(html).toContain('aria-label="Expand details panel"');
-    expect(html).toContain('Spread');
+  it('renders expand details panel label when collapsed', () => {
+    const { getByLabelText, getAllByText } = renderCard(false);
+
+    expect(getByLabelText('Expand details panel')).toBeInTheDocument();
+    expect(getAllByText(/spread/i).length).toBeGreaterThan(0);
   });
 
   it('renders collapse details panel label when expanded', () => {
-    const html = renderCard(true);
+    const { getByLabelText } = renderCard(true);
 
-    expect(html).toContain('aria-label="Collapse details panel"');
+    expect(getByLabelText('Collapse details panel')).toBeInTheDocument();
   });
 });

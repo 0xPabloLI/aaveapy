@@ -1,5 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { renderToString } from 'react-dom/server';
+// @vitest-environment happy-dom
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { cleanup, render } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReserveWithSpread } from '@/types/aave';
 import TopOpportunities from './TopOpportunities';
@@ -63,10 +64,11 @@ describe('TopOpportunities', () => {
   beforeEach(() => {
     mockUseIsMobile.mockReset();
   });
+  afterEach(() => cleanup());
 
   const renderComponent = () => {
     const queryClient = new QueryClient();
-    return renderToString(
+    return render(
       <QueryClientProvider client={queryClient}>
         <TopOpportunities {...baseProps} />
       </QueryClientProvider>,
@@ -76,18 +78,18 @@ describe('TopOpportunities', () => {
   it('renders mobile cards without desktop external-link row layout when useIsMobile is true', () => {
     mockUseIsMobile.mockReturnValue(true);
 
-    const html = renderComponent();
+    const { queryByText, getAllByText } = renderComponent();
 
-    expect(html).not.toContain('Open GHO on Aave');
-    expect(html).toContain('GHO');
+    expect(queryByText('Open GHO on Aave')).not.toBeInTheDocument();
+    expect(getAllByText(/GHO/).length).toBeGreaterThan(0);
   });
 
   it('preserves APY total inside category cards when isApy is true', () => {
     mockUseIsMobile.mockReturnValue(false);
 
-    const html = renderComponent();
+    const { getAllByText, queryByText } = renderComponent();
 
-    expect(html).toContain('11.30%');
-    expect(html).not.toContain('11.00%');
+    expect(getAllByText(/11\.30%/).length).toBeGreaterThan(0);
+    expect(queryByText(/^11\.00%$/)).not.toBeInTheDocument();
   });
 });
