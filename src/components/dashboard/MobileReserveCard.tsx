@@ -33,6 +33,7 @@ import type { RateSimulationResult } from '@/hooks/useRateSimulation';
 import { getPoolLiquidityUsd, getScenarioSupplySizeUsd, getTotalBorrowedUsd, getValidTokenPrice } from '@/lib/scenarioSize';
 import { buildPoolExplorerUrl } from '@/lib/poolExplorerLinks';
 import { buildAaveProHubUrl } from '@/lib/aaveLinks';
+import { getProtocolVersion } from '@/lib/protocolVersion';
 import { cn } from '@/lib/utils';
 import {
   SupplyCapSheetContent,
