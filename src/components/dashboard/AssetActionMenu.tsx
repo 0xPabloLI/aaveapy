@@ -8,6 +8,7 @@ import { buildPoolExplorerUrl, buildTokenExplorerUrl, buildHubExplorerUrl } from
 import { externalLinkTabProps } from '@/lib/externalNavigation';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { cn } from '@/lib/utils';
+import { computePopoverPosition } from './assetActionMenuPosition';
 
 /** Strip Aave market prefix to get the chain name (e.g. "AaveV3Arbitrum" → "Arbitrum"). */
 function deriveChainFromMarketName(marketName: string): string {
@@ -71,22 +72,50 @@ export function AssetActionMenu({
   const popoverRef = useRef<HTMLDivElement>(null);
   const [popoverPos, setPopoverPos] = useState<{ top: number; left: number } | null>(null);
 
-  // Position desktop popover under trigger; flip if not enough room below.
+  const POPOVER_W = 220;
+  const POPOVER_H_EST = 180;
+
+  // First pass: compute an initial position using an estimated height so the
+  // popover can mount immediately on the correct side of the trigger.
   useEffect(() => {
     if (!open || isMobile || !triggerRef.current) return;
     const rect = triggerRef.current.getBoundingClientRect();
-    const POPOVER_W = 220;
-    const POPOVER_H_EST = 180;
-    const margin = 6;
-    let left = rect.right - POPOVER_W;
-    if (left < 8) left = 8;
-    if (left + POPOVER_W > window.innerWidth - 8) left = window.innerWidth - 8 - POPOVER_W;
-    let top = rect.bottom + margin;
-    if (top + POPOVER_H_EST > window.innerHeight - 8) {
-      top = Math.max(8, rect.top - margin - POPOVER_H_EST);
-    }
-    setPopoverPos({ top, left });
+    const pos = computePopoverPosition({
+      triggerRect: rect,
+      popoverWidth: POPOVER_W,
+      popoverHeight: POPOVER_H_EST,
+      viewportWidth: window.innerWidth,
+      viewportHeight: window.innerHeight,
+    });
+    setPopoverPos({ top: pos.top, left: pos.left });
   }, [open, isMobile]);
+
+  // Second pass: once the popover is rendered we know its real height. Recompute
+  // the position so an "above" flip doesn't leave a visible gap (real height is
+  // usually smaller than POPOVER_H_EST).
+  // NOTE: we read `offsetHeight` rather than `getBoundingClientRect().height`
+  // because the popover has a Tailwind `animate-in zoom-in-95` transition that
+  // scales it during mount. `getBoundingClientRect` returns the *transformed*
+  // (scaled) box, which would under-measure the height and cause the popover
+  // to overlap the trigger on the above-flip pass. `offsetHeight` is not
+  // affected by CSS transforms so it reflects the real layout height.
+  useEffect(() => {
+    if (!open || isMobile || !triggerRef.current || !popoverRef.current) return;
+    const measuredHeight = popoverRef.current.offsetHeight;
+    if (!measuredHeight) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    const pos = computePopoverPosition({
+      triggerRect: rect,
+      popoverWidth: POPOVER_W,
+      popoverHeight: measuredHeight,
+      viewportWidth: window.innerWidth,
+      viewportHeight: window.innerHeight,
+    });
+    setPopoverPos((prev) => {
+      if (prev && prev.top === pos.top && prev.left === pos.left) return prev;
+      return { top: pos.top, left: pos.left };
+    });
+  }, [open, isMobile, popoverPos]);
 
   // Close on outside click / Escape (desktop).
   useEffect(() => {
@@ -251,7 +280,7 @@ export function AssetActionMenu({
       </button>
 
       {/* Desktop popover (portal) */}
-      {!isMobile && open && popoverPos &&
+      {!isMobile && open && popoverPos && typeof document !== 'undefined' &&
         createPortal(
           <div
             ref={popoverRef}
@@ -266,8 +295,9 @@ export function AssetActionMenu({
           document.body,
         )}
 
-      {/* Mobile bottom sheet (portal) */}
-      {isMobile &&
+      {/* Mobile bottom sheet (portal). Guarded for SSR so the component can be
+          rendered with `react-dom/server` (used by component smoke tests). */}
+      {isMobile && typeof document !== 'undefined' &&
         createPortal(
           <AnimatePresence>
             {open && (
