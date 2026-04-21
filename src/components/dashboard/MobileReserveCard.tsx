@@ -32,6 +32,7 @@ import {
 import type { RateSimulationResult } from '@/hooks/useRateSimulation';
 import { getPoolLiquidityUsd, getScenarioSupplySizeUsd, getTotalBorrowedUsd, getValidTokenPrice } from '@/lib/scenarioSize';
 import { buildPoolExplorerUrl } from '@/lib/poolExplorerLinks';
+import { buildAaveProHubUrl } from '@/lib/aaveLinks';
 import { cn } from '@/lib/utils';
 import {
   SupplyCapSheetContent,
@@ -549,27 +550,54 @@ const MobileReserveCard = memo(({
               className="shrink-0"
               logoURI={logoURI}
             />
-            <div className="min-w-0">
-              <div className="flex items-center gap-1">
-                <p className="font-bold text-foreground ds-text-14 truncate">{reserve.tokenSymbol}</p>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1">
+                  <p className="font-bold text-foreground ds-text-14 truncate">{reserve.tokenSymbol}</p>
                 <AssetActionMenu
                   tokenSymbol={reserve.tokenSymbol}
                   tokenAddress={reserve.tokenAddress}
                   marketName={reserve.marketName}
                   aaveProReserveId={reserve.aaveProReserveId}
                   chainName={reserve.chainName}
+                  hubAddress={reserve.hubAddress}
                   isMobile
                   triggerSize={13}
                   triggerClassName="shrink-0"
                 />
+                </div>
+                <div className="flex flex-col gap-0">
+                  <div className="flex items-center gap-1 ds-text-11 text-muted-foreground/80">
+                    {chainIconSrc && (
+                      <img src={chainIconSrc} alt={reserve.chainName} className="w-3 h-3 opacity-80" />
+                    )}
+                    <span className="truncate">{getReserveMarketDisplayName(reserve)}</span>
+                  </div>
+                  {/* V4 Hub Info */}
+                  {reserve.hubName && (
+                    <div className="flex items-center gap-1">
+                      {(() => {
+                        const aaveProHubUrl = buildAaveProHubUrl(reserve);
+                        return aaveProHubUrl ? (
+                          <a
+                            href={aaveProHubUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="ds-text-10 text-muted-foreground/60 hover:text-primary hover:underline transition-colors duration-100 truncate"
+                            aria-label={`View ${reserve.hubName} hub on Aave Pro`}
+                          >
+                            {reserve.hubName}
+                          </a>
+                        ) : (
+                          <span className="ds-text-10 text-muted-foreground/60 truncate">
+                            {reserve.hubName}
+                          </span>
+                        );
+                      })()}
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="flex items-center gap-1 ds-text-11 text-muted-foreground/80">
-                {chainIconSrc && (
-                  <img src={chainIconSrc} alt={reserve.chainName} className="w-3 h-3 opacity-80" />
-                )}
-                <span className="truncate">{getReserveMarketDisplayName(reserve)}</span>
-              </div>
-            </div>
           </div>
           {/* Utilization indicator - clickable (values match desktop Utilization column + UtilizationIndicator) */}
           {displayUtilization != null && optimalPct != null && (

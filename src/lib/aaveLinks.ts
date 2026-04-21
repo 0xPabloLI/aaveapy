@@ -82,6 +82,16 @@ export function buildAaveProUrl(reserve: {
   return null;
 }
 
+/** Build a pro.aave.com deep-link for a V4 hub. Returns null for non-V4 reserves. */
+export function buildAaveProHubUrl(reserve: {
+  hubId?: string;
+}): string | null {
+  if (reserve.hubId) {
+    return `${AAVE_PRO_BASE}/explore/hub/${reserve.hubId}`;
+  }
+  return null;
+}
+
 /**
  * Best-effort Aave link: returns app.aave.com for V3, pro.aave.com for V4, or null.
  * Use this as the single entry-point for "Open on Aave" actions.

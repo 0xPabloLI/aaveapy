@@ -326,26 +326,28 @@ export default function ReservesTableDesktopHeader({
           </button>
         </TableHead>
         <TableHead className="pl-[var(--ds-space-0-5)] pr-[var(--ds-space-1)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
-          <button
-            type="button"
-            onClick={onSortMarket}
-            className={`ds-chip-heading md:ds-text-16 gap-[var(--ds-space-1)] transition-all duration-200 ${
-              activeSortColumn === 'market'
-                ? 'text-foreground font-bold scale-105'
-                : 'text-muted-foreground hover:text-foreground/80'
-            }`}
-          >
-            <span>Market</span>
-            {activeSortColumn === 'market' ? (
-              marketSortOrder === 'asc' ? (
-                <ArrowUp className="w-3 h-3" />
+          <div className="flex items-center justify-center">
+            <button
+              type="button"
+              onClick={onSortMarket}
+              className={`ds-chip-heading md:ds-text-16 gap-[var(--ds-space-1)] transition-all duration-200 ${
+                activeSortColumn === 'market'
+                  ? 'text-foreground font-bold scale-105'
+                  : 'text-muted-foreground hover:text-foreground/80'
+              }`}
+            >
+              <span>Market</span>
+              {activeSortColumn === 'market' ? (
+                marketSortOrder === 'asc' ? (
+                  <ArrowUp className="w-3 h-3" />
+                ) : (
+                  <ArrowDown className="w-3 h-3" />
+                )
               ) : (
-                <ArrowDown className="w-3 h-3" />
-              )
-            ) : (
-              <ArrowDown className="w-3 h-3 opacity-50" />
-            )}
-          </button>
+                <ArrowDown className="w-3 h-3 opacity-50" />
+              )}
+            </button>
+          </div>
         </TableHead>
         <TableHead className="px-[var(--ds-space-1-5)] py-[var(--ds-space-3)] ds-text-14 md:ds-text-16 font-semibold text-muted-foreground text-center hidden md:table-cell">
           <div className="flex items-center justify-center gap-[var(--ds-space-2)]">

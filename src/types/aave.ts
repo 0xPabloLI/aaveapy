@@ -118,6 +118,14 @@ export interface ReserveWithSpread {
   brevisSupplys?: BrevisIncentive[];
   brevisBorrows?: BrevisIncentive[];
 
+  // V4 Hub & Spoke addresses for contract interaction (only present for V4 markets)
+  hubId?: string;
+  hubName?: string;
+  hubAddress?: string;
+  spokeId?: string;
+  spokeName?: string;
+  spokeAddress?: string;
+
 }
 
 export interface MarketsResponse {

@@ -521,3 +521,29 @@ export function buildTokenExplorerUrl(
 
   return null;
 }
+
+/**
+ * Build an explorer URL for a V4 Hub contract address.
+ * V4 uses Hub & Spoke architecture, where Hub is the cross-chain coordination
+ * contract that also holds assets (unlike V3's single Pool).
+ *
+ * Uses chainName to determine the appropriate explorer base URL.
+ */
+export function buildHubExplorerUrl(
+  hubAddress: string | null | undefined,
+  options: { chainName?: string } = {},
+): string | null {
+  if (!hubAddress) return null;
+
+  const chainName = options.chainName;
+  if (chainName && CHAIN_EXPLORER_MAP[chainName]) {
+    const explorer = CHAIN_EXPLORER_MAP[chainName];
+    let path = '/address/' + hubAddress;
+    if (explorer.pathFormat) {
+      path = explorer.pathFormat.replace('{pool}', hubAddress);
+    }
+    return `${explorer.base}${path}`;
+  }
+
+  return null;
+}

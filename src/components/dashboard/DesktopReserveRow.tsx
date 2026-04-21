@@ -4,7 +4,7 @@ import { TableRow, TableCell } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ReserveWithSpread } from '@/types/aave';
 import { formatPercent, formatScenarioSize, formatSpread, formatUsd, getReserveMarketDisplayName } from '@/lib/formatters';
-import { buildAaveMarketUrl, buildAaveUrl } from '@/lib/aaveLinks';
+import { buildAaveMarketUrl, buildAaveUrl, buildAaveProHubUrl } from '@/lib/aaveLinks';
 import { buildPoolExplorerUrl } from '@/lib/poolExplorerLinks';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
 import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
@@ -125,6 +125,7 @@ const DesktopReserveRow = memo(({
   const aaveUrl = buildAaveUrl({ marketName: reserve.marketName, tokenAddress: reserve.tokenAddress, aaveProReserveId: reserve.aaveProReserveId }) || '#';
   const aaveMarketUrl = buildAaveMarketUrl(reserve.marketName);
   const poolExplorerUrl = buildPoolExplorerUrl(reserve.marketName);
+  const aaveProHubUrl = buildAaveProHubUrl(reserve);
 
   const displayTokenPrice = getValidTokenPrice(simulation?.tokenPrice, reserve.tokenPrice);
   const displayReserveSizeUsd = getScenarioSupplySizeUsd({
@@ -227,6 +228,7 @@ const DesktopReserveRow = memo(({
               marketName={reserve.marketName}
               aaveProReserveId={reserve.aaveProReserveId}
               chainName={reserve.chainName}
+              hubAddress={reserve.hubAddress}
               isMobile={isMobile}
               triggerSize={12}
             />
@@ -239,33 +241,61 @@ const DesktopReserveRow = memo(({
         </TableCell>
         {/* Market — 左侧留白更小，右侧与其余列统一 */}
         <TableCell className="pl-[var(--ds-space-1)] pr-[var(--ds-space-2)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell">
-          <div className="group/market inline-flex items-center justify-center gap-[var(--ds-space-1)]">
-            <button
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation();
-                onMarketChipClick?.(reserveId);
-                onSelectMarket?.(reserve.marketName);
-              }}
-              className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)] px-[var(--ds-space-2-5)] py-[var(--ds-space-1)] rounded-full ds-text-13 font-medium bg-muted/50 text-muted-foreground border border-border/60 hover:bg-muted hover:text-foreground hover:border-border/80 active:scale-[0.98] transition-all duration-150"
-              aria-label={`Filter by ${getReserveMarketDisplayName(reserve)} market`}
-              title={`Filter by ${getReserveMarketDisplayName(reserve)}`}
-            >
-              <ChainIcon chain={reserve.chainName} />
-              {getReserveMarketDisplayName(reserve)}
-            </button>
-            {aaveMarketUrl ? (
-              <a
-                href={aaveMarketUrl}
-                {...externalLinkTabProps(isMobile)}
-                onClick={(event) => event.stopPropagation()}
-                className="inline-flex shrink-0 items-center justify-center hover:opacity-80 transition-opacity duration-100"
-                aria-label={`Open ${getReserveMarketDisplayName(reserve)} market on Aave`}
-                title="Open market on Aave"
+          <div className="group/market flex flex-col items-center justify-center gap-[var(--ds-space-0-5)]">
+            <div className="inline-flex items-center justify-center gap-[var(--ds-space-1)]">
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onMarketChipClick?.(reserveId);
+                  onSelectMarket?.(reserve.marketName);
+                }}
+                className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)] px-[var(--ds-space-2-5)] py-[var(--ds-space-1)] rounded-full ds-text-13 font-medium bg-muted/50 text-muted-foreground border border-border/60 hover:bg-muted hover:text-foreground hover:border-border/80 active:scale-[0.98] transition-all duration-150"
+                aria-label={`Filter by ${getReserveMarketDisplayName(reserve)} market`}
+                title={`Filter by ${getReserveMarketDisplayName(reserve)}`}
               >
-                <ExternalLink className="w-3 h-3 text-muted-foreground opacity-0 -ml-0.5 group-hover/market:opacity-70 transition-opacity duration-75" />
-              </a>
-            ) : null}
+                <ChainIcon chain={reserve.chainName} />
+                {getReserveMarketDisplayName(reserve)}
+              </button>
+              {aaveMarketUrl ? (
+                <a
+                  href={aaveMarketUrl}
+                  {...externalLinkTabProps(isMobile)}
+                  onClick={(event) => event.stopPropagation()}
+                  className="inline-flex shrink-0 items-center justify-center hover:opacity-80 transition-opacity duration-100"
+                  aria-label={`Open ${getReserveMarketDisplayName(reserve)} market on Aave`}
+                  title="Open market on Aave"
+                >
+                  <ExternalLink className="w-3 h-3 text-muted-foreground opacity-0 -ml-0.5 group-hover/market:opacity-70 transition-opacity duration-75" />
+                </a>
+              ) : (
+                <span
+                  aria-hidden="true"
+                  className="inline-flex shrink-0 w-3 h-3 -ml-0.5"
+                />
+              )}
+            </div>
+            {/* V4 Hub Info */}
+            {reserve.hubName && (
+              <div className="flex items-center justify-center gap-[var(--ds-space-1)]">
+                {aaveProHubUrl ? (
+                  <a
+                    href={aaveProHubUrl}
+                    {...externalLinkTabProps(isMobile)}
+                    onClick={(event) => event.stopPropagation()}
+                    className="ds-text-11 text-muted-foreground/60 hover:text-primary hover:underline transition-colors duration-100"
+                    aria-label={`View ${reserve.hubName} hub on Aave Pro`}
+                    title={`View ${reserve.hubName} hub on Aave Pro`}
+                  >
+                    {reserve.hubName}
+                  </a>
+                ) : (
+                  <span className="ds-text-11 text-muted-foreground/60">
+                    {reserve.hubName}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </TableCell>
         {/* Size (Supply + Borrow) */}

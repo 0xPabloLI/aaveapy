@@ -133,6 +133,10 @@ const ReserveWithSpreadSchema = z.object({
   borrowDisabled: z.boolean().optional(),
   aTokenAddress: z.string().nullish(),
   vTokenAddress: z.string().nullish(),
+  /** V4 Hub contract address (for explorer links). */
+  hubAddress: z.string().optional(),
+  /** V4 Spoke contract address (for explorer links). */
+  spokeAddress: z.string().optional(),
   supplyApy: z.number().optional(),
   borrowApy: z.number().optional(),
   supplyIncentives: z.array(z.number()).optional(),

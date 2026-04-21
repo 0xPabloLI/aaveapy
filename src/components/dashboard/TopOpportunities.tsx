@@ -143,6 +143,7 @@ interface ReserveIdentityProps {
   marketName?: string;
   tokenAddress?: string | null;
   aaveProReserveId?: string;
+  hubAddress?: string;
 }
 
 const ReserveIdentity = memo(({
@@ -159,6 +160,7 @@ const ReserveIdentity = memo(({
   marketName,
   tokenAddress,
   aaveProReserveId,
+  hubAddress,
 }: ReserveIdentityProps) => {
   if (mini) {
     return (
@@ -180,6 +182,7 @@ const ReserveIdentity = memo(({
                 marketName={marketName}
                 aaveProReserveId={aaveProReserveId}
                 chainName={chainName}
+                hubAddress={hubAddress}
                 isMobile={isMobile}
                 triggerSize={11}
               />
@@ -216,6 +219,7 @@ const ReserveIdentity = memo(({
             tokenAddress={tokenAddress}
             marketName={marketName}
             aaveProReserveId={aaveProReserveId}
+            hubAddress={hubAddress}
             isMobile={isMobile}
           />
         ) : null}
@@ -396,6 +400,7 @@ const MiniReserveCard = ({
         marketName={reserve.marketName}
         tokenAddress={reserve.tokenAddress}
         aaveProReserveId={reserve.aaveProReserveId}
+        hubAddress={reserve.hubAddress}
       />
 
       <div className="flex items-baseline justify-end gap-[var(--ds-space-1)]">
@@ -507,6 +512,7 @@ const ReserveItem = forwardRef<HTMLDivElement, ReserveItemProps>(function Reserv
               marketName={reserve.marketName}
               aaveProReserveId={reserve.aaveProReserveId}
               chainName={reserve.chainName}
+              hubAddress={reserve.hubAddress}
               isMobile={isMobile}
             />
           ) : null}

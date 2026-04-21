@@ -4,7 +4,7 @@ import { Check, Copy, ExternalLink, SquareArrowOutUpRight, X } from 'lucide-reac
 import { AnimatePresence, motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { buildAaveUrl } from '@/lib/aaveLinks';
-import { buildPoolExplorerUrl, buildTokenExplorerUrl } from '@/lib/poolExplorerLinks';
+import { buildPoolExplorerUrl, buildTokenExplorerUrl, buildHubExplorerUrl } from '@/lib/poolExplorerLinks';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { cn } from '@/lib/utils';
@@ -25,6 +25,8 @@ export interface AssetActionMenuProps {
   aaveProReserveId?: string;
   /** Chain name for explorer URL fallback (needed for V4 markets). */
   chainName?: string;
+  /** V4 Hub contract address (for explorer links). */
+  hubAddress?: string;
   /** When true, render bottom-sheet style; otherwise render desktop popover. */
   isMobile: boolean;
   /** Optional extra classes for the trigger button. */
@@ -58,6 +60,7 @@ export function AssetActionMenu({
   marketName,
   aaveProReserveId,
   chainName: reserveChainName,
+  hubAddress,
   isMobile,
   triggerClassName,
   triggerSize = 12,
@@ -113,6 +116,7 @@ export function AssetActionMenu({
   const aaveUrl = buildAaveUrl({ marketName, tokenAddress, aaveProReserveId });
   const tokenExplorerUrl = buildTokenExplorerUrl(marketName, tokenAddress, { chainName: reserveChainName });
   const poolExplorerUrl = buildPoolExplorerUrl(marketName, { deepLink: false, chainName: reserveChainName });
+  const hubExplorerUrl = buildHubExplorerUrl(hubAddress, { chainName: reserveChainName });
   const chainName = reserveChainName ?? deriveChainFromMarketName(marketName);
   const chainIconSrc = getChainIconSrc(chainName);
 
@@ -139,6 +143,9 @@ export function AssetActionMenu({
       : null,
     poolExplorerUrl
       ? { key: 'pool-explorer', label: 'View pool on explorer', href: poolExplorerUrl, icon: 'external' as const }
+      : null,
+    hubExplorerUrl
+      ? { key: 'hub-explorer', label: 'View hub on explorer', href: hubExplorerUrl, icon: 'external' as const }
       : null,
     {
       key: 'copy',
