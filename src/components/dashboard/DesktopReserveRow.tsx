@@ -320,14 +320,7 @@ const DesktopReserveRow = memo(({
               </div>
             )}
           </div>
-        </CardContent>
-        {/* ... keep existing code ... */}
-      </Card>
-    </div>
-  );
-}, (prevProps, nextProps) => { ... });
-MobileReserveCard.displayName = 'MobileReserveCard';
-```
+        </TableCell>
         {/* Size (Supply + Borrow) */}
         <TableCell className="px-[var(--ds-space-2)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell tabular-nums ds-text-13">
           <div className="flex flex-col items-center justify-center gap-[var(--ds-space-0-5)]">
