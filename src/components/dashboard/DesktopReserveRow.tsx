@@ -263,16 +263,16 @@ const DesktopReserveRow = memo(({
                   href={aaveMarketUrl}
                   {...externalLinkTabProps(isMobile)}
                   onClick={(event) => event.stopPropagation()}
-                  className="inline-flex shrink-0 items-center justify-center hover:opacity-80 transition-opacity duration-100"
+                  className="opacity-0 group-hover/market:opacity-100 transition-opacity duration-100 inline-flex shrink-0 items-center justify-center"
                   aria-label={`Open ${getReserveMarketDisplayName(reserve)} market on Aave`}
                   title="Open market on Aave"
                 >
-                  <ExternalLink className="w-3 h-3 text-muted-foreground -ml-0.5 opacity-70 transition-opacity duration-75" />
+                  <ExternalLink className="w-3 h-3 text-muted-foreground" />
                 </a>
               ) : (
                 <span
                   aria-hidden="true"
-                  className="inline-flex shrink-0 w-3 h-3 -ml-0.5"
+                  className="inline-flex shrink-0 w-3 h-3"
                 />
               )}
             </div>
