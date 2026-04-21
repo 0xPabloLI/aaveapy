@@ -257,14 +257,6 @@ const DesktopReserveRow = memo(({
               >
                 <ChainIcon chain={reserve.chainName} />
                 {getReserveMarketDisplayName(reserve)}
-                {getProtocolVersion(reserve.marketName) === 'v4' && (
-                  <span
-                    className="ml-0.5 inline-flex items-center px-1 rounded ds-text-9 font-semibold leading-none py-0.5 text-foreground border border-transparent gradient-border bg-gradient-to-r from-[rgb(var(--ds-brand-magenta-rgb))]/15 to-[rgb(var(--ds-brand-cyan-rgb))]/15"
-                    aria-label="Aave V4 market"
-                  >
-                    V4
-                  </span>
-                )}
               </button>
               {aaveMarketUrl ? (
                 <a
@@ -284,7 +276,7 @@ const DesktopReserveRow = memo(({
                 />
               )}
             </div>
-            {/* V4 Hub Info — pill linked visually to the V4 market chip above */}
+            {/* Hub Info — V4 uses brand gradient emphasis, V3 uses plain style */}
             {reserve.hubName && (
               <div className="inline-flex items-center justify-center gap-[var(--ds-space-1)]">
                 {aaveProHubUrl ? (
@@ -292,20 +284,37 @@ const DesktopReserveRow = memo(({
                     href={aaveProHubUrl}
                     {...externalLinkTabProps(isMobile)}
                     onClick={(event) => event.stopPropagation()}
-                    className="inline-flex items-center gap-[var(--ds-space-1)] px-[var(--ds-space-1-5)] py-[1px] rounded-full ds-text-10 font-medium text-muted-foreground border border-border/50 bg-muted/25 hover:text-foreground hover:border-border/80 transition-colors duration-100"
+                    className={cn(
+                      "inline-flex items-center gap-[var(--ds-space-1)] px-[var(--ds-space-1-5)] py-[1px] rounded-full ds-text-10 font-medium transition-colors duration-100 group/hub",
+                      getProtocolVersion(reserve.marketName) === 'v4'
+                        ? "text-foreground border border-transparent gradient-border bg-gradient-to-r from-[rgb(var(--ds-brand-magenta-rgb))]/15 to-[rgb(var(--ds-brand-cyan-rgb))]/15 hover:from-[rgb(var(--ds-brand-magenta-rgb))]/25 hover:to-[rgb(var(--ds-brand-cyan-rgb))]/25"
+                        : "text-muted-foreground border border-border/50 bg-muted/25 hover:text-foreground hover:border-border/80"
+                    )}
                     aria-label={`View ${reserve.hubName} hub on Aave Pro`}
                     title={`Open hub ${reserve.hubName} on Aave Pro`}
                   >
-                    <span className="ds-text-9 uppercase tracking-wide text-muted-foreground/70">Hub</span>
-                    <span className="text-muted-foreground/90">{reserve.hubName}</span>
-                    <ExternalLink className="w-2.5 h-2.5 text-muted-foreground/60" />
+                    <span className={cn(
+                      "truncate",
+                      getProtocolVersion(reserve.marketName) === 'v4' ? "text-foreground/90" : "text-muted-foreground/90"
+                    )}>{reserve.hubName}</span>
+                    <ExternalLink className={cn(
+                      "w-2.5 h-2.5 opacity-0 group-hover/hub:opacity-100 transition-opacity duration-100",
+                      getProtocolVersion(reserve.marketName) === 'v4' ? "text-foreground/60" : "text-muted-foreground/60"
+                    )} />
                   </a>
                 ) : (
                   <span
-                    className="inline-flex items-center gap-[var(--ds-space-1)] px-[var(--ds-space-1-5)] py-[1px] rounded-full ds-text-10 font-medium text-muted-foreground border border-border/50 bg-muted/25"
+                    className={cn(
+                      "inline-flex items-center gap-[var(--ds-space-1)] px-[var(--ds-space-1-5)] py-[1px] rounded-full ds-text-10 font-medium",
+                      getProtocolVersion(reserve.marketName) === 'v4'
+                        ? "text-foreground border border-transparent gradient-border bg-gradient-to-r from-[rgb(var(--ds-brand-magenta-rgb))]/15 to-[rgb(var(--ds-brand-cyan-rgb))]/15"
+                        : "text-muted-foreground border border-border/50 bg-muted/25"
+                    )}
                   >
-                    <span className="ds-text-9 uppercase tracking-wide text-muted-foreground/70">Hub</span>
-                    <span className="text-muted-foreground/90">{reserve.hubName}</span>
+                    <span className={cn(
+                      "truncate",
+                      getProtocolVersion(reserve.marketName) === 'v4' ? "text-foreground/90" : "text-muted-foreground/90"
+                    )}>{reserve.hubName}</span>
                   </span>
                 )}
               </div>
