@@ -1,5 +1,5 @@
 import { memo, useEffect, useState } from 'react';
-import { ListCollapse, Plus, X } from 'lucide-react';
+import { ExternalLink, ListCollapse, Plus, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ReserveWithSpread } from '@/types/aave';
 import {
