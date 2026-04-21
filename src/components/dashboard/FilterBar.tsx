@@ -299,7 +299,7 @@ const FilterBar = ({
             <button
               key={market.marketName}
               onClick={() => toggleMarket(market.marketName)}
-              className={`ds-chip gap-1 px-1.5 md:px-2 py-1 rounded-md font-medium transition-colors ${
+              className={`ds-chip gap-0.5 px-1 md:px-1.5 py-0.5 rounded-md text-[10px] font-medium transition-colors ${
                 isSelected
                   ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
                   : 'text-foreground/80 border border-border hover:text-foreground'
@@ -309,10 +309,10 @@ const FilterBar = ({
               <ChainIcon chain={market.chainName} />
               <span>{isEthereum ? info.label : market.chainName}</span>
               <span
-                className={`ml-0.5 inline-flex items-center px-1 rounded ds-text-9 font-semibold leading-none py-0.5 ${
+                className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-medium leading-none ${
                   isV4
-                    ? 'text-foreground border border-transparent gradient-border bg-gradient-to-r from-[rgb(var(--ds-brand-magenta-rgb))]/15 to-[rgb(var(--ds-brand-cyan-rgb))]/15'
-                    : 'text-muted-foreground/70 border border-border/60 bg-muted/30'
+                    ? 'text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10'
+                    : 'text-muted-foreground/70 bg-muted/40'
                 }`}
               >
                 {isV4 ? 'V4' : 'V3'}
