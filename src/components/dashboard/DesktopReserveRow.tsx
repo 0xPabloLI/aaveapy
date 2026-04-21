@@ -242,8 +242,8 @@ const DesktopReserveRow = memo(({
         </TableCell>
         {/* Market — 左侧留白更小，右侧与其余列统一 */}
         <TableCell className="pl-[var(--ds-space-1)] pr-[var(--ds-space-2)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell">
-          <div className="group/market flex flex-col items-center justify-center gap-[var(--ds-space-1)]">
-            <div className="inline-flex items-center justify-center gap-[var(--ds-space-1)]">
+          <div className="group/market flex items-center justify-center gap-[var(--ds-space-1)]">
+            <div className="flex flex-col items-center justify-center gap-[var(--ds-space-1)]">
               <button
                 type="button"
                 onClick={(event) => {
@@ -258,66 +258,67 @@ const DesktopReserveRow = memo(({
                 <ChainIcon chain={reserve.chainName} />
                 {getReserveMarketDisplayName(reserve)}
               </button>
-              {aaveMarketUrl ? (
-                <a
-                  href={aaveMarketUrl}
-                  {...externalLinkTabProps(isMobile)}
-                  onClick={(event) => event.stopPropagation()}
-                  className="inline-flex shrink-0 items-center justify-center hover:opacity-80 transition-opacity duration-100"
-                  aria-label={`Open ${getReserveMarketDisplayName(reserve)} market on Aave`}
-                  title="Open market on Aave"
-                >
-                  <ExternalLink className="w-3 h-3 text-muted-foreground -ml-0.5 opacity-70 transition-opacity duration-75" />
-                </a>
-              ) : (
-                <span
-                  aria-hidden="true"
-                  className="inline-flex shrink-0 w-3 h-3 -ml-0.5"
-                />
+              {/* Hub Info — V4 uses brand gradient emphasis, V3 uses plain style */}
+              {reserve.hubName && (
+                <div className="inline-flex items-center justify-center gap-[var(--ds-space-1)]">
+                  {aaveProHubUrl ? (
+                    <a
+                      href={aaveProHubUrl}
+                      {...externalLinkTabProps(isMobile)}
+                      onClick={(event) => event.stopPropagation()}
+                      className={cn(
+                        "inline-flex items-center gap-[var(--ds-space-1)] px-[var(--ds-space-1-5)] py-[1px] rounded-full ds-text-10 font-medium transition-colors duration-100 group/hub",
+                        getProtocolVersion(reserve.marketName) === 'v4'
+                          ? "text-foreground border border-transparent gradient-border bg-gradient-to-r from-[rgb(var(--ds-brand-magenta-rgb))]/15 to-[rgb(var(--ds-brand-cyan-rgb))]/15 hover:from-[rgb(var(--ds-brand-magenta-rgb))]/25 hover:to-[rgb(var(--ds-brand-cyan-rgb))]/25"
+                          : "text-muted-foreground border border-border/50 bg-muted/25 hover:text-foreground hover:border-border/80"
+                      )}
+                      aria-label={`View ${reserve.hubName} hub on Aave Pro`}
+                      title={`Open hub ${reserve.hubName} on Aave Pro`}
+                    >
+                      <span className={cn(
+                        "truncate",
+                        getProtocolVersion(reserve.marketName) === 'v4' ? "text-foreground/90" : "text-muted-foreground/90"
+                      )}>{reserve.hubName}</span>
+                      <ExternalLink className={cn(
+                        "w-2.5 h-2.5 opacity-0 group-hover/hub:opacity-100 transition-opacity duration-100",
+                        getProtocolVersion(reserve.marketName) === 'v4' ? "text-foreground/60" : "text-muted-foreground/60"
+                      )} />
+                    </a>
+                  ) : (
+                    <span
+                      className={cn(
+                        "inline-flex items-center gap-[var(--ds-space-1)] px-[var(--ds-space-1-5)] py-[1px] rounded-full ds-text-10 font-medium",
+                        getProtocolVersion(reserve.marketName) === 'v4'
+                          ? "text-foreground border border-transparent gradient-border bg-gradient-to-r from-[rgb(var(--ds-brand-magenta-rgb))]/15 to-[rgb(var(--ds-brand-cyan-rgb))]/15"
+                          : "text-muted-foreground border border-border/50 bg-muted/25"
+                      )}
+                    >
+                      <span className={cn(
+                        "truncate",
+                        getProtocolVersion(reserve.marketName) === 'v4' ? "text-foreground/90" : "text-muted-foreground/90"
+                      )}>{reserve.hubName}</span>
+                    </span>
+                  )}
+                </div>
               )}
             </div>
-            {/* Hub Info — V4 uses brand gradient emphasis, V3 uses plain style */}
-            {reserve.hubName && (
-              <div className="inline-flex items-center justify-center gap-[var(--ds-space-1)]">
-                {aaveProHubUrl ? (
-                  <a
-                    href={aaveProHubUrl}
-                    {...externalLinkTabProps(isMobile)}
-                    onClick={(event) => event.stopPropagation()}
-                    className={cn(
-                      "inline-flex items-center gap-[var(--ds-space-1)] px-[var(--ds-space-1-5)] py-[1px] rounded-full ds-text-10 font-medium transition-colors duration-100 group/hub",
-                      getProtocolVersion(reserve.marketName) === 'v4'
-                        ? "text-foreground border border-transparent gradient-border bg-gradient-to-r from-[rgb(var(--ds-brand-magenta-rgb))]/15 to-[rgb(var(--ds-brand-cyan-rgb))]/15 hover:from-[rgb(var(--ds-brand-magenta-rgb))]/25 hover:to-[rgb(var(--ds-brand-cyan-rgb))]/25"
-                        : "text-muted-foreground border border-border/50 bg-muted/25 hover:text-foreground hover:border-border/80"
-                    )}
-                    aria-label={`View ${reserve.hubName} hub on Aave Pro`}
-                    title={`Open hub ${reserve.hubName} on Aave Pro`}
-                  >
-                    <span className={cn(
-                      "truncate",
-                      getProtocolVersion(reserve.marketName) === 'v4' ? "text-foreground/90" : "text-muted-foreground/90"
-                    )}>{reserve.hubName}</span>
-                    <ExternalLink className={cn(
-                      "w-2.5 h-2.5 opacity-0 group-hover/hub:opacity-100 transition-opacity duration-100",
-                      getProtocolVersion(reserve.marketName) === 'v4' ? "text-foreground/60" : "text-muted-foreground/60"
-                    )} />
-                  </a>
-                ) : (
-                  <span
-                    className={cn(
-                      "inline-flex items-center gap-[var(--ds-space-1)] px-[var(--ds-space-1-5)] py-[1px] rounded-full ds-text-10 font-medium",
-                      getProtocolVersion(reserve.marketName) === 'v4'
-                        ? "text-foreground border border-transparent gradient-border bg-gradient-to-r from-[rgb(var(--ds-brand-magenta-rgb))]/15 to-[rgb(var(--ds-brand-cyan-rgb))]/15"
-                        : "text-muted-foreground border border-border/50 bg-muted/25"
-                    )}
-                  >
-                    <span className={cn(
-                      "truncate",
-                      getProtocolVersion(reserve.marketName) === 'v4' ? "text-foreground/90" : "text-muted-foreground/90"
-                    )}>{reserve.hubName}</span>
-                  </span>
-                )}
-              </div>
+            {/* Market jump arrow — hover only, outside the box */}
+            {aaveMarketUrl ? (
+              <a
+                href={aaveMarketUrl}
+                {...externalLinkTabProps(isMobile)}
+                onClick={(event) => event.stopPropagation()}
+                className="opacity-0 group-hover/market:opacity-100 transition-opacity duration-100 inline-flex shrink-0 items-center justify-center"
+                aria-label={`Open ${getReserveMarketDisplayName(reserve)} market on Aave`}
+                title="Open market on Aave"
+              >
+                <ExternalLink className="w-3 h-3 text-muted-foreground" />
+              </a>
+            ) : (
+              <span
+                aria-hidden="true"
+                className="inline-flex shrink-0 w-3 h-3"
+              />
             )}
           </div>
         </TableCell>
