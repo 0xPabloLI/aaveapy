@@ -572,14 +572,6 @@ const MobileReserveCard = memo(({
                       <img src={chainIconSrc} alt={reserve.chainName} className="w-3 h-3 opacity-80" />
                     )}
                     <span className="truncate">{getReserveMarketDisplayName(reserve)}</span>
-                    {getProtocolVersion(reserve.marketName) === 'v4' && (
-                      <span
-                        className="ml-0.5 inline-flex items-center px-1 rounded ds-text-9 font-semibold leading-none py-0.5 text-foreground border border-transparent gradient-border bg-gradient-to-r from-[rgb(var(--ds-brand-magenta-rgb))]/15 to-[rgb(var(--ds-brand-cyan-rgb))]/15"
-                        aria-label="Aave V4 market"
-                      >
-                        V4
-                      </span>
-                    )}
                   </div>
                   {/* Hub Info — V4 uses brand gradient emphasis, V3 uses plain style */}
                   {reserve.hubName && (
