@@ -5,6 +5,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { ReserveWithSpread } from '@/types/aave';
 import { formatPercent, formatScenarioSize, formatSpread, formatUsd, getReserveMarketDisplayName } from '@/lib/formatters';
 import { buildAaveMarketUrl, buildAaveUrl, buildAaveProHubUrl } from '@/lib/aaveLinks';
+import { getProtocolVersion } from '@/lib/protocolVersion';
 import { buildPoolExplorerUrl } from '@/lib/poolExplorerLinks';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
 import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
@@ -241,7 +242,7 @@ const DesktopReserveRow = memo(({
         </TableCell>
         {/* Market — 左侧留白更小，右侧与其余列统一 */}
         <TableCell className="pl-[var(--ds-space-1)] pr-[var(--ds-space-2)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell">
-          <div className="group/market flex flex-col items-center justify-center gap-[var(--ds-space-0-5)]">
+          <div className="group/market flex flex-col items-center justify-center gap-[var(--ds-space-1)]">
             <div className="inline-flex items-center justify-center gap-[var(--ds-space-1)]">
               <button
                 type="button"
@@ -256,6 +257,14 @@ const DesktopReserveRow = memo(({
               >
                 <ChainIcon chain={reserve.chainName} />
                 {getReserveMarketDisplayName(reserve)}
+                {getProtocolVersion(reserve.marketName) === 'v4' && (
+                  <span
+                    className="ml-0.5 inline-flex items-center px-1 rounded ds-text-9 font-semibold leading-none py-0.5 text-foreground border border-transparent gradient-border bg-gradient-to-r from-[rgb(var(--ds-brand-magenta-rgb))]/15 to-[rgb(var(--ds-brand-cyan-rgb))]/15"
+                    aria-label="Aave V4 market"
+                  >
+                    V4
+                  </span>
+                )}
               </button>
               {aaveMarketUrl ? (
                 <a
@@ -266,7 +275,7 @@ const DesktopReserveRow = memo(({
                   aria-label={`Open ${getReserveMarketDisplayName(reserve)} market on Aave`}
                   title="Open market on Aave"
                 >
-                  <ExternalLink className="w-3 h-3 text-muted-foreground opacity-0 -ml-0.5 group-hover/market:opacity-70 transition-opacity duration-75" />
+                  <ExternalLink className="w-3 h-3 text-muted-foreground -ml-0.5 opacity-70 transition-opacity duration-75" />
                 </a>
               ) : (
                 <span
@@ -275,23 +284,28 @@ const DesktopReserveRow = memo(({
                 />
               )}
             </div>
-            {/* V4 Hub Info */}
+            {/* V4 Hub Info — pill linked visually to the V4 market chip above */}
             {reserve.hubName && (
-              <div className="flex items-center justify-center gap-[var(--ds-space-1)]">
+              <div className="inline-flex items-center justify-center gap-[var(--ds-space-1)]">
                 {aaveProHubUrl ? (
                   <a
                     href={aaveProHubUrl}
                     {...externalLinkTabProps(isMobile)}
                     onClick={(event) => event.stopPropagation()}
-                    className="ds-text-11 text-muted-foreground/60 hover:text-primary hover:underline transition-colors duration-100"
+                    className="inline-flex items-center gap-[var(--ds-space-1)] px-[var(--ds-space-1-5)] py-[1px] rounded-full ds-text-10 font-medium text-muted-foreground border border-border/50 bg-muted/25 hover:text-foreground hover:border-border/80 transition-colors duration-100"
                     aria-label={`View ${reserve.hubName} hub on Aave Pro`}
-                    title={`View ${reserve.hubName} hub on Aave Pro`}
+                    title={`Open hub ${reserve.hubName} on Aave Pro`}
                   >
-                    {reserve.hubName}
+                    <span className="ds-text-9 uppercase tracking-wide text-muted-foreground/70">Hub</span>
+                    <span className="text-muted-foreground/90">{reserve.hubName}</span>
+                    <ExternalLink className="w-2.5 h-2.5 text-muted-foreground/60" />
                   </a>
                 ) : (
-                  <span className="ds-text-11 text-muted-foreground/60">
-                    {reserve.hubName}
+                  <span
+                    className="inline-flex items-center gap-[var(--ds-space-1)] px-[var(--ds-space-1-5)] py-[1px] rounded-full ds-text-10 font-medium text-muted-foreground border border-border/50 bg-muted/25"
+                  >
+                    <span className="ds-text-9 uppercase tracking-wide text-muted-foreground/70">Hub</span>
+                    <span className="text-muted-foreground/90">{reserve.hubName}</span>
                   </span>
                 )}
               </div>

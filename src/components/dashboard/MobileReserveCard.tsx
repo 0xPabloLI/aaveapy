@@ -33,6 +33,7 @@ import type { RateSimulationResult } from '@/hooks/useRateSimulation';
 import { getPoolLiquidityUsd, getScenarioSupplySizeUsd, getTotalBorrowedUsd, getValidTokenPrice } from '@/lib/scenarioSize';
 import { buildPoolExplorerUrl } from '@/lib/poolExplorerLinks';
 import { buildAaveProHubUrl } from '@/lib/aaveLinks';
+import { getProtocolVersion } from '@/lib/protocolVersion';
 import { cn } from '@/lib/utils';
 import {
   SupplyCapSheetContent,
@@ -571,26 +572,40 @@ const MobileReserveCard = memo(({
                       <img src={chainIconSrc} alt={reserve.chainName} className="w-3 h-3 opacity-80" />
                     )}
                     <span className="truncate">{getReserveMarketDisplayName(reserve)}</span>
+                    {getProtocolVersion(reserve.marketName) === 'v4' && (
+                      <span
+                        className="ml-0.5 inline-flex items-center px-1 rounded ds-text-9 font-semibold leading-none py-0.5 text-foreground border border-transparent gradient-border bg-gradient-to-r from-[rgb(var(--ds-brand-magenta-rgb))]/15 to-[rgb(var(--ds-brand-cyan-rgb))]/15"
+                        aria-label="Aave V4 market"
+                      >
+                        V4
+                      </span>
+                    )}
                   </div>
-                  {/* V4 Hub Info */}
+                  {/* V4 Hub Info — pill aligned with the V4 market label above */}
                   {reserve.hubName && (
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 mt-0.5">
                       {(() => {
                         const aaveProHubUrl = buildAaveProHubUrl(reserve);
+                        const inner = (
+                          <>
+                            <span className="ds-text-9 uppercase tracking-wide text-muted-foreground/70">Hub</span>
+                            <span className="text-muted-foreground/90 truncate">{reserve.hubName}</span>
+                          </>
+                        );
                         return aaveProHubUrl ? (
                           <a
                             href={aaveProHubUrl}
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
-                            className="ds-text-10 text-muted-foreground/60 hover:text-primary hover:underline transition-colors duration-100 truncate"
+                            className="inline-flex items-center gap-1 px-1.5 py-[1px] rounded-full ds-text-10 font-medium text-muted-foreground border border-border/50 bg-muted/25 max-w-full"
                             aria-label={`View ${reserve.hubName} hub on Aave Pro`}
                           >
-                            {reserve.hubName}
+                            {inner}
                           </a>
                         ) : (
-                          <span className="ds-text-10 text-muted-foreground/60 truncate">
-                            {reserve.hubName}
+                          <span className="inline-flex items-center gap-1 px-1.5 py-[1px] rounded-full ds-text-10 font-medium text-muted-foreground border border-border/50 bg-muted/25 max-w-full">
+                            {inner}
                           </span>
                         );
                       })()}
