@@ -72,6 +72,40 @@ export function buildAaveMarketUrl(marketName: string): string | null {
 
 const AAVE_PRO_BASE = 'https://pro.aave.com';
 
+/** Chain name to chain ID mapping for pro.aave.com asset URLs. */
+const CHAIN_NAME_TO_ID: Record<string, string> = {
+  Ethereum: '1',
+  Arbitrum: '42161',
+  Optimism: '10',
+  Polygon: '137',
+  Base: '8453',
+  Gnosis: '100',
+  BNB: '56',
+  Avalanche: '43114',
+  Scroll: '534352',
+  ZkSync: '324',
+  Linea: '59144',
+  Metis: '1088',
+  Sonic: '146',
+  Celo: '42220',
+  Mantle: '5000',
+  Soneium: '1868',
+  Ink: '57073',
+  MegaEth: '999',
+  Plasma: '992',
+};
+
+/** Build a pro.aave.com deep-link for a V4 asset. Returns null for non-V4 reserves. */
+export function buildAaveProAssetUrl(asset: {
+  tokenAddress: string;
+  chainName?: string;
+}): string | null {
+  if (!asset.tokenAddress || !asset.chainName) return null;
+  const chainId = CHAIN_NAME_TO_ID[asset.chainName];
+  if (!chainId) return null;
+  return `${AAVE_PRO_BASE}/explore/asset/${chainId}/${asset.tokenAddress.toLowerCase()}`;
+}
+
 /** Build a pro.aave.com deep-link for a V4 reserve. Returns null for non-V4 reserves. */
 export function buildAaveProUrl(reserve: {
   aaveProReserveId?: string;

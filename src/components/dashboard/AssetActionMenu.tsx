@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { Check, Copy, ExternalLink, SquareArrowOutUpRight, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { toast } from 'sonner';
-import { buildAaveUrl } from '@/lib/aaveLinks';
+import { buildAaveUrl, buildAaveProAssetUrl } from '@/lib/aaveLinks';
 import { buildPoolExplorerUrl, buildTokenExplorerUrl, buildHubExplorerUrl } from '@/lib/poolExplorerLinks';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
 import { getChainIconSrc } from '@/lib/chainIcons';
@@ -142,12 +142,14 @@ export function AssetActionMenu({
 
   if (!tokenAddress) return null;
 
+  const chainName = reserveChainName ?? deriveChainFromMarketName(marketName);
+  const chainIconSrc = getChainIconSrc(chainName);
+
   const aaveUrl = buildAaveUrl({ marketName, tokenAddress, aaveProReserveId });
+  const aaveProAssetUrl = buildAaveProAssetUrl({ tokenAddress, chainName });
   const tokenExplorerUrl = buildTokenExplorerUrl(marketName, tokenAddress, { chainName: reserveChainName });
   const poolExplorerUrl = buildPoolExplorerUrl(marketName, { deepLink: false, chainName: reserveChainName });
   const hubExplorerUrl = buildHubExplorerUrl(hubAddress, { chainName: reserveChainName });
-  const chainName = reserveChainName ?? deriveChainFromMarketName(marketName);
-  const chainIconSrc = getChainIconSrc(chainName);
 
   const handleCopy = async () => {
     try {
@@ -167,6 +169,9 @@ export function AssetActionMenu({
 
   const items: MenuItem[] = [
     aaveUrl ? { key: 'aave', label: 'Open on Aave', href: aaveUrl, icon: 'external' as const } : null,
+    aaveProAssetUrl
+      ? { key: 'aave-pro-asset', label: 'View asset page', href: aaveProAssetUrl, icon: 'external' as const }
+      : null,
     tokenExplorerUrl
       ? { key: 'token-explorer', label: 'View token on explorer', href: tokenExplorerUrl, icon: 'external' as const }
       : null,
