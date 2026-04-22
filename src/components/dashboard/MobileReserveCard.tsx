@@ -579,11 +579,11 @@ const MobileReserveCard = memo(({
                       {(() => {
                         const aaveProHubUrl = buildAaveProHubUrl(reserve);
                         const isV4 = getProtocolVersion(reserve.marketName) === 'v4';
-                        const inner = (
-                          <span className={cn(
-                            "truncate",
-                            isV4 ? "text-foreground/90" : "text-muted-foreground/90"
-                          )}>{reserve.hubName}</span>
+                        const hubClass = cn(
+                          "inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-medium leading-none",
+                          isV4
+                            ? "text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10"
+                            : "text-muted-foreground/70 bg-muted/40"
                         );
                         return aaveProHubUrl ? (
                           <a
@@ -591,28 +591,18 @@ const MobileReserveCard = memo(({
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
-                            className={cn(
-                              "inline-flex items-center gap-1 px-1.5 py-[1px] rounded-full ds-text-10 font-medium max-w-full group/hub",
-                              isV4
-                                ? "text-foreground border border-transparent gradient-border bg-gradient-to-r from-[rgb(var(--ds-brand-magenta-rgb))]/15 to-[rgb(var(--ds-brand-cyan-rgb))]/15"
-                                : "text-muted-foreground border border-border/50 bg-muted/25"
-                            )}
+                            className={cn("relative inline-flex items-center max-w-full group/hub", hubClass)}
                             aria-label={`View ${reserve.hubName} hub on Aave Pro`}
                           >
-                            {inner}
+                            <span className="truncate">{reserve.hubName}</span>
                             <ExternalLink className={cn(
-                              "w-2.5 h-2.5 opacity-0 group-hover/hub:opacity-100 transition-opacity duration-100",
+                              "w-2.5 h-2.5 absolute -right-3 opacity-0 group-hover/hub:opacity-100 transition-opacity duration-100",
                               isV4 ? "text-foreground/60" : "text-muted-foreground/60"
                             )} />
                           </a>
                         ) : (
-                          <span className={cn(
-                            "inline-flex items-center gap-1 px-1.5 py-[1px] rounded-full ds-text-10 font-medium max-w-full",
-                            isV4
-                              ? "text-foreground border border-transparent gradient-border bg-gradient-to-r from-[rgb(var(--ds-brand-magenta-rgb))]/15 to-[rgb(var(--ds-brand-cyan-rgb))]/15"
-                              : "text-muted-foreground border border-border/50 bg-muted/25"
-                          )}>
-                            {inner}
+                          <span className={cn("truncate", hubClass)}>
+                            {reserve.hubName}
                           </span>
                         );
                       })()}

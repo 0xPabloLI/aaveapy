@@ -260,26 +260,23 @@ const DesktopReserveRow = memo(({
               </button>
               {/* Hub Info — V4 uses brand gradient emphasis, V3 uses plain style */}
               {reserve.hubName && (
-                <div className="group/hub inline-flex items-center justify-center gap-[var(--ds-space-1)]">
+                <div className="group/hub relative inline-flex items-center justify-center">
                   <span
                     className={cn(
-                      "inline-flex items-center gap-[var(--ds-space-1)] px-[var(--ds-space-1-5)] py-[1px] rounded-full ds-text-10 font-medium",
+                      "inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-medium leading-none",
                       getProtocolVersion(reserve.marketName) === 'v4'
-                        ? "text-foreground border border-transparent gradient-border bg-gradient-to-r from-[rgb(var(--ds-brand-magenta-rgb))]/15 to-[rgb(var(--ds-brand-cyan-rgb))]/15"
-                        : "text-muted-foreground border border-border/50 bg-muted/25"
+                        ? "text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10"
+                        : "text-muted-foreground/70 bg-muted/40"
                     )}
                   >
-                    <span className={cn(
-                      "truncate",
-                      getProtocolVersion(reserve.marketName) === 'v4' ? "text-foreground/90" : "text-muted-foreground/90"
-                    )}>{reserve.hubName}</span>
+                    {reserve.hubName}
                   </span>
                   {aaveProHubUrl && (
                     <a
                       href={aaveProHubUrl}
                       {...externalLinkTabProps(isMobile)}
                       onClick={(event) => event.stopPropagation()}
-                      className="opacity-0 group-hover/hub:opacity-100 transition-opacity duration-100 inline-flex shrink-0 items-center justify-center"
+                      className="absolute -right-3.5 opacity-0 group-hover/hub:opacity-100 transition-opacity duration-100 inline-flex items-center justify-center"
                       aria-label={`View ${reserve.hubName} hub on Aave Pro`}
                       title={`Open hub ${reserve.hubName} on Aave Pro`}
                     >
