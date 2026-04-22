@@ -61,6 +61,7 @@ This is a project-specific guardrail file, not the reusable design reference. If
 ### Text-to-border spacing (mandatory)
 
 - **Text must never touch borders**: Any bordered container (cards, table cells, warning banners, buttons) must have at least `--ds-space-2` (8px) padding between text and the border. See **DESIGN-SYSTEM-REFERENCE.md** §3（文字与边框）and §4（布局原则）.
+- **Mobile token symbols must prefer single-line full display**: token symbols (`USDT`, `WETH`, etc.) must stay on one line whenever physically possible. Only when the layout truly cannot fit may they use **tail truncation** (`truncate` / end ellipsis). Never force early abbreviation patterns like `U...` for short symbols, and never use `break-all`/character wrapping on token symbols in reserve cards or Top Opportunities mobile rows.
 
 ### Visual consistency
 

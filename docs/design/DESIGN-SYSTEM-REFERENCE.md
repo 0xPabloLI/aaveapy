@@ -50,6 +50,7 @@
 - **字号尺度**：统一使用设计 token（如 `ds-text-11` ~ `ds-text-24`），避免随意 `text-sm`/`text-base` 混用。
 - **数值**：一律 `tabular-nums` 保证对齐。
 - **文字与边框**：**强制** — 所有带边框的容器（卡片、表格单元格、警告条、按钮）内，文字与边框之间至少保留 8px（`--ds-space-2`）内边距，不得贴边。
+- **Token symbol 截断规则（强制）**：移动端 token symbol 必须**优先单行完整显示**；只有在真实可用宽度不足时，才允许使用**尾部省略号**。禁止对短 symbol 做提前缩写（如 `USDT` → `U...`），也禁止对 token symbol 使用 `break-all`、逐字符换行或中间截断。
 
 ### 数据列层级（Supply / Borrow APY、Size、Util）
 
@@ -77,7 +78,7 @@
 
 - **移动优先**，触控目标 ≥ 44×44px。
 - **多列面板**（如 Supply / Spread / Borrow）：等宽列、统一压缩，不单独给某一列固定或更大宽度。
-- **表格**：表头与占位符（如 `-`）使用相同列宽与对齐，避免表头与内容错位；空间紧张时优先换行而非省略号。
+- **表格**：表头与占位符（如 `-`）使用相同列宽与对齐，避免表头与内容错位；空间紧张时优先换行而非省略号。**但 token symbol 属于例外**：应优先保持单行，并仅在确实放不下时做尾部省略。
 - **叠层 sticky 表头 + 页面滚动**：若顶栏与 `<thead>` 均 `position: sticky` 且 `top` 意在相对**视口**叠放，**禁止**用包住整张表（含 `thead`）的 `overflow-x-auto` / `overflow: hidden` 等制造**独立 scrollport**，否则 `thead` 的 `top` 会相对该盒计算，与视口 sticky 错位（缝中大段空白、tbody 从缝露出）。**桌面展开 simulation 时**，主数据行各 `td` 须再叠一层 sticky（`--reserves-expanded-main-row-top`），避免长 simulation 滚动时 Token/市场行消失。本项目细则见 **[frontend-interaction-guardrails.md](frontend-interaction-guardrails.md)** § *Desktop reserves table: sticky stack and scrollport (normative)* 与 *DOM contract / CSS variables*。
 - **对称**：成对出现的区块（如 Supply / Borrow）在布局与视觉权重上保持对称。
 
