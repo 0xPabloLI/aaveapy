@@ -315,8 +315,8 @@ export default function ReservesTableDesktopHeader({
       label: 'Sort by Liquidity',
       isSelected: utilSortMode === 'liquidity' && activeSortColumn === 'util',
       order: utilSortOrder,
-      activeClassName: 'text-foreground',
-      hoverClassName: 'hover:bg-muted/50',
+      activeClassName: 'ds-text-purple-600',
+      hoverClassName: 'hover:bg-[rgb(var(--ds-purple-50-rgb)/0.5)]',
       onSelect: onSelectUtilSortLiquidity,
     },
   ];
@@ -411,7 +411,13 @@ export default function ReservesTableDesktopHeader({
                   onClick={onToggleSizeMenu}
                   className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-lg border transition-colors ${
                     showSizeSortMenu || activeSortColumn === 'size'
-                      ? 'bg-card/60 border-border/70 text-foreground'
+                      ? `bg-card/60 border-border/70 ${
+                          sizeSortMode === 'supply'
+                            ? 'ds-text-emerald-700'
+                            : sizeSortMode === 'borrow' || sizeSortMode === 'borrowAvailability'
+                              ? 'ds-text-brand-cyan'
+                              : 'text-foreground'
+                        }`
                       : 'bg-card/60 border-border/70 text-muted-foreground'
                   }`}
                   title="Select size sort field"
@@ -444,7 +450,13 @@ export default function ReservesTableDesktopHeader({
           <div className="flex items-center justify-center gap-[var(--ds-space-2)]">
             <div className="flex items-center gap-[var(--ds-space-1-5)]">
               <span
-                className={`transition-all duration-200 ${activeSortColumn === 'util' ? 'text-foreground font-bold scale-105' : 'text-muted-foreground'}`}
+                className={`transition-all duration-200 ${
+                  activeSortColumn === 'util'
+                    ? utilSortMode === 'liquidity'
+                      ? 'ds-text-purple-600 font-bold scale-105'
+                      : 'text-foreground font-bold scale-105'
+                    : 'text-muted-foreground'
+                }`}
               >
                 Utilization
               </span>
@@ -455,7 +467,11 @@ export default function ReservesTableDesktopHeader({
                   onClick={onToggleUtilMenu}
                   className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-lg border transition-colors ${
                     showUtilSortMenu || activeSortColumn === 'util'
-                      ? 'bg-card/60 border-border/70 text-foreground'
+                      ? `bg-card/60 border-border/70 ${
+                          utilSortMode === 'liquidity'
+                            ? 'ds-text-purple-700'
+                            : 'text-foreground'
+                        }`
                       : 'bg-card/60 border-border/70 text-muted-foreground'
                   }`}
                   title="Select utilization sort field"

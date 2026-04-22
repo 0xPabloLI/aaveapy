@@ -411,7 +411,11 @@ const DesktopReserveRow = memo(({
               <span className={displayUtilization != null && simulation?.utilization.optimal != null && displayUtilization > simulation.utilization.optimal ? 'text-amber-600' : 'text-foreground'}>
                 {formatPercent(displayUtilization)}
               </span>
-              <span className="text-muted-foreground/70 ds-text-11 tabular-nums">
+              <span className={`ds-text-11 tabular-nums font-medium ${
+                poolLiquidity != null && poolLiquidity < 1000
+                  ? 'text-amber-600'
+                  : 'ds-text-purple-500'
+              }`}>
                 {formatScenarioSize(poolLiquidity, { inputMode, tokenPrice: displayTokenPrice, tokenSymbol: reserve.tokenSymbol })}
               </span>
             </div>
