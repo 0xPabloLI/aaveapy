@@ -21,7 +21,7 @@ import {
   getReserveMarketDisplayName,
 } from '@/lib/formatters';
 import { buildAaveUrl } from '@/lib/aaveLinks';
-import { externalLinkTabProps, openExternalUrl } from '@/lib/externalNavigation';
+import { openExternalUrl } from '@/lib/externalNavigation';
 import { IncentiveIcon } from '@/components/IncentiveIcon';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getChainIconSrc } from '@/lib/chainIcons';
