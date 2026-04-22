@@ -6,9 +6,14 @@ import type { ReserveWithSpread } from '@/types/aave';
 import TopOpportunities from './TopOpportunities';
 
 const mockUseIsMobile = vi.fn();
+const mockUseSideDataMeta = vi.fn();
 
 vi.mock('@/hooks/use-mobile', () => ({
   useIsMobile: () => mockUseIsMobile(),
+}));
+
+vi.mock('@/hooks/useSideDataMeta', () => ({
+  useSideDataMeta: (...args: unknown[]) => mockUseSideDataMeta(...args),
 }));
 
 vi.mock('@/components/ui/carousel', () => ({
@@ -63,6 +68,8 @@ const baseProps = {
 describe('TopOpportunities', () => {
   beforeEach(() => {
     mockUseIsMobile.mockReset();
+    mockUseSideDataMeta.mockReset();
+    mockUseSideDataMeta.mockReturnValue({ data: undefined });
   });
   afterEach(() => cleanup());
 
@@ -91,5 +98,17 @@ describe('TopOpportunities', () => {
 
     expect(getAllByText(/11\.30%/).length).toBeGreaterThan(0);
     expect(queryByText(/^11\.00%$/)).not.toBeInTheDocument();
+  });
+
+  it('does not issue a real side-data fetch during happy-dom rendering', () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    mockUseIsMobile.mockReturnValue(true);
+
+    try {
+      renderComponent();
+      expect(fetchSpy).not.toHaveBeenCalled();
+    } finally {
+      fetchSpy.mockRestore();
+    }
   });
 });
