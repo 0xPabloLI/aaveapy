@@ -47,7 +47,8 @@ const Index = () => {
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMarkets, setSelectedMarkets] = useState<string[]>([]);
-const [selectedCategory, setSelectedCategory] = useState<TokenCategory>('all');
+const [selectedCategory, setSelectedCategory] = useState<TokenCategory>("all");
+  const [selectedHubId, setSelectedHubId] = useState<string | null>(null);
   const [isApy, setIsApy] = useState(true);
   const [showCacheWarning, setShowCacheWarning] = useState(false);
   
@@ -254,9 +255,16 @@ const [selectedCategory, setSelectedCategory] = useState<TokenCategory>('all');
         }
       }
 
+      // Hub filter
+      if (selectedHubId) {
+        if (reserve.hubId !== selectedHubId) {
+          return false;
+        }
+      }
+
       return true;
     });
-  }, [effectiveReservesData?.reserves, searchQuery, selectedMarkets, selectedCategory, tokenCategoryGroups]);
+  }, [effectiveReservesData?.reserves, searchQuery, selectedMarkets, selectedCategory, selectedHubId, tokenCategoryGroups]);
 
   if (isLoading && !effectiveReservesData) {
     return <LoadingState />;
@@ -357,6 +365,9 @@ const [selectedCategory, setSelectedCategory] = useState<TokenCategory>('all');
               isApy={isApy}
               setIsApy={setIsApy}
               marketsList={effectiveMarketsList}
+              selectedHubId={selectedHubId}
+              onClearHub={() => setSelectedHubId(null)}
+              selectedHubName={effectiveReservesData?.reserves.find(r => r.hubId === selectedHubId)?.hubName || null}
             />
 
             <ReservesTable
@@ -370,6 +381,9 @@ const [selectedCategory, setSelectedCategory] = useState<TokenCategory>('all');
                 setSelectedMarkets((prev) =>
                   prev.length === 1 && prev[0] === marketName ? [] : [marketName]
                 );
+              }}
+              onSelectHub={(hubId) => {
+                setSelectedHubId((prev) => (prev === hubId ? null : hubId));
               }}
               tydroPointToUsdRate={tydroPointToUsdRate}
               whitelistMerklCampaignIds={whitelistMerklCampaignIds}

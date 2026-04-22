@@ -52,6 +52,8 @@ interface DesktopReserveRowProps {
   isExpanded: boolean;
   onToggleExpand: (reserveId: string) => void;
   onSelectMarket?: (marketName: string) => void;
+  /** Callback when user clicks hub badge to filter by that hub (desktop only). */
+  onSelectHub?: (hubId: string) => void;
   onMarketChipClick?: (reserveId: string) => void;
   onIncentiveClick: (e: React.MouseEvent, reserve: ReserveWithSpread, type: 'supply' | 'borrow', apy: number | null) => void;
   displaySupplyTotal: number | null;
@@ -86,6 +88,7 @@ const DesktopReserveRow = memo(({
   isExpanded,
   onToggleExpand,
   onSelectMarket,
+  onSelectHub,
   onMarketChipClick,
   onIncentiveClick,
   displaySupplyTotal,
@@ -281,16 +284,25 @@ const DesktopReserveRow = memo(({
                   "group/hub-link relative inline-flex max-w-full items-center justify-center",
                   aaveProHubUrl && "pl-3.5 pr-3.5"
                 )}>
-                  <span
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      if (reserve.hubId) {
+                        onSelectHub?.(reserve.hubId);
+                      }
+                    }}
                     className={cn(
-                      "inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-medium leading-none",
+                      "inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-medium leading-none transition-colors hover:brightness-110",
                       getProtocolVersion(reserve.marketName) === 'v4'
-                        ? "text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10"
-                        : "text-muted-foreground/70 bg-muted/40"
+                        ? "text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))/10]"
+                        : "text-muted-foreground/70 bg-muted/40 hover:text-muted-foreground"
                     )}
+                    aria-label={`Filter by ${reserve.hubName} hub`}
+                    title={`Filter by ${reserve.hubName} hub`}
                   >
                     {reserve.hubName}
-                  </span>
+                  </button>
                   {aaveProHubUrl && (
                     <a
                       href={aaveProHubUrl}

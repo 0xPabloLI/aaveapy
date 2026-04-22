@@ -18,6 +18,12 @@ interface FilterBarProps {
   isApy: boolean;
   setIsApy: (isApy: boolean) => void;
   marketsList?: MarketListItem[];
+  /** Current hub filter; only used on desktop. */
+  selectedHubId?: string | null;
+  /** Clear the hub filter. */
+  onClearHub?: () => void;
+  /** Display name for the selected hub (if known). */
+  selectedHubName?: string | null;
 }
 
 const categories: { value: TokenCategory; label: string }[] = [
@@ -103,6 +109,9 @@ const FilterBar = ({
   isApy,
   setIsApy,
   marketsList,
+  selectedHubId,
+  onClearHub,
+  selectedHubName,
 }: FilterBarProps) => {
   const isMobile = useIsMobile();
   const [searchPlaceholder, setSearchPlaceholder] = useState('Search token');
@@ -273,6 +282,21 @@ const FilterBar = ({
           <AprApyToggle isApy={isApy} setIsApy={setIsApy} />
         </div>
       </div>
+
+      {/* Row 2.5: Active Hub Filter (desktop only) */}
+      {selectedHubId && onClearHub && (
+        <div className="hidden md:flex flex-wrap items-center gap-1.5">
+          <span className="ds-text-11 text-muted-foreground/70">Hub</span>
+          <button
+            onClick={onClearHub}
+            className="ds-chip gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-colors ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm hover:opacity-80"
+            title="Clear hub filter"
+          >
+            <span>{selectedHubName || selectedHubId}</span>
+            <X className="w-3 h-3" />
+          </button>
+        </div>
+      )}
 
       {/* Row 3: Markets – all visible */}
       <div className="flex flex-wrap items-center gap-1 md:gap-1.5">
