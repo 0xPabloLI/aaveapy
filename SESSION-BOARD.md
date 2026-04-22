@@ -50,6 +50,7 @@
 | codex-0410a | Codex | 前端收口 Merkl API contract 对齐 | src/lib/apiSchemas.ts, src/types/aave.ts, src/lib/tydro.ts, src/lib/tydro.test.ts, src/hooks/useRateSimulation.ts, src/hooks/useRateSimulation.test.ts, src/lib/apiSchemas.test.ts, SESSION-BOARD.md | done | 2026-04-10T00:00:00Z | 承接中断修改，补齐前端契约行为；本地验证通过 |
 | codex-0415b | Codex | 修复 explorer links + 增加真实浏览器校验并更新文档提交 | src/lib/poolExplorerLinks.ts, src/lib/poolExplorerLinks.test.ts, scripts/test-explorer-links.ts, scripts/verify-explorer-links.ts, scripts/, docs/pool-explorer-links.md, .github/workflows/, SESSION-BOARD.md | done | 2026-04-15T20:35:00Z | 已完成并提交 |
 | droid-0421a | Droid | 修复 AssetActionMenu 上翻偏移 + RTL/happy-dom 加固 | src/components/dashboard/AssetActionMenu.tsx, src/components/dashboard/assetActionMenuPosition.ts, src/components/dashboard/assetActionMenuPosition.test.ts, src/components/dashboard/AssetActionMenu.test.tsx, src/components/dashboard/MobileReserveCard.test.tsx, src/components/dashboard/TopOpportunities.test.tsx, src/test/setup.ts, vite.config.ts, scripts/verify-asset-action-menu-position.mjs, package.json, SESSION-BOARD.md | done | 2026-04-21T00:00:00Z | 中心锚点 + offsetHeight；Playwright 实机校验通过；迁移 3 个冒烟测试 + 9 个 AssetActionMenu 交互测试；426/426 pass；已 rebase+push（commits b845bd2, 9d9713f） |
+| codex-0422a | Codex | 修正移动端 symbol 截断规则并补充文档 | src/components/dashboard/MobileReserveCard.tsx, src/components/dashboard/TopOpportunities.tsx, docs/design/frontend-interaction-guardrails.md, docs/design/DESIGN-SYSTEM-REFERENCE.md, SESSION-BOARD.md | active | 2026-04-22T09:20:00Z | 无冲突 |
 
 ---
 
