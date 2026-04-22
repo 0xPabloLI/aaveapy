@@ -256,7 +256,7 @@ describe('MobileReserveCard', () => {
     const html = container.innerHTML;
     expect(html).toContain('width: 28px; height: 28px;');
     expect(html).toContain('flex items-start gap-1 min-w-0 flex-1');
-    expect(html).toContain('flex min-w-0 items-center gap-0.5');
+    expect(html).toContain('flex min-w-0 flex-1 items-start gap-0.5');
     expect(html).toContain('mt-0 flex min-w-0 items-center gap-1');
     expect(html).toContain('style="width: 13px; height: 13px;"');
     expect(html).toContain('class="inline-flex shrink-0 items-center gap-0.5 rounded-md px-1 py-0.5 transition-all hover:bg-muted/50 active:scale-[0.97] -translate-y-px"');
