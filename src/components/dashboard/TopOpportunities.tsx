@@ -20,8 +20,6 @@ import {
   getReserveIncentiveValues,
   getReserveMarketDisplayName,
 } from '@/lib/formatters';
-import { buildAaveUrl } from '@/lib/aaveLinks';
-import { openExternalUrl } from '@/lib/externalNavigation';
 import { IncentiveIcon } from '@/components/IncentiveIcon';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getChainIconSrc } from '@/lib/chainIcons';
@@ -31,7 +29,6 @@ import { Carousel, CarouselContent, CarouselItem, CarouselApi } from '@/componen
 import { Button } from '@/components/ui/button';
 import { shouldSkipTopOpportunitiesRender } from '@/lib/topOpportunitiesMemo';
 import IncentiveTooltip from '@/components/dashboard/IncentiveTooltip';
-import AssetActionMenu from '@/components/dashboard/AssetActionMenu';
 import { useSideDataMeta } from '@/hooks/useSideDataMeta';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
 import {
@@ -138,12 +135,7 @@ interface ReserveIdentityProps {
   marketDisplayName: string;
   isMobile: boolean;
   mini?: boolean;
-  aaveUrl?: string;
   miniRightContent?: ReactNode;
-  marketName?: string;
-  tokenAddress?: string | null;
-  aaveProReserveId?: string;
-  hubAddress?: string;
 }
 
 const ReserveIdentity = memo(({
@@ -155,12 +147,7 @@ const ReserveIdentity = memo(({
   marketDisplayName,
   isMobile,
   mini = false,
-  aaveUrl,
   miniRightContent,
-  marketName,
-  tokenAddress,
-  aaveProReserveId,
-  hubAddress,
 }: ReserveIdentityProps) => {
   if (mini) {
     return (
@@ -175,18 +162,6 @@ const ReserveIdentity = memo(({
         <div className="min-w-0 flex-1">
           <div className="flex min-w-0 w-full items-start gap-[var(--ds-space-0-5)]">
             <span className="min-w-0 flex-1 truncate whitespace-nowrap font-bold text-foreground ds-text-11 leading-tight">{tokenSymbol}</span>
-            {marketName && tokenAddress ? (
-              <AssetActionMenu
-                tokenSymbol={tokenSymbol}
-                tokenAddress={tokenAddress}
-                marketName={marketName}
-                aaveProReserveId={aaveProReserveId}
-                chainName={chainName}
-                hubAddress={hubAddress}
-                isMobile={isMobile}
-                triggerSize={11}
-              />
-            ) : null}
           </div>
           <div className="flex items-center gap-[var(--ds-space-1)] ds-text-9 text-muted-foreground">
             {chainIconSrc && (
@@ -213,16 +188,6 @@ const ReserveIdentity = memo(({
           <span className="min-w-0 flex-1 truncate whitespace-nowrap font-semibold text-foreground leading-tight ds-text-13">
           {tokenSymbol}
         </span>
-        {marketName && tokenAddress ? (
-          <AssetActionMenu
-            tokenSymbol={tokenSymbol}
-            tokenAddress={tokenAddress}
-            marketName={marketName}
-            aaveProReserveId={aaveProReserveId}
-            hubAddress={hubAddress}
-            isMobile={isMobile}
-          />
-        ) : null}
       </div>
       <div className="flex items-center gap-[var(--ds-space-1)] min-w-0 leading-none">
         {chainIconSrc && (
@@ -397,10 +362,6 @@ const MiniReserveCard = ({
         marketDisplayName={marketDisplayName}
         isMobile={isMobile}
         miniRightContent={mainValueNode}
-        marketName={reserve.marketName}
-        tokenAddress={reserve.tokenAddress}
-        aaveProReserveId={reserve.aaveProReserveId}
-        hubAddress={reserve.hubAddress}
       />
 
       <div className="flex items-baseline justify-end gap-[var(--ds-space-1)]">
@@ -505,17 +466,6 @@ const ReserveItem = forwardRef<HTMLDivElement, ReserveItemProps>(function Reserv
           <span className="min-w-0 flex-1 truncate whitespace-nowrap font-semibold text-foreground leading-none ds-text-14">
             {reserve.tokenSymbol}
           </span>
-          {reserve.marketName && reserve.tokenAddress ? (
-            <AssetActionMenu
-              tokenSymbol={reserve.tokenSymbol}
-              tokenAddress={reserve.tokenAddress}
-              marketName={reserve.marketName}
-              aaveProReserveId={reserve.aaveProReserveId}
-              chainName={reserve.chainName}
-              hubAddress={reserve.hubAddress}
-              isMobile={isMobile}
-            />
-          ) : null}
         </div>
         <div
           className={`${(isLeverage ? getSpreadColorClass(mainValue, index, totalItems) : getApyColorClass(mainValue))} font-bold tabular-nums text-right leading-none ${isMobile ? 'ds-text-16' : 'ds-text-18'} ${!isLeverage && !hasIncentive ? 'row-span-2 self-center' : ''}`}
@@ -880,12 +830,6 @@ const TopOpportunities = ({
   const handleCardClick = (reserve: ReserveWithSpread) => {
     if (onCardClick) {
       onCardClick(reserve);
-      return;
-    }
-    if (isMobile) return;
-    const url = buildAaveUrl(reserve);
-    if (url) {
-      openExternalUrl(url, false);
     }
   };
 
