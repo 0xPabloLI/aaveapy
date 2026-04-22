@@ -580,7 +580,7 @@ const MobileReserveCard = memo(({
                         const aaveProHubUrl = buildAaveProHubUrl(reserve);
                         const isV4 = getProtocolVersion(reserve.marketName) === 'v4';
                         const hubClass = cn(
-                          "inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-medium leading-none",
+                          "inline-flex items-center rounded-full text-[9px] font-medium leading-none",
                           isV4
                             ? "text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10"
                             : "text-muted-foreground/70 bg-muted/40"
@@ -591,17 +591,17 @@ const MobileReserveCard = memo(({
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
-                            className={cn("relative inline-flex items-center max-w-full group/hub", hubClass)}
+                            className={cn("group/hub-link relative inline-flex max-w-full items-center pl-3.5 pr-3.5 py-0.5", hubClass)}
                             aria-label={`View ${reserve.hubName} hub on Aave Pro`}
                           >
                             <span className="truncate">{reserve.hubName}</span>
                             <ExternalLink className={cn(
-                              "w-2.5 h-2.5 absolute -right-3 opacity-0 group-hover/hub:opacity-100 transition-opacity duration-100",
+                              "pointer-events-none absolute right-0 top-1/2 h-2.5 w-2.5 -translate-y-1/2 opacity-0 transition-opacity duration-100 group-hover/hub-link:opacity-100",
                               isV4 ? "text-foreground/60" : "text-muted-foreground/60"
                             )} />
                           </a>
                         ) : (
-                          <span className={cn("truncate", hubClass)}>
+                          <span className={cn("truncate px-1.5 py-0.5", hubClass)}>
                             {reserve.hubName}
                           </span>
                         );

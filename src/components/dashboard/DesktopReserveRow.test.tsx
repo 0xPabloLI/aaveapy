@@ -159,4 +159,48 @@ describe('DesktopReserveRow', () => {
       </QueryClientProvider>
     )).not.toThrow();
   });
+
+  it('uses dedicated non-flickering hover groups for market and hub action icons', () => {
+    const queryClient = new QueryClient();
+    const html = renderToString(
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Table>
+            <TableBody>
+              <DesktopReserveRow
+                reserve={{ ...reserve, hubName: 'Core', hubId: 'hub-core' }}
+                reserveId="AaveV3Ethereum-0x0000000000000000000000000000000000000001"
+                isExpanded={false}
+                onToggleExpand={() => {}}
+                onIncentiveClick={() => {}}
+                displaySupplyTotal={2.9}
+                displaySupplyNative={2.5}
+                displaySupplyIncentive={0.4}
+                displayBorrowTotal={3.3}
+                displayBorrowNative={3.4}
+                displayBorrowIncentive={0.1}
+                displayUtilization={52}
+                spread={-0.4}
+                simulation={simulation}
+                supplyInput="1000"
+                borrowInput="500"
+                inputMode="usd"
+                isApy
+                isMobile={false}
+              />
+            </TableBody>
+          </Table>
+        </TooltipProvider>
+      </QueryClientProvider>
+    );
+
+    expect(html).toContain('group/market-link');
+    expect(html).toContain('group-hover/market-link:opacity-100');
+    expect(html).toContain('pl-4');
+    expect(html).toContain('pr-4');
+    expect(html).toContain('group/hub-link');
+    expect(html).toContain('group-hover/hub-link:opacity-100');
+    expect(html).toContain('pl-3.5');
+    expect(html).toContain('pr-3.5');
+  });
 });

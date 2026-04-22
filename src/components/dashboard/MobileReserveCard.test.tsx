@@ -166,4 +166,31 @@ describe('MobileReserveCard', () => {
 
     expect(getByLabelText('Collapse details panel')).toBeInTheDocument();
   });
+
+  it('keeps the hub action icon inside a dedicated hover wrapper', () => {
+    const { container } = render(
+      <QueryClientProvider client={new QueryClient()}>
+        <TooltipProvider>
+          <MobileReserveCard
+            reserve={{ ...reserve, hubName: 'Core', hubId: 'hub-core' }}
+            isApy
+            tydroPointToUsdRate={0}
+            onIncentiveClick={() => {}}
+            isSimulationExpanded={false}
+            onToggleSimulation={() => {}}
+            simulation={simulation}
+            supplyInput="1000"
+            borrowInput="500"
+            hasSharedScenario
+            inputMode="usd"
+          />
+        </TooltipProvider>
+      </QueryClientProvider>,
+    );
+
+    expect(container.innerHTML).toContain('group/hub-link');
+    expect(container.innerHTML).toContain('group-hover/hub-link:opacity-100');
+    expect(container.innerHTML).toContain('pl-3.5');
+    expect(container.innerHTML).toContain('pr-3.5');
+  });
 });
