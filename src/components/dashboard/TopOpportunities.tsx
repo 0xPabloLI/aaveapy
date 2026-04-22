@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef, memo, forwardRef, useCallback, type ReactNode } from 'react';
-import { TrendingUp, Zap, ChevronLeft, ChevronsLeft, ChevronsRight, ExternalLink } from 'lucide-react';
+import { TrendingUp, Zap, ChevronLeft, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ReserveWithSpread, MerklForecastWireItem } from '@/types/aave';
 import {
@@ -21,7 +21,7 @@ import {
   getReserveMarketDisplayName,
 } from '@/lib/formatters';
 import { buildAaveUrl } from '@/lib/aaveLinks';
-import { externalLinkTabProps, openExternalUrl } from '@/lib/externalNavigation';
+import { openExternalUrl } from '@/lib/externalNavigation';
 import { IncentiveIcon } from '@/components/IncentiveIcon';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getChainIconSrc } from '@/lib/chainIcons';
