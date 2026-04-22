@@ -173,8 +173,8 @@ const ReserveIdentity = memo(({
           logoURI={logoURI}
         />
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-[var(--ds-space-0-5)]">
-            <span className="font-bold text-foreground ds-text-12 truncate">{tokenSymbol}</span>
+          <div className="flex items-start gap-[var(--ds-space-0-5)]">
+            <span className="min-w-0 break-all font-bold text-foreground ds-text-11 leading-tight">{tokenSymbol}</span>
             {marketName && tokenAddress ? (
               <AssetActionMenu
                 tokenSymbol={tokenSymbol}
@@ -209,8 +209,8 @@ const ReserveIdentity = memo(({
         className="shrink-0 row-span-2"
         logoURI={logoURI}
       />
-      <div className="flex items-center min-w-0 gap-[var(--ds-space-1)]">
-        <span className="font-semibold text-foreground truncate leading-none ds-text-14">
+        <div className="flex items-start min-w-0 gap-[var(--ds-space-1)]">
+          <span className="min-w-0 break-all font-semibold text-foreground leading-tight ds-text-13">
           {tokenSymbol}
         </span>
         {marketName && tokenAddress ? (
@@ -384,7 +384,7 @@ const MiniReserveCard = ({
             animate: 'visible',
             variants: itemVariants,
           })}
-      className="rounded-xl border ds-card-pad-sm cursor-pointer bg-card border-border/60 active:bg-muted/60 h-[60px] flex flex-col justify-center gap-[var(--ds-space-0-5)]"
+      className="rounded-xl border ds-card-pad-sm cursor-pointer bg-card border-border/60 active:bg-muted/60 min-h-[60px] flex flex-col justify-center gap-[var(--ds-space-0-5)]"
       onClick={() => onCardClick(reserve)}
     >
       <ReserveIdentity
