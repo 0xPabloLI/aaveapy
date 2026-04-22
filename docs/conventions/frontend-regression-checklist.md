@@ -33,6 +33,8 @@ Examples:
 - `MobileReserveCard`
   - Expanded and collapsed shells must preserve the same reserve identity.
   - Incentive/native sub-rows must remain consistent with the parent total.
+  - Mobile header compaction must not silently change icon size, text size, or font weight; verify spacing changes separately from typography.
+  - When no incentive is visible, the hero empty-state helper copy must remain present and follow the active rate mode wording (`APY` vs `APR`).
 - `ReservesTable`
   - Sort controls must preserve current sorting semantics.
   - Sticky/expanded row behavior must preserve the DOM contract documented in `docs/design/frontend-interaction-guardrails.md`.

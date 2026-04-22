@@ -1,5 +1,5 @@
 import { memo, useEffect, useState } from 'react';
-import { ExternalLink, ListCollapse, Plus, X } from 'lucide-react';
+import { ListCollapse, Plus, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ReserveWithSpread } from '@/types/aave';
 import {
@@ -229,6 +229,7 @@ function MobileReserveAmountRow({
 
 interface MobileReserveHeroApyProps {
   activeTab: 'supply' | 'borrow';
+  isApy: boolean;
   reserve: ReserveWithSpread;
   displaySupplyTotal: number | null;
   displaySupplyNative: number | null;
@@ -246,6 +247,7 @@ interface MobileReserveHeroApyProps {
 
 function MobileReserveHeroApy({
   activeTab,
+  isApy,
   reserve,
   displaySupplyTotal,
   displaySupplyNative,
@@ -255,6 +257,13 @@ function MobileReserveHeroApy({
   visibleBorrowIncentive,
   onIncentiveClick,
 }: MobileReserveHeroApyProps) {
+  const rateUnitLabel = isApy ? 'APY' : 'APR';
+  const noIncentivePlaceholder = (
+    <span className="ds-text-10 font-medium leading-none text-muted-foreground/55">
+      {`Base ${rateUnitLabel} only`}
+    </span>
+  );
+
   if (activeTab === 'supply') {
     const heroValue = displaySupplyTotal;
     const isDisabled = reserve.supplyDisabled;
@@ -265,19 +274,19 @@ function MobileReserveHeroApy({
         {isDisabled ? (
           <Tooltip>
             <TooltipTrigger asChild>
-              <p className={`ds-text-24 font-bold tabular-nums ${heroColorClass} cursor-auto`}>
+              <p className={`ds-text-22 font-bold tabular-nums ${heroColorClass} cursor-auto`}>
                 {formatPercent(heroValue)}
               </p>
             </TooltipTrigger>
             <TooltipContent>Supply unavailable</TooltipContent>
           </Tooltip>
         ) : (
-          <p className={`ds-text-24 font-bold tabular-nums ${heroColorClass}`}>
+          <p className={`ds-text-22 font-bold tabular-nums ${heroColorClass}`}>
             {formatPercent(heroValue)}
           </p>
         )}
-        <div className="min-h-[1rem]">
-          {visibleSupplyIncentive !== null && (
+        <div className="flex min-h-[1rem] items-center justify-center">
+          {visibleSupplyIncentive !== null ? (
             <div className="flex items-center gap-[var(--ds-space-1)] ds-text-11">
               <span className={isDisabled ? 'text-secondary' : 'ds-text-emerald-500-70 font-medium'}>
                 {formatPercent(displaySupplyNative)}
@@ -299,7 +308,7 @@ function MobileReserveHeroApy({
                 <IncentiveIcon width={8} height={8} />
               </button>
             </div>
-          )}
+          ) : !isDisabled ? noIncentivePlaceholder : null}
         </div>
       </div>
     );
@@ -314,19 +323,19 @@ function MobileReserveHeroApy({
       {isDisabled ? (
         <Tooltip>
           <TooltipTrigger asChild>
-            <p className={`ds-text-24 font-bold tabular-nums ${heroColorClass} cursor-auto`}>
+            <p className={`ds-text-22 font-bold tabular-nums ${heroColorClass} cursor-auto`}>
               {formatPercent(heroValue)}
             </p>
           </TooltipTrigger>
           <TooltipContent>Borrow disabled</TooltipContent>
         </Tooltip>
       ) : (
-        <p className={`ds-text-24 font-bold tabular-nums ${heroColorClass}`}>
+        <p className={`ds-text-22 font-bold tabular-nums ${heroColorClass}`}>
           {formatPercent(heroValue)}
         </p>
       )}
-      <div className="min-h-[1rem]">
-        {visibleBorrowIncentive !== null && (
+      <div className="flex min-h-[1rem] items-center justify-center">
+        {visibleBorrowIncentive !== null ? (
           <div className="flex items-center gap-[var(--ds-space-1)] ds-text-11">
             <span className={isDisabled ? 'text-secondary' : 'ds-text-brand-cyan-70 font-medium'}>
               {formatPercent(displayBorrowNative)}
@@ -348,7 +357,7 @@ function MobileReserveHeroApy({
               <IncentiveIcon width={8} height={8} />
             </button>
           </div>
-        )}
+        ) : !isDisabled ? noIncentivePlaceholder : null}
       </div>
     </div>
   );
@@ -520,7 +529,7 @@ const MobileReserveCard = memo(({
         }`}
       >
         {/* Token header */}
-        <div className="flex items-center gap-[var(--ds-space-2)] mb-1.5 min-h-[36px] px-3">
+        <div className="flex items-start gap-[var(--ds-space-2)] mb-1.5 min-h-[36px] px-3">
           {isPortfolioMode && onPortfolioToggle && (
             <button
               type="button"
@@ -543,7 +552,7 @@ const MobileReserveCard = memo(({
               )}
             </button>
           )}
-          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+          <div className="flex items-start gap-1 min-w-0 flex-1">
             <TokenIcon
               symbol={iconSymbol}
               size={28}
@@ -551,91 +560,87 @@ const MobileReserveCard = memo(({
               className="shrink-0"
               logoURI={logoURI}
             />
-              <div className="min-w-0 flex-1">
-                <div className="flex min-w-0 w-full items-start gap-1">
-                  <p className="min-w-0 flex-1 truncate whitespace-nowrap font-bold text-foreground ds-text-13 leading-tight">{reserve.tokenSymbol}</p>
-                <AssetActionMenu
-                  tokenSymbol={reserve.tokenSymbol}
-                  tokenAddress={reserve.tokenAddress}
-                  marketName={reserve.marketName}
-                  aaveProReserveId={reserve.aaveProReserveId}
-                  chainName={reserve.chainName}
-                  hubAddress={reserve.hubAddress}
-                  isMobile
-                  triggerSize={13}
-                  triggerClassName="shrink-0"
-                />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex min-w-0 flex-1 items-start gap-0.5">
+                  <p className="min-w-0 flex-1 truncate whitespace-nowrap font-bold text-foreground ds-text-13 leading-tight">
+                    {reserve.tokenSymbol}
+                  </p>
+                  <AssetActionMenu
+                    tokenSymbol={reserve.tokenSymbol}
+                    tokenAddress={reserve.tokenAddress}
+                    marketName={reserve.marketName}
+                    aaveProReserveId={reserve.aaveProReserveId}
+                    chainName={reserve.chainName}
+                    hubAddress={reserve.hubAddress}
+                    isMobile
+                    triggerSize={13}
+                    triggerClassName="shrink-0"
+                  />
                 </div>
-                <div className="flex flex-col gap-0">
-                  <div className="flex items-center gap-1 ds-text-11 text-muted-foreground/80">
-                    {chainIconSrc && (
-                      <img src={chainIconSrc} alt={reserve.chainName} className="w-3 h-3 opacity-80" />
-                    )}
-                    <span className="truncate">{getReserveMarketDisplayName(reserve)}</span>
-                  </div>
-                  {/* Hub Info — V4 uses brand gradient emphasis, V3 uses plain style */}
-                  {reserve.hubName && (
-                    <div className="flex items-center gap-1 mt-0.5">
-                      {(() => {
-                        const aaveProHubUrl = buildAaveProHubUrl(reserve);
-                        const isV4 = getProtocolVersion(reserve.marketName) === 'v4';
-                        const hubClass = cn(
-                          "inline-flex items-center rounded-full text-[9px] font-medium leading-none",
-                          isV4
-                            ? "text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10"
-                            : "text-muted-foreground/70 bg-muted/40"
-                        );
-                        return aaveProHubUrl ? (
-                          <a
-                            href={aaveProHubUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className={cn("group/hub-link relative inline-flex max-w-full items-center pl-3.5 pr-3.5 py-0.5", hubClass)}
-                            aria-label={`View ${reserve.hubName} hub on Aave Pro`}
-                          >
-                            <span className="truncate">{reserve.hubName}</span>
-                            <ExternalLink className={cn(
-                              "pointer-events-none absolute right-0 top-1/2 h-2.5 w-2.5 -translate-y-1/2 opacity-0 transition-opacity duration-100 group-hover/hub-link:opacity-100",
-                              isV4 ? "text-foreground/60" : "text-muted-foreground/60"
-                            )} />
-                          </a>
-                        ) : (
-                          <span className={cn("truncate px-1.5 py-0.5", hubClass)}>
-                            {reserve.hubName}
-                          </span>
-                        );
-                      })()}
-                    </div>
-                  )}
-                </div>
+                {/* Utilization indicator - clickable (values match desktop Utilization column + UtilizationIndicator) */}
+                {displayUtilization != null && optimalPct != null && (
+                  <button
+                    type="button"
+                    onClick={() => setCapSheet('utilization')}
+                    className="inline-flex shrink-0 items-center gap-0.5 rounded-md px-1 py-0.5 transition-all hover:bg-muted/50 active:scale-[0.97] -translate-y-px"
+                    aria-label="Show utilization details"
+                  >
+                    <span className={`ds-text-11 font-medium tabular-nums leading-none ${
+                      displayUtilization > optimalPct ? 'text-amber-600' : 'text-foreground'
+                    }`}>
+                      {displayUtilization.toFixed(0)}%
+                    </span>
+                    <UtilizationIndicator
+                      current={displayUtilization}
+                      optimal={optimalPct}
+                      width={8}
+                      height={16}
+                    />
+                  </button>
+                )}
               </div>
+
+              <div className="mt-0 flex min-w-0 items-center gap-1 ds-text-11 text-muted-foreground/80">
+                {chainIconSrc && (
+                  <img src={chainIconSrc} alt={reserve.chainName} className="w-3 h-3 shrink-0 opacity-80" />
+                )}
+                <span className="min-w-0 flex-1 truncate">{getReserveMarketDisplayName(reserve)}</span>
+                {/* Hub Info — V4 uses brand gradient emphasis, V3 uses plain style */}
+                {reserve.hubName && (() => {
+                  const aaveProHubUrl = buildAaveProHubUrl(reserve);
+                  const isV4 = getProtocolVersion(reserve.marketName) === 'v4';
+                  const hubClass = cn(
+                    "inline-flex items-center rounded-full text-[9px] font-medium leading-none",
+                    isV4
+                      ? "text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10"
+                      : "text-muted-foreground/70 bg-muted/40"
+                  );
+
+                  return aaveProHubUrl ? (
+                    <a
+                      href={aaveProHubUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className={cn("inline-flex max-w-full shrink-0 items-center px-1.5 py-0.5", hubClass)}
+                      aria-label={`View ${reserve.hubName} hub on Aave Pro`}
+                    >
+                      <span className="truncate">{reserve.hubName}</span>
+                    </a>
+                  ) : (
+                    <span className={cn("inline-flex shrink-0 items-center truncate px-1.5 py-0.5", hubClass)}>
+                      {reserve.hubName}
+                    </span>
+                  );
+                })()}
+              </div>
+            </div>
           </div>
-          {/* Utilization indicator - clickable (values match desktop Utilization column + UtilizationIndicator) */}
-          {displayUtilization != null && optimalPct != null && (
-            <button
-              type="button"
-              onClick={() => setCapSheet('utilization')}
-              className="shrink-0 flex items-center gap-0.5 rounded-md px-1 py-0.5 transition-all hover:bg-muted/50 active:scale-[0.97]"
-              aria-label="Show utilization details"
-            >
-              <span className={`ds-text-11 font-medium tabular-nums leading-none ${
-                displayUtilization > optimalPct ? 'text-amber-600' : 'text-foreground'
-              }`}>
-                {displayUtilization.toFixed(0)}%
-              </span>
-              <UtilizationIndicator
-                current={displayUtilization}
-                optimal={optimalPct}
-                width={8}
-                height={16}
-              />
-            </button>
-          )}
         </div>
 
         {/* Pill tabs */}
-        <div className="mx-3 mb-1.5 flex gap-[var(--ds-space-1)] rounded-lg bg-muted/40 p-0.5">
+        <div className="mx-3 mb-1 flex gap-[var(--ds-space-1)] rounded-lg bg-muted/40 p-0.5">
           <button
             type="button"
             onClick={() => setActiveTab('supply')}
@@ -686,10 +691,11 @@ const MobileReserveCard = memo(({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -4 }}
               transition={{ duration: 0.18, ease: [0.25, 0.1, 0.25, 1] }}
-              className="mt-1"
+              className="mt-0.5"
             >
               <MobileReserveHeroApy
                 activeTab={activeTab}
+                isApy={isApy}
                 reserve={reserve}
                 displaySupplyTotal={displaySupplyTotal}
                 displaySupplyNative={displaySupplyNative}

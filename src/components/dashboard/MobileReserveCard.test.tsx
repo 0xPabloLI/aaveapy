@@ -167,8 +167,8 @@ describe('MobileReserveCard', () => {
     expect(getByLabelText('Collapse details panel')).toBeInTheDocument();
   });
 
-  it('keeps the hub action icon inside a dedicated hover wrapper', () => {
-    const { container } = render(
+  it('renders the mobile hub chip as a single clickable area without a separate external icon', () => {
+    const { container, getByLabelText } = render(
       <QueryClientProvider client={new QueryClient()}>
         <TooltipProvider>
           <MobileReserveCard
@@ -188,9 +188,168 @@ describe('MobileReserveCard', () => {
       </QueryClientProvider>,
     );
 
-    expect(container.innerHTML).toContain('group/hub-link');
-    expect(container.innerHTML).toContain('group-hover/hub-link:opacity-100');
-    expect(container.innerHTML).toContain('pl-3.5');
-    expect(container.innerHTML).toContain('pr-3.5');
+    const hubLink = getByLabelText('View Core hub on Aave Pro');
+    expect(hubLink.className).toContain('px-1.5');
+    expect(hubLink.className).not.toContain('group/hub-link');
+    expect(hubLink.className).not.toContain('pr-3');
+    expect(container.innerHTML).not.toContain('group-hover/hub-link:opacity-100');
+  });
+
+  it('renders utilization before the market and hub metadata row', () => {
+    const { getByLabelText, getByText } = render(
+      <QueryClientProvider client={new QueryClient()}>
+        <TooltipProvider>
+          <MobileReserveCard
+            reserve={{
+              ...reserve,
+              marketName: 'AaveV3EthereumHorizon',
+              chainName: 'Ethereum',
+              hubName: 'Prime',
+              hubId: 'hub-prime',
+            }}
+            isApy
+            tydroPointToUsdRate={0}
+            onIncentiveClick={() => {}}
+            isSimulationExpanded={false}
+            onToggleSimulation={() => {}}
+            simulation={simulation}
+            supplyInput="1000"
+            borrowInput="500"
+            hasSharedScenario
+            inputMode="usd"
+          />
+        </TooltipProvider>
+      </QueryClientProvider>,
+    );
+
+    const utilizationButton = getByLabelText('Show utilization details');
+    const marketLabel = getByText(/Horizon/);
+    const hubLink = getByLabelText('View Prime hub on Aave Pro');
+
+    expect(utilizationButton.compareDocumentPosition(marketLabel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(utilizationButton.compareDocumentPosition(hubLink) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(utilizationButton.className).not.toContain('border-border/50');
+    expect(utilizationButton.className).not.toContain('bg-muted/35');
+  });
+
+  it('uses tighter spacing for the mobile header left half', () => {
+    const { container } = render(
+      <QueryClientProvider client={new QueryClient()}>
+        <TooltipProvider>
+          <MobileReserveCard
+            reserve={{ ...reserve, marketName: 'AaveV3EthereumHorizon', hubName: 'Prime', hubId: 'hub-prime' }}
+            isApy
+            tydroPointToUsdRate={0}
+            onIncentiveClick={() => {}}
+            isSimulationExpanded={false}
+            onToggleSimulation={() => {}}
+            simulation={simulation}
+            supplyInput="1000"
+            borrowInput="500"
+            hasSharedScenario
+            inputMode="usd"
+          />
+        </TooltipProvider>
+      </QueryClientProvider>,
+    );
+
+    const html = container.innerHTML;
+    expect(html).toContain('width: 28px; height: 28px;');
+    expect(html).toContain('flex items-start gap-1 min-w-0 flex-1');
+    expect(html).toContain('flex min-w-0 items-center gap-0.5');
+    expect(html).toContain('mt-0 flex min-w-0 items-center gap-1');
+    expect(html).toContain('style="width: 13px; height: 13px;"');
+    expect(html).toContain('class="inline-flex shrink-0 items-center gap-0.5 rounded-md px-1 py-0.5 transition-all hover:bg-muted/50 active:scale-[0.97] -translate-y-px"');
+  });
+
+  it('uses a slightly smaller hero APY size on mobile', () => {
+    const { getByText } = renderCard(false);
+
+    expect(getByText('2.90%').className).toContain('ds-text-22');
+    expect(getByText('2.90%').className).not.toContain('ds-text-24');
+  });
+
+  it('reduces the spacing between the tabs row and the hero APY block', () => {
+    const { container } = renderCard(false);
+
+    const html = container.innerHTML;
+    expect(html).toContain('mx-3 mb-1 flex gap-[var(--ds-space-1)]');
+    expect(html).toContain('class="mt-0.5"');
+  });
+
+  it('shows a subtle base APY placeholder when there is no visible incentive', () => {
+    const noIncentiveSimulation: RateSimulationResult = {
+      ...simulation,
+      supply: {
+        ...simulation.supply,
+        currentIncentive: 0,
+        afterIncentive: 0,
+        currentTotal: 1.45,
+        afterTotal: 1.45,
+        currentNative: 1.45,
+        afterNative: 1.45,
+      },
+    };
+
+    const { getByText, queryByText } = render(
+      <QueryClientProvider client={new QueryClient()}>
+        <TooltipProvider>
+          <MobileReserveCard
+            reserve={reserve}
+            isApy
+            tydroPointToUsdRate={0}
+            onIncentiveClick={() => {}}
+            isSimulationExpanded={false}
+            onToggleSimulation={() => {}}
+            simulation={noIncentiveSimulation}
+            supplyInput="1000"
+            borrowInput="500"
+            hasSharedScenario
+            inputMode="usd"
+          />
+        </TooltipProvider>
+      </QueryClientProvider>,
+    );
+
+    expect(getByText('Base APY only')).toBeInTheDocument();
+    expect(queryByText('+')).not.toBeInTheDocument();
+  });
+
+  it('switches the empty-state placeholder to APR wording when the card is in APR mode', () => {
+    const noIncentiveSimulation: RateSimulationResult = {
+      ...simulation,
+      supply: {
+        ...simulation.supply,
+        currentIncentive: 0,
+        afterIncentive: 0,
+        currentTotal: 1.45,
+        afterTotal: 1.45,
+        currentNative: 1.45,
+        afterNative: 1.45,
+      },
+    };
+
+    const { getByText, queryByText } = render(
+      <QueryClientProvider client={new QueryClient()}>
+        <TooltipProvider>
+          <MobileReserveCard
+            reserve={reserve}
+            isApy={false}
+            tydroPointToUsdRate={0}
+            onIncentiveClick={() => {}}
+            isSimulationExpanded={false}
+            onToggleSimulation={() => {}}
+            simulation={noIncentiveSimulation}
+            supplyInput="1000"
+            borrowInput="500"
+            hasSharedScenario
+            inputMode="usd"
+          />
+        </TooltipProvider>
+      </QueryClientProvider>,
+    );
+
+    expect(getByText('Base APR only')).toBeInTheDocument();
+    expect(queryByText('Base APY only')).not.toBeInTheDocument();
   });
 });
