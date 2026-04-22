@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef, memo, forwardRef, useCallback, type ReactNode } from 'react';
-import { TrendingUp, Zap, ChevronLeft, ChevronsLeft, ChevronsRight, ExternalLink } from 'lucide-react';
+import { TrendingUp, Zap, ChevronLeft, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ReserveWithSpread, MerklForecastWireItem } from '@/types/aave';
 import {
