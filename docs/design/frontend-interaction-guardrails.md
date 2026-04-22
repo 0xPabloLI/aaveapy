@@ -192,6 +192,13 @@ Set on the desktop table card (`desktopTableCardRef` in `ReservesTable.tsx`). **
   - Example: `USDT` should match `USD₮`.
   - Normalize unicode / punctuation variants before filtering.
 
+### Row-triggered filtering
+
+- **Reserve row sub-actions should not own canonical filter state**: row-level chips/badges may trigger filtering, but the source of truth must remain page-level state (currently `Index.tsx`), with rows emitting intent upward.
+- **Use canonical ids for filtering, display labels for UI only**: `marketName` or `hubId` should drive the predicate; `hubName` and formatted market labels are presentation only.
+- **Keep table-local pin/expand helpers filter-agnostic**: if a row click narrows the list and the table preserves expansion/scroll position, naming and helper structure should describe a generic row-filter flow, not a single market-only case.
+- **Do not overload dense mobile badges with two primary actions**: when a small mobile badge already represents a direct external navigation target, do not also make the same tiny surface a filter toggle. Prefer one primary action per compact target; move filtering to a larger chip, menu item, or dedicated control.
+
 ### Theme switching behavior
 
 - **Default theme follows system**: on first visit, the app respects `prefers-color-scheme` via `next-themes` with `defaultTheme="system"` and `enableSystem={true}`.
