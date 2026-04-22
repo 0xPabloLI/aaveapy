@@ -189,8 +189,8 @@ const FilterBar = ({
   const handleOtherChainClick = useCallback(
     (group: ChainGroup) => {
       toggleChain(group);
-      // Collapse any expanded chain when clicking a different chain
-      setExpandedChain(null);
+      // Note: Intentionally not collapsing expanded chain to allow viewing
+      // Ethereum sub-markets while filtering other chains
     },
     [toggleChain],
   );
@@ -389,7 +389,7 @@ const FilterBar = ({
             const chipStyle = selected
               ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
               : subSelected
-                ? 'text-foreground/80 border border-dashed border-[rgb(var(--ds-brand-magenta-rgb))]'
+                ? 'ds-text-brand-magenta border border-dashed border-[rgb(var(--ds-brand-magenta-rgb))]'
                 : expanded
                   ? 'text-foreground/80 border border-border'
                   : 'text-foreground/80 border border-border hover:text-foreground';
