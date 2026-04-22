@@ -190,11 +190,15 @@ const ReservesTable = ({
   }, []);
 
   const handleMarketChipClick = useCallback((reserveId: string) => {
-    // Keep the clicked row expanded across filter updates and ignore a bubbled row toggle once.
-    suppressNextToggleReserveIdRef.current = reserveId;
-    pendingMarketFilterPinReserveIdRef.current = reserveId;
-    setExpandedReserveId(reserveId);
-  }, []);
+    // Preserve an already-expanded row across filter updates, but do not
+    // implicitly expand a collapsed row just because its market chip was clicked.
+    // The chip stops propagation, so row expansion stays an explicit action.
+    const shouldKeepExpanded = expandedReserveId === reserveId;
+    pendingMarketFilterPinReserveIdRef.current = shouldKeepExpanded ? reserveId : null;
+    if (shouldKeepExpanded) {
+      setExpandedReserveId(reserveId);
+    }
+  }, [expandedReserveId]);
 
   const [tooltipState, setTooltipState] = useState<TooltipState | null>(null);
 
@@ -660,11 +664,16 @@ const ReservesTable = ({
   }, [expandedReserveId]);
 
   useEffect(() => {
-    const existsInReserves = expandedReserveId
-      ? reserves.some((r) => getReserveSimulationId(r) === expandedReserveId)
-      : true;
-    if (!existsInReserves && pendingMarketFilterPinReserveIdRef.current === expandedReserveId) {
+    if (!expandedReserveId) return;
+    const existsInReserves = reserves.some(
+      (r) => getReserveSimulationId(r) === expandedReserveId,
+    );
+    if (!existsInReserves) {
       pendingMarketFilterPinReserveIdRef.current = null;
+      suppressNextToggleReserveIdRef.current = null;
+      cancelFilterPinScrollRef.current?.();
+      cancelFilterPinScrollRef.current = null;
+      setExpandedReserveId(null);
     }
   }, [expandedReserveId, reserves]);
 
