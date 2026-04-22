@@ -33,7 +33,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { getReserveSimulationId, useSharedRateSimulations } from '@/hooks/useRateSimulation';
 import { useSideDataMeta } from '@/hooks/useSideDataMeta';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
-import { getScenarioSupplySizeUsd, getTotalBorrowedUsd as getReserveTotalBorrowedUsd } from '@/lib/scenarioSize';
+import { getPoolLiquidityUsd, getScenarioSupplySizeUsd, getTotalBorrowedUsd as getReserveTotalBorrowedUsd } from '@/lib/scenarioSize';
 import {
   scrollExpandedSimulationIntoView,
   shouldScrollExpandedSimulationIntoView,
@@ -120,6 +120,10 @@ const ReservesTable = ({
   const [sizeSortMode, setSizeSortMode] = useState<'supply' | 'borrow' | 'deficitRatio' | 'deficitAmount'>('supply');
   const [sizeSortOrder, setSizeSortOrder] = useState<'asc' | 'desc'>('desc');
   const [utilSortOrder, setUtilSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [utilSortMode, setUtilSortMode] = useState<'util' | 'liquidity'>('util');
+  const [showUtilSortMenu, setShowUtilSortMenu] = useState(false);
+  const utilSortButtonRef = useRef<HTMLButtonElement>(null);
+  const [utilMenuPos, setUtilMenuPos] = useState<{ top: number; left: number } | null>(null);
   const [showSizeSortMenu, setShowSizeSortMenu] = useState(false);
   const sizeSortButtonRef = useRef<HTMLButtonElement>(null);
   const [sizeMenuPos, setSizeMenuPos] = useState<{ top: number; left: number } | null>(null);
@@ -183,6 +187,13 @@ const ReservesTable = ({
       setSizeMenuPos({ top: rect.bottom + 4, left: rect.right - 140 });
     }
   }, [showSizeSortMenu]);
+
+  useEffect(() => {
+    if (showUtilSortMenu && utilSortButtonRef.current) {
+      const rect = utilSortButtonRef.current.getBoundingClientRect();
+      setUtilMenuPos({ top: rect.bottom + 4, left: rect.right - 180 });
+    }
+  }, [showUtilSortMenu]);
 
   const handleToggleExpand = useCallback((reserveId: string) => {
     if (suppressNextToggleReserveIdRef.current === reserveId) {
@@ -414,6 +425,11 @@ const ReservesTable = ({
     });
   };
 
+  const getDisplayLiquidityUsd = (reserve: ReserveWithSpread): number | null => {
+    const totalBorrowed = getTotalBorrowedUsd(reserve);
+    return getPoolLiquidityUsd({ reserveSizeUsd: reserve.reserveSizeUsd, totalBorrowedUsd: totalBorrowed });
+  };
+
   const getDisplayDeficit = (reserve: ReserveWithSpread): number | null => {
     const tokenPrice = getSimulation(reserve)?.tokenPrice ?? reserve.tokenPrice;
     return getReserveDeficitUsdAmount(reserve, tokenPrice);
@@ -471,9 +487,15 @@ const ReservesTable = ({
         return sizeSortOrder === 'desc' ? -comparison : comparison;
       }
       if (sortColumn === 'util') {
-        const aU = getDisplayUtilization(a) ?? -Infinity;
-        const bU = getDisplayUtilization(b) ?? -Infinity;
-        comparison = aU - bU;
+        if (utilSortMode === 'liquidity') {
+          const aL = getDisplayLiquidityUsd(a) ?? -Infinity;
+          const bL = getDisplayLiquidityUsd(b) ?? -Infinity;
+          comparison = aL - bL;
+        } else {
+          const aU = getDisplayUtilization(a) ?? -Infinity;
+          const bU = getDisplayUtilization(b) ?? -Infinity;
+          comparison = aU - bU;
+        }
         return utilSortOrder === 'desc' ? -comparison : comparison;
       }
 
@@ -559,7 +581,7 @@ const ReservesTable = ({
       }
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reserves, activeSortColumn, tokenSortOrder, marketSortOrder, priceSortOrder, sizeSortMode, sizeSortOrder, utilSortOrder, supplySortMode, supplySortOrder, borrowSortMode, borrowSortOrder, spreadSortOrder, simulationsById, hasSharedScenario, isApy, tydroPointToUsdRate, whitelistMerklCampaignIds, debouncedSharedSupplyInput, debouncedSharedBorrowInput, sharedInputMode, meritMerklNetPosition]);
+  }, [reserves, activeSortColumn, tokenSortOrder, marketSortOrder, priceSortOrder, sizeSortMode, sizeSortOrder, utilSortMode, utilSortOrder, supplySortMode, supplySortOrder, borrowSortMode, borrowSortOrder, spreadSortOrder, simulationsById, hasSharedScenario, isApy, tydroPointToUsdRate, whitelistMerklCampaignIds, debouncedSharedSupplyInput, debouncedSharedBorrowInput, sharedInputMode, meritMerklNetPosition]);
 
   /**
    * Simulation pin scroll — normative spec + implementation steps:
@@ -719,7 +741,7 @@ const ReservesTable = ({
           : activeSortColumn === 'price'
             ? 'Price'
             : activeSortColumn === 'util'
-              ? 'Utilization'
+              ? (utilSortMode === 'liquidity' ? 'Liquidity' : 'Utilization')
               : 'Spread';
 
   const mobileExtraSortActive =
@@ -775,6 +797,7 @@ const ReservesTable = ({
     collapseExpandedOnSort();
     setActiveSortColumn('util');
     setUtilSortOrder((o) => (o === 'desc' ? 'asc' : 'desc'));
+    setShowUtilSortMenu(false);
   };
 
   const closeAllMobileSortMenus = useCallback((except: MobileSortMenuKey | null = null) => {
@@ -782,6 +805,7 @@ const ReservesTable = ({
     if (except !== 'supply') setShowSupplySortMenu(false);
     if (except !== 'borrow') setShowBorrowSortMenu(false);
     if (except !== 'extra') setShowExtraSortMenu(false);
+    setShowUtilSortMenu(false);
   }, []);
 
   const toggleMobileSortMenu = useCallback((menu: MobileSortMenuKey) => {
@@ -987,14 +1011,33 @@ const ReservesTable = ({
     {
       key: 'util',
       label: 'Utilization',
-      isSelected: activeSortColumn === 'util',
+      isSelected: activeSortColumn === 'util' && utilSortMode === 'util',
       order: utilSortOrder,
       activeClassName: 'text-foreground',
       onSelect: () => {
         collapseExpandedOnSort();
-        if (activeSortColumn === 'util' && utilSortOrder === 'desc') {
+        if (activeSortColumn === 'util' && utilSortMode === 'util' && utilSortOrder === 'desc') {
           setUtilSortOrder('asc');
         } else {
+          setUtilSortMode('util');
+          setActiveSortColumn('util');
+          setUtilSortOrder('desc');
+        }
+        closeAllMobileSortMenus();
+      },
+    },
+    {
+      key: 'liquidity',
+      label: 'Liquidity',
+      isSelected: activeSortColumn === 'util' && utilSortMode === 'liquidity',
+      order: utilSortOrder,
+      activeClassName: 'text-foreground',
+      onSelect: () => {
+        collapseExpandedOnSort();
+        if (activeSortColumn === 'util' && utilSortMode === 'liquidity' && utilSortOrder === 'desc') {
+          setUtilSortOrder('asc');
+        } else {
+          setUtilSortMode('liquidity');
           setActiveSortColumn('util');
           setUtilSortOrder('desc');
         }
@@ -1387,7 +1430,36 @@ const ReservesTable = ({
             onSortToken={handleSortToken}
             onSortMarket={handleSortMarket}
             onSortPrice={handleSortPrice}
-            onSortUtil={handleSortUtil}
+            utilSortMode={utilSortMode}
+            showUtilSortMenu={showUtilSortMenu}
+            utilMenuPos={utilMenuPos}
+            utilSortButtonRef={utilSortButtonRef}
+            onToggleUtilMenu={() => setShowUtilSortMenu(!showUtilSortMenu)}
+            onCloseUtilMenu={() => setShowUtilSortMenu(false)}
+            onSelectUtilSortUtil={() => {
+              collapseExpandedOnSort();
+              const isAlreadySelected = utilSortMode === 'util' && activeSortColumn === 'util';
+              if (isAlreadySelected && utilSortOrder === 'desc') {
+                setUtilSortOrder('asc');
+              } else {
+                setUtilSortMode('util');
+                setActiveSortColumn('util');
+                setUtilSortOrder('desc');
+              }
+              setShowUtilSortMenu(false);
+            }}
+            onSelectUtilSortLiquidity={() => {
+              collapseExpandedOnSort();
+              const isAlreadySelected = utilSortMode === 'liquidity' && activeSortColumn === 'util';
+              if (isAlreadySelected && utilSortOrder === 'desc') {
+                setUtilSortOrder('asc');
+              } else {
+                setUtilSortMode('liquidity');
+                setActiveSortColumn('util');
+                setUtilSortOrder('desc');
+              }
+              setShowUtilSortMenu(false);
+            }}
             onToggleSpreadSort={() => {
               if (activeSortColumn === 'spread') {
                 toggleSpreadSortOrder();
