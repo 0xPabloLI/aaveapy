@@ -45,6 +45,7 @@ describe('ReservesTableDesktopHeader', () => {
             onCloseSizeMenu={() => {}}
             onSelectSizeSortSupply={() => {}}
             onSelectSizeSortBorrow={() => {}}
+            onSelectSizeSortBorrowAvailability={() => {}}
             onSelectSizeSortDeficitAmount={() => {}}
             onSelectSizeSortDeficitRatio={() => {}}
             onToggleSupplyMenu={() => {}}

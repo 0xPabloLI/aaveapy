@@ -33,7 +33,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { getReserveSimulationId, useSharedRateSimulations } from '@/hooks/useRateSimulation';
 import { useSideDataMeta } from '@/hooks/useSideDataMeta';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
-import { getPoolLiquidityUsd, getScenarioSupplySizeUsd, getTotalBorrowedUsd as getReserveTotalBorrowedUsd } from '@/lib/scenarioSize';
+import { getPoolLiquidityUsd, getScenarioSupplySizeUsd, getTotalBorrowedUsd as getReserveTotalBorrowedUsd, getAvailableToBorrowUsd } from '@/lib/scenarioSize';
 import {
   scrollExpandedSimulationIntoView,
   shouldScrollExpandedSimulationIntoView,
@@ -114,10 +114,10 @@ const ReservesTable = ({
   const [tokenSortOrder, setTokenSortOrder] = useState<'asc' | 'desc'>('asc');
   const [marketSortOrder, setMarketSortOrder] = useState<'asc' | 'desc'>('asc');
   const [priceSortOrder, setPriceSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [sizeSortMode, setSizeSortMode] = useState<'supply' | 'borrow' | 'deficitRatio' | 'deficitAmount'>('supply');
+  const [sizeSortMode, setSizeSortMode] = useState<'supply' | 'borrow' | 'borrowAvailability' | 'deficitRatio' | 'deficitAmount'>('supply');
   const [sizeSortOrder, setSizeSortOrder] = useState<'asc' | 'desc'>('desc');
   const [utilSortOrder, setUtilSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [utilSortMode, setUtilSortMode] = useState<'util' | 'liquidity'>('util');
+  const [utilSortMode, setUtilSortMode] = useState<'util' | 'liquidity'>('liquidity');
   const [showUtilSortMenu, setShowUtilSortMenu] = useState(false);
   const utilSortButtonRef = useRef<HTMLButtonElement>(null);
   const [utilMenuPos, setUtilMenuPos] = useState<{ top: number; left: number } | null>(null);
@@ -427,6 +427,16 @@ const ReservesTable = ({
     return getPoolLiquidityUsd({ reserveSizeUsd: reserve.reserveSizeUsd, totalBorrowedUsd: totalBorrowed });
   };
 
+  const getDisplayAvailableToBorrowUsd = (reserve: ReserveWithSpread): number | null => {
+    const totalBorrowed = getTotalBorrowedUsd(reserve);
+    const poolLiquidity = getPoolLiquidityUsd({ reserveSizeUsd: reserve.reserveSizeUsd, totalBorrowedUsd: totalBorrowed });
+    return getAvailableToBorrowUsd({
+      borrowedUsd: totalBorrowed,
+      borrowCapUsd: reserve.borrowCapUsd,
+      poolLiquidityUsd: poolLiquidity,
+    });
+  };
+
   const getDisplayDeficit = (reserve: ReserveWithSpread): number | null => {
     const tokenPrice = getSimulation(reserve)?.tokenPrice ?? reserve.tokenPrice;
     return getReserveDeficitUsdAmount(reserve, tokenPrice);
@@ -467,6 +477,10 @@ const ReservesTable = ({
         if (sizeSortMode === 'borrow') {
           const aT = getTotalBorrowedUsd(a) ?? -Infinity;
           const bT = getTotalBorrowedUsd(b) ?? -Infinity;
+          comparison = aT - bT;
+        } else if (sizeSortMode === 'borrowAvailability') {
+          const aT = getDisplayAvailableToBorrowUsd(a) ?? -Infinity;
+          const bT = getDisplayAvailableToBorrowUsd(b) ?? -Infinity;
           comparison = aT - bT;
         } else if (sizeSortMode === 'deficitRatio') {
           const aT = getDisplayDeficitRatio(a) ?? -Infinity;
@@ -714,17 +728,17 @@ const ReservesTable = ({
   const sizeSortAccentClass =
     sizeSortMode === 'supply'
       ? 'ds-text-emerald-700'
-      : sizeSortMode === 'borrow'
+      : sizeSortMode === 'borrow' || sizeSortMode === 'borrowAvailability'
         ? 'ds-text-brand-cyan'
         : 'text-foreground';
   const sizeSortActiveHeadingClass =
     sizeSortMode === 'supply'
       ? 'ds-text-emerald-600 font-bold scale-105'
-      : sizeSortMode === 'borrow'
+      : sizeSortMode === 'borrow' || sizeSortMode === 'borrowAvailability'
         ? 'ds-text-brand-cyan font-bold scale-105'
         : 'text-foreground font-bold scale-105';
   const mobileCardDefaultTab: 'supply' | 'borrow' =
-    activeSortColumn === 'borrow' || (activeSortColumn === 'size' && sizeSortMode === 'borrow')
+    activeSortColumn === 'borrow' || (activeSortColumn === 'size' && (sizeSortMode === 'borrow' || sizeSortMode === 'borrowAvailability'))
       ? 'borrow'
       : 'supply';
 
@@ -844,7 +858,7 @@ const ReservesTable = ({
     },
     {
       key: 'borrow',
-      label: 'Borrow',
+      label: 'Borrow Size',
       isSelected: sizeSortMode === 'borrow' && activeSortColumn === 'size',
       order: sizeSortOrder,
       activeClassName: 'ds-text-brand-cyan',
@@ -854,6 +868,24 @@ const ReservesTable = ({
           setSizeSortOrder('asc');
         } else {
           setSizeSortMode('borrow');
+          setActiveSortColumn('size');
+          setSizeSortOrder('desc');
+        }
+        closeAllMobileSortMenus();
+      },
+    },
+    {
+      key: 'borrowAvailability',
+      label: 'Borrow Avail',
+      isSelected: sizeSortMode === 'borrowAvailability' && activeSortColumn === 'size',
+      order: sizeSortOrder,
+      activeClassName: 'ds-text-brand-cyan',
+      onSelect: () => {
+        const isAlreadySelected = sizeSortMode === 'borrowAvailability' && activeSortColumn === 'size';
+        if (isAlreadySelected && sizeSortOrder === 'desc') {
+          setSizeSortOrder('asc');
+        } else {
+          setSizeSortMode('borrowAvailability');
           setActiveSortColumn('size');
           setSizeSortOrder('desc');
         }
@@ -1487,6 +1519,18 @@ const ReservesTable = ({
                 setSizeSortOrder('asc');
               } else {
                 setSizeSortMode('borrow');
+                setActiveSortColumn('size');
+                setSizeSortOrder('desc');
+              }
+              setShowSizeSortMenu(false);
+            }}
+            onSelectSizeSortBorrowAvailability={() => {
+              collapseExpandedOnSort();
+              const isAlreadySelected = sizeSortMode === 'borrowAvailability' && activeSortColumn === 'size';
+              if (isAlreadySelected && sizeSortOrder === 'desc') {
+                setSizeSortOrder('asc');
+              } else {
+                setSizeSortMode('borrowAvailability');
                 setActiveSortColumn('size');
                 setSizeSortOrder('desc');
               }

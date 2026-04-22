@@ -1,0 +1,8 @@
+{
+    "search.useGlobalIgnoreFiles": false,
+    "search.useIgnoreFiles": false,
+    "files.exclude": {
+        "**/.env": false
+    },
+    "diffEditor.renderSideBySide": false
+}

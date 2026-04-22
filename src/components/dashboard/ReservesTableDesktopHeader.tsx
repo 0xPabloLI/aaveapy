@@ -5,7 +5,7 @@ import { TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 type SortMode = 'total' | 'native' | 'incentive';
 type SortableColumn = 'token' | 'price' | 'market' | 'size' | 'util' | 'supply' | 'borrow' | 'spread';
-type SizeSortMode = 'supply' | 'borrow' | 'deficitRatio' | 'deficitAmount';
+type SizeSortMode = 'supply' | 'borrow' | 'borrowAvailability' | 'deficitRatio' | 'deficitAmount';
 type UtilSortMode = 'util' | 'liquidity';
 
 interface MenuPos {
@@ -120,6 +120,7 @@ interface ReservesTableDesktopHeaderProps {
   onCloseSizeMenu: () => void;
   onSelectSizeSortSupply: () => void;
   onSelectSizeSortBorrow: () => void;
+  onSelectSizeSortBorrowAvailability: () => void;
   onSelectSizeSortDeficitAmount: () => void;
   onSelectSizeSortDeficitRatio: () => void;
   onToggleSupplyMenu: () => void;
@@ -177,6 +178,7 @@ export default function ReservesTableDesktopHeader({
   onCloseSizeMenu,
   onSelectSizeSortSupply,
   onSelectSizeSortBorrow,
+  onSelectSizeSortBorrowAvailability,
   onSelectSizeSortDeficitAmount,
   onSelectSizeSortDeficitRatio,
   onToggleSupplyMenu,
@@ -202,12 +204,21 @@ export default function ReservesTableDesktopHeader({
     },
     {
       key: 'borrow',
-      label: 'Sort by Borrow',
+      label: 'Sort by Borrow Size',
       isSelected: sizeSortMode === 'borrow' && activeSortColumn === 'size',
       order: sizeSortOrder,
       activeClassName: 'ds-text-brand-cyan',
       hoverClassName: 'hover:bg-[rgb(var(--ds-brand-cyan-rgb)/0.1)]',
       onSelect: onSelectSizeSortBorrow,
+    },
+    {
+      key: 'borrowAvailability',
+      label: 'Sort by Borrow Availability',
+      isSelected: sizeSortMode === 'borrowAvailability' && activeSortColumn === 'size',
+      order: sizeSortOrder,
+      activeClassName: 'ds-text-brand-cyan',
+      hoverClassName: 'hover:bg-[rgb(var(--ds-brand-cyan-rgb)/0.1)]',
+      onSelect: onSelectSizeSortBorrowAvailability,
     },
     {
       key: 'deficitAmount',
@@ -410,9 +421,11 @@ export default function ReservesTableDesktopHeader({
                       ? 'Supply'
                       : sizeSortMode === 'borrow'
                         ? 'Borrow'
-                        : sizeSortMode === 'deficitRatio'
-                          ? 'Deficit (%)'
-                          : 'Deficit'}
+                        : sizeSortMode === 'borrowAvailability'
+                          ? 'Borrow Avail'
+                          : sizeSortMode === 'deficitRatio'
+                            ? 'Deficit (%)'
+                            : 'Deficit'}
                   </span>
                   <ChevronDown className="w-2.5 h-2.5" />
                 </button>
@@ -433,7 +446,7 @@ export default function ReservesTableDesktopHeader({
               <span
                 className={`transition-all duration-200 ${activeSortColumn === 'util' ? 'text-foreground font-bold scale-105' : 'text-muted-foreground'}`}
               >
-                Util
+                Utilization
               </span>
               <div className="relative">
                 <button
