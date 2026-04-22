@@ -699,19 +699,9 @@ const ReservesTable = ({
     }
   }, [expandedReserveId]);
 
-  useEffect(() => {
-    if (!expandedReserveId) return;
-    const existsInReserves = reserves.some(
-      (r) => getReserveSimulationId(r) === expandedReserveId,
-    );
-    if (!existsInReserves) {
-      pendingMarketFilterPinReserveIdRef.current = null;
-      suppressNextToggleReserveIdRef.current = null;
-      cancelFilterPinScrollRef.current?.();
-      cancelFilterPinScrollRef.current = null;
-      setExpandedReserveId(null);
-    }
-  }, [expandedReserveId, reserves]);
+  // Keep expansion even when reserves change (e.g., market filter applied)
+  // Previously this auto-collapsed when the expanded row was not in the filtered list
+  // Now we preserve the expansion state so it re-appears when switching back markets
 
   const supplySortLabel = {
     total: 'Total',

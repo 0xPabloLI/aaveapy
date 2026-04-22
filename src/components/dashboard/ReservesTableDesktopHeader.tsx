@@ -53,7 +53,7 @@ const DesktopSortMenuPortal = ({
             type="button"
             key={option.key}
             onClick={option.onSelect}
-            className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-12 transition-colors flex items-center justify-between ${
+            className={`w-full px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-left ds-text-12 transition-colors flex items-center justify-between gap-[var(--ds-space-1-5)] ${
               option.isSelected
                 ? `${option.activeClassName} font-bold bg-card/60`
                 : `text-foreground/80 ${option.hoverClassName}`
