@@ -13,7 +13,7 @@ const UtilizationIndicator = memo(({
   current,
   optimal,
   width = 10,
-  height = 18,
+  height = 24,
 }: UtilizationIndicatorProps) => {
   const clipId = useId();
 

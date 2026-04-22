@@ -56,8 +56,6 @@ interface ReservesTableProps {
   isApy: boolean;
   isLoading?: boolean;
   onSelectMarket?: (marketName: string) => void;
-  /** Callback when user clicks hub badge to filter by that hub (desktop only). */
-  onSelectHub?: (hubId: string) => void;
   tydroPointToUsdRate: number;
   whitelistMerklCampaignIds: ReadonlySet<string>;
   onToggleWhitelistMerklCampaign: (campaignId: string, enabled: boolean) => void;
@@ -87,7 +85,6 @@ const ReservesTable = ({
   isApy,
   isLoading,
   onSelectMarket,
-  onSelectHub,
   tydroPointToUsdRate,
   whitelistMerklCampaignIds,
   onToggleWhitelistMerklCampaign,
@@ -1624,7 +1621,6 @@ const ReservesTable = ({
                   isExpanded={expandedReserveId === reserveId}
                   onToggleExpand={handleToggleExpand}
                   onSelectMarket={onSelectMarket}
-                  onSelectHub={onSelectHub}
                   onMarketChipClick={handleMarketChipClick}
                   onIncentiveClick={handleIncentiveClick}
                   displaySupplyTotal={getDisplaySupplyTotal(reserve)}

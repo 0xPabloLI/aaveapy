@@ -52,8 +52,6 @@ interface DesktopReserveRowProps {
   isExpanded: boolean;
   onToggleExpand: (reserveId: string) => void;
   onSelectMarket?: (marketName: string) => void;
-  /** Callback when user clicks hub badge to filter by that hub (desktop only). */
-  onSelectHub?: (hubId: string) => void;
   onMarketChipClick?: (reserveId: string) => void;
   onIncentiveClick: (e: React.MouseEvent, reserve: ReserveWithSpread, type: 'supply' | 'borrow', apy: number | null) => void;
   displaySupplyTotal: number | null;
@@ -88,7 +86,6 @@ const DesktopReserveRow = memo(({
   isExpanded,
   onToggleExpand,
   onSelectMarket,
-  onSelectHub,
   onMarketChipClick,
   onIncentiveClick,
   displaySupplyTotal,
@@ -284,25 +281,18 @@ const DesktopReserveRow = memo(({
                   "group/hub-link relative inline-flex max-w-full items-center justify-center",
                   aaveProHubUrl && "pl-3.5 pr-3.5"
                 )}>
-                  <button
-                    type="button"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      if (reserve.hubId) {
-                        onSelectHub?.(reserve.hubId);
-                      }
-                    }}
+                  <span
                     className={cn(
-                      "inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-medium leading-none transition-colors hover:brightness-110",
+                      "inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-medium leading-none",
                       getProtocolVersion(reserve.marketName) === 'v4'
                         ? "text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))/10]"
-                        : "text-muted-foreground/70 bg-muted/40 hover:text-muted-foreground"
+                        : "text-muted-foreground/70 bg-muted/40"
                     )}
-                    aria-label={`Filter by ${reserve.hubName} hub`}
-                    title={`Filter by ${reserve.hubName} hub`}
+                    aria-label={`${reserve.hubName} hub`}
+                    title={`${reserve.hubName} hub`}
                   >
                     {reserve.hubName}
-                  </button>
+                  </span>
                   {aaveProHubUrl && (
                     <a
                       href={aaveProHubUrl}
@@ -416,19 +406,19 @@ const DesktopReserveRow = memo(({
         </TableCell>
         {/* Utilization + Liquidity */}
         <TableCell className="px-[var(--ds-space-2)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell tabular-nums ds-text-13">
-          <div className="flex flex-col items-center justify-center gap-[var(--ds-space-0-5)]">
-            <div className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)]">
-              <UtilizationIndicator
-                current={displayUtilization}
-                optimal={simulation?.utilization.optimal ?? null}
-              />
+          <div className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)]">
+            <div className="flex flex-col items-center gap-[var(--ds-space-0-5)]">
               <span className={displayUtilization != null && simulation?.utilization.optimal != null && displayUtilization > simulation.utilization.optimal ? 'text-amber-600' : 'text-foreground'}>
                 {formatPercent(displayUtilization)}
               </span>
+              <span className="text-muted-foreground/70 ds-text-11 tabular-nums">
+                {formatScenarioSize(poolLiquidity, { inputMode, tokenPrice: displayTokenPrice, tokenSymbol: reserve.tokenSymbol })}
+              </span>
             </div>
-            <span className="text-muted-foreground/70 ds-text-11 tabular-nums">
-              {formatScenarioSize(poolLiquidity, { inputMode, tokenPrice: displayTokenPrice, tokenSymbol: reserve.tokenSymbol })}
-            </span>
+            <UtilizationIndicator
+              current={displayUtilization}
+              optimal={simulation?.utilization.optimal ?? null}
+            />
           </div>
         </TableCell>
         {/* Supply */}
