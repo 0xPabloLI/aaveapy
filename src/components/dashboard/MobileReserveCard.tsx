@@ -552,8 +552,8 @@ const MobileReserveCard = memo(({
               logoURI={logoURI}
             />
               <div className="min-w-0 flex-1">
-                <div className="flex items-start gap-1">
-                  <p className="min-w-0 break-all font-bold text-foreground ds-text-13 leading-tight">{reserve.tokenSymbol}</p>
+                <div className="flex min-w-0 w-full items-start gap-1">
+                  <p className="min-w-0 flex-1 truncate whitespace-nowrap font-bold text-foreground ds-text-13 leading-tight">{reserve.tokenSymbol}</p>
                 <AssetActionMenu
                   tokenSymbol={reserve.tokenSymbol}
                   tokenAddress={reserve.tokenAddress}

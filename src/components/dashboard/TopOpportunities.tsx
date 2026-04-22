@@ -173,8 +173,8 @@ const ReserveIdentity = memo(({
           logoURI={logoURI}
         />
         <div className="min-w-0 flex-1">
-          <div className="flex items-start gap-[var(--ds-space-0-5)]">
-            <span className="min-w-0 break-all font-bold text-foreground ds-text-11 leading-tight">{tokenSymbol}</span>
+          <div className="flex min-w-0 w-full items-start gap-[var(--ds-space-0-5)]">
+            <span className="min-w-0 flex-1 truncate whitespace-nowrap font-bold text-foreground ds-text-11 leading-tight">{tokenSymbol}</span>
             {marketName && tokenAddress ? (
               <AssetActionMenu
                 tokenSymbol={tokenSymbol}
@@ -209,8 +209,8 @@ const ReserveIdentity = memo(({
         className="shrink-0 row-span-2"
         logoURI={logoURI}
       />
-        <div className="flex items-start min-w-0 gap-[var(--ds-space-1)]">
-          <span className="min-w-0 break-all font-semibold text-foreground leading-tight ds-text-13">
+        <div className="flex items-start min-w-0 w-full gap-[var(--ds-space-1)]">
+          <span className="min-w-0 flex-1 truncate whitespace-nowrap font-semibold text-foreground leading-tight ds-text-13">
           {tokenSymbol}
         </span>
         {marketName && tokenAddress ? (
@@ -502,7 +502,7 @@ const ReserveItem = forwardRef<HTMLDivElement, ReserveItemProps>(function Reserv
           logoURI={logoURI}
         />
         <div className="flex items-center min-w-0 gap-[var(--ds-space-1)]">
-          <span className="font-semibold text-foreground truncate leading-none ds-text-14">
+          <span className="min-w-0 flex-1 truncate whitespace-nowrap font-semibold text-foreground leading-none ds-text-14">
             {reserve.tokenSymbol}
           </span>
           {reserve.marketName && reserve.tokenAddress ? (
