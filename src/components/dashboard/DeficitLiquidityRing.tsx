@@ -88,19 +88,19 @@ const DeficitLiquidityRing = memo(({
               </a>
             )}
           </span>
-          <span className="font-medium tabular-nums">
+          <span className={`font-medium tabular-nums ${getProgressColorClass()}`}>
             {deficitDisplayValue}
           </span>
         </div>
         <div className="flex justify-between gap-3">
           <span className="text-muted-foreground">Total supplied</span>
-          <span className="font-medium tabular-nums">
+          <span className={`font-medium tabular-nums ${getProgressColorClass()}`}>
             {hasTotalSupplied ? totalSuppliedDisplayValue : '—'}
           </span>
         </div>
         <div className="flex items-center justify-between gap-3 pt-2 border-t border-border/35">
           <span className="text-muted-foreground">% of total (incl. deficit)</span>
-          <span className={`self-center font-bold tabular-nums leading-none ${getProgressColorClass()}`}>
+          <span className={`font-bold tabular-nums leading-none ${getProgressColorClass()}`}>
             {ratio != null ? `${percentage.toFixed(2)}%` : '—'}
           </span>
         </div>

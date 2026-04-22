@@ -418,13 +418,13 @@ const DesktopReserveRow = memo(({
         <TableCell className="px-[var(--ds-space-2)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell tabular-nums ds-text-13">
           <div className="flex flex-col items-center justify-center gap-[var(--ds-space-0-5)]">
             <div className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)]">
-              <span className={displayUtilization != null && simulation?.utilization.optimal != null && displayUtilization > simulation.utilization.optimal ? 'text-amber-600' : 'text-foreground'}>
-                {formatPercent(displayUtilization)}
-              </span>
               <UtilizationIndicator
                 current={displayUtilization}
                 optimal={simulation?.utilization.optimal ?? null}
               />
+              <span className={displayUtilization != null && simulation?.utilization.optimal != null && displayUtilization > simulation.utilization.optimal ? 'text-amber-600' : 'text-foreground'}>
+                {formatPercent(displayUtilization)}
+              </span>
             </div>
             <span className="text-muted-foreground/70 ds-text-11 tabular-nums">
               {formatScenarioSize(poolLiquidity, { inputMode, tokenPrice: displayTokenPrice, tokenSymbol: reserve.tokenSymbol })}

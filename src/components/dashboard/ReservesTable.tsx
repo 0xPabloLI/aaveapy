@@ -1395,9 +1395,9 @@ const ReservesTable = ({
             <col style={{ width: '10.5%' }} />
             <col style={{ width: '11.5%' }} />
             <col style={{ width: '13%' }} />
-            <col style={{ width: '12%' }} />
+            <col style={{ width: '12.5%' }} />
             <col style={{ width: '13.5%' }} />
-            <col style={{ width: '12%' }} />
+            <col style={{ width: '11.5%' }} />
             <col style={{ width: '14.5%' }} />
           </colgroup>
           <ReservesTableDesktopHeader

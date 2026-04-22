@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Search, X } from 'lucide-react';
+import { Search, X, ChevronRight, ChevronLeft } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { TokenCategory, MarketListItem, ETHEREUM_MARKET_NAMES } from '@/types/aave';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { useIsMobile } from '@/hooks/use-mobile';
 import AprApyToggle from '@/components/dashboard/AprApyToggle';
-import { getProtocolVersion, type ProtocolVersionFilter } from '@/lib/protocolVersion';
+import { getProtocolVersion } from '@/lib/protocolVersion';
 import { memo } from 'react';
 
 interface FilterBarProps {
@@ -56,48 +56,56 @@ const ChainIcon = memo(({ chain, className = "" }: { chain: string; className?: 
   );
 });
 
-const getMarketInfo = (market: MarketListItem) => {
+/** Group markets by chainName, preserving Ethereum first, then alphabetical. */
+interface ChainGroup {
+  chainName: string;
+  markets: MarketListItem[];
+  /** Whether this chain has expandable sub-markets */
+  expandable: boolean;
+}
+
+function groupMarketsByChain(marketsList: MarketListItem[] | undefined): ChainGroup[] {
+  if (!marketsList?.length) return [];
+
+  const chainMap = new Map<string, MarketListItem[]>();
+  for (const m of marketsList) {
+    const list = chainMap.get(m.chainName) || [];
+    list.push(m);
+    chainMap.set(m.chainName, list);
+  }
+
+  const groups: ChainGroup[] = [];
+  // Ethereum first
+  const ethMarkets = chainMap.get('Ethereum');
+  if (ethMarkets) {
+    groups.push({ chainName: 'Ethereum', markets: ethMarkets, expandable: ethMarkets.length > 1 });
+    chainMap.delete('Ethereum');
+  }
+  // Remaining chains alphabetically
+  const remaining = Array.from(chainMap.entries()).sort(([a], [b]) => a.localeCompare(b));
+  for (const [chainName, markets] of remaining) {
+    groups.push({ chainName, markets, expandable: false });
+  }
+
+  return groups;
+}
+
+/** Get sub-market display label for Ethereum markets */
+function getEthSubMarketLabel(market: MarketListItem): string {
   const version = getProtocolVersion(market.marketName);
-  
-  // V4 markets: extract suffix from marketName
+
+  // V4: extract suffix from marketName (e.g. AaveV4EthereumLido → Ethereum Lido)
   if (version === 'v4') {
     const withoutPrefix = market.marketName.replace(/^AaveV4/i, '');
-    const label = withoutPrefix.replace(/([a-z])([A-Z])/g, '$1 $2');
-    return {
-      label,
-      chain: market.chainName,
-      isEthereum: market.chainName === 'Ethereum',
-    };
+    return withoutPrefix.replace(/([a-z])([A-Z])/g, '$1 $2');
   }
-  
-  // V3 Ethereum: use canonical mapped names
-  if (market.chainName === 'Ethereum' && ETHEREUM_MARKET_NAMES[market.marketName]) {
-    return {
-      label: ETHEREUM_MARKET_NAMES[market.marketName],
-      chain: 'Ethereum',
-      isEthereum: true,
-    };
+
+  // V3: use canonical mapped names
+  if (ETHEREUM_MARKET_NAMES[market.marketName]) {
+    return ETHEREUM_MARKET_NAMES[market.marketName];
   }
-  
-  // V3 non-Ethereum: extract suffix from marketName (consistent with V4)
-  // e.g., "AaveV3Base" → "Base", "AaveV3ArbitrumNova" → "Arbitrum Nova"
-  if (market.marketName?.startsWith('AaveV3')) {
-    const withoutPrefix = market.marketName.replace(/^AaveV3/i, '');
-    const label = withoutPrefix.replace(/([a-z])([A-Z])/g, '$1 $2');
-    return {
-      label,
-      chain: market.chainName,
-      isEthereum: false,
-    };
-  }
-  
-  // Fallback for unexpected formats
-  return {
-    label: market.chainName,
-    chain: market.chainName,
-    isEthereum: false,
-  };
-};
+  return market.marketName;
+}
 
 const FilterBar = ({
   searchQuery,
@@ -118,30 +126,85 @@ const FilterBar = ({
   const desktopSearchInputRef = useRef<HTMLInputElement>(null);
   const mobileSearchInputRef = useRef<HTMLInputElement>(null);
   const debouncedUpdateRef = useRef<(() => void) | null>(null);
+  const [expandedChain, setExpandedChain] = useState<string | null>(null);
 
   const stableResizeHandler = useCallback(() => {
     debouncedUpdateRef.current?.();
   }, []);
 
-  const toggleMarket = (marketName: string) => {
-    if (selectedMarkets.includes(marketName)) {
-      setSelectedMarkets(selectedMarkets.filter(m => m !== marketName));
-    } else {
-      setSelectedMarkets([...selectedMarkets, marketName]);
-    }
-  };
+  const chainGroups = useMemo(() => groupMarketsByChain(marketsList), [marketsList]);
+
+  // Derive which chains are fully selected (all their markets are in selectedMarkets)
+  const isChainSelected = useCallback(
+    (group: ChainGroup) => {
+      return group.markets.every((m) => selectedMarkets.includes(m.marketName));
+    },
+    [selectedMarkets],
+  );
+
+  // Check if any sub-market of a chain is selected (but not the whole chain)
+  const hasSubMarketSelected = useCallback(
+    (group: ChainGroup) => {
+      return group.markets.some((m) => selectedMarkets.includes(m.marketName)) && !isChainSelected(group);
+    },
+    [selectedMarkets, isChainSelected],
+  );
+
+  const toggleChain = useCallback(
+    (group: ChainGroup) => {
+      const allNames = group.markets.map((m) => m.marketName);
+      if (isChainSelected(group)) {
+        // Deselect all markets of this chain
+        setSelectedMarkets(selectedMarkets.filter((m) => !allNames.includes(m)));
+      } else {
+        // Select all markets of this chain
+        const withoutChain = selectedMarkets.filter((m) => !allNames.includes(m));
+        setSelectedMarkets([...withoutChain, ...allNames]);
+      }
+    },
+    [selectedMarkets, setSelectedMarkets, isChainSelected],
+  );
+
+  const toggleSubMarket = useCallback(
+    (marketName: string) => {
+      if (selectedMarkets.includes(marketName)) {
+        setSelectedMarkets(selectedMarkets.filter((m) => m !== marketName));
+      } else {
+        setSelectedMarkets([...selectedMarkets, marketName]);
+      }
+    },
+    [selectedMarkets, setSelectedMarkets],
+  );
+
+  const handleAllClick = useCallback(() => {
+    setSelectedMarkets([]);
+    setExpandedChain(null);
+  }, [setSelectedMarkets]);
+
+  const handleChainLabelClick = useCallback(
+    (group: ChainGroup) => {
+      toggleChain(group);
+    },
+    [toggleChain],
+  );
+
+  const handleExpandToggle = useCallback(
+    (chainName: string) => {
+      setExpandedChain((prev) => (prev === chainName ? null : chainName));
+    },
+    [],
+  );
+
+  const handleOtherChainClick = useCallback(
+    (group: ChainGroup) => {
+      toggleChain(group);
+      // Collapse any expanded chain when clicking a different chain
+      setExpandedChain(null);
+    },
+    [toggleChain],
+  );
 
   const noMarketsSelected = selectedMarkets.length === 0;
-
-  const ethereumMarkets = marketsList?.filter(m => m.chainName === 'Ethereum') || [];
-  const otherMarkets = marketsList?.filter(m => m.chainName !== 'Ethereum') || [];
-  const allMarkets = [...ethereumMarkets, ...otherMarkets];
-
-  // Show V3/V4 toggle only when at least one V4 market exists
-  const hasV4Market = useMemo(
-    () => (marketsList ?? []).some((m) => getProtocolVersion(m.marketName) === 'v4'),
-    [marketsList],
-  );
 
   // Auto-adapt search placeholder based on input width
   useEffect(() => {
@@ -298,12 +361,13 @@ const FilterBar = ({
         </div>
       )}
 
-      {/* Row 3: Markets – all visible */}
+      {/* Row 3: Markets – chain-level chips with expandable sub-markets */}
       <div className="flex flex-wrap items-center gap-1 md:gap-1.5">
         <span className="ds-text-11 text-muted-foreground/70 hidden sm:inline">Markets</span>
 
+        {/* "All" button */}
         <button
-          onClick={() => setSelectedMarkets([])}
+          onClick={handleAllClick}
           className={`ds-chip px-2 md:px-2.5 py-1 rounded-md font-medium transition-colors ${
             noMarketsSelected
               ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
@@ -313,38 +377,107 @@ const FilterBar = ({
           All
         </button>
 
-        {allMarkets.map((market) => {
-          const info = getMarketInfo(market);
-          const isSelected = selectedMarkets.includes(market.marketName);
-          const isEthereum = market.chainName === 'Ethereum';
-          const version = getProtocolVersion(market.marketName);
-          const isV4 = version === 'v4';
+        {chainGroups.map((group) => {
+          const selected = isChainSelected(group);
+          const subSelected = hasSubMarketSelected(group);
+          const expanded = expandedChain === group.chainName;
+
+          if (group.expandable) {
+            // Expandable chain (Ethereum): split click areas
+            const chipStyle = selected
+              ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
+              : subSelected
+                ? 'text-foreground/80 border border-dashed border-[rgb(var(--ds-brand-magenta-rgb))]'
+                : expanded
+                  ? 'text-foreground/80 border border-border'
+                  : 'text-foreground/80 border border-border hover:text-foreground';
+
+            return (
+              <div key={group.chainName} className="contents">
+                <div
+                  className={`ds-chip flex items-center rounded-md text-[10px] font-medium transition-colors overflow-hidden ${chipStyle}`}
+                >
+                  {/* Left area: icon + chain name → toggles chain selection */}
+                  <button
+                    onClick={() => handleChainLabelClick(group)}
+                    className="flex items-center gap-0.5 px-1 md:px-1.5 py-0.5 hover:opacity-80 transition-opacity"
+                    title={`${selected ? 'Deselect' : 'Select'} all ${group.chainName} markets`}
+                  >
+                    <ChainIcon chain={group.chainName} />
+                    <span>{group.chainName}</span>
+                  </button>
+                  {/* Divider */}
+                  <div className="w-px h-3.5 bg-current opacity-20 shrink-0" />
+                  {/* Right area: expand/collapse arrow */}
+                  <button
+                    onClick={() => handleExpandToggle(group.chainName)}
+                    className="flex items-center px-1 py-0.5 hover:opacity-80 transition-opacity"
+                    title={expanded ? 'Collapse sub-markets' : 'Expand sub-markets'}
+                  >
+                    {expanded ? (
+                      <ChevronLeft className="w-3 h-3" />
+                    ) : (
+                      <ChevronRight className="w-3 h-3" />
+                    )}
+                  </button>
+                </div>
+
+                {/* Sub-market chips – animated expand */}
+                {expanded && group.markets
+                  .slice()
+                  .sort((a, b) => {
+                    const aVersion = getProtocolVersion(a.marketName);
+                    const bVersion = getProtocolVersion(b.marketName);
+                    // V4 markets first
+                    if (aVersion === 'v4' && bVersion !== 'v4') return -1;
+                    if (aVersion !== 'v4' && bVersion === 'v4') return 1;
+                    return 0;
+                  })
+                  .map((market) => {
+                  const isSubSelected = selectedMarkets.includes(market.marketName);
+                  const version = getProtocolVersion(market.marketName);
+                  const isV4 = version === 'v4';
+                  return (
+                    <button
+                      key={market.marketName}
+                      onClick={() => toggleSubMarket(market.marketName)}
+                      className={`ds-chip gap-0.5 px-1 md:px-1.5 py-0.5 rounded-md text-[10px] font-medium transition-colors ${
+                        isSubSelected
+                          ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
+                          : 'text-foreground/80 border border-border hover:text-foreground'
+                      }`}
+                      title={market.marketName}
+                    >
+                      {isV4 && (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-medium leading-none text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10">
+                          V4
+                        </span>
+                      )}
+                      <span>{getEthSubMarketLabel(market)}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            );
+          }
+
+          // Non-expandable chain: simple chip selecting all markets of this chain
           return (
             <button
-              key={market.marketName}
-              onClick={() => toggleMarket(market.marketName)}
+              key={group.chainName}
+              onClick={() => handleOtherChainClick(group)}
               className={`ds-chip gap-0.5 px-1 md:px-1.5 py-0.5 rounded-md text-[10px] font-medium transition-colors ${
-                isSelected
+                selected
                   ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
                   : 'text-foreground/80 border border-border hover:text-foreground'
               }`}
-              title={`${isEthereum ? `Ethereum ${info.label}` : market.chainName} · ${isV4 ? 'V4' : 'V3'}`}
+              title={group.chainName}
             >
-              <ChainIcon chain={market.chainName} />
-              <span>{isEthereum ? info.label : market.chainName}</span>
-              <span
-                className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-medium leading-none ${
-                  isV4
-                    ? 'text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10'
-                    : 'text-muted-foreground/70 bg-muted/40'
-                }`}
-              >
-                {isV4 ? 'V4' : 'V3'}
-              </span>
+              <ChainIcon chain={group.chainName} />
+              <span>{group.chainName}</span>
             </button>
           );
         })}
-
       </div>
     </div>
   );

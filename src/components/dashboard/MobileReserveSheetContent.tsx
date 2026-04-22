@@ -182,11 +182,11 @@ export function DeficitSheetContent({
             </a>
           )}
         </span>
-        <span className="font-medium tabular-nums">{deficitDisplay}</span>
+        <span className={`font-medium tabular-nums ${percentColorClass}`}>{deficitDisplay}</span>
       </div>
       <div className="flex justify-between gap-3">
         <span className="text-muted-foreground">Total supplied</span>
-        <span className="font-medium tabular-nums">{totalDisplay}</span>
+        <span className={`font-medium tabular-nums ${percentColorClass}`}>{totalDisplay}</span>
       </div>
       <div className="flex items-center justify-between gap-3 pt-1 border-t border-border/50">
         <span className="text-muted-foreground flex items-center gap-1">
