@@ -18,12 +18,6 @@ interface FilterBarProps {
   isApy: boolean;
   setIsApy: (isApy: boolean) => void;
   marketsList?: MarketListItem[];
-  /** Current hub filter; only used on desktop. */
-  selectedHubId?: string | null;
-  /** Clear the hub filter. */
-  onClearHub?: () => void;
-  /** Display name for the selected hub (if known). */
-  selectedHubName?: string | null;
 }
 
 const categories: { value: TokenCategory; label: string }[] = [
@@ -117,9 +111,6 @@ const FilterBar = ({
   isApy,
   setIsApy,
   marketsList,
-  selectedHubId,
-  onClearHub,
-  selectedHubName,
 }: FilterBarProps) => {
   const isMobile = useIsMobile();
   const [searchPlaceholder, setSearchPlaceholder] = useState('Search token');
@@ -346,20 +337,31 @@ const FilterBar = ({
         </div>
       </div>
 
-      {/* Row 2.5: Active Hub Filter (desktop only) */}
-      {selectedHubId && onClearHub && (
-        <div className="hidden md:flex flex-wrap items-center gap-1.5">
-          <span className="ds-text-11 text-muted-foreground/70">Hub</span>
-          <button
-            onClick={onClearHub}
-            className="ds-chip gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-colors ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm hover:opacity-80"
-            title="Clear hub filter"
-          >
-            <span>{selectedHubName || selectedHubId}</span>
-            <X className="w-3 h-3" />
-          </button>
+      {/* Row 2: Search + APR/APY toggle – mobile only */}
+      <div className="flex items-center gap-1.5 md:hidden">
+        <div className="relative flex-1 min-w-0">
+          <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
+          <Input
+            ref={mobileSearchInputRef}
+            surfaceVariant="magenta"
+            placeholder={searchPlaceholder}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="h-7 pl-[var(--ds-space-8)] pr-[var(--ds-space-6)] ds-text-11 text-muted-foreground/50 placeholder:text-muted-foreground/50 focus:text-foreground"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          )}
         </div>
-      )}
+        <div className="shrink-0">
+          <AprApyToggle isApy={isApy} setIsApy={setIsApy} />
+        </div>
+      </div>
 
       {/* Row 3: Markets – chain-level chips with expandable sub-markets */}
       <div className="flex flex-wrap items-center gap-1 md:gap-1.5">
@@ -449,7 +451,7 @@ const FilterBar = ({
                       title={market.marketName}
                     >
                       {isV4 && (
-                        <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-medium leading-none text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10">
+                        <span className="inline-flex items-center px-1 py-0 rounded-full text-[9px] font-medium leading-none text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10">
                           V4
                         </span>
                       )}
