@@ -562,22 +562,22 @@ const MobileReserveCard = memo(({
             />
             <div className="min-w-0 flex-1">
               <div className="flex items-start justify-between gap-2">
-                <div className="flex min-w-0 flex-1 items-start gap-0.5">
-                  <p className="min-w-0 flex-1 truncate whitespace-nowrap font-bold text-foreground ds-text-13 leading-tight">
-                    {reserve.tokenSymbol}
-                  </p>
-                  <AssetActionMenu
-                    tokenSymbol={reserve.tokenSymbol}
-                    tokenAddress={reserve.tokenAddress}
-                    marketName={reserve.marketName}
-                    aaveProReserveId={reserve.aaveProReserveId}
-                    chainName={reserve.chainName}
-                    hubAddress={reserve.hubAddress}
-                    isMobile
-                    triggerSize={13}
-                    triggerClassName="shrink-0"
-                  />
-                </div>
+                  <div className="flex min-w-0 flex-1 items-start gap-0.5">
+                    <p className="min-w-0 truncate whitespace-nowrap font-bold text-foreground ds-text-13 leading-tight">
+                      {reserve.tokenSymbol}
+                    </p>
+                    <AssetActionMenu
+                      tokenSymbol={reserve.tokenSymbol}
+                      tokenAddress={reserve.tokenAddress}
+                      marketName={reserve.marketName}
+                      aaveProReserveId={reserve.aaveProReserveId}
+                      chainName={reserve.chainName}
+                      hubAddress={reserve.hubAddress}
+                      isMobile
+                      triggerSize={13}
+                      triggerClassName="shrink-0"
+                    />
+                  </div>
                 {/* Utilization indicator - clickable (values match desktop Utilization column + UtilizationIndicator) */}
                 {displayUtilization != null && optimalPct != null && (
                   <button
