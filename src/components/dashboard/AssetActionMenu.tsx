@@ -7,6 +7,7 @@ import { buildAaveUrl, buildAaveProAssetUrl } from '@/lib/aaveLinks';
 import { buildPoolExplorerUrl, buildTokenExplorerUrl, buildHubExplorerUrl } from '@/lib/poolExplorerLinks';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
 import { getChainIconSrc } from '@/lib/chainIcons';
+import { getProtocolVersion } from '@/lib/protocolVersion';
 import { cn } from '@/lib/utils';
 import { computePopoverPosition } from './assetActionMenuPosition';
 
@@ -147,6 +148,7 @@ export function AssetActionMenu({
 
   const aaveUrl = buildAaveUrl({ marketName, tokenAddress, aaveProReserveId });
   const aaveProAssetUrl = buildAaveProAssetUrl({ tokenAddress, chainName });
+  const isV4 = getProtocolVersion(marketName) === 'v4';
   const tokenExplorerUrl = buildTokenExplorerUrl(marketName, tokenAddress, { chainName: reserveChainName });
   const poolExplorerUrl = buildPoolExplorerUrl(marketName, { deepLink: false, chainName: reserveChainName });
   const hubExplorerUrl = buildHubExplorerUrl(hubAddress, { chainName: reserveChainName });
@@ -169,7 +171,7 @@ export function AssetActionMenu({
 
   const items: MenuItem[] = [
     aaveUrl ? { key: 'aave', label: 'Open on Aave', href: aaveUrl, icon: 'external' as const } : null,
-    aaveProAssetUrl
+    isV4 && aaveProAssetUrl
       ? { key: 'aave-pro-asset', label: 'View asset page', href: aaveProAssetUrl, icon: 'external' as const }
       : null,
     tokenExplorerUrl

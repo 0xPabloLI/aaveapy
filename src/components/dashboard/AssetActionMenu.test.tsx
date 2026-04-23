@@ -180,3 +180,36 @@ describe('AssetActionMenu (mobile)', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 });
+
+describe('AssetActionMenu (V3 vs V4 links)', () => {
+  afterEach(() => cleanup());
+
+  it('does not render "View asset page" for V3 assets', async () => {
+    const user = userEvent.setup();
+    const V3_MARKET = 'AaveV3Ethereum';
+    setup({ marketName: V3_MARKET });
+
+    await user.click(screen.getByLabelText(`Asset actions for ${TOKEN_SYMBOL}`));
+    await screen.findByRole('menu');
+
+    expect(screen.queryByText('View asset page')).not.toBeInTheDocument();
+  });
+
+  it('renders "View asset page" for V4 assets using pro.aave.com URL', async () => {
+    const user = userEvent.setup();
+    const V4_MARKET = 'AaveV4Ethereum';
+    const CHAIN_NAME = 'Ethereum';
+    const V4_TOKEN = TOKEN_ADDRESS;
+    setup({ marketName: V4_MARKET, chainName: CHAIN_NAME, tokenAddress: V4_TOKEN });
+
+    await user.click(screen.getByLabelText(`Asset actions for ${TOKEN_SYMBOL}`));
+    await screen.findByRole('menu');
+
+    const viewAssetLink = screen.getByText('View asset page').closest('a');
+    expect(viewAssetLink).toBeInTheDocument();
+    expect(viewAssetLink?.getAttribute('href')).toContain('pro.aave.com');
+    expect(viewAssetLink?.getAttribute('href')).toContain('explore/asset');
+    // pro.aave.com URLs use chain ID (1 for Ethereum) not chain name
+    expect(viewAssetLink?.getAttribute('href')).toContain('/1/');
+  });
+});
