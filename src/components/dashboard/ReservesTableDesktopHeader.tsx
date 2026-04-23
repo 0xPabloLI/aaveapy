@@ -328,7 +328,7 @@ export default function ReservesTableDesktopHeader({
       className={tableHeaderClassName}
     >
       <TableRow className="border-b border-border/50 hover:bg-transparent">
-        <TableHead className="pl-[var(--ds-space-1-5)] pr-[var(--ds-space-0-5)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground">
+        <TableHead className="pl-[var(--ds-space-2)] pr-[var(--ds-space-0-5)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground">
           <button
             type="button"
             onClick={onSortToken}
@@ -545,7 +545,7 @@ export default function ReservesTableDesktopHeader({
             )}
           </button>
         </TableHead>
-        <TableHead className="pl-[var(--ds-space-1-5)] pr-[var(--ds-space-2)] py-[var(--ds-space-3)] ds-text-14 md:ds-text-16 font-semibold text-muted-foreground text-center">
+        <TableHead className="pl-[var(--ds-space-1-5)] pr-[var(--ds-space-1-5)] py-[var(--ds-space-3)] ds-text-14 md:ds-text-16 font-semibold text-muted-foreground text-center">
           <div className="flex items-center justify-center gap-[var(--ds-space-2)]">
             <div className="flex items-center gap-[var(--ds-space-1-5)]">
               <span

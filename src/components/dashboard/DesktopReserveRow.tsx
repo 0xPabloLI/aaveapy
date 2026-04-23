@@ -193,8 +193,8 @@ const DesktopReserveRow = memo(({
         )}
         onClick={() => onToggleExpand(reserveId)}
       >
-        {/* Token — 右侧留白更小 */}
-        <TableCell className="pl-[var(--ds-space-3)] pr-[var(--ds-space-1)] ds-row-pad whitespace-nowrap text-center">
+        {/* Token */}
+        <TableCell className="pl-[var(--ds-space-2)] pr-[var(--ds-space-1)] ds-row-pad whitespace-nowrap text-center">
           <div className="inline-flex items-center justify-center gap-[var(--ds-space-2)]">
           {isPortfolioMode && onPortfolioToggle && (
             <button
@@ -474,8 +474,8 @@ const DesktopReserveRow = memo(({
             {formatSpread(spread)}
           </span>
         </TableCell>
-        {/* Borrow — 左侧与各列统一，右侧保留外边距 */}
-        <TableCell className="pl-[var(--ds-space-2)] pr-[var(--ds-space-3)] ds-row-pad whitespace-nowrap text-center">
+        {/* Borrow */}
+        <TableCell className="pl-[var(--ds-space-2)] pr-[var(--ds-space-2)] ds-row-pad whitespace-nowrap text-center">
           <div className="flex flex-col items-center justify-center gap-[var(--ds-space-0-5)] min-h-[2.75rem]">
             {reserve.borrowDisabled ? (
               <Tooltip>

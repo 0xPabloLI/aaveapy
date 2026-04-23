@@ -1409,15 +1409,15 @@ const ReservesTable = ({
       */}
       <Table className="w-full table-fixed min-w-0" wrapperClassName="overflow-visible">
           <colgroup>
-            {/* 左边三列再宽松，右边三列（Supply/Spread/Borrow）稍紧凑，合计 100% */}
+            {/* 八列均匀分配，左右对称，合计 100% */}
+            <col style={{ width: '12.5%' }} />
+            <col style={{ width: '11%' }} />
+            <col style={{ width: '12%' }} />
             <col style={{ width: '13%' }} />
-            <col style={{ width: '10.5%' }} />
-            <col style={{ width: '11.5%' }} />
+            <col style={{ width: '12.5%' }} />
             <col style={{ width: '13%' }} />
             <col style={{ width: '12.5%' }} />
             <col style={{ width: '13.5%' }} />
-            <col style={{ width: '11.5%' }} />
-            <col style={{ width: '14.5%' }} />
           </colgroup>
           <ReservesTableDesktopHeader
             tableHeaderRef={desktopStickyTheadRef}
