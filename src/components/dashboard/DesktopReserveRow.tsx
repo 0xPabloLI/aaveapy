@@ -419,7 +419,9 @@ const DesktopReserveRow = memo(({
               <span className={`ds-text-11 tabular-nums font-medium ${
                 poolLiquidity != null && poolLiquidity < 1000
                   ? 'text-amber-600'
-                  : 'ds-text-purple-500'
+                  : poolLiquidity != null && poolLiquidity < 10000
+                    ? 'text-amber-500'
+                    : 'ds-text-purple-500'
               }`}>
                 {formatScenarioSize(poolLiquidity, { inputMode, tokenPrice: displayTokenPrice, tokenSymbol: reserve.tokenSymbol })}
               </span>
