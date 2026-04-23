@@ -45,6 +45,17 @@ const ChainIcon = memo(({ chain, className = '' }: { chain: string; className?: 
 });
 ChainIcon.displayName = 'ChainIcon';
 
+const marketCellClassNames = {
+  stack: 'flex max-w-[13rem] flex-col items-center justify-center gap-[6px]',
+  marketShell: 'group/market-link relative inline-flex max-w-full items-center justify-center pl-4 pr-4',
+  marketButton: 'inline-flex max-w-full items-center justify-center gap-[var(--ds-space-1-5)] rounded-full border border-border/60 bg-muted/45 px-[var(--ds-space-2)] py-[var(--ds-space-1)] text-foreground transition-all duration-150 hover:bg-muted/70 hover:border-border/80 active:scale-[0.98]',
+  marketText: 'truncate whitespace-nowrap ds-text-13 font-semibold',
+  hubShell: 'group/hub-link relative inline-flex max-w-full items-center justify-center gap-1 pl-3 pr-3',
+  hubLabel: 'ds-text-10 uppercase tracking-[0.04em] text-muted-foreground/55',
+  hubValue: 'max-w-[8.5rem] truncate whitespace-nowrap ds-text-11 font-medium',
+  externalLink: 'pointer-events-none absolute right-0 top-1/2 inline-flex -translate-y-1/2 items-center justify-center opacity-0 transition-opacity duration-100',
+};
+
 /* ─── Props ─── */
 interface DesktopReserveRowProps {
   reserve: ReserveWithSpread;
@@ -127,6 +138,8 @@ const DesktopReserveRow = memo(({
   const aaveMarketUrl = buildAaveMarketUrl(reserve.marketName);
   const poolExplorerUrl = buildPoolExplorerUrl(reserve.marketName);
   const aaveProHubUrl = buildAaveProHubUrl(reserve);
+  const marketDisplayName = getReserveMarketDisplayName(reserve);
+  const isV4Market = getProtocolVersion(reserve.marketName) === 'v4';
 
   const displayTokenPrice = getValidTokenPrice(simulation?.tokenPrice, reserve.tokenPrice);
   const displayReserveSizeUsd = getScenarioSupplySizeUsd({
@@ -243,11 +256,8 @@ const DesktopReserveRow = memo(({
         {/* Market — 左侧留白更小，右侧与其余列统一 */}
         <TableCell className="pl-[var(--ds-space-1)] pr-[var(--ds-space-2)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell">
           <div className="flex items-center justify-center">
-            <div className="flex flex-col items-center justify-center gap-[var(--ds-space-1)]">
-              <div className={cn(
-                "group/market-link relative inline-flex items-center justify-center",
-                aaveMarketUrl && "pl-4 pr-4"
-              )}>
+            <div className={marketCellClassNames.stack}>
+              <div className={marketCellClassNames.marketShell}>
                 <button
                   type="button"
                   onClick={(event) => {
@@ -255,38 +265,33 @@ const DesktopReserveRow = memo(({
                     onMarketChipClick?.(reserveId);
                     onSelectMarket?.(reserve.marketName);
                   }}
-                  className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)] px-[var(--ds-space-2-5)] py-[var(--ds-space-1)] rounded-full ds-text-13 font-medium bg-muted/50 text-muted-foreground border border-border/60 hover:bg-muted hover:text-foreground hover:border-border/80 active:scale-[0.98] transition-all duration-150"
-                  aria-label={`Filter by ${getReserveMarketDisplayName(reserve)} market`}
-                  title={`Filter by ${getReserveMarketDisplayName(reserve)}`}
+                  className={marketCellClassNames.marketButton}
+                  aria-label={`Filter by ${marketDisplayName} market`}
+                  title={`Filter by ${marketDisplayName}`}
                 >
                   <ChainIcon chain={reserve.chainName} />
-                  {getReserveMarketDisplayName(reserve)}
+                  <span className={marketCellClassNames.marketText}>{marketDisplayName}</span>
                 </button>
                 {aaveMarketUrl && (
                   <a
                     href={aaveMarketUrl}
                     {...externalLinkTabProps(isMobile)}
                     onClick={(event) => event.stopPropagation()}
-                    className="pointer-events-none absolute right-0 top-1/2 inline-flex -translate-y-1/2 items-center justify-center opacity-0 transition-opacity duration-100 group-hover/market-link:pointer-events-auto group-hover/market-link:opacity-100"
-                    aria-label={`Open ${getReserveMarketDisplayName(reserve)} market on Aave`}
+                    className={cn(marketCellClassNames.externalLink, 'group-hover/market-link:pointer-events-auto group-hover/market-link:opacity-100')}
+                    aria-label={`Open ${marketDisplayName} market on Aave`}
                     title="Open market on Aave"
                   >
                     <ExternalLink className="w-3 h-3 text-muted-foreground" />
                   </a>
                 )}
               </div>
-              {/* Hub Info — V4 uses brand gradient emphasis, V3 uses plain style */}
               {reserve.hubName && (
-                <div className={cn(
-                  "group/hub-link relative inline-flex max-w-full items-center justify-center",
-                  aaveProHubUrl && "pl-3.5 pr-3.5"
-                )}>
+                <div className={marketCellClassNames.hubShell}>
+                  <span className={marketCellClassNames.hubLabel}>Hub</span>
                   <span
                     className={cn(
-                      "inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-medium leading-none",
-                      getProtocolVersion(reserve.marketName) === 'v4'
-                        ? "text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))/10]"
-                        : "text-muted-foreground/70 bg-muted/40"
+                      marketCellClassNames.hubValue,
+                      isV4Market ? 'text-[rgb(var(--ds-brand-magenta-rgb))]/85' : 'text-foreground/70',
                     )}
                     aria-label={`${reserve.hubName} hub`}
                     title={`${reserve.hubName} hub`}
@@ -298,7 +303,7 @@ const DesktopReserveRow = memo(({
                       href={aaveProHubUrl}
                       {...externalLinkTabProps(isMobile)}
                       onClick={(event) => event.stopPropagation()}
-                      className="pointer-events-none absolute right-0 top-1/2 inline-flex -translate-y-1/2 items-center justify-center opacity-0 transition-opacity duration-100 group-hover/hub-link:pointer-events-auto group-hover/hub-link:opacity-100"
+                      className={cn(marketCellClassNames.externalLink, 'group-hover/hub-link:pointer-events-auto group-hover/hub-link:opacity-100')}
                       aria-label={`View ${reserve.hubName} hub on Aave Pro`}
                       title={`Open hub ${reserve.hubName} on Aave Pro`}
                     >
