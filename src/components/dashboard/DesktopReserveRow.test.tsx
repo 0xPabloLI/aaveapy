@@ -200,7 +200,6 @@ describe('DesktopReserveRow', () => {
     expect(html).toContain('pr-4');
     expect(html).toContain('group/hub-link');
     expect(html).toContain('group-hover/hub-link:opacity-100');
-    expect(html).toContain('pl-3.5');
-    expect(html).toContain('pr-3.5');
+    expect(html).toContain('pr-3');
   });
 });

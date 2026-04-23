@@ -46,13 +46,14 @@ const ChainIcon = memo(({ chain, className = '' }: { chain: string; className?: 
 ChainIcon.displayName = 'ChainIcon';
 
 const marketCellClassNames = {
-  stack: 'flex max-w-[13rem] flex-col items-center justify-center gap-[6px]',
+  stack: 'flex max-w-none flex-col items-center justify-center gap-1',
   marketShell: 'group/market-link relative inline-flex max-w-full items-center justify-center pl-4 pr-4',
   marketButton: 'inline-flex max-w-full items-center justify-center gap-[var(--ds-space-1-5)] rounded-full border border-border/60 bg-muted/45 px-[var(--ds-space-2)] py-[var(--ds-space-1)] text-foreground transition-all duration-150 hover:bg-muted/70 hover:border-border/80 active:scale-[0.98]',
   marketText: 'truncate whitespace-nowrap ds-text-13 font-semibold',
-  hubShell: 'group/hub-link relative inline-flex max-w-full items-center justify-center gap-1 pl-3 pr-3',
-  hubLabel: 'ds-text-10 uppercase tracking-[0.04em] text-muted-foreground/55',
-  hubValue: 'max-w-[8.5rem] truncate whitespace-nowrap ds-text-11 font-medium',
+  hubShell: 'group/hub-link relative inline-flex max-w-full items-center justify-center pr-3',
+  hubPill: 'inline-flex max-w-[8.5rem] items-center truncate whitespace-nowrap rounded-full px-1.5 py-0.5 text-[10px] font-medium leading-none',
+  hubPillV4: 'text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10',
+  hubPillDefault: 'text-muted-foreground/70 bg-muted/40',
   externalLink: 'pointer-events-none absolute right-0 top-1/2 inline-flex -translate-y-1/2 items-center justify-center opacity-0 transition-opacity duration-100',
 };
 
@@ -287,11 +288,10 @@ const DesktopReserveRow = memo(({
               </div>
               {reserve.hubName && (
                 <div className={marketCellClassNames.hubShell}>
-                  <span className={marketCellClassNames.hubLabel}>Hub</span>
                   <span
                     className={cn(
-                      marketCellClassNames.hubValue,
-                      isV4Market ? 'text-[rgb(var(--ds-brand-magenta-rgb))]/85' : 'text-foreground/70',
+                      marketCellClassNames.hubPill,
+                      isV4Market ? marketCellClassNames.hubPillV4 : marketCellClassNames.hubPillDefault,
                     )}
                     aria-label={`${reserve.hubName} hub`}
                     title={`${reserve.hubName} hub`}
@@ -309,7 +309,7 @@ const DesktopReserveRow = memo(({
                     >
                       <ExternalLink className={cn(
                         "w-2.5 h-2.5",
-                        getProtocolVersion(reserve.marketName) === 'v4' ? "text-foreground/60" : "text-muted-foreground/60"
+                        isV4Market ? "text-foreground/60" : "text-muted-foreground/60"
                       )} />
                     </a>
                   )}
