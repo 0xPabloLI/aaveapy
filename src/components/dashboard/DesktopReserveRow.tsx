@@ -209,8 +209,8 @@ const DesktopReserveRow = memo(({
         onClick={() => onToggleExpand(reserveId)}
       >
         {/* Token */}
-        <TableCell className="pl-[var(--ds-space-2)] pr-[var(--ds-space-2)] ds-row-pad text-center">
-          <div className="inline-flex items-center justify-center gap-[var(--ds-space-2)]">
+        <TableCell className="pl-[var(--ds-space-2)] pr-[var(--ds-space-2)] ds-row-pad text-center overflow-hidden">
+          <div className="flex w-full min-w-0 items-center justify-center gap-[var(--ds-space-2)]">
           {isPortfolioMode && onPortfolioToggle && (
             <button
               type="button"
@@ -233,15 +233,15 @@ const DesktopReserveRow = memo(({
               )}
             </button>
           )}
-          <div className="group/token inline-flex items-center justify-center gap-[var(--ds-space-1-5)]">
-            <TokenIcon symbol={iconSymbol} size={28} loading="eager" logoURI={logoURI} className="flex-shrink-0" />
-            <span className="font-semibold text-foreground ds-text-13 break-words min-w-0">
+          <div className="group/token flex min-w-0 max-w-full items-center justify-center gap-[var(--ds-space-1-5)]">
+            <TokenIcon symbol={iconSymbol} size={28} loading="eager" logoURI={logoURI} className="shrink-0" />
+            <span className="font-semibold text-foreground ds-text-13 truncate min-w-0">
               {reserve.tokenSymbol}
             </span>
             {reserve.isFrozenOrPaused && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className="inline-flex items-center gap-0.5 rounded px-1 py-0.5 ds-text-9 font-medium text-sky-500 bg-sky-500/10">
+                  <span className="inline-flex shrink-0 items-center gap-0.5 rounded px-1 py-0.5 ds-text-9 font-medium text-sky-500 bg-sky-500/10">
                     <Snowflake className="w-2.5 h-2.5" />
                   </span>
                 </TooltipTrigger>
@@ -257,6 +257,7 @@ const DesktopReserveRow = memo(({
               hubAddress={reserve.hubAddress}
               isMobile={isMobile}
               triggerSize={12}
+              triggerClassName="shrink-0"
             />
           </div>
           </div>

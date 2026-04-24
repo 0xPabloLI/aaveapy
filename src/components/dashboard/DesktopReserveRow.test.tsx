@@ -202,4 +202,63 @@ describe('DesktopReserveRow', () => {
     expect(html).toContain('group-hover/hub-link:opacity-100');
     expect(html).toContain('pr-3');
   });
+
+  it('keeps Token cell content from overflowing into the Price column at narrow widths', () => {
+    // Regression guard: at narrow desktop widths (~768-900px), the table-fixed
+    // Token column (13%) is too tight to fit icon + symbol + optional snowflake +
+    // AssetActionMenu on one line. If the inner flex uses inline-flex (sizes to
+    // content) and the symbol is not truncatable, the whole block overflows into
+    // the Price column regardless of cell padding. The fix has four invariants:
+    //   1. Token TableCell has `overflow-hidden`
+    //   2. Inner flex is `flex w-full min-w-0` (fills cell, can shrink)
+    //   3. Token symbol span uses `truncate min-w-0` (tail-ellipsis fallback)
+    //   4. Non-text siblings (icon, snowflake, AssetActionMenu) are `shrink-0`
+    //      so they stay at intrinsic size and never disappear.
+    const queryClient = new QueryClient();
+    const html = renderToString(
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Table>
+            <TableBody>
+              <DesktopReserveRow
+                reserve={{ ...reserve, isFrozenOrPaused: true, tokenSymbol: 'syrupUSDT' }}
+                reserveId="AaveV3Ethereum-0x0000000000000000000000000000000000000001"
+                isExpanded={false}
+                onToggleExpand={() => {}}
+                onIncentiveClick={() => {}}
+                displaySupplyTotal={2.9}
+                displaySupplyNative={2.5}
+                displaySupplyIncentive={0.4}
+                displayBorrowTotal={3.3}
+                displayBorrowNative={3.4}
+                displayBorrowIncentive={0.1}
+                displayUtilization={52}
+                spread={-0.4}
+                simulation={simulation}
+                supplyInput="1000"
+                borrowInput="500"
+                inputMode="usd"
+                isApy
+                isMobile={false}
+              />
+            </TableBody>
+          </Table>
+        </TooltipProvider>
+      </QueryClientProvider>
+    );
+
+    // (1) Token cell clips any residual overflow.
+    expect(html).toMatch(/class="[^"]*overflow-hidden[^"]*"[^>]*>\s*<div class="flex w-full min-w-0/);
+    // (2) Inner group/token uses flex + min-w-0 (not inline-flex).
+    expect(html).toMatch(/class="group\/token flex min-w-0 max-w-full/);
+    // (3) Token symbol can tail-truncate.
+    expect(html).toMatch(/<span class="font-semibold text-foreground ds-text-13 truncate min-w-0">/);
+    // (4) Icon wrapper, snowflake wrapper, and AssetActionMenu trigger are all shrink-0.
+    expect(html).toMatch(/<div class="relative inline-block rounded-full shrink-0"/);
+    expect(html).toMatch(/<span[^>]*class="inline-flex shrink-0 items-center[^"]*text-sky-500 bg-sky-500\/10"/);
+    // AssetActionMenu receives triggerClassName="shrink-0" which merges onto its trigger button.
+    const assetMenuMatches = html.match(/<button[^>]*aria-label="Asset actions for[^"]*"[^>]*class="([^"]*)"/);
+    expect(assetMenuMatches).not.toBeNull();
+    expect(assetMenuMatches?.[1]).toContain('shrink-0');
+  });
 });
