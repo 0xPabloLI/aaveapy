@@ -352,20 +352,6 @@ const FilterBar = ({
             </button>
           )}
         </div>
-        {setShowFrozenOrPaused && (
-          <button
-            type="button"
-            onClick={() => setShowFrozenOrPaused(!showFrozenOrPaused)}
-            className={`shrink-0 inline-flex items-center gap-1 h-7 px-2 rounded-md ds-text-11 font-medium transition-colors ${
-              showFrozenOrPaused
-                ? 'bg-sky-500/15 text-sky-600 shadow-sm border border-sky-400/50'
-                : 'bg-card/50 text-muted-foreground hover:text-foreground hover:bg-card/80 border border-border/40'
-            }`}
-            title={showFrozenOrPaused ? 'Hide frozen/paused assets' : 'Show frozen/paused assets'}
-          >
-            <Snowflake className="w-3.5 h-3.5" />
-          </button>
-        )}
         <div className="shrink-0">
           <AprApyToggle isApy={isApy} setIsApy={setIsApy} />
         </div>
