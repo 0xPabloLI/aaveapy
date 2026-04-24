@@ -40,6 +40,7 @@ import {
   BorrowCapSheetContent,
   UtilizationSheetContent,
   DeficitSheetContent,
+  FrozenSheetContent,
 } from './MobileReserveSheetContent';
 
 interface MobileReserveCardProps {
@@ -385,7 +386,7 @@ const MobileReserveCard = memo(({
   onPortfolioToggle,
   onAddToPortfolio,
 }: MobileReserveCardProps) => {
-  const [capSheet, setCapSheet] = useState<'supply' | 'borrow' | 'utilization' | 'deficit' | null>(null);
+  const [capSheet, setCapSheet] = useState<'supply' | 'borrow' | 'utilization' | 'deficit' | 'frozen' | null>(null);
   const [hasSimulationMounted, setHasSimulationMounted] = useState(isSimulationExpanded);
   const [activeTab, setActiveTab] = useState<'supply' | 'borrow'>(defaultTab ?? 'supply');
 
@@ -553,41 +554,55 @@ const MobileReserveCard = memo(({
             </button>
           )}
           <div className="flex items-start gap-1 min-w-0 flex-1">
-            <TokenIcon
-              symbol={iconSymbol}
-              size={28}
-              loading="eager"
-              className="shrink-0"
-              logoURI={logoURI}
-            />
+            {reserve.isFrozenOrPaused ? (
+              <div className="relative shrink-0">
+                <TokenIcon
+                  symbol={iconSymbol}
+                  size={28}
+                  loading="eager"
+                  logoURI={logoURI}
+                />
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        onClick={() => setCapSheet('frozen')}
+                        className="absolute -top-0.5 -left-0.5 z-10 flex items-center justify-center w-3.5 h-3.5 rounded-full bg-sky-500 shadow-sm"
+                        aria-label="Show frozen/paused details"
+                      >
+                        <span className="text-white text-[8px] leading-none">❄</span>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>Frozen or paused</TooltipContent>
+                  </Tooltip>
+              </div>
+            ) : (
+              <TokenIcon
+                symbol={iconSymbol}
+                size={28}
+                loading="eager"
+                className="shrink-0"
+                logoURI={logoURI}
+              />
+            )}
             <div className="min-w-0 flex-1">
-               <div className="flex items-start justify-between gap-1.5">
-                  <div className="flex min-w-0 flex-1 items-start gap-0.5">
-                    <p className="min-w-0 truncate whitespace-nowrap font-bold text-foreground ds-text-13 leading-tight">
-                      {reserve.tokenSymbol}
-                    </p>
-                    {reserve.isFrozenOrPaused && (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <span className="inline-flex items-center gap-0.5 rounded px-1 py-0.5 ds-text-9 font-medium text-sky-500 bg-sky-500/10 shrink-0">
-                            <Snowflake className="w-2.5 h-2.5" />
-                          </span>
-                        </TooltipTrigger>
-                        <TooltipContent>Frozen or paused</TooltipContent>
-                      </Tooltip>
-                    )}
-                    <AssetActionMenu
-                      tokenSymbol={reserve.tokenSymbol}
-                      tokenAddress={reserve.tokenAddress}
-                      marketName={reserve.marketName}
-                      aaveProReserveId={reserve.aaveProReserveId}
-                      chainName={reserve.chainName}
-                      hubAddress={reserve.hubAddress}
-                      isMobile
-                      triggerSize={13}
-                      triggerClassName="shrink-0"
-                    />
-                  </div>
+              <div className="flex items-start justify-between gap-1.5">
+                <div className="flex min-w-0 flex-1 items-start gap-0.5">
+                  <p className="min-w-0 truncate whitespace-nowrap font-bold text-foreground ds-text-13 leading-tight">
+                    {reserve.tokenSymbol}
+                  </p>
+                  <AssetActionMenu
+                    tokenSymbol={reserve.tokenSymbol}
+                    tokenAddress={reserve.tokenAddress}
+                    marketName={reserve.marketName}
+                    aaveProReserveId={reserve.aaveProReserveId}
+                    chainName={reserve.chainName}
+                    hubAddress={reserve.hubAddress}
+                    isMobile
+                    triggerSize={13}
+                    triggerClassName="shrink-0"
+                  />
+                </div>
                 {/* Utilization indicator - clickable (values match desktop Utilization column + UtilizationIndicator) */}
                 {displayUtilization != null && optimalPct != null && (
                   <button
@@ -647,7 +662,7 @@ const MobileReserveCard = memo(({
               </div>
             </div>
           </div>
-        </div>
+          </div>
 
         {/* Pill tabs */}
         <div className="mx-3 mb-1 flex gap-[var(--ds-space-1)] rounded-lg bg-muted/40 p-0.5">
