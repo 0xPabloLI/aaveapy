@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Search, X, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Search, X, ChevronRight, ChevronLeft, Snowflake } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { TokenCategory, MarketListItem, ETHEREUM_MARKET_NAMES } from '@/types/aave';
 import { getChainIconSrc } from '@/lib/chainIcons';
@@ -36,7 +36,7 @@ const ChainIcon = memo(({ chain, className = "" }: { chain: string; className?: 
 
   if (!src) {
     return (
-      <div className={`${size} rounded-full bg-current opacity-40 flex items-center justify-center ds-text-8 font-bold`}>
+      <div className={`${size} rounded-full bg-current opacity-40 flex items-center justify-center ds-text-8 font-semibold`}>
         {chain.charAt(0)}
       </div>
     );
@@ -276,7 +276,7 @@ const FilterBar = ({
                 setSelectedCategory(category.value);
               }
             }}
-            className={`inline-flex items-center justify-center h-7 px-2 rounded-md ds-text-11 font-medium transition-colors ${
+            className={`inline-flex items-center justify-center h-7 px-2 rounded-md ds-text-11 font-normal transition-colors ${
               selectedCategory === category.value
                 ? 'bg-card text-foreground shadow-sm border border-[rgb(var(--ds-brand-magenta-rgb))]'
                 : 'bg-card/50 text-muted-foreground hover:text-foreground hover:bg-card/80 border border-border/40'
@@ -311,13 +311,15 @@ const FilterBar = ({
           <button
             type="button"
             onClick={() => setShowFrozenOrPaused(!showFrozenOrPaused)}
-            className={`inline-flex items-center justify-center h-7 px-2 rounded-md ds-text-11 font-medium transition-colors ${
+            className={`inline-flex items-center gap-1 h-7 px-2.5 rounded-md ds-text-11 font-medium transition-colors ${
               showFrozenOrPaused
-                ? 'bg-card text-foreground shadow-sm border border-[rgb(var(--ds-brand-magenta-rgb))]'
+                ? 'bg-sky-500/15 text-sky-600 shadow-sm border border-sky-400/50'
                 : 'bg-card/50 text-muted-foreground hover:text-foreground hover:bg-card/80 border border-border/40'
             }`}
+            title={showFrozenOrPaused ? 'Hide frozen/paused assets' : 'Show frozen/paused assets'}
           >
-            Frozen
+            <Snowflake className="w-3 h-3" />
+            <span className="hidden sm:inline">Frozen</span>
           </button>
         )}
 
@@ -354,41 +356,16 @@ const FilterBar = ({
           <button
             type="button"
             onClick={() => setShowFrozenOrPaused(!showFrozenOrPaused)}
-            className={`shrink-0 inline-flex items-center justify-center h-7 px-2 rounded-md ds-text-11 font-medium transition-colors ${
+            className={`shrink-0 inline-flex items-center gap-1 h-7 px-2 rounded-md ds-text-11 font-medium transition-colors ${
               showFrozenOrPaused
-                ? 'bg-card text-foreground shadow-sm border border-[rgb(var(--ds-brand-magenta-rgb))]'
+                ? 'bg-sky-500/15 text-sky-600 shadow-sm border border-sky-400/50'
                 : 'bg-card/50 text-muted-foreground hover:text-foreground hover:bg-card/80 border border-border/40'
             }`}
+            title={showFrozenOrPaused ? 'Hide frozen/paused assets' : 'Show frozen/paused assets'}
           >
-            Frozen
+            <Snowflake className="w-3.5 h-3.5" />
           </button>
         )}
-        <div className="shrink-0">
-          <AprApyToggle isApy={isApy} setIsApy={setIsApy} />
-        </div>
-      </div>
-
-      {/* Row 2: Search + APR/APY toggle – mobile only */}
-      <div className="flex items-center gap-1.5 md:hidden">
-        <div className="relative flex-1 min-w-0">
-          <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
-          <Input
-            ref={mobileSearchInputRef}
-            surfaceVariant="magenta"
-            placeholder={searchPlaceholder}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-7 pl-[var(--ds-space-8)] pr-[var(--ds-space-6)] ds-text-11 text-muted-foreground/50 placeholder:text-muted-foreground/50 focus:text-foreground"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-            >
-              <X className="w-3 h-3" />
-            </button>
-          )}
-        </div>
         <div className="shrink-0">
           <AprApyToggle isApy={isApy} setIsApy={setIsApy} />
         </div>
@@ -401,7 +378,7 @@ const FilterBar = ({
         {/* "All" button */}
         <button
           onClick={handleAllClick}
-          className={`ds-chip px-2 md:px-2.5 py-1 rounded-md font-medium transition-colors ${
+          className={`ds-chip px-2 md:px-2.5 py-1 rounded-md font-normal transition-colors ${
             noMarketsSelected
               ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
               : 'text-foreground/80 border border-border hover:text-foreground'
@@ -428,7 +405,7 @@ const FilterBar = ({
             return (
               <div key={group.chainName} className="contents">
                 <div
-                  className={`ds-chip flex items-center rounded-md text-[10px] font-medium transition-colors overflow-hidden ${chipStyle}`}
+                  className={`ds-chip flex items-center rounded-md text-[10px] font-normal transition-colors overflow-hidden ${chipStyle}`}
                 >
                   {/* Left area: icon + chain name → toggles chain selection */}
                   <button
@@ -474,7 +451,7 @@ const FilterBar = ({
                     <button
                       key={market.marketName}
                       onClick={() => toggleSubMarket(market.marketName)}
-                      className={`ds-chip gap-0.5 px-1 md:px-1.5 py-0.5 rounded-md text-[10px] font-medium transition-colors ${
+                      className={`ds-chip gap-0.5 px-1 md:px-1.5 py-0.5 rounded-md text-[10px] font-normal transition-colors ${
                         isSubSelected
                           ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
                           : 'text-foreground/80 border border-border hover:text-foreground'
@@ -482,7 +459,7 @@ const FilterBar = ({
                       title={market.marketName}
                     >
                       {isV4 && (
-                        <span className="inline-flex items-center px-1 py-0 rounded-full text-[9px] font-medium leading-none text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10">
+                        <span className="inline-flex items-center px-1 py-0 rounded-full text-[9px] font-normal leading-none text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10">
                           V4
                         </span>
                       )}
@@ -499,7 +476,7 @@ const FilterBar = ({
             <button
               key={group.chainName}
               onClick={() => handleOtherChainClick(group)}
-              className={`ds-chip gap-0.5 px-1 md:px-1.5 py-0.5 rounded-md text-[10px] font-medium transition-colors ${
+              className={`ds-chip gap-0.5 px-1 md:px-1.5 py-0.5 rounded-md text-[10px] font-normal transition-colors ${
                 selected
                   ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
                   : 'text-foreground/80 border border-border hover:text-foreground'

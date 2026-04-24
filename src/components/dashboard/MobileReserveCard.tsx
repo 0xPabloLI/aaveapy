@@ -1,5 +1,5 @@
 import { memo, useEffect, useState } from 'react';
-import { ListCollapse, Plus, X } from 'lucide-react';
+import { ListCollapse, Plus, Snowflake, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ReserveWithSpread } from '@/types/aave';
 import {
@@ -520,7 +520,7 @@ const MobileReserveCard = memo(({
     <div data-reserve-id={reserveId} className={isSimulationExpanded && !showUpperOnly ? 'shadow-sm rounded-xl border border-border/60 bg-card' : ''}>
       {/* Card upper part */}
       <div
-        className={`bg-card py-3 transition-all duration-300 ${
+        className={`bg-card py-3 transition-all duration-300 ${reserve.isFrozenOrPaused ? 'opacity-60 ' : ''}${
           isSimulationExpanded && !showUpperOnly
             ? 'rounded-t-xl rounded-b-none'
             : connectedBelow
@@ -566,6 +566,16 @@ const MobileReserveCard = memo(({
                     <p className="min-w-0 truncate whitespace-nowrap font-bold text-foreground ds-text-13 leading-tight">
                       {reserve.tokenSymbol}
                     </p>
+                    {reserve.isFrozenOrPaused && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="inline-flex items-center gap-0.5 rounded px-1 py-0.5 ds-text-9 font-medium text-sky-500 bg-sky-500/10 shrink-0">
+                            <Snowflake className="w-2.5 h-2.5" />
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>Frozen or paused</TooltipContent>
+                      </Tooltip>
+                    )}
                     <AssetActionMenu
                       tokenSymbol={reserve.tokenSymbol}
                       tokenAddress={reserve.tokenAddress}
@@ -611,7 +621,7 @@ const MobileReserveCard = memo(({
                   const aaveProHubUrl = buildAaveProHubUrl(reserve);
                   const isV4 = getProtocolVersion(reserve.marketName) === 'v4';
                   const hubClass = cn(
-                    "inline-flex items-center rounded-full text-[9px] font-medium leading-none",
+                    "inline-flex items-center rounded-full text-[9px] font-normal leading-none",
                     isV4
                       ? "text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10"
                       : "text-muted-foreground/70 bg-muted/40"
