@@ -397,10 +397,10 @@ export default function ReservesTableDesktopHeader({
           </div>
         </TableHead>
         <TableHead className="px-[var(--ds-space-1-5)] py-[var(--ds-space-3)] ds-text-14 md:ds-text-16 font-semibold text-muted-foreground text-center hidden md:table-cell">
-          <div className="flex items-center justify-center gap-[var(--ds-space-2)]">
-            <div className="flex items-center gap-[var(--ds-space-1-5)]">
+          <div className="flex items-center justify-center">
+            <div className="flex flex-wrap items-center justify-center gap-x-[var(--ds-space-1-5)] gap-y-[var(--ds-space-1)]">
               <span
-                className={`transition-all duration-200 ${activeSortColumn === 'size' ? sizeSortActiveHeadingClass : 'text-muted-foreground'}`}
+                className={`whitespace-nowrap transition-all duration-200 ${activeSortColumn === 'size' ? sizeSortActiveHeadingClass : 'text-muted-foreground'}`}
               >
                 Size
               </span>
@@ -422,7 +422,7 @@ export default function ReservesTableDesktopHeader({
                   }`}
                   title="Select size sort field"
                 >
-                  <span className="font-semibold">
+                  <span className="font-semibold text-[10px] md:ds-text-11">
                     {sizeSortMode === 'supply'
                       ? 'Supply'
                       : sizeSortMode === 'borrow'
@@ -447,10 +447,10 @@ export default function ReservesTableDesktopHeader({
           </div>
         </TableHead>
         <TableHead className="px-[var(--ds-space-1-5)] py-[var(--ds-space-3)] ds-text-14 md:ds-text-16 font-semibold text-muted-foreground text-center hidden md:table-cell">
-          <div className="flex items-center justify-center gap-[var(--ds-space-2)]">
-            <div className="flex items-center gap-[var(--ds-space-1-5)]">
+          <div className="flex items-center justify-center">
+            <div className="flex flex-wrap items-center justify-center gap-x-[var(--ds-space-1-5)] gap-y-[var(--ds-space-1)]">
               <span
-                className={`transition-all duration-200 ${
+                className={`whitespace-nowrap transition-all duration-200 ${
                   activeSortColumn === 'util'
                     ? utilSortMode === 'liquidity'
                       ? 'ds-text-purple-600 font-bold scale-105'
@@ -476,7 +476,7 @@ export default function ReservesTableDesktopHeader({
                   }`}
                   title="Select utilization sort field"
                 >
-                  <span className="font-semibold">
+                  <span className="font-semibold text-[10px] md:ds-text-11">
                     {utilSortMode === 'util' ? '%' : 'Liquidity'}
                   </span>
                   <ChevronDown className="w-2.5 h-2.5" />
@@ -493,10 +493,10 @@ export default function ReservesTableDesktopHeader({
           </div>
         </TableHead>
         <TableHead className="px-[var(--ds-space-1-5)] py-[var(--ds-space-3)] ds-text-14 md:ds-text-16 font-semibold text-muted-foreground text-center">
-          <div className="flex items-center justify-center gap-[var(--ds-space-2)]">
-            <div className="flex items-center gap-[var(--ds-space-1-5)]">
+          <div className="flex items-center justify-center">
+            <div className="flex flex-wrap items-center justify-center gap-x-[var(--ds-space-1-5)] gap-y-[var(--ds-space-1)]">
               <span
-                className={`transition-all duration-200 ${activeSortColumn === 'supply' ? 'ds-text-emerald-600 font-bold scale-105' : 'text-muted-foreground'}`}
+                className={`whitespace-nowrap transition-all duration-200 ${activeSortColumn === 'supply' ? 'ds-text-emerald-600 font-bold scale-105' : 'text-muted-foreground'}`}
               >
                 Supply
               </span>
@@ -512,7 +512,7 @@ export default function ReservesTableDesktopHeader({
                   }`}
                   title="Select sort field"
                 >
-                  <span className="font-semibold">{supplySortLabel}</span>
+                  <span className="font-semibold text-[10px] md:ds-text-11">{supplySortLabel}</span>
                   <ChevronDown className="w-2.5 h-2.5" />
                 </button>
                 <DesktopSortMenuPortal
@@ -546,10 +546,10 @@ export default function ReservesTableDesktopHeader({
           </button>
         </TableHead>
         <TableHead className="pl-[var(--ds-space-1-5)] pr-[var(--ds-space-1-5)] py-[var(--ds-space-3)] ds-text-14 md:ds-text-16 font-semibold text-muted-foreground text-center">
-          <div className="flex items-center justify-center gap-[var(--ds-space-2)]">
-            <div className="flex items-center gap-[var(--ds-space-1-5)]">
+          <div className="flex items-center justify-center">
+            <div className="flex flex-wrap items-center justify-center gap-x-[var(--ds-space-1-5)] gap-y-[var(--ds-space-1)]">
               <span
-                className={`transition-all duration-200 ${activeSortColumn === 'borrow' ? 'ds-text-brand-cyan font-bold scale-105' : 'text-muted-foreground'}`}
+                className={`whitespace-nowrap transition-all duration-200 ${activeSortColumn === 'borrow' ? 'ds-text-brand-cyan font-bold scale-105' : 'text-muted-foreground'}`}
               >
                 Borrow
               </span>
@@ -565,7 +565,7 @@ export default function ReservesTableDesktopHeader({
                   }`}
                   title="Select sort field"
                 >
-                  <span className="font-semibold">{borrowSortLabel}</span>
+                  <span className="font-semibold text-[10px] md:ds-text-11">{borrowSortLabel}</span>
                   <ChevronDown className="w-2.5 h-2.5" />
                 </button>
                 <DesktopSortMenuPortal

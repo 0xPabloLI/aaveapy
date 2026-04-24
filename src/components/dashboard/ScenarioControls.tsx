@@ -310,77 +310,86 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
 
   /* Desktop: tinted inner well (no extra outer border — reserves card frame only). */
   return (
-    <div className="w-full min-w-0 rounded-xl bg-card/60 px-3 py-0.5 backdrop-blur-sm">
-      <div className="flex w-full min-w-0 items-center gap-3">
-      <div className={cn('flex shrink-0 items-center', segmentedTrack)}>
-        <button
-          type="button"
-          onClick={() => handleModeChange('usd')}
-          className={cn(
-            segmentedSegment,
-            inputMode === 'usd' ? segmentedSelectedBase : segmentedUnselectedBase,
-          )}
-          aria-pressed={inputMode === 'usd'}
-        >
-          <span className={segmentedUsdLabelSize}>USD</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => handleModeChange('token')}
-          className={cn(
-            segmentedSegment,
-            inputMode === 'token' ? segmentedSelectedBase : segmentedUnselectedBase,
-          )}
-          aria-pressed={inputMode === 'token'}
-        >
-          <span className={segmentedUsdLabelSize}>Token</span>
-        </button>
-      </div>
+    <div className="w-full min-w-0 rounded-xl bg-card/60 px-3 py-1.5 backdrop-blur-sm">
+      <div className="flex flex-row items-center gap-x-6 gap-y-3">
+        {/* USD/Token Mode Switch - Always on the left */}
+        <div className={cn('flex shrink-0 items-center', segmentedTrack)}>
+          <button
+            type="button"
+            onClick={() => handleModeChange('usd')}
+            className={cn(
+              segmentedSegment,
+              inputMode === 'usd' ? segmentedSelectedBase : segmentedUnselectedBase,
+            )}
+            aria-pressed={inputMode === 'usd'}
+          >
+            <span className={segmentedUsdLabelSize}>USD</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleModeChange('token')}
+            className={cn(
+              segmentedSegment,
+              inputMode === 'token' ? segmentedSelectedBase : segmentedUnselectedBase,
+            )}
+            aria-pressed={inputMode === 'token'}
+          >
+            <span className={segmentedUsdLabelSize}>Token</span>
+          </button>
+        </div>
 
-      <div className="flex min-w-0 flex-1 items-center gap-[var(--ds-space-1)]">
-        <span className={fieldLabelSupplyDesktop}>Supply</span>
-        <input
-          value={supplyInput}
-          onChange={(event) => setSupplyInput(formatNumberInput(event.target.value))}
-          inputMode="decimal"
-          placeholder={inputMode === 'usd' ? '100,000' : '50'}
-          className={cn(inputBase, cnDsInputSurface(Boolean(supplyInput.trim()), 'supply'))}
-          aria-label="Supply amount"
-        />
-      </div>
+        {/* Simulation inputs and controls group - Wraps as a unit to keep alignment */}
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 min-w-0 flex-1">
+          {/* Supply Section - flex-grow to fill space */}
+          <div className="flex items-center gap-[var(--ds-space-1-5)] min-w-[120px] flex-1">
+            <span className={fieldLabelSupplyDesktop}>Supply</span>
+            <input
+              value={supplyInput}
+              onChange={(event) => setSupplyInput(formatNumberInput(event.target.value))}
+              inputMode="decimal"
+              placeholder={inputMode === 'usd' ? '100,000' : '50'}
+              className={cn(inputBase, cnDsInputSurface(Boolean(supplyInput.trim()), 'supply'), 'flex-1')}
+              aria-label="Supply amount"
+            />
+          </div>
 
-      <div className="flex min-w-0 flex-1 items-center gap-[var(--ds-space-1)]">
-        <span className={fieldLabelBorrowDesktop}>Borrow</span>
-        <input
-          value={borrowInput}
-          onChange={(event) => setBorrowInput(formatNumberInput(event.target.value))}
-          inputMode="decimal"
-          placeholder={inputMode === 'usd' ? '20,000' : '10'}
-          className={cn(inputBase, cnDsInputSurface(Boolean(borrowInput.trim()), 'borrow'))}
-          aria-label="Borrow amount"
-        />
-      </div>
+          {/* Borrow Section - flex-grow to fill space */}
+          <div className="flex items-center gap-[var(--ds-space-1-5)] min-w-[120px] flex-1">
+            <span className={fieldLabelBorrowDesktop}>Borrow</span>
+            <input
+              value={borrowInput}
+              onChange={(event) => setBorrowInput(formatNumberInput(event.target.value))}
+              inputMode="decimal"
+              placeholder={inputMode === 'usd' ? '20,000' : '10'}
+              className={cn(inputBase, cnDsInputSurface(Boolean(borrowInput.trim()), 'borrow'), 'flex-1')}
+              aria-label="Borrow amount"
+            />
+          </div>
 
-      {showMeritMerklMode ? (
-        <IncentiveNetCheckboxTooltip
-          id={meritMerklCheckboxId}
-          checked={meritMerklNetPosition}
-          onCheckedChange={handleMeritMerklNetPositionChange}
-          labelClassName="shrink-0 min-w-0 py-0.5"
-          labelTextClassName={`${fontSize} min-w-0 leading-tight text-muted-foreground`}
-        />
-      ) : null}
+          {/* Controls Section - When it wraps, it will start under Supply because it's in the same flex-wrap container */}
+          <div className="flex items-center gap-3 shrink-0">
+            {showMeritMerklMode ? (
+              <IncentiveNetCheckboxTooltip
+                id={meritMerklCheckboxId}
+                checked={meritMerklNetPosition}
+                onCheckedChange={handleMeritMerklNetPositionChange}
+                labelClassName="shrink-0 min-w-0 py-0.5"
+                labelTextClassName={`${fontSize} min-w-0 leading-tight text-muted-foreground`}
+              />
+            ) : null}
 
-      <button
-        type="button"
-        onClick={() => { setSupplyInput(''); setBorrowInput(''); }}
-        disabled={!hasInput}
-        className={`${clearBtnBase} ${clearBtnState}`}
-        aria-label="Clear scenario inputs"
-      >
-        <Trash2 className="size-3.5 shrink-0" aria-hidden />
-        <span>Clear</span>
-      </button>
+            <button
+              type="button"
+              onClick={() => { setSupplyInput(''); setBorrowInput(''); }}
+              disabled={!hasInput}
+              className={`${clearBtnBase} ${clearBtnState}`}
+              aria-label="Clear scenario inputs"
+            >
+              <Trash2 className="size-3.5 shrink-0" aria-hidden />
+              <span>Clear</span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
