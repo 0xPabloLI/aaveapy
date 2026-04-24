@@ -48,7 +48,7 @@ ChainIcon.displayName = 'ChainIcon';
 const marketCellClassNames = {
   stack: 'flex max-w-none flex-col items-center justify-center gap-1.5',
   marketShell: 'group/market-link relative inline-flex max-w-full items-center justify-center pl-4 pr-4',
-  marketButton: 'inline-flex min-w-[8.5rem] max-w-[12rem] items-center justify-center gap-[var(--ds-space-1-5)] rounded-[1.125rem] border border-border/60 bg-muted/45 px-[var(--ds-space-3-5)] py-[var(--ds-space-1-5)] text-foreground transition-all duration-150 hover:bg-muted/70 hover:border-border/80 active:scale-[0.98]',
+  marketButton: 'inline-flex max-w-full items-center justify-center gap-[var(--ds-space-1-5)] rounded-[1.125rem] border border-border/60 bg-muted/45 px-[var(--ds-space-3-5)] py-[var(--ds-space-1-5)] text-foreground transition-all duration-150 hover:bg-muted/70 hover:border-border/80 active:scale-[0.98]',
   marketText: 'whitespace-normal break-normal text-left min-w-0 ds-text-13 font-medium leading-tight',
   hubShell: 'group/hub-link relative inline-flex max-w-full items-center justify-center pl-3 pr-3',
   hubPill: 'inline-flex max-w-[8.5rem] items-center truncate whitespace-nowrap rounded-full px-2 py-0.5 ds-text-12 font-normal leading-none',

@@ -217,3 +217,17 @@ export function DeficitSheetContent({
     </div>
   );
 }
+
+/** Frozen/paused status bottom sheet content */
+export function FrozenSheetContent() {
+  return (
+    <div className="space-y-2 ds-text-12">
+      <p className="text-muted-foreground">
+        This reserve is currently <strong className="text-sky-500">frozen or paused</strong>.
+      </p>
+      <p className="text-muted-foreground">
+        When a reserve is frozen, deposits and borrows are temporarily disabled to protect the protocol.
+      </p>
+    </div>
+  );
+}
