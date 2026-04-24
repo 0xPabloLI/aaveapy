@@ -410,12 +410,21 @@ Body (`DesktopReserveRow.tsx`):
 
 **Pairwise padding rule (mandatory)** — when a cell contains a trailing icon (external-link, overflow-menu trigger, chevron) and the adjacent cell starts with tabular digits (price, percent, size), **both** must contribute padding. Do **not** try to solve the overlap by padding only one side; the side with the icon needs `pr ≥ space-2`, and the receiving side needs `pl ≥ space-1-5`. Header padding may remain slightly tighter than body padding (headers have no trailing icons), but Token header's `pr` must still be ≥ `space-1` so the column's sort arrow `↓` does not visually merge with the next header's arrow.
 
+**Token cell overflow-containment invariants (mandatory, narrow-viewport regression guard)** — at ~768–900 px desktop widths the Token column (13%) is too tight to fit icon + symbol + optional snowflake + `AssetActionMenu` on one line. Padding alone cannot fix this because the inner `inline-flex` grows to content width and overflows **past** the cell boundary into the Price column. All four invariants must hold (enforced by `DesktopReserveRow.test.tsx`):
+
+1. `TableCell` for Token has `overflow-hidden` as a containment fallback.
+2. The cell's inner flex is `flex w-full min-w-0 items-center justify-center` (**not** `inline-flex`), so the container matches cell width and can shrink.
+3. The `tokenSymbol` `<span>` uses `truncate min-w-0`. This is the only element allowed to shrink; tail-ellipsis kicks in only when the cell truly cannot fit. **Never** use `break-words` / `break-all` on token symbols (see DESIGN-SYSTEM-REFERENCE §4.1 path B).
+4. `TokenIcon`, the snowflake `<span>`, and `AssetActionMenu` (via `triggerClassName="shrink-0"`) all carry `shrink-0`. Without this, flex pressure squashes them out of view and the cell silently loses the action icon at narrow widths.
+
 **Diagnosis workflow when an icon/arrow "overlaps" an adjacent column:**
 
-1. Identify which cell the icon lives in (the overlap is usually a *trailing* element of the previous column, not the column it appears over).
-2. Inspect that column's `pr-*` and the next column's `pl-*`; the sum determines the visible gap.
-3. Prefer raising both sides by one step over a single big bump — keeps the global column width budget stable and avoids pushing the Market/Size blocks.
-4. Update header **and** body **and** any skeleton row together; header-only fixes look correct at rest but regress the moment data renders.
+1. **Reproduce at wide viewport first**: if it only breaks below ~1000 px, treat it as an **overflow** problem (invariants above), not a padding problem.
+2. Identify which cell the icon lives in (the overlap is almost always a *trailing* element of the previous column — e.g. the `↗` seen next to Price is really the Token cell's `AssetActionMenu`).
+3. **Padding path**: inspect that column's `pr-*` and the next column's `pl-*`; their sum is the visible gap. Prefer raising both sides by one step.
+4. **Overflow path**: verify the four invariants above; `overflow-hidden` + `flex w-full min-w-0` + `truncate` + `shrink-0` siblings. Padding tweaks are a no-op here.
+5. Update header **and** body **and** any skeleton row together; header-only fixes look correct at rest but regress the moment data renders.
+6. jsdom unit tests cannot verify real layout — guard with **structural class assertions** (as done in `DesktopReserveRow.test.tsx`) and, when pixel accuracy matters, a Playwright e2e with `getBoundingClientRect` on the trailing icon vs the next cell's first text node.
 
 ### Borrow availability constraint
 

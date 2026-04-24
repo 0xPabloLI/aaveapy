@@ -85,14 +85,40 @@
 
 ### 4.1 相邻单元格的自适应留白（跨列呼吸空间）
 
-密集数据表里的"图标/箭头看起来压到下一列"几乎从不是对齐 bug，而是 padding 配对失衡。强制规则：
+密集数据表里的"图标/箭头看起来压到下一列"有两种根因，**必须先分清**才能修对地方：
+
+#### A. Padding 配对失衡（列宽够，只是间距小）
+
+当列宽足够、只是相邻 padding 太紧时，强制规则：
 
 1. **尾部图标属于它所在的列**。`AssetActionMenu`、外链 `↗`、溢出菜单触发器、展开 chevron 等渲染在单元格末尾的元素，视觉上会探进下一列；解决方案是在**它所在列**增加 `pr`，而不是在邻列掩盖。
 2. **成对 padding（pairwise padding）**：当一列以尾部图标结束、下一列以数字/价格/芯片开头时，两侧必须同时贡献留白——典型配对是 `pr-[var(--ds-space-2)]` + `pl-[var(--ds-space-1-5)]`，给出 ≥10 px 可见间距。**不要**把所有负担压到单侧（既会压扁图标，也会扰动整张表的列宽预算）。
 3. **表头可以比行体更紧**：表头列没有尾部图标，`pr`/`pl` 可以比行体小一档；但当两列都带排序箭头 `↓` 时，相邻列之间至少保留一档 `pr-[var(--ds-space-1)]`，否则两个箭头会读起来像同一个符号。
 4. **Header / Body / Skeleton 必须同步修改**。只改表头（或只改行体）一定会回归——静态截图看似对齐，一旦真实数据/图标渲染出来就破形。
 5. **优先"两端各让一点"，少做单边大跳**。在固定 `table-fixed` + 百分比列宽的栅格里，单侧把 `px-0.5` 直接跳到 `px-3` 会把邻列挤偏；相邻两列各上升一档通常更稳。
-6. **诊断顺序**：先看图标属于哪一列（多数时候是"上一列"的尾部节点）→ 再看该列的 `pr` 与下一列的 `pl` 之和 → 最后再看图标自身是否需要 `mr` / `shrink-0`。用这顺序走一次，80% 的"箭头/外链/chevron 撞到价格" issue 都能一次性定位到真实代码现场。
+
+#### B. 内容溢出 cell 边界（列宽不够，padding 永远盖不住）
+
+当"问题只在窄视口复现、宽视口正常"时几乎一定是这类——**单元格里的 `inline-flex` 贴合内容宽度**，一旦内容总宽 > cell 实际宽度（`table-fixed` + 百分比列宽），整坨内容会直接溢出到邻列，此时加多少 `pr` 都没用，因为 padding 只是 cell 内部预留，约束不了 `inline-flex` 向外扩。
+
+必修四件套（缺一回归）：
+
+1. **Cell 兜底**：`<TableCell className="... overflow-hidden">`，阻止内部任何残余溢出穿到邻列。
+2. **容器吃满宽度**：把 `inline-flex` 换成 `flex w-full min-w-0`（外层 `items-center justify-center`，仍可居中），这样 flex 容器宽度 = cell 内容区宽度，不会贴合内容再外扩。
+3. **文本可收缩**：唯一允许收缩的元素（通常是 token symbol / 标题文案）加 `truncate min-w-0`，真放不下时走**尾部省略**（符合 §4「表格优先换行；但 token symbol 用尾部省略」）。不要用 `break-words` 或 `break-all`，前者在无空格的 symbol 上无效，后者会逐字符换行。
+4. **固定尺寸元素都 `shrink-0`**：icon 外层、徽章/雪花 `<span>`、`AssetActionMenu`（通过 `triggerClassName="shrink-0"`）等必须保留原尺寸的元素必须标记 `shrink-0`，否则它们会被 flex 压扁或消失，窄视口看起来"图标不见了"。
+
+#### 诊断顺序（3 步定位）
+
+1. **看是不是只在窄视口复现**：是 → 走 B 路径（内容溢出）；否 → 走 A 路径（padding 配对）。
+2. **找尾部图标属于哪一列**：多数时候是"上一列"的尾部节点（例如 Price 列里看到的 `↗` 其实是 Token cell 的 `AssetActionMenu`）。
+3. **A 路径**：检查该列的 `pr` 与下一列的 `pl` 之和是否 ≥ 10 px，并同步 header / body / skeleton。**B 路径**：把容器从 `inline-flex` 改成 `flex w-full min-w-0`，给文本 `truncate min-w-0`，其他元素 `shrink-0`，并给 cell 加 `overflow-hidden` 兜底。
+
+这两种根因能覆盖 95% 的"箭头/外链/chevron 撞到价格"问题，先分清 A 还是 B，再动手改。
+
+#### 测试防回归
+
+jsdom / `renderToString` 的单测**不会**真的跑布局，无法直接断言"元素没溢出"，但可以**结构性**锁定上述不变量（`overflow-hidden`、`flex w-full min-w-0`、`truncate`、`shrink-0`）不被后续重构误删。真正的像素级回归仍需 Playwright e2e 在目标视口截图或用 `getBoundingClientRect` 断言相邻元素间距。参考 `src/components/dashboard/DesktopReserveRow.test.tsx` 里的 *"keeps Token cell content from overflowing into the Price column at narrow widths"* 用例模板。
 
 ---
 
