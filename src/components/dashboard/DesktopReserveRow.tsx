@@ -266,7 +266,7 @@ const DesktopReserveRow = memo(({
           {formatUsd(reserve.tokenPrice)}
         </TableCell>
         {/* Market — 左侧留白更小，右侧与其余列统一 */}
-        <TableCell className="pl-[var(--ds-space-1)] pr-[var(--ds-space-2)] ds-row-pad text-center hidden md:table-cell">
+        <TableCell className="pl-[var(--ds-space-1)] pr-[var(--ds-space-2)] ds-row-pad text-center hidden md:table-cell min-w-[11.5rem]">
           <div className="flex items-center justify-center">
             <div className={marketCellClassNames.stack}>
               <div className={marketCellClassNames.marketShell}>

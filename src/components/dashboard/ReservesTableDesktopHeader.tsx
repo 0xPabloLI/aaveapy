@@ -372,7 +372,7 @@ export default function ReservesTableDesktopHeader({
             )}
           </button>
         </TableHead>
-        <TableHead className="pl-[var(--ds-space-0-5)] pr-[var(--ds-space-1)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-medium text-muted-foreground hidden md:table-cell">
+        <TableHead className="pl-[var(--ds-space-0-5)] pr-[var(--ds-space-1)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-medium text-muted-foreground hidden md:table-cell min-w-[11.5rem]">
           <div className="flex items-center justify-center">
             <button
               type="button"
