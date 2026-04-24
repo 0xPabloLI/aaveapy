@@ -1,5 +1,5 @@
 import { memo, useEffect, useState } from 'react';
-import { ListCollapse, Plus, Snowflake, X } from 'lucide-react';
+import { ListCollapse, Plus, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ReserveWithSpread } from '@/types/aave';
 import {
@@ -786,9 +786,11 @@ const MobileReserveCard = memo(({
                       ? 'Supply cap details'
                       : capSheet === 'borrow'
                         ? 'Borrow cap details'
-                        : capSheet === 'deficit'
-                          ? 'Deficit details'
-                          : 'Utilization'}
+                 : capSheet === 'deficit'
+                  ? 'Deficit details'
+                  : capSheet === 'frozen'
+                    ? 'Status: Frozen'
+                    : 'Utilization'}
                   </h3>
                   <button
                     type="button"
@@ -836,6 +838,7 @@ const MobileReserveCard = memo(({
                       poolExplorerUrl={buildPoolExplorerUrl(reserve.marketName)}
                     />
                   )}
+                  {capSheet === 'frozen' && <FrozenSheetContent />}
                 </div>
               </motion.div>
             </>
