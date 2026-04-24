@@ -233,9 +233,9 @@ const DesktopReserveRow = memo(({
               )}
             </button>
           )}
-          <div className="group/token inline-flex items-center justify-center gap-[var(--ds-space-1-5)]">
-            <TokenIcon symbol={iconSymbol} size={28} loading="eager" logoURI={logoURI} />
-            <span className="font-semibold text-foreground ds-text-13">
+          <div className="group/token inline-flex flex-wrap items-center justify-center gap-[var(--ds-space-1-5)]">
+            <TokenIcon symbol={iconSymbol} size={28} loading="eager" logoURI={logoURI} className="flex-shrink-0" />
+            <span className="font-semibold text-foreground ds-text-13 break-words">
               {reserve.tokenSymbol}
             </span>
             {reserve.isFrozenOrPaused && (
