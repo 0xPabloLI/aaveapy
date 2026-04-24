@@ -83,6 +83,17 @@
 - **叠层 sticky 表头 + 页面滚动**：若顶栏与 `<thead>` 均 `position: sticky` 且 `top` 意在相对**视口**叠放，**禁止**用包住整张表（含 `thead`）的 `overflow-x-auto` / `overflow: hidden` 等制造**独立 scrollport**，否则 `thead` 的 `top` 会相对该盒计算，与视口 sticky 错位（缝中大段空白、tbody 从缝露出）。**桌面展开 simulation 时**，主数据行各 `td` 须再叠一层 sticky（`--reserves-expanded-main-row-top`），避免长 simulation 滚动时 Token/市场行消失。本项目细则见 **[frontend-interaction-guardrails.md](frontend-interaction-guardrails.md)** § *Desktop reserves table: sticky stack and scrollport (normative)* 与 *DOM contract / CSS variables*。
 - **对称**：成对出现的区块（如 Supply / Borrow）在布局与视觉权重上保持对称。
 
+### 4.1 相邻单元格的自适应留白（跨列呼吸空间）
+
+密集数据表里的"图标/箭头看起来压到下一列"几乎从不是对齐 bug，而是 padding 配对失衡。强制规则：
+
+1. **尾部图标属于它所在的列**。`AssetActionMenu`、外链 `↗`、溢出菜单触发器、展开 chevron 等渲染在单元格末尾的元素，视觉上会探进下一列；解决方案是在**它所在列**增加 `pr`，而不是在邻列掩盖。
+2. **成对 padding（pairwise padding）**：当一列以尾部图标结束、下一列以数字/价格/芯片开头时，两侧必须同时贡献留白——典型配对是 `pr-[var(--ds-space-2)]` + `pl-[var(--ds-space-1-5)]`，给出 ≥10 px 可见间距。**不要**把所有负担压到单侧（既会压扁图标，也会扰动整张表的列宽预算）。
+3. **表头可以比行体更紧**：表头列没有尾部图标，`pr`/`pl` 可以比行体小一档；但当两列都带排序箭头 `↓` 时，相邻列之间至少保留一档 `pr-[var(--ds-space-1)]`，否则两个箭头会读起来像同一个符号。
+4. **Header / Body / Skeleton 必须同步修改**。只改表头（或只改行体）一定会回归——静态截图看似对齐，一旦真实数据/图标渲染出来就破形。
+5. **优先"两端各让一点"，少做单边大跳**。在固定 `table-fixed` + 百分比列宽的栅格里，单侧把 `px-0.5` 直接跳到 `px-3` 会把邻列挤偏；相邻两列各上升一档通常更稳。
+6. **诊断顺序**：先看图标属于哪一列（多数时候是"上一列"的尾部节点）→ 再看该列的 `pr` 与下一列的 `pl` 之和 → 最后再看图标自身是否需要 `mr` / `shrink-0`。用这顺序走一次，80% 的"箭头/外链/chevron 撞到价格" issue 都能一次性定位到真实代码现场。
+
 ---
 
 ## 5. 开关与选择控件（Toggle / Segmented / Chips）

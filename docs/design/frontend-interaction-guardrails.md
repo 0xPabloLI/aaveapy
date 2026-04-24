@@ -390,15 +390,32 @@ Sticky scenario + sticky `<thead>` and **scrollport** constraints are **normativ
 | Spread  | 12%   | |
 | Borrow  | 14.5% | |
 
-**Cell padding (horizontal):**
+**Cell padding (horizontal):** — *body cells are looser than header cells because body rows carry trailing action icons (e.g. `AssetActionMenu` in Token cell) that must not kiss the next column.*
 
-- **Token**: `pl-[var(--ds-space-1-5)] pr-[var(--ds-space-0-5)]` — tight right so Token and Price sit close.
-- **Price**: `px-[var(--ds-space-0-5)]` — minimal so Price/Market gap stays small.
-- **Market**: `pl-[var(--ds-space-0-5)] pr-[var(--ds-space-1)]` — tight left; right bridges to Size.
-- **Size, Utilization, Supply, Spread**: `px-[var(--ds-space-1-5)]` — uniform.
-- **Borrow**: `pl-[var(--ds-space-1-5)] pr-[var(--ds-space-2)]` — right keeps a small outer margin.
+Header (`ReservesTableDesktopHeader.tsx`):
 
-Keep header, body, and skeleton row padding in sync so alignment and spacing stay consistent.
+- **Token**: `pl-[var(--ds-space-2)] pr-[var(--ds-space-1)]`
+- **Price**: `pl-[var(--ds-space-1-5)] pr-[var(--ds-space-0-5)]`
+- **Market**: `pl-[var(--ds-space-0-5)] pr-[var(--ds-space-1)]`
+- **Size, Utilization, Supply, Spread**: `px-[var(--ds-space-1-5)]`
+- **Borrow**: `pl-[var(--ds-space-1-5)] pr-[var(--ds-space-1-5)]`
+
+Body (`DesktopReserveRow.tsx`):
+
+- **Token**: `pl-[var(--ds-space-2)] pr-[var(--ds-space-2)]` — right padding kept at `space-2` so `AssetActionMenu` (↗) never bumps the Price value.
+- **Price**: `pl-[var(--ds-space-1-5)] pr-[var(--ds-space-1)]` — left `space-1-5` pairs with Token's `pr-space-2` to create ≥10 px breathing room around the trailing icon.
+- **Market**: `pl-[var(--ds-space-1)] pr-[var(--ds-space-2)]`
+- **Size, Utilization, Supply, Spread**: `px-[var(--ds-space-2)]`
+- **Borrow**: `pl-[var(--ds-space-2)] pr-[var(--ds-space-2)]`
+
+**Pairwise padding rule (mandatory)** — when a cell contains a trailing icon (external-link, overflow-menu trigger, chevron) and the adjacent cell starts with tabular digits (price, percent, size), **both** must contribute padding. Do **not** try to solve the overlap by padding only one side; the side with the icon needs `pr ≥ space-2`, and the receiving side needs `pl ≥ space-1-5`. Header padding may remain slightly tighter than body padding (headers have no trailing icons), but Token header's `pr` must still be ≥ `space-1` so the column's sort arrow `↓` does not visually merge with the next header's arrow.
+
+**Diagnosis workflow when an icon/arrow "overlaps" an adjacent column:**
+
+1. Identify which cell the icon lives in (the overlap is usually a *trailing* element of the previous column, not the column it appears over).
+2. Inspect that column's `pr-*` and the next column's `pl-*`; the sum determines the visible gap.
+3. Prefer raising both sides by one step over a single big bump — keeps the global column width budget stable and avoids pushing the Market/Size blocks.
+4. Update header **and** body **and** any skeleton row together; header-only fixes look correct at rest but regress the moment data renders.
 
 ### Borrow availability constraint
 
