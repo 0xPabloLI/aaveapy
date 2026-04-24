@@ -30,10 +30,9 @@ const categories: { value: TokenCategory; label: string }[] = [
   { value: 'pendle', label: 'Pendle' },
 ];
 
-const ChainIcon = memo(({ chain, className = "" }: { chain: string; className?: string }) => {
-  const size = "w-3.5 h-3.5";
+const ChainIcon = memo(({ chain, className = '' }: { chain: string; className?: string }) => {
+  const size = 'w-3.5 h-3.5';
   const src = getChainIconSrc(chain);
-
   if (!src) {
     return (
       <div className={`${size} rounded-full bg-current opacity-40 flex items-center justify-center ds-text-8 font-semibold`}>
@@ -41,16 +40,9 @@ const ChainIcon = memo(({ chain, className = "" }: { chain: string; className?: 
       </div>
     );
   }
-
-  return (
-    <img
-      src={src}
-      alt={`${chain} logo`}
-      className={`${size} ${className}`}
-      loading="lazy"
-    />
-  );
+  return <img src={src} alt={`${chain} logo`} className={`${size} ${className}`} loading="lazy" />;
 });
+ChainIcon.displayName = 'ChainIcon';
 
 /** Group markets by chainName, preserving Ethereum first, then alphabetical. */
 interface ChainGroup {
@@ -229,7 +221,7 @@ const FilterBar = ({
       } else {
         newPlaceholder = 'Search';
       }
-      setSearchPlaceholder(prev => prev !== newPlaceholder ? newPlaceholder : prev);
+      setSearchPlaceholder((prev) => (prev !== newPlaceholder ? newPlaceholder : prev));
     };
 
     const debouncedUpdate = () => {
@@ -276,7 +268,7 @@ const FilterBar = ({
                 setSelectedCategory(category.value);
               }
             }}
-            className={`inline-flex items-center justify-center h-7 px-2 rounded-md ds-text-11 font-normal transition-colors ${
+            className={`inline-flex items-center justify-center h-7 px-2 rounded-md ds-text-11 font-medium transition-colors ${
               selectedCategory === category.value
                 ? 'bg-card text-foreground shadow-sm border border-[rgb(var(--ds-brand-magenta-rgb))]'
                 : 'bg-card/50 text-muted-foreground hover:text-foreground hover:bg-card/80 border border-border/40'
@@ -306,22 +298,6 @@ const FilterBar = ({
             </button>
           )}
         </div>
-
-        {setShowFrozenOrPaused && (
-          <button
-            type="button"
-            onClick={() => setShowFrozenOrPaused(!showFrozenOrPaused)}
-            className={`inline-flex items-center gap-1 h-7 px-2.5 rounded-md ds-text-11 font-medium transition-colors ${
-              showFrozenOrPaused
-                ? 'bg-sky-500/15 text-sky-600 shadow-sm border border-sky-400/50'
-                : 'bg-card/50 text-muted-foreground hover:text-foreground hover:bg-card/80 border border-border/40'
-            }`}
-            title={showFrozenOrPaused ? 'Hide frozen/paused assets' : 'Show frozen/paused assets'}
-          >
-            <Snowflake className="w-3 h-3" />
-            <span className="hidden sm:inline">Frozen</span>
-          </button>
-        )}
 
         <div className="flex-1 min-w-2 md:min-w-4 hidden md:block" />
 
@@ -364,7 +340,7 @@ const FilterBar = ({
         {/* "All" button */}
         <button
           onClick={handleAllClick}
-          className={`ds-chip px-2 md:px-2.5 py-1 rounded-md font-normal transition-colors ${
+          className={`ds-chip px-2 md:px-2.5 py-1 rounded-md font-medium transition-colors ${
             noMarketsSelected
               ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
               : 'text-foreground/80 border border-border hover:text-foreground'
@@ -391,7 +367,7 @@ const FilterBar = ({
             return (
               <div key={group.chainName} className="contents">
                 <div
-                  className={`ds-chip flex items-center rounded-md text-[10px] font-normal transition-colors overflow-hidden ${chipStyle}`}
+                  className={`ds-chip flex items-center rounded-md text-[10px] font-medium transition-colors overflow-hidden ${chipStyle}`}
                 >
                   {/* Left area: icon + chain name → toggles chain selection */}
                   <button
@@ -419,40 +395,41 @@ const FilterBar = ({
                 </div>
 
                 {/* Sub-market chips – animated expand */}
-                {expanded && group.markets
-                  .slice()
-                  .sort((a, b) => {
-                    const aVersion = getProtocolVersion(a.marketName);
-                    const bVersion = getProtocolVersion(b.marketName);
-                    // V4 markets first
-                    if (aVersion === 'v4' && bVersion !== 'v4') return -1;
-                    if (aVersion !== 'v4' && bVersion === 'v4') return 1;
-                    return 0;
-                  })
-                  .map((market) => {
-                  const isSubSelected = selectedMarkets.includes(market.marketName);
-                  const version = getProtocolVersion(market.marketName);
-                  const isV4 = version === 'v4';
-                  return (
-                    <button
-                      key={market.marketName}
-                      onClick={() => toggleSubMarket(market.marketName)}
-                      className={`ds-chip gap-0.5 px-1 md:px-1.5 py-0.5 rounded-md text-[10px] font-normal transition-colors ${
-                        isSubSelected
-                          ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
-                          : 'text-foreground/80 border border-border hover:text-foreground'
-                      }`}
-                      title={market.marketName}
-                    >
-                      {isV4 && (
-                        <span className="inline-flex items-center px-1 py-0 rounded-full text-[9px] font-normal leading-none text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10">
-                          V4
-                        </span>
-                      )}
-                      <span>{getEthSubMarketLabel(market)}</span>
-                    </button>
-                  );
-                })}
+                {expanded &&
+                  group.markets
+                    .slice()
+                    .sort((a, b) => {
+                      const aVersion = getProtocolVersion(a.marketName);
+                      const bVersion = getProtocolVersion(b.marketName);
+                      // V4 markets first
+                      if (aVersion === 'v4' && bVersion !== 'v4') return -1;
+                      if (aVersion !== 'v4' && bVersion === 'v4') return 1;
+                      return 0;
+                    })
+                    .map((market) => {
+                      const isSubSelected = selectedMarkets.includes(market.marketName);
+                      const version = getProtocolVersion(market.marketName);
+                      const isV4 = version === 'v4';
+                      return (
+                        <button
+                          key={market.marketName}
+                          onClick={() => toggleSubMarket(market.marketName)}
+                          className={`ds-chip gap-0.5 px-1 md:px-1.5 py-0.5 rounded-md text-[10px] font-medium transition-colors ${
+                            isSubSelected
+                              ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
+                              : 'text-foreground/80 border border-border hover:text-foreground'
+                          }`}
+                          title={market.marketName}
+                        >
+                          {isV4 && (
+                            <span className="inline-flex items-center px-1 py-0 rounded-full text-[9px] font-medium leading-none text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10">
+                              V4
+                            </span>
+                          )}
+                          <span>{getEthSubMarketLabel(market)}</span>
+                        </button>
+                      );
+                    })}
               </div>
             );
           }
@@ -462,7 +439,7 @@ const FilterBar = ({
             <button
               key={group.chainName}
               onClick={() => handleOtherChainClick(group)}
-              className={`ds-chip gap-0.5 px-1 md:px-1.5 py-0.5 rounded-md text-[10px] font-normal transition-colors ${
+              className={`ds-chip gap-0.5 px-1 md:px-1.5 py-0.5 rounded-md text-[10px] font-medium transition-colors ${
                 selected
                   ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
                   : 'text-foreground/80 border border-border hover:text-foreground'
@@ -475,6 +452,26 @@ const FilterBar = ({
           );
         })}
       </div>
+
+      {/* Row 4: Frozen/paused toggle – at row bottom for visibility */}
+      {setShowFrozenOrPaused && (
+        <div className="flex items-center gap-1.5">
+          <span className="ds-text-11 text-muted-foreground/70 hidden sm:inline">Filter</span>
+          <button
+            type="button"
+            onClick={() => setShowFrozenOrPaused(!showFrozenOrPaused)}
+            className={`inline-flex items-center gap-1 h-6 px-2 rounded-md ds-text-11 font-medium transition-colors ${
+              showFrozenOrPaused
+                ? 'bg-sky-500/15 text-sky-600 shadow-sm border border-sky-400/50'
+                : 'bg-card/50 text-muted-foreground hover:text-foreground hover:bg-card/80 border border-border/40'
+            }`}
+            title={showFrozenOrPaused ? 'Hide frozen or paused assets' : 'Show frozen or paused assets'}
+          >
+            <Snowflake className="w-3 h-3" />
+            <span>{showFrozenOrPaused ? 'Including frozen assets' : 'Include frozen assets'}</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 };
