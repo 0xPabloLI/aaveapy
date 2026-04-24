@@ -299,8 +299,6 @@ const FilterBar = ({
           )}
         </div>
 
-        <div className="flex-1 min-w-2 md:min-w-4 hidden md:block" />
-
         {/* Include frozen/paused assets toggle – desktop only */}
         {setShowFrozenOrPaused && (
           <button
@@ -314,9 +312,11 @@ const FilterBar = ({
             title={showFrozenOrPaused ? 'Hide frozen or paused assets' : 'Show frozen or paused assets'}
           >
             <Snowflake className="w-3 h-3" />
-            <span className="hidden lg:inline">{showFrozenOrPaused ? 'Frozen included' : 'Include frozen'}</span>
+            <span className="hidden lg:inline">{showFrozenOrPaused ? 'Frozen assets included' : 'Include frozen assets'}</span>
           </button>
         )}
+
+        <div className="flex-1 min-w-2 md:min-w-4 hidden md:block" />
 
         {/* APR/APY toggle – desktop only */}
         <div className="hidden md:block">
