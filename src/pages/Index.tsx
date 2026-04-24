@@ -49,6 +49,7 @@ const Index = () => {
   const [selectedMarkets, setSelectedMarkets] = useState<string[]>([]);
 const [selectedCategory, setSelectedCategory] = useState<TokenCategory>("all");
   const [isApy, setIsApy] = useState(true);
+  const [showFrozenOrPaused, setShowFrozenOrPaused] = useState(false);
   const [showCacheWarning, setShowCacheWarning] = useState(false);
   
   const [isRateDragging, setIsRateDragging] = useState(false);
@@ -254,9 +255,14 @@ const [selectedCategory, setSelectedCategory] = useState<TokenCategory>("all");
         }
       }
 
+      // Frozen/Paused filter
+      if (!showFrozenOrPaused && reserve.isFrozenOrPaused) {
+        return false;
+      }
+
       return true;
     });
-  }, [effectiveReservesData?.reserves, searchQuery, selectedMarkets, selectedCategory, tokenCategoryGroups]);
+  }, [effectiveReservesData?.reserves, searchQuery, selectedMarkets, selectedCategory, tokenCategoryGroups, showFrozenOrPaused]);
 
   if (isLoading && !effectiveReservesData) {
     return <LoadingState />;
@@ -357,6 +363,8 @@ const [selectedCategory, setSelectedCategory] = useState<TokenCategory>("all");
               isApy={isApy}
               setIsApy={setIsApy}
               marketsList={effectiveMarketsList}
+              showFrozenOrPaused={showFrozenOrPaused}
+              setShowFrozenOrPaused={setShowFrozenOrPaused}
             />
 
             <ReservesTable

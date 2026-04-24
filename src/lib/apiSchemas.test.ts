@@ -189,6 +189,42 @@ describe('apiSchemas', () => {
     expect('totalRewardUsd' in (brevis ?? {})).toBe(true);
   });
 
+  it('accepts isFrozenOrPaused field on reserves', () => {
+    const parsed = MarketsResponseSchema.parse({
+      snapshot: {
+        lastUpdated: '2026-04-24T00:00:00.000Z',
+        version: '1.0.0',
+      },
+      reserves: [
+        {
+          reserveId: 'AaveV3Ethereum-0xfrozen',
+          marketName: 'AaveV3Ethereum',
+          chainName: 'Ethereum',
+          chainId: 1,
+          tokenName: 'Frozen Token',
+          tokenSymbol: 'FRZ',
+          tokenAddress: '0xfrozen',
+          isFrozenOrPaused: true,
+          supplyApy: 2.5,
+        },
+        {
+          reserveId: 'AaveV3Ethereum-0xnormal',
+          marketName: 'AaveV3Ethereum',
+          chainName: 'Ethereum',
+          chainId: 1,
+          tokenName: 'Normal Token',
+          tokenSymbol: 'NRM',
+          tokenAddress: '0xnormal',
+          supplyApy: 3.0,
+        },
+      ],
+    });
+
+    expect(parsed.reserves[0].isFrozenOrPaused).toBe(true);
+    expect(parsed.reserves[0].supplyDisabled).toBeUndefined();
+    expect(parsed.reserves[1].isFrozenOrPaused).toBeUndefined();
+  });
+
   it('normalizes grouped Brevis breakdowns from /markets into flat Brevis incentives', () => {
     const parsed = MarketsResponseSchema.parse({
       snapshot: {

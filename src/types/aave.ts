@@ -89,6 +89,7 @@ export interface ReserveWithSpread {
   // Availability flags
   supplyDisabled?: boolean;
   borrowDisabled?: boolean;
+  isFrozenOrPaused?: boolean;
   
   // Rate calculation fields (from /api/markets reserves)
   decimals?: number;

@@ -18,6 +18,8 @@ interface FilterBarProps {
   isApy: boolean;
   setIsApy: (isApy: boolean) => void;
   marketsList?: MarketListItem[];
+  showFrozenOrPaused?: boolean;
+  setShowFrozenOrPaused?: (value: boolean) => void;
 }
 
 const categories: { value: TokenCategory; label: string }[] = [
@@ -111,6 +113,8 @@ const FilterBar = ({
   isApy,
   setIsApy,
   marketsList,
+  showFrozenOrPaused,
+  setShowFrozenOrPaused,
 }: FilterBarProps) => {
   const isMobile = useIsMobile();
   const [searchPlaceholder, setSearchPlaceholder] = useState('Search token');
@@ -303,6 +307,20 @@ const FilterBar = ({
           )}
         </div>
 
+        {setShowFrozenOrPaused && (
+          <button
+            type="button"
+            onClick={() => setShowFrozenOrPaused(!showFrozenOrPaused)}
+            className={`inline-flex items-center justify-center h-7 px-2 rounded-md ds-text-11 font-medium transition-colors ${
+              showFrozenOrPaused
+                ? 'bg-card text-foreground shadow-sm border border-[rgb(var(--ds-brand-magenta-rgb))]'
+                : 'bg-card/50 text-muted-foreground hover:text-foreground hover:bg-card/80 border border-border/40'
+            }`}
+          >
+            Frozen
+          </button>
+        )}
+
         <div className="flex-1 min-w-2 md:min-w-4 hidden md:block" />
 
         {/* APR/APY toggle – desktop only */}
@@ -332,6 +350,19 @@ const FilterBar = ({
             </button>
           )}
         </div>
+        {setShowFrozenOrPaused && (
+          <button
+            type="button"
+            onClick={() => setShowFrozenOrPaused(!showFrozenOrPaused)}
+            className={`shrink-0 inline-flex items-center justify-center h-7 px-2 rounded-md ds-text-11 font-medium transition-colors ${
+              showFrozenOrPaused
+                ? 'bg-card text-foreground shadow-sm border border-[rgb(var(--ds-brand-magenta-rgb))]'
+                : 'bg-card/50 text-muted-foreground hover:text-foreground hover:bg-card/80 border border-border/40'
+            }`}
+          >
+            Frozen
+          </button>
+        )}
         <div className="shrink-0">
           <AprApyToggle isApy={isApy} setIsApy={setIsApy} />
         </div>
