@@ -48,8 +48,8 @@ ChainIcon.displayName = 'ChainIcon';
 const marketCellClassNames = {
   stack: 'flex max-w-none flex-col items-center justify-center gap-1.5',
   marketShell: 'group/market-link relative inline-flex max-w-full items-center justify-center pl-4 pr-4',
-  marketButton: 'inline-flex max-w-full items-center justify-center gap-[var(--ds-space-1-5)] rounded-[1.125rem] border border-border/60 bg-muted/45 px-[var(--ds-space-3-5)] py-[var(--ds-space-1-5)] text-foreground transition-all duration-150 hover:bg-muted/70 hover:border-border/80 active:scale-[0.98]',
-  marketText: 'whitespace-normal break-normal text-left min-w-0 ds-text-13 font-medium leading-tight',
+  marketButton: 'inline-flex items-center justify-center gap-[var(--ds-space-1-5)] rounded-full border border-border/60 bg-muted/45 px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] text-foreground transition-all duration-150 hover:bg-muted/70 hover:border-border/80 active:scale-[0.98]',
+  marketText: 'whitespace-nowrap ds-text-13 font-medium leading-tight',
   hubShell: 'group/hub-link relative inline-flex max-w-full items-center justify-center pl-3 pr-3',
   hubPill: 'inline-flex max-w-[8.5rem] items-center truncate whitespace-nowrap rounded-full px-2 py-0.5 ds-text-12 font-normal leading-none',
   hubPillV4: 'text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10 font-medium',
@@ -204,12 +204,12 @@ const DesktopReserveRow = memo(({
           isExpanded && 'bg-muted/30',
           isExpanded &&
             '[&_td]:sticky [&_td]:z-[25] [&_td]:border-b [&_td]:border-border/60 [&_td]:bg-card [&_td]:shadow-[0_1px_2px_0_rgb(0_0_0/0.04)] [&_td]:[top:var(--reserves-expanded-main-row-top,5.75rem)]',
-          reserve.isFrozenOrPaused && 'bg-sky-500/5',
+          reserve.isFrozenOrPaused && 'bg-sky-500/8',
         )}
         onClick={() => onToggleExpand(reserveId)}
       >
         {/* Token */}
-        <TableCell className="pl-[var(--ds-space-2)] pr-[var(--ds-space-1)] ds-row-pad text-center">
+        <TableCell className="pl-[var(--ds-space-2)] pr-[var(--ds-space-2)] ds-row-pad text-center">
           <div className="inline-flex items-center justify-center gap-[var(--ds-space-2)]">
           {isPortfolioMode && onPortfolioToggle && (
             <button
@@ -262,11 +262,11 @@ const DesktopReserveRow = memo(({
           </div>
         </TableCell>
         {/* Price — 左右留白更小 */}
-        <TableCell className="px-[var(--ds-space-1)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell tabular-nums text-muted-foreground ds-text-13">
+        <TableCell className="pl-[var(--ds-space-1-5)] pr-[var(--ds-space-1)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell tabular-nums text-muted-foreground ds-text-13">
           {formatUsd(reserve.tokenPrice)}
         </TableCell>
         {/* Market — 左侧留白更小，右侧与其余列统一 */}
-        <TableCell className="pl-[var(--ds-space-1)] pr-[var(--ds-space-2)] ds-row-pad text-center hidden md:table-cell min-w-[11.5rem]">
+        <TableCell className="pl-[var(--ds-space-1)] pr-[var(--ds-space-2)] ds-row-pad text-center hidden md:table-cell">
           <div className="flex items-center justify-center">
             <div className={marketCellClassNames.stack}>
               <div className={marketCellClassNames.marketShell}>

@@ -87,6 +87,7 @@
     --ds-amber-100-rgb: 254 243 199;
     --ds-amber-300-rgb: 252 211 77;
     --ds-blue-500-rgb: 59 130 246;
+    --ds-sky-500-rgb: 14 165 233;
     --ds-brand-cyan-rgb: 26 163 199;
     --ds-brand-magenta-rgb: 194 66 177;
     --ds-on-brand-rgb: 255 255 255;
@@ -398,6 +399,10 @@
 
   .ds-bg-blue-500-10 {
     background-color: rgb(var(--ds-blue-500-rgb) / 0.1);
+  }
+
+  .ds-bg-sky-500-8 {
+    background-color: rgb(var(--ds-sky-500-rgb) / 0.08);
   }
 
   .ds-bg-teal-500-10 {

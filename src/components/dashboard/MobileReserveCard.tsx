@@ -521,7 +521,7 @@ const MobileReserveCard = memo(({
     <div data-reserve-id={reserveId} className={isSimulationExpanded && !showUpperOnly ? 'shadow-sm rounded-xl border border-border/60 bg-card' : ''}>
       {/* Card upper part */}
       <div
-        className={`bg-card py-3 transition-all duration-300 ${reserve.isFrozenOrPaused ? 'bg-sky-500/5 ' : ''}${
+        className={`bg-card py-3 transition-all duration-300 ${reserve.isFrozenOrPaused ? 'bg-sky-500/8 ' : ''}${
           isSimulationExpanded && !showUpperOnly
             ? 'rounded-t-xl rounded-b-none'
             : connectedBelow
