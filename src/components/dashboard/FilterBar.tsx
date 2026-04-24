@@ -254,7 +254,7 @@ const FilterBar = ({
 
   return (
     <div className="space-y-2 md:space-y-2.5">
-      {/* Row 1: Token Categories + Search + APY Toggle */}
+      {/* Row 1: Token Categories + Search + Frozen Toggle + APY Toggle */}
       <div className="flex flex-wrap items-center gap-1.5 md:gap-2">
         <span className="ds-text-11 text-muted-foreground/70 hidden sm:inline">Tokens</span>
 
@@ -301,13 +301,30 @@ const FilterBar = ({
 
         <div className="flex-1 min-w-2 md:min-w-4 hidden md:block" />
 
+        {/* Include frozen/paused assets toggle – desktop only */}
+        {setShowFrozenOrPaused && (
+          <button
+            type="button"
+            onClick={() => setShowFrozenOrPaused(!showFrozenOrPaused)}
+            className={`hidden md:inline-flex items-center gap-1 h-7 px-2 rounded-md ds-text-11 font-medium transition-colors ${
+              showFrozenOrPaused
+                ? 'bg-sky-500/15 text-sky-600 shadow-sm border border-sky-400/50'
+                : 'bg-card/50 text-muted-foreground hover:text-foreground hover:bg-card/80 border border-border/40'
+            }`}
+            title={showFrozenOrPaused ? 'Hide frozen or paused assets' : 'Show frozen or paused assets'}
+          >
+            <Snowflake className="w-3 h-3" />
+            <span className="hidden lg:inline">{showFrozenOrPaused ? 'Frozen included' : 'Include frozen'}</span>
+          </button>
+        )}
+
         {/* APR/APY toggle – desktop only */}
         <div className="hidden md:block">
           <AprApyToggle isApy={isApy} setIsApy={setIsApy} />
         </div>
       </div>
 
-      {/* Row 2: Search + APR/APY toggle – mobile only */}
+      {/* Row 2: Search + APR/APY toggle + Frozen toggle – mobile only */}
       <div className="flex items-center gap-1.5 md:hidden">
         <div className="relative flex-1 min-w-0">
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
@@ -328,6 +345,23 @@ const FilterBar = ({
             </button>
           )}
         </div>
+
+        {/* Include frozen/paused assets toggle – mobile only */}
+        {setShowFrozenOrPaused && (
+          <button
+            type="button"
+            onClick={() => setShowFrozenOrPaused(!showFrozenOrPaused)}
+            className={`shrink-0 inline-flex items-center justify-center gap-1 h-7 w-7 rounded-md transition-colors ${
+              showFrozenOrPaused
+                ? 'bg-sky-500/15 text-sky-600 shadow-sm border border-sky-400/50'
+                : 'bg-card/50 text-muted-foreground hover:text-foreground hover:bg-card/80 border border-border/40'
+            }`}
+            title={showFrozenOrPaused ? 'Hide frozen or paused assets' : 'Show frozen or paused assets'}
+          >
+            <Snowflake className="w-3.5 h-3.5" />
+          </button>
+        )}
+
         <div className="shrink-0">
           <AprApyToggle isApy={isApy} setIsApy={setIsApy} />
         </div>
@@ -452,26 +486,6 @@ const FilterBar = ({
           );
         })}
       </div>
-
-      {/* Row 4: Frozen/paused toggle – at row bottom for visibility */}
-      {setShowFrozenOrPaused && (
-        <div className="flex items-center gap-1.5">
-          <span className="ds-text-11 text-muted-foreground/70 hidden sm:inline">Filter</span>
-          <button
-            type="button"
-            onClick={() => setShowFrozenOrPaused(!showFrozenOrPaused)}
-            className={`inline-flex items-center gap-1 h-6 px-2 rounded-md ds-text-11 font-medium transition-colors ${
-              showFrozenOrPaused
-                ? 'bg-sky-500/15 text-sky-600 shadow-sm border border-sky-400/50'
-                : 'bg-card/50 text-muted-foreground hover:text-foreground hover:bg-card/80 border border-border/40'
-            }`}
-            title={showFrozenOrPaused ? 'Hide frozen or paused assets' : 'Show frozen or paused assets'}
-          >
-            <Snowflake className="w-3 h-3" />
-            <span>{showFrozenOrPaused ? 'Including frozen assets' : 'Include frozen assets'}</span>
-          </button>
-        </div>
-      )}
     </div>
   );
 };
