@@ -37,6 +37,7 @@ const PortfolioModeToggle = memo(function PortfolioModeToggle({
         onCheckedChange={(checked) =>
           onModeChange(checked ? 'portfolio' : 'single')
         }
+        className="data-[state=checked]:bg-foreground/80 data-[state=unchecked]:bg-muted-foreground/30"
       />
       <div className="flex items-center gap-1">
         <span
