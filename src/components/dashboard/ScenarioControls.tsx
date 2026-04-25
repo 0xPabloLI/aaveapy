@@ -374,9 +374,12 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
               onClick={() => setSupplyInput('')}
               disabled={!supplyInput.trim()}
               className={cn(
-                'ds-btn-secondary gap-1.5 px-[var(--ds-space-2-5)]',
+                'shrink-0 rounded-md transition-colors inline-flex items-center justify-center gap-1.5 px-[var(--ds-space-2-5)] min-w-0',
                 controlH,
                 fontSize,
+                supplyInput.trim()
+                  ? 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
+                  : 'text-muted-foreground/35 cursor-not-allowed',
               )}
               aria-label="Clear supply amount"
             >
@@ -401,9 +404,12 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
               onClick={() => setBorrowInput('')}
               disabled={!borrowInput.trim()}
               className={cn(
-                'ds-btn-secondary gap-1.5 px-[var(--ds-space-2-5)]',
+                'shrink-0 rounded-md transition-colors inline-flex items-center justify-center gap-1.5 px-[var(--ds-space-2-5)] min-w-0',
                 controlH,
                 fontSize,
+                borrowInput.trim()
+                  ? 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
+                  : 'text-muted-foreground/35 cursor-not-allowed',
               )}
               aria-label="Clear borrow amount"
             >
