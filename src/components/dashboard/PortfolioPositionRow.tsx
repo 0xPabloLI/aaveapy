@@ -2,11 +2,12 @@
  * PortfolioPositionRow — a single position card inside the portfolio panel.
  */
 import { memo } from 'react';
-import { Minus, Eraser } from 'lucide-react';
+import { Trash2, Eraser } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatNumberInput } from '@/lib/numberFormat';
 import { cnDsInputSurface } from '@/lib/dsInputSurface';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
+import { useIsMobile } from '@/hooks/use-mobile';
 import type { PortfolioPosition, PortfolioInputMode } from '@/types/portfolio';
 
 interface PortfolioPositionRowProps {
@@ -22,6 +23,7 @@ const PortfolioPositionRow = memo(function PortfolioPositionRow({
   onUpdateAmount,
   onUpdateInputMode,
 }: PortfolioPositionRowProps) {
+  const isMobile = useIsMobile();
   const isBorrow = position.side === 'borrow';
   const sideLabel = isBorrow ? 'Borrow' : 'Supply';
   const sideColor = isBorrow ? 'ds-text-brand-cyan' : 'ds-text-emerald-600';
@@ -37,7 +39,7 @@ const PortfolioPositionRow = memo(function PortfolioPositionRow({
         className="shrink-0 rounded-md p-1 text-muted-foreground/60 transition-colors hover:bg-destructive/10 hover:text-destructive"
         aria-label={`Remove ${position.tokenSymbol} ${sideLabel}`}
       >
-        <Minus className="size-3.5" aria-hidden />
+        <Trash2 className="size-3.5" aria-hidden />
       </button>
 
       {/* Token info */}
@@ -93,16 +95,18 @@ const PortfolioPositionRow = memo(function PortfolioPositionRow({
           aria-label={`${sideLabel} amount for ${position.tokenSymbol}`}
         />
         {/* Clear amount */}
-        {position.amount && (
-          <button
-            type="button"
-            onClick={() => onUpdateAmount(position.positionId, '')}
-            className="shrink-0 rounded-md p-1 text-muted-foreground/60 transition-colors hover:text-foreground"
-            aria-label={`Clear ${position.tokenSymbol} amount`}
-          >
-            <Eraser className="size-3" aria-hidden />
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={() => onUpdateAmount(position.positionId, '')}
+          className={cn(
+            'shrink-0 rounded-md p-1 text-muted-foreground/60 transition-colors hover:text-foreground',
+            !isMobile && 'flex items-center gap-0.5 px-1.5',
+          )}
+          aria-label={`Clear ${position.tokenSymbol} amount`}
+        >
+          <Eraser className="size-3" aria-hidden />
+          {!isMobile && <span className="ds-text-10 font-medium">Clear</span>}
+        </button>
       </div>
     </div>
   );

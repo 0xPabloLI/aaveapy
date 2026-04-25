@@ -1,5 +1,5 @@
 import { useState, useEffect, memo, forwardRef, useImperativeHandle, useCallback } from 'react';
-import { SlidersHorizontal, Trash2 } from 'lucide-react';
+import { SlidersHorizontal, Eraser } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatNumberInput } from '@/lib/numberFormat';
 import { DS_NATIVE_CHECKBOX_CLASS } from '@/lib/dsNativeCheckbox';
@@ -248,7 +248,7 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
                 className={cn(clearBtnMobileStyle, 'shrink-0')}
                 aria-label="Clear supply and borrow scenario inputs"
               >
-                <Trash2 className="size-[18px] shrink-0" aria-hidden />
+                <Eraser className="size-[18px] shrink-0" aria-hidden />
               </button>
             </div>
             {showMeritMerklMode ? (
@@ -368,6 +368,17 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
 
           {/* Controls Section - When it wraps, it will start under Supply because it's in the same flex-wrap container */}
           <div className="flex items-center gap-3 shrink-0">
+            <button
+              type="button"
+              onClick={() => { setSupplyInput(''); setBorrowInput(''); }}
+              disabled={!hasInput}
+              className={`${clearBtnBase} ${clearBtnState}`}
+              aria-label="Clear scenario inputs"
+            >
+              <Eraser className="size-3.5 shrink-0" aria-hidden />
+              <span>Clear</span>
+            </button>
+
             {showMeritMerklMode ? (
               <IncentiveNetCheckboxTooltip
                 id={meritMerklCheckboxId}
@@ -377,17 +388,6 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
                 labelTextClassName={`${fontSize} min-w-0 leading-tight text-muted-foreground`}
               />
             ) : null}
-
-            <button
-              type="button"
-              onClick={() => { setSupplyInput(''); setBorrowInput(''); }}
-              disabled={!hasInput}
-              className={`${clearBtnBase} ${clearBtnState}`}
-              aria-label="Clear scenario inputs"
-            >
-              <Trash2 className="size-3.5 shrink-0" aria-hidden />
-              <span>Clear</span>
-            </button>
           </div>
         </div>
       </div>
