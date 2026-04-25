@@ -262,11 +262,7 @@ const DesktopReserveRow = memo(({
           </div>
           </div>
         </TableCell>
-        {/* Price */}
-        <TableCell className="ds-reserves-cell-td ds-row-pad whitespace-nowrap text-right hidden md:table-cell tabular-nums text-muted-foreground ds-text-13">
-          {formatUsd(reserve.tokenPrice)}
-        </TableCell>
-        {/* Market — 左侧留白更小，右侧与其余列统一 */}
+        {/* Market — DeFi/lending 协议表惯例：Asset → Market 紧贴 */}
         <TableCell className="ds-reserves-cell-td ds-row-pad text-center hidden md:table-cell">
           <div className="flex items-center justify-center">
             <div className={marketCellClassNames.stack}>
@@ -329,6 +325,10 @@ const DesktopReserveRow = memo(({
               )}
             </div>
           </div>
+        </TableCell>
+        {/* Price */}
+        <TableCell className="ds-reserves-cell-td ds-row-pad whitespace-nowrap text-right hidden md:table-cell tabular-nums text-muted-foreground ds-text-13">
+          {formatUsd(reserve.tokenPrice)}
         </TableCell>
         {/* Size (Supply + Borrow) */}
         <TableCell className="ds-reserves-cell-td ds-row-pad whitespace-nowrap text-center hidden md:table-cell tabular-nums ds-text-13">

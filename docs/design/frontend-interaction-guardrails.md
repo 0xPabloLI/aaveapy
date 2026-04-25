@@ -379,11 +379,13 @@ Sticky scenario + sticky `<thead>` and **scrollport** constraints are **normativ
 
 **Column order and widths (percentages, sum = 100%):**
 
+Column order follows the **DeFi/lending convention**: Asset → Network/Market sit adjacent (Aave UI / Compound / Spark / Morpho). The mental model is "*which token, on which market, at what price*" — Market belongs next to Token, not after Price.
+
 | Column  | Width | Notes |
 |---------|-------|--------|
 | Token   | 13%   | Left three columns kept slightly wider for readability |
+| Market  | 11.5% | Sits adjacent to Token (DeFi convention) |
 | Price   | 10.5% | |
-| Market  | 11.5% | |
 | Size    | 13%   | |
 | Utilization | 12%   | |
 | Supply  | 13.5% | Right three (Supply / Spread / Borrow) slightly tighter |
@@ -451,8 +453,8 @@ Utility classes (defined in `src/index.css`, must be used unchanged on every cel
 | Column | `<th>` / `<td>` | Inner flex | Sort arrow position |
 |---|---|---|---|
 | **Token** (identifier) | `text-left` | `flex w-full justify-start`; `group/token … justify-start` | label right (`<span>Token</span> ↓`) |
-| **Price** (tabular num) | `text-right` | — | label left (`↓ <span>Price</span>`) |
 | **Market** (chip) | `text-center` | `flex justify-center` (unchanged) | label right (default) |
+| **Price** (tabular num) | `text-right` | — | label left (`↓ <span>Price</span>`) |
 | **Size** (num + ring) | `text-center` | `flex flex-col items-center` (unchanged) | dropdown chip (no arrow) |
 | **Utilization** (num + bar) | `text-center` | `inline-flex justify-center` (unchanged) | dropdown chip (no arrow) |
 | **Supply** (APY + incentive) | `text-right` | `flex flex-col items-end`; secondary row `justify-end` | dropdown chip; outer `flex justify-end` |

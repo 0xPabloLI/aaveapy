@@ -246,11 +246,13 @@ L1 / L2 / L3 / L4 + 安全网在 reserves table 的具体执行细则见 [`front
 
 reserves desktop table 的 8 列对齐分配：
 
+列顺序遵循 **DeFi/lending 协议表惯例**（Asset → Network/Market 紧贴 — 参考 Aave UI / Compound / Spark / Morpho — Market 紧贴 Asset 帮助用户先建立"在哪条链上交易这个 token"的心智）：
+
 | 列 | 对齐 | 内容 |
 |---|---|---|
 | Token | **left** | identifier (symbol + icon) |
-| Price | **right** | tabular number |
 | Market | center | chain chip |
+| Price | **right** | tabular number |
 | Size | center | 数字 + 进度环 |
 | Utilization | center | 数字 + bar chart |
 | Supply | **right** | APY 主数字 + incentive chip |

@@ -350,28 +350,6 @@ export default function ReservesTableDesktopHeader({
             )}
           </button>
         </TableHead>
-        <TableHead className="ds-reserves-cell-th py-[var(--ds-space-3)] text-right ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
-          <button
-            type="button"
-            onClick={onSortPrice}
-            className={`ds-chip-heading md:ds-text-16 gap-[var(--ds-space-1)] transition-all duration-200 ml-auto ${
-              activeSortColumn === 'price'
-                ? 'text-foreground font-bold scale-105'
-                : 'text-muted-foreground hover:text-foreground/80'
-            }`}
-          >
-            {activeSortColumn === 'price' ? (
-              priceSortOrder === 'desc' ? (
-                <ArrowDown className="w-3 h-3" />
-              ) : (
-                <ArrowUp className="w-3 h-3" />
-              )
-            ) : (
-              <ArrowDown className="w-3 h-3 opacity-50" />
-            )}
-            <span>Price</span>
-          </button>
-        </TableHead>
         <TableHead className="ds-reserves-cell-th py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-medium text-muted-foreground hidden md:table-cell">
           <div className="flex items-center justify-center">
             <button
@@ -395,6 +373,28 @@ export default function ReservesTableDesktopHeader({
               )}
             </button>
           </div>
+        </TableHead>
+        <TableHead className="ds-reserves-cell-th py-[var(--ds-space-3)] text-right ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
+          <button
+            type="button"
+            onClick={onSortPrice}
+            className={`ds-chip-heading md:ds-text-16 gap-[var(--ds-space-1)] transition-all duration-200 ml-auto ${
+              activeSortColumn === 'price'
+                ? 'text-foreground font-bold scale-105'
+                : 'text-muted-foreground hover:text-foreground/80'
+            }`}
+          >
+            {activeSortColumn === 'price' ? (
+              priceSortOrder === 'desc' ? (
+                <ArrowDown className="w-3 h-3" />
+              ) : (
+                <ArrowUp className="w-3 h-3" />
+              )
+            ) : (
+              <ArrowDown className="w-3 h-3 opacity-50" />
+            )}
+            <span>Price</span>
+          </button>
         </TableHead>
         <TableHead className="ds-reserves-cell-th py-[var(--ds-space-3)] ds-text-14 md:ds-text-16 font-semibold text-muted-foreground text-center hidden md:table-cell">
           <div className="flex items-center justify-center">

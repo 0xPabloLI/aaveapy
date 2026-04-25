@@ -301,9 +301,10 @@ function DesktopTableSkeleton() {
         {/* Table */}
         <table className="w-full table-fixed min-w-0">
           <colgroup>
+            {/* Order: Token → Market → Price → Size → Util → Supply → Spread → Borrow */}
             <col style={{ width: '13%' }} />
-            <col style={{ width: '10.5%' }} />
             <col style={{ width: '11.5%' }} />
+            <col style={{ width: '10.5%' }} />
             <col style={{ width: '13%' }} />
             <col style={{ width: '12%' }} />
             <col style={{ width: '13.5%' }} />
@@ -312,7 +313,7 @@ function DesktopTableSkeleton() {
           </colgroup>
           <thead>
             <tr className="border-b border-border/60">
-              {['Token', 'Price', 'Market', 'Size', 'Util', 'Supply', 'Spread', 'Borrow'].map((label, i) => (
+              {['Token', 'Market', 'Price', 'Size', 'Util', 'Supply', 'Spread', 'Borrow'].map((label, i) => (
                 <th key={label} className="py-[var(--ds-space-3)] text-center">
                   <Skeleton
                     variant={i === 5 || i === 7 ? 'gradient' : 'subtle'}
@@ -332,13 +333,13 @@ function DesktopTableSkeleton() {
                     <Skeleton variant="default" className={`h-4 rounded-md ${i % 2 === 0 ? 'w-10' : 'w-14'}`} />
                   </div>
                 </td>
+                {/* Market: chain chip (centered) */}
+                <td className="ds-reserves-cell-td py-[var(--ds-space-3)]">
+                  <Skeleton variant="subtle" className="h-6 w-20 rounded-full mx-auto" />
+                </td>
                 {/* Price (right-aligned) */}
                 <td className="ds-reserves-cell-td py-[var(--ds-space-3)]">
                   <Skeleton variant="subtle" className={`h-4 ml-auto rounded-md ${i % 2 === 0 ? 'w-14' : 'w-10'}`} />
-                </td>
-                {/* Market: chain chip */}
-                <td className="ds-reserves-cell-td py-[var(--ds-space-3)]">
-                  <Skeleton variant="subtle" className="h-6 w-20 rounded-full mx-auto" />
                 </td>
                 {/* Size: supply + borrow stacked */}
                 <td className="ds-reserves-cell-td py-[var(--ds-space-3)]">

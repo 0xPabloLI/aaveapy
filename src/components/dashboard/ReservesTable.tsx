@@ -1409,10 +1409,12 @@ const ReservesTable = ({
       */}
       <Table className="w-full table-fixed min-w-0" wrapperClassName="overflow-visible">
           <colgroup>
-            {/* 优化列宽分布：确保 Utilization 刚好撑开，平衡其他列 */}
+            {/* 列顺序：Token → Market → Price → ...（DeFi/lending 协议表惯例：
+             * Asset → Network/Market 紧贴，参考 Aave UI / Compound / Spark / Morpho）。
+             * 优化列宽分布：确保 Utilization 刚好撑开，平衡其他列 */}
             <col style={{ width: '13%' }} /> {/* Token */}
-            <col style={{ width: '10%' }} /> {/* Price */}
             <col style={{ width: '13.5%' }} /> {/* Market */}
+            <col style={{ width: '10%' }} /> {/* Price */}
             <col style={{ width: '12%' }} /> {/* Size */}
             <col style={{ width: '13%' }} /> {/* Utilization */}
             <col style={{ width: '12.5%' }} /> {/* Supply */}
