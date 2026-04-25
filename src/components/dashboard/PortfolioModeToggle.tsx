@@ -37,14 +37,14 @@ const PortfolioModeToggle = memo(function PortfolioModeToggle({
         onCheckedChange={(checked) =>
           onModeChange(checked ? 'portfolio' : 'single')
         }
-        className="data-[state=checked]:bg-foreground/80 data-[state=unchecked]:bg-muted-foreground/30"
+        className="data-[state=checked]:bg-[hsl(var(--brand-cyan))] data-[state=unchecked]:bg-muted-foreground/30"
       />
       <div className="flex items-center gap-1">
         <span
           className={cn(
             isMobile ? 'ds-text-10' : 'ds-text-12',
             'font-semibold transition-colors duration-200',
-            isPortfolio ? 'text-foreground' : 'text-muted-foreground',
+            isPortfolio ? 'text-[hsl(var(--brand-cyan))]' : 'text-muted-foreground',
           )}
         >
           Batch
@@ -54,7 +54,7 @@ const PortfolioModeToggle = memo(function PortfolioModeToggle({
             className={cn(
               'inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full px-1 ds-text-10 font-bold tabular-nums',
               isPortfolio
-                ? 'bg-foreground/10 text-foreground'
+                ? 'bg-[hsl(var(--brand-cyan)/0.15)] text-[hsl(var(--brand-cyan))]'
                 : 'bg-muted text-muted-foreground',
             )}
           >
