@@ -1247,16 +1247,14 @@ const ReservesTable = ({
         )}
       </div>
       {isPortfolioMode && portfolioPositions && portfolioActions && (
-        <Suspense fallback={<div className="h-20 rounded-xl bg-muted/50 animate-pulse" />}>
-          <PortfolioPanel
-            positions={portfolioPositions}
-            actions={portfolioActions}
-            reserves={reserves}
-            positionResults={portfolioResults}
-            summary={portfolioSummary}
-            snapshots={portfolioSnapshots}
-          />
-        </Suspense>
+        <PortfolioPanel
+          positions={portfolioPositions}
+          actions={portfolioActions}
+          reserves={reserves}
+          positionResults={portfolioResults}
+          summary={portfolioSummary}
+          snapshots={portfolioSnapshots}
+        />
       )}
     </div>
   );
