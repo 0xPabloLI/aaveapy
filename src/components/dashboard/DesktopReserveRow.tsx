@@ -425,14 +425,10 @@ const DesktopReserveRow = memo(({
           </div>
         </TableCell>
         {/* Utilization + Liquidity — right-aligned numeric column.
-         * 数字 stack 贴右；UtilizationIndicator (bar) 在数字左侧作为视觉前缀。
+         * 数字 stack 贴右；UtilizationIndicator (bar) 在数字右侧作为视觉后缀。
          * Bar 永远存在，不需要 placeholder。*/}
         <TableCell className="ds-reserves-cell-td ds-row-pad whitespace-nowrap text-right hidden md:table-cell tabular-nums ds-text-13">
           <div className="inline-flex items-center justify-end gap-[var(--ds-space-1-5)] w-full">
-            <UtilizationIndicator
-              current={displayUtilization}
-              optimal={simulation?.utilization.optimal ?? null}
-            />
             <div className="flex flex-col items-end gap-[var(--ds-space-0-5)]">
               <span className={displayUtilization != null && simulation?.utilization.optimal != null && displayUtilization > simulation.utilization.optimal ? 'text-amber-600' : 'text-foreground'}>
                 {formatPercent(displayUtilization)}
@@ -447,6 +443,10 @@ const DesktopReserveRow = memo(({
                 {formatScenarioSize(poolLiquidity, { inputMode, tokenPrice: displayTokenPrice, tokenSymbol: reserve.tokenSymbol })}
               </span>
             </div>
+            <UtilizationIndicator
+              current={displayUtilization}
+              optimal={simulation?.utilization.optimal ?? null}
+            />
           </div>
         </TableCell>
         {/* Supply */}
