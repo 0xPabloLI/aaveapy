@@ -347,7 +347,7 @@ const DesktopReserveRow = memo(({
                 triggerAriaLabel={`Supply cap details for ${reserve.tokenSymbol}`}
               />
             ) : (
-              <div className="inline-flex items-center gap-[var(--ds-space-1-5)] ds-text-emerald-500">
+              <div className="inline-flex items-center gap-[var(--ds-space-1-5)] ds-text-emerald-500 rounded-md py-0.5 pl-1 pr-0.5 -my-0.5">
                 <span className="font-medium tabular-nums">{supplySizeLabel}</span>
                 <span aria-hidden className="inline-block w-3 h-3 shrink-0" />
               </div>
@@ -366,7 +366,7 @@ const DesktopReserveRow = memo(({
                 triggerAriaLabel={`Borrow cap details for ${reserve.tokenSymbol}`}
               />
             ) : (
-              <div className="inline-flex items-center gap-[var(--ds-space-1-5)] ds-text-brand-cyan">
+              <div className="inline-flex items-center gap-[var(--ds-space-1-5)] ds-text-brand-cyan rounded-md py-0.5 pl-1 pr-0.5 -my-0.5">
                 <span className="font-medium tabular-nums">{borrowSizeLabel}</span>
                 <span aria-hidden className="inline-block w-3 h-3 shrink-0" />
               </div>
@@ -398,6 +398,7 @@ const DesktopReserveRow = memo(({
                       onClick={(event) => event.stopPropagation()}
                       className={cn(
                         'inline-flex items-center gap-1 ds-text-11 tabular-nums transition-colors',
+                        'rounded-md py-0.5 pl-1 pr-0.5 -my-0.5 hover:bg-muted/50',
                         deficitTextClass,
                         isNeutralDeficit ? 'hover:text-muted-foreground/70' : 'hover:text-amber-600',
                       )}
