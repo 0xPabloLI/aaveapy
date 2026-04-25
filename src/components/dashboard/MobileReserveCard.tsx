@@ -29,7 +29,8 @@ import {
   getReserveDeficitUsdAmount,
   hasReserveDeficit,
 } from '@/lib/deficit';
-import type { RateSimulationResult } from '@/hooks/useRateSimulation';
+import { RateSimulationResult } from '@/hooks/useRateSimulation';
+
 import { getPoolLiquidityUsd, getScenarioSupplySizeUsd, getTotalBorrowedUsd, getValidTokenPrice } from '@/lib/scenarioSize';
 import { buildPoolExplorerUrl } from '@/lib/poolExplorerLinks';
 import { buildAaveProHubUrl } from '@/lib/aaveLinks';
@@ -74,9 +75,7 @@ interface MobileReserveCardProps {
   /** Whether this reserve is already in the portfolio. */
   isInPortfolio?: boolean;
   /** Callback to add/remove from portfolio. */
-  onPortfolioToggle?: (reserveId: string, reserve: ReserveWithSpread) => void;
-  /** Callback from SimulationSubRow "Add to Portfolio" button. */
-  onAddToPortfolio?: (reserve: ReserveWithSpread, side: 'supply' | 'borrow') => void;
+  onPortfolioToggle?: (reserveId: string, reserve: ReserveWithSpread, side?: 'supply' | 'borrow') => void;
 }
 
 interface MobileReserveAmountRowProps {
@@ -384,7 +383,6 @@ const MobileReserveCard = memo(({
   isPortfolioMode,
   isInPortfolio,
   onPortfolioToggle,
-  onAddToPortfolio,
 }: MobileReserveCardProps) => {
   const [capSheet, setCapSheet] = useState<'supply' | 'borrow' | 'utilization' | 'deficit' | 'frozen' | null>(null);
   const [hasSimulationMounted, setHasSimulationMounted] = useState(isSimulationExpanded);
@@ -494,8 +492,6 @@ const MobileReserveCard = memo(({
           embeddedFromTop
           onCorrectSupplyInput={onCorrectSupplyInput}
           onCorrectBorrowInput={onCorrectBorrowInput}
-          showAddToPortfolio={isPortfolioMode}
-          onAddToPortfolio={onAddToPortfolio}
         />
       </div>
     );
@@ -547,9 +543,9 @@ const MobileReserveCard = memo(({
               aria-label={isInPortfolio ? `Remove ${reserve.tokenSymbol} from portfolio` : `Add ${reserve.tokenSymbol} to portfolio`}
             >
               {isInPortfolio ? (
-                <span className="ds-text-11 font-bold leading-none">✓</span>
+                <span className="ds-text-10 font-bold leading-none">✓</span>
               ) : (
-                <Plus className="h-3 w-3" />
+                <Plus className="h-2.5 w-2.5" />
               )}
             </button>
           )}
@@ -867,8 +863,6 @@ const MobileReserveCard = memo(({
                     embeddedFromTop
                     onCorrectSupplyInput={onCorrectSupplyInput}
                     onCorrectBorrowInput={onCorrectBorrowInput}
-                    showAddToPortfolio={isPortfolioMode}
-                    onAddToPortfolio={onAddToPortfolio}
                   />
                 </div>
               </div>

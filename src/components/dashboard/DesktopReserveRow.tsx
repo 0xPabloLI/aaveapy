@@ -27,6 +27,7 @@ import UtilizationIndicator from './UtilizationIndicator';
 import DeficitShieldIcon from './DeficitShieldIcon';
 import AssetActionMenu from './AssetActionMenu';
 import type { RateSimulationResult, ScenarioInputMode } from '@/hooks/useRateSimulation';
+
 import { getPoolLiquidityUsd, getScenarioSupplySizeUsd, getTotalBorrowedUsd, getValidTokenPrice } from '@/lib/scenarioSize';
 import { cn } from '@/lib/utils';
 
@@ -87,9 +88,7 @@ interface DesktopReserveRowProps {
   /** Whether this reserve is already in the portfolio. */
   isInPortfolio?: boolean;
   /** Callback to add/remove from portfolio. */
-  onPortfolioToggle?: (reserveId: string, reserve: ReserveWithSpread) => void;
-  /** Callback from SimulationSubRow "Add to Portfolio" button. */
-  onAddToPortfolio?: (reserve: ReserveWithSpread, side: 'supply' | 'borrow') => void;
+  onPortfolioToggle?: (reserveId: string, reserve: ReserveWithSpread, side?: 'supply' | 'borrow') => void;
 }
 
 const DesktopReserveRow = memo(({
@@ -119,7 +118,6 @@ const DesktopReserveRow = memo(({
   isPortfolioMode,
   isInPortfolio,
   onPortfolioToggle,
-  onAddToPortfolio,
 }: DesktopReserveRowProps) => {
   const [hasSimulationMounted, setHasSimulationMounted] = useState(isExpanded);
 
@@ -225,6 +223,7 @@ const DesktopReserveRow = memo(({
                   : 'border-border/60 text-muted-foreground/40 hover:border-primary/40 hover:text-primary/60',
               )}
               aria-label={isInPortfolio ? `Remove ${reserve.tokenSymbol} from portfolio` : `Add ${reserve.tokenSymbol} to portfolio`}
+              title={isInPortfolio ? 'Remove from portfolio' : 'Add to portfolio'}
             >
               {isInPortfolio ? (
                 <span className="ds-text-11 font-bold leading-none">✓</span>
@@ -557,8 +556,6 @@ const DesktopReserveRow = memo(({
                   inputMode={inputMode}
                   onCorrectSupplyInput={onCorrectSupplyInput}
                   onCorrectBorrowInput={onCorrectBorrowInput}
-                  showAddToPortfolio={isPortfolioMode}
-                  onAddToPortfolio={onAddToPortfolio}
                 />
               )}
             </div>

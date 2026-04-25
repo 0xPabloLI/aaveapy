@@ -29,7 +29,7 @@ const PortfolioModeToggle = memo(function PortfolioModeToggle({
     <label
       className={cn(
         'flex cursor-pointer select-none items-center gap-1.5',
-        isMobile && 'flex-col gap-0.5',
+        isMobile && !isPortfolio && 'flex-col gap-1',
       )}
     >
       <Switch
@@ -38,15 +38,16 @@ const PortfolioModeToggle = memo(function PortfolioModeToggle({
           onModeChange(checked ? 'portfolio' : 'single')
         }
       />
-      <span
-        className={cn(
-          'flex items-center gap-1',
-          isMobile ? 'ds-text-10' : 'ds-text-12',
-          'font-semibold transition-colors duration-200',
-          isPortfolio ? 'text-foreground' : 'text-muted-foreground',
-        )}
-      >
-        Batch
+      <div className="flex items-center gap-1">
+        <span
+          className={cn(
+            isMobile ? 'ds-text-10' : 'ds-text-12',
+            'font-semibold transition-colors duration-200',
+            isPortfolio ? 'text-foreground' : 'text-muted-foreground',
+          )}
+        >
+          Batch
+        </span>
         {positionCount > 0 && (
           <span
             className={cn(
@@ -59,7 +60,7 @@ const PortfolioModeToggle = memo(function PortfolioModeToggle({
             {positionCount}
           </span>
         )}
-      </span>
+      </div>
     </label>
   );
 });

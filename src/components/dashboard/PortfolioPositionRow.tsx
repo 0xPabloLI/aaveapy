@@ -2,7 +2,7 @@
  * PortfolioPositionRow — a single position card inside the portfolio panel.
  */
 import { memo } from 'react';
-import { Trash2 } from 'lucide-react';
+import { Minus, Eraser } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatNumberInput } from '@/lib/numberFormat';
 import { cnDsInputSurface } from '@/lib/dsInputSurface';
@@ -30,6 +30,16 @@ const PortfolioPositionRow = memo(function PortfolioPositionRow({
 
   return (
     <div className="flex items-center gap-2 rounded-lg border border-border/50 bg-card/80 px-2.5 py-2 transition-colors hover:border-border">
+      {/* Remove */}
+      <button
+        type="button"
+        onClick={() => onRemove(position.positionId)}
+        className="shrink-0 rounded-md p-1 text-muted-foreground/60 transition-colors hover:bg-destructive/10 hover:text-destructive"
+        aria-label={`Remove ${position.tokenSymbol} ${sideLabel}`}
+      >
+        <Minus className="size-3.5" aria-hidden />
+      </button>
+
       {/* Token info */}
       <div className="flex min-w-0 shrink-0 items-center gap-1.5">
         <TokenIcon symbol={position.tokenSymbol} size={20} />
@@ -82,17 +92,18 @@ const PortfolioPositionRow = memo(function PortfolioPositionRow({
           )}
           aria-label={`${sideLabel} amount for ${position.tokenSymbol}`}
         />
+        {/* Clear amount */}
+        {position.amount && (
+          <button
+            type="button"
+            onClick={() => onUpdateAmount(position.positionId, '')}
+            className="shrink-0 rounded-md p-1 text-muted-foreground/60 transition-colors hover:text-foreground"
+            aria-label={`Clear ${position.tokenSymbol} amount`}
+          >
+            <Eraser className="size-3" aria-hidden />
+          </button>
+        )}
       </div>
-
-      {/* Remove */}
-      <button
-        type="button"
-        onClick={() => onRemove(position.positionId)}
-        className="shrink-0 rounded-md p-1 text-muted-foreground/60 transition-colors hover:bg-destructive/10 hover:text-destructive"
-        aria-label={`Remove ${position.tokenSymbol} ${sideLabel}`}
-      >
-        <Trash2 className="size-3.5" aria-hidden />
-      </button>
     </div>
   );
 });

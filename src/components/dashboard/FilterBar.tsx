@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Search, X, ChevronRight, ChevronLeft, Snowflake } from 'lucide-react';
+import { Search, Eraser, ChevronRight, ChevronLeft, Snowflake } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { TokenCategory, MarketListItem, ETHEREUM_MARKET_NAMES } from '@/types/aave';
 import { getChainIconSrc } from '@/lib/chainIcons';
@@ -294,7 +294,7 @@ const FilterBar = ({
               onClick={() => setSearchQuery('')}
               className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
             >
-              <X className="w-3 h-3" />
+              <Eraser className="w-3 h-3" />
             </button>
           )}
         </div>
@@ -341,7 +341,7 @@ const FilterBar = ({
               onClick={() => setSearchQuery('')}
               className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
             >
-              <X className="w-3 h-3" />
+              <Eraser className="w-3 h-3" />
             </button>
           )}
         </div>

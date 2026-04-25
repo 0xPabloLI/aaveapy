@@ -30,7 +30,6 @@ interface ReservesTableMobileGridProps {
   isPortfolioMode?: boolean;
   portfolioReserveIds?: Set<string>;
   onPortfolioToggle?: (reserveId: string, reserve: ReserveWithSpread) => void;
-  onAddToPortfolio?: (reserve: ReserveWithSpread, side: 'supply' | 'borrow') => void;
 }
 
 function MobileReservesSkeletonGrid() {
@@ -88,7 +87,6 @@ export default function ReservesTableMobileGrid({
   isPortfolioMode,
   portfolioReserveIds,
   onPortfolioToggle,
-  onAddToPortfolio,
 }: ReservesTableMobileGridProps) {
   if (isLoading && reservesCount === 0) {
     return <MobileReservesSkeletonGrid />;
@@ -115,7 +113,6 @@ export default function ReservesTableMobileGrid({
       isPortfolioMode: isPortfolioMode ?? false,
       isInPortfolio: portfolioReserveIds?.has(id) ?? false,
       onPortfolioToggle,
-      onAddToPortfolio,
     });
 
     const leftCard = (

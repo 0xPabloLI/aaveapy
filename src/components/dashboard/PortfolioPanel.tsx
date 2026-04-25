@@ -12,7 +12,7 @@ import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation'
 import { normalizeTokenSymbolForSearch } from '@/lib/tokenSymbolNormalization';
 import { getReserveKey } from '@/lib/reserveKey';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
-import PortfolioPositionRow from './PortfolioPositionRow';
+import PortfolioTokenRow from './PortfolioTokenRow';
 import PortfolioSummaryCard from './PortfolioSummaryCard';
 import PortfolioResultsTable from './PortfolioResultsTable';
 
@@ -212,8 +212,24 @@ const PortfolioPanel = memo(function PortfolioPanel({
     return { a, b };
   }, [canCompare, compareIds, snapshots]);
 
-  const supplyPositions = positions.filter((p) => p.side === 'supply');
-  const borrowPositions = positions.filter((p) => p.side === 'borrow');
+  const groupedByReserve = useMemo(() => {
+    const map = new Map<string, { tokenSymbol: string; chainName: string; supply: PortfolioPosition | null; borrow: PortfolioPosition | null }>();
+    for (const p of positions) {
+      if (!map.has(p.reserveId)) {
+        map.set(p.reserveId, { tokenSymbol: p.tokenSymbol, chainName: p.chainName, supply: null, borrow: null });
+      }
+      const entry = map.get(p.reserveId)!;
+      if (p.side === 'supply') entry.supply = p;
+      else entry.borrow = p;
+    }
+    return map;
+  }, [positions]);
+
+  const handleRemoveToken = useCallback((reserveId: string) => {
+    for (const p of positions) {
+      if (p.reserveId === reserveId) actions.removePosition(p.positionId);
+    }
+  }, [actions, positions]);
 
   return (
     <div className="space-y-3">
@@ -230,11 +246,6 @@ const PortfolioPanel = memo(function PortfolioPanel({
             <span className="ds-text-14 font-semibold text-foreground">
               Batch
             </span>
-            {positions.length > 0 && (
-              <span className="rounded-full bg-primary/10 px-1.5 py-0.5 ds-text-10 font-bold tabular-nums text-primary">
-                {positions.length}
-              </span>
-            )}
           </div>
           <div className="flex items-center gap-1.5">
             {/* Save snapshot */}
@@ -360,46 +371,20 @@ const PortfolioPanel = memo(function PortfolioPanel({
             )}
           </div>
         ) : (
-          <div className="space-y-3">
-            {/* Supply section */}
-            {supplyPositions.length > 0 && (
-              <div className="space-y-1.5">
-                <span className="ds-text-10 font-semibold uppercase tracking-wide ds-text-emerald-600">
-                  Supply ({supplyPositions.length})
-                </span>
-                <div className="space-y-1">
-                  {supplyPositions.map((p) => (
-                    <PortfolioPositionRow
-                      key={p.positionId}
-                      position={p}
-                      onRemove={actions.removePosition}
-                      onUpdateAmount={actions.updateAmount}
-                      onUpdateInputMode={actions.updateInputMode}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Borrow section */}
-            {borrowPositions.length > 0 && (
-              <div className="space-y-1.5">
-                <span className="ds-text-10 font-semibold uppercase tracking-wide ds-text-brand-cyan">
-                  Borrow ({borrowPositions.length})
-                </span>
-                <div className="space-y-1">
-                  {borrowPositions.map((p) => (
-                    <PortfolioPositionRow
-                      key={p.positionId}
-                      position={p}
-                      onRemove={actions.removePosition}
-                      onUpdateAmount={actions.updateAmount}
-                      onUpdateInputMode={actions.updateInputMode}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
+          <div className="space-y-1.5">
+            {Array.from(groupedByReserve.entries()).map(([reserveId, entry]) => (
+              <PortfolioTokenRow
+                key={reserveId}
+                reserveId={reserveId}
+                tokenSymbol={entry.tokenSymbol}
+                chainName={entry.chainName}
+                supplyPosition={entry.supply}
+                borrowPosition={entry.borrow}
+                onRemove={handleRemoveToken}
+                onUpdateAmount={actions.updateAmount}
+                onUpdateInputMode={actions.updateInputMode}
+              />
+            ))}
           </div>
         )}
 

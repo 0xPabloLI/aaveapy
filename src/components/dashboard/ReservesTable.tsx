@@ -1151,36 +1151,45 @@ const ReservesTable = ({
     return new Set(portfolioPositions.map((p) => p.reserveId));
   }, [portfolioPositions]);
 
-  // Callback: toggle a reserve in/out of portfolio (adds as supply by default)
-  const handlePortfolioToggle = useCallback((reserveId: string, reserve: ReserveWithSpread) => {
+  // Callback: toggle a reserve in/out of portfolio (adds as specific side if provided, else defaults to supply)
+  const handlePortfolioToggle = useCallback((reserveId: string, reserve: ReserveWithSpread, side?: 'supply' | 'borrow') => {
     if (!portfolioActions) return;
-    if (portfolioReserveIds.has(reserveId)) {
-      // Remove all positions for this reserve
-      const toRemove = portfolioPositions?.filter((p) => p.reserveId === reserveId) ?? [];
-      toRemove.forEach((p) => portfolioActions.removePosition(p.positionId));
+
+    if (side) {
+      const existing = portfolioPositions?.find((p) => p.reserveId === reserveId && p.side === side);
+      if (existing) {
+        portfolioActions.removePosition(existing.positionId);
+      } else {
+        portfolioActions.addPosition({
+          reserveId,
+          marketName: reserve.marketName,
+          chainName: reserve.chainName,
+          tokenSymbol: reserve.tokenSymbol,
+          side,
+        });
+      }
     } else {
-      portfolioActions.addPosition({
-        reserveId,
-        marketName: reserve.marketName,
-        chainName: reserve.chainName,
-        tokenSymbol: reserve.tokenSymbol,
-        side: 'supply',
-      });
+      if (portfolioReserveIds.has(reserveId)) {
+        const toRemove = portfolioPositions?.filter((p) => p.reserveId === reserveId) ?? [];
+        toRemove.forEach((p) => portfolioActions.removePosition(p.positionId));
+      } else {
+        portfolioActions.addPosition({
+          reserveId,
+          marketName: reserve.marketName,
+          chainName: reserve.chainName,
+          tokenSymbol: reserve.tokenSymbol,
+          side: 'supply',
+        });
+        portfolioActions.addPosition({
+          reserveId,
+          marketName: reserve.marketName,
+          chainName: reserve.chainName,
+          tokenSymbol: reserve.tokenSymbol,
+          side: 'borrow',
+        });
+      }
     }
   }, [portfolioActions, portfolioPositions, portfolioReserveIds]);
-
-  // Callback: add from expanded simulation panel
-  const handleAddToPortfolio = useCallback((reserve: ReserveWithSpread, side: 'supply' | 'borrow') => {
-    if (!portfolioActions) return;
-    const reserveId = getReserveKey(reserve);
-    portfolioActions.addPosition({
-      reserveId,
-      marketName: reserve.marketName,
-      chainName: reserve.chainName,
-      tokenSymbol: reserve.tokenSymbol,
-      side,
-    });
-  }, [portfolioActions]);
 
   // Portfolio results computation (Phase 3)
   const { portfolioResults, portfolioSummary } = useMemo<{
@@ -1353,7 +1362,6 @@ const ReservesTable = ({
             isPortfolioMode={isPortfolioMode}
             portfolioReserveIds={portfolioReserveIds}
             onPortfolioToggle={handlePortfolioToggle}
-            onAddToPortfolio={handleAddToPortfolio}
           />
         </div>
         
@@ -1678,7 +1686,6 @@ const ReservesTable = ({
                   isPortfolioMode={isPortfolioMode}
                   isInPortfolio={portfolioReserveIds.has(reserveId)}
                   onPortfolioToggle={handlePortfolioToggle}
-                  onAddToPortfolio={handleAddToPortfolio}
                 />
               );
             })
