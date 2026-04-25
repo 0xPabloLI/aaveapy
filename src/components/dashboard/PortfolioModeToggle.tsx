@@ -1,8 +1,10 @@
 /**
- * PortfolioModeToggle — segmented "Single / Portfolio" toggle.
- * Matches AprApyToggle sizing and spec (DESIGN-SYSTEM-REFERENCE.md §5.1).
+ * PortfolioModeToggle — icon + label toggle switch for Single ↔ Portfolio mode.
+ * Visually distinct from segmented pills (USD/Token, APR/APY) to signal
+ * that it's a higher-level mode switch that changes the entire input bar.
  */
 import { memo } from 'react';
+import { Layers } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export type SimulationMode = 'single' | 'portfolio';
@@ -18,48 +20,44 @@ const PortfolioModeToggle = memo(function PortfolioModeToggle({
   onModeChange,
   positionCount = 0,
 }: PortfolioModeToggleProps) {
-  const segBase =
-    'px-3 py-1 rounded-md ds-text-12 font-semibold transition-all duration-200';
-  const segSelected =
-    'bg-card text-foreground shadow-sm border border-border/60';
-  const segUnselected =
-    'text-muted-foreground hover:text-foreground hover:bg-card/50';
+  const isPortfolio = mode === 'portfolio';
 
   return (
-    <div className="flex items-center gap-0.5 bg-muted/60 rounded-lg p-0.5 border border-border/40">
-      <button
-        type="button"
-        onClick={() => onModeChange('single')}
-        className={cn(segBase, mode === 'single' ? segSelected : segUnselected)}
-        aria-pressed={mode === 'single'}
-      >
-        Single
-      </button>
-      <button
-        type="button"
-        onClick={() => onModeChange('portfolio')}
+    <button
+      type="button"
+      role="switch"
+      aria-checked={isPortfolio}
+      aria-label="Toggle portfolio mode"
+      onClick={() => onModeChange(isPortfolio ? 'single' : 'portfolio')}
+      className={cn(
+        'group flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 ds-text-12 font-semibold transition-all duration-200',
+        'border',
+        isPortfolio
+          ? 'border-primary/40 bg-primary/10 text-primary shadow-sm shadow-primary/10'
+          : 'border-border/40 bg-transparent text-muted-foreground hover:text-foreground hover:bg-muted/40',
+      )}
+    >
+      <Layers
         className={cn(
-          segBase,
-          mode === 'portfolio' ? segSelected : segUnselected,
-          'relative',
+          'size-3.5 transition-colors duration-200',
+          isPortfolio ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground',
         )}
-        aria-pressed={mode === 'portfolio'}
-      >
-        Portfolio
-        {positionCount > 0 && (
-          <span
-            className={cn(
-              'ml-1 inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full px-1 ds-text-10 font-bold tabular-nums',
-              mode === 'portfolio'
-                ? 'bg-primary/15 text-primary'
-                : 'bg-muted text-muted-foreground',
-            )}
-          >
-            {positionCount}
-          </span>
-        )}
-      </button>
-    </div>
+        aria-hidden
+      />
+      <span>Portfolio</span>
+      {positionCount > 0 && (
+        <span
+          className={cn(
+            'inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full px-1 ds-text-10 font-bold tabular-nums',
+            isPortfolio
+              ? 'bg-primary/20 text-primary'
+              : 'bg-muted text-muted-foreground',
+          )}
+        >
+          {positionCount}
+        </span>
+      )}
+    </button>
   );
 });
 
