@@ -329,7 +329,7 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
   /* Desktop: tinted inner well (no extra outer border — reserves card frame only). */
   return (
     <div className="w-full min-w-0 rounded-xl bg-card/60 px-3 py-1.5 backdrop-blur-sm">
-      <div ref={desktopRowRef} className="flex flex-row items-center gap-x-4 gap-y-2 flex-wrap">
+      <div ref={desktopRowRef} className="flex flex-row items-center gap-x-4">
         {/* USD/Token Mode Switch - Always on the left */}
         <div className={cn('flex shrink-0 items-center', segmentedTrack)}>
           <button
@@ -357,7 +357,7 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
         </div>
 
         {/* Simulation inputs and controls group - Wraps as a unit to keep alignment */}
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 min-w-0 flex-1">
+        <div className="flex items-center gap-x-4 min-w-0 flex-1">
           {/* Supply Section - flex-grow to fill space */}
           <div className="flex items-center gap-[var(--ds-space-1-5)] flex-1">
             <span className={fieldLabelSupplyDesktop}>Supply</span>
