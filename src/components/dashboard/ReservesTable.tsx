@@ -46,7 +46,7 @@ import type { PortfolioPosition, PortfolioPositionResult, PortfolioSummary } fro
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
 import { resolvePositionAmountUsd, buildPortfolioPositionResult } from '@/hooks/usePortfolioSimulation';
 import { aggregatePortfolioSummary } from '@/lib/portfolioCalculator';
-const PortfolioPanel = lazy(() => import('./PortfolioPanel'));
+import PortfolioPanel from './PortfolioPanel';
 
 interface ReservesTableProps {
   reserves: ReserveWithSpread[];
