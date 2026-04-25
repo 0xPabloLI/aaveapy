@@ -549,6 +549,10 @@
     border-color: rgb(var(--ds-brand-cyan-rgb));
   }
 
+  .hover\:ds-bg-brand-cyan-15:hover {
+    background-color: rgb(var(--ds-brand-cyan-rgb) / 0.15);
+  }
+
   .ds-bg-brand-cyan-5 {
     background-color: rgb(var(--ds-brand-cyan-rgb) / 0.06);
   }
