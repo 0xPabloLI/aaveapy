@@ -235,7 +235,7 @@ const DesktopReserveRow = memo(({
           )}
           <div className="group/token flex min-w-0 max-w-full items-center justify-center gap-[var(--ds-space-1-5)]">
             <TokenIcon symbol={iconSymbol} size={28} loading="eager" logoURI={logoURI} className="shrink-0" />
-            <span className="font-semibold text-foreground ds-text-13 truncate min-w-0">
+            <span className="font-semibold text-foreground ds-text-13 break-words min-w-0">
               {reserve.tokenSymbol}
             </span>
             {reserve.isFrozenOrPaused && (

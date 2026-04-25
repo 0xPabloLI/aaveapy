@@ -207,11 +207,13 @@ describe('DesktopReserveRow', () => {
     // Regression guard: at narrow desktop widths (~768-900px), the table-fixed
     // Token column (13%) is too tight to fit icon + symbol + optional snowflake +
     // AssetActionMenu on one line. If the inner flex uses inline-flex (sizes to
-    // content) and the symbol is not truncatable, the whole block overflows into
-    // the Price column regardless of cell padding. The fix has four invariants:
+    // content) and the symbol cannot wrap, the whole block overflows into the
+    // Price column regardless of cell padding. The fix has four invariants:
     //   1. Token TableCell has `overflow-hidden`
     //   2. Inner flex is `flex w-full min-w-0` (fills cell, can shrink)
-    //   3. Token symbol span uses `truncate min-w-0` (tail-ellipsis fallback)
+    //   3. Token symbol span uses `break-words min-w-0` so multi-token names can
+    //      wrap to a new line (single-line-first, wrap-only-when-needed per
+    //      DESIGN-SYSTEM-REFERENCE §3 / §4); never `break-all` / `truncate`.
     //   4. Non-text siblings (icon, snowflake, AssetActionMenu) are `shrink-0`
     //      so they stay at intrinsic size and never disappear.
     const queryClient = new QueryClient();
@@ -251,8 +253,10 @@ describe('DesktopReserveRow', () => {
     expect(html).toMatch(/class="[^"]*overflow-hidden[^"]*"[^>]*>\s*<div class="flex w-full min-w-0/);
     // (2) Inner group/token uses flex + min-w-0 (not inline-flex).
     expect(html).toMatch(/class="group\/token flex min-w-0 max-w-full/);
-    // (3) Token symbol can tail-truncate.
-    expect(html).toMatch(/<span class="font-semibold text-foreground ds-text-13 truncate min-w-0">/);
+    // (3) Token symbol can wrap (break-words), not truncate / break-all.
+    expect(html).toMatch(/<span class="font-semibold text-foreground ds-text-13 break-words min-w-0">/);
+    expect(html).not.toMatch(/font-semibold text-foreground ds-text-13 truncate/);
+    expect(html).not.toMatch(/font-semibold text-foreground ds-text-13 break-all/);
     // (4) Icon wrapper, snowflake wrapper, and AssetActionMenu trigger are all shrink-0.
     expect(html).toMatch(/<div class="relative inline-block rounded-full shrink-0"/);
     expect(html).toMatch(/<span[^>]*class="inline-flex shrink-0 items-center[^"]*text-sky-500 bg-sky-500\/10"/);

@@ -61,7 +61,7 @@ This is a project-specific guardrail file, not the reusable design reference. If
 ### Text-to-border spacing (mandatory)
 
 - **Text must never touch borders**: Any bordered container (cards, table cells, warning banners, buttons) must have at least `--ds-space-2` (8px) padding between text and the border. See **DESIGN-SYSTEM-REFERENCE.md** §3（文字与边框）and §4（布局原则）.
-- **Mobile token symbols must prefer single-line full display**: token symbols (`USDT`, `WETH`, etc.) must stay on one line whenever physically possible. Only when the layout truly cannot fit may they use **tail truncation** (`truncate` / end ellipsis). Never force early abbreviation patterns like `U...` for short symbols, and never use `break-all`/character wrapping on token symbols in reserve cards or Top Opportunities mobile rows.
+- **Token symbols: single-line first, wrap-only-when-needed (all viewports)**: token symbols (`USDT`, `WETH`, `syrupUSDT`, etc.) must stay on one line whenever the cell can physically fit them. Only when the layout truly cannot fit may they **wrap to a new line** (`break-words` + `min-w-0` on the span, with the flex parent set to `flex w-full min-w-0`). **Never** use `truncate` / tail ellipsis (drops information), **never** use `break-all` (breaks per-character), and **never** force early abbreviation patterns like `U...`. This rule applies identically to mobile reserve cards, Top Opportunities rows, and the desktop Reserves table Token cell — and **supersedes** the previous \"tail truncation when it cannot fit\" rule.
 
 ### Visual consistency
 
@@ -414,7 +414,7 @@ Body (`DesktopReserveRow.tsx`):
 
 1. `TableCell` for Token has `overflow-hidden` as a containment fallback.
 2. The cell's inner flex is `flex w-full min-w-0 items-center justify-center` (**not** `inline-flex`), so the container matches cell width and can shrink.
-3. The `tokenSymbol` `<span>` uses `truncate min-w-0`. This is the only element allowed to shrink; tail-ellipsis kicks in only when the cell truly cannot fit. **Never** use `break-words` / `break-all` on token symbols (see DESIGN-SYSTEM-REFERENCE §4.1 path B).
+3. The `tokenSymbol` `<span>` uses `break-words min-w-0`. This is the only element allowed to shrink; the symbol stays on one line whenever it fits and **wraps** to a second line when it does not (single-line first, wrap-only-when-needed — see DESIGN-SYSTEM-REFERENCE §3 / §4 / §4.1 path B). **Never** use `truncate` / tail ellipsis (information loss) or `break-all` (per-character wrapping) on token symbols.
 4. `TokenIcon`, the snowflake `<span>`, and `AssetActionMenu` (via `triggerClassName="shrink-0"`) all carry `shrink-0`. Without this, flex pressure squashes them out of view and the cell silently loses the action icon at narrow widths.
 
 **Diagnosis workflow when an icon/arrow "overlaps" an adjacent column:**
