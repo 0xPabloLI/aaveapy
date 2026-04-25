@@ -1232,7 +1232,7 @@ const ReservesTable = ({
           <PortfolioModeToggle
             mode={simulationMode}
             onModeChange={onSimulationModeChange}
-            positionCount={portfolioPositions?.length}
+            positionCount={portfolioPositions ? new Set(portfolioPositions.map(p => p.reserveId)).size : 0}
           />
         )}
         {!isPortfolioMode && (
