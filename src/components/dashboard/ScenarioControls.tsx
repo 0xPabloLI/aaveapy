@@ -219,7 +219,7 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
                 className={cn(
                   'shrink-0 rounded-md p-1 transition-colors',
                   supplyInput.trim()
-                    ? 'text-foreground hover:bg-accent/60 hover:text-foreground'
+                    ? 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
                     : 'text-muted-foreground/35 cursor-not-allowed',
                 )}
                 aria-label="Clear supply amount"
@@ -248,7 +248,7 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
                 className={cn(
                   'shrink-0 rounded-md p-1 transition-colors',
                   borrowInput.trim()
-                    ? 'text-foreground hover:bg-accent/60 hover:text-foreground'
+                    ? 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
                     : 'text-muted-foreground/35 cursor-not-allowed',
                 )}
                 aria-label="Clear borrow amount"
@@ -361,11 +361,9 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
               onClick={() => setSupplyInput('')}
               disabled={!supplyInput.trim()}
               className={cn(
-                'shrink-0 rounded-md p-1 transition-colors',
-                'flex items-center gap-0.5 px-1.5',
-                supplyInput.trim()
-                  ? 'text-foreground hover:bg-accent hover:text-foreground'
-                  : 'text-muted-foreground/35 cursor-not-allowed',
+                'ds-btn-secondary gap-1.5 px-[var(--ds-space-2-5)]',
+                controlH,
+                fontSize,
               )}
               aria-label="Clear supply amount"
             >
@@ -390,11 +388,9 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
               onClick={() => setBorrowInput('')}
               disabled={!borrowInput.trim()}
               className={cn(
-                'shrink-0 rounded-md p-1 transition-colors',
-                'flex items-center gap-0.5 px-1.5',
-                borrowInput.trim()
-                  ? 'text-foreground hover:bg-accent hover:text-foreground'
-                  : 'text-muted-foreground/35 cursor-not-allowed',
+                'ds-btn-secondary gap-1.5 px-[var(--ds-space-2-5)]',
+                controlH,
+                fontSize,
               )}
               aria-label="Clear borrow amount"
             >

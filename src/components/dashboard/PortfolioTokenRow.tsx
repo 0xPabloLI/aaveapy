@@ -76,7 +76,7 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
             'shrink-0 rounded-md p-1 transition-colors',
             !isMobile && 'flex items-center gap-0.5 px-1.5',
             position.amount.trim()
-              ? 'text-foreground hover:bg-accent hover:text-foreground'
+              ? 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
               : 'text-muted-foreground/35 cursor-not-allowed',
           )}
           aria-label={`Clear ${tokenSymbol} ${sideLabel.toLowerCase()}`}
