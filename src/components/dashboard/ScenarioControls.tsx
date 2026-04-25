@@ -359,7 +359,7 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
         {/* Simulation inputs and controls group - Wraps as a unit to keep alignment */}
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 min-w-0 flex-1">
           {/* Supply Section - flex-grow to fill space */}
-          <div className="flex items-center gap-[var(--ds-space-1-5)] min-w-[80px] flex-1 overflow-hidden">
+          <div className="flex items-center gap-[var(--ds-space-1-5)] flex-1">
             <span className={fieldLabelSupplyDesktop}>Supply</span>
             <input
               value={supplyInput}
@@ -386,7 +386,7 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
           </div>
 
           {/* Borrow Section - flex-grow to fill space */}
-          <div className="flex items-center gap-[var(--ds-space-1-5)] min-w-[80px] flex-1 overflow-hidden">
+          <div className="flex items-center gap-[var(--ds-space-1-5)] flex-1">
             <span className={fieldLabelBorrowDesktop}>Borrow</span>
             <input
               value={borrowInput}
