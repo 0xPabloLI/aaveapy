@@ -557,10 +557,6 @@
     background-color: rgb(var(--ds-brand-cyan-rgb) / 0.06);
   }
 
-  [data-state="checked"].ds-data-checked\:ds-bg-brand-cyan {
-    background-color: rgb(var(--ds-brand-cyan-rgb));
-  }
-
   .ds-bg-brand-cyan {
     background-color: rgb(var(--ds-brand-cyan-rgb));
   }

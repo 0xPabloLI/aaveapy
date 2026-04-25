@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 
 import { ReservesTableShowMore, ReservesTableFloatingScroll } from './ReservesTablePagination';
 import { Table, TableBody } from '@/components/ui/table';
@@ -46,7 +46,7 @@ import type { PortfolioPosition, PortfolioPositionResult, PortfolioSummary } fro
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
 import { resolvePositionAmountUsd, buildPortfolioPositionResult } from '@/hooks/usePortfolioSimulation';
 import { aggregatePortfolioSummary } from '@/lib/portfolioCalculator';
-const PortfolioPanel = lazy(() => import('./PortfolioPanel'));
+import PortfolioPanel from './PortfolioPanel';
 
 interface ReservesTableProps {
   reserves: ReserveWithSpread[];
@@ -1247,16 +1247,14 @@ const ReservesTable = ({
         )}
       </div>
       {isPortfolioMode && portfolioPositions && portfolioActions && (
-        <Suspense fallback={<div className="h-20 rounded-xl bg-muted/50 animate-pulse" />}>
-          <PortfolioPanel
-            positions={portfolioPositions}
-            actions={portfolioActions}
-            reserves={reserves}
-            positionResults={portfolioResults}
-            summary={portfolioSummary}
-            snapshots={portfolioSnapshots}
-          />
-        </Suspense>
+        <PortfolioPanel
+          positions={portfolioPositions}
+          actions={portfolioActions}
+          reserves={reserves}
+          positionResults={portfolioResults}
+          summary={portfolioSummary}
+          snapshots={portfolioSnapshots}
+        />
       )}
     </div>
   );
