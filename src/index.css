@@ -541,6 +541,50 @@
     border-color: rgb(var(--ds-brand-cyan-rgb) / 0.2);
   }
 
+  .ds-border-brand-cyan-40 {
+    border-color: rgb(var(--ds-brand-cyan-rgb) / 0.4);
+  }
+
+  .ds-border-brand-cyan {
+    border-color: rgb(var(--ds-brand-cyan-rgb));
+  }
+
+  .hover\:ds-bg-brand-cyan-15:hover {
+    background-color: rgb(var(--ds-brand-cyan-rgb) / 0.15);
+  }
+
+  .ds-bg-brand-cyan-5 {
+    background-color: rgb(var(--ds-brand-cyan-rgb) / 0.06);
+  }
+
+  [data-state="checked"].ds-data-checked\:ds-bg-brand-cyan {
+    background-color: rgb(var(--ds-brand-cyan-rgb));
+  }
+
+  .ds-bg-brand-cyan {
+    background-color: rgb(var(--ds-brand-cyan-rgb));
+  }
+
+  .hover\:ds-bg-brand-cyan-10:hover {
+    background-color: rgb(var(--ds-brand-cyan-rgb) / 0.1);
+  }
+
+  .hover\:ds-bg-brand-cyan-20:hover {
+    background-color: rgb(var(--ds-brand-cyan-rgb) / 0.2);
+  }
+
+  .hover\:ds-border-brand-cyan-40:hover {
+    border-color: rgb(var(--ds-brand-cyan-rgb) / 0.4);
+  }
+
+  .focus\:ds-border-brand-cyan-40:focus {
+    border-color: rgb(var(--ds-brand-cyan-rgb) / 0.4);
+  }
+
+  .focus\:ds-ring-brand-cyan-20:focus {
+    --tw-ring-color: rgb(var(--ds-brand-cyan-rgb) / 0.2);
+  }
+
   .ds-ring-brand-cyan-15 {
     --tw-ring-color: rgb(var(--ds-brand-cyan-rgb) / 0.15);
   }
