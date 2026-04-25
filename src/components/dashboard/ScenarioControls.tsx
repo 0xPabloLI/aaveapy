@@ -357,7 +357,7 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
         </div>
 
         {/* Simulation inputs and controls group - Wraps as a unit to keep alignment */}
-        <div className="flex items-center gap-x-4 min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 min-w-0 flex-1">
           {/* Supply Section - flex-grow to fill space */}
           <div className="flex items-center gap-[var(--ds-space-1-5)] flex-1">
             <span className={fieldLabelSupplyDesktop}>Supply</span>
