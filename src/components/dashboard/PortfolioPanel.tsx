@@ -111,7 +111,7 @@ const SnapshotItem = memo(function SnapshotItem({
   return (
     <div className={cn(
       'flex items-center gap-2 rounded-lg px-2.5 py-1.5 border transition-colors',
-      isSelectedForCompare ? 'border-primary/40 bg-primary/5' : 'border-border/30 hover:bg-muted/40',
+      isSelectedForCompare ? 'border-[rgb(var(--ds-brand-cyan-rgb)/0.4)] bg-[rgb(var(--ds-brand-cyan-rgb)/0.06)]' : 'border-border/30 hover:bg-muted/40',
     )}>
       <button
         type="button"
@@ -119,8 +119,8 @@ const SnapshotItem = memo(function SnapshotItem({
         className={cn(
           'size-4 rounded border flex items-center justify-center transition-colors shrink-0',
           isSelectedForCompare
-            ? 'border-primary bg-primary text-primary-foreground'
-            : 'border-border/60 hover:border-primary/40',
+            ? 'border-[rgb(var(--ds-brand-cyan-rgb))] bg-[rgb(var(--ds-brand-cyan-rgb))] text-white'
+            : 'border-border/60 hover:border-[rgb(var(--ds-brand-cyan-rgb)/0.4)]',
         )}
         aria-label={`${isSelectedForCompare ? 'Deselect' : 'Select'} ${snapshot.label} for comparison`}
       >
@@ -242,7 +242,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
         {/* Header */}
         <div className="flex items-center justify-between mb-2.5">
           <div className="flex items-center gap-2">
-            <Layers className="size-4 text-primary" aria-hidden />
+            <Layers className="size-4 ds-text-brand-cyan" aria-hidden />
             <span className="ds-text-14 font-semibold text-foreground">
               Batch
             </span>
@@ -309,14 +309,14 @@ const PortfolioPanel = memo(function PortfolioPanel({
               onKeyDown={(e) => e.key === 'Enter' && handleSaveSnapshot()}
               className={cn(
                 'h-7 flex-1 rounded-lg border border-border/50 bg-muted/40 px-2.5 ds-text-11 text-foreground placeholder:text-muted-foreground/50',
-                'focus:border-primary/40 focus:outline-none focus:ring-1 focus:ring-primary/20',
+                'focus:border-[rgb(var(--ds-brand-cyan-rgb)/0.4)] focus:outline-none focus:ring-1 focus:ring-[rgb(var(--ds-brand-cyan-rgb)/0.2)]',
               )}
               aria-label="Snapshot name"
             />
             <button
               type="button"
               onClick={handleSaveSnapshot}
-              className="rounded-lg bg-primary/10 px-3 py-1 ds-text-11 font-semibold text-primary hover:bg-primary/20 transition-colors"
+              className="rounded-lg ds-bg-brand-cyan-10 px-3 py-1 ds-text-11 font-semibold ds-text-brand-cyan hover:ds-bg-brand-cyan-20 transition-colors"
             >
               Save
             </button>
@@ -333,7 +333,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
               autoFocus
               className={cn(
                 'h-8 w-full rounded-lg border border-border/50 bg-muted/40 px-3 ds-text-12 text-foreground placeholder:text-muted-foreground/50 placeholder:italic',
-                'focus:border-primary/40 focus:outline-none focus:ring-1 focus:ring-primary/20',
+                'focus:border-[rgb(var(--ds-brand-cyan-rgb)/0.4)] focus:outline-none focus:ring-1 focus:ring-[rgb(var(--ds-brand-cyan-rgb)/0.2)]',
               )}
               aria-label="Search tokens to add"
             />
@@ -367,7 +367,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
               <button
                 type="button"
                 onClick={() => setSearchOpen(true)}
-                className="mt-2 flex items-center gap-1 rounded-lg border border-dashed border-primary/40 bg-primary/5 px-3 py-1.5 ds-text-11 font-semibold text-primary transition-colors hover:bg-primary/10"
+                className="mt-2 flex items-center gap-1 rounded-lg border border-dashed border-[rgb(var(--ds-brand-cyan-rgb)/0.4)] bg-[rgb(var(--ds-brand-cyan-rgb)/0.06)] px-3 py-1.5 ds-text-11 font-semibold ds-text-brand-cyan transition-colors hover:ds-bg-brand-cyan-10"
               >
                 <Plus className="size-3" aria-hidden />
                 Add token
@@ -421,7 +421,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
               <button
                 type="button"
                 onClick={() => setShowCompare(true)}
-                className="flex items-center gap-1 rounded-lg bg-primary/10 px-2.5 py-1 ds-text-11 font-semibold text-primary hover:bg-primary/20 transition-colors"
+                className="flex items-center gap-1 rounded-lg ds-bg-brand-cyan-10 px-2.5 py-1 ds-text-11 font-semibold ds-text-brand-cyan hover:ds-bg-brand-cyan-20 transition-colors"
               >
                 <ArrowRightLeft className="size-3" aria-hidden />
                 Compare
