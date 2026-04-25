@@ -209,7 +209,7 @@ const DesktopReserveRow = memo(({
         onClick={() => onToggleExpand(reserveId)}
       >
         {/* Token */}
-        <TableCell className="pl-[var(--ds-space-2)] pr-[var(--ds-space-2)] ds-row-pad text-center overflow-hidden">
+        <TableCell className="ds-reserves-cell-td-edge-l ds-row-pad text-center overflow-hidden">
           <div className="flex w-full min-w-0 items-center justify-center gap-[var(--ds-space-2)]">
           {isPortfolioMode && onPortfolioToggle && (
             <button
@@ -263,11 +263,11 @@ const DesktopReserveRow = memo(({
           </div>
         </TableCell>
         {/* Price — 左右留白更小 */}
-        <TableCell className="pl-[var(--ds-space-1-5)] pr-[var(--ds-space-1)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell tabular-nums text-muted-foreground ds-text-13">
+        <TableCell className="ds-reserves-cell-td ds-row-pad whitespace-nowrap text-center hidden md:table-cell tabular-nums text-muted-foreground ds-text-13">
           {formatUsd(reserve.tokenPrice)}
         </TableCell>
         {/* Market — 左侧留白更小，右侧与其余列统一 */}
-        <TableCell className="pl-[var(--ds-space-1)] pr-[var(--ds-space-2)] ds-row-pad text-center hidden md:table-cell">
+        <TableCell className="ds-reserves-cell-td ds-row-pad text-center hidden md:table-cell">
           <div className="flex items-center justify-center">
             <div className={marketCellClassNames.stack}>
               <div className={marketCellClassNames.marketShell}>
@@ -331,7 +331,7 @@ const DesktopReserveRow = memo(({
           </div>
         </TableCell>
         {/* Size (Supply + Borrow) */}
-        <TableCell className="px-[var(--ds-space-2)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell tabular-nums ds-text-13">
+        <TableCell className="ds-reserves-cell-td ds-row-pad whitespace-nowrap text-center hidden md:table-cell tabular-nums ds-text-13">
           <div className="flex flex-col items-center justify-center gap-[var(--ds-space-0-5)]">
             {/* Supply Size - Green (match Supply APY primary: ds-text-emerald-500) */}
             {hasSupplyCap ? (
@@ -422,7 +422,7 @@ const DesktopReserveRow = memo(({
           </div>
         </TableCell>
         {/* Utilization + Liquidity */}
-        <TableCell className="px-[var(--ds-space-2)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell tabular-nums ds-text-13">
+        <TableCell className="ds-reserves-cell-td ds-row-pad whitespace-nowrap text-center hidden md:table-cell tabular-nums ds-text-13">
           <div className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)]">
             <div className="flex flex-col items-center gap-[var(--ds-space-0-5)]">
               <span className={displayUtilization != null && simulation?.utilization.optimal != null && displayUtilization > simulation.utilization.optimal ? 'text-amber-600' : 'text-foreground'}>
@@ -445,7 +445,7 @@ const DesktopReserveRow = memo(({
           </div>
         </TableCell>
         {/* Supply */}
-        <TableCell className="px-[var(--ds-space-2)] ds-row-pad whitespace-nowrap text-center">
+        <TableCell className="ds-reserves-cell-td ds-row-pad whitespace-nowrap text-center">
           <div className="flex flex-col items-center justify-center gap-[var(--ds-space-0-5)] min-h-[2.75rem]">
             {reserve.supplyDisabled ? (
               <Tooltip>
@@ -484,7 +484,7 @@ const DesktopReserveRow = memo(({
           </div>
         </TableCell>
         {/* Spread */}
-        <TableCell className="px-[var(--ds-space-2)] ds-row-pad whitespace-nowrap text-center hidden md:table-cell">
+        <TableCell className="ds-reserves-cell-td ds-row-pad whitespace-nowrap text-center hidden md:table-cell">
           <span
             className={`font-bold tabular-nums ds-text-14 ${
               spread !== null ? 'ds-text-purple-500' : 'text-muted-foreground/70'
@@ -494,7 +494,7 @@ const DesktopReserveRow = memo(({
           </span>
         </TableCell>
         {/* Borrow */}
-        <TableCell className="pl-[var(--ds-space-2)] pr-[var(--ds-space-2)] ds-row-pad whitespace-nowrap text-center">
+        <TableCell className="ds-reserves-cell-td-edge-r ds-row-pad whitespace-nowrap text-center">
           <div className="flex flex-col items-center justify-center gap-[var(--ds-space-0-5)] min-h-[2.75rem]">
             {reserve.borrowDisabled ? (
               <Tooltip>

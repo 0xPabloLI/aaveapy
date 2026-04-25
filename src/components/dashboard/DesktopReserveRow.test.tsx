@@ -249,8 +249,21 @@ describe('DesktopReserveRow', () => {
       </QueryClientProvider>
     );
 
-    // (1) Token cell clips any residual overflow.
-    expect(html).toMatch(/class="[^"]*overflow-hidden[^"]*"[^>]*>\s*<div class="flex w-full min-w-0/);
+    // (1) Token cell clips any residual overflow AND uses the centralized
+    // padding utility (not raw pl-*/pr-*). The utility class encodes both
+    // the edge-left outer padding and the gap/2 right padding from the
+    // --ds-reserves-col-gap-body CSS variable, so a single retune updates
+    // every cell at once. Re-introducing raw `pl-[var(--ds-space-*)]` or
+    // `pr-[var(--ds-space-*)]` here is a regression — it bypasses the
+    // single-source-of-truth and lets the Token-Price gap drift below the
+    // minimum-visible-gap floor.
+    expect(html).toMatch(/class="[^"]*ds-reserves-cell-td-edge-l[^"]*overflow-hidden[^"]*"[^>]*>\s*<div class="flex w-full min-w-0/);
+    // Anti-regression: no raw column padding (space-1 .. space-3) should leak onto a <td>.
+    // The shadcn-default `[&:has([role=checkbox])]:pr-[var(--ds-space-0)]` is allowed
+    // (uses space-0 and is scoped to checkbox cells); only space-1+ values are forbidden.
+    expect(html).not.toMatch(/<td[^>]*\bpl-\[var\(--ds-space-(1|1-5|2|2-5|3)\)/);
+    expect(html).not.toMatch(/<td[^>]*\bpr-\[var\(--ds-space-(1|1-5|2|2-5|3)\)/);
+    expect(html).not.toMatch(/<td[^>]*\bpx-\[var\(--ds-space-(1|1-5|2|2-5|3)\)/);
     // (2) Inner group/token uses flex + min-w-0 (not inline-flex).
     expect(html).toMatch(/class="group\/token flex min-w-0 max-w-full/);
     // (3) Token symbol can wrap (break-words), not truncate / break-all.

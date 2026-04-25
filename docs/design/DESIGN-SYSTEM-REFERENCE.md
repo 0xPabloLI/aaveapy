@@ -116,13 +116,14 @@
 3. **文本可收缩并允许换行**：唯一允许收缩的元素（通常是 token symbol / 标题文案）加 `break-words min-w-0`——**优先单行展示，真放不下时换行到下一行继续显示完整文本**（符合 §3「Token symbol 优先单行 + 放不下时换行」与 §4「表格统一优先单行、放不下时换行」）。**禁止**使用 `truncate` / 尾部省略号（会丢失信息），也**禁止** `break-all`（会逐字符换行，破坏可读性）。如果发现 `break-words` 在某些纯连续字符的 symbol 上视觉换行不生效，先靠 cell `overflow-hidden` 兜底，再讨论是否引入 `[overflow-wrap:anywhere]` 这类按字符断行的兼容手段——**不要**直接退化到 `truncate` 或 `break-all`。
 4. **固定尺寸元素都 `shrink-0`**：icon 外层、徽章/雪花 `<span>`、`AssetActionMenu`（通过 `triggerClassName="shrink-0"`）等必须保留原尺寸的元素必须标记 `shrink-0`，否则它们会被 flex 压扁或消失，窄视口看起来"图标不见了"。
 
-#### 诊断顺序（3 步定位）
+#### 诊断顺序（4 步定位）
 
+0. **先量当前 gap 是否合规**（前置体检，最便宜的一步）：把相邻两列实际的 `pr-* + pl-*` 加起来——普通列必须 ≥ 8 px（`--ds-space-2`），含尾部图标的列必须 ≥ 10 px。如果连下限都没达到，**先把 gap 调到合规再说**，多数"看起来粘成一团 / 图标贴上数字"的问题在这一步就解决了。建议把列间 gap 抽成 CSS 变量（如 `--ds-reserves-col-gap-header` / `--ds-reserves-col-gap-body`）+ 一组 `ds-*-cell-{th,td}{,-edge-l,-edge-r}` utility class 集中管理，避免散落 `pl-*` / `pr-*` 难以维护。
 1. **看是不是只在窄视口复现**：是 → 走 B 路径（内容溢出）；否 → 走 A 路径（padding 配对）。
 2. **找尾部图标属于哪一列**：多数时候是"上一列"的尾部节点（例如 Price 列里看到的 `↗` 其实是 Token cell 的 `AssetActionMenu`）。
-3. **A 路径**：检查该列的 `pr` 与下一列的 `pl` 之和是否 ≥ 10 px，并同步 header / body / skeleton。**B 路径**：把容器从 `inline-flex` 改成 `flex w-full min-w-0`，给文本 `truncate min-w-0`，其他元素 `shrink-0`，并给 cell 加 `overflow-hidden` 兜底。
+3. **A 路径**：检查该列的 `pr` 与下一列的 `pl` 之和是否 ≥ 10 px，并同步 header / body / skeleton。**B 路径**：把容器从 `inline-flex` 改成 `flex w-full min-w-0`，给文本 `break-words min-w-0`（不是 `truncate`），其他元素 `shrink-0`，并给 cell 加 `overflow-hidden` 兜底。
 
-这两种根因能覆盖 95% 的"箭头/外链/chevron 撞到价格"问题，先分清 A 还是 B，再动手改。
+这三种根因（gap < 下限、padding 配对失衡、内容溢出）能覆盖几乎所有"箭头/外链/chevron 撞到价格"问题，先按 0 → 1 → 2 → 3 顺序排除。
 
 #### 测试防回归
 

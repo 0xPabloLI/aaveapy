@@ -328,7 +328,7 @@ export default function ReservesTableDesktopHeader({
       className={tableHeaderClassName}
     >
       <TableRow className="border-b border-border/50 hover:bg-transparent">
-        <TableHead className="pl-[var(--ds-space-2)] pr-[var(--ds-space-1)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground">
+        <TableHead className="ds-reserves-cell-th-edge-l py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground">
           <button
             type="button"
             onClick={onSortToken}
@@ -350,7 +350,7 @@ export default function ReservesTableDesktopHeader({
             )}
           </button>
         </TableHead>
-        <TableHead className="pl-[var(--ds-space-1-5)] pr-[var(--ds-space-0-5)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
+        <TableHead className="ds-reserves-cell-th py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
           <button
             type="button"
             onClick={onSortPrice}
@@ -372,7 +372,7 @@ export default function ReservesTableDesktopHeader({
             )}
           </button>
         </TableHead>
-        <TableHead className="pl-[var(--ds-space-0-5)] pr-[var(--ds-space-1)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-medium text-muted-foreground hidden md:table-cell">
+        <TableHead className="ds-reserves-cell-th py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-medium text-muted-foreground hidden md:table-cell">
           <div className="flex items-center justify-center">
             <button
               type="button"
@@ -396,7 +396,7 @@ export default function ReservesTableDesktopHeader({
             </button>
           </div>
         </TableHead>
-        <TableHead className="px-[var(--ds-space-1-5)] py-[var(--ds-space-3)] ds-text-14 md:ds-text-16 font-semibold text-muted-foreground text-center hidden md:table-cell">
+        <TableHead className="ds-reserves-cell-th py-[var(--ds-space-3)] ds-text-14 md:ds-text-16 font-semibold text-muted-foreground text-center hidden md:table-cell">
           <div className="flex items-center justify-center">
             <div className="flex flex-wrap items-center justify-center gap-x-[var(--ds-space-1-5)] gap-y-[var(--ds-space-1)]">
               <span
@@ -446,7 +446,7 @@ export default function ReservesTableDesktopHeader({
             </div>
           </div>
         </TableHead>
-        <TableHead className="px-[var(--ds-space-1-5)] py-[var(--ds-space-3)] ds-text-14 md:ds-text-16 font-semibold text-muted-foreground text-center hidden md:table-cell">
+        <TableHead className="ds-reserves-cell-th py-[var(--ds-space-3)] ds-text-14 md:ds-text-16 font-semibold text-muted-foreground text-center hidden md:table-cell">
           <div className="flex items-center justify-center">
             <div className="flex flex-wrap items-center justify-center gap-x-[var(--ds-space-1-5)] gap-y-[var(--ds-space-1)]">
               <span
@@ -492,7 +492,7 @@ export default function ReservesTableDesktopHeader({
             </div>
           </div>
         </TableHead>
-        <TableHead className="px-[var(--ds-space-1-5)] py-[var(--ds-space-3)] ds-text-14 md:ds-text-16 font-semibold text-muted-foreground text-center">
+        <TableHead className="ds-reserves-cell-th py-[var(--ds-space-3)] ds-text-14 md:ds-text-16 font-semibold text-muted-foreground text-center">
           <div className="flex items-center justify-center">
             <div className="flex flex-wrap items-center justify-center gap-x-[var(--ds-space-1-5)] gap-y-[var(--ds-space-1)]">
               <span
@@ -525,7 +525,7 @@ export default function ReservesTableDesktopHeader({
             </div>
           </div>
         </TableHead>
-        <TableHead className="px-[var(--ds-space-1-5)] py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
+        <TableHead className="ds-reserves-cell-th py-[var(--ds-space-3)] text-center ds-text-14 md:ds-text-16 font-semibold text-muted-foreground hidden md:table-cell">
           <button
             type="button"
             onClick={onToggleSpreadSort}
@@ -545,7 +545,7 @@ export default function ReservesTableDesktopHeader({
             )}
           </button>
         </TableHead>
-        <TableHead className="pl-[var(--ds-space-1-5)] pr-[var(--ds-space-1-5)] py-[var(--ds-space-3)] ds-text-14 md:ds-text-16 font-semibold text-muted-foreground text-center">
+        <TableHead className="ds-reserves-cell-th-edge-r py-[var(--ds-space-3)] ds-text-14 md:ds-text-16 font-semibold text-muted-foreground text-center">
           <div className="flex items-center justify-center">
             <div className="flex flex-wrap items-center justify-center gap-x-[var(--ds-space-1-5)] gap-y-[var(--ds-space-1)]">
               <span

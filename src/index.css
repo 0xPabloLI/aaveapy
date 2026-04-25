@@ -48,6 +48,13 @@
     --ds-tooltip-pad: 0.75rem;
     --ds-tooltip-item-pad: 0.5rem;
     --ds-row-pad-y: 0.5rem;
+    /* Reserves table column gap (visible space between two adjacent columns).
+     * Visible gap = right padding of column N + left padding of column N+1.
+     * Each interior cell side pads = gap / 2; edge sides (Token left, Borrow right)
+     * use --ds-space-2 for outer breathing room. Adjust here to retune the whole
+     * desktop reserves table without touching individual cells. */
+    --ds-reserves-col-gap-header: 10px;
+    --ds-reserves-col-gap-body: 12px;
     --ds-card-pad: 1rem;
     --ds-card-pad-sm: 0.75rem;
     --ds-dot: 0.5rem;
@@ -273,6 +280,34 @@
   .ds-row-pad {
     padding-top: var(--ds-row-pad-y);
     padding-bottom: var(--ds-row-pad-y);
+  }
+
+  /* Desktop reserves table cell padding utilities.
+   * See --ds-reserves-col-gap-{header,body} for the source of truth.
+   * Use *-edge-l on the leftmost column (Token) and *-edge-r on the rightmost (Borrow). */
+  .ds-reserves-cell-th {
+    padding-left: calc(var(--ds-reserves-col-gap-header) / 2);
+    padding-right: calc(var(--ds-reserves-col-gap-header) / 2);
+  }
+  .ds-reserves-cell-th-edge-l {
+    padding-left: var(--ds-space-2);
+    padding-right: calc(var(--ds-reserves-col-gap-header) / 2);
+  }
+  .ds-reserves-cell-th-edge-r {
+    padding-left: calc(var(--ds-reserves-col-gap-header) / 2);
+    padding-right: var(--ds-space-2);
+  }
+  .ds-reserves-cell-td {
+    padding-left: calc(var(--ds-reserves-col-gap-body) / 2);
+    padding-right: calc(var(--ds-reserves-col-gap-body) / 2);
+  }
+  .ds-reserves-cell-td-edge-l {
+    padding-left: var(--ds-space-2);
+    padding-right: calc(var(--ds-reserves-col-gap-body) / 2);
+  }
+  .ds-reserves-cell-td-edge-r {
+    padding-left: calc(var(--ds-reserves-col-gap-body) / 2);
+    padding-right: var(--ds-space-2);
   }
 
   .ds-card-pad {
@@ -540,6 +575,10 @@
 
   .dark .ds-bg-purple-50 {
     background-color: rgb(var(--ds-purple-500-rgb) / 0.12);
+  }
+
+  .dark .ds-bg-sky-500-8 {
+    background-color: rgb(var(--ds-sky-500-rgb) / 0.15);
   }
 
   .dark .ds-border-emerald-200 {

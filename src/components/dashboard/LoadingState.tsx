@@ -326,36 +326,36 @@ function DesktopTableSkeleton() {
             {Array.from({ length: 10 }).map((_, i) => (
               <motion.tr key={i} className="border-b border-border/30" variants={itemVariants}>
                 {/* Token: icon + symbol */}
-                <td className="py-[var(--ds-space-3)] px-[var(--ds-space-2)]">
+                <td className="ds-reserves-cell-td-edge-l py-[var(--ds-space-3)]">
                   <div className="flex items-center justify-center gap-[var(--ds-space-2)]">
                     <Skeleton variant="gradient" className="w-7 h-7 rounded-full border-transparent" />
                     <Skeleton variant="default" className={`h-4 rounded-md ${i % 2 === 0 ? 'w-10' : 'w-14'}`} />
                   </div>
                 </td>
                 {/* Price */}
-                <td className="py-[var(--ds-space-3)] px-[var(--ds-space-1)]">
+                <td className="ds-reserves-cell-td py-[var(--ds-space-3)]">
                   <Skeleton variant="subtle" className={`h-4 mx-auto rounded-md ${i % 2 === 0 ? 'w-14' : 'w-10'}`} />
                 </td>
                 {/* Market: chain chip */}
-                <td className="py-[var(--ds-space-3)] px-[var(--ds-space-1)]">
+                <td className="ds-reserves-cell-td py-[var(--ds-space-3)]">
                   <Skeleton variant="subtle" className="h-6 w-20 rounded-full mx-auto" />
                 </td>
                 {/* Size: supply + borrow stacked */}
-                <td className="py-[var(--ds-space-3)] px-[var(--ds-space-2)]">
+                <td className="ds-reserves-cell-td py-[var(--ds-space-3)]">
                   <div className="flex flex-col items-center gap-[var(--ds-space-0-5)]">
                     <Skeleton variant="gradient" className={`h-4 rounded-md ${i % 2 === 0 ? 'w-16' : 'w-14'}`} />
                     <Skeleton variant="subtle" className={`h-4 rounded-md ${i % 2 === 0 ? 'w-14' : 'w-16'}`} />
                   </div>
                 </td>
                 {/* Utilization */}
-                <td className="py-[var(--ds-space-3)] px-[var(--ds-space-2)]">
+                <td className="ds-reserves-cell-td py-[var(--ds-space-3)]">
                   <div className="flex items-center justify-center gap-1">
                     <Skeleton variant="subtle" className="h-4 w-10 rounded-md" />
                     <Skeleton variant="subtle" className="w-2 h-4 rounded-sm border-transparent" />
                   </div>
                 </td>
                 {/* Supply: total + native+incentive breakdown */}
-                <td className="py-[var(--ds-space-3)] px-[var(--ds-space-2)]">
+                <td className="ds-reserves-cell-td py-[var(--ds-space-3)]">
                   <div className="flex flex-col items-center gap-[var(--ds-space-0-5)]">
                     <Skeleton variant="gradient" className={`h-5 rounded-md ${i % 2 === 0 ? 'w-14' : 'w-16'}`} />
                     <div className="flex items-center gap-1">
@@ -365,11 +365,11 @@ function DesktopTableSkeleton() {
                   </div>
                 </td>
                 {/* Spread */}
-                <td className="py-[var(--ds-space-3)] px-[var(--ds-space-2)]">
+                <td className="ds-reserves-cell-td py-[var(--ds-space-3)]">
                   <Skeleton variant="subtle" className={`h-5 rounded-md mx-auto ${i % 2 === 0 ? 'w-14' : 'w-12'}`} />
                 </td>
                 {/* Borrow: total + native+incentive breakdown */}
-                <td className="py-[var(--ds-space-3)] px-[var(--ds-space-2)]">
+                <td className="ds-reserves-cell-td-edge-r py-[var(--ds-space-3)]">
                   <div className="flex flex-col items-center gap-[var(--ds-space-0-5)]">
                     <Skeleton variant="gradient" className={`h-5 rounded-md ${i % 3 === 0 ? 'w-14' : 'w-16'}`} />
                     <div className="flex items-center gap-1">
