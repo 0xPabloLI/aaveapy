@@ -189,7 +189,7 @@ describe('apiSchemas', () => {
     expect('totalRewardUsd' in (brevis ?? {})).toBe(true);
   });
 
-  it('accepts isFrozenOrPaused field on reserves', () => {
+  it('accepts isFrozen and isPaused fields on reserves', () => {
     const parsed = MarketsResponseSchema.parse({
       snapshot: {
         lastUpdated: '2026-04-24T00:00:00.000Z',
@@ -204,8 +204,19 @@ describe('apiSchemas', () => {
           tokenName: 'Frozen Token',
           tokenSymbol: 'FRZ',
           tokenAddress: '0xfrozen',
-          isFrozenOrPaused: true,
+          isFrozen: true,
           supplyApy: 2.5,
+        },
+        {
+          reserveId: 'AaveV3Ethereum-0xpaused',
+          marketName: 'AaveV3Ethereum',
+          chainName: 'Ethereum',
+          chainId: 1,
+          tokenName: 'Paused Token',
+          tokenSymbol: 'PAU',
+          tokenAddress: '0xpaused',
+          isFrozen: true,
+          isPaused: true,
         },
         {
           reserveId: 'AaveV3Ethereum-0xnormal',
@@ -220,9 +231,13 @@ describe('apiSchemas', () => {
       ],
     });
 
-    expect(parsed.reserves[0].isFrozenOrPaused).toBe(true);
+    expect(parsed.reserves[0].isFrozen).toBe(true);
+    expect(parsed.reserves[0].isPaused).toBeUndefined();
     expect(parsed.reserves[0].supplyDisabled).toBeUndefined();
-    expect(parsed.reserves[1].isFrozenOrPaused).toBeUndefined();
+    expect(parsed.reserves[1].isFrozen).toBe(true);
+    expect(parsed.reserves[1].isPaused).toBe(true);
+    expect(parsed.reserves[2].isFrozen).toBeUndefined();
+    expect(parsed.reserves[2].isPaused).toBeUndefined();
   });
 
   it('normalizes grouped Brevis breakdowns from /markets into flat Brevis incentives', () => {

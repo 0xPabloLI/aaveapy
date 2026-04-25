@@ -256,12 +256,16 @@ const PortfolioPanel = memo(function PortfolioPanel({
                 className={cn(
                   'rounded-md p-1.5 transition-colors',
                   showSaveInput
-                    ? 'bg-primary/10 text-primary'
+                    ? 'bg-muted text-foreground'
                     : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground',
                 )}
-                aria-label="Save snapshot"
+                aria-label={showSaveInput ? 'Cancel save' : 'Save snapshot'}
               >
-                <Save className="size-3.5" aria-hidden />
+                {showSaveInput ? (
+                  <X className="size-3.5" aria-hidden />
+                ) : (
+                  <Save className="size-3.5" aria-hidden />
+                )}
               </button>
             )}
             <button

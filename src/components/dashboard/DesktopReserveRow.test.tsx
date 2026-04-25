@@ -223,7 +223,7 @@ describe('DesktopReserveRow', () => {
           <Table>
             <TableBody>
               <DesktopReserveRow
-                reserve={{ ...reserve, isFrozenOrPaused: true, tokenSymbol: 'syrupUSDT' }}
+                reserve={{ ...reserve, isFrozen: true, tokenSymbol: 'syrupUSDT' }}
                 reserveId="AaveV3Ethereum-0x0000000000000000000000000000000000000001"
                 isExpanded={false}
                 onToggleExpand={() => {}}
@@ -275,7 +275,7 @@ describe('DesktopReserveRow', () => {
     expect(html).not.toMatch(/font-semibold text-foreground ds-text-13 break-all/);
     // (4) Icon wrapper, snowflake wrapper, and AssetActionMenu trigger are all shrink-0.
     expect(html).toMatch(/<div class="relative inline-block rounded-full shrink-0"/);
-    expect(html).toMatch(/<span[^>]*class="inline-flex shrink-0 items-center[^"]*text-sky-500 bg-sky-500\/10"/);
+    expect(html).toMatch(/<button[^>]*class="inline-flex shrink-0 items-center[^"]*text-sky-500 bg-sky-500\/10"/);
     // AssetActionMenu receives triggerClassName="shrink-0" which merges onto its trigger button.
     const assetMenuMatches = html.match(/<button[^>]*aria-label="Asset actions for[^"]*"[^>]*class="([^"]*)"/);
     expect(assetMenuMatches).not.toBeNull();

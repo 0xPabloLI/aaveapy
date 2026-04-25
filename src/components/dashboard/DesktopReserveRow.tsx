@@ -1,7 +1,8 @@
 import { memo, Fragment, useEffect, useState, useCallback } from 'react';
-import { ExternalLink, Plus, Snowflake } from 'lucide-react';
+import { ExternalLink, Plus } from 'lucide-react';
 import { TableRow, TableCell } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { FrozenStatusBadge } from './FrozenStatusBadge';
 import { ReserveWithSpread } from '@/types/aave';
 import { formatPercent, formatScenarioSize, formatSpread, formatUsd, getReserveMarketDisplayName } from '@/lib/formatters';
 import { buildAaveMarketUrl, buildAaveUrl, buildAaveProHubUrl } from '@/lib/aaveLinks';
@@ -202,7 +203,7 @@ const DesktopReserveRow = memo(({
           isExpanded && 'bg-muted/30',
           isExpanded &&
             '[&_td]:sticky [&_td]:z-[25] [&_td]:border-b [&_td]:border-border/60 [&_td]:bg-card [&_td]:shadow-[0_1px_2px_0_rgb(0_0_0/0.04)] [&_td]:[top:var(--reserves-expanded-main-row-top,5.75rem)]',
-          reserve.isFrozenOrPaused && 'ds-bg-sky-500-8',
+          (reserve.isFrozen || reserve.isPaused) && 'ds-bg-sky-500-8',
         )}
         onClick={() => onToggleExpand(reserveId)}
       >
@@ -237,16 +238,7 @@ const DesktopReserveRow = memo(({
             <span className="font-semibold text-foreground ds-text-13 break-words min-w-0 [max-width:max-content]">
               {reserve.tokenSymbol}
             </span>
-            {reserve.isFrozenOrPaused && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className="inline-flex shrink-0 items-center gap-0.5 rounded px-1 py-0.5 ds-text-9 font-medium text-sky-500 bg-sky-500/10">
-                    <Snowflake className="w-2.5 h-2.5" />
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent>Frozen or paused</TooltipContent>
-              </Tooltip>
-            )}
+            <FrozenStatusBadge isFrozen={reserve.isFrozen} isPaused={reserve.isPaused} />
             <AssetActionMenu
               tokenSymbol={reserve.tokenSymbol}
               tokenAddress={reserve.tokenAddress}

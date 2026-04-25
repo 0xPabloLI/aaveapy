@@ -256,7 +256,7 @@ const [selectedCategory, setSelectedCategory] = useState<TokenCategory>("all");
       }
 
       // Frozen/Paused filter
-      if (!showFrozenOrPaused && reserve.isFrozenOrPaused) {
+      if (!showFrozenOrPaused && (reserve.isFrozen || reserve.isPaused)) {
         return false;
       }
 

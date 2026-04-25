@@ -517,7 +517,7 @@ const MobileReserveCard = memo(({
     <div data-reserve-id={reserveId} className={isSimulationExpanded && !showUpperOnly ? 'shadow-sm rounded-xl border border-border/60 bg-card' : ''}>
       {/* Card upper part */}
       <div
-        className={`bg-card py-3 transition-all duration-300 ${reserve.isFrozenOrPaused ? 'ds-bg-sky-500-8 ' : ''}${
+        className={`bg-card py-3 transition-all duration-300 ${reserve.isFrozen || reserve.isPaused ? 'ds-bg-sky-500-8 ' : ''}${
           isSimulationExpanded && !showUpperOnly
             ? 'rounded-t-xl rounded-b-none'
             : connectedBelow
@@ -550,7 +550,7 @@ const MobileReserveCard = memo(({
             </button>
           )}
           <div className="flex items-start gap-1 min-w-0 flex-1">
-            {reserve.isFrozenOrPaused ? (
+            {reserve.isFrozen || reserve.isPaused ? (
               <div className="relative shrink-0">
                 <TokenIcon
                   symbol={iconSymbol}
@@ -785,7 +785,7 @@ const MobileReserveCard = memo(({
                  : capSheet === 'deficit'
                   ? 'Deficit details'
                   : capSheet === 'frozen'
-                    ? 'Status: Frozen'
+                    ? `Status: ${[reserve.isFrozen && 'Frozen', reserve.isPaused && 'Paused'].filter(Boolean).join(' & ') || 'Frozen'}`
                     : 'Utilization'}
                   </h3>
                   <button
@@ -834,7 +834,9 @@ const MobileReserveCard = memo(({
                       poolExplorerUrl={buildPoolExplorerUrl(reserve.marketName)}
                     />
                   )}
-                  {capSheet === 'frozen' && <FrozenSheetContent />}
+                  {capSheet === 'frozen' && (
+                    <FrozenSheetContent isFrozen={reserve.isFrozen} isPaused={reserve.isPaused} />
+                  )}
                 </div>
               </motion.div>
             </>
