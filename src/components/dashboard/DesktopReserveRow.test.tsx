@@ -277,5 +277,64 @@ describe('DesktopReserveRow', () => {
     const assetMenuMatches = html.match(/<button[^>]*aria-label="Asset actions for[^"]*"[^>]*class="([^"]*)"/);
     expect(assetMenuMatches).not.toBeNull();
     expect(assetMenuMatches?.[1]).toContain('shrink-0');
+    // (5) Industry-standard alignment lock — see DESIGN-SYSTEM-REFERENCE §4.3
+    // 「密集表对齐策略」. Token = text-left + justify-start (identifier 起点对齐).
+    // The inner flex (token block) and outer flex (with optional portfolio toggle)
+    // both use justify-start so the icon hugs the cell's left edge.
+    expect(html).toMatch(/<td[^>]*ds-reserves-cell-td-edge-l[^"]*text-left/);
+    expect(html).toMatch(/class="flex w-full min-w-0 items-center justify-start/);
+    expect(html).toMatch(/class="group\/token flex min-w-0 max-w-full items-center justify-start/);
+    expect(html).not.toMatch(/<td[^>]*ds-reserves-cell-td-edge-l[^"]*text-center/);
+  });
+
+  it('aligns numeric columns (Price / Supply / Spread / Borrow) to the right per industry-standard dense-table convention', () => {
+    // See DESIGN-SYSTEM-REFERENCE §4.3 「密集表对齐策略」: tabular-nums
+    // numeric columns should right-align so that the decimal points and
+    // digit positions line up across rows (financial-table convention).
+    const queryClient = new QueryClient();
+    const html = renderToString(
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Table>
+            <TableBody>
+              <DesktopReserveRow
+                reserve={reserve}
+                reserveId="AaveV3Ethereum-0x0000000000000000000000000000000000000001"
+                isExpanded={false}
+                onToggleExpand={() => {}}
+                onIncentiveClick={() => {}}
+                displaySupplyTotal={2.9}
+                displaySupplyNative={2.5}
+                displaySupplyIncentive={0.4}
+                displayBorrowTotal={3.3}
+                displayBorrowNative={3.4}
+                displayBorrowIncentive={0.1}
+                displayUtilization={52}
+                spread={-0.4}
+                simulation={simulation}
+                supplyInput="1000"
+                borrowInput="500"
+                inputMode="usd"
+                isApy
+                isMobile={false}
+              />
+            </TableBody>
+          </Table>
+        </TooltipProvider>
+      </QueryClientProvider>
+    );
+
+    // Price: pure tabular number → text-right.
+    expect(html).toMatch(/<td[^>]*ds-reserves-cell-td[^"]*text-right[^"]*tabular-nums[^"]*ds-text-13[^"]*"[^>]*>\$1\.00<\/td>/);
+    // Supply / Borrow cells: text-right + inner column flex must use
+    // `items-end` so the secondary incentive line stays vertically aligned
+    // to the same right edge as the headline APY.
+    expect(html).toMatch(/<td[^>]*ds-reserves-cell-td[^"]*whitespace-nowrap text-right[^>]*>\s*<div class="flex flex-col items-end justify-center/);
+    expect(html).toMatch(/<td[^>]*ds-reserves-cell-td-edge-r[^"]*whitespace-nowrap text-right[^>]*>\s*<div class="flex flex-col items-end justify-center/);
+    // Spread cell: text-right + single span (no internal stack).
+    expect(html).toMatch(/<td[^>]*ds-reserves-cell-td[^"]*whitespace-nowrap text-right[^>]*hidden md:table-cell[^>]*>\s*<span/);
+    // Anti-regression: numeric cells must NOT silently drift back to text-center.
+    expect(html).not.toMatch(/<td[^>]*ds-reserves-cell-td[^"]*tabular-nums[^"]*text-center[^"]*"[^>]*>\$/);
+    expect(html).not.toMatch(/<td[^>]*ds-reserves-cell-td-edge-r[^"]*text-center/);
   });
 });

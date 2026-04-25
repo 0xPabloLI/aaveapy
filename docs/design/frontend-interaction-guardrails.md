@@ -441,6 +441,23 @@ Utility classes (defined in `src/index.css`, must be used unchanged on every cel
 
 **Cross-column minimum visible gap (mandatory, generic)** — *this is the portable rule; see `DESIGN-SYSTEM-REFERENCE.md` §4 「相邻列最小可见 gap」 for the cross-project version.* Every adjacent column pair in any multi-column layout (table, grid, side-by-side panels) must keep a **fixed minimum visible gap** so that text, numbers, and trailing icons in adjacent columns never read as one merged blob or overlap at narrow viewports. Floor: **≥ `--ds-space-2` (8 px)** for plain text columns; **≥ 10 px** when one side ends with a trailing icon (external link `↗`, menu trigger, chevron). Header / body / skeleton must share the same gap; only-grow-never-shrink — never let a single row type drop below the floor. In this codebase, the floor is enforced via `--ds-reserves-col-gap-*` and the `ds-reserves-cell-*` utilities described above.
 
+**Column alignment contract (mandatory, see `DESIGN-SYSTEM-REFERENCE.md` §4.3)** — the desktop reserves table assigns alignment by content type, not by aesthetic preference. **Visual gap = padding gap + center-margin余量**, so the only way to keep the table from looking "uneven" while keeping a uniform padding gap is to eliminate center余量 by switching to left / right alignment for content-leading columns:
+
+| Column | `<th>` / `<td>` | Inner flex | Sort arrow position |
+|---|---|---|---|
+| **Token** (identifier) | `text-left` | `flex w-full justify-start`; `group/token … justify-start` | label right (`<span>Token</span> ↓`) |
+| **Price** (tabular num) | `text-right` | — | label left (`↓ <span>Price</span>`) |
+| **Market** (chip) | `text-center` | `flex justify-center` (unchanged) | label right (default) |
+| **Size** (num + ring) | `text-center` | `flex flex-col items-center` (unchanged) | dropdown chip (no arrow) |
+| **Utilization** (num + bar) | `text-center` | `inline-flex justify-center` (unchanged) | dropdown chip (no arrow) |
+| **Supply** (APY + incentive) | `text-right` | `flex flex-col items-end`; secondary row `justify-end` | dropdown chip; outer `flex justify-end` |
+| **Spread** (tabular num) | `text-right` | — | label left (`↓ <span>Spread</span>`) |
+| **Borrow** (APY + incentive) | `text-right` (edge-r) | `flex flex-col items-end`; secondary row `justify-end` | dropdown chip; outer `flex justify-end` |
+
+The `LoadingState.tsx` skeleton **must** mirror this alignment per cell (`ml-auto` for right-aligned numeric placeholders, `items-end` for stacked numeric placeholders, `justify-start` for the Token icon + symbol pair). A loading-to-loaded transition that shifts content horizontally is a regression — fix the skeleton, don't accept the flicker.
+
+The single jsdom test that locks this in is `DesktopReserveRow.test.tsx` *"aligns numeric columns ... to the right per industry-standard dense-table convention"* — it asserts `text-right` on Price/Supply/Spread/Borrow, `items-end` on the Supply/Borrow column flex, and reverse-asserts that no numeric cell silently drifts back to `text-center`.
+
 **Pairwise padding rule (mandatory)** — when a cell contains a trailing icon (external-link, overflow-menu trigger, chevron) and the adjacent cell starts with tabular digits (price, percent, size), **both** must contribute padding. Do **not** try to solve the overlap by padding only one side; the side with the icon needs `pr ≥ space-2`, and the receiving side needs `pl ≥ space-1-5`. With the breakpoint-driven utility classes above, this is automatically satisfied at every tier because every interior side contributes `gap/2`: header 4 / 5 / 6 px, body 5 / 6 / 7 px (narrow / mid / wide). The narrow-tier body sum (5 + 5 = 10 px) sits exactly at the trailing-icon floor, which is the worst case in this table — anything narrower than 1024 px is by design the tightest layout the desktop view supports.
 
 **Token cell overflow-containment invariants (mandatory, narrow-viewport regression guard)** — at ~768–900 px desktop widths the Token column (13%) is too tight to fit icon + symbol + optional snowflake + `AssetActionMenu` on one line. Padding alone cannot fix this because the inner `inline-flex` grows to content width and overflows **past** the cell boundary into the Price column. All four invariants must hold (enforced by `DesktopReserveRow.test.tsx`):

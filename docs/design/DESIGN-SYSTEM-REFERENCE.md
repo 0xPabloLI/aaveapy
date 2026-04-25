@@ -182,6 +182,69 @@ L2 的所有断点档位都必须先满足这个下限再决定具体值；L1 �
 
 L1 / L2 / L3 / L4 + 安全网在 reserves table 的具体执行细则见 [`frontend-interaction-guardrails.md`](frontend-interaction-guardrails.md) 的 *Cell padding (horizontal)* / *Cross-column minimum visible gap* / *Token cell overflow-containment invariants* 三节，以及 `src/index.css` 里 `--ds-reserves-col-gap-{header,body}` 的三档断点定义。
 
+### 4.3 密集表对齐策略（按列内容性质分配 left / center / right，跨场景通用）
+
+> 你只统一了 padding gap，但表格看起来"列间距时大时小、个别列像被挤扁"——这往往不是 padding 的问题，而是**对齐策略错配**。CSS 上每对相邻列的 padding gap 是常量，但**眼睛看到的视觉间距 = padding gap + 列 N 内容右边到 cell 右边的余量 + 列 N+1 内容左边到 cell 左边的余量**。当所有列都 `text-center`，内容窄的列两侧留出大量"居中余量"，内容宽到撑满的列几乎没有余量——视觉间距自然忽宽忽窄。
+>
+> **解法是按内容性质分配对齐方向**，让"row 间内容起点对齐"或"row 间数字按位对齐"成为视觉锚点。这是密集数据表设计的工业标准，跟分层响应式压缩（§4.2）一起构成密集表设计的两大支柱。
+
+#### 三类对齐（按内容判定）
+
+| 内容性质 | 对齐 | 视觉锚点 | 典型例子 |
+|---|---|---|---|
+| **identifier / 文本主导**（symbol、名称、标签）| **left** | row 间起点对齐——眼睛从左到右扫读时所有 row 第一字符在同一 x 坐标 | Token symbol、Order ID、User name |
+| **数字主导 / tabular-nums**（价格、百分比、APY、size）| **right** | row 间末位对齐——小数点 / 千分位 / 数量级在同一 x 坐标，扫读时立刻察觉数量级差异 | Price `$1.00` vs `$1,234.56`、APY `2.90%`、Spread |
+| **chip / 视觉容器 / 图形 + 数字组合**（badge、市场标识、图表）| **center** | 内容自带视觉边界，居中最稳；左右余量小因为 chip 通常贴近列宽 | Market chip、进度环 + 数字、bar chart + 数字 |
+
+#### 为什么不能"全部居中省事"
+
+- **居中余量随内容变化** → 同一列不同 row 的内容宽度不同（"ETH" vs "PT-USDe-7MAY2026"），居中后两侧余量也不同；row 间起点 / 终点都不对齐，扫读时眼睛要左右移动。
+- **相邻列视觉间距失控** → 内容窄的列对（如 Token + Price 短数字）居中后两边各留 20+ px，邻列视觉间距 ≈ padding + 40 px；内容宽的列对（如 Market chip 撑满）几乎没居中余量，邻列视觉间距 ≈ padding。同一张表里能差出 2-3 倍。
+- **数字按位对齐丢失** → 财务表读 `$1.00` vs `$1,234.56` 居中时小数点不对齐，眼睛要重新定位每一位的"位"，扫读速度大幅下降。
+
+#### Sort arrow 位置规则（与对齐方向耦合）
+
+| header 对齐 | sort arrow 位置 | 原因 |
+|---|---|---|
+| **left** | 文字 **右** 侧（`<span>Label</span> ↓`） | label 起点已贴 cell 左边；arrow 在右不会越过下一列 |
+| **right** | 文字 **左** 侧（`↓ <span>Label</span>`） | label 终点已贴 cell 右边；arrow 在右会撞 cell padding / 邻列；放左侧不会跨越列边界 |
+| **center** | 文字 **右** 侧（默认） | 居中对齐没有"贴边"压力，约定俗成 arrow 在 label 之后 |
+
+如果违反这个规则——比如 right-aligned 列的 arrow 在文字右侧——arrow 会顶到 cell 右 padding，要么挤压 padding 让 visual gap 跌破最小可见值（§4 安全网），要么需要硬扩 padding 让出位置。两个都是症状不是治标。
+
+#### 反模式
+
+- **数字列居中** → 小数点不对齐，扫读丢失"位感"。
+- **文本列居中**（特别是 first column）→ row 间起点不对齐，扫读眼跳。
+- **chip 列右对齐 / 左对齐** → chip 撞 cell 边或浮在中间，破坏 chip 自身的视觉边界感。
+- **right-align 数字列时 sort arrow 仍在文字右** → arrow 越过列边界，要么挤压 padding，要么需要额外硬编码间距。
+- **改对齐时只改 cell `text-*`、不改内部 flex `justify-*`** → 文字虽对齐，但内部 flex 容器（如 `flex flex-col items-center`）让换行 / 多行内容仍在中间，跟主行对不齐。改 `text-right` 时记得把同一 cell 内层的 `items-center` 改成 `items-end`、`justify-center` 改成 `justify-end`。
+
+#### 实现建议（项目无关）
+
+1. **先列出所有列、按"内容主导是什么"分类**——不要凭直觉，凭"用户扫读时眼睛锚什么"。
+2. **header 跟着 body 一起改**——header 的 `<th>` 对齐方向必须与 body 一致，否则 sort arrow 跨列、column label 跟数据列对不上。
+3. **内部 flex 跟着 cell `text-*` 一起改**——`text-right` 不会自动让 flex column 的子元素 `items-end`。多行内容的 cell 特别注意。
+4. **结构性测试锁住对齐**——单测 `<td>` 的 className 必须包含 `text-left` / `text-right` / `text-center`，并加反向断言禁止"silent revert 到 text-center"。
+5. **对齐变化要同步 skeleton**——loading 状态的占位条对齐方式必须与真实内容一致，否则 loading-to-loaded 闪烁。
+
+#### 在本仓库中的落地
+
+reserves desktop table 的 8 列对齐分配：
+
+| 列 | 对齐 | 内容 |
+|---|---|---|
+| Token | **left** | identifier (symbol + icon) |
+| Price | **right** | tabular number |
+| Market | center | chain chip |
+| Size | center | 数字 + 进度环 |
+| Utilization | center | 数字 + bar chart |
+| Supply | **right** | APY 主数字 + incentive chip |
+| Spread | **right** | tabular number |
+| Borrow | **right** | APY 主数字 + incentive chip |
+
+执行细则（cell 的 `text-*` + 内部 flex `justify-*` / `items-*` + sort arrow 位置）见 [`frontend-interaction-guardrails.md`](frontend-interaction-guardrails.md) 的 *Column alignment contract* 一节。结构性测试见 `src/components/dashboard/DesktopReserveRow.test.tsx` 的 *"aligns numeric columns ... to the right"* 用例。
+
 ---
 
 ## 5. 开关与选择控件（Toggle / Segmented / Chips）

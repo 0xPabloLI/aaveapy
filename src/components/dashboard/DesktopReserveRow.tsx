@@ -209,8 +209,8 @@ const DesktopReserveRow = memo(({
         onClick={() => onToggleExpand(reserveId)}
       >
         {/* Token */}
-        <TableCell className="ds-reserves-cell-td-edge-l ds-row-pad text-center overflow-hidden">
-          <div className="flex w-full min-w-0 items-center justify-center gap-[var(--ds-space-2)]">
+        <TableCell className="ds-reserves-cell-td-edge-l ds-row-pad text-left overflow-hidden">
+          <div className="flex w-full min-w-0 items-center justify-start gap-[var(--ds-space-2)]">
           {isPortfolioMode && onPortfolioToggle && (
             <button
               type="button"
@@ -233,7 +233,7 @@ const DesktopReserveRow = memo(({
               )}
             </button>
           )}
-          <div className="group/token flex min-w-0 max-w-full items-center justify-center gap-[var(--ds-space-1-5)]">
+          <div className="group/token flex min-w-0 max-w-full items-center justify-start gap-[var(--ds-space-1-5)]">
             <TokenIcon symbol={iconSymbol} size={28} loading="eager" logoURI={logoURI} className="shrink-0" />
             <span className="font-semibold text-foreground ds-text-13 break-words min-w-0">
               {reserve.tokenSymbol}
@@ -262,8 +262,8 @@ const DesktopReserveRow = memo(({
           </div>
           </div>
         </TableCell>
-        {/* Price — 左右留白更小 */}
-        <TableCell className="ds-reserves-cell-td ds-row-pad whitespace-nowrap text-center hidden md:table-cell tabular-nums text-muted-foreground ds-text-13">
+        {/* Price */}
+        <TableCell className="ds-reserves-cell-td ds-row-pad whitespace-nowrap text-right hidden md:table-cell tabular-nums text-muted-foreground ds-text-13">
           {formatUsd(reserve.tokenPrice)}
         </TableCell>
         {/* Market — 左侧留白更小，右侧与其余列统一 */}
@@ -445,8 +445,8 @@ const DesktopReserveRow = memo(({
           </div>
         </TableCell>
         {/* Supply */}
-        <TableCell className="ds-reserves-cell-td ds-row-pad whitespace-nowrap text-center">
-          <div className="flex flex-col items-center justify-center gap-[var(--ds-space-0-5)] min-h-[2.75rem]">
+        <TableCell className="ds-reserves-cell-td ds-row-pad whitespace-nowrap text-right">
+          <div className="flex flex-col items-end justify-center gap-[var(--ds-space-0-5)] min-h-[2.75rem]">
             {reserve.supplyDisabled ? (
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -462,7 +462,7 @@ const DesktopReserveRow = memo(({
               </span>
             )}
             {displaySupplyIncentive !== null && (
-              <div className="flex items-center gap-[var(--ds-space-0-5)] ds-text-11 justify-center min-h-[1.25rem]">
+              <div className="flex items-center gap-[var(--ds-space-0-5)] ds-text-11 justify-end min-h-[1.25rem]">
                 <span className={`tabular-nums font-medium ${reserve.supplyDisabled ? 'text-secondary' : 'ds-text-emerald-500-70'}`}>
                   {formatPercent(displaySupplyNative)}
                 </span>
@@ -484,7 +484,7 @@ const DesktopReserveRow = memo(({
           </div>
         </TableCell>
         {/* Spread */}
-        <TableCell className="ds-reserves-cell-td ds-row-pad whitespace-nowrap text-center hidden md:table-cell">
+        <TableCell className="ds-reserves-cell-td ds-row-pad whitespace-nowrap text-right hidden md:table-cell">
           <span
             className={`font-bold tabular-nums ds-text-14 ${
               spread !== null ? 'ds-text-purple-500' : 'text-muted-foreground/70'
@@ -494,8 +494,8 @@ const DesktopReserveRow = memo(({
           </span>
         </TableCell>
         {/* Borrow */}
-        <TableCell className="ds-reserves-cell-td-edge-r ds-row-pad whitespace-nowrap text-center">
-          <div className="flex flex-col items-center justify-center gap-[var(--ds-space-0-5)] min-h-[2.75rem]">
+        <TableCell className="ds-reserves-cell-td-edge-r ds-row-pad whitespace-nowrap text-right">
+          <div className="flex flex-col items-end justify-center gap-[var(--ds-space-0-5)] min-h-[2.75rem]">
             {reserve.borrowDisabled ? (
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -511,7 +511,7 @@ const DesktopReserveRow = memo(({
               </span>
             )}
             {displayBorrowIncentive !== null && (
-              <div className="flex items-center gap-[var(--ds-space-0-5)] ds-text-11 justify-center min-h-[1.25rem]">
+              <div className="flex items-center gap-[var(--ds-space-0-5)] ds-text-11 justify-end min-h-[1.25rem]">
                 {displayBorrowNative !== null && (
                   <>
                     <span className={`tabular-nums font-medium ${reserve.borrowDisabled ? 'text-secondary' : 'ds-text-brand-cyan-70'}`}>
