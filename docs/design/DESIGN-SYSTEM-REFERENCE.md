@@ -58,7 +58,7 @@
 - **数值**：一律 `tabular-nums` 保证对齐。
 - **文字与边框**：**强制** — 所有带边框的容器（卡片、表格单元格、警告条、按钮）内，文字与边框之间至少保留 8px（`--ds-space-2`）内边距，不得贴边。
 - **文字与箭头/图标**：**强制** — 文字与紧邻的箭头、chevron、展开/收起图标之间必须留有呼吸空间，使用 `gap-[var(--ds-space-1)]`（4px）或 `gap-[var(--ds-space-1-5)]`（6px）。等效的 Tailwind 简写 `gap-1` / `gap-1.5` 亦可。禁止文字与箭头紧贴（如 `gap-0` 或无 gap 的 flex）。此规则适用于：下拉按钮（如 Size ⌄）、下拉菜单选项、排序选项、展开指示器、导航箭头等所有文字+图标的组合。
-- **Token symbol 单行优先 + 放不下时换行（强制）**：所有端（桌面 + 移动）的 token symbol 必须**优先单行完整显示**；只有在真实可用宽度不足时，才**允许换行到下一行**继续显示完整 symbol（CSS：`break-words` + `min-w-0`，由 flex 父级配合 `flex w-full min-w-0`）。**禁止**对 short symbol 做提前缩写（如 `USDT` → `U...`），**禁止**使用 `truncate` / 尾部省略号、`break-all`、逐字符换行或中间截断。这是\"先单行后换行（never truncate）\"的统一规则，覆盖之前\"放不下时尾部省略\"的旧约定。
+- **Token symbol 优先单行 + 放不下时换行（强制）**：所有端（桌面 + 移动）的 token symbol 必须**优先单行完整显示**；只有在真实可用宽度不足时，才**允许换行到下一行**继续显示完整 symbol（CSS：`break-words` + `min-w-0`，由 flex 父级配合 `flex w-full min-w-0`）。**禁止**对 short symbol 做提前缩写（如 `USDT` → `U...`），**禁止**使用 `truncate` / 尾部省略号、`break-all`、逐字符换行或中间截断。这是\"优先单行、放不下时换行（never truncate）\"的统一规则，覆盖之前\"放不下时尾部省略\"的旧约定。
 
 ### 数据列层级（Supply / Borrow APY、Size、Util）
 
@@ -86,7 +86,8 @@
 
 - **移动优先**，触控目标 ≥ 44×44px。
 - **多列面板**（如 Supply / Spread / Borrow）：等宽列、统一压缩，不单独给某一列固定或更大宽度。
-- **表格**：表头与占位符（如 `-`）使用相同列宽与对齐，避免表头与内容错位。**所有表格内容统一遵循\"先保持单行，仅在确实放不下时换行\"**——既不\"优先换行\"也不\"省略\"，token symbol、市场名、价格、APY 等都按这条规则处理。换行通过 `break-words` + `min-w-0` 实现，**禁止**使用 `truncate` / 尾部省略号或 `break-all`。
+- **表格**：表头与占位符（如 `-`）使用相同列宽与对齐，避免表头与内容错位。**所有表格内容统一遵循\"优先保持单行，仅在确实放不下时换行\"**——既不\"优先换行\"也不\"省略\"，token symbol、市场名、价格、APY 等都按这条规则处理。换行通过 `break-words` + `min-w-0` 实现，**禁止**使用 `truncate` / 尾部省略号或 `break-all`。
+- **相邻列最小可见 gap（强制，跨场景通用）**：任何\"多列\"布局——不仅是 `<table>`，也包括 grid、多列卡片、并排面板——**相邻列之间必须保留固定的最小可见间距**，让相邻列的文字、数字、尾部图标不会在窄视口下读起来像粘成一团或互相覆盖。最小值建议 **≥ `--ds-space-2` (8 px)**；当某一列以尾部图标（外链 `↗`、菜单触发器、chevron 等）结束、邻列以紧凑数字/价格开头时，**总间距 ≥ 10 px**（典型实现：`pr-[var(--ds-space-2)]` + `pl-[var(--ds-space-1-5)]`，或者用一个统一的列间 `column-gap`/`gap` 变量）。该最小值在 header / body / skeleton 必须**保持一致**；只增不减——不允许在某一行类型把它降到下限以下。落到具体表格的执行细则见 §4.1。
 - **叠层 sticky 表头 + 页面滚动**：若顶栏与 `<thead>` 均 `position: sticky` 且 `top` 意在相对**视口**叠放，**禁止**用包住整张表（含 `thead`）的 `overflow-x-auto` / `overflow: hidden` 等制造**独立 scrollport**，否则 `thead` 的 `top` 会相对该盒计算，与视口 sticky 错位（缝中大段空白、tbody 从缝露出）。**桌面展开 simulation 时**，主数据行各 `td` 须再叠一层 sticky（`--reserves-expanded-main-row-top`），避免长 simulation 滚动时 Token/市场行消失。本项目细则见 **[frontend-interaction-guardrails.md](frontend-interaction-guardrails.md)** § *Desktop reserves table: sticky stack and scrollport (normative)* 与 *DOM contract / CSS variables*。
 - **对称**：成对出现的区块（如 Supply / Borrow）在布局与视觉权重上保持对称。
 
@@ -112,7 +113,7 @@
 
 1. **Cell 兜底**：`<TableCell className="... overflow-hidden">`，阻止内部任何残余溢出穿到邻列。
 2. **容器吃满宽度**：把 `inline-flex` 换成 `flex w-full min-w-0`（外层 `items-center justify-center`，仍可居中），这样 flex 容器宽度 = cell 内容区宽度，不会贴合内容再外扩。
-3. **文本可收缩并允许换行**：唯一允许收缩的元素（通常是 token symbol / 标题文案）加 `break-words min-w-0`——**先单行展示，真放不下时换行到下一行继续显示完整文本**（符合 §3「Token symbol 单行优先 + 放不下时换行」与 §4「表格统一先单行后换行」）。**禁止**使用 `truncate` / 尾部省略号（会丢失信息），也**禁止** `break-all`（会逐字符换行，破坏可读性）。如果发现 `break-words` 在某些纯连续字符的 symbol 上视觉换行不生效，先靠 cell `overflow-hidden` 兜底，再讨论是否引入 `[overflow-wrap:anywhere]` 这类按字符断行的兼容手段——**不要**直接退化到 `truncate` 或 `break-all`。
+3. **文本可收缩并允许换行**：唯一允许收缩的元素（通常是 token symbol / 标题文案）加 `break-words min-w-0`——**优先单行展示，真放不下时换行到下一行继续显示完整文本**（符合 §3「Token symbol 优先单行 + 放不下时换行」与 §4「表格统一优先单行、放不下时换行」）。**禁止**使用 `truncate` / 尾部省略号（会丢失信息），也**禁止** `break-all`（会逐字符换行，破坏可读性）。如果发现 `break-words` 在某些纯连续字符的 symbol 上视觉换行不生效，先靠 cell `overflow-hidden` 兜底，再讨论是否引入 `[overflow-wrap:anywhere]` 这类按字符断行的兼容手段——**不要**直接退化到 `truncate` 或 `break-all`。
 4. **固定尺寸元素都 `shrink-0`**：icon 外层、徽章/雪花 `<span>`、`AssetActionMenu`（通过 `triggerClassName="shrink-0"`）等必须保留原尺寸的元素必须标记 `shrink-0`，否则它们会被 flex 压扁或消失，窄视口看起来"图标不见了"。
 
 #### 诊断顺序（3 步定位）
