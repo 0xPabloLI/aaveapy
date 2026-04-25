@@ -99,7 +99,7 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
   useEffect(() => {
     const el = desktopRowRef.current;
     if (!el || isMobile) return;
-    const MIN_WIDTH = 520;
+    const MIN_WIDTH = 600;
     const check = () => setContainerNarrow(el.clientWidth < MIN_WIDTH);
     check();
     const ro = new ResizeObserver(check);
