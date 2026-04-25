@@ -390,14 +390,41 @@ Sticky scenario + sticky `<thead>` and **scrollport** constraints are **normativ
 | Spread  | 12%   | |
 | Borrow  | 14.5% | |
 
-**Cell padding (horizontal):** — column-gap is centrally controlled by two CSS variables in `src/index.css` and applied through a small set of utility classes. Do **not** sprinkle ad-hoc `pl-*` / `pr-*` on individual cells — it makes the table impossible to retune and makes it trivial to drift below the minimum-visible-gap floor.
+**Cell padding (horizontal):** — column-gap is centrally controlled by two CSS variables in `src/index.css` and applied through a small set of utility classes. Do **not** sprinkle ad-hoc `pl-*` / `pr-*` on individual cells — it makes the table impossible to retune and makes it trivial to drift below the minimum-visible-gap floor. The variables are **breakpoint-driven** (this is L2 of the 4-layer adaptive compression model — see `DESIGN-SYSTEM-REFERENCE.md` §4.2): they shrink on narrow desktops and expand on wide ones, so padding doesn't sit there as a px constant while the column-width percentages are doing all the responsive work.
 
 ```css
---ds-reserves-col-gap-header: 10px;   /* visible gap between two adjacent <th> */
---ds-reserves-col-gap-body:   12px;   /* visible gap between two adjacent <td> */
+:root {
+  /* < 1024 px — narrow desktop (base values) */
+  --ds-reserves-col-gap-header: 8px;
+  --ds-reserves-col-gap-body:  10px;
+}
+@media (min-width: 1024px) {
+  :root {
+    /* 1024 – 1439 px — typical desktop */
+    --ds-reserves-col-gap-header: 10px;
+    --ds-reserves-col-gap-body:  12px;
+  }
+}
+@media (min-width: 1440px) {
+  :root {
+    /* ≥ 1440 px — wide desktop, more breathing room */
+    --ds-reserves-col-gap-header: 12px;
+    --ds-reserves-col-gap-body:  14px;
+  }
+}
 ```
 
-Each interior cell side pads = `gap / 2` (so `pr` of column N + `pl` of column N+1 = exactly the configured gap). Edge sides — Token's left padding and Borrow's right padding — use `--ds-space-2` (8 px) for outer breathing room.
+Resulting visible-gap-per-tier table (every adjacent column pair, uniform across the row):
+
+| Viewport tier | `<th>` adjacent gap | `<td>` adjacent gap | Plain-floor (≥ 8 px) | Trailing-icon-floor (≥ 10 px) |
+|---|---|---|---|---|
+| < 1024 px (narrow desktop) | **8 px** | **10 px** | OK (= 8) | OK (body = 10; **header at floor**) |
+| 1024 – 1439 px | **10 px** | **12 px** | OK | OK |
+| ≥ 1440 px | **12 px** | **14 px** | OK | OK |
+
+> **Narrow-tier note**: at < 1024 px, the header gap sits *exactly* at the trailing-icon floor (10 px is the body, header is 8 px which is below the icon floor — but headers do **not** have trailing icons, only sort arrows, so the plain 8 px floor applies and the table is still safe). If a future change adds a trailing icon to a header cell, the narrow-tier header value must rise to ≥ 10 px.
+
+Each interior cell side pads = `gap / 2` (so `pr` of column N + `pl` of column N+1 = exactly the configured gap). Edge sides — Token's left padding and Borrow's right padding — use `--ds-space-2` (8 px) for outer breathing room (these stay constant across all tiers; outer breathing room is not the bottleneck).
 
 Utility classes (defined in `src/index.css`, must be used unchanged on every cell):
 
@@ -410,17 +437,11 @@ Utility classes (defined in `src/index.css`, must be used unchanged on every cel
 | `ds-reserves-cell-td-edge-l` | body Token cell |
 | `ds-reserves-cell-td-edge-r` | body Borrow cell |
 
-Resulting visible gaps (uniform across the table):
-
-- **Header**: every adjacent column pair = **10 px** (Token edge-l contributes 5 px on its right, next column contributes 5 px on its left)
-- **Body**: every adjacent column pair = **12 px**
-- **Outer edges**: Token cell left = 8 px, Borrow cell right = 8 px
-
-**Header / body / skeleton must use the same utility set** (see `LoadingState.tsx` for skeleton). To retune the whole table, change the two CSS variables — never ad-hoc-override an individual cell back to a raw `pl-*` / `pr-*`.
+**Header / body / skeleton must use the same utility set** (see `LoadingState.tsx` for skeleton). To retune the whole table, change the values inside the three tier blocks (`:root` base + the two `@media` overrides) — never ad-hoc-override an individual cell back to a raw `pl-*` / `pr-*`. **Outer edges** (Token left, Borrow right) stay at `--ds-space-2` (8 px) across all tiers.
 
 **Cross-column minimum visible gap (mandatory, generic)** — *this is the portable rule; see `DESIGN-SYSTEM-REFERENCE.md` §4 「相邻列最小可见 gap」 for the cross-project version.* Every adjacent column pair in any multi-column layout (table, grid, side-by-side panels) must keep a **fixed minimum visible gap** so that text, numbers, and trailing icons in adjacent columns never read as one merged blob or overlap at narrow viewports. Floor: **≥ `--ds-space-2` (8 px)** for plain text columns; **≥ 10 px** when one side ends with a trailing icon (external link `↗`, menu trigger, chevron). Header / body / skeleton must share the same gap; only-grow-never-shrink — never let a single row type drop below the floor. In this codebase, the floor is enforced via `--ds-reserves-col-gap-*` and the `ds-reserves-cell-*` utilities described above.
 
-**Pairwise padding rule (mandatory)** — when a cell contains a trailing icon (external-link, overflow-menu trigger, chevron) and the adjacent cell starts with tabular digits (price, percent, size), **both** must contribute padding. Do **not** try to solve the overlap by padding only one side; the side with the icon needs `pr ≥ space-2`, and the receiving side needs `pl ≥ space-1-5`. With the centralized utility classes above, this is automatically satisfied because every interior side contributes `gap/2` ≥ 5 px (header) or 6 px (body). Token header's effective `pr` (5 px) plus Price header's `pl` (5 px) gives 10 px, well clear of the "two sort arrows visually merging" failure mode.
+**Pairwise padding rule (mandatory)** — when a cell contains a trailing icon (external-link, overflow-menu trigger, chevron) and the adjacent cell starts with tabular digits (price, percent, size), **both** must contribute padding. Do **not** try to solve the overlap by padding only one side; the side with the icon needs `pr ≥ space-2`, and the receiving side needs `pl ≥ space-1-5`. With the breakpoint-driven utility classes above, this is automatically satisfied at every tier because every interior side contributes `gap/2`: header 4 / 5 / 6 px, body 5 / 6 / 7 px (narrow / mid / wide). The narrow-tier body sum (5 + 5 = 10 px) sits exactly at the trailing-icon floor, which is the worst case in this table — anything narrower than 1024 px is by design the tightest layout the desktop view supports.
 
 **Token cell overflow-containment invariants (mandatory, narrow-viewport regression guard)** — at ~768–900 px desktop widths the Token column (13%) is too tight to fit icon + symbol + optional snowflake + `AssetActionMenu` on one line. Padding alone cannot fix this because the inner `inline-flex` grows to content width and overflows **past** the cell boundary into the Price column. All four invariants must hold (enforced by `DesktopReserveRow.test.tsx`):
 

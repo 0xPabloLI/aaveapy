@@ -129,6 +129,59 @@
 
 jsdom / `renderToString` 的单测**不会**真的跑布局，无法直接断言"元素没溢出"，但可以**结构性**锁定上述不变量（`overflow-hidden`、`flex w-full min-w-0`、`truncate`、`shrink-0`）不被后续重构误删。真正的像素级回归仍需 Playwright e2e 在目标视口截图或用 `getBoundingClientRect` 断言相邻元素间距。参考 `src/components/dashboard/DesktopReserveRow.test.tsx` 里的 *"keeps Token cell content from overflowing into the Price column at narrow widths"* 用例模板。
 
+### 4.2 密集数据表的分层响应式压缩（4 层 + 安全网，跨场景通用）
+
+> 当一张多列、信息密度高的表格（reserves、订单、行情、leaderboard 等）需要在不同 viewport 下保持可读时，**列宽的百分比缩放只是 4 层压缩中的最外层**。光靠 `table-fixed` + 百分比列宽并不足够——padding 是 px 常量、内容是不可压缩的图标 + 数字，节奏不同步会导致：宽视口下显得空荡（gap 占列宽比例过小）、窄视口下 padding 反而吃掉过大比例（最差时 10%+），并把内容挤到溢出。
+>
+> **正确的做法是分 4 层主动压缩 + 1 张安全网兜底**——这是密集表设计的可迁移最佳实践。
+
+#### 四层压缩（按介入顺序，从被动到主动）
+
+| 层 | 何时介入 | 压什么 | 具体手段 |
+|---|---|---|---|
+| **L1. 列宽响应式** | 永远（基础） | 整列宽度 | `table-fixed` + `<colgroup>` 百分比 / CSS Grid `1fr`-`minmax()` |
+| **L2. padding 自身响应式** | viewport 变化时 | 列内左右留白 | 把 padding 抽成 CSS 变量，在断点（推荐 `<1024 / 1024-1440 / ≥1440`）或 `clamp()` 中重写；**禁止**写成 px 常量 |
+| **L3. 内容压缩** | padding 已到下限、列宽继续缩 | 单元格内的元素本身 | 文本 `break-words min-w-0`、图标 `shrink-0`、cell `overflow-hidden` 兜底（详见 §4.1 路径 B）|
+| **L4. 断点切视图 / 隐藏次要列** | 极窄场景（< 768 px 等） | 整张表的形态 | 桌面表 ↔ 移动卡 切换；或 `hidden md:table-cell` 隐藏 Spread/Util 之类次要列 |
+
+#### 安全网：相邻列最小可见 gap
+
+横跨所有 4 层的硬下限，**任何断点档位、任何视口宽度、任何 viewport 大小都不允许跌破**：
+
+- **普通列对**：≥ `--ds-space-2` (**8 px**)
+- **含尾部图标的列对**（外链 `↗`、菜单触发器、chevron 等）：≥ **10 px**
+
+L2 的所有断点档位都必须先满足这个下限再决定具体值；L1 的列宽百分比也不能让某列在最窄视口下被压到内容根本放不下。
+
+#### 为什么必须分层（而不是只用一种）
+
+只用某一种都会出问题：
+
+- **只 L1**：列宽缩，padding 是常量 → 窄视口里 padding 占列宽比例急剧膨胀（13% 的 Token 列在 768 px 时 padding 占 10%+），内容被挤溢出；宽视口里 gap 又显得空荡。
+- **只 L2**：padding 缩到位，但内容（图标 + 文本）本身不可压缩，撞墙后还是溢出。
+- **只 L3**：每行都换行 / `truncate`，宽视口下也强行压缩，浪费空间。
+- **只 L4**：断点跳变粗暴，断点之间的视口段照样错位。
+
+四层叠在一起、+ 安全网兜底，才能在 **768 → 2560** 这种巨大的视口跨度下保持"看起来都合理"。
+
+#### 实现建议（项目无关）
+
+1. **抽 CSS 变量作为单一事实来源**：列间 gap、padding、列宽阈值都做成 `--ds-table-*-gap` / `--ds-table-*-pad` 这类语义变量，不要散写在每个 cell 上。
+2. **L2 优先用 `@media` 断点**而非 `clamp()`：除非容器宽度严格跟 viewport 同步，否则 `clamp(min, vw, max)` 跟 viewport 不跟 container，遇到 sidebar 或多 panel 布局会失真。Container queries 在更通用但兼容性 / 复杂度更高，按项目情况选。
+3. **每个断点档都过一次安全网**：写完 `@media (min-width: X)` 之后心算一下 `gap < 8 px` / `gap < 10 px` 没有；窄屏 base 值通常是被它强制定下来的。
+4. **结构性测试锁住 L3 的不变量**（`overflow-hidden` / `min-w-0` / `shrink-0` / 不准 `truncate` / 不准散写 `pl-/pr-` 数字 padding）；像素级回归交给 e2e。
+
+#### 反模式（看到立即停手）
+
+- 把 padding 写成 px 常量（"10 px 一刀切"）——失去 L2，宽窄视口都会别扭。
+- 在某个 cell 用 `pl-[var(--ds-space-3)]` 这类 ad-hoc 数字 padding 去"局部修一下"——破坏了集中式 CSS 变量，下一个人改不动。
+- 用 `truncate` / `break-all` 解决溢出——丢信息或破可读，**永远先走 L3 的 `break-words` + 容器 `overflow-hidden` 兜底**。
+- 让 header / body / skeleton 三处的 padding 各跑各的——必然在某一行出现"列对不齐"或"第 2 行 gap 比第 1 行大"的视觉裂缝。
+
+#### 在本仓库中的落地
+
+L1 / L2 / L3 / L4 + 安全网在 reserves table 的具体执行细则见 [`frontend-interaction-guardrails.md`](frontend-interaction-guardrails.md) 的 *Cell padding (horizontal)* / *Cross-column minimum visible gap* / *Token cell overflow-containment invariants* 三节，以及 `src/index.css` 里 `--ds-reserves-col-gap-{header,body}` 的三档断点定义。
+
 ---
 
 ## 5. 开关与选择控件（Toggle / Segmented / Chips）

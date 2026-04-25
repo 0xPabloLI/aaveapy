@@ -51,10 +51,19 @@
     /* Reserves table column gap (visible space between two adjacent columns).
      * Visible gap = right padding of column N + left padding of column N+1.
      * Each interior cell side pads = gap / 2; edge sides (Token left, Borrow right)
-     * use --ds-space-2 for outer breathing room. Adjust here to retune the whole
-     * desktop reserves table without touching individual cells. */
-    --ds-reserves-col-gap-header: 10px;
-    --ds-reserves-col-gap-body: 12px;
+     * use --ds-space-2 for outer breathing room.
+     *
+     * BREAKPOINT-DRIVEN (L2 of the 4-layer adaptive compression model — see
+     * docs/design/DESIGN-SYSTEM-REFERENCE.md §4 「密集数据表的分层响应式压缩」):
+     *   < 1024 px (narrow desktop) : header  8 / body 10  ← values defined here
+     *   1024 – 1439 px (mid)       : header 10 / body 12  ← @media override below
+     *   ≥ 1440 px (wide)           : header 12 / body 14  ← @media override below
+     * Every tier respects the safety-net floor of ≥ 8 px (plain) / ≥ 10 px
+     * (column with trailing icon). Adjust the values here & in the two @media
+     * blocks below to retune the whole desktop reserves table — never reach
+     * back into individual cells. */
+    --ds-reserves-col-gap-header: 8px;
+    --ds-reserves-col-gap-body: 10px;
     --ds-card-pad: 1rem;
     --ds-card-pad-sm: 0.75rem;
     --ds-dot: 0.5rem;
@@ -98,6 +107,31 @@
     --ds-brand-cyan-rgb: 26 163 199;
     --ds-brand-magenta-rgb: 194 66 177;
     --ds-on-brand-rgb: 255 255 255;
+  }
+}
+
+/* L2 of the 4-layer adaptive compression model: padding-自身-响应式.
+ * The reserves table column gap (and therefore each cell's pl/pr via the
+ * `ds-reserves-cell-*` utility classes) responds to viewport width in three
+ * tiers. Wider viewports get more breathing room; narrower viewports tighten
+ * down to the safety-net floor (≥ 8 px plain / ≥ 10 px with trailing icon).
+ *
+ * IMPORTANT: do NOT introduce per-cell `pl-*` / `pr-*` overrides to "tune" a
+ * single column at a single breakpoint — that defeats the centralised model
+ * and re-creates the original drift problem. To retune, edit *only* the
+ * three sets of values (base + 1024 + 1440) below. See
+ * docs/design/DESIGN-SYSTEM-REFERENCE.md §4 「密集数据表的分层响应式压缩」
+ * for the full design rationale. */
+@media (min-width: 1024px) {
+  :root {
+    --ds-reserves-col-gap-header: 10px;
+    --ds-reserves-col-gap-body: 12px;
+  }
+}
+@media (min-width: 1440px) {
+  :root {
+    --ds-reserves-col-gap-header: 12px;
+    --ds-reserves-col-gap-body: 14px;
   }
 }
 
