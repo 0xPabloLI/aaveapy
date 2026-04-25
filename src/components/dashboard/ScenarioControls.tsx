@@ -128,8 +128,6 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
     return () => window.clearTimeout(timer);
   }, [supplyInput, borrowInput, inputMode, onDebouncedChange]);
 
-  const hasInput = supplyInput || borrowInput;
-
   /* shared token classes — mobile: h-9 (36px) for max compactness; desktop h-8 */
   const controlH = isMobile ? 'h-9' : 'h-8';
   const fontSize = isMobile ? 'ds-text-11' : 'ds-text-12';
@@ -137,14 +135,6 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
   /* min-w on inputs so digits don't get clipped; mobile needs more room for long numbers */
   const inputMinW = isMobile ? 'min-w-[5rem]' : 'min-w-[6rem]';
   const inputBase = `w-full min-w-0 ${inputMinW} ${controlH} ${inputPx} ${fontSize} tabular-nums placeholder:italic`;
-  const clearBtnBase = isMobile
-    ? `ds-btn-secondary ${controlH} ${fontSize} inline-flex items-center justify-center px-1.5 min-w-0`
-    : `ds-btn-secondary ${controlH} ${fontSize} inline-flex items-center gap-1.5 px-[var(--ds-space-2-5)] min-w-0`;
-  const clearBtnState = hasInput
-    ? 'border-border bg-muted/80 text-foreground hover:bg-accent hover:border-border shadow-sm'
-    : '';
-  const clearBtnMobileStyle =
-    'inline-flex h-9 w-9 items-center justify-center rounded-md border-0 bg-transparent p-0 text-muted-foreground/70 shadow-none ring-0 outline-none transition-colors hover:bg-muted/45 hover:text-foreground disabled:text-muted-foreground/35 disabled:hover:bg-transparent';
 
   /**
    * Segmented control: same metrics as `AprApyToggle` (px-3 py-1, ds-text-12, content-width segments)
@@ -222,6 +212,20 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
                 )}
                 aria-label="Supply amount"
               />
+              <button
+                type="button"
+                onClick={() => setSupplyInput('')}
+                disabled={!supplyInput.trim()}
+                className={cn(
+                  'shrink-0 rounded-md p-1 transition-colors',
+                  supplyInput.trim()
+                    ? 'text-foreground hover:bg-accent/60 hover:text-foreground'
+                    : 'text-muted-foreground/35 cursor-not-allowed',
+                )}
+                aria-label="Clear supply amount"
+              >
+                <Eraser className="size-3" aria-hidden />
+              </button>
             </div>
             <div className="flex min-w-0 items-center gap-1">
               <span className={`${fieldLabelMobileBorrow} w-11 shrink-0`}>Borrow</span>
@@ -237,41 +241,42 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
                 )}
                 aria-label="Borrow amount"
               />
-            </div>
-          </div>
-          <div className="relative flex w-8 shrink-0 flex-col items-center self-stretch">
-            <div className="absolute left-[44%] top-1/2 -translate-x-1/2 -translate-y-1/2">
               <button
                 type="button"
-                onClick={() => { setSupplyInput(''); setBorrowInput(''); }}
-                disabled={!hasInput}
-                className={cn(clearBtnMobileStyle, 'shrink-0')}
-                aria-label="Clear supply and borrow scenario inputs"
+                onClick={() => setBorrowInput('')}
+                disabled={!borrowInput.trim()}
+                className={cn(
+                  'shrink-0 rounded-md p-1 transition-colors',
+                  borrowInput.trim()
+                    ? 'text-foreground hover:bg-accent/60 hover:text-foreground'
+                    : 'text-muted-foreground/35 cursor-not-allowed',
+                )}
+                aria-label="Clear borrow amount"
               >
-                <Eraser className="size-[18px] shrink-0" aria-hidden />
+                <Eraser className="size-3" aria-hidden />
               </button>
             </div>
-            {showMeritMerklMode ? (
-              <button
-                type="button"
-                onClick={() => setMobileNetOpen((prev) => !prev)}
-                className={cn(
-                  'absolute -right-1.5 -bottom-1 inline-flex h-8 w-8 items-center justify-center text-muted-foreground/65 transition-colors',
-                  mobileNetOpen
-                    ? 'text-foreground'
-                    : 'hover:text-foreground/85',
-                )}
-                aria-label={mobileNetOpen ? 'Collapse advanced controls' : 'Expand advanced controls'}
-                aria-expanded={mobileNetOpen}
-              >
-                <SlidersHorizontal
-                  className={cn('size-3.5 transition-transform duration-300', mobileNetOpen && 'rotate-180')}
-                  aria-hidden
+          </div>
+          {showMeritMerklMode ? (
+            <button
+              type="button"
+              onClick={() => setMobileNetOpen((prev) => !prev)}
+              className={cn(
+                'shrink-0 inline-flex h-8 w-8 items-center justify-center text-muted-foreground/65 transition-colors',
+                mobileNetOpen
+                  ? 'text-foreground'
+                  : 'hover:text-foreground/85',
+              )}
+              aria-label={mobileNetOpen ? 'Collapse advanced controls' : 'Expand advanced controls'}
+              aria-expanded={mobileNetOpen}
+            >
+              <SlidersHorizontal
+                className={cn('size-3.5 transition-transform duration-300', mobileNetOpen && 'rotate-180')}
+                aria-hidden
                 />
               </button>
             ) : null}
           </div>
-        </div>
         {showMeritMerklMode && mobileNetOpen ? (
           <div className="mt-1.5 px-0.5 pb-0.5">
             <label
@@ -351,6 +356,22 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
               className={cn(inputBase, cnDsInputSurface(Boolean(supplyInput.trim()), 'supply'), 'flex-1')}
               aria-label="Supply amount"
             />
+            <button
+              type="button"
+              onClick={() => setSupplyInput('')}
+              disabled={!supplyInput.trim()}
+              className={cn(
+                'shrink-0 rounded-md p-1 transition-colors',
+                'flex items-center gap-0.5 px-1.5',
+                supplyInput.trim()
+                  ? 'text-foreground hover:bg-accent hover:text-foreground'
+                  : 'text-muted-foreground/35 cursor-not-allowed',
+              )}
+              aria-label="Clear supply amount"
+            >
+              <Eraser className="size-3.5" aria-hidden />
+              <span>Clear</span>
+            </button>
           </div>
 
           {/* Borrow Section - flex-grow to fill space */}
@@ -364,21 +385,26 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
               className={cn(inputBase, cnDsInputSurface(Boolean(borrowInput.trim()), 'borrow'), 'flex-1')}
               aria-label="Borrow amount"
             />
-          </div>
-
-          {/* Controls Section - When it wraps, it will start under Supply because it's in the same flex-wrap container */}
-          <div className="flex items-center gap-3 shrink-0">
             <button
               type="button"
-              onClick={() => { setSupplyInput(''); setBorrowInput(''); }}
-              disabled={!hasInput}
-              className={`${clearBtnBase} ${clearBtnState}`}
-              aria-label="Clear scenario inputs"
+              onClick={() => setBorrowInput('')}
+              disabled={!borrowInput.trim()}
+              className={cn(
+                'shrink-0 rounded-md p-1 transition-colors',
+                'flex items-center gap-0.5 px-1.5',
+                borrowInput.trim()
+                  ? 'text-foreground hover:bg-accent hover:text-foreground'
+                  : 'text-muted-foreground/35 cursor-not-allowed',
+              )}
+              aria-label="Clear borrow amount"
             >
-              <Eraser className="size-3.5 shrink-0" aria-hidden />
+              <Eraser className="size-3.5" aria-hidden />
               <span>Clear</span>
             </button>
+          </div>
 
+          {/* Controls Section */}
+          <div className="flex items-center gap-3 shrink-0">
             {showMeritMerklMode ? (
               <IncentiveNetCheckboxTooltip
                 id={meritMerklCheckboxId}
