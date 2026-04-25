@@ -145,7 +145,7 @@ const PortfolioCompareView = memo(function PortfolioCompareView({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <ArrowRightLeft className="size-4 text-primary" aria-hidden />
+          <ArrowRightLeft className="size-4 ds-text-brand-cyan" aria-hidden />
           <span className="ds-text-14 font-semibold text-foreground">Compare Snapshots</span>
         </div>
         <button
