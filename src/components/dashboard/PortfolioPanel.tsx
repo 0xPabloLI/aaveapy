@@ -82,7 +82,7 @@ function SearchResultRow({
           'rounded px-2 py-0.5 ds-text-10 font-semibold transition-colors',
           hasBorrow
             ? 'opacity-40 cursor-not-allowed bg-muted text-muted-foreground'
-            : 'ds-bg-brand-cyan-10 ds-text-brand-cyan hover:bg-[rgb(var(--ds-brand-cyan-rgb)/0.15)]',
+            : 'ds-bg-brand-cyan-10 ds-text-brand-cyan hover:ds-bg-brand-cyan-15',
         )}
         aria-label={`Add ${reserve.tokenSymbol} borrow`}
       >
