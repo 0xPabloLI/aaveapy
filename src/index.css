@@ -619,7 +619,7 @@
   }
 
   .dark .ds-bg-sky-500-8 {
-    background-color: rgb(var(--ds-sky-500-rgb) / 0.15);
+    background-color: rgb(var(--ds-sky-500-rgb) / 0.25);
   }
 
   .dark .ds-border-emerald-200 {

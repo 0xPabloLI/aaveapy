@@ -81,6 +81,7 @@
 - Theme: warm DeFi dashboard
 - Primary supply: emerald
 - Primary borrow: cyan
+- Frozen/Paused: sky-500 (`ds-bg-sky-500-8`, `ds-text-sky-500`)
 - Spread: purple
 - Warning: amber
 
