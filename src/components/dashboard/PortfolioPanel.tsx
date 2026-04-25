@@ -152,7 +152,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
 }: PortfolioPanelProps) {
   const isMobile = useIsMobile();
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(positions.length === 0);
   const [snapshotName, setSnapshotName] = useState('');
   const [showSaveInput, setShowSaveInput] = useState(false);
   const [compareIds, setCompareIds] = useState<string[]>([]);
@@ -228,7 +228,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
           <div className="flex items-center gap-2">
             <Layers className="size-4 text-primary" aria-hidden />
             <span className="ds-text-14 font-semibold text-foreground">
-              Portfolio
+              Batch
             </span>
             {positions.length > 0 && (
               <span className="rounded-full bg-primary/10 px-1.5 py-0.5 ds-text-10 font-bold tabular-nums text-primary">
@@ -348,9 +348,16 @@ const PortfolioPanel = memo(function PortfolioPanel({
             <p className="ds-text-12 text-muted-foreground">
               No positions yet
             </p>
-            <p className="ds-text-11 text-muted-foreground/60 mt-1">
-              Use the search above to add tokens
-            </p>
+            {!searchOpen && (
+              <button
+                type="button"
+                onClick={() => setSearchOpen(true)}
+                className="mt-2 flex items-center gap-1 rounded-lg border border-dashed border-primary/40 bg-primary/5 px-3 py-1.5 ds-text-11 font-semibold text-primary transition-colors hover:bg-primary/10"
+              >
+                <Plus className="size-3" aria-hidden />
+                Add token
+              </button>
+            )}
           </div>
         ) : (
           <div className="space-y-3">
