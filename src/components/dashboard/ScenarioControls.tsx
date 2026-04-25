@@ -1,4 +1,4 @@
-import { useState, useEffect, memo, forwardRef, useImperativeHandle, useCallback } from 'react';
+import { useState, useEffect, memo, forwardRef, useImperativeHandle, useCallback, useRef } from 'react';
 import { SlidersHorizontal, Eraser } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatNumberInput } from '@/lib/numberFormat';
@@ -93,6 +93,19 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
   const [borrowInput, setBorrowInput] = useState('');
   const [inputMode, setInputMode] = useState<ScenarioInputMode>('usd');
   const [mobileNetOpen, setMobileNetOpen] = useState(false);
+  const desktopRowRef = useRef<HTMLDivElement>(null);
+  const [containerNarrow, setContainerNarrow] = useState(false);
+
+  useEffect(() => {
+    const el = desktopRowRef.current;
+    if (!el || isMobile) return;
+    const MIN_WIDTH = 520;
+    const check = () => setContainerNarrow(el.clientWidth < MIN_WIDTH);
+    check();
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [isMobile]);
   const handleMeritMerklNetPositionChange = useCallback(
     (next: boolean) => {
       if (!onMeritMerklNetPositionChange) return;
@@ -133,7 +146,7 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
   const fontSize = isMobile ? 'ds-text-11' : 'ds-text-12';
   const inputPx = isMobile ? 'px-2' : 'px-[var(--ds-space-3)]';
   /* min-w on inputs so digits don't get clipped; mobile needs more room for long numbers */
-  const inputMinW = isMobile ? 'min-w-[5rem]' : 'min-w-[6rem]';
+  const inputMinW = isMobile ? 'min-w-[5rem]' : 'min-w-[3.5rem]';
   const inputBase = `w-full min-w-0 ${inputMinW} ${controlH} ${inputPx} ${fontSize} tabular-nums placeholder:italic`;
 
   /**
@@ -316,7 +329,7 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
   /* Desktop: tinted inner well (no extra outer border — reserves card frame only). */
   return (
     <div className="w-full min-w-0 rounded-xl bg-card/60 px-3 py-1.5 backdrop-blur-sm">
-      <div className="flex flex-row items-center gap-x-6 gap-y-3">
+      <div ref={desktopRowRef} className="flex flex-row items-center gap-x-4 gap-y-2 flex-wrap">
         {/* USD/Token Mode Switch - Always on the left */}
         <div className={cn('flex shrink-0 items-center', segmentedTrack)}>
           <button
@@ -344,9 +357,9 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
         </div>
 
         {/* Simulation inputs and controls group - Wraps as a unit to keep alignment */}
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 min-w-0 flex-1">
           {/* Supply Section - flex-grow to fill space */}
-          <div className="flex items-center gap-[var(--ds-space-1-5)] min-w-[120px] flex-1">
+          <div className="flex items-center gap-[var(--ds-space-1-5)] min-w-[80px] flex-1">
             <span className={fieldLabelSupplyDesktop}>Supply</span>
             <input
               value={supplyInput}
@@ -368,12 +381,12 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
               aria-label="Clear supply amount"
             >
               <Eraser className="size-3.5" aria-hidden />
-              <span>Clear</span>
+              {!containerNarrow && <span>Clear</span>}
             </button>
           </div>
 
           {/* Borrow Section - flex-grow to fill space */}
-          <div className="flex items-center gap-[var(--ds-space-1-5)] min-w-[120px] flex-1">
+          <div className="flex items-center gap-[var(--ds-space-1-5)] min-w-[80px] flex-1">
             <span className={fieldLabelBorrowDesktop}>Borrow</span>
             <input
               value={borrowInput}
@@ -395,7 +408,7 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
               aria-label="Clear borrow amount"
             >
               <Eraser className="size-3.5" aria-hidden />
-              <span>Clear</span>
+              {!containerNarrow && <span>Clear</span>}
             </button>
           </div>
 
