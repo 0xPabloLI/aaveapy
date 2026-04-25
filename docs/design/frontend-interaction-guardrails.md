@@ -390,19 +390,23 @@ Sticky scenario + sticky `<thead>` and **scrollport** constraints are **normativ
 | Spread  | 12%   | |
 | Borrow  | 14.5% | |
 
-**Cell padding (horizontal):** — column-gap is centrally controlled by two CSS variables in `src/index.css` and applied through a small set of utility classes. Do **not** sprinkle ad-hoc `pl-*` / `pr-*` on individual cells — it makes the table impossible to retune and makes it trivial to drift below the minimum-visible-gap floor. The variables are **breakpoint-driven** (this is L2 of the 4-layer adaptive compression model — see `DESIGN-SYSTEM-REFERENCE.md` §4.2): they shrink on narrow desktops and expand on wide ones, so padding doesn't sit there as a px constant while the column-width percentages are doing all the responsive work.
+**Cell padding (horizontal):** — column-gap and edge-padding are centrally controlled by **three** CSS variables in `src/index.css` and applied through a small set of utility classes. Do **not** sprinkle ad-hoc `pl-*` / `pr-*` on individual cells — it makes the table impossible to retune and makes it trivial to drift below the minimum-visible-gap floor. The variables are **breakpoint-driven** (this is L2 of the 4-layer adaptive compression model — see `DESIGN-SYSTEM-REFERENCE.md` §4.2): they shrink on narrow desktops and expand on wide ones, so padding doesn't sit there as a px constant while the column-width percentages are doing all the responsive work.
+
+The split between column-gap and edge-padding is intentional: the edge of the table (Token's left side, Borrow's right side) borders the **card / container**, which is a different visual relationship than column-to-column. Edge padding therefore runs **1.5–2× the column gap** so the table's outer bounds get more breathing room than the column-to-column seams.
 
 ```css
 :root {
   /* < 1024 px — narrow desktop (base values) */
   --ds-reserves-col-gap-header: 8px;
   --ds-reserves-col-gap-body:  10px;
+  --ds-reserves-edge-pad:      12px;   /* outer padding for first/last cols */
 }
 @media (min-width: 1024px) {
   :root {
     /* 1024 – 1439 px — typical desktop */
     --ds-reserves-col-gap-header: 10px;
     --ds-reserves-col-gap-body:  12px;
+    --ds-reserves-edge-pad:      16px;
   }
 }
 @media (min-width: 1440px) {
@@ -410,21 +414,22 @@ Sticky scenario + sticky `<thead>` and **scrollport** constraints are **normativ
     /* ≥ 1440 px — wide desktop, more breathing room */
     --ds-reserves-col-gap-header: 12px;
     --ds-reserves-col-gap-body:  14px;
+    --ds-reserves-edge-pad:      20px;
   }
 }
 ```
 
-Resulting visible-gap-per-tier table (every adjacent column pair, uniform across the row):
+Resulting visible-gap-per-tier table (every adjacent column pair, uniform across the row; edge column outer-pad shown alongside):
 
-| Viewport tier | `<th>` adjacent gap | `<td>` adjacent gap | Plain-floor (≥ 8 px) | Trailing-icon-floor (≥ 10 px) |
+| Viewport tier | `<th>` col gap | `<td>` col gap | Edge pad | Edge / col-gap ratio |
 |---|---|---|---|---|
-| < 1024 px (narrow desktop) | **8 px** | **10 px** | OK (= 8) | OK (body = 10; **header at floor**) |
-| 1024 – 1439 px | **10 px** | **12 px** | OK | OK |
-| ≥ 1440 px | **12 px** | **14 px** | OK | OK |
+| < 1024 px (narrow desktop) | **8 px** | **10 px** | **12 px** | 1.5× / 1.2× |
+| 1024 – 1439 px | **10 px** | **12 px** | **16 px** | 1.6× / 1.33× |
+| ≥ 1440 px | **12 px** | **14 px** | **20 px** | 1.67× / 1.43× |
 
-> **Narrow-tier note**: at < 1024 px, the header gap sits *exactly* at the trailing-icon floor (10 px is the body, header is 8 px which is below the icon floor — but headers do **not** have trailing icons, only sort arrows, so the plain 8 px floor applies and the table is still safe). If a future change adds a trailing icon to a header cell, the narrow-tier header value must rise to ≥ 10 px.
+> **Narrow-tier note**: at < 1024 px, the header col-gap sits *exactly* at the trailing-icon floor (10 px is the body, header is 8 px which is below the icon floor — but headers do **not** have trailing icons, only sort arrows, so the plain 8 px floor applies and the table is still safe). If a future change adds a trailing icon to a header cell, the narrow-tier header col-gap must rise to ≥ 10 px.
 
-Each interior cell side pads = `gap / 2` (so `pr` of column N + `pl` of column N+1 = exactly the configured gap). Edge sides — Token's left padding and Borrow's right padding — use `--ds-space-2` (8 px) for outer breathing room (these stay constant across all tiers; outer breathing room is not the bottleneck).
+Each interior cell side pads = `gap / 2` (so `pr` of column N + `pl` of column N+1 = exactly the configured gap). Edge sides — Token's left padding and Borrow's right padding — use `--ds-reserves-edge-pad` so the table's outer bounds breathe more than its column-to-column seams (1.4–1.7× across tiers). **Don't** silently revert edge padding to `var(--ds-space-2)` (which equals or under-runs the col-gap); it makes the table look "stuck to the card walls".
 
 Utility classes (defined in `src/index.css`, must be used unchanged on every cell):
 
@@ -437,7 +442,7 @@ Utility classes (defined in `src/index.css`, must be used unchanged on every cel
 | `ds-reserves-cell-td-edge-l` | body Token cell |
 | `ds-reserves-cell-td-edge-r` | body Borrow cell |
 
-**Header / body / skeleton must use the same utility set** (see `LoadingState.tsx` for skeleton). To retune the whole table, change the values inside the three tier blocks (`:root` base + the two `@media` overrides) — never ad-hoc-override an individual cell back to a raw `pl-*` / `pr-*`. **Outer edges** (Token left, Borrow right) stay at `--ds-space-2` (8 px) across all tiers.
+**Header / body / skeleton must use the same utility set** (see `LoadingState.tsx` for skeleton). To retune the whole table, change the values inside the three tier blocks (`:root` base + the two `@media` overrides) — never ad-hoc-override an individual cell back to a raw `pl-*` / `pr-*`. Outer edges (Token left, Borrow right) follow `--ds-reserves-edge-pad` (12 / 16 / 20 px per tier).
 
 **Cross-column minimum visible gap (mandatory, generic)** — *this is the portable rule; see `DESIGN-SYSTEM-REFERENCE.md` §4 「相邻列最小可见 gap」 for the cross-project version.* Every adjacent column pair in any multi-column layout (table, grid, side-by-side panels) must keep a **fixed minimum visible gap** so that text, numbers, and trailing icons in adjacent columns never read as one merged blob or overlap at narrow viewports. Floor: **≥ `--ds-space-2` (8 px)** for plain text columns; **≥ 10 px** when one side ends with a trailing icon (external link `↗`, menu trigger, chevron). Header / body / skeleton must share the same gap; only-grow-never-shrink — never let a single row type drop below the floor. In this codebase, the floor is enforced via `--ds-reserves-col-gap-*` and the `ds-reserves-cell-*` utilities described above.
 

@@ -140,9 +140,22 @@ jsdom / `renderToString` 的单测**不会**真的跑布局，无法直接断言
 | 层 | 何时介入 | 压什么 | 具体手段 |
 |---|---|---|---|
 | **L1. 列宽响应式** | 永远（基础） | 整列宽度 | `table-fixed` + `<colgroup>` 百分比 / CSS Grid `1fr`-`minmax()` |
-| **L2. padding 自身响应式** | viewport 变化时 | 列内左右留白 | 把 padding 抽成 CSS 变量，在断点（推荐 `<1024 / 1024-1440 / ≥1440`）或 `clamp()` 中重写；**禁止**写成 px 常量 |
+| **L2. padding 自身响应式** | viewport 变化时 | 列内左右留白（含**外缘 padding**，见下文）| 把 padding 抽成 CSS 变量，在断点（推荐 `<1024 / 1024-1440 / ≥1440`）或 `clamp()` 中重写；**禁止**写成 px 常量 |
 | **L3. 内容压缩** | padding 已到下限、列宽继续缩 | 单元格内的元素本身 | 文本 `break-words min-w-0`、图标 `shrink-0`、cell `overflow-hidden` 兜底（详见 §4.1 路径 B）|
 | **L4. 断点切视图 / 隐藏次要列** | 极窄场景（< 768 px 等） | 整张表的形态 | 桌面表 ↔ 移动卡 切换；或 `hidden md:table-cell` 隐藏 Spread/Util 之类次要列 |
+
+#### L2 内的两个子量：列间 gap vs 外缘 padding（必须分开管）
+
+L2 不只一个值——密集表至少有 **两套** padding 要分别响应式：
+
+| 子量 | 作用位置 | 视觉职责 | 推荐取值 |
+|---|---|---|---|
+| **列间 gap**（`gap/2` 在每个 interior 边）| 列 N 与列 N+1 之间 | 防止内容糊成一团 | 普通列 ≥ 8 px、含尾部图标 ≥ 10 px（见安全网） |
+| **外缘 padding**（first column 的左 / last column 的右）| 表格容器边 ↔ 第一/最后一列内容之间 | 让表格内容不贴容器边、跟卡片 border 之间有"层次感" | **外缘 padding ≈ 列间 gap × 1.5–2**（外缘比内缘更宽） |
+
+为什么外缘必须比内缘宽？因为视觉层级上外缘是"卡片 / 容器内边距"的一部分，需要和**容器外的负空间**（卡片 border、页面背景）形成层次；列间 gap 只在"列 ↔ 列"两个**对等**元素之间分隔。两者职责不同，给同样的值（如都用 `--ds-space-2 = 8 px`）就会让表格"贴壳"——第一列的 icon 看起来跟卡片左边贴上、最后一列的数字看起来跟卡片右边贴上。
+
+> **本仓库实现**：`--ds-reserves-edge-pad` 三档断点驱动 12 / 16 / 20 px，对比 `--ds-reserves-col-gap-body` 同档 10 / 12 / 14 px，外缘约为内缘的 1.5×（narrow）→ 1.4×（wide）。
 
 #### 安全网：相邻列最小可见 gap
 
@@ -177,10 +190,11 @@ L2 的所有断点档位都必须先满足这个下限再决定具体值；L1 �
 - 在某个 cell 用 `pl-[var(--ds-space-3)]` 这类 ad-hoc 数字 padding 去"局部修一下"——破坏了集中式 CSS 变量，下一个人改不动。
 - 用 `truncate` / `break-all` 解决溢出——丢信息或破可读，**永远先走 L3 的 `break-words` + 容器 `overflow-hidden` 兜底**。
 - 让 header / body / skeleton 三处的 padding 各跑各的——必然在某一行出现"列对不齐"或"第 2 行 gap 比第 1 行大"的视觉裂缝。
+- **把外缘 padding 等同于列间 gap 的一半**（即外缘 = `gap/2`，跟 interior cell 的某一侧一样）——表格内容会"贴壳"，第一列的 icon 看起来跟卡片左 border 贴上。外缘必须有自己的变量，至少是列间 gap 的 1.5×。
 
 #### 在本仓库中的落地
 
-L1 / L2 / L3 / L4 + 安全网在 reserves table 的具体执行细则见 [`frontend-interaction-guardrails.md`](frontend-interaction-guardrails.md) 的 *Cell padding (horizontal)* / *Cross-column minimum visible gap* / *Token cell overflow-containment invariants* 三节，以及 `src/index.css` 里 `--ds-reserves-col-gap-{header,body}` 的三档断点定义。
+L1 / L2 / L3 / L4 + 安全网在 reserves table 的具体执行细则见 [`frontend-interaction-guardrails.md`](frontend-interaction-guardrails.md) 的 *Cell padding (horizontal)* / *Cross-column minimum visible gap* / *Token cell overflow-containment invariants* 三节，以及 `src/index.css` 里 `--ds-reserves-col-gap-{header,body}` 与 `--ds-reserves-edge-pad` 的三档断点定义。
 
 ### 4.3 密集表对齐策略（按列内容性质分配 left / center / right，跨场景通用）
 

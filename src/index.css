@@ -64,6 +64,11 @@
      * back into individual cells. */
     --ds-reserves-col-gap-header: 8px;
     --ds-reserves-col-gap-body: 10px;
+    /* Outer edge padding for the table's first (Token) and last (Borrow)
+     * columns. By design this is 1.5–2× the interior gap/2 so the table's
+     * left and right edges have more breathing room than the column-to-column
+     * seams. Same breakpoint cadence as --ds-reserves-col-gap-*. */
+    --ds-reserves-edge-pad: 12px;
     --ds-card-pad: 1rem;
     --ds-card-pad-sm: 0.75rem;
     --ds-dot: 0.5rem;
@@ -126,12 +131,14 @@
   :root {
     --ds-reserves-col-gap-header: 10px;
     --ds-reserves-col-gap-body: 12px;
+    --ds-reserves-edge-pad: 16px;
   }
 }
 @media (min-width: 1440px) {
   :root {
     --ds-reserves-col-gap-header: 12px;
     --ds-reserves-col-gap-body: 14px;
+    --ds-reserves-edge-pad: 20px;
   }
 }
 
@@ -324,24 +331,24 @@
     padding-right: calc(var(--ds-reserves-col-gap-header) / 2);
   }
   .ds-reserves-cell-th-edge-l {
-    padding-left: var(--ds-space-2);
+    padding-left: var(--ds-reserves-edge-pad);
     padding-right: calc(var(--ds-reserves-col-gap-header) / 2);
   }
   .ds-reserves-cell-th-edge-r {
     padding-left: calc(var(--ds-reserves-col-gap-header) / 2);
-    padding-right: var(--ds-space-2);
+    padding-right: var(--ds-reserves-edge-pad);
   }
   .ds-reserves-cell-td {
     padding-left: calc(var(--ds-reserves-col-gap-body) / 2);
     padding-right: calc(var(--ds-reserves-col-gap-body) / 2);
   }
   .ds-reserves-cell-td-edge-l {
-    padding-left: var(--ds-space-2);
+    padding-left: var(--ds-reserves-edge-pad);
     padding-right: calc(var(--ds-reserves-col-gap-body) / 2);
   }
   .ds-reserves-cell-td-edge-r {
     padding-left: calc(var(--ds-reserves-col-gap-body) / 2);
-    padding-right: var(--ds-space-2);
+    padding-right: var(--ds-reserves-edge-pad);
   }
 
   .ds-card-pad {
