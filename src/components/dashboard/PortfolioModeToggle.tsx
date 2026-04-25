@@ -54,7 +54,7 @@ const PortfolioModeToggle = memo(function PortfolioModeToggle({
             className={cn(
               'inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full px-1 ds-text-10 font-bold tabular-nums',
               isPortfolio
-                ? 'bg-primary/15 text-primary'
+                ? 'bg-foreground/10 text-foreground'
                 : 'bg-muted text-muted-foreground',
             )}
           >
