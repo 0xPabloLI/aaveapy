@@ -100,11 +100,8 @@ const PortfolioPositionRow = memo(function PortfolioPositionRow({
           onClick={() => onUpdateAmount(position.positionId, '')}
           disabled={!position.amount.trim()}
           className={cn(
-            'shrink-0 rounded-md p-1 transition-colors',
-            !isMobile && 'flex items-center gap-0.5 px-1.5',
-            position.amount.trim()
-              ? 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
-              : 'text-muted-foreground/35 cursor-not-allowed',
+            'ds-btn-secondary p-1',
+            !isMobile && 'gap-0.5 px-1.5',
           )}
           aria-label={`Clear ${position.tokenSymbol} amount`}
         >
