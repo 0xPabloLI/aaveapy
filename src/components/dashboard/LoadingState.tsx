@@ -301,15 +301,16 @@ function DesktopTableSkeleton() {
         {/* Table */}
         <table className="w-full table-fixed min-w-0">
           <colgroup>
-            {/* Order: Token → Market → Price → Size → Util → Supply → Spread → Borrow */}
-            <col style={{ width: '13%' }} />
-            <col style={{ width: '11.5%' }} />
-            <col style={{ width: '10.5%' }} />
-            <col style={{ width: '13%' }} />
-            <col style={{ width: '12%' }} />
-            <col style={{ width: '13.5%' }} />
-            <col style={{ width: '12%' }} />
+            {/* Order: Token → Market → Price → Size → Util → Supply → Spread → Borrow
+             * Widths must mirror ReservesTable.tsx exactly. */}
+            <col style={{ width: '14%' }} />
             <col style={{ width: '14.5%' }} />
+            <col style={{ width: '8%' }} />
+            <col style={{ width: '12%' }} />
+            <col style={{ width: '13%' }} />
+            <col style={{ width: '12.5%' }} />
+            <col style={{ width: '12%' }} />
+            <col style={{ width: '14%' }} />
           </colgroup>
           <thead>
             <tr className="border-b border-border/60">
@@ -341,18 +342,18 @@ function DesktopTableSkeleton() {
                 <td className="ds-reserves-cell-td py-[var(--ds-space-3)]">
                   <Skeleton variant="subtle" className={`h-4 ml-auto rounded-md ${i % 2 === 0 ? 'w-14' : 'w-10'}`} />
                 </td>
-                {/* Size: supply + borrow stacked */}
+                {/* Size: supply + borrow stacked (right-aligned) */}
                 <td className="ds-reserves-cell-td py-[var(--ds-space-3)]">
-                  <div className="flex flex-col items-center gap-[var(--ds-space-0-5)]">
+                  <div className="flex flex-col items-end gap-[var(--ds-space-0-5)]">
                     <Skeleton variant="gradient" className={`h-4 rounded-md ${i % 2 === 0 ? 'w-16' : 'w-14'}`} />
                     <Skeleton variant="subtle" className={`h-4 rounded-md ${i % 2 === 0 ? 'w-14' : 'w-16'}`} />
                   </div>
                 </td>
-                {/* Utilization */}
+                {/* Utilization (right-aligned) */}
                 <td className="ds-reserves-cell-td py-[var(--ds-space-3)]">
-                  <div className="flex items-center justify-center gap-1">
-                    <Skeleton variant="subtle" className="h-4 w-10 rounded-md" />
+                  <div className="flex items-center justify-end gap-1">
                     <Skeleton variant="subtle" className="w-2 h-4 rounded-sm border-transparent" />
+                    <Skeleton variant="subtle" className="h-4 w-10 rounded-md" />
                   </div>
                 </td>
                 {/* Supply: total + native+incentive breakdown (right-aligned) */}

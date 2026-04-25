@@ -383,14 +383,14 @@ Column order follows the **DeFi/lending convention**: Asset → Network/Market s
 
 | Column  | Width | Notes |
 |---------|-------|--------|
-| Token   | 13%   | Left three columns kept slightly wider for readability |
-| Market  | 11.5% | Sits adjacent to Token (DeFi convention) |
-| Price   | 10.5% | |
-| Size    | 13%   | |
-| Utilization | 12%   | |
-| Supply  | 13.5% | Right three (Supply / Spread / Borrow) slightly tighter |
+| Token   | 14%   | identifier — `[max-width:max-content]` on symbol so ↗ stays adjacent to text |
+| Market  | 14.5% | Sits adjacent to Token (DeFi convention) |
+| Price   | 8%    | Tabular number ($X.XX); narrow on purpose so chip→price visual gap doesn't gape |
+| Size    | 12%   | |
+| Utilization | 13%   | |
+| Supply  | 12.5% | |
 | Spread  | 12%   | |
-| Borrow  | 14.5% | |
+| Borrow  | 14%   | |
 
 **Cell padding (horizontal):** — column-gap and edge-padding are centrally controlled by **three** CSS variables in `src/index.css` and applied through a small set of utility classes. Do **not** sprinkle ad-hoc `pl-*` / `pr-*` on individual cells — it makes the table impossible to retune and makes it trivial to drift below the minimum-visible-gap floor. The variables are **breakpoint-driven** (this is L2 of the 4-layer adaptive compression model — see `DESIGN-SYSTEM-REFERENCE.md` §4.2): they shrink on narrow desktops and expand on wide ones, so padding doesn't sit there as a px constant while the column-width percentages are doing all the responsive work.
 
@@ -452,14 +452,16 @@ Utility classes (defined in `src/index.css`, must be used unchanged on every cel
 
 | Column | `<th>` / `<td>` | Inner flex | Sort arrow position |
 |---|---|---|---|
-| **Token** (identifier) | `text-left` | `flex w-full justify-start`; `group/token … justify-start` | label right (`<span>Token</span> ↓`) |
+| **Token** (identifier) | `text-left` | `flex w-full justify-start`; `group/token … justify-start`; symbol span `[max-width:max-content]` | label right (`<span>Token</span> ↓`) |
 | **Market** (chip) | `text-center` | `flex justify-center` (unchanged) | label right (default) |
 | **Price** (tabular num) | `text-right` | — | label left (`↓ <span>Price</span>`) |
-| **Size** (num + ring) | `text-center` | `flex flex-col items-center` (unchanged) | dropdown chip (no arrow) |
-| **Utilization** (num + bar) | `text-center` | `inline-flex justify-center` (unchanged) | dropdown chip (no arrow) |
+| **Size** (num + ring) | `text-right` | `flex flex-col items-end`; per-row `inline-flex items-center gap-1.5`; **rows without cap render a transparent 12×12 ring placeholder** (`<span aria-hidden className="inline-block w-3 h-3 shrink-0" />`) | dropdown chip; outer `flex justify-end` |
+| **Utilization** (num + bar) | `text-right` | `inline-flex items-center justify-end gap-1.5 w-full`; bar prefix → `flex flex-col items-end` numeric stack | dropdown chip; outer `flex justify-end` |
 | **Supply** (APY + incentive) | `text-right` | `flex flex-col items-end`; secondary row `justify-end` | dropdown chip; outer `flex justify-end` |
 | **Spread** (tabular num) | `text-right` | — | label left (`↓ <span>Spread</span>`) |
 | **Borrow** (APY + incentive) | `text-right` (edge-r) | `flex flex-col items-end`; secondary row `justify-end` | dropdown chip; outer `flex justify-end` |
+
+**Ring / decorator placeholder contract (mandatory)** — Size column has rows with cap rings (`CapProgressRing` / `BorrowCapProgressRing`) and rows without (when `supplyCapUsd` / `borrowCapUsd` is null). Without a placeholder, the numeric column shifts horizontally between "has-ring" and "no-ring" rows because the ring takes 12 px + 6 px gap on the right of the number. The fallback (no-cap) branch must render a 12×12 transparent placeholder (`<span aria-hidden className="inline-block w-3 h-3 shrink-0" />`) so the numeric right edge stays in the same column position across rows. Same principle applies to any future right-aligned column that mixes "decorated" and "plain" cells.
 
 The `LoadingState.tsx` skeleton **must** mirror this alignment per cell (`ml-auto` for right-aligned numeric placeholders, `items-end` for stacked numeric placeholders, `justify-start` for the Token icon + symbol pair). A loading-to-loaded transition that shifts content horizontally is a regression — fix the skeleton, don't accept the flicker.
 

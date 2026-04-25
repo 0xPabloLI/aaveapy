@@ -267,7 +267,10 @@ describe('DesktopReserveRow', () => {
     // (2) Inner group/token uses flex + min-w-0 (not inline-flex).
     expect(html).toMatch(/class="group\/token flex min-w-0 max-w-full/);
     // (3) Token symbol can wrap (break-words), not truncate / break-all.
-    expect(html).toMatch(/<span class="font-semibold text-foreground ds-text-13 break-words min-w-0">/);
+    // [max-width:max-content] keeps the symbol's box no wider than its single-line natural width
+    // so the trailing AssetActionMenu (↗) stays visually adjacent to the text on wide viewports
+    // (instead of getting pushed to the cell's right edge while the wrapped text sits on the left).
+    expect(html).toMatch(/<span class="font-semibold text-foreground ds-text-13 break-words min-w-0 \[max-width:max-content\]">/);
     expect(html).not.toMatch(/font-semibold text-foreground ds-text-13 truncate/);
     expect(html).not.toMatch(/font-semibold text-foreground ds-text-13 break-all/);
     // (4) Icon wrapper, snowflake wrapper, and AssetActionMenu trigger are all shrink-0.
@@ -333,8 +336,65 @@ describe('DesktopReserveRow', () => {
     expect(html).toMatch(/<td[^>]*ds-reserves-cell-td-edge-r[^"]*whitespace-nowrap text-right[^>]*>\s*<div class="flex flex-col items-end justify-center/);
     // Spread cell: text-right + single span (no internal stack).
     expect(html).toMatch(/<td[^>]*ds-reserves-cell-td[^"]*whitespace-nowrap text-right[^>]*hidden md:table-cell[^>]*>\s*<span/);
+    // Size cell: text-right + items-end (numeric stack right-aligned).
+    expect(html).toMatch(/<td[^>]*ds-reserves-cell-td[^"]*whitespace-nowrap text-right[^>]*hidden md:table-cell[^"]*tabular-nums[^>]*>\s*<div class="flex flex-col items-end/);
+    // Util cell: text-right + inline-flex justify-end (bar prefix + numeric stack right-aligned).
+    expect(html).toMatch(/<td[^>]*ds-reserves-cell-td[^"]*whitespace-nowrap text-right[^>]*hidden md:table-cell[^"]*tabular-nums[^>]*>\s*<div class="inline-flex items-center justify-end/);
     // Anti-regression: numeric cells must NOT silently drift back to text-center.
     expect(html).not.toMatch(/<td[^>]*ds-reserves-cell-td[^"]*tabular-nums[^"]*text-center[^"]*"[^>]*>\$/);
     expect(html).not.toMatch(/<td[^>]*ds-reserves-cell-td-edge-r[^"]*text-center/);
+    // Anti-regression: Size + Util can't drift back to text-center either now that
+    // they're right-aligned per the industry-standard alignment contract.
+    expect(html).not.toMatch(/<td[^>]*ds-reserves-cell-td[^"]*tabular-nums[^"]*text-center[^"]*hidden md:table-cell/);
+  });
+
+  it('renders a 12×12 transparent ring placeholder on Size rows without cap so numbers stay in the same column', () => {
+    // Regression guard: Size column mixes rows with `CapProgressRing` /
+    // `BorrowCapProgressRing` (which take 12 px ring + 6 px gap on the right
+    // of the number) and rows without caps. Without a placeholder, the
+    // numeric column shifts horizontally row-to-row, breaking the tabular-num
+    // grid. The fallback branch must render `<span aria-hidden class="inline-block w-3 h-3 shrink-0" />`.
+    const queryClient = new QueryClient();
+    const reserveWithoutCaps: ReserveWithSpread = {
+      ...reserve,
+      supplyCapUsd: null,
+      borrowCapUsd: null,
+    };
+    const html = renderToString(
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Table>
+            <TableBody>
+              <DesktopReserveRow
+                reserve={reserveWithoutCaps}
+                reserveId="AaveV3Ethereum-0x0000000000000000000000000000000000000001"
+                isExpanded={false}
+                onToggleExpand={() => {}}
+                onIncentiveClick={() => {}}
+                displaySupplyTotal={2.9}
+                displaySupplyNative={2.5}
+                displaySupplyIncentive={0.4}
+                displayBorrowTotal={3.3}
+                displayBorrowNative={3.4}
+                displayBorrowIncentive={0.1}
+                displayUtilization={52}
+                spread={-0.4}
+                simulation={simulation}
+                supplyInput="1000"
+                borrowInput="500"
+                inputMode="usd"
+                isApy
+                isMobile={false}
+              />
+            </TableBody>
+          </Table>
+        </TooltipProvider>
+      </QueryClientProvider>
+    );
+
+    // Two placeholders: one for Supply row (no supply cap), one for Borrow row
+    // (no borrow cap). Each is `inline-block w-3 h-3 shrink-0`, aria-hidden.
+    const placeholderMatches = html.match(/<span aria-hidden="true" class="inline-block w-3 h-3 shrink-0"/g) ?? [];
+    expect(placeholderMatches.length).toBeGreaterThanOrEqual(2);
   });
 });

@@ -253,11 +253,13 @@ reserves desktop table 的 8 列对齐分配：
 | Token | **left** | identifier (symbol + icon) |
 | Market | center | chain chip |
 | Price | **right** | tabular number |
-| Size | center | 数字 + 进度环 |
-| Utilization | center | 数字 + bar chart |
+| Size | **right** | 数字 + 进度环（无 cap 行用 12×12 ring placeholder 占位）|
+| Utilization | **right** | 数字 stack + bar chart prefix |
 | Supply | **right** | APY 主数字 + incentive chip |
 | Spread | **right** | tabular number |
 | Borrow | **right** | APY 主数字 + incentive chip |
+
+> **占位规则（mandatory）**：当一列在不同行有 / 没有装饰元素（如 Size 列的 progress ring、Util 列的 bar chart）时，必须给"没有装饰"的行加同尺寸透明占位（如 `<span aria-hidden className="inline-block w-3 h-3" />`），确保数字垂直栅格在跨行时严格对齐。这不是审美选项，是数字表的栅格契约——一旦有行没有占位，整列数字会出现"有环↔无环"的抖动错位。
 
 执行细则（cell 的 `text-*` + 内部 flex `justify-*` / `items-*` + sort arrow 位置）见 [`frontend-interaction-guardrails.md`](frontend-interaction-guardrails.md) 的 *Column alignment contract* 一节。结构性测试见 `src/components/dashboard/DesktopReserveRow.test.tsx` 的 *"aligns numeric columns ... to the right"* 用例。
 

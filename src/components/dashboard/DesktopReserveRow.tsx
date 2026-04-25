@@ -234,7 +234,7 @@ const DesktopReserveRow = memo(({
           )}
           <div className="group/token flex min-w-0 max-w-full items-center justify-start gap-[var(--ds-space-1-5)]">
             <TokenIcon symbol={iconSymbol} size={28} loading="eager" logoURI={logoURI} className="shrink-0" />
-            <span className="font-semibold text-foreground ds-text-13 break-words min-w-0">
+            <span className="font-semibold text-foreground ds-text-13 break-words min-w-0 [max-width:max-content]">
               {reserve.tokenSymbol}
             </span>
             {reserve.isFrozenOrPaused && (
@@ -329,9 +329,11 @@ const DesktopReserveRow = memo(({
         <TableCell className="ds-reserves-cell-td ds-row-pad whitespace-nowrap text-right hidden md:table-cell tabular-nums text-muted-foreground ds-text-13">
           {formatUsd(reserve.tokenPrice)}
         </TableCell>
-        {/* Size (Supply + Borrow) */}
-        <TableCell className="ds-reserves-cell-td ds-row-pad whitespace-nowrap text-center hidden md:table-cell tabular-nums ds-text-13">
-          <div className="flex flex-col items-center justify-center gap-[var(--ds-space-0-5)]">
+        {/* Size (Supply + Borrow) — right-aligned numeric column.
+         * 无 cap 的行用 12×12 透明 RingPlaceholder 占位，保证 supply/borrow 数字
+         * 在垂直方向跨行严格右对齐，不出现"有环 ↔ 无环"行之间的水平错位。*/}
+        <TableCell className="ds-reserves-cell-td ds-row-pad whitespace-nowrap text-right hidden md:table-cell tabular-nums ds-text-13">
+          <div className="flex flex-col items-end justify-center gap-[var(--ds-space-0-5)]">
             {/* Supply Size - Green (match Supply APY primary: ds-text-emerald-500) */}
             {hasSupplyCap ? (
               <CapProgressRing
@@ -345,8 +347,9 @@ const DesktopReserveRow = memo(({
                 triggerAriaLabel={`Supply cap details for ${reserve.tokenSymbol}`}
               />
             ) : (
-              <div className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)] ds-text-emerald-500">
+              <div className="inline-flex items-center gap-[var(--ds-space-1-5)] ds-text-emerald-500">
                 <span className="font-medium tabular-nums">{supplySizeLabel}</span>
+                <span aria-hidden className="inline-block w-3 h-3 shrink-0" />
               </div>
             )}
             {/* Borrow Size - Cyan (match tooltip: font-medium + ds-text-brand-cyan) */}
@@ -363,8 +366,9 @@ const DesktopReserveRow = memo(({
                 triggerAriaLabel={`Borrow cap details for ${reserve.tokenSymbol}`}
               />
             ) : (
-              <div className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)] ds-text-brand-cyan">
+              <div className="inline-flex items-center gap-[var(--ds-space-1-5)] ds-text-brand-cyan">
                 <span className="font-medium tabular-nums">{borrowSizeLabel}</span>
+                <span aria-hidden className="inline-block w-3 h-3 shrink-0" />
               </div>
             )}
             {hasDeficit && (
@@ -420,10 +424,16 @@ const DesktopReserveRow = memo(({
             )}
           </div>
         </TableCell>
-        {/* Utilization + Liquidity */}
-        <TableCell className="ds-reserves-cell-td ds-row-pad whitespace-nowrap text-center hidden md:table-cell tabular-nums ds-text-13">
-          <div className="inline-flex items-center justify-center gap-[var(--ds-space-1-5)]">
-            <div className="flex flex-col items-center gap-[var(--ds-space-0-5)]">
+        {/* Utilization + Liquidity — right-aligned numeric column.
+         * 数字 stack 贴右；UtilizationIndicator (bar) 在数字左侧作为视觉前缀。
+         * Bar 永远存在，不需要 placeholder。*/}
+        <TableCell className="ds-reserves-cell-td ds-row-pad whitespace-nowrap text-right hidden md:table-cell tabular-nums ds-text-13">
+          <div className="inline-flex items-center justify-end gap-[var(--ds-space-1-5)] w-full">
+            <UtilizationIndicator
+              current={displayUtilization}
+              optimal={simulation?.utilization.optimal ?? null}
+            />
+            <div className="flex flex-col items-end gap-[var(--ds-space-0-5)]">
               <span className={displayUtilization != null && simulation?.utilization.optimal != null && displayUtilization > simulation.utilization.optimal ? 'text-amber-600' : 'text-foreground'}>
                 {formatPercent(displayUtilization)}
               </span>
@@ -437,10 +447,6 @@ const DesktopReserveRow = memo(({
                 {formatScenarioSize(poolLiquidity, { inputMode, tokenPrice: displayTokenPrice, tokenSymbol: reserve.tokenSymbol })}
               </span>
             </div>
-            <UtilizationIndicator
-              current={displayUtilization}
-              optimal={simulation?.utilization.optimal ?? null}
-            />
           </div>
         </TableCell>
         {/* Supply */}
