@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 
 import { ReservesTableShowMore, ReservesTableFloatingScroll } from './ReservesTablePagination';
 import { Table, TableBody } from '@/components/ui/table';
