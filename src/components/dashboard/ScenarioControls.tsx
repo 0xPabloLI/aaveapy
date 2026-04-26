@@ -182,7 +182,7 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
 
   if (isMobile) {
     return (
-      <div className="rounded-xl border border-border/60 bg-card/60 backdrop-blur-sm px-1.5 py-1">
+      <div className="relative rounded-xl border border-border/60 bg-card/60 backdrop-blur-sm px-1.5 py-1">
         <div className="flex min-w-0 items-center gap-1.5">
           <div
             className={cn(
@@ -298,7 +298,7 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
             ) : null}
           </div>
         {showMeritMerklMode && mobileNetOpen ? (
-          <div className="mt-1.5 px-0.5 pb-0.5">
+          <div className="absolute left-0 right-0 top-full z-10 mt-1 rounded-xl border border-border/60 bg-card/95 px-1.5 py-1 backdrop-blur-sm">
             <label
               htmlFor={meritMerklCheckboxId}
               className="mx-auto flex w-fit max-w-full min-w-0 cursor-pointer items-center justify-center gap-[var(--ds-space-1-5)] rounded-md px-1.5 py-0.5 transition-colors"
