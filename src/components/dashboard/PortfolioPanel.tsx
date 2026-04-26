@@ -234,10 +234,12 @@ const PortfolioPanel = memo(function PortfolioPanel({
     return map;
   }, [positions]);
 
-  // Suggested popular tokens to seed an empty Batch panel: pick a small set
-  // of unique high-supply-APY reserves the user can add with a single click.
+  // Suggested popular tokens for quick-add. Excludes tokens already in the
+  // batch so the user can keep clicking to add more without duplicates.
   const suggestedReserves = useMemo(() => {
-    if (positions.length > 0) return [];
+    const addedSymbols = new Set(
+      positions.map((p) => p.tokenSymbol.toUpperCase()),
+    );
     const seen = new Set<string>();
     const picks: ReserveWithSpread[] = [];
     const sorted = [...reserves].sort(
@@ -245,13 +247,22 @@ const PortfolioPanel = memo(function PortfolioPanel({
     );
     for (const r of sorted) {
       const sym = r.tokenSymbol.toUpperCase();
-      if (seen.has(sym)) continue;
+      if (seen.has(sym) || addedSymbols.has(sym)) continue;
       seen.add(sym);
       picks.push(r);
       if (picks.length >= 5) break;
     }
     return picks;
-  }, [reserves, positions.length]);
+  }, [reserves, positions]);
+
+  const handleQuickAddSuggested = useCallback(
+    (reserveId: string) => {
+      handleAddFromSearch(reserveId, 'supply');
+      // Keep focus on search so the user can keep adding tokens rapidly.
+      requestAnimationFrame(() => searchInputRef.current?.focus());
+    },
+    [handleAddFromSearch],
+  );
 
   const handleRemoveToken = useCallback((reserveId: string) => {
     for (const p of positions) {
