@@ -8,6 +8,7 @@ import { memo } from 'react';
 import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { BATCH_THEME } from './batchTheme';
 
 export type SimulationMode = 'single' | 'portfolio';
 
@@ -36,7 +37,7 @@ const PortfolioModeToggle = memo(function PortfolioModeToggle({
         className={cn(
           isMobile ? 'ds-text-10' : 'ds-text-12',
           'font-semibold transition-colors duration-200',
-          isPortfolio ? 'ds-text-brand-cyan' : 'text-muted-foreground',
+          isPortfolio ? BATCH_THEME.text : 'text-muted-foreground',
         )}
       >
         Batch
@@ -46,7 +47,7 @@ const PortfolioModeToggle = memo(function PortfolioModeToggle({
           className={cn(
             'inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full px-1 ds-text-10 font-bold tabular-nums',
             isPortfolio
-              ? 'ds-bg-brand-cyan-10 ds-text-brand-cyan'
+              ? `${BATCH_THEME.bgSoft} ${BATCH_THEME.text}`
               : 'bg-muted text-muted-foreground',
           )}
         >
@@ -58,7 +59,7 @@ const PortfolioModeToggle = memo(function PortfolioModeToggle({
         onCheckedChange={(checked) =>
           onModeChange(checked ? 'portfolio' : 'single')
         }
-        className="data-[state=checked]:!bg-[rgb(var(--ds-brand-cyan-rgb))] data-[state=unchecked]:bg-muted-foreground/30"
+        className={`${BATCH_THEME.switchCheckedBg} data-[state=unchecked]:bg-muted-foreground/30`}
       />
     </label>
   );
