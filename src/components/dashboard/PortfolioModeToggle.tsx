@@ -32,14 +32,12 @@ const PortfolioModeToggle = memo(function PortfolioModeToggle({
         isMobile && !isPortfolio && 'flex-col gap-1',
       )}
     >
-      <Switch
-        checked={isPortfolio}
-        onCheckedChange={(checked) =>
-          onModeChange(checked ? 'portfolio' : 'single')
-        }
-        className="data-[state=checked]:!bg-[rgb(var(--ds-brand-cyan-rgb))] data-[state=unchecked]:bg-muted-foreground/30"
-      />
-      <div className="flex items-center gap-1">
+      <div
+        className={cn(
+          'flex items-center gap-1',
+          isMobile && isPortfolio && 'flex-col gap-0.5',
+        )}
+      >
         <span
           className={cn(
             isMobile ? 'ds-text-10' : 'ds-text-12',
@@ -62,6 +60,13 @@ const PortfolioModeToggle = memo(function PortfolioModeToggle({
           </span>
         )}
       </div>
+      <Switch
+        checked={isPortfolio}
+        onCheckedChange={(checked) =>
+          onModeChange(checked ? 'portfolio' : 'single')
+        }
+        className="data-[state=checked]:!bg-[rgb(var(--ds-brand-cyan-rgb))] data-[state=unchecked]:bg-muted-foreground/30"
+      />
     </label>
   );
 });

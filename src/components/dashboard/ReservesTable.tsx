@@ -1228,13 +1228,6 @@ const ReservesTable = ({
   const scenarioControls = (
     <div className="space-y-2">
       <div className="flex items-center gap-2">
-        {onSimulationModeChange && (
-          <PortfolioModeToggle
-            mode={simulationMode}
-            onModeChange={onSimulationModeChange}
-            positionCount={portfolioPositions ? new Set(portfolioPositions.map(p => p.reserveId)).size : 0}
-          />
-        )}
         {!isPortfolioMode && (
           <div className="flex-1 min-w-0">
             <ScenarioControls
@@ -1242,6 +1235,15 @@ const ReservesTable = ({
               onDebouncedChange={handleScenarioChange}
               meritMerklNetPosition={meritMerklNetPosition}
               onMeritMerklNetPositionChange={setMeritMerklNetPosition}
+            />
+          </div>
+        )}
+        {onSimulationModeChange && (
+          <div className="ml-auto shrink-0">
+            <PortfolioModeToggle
+              mode={simulationMode}
+              onModeChange={onSimulationModeChange}
+              positionCount={portfolioPositions ? new Set(portfolioPositions.map(p => p.reserveId)).size : 0}
             />
           </div>
         )}
