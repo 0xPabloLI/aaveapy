@@ -43,6 +43,7 @@ import {
   DeficitSheetContent,
   FrozenSheetContent,
 } from './MobileReserveSheetContent';
+import { BATCH_RESERVE_ADD_BUTTON_CLASSES } from './batchTheme';
 
 interface MobileReserveCardProps {
   reserve: ReserveWithSpread;
@@ -537,8 +538,8 @@ const MobileReserveCard = memo(({
               className={cn(
                 'flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-all duration-150',
                 isInPortfolio
-                  ? 'bg-primary/15 border-primary/40 text-primary'
-                  : 'border-border/60 text-muted-foreground/40',
+                  ? BATCH_RESERVE_ADD_BUTTON_CLASSES.selected
+                  : BATCH_RESERVE_ADD_BUTTON_CLASSES.unselected,
               )}
               aria-label={isInPortfolio ? `Remove ${reserve.tokenSymbol} from portfolio` : `Add ${reserve.tokenSymbol} to portfolio`}
             >

@@ -130,6 +130,54 @@
 
 ---
 
+## Mobile Scenario Strip: Batch & Expand Icon 居中规则
+
+在移动端 scenario strip 中，右侧列（Batch toggle + 展开 icon）必须与左侧 ScenarioControls 的上下两部分**各自居中**：
+
+```
+┌──────────────────────────────────────────────────────────┐
+│  ┌── ScenarioControls (上) ──┐  ┌── 右侧列 (上) ──┐     │
+│  │  USD│Token  Supply [____] │  │    Batch [3]     │     │  ← Batch 在上半区垂直居中
+│  │          Borrow [____]    │  │      ⚪⚪        │     │
+│  └───────────────────────────┘  └──────────────────┘     │
+│  ┌── ScenarioControls (下) ──┐  ┌── 右侧列 (下) ──┐     │
+│  │  ☑ Net lending & borrowing│  │       ⌄         │     │  ← 展开 icon 在下半区垂直居中
+│  │  Net on: …               │  │                  │     │
+│  └───────────────────────────┘  └──────────────────┘     │
+└──────────────────────────────────────────────────────────┘
+```
+
+**实现要点：**
+- 外层行使用 `flex items-stretch`（非 `items-start`），使右侧列拉伸到 ScenarioControls 全高
+- 右侧列分为两个 `flex-1` 区块，各用 `flex items-center justify-center` 实现垂直居中
+- 上半区：Batch toggle（`PortfolioModeToggle`）
+- 下半区：展开 icon（`SlidersHorizontal` 按钮），仅在 `!isPortfolioMode` 时渲染
+- 当 Net 面板收起（`mobileNetOpen === false`）时，下半区高度为 0，展开 icon 自然贴紧上半区底部
+
+## Mobile Scenario Strip: 展开 Icon 位置稳定性规则
+
+当 Net lending & borrowing 面板展开/收起时，Batch toggle 和展开 icon **位置不能移动**：
+
+```
+收起状态:                          展开状态:
+┌──────────────────────┬────┐     ┌──────────────────────┬────┐
+│ USD│Token Supply [__] │Batch│     │ USD│Token Supply [__] │Batch│  ← Batch 位置不变
+│        Borrow [__]    │ ⌄  │     │        Borrow [__]    │ ⌄  │  ← ⌄ 位置不变
+└──────────────────────┴────┘     └──────────────────────┴────┘
+                                         ┌─────────────────┐
+                                         │ ☑ Net lending & │  ← 绝对定位，不影响
+                                         │   borrowing     │     ScenarioControls 高度
+                                         └─────────────────┘
+```
+
+**实现要点：**
+- Net 面板使用 `position: absolute`（`absolute left-0 right-0 top-full z-10`），脱离文档流
+- ScenarioControls 父容器使用 `relative` 锚定绝对定位面板
+- **禁止**将 Net 面板改回流式布局（如 `mt-1.5 px-0.5 pb-0.5`），否则 ScenarioControls 高度变化会导致右侧列 Batch/⌄ 位移
+- 此规则与居中规则**同时满足**：绝对定位保证位置稳定，`items-stretch` + 双 `flex-1` 居中块保证各自居中
+
+---
+
 ## 图例
 
 - `(G)` = Token 图标

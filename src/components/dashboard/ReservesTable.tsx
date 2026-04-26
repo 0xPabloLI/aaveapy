@@ -1232,7 +1232,7 @@ const ReservesTable = ({
   const scenarioControls = (
     <div className={cn("space-y-2", isMobile && "rounded-xl border border-border/60 bg-card/60 backdrop-blur-sm px-1.5 py-1.5")}>
       {isMobile ? (
-        <div className="flex items-start gap-2">
+        <div className="flex items-stretch gap-2">
           {!isPortfolioMode && (
             <div className="flex-1 min-w-0">
               <ScenarioControls
@@ -1246,28 +1246,34 @@ const ReservesTable = ({
             </div>
           )}
           {onSimulationModeChange && (
-            <div className="ml-auto shrink-0 flex flex-col items-center gap-1.5">
-              <PortfolioModeToggle
-                mode={simulationMode}
-                onModeChange={onSimulationModeChange}
-                positionCount={portfolioPositions ? new Set(portfolioPositions.map(p => p.reserveId)).size : 0}
-              />
+            <div className="ml-auto shrink-0 flex flex-col items-center">
+              {/* Upper section: Batch toggle — vertically centered in the input row */}
+              <div className="flex flex-1 items-center justify-center">
+                <PortfolioModeToggle
+                  mode={simulationMode}
+                  onModeChange={onSimulationModeChange}
+                  positionCount={portfolioPositions ? new Set(portfolioPositions.map(p => p.reserveId)).size : 0}
+                />
+              </div>
+              {/* Lower section: expand icon — vertically centered in the Net checkbox area */}
               {!isPortfolioMode && (
-                <button
-                  type="button"
-                  onClick={handleMobileNetToggle}
-                  className={cn(
-                    'shrink-0 inline-flex h-7 w-7 items-center justify-center text-muted-foreground/65 transition-colors',
-                    mobileNetOpen ? 'text-foreground' : 'hover:text-foreground/85',
-                  )}
-                  aria-label={mobileNetOpen ? 'Collapse advanced controls' : 'Expand advanced controls'}
-                  aria-expanded={mobileNetOpen}
-                >
-                  <SlidersHorizontal
-                    className={cn('size-3.5 transition-transform duration-300', mobileNetOpen && 'rotate-180')}
-                    aria-hidden
-                  />
-                </button>
+                <div className="flex flex-1 items-center justify-center">
+                  <button
+                    type="button"
+                    onClick={handleMobileNetToggle}
+                    className={cn(
+                      'shrink-0 inline-flex h-7 w-7 items-center justify-center text-muted-foreground/65 transition-colors',
+                      mobileNetOpen ? 'text-foreground' : 'hover:text-foreground/85',
+                    )}
+                    aria-label={mobileNetOpen ? 'Collapse advanced controls' : 'Expand advanced controls'}
+                    aria-expanded={mobileNetOpen}
+                  >
+                    <SlidersHorizontal
+                      className={cn('size-3.5 transition-transform duration-300', mobileNetOpen && 'rotate-180')}
+                      aria-hidden
+                    />
+                  </button>
+                </div>
               )}
             </div>
           )}
