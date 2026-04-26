@@ -160,6 +160,12 @@ const PortfolioPanel = memo(function PortfolioPanel({
   const [showSaveInput, setShowSaveInput] = useState(false);
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [showCompare, setShowCompare] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const focusSearch = useCallback(() => {
+    setSearchOpen(true);
+    requestAnimationFrame(() => searchInputRef.current?.focus());
+  }, []);
 
   const filteredReserves = useMemo(() => {
     if (!searchQuery.trim()) return [];
