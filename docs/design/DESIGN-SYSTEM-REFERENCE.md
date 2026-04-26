@@ -254,7 +254,6 @@ L1 / L2 / L3 / L4 + 安全网在 reserves table 的具体执行细则见 [`front
 - **chip 列右对齐 / 左对齐** → chip 撞 cell 边或浮在中间，破坏 chip 自身的视觉边界感。
 - **right-align 数字列时 sort arrow 仍在文字右** → arrow 越过列边界，要么挤压 padding，要么需要额外硬编码间距。
 - **改对齐时只改 cell `text-*`、不改内部 flex `justify-*`** → 文字虽对齐，但内部 flex 容器（如 `flex flex-col items-center`）让换行 / 多行内容仍在中间，跟主行对不齐。改 `text-right` 时记得把同一 cell 内层的 `items-center` 改成 `items-end`、`justify-center` 改成 `justify-end`。
-- **token cell 使用 `items-center` 且箭头作为独立 flex 子项** → 当 token symbol 文本换行时，箭头（AssetActionMenu）会垂直居中到整个容器高度，与最后一行文字出现位置偏移。**正确做法**：外层容器用 `items-start`，将文本和箭头包裹在同一个 `inline-flex items-baseline` 容器内，确保箭头紧贴文字基线（无论单行还是多行）。参考 `DesktopReserveRow.tsx` 的实现。
 
 #### 实现建议（项目无关）
 
