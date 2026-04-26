@@ -3,6 +3,7 @@
  * Uses an iOS-style sliding toggle to clearly signal a higher-level mode
  * switch (vs. the segmented pills used for USD/Token, APR/APY).
  * On mobile the label stacks below the switch.
+ * The position count is rendered inside the toggle thumb to save space.
  */
 import { memo } from 'react';
 import { cn } from '@/lib/utils';
@@ -42,24 +43,19 @@ const PortfolioModeToggle = memo(function PortfolioModeToggle({
       >
         Batch
       </span>
-      {positionCount > 0 && (
-        <span
-          className={cn(
-            'inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full px-1 ds-text-10 font-bold tabular-nums',
-            isPortfolio
-              ? `${BATCH_THEME.bgSoft} ${BATCH_THEME.text}`
-              : 'bg-muted text-muted-foreground',
-          )}
-        >
-          {positionCount}
-        </span>
-      )}
       <Switch
         checked={isPortfolio}
         onCheckedChange={(checked) =>
           onModeChange(checked ? 'portfolio' : 'single')
         }
         className={`${BATCH_THEME.switchCheckedBg} data-[state=unchecked]:bg-muted-foreground/30`}
+        thumbContent={
+          positionCount > 0 ? (
+            <span className="ds-text-9 font-bold leading-none tabular-nums text-foreground">
+              {positionCount}
+            </span>
+          ) : undefined
+        }
       />
     </label>
   );
