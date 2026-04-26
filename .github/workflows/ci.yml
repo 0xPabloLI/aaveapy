@@ -6,11 +6,13 @@ on:
       - main
       - dev
       - railway
+      - lovable
   push:
     branches:
       - main
       - dev
       - railway
+      - lovable
       - feature/**
   workflow_dispatch:
     inputs:
@@ -144,7 +146,7 @@ jobs:
 
   live-schema-validation:
     name: live-schema-validation
-    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/lovable') && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     env:
       CI_REF: ${{ github.event.pull_request.head.sha || github.event.inputs.target_ref || github.sha }}

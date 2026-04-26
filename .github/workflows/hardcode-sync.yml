@@ -23,7 +23,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target_branch: [dev, main]
+        target_branch: [dev, main, lovable]
     runs-on: ubuntu-latest
     env:
       # One job per branch: drift on `main` and integration on `dev` both get matching bot PRs.
