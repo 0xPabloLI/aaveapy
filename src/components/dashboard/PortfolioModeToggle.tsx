@@ -28,12 +28,22 @@ const PortfolioModeToggle = memo(function PortfolioModeToggle({
   const isPortfolio = mode === 'portfolio';
   const isMobile = useIsMobile();
 
+  // Warm up the lazy Portfolio compare chunk as soon as the user signals
+  // intent (hover/focus/touch) so flipping the toggle never blocks on
+  // network/parse work.
+  const handlePrefetch = useCallback(() => {
+    prefetchPortfolioPanel();
+  }, []);
+
   return (
     <label
       className={cn(
         'flex cursor-pointer select-none items-center gap-1.5',
         isMobile && !isPortfolio && 'flex-col gap-0.5',
       )}
+      onMouseEnter={handlePrefetch}
+      onFocus={handlePrefetch}
+      onTouchStart={handlePrefetch}
     >
       <span
         className={cn(
@@ -46,9 +56,10 @@ const PortfolioModeToggle = memo(function PortfolioModeToggle({
       </span>
       <Switch
         checked={isPortfolio}
-        onCheckedChange={(checked) =>
-          onModeChange(checked ? 'portfolio' : 'single')
-        }
+        onCheckedChange={(checked) => {
+          if (checked) prefetchPortfolioPanel();
+          onModeChange(checked ? 'portfolio' : 'single');
+        }}
         className={`${BATCH_THEME.switchCheckedBg} data-[state=unchecked]:bg-muted-foreground/30`}
         thumbContent={
           positionCount > 0 ? (
