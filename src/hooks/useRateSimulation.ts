@@ -113,12 +113,18 @@ export function buildForecastMerklOpportunities({
   }));
 }
 
+const FORECAST_REQUIRING_CAMPAIGN_TYPES = new Set([
+  'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+  'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+]);
+
 const collectActiveCampaignIds = (opportunities?: MerklOpportunityGroup[]): string[] => {
   if (!opportunities || opportunities.length === 0) return [];
   const ids = new Set<string>();
   opportunities.forEach((opportunity) => {
     opportunity.breakdowns?.forEach((breakdown) => {
       if (!isCampaignActive(breakdown.campaignStartedAt, breakdown.campaignEndedAt)) return;
+      if (breakdown.campaignType && !FORECAST_REQUIRING_CAMPAIGN_TYPES.has(breakdown.campaignType)) return;
       if (breakdown.campaignId) ids.add(String(breakdown.campaignId));
     });
   });

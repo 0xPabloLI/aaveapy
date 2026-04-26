@@ -1152,4 +1152,104 @@ describe('buildRateSimulationResult', () => {
     expect(rows.find((r) => r.id.includes('dutch1'))?.capNote).toBeUndefined();
     expect(rows.find((r) => r.id.includes('dutch2'))?.capNote).toBeUndefined();
   });
+
+  it('does not count DUTCH_AUCTION toward forecastUnavailableCampaignCount', () => {
+    const reserve: ReserveWithSpread = {
+      ...baseReserve,
+      merklSupplys: [
+        {
+          name: 'Dutch opp',
+          breakdowns: [
+            {
+              campaignApr: 10,
+              campaignStartedAt: '2020-01-01T00:00:00.000Z',
+              campaignEndedAt: '2099-01-01T00:00:00.000Z',
+              campaignId: 'dutch1',
+              campaignType: 'DUTCH_AUCTION',
+              plannedDaily: 10,
+              aprCap: null,
+              totalBudget: 100000,
+            },
+          ],
+        },
+      ],
+    };
+
+    const result = buildRateSimulationResult({
+      reserve,
+      reserveRateInput: baseReserve,
+      isApy: false,
+      whitelistMerklCampaignIds: new Set(),
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '1000',
+      borrowInput: '0',
+      forecastStates: {},
+    });
+
+    expect(result.forecastUnavailableCampaignCount).toBe(0);
+  });
+
+  it('counts only FIX/MAX_REWARD campaigns missing forecast data', () => {
+    const reserve: ReserveWithSpread = {
+      ...baseReserve,
+      merklSupplys: [
+        {
+          name: 'Dutch opp',
+          breakdowns: [
+            {
+              campaignApr: 10,
+              campaignStartedAt: '2020-01-01T00:00:00.000Z',
+              campaignEndedAt: '2099-01-01T00:00:00.000Z',
+              campaignId: 'dutch1',
+              campaignType: 'DUTCH_AUCTION',
+              plannedDaily: 10,
+              aprCap: null,
+              totalBudget: 100000,
+            },
+          ],
+        },
+        {
+          name: 'Fix opp',
+          breakdowns: [
+            {
+              campaignApr: 5,
+              campaignStartedAt: '2020-01-01T00:00:00.000Z',
+              campaignEndedAt: '2099-01-01T00:00:00.000Z',
+              campaignId: 'fix1',
+              campaignType: 'FIX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+              plannedDaily: 10,
+              aprCap: 5,
+              totalBudget: 100000,
+            },
+            {
+              campaignApr: 3,
+              campaignStartedAt: '2020-01-01T00:00:00.000Z',
+              campaignEndedAt: '2099-01-01T00:00:00.000Z',
+              campaignId: 'fix2',
+              campaignType: 'MAX_REWARD_VALUE_PER_LIQUIDITY_VALUE',
+              plannedDaily: 10,
+              aprCap: 5,
+              totalBudget: 100000,
+            },
+          ],
+        },
+      ],
+    };
+
+    const result = buildRateSimulationResult({
+      reserve,
+      reserveRateInput: baseReserve,
+      isApy: false,
+      whitelistMerklCampaignIds: new Set(),
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '1000',
+      borrowInput: '0',
+      forecastStates: { fix1: { campaignId: 'fix1', distributedSoFar: 0, endTimestamp: Math.floor(Date.now() / 1000) + 86400 * 30 } },
+    });
+
+    // dutch1 excluded, fix1 has forecast, fix2 missing forecast
+    expect(result.forecastUnavailableCampaignCount).toBe(1);
+  });
 });
