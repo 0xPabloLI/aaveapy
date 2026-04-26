@@ -1246,7 +1246,7 @@ const ReservesTable = ({
             </div>
           )}
           {onSimulationModeChange && (
-            <div className="ml-auto shrink-0 flex flex-col items-center gap-1">
+            <div className="ml-auto shrink-0 flex flex-col items-center justify-around self-stretch">
               <PortfolioModeToggle
                 mode={simulationMode}
                 onModeChange={onSimulationModeChange}
