@@ -732,28 +732,28 @@ const MobileReserveCard = memo(({
             </motion.div>
           </AnimatePresence>
 
-          {/* Simulation toggle — shows Spread inside, vertical layout for space saving */}
+          {/* Simulation toggle — horizontal single-line: Spread text on left, expand icon on right */}
           <div className="mt-1.5 px-3">
             <button
               type="button"
               onClick={onToggleSimulation}
               aria-expanded={isSimulationExpanded}
               aria-label={isSimulationExpanded ? 'Collapse details panel' : 'Expand details panel'}
-              className={`flex w-full flex-col items-center justify-center gap-0.5 rounded-lg px-2 py-1 ds-text-12 text-muted-foreground transition-all duration-200 ${
+              className={`flex w-full items-center justify-between rounded-lg px-2 py-1 ds-text-12 text-muted-foreground transition-all duration-200 ${
                 isSimulationExpanded
                   ? 'border border-foreground/25 bg-muted/60 shadow-sm dark:border-foreground/20 dark:bg-muted/40'
                   : 'border border-border/60 bg-background hover:bg-muted/40 hover:border-border/80 dark:bg-card/50 dark:hover:bg-muted/30'
               }`}
             >
-              {/* Icon on top */}
-              <ListCollapse className={`h-3.5 w-3.5 shrink-0 transition-transform duration-300 ${isSimulationExpanded ? 'rotate-180' : ''}`} />
-              {/* Spread text below */}
+              {/* Spread text on left */}
               <span className="flex items-center gap-1">
                 <span className="ds-text-10 text-muted-foreground/70">Spread</span>
                 <span className={`ds-text-10 font-medium tabular-nums ${displaySpread !== null ? 'text-purple-500' : 'text-muted-foreground/70'}`}>
                   {formatSpread(displaySpread)}
                 </span>
               </span>
+              {/* Expand icon on the right */}
+              <ListCollapse className={`h-3.5 w-3.5 shrink-0 transition-transform duration-300 ${isSimulationExpanded ? 'rotate-180' : ''}`} />
             </button>
           </div>
         </div>
