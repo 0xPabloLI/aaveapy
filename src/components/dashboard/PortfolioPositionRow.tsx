@@ -8,6 +8,7 @@ import { formatNumberInput } from '@/lib/numberFormat';
 import { cnDsInputSurface } from '@/lib/dsInputSurface';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { BATCH_THEME } from './batchTheme';
 import type { PortfolioPosition, PortfolioInputMode } from '@/types/portfolio';
 
 interface PortfolioPositionRowProps {
@@ -36,7 +37,7 @@ const PortfolioPositionRow = memo(function PortfolioPositionRow({
       <button
         type="button"
         onClick={() => onRemove(position.positionId)}
-        className="shrink-0 rounded-md p-1 text-muted-foreground/60 transition-colors hover:bg-destructive/10 hover:text-destructive"
+        className={`shrink-0 rounded-md p-1 text-muted-foreground/60 transition-colors ${BATCH_THEME.trashHoverBg} ${BATCH_THEME.trashHoverText}`}
         aria-label={`Remove ${position.tokenSymbol} ${sideLabel}`}
       >
         <Trash2 className="size-3.5" aria-hidden />

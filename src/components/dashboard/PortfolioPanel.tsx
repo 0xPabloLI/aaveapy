@@ -300,7 +300,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
               <button
                 type="button"
                 onClick={() => actions.clearAll()}
-                className="rounded-md p-1.5 text-muted-foreground/60 transition-colors hover:bg-destructive/10 hover:text-destructive"
+                className={`rounded-md p-1.5 text-muted-foreground/60 transition-colors ${BATCH_THEME.trashHoverBg} ${BATCH_THEME.trashHoverText}`}
                 aria-label="Clear all positions"
               >
                 <Trash2 className="size-3.5" aria-hidden />
