@@ -740,16 +740,7 @@ const ReservesTable = ({
       ? 'borrow'
       : 'supply';
 
-  const mobileExtraSortChipLabel =
-    activeSortColumn === 'spread'
-      ? 'Spread'
-      : activeSortColumn === 'token'
-        ? 'Token'
-        : activeSortColumn === 'market'
-          ? 'Market'
-          : activeSortColumn === 'price'
-            ? 'Price'
-            : 'Spread';
+  const mobileExtraSortChipLabel = 'Extra';
 
   const mobileExtraSortActive =
     activeSortColumn === 'spread' ||

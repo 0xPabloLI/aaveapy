@@ -39,7 +39,7 @@ const MobileSortMenu = ({
             type="button"
             key={option.key}
             onClick={option.onSelect}
-            className={`w-full px-2 py-1.5 text-left ds-text-13 transition-colors flex items-center justify-start gap-1.5 ${
+            className={`w-full px-2 py-1.5 text-left ds-text-13 transition-colors flex items-center justify-between gap-1.5 ${
               option.isSelected
                 ? `${option.activeClassName} font-bold bg-card/60`
                 : 'text-muted-foreground'
