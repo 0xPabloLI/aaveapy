@@ -277,7 +277,7 @@ const [selectedCategory, setSelectedCategory] = useState<TokenCategory>("all");
         <div className="fixed inset-0 bg-gradient-radial from-primary/5 via-transparent to-transparent pointer-events-none" />
         <div className="fixed top-0 right-0 w-1/2 h-1/2 bg-gradient-radial from-secondary/5 via-transparent to-transparent pointer-events-none" />
 
-        <div className="relative z-10 container mx-auto px-[var(--ds-space-3)] md:px-[var(--ds-space-4)] py-[var(--ds-space-3)] md:py-[var(--ds-space-5)] space-y-3 md:space-y-5">
+        <div className="relative z-10 w-full px-[var(--ds-space-3)] md:px-[var(--ds-space-5)] xl:px-[var(--ds-space-8)] 2xl:px-[4.5rem] py-[var(--ds-space-3)] md:py-[var(--ds-space-5)] space-y-3 md:space-y-5">
           {/* Cache warning banner */}
           {showCacheWarning && (
             <div className="rounded-lg border ds-border-amber-500-50 ds-bg-amber-500-10 p-[var(--ds-space-3)] md:p-[var(--ds-space-4)] flex items-start gap-[var(--ds-space-3)]">
