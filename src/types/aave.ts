@@ -225,14 +225,8 @@ export const BTC_RELATED = ['BTC', 'CBBTC', 'WBTC', 'LBTC', 'TBTC', 'EBTC'];
 export const PENDLE_TOKENS = ['PT-', 'YT-', 'SY-'];
 
 export const ETHEREUM_MARKET_NAMES: Record<string, string> = {
-  // V3 markets
   'AaveV3Ethereum': 'Core',
   'AaveV3EthereumLido': 'Prime',
   'AaveV3EthereumHorizon': 'Horizon RWA',
   'AaveV3EthereumEtherFi': 'EtherFi',
-  // V4 markets
-  'AaveV4Ethereum': 'Core',
-  'AaveV4EthereumLido': 'Prime',
-  'AaveV4EthereumHorizon': 'Horizon RWA',
-  'AaveV4EthereumEtherFi': 'EtherFi',
 };
