@@ -49,6 +49,7 @@ import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation'
 import { resolvePositionAmountUsd, buildPortfolioPositionResult } from '@/hooks/usePortfolioSimulation';
 import { aggregatePortfolioSummary } from '@/lib/portfolioCalculator';
 import PortfolioPanel from './PortfolioPanel';
+import PortfolioPanelSkeleton from './PortfolioPanelSkeleton';
 
 interface ReservesTableProps {
   reserves: ReserveWithSpread[];
@@ -1299,15 +1300,19 @@ const ReservesTable = ({
           )}
         </div>
       )}
-      {isPortfolioMode && portfolioPositions && portfolioActions && (
-        <PortfolioPanel
-          positions={portfolioPositions}
-          actions={portfolioActions}
-          reserves={reserves}
-          positionResults={portfolioResults}
-          summary={portfolioSummary}
-          snapshots={portfolioSnapshots}
-        />
+      {isPortfolioMode && (
+        isLoading && reserves.length === 0 ? (
+          <PortfolioPanelSkeleton />
+        ) : portfolioPositions && portfolioActions ? (
+          <PortfolioPanel
+            positions={portfolioPositions}
+            actions={portfolioActions}
+            reserves={reserves}
+            positionResults={portfolioResults}
+            summary={portfolioSummary}
+            snapshots={portfolioSnapshots}
+          />
+        ) : null
       )}
     </div>
   );
