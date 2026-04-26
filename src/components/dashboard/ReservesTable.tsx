@@ -725,6 +725,10 @@ const ReservesTable = ({
       : sizeSortMode === 'borrow' || sizeSortMode === 'borrowAvailability'
         ? 'ds-text-brand-cyan'
         : 'text-foreground';
+  const utilSortAccentClass =
+    utilSortMode === 'liquidity'
+      ? 'ds-text-purple-700'
+      : 'text-foreground';
   const sizeSortActiveHeadingClass =
     sizeSortMode === 'supply'
       ? 'ds-text-emerald-600 font-bold scale-105'
@@ -745,16 +749,13 @@ const ReservesTable = ({
           ? 'Market'
           : activeSortColumn === 'price'
             ? 'Price'
-            : activeSortColumn === 'util'
-              ? (utilSortMode === 'liquidity' ? 'Liquidity' : 'Utilization')
-              : 'Spread';
+            : 'Spread';
 
   const mobileExtraSortActive =
     activeSortColumn === 'spread' ||
     activeSortColumn === 'token' ||
     activeSortColumn === 'market' ||
-    activeSortColumn === 'price' ||
-    activeSortColumn === 'util';
+    activeSortColumn === 'price';
 
   const toggleSupplySortOrder = () => {
     collapseExpandedOnSort();
@@ -818,6 +819,9 @@ const ReservesTable = ({
     switch (menu) {
       case 'size':
         setShowSizeSortMenu((prev) => !prev);
+        break;
+      case 'util':
+        setShowUtilSortMenu((prev) => !prev);
         break;
       case 'supply':
         setShowSupplySortMenu((prev) => !prev);
@@ -962,6 +966,45 @@ const ReservesTable = ({
     },
   }));
 
+  const utilSortOptions: MobileSortOption[] = [
+    {
+      key: 'util',
+      label: 'Utilization',
+      isSelected: activeSortColumn === 'util' && utilSortMode === 'util',
+      order: utilSortOrder,
+      activeClassName: 'text-foreground',
+      onSelect: () => {
+        collapseExpandedOnSort();
+        if (activeSortColumn === 'util' && utilSortMode === 'util' && utilSortOrder === 'desc') {
+          setUtilSortOrder('asc');
+        } else {
+          setUtilSortMode('util');
+          setActiveSortColumn('util');
+          setUtilSortOrder('desc');
+        }
+        closeAllMobileSortMenus();
+      },
+    },
+    {
+      key: 'liquidity',
+      label: 'Liquidity',
+      isSelected: activeSortColumn === 'util' && utilSortMode === 'liquidity',
+      order: utilSortOrder,
+      activeClassName: 'ds-text-purple-600',
+      onSelect: () => {
+        collapseExpandedOnSort();
+        if (activeSortColumn === 'util' && utilSortMode === 'liquidity' && utilSortOrder === 'desc') {
+          setUtilSortOrder('asc');
+        } else {
+          setUtilSortMode('liquidity');
+          setActiveSortColumn('util');
+          setUtilSortOrder('desc');
+        }
+        closeAllMobileSortMenus();
+      },
+    },
+  ];
+
   const extraSortOptions: MobileSortOption[] = [
     {
       key: 'spread',
@@ -1027,42 +1070,6 @@ const ReservesTable = ({
         } else {
           setActiveSortColumn('price');
           setPriceSortOrder('desc');
-        }
-        closeAllMobileSortMenus();
-      },
-    },
-    {
-      key: 'util',
-      label: 'Utilization',
-      isSelected: activeSortColumn === 'util' && utilSortMode === 'util',
-      order: utilSortOrder,
-      activeClassName: 'text-foreground',
-      onSelect: () => {
-        collapseExpandedOnSort();
-        if (activeSortColumn === 'util' && utilSortMode === 'util' && utilSortOrder === 'desc') {
-          setUtilSortOrder('asc');
-        } else {
-          setUtilSortMode('util');
-          setActiveSortColumn('util');
-          setUtilSortOrder('desc');
-        }
-        closeAllMobileSortMenus();
-      },
-    },
-    {
-      key: 'liquidity',
-      label: 'Liquidity',
-      isSelected: activeSortColumn === 'util' && utilSortMode === 'liquidity',
-      order: utilSortOrder,
-      activeClassName: 'text-foreground',
-      onSelect: () => {
-        collapseExpandedOnSort();
-        if (activeSortColumn === 'util' && utilSortMode === 'liquidity' && utilSortOrder === 'desc') {
-          setUtilSortOrder('asc');
-        } else {
-          setUtilSortMode('liquidity');
-          setActiveSortColumn('util');
-          setUtilSortOrder('desc');
         }
         closeAllMobileSortMenus();
       },
@@ -1376,16 +1383,18 @@ const ReservesTable = ({
           {scenarioControls}
         </div>
         <ReservesTableMobileSortBar
-          reservesCount={reserves.length}
           activeSortColumn={activeSortColumn}
           sizeSortAccentClass={sizeSortAccentClass}
+          utilSortAccentClass={utilSortAccentClass}
           mobileExtraSortActive={mobileExtraSortActive}
           mobileExtraSortChipLabel={mobileExtraSortChipLabel}
           showSizeSortMenu={showSizeSortMenu}
+          showUtilSortMenu={showUtilSortMenu}
           showSupplySortMenu={showSupplySortMenu}
           showBorrowSortMenu={showBorrowSortMenu}
           showExtraSortMenu={showExtraSortMenu}
           sizeSortOptions={sizeSortOptions}
+          utilSortOptions={utilSortOptions}
           supplySortOptions={supplySortOptions}
           borrowSortOptions={borrowSortOptions}
           extraSortOptions={extraSortOptions}
