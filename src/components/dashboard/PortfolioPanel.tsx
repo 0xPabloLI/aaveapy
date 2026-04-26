@@ -363,6 +363,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
         {searchOpen && (
           <div className="mb-2.5">
             <input
+              ref={searchInputRef}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search token…"
