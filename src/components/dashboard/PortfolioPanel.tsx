@@ -456,7 +456,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
                       <button
                         key={reserveId}
                         type="button"
-                        onClick={() => handleAddFromSearch(reserveId, 'supply')}
+                        onClick={() => handleQuickAddSuggested(reserveId)}
                         className="inline-flex items-center gap-1 rounded-full border border-border/50 bg-card/70 px-2 py-1 ds-text-10 font-semibold text-foreground transition-colors hover:bg-muted/60"
                         aria-label={`Add ${r.tokenSymbol} supply to batch`}
                       >
@@ -472,6 +472,29 @@ const PortfolioPanel = memo(function PortfolioPanel({
           </div>
         ) : (
           <div className="space-y-1.5">
+            {suggestedReserves.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5 px-1">
+                <span className="ds-text-10 uppercase tracking-wide text-muted-foreground/70">
+                  Quick add
+                </span>
+                {suggestedReserves.map((r) => {
+                  const reserveId = getReserveKey(r);
+                  return (
+                    <button
+                      key={reserveId}
+                      type="button"
+                      onClick={() => handleQuickAddSuggested(reserveId)}
+                      className="inline-flex items-center gap-1 rounded-full border border-border/50 bg-card/70 px-2 py-0.5 ds-text-10 font-semibold text-foreground transition-colors hover:bg-muted/60"
+                      aria-label={`Add ${r.tokenSymbol} supply to batch`}
+                    >
+                      <TokenIcon symbol={r.tokenSymbol} size={12} />
+                      <span>{r.tokenSymbol}</span>
+                      <Plus className="size-2.5 text-muted-foreground" aria-hidden />
+                    </button>
+                  );
+                })}
+              </div>
+            )}
             {Array.from(groupedByReserve.entries()).map(([reserveId, entry]) => (
               <PortfolioTokenRow
                 key={reserveId}
