@@ -1228,27 +1228,51 @@ const ReservesTable = ({
 
   const scenarioControls = (
     <div className={cn("space-y-2", isMobile && "rounded-xl border border-border/60 bg-card/60 backdrop-blur-sm px-1.5 py-1.5")}>
-      <div className="flex items-center gap-2">
-        {!isPortfolioMode && (
-          <div className="flex-1 min-w-0">
-            <ScenarioControls
-              ref={scenarioControlsRef}
-              onDebouncedChange={handleScenarioChange}
-              meritMerklNetPosition={meritMerklNetPosition}
-              onMeritMerklNetPositionChange={setMeritMerklNetPosition}
-            />
-          </div>
-        )}
-        {onSimulationModeChange && (
-          <div className="ml-auto shrink-0">
-            <PortfolioModeToggle
-              mode={simulationMode}
-              onModeChange={onSimulationModeChange}
-              positionCount={portfolioPositions ? new Set(portfolioPositions.map(p => p.reserveId)).size : 0}
-            />
-          </div>
-        )}
-      </div>
+      {isMobile ? (
+        <div className="flex items-center gap-2">
+          {!isPortfolioMode && (
+            <div className="flex-1 min-w-0">
+              <ScenarioControls
+                ref={scenarioControlsRef}
+                onDebouncedChange={handleScenarioChange}
+                meritMerklNetPosition={meritMerklNetPosition}
+                onMeritMerklNetPositionChange={setMeritMerklNetPosition}
+              />
+            </div>
+          )}
+          {onSimulationModeChange && (
+            <div className="shrink-0 flex flex-col items-center gap-1">
+              <PortfolioModeToggle
+                mode={simulationMode}
+                onModeChange={onSimulationModeChange}
+                positionCount={portfolioPositions ? new Set(portfolioPositions.map(p => p.reserveId)).size : 0}
+              />
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="flex items-center gap-2">
+          {!isPortfolioMode && (
+            <div className="flex-1 min-w-0">
+              <ScenarioControls
+                ref={scenarioControlsRef}
+                onDebouncedChange={handleScenarioChange}
+                meritMerklNetPosition={meritMerklNetPosition}
+                onMeritMerklNetPositionChange={setMeritMerklNetPosition}
+              />
+            </div>
+          )}
+          {onSimulationModeChange && (
+            <div className="ml-auto shrink-0">
+              <PortfolioModeToggle
+                mode={simulationMode}
+                onModeChange={onSimulationModeChange}
+                positionCount={portfolioPositions ? new Set(portfolioPositions.map(p => p.reserveId)).size : 0}
+              />
+            </div>
+          )}
+        </div>
+      )}
       {isPortfolioMode && portfolioPositions && portfolioActions && (
         <PortfolioPanel
           positions={portfolioPositions}
