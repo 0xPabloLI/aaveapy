@@ -2,7 +2,7 @@
  * PortfolioPanel — portfolio management panel with token search,
  * position list, summary card, results table, and snapshot comparison.
  */
-import { useState, useMemo, memo, useCallback, lazy, Suspense } from 'react';
+import { useState, useMemo, useEffect, memo, useCallback, lazy, Suspense } from 'react';
 import { Search, Plus, X, Layers, Trash2, Save, ArrowRightLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -153,7 +153,9 @@ const PortfolioPanel = memo(function PortfolioPanel({
 }: PortfolioPanelProps) {
   const isMobile = useIsMobile();
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchOpen, setSearchOpen] = useState(positions.length === 0);
+  // Keep batch onboarding consistent across desktop/mobile:
+  // entering batch always starts with the search bar visible.
+  const [searchOpen, setSearchOpen] = useState(true);
   const [snapshotName, setSnapshotName] = useState('');
   const [showSaveInput, setShowSaveInput] = useState(false);
   const [compareIds, setCompareIds] = useState<string[]>([]);
@@ -231,6 +233,14 @@ const PortfolioPanel = memo(function PortfolioPanel({
       if (p.reserveId === reserveId) actions.removePosition(p.positionId);
     }
   }, [actions, positions]);
+
+  // When the position list becomes empty (e.g. clear all), reopen search
+  // so users can immediately add the next token without extra clicks.
+  useEffect(() => {
+    if (positions.length === 0 && !searchOpen) {
+      setSearchOpen(true);
+    }
+  }, [positions.length, searchOpen]);
 
   return (
     <div className="space-y-3">

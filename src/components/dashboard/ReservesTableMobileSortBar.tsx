@@ -51,7 +51,7 @@ const MobileSortMenu = ({
                 <ArrowUp className={`w-3 h-3 ${option.activeClassName}`} />
               )
             ) : (
-              <ChevronDown className="w-3 h-3 text-muted-foreground/40" />
+              <ArrowDown className="w-3 h-3 text-muted-foreground/70" />
             )}
           </button>
         ))}
