@@ -475,6 +475,51 @@ Slider 与紧挨其下的区块（如「Reference FDVs」、说明文字）可�
 - 在**不缩小触控热区、不损害可点击性**的前提下，将下方区块的 `margin-top` 从 4px 减至 2px（如 `--ds-space-1` → `--ds-space-0-5`），必要时可设为 0。
 - 验收：间距更小但不显拥挤，下方区块仍易点、可访问性不受影响。
 
+### 9.3 行内下拉菜单的视口边界约束（移动端 chip + dropdown 模式）
+
+当移动端使用**水平排列的 chip 触发器 + 绝对定位下拉菜单**模式时（如排序栏、筛选栏），必须防止菜单溢出视口左右边缘。**禁止**用外层容器的 `overflow-hidden` 裁剪——这会同时裁剪掉绝对定位的下拉菜单使其不可见。
+
+#### 三层防护体系
+
+| 层 | 机制 | 作用 | 实现方式 |
+|---|------|------|---------|
+| **① 方向对齐** | 按 chip 在行中的位置选择展开方向 | 左侧 chip 向右展开不溢左边界；右侧 chip 向左展开不溢右边界 | `align` prop：`'start'` → `left-0`，`'end'` → `right-0` |
+| **② 宽度约束** | viewport-aware max-width | 即使方向正确，超宽内容也不超出视口 | `max-w-[min(18rem,calc(100vw-1.5rem))]` |
+| **③ 不裁剪祖先** | 每个 chip 容器显式 `overflow-visible` | 确保绝对定位菜单不被任何父级意外截断 | `<div className="relative overflow-visible">` |
+
+#### 对齐策略
+
+```
+行内 chip 排列（LTR 布局）:
+
+  [Size]  [Util]  [Supply]  [Borrow]  [Extra]
+   ↓left    ↓left     ↓left      ↓right    ↓right
+  (→向右) (→向右)  (→向右)    (←向左)   (←向左)
+```
+
+- **左侧芯片**（前半段，如 Size / Util / Supply）：默认 `left-0`，菜单向右展开。LTR 布局下右侧空间通常更充裕。
+- **右侧芯片**（后半段，如 Borrow / Extra）：使用 `right-0`，菜单向左展开。避免向右溢出视口。
+- **分界点**：通常取中点或按实际芯片数量分配。本项目 5 个 chip 时，前 3 个 `start`、后 2 个 `end`。
+- **居中容器**：若外层 flex 使用 `justify-center`，两侧空间大致对称，上述策略效果最优。
+
+#### 反模式
+
+| 错误做法 | 后果 |
+|----------|------|
+| 外层容器加 `overflow-x-hidden` | 下拉菜单被裁剪不可见 |
+| 所有菜单统一 `right-0` | 最左侧芯片菜单向左溢出视口 |
+| 所有菜单统一 `left-0` | 最右侧芯片菜单向右溢出视口 |
+| 不设 `max-w` 约束 | 长选项文本可能超出视口 |
+| chip 容器未设 `overflow-visible` | 被更高层级的 `overflow` 意外截断 |
+
+#### 测试策略
+
+jsdom 单测无法测量真实布局，但可**结构性锁定**三层防护的不变量：
+- 断言 chip 容器包含 `overflow-visible`
+- 断言渲染特定菜单时出现 `absolute left-0`（左侧 chip）或 `absolute right-0`（右侧 chip）
+- 断言所有菜单 div 包含 viewport-aware `max-w`
+- 像素级回归需 Playwright e2e 在目标视口宽度截图或 `getBoundingClientRect` 验证
+
 ---
 
 ## 10. 无障碍与键盘
