@@ -2,8 +2,8 @@
  * PortfolioPanel — portfolio management panel with token search,
  * position list, summary card, results table, and snapshot comparison.
  */
-import { useState, useMemo, useEffect, memo, useCallback, lazy, Suspense } from 'react';
-import { Search, Plus, X, Layers, Trash2, Save, ArrowRightLeft } from 'lucide-react';
+import { useState, useMemo, useEffect, useRef, memo, useCallback, lazy, Suspense } from 'react';
+import { Search, Plus, X, Layers, Trash2, Save, ArrowRightLeft, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { ReserveWithSpread } from '@/types/aave';
@@ -160,6 +160,12 @@ const PortfolioPanel = memo(function PortfolioPanel({
   const [showSaveInput, setShowSaveInput] = useState(false);
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [showCompare, setShowCompare] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const focusSearch = useCallback(() => {
+    setSearchOpen(true);
+    requestAnimationFrame(() => searchInputRef.current?.focus());
+  }, []);
 
   const filteredReserves = useMemo(() => {
     if (!searchQuery.trim()) return [];
@@ -227,6 +233,25 @@ const PortfolioPanel = memo(function PortfolioPanel({
     }
     return map;
   }, [positions]);
+
+  // Suggested popular tokens to seed an empty Batch panel: pick a small set
+  // of unique high-supply-APY reserves the user can add with a single click.
+  const suggestedReserves = useMemo(() => {
+    if (positions.length > 0) return [];
+    const seen = new Set<string>();
+    const picks: ReserveWithSpread[] = [];
+    const sorted = [...reserves].sort(
+      (a, b) => (b.supplyApy ?? 0) - (a.supplyApy ?? 0),
+    );
+    for (const r of sorted) {
+      const sym = r.tokenSymbol.toUpperCase();
+      if (seen.has(sym)) continue;
+      seen.add(sym);
+      picks.push(r);
+      if (picks.length >= 5) break;
+    }
+    return picks;
+  }, [reserves, positions.length]);
 
   const handleRemoveToken = useCallback((reserveId: string) => {
     for (const p of positions) {
@@ -338,6 +363,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
         {searchOpen && (
           <div className="mb-2.5">
             <input
+              ref={searchInputRef}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search token…"
@@ -370,19 +396,67 @@ const PortfolioPanel = memo(function PortfolioPanel({
 
         {/* Position list */}
         {positions.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-6 text-center">
-            <p className="ds-text-12 text-muted-foreground">
-              No positions yet
+          <div
+            className={cn(
+              'rounded-xl border border-dashed px-3 py-4 text-center',
+              BATCH_THEME.border,
+              BATCH_THEME.bgSubtle,
+            )}
+          >
+            <div className="mx-auto mb-2 flex size-9 items-center justify-center rounded-full border border-border/50 bg-card/80">
+              <Sparkles className={cn('size-4', BATCH_THEME.text)} aria-hidden />
+            </div>
+            <p className="ds-text-13 font-semibold text-foreground">
+              Build your batch portfolio
             </p>
-            {!searchOpen && (
+            <p className="mx-auto mt-1 max-w-[20rem] ds-text-11 text-muted-foreground">
+              Search a token below, then tap{' '}
+              <span className="ds-text-emerald-600 font-semibold">Supply</span>
+              {' '}or{' '}
+              <span className={cn('font-semibold', BATCH_THEME.text)}>Borrow</span>
+              {' '}to add it. Combine multiple positions to compare net APY and daily earn.
+            </p>
+
+            <div className="mt-3 flex items-center justify-center gap-2">
               <button
                 type="button"
-                onClick={() => setSearchOpen(true)}
-                className={`mt-2 flex items-center gap-1 rounded-lg border border-dashed ${BATCH_THEME.border} ${BATCH_THEME.bgSubtle} px-3 py-1.5 ds-text-11 font-semibold ${BATCH_THEME.text} transition-colors hover:${BATCH_THEME.bgSoft}`}
+                onClick={focusSearch}
+                className={cn(
+                  'inline-flex items-center gap-1 rounded-lg px-3 py-1.5 ds-text-11 font-semibold transition-colors',
+                  BATCH_THEME.bgSoft,
+                  BATCH_THEME.text,
+                  `hover:${BATCH_THEME.bgSubtle}`,
+                )}
               >
-                <Plus className="size-3" aria-hidden />
-                Add token
+                <Search className="size-3" aria-hidden />
+                Search tokens
               </button>
+            </div>
+
+            {suggestedReserves.length > 0 && (
+              <div className="mt-3">
+                <p className="ds-text-10 uppercase tracking-wide text-muted-foreground/70 mb-1.5">
+                  Popular tokens
+                </p>
+                <div className="flex flex-wrap items-center justify-center gap-1.5">
+                  {suggestedReserves.map((r) => {
+                    const reserveId = getReserveKey(r);
+                    return (
+                      <button
+                        key={reserveId}
+                        type="button"
+                        onClick={() => handleAddFromSearch(reserveId, 'supply')}
+                        className="inline-flex items-center gap-1 rounded-full border border-border/50 bg-card/70 px-2 py-1 ds-text-10 font-semibold text-foreground transition-colors hover:bg-muted/60"
+                        aria-label={`Add ${r.tokenSymbol} supply to batch`}
+                      >
+                        <TokenIcon symbol={r.tokenSymbol} size={14} />
+                        <span>{r.tokenSymbol}</span>
+                        <Plus className="size-2.5 text-muted-foreground" aria-hidden />
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             )}
           </div>
         ) : (
