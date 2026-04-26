@@ -499,13 +499,13 @@ const MobileReserveCard = memo(({
 
   const showUpperOnly = variant === 'upperOnly';
 
-  /** RAY → display %; must match `interestRateCalculator` / desktop `simulation.utilization.optimal`. */
+  /** RAY → display %; API 字段优先直接读取，simulation 作为 fallback。 */
   const RAY_TO_PERCENT_DIVISOR = 1e25;
   const optimalPctFromReserve =
     reserve.optimalUsageRate != null && Number(reserve.optimalUsageRate) > 0
       ? Number(reserve.optimalUsageRate) / RAY_TO_PERCENT_DIVISOR
       : null;
-  const optimalPct = simulation.utilization.optimal ?? optimalPctFromReserve;
+  const optimalPct = optimalPctFromReserve ?? simulation.utilization.optimal;
   const reserveId = getReserveKey(reserve);
 
   /** Same rule as `ReservesTable.getDisplayUtilization` / desktop row: scenario uses after when shared inputs exist. */
