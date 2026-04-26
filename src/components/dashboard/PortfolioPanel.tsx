@@ -258,7 +258,8 @@ const PortfolioPanel = memo(function PortfolioPanel({
   const handleQuickAddSuggested = useCallback(
     (reserveId: string) => {
       handleAddFromSearch(reserveId, 'supply');
-      // Keep focus on search so the user can keep adding tokens rapidly.
+      // Keep the search panel open and focused so the user can keep adding.
+      setSearchOpen(true);
       requestAnimationFrame(() => searchInputRef.current?.focus());
     },
     [handleAddFromSearch],
