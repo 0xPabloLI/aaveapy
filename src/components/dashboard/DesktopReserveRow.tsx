@@ -423,7 +423,14 @@ const DesktopReserveRow = memo(({
         <TableCell className="ds-reserves-cell-td ds-row-pad whitespace-nowrap text-right hidden md:table-cell tabular-nums ds-text-13">
           <div className="inline-flex items-center justify-end gap-[var(--ds-space-1-5)] w-full">
             <div className="flex flex-col items-end gap-[var(--ds-space-0-5)]">
-              <span className={displayUtilization != null && simulation?.utilization.optimal != null && displayUtilization > simulation.utilization.optimal ? 'text-amber-600' : 'text-foreground'}>
+              <span className={displayUtilization != null && simulation?.utilization.optimal != null
+                ? displayUtilization >= 95
+                  ? 'text-amber-600'
+                  : displayUtilization > simulation.utilization.optimal
+                    ? 'text-amber-500'
+                    : 'text-foreground'
+                : 'text-foreground'
+              }>
                 {formatPercent(displayUtilization)}
               </span>
               <span className={`ds-text-11 tabular-nums font-medium ${

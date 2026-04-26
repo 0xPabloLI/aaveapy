@@ -608,7 +608,11 @@ const MobileReserveCard = memo(({
                     aria-label="Show utilization details"
                   >
                     <span className={`ds-text-11 font-medium tabular-nums leading-none ${
-                      displayUtilization > optimalPct ? 'text-amber-600' : 'text-foreground'
+                      displayUtilization >= 95
+                        ? 'text-amber-600'
+                        : optimalPct != null && displayUtilization > optimalPct
+                          ? 'text-amber-500'
+                          : 'text-foreground'
                     }`}>
                       {displayUtilization.toFixed(0)}%
                     </span>
@@ -729,26 +733,28 @@ const MobileReserveCard = memo(({
             </motion.div>
           </AnimatePresence>
 
-          {/* Simulation toggle — shows Spread inside */}
+          {/* Simulation toggle — shows Spread inside, vertical layout for space saving */}
           <div className="mt-1.5 px-3">
             <button
               type="button"
               onClick={onToggleSimulation}
               aria-expanded={isSimulationExpanded}
               aria-label={isSimulationExpanded ? 'Collapse details panel' : 'Expand details panel'}
-              className={`inline-flex w-full items-center justify-between gap-2 rounded-lg px-3 py-1.5 ds-text-12 text-muted-foreground transition-all duration-200 ${
+              className={`flex w-full flex-col items-center justify-center gap-0.5 rounded-lg px-2 py-1 ds-text-12 text-muted-foreground transition-all duration-200 ${
                 isSimulationExpanded
                   ? 'border border-foreground/25 bg-muted/60 shadow-sm dark:border-foreground/20 dark:bg-muted/40'
                   : 'border border-border/60 bg-background hover:bg-muted/40 hover:border-border/80 dark:bg-card/50 dark:hover:bg-muted/30'
               }`}
             >
-              <span className="flex min-w-0 items-center gap-1.5">
-                <span className="ds-text-11 text-muted-foreground/70 shrink-0">Spread</span>
-                <span className={`ds-text-11 font-medium tabular-nums ${displaySpread !== null ? 'text-purple-500' : 'text-muted-foreground/70'}`}>
+              {/* Icon on top */}
+              <ListCollapse className={`h-3.5 w-3.5 shrink-0 transition-transform duration-300 ${isSimulationExpanded ? 'rotate-180' : ''}`} />
+              {/* Spread text below */}
+              <span className="flex items-center gap-1">
+                <span className="ds-text-10 text-muted-foreground/70">Spread</span>
+                <span className={`ds-text-10 font-medium tabular-nums ${displaySpread !== null ? 'text-purple-500' : 'text-muted-foreground/70'}`}>
                   {formatSpread(displaySpread)}
                 </span>
               </span>
-              <ListCollapse className={`h-3.5 w-3.5 shrink-0 transition-transform duration-300 ${isSimulationExpanded ? 'rotate-180' : ''}`} />
             </button>
           </div>
         </div>

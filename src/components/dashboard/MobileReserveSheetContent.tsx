@@ -122,14 +122,19 @@ export function BorrowCapSheetContent({
 /** Utilization bottom sheet content */
 export function UtilizationSheetContent({ current, optimal }: { current: number; optimal: number }) {
   const isOverOptimal = current > optimal;
+  const isCritical = current >= 95;
   return (
     <div className="space-y-2 ds-text-12">
       <div className="flex justify-between gap-4">
         <span className="text-muted-foreground">Optimal</span>
         <span className="font-medium tabular-nums">{formatPercent(optimal)}</span>
       </div>
-      {isOverOptimal ? (
+      {isCritical ? (
         <p className="text-amber-600 ds-text-11 pt-2 border-t border-border/50">
+          ⚠️ Critical / High Risk
+        </p>
+      ) : isOverOptimal ? (
+        <p className="text-amber-500 ds-text-11 pt-2 border-t border-border/50">
           ⚠️ Above optimal
         </p>
       ) : (
