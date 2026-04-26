@@ -81,18 +81,25 @@ interface ScenarioControlsProps {
   /** When true, non-Brevis incentive simulation uses net lending (supply minus borrow) and net borrowing (borrow minus supply); when false, gross supply and gross borrow per side. Brevis is unchanged. */
   meritMerklNetPosition?: boolean;
   onMeritMerklNetPositionChange?: (value: boolean) => void;
+  /** Controlled mobile net-open state — when provided, the SlidersHorizontal toggle is rendered externally and this component uses the supplied value. */
+  mobileNetOpen?: boolean;
+  onMobileNetToggle?: () => void;
 }
 
 const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControlsProps>(({
   onDebouncedChange,
   meritMerklNetPosition = true,
   onMeritMerklNetPositionChange,
+  mobileNetOpen: controlledMobileNetOpen,
+  onMobileNetToggle,
 }, ref) => {
   const isMobile = useIsMobile();
   const [supplyInput, setSupplyInput] = useState('');
   const [borrowInput, setBorrowInput] = useState('');
   const [inputMode, setInputMode] = useState<ScenarioInputMode>('usd');
-  const [mobileNetOpen, setMobileNetOpen] = useState(false);
+  const [internalMobileNetOpen, setInternalMobileNetOpen] = useState(false);
+  const mobileNetOpen = controlledMobileNetOpen ?? internalMobileNetOpen;
+  const isMobileNetOpenControlled = controlledMobileNetOpen !== undefined;
   const desktopRowRef = useRef<HTMLDivElement>(null);
   const [containerNarrow, setContainerNarrow] = useState(false);
 
@@ -270,10 +277,10 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
               </button>
             </div>
           </div>
-          {showMeritMerklMode ? (
+          {showMeritMerklMode && !isMobileNetOpenControlled ? (
             <button
               type="button"
-              onClick={() => setMobileNetOpen((prev) => !prev)}
+              onClick={() => setInternalMobileNetOpen((prev) => !prev)}
               className={cn(
                 'shrink-0 inline-flex h-8 w-8 items-center justify-center text-muted-foreground/65 transition-colors',
                 mobileNetOpen

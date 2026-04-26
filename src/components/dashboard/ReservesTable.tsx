@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { SlidersHorizontal } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { ReservesTableShowMore, ReservesTableFloatingScroll } from './ReservesTablePagination';
@@ -151,6 +152,8 @@ const ReservesTable = ({
   const [debouncedSharedBorrowInput, setDebouncedSharedBorrowInput] = useState('');
   const [sharedInputMode, setSharedInputMode] = useState<import('@/hooks/useRateSimulation').ScenarioInputMode>('usd');
   const [meritMerklNetPosition, setMeritMerklNetPosition] = useState(true);
+  const [mobileNetOpen, setMobileNetOpen] = useState(false);
+  const handleMobileNetToggle = useCallback(() => setMobileNetOpen(prev => !prev), []);
   const handleScenarioChange = useCallback((supply: string, borrow: string, mode: import('@/components/dashboard/ScenarioControls').ScenarioInputMode) => {
     setDebouncedSharedSupplyInput(supply);
     setDebouncedSharedBorrowInput(borrow);
@@ -1237,11 +1240,30 @@ const ReservesTable = ({
                 onDebouncedChange={handleScenarioChange}
                 meritMerklNetPosition={meritMerklNetPosition}
                 onMeritMerklNetPositionChange={setMeritMerklNetPosition}
+                mobileNetOpen={mobileNetOpen}
+                onMobileNetToggle={handleMobileNetToggle}
               />
             </div>
           )}
           {onSimulationModeChange && (
-            <div className="shrink-0 flex flex-col items-center gap-1">
+            <div className="ml-auto shrink-0 flex flex-col items-center gap-1">
+              {!isPortfolioMode && (
+                <button
+                  type="button"
+                  onClick={handleMobileNetToggle}
+                  className={cn(
+                    'shrink-0 inline-flex h-7 w-7 items-center justify-center text-muted-foreground/65 transition-colors',
+                    mobileNetOpen ? 'text-foreground' : 'hover:text-foreground/85',
+                  )}
+                  aria-label={mobileNetOpen ? 'Collapse advanced controls' : 'Expand advanced controls'}
+                  aria-expanded={mobileNetOpen}
+                >
+                  <SlidersHorizontal
+                    className={cn('size-3.5 transition-transform duration-300', mobileNetOpen && 'rotate-180')}
+                    aria-hidden
+                  />
+                </button>
+              )}
               <PortfolioModeToggle
                 mode={simulationMode}
                 onModeChange={onSimulationModeChange}
