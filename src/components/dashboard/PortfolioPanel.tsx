@@ -234,6 +234,25 @@ const PortfolioPanel = memo(function PortfolioPanel({
     return map;
   }, [positions]);
 
+  // Suggested popular tokens to seed an empty Batch panel: pick a small set
+  // of unique high-supply-APY reserves the user can add with a single click.
+  const suggestedReserves = useMemo(() => {
+    if (positions.length > 0) return [];
+    const seen = new Set<string>();
+    const picks: ReserveWithSpread[] = [];
+    const sorted = [...reserves].sort(
+      (a, b) => (b.supplyApy ?? 0) - (a.supplyApy ?? 0),
+    );
+    for (const r of sorted) {
+      const sym = r.tokenSymbol.toUpperCase();
+      if (seen.has(sym)) continue;
+      seen.add(sym);
+      picks.push(r);
+      if (picks.length >= 5) break;
+    }
+    return picks;
+  }, [reserves, positions.length]);
+
   const handleRemoveToken = useCallback((reserveId: string) => {
     for (const p of positions) {
       if (p.reserveId === reserveId) actions.removePosition(p.positionId);
