@@ -28,7 +28,6 @@ const UtilizationIndicator = memo(({
   const currentY = height - (clampedCurrent / 100) * height;
   
   const isOverOptimal = current > optimal;
-  const isCritical = current >= 95;
 
   /** Solid dot only (no stroke, no outer glow disc). */
   const dotRadius = 2.5;
@@ -78,20 +77,20 @@ const UtilizationIndicator = memo(({
               clipPath={`url(#${clipId})`}
               className="fill-[rgb(var(--ds-brand-cyan-rgb)/0.32)]"
             />
-            {/* Above optimal: zone amber-500; dot matches warning label (amber-600) — avoid 500/600/700 mix */}
+            {/* Above optimal: zone amber-500; dot matches warning label (amber-500) — avoid 500/600/700 mix */}
             <rect
               x={trackX}
               y={0}
               width={trackWidth}
               height={optimalY}
               clipPath={`url(#${clipId})`}
-              className={isCritical ? 'fill-amber-600' : 'fill-amber-500'}
+              className="fill-amber-500"
             />
             <circle
               cx={width / 2}
               cy={currentY}
               r={dotRadius}
-              className={isCritical ? 'fill-amber-600' : isOverOptimal ? 'fill-amber-500' : 'fill-[rgb(var(--ds-brand-cyan-rgb))]'}
+              className={isOverOptimal ? 'fill-amber-500' : 'fill-[rgb(var(--ds-brand-cyan-rgb))]'}
             />
           </svg>
         </div>
@@ -102,11 +101,7 @@ const UtilizationIndicator = memo(({
             <span className="text-muted-foreground">Optimal</span>
             <span className="font-medium tabular-nums">{formatPercent(optimal)}</span>
           </div>
-          {isCritical ? (
-            <p className="text-amber-600 ds-text-11 pt-2 border-t border-border/50">
-              ⚠️ Critical / High Risk
-            </p>
-          ) : isOverOptimal ? (
+          {isOverOptimal ? (
             <p className="text-amber-500 ds-text-11 pt-2 border-t border-border/50">
               ⚠️ Above optimal
             </p>

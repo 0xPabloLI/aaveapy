@@ -167,6 +167,14 @@ const DesktopReserveRow = memo(({
     : deficitTokenCompact;
   const deficitTokenLabel = deficitTokenCompact !== '-' ? deficitTokenCompact : undefined;
   const deficitUsdLabel = deficitUsd != null ? formatUsd(deficitUsd) : '— (token price unavailable)';
+
+  /** RAY → display %; must match `interestRateCalculator` / mobile `optimalPctFromReserve`. */
+  const RAY_TO_PERCENT_DIVISOR = 1e25;
+  const optimalPctFromReserve =
+    reserve.optimalUsageRate != null && Number(reserve.optimalUsageRate) > 0
+      ? Number(reserve.optimalUsageRate) / RAY_TO_PERCENT_DIVISOR
+      : null;
+  const optimalPct = simulation?.utilization.optimal ?? optimalPctFromReserve;
   const deficitShareRatio = calculateDeficitShareRatio({
     deficitUsd,
     totalSuppliedUsd: displayReserveSizeUsd,
@@ -423,29 +431,20 @@ const DesktopReserveRow = memo(({
         <TableCell className="ds-reserves-cell-td ds-row-pad whitespace-nowrap text-right hidden md:table-cell tabular-nums ds-text-13">
           <div className="inline-flex items-center justify-end gap-[var(--ds-space-1-5)] w-full">
             <div className="flex flex-col items-end gap-[var(--ds-space-0-5)]">
-              <span className={displayUtilization != null && simulation?.utilization.optimal != null
-                ? displayUtilization >= 95
-                  ? 'text-amber-600'
-                  : displayUtilization > simulation.utilization.optimal
-                    ? 'text-amber-500'
-                    : 'text-foreground'
-                : 'text-foreground'
-              }>
+              <span className={displayUtilization != null && optimalPct != null && displayUtilization > optimalPct ? 'text-amber-500' : 'text-foreground'}>
                 {formatPercent(displayUtilization)}
               </span>
               <span className={`ds-text-11 tabular-nums font-medium ${
-                poolLiquidity != null && poolLiquidity < 1000
-                  ? 'text-amber-600'
-                  : poolLiquidity != null && poolLiquidity < 10000
-                    ? 'text-amber-500'
-                    : 'ds-text-purple-500'
+                poolLiquidity != null && poolLiquidity < 10000
+                  ? 'text-amber-500'
+                  : 'ds-text-purple-500'
               }`}>
                 {formatScenarioSize(poolLiquidity, { inputMode, tokenPrice: displayTokenPrice, tokenSymbol: reserve.tokenSymbol })}
               </span>
             </div>
             <UtilizationIndicator
               current={displayUtilization}
-              optimal={simulation?.utilization.optimal ?? null}
+              optimal={optimalPct}
             />
           </div>
         </TableCell>

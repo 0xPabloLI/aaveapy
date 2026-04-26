@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 
+import { cn } from '@/lib/utils';
 import { ReservesTableShowMore, ReservesTableFloatingScroll } from './ReservesTablePagination';
 import { Table, TableBody } from '@/components/ui/table';
 import { ReserveWithSpread, TokenPricesIndex, MerklForecastWireItem } from '@/types/aave';
@@ -1226,7 +1227,7 @@ const ReservesTable = ({
   }, [isPortfolioMode, portfolioPositions, reserves]);
 
   const scenarioControls = (
-    <div className="space-y-2">
+    <div className={cn("space-y-2", isMobile && "rounded-xl border border-border/60 bg-card/60 backdrop-blur-sm px-1.5 py-1.5")}>
       <div className="flex items-center gap-2">
         {!isPortfolioMode && (
           <div className="flex-1 min-w-0">
@@ -1318,7 +1319,7 @@ const ReservesTable = ({
       <div ref={mobileTableRef} className="space-y-3 pb-[calc(env(safe-area-inset-bottom,0px)+5rem)]">
         <div
           data-reserves-sticky-scenario
-          className="sticky top-[env(safe-area-inset-top,0px)] z-20 -mx-[var(--ds-space-3)] px-[var(--ds-space-3)] pt-1 pb-0 bg-background/80 backdrop-blur-sm"
+          className="sticky top-[env(safe-area-inset-top,0px)] z-20 -mx-[var(--ds-space-3)] px-[var(--ds-space-3)] pt-1 pb-0"
         >
           {scenarioControls}
         </div>

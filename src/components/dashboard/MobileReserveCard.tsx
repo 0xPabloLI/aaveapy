@@ -608,11 +608,9 @@ const MobileReserveCard = memo(({
                     aria-label="Show utilization details"
                   >
                     <span className={`ds-text-11 font-medium tabular-nums leading-none ${
-                      displayUtilization >= 95
-                        ? 'text-amber-600'
-                        : optimalPct != null && displayUtilization > optimalPct
-                          ? 'text-amber-500'
-                          : 'text-foreground'
+                      optimalPct != null && displayUtilization > optimalPct
+                        ? 'text-amber-500'
+                        : 'text-foreground'
                     }`}>
                       {displayUtilization.toFixed(0)}%
                     </span>

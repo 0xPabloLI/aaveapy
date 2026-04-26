@@ -96,11 +96,9 @@ export function BorrowCapSheetContent({
       <div className="flex justify-between gap-3">
         <span className="text-muted-foreground">Pool liquidity</span>
         <span className={`font-medium tabular-nums ${
-          poolLiquidity < 1000
-            ? 'text-amber-600'
-            : poolLiquidity < 10000
-              ? 'text-amber-500'
-              : 'ds-text-purple-600'
+          poolLiquidity < 10000
+            ? 'text-amber-500'
+            : 'ds-text-purple-600'
         }`}>
           {formatScenarioSize(poolLiquidity, { inputMode, tokenPrice, tokenSymbol })}
         </span>
@@ -122,18 +120,13 @@ export function BorrowCapSheetContent({
 /** Utilization bottom sheet content */
 export function UtilizationSheetContent({ current, optimal }: { current: number; optimal: number }) {
   const isOverOptimal = current > optimal;
-  const isCritical = current >= 95;
   return (
     <div className="space-y-2 ds-text-12">
       <div className="flex justify-between gap-4">
         <span className="text-muted-foreground">Optimal</span>
         <span className="font-medium tabular-nums">{formatPercent(optimal)}</span>
       </div>
-      {isCritical ? (
-        <p className="text-amber-600 ds-text-11 pt-2 border-t border-border/50">
-          ⚠️ Critical / High Risk
-        </p>
-      ) : isOverOptimal ? (
+      {isOverOptimal ? (
         <p className="text-amber-500 ds-text-11 pt-2 border-t border-border/50">
           ⚠️ Above optimal
         </p>
