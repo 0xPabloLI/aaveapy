@@ -49,6 +49,27 @@
 
 **辅助元素与文字同色**：进度环、状态图标等紧挨数值时，用 `currentColor` 或与相邻文字一致；仅在有明确语义（警告/错误/成功）时改用语义色。
 
+### 2.1 颜色档位规范（告警色分级）
+
+为了平衡视觉清晰度与风险预警的精确性，告警色采用**两档与三档并存**的策略：
+
+| 分级策略 | 适用指标 | 档位定义 | 颜色 |
+| :--- | :--- | :--- | :--- |
+| **两档** | Utilization、Liquidity | Safe / Warning | `brand-cyan` / `amber-500` |
+| **三档** | Supply Cap、Borrow Cap、Deficit | Safe / Warning / Critical | `brand-color` / `amber-500` / `amber-600` |
+
+**两档指标**（连续型/相对型）：
+- **Utilization**: ≤ optimal (Safe) / > optimal (Warning)
+- **Liquidity**: ≥ $10K (Safe) / < $10K (Warning)
+- 统一使用 `amber-500` 作为警告色，避免颜色过载
+
+**三档指标**（容量型/硬性限制）：
+- **Supply/Borrow Cap**: < 80% / 80-95% / ≥ 95%
+- **Deficit Share**: neutral / warning / critical
+- 在接近容量上限时（≥ 95%）使用 `amber-600` 强化告警
+
+**统一原则**：所有 Warning 级别（无论是两档还是三档的第二档）统一使用 `amber-500`，确保用户形成"琥珀色 = 需要注意"的单一心智模型。
+
 ---
 
 ## 3. 排版与间距
