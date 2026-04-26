@@ -1247,6 +1247,11 @@ const ReservesTable = ({
           )}
           {onSimulationModeChange && (
             <div className="ml-auto shrink-0 flex flex-col items-center gap-1">
+              <PortfolioModeToggle
+                mode={simulationMode}
+                onModeChange={onSimulationModeChange}
+                positionCount={portfolioPositions ? new Set(portfolioPositions.map(p => p.reserveId)).size : 0}
+              />
               {!isPortfolioMode && (
                 <button
                   type="button"
@@ -1264,11 +1269,6 @@ const ReservesTable = ({
                   />
                 </button>
               )}
-              <PortfolioModeToggle
-                mode={simulationMode}
-                onModeChange={onSimulationModeChange}
-                positionCount={portfolioPositions ? new Set(portfolioPositions.map(p => p.reserveId)).size : 0}
-              />
             </div>
           )}
         </div>
