@@ -5,11 +5,12 @@
  * On mobile the label stacks below the switch.
  * The position count is rendered inside the toggle thumb to save space.
  */
-import { memo } from 'react';
+import { memo, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { BATCH_THEME } from './batchTheme';
+import { prefetchPortfolioPanel } from './portfolioPrefetch';
 
 export type SimulationMode = 'single' | 'portfolio';
 
