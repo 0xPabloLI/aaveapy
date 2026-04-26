@@ -274,7 +274,12 @@ describe('DesktopReserveRow', () => {
     expect(html).not.toMatch(/font-semibold text-foreground ds-text-13 truncate/);
     expect(html).not.toMatch(/font-semibold text-foreground ds-text-13 break-all/);
     // (4) Icon wrapper, snowflake wrapper, and AssetActionMenu trigger are all shrink-0.
-    expect(html).toMatch(/<div class="relative inline-block rounded-full shrink-0"/);
+    const iconWrapperMatch = html.match(/<div class="[^"]*rounded-full[^"]*"/);
+    const iconWrapperClasses = iconWrapperMatch?.[0] ?? '';
+    expect(iconWrapperClasses).toContain('relative');
+    expect(iconWrapperClasses).toContain('inline-block');
+    expect(iconWrapperClasses).toContain('shrink-0');
+    expect(iconWrapperClasses).toContain('rounded-full');
     expect(html).toMatch(/<button[^>]*class="inline-flex shrink-0 items-center[^"]*text-sky-500 bg-sky-500\/10"/);
     // AssetActionMenu receives triggerClassName="shrink-0" which merges onto its trigger button.
     const assetMenuMatches = html.match(/<button[^>]*aria-label="Asset actions for[^"]*"[^>]*class="([^"]*)"/);
@@ -284,9 +289,11 @@ describe('DesktopReserveRow', () => {
     // 「密集表对齐策略」. Token = text-left + justify-start (identifier 起点对齐).
     // The inner flex (token block) and outer flex (with optional portfolio toggle)
     // both use justify-start so the icon hugs the cell's left edge.
+    // group/token uses items-start (not items-center) so the arrow badge hugs the
+    // last line of wrapped text instead of floating in the vertical center.
     expect(html).toMatch(/<td[^>]*ds-reserves-cell-td-edge-l[^"]*text-left/);
     expect(html).toMatch(/class="flex w-full min-w-0 items-center justify-start/);
-    expect(html).toMatch(/class="group\/token flex min-w-0 max-w-full items-center justify-start/);
+    expect(html).toMatch(/class="group\/token flex min-w-0 max-w-full items-start justify-start/);
     expect(html).not.toMatch(/<td[^>]*ds-reserves-cell-td-edge-l[^"]*text-center/);
   });
 

@@ -241,23 +241,27 @@ const DesktopReserveRow = memo(({
               )}
             </button>
           )}
-          <div className="group/token flex min-w-0 max-w-full items-center justify-start gap-[var(--ds-space-1-5)]">
-            <TokenIcon symbol={iconSymbol} size={28} loading="eager" logoURI={logoURI} className="shrink-0" />
-            <span className="font-semibold text-foreground ds-text-13 break-words min-w-0 [max-width:max-content]">
-              {reserve.tokenSymbol}
-            </span>
-            <FrozenStatusBadge isFrozen={reserve.isFrozen} isPaused={reserve.isPaused} />
-            <AssetActionMenu
-              tokenSymbol={reserve.tokenSymbol}
-              tokenAddress={reserve.tokenAddress}
-              marketName={reserve.marketName}
-              aaveProReserveId={reserve.aaveProReserveId}
-              chainName={reserve.chainName}
-              hubAddress={reserve.hubAddress}
-              isMobile={isMobile}
-              triggerSize={12}
-              triggerClassName="shrink-0"
-            />
+          <div className="group/token flex min-w-0 max-w-full items-start justify-start gap-[var(--ds-space-1-5)]">
+            <TokenIcon symbol={iconSymbol} size={28} loading="eager" logoURI={logoURI} className="shrink-0 mt-0.5" />
+            <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-[var(--ds-space-1-5)] gap-y-0">
+              <span className="font-semibold text-foreground ds-text-13 break-words min-w-0 [max-width:max-content]">
+                {reserve.tokenSymbol}
+              </span>
+              <span className="inline-flex shrink-0 items-baseline gap-[var(--ds-space-1-5)]">
+                <FrozenStatusBadge isFrozen={reserve.isFrozen} isPaused={reserve.isPaused} />
+                <AssetActionMenu
+                  tokenSymbol={reserve.tokenSymbol}
+                  tokenAddress={reserve.tokenAddress}
+                  marketName={reserve.marketName}
+                  aaveProReserveId={reserve.aaveProReserveId}
+                  chainName={reserve.chainName}
+                  hubAddress={reserve.hubAddress}
+                  isMobile={isMobile}
+                  triggerSize={12}
+                  triggerClassName="shrink-0 self-baseline"
+                />
+              </span>
+            </div>
           </div>
           </div>
         </TableCell>
