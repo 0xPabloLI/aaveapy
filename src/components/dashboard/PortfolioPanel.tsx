@@ -2,8 +2,8 @@
  * PortfolioPanel — portfolio management panel with token search,
  * position list, summary card, results table, and snapshot comparison.
  */
-import { useState, useMemo, useEffect, memo, useCallback, lazy, Suspense } from 'react';
-import { Search, Plus, X, Layers, Trash2, Save, ArrowRightLeft } from 'lucide-react';
+import { useState, useMemo, useEffect, useRef, memo, useCallback, lazy, Suspense } from 'react';
+import { Search, Plus, X, Layers, Trash2, Save, ArrowRightLeft, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { ReserveWithSpread } from '@/types/aave';
