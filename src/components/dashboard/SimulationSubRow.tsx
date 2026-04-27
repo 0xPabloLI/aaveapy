@@ -28,7 +28,6 @@ import {
 } from '@/lib/simulationIncentiveTableRows';
 import type { ReserveWithSpread, MeritIncentive, MerklOpportunityGroup, BrevisIncentive } from '@/types/aave';
 import { ETHEREUM_MARKET_NAMES } from '@/types/aave';
-import { getProtocolVersion } from '@/lib/protocolVersion';
 import { getFirstActiveBrevisLink } from '@/lib/brevis';
 
 const getFirstMeritLink = (merits?: MeritIncentive[]): string | null => {

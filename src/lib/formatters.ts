@@ -60,7 +60,7 @@ import {
   type MeritIncentive,
   type MerklOpportunityGroup,
   type ReserveWithSpread,
-} from '@/types/aave';
+ MerklForecastWireItem } from '@/types/aave';
 import { isCampaignActive, sumActiveCampaignBreakdownValues } from '@/lib/campaignGroups';
 import {
   getBrevisCampaignBreakdowns,
@@ -68,7 +68,6 @@ import {
 } from '@/lib/brevis';
 import { TYDRO_POINT_TO_USD_RATE } from '@/lib/tydro';
 import { getMerklBreakdownApr, forecastBreakdownApr, sanitizePercent } from '@/lib/merklForecast';
-import type { MerklForecastWireItem } from '@/types/aave';
 
 /**
  * Opt-in key for whitelist-only Merkl breakdowns that have no usable `campaignId` (empty after trim).

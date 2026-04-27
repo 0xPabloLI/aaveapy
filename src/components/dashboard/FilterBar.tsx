@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo , memo } from 'react';
 import { Search, Eraser, ChevronRight, ChevronLeft, Snowflake } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { TokenCategory, MarketListItem, ETHEREUM_MARKET_NAMES } from '@/types/aave';
@@ -6,7 +6,6 @@ import { getChainIconSrc } from '@/lib/chainIcons';
 import { useIsMobile } from '@/hooks/use-mobile';
 import AprApyToggle from '@/components/dashboard/AprApyToggle';
 import { getProtocolVersion } from '@/lib/protocolVersion';
-import { memo } from 'react';
 
 interface FilterBarProps {
   searchQuery: string;

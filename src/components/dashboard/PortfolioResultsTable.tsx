@@ -6,8 +6,7 @@ import { memo } from 'react';
 import { cn } from '@/lib/utils';
 import { formatPercent } from '@/lib/formatters';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
-import type { PortfolioPositionResult } from '@/types/portfolio';
-import type { PortfolioPosition } from '@/types/portfolio';
+import type { PortfolioPositionResult , PortfolioPosition } from '@/types/portfolio';
 
 interface PortfolioResultsTableProps {
   positions: PortfolioPosition[];
