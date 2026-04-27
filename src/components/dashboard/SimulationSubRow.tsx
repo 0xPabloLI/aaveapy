@@ -11,6 +11,7 @@ import {
 } from '@/lib/formatters';
 import { buildAaveUrl } from '@/lib/aaveLinks';
 import { convertUsdToInputValue } from '@/lib/scenarioSize';
+import { getProtocolVersion } from '@/lib/protocolVersion';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type {
   RateSimulationResult,
@@ -238,8 +239,15 @@ const SimulationSubRow = ({
     onCorrectBorrowInput(convertUsdToInputValue(availableBorrowRoomUsd, inputMode, simulation.tokenPrice));
   };
 
-  const currentSupplySizeUsd =
-    reserve.reserveSizeUsd != null && Number.isFinite(reserve.reserveSizeUsd) ? reserve.reserveSizeUsd : null;
+  // V4: reserveSizeUsd may be 0 or a per-Spoke slice — treat as null to avoid misleading cap checks
+  const currentSupplySizeUsd = (() => {
+    if (getProtocolVersion(reserve.marketName) === 'v4') {
+      const size = reserve.reserveSizeUsd;
+      if (size != null && Number.isFinite(size) && size > 0) return size;
+      return null;
+    }
+    return reserve.reserveSizeUsd != null && Number.isFinite(reserve.reserveSizeUsd) ? reserve.reserveSizeUsd : null;
+  })();
   const afterSupplySizeUsd =
     currentSupplySizeUsd !== null && simulation.supply.inputUsd > 0
       ? currentSupplySizeUsd + simulation.supply.inputUsd

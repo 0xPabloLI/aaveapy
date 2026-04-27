@@ -35,7 +35,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { getReserveSimulationId, useSharedRateSimulations } from '@/hooks/useRateSimulation';
 import { useSideDataMeta } from '@/hooks/useSideDataMeta';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
-import { getPoolLiquidityUsd, getReserveAvailableLiquidityUsd, getReserveTotalBorrowedUsd as getOnChainTotalBorrowedUsd, getScenarioSupplySizeUsd, getTotalBorrowedUsd as getDerivedTotalBorrowedUsd, getAvailableToBorrowUsd } from '@/lib/scenarioSize';
+import { getDisplayPoolLiquidityUsd as computeDisplayPoolLiquidityUsd, getDisplayReserveSizeUsd as computeDisplayReserveSizeUsd, getDisplayTotalBorrowedUsd as computeDisplayTotalBorrowedUsd, getAvailableToBorrowUsd } from '@/lib/scenarioSize';
 import {
   scrollExpandedSimulationIntoView,
   shouldScrollExpandedSimulationIntoView,
@@ -410,9 +410,8 @@ const ReservesTable = ({
   };
 
   const getDisplayReserveSizeUsd = (reserve: ReserveWithSpread): number | null => {
-    return getScenarioSupplySizeUsd({
-      reserveSizeUsd: reserve.reserveSizeUsd,
-      supplyCapUsd: reserve.supplyCapUsd,
+    const protocolVersion = getProtocolVersion(reserve.marketName);
+    return computeDisplayReserveSizeUsd(reserve, protocolVersion, {
       rawSupplyInput: debouncedSharedSupplyInput,
       inputMode: sharedInputMode,
       tokenPrice: getSimulation(reserve)?.tokenPrice ?? reserve.tokenPrice,
@@ -420,24 +419,11 @@ const ReservesTable = ({
   };
 
   const getTotalBorrowedUsd = (reserve: ReserveWithSpread): number | null => {
-    // Prefer on-chain `totalVariableDebt` as the source of truth (matches Aave UIs).
-    // Fall back to derived `reserveSizeUsd * utilizationPct / 100` only when raw fields are unavailable.
-    // V4 markets in particular can have reserveSizeUsd=0, making the derived value 0
-    // while the actual borrowed amount is non-zero (e.g. AaveV4Bluechip USDT).
-    return getOnChainTotalBorrowedUsd(reserve)
-      ?? getDerivedTotalBorrowedUsd({
-        reserveSizeUsd: reserve.reserveSizeUsd,
-        utilizationPct: reserve.utilizationPct,
-      });
+    return computeDisplayTotalBorrowedUsd(reserve, getProtocolVersion(reserve.marketName));
   };
 
   const getDisplayLiquidityUsd = (reserve: ReserveWithSpread): number | null => {
-    // Prefer on-chain availableLiquidity (matches Aave UIs); fall back to derived value.
-    // V4 markets in particular have an unreliable `reserveSizeUsd` aggregate.
-    const onChainLiquidity = getReserveAvailableLiquidityUsd(reserve);
-    if (onChainLiquidity != null) return onChainLiquidity;
-    const totalBorrowed = getTotalBorrowedUsd(reserve);
-    return getPoolLiquidityUsd({ reserveSizeUsd: reserve.reserveSizeUsd, totalBorrowedUsd: totalBorrowed });
+    return computeDisplayPoolLiquidityUsd(reserve, getProtocolVersion(reserve.marketName));
   };
 
   const getDisplayAvailableToBorrowUsd = (reserve: ReserveWithSpread): number | null => {

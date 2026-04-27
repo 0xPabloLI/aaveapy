@@ -23,6 +23,7 @@ import {
   forecastWithTVL,
 } from '@/lib/merklForecast';
 import { shouldSurfaceForecastError } from '@/lib/merklForecastErrors';
+import { getProtocolVersion, type ProtocolVersion } from '@/lib/protocolVersion';
 import {
   extractMeritSelfCapUsd,
   forecastMeritAprPercent,
@@ -333,8 +334,30 @@ const sumMeritValues = (values?: MeritIncentive[], isApy = false): number => {
 
 /**
  * Supply: `reserveSizeUsd`. Borrow: borrowed USD ≈ reserveSize × utilization (Merit TVL proxy when no campaign TVL exists).
+ * V4: reserveSizeUsd may be 0 or a per-Spoke slice — use on-chain totalVariableDebt for borrow side,
+ *     and return undefined for supply side when reserveSizeUsd is 0/unreliable.
  */
-const getMeritAnchorTvlUsd = (reserve: ReserveWithSpread, side: RateSide): number | undefined => {
+const getMeritAnchorTvlUsd = (reserve: ReserveWithSpread, side: RateSide, protocolVersion: ProtocolVersion): number | undefined => {
+  if (protocolVersion === 'v4') {
+    // V4: reserveSizeUsd is unreliable for both supply and borrow anchor
+    if (side === 'supply') {
+      const size = reserve.reserveSizeUsd;
+      if (Number.isFinite(size) && size !== undefined && size > 0) return size;
+      return undefined;
+    }
+    // Borrow: use on-chain totalVariableDebt if available
+    const { totalVariableDebt, decimals, tokenPrice } = reserve;
+    if (totalVariableDebt && decimals != null && tokenPrice != null && tokenPrice > 0) {
+      const raw = Number(totalVariableDebt);
+      if (Number.isFinite(raw) && raw >= 0) {
+        const tokens = raw / Math.pow(10, decimals);
+        const usd = tokens * tokenPrice;
+        if (usd > 0) return usd;
+      }
+    }
+    return undefined;
+  }
+  // V3: reserveSizeUsd is reliable
   const size = reserve.reserveSizeUsd;
   if (!Number.isFinite(size) || size === undefined || size <= 0) return undefined;
   if (side === 'supply') return size;
@@ -852,7 +875,7 @@ const buildIncentiveAfter = (
 
   return (
     sumNumberArray(protocol, isApy) +
-    sumForecastMeritValues(merit, isApy, netInputUsd, getMeritAnchorTvlUsd(reserve, side)) * eligibilityRatio +
+    sumForecastMeritValues(merit, isApy, netInputUsd, getMeritAnchorTvlUsd(reserve, side, getProtocolVersion(reserve.marketName))) * eligibilityRatio +
     sumMerklValues(forecastedMerkl, isApy, tydroPointToUsdRate, whitelistMerklCampaignIds) * eligibilityRatio +
     sumForecastBrevisValues(brevis, isApy, grossInputUsd, brevisSharedDepositsByCampaignId)
   );
@@ -965,7 +988,12 @@ export function buildRateSimulationResult({
   // Calculate cap constraints for capping inputs
   const supplyCapUsd = reserve.supplyCapUsd ?? null;
   const borrowCapUsd = reserve.borrowCapUsd ?? null;
-  const currentReserveSizeUsd = reserve.reserveSizeUsd ?? null;
+  // V4: reserveSizeUsd may be 0 or a per-Spoke slice — treat as null to avoid misleading cap room
+  const currentReserveSizeUsd = (() => {
+    const size = reserve.reserveSizeUsd ?? null;
+    if (getProtocolVersion(reserve.marketName) === 'v4' && (size === null || size === 0)) return null;
+    return size;
+  })();
   
   // Calculate available supply room
   const availableSupplyRoomUsd = 
@@ -1265,7 +1293,7 @@ export function buildRateSimulationResult({
     isApy,
     supplyMeritMerklInputUsd,
     hasAnyInput,
-    getMeritAnchorTvlUsd(reserve, 'supply'),
+    getMeritAnchorTvlUsd(reserve, 'supply', getProtocolVersion(reserve.marketName)),
     supplyMeritMerklEligibilityRatio,
     supplyInputUsd,
   );
@@ -1292,7 +1320,7 @@ export function buildRateSimulationResult({
     isApy,
     borrowMeritMerklInputUsd,
     hasAnyInput,
-    getMeritAnchorTvlUsd(reserve, 'borrow'),
+    getMeritAnchorTvlUsd(reserve, 'borrow', getProtocolVersion(reserve.marketName)),
     borrowMeritMerklEligibilityRatio,
     borrowInputUsd,
   );

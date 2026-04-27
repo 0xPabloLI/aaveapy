@@ -1,4 +1,5 @@
 import { parseNumberInput } from './numberFormat';
+import type { ProtocolVersion } from './protocolVersion';
 
 export type ScenarioDisplayMode = 'usd' | 'token';
 
@@ -190,4 +191,108 @@ export const getAvailableToBorrowUsd = ({
   if (capRemaining === null) return liquidityRemaining;
   if (liquidityRemaining === null) return capRemaining;
   return Math.min(capRemaining, liquidityRemaining);
+};
+
+/* ─── V4-aware unified display functions ───
+ *
+ * V3: on-chain field ?? derived fallback (reserveSizeUsd-based) — both are reliable.
+ * V4: on-chain field only — derived fallback is UNSAFE because reserveSizeUsd
+ *      can be 0 or a per-Spoke slice, making reserveSizeUsd * utilizationPct / 100
+ *      and reserveSizeUsd - totalBorrowed wildly inaccurate.
+ *
+ * All three functions share the same pattern:
+ *   1. Try on-chain source of truth (totalVariableDebt / availableLiquidity / reserveSizeUsd)
+ *   2. If null AND V3: fall back to derived calculation
+ *   3. If null AND V4: return null (display "—" in UI)
+ */
+
+/**
+ * V4-aware total borrowed (USD).
+ * V3: on-chain totalVariableDebt ?? reserveSizeUsd * utilizationPct / 100
+ * V4: on-chain totalVariableDebt only (no derived fallback)
+ */
+export const getDisplayTotalBorrowedUsd = (
+  reserve: {
+    totalVariableDebt?: string | null;
+    decimals?: number | null;
+    tokenPrice?: number | null;
+    reserveSizeUsd?: number | null;
+    utilizationPct?: number | null;
+  },
+  protocolVersion: ProtocolVersion,
+): number | null => {
+  const onChain = getReserveTotalBorrowedUsd(reserve);
+  if (onChain != null) return onChain;
+  // V4: derived fallback is unsafe — reserveSizeUsd may be 0 or a Spoke slice
+  if (protocolVersion === 'v4') return null;
+  return getTotalBorrowedUsd({
+    reserveSizeUsd: reserve.reserveSizeUsd,
+    utilizationPct: reserve.utilizationPct,
+  });
+};
+
+/**
+ * V4-aware pool liquidity (USD).
+ * V3: on-chain availableLiquidity ?? reserveSizeUsd - totalBorrowedUsd
+ * V4: on-chain availableLiquidity only (no derived fallback)
+ */
+export const getDisplayPoolLiquidityUsd = (
+  reserve: {
+    availableLiquidity?: string | null;
+    totalVariableDebt?: string | null;
+    decimals?: number | null;
+    tokenPrice?: number | null;
+    reserveSizeUsd?: number | null;
+    utilizationPct?: number | null;
+  },
+  protocolVersion: ProtocolVersion,
+): number | null => {
+  const onChain = getReserveAvailableLiquidityUsd(reserve);
+  if (onChain != null) return onChain;
+  // V4: derived fallback is unsafe — reserveSizeUsd is per-Spoke, not Hub aggregate
+  if (protocolVersion === 'v4') return null;
+  const totalBorrowedUsd = getTotalBorrowedUsd({
+    reserveSizeUsd: reserve.reserveSizeUsd,
+    utilizationPct: reserve.utilizationPct,
+  });
+  return getPoolLiquidityUsd({
+    reserveSizeUsd: reserve.reserveSizeUsd,
+    totalBorrowedUsd,
+  });
+};
+
+/**
+ * V4-aware reserve supply size (USD).
+ * V3: reserveSizeUsd (reliable Pool-level aggregate) + scenario input
+ * V4: reserveSizeUsd only if non-zero and plausible; otherwise null.
+ *      For V4, reserveSizeUsd=0 means the Hub aggregate is not available,
+ *      so showing 0 is misleading — return null instead.
+ */
+export const getDisplayReserveSizeUsd = (
+  reserve: {
+    reserveSizeUsd?: number | null;
+    supplyCapUsd?: number | null;
+  },
+  protocolVersion: ProtocolVersion,
+  scenarioInput?: {
+    rawSupplyInput: string;
+    inputMode: ScenarioDisplayMode;
+    tokenPrice?: number | null;
+  },
+): number | null => {
+  const { reserveSizeUsd } = reserve;
+  // V4 with reserveSizeUsd=0: the Hub aggregate is unavailable, don't show 0
+  if (protocolVersion === 'v4' && (reserveSizeUsd == null || reserveSizeUsd === 0)) {
+    return null;
+  }
+  if (reserveSizeUsd == null || !Number.isFinite(reserveSizeUsd)) return reserveSizeUsd ?? null;
+
+  if (!scenarioInput) return reserveSizeUsd;
+  return getScenarioSupplySizeUsd({
+    reserveSizeUsd,
+    supplyCapUsd: reserve.supplyCapUsd,
+    rawSupplyInput: scenarioInput.rawSupplyInput,
+    inputMode: scenarioInput.inputMode,
+    tokenPrice: scenarioInput.tokenPrice,
+  });
 };

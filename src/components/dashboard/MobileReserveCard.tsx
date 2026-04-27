@@ -31,7 +31,7 @@ import {
 } from '@/lib/deficit';
 import { RateSimulationResult } from '@/hooks/useRateSimulation';
 
-import { getPoolLiquidityUsd, getReserveAvailableLiquidityUsd, getReserveTotalBorrowedUsd, getScenarioSupplySizeUsd, getTotalBorrowedUsd, getValidTokenPrice } from '@/lib/scenarioSize';
+import { getDisplayPoolLiquidityUsd, getDisplayReserveSizeUsd, getDisplayTotalBorrowedUsd, getValidTokenPrice } from '@/lib/scenarioSize';
 import { buildPoolExplorerUrl } from '@/lib/poolExplorerLinks';
 import { buildAaveProHubUrl } from '@/lib/aaveLinks';
 import { getProtocolVersion } from '@/lib/protocolVersion';
@@ -446,32 +446,15 @@ const MobileReserveCard = memo(({
   });
 
   const displayTokenPrice = getValidTokenPrice(simulation.tokenPrice, reserve.tokenPrice);
-  const displayReserveSizeUsd = getScenarioSupplySizeUsd({
-    reserveSizeUsd: reserve.reserveSizeUsd,
-    supplyCapUsd: reserve.supplyCapUsd,
+  const protocolVersion = getProtocolVersion(reserve.marketName);
+  const displayReserveSizeUsd = getDisplayReserveSizeUsd(reserve, protocolVersion, {
     rawSupplyInput: hasSharedScenario ? supplyInput : '',
     inputMode,
     tokenPrice: displayTokenPrice,
   });
-  // Prefer on-chain `totalVariableDebt` as the source of truth (matches Aave UIs).
-  // Fall back to derived `reserveSizeUsd * utilizationPct / 100` only when raw fields are unavailable.
-  // V4 markets in particular can have reserveSizeUsd=0, making the derived value 0
-  // while the actual borrowed amount is non-zero (e.g. AaveV4Bluechip USDT).
-  const baseTotalBorrowedUsd = getReserveTotalBorrowedUsd(reserve)
-    ?? getTotalBorrowedUsd({
-      reserveSizeUsd: reserve.reserveSizeUsd,
-      utilizationPct: reserve.utilizationPct,
-    });
+  const baseTotalBorrowedUsd = getDisplayTotalBorrowedUsd(reserve, protocolVersion);
   const totalBorrowedUsd = simulation?.marketMetrics.totalBorrowedUsdAfter ?? baseTotalBorrowedUsd;
-  // Prefer on-chain `availableLiquidity` as the source of truth (matches Aave UIs).
-  // Fall back to derived `reserveSize - totalBorrowed` only when raw fields are unavailable.
-  // V4 markets in particular have an unreliable `reserveSizeUsd` aggregate, so the derived
-  // value can be off by orders of magnitude (e.g. AaveV4Forex USDT).
-  const basePoolLiquidity = getReserveAvailableLiquidityUsd(reserve)
-    ?? getPoolLiquidityUsd({
-      reserveSizeUsd: reserve.reserveSizeUsd,
-      totalBorrowedUsd: baseTotalBorrowedUsd,
-    });
+  const basePoolLiquidity = getDisplayPoolLiquidityUsd(reserve, protocolVersion);
   const poolLiquidity = simulation?.marketMetrics.availableLiquidityUsdAfter ?? basePoolLiquidity;
   const hasDeficit = hasReserveDeficit(reserve);
   const deficitUsd = getReserveDeficitUsdAmount(reserve, displayTokenPrice);
@@ -643,7 +626,7 @@ const MobileReserveCard = memo(({
                 {/* Hub Info — V4 uses brand gradient emphasis, V3 uses plain style */}
                 {reserve.hubName && (() => {
                   const aaveProHubUrl = buildAaveProHubUrl(reserve);
-                  const isV4 = getProtocolVersion(reserve.marketName) === 'v4';
+                  const isV4 = protocolVersion === 'v4';
                   const hubClass = cn(
                     "inline-flex items-center rounded-full text-[9px] font-normal leading-none",
                     isV4

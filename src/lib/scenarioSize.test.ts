@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { convertUsdToInputValue, getReserveAvailableLiquidityUsd, getReserveTotalBorrowedUsd, getScenarioSupplySizeUsd } from './scenarioSize';
+import { convertUsdToInputValue, getDisplayPoolLiquidityUsd, getDisplayReserveSizeUsd, getDisplayTotalBorrowedUsd, getReserveAvailableLiquidityUsd, getReserveTotalBorrowedUsd, getScenarioSupplySizeUsd } from './scenarioSize';
 
 describe('getScenarioSupplySizeUsd', () => {
   it('keeps current size when reserve is already above cap', () => {
@@ -140,6 +140,113 @@ describe('getReserveTotalBorrowedUsd', () => {
   it('returns null when totalVariableDebt is not numeric', () => {
     expect(
       getReserveTotalBorrowedUsd({ totalVariableDebt: 'not-a-number', decimals: 6, tokenPrice: 1 }),
+    ).toBeNull();
+  });
+});
+
+describe('getDisplayTotalBorrowedUsd', () => {
+  const v4Reserve = {
+    totalVariableDebt: '1037279054299',
+    decimals: 6,
+    tokenPrice: 1.0002,
+    reserveSizeUsd: 0,
+    utilizationPct: 93.14,
+  };
+
+  it('V3: uses on-chain totalVariableDebt when available', () => {
+    expect(getDisplayTotalBorrowedUsd(v4Reserve, 'v3')).toBeCloseTo(1037486.51, 2);
+  });
+
+  it('V4: uses on-chain totalVariableDebt when available', () => {
+    expect(getDisplayTotalBorrowedUsd(v4Reserve, 'v4')).toBeCloseTo(1037486.51, 2);
+  });
+
+  it('V3: falls back to derived reserveSizeUsd * utilizationPct / 100 when on-chain unavailable', () => {
+    const noOnChain = { reserveSizeUsd: 1000, utilizationPct: 50 };
+    expect(getDisplayTotalBorrowedUsd(noOnChain, 'v3')).toBe(500);
+  });
+
+  it('V4: returns null when on-chain unavailable (no derived fallback)', () => {
+    const noOnChain = { reserveSizeUsd: 0, utilizationPct: 93.14 };
+    expect(getDisplayTotalBorrowedUsd(noOnChain, 'v4')).toBeNull();
+  });
+});
+
+describe('getDisplayPoolLiquidityUsd', () => {
+  it('V3: uses on-chain availableLiquidity when available', () => {
+    expect(
+      getDisplayPoolLiquidityUsd({
+        availableLiquidity: '76610908377',
+        decimals: 6,
+        tokenPrice: 1.0002,
+        reserveSizeUsd: 100000,
+        utilizationPct: 50,
+      }, 'v3'),
+    ).toBeCloseTo(76626.23, 2);
+  });
+
+  it('V4: uses on-chain availableLiquidity when available', () => {
+    expect(
+      getDisplayPoolLiquidityUsd({
+        availableLiquidity: '76610908377',
+        decimals: 6,
+        tokenPrice: 1.0002,
+        reserveSizeUsd: 0,
+        utilizationPct: 93.14,
+      }, 'v4'),
+    ).toBeCloseTo(76626.23, 2);
+  });
+
+  it('V3: falls back to derived reserveSizeUsd - totalBorrowed when on-chain unavailable', () => {
+    const noOnChain = { reserveSizeUsd: 1000, utilizationPct: 50 };
+    // totalBorrowed = 1000 * 50/100 = 500, liquidity = 1000 - 500 = 500
+    expect(getDisplayPoolLiquidityUsd(noOnChain, 'v3')).toBe(500);
+  });
+
+  it('V4: returns null when on-chain unavailable (no derived fallback)', () => {
+    const noOnChain = { reserveSizeUsd: 0, utilizationPct: 93.14 };
+    expect(getDisplayPoolLiquidityUsd(noOnChain, 'v4')).toBeNull();
+  });
+});
+
+describe('getDisplayReserveSizeUsd', () => {
+  it('V3: returns reserveSizeUsd when valid', () => {
+    expect(getDisplayReserveSizeUsd({ reserveSizeUsd: 1000 }, 'v3')).toBe(1000);
+  });
+
+  it('V3: returns null when reserveSizeUsd is null', () => {
+    expect(getDisplayReserveSizeUsd({ reserveSizeUsd: null }, 'v3')).toBeNull();
+  });
+
+  it('V4: returns reserveSizeUsd when non-zero', () => {
+    expect(getDisplayReserveSizeUsd({ reserveSizeUsd: 1000 }, 'v4')).toBe(1000);
+  });
+
+  it('V4: returns null when reserveSizeUsd is 0 (Hub aggregate unavailable)', () => {
+    expect(getDisplayReserveSizeUsd({ reserveSizeUsd: 0 }, 'v4')).toBeNull();
+  });
+
+  it('V4: returns null when reserveSizeUsd is null', () => {
+    expect(getDisplayReserveSizeUsd({ reserveSizeUsd: null }, 'v4')).toBeNull();
+  });
+
+  it('V4: applies scenario input when reserveSizeUsd is non-zero', () => {
+    expect(
+      getDisplayReserveSizeUsd(
+        { reserveSizeUsd: 1000, supplyCapUsd: 2000 },
+        'v4',
+        { rawSupplyInput: '500', inputMode: 'usd', tokenPrice: 1 },
+      ),
+    ).toBe(1500);
+  });
+
+  it('V4: returns null with scenario input when reserveSizeUsd is 0', () => {
+    expect(
+      getDisplayReserveSizeUsd(
+        { reserveSizeUsd: 0, supplyCapUsd: 2000 },
+        'v4',
+        { rawSupplyInput: '500', inputMode: 'usd', tokenPrice: 1 },
+      ),
     ).toBeNull();
   });
 });
