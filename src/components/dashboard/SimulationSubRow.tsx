@@ -821,7 +821,11 @@ const SimulationSubRow = ({
   }, [effectiveCompact, supplyDesktopAlignSignature, borrowDesktopAlignSignature, scenarioAccrual]);
 
   const renderEarnCostTable = () => {
-    const tokenPrice = simulation.tokenPrice ?? reserve.tokenPrice;
+    // Token price from reserve directly (simulation.tokenPrice is derived from the same source via tokenPrices index)
+    const tokenPrice =
+      reserve.tokenPrice != null && Number.isFinite(reserve.tokenPrice) && reserve.tokenPrice > 0
+        ? reserve.tokenPrice
+        : null;
     const fmt = (value: number | null) =>
       formatSignedScenarioDailyCashflow(value, { inputMode, tokenPrice });
     const supplyPrincipal = simulation.supply.inputUsd;

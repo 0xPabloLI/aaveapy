@@ -8,18 +8,39 @@
 
 ## 一、Fallback 总结表
 
+### 1.1 数据缺失时的 Fallback（链上 → 推导）
+
+当链上原始字段缺失时，前端使用推导公式作为 fallback：
+
+| 变量/指标 | 首选来源（链上） | Fallback 来源（推导） | 关键文件 |
+|---|---|---|---|
+| `totalBorrowedUsd` | `totalVariableDebt` | `reserveSizeUsd × utilizationPct / 100` | `src/lib/scenarioSize.ts` |
+| `poolLiquidityUsd` | `availableLiquidity` | `reserveSizeUsd − totalBorrowedUsd` | `src/lib/scenarioSize.ts` |
+
+### 1.2 数据结构 Fallback（新字段 → 旧字段）
+
 | 变量/指标 | 首选来源 | Fallback 来源 | 关键文件 |
 |---|---|---|---|
-| `totalBorrowedUsd` | 链上 `totalVariableDebt` | `reserveSizeUsd × utilizationPct / 100` | `src/lib/scenarioSize.ts` |
-| `poolLiquidityUsd` | 链上 `availableLiquidity` | `reserveSizeUsd − totalBorrowedUsd` | `src/lib/scenarioSize.ts` |
-| `tokenPrice` | `simulation.tokenPrice` | `reserve.tokenPrice` | `src/components/dashboard/DesktopReserveRow.tsx` |
-| `optimalUtilization` | API `optimalUsageRate` | `simulation.utilization.optimal` | `src/components/dashboard/DesktopReserveRow.tsx` |
-| `utilizationPct` | simulation | API `reserve.utilizationPct` | `src/components/dashboard/ReservesTable.tsx` |
-| Brevis 字段 | breakdown 级别 | group legacy 级别 | `src/lib/brevis.ts` |
-| Merit forecast APR | `lastRoundRewardUsd` | `anchorTvlUsd` → 当前 APR | `src/lib/meritForecast.ts` |
-| Merkl forecast APR | currentApr | `forecastWithTVL` at current TVL | `src/lib/merklForecast.ts` |
-| Forecast token price | 本地索引 | CoinGecko API（地址 → symbol） | `src/lib/tokenPriceResolver.ts` |
-| Simulation 市场指标 | `/markets` reserve 内联字段 (RateCalcInput) | 缺失时返回 `null` | `src/hooks/useRateSimulation.ts` |
+| Brevis 字段 | `breakdown` 级别 | group `legacy` 级别 | `src/lib/brevis.ts` |
+
+### 1.3 Simulation 对 Base 值的覆盖（用户输入后）
+
+当用户输入了 simulation 场景金额时，UI **用 simulation 值覆盖 base 值**；无输入时显示 base 值。这不是传统意义上的"fallback"，而是"场景覆盖"：
+
+| 变量/指标 | Base 值（无输入时） | Simulation 覆盖值（有输入时） | 关键文件 |
+|---|---|---|---|
+| `utilizationPct` | `reserve.utilizationPct` | `simulation.utilization.after`（或 `current`） | `src/components/dashboard/ReservesTable.tsx` |
+| `totalBorrowedUsd` | `baseTotalBorrowedUsd`（链上或推导） | `simulation.marketMetrics.totalBorrowedUsdAfter` | `src/components/dashboard/DesktopReserveRow.tsx` |
+| `poolLiquidityUsd` | `basePoolLiquidity`（链上或推导） | `simulation.marketMetrics.availableLiquidityUsdAfter` | `src/components/dashboard/DesktopReserveRow.tsx` |
+| Supply APR/APY | `reserve.supplyApy` / `getNativeSupplyApy()` | `simulation.supply.afterNative` | `src/components/dashboard/ReservesTable.tsx` |
+| Supply Total APR/APY | `getTotalSupplyApy()` | `simulation.supply.afterTotal` | `src/components/dashboard/ReservesTable.tsx` |
+| Borrow APR/APY | `reserve.borrowApy` / `getNativeBorrowApy()` | `simulation.borrow.afterNative` | `src/components/dashboard/ReservesTable.tsx` |
+| Borrow Total APR/APY | `getTotalBorrowApy()` | `simulation.borrow.afterTotal` | `src/components/dashboard/ReservesTable.tsx` |
+| Spread | `getSpread()` | `simulation.spread.after` | `src/components/dashboard/ReservesTable.tsx` |
+| Supply Incentive | `getIncentiveValues(...).apy/apr` | `simulation.supply.afterIncentive` | `src/components/dashboard/ReservesTable.tsx` |
+| Borrow Incentive | `getIncentiveValues(...).apy/apr` | `simulation.borrow.afterIncentive` | `src/components/dashboard/ReservesTable.tsx` |
+
+> **注意**：`tokenPrice` 和 `optimalUtilization` **没有** simulation fallback。`tokenPrice` 直接读取 `reserve.tokenPrice`；`optimalUtilization` 直接读取 `reserve.optimalUsageRate`，代码中虽然写了 `?? simulation?.utilization.optimal`，但 simulation 的 `optimal` 也是从同一个 `reserve.optimalUsageRate` 算出来的，所以这条 fallback 实际上永远不会触发。
 
 ---
 
@@ -74,27 +95,38 @@ poolLiquidityUsd = reserveSizeUsd − totalBorrowedUsd
 
 ### 2.3 `tokenPrice`
 
-**Fallback 链**：
+**无 fallback 链**，直接读取：
 
-1. `simulation?.tokenPrice`（由 `useRateSimulation` 计算或从 API 获取）
-2. `reserve.tokenPrice`（`/markets` API 返回）
-3. `getValidTokenPrice(...candidates)`（多候选取第一个有效值）
+```typescript
+const displayTokenPrice =
+  reserve.tokenPrice != null && Number.isFinite(reserve.tokenPrice) && reserve.tokenPrice > 0
+    ? reserve.tokenPrice
+    : null;
+```
 
-**代码位置**：
-- `DesktopReserveRow.tsx:L145`：`const displayTokenPrice = getValidTokenPrice(simulation?.tokenPrice, reserve.tokenPrice);`
+- UI 层直接使用 `reserve.tokenPrice`，不经过 simulation。
+- `simulation.tokenPrice` 只在 hook 内部计算 marketMetrics 时使用。
+
+**代码位置**：`DesktopReserveRow.tsx:L147`
 
 ---
 
 ### 2.4 `optimalUtilization`
 
-**Fallback 链**：
+**无实际 fallback 链**，直接读取：
 
-1. API 直接读取：`reserve.optimalUsageRate / RAY_SCALE`
-2. Simulation 结果：`simulation?.utilization.optimal`
+```typescript
+const optimalPctFromReserve =
+  reserve.optimalUsageRate != null && Number(reserve.optimalUsageRate) > 0
+    ? Number(reserve.optimalUsageRate) / RAY_TO_PERCENT_DIVISOR
+    : null;
+const optimalPct = optimalPctFromReserve ?? simulation?.utilization.optimal;
+```
 
-**注释**：`RAY → display %; API 字段优先直接读取，simulation 作为 fallback。`
+- `simulation.utilization.optimal` 也是从 `reserve.optimalUsageRate` 算出来的（见 `interestRateCalculator.ts`），所以 `?? simulation?.utilization.optimal` 这条 fallback **永远不会触发**。
+- 保留这段代码是历史遗留，实际上 `optimalPctFromReserve` 永远有值（只要 API 返回了 `optimalUsageRate`）。
 
-**代码位置**：`DesktopReserveRow.tsx:L182-188`、`MobileReserveCard.tsx:L513-519`
+**代码位置**：`DesktopReserveRow.tsx:L171-175`、`MobileReserveCard.tsx:L502-506`
 
 ---
 
@@ -192,10 +224,17 @@ const totalBorrowedUsdAfter = hasAnyInput
 // DesktopReserveRow.tsx
 const totalBorrowedUsd = simulation?.marketMetrics.totalBorrowedUsdAfter ?? baseTotalBorrowedUsd;
 const poolLiquidity = simulation?.marketMetrics.availableLiquidityUsdAfter ?? basePoolLiquidity;
-
-// MobileReserveCard.tsx
-const optimalPct = optimalPctFromReserve ?? simulation.utilization.optimal;
 ```
+
+在 `ReservesTable.tsx` 中，`pickScenarioValue` 决定显示 `current` 还是 `after`：
+
+```typescript
+const pickScenarioValue = (current: number | null, after: number | null): number | null =>
+  hasSharedScenario ? after ?? current : current;
+```
+
+- 无共享输入时 → 显示 `current`（即当前值）
+- 有共享输入时 → 显示 `after`（即模拟后的值）
 
 ---
 
