@@ -166,13 +166,12 @@ const DesktopReserveRow = memo(({
   const deficitTokenLabel = deficitTokenCompact !== '-' ? deficitTokenCompact : undefined;
   const deficitUsdLabel = deficitUsd != null ? formatUsd(deficitUsd) : '— (token price unavailable)';
 
-  /** RAY → display %; API 字段优先直接读取，simulation 作为 fallback。 */
+  /** RAY → display %; reserve.optimalUsageRate 是唯一来源（simulation.utilization.optimal 同源，无独立 fallback 价值）。 */
   const RAY_TO_PERCENT_DIVISOR = 1e25;
-  const optimalPctFromReserve =
+  const optimalPct =
     reserve.optimalUsageRate != null && Number(reserve.optimalUsageRate) > 0
       ? Number(reserve.optimalUsageRate) / RAY_TO_PERCENT_DIVISOR
       : null;
-  const optimalPct = optimalPctFromReserve ?? simulation?.utilization.optimal;
   const deficitShareRatio = calculateDeficitShareRatio({
     deficitUsd,
     totalSuppliedUsd: displayReserveSizeUsd,

@@ -8,14 +8,15 @@
 
 ## 一、Fallback 总结表
 
-### 1.1 数据缺失时的 Fallback（链上 → 推导）
+### 1.1 数据缺失时的 Fallback（链上 → 推导，V3/V4 不同）
 
-当链上原始字段缺失时，前端使用推导公式作为 fallback：
+当链上原始字段缺失时，前端**仅在 V3 市场**使用推导公式作为 fallback；**V4 市场不做推导 fallback，直接返回 `null`**（UI 显示 `—`），避免 V4 Hub & Spoke 数据切片导致的数量级错误：
 
-| 变量/指标 | 首选来源（链上） | Fallback 来源（推导） | 关键文件 |
-|---|---|---|---|
-| `totalBorrowedUsd` | `totalVariableDebt` | `reserveSizeUsd × utilizationPct / 100` | `src/lib/scenarioSize.ts` |
-| `poolLiquidityUsd` | `availableLiquidity` | `reserveSizeUsd − totalBorrowedUsd` | `src/lib/scenarioSize.ts` |
+| 变量/指标 | 首选来源（链上） | V3 Fallback（推导） | V4 行为 | 关键文件 |
+|---|---|---|---|---|
+| `totalBorrowedUsd` | `totalVariableDebt` | `reserveSizeUsd × utilizationPct / 100` | `null` | `src/lib/scenarioSize.ts`（`getDisplayTotalBorrowedUsd`） |
+| `poolLiquidityUsd` | `availableLiquidity` | `reserveSizeUsd − totalBorrowedUsd` | `null` | `src/lib/scenarioSize.ts`（`getDisplayPoolLiquidityUsd`） |
+| `reserveSizeUsd`（展示） | `reserveSizeUsd` | — | 当 `0` 或 `null` 时返回 `null`（不显示 `0`） | `src/lib/scenarioSize.ts`（`getDisplayReserveSizeUsd`） |
 
 ### 1.2 数据结构 Fallback（新字段 → 旧字段）
 
@@ -30,8 +31,8 @@
 | 变量/指标 | Base 值（无输入时） | Simulation 覆盖值（有输入时） | 关键文件 |
 |---|---|---|---|
 | `utilizationPct` | `reserve.utilizationPct` | `simulation.utilization.after`（或 `current`） | `src/components/dashboard/ReservesTable.tsx` |
-| `totalBorrowedUsd` | `baseTotalBorrowedUsd`（链上或推导） | `simulation.marketMetrics.totalBorrowedUsdAfter` | `src/components/dashboard/DesktopReserveRow.tsx` |
-| `poolLiquidityUsd` | `basePoolLiquidity`（链上或推导） | `simulation.marketMetrics.availableLiquidityUsdAfter` | `src/components/dashboard/DesktopReserveRow.tsx` |
+| `totalBorrowedUsd` | `baseTotalBorrowedUsd`（V3：链上或推导；V4：仅链上，否则 `null`） | `simulation.marketMetrics.totalBorrowedUsdAfter` | `src/components/dashboard/DesktopReserveRow.tsx` |
+| `poolLiquidityUsd` | `basePoolLiquidity`（V3：链上或推导；V4：仅链上，否则 `null`） | `simulation.marketMetrics.availableLiquidityUsdAfter` | `src/components/dashboard/DesktopReserveRow.tsx` |
 | Supply APR/APY | `reserve.supplyApy` / `getNativeSupplyApy()` | `simulation.supply.afterNative` | `src/components/dashboard/ReservesTable.tsx` |
 | Supply Total APR/APY | `getTotalSupplyApy()` | `simulation.supply.afterTotal` | `src/components/dashboard/ReservesTable.tsx` |
 | Borrow APR/APY | `reserve.borrowApy` / `getNativeBorrowApy()` | `simulation.borrow.afterNative` | `src/components/dashboard/ReservesTable.tsx` |
@@ -40,7 +41,7 @@
 | Supply Incentive | `getIncentiveValues(...).apy/apr` | `simulation.supply.afterIncentive` | `src/components/dashboard/ReservesTable.tsx` |
 | Borrow Incentive | `getIncentiveValues(...).apy/apr` | `simulation.borrow.afterIncentive` | `src/components/dashboard/ReservesTable.tsx` |
 
-> **注意**：`tokenPrice` 和 `optimalUtilization` **没有** simulation fallback。`tokenPrice` 直接读取 `reserve.tokenPrice`；`optimalUtilization` 直接读取 `reserve.optimalUsageRate`，代码中虽然写了 `?? simulation?.utilization.optimal`，但 simulation 的 `optimal` 也是从同一个 `reserve.optimalUsageRate` 算出来的，所以这条 fallback 实际上永远不会触发。
+> **注意**：`tokenPrice` 和 `optimalUtilization` **没有** simulation fallback。`tokenPrice` 直接读取 `reserve.tokenPrice`；`optimalUtilization` 直接读取 `reserve.optimalUsageRate`。曾经写过的 `?? simulation?.utilization.optimal` 已于 2026-04-27 清理（见 §2.4）。
 
 ---
 
@@ -57,17 +58,21 @@ totalBorrowedUsd = (Number(totalVariableDebt) / 10^decimals) × tokenPrice
 - 这是 Aave Pool / Spoke 合约的原始数据，与 app.aave.com / pro.aave.com 一致。
 - 适用于 V3 和 V4。
 
-**Fallback**：由 `reserveSizeUsd` 和 `utilizationPct` 推导
+**Fallback**：仅 V3 走推导，V4 不 fallback
 
 ```
+// V3 only:
 totalBorrowedUsd = reserveSizeUsd × (utilizationPct / 100)
+// V4: 直接返回 null，UI 显示 “—”
 ```
 
-- 当链上 `totalVariableDebt` 缺失时使用。
-- **V4 特别注意**：`reserveSizeUsd` 可能只是 Spoke 级别的切片，导致推导值严重偏低（如 AaveV4Bluechip USDT 的 `reserveSizeUsd=0`，但实际 borrowed ≈ $1.037B）。
+- 当链上 `totalVariableDebt` 缺失时：
+  - **V3** → 用 `reserveSizeUsd × utilizationPct / 100` 推导（V3 的 `reserveSizeUsd` 是 Pool 级别聚合值，可信）。
+  - **V4** → 不推导，返回 `null`。原因：V4 的 `reserveSizeUsd` 可能为 `0` 或仅是 Hub & Spoke 中某 Spoke 的供应切片，与 `totalVariableDebt`（Hub 级别债务）不在同一量纲（如 AaveV4Bluechip USDT 的 `reserveSizeUsd=0`，但实际 borrowed ≈ $1.037B），推导会严重偏低。
 
 **代码位置**：
-- 计算：`src/lib/scenarioSize.ts` 中的 `getReserveTotalBorrowedUsd()` 和 `getTotalBorrowedUsd()`
+- 入口（V4-aware）：`src/lib/scenarioSize.ts` 中的 `getDisplayTotalBorrowedUsd(reserve, protocolVersion)`
+- 内部：`getReserveTotalBorrowedUsd()`（链上换算）+ `getTotalBorrowedUsd()`（V3 推导）
 - 使用：`DesktopReserveRow.tsx`、`ReservesTable.tsx`、`MobileReserveCard.tsx`
 
 ---
@@ -80,16 +85,21 @@ totalBorrowedUsd = reserveSizeUsd × (utilizationPct / 100)
 poolLiquidityUsd = (Number(availableLiquidity) / 10^decimals) × tokenPrice
 ```
 
-**Fallback**：由 `reserveSizeUsd` 减去 `totalBorrowedUsd` 推导
+**Fallback**：仅 V3 走推导，V4 不 fallback
 
 ```
+// V3 only:
 poolLiquidityUsd = reserveSizeUsd − totalBorrowedUsd
+// V4: 直接返回 null，UI 显示 “—”
 ```
 
-- V4 的 `reserveSizeUsd` 是 per-Spoke 供应切片，而 `availableLiquidity` 是 Hub 级别共享流动性，混用会导致数量级错误。
+- 当链上 `availableLiquidity` 缺失时：
+  - **V3** → 用 `reserveSizeUsd − (reserveSizeUsd × utilizationPct / 100)` 推导。
+  - **V4** → 不推导，返回 `null`。原因：V4 的 `reserveSizeUsd` 是 per-Spoke 供应切片，而 `availableLiquidity` 是 Hub 级别共享流动性，混用得到的只是 Hub 流动性的一个 Spoke 比例，可能数量级偏差（如 AaveV4Forex USDT 推导 ≈ $5.7k，链上 ≈ $76.6k）。
 
 **代码位置**：
-- 计算：`src/lib/scenarioSize.ts` 中的 `getReserveAvailableLiquidityUsd()` 和 `getPoolLiquidityUsd()`
+- 入口（V4-aware）：`src/lib/scenarioSize.ts` 中的 `getDisplayPoolLiquidityUsd(reserve, protocolVersion)`
+- 内部：`getReserveAvailableLiquidityUsd()`（链上换算）+ `getPoolLiquidityUsd()`（V3 推导）
 
 ---
 
@@ -113,20 +123,20 @@ const displayTokenPrice =
 
 ### 2.4 `optimalUtilization`
 
-**无实际 fallback 链**，直接读取：
+**无 fallback**，直接读取：
 
 ```typescript
-const optimalPctFromReserve =
+const RAY_TO_PERCENT_DIVISOR = 1e25;
+const optimalPct =
   reserve.optimalUsageRate != null && Number(reserve.optimalUsageRate) > 0
     ? Number(reserve.optimalUsageRate) / RAY_TO_PERCENT_DIVISOR
     : null;
-const optimalPct = optimalPctFromReserve ?? simulation?.utilization.optimal;
 ```
 
-- `simulation.utilization.optimal` 也是从 `reserve.optimalUsageRate` 算出来的（见 `interestRateCalculator.ts`），所以 `?? simulation?.utilization.optimal` 这条 fallback **永远不会触发**。
-- 保留这段代码是历史遗留，实际上 `optimalPctFromReserve` 永远有值（只要 API 返回了 `optimalUsageRate`）。
+- `reserve.optimalUsageRate` 是唯一来源；当缺失或 `<= 0` 时 `optimalPct = null`，UI 显示 `—`。
+- **历史**：曾写过 `?? simulation?.utilization.optimal` 作为兜底，但 `simulation.utilization.optimal` 同样从 `reserveRateInput.optimalUsageRate` 计算（见 [`useRateSimulation.ts` L1538-1539](file:///Users/pabloli/Documents/code/aaveapy/src/hooks/useRateSimulation.ts#L1538-L1539)），与 `reserve.optimalUsageRate` 实际是同一字段；该兜底永不触发，已于 2026-04-27 清理。
 
-**代码位置**：`DesktopReserveRow.tsx:L171-175`、`MobileReserveCard.tsx:L502-506`
+**代码位置**：[`DesktopReserveRow.tsx`](file:///Users/pabloli/Documents/code/aaveapy/src/components/dashboard/DesktopReserveRow.tsx)、[`MobileReserveCard.tsx`](file:///Users/pabloli/Documents/code/aaveapy/src/components/dashboard/MobileReserveCard.tsx)
 
 ---
 

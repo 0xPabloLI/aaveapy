@@ -24,6 +24,11 @@ const reserve: ReserveWithSpread = {
   supplyCapUsd: 2_000_000,
   borrowCapUsd: 1_000_000,
   utilizationPct: 45,
+  // 80% optimal usage rate in RAY (1e27 == 100%): 0.8 * 1e27 = 8e26.
+  // Mirrors production where reserve.optimalUsageRate is the source of optimalPct;
+  // simulation.utilization.optimal is computed from the same field, so previously
+  // the test relied on a fallback that never fires in real data.
+  optimalUsageRate: '800000000000000000000000000',
   supplyApy: 4.2,
   borrowApy: 6.1,
   supplyDisabled: false,
