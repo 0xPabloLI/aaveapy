@@ -476,17 +476,28 @@ const PortfolioPanel = memo(function PortfolioPanel({
                 <div className="flex flex-wrap items-center justify-center gap-1.5">
                   {suggestedReserves.map((r) => {
                     const reserveId = getReserveKey(r);
+                    const isAdded = recentlyAdded === reserveId;
                     return (
                       <button
                         key={reserveId}
                         type="button"
+                        disabled={isAdded}
                         onClick={() => handleQuickAddSuggested(reserveId)}
-                        className="inline-flex items-center gap-1 rounded-full border border-border/50 bg-card/70 px-2 py-1 ds-text-10 font-semibold text-foreground transition-colors hover:bg-muted/60"
-                        aria-label={`Add ${r.tokenSymbol} supply to batch`}
+                        className={cn(
+                          'inline-flex items-center gap-1 rounded-full border px-2 py-1 ds-text-10 font-semibold transition-colors',
+                          isAdded
+                            ? cn(BATCH_THEME.border, BATCH_THEME.bgSoft, BATCH_THEME.text)
+                            : 'border-border/50 bg-card/70 text-foreground hover:bg-muted/60',
+                        )}
+                        aria-label={isAdded ? `${r.tokenSymbol} added` : `Add ${r.tokenSymbol} supply to batch`}
                       >
                         <TokenIcon symbol={r.tokenSymbol} size={14} />
                         <span>{r.tokenSymbol}</span>
-                        <Plus className="size-2.5 text-muted-foreground" aria-hidden />
+                        {isAdded ? (
+                          <Check className={cn('size-2.5', BATCH_THEME.text)} aria-hidden />
+                        ) : (
+                          <Plus className="size-2.5 text-muted-foreground" aria-hidden />
+                        )}
                       </button>
                     );
                   })}
