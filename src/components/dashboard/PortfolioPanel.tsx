@@ -281,9 +281,11 @@ const PortfolioPanel = memo(function PortfolioPanel({
   // indicator. Each step adds one token (~80ms apart) so the user sees
   // tangible progress; on completion we flash a check and refocus the search.
   const handleAddAllSuggested = useCallback(() => {
-    if (addAllProgress) return; // ignore double clicks
+    // Synchronous + state guard prevents repeat invocations until done.
+    if (addAllRunningRef.current || addAllProgress) return;
     const targets = suggestedReserves.map((r) => getReserveKey(r));
     if (targets.length === 0) return;
+    addAllRunningRef.current = true;
     setAddAllDone(false);
     setAddAllProgress({ current: 0, total: targets.length });
     setSearchOpen(true);
@@ -302,6 +304,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
         setTimeout(() => {
           setAddAllProgress(null);
           setAddAllDone(false);
+          addAllRunningRef.current = false;
           requestAnimationFrame(() => searchInputRef.current?.focus());
         }, 900);
       }
