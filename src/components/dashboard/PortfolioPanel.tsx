@@ -288,6 +288,15 @@ const PortfolioPanel = memo(function PortfolioPanel({
     [handleAddFromSearch],
   );
 
+  const handleAddAllSuggested = useCallback(() => {
+    if (suggestedReserves.length === 0) return;
+    for (const r of suggestedReserves) {
+      handleAddFromSearch(getReserveKey(r), 'supply');
+    }
+    setSearchOpen(true);
+    requestAnimationFrame(() => searchInputRef.current?.focus());
+  }, [suggestedReserves, handleAddFromSearch]);
+
   const handleRemoveToken = useCallback((reserveId: string) => {
     for (const p of positions) {
       if (p.reserveId === reserveId) actions.removePosition(p.positionId);
