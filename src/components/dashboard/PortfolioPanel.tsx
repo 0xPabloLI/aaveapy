@@ -3,7 +3,7 @@
  * position list, summary card, results table, and snapshot comparison.
  */
 import { useState, useMemo, useEffect, useRef, memo, useCallback, lazy, Suspense } from 'react';
-import { Search, Plus, X, Layers, Trash2, Save, ArrowRightLeft, Sparkles, Check } from 'lucide-react';
+import { Search, Plus, X, Layers, Trash2, Save, ArrowRightLeft, Sparkles, Loader2, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { ReserveWithSpread } from '@/types/aave';
@@ -161,12 +161,10 @@ const PortfolioPanel = memo(function PortfolioPanel({
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [showCompare, setShowCompare] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  // Brief "Added" feedback per reserveId on quick-add chip clicks.
-  const [recentlyAdded, setRecentlyAdded] = useState<string | null>(null);
-  const recentlyAddedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => () => {
-    if (recentlyAddedTimerRef.current) clearTimeout(recentlyAddedTimerRef.current);
-  }, []);
+  // Progress state for "Add all" bulk action: { current, total } while running,
+  // null when idle. After completion we briefly show a "done" pulse via `addAllDone`.
+  const [addAllProgress, setAddAllProgress] = useState<{ current: number; total: number } | null>(null);
+  const [addAllDone, setAddAllDone] = useState(false);
 
   const focusSearch = useCallback(() => {
     setSearchOpen(true);
@@ -251,14 +249,6 @@ const PortfolioPanel = memo(function PortfolioPanel({
     const addedSymbols = new Set(
       positions.map((p) => p.tokenSymbol.toUpperCase()),
     );
-    // Allow the just-added token to remain visible briefly so the
-    // user sees the "Added" confirmation on its chip.
-    const recentReserve = recentlyAdded
-      ? reserves.find((r) => getReserveKey(r) === recentlyAdded) ?? null
-      : null;
-    if (recentReserve) {
-      addedSymbols.delete(recentReserve.tokenSymbol.toUpperCase());
-    }
     const seen = new Set<string>();
     const picks: ReserveWithSpread[] = [];
     const sorted = [...reserves].sort(
@@ -272,15 +262,11 @@ const PortfolioPanel = memo(function PortfolioPanel({
       if (picks.length >= 5) break;
     }
     return picks;
-  }, [reserves, positions, recentlyAdded]);
+  }, [reserves, positions]);
 
   const handleQuickAddSuggested = useCallback(
     (reserveId: string) => {
       handleAddFromSearch(reserveId, 'supply');
-      // Show brief "Added" feedback on the chip.
-      setRecentlyAdded(reserveId);
-      if (recentlyAddedTimerRef.current) clearTimeout(recentlyAddedTimerRef.current);
-      recentlyAddedTimerRef.current = setTimeout(() => setRecentlyAdded(null), 1100);
       // Keep the search panel open and focused so the user can keep adding.
       setSearchOpen(true);
       requestAnimationFrame(() => searchInputRef.current?.focus());
@@ -288,14 +274,37 @@ const PortfolioPanel = memo(function PortfolioPanel({
     [handleAddFromSearch],
   );
 
+  // Bulk add all suggested popular tokens with a brief staggered progress
+  // indicator. Each step adds one token (~80ms apart) so the user sees
+  // tangible progress; on completion we flash a check and refocus the search.
   const handleAddAllSuggested = useCallback(() => {
-    if (suggestedReserves.length === 0) return;
-    for (const r of suggestedReserves) {
-      handleAddFromSearch(getReserveKey(r), 'supply');
-    }
+    if (addAllProgress) return; // ignore double clicks
+    const targets = suggestedReserves.map((r) => getReserveKey(r));
+    if (targets.length === 0) return;
+    setAddAllDone(false);
+    setAddAllProgress({ current: 0, total: targets.length });
     setSearchOpen(true);
-    requestAnimationFrame(() => searchInputRef.current?.focus());
-  }, [suggestedReserves, handleAddFromSearch]);
+
+    let i = 0;
+    const step = () => {
+      const id = targets[i];
+      handleAddFromSearch(id, 'supply');
+      i += 1;
+      setAddAllProgress({ current: i, total: targets.length });
+      if (i < targets.length) {
+        setTimeout(step, 80);
+      } else {
+        setAddAllDone(true);
+        // Hold the "done" state briefly, then reset and refocus search input
+        setTimeout(() => {
+          setAddAllProgress(null);
+          setAddAllDone(false);
+          requestAnimationFrame(() => searchInputRef.current?.focus());
+        }, 900);
+      }
+    };
+    step();
+  }, [addAllProgress, suggestedReserves, handleAddFromSearch]);
 
   const handleRemoveToken = useCallback((reserveId: string) => {
     for (const p of positions) {
@@ -479,51 +488,57 @@ const PortfolioPanel = memo(function PortfolioPanel({
 
             {suggestedReserves.length > 0 && (
               <div className="mt-3">
-                <div className="flex items-center justify-center gap-2 mb-1.5">
+                <div className="mb-1.5 flex items-center justify-center gap-2">
                   <p className="ds-text-10 uppercase tracking-wide text-muted-foreground/70">
                     Popular tokens
                   </p>
                   <button
                     type="button"
                     onClick={handleAddAllSuggested}
+                    disabled={addAllProgress !== null}
                     className={cn(
                       'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 ds-text-10 font-semibold transition-colors',
                       BATCH_THEME.border,
                       BATCH_THEME.bgSoft,
                       BATCH_THEME.text,
-                      `hover:${BATCH_THEME.bgSubtle}`,
+                      addAllProgress !== null
+                        ? 'opacity-80 cursor-wait'
+                        : `hover:${BATCH_THEME.bgSubtle}`,
                     )}
-                    aria-label="Add all popular tokens to batch"
+                    aria-label="Add all popular tokens"
                   >
-                    <Plus className="size-2.5" aria-hidden />
-                    Add all
+                    {addAllDone ? (
+                      <>
+                        <Check className="size-2.5" aria-hidden />
+                        Added {addAllProgress?.total ?? ''}
+                      </>
+                    ) : addAllProgress ? (
+                      <>
+                        <Loader2 className="size-2.5 animate-spin" aria-hidden />
+                        Adding {addAllProgress.current}/{addAllProgress.total}
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="size-2.5" aria-hidden />
+                        Add all
+                      </>
+                    )}
                   </button>
                 </div>
                 <div className="flex flex-wrap items-center justify-center gap-1.5">
                   {suggestedReserves.map((r) => {
                     const reserveId = getReserveKey(r);
-                    const isAdded = recentlyAdded === reserveId;
                     return (
                       <button
                         key={reserveId}
                         type="button"
-                        disabled={isAdded}
                         onClick={() => handleQuickAddSuggested(reserveId)}
-                        className={cn(
-                          'inline-flex items-center gap-1 rounded-full border px-2 py-1 ds-text-10 font-semibold transition-colors',
-                          isAdded
-                            ? cn(BATCH_THEME.border, BATCH_THEME.bgSoft, BATCH_THEME.text)
-                            : 'border-border/50 bg-card/70 text-foreground hover:bg-muted/60',
-                        )}
-                        aria-label={isAdded ? `${r.tokenSymbol} added` : `Add ${r.tokenSymbol} supply to batch`}
+                        className="inline-flex items-center gap-1 rounded-full border border-border/50 bg-card/70 px-2 py-1 ds-text-10 font-semibold text-foreground transition-colors hover:bg-muted/60"
+                        aria-label={`Add ${r.tokenSymbol} supply to batch`}
                       >
                         <TokenIcon symbol={r.tokenSymbol} size={14} />
                         <span>{r.tokenSymbol}</span>
-                        {isAdded ? (
-                          <Check className={cn('size-2.5', BATCH_THEME.text)} aria-hidden />
-                        ) : (
-                          <Plus className="size-2.5 text-muted-foreground" aria-hidden />
-                        )}
+                        <Plus className="size-2.5 text-muted-foreground" aria-hidden />
                       </button>
                     );
                   })}
@@ -540,28 +555,17 @@ const PortfolioPanel = memo(function PortfolioPanel({
                 </span>
                 {suggestedReserves.map((r) => {
                   const reserveId = getReserveKey(r);
-                  const isAdded = recentlyAdded === reserveId;
                   return (
                     <button
                       key={reserveId}
                       type="button"
-                      disabled={isAdded}
                       onClick={() => handleQuickAddSuggested(reserveId)}
-                      className={cn(
-                        'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 ds-text-10 font-semibold transition-colors',
-                        isAdded
-                          ? cn(BATCH_THEME.border, BATCH_THEME.bgSoft, BATCH_THEME.text)
-                          : 'border-border/50 bg-card/70 text-foreground hover:bg-muted/60',
-                      )}
-                      aria-label={isAdded ? `${r.tokenSymbol} added` : `Add ${r.tokenSymbol} supply to batch`}
+                      className="inline-flex items-center gap-1 rounded-full border border-border/50 bg-card/70 px-2 py-0.5 ds-text-10 font-semibold text-foreground transition-colors hover:bg-muted/60"
+                      aria-label={`Add ${r.tokenSymbol} supply to batch`}
                     >
                       <TokenIcon symbol={r.tokenSymbol} size={12} />
                       <span>{r.tokenSymbol}</span>
-                      {isAdded ? (
-                        <Check className={cn('size-2.5', BATCH_THEME.text)} aria-hidden />
-                      ) : (
-                        <Plus className="size-2.5 text-muted-foreground" aria-hidden />
-                      )}
+                      <Plus className="size-2.5 text-muted-foreground" aria-hidden />
                     </button>
                   );
                 })}
