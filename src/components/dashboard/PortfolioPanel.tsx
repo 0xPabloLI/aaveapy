@@ -161,6 +161,10 @@ const PortfolioPanel = memo(function PortfolioPanel({
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [showCompare, setShowCompare] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  // Progress state for "Add all" bulk action: { current, total } while running,
+  // null when idle. After completion we briefly show a "done" pulse via `addAllDone`.
+  const [addAllProgress, setAddAllProgress] = useState<{ current: number; total: number } | null>(null);
+  const [addAllDone, setAddAllDone] = useState(false);
 
   const focusSearch = useCallback(() => {
     setSearchOpen(true);
