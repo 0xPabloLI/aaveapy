@@ -251,6 +251,14 @@ const PortfolioPanel = memo(function PortfolioPanel({
     const addedSymbols = new Set(
       positions.map((p) => p.tokenSymbol.toUpperCase()),
     );
+    // Allow the just-added token to remain visible briefly so the
+    // user sees the "Added" confirmation on its chip.
+    const recentReserve = recentlyAdded
+      ? reserves.find((r) => getReserveKey(r) === recentlyAdded) ?? null
+      : null;
+    if (recentReserve) {
+      addedSymbols.delete(recentReserve.tokenSymbol.toUpperCase());
+    }
     const seen = new Set<string>();
     const picks: ReserveWithSpread[] = [];
     const sorted = [...reserves].sort(
@@ -264,7 +272,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
       if (picks.length >= 5) break;
     }
     return picks;
-  }, [reserves, positions]);
+  }, [reserves, positions, recentlyAdded]);
 
   const handleQuickAddSuggested = useCallback(
     (reserveId: string) => {
