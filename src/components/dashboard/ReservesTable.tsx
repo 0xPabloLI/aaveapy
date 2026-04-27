@@ -36,6 +36,7 @@ import { getReserveSimulationId, useSharedRateSimulations } from '@/hooks/useRat
 import { useSideDataMeta } from '@/hooks/useSideDataMeta';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
 import { getDisplayPoolLiquidityUsd as computeDisplayPoolLiquidityUsd, getDisplayReserveSizeUsd as computeDisplayReserveSizeUsd, getDisplayTotalBorrowedUsd as computeDisplayTotalBorrowedUsd, getAvailableToBorrowUsd } from '@/lib/scenarioSize';
+import { getProtocolVersion } from '@/lib/protocolVersion';
 import {
   scrollExpandedSimulationIntoView,
   shouldScrollExpandedSimulationIntoView,
@@ -116,7 +117,7 @@ const ReservesTable = ({
   const [tokenSortOrder, setTokenSortOrder] = useState<'asc' | 'desc'>('asc');
   const [marketSortOrder, setMarketSortOrder] = useState<'asc' | 'desc'>('asc');
   const [priceSortOrder, setPriceSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [sizeSortMode, setSizeSortMode] = useState<'supply' | 'borrow' | 'borrowAvailability' | 'deficitRatio' | 'deficitAmount'>('supply');
+  const [sizeSortMode, setSizeSortMode] = useState<'supply' | 'borrow' | 'borrowAvailability' | 'supplyAvailability' | 'deficitRatio' | 'deficitAmount'>('supply');
   const [sizeSortOrder, setSizeSortOrder] = useState<'asc' | 'desc'>('desc');
   const [utilSortOrder, setUtilSortOrder] = useState<'asc' | 'desc'>('desc');
   const [utilSortMode, setUtilSortMode] = useState<'util' | 'liquidity'>('liquidity');
@@ -426,6 +427,14 @@ const ReservesTable = ({
     return computeDisplayPoolLiquidityUsd(reserve, getProtocolVersion(reserve.marketName));
   };
 
+  const getDisplaySupplyAvailabilityUsd = (reserve: ReserveWithSpread): number | null => {
+    const reserveSize = getDisplayReserveSizeUsd(reserve);
+    const supplyCap = reserve.supplyCapUsd;
+    if (supplyCap == null || !Number.isFinite(supplyCap) || supplyCap <= 0) return null;
+    if (reserveSize == null || !Number.isFinite(reserveSize)) return null;
+    return Math.max(0, supplyCap - reserveSize);
+  };
+
   const getDisplayAvailableToBorrowUsd = (reserve: ReserveWithSpread): number | null => {
     const totalBorrowed = getTotalBorrowedUsd(reserve);
     const poolLiquidity = getDisplayLiquidityUsd(reserve);
@@ -480,6 +489,10 @@ const ReservesTable = ({
         } else if (sizeSortMode === 'borrowAvailability') {
           const aT = getDisplayAvailableToBorrowUsd(a) ?? -Infinity;
           const bT = getDisplayAvailableToBorrowUsd(b) ?? -Infinity;
+          comparison = aT - bT;
+        } else if (sizeSortMode === 'supplyAvailability') {
+          const aT = getDisplaySupplyAvailabilityUsd(a) ?? -Infinity;
+          const bT = getDisplaySupplyAvailabilityUsd(b) ?? -Infinity;
           comparison = aT - bT;
         } else if (sizeSortMode === 'deficitRatio') {
           const aT = getDisplayDeficitRatio(a) ?? -Infinity;
@@ -717,7 +730,7 @@ const ReservesTable = ({
   const sizeSortAccentClass =
     sizeSortMode === 'supply'
       ? 'ds-text-emerald-700'
-      : sizeSortMode === 'borrow' || sizeSortMode === 'borrowAvailability'
+      : sizeSortMode === 'borrow' || sizeSortMode === 'borrowAvailability' || sizeSortMode === 'supplyAvailability'
         ? 'ds-text-brand-cyan'
         : 'text-foreground';
   const utilSortAccentClass =
@@ -727,7 +740,7 @@ const ReservesTable = ({
   const sizeSortActiveHeadingClass =
     sizeSortMode === 'supply'
       ? 'ds-text-emerald-600 font-bold scale-105'
-      : sizeSortMode === 'borrow' || sizeSortMode === 'borrowAvailability'
+      : sizeSortMode === 'borrow' || sizeSortMode === 'borrowAvailability' || sizeSortMode === 'supplyAvailability'
         ? 'ds-text-brand-cyan font-bold scale-105'
         : 'text-foreground font-bold scale-105';
   const mobileCardDefaultTab: 'supply' | 'borrow' =
@@ -824,7 +837,7 @@ const ReservesTable = ({
   const sizeSortOptions: MobileSortOption[] = [
     {
       key: 'supply',
-      label: 'Supply',
+      label: 'Supplied',
       isSelected: sizeSortMode === 'supply' && activeSortColumn === 'size',
       order: sizeSortOrder,
       activeClassName: 'ds-text-emerald-600',
@@ -841,8 +854,26 @@ const ReservesTable = ({
       },
     },
     {
+      key: 'supplyAvailability',
+      label: 'Suppliable',
+      isSelected: sizeSortMode === 'supplyAvailability' && activeSortColumn === 'size',
+      order: sizeSortOrder,
+      activeClassName: 'ds-text-emerald-600',
+      onSelect: () => {
+        const isAlreadySelected = sizeSortMode === 'supplyAvailability' && activeSortColumn === 'size';
+        if (isAlreadySelected && sizeSortOrder === 'desc') {
+          setSizeSortOrder('asc');
+        } else {
+          setSizeSortMode('supplyAvailability');
+          setActiveSortColumn('size');
+          setSizeSortOrder('desc');
+        }
+        closeAllMobileSortMenus();
+      },
+    },
+    {
       key: 'borrow',
-      label: 'Borrow Size',
+      label: 'Borrowed',
       isSelected: sizeSortMode === 'borrow' && activeSortColumn === 'size',
       order: sizeSortOrder,
       activeClassName: 'ds-text-brand-cyan',
@@ -860,7 +891,7 @@ const ReservesTable = ({
     },
     {
       key: 'borrowAvailability',
-      label: 'Borrow Avail',
+      label: 'Borrowable',
       isSelected: sizeSortMode === 'borrowAvailability' && activeSortColumn === 'size',
       order: sizeSortOrder,
       activeClassName: 'ds-text-brand-cyan',
@@ -1579,6 +1610,18 @@ const ReservesTable = ({
                 setSizeSortOrder('asc');
               } else {
                 setSizeSortMode('borrowAvailability');
+                setActiveSortColumn('size');
+                setSizeSortOrder('desc');
+              }
+              setShowSizeSortMenu(false);
+            }}
+            onSelectSizeSortSupplyAvailability={() => {
+              collapseExpandedOnSort();
+              const isAlreadySelected = sizeSortMode === 'supplyAvailability' && activeSortColumn === 'size';
+              if (isAlreadySelected && sizeSortOrder === 'desc') {
+                setSizeSortOrder('asc');
+              } else {
+                setSizeSortMode('supplyAvailability');
                 setActiveSortColumn('size');
                 setSizeSortOrder('desc');
               }

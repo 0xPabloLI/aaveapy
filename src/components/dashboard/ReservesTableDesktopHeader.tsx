@@ -5,7 +5,7 @@ import { TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 type SortMode = 'total' | 'native' | 'incentive';
 type SortableColumn = 'token' | 'price' | 'market' | 'size' | 'util' | 'supply' | 'borrow' | 'spread';
-type SizeSortMode = 'supply' | 'borrow' | 'borrowAvailability' | 'deficitRatio' | 'deficitAmount';
+type SizeSortMode = 'supply' | 'borrow' | 'borrowAvailability' | 'supplyAvailability' | 'deficitRatio' | 'deficitAmount';
 type UtilSortMode = 'util' | 'liquidity';
 
 interface MenuPos {
@@ -121,6 +121,7 @@ interface ReservesTableDesktopHeaderProps {
   onSelectSizeSortSupply: () => void;
   onSelectSizeSortBorrow: () => void;
   onSelectSizeSortBorrowAvailability: () => void;
+  onSelectSizeSortSupplyAvailability: () => void;
   onSelectSizeSortDeficitAmount: () => void;
   onSelectSizeSortDeficitRatio: () => void;
   onToggleSupplyMenu: () => void;
@@ -179,6 +180,7 @@ export default function ReservesTableDesktopHeader({
   onSelectSizeSortSupply,
   onSelectSizeSortBorrow,
   onSelectSizeSortBorrowAvailability,
+  onSelectSizeSortSupplyAvailability,
   onSelectSizeSortDeficitAmount,
   onSelectSizeSortDeficitRatio,
   onToggleSupplyMenu,
@@ -195,7 +197,7 @@ export default function ReservesTableDesktopHeader({
   const sizeSortOptions: DesktopSortMenuOption[] = [
     {
       key: 'supply',
-      label: 'Sort by Supply',
+      label: 'Sort by Supplied',
       isSelected: sizeSortMode === 'supply' && activeSortColumn === 'size',
       order: sizeSortOrder,
       activeClassName: 'ds-text-emerald-600',
@@ -203,8 +205,17 @@ export default function ReservesTableDesktopHeader({
       onSelect: onSelectSizeSortSupply,
     },
     {
+      key: 'supplyAvailability',
+      label: 'Sort by Suppliable',
+      isSelected: sizeSortMode === 'supplyAvailability' && activeSortColumn === 'size',
+      order: sizeSortOrder,
+      activeClassName: 'ds-text-emerald-600',
+      hoverClassName: 'hover:bg-[rgb(var(--ds-emerald-50-rgb)/0.5)]',
+      onSelect: onSelectSizeSortSupplyAvailability,
+    },
+    {
       key: 'borrow',
-      label: 'Sort by Borrow Size',
+      label: 'Sort by Borrowed',
       isSelected: sizeSortMode === 'borrow' && activeSortColumn === 'size',
       order: sizeSortOrder,
       activeClassName: 'ds-text-brand-cyan',
@@ -213,7 +224,7 @@ export default function ReservesTableDesktopHeader({
     },
     {
       key: 'borrowAvailability',
-      label: 'Sort by Borrow Availability',
+      label: 'Sort by Borrowable',
       isSelected: sizeSortMode === 'borrowAvailability' && activeSortColumn === 'size',
       order: sizeSortOrder,
       activeClassName: 'ds-text-brand-cyan',
@@ -414,7 +425,7 @@ export default function ReservesTableDesktopHeader({
                       ? `bg-card/60 border-border/70 ${
                           sizeSortMode === 'supply'
                             ? 'ds-text-emerald-700'
-                            : sizeSortMode === 'borrow' || sizeSortMode === 'borrowAvailability'
+                            : sizeSortMode === 'borrow' || sizeSortMode === 'borrowAvailability' || sizeSortMode === 'supplyAvailability'
                               ? 'ds-text-brand-cyan'
                               : 'text-foreground'
                         }`
@@ -424,14 +435,16 @@ export default function ReservesTableDesktopHeader({
                 >
                   <span className="font-semibold text-[10px] md:ds-text-11">
                     {sizeSortMode === 'supply'
-                      ? 'Supply'
-                      : sizeSortMode === 'borrow'
-                        ? 'Borrow'
-                        : sizeSortMode === 'borrowAvailability'
-                          ? 'Borrow Avail'
-                          : sizeSortMode === 'deficitRatio'
-                            ? 'Deficit (%)'
-                            : 'Deficit'}
+                      ? 'Supplied'
+                      : sizeSortMode === 'supplyAvailability'
+                        ? 'Suppliable'
+                        : sizeSortMode === 'borrow'
+                          ? 'Borrowed'
+                          : sizeSortMode === 'borrowAvailability'
+                            ? 'Borrowable'
+                            : sizeSortMode === 'deficitRatio'
+                              ? 'Deficit (%)'
+                              : 'Deficit'}
                   </span>
                   <ChevronDown className="w-2.5 h-2.5" />
                 </button>
