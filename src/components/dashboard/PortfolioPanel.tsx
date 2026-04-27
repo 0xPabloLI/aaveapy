@@ -288,6 +288,15 @@ const PortfolioPanel = memo(function PortfolioPanel({
     [handleAddFromSearch],
   );
 
+  const handleAddAllSuggested = useCallback(() => {
+    if (suggestedReserves.length === 0) return;
+    for (const r of suggestedReserves) {
+      handleAddFromSearch(getReserveKey(r), 'supply');
+    }
+    setSearchOpen(true);
+    requestAnimationFrame(() => searchInputRef.current?.focus());
+  }, [suggestedReserves, handleAddFromSearch]);
+
   const handleRemoveToken = useCallback((reserveId: string) => {
     for (const p of positions) {
       if (p.reserveId === reserveId) actions.removePosition(p.positionId);
@@ -470,9 +479,26 @@ const PortfolioPanel = memo(function PortfolioPanel({
 
             {suggestedReserves.length > 0 && (
               <div className="mt-3">
-                <p className="ds-text-10 uppercase tracking-wide text-muted-foreground/70 mb-1.5">
-                  Popular tokens
-                </p>
+                <div className="flex items-center justify-center gap-2 mb-1.5">
+                  <p className="ds-text-10 uppercase tracking-wide text-muted-foreground/70">
+                    Popular tokens
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleAddAllSuggested}
+                    className={cn(
+                      'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 ds-text-10 font-semibold transition-colors',
+                      BATCH_THEME.border,
+                      BATCH_THEME.bgSoft,
+                      BATCH_THEME.text,
+                      `hover:${BATCH_THEME.bgSubtle}`,
+                    )}
+                    aria-label="Add all popular tokens to batch"
+                  >
+                    <Plus className="size-2.5" aria-hidden />
+                    Add all
+                  </button>
+                </div>
                 <div className="flex flex-wrap items-center justify-center gap-1.5">
                   {suggestedReserves.map((r) => {
                     const reserveId = getReserveKey(r);
