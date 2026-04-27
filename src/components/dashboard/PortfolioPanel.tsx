@@ -3,7 +3,7 @@
  * position list, summary card, results table, and snapshot comparison.
  */
 import { useState, useMemo, useEffect, useRef, memo, useCallback, lazy, Suspense } from 'react';
-import { Search, Plus, X, Layers, Trash2, Save, ArrowRightLeft, Sparkles } from 'lucide-react';
+import { Search, Plus, X, Layers, Trash2, Save, ArrowRightLeft, Sparkles, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { ReserveWithSpread } from '@/types/aave';
