@@ -30,7 +30,7 @@ import AssetActionMenu from './AssetActionMenu';
 import { BATCH_RESERVE_ADD_BUTTON_CLASSES } from './batchTheme';
 import type { RateSimulationResult, ScenarioInputMode } from '@/hooks/useRateSimulation';
 
-import { getPoolLiquidityUsd, getScenarioSupplySizeUsd, getTotalBorrowedUsd, getValidTokenPrice } from '@/lib/scenarioSize';
+import { getPoolLiquidityUsd, getReserveAvailableLiquidityUsd, getReserveTotalBorrowedUsd, getScenarioSupplySizeUsd, getTotalBorrowedUsd, getValidTokenPrice } from '@/lib/scenarioSize';
 import { cn } from '@/lib/utils';
 
 /* ─── Memoised chain icon ─── */
@@ -150,15 +150,25 @@ const DesktopReserveRow = memo(({
     inputMode,
     tokenPrice: displayTokenPrice,
   });
-  const baseTotalBorrowedUsd = getTotalBorrowedUsd({
-    reserveSizeUsd: reserve.reserveSizeUsd,
-    utilizationPct: reserve.utilizationPct,
-  });
+  // Prefer on-chain `totalVariableDebt` as the source of truth (matches Aave UIs).
+  // Fall back to derived `reserveSizeUsd * utilizationPct / 100` only when raw fields are unavailable.
+  // V4 markets in particular can have reserveSizeUsd=0, making the derived value 0
+  // while the actual borrowed amount is non-zero (e.g. AaveV4Bluechip USDT).
+  const baseTotalBorrowedUsd = getReserveTotalBorrowedUsd(reserve)
+    ?? getTotalBorrowedUsd({
+      reserveSizeUsd: reserve.reserveSizeUsd,
+      utilizationPct: reserve.utilizationPct,
+    });
   const totalBorrowedUsd = simulation?.marketMetrics.totalBorrowedUsdAfter ?? baseTotalBorrowedUsd;
-  const basePoolLiquidity = getPoolLiquidityUsd({
-    reserveSizeUsd: reserve.reserveSizeUsd,
-    totalBorrowedUsd: baseTotalBorrowedUsd,
-  });
+  // Prefer on-chain `availableLiquidity` as the source of truth (matches Aave UIs).
+  // Fall back to derived `reserveSize - totalBorrowed` only when raw fields are unavailable.
+  // V4 markets in particular have an unreliable `reserveSizeUsd` aggregate, so the derived
+  // value can be off by orders of magnitude (e.g. AaveV4Forex USDT).
+  const basePoolLiquidity = getReserveAvailableLiquidityUsd(reserve)
+    ?? getPoolLiquidityUsd({
+      reserveSizeUsd: reserve.reserveSizeUsd,
+      totalBorrowedUsd: baseTotalBorrowedUsd,
+    });
   const poolLiquidity = simulation?.marketMetrics.availableLiquidityUsdAfter ?? basePoolLiquidity;
   const hasDeficit = hasReserveDeficit(reserve);
   const deficitUsd = getReserveDeficitUsdAmount(reserve, displayTokenPrice);

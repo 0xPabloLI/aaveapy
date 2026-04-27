@@ -35,7 +35,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { getReserveSimulationId, useSharedRateSimulations } from '@/hooks/useRateSimulation';
 import { useSideDataMeta } from '@/hooks/useSideDataMeta';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
-import { getPoolLiquidityUsd, getScenarioSupplySizeUsd, getTotalBorrowedUsd as getReserveTotalBorrowedUsd, getAvailableToBorrowUsd } from '@/lib/scenarioSize';
+import { getPoolLiquidityUsd, getReserveAvailableLiquidityUsd, getReserveTotalBorrowedUsd as getOnChainTotalBorrowedUsd, getScenarioSupplySizeUsd, getTotalBorrowedUsd as getDerivedTotalBorrowedUsd, getAvailableToBorrowUsd } from '@/lib/scenarioSize';
 import {
   scrollExpandedSimulationIntoView,
   shouldScrollExpandedSimulationIntoView,
@@ -420,20 +420,29 @@ const ReservesTable = ({
   };
 
   const getTotalBorrowedUsd = (reserve: ReserveWithSpread): number | null => {
-    return getReserveTotalBorrowedUsd({
-      reserveSizeUsd: reserve.reserveSizeUsd,
-      utilizationPct: reserve.utilizationPct,
-    });
+    // Prefer on-chain `totalVariableDebt` as the source of truth (matches Aave UIs).
+    // Fall back to derived `reserveSizeUsd * utilizationPct / 100` only when raw fields are unavailable.
+    // V4 markets in particular can have reserveSizeUsd=0, making the derived value 0
+    // while the actual borrowed amount is non-zero (e.g. AaveV4Bluechip USDT).
+    return getOnChainTotalBorrowedUsd(reserve)
+      ?? getDerivedTotalBorrowedUsd({
+        reserveSizeUsd: reserve.reserveSizeUsd,
+        utilizationPct: reserve.utilizationPct,
+      });
   };
 
   const getDisplayLiquidityUsd = (reserve: ReserveWithSpread): number | null => {
+    // Prefer on-chain availableLiquidity (matches Aave UIs); fall back to derived value.
+    // V4 markets in particular have an unreliable `reserveSizeUsd` aggregate.
+    const onChainLiquidity = getReserveAvailableLiquidityUsd(reserve);
+    if (onChainLiquidity != null) return onChainLiquidity;
     const totalBorrowed = getTotalBorrowedUsd(reserve);
     return getPoolLiquidityUsd({ reserveSizeUsd: reserve.reserveSizeUsd, totalBorrowedUsd: totalBorrowed });
   };
 
   const getDisplayAvailableToBorrowUsd = (reserve: ReserveWithSpread): number | null => {
     const totalBorrowed = getTotalBorrowedUsd(reserve);
-    const poolLiquidity = getPoolLiquidityUsd({ reserveSizeUsd: reserve.reserveSizeUsd, totalBorrowedUsd: totalBorrowed });
+    const poolLiquidity = getDisplayLiquidityUsd(reserve);
     return getAvailableToBorrowUsd({
       borrowedUsd: totalBorrowed,
       borrowCapUsd: reserve.borrowCapUsd,

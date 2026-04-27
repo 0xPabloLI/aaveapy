@@ -179,6 +179,45 @@ Where:
 
 The simulation hook caps borrow input to the effective limit and surfaces which constraint binds.
 
+### Pool Liquidity Source of Truth (V3 + V4)
+
+Pool liquidity displayed on the reserves table / row / mobile card MUST be derived from the on-chain `availableLiquidity` field, not from `reserveSizeUsd × (1 − utilization)`.
+
+Helper: `getReserveAvailableLiquidityUsd(reserve)` in `src/lib/scenarioSize.ts`.
+
+```text
+poolLiquidityUsd = (Number(reserve.availableLiquidity) / 10^reserve.decimals) × reserve.tokenPrice
+```
+
+Used unified for V3 and V4 by `DesktopReserveRow`, `MobileReserveCard`, and the `ReservesTable` sorter, with the legacy `reserveSizeUsd − totalBorrowedUsd` formula kept only as a fallback when any of the three raw inputs is missing.
+
+#### Why: V4 Hub & Spoke semantics
+
+For V4 markets, `reserveSizeUsd` and `availableLiquidity` describe **different aggregation levels**, so the legacy derivation is wrong:
+
+| Field | V3 meaning | V4 meaning |
+|---|---|---|
+| `reserveSizeUsd` | Total supplied USD for the asset in this market (matches the pool) | Total supplied USD for the asset **in this Spoke only** (per‑Spoke supply slice) |
+| `availableLiquidity` | Free liquidity in the pool (raw token units) | Free liquidity in the **Hub** for the asset (raw token units) — shared across Spokes |
+| `utilizationPct` | `borrowed / reserveSize` for the pool | Hub‑level utilization for the asset |
+
+Concrete example (snapshot 2026‑04‑27, AaveV4Forex USDT):
+
+| Field | Value |
+|---|---|
+| `reserveSizeUsd` (Spoke `Forex` supply) | ≈ $83,162 |
+| Hub `Core` real total supplied (= `availableLiquidity` + `totalVariableDebt`) | ≈ $1,114,116 |
+| `availableLiquidity` (Hub free) | ≈ $76,626 |
+| Derived `reserveSizeUsd × (1 − utilization)` (wrong) | ≈ $5,711 |
+
+A single Hub aggregates supply from one or more Spokes; borrows are taken against the Hub's pooled liquidity. As a result `reserveSizeUsd` is a per‑Spoke supply ledger, while `availableLiquidity` / `totalVariableDebt` are Hub aggregates. Mixing them via `reserveSizeUsd × (1 − utilization)` produces a Spoke‑sized fraction of the Hub liquidity and can be off by orders of magnitude (≈13× for the example above).
+
+Until the API exposes a Hub‑level `reserveSizeUsd` (or a separate `hubSuppliedUsd`), the frontend must:
+
+1. Use `availableLiquidity` (raw → token → USD) as the canonical pool liquidity for both V3 and V4.
+2. Avoid presenting `reserveSizeUsd` as "total supplied" for V4 without qualifying it as the per‑Spoke supply slice.
+3. Keep simulation inputs aligned: `useRateSimulation` already feeds `availableLiquidity` into `interestRateCalculator`, so simulation outputs (`marketMetrics.availableLiquidityUsd*`) and the static base value share the same source of truth.
+
 ---
 
 ## Part 2: Merkl Incentive Forecast

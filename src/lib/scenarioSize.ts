@@ -89,6 +89,68 @@ export const getTotalBorrowedUsd = ({
   return reserveSizeUsd * (utilizationPct / 100);
 };
 
+/**
+ * Compute total borrowed (USD) directly from the reserve's on-chain
+ * `totalVariableDebt` field (raw token units). This is the source of truth
+ * from the Aave Pool / Spoke contract and matches what users see on
+ * app.aave.com / pro.aave.com.
+ *
+ * Prefer this over deriving borrowed from `reserveSizeUsd * (utilizationPct / 100)`,
+ * because for V4 markets `reserveSizeUsd` can be 0 or reflect only a sub-component
+ * of the Hub & Spoke aggregate, making the derived value wildly inaccurate
+ * (e.g. AaveV4Bluechip USDT where reserveSizeUsd=0 but actual borrowed ≈ $1.037B).
+ *
+ * Returns `null` when any required input is missing/invalid so callers can fall
+ * back to the derived calculation.
+ */
+export const getReserveTotalBorrowedUsd = (reserve: {
+  totalVariableDebt?: string | null;
+  decimals?: number | null;
+  tokenPrice?: number | null;
+}): number | null => {
+  const { totalVariableDebt, decimals, tokenPrice } = reserve;
+  if (!totalVariableDebt) return null;
+  if (decimals == null || !Number.isFinite(decimals) || decimals < 0) return null;
+  if (tokenPrice == null || !Number.isFinite(tokenPrice) || tokenPrice <= 0) return null;
+  const raw = Number(totalVariableDebt);
+  if (!Number.isFinite(raw) || raw < 0) return null;
+  const tokens = raw / Math.pow(10, decimals);
+  return tokens * tokenPrice;
+};
+
+/**
+ * Compute current pool liquidity (USD) directly from the reserve's on-chain
+ * `availableLiquidity` field (raw token units). This is the source of truth
+ * from the Aave Pool / Spoke contract and matches what users see on
+ * app.aave.com / pro.aave.com.
+ *
+ * Prefer this over deriving liquidity from `reserveSizeUsd * (1 - utilization)`,
+ * because for V4 markets `reserveSizeUsd` is the per-Spoke supply slice while
+ * `availableLiquidity` is the Hub-level free liquidity (shared across Spokes).
+ * Mixing them yields a Spoke-sized fraction of the Hub liquidity and can be off
+ * by orders of magnitude (see e.g. AaveV4Forex USDT, where derived ≈ $5.7k but
+ * on-chain ≈ $76.6k). Used unified for V3 and V4.
+ *
+ * See `docs/rate-calculation.md` → "Pool Liquidity Source of Truth (V3 + V4)".
+ *
+ * Returns `null` when any required input is missing/invalid so callers can fall
+ * back to the derived calculation.
+ */
+export const getReserveAvailableLiquidityUsd = (reserve: {
+  availableLiquidity?: string | null;
+  decimals?: number | null;
+  tokenPrice?: number | null;
+}): number | null => {
+  const { availableLiquidity, decimals, tokenPrice } = reserve;
+  if (!availableLiquidity) return null;
+  if (decimals == null || !Number.isFinite(decimals) || decimals < 0) return null;
+  if (tokenPrice == null || !Number.isFinite(tokenPrice) || tokenPrice <= 0) return null;
+  const raw = Number(availableLiquidity);
+  if (!Number.isFinite(raw) || raw < 0) return null;
+  const tokens = raw / Math.pow(10, decimals);
+  return tokens * tokenPrice;
+};
+
 export const getPoolLiquidityUsd = ({
   reserveSizeUsd,
   totalBorrowedUsd,
