@@ -161,6 +161,12 @@ const PortfolioPanel = memo(function PortfolioPanel({
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [showCompare, setShowCompare] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  // Brief "Added" feedback per reserveId on quick-add chip clicks.
+  const [recentlyAdded, setRecentlyAdded] = useState<string | null>(null);
+  const recentlyAddedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (recentlyAddedTimerRef.current) clearTimeout(recentlyAddedTimerRef.current);
+  }, []);
 
   const focusSearch = useCallback(() => {
     setSearchOpen(true);
