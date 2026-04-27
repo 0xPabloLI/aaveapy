@@ -3,7 +3,7 @@
  * position list, summary card, results table, and snapshot comparison.
  */
 import { useState, useMemo, useEffect, useRef, memo, useCallback, lazy, Suspense } from 'react';
-import { Search, Plus, X, Layers, Trash2, Save, ArrowRightLeft, Sparkles } from 'lucide-react';
+import { Search, Plus, X, Layers, Trash2, Save, ArrowRightLeft, Sparkles, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { ReserveWithSpread } from '@/types/aave';
@@ -161,6 +161,12 @@ const PortfolioPanel = memo(function PortfolioPanel({
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [showCompare, setShowCompare] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  // Brief "Added" feedback per reserveId on quick-add chip clicks.
+  const [recentlyAdded, setRecentlyAdded] = useState<string | null>(null);
+  const recentlyAddedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (recentlyAddedTimerRef.current) clearTimeout(recentlyAddedTimerRef.current);
+  }, []);
 
   const focusSearch = useCallback(() => {
     setSearchOpen(true);
@@ -245,6 +251,14 @@ const PortfolioPanel = memo(function PortfolioPanel({
     const addedSymbols = new Set(
       positions.map((p) => p.tokenSymbol.toUpperCase()),
     );
+    // Allow the just-added token to remain visible briefly so the
+    // user sees the "Added" confirmation on its chip.
+    const recentReserve = recentlyAdded
+      ? reserves.find((r) => getReserveKey(r) === recentlyAdded) ?? null
+      : null;
+    if (recentReserve) {
+      addedSymbols.delete(recentReserve.tokenSymbol.toUpperCase());
+    }
     const seen = new Set<string>();
     const picks: ReserveWithSpread[] = [];
     const sorted = [...reserves].sort(
@@ -258,11 +272,15 @@ const PortfolioPanel = memo(function PortfolioPanel({
       if (picks.length >= 5) break;
     }
     return picks;
-  }, [reserves, positions]);
+  }, [reserves, positions, recentlyAdded]);
 
   const handleQuickAddSuggested = useCallback(
     (reserveId: string) => {
       handleAddFromSearch(reserveId, 'supply');
+      // Show brief "Added" feedback on the chip.
+      setRecentlyAdded(reserveId);
+      if (recentlyAddedTimerRef.current) clearTimeout(recentlyAddedTimerRef.current);
+      recentlyAddedTimerRef.current = setTimeout(() => setRecentlyAdded(null), 1100);
       // Keep the search panel open and focused so the user can keep adding.
       setSearchOpen(true);
       requestAnimationFrame(() => searchInputRef.current?.focus());
@@ -458,17 +476,28 @@ const PortfolioPanel = memo(function PortfolioPanel({
                 <div className="flex flex-wrap items-center justify-center gap-1.5">
                   {suggestedReserves.map((r) => {
                     const reserveId = getReserveKey(r);
+                    const isAdded = recentlyAdded === reserveId;
                     return (
                       <button
                         key={reserveId}
                         type="button"
+                        disabled={isAdded}
                         onClick={() => handleQuickAddSuggested(reserveId)}
-                        className="inline-flex items-center gap-1 rounded-full border border-border/50 bg-card/70 px-2 py-1 ds-text-10 font-semibold text-foreground transition-colors hover:bg-muted/60"
-                        aria-label={`Add ${r.tokenSymbol} supply to batch`}
+                        className={cn(
+                          'inline-flex items-center gap-1 rounded-full border px-2 py-1 ds-text-10 font-semibold transition-colors',
+                          isAdded
+                            ? cn(BATCH_THEME.border, BATCH_THEME.bgSoft, BATCH_THEME.text)
+                            : 'border-border/50 bg-card/70 text-foreground hover:bg-muted/60',
+                        )}
+                        aria-label={isAdded ? `${r.tokenSymbol} added` : `Add ${r.tokenSymbol} supply to batch`}
                       >
                         <TokenIcon symbol={r.tokenSymbol} size={14} />
                         <span>{r.tokenSymbol}</span>
-                        <Plus className="size-2.5 text-muted-foreground" aria-hidden />
+                        {isAdded ? (
+                          <Check className={cn('size-2.5', BATCH_THEME.text)} aria-hidden />
+                        ) : (
+                          <Plus className="size-2.5 text-muted-foreground" aria-hidden />
+                        )}
                       </button>
                     );
                   })}
@@ -485,17 +514,28 @@ const PortfolioPanel = memo(function PortfolioPanel({
                 </span>
                 {suggestedReserves.map((r) => {
                   const reserveId = getReserveKey(r);
+                  const isAdded = recentlyAdded === reserveId;
                   return (
                     <button
                       key={reserveId}
                       type="button"
+                      disabled={isAdded}
                       onClick={() => handleQuickAddSuggested(reserveId)}
-                      className="inline-flex items-center gap-1 rounded-full border border-border/50 bg-card/70 px-2 py-0.5 ds-text-10 font-semibold text-foreground transition-colors hover:bg-muted/60"
-                      aria-label={`Add ${r.tokenSymbol} supply to batch`}
+                      className={cn(
+                        'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 ds-text-10 font-semibold transition-colors',
+                        isAdded
+                          ? cn(BATCH_THEME.border, BATCH_THEME.bgSoft, BATCH_THEME.text)
+                          : 'border-border/50 bg-card/70 text-foreground hover:bg-muted/60',
+                      )}
+                      aria-label={isAdded ? `${r.tokenSymbol} added` : `Add ${r.tokenSymbol} supply to batch`}
                     >
                       <TokenIcon symbol={r.tokenSymbol} size={12} />
                       <span>{r.tokenSymbol}</span>
-                      <Plus className="size-2.5 text-muted-foreground" aria-hidden />
+                      {isAdded ? (
+                        <Check className={cn('size-2.5', BATCH_THEME.text)} aria-hidden />
+                      ) : (
+                        <Plus className="size-2.5 text-muted-foreground" aria-hidden />
+                      )}
                     </button>
                   );
                 })}
