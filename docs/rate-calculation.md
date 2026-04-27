@@ -575,6 +575,8 @@ This section groups cap / ceiling semantics for Merit, Merkl, and Brevis.
 ## Related Files
 
 - `src/lib/interestRateCalculator.ts` – Core native rate calculation functions
+- `src/lib/scenarioSize.ts` – V4-aware unified display functions (totalBorrowed, poolLiquidity, reserveSize) + scenario input math
+- `src/lib/protocolVersion.ts` – V3/V4 detection from marketName
 - `src/lib/merklForecast.ts` – Merkl `forecastWithTVL` and progress flags
 - `src/lib/meritForecast.ts` – Merit forecast (base + self-auth deposit cap)
 - `src/lib/incentiveCeilings.ts` – Domain-layer ceiling effects → simulation `capNote` / `capWarning`
