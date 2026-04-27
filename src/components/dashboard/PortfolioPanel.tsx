@@ -269,6 +269,10 @@ const PortfolioPanel = memo(function PortfolioPanel({
   const handleQuickAddSuggested = useCallback(
     (reserveId: string) => {
       handleAddFromSearch(reserveId, 'supply');
+      // Show brief "Added" feedback on the chip.
+      setRecentlyAdded(reserveId);
+      if (recentlyAddedTimerRef.current) clearTimeout(recentlyAddedTimerRef.current);
+      recentlyAddedTimerRef.current = setTimeout(() => setRecentlyAdded(null), 1100);
       // Keep the search panel open and focused so the user can keep adding.
       setSearchOpen(true);
       requestAnimationFrame(() => searchInputRef.current?.focus());
