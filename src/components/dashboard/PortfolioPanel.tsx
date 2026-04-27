@@ -193,6 +193,11 @@ const PortfolioPanel = memo(function PortfolioPanel({
         tokenSymbol: reserve.tokenSymbol,
         side,
       });
+      // Keep search panel open and refocus input for continuous additions
+      setSearchOpen(true);
+      requestAnimationFrame(() => {
+        searchInputRef.current?.focus();
+      });
     },
     [reserves, actions],
   );
