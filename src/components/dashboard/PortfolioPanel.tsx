@@ -502,13 +502,15 @@ const PortfolioPanel = memo(function PortfolioPanel({
                     type="button"
                     onClick={handleAddAllSuggested}
                     disabled={addAllProgress !== null}
+                    aria-disabled={addAllProgress !== null}
+                    aria-busy={addAllProgress !== null && !addAllDone}
                     className={cn(
                       'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 ds-text-10 font-semibold transition-colors',
                       BATCH_THEME.border,
                       BATCH_THEME.bgSoft,
                       BATCH_THEME.text,
                       addAllProgress !== null
-                        ? 'opacity-80 cursor-wait'
+                        ? 'opacity-80 cursor-wait pointer-events-none'
                         : `hover:${BATCH_THEME.bgSubtle}`,
                     )}
                     aria-label="Add all popular tokens"
