@@ -165,6 +165,9 @@ const PortfolioPanel = memo(function PortfolioPanel({
   // null when idle. After completion we briefly show a "done" pulse via `addAllDone`.
   const [addAllProgress, setAddAllProgress] = useState<{ current: number; total: number } | null>(null);
   const [addAllDone, setAddAllDone] = useState(false);
+  // Synchronous lock so rapid double-clicks within the same tick are ignored
+  // (state updates from setAddAllProgress aren't visible until next render).
+  const addAllRunningRef = useRef(false);
 
   const focusSearch = useCallback(() => {
     setSearchOpen(true);
@@ -278,9 +281,11 @@ const PortfolioPanel = memo(function PortfolioPanel({
   // indicator. Each step adds one token (~80ms apart) so the user sees
   // tangible progress; on completion we flash a check and refocus the search.
   const handleAddAllSuggested = useCallback(() => {
-    if (addAllProgress) return; // ignore double clicks
+    // Synchronous + state guard prevents repeat invocations until done.
+    if (addAllRunningRef.current || addAllProgress) return;
     const targets = suggestedReserves.map((r) => getReserveKey(r));
     if (targets.length === 0) return;
+    addAllRunningRef.current = true;
     setAddAllDone(false);
     setAddAllProgress({ current: 0, total: targets.length });
     setSearchOpen(true);
@@ -299,6 +304,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
         setTimeout(() => {
           setAddAllProgress(null);
           setAddAllDone(false);
+          addAllRunningRef.current = false;
           requestAnimationFrame(() => searchInputRef.current?.focus());
         }, 900);
       }
@@ -496,13 +502,15 @@ const PortfolioPanel = memo(function PortfolioPanel({
                     type="button"
                     onClick={handleAddAllSuggested}
                     disabled={addAllProgress !== null}
+                    aria-disabled={addAllProgress !== null}
+                    aria-busy={addAllProgress !== null && !addAllDone}
                     className={cn(
                       'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 ds-text-10 font-semibold transition-colors',
                       BATCH_THEME.border,
                       BATCH_THEME.bgSoft,
                       BATCH_THEME.text,
                       addAllProgress !== null
-                        ? 'opacity-80 cursor-wait'
+                        ? 'opacity-80 cursor-wait pointer-events-none'
                         : `hover:${BATCH_THEME.bgSubtle}`,
                     )}
                     aria-label="Add all popular tokens"
