@@ -488,9 +488,43 @@ const PortfolioPanel = memo(function PortfolioPanel({
 
             {suggestedReserves.length > 0 && (
               <div className="mt-3">
-                <p className="ds-text-10 uppercase tracking-wide text-muted-foreground/70 mb-1.5">
-                  Popular tokens
-                </p>
+                <div className="mb-1.5 flex items-center justify-center gap-2">
+                  <p className="ds-text-10 uppercase tracking-wide text-muted-foreground/70">
+                    Popular tokens
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleAddAllSuggested}
+                    disabled={addAllProgress !== null}
+                    className={cn(
+                      'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 ds-text-10 font-semibold transition-colors',
+                      BATCH_THEME.border,
+                      BATCH_THEME.bgSoft,
+                      BATCH_THEME.text,
+                      addAllProgress !== null
+                        ? 'opacity-80 cursor-wait'
+                        : `hover:${BATCH_THEME.bgSubtle}`,
+                    )}
+                    aria-label="Add all popular tokens"
+                  >
+                    {addAllDone ? (
+                      <>
+                        <Check className="size-2.5" aria-hidden />
+                        Added {addAllProgress?.total ?? ''}
+                      </>
+                    ) : addAllProgress ? (
+                      <>
+                        <Loader2 className="size-2.5 animate-spin" aria-hidden />
+                        Adding {addAllProgress.current}/{addAllProgress.total}
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="size-2.5" aria-hidden />
+                        Add all
+                      </>
+                    )}
+                  </button>
+                </div>
                 <div className="flex flex-wrap items-center justify-center gap-1.5">
                   {suggestedReserves.map((r) => {
                     const reserveId = getReserveKey(r);
