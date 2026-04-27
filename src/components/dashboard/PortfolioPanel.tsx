@@ -274,6 +274,38 @@ const PortfolioPanel = memo(function PortfolioPanel({
     [handleAddFromSearch],
   );
 
+  // Bulk add all suggested popular tokens with a brief staggered progress
+  // indicator. Each step adds one token (~80ms apart) so the user sees
+  // tangible progress; on completion we flash a check and refocus the search.
+  const handleAddAllSuggested = useCallback(() => {
+    if (addAllProgress) return; // ignore double clicks
+    const targets = suggestedReserves.map((r) => getReserveKey(r));
+    if (targets.length === 0) return;
+    setAddAllDone(false);
+    setAddAllProgress({ current: 0, total: targets.length });
+    setSearchOpen(true);
+
+    let i = 0;
+    const step = () => {
+      const id = targets[i];
+      handleAddFromSearch(id, 'supply');
+      i += 1;
+      setAddAllProgress({ current: i, total: targets.length });
+      if (i < targets.length) {
+        setTimeout(step, 80);
+      } else {
+        setAddAllDone(true);
+        // Hold the "done" state briefly, then reset and refocus search input
+        setTimeout(() => {
+          setAddAllProgress(null);
+          setAddAllDone(false);
+          requestAnimationFrame(() => searchInputRef.current?.focus());
+        }, 900);
+      }
+    };
+    step();
+  }, [addAllProgress, suggestedReserves, handleAddFromSearch]);
+
   const handleRemoveToken = useCallback((reserveId: string) => {
     for (const p of positions) {
       if (p.reserveId === reserveId) actions.removePosition(p.positionId);
