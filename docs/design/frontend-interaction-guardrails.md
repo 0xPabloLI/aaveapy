@@ -321,7 +321,7 @@ When tooltip/forecast behavior looks wrong, check:
 - Native simulation uses one combined reserve state:
   - `supplyAmount` increases the utilization denominator
   - `borrowAmount` increases variable debt
-  - denominator includes `deficit` from `/rate-inputs`
+  - denominator includes `deficit` from `/markets` reserve (rate calc fields)
   - utilization, borrow rate, and supply rate are recalculated from that same combined state
 - Incentive simulation remains reserve-specific:
   - supply-side incentives react to the shared supply input
@@ -331,7 +331,7 @@ When tooltip/forecast behavior looks wrong, check:
 
 - Shared table simulation must treat backend snapshots as the primary data plane.
   - `markets` provides reserve rows plus any local `tokenPrices`.
-  - `rate-inputs` provides the native-rate state used for supply/borrow recomputation.
+  - `/markets` reserves embed the native-rate state (liquidity, debt, slope params, etc.) used for supply/borrow recomputation.
   - `forecast` (in side-data) provides Merkl campaign state when a campaign is actually being forecast.
 - Browser-side third-party price backup is enabled for shared simulation as a bounded fallback.
   - Primary path remains backend snapshot `tokenPrices`.

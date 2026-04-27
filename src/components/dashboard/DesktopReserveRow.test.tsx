@@ -43,11 +43,8 @@ const emptySource = {
 const simulation: RateSimulationResult = {
   tokenPrice: 1,
   tokenPriceLoading: false,
-  reserveRateInputLoading: false,
-  reserveRateInputError: null,
   forecastLoading: false,
   forecastErrors: {},
-  hasRateInput: true,
   forecastUnavailableCampaignCount: 0,
   scenarioUsdAccrual: null,
   supply: {

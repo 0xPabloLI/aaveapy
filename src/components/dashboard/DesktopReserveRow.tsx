@@ -30,7 +30,7 @@ import AssetActionMenu from './AssetActionMenu';
 import { BATCH_RESERVE_ADD_BUTTON_CLASSES } from './batchTheme';
 import type { RateSimulationResult, ScenarioInputMode } from '@/hooks/useRateSimulation';
 
-import { getDisplayPoolLiquidityUsd, getDisplayReserveSizeUsd, getDisplayTotalBorrowedUsd, getValidTokenPrice } from '@/lib/scenarioSize';
+import { getDisplayPoolLiquidityUsd, getDisplayReserveSizeUsd, getDisplayTotalBorrowedUsd } from '@/lib/scenarioSize';
 import { cn } from '@/lib/utils';
 
 /* ─── Memoised chain icon ─── */
@@ -143,7 +143,11 @@ const DesktopReserveRow = memo(({
   const protocolVersion = getProtocolVersion(reserve.marketName);
   const isV4Market = protocolVersion === 'v4';
 
-  const displayTokenPrice = getValidTokenPrice(simulation?.tokenPrice, reserve.tokenPrice);
+  // Token price from reserve directly (must be positive finite number)
+  const displayTokenPrice =
+    reserve.tokenPrice != null && Number.isFinite(reserve.tokenPrice) && reserve.tokenPrice > 0
+      ? reserve.tokenPrice
+      : null;
   const displayReserveSizeUsd = getDisplayReserveSizeUsd(reserve, protocolVersion, {
     rawSupplyInput: supplyInput,
     inputMode,

@@ -1227,19 +1227,8 @@ const SimulationSubRow = ({
       )}
 
       {/* Footer notes */}
-      {(simulation.reserveRateInputLoading || simulation.reserveRateInputError || simulation.forecastLoading || showPriceMissingNotice || simulation.forecastUnavailableCampaignCount > 0) && (
+      {(simulation.forecastLoading || showPriceMissingNotice || simulation.forecastUnavailableCampaignCount > 0) && (
         <div className={`mt-3 space-y-1 ${effectiveCompact && embeddedFromTop ? 'px-0' : 'px-1'}`}>
-          {simulation.reserveRateInputLoading && !showEmptyStateNote && (
-            <p className="ds-text-11 text-muted-foreground">Loading rate inputs...</p>
-          )}
-          {simulation.reserveRateInputError && !showEmptyStateNote && (
-            <p className="ds-text-11 text-amber-600">
-              Native simulation unavailable: {simulation.reserveRateInputError instanceof Error ? simulation.reserveRateInputError.message : 'failed to fetch'}
-            </p>
-          )}
-          {!showEmptyStateNote && !simulation.hasRateInput && !simulation.reserveRateInputLoading && !simulation.reserveRateInputError && (
-            <p className="ds-text-11 text-muted-foreground">Native simulation unavailable for this reserve.</p>
-          )}
           {simulation.forecastLoading && <p className="ds-text-11 text-muted-foreground">Loading Merkl forecast...</p>}
           {showPriceMissingNotice && (
             <p className="ds-text-11 text-muted-foreground">Price unavailable for {reserve.tokenSymbol}; using current supply for forecast.</p>

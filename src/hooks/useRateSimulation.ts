@@ -239,11 +239,8 @@ export interface RateSimulationComputedResult {
 
 export interface RateSimulationResult extends RateSimulationComputedResult {
   tokenPriceLoading: boolean;
-  reserveRateInputLoading: boolean;
-  reserveRateInputError: unknown;
   forecastLoading: boolean;
   forecastErrors: Record<string, string>;
-  hasRateInput: boolean;
 }
 
 export type ScenarioInputMode = 'usd' | 'token';
@@ -1608,11 +1605,8 @@ const buildEmptyRateSimulationResult = (
     ...params,
   }),
   tokenPriceLoading: false,
-  reserveRateInputLoading: false,
-  reserveRateInputError: null,
   forecastLoading: false,
   forecastErrors: {},
-  hasRateInput: false,
 });
 
 export const useSharedRateSimulations = ({
@@ -1725,11 +1719,8 @@ export const useSharedRateSimulations = ({
           meritMerklNetPosition,
         }),
         tokenPriceLoading: tokenPriceLoadingById[reserveId] ?? false,
-        reserveRateInputLoading: false,
-        reserveRateInputError: null,
         forecastLoading: hasAnyInput && forecastLoading,
         forecastErrors,
-        hasRateInput: Boolean(reserveRateInput),
       };
       return acc;
     }, {});
@@ -1753,8 +1744,6 @@ export const useSharedRateSimulations = ({
   return {
     hasAnyInput,
     simulationsById,
-    rateInputsSnapshotLoading: false,
-    rateInputsSnapshotError: null,
     forecastLoading: hasAnyInput && forecastLoading,
     forecastErrors,
   };

@@ -1,3 +1,4 @@
+
 # Rate Calculation Reference
 
 Frontend rate simulation documentation — consolidated from the former multi-file module docs.
@@ -39,51 +40,45 @@ This section covers the native Aave interest-rate math used for supply / borrow 
 | PERCENTAGE_FACTOR | 10000 | Basis points denominator |
 | SECONDS_PER_YEAR | 31536000 | 365 × 24 × 60 × 60 |
 
-### Input Fields (from `/rate-inputs`)
+### Input Fields (from `/markets` reserves — `ReserveWithSpread` rate calc fields)
 
 | Field | Type | Unit | Description |
 |-------|------|------|-------------|
 | `availableLiquidity` | string (bigint) | token decimals | Pool liquidity available for borrowing |
-| `totalScaledVariableDebt` | string (bigint) | scaled units | Variable debt before index multiplication |
-| `variableBorrowIndex` | string (bigint) | ray (10^27) | Interest accumulation index |
+| `totalVariableDebt` | string (bigint) | token decimals | Total variable debt (already index-normalized) |
 | `deficit` | string (bigint) | token decimals | Reserve deficit from onchain/Aave API |
 | `reserveFactor` | string (bigint) | bps | Protocol fee on interest |
 | `optimalUsageRate` | string (bigint) | ray | Target utilization / kink |
 | `baseVariableBorrowRate` | string (bigint) | ray | Minimum borrow rate |
 | `variableRateSlope1` | string (bigint) | ray | Slope below kink |
 | `variableRateSlope2` | string (bigint) | ray | Slope above kink |
+| `decimals` | number | — | Token decimals for unit conversion |
 
 ### Calculation Steps
 
-#### 1. Compute total variable debt
+#### 1. Parse inputs and apply user actions
 
 ```text
-totalVariableDebt = rayMul(totalScaledVariableDebt, variableBorrowIndex)
+totalVariableDebt = baseTotalVariableDebt + borrowAmount
 ```
 
-`rayMul(a, b) = (a × b + RAY/2) / RAY`
+`baseTotalVariableDebt` comes from `rateInput.totalVariableDebt` (already index-normalized).
 
-#### 2. Apply user actions
-
-```text
-totalVariableDebt' = totalVariableDebt + borrowAmount
-```
-
-#### 3. Compute usage rates
+#### 2. Compute usage rates
 
 | Rate | Formula | Purpose |
 |------|---------|---------|
-| `borrowUsageRate` | `totalVariableDebt' / (availableLiquidity + totalVariableDebt + supplyAmount)` | Borrow rate and displayed utilization |
-| `supplyUsageRate` | `totalVariableDebt' / (availableLiquidity + totalVariableDebt + deficit + supplyAmount)` | Liquidity rate, includes deficit |
+| `borrowUsageRate` | `totalVariableDebt / (availableLiquidity + baseTotalVariableDebt + supplyAmount)` | Borrow rate and displayed utilization |
+| `supplyUsageRate` | `totalVariableDebt / (availableLiquidity + baseTotalVariableDebt + deficit + supplyAmount)` | Liquidity rate, includes deficit |
 
 ```text
-borrowUsageRate = rayDiv(totalVariableDebt', availableLiquidity + totalVariableDebt + supplyAmount)
-supplyUsageRate = rayDiv(totalVariableDebt', availableLiquidity + totalVariableDebt + deficit + supplyAmount)
+borrowUsageRate = rayDiv(totalVariableDebt, availableLiquidity + baseTotalVariableDebt + supplyAmount)
+supplyUsageRate = rayDiv(totalVariableDebt, availableLiquidity + baseTotalVariableDebt + deficit + supplyAmount)
 ```
 
 `rayDiv(a, b) = (a × RAY + b/2) / b`
 
-#### 4. Compute variable borrow rate
+#### 3. Compute variable borrow rate
 
 If `borrowUsageRate ≤ optimalUsageRate`:
 
@@ -99,7 +94,7 @@ excessRatio = rayDiv(borrowUsageRate - optimalUsageRate, RAY - optimalUsageRate)
 variableBorrowRate = baseVariableBorrowRate + variableRateSlope1 + rayMul(variableRateSlope2, excessRatio)
 ```
 
-#### 5. Compute liquidity rate
+#### 4. Compute liquidity rate
 
 ```text
 liquidityRate = percentMul(rayMul(variableBorrowRate, supplyUsageRate), PERCENTAGE_FACTOR - reserveFactor)
@@ -107,14 +102,14 @@ liquidityRate = percentMul(rayMul(variableBorrowRate, supplyUsageRate), PERCENTA
 
 `percentMul(v, pct) = (v × pct + 5000) / 10000`
 
-#### 6. Convert APR to APY
+#### 5. Convert APR to APY
 
 ```text
 ratePerSecond = aprRay / SECONDS_PER_YEAR
 apyRay = rayPow(RAY + ratePerSecond, SECONDS_PER_YEAR) - RAY
 ```
 
-#### 7. Convert ray to percentage
+#### 6. Convert ray to percentage
 
 ```text
 percent = Number(rayValue) / 1e25
@@ -156,9 +151,8 @@ Borrow Rate
 | Check | How |
 |-------|-----|
 | Utilization mismatch | Compare `utilizationRatePercent` vs market `utilizationPct` |
-| Rate mismatch | Verify slope params, reserveFactor, index values |
+| Rate mismatch | Verify slope params, reserveFactor values |
 | Ray precision | Parse inputs as bigint, not Number |
-| Index staleness | `variableBorrowIndex` should reflect recent accrual |
 
 ### Borrow Availability Constraint
 
@@ -168,7 +162,7 @@ Available to Borrow = min(Pool Liquidity + Supply Input, Borrow Cap Remaining)
 
 Where:
 
-- Pool Liquidity = `availableLiquidity` from `/rate-inputs` (converted to USD)
+- Pool Liquidity = `availableLiquidity` from `/markets` reserve (converted to USD)
 - Supply Input = user supply input
 - Borrow Cap Remaining = `borrowCapUsd - currentTotalBorrowedUsd`
 
@@ -179,9 +173,9 @@ Where:
 
 The simulation hook caps borrow input to the effective limit and surfaces which constraint binds.
 
-### Pool Liquidity Source of Truth (V3 + V4)
+### V4-Aware Display Functions (V3 + V4)
 
-Pool liquidity, total borrowed, and reserve size displayed on the reserves table / row / mobile card use **V4-aware unified display functions** in `src/lib/scenarioSize.ts` that share the same priority chain but differ in fallback behavior by protocol version.
+Pool liquidity, total borrowed, and reserve size displayed on the reserves table / row / mobile card use **V4-aware unified display functions** in `src/lib/scenarioSize.ts`. V3 and V4 share the same primary source (on-chain fields) but differ in fallback behavior.
 
 #### Unified display functions
 
@@ -191,16 +185,30 @@ Pool liquidity, total borrowed, and reserve size displayed on the reserves table
 | `getDisplayPoolLiquidityUsd(reserve, version)` | on-chain `availableLiquidity` ?? `reserveSizeUsd − totalBorrowedUsd` | on-chain `availableLiquidity` only (no derived fallback) |
 | `getDisplayReserveSizeUsd(reserve, version, scenario?)` | `reserveSizeUsd` + scenario input | `reserveSizeUsd` only if > 0; `null` if 0 or missing |
 
-**Key principle**: V3 and V3 share the same primary source (on-chain fields). The difference is only in the fallback: V3 can safely fall back to `reserveSizeUsd`-derived calculations; V4 cannot, because `reserveSizeUsd` may be 0 or a per-Spoke slice.
+**Key principle**: The difference is only in the fallback. V3 can safely fall back to `reserveSizeUsd`-derived calculations; V4 cannot, because `reserveSizeUsd` may be 0 or a per-Spoke slice.
 
-#### On-chain computation
+#### Internal architecture
+
+```
+UI component (DesktopReserveRow / MobileReserveCard / ReservesTable)
+  └→ getDisplayReserveSizeUsd(reserve, protocolVersion, scenarioInput?)
+       ├→ [V4 gate] reserveSizeUsd === 0? → return null
+       ├→ [no scenario input] → return reserveSizeUsd
+       └→ getScenarioSupplySizeUsd({ reserveSizeUsd, supplyCapUsd, rawSupplyInput, ... })
+            └→ reserveSizeUsd + supplyInputUsd (capped at supplyCapUsd)
+```
+
+- `getDisplayReserveSizeUsd` — **facade**: decides whether `reserveSizeUsd` is usable (V4: 0 → null), then delegates.
+- `getScenarioSupplySizeUsd` — **engine**: pure arithmetic, adds scenario input to base value, respects supply cap. Version-agnostic.
+
+#### On-chain computation (low-level helpers)
 
 ```text
 totalBorrowedUsd = (Number(reserve.totalVariableDebt) / 10^reserve.decimals) × reserve.tokenPrice
 poolLiquidityUsd = (Number(reserve.availableLiquidity) / 10^reserve.decimals) × reserve.tokenPrice
 ```
 
-Low-level helpers `getReserveTotalBorrowedUsd` and `getReserveAvailableLiquidityUsd` perform this computation and return `null` when any input is missing/invalid, allowing the unified functions to decide whether to fall back.
+`getReserveTotalBorrowedUsd` and `getReserveAvailableLiquidityUsd` perform this computation and return `null` when any input is missing/invalid, allowing the unified functions to decide whether to fall back.
 
 #### Why V4 cannot use derived fallbacks
 
@@ -567,7 +575,6 @@ This section groups cap / ceiling semantics for Merit, Merkl, and Brevis.
 ## Related Files
 
 - `src/lib/interestRateCalculator.ts` – Core native rate calculation functions
-- `src/lib/scenarioSize.ts` – V4-aware unified display functions (totalBorrowed, poolLiquidity, reserveSize)
 - `src/lib/merklForecast.ts` – Merkl `forecastWithTVL` and progress flags
 - `src/lib/meritForecast.ts` – Merit forecast (base + self-auth deposit cap)
 - `src/lib/incentiveCeilings.ts` – Domain-layer ceiling effects → simulation `capNote` / `capWarning`

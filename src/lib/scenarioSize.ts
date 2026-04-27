@@ -3,15 +3,6 @@ import type { ProtocolVersion } from './protocolVersion';
 
 export type ScenarioDisplayMode = 'usd' | 'token';
 
-export const getValidTokenPrice = (...candidates: Array<number | null | undefined>): number | null => {
-  for (const candidate of candidates) {
-    if (candidate != null && Number.isFinite(candidate) && candidate > 0) {
-      return candidate;
-    }
-  }
-  return null;
-};
-
 export const getScenarioInputUsd = ({
   rawInput,
   inputMode,

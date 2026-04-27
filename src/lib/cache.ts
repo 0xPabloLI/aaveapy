@@ -10,7 +10,7 @@ const CACHE_KEYS = {
   COINGECKO_TOKEN_IMAGE_PREFIX: 'coingecko-token-image:',
 } as const;
 
-const LEGACY_CACHE_KEYS = ['aave-markets-list-cache', 'rate-inputs-snapshot-cache'] as const;
+const LEGACY_CACHE_KEYS = ['aave-markets-list-cache'] as const;
 
 // Bump cache version when schema changes.
 const CACHE_VERSION = '1.1.0';
