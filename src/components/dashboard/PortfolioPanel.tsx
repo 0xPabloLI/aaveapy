@@ -165,6 +165,9 @@ const PortfolioPanel = memo(function PortfolioPanel({
   // null when idle. After completion we briefly show a "done" pulse via `addAllDone`.
   const [addAllProgress, setAddAllProgress] = useState<{ current: number; total: number } | null>(null);
   const [addAllDone, setAddAllDone] = useState(false);
+  // Synchronous lock so rapid double-clicks within the same tick are ignored
+  // (state updates from setAddAllProgress aren't visible until next render).
+  const addAllRunningRef = useRef(false);
 
   const focusSearch = useCallback(() => {
     setSearchOpen(true);
