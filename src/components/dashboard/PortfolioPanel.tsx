@@ -595,40 +595,70 @@ const PortfolioPanel = memo(function PortfolioPanel({
                   <p className="ds-text-10 uppercase tracking-wide text-muted-foreground/70">
                     Popular tokens
                   </p>
-                  <button
-                    type="button"
-                    onClick={handleAddAllSuggested}
-                    disabled={addAllProgress !== null}
-                    aria-disabled={addAllProgress !== null}
-                    aria-busy={addAllProgress !== null && !addAllDone}
-                    className={cn(
-                      'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 ds-text-10 font-semibold transition-colors',
-                      BATCH_THEME.border,
-                      BATCH_THEME.bgSoft,
-                      BATCH_THEME.text,
-                      addAllProgress !== null
-                        ? 'opacity-80 cursor-wait pointer-events-none'
-                        : `hover:${BATCH_THEME.bgSubtle}`,
-                    )}
-                    aria-label="Add all popular tokens"
-                  >
-                    {addAllDone ? (
-                      <>
-                        <Check className="size-2.5" aria-hidden />
-                        Added {addAllProgress?.total ?? ''}
-                      </>
-                    ) : addAllProgress ? (
-                      <>
-                        <Loader2 className="size-2.5 animate-spin" aria-hidden />
-                        Adding {addAllProgress.current}/{addAllProgress.total}
-                      </>
-                    ) : (
-                      <>
+                  {pendingResume && !addAllProgress ? (
+                    <span className="inline-flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={handleResumeAddAll}
+                        className={cn(
+                          'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 ds-text-10 font-semibold transition-colors',
+                          BATCH_THEME.border,
+                          BATCH_THEME.bgSoft,
+                          BATCH_THEME.text,
+                          `hover:${BATCH_THEME.bgSubtle}`,
+                        )}
+                        aria-label={`Resume adding tokens from ${pendingResume.current} of ${pendingResume.total}`}
+                        title="Resume the previous batch"
+                      >
                         <Plus className="size-2.5" aria-hidden />
-                        Add all
-                      </>
-                    )}
-                  </button>
+                        Resume {pendingResume.current}/{pendingResume.total}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleDismissResume}
+                        className="inline-flex size-4 items-center justify-center rounded-full text-muted-foreground/70 hover:bg-muted/60 hover:text-foreground transition-colors"
+                        aria-label="Dismiss saved batch progress"
+                        title="Dismiss"
+                      >
+                        <X className="size-2.5" aria-hidden />
+                      </button>
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleAddAllSuggested}
+                      disabled={addAllProgress !== null}
+                      aria-disabled={addAllProgress !== null}
+                      aria-busy={addAllProgress !== null && !addAllDone}
+                      className={cn(
+                        'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 ds-text-10 font-semibold transition-colors',
+                        BATCH_THEME.border,
+                        BATCH_THEME.bgSoft,
+                        BATCH_THEME.text,
+                        addAllProgress !== null
+                          ? 'opacity-80 cursor-wait pointer-events-none'
+                          : `hover:${BATCH_THEME.bgSubtle}`,
+                      )}
+                      aria-label="Add all popular tokens"
+                    >
+                      {addAllDone ? (
+                        <>
+                          <Check className="size-2.5" aria-hidden />
+                          Added {addAllProgress?.total ?? ''}
+                        </>
+                      ) : addAllProgress ? (
+                        <>
+                          <Loader2 className="size-2.5 animate-spin" aria-hidden />
+                          Adding {addAllProgress.current}/{addAllProgress.total}
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="size-2.5" aria-hidden />
+                          Add all
+                        </>
+                      )}
+                    </button>
+                  )}
                 </div>
                 <div className="flex flex-wrap items-center justify-center gap-1.5">
                   {suggestedReserves.map((r) => {
