@@ -19,6 +19,10 @@ import { BATCH_THEME } from './batchTheme';
 
 const PortfolioCompareView = lazy(() => import('./PortfolioCompareView'));
 
+// localStorage key used to persist mid-flight "Add all" progress so a page
+// refresh can offer a resume affordance instead of silently losing state.
+const ADD_ALL_PROGRESS_STORAGE_KEY = 'portfolio-panel:add-all-progress';
+
 interface PortfolioPanelProps {
   positions: PortfolioPosition[];
   actions: PortfolioSimulationActions;
