@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 interface BorrowCapProgressRingProps {
   borrowed: number | null | undefined;
   cap: number | null | undefined;
-  poolLiquidity: number | null | undefined;
+  availableLiquidityUsd: number | null | undefined;
   displayMode?: 'usd' | 'token';
   tokenPrice?: number | null;
   tokenSymbol?: string | null;
@@ -24,7 +24,7 @@ interface BorrowCapProgressRingProps {
 const BorrowCapProgressRing = memo(({
   borrowed,
   cap,
-  poolLiquidity,
+  availableLiquidityUsd,
   displayMode = 'usd',
   tokenPrice,
   tokenSymbol,
@@ -46,7 +46,7 @@ const BorrowCapProgressRing = memo(({
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
   const capRemaining = Math.max(0, cap - currentBorrowed);
-  const liquidityRemaining = poolLiquidity ?? 0;
+  const liquidityRemaining = availableLiquidityUsd ?? 0;
   const availableToBorrow = Math.min(capRemaining, liquidityRemaining);
 
   const getProgressColor = () => {
@@ -77,7 +77,7 @@ const BorrowCapProgressRing = memo(({
           </span>
         </div>
         <div className="flex justify-between gap-3">
-          <span className="text-muted-foreground">Pool liquidity</span>
+          <span className="text-muted-foreground">Available liquidity</span>
           <span className="font-medium tabular-nums ds-text-purple-600">
             {formatScenarioSize(liquidityRemaining, { inputMode: displayMode, tokenPrice, tokenSymbol })}
           </span>

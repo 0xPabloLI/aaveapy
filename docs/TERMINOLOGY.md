@@ -100,7 +100,7 @@ src/hooks/useRateSimulation.ts
 
 | Field | Unit | Description |
 |-------|------|-------------|
-| `availableLiquidity` | token decimals | Pool liquidity available for borrowing |
+| `availableLiquidity` | token decimals | Available liquidity (for borrowing) |
 | `totalVariableDebt` | token decimals | Variable debt before index multiplication |
 | `deficit` | token decimals | Reserve deficit from onchain/Aave API |
 | `tokenPrice` | USD | USD display & sorting |

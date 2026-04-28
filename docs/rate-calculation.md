@@ -44,7 +44,7 @@ This section covers the native Aave interest-rate math used for supply / borrow 
 
 | Field | Type | Unit | Description |
 |-------|------|------|-------------|
-| `availableLiquidity` | string (bigint) | token decimals | Pool liquidity available for borrowing |
+| `availableLiquidity` | string (bigint) | token decimals | Available liquidity for borrowing |
 | `totalVariableDebt` | string (bigint) | token decimals | Total variable debt (already index-normalized) |
 | `deficit` | string (bigint) | token decimals | Reserve deficit from onchain/Aave API |
 | `reserveFactor` | string (bigint) | bps | Protocol fee on interest |
@@ -157,32 +157,32 @@ Borrow Rate
 ### Borrow Availability Constraint
 
 ```text
-Available to Borrow = min(Pool Liquidity + Supply Input, Borrow Cap Remaining)
+Available to Borrow = min(Available Liquidity + Supply Input, Borrow Cap Remaining)
 ```
 
 Where:
 
-- Pool Liquidity = `availableLiquidity` from `/markets` reserve (converted to USD)
+- Available Liquidity = `availableLiquidity` from `/markets` reserve (converted to USD)
 - Supply Input = user supply input
 - Borrow Cap Remaining = `borrowCapUsd - currentTotalBorrowedUsd`
 
 | Constraint | When Active | UI Message |
 |------------|-------------|------------|
-| Borrow Cap | `borrowCapRemaining < poolLiquidity` | `limited by borrow cap` |
-| Pool Liquidity | `poolLiquidity < borrowCapRemaining` | `limited by pool liquidity` |
+| Borrow Cap | `borrowCapRemaining < availableLiquidity` | `limited by borrow cap` |
+| Available Liquidity | `availableLiquidity < borrowCapRemaining` | `limited by available liquidity` |
 
 The simulation hook caps borrow input to the effective limit and surfaces which constraint binds.
 
 ### V4-Aware Display Functions (V3 + V4)
 
-Pool liquidity, total borrowed, and reserve size displayed on the reserves table / row / mobile card use **V4-aware unified display functions** in `src/lib/scenarioSize.ts`. V3 and V4 share the same primary source (on-chain fields) but differ in fallback behavior.
+Available liquidity, total borrowed, and reserve size displayed on the reserves table / row / mobile card use **V4-aware unified display functions** in `src/lib/scenarioSize.ts`. V3 and V4 share the same primary source (on-chain fields) but differ in fallback behavior.
 
 #### Unified display functions
 
 | Function | V3 behavior | V4 behavior |
 |---|---|---|
 | `getDisplayTotalBorrowedUsd(reserve, version)` | on-chain `totalVariableDebt` ?? `reserveSizeUsd × utilizationPct / 100` | on-chain `totalVariableDebt` only (no derived fallback) |
-| `getDisplayPoolLiquidityUsd(reserve, version)` | on-chain `availableLiquidity` ?? `reserveSizeUsd − totalBorrowedUsd` | on-chain `availableLiquidity` only (no derived fallback) |
+| `getDisplayAvailableLiquidityUsd(reserve, version)` | on-chain `availableLiquidity` ?? `reserveSizeUsd − totalBorrowedUsd` | on-chain `availableLiquidity` only (no derived fallback) |
 | `getDisplayReserveSizeUsd(reserve, version, scenario?)` | `reserveSizeUsd` + scenario input | `reserveSizeUsd` only if > 0; `null` if 0 or missing |
 
 **Key principle**: The difference is only in the fallback. V3 can safely fall back to `reserveSizeUsd`-derived calculations; V4 cannot, because `reserveSizeUsd` may be 0 or a per-Spoke slice.
@@ -205,7 +205,7 @@ UI component (DesktopReserveRow / MobileReserveCard / ReservesTable)
 
 ```text
 totalBorrowedUsd = (Number(reserve.totalVariableDebt) / 10^reserve.decimals) × reserve.tokenPrice
-poolLiquidityUsd = (Number(reserve.availableLiquidity) / 10^reserve.decimals) × reserve.tokenPrice
+availableLiquidityUsd = (Number(reserve.availableLiquidity) / 10^reserve.decimals) × reserve.tokenPrice
 ```
 
 `getReserveTotalBorrowedUsd` and `getReserveAvailableLiquidityUsd` perform this computation and return `null` when any input is missing/invalid, allowing the unified functions to decide whether to fall back.
@@ -247,7 +247,7 @@ Beyond the three unified display functions, the following locations also have V4
 
 Until the API exposes a Hub‑level `reserveSizeUsd` (or a separate `hubSuppliedUsd`), the frontend must:
 
-1. Use on-chain `availableLiquidity` and `totalVariableDebt` (raw → token → USD) as the canonical source for pool liquidity and total borrowed.
+1. Use on-chain `availableLiquidity` and `totalVariableDebt` (raw → token → USD) as the canonical source for available liquidity and total borrowed.
 2. Never fall back to `reserveSizeUsd`-derived calculations for V4 markets.
 3. Avoid presenting `reserveSizeUsd` as "total supplied" for V4 without qualifying it as the per‑Spoke supply slice.
 4. Keep simulation inputs aligned: `useRateSimulation` already feeds `availableLiquidity` into `interestRateCalculator`, so simulation outputs (`marketMetrics.availableLiquidityUsd*`) and the static base value share the same source of truth.
@@ -575,8 +575,6 @@ This section groups cap / ceiling semantics for Merit, Merkl, and Brevis.
 ## Related Files
 
 - `src/lib/interestRateCalculator.ts` – Core native rate calculation functions
-- `src/lib/scenarioSize.ts` – V4-aware unified display functions (totalBorrowed, poolLiquidity, reserveSize) + scenario input math
-- `src/lib/protocolVersion.ts` – V3/V4 detection from marketName
 - `src/lib/merklForecast.ts` – Merkl `forecastWithTVL` and progress flags
 - `src/lib/meritForecast.ts` – Merit forecast (base + self-auth deposit cap)
 - `src/lib/incentiveCeilings.ts` – Domain-layer ceiling effects → simulation `capNote` / `capWarning`

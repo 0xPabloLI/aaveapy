@@ -15,7 +15,7 @@
 | 变量/指标 | 首选来源（链上） | V3 Fallback（推导） | V4 行为 | 关键文件 |
 |---|---|---|---|---|
 | `totalBorrowedUsd` | `totalVariableDebt` | `reserveSizeUsd × utilizationPct / 100` | `null` | `src/lib/scenarioSize.ts`（`getDisplayTotalBorrowedUsd`） |
-| `poolLiquidityUsd` | `availableLiquidity` | `reserveSizeUsd − totalBorrowedUsd` | `null` | `src/lib/scenarioSize.ts`（`getDisplayPoolLiquidityUsd`） |
+| `availableLiquidityUsd` | `availableLiquidity` | `reserveSizeUsd − totalBorrowedUsd` | `null` | `src/lib/scenarioSize.ts`（`getDisplayAvailableLiquidityUsd`） |
 | `reserveSizeUsd`（展示） | `reserveSizeUsd` | — | 当 `0` 或 `null` 时返回 `null`（不显示 `0`） | `src/lib/scenarioSize.ts`（`getDisplayReserveSizeUsd`） |
 
 ### 1.2 数据结构 Fallback（新字段 → 旧字段）
@@ -32,7 +32,7 @@
 |---|---|---|---|
 | `utilizationPct` | `reserve.utilizationPct` | `simulation.utilization.after`（或 `current`） | `src/components/dashboard/ReservesTable.tsx` |
 | `totalBorrowedUsd` | `baseTotalBorrowedUsd`（V3：链上或推导；V4：仅链上，否则 `null`） | `simulation.marketMetrics.totalBorrowedUsdAfter` | `src/components/dashboard/DesktopReserveRow.tsx` |
-| `poolLiquidityUsd` | `basePoolLiquidity`（V3：链上或推导；V4：仅链上，否则 `null`） | `simulation.marketMetrics.availableLiquidityUsdAfter` | `src/components/dashboard/DesktopReserveRow.tsx` |
+| `availableLiquidityUsd` | `baseAvailableLiquidityUsd`（V3：链上或推导；V4：仅链上，否则 `null`） | `simulation.marketMetrics.availableLiquidityUsdAfter` | `src/components/dashboard/DesktopReserveRow.tsx` |
 | Supply APR/APY | `reserve.supplyApy` / `getNativeSupplyApy()` | `simulation.supply.afterNative` | `src/components/dashboard/ReservesTable.tsx` |
 | Supply Total APR/APY | `getTotalSupplyApy()` | `simulation.supply.afterTotal` | `src/components/dashboard/ReservesTable.tsx` |
 | Borrow APR/APY | `reserve.borrowApy` / `getNativeBorrowApy()` | `simulation.borrow.afterNative` | `src/components/dashboard/ReservesTable.tsx` |
@@ -41,7 +41,10 @@
 | Supply Incentive | `getIncentiveValues(...).apy/apr` | `simulation.supply.afterIncentive` | `src/components/dashboard/ReservesTable.tsx` |
 | Borrow Incentive | `getIncentiveValues(...).apy/apr` | `simulation.borrow.afterIncentive` | `src/components/dashboard/ReservesTable.tsx` |
 
-> **注意**：`tokenPrice` 和 `optimalUtilization` **没有** simulation fallback。`tokenPrice` 直接读取 `reserve.tokenPrice`；`optimalUtilization` 直接读取 `reserve.optimalUsageRate`。曾经写过的 `?? simulation?.utilization.optimal` 已于 2026-04-27 清理（见 §2.4）。
+> **注意**：以下变量 **没有** simulation fallback：
+> - `tokenPrice`：UI 直接读取 `reserve.tokenPrice`，不经过 simulation
+> - `optimalUtilization`：直接读取 `reserve.optimalUsageRate`。曾经写过的 `?? simulation?.utilization.optimal` 已于 2026-04-27 清理（见 §2.4）
+> - 利率模型参数（`variableRateSlope1/2`、`baseVariableBorrowRate`、`reserveFactor`、`optimalUsageRate`）：simulation 直接读取 `reserve` 的 `RateCalcInput` 字段，缺失时返回 `null`，不做推算 fallback
 
 ---
 
@@ -77,19 +80,19 @@ totalBorrowedUsd = reserveSizeUsd × (utilizationPct / 100)
 
 ---
 
-### 2.2 `poolLiquidityUsd`
+### 2.2 `availableLiquidityUsd`
 
 **首选**：链上 `availableLiquidity` 直接换算
 
 ```
-poolLiquidityUsd = (Number(availableLiquidity) / 10^decimals) × tokenPrice
+availableLiquidityUsd = (Number(availableLiquidity) / 10^decimals) × tokenPrice
 ```
 
 **Fallback**：仅 V3 走推导，V4 不 fallback
 
 ```
 // V3 only:
-poolLiquidityUsd = reserveSizeUsd − totalBorrowedUsd
+availableLiquidityUsd = reserveSizeUsd − totalBorrowedUsd
 // V4: 直接返回 null，UI 显示 “—”
 ```
 
@@ -98,8 +101,8 @@ poolLiquidityUsd = reserveSizeUsd − totalBorrowedUsd
   - **V4** → 不推导，返回 `null`。原因：V4 的 `reserveSizeUsd` 是 per-Spoke 供应切片，而 `availableLiquidity` 是 Hub 级别共享流动性，混用得到的只是 Hub 流动性的一个 Spoke 比例，可能数量级偏差（如 AaveV4Forex USDT 推导 ≈ $5.7k，链上 ≈ $76.6k）。
 
 **代码位置**：
-- 入口（V4-aware）：`src/lib/scenarioSize.ts` 中的 `getDisplayPoolLiquidityUsd(reserve, protocolVersion)`
-- 内部：`getReserveAvailableLiquidityUsd()`（链上换算）+ `getPoolLiquidityUsd()`（V3 推导）
+- 入口（V4-aware）：`src/lib/scenarioSize.ts` 中的 `getDisplayAvailableLiquidityUsd(reserve, protocolVersion)`
+- 内部：`getReserveAvailableLiquidityUsd()`（链上换算）+ `getDerivedAvailableLiquidityUsd()`（V3 推导）
 
 ---
 
@@ -233,7 +236,7 @@ const totalBorrowedUsdAfter = hasAnyInput
 ```typescript
 // DesktopReserveRow.tsx
 const totalBorrowedUsd = simulation?.marketMetrics.totalBorrowedUsdAfter ?? baseTotalBorrowedUsd;
-const poolLiquidity = simulation?.marketMetrics.availableLiquidityUsdAfter ?? basePoolLiquidity;
+const availableLiquidityUsd = simulation?.marketMetrics.availableLiquidityUsdAfter ?? baseAvailableLiquidityUsd;
 ```
 
 在 `ReservesTable.tsx` 中，`pickScenarioValue` 决定显示 `current` 还是 `after`：

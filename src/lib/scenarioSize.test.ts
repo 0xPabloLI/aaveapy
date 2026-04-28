@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { convertUsdToInputValue, getDisplayPoolLiquidityUsd, getDisplayReserveSizeUsd, getDisplayTotalBorrowedUsd, getReserveAvailableLiquidityUsd, getReserveTotalBorrowedUsd, getScenarioSupplySizeUsd } from './scenarioSize';
+import { convertUsdToInputValue, getDisplayAvailableLiquidityUsd, getDisplayReserveSizeUsd, getDisplayTotalBorrowedUsd, getReserveAvailableLiquidityUsd, getReserveTotalBorrowedUsd, getScenarioSupplySizeUsd } from './scenarioSize';
 
 describe('getScenarioSupplySizeUsd', () => {
   it('keeps current size when reserve is already above cap', () => {
@@ -172,10 +172,10 @@ describe('getDisplayTotalBorrowedUsd', () => {
   });
 });
 
-describe('getDisplayPoolLiquidityUsd', () => {
+describe('getDisplayAvailableLiquidityUsd', () => {
   it('V3: uses on-chain availableLiquidity when available', () => {
     expect(
-      getDisplayPoolLiquidityUsd({
+      getDisplayAvailableLiquidityUsd({
         availableLiquidity: '76610908377',
         decimals: 6,
         tokenPrice: 1.0002,
@@ -187,7 +187,7 @@ describe('getDisplayPoolLiquidityUsd', () => {
 
   it('V4: uses on-chain availableLiquidity when available', () => {
     expect(
-      getDisplayPoolLiquidityUsd({
+      getDisplayAvailableLiquidityUsd({
         availableLiquidity: '76610908377',
         decimals: 6,
         tokenPrice: 1.0002,
@@ -200,12 +200,12 @@ describe('getDisplayPoolLiquidityUsd', () => {
   it('V3: falls back to derived reserveSizeUsd - totalBorrowed when on-chain unavailable', () => {
     const noOnChain = { reserveSizeUsd: 1000, utilizationPct: 50 };
     // totalBorrowed = 1000 * 50/100 = 500, liquidity = 1000 - 500 = 500
-    expect(getDisplayPoolLiquidityUsd(noOnChain, 'v3')).toBe(500);
+    expect(getDisplayAvailableLiquidityUsd(noOnChain, 'v3')).toBe(500);
   });
 
   it('V4: returns null when on-chain unavailable (no derived fallback)', () => {
     const noOnChain = { reserveSizeUsd: 0, utilizationPct: 93.14 };
-    expect(getDisplayPoolLiquidityUsd(noOnChain, 'v4')).toBeNull();
+    expect(getDisplayAvailableLiquidityUsd(noOnChain, 'v4')).toBeNull();
   });
 });
 

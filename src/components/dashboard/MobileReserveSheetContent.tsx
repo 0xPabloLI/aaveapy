@@ -59,14 +59,14 @@ export function SupplyCapSheetContent({
 export function BorrowCapSheetContent({
   borrowed,
   cap,
-  poolLiquidity,
+  availableLiquidityUsd,
   inputMode,
   tokenPrice,
   tokenSymbol,
 }: {
   borrowed: number;
   cap: number;
-  poolLiquidity: number;
+  availableLiquidityUsd: number;
   inputMode: 'usd' | 'token';
   tokenPrice?: number | null;
   tokenSymbol?: string | null;
@@ -75,7 +75,7 @@ export function BorrowCapSheetContent({
   const availableToBorrow = getAvailableToBorrowUsd({
     borrowedUsd: borrowed,
     borrowCapUsd: cap,
-    poolLiquidityUsd: poolLiquidity,
+    availableLiquidityUsd,
   }) ?? 0;
   const colorClass =
     percentage >= 95 ? 'text-amber-600' : percentage >= 80 ? 'text-amber-500' : 'ds-text-brand-cyan';
@@ -94,13 +94,13 @@ export function BorrowCapSheetContent({
         </span>
       </div>
       <div className="flex justify-between gap-3">
-        <span className="text-muted-foreground">Pool liquidity</span>
+        <span className="text-muted-foreground">Available liquidity</span>
         <span className={`font-medium tabular-nums ${
-          poolLiquidity < 10000
+          availableLiquidityUsd < 10000
             ? 'text-amber-500'
             : 'ds-text-purple-600'
         }`}>
-          {formatScenarioSize(poolLiquidity, { inputMode, tokenPrice, tokenSymbol })}
+          {formatScenarioSize(availableLiquidityUsd, { inputMode, tokenPrice, tokenSymbol })}
         </span>
       </div>
       <div className="flex justify-between gap-3">

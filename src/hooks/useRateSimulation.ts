@@ -1028,8 +1028,8 @@ export function buildRateSimulationResult({
       ? Math.max(borrowCapUsd - currentTotalBorrowedUsd, 0)
       : null;
 
-  // Calculate available liquidity for borrow (pool liquidity + any new supply)
-  const poolLiquidityForBorrowUsd = reserveRateInput && tokenPrice
+  // Calculate available liquidity for borrow (on-chain available liquidity + any new supply)
+  const availableLiquidityForBorrowUsd = reserveRateInput && tokenPrice
     ? (() => {
         const decimals = reserveRateInput.decimals ?? 18;
         const scale = Math.pow(10, decimals);
@@ -1038,21 +1038,21 @@ export function buildRateSimulationResult({
       })()
     : null;
 
-  // Available to borrow = min(borrow cap remaining, pool liquidity)
-  // If no borrow cap, use pool liquidity; if no liquidity data, use cap remaining
+  // Available to borrow = min(borrow cap remaining, available liquidity)
+  // If no borrow cap, use available liquidity; if no liquidity data, use cap remaining
   const availableBorrowRoomUsd = (() => {
-    if (borrowCapRemainingUsd !== null && poolLiquidityForBorrowUsd !== null) {
-      return Math.min(borrowCapRemainingUsd, poolLiquidityForBorrowUsd);
+    if (borrowCapRemainingUsd !== null && availableLiquidityForBorrowUsd !== null) {
+      return Math.min(borrowCapRemainingUsd, availableLiquidityForBorrowUsd);
     }
     if (borrowCapRemainingUsd !== null) return borrowCapRemainingUsd;
-    if (poolLiquidityForBorrowUsd !== null) return poolLiquidityForBorrowUsd;
+    if (availableLiquidityForBorrowUsd !== null) return availableLiquidityForBorrowUsd;
     return null;
   })();
 
   // Track which constraint is binding (for UI messaging)
-  const borrowLimitedByLiquidity = 
-    poolLiquidityForBorrowUsd !== null && 
-    (borrowCapRemainingUsd === null || poolLiquidityForBorrowUsd < borrowCapRemainingUsd);
+  const borrowLimitedByLiquidity =
+    availableLiquidityForBorrowUsd !== null &&
+    (borrowCapRemainingUsd === null || availableLiquidityForBorrowUsd < borrowCapRemainingUsd);
 
   // Cap borrow input by available borrow room (which already considers both constraints)
   let borrowInputUsd = rawBorrowInputUsd;

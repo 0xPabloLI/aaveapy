@@ -491,8 +491,8 @@ The single jsdom test that locks this in is `DesktopReserveRow.test.tsx` *"align
 
 ### Borrow availability constraint
 
-- Available to borrow = `min(Pool Liquidity + Supply Input, Borrow Cap Remaining)`
-- When user input exceeds limit, show which constraint is binding ("limited by pool liquidity" or "limited by borrow cap")
+- Available to borrow = `min(Available Liquidity + Supply Input, Borrow Cap Remaining)`
+- When user input exceeds limit, show which constraint is binding ("limited by available liquidity" or "limited by borrow cap")
 - Borrow input is automatically capped to the effective limit in simulation calculations
 
 ### Simulation breakdown panel layout

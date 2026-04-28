@@ -35,7 +35,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { getReserveSimulationId, useSharedRateSimulations } from '@/hooks/useRateSimulation';
 import { useSideDataMeta } from '@/hooks/useSideDataMeta';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
-import { getDisplayPoolLiquidityUsd as computeDisplayPoolLiquidityUsd, getDisplayReserveSizeUsd as computeDisplayReserveSizeUsd, getDisplayTotalBorrowedUsd as computeDisplayTotalBorrowedUsd, getAvailableToBorrowUsd } from '@/lib/scenarioSize';
+import { getDisplayAvailableLiquidityUsd as computeDisplayAvailableLiquidityUsd, getDisplayReserveSizeUsd as computeDisplayReserveSizeUsd, getDisplayTotalBorrowedUsd as computeDisplayTotalBorrowedUsd, getAvailableToBorrowUsd } from '@/lib/scenarioSize';
 import { getProtocolVersion } from '@/lib/protocolVersion';
 import {
   scrollExpandedSimulationIntoView,
@@ -424,7 +424,7 @@ const ReservesTable = ({
   };
 
   const getDisplayLiquidityUsd = (reserve: ReserveWithSpread): number | null => {
-    return computeDisplayPoolLiquidityUsd(reserve, getProtocolVersion(reserve.marketName));
+    return computeDisplayAvailableLiquidityUsd(reserve, getProtocolVersion(reserve.marketName));
   };
 
   const getDisplaySupplyAvailabilityUsd = (reserve: ReserveWithSpread): number | null => {
@@ -437,11 +437,11 @@ const ReservesTable = ({
 
   const getDisplayAvailableToBorrowUsd = (reserve: ReserveWithSpread): number | null => {
     const totalBorrowed = getTotalBorrowedUsd(reserve);
-    const poolLiquidity = getDisplayLiquidityUsd(reserve);
+    const availableLiquidityUsd = getDisplayLiquidityUsd(reserve);
     return getAvailableToBorrowUsd({
       borrowedUsd: totalBorrowed,
       borrowCapUsd: reserve.borrowCapUsd,
-      poolLiquidityUsd: poolLiquidity,
+      availableLiquidityUsd,
     });
   };
 

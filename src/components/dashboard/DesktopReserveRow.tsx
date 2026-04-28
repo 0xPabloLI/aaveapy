@@ -30,7 +30,7 @@ import AssetActionMenu from './AssetActionMenu';
 import { BATCH_RESERVE_ADD_BUTTON_CLASSES } from './batchTheme';
 import type { RateSimulationResult, ScenarioInputMode } from '@/hooks/useRateSimulation';
 
-import { getDisplayPoolLiquidityUsd, getDisplayReserveSizeUsd, getDisplayTotalBorrowedUsd } from '@/lib/scenarioSize';
+import { getDisplayAvailableLiquidityUsd, getDisplayReserveSizeUsd, getDisplayTotalBorrowedUsd } from '@/lib/scenarioSize';
 import { cn } from '@/lib/utils';
 
 /* ─── Memoised chain icon ─── */
@@ -155,8 +155,8 @@ const DesktopReserveRow = memo(({
   });
   const baseTotalBorrowedUsd = getDisplayTotalBorrowedUsd(reserve, protocolVersion);
   const totalBorrowedUsd = simulation?.marketMetrics.totalBorrowedUsdAfter ?? baseTotalBorrowedUsd;
-  const basePoolLiquidity = getDisplayPoolLiquidityUsd(reserve, protocolVersion);
-  const poolLiquidity = simulation?.marketMetrics.availableLiquidityUsdAfter ?? basePoolLiquidity;
+  const baseAvailableLiquidityUsd = getDisplayAvailableLiquidityUsd(reserve, protocolVersion);
+  const availableLiquidityUsd = simulation?.marketMetrics.availableLiquidityUsdAfter ?? baseAvailableLiquidityUsd;
   const hasDeficit = hasReserveDeficit(reserve);
   const deficitUsd = getReserveDeficitUsdAmount(reserve, displayTokenPrice);
   const deficitTokenCompact = formatReserveDeficitTokenCompact(reserve);
@@ -358,7 +358,7 @@ const DesktopReserveRow = memo(({
               <BorrowCapProgressRing
                 borrowed={totalBorrowedUsd}
                 cap={reserve.borrowCapUsd}
-                poolLiquidity={poolLiquidity}
+                availableLiquidityUsd={availableLiquidityUsd}
                 displayMode={inputMode}
                 tokenPrice={displayTokenPrice}
                 tokenSymbol={reserve.tokenSymbol}
@@ -436,11 +436,11 @@ const DesktopReserveRow = memo(({
                 {formatPercent(displayUtilization)}
               </span>
               <span className={`ds-text-11 tabular-nums font-medium ${
-                poolLiquidity != null && poolLiquidity < 10000
+                availableLiquidityUsd != null && availableLiquidityUsd < 10000
                   ? 'text-amber-500'
                   : 'ds-text-purple-500'
               }`}>
-                {formatScenarioSize(poolLiquidity, { inputMode, tokenPrice: displayTokenPrice, tokenSymbol: reserve.tokenSymbol })}
+                {formatScenarioSize(availableLiquidityUsd, { inputMode, tokenPrice: displayTokenPrice, tokenSymbol: reserve.tokenSymbol })}
               </span>
             </div>
             <UtilizationIndicator

@@ -31,7 +31,7 @@ import {
 } from '@/lib/deficit';
 import { RateSimulationResult } from '@/hooks/useRateSimulation';
 
-import { getDisplayPoolLiquidityUsd, getDisplayReserveSizeUsd, getDisplayTotalBorrowedUsd } from '@/lib/scenarioSize';
+import { getDisplayAvailableLiquidityUsd, getDisplayReserveSizeUsd, getDisplayTotalBorrowedUsd } from '@/lib/scenarioSize';
 import { buildPoolExplorerUrl } from '@/lib/poolExplorerLinks';
 import { buildAaveProHubUrl } from '@/lib/aaveLinks';
 import { getProtocolVersion } from '@/lib/protocolVersion';
@@ -86,7 +86,7 @@ interface MobileReserveAmountRowProps {
   displayTokenPrice?: number | null;
   displayReserveSizeUsd: number | null;
   totalBorrowedUsd: number;
-  poolLiquidity: number;
+  availableLiquidityUsd: number;
   hasDeficit: boolean;
   deficitUsd: number | null;
   deficitShareRatio: number | null;
@@ -104,7 +104,7 @@ function MobileReserveAmountRow({
   displayTokenPrice,
   displayReserveSizeUsd,
   totalBorrowedUsd,
-  poolLiquidity,
+  availableLiquidityUsd,
   hasDeficit,
   deficitUsd,
   deficitShareRatio,
@@ -205,7 +205,7 @@ function MobileReserveAmountRow({
             <BorrowCapProgressRing
               borrowed={totalBorrowedUsd}
               cap={reserve.borrowCapUsd}
-              poolLiquidity={poolLiquidity}
+              availableLiquidityUsd={availableLiquidityUsd}
               displayMode={inputMode}
               tokenPrice={displayTokenPrice}
               tokenSymbol={reserve.tokenSymbol}
@@ -458,8 +458,8 @@ const MobileReserveCard = memo(({
   });
   const baseTotalBorrowedUsd = getDisplayTotalBorrowedUsd(reserve, protocolVersion);
   const totalBorrowedUsd = simulation?.marketMetrics.totalBorrowedUsdAfter ?? baseTotalBorrowedUsd;
-  const basePoolLiquidity = getDisplayPoolLiquidityUsd(reserve, protocolVersion);
-  const poolLiquidity = simulation?.marketMetrics.availableLiquidityUsdAfter ?? basePoolLiquidity;
+  const baseAvailableLiquidityUsd = getDisplayAvailableLiquidityUsd(reserve, protocolVersion);
+  const availableLiquidityUsd = simulation?.marketMetrics.availableLiquidityUsdAfter ?? baseAvailableLiquidityUsd;
   const hasDeficit = hasReserveDeficit(reserve);
   const deficitUsd = getReserveDeficitUsdAmount(reserve, displayTokenPrice);
   const deficitTokenCompact = formatReserveDeficitTokenCompact(reserve);
@@ -694,7 +694,7 @@ const MobileReserveCard = memo(({
             displayTokenPrice={displayTokenPrice}
             displayReserveSizeUsd={displayReserveSizeUsd}
             totalBorrowedUsd={totalBorrowedUsd}
-            poolLiquidity={poolLiquidity}
+            availableLiquidityUsd={availableLiquidityUsd}
             hasDeficit={hasDeficit}
             deficitUsd={deficitUsd}
             deficitShareRatio={deficitShareRatio}
@@ -812,7 +812,7 @@ const MobileReserveCard = memo(({
                     <BorrowCapSheetContent
                       borrowed={totalBorrowedUsd ?? 0}
                       cap={reserve.borrowCapUsd!}
-                      poolLiquidity={poolLiquidity ?? 0}
+                      availableLiquidityUsd={availableLiquidityUsd ?? 0}
                       inputMode={inputMode}
                       tokenPrice={displayTokenPrice}
                       tokenSymbol={reserve.tokenSymbol}

@@ -111,7 +111,7 @@ export const getReserveTotalBorrowedUsd = (reserve: {
 };
 
 /**
- * Compute current pool liquidity (USD) directly from the reserve's on-chain
+ * Compute current available liquidity (USD) directly from the reserve's on-chain
  * `availableLiquidity` field (raw token units). This is the source of truth
  * from the Aave Pool / Spoke contract and matches what users see on
  * app.aave.com / pro.aave.com.
@@ -123,7 +123,7 @@ export const getReserveTotalBorrowedUsd = (reserve: {
  * by orders of magnitude (see e.g. AaveV4Forex USDT, where derived ≈ $5.7k but
  * on-chain ≈ $76.6k). Used unified for V3 and V4.
  *
- * See `docs/rate-calculation.md` → "Pool Liquidity Source of Truth (V3 + V4)".
+ * See `docs/rate-calculation.md` → "V4-Aware Display Functions (V3 + V4)".
  *
  * Returns `null` when any required input is missing/invalid so callers can fall
  * back to the derived calculation.
@@ -143,7 +143,7 @@ export const getReserveAvailableLiquidityUsd = (reserve: {
   return tokens * tokenPrice;
 };
 
-export const getPoolLiquidityUsd = ({
+export const getDerivedAvailableLiquidityUsd = ({
   reserveSizeUsd,
   totalBorrowedUsd,
 }: {
@@ -165,18 +165,18 @@ export const getPoolLiquidityUsd = ({
 export const getAvailableToBorrowUsd = ({
   borrowedUsd,
   borrowCapUsd,
-  poolLiquidityUsd,
+  availableLiquidityUsd,
 }: {
   borrowedUsd: number | null | undefined;
   borrowCapUsd: number | null | undefined;
-  poolLiquidityUsd: number | null | undefined;
+  availableLiquidityUsd: number | null | undefined;
 }): number | null => {
   const capRemaining =
     borrowCapUsd != null && Number.isFinite(borrowCapUsd) && borrowCapUsd > 0
       ? Math.max(0, borrowCapUsd - (borrowedUsd ?? 0))
       : null;
   const liquidityRemaining =
-    poolLiquidityUsd != null && Number.isFinite(poolLiquidityUsd) ? poolLiquidityUsd : null;
+    availableLiquidityUsd != null && Number.isFinite(availableLiquidityUsd) ? availableLiquidityUsd : null;
 
   if (capRemaining === null && liquidityRemaining === null) return null;
   if (capRemaining === null) return liquidityRemaining;
@@ -223,11 +223,11 @@ export const getDisplayTotalBorrowedUsd = (
 };
 
 /**
- * V4-aware pool liquidity (USD).
+ * V4-aware available liquidity (USD).
  * V3: on-chain availableLiquidity ?? reserveSizeUsd - totalBorrowedUsd
  * V4: on-chain availableLiquidity only (no derived fallback)
  */
-export const getDisplayPoolLiquidityUsd = (
+export const getDisplayAvailableLiquidityUsd = (
   reserve: {
     availableLiquidity?: string | null;
     totalVariableDebt?: string | null;
@@ -246,7 +246,7 @@ export const getDisplayPoolLiquidityUsd = (
     reserveSizeUsd: reserve.reserveSizeUsd,
     utilizationPct: reserve.utilizationPct,
   });
-  return getPoolLiquidityUsd({
+  return getDerivedAvailableLiquidityUsd({
     reserveSizeUsd: reserve.reserveSizeUsd,
     totalBorrowedUsd,
   });
