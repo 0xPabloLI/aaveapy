@@ -287,37 +287,123 @@ const PortfolioPanel = memo(function PortfolioPanel({
   // Bulk add all suggested popular tokens with a brief staggered progress
   // indicator. Each step adds one token (~80ms apart) so the user sees
   // tangible progress; on completion we flash a check and refocus the search.
-  const handleAddAllSuggested = useCallback(() => {
-    // Synchronous + state guard prevents repeat invocations until done.
-    if (addAllRunningRef.current || addAllProgress) return;
-    const targets = suggestedReserves.map((r) => getReserveKey(r));
-    if (targets.length === 0) return;
-    addAllRunningRef.current = true;
-    setAddAllDone(false);
-    setAddAllProgress({ current: 0, total: targets.length });
-    setSearchOpen(true);
+  // Progress is persisted to localStorage so a mid-batch refresh can resume.
+  const runAddAllBatch = useCallback(
+    (targets: string[], startIndex: number) => {
+      if (addAllRunningRef.current || addAllProgress) return;
+      if (targets.length === 0 || startIndex >= targets.length) return;
+      addAllRunningRef.current = true;
+      setAddAllDone(false);
+      setAddAllProgress({ current: startIndex, total: targets.length });
+      setSearchOpen(true);
+      setPendingResume(null);
 
-    let i = 0;
-    const step = () => {
-      const id = targets[i];
-      handleAddFromSearch(id, 'supply');
-      i += 1;
-      setAddAllProgress({ current: i, total: targets.length });
-      if (i < targets.length) {
-        setTimeout(step, 80);
-      } else {
-        setAddAllDone(true);
-        // Hold the "done" state briefly, then reset and refocus search input
-        setTimeout(() => {
-          setAddAllProgress(null);
-          setAddAllDone(false);
-          addAllRunningRef.current = false;
-          requestAnimationFrame(() => searchInputRef.current?.focus());
-        }, 900);
+      let i = startIndex;
+      const persist = (current: number) => {
+        try {
+          if (current >= targets.length) {
+            localStorage.removeItem(ADD_ALL_PROGRESS_STORAGE_KEY);
+          } else {
+            localStorage.setItem(
+              ADD_ALL_PROGRESS_STORAGE_KEY,
+              JSON.stringify({
+                targets,
+                current,
+                total: targets.length,
+                startedAt: Date.now(),
+              }),
+            );
+          }
+        } catch {
+          /* localStorage unavailable — silently ignore */
+        }
+      };
+
+      // Persist initial offset so an immediate refresh still shows resume.
+      persist(i);
+
+      const step = () => {
+        const id = targets[i];
+        handleAddFromSearch(id, 'supply');
+        i += 1;
+        setAddAllProgress({ current: i, total: targets.length });
+        persist(i);
+        if (i < targets.length) {
+          setTimeout(step, 80);
+        } else {
+          setAddAllDone(true);
+          // Hold the "done" state briefly, then reset and refocus search input
+          setTimeout(() => {
+            setAddAllProgress(null);
+            setAddAllDone(false);
+            addAllRunningRef.current = false;
+            requestAnimationFrame(() => searchInputRef.current?.focus());
+          }, 900);
+        }
+      };
+      step();
+    },
+    [addAllProgress, handleAddFromSearch],
+  );
+
+  const handleAddAllSuggested = useCallback(() => {
+    const targets = suggestedReserves.map((r) => getReserveKey(r));
+    runAddAllBatch(targets, 0);
+  }, [suggestedReserves, runAddAllBatch]);
+
+  const handleResumeAddAll = useCallback(() => {
+    if (!pendingResume) return;
+    runAddAllBatch(pendingResume.targets, pendingResume.current);
+  }, [pendingResume, runAddAllBatch]);
+
+  const handleDismissResume = useCallback(() => {
+    try {
+      localStorage.removeItem(ADD_ALL_PROGRESS_STORAGE_KEY);
+    } catch {
+      /* ignore */
+    }
+    setPendingResume(null);
+  }, []);
+
+  // Load any unfinished batch from a previous session on mount. We keep it
+  // visible (as a resume affordance) regardless of how many of those tokens
+  // are already in the batch — the user can still dismiss it.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(ADD_ALL_PROGRESS_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as {
+        targets?: unknown;
+        current?: unknown;
+        total?: unknown;
+        startedAt?: unknown;
+      };
+      if (
+        !Array.isArray(parsed.targets) ||
+        typeof parsed.current !== 'number' ||
+        typeof parsed.total !== 'number' ||
+        parsed.current >= parsed.total
+      ) {
+        localStorage.removeItem(ADD_ALL_PROGRESS_STORAGE_KEY);
+        return;
       }
-    };
-    step();
-  }, [addAllProgress, suggestedReserves, handleAddFromSearch]);
+      const targets = parsed.targets.filter((t): t is string => typeof t === 'string');
+      if (targets.length === 0 || parsed.current >= targets.length) {
+        localStorage.removeItem(ADD_ALL_PROGRESS_STORAGE_KEY);
+        return;
+      }
+      setPendingResume({
+        targets,
+        current: parsed.current,
+        total: parsed.total,
+        startedAt: typeof parsed.startedAt === 'number' ? parsed.startedAt : Date.now(),
+      });
+    } catch {
+      /* ignore parse errors */
+    }
+    // Run once on mount only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleRemoveToken = useCallback((reserveId: string) => {
     for (const p of positions) {
