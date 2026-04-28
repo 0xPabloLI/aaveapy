@@ -19,6 +19,10 @@ import { BATCH_THEME } from './batchTheme';
 
 const PortfolioCompareView = lazy(() => import('./PortfolioCompareView'));
 
+// localStorage key used to persist mid-flight "Add all" progress so a page
+// refresh can offer a resume affordance instead of silently losing state.
+const ADD_ALL_PROGRESS_STORAGE_KEY = 'portfolio-panel:add-all-progress';
+
 interface PortfolioPanelProps {
   positions: PortfolioPosition[];
   actions: PortfolioSimulationActions;
@@ -168,6 +172,13 @@ const PortfolioPanel = memo(function PortfolioPanel({
   // Synchronous lock so rapid double-clicks within the same tick are ignored
   // (state updates from setAddAllProgress aren't visible until next render).
   const addAllRunningRef = useRef(false);
+  // Persisted unfinished "Add all" batch detected on mount (page refresh
+  // mid-batch). When non-null we offer a "Resume" affordance instead of
+  // "Add all" so the user can finish where they left off.
+  const [pendingResume, setPendingResume] = useState<
+    | { targets: string[]; current: number; total: number; startedAt: number }
+    | null
+  >(null);
 
   const focusSearch = useCallback(() => {
     setSearchOpen(true);
@@ -280,37 +291,123 @@ const PortfolioPanel = memo(function PortfolioPanel({
   // Bulk add all suggested popular tokens with a brief staggered progress
   // indicator. Each step adds one token (~80ms apart) so the user sees
   // tangible progress; on completion we flash a check and refocus the search.
-  const handleAddAllSuggested = useCallback(() => {
-    // Synchronous + state guard prevents repeat invocations until done.
-    if (addAllRunningRef.current || addAllProgress) return;
-    const targets = suggestedReserves.map((r) => getReserveKey(r));
-    if (targets.length === 0) return;
-    addAllRunningRef.current = true;
-    setAddAllDone(false);
-    setAddAllProgress({ current: 0, total: targets.length });
-    setSearchOpen(true);
+  // Progress is persisted to localStorage so a mid-batch refresh can resume.
+  const runAddAllBatch = useCallback(
+    (targets: string[], startIndex: number) => {
+      if (addAllRunningRef.current || addAllProgress) return;
+      if (targets.length === 0 || startIndex >= targets.length) return;
+      addAllRunningRef.current = true;
+      setAddAllDone(false);
+      setAddAllProgress({ current: startIndex, total: targets.length });
+      setSearchOpen(true);
+      setPendingResume(null);
 
-    let i = 0;
-    const step = () => {
-      const id = targets[i];
-      handleAddFromSearch(id, 'supply');
-      i += 1;
-      setAddAllProgress({ current: i, total: targets.length });
-      if (i < targets.length) {
-        setTimeout(step, 80);
-      } else {
-        setAddAllDone(true);
-        // Hold the "done" state briefly, then reset and refocus search input
-        setTimeout(() => {
-          setAddAllProgress(null);
-          setAddAllDone(false);
-          addAllRunningRef.current = false;
-          requestAnimationFrame(() => searchInputRef.current?.focus());
-        }, 900);
+      let i = startIndex;
+      const persist = (current: number) => {
+        try {
+          if (current >= targets.length) {
+            localStorage.removeItem(ADD_ALL_PROGRESS_STORAGE_KEY);
+          } else {
+            localStorage.setItem(
+              ADD_ALL_PROGRESS_STORAGE_KEY,
+              JSON.stringify({
+                targets,
+                current,
+                total: targets.length,
+                startedAt: Date.now(),
+              }),
+            );
+          }
+        } catch {
+          /* localStorage unavailable — silently ignore */
+        }
+      };
+
+      // Persist initial offset so an immediate refresh still shows resume.
+      persist(i);
+
+      const step = () => {
+        const id = targets[i];
+        handleAddFromSearch(id, 'supply');
+        i += 1;
+        setAddAllProgress({ current: i, total: targets.length });
+        persist(i);
+        if (i < targets.length) {
+          setTimeout(step, 80);
+        } else {
+          setAddAllDone(true);
+          // Hold the "done" state briefly, then reset and refocus search input
+          setTimeout(() => {
+            setAddAllProgress(null);
+            setAddAllDone(false);
+            addAllRunningRef.current = false;
+            requestAnimationFrame(() => searchInputRef.current?.focus());
+          }, 900);
+        }
+      };
+      step();
+    },
+    [addAllProgress, handleAddFromSearch],
+  );
+
+  const handleAddAllSuggested = useCallback(() => {
+    const targets = suggestedReserves.map((r) => getReserveKey(r));
+    runAddAllBatch(targets, 0);
+  }, [suggestedReserves, runAddAllBatch]);
+
+  const handleResumeAddAll = useCallback(() => {
+    if (!pendingResume) return;
+    runAddAllBatch(pendingResume.targets, pendingResume.current);
+  }, [pendingResume, runAddAllBatch]);
+
+  const handleDismissResume = useCallback(() => {
+    try {
+      localStorage.removeItem(ADD_ALL_PROGRESS_STORAGE_KEY);
+    } catch {
+      /* ignore */
+    }
+    setPendingResume(null);
+  }, []);
+
+  // Load any unfinished batch from a previous session on mount. We keep it
+  // visible (as a resume affordance) regardless of how many of those tokens
+  // are already in the batch — the user can still dismiss it.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(ADD_ALL_PROGRESS_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as {
+        targets?: unknown;
+        current?: unknown;
+        total?: unknown;
+        startedAt?: unknown;
+      };
+      if (
+        !Array.isArray(parsed.targets) ||
+        typeof parsed.current !== 'number' ||
+        typeof parsed.total !== 'number' ||
+        parsed.current >= parsed.total
+      ) {
+        localStorage.removeItem(ADD_ALL_PROGRESS_STORAGE_KEY);
+        return;
       }
-    };
-    step();
-  }, [addAllProgress, suggestedReserves, handleAddFromSearch]);
+      const targets = parsed.targets.filter((t): t is string => typeof t === 'string');
+      if (targets.length === 0 || parsed.current >= targets.length) {
+        localStorage.removeItem(ADD_ALL_PROGRESS_STORAGE_KEY);
+        return;
+      }
+      setPendingResume({
+        targets,
+        current: parsed.current,
+        total: parsed.total,
+        startedAt: typeof parsed.startedAt === 'number' ? parsed.startedAt : Date.now(),
+      });
+    } catch {
+      /* ignore parse errors */
+    }
+    // Run once on mount only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleRemoveToken = useCallback((reserveId: string) => {
     for (const p of positions) {
@@ -498,40 +595,70 @@ const PortfolioPanel = memo(function PortfolioPanel({
                   <p className="ds-text-10 uppercase tracking-wide text-muted-foreground/70">
                     Popular tokens
                   </p>
-                  <button
-                    type="button"
-                    onClick={handleAddAllSuggested}
-                    disabled={addAllProgress !== null}
-                    aria-disabled={addAllProgress !== null}
-                    aria-busy={addAllProgress !== null && !addAllDone}
-                    className={cn(
-                      'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 ds-text-10 font-semibold transition-colors',
-                      BATCH_THEME.border,
-                      BATCH_THEME.bgSoft,
-                      BATCH_THEME.text,
-                      addAllProgress !== null
-                        ? 'opacity-80 cursor-wait pointer-events-none'
-                        : `hover:${BATCH_THEME.bgSubtle}`,
-                    )}
-                    aria-label="Add all popular tokens"
-                  >
-                    {addAllDone ? (
-                      <>
-                        <Check className="size-2.5" aria-hidden />
-                        Added {addAllProgress?.total ?? ''}
-                      </>
-                    ) : addAllProgress ? (
-                      <>
-                        <Loader2 className="size-2.5 animate-spin" aria-hidden />
-                        Adding {addAllProgress.current}/{addAllProgress.total}
-                      </>
-                    ) : (
-                      <>
+                  {pendingResume && !addAllProgress ? (
+                    <span className="inline-flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={handleResumeAddAll}
+                        className={cn(
+                          'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 ds-text-10 font-semibold transition-colors',
+                          BATCH_THEME.border,
+                          BATCH_THEME.bgSoft,
+                          BATCH_THEME.text,
+                          `hover:${BATCH_THEME.bgSubtle}`,
+                        )}
+                        aria-label={`Resume adding tokens from ${pendingResume.current} of ${pendingResume.total}`}
+                        title="Resume the previous batch"
+                      >
                         <Plus className="size-2.5" aria-hidden />
-                        Add all
-                      </>
-                    )}
-                  </button>
+                        Resume {pendingResume.current}/{pendingResume.total}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleDismissResume}
+                        className="inline-flex size-4 items-center justify-center rounded-full text-muted-foreground/70 hover:bg-muted/60 hover:text-foreground transition-colors"
+                        aria-label="Dismiss saved batch progress"
+                        title="Dismiss"
+                      >
+                        <X className="size-2.5" aria-hidden />
+                      </button>
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleAddAllSuggested}
+                      disabled={addAllProgress !== null}
+                      aria-disabled={addAllProgress !== null}
+                      aria-busy={addAllProgress !== null && !addAllDone}
+                      className={cn(
+                        'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 ds-text-10 font-semibold transition-colors',
+                        BATCH_THEME.border,
+                        BATCH_THEME.bgSoft,
+                        BATCH_THEME.text,
+                        addAllProgress !== null
+                          ? 'opacity-80 cursor-wait pointer-events-none'
+                          : `hover:${BATCH_THEME.bgSubtle}`,
+                      )}
+                      aria-label="Add all popular tokens"
+                    >
+                      {addAllDone ? (
+                        <>
+                          <Check className="size-2.5" aria-hidden />
+                          Added {addAllProgress?.total ?? ''}
+                        </>
+                      ) : addAllProgress ? (
+                        <>
+                          <Loader2 className="size-2.5 animate-spin" aria-hidden />
+                          Adding {addAllProgress.current}/{addAllProgress.total}
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="size-2.5" aria-hidden />
+                          Add all
+                        </>
+                      )}
+                    </button>
+                  )}
                 </div>
                 <div className="flex flex-wrap items-center justify-center gap-1.5">
                   {suggestedReserves.map((r) => {
