@@ -168,6 +168,13 @@ const PortfolioPanel = memo(function PortfolioPanel({
   // Synchronous lock so rapid double-clicks within the same tick are ignored
   // (state updates from setAddAllProgress aren't visible until next render).
   const addAllRunningRef = useRef(false);
+  // Persisted unfinished "Add all" batch detected on mount (page refresh
+  // mid-batch). When non-null we offer a "Resume" affordance instead of
+  // "Add all" so the user can finish where they left off.
+  const [pendingResume, setPendingResume] = useState<
+    | { targets: string[]; current: number; total: number; startedAt: number }
+    | null
+  >(null);
 
   const focusSearch = useCallback(() => {
     setSearchOpen(true);
