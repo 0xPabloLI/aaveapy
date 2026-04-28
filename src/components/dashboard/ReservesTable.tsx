@@ -407,7 +407,8 @@ const ReservesTable = ({
   const getDisplayUtilization = (reserve: ReserveWithSpread): number | null => {
     const simulation = getSimulation(reserve);
     if (!simulation) return reserve.utilizationPct ?? null;
-    return pickScenarioValue(simulation.utilization.current, simulation.utilization.after);
+    const baseUtilization = reserve.utilizationPct ?? simulation.utilization.current ?? null;
+    return pickScenarioValue(baseUtilization, simulation.utilization.after);
   };
 
   const getDisplayReserveSizeUsd = (reserve: ReserveWithSpread): number | null => {
@@ -420,11 +421,13 @@ const ReservesTable = ({
   };
 
   const getTotalBorrowedUsd = (reserve: ReserveWithSpread): number | null => {
-    return computeDisplayTotalBorrowedUsd(reserve, getProtocolVersion(reserve.marketName));
+    const simulation = getSimulation(reserve);
+    return simulation?.marketMetrics.totalBorrowedUsd ?? computeDisplayTotalBorrowedUsd(reserve, getProtocolVersion(reserve.marketName));
   };
 
   const getDisplayLiquidityUsd = (reserve: ReserveWithSpread): number | null => {
-    return computeDisplayAvailableLiquidityUsd(reserve, getProtocolVersion(reserve.marketName));
+    const simulation = getSimulation(reserve);
+    return simulation?.marketMetrics.availableLiquidityUsd ?? computeDisplayAvailableLiquidityUsd(reserve, getProtocolVersion(reserve.marketName));
   };
 
   const getDisplaySupplyAvailabilityUsd = (reserve: ReserveWithSpread): number | null => {

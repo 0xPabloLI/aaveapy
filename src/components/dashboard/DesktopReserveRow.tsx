@@ -153,9 +153,9 @@ const DesktopReserveRow = memo(({
     inputMode,
     tokenPrice: displayTokenPrice,
   });
-  const baseTotalBorrowedUsd = getDisplayTotalBorrowedUsd(reserve, protocolVersion);
+  const baseTotalBorrowedUsd = simulation?.marketMetrics.totalBorrowedUsd ?? getDisplayTotalBorrowedUsd(reserve, protocolVersion);
   const totalBorrowedUsd = simulation?.marketMetrics.totalBorrowedUsdAfter ?? baseTotalBorrowedUsd;
-  const baseAvailableLiquidityUsd = getDisplayAvailableLiquidityUsd(reserve, protocolVersion);
+  const baseAvailableLiquidityUsd = simulation?.marketMetrics.availableLiquidityUsd ?? getDisplayAvailableLiquidityUsd(reserve, protocolVersion);
   const availableLiquidityUsd = simulation?.marketMetrics.availableLiquidityUsdAfter ?? baseAvailableLiquidityUsd;
   const hasDeficit = hasReserveDeficit(reserve);
   const deficitUsd = getReserveDeficitUsdAmount(reserve, displayTokenPrice);

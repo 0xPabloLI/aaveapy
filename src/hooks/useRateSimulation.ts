@@ -1462,6 +1462,28 @@ export function buildRateSimulationResult({
     : 0;
 
   const RAY_SCALE = 1e27;
+  const deriveTotalBorrowedUsd = (
+    reserveSizeUsd: number | null | undefined,
+    utilizationPct: number | null | undefined,
+  ): number | null => {
+    if (
+      reserveSizeUsd == null || utilizationPct == null ||
+      !Number.isFinite(reserveSizeUsd) || !Number.isFinite(utilizationPct)
+    ) return null;
+    return reserveSizeUsd * (utilizationPct / 100);
+  };
+
+  const deriveAvailableLiquidityUsd = (
+    reserveSizeUsd: number | null | undefined,
+    totalBorrowedUsd: number | null | undefined,
+  ): number | null => {
+    if (
+      reserveSizeUsd == null || totalBorrowedUsd == null ||
+      !Number.isFinite(reserveSizeUsd) || !Number.isFinite(totalBorrowedUsd)
+    ) return null;
+    return reserveSizeUsd - totalBorrowedUsd;
+  };
+
   const computeMarketMetrics = (): MarketMetrics => {
     // Use raw input values to determine if caps are exceeded (for warnings)
     // But use capped values for actual calculations (supplyInputUsd, borrowInputUsd are already capped)
@@ -1505,13 +1527,21 @@ export function buildRateSimulationResult({
     };
 
     if (!reserveRateInput || !tokenPrice) {
+      const protocolVersion = getProtocolVersion(reserve.marketName);
+      const isV3 = protocolVersion === 'v3';
+      const fallbackTotalBorrowedUsd = isV3
+        ? deriveTotalBorrowedUsd(reserve.reserveSizeUsd, reserve.utilizationPct)
+        : null;
+      const fallbackAvailableLiquidityUsd = isV3
+        ? deriveAvailableLiquidityUsd(reserve.reserveSizeUsd, fallbackTotalBorrowedUsd)
+        : null;
       const supplyCapFields = computeSupplyCapFields();
-      const borrowCapFields = computeBorrowCapFields(null);
+      const borrowCapFields = computeBorrowCapFields(fallbackTotalBorrowedUsd);
       return {
-        availableLiquidityUsd: null,
+        availableLiquidityUsd: fallbackAvailableLiquidityUsd,
         availableLiquidityUsdAfter: null,
         availableLiquidityUsdDelta: null,
-        totalBorrowedUsd: null,
+        totalBorrowedUsd: fallbackTotalBorrowedUsd,
         totalBorrowedUsdAfter: null,
         totalBorrowedUsdDelta: null,
         supplyCapUsd,
@@ -1527,10 +1557,27 @@ export function buildRateSimulationResult({
     const scale = Math.pow(10, decimals);
 
     const availableLiquidityRaw = Number(reserveRateInput.availableLiquidity) / scale;
-    const availableLiquidityUsd = availableLiquidityRaw * tokenPrice;
+    const onChainAvailableLiquidityUsd = availableLiquidityRaw * tokenPrice;
 
     const totalBorrowedRaw = Number(reserveRateInput.totalVariableDebt) / scale;
-    const totalBorrowedUsd = totalBorrowedRaw * tokenPrice;
+    const onChainTotalBorrowedUsd = totalBorrowedRaw * tokenPrice;
+
+    const protocolVersion = getProtocolVersion(reserve.marketName);
+    const isV3 = protocolVersion === 'v3';
+
+    const totalBorrowedUsd =
+      Number.isFinite(onChainTotalBorrowedUsd) && onChainTotalBorrowedUsd >= 0
+        ? onChainTotalBorrowedUsd
+        : isV3
+          ? deriveTotalBorrowedUsd(reserve.reserveSizeUsd, reserve.utilizationPct)
+          : null;
+
+    const availableLiquidityUsd =
+      Number.isFinite(onChainAvailableLiquidityUsd) && onChainAvailableLiquidityUsd >= 0
+        ? onChainAvailableLiquidityUsd
+        : isV3
+          ? deriveAvailableLiquidityUsd(reserve.reserveSizeUsd, totalBorrowedUsd)
+          : null;
 
     const reserveFactorRaw = Number(reserveRateInput.reserveFactor);
     const reserveFactor = reserveFactorRaw > 0 ? (reserveFactorRaw / 10000) * 100 : null;

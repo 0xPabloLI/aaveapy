@@ -456,9 +456,9 @@ const MobileReserveCard = memo(({
     inputMode,
     tokenPrice: displayTokenPrice,
   });
-  const baseTotalBorrowedUsd = getDisplayTotalBorrowedUsd(reserve, protocolVersion);
+  const baseTotalBorrowedUsd = simulation?.marketMetrics.totalBorrowedUsd ?? getDisplayTotalBorrowedUsd(reserve, protocolVersion);
   const totalBorrowedUsd = simulation?.marketMetrics.totalBorrowedUsdAfter ?? baseTotalBorrowedUsd;
-  const baseAvailableLiquidityUsd = getDisplayAvailableLiquidityUsd(reserve, protocolVersion);
+  const baseAvailableLiquidityUsd = simulation?.marketMetrics.availableLiquidityUsd ?? getDisplayAvailableLiquidityUsd(reserve, protocolVersion);
   const availableLiquidityUsd = simulation?.marketMetrics.availableLiquidityUsdAfter ?? baseAvailableLiquidityUsd;
   const hasDeficit = hasReserveDeficit(reserve);
   const deficitUsd = getReserveDeficitUsdAmount(reserve, displayTokenPrice);
@@ -506,9 +506,10 @@ const MobileReserveCard = memo(({
   const reserveId = getReserveKey(reserve);
 
   /** Same rule as `ReservesTable.getDisplayUtilization` / desktop row: scenario uses after when shared inputs exist. */
+  const baseUtilization = reserve.utilizationPct ?? simulation.utilization.current ?? null;
   const displayUtilization = hasSharedScenario
-    ? simulation.utilization.after ?? simulation.utilization.current
-    : simulation.utilization.current;
+    ? simulation.utilization.after ?? baseUtilization
+    : baseUtilization;
 
   return (
     <div data-reserve-id={reserveId} className={isSimulationExpanded && !showUpperOnly ? 'shadow-sm rounded-xl border border-border/60 bg-card' : ''}>
