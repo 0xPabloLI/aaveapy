@@ -322,7 +322,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
       if (!opts?.isRetry) setAddAllFailures([]);
 
       let i = startIndex;
-      const failures: Array<{ reserveId: string; symbol: string; reason: string }> = [];
+      const failures: Array<{ reserveId: string; symbol: string; reason: string; autoRetried: boolean }> = [];
 
       const persist = (current: number) => {
         try {
