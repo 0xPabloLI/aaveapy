@@ -3,7 +3,7 @@
  * position list, summary card, results table, and snapshot comparison.
  */
 import { useState, useMemo, useEffect, useRef, memo, useCallback, lazy, Suspense } from 'react';
-import { Search, Plus, X, Layers, Trash2, Save, ArrowRightLeft, Sparkles, Loader2, Check } from 'lucide-react';
+import { Search, Plus, X, Layers, Trash2, Save, ArrowRightLeft, Sparkles, Loader2, Check, AlertTriangle, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { ReserveWithSpread } from '@/types/aave';
@@ -179,6 +179,12 @@ const PortfolioPanel = memo(function PortfolioPanel({
     | { targets: string[]; current: number; total: number; startedAt: number }
     | null
   >(null);
+  // Tokens that failed during the most recent "Add all" run. Each entry keeps
+  // the original reserveId, a friendly symbol for display, and the failure
+  // reason. Cleared when a new batch starts or the user dismisses/retries.
+  const [addAllFailures, setAddAllFailures] = useState<
+    Array<{ reserveId: string; symbol: string; reason: string }>
+  >([]);
 
   const focusSearch = useCallback(() => {
     setSearchOpen(true);
@@ -199,23 +205,31 @@ const PortfolioPanel = memo(function PortfolioPanel({
   }, [reserves, searchQuery]);
 
   const handleAddFromSearch = useCallback(
-    (reserveId: string, side: PortfolioSide) => {
-      const reserve = reserves.find(
-        (r) => getReserveKey(r) === reserveId,
-      );
-      if (!reserve) return;
-      actions.addPosition({
-        reserveId,
-        marketName: reserve.marketName,
-        chainName: reserve.chainName ?? reserve.marketName,
-        tokenSymbol: reserve.tokenSymbol,
-        side,
-      });
-      // Keep search panel open and refocus input for continuous additions
-      setSearchOpen(true);
-      requestAnimationFrame(() => {
-        searchInputRef.current?.focus();
-      });
+    (reserveId: string, side: PortfolioSide): { ok: boolean; symbol?: string; reason?: string } => {
+      try {
+        const reserve = reserves.find(
+          (r) => getReserveKey(r) === reserveId,
+        );
+        if (!reserve) {
+          return { ok: false, reason: 'Token not found in current market data' };
+        }
+        actions.addPosition({
+          reserveId,
+          marketName: reserve.marketName,
+          chainName: reserve.chainName ?? reserve.marketName,
+          tokenSymbol: reserve.tokenSymbol,
+          side,
+        });
+        // Keep search panel open and refocus input for continuous additions
+        setSearchOpen(true);
+        requestAnimationFrame(() => {
+          searchInputRef.current?.focus();
+        });
+        return { ok: true, symbol: reserve.tokenSymbol };
+      } catch (err) {
+        const reason = err instanceof Error ? err.message : 'Unknown error';
+        return { ok: false, reason };
+      }
     },
     [reserves, actions],
   );
@@ -293,7 +307,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
   // tangible progress; on completion we flash a check and refocus the search.
   // Progress is persisted to localStorage so a mid-batch refresh can resume.
   const runAddAllBatch = useCallback(
-    (targets: string[], startIndex: number) => {
+    (targets: string[], startIndex: number, opts?: { isRetry?: boolean }) => {
       if (addAllRunningRef.current || addAllProgress) return;
       if (targets.length === 0 || startIndex >= targets.length) return;
       addAllRunningRef.current = true;
@@ -301,8 +315,13 @@ const PortfolioPanel = memo(function PortfolioPanel({
       setAddAllProgress({ current: startIndex, total: targets.length });
       setSearchOpen(true);
       setPendingResume(null);
+      // Reset failures at the start of a fresh run; on a retry we replace
+      // them with the new failure list once the run completes.
+      if (!opts?.isRetry) setAddAllFailures([]);
 
       let i = startIndex;
+      const failures: Array<{ reserveId: string; symbol: string; reason: string }> = [];
+
       const persist = (current: number) => {
         try {
           if (current >= targets.length) {
@@ -326,34 +345,66 @@ const PortfolioPanel = memo(function PortfolioPanel({
       // Persist initial offset so an immediate refresh still shows resume.
       persist(i);
 
+      const finish = () => {
+        setAddAllDone(true);
+        setAddAllFailures(failures);
+        // Hold the "done" state briefly, then reset and refocus search input
+        setTimeout(() => {
+          setAddAllProgress(null);
+          setAddAllDone(false);
+          addAllRunningRef.current = false;
+          requestAnimationFrame(() => searchInputRef.current?.focus());
+          // Auto-retry failures once on the first pass (not on a retry run)
+          // with a small delay so the UI settles before the second batch.
+          if (!opts?.isRetry && failures.length > 0) {
+            const retryTargets = failures.map((f) => f.reserveId);
+            setTimeout(() => {
+              runAddAllBatch(retryTargets, 0, { isRetry: true });
+            }, 600);
+          }
+        }, 900);
+      };
+
       const step = () => {
         const id = targets[i];
-        handleAddFromSearch(id, 'supply');
+        const result = handleAddFromSearch(id, 'supply');
+        if (!result.ok) {
+          // Resolve a friendly symbol from current reserves; fall back to id.
+          const reserve = reserves.find((r) => getReserveKey(r) === id);
+          failures.push({
+            reserveId: id,
+            symbol: reserve?.tokenSymbol ?? result.symbol ?? id,
+            reason: result.reason ?? 'Failed to add',
+          });
+        }
         i += 1;
         setAddAllProgress({ current: i, total: targets.length });
         persist(i);
         if (i < targets.length) {
           setTimeout(step, 80);
         } else {
-          setAddAllDone(true);
-          // Hold the "done" state briefly, then reset and refocus search input
-          setTimeout(() => {
-            setAddAllProgress(null);
-            setAddAllDone(false);
-            addAllRunningRef.current = false;
-            requestAnimationFrame(() => searchInputRef.current?.focus());
-          }, 900);
+          finish();
         }
       };
       step();
     },
-    [addAllProgress, handleAddFromSearch],
+    [addAllProgress, handleAddFromSearch, reserves],
   );
 
   const handleAddAllSuggested = useCallback(() => {
     const targets = suggestedReserves.map((r) => getReserveKey(r));
     runAddAllBatch(targets, 0);
   }, [suggestedReserves, runAddAllBatch]);
+
+  const handleRetryFailures = useCallback(() => {
+    if (addAllFailures.length === 0) return;
+    const retryTargets = addAllFailures.map((f) => f.reserveId);
+    runAddAllBatch(retryTargets, 0, { isRetry: true });
+  }, [addAllFailures, runAddAllBatch]);
+
+  const handleDismissFailures = useCallback(() => {
+    setAddAllFailures([]);
+  }, []);
 
   const handleResumeAddAll = useCallback(() => {
     if (!pendingResume) return;
@@ -678,6 +729,61 @@ const PortfolioPanel = memo(function PortfolioPanel({
                     );
                   })}
                 </div>
+                {addAllFailures.length > 0 && !addAllProgress && (
+                  <div
+                    role="alert"
+                    className="mt-2 rounded-lg border border-destructive/40 bg-destructive/5 px-2.5 py-2"
+                  >
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="mt-0.5 size-3 shrink-0 text-destructive" aria-hidden />
+                      <div className="flex-1 min-w-0">
+                        <p className="ds-text-10 font-semibold text-destructive">
+                          {addAllFailures.length === 1
+                            ? '1 token failed to add'
+                            : `${addAllFailures.length} tokens failed to add`}
+                        </p>
+                        <ul className="mt-1 space-y-0.5">
+                          {addAllFailures.map((f) => (
+                            <li
+                              key={f.reserveId}
+                              className="ds-text-10 text-muted-foreground"
+                              title={f.reason}
+                            >
+                              <span className="font-medium text-foreground">{f.symbol}</span>
+                              <span className="text-muted-foreground/80"> — {f.reason}</span>
+                            </li>
+                          ))}
+                        </ul>
+                        <div className="mt-1.5 flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={handleRetryFailures}
+                            className={cn(
+                              'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 ds-text-10 font-semibold transition-colors',
+                              BATCH_THEME.border,
+                              BATCH_THEME.bgSoft,
+                              BATCH_THEME.text,
+                              `hover:${BATCH_THEME.bgSubtle}`,
+                            )}
+                            aria-label="Retry failed tokens"
+                          >
+                            <RotateCcw className="size-2.5" aria-hidden />
+                            Retry {addAllFailures.length}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleDismissFailures}
+                            className="inline-flex size-4 items-center justify-center rounded-full text-muted-foreground/70 hover:bg-muted/60 hover:text-foreground transition-colors"
+                            aria-label="Dismiss failed tokens"
+                            title="Dismiss"
+                          >
+                            <X className="size-2.5" aria-hidden />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
