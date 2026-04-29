@@ -16,6 +16,7 @@ import PortfolioTokenRow from './PortfolioTokenRow';
 import PortfolioSummaryCard from './PortfolioSummaryCard';
 import PortfolioResultsTable from './PortfolioResultsTable';
 import { BATCH_THEME } from './batchTheme';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 const PortfolioCompareView = lazy(() => import('./PortfolioCompareView'));
 
@@ -183,8 +184,10 @@ const PortfolioPanel = memo(function PortfolioPanel({
   // the original reserveId, a friendly symbol for display, and the failure
   // reason. Cleared when a new batch starts or the user dismisses/retries.
   const [addAllFailures, setAddAllFailures] = useState<
-    Array<{ reserveId: string; symbol: string; reason: string }>
+    Array<{ reserveId: string; symbol: string; reason: string; autoRetried: boolean }>
   >([]);
+  // Currently opened failure-detail popover (reserveId of the failure entry).
+  const [openFailureId, setOpenFailureId] = useState<string | null>(null);
 
   const focusSearch = useCallback(() => {
     setSearchOpen(true);
@@ -320,7 +323,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
       if (!opts?.isRetry) setAddAllFailures([]);
 
       let i = startIndex;
-      const failures: Array<{ reserveId: string; symbol: string; reason: string }> = [];
+      const failures: Array<{ reserveId: string; symbol: string; reason: string; autoRetried: boolean }> = [];
 
       const persist = (current: number) => {
         try {
@@ -375,6 +378,10 @@ const PortfolioPanel = memo(function PortfolioPanel({
             reserveId: id,
             symbol: reserve?.tokenSymbol ?? result.symbol ?? id,
             reason: result.reason ?? 'Failed to add',
+            // On the initial pass, the auto-retry will run after `finish`,
+            // so mark these as "will be auto-retried". On a retry pass we
+            // mark them as already auto-retried (no further auto attempts).
+            autoRetried: opts?.isRetry === true,
           });
         }
         i += 1;
@@ -744,13 +751,81 @@ const PortfolioPanel = memo(function PortfolioPanel({
                         </p>
                         <ul className="mt-1 space-y-0.5">
                           {addAllFailures.map((f) => (
-                            <li
-                              key={f.reserveId}
-                              className="ds-text-10 text-muted-foreground"
-                              title={f.reason}
-                            >
-                              <span className="font-medium text-foreground">{f.symbol}</span>
-                              <span className="text-muted-foreground/80"> — {f.reason}</span>
+                            <li key={f.reserveId} className="ds-text-10 text-muted-foreground">
+                              <Popover
+                                open={openFailureId === f.reserveId}
+                                onOpenChange={(o) =>
+                                  setOpenFailureId(o ? f.reserveId : null)
+                                }
+                              >
+                                <PopoverTrigger asChild>
+                                  <button
+                                    type="button"
+                                    className="inline-flex items-center gap-1 rounded text-left transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/40"
+                                    aria-label={`Show failure details for ${f.symbol}`}
+                                  >
+                                    <span className="font-medium text-foreground">{f.symbol}</span>
+                                    <span className="text-muted-foreground/80 truncate max-w-[180px]">
+                                      {' '}— {f.reason}
+                                    </span>
+                                  </button>
+                                </PopoverTrigger>
+                                <PopoverContent
+                                  align="start"
+                                  side="bottom"
+                                  className="w-72 rounded-xl border-border/60 bg-card p-3"
+                                >
+                                  <div className="space-y-2">
+                                    <div className="flex items-center gap-1.5">
+                                      <AlertTriangle className="size-3 text-destructive" aria-hidden />
+                                      <span className="ds-text-11 font-semibold text-foreground">
+                                        {f.symbol}
+                                      </span>
+                                    </div>
+                                    <dl className="space-y-1.5">
+                                      <div>
+                                        <dt className="ds-text-10 uppercase tracking-wide text-muted-foreground/70">
+                                          Reserve ID
+                                        </dt>
+                                        <dd className="ds-text-10 break-all font-mono text-foreground">
+                                          {f.reserveId}
+                                        </dd>
+                                      </div>
+                                      <div>
+                                        <dt className="ds-text-10 uppercase tracking-wide text-muted-foreground/70">
+                                          Error
+                                        </dt>
+                                        <dd className="ds-text-10 text-foreground">{f.reason}</dd>
+                                      </div>
+                                      <div>
+                                        <dt className="ds-text-10 uppercase tracking-wide text-muted-foreground/70">
+                                          Auto-retry
+                                        </dt>
+                                        <dd
+                                          className={cn(
+                                            'inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 ds-text-10 font-semibold',
+                                            f.autoRetried
+                                              ? 'border-destructive/40 bg-destructive/10 text-destructive'
+                                              : 'border-border/60 bg-muted/40 text-muted-foreground',
+                                          )}
+                                        >
+                                          {f.autoRetried ? (
+                                            <>
+                                              <Check className="size-2.5" aria-hidden />
+                                              Already retried once
+                                            </>
+                                          ) : (
+                                            <>
+                                              <Loader2 className="size-2.5" aria-hidden />
+                                              Pending auto-retry
+                                            </>
+                                          )}
+                                        </dd>
+                                      </div>
+                                    </dl>
+                                  </div>
+                                </PopoverContent>
+                              </Popover>
                             </li>
                           ))}
                         </ul>
