@@ -183,8 +183,10 @@ const PortfolioPanel = memo(function PortfolioPanel({
   // the original reserveId, a friendly symbol for display, and the failure
   // reason. Cleared when a new batch starts or the user dismisses/retries.
   const [addAllFailures, setAddAllFailures] = useState<
-    Array<{ reserveId: string; symbol: string; reason: string }>
+    Array<{ reserveId: string; symbol: string; reason: string; autoRetried: boolean }>
   >([]);
+  // Currently opened failure-detail popover (reserveId of the failure entry).
+  const [openFailureId, setOpenFailureId] = useState<string | null>(null);
 
   const focusSearch = useCallback(() => {
     setSearchOpen(true);
