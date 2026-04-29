@@ -845,6 +845,21 @@ const PortfolioPanel = memo(function PortfolioPanel({
                                         </dd>
                                       </div>
                                     </dl>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRetrySingleFailure(f.reserveId)}
+                                      className={cn(
+                                        'inline-flex w-full items-center justify-center gap-1 rounded-full border px-2 py-1 ds-text-10 font-semibold transition-colors',
+                                        BATCH_THEME.border,
+                                        BATCH_THEME.bgSoft,
+                                        BATCH_THEME.text,
+                                        `hover:${BATCH_THEME.bgSubtle}`,
+                                      )}
+                                      aria-label={`Retry ${f.symbol}`}
+                                    >
+                                      <RotateCcw className="size-2.5" aria-hidden />
+                                      Retry this token
+                                    </button>
                                   </div>
                                 </PopoverContent>
                               </Popover>
