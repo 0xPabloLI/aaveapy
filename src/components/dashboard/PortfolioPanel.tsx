@@ -413,6 +413,28 @@ const PortfolioPanel = memo(function PortfolioPanel({
     setAddAllFailures([]);
   }, []);
 
+  // Retry a single failed token without re-running the whole batch. On
+  // success we remove it from the failure list and close its popover; on
+  // failure we keep it but refresh its reason and mark autoRetried=true.
+  const handleRetrySingleFailure = useCallback(
+    (reserveId: string) => {
+      const result = handleAddFromSearch(reserveId, 'supply');
+      if (result.ok) {
+        setAddAllFailures((prev) => prev.filter((f) => f.reserveId !== reserveId));
+        setOpenFailureId((curr) => (curr === reserveId ? null : curr));
+      } else {
+        setAddAllFailures((prev) =>
+          prev.map((f) =>
+            f.reserveId === reserveId
+              ? { ...f, reason: result.reason ?? f.reason, autoRetried: true }
+              : f,
+          ),
+        );
+      }
+    },
+    [handleAddFromSearch],
+  );
+
   const handleResumeAddAll = useCallback(() => {
     if (!pendingResume) return;
     runAddAllBatch(pendingResume.targets, pendingResume.current);
@@ -823,6 +845,21 @@ const PortfolioPanel = memo(function PortfolioPanel({
                                         </dd>
                                       </div>
                                     </dl>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRetrySingleFailure(f.reserveId)}
+                                      className={cn(
+                                        'inline-flex w-full items-center justify-center gap-1 rounded-full border px-2 py-1 ds-text-10 font-semibold transition-colors',
+                                        BATCH_THEME.border,
+                                        BATCH_THEME.bgSoft,
+                                        BATCH_THEME.text,
+                                        `hover:${BATCH_THEME.bgSubtle}`,
+                                      )}
+                                      aria-label={`Retry ${f.symbol}`}
+                                    >
+                                      <RotateCcw className="size-2.5" aria-hidden />
+                                      Retry this token
+                                    </button>
                                   </div>
                                 </PopoverContent>
                               </Popover>
