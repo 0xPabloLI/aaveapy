@@ -729,6 +729,61 @@ const PortfolioPanel = memo(function PortfolioPanel({
                     );
                   })}
                 </div>
+                {addAllFailures.length > 0 && !addAllProgress && (
+                  <div
+                    role="alert"
+                    className="mt-2 rounded-lg border border-destructive/40 bg-destructive/5 px-2.5 py-2"
+                  >
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="mt-0.5 size-3 shrink-0 text-destructive" aria-hidden />
+                      <div className="flex-1 min-w-0">
+                        <p className="ds-text-10 font-semibold text-destructive">
+                          {addAllFailures.length === 1
+                            ? '1 token failed to add'
+                            : `${addAllFailures.length} tokens failed to add`}
+                        </p>
+                        <ul className="mt-1 space-y-0.5">
+                          {addAllFailures.map((f) => (
+                            <li
+                              key={f.reserveId}
+                              className="ds-text-10 text-muted-foreground"
+                              title={f.reason}
+                            >
+                              <span className="font-medium text-foreground">{f.symbol}</span>
+                              <span className="text-muted-foreground/80"> — {f.reason}</span>
+                            </li>
+                          ))}
+                        </ul>
+                        <div className="mt-1.5 flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={handleRetryFailures}
+                            className={cn(
+                              'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 ds-text-10 font-semibold transition-colors',
+                              BATCH_THEME.border,
+                              BATCH_THEME.bgSoft,
+                              BATCH_THEME.text,
+                              `hover:${BATCH_THEME.bgSubtle}`,
+                            )}
+                            aria-label="Retry failed tokens"
+                          >
+                            <RotateCcw className="size-2.5" aria-hidden />
+                            Retry {addAllFailures.length}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleDismissFailures}
+                            className="inline-flex size-4 items-center justify-center rounded-full text-muted-foreground/70 hover:bg-muted/60 hover:text-foreground transition-colors"
+                            aria-label="Dismiss failed tokens"
+                            title="Dismiss"
+                          >
+                            <X className="size-2.5" aria-hidden />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
