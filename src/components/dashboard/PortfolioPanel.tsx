@@ -377,6 +377,10 @@ const PortfolioPanel = memo(function PortfolioPanel({
             reserveId: id,
             symbol: reserve?.tokenSymbol ?? result.symbol ?? id,
             reason: result.reason ?? 'Failed to add',
+            // On the initial pass, the auto-retry will run after `finish`,
+            // so mark these as "will be auto-retried". On a retry pass we
+            // mark them as already auto-retried (no further auto attempts).
+            autoRetried: opts?.isRetry === true,
           });
         }
         i += 1;
