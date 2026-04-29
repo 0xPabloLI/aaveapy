@@ -413,6 +413,28 @@ const PortfolioPanel = memo(function PortfolioPanel({
     setAddAllFailures([]);
   }, []);
 
+  // Retry a single failed token without re-running the whole batch. On
+  // success we remove it from the failure list and close its popover; on
+  // failure we keep it but refresh its reason and mark autoRetried=true.
+  const handleRetrySingleFailure = useCallback(
+    (reserveId: string) => {
+      const result = handleAddFromSearch(reserveId, 'supply');
+      if (result.ok) {
+        setAddAllFailures((prev) => prev.filter((f) => f.reserveId !== reserveId));
+        setOpenFailureId((curr) => (curr === reserveId ? null : curr));
+      } else {
+        setAddAllFailures((prev) =>
+          prev.map((f) =>
+            f.reserveId === reserveId
+              ? { ...f, reason: result.reason ?? f.reason, autoRetried: true }
+              : f,
+          ),
+        );
+      }
+    },
+    [handleAddFromSearch],
+  );
+
   const handleResumeAddAll = useCallback(() => {
     if (!pendingResume) return;
     runAddAllBatch(pendingResume.targets, pendingResume.current);
