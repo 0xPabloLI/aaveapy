@@ -199,23 +199,31 @@ const PortfolioPanel = memo(function PortfolioPanel({
   }, [reserves, searchQuery]);
 
   const handleAddFromSearch = useCallback(
-    (reserveId: string, side: PortfolioSide) => {
-      const reserve = reserves.find(
-        (r) => getReserveKey(r) === reserveId,
-      );
-      if (!reserve) return;
-      actions.addPosition({
-        reserveId,
-        marketName: reserve.marketName,
-        chainName: reserve.chainName ?? reserve.marketName,
-        tokenSymbol: reserve.tokenSymbol,
-        side,
-      });
-      // Keep search panel open and refocus input for continuous additions
-      setSearchOpen(true);
-      requestAnimationFrame(() => {
-        searchInputRef.current?.focus();
-      });
+    (reserveId: string, side: PortfolioSide): { ok: boolean; symbol?: string; reason?: string } => {
+      try {
+        const reserve = reserves.find(
+          (r) => getReserveKey(r) === reserveId,
+        );
+        if (!reserve) {
+          return { ok: false, reason: 'Token not found in current market data' };
+        }
+        actions.addPosition({
+          reserveId,
+          marketName: reserve.marketName,
+          chainName: reserve.chainName ?? reserve.marketName,
+          tokenSymbol: reserve.tokenSymbol,
+          side,
+        });
+        // Keep search panel open and refocus input for continuous additions
+        setSearchOpen(true);
+        requestAnimationFrame(() => {
+          searchInputRef.current?.focus();
+        });
+        return { ok: true, symbol: reserve.tokenSymbol };
+      } catch (err) {
+        const reason = err instanceof Error ? err.message : 'Unknown error';
+        return { ok: false, reason };
+      }
     },
     [reserves, actions],
   );
