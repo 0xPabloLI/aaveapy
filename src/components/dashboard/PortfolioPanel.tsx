@@ -307,7 +307,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
   // tangible progress; on completion we flash a check and refocus the search.
   // Progress is persisted to localStorage so a mid-batch refresh can resume.
   const runAddAllBatch = useCallback(
-    (targets: string[], startIndex: number) => {
+    (targets: string[], startIndex: number, opts?: { isRetry?: boolean }) => {
       if (addAllRunningRef.current || addAllProgress) return;
       if (targets.length === 0 || startIndex >= targets.length) return;
       addAllRunningRef.current = true;
@@ -315,8 +315,13 @@ const PortfolioPanel = memo(function PortfolioPanel({
       setAddAllProgress({ current: startIndex, total: targets.length });
       setSearchOpen(true);
       setPendingResume(null);
+      // Reset failures at the start of a fresh run; on a retry we replace
+      // them with the new failure list once the run completes.
+      if (!opts?.isRetry) setAddAllFailures([]);
 
       let i = startIndex;
+      const failures: Array<{ reserveId: string; symbol: string; reason: string }> = [];
+
       const persist = (current: number) => {
         try {
           if (current >= targets.length) {
@@ -340,34 +345,66 @@ const PortfolioPanel = memo(function PortfolioPanel({
       // Persist initial offset so an immediate refresh still shows resume.
       persist(i);
 
+      const finish = () => {
+        setAddAllDone(true);
+        setAddAllFailures(failures);
+        // Hold the "done" state briefly, then reset and refocus search input
+        setTimeout(() => {
+          setAddAllProgress(null);
+          setAddAllDone(false);
+          addAllRunningRef.current = false;
+          requestAnimationFrame(() => searchInputRef.current?.focus());
+          // Auto-retry failures once on the first pass (not on a retry run)
+          // with a small delay so the UI settles before the second batch.
+          if (!opts?.isRetry && failures.length > 0) {
+            const retryTargets = failures.map((f) => f.reserveId);
+            setTimeout(() => {
+              runAddAllBatch(retryTargets, 0, { isRetry: true });
+            }, 600);
+          }
+        }, 900);
+      };
+
       const step = () => {
         const id = targets[i];
-        handleAddFromSearch(id, 'supply');
+        const result = handleAddFromSearch(id, 'supply');
+        if (!result.ok) {
+          // Resolve a friendly symbol from current reserves; fall back to id.
+          const reserve = reserves.find((r) => getReserveKey(r) === id);
+          failures.push({
+            reserveId: id,
+            symbol: reserve?.tokenSymbol ?? result.symbol ?? id,
+            reason: result.reason ?? 'Failed to add',
+          });
+        }
         i += 1;
         setAddAllProgress({ current: i, total: targets.length });
         persist(i);
         if (i < targets.length) {
           setTimeout(step, 80);
         } else {
-          setAddAllDone(true);
-          // Hold the "done" state briefly, then reset and refocus search input
-          setTimeout(() => {
-            setAddAllProgress(null);
-            setAddAllDone(false);
-            addAllRunningRef.current = false;
-            requestAnimationFrame(() => searchInputRef.current?.focus());
-          }, 900);
+          finish();
         }
       };
       step();
     },
-    [addAllProgress, handleAddFromSearch],
+    [addAllProgress, handleAddFromSearch, reserves],
   );
 
   const handleAddAllSuggested = useCallback(() => {
     const targets = suggestedReserves.map((r) => getReserveKey(r));
     runAddAllBatch(targets, 0);
   }, [suggestedReserves, runAddAllBatch]);
+
+  const handleRetryFailures = useCallback(() => {
+    if (addAllFailures.length === 0) return;
+    const retryTargets = addAllFailures.map((f) => f.reserveId);
+    runAddAllBatch(retryTargets, 0, { isRetry: true });
+  }, [addAllFailures, runAddAllBatch]);
+
+  const handleDismissFailures = useCallback(() => {
+    setAddAllFailures([]);
+  }, []);
 
   const handleResumeAddAll = useCallback(() => {
     if (!pendingResume) return;
