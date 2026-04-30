@@ -157,16 +157,16 @@ node scripts/sync-pool-addresses-upstream.mjs
 
 ## 验证测试
 
-### 两层验证体系
+### 真实浏览器 DOM + 截图校验
 
-1. **结构/映射校验**（快速）：
-```bash
-npx tsx scripts/verify-explorer-links.ts
-```
-
-2. **真实浏览器 DOM + 截图校验**（完整）：
 ```bash
 npx playwright test e2e/explorer-links-live-dom.spec.ts --project=chromium
+```
+
+冒烟（仅 URL 构造，不打开真实页面）：
+
+```bash
+npx playwright test e2e/explorer-links-smoke.spec.ts --project=chromium
 ```
 
 ### 测试结果分类

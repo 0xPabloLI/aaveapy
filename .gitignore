@@ -16,6 +16,9 @@ dist-ssr
 *.local
 .npmrc.local
 
+# TypeScript incremental build artifacts
+*.tsbuildinfo
+
 # Environment variables
 .env
 .env.local
