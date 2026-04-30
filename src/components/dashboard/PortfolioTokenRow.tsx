@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 import { formatNumberInput } from '@/lib/numberFormat';
 import { cnDsInputSurface } from '@/lib/dsInputSurface';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
-import { useIsMobile } from '@/hooks/use-mobile';
+
 import { BATCH_THEME } from './batchTheme';
 import type { PortfolioPosition, PortfolioInputMode } from '@/types/portfolio';
 
