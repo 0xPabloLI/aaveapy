@@ -29,7 +29,7 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
   onUpdateAmount,
   onUpdateInputMode,
 }: PortfolioTokenRowProps) {
-  const isMobile = useIsMobile();
+  
 
   const renderSideInput = (position: PortfolioPosition | null, sideLabel: string) => {
     if (!position) return null;
