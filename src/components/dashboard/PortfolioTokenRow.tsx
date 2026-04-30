@@ -68,22 +68,20 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
           )}
           aria-label={`${sideLabel} amount for ${tokenSymbol}`}
         />
-        {/* Clear amount */}
+        {/* Clear amount — matches the search panel close button style */}
         <button
           type="button"
           onClick={() => onUpdateAmount(position.positionId, '')}
           disabled={!position.amount.trim()}
           className={cn(
-            'shrink-0 rounded-md p-1 transition-colors',
-            !isMobile && 'inline-flex items-center gap-0.5 px-1.5',
+            'shrink-0 rounded-md p-1.5 transition-colors',
             position.amount.trim()
               ? 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
               : 'text-muted-foreground/35 cursor-not-allowed',
           )}
           aria-label={`Clear ${tokenSymbol} ${sideLabel.toLowerCase()}`}
         >
-          <Eraser className="size-3" aria-hidden />
-          {!isMobile && <span className="ds-text-10 font-medium">Clear</span>}
+          <X className="size-3.5" aria-hidden />
         </button>
       </div>
     );
