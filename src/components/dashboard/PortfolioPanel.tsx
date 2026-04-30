@@ -95,7 +95,7 @@ function SearchResultRow({
           </span>
         ) : partiallyAdded ? (
           <span className={cn('ds-text-10 font-semibold ml-1', BATCH_THEME.text)}>
-            +{hasSupply ? 'Borrow' : 'Supply'}
+            Add {hasSupply ? 'Borrow' : 'Supply'}
           </span>
         ) : null}
       </div>
