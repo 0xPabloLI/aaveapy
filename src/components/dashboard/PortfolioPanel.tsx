@@ -516,7 +516,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
             {suggestedReserves.length > 0 && (
               <div className="flex flex-wrap items-center gap-1.5 px-1">
                 <span className="ds-text-10 uppercase tracking-wide text-muted-foreground/70">
-                  Quick add
+                  Quick add (S+B)
                 </span>
                 {suggestedReserves.map((r) => {
                   const reserveId = getReserveKey(r);
