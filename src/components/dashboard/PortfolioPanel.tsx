@@ -1,13 +1,16 @@
 /**
  * PortfolioPanel — portfolio management panel with token search,
  * position list, summary card, results table, and snapshot comparison.
+ *
+ * Selecting a token adds BOTH a supply and a borrow position in one go,
+ * so users can fill in either / both amounts directly without picking a side.
  */
 import { useState, useMemo, useEffect, useRef, memo, useCallback, lazy, Suspense } from 'react';
-import { Search, Plus, X, Layers, Trash2, Save, ArrowRightLeft, Sparkles, Loader2, Check, AlertTriangle, RotateCcw } from 'lucide-react';
+import { Search, Plus, X, Layers, Trash2, Save, ArrowRightLeft, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { ReserveWithSpread } from '@/types/aave';
-import type { PortfolioPosition, PortfolioInputMode, PortfolioSide, PortfolioPositionResult, PortfolioSummary, PortfolioSnapshot } from '@/types/portfolio';
+import type { PortfolioPosition, PortfolioPositionResult, PortfolioSummary, PortfolioSnapshot } from '@/types/portfolio';
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
 import { normalizeTokenSymbolForSearch } from '@/lib/tokenSymbolNormalization';
 import { getReserveKey } from '@/lib/reserveKey';
@@ -16,13 +19,8 @@ import PortfolioTokenRow from './PortfolioTokenRow';
 import PortfolioSummaryCard from './PortfolioSummaryCard';
 import PortfolioResultsTable from './PortfolioResultsTable';
 import { BATCH_THEME } from './batchTheme';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 const PortfolioCompareView = lazy(() => import('./PortfolioCompareView'));
-
-// localStorage key used to persist mid-flight "Add all" progress so a page
-// refresh can offer a resume affordance instead of silently losing state.
-const ADD_ALL_PROGRESS_STORAGE_KEY = 'portfolio-panel:add-all-progress';
 
 interface PortfolioPanelProps {
   positions: PortfolioPosition[];
@@ -36,26 +34,30 @@ interface PortfolioPanelProps {
   snapshots?: PortfolioSnapshot[];
 }
 
-/** Search result row with quick add buttons. */
+/** Search result row — single click adds both supply and borrow positions. */
 function SearchResultRow({
   reserve,
   onAdd,
   existingPositions,
 }: {
   reserve: ReserveWithSpread;
-  onAdd: (reserveId: string, side: PortfolioSide) => void;
+  onAdd: (reserveId: string) => void;
   existingPositions: PortfolioPosition[];
 }) {
   const reserveId = getReserveKey(reserve);
-  const hasSupply = existingPositions.some(
-    (p) => p.reserveId === reserveId && p.side === 'supply',
-  );
-  const hasBorrow = existingPositions.some(
-    (p) => p.reserveId === reserveId && p.side === 'borrow',
-  );
+  const alreadyAdded = existingPositions.some((p) => p.reserveId === reserveId);
 
   return (
-    <div className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 transition-colors hover:bg-muted/60">
+    <button
+      type="button"
+      disabled={alreadyAdded}
+      onClick={() => onAdd(reserveId)}
+      className={cn(
+        'flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left transition-colors',
+        alreadyAdded ? 'opacity-50 cursor-not-allowed' : 'hover:bg-muted/60',
+      )}
+      aria-label={alreadyAdded ? `${reserve.tokenSymbol} already added` : `Add ${reserve.tokenSymbol}`}
+    >
       <TokenIcon symbol={reserve.tokenSymbol} size={18} />
       <div className="flex min-w-0 flex-1 flex-col">
         <span className="ds-text-12 font-semibold text-foreground truncate">
@@ -65,37 +67,12 @@ function SearchResultRow({
           {reserve.marketName}
         </span>
       </div>
-      <button
-        type="button"
-        disabled={hasSupply}
-        onClick={() => onAdd(reserveId, 'supply')}
-        className={cn(
-          'rounded px-2 py-0.5 ds-text-10 font-semibold transition-colors',
-          hasSupply
-            ? 'opacity-40 cursor-not-allowed bg-muted text-muted-foreground'
-            : 'ds-bg-emerald-500-10 ds-text-emerald-600 hover:ds-bg-emerald-500-20',
-        )}
-        aria-label={`Add ${reserve.tokenSymbol} supply`}
-      >
-        <Plus className="inline size-3 mr-0.5" aria-hidden />
-        Supply
-      </button>
-      <button
-        type="button"
-        disabled={hasBorrow}
-        onClick={() => onAdd(reserveId, 'borrow')}
-        className={cn(
-          'rounded px-2 py-0.5 ds-text-10 font-semibold transition-colors',
-          hasBorrow
-            ? 'opacity-40 cursor-not-allowed bg-muted text-muted-foreground'
-            : `${BATCH_THEME.bgSoft} ${BATCH_THEME.text} hover:${BATCH_THEME.bgSubtle}`,
-        )}
-        aria-label={`Add ${reserve.tokenSymbol} borrow`}
-      >
-        <Plus className="inline size-3 mr-0.5" aria-hidden />
-        Borrow
-      </button>
-    </div>
+      {alreadyAdded ? (
+        <span className="ds-text-10 font-semibold text-muted-foreground">Added</span>
+      ) : (
+        <Plus className={cn('size-3.5', BATCH_THEME.text)} aria-hidden />
+      )}
+    </button>
   );
 }
 
@@ -166,28 +143,6 @@ const PortfolioPanel = memo(function PortfolioPanel({
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [showCompare, setShowCompare] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  // Progress state for "Add all" bulk action: { current, total } while running,
-  // null when idle. After completion we briefly show a "done" pulse via `addAllDone`.
-  const [addAllProgress, setAddAllProgress] = useState<{ current: number; total: number } | null>(null);
-  const [addAllDone, setAddAllDone] = useState(false);
-  // Synchronous lock so rapid double-clicks within the same tick are ignored
-  // (state updates from setAddAllProgress aren't visible until next render).
-  const addAllRunningRef = useRef(false);
-  // Persisted unfinished "Add all" batch detected on mount (page refresh
-  // mid-batch). When non-null we offer a "Resume" affordance instead of
-  // "Add all" so the user can finish where they left off.
-  const [pendingResume, setPendingResume] = useState<
-    | { targets: string[]; current: number; total: number; startedAt: number }
-    | null
-  >(null);
-  // Tokens that failed during the most recent "Add all" run. Each entry keeps
-  // the original reserveId, a friendly symbol for display, and the failure
-  // reason. Cleared when a new batch starts or the user dismisses/retries.
-  const [addAllFailures, setAddAllFailures] = useState<
-    Array<{ reserveId: string; symbol: string; reason: string; autoRetried: boolean }>
-  >([]);
-  // Currently opened failure-detail popover (reserveId of the failure entry).
-  const [openFailureId, setOpenFailureId] = useState<string | null>(null);
 
   const focusSearch = useCallback(() => {
     setSearchOpen(true);
@@ -207,34 +162,32 @@ const PortfolioPanel = memo(function PortfolioPanel({
       .slice(0, 8);
   }, [reserves, searchQuery]);
 
-  const handleAddFromSearch = useCallback(
-    (reserveId: string, side: PortfolioSide): { ok: boolean; symbol?: string; reason?: string } => {
-      try {
-        const reserve = reserves.find(
-          (r) => getReserveKey(r) === reserveId,
-        );
-        if (!reserve) {
-          return { ok: false, reason: 'Token not found in current market data' };
-        }
-        actions.addPosition({
-          reserveId,
-          marketName: reserve.marketName,
-          chainName: reserve.chainName ?? reserve.marketName,
-          tokenSymbol: reserve.tokenSymbol,
-          side,
-        });
-        // Keep search panel open and refocus input for continuous additions
-        setSearchOpen(true);
-        requestAnimationFrame(() => {
-          searchInputRef.current?.focus();
-        });
-        return { ok: true, symbol: reserve.tokenSymbol };
-      } catch (err) {
-        const reason = err instanceof Error ? err.message : 'Unknown error';
-        return { ok: false, reason };
+  // Add both supply and borrow positions for the selected token in one click.
+  // If a side already exists for this reserve, we skip it to avoid duplicates.
+  const handleAddToken = useCallback(
+    (reserveId: string) => {
+      const reserve = reserves.find((r) => getReserveKey(r) === reserveId);
+      if (!reserve) return;
+      const existingSides = new Set(
+        positions.filter((p) => p.reserveId === reserveId).map((p) => p.side),
+      );
+      const common = {
+        reserveId,
+        marketName: reserve.marketName,
+        chainName: reserve.chainName ?? reserve.marketName,
+        tokenSymbol: reserve.tokenSymbol,
+      };
+      if (!existingSides.has('supply')) {
+        actions.addPosition({ ...common, side: 'supply' });
       }
+      if (!existingSides.has('borrow')) {
+        actions.addPosition({ ...common, side: 'borrow' });
+      }
+      // Keep search open + focused so users can keep adding more tokens.
+      setSearchOpen(true);
+      requestAnimationFrame(() => searchInputRef.current?.focus());
     },
-    [reserves, actions],
+    [reserves, positions, actions],
   );
 
   const handleSaveSnapshot = useCallback(() => {
@@ -294,200 +247,6 @@ const PortfolioPanel = memo(function PortfolioPanel({
     }
     return picks;
   }, [reserves, positions]);
-
-  const handleQuickAddSuggested = useCallback(
-    (reserveId: string) => {
-      handleAddFromSearch(reserveId, 'supply');
-      // Keep the search panel open and focused so the user can keep adding.
-      setSearchOpen(true);
-      requestAnimationFrame(() => searchInputRef.current?.focus());
-    },
-    [handleAddFromSearch],
-  );
-
-  // Bulk add all suggested popular tokens with a brief staggered progress
-  // indicator. Each step adds one token (~80ms apart) so the user sees
-  // tangible progress; on completion we flash a check and refocus the search.
-  // Progress is persisted to localStorage so a mid-batch refresh can resume.
-  const runAddAllBatch = useCallback(
-    (targets: string[], startIndex: number, opts?: { isRetry?: boolean }) => {
-      if (addAllRunningRef.current || addAllProgress) return;
-      if (targets.length === 0 || startIndex >= targets.length) return;
-      addAllRunningRef.current = true;
-      setAddAllDone(false);
-      setAddAllProgress({ current: startIndex, total: targets.length });
-      setSearchOpen(true);
-      setPendingResume(null);
-      // Reset failures at the start of a fresh run; on a retry we replace
-      // them with the new failure list once the run completes.
-      if (!opts?.isRetry) setAddAllFailures([]);
-
-      let i = startIndex;
-      const failures: Array<{ reserveId: string; symbol: string; reason: string; autoRetried: boolean }> = [];
-
-      const persist = (current: number) => {
-        try {
-          if (current >= targets.length) {
-            localStorage.removeItem(ADD_ALL_PROGRESS_STORAGE_KEY);
-          } else {
-            localStorage.setItem(
-              ADD_ALL_PROGRESS_STORAGE_KEY,
-              JSON.stringify({
-                targets,
-                current,
-                total: targets.length,
-                startedAt: Date.now(),
-              }),
-            );
-          }
-        } catch {
-          /* localStorage unavailable — silently ignore */
-        }
-      };
-
-      // Persist initial offset so an immediate refresh still shows resume.
-      persist(i);
-
-      const finish = () => {
-        setAddAllDone(true);
-        setAddAllFailures(failures);
-        // Hold the "done" state briefly, then reset and refocus search input
-        setTimeout(() => {
-          setAddAllProgress(null);
-          setAddAllDone(false);
-          addAllRunningRef.current = false;
-          requestAnimationFrame(() => searchInputRef.current?.focus());
-          // Auto-retry failures once on the first pass (not on a retry run)
-          // with a small delay so the UI settles before the second batch.
-          if (!opts?.isRetry && failures.length > 0) {
-            const retryTargets = failures.map((f) => f.reserveId);
-            setTimeout(() => {
-              runAddAllBatch(retryTargets, 0, { isRetry: true });
-            }, 600);
-          }
-        }, 900);
-      };
-
-      const step = () => {
-        const id = targets[i];
-        const result = handleAddFromSearch(id, 'supply');
-        if (!result.ok) {
-          // Resolve a friendly symbol from current reserves; fall back to id.
-          const reserve = reserves.find((r) => getReserveKey(r) === id);
-          failures.push({
-            reserveId: id,
-            symbol: reserve?.tokenSymbol ?? result.symbol ?? id,
-            reason: result.reason ?? 'Failed to add',
-            // On the initial pass, the auto-retry will run after `finish`,
-            // so mark these as "will be auto-retried". On a retry pass we
-            // mark them as already auto-retried (no further auto attempts).
-            autoRetried: opts?.isRetry === true,
-          });
-        }
-        i += 1;
-        setAddAllProgress({ current: i, total: targets.length });
-        persist(i);
-        if (i < targets.length) {
-          setTimeout(step, 80);
-        } else {
-          finish();
-        }
-      };
-      step();
-    },
-    [addAllProgress, handleAddFromSearch, reserves],
-  );
-
-  const handleAddAllSuggested = useCallback(() => {
-    const targets = suggestedReserves.map((r) => getReserveKey(r));
-    runAddAllBatch(targets, 0);
-  }, [suggestedReserves, runAddAllBatch]);
-
-  const handleRetryFailures = useCallback(() => {
-    if (addAllFailures.length === 0) return;
-    const retryTargets = addAllFailures.map((f) => f.reserveId);
-    runAddAllBatch(retryTargets, 0, { isRetry: true });
-  }, [addAllFailures, runAddAllBatch]);
-
-  const handleDismissFailures = useCallback(() => {
-    setAddAllFailures([]);
-  }, []);
-
-  // Retry a single failed token without re-running the whole batch. On
-  // success we remove it from the failure list and close its popover; on
-  // failure we keep it but refresh its reason and mark autoRetried=true.
-  const handleRetrySingleFailure = useCallback(
-    (reserveId: string) => {
-      const result = handleAddFromSearch(reserveId, 'supply');
-      if (result.ok) {
-        setAddAllFailures((prev) => prev.filter((f) => f.reserveId !== reserveId));
-        setOpenFailureId((curr) => (curr === reserveId ? null : curr));
-      } else {
-        setAddAllFailures((prev) =>
-          prev.map((f) =>
-            f.reserveId === reserveId
-              ? { ...f, reason: result.reason ?? f.reason, autoRetried: true }
-              : f,
-          ),
-        );
-      }
-    },
-    [handleAddFromSearch],
-  );
-
-  const handleResumeAddAll = useCallback(() => {
-    if (!pendingResume) return;
-    runAddAllBatch(pendingResume.targets, pendingResume.current);
-  }, [pendingResume, runAddAllBatch]);
-
-  const handleDismissResume = useCallback(() => {
-    try {
-      localStorage.removeItem(ADD_ALL_PROGRESS_STORAGE_KEY);
-    } catch {
-      /* ignore */
-    }
-    setPendingResume(null);
-  }, []);
-
-  // Load any unfinished batch from a previous session on mount. We keep it
-  // visible (as a resume affordance) regardless of how many of those tokens
-  // are already in the batch — the user can still dismiss it.
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(ADD_ALL_PROGRESS_STORAGE_KEY);
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as {
-        targets?: unknown;
-        current?: unknown;
-        total?: unknown;
-        startedAt?: unknown;
-      };
-      if (
-        !Array.isArray(parsed.targets) ||
-        typeof parsed.current !== 'number' ||
-        typeof parsed.total !== 'number' ||
-        parsed.current >= parsed.total
-      ) {
-        localStorage.removeItem(ADD_ALL_PROGRESS_STORAGE_KEY);
-        return;
-      }
-      const targets = parsed.targets.filter((t): t is string => typeof t === 'string');
-      if (targets.length === 0 || parsed.current >= targets.length) {
-        localStorage.removeItem(ADD_ALL_PROGRESS_STORAGE_KEY);
-        return;
-      }
-      setPendingResume({
-        targets,
-        current: parsed.current,
-        total: parsed.total,
-        startedAt: typeof parsed.startedAt === 'number' ? parsed.startedAt : Date.now(),
-      });
-    } catch {
-      /* ignore parse errors */
-    }
-    // Run once on mount only.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const handleRemoveToken = useCallback((reserveId: string) => {
     for (const p of positions) {
@@ -616,7 +375,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
                   <SearchResultRow
                     key={getReserveKey(r)}
                     reserve={r}
-                    onAdd={handleAddFromSearch}
+                    onAdd={handleAddToken}
                     existingPositions={positions}
                   />
                 ))}
@@ -646,11 +405,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
               Build your batch portfolio
             </p>
             <p className="mx-auto mt-1 max-w-[20rem] ds-text-11 text-muted-foreground">
-              Search a token below, then tap{' '}
-              <span className="ds-text-emerald-600 font-semibold">Supply</span>
-              {' '}or{' '}
-              <span className={cn('font-semibold', BATCH_THEME.text)}>Borrow</span>
-              {' '}to add it. Combine multiple positions to compare net APY and daily earn.
+              Search a token below and select it to add — supply and borrow inputs appear together so you can fill in either side. Combine multiple tokens to compare net APY and daily earn.
             </p>
 
             <div className="mt-3 flex items-center justify-center gap-2">
@@ -671,75 +426,9 @@ const PortfolioPanel = memo(function PortfolioPanel({
 
             {suggestedReserves.length > 0 && (
               <div className="mt-3">
-                <div className="mb-1.5 flex items-center justify-center gap-2">
-                  <p className="ds-text-10 uppercase tracking-wide text-muted-foreground/70">
-                    Popular tokens
-                  </p>
-                  {pendingResume && !addAllProgress ? (
-                    <span className="inline-flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={handleResumeAddAll}
-                        className={cn(
-                          'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 ds-text-10 font-semibold transition-colors',
-                          BATCH_THEME.border,
-                          BATCH_THEME.bgSoft,
-                          BATCH_THEME.text,
-                          `hover:${BATCH_THEME.bgSubtle}`,
-                        )}
-                        aria-label={`Resume adding tokens from ${pendingResume.current} of ${pendingResume.total}`}
-                        title="Resume the previous batch"
-                      >
-                        <Plus className="size-2.5" aria-hidden />
-                        Resume {pendingResume.current}/{pendingResume.total}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleDismissResume}
-                        className="inline-flex size-4 items-center justify-center rounded-full text-muted-foreground/70 hover:bg-muted/60 hover:text-foreground transition-colors"
-                        aria-label="Dismiss saved batch progress"
-                        title="Dismiss"
-                      >
-                        <X className="size-2.5" aria-hidden />
-                      </button>
-                    </span>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={handleAddAllSuggested}
-                      disabled={addAllProgress !== null}
-                      aria-disabled={addAllProgress !== null}
-                      aria-busy={addAllProgress !== null && !addAllDone}
-                      className={cn(
-                        'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 ds-text-10 font-semibold transition-colors',
-                        BATCH_THEME.border,
-                        BATCH_THEME.bgSoft,
-                        BATCH_THEME.text,
-                        addAllProgress !== null
-                          ? 'opacity-80 cursor-wait pointer-events-none'
-                          : `hover:${BATCH_THEME.bgSubtle}`,
-                      )}
-                      aria-label="Add all popular tokens"
-                    >
-                      {addAllDone ? (
-                        <>
-                          <Check className="size-2.5" aria-hidden />
-                          Added {addAllProgress?.total ?? ''}
-                        </>
-                      ) : addAllProgress ? (
-                        <>
-                          <Loader2 className="size-2.5 animate-spin" aria-hidden />
-                          Adding {addAllProgress.current}/{addAllProgress.total}
-                        </>
-                      ) : (
-                        <>
-                          <Plus className="size-2.5" aria-hidden />
-                          Add all
-                        </>
-                      )}
-                    </button>
-                  )}
-                </div>
+                <p className="mb-1.5 ds-text-10 uppercase tracking-wide text-muted-foreground/70">
+                  Popular tokens
+                </p>
                 <div className="flex flex-wrap items-center justify-center gap-1.5">
                   {suggestedReserves.map((r) => {
                     const reserveId = getReserveKey(r);
@@ -747,9 +436,9 @@ const PortfolioPanel = memo(function PortfolioPanel({
                       <button
                         key={reserveId}
                         type="button"
-                        onClick={() => handleQuickAddSuggested(reserveId)}
+                        onClick={() => handleAddToken(reserveId)}
                         className="inline-flex items-center gap-1 rounded-full border border-border/50 bg-card/70 px-2 py-1 ds-text-10 font-semibold text-foreground transition-colors hover:bg-muted/60"
-                        aria-label={`Add ${r.tokenSymbol} supply to batch`}
+                        aria-label={`Add ${r.tokenSymbol} to batch`}
                       >
                         <TokenIcon symbol={r.tokenSymbol} size={14} />
                         <span>{r.tokenSymbol}</span>
@@ -758,144 +447,6 @@ const PortfolioPanel = memo(function PortfolioPanel({
                     );
                   })}
                 </div>
-                {addAllFailures.length > 0 && !addAllProgress && (
-                  <div
-                    role="alert"
-                    className="mt-2 rounded-lg border border-destructive/40 bg-destructive/5 px-2.5 py-2"
-                  >
-                    <div className="flex items-start gap-2">
-                      <AlertTriangle className="mt-0.5 size-3 shrink-0 text-destructive" aria-hidden />
-                      <div className="flex-1 min-w-0">
-                        <p className="ds-text-10 font-semibold text-destructive">
-                          {addAllFailures.length === 1
-                            ? '1 token failed to add'
-                            : `${addAllFailures.length} tokens failed to add`}
-                        </p>
-                        <ul className="mt-1 space-y-0.5">
-                          {addAllFailures.map((f) => (
-                            <li key={f.reserveId} className="ds-text-10 text-muted-foreground">
-                              <Popover
-                                open={openFailureId === f.reserveId}
-                                onOpenChange={(o) =>
-                                  setOpenFailureId(o ? f.reserveId : null)
-                                }
-                              >
-                                <PopoverTrigger asChild>
-                                  <button
-                                    type="button"
-                                    className="inline-flex items-center gap-1 rounded text-left transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/40"
-                                    aria-label={`Show failure details for ${f.symbol}`}
-                                  >
-                                    <span className="font-medium text-foreground">{f.symbol}</span>
-                                    <span className="text-muted-foreground/80 truncate max-w-[180px]">
-                                      {' '}— {f.reason}
-                                    </span>
-                                  </button>
-                                </PopoverTrigger>
-                                <PopoverContent
-                                  align="start"
-                                  side="bottom"
-                                  className="w-72 rounded-xl border-border/60 bg-card p-3"
-                                >
-                                  <div className="space-y-2">
-                                    <div className="flex items-center gap-1.5">
-                                      <AlertTriangle className="size-3 text-destructive" aria-hidden />
-                                      <span className="ds-text-11 font-semibold text-foreground">
-                                        {f.symbol}
-                                      </span>
-                                    </div>
-                                    <dl className="space-y-1.5">
-                                      <div>
-                                        <dt className="ds-text-10 uppercase tracking-wide text-muted-foreground/70">
-                                          Reserve ID
-                                        </dt>
-                                        <dd className="ds-text-10 break-all font-mono text-foreground">
-                                          {f.reserveId}
-                                        </dd>
-                                      </div>
-                                      <div>
-                                        <dt className="ds-text-10 uppercase tracking-wide text-muted-foreground/70">
-                                          Error
-                                        </dt>
-                                        <dd className="ds-text-10 text-foreground">{f.reason}</dd>
-                                      </div>
-                                      <div>
-                                        <dt className="ds-text-10 uppercase tracking-wide text-muted-foreground/70">
-                                          Auto-retry
-                                        </dt>
-                                        <dd
-                                          className={cn(
-                                            'inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 ds-text-10 font-semibold',
-                                            f.autoRetried
-                                              ? 'border-destructive/40 bg-destructive/10 text-destructive'
-                                              : 'border-border/60 bg-muted/40 text-muted-foreground',
-                                          )}
-                                        >
-                                          {f.autoRetried ? (
-                                            <>
-                                              <Check className="size-2.5" aria-hidden />
-                                              Already retried once
-                                            </>
-                                          ) : (
-                                            <>
-                                              <Loader2 className="size-2.5" aria-hidden />
-                                              Pending auto-retry
-                                            </>
-                                          )}
-                                        </dd>
-                                      </div>
-                                    </dl>
-                                    <button
-                                      type="button"
-                                      onClick={() => handleRetrySingleFailure(f.reserveId)}
-                                      className={cn(
-                                        'inline-flex w-full items-center justify-center gap-1 rounded-full border px-2 py-1 ds-text-10 font-semibold transition-colors',
-                                        BATCH_THEME.border,
-                                        BATCH_THEME.bgSoft,
-                                        BATCH_THEME.text,
-                                        `hover:${BATCH_THEME.bgSubtle}`,
-                                      )}
-                                      aria-label={`Retry ${f.symbol}`}
-                                    >
-                                      <RotateCcw className="size-2.5" aria-hidden />
-                                      Retry this token
-                                    </button>
-                                  </div>
-                                </PopoverContent>
-                              </Popover>
-                            </li>
-                          ))}
-                        </ul>
-                        <div className="mt-1.5 flex items-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={handleRetryFailures}
-                            className={cn(
-                              'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 ds-text-10 font-semibold transition-colors',
-                              BATCH_THEME.border,
-                              BATCH_THEME.bgSoft,
-                              BATCH_THEME.text,
-                              `hover:${BATCH_THEME.bgSubtle}`,
-                            )}
-                            aria-label="Retry failed tokens"
-                          >
-                            <RotateCcw className="size-2.5" aria-hidden />
-                            Retry {addAllFailures.length}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={handleDismissFailures}
-                            className="inline-flex size-4 items-center justify-center rounded-full text-muted-foreground/70 hover:bg-muted/60 hover:text-foreground transition-colors"
-                            aria-label="Dismiss failed tokens"
-                            title="Dismiss"
-                          >
-                            <X className="size-2.5" aria-hidden />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
             )}
           </div>
@@ -912,9 +463,9 @@ const PortfolioPanel = memo(function PortfolioPanel({
                     <button
                       key={reserveId}
                       type="button"
-                      onClick={() => handleQuickAddSuggested(reserveId)}
+                      onClick={() => handleAddToken(reserveId)}
                       className="inline-flex items-center gap-1 rounded-full border border-border/50 bg-card/70 px-2 py-0.5 ds-text-10 font-semibold text-foreground transition-colors hover:bg-muted/60"
-                      aria-label={`Add ${r.tokenSymbol} supply to batch`}
+                      aria-label={`Add ${r.tokenSymbol} to batch`}
                     >
                       <TokenIcon symbol={r.tokenSymbol} size={12} />
                       <span>{r.tokenSymbol}</span>
