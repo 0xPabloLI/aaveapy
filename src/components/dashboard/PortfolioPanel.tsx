@@ -6,7 +6,7 @@
  * so users can fill in either / both amounts directly without picking a side.
  */
 import { useState, useMemo, useEffect, useRef, memo, useCallback, lazy, Suspense } from 'react';
-import { Search, Plus, X, Layers, Trash2, Save, ArrowRightLeft, Sparkles, Check } from 'lucide-react';
+import { Search, X, Layers, Trash2, Save, ArrowRightLeft, Sparkles, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -14,6 +14,7 @@ import type { ReserveWithSpread } from '@/types/aave';
 import type { PortfolioPosition, PortfolioPositionResult, PortfolioSummary, PortfolioSnapshot } from '@/types/portfolio';
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
 import { normalizeTokenSymbolForSearch } from '@/lib/tokenSymbolNormalization';
+import { isStablecoinSymbol, isEthRelatedSymbol, isBtcRelatedSymbol } from '@/lib/tokenCategories';
 import { getReserveKey } from '@/lib/reserveKey';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import PortfolioTokenRow from './PortfolioTokenRow';
@@ -94,11 +95,9 @@ function SearchResultRow({
           </span>
         ) : partiallyAdded ? (
           <span className={cn('ds-text-10 font-semibold ml-1', BATCH_THEME.text)}>
-            +{hasSupply ? 'Borrow' : 'Supply'}
+            Add {hasSupply ? 'Borrow' : 'Supply'}
           </span>
-        ) : (
-          <Plus className={cn('size-3.5 ml-1', BATCH_THEME.text)} aria-hidden />
-        )}
+        ) : null}
       </div>
     </button>
   );
@@ -288,26 +287,33 @@ const PortfolioPanel = memo(function PortfolioPanel({
     return map;
   }, [positions]);
 
-  // Suggested popular tokens for quick-add. Excludes tokens already in the
-  // batch so the user can keep clicking to add more without duplicates.
+  // Suggested popular tokens for quick-add: top 2 stablecoins, top 2 ETH-related,
+  // and top 1 BTC-related by reserve size (TVL). Excludes already-added symbols.
   const suggestedReserves = useMemo(() => {
-    const addedSymbols = new Set(
-      positions.map((p) => p.tokenSymbol.toUpperCase()),
+    const addedSymbols = new Set(positions.map((p) => p.tokenSymbol.toUpperCase()));
+    const sortedBySize = [...reserves].sort(
+      (a, b) => (b.reserveSizeUsd ?? 0) - (a.reserveSizeUsd ?? 0),
     );
-    const seen = new Set<string>();
-    const picks: ReserveWithSpread[] = [];
-    const sorted = [...reserves].sort(
-      (a, b) => (b.supplyApy ?? 0) - (a.supplyApy ?? 0),
-    );
-    for (const r of sorted) {
-      const sym = r.tokenSymbol.toUpperCase();
-      if (seen.has(sym) || addedSymbols.has(sym)) continue;
-      seen.add(sym);
-      picks.push(r);
-      if (picks.length >= 5) break;
-    }
-    return picks;
+    const pickTop = (predicate: (sym: string) => boolean, n: number) => {
+      const seen = new Set<string>();
+      const out: ReserveWithSpread[] = [];
+      for (const r of sortedBySize) {
+        const sym = r.tokenSymbol.toUpperCase();
+        if (seen.has(sym) || addedSymbols.has(sym)) continue;
+        if (!predicate(r.tokenSymbol)) continue;
+        seen.add(sym);
+        out.push(r);
+        if (out.length >= n) break;
+      }
+      return out;
+    };
+    return [
+      ...pickTop(isStablecoinSymbol, 2),
+      ...pickTop(isEthRelatedSymbol, 2),
+      ...pickTop(isBtcRelatedSymbol, 1),
+    ];
   }, [reserves, positions]);
+
 
   const handleRemoveToken = useCallback((reserveId: string) => {
     for (const p of positions) {
@@ -465,9 +471,6 @@ const PortfolioPanel = memo(function PortfolioPanel({
             <p className="ds-text-13 font-semibold text-foreground">
               Build your batch portfolio
             </p>
-            <p className="mx-auto mt-1 max-w-[20rem] ds-text-11 text-muted-foreground">
-              Search a token below and select it to add — supply and borrow inputs appear together so you can fill in either side. Combine multiple tokens to compare net APY and daily earn.
-            </p>
 
             <div className="mt-3 flex items-center justify-center gap-2">
               <button
@@ -486,28 +489,22 @@ const PortfolioPanel = memo(function PortfolioPanel({
             </div>
 
             {suggestedReserves.length > 0 && (
-              <div className="mt-3">
-                <p className="mb-1.5 ds-text-10 uppercase tracking-wide text-muted-foreground/70">
-                  Popular tokens · adds supply + borrow
-                </p>
-                <div className="flex flex-wrap items-center justify-center gap-1.5">
-                  {suggestedReserves.map((r) => {
-                    const reserveId = getReserveKey(r);
-                    return (
-                      <button
-                        key={reserveId}
-                        type="button"
-                        onClick={() => handleAddToken(reserveId)}
-                        className="inline-flex items-center gap-1 rounded-full border border-border/50 bg-card/70 px-2 py-1 ds-text-10 font-semibold text-foreground transition-colors hover:bg-muted/60"
-                        aria-label={`Add ${r.tokenSymbol} to batch`}
-                      >
-                        <TokenIcon symbol={r.tokenSymbol} size={14} />
-                        <span>{r.tokenSymbol}</span>
-                        <Plus className="size-2.5 text-muted-foreground" aria-hidden />
-                      </button>
-                    );
-                  })}
-                </div>
+              <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5">
+                {suggestedReserves.map((r) => {
+                  const reserveId = getReserveKey(r);
+                  return (
+                    <button
+                      key={reserveId}
+                      type="button"
+                      onClick={() => handleAddToken(reserveId)}
+                      className="inline-flex items-center gap-1 rounded-full border border-border/50 bg-card/70 px-2 py-1 ds-text-10 font-semibold text-foreground transition-colors hover:bg-muted/60"
+                      aria-label={`Add ${r.tokenSymbol} to batch`}
+                    >
+                      <TokenIcon symbol={r.tokenSymbol} size={14} />
+                      <span>{r.tokenSymbol}</span>
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -515,9 +512,6 @@ const PortfolioPanel = memo(function PortfolioPanel({
           <div className="space-y-1.5">
             {suggestedReserves.length > 0 && (
               <div className="flex flex-wrap items-center gap-1.5 px-1">
-                <span className="ds-text-10 uppercase tracking-wide text-muted-foreground/70">
-                  Quick add (S+B)
-                </span>
                 {suggestedReserves.map((r) => {
                   const reserveId = getReserveKey(r);
                   return (
@@ -530,7 +524,6 @@ const PortfolioPanel = memo(function PortfolioPanel({
                     >
                       <TokenIcon symbol={r.tokenSymbol} size={12} />
                       <span>{r.tokenSymbol}</span>
-                      <Plus className="size-2.5 text-muted-foreground" aria-hidden />
                     </button>
                   );
                 })}
