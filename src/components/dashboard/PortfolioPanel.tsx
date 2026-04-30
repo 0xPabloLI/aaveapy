@@ -35,7 +35,13 @@ interface PortfolioPanelProps {
   snapshots?: PortfolioSnapshot[];
 }
 
-/** Search result row — single click adds both supply and borrow positions. */
+/**
+ * Search result row.
+ * - Click adds whichever sides (supply/borrow) are missing for this reserve.
+ * - Disabled only when BOTH sides are already added.
+ * - Always shows per-side status badges so users can see at a glance which
+ *   inputs already exist and which will be created on click.
+ */
 function SearchResultRow({
   reserve,
   onAdd,
@@ -46,18 +52,28 @@ function SearchResultRow({
   existingPositions: PortfolioPosition[];
 }) {
   const reserveId = getReserveKey(reserve);
-  const alreadyAdded = existingPositions.some((p) => p.reserveId === reserveId);
+  const sidesForReserve = existingPositions.filter((p) => p.reserveId === reserveId);
+  const hasSupply = sidesForReserve.some((p) => p.side === 'supply');
+  const hasBorrow = sidesForReserve.some((p) => p.side === 'borrow');
+  const fullyAdded = hasSupply && hasBorrow;
+  const partiallyAdded = (hasSupply || hasBorrow) && !fullyAdded;
+
+  const ariaLabel = fullyAdded
+    ? `${reserve.tokenSymbol} already added (supply and borrow)`
+    : partiallyAdded
+      ? `Add missing ${hasSupply ? 'borrow' : 'supply'} side for ${reserve.tokenSymbol}`
+      : `Add ${reserve.tokenSymbol} (supply and borrow)`;
 
   return (
     <button
       type="button"
-      disabled={alreadyAdded}
+      disabled={fullyAdded}
       onClick={() => onAdd(reserveId)}
       className={cn(
         'flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left transition-colors',
-        alreadyAdded ? 'opacity-50 cursor-not-allowed' : 'hover:bg-muted/60',
+        fullyAdded ? 'opacity-60 cursor-not-allowed' : 'hover:bg-muted/60',
       )}
-      aria-label={alreadyAdded ? `${reserve.tokenSymbol} already added` : `Add ${reserve.tokenSymbol}`}
+      aria-label={ariaLabel}
     >
       <TokenIcon symbol={reserve.tokenSymbol} size={18} />
       <div className="flex min-w-0 flex-1 flex-col">
@@ -68,12 +84,40 @@ function SearchResultRow({
           {reserve.marketName}
         </span>
       </div>
-      {alreadyAdded ? (
-        <span className="ds-text-10 font-semibold text-muted-foreground">Added</span>
-      ) : (
-        <Plus className={cn('size-3.5', BATCH_THEME.text)} aria-hidden />
-      )}
+      <div className="flex items-center gap-1 shrink-0">
+        <SideBadge label="S" active={hasSupply} />
+        <SideBadge label="B" active={hasBorrow} />
+        {fullyAdded ? (
+          <span className={cn('ds-text-10 font-semibold ml-1 inline-flex items-center gap-0.5', BATCH_THEME.text)}>
+            <Check className="size-3" aria-hidden />
+            Added
+          </span>
+        ) : partiallyAdded ? (
+          <span className={cn('ds-text-10 font-semibold ml-1', BATCH_THEME.text)}>
+            +{hasSupply ? 'Borrow' : 'Supply'}
+          </span>
+        ) : (
+          <Plus className={cn('size-3.5 ml-1', BATCH_THEME.text)} aria-hidden />
+        )}
+      </div>
     </button>
+  );
+}
+
+/** Compact pill that shows whether a side (S/B) is already in the batch. */
+function SideBadge({ label, active }: { label: string; active: boolean }) {
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center justify-center rounded-md border px-1 ds-text-10 font-semibold leading-none h-4 min-w-4',
+        active
+          ? `${BATCH_THEME.border} ${BATCH_THEME.text} ${BATCH_THEME.bgSoft}`
+          : 'border-border/40 text-muted-foreground/50 bg-transparent',
+      )}
+      aria-label={`${label === 'S' ? 'Supply' : 'Borrow'} ${active ? 'added' : 'not added'}`}
+    >
+      {label}
+    </span>
   );
 }
 
