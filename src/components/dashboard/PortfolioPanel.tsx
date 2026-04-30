@@ -473,9 +473,6 @@ const PortfolioPanel = memo(function PortfolioPanel({
             <p className="ds-text-13 font-semibold text-foreground">
               Build your batch portfolio
             </p>
-            <p className="mx-auto mt-1 max-w-[20rem] ds-text-11 text-muted-foreground">
-              Search a token below and select it to add — supply and borrow inputs appear together so you can fill in either side. Combine multiple tokens to compare net APY and daily earn.
-            </p>
 
             <div className="mt-3 flex items-center justify-center gap-2">
               <button
@@ -494,28 +491,22 @@ const PortfolioPanel = memo(function PortfolioPanel({
             </div>
 
             {suggestedReserves.length > 0 && (
-              <div className="mt-3">
-                <p className="mb-1.5 ds-text-10 uppercase tracking-wide text-muted-foreground/70">
-                  Popular tokens · adds supply + borrow
-                </p>
-                <div className="flex flex-wrap items-center justify-center gap-1.5">
-                  {suggestedReserves.map((r) => {
-                    const reserveId = getReserveKey(r);
-                    return (
-                      <button
-                        key={reserveId}
-                        type="button"
-                        onClick={() => handleAddToken(reserveId)}
-                        className="inline-flex items-center gap-1 rounded-full border border-border/50 bg-card/70 px-2 py-1 ds-text-10 font-semibold text-foreground transition-colors hover:bg-muted/60"
-                        aria-label={`Add ${r.tokenSymbol} to batch`}
-                      >
-                        <TokenIcon symbol={r.tokenSymbol} size={14} />
-                        <span>{r.tokenSymbol}</span>
-                        <Plus className="size-2.5 text-muted-foreground" aria-hidden />
-                      </button>
-                    );
-                  })}
-                </div>
+              <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5">
+                {suggestedReserves.map((r) => {
+                  const reserveId = getReserveKey(r);
+                  return (
+                    <button
+                      key={reserveId}
+                      type="button"
+                      onClick={() => handleAddToken(reserveId)}
+                      className="inline-flex items-center gap-1 rounded-full border border-border/50 bg-card/70 px-2 py-1 ds-text-10 font-semibold text-foreground transition-colors hover:bg-muted/60"
+                      aria-label={`Add ${r.tokenSymbol} to batch`}
+                    >
+                      <TokenIcon symbol={r.tokenSymbol} size={14} />
+                      <span>{r.tokenSymbol}</span>
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -523,9 +514,6 @@ const PortfolioPanel = memo(function PortfolioPanel({
           <div className="space-y-1.5">
             {suggestedReserves.length > 0 && (
               <div className="flex flex-wrap items-center gap-1.5 px-1">
-                <span className="ds-text-10 uppercase tracking-wide text-muted-foreground/70">
-                  Quick add (S+B)
-                </span>
                 {suggestedReserves.map((r) => {
                   const reserveId = getReserveKey(r);
                   return (
@@ -538,7 +526,6 @@ const PortfolioPanel = memo(function PortfolioPanel({
                     >
                       <TokenIcon symbol={r.tokenSymbol} size={12} />
                       <span>{r.tokenSymbol}</span>
-                      <Plus className="size-2.5 text-muted-foreground" aria-hidden />
                     </button>
                   );
                 })}
