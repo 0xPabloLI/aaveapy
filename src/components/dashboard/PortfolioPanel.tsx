@@ -289,26 +289,33 @@ const PortfolioPanel = memo(function PortfolioPanel({
     return map;
   }, [positions]);
 
-  // Suggested popular tokens for quick-add. Excludes tokens already in the
-  // batch so the user can keep clicking to add more without duplicates.
+  // Suggested popular tokens for quick-add: top 2 stablecoins, top 2 ETH-related,
+  // and top 1 BTC-related by reserve size (TVL). Excludes already-added symbols.
   const suggestedReserves = useMemo(() => {
-    const addedSymbols = new Set(
-      positions.map((p) => p.tokenSymbol.toUpperCase()),
+    const addedSymbols = new Set(positions.map((p) => p.tokenSymbol.toUpperCase()));
+    const sortedBySize = [...reserves].sort(
+      (a, b) => (b.reserveSizeUsd ?? 0) - (a.reserveSizeUsd ?? 0),
     );
-    const seen = new Set<string>();
-    const picks: ReserveWithSpread[] = [];
-    const sorted = [...reserves].sort(
-      (a, b) => (b.supplyApy ?? 0) - (a.supplyApy ?? 0),
-    );
-    for (const r of sorted) {
-      const sym = r.tokenSymbol.toUpperCase();
-      if (seen.has(sym) || addedSymbols.has(sym)) continue;
-      seen.add(sym);
-      picks.push(r);
-      if (picks.length >= 5) break;
-    }
-    return picks;
+    const pickTop = (predicate: (sym: string) => boolean, n: number) => {
+      const seen = new Set<string>();
+      const out: ReserveWithSpread[] = [];
+      for (const r of sortedBySize) {
+        const sym = r.tokenSymbol.toUpperCase();
+        if (seen.has(sym) || addedSymbols.has(sym)) continue;
+        if (!predicate(r.tokenSymbol)) continue;
+        seen.add(sym);
+        out.push(r);
+        if (out.length >= n) break;
+      }
+      return out;
+    };
+    return [
+      ...pickTop(isStablecoinSymbol, 2),
+      ...pickTop(isEthRelatedSymbol, 2),
+      ...pickTop(isBtcRelatedSymbol, 1),
+    ];
   }, [reserves, positions]);
+
 
   const handleRemoveToken = useCallback((reserveId: string) => {
     for (const p of positions) {
