@@ -97,9 +97,7 @@ function SearchResultRow({
           <span className={cn('ds-text-10 font-semibold ml-1', BATCH_THEME.text)}>
             +{hasSupply ? 'Borrow' : 'Supply'}
           </span>
-        ) : (
-          <Plus className={cn('size-3.5 ml-1', BATCH_THEME.text)} aria-hidden />
-        )}
+        ) : null}
       </div>
     </button>
   );
