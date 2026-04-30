@@ -207,8 +207,12 @@ const PortfolioPanel = memo(function PortfolioPanel({
       .slice(0, 8);
   }, [reserves, searchQuery]);
 
-  // Add both supply and borrow positions for the selected token in one click.
-  // If a side already exists for this reserve, we skip it to avoid duplicates.
+  // Add both supply and borrow positions for the selected token.
+  // - If both already exist: do nothing (button is disabled in search results).
+  // - If only one side exists: add the missing side and inform the user.
+  // - If none exist: add both.
+  // Search auto-focus is preserved ONLY when the search panel is already open,
+  // so clicking a quick-add chip while search is collapsed will NOT reopen it.
   const handleAddToken = useCallback(
     (reserveId: string) => {
       const reserve = reserves.find((r) => getReserveKey(r) === reserveId);
@@ -216,23 +220,35 @@ const PortfolioPanel = memo(function PortfolioPanel({
       const existingSides = new Set(
         positions.filter((p) => p.reserveId === reserveId).map((p) => p.side),
       );
+      const hadSupply = existingSides.has('supply');
+      const hadBorrow = existingSides.has('borrow');
+
+      if (hadSupply && hadBorrow) {
+        toast.info(`${reserve.tokenSymbol} is already in the batch`);
+        return;
+      }
+
       const common = {
         reserveId,
         marketName: reserve.marketName,
         chainName: reserve.chainName ?? reserve.marketName,
         tokenSymbol: reserve.tokenSymbol,
       };
-      if (!existingSides.has('supply')) {
-        actions.addPosition({ ...common, side: 'supply' });
+      if (!hadSupply) actions.addPosition({ ...common, side: 'supply' });
+      if (!hadBorrow) actions.addPosition({ ...common, side: 'borrow' });
+
+      if (hadSupply || hadBorrow) {
+        const missing = hadSupply ? 'borrow' : 'supply';
+        toast.success(`Added missing ${missing} side for ${reserve.tokenSymbol}`);
       }
-      if (!existingSides.has('borrow')) {
-        actions.addPosition({ ...common, side: 'borrow' });
+
+      // Keep focus on the search input only if search is already open;
+      // do not force-open it (quick-add chips should not toggle the panel).
+      if (searchOpen) {
+        requestAnimationFrame(() => searchInputRef.current?.focus());
       }
-      // Keep search open + focused so users can keep adding more tokens.
-      setSearchOpen(true);
-      requestAnimationFrame(() => searchInputRef.current?.focus());
     },
-    [reserves, positions, actions],
+    [reserves, positions, actions, searchOpen],
   );
 
   const handleSaveSnapshot = useCallback(() => {
