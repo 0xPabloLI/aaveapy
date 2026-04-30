@@ -488,7 +488,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
             {suggestedReserves.length > 0 && (
               <div className="mt-3">
                 <p className="mb-1.5 ds-text-10 uppercase tracking-wide text-muted-foreground/70">
-                  Popular tokens
+                  Popular tokens · adds supply + borrow
                 </p>
                 <div className="flex flex-wrap items-center justify-center gap-1.5">
                   {suggestedReserves.map((r) => {
