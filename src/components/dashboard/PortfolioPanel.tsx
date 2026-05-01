@@ -82,8 +82,15 @@ function SearchResultRow({
         <span className="ds-text-12 font-semibold text-foreground truncate">
           {reserve.tokenSymbol}
         </span>
-        <span className="ds-text-10 text-muted-foreground truncate">
-          {reserve.marketName}
+        <span className="ds-text-10 text-muted-foreground truncate inline-flex items-center gap-1">
+          {getChainIconSrc(reserve.chainName) && (
+            <img
+              src={getChainIconSrc(reserve.chainName)!}
+              alt={reserve.chainName}
+              className="size-3 shrink-0"
+            />
+          )}
+          <span className="truncate">{reserve.marketName}</span>
         </span>
       </div>
       <div className="flex items-center gap-1 shrink-0">
