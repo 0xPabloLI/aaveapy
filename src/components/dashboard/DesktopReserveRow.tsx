@@ -266,34 +266,6 @@ const DesktopReserveRow = memo(({
         <TableCell className="ds-reserves-cell-td ds-row-pad text-center hidden md:table-cell">
           <div className="flex items-center justify-center">
             <div className={marketCellClassNames.stack}>
-              <div className={marketCellClassNames.marketShell}>
-                <button
-                  type="button"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onMarketChipClick?.(reserveId);
-                    onSelectMarket?.(reserve.marketName);
-                  }}
-                  className={marketCellClassNames.marketButton}
-                  aria-label={`Filter by ${marketDisplayName} market`}
-                  title={`Filter by ${marketDisplayName}`}
-                >
-                  <ChainIcon chain={reserve.chainName} />
-                  <span className={marketCellClassNames.marketText}>{marketDisplayName}</span>
-                </button>
-                {aaveMarketUrl && (
-                  <a
-                    href={aaveMarketUrl}
-                    {...externalLinkTabProps(isMobile)}
-                    onClick={(event) => event.stopPropagation()}
-                    className={cn(marketCellClassNames.externalLink, 'group-hover/market-link:pointer-events-auto group-hover/market-link:opacity-100')}
-                    aria-label={`Open ${marketDisplayName} market on Aave`}
-                    title="Open market on Aave"
-                  >
-                    <ExternalLink className="w-3 h-3 text-muted-foreground" />
-                  </a>
-                )}
-              </div>
               {reserve.hubName && (
                 <div className={marketCellClassNames.hubShell}>
                   <span
@@ -323,6 +295,34 @@ const DesktopReserveRow = memo(({
                   )}
                 </div>
               )}
+              <div className={marketCellClassNames.marketShell}>
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onMarketChipClick?.(reserveId);
+                    onSelectMarket?.(reserve.marketName);
+                  }}
+                  className={marketCellClassNames.marketButton}
+                  aria-label={`Filter by ${marketDisplayName} market`}
+                  title={`Filter by ${marketDisplayName}`}
+                >
+                  <ChainIcon chain={reserve.chainName} />
+                  <span className={marketCellClassNames.marketText}>{marketDisplayName}</span>
+                </button>
+                {aaveMarketUrl && (
+                  <a
+                    href={aaveMarketUrl}
+                    {...externalLinkTabProps(isMobile)}
+                    onClick={(event) => event.stopPropagation()}
+                    className={cn(marketCellClassNames.externalLink, 'group-hover/market-link:pointer-events-auto group-hover/market-link:opacity-100')}
+                    aria-label={`Open ${marketDisplayName} market on Aave`}
+                    title="Open market on Aave"
+                  >
+                    <ExternalLink className="w-3 h-3 text-muted-foreground" />
+                  </a>
+                )}
+              </div>
             </div>
           </div>
         </TableCell>
