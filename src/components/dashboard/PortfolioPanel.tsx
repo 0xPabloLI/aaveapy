@@ -16,6 +16,7 @@ import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation'
 import { normalizeTokenSymbolForSearch } from '@/lib/tokenSymbolNormalization';
 import { isStablecoinSymbol, isEthRelatedSymbol, isBtcRelatedSymbol } from '@/lib/tokenCategories';
 import { getReserveKey } from '@/lib/reserveKey';
+import { getChainIconSrc } from '@/lib/chainIcons';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import PortfolioTokenRow from './PortfolioTokenRow';
 import PortfolioSummaryCard from './PortfolioSummaryCard';
