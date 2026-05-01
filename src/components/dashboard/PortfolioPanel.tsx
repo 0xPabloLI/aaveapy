@@ -536,16 +536,25 @@ const PortfolioPanel = memo(function PortfolioPanel({
               <div className="flex flex-wrap items-center gap-1.5 px-1">
                 {suggestedReserves.map((r) => {
                   const reserveId = getReserveKey(r);
+                  const chainSrc = getChainIconSrc(r.chainName);
                   return (
                     <button
                       key={reserveId}
                       type="button"
                       onClick={() => handleAddToken(reserveId)}
                       className="inline-flex items-center gap-1 rounded-full border border-border/50 bg-card/70 px-2 py-0.5 ds-text-10 font-semibold text-foreground transition-colors hover:bg-muted/60"
-                      aria-label={`Add ${r.tokenSymbol} to batch`}
+                      aria-label={`Add ${r.tokenSymbol} on ${r.marketName} to batch`}
                     >
                       <TokenIcon symbol={r.tokenSymbol} size={12} />
                       <span>{r.tokenSymbol}</span>
+                      {chainSrc && (
+                        <img src={chainSrc} alt={r.chainName} title={r.marketName} className="size-3 shrink-0" />
+                      )}
+                      {!isMobile && (
+                        <span className="ds-text-10 font-normal text-muted-foreground truncate max-w-[80px]">
+                          {r.marketName}
+                        </span>
+                      )}
                     </button>
                   );
                 })}
