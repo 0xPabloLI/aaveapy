@@ -193,7 +193,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
         const symNorm = normalizeTokenSymbolForSearch(r.tokenSymbol);
         return sym.includes(q) || (qNorm.length > 0 && symNorm.includes(qNorm));
       })
-      .slice(0, 8);
+      .slice(0, 50);
   }, [reserves, searchQuery]);
 
   // Add both supply and borrow positions for the selected token.
