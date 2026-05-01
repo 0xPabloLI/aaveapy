@@ -1,13 +1,34 @@
+/**
+ * Smart-format a percentage value with controlled display length.
+ * - < 100:      2 decimals (e.g. 5.67%)
+ * - 100-999:    1 decimal  (e.g. 123.4%)
+ * - 1K-999K:    0 decimals + K (e.g. 12K%)
+ * - >= 1M:      2 decimals + M (e.g. 12.35M%)
+ */
+function smartPercent(value: number): string {
+  const absValue = Math.abs(value);
+  if (absValue >= 1_000_000) {
+    return `${(value / 1_000_000).toFixed(2)}M%`;
+  }
+  if (absValue >= 1_000) {
+    return `${Math.round(value / 1_000)}K%`;
+  }
+  if (absValue >= 100) {
+    return `${value.toFixed(1)}%`;
+  }
+  return `${value.toFixed(2)}%`;
+}
+
 // Format percentage to string (value is already in percentage form, e.g., 5 for 5%)
 export const formatPercent = (value: number | null | undefined): string => {
   if (value === null || value === undefined || isNaN(value)) return '-';
-  return `${value.toFixed(2)}%`;
+  return smartPercent(value);
 };
 
 // Format spread with sign (value is already in percentage form)
 export const formatSpread = (value: number | null | undefined): string => {
   if (value === null || value === undefined || isNaN(value)) return '-';
-  return `${value > 0 ? '+' : ''}${value.toFixed(2)}%`;
+  return `${value > 0 ? '+' : ''}${smartPercent(value)}`;
 };
 
 // Format relative time
