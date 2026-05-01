@@ -101,18 +101,8 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
   const mobileNetOpen = controlledMobileNetOpen ?? internalMobileNetOpen;
   const isMobileNetOpenControlled = controlledMobileNetOpen !== undefined;
   const desktopRowRef = useRef<HTMLDivElement>(null);
-  const [containerNarrow, setContainerNarrow] = useState(false);
 
-  useEffect(() => {
-    const el = desktopRowRef.current;
-    if (!el || isMobile) return;
-    const MIN_WIDTH = 600;
-    const check = () => setContainerNarrow(el.clientWidth < MIN_WIDTH);
-    check();
-    const ro = new ResizeObserver(check);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [isMobile]);
+
   const handleMeritMerklNetPositionChange = useCallback(
     (next: boolean) => {
       if (!onMeritMerklNetPositionChange) return;
