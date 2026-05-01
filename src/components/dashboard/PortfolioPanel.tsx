@@ -109,22 +109,6 @@ function SearchResultRow({
   );
 }
 
-/** Compact pill that shows whether a side (S/B) is already in the batch. */
-function SideBadge({ label, active }: { label: string; active: boolean }) {
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center justify-center rounded-md border px-1 ds-text-10 font-semibold leading-none h-4 min-w-4',
-        active
-          ? `${BATCH_THEME.border} ${BATCH_THEME.text} ${BATCH_THEME.bgSoft}`
-          : 'border-border/40 text-muted-foreground/50 bg-transparent',
-      )}
-      aria-label={`${label === 'S' ? 'Supply' : 'Borrow'} ${active ? 'added' : 'not added'}`}
-    >
-      {label}
-    </span>
-  );
-}
 
 /** Snapshot list item with compare / delete actions. */
 const SnapshotItem = memo(function SnapshotItem({
