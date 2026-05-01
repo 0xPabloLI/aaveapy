@@ -366,61 +366,61 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
           {/* Supply Section - flex-grow to fill space */}
           <div className="flex items-center gap-[var(--ds-space-1-5)] flex-1">
             <span className={fieldLabelSupplyDesktop}>Supply</span>
-            <input
-              value={supplyInput}
-              onChange={(event) => setSupplyInput(formatNumberInput(event.target.value))}
-              inputMode="decimal"
-              placeholder={inputMode === 'usd' ? '100,000' : '50'}
-              className={cn(inputBase, cnDsInputSurface(Boolean(supplyInput.trim()), 'supply'), 'flex-1')}
-              aria-label="Supply amount"
-            />
-            <button
-              type="button"
-              onClick={() => setSupplyInput('')}
-              disabled={!supplyInput.trim()}
-              className={cn(
-                'shrink-0 rounded-md transition-colors inline-flex items-center justify-center gap-1.5 px-[var(--ds-space-2-5)] min-w-0',
-                controlH,
-                fontSize,
-                supplyInput.trim()
-                  ? 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
-                  : 'text-muted-foreground/35 cursor-not-allowed',
+            <div className="relative flex-1 min-w-0">
+              <input
+                value={supplyInput}
+                onChange={(event) => setSupplyInput(formatNumberInput(event.target.value))}
+                inputMode="decimal"
+                placeholder={inputMode === 'usd' ? '100,000' : '50'}
+                className={cn(
+                  inputBase,
+                  cnDsInputSurface(Boolean(supplyInput.trim()), 'supply'),
+                  'w-full',
+                  supplyInput.trim() ? 'pr-8' : '',
+                )}
+                aria-label="Supply amount"
+              />
+              {supplyInput.trim() && (
+                <button
+                  type="button"
+                  onClick={() => setSupplyInput('')}
+                  className="absolute right-1 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors"
+                  aria-label="Clear supply amount"
+                >
+                  <Eraser className="size-3.5" aria-hidden />
+                </button>
               )}
-              aria-label="Clear supply amount"
-            >
-              <Eraser className="size-3.5" aria-hidden />
-              {!containerNarrow && <span>Clear</span>}
-            </button>
+            </div>
           </div>
 
           {/* Borrow Section - flex-grow to fill space */}
           <div className="flex items-center gap-[var(--ds-space-1-5)] flex-1">
             <span className={fieldLabelBorrowDesktop}>Borrow</span>
-            <input
-              value={borrowInput}
-              onChange={(event) => setBorrowInput(formatNumberInput(event.target.value))}
-              inputMode="decimal"
-              placeholder={inputMode === 'usd' ? '20,000' : '10'}
-              className={cn(inputBase, cnDsInputSurface(Boolean(borrowInput.trim()), 'borrow'), 'flex-1')}
-              aria-label="Borrow amount"
-            />
-            <button
-              type="button"
-              onClick={() => setBorrowInput('')}
-              disabled={!borrowInput.trim()}
-              className={cn(
-                'shrink-0 rounded-md transition-colors inline-flex items-center justify-center gap-1.5 px-[var(--ds-space-2-5)] min-w-0',
-                controlH,
-                fontSize,
-                borrowInput.trim()
-                  ? 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
-                  : 'text-muted-foreground/35 cursor-not-allowed',
+            <div className="relative flex-1 min-w-0">
+              <input
+                value={borrowInput}
+                onChange={(event) => setBorrowInput(formatNumberInput(event.target.value))}
+                inputMode="decimal"
+                placeholder={inputMode === 'usd' ? '20,000' : '10'}
+                className={cn(
+                  inputBase,
+                  cnDsInputSurface(Boolean(borrowInput.trim()), 'borrow'),
+                  'w-full',
+                  borrowInput.trim() ? 'pr-8' : '',
+                )}
+                aria-label="Borrow amount"
+              />
+              {borrowInput.trim() && (
+                <button
+                  type="button"
+                  onClick={() => setBorrowInput('')}
+                  className="absolute right-1 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors"
+                  aria-label="Clear borrow amount"
+                >
+                  <Eraser className="size-3.5" aria-hidden />
+                </button>
               )}
-              aria-label="Clear borrow amount"
-            >
-              <Eraser className="size-3.5" aria-hidden />
-              {!containerNarrow && <span>Clear</span>}
-            </button>
+            </div>
           </div>
 
           {/* Controls Section */}
