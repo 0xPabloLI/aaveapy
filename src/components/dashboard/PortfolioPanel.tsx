@@ -94,15 +94,13 @@ function SearchResultRow({
         </span>
       </div>
       <div className="flex items-center gap-1 shrink-0">
-        <SideBadge label="S" active={hasSupply} />
-        <SideBadge label="B" active={hasBorrow} />
         {fullyAdded ? (
-          <span className={cn('ds-text-10 font-semibold ml-1 inline-flex items-center gap-0.5', BATCH_THEME.text)}>
+          <span className={cn('ds-text-10 font-semibold inline-flex items-center gap-0.5', BATCH_THEME.text)}>
             <Check className="size-3" aria-hidden />
             Added
           </span>
         ) : partiallyAdded ? (
-          <span className={cn('ds-text-10 font-semibold ml-1', BATCH_THEME.text)}>
+          <span className={cn('ds-text-10 font-semibold', BATCH_THEME.text)}>
             Add {hasSupply ? 'Borrow' : 'Supply'}
           </span>
         ) : null}
@@ -111,22 +109,6 @@ function SearchResultRow({
   );
 }
 
-/** Compact pill that shows whether a side (S/B) is already in the batch. */
-function SideBadge({ label, active }: { label: string; active: boolean }) {
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center justify-center rounded-md border px-1 ds-text-10 font-semibold leading-none h-4 min-w-4',
-        active
-          ? `${BATCH_THEME.border} ${BATCH_THEME.text} ${BATCH_THEME.bgSoft}`
-          : 'border-border/40 text-muted-foreground/50 bg-transparent',
-      )}
-      aria-label={`${label === 'S' ? 'Supply' : 'Borrow'} ${active ? 'added' : 'not added'}`}
-    >
-      {label}
-    </span>
-  );
-}
 
 /** Snapshot list item with compare / delete actions. */
 const SnapshotItem = memo(function SnapshotItem({
@@ -187,15 +169,9 @@ const PortfolioPanel = memo(function PortfolioPanel({
 }: PortfolioPanelProps) {
   const isMobile = useIsMobile();
   const [searchQuery, setSearchQuery] = useState('');
-  // On mobile, only auto-expand the search bar when there are no positions yet.
-  // Once the user has tokens in the batch, do not steal vertical space — they can
-  // tap the search icon to open it manually. Desktop keeps the original behavior
-  // (always start open) since horizontal space is plentiful.
-  const [searchOpen, setSearchOpen] = useState(() => {
-    if (typeof window === 'undefined') return true;
-    const isMobileInitial = window.matchMedia('(max-width: 767px)').matches;
-    return isMobileInitial ? positions.length === 0 : true;
-  });
+  // Always default the search bar open whenever the batch panel mounts/opens.
+  // Users can still collapse it manually via the X button.
+  const [searchOpen, setSearchOpen] = useState(true);
   const [snapshotName, setSnapshotName] = useState('');
   const [showSaveInput, setShowSaveInput] = useState(false);
   const [compareIds, setCompareIds] = useState<string[]>([]);
