@@ -187,15 +187,9 @@ const PortfolioPanel = memo(function PortfolioPanel({
 }: PortfolioPanelProps) {
   const isMobile = useIsMobile();
   const [searchQuery, setSearchQuery] = useState('');
-  // On mobile, only auto-expand the search bar when there are no positions yet.
-  // Once the user has tokens in the batch, do not steal vertical space — they can
-  // tap the search icon to open it manually. Desktop keeps the original behavior
-  // (always start open) since horizontal space is plentiful.
-  const [searchOpen, setSearchOpen] = useState(() => {
-    if (typeof window === 'undefined') return true;
-    const isMobileInitial = window.matchMedia('(max-width: 767px)').matches;
-    return isMobileInitial ? positions.length === 0 : true;
-  });
+  // Always default the search bar open whenever the batch panel mounts/opens.
+  // Users can still collapse it manually via the X button.
+  const [searchOpen, setSearchOpen] = useState(true);
   const [snapshotName, setSnapshotName] = useState('');
   const [showSaveInput, setShowSaveInput] = useState(false);
   const [compareIds, setCompareIds] = useState<string[]>([]);
