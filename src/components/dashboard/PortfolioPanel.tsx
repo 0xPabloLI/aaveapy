@@ -16,6 +16,7 @@ import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation'
 import { normalizeTokenSymbolForSearch } from '@/lib/tokenSymbolNormalization';
 import { isStablecoinSymbol, isEthRelatedSymbol, isBtcRelatedSymbol } from '@/lib/tokenCategories';
 import { getReserveKey } from '@/lib/reserveKey';
+import { getChainIconSrc } from '@/lib/chainIcons';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import PortfolioTokenRow from './PortfolioTokenRow';
 import PortfolioSummaryCard from './PortfolioSummaryCard';
@@ -81,8 +82,15 @@ function SearchResultRow({
         <span className="ds-text-12 font-semibold text-foreground truncate">
           {reserve.tokenSymbol}
         </span>
-        <span className="ds-text-10 text-muted-foreground truncate">
-          {reserve.marketName}
+        <span className="ds-text-10 text-muted-foreground truncate inline-flex items-center gap-1">
+          {getChainIconSrc(reserve.chainName) && (
+            <img
+              src={getChainIconSrc(reserve.chainName)!}
+              alt={reserve.chainName}
+              className="size-3 shrink-0"
+            />
+          )}
+          <span className="truncate">{reserve.marketName}</span>
         </span>
       </div>
       <div className="flex items-center gap-1 shrink-0">
@@ -321,13 +329,18 @@ const PortfolioPanel = memo(function PortfolioPanel({
     }
   }, [actions, positions]);
 
-  // When the position list becomes empty (e.g. clear all), reopen search
-  // so users can immediately add the next token without extra clicks.
+  // When positions transition from non-empty to empty (e.g. clear all),
+  // reopen search so users can immediately add the next token.
+  // Do NOT continuously force search open while empty — users must be able
+  // to collapse the search bar via the X button even with zero positions.
+  const prevPositionsCountRef = useRef(positions.length);
   useEffect(() => {
-    if (positions.length === 0 && !searchOpen) {
+    const prev = prevPositionsCountRef.current;
+    if (prev > 0 && positions.length === 0) {
       setSearchOpen(true);
     }
-  }, [positions.length, searchOpen]);
+    prevPositionsCountRef.current = positions.length;
+  }, [positions.length]);
 
   return (
     <div className="space-y-3">
@@ -492,16 +505,25 @@ const PortfolioPanel = memo(function PortfolioPanel({
               <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5">
                 {suggestedReserves.map((r) => {
                   const reserveId = getReserveKey(r);
+                  const chainSrc = getChainIconSrc(r.chainName);
                   return (
                     <button
                       key={reserveId}
                       type="button"
                       onClick={() => handleAddToken(reserveId)}
                       className="inline-flex items-center gap-1 rounded-full border border-border/50 bg-card/70 px-2 py-1 ds-text-10 font-semibold text-foreground transition-colors hover:bg-muted/60"
-                      aria-label={`Add ${r.tokenSymbol} to batch`}
+                      aria-label={`Add ${r.tokenSymbol} on ${r.marketName} to batch`}
                     >
                       <TokenIcon symbol={r.tokenSymbol} size={14} />
                       <span>{r.tokenSymbol}</span>
+                      {chainSrc && (
+                        <img src={chainSrc} alt={r.chainName} title={r.marketName} className="size-3 shrink-0" />
+                      )}
+                      {!isMobile && (
+                        <span className="ds-text-10 font-normal text-muted-foreground truncate max-w-[90px]">
+                          {r.marketName}
+                        </span>
+                      )}
                     </button>
                   );
                 })}
@@ -514,16 +536,25 @@ const PortfolioPanel = memo(function PortfolioPanel({
               <div className="flex flex-wrap items-center gap-1.5 px-1">
                 {suggestedReserves.map((r) => {
                   const reserveId = getReserveKey(r);
+                  const chainSrc = getChainIconSrc(r.chainName);
                   return (
                     <button
                       key={reserveId}
                       type="button"
                       onClick={() => handleAddToken(reserveId)}
                       className="inline-flex items-center gap-1 rounded-full border border-border/50 bg-card/70 px-2 py-0.5 ds-text-10 font-semibold text-foreground transition-colors hover:bg-muted/60"
-                      aria-label={`Add ${r.tokenSymbol} to batch`}
+                      aria-label={`Add ${r.tokenSymbol} on ${r.marketName} to batch`}
                     >
                       <TokenIcon symbol={r.tokenSymbol} size={12} />
                       <span>{r.tokenSymbol}</span>
+                      {chainSrc && (
+                        <img src={chainSrc} alt={r.chainName} title={r.marketName} className="size-3 shrink-0" />
+                      )}
+                      {!isMobile && (
+                        <span className="ds-text-10 font-normal text-muted-foreground truncate max-w-[80px]">
+                          {r.marketName}
+                        </span>
+                      )}
                     </button>
                   );
                 })}
