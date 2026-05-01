@@ -322,13 +322,18 @@ const PortfolioPanel = memo(function PortfolioPanel({
     }
   }, [actions, positions]);
 
-  // When the position list becomes empty (e.g. clear all), reopen search
-  // so users can immediately add the next token without extra clicks.
+  // When positions transition from non-empty to empty (e.g. clear all),
+  // reopen search so users can immediately add the next token.
+  // Do NOT continuously force search open while empty — users must be able
+  // to collapse the search bar via the X button even with zero positions.
+  const prevPositionsCountRef = useRef(positions.length);
   useEffect(() => {
-    if (positions.length === 0 && !searchOpen) {
+    const prev = prevPositionsCountRef.current;
+    if (prev > 0 && positions.length === 0) {
       setSearchOpen(true);
     }
-  }, [positions.length, searchOpen]);
+    prevPositionsCountRef.current = positions.length;
+  }, [positions.length]);
 
   return (
     <div className="space-y-3">
