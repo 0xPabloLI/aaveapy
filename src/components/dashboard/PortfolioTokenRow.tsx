@@ -30,17 +30,18 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
   onUpdateAmount,
   onUpdateInputMode,
 }: PortfolioTokenRowProps) {
-  
+  const isMobile = useIsMobile();
 
   const renderSideInput = (position: PortfolioPosition | null, sideLabel: string) => {
     if (!position) return null;
     const isBorrow = position.side === 'borrow';
     const labelColor = isBorrow ? 'ds-text-brand-cyan' : 'ds-text-emerald-600';
     const inputVariant = isBorrow ? 'borrow' as const : 'supply' as const;
+    const hasValue = Boolean(position.amount.trim());
 
     return (
       <div className="flex min-w-0 flex-1 items-center gap-1.5">
-        <span className={cn('shrink-0 ds-text-12 font-semibold', labelColor)}>
+        <span className={cn('shrink-0 ds-text-12 font-semibold w-11', labelColor)}>
           {sideLabel}
         </span>
         <button
@@ -56,34 +57,33 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
         >
           {position.inputMode === 'usd' ? '$' : 'T'}
         </button>
-        <input
-          value={position.amount}
-          onChange={(e) =>
-            onUpdateAmount(position.positionId, formatNumberInput(e.target.value))
-          }
-          inputMode="decimal"
-          placeholder={position.inputMode === 'usd' ? '10,000' : '100'}
-          className={cn(
-            'h-7 w-full min-w-[4rem] rounded-md px-2 ds-text-12 tabular-nums placeholder:italic',
-            cnDsInputSurface(Boolean(position.amount.trim()), inputVariant),
+        {/* Input with embedded clear button (matches search-token / filter input pattern) */}
+        <div className="relative flex-1 min-w-0">
+          <input
+            value={position.amount}
+            onChange={(e) =>
+              onUpdateAmount(position.positionId, formatNumberInput(e.target.value))
+            }
+            inputMode="decimal"
+            placeholder={position.inputMode === 'usd' ? '10,000' : '100'}
+            className={cn(
+              'h-7 w-full min-w-[4rem] rounded-md pl-2 ds-text-12 tabular-nums placeholder:italic',
+              hasValue ? 'pr-7' : 'pr-2',
+              cnDsInputSurface(hasValue, inputVariant),
+            )}
+            aria-label={`${sideLabel} amount for ${tokenSymbol}`}
+          />
+          {hasValue && (
+            <button
+              type="button"
+              onClick={() => onUpdateAmount(position.positionId, '')}
+              className="absolute right-1 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors"
+              aria-label={`Clear ${tokenSymbol} ${sideLabel.toLowerCase()}`}
+            >
+              <X className="size-3.5" aria-hidden />
+            </button>
           )}
-          aria-label={`${sideLabel} amount for ${tokenSymbol}`}
-        />
-        {/* Clear amount — matches the search panel close button style */}
-        <button
-          type="button"
-          onClick={() => onUpdateAmount(position.positionId, '')}
-          disabled={!position.amount.trim()}
-          className={cn(
-            'shrink-0 rounded-md p-1.5 transition-colors',
-            position.amount.trim()
-              ? 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
-              : 'text-muted-foreground/35 cursor-not-allowed',
-          )}
-          aria-label={`Clear ${tokenSymbol} ${sideLabel.toLowerCase()}`}
-        >
-          <X className="size-3.5" aria-hidden />
-        </button>
+        </div>
       </div>
     );
   };
@@ -113,8 +113,13 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
         </div>
       </div>
 
-      {/* Supply + Borrow inputs */}
-      <div className="flex min-w-0 flex-1 items-center gap-3">
+      {/* Supply + Borrow inputs — stacked on mobile (not enough horizontal room), inline on desktop */}
+      <div
+        className={cn(
+          'flex min-w-0 flex-1',
+          isMobile ? 'flex-col items-stretch gap-1.5' : 'items-center gap-3',
+        )}
+      >
         {renderSideInput(supplyPosition, 'Supply')}
         {borrowPosition && renderSideInput(borrowPosition, 'Borrow')}
       </div>
