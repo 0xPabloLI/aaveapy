@@ -95,13 +95,23 @@ export interface ReserveWithSpread {
   // Rate calculation fields (from /api/markets reserves)
   decimals?: number;
   availableLiquidity?: string;
+  availableLiquidityUsd?: number;
   totalVariableDebt?: string;
-  reserveFactor?: string;
-  variableRateSlope1?: string;
-  variableRateSlope2?: string;
-  optimalUsageRate?: string;
+  totalVariableDebtUsd?: number;
+  reserveSize?: string;
+  supplyCap?: string;
+  borrowCap?: string;
+  suppliable?: string;
+  suppliableUsd?: number;
+  borrowable?: string;
+  borrowableUsd?: number;
+  // Rate-model fields are percent numbers (e.g., 9 means 9%) for V3/V4 unified API.
+  reserveFactor?: number;
+  variableRateSlope1?: number;
+  variableRateSlope2?: number;
+  optimalUsageRate?: number;
   deficit?: string;
-  baseVariableBorrowRate?: string;
+  baseVariableBorrowRate?: number;
 
   // Protocol incentives (from Aave protocol, array of percentage values)
   supplyIncentives?: number[];

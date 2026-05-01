@@ -150,7 +150,32 @@ const ReserveWithSpreadSchema = z.object({
   merklHolds: z.array(MerklOpportunityGroupSchema).optional(),
   brevisSupplys: z.array(BrevisRawIncentiveSchema).optional().transform(normalizeBrevisIncentives),
   brevisBorrows: z.array(BrevisRawIncentiveSchema).optional().transform(normalizeBrevisIncentives),
-}).passthrough(); // allow extra fields from API without breaking
+  // Rate-calculation raw token fields
+  decimals: z.number().optional(),
+  availableLiquidity: z.string().optional(),
+  availableLiquidityUsd: z.number().optional(),
+  totalVariableDebt: z.string().optional(),
+  totalVariableDebtUsd: z.number().optional(),
+  reserveSize: z.string().optional(),
+  supplyCap: z.string().optional(),
+  borrowCap: z.string().optional(),
+  suppliable: z.string().optional(),
+  suppliableUsd: z.number().optional(),
+  borrowable: z.string().optional(),
+  borrowableUsd: z.number().optional(),
+  deficit: z.string().optional(),
+  // Rate-model fields are percent numbers (e.g., 9 means 9%)
+  reserveFactor: z.number().optional(),
+  variableRateSlope1: z.number().optional(),
+  variableRateSlope2: z.number().optional(),
+  optimalUsageRate: z.number().optional(),
+  baseVariableBorrowRate: z.number().optional(),
+  // V4 Hub & Spoke identifiers
+  hubId: z.string().optional(),
+  hubName: z.string().optional(),
+  spokeId: z.string().optional(),
+  spokeName: z.string().optional(),
+}).passthrough(); // allow any future API additions without breaking
 
 // ── Markets response ── (current API: { snapshot, reserves })
 export const MarketsResponseSchema = z.object({
