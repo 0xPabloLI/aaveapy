@@ -220,61 +220,59 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
           <div className="flex flex-col gap-1 flex-1 min-w-0">
             <div className="flex min-w-0 items-center gap-1">
               <span className={`${fieldLabelMobileSupply} w-11 shrink-0`}>Supply</span>
-              <input
-                value={supplyInput}
-                onChange={(event) => setSupplyInput(formatNumberInput(event.target.value))}
-                inputMode="decimal"
-                placeholder={inputMode === 'usd' ? '100,000' : '50'}
-                className={cn(
-                  inputBase,
-                  cnDsInputSurface(Boolean(supplyInput.trim()), 'supply'),
-                  'min-w-0 flex-1',
+              <div className="relative flex-1 min-w-0">
+                <input
+                  value={supplyInput}
+                  onChange={(event) => setSupplyInput(formatNumberInput(event.target.value))}
+                  inputMode="decimal"
+                  placeholder={inputMode === 'usd' ? '100,000' : '50'}
+                  className={cn(
+                    inputBase,
+                    cnDsInputSurface(Boolean(supplyInput.trim()), 'supply'),
+                    'min-w-0 w-full',
+                    supplyInput.trim() ? 'pr-7' : '',
+                  )}
+                  aria-label="Supply amount"
+                />
+                {supplyInput.trim() && (
+                  <button
+                    type="button"
+                    onClick={() => setSupplyInput('')}
+                    className="absolute right-1 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors"
+                    aria-label="Clear supply amount"
+                  >
+                    <Eraser className="size-3" aria-hidden />
+                  </button>
                 )}
-                aria-label="Supply amount"
-              />
-              <button
-                type="button"
-                onClick={() => setSupplyInput('')}
-                disabled={!supplyInput.trim()}
-                className={cn(
-                  'shrink-0 rounded-md p-1 transition-colors',
-                  supplyInput.trim()
-                    ? 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
-                    : 'text-muted-foreground/35 cursor-not-allowed',
-                )}
-                aria-label="Clear supply amount"
-              >
-                <Eraser className="size-3" aria-hidden />
-              </button>
+              </div>
             </div>
             <div className="flex min-w-0 items-center gap-1">
               <span className={`${fieldLabelMobileBorrow} w-11 shrink-0`}>Borrow</span>
-              <input
-                value={borrowInput}
-                onChange={(event) => setBorrowInput(formatNumberInput(event.target.value))}
-                inputMode="decimal"
-                placeholder={inputMode === 'usd' ? '20,000' : '10'}
-                className={cn(
-                  inputBase,
-                  cnDsInputSurface(Boolean(borrowInput.trim()), 'borrow'),
-                  'min-w-0 flex-1',
+              <div className="relative flex-1 min-w-0">
+                <input
+                  value={borrowInput}
+                  onChange={(event) => setBorrowInput(formatNumberInput(event.target.value))}
+                  inputMode="decimal"
+                  placeholder={inputMode === 'usd' ? '20,000' : '10'}
+                  className={cn(
+                    inputBase,
+                    cnDsInputSurface(Boolean(borrowInput.trim()), 'borrow'),
+                    'min-w-0 w-full',
+                    borrowInput.trim() ? 'pr-7' : '',
+                  )}
+                  aria-label="Borrow amount"
+                />
+                {borrowInput.trim() && (
+                  <button
+                    type="button"
+                    onClick={() => setBorrowInput('')}
+                    className="absolute right-1 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors"
+                    aria-label="Clear borrow amount"
+                  >
+                    <Eraser className="size-3" aria-hidden />
+                  </button>
                 )}
-                aria-label="Borrow amount"
-              />
-              <button
-                type="button"
-                onClick={() => setBorrowInput('')}
-                disabled={!borrowInput.trim()}
-                className={cn(
-                  'shrink-0 rounded-md p-1 transition-colors',
-                  borrowInput.trim()
-                    ? 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
-                    : 'text-muted-foreground/35 cursor-not-allowed',
-                )}
-                aria-label="Clear borrow amount"
-              >
-                <Eraser className="size-3" aria-hidden />
-              </button>
+              </div>
             </div>
           </div>
           {showMeritMerklMode && !isMobileNetOpenControlled ? (
