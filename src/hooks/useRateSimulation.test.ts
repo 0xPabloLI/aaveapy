@@ -33,11 +33,11 @@ const baseReserve: ReserveWithSpread & RateCalcInput = {
   deficit: '0',
   availableLiquidity: '1000000000000',
   totalVariableDebt: '500000000000',
-  reserveFactor: '1000',
-  variableRateSlope1: '40000000000000000000000000',
-  variableRateSlope2: '600000000000000000000000000',
-  baseVariableBorrowRate: '0',
-  optimalUsageRate: '800000000000000000000000000',
+  reserveFactor: 10,
+  variableRateSlope1: 4,
+  variableRateSlope2: 60,
+  baseVariableBorrowRate: 0,
+  optimalUsageRate: 80,
 };
 
 const SECONDS_PER_YEAR = 365 * 24 * 60 * 60;

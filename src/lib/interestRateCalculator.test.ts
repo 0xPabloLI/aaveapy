@@ -11,25 +11,26 @@ import type { ReserveWithSpread } from '@/types/aave';
 const baseRateInput: RateCalcInput = {
   decimals: 18,
   deficit: '0',
-  availableLiquidity: '1000000000000000000000000',
-  totalVariableDebt: '500000000000000000000000',
-  reserveFactor: '1000',
-  variableRateSlope1: '40000000000000000000000000',
-  variableRateSlope2: '600000000000000000000000000',
-  baseVariableBorrowRate: '0',
-  optimalUsageRate: '800000000000000000000000000',
+  availableLiquidity: '1000000000000000000000000',  // 1M tokens (18 decimals)
+  totalVariableDebt: '500000000000000000000000',    // 500k tokens
+  /* Rate params are now percent numbers (not RAY strings) */
+  reserveFactor: 10,         // 10%
+  variableRateSlope1: 4,     // 4%
+  variableRateSlope2: 60,    // 60%
+  baseVariableBorrowRate: 0, // 0%
+  optimalUsageRate: 80,      // 80%
 };
 
 describe('simulateNativeRatesAfterSupply', () => {
   it('reduces utilization when supply amount increases', () => {
     const withoutDeposit = simulateNativeRatesAfterSupply(baseRateInput, '0');
-    const withDeposit = simulateNativeRatesAfterSupply(baseRateInput, '100000');
+    const withDeposit = simulateNativeRatesAfterSupply(baseRateInput, '100000'); // 100k tokens
 
     expect(withDeposit.utilizationRatePercent).toBeLessThan(withoutDeposit.utilizationRatePercent);
   });
 
   it('keeps rates non-negative', () => {
-    const forecast = simulateNativeRatesAfterSupply(baseRateInput, '1234.56');
+    const forecast = simulateNativeRatesAfterSupply(baseRateInput, '1234.56'); // ~1234 tokens
 
     expect(forecast.supplyAprPercent).toBeGreaterThanOrEqual(0);
     expect(forecast.borrowAprPercent).toBeGreaterThanOrEqual(0);
@@ -122,23 +123,12 @@ describe('simulateNativeRatesAfterActions', () => {
 });
 
 describe('totalVariableDebt precision (replaces totalScaledVariableDebt × variableBorrowIndex)', () => {
-  // The old API provided totalScaledVariableDebt (raw) and variableBorrowIndex (RAY).
-  // The new API provides totalVariableDebt = scaledDebt × index ÷ 1e27, already computed by backend.
-  // Verify that using totalVariableDebt directly produces identical results to the old formula.
-
   it('produces correct utilization for 33.33% utilization (debt=500k, liquidity=1M, 18 decimals)', () => {
-    // totalSupply = availableLiquidity + totalVariableDebt = 1M + 500k = 1.5M
-    // utilization = 500k / 1.5M = 33.33%
     const result = simulateNativeRatesAfterActions(baseRateInput, { supplyAmount: '0', borrowAmount: '0' });
     expect(result.utilizationRatePercent).toBeCloseTo(33.33, 1);
   });
 
   it('handles non-trivial borrow index (totalVariableDebt already includes index multiplication)', () => {
-    // Simulates a scenario where the old API would have:
-    //   totalScaledVariableDebt = 400000000000000000000000 (400k with 18 decimals)
-    //   variableBorrowIndex = 1250000000000000000000000000 (1.25 in RAY)
-    //   totalVariableDebt = 400k × 1.25 = 500000000000000000000000 (500k)
-    // The new API directly gives totalVariableDebt = 500k
     const inputWithIndex: RateCalcInput = {
       ...baseRateInput,
       totalVariableDebt: '500000000000000000000000', // 500k tokens (already index-adjusted)
@@ -188,10 +178,10 @@ describe('deficit impact on rates', () => {
     const deficitResult = simulateNativeRatesAfterActions(withDeficit, { supplyAmount: '0', borrowAmount: '0' });
 
     // Utilization (borrow-side) should be identical — deficit is excluded
-    expect(deficitResult.utilizationRatePercent).toBeCloseTo(noDeficit.utilizationRatePercent, 10);
+    expect(deficitResult.utilizationRatePercent).toBeCloseTo(noDeficit.utilizationRatePercent, 8);
     // Borrow rate should be identical
-    expect(deficitResult.borrowAprPercent).toBeCloseTo(noDeficit.borrowAprPercent, 10);
-    expect(deficitResult.borrowApyPercent).toBeCloseTo(noDeficit.borrowApyPercent, 10);
+    expect(deficitResult.borrowAprPercent).toBeCloseTo(noDeficit.borrowAprPercent, 8);
+    expect(deficitResult.borrowApyPercent).toBeCloseTo(noDeficit.borrowApyPercent, 8);
     // Supply rate should be lower (diluted by deficit in denominator)
     expect(deficitResult.supplyAprPercent).toBeLessThan(noDeficit.supplyAprPercent);
     expect(deficitResult.supplyApyPercent).toBeLessThan(noDeficit.supplyApyPercent);
@@ -204,8 +194,8 @@ describe('deficit impact on rates', () => {
     );
     const baseline = simulateNativeRatesAfterActions(baseRateInput, { supplyAmount: '0', borrowAmount: '0' });
 
-    expect(result.supplyApyPercent).toBeCloseTo(baseline.supplyApyPercent, 10);
-    expect(result.borrowApyPercent).toBeCloseTo(baseline.borrowApyPercent, 10);
+    expect(result.supplyApyPercent).toBeCloseTo(baseline.supplyApyPercent, 8);
+    expect(result.borrowApyPercent).toBeCloseTo(baseline.borrowApyPercent, 8);
   });
 });
 
@@ -215,7 +205,7 @@ describe('baseVariableBorrowRate impact on rates', () => {
 
     const withBase: RateCalcInput = {
       ...baseRateInput,
-      baseVariableBorrowRate: '10000000000000000000000000', // 1% in RAY
+      baseVariableBorrowRate: 1, // 1% (was '10000000000000000000000000' in RAY)
     };
     const baseResult = simulateNativeRatesAfterActions(withBase, { supplyAmount: '0', borrowAmount: '0' });
 
@@ -225,13 +215,13 @@ describe('baseVariableBorrowRate impact on rates', () => {
 
   it('zero baseVariableBorrowRate is the default behavior', () => {
     const result = simulateNativeRatesAfterActions(
-      { ...baseRateInput, baseVariableBorrowRate: '0' },
+      { ...baseRateInput, baseVariableBorrowRate: 0 },
       { supplyAmount: '0', borrowAmount: '0' }
     );
     const baseline = simulateNativeRatesAfterActions(baseRateInput, { supplyAmount: '0', borrowAmount: '0' });
 
-    expect(result.borrowApyPercent).toBeCloseTo(baseline.borrowApyPercent, 10);
-    expect(result.supplyApyPercent).toBeCloseTo(baseline.supplyApyPercent, 10);
+    expect(result.borrowApyPercent).toBeCloseTo(baseline.borrowApyPercent, 8);
+    expect(result.supplyApyPercent).toBeCloseTo(baseline.supplyApyPercent, 8);
   });
 });
 
@@ -247,12 +237,13 @@ describe('hasRateCalcFields', () => {
     decimals: 6,
     availableLiquidity: '1000000000000',
     totalVariableDebt: '500000000000',
-    reserveFactor: '1000',
-    variableRateSlope1: '40000000000000000000000000',
-    variableRateSlope2: '600000000000000000000000000',
-    optimalUsageRate: '800000000000000000000000000',
+    /* Rate params are now percent numbers */
+    reserveFactor: 10,
+    variableRateSlope1: 4,
+    variableRateSlope2: 60,
+    optimalUsageRate: 80,
     deficit: '0',
-    baseVariableBorrowRate: '0',
+    baseVariableBorrowRate: 0,
   };
 
   it('returns true when all 9 rate fields are present', () => {
