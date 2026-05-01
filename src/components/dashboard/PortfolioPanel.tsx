@@ -94,15 +94,13 @@ function SearchResultRow({
         </span>
       </div>
       <div className="flex items-center gap-1 shrink-0">
-        <SideBadge label="S" active={hasSupply} />
-        <SideBadge label="B" active={hasBorrow} />
         {fullyAdded ? (
-          <span className={cn('ds-text-10 font-semibold ml-1 inline-flex items-center gap-0.5', BATCH_THEME.text)}>
+          <span className={cn('ds-text-10 font-semibold inline-flex items-center gap-0.5', BATCH_THEME.text)}>
             <Check className="size-3" aria-hidden />
             Added
           </span>
         ) : partiallyAdded ? (
-          <span className={cn('ds-text-10 font-semibold ml-1', BATCH_THEME.text)}>
+          <span className={cn('ds-text-10 font-semibold', BATCH_THEME.text)}>
             Add {hasSupply ? 'Borrow' : 'Supply'}
           </span>
         ) : null}
