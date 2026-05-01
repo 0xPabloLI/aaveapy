@@ -1461,7 +1461,6 @@ export function buildRateSimulationResult({
       ).filter((id) => !forecastStates[id]).length
     : 0;
 
-  const RAY_SCALE = 1e27;
   const deriveTotalBorrowedUsd = (
     reserveSizeUsd: number | null | undefined,
     utilizationPct: number | null | undefined,
@@ -1579,11 +1578,13 @@ export function buildRateSimulationResult({
           ? deriveAvailableLiquidityUsd(reserve.reserveSizeUsd, totalBorrowedUsd)
           : null;
 
-    const reserveFactorRaw = Number(reserveRateInput.reserveFactor);
-    const reserveFactor = reserveFactorRaw > 0 ? (reserveFactorRaw / 10000) * 100 : null;
+    const reserveFactor = Number.isFinite(reserveRateInput.reserveFactor) && reserveRateInput.reserveFactor > 0
+      ? reserveRateInput.reserveFactor
+      : null;
 
-    const optimalUsageRateRaw = Number(reserveRateInput.optimalUsageRate);
-    const optimalUtilization = optimalUsageRateRaw > 0 ? (optimalUsageRateRaw / RAY_SCALE) * 100 : null;
+    const optimalUtilization = Number.isFinite(reserveRateInput.optimalUsageRate) && reserveRateInput.optimalUsageRate > 0
+      ? reserveRateInput.optimalUsageRate
+      : null;
 
     // Use capped inputs for after values (supplyInputUsd and borrowInputUsd are already capped)
     const availableLiquidityUsdAfter = hasAnyInput
