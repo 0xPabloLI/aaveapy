@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { Trash2, X } from 'lucide-react';
+import { Trash2, Eraser } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatNumberInput } from '@/lib/numberFormat';
 import { cnDsInputSurface } from '@/lib/dsInputSurface';
@@ -80,7 +80,7 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
               className="absolute right-1 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors"
               aria-label={`Clear ${tokenSymbol} ${sideLabel.toLowerCase()}`}
             >
-              <X className="size-3.5" aria-hidden />
+              <Eraser className="size-3.5" aria-hidden />
             </button>
           )}
         </div>
