@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo , memo } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, memo, Fragment } from 'react';
 import { Search, Eraser, ChevronRight, Snowflake } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { FilterChip } from '@/components/ui/filter-chip';
@@ -26,6 +26,10 @@ interface FilterBarProps {
   selectedHubs: string[];
   /** Set selected hub names. */
   setSelectedHubs: (hubs: string[]) => void;
+  /** Current market view mode. */
+  marketViewMode?: 'chain' | 'hub';
+  /** Set market view mode. */
+  setMarketViewMode?: (mode: 'chain' | 'hub') => void;
 }
 
 const categories: { value: TokenCategory; label: string }[] = [
@@ -116,6 +120,8 @@ const FilterBar = ({
   hubNames,
   selectedHubs,
   setSelectedHubs,
+  marketViewMode: controlledMarketViewMode,
+  setMarketViewMode: setControlledMarketViewMode,
 }: FilterBarProps) => {
   const isMobile = useIsMobile();
   const [searchPlaceholder, setSearchPlaceholder] = useState('Search token');
@@ -125,7 +131,12 @@ const FilterBar = ({
   const [expandedChain, setExpandedChain] = useState<string | null>(null);
 
   /** View mode for the markets row: 'chain' = chain chips, 'hub' = hub chips */
-  const [marketViewMode, setMarketViewMode] = useState<'chain' | 'hub'>('chain');
+  const [internalMarketViewMode, setInternalMarketViewMode] = useState<'chain' | 'hub'>('chain');
+  const marketViewMode = controlledMarketViewMode ?? internalMarketViewMode;
+  const setMarketViewMode = useCallback((mode: 'chain' | 'hub') => {
+    setInternalMarketViewMode(mode);
+    setControlledMarketViewMode?.(mode);
+  }, [setControlledMarketViewMode]);
 
   const stableResizeHandler = useCallback(() => {
     debouncedUpdateRef.current?.();
@@ -468,11 +479,10 @@ const FilterBar = ({
                       : 'bg-card/50 text-muted-foreground border border-border/40 hover:text-foreground hover:bg-card/80';
 
                 return (
-                  <div key={group.chainName} className="contents">
+                  <Fragment key={group.chainName}>
                     <div
                       className={`ds-chip flex items-center rounded-md text-[10px] font-medium transition-colors overflow-hidden ${chipStyle}`}
                     >
-                      {/* Left area: icon + chain name → toggles chain selection */}
                       <button
                         onClick={() => handleChainLabelClick(group)}
                         className="flex items-center gap-0.5 px-1 md:px-1.5 py-0.5 hover:opacity-80 transition-opacity"
@@ -481,9 +491,7 @@ const FilterBar = ({
                         <ChainIcon chain={group.chainName} />
                         <span>{group.chainName}</span>
                       </button>
-                      {/* Divider */}
                       <div className="w-px h-3.5 bg-current opacity-20 shrink-0" />
-                      {/* Right area: expand/collapse arrow */}
                       <button
                         onClick={() => handleExpandToggle(group.chainName)}
                         className="flex items-center px-1 py-0.5 hover:opacity-80 transition-opacity"
@@ -493,21 +501,19 @@ const FilterBar = ({
                       </button>
                     </div>
 
-                    {/* Sub-market chips with smooth accordion expand animation */}
                     <div
-                      className="overflow-hidden transition-all duration-300 ease-out"
+                      className="flex items-center overflow-hidden transition-all duration-200 ease-in-out"
                       style={{
-                        maxHeight: expanded ? '500px' : '0px',
+                        maxWidth: expanded ? '500px' : '0px',
                         opacity: expanded ? 1 : 0,
                       }}
                     >
-                      <div className="flex flex-wrap items-center gap-1 pt-1">
+                      <div className="flex items-center gap-1 pl-1 pr-1">
                         {group.markets
                           .slice()
                           .sort((a, b) => {
                             const aVersion = getProtocolVersion(a.marketName);
                             const bVersion = getProtocolVersion(b.marketName);
-                            // V4 markets first
                             if (aVersion === 'v4' && bVersion !== 'v4') return -1;
                             if (aVersion !== 'v4' && bVersion === 'v4') return 1;
                             return 0;
@@ -520,7 +526,7 @@ const FilterBar = ({
                               <button
                                 key={market.marketName}
                                 onClick={() => toggleSubMarket(market.marketName)}
-                                className={`ds-chip gap-0.5 px-1 md:px-1.5 py-0.5 rounded-md text-[10px] font-medium transition-all duration-150 hover:scale-105 active:scale-95 ${
+                                className={`ds-chip gap-0.5 px-1 md:px-1.5 py-0.5 rounded-md text-[10px] font-medium whitespace-nowrap transition-all duration-150 hover:scale-105 active:scale-95 ${
                                   isSubSelected
                                     ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
                                     : 'text-foreground/80 border border-border hover:text-foreground'
@@ -538,7 +544,7 @@ const FilterBar = ({
                           })}
                       </div>
                     </div>
-                  </div>
+                  </Fragment>
                 );
               }
 

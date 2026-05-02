@@ -59,6 +59,7 @@ interface ReservesTableProps {
   isApy: boolean;
   isLoading?: boolean;
   onSelectMarket?: (marketName: string) => void;
+  onSelectHub?: (hubName: string) => void;
   tydroPointToUsdRate: number;
   whitelistMerklCampaignIds: ReadonlySet<string>;
   onToggleWhitelistMerklCampaign: (campaignId: string, enabled: boolean) => void;
@@ -88,6 +89,7 @@ const ReservesTable = ({
   isApy,
   isLoading,
   onSelectMarket,
+  onSelectHub,
   tydroPointToUsdRate,
   whitelistMerklCampaignIds,
   onToggleWhitelistMerklCampaign,
@@ -1444,6 +1446,7 @@ const ReservesTable = ({
             isPortfolioMode={isPortfolioMode}
             portfolioReserveIds={portfolioReserveIds}
             onPortfolioToggle={handlePortfolioToggle}
+            onSelectHub={onSelectHub}
           />
         </div>
         
@@ -1502,14 +1505,22 @@ const ReservesTable = ({
             {/* 列顺序：Token → Market → Price → ...（DeFi/lending 协议表惯例：
              * Asset → Network/Market 紧贴，参考 Aave UI / Compound / Spark / Morpho）。
              * 优化列宽分布：确保 Utilization 刚好撑开，平衡其他列 */}
-            <col style={{ width: '14%' }} /> {/* Token   — +1% from Price，给 ↗ + symbol 多一点呼吸 */}
-            <col style={{ width: '14.5%' }} /> {/* Market — +1% from Price，让 chip 离 Price 数字不至于太空 */}
-            <col style={{ width: '8%' }} />  {/* Price   — Price 内容固定为 $X.XX 短数字，10% 留给数字左侧的余量过大 */}
-            <col style={{ width: '12%' }} /> {/* Size */}
-            <col style={{ width: '13%' }} /> {/* Utilization */}
-            <col style={{ width: '12.5%' }} /> {/* Supply */}
-            <col style={{ width: '12%' }} /> {/* Spread */}
-            <col style={{ width: '14%' }} /> {/* Borrow */}
+            {/* Token — +1% from Price，给 ↗ + symbol 多一点呼吸 */}
+            <col style={{ width: '14%' }} />
+            {/* Market — +1% from Price，让 chip 离 Price 数字不至于太空 */}
+            <col style={{ width: '14.5%' }} />
+            {/* Price — Price 内容固定为 $X.XX 短数字，10% 留给数字左侧的余量过大 */}
+            <col style={{ width: '8%' }} />
+            {/* Size */}
+            <col style={{ width: '12%' }} />
+            {/* Utilization */}
+            <col style={{ width: '13%' }} />
+            {/* Supply */}
+            <col style={{ width: '12.5%' }} />
+            {/* Spread */}
+            <col style={{ width: '12%' }} />
+            {/* Borrow */}
+            <col style={{ width: '14%' }} />
           </colgroup>
           <ReservesTableDesktopHeader
             tableHeaderRef={desktopStickyTheadRef}
@@ -1760,6 +1771,7 @@ const ReservesTable = ({
                   onToggleExpand={handleToggleExpand}
                   onSelectMarket={onSelectMarket}
                   onMarketChipClick={handleMarketChipClick}
+                  onSelectHub={onSelectHub}
                   onIncentiveClick={handleIncentiveClick}
                   displaySupplyTotal={getDisplaySupplyTotal(reserve)}
                   displaySupplyNative={getDisplaySupplyNative(reserve)}

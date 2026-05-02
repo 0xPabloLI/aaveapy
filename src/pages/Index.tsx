@@ -52,7 +52,8 @@ const Index = () => {
   const [showFrozenOrPaused, setShowFrozenOrPaused] = useState(false);
   const [showCacheWarning, setShowCacheWarning] = useState(false);
   const [selectedHubs, setSelectedHubs] = useState<string[]>([]);
-  
+  const [marketViewMode, setMarketViewMode] = useState<'chain' | 'hub'>('chain');
+
   const [isRateDragging, setIsRateDragging] = useState(false);
   const [simulationMode, setSimulationMode] = useState<SimulationMode>('single');
   const portfolio = usePortfolioSimulation();
@@ -387,6 +388,8 @@ const Index = () => {
               hubNames={hubNames}
               selectedHubs={selectedHubs}
               setSelectedHubs={setSelectedHubs}
+              marketViewMode={marketViewMode}
+              setMarketViewMode={setMarketViewMode}
             />
 
             <ReservesTable
@@ -400,6 +403,14 @@ const Index = () => {
                 setSelectedMarkets((prev) =>
                   prev.length === 1 && prev[0] === marketName ? [] : [marketName]
                 );
+                setSelectedHubs([]);
+              }}
+              onSelectHub={(hubName) => {
+                setSelectedHubs((prev) =>
+                  prev.length === 1 && prev[0] === hubName ? [] : [hubName]
+                );
+                setSelectedMarkets([]);
+                setMarketViewMode('hub');
               }}
               tydroPointToUsdRate={tydroPointToUsdRate}
               whitelistMerklCampaignIds={whitelistMerklCampaignIds}

@@ -193,10 +193,10 @@ describe('MobileReserveCard', () => {
       </QueryClientProvider>,
     );
 
-    const hubLink = getByLabelText('View Core hub on Aave Pro');
-    expect(hubLink.className).toContain('px-1.5');
-    expect(hubLink.className).not.toContain('group/hub-link');
-    expect(hubLink.className).not.toContain('pr-3');
+    const hubButton = getByLabelText('Filter by Core hub');
+    expect(hubButton.className).toContain('px-1.5');
+    expect(hubButton.className).not.toContain('group/hub-link');
+    expect(hubButton.className).not.toContain('pr-3');
     expect(container.innerHTML).not.toContain('group-hover/hub-link:opacity-100');
   });
 
@@ -229,10 +229,10 @@ describe('MobileReserveCard', () => {
 
     const utilizationButton = getByLabelText('Show utilization details');
     const marketLabel = getByText(/Horizon/);
-    const hubLink = getByLabelText('View Prime hub on Aave Pro');
+    const hubButton = getByLabelText('Filter by Prime hub');
 
     expect(utilizationButton.compareDocumentPosition(marketLabel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(utilizationButton.compareDocumentPosition(hubLink) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(utilizationButton.compareDocumentPosition(hubButton) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(utilizationButton.className).not.toContain('border-border/50');
     expect(utilizationButton.className).not.toContain('bg-muted/35');
   });

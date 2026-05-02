@@ -68,6 +68,7 @@ interface DesktopReserveRowProps {
   onToggleExpand: (reserveId: string) => void;
   onSelectMarket?: (marketName: string) => void;
   onMarketChipClick?: (reserveId: string) => void;
+  onSelectHub?: (hubName: string) => void;
   onIncentiveClick: (e: React.MouseEvent, reserve: ReserveWithSpread, type: 'supply' | 'borrow', apy: number | null) => void;
   displaySupplyTotal: number | null;
   displaySupplyNative: number | null;
@@ -100,6 +101,7 @@ const DesktopReserveRow = memo(({
   onToggleExpand,
   onSelectMarket,
   onMarketChipClick,
+  onSelectHub,
   onIncentiveClick,
   displaySupplyTotal,
   displaySupplyNative,
@@ -267,16 +269,22 @@ const DesktopReserveRow = memo(({
             <div className={marketCellClassNames.stack}>
               {reserve.hubName && (
                 <div className={marketCellClassNames.hubShell}>
-                  <span
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onSelectHub?.(reserve.hubName!);
+                    }}
                     className={cn(
                       marketCellClassNames.hubPill,
                       isV4Market ? marketCellClassNames.hubPillV4 : marketCellClassNames.hubPillDefault,
+                      'cursor-pointer transition-all duration-150 hover:opacity-80 active:scale-[0.98]',
                     )}
-                    aria-label={`${reserve.hubName} hub`}
-                    title={`${reserve.hubName} hub`}
+                    aria-label={`Filter by ${reserve.hubName} hub`}
+                    title={`Filter by ${reserve.hubName}`}
                   >
                     {reserve.hubName}
-                  </span>
+                  </button>
                   {aaveProHubUrl && (
                     <a
                       href={aaveProHubUrl}

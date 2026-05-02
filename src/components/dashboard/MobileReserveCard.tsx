@@ -77,6 +77,8 @@ interface MobileReserveCardProps {
   isInPortfolio?: boolean;
   /** Callback to add/remove from portfolio. */
   onPortfolioToggle?: (reserveId: string, reserve: ReserveWithSpread, side?: 'supply' | 'borrow') => void;
+  /** Callback when hub pill is clicked for filtering. */
+  onSelectHub?: (hubName: string) => void;
 }
 
 interface MobileReserveAmountRowProps {
@@ -384,6 +386,7 @@ const MobileReserveCard = memo(({
   isPortfolioMode,
   isInPortfolio,
   onPortfolioToggle,
+  onSelectHub,
 }: MobileReserveCardProps) => {
   const [capSheet, setCapSheet] = useState<'supply' | 'borrow' | 'utilization' | 'deficit' | 'frozen' | null>(null);
   const [hasSimulationMounted, setHasSimulationMounted] = useState(isSimulationExpanded);
@@ -637,21 +640,19 @@ const MobileReserveCard = memo(({
                       : "text-muted-foreground/70 bg-muted/40"
                   );
 
-                  return aaveProHubUrl ? (
-                    <a
-                      href={aaveProHubUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className={cn("inline-flex max-w-full shrink-0 items-center px-1.5 py-0.5", hubClass)}
-                      aria-label={`View ${reserve.hubName} hub on Aave Pro`}
+                  return (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSelectHub?.(reserve.hubName!);
+                      }}
+                      className={cn("inline-flex max-w-full shrink-0 items-center px-1.5 py-0.5 cursor-pointer transition-all duration-150 hover:opacity-80 active:scale-[0.98]", hubClass)}
+                      aria-label={`Filter by ${reserve.hubName} hub`}
+                      title={`Filter by ${reserve.hubName}`}
                     >
                       <span className="truncate">{reserve.hubName}</span>
-                    </a>
-                  ) : (
-                    <span className={cn("inline-flex shrink-0 items-center truncate px-1.5 py-0.5", hubClass)}>
-                      {reserve.hubName}
-                    </span>
+                    </button>
                   );
                 })()}
               </div>
