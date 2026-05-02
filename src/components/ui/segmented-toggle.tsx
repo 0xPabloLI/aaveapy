@@ -85,14 +85,14 @@ export function SegmentedToggle<T extends string = string>({
     <div
       ref={trackRef}
       className={cn(
-        'relative inline-flex rounded-md bg-muted/50',
-        isVertical ? 'flex-col gap-0.5 p-0.5' : 'items-center gap-0.5 p-0.5',
+        'relative inline-flex rounded-lg bg-muted/60 p-0.5',
+        isVertical ? 'flex-col gap-0.5' : 'items-center gap-0.5',
         className,
       )}
     >
       {/* Sliding indicator */}
       <div
-        className="absolute rounded-md bg-background shadow-sm pointer-events-none motion-safe:transition-all motion-safe:duration-200 motion-safe:ease-out"
+        className="absolute rounded-md bg-card shadow-sm border border-border/40 pointer-events-none motion-safe:transition-all motion-safe:duration-200 motion-safe:ease-out"
         style={{
           width: indicator.width,
           height: indicator.height,
@@ -116,10 +116,10 @@ export function SegmentedToggle<T extends string = string>({
             aria-checked={isActive}
             onClick={() => onChange(option.value)}
             className={cn(
-              'relative z-10 flex items-center justify-center rounded-md ds-text-12 font-semibold transition-colors duration-200',
+              'relative z-10 flex items-center justify-center rounded-md ds-text-12 font-medium transition-colors duration-200',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
               isVertical ? 'flex-1 px-3 py-0.5' : 'px-3 h-[1.5rem]',
-              isActive ? activeTextClassName : 'text-muted-foreground hover:text-foreground',
+              isActive ? `font-semibold ${activeTextClassName}` : 'text-muted-foreground hover:text-foreground',
             )}
           >
             {option.label}
