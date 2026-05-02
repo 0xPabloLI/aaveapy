@@ -490,7 +490,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
                   const reserveId = getReserveKey(r);
                   const chainSrc = getChainIconSrc(r.chainName);
                   const marketLabel = getMarketChipLabel(r.marketName, r.chainName);
-                  const isV4 = getProtocolVersion(r.marketName) === 'v4';
+                  const isV4 = isV4Market(r.marketName);
                   return (
                     <button
                       key={reserveId}
