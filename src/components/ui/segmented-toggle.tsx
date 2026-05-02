@@ -15,6 +15,8 @@ interface SegmentedToggleProps<T extends string = string> {
   activeTextClassName?: string;
   /** Layout orientation (default: horizontal) */
   orientation?: 'horizontal' | 'vertical';
+  /** Match height/typography to ds-chip for inline alignment */
+  size?: 'default' | 'chip';
 }
 
 interface IndicatorStyle {
@@ -30,7 +32,9 @@ export function SegmentedToggle<T extends string = string>({
   className,
   activeTextClassName = 'ds-text-emerald-600',
   orientation = 'horizontal',
+  size = 'default',
 }: SegmentedToggleProps<T>) {
+  const isChip = size === 'chip';
   const trackRef = useRef<HTMLDivElement>(null);
   const buttonRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const [indicator, setIndicator] = useState<IndicatorStyle>({
@@ -85,7 +89,8 @@ export function SegmentedToggle<T extends string = string>({
     <div
       ref={trackRef}
       className={cn(
-        'relative inline-flex rounded-lg bg-muted/60 p-0.5',
+        'relative inline-flex rounded-lg bg-muted/60',
+        isChip ? 'p-[2px]' : 'p-[3px]',
         isVertical ? 'flex-col gap-0.5' : 'items-center gap-0.5',
         className,
       )}
@@ -116,9 +121,10 @@ export function SegmentedToggle<T extends string = string>({
             aria-checked={isActive}
             onClick={() => onChange(option.value)}
             className={cn(
-              'relative z-10 flex items-center justify-center rounded-md ds-text-12 font-medium transition-colors duration-200',
+              'relative z-10 flex items-center justify-center rounded-md font-medium transition-colors duration-200 leading-none',
+              isChip ? 'ds-text-11' : 'ds-text-12',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
-              isVertical ? 'flex-1 px-3 py-0.5' : 'px-3 h-[1.5rem]',
+              isVertical ? 'flex-1 px-3 py-1.5' : isChip ? 'px-2 h-[24px]' : 'px-3 h-[22px]',
               isActive ? `font-semibold ${activeTextClassName}` : 'text-muted-foreground hover:text-foreground',
             )}
           >

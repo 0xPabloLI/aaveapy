@@ -425,6 +425,7 @@ const FilterBar = ({
             value={marketViewMode}
             onChange={setMarketViewMode}
             activeTextClassName="text-foreground"
+            size="chip"
           />
         )}
 
@@ -484,7 +485,7 @@ const FilterBar = ({
                       <button
                         onClick={() => handleExpandToggle(group.chainName)}
                         className="flex items-center px-1 py-0.5 hover:opacity-80 transition-opacity"
-                        title={expanded ? 'Collapse sub-markets' : 'Expand sub-markets'}
+                        title={expanded ? 'Collapse Ethereum markets' : 'Expand Ethereum markets'}
                       >
                         <ChevronRight
                           className={`w-3 h-3 transition-transform duration-200 ${expanded ? 'rotate-90' : ''}`}
