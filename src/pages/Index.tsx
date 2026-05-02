@@ -53,6 +53,7 @@ const Index = () => {
   const [showCacheWarning, setShowCacheWarning] = useState(false);
   const [selectedHubs, setSelectedHubs] = useState<string[]>([]);
   const [marketViewMode, setMarketViewMode] = useState<'chain' | 'hub'>('chain');
+  const [expandedChain, setExpandedChain] = useState<string | null>(null);
 
   const [isRateDragging, setIsRateDragging] = useState(false);
   const [simulationMode, setSimulationMode] = useState<SimulationMode>('single');
@@ -390,6 +391,8 @@ const Index = () => {
               setSelectedHubs={setSelectedHubs}
               marketViewMode={marketViewMode}
               setMarketViewMode={setMarketViewMode}
+              expandedChain={expandedChain}
+              setExpandedChain={setExpandedChain}
             />
 
             <ReservesTable
@@ -405,6 +408,8 @@ const Index = () => {
                 );
                 setSelectedHubs([]);
                 setMarketViewMode('chain');
+                const chain = effectiveMarketsList.find((m) => m.marketName === marketName)?.chainName ?? null;
+                setExpandedChain(chain);
               }}
               onSelectHub={(hubName) => {
                 setSelectedHubs((prev) =>

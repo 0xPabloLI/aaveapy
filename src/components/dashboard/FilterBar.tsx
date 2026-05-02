@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo, memo, Fragment } fro
 import { Search, Eraser, ChevronRight, Snowflake } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { FilterChip } from '@/components/ui/filter-chip';
+import { SegmentedToggle } from '@/components/ui/segmented-toggle';
 import { TokenCategory, MarketListItem, ETHEREUM_MARKET_NAMES } from '@/types/aave';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -30,6 +31,10 @@ interface FilterBarProps {
   marketViewMode?: 'chain' | 'hub';
   /** Set market view mode. */
   setMarketViewMode?: (mode: 'chain' | 'hub') => void;
+  /** Currently expanded chain name (for Ethereum sub-markets). */
+  expandedChain?: string | null;
+  /** Set expanded chain name. */
+  setExpandedChain?: (chain: string | null) => void;
 }
 
 const categories: { value: TokenCategory; label: string }[] = [
@@ -122,13 +127,20 @@ const FilterBar = ({
   setSelectedHubs,
   marketViewMode: controlledMarketViewMode,
   setMarketViewMode: setControlledMarketViewMode,
+  expandedChain: controlledExpandedChain,
+  setExpandedChain: setControlledExpandedChain,
 }: FilterBarProps) => {
   const isMobile = useIsMobile();
   const [searchPlaceholder, setSearchPlaceholder] = useState('Search token');
   const desktopSearchInputRef = useRef<HTMLInputElement>(null);
   const mobileSearchInputRef = useRef<HTMLInputElement>(null);
   const debouncedUpdateRef = useRef<(() => void) | null>(null);
-  const [expandedChain, setExpandedChain] = useState<string | null>(null);
+  const [internalExpandedChain, setInternalExpandedChain] = useState<string | null>(null);
+  const expandedChain = controlledExpandedChain ?? internalExpandedChain;
+  const setExpandedChain = useCallback((chain: string | null) => {
+    setInternalExpandedChain(chain);
+    setControlledExpandedChain?.(chain);
+  }, [setControlledExpandedChain]);
 
   /** View mode for the markets row: 'chain' = chain chips, 'hub' = hub chips */
   const [internalMarketViewMode, setInternalMarketViewMode] = useState<'chain' | 'hub'>('chain');
@@ -190,7 +202,7 @@ const FilterBar = ({
     setSelectedMarkets([]);
     setExpandedChain(null);
     setSelectedHubs([]);
-  }, [setSelectedMarkets, setSelectedHubs]);
+  }, [setSelectedMarkets, setSelectedHubs, setExpandedChain]);
 
   const handleChainLabelClick = useCallback(
     (group: ChainGroup) => {
@@ -203,7 +215,7 @@ const FilterBar = ({
     (chainName: string) => {
       setExpandedChain((prev) => (prev === chainName ? null : chainName));
     },
-    [],
+    [setExpandedChain],
   );
 
   const handleOtherChainClick = useCallback(
@@ -404,39 +416,24 @@ const FilterBar = ({
 
         {/* Chain/Hub segmented toggle – only when hubs exist */}
         {hasHubs && (
-          <div className="flex items-center gap-0.5 bg-muted/60 rounded-lg p-0.5 border border-border/40">
-            <button
-              type="button"
-              onClick={() => {
+          <SegmentedToggle
+            options={[
+              { value: 'chain', label: 'Chain' },
+              { value: 'hub', label: 'Hub' },
+            ]}
+            value={marketViewMode}
+            onChange={(val) => {
+              if (val === 'chain') {
                 setMarketViewMode('chain');
-                setSelectedHub(null);
-              }}
-              className={`px-3 py-1 rounded-md ds-text-11 font-semibold transition-all duration-200 ${
-                marketViewMode === 'chain'
-                  ? 'bg-card text-foreground shadow-sm border border-border/60'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-card/50'
-              }`}
-              aria-pressed={marketViewMode === 'chain'}
-            >
-              Chain
-            </button>
-            <button
-              type="button"
-              onClick={() => {
+                setSelectedHubs([]);
+              } else {
                 setMarketViewMode('hub');
                 setSelectedMarkets([]);
                 setExpandedChain(null);
-              }}
-              className={`px-3 py-1 rounded-md ds-text-11 font-semibold transition-all duration-200 ${
-                marketViewMode === 'hub'
-                  ? 'bg-card text-foreground shadow-sm border border-border/60'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-card/50'
-              }`}
-              aria-pressed={marketViewMode === 'hub'}
-            >
-              Hub
-            </button>
-          </div>
+              }
+            }}
+            activeTextClassName="text-foreground"
+          />
         )}
 
         {marketViewMode === 'hub' && hasHubs
