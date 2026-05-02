@@ -17,6 +17,19 @@ import { normalizeTokenSymbolForSearch } from '@/lib/tokenSymbolNormalization';
 import { isStablecoinSymbol, isEthRelatedSymbol, isBtcRelatedSymbol } from '@/lib/tokenCategories';
 import { getReserveKey } from '@/lib/reserveKey';
 import { getChainIconSrc } from '@/lib/chainIcons';
+import { ETHEREUM_MARKET_NAMES } from '@/types/aave';
+import { getProtocolVersion } from '@/lib/protocolVersion';
+
+/** Mirrors FilterBar's market chip label: V4 badge + sub-market name for Ethereum, chain name otherwise. */
+function getMarketChipLabel(marketName: string, chainName: string): string {
+  if (chainName !== 'Ethereum') return chainName;
+  const version = getProtocolVersion(marketName);
+  if (version === 'v4') {
+    const withoutPrefix = marketName.replace(/^AaveV4/i, '');
+    return withoutPrefix.replace(/([a-z])([A-Z])/g, '$1 $2');
+  }
+  return ETHEREUM_MARKET_NAMES[marketName] ?? marketName;
+}
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import PortfolioTokenRow from './PortfolioTokenRow';
 import PortfolioSummaryCard from './PortfolioSummaryCard';
@@ -488,6 +501,8 @@ const PortfolioPanel = memo(function PortfolioPanel({
                 {suggestedReserves.map((r) => {
                   const reserveId = getReserveKey(r);
                   const chainSrc = getChainIconSrc(r.chainName);
+                  const marketLabel = getMarketChipLabel(r.marketName, r.chainName);
+                  const isV4 = getProtocolVersion(r.marketName) === 'v4';
                   return (
                     <button
                       key={reserveId}
@@ -498,14 +513,17 @@ const PortfolioPanel = memo(function PortfolioPanel({
                     >
                       <TokenIcon symbol={r.tokenSymbol} size={14} />
                       <span>{r.tokenSymbol}</span>
-                      {chainSrc && (
-                        <img src={chainSrc} alt={r.chainName} title={r.marketName} className="size-3 shrink-0" />
-                      )}
-                      {!isMobile && (
-                        <span className="ds-text-10 font-normal text-muted-foreground truncate max-w-[90px]">
-                          {r.marketName}
-                        </span>
-                      )}
+                      <span className="inline-flex items-center gap-0.5 ds-text-10 font-normal text-muted-foreground">
+                        {chainSrc && (
+                          <img src={chainSrc} alt={r.chainName} className="size-3 shrink-0" />
+                        )}
+                        {isV4 && (
+                          <span className="inline-flex items-center px-1 py-0 rounded-full text-[9px] font-medium leading-none text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10">
+                            V4
+                          </span>
+                        )}
+                        <span>{marketLabel}</span>
+                      </span>
                     </button>
                   );
                 })}
@@ -519,6 +537,8 @@ const PortfolioPanel = memo(function PortfolioPanel({
                 {suggestedReserves.map((r) => {
                   const reserveId = getReserveKey(r);
                   const chainSrc = getChainIconSrc(r.chainName);
+                  const marketLabel = getMarketChipLabel(r.marketName, r.chainName);
+                  const isV4 = getProtocolVersion(r.marketName) === 'v4';
                   return (
                     <button
                       key={reserveId}
@@ -529,14 +549,17 @@ const PortfolioPanel = memo(function PortfolioPanel({
                     >
                       <TokenIcon symbol={r.tokenSymbol} size={12} />
                       <span>{r.tokenSymbol}</span>
-                      {chainSrc && (
-                        <img src={chainSrc} alt={r.chainName} title={r.marketName} className="size-3 shrink-0" />
-                      )}
-                      {!isMobile && (
-                        <span className="ds-text-10 font-normal text-muted-foreground truncate max-w-[80px]">
-                          {r.marketName}
-                        </span>
-                      )}
+                      <span className="inline-flex items-center gap-0.5 ds-text-10 font-normal text-muted-foreground">
+                        {chainSrc && (
+                          <img src={chainSrc} alt={r.chainName} className="size-3 shrink-0" />
+                        )}
+                        {isV4 && (
+                          <span className="inline-flex items-center px-1 py-0 rounded-full text-[9px] font-medium leading-none text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10">
+                            V4
+                          </span>
+                        )}
+                        <span>{marketLabel}</span>
+                      </span>
                     </button>
                   );
                 })}
