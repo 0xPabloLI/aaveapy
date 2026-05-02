@@ -446,7 +446,7 @@ const FilterBar = ({
                               V4
                             </span>
                           )}
-                          <span>{getEthSubMarketLabel(market)}</span>
+                          <span>{getEthSubMarketLabel(market.marketName)}</span>
                         </button>
                       );
                     })}
