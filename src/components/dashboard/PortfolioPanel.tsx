@@ -91,7 +91,12 @@ function SearchResultRow({
               className="size-3 shrink-0"
             />
           )}
-          <span className="truncate">{reserve.marketName}</span>
+          {isV4Market(reserve.marketName) && (
+            <span className="inline-flex items-center px-1 py-0 rounded-full text-[9px] font-medium leading-none text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10 shrink-0">
+              V4
+            </span>
+          )}
+          <span className="truncate">{getMarketChipLabel(reserve.marketName, reserve.chainName)}</span>
         </span>
       </div>
       <div className="flex items-center gap-1 shrink-0">
