@@ -558,6 +558,7 @@ const FilterBar = ({
                           );
                         })}
                     </AnimatePresence>
+                    {expanded && <div className="h-px w-full bg-border/40" />}
                   </Fragment>
                 );
               }

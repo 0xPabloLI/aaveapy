@@ -391,6 +391,21 @@ import { SegmentedToggle } from '@/components/ui/segmented-toggle';
 
 迁移与验收：所有筛选芯片（Token Categories、Markets chain/hub chips、Hub chips）统一使用 §5.2 样式；`ScenarioControls` 的 USD/Token 使用分段控件（非单按钮）；**新增原生勾选框必须复用 `DS_NATIVE_CHECKBOX_CLASS`**。
 
+### 5.9 分隔线（Divider）
+
+用于同一行内或相邻逻辑分组之间的视觉分隔。两种场景对应两种样式，不可混用。
+
+| 场景 | 方向 | Tailwind class | 说明 |
+|------|------|----------------|------|
+| **内联分隔**（chip 内部元素之间）| 竖向 | `w-px h-3.5 bg-current opacity-20 shrink-0` | 高度跟随容器；颜色跟随父元素 `currentColor`，保持与 chip 文字同色系 |
+| **分组分隔**（展开子项列表与后续组之间）| 横向 | `h-px w-full bg-border/40` | 使用语义 `border` 色 + 40% 透明度，视觉轻于实线边框，暗示"同层级、可独立操作" |
+
+**规范要点**：
+- 分组分隔线仅出现在**展开内容结束、下一组开始**的位置，不在每个 chip 后都加。
+- 分组分隔线宽度 `w-full` 取父容器（filter bar 行）宽度，不是 chip 宽度。
+- 透明度 40% 不可随意增减：过重（如 `bg-border`）会变成硬边框，与 chip 本身的 `border-border/40` 抢视觉权重；过轻（如 `bg-border/20`）则不起分隔作用。
+- 若后续新增其他可展开分组（如 Arbitrum 多 market），同样使用分组分隔线，保持一致。
+
 ---
 
 ## 6. 光标与 Tooltip 交互
