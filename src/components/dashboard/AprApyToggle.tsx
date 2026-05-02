@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Info, X } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
+import { SegmentedToggle } from '@/components/ui/segmented-toggle';
 
 interface AprApyToggleProps {
   isApy: boolean;
@@ -396,37 +397,14 @@ export function AprApyToggle({ isApy, setIsApy }: AprApyToggleProps) {
         }
       </InfoIconButton>
 
-      {/* Segmented Control with color indication */}
-      <div className="flex items-center gap-0.5 bg-muted/60 rounded-lg p-0.5 border border-border/40">
-        <button
-          type="button"
-          onClick={() => setIsApy(false)}
-          className={`
-            px-3 py-1 rounded-md ds-text-12 font-semibold transition-all duration-200
-            ${!isApy 
-              ? 'bg-card ds-text-emerald-600 shadow-sm border border-border/60' 
-              : 'text-muted-foreground hover:text-foreground hover:bg-card/50'
-            }
-          `}
-          aria-pressed={!isApy}
-        >
-          APR
-        </button>
-        <button
-          type="button"
-          onClick={() => setIsApy(true)}
-          className={`
-            px-3 py-1 rounded-md ds-text-12 font-semibold transition-all duration-200
-            ${isApy 
-              ? 'bg-card ds-text-emerald-600 shadow-sm border border-border/60' 
-              : 'text-muted-foreground hover:text-foreground hover:bg-card/50'
-            }
-          `}
-          aria-pressed={isApy}
-        >
-          APY
-        </button>
-      </div>
+      <SegmentedToggle
+        options={[
+          { value: 'apr', label: 'APR' },
+          { value: 'apy', label: 'APY' },
+        ]}
+        value={isApy ? 'apy' : 'apr'}
+        onChange={(val) => setIsApy(val === 'apy')}
+      />
 
       <InfoIconButton
         aria-label="Information about APY"

@@ -350,9 +350,36 @@ reserves desktop table 的 8 列对齐分配：
 
 | 用途 | 参考文件 |
 |------|----------|
-| APR/APY 分段 | `AprApyToggle.tsx` |
+| APR/APY 分段 | `AprApyToggle.tsx` → 使用 `SegmentedToggle` |
 | Token / Markets / Hub 筛选芯片 | `FilterBar.tsx` |
-| USD/Token 等模式分段 | `ScenarioControls.tsx` |
+| USD/Token 等模式分段 | `ScenarioControls.tsx` → 使用 `SegmentedToggle` |
+| **可复用分段组件** | **`src/components/ui/segmented-toggle.tsx`** |
+
+#### SegmentedToggle 组件
+
+已提取为统一组件，支持横向/纵向、自定义激活文字颜色等：
+
+```tsx
+import { SegmentedToggle } from '@/components/ui/segmented-toggle';
+
+// 横向（默认）
+<SegmentedToggle
+  options={[
+    { value: 'apr', label: 'APR' },
+    { value: 'apy', label: 'APY' },
+  ]}
+  value={currentValue}
+  onChange={(val) => setValue(val)}
+/>
+
+// 纵向
+<SegmentedToggle
+  options={[...]}
+  value={currentValue}
+  onChange={(val) => setValue(val)}
+  orientation="vertical"
+/>
+```
 
 ### 5.8 Pill 与可点击性
 

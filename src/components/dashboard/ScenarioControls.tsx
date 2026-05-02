@@ -5,6 +5,7 @@ import { formatNumberInput } from '@/lib/numberFormat';
 import { DS_NATIVE_CHECKBOX_CLASS } from '@/lib/dsNativeCheckbox';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { SegmentedToggle } from '@/components/ui/segmented-toggle';
 import { cn } from '@/lib/utils';
 import { cnDsInputSurface } from '@/lib/dsInputSurface';
 
@@ -156,19 +157,8 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
   const inputMinW = isMobile ? 'min-w-[5rem]' : 'min-w-[3.5rem]';
   const inputBase = `w-full min-w-0 ${inputMinW} ${controlH} ${inputPx} ${fontSize} tabular-nums placeholder:italic`;
 
-  /**
-   * Segmented control: same metrics as `AprApyToggle` (px-3 py-1, ds-text-12, content-width segments)
-   * so USD/Token matches APR/APY in FilterBar. Spec: DESIGN-SYSTEM-REFERENCE.md §5.1 (segmented control).
-   */
-  const segmentedTrack = 'rounded-lg border border-border/40 bg-muted/60 p-0.5 gap-0.5';
-  const segmentedFontSize = isMobile ? 'ds-text-11' : 'ds-text-12';
   const segmentedUsdLabelSize = isMobile ? 'text-[12px]' : 'text-[13px]';
-  const segmentedSegment =
-    `flex items-center justify-center rounded-md ${segmentedFontSize} font-semibold transition-all duration-200 px-3 py-1`;
-  const segmentedSelectedBase =
-    'bg-card text-foreground border border-border/60 shadow-sm';
-  const segmentedUnselectedBase =
-    'text-muted-foreground hover:bg-card/50 hover:text-foreground';
+  const segmentedActiveTextClass = 'text-foreground';
 
   const showMeritMerklMode = typeof onMeritMerklNetPositionChange === 'function';
   const meritMerklCheckboxId = 'scenario-merit-merkl-net-lending-borrowing';
@@ -184,39 +174,17 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
     return (
       <div className="relative rounded-xl border border-border/60 bg-card/60 backdrop-blur-sm px-1.5 py-1">
         <div className="flex min-w-0 items-center gap-1.5">
-          <div
-            className={cn(
-              'flex min-h-0 shrink-0 flex-col self-stretch',
-              segmentedTrack,
-            )}
-          >
-            <button
-              type="button"
-              onClick={() => handleModeChange('usd')}
-              className={cn(
-                'min-h-0 flex-1',
-                segmentedSegment,
-                inputMode === 'usd' ? segmentedSelectedBase : segmentedUnselectedBase,
-              )}
-              aria-pressed={inputMode === 'usd'}
-              aria-label="USD mode"
-            >
-              <span className={segmentedUsdLabelSize}>USD</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleModeChange('token')}
-              className={cn(
-                'min-h-0 flex-1',
-                segmentedSegment,
-                inputMode === 'token' ? segmentedSelectedBase : segmentedUnselectedBase,
-              )}
-              aria-pressed={inputMode === 'token'}
-              aria-label="Token mode"
-            >
-              <span className={segmentedUsdLabelSize}>Token</span>
-            </button>
-          </div>
+          <SegmentedToggle
+            options={[
+              { value: 'usd', label: 'USD' },
+              { value: 'token', label: 'Token' },
+            ]}
+            value={inputMode}
+            onChange={(val) => handleModeChange(val as ScenarioInputMode)}
+            orientation="vertical"
+            activeTextClassName={segmentedActiveTextClass}
+            className="shrink-0 self-stretch"
+          />
           <div className="flex flex-col gap-1 flex-1 min-w-0">
             <div className="flex min-w-0 items-center gap-1">
               <span className={`${fieldLabelMobileSupply} w-11 shrink-0`}>Supply</span>
@@ -338,30 +306,16 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
     <div className="w-full min-w-0 rounded-xl bg-card/60 px-3 py-1.5 backdrop-blur-sm">
       <div ref={desktopRowRef} className="flex flex-row items-center gap-x-4">
         {/* USD/Token Mode Switch - Always on the left */}
-        <div className={cn('flex shrink-0 items-center', segmentedTrack)}>
-          <button
-            type="button"
-            onClick={() => handleModeChange('usd')}
-            className={cn(
-              segmentedSegment,
-              inputMode === 'usd' ? segmentedSelectedBase : segmentedUnselectedBase,
-            )}
-            aria-pressed={inputMode === 'usd'}
-          >
-            <span className={segmentedUsdLabelSize}>USD</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => handleModeChange('token')}
-            className={cn(
-              segmentedSegment,
-              inputMode === 'token' ? segmentedSelectedBase : segmentedUnselectedBase,
-            )}
-            aria-pressed={inputMode === 'token'}
-          >
-            <span className={segmentedUsdLabelSize}>Token</span>
-          </button>
-        </div>
+        <SegmentedToggle
+          options={[
+            { value: 'usd', label: 'USD' },
+            { value: 'token', label: 'Token' },
+          ]}
+          value={inputMode}
+          onChange={(val) => handleModeChange(val as ScenarioInputMode)}
+          activeTextClassName={segmentedActiveTextClass}
+          className="shrink-0"
+        />
 
         {/* Simulation inputs and controls group - Wraps as a unit to keep alignment */}
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 min-w-0 flex-1">

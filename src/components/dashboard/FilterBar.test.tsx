@@ -76,7 +76,7 @@ describe('FilterBar', () => {
     render(<TestWrapper />);
 
     const marketsRow = screen.getAllByTestId('markets-row')[0];
-    const hubButton = within(marketsRow).getByRole('button', { name: 'Hub' });
+    const hubButton = within(marketsRow).getByRole('radio', { name: 'Hub' });
     fireEvent.click(hubButton);
 
     ['Core', 'Prime'].forEach((hub) => {
