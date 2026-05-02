@@ -203,7 +203,7 @@ const DesktopReserveRow = memo(({
       <TableRow
         data-reserve-id={reserveId}
         className={cn(
-          'transition-colors duration-150 cursor-pointer hover:bg-muted/60 active:bg-muted/80',
+          'cursor-pointer transition-all duration-200 hover:bg-muted/60 active:scale-[0.998] active:bg-muted/80',
           isExpanded && 'bg-muted/30',
           isExpanded &&
             '[&_td]:sticky [&_td]:z-[25] [&_td]:border-b [&_td]:border-border/60 [&_td]:bg-card [&_td]:shadow-[0_1px_2px_0_rgb(0_0_0/0.04)] [&_td]:[top:var(--reserves-expanded-main-row-top,5.75rem)]',
@@ -541,32 +541,38 @@ const DesktopReserveRow = memo(({
           </div>
         </TableCell>
       </TableRow>
-      {isExpanded && (
-        <TableRow
-          className="border-0 bg-transparent hover:bg-transparent data-[state=selected]:bg-transparent"
-          onClick={(event) => event.stopPropagation()}
-        >
-          <TableCell colSpan={8} className="min-w-0 p-0">
-            <div
-              data-reserves-simulation-scrollport
-              className="px-[var(--ds-space-3)] py-[var(--ds-space-3)]"
-            >
+      {/* Expanded simulation panel with smooth animation */}
+      <TableRow
+        className="border-0 bg-transparent hover:bg-transparent data-[state=selected]:bg-transparent"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <TableCell colSpan={8} className="min-w-0 p-0">
+          <div
+            className="grid transition-[grid-template-rows] duration-300 ease-in-out"
+            style={{ gridTemplateRows: isExpanded ? '1fr' : '0fr' }}
+          >
+            <div className="overflow-hidden">
               {hasSimulationMounted && simulation && (
-                <SimulationSubRow
-                  reserve={reserve}
-                  simulation={simulation}
-                  isApy={isApy}
-                  supplyInput={supplyInput}
-                  borrowInput={borrowInput}
-                  inputMode={inputMode}
-                  onCorrectSupplyInput={onCorrectSupplyInput}
-                  onCorrectBorrowInput={onCorrectBorrowInput}
-                />
+                <div
+                  data-reserves-simulation-scrollport
+                  className="px-[var(--ds-space-3)] py-[var(--ds-space-3)]"
+                >
+                  <SimulationSubRow
+                    reserve={reserve}
+                    simulation={simulation}
+                    isApy={isApy}
+                    supplyInput={supplyInput}
+                    borrowInput={borrowInput}
+                    inputMode={inputMode}
+                    onCorrectSupplyInput={onCorrectSupplyInput}
+                    onCorrectBorrowInput={onCorrectBorrowInput}
+                  />
+                </div>
               )}
             </div>
-          </TableCell>
-        </TableRow>
-      )}
+          </div>
+        </TableCell>
+      </TableRow>
     </Fragment>
   );
 });

@@ -735,7 +735,7 @@ const MobileReserveCard = memo(({
               onClick={onToggleSimulation}
               aria-expanded={isSimulationExpanded}
               aria-label={isSimulationExpanded ? 'Collapse details panel' : 'Expand details panel'}
-              className={`flex w-full items-center justify-between rounded-lg px-2 py-1 ds-text-12 text-muted-foreground transition-all duration-200 ${
+              className={`flex w-full items-center justify-between rounded-lg px-2 py-1 ds-text-12 text-muted-foreground transition-all duration-200 active:scale-[0.995] ${
                 isSimulationExpanded
                   ? 'border border-foreground/25 bg-muted/60 shadow-sm dark:border-foreground/20 dark:bg-muted/40'
                   : 'border border-border/60 bg-background hover:bg-muted/40 hover:border-border/80 dark:bg-card/50 dark:hover:bg-muted/30'
@@ -749,7 +749,7 @@ const MobileReserveCard = memo(({
                 </span>
               </span>
               {/* Expand icon on the right */}
-              <ListCollapse className={`h-3.5 w-3.5 shrink-0 transition-transform duration-300 ${isSimulationExpanded ? 'rotate-180' : ''}`} />
+              <ListCollapse className={`h-3.5 w-3.5 shrink-0 transition-transform duration-300 ease-in-out ${isSimulationExpanded ? 'rotate-180' : ''}`} />
             </button>
           </div>
         </div>

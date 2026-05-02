@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo , memo } from 'react';
-import { Search, Eraser, ChevronRight, ChevronLeft, Snowflake } from 'lucide-react';
+import { Search, Eraser, ChevronRight, Snowflake } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { FilterChip } from '@/components/ui/filter-chip';
 import { TokenCategory, MarketListItem, ETHEREUM_MARKET_NAMES } from '@/types/aave';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -283,7 +284,7 @@ const FilterBar = ({
                 setSelectedCategory(category.value);
               }
             }}
-            className={`inline-flex items-center justify-center h-7 px-2 rounded-md ds-text-11 font-medium transition-colors ${
+            className={`ds-chip px-2 md:px-2.5 rounded-md ds-text-11 font-medium transition-colors ${
               selectedCategory === category.value
                 ? 'bg-card text-foreground shadow-sm border border-[rgb(var(--ds-brand-magenta-rgb))]'
                 : 'bg-card/50 text-muted-foreground border border-border/40 hover:text-foreground hover:bg-card/80'
@@ -501,17 +502,21 @@ const FilterBar = ({
                         className="flex items-center px-1 py-0.5 hover:opacity-80 transition-opacity"
                         title={expanded ? 'Collapse sub-markets' : 'Expand sub-markets'}
                       >
-                        {expanded ? (
-                          <ChevronLeft className="w-3 h-3" />
-                        ) : (
-                          <ChevronRight className="w-3 h-3" />
-                        )}
+                        <ChevronRight className={`w-3 h-3 transition-transform duration-200 ease-in-out ${expanded ? 'rotate-90' : ''}`} />
                       </button>
                     </div>
 
-                    {/* Sub-market chips */}
-                    {expanded &&
-                      group.markets
+                    {/* Sub-market chips with smooth expand animation */}
+                    <div
+                      className="flex flex-wrap items-center gap-1 overflow-hidden transition-all duration-300 ease-in-out"
+                      style={{
+                        maxHeight: expanded ? '200px' : '0px',
+                        opacity: expanded ? 1 : 0,
+                        marginTop: expanded ? '0.25rem' : '0px',
+                        marginBottom: expanded ? '0px' : '0px',
+                      }}
+                    >
+                      {group.markets
                         .slice()
                         .sort((a, b) => {
                           const aVersion = getProtocolVersion(a.marketName);
@@ -529,7 +534,7 @@ const FilterBar = ({
                             <button
                               key={market.marketName}
                               onClick={() => toggleSubMarket(market.marketName)}
-                              className={`ds-chip gap-0.5 px-1 md:px-1.5 py-0.5 rounded-md text-[10px] font-medium transition-colors ${
+                              className={`ds-chip gap-0.5 px-1 md:px-1.5 py-0.5 rounded-md text-[10px] font-medium transition-all duration-150 hover:scale-105 active:scale-95 ${
                                 isSubSelected
                                   ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
                                   : 'text-foreground/80 border border-border hover:text-foreground'
@@ -545,6 +550,7 @@ const FilterBar = ({
                             </button>
                           );
                         })}
+                    </div>
                   </div>
                 );
               }
