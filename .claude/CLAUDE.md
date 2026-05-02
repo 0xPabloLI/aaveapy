@@ -51,7 +51,7 @@ For API contract changes, follow `docs/conventions/api-contract-checklist.md`.
 
 ## PR / Merge Guardrails
 - Keep commits concise and conventional; no URL in commit message.
-- Do not “cosmetically resolve” review threads without actual fix or maintainer-approved rationale.
+- Do not "cosmetically resolve" review threads without actual fix or maintainer-approved rationale.
 - For branch sync/force update scenarios, prefer `git push --force-with-lease` (not `--force`).
 
 ## High-Risk Areas (Coordinate Carefully)
@@ -72,6 +72,6 @@ For API contract changes, follow `docs/conventions/api-contract-checklist.md`.
 ## Learned Preferences (Condensed)
 - Prefer Chinese for collaboration text and direct execution once confirmed.
 - Prefer evidence-based debugging (logs/API/runtime artifacts) over speculation.
-- If user requests “先给方案”, provide plan first before coding.
+- If user requests "先给方案", provide plan first before coding.
 - Keep implementation scoped; avoid unrelated refactors.
 - Avoid filling missing backend fields with guessed defaults.

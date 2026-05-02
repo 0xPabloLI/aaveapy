@@ -1,0 +1,31 @@
+# Post-Modification Validation Gate (修改后必跑验证)
+
+## Scope
+This rule applies to ALL code changes made in this project.
+
+## Rule
+After EVERY code change, the agent MUST immediately run the full validation sequence. The change is NOT considered complete until all checks pass.
+
+### Mandatory Validation Sequence
+Run these commands in order after each code modification:
+
+```bash
+npm run lint        # ESLint
+npm test            # Vitest
+npm run build       # Vite production build
+npx tsc --noEmit    # TypeScript type-checking
+```
+
+### Workflow
+1. Make the code change
+2. Run the full validation sequence above
+3. If ANY check fails:
+   - Fix the root cause in the code
+   - Re-run the full sequence from the beginning
+   - Repeat until ALL checks pass
+4. Only when ALL checks pass is the modification considered complete
+
+### Critical Notes
+- Do NOT skip any step in the sequence
+- Do NOT hand back to the user with failing validation — fix it first
+- For high-risk UI changes (simulation/table/reserves), also check `docs/conventions/frontend-regression-checklist.md`
