@@ -486,7 +486,10 @@ const FilterBar = ({
                         className="flex items-center px-1 py-0.5 hover:opacity-80 transition-opacity"
                         title={expanded ? 'Collapse sub-markets' : 'Expand sub-markets'}
                       >
-                        <ChevronRight className={`w-3 h-3 transition-transform duration-200 ease-in-out ${expanded ? 'rotate-90' : ''}`} />
+                        <ChevronRight
+                          className={`w-3 h-3 transition-transform duration-200 ${expanded ? 'rotate-90' : ''}`}
+                          style={{ transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)' }}
+                        />
                       </button>
                     </div>
 
@@ -500,7 +503,7 @@ const FilterBar = ({
                           if (aVersion !== 'v4' && bVersion === 'v4') return 1;
                           return 0;
                         })
-                        .map((market) => {
+                        .map((market, index) => {
                           const isSubSelected = selectedMarkets.includes(market.marketName);
                           const version = getProtocolVersion(market.marketName);
                           const isV4 = version === 'v4';
@@ -508,10 +511,34 @@ const FilterBar = ({
                             <motion.button
                               key={market.marketName}
                               layout
-                              initial={{ width: 0, opacity: 0, scale: 0.96 }}
-                              animate={{ width: 'auto', opacity: 1, scale: 1 }}
-                              exit={{ width: 0, opacity: 0, scale: 0.96 }}
-                              transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+                              variants={{
+                                hidden: { width: 0, opacity: 0, scale: 0.98 },
+                                visible: (i: number) => ({
+                                  width: 'auto',
+                                  opacity: 1,
+                                  scale: 1,
+                                  transition: {
+                                    width: { duration: 0.28, delay: i * 0.04, ease: [0.22, 1, 0.36, 1] },
+                                    opacity: { duration: 0.2, delay: i * 0.04, ease: [0.22, 1, 0.36, 1] },
+                                    scale: { duration: 0.28, delay: i * 0.04, ease: [0.22, 1, 0.36, 1] },
+                                  },
+                                }),
+                                exit: (i: number) => ({
+                                  width: 0,
+                                  opacity: 0,
+                                  scale: 0.98,
+                                  transition: {
+                                    width: { duration: 0.18, delay: i * 0.02, ease: [0.55, 0, 1, 0.45] },
+                                    opacity: { duration: 0.14, delay: i * 0.02, ease: [0.55, 0, 1, 0.45] },
+                                    scale: { duration: 0.18, delay: i * 0.02, ease: [0.55, 0, 1, 0.45] },
+                                  },
+                                }),
+                              }}
+                              initial="hidden"
+                              animate="visible"
+                              exit="exit"
+                              custom={index}
+                              transition={{ layout: { duration: 0.22, ease: [0.22, 1, 0.36, 1] } }}
                               onClick={() => toggleSubMarket(market.marketName)}
                               className={`ds-chip gap-0.5 px-1 md:px-1.5 py-0.5 rounded-md text-[10px] font-medium whitespace-nowrap overflow-hidden transition-colors hover:scale-105 active:scale-95 ${
                                 isSubSelected
