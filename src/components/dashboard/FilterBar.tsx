@@ -271,12 +271,13 @@ const FilterBar = ({
   return (
     <div className="space-y-2 md:space-y-2.5">
       {/* Row 1: Token Categories + Search + Frozen Toggle + APY Toggle */}
-      <div className="flex flex-wrap items-center gap-1.5 md:gap-2">
+      <div data-testid="tokens-row" className="flex flex-wrap items-center gap-1.5 md:gap-2">
         <span className="ds-text-11 text-muted-foreground/70 hidden sm:inline">Tokens</span>
 
         {categories.map((category) => (
-          <button
+          <FilterChip
             key={category.value}
+            selected={selectedCategory === category.value}
             onClick={() => {
               if (selectedCategory === category.value) {
                 setSelectedCategory('all');
@@ -284,14 +285,9 @@ const FilterBar = ({
                 setSelectedCategory(category.value);
               }
             }}
-            className={`ds-chip px-2 md:px-2.5 rounded-md ds-text-11 font-medium transition-colors ${
-              selectedCategory === category.value
-                ? 'bg-card text-foreground shadow-sm border border-[rgb(var(--ds-brand-magenta-rgb))]'
-                : 'bg-card/50 text-muted-foreground border border-border/40 hover:text-foreground hover:bg-card/80'
-            }`}
           >
             {category.label}
-          </button>
+          </FilterChip>
         ))}
 
         {/* Search – desktop only */}
@@ -384,20 +380,16 @@ const FilterBar = ({
       </div>
 
       {/* Row 3: Markets – chain-level chips + optional chain/hub segmented toggle */}
-      <div className="flex flex-wrap items-center gap-1 md:gap-1.5">
+      <div data-testid="markets-row" className="flex flex-wrap items-center gap-1 md:gap-1.5">
         <span className="ds-text-11 text-muted-foreground/70 hidden sm:inline">Markets</span>
 
         {/* "All" button */}
-        <button
+        <FilterChip
+          selected={noMarketsSelected && noHubSelected}
           onClick={handleAllClick}
-          className={`ds-chip px-2 md:px-2.5 py-1 rounded-md ds-text-11 font-medium transition-colors ${
-            noMarketsSelected && noHubSelected
-              ? 'bg-card text-foreground shadow-sm border border-[rgb(var(--ds-brand-magenta-rgb))]'
-              : 'bg-card/50 text-muted-foreground border border-border/40 hover:text-foreground hover:bg-card/80'
-          }`}
         >
           All
-        </button>
+        </FilterChip>
 
         {/* Chain/Hub segmented toggle – only when hubs exist */}
         {hasHubs && (
@@ -442,9 +434,9 @@ const FilterBar = ({
             hubNames!.map((hub) => {
               const isSelected = selectedHubs.includes(hub);
               return (
-                <button
+                <FilterChip
                   key={hub}
-                  type="button"
+                  selected={isSelected}
                   onClick={() => {
                     if (isSelected) {
                       setSelectedHubs(selectedHubs.filter((h) => h !== hub));
@@ -452,15 +444,10 @@ const FilterBar = ({
                       setSelectedHubs([...selectedHubs, hub]);
                     }
                   }}
-                  className={`ds-chip px-2 md:px-2.5 py-1 rounded-md ds-text-11 font-medium transition-colors ${
-                    isSelected
-                      ? 'bg-card text-foreground shadow-sm border border-[rgb(var(--ds-brand-magenta-rgb))]'
-                      : 'bg-card/50 text-muted-foreground border border-border/40 hover:text-foreground hover:bg-card/80'
-                  }`}
                   title={hub}
                 >
                   {hub}
-                </button>
+                </FilterChip>
               );
             })
           )
@@ -506,50 +493,50 @@ const FilterBar = ({
                       </button>
                     </div>
 
-                    {/* Sub-market chips with smooth expand animation */}
+                    {/* Sub-market chips with smooth accordion expand animation */}
                     <div
-                      className="flex flex-wrap items-center gap-1 overflow-hidden transition-all duration-300 ease-in-out"
+                      className="overflow-hidden transition-all duration-300 ease-out"
                       style={{
-                        maxHeight: expanded ? '200px' : '0px',
+                        maxHeight: expanded ? '500px' : '0px',
                         opacity: expanded ? 1 : 0,
-                        marginTop: expanded ? '0.25rem' : '0px',
-                        marginBottom: expanded ? '0px' : '0px',
                       }}
                     >
-                      {group.markets
-                        .slice()
-                        .sort((a, b) => {
-                          const aVersion = getProtocolVersion(a.marketName);
-                          const bVersion = getProtocolVersion(b.marketName);
-                          // V4 markets first
-                          if (aVersion === 'v4' && bVersion !== 'v4') return -1;
-                          if (aVersion !== 'v4' && bVersion === 'v4') return 1;
-                          return 0;
-                        })
-                        .map((market) => {
-                          const isSubSelected = selectedMarkets.includes(market.marketName);
-                          const version = getProtocolVersion(market.marketName);
-                          const isV4 = version === 'v4';
-                          return (
-                            <button
-                              key={market.marketName}
-                              onClick={() => toggleSubMarket(market.marketName)}
-                              className={`ds-chip gap-0.5 px-1 md:px-1.5 py-0.5 rounded-md text-[10px] font-medium transition-all duration-150 hover:scale-105 active:scale-95 ${
-                                isSubSelected
-                                  ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
-                                  : 'text-foreground/80 border border-border hover:text-foreground'
-                              }`}
-                              title={market.marketName}
-                            >
-                              {isV4 && (
-                                <span className="inline-flex items-center px-1 py-0 rounded-full text-[9px] font-medium leading-none text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10">
-                                  V4
-                                </span>
-                              )}
-                              <span>{getEthSubMarketLabel(market)}</span>
-                            </button>
-                          );
-                        })}
+                      <div className="flex flex-wrap items-center gap-1 pt-1">
+                        {group.markets
+                          .slice()
+                          .sort((a, b) => {
+                            const aVersion = getProtocolVersion(a.marketName);
+                            const bVersion = getProtocolVersion(b.marketName);
+                            // V4 markets first
+                            if (aVersion === 'v4' && bVersion !== 'v4') return -1;
+                            if (aVersion !== 'v4' && bVersion === 'v4') return 1;
+                            return 0;
+                          })
+                          .map((market) => {
+                            const isSubSelected = selectedMarkets.includes(market.marketName);
+                            const version = getProtocolVersion(market.marketName);
+                            const isV4 = version === 'v4';
+                            return (
+                              <button
+                                key={market.marketName}
+                                onClick={() => toggleSubMarket(market.marketName)}
+                                className={`ds-chip gap-0.5 px-1 md:px-1.5 py-0.5 rounded-md text-[10px] font-medium transition-all duration-150 hover:scale-105 active:scale-95 ${
+                                  isSubSelected
+                                    ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
+                                    : 'text-foreground/80 border border-border hover:text-foreground'
+                                }`}
+                                title={market.marketName}
+                              >
+                                {isV4 && (
+                                  <span className="inline-flex items-center px-1 py-0 rounded-full text-[9px] font-medium leading-none text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10">
+                                    V4
+                                  </span>
+                                )}
+                                <span>{getEthSubMarketLabel(market)}</span>
+                              </button>
+                            );
+                          })}
+                      </div>
                     </div>
                   </div>
                 );
