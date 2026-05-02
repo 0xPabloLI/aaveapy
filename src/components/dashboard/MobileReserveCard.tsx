@@ -79,6 +79,7 @@ interface MobileReserveCardProps {
   onPortfolioToggle?: (reserveId: string, reserve: ReserveWithSpread, side?: 'supply' | 'borrow') => void;
   /** Callback when hub pill is clicked for filtering. */
   onSelectHub?: (hubName: string) => void;
+  onHubChipClick?: (reserveId: string) => void;
 }
 
 interface MobileReserveAmountRowProps {
@@ -387,6 +388,7 @@ const MobileReserveCard = memo(({
   isInPortfolio,
   onPortfolioToggle,
   onSelectHub,
+  onHubChipClick,
 }: MobileReserveCardProps) => {
   const [capSheet, setCapSheet] = useState<'supply' | 'borrow' | 'utilization' | 'deficit' | 'frozen' | null>(null);
   const [hasSimulationMounted, setHasSimulationMounted] = useState(isSimulationExpanded);

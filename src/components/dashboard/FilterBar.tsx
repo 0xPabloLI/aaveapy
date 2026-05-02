@@ -422,16 +422,7 @@ const FilterBar = ({
               { value: 'hub', label: 'Hub' },
             ]}
             value={marketViewMode}
-            onChange={(val) => {
-              if (val === 'chain') {
-                setMarketViewMode('chain');
-                setSelectedHubs([]);
-              } else {
-                setMarketViewMode('hub');
-                setSelectedMarkets([]);
-                setExpandedChain(null);
-              }
-            }}
+            onChange={setMarketViewMode}
             activeTextClassName="text-foreground"
           />
         )}

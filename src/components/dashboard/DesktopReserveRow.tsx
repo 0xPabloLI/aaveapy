@@ -69,6 +69,7 @@ interface DesktopReserveRowProps {
   onSelectMarket?: (marketName: string) => void;
   onMarketChipClick?: (reserveId: string) => void;
   onSelectHub?: (hubName: string) => void;
+  onHubChipClick?: (reserveId: string) => void;
   onIncentiveClick: (e: React.MouseEvent, reserve: ReserveWithSpread, type: 'supply' | 'borrow', apy: number | null) => void;
   displaySupplyTotal: number | null;
   displaySupplyNative: number | null;
@@ -102,6 +103,7 @@ const DesktopReserveRow = memo(({
   onSelectMarket,
   onMarketChipClick,
   onSelectHub,
+  onHubChipClick,
   onIncentiveClick,
   displaySupplyTotal,
   displaySupplyNative,
@@ -273,6 +275,7 @@ const DesktopReserveRow = memo(({
                     type="button"
                     onClick={(event) => {
                       event.stopPropagation();
+                      onHubChipClick?.(reserveId);
                       onSelectHub?.(reserve.hubName!);
                     }}
                     className={cn(

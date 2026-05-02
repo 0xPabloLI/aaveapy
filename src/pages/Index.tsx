@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, startTransition } from 'react';
 import type { SimulationMode } from '@/components/dashboard/PortfolioModeToggle';
 import { usePortfolioSimulation } from '@/hooks/usePortfolioSimulation';
 import { useIsFetching } from '@tanstack/react-query';
@@ -390,7 +390,19 @@ const Index = () => {
               selectedHubs={selectedHubs}
               setSelectedHubs={setSelectedHubs}
               marketViewMode={marketViewMode}
-              setMarketViewMode={setMarketViewMode}
+              setMarketViewMode={(mode) => {
+                setMarketViewMode(mode);
+                if (mode === 'chain') {
+                  startTransition(() => {
+                    setSelectedHubs([]);
+                  });
+                } else {
+                  startTransition(() => {
+                    setSelectedMarkets([]);
+                    setExpandedChain(null);
+                  });
+                }
+              }}
               expandedChain={expandedChain}
               setExpandedChain={setExpandedChain}
             />
