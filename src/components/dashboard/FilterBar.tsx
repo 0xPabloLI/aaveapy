@@ -19,6 +19,12 @@ interface FilterBarProps {
   marketsList?: MarketListItem[];
   showFrozenOrPaused?: boolean;
   setShowFrozenOrPaused?: (value: boolean) => void;
+  /** Available hub names derived from current reserves. */
+  hubNames?: string[];
+  /** Currently selected hub names (empty = "All"). */
+  selectedHubs: string[];
+  /** Set selected hub names. */
+  setSelectedHubs: (hubs: string[]) => void;
 }
 
 const categories: { value: TokenCategory; label: string }[] = [
@@ -106,6 +112,9 @@ const FilterBar = ({
   marketsList,
   showFrozenOrPaused,
   setShowFrozenOrPaused,
+  hubNames,
+  selectedHubs,
+  setSelectedHubs,
 }: FilterBarProps) => {
   const isMobile = useIsMobile();
   const [searchPlaceholder, setSearchPlaceholder] = useState('Search token');
@@ -113,6 +122,9 @@ const FilterBar = ({
   const mobileSearchInputRef = useRef<HTMLInputElement>(null);
   const debouncedUpdateRef = useRef<(() => void) | null>(null);
   const [expandedChain, setExpandedChain] = useState<string | null>(null);
+
+  /** View mode for the markets row: 'chain' = chain chips, 'hub' = hub chips */
+  const [marketViewMode, setMarketViewMode] = useState<'chain' | 'hub'>('chain');
 
   const stableResizeHandler = useCallback(() => {
     debouncedUpdateRef.current?.();
@@ -165,7 +177,8 @@ const FilterBar = ({
   const handleAllClick = useCallback(() => {
     setSelectedMarkets([]);
     setExpandedChain(null);
-  }, [setSelectedMarkets]);
+    setSelectedHubs([]);
+  }, [setSelectedMarkets, setSelectedHubs]);
 
   const handleChainLabelClick = useCallback(
     (group: ChainGroup) => {
@@ -191,6 +204,7 @@ const FilterBar = ({
   );
 
   const noMarketsSelected = selectedMarkets.length === 0;
+  const noHubSelected = selectedHubs.length === 0;
 
   // Auto-adapt search placeholder based on input width
   useEffect(() => {
@@ -251,6 +265,8 @@ const FilterBar = ({
     };
   }, [searchQuery, isMobile, stableResizeHandler]);
 
+  const hasHubs = hubNames && hubNames.length > 0;
+
   return (
     <div className="space-y-2 md:space-y-2.5">
       {/* Row 1: Token Categories + Search + Frozen Toggle + APY Toggle */}
@@ -270,7 +286,7 @@ const FilterBar = ({
             className={`inline-flex items-center justify-center h-7 px-2 rounded-md ds-text-11 font-medium transition-colors ${
               selectedCategory === category.value
                 ? 'bg-card text-foreground shadow-sm border border-[rgb(var(--ds-brand-magenta-rgb))]'
-                : 'bg-card/50 text-muted-foreground hover:text-foreground hover:bg-card/80 border border-border/40'
+                : 'bg-card/50 text-muted-foreground border border-border/40 hover:text-foreground hover:bg-card/80'
             }`}
           >
             {category.label}
@@ -366,124 +382,191 @@ const FilterBar = ({
         </div>
       </div>
 
-      {/* Row 3: Markets – chain-level chips with expandable sub-markets */}
+      {/* Row 3: Markets – chain-level chips + optional chain/hub segmented toggle */}
       <div className="flex flex-wrap items-center gap-1 md:gap-1.5">
         <span className="ds-text-11 text-muted-foreground/70 hidden sm:inline">Markets</span>
 
         {/* "All" button */}
         <button
           onClick={handleAllClick}
-          className={`ds-chip px-2 md:px-2.5 py-1 rounded-md font-medium transition-colors ${
-            noMarketsSelected
-              ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
-              : 'text-foreground/80 border border-border hover:text-foreground'
+          className={`ds-chip px-2 md:px-2.5 py-1 rounded-md ds-text-11 font-medium transition-colors ${
+            noMarketsSelected && noHubSelected
+              ? 'bg-card text-foreground shadow-sm border border-[rgb(var(--ds-brand-magenta-rgb))]'
+              : 'bg-card/50 text-muted-foreground border border-border/40 hover:text-foreground hover:bg-card/80'
           }`}
         >
           All
         </button>
 
-        {chainGroups.map((group) => {
-          const selected = isChainSelected(group);
-          const subSelected = hasSubMarketSelected(group);
-          const expanded = expandedChain === group.chainName;
-
-          if (group.expandable) {
-            // Expandable chain (Ethereum): split click areas
-            const chipStyle = selected
-              ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
-              : subSelected
-                ? 'ds-text-brand-magenta border border-dashed border-[rgb(var(--ds-brand-magenta-rgb))]'
-                : expanded
-                  ? 'text-foreground/80 border border-border'
-                  : 'text-foreground/80 border border-border hover:text-foreground';
-
-            return (
-              <div key={group.chainName} className="contents">
-                <div
-                  className={`ds-chip flex items-center rounded-md text-[10px] font-medium transition-colors overflow-hidden ${chipStyle}`}
-                >
-                  {/* Left area: icon + chain name → toggles chain selection */}
-                  <button
-                    onClick={() => handleChainLabelClick(group)}
-                    className="flex items-center gap-0.5 px-1 md:px-1.5 py-0.5 hover:opacity-80 transition-opacity"
-                    title={`${selected ? 'Deselect' : 'Select'} all ${group.chainName} markets`}
-                  >
-                    <ChainIcon chain={group.chainName} />
-                    <span>{group.chainName}</span>
-                  </button>
-                  {/* Divider */}
-                  <div className="w-px h-3.5 bg-current opacity-20 shrink-0" />
-                  {/* Right area: expand/collapse arrow */}
-                  <button
-                    onClick={() => handleExpandToggle(group.chainName)}
-                    className="flex items-center px-1 py-0.5 hover:opacity-80 transition-opacity"
-                    title={expanded ? 'Collapse sub-markets' : 'Expand sub-markets'}
-                  >
-                    {expanded ? (
-                      <ChevronLeft className="w-3 h-3" />
-                    ) : (
-                      <ChevronRight className="w-3 h-3" />
-                    )}
-                  </button>
-                </div>
-
-                {/* Sub-market chips – animated expand */}
-                {expanded &&
-                  group.markets
-                    .slice()
-                    .sort((a, b) => {
-                      const aVersion = getProtocolVersion(a.marketName);
-                      const bVersion = getProtocolVersion(b.marketName);
-                      // V4 markets first
-                      if (aVersion === 'v4' && bVersion !== 'v4') return -1;
-                      if (aVersion !== 'v4' && bVersion === 'v4') return 1;
-                      return 0;
-                    })
-                    .map((market) => {
-                      const isSubSelected = selectedMarkets.includes(market.marketName);
-                      const version = getProtocolVersion(market.marketName);
-                      const isV4 = version === 'v4';
-                      return (
-                        <button
-                          key={market.marketName}
-                          onClick={() => toggleSubMarket(market.marketName)}
-                          className={`ds-chip gap-0.5 px-1 md:px-1.5 py-0.5 rounded-md text-[10px] font-medium transition-colors ${
-                            isSubSelected
-                              ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
-                              : 'text-foreground/80 border border-border hover:text-foreground'
-                          }`}
-                          title={market.marketName}
-                        >
-                          {isV4 && (
-                            <span className="inline-flex items-center px-1 py-0 rounded-full text-[9px] font-medium leading-none text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10">
-                              V4
-                            </span>
-                          )}
-                          <span>{getEthSubMarketLabel(market)}</span>
-                        </button>
-                      );
-                    })}
-              </div>
-            );
-          }
-
-          // Non-expandable chain: simple chip selecting all markets of this chain
-          return (
+        {/* Chain/Hub segmented toggle – only when hubs exist */}
+        {hasHubs && (
+          <div className="flex items-center gap-0.5 bg-muted/60 rounded-lg p-0.5 border border-border/40">
             <button
-              key={group.chainName}
-              onClick={() => handleOtherChainClick(group)}
-              className={`ds-chip gap-0.5 px-1 md:px-1.5 py-0.5 rounded-md text-[10px] font-medium transition-colors ${
-                selected
-                  ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
-                  : 'text-foreground/80 border border-border hover:text-foreground'
+              type="button"
+              onClick={() => {
+                setMarketViewMode('chain');
+                setSelectedHub(null);
+              }}
+              className={`px-3 py-1 rounded-md ds-text-11 font-semibold transition-all duration-200 ${
+                marketViewMode === 'chain'
+                  ? 'bg-card text-foreground shadow-sm border border-border/60'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-card/50'
               }`}
-              title={group.chainName}
+              aria-pressed={marketViewMode === 'chain'}
             >
-              <ChainIcon chain={group.chainName} />
-              <span>{group.chainName}</span>
+              Chain
             </button>
-          );
-        })}
+            <button
+              type="button"
+              onClick={() => {
+                setMarketViewMode('hub');
+                setSelectedMarkets([]);
+                setExpandedChain(null);
+              }}
+              className={`px-3 py-1 rounded-md ds-text-11 font-semibold transition-all duration-200 ${
+                marketViewMode === 'hub'
+                  ? 'bg-card text-foreground shadow-sm border border-border/60'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-card/50'
+              }`}
+              aria-pressed={marketViewMode === 'hub'}
+            >
+              Hub
+            </button>
+          </div>
+        )}
+
+        {marketViewMode === 'hub' && hasHubs
+          ? (
+            /* Hub mode: show hub name chips (multi-select) */
+            hubNames!.map((hub) => {
+              const isSelected = selectedHubs.includes(hub);
+              return (
+                <button
+                  key={hub}
+                  type="button"
+                  onClick={() => {
+                    if (isSelected) {
+                      setSelectedHubs(selectedHubs.filter((h) => h !== hub));
+                    } else {
+                      setSelectedHubs([...selectedHubs, hub]);
+                    }
+                  }}
+                  className={`ds-chip px-2 md:px-2.5 py-1 rounded-md ds-text-11 font-medium transition-colors ${
+                    isSelected
+                      ? 'bg-card text-foreground shadow-sm border border-[rgb(var(--ds-brand-magenta-rgb))]'
+                      : 'bg-card/50 text-muted-foreground border border-border/40 hover:text-foreground hover:bg-card/80'
+                  }`}
+                  title={hub}
+                >
+                  {hub}
+                </button>
+              );
+            })
+          )
+          : (
+            /* Chain mode: original chain chips */
+            chainGroups.map((group) => {
+              const selected = isChainSelected(group);
+              const subSelected = hasSubMarketSelected(group);
+              const expanded = expandedChain === group.chainName;
+
+              if (group.expandable) {
+                const chipStyle = selected
+                  ? 'bg-card text-foreground shadow-sm border border-[rgb(var(--ds-brand-magenta-rgb))]'
+                  : subSelected
+                    ? 'bg-card/50 text-foreground/80 border border-dashed border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
+                    : expanded
+                      ? 'bg-card/50 text-muted-foreground border border-border/40'
+                      : 'bg-card/50 text-muted-foreground border border-border/40 hover:text-foreground hover:bg-card/80';
+
+                return (
+                  <div key={group.chainName} className="contents">
+                    <div
+                      className={`ds-chip flex items-center rounded-md text-[10px] font-medium transition-colors overflow-hidden ${chipStyle}`}
+                    >
+                      {/* Left area: icon + chain name → toggles chain selection */}
+                      <button
+                        onClick={() => handleChainLabelClick(group)}
+                        className="flex items-center gap-0.5 px-1 md:px-1.5 py-0.5 hover:opacity-80 transition-opacity"
+                        title={`${selected ? 'Deselect' : 'Select'} all ${group.chainName} markets`}
+                      >
+                        <ChainIcon chain={group.chainName} />
+                        <span>{group.chainName}</span>
+                      </button>
+                      {/* Divider */}
+                      <div className="w-px h-3.5 bg-current opacity-20 shrink-0" />
+                      {/* Right area: expand/collapse arrow */}
+                      <button
+                        onClick={() => handleExpandToggle(group.chainName)}
+                        className="flex items-center px-1 py-0.5 hover:opacity-80 transition-opacity"
+                        title={expanded ? 'Collapse sub-markets' : 'Expand sub-markets'}
+                      >
+                        {expanded ? (
+                          <ChevronLeft className="w-3 h-3" />
+                        ) : (
+                          <ChevronRight className="w-3 h-3" />
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Sub-market chips */}
+                    {expanded &&
+                      group.markets
+                        .slice()
+                        .sort((a, b) => {
+                          const aVersion = getProtocolVersion(a.marketName);
+                          const bVersion = getProtocolVersion(b.marketName);
+                          // V4 markets first
+                          if (aVersion === 'v4' && bVersion !== 'v4') return -1;
+                          if (aVersion !== 'v4' && bVersion === 'v4') return 1;
+                          return 0;
+                        })
+                        .map((market) => {
+                          const isSubSelected = selectedMarkets.includes(market.marketName);
+                          const version = getProtocolVersion(market.marketName);
+                          const isV4 = version === 'v4';
+                          return (
+                            <button
+                              key={market.marketName}
+                              onClick={() => toggleSubMarket(market.marketName)}
+                              className={`ds-chip gap-0.5 px-1 md:px-1.5 py-0.5 rounded-md text-[10px] font-medium transition-colors ${
+                                isSubSelected
+                                  ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
+                                  : 'text-foreground/80 border border-border hover:text-foreground'
+                              }`}
+                              title={market.marketName}
+                            >
+                              {isV4 && (
+                                <span className="inline-flex items-center px-1 py-0 rounded-full text-[9px] font-medium leading-none text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10">
+                                  V4
+                                </span>
+                              )}
+                              <span>{getEthSubMarketLabel(market)}</span>
+                            </button>
+                          );
+                        })}
+                  </div>
+                );
+              }
+
+              // Non-expandable chain: simple chip selecting all markets of this chain
+              return (
+                <button
+                  key={group.chainName}
+                  onClick={() => handleOtherChainClick(group)}
+                  className={`ds-chip gap-0.5 px-1 md:px-1.5 py-0.5 rounded-md text-[10px] font-medium transition-colors ${
+                    selected
+                      ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
+                      : 'text-foreground/80 border border-border hover:text-foreground'
+                  }`}
+                  title={group.chainName}
+                >
+                  <ChainIcon chain={group.chainName} />
+                  <span>{group.chainName}</span>
+                </button>
+              );
+            })
+          )}
       </div>
     </div>
   );

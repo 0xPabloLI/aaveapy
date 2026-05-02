@@ -298,18 +298,24 @@ reserves desktop table 的 8 列对齐分配：
 | 选中项   | `px-3 py-1 rounded-md font-semibold bg-card text-foreground shadow-sm border border-border/60` |
 | 未选中   | `px-3 py-1 rounded-md font-semibold text-muted-foreground hover:text-foreground hover:bg-card/50` |
 
-### 5.2 筛选芯片（单选）
+### 5.2 筛选芯片（Filter Chips）
 
-用于单选的分类筛选（如 All / Stables / ETH）。
+用于分类、市场、hub 等筛选维度（如 All / Stables / ETH、Ethereum / Arbitrum、Core / Prime）。**所有筛选芯片统一样式，不区分单多选**。
 
-| 状态     | 说明 |
-|----------|------|
-| 选中     | `bg-card text-foreground shadow-sm border border-border/60`，不用品牌色 |
-| 未选中   | `bg-card/50 text-muted-foreground border border-border/40 hover:bg-card/80` |
+| 状态   | Tailwind class |
+|--------|----------------|
+| 选中   | `bg-card text-foreground shadow-sm border border-[rgb(var(--ds-brand-magenta-rgb))]` |
+| 未选中 | `bg-card/50 text-muted-foreground border border-border/40 hover:text-foreground hover:bg-card/80` |
+| 通用   | `ds-text-11 font-medium transition-colors rounded-md` |
 
-### 5.3 多选芯片
+**视觉特征**：
+- 选中态：`bg-card` 实色背景 + 品牌色边框 + `shadow-sm`，文字用 `text-foreground`（中性前景色，不是品牌色文字）
+- 未选中态：半透明 `bg-card/50` 背景 + 中性 `border-border/40` 边框
+- 特殊状态：部分市场芯片（如 Ethereum 含子市场时部分选中）可用虚线边框 `border-dashed border-[brand]` 表示"部分选中"
 
-多选时可用品牌色边框区分“已选”：`border-[brand]` + 品牌文字色，保持视觉重量适中。
+### 5.3 ~~多选芯片~~ → 已合并入 5.2
+
+~~多选时可用品牌色边框区分"已选"~~ — 已统一。所有筛选芯片（Token Categories、Markets chain/hub chips、Hub chips、"All" 按钮）使用 §5.2 的统一样式。
 
 ### 5.4 图标切换按钮（如主题）
 
@@ -345,7 +351,7 @@ reserves desktop table 的 8 列对齐分配：
 | 用途 | 参考文件 |
 |------|----------|
 | APR/APY 分段 | `AprApyToggle.tsx` |
-| Token / Markets 筛选芯片 | `FilterBar.tsx` |
+| Token / Markets / Hub 筛选芯片 | `FilterBar.tsx` |
 | USD/Token 等模式分段 | `ScenarioControls.tsx` |
 
 ### 5.8 Pill 与可点击性
@@ -356,7 +362,7 @@ reserves desktop table 的 8 列对齐分配：
 | 主题图标切换 | `ThemeToggle.tsx` |
 | 原生勾选框（Merkl 白名单、场景 net 口径等） | `dsNativeCheckbox.ts` → `IncentiveTooltip.tsx`、`MerklForecastPanel.tsx`、`ScenarioControls.tsx` |
 
-迁移与验收：`ScenarioControls` 的 USD/Token 使用分段控件（非单按钮）；分类筛选用中性 `bg-card` 选中；Markets 多选保留品牌色边框以区分多选状态；**新增原生勾选框必须复用 `DS_NATIVE_CHECKBOX_CLASS`**。
+迁移与验收：所有筛选芯片（Token Categories、Markets chain/hub chips、Hub chips）统一使用 §5.2 样式；`ScenarioControls` 的 USD/Token 使用分段控件（非单按钮）；**新增原生勾选框必须复用 `DS_NATIVE_CHECKBOX_CLASS`**。
 
 ---
 

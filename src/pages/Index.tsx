@@ -47,10 +47,11 @@ const Index = () => {
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMarkets, setSelectedMarkets] = useState<string[]>([]);
-const [selectedCategory, setSelectedCategory] = useState<TokenCategory>("all");
+  const [selectedCategory, setSelectedCategory] = useState<TokenCategory>("all");
   const [isApy, setIsApy] = useState(true);
   const [showFrozenOrPaused, setShowFrozenOrPaused] = useState(false);
   const [showCacheWarning, setShowCacheWarning] = useState(false);
+  const [selectedHubs, setSelectedHubs] = useState<string[]>([]);
   
   const [isRateDragging, setIsRateDragging] = useState(false);
   const [simulationMode, setSimulationMode] = useState<SimulationMode>('single');
@@ -184,6 +185,7 @@ const [selectedCategory, setSelectedCategory] = useState<TokenCategory>("all");
     setSearchQuery('');
     setSelectedMarkets([]);
     setSelectedCategory('all');
+    setSelectedHubs([]);
     setPendingScrollReserveId(id);
     scrollToReserveElement(id);
   }, [scrollToReserveElement]);
@@ -212,6 +214,16 @@ const [selectedCategory, setSelectedCategory] = useState<TokenCategory>("all");
     }
   };
 
+  // Derive unique hub names from current reserves (stable, alphabetical)
+  const hubNames = useMemo(() => {
+    const reserves = effectiveReservesData?.reserves ?? [];
+    const names = new Set<string>();
+    for (const r of reserves) {
+      if (r.hubName?.trim()) names.add(r.hubName.trim());
+    }
+    return Array.from(names).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+  }, [effectiveReservesData?.reserves]);
+
   const filteredReserves = useMemo(() => {
     if (!effectiveReservesData?.reserves) return [];
     return effectiveReservesData.reserves.filter((reserve) => {
@@ -232,6 +244,13 @@ const [selectedCategory, setSelectedCategory] = useState<TokenCategory>("all");
       // Market filter
       if (selectedMarkets.length > 0) {
         if (!selectedMarkets.includes(reserve.marketName)) {
+          return false;
+        }
+      }
+
+      // Hub filter
+      if (selectedHubs.length > 0) {
+        if (!reserve.hubName || !selectedHubs.includes(reserve.hubName)) {
           return false;
         }
       }
@@ -262,7 +281,7 @@ const [selectedCategory, setSelectedCategory] = useState<TokenCategory>("all");
 
       return true;
     });
-  }, [effectiveReservesData?.reserves, searchQuery, selectedMarkets, selectedCategory, tokenCategoryGroups, showFrozenOrPaused]);
+  }, [effectiveReservesData?.reserves, searchQuery, selectedMarkets, selectedHubs, selectedCategory, tokenCategoryGroups, showFrozenOrPaused]);
 
   if (isLoading && !effectiveReservesData) {
     return <LoadingState />;
@@ -365,6 +384,9 @@ const [selectedCategory, setSelectedCategory] = useState<TokenCategory>("all");
               marketsList={effectiveMarketsList}
               showFrozenOrPaused={showFrozenOrPaused}
               setShowFrozenOrPaused={setShowFrozenOrPaused}
+              hubNames={hubNames}
+              selectedHubs={selectedHubs}
+              setSelectedHubs={setSelectedHubs}
             />
 
             <ReservesTable

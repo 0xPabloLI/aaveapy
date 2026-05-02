@@ -30,7 +30,7 @@
 - Reuse existing UI patterns/tokens before introducing new ones.
 
 ## Validation Gate
-- For code changes, run at minimum: `npm run lint`, `npm test`, `npm run build`.
+- For code changes, run at minimum: `npm run lint`, `npm test`, `npm run build`; also run `npx tsc --noEmit` to catch missing imports and type errors before runtime.
 - For high-risk reserves/simulation/table UI changes, follow `docs/conventions/frontend-regression-checklist.md` (including targeted e2e/manual checks).
 - For API contract changes, follow `docs/conventions/api-contract-checklist.md`.
 
