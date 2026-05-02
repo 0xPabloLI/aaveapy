@@ -22,6 +22,14 @@ const reserve: ReserveWithSpread = {
   utilizationPct: 45,
   supplyApy: 4.2,
   borrowApy: 6.1,
+  // Rate-model parameters are unified percent numbers (e.g., 80 = 80%); see
+  // docs/api/v3-v4-precision-unification-plan.md. Components must NOT apply
+  // any RAY/bps divisor when consuming these fields.
+  optimalUsageRate: 80,
+  variableRateSlope1: 4,
+  variableRateSlope2: 60,
+  baseVariableBorrowRate: 0,
+  reserveFactor: 10,
   supplyDisabled: false,
   borrowDisabled: false,
   supplyIncentives: [],
@@ -400,5 +408,74 @@ describe('DesktopReserveRow', () => {
     // (no borrow cap). Each is `inline-block w-3 h-3 shrink-0`, aria-hidden.
     const placeholderMatches = html.match(/<span aria-hidden="true" class="inline-block w-3 h-3 shrink-0"/g) ?? [];
     expect(placeholderMatches.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('treats reserve.optimalUsageRate as a percent number (not RAY) when sizing the UtilizationIndicator', () => {
+    // Regression guard for the V3/V4 precision-unification migration:
+    // After the backend switched optimalUsageRate from RAY/bps strings to
+    // percent numbers (e.g., 80 = 80%), the desktop row used to divide the
+    // value by `1e25` to convert RAY → percent. With unified percent input
+    // that division turned every "Optimal" marker into ~0, making the
+    // utilization SVG always render as fully amber and breaking the
+    // current-vs-optimal comparison.
+    //
+    // UtilizationIndicator math (height = 24):
+    //     optimalY  = height − (optimalPct / 100) × height
+    //                = 24 − (80/100) × 24 = 4.8
+    //     belowZoneHeight = height − optimalY = 19.2
+    //
+    // If a future change re-introduces a RAY/bps divisor, optimalPct would
+    // collapse to ~0 and the SVG would emit `y="24"` / cyan-zone-height="0"
+    // instead, failing this assertion.
+    const queryClient = new QueryClient();
+    const html = renderToString(
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Table>
+            <TableBody>
+              <DesktopReserveRow
+                reserve={reserve}
+                reserveId="AaveV3Ethereum-0x0000000000000000000000000000000000000001"
+                isExpanded={false}
+                onToggleExpand={() => {}}
+                onIncentiveClick={() => {}}
+                displaySupplyTotal={2.9}
+                displaySupplyNative={2.5}
+                displaySupplyIncentive={0.4}
+                displayBorrowTotal={3.3}
+                displayBorrowNative={3.4}
+                displayBorrowIncentive={0.1}
+                displayUtilization={52}
+                spread={-0.4}
+                simulation={simulation}
+                supplyInput="1000"
+                borrowInput="500"
+                inputMode="usd"
+                isApy
+                isMobile={false}
+              />
+            </TableBody>
+          </Table>
+        </TooltipProvider>
+      </QueryClientProvider>
+    );
+
+    // Extract every numeric `y="..."` and `height="..."` in the SVG output.
+    const yValues = [...html.matchAll(/\by="([\d.]+)"/g)].map((m) => Number(m[1]));
+    const heightValues = [...html.matchAll(/\bheight="([\d.]+)"/g)].map((m) => Number(m[1]));
+
+    // Optimal mapped to y ≈ 4.8 (24 − 0.8×24). Allow ±0.05 tolerance for floating-point drift.
+    const hasOptimalY = yValues.some((y) => Math.abs(y - 4.8) < 0.05);
+    expect(hasOptimalY, `expected an SVG y≈4.8 for optimal=80, got y=${yValues.join(',')}`).toBe(true);
+
+    // Below-optimal cyan zone has height ≈ 19.2 (24 − 4.8).
+    const hasCyanZoneHeight = heightValues.some((h) => Math.abs(h - 19.2) < 0.05);
+    expect(hasCyanZoneHeight, `expected SVG height≈19.2 for cyan zone (optimal=80), got heights=${heightValues.join(',')}`).toBe(true);
+
+    // Anti-regression: if a RAY divisor (1e25) sneaks back in, optimalPct → 0,
+    // y → 24, and below-optimal height → 0. Assert neither pathological value
+    // appears alongside the optimal indicator.
+    const dangerousYExists = yValues.filter((y) => y === 24).length;
+    expect(dangerousYExists, 'SVG must not render the bug-state y=24 (which means optimal collapsed to 0%)').toBe(0);
   });
 });

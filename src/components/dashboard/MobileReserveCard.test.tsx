@@ -24,8 +24,14 @@ const reserve: ReserveWithSpread = {
   supplyCapUsd: 2_000_000,
   borrowCapUsd: 1_000_000,
   utilizationPct: 45,
-  // 80% optimal usage rate (percent number, not RAY)
+  // Rate-model parameters are unified percent numbers (e.g., 80 = 80%); see
+  // docs/api/v3-v4-precision-unification-plan.md. Components must NOT apply
+  // any RAY/bps divisor when consuming these fields.
   optimalUsageRate: 80,
+  variableRateSlope1: 4,
+  variableRateSlope2: 60,
+  baseVariableBorrowRate: 0,
+  reserveFactor: 10,
   supplyApy: 4.2,
   borrowApy: 6.1,
   supplyDisabled: false,
@@ -229,6 +235,72 @@ describe('MobileReserveCard', () => {
     expect(utilizationButton.compareDocumentPosition(hubLink) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(utilizationButton.className).not.toContain('border-border/50');
     expect(utilizationButton.className).not.toContain('bg-muted/35');
+  });
+
+  it('treats reserve.optimalUsageRate as a percent number (not RAY) for utilization comparisons', () => {
+    // Regression guard for precision-unification: mobile card used to divide
+    // optimalUsageRate by 1e25 (RAY → %), which collapses unified percent input
+    // (e.g., 80) to ~0 and incorrectly flags normal utilization as above-optimal.
+    const reserveAt52PctUtil = {
+      ...reserve,
+      utilizationPct: 52,
+      optimalUsageRate: 80,
+    };
+
+    const { getByLabelText, rerender } = render(
+      <QueryClientProvider client={new QueryClient()}>
+        <TooltipProvider>
+          <MobileReserveCard
+            reserve={reserveAt52PctUtil}
+            isApy
+            tydroPointToUsdRate={0}
+            onIncentiveClick={() => {}}
+            isSimulationExpanded={false}
+            onToggleSimulation={() => {}}
+            simulation={simulation}
+            supplyInput="1000"
+            borrowInput="500"
+            hasSharedScenario={false}
+            inputMode="usd"
+          />
+        </TooltipProvider>
+      </QueryClientProvider>,
+    );
+
+    const utilTrigger = getByLabelText('Show utilization details');
+    const utilValue = utilTrigger.querySelector('span');
+    expect(utilValue).not.toBeNull();
+
+    // With correct percent semantics: 52% < 80%, so value stays normal foreground,
+    // not warning amber.
+    expect(utilValue?.className).toContain('text-foreground');
+    expect(utilValue?.className).not.toContain('text-amber-500');
+
+    // Flip to truly over-optimal utilization and ensure warning color appears.
+    rerender(
+      <QueryClientProvider client={new QueryClient()}>
+        <TooltipProvider>
+          <MobileReserveCard
+            reserve={{ ...reserveAt52PctUtil, utilizationPct: 92 }}
+            isApy
+            tydroPointToUsdRate={0}
+            onIncentiveClick={() => {}}
+            isSimulationExpanded={false}
+            onToggleSimulation={() => {}}
+            simulation={simulation}
+            supplyInput="1000"
+            borrowInput="500"
+            hasSharedScenario={false}
+            inputMode="usd"
+          />
+        </TooltipProvider>
+      </QueryClientProvider>,
+    );
+
+    const overUtilTrigger = getByLabelText('Show utilization details');
+    const overUtilValue = overUtilTrigger.querySelector('span');
+    expect(overUtilValue).not.toBeNull();
+    expect(overUtilValue?.className).toContain('text-amber-500');
   });
 
   it('uses tighter spacing for the mobile header left half', () => {

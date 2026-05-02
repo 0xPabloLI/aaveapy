@@ -497,11 +497,10 @@ const MobileReserveCard = memo(({
 
   const showUpperOnly = variant === 'upperOnly';
 
-  /** RAY → display %; reserve.optimalUsageRate 是唯一来源（simulation.utilization.optimal 同源，无独立 fallback 价值）。 */
-  const RAY_TO_PERCENT_DIVISOR = 1e25;
+  /** reserve.optimalUsageRate 是 percent number（如 45 = 45%），直接显示，无需 RAY 转换。 */
   const optimalPct =
     reserve.optimalUsageRate != null && Number(reserve.optimalUsageRate) > 0
-      ? Number(reserve.optimalUsageRate) / RAY_TO_PERCENT_DIVISOR
+      ? Number(reserve.optimalUsageRate)
       : null;
   const reserveId = getReserveKey(reserve);
 
