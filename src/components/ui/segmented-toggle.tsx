@@ -85,8 +85,8 @@ export function SegmentedToggle<T extends string = string>({
     <div
       ref={trackRef}
       className={cn(
-        'relative inline-flex rounded-md bg-muted/50 p-0.5',
-        isVertical ? 'flex-col gap-0.5' : 'items-center gap-0.5',
+        'relative inline-flex rounded-md bg-muted/50',
+        isVertical ? 'flex-col gap-0.5 p-0.5' : 'items-center gap-0.5 p-0.5',
         className,
       )}
     >
@@ -116,9 +116,9 @@ export function SegmentedToggle<T extends string = string>({
             aria-checked={isActive}
             onClick={() => onChange(option.value)}
             className={cn(
-              'relative z-10 flex items-center justify-center px-3 py-1 rounded-md ds-text-12 font-semibold transition-colors duration-200',
+              'relative z-10 flex items-center justify-center rounded-md ds-text-12 font-semibold transition-colors duration-200',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
-              isVertical && 'flex-1',
+              isVertical ? 'flex-1 px-3 py-0.5' : 'px-3 h-[1.5rem]',
               isActive ? activeTextClassName : 'text-muted-foreground hover:text-foreground',
             )}
           >
