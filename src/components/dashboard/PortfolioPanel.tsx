@@ -542,12 +542,12 @@ const PortfolioPanel = memo(function PortfolioPanel({
                     >
                       <TokenIcon symbol={r.tokenSymbol} size={12} />
                       <span>{r.tokenSymbol}</span>
-                      <span className="inline-flex items-center gap-0.5 ds-text-10 font-normal text-muted-foreground">
+                      <span className="inline-flex items-center gap-0.5 text-[9px] font-normal text-muted-foreground/70">
                         {chainSrc && (
-                          <img src={chainSrc} alt={r.chainName} className="size-3 shrink-0" />
+                          <img src={chainSrc} alt={r.chainName} className="size-2.5 shrink-0 opacity-70" />
                         )}
                         {isV4 && (
-                          <span className="inline-flex items-center px-1 py-0 rounded-full text-[9px] font-medium leading-none text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10">
+                          <span className="inline-flex items-center px-1 py-0 rounded-full text-[8px] font-medium leading-none text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10">
                             V4
                           </span>
                         )}
