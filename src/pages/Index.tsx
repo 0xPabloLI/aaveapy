@@ -404,6 +404,7 @@ const Index = () => {
                   prev.length === 1 && prev[0] === marketName ? [] : [marketName]
                 );
                 setSelectedHubs([]);
+                setMarketViewMode('chain');
               }}
               onSelectHub={(hubName) => {
                 setSelectedHubs((prev) =>
