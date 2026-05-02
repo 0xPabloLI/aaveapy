@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect, startTransition } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef, startTransition } from 'react';
 import type { SimulationMode } from '@/components/dashboard/PortfolioModeToggle';
 import { usePortfolioSimulation } from '@/hooks/usePortfolioSimulation';
 import { useIsFetching } from '@tanstack/react-query';
@@ -54,6 +54,7 @@ const Index = () => {
   const [selectedHubs, setSelectedHubs] = useState<string[]>([]);
   const [marketViewMode, setMarketViewMode] = useState<'chain' | 'hub'>('chain');
   const [expandedChain, setExpandedChain] = useState<string | null>(null);
+  const topOppsRef = useRef<HTMLDivElement>(null);
 
   const [isRateDragging, setIsRateDragging] = useState(false);
   const [simulationMode, setSimulationMode] = useState<SimulationMode>('single');
@@ -359,18 +360,20 @@ const Index = () => {
           </>
 
           {/* Top Opportunities */}
-          {stableReserves && stableReserves.length > 0 && (
-            <TopOpportunities
-              reserves={stableReserves}
-              isApy={isApy}
-              isRateDragging={isRateDragging}
-              whitelistMerklCampaignIds={whitelistMerklCampaignIds}
-              onToggleWhitelistMerklCampaign={toggleWhitelistMerklCampaign}
-              categoryGroups={tokenCategoryGroups}
-              onCardClick={handleTopCardClick}
-              tydroPointToUsdRate={tydroPointToUsdRate}
-            />
-          )}
+          <div ref={topOppsRef}>
+            {stableReserves && stableReserves.length > 0 && (
+              <TopOpportunities
+                reserves={stableReserves}
+                isApy={isApy}
+                isRateDragging={isRateDragging}
+                whitelistMerklCampaignIds={whitelistMerklCampaignIds}
+                onToggleWhitelistMerklCampaign={toggleWhitelistMerklCampaign}
+                categoryGroups={tokenCategoryGroups}
+                onCardClick={handleTopCardClick}
+                tydroPointToUsdRate={tydroPointToUsdRate}
+              />
+            )}
+          </div>
 
           {/* Filters + Reserves Table (tighter gap) */}
           <div className="space-y-2 md:space-y-3">
@@ -422,6 +425,11 @@ const Index = () => {
                 setMarketViewMode('chain');
                 const chain = effectiveMarketsList.find((m) => m.marketName === marketName)?.chainName ?? null;
                 setExpandedChain(chain);
+                const el = topOppsRef.current;
+                if (el) {
+                  const y = el.getBoundingClientRect().bottom + window.scrollY;
+                  window.scrollTo({ top: y, behavior: 'smooth' });
+                }
               }}
               onSelectHub={(hubName) => {
                 setSelectedHubs((prev) =>
@@ -429,6 +437,11 @@ const Index = () => {
                 );
                 setSelectedMarkets([]);
                 setMarketViewMode('hub');
+                const el = topOppsRef.current;
+                if (el) {
+                  const y = el.getBoundingClientRect().bottom + window.scrollY;
+                  window.scrollTo({ top: y, behavior: 'smooth' });
+                }
               }}
               tydroPointToUsdRate={tydroPointToUsdRate}
               whitelistMerklCampaignIds={whitelistMerklCampaignIds}
