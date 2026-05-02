@@ -79,22 +79,7 @@ function groupMarketsByChain(marketsList: MarketListItem[] | undefined): ChainGr
   return groups;
 }
 
-/** Get sub-market display label for Ethereum markets */
-function getEthSubMarketLabel(market: MarketListItem): string {
-  const version = getProtocolVersion(market.marketName);
-
-  // V4: extract suffix from marketName (e.g. AaveV4EthereumLido → Ethereum Lido)
-  if (version === 'v4') {
-    const withoutPrefix = market.marketName.replace(/^AaveV4/i, '');
-    return withoutPrefix.replace(/([a-z])([A-Z])/g, '$1 $2');
-  }
-
-  // V3: use canonical mapped names
-  if (ETHEREUM_MARKET_NAMES[market.marketName]) {
-    return ETHEREUM_MARKET_NAMES[market.marketName];
-  }
-  return market.marketName;
-}
+// Market label helpers live in @/lib/marketLabels (shared with PortfolioPanel).
 
 const FilterBar = ({
   searchQuery,
