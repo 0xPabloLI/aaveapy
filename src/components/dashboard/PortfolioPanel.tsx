@@ -17,6 +17,19 @@ import { normalizeTokenSymbolForSearch } from '@/lib/tokenSymbolNormalization';
 import { isStablecoinSymbol, isEthRelatedSymbol, isBtcRelatedSymbol } from '@/lib/tokenCategories';
 import { getReserveKey } from '@/lib/reserveKey';
 import { getChainIconSrc } from '@/lib/chainIcons';
+import { ETHEREUM_MARKET_NAMES } from '@/types/aave';
+import { getProtocolVersion } from '@/lib/protocolVersion';
+
+/** Mirrors FilterBar's market chip label: V4 badge + sub-market name for Ethereum, chain name otherwise. */
+function getMarketChipLabel(marketName: string, chainName: string): string {
+  if (chainName !== 'Ethereum') return chainName;
+  const version = getProtocolVersion(marketName);
+  if (version === 'v4') {
+    const withoutPrefix = marketName.replace(/^AaveV4/i, '');
+    return withoutPrefix.replace(/([a-z])([A-Z])/g, '$1 $2');
+  }
+  return ETHEREUM_MARKET_NAMES[marketName] ?? marketName;
+}
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import PortfolioTokenRow from './PortfolioTokenRow';
 import PortfolioSummaryCard from './PortfolioSummaryCard';
