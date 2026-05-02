@@ -17,19 +17,7 @@ import { normalizeTokenSymbolForSearch } from '@/lib/tokenSymbolNormalization';
 import { isStablecoinSymbol, isEthRelatedSymbol, isBtcRelatedSymbol } from '@/lib/tokenCategories';
 import { getReserveKey } from '@/lib/reserveKey';
 import { getChainIconSrc } from '@/lib/chainIcons';
-import { ETHEREUM_MARKET_NAMES } from '@/types/aave';
-import { getProtocolVersion } from '@/lib/protocolVersion';
-
-/** Mirrors FilterBar's market chip label: V4 badge + sub-market name for Ethereum, chain name otherwise. */
-function getMarketChipLabel(marketName: string, chainName: string): string {
-  if (chainName !== 'Ethereum') return chainName;
-  const version = getProtocolVersion(marketName);
-  if (version === 'v4') {
-    const withoutPrefix = marketName.replace(/^AaveV4/i, '');
-    return withoutPrefix.replace(/([a-z])([A-Z])/g, '$1 $2');
-  }
-  return ETHEREUM_MARKET_NAMES[marketName] ?? marketName;
-}
+import { getMarketChipLabel, isV4Market } from '@/lib/marketLabels';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import PortfolioTokenRow from './PortfolioTokenRow';
 import PortfolioSummaryCard from './PortfolioSummaryCard';
@@ -502,7 +490,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
                   const reserveId = getReserveKey(r);
                   const chainSrc = getChainIconSrc(r.chainName);
                   const marketLabel = getMarketChipLabel(r.marketName, r.chainName);
-                  const isV4 = getProtocolVersion(r.marketName) === 'v4';
+                  const isV4 = isV4Market(r.marketName);
                   return (
                     <button
                       key={reserveId}
@@ -538,7 +526,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
                   const reserveId = getReserveKey(r);
                   const chainSrc = getChainIconSrc(r.chainName);
                   const marketLabel = getMarketChipLabel(r.marketName, r.chainName);
-                  const isV4 = getProtocolVersion(r.marketName) === 'v4';
+                  const isV4 = isV4Market(r.marketName);
                   return (
                     <button
                       key={reserveId}
