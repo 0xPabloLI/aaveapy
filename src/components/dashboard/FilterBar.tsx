@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo, memo, Fragment } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Search, Eraser, ChevronRight, Snowflake } from 'lucide-react';
+import { Search, Eraser, ChevronRight, ChevronDown, Snowflake } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { FilterChip } from '@/components/ui/filter-chip';
 import { SegmentedToggle } from '@/components/ui/segmented-toggle';
@@ -296,7 +296,7 @@ const FilterBar = ({
     <div className="space-y-2 md:space-y-2.5">
       {/* Row 1: Token Categories + Search + Frozen Toggle + APY Toggle */}
       <div data-testid="tokens-row" className="flex flex-wrap items-center gap-1.5 md:gap-2">
-        <span className="ds-text-11 text-muted-foreground/70 hidden sm:inline">Tokens</span>
+        <span className="ds-text-11 leading-none text-muted-foreground/70 hidden sm:inline">Tokens</span>
 
         {categories.map((category) => (
           <FilterChip
@@ -405,7 +405,7 @@ const FilterBar = ({
 
       {/* Row 3: Markets – chain-level chips + optional chain/hub segmented toggle */}
       <div data-testid="markets-row" className="flex flex-wrap items-center gap-1 md:gap-1.5">
-        <span className="ds-text-11 text-muted-foreground/70 hidden sm:inline">Markets</span>
+        <span className="ds-text-11 leading-none text-muted-foreground/70 hidden sm:inline">Markets</span>
 
         {/* "All" button */}
         <FilterChip
@@ -487,10 +487,12 @@ const FilterBar = ({
                         className="flex items-center px-1 py-0.5 hover:opacity-80 transition-opacity"
                         title={expanded ? 'Collapse Ethereum markets' : 'Expand Ethereum markets'}
                       >
-                        <ChevronRight
-                          className={`w-3 h-3 transition-transform duration-200 ${expanded ? 'rotate-90' : ''}`}
-                          style={{ transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)' }}
-                        />
+                        <AnimatePresence mode="wait" initial={false}>
+                          {expanded
+                            ? <motion.span key="down" initial={{ opacity: 0, rotate: -90 }} animate={{ opacity: 1, rotate: 0 }} exit={{ opacity: 0, rotate: -90 }} transition={{ duration: 0.15, ease: [0.22, 1, 0.36, 1] }} className="flex items-center"><ChevronDown className="w-3 h-3" /></motion.span>
+                            : <motion.span key="right" initial={{ opacity: 0, rotate: 90 }} animate={{ opacity: 1, rotate: 0 }} exit={{ opacity: 0, rotate: 90 }} transition={{ duration: 0.15, ease: [0.22, 1, 0.36, 1] }} className="flex items-center"><ChevronRight className="w-3 h-3" /></motion.span>
+                          }
+                        </AnimatePresence>
                       </button>
                     </div>
 
@@ -558,7 +560,7 @@ const FilterBar = ({
                           );
                         })}
                     </AnimatePresence>
-                    {expanded && <div className="h-px w-full bg-border/40" />}
+                    {expanded && <div className="w-px h-3.5 bg-current opacity-20 shrink-0" />}
                   </Fragment>
                 );
               }
