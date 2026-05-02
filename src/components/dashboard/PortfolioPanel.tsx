@@ -539,16 +539,6 @@ const PortfolioPanel = memo(function PortfolioPanel({
                   const chainSrc = getChainIconSrc(r.chainName);
                   const marketLabel = getMarketChipLabel(r.marketName, r.chainName);
                   const isV4 = getProtocolVersion(r.marketName) === 'v4';
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-1.5">
-            {suggestedReserves.length > 0 && (
-              <div className="flex flex-wrap items-center gap-1.5 px-1">
-                {suggestedReserves.map((r) => {
-                  const reserveId = getReserveKey(r);
-                  const chainSrc = getChainIconSrc(r.chainName);
                   return (
                     <button
                       key={reserveId}
@@ -559,14 +549,17 @@ const PortfolioPanel = memo(function PortfolioPanel({
                     >
                       <TokenIcon symbol={r.tokenSymbol} size={12} />
                       <span>{r.tokenSymbol}</span>
-                      {chainSrc && (
-                        <img src={chainSrc} alt={r.chainName} title={r.marketName} className="size-3 shrink-0" />
-                      )}
-                      {!isMobile && (
-                        <span className="ds-text-10 font-normal text-muted-foreground truncate max-w-[80px]">
-                          {r.marketName}
-                        </span>
-                      )}
+                      <span className="inline-flex items-center gap-0.5 ds-text-10 font-normal text-muted-foreground">
+                        {chainSrc && (
+                          <img src={chainSrc} alt={r.chainName} className="size-3 shrink-0" />
+                        )}
+                        {isV4 && (
+                          <span className="inline-flex items-center px-1 py-0 rounded-full text-[9px] font-medium leading-none text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10">
+                            V4
+                          </span>
+                        )}
+                        <span>{marketLabel}</span>
+                      </span>
                     </button>
                   );
                 })}
