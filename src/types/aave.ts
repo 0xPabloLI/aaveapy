@@ -177,17 +177,6 @@ export type MerklForecastWireItem =
       endTimestamp: number;
     };
 
-export interface MerklForecastStatesBatchResponse {
-  requested?: number;
-  staleTimeMs?: number;
-  items: MerklForecastWireItem[];
-  errors: Array<{
-    campaignId: string;
-    status?: number;
-    message: string;
-  }>;
-}
-
 export type SortField = 'totalSupplyApy' | 'totalBorrowApy' | 'apySpread' | null;
 export type SortOrder = 'asc' | 'desc';
 export type TokenCategory = 'stablecoin' | 'eth-related' | 'btc-related' | 'pendle' | 'all';

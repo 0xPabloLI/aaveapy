@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo, memo, Fragment } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Search, Eraser, ChevronRight, Snowflake } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { FilterChip } from '@/components/ui/filter-chip';
@@ -489,49 +490,46 @@ const FilterBar = ({
                       </button>
                     </div>
 
-                    <div
-                      className="flex items-center overflow-hidden transition-all duration-200 ease-in-out"
-                      style={{
-                        maxWidth: expanded ? '500px' : '0px',
-                        opacity: expanded ? 1 : 0,
-                      }}
-                    >
-                      <div className="flex items-center gap-1 pl-1 pr-1">
-                        {group.markets
-                          .slice()
-                          .sort((a, b) => {
-                            const aVersion = getProtocolVersion(a.marketName);
-                            const bVersion = getProtocolVersion(b.marketName);
-                            if (aVersion === 'v4' && bVersion !== 'v4') return -1;
-                            if (aVersion !== 'v4' && bVersion === 'v4') return 1;
-                            return 0;
-                          })
-                          .map((market) => {
-                            const isSubSelected = selectedMarkets.includes(market.marketName);
-                            const version = getProtocolVersion(market.marketName);
-                            const isV4 = version === 'v4';
-                            return (
-                              <button
-                                key={market.marketName}
-                                onClick={() => toggleSubMarket(market.marketName)}
-                                className={`ds-chip gap-0.5 px-1 md:px-1.5 py-0.5 rounded-md text-[10px] font-medium whitespace-nowrap transition-all duration-150 hover:scale-105 active:scale-95 ${
-                                  isSubSelected
-                                    ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
-                                    : 'text-foreground/80 border border-border hover:text-foreground'
-                                }`}
-                                title={market.marketName}
-                              >
-                                {isV4 && (
-                                  <span className="inline-flex items-center px-1 py-0 rounded-full text-[9px] font-medium leading-none text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10">
-                                    V4
-                                  </span>
-                                )}
-                                <span>{getEthSubMarketLabel(market)}</span>
-                              </button>
-                            );
-                          })}
-                      </div>
-                    </div>
+                    <AnimatePresence initial={false}>
+                      {expanded && group.markets
+                        .slice()
+                        .sort((a, b) => {
+                          const aVersion = getProtocolVersion(a.marketName);
+                          const bVersion = getProtocolVersion(b.marketName);
+                          if (aVersion === 'v4' && bVersion !== 'v4') return -1;
+                          if (aVersion !== 'v4' && bVersion === 'v4') return 1;
+                          return 0;
+                        })
+                        .map((market) => {
+                          const isSubSelected = selectedMarkets.includes(market.marketName);
+                          const version = getProtocolVersion(market.marketName);
+                          const isV4 = version === 'v4';
+                          return (
+                            <motion.button
+                              key={market.marketName}
+                              layout
+                              initial={{ width: 0, opacity: 0, scale: 0.96 }}
+                              animate={{ width: 'auto', opacity: 1, scale: 1 }}
+                              exit={{ width: 0, opacity: 0, scale: 0.96 }}
+                              transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+                              onClick={() => toggleSubMarket(market.marketName)}
+                              className={`ds-chip gap-0.5 px-1 md:px-1.5 py-0.5 rounded-md text-[10px] font-medium whitespace-nowrap overflow-hidden transition-colors hover:scale-105 active:scale-95 ${
+                                isSubSelected
+                                  ? 'ds-text-brand-magenta border border-[rgb(var(--ds-brand-magenta-rgb))] shadow-sm'
+                                  : 'text-foreground/80 border border-border hover:text-foreground'
+                              }`}
+                              title={market.marketName}
+                            >
+                              {isV4 && (
+                                <span className="inline-flex items-center px-1 py-0 rounded-full text-[9px] font-medium leading-none text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10">
+                                  V4
+                                </span>
+                              )}
+                              <span>{getEthSubMarketLabel(market)}</span>
+                            </motion.button>
+                          );
+                        })}
+                    </AnimatePresence>
                   </Fragment>
                 );
               }

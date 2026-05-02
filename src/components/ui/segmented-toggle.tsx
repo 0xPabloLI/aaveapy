@@ -85,19 +85,19 @@ export function SegmentedToggle<T extends string = string>({
     <div
       ref={trackRef}
       className={cn(
-        'relative rounded-lg border border-border/40 bg-muted/60 p-0.5',
-        isVertical ? 'flex flex-col gap-0.5' : 'flex items-center gap-0.5',
+        'relative inline-flex rounded-md bg-muted/50 p-0.5',
+        isVertical ? 'flex-col gap-0.5' : 'items-center gap-0.5',
         className,
       )}
     >
       {/* Sliding indicator */}
       <div
-        className="absolute rounded-md bg-card shadow-sm border border-border/60 pointer-events-none motion-safe:transition-transform motion-safe:duration-200 motion-safe:ease-out"
+        className="absolute rounded-md bg-background shadow-sm pointer-events-none motion-safe:transition-all motion-safe:duration-200 motion-safe:ease-out"
         style={{
           width: indicator.width,
           height: indicator.height,
           transform: indicator.transform,
-          transitionTimingFunction: 'cubic-bezier(0.25, 0.1, 0.25, 1)',
+          transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
           willChange: 'transform',
         }}
         aria-hidden

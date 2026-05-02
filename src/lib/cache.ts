@@ -127,10 +127,6 @@ export function setCachedSideDataMeta<T>(data: T): void {
 }
 
 // Merkl forecast states cache
-export function getCachedMerklForecastStatesEntry<T>(): CachedPayload<T> | null {
-  return getCacheEntry<T>(CACHE_KEYS.MERKL_FORECAST_STATES);
-}
-
 export function setCachedMerklForecastStates<T>(data: T): void {
   setCacheEntry(CACHE_KEYS.MERKL_FORECAST_STATES, data);
 }
