@@ -31,7 +31,7 @@ import {
 } from '@/lib/deficit';
 import { RateSimulationResult } from '@/hooks/useRateSimulation';
 
-import { getDisplayAvailableLiquidityUsd, getDisplayReserveSizeUsd, getDisplayTotalBorrowedUsd } from '@/lib/scenarioSize';
+import { getDisplayAvailableLiquidityUsd, getDisplayReserveSizeUsd, getDisplayTotalBorrowedUsd, nativeToUsd } from '@/lib/scenarioSize';
 import { buildPoolExplorerUrl } from '@/lib/poolExplorerLinks';
 import { buildAaveProHubUrl } from '@/lib/aaveLinks';
 import { getProtocolVersion } from '@/lib/protocolVersion';
@@ -126,8 +126,9 @@ function MobileReserveAmountRow({
     ) : null;
 
   if (activeTab === 'supply') {
-    const hasSupplyCap =
-      reserve.supplyCapUsd != null && Number.isFinite(reserve.supplyCapUsd) && reserve.supplyCapUsd > 0;
+    const computedSupplyCapUsd = nativeToUsd(reserve.supplyCap, reserve.decimals, reserve.tokenPrice);
+  const hasSupplyCap =
+    computedSupplyCapUsd != null && Number.isFinite(computedSupplyCapUsd) && computedSupplyCapUsd > 0;
 
     return (
       <div className="flex w-full min-w-0 flex-nowrap items-center gap-1.5 px-4">
@@ -162,7 +163,7 @@ function MobileReserveAmountRow({
               </span>
               <CapProgressRing
                 size={displayReserveSizeUsd}
-                cap={reserve.supplyCapUsd}
+                cap={computedSupplyCapUsd}
                 displayMode={inputMode}
                 tokenPrice={displayTokenPrice}
                 tokenSymbol={reserve.tokenSymbol}
@@ -185,7 +186,8 @@ function MobileReserveAmountRow({
     );
   }
 
-  const hasBorrowCap = reserve.borrowCapUsd != null && Number.isFinite(reserve.borrowCapUsd) && reserve.borrowCapUsd > 0;
+  const computedBorrowCapUsd = nativeToUsd(reserve.borrowCap, reserve.decimals, reserve.tokenPrice);
+  const hasBorrowCap = computedBorrowCapUsd != null && Number.isFinite(computedBorrowCapUsd) && computedBorrowCapUsd > 0;
 
   return (
     <div className="flex w-full min-w-0 flex-nowrap items-center gap-1.5 px-4">
@@ -207,7 +209,7 @@ function MobileReserveAmountRow({
             </span>
             <BorrowCapProgressRing
               borrowed={totalBorrowedUsd}
-              cap={reserve.borrowCapUsd}
+              cap={computedBorrowCapUsd}
               availableLiquidityUsd={availableLiquidityUsd}
               displayMode={inputMode}
               tokenPrice={displayTokenPrice}
@@ -805,7 +807,7 @@ const MobileReserveCard = memo(({
                   {capSheet === 'supply' && (
                     <SupplyCapSheetContent
                       currentSize={displayReserveSizeUsd ?? 0}
-                      cap={reserve.supplyCapUsd!}
+                      cap={computedSupplyCapUsd!}
                       inputMode={inputMode}
                       tokenPrice={displayTokenPrice}
                       tokenSymbol={reserve.tokenSymbol}
@@ -814,7 +816,7 @@ const MobileReserveCard = memo(({
                   {capSheet === 'borrow' && (
                     <BorrowCapSheetContent
                       borrowed={totalBorrowedUsd ?? 0}
-                      cap={reserve.borrowCapUsd!}
+                      cap={computedBorrowCapUsd!}
                       availableLiquidityUsd={availableLiquidityUsd ?? 0}
                       inputMode={inputMode}
                       tokenPrice={displayTokenPrice}

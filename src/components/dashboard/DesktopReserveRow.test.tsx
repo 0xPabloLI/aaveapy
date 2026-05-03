@@ -16,9 +16,10 @@ const reserve: ReserveWithSpread = {
   tokenSymbol: 'USDC',
   tokenAddress: '0x0000000000000000000000000000000000000001',
   tokenPrice: 1,
-  reserveSizeUsd: 1_000_000,
-  supplyCapUsd: 2_000_000,
-  borrowCapUsd: 1_000_000,
+  decimals: 6,
+  reserveSize: '1000000000000',
+  supplyCap: '2000000000000',
+  borrowCap: '1000000000000',
   utilizationPct: 45,
   supplyApy: 4.2,
   borrowApy: 6.1,
@@ -369,8 +370,8 @@ describe('DesktopReserveRow', () => {
     const queryClient = new QueryClient();
     const reserveWithoutCaps: ReserveWithSpread = {
       ...reserve,
-      supplyCapUsd: null,
-      borrowCapUsd: null,
+      supplyCap: undefined,
+      borrowCap: undefined,
     };
     const html = renderToString(
       <QueryClientProvider client={queryClient}>

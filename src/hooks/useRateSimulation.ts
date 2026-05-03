@@ -67,6 +67,7 @@ import type {
   ReserveWithSpread,
   TokenPricesIndex,
 } from '@/types/aave';
+import { nativeToUsd } from '@/lib/scenarioSize';
 
 const FORECAST_TOKEN_PRICE_QUERY_KEY = ['forecast-token-price'] as const;
 
@@ -330,16 +331,16 @@ const sumMeritValues = (values?: MeritIncentive[], isApy = false): number => {
 };
 
 /**
- * Supply: `reserveSizeUsd`. Borrow: borrowed USD ≈ reserveSize × utilization (Merit TVL proxy when no campaign TVL exists).
- * V4: reserveSizeUsd may be 0 or a per-Spoke slice — use on-chain totalVariableDebt for borrow side,
- *     and return undefined for supply side when reserveSizeUsd is 0/unreliable.
+ * Supply: reserveSize (native → USD). Borrow: borrowed USD ≈ reserveSize × utilization (Merit TVL proxy when no campaign TVL exists).
+ * V4: reserveSize may be 0 or a per-Spoke slice — use on-chain totalVariableDebt for borrow side,
+ *     and return undefined for supply side when reserveSize-derived USD is 0/unreliable.
  */
 const getMeritAnchorTvlUsd = (reserve: ReserveWithSpread, side: RateSide, protocolVersion: ProtocolVersion): number | undefined => {
   if (protocolVersion === 'v4') {
     // V4: reserveSizeUsd is unreliable for both supply and borrow anchor
     if (side === 'supply') {
-      const size = reserve.reserveSizeUsd;
-      if (Number.isFinite(size) && size !== undefined && size > 0) return size;
+      const size = nativeToUsd(reserve.reserveSize, reserve.decimals, reserve.tokenPrice);
+      if (size != null && Number.isFinite(size) && size > 0) return size;
       return undefined;
     }
     // Borrow: use on-chain totalVariableDebt if available
@@ -354,9 +355,9 @@ const getMeritAnchorTvlUsd = (reserve: ReserveWithSpread, side: RateSide, protoc
     }
     return undefined;
   }
-  // V3: reserveSizeUsd is reliable
-  const size = reserve.reserveSizeUsd;
-  if (!Number.isFinite(size) || size === undefined || size <= 0) return undefined;
+  // V3: reserveSize is reliable
+  const size = nativeToUsd(reserve.reserveSize, reserve.decimals, reserve.tokenPrice);
+  if (size == null || !Number.isFinite(size) || size <= 0) return undefined;
   if (side === 'supply') return size;
   const u = reserve.utilizationPct;
   if (typeof u === 'number' && Number.isFinite(u) && u > 0 && u <= 100) {
@@ -983,11 +984,11 @@ export function buildRateSimulationResult({
   const rawBorrowInputUsd = inputMode === 'usd' ? rawBorrow : (tokenPrice ? rawBorrow * tokenPrice : 0);
 
   // Calculate cap constraints for capping inputs
-  const supplyCapUsd = reserve.supplyCapUsd ?? null;
-  const borrowCapUsd = reserve.borrowCapUsd ?? null;
-  // V4: reserveSizeUsd may be 0 or a per-Spoke slice — treat as null to avoid misleading cap room
+  const supplyCapUsd = nativeToUsd(reserve.supplyCap, reserve.decimals, reserve.tokenPrice) ?? null;
+  const borrowCapUsd = nativeToUsd(reserve.borrowCap, reserve.decimals, reserve.tokenPrice) ?? null;
+  // V4: reserveSize may be 0 or a per-Spoke slice — treat as null to avoid misleading cap room
   const currentReserveSizeUsd = (() => {
-    const size = reserve.reserveSizeUsd ?? null;
+    const size = nativeToUsd(reserve.reserveSize, reserve.decimals, reserve.tokenPrice) ?? null;
     if (getProtocolVersion(reserve.marketName) === 'v4' && (size === null || size === 0)) return null;
     return size;
   })();
@@ -1528,11 +1529,12 @@ export function buildRateSimulationResult({
     if (!reserveRateInput || !tokenPrice) {
       const protocolVersion = getProtocolVersion(reserve.marketName);
       const isV3 = protocolVersion === 'v3';
+      const computedReserveSizeUsd = nativeToUsd(reserve.reserveSize, reserve.decimals, reserve.tokenPrice);
       const fallbackTotalBorrowedUsd = isV3
-        ? deriveTotalBorrowedUsd(reserve.reserveSizeUsd, reserve.utilizationPct)
+        ? deriveTotalBorrowedUsd(computedReserveSizeUsd, reserve.utilizationPct)
         : null;
       const fallbackAvailableLiquidityUsd = isV3
-        ? deriveAvailableLiquidityUsd(reserve.reserveSizeUsd, fallbackTotalBorrowedUsd)
+        ? deriveAvailableLiquidityUsd(computedReserveSizeUsd, fallbackTotalBorrowedUsd)
         : null;
       const supplyCapFields = computeSupplyCapFields();
       const borrowCapFields = computeBorrowCapFields(fallbackTotalBorrowedUsd);
@@ -1563,19 +1565,20 @@ export function buildRateSimulationResult({
 
     const protocolVersion = getProtocolVersion(reserve.marketName);
     const isV3 = protocolVersion === 'v3';
+    const computedReserveSizeUsd = nativeToUsd(reserve.reserveSize, reserve.decimals, reserve.tokenPrice);
 
     const totalBorrowedUsd =
       Number.isFinite(onChainTotalBorrowedUsd) && onChainTotalBorrowedUsd >= 0
         ? onChainTotalBorrowedUsd
         : isV3
-          ? deriveTotalBorrowedUsd(reserve.reserveSizeUsd, reserve.utilizationPct)
+          ? deriveTotalBorrowedUsd(computedReserveSizeUsd, reserve.utilizationPct)
           : null;
 
     const availableLiquidityUsd =
       Number.isFinite(onChainAvailableLiquidityUsd) && onChainAvailableLiquidityUsd >= 0
         ? onChainAvailableLiquidityUsd
         : isV3
-          ? deriveAvailableLiquidityUsd(reserve.reserveSizeUsd, totalBorrowedUsd)
+          ? deriveAvailableLiquidityUsd(computedReserveSizeUsd, totalBorrowedUsd)
           : null;
 
     const reserveFactor = Number.isFinite(reserveRateInput.reserveFactor) && reserveRateInput.reserveFactor > 0

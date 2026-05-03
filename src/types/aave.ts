@@ -81,9 +81,6 @@ export interface ReserveWithSpread {
   supplyApy?: number;
   borrowApy?: number;
   tokenPrice?: number;
-  reserveSizeUsd?: number;
-  supplyCapUsd?: number;
-  borrowCapUsd?: number;
   utilizationPct?: number;
   
   // Availability flags
@@ -95,16 +92,12 @@ export interface ReserveWithSpread {
   // Rate calculation fields (from /api/markets reserves)
   decimals?: number;
   availableLiquidity?: string;
-  availableLiquidityUsd?: number;
   totalVariableDebt?: string;
-  totalVariableDebtUsd?: number;
   reserveSize?: string;
   supplyCap?: string;
   borrowCap?: string;
   suppliable?: string;
-  suppliableUsd?: number;
   borrowable?: string;
-  borrowableUsd?: number;
   // Rate-model fields are percent numbers (e.g., 9 means 9%) for V3/V4 unified API.
   reserveFactor?: number;
   variableRateSlope1?: number;

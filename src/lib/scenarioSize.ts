@@ -3,6 +3,20 @@ import type { ProtocolVersion } from './protocolVersion';
 
 export type ScenarioDisplayMode = 'usd' | 'token';
 
+export const nativeToUsd = (
+  raw: string | null | undefined,
+  decimals: number | null | undefined,
+  tokenPrice: number | null | undefined,
+): number | null => {
+  if (!raw) return null;
+  if (decimals == null || !Number.isFinite(decimals) || decimals < 0) return null;
+  if (tokenPrice == null || !Number.isFinite(tokenPrice) || tokenPrice <= 0) return null;
+  const value = Number(raw);
+  if (!Number.isFinite(value) || value < 0) return null;
+  const tokens = value / Math.pow(10, decimals);
+  return tokens * tokenPrice;
+};
+
 export const getScenarioInputUsd = ({
   rawInput,
   inputMode,
@@ -207,17 +221,18 @@ export const getDisplayTotalBorrowedUsd = (
     totalVariableDebt?: string | null;
     decimals?: number | null;
     tokenPrice?: number | null;
-    reserveSizeUsd?: number | null;
+    reserveSize?: string | null;
     utilizationPct?: number | null;
   },
   protocolVersion: ProtocolVersion,
 ): number | null => {
   const onChain = getReserveTotalBorrowedUsd(reserve);
   if (onChain != null) return onChain;
-  // V4: derived fallback is unsafe — reserveSizeUsd may be 0 or a Spoke slice
+  // V4: derived fallback is unsafe — reserveSize may be 0 or a Spoke slice
   if (protocolVersion === 'v4') return null;
+  const reserveSizeUsd = nativeToUsd(reserve.reserveSize, reserve.decimals, reserve.tokenPrice);
   return getTotalBorrowedUsd({
-    reserveSizeUsd: reserve.reserveSizeUsd,
+    reserveSizeUsd,
     utilizationPct: reserve.utilizationPct,
   });
 };
@@ -233,21 +248,22 @@ export const getDisplayAvailableLiquidityUsd = (
     totalVariableDebt?: string | null;
     decimals?: number | null;
     tokenPrice?: number | null;
-    reserveSizeUsd?: number | null;
+    reserveSize?: string | null;
     utilizationPct?: number | null;
   },
   protocolVersion: ProtocolVersion,
 ): number | null => {
   const onChain = getReserveAvailableLiquidityUsd(reserve);
   if (onChain != null) return onChain;
-  // V4: derived fallback is unsafe — reserveSizeUsd is per-Spoke, not Hub aggregate
+  // V4: derived fallback is unsafe — reserveSize is per-Spoke, not Hub aggregate
   if (protocolVersion === 'v4') return null;
+  const reserveSizeUsd = nativeToUsd(reserve.reserveSize, reserve.decimals, reserve.tokenPrice);
   const totalBorrowedUsd = getTotalBorrowedUsd({
-    reserveSizeUsd: reserve.reserveSizeUsd,
+    reserveSizeUsd,
     utilizationPct: reserve.utilizationPct,
   });
   return getDerivedAvailableLiquidityUsd({
-    reserveSizeUsd: reserve.reserveSizeUsd,
+    reserveSizeUsd,
     totalBorrowedUsd,
   });
 };
@@ -261,8 +277,10 @@ export const getDisplayAvailableLiquidityUsd = (
  */
 export const getDisplayReserveSizeUsd = (
   reserve: {
-    reserveSizeUsd?: number | null;
-    supplyCapUsd?: number | null;
+    reserveSize?: string | null;
+    decimals?: number | null;
+    tokenPrice?: number | null;
+    supplyCap?: string | null;
   },
   protocolVersion: ProtocolVersion,
   scenarioInput?: {
@@ -271,8 +289,7 @@ export const getDisplayReserveSizeUsd = (
     tokenPrice?: number | null;
   },
 ): number | null => {
-  const { reserveSizeUsd } = reserve;
-  // V4 with reserveSizeUsd=0: the Hub aggregate is unavailable, don't show 0
+  const reserveSizeUsd = nativeToUsd(reserve.reserveSize, reserve.decimals, reserve.tokenPrice);
   if (protocolVersion === 'v4' && (reserveSizeUsd == null || reserveSizeUsd === 0)) {
     return null;
   }
@@ -281,7 +298,7 @@ export const getDisplayReserveSizeUsd = (
   if (!scenarioInput) return reserveSizeUsd;
   return getScenarioSupplySizeUsd({
     reserveSizeUsd,
-    supplyCapUsd: reserve.supplyCapUsd,
+    supplyCapUsd: nativeToUsd(reserve.supplyCap, reserve.decimals, reserve.tokenPrice),
     rawSupplyInput: scenarioInput.rawSupplyInput,
     inputMode: scenarioInput.inputMode,
     tokenPrice: scenarioInput.tokenPrice,

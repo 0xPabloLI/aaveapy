@@ -453,7 +453,8 @@ describe('buildRateSimulationResult', () => {
     const reserve: ReserveWithSpread = {
       ...baseReserve,
       tokenSymbol: 'USDG',
-      reserveSizeUsd: 23655388.009228,
+      tokenPrice: 1,
+      reserveSize: '23655388009228',
       merklSupplys: [
         {
           name: 'Lend USDG on Tydro',
@@ -506,7 +507,8 @@ describe('buildRateSimulationResult', () => {
     const reserve: ReserveWithSpread = {
       ...baseReserve,
       tokenSymbol: 'USDG',
-      reserveSizeUsd: 23655388.009228,
+      tokenPrice: 1,
+      reserveSize: '23655388009228',
       merklSupplys: [
         {
           name: 'Lend USDG on Tydro',

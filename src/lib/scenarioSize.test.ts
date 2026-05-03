@@ -1,6 +1,28 @@
 import { describe, expect, it } from 'vitest';
 
-import { convertUsdToInputValue, getDisplayAvailableLiquidityUsd, getDisplayReserveSizeUsd, getDisplayTotalBorrowedUsd, getReserveAvailableLiquidityUsd, getReserveTotalBorrowedUsd, getScenarioSupplySizeUsd } from './scenarioSize';
+import { convertUsdToInputValue, getDisplayAvailableLiquidityUsd, getDisplayReserveSizeUsd, getDisplayTotalBorrowedUsd, getReserveAvailableLiquidityUsd, getReserveTotalBorrowedUsd, getScenarioSupplySizeUsd, nativeToUsd } from './scenarioSize';
+
+describe('nativeToUsd', () => {
+  it('converts raw token units to USD', () => {
+    expect(nativeToUsd('1000000000000000000', 18, 2500)).toBe(2500);
+  });
+
+  it('returns null when raw is missing', () => {
+    expect(nativeToUsd(null, 18, 1)).toBeNull();
+    expect(nativeToUsd(undefined, 18, 1)).toBeNull();
+  });
+
+  it('returns null when decimals is missing or invalid', () => {
+    expect(nativeToUsd('1', null, 1)).toBeNull();
+    expect(nativeToUsd('1', -1, 1)).toBeNull();
+  });
+
+  it('returns null when tokenPrice is missing or non-positive', () => {
+    expect(nativeToUsd('1', 18, null)).toBeNull();
+    expect(nativeToUsd('1', 18, 0)).toBeNull();
+    expect(nativeToUsd('1', 18, -1)).toBeNull();
+  });
+});
 
 describe('getScenarioSupplySizeUsd', () => {
   it('keeps current size when reserve is already above cap', () => {
@@ -149,7 +171,7 @@ describe('getDisplayTotalBorrowedUsd', () => {
     totalVariableDebt: '1037279054299',
     decimals: 6,
     tokenPrice: 1.0002,
-    reserveSizeUsd: 0,
+    reserveSize: '0',
     utilizationPct: 93.14,
   };
 
@@ -161,13 +183,13 @@ describe('getDisplayTotalBorrowedUsd', () => {
     expect(getDisplayTotalBorrowedUsd(v4Reserve, 'v4')).toBeCloseTo(1037486.51, 2);
   });
 
-  it('V3: falls back to derived reserveSizeUsd * utilizationPct / 100 when on-chain unavailable', () => {
-    const noOnChain = { reserveSizeUsd: 1000, utilizationPct: 50 };
+  it('V3: falls back to derived native reserveSize * utilizationPct / 100 when on-chain unavailable', () => {
+    const noOnChain = { reserveSize: '1000000000000000000000', decimals: 18, tokenPrice: 1, utilizationPct: 50 };
     expect(getDisplayTotalBorrowedUsd(noOnChain, 'v3')).toBe(500);
   });
 
   it('V4: returns null when on-chain unavailable (no derived fallback)', () => {
-    const noOnChain = { reserveSizeUsd: 0, utilizationPct: 93.14 };
+    const noOnChain = { reserveSize: '0', decimals: 18, tokenPrice: 1, utilizationPct: 93.14 };
     expect(getDisplayTotalBorrowedUsd(noOnChain, 'v4')).toBeNull();
   });
 });
@@ -179,7 +201,7 @@ describe('getDisplayAvailableLiquidityUsd', () => {
         availableLiquidity: '76610908377',
         decimals: 6,
         tokenPrice: 1.0002,
-        reserveSizeUsd: 100000,
+        reserveSize: '100000000000000',
         utilizationPct: 50,
       }, 'v3'),
     ).toBeCloseTo(76626.23, 2);
@@ -191,59 +213,59 @@ describe('getDisplayAvailableLiquidityUsd', () => {
         availableLiquidity: '76610908377',
         decimals: 6,
         tokenPrice: 1.0002,
-        reserveSizeUsd: 0,
+        reserveSize: '0',
         utilizationPct: 93.14,
       }, 'v4'),
     ).toBeCloseTo(76626.23, 2);
   });
 
-  it('V3: falls back to derived reserveSizeUsd - totalBorrowed when on-chain unavailable', () => {
-    const noOnChain = { reserveSizeUsd: 1000, utilizationPct: 50 };
+  it('V3: falls back to derived reserveSize - totalBorrowed when on-chain unavailable', () => {
+    const noOnChain = { reserveSize: '1000000000000000000000', decimals: 18, tokenPrice: 1, utilizationPct: 50 };
     // totalBorrowed = 1000 * 50/100 = 500, liquidity = 1000 - 500 = 500
     expect(getDisplayAvailableLiquidityUsd(noOnChain, 'v3')).toBe(500);
   });
 
   it('V4: returns null when on-chain unavailable (no derived fallback)', () => {
-    const noOnChain = { reserveSizeUsd: 0, utilizationPct: 93.14 };
+    const noOnChain = { reserveSize: '0', decimals: 18, tokenPrice: 1, utilizationPct: 93.14 };
     expect(getDisplayAvailableLiquidityUsd(noOnChain, 'v4')).toBeNull();
   });
 });
 
 describe('getDisplayReserveSizeUsd', () => {
-  it('V3: returns reserveSizeUsd when valid', () => {
-    expect(getDisplayReserveSizeUsd({ reserveSizeUsd: 1000 }, 'v3')).toBe(1000);
+  it('V3: returns nativeToUsd when valid', () => {
+    expect(getDisplayReserveSizeUsd({ reserveSize: '1000000000000000000000', decimals: 18, tokenPrice: 1 }, 'v3')).toBe(1000);
   });
 
-  it('V3: returns null when reserveSizeUsd is null', () => {
-    expect(getDisplayReserveSizeUsd({ reserveSizeUsd: null }, 'v3')).toBeNull();
+  it('V3: returns null when reserveSize is null', () => {
+    expect(getDisplayReserveSizeUsd({ reserveSize: null, decimals: 18, tokenPrice: 1 }, 'v3')).toBeNull();
   });
 
-  it('V4: returns reserveSizeUsd when non-zero', () => {
-    expect(getDisplayReserveSizeUsd({ reserveSizeUsd: 1000 }, 'v4')).toBe(1000);
+  it('V4: returns nativeToUsd when non-zero', () => {
+    expect(getDisplayReserveSizeUsd({ reserveSize: '1000000000000000000000', decimals: 18, tokenPrice: 1 }, 'v4')).toBe(1000);
   });
 
-  it('V4: returns null when reserveSizeUsd is 0 (Hub aggregate unavailable)', () => {
-    expect(getDisplayReserveSizeUsd({ reserveSizeUsd: 0 }, 'v4')).toBeNull();
+  it('V4: returns null when reserveSize-derived USD is 0 (Hub aggregate unavailable)', () => {
+    expect(getDisplayReserveSizeUsd({ reserveSize: '0', decimals: 18, tokenPrice: 1 }, 'v4')).toBeNull();
   });
 
-  it('V4: returns null when reserveSizeUsd is null', () => {
-    expect(getDisplayReserveSizeUsd({ reserveSizeUsd: null }, 'v4')).toBeNull();
+  it('V4: returns null when reserveSize is null', () => {
+    expect(getDisplayReserveSizeUsd({ reserveSize: null, decimals: 18, tokenPrice: 1 }, 'v4')).toBeNull();
   });
 
-  it('V4: applies scenario input when reserveSizeUsd is non-zero', () => {
+  it('V4: applies scenario input when reserveSize is non-zero', () => {
     expect(
       getDisplayReserveSizeUsd(
-        { reserveSizeUsd: 1000, supplyCapUsd: 2000 },
+        { reserveSize: '1000000000000000000000', decimals: 18, tokenPrice: 1, supplyCap: '2000000000000000000000' },
         'v4',
         { rawSupplyInput: '500', inputMode: 'usd', tokenPrice: 1 },
       ),
     ).toBe(1500);
   });
 
-  it('V4: returns null with scenario input when reserveSizeUsd is 0', () => {
+  it('V4: returns null with scenario input when reserveSize is 0', () => {
     expect(
       getDisplayReserveSizeUsd(
-        { reserveSizeUsd: 0, supplyCapUsd: 2000 },
+        { reserveSize: '0', decimals: 18, tokenPrice: 1, supplyCap: '2000000000000000000000' },
         'v4',
         { rawSupplyInput: '500', inputMode: 'usd', tokenPrice: 1 },
       ),

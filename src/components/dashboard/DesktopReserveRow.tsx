@@ -30,7 +30,7 @@ import AssetActionMenu from './AssetActionMenu';
 import { BATCH_RESERVE_ADD_BUTTON_CLASSES } from './batchTheme';
 import type { RateSimulationResult, ScenarioInputMode } from '@/hooks/useRateSimulation';
 
-import { getDisplayAvailableLiquidityUsd, getDisplayReserveSizeUsd, getDisplayTotalBorrowedUsd } from '@/lib/scenarioSize';
+import { getDisplayAvailableLiquidityUsd, getDisplayReserveSizeUsd, getDisplayTotalBorrowedUsd, nativeToUsd } from '@/lib/scenarioSize';
 import { cn } from '@/lib/utils';
 
 /* ─── Memoised chain icon ─── */
@@ -197,10 +197,12 @@ const DesktopReserveRow = memo(({
     tokenPrice: displayTokenPrice,
     tokenSymbol: reserve.tokenSymbol,
   });
+  const computedSupplyCapUsd = nativeToUsd(reserve.supplyCap, reserve.decimals, reserve.tokenPrice);
+  const computedBorrowCapUsd = nativeToUsd(reserve.borrowCap, reserve.decimals, reserve.tokenPrice);
   const hasSupplyCap =
-    reserve.supplyCapUsd != null && Number.isFinite(reserve.supplyCapUsd) && reserve.supplyCapUsd > 0;
+    computedSupplyCapUsd != null && Number.isFinite(computedSupplyCapUsd) && computedSupplyCapUsd > 0;
   const hasBorrowCap =
-    reserve.borrowCapUsd != null && Number.isFinite(reserve.borrowCapUsd) && reserve.borrowCapUsd > 0;
+    computedBorrowCapUsd != null && Number.isFinite(computedBorrowCapUsd) && computedBorrowCapUsd > 0;
 
   return (
     <Fragment>
@@ -349,7 +351,7 @@ const DesktopReserveRow = memo(({
             {hasSupplyCap ? (
               <CapProgressRing
                 size={displayReserveSizeUsd}
-                cap={reserve.supplyCapUsd}
+                cap={computedSupplyCapUsd}
                 displayMode={inputMode}
                 tokenPrice={displayTokenPrice}
                 tokenSymbol={reserve.tokenSymbol}
@@ -367,7 +369,7 @@ const DesktopReserveRow = memo(({
             {hasBorrowCap ? (
               <BorrowCapProgressRing
                 borrowed={totalBorrowedUsd}
-                cap={reserve.borrowCapUsd}
+                cap={computedBorrowCapUsd}
                 availableLiquidityUsd={availableLiquidityUsd}
                 displayMode={inputMode}
                 tokenPrice={displayTokenPrice}

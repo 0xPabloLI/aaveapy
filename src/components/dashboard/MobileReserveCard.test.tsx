@@ -20,9 +20,10 @@ const reserve: ReserveWithSpread = {
   tokenSymbol: 'USDC',
   tokenAddress: '0x0000000000000000000000000000000000000001',
   tokenPrice: 1,
-  reserveSizeUsd: 1_000_000,
-  supplyCapUsd: 2_000_000,
-  borrowCapUsd: 1_000_000,
+  decimals: 6,
+  reserveSize: '1000000000000',
+  supplyCap: '2000000000000',
+  borrowCap: '1000000000000',
   utilizationPct: 45,
   // Rate-model parameters are unified percent numbers (e.g., 80 = 80%); see
   // docs/api/v3-v4-precision-unification-plan.md. Components must NOT apply
