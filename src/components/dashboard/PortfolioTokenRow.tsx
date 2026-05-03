@@ -118,12 +118,12 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
             {chainSrc && (
               <img src={chainSrc} alt={chainName} className="size-2.5 shrink-0 opacity-70" />
             )}
-            <span className="truncate">{marketLabel}</span>
             {showV4 && (
-              <span className="shrink-0 rounded-sm border border-border/50 bg-muted/50 px-0.5 text-[8px] font-semibold leading-none text-muted-foreground">
+              <span className="shrink-0 inline-flex items-center px-1 py-0 rounded-full text-[8px] font-medium leading-none text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10">
                 V4
               </span>
             )}
+            <span className="truncate">{marketLabel}</span>
           </span>
         </div>
       </div>
