@@ -218,7 +218,7 @@
   .ds-chip {
     height: var(--ds-chip-h);
     font-size: var(--ds-text-11);
-    line-height: 1;
+    line-height: 1 !important;
     display: inline-flex;
     align-items: center;
   }

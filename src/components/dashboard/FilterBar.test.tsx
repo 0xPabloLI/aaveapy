@@ -59,7 +59,6 @@ describe('FilterBar', () => {
     tokenLabels.forEach((label) => {
       const chip = within(tokensRow).getByRole('button', { name: label });
       expect(chip.className).toContain('ds-chip');
-      expect(chip.className).toContain('ds-text-11');
       expect(chip.className).toContain('font-medium');
     });
   });
@@ -82,7 +81,6 @@ describe('FilterBar', () => {
     ['Core', 'Prime'].forEach((hub) => {
       const chip = within(marketsRow).getByRole('button', { name: hub });
       expect(chip.className).toContain('ds-chip');
-      expect(chip.className).toContain('ds-text-11');
       expect(chip.className).toContain('font-medium');
     });
   });

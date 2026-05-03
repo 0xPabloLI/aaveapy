@@ -157,7 +157,6 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
   const inputMinW = isMobile ? 'min-w-[5rem]' : 'min-w-[3.5rem]';
   const inputBase = `w-full min-w-0 ${inputMinW} ${controlH} ${inputPx} ${fontSize} tabular-nums placeholder:italic`;
 
-  const segmentedUsdLabelSize = isMobile ? 'text-[12px]' : 'text-[13px]';
   const segmentedActiveTextClass = 'text-foreground';
 
   const showMeritMerklMode = typeof onMeritMerklNetPositionChange === 'function';

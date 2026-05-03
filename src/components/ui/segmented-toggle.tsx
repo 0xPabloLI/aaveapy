@@ -89,15 +89,20 @@ export function SegmentedToggle<T extends string = string>({
     <div
       ref={trackRef}
       className={cn(
-        'relative inline-flex rounded-lg bg-muted/60',
-        isChip ? 'p-[2px]' : 'p-[3px]',
-        isVertical ? 'flex-col gap-0.5' : 'items-center gap-0.5',
+        'relative inline-grid box-border align-middle rounded-full bg-muted/60 shadow-inner shadow-black/[0.02]',
+        isChip ? 'h-[var(--ds-chip-h)] p-[2px]' : isVertical ? 'p-[3px]' : 'h-8 p-[3px]',
+        'gap-0.5',
         className,
       )}
+      style={
+        isVertical
+          ? { gridTemplateRows: `repeat(${options.length}, minmax(0, 1fr))` }
+          : { gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }
+      }
     >
       {/* Sliding indicator */}
       <div
-        className="absolute rounded-md bg-card shadow-sm border border-border/40 pointer-events-none motion-safe:transition-all motion-safe:duration-200 motion-safe:ease-out"
+        className="pointer-events-none absolute rounded-full bg-card shadow-[0_1px_4px_rgb(var(--ds-shadow-rgb)/0.16),0_1px_2px_rgb(var(--ds-shadow-rgb)/0.10)] motion-safe:transition-all motion-safe:duration-200 motion-safe:ease-out"
         style={{
           width: indicator.width,
           height: indicator.height,
@@ -121,10 +126,10 @@ export function SegmentedToggle<T extends string = string>({
             aria-checked={isActive}
             onClick={() => onChange(option.value)}
             className={cn(
-              'relative z-10 flex items-center justify-center rounded-md font-medium transition-colors duration-200 leading-none',
-              isChip ? 'ds-text-11' : 'ds-text-12',
+              'relative z-10 box-border flex w-full items-center justify-center whitespace-nowrap rounded-full font-medium leading-none transition-colors duration-200',
+              isChip ? 'min-w-[42px] px-2 text-[11px]' : 'min-w-[56px] px-3 text-[12px]',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
-              isVertical ? 'flex-1 px-3 py-1.5' : isChip ? 'px-2 h-[24px]' : 'px-3 h-[22px]',
+              isVertical ? 'h-full min-h-[28px]' : 'h-full',
               isActive ? `font-semibold ${activeTextClassName}` : 'text-muted-foreground hover:text-foreground',
             )}
           >

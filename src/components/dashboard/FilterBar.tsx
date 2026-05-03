@@ -425,7 +425,6 @@ const FilterBar = ({
             value={marketViewMode}
             onChange={setMarketViewMode}
             activeTextClassName="text-foreground"
-            size="chip"
           />
         )}
 

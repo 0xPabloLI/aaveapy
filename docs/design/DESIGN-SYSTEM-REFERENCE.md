@@ -294,9 +294,15 @@ reserves desktop table 的 8 列对齐分配：
 
 | 区域     | Tailwind 示例 |
 |----------|----------------|
-| 容器     | `flex items-center gap-0.5 bg-muted/60 rounded-lg p-0.5 border border-border/40` |
-| 选中项   | `px-3 py-1 rounded-md font-semibold bg-card text-foreground shadow-sm border border-border/60` |
-| 未选中   | `px-3 py-1 rounded-md font-semibold text-muted-foreground hover:text-foreground hover:bg-card/50` |
+| 容器     | `inline-grid box-border h-8 gap-0.5 bg-muted/60 rounded-full p-[3px] shadow-inner shadow-black/[0.02]` |
+| 选中项   | `h-full min-w-[56px] px-3 rounded-full font-semibold bg-card text-foreground shadow-[0_1px_4px_rgb(var(--ds-shadow-rgb)/0.16),0_1px_2px_rgb(var(--ds-shadow-rgb)/0.10)]` |
+| 未选中   | `h-full min-w-[56px] px-3 rounded-full font-medium text-muted-foreground hover:text-foreground` |
+
+**视觉特征**：
+- 默认容器高度为 32px（`h-8`，`box-border` 固定外框尺寸），用于和桌面场景输入 `h-8` 对齐。
+- `size="chip"` 容器高度为 28px（`--ds-chip-h`，`box-border` 固定外框尺寸），用于和 `ds-chip` 对齐。
+- 横向与纵向都使用等宽 / 等高网格分段，滑块宽高跟随当前分段，避免 USD/Token 这类不同字数选项来回跳。
+- Chain/Hub 这类二选一视图切换使用默认 32px 分段，不降级为 chip 尺寸；chip 尺寸仅用于必须嵌在密集 chip 流里的次级分段。
 
 ### 5.2 筛选芯片（Filter Chips）
 
