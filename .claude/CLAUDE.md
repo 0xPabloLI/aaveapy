@@ -15,7 +15,6 @@
 ## Mandatory Session Workflow
 1. **Bootstrap first** (every new session):
    - `~/.codex/superpowers/.codex/superpowers-codex bootstrap`
-   - `~/.codex/superpowers/.codex/superpowers-codex use-skill thread-tracker`
    - `~/.codex/superpowers/.codex/superpowers-codex use-skill brainstorming`
 2. **Session coordination**: read/update `SESSION-BOARD.md` before work; detect conflicts; deregister when done.
 3. **Git safety**: never run `stash`/`checkout` related commands without explicit user confirmation in current chat.
