@@ -282,10 +282,10 @@ const PortfolioPanel = memo(function PortfolioPanel({
   }, [canCompare, compareIds, snapshots]);
 
   const groupedByReserve = useMemo(() => {
-    const map = new Map<string, { tokenSymbol: string; chainName: string; supply: PortfolioPosition | null; borrow: PortfolioPosition | null }>();
+    const map = new Map<string, { tokenSymbol: string; chainName: string; marketName: string; supply: PortfolioPosition | null; borrow: PortfolioPosition | null }>();
     for (const p of positions) {
       if (!map.has(p.reserveId)) {
-        map.set(p.reserveId, { tokenSymbol: p.tokenSymbol, chainName: p.chainName, supply: null, borrow: null });
+        map.set(p.reserveId, { tokenSymbol: p.tokenSymbol, chainName: p.chainName, marketName: p.marketName, supply: null, borrow: null });
       }
       const entry = map.get(p.reserveId)!;
       if (p.side === 'supply') entry.supply = p;
