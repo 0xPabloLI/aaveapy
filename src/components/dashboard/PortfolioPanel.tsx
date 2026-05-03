@@ -501,11 +501,12 @@ const PortfolioPanel = memo(function PortfolioPanel({
                       key={reserveId}
                       type="button"
                       onClick={() => handleAddToken(reserveId)}
-                      className="inline-flex items-center gap-1 rounded-full border border-border/50 bg-card/70 px-2 py-1 ds-text-10 font-semibold text-foreground transition-colors hover:bg-muted/60"
+                      className="inline-flex items-center gap-1.5 rounded-full border border-border/50 bg-card/70 px-2 py-1 ds-text-10 font-semibold text-foreground transition-colors hover:bg-muted/60"
                       aria-label={`Add ${r.tokenSymbol} on ${r.marketName} to batch`}
                     >
                       <TokenIcon symbol={r.tokenSymbol} size={14} />
                       <span>{r.tokenSymbol}</span>
+                      <span aria-hidden className="h-3 w-px bg-border/60" />
                       <span className="inline-flex items-center gap-0.5 text-[9px] font-normal text-muted-foreground/70">
                         {chainSrc && (
                           <img src={chainSrc} alt={r.chainName} className="size-2.5 shrink-0 opacity-70" />
