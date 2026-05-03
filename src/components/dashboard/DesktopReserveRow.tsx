@@ -1,7 +1,7 @@
 import { memo, Fragment, useEffect, useState, useCallback } from 'react';
 import { ExternalLink, Plus } from 'lucide-react';
 import { TableRow, TableCell } from '@/components/ui/table';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipArrow } from '@/components/ui/tooltip';
 import { FrozenStatusBadge } from './FrozenStatusBadge';
 import { ReserveWithSpread } from '@/types/aave';
 import { formatPercent, formatScenarioSize, formatSpread, formatUsd, getReserveMarketDisplayName } from '@/lib/formatters';
@@ -419,7 +419,8 @@ const DesktopReserveRow = memo(({
                       <span>{deficitInlineValue}</span>
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent side="top" align="center" className="max-w-[18rem]">
+                  <TooltipContent side="right" align="center" className="max-w-[18rem]">
+                    <TooltipArrow />
                     <div className="space-y-1 ds-text-11">
                       <div className="flex items-center justify-between gap-4">
                         <span className="text-muted-foreground">USD</span>

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { memo } from 'react';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipArrow } from '@/components/ui/tooltip';
 import { formatScenarioSize } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
 
@@ -58,7 +58,8 @@ const CapProgressRing = memo(({
   };
 
   const tooltipContent = (
-    <TooltipContent side="top" className="max-w-[220px]">
+    <TooltipContent side="right" className="max-w-[220px]">
+      <TooltipArrow />
       <div className="space-y-1 ds-text-12">
         <div className="flex justify-between gap-3">
           <span className="text-muted-foreground">Total supplied</span>
