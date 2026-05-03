@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo, memo, Fragment } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Search, Eraser, ChevronRight, ChevronDown, Snowflake } from 'lucide-react';
+import { Search, Eraser, ChevronRight, ChevronLeft, Snowflake } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { FilterChip } from '@/components/ui/filter-chip';
 import { SegmentedToggle } from '@/components/ui/segmented-toggle';
@@ -489,8 +489,8 @@ const FilterBar = ({
                       >
                         <AnimatePresence mode="wait" initial={false}>
                           {expanded
-                            ? <motion.span key="down" initial={{ opacity: 0, rotate: -90 }} animate={{ opacity: 1, rotate: 0 }} exit={{ opacity: 0, rotate: -90 }} transition={{ duration: 0.15, ease: [0.22, 1, 0.36, 1] }} className="flex items-center"><ChevronDown className="w-3 h-3" /></motion.span>
-                            : <motion.span key="right" initial={{ opacity: 0, rotate: 90 }} animate={{ opacity: 1, rotate: 0 }} exit={{ opacity: 0, rotate: 90 }} transition={{ duration: 0.15, ease: [0.22, 1, 0.36, 1] }} className="flex items-center"><ChevronRight className="w-3 h-3" /></motion.span>
+                            ? <motion.span key="left" initial={{ opacity: 0, rotate: 90 }} animate={{ opacity: 1, rotate: 0 }} exit={{ opacity: 0, rotate: 90 }} transition={{ duration: 0.15, ease: [0.22, 1, 0.36, 1] }} className="flex items-center"><ChevronLeft className="w-3 h-3" /></motion.span>
+                            : <motion.span key="right" initial={{ opacity: 0, rotate: -90 }} animate={{ opacity: 1, rotate: 0 }} exit={{ opacity: 0, rotate: -90 }} transition={{ duration: 0.15, ease: [0.22, 1, 0.36, 1] }} className="flex items-center"><ChevronRight className="w-3 h-3" /></motion.span>
                           }
                         </AnimatePresence>
                       </button>
@@ -521,9 +521,9 @@ const FilterBar = ({
                                   opacity: 1,
                                   scale: 1,
                                   transition: {
-                                    width: { duration: 0.28, delay: i * 0.04, ease: [0.22, 1, 0.36, 1] },
-                                    opacity: { duration: 0.2, delay: i * 0.04, ease: [0.22, 1, 0.36, 1] },
-                                    scale: { duration: 0.28, delay: i * 0.04, ease: [0.22, 1, 0.36, 1] },
+                                    width: { duration: 0.36, delay: i * 0.055, ease: [0.22, 1, 0.36, 1] },
+                                    opacity: { duration: 0.28, delay: i * 0.055, ease: [0.22, 1, 0.36, 1] },
+                                    scale: { duration: 0.36, delay: i * 0.055, ease: [0.22, 1, 0.36, 1] },
                                   },
                                 }),
                                 exit: (i: number) => ({
