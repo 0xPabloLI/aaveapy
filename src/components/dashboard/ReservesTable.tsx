@@ -50,6 +50,7 @@ import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation'
 import { resolvePositionAmountUsd, buildPortfolioPositionResult } from '@/hooks/usePortfolioSimulation';
 import { aggregatePortfolioSummary } from '@/lib/portfolioCalculator';
 import PortfolioPanel from './PortfolioPanel';
+import PortfolioPanelSkeleton from './PortfolioPanelSkeleton';
 
 interface ReservesTableProps {
   reserves: ReserveWithSpread[];
@@ -1320,15 +1321,19 @@ const ReservesTable = ({
           )}
         </div>
       )}
-      {isPortfolioMode && portfolioPositions && portfolioActions && (
-        <PortfolioPanel
-          positions={portfolioPositions}
-          actions={portfolioActions}
-          reserves={reserves}
-          positionResults={portfolioResults}
-          summary={portfolioSummary}
-          snapshots={portfolioSnapshots}
-        />
+      {isPortfolioMode && (
+        isLoading && reserves.length === 0 ? (
+          <PortfolioPanelSkeleton />
+        ) : portfolioPositions && portfolioActions ? (
+          <PortfolioPanel
+            positions={portfolioPositions}
+            actions={portfolioActions}
+            reserves={reserves}
+            positionResults={portfolioResults}
+            summary={portfolioSummary}
+            snapshots={portfolioSnapshots}
+          />
+        ) : null
       )}
     </div>
   );
@@ -1390,7 +1395,15 @@ const ReservesTable = ({
       <div ref={mobileTableRef} className="space-y-3 pb-[calc(env(safe-area-inset-bottom,0px)+5rem)]">
         <div
           data-reserves-sticky-scenario
-          className="sticky top-[env(safe-area-inset-top,0px)] z-20 -mx-[var(--ds-space-3)] px-[var(--ds-space-3)] pt-1 pb-0"
+          className={cn(
+            '-mx-[var(--ds-space-3)] px-[var(--ds-space-3)] pt-1 pb-0',
+            // In portfolio (batch) mode, the panel can grow taller than the viewport
+            // (search + suggested chips + many position rows + summary). If we keep
+            // it sticky, the content overflows the sticky box and becomes unscrollable
+            // — only the cards below it scroll. Disable sticky in batch mode so the
+            // entire panel scrolls naturally with the page.
+            !isPortfolioMode && 'sticky top-[env(safe-area-inset-top,0px)] z-20',
+          )}
         >
           {scenarioControls}
         </div>

@@ -531,28 +531,6 @@ const MobileReserveCard = memo(({
       >
         {/* Token header */}
         <div className="flex items-start gap-[var(--ds-space-2)] mb-1.5 min-h-[36px] px-3">
-          {isPortfolioMode && onPortfolioToggle && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onPortfolioToggle(reserveId, reserve);
-              }}
-              className={cn(
-                'flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-all duration-150',
-                isInPortfolio
-                  ? BATCH_RESERVE_ADD_BUTTON_CLASSES.selected
-                  : BATCH_RESERVE_ADD_BUTTON_CLASSES.unselected,
-              )}
-              aria-label={isInPortfolio ? `Remove ${reserve.tokenSymbol} from portfolio` : `Add ${reserve.tokenSymbol} to portfolio`}
-            >
-              {isInPortfolio ? (
-                <span className="ds-text-10 font-bold leading-none">✓</span>
-              ) : (
-                <Plus className="h-2.5 w-2.5" />
-              )}
-            </button>
-          )}
           <div className="flex items-start gap-1 min-w-0 flex-1">
             {reserve.isFrozen || reserve.isPaused ? (
               <div className="relative shrink-0">

@@ -4,11 +4,12 @@ import { Search, Eraser, ChevronRight, ChevronLeft, Snowflake } from 'lucide-rea
 import { Input } from '@/components/ui/input';
 import { FilterChip } from '@/components/ui/filter-chip';
 import { SegmentedToggle } from '@/components/ui/segmented-toggle';
-import { TokenCategory, MarketListItem, ETHEREUM_MARKET_NAMES } from '@/types/aave';
+import { TokenCategory, MarketListItem } from '@/types/aave';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { useIsMobile } from '@/hooks/use-mobile';
 import AprApyToggle from '@/components/dashboard/AprApyToggle';
 import { getProtocolVersion } from '@/lib/protocolVersion';
+import { getEthSubMarketLabel } from '@/lib/marketLabels';
 
 interface FilterBarProps {
   searchQuery: string;
@@ -92,23 +93,6 @@ function groupMarketsByChain(marketsList: MarketListItem[] | undefined): ChainGr
   }
 
   return groups;
-}
-
-/** Get sub-market display label for Ethereum markets */
-function getEthSubMarketLabel(market: MarketListItem): string {
-  const version = getProtocolVersion(market.marketName);
-
-  // V4: extract suffix from marketName (e.g. AaveV4EthereumLido → Ethereum Lido)
-  if (version === 'v4') {
-    const withoutPrefix = market.marketName.replace(/^AaveV4/i, '');
-    return withoutPrefix.replace(/([a-z])([A-Z])/g, '$1 $2');
-  }
-
-  // V3: use canonical mapped names
-  if (ETHEREUM_MARKET_NAMES[market.marketName]) {
-    return ETHEREUM_MARKET_NAMES[market.marketName];
-  }
-  return market.marketName;
 }
 
 const FilterBar = ({
@@ -553,7 +537,7 @@ const FilterBar = ({
                                   V4
                                 </span>
                               )}
-                              <span>{getEthSubMarketLabel(market)}</span>
+                              <span>{getEthSubMarketLabel(market.marketName)}</span>
                             </motion.button>
                           );
                         })}

@@ -1,16 +1,23 @@
 /**
  * PortfolioPanel — portfolio management panel with token search,
  * position list, summary card, results table, and snapshot comparison.
+ *
+ * Selecting a token adds BOTH a supply and a borrow position in one go,
+ * so users can fill in either / both amounts directly without picking a side.
  */
-import { useState, useMemo, useEffect, memo, useCallback, lazy, Suspense } from 'react';
-import { Search, Plus, X, Layers, Trash2, Save, ArrowRightLeft } from 'lucide-react';
+import { useState, useMemo, useEffect, useRef, memo, useCallback, lazy, Suspense } from 'react';
+import { Search, X, Layers, Trash2, Save, ArrowRightLeft, Sparkles, Check } from 'lucide-react';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { ReserveWithSpread } from '@/types/aave';
-import type { PortfolioPosition, PortfolioInputMode, PortfolioSide, PortfolioPositionResult, PortfolioSummary, PortfolioSnapshot } from '@/types/portfolio';
+import type { PortfolioPosition, PortfolioPositionResult, PortfolioSummary, PortfolioSnapshot } from '@/types/portfolio';
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
 import { normalizeTokenSymbolForSearch } from '@/lib/tokenSymbolNormalization';
+import { isStablecoinSymbol, isEthRelatedSymbol, isBtcRelatedSymbol } from '@/lib/tokenCategories';
 import { getReserveKey } from '@/lib/reserveKey';
+import { getChainIconSrc } from '@/lib/chainIcons';
+import { getMarketChipLabel, isV4Market } from '@/lib/marketLabels';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import PortfolioTokenRow from './PortfolioTokenRow';
 import PortfolioSummaryCard from './PortfolioSummaryCard';
@@ -31,68 +38,83 @@ interface PortfolioPanelProps {
   snapshots?: PortfolioSnapshot[];
 }
 
-/** Search result row with quick add buttons. */
+/**
+ * Search result row.
+ * - Click adds whichever sides (supply/borrow) are missing for this reserve.
+ * - Disabled only when BOTH sides are already added.
+ * - Always shows per-side status badges so users can see at a glance which
+ *   inputs already exist and which will be created on click.
+ */
 function SearchResultRow({
   reserve,
   onAdd,
   existingPositions,
 }: {
   reserve: ReserveWithSpread;
-  onAdd: (reserveId: string, side: PortfolioSide) => void;
+  onAdd: (reserveId: string) => void;
   existingPositions: PortfolioPosition[];
 }) {
   const reserveId = getReserveKey(reserve);
-  const hasSupply = existingPositions.some(
-    (p) => p.reserveId === reserveId && p.side === 'supply',
-  );
-  const hasBorrow = existingPositions.some(
-    (p) => p.reserveId === reserveId && p.side === 'borrow',
-  );
+  const sidesForReserve = existingPositions.filter((p) => p.reserveId === reserveId);
+  const hasSupply = sidesForReserve.some((p) => p.side === 'supply');
+  const hasBorrow = sidesForReserve.some((p) => p.side === 'borrow');
+  const fullyAdded = hasSupply && hasBorrow;
+  const partiallyAdded = (hasSupply || hasBorrow) && !fullyAdded;
+
+  const ariaLabel = fullyAdded
+    ? `${reserve.tokenSymbol} already added (supply and borrow)`
+    : partiallyAdded
+      ? `Add missing ${hasSupply ? 'borrow' : 'supply'} side for ${reserve.tokenSymbol}`
+      : `Add ${reserve.tokenSymbol} (supply and borrow)`;
 
   return (
-    <div className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 transition-colors hover:bg-muted/60">
+    <button
+      type="button"
+      disabled={fullyAdded}
+      onClick={() => onAdd(reserveId)}
+      className={cn(
+        'flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left transition-colors',
+        fullyAdded ? 'opacity-60 cursor-not-allowed' : 'hover:bg-muted/60',
+      )}
+      aria-label={ariaLabel}
+    >
       <TokenIcon symbol={reserve.tokenSymbol} size={18} />
       <div className="flex min-w-0 flex-1 flex-col">
         <span className="ds-text-12 font-semibold text-foreground truncate">
           {reserve.tokenSymbol}
         </span>
-        <span className="ds-text-10 text-muted-foreground truncate">
-          {reserve.marketName}
+        <span className="ds-text-10 text-muted-foreground truncate inline-flex items-center gap-1">
+          {getChainIconSrc(reserve.chainName) && (
+            <img
+              src={getChainIconSrc(reserve.chainName)!}
+              alt={reserve.chainName}
+              className="size-3 shrink-0"
+            />
+          )}
+          {isV4Market(reserve.marketName) && (
+            <span className="inline-flex items-center px-1 py-0 rounded-full text-[9px] font-medium leading-none text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10 shrink-0">
+              V4
+            </span>
+          )}
+          <span className="truncate">{getMarketChipLabel(reserve.marketName, reserve.chainName)}</span>
         </span>
       </div>
-      <button
-        type="button"
-        disabled={hasSupply}
-        onClick={() => onAdd(reserveId, 'supply')}
-        className={cn(
-          'rounded px-2 py-0.5 ds-text-10 font-semibold transition-colors',
-          hasSupply
-            ? 'opacity-40 cursor-not-allowed bg-muted text-muted-foreground'
-            : 'ds-bg-emerald-500-10 ds-text-emerald-600 hover:ds-bg-emerald-500-20',
-        )}
-        aria-label={`Add ${reserve.tokenSymbol} supply`}
-      >
-        <Plus className="inline size-3 mr-0.5" aria-hidden />
-        Supply
-      </button>
-      <button
-        type="button"
-        disabled={hasBorrow}
-        onClick={() => onAdd(reserveId, 'borrow')}
-        className={cn(
-          'rounded px-2 py-0.5 ds-text-10 font-semibold transition-colors',
-          hasBorrow
-            ? 'opacity-40 cursor-not-allowed bg-muted text-muted-foreground'
-            : `${BATCH_THEME.bgSoft} ${BATCH_THEME.text} hover:${BATCH_THEME.bgSubtle}`,
-        )}
-        aria-label={`Add ${reserve.tokenSymbol} borrow`}
-      >
-        <Plus className="inline size-3 mr-0.5" aria-hidden />
-        Borrow
-      </button>
-    </div>
+      <div className="flex items-center gap-1 shrink-0">
+        {fullyAdded ? (
+          <span className={cn('ds-text-10 font-semibold inline-flex items-center gap-0.5', BATCH_THEME.text)}>
+            <Check className="size-3" aria-hidden />
+            Added
+          </span>
+        ) : partiallyAdded ? (
+          <span className={cn('ds-text-10 font-semibold', BATCH_THEME.text)}>
+            Add {hasSupply ? 'Borrow' : 'Supply'}
+          </span>
+        ) : null}
+      </div>
+    </button>
   );
 }
+
 
 /** Snapshot list item with compare / delete actions. */
 const SnapshotItem = memo(function SnapshotItem({
@@ -153,42 +175,86 @@ const PortfolioPanel = memo(function PortfolioPanel({
 }: PortfolioPanelProps) {
   const isMobile = useIsMobile();
   const [searchQuery, setSearchQuery] = useState('');
-  // Keep batch onboarding consistent across desktop/mobile:
-  // entering batch always starts with the search bar visible.
+  // Always default the search bar open whenever the batch panel mounts/opens.
+  // Users can still collapse it manually via the X button.
   const [searchOpen, setSearchOpen] = useState(true);
   const [snapshotName, setSnapshotName] = useState('');
   const [showSaveInput, setShowSaveInput] = useState(false);
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [showCompare, setShowCompare] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const focusSearch = useCallback(() => {
+    setSearchOpen(true);
+    requestAnimationFrame(() => searchInputRef.current?.focus());
+  }, []);
 
   const filteredReserves = useMemo(() => {
     if (!searchQuery.trim()) return [];
     const q = searchQuery.toLowerCase().trim();
     const qNorm = normalizeTokenSymbolForSearch(searchQuery);
-    return reserves
-      .filter((r) => {
-        const sym = r.tokenSymbol.toLowerCase();
-        const symNorm = normalizeTokenSymbolForSearch(r.tokenSymbol);
-        return sym.includes(q) || (qNorm.length > 0 && symNorm.includes(qNorm));
-      })
-      .slice(0, 8);
+    type Scored = { reserve: ReserveWithSpread; rank: number };
+    const scored: Scored[] = [];
+    for (const r of reserves) {
+      const sym = r.tokenSymbol.toLowerCase();
+      const symNorm = normalizeTokenSymbolForSearch(r.tokenSymbol);
+      // rank: 0 = exact, 1 = prefix, 2 = substring (lower is better)
+      let rank = -1;
+      if (sym === q || (qNorm && symNorm === qNorm)) rank = 0;
+      else if (sym.startsWith(q) || (qNorm && symNorm.startsWith(qNorm))) rank = 1;
+      else if (sym.includes(q) || (qNorm && symNorm.includes(qNorm))) rank = 2;
+      if (rank < 0) continue;
+      scored.push({ reserve: r, rank });
+    }
+    scored.sort((a, b) => {
+      if (a.rank !== b.rank) return a.rank - b.rank;
+      return (b.reserve.reserveSizeUsd ?? 0) - (a.reserve.reserveSizeUsd ?? 0);
+    });
+    return scored.slice(0, 50).map((s) => s.reserve);
   }, [reserves, searchQuery]);
 
-  const handleAddFromSearch = useCallback(
-    (reserveId: string, side: PortfolioSide) => {
-      const reserve = reserves.find(
-        (r) => getReserveKey(r) === reserveId,
-      );
+  // Add both supply and borrow positions for the selected token.
+  // - If both already exist: do nothing (button is disabled in search results).
+  // - If only one side exists: add the missing side and inform the user.
+  // - If none exist: add both.
+  // Search auto-focus is preserved ONLY when the search panel is already open,
+  // so clicking a quick-add chip while search is collapsed will NOT reopen it.
+  const handleAddToken = useCallback(
+    (reserveId: string) => {
+      const reserve = reserves.find((r) => getReserveKey(r) === reserveId);
       if (!reserve) return;
-      actions.addPosition({
+      const existingSides = new Set(
+        positions.filter((p) => p.reserveId === reserveId).map((p) => p.side),
+      );
+      const hadSupply = existingSides.has('supply');
+      const hadBorrow = existingSides.has('borrow');
+
+      if (hadSupply && hadBorrow) {
+        toast.info(`${reserve.tokenSymbol} is already in the batch`);
+        return;
+      }
+
+      const common = {
         reserveId,
         marketName: reserve.marketName,
         chainName: reserve.chainName ?? reserve.marketName,
         tokenSymbol: reserve.tokenSymbol,
-        side,
-      });
+      };
+      if (!hadSupply) actions.addPosition({ ...common, side: 'supply' });
+      if (!hadBorrow) actions.addPosition({ ...common, side: 'borrow' });
+
+      if (hadSupply || hadBorrow) {
+        const missing = hadSupply ? 'borrow' : 'supply';
+        toast.success(`Added missing ${missing} side for ${reserve.tokenSymbol}`);
+      }
+
+      // Keep focus on the search input only if search is already open;
+      // do not force-open it (quick-add chips should not toggle the panel).
+      if (searchOpen) {
+        requestAnimationFrame(() => searchInputRef.current?.focus());
+      }
     },
-    [reserves, actions],
+    [reserves, positions, actions, searchOpen],
   );
 
   const handleSaveSnapshot = useCallback(() => {
@@ -216,10 +282,10 @@ const PortfolioPanel = memo(function PortfolioPanel({
   }, [canCompare, compareIds, snapshots]);
 
   const groupedByReserve = useMemo(() => {
-    const map = new Map<string, { tokenSymbol: string; chainName: string; supply: PortfolioPosition | null; borrow: PortfolioPosition | null }>();
+    const map = new Map<string, { tokenSymbol: string; chainName: string; marketName: string; supply: PortfolioPosition | null; borrow: PortfolioPosition | null }>();
     for (const p of positions) {
       if (!map.has(p.reserveId)) {
-        map.set(p.reserveId, { tokenSymbol: p.tokenSymbol, chainName: p.chainName, supply: null, borrow: null });
+        map.set(p.reserveId, { tokenSymbol: p.tokenSymbol, chainName: p.chainName, marketName: p.marketName, supply: null, borrow: null });
       }
       const entry = map.get(p.reserveId)!;
       if (p.side === 'supply') entry.supply = p;
@@ -228,19 +294,52 @@ const PortfolioPanel = memo(function PortfolioPanel({
     return map;
   }, [positions]);
 
+  // Suggested popular tokens for quick-add: top 2 stablecoins, top 2 ETH-related,
+  // and top 1 BTC-related by reserve size (TVL). Excludes already-added symbols.
+  const suggestedReserves = useMemo(() => {
+    const addedSymbols = new Set(positions.map((p) => p.tokenSymbol.toUpperCase()));
+    const sortedBySize = [...reserves].sort(
+      (a, b) => (b.reserveSizeUsd ?? 0) - (a.reserveSizeUsd ?? 0),
+    );
+    const pickTop = (predicate: (sym: string) => boolean, n: number) => {
+      const seen = new Set<string>();
+      const out: ReserveWithSpread[] = [];
+      for (const r of sortedBySize) {
+        const sym = r.tokenSymbol.toUpperCase();
+        if (seen.has(sym) || addedSymbols.has(sym)) continue;
+        if (!predicate(r.tokenSymbol)) continue;
+        seen.add(sym);
+        out.push(r);
+        if (out.length >= n) break;
+      }
+      return out;
+    };
+    return [
+      ...pickTop(isStablecoinSymbol, 2),
+      ...pickTop(isEthRelatedSymbol, 2),
+      ...pickTop(isBtcRelatedSymbol, 1),
+    ];
+  }, [reserves, positions]);
+
+
   const handleRemoveToken = useCallback((reserveId: string) => {
     for (const p of positions) {
       if (p.reserveId === reserveId) actions.removePosition(p.positionId);
     }
   }, [actions, positions]);
 
-  // When the position list becomes empty (e.g. clear all), reopen search
-  // so users can immediately add the next token without extra clicks.
+  // When positions transition from non-empty to empty (e.g. clear all),
+  // reopen search so users can immediately add the next token.
+  // Do NOT continuously force search open while empty — users must be able
+  // to collapse the search bar via the X button even with zero positions.
+  const prevPositionsCountRef = useRef(positions.length);
   useEffect(() => {
-    if (positions.length === 0 && !searchOpen) {
+    const prev = prevPositionsCountRef.current;
+    if (prev > 0 && positions.length === 0) {
       setSearchOpen(true);
     }
-  }, [positions.length, searchOpen]);
+    prevPositionsCountRef.current = positions.length;
+  }, [positions.length]);
 
   return (
     <div className="space-y-3">
@@ -338,6 +437,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
         {searchOpen && (
           <div className="mb-2.5">
             <input
+              ref={searchInputRef}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search token…"
@@ -354,7 +454,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
                   <SearchResultRow
                     key={getReserveKey(r)}
                     reserve={r}
-                    onAdd={handleAddFromSearch}
+                    onAdd={handleAddToken}
                     existingPositions={positions}
                   />
                 ))}
@@ -370,29 +470,114 @@ const PortfolioPanel = memo(function PortfolioPanel({
 
         {/* Position list */}
         {positions.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-6 text-center">
-            <p className="ds-text-12 text-muted-foreground">
-              No positions yet
+          <div
+            className={cn(
+              'rounded-xl border border-dashed px-3 py-4 text-center',
+              BATCH_THEME.border,
+              BATCH_THEME.bgSubtle,
+            )}
+          >
+            <div className="mx-auto mb-2 flex size-9 items-center justify-center rounded-full border border-border/50 bg-card/80">
+              <Sparkles className={cn('size-4', BATCH_THEME.text)} aria-hidden />
+            </div>
+            <p className="ds-text-13 font-semibold text-foreground">
+              Build your batch portfolio
             </p>
-            {!searchOpen && (
+
+            <div className="mt-3 flex items-center justify-center gap-2">
               <button
                 type="button"
-                onClick={() => setSearchOpen(true)}
-                className={`mt-2 flex items-center gap-1 rounded-lg border border-dashed ${BATCH_THEME.border} ${BATCH_THEME.bgSubtle} px-3 py-1.5 ds-text-11 font-semibold ${BATCH_THEME.text} transition-colors hover:${BATCH_THEME.bgSoft}`}
+                onClick={focusSearch}
+                className={cn(
+                  'inline-flex items-center gap-1 rounded-lg px-3 py-1.5 ds-text-11 font-semibold transition-colors',
+                  BATCH_THEME.bgSoft,
+                  BATCH_THEME.text,
+                  `hover:${BATCH_THEME.bgSubtle}`,
+                )}
               >
-                <Plus className="size-3" aria-hidden />
-                Add token
+                <Search className="size-3" aria-hidden />
+                Search tokens
               </button>
+            </div>
+
+            {suggestedReserves.length > 0 && (
+              <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5">
+                {suggestedReserves.map((r) => {
+                  const reserveId = getReserveKey(r);
+                  const chainSrc = getChainIconSrc(r.chainName);
+                  const marketLabel = getMarketChipLabel(r.marketName, r.chainName);
+                  const isV4 = isV4Market(r.marketName);
+                  return (
+                    <button
+                      key={reserveId}
+                      type="button"
+                      onClick={() => handleAddToken(reserveId)}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-border/50 bg-card/70 px-2 py-1 ds-text-10 font-semibold text-foreground transition-colors hover:bg-muted/60"
+                      aria-label={`Add ${r.tokenSymbol} on ${r.marketName} to batch`}
+                    >
+                      <TokenIcon symbol={r.tokenSymbol} size={14} />
+                      <span>{r.tokenSymbol}</span>
+                      <span aria-hidden className="h-3 w-px bg-border/60" />
+                      <span className="inline-flex items-center gap-0.5 text-[9px] font-normal text-muted-foreground/70">
+                        {chainSrc && (
+                          <img src={chainSrc} alt={r.chainName} className="size-2.5 shrink-0 opacity-70" />
+                        )}
+                        {isV4 && (
+                          <span className="inline-flex items-center px-1 py-0 rounded-full text-[8px] font-medium leading-none text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10">
+                            V4
+                          </span>
+                        )}
+                        <span>{marketLabel}</span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             )}
           </div>
         ) : (
           <div className="space-y-1.5">
+            {!isMobile && suggestedReserves.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5 px-1">
+                {suggestedReserves.map((r) => {
+                  const reserveId = getReserveKey(r);
+                  const chainSrc = getChainIconSrc(r.chainName);
+                  const marketLabel = getMarketChipLabel(r.marketName, r.chainName);
+                  const isV4 = isV4Market(r.marketName);
+                  return (
+                    <button
+                      key={reserveId}
+                      type="button"
+                      onClick={() => handleAddToken(reserveId)}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-border/50 bg-card/70 px-2 py-0.5 ds-text-10 font-semibold text-foreground transition-colors hover:bg-muted/60"
+                      aria-label={`Add ${r.tokenSymbol} on ${r.marketName} to batch`}
+                    >
+                      <TokenIcon symbol={r.tokenSymbol} size={12} />
+                      <span>{r.tokenSymbol}</span>
+                      <span aria-hidden className="h-3 w-px bg-border/60" />
+                      <span className="inline-flex items-center gap-0.5 text-[9px] font-normal text-muted-foreground/70">
+                        {chainSrc && (
+                          <img src={chainSrc} alt={r.chainName} className="size-2.5 shrink-0 opacity-70" />
+                        )}
+                        {isV4 && (
+                          <span className="inline-flex items-center px-1 py-0 rounded-full text-[8px] font-medium leading-none text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10">
+                            V4
+                          </span>
+                        )}
+                        <span>{marketLabel}</span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
             {Array.from(groupedByReserve.entries()).map(([reserveId, entry]) => (
               <PortfolioTokenRow
                 key={reserveId}
                 reserveId={reserveId}
                 tokenSymbol={entry.tokenSymbol}
                 chainName={entry.chainName}
+                marketName={entry.marketName}
                 supplyPosition={entry.supply}
                 borrowPosition={entry.borrow}
                 onRemove={handleRemoveToken}

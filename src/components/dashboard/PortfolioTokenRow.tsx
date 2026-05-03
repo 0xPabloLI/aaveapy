@@ -5,6 +5,9 @@ import { formatNumberInput } from '@/lib/numberFormat';
 import { cnDsInputSurface } from '@/lib/dsInputSurface';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { getChainIconSrc } from '@/lib/chainIcons';
+import { getMarketChipLabel, isV4Market } from '@/lib/marketLabels';
+
 import { BATCH_THEME } from './batchTheme';
 import type { PortfolioPosition, PortfolioInputMode } from '@/types/portfolio';
 
@@ -13,6 +16,7 @@ interface PortfolioTokenRowProps {
   borrowPosition: PortfolioPosition | null;
   tokenSymbol: string;
   chainName: string;
+  marketName: string;
   onRemove: (reserveId: string) => void;
   reserveId: string;
   onUpdateAmount: (positionId: string, amount: string) => void;
@@ -24,22 +28,27 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
   borrowPosition,
   tokenSymbol,
   chainName,
+  marketName,
   onRemove,
   reserveId,
   onUpdateAmount,
   onUpdateInputMode,
 }: PortfolioTokenRowProps) {
   const isMobile = useIsMobile();
+  const chainSrc = getChainIconSrc(chainName);
+  const marketLabel = getMarketChipLabel(marketName, chainName);
+  const showV4 = isV4Market(marketName);
 
   const renderSideInput = (position: PortfolioPosition | null, sideLabel: string) => {
     if (!position) return null;
     const isBorrow = position.side === 'borrow';
     const labelColor = isBorrow ? 'ds-text-brand-cyan' : 'ds-text-emerald-600';
     const inputVariant = isBorrow ? 'borrow' as const : 'supply' as const;
+    const hasValue = Boolean(position.amount.trim());
 
     return (
       <div className="flex min-w-0 flex-1 items-center gap-1.5">
-        <span className={cn('shrink-0 ds-text-12 font-semibold', labelColor)}>
+        <span className={cn('shrink-0 ds-text-12 font-semibold w-11', labelColor)}>
           {sideLabel}
         </span>
         <button
@@ -55,36 +64,33 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
         >
           {position.inputMode === 'usd' ? '$' : 'T'}
         </button>
-        <input
-          value={position.amount}
-          onChange={(e) =>
-            onUpdateAmount(position.positionId, formatNumberInput(e.target.value))
-          }
-          inputMode="decimal"
-          placeholder={position.inputMode === 'usd' ? '10,000' : '100'}
-          className={cn(
-            'h-7 w-full min-w-[4rem] rounded-md px-2 ds-text-12 tabular-nums placeholder:italic',
-            cnDsInputSurface(Boolean(position.amount.trim()), inputVariant),
+        {/* Input with embedded clear button (matches search-token / filter input pattern) */}
+        <div className="relative flex-1 min-w-0">
+          <input
+            value={position.amount}
+            onChange={(e) =>
+              onUpdateAmount(position.positionId, formatNumberInput(e.target.value))
+            }
+            inputMode="decimal"
+            placeholder={position.inputMode === 'usd' ? '10,000' : '100'}
+            className={cn(
+              'h-7 w-full min-w-[4rem] rounded-md pl-2 ds-text-12 tabular-nums placeholder:italic',
+              hasValue ? 'pr-7' : 'pr-2',
+              cnDsInputSurface(hasValue, inputVariant),
+            )}
+            aria-label={`${sideLabel} amount for ${tokenSymbol}`}
+          />
+          {hasValue && (
+            <button
+              type="button"
+              onClick={() => onUpdateAmount(position.positionId, '')}
+              className="absolute right-1 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors"
+              aria-label={`Clear ${tokenSymbol} ${sideLabel.toLowerCase()}`}
+            >
+              <Eraser className="size-3.5" aria-hidden />
+            </button>
           )}
-          aria-label={`${sideLabel} amount for ${tokenSymbol}`}
-        />
-        {/* Clear amount */}
-        <button
-          type="button"
-          onClick={() => onUpdateAmount(position.positionId, '')}
-          disabled={!position.amount.trim()}
-          className={cn(
-            'shrink-0 rounded-md p-1 transition-colors',
-            !isMobile && 'inline-flex items-center gap-0.5 px-1.5',
-            position.amount.trim()
-              ? 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
-              : 'text-muted-foreground/35 cursor-not-allowed',
-          )}
-          aria-label={`Clear ${tokenSymbol} ${sideLabel.toLowerCase()}`}
-        >
-          <Eraser className="size-3" aria-hidden />
-          {!isMobile && <span className="ds-text-10 font-medium">Clear</span>}
-        </button>
+        </div>
       </div>
     );
   };
@@ -108,14 +114,27 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
           <span className="ds-text-12 font-semibold text-foreground truncate">
             {tokenSymbol}
           </span>
-          <span className="ds-text-10 text-muted-foreground truncate">
-            {chainName}
+          <span className="ds-text-10 text-muted-foreground inline-flex items-center gap-1 min-w-0">
+            {chainSrc && (
+              <img src={chainSrc} alt={chainName} className="size-2.5 shrink-0 opacity-70" />
+            )}
+            {showV4 && (
+              <span className="shrink-0 inline-flex items-center px-1 py-0 rounded-full text-[8px] font-medium leading-none text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10">
+                V4
+              </span>
+            )}
+            <span className="truncate">{marketLabel}</span>
           </span>
         </div>
       </div>
 
-      {/* Supply + Borrow inputs */}
-      <div className="flex min-w-0 flex-1 items-center gap-3">
+      {/* Supply + Borrow inputs — stacked on mobile (not enough horizontal room), inline on desktop */}
+      <div
+        className={cn(
+          'flex min-w-0 flex-1',
+          isMobile ? 'flex-col items-stretch gap-1.5' : 'items-center gap-3',
+        )}
+      >
         {renderSideInput(supplyPosition, 'Supply')}
         {borrowPosition && renderSideInput(borrowPosition, 'Borrow')}
       </div>
