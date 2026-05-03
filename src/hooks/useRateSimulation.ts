@@ -986,7 +986,8 @@ export function buildRateSimulationResult({
   // Calculate cap constraints for capping inputs
   const supplyCapUsd = nativeToUsd(reserve.supplyCap, reserve.decimals, reserve.tokenPrice) ?? null;
   const borrowCapUsd = nativeToUsd(reserve.borrowCap, reserve.decimals, reserve.tokenPrice) ?? null;
-  // V4: reserveSize may be 0 or a per-Spoke slice — treat as null to avoid misleading cap room
+  // V4: reserveSize is Hub-level aggregate; may be 0 or a per-Spoke slice.
+  // Treat as null to avoid cross-layer fallback (supplyCap is reserve-level).
   const currentReserveSizeUsd = (() => {
     const size = nativeToUsd(reserve.reserveSize, reserve.decimals, reserve.tokenPrice) ?? null;
     if (getProtocolVersion(reserve.marketName) === 'v4' && (size === null || size === 0)) return null;
@@ -1027,6 +1028,7 @@ export function buildRateSimulationResult({
     : null;
 
   // Calculate borrow cap remaining (if cap exists)
+  // borrowCap and totalVariableDebt are both reserve-level — same-layer, safe for V4.
   const borrowCapRemainingUsd = 
     borrowCapUsd !== null && borrowCapUsd > 0 && currentTotalBorrowedUsd !== null
       ? Math.max(borrowCapUsd - currentTotalBorrowedUsd, 0)
@@ -1043,9 +1045,23 @@ export function buildRateSimulationResult({
     : null;
 
   // Available to borrow = min(borrow cap remaining, available liquidity + scenario supply)
-  // For static display (no input), prefer API borrowable; for simulation, recalculate with supply added
+  // V4: borrowCap (Reserve-level) and availableLiquidity (Hub-level) are cross-layer.
+  // apiBorrowableUsd already captures the correct scope from the backend.
+  // Adding supplyInputUsd to apiBorrowableUsd is wrong: if apiBorrowableUsd is
+  // capped by borrowCapRemaining (Reserve-level), extra supply won't increase
+  // borrow room (borrowCap doesn't grow with supply). If capped by
+  // availableLiquidity (Hub-level), supply could help — but we can't determine
+  // which constraint is binding without cross-layer mixing. Use apiBorrowableUsd
+  // as-is for V4 (static display), let simulation recalculate rates independently.
   const apiBorrowableUsd = nativeToUsd(reserve.borrowable, reserve.decimals, reserve.tokenPrice) ?? null;
+  const isV4Borrow = getProtocolVersion(reserve.marketName) === 'v4';
   const availableBorrowRoomUsd = (() => {
+    if (isV4Borrow) {
+      // V4: use API borrowable as static value — cannot safely combine
+      // Reserve-level borrowCap with Hub-level availableLiquidity + supplyInput
+      return apiBorrowableUsd;
+    }
+    // V3: same-layer, min() is safe
     if (borrowCapRemainingUsd !== null && availableLiquidityForBorrowUsd !== null) {
       return Math.min(borrowCapRemainingUsd, availableLiquidityForBorrowUsd);
     }

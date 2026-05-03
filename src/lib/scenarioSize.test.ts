@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { convertUsdToInputValue, getDisplayAvailableLiquidityUsd, getDisplayReserveSizeUsd, getDisplayTotalBorrowedUsd, getReserveAvailableLiquidityUsd, getReserveTotalBorrowedUsd, getScenarioSupplySizeUsd, nativeToUsd, getSuppliableUsd, getBorrowableUsd } from './scenarioSize';
+import { convertUsdToInputValue, getDisplayAvailableLiquidityUsd, getDisplayReserveSizeUsd, getDisplayTotalBorrowedUsd, getReserveAvailableLiquidityUsd, getReserveTotalBorrowedUsd, getScenarioSupplySizeUsd, nativeToUsd, getSuppliableUsd, getBorrowableUsd, getDisplayBorrowableUsd } from './scenarioSize';
 
 describe('nativeToUsd', () => {
   it('converts raw token units to USD', () => {
@@ -321,5 +321,49 @@ describe('getBorrowableUsd', () => {
     expect(
       getBorrowableUsd({ decimals: 18, tokenPrice: 1 }),
     ).toBeNull();
+  });
+});
+
+describe('getDisplayBorrowableUsd', () => {
+  it('uses API borrowable when available (V3)', () => {
+    expect(
+      getDisplayBorrowableUsd({ borrowable: '300000000000000000000', decimals: 18, tokenPrice: 2 }, 'v3'),
+    ).toBe(600);
+  });
+
+  it('uses API borrowable when available (V4)', () => {
+    expect(
+      getDisplayBorrowableUsd({ borrowable: '300000000000000000000', decimals: 18, tokenPrice: 2 }, 'v4'),
+    ).toBe(600);
+  });
+
+  it('falls back for V3 when borrowable is missing', () => {
+    expect(
+      getDisplayBorrowableUsd({
+        borrowCap: '1000000000000000000000',
+        totalVariableDebt: '400000000000000000000',
+        availableLiquidity: '700000000000000000000',
+        decimals: 18,
+        tokenPrice: 1,
+      }, 'v3'),
+    ).toBe(600);
+  });
+
+  it('returns null for V4 when borrowable is missing (no cross-layer fallback)', () => {
+    expect(
+      getDisplayBorrowableUsd({
+        borrowCap: '1000000000000000000000',
+        totalVariableDebt: '400000000000000000000',
+        availableLiquidity: '700000000000000000000',
+        decimals: 18,
+        tokenPrice: 1,
+      }, 'v4'),
+    ).toBeNull();
+  });
+
+  it('clamps API result to ≥ 0', () => {
+    expect(
+      getDisplayBorrowableUsd({ borrowable: '0', decimals: 18, tokenPrice: 1 }, 'v4'),
+    ).toBe(0);
   });
 });
