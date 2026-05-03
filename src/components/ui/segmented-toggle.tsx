@@ -11,7 +11,7 @@ interface SegmentedToggleProps<T extends string = string> {
   value: T;
   onChange: (value: T) => void;
   className?: string;
-  /** Custom active text color class (defaults to ds-text-emerald-600) */
+  /** Custom active text color class (defaults to text-foreground per spec §5.1) */
   activeTextClassName?: string;
   /** Layout orientation (default: horizontal) */
   orientation?: 'horizontal' | 'vertical';
@@ -30,7 +30,7 @@ export function SegmentedToggle<T extends string = string>({
   value,
   onChange,
   className,
-  activeTextClassName = 'ds-text-emerald-600',
+  activeTextClassName = 'text-foreground',
   orientation = 'horizontal',
   size = 'default',
 }: SegmentedToggleProps<T>) {

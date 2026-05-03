@@ -51,10 +51,10 @@ const ThemeToggle = () => {
       <TooltipTrigger asChild>
         <Button
           type="button"
-          variant="utility"
+          variant="ghost"
           size="icon"
           onClick={handleToggle}
-          className="relative h-9 w-9 rounded-full text-interactive transition-colors duration-200
+          className="relative h-9 w-9 rounded-full bg-muted/60 text-interactive transition-colors duration-200 hover:bg-muted/80
             focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
           {isDark ? (

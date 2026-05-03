@@ -404,6 +404,8 @@ export function AprApyToggle({ isApy, setIsApy }: AprApyToggleProps) {
         ]}
         value={isApy ? 'apy' : 'apr'}
         onChange={(val) => setIsApy(val === 'apy')}
+        activeTextClassName="text-foreground"
+        size="chip"
       />
 
       <InfoIconButton
