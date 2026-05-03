@@ -537,7 +537,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
           </div>
         ) : (
           <div className="space-y-1.5">
-            {suggestedReserves.length > 0 && (
+            {!isMobile && suggestedReserves.length > 0 && (
               <div className="flex flex-wrap items-center gap-1.5 px-1">
                 {suggestedReserves.map((r) => {
                   const reserveId = getReserveKey(r);
@@ -549,38 +549,23 @@ const PortfolioPanel = memo(function PortfolioPanel({
                       key={reserveId}
                       type="button"
                       onClick={() => handleAddToken(reserveId)}
-                      className="inline-flex items-center gap-1 rounded-full border border-border/50 bg-card/70 px-1.5 py-0.5 ds-text-10 font-semibold text-foreground transition-colors hover:bg-muted/60 sm:gap-1.5 sm:px-2"
+                      className="inline-flex items-center gap-1.5 rounded-full border border-border/50 bg-card/70 px-2 py-0.5 ds-text-10 font-semibold text-foreground transition-colors hover:bg-muted/60"
                       aria-label={`Add ${r.tokenSymbol} on ${r.marketName} to batch`}
                     >
                       <TokenIcon symbol={r.tokenSymbol} size={12} />
                       <span>{r.tokenSymbol}</span>
-                      {isMobile ? (
-                        <span className="inline-flex items-center gap-0.5 opacity-70">
-                          {chainSrc && (
-                            <img src={chainSrc} alt={r.chainName} className="size-2.5 shrink-0" />
-                          )}
-                          {isV4 && (
-                            <span className="inline-flex items-center px-1 py-0 rounded-full text-[8px] font-medium leading-none text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10">
-                              V4
-                            </span>
-                          )}
-                        </span>
-                      ) : (
-                        <>
-                          <span aria-hidden className="h-3 w-px bg-border/60" />
-                          <span className="inline-flex items-center gap-0.5 text-[9px] font-normal text-muted-foreground/70">
-                            {chainSrc && (
-                              <img src={chainSrc} alt={r.chainName} className="size-2.5 shrink-0 opacity-70" />
-                            )}
-                            {isV4 && (
-                              <span className="inline-flex items-center px-1 py-0 rounded-full text-[8px] font-medium leading-none text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10">
-                                V4
-                              </span>
-                            )}
-                            <span>{marketLabel}</span>
+                      <span aria-hidden className="h-3 w-px bg-border/60" />
+                      <span className="inline-flex items-center gap-0.5 text-[9px] font-normal text-muted-foreground/70">
+                        {chainSrc && (
+                          <img src={chainSrc} alt={r.chainName} className="size-2.5 shrink-0 opacity-70" />
+                        )}
+                        {isV4 && (
+                          <span className="inline-flex items-center px-1 py-0 rounded-full text-[8px] font-medium leading-none text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10">
+                            V4
                           </span>
-                        </>
-                      )}
+                        )}
+                        <span>{marketLabel}</span>
+                      </span>
                     </button>
                   );
                 })}
