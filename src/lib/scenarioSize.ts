@@ -376,7 +376,9 @@ export const getBorrowableUsd = (reserve: {
   availableLiquidity?: string | null;
   decimals?: number | null;
   tokenPrice?: number | null;
+  borrowDisabled?: boolean;
 }): number | null => {
+  if (reserve.borrowDisabled) return 0;
   const fromApi = nativeToUsd(reserve.borrowable, reserve.decimals, reserve.tokenPrice);
   if (fromApi != null) return Math.max(0, fromApi);
   const borrowCapUsd = nativeToUsd(reserve.borrowCap, reserve.decimals, reserve.tokenPrice);

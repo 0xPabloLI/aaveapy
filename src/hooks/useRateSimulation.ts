@@ -1035,20 +1035,23 @@ export function buildRateSimulationResult({
       : null;
 
   // Calculate available liquidity for borrow (on-chain available liquidity + any new supply)
+  // If supply is disabled, new supply input does not increase available liquidity.
+  const effectiveSupplyInputUsd = reserve.supplyDisabled ? 0 : supplyInputUsd;
   const availableLiquidityForBorrowUsd = reserveRateInput && tokenPrice
     ? (() => {
         const decimals = reserveRateInput.decimals ?? 18;
         const scale = Math.pow(10, decimals);
         const availableLiquidityRaw = Number(reserveRateInput.availableLiquidity) / scale;
-        return availableLiquidityRaw * tokenPrice + supplyInputUsd;
+        return availableLiquidityRaw * tokenPrice + effectiveSupplyInputUsd;
       })()
     : null;
 
   // Available to borrow = min(borrow cap remaining, available liquidity + scenario supply)
   // min(borrowCapRemaining, availableLiquidity) is valid for both V3 and V4
-  // (verified against on-chain data, except when borrowDisabled=true).
+  // If borrow is disabled, borrow room is 0.
   const apiBorrowableUsd = nativeToUsd(reserve.borrowable, reserve.decimals, reserve.tokenPrice) ?? null;
   const availableBorrowRoomUsd = (() => {
+    if (reserve.borrowDisabled) return 0;
     if (borrowCapRemainingUsd !== null && availableLiquidityForBorrowUsd !== null) {
       return Math.min(borrowCapRemainingUsd, availableLiquidityForBorrowUsd);
     }
