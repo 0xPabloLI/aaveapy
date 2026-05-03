@@ -521,9 +521,9 @@ const FilterBar = ({
                                   opacity: 1,
                                   scale: 1,
                                   transition: {
-                                    width: { duration: 0.36, delay: i * 0.055, ease: [0.22, 1, 0.36, 1] },
-                                    opacity: { duration: 0.28, delay: i * 0.055, ease: [0.22, 1, 0.36, 1] },
-                                    scale: { duration: 0.36, delay: i * 0.055, ease: [0.22, 1, 0.36, 1] },
+                                    width: { duration: 0.3, delay: i * 0.045, ease: [0.22, 1, 0.36, 1] },
+                                    opacity: { duration: 0.22, delay: i * 0.045, ease: [0.22, 1, 0.36, 1] },
+                                    scale: { duration: 0.3, delay: i * 0.045, ease: [0.22, 1, 0.36, 1] },
                                   },
                                 }),
                                 exit: (i: number) => ({
