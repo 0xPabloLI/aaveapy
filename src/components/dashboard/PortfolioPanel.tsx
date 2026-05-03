@@ -193,13 +193,24 @@ const PortfolioPanel = memo(function PortfolioPanel({
     if (!searchQuery.trim()) return [];
     const q = searchQuery.toLowerCase().trim();
     const qNorm = normalizeTokenSymbolForSearch(searchQuery);
-    return reserves
-      .filter((r) => {
-        const sym = r.tokenSymbol.toLowerCase();
-        const symNorm = normalizeTokenSymbolForSearch(r.tokenSymbol);
-        return sym.includes(q) || (qNorm.length > 0 && symNorm.includes(qNorm));
-      })
-      .slice(0, 50);
+    type Scored = { reserve: ReserveWithSpread; rank: number };
+    const scored: Scored[] = [];
+    for (const r of reserves) {
+      const sym = r.tokenSymbol.toLowerCase();
+      const symNorm = normalizeTokenSymbolForSearch(r.tokenSymbol);
+      // rank: 0 = exact, 1 = prefix, 2 = substring (lower is better)
+      let rank = -1;
+      if (sym === q || (qNorm && symNorm === qNorm)) rank = 0;
+      else if (sym.startsWith(q) || (qNorm && symNorm.startsWith(qNorm))) rank = 1;
+      else if (sym.includes(q) || (qNorm && symNorm.includes(qNorm))) rank = 2;
+      if (rank < 0) continue;
+      scored.push({ reserve: r, rank });
+    }
+    scored.sort((a, b) => {
+      if (a.rank !== b.rank) return a.rank - b.rank;
+      return (b.reserve.reserveSizeUsd ?? 0) - (a.reserve.reserveSizeUsd ?? 0);
+    });
+    return scored.slice(0, 50).map((s) => s.reserve);
   }, [reserves, searchQuery]);
 
   // Add both supply and borrow positions for the selected token.
