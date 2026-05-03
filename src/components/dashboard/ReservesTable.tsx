@@ -35,7 +35,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { getReserveSimulationId, useSharedRateSimulations } from '@/hooks/useRateSimulation';
 import { useSideDataMeta } from '@/hooks/useSideDataMeta';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
-import { getDisplayAvailableLiquidityUsd as computeDisplayAvailableLiquidityUsd, getDisplayReserveSizeUsd as computeDisplayReserveSizeUsd, getDisplayTotalBorrowedUsd as computeDisplayTotalBorrowedUsd, getAvailableToBorrowUsd, nativeToUsd, getSuppliableUsd, getDisplayBorrowableUsd } from '@/lib/scenarioSize';
+import { getDisplayAvailableLiquidityUsd as computeDisplayAvailableLiquidityUsd, getDisplayReserveSizeUsd as computeDisplayReserveSizeUsd, getDisplayTotalBorrowedUsd as computeDisplayTotalBorrowedUsd, getAvailableToBorrowUsd, nativeToUsd, getSuppliableUsd, getBorrowableUsd } from '@/lib/scenarioSize';
 import { getProtocolVersion } from '@/lib/protocolVersion';
 import {
   scrollExpandedSimulationIntoView,
@@ -437,7 +437,7 @@ const ReservesTable = ({
   };
 
   const getDisplayAvailableToBorrowUsd = (reserve: ReserveWithSpread): number | null => {
-    return getDisplayBorrowableUsd(reserve, getProtocolVersion(reserve.marketName));
+    return getBorrowableUsd(reserve);
   };
 
   const getDisplayDeficit = (reserve: ReserveWithSpread): number | null => {

@@ -215,9 +215,8 @@ export const getAvailableToBorrowUsd = ({
  * Cross-layer mixing rule:
  *   - supplyCap(reserve) - reserveSize(reserve) → same-layer, safe for V4
  *   - borrowCap(reserve) - totalVariableDebt(reserve) → same-layer, safe for V4
- *   - min(borrowCapRemaining(reserve), availableLiquidity(hub)) → cross-layer,
- *     scopes differ for V4 — borrowCap constrains per-Spoke, availableLiquidity
- *     is Hub aggregate
+ *   - min(borrowCapRemaining(reserve), availableLiquidity(hub)) → valid for V4
+ *     (verified against on-chain data, except when borrowDisabled=true)
  *   - reserveSize(reserve) * utilizationPct(hub) → cross-layer for V4,
  *     and reserveSize may be 0 or a Spoke slice making the product inaccurate
  *
@@ -366,9 +365,7 @@ export const getSuppliableUsd = (reserve: {
  *
  * API priority: reserve.borrowable (native token units).
  * Fallback: min(borrowCap - totalVariableDebt, availableLiquidity).
- *   borrowCap and totalVariableDebt are both Reserve-level (safe to subtract).
- *   availableLiquidity is Hub-level — min() mixes scopes for V4.
- *   Use getDisplayBorrowableUsd for V4-safe behavior.
+ *   Valid for both V3 and V4 (verified against on-chain data).
  *
  * Result is clamped to ≥ 0 via getAvailableToBorrowUsd (Math.max).
  */
@@ -386,37 +383,4 @@ export const getBorrowableUsd = (reserve: {
   const borrowedUsd = nativeToUsd(reserve.totalVariableDebt, reserve.decimals, reserve.tokenPrice);
   const availableLiquidityUsd = nativeToUsd(reserve.availableLiquidity, reserve.decimals, reserve.tokenPrice);
   return getAvailableToBorrowUsd({ borrowedUsd, borrowCapUsd, availableLiquidityUsd });
-};
-
-/* ─── V4-aware borrowable display function ───
- *
- * getBorrowableUsd fallback's min(borrowCap - debt, availableLiquidity) mixes
- * borrowCap (Reserve-level) with availableLiquidity (Hub-level) — cross-layer
- * for V4.
- *
- * V3: same-layer (V3 has no Hub/Spoke split), fallback is safe.
- * V4: skip cross-layer fallback, return null instead.
- */
-
-/**
- * V4-aware borrowable USD.
- * V3: API borrowable ?? min(borrowCap - totalVariableDebt, availableLiquidity)
- * V4: API borrowable only (no cross-layer fallback)
- */
-export const getDisplayBorrowableUsd = (
-  reserve: {
-    borrowable?: string | null;
-    borrowCap?: string | null;
-    totalVariableDebt?: string | null;
-    availableLiquidity?: string | null;
-    decimals?: number | null;
-    tokenPrice?: number | null;
-  },
-  protocolVersion: ProtocolVersion,
-): number | null => {
-  if (protocolVersion === 'v4') {
-    const fromApi = nativeToUsd(reserve.borrowable, reserve.decimals, reserve.tokenPrice);
-    return fromApi != null ? Math.max(0, fromApi) : null;
-  }
-  return getBorrowableUsd(reserve);
 };
