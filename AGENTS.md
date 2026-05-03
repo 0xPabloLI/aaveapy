@@ -13,12 +13,11 @@
 - `npm run ci:remote` — full local gate (used by hooks)
 
 ## Mandatory Session Workflow
-1. **Bootstrap first** (every new session):
-   - `~/.codex/superpowers/.codex/superpowers-codex bootstrap`
-   - `~/.codex/superpowers/.codex/superpowers-codex use-skill brainstorming`
-2. **Session coordination**: read/update `SESSION-BOARD.md` before work; detect conflicts; deregister when done.
-3. **Git safety**: never run `stash`/`checkout` related commands without explicit user confirmation in current chat.
-4. **Hook policy**: do not bypass `pre-commit`/`pre-push`; if `ci:remote` fails, fix root cause.
+1. **Bootstrap first** (every new session — BEFORE any other action):
+   - **Codex**: `~/.codex/superpowers/.codex/superpowers-codex bootstrap && ~/.codex/superpowers/.codex/superpowers-codex use-skill brainstorming`
+   - **CodeArts**: Use the `skill` tool to load `using-superpowers`, then load `brainstorming`. This is mandatory — do not skip even for simple questions.
+2. **Git safety**: never run `stash`/`checkout` related commands without explicit user confirmation in current chat.
+3. **Hook policy**: do not bypass `pre-commit`/`pre-push`; if `ci:remote` fails, fix root cause.
 
 ## Coding Conventions
 - TypeScript + functional React components/hooks.
@@ -59,7 +58,6 @@ For API contract changes, follow `docs/conventions/api-contract-checklist.md`.
 - Sorting/formatting contracts: `src/lib/sorters.ts`, `src/lib/formatters.ts`, `src/lib/apiSchemas*.ts`.
 
 ## Key References
-- `SESSION-BOARD.md`
 - `docs/design/frontend-interaction-guardrails.md`
 - `docs/design/DESIGN-SYSTEM-REFERENCE.md`
 - `docs/rate-calculation.md`
