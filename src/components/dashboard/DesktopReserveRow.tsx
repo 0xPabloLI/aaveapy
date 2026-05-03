@@ -1,4 +1,4 @@
-import { memo, Fragment, useEffect, useState, useCallback } from 'react';
+import { memo, Fragment, useEffect, useState, useCallback, useRef } from 'react';
 import { ExternalLink, Plus } from 'lucide-react';
 import { TableRow, TableCell } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipArrow } from '@/components/ui/tooltip';
@@ -133,6 +133,22 @@ const DesktopReserveRow = memo(({
     }
   }, [isExpanded]);
 
+  const tokenTextRef = useRef<HTMLSpanElement>(null);
+  const [isTokenWrapped, setIsTokenWrapped] = useState(false);
+
+  useEffect(() => {
+    const el = tokenTextRef.current;
+    if (!el) return;
+    const detect = () => {
+      const lineHeight = parseFloat(getComputedStyle(el).lineHeight) || 18;
+      setIsTokenWrapped(el.scrollHeight > lineHeight * 1.2);
+    };
+    detect();
+    const ro = new ResizeObserver(detect);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [reserve.tokenSymbol]);
+
   const { iconSymbol, logoURI } = fetchIconSymbolAndName({
     underlyingAsset: reserve.tokenAddress,
     symbol: reserve.tokenSymbol,
@@ -243,10 +259,10 @@ const DesktopReserveRow = memo(({
               )}
             </button>
           )}
-          <div className="group/token flex min-w-0 max-w-full items-start justify-start gap-[var(--ds-space-1-5)]">
-            <TokenIcon symbol={iconSymbol} size={28} loading="eager" logoURI={logoURI} className="shrink-0 mt-0.5" />
-            <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-[var(--ds-space-1-5)] gap-y-0">
-              <span className="font-semibold text-foreground ds-text-13 break-words min-w-0 [max-width:max-content]">
+          <div className={`group/token flex min-w-0 max-w-full justify-start gap-[var(--ds-space-1-5)] ${isTokenWrapped ? 'items-start' : 'items-center'}`}>
+            <TokenIcon symbol={iconSymbol} size={28} loading="eager" logoURI={logoURI} className={`shrink-0 ${isTokenWrapped ? 'mt-0.5' : ''}`} />
+            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-[var(--ds-space-1-5)] gap-y-0">
+              <span ref={tokenTextRef} className="font-semibold text-foreground ds-text-13 break-words min-w-0 [max-width:max-content]">
                 {reserve.tokenSymbol}
               </span>
               <span className="inline-flex shrink-0 items-baseline gap-[var(--ds-space-1-5)]">

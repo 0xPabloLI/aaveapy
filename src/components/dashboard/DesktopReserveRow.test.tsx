@@ -295,11 +295,11 @@ describe('DesktopReserveRow', () => {
     // 「密集表对齐策略」. Token = text-left + justify-start (identifier 起点对齐).
     // The inner flex (token block) and outer flex (with optional portfolio toggle)
     // both use justify-start so the icon hugs the cell's left edge.
-    // group/token uses items-start (not items-center) so the arrow badge hugs the
-    // last line of wrapped text instead of floating in the vertical center.
+    // group/token switches between items-center (single-line token) and
+    // items-start (wrapped token) via ResizeObserver.
     expect(html).toMatch(/<td[^>]*ds-reserves-cell-td-edge-l[^"]*text-left/);
     expect(html).toMatch(/class="flex w-full min-w-0 items-center justify-start/);
-    expect(html).toMatch(/class="group\/token flex min-w-0 max-w-full items-start justify-start/);
+    expect(html).toMatch(/class="group\/token flex min-w-0 max-w-full justify-start gap-\[var\(--ds-space-1-5\)\] (items-start|items-center)"/);
     expect(html).not.toMatch(/<td[^>]*ds-reserves-cell-td-edge-l[^"]*text-center/);
   });
 
