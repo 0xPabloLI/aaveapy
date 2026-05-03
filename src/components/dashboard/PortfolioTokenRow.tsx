@@ -5,6 +5,8 @@ import { formatNumberInput } from '@/lib/numberFormat';
 import { cnDsInputSurface } from '@/lib/dsInputSurface';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { getChainIconSrc } from '@/lib/chainIcons';
+import { getMarketChipLabel, isV4Market } from '@/lib/marketLabels';
 
 import { BATCH_THEME } from './batchTheme';
 import type { PortfolioPosition, PortfolioInputMode } from '@/types/portfolio';
@@ -14,6 +16,7 @@ interface PortfolioTokenRowProps {
   borrowPosition: PortfolioPosition | null;
   tokenSymbol: string;
   chainName: string;
+  marketName: string;
   onRemove: (reserveId: string) => void;
   reserveId: string;
   onUpdateAmount: (positionId: string, amount: string) => void;
@@ -25,12 +28,16 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
   borrowPosition,
   tokenSymbol,
   chainName,
+  marketName,
   onRemove,
   reserveId,
   onUpdateAmount,
   onUpdateInputMode,
 }: PortfolioTokenRowProps) {
   const isMobile = useIsMobile();
+  const chainSrc = getChainIconSrc(chainName);
+  const marketLabel = getMarketChipLabel(marketName, chainName);
+  const showV4 = isV4Market(marketName);
 
   const renderSideInput = (position: PortfolioPosition | null, sideLabel: string) => {
     if (!position) return null;
@@ -107,8 +114,16 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
           <span className="ds-text-12 font-semibold text-foreground truncate">
             {tokenSymbol}
           </span>
-          <span className="ds-text-10 text-muted-foreground truncate">
-            {chainName}
+          <span className="ds-text-10 text-muted-foreground inline-flex items-center gap-1 min-w-0">
+            {chainSrc && (
+              <img src={chainSrc} alt={chainName} className="size-2.5 shrink-0 opacity-70" />
+            )}
+            <span className="truncate">{marketLabel}</span>
+            {showV4 && (
+              <span className="shrink-0 rounded-sm border border-border/50 bg-muted/50 px-0.5 text-[8px] font-semibold leading-none text-muted-foreground">
+                V4
+              </span>
+            )}
           </span>
         </div>
       </div>
