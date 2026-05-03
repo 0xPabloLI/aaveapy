@@ -1027,38 +1027,30 @@ export function buildRateSimulationResult({
       })()
     : null;
 
-  // Calculate borrow cap remaining (if cap exists)
-  // borrowCap and totalVariableDebt are both reserve-level — same-layer, safe for V4.
-  const borrowCapRemainingUsd = 
-    borrowCapUsd !== null && borrowCapUsd > 0 && currentTotalBorrowedUsd !== null
+  // Early exit: if borrow is disabled, skip borrow room calculation entirely.
+  const borrowCapRemainingUsd = reserve.borrowDisabled ? null
+    : borrowCapUsd !== null && borrowCapUsd > 0 && currentTotalBorrowedUsd !== null
       ? Math.max(borrowCapUsd - currentTotalBorrowedUsd, 0)
       : null;
 
-  // Calculate available liquidity for borrow (on-chain available liquidity + any new supply)
   // If supply is disabled, new supply input does not increase available liquidity.
   const effectiveSupplyInputUsd = reserve.supplyDisabled ? 0 : supplyInputUsd;
-  const availableLiquidityForBorrowUsd = reserveRateInput && tokenPrice
-    ? (() => {
-        const decimals = reserveRateInput.decimals ?? 18;
-        const scale = Math.pow(10, decimals);
-        const availableLiquidityRaw = Number(reserveRateInput.availableLiquidity) / scale;
-        return availableLiquidityRaw * tokenPrice + effectiveSupplyInputUsd;
-      })()
-    : null;
+  const availableLiquidityForBorrowUsd = reserve.borrowDisabled ? null
+    : reserveRateInput && tokenPrice
+      ? (() => {
+          const decimals = reserveRateInput.decimals ?? 18;
+          const scale = Math.pow(10, decimals);
+          const availableLiquidityRaw = Number(reserveRateInput.availableLiquidity) / scale;
+          return availableLiquidityRaw * tokenPrice + effectiveSupplyInputUsd;
+        })()
+      : null;
 
   // Available to borrow = min(borrow cap remaining, available liquidity + scenario supply)
-  // min(borrowCapRemaining, availableLiquidity) is valid for both V3 and V4
-  // If borrow is disabled, borrow room is 0.
-  const apiBorrowableUsd = nativeToUsd(reserve.borrowable, reserve.decimals, reserve.tokenPrice) ?? null;
-  const availableBorrowRoomUsd = (() => {
-    if (reserve.borrowDisabled) return 0;
-    if (borrowCapRemainingUsd !== null && availableLiquidityForBorrowUsd !== null) {
-      return Math.min(borrowCapRemainingUsd, availableLiquidityForBorrowUsd);
-    }
-    if (borrowCapRemainingUsd !== null) return borrowCapRemainingUsd;
-    if (availableLiquidityForBorrowUsd !== null) return availableLiquidityForBorrowUsd;
-    return apiBorrowableUsd;
-  })();
+  // Valid for both V3 and V4. If borrow is disabled, borrow room is 0 (skip all calculation).
+  const availableBorrowRoomUsd = reserve.borrowDisabled ? 0
+    : borrowCapRemainingUsd !== null && availableLiquidityForBorrowUsd !== null
+      ? Math.min(borrowCapRemainingUsd, availableLiquidityForBorrowUsd)
+      : borrowCapRemainingUsd ?? availableLiquidityForBorrowUsd ?? (nativeToUsd(reserve.borrowable, reserve.decimals, reserve.tokenPrice) ?? null);
 
   // Track which constraint is binding (for UI messaging)
   const borrowLimitedByLiquidity =

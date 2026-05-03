@@ -350,7 +350,9 @@ export const getSuppliableUsd = (reserve: {
   reserveSize?: string | null;
   decimals?: number | null;
   tokenPrice?: number | null;
+  supplyDisabled?: boolean;
 }): number | null => {
+  if (reserve.supplyDisabled) return 0;
   const fromApi = nativeToUsd(reserve.suppliable, reserve.decimals, reserve.tokenPrice);
   if (fromApi != null) return Math.max(0, fromApi);
   const supplyCapUsd = nativeToUsd(reserve.supplyCap, reserve.decimals, reserve.tokenPrice);
