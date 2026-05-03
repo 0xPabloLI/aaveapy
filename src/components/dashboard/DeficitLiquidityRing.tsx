@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { memo } from 'react';
 import { ExternalLink } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipTrigger, TooltipArrow } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipCalloutArrow } from '@/components/ui/tooltip';
 import { formatScenarioSize } from '@/lib/formatters';
 import { calculateDeficitShareRatio, getDeficitSeverity } from '@/lib/deficit';
 import { cn } from '@/lib/utils';
@@ -71,7 +71,7 @@ const DeficitLiquidityRing = memo(({
 
   const tooltipContent = (
     <TooltipContent side="right" className="max-w-[240px]">
-      <TooltipArrow />
+      <TooltipCalloutArrow side="right" />
       <div className="space-y-1 ds-text-12">
         <div className="flex items-center justify-between gap-3">
           <span className="text-muted-foreground flex items-center gap-1">
