@@ -35,7 +35,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { getReserveSimulationId, useSharedRateSimulations } from '@/hooks/useRateSimulation';
 import { useSideDataMeta } from '@/hooks/useSideDataMeta';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
-import { getDisplayAvailableLiquidityUsd as computeDisplayAvailableLiquidityUsd, getDisplayReserveSizeUsd as computeDisplayReserveSizeUsd, getDisplayTotalBorrowedUsd as computeDisplayTotalBorrowedUsd, getAvailableToBorrowUsd, nativeToUsd } from '@/lib/scenarioSize';
+import { getDisplayAvailableLiquidityUsd as computeDisplayAvailableLiquidityUsd, getDisplayReserveSizeUsd as computeDisplayReserveSizeUsd, getDisplayTotalBorrowedUsd as computeDisplayTotalBorrowedUsd, getAvailableToBorrowUsd, nativeToUsd, getSuppliableUsd, getBorrowableUsd } from '@/lib/scenarioSize';
 import { getProtocolVersion } from '@/lib/protocolVersion';
 import {
   scrollExpandedSimulationIntoView,
@@ -433,21 +433,11 @@ const ReservesTable = ({
   };
 
   const getDisplaySupplyAvailabilityUsd = (reserve: ReserveWithSpread): number | null => {
-    const reserveSize = getDisplayReserveSizeUsd(reserve);
-    const supplyCap = nativeToUsd(reserve.supplyCap, reserve.decimals, reserve.tokenPrice);
-    if (supplyCap == null || !Number.isFinite(supplyCap) || supplyCap <= 0) return null;
-    if (reserveSize == null || !Number.isFinite(reserveSize)) return null;
-    return Math.max(0, supplyCap - reserveSize);
+    return getSuppliableUsd(reserve);
   };
 
   const getDisplayAvailableToBorrowUsd = (reserve: ReserveWithSpread): number | null => {
-    const totalBorrowed = getTotalBorrowedUsd(reserve);
-    const availableLiquidityUsd = getDisplayLiquidityUsd(reserve);
-    return getAvailableToBorrowUsd({
-      borrowedUsd: totalBorrowed,
-      borrowCapUsd: nativeToUsd(reserve.borrowCap, reserve.decimals, reserve.tokenPrice),
-      availableLiquidityUsd,
-    });
+    return getBorrowableUsd(reserve);
   };
 
   const getDisplayDeficit = (reserve: ReserveWithSpread): number | null => {

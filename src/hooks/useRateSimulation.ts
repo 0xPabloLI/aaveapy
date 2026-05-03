@@ -993,11 +993,14 @@ export function buildRateSimulationResult({
     return size;
   })();
   
-  // Calculate available supply room
-  const availableSupplyRoomUsd = 
-    supplyCapUsd !== null && supplyCapUsd > 0 && currentReserveSizeUsd !== null
+  // Calculate available supply room (prefer API suppliable, fallback to cap-size)
+  const availableSupplyRoomUsd = (() => {
+    const fromApi = nativeToUsd(reserve.suppliable, reserve.decimals, reserve.tokenPrice) ?? null;
+    if (fromApi !== null) return fromApi;
+    return supplyCapUsd !== null && supplyCapUsd > 0 && currentReserveSizeUsd !== null
       ? Math.max(supplyCapUsd - currentReserveSizeUsd, 0)
       : null;
+  })();
 
   // Cap supply input
   const supplyInputUsd = 
@@ -1039,15 +1042,16 @@ export function buildRateSimulationResult({
       })()
     : null;
 
-  // Available to borrow = min(borrow cap remaining, available liquidity)
-  // If no borrow cap, use available liquidity; if no liquidity data, use cap remaining
+  // Available to borrow = min(borrow cap remaining, available liquidity + scenario supply)
+  // For static display (no input), prefer API borrowable; for simulation, recalculate with supply added
+  const apiBorrowableUsd = nativeToUsd(reserve.borrowable, reserve.decimals, reserve.tokenPrice) ?? null;
   const availableBorrowRoomUsd = (() => {
     if (borrowCapRemainingUsd !== null && availableLiquidityForBorrowUsd !== null) {
       return Math.min(borrowCapRemainingUsd, availableLiquidityForBorrowUsd);
     }
     if (borrowCapRemainingUsd !== null) return borrowCapRemainingUsd;
     if (availableLiquidityForBorrowUsd !== null) return availableLiquidityForBorrowUsd;
-    return null;
+    return apiBorrowableUsd;
   })();
 
   // Track which constraint is binding (for UI messaging)

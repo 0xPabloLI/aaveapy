@@ -304,3 +304,35 @@ export const getDisplayReserveSizeUsd = (
     tokenPrice: scenarioInput.tokenPrice,
   });
 };
+
+export const getSuppliableUsd = (reserve: {
+  suppliable?: string | null;
+  supplyCap?: string | null;
+  reserveSize?: string | null;
+  decimals?: number | null;
+  tokenPrice?: number | null;
+}): number | null => {
+  const fromApi = nativeToUsd(reserve.suppliable, reserve.decimals, reserve.tokenPrice);
+  if (fromApi != null) return fromApi;
+  const supplyCapUsd = nativeToUsd(reserve.supplyCap, reserve.decimals, reserve.tokenPrice);
+  const reserveSizeUsd = nativeToUsd(reserve.reserveSize, reserve.decimals, reserve.tokenPrice);
+  if (supplyCapUsd == null || !Number.isFinite(supplyCapUsd) || supplyCapUsd <= 0) return null;
+  if (reserveSizeUsd == null || !Number.isFinite(reserveSizeUsd)) return null;
+  return Math.max(0, supplyCapUsd - reserveSizeUsd);
+};
+
+export const getBorrowableUsd = (reserve: {
+  borrowable?: string | null;
+  borrowCap?: string | null;
+  totalVariableDebt?: string | null;
+  availableLiquidity?: string | null;
+  decimals?: number | null;
+  tokenPrice?: number | null;
+}): number | null => {
+  const fromApi = nativeToUsd(reserve.borrowable, reserve.decimals, reserve.tokenPrice);
+  if (fromApi != null) return fromApi;
+  const borrowCapUsd = nativeToUsd(reserve.borrowCap, reserve.decimals, reserve.tokenPrice);
+  const borrowedUsd = nativeToUsd(reserve.totalVariableDebt, reserve.decimals, reserve.tokenPrice);
+  const availableLiquidityUsd = nativeToUsd(reserve.availableLiquidity, reserve.decimals, reserve.tokenPrice);
+  return getAvailableToBorrowUsd({ borrowedUsd, borrowCapUsd, availableLiquidityUsd });
+};

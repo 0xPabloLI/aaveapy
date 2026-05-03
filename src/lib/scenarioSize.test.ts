@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { convertUsdToInputValue, getDisplayAvailableLiquidityUsd, getDisplayReserveSizeUsd, getDisplayTotalBorrowedUsd, getReserveAvailableLiquidityUsd, getReserveTotalBorrowedUsd, getScenarioSupplySizeUsd, nativeToUsd } from './scenarioSize';
+import { convertUsdToInputValue, getDisplayAvailableLiquidityUsd, getDisplayReserveSizeUsd, getDisplayTotalBorrowedUsd, getReserveAvailableLiquidityUsd, getReserveTotalBorrowedUsd, getScenarioSupplySizeUsd, nativeToUsd, getSuppliableUsd, getBorrowableUsd } from './scenarioSize';
 
 describe('nativeToUsd', () => {
   it('converts raw token units to USD', () => {
@@ -269,6 +269,57 @@ describe('getDisplayReserveSizeUsd', () => {
         'v4',
         { rawSupplyInput: '500', inputMode: 'usd', tokenPrice: 1 },
       ),
+    ).toBeNull();
+  });
+});
+
+describe('getSuppliableUsd', () => {
+  it('uses API suppliable when available', () => {
+    expect(
+      getSuppliableUsd({ suppliable: '500000000000000000000', decimals: 18, tokenPrice: 2 }),
+    ).toBe(1000);
+  });
+
+  it('falls back to supplyCap - reserveSize when suppliable is missing', () => {
+    expect(
+      getSuppliableUsd({
+        supplyCap: '2000000000000000000000',
+        reserveSize: '1000000000000000000000',
+        decimals: 18,
+        tokenPrice: 1,
+      }),
+    ).toBe(1000);
+  });
+
+  it('returns null when suppliable missing and supplyCap missing', () => {
+    expect(
+      getSuppliableUsd({ reserveSize: '1000', decimals: 18, tokenPrice: 1 }),
+    ).toBeNull();
+  });
+});
+
+describe('getBorrowableUsd', () => {
+  it('uses API borrowable when available', () => {
+    expect(
+      getBorrowableUsd({ borrowable: '300000000000000000000', decimals: 18, tokenPrice: 2 }),
+    ).toBe(600);
+  });
+
+  it('falls back to getAvailableToBorrowUsd when borrowable is missing', () => {
+    expect(
+      getBorrowableUsd({
+        borrowCap: '1000000000000000000000',
+        totalVariableDebt: '400000000000000000000',
+        availableLiquidity: '700000000000000000000',
+        decimals: 18,
+        tokenPrice: 1,
+      }),
+    ).toBe(600);
+  });
+
+  it('returns null when borrowable missing and no fallback data', () => {
+    expect(
+      getBorrowableUsd({ decimals: 18, tokenPrice: 1 }),
     ).toBeNull();
   });
 });

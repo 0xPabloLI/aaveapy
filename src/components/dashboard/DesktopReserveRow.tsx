@@ -260,7 +260,7 @@ const DesktopReserveRow = memo(({
                   hubAddress={reserve.hubAddress}
                   isMobile={isMobile}
                   triggerSize={12}
-                  triggerClassName="shrink-0 self-baseline"
+                  triggerClassName="shrink-0 self-center"
                 />
               </span>
             </div>
