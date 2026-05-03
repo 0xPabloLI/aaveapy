@@ -302,7 +302,7 @@ reserves desktop table 的 8 列对齐分配：
 - 默认容器高度为 32px（`h-8`，`box-border` 固定外框尺寸），用于和桌面场景输入 `h-8` 对齐。
 - `size="chip"` 容器高度为 28px（`--ds-chip-h`，`box-border` 固定外框尺寸），用于和 `ds-chip` 对齐。
 - 横向与纵向都使用等宽 / 等高网格分段，滑块宽高跟随当前分段，避免 USD/Token 这类不同字数选项来回跳。
-- Chain/Hub 这类二选一视图切换使用默认 32px 分段，不降级为 chip 尺寸；chip 尺寸仅用于必须嵌在密集 chip 流里的次级分段。
+- 当分段控制器与筛选芯片（§5.2）同行排列时（如 Chain/Hub toggle、APR/APY toggle），使用 `size="chip"`（28px）以保持行高一致；仅当与 `h-8` 输入框对齐时（如桌面场景条 USD/Token）使用默认 32px。
 
 ### 5.2 筛选芯片（Filter Chips）
 
