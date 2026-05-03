@@ -5,6 +5,8 @@ import { formatNumberInput } from '@/lib/numberFormat';
 import { cnDsInputSurface } from '@/lib/dsInputSurface';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { getChainIconSrc } from '@/lib/chainIcons';
+import { getMarketChipLabel, isV4Market } from '@/lib/marketLabels';
 
 import { BATCH_THEME } from './batchTheme';
 import type { PortfolioPosition, PortfolioInputMode } from '@/types/portfolio';
@@ -14,6 +16,7 @@ interface PortfolioTokenRowProps {
   borrowPosition: PortfolioPosition | null;
   tokenSymbol: string;
   chainName: string;
+  marketName: string;
   onRemove: (reserveId: string) => void;
   reserveId: string;
   onUpdateAmount: (positionId: string, amount: string) => void;
@@ -25,12 +28,16 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
   borrowPosition,
   tokenSymbol,
   chainName,
+  marketName,
   onRemove,
   reserveId,
   onUpdateAmount,
   onUpdateInputMode,
 }: PortfolioTokenRowProps) {
   const isMobile = useIsMobile();
+  const chainSrc = getChainIconSrc(chainName);
+  const marketLabel = getMarketChipLabel(marketName, chainName);
+  const showV4 = isV4Market(marketName);
 
   const renderSideInput = (position: PortfolioPosition | null, sideLabel: string) => {
     if (!position) return null;
