@@ -13,7 +13,7 @@ const CACHE_KEYS = {
 const LEGACY_CACHE_KEYS = ['aave-markets-list-cache'] as const;
 
 // Bump cache version when schema changes.
-const CACHE_VERSION = '1.1.0';
+const CACHE_VERSION = '1.2.0';
 
 interface CacheEntry<T> {
   data: T;
@@ -86,8 +86,22 @@ export function clearLegacyCacheEntries(storage: StorageLike = localStorage): vo
 }
 
 // Markets cache
+const isDeficitWithoutPrice = (r: Record<string, unknown>): boolean =>
+  !!r.deficit && r.deficit !== '0' && r.deficit !== '' &&
+  (r.tokenPrice == null || !Number.isFinite(r.tokenPrice as number) || (r.tokenPrice as number) <= 0);
+
 export function getCachedMarketsEntry(): CachedPayload<MarketsResponse> | null {
-  return getCacheEntry<MarketsResponse>(CACHE_KEYS.MARKETS);
+  const entry = getCacheEntry<MarketsResponse>(CACHE_KEYS.MARKETS);
+  if (!entry) return null;
+  const reserves = entry.data?.reserves;
+  if (Array.isArray(reserves) && reserves.some(isDeficitWithoutPrice)) {
+    for (const r of reserves) {
+      if (isDeficitWithoutPrice(r as Record<string, unknown>)) {
+        (r as Record<string, unknown>).deficit = '';
+      }
+    }
+  }
+  return entry;
 }
 
 export function getCachedMarkets(): MarketsResponse | null {
