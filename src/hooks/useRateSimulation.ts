@@ -331,9 +331,10 @@ const sumMeritValues = (values?: MeritIncentive[], isApy = false): number => {
 };
 
 /**
- * Supply: reserveSize (native → USD). Borrow: borrowed USD ≈ reserveSize × utilization (Merit TVL proxy when no campaign TVL exists).
- * V4: reserveSize may be 0 or a per-Spoke slice — use on-chain totalVariableDebt for borrow side,
- *     and return undefined for supply side when reserveSize-derived USD is 0/unreliable.
+ * Supply: reserveSize (native → USD). Borrow: borrowed USD by reserveSize × utilization (Merit TVL proxy when no campaign TVL exists).
+ * V4: use on-chain totalVariableDebt for borrow side (reserveSize × utilizationPct
+ *     is cross-layer: Reserve × Hub), and return undefined for supply side when
+ *     reserveSize-derived USD is 0/unreliable.
  */
 const getMeritAnchorTvlUsd = (reserve: ReserveWithSpread, side: RateSide, protocolVersion: ProtocolVersion): number | undefined => {
   if (protocolVersion === 'v4') {

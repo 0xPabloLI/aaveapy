@@ -101,10 +101,10 @@ export const getTotalBorrowedUsd = ({
  * from the Aave Pool / Spoke contract and matches what users see on
  * app.aave.com / pro.aave.com.
  *
- * For V4, this is a Hub-level aggregate. Do NOT derive from
- * `reserveSizeUsd * utilizationPct / 100` because that mixes Hub-level
- * utilization with a reserveSize that may be 0 or a per-Spoke slice
- * (cross-layer computation — see Hub vs Reserve boundary comment above).
+ * For V4, this is a Reserve-level value (per-Spoke). Do NOT derive from
+ * `reserveSizeUsd * utilizationPct / 100` because reserveSize is
+ * Reserve-level while utilizationPct is Hub-level — cross-layer
+ * (see Hub vs Reserve boundary comment above).
  *
  * Returns `null` when any required input is missing/invalid so callers can fall
  * back to the derived calculation (V3 only).
@@ -130,12 +130,12 @@ export const getReserveTotalBorrowedUsd = (reserve: {
  * from the Aave Pool / Spoke contract and matches what users see on
  * app.aave.com / pro.aave.com.
  *
- * For V4, availableLiquidity is a Hub-level aggregate (free liquidity shared
- * across Spokes). Do NOT derive from `reserveSizeUsd - totalBorrowedUsd`
- * because reserveSizeUsd may be a per-Spoke slice while availableLiquidity
- * is Hub-level — mixing them yields a Spoke-sized fraction of the Hub
- * liquidity (cross-layer computation — see Hub vs Reserve boundary comment
- * above).
+ * For V4, availableLiquidity is Hub-level (free liquidity shared across Spokes).
+ * Do NOT derive from `reserveSizeUsd - totalBorrowedUsd` — even though both
+ * reserveSize and totalVariableDebt are Reserve-level (same-layer), the result
+ * of that subtraction is a per-Spoke remainder, NOT the Hub-level
+ * availableLiquidity. They are fundamentally different quantities in V4's
+ * architecture (see Hub vs Reserve boundary comment above).
  *
  * Returns `null` when any required input is missing/invalid so callers can fall
  * back to the derived calculation (V3 only).
@@ -236,9 +236,8 @@ export const getAvailableToBorrowUsd = ({
  * V4-aware total borrowed (USD).
  * V3: on-chain totalVariableDebt ?? reserveSizeUsd * utilizationPct / 100
  *     (V3: both Pool-level, safe)
- * V4: on-chain totalVariableDebt only (no derived fallback — reserveSize is
- *     Reserve-level while utilizationPct is Hub-level, cross-layer; also
- *     reserveSize may be 0 or a per-Spoke slice)
+ * V4: on-chain totalVariableDebt only (no derived fallback —
+ *     reserveSize(Reserve) * utilizationPct(Hub) is cross-layer)
  */
 export const getDisplayTotalBorrowedUsd = (
   reserve: {
@@ -252,8 +251,7 @@ export const getDisplayTotalBorrowedUsd = (
 ): number | null => {
   const onChain = getReserveTotalBorrowedUsd(reserve);
   if (onChain != null) return onChain;
-  // V4: cross-layer (reserveSize Reserve × utilizationPct Hub), also reserveSize
-  // may be 0 or a Spoke slice — derived value is unreliable
+  // V4: cross-layer — reserveSize(Reserve) × utilizationPct(Hub)
   if (protocolVersion === 'v4') return null;
   const reserveSizeUsd = nativeToUsd(reserve.reserveSize, reserve.decimals, reserve.tokenPrice);
   return getTotalBorrowedUsd({
@@ -266,9 +264,9 @@ export const getDisplayTotalBorrowedUsd = (
  * V4-aware available liquidity (USD).
  * V3: on-chain availableLiquidity ?? reserveSizeUsd - totalBorrowedUsd
  *     (V3: both Pool-level, safe)
- * V4: on-chain availableLiquidity only (no derived fallback — derivation
- *     involves cross-layer reserveSize × utilizationPct, and reserveSize may
- *     be 0 or a per-Spoke slice)
+ * V4: on-chain availableLiquidity only (no derived fallback —
+ *     availableLiquidity is Hub-level while reserveSize - totalBorrowed
+ *     is per-Spoke, fundamentally different quantities in V4)
  */
 export const getDisplayAvailableLiquidityUsd = (
   reserve: {
@@ -283,8 +281,7 @@ export const getDisplayAvailableLiquidityUsd = (
 ): number | null => {
   const onChain = getReserveAvailableLiquidityUsd(reserve);
   if (onChain != null) return onChain;
-  // V4: derivation uses cross-layer reserveSize × utilizationPct, and
-  // reserveSize may be 0 or a Spoke slice — derived value is unreliable
+  // V4: availableLiquidity is Hub-level; reserveSize - totalBorrowed is per-Spoke
   if (protocolVersion === 'v4') return null;
   const reserveSizeUsd = nativeToUsd(reserve.reserveSize, reserve.decimals, reserve.tokenPrice);
   const totalBorrowedUsd = getTotalBorrowedUsd({
