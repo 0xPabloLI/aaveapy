@@ -568,6 +568,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
                 tokenSymbol={entry.tokenSymbol}
                 chainName={entry.chainName}
                 marketName={entry.marketName}
+                hubName={entry.hubName}
                 supplyPosition={entry.supply}
                 borrowPosition={entry.borrow}
                 onRemove={handleRemoveToken}
