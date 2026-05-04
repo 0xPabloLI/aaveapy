@@ -455,6 +455,7 @@ const Index = () => {
               portfolioSnapshots={portfolio.snapshots}
               onRefresh={handleRefresh}
               dataUpdatedAt={dataUpdatedAt}
+              topOppsRef={topOppsRef}
             />
           </div>
 

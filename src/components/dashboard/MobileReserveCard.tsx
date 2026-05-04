@@ -792,7 +792,7 @@ const MobileReserveCard = memo(({
                   {capSheet === 'supply' && (
                     <SupplyCapSheetContent
                       currentSize={displayReserveSizeUsd ?? 0}
-                      cap={computedSupplyCapUsd!}
+                      cap={nativeToUsd(reserve.supplyCap, reserve.decimals, reserve.tokenPrice) ?? 0}
                       inputMode={inputMode}
                       tokenPrice={displayTokenPrice}
                       tokenSymbol={reserve.tokenSymbol}
@@ -801,7 +801,7 @@ const MobileReserveCard = memo(({
                   {capSheet === 'borrow' && (
                     <BorrowCapSheetContent
                       borrowed={totalBorrowedUsd ?? 0}
-                      cap={computedBorrowCapUsd!}
+                      cap={nativeToUsd(reserve.borrowCap, reserve.decimals, reserve.tokenPrice) ?? 0}
                       availableLiquidityUsd={availableLiquidityUsd ?? 0}
                       inputMode={inputMode}
                       tokenPrice={displayTokenPrice}

@@ -89,8 +89,17 @@ export function SegmentedToggle<T extends string = string>({
     <div
       ref={trackRef}
       className={cn(
-        'relative inline-grid box-border align-middle rounded-full bg-muted/60 shadow-inner shadow-black/[0.02]',
-        isChip ? 'h-[var(--ds-chip-h)] p-[2px]' : isVertical ? 'p-[3px]' : 'h-8 p-[3px]',
+        'relative inline-grid box-border align-middle bg-muted/60 shadow-inner shadow-black/[0.02]',
+        // Vertical uses softer rounded-2xl (matches card aesthetic);
+        // horizontal stays as rounded-full (pill).
+        isVertical ? 'rounded-2xl' : 'rounded-full',
+        isChip
+          ? isVertical
+            ? 'p-[2px]'
+            : 'h-[var(--ds-chip-h)] p-[2px]'
+          : isVertical
+            ? 'p-[3px]'
+            : 'h-8 p-[3px]',
         'gap-0.5',
         className,
       )}
@@ -99,10 +108,18 @@ export function SegmentedToggle<T extends string = string>({
           ? { gridTemplateRows: `repeat(${options.length}, minmax(0, 1fr))` }
           : { gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }
       }
+      role="radiogroup"
+      aria-orientation={isVertical ? 'vertical' : 'horizontal'}
     >
       {/* Sliding indicator */}
       <div
-        className="pointer-events-none absolute rounded-full bg-card shadow-[0_1px_4px_rgb(var(--ds-shadow-rgb)/0.16),0_1px_2px_rgb(var(--ds-shadow-rgb)/0.10)] motion-safe:transition-all motion-safe:duration-200 motion-safe:ease-out"
+        className={cn(
+          'pointer-events-none absolute bg-card shadow-[0_1px_4px_rgb(var(--ds-shadow-rgb)/0.16),0_1px_2px_rgb(var(--ds-shadow-rgb)/0.10)] motion-safe:transition-all motion-safe:duration-200 motion-safe:ease-out',
+          // Indicator radius mirrors the track: tighter rounded-xl for
+          // vertical (so the pill nests inside the rounded-2xl track),
+          // full pill for horizontal.
+          isVertical ? 'rounded-xl' : 'rounded-full',
+        )}
         style={{
           width: indicator.width,
           height: indicator.height,
@@ -126,10 +143,19 @@ export function SegmentedToggle<T extends string = string>({
             aria-checked={isActive}
             onClick={() => onChange(option.value)}
             className={cn(
-              'relative z-10 box-border flex w-full items-center justify-center whitespace-nowrap rounded-full font-medium leading-none transition-colors duration-200',
-              isChip ? 'min-w-[42px] px-2 text-[11px]' : 'min-w-[56px] px-3 text-[12px]',
+              'relative z-10 box-border flex w-full items-center justify-center whitespace-nowrap font-medium leading-none transition-colors duration-200',
+              // Match button radius to indicator so focus ring & hover hit areas align.
+              isVertical ? 'rounded-xl' : 'rounded-full',
+              // In vertical mode allow the button to shrink to track width;
+              // horizontal keeps a pill min-width so two segments don't collapse.
+              isVertical
+                ? isChip
+                  ? 'min-w-0 px-2 text-[11px] h-full min-h-[var(--ds-chip-h)]'
+                  : 'min-w-0 px-2.5 text-[12px] h-full min-h-[28px]'
+                : isChip
+                  ? 'min-w-[42px] px-2 text-[11px] h-full'
+                  : 'min-w-[56px] px-3 text-[12px] h-full',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
-              isVertical ? 'h-full min-h-[28px]' : 'h-full',
               isActive ? `font-semibold ${activeTextClassName}` : 'text-muted-foreground hover:text-foreground',
             )}
           >

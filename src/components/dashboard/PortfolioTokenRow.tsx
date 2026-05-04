@@ -17,6 +17,7 @@ interface PortfolioTokenRowProps {
   tokenSymbol: string;
   chainName: string;
   marketName: string;
+  hubName?: string;
   onRemove: (reserveId: string) => void;
   reserveId: string;
   onUpdateAmount: (positionId: string, amount: string) => void;
@@ -29,6 +30,7 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
   tokenSymbol,
   chainName,
   marketName,
+  hubName,
   onRemove,
   reserveId,
   onUpdateAmount,
@@ -48,7 +50,7 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
 
     return (
       <div className="flex min-w-0 flex-1 items-center gap-1.5">
-        <span className={cn('shrink-0 ds-text-12 font-semibold w-11', labelColor)}>
+        <span className={cn('shrink-0 ds-text-12 font-semibold', isMobile ? 'w-10' : 'w-11', labelColor)}>
           {sideLabel}
         </span>
         <button
@@ -96,7 +98,12 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
   };
 
   return (
-    <div className="flex items-center gap-2.5 rounded-lg border border-border/50 bg-card/80 px-2.5 py-2 transition-colors hover:border-border">
+    <div
+      className={cn(
+        'flex items-center rounded-lg border border-border/50 bg-card/80 transition-colors hover:border-border',
+        isMobile ? 'gap-1.5 px-2 py-1.5' : 'gap-2.5 px-2.5 py-2',
+      )}
+    >
       {/* Remove */}
       <button
         type="button"
@@ -107,32 +114,70 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
         <Trash2 className="size-3.5" aria-hidden />
       </button>
 
-      {/* Token info */}
-      <div className="flex min-w-0 shrink-0 items-center gap-1.5">
-        <TokenIcon symbol={tokenSymbol} size={20} />
-        <div className="flex flex-col min-w-0">
-          <span className="ds-text-12 font-semibold text-foreground truncate">
-            {tokenSymbol}
-          </span>
-          <span className="ds-text-10 text-muted-foreground inline-flex items-center gap-1 min-w-0">
-            {chainSrc && (
-              <img src={chainSrc} alt={chainName} className="size-2.5 shrink-0 opacity-70" />
-            )}
-            {showV4 && (
-              <span className="shrink-0 inline-flex items-center px-1 py-0 rounded-full text-[8px] font-medium leading-none text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10">
-                V4
+      {/* Token info — mobile: vertical stack (symbol / chain·V4·market / hub) for narrower footprint */}
+      {isMobile ? (
+        <div className="flex min-w-0 shrink-0 items-center gap-1 max-w-[40%]">
+          <TokenIcon symbol={tokenSymbol} size={18} />
+          <div className="flex flex-col min-w-0 leading-[1.15] gap-0.5">
+            <span className="ds-text-12 font-semibold text-foreground truncate">
+              {tokenSymbol}
+            </span>
+            <span className="ds-text-10 text-muted-foreground inline-flex items-center gap-0.5 min-w-0">
+              {chainSrc && (
+                <img src={chainSrc} alt={chainName} className="size-2.5 shrink-0 opacity-70" />
+              )}
+              {showV4 && (
+                <span className="shrink-0 inline-flex items-center px-1 py-0 rounded-full text-[8px] font-medium leading-none text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10">
+                  V4
+                </span>
+              )}
+              <span className="truncate">{marketLabel}</span>
+            </span>
+            {hubName && (
+              <span
+                className="shrink-0 self-start inline-flex items-center px-1 py-0 rounded-full text-[8px] font-medium leading-none text-muted-foreground bg-muted/70 ring-1 ring-border/40 max-w-full truncate"
+                title={`Hub: ${hubName}`}
+              >
+                {hubName}
               </span>
             )}
-            <span className="truncate">{marketLabel}</span>
-          </span>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="flex min-w-0 shrink-0 items-center gap-1.5">
+          <TokenIcon symbol={tokenSymbol} size={20} />
+          <div className="flex flex-col min-w-0 leading-tight">
+            <span className="ds-text-12 font-semibold text-foreground truncate">
+              {tokenSymbol}
+            </span>
+            <span className="ds-text-10 text-muted-foreground inline-flex items-center gap-0.5 min-w-0 flex-wrap">
+              {chainSrc && (
+                <img src={chainSrc} alt={chainName} className="size-2.5 shrink-0 opacity-70" />
+              )}
+              {showV4 && (
+                <span className="shrink-0 inline-flex items-center px-1 py-0 rounded-full text-[8px] font-medium leading-none text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10">
+                  V4
+                </span>
+              )}
+              <span className="truncate">{marketLabel}</span>
+              {hubName && (
+                <span
+                  className="shrink-0 inline-flex items-center px-1 py-0 rounded-full text-[8px] font-medium leading-none text-muted-foreground bg-muted/70 ring-1 ring-border/40"
+                  title={`Hub: ${hubName}`}
+                >
+                  {hubName}
+                </span>
+              )}
+            </span>
+          </div>
+        </div>
+      )}
 
-      {/* Supply + Borrow inputs — stacked on mobile (not enough horizontal room), inline on desktop */}
+      {/* Supply + Borrow inputs — stacked on mobile, inline on desktop */}
       <div
         className={cn(
           'flex min-w-0 flex-1',
-          isMobile ? 'flex-col items-stretch gap-1.5' : 'items-center gap-3',
+          isMobile ? 'flex-col items-stretch gap-1' : 'items-center gap-3',
         )}
       >
         {renderSideInput(supplyPosition, 'Supply')}

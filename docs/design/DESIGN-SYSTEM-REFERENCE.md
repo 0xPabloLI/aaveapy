@@ -304,6 +304,14 @@ reserves desktop table 的 8 列对齐分配：
 - 横向与纵向都使用等宽 / 等高网格分段，滑块宽高跟随当前分段，避免 USD/Token 这类不同字数选项来回跳。
 - 当分段控制器与筛选芯片（§5.2）同行排列时（如 Chain/Hub toggle、APR/APY toggle），使用 `size="chip"`（28px）以保持行高一致；仅当与 `h-8` 输入框对齐时（如桌面场景条 USD/Token）使用默认 32px。
 
+**形态规则（横向 vs 纵向）**：
+- **横向（默认）**：容器与活动段均为 `rounded-full` 药丸形，按钮带 `min-w-[56px]`（chip：`42px`），保证短文案对称。
+- **纵向**：容器使用 `rounded-2xl`、活动段使用 `rounded-xl`（与卡片圆角体系一致，§4.1）；按钮 `min-w-0`，宽度由父容器决定。**禁止**纵向沿用 `rounded-full`——长椭圆叠两段椭圆会产生视觉割裂。
+- **纵向高度对齐**：必须用 `className="self-stretch"` 让 toggle 与同行右侧主控件等高（如两个 input 行），不要写死 `h-*`。
+- **指示器与按钮等圆角**：`indicator` 与按钮共享同一圆角值，确保焦点环、悬停态在视觉上完美贴合。
+
+完整规范与禁止事项见 [`docs/design/segmented-toggle.md`](./segmented-toggle.md)。
+
 ### 5.2 筛选芯片（Filter Chips）
 
 用于分类、市场、hub 等筛选维度（如 All / Stables / ETH、Ethereum / Arbitrum、Core / Prime）。**所有筛选芯片统一样式，不区分单多选**。

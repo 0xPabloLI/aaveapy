@@ -74,6 +74,7 @@ interface ReservesTableProps {
   portfolioSnapshots?: import('@/types/portfolio').PortfolioSnapshot[];
   onRefresh?: () => Promise<void>;
   dataUpdatedAt?: number;
+  topOppsRef?: React.RefObject<HTMLDivElement | null>;
 }
 
 type SortMode = 'total' | 'native' | 'incentive';
@@ -103,6 +104,7 @@ const ReservesTable = ({
   portfolioSnapshots,
   onRefresh,
   dataUpdatedAt,
+  topOppsRef,
 }: ReservesTableProps) => {
   const isMobile = useIsMobile();
 
@@ -1471,7 +1473,15 @@ const ReservesTable = ({
         <ReservesTableFloatingScroll
           tableInView={tableInView}
           variant="mobile"
-          onScrollToTop={() => mobileTableRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+          onScrollToTop={() => {
+            const el = topOppsRef?.current;
+            if (el) {
+              const y = el.getBoundingClientRect().bottom + window.scrollY;
+              window.scrollTo({ top: y, behavior: 'smooth' });
+            } else {
+              mobileTableRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          }}
           onScrollToBottom={() => mobileTableRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })}
           onRefresh={onRefresh}
           dataUpdatedAt={dataUpdatedAt}
@@ -1827,7 +1837,15 @@ const ReservesTable = ({
       <ReservesTableFloatingScroll
         tableInView={tableInView}
         variant="desktop"
-        onScrollToTop={() => desktopTableCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+        onScrollToTop={() => {
+          const el = topOppsRef?.current;
+          if (el) {
+            const y = el.getBoundingClientRect().bottom + window.scrollY;
+            window.scrollTo({ top: y, behavior: 'smooth' });
+          } else {
+            desktopTableCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }}
         onScrollToBottom={() => {
           const target = desktopTableBottomAnchorRef.current ?? desktopTableCardRef.current;
           target?.scrollIntoView({ behavior: 'smooth', block: 'end' });

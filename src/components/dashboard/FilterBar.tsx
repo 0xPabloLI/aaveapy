@@ -198,9 +198,9 @@ const FilterBar = ({
 
   const handleExpandToggle = useCallback(
     (chainName: string) => {
-      setExpandedChain((prev) => (prev === chainName ? null : chainName));
+      setExpandedChain(expandedChain === chainName ? null : chainName);
     },
-    [setExpandedChain],
+    [setExpandedChain, expandedChain],
   );
 
   const handleOtherChainClick = useCallback(

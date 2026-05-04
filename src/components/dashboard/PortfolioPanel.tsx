@@ -14,6 +14,7 @@ import type { ReserveWithSpread } from '@/types/aave';
 import type { PortfolioPosition, PortfolioPositionResult, PortfolioSummary, PortfolioSnapshot } from '@/types/portfolio';
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
 import { normalizeTokenSymbolForSearch } from '@/lib/tokenSymbolNormalization';
+import { filterAndRankReservesForPortfolioSearch, getReserveTvlUsd } from '@/lib/portfolioSearch';
 import { isStablecoinSymbol, isEthRelatedSymbol, isBtcRelatedSymbol } from '@/lib/tokenCategories';
 import { getReserveKey } from '@/lib/reserveKey';
 import { getChainIconSrc } from '@/lib/chainIcons';
@@ -189,29 +190,10 @@ const PortfolioPanel = memo(function PortfolioPanel({
     requestAnimationFrame(() => searchInputRef.current?.focus());
   }, []);
 
-  const filteredReserves = useMemo(() => {
-    if (!searchQuery.trim()) return [];
-    const q = searchQuery.toLowerCase().trim();
-    const qNorm = normalizeTokenSymbolForSearch(searchQuery);
-    type Scored = { reserve: ReserveWithSpread; rank: number };
-    const scored: Scored[] = [];
-    for (const r of reserves) {
-      const sym = r.tokenSymbol.toLowerCase();
-      const symNorm = normalizeTokenSymbolForSearch(r.tokenSymbol);
-      // rank: 0 = exact, 1 = prefix, 2 = substring (lower is better)
-      let rank = -1;
-      if (sym === q || (qNorm && symNorm === qNorm)) rank = 0;
-      else if (sym.startsWith(q) || (qNorm && symNorm.startsWith(qNorm))) rank = 1;
-      else if (sym.includes(q) || (qNorm && symNorm.includes(qNorm))) rank = 2;
-      if (rank < 0) continue;
-      scored.push({ reserve: r, rank });
-    }
-    scored.sort((a, b) => {
-      if (a.rank !== b.rank) return a.rank - b.rank;
-      return (b.reserve.reserveSizeUsd ?? 0) - (a.reserve.reserveSizeUsd ?? 0);
-    });
-    return scored.slice(0, 50).map((s) => s.reserve);
-  }, [reserves, searchQuery]);
+  const filteredReserves = useMemo(
+    () => filterAndRankReservesForPortfolioSearch(reserves, searchQuery, { limit: 50 }),
+    [reserves, searchQuery],
+  );
 
   // Add both supply and borrow positions for the selected token.
   // - If both already exist: do nothing (button is disabled in search results).
@@ -282,24 +264,32 @@ const PortfolioPanel = memo(function PortfolioPanel({
   }, [canCompare, compareIds, snapshots]);
 
   const groupedByReserve = useMemo(() => {
-    const map = new Map<string, { tokenSymbol: string; chainName: string; marketName: string; supply: PortfolioPosition | null; borrow: PortfolioPosition | null }>();
+    const map = new Map<string, { tokenSymbol: string; chainName: string; marketName: string; hubName?: string; supply: PortfolioPosition | null; borrow: PortfolioPosition | null }>();
     for (const p of positions) {
       if (!map.has(p.reserveId)) {
-        map.set(p.reserveId, { tokenSymbol: p.tokenSymbol, chainName: p.chainName, marketName: p.marketName, supply: null, borrow: null });
+        const reserve = reserves.find((r) => getReserveKey(r) === p.reserveId);
+        map.set(p.reserveId, {
+          tokenSymbol: p.tokenSymbol,
+          chainName: p.chainName,
+          marketName: p.marketName,
+          hubName: reserve?.hubName,
+          supply: null,
+          borrow: null,
+        });
       }
       const entry = map.get(p.reserveId)!;
       if (p.side === 'supply') entry.supply = p;
       else entry.borrow = p;
     }
     return map;
-  }, [positions]);
+  }, [positions, reserves]);
 
   // Suggested popular tokens for quick-add: top 2 stablecoins, top 2 ETH-related,
   // and top 1 BTC-related by reserve size (TVL). Excludes already-added symbols.
   const suggestedReserves = useMemo(() => {
     const addedSymbols = new Set(positions.map((p) => p.tokenSymbol.toUpperCase()));
     const sortedBySize = [...reserves].sort(
-      (a, b) => (b.reserveSizeUsd ?? 0) - (a.reserveSizeUsd ?? 0),
+      (a, b) => getReserveTvlUsd(b) - getReserveTvlUsd(a),
     );
     const pickTop = (predicate: (sym: string) => boolean, n: number) => {
       const seen = new Set<string>();
@@ -578,6 +568,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
                 tokenSymbol={entry.tokenSymbol}
                 chainName={entry.chainName}
                 marketName={entry.marketName}
+                hubName={entry.hubName}
                 supplyPosition={entry.supply}
                 borrowPosition={entry.borrow}
                 onRemove={handleRemoveToken}
