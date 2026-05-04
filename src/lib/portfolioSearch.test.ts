@@ -42,7 +42,7 @@ describe('portfolioSearch', () => {
     it('ranks exact > prefix > substring', () => {
       const reserves: ReserveWithSpread[] = [
         mk('XETH', 'A', 1, 1),     // substring "eth"
-        mk('WETH', 'B', 1, 1),     // prefix? no - "weth" doesn't start with "eth"; substring
+        mk('WETH', 'B', 2, 1),     // substring; higher TVL than XETH
         mk('ETHX', 'C', 1, 1),     // prefix "eth"
         mk('ETH',  'D', 1, 1),     // exact
       ];
