@@ -17,6 +17,7 @@ interface PortfolioTokenRowProps {
   tokenSymbol: string;
   chainName: string;
   marketName: string;
+  hubName?: string;
   onRemove: (reserveId: string) => void;
   reserveId: string;
   onUpdateAmount: (positionId: string, amount: string) => void;
@@ -29,6 +30,7 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
   tokenSymbol,
   chainName,
   marketName,
+  hubName,
   onRemove,
   reserveId,
   onUpdateAmount,
