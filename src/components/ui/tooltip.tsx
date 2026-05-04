@@ -27,10 +27,11 @@ const TooltipContent = React.forwardRef<
       <TooltipPrimitive.Content
         ref={ref}
         sideOffset={sideOffset}
-        // 移动端统一从下往上弹出，避免左右滑动带来的“拉伸”感
         side={isMobile ? "bottom" : side}
         className={cn(
-          "z-50 max-w-[18rem] overflow-visible rounded-md border border-border/60 bg-card px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] ds-text-14 leading-tight text-foreground shadow-sm duration-200",
+          // group/tt lets <TooltipCalloutArrow /> auto-detect the actual rendered side
+          // via group-data-[side=...]/tt variants, so it follows Radix collision flips.
+          "group/tt z-50 max-w-[18rem] overflow-visible rounded-md border border-border/60 bg-card px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] ds-text-14 leading-tight text-foreground shadow-sm duration-200",
           isMobile ? mobileAnimationClasses : desktopAnimationClasses,
           className,
         )}
@@ -53,41 +54,84 @@ const TooltipArrow = React.forwardRef<
 ));
 TooltipArrow.displayName = TooltipPrimitive.Arrow.displayName;
 
-const TooltipCalloutArrow = ({ side = 'right' as const }: { side?: 'top' | 'bottom' | 'left' | 'right' }) => {
-  const borderClass = 'border-border/60';
-  const sizeClass = 'w-2.5 h-2.5';
-  const arrowBase = `${sizeClass} bg-card pointer-events-none z-20 rotate-45`;
+/**
+ * Callout arrow that integrates seamlessly with the TooltipContent border.
+ *
+ * Implementation:
+ * - Uses an SVG path with separate fill (closed triangle) + stroke (only the two
+ *   outward edges, so the base of the triangle is "open" and there's no seam where
+ *   the arrow joins the body).
+ * - Renders all four directional arrows; only the one matching the actual rendered
+ *   side becomes visible via `group-data-[side=...]/tt` variants. This means the
+ *   arrow automatically follows Radix's collision-detection flip — if the tooltip
+ *   flips from `right` to `left` because right-side viewport space is insufficient,
+ *   the arrow flips along with it.
+ * - The `side` prop is kept only for API back-compat and as a documentation hint.
+ *   It is intentionally ignored at render time.
+ */
+const TooltipCalloutArrow = (_props: { side?: 'top' | 'bottom' | 'left' | 'right' }) => {
+  const fill = 'hsl(var(--card))';
+  const stroke = 'hsl(var(--border) / 0.6)';
+  const commonStrokeProps = {
+    stroke,
+    strokeWidth: '1',
+    strokeLinejoin: 'round' as const,
+    fill: 'none' as const,
+  };
+  // Each arrow is positioned with a tiny overlap into the body (left/right/top/bottom: -8px on a 9-deep arrow)
+  // so the body's 1px border at the arrow's base is hidden inside the body — eliminating any visible seam.
 
-  switch (side) {
-    case 'right':
-      return (
-        <>
-          <div className={`absolute ${arrowBase} -left-[7px] top-1/2 -translate-y-1/2 border-b border-l ${borderClass}`} />
-          <div className="absolute -left-[1px] top-1/2 -translate-y-1/2 w-[2px] h-[11px] bg-card pointer-events-none z-10" />
-        </>
-      );
-    case 'left':
-      return (
-        <>
-          <div className={`absolute ${arrowBase} -right-[7px] top-1/2 -translate-y-1/2 border-t border-r ${borderClass}`} />
-          <div className="absolute -right-[1px] top-1/2 -translate-y-1/2 w-[2px] h-[11px] bg-card pointer-events-none z-10" />
-        </>
-      );
-    case 'bottom':
-      return (
-        <>
-          <div className={`absolute ${arrowBase} -top-[7px] left-1/2 -translate-x-1/2 border-l border-t ${borderClass}`} />
-          <div className="absolute -top-[1px] left-1/2 -translate-x-1/2 h-[2px] w-[11px] bg-card pointer-events-none z-10" />
-        </>
-      );
-    case 'top':
-      return (
-        <>
-          <div className={`absolute ${arrowBase} -bottom-[7px] left-1/2 -translate-x-1/2 border-b border-r ${borderClass}`} />
-          <div className="absolute -bottom-[1px] left-1/2 -translate-x-1/2 h-[2px] w-[11px] bg-card pointer-events-none z-10" />
-        </>
-      );
-  }
+  return (
+    <>
+      {/* tooltip on right of trigger → arrow points left (sits on body's left edge) */}
+      <svg
+        className="hidden group-data-[side=right]/tt:block absolute left-[-8px] top-1/2 -translate-y-1/2 pointer-events-none z-20"
+        width="9"
+        height="16"
+        viewBox="0 0 9 16"
+        aria-hidden
+      >
+        <path d="M9 0 L0 8 L9 16 Z" fill={fill} />
+        <path d="M9 0 L0 8 L9 16" {...commonStrokeProps} />
+      </svg>
+
+      {/* tooltip on left of trigger → arrow points right (sits on body's right edge) */}
+      <svg
+        className="hidden group-data-[side=left]/tt:block absolute right-[-8px] top-1/2 -translate-y-1/2 pointer-events-none z-20"
+        width="9"
+        height="16"
+        viewBox="0 0 9 16"
+        aria-hidden
+      >
+        <path d="M0 0 L9 8 L0 16 Z" fill={fill} />
+        <path d="M0 0 L9 8 L0 16" {...commonStrokeProps} />
+      </svg>
+
+      {/* tooltip below trigger → arrow points up (sits on body's top edge) */}
+      <svg
+        className="hidden group-data-[side=bottom]/tt:block absolute top-[-8px] left-1/2 -translate-x-1/2 pointer-events-none z-20"
+        width="16"
+        height="9"
+        viewBox="0 0 16 9"
+        aria-hidden
+      >
+        <path d="M0 9 L8 0 L16 9 Z" fill={fill} />
+        <path d="M0 9 L8 0 L16 9" {...commonStrokeProps} />
+      </svg>
+
+      {/* tooltip above trigger → arrow points down (sits on body's bottom edge) */}
+      <svg
+        className="hidden group-data-[side=top]/tt:block absolute bottom-[-8px] left-1/2 -translate-x-1/2 pointer-events-none z-20"
+        width="16"
+        height="9"
+        viewBox="0 0 16 9"
+        aria-hidden
+      >
+        <path d="M0 0 L8 9 L16 0 Z" fill={fill} />
+        <path d="M0 0 L8 9 L16 0" {...commonStrokeProps} />
+      </svg>
+    </>
+  );
 };
 
 export { Tooltip, TooltipTrigger, TooltipContent, TooltipArrow, TooltipCalloutArrow, TooltipProvider };
