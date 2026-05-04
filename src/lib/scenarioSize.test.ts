@@ -244,8 +244,8 @@ describe('getDisplayReserveSizeUsd', () => {
     expect(getDisplayReserveSizeUsd({ reserveSize: '1000000000000000000000', decimals: 18, tokenPrice: 1 }, 'v4')).toBe(1000);
   });
 
-  it('V4: returns null when reserveSize-derived USD is 0 (Hub aggregate unavailable)', () => {
-    expect(getDisplayReserveSizeUsd({ reserveSize: '0', decimals: 18, tokenPrice: 1 }, 'v4')).toBeNull();
+  it('V4: returns 0 when reserveSize-derived USD is 0 (no supply)', () => {
+    expect(getDisplayReserveSizeUsd({ reserveSize: '0', decimals: 18, tokenPrice: 1 }, 'v4')).toBe(0);
   });
 
   it('V4: returns null when reserveSize is null', () => {
@@ -262,14 +262,14 @@ describe('getDisplayReserveSizeUsd', () => {
     ).toBe(1500);
   });
 
-  it('V4: returns null with scenario input when reserveSize is 0', () => {
+  it('V4: applies scenario input when reserveSize is 0', () => {
     expect(
       getDisplayReserveSizeUsd(
         { reserveSize: '0', decimals: 18, tokenPrice: 1, supplyCap: '2000000000000000000000' },
         'v4',
         { rawSupplyInput: '500', inputMode: 'usd', tokenPrice: 1 },
       ),
-    ).toBeNull();
+    ).toBe(500);
   });
 });
 

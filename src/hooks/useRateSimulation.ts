@@ -975,8 +975,8 @@ export function buildRateSimulationResult({
   // In USD mode, convert to token amounts for native simulation
   const supplyAmount = inputMode === 'usd' && tokenPrice ? rawSupply / tokenPrice : rawSupply;
   const borrowAmount = inputMode === 'usd' && tokenPrice ? rawBorrow / tokenPrice : rawBorrow;
-  const hasSupplyInput = rawSupply > 0;
-  const hasBorrowInput = rawBorrow > 0;
+  const hasSupplyInput = reserve.supplyDisabled ? false : rawSupply > 0;
+  const hasBorrowInput = reserve.borrowDisabled ? false : rawBorrow > 0;
   const hasAnyInput = hasSupplyInput || hasBorrowInput;
 
   // For incentive forecasts, we need USD values
@@ -986,13 +986,7 @@ export function buildRateSimulationResult({
   // Calculate cap constraints for capping inputs
   const supplyCapUsd = nativeToUsd(reserve.supplyCap, reserve.decimals, reserve.tokenPrice) ?? null;
   const borrowCapUsd = nativeToUsd(reserve.borrowCap, reserve.decimals, reserve.tokenPrice) ?? null;
-  // V4: reserveSize is Hub-level aggregate; may be 0 or a per-Spoke slice.
-  // Treat as null to avoid cross-layer fallback (supplyCap is reserve-level).
-  const currentReserveSizeUsd = (() => {
-    const size = nativeToUsd(reserve.reserveSize, reserve.decimals, reserve.tokenPrice) ?? null;
-    if (getProtocolVersion(reserve.marketName) === 'v4' && (size === null || size === 0)) return null;
-    return size;
-  })();
+  const currentReserveSizeUsd = nativeToUsd(reserve.reserveSize, reserve.decimals, reserve.tokenPrice) ?? null;
   
   // Calculate available supply room (prefer API suppliable, fallback to cap-size)
   const availableSupplyRoomUsd = (() => {
@@ -1344,9 +1338,9 @@ export function buildRateSimulationResult({
   );
 
   const supplyLane: SimulationLane = {
-    hasInput: hasSupplyInput,
-    inputAmount: supplyAmount,
-    inputUsd: supplyInputUsd,
+    hasInput: reserve.supplyDisabled ? false : hasSupplyInput,
+    inputAmount: reserve.supplyDisabled ? 0 : supplyAmount,
+    inputUsd: reserve.supplyDisabled ? 0 : supplyInputUsd,
     currentNative: supplyCurrentNative,
     currentIncentive: supplyCurrentIncentive,
     currentTotal: supplyCurrentTotal,
@@ -1377,9 +1371,9 @@ export function buildRateSimulationResult({
   };
 
   const borrowLane: SimulationLane = {
-    hasInput: hasBorrowInput,
-    inputAmount: borrowAmount,
-    inputUsd: borrowInputUsd,
+    hasInput: reserve.borrowDisabled ? false : hasBorrowInput,
+    inputAmount: reserve.borrowDisabled ? 0 : borrowAmount,
+    inputUsd: reserve.borrowDisabled ? 0 : borrowInputUsd,
     currentNative: borrowCurrentNative,
     currentIncentive: borrowCurrentIncentive,
     currentTotal: borrowCurrentTotal,

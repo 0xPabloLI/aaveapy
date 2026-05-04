@@ -238,13 +238,8 @@ const SimulationSubRow = ({
     onCorrectBorrowInput(convertUsdToInputValue(availableBorrowRoomUsd, inputMode, simulation.tokenPrice));
   };
 
-  // V4: reserveSize may be 0 or a per-Spoke slice — treat as null to avoid misleading cap checks
   const currentSupplySizeUsd = (() => {
     const size = nativeToUsd(reserve.reserveSize, reserve.decimals, reserve.tokenPrice);
-    if (getProtocolVersion(reserve.marketName) === 'v4') {
-      if (size != null && Number.isFinite(size) && size > 0) return size;
-      return null;
-    }
     return size != null && Number.isFinite(size) ? size : null;
   })();
   const afterSupplySizeUsd =

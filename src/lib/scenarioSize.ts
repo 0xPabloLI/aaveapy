@@ -218,13 +218,13 @@ export const getAvailableToBorrowUsd = ({
  *   - min(borrowCapRemaining(reserve), availableLiquidity(hub)) → valid for V4
  *     (verified against on-chain data, except when borrowDisabled=true)
  *   - reserveSize(reserve) * utilizationPct(hub) → cross-layer for V4,
- *     and reserveSize may be 0 or a Spoke slice making the product inaccurate
+ *     unreliable when reserveSize is a per-Spoke slice
  *
  * ## Fallback policy
  *
  * V3: All fields are Pool-level (single layer), so on-chain ?? derived is safe.
- * V4: On-chain field only — derived fallbacks that rely on unreliable reserveSize
- *     or mix Hub/Reserve scopes are invalid. Return null (display "—" in UI).
+ * V4: On-chain field only — derived fallbacks that involve cross-layer
+ *     reserveSize × utilizationPct are invalid. Return null (display "—" in UI).
  *
  * All three display functions share the same pattern:
  *   1. Try on-chain source of truth
@@ -299,11 +299,7 @@ export const getDisplayAvailableLiquidityUsd = (
 
 /**
  * V4-aware reserve supply size (USD).
- * V3: reserveSizeUsd (reliable Pool-level aggregate) + scenario input
- * V4: reserveSizeUsd only if non-zero and plausible; otherwise null.
- *      For V4, reserveSizeUsd=0 means the Reserve's supplied amount is
- *      not available or is a zero-valued Spoke, so showing 0 is
- *      misleading — return null instead.
+ * V3/V4: reserveSizeUsd (Reserve-level, per-Spoke) + scenario input
  */
 export const getDisplayReserveSizeUsd = (
   reserve: {
@@ -320,9 +316,6 @@ export const getDisplayReserveSizeUsd = (
   },
 ): number | null => {
   const reserveSizeUsd = nativeToUsd(reserve.reserveSize, reserve.decimals, reserve.tokenPrice);
-  if (protocolVersion === 'v4' && (reserveSizeUsd == null || reserveSizeUsd === 0)) {
-    return null;
-  }
   if (reserveSizeUsd == null || !Number.isFinite(reserveSizeUsd)) return reserveSizeUsd ?? null;
 
   if (!scenarioInput) return reserveSizeUsd;
