@@ -264,17 +264,25 @@ const PortfolioPanel = memo(function PortfolioPanel({
   }, [canCompare, compareIds, snapshots]);
 
   const groupedByReserve = useMemo(() => {
-    const map = new Map<string, { tokenSymbol: string; chainName: string; marketName: string; supply: PortfolioPosition | null; borrow: PortfolioPosition | null }>();
+    const map = new Map<string, { tokenSymbol: string; chainName: string; marketName: string; hubName?: string; supply: PortfolioPosition | null; borrow: PortfolioPosition | null }>();
     for (const p of positions) {
       if (!map.has(p.reserveId)) {
-        map.set(p.reserveId, { tokenSymbol: p.tokenSymbol, chainName: p.chainName, marketName: p.marketName, supply: null, borrow: null });
+        const reserve = reserves.find((r) => getReserveKey(r) === p.reserveId);
+        map.set(p.reserveId, {
+          tokenSymbol: p.tokenSymbol,
+          chainName: p.chainName,
+          marketName: p.marketName,
+          hubName: reserve?.hubName,
+          supply: null,
+          borrow: null,
+        });
       }
       const entry = map.get(p.reserveId)!;
       if (p.side === 'supply') entry.supply = p;
       else entry.borrow = p;
     }
     return map;
-  }, [positions]);
+  }, [positions, reserves]);
 
   // Suggested popular tokens for quick-add: top 2 stablecoins, top 2 ETH-related,
   // and top 1 BTC-related by reserve size (TVL). Excludes already-added symbols.
