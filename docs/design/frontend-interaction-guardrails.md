@@ -225,6 +225,11 @@ Set on the desktop table card (`desktopTableCardRef` in `ReservesTable.tsx`). **
 
 ## B. AaveAPY-specific guardrails (app-specific)
 
+### Top Opportunities frozen/paused filter (normative)
+
+- **Top Opportunities 必须排除 frozen 和 paused 的 reserve**: `reservesWithTotals` 在 `map` 之后必须 `.filter(r => !r.isFrozen && !r.isPaused)`，这样 Stable / ETH / BTC / Looping 四个分类都不会展示不可操作的资产。
+- **原因**: frozen/paused 的 reserve 无法进行 supply/borrow 操作，展示在 Top Opportunity 中会误导用户点击，且由于 `handleTopCardClick` 不重置 `showFrozenOrPaused` 过滤器，点击后无法跳转到 ReservesTable 中对应的行（该行被过滤隐藏），导致跳转静默失败。
+
 ### API freshness guardrail (`staleTime` + HTTP cache)
 
 - Treat `staleTime` as the single source of truth for **when** the UI should re-check backend freshness.
