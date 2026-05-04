@@ -94,7 +94,7 @@ export function getCachedMarketsEntry(): CachedPayload<MarketsResponse> | null {
   const entry = getCacheEntry<MarketsResponse>(CACHE_KEYS.MARKETS);
   if (!entry) return null;
   const reserves = entry.data?.reserves;
-  if (Array.isArray(reserves) && (reserves as unknown as Record<string, unknown>[]).some(isDeficitWithoutPrice)) {
+  if (Array.isArray(reserves) && reserves.some(isDeficitWithoutPrice)) {
     for (const r of reserves) {
       if (isDeficitWithoutPrice(r as Record<string, unknown>)) {
         (r as Record<string, unknown>).deficit = '';
