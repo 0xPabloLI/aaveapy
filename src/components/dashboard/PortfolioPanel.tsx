@@ -14,6 +14,7 @@ import type { ReserveWithSpread } from '@/types/aave';
 import type { PortfolioPosition, PortfolioPositionResult, PortfolioSummary, PortfolioSnapshot } from '@/types/portfolio';
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
 import { normalizeTokenSymbolForSearch } from '@/lib/tokenSymbolNormalization';
+import { filterAndRankReservesForPortfolioSearch, getReserveTvlUsd } from '@/lib/portfolioSearch';
 import { isStablecoinSymbol, isEthRelatedSymbol, isBtcRelatedSymbol } from '@/lib/tokenCategories';
 import { getReserveKey } from '@/lib/reserveKey';
 import { getChainIconSrc } from '@/lib/chainIcons';
@@ -189,29 +190,10 @@ const PortfolioPanel = memo(function PortfolioPanel({
     requestAnimationFrame(() => searchInputRef.current?.focus());
   }, []);
 
-  const filteredReserves = useMemo(() => {
-    if (!searchQuery.trim()) return [];
-    const q = searchQuery.toLowerCase().trim();
-    const qNorm = normalizeTokenSymbolForSearch(searchQuery);
-    type Scored = { reserve: ReserveWithSpread; rank: number };
-    const scored: Scored[] = [];
-    for (const r of reserves) {
-      const sym = r.tokenSymbol.toLowerCase();
-      const symNorm = normalizeTokenSymbolForSearch(r.tokenSymbol);
-      // rank: 0 = exact, 1 = prefix, 2 = substring (lower is better)
-      let rank = -1;
-      if (sym === q || (qNorm && symNorm === qNorm)) rank = 0;
-      else if (sym.startsWith(q) || (qNorm && symNorm.startsWith(qNorm))) rank = 1;
-      else if (sym.includes(q) || (qNorm && symNorm.includes(qNorm))) rank = 2;
-      if (rank < 0) continue;
-      scored.push({ reserve: r, rank });
-    }
-    scored.sort((a, b) => {
-      if (a.rank !== b.rank) return a.rank - b.rank;
-      return (b.reserve.reserveSizeUsd ?? 0) - (a.reserve.reserveSizeUsd ?? 0);
-    });
-    return scored.slice(0, 50).map((s) => s.reserve);
-  }, [reserves, searchQuery]);
+  const filteredReserves = useMemo(
+    () => filterAndRankReservesForPortfolioSearch(reserves, searchQuery, { limit: 50 }),
+    [reserves, searchQuery],
+  );
 
   // Add both supply and borrow positions for the selected token.
   // - If both already exist: do nothing (button is disabled in search results).
