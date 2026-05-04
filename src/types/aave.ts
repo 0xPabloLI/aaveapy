@@ -62,7 +62,38 @@ export interface BrevisIncentive extends Omit<CampaignGroup<BrevisCampaignBreakd
   campaignId?: string;                 // Legacy shared campaign id fallback
 }
 
-export interface ReserveWithSpread {
+/**
+ * Compile-time ban for reserve-derived USD fields.
+ *
+ * The backend NO LONGER returns precomputed `*Usd` fields on reserves
+ * (e.g. `reserveSizeUsd`, `totalBorrowedUsd`, `availableLiquidityUsd`,
+ * `totalSuppliedUsd`, `borrowedUsd`, `suppliableUsd`, `borrowableUsd`).
+ *
+ * All USD values MUST be derived in the frontend through the canonical
+ * helpers in `src/lib/scenarioSize.ts`:
+ *   - `nativeToUsd(raw, decimals, tokenPrice)` — base primitive
+ *   - `getDisplayReserveSizeUsd` / `getDisplayTotalBorrowedUsd` /
+ *     `getDisplayAvailableLiquidityUsd` — V4-aware display values
+ *   - `getSuppliableUsd` / `getBorrowableUsd` / `getAvailableToBorrowUsd`
+ *   - `getReserveTvlUsd` (for portfolio search)
+ *
+ * Each banned key is typed as `never` so any access like
+ * `reserve.reserveSizeUsd` produces a TypeScript error and the build
+ * fails at the compile step. Do NOT remove without team review.
+ */
+export type BannedReserveUsdFields = {
+  reserveSizeUsd?: never;
+  totalSuppliedUsd?: never;
+  totalBorrowedUsd?: never;
+  borrowedUsd?: never;
+  availableLiquidityUsd?: never;
+  suppliableUsd?: never;
+  borrowableUsd?: never;
+  supplyCapUsd?: never;
+  borrowCapUsd?: never;
+};
+
+export interface ReserveWithSpread extends BannedReserveUsdFields {
   // Basic information
   marketName: string;
   chainName: string;
