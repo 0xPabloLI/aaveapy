@@ -50,7 +50,7 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
 
     return (
       <div className="flex min-w-0 flex-1 items-center gap-1.5">
-        <span className={cn('shrink-0 ds-text-12 font-semibold w-11', labelColor)}>
+        <span className={cn('shrink-0 ds-text-12 font-semibold', isMobile ? 'w-10' : 'w-11', labelColor)}>
           {sideLabel}
         </span>
         <button
