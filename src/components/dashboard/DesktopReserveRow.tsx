@@ -387,6 +387,7 @@ const DesktopReserveRow = memo(({
                 borrowed={totalBorrowedUsd}
                 cap={computedBorrowCapUsd}
                 availableLiquidityUsd={availableLiquidityUsd}
+                disabled={reserve.borrowDisabled}
                 displayMode={inputMode}
                 tokenPrice={displayTokenPrice}
                 tokenSymbol={reserve.tokenSymbol}

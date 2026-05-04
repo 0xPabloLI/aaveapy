@@ -63,6 +63,7 @@ export function BorrowCapSheetContent({
   inputMode,
   tokenPrice,
   tokenSymbol,
+  borrowDisabled,
 }: {
   borrowed: number;
   cap: number;
@@ -70,13 +71,16 @@ export function BorrowCapSheetContent({
   inputMode: 'usd' | 'token';
   tokenPrice?: number | null;
   tokenSymbol?: string | null;
+  borrowDisabled?: boolean;
 }) {
   const percentage = Math.min((borrowed / cap) * 100, 100);
-  const availableToBorrow = getAvailableToBorrowUsd({
-    borrowedUsd: borrowed,
-    borrowCapUsd: cap,
-    availableLiquidityUsd,
-  }) ?? 0;
+  const availableToBorrow = borrowDisabled
+    ? 0
+    : getAvailableToBorrowUsd({
+        borrowedUsd: borrowed,
+        borrowCapUsd: cap,
+        availableLiquidityUsd,
+      }) ?? 0;
   const colorClass =
     percentage >= 95 ? 'text-amber-600' : percentage >= 80 ? 'text-amber-500' : 'ds-text-brand-cyan';
   return (

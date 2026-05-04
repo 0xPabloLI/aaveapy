@@ -211,6 +211,7 @@ function MobileReserveAmountRow({
               borrowed={totalBorrowedUsd}
               cap={computedBorrowCapUsd}
               availableLiquidityUsd={availableLiquidityUsd}
+              disabled={reserve.borrowDisabled}
               displayMode={inputMode}
               tokenPrice={displayTokenPrice}
               tokenSymbol={reserve.tokenSymbol}
@@ -799,6 +800,7 @@ const MobileReserveCard = memo(({
                       inputMode={inputMode}
                       tokenPrice={displayTokenPrice}
                       tokenSymbol={reserve.tokenSymbol}
+                      borrowDisabled={reserve.borrowDisabled}
                     />
                   )}
                   {capSheet === 'utilization' && optimalPct != null && displayUtilization != null && (

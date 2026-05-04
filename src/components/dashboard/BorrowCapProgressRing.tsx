@@ -8,6 +8,7 @@ interface BorrowCapProgressRingProps {
   borrowed: number | null | undefined;
   cap: number | null | undefined;
   availableLiquidityUsd: number | null | undefined;
+  disabled?: boolean;
   displayMode?: 'usd' | 'token';
   tokenPrice?: number | null;
   tokenSymbol?: string | null;
@@ -25,6 +26,7 @@ const BorrowCapProgressRing = memo(({
   borrowed,
   cap,
   availableLiquidityUsd,
+  disabled = false,
   displayMode = 'usd',
   tokenPrice,
   tokenSymbol,
@@ -45,9 +47,9 @@ const BorrowCapProgressRing = memo(({
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
-  const capRemaining = Math.max(0, cap - currentBorrowed);
+  const capRemaining = disabled ? 0 : Math.max(0, cap - currentBorrowed);
   const liquidityRemaining = availableLiquidityUsd ?? 0;
-  const availableToBorrow = Math.min(capRemaining, liquidityRemaining);
+  const availableToBorrow = disabled ? 0 : Math.min(capRemaining, liquidityRemaining);
 
   const getProgressColor = () => {
     if (percentage >= 95) return 'rgb(var(--ds-amber-600-rgb, 217 119 6))';
