@@ -104,20 +104,35 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
         isMobile ? 'gap-1.5 px-2 py-1.5' : 'gap-2.5 px-2.5 py-2',
       )}
     >
-      {/* Remove */}
-      <button
-        type="button"
-        onClick={() => onRemove(reserveId)}
-        className={`shrink-0 rounded-md p-1 text-muted-foreground/60 transition-colors ${BATCH_THEME.trashHoverBg} ${BATCH_THEME.trashHoverText}`}
-        aria-label={`Remove ${tokenSymbol} from portfolio`}
-      >
-        <Trash2 className="size-3.5" aria-hidden />
-      </button>
+      {/* Remove — desktop only as a separate column. On mobile it overlays the token icon (hover/tap reveals trash). */}
+      {!isMobile && (
+        <button
+          type="button"
+          onClick={() => onRemove(reserveId)}
+          className={`shrink-0 rounded-md p-1 text-muted-foreground/60 transition-colors ${BATCH_THEME.trashHoverBg} ${BATCH_THEME.trashHoverText}`}
+          aria-label={`Remove ${tokenSymbol} from portfolio`}
+        >
+          <Trash2 className="size-3.5" aria-hidden />
+        </button>
+      )}
 
       {/* Token info — mobile: vertical stack (symbol / chain·V4·market / hub) for narrower footprint */}
       {isMobile ? (
         <div className="flex min-w-0 shrink-0 items-center gap-1 max-w-[40%]">
-          <TokenIcon symbol={tokenSymbol} size={18} />
+          {/* Token icon doubles as remove button on mobile (saves a column) */}
+          <button
+            type="button"
+            onClick={() => onRemove(reserveId)}
+            className="group relative shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-label={`Remove ${tokenSymbol} from portfolio`}
+          >
+            <TokenIcon symbol={tokenSymbol} size={18} />
+            <span
+              className={`pointer-events-none absolute inset-0 flex items-center justify-center rounded-full bg-background/85 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100 group-active:opacity-100 ${BATCH_THEME.trashHoverText}`}
+            >
+              <Trash2 className="size-3" aria-hidden />
+            </span>
+          </button>
           <div className="flex flex-col min-w-0 leading-[1.15] gap-0.5">
             <span className="ds-text-12 font-semibold text-foreground truncate">
               {tokenSymbol}
