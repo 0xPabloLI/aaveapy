@@ -114,34 +114,64 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
         <Trash2 className="size-3.5" aria-hidden />
       </button>
 
-      {/* Token info — compact on mobile: smaller logo, tighter gap, hub badge inline */}
-      <div className={cn('flex min-w-0 shrink-0 items-center', isMobile ? 'gap-1 max-w-[44%]' : 'gap-1.5')}>
-        <TokenIcon symbol={tokenSymbol} size={isMobile ? 18 : 20} />
-        <div className="flex flex-col min-w-0 leading-tight">
-          <span className="ds-text-12 font-semibold text-foreground truncate">
-            {tokenSymbol}
-          </span>
-          <span className="ds-text-10 text-muted-foreground inline-flex items-center gap-0.5 min-w-0 flex-wrap">
-            {chainSrc && (
-              <img src={chainSrc} alt={chainName} className="size-2.5 shrink-0 opacity-70" />
-            )}
-            {showV4 && (
-              <span className="shrink-0 inline-flex items-center px-1 py-0 rounded-full text-[8px] font-medium leading-none text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10">
-                V4
-              </span>
-            )}
-            <span className="truncate">{marketLabel}</span>
+      {/* Token info — mobile: vertical stack (symbol / chain·V4·market / hub) for narrower footprint */}
+      {isMobile ? (
+        <div className="flex min-w-0 shrink-0 items-center gap-1 max-w-[40%]">
+          <TokenIcon symbol={tokenSymbol} size={18} />
+          <div className="flex flex-col min-w-0 leading-[1.15] gap-0.5">
+            <span className="ds-text-12 font-semibold text-foreground truncate">
+              {tokenSymbol}
+            </span>
+            <span className="ds-text-10 text-muted-foreground inline-flex items-center gap-0.5 min-w-0">
+              {chainSrc && (
+                <img src={chainSrc} alt={chainName} className="size-2.5 shrink-0 opacity-70" />
+              )}
+              {showV4 && (
+                <span className="shrink-0 inline-flex items-center px-1 py-0 rounded-full text-[8px] font-medium leading-none text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10">
+                  V4
+                </span>
+              )}
+              <span className="truncate">{marketLabel}</span>
+            </span>
             {hubName && (
               <span
-                className="shrink-0 inline-flex items-center px-1 py-0 rounded-full text-[8px] font-medium leading-none text-muted-foreground bg-muted/70 ring-1 ring-border/40"
+                className="shrink-0 self-start inline-flex items-center px-1 py-0 rounded-full text-[8px] font-medium leading-none text-muted-foreground bg-muted/70 ring-1 ring-border/40 max-w-full truncate"
                 title={`Hub: ${hubName}`}
               >
                 {hubName}
               </span>
             )}
-          </span>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="flex min-w-0 shrink-0 items-center gap-1.5">
+          <TokenIcon symbol={tokenSymbol} size={20} />
+          <div className="flex flex-col min-w-0 leading-tight">
+            <span className="ds-text-12 font-semibold text-foreground truncate">
+              {tokenSymbol}
+            </span>
+            <span className="ds-text-10 text-muted-foreground inline-flex items-center gap-0.5 min-w-0 flex-wrap">
+              {chainSrc && (
+                <img src={chainSrc} alt={chainName} className="size-2.5 shrink-0 opacity-70" />
+              )}
+              {showV4 && (
+                <span className="shrink-0 inline-flex items-center px-1 py-0 rounded-full text-[8px] font-medium leading-none text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10">
+                  V4
+                </span>
+              )}
+              <span className="truncate">{marketLabel}</span>
+              {hubName && (
+                <span
+                  className="shrink-0 inline-flex items-center px-1 py-0 rounded-full text-[8px] font-medium leading-none text-muted-foreground bg-muted/70 ring-1 ring-border/40"
+                  title={`Hub: ${hubName}`}
+                >
+                  {hubName}
+                </span>
+              )}
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Supply + Borrow inputs — stacked on mobile, inline on desktop */}
       <div
