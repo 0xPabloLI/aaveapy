@@ -31,7 +31,7 @@ import {
 } from '@/lib/deficit';
 import { RateSimulationResult } from '@/hooks/useRateSimulation';
 
-import { getDisplayAvailableLiquidityUsd, getDisplayReserveSizeUsd, getDisplayTotalBorrowedUsd, nativeToUsd } from '@/lib/scenarioSize';
+import { getDisplayAvailableLiquidityUsd, getDisplayTotalBorrowedUsd, nativeToUsd, getScenarioSupplySizeUsd } from '@/lib/scenarioSize';
 import { buildPoolExplorerUrl } from '@/lib/poolExplorerLinks';
 import { buildAaveProHubUrl } from '@/lib/aaveLinks';
 import { getProtocolVersion } from '@/lib/protocolVersion';
@@ -459,11 +459,17 @@ const MobileReserveCard = memo(({
       ? reserve.tokenPrice
       : null;
   const protocolVersion = getProtocolVersion(reserve.marketName);
-  const displayReserveSizeUsd = getDisplayReserveSizeUsd(reserve, protocolVersion, {
-    rawSupplyInput: hasSharedScenario ? supplyInput : '',
-    inputMode,
-    tokenPrice: displayTokenPrice,
-  });
+  const displayReserveSizeUsd = (() => {
+    const usd = nativeToUsd(reserve.reserveSize, reserve.decimals, reserve.tokenPrice);
+    if (usd == null || !Number.isFinite(usd)) return usd ?? null;
+    return getScenarioSupplySizeUsd({
+      reserveSizeUsd: usd,
+      supplyCapUsd: nativeToUsd(reserve.supplyCap, reserve.decimals, reserve.tokenPrice),
+      rawSupplyInput: hasSharedScenario ? supplyInput : '',
+      inputMode,
+      tokenPrice: displayTokenPrice,
+    });
+  })();
   const baseTotalBorrowedUsd = simulation?.marketMetrics.totalBorrowedUsd ?? getDisplayTotalBorrowedUsd(reserve, protocolVersion);
   const totalBorrowedUsd = simulation?.marketMetrics.totalBorrowedUsdAfter ?? baseTotalBorrowedUsd;
   const baseAvailableLiquidityUsd = simulation?.marketMetrics.availableLiquidityUsd ?? getDisplayAvailableLiquidityUsd(reserve, protocolVersion);

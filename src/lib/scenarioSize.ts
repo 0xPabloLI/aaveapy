@@ -295,37 +295,6 @@ export const getDisplayAvailableLiquidityUsd = (
 };
 
 /**
- * V4-aware reserve supply size (USD).
- * V3/V4: reserveSizeUsd (Reserve-level, per-Spoke) + scenario input
- */
-export const getDisplayReserveSizeUsd = (
-  reserve: {
-    reserveSize?: string | null;
-    decimals?: number | null;
-    tokenPrice?: number | null;
-    supplyCap?: string | null;
-  },
-  protocolVersion: ProtocolVersion,
-  scenarioInput?: {
-    rawSupplyInput: string;
-    inputMode: ScenarioDisplayMode;
-    tokenPrice?: number | null;
-  },
-): number | null => {
-  const reserveSizeUsd = nativeToUsd(reserve.reserveSize, reserve.decimals, reserve.tokenPrice);
-  if (reserveSizeUsd == null || !Number.isFinite(reserveSizeUsd)) return reserveSizeUsd ?? null;
-
-  if (!scenarioInput) return reserveSizeUsd;
-  return getScenarioSupplySizeUsd({
-    reserveSizeUsd,
-    supplyCapUsd: nativeToUsd(reserve.supplyCap, reserve.decimals, reserve.tokenPrice),
-    rawSupplyInput: scenarioInput.rawSupplyInput,
-    inputMode: scenarioInput.inputMode,
-    tokenPrice: scenarioInput.tokenPrice,
-  });
-};
-
-/**
  * Suppliable USD — how much more can be supplied.
  * Both Reserve-level: supplyCap and reserveSize are per-Spoke.
  *

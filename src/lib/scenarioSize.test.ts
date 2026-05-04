@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { convertUsdToInputValue, getDisplayAvailableLiquidityUsd, getDisplayReserveSizeUsd, getDisplayTotalBorrowedUsd, getReserveAvailableLiquidityUsd, getReserveTotalBorrowedUsd, getScenarioSupplySizeUsd, nativeToUsd, getSuppliableUsd, getBorrowableUsd } from './scenarioSize';
+import { convertUsdToInputValue, getDisplayAvailableLiquidityUsd, getDisplayTotalBorrowedUsd, getReserveAvailableLiquidityUsd, getReserveTotalBorrowedUsd, getScenarioSupplySizeUsd, nativeToUsd, getSuppliableUsd, getBorrowableUsd } from './scenarioSize';
 
 describe('nativeToUsd', () => {
   it('converts raw token units to USD', () => {
@@ -231,44 +231,43 @@ describe('getDisplayAvailableLiquidityUsd', () => {
   });
 });
 
-describe('getDisplayReserveSizeUsd', () => {
-  it('V3: returns nativeToUsd when valid', () => {
-    expect(getDisplayReserveSizeUsd({ reserveSize: '1000000000000000000000', decimals: 18, tokenPrice: 1 }, 'v3')).toBe(1000);
+describe('getScenarioSupplySizeUsd (reserve size context)', () => {
+  it('returns nativeToUsd when no scenario input (via getScenarioSupplySizeUsd with zero input)', () => {
+    const reserveSizeUsd = nativeToUsd('1000000000000000000000', 18, 1);
+    expect(getScenarioSupplySizeUsd({ reserveSizeUsd, supplyCapUsd: null, rawSupplyInput: '', inputMode: 'usd', tokenPrice: 1 })).toBe(1000);
   });
 
-  it('V3: returns null when reserveSize is null', () => {
-    expect(getDisplayReserveSizeUsd({ reserveSize: null, decimals: 18, tokenPrice: 1 }, 'v3')).toBeNull();
+  it('returns null when reserveSizeUsd is null', () => {
+    const reserveSizeUsd = nativeToUsd(null, 18, 1);
+    expect(reserveSizeUsd).toBeNull();
   });
 
-  it('V4: returns nativeToUsd when non-zero', () => {
-    expect(getDisplayReserveSizeUsd({ reserveSize: '1000000000000000000000', decimals: 18, tokenPrice: 1 }, 'v4')).toBe(1000);
+  it('returns 0 when reserveSize-derived USD is 0', () => {
+    const reserveSizeUsd = nativeToUsd('0', 18, 1);
+    expect(reserveSizeUsd).toBe(0);
   });
 
-  it('V4: returns 0 when reserveSize-derived USD is 0 (no supply)', () => {
-    expect(getDisplayReserveSizeUsd({ reserveSize: '0', decimals: 18, tokenPrice: 1 }, 'v4')).toBe(0);
-  });
-
-  it('V4: returns null when reserveSize is null', () => {
-    expect(getDisplayReserveSizeUsd({ reserveSize: null, decimals: 18, tokenPrice: 1 }, 'v4')).toBeNull();
-  });
-
-  it('V4: applies scenario input when reserveSize is non-zero', () => {
+  it('applies scenario input when reserveSize is non-zero', () => {
     expect(
-      getDisplayReserveSizeUsd(
-        { reserveSize: '1000000000000000000000', decimals: 18, tokenPrice: 1, supplyCap: '2000000000000000000000' },
-        'v4',
-        { rawSupplyInput: '500', inputMode: 'usd', tokenPrice: 1 },
-      ),
+      getScenarioSupplySizeUsd({
+        reserveSizeUsd: 1000,
+        supplyCapUsd: 2000,
+        rawSupplyInput: '500',
+        inputMode: 'usd',
+        tokenPrice: 1,
+      }),
     ).toBe(1500);
   });
 
-  it('V4: applies scenario input when reserveSize is 0', () => {
+  it('applies scenario input when reserveSize is 0', () => {
     expect(
-      getDisplayReserveSizeUsd(
-        { reserveSize: '0', decimals: 18, tokenPrice: 1, supplyCap: '2000000000000000000000' },
-        'v4',
-        { rawSupplyInput: '500', inputMode: 'usd', tokenPrice: 1 },
-      ),
+      getScenarioSupplySizeUsd({
+        reserveSizeUsd: 0,
+        supplyCapUsd: 2000,
+        rawSupplyInput: '500',
+        inputMode: 'usd',
+        tokenPrice: 1,
+      }),
     ).toBe(500);
   });
 });

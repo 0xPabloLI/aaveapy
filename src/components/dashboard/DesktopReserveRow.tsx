@@ -30,7 +30,7 @@ import AssetActionMenu from './AssetActionMenu';
 import { BATCH_RESERVE_ADD_BUTTON_CLASSES } from './batchTheme';
 import type { RateSimulationResult, ScenarioInputMode } from '@/hooks/useRateSimulation';
 
-import { getDisplayAvailableLiquidityUsd, getDisplayReserveSizeUsd, getDisplayTotalBorrowedUsd, nativeToUsd } from '@/lib/scenarioSize';
+import { getDisplayAvailableLiquidityUsd, getDisplayTotalBorrowedUsd, nativeToUsd, getScenarioSupplySizeUsd } from '@/lib/scenarioSize';
 import { cn } from '@/lib/utils';
 
 /* ─── Memoised chain icon ─── */
@@ -168,11 +168,17 @@ const DesktopReserveRow = memo(({
     reserve.tokenPrice != null && Number.isFinite(reserve.tokenPrice) && reserve.tokenPrice > 0
       ? reserve.tokenPrice
       : null;
-  const displayReserveSizeUsd = getDisplayReserveSizeUsd(reserve, protocolVersion, {
-    rawSupplyInput: supplyInput,
-    inputMode,
-    tokenPrice: displayTokenPrice,
-  });
+  const reserveSizeUsd = nativeToUsd(reserve.reserveSize, reserve.decimals, reserve.tokenPrice);
+  const displayReserveSizeUsd =
+    reserveSizeUsd != null && Number.isFinite(reserveSizeUsd)
+      ? getScenarioSupplySizeUsd({
+          reserveSizeUsd,
+          supplyCapUsd: nativeToUsd(reserve.supplyCap, reserve.decimals, reserve.tokenPrice),
+          rawSupplyInput: supplyInput,
+          inputMode,
+          tokenPrice: displayTokenPrice,
+        })
+      : reserveSizeUsd ?? null;
   const baseTotalBorrowedUsd = simulation?.marketMetrics.totalBorrowedUsd ?? getDisplayTotalBorrowedUsd(reserve, protocolVersion);
   const totalBorrowedUsd = simulation?.marketMetrics.totalBorrowedUsdAfter ?? baseTotalBorrowedUsd;
   const baseAvailableLiquidityUsd = simulation?.marketMetrics.availableLiquidityUsd ?? getDisplayAvailableLiquidityUsd(reserve, protocolVersion);

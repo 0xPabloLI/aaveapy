@@ -35,7 +35,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { getReserveSimulationId, useSharedRateSimulations } from '@/hooks/useRateSimulation';
 import { useSideDataMeta } from '@/hooks/useSideDataMeta';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
-import { getDisplayAvailableLiquidityUsd as computeDisplayAvailableLiquidityUsd, getDisplayReserveSizeUsd as computeDisplayReserveSizeUsd, getDisplayTotalBorrowedUsd as computeDisplayTotalBorrowedUsd, getAvailableToBorrowUsd, nativeToUsd, getSuppliableUsd, getBorrowableUsd } from '@/lib/scenarioSize';
+import { getDisplayAvailableLiquidityUsd as computeDisplayAvailableLiquidityUsd, getDisplayTotalBorrowedUsd as computeDisplayTotalBorrowedUsd, getAvailableToBorrowUsd, nativeToUsd, getSuppliableUsd, getBorrowableUsd, getScenarioSupplySizeUsd } from '@/lib/scenarioSize';
 import { getProtocolVersion } from '@/lib/protocolVersion';
 import {
   scrollExpandedSimulationIntoView,
@@ -415,8 +415,11 @@ const ReservesTable = ({
   };
 
   const getDisplayReserveSizeUsd = (reserve: ReserveWithSpread): number | null => {
-    const protocolVersion = getProtocolVersion(reserve.marketName);
-    return computeDisplayReserveSizeUsd(reserve, protocolVersion, {
+    const usd = nativeToUsd(reserve.reserveSize, reserve.decimals, reserve.tokenPrice);
+    if (usd == null || !Number.isFinite(usd)) return usd ?? null;
+    return getScenarioSupplySizeUsd({
+      reserveSizeUsd: usd,
+      supplyCapUsd: nativeToUsd(reserve.supplyCap, reserve.decimals, reserve.tokenPrice),
       rawSupplyInput: debouncedSharedSupplyInput,
       inputMode: sharedInputMode,
       tokenPrice: getSimulation(reserve)?.tokenPrice ?? reserve.tokenPrice,
