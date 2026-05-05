@@ -573,21 +573,29 @@ const PortfolioPanel = memo(function PortfolioPanel({
                 })}
               </div>
             )}
-            {Array.from(groupedByReserve.entries()).map(([reserveId, entry]) => (
-              <PortfolioTokenRow
-                key={reserveId}
-                reserveId={reserveId}
-                tokenSymbol={entry.tokenSymbol}
-                chainName={entry.chainName}
-                marketName={entry.marketName}
-                hubName={entry.hubName}
-                supplyPosition={entry.supply}
-                borrowPosition={entry.borrow}
-                onRemove={handleRemoveToken}
-                onUpdateAmount={actions.updateAmount}
-                onUpdateInputMode={actions.updateInputMode}
-              />
-            ))}
+            <div
+              className={cn(
+                isMobile
+                  ? 'space-y-1.5'
+                  : 'grid gap-y-1.5 [grid-template-columns:auto_auto_minmax(0,1fr)]',
+              )}
+            >
+              {Array.from(groupedByReserve.entries()).map(([reserveId, entry]) => (
+                <PortfolioTokenRow
+                  key={reserveId}
+                  reserveId={reserveId}
+                  tokenSymbol={entry.tokenSymbol}
+                  chainName={entry.chainName}
+                  marketName={entry.marketName}
+                  hubName={entry.hubName}
+                  supplyPosition={entry.supply}
+                  borrowPosition={entry.borrow}
+                  onRemove={handleRemoveToken}
+                  onUpdateAmount={actions.updateAmount}
+                  onUpdateInputMode={actions.updateInputMode}
+                />
+              ))}
+            </div>
           </div>
         )}
 
