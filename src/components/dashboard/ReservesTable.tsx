@@ -1149,6 +1149,13 @@ const ReservesTable = ({
     }
   }, [scrollToReserveId, sortedData]);
 
+  // Reset minVisibleCount when sortedData becomes empty to avoid stale "Show Less" state
+  useEffect(() => {
+    if (sortedData.length === 0 && minVisibleCount !== null) {
+      setMinVisibleCount(null);
+    }
+  }, [sortedData.length, minVisibleCount]);
+
   // Auto-expand visible count when a row is expanded (persist even after collapse)
   useEffect(() => {
     if (!expandedReserveId) return;
@@ -1171,7 +1178,7 @@ const ReservesTable = ({
     return sortedData.slice(0, baseCount);
   }, [sortedData, minVisibleCount]);
   
-  const showAll = minVisibleCount !== null && minVisibleCount >= sortedData.length;
+  const showAll = sortedData.length > 0 && minVisibleCount !== null && minVisibleCount >= sortedData.length;
 
   const isPortfolioMode = simulationMode === 'portfolio';
 
