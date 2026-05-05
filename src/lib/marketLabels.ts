@@ -34,3 +34,17 @@ export function getMarketChipLabel(marketName: string, chainName: string): strin
 export function isV4Market(marketName: string): boolean {
   return getProtocolVersion(marketName) === 'v4';
 }
+
+/**
+ * Shared chip class for rendering a Hub label across surfaces
+ * (PortfolioTokenRow desktop+mobile, SearchResultRow, etc.).
+ * V4 markets use the brand magenta tint; others use muted neutral.
+ */
+export function getHubChipClass(isV4: boolean): string {
+  return [
+    'inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-normal leading-none',
+    isV4
+      ? 'text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10'
+      : 'text-muted-foreground/70 bg-muted/40',
+  ].join(' ');
+}
