@@ -9,7 +9,6 @@ import { getChainIconSrc } from '@/lib/chainIcons';
 import { getMarketChipLabel, isV4Market } from '@/lib/marketLabels';
 
 import { BATCH_THEME } from './batchTheme';
-import { ConfirmPopover } from '@/components/ui/confirm-popover';
 import type { PortfolioPosition, PortfolioInputMode } from '@/types/portfolio';
 
 interface PortfolioTokenRowProps {
