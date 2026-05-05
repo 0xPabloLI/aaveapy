@@ -9,6 +9,7 @@ import { getChainIconSrc } from '@/lib/chainIcons';
 import { getMarketChipLabel, isV4Market } from '@/lib/marketLabels';
 
 import { BATCH_THEME } from './batchTheme';
+import { ConfirmPopover } from '@/components/ui/confirm-popover';
 import type { PortfolioPosition, PortfolioInputMode } from '@/types/portfolio';
 
 interface PortfolioTokenRowProps {
@@ -106,26 +107,40 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
     >
       {/* Mobile corner remove badge — anchored to the whole row's top-right corner */}
       {isMobile && (
-        <button
-          type="button"
-          onClick={() => onRemove(reserveId)}
-          className="absolute -top-1.5 -right-1.5 z-10 flex size-4 items-center justify-center rounded-full bg-muted text-muted-foreground ring-1 ring-border/60 transition-colors hover:bg-destructive hover:text-destructive-foreground active:scale-90"
-          aria-label={`Remove ${tokenSymbol} from portfolio`}
+        <ConfirmPopover
+          onConfirm={() => onRemove(reserveId)}
+          title={`Remove ${tokenSymbol}?`}
+          description="This position will be removed from the portfolio."
+          align="end"
+          side="bottom"
         >
-          <Minus className="size-2.5" strokeWidth={3} aria-hidden />
-        </button>
+          <button
+            type="button"
+            className="absolute -top-1.5 -right-1.5 z-10 flex size-4 items-center justify-center rounded-full bg-muted text-muted-foreground ring-1 ring-border/60 transition-colors hover:bg-destructive hover:text-destructive-foreground active:scale-90"
+            aria-label={`Remove ${tokenSymbol} from portfolio`}
+          >
+            <Minus className="size-2.5" strokeWidth={3} aria-hidden />
+          </button>
+        </ConfirmPopover>
       )}
 
       {/* Remove — desktop only as a separate column */}
       {!isMobile && (
-        <button
-          type="button"
-          onClick={() => onRemove(reserveId)}
-          className={`shrink-0 rounded-md p-1 text-muted-foreground/60 transition-colors ${BATCH_THEME.trashHoverBg} ${BATCH_THEME.trashHoverText}`}
-          aria-label={`Remove ${tokenSymbol} from portfolio`}
+        <ConfirmPopover
+          onConfirm={() => onRemove(reserveId)}
+          title={`Remove ${tokenSymbol}?`}
+          description="This position will be removed from the portfolio."
+          align="start"
+          side="bottom"
         >
-          <Trash2 className="size-3.5" aria-hidden />
-        </button>
+          <button
+            type="button"
+            className={`shrink-0 rounded-md p-1 text-muted-foreground/60 transition-colors ${BATCH_THEME.trashHoverBg} ${BATCH_THEME.trashHoverText}`}
+            aria-label={`Remove ${tokenSymbol} from portfolio`}
+          >
+            <Trash2 className="size-3.5" aria-hidden />
+          </button>
+        </ConfirmPopover>
       )}
 
       {/* Token info — mobile: 2-col grid (icons centered, text left-aligned), 3 rows */}

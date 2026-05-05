@@ -24,6 +24,7 @@ import PortfolioTokenRow from './PortfolioTokenRow';
 import PortfolioSummaryCard from './PortfolioSummaryCard';
 import PortfolioResultsTable from './PortfolioResultsTable';
 import { BATCH_THEME } from './batchTheme';
+import { ConfirmPopover } from '@/components/ui/confirm-popover';
 
 const PortfolioCompareView = lazy(() => import('./PortfolioCompareView'));
 
@@ -77,7 +78,7 @@ function SearchResultRow({
       disabled={fullyAdded}
       onClick={() => onAdd(reserveId)}
       className={cn(
-        'flex w-full items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-left transition-colors',
+        'flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left transition-colors',
         fullyAdded ? 'opacity-60 cursor-not-allowed' : 'hover:bg-muted/60',
       )}
       aria-label={ariaLabel}
@@ -85,10 +86,10 @@ function SearchResultRow({
       {/* Horizontal compact row: token | divider | chain+market | divider | hub */}
       <span className="inline-flex items-center gap-1 shrink-0">
         <TokenIcon symbol={reserve.tokenSymbol} size={14} />
-        <span className="ds-text-12 font-semibold text-foreground">{reserve.tokenSymbol}</span>
+        <span className="ds-text-12 font-semibold text-foreground leading-none">{reserve.tokenSymbol}</span>
       </span>
       <span aria-hidden className="h-3 w-px bg-border/60 shrink-0" />
-      <span className="inline-flex items-center gap-1 min-w-0 ds-text-10 text-muted-foreground">
+      <span className="inline-flex min-w-0 items-center gap-1 ds-text-10 leading-none text-muted-foreground">
         {chainSrc && (
           <img src={chainSrc} alt={reserve.chainName} className="size-2.5 shrink-0 opacity-70" />
         )}
@@ -98,7 +99,7 @@ function SearchResultRow({
         <>
           <span aria-hidden className="h-3 w-px bg-border/60 shrink-0" />
           <span
-            className="inline-flex max-w-[40%] items-center rounded-full bg-muted/40 px-1.5 py-0.5 text-[9px] font-normal leading-none text-muted-foreground/70 shrink-0"
+            className="inline-flex min-w-0 max-w-[40%] shrink items-center rounded-full bg-muted/40 px-1.5 py-0.5 text-[9px] font-normal leading-none text-muted-foreground/70"
             title={`Hub: ${reserve.hubName}`}
           >
             <span className="truncate">{reserve.hubName}</span>
@@ -159,14 +160,20 @@ const SnapshotItem = memo(function SnapshotItem({
         <span className="ds-text-11 font-semibold text-foreground truncate block">{snapshot.label}</span>
         <span className="ds-text-10 text-muted-foreground">{timeStr} · {snapshot.positions.length} positions</span>
       </div>
-      <button
-        type="button"
-        onClick={() => onDelete(snapshot.id)}
-        className="rounded p-1 text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-colors"
-        aria-label={`Delete snapshot ${snapshot.label}`}
+      <ConfirmPopover
+        onConfirm={() => onDelete(snapshot.id)}
+        title="Delete snapshot?"
+        description={`"${snapshot.label}" will be removed permanently.`}
+        confirmLabel="Delete"
       >
-        <X className="size-3" aria-hidden />
-      </button>
+        <button
+          type="button"
+          className="rounded p-1 text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-colors"
+          aria-label={`Delete snapshot ${snapshot.label}`}
+        >
+          <X className="size-3" aria-hidden />
+        </button>
+      </ConfirmPopover>
     </div>
   );
 });
@@ -391,14 +398,20 @@ const PortfolioPanel = memo(function PortfolioPanel({
               )}
             </button>
             {positions.length > 0 && (
-              <button
-                type="button"
-                onClick={() => actions.clearAll()}
-                className={`rounded-md p-1.5 text-muted-foreground/60 transition-colors ${BATCH_THEME.trashHoverBg} ${BATCH_THEME.trashHoverText}`}
-                aria-label="Clear all positions"
+              <ConfirmPopover
+                onConfirm={() => actions.clearAll()}
+                title="Clear all positions?"
+                description={`This will remove all ${positions.length} positions from the portfolio.`}
+                confirmLabel="Clear all"
               >
-                <Trash2 className="size-3.5" aria-hidden />
-              </button>
+                <button
+                  type="button"
+                  className={`rounded-md p-1.5 text-muted-foreground/60 transition-colors ${BATCH_THEME.trashHoverBg} ${BATCH_THEME.trashHoverText}`}
+                  aria-label="Clear all positions"
+                >
+                  <Trash2 className="size-3.5" aria-hidden />
+                </button>
+              </ConfirmPopover>
             )}
           </div>
         </div>
