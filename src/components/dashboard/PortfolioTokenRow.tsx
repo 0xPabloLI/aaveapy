@@ -171,10 +171,10 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
               <span className="truncate">{marketLabel}</span>
               {hubName && (
                 <span
-                  className="shrink-0 inline-flex items-center px-1 py-0 rounded-full text-[8px] font-medium leading-none text-muted-foreground bg-muted/70 ring-1 ring-border/40"
+                  className="shrink-0 inline-flex max-w-full items-center rounded-full bg-muted/40 px-1.5 py-0.5 text-[9px] font-normal leading-none text-muted-foreground/70"
                   title={`Hub: ${hubName}`}
                 >
-                  {hubName}
+                  <span className="truncate">{hubName}</span>
                 </span>
               )}
             </span>
