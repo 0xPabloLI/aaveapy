@@ -211,6 +211,8 @@ const SimulationSubRow = ({
   const isBorrowDisabledOnly = !isPausedState && !isFrozenState && !reserve.supplyDisabled && !!reserve.borrowDisabled;
   const isBothDisabled = !isPausedState && !isFrozenState && !!reserve.supplyDisabled && !!reserve.borrowDisabled;
   const hasDisabledState = isPausedState || isFrozenState || isSupplyDisabledOnly || isBorrowDisabledOnly || isBothDisabled;
+  const supplySideBlocked = isPausedState || isFrozenState || isSupplyDisabledOnly || isBothDisabled;
+  const borrowSideBlocked = isPausedState || isFrozenState || isBorrowDisabledOnly || isBothDisabled;
 
   const aaveUrl = buildAaveUrl({ marketName: reserve.marketName, tokenAddress: reserve.tokenAddress, aaveProReserveId: reserve.aaveProReserveId });
 
@@ -257,7 +259,7 @@ const SimulationSubRow = ({
     supplyCapUsd !== null && currentSupplySizeUsd !== null && currentSupplySizeUsd > supplyCapUsd;
   const supplyCapBaseExceededByUsd =
     supplyCapBaseExceeded ? currentSupplySizeUsd - supplyCapUsd : null;
-  const showSupplyCapWarning = supplyCapExceeded || supplyCapBaseExceeded;
+  const showSupplyCapWarning = (supplyCapExceeded || supplyCapBaseExceeded) && !supplySideBlocked;
   const currentBorrowedSizeUsd =
     simulation.marketMetrics.totalBorrowedUsd != null && Number.isFinite(simulation.marketMetrics.totalBorrowedUsd)
       ? simulation.marketMetrics.totalBorrowedUsd
@@ -266,7 +268,7 @@ const SimulationSubRow = ({
     borrowCapUsd !== null && currentBorrowedSizeUsd !== null && currentBorrowedSizeUsd > borrowCapUsd;
   const borrowCapBaseExceededByUsd =
     borrowCapBaseExceeded ? currentBorrowedSizeUsd - borrowCapUsd : null;
-  const showBorrowCapWarning = borrowCapExceeded || borrowCapBaseExceeded;
+  const showBorrowCapWarning = (borrowCapExceeded || borrowCapBaseExceeded) && !borrowSideBlocked;
 
   const supplyMeritLink = getFirstMeritLink(reserve.meritSupplys);
   const supplyMerklLink = getFirstMerklLink(reserve.merklSupplys);
