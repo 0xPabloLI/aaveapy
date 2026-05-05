@@ -18,7 +18,7 @@ import { filterAndRankReservesForPortfolioSearch, getReserveTvlUsd } from '@/lib
 import { isStablecoinSymbol, isEthRelatedSymbol, isBtcRelatedSymbol } from '@/lib/tokenCategories';
 import { getReserveKey } from '@/lib/reserveKey';
 import { getChainIconSrc } from '@/lib/chainIcons';
-import { getMarketChipLabel, isV4Market } from '@/lib/marketLabels';
+import { getMarketChipLabel, isV4Market, getHubChipClass } from '@/lib/marketLabels';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import PortfolioTokenRow from './PortfolioTokenRow';
 import PortfolioSummaryCard from './PortfolioSummaryCard';
