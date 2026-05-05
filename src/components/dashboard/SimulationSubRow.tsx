@@ -538,10 +538,10 @@ const SimulationSubRow = ({
       const currentPct = Math.min((currentVal / capVal) * 100, 100);
       const afterPct = afterVal != null ? Math.min((afterVal / capVal) * 100, 100) : null;
       const barColorClass = row.warning
-        ? 'bg-amber-500'
+        ? 'bg-amber-600'
         : accentClass.includes('emerald') ? 'bg-emerald-500' : 'bg-[rgb(var(--ds-brand-cyan-rgb))]';
       const afterBarColorClass = row.warning
-        ? 'bg-amber-400/50'
+        ? 'bg-amber-500/50'
         : accentClass.includes('emerald') ? 'bg-emerald-400/40' : 'bg-[rgb(var(--ds-brand-cyan-rgb))]/40';
       return (
         <tr data-align-key={capAlignKey} className={row.warning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
@@ -1106,7 +1106,7 @@ const SimulationSubRow = ({
       {/* Warnings */}
       {simulation.supply.hasInput && showSupplyCapWarning && (
         <div className={`flex items-center gap-3 rounded-lg border border-amber-400/60 bg-amber-50/80 dark:bg-amber-950/30 ${effectiveCompact ? 'mb-2 px-3 py-1.5' : 'mb-3 px-4 py-2'}`}>
-          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+          <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
           <p className="flex-1 ds-text-12 text-amber-800 dark:text-amber-300">
             {simulation.supply.hasInput && supplyCapExceeded ? (
               <>Supply exceeds cap by {formatScenarioSize(supplyCapExceededByUsd, { inputMode, tokenPrice: simulation.tokenPrice })}</>
@@ -1127,7 +1127,7 @@ const SimulationSubRow = ({
 
       {simulation.borrow.hasInput && showBorrowCapWarning && (
         <div className={`flex items-center gap-3 rounded-lg border border-amber-400/60 bg-amber-50/80 dark:bg-amber-950/30 ${effectiveCompact ? 'mb-2 px-3 py-1.5' : 'mb-3 px-4 py-2'}`}>
-          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+          <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
           <p className="flex-1 ds-text-12 text-amber-800 dark:text-amber-300">
             {simulation.borrow.hasInput && borrowCapExceeded ? (
               <>Borrow exceeds {borrowLimitedByLiquidity ? 'liquidity' : 'cap'} by {formatScenarioSize(borrowCapExceededByUsd, { inputMode, tokenPrice: simulation.tokenPrice })}</>

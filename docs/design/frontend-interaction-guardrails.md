@@ -94,7 +94,7 @@ This is a project-specific guardrail file, not the reusable design reference. If
 
 **UtilizationIndicator color scheme** (minimize same-hue steps: one **zone tint** + one **full semantic** per state):
 - Below optimal (borrow-friendly / flatter borrow curve): track zone `fill-[rgb(var(--ds-brand-cyan-rgb)/0.32)]`; dot **full** `fill-[rgb(var(--ds-brand-cyan-rgb))]` — same as Borrow (`ds-text-brand-cyan`), not emerald; avoid mixing `-70` text with other cyan opacities
-- Above optimal (past kink): track `fill-amber-500`; dot `fill-amber-600` (same as warning copy), not a third amber step
+- Above optimal (past kink): track `fill-amber-600`; dot `fill-amber-600` (same as warning copy), not a third amber step
 - **Dot visibility (no extra hue, no outline habit)**: single **solid** dot (slightly larger radius is OK); **do not** add outer glow discs, `stroke` halos, or extra opacity rings by default
 - Tooltip / mobile sheet: “Below optimal” uses `ds-text-brand-cyan`; “⚠️ Above optimal” uses `text-amber-600`
 

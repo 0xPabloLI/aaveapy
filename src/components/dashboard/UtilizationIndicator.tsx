@@ -77,20 +77,20 @@ const UtilizationIndicator = memo(({
               clipPath={`url(#${clipId})`}
               className="fill-[rgb(var(--ds-brand-cyan-rgb)/0.32)]"
             />
-            {/* Above optimal: zone amber-500; dot matches warning label (amber-500) — avoid 500/600/700 mix */}
+            {/* Above optimal: zone amber-600; dot matches warning label (amber-600) — darker = warning, brighter = critical */}
             <rect
               x={trackX}
               y={0}
               width={trackWidth}
               height={optimalY}
               clipPath={`url(#${clipId})`}
-              className="fill-amber-500"
+              className="fill-amber-600"
             />
             <circle
               cx={width / 2}
               cy={currentY}
               r={dotRadius}
-              className={isOverOptimal ? 'fill-amber-500' : 'fill-[rgb(var(--ds-brand-cyan-rgb))]'}
+              className={isOverOptimal ? 'fill-amber-600' : 'fill-[rgb(var(--ds-brand-cyan-rgb))]'}
             />
           </svg>
         </div>
@@ -102,7 +102,7 @@ const UtilizationIndicator = memo(({
             <span className="font-medium tabular-nums">{formatPercent(optimal)}</span>
           </div>
           {isOverOptimal ? (
-            <p className="text-amber-500 ds-text-11 pt-2 border-t border-border/50">
+            <p className="text-amber-600 ds-text-11 pt-2 border-t border-border/50">
               ⚠️ Above optimal
             </p>
           ) : (

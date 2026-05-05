@@ -485,9 +485,9 @@ const MobileReserveCard = memo(({
   const deficitSeverity = getDeficitSeverity(deficitShareRatio);
   const isNeutralDeficit = deficitSeverity === 'neutral';
   const deficitTextClass = deficitSeverity === 'critical'
-    ? 'text-amber-600/90'
+    ? 'text-amber-500/90'
     : deficitSeverity === 'warning'
-      ? 'text-amber-500/90'
+      ? 'text-amber-600/90'
       : 'text-muted-foreground/60';
 
   if (variant === 'simulationOnly') {
@@ -598,7 +598,7 @@ const MobileReserveCard = memo(({
                   >
                     <span className={`ds-text-11 font-medium tabular-nums leading-none ${
                       optimalPct != null && displayUtilization > optimalPct
-                        ? 'text-amber-500'
+                        ? 'text-amber-600'
                         : 'text-foreground'
                     }`}>
                       {displayUtilization.toFixed(0)}%

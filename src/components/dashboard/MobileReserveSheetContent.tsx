@@ -26,7 +26,7 @@ export function SupplyCapSheetContent({
 }) {
   const percentage = Math.min((currentSize / cap) * 100, 100);
   const colorClass =
-    percentage >= 95 ? 'text-amber-600' : percentage >= 80 ? 'text-amber-500' : 'ds-text-emerald-500';
+    percentage >= 95 ? 'text-amber-500' : percentage >= 80 ? 'text-amber-600' : 'ds-text-emerald-500';
   return (
     <div className="space-y-1 ds-text-12">
       <div className="flex justify-between gap-3">
@@ -82,7 +82,7 @@ export function BorrowCapSheetContent({
         availableLiquidityUsd,
       }) ?? 0;
   const colorClass =
-    percentage >= 95 ? 'text-amber-600' : percentage >= 80 ? 'text-amber-500' : 'ds-text-brand-cyan';
+    percentage >= 95 ? 'text-amber-500' : percentage >= 80 ? 'text-amber-600' : 'ds-text-brand-cyan';
   return (
     <div className="space-y-1 ds-text-12">
       <div className="flex justify-between gap-3">
@@ -101,7 +101,7 @@ export function BorrowCapSheetContent({
         <span className="text-muted-foreground">Available liquidity</span>
         <span className={`font-medium tabular-nums ${
           availableLiquidityUsd < 10000
-            ? 'text-amber-500'
+            ? 'text-amber-600'
             : 'ds-text-purple-600'
         }`}>
           {formatScenarioSize(availableLiquidityUsd, { inputMode, tokenPrice, tokenSymbol })}
@@ -165,7 +165,7 @@ export function DeficitSheetContent({
   const percentage = ratio != null ? Math.min(Math.max(ratio * 100, 0), 100) : null;
   const severity = getDeficitSeverity(ratio);
   const percentColorClass =
-    severity === 'critical' ? 'text-amber-600' : severity === 'warning' ? 'text-amber-500' : 'text-muted-foreground/60';
+    severity === 'critical' ? 'text-amber-500' : severity === 'warning' ? 'text-amber-600' : 'text-muted-foreground/60';
 
   const deficitDisplay = inputMode === 'token' && deficitTokenLabel
     ? deficitTokenLabel

@@ -23,7 +23,7 @@
 - Borrow: `ds-text-brand-cyan` / `ds-bg-brand-cyan-10`
 - Spread: `ds-text-purple-600`
 - Batch mode (UI mode cue only): `ds-text-blue-500` / `ds-bg-blue-500-10`
-- Warning: amber scale only
+- Warning: amber scale only (Critical: `amber-500` 亮, Warning: `amber-600` 暗 — 越严重越亮越醒目)
 
 ### Rule
 
@@ -85,7 +85,7 @@
 - Primary borrow: cyan
 - Frozen/Paused: sky-500 (`ds-bg-sky-500-8`, `ds-text-sky-500`)
 - Spread: purple
-- Warning: amber
+- Warning: amber (Critical=amber-500 亮, Warning=amber-600 暗)
 
 ### Example Prompts
 

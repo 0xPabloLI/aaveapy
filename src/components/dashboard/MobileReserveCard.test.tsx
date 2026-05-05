@@ -301,7 +301,7 @@ describe('MobileReserveCard', () => {
     const overUtilTrigger = getByLabelText('Show utilization details');
     const overUtilValue = overUtilTrigger.querySelector('span');
     expect(overUtilValue).not.toBeNull();
-    expect(overUtilValue?.className).toContain('text-amber-500');
+    expect(overUtilValue?.className).toContain('text-amber-600');
   });
 
   it('uses tighter spacing for the mobile header left half', () => {

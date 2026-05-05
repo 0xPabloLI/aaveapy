@@ -55,20 +55,22 @@
 
 | 分级策略 | 适用指标 | 档位定义 | 颜色 |
 | :--- | :--- | :--- | :--- |
-| **两档** | Utilization、Liquidity | Safe / Warning | `brand-cyan` / `amber-500` |
-| **三档** | Supply Cap、Borrow Cap、Deficit | Safe / Warning / Critical | `brand-color` / `amber-500` / `amber-600` |
+| **两档** | Utilization、Liquidity | Safe / Warning | `brand-cyan` / `amber-600` |
+| **三档** | Supply Cap、Borrow Cap、Deficit | Safe / Warning / Critical | `brand-color` / `amber-600` / `amber-500` |
+
+**亮度梯度原则**：越严重越亮越醒目——`amber-500`（亮黄橙）比 `amber-600`（深棕橙）更亮，因此 Critical 用 `amber-500`，Warning 用 `amber-600`。
 
 **两档指标**（连续型/相对型）：
 - **Utilization**: ≤ optimal (Safe) / > optimal (Warning)
 - **Liquidity**: ≥ $10K (Safe) / < $10K (Warning)
-- 统一使用 `amber-500` 作为警告色，避免颜色过载
+- 统一使用 `amber-600` 作为警告色，避免颜色过载
 
 **三档指标**（容量型/硬性限制）：
 - **Supply/Borrow Cap**: < 80% / 80-95% / ≥ 95%
 - **Deficit Share**: neutral / warning / critical
-- 在接近容量上限时（≥ 95%）使用 `amber-600` 强化告警
+- 在接近容量上限时（≥ 95%）使用 `amber-500` 强化告警（更亮更醒目）
 
-**统一原则**：所有 Warning 级别（无论是两档还是三档的第二档）统一使用 `amber-500`，确保用户形成"琥珀色 = 需要注意"的单一心智模型。
+**统一原则**：所有 Warning 级别（无论是两档还是三档的第二档）统一使用 `amber-600`，Critical 级别统一使用 `amber-500`，确保用户形成"琥珀色越亮 = 越严重"的心智模型。
 
 ---
 
@@ -466,6 +468,15 @@ className="cursor-pointer md:cursor-auto"
 | 禁用但有说明 tooltip | `cursor-auto`（tooltip 仍可用） |
 | 可编辑文本         | `cursor-text` |
 | 可拖拽             | `cursor-grab` / `cursor-grabbing` |
+
+### 6.6 Tooltip 箭头（callout arrow）规范
+
+**完整规范见 [`tooltip-arrow.md`](./tooltip-arrow.md)**（视觉规范 + SVG 双 path 实现 + Radix `data-side` 自动 flip + 与 `IncentiveTooltip` 自定义箭头的并排对比）。
+
+要点摘录：
+- **统一 SVG 双 path 模式**：fill path 闭合（`Z`）+ stroke path 不闭合（不画底边），消除 arrow ↔ body 接合处的"双线 seam"。**禁止**回到 CSS 旋转 div + 边框模拟箭头的做法（先天有 sub-pixel 渲染 artifact）。
+- **跟随 Radix flip**：`TooltipContent` 上加 `group/tt`、`TooltipCalloutArrow` 内 4 个方向 SVG 由 `group-data-[side=...]/tt:block` 选中。当 viewport 空间不足触发 collision flip（如 right → left），箭头自动跟随 body 翻到对侧并改变指向，**调用方无需任何改动**。
+- **颜色 token**：`fill="hsl(var(--card))"` + `stroke="hsl(var(--border) / 0.6)"`，与 body 完全同色；不允许硬编码颜色。
 
 ---
 
