@@ -126,11 +126,13 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
             className="group relative shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             aria-label={`Remove ${tokenSymbol} from portfolio`}
           >
-            <TokenIcon symbol={tokenSymbol} size={18} />
+            <TokenIcon symbol={tokenSymbol} size={20} />
+            {/* Always-visible small remove badge — discoverable on mobile without occupying a column */}
             <span
-              className={`pointer-events-none absolute inset-0 flex items-center justify-center rounded-full bg-background/85 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100 group-active:opacity-100 ${BATCH_THEME.trashHoverText}`}
+              className="pointer-events-none absolute -bottom-0.5 -right-0.5 flex size-3.5 items-center justify-center rounded-full bg-destructive text-destructive-foreground ring-1 ring-background transition-transform group-active:scale-90"
+              aria-hidden
             >
-              <Trash2 className="size-3" aria-hidden />
+              <X className="size-2.5" strokeWidth={3} />
             </span>
           </button>
           <div className="flex flex-col min-w-0 leading-[1.15] gap-0.5">
