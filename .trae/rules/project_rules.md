@@ -1,5 +1,18 @@
 # Project Rules
 
+## Mandatory Skill Bootstrap (技能自举 — 每次对话必须执行)
+
+**This rule applies at the START of EVERY agent invocation — no exceptions.**
+
+Before ANY other action (including reading files, searching code, or responding to the user), the agent MUST:
+
+1. Invoke the `Skill` tool with name `using-superpowers`
+2. Follow the loaded skill instructions exactly
+
+This is NOT optional. Even for "simple questions" or "quick lookups", the skill check comes FIRST.
+
+**Rationale:** `using-superpowers` establishes how to find and use skills properly. Skipping it leads to undisciplined workflows and missed opportunities to use relevant skills.
+
 ## Post-Modification Validation Gate (修改后验证门禁)
 
 **This rule applies after EVERY code change — no exceptions.**

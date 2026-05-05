@@ -70,6 +70,7 @@ _Last inventory pass: 2026-04-30._
 - Canonical (reusable system rules): `docs/design/DESIGN-SYSTEM-REFERENCE.md`
 - Canonical (product-critical interaction guardrails): `docs/design/frontend-interaction-guardrails.md`
 - Canonical (mobile ASCII reference): `docs/design/mobile-reserve-card-ascii-layout.md`
+- Canonical (tooltip callout arrow spec): `docs/design/tooltip-arrow.md` (SVG double-path, auto-flip via Radix `data-side`, side-by-side comparison with `IncentiveTooltip`'s custom arrow)
 - Entry stub: `docs/design/README.md` (index page only)
 
   > `frontend-interaction-guardrails.md` is *not* under `docs/conventions/` because it is a product-behavior rulebook, not a repo-process convention.
