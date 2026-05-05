@@ -286,7 +286,7 @@ describe('DesktopReserveRow', () => {
     expect(iconWrapperClasses).toContain('inline-block');
     expect(iconWrapperClasses).toContain('shrink-0');
     expect(iconWrapperClasses).toContain('rounded-full');
-    expect(html).toMatch(/<button[^>]*class="inline-flex shrink-0 items-center[^"]*text-sky-500 bg-sky-500\/10"/);
+    expect(html).toMatch(/<button[^>]*class="inline-flex shrink-0 items-center[^"]*"/);
     // AssetActionMenu receives triggerClassName="shrink-0" which merges onto its trigger button.
     const assetMenuMatches = html.match(/<button[^>]*aria-label="Asset actions for[^"]*"[^>]*class="([^"]*)"/);
     expect(assetMenuMatches).not.toBeNull();

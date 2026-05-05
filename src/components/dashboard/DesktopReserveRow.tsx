@@ -235,7 +235,8 @@ const DesktopReserveRow = memo(({
           isExpanded && 'bg-muted/30',
           isExpanded &&
             '[&_td]:sticky [&_td]:z-[25] [&_td]:border-b [&_td]:border-border/60 [&_td]:bg-card [&_td]:shadow-[0_1px_2px_0_rgb(0_0_0/0.04)] [&_td]:[top:var(--reserves-expanded-main-row-top,5.75rem)]',
-          (reserve.isFrozen || reserve.isPaused) && 'ds-bg-sky-500-8',
+          reserve.isPaused && 'ds-bg-amber-500-10',
+          (!reserve.isPaused && reserve.isFrozen) && 'ds-bg-sky-500-8',
         )}
         onClick={() => onToggleExpand(reserveId)}
       >
@@ -268,11 +269,11 @@ const DesktopReserveRow = memo(({
           <div className={`group/token flex min-w-0 max-w-full justify-start gap-[var(--ds-space-1-5)] ${isTokenWrapped ? 'items-start' : 'items-center'}`}>
             <TokenIcon symbol={iconSymbol} size={28} loading="eager" logoURI={logoURI} className={`shrink-0 ${isTokenWrapped ? 'mt-0.5' : ''}`} />
             <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-[var(--ds-space-1-5)] gap-y-0">
+              <FrozenStatusBadge isFrozen={reserve.isFrozen} isPaused={reserve.isPaused} />
               <span ref={tokenTextRef} className="font-semibold text-foreground ds-text-13 break-words min-w-0 [max-width:max-content]">
                 {reserve.tokenSymbol}
               </span>
               <span className="inline-flex shrink-0 items-baseline gap-[var(--ds-space-1-5)]">
-                <FrozenStatusBadge isFrozen={reserve.isFrozen} isPaused={reserve.isPaused} />
                 <AssetActionMenu
                   tokenSymbol={reserve.tokenSymbol}
                   tokenAddress={reserve.tokenAddress}
