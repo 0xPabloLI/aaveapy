@@ -77,7 +77,7 @@ function SearchResultRow({
       disabled={fullyAdded}
       onClick={() => onAdd(reserveId)}
       className={cn(
-        'flex w-full items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-left transition-colors',
+        'flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left transition-colors',
         fullyAdded ? 'opacity-60 cursor-not-allowed' : 'hover:bg-muted/60',
       )}
       aria-label={ariaLabel}
@@ -85,10 +85,10 @@ function SearchResultRow({
       {/* Horizontal compact row: token | divider | chain+market | divider | hub */}
       <span className="inline-flex items-center gap-1 shrink-0">
         <TokenIcon symbol={reserve.tokenSymbol} size={14} />
-        <span className="ds-text-12 font-semibold text-foreground">{reserve.tokenSymbol}</span>
+        <span className="ds-text-12 font-semibold text-foreground leading-none">{reserve.tokenSymbol}</span>
       </span>
       <span aria-hidden className="h-3 w-px bg-border/60 shrink-0" />
-      <span className="inline-flex items-center gap-1 min-w-0 ds-text-10 text-muted-foreground">
+      <span className="inline-flex min-w-0 items-center gap-1 ds-text-10 leading-none text-muted-foreground">
         {chainSrc && (
           <img src={chainSrc} alt={reserve.chainName} className="size-2.5 shrink-0 opacity-70" />
         )}
@@ -98,7 +98,7 @@ function SearchResultRow({
         <>
           <span aria-hidden className="h-3 w-px bg-border/60 shrink-0" />
           <span
-            className="inline-flex max-w-[40%] items-center rounded-full bg-muted/40 px-1.5 py-0.5 text-[9px] font-normal leading-none text-muted-foreground/70 shrink-0"
+            className="inline-flex min-w-0 max-w-[40%] shrink items-center rounded-full bg-muted/40 px-1.5 py-0.5 text-[9px] font-normal leading-none text-muted-foreground/70"
             title={`Hub: ${reserve.hubName}`}
           >
             <span className="truncate">{reserve.hubName}</span>
