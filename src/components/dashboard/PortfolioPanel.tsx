@@ -24,6 +24,7 @@ import PortfolioTokenRow from './PortfolioTokenRow';
 import PortfolioSummaryCard from './PortfolioSummaryCard';
 import PortfolioResultsTable from './PortfolioResultsTable';
 import { BATCH_THEME } from './batchTheme';
+import { ConfirmPopover } from '@/components/ui/confirm-popover';
 
 const PortfolioCompareView = lazy(() => import('./PortfolioCompareView'));
 
