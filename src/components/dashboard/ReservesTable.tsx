@@ -1159,13 +1159,14 @@ const ReservesTable = ({
     const neededCount = expandedIndex + 6; // expanded row + 5 buffer rows
     const currentCount = minVisibleCount ?? DEFAULT_VISIBLE_COUNT;
     if (neededCount > currentCount) {
-      setMinVisibleCount(Math.min(neededCount, sortedData.length));
+      const nextCount = Math.min(neededCount, sortedData.length);
+      setMinVisibleCount(nextCount > 0 ? nextCount : null);
     }
   }, [expandedReserveId, sortedData, minVisibleCount]);
 
   // Display data with pagination - must be before conditional returns
   const displayData = useMemo(() => {
-    const baseCount = minVisibleCount ?? DEFAULT_VISIBLE_COUNT;
+    const baseCount = (minVisibleCount != null && minVisibleCount > 0) ? minVisibleCount : DEFAULT_VISIBLE_COUNT;
     if (baseCount >= sortedData.length) return sortedData;
     return sortedData.slice(0, baseCount);
   }, [sortedData, minVisibleCount]);
@@ -1464,10 +1465,11 @@ const ReservesTable = ({
           showAll={showAll}
           defaultVisibleCount={DEFAULT_VISIBLE_COUNT}
           variant="mobile"
-          onShowAll={() => setMinVisibleCount(sortedData.length)}
+          onShowAll={() => setMinVisibleCount(sortedData.length > 0 ? sortedData.length : null)}
           onShowLess={() => setMinVisibleCount(null)}
         />
-        
+
+
         <ReservesTableTooltipOverlay tooltipState={tooltipState} onClose={() => setTooltipState(null)} isApy={isApy} tydroPointToUsdRate={tydroPointToUsdRate} whitelistMerklCampaignIds={whitelistMerklCampaignIds} onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign} forecastStates={forecastStates} />
 
         <ReservesTableFloatingScroll
@@ -1821,7 +1823,7 @@ const ReservesTable = ({
         showAll={showAll}
         defaultVisibleCount={DEFAULT_VISIBLE_COUNT}
         variant="desktop"
-        onShowAll={() => setMinVisibleCount(sortedData.length)}
+        onShowAll={() => setMinVisibleCount(sortedData.length > 0 ? sortedData.length : null)}
         onShowLess={() => setMinVisibleCount(null)}
       />
       
