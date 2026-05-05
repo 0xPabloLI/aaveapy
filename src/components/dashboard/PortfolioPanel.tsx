@@ -160,14 +160,20 @@ const SnapshotItem = memo(function SnapshotItem({
         <span className="ds-text-11 font-semibold text-foreground truncate block">{snapshot.label}</span>
         <span className="ds-text-10 text-muted-foreground">{timeStr} · {snapshot.positions.length} positions</span>
       </div>
-      <button
-        type="button"
-        onClick={() => onDelete(snapshot.id)}
-        className="rounded p-1 text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-colors"
-        aria-label={`Delete snapshot ${snapshot.label}`}
+      <ConfirmPopover
+        onConfirm={() => onDelete(snapshot.id)}
+        title="Delete snapshot?"
+        description={`"${snapshot.label}" will be removed permanently.`}
+        confirmLabel="Delete"
       >
-        <X className="size-3" aria-hidden />
-      </button>
+        <button
+          type="button"
+          className="rounded p-1 text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-colors"
+          aria-label={`Delete snapshot ${snapshot.label}`}
+        >
+          <X className="size-3" aria-hidden />
+        </button>
+      </ConfirmPopover>
     </div>
   );
 });
