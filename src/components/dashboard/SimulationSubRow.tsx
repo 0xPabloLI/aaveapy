@@ -205,14 +205,9 @@ const SimulationSubRow = ({
   const hasScenarioInput = simulation.supply.hasInput || simulation.borrow.hasInput;
   const showEmptyStateNote = !simulation.supply.hasInput && !simulation.borrow.hasInput;
 
-  const isPausedState = !!reserve.isPaused;
-  const isFrozenState = !isPausedState && !!reserve.isFrozen;
-  const isSupplyDisabledOnly = !isPausedState && !isFrozenState && !!reserve.supplyDisabled;
-  const isBorrowDisabledOnly = !isPausedState && !isFrozenState && !reserve.supplyDisabled && !!reserve.borrowDisabled;
-  const isBothDisabled = !isPausedState && !isFrozenState && !!reserve.supplyDisabled && !!reserve.borrowDisabled;
-  const hasDisabledState = isPausedState || isFrozenState || isSupplyDisabledOnly || isBorrowDisabledOnly || isBothDisabled;
-  const supplySideBlocked = isPausedState || isFrozenState || isSupplyDisabledOnly || isBothDisabled;
-  const borrowSideBlocked = isPausedState || isFrozenState || isBorrowDisabledOnly || isBothDisabled;
+  const supplySideBlocked = !!(reserve.isPaused || reserve.isFrozen || reserve.supplyDisabled);
+  const borrowSideBlocked = !!(reserve.isPaused || reserve.isFrozen || reserve.borrowDisabled);
+  const hasDisabledState = supplySideBlocked || borrowSideBlocked;
 
   const aaveUrl = buildAaveUrl({ marketName: reserve.marketName, tokenAddress: reserve.tokenAddress, aaveProReserveId: reserve.aaveProReserveId });
 
@@ -1093,33 +1088,33 @@ const SimulationSubRow = ({
     <div ref={containerRef} className={`min-w-0 ${effectiveCompact ? 'p-0' : 'p-0'}`}>
       {showHeaderBlock && hasDisabledState ? (
         <div className={`flex items-center gap-3 rounded-lg ${
-          isPausedState
+          reserve.isPaused
             ? 'border border-amber-400/60 bg-amber-50/80 dark:bg-amber-950/30'
-            : isFrozenState
+            : reserve.isFrozen
               ? 'border border-sky-400/60 bg-sky-50/80 dark:bg-sky-950/30'
               : 'border border-muted-foreground/20 bg-muted/40'
         } ${effectiveCompact ? 'mb-2 px-3 py-1.5' : 'mb-3 px-4 py-2'}`}>
-          {isPausedState ? (
+          {reserve.isPaused ? (
             <PauseCircle className="w-4 h-4 text-amber-500 shrink-0" />
-          ) : isFrozenState ? (
+          ) : reserve.isFrozen ? (
             <Snowflake className="w-4 h-4 text-sky-500 shrink-0" />
           ) : (
             <Ban className="w-4 h-4 text-muted-foreground shrink-0" />
           )}
           <p className={`flex-1 ds-text-12 ${
-            isPausedState
+            reserve.isPaused
               ? 'text-amber-800 dark:text-amber-300'
-              : isFrozenState
+              : reserve.isFrozen
                 ? 'text-sky-800 dark:text-sky-300'
                 : 'text-muted-foreground'
           }`}>
-            {isPausedState
+            {reserve.isPaused
               ? 'Paused: all actions are halted. Simulation not available.'
-              : isFrozenState
+              : reserve.isFrozen
                 ? 'Frozen: supply and borrow are disabled. Simulation not available.'
-                : isBothDisabled
+                : supplySideBlocked && borrowSideBlocked
                   ? 'Supply and borrow are disabled for this reserve.'
-                  : isSupplyDisabledOnly
+                  : supplySideBlocked
                     ? 'Supply is disabled for this reserve.'
                     : 'Borrow is disabled for this reserve.'}
           </p>

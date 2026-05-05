@@ -163,6 +163,9 @@ const DesktopReserveRow = memo(({
   const protocolVersion = getProtocolVersion(reserve.marketName);
   const isV4Market = protocolVersion === 'v4';
 
+  const supplyBlocked = !!(reserve.isPaused || reserve.isFrozen || reserve.supplyDisabled);
+  const borrowBlocked = !!(reserve.isPaused || reserve.isFrozen || reserve.borrowDisabled);
+
   // Token price from reserve directly (must be positive finite number)
   const displayTokenPrice =
     reserve.tokenPrice != null && Number.isFinite(reserve.tokenPrice) && reserve.tokenPrice > 0
@@ -382,11 +385,11 @@ const DesktopReserveRow = memo(({
                 tokenPrice={displayTokenPrice}
                 tokenSymbol={reserve.tokenSymbol}
                 label={<span className="font-medium tabular-nums">{supplySizeLabel}</span>}
-                triggerClassName="ds-text-emerald-500"
+                triggerClassName={supplyBlocked ? 'text-secondary' : 'ds-text-emerald-500'}
                 triggerAriaLabel={`Supply cap details for ${reserve.tokenSymbol}`}
               />
             ) : (
-              <div className="inline-flex items-center gap-[var(--ds-space-1-5)] ds-text-emerald-500 rounded-md py-0.5 pl-1 pr-0.5 -my-0.5">
+              <div className={`inline-flex items-center gap-[var(--ds-space-1-5)] rounded-md py-0.5 pl-1 pr-0.5 -my-0.5 ${supplyBlocked ? 'text-secondary' : 'ds-text-emerald-500'}`}>
                 <span className="font-medium tabular-nums">{supplySizeLabel}</span>
                 <span aria-hidden className="inline-block w-3 h-3 shrink-0" />
               </div>
@@ -406,7 +409,7 @@ const DesktopReserveRow = memo(({
                 triggerAriaLabel={`Borrow cap details for ${reserve.tokenSymbol}`}
               />
             ) : (
-              <div className="inline-flex items-center gap-[var(--ds-space-1-5)] ds-text-brand-cyan rounded-md py-0.5 pl-1 pr-0.5 -my-0.5">
+              <div className={`inline-flex items-center gap-[var(--ds-space-1-5)] rounded-md py-0.5 pl-1 pr-0.5 -my-0.5 ${borrowBlocked ? 'text-secondary' : 'ds-text-brand-cyan'}`}>
                 <span className="font-medium tabular-nums">{borrowSizeLabel}</span>
                 <span aria-hidden className="inline-block w-3 h-3 shrink-0" />
               </div>
