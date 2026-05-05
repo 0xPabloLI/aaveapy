@@ -1,12 +1,12 @@
 import { memo } from 'react';
-import { Trash2, Eraser, Minus } from 'lucide-react';
+import { Eraser, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatNumberInput } from '@/lib/numberFormat';
 import { cnDsInputSurface } from '@/lib/dsInputSurface';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getChainIconSrc } from '@/lib/chainIcons';
-import { getMarketChipLabel, isV4Market } from '@/lib/marketLabels';
+import { getMarketChipLabel, isV4Market, getHubChipClass } from '@/lib/marketLabels';
 
 import { BATCH_THEME } from './batchTheme';
 import type { PortfolioPosition, PortfolioInputMode } from '@/types/portfolio';
@@ -40,6 +40,7 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
   const chainSrc = getChainIconSrc(chainName);
   const marketLabel = getMarketChipLabel(marketName, chainName);
   const showV4 = isV4Market(marketName);
+  const hubChipClass = getHubChipClass(showV4);
 
   const renderSideInput = (position: PortfolioPosition | null, sideLabel: string) => {
     if (!position) return null;
@@ -66,7 +67,6 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
         >
           {position.inputMode === 'usd' ? '$' : 'T'}
         </button>
-        {/* Input with embedded clear button (matches search-token / filter input pattern) */}
         <div className="relative flex-1 min-w-0">
           <input
             value={position.amount}
@@ -97,97 +97,77 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
     );
   };
 
-  const hubChipClass = cn(
-    'inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-normal leading-none',
-    showV4
-      ? 'text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10'
-      : 'text-muted-foreground/70 bg-muted/40',
+  // Single delete button — uses Minus icon (distinct from bulk Clear-all Trash2).
+  const removeButton = (
+    <button
+      type="button"
+      onClick={() => onRemove(reserveId)}
+      className={cn(
+        'shrink-0 rounded-md p-1 text-muted-foreground/60 transition-colors',
+        BATCH_THEME.trashHoverBg,
+        BATCH_THEME.trashHoverText,
+      )}
+      aria-label={`Remove ${tokenSymbol} from portfolio`}
+    >
+      <Minus className="size-3.5" strokeWidth={2.5} aria-hidden />
+    </button>
   );
 
-  return (
-    <div
-      className={cn(
-        'relative flex items-center rounded-lg border border-border/50 bg-card/80 transition-colors hover:border-border',
-        isMobile ? 'gap-1.5 px-2 py-1.5' : 'gap-2.5 px-2.5 py-2',
-      )}
-    >
-      {/* Mobile corner remove badge — anchored to the whole row's top-right corner */}
-      {isMobile && (
-        <button
-          type="button"
-          onClick={() => onRemove(reserveId)}
-          className="absolute -top-1.5 -right-1.5 z-10 flex size-4 items-center justify-center rounded-full bg-muted text-muted-foreground ring-1 ring-border/60 transition-colors hover:bg-destructive hover:text-destructive-foreground active:scale-90"
-          aria-label={`Remove ${tokenSymbol} from portfolio`}
-        >
-          <Minus className="size-2.5" strokeWidth={3} aria-hidden />
-        </button>
-      )}
-
-      {/* Remove — desktop only as a separate column */}
-      {!isMobile && (
-        <button
-          type="button"
-          onClick={() => onRemove(reserveId)}
-          className={`shrink-0 rounded-md p-1 text-muted-foreground/60 transition-colors ${BATCH_THEME.trashHoverBg} ${BATCH_THEME.trashHoverText}`}
-          aria-label={`Remove ${tokenSymbol} from portfolio`}
-        >
-          <Trash2 className="size-3.5" aria-hidden />
-        </button>
-      )}
-
-      {/* Token info — mobile: 2-col grid (icons centered, text left-aligned), 3 rows */}
-      {isMobile ? (
+  if (isMobile) {
+    return (
+      <div className="flex items-center gap-1.5 rounded-lg border border-border/50 bg-card/80 px-2 py-1.5 transition-colors hover:border-border">
+        {removeButton}
+        {/* Token info — 2-col grid (icons centered, text left-aligned), 3 rows */}
         <div className="grid min-w-0 shrink-0 max-w-[44%] grid-cols-[1rem_minmax(0,1fr)] items-center gap-x-1 gap-y-0.5 leading-[1.15]">
-          {/* Row 1 */}
           <span className="flex justify-center"><TokenIcon symbol={tokenSymbol} size={14} /></span>
           <span className="ds-text-12 font-semibold text-foreground truncate">{tokenSymbol}</span>
-          {/* Row 2 */}
           <span className="flex justify-center">
             {chainSrc && <img src={chainSrc} alt={chainName} className="size-3 opacity-70" />}
           </span>
           <span className="ds-text-10 text-muted-foreground truncate">{marketLabel}</span>
-          {/* Row 3 — Hub: text left-aligned with the rows above (negative margin offsets the chip's horizontal padding) */}
           {hubName && (
             <>
               <span aria-hidden />
-              <span
-                className={cn('justify-self-start max-w-full -ml-1.5', hubChipClass)}
-                title={`Hub: ${hubName}`}
-              >
+              <span className={cn('justify-self-start max-w-full -ml-1.5', hubChipClass)} title={`Hub: ${hubName}`}>
                 <span className="truncate">{hubName}</span>
               </span>
             </>
           )}
         </div>
-      ) : (
-        <div className="flex w-[180px] shrink-0 min-w-0 items-center gap-1.5">
-          <TokenIcon symbol={tokenSymbol} size={20} />
-          <div className="flex flex-col min-w-0 leading-tight">
-            <span className="ds-text-12 font-semibold text-foreground truncate">
-              {tokenSymbol}
-            </span>
-            <span className="ds-text-10 text-muted-foreground inline-flex items-center gap-1 min-w-0 flex-wrap">
-              {chainSrc && (
-                <img src={chainSrc} alt={chainName} className="size-2.5 shrink-0 opacity-70" />
-              )}
-              <span className="truncate">{marketLabel}</span>
-              {hubName && (
-                <span className={cn('shrink-0 max-w-full', hubChipClass)} title={`Hub: ${hubName}`}>
-                  <span className="truncate">{hubName}</span>
-                </span>
-              )}
-            </span>
-          </div>
+        <div className="flex min-w-0 flex-1 flex-col items-stretch gap-1">
+          {renderSideInput(supplyPosition, 'Supply')}
+          {borrowPosition && renderSideInput(borrowPosition, 'Borrow')}
         </div>
-      )}
+      </div>
+    );
+  }
 
-      {/* Supply + Borrow inputs — stacked on mobile, inline on desktop */}
-      <div
-        className={cn(
-          'flex min-w-0 flex-1',
-          isMobile ? 'flex-col items-stretch gap-1' : 'items-center gap-3',
-        )}
-      >
+  // Desktop — uses subgrid so left columns dynamically align to the widest row.
+  return (
+    <div
+      className="grid grid-cols-subgrid col-span-3 items-center gap-x-2.5 rounded-lg border border-border/50 bg-card/80 px-2.5 py-2 transition-colors hover:border-border"
+    >
+      {removeButton}
+      <div className="flex min-w-0 items-center gap-1.5">
+        <TokenIcon symbol={tokenSymbol} size={20} />
+        <div className="flex flex-col min-w-0 leading-tight">
+          <span className="ds-text-12 font-semibold text-foreground truncate">
+            {tokenSymbol}
+          </span>
+          <span className="ds-text-10 text-muted-foreground inline-flex items-center gap-1 min-w-0 flex-wrap">
+            {chainSrc && (
+              <img src={chainSrc} alt={chainName} className="size-2.5 shrink-0 opacity-70" />
+            )}
+            <span className="truncate">{marketLabel}</span>
+            {hubName && (
+              <span className={cn('shrink-0 max-w-full', hubChipClass)} title={`Hub: ${hubName}`}>
+                <span className="truncate">{hubName}</span>
+              </span>
+            )}
+          </span>
+        </div>
+      </div>
+      <div className="flex min-w-0 items-center gap-3">
         {renderSideInput(supplyPosition, 'Supply')}
         {borrowPosition && renderSideInput(borrowPosition, 'Borrow')}
       </div>
