@@ -99,7 +99,7 @@ function SearchResultRow({
         <>
           <span aria-hidden className="h-3 w-px bg-border/60 shrink-0" />
           <span
-            className="inline-flex min-w-0 max-w-[40%] shrink items-center rounded-full bg-muted/40 px-1.5 py-0.5 text-[9px] font-normal leading-none text-muted-foreground/70"
+            className={cn('min-w-0 max-w-[40%] shrink', getHubChipClass(isV4Market(reserve.marketName)))}
             title={`Hub: ${reserve.hubName}`}
           >
             <span className="truncate">{reserve.hubName}</span>
