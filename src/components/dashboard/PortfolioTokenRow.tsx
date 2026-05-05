@@ -97,6 +97,13 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
     );
   };
 
+  const hubChipClass = cn(
+    'inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-normal leading-none',
+    showV4
+      ? 'text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10'
+      : 'text-muted-foreground/70 bg-muted/40',
+  );
+
   return (
     <div
       className={cn(
@@ -106,40 +113,26 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
     >
       {/* Mobile corner remove badge — anchored to the whole row's top-right corner */}
       {isMobile && (
-        <ConfirmPopover
-          onConfirm={() => onRemove(reserveId)}
-          title={`Remove ${tokenSymbol}?`}
-          description="This position will be removed from the portfolio."
-          align="end"
-          side="bottom"
+        <button
+          type="button"
+          onClick={() => onRemove(reserveId)}
+          className="absolute -top-1.5 -right-1.5 z-10 flex size-4 items-center justify-center rounded-full bg-muted text-muted-foreground ring-1 ring-border/60 transition-colors hover:bg-destructive hover:text-destructive-foreground active:scale-90"
+          aria-label={`Remove ${tokenSymbol} from portfolio`}
         >
-          <button
-            type="button"
-            className="absolute -top-1.5 -right-1.5 z-10 flex size-4 items-center justify-center rounded-full bg-muted text-muted-foreground ring-1 ring-border/60 transition-colors hover:bg-destructive hover:text-destructive-foreground active:scale-90"
-            aria-label={`Remove ${tokenSymbol} from portfolio`}
-          >
-            <Minus className="size-2.5" strokeWidth={3} aria-hidden />
-          </button>
-        </ConfirmPopover>
+          <Minus className="size-2.5" strokeWidth={3} aria-hidden />
+        </button>
       )}
 
       {/* Remove — desktop only as a separate column */}
       {!isMobile && (
-        <ConfirmPopover
-          onConfirm={() => onRemove(reserveId)}
-          title={`Remove ${tokenSymbol}?`}
-          description="This position will be removed from the portfolio."
-          align="start"
-          side="bottom"
+        <button
+          type="button"
+          onClick={() => onRemove(reserveId)}
+          className={`shrink-0 rounded-md p-1 text-muted-foreground/60 transition-colors ${BATCH_THEME.trashHoverBg} ${BATCH_THEME.trashHoverText}`}
+          aria-label={`Remove ${tokenSymbol} from portfolio`}
         >
-          <button
-            type="button"
-            className={`shrink-0 rounded-md p-1 text-muted-foreground/60 transition-colors ${BATCH_THEME.trashHoverBg} ${BATCH_THEME.trashHoverText}`}
-            aria-label={`Remove ${tokenSymbol} from portfolio`}
-          >
-            <Trash2 className="size-3.5" aria-hidden />
-          </button>
-        </ConfirmPopover>
+          <Trash2 className="size-3.5" aria-hidden />
+        </button>
       )}
 
       {/* Token info — mobile: 2-col grid (icons centered, text left-aligned), 3 rows */}
@@ -153,12 +146,12 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
             {chainSrc && <img src={chainSrc} alt={chainName} className="size-3 opacity-70" />}
           </span>
           <span className="ds-text-10 text-muted-foreground truncate">{marketLabel}</span>
-          {/* Row 3 — Hub aligned with text column, using shared mobile hub chip style */}
+          {/* Row 3 — Hub: text left-aligned with the rows above (negative margin offsets the chip's horizontal padding) */}
           {hubName && (
             <>
               <span aria-hidden />
               <span
-                className="justify-self-start inline-flex max-w-full items-center rounded-full bg-muted/40 px-1.5 py-0.5 text-[9px] font-normal leading-none text-muted-foreground/70"
+                className={cn('justify-self-start max-w-full -ml-1.5', hubChipClass)}
                 title={`Hub: ${hubName}`}
               >
                 <span className="truncate">{hubName}</span>
@@ -167,27 +160,19 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
           )}
         </div>
       ) : (
-        <div className="flex min-w-0 shrink-0 items-center gap-1.5">
+        <div className="flex w-[180px] shrink-0 min-w-0 items-center gap-1.5">
           <TokenIcon symbol={tokenSymbol} size={20} />
           <div className="flex flex-col min-w-0 leading-tight">
             <span className="ds-text-12 font-semibold text-foreground truncate">
               {tokenSymbol}
             </span>
-            <span className="ds-text-10 text-muted-foreground inline-flex items-center gap-0.5 min-w-0 flex-wrap">
+            <span className="ds-text-10 text-muted-foreground inline-flex items-center gap-1 min-w-0 flex-wrap">
               {chainSrc && (
                 <img src={chainSrc} alt={chainName} className="size-2.5 shrink-0 opacity-70" />
               )}
-              {showV4 && (
-                <span className="shrink-0 inline-flex items-center px-1 py-0 rounded-full text-[8px] font-medium leading-none text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10">
-                  V4
-                </span>
-              )}
               <span className="truncate">{marketLabel}</span>
               {hubName && (
-                <span
-                  className="shrink-0 inline-flex max-w-full items-center rounded-full bg-muted/40 px-1.5 py-0.5 text-[9px] font-normal leading-none text-muted-foreground/70"
-                  title={`Hub: ${hubName}`}
-                >
+                <span className={cn('shrink-0 max-w-full', hubChipClass)} title={`Hub: ${hubName}`}>
                   <span className="truncate">{hubName}</span>
                 </span>
               )}
