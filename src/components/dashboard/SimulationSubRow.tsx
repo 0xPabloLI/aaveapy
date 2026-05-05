@@ -1,5 +1,5 @@
 import { Fragment, useRef, useState, useEffect } from 'react';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Ban, PauseCircle, Snowflake } from 'lucide-react';
 import {
   annualPercentToDailyFraction,
   formatPercent,
@@ -204,6 +204,13 @@ const SimulationSubRow = ({
     !simulation.tokenPriceLoading;
   const hasScenarioInput = simulation.supply.hasInput || simulation.borrow.hasInput;
   const showEmptyStateNote = !simulation.supply.hasInput && !simulation.borrow.hasInput;
+
+  const isPausedState = !!reserve.isPaused;
+  const isFrozenState = !isPausedState && !!reserve.isFrozen;
+  const isSupplyDisabledOnly = !isPausedState && !isFrozenState && !!reserve.supplyDisabled;
+  const isBorrowDisabledOnly = !isPausedState && !isFrozenState && !reserve.supplyDisabled && !!reserve.borrowDisabled;
+  const isBothDisabled = !isPausedState && !isFrozenState && !!reserve.supplyDisabled && !!reserve.borrowDisabled;
+  const hasDisabledState = isPausedState || isFrozenState || isSupplyDisabledOnly || isBorrowDisabledOnly || isBothDisabled;
 
   const aaveUrl = buildAaveUrl({ marketName: reserve.marketName, tokenAddress: reserve.tokenAddress, aaveProReserveId: reserve.aaveProReserveId });
 
@@ -1082,7 +1089,40 @@ const SimulationSubRow = ({
 
   return (
     <div ref={containerRef} className={`min-w-0 ${effectiveCompact ? 'p-0' : 'p-0'}`}>
-      {showHeaderBlock && (
+      {showHeaderBlock && hasDisabledState ? (
+        <div className={`flex items-center gap-3 rounded-lg ${
+          isPausedState
+            ? 'border border-amber-400/60 bg-amber-50/80 dark:bg-amber-950/30'
+            : isFrozenState
+              ? 'border border-sky-400/60 bg-sky-50/80 dark:bg-sky-950/30'
+              : 'border border-muted-foreground/20 bg-muted/40'
+        } ${effectiveCompact ? 'mb-2 px-3 py-1.5' : 'mb-3 px-4 py-2'}`}>
+          {isPausedState ? (
+            <PauseCircle className="w-4 h-4 text-amber-500 shrink-0" />
+          ) : isFrozenState ? (
+            <Snowflake className="w-4 h-4 text-sky-500 shrink-0" />
+          ) : (
+            <Ban className="w-4 h-4 text-muted-foreground shrink-0" />
+          )}
+          <p className={`flex-1 ds-text-12 ${
+            isPausedState
+              ? 'text-amber-800 dark:text-amber-300'
+              : isFrozenState
+                ? 'text-sky-800 dark:text-sky-300'
+                : 'text-muted-foreground'
+          }`}>
+            {isPausedState
+              ? 'Paused: all actions are halted. Simulation not available.'
+              : isFrozenState
+                ? 'Frozen: supply and borrow are disabled. Simulation not available.'
+                : isBothDisabled
+                  ? 'Supply and borrow are disabled for this reserve.'
+                  : isSupplyDisabledOnly
+                    ? 'Supply is disabled for this reserve.'
+                    : 'Borrow is disabled for this reserve.'}
+          </p>
+        </div>
+      ) : showHeaderBlock ? (
         <div
         className={`flex flex-wrap items-baseline gap-x-2 gap-y-1 ${
           effectiveCompact ? (embeddedFromTop ? 'mb-2 px-0' : 'mb-2 px-1') : 'mb-3 px-1'
@@ -1092,7 +1132,7 @@ const SimulationSubRow = ({
             Enter supply or borrow amount above to see simulated values.
           </span>
         </div>
-      )}
+      ) : null}
       {!showEmptyStateNote && (
         <div className={`${effectiveCompact ? 'mb-2' : 'mb-3'} ${effectiveCompact && embeddedFromTop ? 'px-0' : 'px-1'}`}>
           <p className={`ds-text-11 ${SIM_NEUTRAL_SECONDARY}`}>
