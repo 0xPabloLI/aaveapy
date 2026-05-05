@@ -633,6 +633,11 @@ describe('buildRateSimulationResult', () => {
       brevisSupplys: [
         {
           link: 'https://example.com/brevis',
+          campaignApr: 10,
+          campaignStartedAt: '2020-01-01T00:00:00.000Z',
+          campaignEndedAt: endDate,
+          perUserRewardCapUsd: 5000,
+          campaignId: 'brevis-supply',
           name: 'Brevis Supply',
           message: 'Brevis Supply',
           breakdowns: [
@@ -675,6 +680,11 @@ describe('buildRateSimulationResult', () => {
       brevisSupplys: [
         {
           link: 'https://example.com/brevis',
+          campaignApr: 10,
+          campaignStartedAt: '2020-01-01T00:00:00.000Z',
+          campaignEndedAt: endDate,
+          perUserRewardCapUsd: 5000,
+          campaignId: 'brevis-supply',
           name: 'Brevis Supply',
           message: 'Brevis Supply',
           breakdowns: [

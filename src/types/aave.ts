@@ -51,15 +51,15 @@ export interface BrevisCampaignBreakdown extends BaseCampaignBreakdown {
 }
 
 export interface BrevisIncentive extends Omit<CampaignGroup<BrevisCampaignBreakdown>, 'breakdowns' | 'link'> {
-  link: string;                        // Brevis campaign detail link
-  breakdowns?: BrevisCampaignBreakdown[]; // Canonical breakdown-level metadata, aligned with Merkl
-  campaignApr?: number;                 // Legacy canonical APR fallback
-  campaignStartedAt?: string;           // Legacy canonical start time fallback
-  campaignEndedAt?: string;             // Legacy canonical end time fallback
-  latestTvl?: number;                  // Legacy preferred TVL field
-  totalBudget?: number;                // Legacy preferred total budget field
-  perUserRewardCapUsd?: number;        // Legacy per-user cumulative reward ceiling
-  campaignId?: string;                 // Legacy shared campaign id fallback
+  link: string;
+  breakdowns?: BrevisCampaignBreakdown[];
+  campaignApr?: number;
+  campaignStartedAt?: string;
+  campaignEndedAt?: string;
+  latestTvl?: number;
+  totalBudget?: number;
+  perUserRewardCapUsd?: number;
+  campaignId?: string;
 }
 
 /**

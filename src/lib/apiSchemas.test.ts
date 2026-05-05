@@ -127,7 +127,7 @@ describe('apiSchemas', () => {
     expect(item?.endTimestamp).toBe(1774965600);
   });
 
-  it('accepts aligned Brevis fields while dropping deprecated legacy fields', () => {
+  it('normalizes grouped Brevis payloads to flat incentives', () => {
     const parsed = MarketsResponseSchema.parse({
       snapshot: {
         lastUpdated: '2026-03-26T00:00:00.000Z',

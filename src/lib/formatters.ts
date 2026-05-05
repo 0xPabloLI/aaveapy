@@ -255,7 +255,7 @@ const sumMerklOpportunitiesApy = (
 };
 
 /**
- * Helper: Sum Brevis incentives (supports array or legacy single APR)
+ * Helper: Sum Brevis incentives (supports array of incentives)
  * Note: only active campaigns are counted; apr >= 0 keeps zero-APR active campaigns
  */
 const sumBrevisIncentives = (brevis?: BrevisIncentive[]): number => {
@@ -272,7 +272,7 @@ const sumBrevisIncentives = (brevis?: BrevisIncentive[]): number => {
 };
 
 /**
- * Helper: Sum Brevis incentives as APY (supports array or legacy single APR)
+ * Helper: Sum Brevis incentives as APY (supports array of incentives)
  * Note: only active campaigns are counted; apr >= 0 keeps zero-APR active campaigns
  */
 const sumBrevisIncentivesApy = (brevis?: BrevisIncentive[]): number => {

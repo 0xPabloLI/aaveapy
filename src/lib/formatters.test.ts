@@ -63,6 +63,9 @@ describe('incentive calculations only include active campaigns', () => {
         link: 'https://example.com/active-brevis',
         name: 'Brevis Active',
         message: 'Active Brevis',
+        campaignApr: 3,
+        campaignStartedAt: daysFromNowIso(-1),
+        campaignEndedAt: daysFromNowIso(1),
         breakdowns: [
           {
             campaignApr: 3,
@@ -75,6 +78,9 @@ describe('incentive calculations only include active campaigns', () => {
         link: 'https://example.com/future-brevis',
         name: 'Brevis Future',
         message: 'Future Brevis',
+        campaignApr: 8,
+        campaignStartedAt: daysFromNowIso(4),
+        campaignEndedAt: daysFromNowIso(8),
         breakdowns: [
           {
             campaignApr: 8,

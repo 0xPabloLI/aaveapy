@@ -36,11 +36,9 @@ const totalBorrowedUsd = simulation?.marketMetrics.totalBorrowedUsdAfter ?? base
 - `simulation.utilization.current` 通过互补的链上参数重新计算：`totalVariableDebt / (availableLiquidity + totalVariableDebt)`
 - 其他 simulation 值要么是同源转换（如 `supplyApy` → `toDisplayNative`），不构成互补参数 fallback
 
-### 1.3 数据结构 Fallback（新字段 → 旧字段）
+### 1.3 数据结构 Fallback
 
-| 变量 | 首选来源 | Fallback 来源 | 关键文件 |
-|---|---|---|---|
-| Brevis 字段 | `breakdown` 级别 | group `legacy` 级别 | `src/lib/brevis.ts` |
+经 normalize 之后，所有 Brevis 字段已扁平化到顶层，不再有 breakdown→legacy 的区别。详见 `src/lib/apiSchemas.ts:normalizeBrevisIncentives`。
 
 ---
 
