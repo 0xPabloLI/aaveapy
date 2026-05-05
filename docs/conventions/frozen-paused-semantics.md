@@ -107,19 +107,59 @@ V4 采用 **Hub & Spoke** 架构，标志分为两层：
 
 ---
 
-## 四、UI 文案策略
+## 四、UI 实现规范
+
+### 4.1 文案策略
 
 UI 文案采用 **最大公约数** 策略：只描述两个版本中行为一致的核心操作，
 避免让普通用户困惑于版本差异。详细差异见本文档。
-
-如需展示版本差异化信息，可考虑在 `FrozenStatusBadge` 中增加 `protocolVersion` 参数。
-
-### 当前文案
 
 **Frozen:**
 > deposits and borrows are temporarily disabled, but existing positions can
 > still be repaid, withdrawn, and liquidated.
 
 **Paused:**
-> all reserve actions (deposit, borrow, repay, withdraw, liquidations, and
-> aToken transfers) are halted.
+> all reserve actions (deposit, borrow, repay, withdraw, liquidations)
+> are halted.
+
+### 4.2 图标与颜色
+
+| 状态 | 图标 | 颜色 | 语义 |
+|------|------|------|------|
+| Frozen（仅） | ❄️ `Snowflake` | `sky-500` 蓝 | 中度限制，可退出 |
+| Paused | ⏸️ `PauseCircle` | `amber-500` 橙 | 紧急停机，全锁死 |
+| Frozen + Paused | ❄️ ⏸️ 并列 | 各用各的色 | 两种独立标志同时展示 |
+
+### 4.3 行/卡片背景色
+
+| 状态 | 桌面端行背景 | 移动端卡片背景 |
+|------|------------|-------------|
+| 无状态 | 默认 | 默认 |
+| Frozen（仅） | `ds-bg-sky-500-8` 蓝底 | `ds-bg-sky-500-8` 蓝底 |
+| Paused（含同时 Frozen） | `ds-bg-amber-500-10` 橙底 | `ds-bg-amber-500-10` 橙底 |
+
+> 同时 Frozen + Paused 时，背景色取 Paused（更严重状态覆盖），
+> 因为 Paused 完全包含 Frozen 的语义范围。
+
+### 4.4 图标位置
+
+**桌面端：**
+```
+🪙 TokenIcon   ❄/⏸   syrupUSDT   ↗ 菜单
+```
+
+状态图标位于 TokenIcon 和资产名称之间，作为资产的属性修饰。
+
+**移动端：**
+- TokenIcon 左上角叠加小圆点指示器
+- Paused 显示 ⏸️ `PauseCircle` / `bg-amber-500`
+- Frozen 显示 ❄️ emoji / `bg-sky-500`
+
+### 4.5 设计取舍
+
+- **图标不带自身背景**：去掉 `bg-sky-500/10` / `bg-amber-500/10` 药丸底色，
+  行背景已经传达状态信息，裸 icon 更干净
+- **两者同时存在时并排展示**：Frozen 和 Paused 是独立语义，不应互相覆盖
+- **Tooltip 始终完整展示**：点击后同时列出 Frozen 和 Paused 的说明文案
+- **不区分 V3/V4 版本**：当前对两个版本使用相同规则（最大公约数 + tooltip 补全），
+  如需版本差异化展示，可给 `FrozenStatusBadge` 增加 `protocolVersion` 参数
