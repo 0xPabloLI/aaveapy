@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { Trash2, Eraser } from 'lucide-react';
+import { Trash2, Eraser, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatNumberInput } from '@/lib/numberFormat';
 import { cnDsInputSurface } from '@/lib/dsInputSurface';
