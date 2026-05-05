@@ -100,11 +100,23 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
   return (
     <div
       className={cn(
-        'flex items-center rounded-lg border border-border/50 bg-card/80 transition-colors hover:border-border',
+        'relative flex items-center rounded-lg border border-border/50 bg-card/80 transition-colors hover:border-border',
         isMobile ? 'gap-1.5 px-2 py-1.5' : 'gap-2.5 px-2.5 py-2',
       )}
     >
-      {/* Remove — desktop only as a separate column. On mobile it overlays the token icon (hover/tap reveals trash). */}
+      {/* Mobile corner remove badge — anchored to the whole row's top-right corner */}
+      {isMobile && (
+        <button
+          type="button"
+          onClick={() => onRemove(reserveId)}
+          className="absolute -top-1.5 -right-1.5 z-10 flex size-4 items-center justify-center rounded-full bg-muted text-muted-foreground ring-1 ring-border/60 transition-colors hover:bg-destructive hover:text-destructive-foreground active:scale-90"
+          aria-label={`Remove ${tokenSymbol} from portfolio`}
+        >
+          <Minus className="size-2.5" strokeWidth={3} aria-hidden />
+        </button>
+      )}
+
+      {/* Remove — desktop only as a separate column */}
       {!isMobile && (
         <button
           type="button"
@@ -116,40 +128,28 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
         </button>
       )}
 
-      {/* Token info — mobile: vertical stack (icon+symbol / chain+market / hub) for narrower footprint */}
+      {/* Token info — mobile: 2-col grid (icons centered, text left-aligned), 3 rows */}
       {isMobile ? (
-        <div className="relative flex min-w-0 shrink-0 flex-col gap-0.5 leading-[1.15] max-w-[44%] pr-1">
-          {/* Corner remove badge — top-right of the whole token info block */}
-          <button
-            type="button"
-            onClick={() => onRemove(reserveId)}
-            className="absolute -top-1 -right-1 z-10 flex size-4 items-center justify-center rounded-full bg-muted text-muted-foreground ring-1 ring-border/60 transition-colors hover:bg-destructive hover:text-destructive-foreground active:scale-90"
-            aria-label={`Remove ${tokenSymbol} from portfolio`}
-          >
-            <Minus className="size-2.5" strokeWidth={3} aria-hidden />
-          </button>
-          {/* Row 1: token icon + symbol */}
-          <span className="inline-flex items-center gap-1 min-w-0">
-            <TokenIcon symbol={tokenSymbol} size={16} />
-            <span className="ds-text-12 font-semibold text-foreground truncate">
-              {tokenSymbol}
-            </span>
+        <div className="grid min-w-0 shrink-0 max-w-[44%] grid-cols-[1rem_minmax(0,1fr)] items-center gap-x-1 gap-y-0.5 leading-[1.15]">
+          {/* Row 1 */}
+          <span className="flex justify-center"><TokenIcon symbol={tokenSymbol} size={14} /></span>
+          <span className="ds-text-12 font-semibold text-foreground truncate">{tokenSymbol}</span>
+          {/* Row 2 */}
+          <span className="flex justify-center">
+            {chainSrc && <img src={chainSrc} alt={chainName} className="size-3 opacity-70" />}
           </span>
-          {/* Row 2: chain logo + market name (no V4 tag) */}
-          <span className="ds-text-10 text-muted-foreground inline-flex items-center gap-1 min-w-0">
-            {chainSrc && (
-              <img src={chainSrc} alt={chainName} className="size-2.5 shrink-0 opacity-70" />
-            )}
-            <span className="truncate">{marketLabel}</span>
-          </span>
-          {/* Row 3: hub */}
+          <span className="ds-text-10 text-muted-foreground truncate">{marketLabel}</span>
+          {/* Row 3 — Hub aligned with text column, using shared mobile hub chip style */}
           {hubName && (
-            <span
-              className="self-start inline-flex items-center px-1 py-0 rounded-full text-[8px] font-medium leading-none text-muted-foreground bg-muted/70 ring-1 ring-border/40 max-w-full truncate"
-              title={`Hub: ${hubName}`}
-            >
-              {hubName}
-            </span>
+            <>
+              <span aria-hidden />
+              <span
+                className="justify-self-start inline-flex max-w-full items-center rounded-full bg-muted/40 px-1.5 py-0.5 text-[9px] font-normal leading-none text-muted-foreground/70"
+                title={`Hub: ${hubName}`}
+              >
+                <span className="truncate">{hubName}</span>
+              </span>
+            </>
           )}
         </div>
       ) : (

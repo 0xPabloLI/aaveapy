@@ -68,39 +68,44 @@ function SearchResultRow({
       ? `Add missing ${hasSupply ? 'borrow' : 'supply'} side for ${reserve.tokenSymbol}`
       : `Add ${reserve.tokenSymbol} (supply and borrow)`;
 
+  const chainSrc = getChainIconSrc(reserve.chainName);
+  const marketLabel = getMarketChipLabel(reserve.marketName, reserve.chainName);
+
   return (
     <button
       type="button"
       disabled={fullyAdded}
       onClick={() => onAdd(reserveId)}
       className={cn(
-        'flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left transition-colors',
+        'flex w-full items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-left transition-colors',
         fullyAdded ? 'opacity-60 cursor-not-allowed' : 'hover:bg-muted/60',
       )}
       aria-label={ariaLabel}
     >
-      <TokenIcon symbol={reserve.tokenSymbol} size={18} />
-      <div className="flex min-w-0 flex-1 flex-col">
-        <span className="ds-text-12 font-semibold text-foreground truncate">
-          {reserve.tokenSymbol}
-        </span>
-        <span className="ds-text-10 text-muted-foreground truncate inline-flex items-center gap-1">
-          {getChainIconSrc(reserve.chainName) && (
-            <img
-              src={getChainIconSrc(reserve.chainName)!}
-              alt={reserve.chainName}
-              className="size-3 shrink-0"
-            />
-          )}
-          {isV4Market(reserve.marketName) && (
-            <span className="inline-flex items-center px-1 py-0 rounded-full text-[9px] font-medium leading-none text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10 shrink-0">
-              V4
-            </span>
-          )}
-          <span className="truncate">{getMarketChipLabel(reserve.marketName, reserve.chainName)}</span>
-        </span>
-      </div>
-      <div className="flex items-center gap-1 shrink-0">
+      {/* Horizontal compact row: token | divider | chain+market | divider | hub */}
+      <span className="inline-flex items-center gap-1 shrink-0">
+        <TokenIcon symbol={reserve.tokenSymbol} size={14} />
+        <span className="ds-text-12 font-semibold text-foreground">{reserve.tokenSymbol}</span>
+      </span>
+      <span aria-hidden className="h-3 w-px bg-border/60 shrink-0" />
+      <span className="inline-flex items-center gap-1 min-w-0 ds-text-10 text-muted-foreground">
+        {chainSrc && (
+          <img src={chainSrc} alt={reserve.chainName} className="size-2.5 shrink-0 opacity-70" />
+        )}
+        <span className="truncate">{marketLabel}</span>
+      </span>
+      {reserve.hubName && (
+        <>
+          <span aria-hidden className="h-3 w-px bg-border/60 shrink-0" />
+          <span
+            className="inline-flex max-w-[40%] items-center rounded-full bg-muted/40 px-1.5 py-0.5 text-[9px] font-normal leading-none text-muted-foreground/70 shrink-0"
+            title={`Hub: ${reserve.hubName}`}
+          >
+            <span className="truncate">{reserve.hubName}</span>
+          </span>
+        </>
+      )}
+      <span className="ml-auto flex items-center gap-1 shrink-0">
         {fullyAdded ? (
           <span className={cn('ds-text-10 font-semibold inline-flex items-center gap-0.5', BATCH_THEME.text)}>
             <Check className="size-3" aria-hidden />
@@ -111,7 +116,7 @@ function SearchResultRow({
             Add {hasSupply ? 'Borrow' : 'Supply'}
           </span>
         ) : null}
-      </div>
+      </span>
     </button>
   );
 }
