@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { Trash2, Eraser, X } from 'lucide-react';
+import { Trash2, Eraser, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatNumberInput } from '@/lib/numberFormat';
 import { cnDsInputSurface } from '@/lib/dsInputSurface';
@@ -116,49 +116,41 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
         </button>
       )}
 
-      {/* Token info — mobile: vertical stack (symbol / chain·V4·market / hub) for narrower footprint */}
+      {/* Token info — mobile: vertical stack (icon+symbol / chain+market / hub) for narrower footprint */}
       {isMobile ? (
-        <div className="flex min-w-0 shrink-0 items-center gap-1 max-w-[40%]">
-          {/* Token icon doubles as remove button on mobile (saves a column) */}
+        <div className="relative flex min-w-0 shrink-0 flex-col gap-0.5 leading-[1.15] max-w-[44%] pr-1">
+          {/* Corner remove badge — top-right of the whole token info block */}
           <button
             type="button"
             onClick={() => onRemove(reserveId)}
-            className="group relative shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="absolute -top-1 -right-1 z-10 flex size-4 items-center justify-center rounded-full bg-muted text-muted-foreground ring-1 ring-border/60 transition-colors hover:bg-destructive hover:text-destructive-foreground active:scale-90"
             aria-label={`Remove ${tokenSymbol} from portfolio`}
           >
-            <TokenIcon symbol={tokenSymbol} size={20} />
-            {/* Always-visible small remove badge — discoverable on mobile without occupying a column */}
-            <span
-              className="pointer-events-none absolute -bottom-0.5 -right-0.5 flex size-3.5 items-center justify-center rounded-full bg-destructive text-destructive-foreground ring-1 ring-background transition-transform group-active:scale-90"
-              aria-hidden
-            >
-              <X className="size-2.5" strokeWidth={3} />
-            </span>
+            <Minus className="size-2.5" strokeWidth={3} aria-hidden />
           </button>
-          <div className="flex flex-col min-w-0 leading-[1.15] gap-0.5">
+          {/* Row 1: token icon + symbol */}
+          <span className="inline-flex items-center gap-1 min-w-0">
+            <TokenIcon symbol={tokenSymbol} size={16} />
             <span className="ds-text-12 font-semibold text-foreground truncate">
               {tokenSymbol}
             </span>
-            <span className="ds-text-10 text-muted-foreground inline-flex items-center gap-0.5 min-w-0">
-              {chainSrc && (
-                <img src={chainSrc} alt={chainName} className="size-2.5 shrink-0 opacity-70" />
-              )}
-              {showV4 && (
-                <span className="shrink-0 inline-flex items-center px-1 py-0 rounded-full text-[8px] font-medium leading-none text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10">
-                  V4
-                </span>
-              )}
-              <span className="truncate">{marketLabel}</span>
-            </span>
-            {hubName && (
-              <span
-                className="shrink-0 self-start inline-flex items-center px-1 py-0 rounded-full text-[8px] font-medium leading-none text-muted-foreground bg-muted/70 ring-1 ring-border/40 max-w-full truncate"
-                title={`Hub: ${hubName}`}
-              >
-                {hubName}
-              </span>
+          </span>
+          {/* Row 2: chain logo + market name (no V4 tag) */}
+          <span className="ds-text-10 text-muted-foreground inline-flex items-center gap-1 min-w-0">
+            {chainSrc && (
+              <img src={chainSrc} alt={chainName} className="size-2.5 shrink-0 opacity-70" />
             )}
-          </div>
+            <span className="truncate">{marketLabel}</span>
+          </span>
+          {/* Row 3: hub */}
+          {hubName && (
+            <span
+              className="self-start inline-flex items-center px-1 py-0 rounded-full text-[8px] font-medium leading-none text-muted-foreground bg-muted/70 ring-1 ring-border/40 max-w-full truncate"
+              title={`Hub: ${hubName}`}
+            >
+              {hubName}
+            </span>
+          )}
         </div>
       ) : (
         <div className="flex min-w-0 shrink-0 items-center gap-1.5">
