@@ -391,14 +391,20 @@ const PortfolioPanel = memo(function PortfolioPanel({
               )}
             </button>
             {positions.length > 0 && (
-              <button
-                type="button"
-                onClick={() => actions.clearAll()}
-                className={`rounded-md p-1.5 text-muted-foreground/60 transition-colors ${BATCH_THEME.trashHoverBg} ${BATCH_THEME.trashHoverText}`}
-                aria-label="Clear all positions"
+              <ConfirmPopover
+                onConfirm={() => actions.clearAll()}
+                title="Clear all positions?"
+                description={`This will remove all ${positions.length} positions from the portfolio.`}
+                confirmLabel="Clear all"
               >
-                <Trash2 className="size-3.5" aria-hidden />
-              </button>
+                <button
+                  type="button"
+                  className={`rounded-md p-1.5 text-muted-foreground/60 transition-colors ${BATCH_THEME.trashHoverBg} ${BATCH_THEME.trashHoverText}`}
+                  aria-label="Clear all positions"
+                >
+                  <Trash2 className="size-3.5" aria-hidden />
+                </button>
+              </ConfirmPopover>
             )}
           </div>
         </div>
