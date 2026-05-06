@@ -468,7 +468,7 @@ const MobileReserveCard = memo(({
       : null;
   const protocolVersion = getProtocolVersion(reserve.marketName);
   const displayReserveSizeUsd = getDisplayReserveSizeUsd(reserve, protocolVersion, {
-    rawSupplyInput: hasSharedScenario ? supplyInput : '',
+    rawSupplyInput: useSupplyAfter ? supplyInput : '',
     inputMode,
     tokenPrice: displayTokenPrice,
   });
