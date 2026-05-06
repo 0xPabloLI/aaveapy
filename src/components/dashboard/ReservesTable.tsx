@@ -987,7 +987,7 @@ const ReservesTable = ({
   const utilSortOptions: MobileSortOption[] = [
     {
       key: 'util',
-      label: 'Utilization',
+      label: 'Util Rate',
       isSelected: activeSortColumn === 'util' && utilSortMode === 'util',
       order: utilSortOrder,
       activeClassName: 'text-foreground',
@@ -1005,7 +1005,7 @@ const ReservesTable = ({
     },
     {
       key: 'liquidity',
-      label: 'Liquidity',
+      label: 'Available Amount',
       isSelected: activeSortColumn === 'util' && utilSortMode === 'liquidity',
       order: utilSortOrder,
       activeClassName: 'ds-text-purple-600',

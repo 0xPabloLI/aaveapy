@@ -232,8 +232,8 @@ describe('MobileReserveCard', () => {
     const marketLabel = getByText(/Horizon/);
     const hubButton = getByLabelText('Filter by Prime hub');
 
-    expect(utilizationButton.compareDocumentPosition(marketLabel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(utilizationButton.compareDocumentPosition(hubButton) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(utilizationButton.compareDocumentPosition(marketLabel) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
+    expect(utilizationButton.compareDocumentPosition(hubButton) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
     expect(utilizationButton.className).not.toContain('border-border/50');
     expect(utilizationButton.className).not.toContain('bg-muted/35');
   });
@@ -269,13 +269,11 @@ describe('MobileReserveCard', () => {
     );
 
     const utilTrigger = getByLabelText('Show utilization details');
-    const utilValue = utilTrigger.querySelector('span');
+    const utilValue = utilTrigger.querySelector('.ds-text-11');
     expect(utilValue).not.toBeNull();
-
-    // With correct percent semantics: 52% < 80%, so value stays normal foreground,
-    // not warning amber.
-    expect(utilValue?.className).toContain('text-foreground');
-    expect(utilValue?.className).not.toContain('text-amber-500');
+    expect(utilValue.textContent).toContain('52');
+    expect(utilValue.className).toContain('text-muted-foreground');
+    expect(utilValue.className).not.toContain('text-amber-500');
 
     // Flip to truly over-optimal utilization and ensure warning color appears.
     rerender(
@@ -299,7 +297,7 @@ describe('MobileReserveCard', () => {
     );
 
     const overUtilTrigger = getByLabelText('Show utilization details');
-    const overUtilValue = overUtilTrigger.querySelector('span');
+    const overUtilValue = overUtilTrigger.querySelector('.ds-text-11');
     expect(overUtilValue).not.toBeNull();
     expect(overUtilValue?.className).toContain('text-amber-600');
   });
@@ -331,7 +329,6 @@ describe('MobileReserveCard', () => {
     expect(html).toContain('flex min-w-0 flex-1 items-start gap-0.5');
     expect(html).toContain('mt-0 flex min-w-0 items-center gap-1');
     expect(html).toContain('style="width: 13px; height: 13px;"');
-    expect(html).toContain('class="inline-flex shrink-0 items-center gap-0.5 rounded-md px-1 py-0.5 transition-all hover:bg-muted/50 active:scale-[0.97] -translate-y-px"');
   });
 
   it('uses a slightly smaller hero APY size on mobile', () => {

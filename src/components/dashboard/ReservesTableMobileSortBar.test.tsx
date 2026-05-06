@@ -17,8 +17,8 @@ const baseProps = {
     { key: 'supply', label: 'Supply', isSelected: false, order: 'desc' as const, activeClassName: 'ds-text-emerald-600', onSelect: () => {} },
   ],
   utilSortOptions: [
-    { key: 'util', label: 'Utilization', isSelected: false, order: 'desc' as const, activeClassName: 'text-foreground', onSelect: () => {} },
-    { key: 'liquidity', label: 'Liquidity', isSelected: false, order: 'desc' as const, activeClassName: 'ds-text-purple-600', onSelect: () => {} },
+    { key: 'util', label: 'Util Rate', isSelected: false, order: 'desc' as const, activeClassName: 'text-foreground', onSelect: () => {} },
+    { key: 'liquidity', label: 'Available Amount', isSelected: false, order: 'desc' as const, activeClassName: 'ds-text-purple-600', onSelect: () => {} },
   ],
   supplySortOptions: [
     { key: 'total', label: 'Total', isSelected: false, order: 'desc' as const, activeClassName: 'ds-text-emerald-600', onSelect: () => {} },
@@ -52,7 +52,7 @@ describe('ReservesTableMobileSortBar', () => {
   it('renders chips in desktop-matching order: Size → Util → Supply → Borrow → Extra', () => {
     const html = renderToString(<ReservesTableMobileSortBar {...baseProps} />);
     const sizeIdx = html.indexOf('>Size<');
-    const utilIdx = html.indexOf('>Util<');
+    const utilIdx = html.indexOf('>Liquidity<');
     const supplyIdx = html.indexOf('>Supply<');
     const borrowIdx = html.indexOf('>Borrow<');
     const extraIdx = html.indexOf('>Spread<');
@@ -63,9 +63,9 @@ describe('ReservesTableMobileSortBar', () => {
 
   it('renders independent Util chip with dropdown menu options', () => {
     const html = renderToString(<ReservesTableMobileSortBar {...baseProps} showUtilSortMenu />);
-    expect(html).toContain('>Util<');
-    expect(html).toContain('Utilization');
-    expect(html).toContain('Liquidity');
+    expect(html).toContain('>Liquidity<');
+    expect(html).toContain('Util Rate');
+    expect(html).toContain('Available Amount');
   });
 
   it('aligns left-side chip menus (Size/Util/Supply) with left-0 to prevent left-edge overflow', () => {
@@ -92,8 +92,8 @@ describe('ReservesTableMobileSortBar', () => {
     const extraMenuMatch = html.match(/<div[^>]*absolute right-0[^>]*>([\s\S]*?)(?=<\/div>\s*<\/div>\s*<\/div>\s*$)/);
     expect(extraMenuMatch).not.toBeNull();
     const extraMenuContent = extraMenuMatch![1];
-    expect(extraMenuContent).not.toContain('Utilization');
-    expect(extraMenuContent).not.toContain('Liquidity');
+    expect(extraMenuContent).not.toContain('Util Rate');
+    expect(extraMenuContent).not.toContain('Available Amount');
     expect(extraMenuContent).toContain('Spread');
     expect(extraMenuContent).toContain('Token');
   });

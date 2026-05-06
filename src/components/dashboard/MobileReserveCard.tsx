@@ -594,29 +594,6 @@ const MobileReserveCard = memo(({
                     triggerClassName="shrink-0"
                   />
                 </div>
-                {/* Utilization indicator - clickable (values match desktop Utilization column + UtilizationIndicator) */}
-                {displayUtilization != null && optimalPct != null && (
-                  <button
-                    type="button"
-                    onClick={() => setCapSheet('utilization')}
-                    className="inline-flex shrink-0 items-center gap-0.5 rounded-md px-1 py-0.5 transition-all hover:bg-muted/50 active:scale-[0.97] -translate-y-px"
-                    aria-label="Show utilization details"
-                  >
-                    <span className={`ds-text-11 font-medium tabular-nums leading-none ${
-                      optimalPct != null && displayUtilization > optimalPct
-                        ? 'text-amber-600'
-                        : 'text-foreground'
-                    }`}>
-                      {displayUtilization.toFixed(0)}%
-                    </span>
-                    <UtilizationIndicator
-                      current={displayUtilization}
-                      optimal={optimalPct}
-                      width={8}
-                      height={16}
-                    />
-                  </button>
-                )}
               </div>
 
               <div className="mt-0 flex min-w-0 items-center gap-1 ds-text-11 text-muted-foreground/80">
@@ -624,7 +601,6 @@ const MobileReserveCard = memo(({
                   <img src={chainIconSrc} alt={reserve.chainName} className="w-3 h-3 shrink-0 opacity-80" />
                 )}
                 <span className="min-w-0 flex-1 truncate">{getReserveMarketDisplayName(reserve)}</span>
-                {/* Hub Info — V4 uses brand gradient emphasis, V3 uses plain style */}
                 {reserve.hubName && (() => {
                   const aaveProHubUrl = buildAaveProHubUrl(reserve);
                   const isV4 = protocolVersion === 'v4';
@@ -654,6 +630,41 @@ const MobileReserveCard = memo(({
             </div>
           </div>
           </div>
+
+        {/* Liquidity — primary metric */}
+        {availableLiquidityUsd != null && (
+          <button
+            type="button"
+            onClick={() => setCapSheet('utilization')}
+            className="w-full px-3 pb-1 text-left transition-colors hover:bg-muted/30 active:bg-muted/50"
+            aria-label="Show utilization details"
+          >
+            <div className="flex items-center justify-between">
+              <span className={`ds-text-14 font-bold tabular-nums ${
+                (availableLiquidityUsd < 10000)
+                  ? 'text-amber-600'
+                  : 'ds-text-purple-600'
+              }`}>
+                {formatScenarioSize(availableLiquidityUsd, { inputMode, tokenPrice: displayTokenPrice, tokenSymbol: reserve.tokenSymbol })}
+              </span>
+              {displayUtilization != null && optimalPct != null && (
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className={`ds-text-11 tabular-nums ${
+                    displayUtilization > optimalPct ? 'text-amber-600' : 'text-muted-foreground'
+                  }`}>
+                    {displayUtilization.toFixed(0)}%
+                  </span>
+                  <UtilizationIndicator
+                    current={displayUtilization}
+                    optimal={optimalPct}
+                    width={44}
+                    height={14}
+                  />
+                </div>
+              )}
+            </div>
+          </button>
+        )}
 
         {/* Pill tabs */}
         <div className="mx-3 mb-1 flex gap-[var(--ds-space-1)] rounded-lg bg-muted/40 p-0.5">
