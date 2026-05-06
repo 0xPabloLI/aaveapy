@@ -919,27 +919,27 @@
   }
   .hover-gradient-text:hover,
   .group:hover .group-hover-gradient-text {
-    background: linear-gradient(135deg, hsl(308 78% 48%) 0%, hsl(178 82% 38%) 100%);
+    background: linear-gradient(135deg, hsl(320 95% 45%) 0%, hsl(265 90% 55%) 50%, hsl(178 95% 35%) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
   .dark .hover-gradient-text:hover,
   .dark .group:hover .group-hover-gradient-text {
-    background: linear-gradient(135deg, hsl(308 80% 78%) 0%, hsl(178 85% 68%) 100%);
+    background: linear-gradient(135deg, hsl(320 100% 75%) 0%, hsl(265 100% 78%) 50%, hsl(178 100% 65%) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
   .open-gradient-text[data-state="open"] {
-    background: linear-gradient(135deg, hsl(308 78% 48%) 0%, hsl(178 82% 38%) 100%);
+    background: linear-gradient(135deg, hsl(320 95% 45%) 0%, hsl(265 90% 55%) 50%, hsl(178 95% 35%) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
   .dark .open-gradient-text[data-state="open"] {
-    background: linear-gradient(135deg, hsl(308 80% 78%) 0%, hsl(178 85% 68%) 100%);
+    background: linear-gradient(135deg, hsl(320 100% 75%) 0%, hsl(265 100% 78%) 50%, hsl(178 100% 65%) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
