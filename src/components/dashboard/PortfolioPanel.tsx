@@ -191,6 +191,8 @@ const PortfolioPanel = memo(function PortfolioPanel({
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [showCompare, setShowCompare] = useState(false);
   const [dismissedSuggestions, setDismissedSuggestions] = useState<Set<string>>(() => new Set());
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
 
   const focusSearch = useCallback(() => {
     setSearchOpen(true);
