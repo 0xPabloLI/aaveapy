@@ -640,11 +640,11 @@ const SimulationSubRow = ({
     /** Parent card/panel already provides the outer border when embedded; inner borders misalign with thead lines. */
     return (
     <div
-      className={`overflow-hidden ${
+      className={`${
         embeddedFromTop
           ? 'rounded-none bg-transparent dark:bg-transparent'
           : 'bg-card/50 dark:bg-background/80 border border-border/60 rounded-xl'
-      }`}
+      } overflow-x-auto`}
     >
       {compactDisabledNotices.length > 0 && (
         <div className="px-3 py-1.5 border-b border-border/50 bg-muted/30 ds-text-11 text-secondary">
