@@ -577,8 +577,8 @@ const PortfolioPanel = memo(function PortfolioPanel({
               className={cn(
                 'grid gap-y-1.5',
                 isMobile
-                  ? '[grid-template-columns:minmax(7rem,1fr)_auto]'
-                  : '[grid-template-columns:auto_auto_minmax(0,1fr)]',
+                  ? '[grid-template-columns:minmax(0,auto)_auto]'
+                  : '[grid-template-columns:auto_minmax(0,auto)_auto]',
               )}
             >
               {Array.from(groupedByReserve.entries()).map(([reserveId, entry]) => (
