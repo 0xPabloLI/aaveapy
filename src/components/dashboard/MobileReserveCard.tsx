@@ -526,7 +526,7 @@ const MobileReserveCard = memo(({
 
   /** Same rule as `ReservesTable.getDisplayUtilization` / desktop row: scenario uses after when shared inputs exist. */
   const baseUtilization = reserve.utilizationPct ?? simulation.utilization.current ?? null;
-  const displayUtilization = hasSharedScenario
+  const displayUtilization = useSpreadAfter
     ? simulation.utilization.after ?? baseUtilization
     : baseUtilization;
 
