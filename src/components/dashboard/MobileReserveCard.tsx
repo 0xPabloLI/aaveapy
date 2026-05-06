@@ -1,5 +1,5 @@
 import { memo, useEffect, useState } from 'react';
-import { ListCollapse, PauseCircle, Plus, X } from 'lucide-react';
+import { ListCollapse, PauseCircle, Plus, Snowflake, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ReserveWithSpread } from '@/types/aave';
 import {
@@ -127,8 +127,8 @@ function MobileReserveAmountRow({
 
   if (activeTab === 'supply') {
     const computedSupplyCapUsd = nativeToUsd(reserve.supplyCap, reserve.decimals, reserve.tokenPrice);
-  const hasSupplyCap =
-    computedSupplyCapUsd != null && Number.isFinite(computedSupplyCapUsd) && computedSupplyCapUsd > 0;
+    const hasSupplyCap =
+      computedSupplyCapUsd != null && Number.isFinite(computedSupplyCapUsd) && computedSupplyCapUsd > 0;
 
     return (
       <div className="flex w-full min-w-0 flex-nowrap items-center gap-1.5 px-4">
@@ -409,25 +409,34 @@ const MobileReserveCard = memo(({
     }
   }, [isSimulationExpanded]);
 
-  const displaySupplyTotal = hasSharedScenario
+  // Frozen/paused/disabled gating: keep parity with desktop SimulationSubRow.
+  // See docs/design/frontend-interaction-guardrails.md "Reserve simulation gating".
+  const isReserveLocked = Boolean(reserve.isFrozen || reserve.isPaused);
+  const supplyLocked = isReserveLocked || Boolean(reserve.supplyDisabled);
+  const borrowLocked = isReserveLocked || Boolean(reserve.borrowDisabled);
+  const useSupplyAfter = hasSharedScenario && !supplyLocked;
+  const useBorrowAfter = hasSharedScenario && !borrowLocked;
+  const useSpreadAfter = hasSharedScenario && !supplyLocked && !borrowLocked;
+
+  const displaySupplyTotal = useSupplyAfter
     ? simulation.supply.afterTotal ?? simulation.supply.currentTotal
     : simulation.supply.currentTotal;
-  const displayBorrowTotal = hasSharedScenario
+  const displayBorrowTotal = useBorrowAfter
     ? simulation.borrow.afterTotal ?? simulation.borrow.currentTotal
     : simulation.borrow.currentTotal;
-  const displaySupplyNative = hasSharedScenario
+  const displaySupplyNative = useSupplyAfter
     ? simulation.supply.afterNative ?? simulation.supply.currentNative
     : simulation.supply.currentNative;
-  const displayBorrowNative = hasSharedScenario
+  const displayBorrowNative = useBorrowAfter
     ? simulation.borrow.afterNative ?? simulation.borrow.currentNative
     : simulation.borrow.currentNative;
-  const displaySupplyIncentive = hasSharedScenario
+  const displaySupplyIncentive = useSupplyAfter
     ? simulation.supply.afterIncentive ?? simulation.supply.currentIncentive
     : simulation.supply.currentIncentive;
-  const displayBorrowIncentive = hasSharedScenario
+  const displayBorrowIncentive = useBorrowAfter
     ? simulation.borrow.afterIncentive ?? simulation.borrow.currentIncentive
     : simulation.borrow.currentIncentive;
-  const displaySpread = hasSharedScenario
+  const displaySpread = useSpreadAfter
     ? simulation.spread.after ?? simulation.spread.current
     : simulation.spread.current;
 
@@ -465,15 +474,19 @@ const MobileReserveCard = memo(({
     return getScenarioSupplySizeUsd({
       reserveSizeUsd: usd,
       supplyCapUsd: nativeToUsd(reserve.supplyCap, reserve.decimals, reserve.tokenPrice),
-      rawSupplyInput: hasSharedScenario ? supplyInput : '',
+      rawSupplyInput: useSupplyAfter ? supplyInput : '',
       inputMode,
       tokenPrice: displayTokenPrice,
     });
   })();
   const baseTotalBorrowedUsd = simulation?.marketMetrics.totalBorrowedUsd ?? getDisplayTotalBorrowedUsd(reserve, protocolVersion);
-  const totalBorrowedUsd = simulation?.marketMetrics.totalBorrowedUsdAfter ?? baseTotalBorrowedUsd;
+  const totalBorrowedUsd = useBorrowAfter
+    ? simulation?.marketMetrics.totalBorrowedUsdAfter ?? baseTotalBorrowedUsd
+    : baseTotalBorrowedUsd;
   const baseAvailableLiquidityUsd = simulation?.marketMetrics.availableLiquidityUsd ?? getDisplayAvailableLiquidityUsd(reserve, protocolVersion);
-  const availableLiquidityUsd = simulation?.marketMetrics.availableLiquidityUsdAfter ?? baseAvailableLiquidityUsd;
+  const availableLiquidityUsd = useBorrowAfter
+    ? simulation?.marketMetrics.availableLiquidityUsdAfter ?? baseAvailableLiquidityUsd
+    : baseAvailableLiquidityUsd;
   const hasDeficit = hasReserveDeficit(reserve);
   const deficitUsd = getReserveDeficitUsdAmount(reserve, displayTokenPrice);
   const deficitTokenCompact = formatReserveDeficitTokenCompact(reserve);
@@ -520,7 +533,7 @@ const MobileReserveCard = memo(({
 
   /** Same rule as `ReservesTable.getDisplayUtilization` / desktop row: scenario uses after when shared inputs exist. */
   const baseUtilization = reserve.utilizationPct ?? simulation.utilization.current ?? null;
-  const displayUtilization = hasSharedScenario
+  const displayUtilization = useSpreadAfter
     ? simulation.utilization.after ?? baseUtilization
     : baseUtilization;
 
@@ -551,20 +564,20 @@ const MobileReserveCard = memo(({
                     <TooltipTrigger asChild>
                       <button
                         type="button"
+                        data-testid="mobile-reserve-status-badge"
+                        data-status={reserve.isPaused ? (reserve.isFrozen ? 'paused-frozen' : 'paused') : 'frozen'}
                         onClick={() => setCapSheet('frozen')}
-                        className={`absolute -top-0.5 -left-0.5 z-10 flex items-center justify-center w-3.5 h-3.5 rounded-full shadow-sm ${
-                          reserve.isPaused ? 'bg-[rgb(var(--ds-paused-rgb))]' : 'bg-sky-500'
-                        }`}
-                        aria-label="Show frozen/paused details"
+                        aria-label={reserve.isPaused ? 'Show paused details' : 'Show frozen details'}
+                        className="absolute -top-2 -left-2 z-10 grid place-items-center w-7 h-7 rounded-full bg-transparent"
                       >
-                        {reserve.isPaused ? (
-                          <PauseCircle className="w-2.5 h-2.5 text-white" />
-                        ) : (
-                          <span className="text-white text-[8px] leading-none">❄</span>
-                        )}
+                        <span
+                          className={`inline-flex items-center justify-center w-3.5 h-3.5 rounded-full text-white ${reserve.isPaused ? 'bg-[rgb(var(--ds-paused-rgb))]' : 'bg-sky-500'}`}
+                        >
+                          {reserve.isPaused ? <PauseCircle className="w-2 h-2" /> : <Snowflake className="w-2 h-2" />}
+                        </span>
                       </button>
                     </TooltipTrigger>
-                    <TooltipContent>Frozen or paused</TooltipContent>
+                    <TooltipContent>{reserve.isPaused && reserve.isFrozen ? 'Paused & frozen' : reserve.isPaused ? 'Paused' : 'Frozen'}</TooltipContent>
                   </Tooltip>
               </div>
             ) : (

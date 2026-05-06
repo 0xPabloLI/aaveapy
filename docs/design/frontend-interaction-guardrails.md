@@ -106,7 +106,7 @@ This is a project-specific guardrail file, not the reusable design reference. If
 - **Spread column**: `font-bold` + `ds-text-14` + purple semantic—treated as a **primary numeric** column alongside Supply/Borrow totals.
 - **Mobile parity**: Supply/Borrow tab, **size row**, cap sheets, and incentive chips use the **same** emerald/cyan tokens as desktop (`emerald-500` / `brand-cyan`), not a darker step (e.g. avoid `emerald-600` for Supply size when desktop uses `emerald-500`); utilization figure next to the indicator uses at least `ds-text-11`
 - **Mobile reserves sort strip**: Five independent dropdown chips in desktop-matching order: **Size → Util → Supply → Borrow → Extra**. The **Util** chip is a dedicated standalone dropdown (Utilization / Liquidity), matching the desktop Utilization column. The **Extra** chip groups Spread, Token, Market, and Price options (Utilization moved to its own chip). No reserves count text is rendered in the sort bar area. Re-selecting the active menu row toggles ascending/descending, matching the desktop header behavior.
-- **Mobile sort bar dropdown boundary constraint**: Each chip container uses `relative overflow-visible` so absolute-positioned menus are never clipped by ancestors. Menu alignment follows a position-aware strategy: left-side chips (Size, Util, Supply) use `left-0` (expand rightward) while right-side chips (Borrow, Extra) use `right-0` (expand leftward). All menus are further constrained by `max-w-[min(18rem,calc(100vw-1.5rem))]` as a viewport-aware width guard. This three-layer system (direction + width + no-clip) prevents both left-edge and right-edge overflow on any viewport width.
+- **Mobile sort bar dropdown boundary constraint**: Each chip container uses `relative overflow-visible` so absolute-positioned menus are never clipped by ancestors. Menu alignment follows a position-aware strategy: left-side chips (Size, Util, Supply) use `left-0` (expand rightward) while right-side chips (Borrow, Extra) use `right-0` (expand leftward). All menus use `max-w-[min(18rem,calc(100vw-1.5rem))]` as a viewport-aware **max** cap only — the actual width auto-fits content (no fixed width), same as desktop. This three-layer system (direction + auto-width + no-clip) prevents both left-edge and right-edge overflow on any viewport width.
 - **Desktop sort dropdown width auto-adaptation**: `DesktopSortMenuPortal` uses `position: fixed` with `minWidth` (default 140px) and no explicit `width`, letting the menu auto-size to fit its longest option text via `fit-content` behavior. Do NOT set a fixed `minWidth` larger than needed — the portal should shrink/expand to match content naturally. Each sort column can override `minWidth` only when its options require a wider floor (e.g. long option labels).
 
 **Key principle**: Amber/warning colors must NOT be used for regular data display. This ensures that when amber appears, users immediately recognize it as a warning signal.
@@ -359,6 +359,56 @@ When tooltip/forecast behavior looks wrong, check:
 - Hide downstream source rows when both current and simulated values are effectively zero.
 - Use fixed numeric column widths so placeholders align with headers.
 
+### Reserve simulation gating (frozen / paused / disabled) — MANDATORY
+
+When a reserve is **frozen**, **paused**, or has the relevant side `supplyDisabled` /
+`borrowDisabled`, the affected side MUST NOT show "after" values in response to user
+input. This rule applies **identically on desktop and mobile**.
+
+Locking matrix:
+
+| Reserve flag         | Supply side | Borrow side | Spread / Utilization / Liquidity |
+|----------------------|-------------|-------------|----------------------------------|
+| `isFrozen`           | locked      | locked      | locked                           |
+| `isPaused`           | locked      | locked      | locked                           |
+| `supplyDisabled`     | locked      | live        | locked (depends on supply side)  |
+| `borrowDisabled`     | live        | locked      | locked (depends on borrow side)  |
+
+"Locked" means the displayed value falls back to `current*` (never `after*`), and
+`renderRow` masks `after` / `delta` / `capNote` / `warning` to nullish.
+
+Single source of truth:
+
+- Desktop: `SimulationSubRow.tsx` derives `supplyDisabledNotice` / `borrowDisabledNotice`
+  from `isReserveLocked` + `supplyDisabled` / `borrowDisabled` and threads a
+  `disabled` flag into `renderRow`.
+- Mobile (`MobileReserveCard.tsx`): MUST compute `supplyLocked` / `borrowLocked`
+  from the same boolean rule above and use `useSupplyAfter` / `useBorrowAfter` /
+  `useSpreadAfter` to gate every `simulation.*.after*` read (including
+  `marketMetrics.totalBorrowedUsdAfter`, `availableLiquidityUsdAfter`,
+  `utilization.after`, and the local display reserve size calculation's
+  `rawSupplyInput`).
+
+Do NOT introduce a new ad-hoc check; if you add a new derived field that consumes
+`*.after*`, gate it through the existing `useSupplyAfter` / `useBorrowAfter` /
+`useSpreadAfter` flags so desktop and mobile stay byte-equivalent.
+
+Visual / interaction parity for the frozen/paused badge:
+
+- Same lucide icons on both sides: `Snowflake` (frozen) and `PauseCircle` (paused).
+- Same semantic colors: `bg-sky-500` for frozen, paused state uses the local
+  paused token (`ds-paused` / `bg-[rgb(var(--ds-paused-rgb))]`) so it stays
+  consistent with the amber/paused design-system semantics.
+- Same tooltip strings: `Frozen` / `Paused` / `Paused & frozen`.
+- Mobile badge MUST keep an enlarged transparent hit area (≥ 28×28 CSS px) around
+  the small visual pill so it satisfies the 44px touch-target spirit without
+  enlarging the visual mark.
+
+Regression coverage: see `e2e/top-opportunities-mobile-layout.spec.ts`
+(`mobile frozen / paused badge uses frozen/paused semantic color tokens`) and
+the desktop SimulationSubRow tests.
+
+
 ### Desktop reserves table: sticky stack and scrollport (normative)
 
 This section is **mandatory** for anyone changing desktop `ReservesTable` layout, overflow, or sticky headers.
@@ -599,3 +649,27 @@ When extracting the card–panel junction into a separate component (e.g. `Mobil
 | **`border-b-transparent`** on upper card | The `connectedBelow` branch in `MobileReserveCard` must use `border-b-transparent`, **not** `border-b-0` | `border-b-0` removes border width from the box model, shifting layout by 1px; `border-b-transparent` keeps width and only hides the color |
 
 **Rule**: When refactoring visual junction code into a new component, diff the old inline rendering output against the new component's output. Every `className`, `style`, and SVG element in the junction area must produce identical DOM. A visual-only refactor must not change any computed style.
+
+## Simulation breakdown table — numeric cell wrapping (mobile)
+
+The Simulation expansion table (`SimulationSubRow.tsx`, compact layout) renders
+four columns: label, Current, After, Δ. On narrow viewports (375px CSS pixels)
+the Δ column can hold values like `+$399.88M` which previously got clipped
+because the table used `table-fixed` with hard percentage widths.
+
+Rules — must hold for any future change:
+
+1. **Use `table-auto`** in the compact layout so numeric columns size to their
+   content. Do not reintroduce `table-fixed` with percentage `<col>` widths.
+2. **All numeric cells** (`Current`, `After`, `Δ`, plus their headers) must
+   carry `whitespace-nowrap` on both the `<td>`/`<th>` and the inner `<span>`.
+   Numeric values must never wrap mid-token.
+3. **Label column shrinks first** via `min-w-0` + `break-words` on the label
+   `<td>`. The label is the only column allowed to wrap.
+4. The container must keep `overflow-hidden` + `min-w-0`; never set a fixed
+   width that would force the Δ column to clip.
+
+A regression test lives at
+`src/components/dashboard/SimulationSubRow.compact.test.tsx` — it asserts
+`whitespace-nowrap` is present on numeric cells and that the table is
+`table-auto`. Do not delete that test.

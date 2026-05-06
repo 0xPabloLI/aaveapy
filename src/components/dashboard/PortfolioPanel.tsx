@@ -6,7 +6,7 @@
  * so users can fill in either / both amounts directly without picking a side.
  */
 import { useState, useMemo, useEffect, useRef, memo, useCallback, lazy, Suspense } from 'react';
-import { Search, X, Layers, Trash2, Save, ArrowRightLeft, Sparkles, Check } from 'lucide-react';
+import { Search, X, Layers, Trash2, Save, ArrowRightLeft, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -18,12 +18,14 @@ import { filterAndRankReservesForPortfolioSearch, getReserveTvlUsd } from '@/lib
 import { isStablecoinSymbol, isEthRelatedSymbol, isBtcRelatedSymbol } from '@/lib/tokenCategories';
 import { getReserveKey } from '@/lib/reserveKey';
 import { getChainIconSrc } from '@/lib/chainIcons';
-import { getMarketChipLabel, isV4Market } from '@/lib/marketLabels';
+import { getMarketChipLabel, isV4Market, getHubChipClass } from '@/lib/marketLabels';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import PortfolioTokenRow from './PortfolioTokenRow';
+import PopularTokenChip from './PopularTokenChip';
 import PortfolioSummaryCard from './PortfolioSummaryCard';
 import PortfolioResultsTable from './PortfolioResultsTable';
 import { BATCH_THEME } from './batchTheme';
+import { ConfirmPopover } from '@/components/ui/confirm-popover';
 
 const PortfolioCompareView = lazy(() => import('./PortfolioCompareView'));
 
@@ -68,6 +70,9 @@ function SearchResultRow({
       ? `Add missing ${hasSupply ? 'borrow' : 'supply'} side for ${reserve.tokenSymbol}`
       : `Add ${reserve.tokenSymbol} (supply and borrow)`;
 
+  const chainSrc = getChainIconSrc(reserve.chainName);
+  const marketLabel = getMarketChipLabel(reserve.marketName, reserve.chainName);
+
   return (
     <button
       type="button"
@@ -79,28 +84,30 @@ function SearchResultRow({
       )}
       aria-label={ariaLabel}
     >
-      <TokenIcon symbol={reserve.tokenSymbol} size={18} />
-      <div className="flex min-w-0 flex-1 flex-col">
-        <span className="ds-text-12 font-semibold text-foreground truncate">
-          {reserve.tokenSymbol}
-        </span>
-        <span className="ds-text-10 text-muted-foreground truncate inline-flex items-center gap-1">
-          {getChainIconSrc(reserve.chainName) && (
-            <img
-              src={getChainIconSrc(reserve.chainName)!}
-              alt={reserve.chainName}
-              className="size-3 shrink-0"
-            />
-          )}
-          {isV4Market(reserve.marketName) && (
-            <span className="inline-flex items-center px-1 py-0 rounded-full text-[9px] font-medium leading-none text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10 shrink-0">
-              V4
-            </span>
-          )}
-          <span className="truncate">{getMarketChipLabel(reserve.marketName, reserve.chainName)}</span>
-        </span>
-      </div>
-      <div className="flex items-center gap-1 shrink-0">
+      {/* Horizontal compact row: token | divider | chain+market | divider | hub */}
+      <span className="inline-flex items-center gap-1 shrink-0">
+        <TokenIcon symbol={reserve.tokenSymbol} size={14} />
+        <span className="ds-text-12 font-semibold text-foreground leading-none">{reserve.tokenSymbol}</span>
+      </span>
+      <span aria-hidden className="h-3 w-px bg-border/60 shrink-0" />
+      <span className="inline-flex min-w-0 items-center gap-1 ds-text-10 leading-none text-muted-foreground">
+        {chainSrc && (
+          <img src={chainSrc} alt={reserve.chainName} className="size-2.5 shrink-0 opacity-70" />
+        )}
+        <span className="truncate">{marketLabel}</span>
+      </span>
+      {reserve.hubName && (
+        <>
+          <span aria-hidden className="h-3 w-px bg-border/60 shrink-0" />
+          <span
+            className={cn('min-w-0 max-w-[40%] shrink', getHubChipClass(isV4Market(reserve.marketName)))}
+            title={`Hub: ${reserve.hubName}`}
+          >
+            <span className="truncate">{reserve.hubName}</span>
+          </span>
+        </>
+      )}
+      <span className="ml-auto flex items-center gap-1 shrink-0">
         {fullyAdded ? (
           <span className={cn('ds-text-10 font-semibold inline-flex items-center gap-0.5', BATCH_THEME.text)}>
             <Check className="size-3" aria-hidden />
@@ -111,7 +118,7 @@ function SearchResultRow({
             Add {hasSupply ? 'Borrow' : 'Supply'}
           </span>
         ) : null}
-      </div>
+      </span>
     </button>
   );
 }
@@ -183,7 +190,9 @@ const PortfolioPanel = memo(function PortfolioPanel({
   const [showSaveInput, setShowSaveInput] = useState(false);
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [showCompare, setShowCompare] = useState(false);
+  const [dismissedSuggestions, setDismissedSuggestions] = useState<Set<string>>(() => new Set());
   const searchInputRef = useRef<HTMLInputElement>(null);
+
 
   const focusSearch = useCallback(() => {
     setSearchOpen(true);
@@ -289,7 +298,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
   const suggestedReserves = useMemo(() => {
     const addedSymbols = new Set(positions.map((p) => p.tokenSymbol.toUpperCase()));
     const sortedBySize = [...reserves].sort(
-      (a, b) => getReserveTvlUsd(b) - getReserveTvlUsd(a),
+      (a, b) => (b.supplyApy ?? 0) - (a.supplyApy ?? 0),
     );
     const pickTop = (predicate: (sym: string) => boolean, n: number) => {
       const seen = new Set<string>();
@@ -386,14 +395,20 @@ const PortfolioPanel = memo(function PortfolioPanel({
               )}
             </button>
             {positions.length > 0 && (
-              <button
-                type="button"
-                onClick={() => actions.clearAll()}
-                className={`rounded-md p-1.5 text-muted-foreground/60 transition-colors ${BATCH_THEME.trashHoverBg} ${BATCH_THEME.trashHoverText}`}
-                aria-label="Clear all positions"
+              <ConfirmPopover
+                onConfirm={() => actions.clearAll()}
+                title="Clear all positions?"
+                description={`This will remove all ${positions.length} positions from the portfolio.`}
+                confirmLabel="Clear all"
               >
-                <Trash2 className="size-3.5" aria-hidden />
-              </button>
+                <button
+                  type="button"
+                  className={`rounded-md p-1.5 text-muted-foreground/60 transition-colors ${BATCH_THEME.trashHoverBg} ${BATCH_THEME.trashHoverText}`}
+                  aria-label="Clear all positions"
+                >
+                  <Trash2 className="size-3.5" aria-hidden />
+                </button>
+              </ConfirmPopover>
             )}
           </div>
         </div>
@@ -458,6 +473,44 @@ const PortfolioPanel = memo(function PortfolioPanel({
           </div>
         )}
 
+        {/* Popular tokens (unified across mobile + desktop, always top) */}
+        {(() => {
+          const visible = suggestedReserves.filter((r) => !dismissedSuggestions.has(getReserveKey(r)));
+          if (visible.length === 0) return null;
+          return (
+            <div className="mb-2.5 flex min-h-[28px] flex-wrap items-center gap-1.5 content-start">
+              {visible.map((r) => {
+                const reserveId = getReserveKey(r);
+                return (
+                  <PopularTokenChip
+                    key={reserveId}
+                    reserveId={reserveId}
+                    tokenSymbol={r.tokenSymbol}
+                    chainName={r.chainName}
+                    marketName={r.marketName}
+                    onAdd={handleAddToken}
+                  />
+                );
+              })}
+              {visible.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setDismissedSuggestions(
+                      new Set(suggestedReserves.map((r) => getReserveKey(r))),
+                    )
+                  }
+                  className="inline-flex min-h-[28px] items-center gap-1 rounded-full border border-border/50 bg-card/70 px-2 py-1 ds-text-11 font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+                  aria-label="Dismiss all popular token suggestions"
+                  title="Clear all suggestions"
+                >
+                  <X className="size-3" aria-hidden />
+                </button>
+              )}
+            </div>
+          );
+        })()}
+
         {/* Position list */}
         {positions.length === 0 ? (
           <div
@@ -467,9 +520,6 @@ const PortfolioPanel = memo(function PortfolioPanel({
               BATCH_THEME.bgSubtle,
             )}
           >
-            <div className="mx-auto mb-2 flex size-9 items-center justify-center rounded-full border border-border/50 bg-card/80">
-              <Sparkles className={cn('size-4', BATCH_THEME.text)} aria-hidden />
-            </div>
             <p className="ds-text-13 font-semibold text-foreground">
               Build your batch portfolio
             </p>
@@ -489,93 +539,33 @@ const PortfolioPanel = memo(function PortfolioPanel({
                 Search tokens
               </button>
             </div>
-
-            {suggestedReserves.length > 0 && (
-              <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5">
-                {suggestedReserves.map((r) => {
-                  const reserveId = getReserveKey(r);
-                  const chainSrc = getChainIconSrc(r.chainName);
-                  const marketLabel = getMarketChipLabel(r.marketName, r.chainName);
-                  const isV4 = isV4Market(r.marketName);
-                  return (
-                    <button
-                      key={reserveId}
-                      type="button"
-                      onClick={() => handleAddToken(reserveId)}
-                      className="inline-flex items-center gap-1.5 rounded-full border border-border/50 bg-card/70 px-2 py-1 ds-text-10 font-semibold text-foreground transition-colors hover:bg-muted/60"
-                      aria-label={`Add ${r.tokenSymbol} on ${r.marketName} to batch`}
-                    >
-                      <TokenIcon symbol={r.tokenSymbol} size={14} />
-                      <span>{r.tokenSymbol}</span>
-                      <span aria-hidden className="h-3 w-px bg-border/60" />
-                      <span className="inline-flex items-center gap-0.5 text-[9px] font-normal text-muted-foreground/70">
-                        {chainSrc && (
-                          <img src={chainSrc} alt={r.chainName} className="size-2.5 shrink-0 opacity-70" />
-                        )}
-                        {isV4 && (
-                          <span className="inline-flex items-center px-1 py-0 rounded-full text-[8px] font-medium leading-none text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10">
-                            V4
-                          </span>
-                        )}
-                        <span>{marketLabel}</span>
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
           </div>
         ) : (
           <div className="space-y-1.5">
-            {!isMobile && suggestedReserves.length > 0 && (
-              <div className="flex flex-wrap items-center gap-1.5 px-1">
-                {suggestedReserves.map((r) => {
-                  const reserveId = getReserveKey(r);
-                  const chainSrc = getChainIconSrc(r.chainName);
-                  const marketLabel = getMarketChipLabel(r.marketName, r.chainName);
-                  const isV4 = isV4Market(r.marketName);
-                  return (
-                    <button
-                      key={reserveId}
-                      type="button"
-                      onClick={() => handleAddToken(reserveId)}
-                      className="inline-flex items-center gap-1.5 rounded-full border border-border/50 bg-card/70 px-2 py-0.5 ds-text-10 font-semibold text-foreground transition-colors hover:bg-muted/60"
-                      aria-label={`Add ${r.tokenSymbol} on ${r.marketName} to batch`}
-                    >
-                      <TokenIcon symbol={r.tokenSymbol} size={12} />
-                      <span>{r.tokenSymbol}</span>
-                      <span aria-hidden className="h-3 w-px bg-border/60" />
-                      <span className="inline-flex items-center gap-0.5 text-[9px] font-normal text-muted-foreground/70">
-                        {chainSrc && (
-                          <img src={chainSrc} alt={r.chainName} className="size-2.5 shrink-0 opacity-70" />
-                        )}
-                        {isV4 && (
-                          <span className="inline-flex items-center px-1 py-0 rounded-full text-[8px] font-medium leading-none text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10">
-                            V4
-                          </span>
-                        )}
-                        <span>{marketLabel}</span>
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-            {Array.from(groupedByReserve.entries()).map(([reserveId, entry]) => (
-              <PortfolioTokenRow
-                key={reserveId}
-                reserveId={reserveId}
-                tokenSymbol={entry.tokenSymbol}
-                chainName={entry.chainName}
-                marketName={entry.marketName}
-                hubName={entry.hubName}
-                supplyPosition={entry.supply}
-                borrowPosition={entry.borrow}
-                onRemove={handleRemoveToken}
-                onUpdateAmount={actions.updateAmount}
-                onUpdateInputMode={actions.updateInputMode}
-              />
-            ))}
+            <div
+              className={cn(
+                'grid gap-y-1.5',
+                isMobile
+                  ? '[grid-template-columns:minmax(0,max-content)_minmax(11rem,1fr)]'
+                  : '[grid-template-columns:auto_minmax(0,1fr)_auto]',
+              )}
+            >
+              {Array.from(groupedByReserve.entries()).map(([reserveId, entry]) => (
+                <PortfolioTokenRow
+                  key={reserveId}
+                  reserveId={reserveId}
+                  tokenSymbol={entry.tokenSymbol}
+                  chainName={entry.chainName}
+                  marketName={entry.marketName}
+                  hubName={entry.hubName}
+                  supplyPosition={entry.supply}
+                  borrowPosition={entry.borrow}
+                  onRemove={handleRemoveToken}
+                  onUpdateAmount={actions.updateAmount}
+                  onUpdateInputMode={actions.updateInputMode}
+                />
+              ))}
+            </div>
           </div>
         )}
 

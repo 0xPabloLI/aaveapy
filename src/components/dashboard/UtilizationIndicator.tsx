@@ -97,24 +97,13 @@ const UtilizationIndicator = memo(({
       </TooltipTrigger>
       <TooltipContent side="top" className="max-w-[220px] p-3">
         <div className="space-y-2 ds-text-12">
-          <p className="ds-text-11 text-muted-foreground">Utilization = borrowed / (available + borrowed)</p>
           <div className="flex justify-between gap-4">
-            <span className="text-muted-foreground">Optimal</span>
+            <span className="text-muted-foreground">Optimal utilization</span>
             <span className="font-medium tabular-nums">{formatPercent(optimal)}</span>
           </div>
-          <div className="flex justify-between gap-4">
-            <span className="text-muted-foreground">Current</span>
-            <span className="font-medium tabular-nums">{formatPercent(current)}</span>
-          </div>
-          {isOverOptimal ? (
-            <p className="ds-text-amber-600 ds-text-11 pt-2 border-t border-border/50">
-              Above optimal
-            </p>
-          ) : (
-            <p className="ds-text-brand-cyan ds-text-11 pt-2 border-t border-border/50">
-              Below optimal
-            </p>
-          )}
+          <p className={`ds-text-11 pt-2 border-t border-border/50 ${isOverOptimal ? 'text-amber-600' : 'ds-text-brand-cyan'}`}>
+            {formatPercent(current)} {isOverOptimal ? 'above' : 'below'} optimal
+          </p>
         </div>
       </TooltipContent>
     </Tooltip>

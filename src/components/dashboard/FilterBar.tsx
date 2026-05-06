@@ -298,8 +298,8 @@ const FilterBar = ({
           </FilterChip>
         ))}
 
-        {/* Search – desktop only */}
-        <div className="relative w-20 sm:w-24 md:w-36 lg:w-44 hidden md:block ml-1">
+        {/* Search – inline with categories */}
+        <div className="relative w-20 sm:w-24 md:w-36 lg:w-44 ml-1 hidden md:block">
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/60" />
           <Input
             ref={desktopSearchInputRef}
@@ -308,6 +308,27 @@ const FilterBar = ({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="h-7 pl-[var(--ds-space-7)] pr-[var(--ds-space-6)] md:h-7 ds-text-11 text-muted-foreground/60 placeholder:text-muted-foreground/60 focus:text-foreground md:ds-text-11"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <Eraser className="w-3 h-3" />
+            </button>
+          )}
+        </div>
+
+        {/* Mobile search – flows inline with category chips, fills remaining row space */}
+        <div className="relative flex-1 min-w-[7rem] md:hidden">
+          <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
+          <Input
+            ref={mobileSearchInputRef}
+            surfaceVariant="magenta"
+            placeholder={searchPlaceholder}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="h-7 pl-[var(--ds-space-8)] pr-[var(--ds-space-6)] ds-text-11 text-muted-foreground/50 placeholder:text-muted-foreground/50 focus:text-foreground"
           />
           {searchQuery && (
             <button
@@ -344,41 +365,22 @@ const FilterBar = ({
         </div>
       </div>
 
-      {/* Row 2: Search + APR/APY toggle + Frozen toggle – mobile only */}
+      {/* Row 2: Frozen toggle (full label) + APR/APY toggle – mobile only */}
       <div className="flex items-center gap-1.5 md:hidden">
-        <div className="relative flex-1 min-w-0">
-          <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
-          <Input
-            ref={mobileSearchInputRef}
-            surfaceVariant="magenta"
-            placeholder={searchPlaceholder}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-7 pl-[var(--ds-space-8)] pr-[var(--ds-space-6)] ds-text-11 text-muted-foreground/50 placeholder:text-muted-foreground/50 focus:text-foreground"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-            >
-              <Eraser className="w-3 h-3" />
-            </button>
-          )}
-        </div>
-
-        {/* Include frozen/paused assets toggle – mobile only */}
+        {/* Include frozen/paused assets toggle – mobile, with full label */}
         {setShowFrozenOrPaused && (
           <button
             type="button"
             onClick={() => setShowFrozenOrPaused(!showFrozenOrPaused)}
-            className={`shrink-0 inline-flex items-center justify-center gap-1 h-7 w-7 rounded-md transition-colors ${
+            className={`flex-1 min-w-0 inline-flex items-center justify-center gap-1.5 h-7 px-2 rounded-md ds-text-11 font-medium transition-colors ${
               showFrozenOrPaused
                 ? 'bg-sky-500/15 text-sky-600 shadow-sm border border-sky-400/50'
                 : 'bg-card/50 text-muted-foreground hover:text-foreground hover:bg-card/80 border border-border/40'
             }`}
             title={showFrozenOrPaused ? 'Hide frozen or paused assets' : 'Show frozen or paused assets'}
           >
-            <Snowflake className="w-3.5 h-3.5" />
+            <Snowflake className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">{showFrozenOrPaused ? 'Frozen or paused assets shown' : 'Show frozen or paused assets'}</span>
           </button>
         )}
 

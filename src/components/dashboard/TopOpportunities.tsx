@@ -349,7 +349,7 @@ const MiniReserveCard = ({
             animate: 'visible',
             variants: itemVariants,
           })}
-      className="rounded-xl border ds-card-pad-sm cursor-pointer bg-card border-border/60 active:bg-muted/60 min-h-[60px] flex flex-col justify-center gap-[var(--ds-space-0-5)]"
+      className="rounded-xl border cursor-pointer bg-card border-border/60 active:bg-muted/60 flex flex-col justify-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-2)] py-[var(--ds-space-1-5)]"
       onClick={() => onCardClick(reserve)}
     >
       <ReserveIdentity
@@ -562,7 +562,7 @@ const CategoryCard = ({
   const shouldAnimateList = !isMobile && !isApyChanged;
 
   return (
-    <div className={`bg-card border border-border/60 rounded-xl ${isMobile ? 'ds-card-pad-sm' : 'ds-card-pad'} ${isMobile ? 'col-span-1' : ''} flex flex-col`}>
+    <div className={`bg-card border border-border/60 rounded-xl ${isMobile ? 'px-[var(--ds-space-2)] py-[var(--ds-space-2)]' : 'ds-card-pad'} ${isMobile ? 'col-span-1' : ''} flex flex-col`}>
       <CategoryCardHeader
         title={title}
         shortTitle={shortTitle}
@@ -1012,10 +1012,10 @@ const TopOpportunities = ({
         <Carousel
           setApi={setApi}
           opts={{
-            align: "start",
+            align: "center",
             loop: false,
             dragFree: false,
-            containScroll: "trimSnaps",
+            containScroll: "keepSnaps",
           }}
           className="w-full"
         >
@@ -1046,7 +1046,7 @@ const TopOpportunities = ({
             </button>
           </div>
         )}
-        <CarouselContent className="-ml-[var(--ds-space-2)] will-change-transform">
+        <CarouselContent className="-ml-[var(--ds-space-2)] will-change-transform transform-gpu [backface-visibility:hidden]">
           {mobilePages.map((pageCats, pageIndex) => (
             <CarouselItem key={pageIndex} className="pl-[var(--ds-space-2)] basis-full">
               <div className="grid grid-cols-2 gap-[var(--ds-space-2)]">

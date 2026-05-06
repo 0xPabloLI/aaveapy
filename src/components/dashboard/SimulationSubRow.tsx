@@ -196,6 +196,17 @@ const SimulationSubRow = ({
   }, [compact, containerNarrow]);
 
   const effectiveCompact = compact || containerNarrow;
+  const isReserveLocked = Boolean(reserve.isFrozen || reserve.isPaused);
+  const supplyDisabledNotice = isReserveLocked
+    ? (reserve.isPaused ? 'Paused' : 'Frozen')
+    : reserve.supplyDisabled
+      ? 'Supply unavailable'
+      : null;
+  const borrowDisabledNotice = isReserveLocked
+    ? (reserve.isPaused ? 'Paused' : 'Frozen')
+    : reserve.borrowDisabled
+      ? 'Borrow disabled'
+      : null;
   const rateLabel = isApy ? 'APY' : 'APR';
   const showPriceMissingNotice =
     inputMode === 'token' &&
@@ -469,7 +480,13 @@ const SimulationSubRow = ({
     tight = false,
     peerCapInfo?: { hasCapBar: boolean; hasCapNote: boolean; capNote?: string },
     alignBand?: DesktopAlignBand | null,
+    disabled = false,
   ) => {
+    // When the side is frozen/paused/disabled, mask After + Delta so the
+    // simulation does not appear to react to user input.
+    if (disabled) {
+      row = { ...row, after: null, delta: null, capNote: undefined, warning: false };
+    }
     const deltaColorClass = row.delta === null || Number.isNaN(row.delta) ? SIM_NEUTRAL_MUTED : accentClass;
     const isBreakdownItem = row.isBreakdown;
     const isSubBreakdown = row.isSubBreakdown === true;
@@ -502,9 +519,10 @@ const SimulationSubRow = ({
       <tr data-align-key={mainAlignKey} className={row.warning ? 'ds-bg-warning-row' : ''}>
         <td className={`${labelCellPy} ${metricCellPx} min-w-0 align-top`}>
           <div className={`min-w-0 ${isBreakdownItem ? `${breakdownIndentClass} ${borderColorClass}` : ''}`}>
-            <div className="flex flex-wrap items-start gap-x-1.5 gap-y-0.5 min-w-0">
+            <div className="flex items-start gap-x-1.5 min-w-0">
               <span
-                className={`ds-text-12 break-words ${row.warning ? 'text-amber-700 dark:text-amber-400 font-medium' : isBreakdownItem ? rowAccentClass : accentClass}`}
+                title={typeof row.label === 'string' ? row.label : undefined}
+                className={`ds-text-12 whitespace-nowrap overflow-hidden text-ellipsis min-w-0 ${row.warning ? 'text-amber-700 dark:text-amber-400 font-medium' : isBreakdownItem ? rowAccentClass : accentClass}`}
               >
                 {row.label}
               </span>
@@ -516,18 +534,18 @@ const SimulationSubRow = ({
             </div>
           </div>
         </td>
-        <td className={`${valueCellPy} ${valueCellPx} text-right align-top`}>
-          <span className={`ds-text-12 tabular-nums ${rowAccentClass}`}>
+        <td className={`${valueCellPy} ${valueCellPx} text-right align-top whitespace-nowrap`}>
+          <span className={`ds-text-12 tabular-nums whitespace-nowrap ${rowAccentClass}`}>
             {formatValue(row.current, row.type)}
           </span>
         </td>
-        <td className={`${valueCellPy} ${valueCellPx} text-right align-top`}>
-          <span className={`ds-text-12 tabular-nums ${row.after === null ? SIM_NEUTRAL_MUTED : rowAccentClass}`}>
+        <td className={`${valueCellPy} ${valueCellPx} text-right align-top whitespace-nowrap`}>
+          <span className={`ds-text-12 tabular-nums whitespace-nowrap ${row.after === null ? SIM_NEUTRAL_MUTED : rowAccentClass}`}>
             {formatValue(row.after, row.type)}
           </span>
         </td>
-        <td className={`${valueCellPy} ${deltaCellPx} text-right align-top`}>
-          <span className={`ds-text-12 tabular-nums ${deltaColorClass}`}>
+        <td className={`${valueCellPy} ${deltaCellPx} text-right align-top whitespace-nowrap`}>
+          <span className={`ds-text-12 tabular-nums whitespace-nowrap ${deltaColorClass}`}>
             {formatDeltaValue(row.delta, row.type)}
           </span>
         </td>
@@ -611,86 +629,99 @@ const SimulationSubRow = ({
     const compactMetricCell = 'px-3';
     const compactNumCell = 'px-2.5';
     const compactDeltaCell = 'pl-2.5 pr-3';
+    const compactDisabledNotices: string[] = [];
+    if (isReserveLocked) {
+      compactDisabledNotices.push(reserve.isPaused ? 'Reserve paused — supply & borrow disabled' : 'Reserve frozen — supply & borrow disabled');
+    } else {
+      if (reserve.supplyDisabled) compactDisabledNotices.push('Supply unavailable');
+      if (reserve.borrowDisabled) compactDisabledNotices.push('Borrow disabled');
+    }
     /** Parent card/panel already provides the outer border when embedded; inner borders misalign with thead lines. */
     return (
     <div
-      className={`overflow-hidden ${
+      className={`${
         embeddedFromTop
           ? 'rounded-none bg-transparent dark:bg-transparent'
           : 'bg-card/50 dark:bg-background/80 border border-border/60 rounded-xl'
-      }`}
+      } overflow-x-auto`}
     >
-      <table className="w-full min-w-0 table-fixed">
+      {compactDisabledNotices.length > 0 && (
+        <div className="px-3 py-1.5 border-b border-border/50 bg-muted/30 ds-text-11 text-secondary">
+          {compactDisabledNotices.join(' · ')}
+        </div>
+      )}
+      <table className="w-full min-w-0 table-auto">
         <colgroup>
-          {/* Wide label column: cap notes sit outside nested indent so they use full width (later wrap). */}
-          <col style={{ width: '46%' }} />
-          <col style={{ width: '18%' }} />
-          <col style={{ width: '18%' }} />
-          <col style={{ width: '18%' }} />
+          {/* Auto-sized numeric columns prevent right-side truncation on narrow viewports.
+              Label column shrinks first via min-w-0 + break-words; numeric cells stay nowrap. */}
+          <col />
+          <col />
+          <col />
+          <col />
         </colgroup>
         <thead>
           <tr className="bg-muted/30 border-b border-border/50">
             <th className={`${compactCellPy} ${compactMetricCell} text-left`}>
               <span className="ds-text-11 text-muted-foreground font-medium">{tokenOnChainLabel}</span>
             </th>
-            <th className={`${compactCellPy} ${compactNumCell} text-right`}>
+            <th className={`${compactCellPy} ${compactNumCell} text-right whitespace-nowrap`}>
               <span className="ds-text-11 text-muted-foreground font-medium">Current</span>
             </th>
-            <th className={`${compactCellPy} ${compactNumCell} text-right`}>
+            <th className={`${compactCellPy} ${compactNumCell} text-right whitespace-nowrap`}>
               <span className="ds-text-11 text-muted-foreground font-medium">After</span>
             </th>
-            <th className={`${compactCellPy} ${compactDeltaCell} text-right`}>
+            <th className={`${compactCellPy} ${compactDeltaCell} text-right whitespace-nowrap`}>
               <span className="ds-text-11 text-muted-foreground font-medium">Δ</span>
             </th>
           </tr>
         </thead>
         <tbody className="ds-text-12 [&>tr:last-child>td]:pb-2">
-          {supplyRows.map((row) => renderRow(row, 'ds-text-emerald-600', 'border-l-[rgb(var(--ds-emerald-500-rgb))]', true))}
-          <tr className={middleColumnWarning ? 'ds-bg-warning-row' : ''}>
+          {supplyRows.map((row) => renderRow(row, 'ds-text-emerald-600', 'border-l-[rgb(var(--ds-emerald-500-rgb))]', true, undefined, undefined, Boolean(supplyDisabledNotice)))}
+          <tr className={!isReserveLocked && middleColumnWarning ? 'ds-bg-warning-row' : ''}>
             <td className={`${compactCellPy} ${compactMetricCell}`}>
               <span className="ds-text-12 ds-text-purple-600">Spread</span>
             </td>
-            <td className={`${compactCellPy} ${compactNumCell} text-right`}>
+            <td className={`${compactCellPy} ${compactNumCell} text-right whitespace-nowrap`}>
               <span className="ds-text-12 tabular-nums ds-text-purple-600">{formatSpread(simulation.spread.current)}</span>
             </td>
-            <td className={`${compactCellPy} ${compactNumCell} text-right`}>
-              <span className={`ds-text-12 tabular-nums ${simulation.spread.after === null ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
-                {formatSpread(simulation.spread.after)}
+            <td className={`${compactCellPy} ${compactNumCell} text-right whitespace-nowrap`}>
+              <span className={`ds-text-12 tabular-nums ${(isReserveLocked || simulation.spread.after === null) ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
+                {isReserveLocked ? '-' : formatSpread(simulation.spread.after)}
               </span>
             </td>
-            <td className={`${compactCellPy} ${compactDeltaCell} text-right`}>
-              {hasScenarioInput ? (
+            <td className={`${compactCellPy} ${compactDeltaCell} text-right whitespace-nowrap`}>
+              {hasScenarioInput && !isReserveLocked ? (
                 <span className={`ds-text-12 tabular-nums ${simulation.spread.delta === null ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
                   {formatDelta(simulation.spread.delta)}
                 </span>
               ) : null}
             </td>
           </tr>
-          <tr className={borrowCapExceeded && borrowLimitedByLiquidity ? 'ds-bg-warning-row' : ''}>
+          <tr className={!isReserveLocked && borrowCapExceeded && borrowLimitedByLiquidity ? 'ds-bg-warning-row' : ''}>
             <td className={`${compactCellPy} ${compactMetricCell}`}>
-              <span className={`ds-text-12 ${borrowCapExceeded && borrowLimitedByLiquidity ? 'text-amber-700 dark:text-amber-400 font-medium' : 'ds-text-purple-600'}`}>
+              <span className={`ds-text-12 ${!isReserveLocked && borrowCapExceeded && borrowLimitedByLiquidity ? 'text-amber-700 dark:text-amber-400 font-medium' : 'ds-text-purple-600'}`}>
                 Liquidity
               </span>
             </td>
-            <td className={`${compactCellPy} ${compactNumCell} text-right`}>
-              <span className={`ds-text-12 tabular-nums ${borrowCapExceeded && borrowLimitedByLiquidity ? 'text-amber-700 dark:text-amber-400' : 'ds-text-purple-600'}`}>
+            <td className={`${compactCellPy} ${compactNumCell} text-right whitespace-nowrap`}>
+              <span className={`ds-text-12 tabular-nums whitespace-nowrap ${!isReserveLocked && borrowCapExceeded && borrowLimitedByLiquidity ? 'text-amber-700 dark:text-amber-400' : 'ds-text-purple-600'}`}>
                 {formatScenarioSize(simulation.marketMetrics.availableLiquidityUsd, { inputMode, tokenPrice: simulation.tokenPrice })}
               </span>
             </td>
-            <td className={`${compactCellPy} ${compactNumCell} text-right`}>
-              <span className={`ds-text-12 tabular-nums ${
-                simulation.marketMetrics.availableLiquidityUsdAfter === null
+            <td className={`${compactCellPy} ${compactNumCell} text-right whitespace-nowrap`}>
+              <span className={`ds-text-12 tabular-nums whitespace-nowrap ${
+                isReserveLocked || simulation.marketMetrics.availableLiquidityUsdAfter === null
                   ? 'text-muted-foreground'
                   : borrowCapExceeded && borrowLimitedByLiquidity
                     ? 'text-amber-700 dark:text-amber-400'
                     : 'ds-text-purple-600'
               }`}>
-                {formatScenarioSize(simulation.marketMetrics.availableLiquidityUsdAfter, { inputMode, tokenPrice: simulation.tokenPrice })}
+                {isReserveLocked ? '-' : formatScenarioSize(simulation.marketMetrics.availableLiquidityUsdAfter, { inputMode, tokenPrice: simulation.tokenPrice })}
               </span>
             </td>
-            <td className={`${compactCellPy} ${compactDeltaCell} text-right`}>
-              {hasScenarioInput ? (
-                <span className={`ds-text-12 tabular-nums ${
+            <td className={`${compactCellPy} ${compactDeltaCell} text-right whitespace-nowrap`}>
+              {hasScenarioInput && !isReserveLocked ? (
+                <span className={`ds-text-12 tabular-nums whitespace-nowrap ${
                   simulation.marketMetrics.availableLiquidityUsdDelta === null
                     ? 'text-muted-foreground'
                     : borrowCapExceeded && borrowLimitedByLiquidity
@@ -702,7 +733,7 @@ const SimulationSubRow = ({
               ) : null}
             </td>
           </tr>
-          {borrowRows.map((row) => renderRow(row, 'ds-text-brand-cyan', 'border-l-[rgb(var(--ds-brand-cyan-rgb))]', true))}
+          {borrowRows.map((row) => renderRow(row, 'ds-text-brand-cyan', 'border-l-[rgb(var(--ds-brand-cyan-rgb))]', true, undefined, undefined, Boolean(borrowDisabledNotice)))}
         </tbody>
       </table>
     </div>
@@ -719,7 +750,16 @@ const SimulationSubRow = ({
     return peerKey ? peerRows.find((r) => r.rowKey === peerKey) : undefined;
   };
 
-  const renderTable = (title: string, rows: TableRow[], accentClass: string, borderClass: string, indentBorderClass: string, isWarning?: boolean, peerRows?: TableRow[]) => (
+  const renderTable = (
+    title: string,
+    rows: TableRow[],
+    accentClass: string,
+    borderClass: string,
+    indentBorderClass: string,
+    isWarning?: boolean,
+    peerRows?: TableRow[],
+    disabledNotice?: string | null,
+  ) => (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-border/50 bg-card">
       <table className="w-full min-w-0 table-fixed">
         <colgroup>
@@ -731,7 +771,10 @@ const SimulationSubRow = ({
         <thead>
           <tr className="bg-muted/30 border-b border-border/50">
             <th className="px-4 py-1.5 text-left">
-              <span className={`ds-text-13 font-semibold ${accentClass}`}>{title}</span>
+              <span className={`ds-text-13 font-semibold ${disabledNotice ? 'text-secondary' : accentClass}`}>{title}</span>
+              {disabledNotice && (
+                <span className="ml-2 ds-text-11 font-normal text-secondary">· {disabledNotice}</span>
+              )}
             </th>
             <th className="px-3 py-1.5 text-right">
               <span className="ds-text-11 text-muted-foreground">Current</span>
@@ -744,7 +787,7 @@ const SimulationSubRow = ({
             </th>
           </tr>
         </thead>
-        <tbody className="[&>tr:last-child>td]:pb-2">
+        <tbody className={`[&>tr:last-child>td]:pb-2 ${disabledNotice ? 'opacity-60' : ''}`}>
           {rows.map((row) => {
             const peer = peerRows ? findPeerRow(row.rowKey, peerRows) : undefined;
             const peerHasCapBar = peer != null && peer.cap != null && peer.type === 'usd';
@@ -752,7 +795,7 @@ const SimulationSubRow = ({
             const peerCapInfo = peerHasCapBar || peerHasCapNote
               ? { hasCapBar: peerHasCapBar, hasCapNote: peerHasCapNote, capNote: peer?.capNote }
               : undefined;
-            return renderRow(row, accentClass, indentBorderClass, false, peerCapInfo);
+            return renderRow(row, accentClass, indentBorderClass, false, peerCapInfo, undefined, Boolean(disabledNotice));
           })}
         </tbody>
       </table>
@@ -1261,10 +1304,10 @@ const SimulationSubRow = ({
             className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_clamp(14.5rem,24.5vw,18rem)] gap-2 min-w-0 items-stretch overflow-hidden"
           >
             <div className={`flex min-w-0 flex-col overflow-hidden${supplySideBlocked ? ' opacity-50' : ''}`}>
-              {renderTable('Supply', supplyRows, 'ds-text-emerald-600', 'border-emerald-500/40', 'border-l-[rgb(var(--ds-emerald-500-rgb))]', showSupplyCapWarning, borrowRows)}
+              {renderTable('Supply', supplyRows, 'ds-text-emerald-600', 'border-emerald-500/40', 'border-l-[rgb(var(--ds-emerald-500-rgb))]', showSupplyCapWarning, borrowRows, supplyDisabledNotice)}
             </div>
             <div className={`flex min-w-0 flex-col overflow-hidden${borrowSideBlocked ? ' opacity-50' : ''}`}>
-              {renderTable('Borrow', borrowRows, 'ds-text-brand-cyan', 'border-[rgb(var(--ds-brand-cyan-rgb))]/40', 'border-l-[rgb(var(--ds-brand-cyan-rgb))]', showBorrowCapWarning, supplyRows)}
+              {renderTable('Borrow', borrowRows, 'ds-text-brand-cyan', 'border-[rgb(var(--ds-brand-cyan-rgb))]/40', 'border-l-[rgb(var(--ds-brand-cyan-rgb))]', showBorrowCapWarning, supplyRows, borrowDisabledNotice)}
             </div>
             <div className="flex min-h-0 min-w-0 flex-col overflow-hidden self-stretch">
               {renderEarnCostTable()}
