@@ -114,11 +114,27 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
   );
 
   if (isMobile) {
+    // Corner remove badge — absolute, saves horizontal space.
+    const cornerRemove = (
+      <button
+        type="button"
+        onClick={() => onRemove(reserveId)}
+        className={cn(
+          'absolute -top-1.5 -left-1.5 z-10 rounded-full border border-border/60 bg-card p-0.5 text-muted-foreground/70 transition-colors',
+          BATCH_THEME.trashHoverBg,
+          BATCH_THEME.trashHoverText,
+        )}
+        aria-label={`Remove ${tokenSymbol} from portfolio`}
+      >
+        <Minus className="size-3" strokeWidth={2.5} aria-hidden />
+      </button>
+    );
+
     return (
-      <div className="flex items-center gap-1.5 rounded-lg border border-border/50 bg-card/80 px-2 py-1.5 transition-colors hover:border-border">
-        {removeButton}
+      <div className="relative grid grid-cols-[minmax(0,1fr)_minmax(10.5rem,auto)] items-center gap-x-2 rounded-lg border border-border/50 bg-card/80 px-2 py-1.5 transition-colors hover:border-border">
+        {cornerRemove}
         {/* Token info — 2-col grid (icons centered, text left-aligned), 3 rows */}
-        <div className="grid min-w-0 shrink-0 max-w-[44%] grid-cols-[1rem_minmax(0,1fr)] items-center gap-x-1 gap-y-0.5 leading-[1.15]">
+        <div className="grid min-w-0 grid-cols-[1rem_minmax(0,1fr)] items-center gap-x-1 gap-y-0.5 leading-[1.15]">
           <span className="flex justify-center"><TokenIcon symbol={tokenSymbol} size={14} /></span>
           <span className="ds-text-12 font-semibold text-foreground truncate">{tokenSymbol}</span>
           <span className="flex justify-center">
@@ -134,7 +150,7 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
             </>
           )}
         </div>
-        <div className="flex min-w-0 flex-1 flex-col items-stretch gap-1">
+        <div className="flex min-w-0 flex-col items-stretch gap-1">
           {renderSideInput(supplyPosition, 'Supply')}
           {borrowPosition && renderSideInput(borrowPosition, 'Borrow')}
         </div>
