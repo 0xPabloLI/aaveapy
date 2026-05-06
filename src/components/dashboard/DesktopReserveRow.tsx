@@ -93,8 +93,6 @@ interface DesktopReserveRowProps {
   isInPortfolio?: boolean;
   /** Callback to add/remove from portfolio. */
   onPortfolioToggle?: (reserveId: string, reserve: ReserveWithSpread, side?: 'supply' | 'borrow') => void;
-  /** When true, borrow exceeds available liquidity in the shared scenario — show liquidity column in warning color (amber-600). Simulation input feedback, not a system-critical state. */
-  liquidityWarning?: boolean;
 }
 
 const DesktopReserveRow = memo(({
@@ -126,7 +124,6 @@ const DesktopReserveRow = memo(({
   isPortfolioMode,
   isInPortfolio,
   onPortfolioToggle,
-  liquidityWarning,
 }: DesktopReserveRowProps) => {
   const [hasSimulationMounted, setHasSimulationMounted] = useState(isExpanded);
 
@@ -485,12 +482,8 @@ const DesktopReserveRow = memo(({
               </span>
               {/* Liquidity: two-level metric.
                    * Safe (>= $10K) → purple brand color
-                   * Warning (< $10K or borrow exceeds liquidity in shared scenario) → amber-600 */}
-              <span className={`ds-text-11 tabular-nums font-medium ${
-                liquidityWarning || (availableLiquidityUsd != null && availableLiquidityUsd < 10000)
-                  ? 'text-amber-600'
-                  : 'ds-text-purple-500'
-              }`}>
+                   * Warning (< $10K) → amber-600 */}
+              <span className={`ds-text-11 tabular-nums font-medium ${availableLiquidityUsd != null && availableLiquidityUsd < 10000 ? 'text-amber-600' : 'ds-text-purple-500'}`}>
                 {formatScenarioSize(availableLiquidityUsd, { inputMode, tokenPrice: displayTokenPrice, tokenSymbol: reserve.tokenSymbol })}
               </span>
             </div>
