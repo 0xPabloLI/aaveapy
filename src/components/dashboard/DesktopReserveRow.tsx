@@ -93,7 +93,7 @@ interface DesktopReserveRowProps {
   isInPortfolio?: boolean;
   /** Callback to add/remove from portfolio. */
   onPortfolioToggle?: (reserveId: string, reserve: ReserveWithSpread, side?: 'supply' | 'borrow') => void;
-  /** When true, borrow exceeds available liquidity in the shared scenario — show liquidity column in warning color. */
+  /** When true, borrow exceeds available liquidity in the shared scenario — show liquidity column in critical color (amber-500, brighter = more severe). */
   liquidityWarning?: boolean;
 }
 
@@ -483,6 +483,10 @@ const DesktopReserveRow = memo(({
               <span className={displayUtilization != null && optimalPct != null && displayUtilization > optimalPct ? 'text-amber-600' : 'text-foreground'}>
                 {formatPercent(displayUtilization)}
               </span>
+              {/* Liquidity: two-level metric with luminous ceiling.
+                   * Safe (>= $10K) → purple brand color
+                   * Warning (< $10K) → amber-600 (darker = secondary alert)
+                   * Critical (borrow exceeds liquidity in shared scenario) → amber-500 (brighter = primary alert) */}
               <span className={`ds-text-11 tabular-nums font-medium ${
                 liquidityWarning
                   ? 'text-amber-500'
