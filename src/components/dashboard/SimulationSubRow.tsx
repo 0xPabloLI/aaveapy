@@ -624,10 +624,10 @@ const SimulationSubRow = ({
       <table className="w-full min-w-0 table-fixed">
         <colgroup>
           {/* Wide label column: cap notes sit outside nested indent so they use full width (later wrap). */}
-          <col style={{ width: '46%' }} />
-          <col style={{ width: '18%' }} />
-          <col style={{ width: '18%' }} />
-          <col style={{ width: '18%' }} />
+          <col style={{ width: '36%' }} />
+          <col style={{ width: '20%' }} />
+          <col style={{ width: '20%' }} />
+          <col style={{ width: '24%' }} />
         </colgroup>
         <thead>
           <tr className="bg-muted/30 border-b border-border/50">
