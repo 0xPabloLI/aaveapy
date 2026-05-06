@@ -1,5 +1,6 @@
 import { getChainIconSrc } from './chainIcons';
 import { TOKEN_ICON_MANIFEST } from './tokenIconManifest.generated';
+import { PT_ICON_FALLBACK_MAP } from './ptIconFallback.generated';
 
 /**
  * Performance Optimization - Phase 3
@@ -64,10 +65,12 @@ export function shouldUseFullPreloadMode(): boolean {
 
 /**
  * Resolve symbol to the icon keys used for static assets, ordered by priority.
- * PT tokens try pt{base} (upstream PT-specific icon) first, then fall back to {base}.
- * - pt-susde-28may2026 → ['ptsusde', 'susde']
- * - pt-usdg-28may2026  → ['ptusdg', 'usdg']
- * - pt-eusde           → ['pteusde', 'eusde']
+ * PT tokens use upstream mapping (from reservePatches.ts) for the first layer,
+ * then fall back to the bare base asset name.
+ *
+ * With upstream mappings:        pt-susde-28may2026 → ['ptsusde', 'susde']
+ * Without upstream mapping:      pt-usdg-28may2026  → ['ptusdg', 'usdg']
+ * Non-PT symbols pass through:   usdc               → ['usdc']
  */
 export function getTokenIconSymbolKeys(symbol: string): string[] {
   const key = symbol.trim().toLowerCase();
@@ -77,7 +80,10 @@ export function getTokenIconSymbolKeys(symbol: string): string[] {
   const rest = ptMatch[1];
   const baseEnd = rest.indexOf('-');
   const base = baseEnd >= 0 ? rest.slice(0, baseEnd) : rest;
-  return [`pt${base}`, base];
+
+  const upstreamIcon = PT_ICON_FALLBACK_MAP[base];
+  const firstLayer = upstreamIcon ?? `pt${base}`;
+  return [firstLayer, base];
 }
 
 export function getTokenIconSources(symbol: string): string[] {

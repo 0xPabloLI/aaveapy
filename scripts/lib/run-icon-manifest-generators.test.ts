@@ -26,6 +26,12 @@ describe('runIconManifestGenerators', () => {
       [path.join('/repo', 'scripts', 'generate-chain-icon-manifest.mjs')],
       { stdio: 'inherit' }
     );
-    expect(run).toHaveBeenCalledTimes(2);
+    expect(run).toHaveBeenNthCalledWith(
+      3,
+      '/custom/node',
+      [path.join('/repo', 'scripts', 'generate-pt-icon-fallback.mjs')],
+      { stdio: 'inherit' }
+    );
+    expect(run).toHaveBeenCalledTimes(3);
   });
 });

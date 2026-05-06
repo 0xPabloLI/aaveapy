@@ -9,6 +9,7 @@ export function runIconManifestGenerators({
   const scripts = [
     path.join(rootDir, 'scripts', 'generate-token-icon-manifest.mjs'),
     path.join(rootDir, 'scripts', 'generate-chain-icon-manifest.mjs'),
+    path.join(rootDir, 'scripts', 'generate-pt-icon-fallback.mjs'),
   ];
 
   for (const scriptPath of scripts) {
