@@ -15,6 +15,10 @@ export function FrozenStatusBadge({ isFrozen, isPaused }: FrozenStatusBadgeProps
   const [open, setOpen] = useState(false);
   if (!isFrozen && !isPaused) return null;
 
+  const colorClass = isPaused ? 'text-rose-500 bg-rose-500/10' : 'text-sky-500 bg-sky-500/10';
+  const Icon = isPaused ? Pause : Snowflake;
+  const label = isPaused && isFrozen ? 'Paused & frozen' : isPaused ? 'Paused' : 'Frozen';
+
   return (
     <Tooltip open={open} onOpenChange={setOpen} delayDuration={0}>
       <TooltipTrigger asChild>
@@ -24,10 +28,10 @@ export function FrozenStatusBadge({ isFrozen, isPaused }: FrozenStatusBadgeProps
             e.stopPropagation();
             setOpen((v) => !v);
           }}
-          className="inline-flex shrink-0 items-center gap-0.5 rounded px-1 py-0.5 ds-text-9 font-medium text-sky-500 bg-sky-500/10"
-          aria-label="Show frozen or paused status details"
+          className={`inline-flex shrink-0 items-center gap-0.5 rounded px-1 py-0.5 ds-text-9 font-medium ${colorClass}`}
+          aria-label={`Show ${label.toLowerCase()} status details`}
         >
-          <Snowflake className="w-2.5 h-2.5" />
+          <Icon className="w-2.5 h-2.5" />
         </button>
       </TooltipTrigger>
       <TooltipContent>
@@ -50,7 +54,7 @@ export function FrozenStatusContent({ isFrozen, isPaused }: FrozenStatusBadgePro
       )}
       {isPaused && (
         <p className="text-muted-foreground">
-          <strong className="text-sky-500">Paused:</strong> all reserve actions
+          <strong className="text-rose-500">Paused:</strong> all reserve actions
           (deposit, borrow, repay, withdraw, liquidations) are halted.
         </p>
       )}
