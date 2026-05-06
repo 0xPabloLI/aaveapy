@@ -560,10 +560,14 @@ const MobileReserveCard = memo(({
                         data-testid="mobile-reserve-status-badge"
                         data-status={reserve.isPaused ? (reserve.isFrozen ? 'paused-frozen' : 'paused') : 'frozen'}
                         onClick={() => setCapSheet('frozen')}
-                        className={`absolute -top-0.5 -left-0.5 z-10 inline-flex shrink-0 items-center justify-center w-3.5 h-3.5 rounded-full text-white ${reserve.isPaused ? 'bg-rose-500' : 'bg-sky-500'}`}
                         aria-label={reserve.isPaused ? 'Show paused details' : 'Show frozen details'}
+                        className="absolute -top-2 -left-2 z-10 grid place-items-center w-7 h-7 rounded-full bg-transparent"
                       >
-                        {reserve.isPaused ? <Pause className="w-2 h-2" /> : <Snowflake className="w-2 h-2" />}
+                        <span
+                          className={`inline-flex items-center justify-center w-3.5 h-3.5 rounded-full text-white ${reserve.isPaused ? 'bg-rose-500' : 'bg-sky-500'}`}
+                        >
+                          {reserve.isPaused ? <Pause className="w-2 h-2" /> : <Snowflake className="w-2 h-2" />}
+                        </span>
                       </button>
                     </TooltipTrigger>
                     <TooltipContent>{reserve.isPaused && reserve.isFrozen ? 'Paused & frozen' : reserve.isPaused ? 'Paused' : 'Frozen'}</TooltipContent>
