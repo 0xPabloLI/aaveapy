@@ -46,14 +46,14 @@ const CapProgressRing = memo(({
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
   const getProgressColor = () => {
-    if (percentage >= 95) return 'rgb(var(--ds-amber-600-rgb, 217 119 6))';
-    if (percentage >= 80) return 'rgb(var(--ds-amber-500-rgb, 245 158 11))';
+    if (percentage >= 95) return 'rgb(var(--ds-amber-500-rgb, 245 158 11))';
+    if (percentage >= 80) return 'rgb(var(--ds-amber-600-rgb, 217 119 6))';
     return 'rgb(var(--ds-emerald-500-rgb, 16 185 129))';
   };
 
   const getProgressColorClass = () => {
-    if (percentage >= 95) return 'text-amber-600';
-    if (percentage >= 80) return 'text-amber-500';
+    if (percentage >= 95) return 'text-amber-500';
+    if (percentage >= 80) return 'text-amber-600';
     return 'ds-text-emerald-500';
   };
 

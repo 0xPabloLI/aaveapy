@@ -212,9 +212,9 @@ const DesktopReserveRow = memo(({
   const deficitSeverity = getDeficitSeverity(deficitShareRatio);
   const isNeutralDeficit = deficitSeverity === 'neutral';
   const deficitTextClass = deficitSeverity === 'critical'
-    ? 'text-amber-600/90'
+    ? 'text-amber-500/90'
     : deficitSeverity === 'warning'
-      ? 'text-amber-500/90'
+      ? 'text-amber-600/90'
       : 'text-muted-foreground/60';
 
   const supplySizeLabel = formatScenarioSize(displayReserveSizeUsd, {
@@ -480,14 +480,14 @@ const DesktopReserveRow = memo(({
         <TableCell className="ds-reserves-cell-td ds-row-pad whitespace-nowrap text-right hidden md:table-cell tabular-nums ds-text-13">
           <div className="inline-flex items-center justify-end gap-[var(--ds-space-1-5)] w-full">
             <div className="flex flex-col items-end gap-[var(--ds-space-0-5)]">
-              <span className={displayUtilization != null && optimalPct != null && displayUtilization > optimalPct ? 'text-amber-500' : 'text-foreground'}>
+              <span className={displayUtilization != null && optimalPct != null && displayUtilization > optimalPct ? 'text-amber-600' : 'text-foreground'}>
                 {formatPercent(displayUtilization)}
               </span>
               <span className={`ds-text-11 tabular-nums font-medium ${
                 liquidityWarning
-                  ? 'text-amber-600 dark:text-amber-400'
+                  ? 'text-amber-500'
                   : availableLiquidityUsd != null && availableLiquidityUsd < 10000
-                    ? 'text-amber-500'
+                    ? 'text-amber-600'
                     : 'ds-text-purple-500'
               }`}>
                 {formatScenarioSize(availableLiquidityUsd, { inputMode, tokenPrice: displayTokenPrice, tokenSymbol: reserve.tokenSymbol })}

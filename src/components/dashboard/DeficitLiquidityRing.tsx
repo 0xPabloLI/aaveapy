@@ -49,14 +49,14 @@ const DeficitLiquidityRing = memo(({
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
   const getProgressColor = () => {
-    if (severity === 'critical') return 'rgb(var(--ds-amber-600-rgb, 217 119 6))';
-    if (severity === 'warning') return 'rgb(var(--ds-amber-500-rgb, 245 158 11))';
+    if (severity === 'critical') return 'rgb(var(--ds-amber-500-rgb, 245 158 11))';
+    if (severity === 'warning') return 'rgb(var(--ds-amber-600-rgb, 217 119 6))';
     return 'rgb(var(--ds-muted-foreground-rgb, 100 116 139) / 0.75)';
   };
 
   const getProgressColorClass = () => {
-    if (severity === 'critical') return 'text-amber-600';
-    if (severity === 'warning') return 'text-amber-500';
+    if (severity === 'critical') return 'text-amber-500';
+    if (severity === 'warning') return 'text-amber-600';
     return 'text-muted-foreground/60';
   };
 

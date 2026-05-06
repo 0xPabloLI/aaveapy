@@ -131,7 +131,7 @@ export function UtilizationSheetContent({ current, optimal }: { current: number;
         <span className="font-medium tabular-nums">{formatPercent(optimal)}</span>
       </div>
       {isOverOptimal ? (
-        <p className="text-amber-500 ds-text-11 pt-2 border-t border-border/50">
+        <p className="text-amber-600 ds-text-11 pt-2 border-t border-border/50">
           ⚠️ Above optimal
         </p>
       ) : (

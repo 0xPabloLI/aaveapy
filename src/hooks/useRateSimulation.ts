@@ -975,8 +975,10 @@ export function buildRateSimulationResult({
   // In USD mode, convert to token amounts for native simulation
   const supplyAmount = inputMode === 'usd' && tokenPrice ? rawSupply / tokenPrice : rawSupply;
   const borrowAmount = inputMode === 'usd' && tokenPrice ? rawBorrow / tokenPrice : rawBorrow;
-  const hasSupplyInput = reserve.supplyDisabled ? false : rawSupply > 0;
-  const hasBorrowInput = reserve.borrowDisabled ? false : rawBorrow > 0;
+  const supplyBlocked = !!(reserve.supplyDisabled || reserve.isPaused || reserve.isFrozen);
+  const borrowBlocked = !!(reserve.borrowDisabled || reserve.isPaused || reserve.isFrozen);
+  const hasSupplyInput = supplyBlocked ? false : rawSupply > 0;
+  const hasBorrowInput = borrowBlocked ? false : rawBorrow > 0;
   const hasAnyInput = hasSupplyInput || hasBorrowInput;
 
   // For incentive forecasts, we need USD values
@@ -1022,14 +1024,14 @@ export function buildRateSimulationResult({
     : null;
 
   // Early exit: if borrow is disabled, skip borrow room calculation entirely.
-  const borrowCapRemainingUsd = reserve.borrowDisabled ? null
+  const borrowCapRemainingUsd = borrowBlocked ? null
     : borrowCapUsd !== null && borrowCapUsd > 0 && currentTotalBorrowedUsd !== null
       ? Math.max(borrowCapUsd - currentTotalBorrowedUsd, 0)
       : null;
 
   // If supply is disabled, new supply input does not increase available liquidity.
-  const effectiveSupplyInputUsd = reserve.supplyDisabled ? 0 : supplyInputUsd;
-  const availableLiquidityForBorrowUsd = reserve.borrowDisabled ? null
+  const effectiveSupplyInputUsd = supplyBlocked ? 0 : supplyInputUsd;
+  const availableLiquidityForBorrowUsd = borrowBlocked ? null
     : reserveRateInput && tokenPrice
       ? (() => {
           const decimals = reserveRateInput.decimals ?? 18;
@@ -1041,7 +1043,7 @@ export function buildRateSimulationResult({
 
   // Available to borrow = min(borrow cap remaining, available liquidity + scenario supply)
   // Valid for both V3 and V4. If borrow is disabled, borrow room is 0 (skip all calculation).
-  const availableBorrowRoomUsd = reserve.borrowDisabled ? 0
+  const availableBorrowRoomUsd = borrowBlocked ? 0
     : borrowCapRemainingUsd !== null && availableLiquidityForBorrowUsd !== null
       ? Math.min(borrowCapRemainingUsd, availableLiquidityForBorrowUsd)
       : borrowCapRemainingUsd ?? availableLiquidityForBorrowUsd ?? (nativeToUsd(reserve.borrowable, reserve.decimals, reserve.tokenPrice) ?? null);
@@ -1059,7 +1061,7 @@ export function buildRateSimulationResult({
 
   // Convert capped USD back to token amounts for native rate simulation
   const cappedSupplyAmount = tokenPrice && tokenPrice > 0
-    ? supplyInputUsd / tokenPrice
+    ? effectiveSupplyInputUsd / tokenPrice
     : supplyAmount;
   const cappedBorrowAmount = tokenPrice && tokenPrice > 0
     ? borrowInputUsd / tokenPrice
@@ -1338,21 +1340,21 @@ export function buildRateSimulationResult({
   );
 
   const supplyLane: SimulationLane = {
-    hasInput: reserve.supplyDisabled ? false : hasSupplyInput,
-    inputAmount: reserve.supplyDisabled ? 0 : supplyAmount,
-    inputUsd: reserve.supplyDisabled ? 0 : supplyInputUsd,
+    hasInput: supplyBlocked ? false : hasSupplyInput,
+    inputAmount: supplyBlocked ? 0 : supplyAmount,
+    inputUsd: supplyBlocked ? 0 : supplyInputUsd,
     currentNative: supplyCurrentNative,
     currentIncentive: supplyCurrentIncentive,
     currentTotal: supplyCurrentTotal,
-    afterNative: supplyAfterNative,
-    afterIncentive: supplyAfterIncentive,
-    afterTotal: supplyAfterTotal,
+    afterNative: supplyBlocked ? null : supplyAfterNative,
+    afterIncentive: supplyBlocked ? null : supplyAfterIncentive,
+    afterTotal: supplyBlocked ? null : supplyAfterTotal,
     deltaNative:
-      supplyAfterNative !== null && supplyCurrentNative !== null ? supplyAfterNative - supplyCurrentNative : null,
+      supplyBlocked ? null : (supplyAfterNative !== null && supplyCurrentNative !== null ? supplyAfterNative - supplyCurrentNative : null),
     deltaIncentive:
-      supplyAfterIncentive !== null ? supplyAfterIncentive - supplyCurrentIncentive : null,
+      supplyBlocked ? null : (supplyAfterIncentive !== null ? supplyAfterIncentive - supplyCurrentIncentive : null),
     deltaTotal:
-      supplyAfterTotal !== null && supplyCurrentTotal !== null ? supplyAfterTotal - supplyCurrentTotal : null,
+      supplyBlocked ? null : (supplyAfterTotal !== null && supplyCurrentTotal !== null ? supplyAfterTotal - supplyCurrentTotal : null),
     sources: {
       protocol: attachCampaigns(buildMetric(supplyCurrentSources.protocol, supplyAfterSources?.protocol ?? null), []),
       merit: attachCampaigns(
@@ -1371,21 +1373,21 @@ export function buildRateSimulationResult({
   };
 
   const borrowLane: SimulationLane = {
-    hasInput: reserve.borrowDisabled ? false : hasBorrowInput,
-    inputAmount: reserve.borrowDisabled ? 0 : borrowAmount,
-    inputUsd: reserve.borrowDisabled ? 0 : borrowInputUsd,
+    hasInput: borrowBlocked ? false : hasBorrowInput,
+    inputAmount: borrowBlocked ? 0 : borrowAmount,
+    inputUsd: borrowBlocked ? 0 : borrowInputUsd,
     currentNative: borrowCurrentNative,
     currentIncentive: borrowCurrentIncentive,
     currentTotal: borrowCurrentTotal,
-    afterNative: borrowAfterNative,
-    afterIncentive: borrowAfterIncentive,
-    afterTotal: borrowAfterTotal,
+    afterNative: borrowBlocked ? null : borrowAfterNative,
+    afterIncentive: borrowBlocked ? null : borrowAfterIncentive,
+    afterTotal: borrowBlocked ? null : borrowAfterTotal,
     deltaNative:
-      borrowAfterNative !== null && borrowCurrentNative !== null ? borrowAfterNative - borrowCurrentNative : null,
+      borrowBlocked ? null : (borrowAfterNative !== null && borrowCurrentNative !== null ? borrowAfterNative - borrowCurrentNative : null),
     deltaIncentive:
-      borrowAfterIncentive !== null ? borrowAfterIncentive - borrowCurrentIncentive : null,
+      borrowBlocked ? null : (borrowAfterIncentive !== null ? borrowAfterIncentive - borrowCurrentIncentive : null),
     deltaTotal:
-      borrowAfterTotal !== null && borrowCurrentTotal !== null ? borrowAfterTotal - borrowCurrentTotal : null,
+      borrowBlocked ? null : (borrowAfterTotal !== null && borrowCurrentTotal !== null ? borrowAfterTotal - borrowCurrentTotal : null),
     sources: {
       protocol: attachCampaigns(buildMetric(borrowCurrentSources.protocol, borrowAfterSources?.protocol ?? null), []),
       merit: attachCampaigns(
@@ -1587,9 +1589,9 @@ export function buildRateSimulationResult({
 
     // Use capped inputs for after values (supplyInputUsd and borrowInputUsd are already capped)
     const availableLiquidityUsdAfter = hasAnyInput
-      ? availableLiquidityUsd + supplyInputUsd - borrowInputUsd
+      ? availableLiquidityUsd + effectiveSupplyInputUsd - borrowInputUsd
       : null;
-    const totalBorrowedUsdAfter = hasAnyInput
+    const totalBorrowedUsdAfter = (hasAnyInput && !borrowBlocked)
       ? totalBorrowedUsd + borrowInputUsd
       : null;
 

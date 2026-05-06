@@ -1202,6 +1202,229 @@ describe('buildRateSimulationResult', () => {
     expect(result.forecastUnavailableCampaignCount).toBe(0);
   });
 
+  describe('blocked / disabled reserves', () => {
+    it('TC1: paused reserve ignores all simulation input (after values all null)', () => {
+      const reserve: ReserveWithSpread = {
+        ...baseReserve,
+        isPaused: true,
+      };
+
+      const result = buildRateSimulationResult({
+        reserve,
+        reserveRateInput: baseReserve,
+        isApy: false,
+        whitelistMerklCampaignIds: new Set(),
+        tydroPointToUsdRate: 1,
+        tokenPrice: 1,
+        supplyInput: '100000',
+        borrowInput: '50000',
+        forecastStates: {},
+      });
+
+      expect(result.supply.hasInput).toBe(false);
+      expect(result.supply.inputUsd).toBe(0);
+      expect(result.supply.inputAmount).toBe(0);
+      expect(result.supply.afterNative).toBeNull();
+      expect(result.supply.afterIncentive).toBeNull();
+      expect(result.supply.afterTotal).toBeNull();
+
+      expect(result.borrow.hasInput).toBe(false);
+      expect(result.borrow.inputUsd).toBe(0);
+      expect(result.borrow.inputAmount).toBe(0);
+      expect(result.borrow.afterNative).toBeNull();
+      expect(result.borrow.afterIncentive).toBeNull();
+      expect(result.borrow.afterTotal).toBeNull();
+
+      expect(result.spread.after).toBeNull();
+      expect(result.utilization.after).toBeNull();
+    });
+
+    it('TC2: frozen reserve ignores all simulation input (after values all null)', () => {
+      const reserve: ReserveWithSpread = {
+        ...baseReserve,
+        isFrozen: true,
+      };
+
+      const result = buildRateSimulationResult({
+        reserve,
+        reserveRateInput: baseReserve,
+        isApy: false,
+        whitelistMerklCampaignIds: new Set(),
+        tydroPointToUsdRate: 1,
+        tokenPrice: 1,
+        supplyInput: '100000',
+        borrowInput: '50000',
+        forecastStates: {},
+      });
+
+      expect(result.supply.hasInput).toBe(false);
+      expect(result.supply.inputUsd).toBe(0);
+      expect(result.supply.afterNative).toBeNull();
+      expect(result.supply.afterIncentive).toBeNull();
+      expect(result.supply.afterTotal).toBeNull();
+
+      expect(result.borrow.hasInput).toBe(false);
+      expect(result.borrow.inputUsd).toBe(0);
+      expect(result.borrow.afterNative).toBeNull();
+      expect(result.borrow.afterIncentive).toBeNull();
+      expect(result.borrow.afterTotal).toBeNull();
+
+      expect(result.spread.after).toBeNull();
+      expect(result.utilization.after).toBeNull();
+    });
+
+    it('TC3: both supplyDisabled and borrowDisabled → all after null', () => {
+      const reserve: ReserveWithSpread = {
+        ...baseReserve,
+        supplyDisabled: true,
+        borrowDisabled: true,
+      };
+
+      const result = buildRateSimulationResult({
+        reserve,
+        reserveRateInput: baseReserve,
+        isApy: false,
+        whitelistMerklCampaignIds: new Set(),
+        tydroPointToUsdRate: 1,
+        tokenPrice: 1,
+        supplyInput: '100000',
+        borrowInput: '50000',
+        forecastStates: {},
+      });
+
+      expect(result.supply.hasInput).toBe(false);
+      expect(result.supply.afterNative).toBeNull();
+      expect(result.supply.afterIncentive).toBeNull();
+      expect(result.supply.afterTotal).toBeNull();
+
+      expect(result.borrow.hasInput).toBe(false);
+      expect(result.borrow.afterNative).toBeNull();
+      expect(result.borrow.afterIncentive).toBeNull();
+      expect(result.borrow.afterTotal).toBeNull();
+
+      expect(result.spread.after).toBeNull();
+      expect(result.utilization.after).toBeNull();
+    });
+
+    it('TC4: supplyDisabled only → supply lane blocked, borrow lane works', () => {
+      const reserve: ReserveWithSpread = {
+        ...baseReserve,
+        supplyDisabled: true,
+        borrowDisabled: false,
+      };
+
+      const result = buildRateSimulationResult({
+        reserve,
+        reserveRateInput: baseReserve,
+        isApy: false,
+        whitelistMerklCampaignIds: new Set(),
+        tydroPointToUsdRate: 1,
+        tokenPrice: 1,
+        supplyInput: '100000',
+        borrowInput: '20000',
+        forecastStates: {},
+      });
+
+      expect(result.supply.hasInput).toBe(false);
+      expect(result.supply.inputUsd).toBe(0);
+      expect(result.supply.afterNative).toBeNull();
+      expect(result.supply.afterIncentive).toBeNull();
+      expect(result.supply.afterTotal).toBeNull();
+
+      expect(result.borrow.hasInput).toBe(true);
+      expect(result.borrow.afterNative).not.toBeNull();
+      expect(result.borrow.afterIncentive).not.toBeNull();
+      expect(result.borrow.afterTotal).not.toBeNull();
+
+      expect(result.utilization.after).not.toBeNull();
+
+      expect(result.marketMetrics.totalBorrowedUsdAfter).not.toBeNull();
+      expect(result.marketMetrics.availableLiquidityUsdAfter).not.toBeNull();
+    });
+
+    it('TC5: borrowDisabled only → borrow lane blocked, supply lane works', () => {
+      const reserve: ReserveWithSpread = {
+        ...baseReserve,
+        supplyDisabled: false,
+        borrowDisabled: true,
+      };
+
+      const result = buildRateSimulationResult({
+        reserve,
+        reserveRateInput: baseReserve,
+        isApy: false,
+        whitelistMerklCampaignIds: new Set(),
+        tydroPointToUsdRate: 1,
+        tokenPrice: 1,
+        supplyInput: '100000',
+        borrowInput: '20000',
+        forecastStates: {},
+      });
+
+      expect(result.borrow.hasInput).toBe(false);
+      expect(result.borrow.inputUsd).toBe(0);
+      expect(result.borrow.afterNative).toBeNull();
+      expect(result.borrow.afterIncentive).toBeNull();
+      expect(result.borrow.afterTotal).toBeNull();
+
+      expect(result.supply.hasInput).toBe(true);
+      expect(result.supply.afterNative).not.toBeNull();
+      expect(result.supply.afterIncentive).not.toBeNull();
+      expect(result.supply.afterTotal).not.toBeNull();
+
+      expect(result.utilization.after).not.toBeNull();
+
+      expect(result.marketMetrics.totalBorrowedUsdAfter).toBeNull();
+      expect(result.marketMetrics.availableLiquidityUsdAfter).not.toBeNull();
+    });
+
+    it('TC6: paused reserve with only supply input → all after null', () => {
+      const reserve: ReserveWithSpread = {
+        ...baseReserve,
+        isPaused: true,
+      };
+
+      const result = buildRateSimulationResult({
+        reserve,
+        reserveRateInput: baseReserve,
+        isApy: false,
+        whitelistMerklCampaignIds: new Set(),
+        tydroPointToUsdRate: 1,
+        tokenPrice: 1,
+        supplyInput: '100000',
+        borrowInput: '',
+        forecastStates: {},
+      });
+
+      expect(result.supply.hasInput).toBe(false);
+      expect(result.supply.afterTotal).toBeNull();
+      expect(result.utilization.after).toBeNull();
+    });
+
+    it('TC7: frozen reserve with only borrow input → all after null', () => {
+      const reserve: ReserveWithSpread = {
+        ...baseReserve,
+        isFrozen: true,
+      };
+
+      const result = buildRateSimulationResult({
+        reserve,
+        reserveRateInput: baseReserve,
+        isApy: false,
+        whitelistMerklCampaignIds: new Set(),
+        tydroPointToUsdRate: 1,
+        tokenPrice: 1,
+        supplyInput: '',
+        borrowInput: '50000',
+        forecastStates: {},
+      });
+
+      expect(result.borrow.hasInput).toBe(false);
+      expect(result.borrow.afterTotal).toBeNull();
+      expect(result.utilization.after).toBeNull();
+    });
+  });
+
   it('counts only FIX/MAX_REWARD campaigns missing forecast data', () => {
     const reserve: ReserveWithSpread = {
       ...baseReserve,
