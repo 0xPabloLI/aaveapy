@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Snowflake } from 'lucide-react';
+import { Pause, Snowflake } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface FrozenStatusBadgeProps {
