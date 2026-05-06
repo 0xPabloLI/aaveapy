@@ -196,6 +196,17 @@ const SimulationSubRow = ({
   }, [compact, containerNarrow]);
 
   const effectiveCompact = compact || containerNarrow;
+  const isReserveLocked = Boolean(reserve.isFrozen || reserve.isPaused);
+  const supplyDisabledNotice = isReserveLocked
+    ? (reserve.isPaused ? 'Paused' : 'Frozen')
+    : reserve.supplyDisabled
+      ? 'Supply unavailable'
+      : null;
+  const borrowDisabledNotice = isReserveLocked
+    ? (reserve.isPaused ? 'Paused' : 'Frozen')
+    : reserve.borrowDisabled
+      ? 'Borrow disabled'
+      : null;
   const rateLabel = isApy ? 'APY' : 'APR';
   const showPriceMissingNotice =
     inputMode === 'token' &&
@@ -613,6 +624,13 @@ const SimulationSubRow = ({
     const compactMetricCell = 'px-3';
     const compactNumCell = 'px-2.5';
     const compactDeltaCell = 'pl-2.5 pr-3';
+    const compactDisabledNotices: string[] = [];
+    if (isReserveLocked) {
+      compactDisabledNotices.push(reserve.isPaused ? 'Reserve paused — supply & borrow disabled' : 'Reserve frozen — supply & borrow disabled');
+    } else {
+      if (reserve.supplyDisabled) compactDisabledNotices.push('Supply unavailable');
+      if (reserve.borrowDisabled) compactDisabledNotices.push('Borrow disabled');
+    }
     /** Parent card/panel already provides the outer border when embedded; inner borders misalign with thead lines. */
     return (
     <div
@@ -622,6 +640,11 @@ const SimulationSubRow = ({
           : 'bg-card/50 dark:bg-background/80 border border-border/60 rounded-xl'
       }`}
     >
+      {compactDisabledNotices.length > 0 && (
+        <div className="px-3 py-1.5 border-b border-border/50 bg-muted/30 ds-text-11 text-secondary">
+          {compactDisabledNotices.join(' · ')}
+        </div>
+      )}
       <table className="w-full min-w-0 table-auto">
         <colgroup>
           {/* Auto-sized numeric columns prevent right-side truncation on narrow viewports.
@@ -710,7 +733,16 @@ const SimulationSubRow = ({
     return peerKey ? peerRows.find((r) => r.rowKey === peerKey) : undefined;
   };
 
-  const renderTable = (title: string, rows: TableRow[], accentClass: string, borderClass: string, indentBorderClass: string, isWarning?: boolean, peerRows?: TableRow[]) => (
+  const renderTable = (
+    title: string,
+    rows: TableRow[],
+    accentClass: string,
+    borderClass: string,
+    indentBorderClass: string,
+    isWarning?: boolean,
+    peerRows?: TableRow[],
+    disabledNotice?: string | null,
+  ) => (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-border/50 bg-card">
       <table className="w-full min-w-0 table-fixed">
         <colgroup>
@@ -722,7 +754,10 @@ const SimulationSubRow = ({
         <thead>
           <tr className="bg-muted/30 border-b border-border/50">
             <th className="px-4 py-1.5 text-left">
-              <span className={`ds-text-13 font-semibold ${accentClass}`}>{title}</span>
+              <span className={`ds-text-13 font-semibold ${disabledNotice ? 'text-secondary' : accentClass}`}>{title}</span>
+              {disabledNotice && (
+                <span className="ml-2 ds-text-11 font-normal text-secondary">· {disabledNotice}</span>
+              )}
             </th>
             <th className="px-3 py-1.5 text-right">
               <span className="ds-text-11 text-muted-foreground">Current</span>
@@ -735,7 +770,7 @@ const SimulationSubRow = ({
             </th>
           </tr>
         </thead>
-        <tbody className="[&>tr:last-child>td]:pb-2">
+        <tbody className={`[&>tr:last-child>td]:pb-2 ${disabledNotice ? 'opacity-60' : ''}`}>
           {rows.map((row) => {
             const peer = peerRows ? findPeerRow(row.rowKey, peerRows) : undefined;
             const peerHasCapBar = peer != null && peer.cap != null && peer.type === 'usd';
@@ -1219,10 +1254,10 @@ const SimulationSubRow = ({
             className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_clamp(14.5rem,24.5vw,18rem)] gap-2 min-w-0 items-stretch overflow-hidden"
           >
             <div className="flex min-w-0 flex-col overflow-hidden">
-              {renderTable('Supply', supplyRows, 'ds-text-emerald-600', 'border-emerald-500/40', 'border-l-[rgb(var(--ds-emerald-500-rgb))]', showSupplyCapWarning, borrowRows)}
+              {renderTable('Supply', supplyRows, 'ds-text-emerald-600', 'border-emerald-500/40', 'border-l-[rgb(var(--ds-emerald-500-rgb))]', showSupplyCapWarning, borrowRows, supplyDisabledNotice)}
             </div>
             <div className="flex min-w-0 flex-col overflow-hidden">
-              {renderTable('Borrow', borrowRows, 'ds-text-brand-cyan', 'border-[rgb(var(--ds-brand-cyan-rgb))]/40', 'border-l-[rgb(var(--ds-brand-cyan-rgb))]', showBorrowCapWarning, supplyRows)}
+              {renderTable('Borrow', borrowRows, 'ds-text-brand-cyan', 'border-[rgb(var(--ds-brand-cyan-rgb))]/40', 'border-l-[rgb(var(--ds-brand-cyan-rgb))]', showBorrowCapWarning, supplyRows, borrowDisabledNotice)}
             </div>
             <div className="flex min-h-0 min-w-0 flex-col overflow-hidden self-stretch">
               {renderEarnCostTable()}
