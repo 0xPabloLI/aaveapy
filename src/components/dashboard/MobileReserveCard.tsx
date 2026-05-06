@@ -545,13 +545,13 @@ const MobileReserveCard = memo(({
                       <button
                         type="button"
                         onClick={() => setCapSheet('frozen')}
-                        className="absolute -top-0.5 -left-0.5 z-10 flex items-center justify-center w-3.5 h-3.5 rounded-full bg-sky-500 shadow-sm"
-                        aria-label="Show frozen/paused details"
+                        className={`absolute -top-0.5 -left-0.5 z-10 flex items-center justify-center w-3.5 h-3.5 rounded-full shadow-sm ${reserve.isPaused ? 'bg-amber-500' : 'bg-sky-500'}`}
+                        aria-label={reserve.isPaused ? 'Show paused details' : 'Show frozen details'}
                       >
-                        <span className="text-white text-[8px] leading-none">❄</span>
+                        <span className="text-white text-[8px] leading-none">{reserve.isPaused ? '⏸' : '❄'}</span>
                       </button>
                     </TooltipTrigger>
-                    <TooltipContent>Frozen or paused</TooltipContent>
+                    <TooltipContent>{reserve.isPaused && reserve.isFrozen ? 'Paused & frozen' : reserve.isPaused ? 'Paused' : 'Frozen'}</TooltipContent>
                   </Tooltip>
               </div>
             ) : (
