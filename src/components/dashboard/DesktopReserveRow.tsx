@@ -487,13 +487,20 @@ const DesktopReserveRow = memo(({
               }`}>
                 {formatScenarioSize(availableLiquidityUsd, { inputMode, tokenPrice: displayTokenPrice, tokenSymbol: reserve.tokenSymbol })}
               </span>
-              <span className={`ds-text-11 tabular-nums ${
-                displayUtilization != null && optimalPct != null && displayUtilization > optimalPct
-                  ? 'text-amber-600'
-                  : 'text-muted-foreground'
-              }`}>
-                {formatPercent(displayUtilization)}
-              </span>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className={`ds-text-11 tabular-nums cursor-default ${
+                    displayUtilization != null && optimalPct != null && displayUtilization > optimalPct
+                      ? 'text-amber-600'
+                      : 'text-muted-foreground'
+                  }`}>
+                    {formatPercent(displayUtilization)}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  <p className="ds-text-12">Utilization = borrowed / total liquidity</p>
+                </TooltipContent>
+              </Tooltip>
             </div>
             <UtilizationIndicator
               current={displayUtilization}

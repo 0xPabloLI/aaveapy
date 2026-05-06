@@ -499,7 +499,6 @@ export default function ReservesTableDesktopHeader({
                   menuPos={utilMenuPos}
                   onClose={onCloseUtilMenu}
                   options={utilSortOptions}
-                  minWidth={180}
                 />
               </div>
             </div>

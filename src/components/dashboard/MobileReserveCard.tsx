@@ -649,11 +649,18 @@ const MobileReserveCard = memo(({
               </span>
               {displayUtilization != null && optimalPct != null && (
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <span className={`ds-text-11 tabular-nums ${
-                    displayUtilization > optimalPct ? 'text-amber-600' : 'text-muted-foreground'
-                  }`}>
-                    {displayUtilization.toFixed(0)}%
-                  </span>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className={`ds-text-11 tabular-nums cursor-default ${
+                        displayUtilization > optimalPct ? 'text-amber-600' : 'text-muted-foreground'
+                      }`}>
+                        {displayUtilization.toFixed(0)}%
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">
+                      <p className="ds-text-12">Utilization = borrowed / total liquidity</p>
+                    </TooltipContent>
+                  </Tooltip>
                   <UtilizationIndicator
                     current={displayUtilization}
                     optimal={optimalPct}
