@@ -40,7 +40,7 @@ export function FrozenStatusBadge({ isFrozen, isPaused }: FrozenStatusBadgeProps
 /** Shared copy describing frozen/paused state. Used by tooltip + mobile sheet. */
 export function FrozenStatusContent({ isFrozen, isPaused }: FrozenStatusBadgeProps) {
   return (
-    <div className="space-y-1.5 ds-text-12 max-w-[15rem]">
+    <div className="space-y-1.5 ds-text-12 sm:max-w-[15rem]">
       {isFrozen && (
         <p className="text-muted-foreground">
           <strong className="text-sky-500">Frozen:</strong> deposits and borrows are
