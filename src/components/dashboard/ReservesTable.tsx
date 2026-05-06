@@ -1177,6 +1177,15 @@ const ReservesTable = ({
     if (baseCount >= sortedData.length) return sortedData;
     return sortedData.slice(0, baseCount);
   }, [sortedData, minVisibleCount]);
+
+  if (import.meta.env.DEV && displayData.length === 0 && reserves.length > 0) {
+    console.warn('[ReservesTable] displayData is empty but reserves has', reserves.length, 'items.', {
+      sortedDataLength: sortedData.length,
+      minVisibleCount,
+      baseCount: (minVisibleCount != null && minVisibleCount > 0) ? minVisibleCount : DEFAULT_VISIBLE_COUNT,
+      isLoading,
+    });
+  }
   
   const showAll = sortedData.length > 0 && minVisibleCount !== null && minVisibleCount >= sortedData.length;
 
