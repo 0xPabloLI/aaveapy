@@ -479,10 +479,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
               BATCH_THEME.bgSubtle,
             )}
           >
-            <div className="mx-auto mb-2 flex size-9 items-center justify-center rounded-full border border-border/50 bg-card/80">
-              <Sparkles className={cn('size-4', BATCH_THEME.text)} aria-hidden />
-            </div>
-            {isMobile && suggestedReserves.length > 0 && (
+            {suggestedReserves.length > 0 && (
               <div className="mb-2 flex flex-wrap items-center justify-center gap-1.5">
                 {suggestedReserves.map((r) => {
                   const reserveId = getReserveKey(r);
