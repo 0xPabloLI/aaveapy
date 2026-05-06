@@ -503,9 +503,10 @@ const SimulationSubRow = ({
       <tr data-align-key={mainAlignKey} className={row.warning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
         <td className={`${labelCellPy} ${metricCellPx} min-w-0 align-top`}>
           <div className={`min-w-0 ${isBreakdownItem ? `${breakdownIndentClass} ${borderColorClass}` : ''}`}>
-            <div className="flex flex-wrap items-start gap-x-1.5 gap-y-0.5 min-w-0">
+            <div className="flex items-start gap-x-1.5 min-w-0">
               <span
-                className={`ds-text-12 whitespace-nowrap ${row.warning ? 'text-amber-700 dark:text-amber-400 font-medium' : isBreakdownItem ? rowAccentClass : accentClass}`}
+                title={typeof row.label === 'string' ? row.label : undefined}
+                className={`ds-text-12 whitespace-nowrap overflow-hidden text-ellipsis min-w-0 ${row.warning ? 'text-amber-700 dark:text-amber-400 font-medium' : isBreakdownItem ? rowAccentClass : accentClass}`}
               >
                 {row.label}
               </span>
