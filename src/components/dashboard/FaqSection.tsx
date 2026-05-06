@@ -8,12 +8,8 @@ import {
 
 const FAQ_ITEMS: { q: string; a: ReactNode }[] = [
   {
-    q: 'What is the INK Incentive Calculator?',
-    a: 'It lets you adjust the assumed FDV (Fully Diluted Valuation) of the INK token to see how it affects the incentive APR on Ink-chain markets. Drag the slider or enter a value to explore scenarios.',
-  },
-  {
-    q: 'What are incentives (Merit / Merkl / Brevis)?',
-    a: 'These are additional reward programs on top of native Aave rates. Merit rewards loyal Aave users, Merkl distributes token incentives for specific markets, and Brevis provides ZK-proof based rewards. Click the incentive badges on any reserve to see details.',
+    q: 'What are incentives (Merit / Merkl / Brevis) and the INK Incentive Calculator?',
+    a: 'Incentives are additional reward programs layered on top of native Aave rates. Merit rewards loyal Aave users, Merkl distributes token incentives for specific markets, and Brevis provides ZK-proof based rewards. Click the incentive badges on any reserve to see details. The INK Incentive Calculator is a special case: it lets you adjust the assumed FDV (Fully Diluted Valuation) of the INK token to see how it affects the incentive APR on Ink-chain markets — drag the slider or enter a value to explore scenarios.',
   },
   {
     q: 'How does the Scenario Simulation work?',
@@ -28,40 +24,53 @@ const FAQ_ITEMS: { q: string; a: ReactNode }[] = [
     a: 'Use the category buttons (All / Stable / ETH / BTC / Pendle) to filter by asset type. Use the market chips below to filter by specific Aave deployments (Ethereum, Arbitrum, Base, etc.).',
   },
   {
-    q: 'How is Borrow APY determined?',
+    q: 'How are Supply APY, Borrow APY and Spread calculated?',
     a:
       <div className="space-y-[var(--ds-space-2)]">
-        <p>Borrow APY follows a piecewise-linear curve based on utilization:</p>
+        <p><strong>Borrow APY</strong> follows a piecewise-linear curve based on utilization:</p>
         <div className="bg-muted/40 rounded-[var(--ds-radius-sm)] px-[var(--ds-space-3)] py-[var(--ds-space-2)] font-mono text-[13px] space-y-[var(--ds-space-1)]">
           <div>U ≤ U<sub>opt</sub>: &nbsp;Borrow APY = baseRate + slope1 × (U / U<sub>opt</sub>)</div>
           <div>U &gt; U<sub>opt</sub>: &nbsp;Borrow APY = baseRate + slope1 + slope2 × (U − U<sub>opt</sub>) / (1 − U<sub>opt</sub>)</div>
         </div>
-        <p>Each reserve has its own parameters (baseRate, slope1, slope2, optimal utilization) configured by Aave governance. Rates stay moderate at normal utilization and spike sharply when liquidity runs tight — this is what drives the scenario simulation.</p>
-      </div>,
-  },
-  {
-    q: 'What is the Spread column?',
-    a:
-      <div className="space-y-[var(--ds-space-2)]">
-        <p>Spread = Supply APY − Borrow APY</p>
-        <p>Spread is always ≤ 0 without incentives: the protocol takes a cut of borrower interest, so suppliers always earn less than borrowers pay. The formula:</p>
-        <div className="bg-muted/40 rounded-[var(--ds-radius-sm)] px-[var(--ds-space-3)] py-[var(--ds-space-2)] font-mono text-[13px]">
-          Supply APY = Borrow APY × U × (1 − protocolFee)
+        <p>
+          Each reserve has its own parameters (baseRate, slope1, slope2, optimal utilization) set by Aave governance. Rates stay moderate at normal utilization and spike sharply when liquidity runs tight — this is what drives the scenario simulation.
+        </p>
+        <p>
+          <strong>Supply APY</strong> is whatever borrowers paid, minus the protocol fee, divided across <em>all</em> suppliers (including the liquidity nobody is borrowing):
+        </p>
+        <div className="bg-muted/40 rounded-[var(--ds-radius-sm)] px-[var(--ds-space-3)] py-[var(--ds-space-2)] font-mono text-[13px] space-y-[var(--ds-space-1)]">
+          <div>Supply APY ≈ Borrow APY × Utilization × (1 − fee)</div>
+          <div>Utilization = borrowed / (borrowed + liquidity + deficit)</div>
         </div>
+        <p>
+          <strong>Spread</strong> is the gap between the two. Without incentives it is always ≤ 0 — suppliers always earn less than borrowers pay:
+        </p>
         <div className="bg-muted/40 rounded-[var(--ds-radius-sm)] px-[var(--ds-space-3)] py-[var(--ds-space-2)] font-mono text-[13px]">
-          U = (borrowed + riskPremium) / (borrowed + liquidity + deficit)
+          Spread = Supply APY − Borrow APY
         </div>
-        <p>Drivers:</p>
+        <p>What moves Supply APY:</p>
         <ul className="list-disc pl-[var(--ds-space-5)] space-y-[var(--ds-space-1)]">
-          <li>Borrow APY — rate curve (see FAQ above)</li>
-          <li>deficit — bad debt inflates the denominator → ↓U → wider spread</li>
-          <li>riskPremium — risk premium (V4) adds yield to the numerator → ↑U → tighter spread. In V3, riskPremium = 0.</li>
-          <li>protocolFee — treasury cut (called reserveFactor in V3, liquidityFee in V4) → ↑ widens spread</li>
+          <li><strong>Borrow APY</strong> — higher rate means a bigger pot to share, lifting Supply APY.</li>
+          <li><strong>Utilization</strong> — the share of supplied money that is actually being borrowed. Unborrowed liquidity earns nothing, so low utilization drags Supply APY down.</li>
+          <li><strong>deficit</strong> — bad debt left over after a liquidation (when collateral didn&apos;t cover the loan). It sits in the utilization denominator without paying interest, dragging Utilization — and Supply APY — down. Borrowers still pay full rate; only suppliers are punished.</li>
+          <li><strong>fee</strong> — the treasury cut (called <code>reserveFactor</code> in V3, <code>liquidityFee</code> in V4). Higher fee shaves more off the top before suppliers see it.</li>
         </ul>
-        <p>With incentives spread can turn positive:</p>
+        <p>
+          <strong>V4 twist — risk premium.</strong> In V4, riskier borrowers pay an extra surcharge on top of the headline Borrow APY, so their effective rate is roughly:
+        </p>
+        <div className="bg-muted/40 rounded-[var(--ds-radius-sm)] px-[var(--ds-space-3)] py-[var(--ds-space-2)] font-mono text-[13px]">
+          Effective Borrow APY ≈ Borrow APY × (1 + riskPremium)
+        </div>
+        <p>
+          That extra interest flows back to suppliers, so the more risky borrowing a market has, the tighter (less negative) the spread becomes. In V3 there is no such surcharge.
+        </p>
+        <p>With incentives, the effective spread can even flip positive:</p>
         <div className="bg-muted/40 rounded-[var(--ds-radius-sm)] px-[var(--ds-space-3)] py-[var(--ds-space-2)] font-mono text-[13px]">
           Effective Spread = (Supply APY + Incentive APR) − Borrow APY
         </div>
+        <p>
+          When this number is positive, looping (supply → borrow → re-supply) can be profitable — just keep an eye on your liquidation buffer.
+        </p>
       </div>,
   },
   {
