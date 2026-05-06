@@ -517,18 +517,18 @@ const SimulationSubRow = ({
             </div>
           </div>
         </td>
-        <td className={`${valueCellPy} ${valueCellPx} text-right align-top`}>
-          <span className={`ds-text-12 tabular-nums ${rowAccentClass}`}>
+        <td className={`${valueCellPy} ${valueCellPx} text-right align-top whitespace-nowrap`}>
+          <span className={`ds-text-12 tabular-nums whitespace-nowrap ${rowAccentClass}`}>
             {formatValue(row.current, row.type)}
           </span>
         </td>
-        <td className={`${valueCellPy} ${valueCellPx} text-right align-top`}>
-          <span className={`ds-text-12 tabular-nums ${row.after === null ? SIM_NEUTRAL_MUTED : rowAccentClass}`}>
+        <td className={`${valueCellPy} ${valueCellPx} text-right align-top whitespace-nowrap`}>
+          <span className={`ds-text-12 tabular-nums whitespace-nowrap ${row.after === null ? SIM_NEUTRAL_MUTED : rowAccentClass}`}>
             {formatValue(row.after, row.type)}
           </span>
         </td>
-        <td className={`${valueCellPy} ${deltaCellPx} text-right align-top`}>
-          <span className={`ds-text-12 tabular-nums ${deltaColorClass}`}>
+        <td className={`${valueCellPy} ${deltaCellPx} text-right align-top whitespace-nowrap`}>
+          <span className={`ds-text-12 tabular-nums whitespace-nowrap ${deltaColorClass}`}>
             {formatDeltaValue(row.delta, row.type)}
           </span>
         </td>
@@ -621,26 +621,27 @@ const SimulationSubRow = ({
           : 'bg-card/50 dark:bg-background/80 border border-border/60 rounded-xl'
       }`}
     >
-      <table className="w-full min-w-0 table-fixed">
+      <table className="w-full min-w-0 table-auto">
         <colgroup>
-          {/* Wide label column: cap notes sit outside nested indent so they use full width (later wrap). */}
-          <col style={{ width: '36%' }} />
-          <col style={{ width: '20%' }} />
-          <col style={{ width: '20%' }} />
-          <col style={{ width: '24%' }} />
+          {/* Auto-sized numeric columns prevent right-side truncation on narrow viewports.
+              Label column shrinks first via min-w-0 + break-words; numeric cells stay nowrap. */}
+          <col />
+          <col />
+          <col />
+          <col />
         </colgroup>
         <thead>
           <tr className="bg-muted/30 border-b border-border/50">
             <th className={`${compactCellPy} ${compactMetricCell} text-left`}>
               <span className="ds-text-11 text-muted-foreground font-medium">{tokenOnChainLabel}</span>
             </th>
-            <th className={`${compactCellPy} ${compactNumCell} text-right`}>
+            <th className={`${compactCellPy} ${compactNumCell} text-right whitespace-nowrap`}>
               <span className="ds-text-11 text-muted-foreground font-medium">Current</span>
             </th>
-            <th className={`${compactCellPy} ${compactNumCell} text-right`}>
+            <th className={`${compactCellPy} ${compactNumCell} text-right whitespace-nowrap`}>
               <span className="ds-text-11 text-muted-foreground font-medium">After</span>
             </th>
-            <th className={`${compactCellPy} ${compactDeltaCell} text-right`}>
+            <th className={`${compactCellPy} ${compactDeltaCell} text-right whitespace-nowrap`}>
               <span className="ds-text-11 text-muted-foreground font-medium">Δ</span>
             </th>
           </tr>
@@ -651,15 +652,15 @@ const SimulationSubRow = ({
             <td className={`${compactCellPy} ${compactMetricCell}`}>
               <span className="ds-text-12 ds-text-purple-600">Spread</span>
             </td>
-            <td className={`${compactCellPy} ${compactNumCell} text-right`}>
+            <td className={`${compactCellPy} ${compactNumCell} text-right whitespace-nowrap`}>
               <span className="ds-text-12 tabular-nums ds-text-purple-600">{formatSpread(simulation.spread.current)}</span>
             </td>
-            <td className={`${compactCellPy} ${compactNumCell} text-right`}>
+            <td className={`${compactCellPy} ${compactNumCell} text-right whitespace-nowrap`}>
               <span className={`ds-text-12 tabular-nums ${simulation.spread.after === null ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
                 {formatSpread(simulation.spread.after)}
               </span>
             </td>
-            <td className={`${compactCellPy} ${compactDeltaCell} text-right`}>
+            <td className={`${compactCellPy} ${compactDeltaCell} text-right whitespace-nowrap`}>
               {hasScenarioInput ? (
                 <span className={`ds-text-12 tabular-nums ${simulation.spread.delta === null ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
                   {formatDelta(simulation.spread.delta)}
@@ -673,17 +674,17 @@ const SimulationSubRow = ({
                 Liquidity
               </span>
             </td>
-            <td className={`${compactCellPy} ${compactNumCell} text-right`}>
+            <td className={`${compactCellPy} ${compactNumCell} text-right whitespace-nowrap`}>
               <span className="ds-text-12 tabular-nums ds-text-purple-600">
                 {formatScenarioSize(simulation.marketMetrics.availableLiquidityUsd, { inputMode, tokenPrice: simulation.tokenPrice })}
               </span>
             </td>
-            <td className={`${compactCellPy} ${compactNumCell} text-right`}>
+            <td className={`${compactCellPy} ${compactNumCell} text-right whitespace-nowrap`}>
               <span className={`ds-text-12 tabular-nums ${simulation.marketMetrics.availableLiquidityUsdAfter === null ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
                 {formatScenarioSize(simulation.marketMetrics.availableLiquidityUsdAfter, { inputMode, tokenPrice: simulation.tokenPrice })}
               </span>
             </td>
-            <td className={`${compactCellPy} ${compactDeltaCell} text-right`}>
+            <td className={`${compactCellPy} ${compactDeltaCell} text-right whitespace-nowrap`}>
               {hasScenarioInput ? (
                 <span className={`ds-text-12 tabular-nums ${simulation.marketMetrics.availableLiquidityUsdDelta === null ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
                   {formatScenarioSizeDelta(simulation.marketMetrics.availableLiquidityUsdDelta, { inputMode, tokenPrice: simulation.tokenPrice })}
