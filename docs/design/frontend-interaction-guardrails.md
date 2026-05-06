@@ -593,3 +593,27 @@ When extracting the card–panel junction into a separate component (e.g. `Mobil
 | **`border-b-transparent`** on upper card | The `connectedBelow` branch in `MobileReserveCard` must use `border-b-transparent`, **not** `border-b-0` | `border-b-0` removes border width from the box model, shifting layout by 1px; `border-b-transparent` keeps width and only hides the color |
 
 **Rule**: When refactoring visual junction code into a new component, diff the old inline rendering output against the new component's output. Every `className`, `style`, and SVG element in the junction area must produce identical DOM. A visual-only refactor must not change any computed style.
+
+## Simulation breakdown table — numeric cell wrapping (mobile)
+
+The Simulation expansion table (`SimulationSubRow.tsx`, compact layout) renders
+four columns: label, Current, After, Δ. On narrow viewports (375px CSS pixels)
+the Δ column can hold values like `+$399.88M` which previously got clipped
+because the table used `table-fixed` with hard percentage widths.
+
+Rules — must hold for any future change:
+
+1. **Use `table-auto`** in the compact layout so numeric columns size to their
+   content. Do not reintroduce `table-fixed` with percentage `<col>` widths.
+2. **All numeric cells** (`Current`, `After`, `Δ`, plus their headers) must
+   carry `whitespace-nowrap` on both the `<td>`/`<th>` and the inner `<span>`.
+   Numeric values must never wrap mid-token.
+3. **Label column shrinks first** via `min-w-0` + `break-words` on the label
+   `<td>`. The label is the only column allowed to wrap.
+4. The container must keep `overflow-hidden` + `min-w-0`; never set a fixed
+   width that would force the Δ column to clip.
+
+A regression test lives at
+`src/components/dashboard/SimulationSubRow.compact.test.tsx` — it asserts
+`whitespace-nowrap` is present on numeric cells and that the table is
+`table-auto`. Do not delete that test.
