@@ -131,7 +131,7 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
     );
 
     return (
-      <div className="relative grid grid-cols-[minmax(0,1fr)_minmax(10.5rem,auto)] items-center gap-x-2 rounded-lg border border-border/50 bg-card/80 px-2 py-1.5 transition-colors hover:border-border">
+      <div className="relative grid grid-cols-subgrid col-span-2 items-center gap-x-2 rounded-lg border border-border/50 bg-card/80 px-2 py-1.5 transition-colors hover:border-border">
         {cornerRemove}
         {/* Token info — 2-col grid (icons centered, text left-aligned), 3 rows */}
         <div className="grid min-w-0 grid-cols-[1rem_minmax(0,1fr)] items-center gap-x-1 gap-y-0.5 leading-[1.15]">
