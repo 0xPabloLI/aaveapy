@@ -499,7 +499,7 @@ const SimulationSubRow = ({
     const noteAlignKey = getDesktopAlignKey(resolvedAlignBand, 'note');
 
     const mainRow = (
-      <tr data-align-key={mainAlignKey} className={row.warning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
+      <tr data-align-key={mainAlignKey} className={row.warning ? 'ds-bg-warning-row' : ''}>
         <td className={`${labelCellPy} ${metricCellPx} min-w-0 align-top`}>
           <div className={`min-w-0 ${isBreakdownItem ? `${breakdownIndentClass} ${borderColorClass}` : ''}`}>
             <div className="flex flex-wrap items-start gap-x-1.5 gap-y-0.5 min-w-0">
@@ -542,13 +542,13 @@ const SimulationSubRow = ({
       const currentPct = Math.min((currentVal / capVal) * 100, 100);
       const afterPct = afterVal != null ? Math.min((afterVal / capVal) * 100, 100) : null;
       const barColorClass = row.warning
-        ? 'bg-amber-600'
+        ? 'bg-[rgb(var(--ds-amber-600-rgb))]'
         : accentClass.includes('emerald') ? 'bg-emerald-500' : 'bg-[rgb(var(--ds-brand-cyan-rgb))]';
       const afterBarColorClass = row.warning
-        ? 'bg-amber-500/50'
+        ? 'bg-[rgb(var(--ds-amber-500-rgb)/0.5)]'
         : accentClass.includes('emerald') ? 'bg-emerald-400/40' : 'bg-[rgb(var(--ds-brand-cyan-rgb))]/40';
       return (
-        <tr data-align-key={capAlignKey} className={row.warning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
+        <tr data-align-key={capAlignKey} className={row.warning ? 'ds-bg-warning-row' : ''}>
           <td colSpan={4} className={`pt-0 pb-1 ${deltaCellPx}`}>
             <div className="relative h-1.5 w-full rounded-full bg-muted/40 overflow-hidden">
               <div
@@ -592,7 +592,7 @@ const SimulationSubRow = ({
         {mainRow}
         {capProgressBar ?? capBarPlaceholder}
         {row.capNote ? (
-          <tr data-align-key={noteAlignKey} className={row.warning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
+          <tr data-align-key={noteAlignKey} className={row.warning ? 'ds-bg-warning-row' : ''}>
             <td colSpan={4} className={`pt-0 ${capRowPb} ${metricCellPx} min-w-0 align-top`}>
               <p
                 className={`ds-text-11 min-w-0 w-full max-w-none whitespace-normal break-words leading-snug ${capNoteAlignClass} ${row.capWarning ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}
@@ -646,7 +646,7 @@ const SimulationSubRow = ({
         </thead>
         <tbody className="ds-text-12 [&>tr:last-child>td]:pb-2">
           {supplyRows.map((row) => renderRow(row, 'ds-text-emerald-600', 'border-l-[rgb(var(--ds-emerald-500-rgb))]', true))}
-          <tr className={middleColumnWarning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
+          <tr className={middleColumnWarning ? 'ds-bg-warning-row' : ''}>
             <td className={`${compactCellPy} ${compactMetricCell}`}>
               <span className="ds-text-12 ds-text-purple-600">Spread</span>
             </td>
@@ -666,7 +666,7 @@ const SimulationSubRow = ({
               ) : null}
             </td>
           </tr>
-          <tr className={borrowCapExceeded && borrowLimitedByLiquidity ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
+          <tr className={borrowCapExceeded && borrowLimitedByLiquidity ? 'ds-bg-warning-row' : ''}>
             <td className={`${compactCellPy} ${compactMetricCell}`}>
               <span className={`ds-text-12 ${borrowCapExceeded && borrowLimitedByLiquidity ? 'text-amber-700 dark:text-amber-400 font-medium' : 'ds-text-purple-600'}`}>
                 Liquidity
@@ -970,14 +970,14 @@ const SimulationSubRow = ({
       return (
       <>
         {row.hasCapSpacer ? (
-          <tr data-align-key={capAlignKey} aria-hidden className={row.capWarning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
+          <tr data-align-key={capAlignKey} aria-hidden className={row.capWarning ? 'ds-bg-warning-row' : ''}>
             <td colSpan={3} className={`pt-0 pb-1 ${valuePx}`}>
               <div className="relative h-1.5 w-full rounded-full bg-muted/40 opacity-0" />
             </td>
           </tr>
         ) : null}
         {row.hasNoteSpacer ? (
-          <tr data-align-key={noteAlignKey} aria-hidden className={row.capWarning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
+          <tr data-align-key={noteAlignKey} aria-hidden className={row.capWarning ? 'ds-bg-warning-row' : ''}>
             <td colSpan={3} className={`pt-0 ${capRowPb} ${metricPx} min-w-0 align-top`}>
               <p
                 className={`ds-text-11 min-w-0 w-full max-w-none whitespace-normal break-words leading-snug text-transparent select-none ${noteIndentClass}`}
@@ -1022,7 +1022,7 @@ const SimulationSubRow = ({
               if (row.isNet) {
                 return (
                   <Fragment key={row.key}>
-                    <tr data-align-key={mainAlignKey} className={row.capWarning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
+                    <tr data-align-key={mainAlignKey} className={row.capWarning ? 'ds-bg-warning-row' : ''}>
                       <td className={`${cellPy} ${metricPx} min-w-0 align-middle`}>
                         <div className="grid min-w-0" style={{ gridTemplateColumns: '1fr', gridTemplateRows: '1fr' }}>
                           {/* Visible: Net label + value */}
@@ -1069,7 +1069,7 @@ const SimulationSubRow = ({
 
               return (
                 <Fragment key={row.key}>
-                  <tr data-align-key={mainAlignKey} className={row.capWarning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
+                  <tr data-align-key={mainAlignKey} className={row.capWarning ? 'ds-bg-warning-row' : ''}>
                     <td className={`${labelCellPy} ${metricPx} min-w-0 align-top`}>
                       <div className={`min-w-0 ${indentClass}`}>
                         <span className={`${sizeClass} ${fontClass} ${textClass} break-words`}>{row.label}</span>
@@ -1101,13 +1101,13 @@ const SimulationSubRow = ({
       {hasDisabledState ? (
         <div className={`flex items-center gap-3 rounded-lg ${
           reserve.isPaused
-            ? 'border border-amber-400/60 bg-amber-50/80 dark:bg-amber-950/30'
+            ? 'border border-[rgb(var(--ds-paused-rgb)/0.6)] ds-bg-critical-row'
             : reserve.isFrozen
               ? 'border border-sky-400/60 bg-sky-50/80 dark:bg-sky-950/30'
               : 'border border-muted-foreground/20 bg-muted/40'
         } ${effectiveCompact ? 'mb-2 px-3 py-1.5' : 'mb-3 px-4 py-2'}`}>
           {reserve.isPaused ? (
-            <PauseCircle className="w-4 h-4 text-amber-500 shrink-0" />
+            <PauseCircle className="w-4 h-4 ds-text-paused shrink-0" />
           ) : reserve.isFrozen ? (
             <Snowflake className="w-4 h-4 text-sky-500 shrink-0" />
           ) : (
@@ -1154,7 +1154,7 @@ const SimulationSubRow = ({
 
       {/* Warnings + Tables */}
           {simulation.supply.hasInput && showSupplyCapWarning && (
-        <div className={`flex items-center gap-3 rounded-lg border border-amber-400/60 bg-amber-50/80 dark:bg-amber-950/30 ${effectiveCompact ? 'mb-2 px-3 py-1.5' : 'mb-3 px-4 py-2'}`}>
+        <div className={`flex items-center gap-3 rounded-lg border border-[rgb(var(--ds-amber-500-rgb)/0.6)] ds-bg-critical-row ${effectiveCompact ? 'mb-2 px-3 py-1.5' : 'mb-3 px-4 py-2'}`}>
           <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
           <p className="flex-1 ds-text-12 text-amber-800 dark:text-amber-300">
             {simulation.supply.hasInput && supplyCapExceeded ? (
@@ -1175,7 +1175,7 @@ const SimulationSubRow = ({
       )}
 
       {simulation.borrow.hasInput && showBorrowCapWarning && (
-        <div className={`flex items-center gap-3 rounded-lg border border-amber-400/60 bg-amber-50/80 dark:bg-amber-950/30 ${effectiveCompact ? 'mb-2 px-3 py-1.5' : 'mb-3 px-4 py-2'}`}>
+        <div className={`flex items-center gap-3 rounded-lg border border-[rgb(var(--ds-amber-500-rgb)/0.6)] ds-bg-critical-row ${effectiveCompact ? 'mb-2 px-3 py-1.5' : 'mb-3 px-4 py-2'}`}>
           <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
           <p className="flex-1 ds-text-12 text-amber-800 dark:text-amber-300">
             {simulation.borrow.hasInput && borrowCapExceeded ? (

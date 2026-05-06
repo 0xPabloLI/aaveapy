@@ -528,7 +528,7 @@ const MobileReserveCard = memo(({
     <div data-reserve-id={reserveId} className={isSimulationExpanded && !showUpperOnly ? 'shadow-sm rounded-xl border border-border/60 bg-card' : ''}>
       {/* Card upper part */}
       <div
-        className={`bg-card py-3 transition-all duration-300 ${reserve.isPaused ? 'ds-bg-amber-500-10 ' : reserve.isFrozen ? 'ds-bg-sky-500-8 ' : ''}${
+        className={`bg-card py-3 transition-all duration-300 ${reserve.isPaused ? 'ds-bg-paused ' : reserve.isFrozen ? 'ds-bg-sky-500-8 ' : ''}${
           isSimulationExpanded && !showUpperOnly
             ? 'rounded-t-xl rounded-b-none'
             : connectedBelow
@@ -553,7 +553,7 @@ const MobileReserveCard = memo(({
                         type="button"
                         onClick={() => setCapSheet('frozen')}
                         className={`absolute -top-0.5 -left-0.5 z-10 flex items-center justify-center w-3.5 h-3.5 rounded-full shadow-sm ${
-                          reserve.isPaused ? 'bg-amber-500' : 'bg-sky-500'
+                          reserve.isPaused ? 'bg-[rgb(var(--ds-paused-rgb))]' : 'bg-sky-500'
                         }`}
                         aria-label="Show frozen/paused details"
                       >

@@ -55,8 +55,8 @@ const DeficitLiquidityRing = memo(({
   };
 
   const getProgressColorClass = () => {
-    if (severity === 'critical') return 'text-amber-500';
-    if (severity === 'warning') return 'text-amber-600';
+    if (severity === 'critical') return 'ds-text-amber-500';
+    if (severity === 'warning') return 'ds-text-amber-600';
     return 'text-muted-foreground/60';
   };
 

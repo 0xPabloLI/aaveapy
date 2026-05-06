@@ -58,8 +58,8 @@ const BorrowCapProgressRing = memo(({
   };
 
   const getProgressColorClass = () => {
-    if (percentage >= 95) return 'text-amber-500';
-    if (percentage >= 80) return 'text-amber-600';
+    if (percentage >= 95) return 'ds-text-amber-500';
+    if (percentage >= 80) return 'ds-text-amber-600';
     return 'ds-text-brand-cyan';
   };
 

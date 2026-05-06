@@ -33,7 +33,7 @@ export function FrozenStatusBadge({ isFrozen, isPaused }: FrozenStatusBadgeProps
           aria-label={`Show ${labels.join(' & ')} status details`}
         >
           {isFrozen && <Snowflake className="w-2.5 h-2.5 text-sky-500" />}
-          {isPaused && <PauseCircle className="w-2.5 h-2.5 text-amber-500" />}
+          {isPaused && <PauseCircle className="w-2.5 h-2.5 ds-text-paused" />}
         </button>
       </TooltipTrigger>
       <TooltipContent>
@@ -56,7 +56,7 @@ export function FrozenStatusContent({ isFrozen, isPaused }: FrozenStatusBadgePro
       )}
       {isPaused && (
         <p className="text-muted-foreground">
-          <strong className="text-amber-500">Paused:</strong> all reserve actions
+          <strong className="ds-text-paused">Paused:</strong> all reserve actions
           (deposit, borrow, repay, withdraw, liquidations) are halted.
         </p>
       )}

@@ -72,6 +72,54 @@
 
 **统一原则**：所有 Warning 级别（无论是两档还是三档的第二档）统一使用 `amber-600`，Critical 级别统一使用 `amber-500`，确保用户形成"琥珀色越亮 = 越严重"的心智模型。
 
+### 2.1.1 Amber 色号 Token 定义
+
+| Token | RGB 值 | Hex | 语义 | 文本工具类 | 背景工具类 |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `--ds-amber-100-rgb` | 254 243 199 | `#fef3c7` | 极浅黄底 | — | — |
+| `--ds-amber-300-rgb` | 252 211 77 | `#fcd34d` | 暗色模式警示文字 | — | — |
+| `--ds-amber-500-rgb` | 245 158 11 | `#f59e0b` | **Critical** 临界告警 | `ds-text-amber-500` | `ds-bg-amber-500-10` |
+| `--ds-amber-600-rgb` | 217 119 6 | `#d97706` | **Warning** 主力告警色 | `ds-text-amber-600` | — |
+| `--ds-amber-700-rgb` | 180 83 9 | `#b45309` | 模拟器警告行文字 | `ds-text-amber-700` | — |
+| `--ds-amber-900-rgb` | 120 53 15 | `#78350f` | 深琥珀（禁用提示） | `ds-text-amber-900` | — |
+| `--ds-paused-rgb` | 245 158 11 | `#f59e0b` | **Paused** 资产暂停 | `ds-text-paused` | `ds-bg-paused` |
+
+> `--ds-paused-rgb` 与 `--ds-amber-500-rgb` **视觉同色**，但语义独立：
+> - `amber-500` → 数据指标临界告警（Cap ≥ 95%、Deficit critical）
+> - `paused` → 协议状态标记（`isPaused` 资产暂停）
+>
+> 两者从 token 层分离，确保未来如需独立调整 Paused 色时只需改一处变量。
+
+### 2.1.2 语义化背景 & 边界工具类
+
+| 类名 | 用途 | 效果 |
+| :--- | :--- | :--- |
+| `ds-bg-warning-row` | 模拟器 / 表格的 Warning 行背景 | 浅黄底（`amber-50/50`），暗色模式深琥珀（`amber-950/20`） |
+| `ds-bg-critical-row` | Critical 告警条 / Paused 禁用条背景 | 浅黄底（`amber-50/80`），暗色模式深琥珀（`amber-950/30`） |
+| `ds-border-paused-50` | Paused 状态边框 | `--ds-paused-rgb` @ 50% 透明 |
+| `ds-border-warning-60` | Warning 状态边框 | `--ds-amber-500-rgb` @ 60% 透明 |
+
+### 2.1.3 暗色模式覆盖规则
+
+| 类名 | 亮色模式 | 暗色模式 |
+| :--- | :--- | :--- |
+| `ds-text-amber-700` | `--ds-amber-700-rgb` (#b45309) | `--ds-amber-300-rgb` (#fcd34d) |
+| `ds-text-amber-900` | `--ds-amber-900-rgb` (#78350f) | `--ds-amber-100-rgb` (#fef3c7) |
+
+### 2.1.4 Amber 色使用场景总表
+
+| 场景 | 语义 | 文字色 | 背景色 | 边界色 |
+| :--- | :--- | :--- | :--- | :--- |
+| 利用率 > optimal | **Warning** | `ds-text-amber-600` | — | — |
+| 流动性 < $10K | **Warning** | `ds-text-amber-600` | — | — |
+| Cap 80-95% | **Warning** | `ds-text-amber-600` | — | — |
+| Cap ≥ 95% | **Critical** | `ds-text-amber-500` | — | — |
+| Deficit critical | **Critical** | `ds-text-amber-500` | — | — |
+| 模拟器 Warning 行 | **Warning** | `ds-text-amber-700` | `ds-bg-warning-row` | — |
+| 模拟器 Cap 超限条 | **Critical** | `text-amber-500` | `ds-bg-critical-row` | `border-[rgb(var(--ds-amber-500-rgb)/0.6)]` |
+| 资产 `isPaused` | **Paused** | `ds-text-paused` | `ds-bg-paused` / `ds-bg-critical-row` | `border-[rgb(var(--ds-paused-rgb)/0.6)]` |
+| 资产 `isFrozen` | **Frozen** | `sky-500` | `ds-bg-sky-500-8` | — |
+
 ---
 
 ## 3. 排版与间距
