@@ -235,6 +235,11 @@ const ReservesTable = ({
     meritMerklNetPosition,
   });
 
+  const liquidityWarning = useMemo(() => {
+    if (!hasSharedScenario) return false;
+    return Object.values(simulationsById).some((s) => s.marketMetrics.borrowLimitedByLiquidity);
+  }, [hasSharedScenario, simulationsById]);
+
   /** Scroll-on-expand only when list order can change with shared scenario (matches `pickScenarioValue` / size supply USD). */
   const expandScrollFollowsScenarioSort = useMemo(() => {
     if (!hasSharedScenario) return false;
@@ -1817,6 +1822,7 @@ const ReservesTable = ({
                   isPortfolioMode={isPortfolioMode}
                   isInPortfolio={portfolioReserveIds.has(reserveId)}
                   onPortfolioToggle={handlePortfolioToggle}
+                  liquidityWarning={liquidityWarning}
                 />
               );
             })

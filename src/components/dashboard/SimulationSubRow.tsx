@@ -1099,7 +1099,7 @@ const SimulationSubRow = ({
 
   return (
     <div ref={containerRef} className={`min-w-0 ${effectiveCompact ? 'p-0' : 'p-0'}`}>
-      {showHeaderBlock && hasDisabledState ? (
+      {hasDisabledState ? (
         <div className={`flex items-center gap-3 rounded-lg ${
           reserve.isPaused
             ? 'border border-amber-400/60 bg-amber-50/80 dark:bg-amber-950/30'
@@ -1143,7 +1143,7 @@ const SimulationSubRow = ({
           </span>
         </div>
       ) : null}
-      {!showEmptyStateNote && (
+      {!showEmptyStateNote && !fullyBlocked && (
         <div className={`${effectiveCompact ? 'mb-2' : 'mb-3'} ${effectiveCompact && embeddedFromTop ? 'px-0' : 'px-1'}`}>
           <p className={`ds-text-11 ${SIM_NEUTRAL_SECONDARY}`}>
             {isMobile

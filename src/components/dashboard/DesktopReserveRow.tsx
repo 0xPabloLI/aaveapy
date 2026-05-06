@@ -93,6 +93,8 @@ interface DesktopReserveRowProps {
   isInPortfolio?: boolean;
   /** Callback to add/remove from portfolio. */
   onPortfolioToggle?: (reserveId: string, reserve: ReserveWithSpread, side?: 'supply' | 'borrow') => void;
+  /** When true, borrow exceeds available liquidity in the shared scenario — show liquidity column in warning color. */
+  liquidityWarning?: boolean;
 }
 
 const DesktopReserveRow = memo(({
@@ -124,6 +126,7 @@ const DesktopReserveRow = memo(({
   isPortfolioMode,
   isInPortfolio,
   onPortfolioToggle,
+  liquidityWarning,
 }: DesktopReserveRowProps) => {
   const [hasSimulationMounted, setHasSimulationMounted] = useState(isExpanded);
 
@@ -174,13 +177,15 @@ const DesktopReserveRow = memo(({
   const reserveSizeUsd = nativeToUsd(reserve.reserveSize, reserve.decimals, reserve.tokenPrice);
   const displayReserveSizeUsd =
     reserveSizeUsd != null && Number.isFinite(reserveSizeUsd)
-      ? getScenarioSupplySizeUsd({
-          reserveSizeUsd,
-          supplyCapUsd: nativeToUsd(reserve.supplyCap, reserve.decimals, reserve.tokenPrice),
-          rawSupplyInput: supplyInput,
-          inputMode,
-          tokenPrice: displayTokenPrice,
-        })
+      ? supplyBlocked
+        ? reserveSizeUsd
+        : getScenarioSupplySizeUsd({
+            reserveSizeUsd,
+            supplyCapUsd: nativeToUsd(reserve.supplyCap, reserve.decimals, reserve.tokenPrice),
+            rawSupplyInput: supplyInput,
+            inputMode,
+            tokenPrice: displayTokenPrice,
+          })
       : reserveSizeUsd ?? null;
   const baseTotalBorrowedUsd = simulation?.marketMetrics.totalBorrowedUsd ?? getDisplayTotalBorrowedUsd(reserve, protocolVersion);
   const totalBorrowedUsd = simulation?.marketMetrics.totalBorrowedUsdAfter ?? baseTotalBorrowedUsd;
@@ -479,9 +484,11 @@ const DesktopReserveRow = memo(({
                 {formatPercent(displayUtilization)}
               </span>
               <span className={`ds-text-11 tabular-nums font-medium ${
-                availableLiquidityUsd != null && availableLiquidityUsd < 10000
-                  ? 'text-amber-500'
-                  : 'ds-text-purple-500'
+                liquidityWarning
+                  ? 'text-amber-600 dark:text-amber-400'
+                  : availableLiquidityUsd != null && availableLiquidityUsd < 10000
+                    ? 'text-amber-500'
+                    : 'ds-text-purple-500'
               }`}>
                 {formatScenarioSize(availableLiquidityUsd, { inputMode, tokenPrice: displayTokenPrice, tokenSymbol: reserve.tokenSymbol })}
               </span>
