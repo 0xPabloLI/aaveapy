@@ -24,9 +24,12 @@ const SOURCE = readFileSync(
 describe('SimulationSubRow compact (mobile) layout', () => {
   it('uses table-auto, never table-fixed, in the compact layout', () => {
     // Locate the renderCompactLayout function block.
-    const start = SOURCE.indexOf('renderCompactLayout');
+    const start = SOURCE.indexOf('const renderCompactLayout');
     expect(start).toBeGreaterThan(-1);
-    const end = SOURCE.indexOf('const renderDesktopLayout', start);
+    // Block ends at the next top-level `const render...` declaration.
+    const rest = SOURCE.slice(start + 1);
+    const nextIdx = rest.search(/\n\s{2}const render[A-Z]/);
+    const end = nextIdx > 0 ? start + 1 + nextIdx : -1;
     const block = end > 0 ? SOURCE.slice(start, end) : SOURCE.slice(start);
 
     expect(block).toMatch(/table-auto/);
