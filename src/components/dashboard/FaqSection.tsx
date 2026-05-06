@@ -9,7 +9,15 @@ import {
 const FAQ_ITEMS: { q: string; a: ReactNode }[] = [
   {
     q: 'What are incentives (Merit / Merkl / Brevis) and the INK Incentive Calculator?',
-    a: 'Incentives are additional reward programs layered on top of native Aave rates. Merit rewards loyal Aave users, Merkl distributes token incentives for specific markets, and Brevis provides ZK-proof based rewards. Click the incentive badges on any reserve to see details. The INK Incentive Calculator is a special case: it lets you adjust the assumed FDV (Fully Diluted Valuation) of the INK token to see how it affects the incentive APR on Ink-chain markets — drag the slider or enter a value to explore scenarios.',
+    a:
+      <div className="space-y-[var(--ds-space-2)]">
+        <p>
+          Incentives are additional reward programs layered on top of native Aave rates. Merit rewards loyal Aave users, Merkl distributes token incentives for specific markets, and Brevis provides ZK-proof based rewards. Click the incentive badges on any reserve to see details.
+        </p>
+        <p>
+          The INK Incentive Calculator is a special case: it lets you adjust the assumed FDV (Fully Diluted Valuation) of the INK token to see how it affects the incentive APR on Ink-chain markets — drag the slider or enter a value to explore scenarios.
+        </p>
+      </div>,
   },
   {
     q: 'How does the Scenario Simulation work?',
