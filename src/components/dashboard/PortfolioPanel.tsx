@@ -479,21 +479,20 @@ const PortfolioPanel = memo(function PortfolioPanel({
           if (visible.length === 0) return null;
           return (
             <div
-              key={`pop-${visible.length}`}
-              className="mb-2.5 flex min-h-[28px] flex-wrap items-center gap-1.5 content-start animate-fade-in"
+              className="mb-2.5 flex flex-wrap items-start content-start gap-x-1.5 gap-y-1.5 leading-7 [&>*]:h-7"
+              style={{ minHeight: '28px' }}
             >
               {visible.map((r) => {
                 const reserveId = getReserveKey(r);
                 return (
-                  <div key={reserveId} className="animate-scale-in">
-                    <PopularTokenChip
-                      reserveId={reserveId}
-                      tokenSymbol={r.tokenSymbol}
-                      chainName={r.chainName}
-                      marketName={r.marketName}
-                      onAdd={handleAddToken}
-                    />
-                  </div>
+                  <PopularTokenChip
+                    key={reserveId}
+                    reserveId={reserveId}
+                    tokenSymbol={r.tokenSymbol}
+                    chainName={r.chainName}
+                    marketName={r.marketName}
+                    onAdd={handleAddToken}
+                  />
                 );
               })}
               <button
@@ -503,7 +502,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
                     new Set(suggestedReserves.map((r) => getReserveKey(r))),
                   )
                 }
-                className="inline-flex min-h-[28px] items-center gap-1 rounded-full border border-border/50 bg-card/70 px-2 py-1 ds-text-11 font-medium text-muted-foreground transition-all duration-200 hover:bg-muted/60 hover:text-foreground animate-scale-in"
+                className="inline-flex h-7 items-center gap-1 rounded-full border border-border/50 bg-card/70 px-2 ds-text-11 font-medium leading-none text-muted-foreground transition-colors duration-200 hover:bg-muted/60 hover:text-foreground"
                 aria-label="Dismiss all popular token suggestions"
                 title="Clear all suggestions"
               >
