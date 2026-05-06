@@ -1046,7 +1046,7 @@ const TopOpportunities = ({
             </button>
           </div>
         )}
-        <CarouselContent className="-ml-[var(--ds-space-2)] will-change-transform">
+        <CarouselContent className="-ml-[var(--ds-space-2)] will-change-transform transform-gpu [touch-action:pan-y_pinch-zoom]">
           {mobilePages.map((pageCats, pageIndex) => (
             <CarouselItem key={pageIndex} className="pl-[var(--ds-space-2)] basis-full">
               <div className="grid grid-cols-2 gap-[var(--ds-space-2)]">
