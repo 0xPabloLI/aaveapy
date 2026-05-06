@@ -120,13 +120,13 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
         type="button"
         onClick={() => onRemove(reserveId)}
         className={cn(
-          'absolute -top-1.5 -left-1.5 z-10 rounded-full border border-border/60 bg-card p-0.5 text-muted-foreground/70 transition-colors',
+          'absolute -top-2 -left-2 z-10 grid place-items-center size-6 rounded-full border border-border/60 bg-card text-muted-foreground/70 transition-colors',
           BATCH_THEME.trashHoverBg,
           BATCH_THEME.trashHoverText,
         )}
         aria-label={`Remove ${tokenSymbol} from portfolio`}
       >
-        <Minus className="size-3" strokeWidth={2.5} aria-hidden />
+        <Minus className="size-3.5" strokeWidth={2.5} aria-hidden />
       </button>
     );
 
@@ -144,13 +144,13 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
           {hubName && (
             <>
               <span aria-hidden />
-              <span className={cn('justify-self-start max-w-full -ml-1.5', hubChipClass)} title={`Hub: ${hubName}`}>
+              <span className={cn('justify-self-start max-w-full -ml-1.5 truncate', hubChipClass)} title={`Hub: ${hubName}`}>
                 <span className="truncate">{hubName}</span>
               </span>
             </>
           )}
         </div>
-        <div className="flex min-w-0 flex-col items-stretch gap-1">
+        <div className="flex min-w-[10.5rem] flex-col items-stretch gap-1">
           {renderSideInput(supplyPosition, 'Supply')}
           {borrowPosition && renderSideInput(borrowPosition, 'Borrow')}
         </div>
