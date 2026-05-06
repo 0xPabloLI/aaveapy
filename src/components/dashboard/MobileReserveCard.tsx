@@ -547,7 +547,7 @@ const MobileReserveCard = memo(({
                         data-testid="mobile-reserve-status-badge"
                         data-status={reserve.isPaused ? (reserve.isFrozen ? 'paused-frozen' : 'paused') : 'frozen'}
                         onClick={() => setCapSheet('frozen')}
-                        className={`absolute -top-0.5 -left-0.5 z-10 inline-flex shrink-0 items-center justify-center w-3.5 h-3.5 rounded-full ${reserve.isPaused ? 'text-rose-500 bg-rose-500/10 ring-1 ring-rose-500/30' : 'text-sky-500 bg-sky-500/10 ring-1 ring-sky-500/30'}`}
+                        className={`absolute -top-0.5 -left-0.5 z-10 inline-flex shrink-0 items-center justify-center w-3.5 h-3.5 rounded-full text-white ${reserve.isPaused ? 'bg-rose-500' : 'bg-sky-500'}`}
                         aria-label={reserve.isPaused ? 'Show paused details' : 'Show frozen details'}
                       >
                         {reserve.isPaused ? <Pause className="w-2 h-2" /> : <Snowflake className="w-2 h-2" />}
