@@ -135,7 +135,7 @@ export function UtilizationSheetContent({ current, optimal }: { current: number;
           ⚠️ Above optimal
         </p>
       ) : (
-        <p className="ds-text-brand-cyan ds-text-11 pt-2 border-t border-border/50">
+        <p className="text-muted-foreground ds-text-11 pt-2 border-t border-border/50">
           Below optimal
         </p>
       )}
