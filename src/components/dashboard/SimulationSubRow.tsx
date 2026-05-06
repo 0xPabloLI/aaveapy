@@ -710,7 +710,16 @@ const SimulationSubRow = ({
     return peerKey ? peerRows.find((r) => r.rowKey === peerKey) : undefined;
   };
 
-  const renderTable = (title: string, rows: TableRow[], accentClass: string, borderClass: string, indentBorderClass: string, isWarning?: boolean, peerRows?: TableRow[]) => (
+  const renderTable = (
+    title: string,
+    rows: TableRow[],
+    accentClass: string,
+    borderClass: string,
+    indentBorderClass: string,
+    isWarning?: boolean,
+    peerRows?: TableRow[],
+    disabledNotice?: string | null,
+  ) => (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-border/50 bg-card">
       <table className="w-full min-w-0 table-fixed">
         <colgroup>
@@ -722,7 +731,10 @@ const SimulationSubRow = ({
         <thead>
           <tr className="bg-muted/30 border-b border-border/50">
             <th className="px-4 py-1.5 text-left">
-              <span className={`ds-text-13 font-semibold ${accentClass}`}>{title}</span>
+              <span className={`ds-text-13 font-semibold ${disabledNotice ? 'text-secondary' : accentClass}`}>{title}</span>
+              {disabledNotice && (
+                <span className="ml-2 ds-text-11 font-normal text-secondary">· {disabledNotice}</span>
+              )}
             </th>
             <th className="px-3 py-1.5 text-right">
               <span className="ds-text-11 text-muted-foreground">Current</span>
@@ -735,7 +747,7 @@ const SimulationSubRow = ({
             </th>
           </tr>
         </thead>
-        <tbody className="[&>tr:last-child>td]:pb-2">
+        <tbody className={`[&>tr:last-child>td]:pb-2 ${disabledNotice ? 'opacity-60' : ''}`}>
           {rows.map((row) => {
             const peer = peerRows ? findPeerRow(row.rowKey, peerRows) : undefined;
             const peerHasCapBar = peer != null && peer.cap != null && peer.type === 'usd';
