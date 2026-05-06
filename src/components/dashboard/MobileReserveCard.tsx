@@ -521,7 +521,7 @@ const MobileReserveCard = memo(({
     <div data-reserve-id={reserveId} className={isSimulationExpanded && !showUpperOnly ? 'shadow-sm rounded-xl border border-border/60 bg-card' : ''}>
       {/* Card upper part */}
       <div
-        className={`bg-card py-3 transition-all duration-300 ${reserve.isFrozen || reserve.isPaused ? 'ds-bg-sky-500-8 ' : ''}${
+        className={`bg-card py-3 transition-all duration-300 ${reserve.isPaused ? 'bg-rose-500/10 ' : reserve.isFrozen ? 'ds-bg-sky-500-8 ' : ''}${
           isSimulationExpanded && !showUpperOnly
             ? 'rounded-t-xl rounded-b-none'
             : connectedBelow
@@ -545,13 +545,13 @@ const MobileReserveCard = memo(({
                       <button
                         type="button"
                         onClick={() => setCapSheet('frozen')}
-                        className="absolute -top-0.5 -left-0.5 z-10 flex items-center justify-center w-3.5 h-3.5 rounded-full bg-sky-500 shadow-sm"
-                        aria-label="Show frozen/paused details"
+                        className={`absolute -top-0.5 -left-0.5 z-10 flex items-center justify-center w-3.5 h-3.5 rounded-full shadow-sm ${reserve.isPaused ? 'bg-rose-500' : 'bg-sky-500'}`}
+                        aria-label={reserve.isPaused ? 'Show paused details' : 'Show frozen details'}
                       >
-                        <span className="text-white text-[8px] leading-none">❄</span>
+                        <span className="text-white text-[8px] leading-none">{reserve.isPaused ? '⏸' : '❄'}</span>
                       </button>
                     </TooltipTrigger>
-                    <TooltipContent>Frozen or paused</TooltipContent>
+                    <TooltipContent>{reserve.isPaused && reserve.isFrozen ? 'Paused & frozen' : reserve.isPaused ? 'Paused' : 'Frozen'}</TooltipContent>
                   </Tooltip>
               </div>
             ) : (

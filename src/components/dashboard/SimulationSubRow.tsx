@@ -481,7 +481,13 @@ const SimulationSubRow = ({
     tight = false,
     peerCapInfo?: { hasCapBar: boolean; hasCapNote: boolean; capNote?: string },
     alignBand?: DesktopAlignBand | null,
+    disabled = false,
   ) => {
+    // When the side is frozen/paused/disabled, mask After + Delta so the
+    // simulation does not appear to react to user input.
+    if (disabled) {
+      row = { ...row, after: null, delta: null, capNote: undefined, warning: false };
+    }
     const deltaColorClass = row.delta === null || Number.isNaN(row.delta) ? SIM_NEUTRAL_MUTED : accentClass;
     const isBreakdownItem = row.isBreakdown;
     const isSubBreakdown = row.isSubBreakdown === true;
@@ -634,11 +640,11 @@ const SimulationSubRow = ({
     /** Parent card/panel already provides the outer border when embedded; inner borders misalign with thead lines. */
     return (
     <div
-      className={`overflow-hidden ${
+      className={`${
         embeddedFromTop
           ? 'rounded-none bg-transparent dark:bg-transparent'
           : 'bg-card/50 dark:bg-background/80 border border-border/60 rounded-xl'
-      }`}
+      } overflow-x-auto`}
     >
       {compactDisabledNotices.length > 0 && (
         <div className="px-3 py-1.5 border-b border-border/50 bg-muted/30 ds-text-11 text-secondary">
@@ -671,8 +677,8 @@ const SimulationSubRow = ({
           </tr>
         </thead>
         <tbody className="ds-text-12 [&>tr:last-child>td]:pb-2">
-          {supplyRows.map((row) => renderRow(row, 'ds-text-emerald-600', 'border-l-[rgb(var(--ds-emerald-500-rgb))]', true))}
-          <tr className={middleColumnWarning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
+          {supplyRows.map((row) => renderRow(row, 'ds-text-emerald-600', 'border-l-[rgb(var(--ds-emerald-500-rgb))]', true, undefined, undefined, Boolean(supplyDisabledNotice)))}
+          <tr className={!isReserveLocked && middleColumnWarning ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
             <td className={`${compactCellPy} ${compactMetricCell}`}>
               <span className="ds-text-12 ds-text-purple-600">Spread</span>
             </td>
@@ -680,21 +686,21 @@ const SimulationSubRow = ({
               <span className="ds-text-12 tabular-nums ds-text-purple-600">{formatSpread(simulation.spread.current)}</span>
             </td>
             <td className={`${compactCellPy} ${compactNumCell} text-right whitespace-nowrap`}>
-              <span className={`ds-text-12 tabular-nums ${simulation.spread.after === null ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
-                {formatSpread(simulation.spread.after)}
+              <span className={`ds-text-12 tabular-nums ${(isReserveLocked || simulation.spread.after === null) ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
+                {isReserveLocked ? '-' : formatSpread(simulation.spread.after)}
               </span>
             </td>
             <td className={`${compactCellPy} ${compactDeltaCell} text-right whitespace-nowrap`}>
-              {hasScenarioInput ? (
+              {hasScenarioInput && !isReserveLocked ? (
                 <span className={`ds-text-12 tabular-nums ${simulation.spread.delta === null ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
                   {formatDelta(simulation.spread.delta)}
                 </span>
               ) : null}
             </td>
           </tr>
-          <tr className={borrowCapExceeded && borrowLimitedByLiquidity ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
+          <tr className={!isReserveLocked && borrowCapExceeded && borrowLimitedByLiquidity ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
             <td className={`${compactCellPy} ${compactMetricCell}`}>
-              <span className={`ds-text-12 ${borrowCapExceeded && borrowLimitedByLiquidity ? 'text-amber-700 dark:text-amber-400 font-medium' : 'ds-text-purple-600'}`}>
+              <span className={`ds-text-12 ${!isReserveLocked && borrowCapExceeded && borrowLimitedByLiquidity ? 'text-amber-700 dark:text-amber-400 font-medium' : 'ds-text-purple-600'}`}>
                 Liquidity
               </span>
             </td>
@@ -704,19 +710,19 @@ const SimulationSubRow = ({
               </span>
             </td>
             <td className={`${compactCellPy} ${compactNumCell} text-right whitespace-nowrap`}>
-              <span className={`ds-text-12 tabular-nums ${simulation.marketMetrics.availableLiquidityUsdAfter === null ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
-                {formatScenarioSize(simulation.marketMetrics.availableLiquidityUsdAfter, { inputMode, tokenPrice: simulation.tokenPrice })}
+              <span className={`ds-text-12 tabular-nums ${(isReserveLocked || simulation.marketMetrics.availableLiquidityUsdAfter === null) ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
+                {isReserveLocked ? '-' : formatScenarioSize(simulation.marketMetrics.availableLiquidityUsdAfter, { inputMode, tokenPrice: simulation.tokenPrice })}
               </span>
             </td>
             <td className={`${compactCellPy} ${compactDeltaCell} text-right whitespace-nowrap`}>
-              {hasScenarioInput ? (
+              {hasScenarioInput && !isReserveLocked ? (
                 <span className={`ds-text-12 tabular-nums ${simulation.marketMetrics.availableLiquidityUsdDelta === null ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
                   {formatScenarioSizeDelta(simulation.marketMetrics.availableLiquidityUsdDelta, { inputMode, tokenPrice: simulation.tokenPrice })}
                 </span>
               ) : null}
             </td>
           </tr>
-          {borrowRows.map((row) => renderRow(row, 'ds-text-brand-cyan', 'border-l-[rgb(var(--ds-brand-cyan-rgb))]', true))}
+          {borrowRows.map((row) => renderRow(row, 'ds-text-brand-cyan', 'border-l-[rgb(var(--ds-brand-cyan-rgb))]', true, undefined, undefined, Boolean(borrowDisabledNotice)))}
         </tbody>
       </table>
     </div>
@@ -778,7 +784,7 @@ const SimulationSubRow = ({
             const peerCapInfo = peerHasCapBar || peerHasCapNote
               ? { hasCapBar: peerHasCapBar, hasCapNote: peerHasCapNote, capNote: peer?.capNote }
               : undefined;
-            return renderRow(row, accentClass, indentBorderClass, false, peerCapInfo);
+            return renderRow(row, accentClass, indentBorderClass, false, peerCapInfo, undefined, Boolean(disabledNotice));
           })}
         </tbody>
       </table>
