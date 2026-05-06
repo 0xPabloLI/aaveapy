@@ -478,7 +478,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
           const visible = suggestedReserves.filter((r) => !dismissedSuggestions.has(getReserveKey(r)));
           if (visible.length === 0) return null;
           return (
-            <div className="mb-2.5 flex flex-wrap items-center gap-1.5">
+            <div className="mb-2.5 flex min-h-[28px] flex-wrap items-center gap-1.5 content-start">
               {visible.map((r) => {
                 const reserveId = getReserveKey(r);
                 return (
@@ -492,19 +492,21 @@ const PortfolioPanel = memo(function PortfolioPanel({
                   />
                 );
               })}
-              <button
-                type="button"
-                onClick={() =>
-                  setDismissedSuggestions(
-                    new Set(suggestedReserves.map((r) => getReserveKey(r))),
-                  )
-                }
-                className="inline-flex min-h-[28px] items-center gap-1 rounded-full border border-border/50 bg-card/70 px-2 py-1 ds-text-11 font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
-                aria-label="Dismiss all popular token suggestions"
-                title="Clear all suggestions"
-              >
-                <X className="size-3" aria-hidden />
-              </button>
+              {visible.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setDismissedSuggestions(
+                      new Set(suggestedReserves.map((r) => getReserveKey(r))),
+                    )
+                  }
+                  className="inline-flex min-h-[28px] items-center gap-1 rounded-full border border-border/50 bg-card/70 px-2 py-1 ds-text-11 font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+                  aria-label="Dismiss all popular token suggestions"
+                  title="Clear all suggestions"
+                >
+                  <X className="size-3" aria-hidden />
+                </button>
+              )}
             </div>
           );
         })()}
