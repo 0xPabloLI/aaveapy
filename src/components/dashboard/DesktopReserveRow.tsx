@@ -209,9 +209,9 @@ const DesktopReserveRow = memo(({
   const deficitSeverity = getDeficitSeverity(deficitShareRatio);
   const isNeutralDeficit = deficitSeverity === 'neutral';
   const deficitTextClass = deficitSeverity === 'critical'
-    ? 'text-amber-500/90'
+    ? 'ds-text-amber-500'
     : deficitSeverity === 'warning'
-      ? 'text-amber-600/90'
+      ? 'ds-text-amber-600'
       : 'text-muted-foreground/60';
 
   const supplySizeLabel = formatScenarioSize(displayReserveSizeUsd, {

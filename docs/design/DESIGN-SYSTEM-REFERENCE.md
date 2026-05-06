@@ -67,7 +67,7 @@
 
 **三档指标**（容量型/硬性限制）：
 - **Supply/Borrow Cap**: < 80% / 80-95% / ≥ 95%
-- **Deficit Share**: neutral / warning / critical
+- **Deficit Share**: < 8% / 8%-20% / ≥ 20%
 - 在接近容量上限时（≥ 95%）使用 `amber-500` 强化告警（更亮更醒目）
 
 **统一原则**：所有 Warning 级别（无论是两档还是三档的第二档）统一使用 `amber-600`，Critical 级别统一使用 `amber-500`，确保用户形成"琥珀色越亮 = 越严重"的心智模型。
@@ -114,7 +114,8 @@
 | 流动性 < $10K | **Warning** | `ds-text-amber-600` | — | — |
 | Cap 80-95% | **Warning** | `ds-text-amber-600` | — | — |
 | Cap ≥ 95% | **Critical** | `ds-text-amber-500` | — | — |
-| Deficit critical | **Critical** | `ds-text-amber-500` | — | — |
+| Deficit 8-20% | **Warning** | `ds-text-amber-600` | — | — |
+| Deficit ≥ 20% | **Critical** | `ds-text-amber-500` | — | — |
 | 模拟器 Warning 行 | **Warning** | `ds-text-amber-700` | `ds-bg-warning-row` | — |
 | 模拟器 Cap 超限条 | **Critical** | `text-amber-500` | `ds-bg-critical-row` | `border-[rgb(var(--ds-amber-500-rgb)/0.6)]` |
 | 资产 `isPaused` | **Paused** | `ds-text-paused` | `ds-bg-paused` / `ds-bg-critical-row` | `border-[rgb(var(--ds-paused-rgb)/0.6)]` |
