@@ -535,7 +535,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
           </div>
         ) : (
           <div className="space-y-1.5">
-            {!isMobile && suggestedReserves.length > 0 && (
+            {suggestedReserves.length > 0 && (
               <div className="flex flex-wrap items-center gap-1.5 px-1">
                 {suggestedReserves.map((r) => {
                   const reserveId = getReserveKey(r);
