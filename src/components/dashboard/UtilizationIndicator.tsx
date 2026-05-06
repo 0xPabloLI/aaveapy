@@ -97,7 +97,7 @@ const UtilizationIndicator = memo(({
       </TooltipTrigger>
       <TooltipContent side="top" className="max-w-[220px] p-3">
         <div className="space-y-2 ds-text-12">
-          <p className="ds-text-11 text-muted-foreground">Utilization = borrowed / total liquidity</p>
+          <p className="ds-text-11 text-muted-foreground">Utilization = borrowed / (available + borrowed)</p>
           <div className="flex justify-between gap-4">
             <span className="text-muted-foreground">Optimal</span>
             <span className="font-medium tabular-nums">{formatPercent(optimal)}</span>

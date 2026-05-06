@@ -498,7 +498,7 @@ const DesktopReserveRow = memo(({
                   </span>
                 </TooltipTrigger>
                 <TooltipContent side="top">
-                  <p className="ds-text-12">Utilization = borrowed / total liquidity</p>
+                  <p className="ds-text-12">Utilization = borrowed / (available + borrowed)</p>
                 </TooltipContent>
               </Tooltip>
             </div>

@@ -127,7 +127,7 @@ export default function ReservesTableMobileSortBar({
         <button
           type="button"
           onClick={() => onToggleMenu('util')}
-          title="Utilization = borrowed / total liquidity"
+          title="Utilization = borrowed / (available + borrowed)"
           className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-lg border transition-colors ${
             activeSortColumn === 'util'
               ? `bg-card/60 border-border/70 ${utilSortAccentClass} font-semibold`

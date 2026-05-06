@@ -487,7 +487,7 @@ export default function ReservesTableDesktopHeader({
                         }`
                       : 'bg-card/60 border-border/70 text-muted-foreground'
                   }`}
-                  title="Utilization = borrowed / total liquidity. Switch between rate (%) and available amount."
+                  title="Utilization = borrowed / (available + borrowed). Switch between rate (%) and available amount."
                 >
                   <span className="font-semibold text-[10px] md:ds-text-11">
                     {utilSortMode === 'util' ? '%' : 'Liquidity'}
