@@ -134,7 +134,7 @@ export default function ReservesTableMobileSortBar({
               : 'bg-card border-border text-muted-foreground font-medium'
           }`}
         >
-          <span>Liquidity</span>
+          <span>Liq</span>
           <ChevronDown className="w-3 h-3" />
         </button>
         <MobileSortMenu

@@ -52,7 +52,7 @@ describe('ReservesTableMobileSortBar', () => {
   it('renders chips in desktop-matching order: Size → Util → Supply → Borrow → Extra', () => {
     const html = renderToString(<ReservesTableMobileSortBar {...baseProps} />);
     const sizeIdx = html.indexOf('>Size<');
-    const utilIdx = html.indexOf('>Liquidity<');
+    const utilIdx = html.indexOf('>Liq<');
     const supplyIdx = html.indexOf('>Supply<');
     const borrowIdx = html.indexOf('>Borrow<');
     const extraIdx = html.indexOf('>Spread<');
@@ -63,7 +63,7 @@ describe('ReservesTableMobileSortBar', () => {
 
   it('renders independent Util chip with dropdown menu options', () => {
     const html = renderToString(<ReservesTableMobileSortBar {...baseProps} showUtilSortMenu />);
-    expect(html).toContain('>Liquidity<');
+    expect(html).toContain('>Liq<');
     expect(html).toContain('Utilization');
     expect(html).toContain('Liquidity');
   });
