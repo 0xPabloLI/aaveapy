@@ -624,6 +624,13 @@ const SimulationSubRow = ({
     const compactMetricCell = 'px-3';
     const compactNumCell = 'px-2.5';
     const compactDeltaCell = 'pl-2.5 pr-3';
+    const compactDisabledNotices: string[] = [];
+    if (isReserveLocked) {
+      compactDisabledNotices.push(reserve.isPaused ? 'Reserve paused — supply & borrow disabled' : 'Reserve frozen — supply & borrow disabled');
+    } else {
+      if (reserve.supplyDisabled) compactDisabledNotices.push('Supply unavailable');
+      if (reserve.borrowDisabled) compactDisabledNotices.push('Borrow disabled');
+    }
     /** Parent card/panel already provides the outer border when embedded; inner borders misalign with thead lines. */
     return (
     <div
@@ -633,6 +640,11 @@ const SimulationSubRow = ({
           : 'bg-card/50 dark:bg-background/80 border border-border/60 rounded-xl'
       }`}
     >
+      {compactDisabledNotices.length > 0 && (
+        <div className="px-3 py-1.5 border-b border-border/50 bg-muted/30 ds-text-11 text-secondary">
+          {compactDisabledNotices.join(' · ')}
+        </div>
+      )}
       <table className="w-full min-w-0 table-auto">
         <colgroup>
           {/* Auto-sized numeric columns prevent right-side truncation on narrow viewports.
