@@ -314,7 +314,7 @@ export default function ReservesTableDesktopHeader({
   const utilSortOptions: DesktopSortMenuOption[] = [
     {
       key: 'util',
-      label: 'Sort by Utilization Rate',
+      label: 'Sort by Utilization',
       isSelected: utilSortMode === 'util' && activeSortColumn === 'util',
       order: utilSortOrder,
       activeClassName: 'text-foreground',
@@ -323,7 +323,7 @@ export default function ReservesTableDesktopHeader({
     },
     {
       key: 'liquidity',
-      label: 'Sort by Liquidity Amount',
+      label: 'Sort by Liquidity',
       isSelected: utilSortMode === 'liquidity' && activeSortColumn === 'util',
       order: utilSortOrder,
       activeClassName: 'ds-text-purple-600',
@@ -487,7 +487,7 @@ export default function ReservesTableDesktopHeader({
                         }`
                       : 'bg-card/60 border-border/70 text-muted-foreground'
                   }`}
-                  title="Select utilization sort field"
+                  title="Utilization = borrowed / total liquidity. Switch between rate (%) and available amount."
                 >
                   <span className="font-semibold text-[10px] md:ds-text-11">
                     {utilSortMode === 'util' ? '%' : 'Liquidity'}

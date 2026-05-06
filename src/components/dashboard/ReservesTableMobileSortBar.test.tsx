@@ -17,8 +17,8 @@ const baseProps = {
     { key: 'supply', label: 'Supply', isSelected: false, order: 'desc' as const, activeClassName: 'ds-text-emerald-600', onSelect: () => {} },
   ],
   utilSortOptions: [
-    { key: 'util', label: 'Util Rate', isSelected: false, order: 'desc' as const, activeClassName: 'text-foreground', onSelect: () => {} },
-    { key: 'liquidity', label: 'Liquidity Amount', isSelected: false, order: 'desc' as const, activeClassName: 'ds-text-purple-600', onSelect: () => {} },
+    { key: 'util', label: 'Utilization', isSelected: false, order: 'desc' as const, activeClassName: 'text-foreground', onSelect: () => {} },
+    { key: 'liquidity', label: 'Liquidity', isSelected: false, order: 'desc' as const, activeClassName: 'ds-text-purple-600', onSelect: () => {} },
   ],
   supplySortOptions: [
     { key: 'total', label: 'Total', isSelected: false, order: 'desc' as const, activeClassName: 'ds-text-emerald-600', onSelect: () => {} },
@@ -64,8 +64,8 @@ describe('ReservesTableMobileSortBar', () => {
   it('renders independent Util chip with dropdown menu options', () => {
     const html = renderToString(<ReservesTableMobileSortBar {...baseProps} showUtilSortMenu />);
     expect(html).toContain('>Liquidity<');
-    expect(html).toContain('Util Rate');
-    expect(html).toContain('Liquidity Amount');
+    expect(html).toContain('Utilization');
+    expect(html).toContain('Liquidity');
   });
 
   it('aligns left-side chip menus (Size/Util/Supply) with left-0 to prevent left-edge overflow', () => {
@@ -92,8 +92,8 @@ describe('ReservesTableMobileSortBar', () => {
     const extraMenuMatch = html.match(/<div[^>]*absolute right-0[^>]*>([\s\S]*?)(?=<\/div>\s*<\/div>\s*<\/div>\s*$)/);
     expect(extraMenuMatch).not.toBeNull();
     const extraMenuContent = extraMenuMatch![1];
-    expect(extraMenuContent).not.toContain('Util Rate');
-    expect(extraMenuContent).not.toContain('Liquidity Amount');
+    expect(extraMenuContent).not.toContain('Utilization');
+    expect(extraMenuContent).not.toContain('Liquidity');
     expect(extraMenuContent).toContain('Spread');
     expect(extraMenuContent).toContain('Token');
   });
