@@ -85,7 +85,7 @@ This is a project-specific guardrail file, not the reusable design reference. If
 | Data type | Recommended color | Example |
 |-----------|------------------|---------|
 | Utilization percentage (desktop) | `text-foreground` | "75.2%" in Utilization column |
-| Utilization percentage (mobile header) | `text-foreground` below optimal, `text-amber-600` above optimal | Matches `UtilizationIndicator` zone |
+| Utilization percentage (mobile header) | `text-foreground` below optimal, `ds-text-amber-600` above optimal | Matches `UtilizationIndicator` zone |
 | General numeric data | `text-foreground` | Market size, prices |
 | Secondary/muted info | `text-muted-foreground`, `text-secondary` | Labels, descriptions |
 
@@ -94,9 +94,9 @@ This is a project-specific guardrail file, not the reusable design reference. If
 
 **UtilizationIndicator color scheme** (minimize same-hue steps: one **zone tint** + one **full semantic** per state):
 - Below optimal (borrow-friendly / flatter borrow curve): track zone `fill-[rgb(var(--ds-brand-cyan-rgb)/0.32)]`; dot **full** `fill-[rgb(var(--ds-brand-cyan-rgb))]` — same as Borrow (`ds-text-brand-cyan`), not emerald; avoid mixing `-70` text with other cyan opacities
-- Above optimal (past kink): track `fill-amber-600`; dot `fill-amber-600` (same as warning copy), not a third amber step
+- Above optimal (past kink): track `fill-[rgb(var(--ds-amber-600-rgb))]`; dot `fill-[rgb(var(--ds-amber-600-rgb))]` (same as warning copy), not a third amber step
 - **Dot visibility (no extra hue, no outline habit)**: single **solid** dot (slightly larger radius is OK); **do not** add outer glow discs, `stroke` halos, or extra opacity rings by default
-- Tooltip / mobile sheet: “Below optimal” uses `ds-text-brand-cyan`; “⚠️ Above optimal” uses `text-amber-600`
+- Tooltip / mobile sheet: "Below optimal" uses `ds-text-brand-cyan`; "⚠️ Above optimal" uses `ds-text-amber-600`
 
 **Supply / Borrow APY typography (desktop table + mobile hero)** — same hierarchy rules:
 - **Primary total APY**: `font-bold`, `ds-text-14` (desktop) or `ds-text-24` (mobile hero), semantic fill `ds-text-emerald-500` (Supply) / `ds-text-brand-cyan` (Borrow)
