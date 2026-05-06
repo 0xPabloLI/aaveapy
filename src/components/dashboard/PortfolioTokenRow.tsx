@@ -150,7 +150,7 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
             </>
           )}
         </div>
-        <div className="flex min-w-[10.5rem] flex-col items-stretch gap-1">
+        <div className="flex flex-col items-stretch gap-1">
           {renderSideInput(supplyPosition, 'Supply')}
           {borrowPosition && renderSideInput(borrowPosition, 'Borrow')}
         </div>
