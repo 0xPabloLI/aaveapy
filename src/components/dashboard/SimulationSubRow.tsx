@@ -208,6 +208,7 @@ const SimulationSubRow = ({
   const supplySideBlocked = !!(reserve.isPaused || reserve.isFrozen || reserve.supplyDisabled);
   const borrowSideBlocked = !!(reserve.isPaused || reserve.isFrozen || reserve.borrowDisabled);
   const hasDisabledState = supplySideBlocked || borrowSideBlocked;
+  const fullyBlocked = supplySideBlocked && borrowSideBlocked;
 
   const aaveUrl = buildAaveUrl({ marketName: reserve.marketName, tokenAddress: reserve.tokenAddress, aaveProReserveId: reserve.aaveProReserveId });
 
@@ -673,18 +674,30 @@ const SimulationSubRow = ({
               </span>
             </td>
             <td className={`${compactCellPy} ${compactNumCell} text-right`}>
-              <span className="ds-text-12 tabular-nums ds-text-purple-600">
+              <span className={`ds-text-12 tabular-nums ${borrowCapExceeded && borrowLimitedByLiquidity ? 'text-amber-700 dark:text-amber-400' : 'ds-text-purple-600'}`}>
                 {formatScenarioSize(simulation.marketMetrics.availableLiquidityUsd, { inputMode, tokenPrice: simulation.tokenPrice })}
               </span>
             </td>
             <td className={`${compactCellPy} ${compactNumCell} text-right`}>
-              <span className={`ds-text-12 tabular-nums ${simulation.marketMetrics.availableLiquidityUsdAfter === null ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
+              <span className={`ds-text-12 tabular-nums ${
+                simulation.marketMetrics.availableLiquidityUsdAfter === null
+                  ? 'text-muted-foreground'
+                  : borrowCapExceeded && borrowLimitedByLiquidity
+                    ? 'text-amber-700 dark:text-amber-400'
+                    : 'ds-text-purple-600'
+              }`}>
                 {formatScenarioSize(simulation.marketMetrics.availableLiquidityUsdAfter, { inputMode, tokenPrice: simulation.tokenPrice })}
               </span>
             </td>
             <td className={`${compactCellPy} ${compactDeltaCell} text-right`}>
               {hasScenarioInput ? (
-                <span className={`ds-text-12 tabular-nums ${simulation.marketMetrics.availableLiquidityUsdDelta === null ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
+                <span className={`ds-text-12 tabular-nums ${
+                  simulation.marketMetrics.availableLiquidityUsdDelta === null
+                    ? 'text-muted-foreground'
+                    : borrowCapExceeded && borrowLimitedByLiquidity
+                      ? 'text-amber-700 dark:text-amber-400'
+                      : 'ds-text-purple-600'
+                }`}>
                   {formatScenarioSizeDelta(simulation.marketMetrics.availableLiquidityUsdDelta, { inputMode, tokenPrice: simulation.tokenPrice })}
                 </span>
               ) : null}
@@ -1140,8 +1153,10 @@ const SimulationSubRow = ({
         </div>
       )}
 
-      {/* Warnings */}
-      {simulation.supply.hasInput && showSupplyCapWarning && (
+      {/* Warnings + Tables — suppressed when both sides are blocked */}
+      {!fullyBlocked ? (
+        <>
+          {simulation.supply.hasInput && showSupplyCapWarning && (
         <div className={`flex items-center gap-3 rounded-lg border border-amber-400/60 bg-amber-50/80 dark:bg-amber-950/30 ${effectiveCompact ? 'mb-2 px-3 py-1.5' : 'mb-3 px-4 py-2'}`}>
           <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
           <p className="flex-1 ds-text-12 text-amber-800 dark:text-amber-300">
@@ -1213,7 +1228,7 @@ const SimulationSubRow = ({
             <div className="w-px h-4 bg-border/60" />
             <div className="flex items-center gap-1.5">
               <span className={`ds-text-12 font-bold ${middleColumnWarning ? 'text-amber-700 dark:text-amber-400' : 'ds-text-purple-600'}`}>Liquidity</span>
-              <span className="ds-text-12 tabular-nums ds-text-purple-600">
+              <span className={`ds-text-12 tabular-nums ${middleColumnWarning ? 'text-amber-700 dark:text-amber-400' : 'ds-text-purple-600'}`}>
                 {formatScenarioSize(simulation.marketMetrics.availableLiquidityUsd, { inputMode, tokenPrice: simulation.tokenPrice })}
                 {simulation.marketMetrics.availableLiquidityUsdAfter !== null && (
                   <>
@@ -1260,6 +1275,8 @@ const SimulationSubRow = ({
           </div>
         </>
       )}
+        </>
+      ) : null}
 
       {/* Footer notes */}
       {(simulation.forecastLoading || showPriceMissingNotice || simulation.forecastUnavailableCampaignCount > 0) && (
