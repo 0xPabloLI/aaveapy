@@ -517,18 +517,18 @@ const SimulationSubRow = ({
             </div>
           </div>
         </td>
-        <td className={`${valueCellPy} ${valueCellPx} text-right align-top`}>
-          <span className={`ds-text-12 tabular-nums ${rowAccentClass}`}>
+        <td className={`${valueCellPy} ${valueCellPx} text-right align-top whitespace-nowrap`}>
+          <span className={`ds-text-12 tabular-nums whitespace-nowrap ${rowAccentClass}`}>
             {formatValue(row.current, row.type)}
           </span>
         </td>
-        <td className={`${valueCellPy} ${valueCellPx} text-right align-top`}>
-          <span className={`ds-text-12 tabular-nums ${row.after === null ? SIM_NEUTRAL_MUTED : rowAccentClass}`}>
+        <td className={`${valueCellPy} ${valueCellPx} text-right align-top whitespace-nowrap`}>
+          <span className={`ds-text-12 tabular-nums whitespace-nowrap ${row.after === null ? SIM_NEUTRAL_MUTED : rowAccentClass}`}>
             {formatValue(row.after, row.type)}
           </span>
         </td>
-        <td className={`${valueCellPy} ${deltaCellPx} text-right align-top`}>
-          <span className={`ds-text-12 tabular-nums ${deltaColorClass}`}>
+        <td className={`${valueCellPy} ${deltaCellPx} text-right align-top whitespace-nowrap`}>
+          <span className={`ds-text-12 tabular-nums whitespace-nowrap ${deltaColorClass}`}>
             {formatDeltaValue(row.delta, row.type)}
           </span>
         </td>
