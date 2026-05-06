@@ -1,5 +1,5 @@
 import { memo, useEffect, useState } from 'react';
-import { ListCollapse, Plus, X } from 'lucide-react';
+import { ListCollapse, Pause, Plus, Snowflake, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ReserveWithSpread } from '@/types/aave';
 import {
@@ -544,11 +544,13 @@ const MobileReserveCard = memo(({
                     <TooltipTrigger asChild>
                       <button
                         type="button"
+                        data-testid="mobile-reserve-status-badge"
+                        data-status={reserve.isPaused ? (reserve.isFrozen ? 'paused-frozen' : 'paused') : 'frozen'}
                         onClick={() => setCapSheet('frozen')}
-                        className={`absolute -top-0.5 -left-0.5 z-10 flex items-center justify-center w-3.5 h-3.5 rounded-full shadow-sm ${reserve.isPaused ? 'bg-rose-500' : 'bg-sky-500'}`}
+                        className={`absolute -top-0.5 -left-0.5 z-10 inline-flex shrink-0 items-center justify-center w-3.5 h-3.5 rounded-full text-white ${reserve.isPaused ? 'bg-rose-500' : 'bg-sky-500'}`}
                         aria-label={reserve.isPaused ? 'Show paused details' : 'Show frozen details'}
                       >
-                        <span className="text-white text-[8px] leading-none">{reserve.isPaused ? '⏸' : '❄'}</span>
+                        {reserve.isPaused ? <Pause className="w-2 h-2" /> : <Snowflake className="w-2 h-2" />}
                       </button>
                     </TooltipTrigger>
                     <TooltipContent>{reserve.isPaused && reserve.isFrozen ? 'Paused & frozen' : reserve.isPaused ? 'Paused' : 'Frozen'}</TooltipContent>
