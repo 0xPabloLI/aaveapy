@@ -9,7 +9,7 @@
 
 | 色值 | Tailwind | 亮度 | 用途 |
 |:---|:---|:---|:---|
-| `amber-500` | 亮黄橙 `#f59e0b` | **亮** 最醒目 | **Critical**（三级指标第三档：Cap ≥ 95%、Deficit critical、borrow 超流动性 luminous ceiling） |
+| `amber-500` | 亮黄橙 `#f59e0b` | **亮** 最醒目 | **Critical**（三级指标第三档：Cap ≥ 95%、Deficit critical） |
 | `amber-600` | 深棕橙 `#d97706` | **暗** 次醒目 | **Warning**（两级指标唯一告警档 + 三级指标第二档：Cap 80-95%、Deficit warning） |
 
 ### 两级指标 (利用率和流动性)
