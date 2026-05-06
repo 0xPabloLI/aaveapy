@@ -90,7 +90,7 @@ export default function ReservesTableMobileGrid({
   onPortfolioToggle,
   onSelectHub,
 }: ReservesTableMobileGridProps) {
-  if (isLoading && reservesCount === 0) {
+  if ((isLoading && reservesCount === 0) || (reservesCount > 0 && displayData.length === 0)) {
     return <MobileReservesSkeletonGrid />;
   }
 
