@@ -478,7 +478,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
           const visible = suggestedReserves.filter((r) => !dismissedSuggestions.has(getReserveKey(r)));
           if (visible.length === 0) return null;
           return (
-            <div className="mb-2.5 flex flex-wrap items-center gap-1.5">
+            <div className="mb-2.5 flex min-h-[28px] flex-wrap items-center gap-1.5 content-start">
               {visible.map((r) => {
                 const reserveId = getReserveKey(r);
                 return (
