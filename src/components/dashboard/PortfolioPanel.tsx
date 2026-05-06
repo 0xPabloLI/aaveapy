@@ -21,6 +21,7 @@ import { getChainIconSrc } from '@/lib/chainIcons';
 import { getMarketChipLabel, isV4Market, getHubChipClass } from '@/lib/marketLabels';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import PortfolioTokenRow from './PortfolioTokenRow';
+import PopularTokenChip from './PopularTokenChip';
 import PortfolioSummaryCard from './PortfolioSummaryCard';
 import PortfolioResultsTable from './PortfolioResultsTable';
 import { BATCH_THEME } from './batchTheme';
@@ -189,7 +190,17 @@ const PortfolioPanel = memo(function PortfolioPanel({
   const [showSaveInput, setShowSaveInput] = useState(false);
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [showCompare, setShowCompare] = useState(false);
+  const [dismissedSuggestions, setDismissedSuggestions] = useState<Set<string>>(() => new Set());
+  const [showAllSuggestions, setShowAllSuggestions] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const handleDismissSuggestion = useCallback((reserveId: string) => {
+    setDismissedSuggestions((prev) => {
+      const next = new Set(prev);
+      next.add(reserveId);
+      return next;
+    });
+  }, []);
 
   const focusSearch = useCallback(() => {
     setSearchOpen(true);
@@ -471,40 +482,41 @@ const PortfolioPanel = memo(function PortfolioPanel({
         )}
 
         {/* Popular tokens (unified across mobile + desktop, always top) */}
-        {suggestedReserves.length > 0 && (
-          <div className="mb-2.5 flex flex-wrap items-center gap-1.5">
-            {suggestedReserves.map((r) => {
-              const reserveId = getReserveKey(r);
-              const chainSrc = getChainIconSrc(r.chainName);
-              const marketLabel = getMarketChipLabel(r.marketName, r.chainName);
-              const isV4 = isV4Market(r.marketName);
-              return (
+        {(() => {
+          const visible = suggestedReserves.filter((r) => !dismissedSuggestions.has(getReserveKey(r)));
+          if (visible.length === 0) return null;
+          const mobileLimit = 4;
+          const truncated = isMobile && !showAllSuggestions && visible.length > mobileLimit;
+          const items = truncated ? visible.slice(0, mobileLimit) : visible;
+          return (
+            <div className="mb-2.5 flex flex-wrap items-center gap-1.5">
+              {items.map((r) => {
+                const reserveId = getReserveKey(r);
+                return (
+                  <PopularTokenChip
+                    key={reserveId}
+                    reserveId={reserveId}
+                    tokenSymbol={r.tokenSymbol}
+                    chainName={r.chainName}
+                    marketName={r.marketName}
+                    onAdd={handleAddToken}
+                    onDismiss={handleDismissSuggestion}
+                  />
+                );
+              })}
+              {truncated && (
                 <button
-                  key={reserveId}
                   type="button"
-                  onClick={() => handleAddToken(reserveId)}
-                  className="inline-flex min-h-[28px] items-center gap-1.5 rounded-full border border-border/50 bg-card/70 px-2.5 py-1 ds-text-11 font-semibold text-foreground transition-colors hover:bg-muted/60"
-                  aria-label={`Add ${r.tokenSymbol} on ${r.marketName} to batch`}
+                  onClick={() => setShowAllSuggestions(true)}
+                  className="inline-flex min-h-[28px] items-center rounded-full border border-border/50 bg-card/70 px-2.5 py-1 ds-text-11 font-semibold text-muted-foreground transition-colors hover:bg-muted/60"
+                  aria-label="Show all popular tokens"
                 >
-                  <TokenIcon symbol={r.tokenSymbol} size={14} />
-                  <span>{r.tokenSymbol}</span>
-                  <span aria-hidden className="h-3 w-px bg-border/60" />
-                  <span className="inline-flex items-center gap-1 text-[10px] font-normal text-muted-foreground/70">
-                    {chainSrc && (
-                      <img src={chainSrc} alt={r.chainName} className="size-3 shrink-0 opacity-70" />
-                    )}
-                    {isV4 && (
-                      <span className="inline-flex items-center px-1 py-0 rounded-full text-[9px] font-medium leading-none text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10">
-                        V4
-                      </span>
-                    )}
-                    <span className="whitespace-nowrap">{marketLabel}</span>
-                  </span>
+                  +{visible.length - mobileLimit} more
                 </button>
-              );
-            })}
-          </div>
-        )}
+              )}
+            </div>
+          );
+        })()}
 
         {/* Position list */}
         {positions.length === 0 ? (
