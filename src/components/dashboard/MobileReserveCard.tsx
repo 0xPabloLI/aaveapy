@@ -408,25 +408,34 @@ const MobileReserveCard = memo(({
     }
   }, [isSimulationExpanded]);
 
-  const displaySupplyTotal = hasSharedScenario
+  // Frozen/paused/disabled gating: keep parity with desktop SimulationSubRow.
+  // See docs/design/frontend-interaction-guardrails.md "Reserve simulation gating".
+  const isReserveLocked = Boolean(reserve.isFrozen || reserve.isPaused);
+  const supplyLocked = isReserveLocked || Boolean(reserve.supplyDisabled);
+  const borrowLocked = isReserveLocked || Boolean(reserve.borrowDisabled);
+  const useSupplyAfter = hasSharedScenario && !supplyLocked;
+  const useBorrowAfter = hasSharedScenario && !borrowLocked;
+  const useSpreadAfter = hasSharedScenario && !supplyLocked && !borrowLocked;
+
+  const displaySupplyTotal = useSupplyAfter
     ? simulation.supply.afterTotal ?? simulation.supply.currentTotal
     : simulation.supply.currentTotal;
-  const displayBorrowTotal = hasSharedScenario
+  const displayBorrowTotal = useBorrowAfter
     ? simulation.borrow.afterTotal ?? simulation.borrow.currentTotal
     : simulation.borrow.currentTotal;
-  const displaySupplyNative = hasSharedScenario
+  const displaySupplyNative = useSupplyAfter
     ? simulation.supply.afterNative ?? simulation.supply.currentNative
     : simulation.supply.currentNative;
-  const displayBorrowNative = hasSharedScenario
+  const displayBorrowNative = useBorrowAfter
     ? simulation.borrow.afterNative ?? simulation.borrow.currentNative
     : simulation.borrow.currentNative;
-  const displaySupplyIncentive = hasSharedScenario
+  const displaySupplyIncentive = useSupplyAfter
     ? simulation.supply.afterIncentive ?? simulation.supply.currentIncentive
     : simulation.supply.currentIncentive;
-  const displayBorrowIncentive = hasSharedScenario
+  const displayBorrowIncentive = useBorrowAfter
     ? simulation.borrow.afterIncentive ?? simulation.borrow.currentIncentive
     : simulation.borrow.currentIncentive;
-  const displaySpread = hasSharedScenario
+  const displaySpread = useSpreadAfter
     ? simulation.spread.after ?? simulation.spread.current
     : simulation.spread.current;
 
