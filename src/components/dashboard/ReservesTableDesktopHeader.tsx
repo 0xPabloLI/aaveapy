@@ -490,7 +490,7 @@ export default function ReservesTableDesktopHeader({
                   title="Utilization = borrowed / (available + borrowed). Switch between rate (%) and available amount."
                 >
                   <span className="font-semibold text-[10px] md:ds-text-11">
-                    {utilSortMode === 'util' ? '%' : 'Liquidity'}
+                    {utilSortMode === 'util' ? 'Utilization' : 'Liquidity'}
                   </span>
                   <ChevronDown className="w-2.5 h-2.5" />
                 </button>
