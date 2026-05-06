@@ -536,7 +536,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
               </button>
             </div>
 
-            {suggestedReserves.length > 0 && (
+            {!isMobile && suggestedReserves.length > 0 && (
               <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5">
                 {suggestedReserves.map((r) => {
                   const reserveId = getReserveKey(r);
