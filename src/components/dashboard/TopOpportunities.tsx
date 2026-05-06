@@ -349,7 +349,7 @@ const MiniReserveCard = ({
             animate: 'visible',
             variants: itemVariants,
           })}
-      className="rounded-xl border ds-card-pad-sm cursor-pointer bg-card border-border/60 active:bg-muted/60 min-h-[60px] flex flex-col justify-center gap-[var(--ds-space-0-5)]"
+      className="rounded-xl border cursor-pointer bg-card border-border/60 active:bg-muted/60 flex flex-col justify-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-2)] py-[var(--ds-space-1-5)]"
       onClick={() => onCardClick(reserve)}
     >
       <ReserveIdentity
