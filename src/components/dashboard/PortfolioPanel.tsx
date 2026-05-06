@@ -485,12 +485,9 @@ const PortfolioPanel = memo(function PortfolioPanel({
         {(() => {
           const visible = suggestedReserves.filter((r) => !dismissedSuggestions.has(getReserveKey(r)));
           if (visible.length === 0) return null;
-          const mobileLimit = 4;
-          const truncated = isMobile && !showAllSuggestions && visible.length > mobileLimit;
-          const items = truncated ? visible.slice(0, mobileLimit) : visible;
           return (
             <div className="mb-2.5 flex flex-wrap items-center gap-1.5">
-              {items.map((r) => {
+              {visible.map((r) => {
                 const reserveId = getReserveKey(r);
                 return (
                   <PopularTokenChip
@@ -500,20 +497,22 @@ const PortfolioPanel = memo(function PortfolioPanel({
                     chainName={r.chainName}
                     marketName={r.marketName}
                     onAdd={handleAddToken}
-                    onDismiss={handleDismissSuggestion}
                   />
                 );
               })}
-              {truncated && (
-                <button
-                  type="button"
-                  onClick={() => setShowAllSuggestions(true)}
-                  className="inline-flex min-h-[28px] items-center rounded-full border border-border/50 bg-card/70 px-2.5 py-1 ds-text-11 font-semibold text-muted-foreground transition-colors hover:bg-muted/60"
-                  aria-label="Show all popular tokens"
-                >
-                  +{visible.length - mobileLimit} more
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() =>
+                  setDismissedSuggestions(
+                    new Set(suggestedReserves.map((r) => getReserveKey(r))),
+                  )
+                }
+                className="inline-flex min-h-[28px] items-center gap-1 rounded-full border border-border/50 bg-card/70 px-2 py-1 ds-text-11 font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+                aria-label="Dismiss all popular token suggestions"
+                title="Clear all suggestions"
+              >
+                <X className="size-3" aria-hidden />
+              </button>
             </div>
           );
         })()}
