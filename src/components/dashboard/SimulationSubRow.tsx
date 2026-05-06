@@ -505,7 +505,7 @@ const SimulationSubRow = ({
           <div className={`min-w-0 ${isBreakdownItem ? `${breakdownIndentClass} ${borderColorClass}` : ''}`}>
             <div className="flex flex-wrap items-start gap-x-1.5 gap-y-0.5 min-w-0">
               <span
-                className={`ds-text-12 ${row.cap !== null && row.cap !== undefined ? 'break-words' : 'whitespace-normal [overflow-wrap:anywhere] [word-break:keep-all]'} ${row.warning ? 'text-amber-700 dark:text-amber-400 font-medium' : isBreakdownItem ? rowAccentClass : accentClass}`}
+                className={`ds-text-12 whitespace-nowrap ${row.warning ? 'text-amber-700 dark:text-amber-400 font-medium' : isBreakdownItem ? rowAccentClass : accentClass}`}
               >
                 {row.label}
               </span>
