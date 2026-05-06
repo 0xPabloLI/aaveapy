@@ -189,7 +189,17 @@ const PortfolioPanel = memo(function PortfolioPanel({
   const [showSaveInput, setShowSaveInput] = useState(false);
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [showCompare, setShowCompare] = useState(false);
+  const [dismissedSuggestions, setDismissedSuggestions] = useState<Set<string>>(() => new Set());
+  const [showAllSuggestions, setShowAllSuggestions] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const handleDismissSuggestion = useCallback((reserveId: string) => {
+    setDismissedSuggestions((prev) => {
+      const next = new Set(prev);
+      next.add(reserveId);
+      return next;
+    });
+  }, []);
 
   const focusSearch = useCallback(() => {
     setSearchOpen(true);
