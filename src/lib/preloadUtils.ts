@@ -62,22 +62,18 @@ export function shouldUseFullPreloadMode(): boolean {
   return connection.type === 'wifi';
 }
 
-/** Principal Token symbol prefix → base icon symbol (we have icons for base only). */
-const PT_ICON_BASE: Record<string, string> = {
-  'pt-usde': 'usde',
-  'pt-eusde': 'eusde',
-  'pt-susde': 'susde',
-  'pt-srusde': 'srusde',
-};
-
 /**
  * Resolve symbol to the icon key used for static assets.
- * PT tokens (pt-usde-*, pt-eusde-*, etc.) share the base token icon to avoid 404s.
+ * PT tokens (pt-usde-28may2026, pt-eusde, etc.) share the base token icon to avoid 404s.
+ * Generic extraction: pt-{base}-{maturity} or pt-{base} → {base}
  */
 export function getTokenIconSymbolKey(symbol: string): string {
   const key = symbol.trim().toLowerCase();
-  for (const [prefix, base] of Object.entries(PT_ICON_BASE)) {
-    if (key.startsWith(prefix + '-') || key === prefix) return base;
+  const ptMatch = key.match(/^pt-(.+)$/);
+  if (ptMatch) {
+    const rest = ptMatch[1];
+    const baseEnd = rest.indexOf('-');
+    return baseEnd >= 0 ? rest.slice(0, baseEnd) : rest;
   }
   return key;
 }
