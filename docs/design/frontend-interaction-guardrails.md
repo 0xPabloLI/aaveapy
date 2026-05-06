@@ -353,6 +353,53 @@ When tooltip/forecast behavior looks wrong, check:
 - Hide downstream source rows when both current and simulated values are effectively zero.
 - Use fixed numeric column widths so placeholders align with headers.
 
+### Reserve simulation gating (frozen / paused / disabled) — MANDATORY
+
+When a reserve is **frozen**, **paused**, or has the relevant side `supplyDisabled` /
+`borrowDisabled`, the affected side MUST NOT show "after" values in response to user
+input. This rule applies **identically on desktop and mobile**.
+
+Locking matrix:
+
+| Reserve flag         | Supply side | Borrow side | Spread / Utilization / Liquidity |
+|----------------------|-------------|-------------|----------------------------------|
+| `isFrozen`           | locked      | locked      | locked                           |
+| `isPaused`           | locked      | locked      | locked                           |
+| `supplyDisabled`     | locked      | live        | locked (depends on supply side)  |
+| `borrowDisabled`     | live        | locked      | locked (depends on borrow side)  |
+
+"Locked" means the displayed value falls back to `current*` (never `after*`), and
+`renderRow` masks `after` / `delta` / `capNote` / `warning` to nullish.
+
+Single source of truth:
+
+- Desktop: `SimulationSubRow.tsx` derives `supplyDisabledNotice` / `borrowDisabledNotice`
+  from `isReserveLocked` + `supplyDisabled` / `borrowDisabled` and threads a
+  `disabled` flag into `renderRow`.
+- Mobile (`MobileReserveCard.tsx`): MUST compute `supplyLocked` / `borrowLocked`
+  from the same boolean rule above and use `useSupplyAfter` / `useBorrowAfter` /
+  `useSpreadAfter` to gate every `simulation.*.after*` read (including
+  `marketMetrics.totalBorrowedUsdAfter`, `availableLiquidityUsdAfter`,
+  `utilization.after`, and `getDisplayReserveSizeUsd`'s `rawSupplyInput`).
+
+Do NOT introduce a new ad-hoc check; if you add a new derived field that consumes
+`*.after*`, gate it through the existing `useSupplyAfter` / `useBorrowAfter` /
+`useSpreadAfter` flags so desktop and mobile stay byte-equivalent.
+
+Visual / interaction parity for the frozen/paused badge:
+
+- Same lucide icons on both sides: `Snowflake` (frozen) and `Pause` (paused).
+- Same semantic colors: `bg-sky-500` for frozen, `bg-rose-500` for paused; never amber.
+- Same tooltip strings: `Frozen` / `Paused` / `Paused & frozen`.
+- Mobile badge MUST keep an enlarged transparent hit area (≥ 28×28 CSS px) around
+  the small visual pill so it satisfies the 44px touch-target spirit without
+  enlarging the visual mark.
+
+Regression coverage: see `e2e/top-opportunities-mobile-layout.spec.ts`
+(`mobile frozen / paused badge uses unified semantic colors`) and the desktop
+SimulationSubRow tests.
+
+
 ### Desktop reserves table: sticky stack and scrollport (normative)
 
 This section is **mandatory** for anyone changing desktop `ReservesTable` layout, overflow, or sticky headers.
