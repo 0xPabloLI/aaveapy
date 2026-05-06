@@ -482,6 +482,40 @@ const PortfolioPanel = memo(function PortfolioPanel({
             <div className="mx-auto mb-2 flex size-9 items-center justify-center rounded-full border border-border/50 bg-card/80">
               <Sparkles className={cn('size-4', BATCH_THEME.text)} aria-hidden />
             </div>
+            {isMobile && suggestedReserves.length > 0 && (
+              <div className="mb-2 flex flex-wrap items-center justify-center gap-1.5">
+                {suggestedReserves.map((r) => {
+                  const reserveId = getReserveKey(r);
+                  const chainSrc = getChainIconSrc(r.chainName);
+                  const marketLabel = getMarketChipLabel(r.marketName, r.chainName);
+                  const isV4 = isV4Market(r.marketName);
+                  return (
+                    <button
+                      key={reserveId}
+                      type="button"
+                      onClick={() => handleAddToken(reserveId)}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-border/50 bg-card/70 px-2 py-1 ds-text-10 font-semibold text-foreground transition-colors hover:bg-muted/60"
+                      aria-label={`Add ${r.tokenSymbol} on ${r.marketName} to batch`}
+                    >
+                      <TokenIcon symbol={r.tokenSymbol} size={14} />
+                      <span>{r.tokenSymbol}</span>
+                      <span aria-hidden className="h-3 w-px bg-border/60" />
+                      <span className="inline-flex items-center gap-0.5 text-[9px] font-normal text-muted-foreground/70">
+                        {chainSrc && (
+                          <img src={chainSrc} alt={r.chainName} className="size-2.5 shrink-0 opacity-70" />
+                        )}
+                        {isV4 && (
+                          <span className="inline-flex items-center px-1 py-0 rounded-full text-[8px] font-medium leading-none text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10">
+                            V4
+                          </span>
+                        )}
+                        <span>{marketLabel}</span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
             <p className="ds-text-13 font-semibold text-foreground">
               Build your batch portfolio
             </p>
