@@ -93,7 +93,7 @@ interface DesktopReserveRowProps {
   isInPortfolio?: boolean;
   /** Callback to add/remove from portfolio. */
   onPortfolioToggle?: (reserveId: string, reserve: ReserveWithSpread, side?: 'supply' | 'borrow') => void;
-  /** When true, borrow exceeds available liquidity in the shared scenario — show liquidity column in critical color (amber-500, brighter = more severe). */
+  /** When true, borrow exceeds available liquidity in the shared scenario — show liquidity column in warning color (amber-600). Simulation input feedback, not a system-critical state. */
   liquidityWarning?: boolean;
 }
 
@@ -483,16 +483,13 @@ const DesktopReserveRow = memo(({
               <span className={displayUtilization != null && optimalPct != null && displayUtilization > optimalPct ? 'text-amber-600' : 'text-foreground'}>
                 {formatPercent(displayUtilization)}
               </span>
-              {/* Liquidity: two-level metric with luminous ceiling.
+              {/* Liquidity: two-level metric.
                    * Safe (>= $10K) → purple brand color
-                   * Warning (< $10K) → amber-600 (darker = secondary alert)
-                   * Critical (borrow exceeds liquidity in shared scenario) → amber-500 (brighter = primary alert) */}
+                   * Warning (< $10K or borrow exceeds liquidity in shared scenario) → amber-600 */}
               <span className={`ds-text-11 tabular-nums font-medium ${
-                liquidityWarning
-                  ? 'text-amber-500'
-                  : availableLiquidityUsd != null && availableLiquidityUsd < 10000
-                    ? 'text-amber-600'
-                    : 'ds-text-purple-500'
+                liquidityWarning || (availableLiquidityUsd != null && availableLiquidityUsd < 10000)
+                  ? 'text-amber-600'
+                  : 'ds-text-purple-500'
               }`}>
                 {formatScenarioSize(availableLiquidityUsd, { inputMode, tokenPrice: displayTokenPrice, tokenSymbol: reserve.tokenSymbol })}
               </span>
