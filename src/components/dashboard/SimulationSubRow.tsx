@@ -481,7 +481,13 @@ const SimulationSubRow = ({
     tight = false,
     peerCapInfo?: { hasCapBar: boolean; hasCapNote: boolean; capNote?: string },
     alignBand?: DesktopAlignBand | null,
+    disabled = false,
   ) => {
+    // When the side is frozen/paused/disabled, mask After + Delta so the
+    // simulation does not appear to react to user input.
+    if (disabled) {
+      row = { ...row, after: null, delta: null, capNote: undefined, warning: false };
+    }
     const deltaColorClass = row.delta === null || Number.isNaN(row.delta) ? SIM_NEUTRAL_MUTED : accentClass;
     const isBreakdownItem = row.isBreakdown;
     const isSubBreakdown = row.isSubBreakdown === true;
