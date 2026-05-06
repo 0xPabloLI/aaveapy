@@ -196,6 +196,17 @@ const SimulationSubRow = ({
   }, [compact, containerNarrow]);
 
   const effectiveCompact = compact || containerNarrow;
+  const isReserveLocked = Boolean(reserve.isFrozen || reserve.isPaused);
+  const supplyDisabledNotice = isReserveLocked
+    ? (reserve.isPaused ? 'Paused' : 'Frozen')
+    : reserve.supplyDisabled
+      ? 'Supply unavailable'
+      : null;
+  const borrowDisabledNotice = isReserveLocked
+    ? (reserve.isPaused ? 'Paused' : 'Frozen')
+    : reserve.borrowDisabled
+      ? 'Borrow disabled'
+      : null;
   const rateLabel = isApy ? 'APY' : 'APR';
   const showPriceMissingNotice =
     inputMode === 'token' &&
