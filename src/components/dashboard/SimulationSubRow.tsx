@@ -635,13 +635,13 @@ const SimulationSubRow = ({
             <th className={`${compactCellPy} ${compactMetricCell} text-left`}>
               <span className="ds-text-11 text-muted-foreground font-medium">{tokenOnChainLabel}</span>
             </th>
-            <th className={`${compactCellPy} ${compactNumCell} text-right`}>
+            <th className={`${compactCellPy} ${compactNumCell} text-right whitespace-nowrap`}>
               <span className="ds-text-11 text-muted-foreground font-medium">Current</span>
             </th>
-            <th className={`${compactCellPy} ${compactNumCell} text-right`}>
+            <th className={`${compactCellPy} ${compactNumCell} text-right whitespace-nowrap`}>
               <span className="ds-text-11 text-muted-foreground font-medium">After</span>
             </th>
-            <th className={`${compactCellPy} ${compactDeltaCell} text-right`}>
+            <th className={`${compactCellPy} ${compactDeltaCell} text-right whitespace-nowrap`}>
               <span className="ds-text-11 text-muted-foreground font-medium">Δ</span>
             </th>
           </tr>
@@ -652,15 +652,15 @@ const SimulationSubRow = ({
             <td className={`${compactCellPy} ${compactMetricCell}`}>
               <span className="ds-text-12 ds-text-purple-600">Spread</span>
             </td>
-            <td className={`${compactCellPy} ${compactNumCell} text-right`}>
+            <td className={`${compactCellPy} ${compactNumCell} text-right whitespace-nowrap`}>
               <span className="ds-text-12 tabular-nums ds-text-purple-600">{formatSpread(simulation.spread.current)}</span>
             </td>
-            <td className={`${compactCellPy} ${compactNumCell} text-right`}>
+            <td className={`${compactCellPy} ${compactNumCell} text-right whitespace-nowrap`}>
               <span className={`ds-text-12 tabular-nums ${simulation.spread.after === null ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
                 {formatSpread(simulation.spread.after)}
               </span>
             </td>
-            <td className={`${compactCellPy} ${compactDeltaCell} text-right`}>
+            <td className={`${compactCellPy} ${compactDeltaCell} text-right whitespace-nowrap`}>
               {hasScenarioInput ? (
                 <span className={`ds-text-12 tabular-nums ${simulation.spread.delta === null ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
                   {formatDelta(simulation.spread.delta)}
@@ -674,17 +674,17 @@ const SimulationSubRow = ({
                 Liquidity
               </span>
             </td>
-            <td className={`${compactCellPy} ${compactNumCell} text-right`}>
+            <td className={`${compactCellPy} ${compactNumCell} text-right whitespace-nowrap`}>
               <span className="ds-text-12 tabular-nums ds-text-purple-600">
                 {formatScenarioSize(simulation.marketMetrics.availableLiquidityUsd, { inputMode, tokenPrice: simulation.tokenPrice })}
               </span>
             </td>
-            <td className={`${compactCellPy} ${compactNumCell} text-right`}>
+            <td className={`${compactCellPy} ${compactNumCell} text-right whitespace-nowrap`}>
               <span className={`ds-text-12 tabular-nums ${simulation.marketMetrics.availableLiquidityUsdAfter === null ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
                 {formatScenarioSize(simulation.marketMetrics.availableLiquidityUsdAfter, { inputMode, tokenPrice: simulation.tokenPrice })}
               </span>
             </td>
-            <td className={`${compactCellPy} ${compactDeltaCell} text-right`}>
+            <td className={`${compactCellPy} ${compactDeltaCell} text-right whitespace-nowrap`}>
               {hasScenarioInput ? (
                 <span className={`ds-text-12 tabular-nums ${simulation.marketMetrics.availableLiquidityUsdDelta === null ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
                   {formatScenarioSizeDelta(simulation.marketMetrics.availableLiquidityUsdDelta, { inputMode, tokenPrice: simulation.tokenPrice })}
