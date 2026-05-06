@@ -621,13 +621,14 @@ const SimulationSubRow = ({
           : 'bg-card/50 dark:bg-background/80 border border-border/60 rounded-xl'
       }`}
     >
-      <table className="w-full min-w-0 table-fixed">
+      <table className="w-full min-w-0 table-auto">
         <colgroup>
-          {/* Wide label column: cap notes sit outside nested indent so they use full width (later wrap). */}
-          <col style={{ width: '36%' }} />
-          <col style={{ width: '20%' }} />
-          <col style={{ width: '20%' }} />
-          <col style={{ width: '24%' }} />
+          {/* Auto-sized numeric columns prevent right-side truncation on narrow viewports.
+              Label column shrinks first via min-w-0 + break-words; numeric cells stay nowrap. */}
+          <col />
+          <col />
+          <col />
+          <col />
         </colgroup>
         <thead>
           <tr className="bg-muted/30 border-b border-border/50">
