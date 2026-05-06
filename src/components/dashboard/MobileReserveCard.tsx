@@ -473,9 +473,13 @@ const MobileReserveCard = memo(({
     tokenPrice: displayTokenPrice,
   });
   const baseTotalBorrowedUsd = simulation?.marketMetrics.totalBorrowedUsd ?? getDisplayTotalBorrowedUsd(reserve, protocolVersion);
-  const totalBorrowedUsd = simulation?.marketMetrics.totalBorrowedUsdAfter ?? baseTotalBorrowedUsd;
+  const totalBorrowedUsd = useBorrowAfter
+    ? simulation?.marketMetrics.totalBorrowedUsdAfter ?? baseTotalBorrowedUsd
+    : baseTotalBorrowedUsd;
   const baseAvailableLiquidityUsd = simulation?.marketMetrics.availableLiquidityUsd ?? getDisplayAvailableLiquidityUsd(reserve, protocolVersion);
-  const availableLiquidityUsd = simulation?.marketMetrics.availableLiquidityUsdAfter ?? baseAvailableLiquidityUsd;
+  const availableLiquidityUsd = useBorrowAfter
+    ? simulation?.marketMetrics.availableLiquidityUsdAfter ?? baseAvailableLiquidityUsd
+    : baseAvailableLiquidityUsd;
   const hasDeficit = hasReserveDeficit(reserve);
   const deficitUsd = getReserveDeficitUsdAmount(reserve, displayTokenPrice);
   const deficitTokenCompact = formatReserveDeficitTokenCompact(reserve);
