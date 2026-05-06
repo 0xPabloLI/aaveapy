@@ -1012,10 +1012,10 @@ const TopOpportunities = ({
         <Carousel
           setApi={setApi}
           opts={{
-            align: "start",
+            align: "center",
             loop: false,
             dragFree: false,
-            containScroll: "trimSnaps",
+            containScroll: "keepSnaps",
           }}
           className="w-full"
         >
