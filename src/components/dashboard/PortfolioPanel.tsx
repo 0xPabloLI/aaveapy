@@ -295,7 +295,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
   const suggestedReserves = useMemo(() => {
     const addedSymbols = new Set(positions.map((p) => p.tokenSymbol.toUpperCase()));
     const sortedBySize = [...reserves].sort(
-      (a, b) => getReserveTvlUsd(b) - getReserveTvlUsd(a),
+      (a, b) => (b.supplyApy ?? 0) - (a.supplyApy ?? 0),
     );
     const pickTop = (predicate: (sym: string) => boolean, n: number) => {
       const seen = new Set<string>();
