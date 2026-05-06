@@ -323,7 +323,7 @@ export default function ReservesTableDesktopHeader({
     },
     {
       key: 'liquidity',
-      label: 'Sort by Available Amount',
+      label: 'Sort by Liquidity Amount',
       isSelected: utilSortMode === 'liquidity' && activeSortColumn === 'util',
       order: utilSortOrder,
       activeClassName: 'ds-text-purple-600',

@@ -125,7 +125,7 @@ const ReservesTable = ({
   const [sizeSortMode, setSizeSortMode] = useState<'supply' | 'borrow' | 'borrowAvailability' | 'supplyAvailability' | 'deficitRatio' | 'deficitAmount'>('supply');
   const [sizeSortOrder, setSizeSortOrder] = useState<'asc' | 'desc'>('desc');
   const [utilSortOrder, setUtilSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [utilSortMode, setUtilSortMode] = useState<'util' | 'liquidity'>('liquidity');
+  const [utilSortMode, setUtilSortMode] = useState<'util' | 'liquidity'>('util');
   const [showUtilSortMenu, setShowUtilSortMenu] = useState(false);
   const utilSortButtonRef = useRef<HTMLButtonElement>(null);
   const [utilMenuPos, setUtilMenuPos] = useState<{ top: number; left: number } | null>(null);
@@ -1005,7 +1005,7 @@ const ReservesTable = ({
     },
     {
       key: 'liquidity',
-      label: 'Available Amount',
+      label: 'Liquidity Amount',
       isSelected: activeSortColumn === 'util' && utilSortMode === 'liquidity',
       order: utilSortOrder,
       activeClassName: 'ds-text-purple-600',
