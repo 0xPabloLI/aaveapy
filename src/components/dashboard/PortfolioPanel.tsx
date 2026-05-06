@@ -6,7 +6,7 @@
  * so users can fill in either / both amounts directly without picking a side.
  */
 import { useState, useMemo, useEffect, useRef, memo, useCallback, lazy, Suspense } from 'react';
-import { Search, X, Layers, Trash2, Save, ArrowRightLeft, Sparkles, Check } from 'lucide-react';
+import { Search, X, Layers, Trash2, Save, ArrowRightLeft, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
