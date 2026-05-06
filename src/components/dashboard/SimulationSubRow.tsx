@@ -208,7 +208,6 @@ const SimulationSubRow = ({
   const supplySideBlocked = !!(reserve.isPaused || reserve.isFrozen || reserve.supplyDisabled);
   const borrowSideBlocked = !!(reserve.isPaused || reserve.isFrozen || reserve.borrowDisabled);
   const hasDisabledState = supplySideBlocked || borrowSideBlocked;
-  const fullyBlocked = supplySideBlocked && borrowSideBlocked;
 
   const aaveUrl = buildAaveUrl({ marketName: reserve.marketName, tokenAddress: reserve.tokenAddress, aaveProReserveId: reserve.aaveProReserveId });
 
@@ -1143,7 +1142,7 @@ const SimulationSubRow = ({
           </span>
         </div>
       ) : null}
-      {!showEmptyStateNote && !fullyBlocked && (
+      {!showEmptyStateNote && (
         <div className={`${effectiveCompact ? 'mb-2' : 'mb-3'} ${effectiveCompact && embeddedFromTop ? 'px-0' : 'px-1'}`}>
           <p className={`ds-text-11 ${SIM_NEUTRAL_SECONDARY}`}>
             {isMobile
@@ -1153,9 +1152,7 @@ const SimulationSubRow = ({
         </div>
       )}
 
-      {/* Warnings + Tables — suppressed when both sides are blocked */}
-      {!fullyBlocked ? (
-        <>
+      {/* Warnings + Tables */}
           {simulation.supply.hasInput && showSupplyCapWarning && (
         <div className={`flex items-center gap-3 rounded-lg border border-amber-400/60 bg-amber-50/80 dark:bg-amber-950/30 ${effectiveCompact ? 'mb-2 px-3 py-1.5' : 'mb-3 px-4 py-2'}`}>
           <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
@@ -1263,10 +1260,10 @@ const SimulationSubRow = ({
             ref={gridRef}
             className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_clamp(14.5rem,24.5vw,18rem)] gap-2 min-w-0 items-stretch overflow-hidden"
           >
-            <div className="flex min-w-0 flex-col overflow-hidden">
+            <div className={`flex min-w-0 flex-col overflow-hidden${supplySideBlocked ? ' opacity-50' : ''}`}>
               {renderTable('Supply', supplyRows, 'ds-text-emerald-600', 'border-emerald-500/40', 'border-l-[rgb(var(--ds-emerald-500-rgb))]', showSupplyCapWarning, borrowRows)}
             </div>
-            <div className="flex min-w-0 flex-col overflow-hidden">
+            <div className={`flex min-w-0 flex-col overflow-hidden${borrowSideBlocked ? ' opacity-50' : ''}`}>
               {renderTable('Borrow', borrowRows, 'ds-text-brand-cyan', 'border-[rgb(var(--ds-brand-cyan-rgb))]/40', 'border-l-[rgb(var(--ds-brand-cyan-rgb))]', showBorrowCapWarning, supplyRows)}
             </div>
             <div className="flex min-h-0 min-w-0 flex-col overflow-hidden self-stretch">
@@ -1275,8 +1272,6 @@ const SimulationSubRow = ({
           </div>
         </>
       )}
-        </>
-      ) : null}
 
       {/* Footer notes */}
       {(simulation.forecastLoading || showPriceMissingNotice || simulation.forecastUnavailableCampaignCount > 0) && (
