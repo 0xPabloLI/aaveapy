@@ -63,28 +63,35 @@ export function shouldUseFullPreloadMode(): boolean {
 }
 
 /**
- * Resolve symbol to the icon key used for static assets.
- * PT tokens (pt-usde-28may2026, pt-eusde, etc.) share the base token icon to avoid 404s.
- * Generic extraction: pt-{base}-{maturity} or pt-{base} → {base}
+ * Resolve symbol to the icon keys used for static assets, ordered by priority.
+ * PT tokens try pt{base} (upstream PT-specific icon) first, then fall back to {base}.
+ * - pt-susde-28may2026 → ['ptsusde', 'susde']
+ * - pt-usdg-28may2026  → ['ptusdg', 'usdg']
+ * - pt-eusde           → ['pteusde', 'eusde']
  */
-export function getTokenIconSymbolKey(symbol: string): string {
+export function getTokenIconSymbolKeys(symbol: string): string[] {
   const key = symbol.trim().toLowerCase();
   const ptMatch = key.match(/^pt-(.+)$/);
-  if (ptMatch) {
-    const rest = ptMatch[1];
-    const baseEnd = rest.indexOf('-');
-    return baseEnd >= 0 ? rest.slice(0, baseEnd) : rest;
-  }
-  return key;
+  if (!ptMatch) return [key];
+
+  const rest = ptMatch[1];
+  const baseEnd = rest.indexOf('-');
+  const base = baseEnd >= 0 ? rest.slice(0, baseEnd) : rest;
+  return [`pt${base}`, base];
 }
 
 export function getTokenIconSources(symbol: string): string[] {
-  const symbolKey = getTokenIconSymbolKey(symbol);
-  const manifestFormats = TOKEN_ICON_MANIFEST[symbolKey];
-  if (manifestFormats && manifestFormats.length > 0) {
-    return manifestFormats.map((fmt) => `/icons/tokens/${symbolKey}.${fmt}`);
+  const keys = getTokenIconSymbolKeys(symbol);
+  const sources: string[] = [];
+  for (const symbolKey of keys) {
+    const manifestFormats = TOKEN_ICON_MANIFEST[symbolKey];
+    if (manifestFormats && manifestFormats.length > 0) {
+      sources.push(...manifestFormats.map((fmt) => `/icons/tokens/${symbolKey}.${fmt}`));
+    } else {
+      sources.push(...TOKEN_ICON_FORMATS.map((fmt) => `/icons/tokens/${symbolKey}.${fmt}`));
+    }
   }
-  return TOKEN_ICON_FORMATS.map((fmt) => `/icons/tokens/${symbolKey}.${fmt}`);
+  return sources;
 }
 
 export function getPreloadedImageSource(srcs: string[]): string | undefined {
