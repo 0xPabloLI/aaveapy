@@ -471,7 +471,7 @@ export default function ReservesTableDesktopHeader({
                     : 'text-muted-foreground'
                 }`}
               >
-                Utilization
+                Liquidity
               </span>
               <div className="relative">
                 <button
