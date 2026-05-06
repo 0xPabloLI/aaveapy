@@ -101,8 +101,8 @@ const UtilizationIndicator = memo(({
             <span className="text-muted-foreground">Optimal utilization</span>
             <span className="font-medium tabular-nums">{formatPercent(optimal)}</span>
           </div>
-          <p className={`ds-text-11 font-bold pt-2 border-t border-border/50 ${isOverOptimal ? 'text-amber-600' : 'text-muted-foreground'}`}>
-            {formatPercent(current)} {isOverOptimal ? 'above' : 'below'} optimal
+          <p className={`ds-text-11 pt-2 border-t border-border/50 ${isOverOptimal ? 'text-amber-600' : 'text-muted-foreground'}`}>
+            <span className="font-bold tabular-nums">{formatPercent(current)}</span> {isOverOptimal ? 'above' : 'below'} optimal
           </p>
         </div>
       </TooltipContent>
