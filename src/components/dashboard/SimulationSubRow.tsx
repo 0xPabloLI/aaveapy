@@ -784,7 +784,7 @@ const SimulationSubRow = ({
             const peerCapInfo = peerHasCapBar || peerHasCapNote
               ? { hasCapBar: peerHasCapBar, hasCapNote: peerHasCapNote, capNote: peer?.capNote }
               : undefined;
-            return renderRow(row, accentClass, indentBorderClass, false, peerCapInfo);
+            return renderRow(row, accentClass, indentBorderClass, false, peerCapInfo, undefined, Boolean(disabledNotice));
           })}
         </tbody>
       </table>
