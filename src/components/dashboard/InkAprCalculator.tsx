@@ -769,7 +769,7 @@ const InkAprCalculator = ({
           ref={fdvTriggerRef}
           type="button"
           aria-label="FDV definition"
-          className="h-4 w-4 rounded-full flex items-center justify-center ds-bg-blue-500-10 ds-text-blue-500 shadow-sm hover:bg-[rgb(var(--ds-blue-500-rgb)/0.2)] hover:shadow-md transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+          className="h-4 w-4 rounded-full flex items-center justify-center ds-bg-blue-500-10 ds-text-blue-500 shadow-sm hover:bg-[rgb(var(--ds-blue-500-rgb)/0.2)] hover:shadow-md transition-all duration-200 cursor-pointer md:cursor-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
           onMouseEnter={() => {
             if (fdvTriggerRef.current) setFdvTriggerRect(fdvTriggerRef.current.getBoundingClientRect());
             if (!isMobile) setIsFdvTooltipOpen(true);
