@@ -4,6 +4,7 @@ import { cleanup, render } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import MobileReserveCard from './MobileReserveCard';
+import { formatPercent, formatUsd } from '@/lib/formatters';
 import type { ReserveWithSpread } from '@/types/aave';
 import type { RateSimulationResult } from '@/hooks/useRateSimulation';
 
@@ -420,5 +421,35 @@ describe('MobileReserveCard', () => {
 
     expect(getByText('Base APR only')).toBeInTheDocument();
     expect(queryByText('Base APY only')).not.toBeInTheDocument();
+  });
+
+  it('displays token price using formatUsd (same as desktop)', () => {
+    const expectedPrice = formatUsd(reserve.tokenPrice);
+
+    const { container } = renderCard(false);
+
+    const html = container.innerHTML;
+    expect(html).toContain(expectedPrice);
+    expect(html).not.toMatch(/\$\d+\.\d+e[+-]/);
+  });
+
+  it('uses solid background (not gradient) for active incentive badge, matching desktop style', () => {
+    const { container } = renderCard(false);
+
+    const html = container.innerHTML;
+    expect(html).toContain('ds-bg-emerald-500-10');
+    expect(html).toContain('ds-ring-emerald-500-15');
+    expect(html).not.toContain('bg-gradient-to-r');
+  });
+
+  it('formats utilization rate with formatPercent (two decimal places), same as desktop', () => {
+    const expectedUtilization = formatPercent(52);
+
+    const { getByLabelText } = renderCard(false);
+
+    const utilButton = getByLabelText('Show utilization details');
+    const utilText = utilButton.querySelector('.ds-text-11');
+    expect(utilText).not.toBeNull();
+    expect(utilText!.textContent!.trim()).toBe(expectedUtilization);
   });
 });

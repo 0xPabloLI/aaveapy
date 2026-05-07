@@ -6,6 +6,7 @@ import {
   formatPercent,
   formatScenarioSize,
   formatSpread,
+  formatUsd,
   getReserveMarketDisplayName,
   resolveVisibleIncentiveBadgeValue,
 } from '@/lib/formatters';
@@ -14,7 +15,7 @@ import { getReserveKey } from '@/lib/reserveKey';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { IncentiveIcon } from '@/components/IncentiveIcon';
 import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipCalloutArrow } from '@/components/ui/tooltip';
 import SimulationSubRow from './SimulationSubRow';
 import UtilizationIndicator from './UtilizationIndicator';
 import CapProgressRing from './CapProgressRing';
@@ -95,6 +96,7 @@ interface MobileReserveAmountRowProps {
   deficitShareRatio: number | null;
   deficitTextClass: string;
   isNeutralDeficit: boolean;
+  spread: number | null;
   onShowSupplyCap: () => void;
   onShowBorrowCap: () => void;
   onShowDeficit: () => void;
@@ -113,6 +115,7 @@ function MobileReserveAmountRow({
   deficitShareRatio,
   deficitTextClass,
   isNeutralDeficit,
+  spread,
   onShowSupplyCap,
   onShowBorrowCap,
   onShowDeficit,
@@ -121,7 +124,7 @@ function MobileReserveAmountRow({
   const priceEl =
     tp != null && Number.isFinite(tp) ? (
       <span className="ds-text-11 text-muted-foreground/60 tabular-nums shrink-0 leading-none">
-        {`$${tp < 0.01 ? tp.toExponential(1) : tp < 100 ? tp.toFixed(2) : tp.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+                {formatUsd(tp)}
       </span>
     ) : null;
 
@@ -191,7 +194,12 @@ function MobileReserveAmountRow({
 
   return (
     <div className="flex w-full min-w-0 flex-nowrap items-center gap-1.5 px-4">
-      {priceEl}
+      <span className="flex items-center gap-1 shrink-0 leading-none">
+        <span className="ds-text-10 text-muted-foreground/60">Spread</span>
+        <span className={`ds-text-11 tabular-nums ${spread !== null ? 'ds-text-purple-600' : 'text-muted-foreground/60'}`}>
+          {formatSpread(spread)}
+        </span>
+      </span>
       <div className="ml-auto flex min-w-0 items-center justify-end gap-1">
         {hasBorrowCap ? (
           <button
@@ -308,7 +316,7 @@ function MobileReserveHeroApy({
                 className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-px shrink-0 ring-1 active:scale-95 transition-all hover:ring-2 ${
                   isDisabled
                     ? 'text-secondary bg-secondary/10 ring-secondary/20 hover:bg-secondary/20 hover:ring-secondary/30'
-                    : 'ds-text-emerald-500 bg-gradient-to-r from-[rgb(var(--ds-emerald-500-rgb)/0.08)] to-[rgb(var(--ds-emerald-500-rgb)/0.15)] hover:from-[rgb(var(--ds-emerald-500-rgb)/0.15)] hover:to-[rgb(var(--ds-emerald-500-rgb)/0.25)] ds-ring-emerald-500-15 hover:ring-[rgb(var(--ds-emerald-500-rgb)/0.35)]'
+                    : 'ds-text-emerald-500 ds-bg-emerald-500-10 hover:bg-[rgb(var(--ds-emerald-500-rgb)/0.25)] ds-ring-emerald-500-15 hover:ring-[rgb(var(--ds-emerald-500-rgb)/0.3)]'
                 }`}
               >
                 <span>{formatPercent(visibleSupplyIncentive)}</span>
@@ -361,7 +369,7 @@ function MobileReserveHeroApy({
               className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-px shrink-0 ring-1 active:scale-95 transition-all hover:ring-2 ${
                 isDisabled
                   ? 'text-secondary bg-secondary/10 ring-secondary/20 hover:bg-secondary/20 hover:ring-secondary/30'
-                  : 'ds-text-brand-cyan bg-gradient-to-r from-[rgb(var(--ds-brand-cyan-rgb)/0.08)] to-[rgb(var(--ds-brand-cyan-rgb)/0.15)] hover:from-[rgb(var(--ds-brand-cyan-rgb)/0.15)] hover:to-[rgb(var(--ds-brand-cyan-rgb)/0.25)] ds-ring-brand-cyan-15 hover:ring-[rgb(var(--ds-brand-cyan-rgb)/0.35)]'
+                  : 'ds-text-brand-cyan ds-bg-brand-cyan-10 hover:bg-[rgb(var(--ds-brand-cyan-rgb)/0.25)] ds-ring-brand-cyan-15 hover:ring-[rgb(var(--ds-brand-cyan-rgb)/0.3)]'
               }`}
             >
               <span>{formatPercent(visibleBorrowIncentive)}</span>
@@ -626,7 +634,7 @@ const MobileReserveCard = memo(({
                   const aaveProHubUrl = buildAaveProHubUrl(reserve);
                   const isV4 = protocolVersion === 'v4';
                   const hubClass = cn(
-                    "inline-flex items-center rounded-full text-[9px] font-normal leading-none",
+                    "inline-flex items-center rounded-full ds-text-9 font-normal leading-none",
                     isV4
                       ? "text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10"
                       : "text-muted-foreground/70 bg-muted/40"
@@ -675,10 +683,11 @@ const MobileReserveCard = memo(({
                       <span className={`ds-text-11 tabular-nums cursor-default ${
                         displayUtilization > optimalPct ? 'text-amber-600' : 'text-muted-foreground'
                       }`}>
-                        {displayUtilization.toFixed(0)}%
+                        {formatPercent(displayUtilization)}
                       </span>
                     </TooltipTrigger>
                     <TooltipContent side="top">
+                      <TooltipCalloutArrow />
                       <p className="ds-text-12">Utilization = borrowed / (available + borrowed)</p>
                     </TooltipContent>
                   </Tooltip>
@@ -735,6 +744,7 @@ const MobileReserveCard = memo(({
             deficitShareRatio={deficitShareRatio}
             deficitTextClass={deficitTextClass}
             isNeutralDeficit={isNeutralDeficit}
+            spread={displaySpread}
             onShowSupplyCap={() => setCapSheet('supply')}
             onShowBorrowCap={() => setCapSheet('borrow')}
             onShowDeficit={() => setCapSheet('deficit')}
@@ -812,7 +822,7 @@ const MobileReserveCard = memo(({
                 aria-modal="true"
                 aria-labelledby="cap-sheet-title"
               >
-                <div className="sticky top-0 bg-card border-b border-border px-[var(--ds-space-4)] py-[var(--ds-space-3)] flex items-center justify-between z-10">
+                <div className="sticky top-0 bg-card border-b border-border px-[var(--ds-space-3)] py-[var(--ds-space-2)] flex items-center justify-between z-10">
                   <h3 id="cap-sheet-title" className="ds-tooltip-title text-foreground">
                     {capSheet === 'supply'
                       ? 'Supply cap details'

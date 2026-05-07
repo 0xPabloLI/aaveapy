@@ -65,7 +65,7 @@ const BorrowCapProgressRing = memo(({
 
   const tooltipContent = (
     <TooltipContent side="right" className="max-w-[220px]">
-      <TooltipCalloutArrow side="right" />
+      <TooltipCalloutArrow />
       <div className="space-y-1 ds-text-12">
         <div className="flex justify-between gap-3">
           <span className="text-muted-foreground">Total borrowed</span>

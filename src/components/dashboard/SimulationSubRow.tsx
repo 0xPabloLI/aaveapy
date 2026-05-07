@@ -783,7 +783,7 @@ const SimulationSubRow = ({
               <span className="ds-text-11 text-muted-foreground">After</span>
             </th>
             <th className="px-4 py-1.5 text-right">
-              <span className="ds-text-11 text-muted-foreground">Delta</span>
+              <span className="ds-text-11 text-muted-foreground">Δ</span>
             </th>
           </tr>
         </thead>
@@ -1188,9 +1188,7 @@ const SimulationSubRow = ({
       {!showEmptyStateNote && (
         <div className={`${effectiveCompact ? 'mb-2' : 'mb-3'} ${effectiveCompact && embeddedFromTop ? 'px-0' : 'px-1'}`}>
           <p className={`ds-text-11 ${SIM_NEUTRAL_SECONDARY}`}>
-            {isMobile
-              ? 'Simulation only; final result is on-chain.'
-              : 'Simulation is for reference only. Final result depends on on-chain execution.'}
+            Simulation is for reference only. Final result depends on on-chain execution.
           </p>
         </div>
       )}

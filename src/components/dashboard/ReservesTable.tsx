@@ -745,7 +745,7 @@ const ReservesTable = ({
         ? 'ds-text-brand-cyan font-bold scale-105'
         : 'text-foreground font-bold scale-105';
   const mobileCardDefaultTab: 'supply' | 'borrow' =
-    activeSortColumn === 'borrow' || (activeSortColumn === 'size' && (sizeSortMode === 'borrow' || sizeSortMode === 'borrowAvailability'))
+    activeSortColumn === 'borrow' || activeSortColumn === 'spread' || (activeSortColumn === 'size' && (sizeSortMode === 'borrow' || sizeSortMode === 'borrowAvailability'))
       ? 'borrow'
       : 'supply';
 

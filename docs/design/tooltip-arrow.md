@@ -24,7 +24,40 @@
 
 ---
 
-## 2. 两类 Tooltip 箭头实现对比
+## 2. 桌面端排版规范（Desktop Placement Rules）
+
+`TooltipContent` 的 `side` prop 控制 tooltip 相对于 trigger 的偏好位置，
+箭头由 `TooltipCalloutArrow` 自动跟随 Radix `data-side` 驱动。
+
+| 场景 | `side` 值 | tooltip 位置 | 箭头位置 | 适用范围 |
+|---|---|---|---|---|
+| **表格列内 tooltip** | `"right"` | trigger 右侧 | 箭头在 **左**（指向 trigger） | CapProgressRing、BorrowCapProgressRing、DeficitLiquidityRing、deficit 详情 |
+| **利用率/数值解释 tooltip** | `"top"` | trigger 上方 | 箭头在 **下**（指向 trigger） | UtilizationIndicator、利用率文案（桌面/移动一致） |
+| **全局控件 tooltip** | `"bottom"` | trigger 下方 | 箭头在 **上**（指向 trigger） | ThemeToggle 等页面级控件 |
+
+**原则：**
+
+- 表格列内 tooltip 用 `"right"` → 不遮挡下方行内容，符合 LTR 阅读习惯
+- 利用率/数值解释 tooltip 用 `"top"` → trigger 上方通常有空余空间，避免遮挡后续内容
+- 所有 `TooltipContent` 必须包含 `<TooltipCalloutArrow />`（**不传 `side`**），保证视觉一致性
+- **IncentiveTooltip**（自定义浮层）不受此规则约束，它有自己的 top/bottom 自动判断逻辑
+
+### 2.1 调用方速查表
+
+| 文件 | 行号 | `TooltipContent side` | `TooltipCalloutArrow` |
+|---|---|---|---|
+| CapProgressRing.tsx | 61 | `"right"` | `<TooltipCalloutArrow />` |
+| BorrowCapProgressRing.tsx | 67 | `"right"` | `<TooltipCalloutArrow />` |
+| DeficitLiquidityRing.tsx | 73 | `"right"` | `<TooltipCalloutArrow />` |
+| DesktopReserveRow.tsx (deficit) | 456 | `"right"` | `<TooltipCalloutArrow />` |
+| UtilizationIndicator.tsx | 98 | `"top"` | `<TooltipCalloutArrow />` |
+| DesktopReserveRow.tsx (util) | 500 | `"top"` | `<TooltipCalloutArrow />` |
+| MobileReserveCard.tsx (util) | 677 | `"top"` | `<TooltipCalloutArrow />` |
+| ThemeToggle.tsx | 68 | `"bottom"` | 无（全局控件可省略） |
+
+---
+
+## 3. 两类 Tooltip 箭头实现对比
 
 | 维度 | `TooltipCalloutArrow`（Radix 派生） | `IncentiveTooltip` 自定义 SVG |
 |---|---|---|
@@ -38,7 +71,7 @@
 | **覆写 sideOffset** | `sideOffset` prop（默认 4） | 直接控制 `top` 偏移 |
 | **DOM 数量** | 4 个 SVG（hidden 3 个） | 1 个 SVG |
 | **z-index 关系** | 箭头 `z-20` 在 body 之上（mask body 边） | SVG 与 body 是同级，无需 mask（border 直接绘出） |
-| **API** | `<TooltipCalloutArrow side?="..." />`（`side` 仅作 hint，已由 data-side 自动驱动） | 内部组件，无对外 API |
+| **API** | `<TooltipCalloutArrow />`（`side` prop 已废弃，由 data-side 自动驱动） | 内部组件，无对外 API |
 
 ### 何时用哪个
 
@@ -53,9 +86,9 @@
 
 ---
 
-## 3. 核心实现要点（Implementation Notes）
+## 4. 核心实现要点（Implementation Notes）
 
-### 3.1 SVG 双 path 模式（关键）
+### 4.1 SVG 双 path 模式（关键）
 
 ```tsx
 <svg viewBox="0 0 9 16" width="9" height="16">
@@ -75,7 +108,7 @@
   与 body 接合处出现一道 1px 的"双线" / seam（即修复前的问题）。
 - 拆成 fill 和 stroke 两条 path 后，stroke 那条**不写 `Z`**，底边就只填充不描边。
 
-### 3.2 与 body border 的几何关系
+### 4.2 与 body border 的几何关系
 
 ```diagram
               ╭──────── tooltip body ────────╮
@@ -94,7 +127,7 @@
 - 这 1px 重叠让 body 的 1px 左边框完全被箭头 fill 遮罩，不会从底边漏出。
 - 上下两个顶角恰好落在 body 边框线上，与 body 边框无缝衔接。
 
-### 3.3 自动 flip：Radix `data-side` + Tailwind `group-data` variant
+### 4.3 自动 flip：Radix `data-side` + Tailwind `group-data` variant
 
 ```tsx
 // TooltipContent 上加 group/tt
@@ -112,7 +145,7 @@ Radix Tooltip 在每次定位时会把实际渲染方向写到 `data-side` 属�
 变成 left，`data-side` 会同步变成 `"left"`，对应的左侧箭头自动显示，
 原右侧箭头自动隐藏。**调用方无需任何改动。**
 
-### 3.4 `side` prop 仍保留但已废弃语义
+### 4.4 `TooltipCalloutArrow` 的 `side` prop 已废弃
 
 ```tsx
 const TooltipCalloutArrow = (_props: { side?: 'top' | 'bottom' | 'left' | 'right' }) => {
@@ -121,12 +154,12 @@ const TooltipCalloutArrow = (_props: { side?: 'top' | 'bottom' | 'left' | 'right
 };
 ```
 
-- 历史调用 `<TooltipCalloutArrow side="right" />` 不需要修改。
-- 但新代码可以省略 `side`，因为方向已由 Radix 自动驱动。
+- 历史调用 `<TooltipCalloutArrow side="right" />` 需要清理为 `<TooltipCalloutArrow />`。
+- 箭头方向完全由 Radix 的 `data-side` 属性自动驱动，无需传参。
 
 ---
 
-## 4. 修复经验回顾（Debugging Lessons）
+## 5. 修复经验回顾（Debugging Lessons）
 
 | 阶段 | 尝试 | 结果 | 教训 |
 |---|---|---|---|
@@ -140,7 +173,7 @@ const TooltipCalloutArrow = (_props: { side?: 'top' | 'bottom' | 'left' | 'right
 
 ---
 
-## 5. 验收清单（Acceptance Checklist for Future Changes）
+## 6. 验收清单（Acceptance Checklist for Future Changes）
 
 修改任意 tooltip 箭头实现时，必须验证：
 
@@ -149,20 +182,28 @@ const TooltipCalloutArrow = (_props: { side?: 'top' | 'bottom' | 'left' | 'right
       **箭头自动出现在 body 右侧并指向右**（`data-side="left"` 时 right 箭头 hidden、left 箭头 block）
 - [ ] 暗色模式下箭头 fill / stroke 与 body 完全同色（依赖 `hsl(var(--card))` /
       `hsl(var(--border) / 0.6)`，不要硬编码颜色）
+- [ ] 所有 `TooltipContent` 调用方 `side` prop 符合 §2 排版规范
+- [ ] 所有 `TooltipCalloutArrow` 调用方不传 `side` prop（已废弃）
 - [ ] `npm run lint && npm test && npx tsc --noEmit && npm run build` 全过
 - [ ] 视觉对照参考：`docs/design/tooltip-arrow-reference.md`（如需要）或
       Magic Patterns 设计 `qfbdm9z2qhfay4lqvzqvrs`
 
 ---
 
-## 6. 关联文件
+## 7. 关联文件
 
 - 实现：[src/components/ui/tooltip.tsx](../../src/components/ui/tooltip.tsx)
 - IncentiveTooltip 自定义箭头：[src/components/dashboard/IncentiveTooltip.tsx](../../src/components/dashboard/IncentiveTooltip.tsx)（见 `showTooltipArrow` 渲染块）
-- 调用方（均使用 `<TooltipCalloutArrow />`，`side` 已可省略）：
+- 调用方（表格列内，`side="right"`）：
   - [src/components/dashboard/CapProgressRing.tsx](../../src/components/dashboard/CapProgressRing.tsx)
   - [src/components/dashboard/BorrowCapProgressRing.tsx](../../src/components/dashboard/BorrowCapProgressRing.tsx)
   - [src/components/dashboard/DeficitLiquidityRing.tsx](../../src/components/dashboard/DeficitLiquidityRing.tsx)
-  - [src/components/dashboard/DesktopReserveRow.tsx](../../src/components/dashboard/DesktopReserveRow.tsx)
+  - [src/components/dashboard/DesktopReserveRow.tsx](../../src/components/dashboard/DesktopReserveRow.tsx)（deficit 部分）
+- 调用方（利用率/数值解释，`side="top"`）：
+  - [src/components/dashboard/UtilizationIndicator.tsx](../../src/components/dashboard/UtilizationIndicator.tsx)
+  - [src/components/dashboard/DesktopReserveRow.tsx](../../src/components/dashboard/DesktopReserveRow.tsx)（利用率部分）
+  - [src/components/dashboard/MobileReserveCard.tsx](../../src/components/dashboard/MobileReserveCard.tsx)（利用率部分）
+- 调用方（全局控件，`side="bottom"`）：
+  - [src/components/ThemeToggle.tsx](../../src/components/ThemeToggle.tsx)
 - 设计系统总览：[docs/design/DESIGN-SYSTEM-REFERENCE.md](./DESIGN-SYSTEM-REFERENCE.md)
 - 前端交互守则：[docs/design/frontend-interaction-guardrails.md](./frontend-interaction-guardrails.md)

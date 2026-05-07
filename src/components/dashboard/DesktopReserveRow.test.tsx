@@ -411,6 +411,120 @@ describe('DesktopReserveRow', () => {
     expect(placeholderMatches.length).toBeGreaterThanOrEqual(2);
   });
 
+  it('shows Base APY/APR placeholder when no incentive is visible', () => {
+    const queryClient = new QueryClient();
+    const html = renderToString(
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Table>
+            <TableBody>
+              <DesktopReserveRow
+                reserve={reserve}
+                reserveId="AaveV3Ethereum-0x0000000000000000000000000000000000000001"
+                isExpanded={false}
+                onToggleExpand={() => {}}
+                onIncentiveClick={() => {}}
+                displaySupplyTotal={2.4}
+                displaySupplyNative={2.1}
+                displaySupplyIncentive={null}
+                displayBorrowTotal={2.9}
+                displayBorrowNative={3.1}
+                displayBorrowIncentive={null}
+                displayUtilization={52}
+                spread={-0.4}
+                simulation={simulation}
+                supplyInput="1000"
+                borrowInput="500"
+                inputMode="usd"
+                isApy
+                isMobile={false}
+              />
+            </TableBody>
+          </Table>
+        </TooltipProvider>
+      </QueryClientProvider>
+    );
+
+    expect(html).toMatch(/Base\s*<!--\s*-->\s*APY\s*<!--\s*-->\s*only/);
+    expect(html).toMatch(/Base\s*<!--\s*-->\s*APR\s*<!--\s*-->\s*only/);
+  });
+
+  it('shows Base APR only placeholder in APR mode when no incentive is visible', () => {
+    const queryClient = new QueryClient();
+    const html = renderToString(
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Table>
+            <TableBody>
+              <DesktopReserveRow
+                reserve={reserve}
+                reserveId="AaveV3Ethereum-0x0000000000000000000000000000000000000001"
+                isExpanded={false}
+                onToggleExpand={() => {}}
+                onIncentiveClick={() => {}}
+                displaySupplyTotal={2.4}
+                displaySupplyNative={2.1}
+                displaySupplyIncentive={null}
+                displayBorrowTotal={2.9}
+                displayBorrowNative={3.1}
+                displayBorrowIncentive={null}
+                displayUtilization={52}
+                spread={-0.4}
+                simulation={simulation}
+                supplyInput="1000"
+                borrowInput="500"
+                inputMode="usd"
+                isApy={false}
+                isMobile={false}
+              />
+            </TableBody>
+          </Table>
+        </TooltipProvider>
+      </QueryClientProvider>
+    );
+
+    expect(html).toMatch(/Base\s*<!--\s*-->\s*APR\s*<!--\s*-->\s*only/);
+    expect(html).toMatch(/Base\s*<!--\s*-->\s*APY\s*<!--\s*-->\s*only/);
+  });
+
+  it('does not show Base placeholder when side is disabled even if no incentive', () => {
+    const queryClient = new QueryClient();
+    const html = renderToString(
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Table>
+            <TableBody>
+              <DesktopReserveRow
+                reserve={{ ...reserve, supplyDisabled: true, borrowDisabled: true }}
+                reserveId="AaveV3Ethereum-0x0000000000000000000000000000000000000001"
+                isExpanded={false}
+                onToggleExpand={() => {}}
+                onIncentiveClick={() => {}}
+                displaySupplyTotal={2.4}
+                displaySupplyNative={2.1}
+                displaySupplyIncentive={null}
+                displayBorrowTotal={2.9}
+                displayBorrowNative={3.1}
+                displayBorrowIncentive={null}
+                displayUtilization={52}
+                spread={-0.4}
+                simulation={simulation}
+                supplyInput="1000"
+                borrowInput="500"
+                inputMode="usd"
+                isApy
+                isMobile={false}
+              />
+            </TableBody>
+          </Table>
+        </TooltipProvider>
+      </QueryClientProvider>
+    );
+
+    expect(html).not.toMatch(/Base\s*<!--\s*-->\s*APY\s*<!--\s*-->\s*only/);
+    expect(html).not.toMatch(/Base\s*<!--\s*-->\s*APR\s*<!--\s*-->\s*only/);
+  });
+
   it('treats reserve.optimalUsageRate as a percent number (not RAY) when sizing the UtilizationIndicator', () => {
     // Regression guard for the V3/V4 precision-unification migration:
     // After the backend switched optimalUsageRate from RAY/bps strings to

@@ -71,7 +71,7 @@ const DeficitLiquidityRing = memo(({
 
   const tooltipContent = (
     <TooltipContent side="right" className="max-w-[240px]">
-      <TooltipCalloutArrow side="right" />
+      <TooltipCalloutArrow />
       <div className="space-y-1 ds-text-12">
         <div className="flex items-center justify-between gap-3">
           <span className="text-muted-foreground flex items-center gap-1">
