@@ -25,9 +25,11 @@ export default function BottomSheet({
   overlayOpacity = '40',
   animate = false,
 }: BottomSheetProps) {
+  const overlayOpacityValue = parseInt(overlayOpacity, 10) / 100;
   const overlay = (
     <div
-      className={`fixed inset-0 z-30 bg-background/${overlayOpacity}`}
+      className="fixed inset-0 z-30"
+      style={{ backgroundColor: `hsl(var(--background) / ${overlayOpacityValue})` }}
       onClick={onClose}
       aria-hidden="true"
     />
