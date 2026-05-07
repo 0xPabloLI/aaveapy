@@ -1,6 +1,6 @@
 import { useRef, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ExternalLink, X } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { ReserveWithSpread, MeritIncentive, MerklOpportunityGroup, BrevisIncentive } from '@/types/aave';
 import {
@@ -24,6 +24,7 @@ import {
 } from '@/lib/brevis';
 import { adjustTooltipAnchorForScroll, getWindowScroll } from '@/lib/tooltipPosition';
 import { useIsMobile } from '@/hooks/use-mobile';
+import BottomSheet from './BottomSheet';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
 import { DS_NATIVE_CHECKBOX_CLASS } from '@/lib/dsNativeCheckbox';
 
@@ -692,38 +693,19 @@ const IncentiveTooltip = ({
   // Mobile: bottom sheet style
   if (isMobile) {
     const content = (
-      <>
-        {/* Background overlay with smooth fade */}
-        <div 
-          className="fixed inset-0 z-30 bg-background/20" 
-          onClick={onClose}
-        />
-        {/* Bottom sheet with spring-like animation */}
-        <div
-          ref={tooltipRef}
-          className="fixed bottom-0 left-0 right-0 z-40 rounded-t-2xl border border-border/60 bg-card max-h-[80vh] overflow-y-auto"
-          style={tooltipSurfaceStyle}
-        >
-          {/* Handle bar */}
-          <div className="sticky top-0 bg-card border-b border-border px-[var(--ds-space-2)] py-[var(--ds-space-1-5)] flex items-center justify-between z-10">
-            <h3 className="ds-tooltip-title text-foreground">
-              {type === 'supply' ? 'Supply' : 'Borrow'} Incentive Details
-            </h3>
-            <button
-              onClick={onClose}
-              className="p-[var(--ds-space-1-5)] rounded-full hover:bg-muted transition-colors"
-            >
-              <X className="w-5 h-5 text-muted-foreground" />
-            </button>
-          </div>
-          
-          <div className="px-[var(--ds-space-3)] pt-[var(--ds-space-2)] pb-[var(--ds-space-2)]">
-            {/* Detailed sources */}
-            {hasDetails ? (
-              <div className="relative mb-[var(--ds-space-2)] pl-[var(--ds-space-2)]">
-                <div className={`pointer-events-none absolute left-0 top-0 bottom-0 ${accentClass}`} />
-                <div className="divide-y divide-border/40">
-                {orderedIncentiveSources.map((source, index) => {
+      <BottomSheet
+        open={true}
+        onClose={onClose}
+        title={`${type === 'supply' ? 'Supply' : 'Borrow'} Incentive Details`}
+        surfaceStyle={tooltipSurfaceStyle}
+        overlayOpacity="20"
+      >
+        {/* Detailed sources */}
+        {hasDetails ? (
+          <div className="relative mb-[var(--ds-space-2)] pl-[var(--ds-space-2)]">
+            <div className={`pointer-events-none absolute left-0 top-0 bottom-0 ${accentClass}`} />
+            <div className="divide-y divide-border/40">
+            {orderedIncentiveSources.map((source, index) => {
                   const campaigns = source.campaigns ?? [];
                   const hasIncludedCampaign =
                     campaigns.length === 0 || campaigns.some((campaign) => campaign.included !== false);
@@ -799,9 +781,7 @@ const IncentiveTooltip = ({
               </div>
             )}
             
-          </div>
-        </div>
-      </>
+        </BottomSheet>
     );
     if (usePortal && portalTarget) {
       return createPortal(content, portalTarget);
