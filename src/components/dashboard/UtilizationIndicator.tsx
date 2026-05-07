@@ -102,7 +102,7 @@ const UtilizationIndicator = memo(({
             <span className="font-medium tabular-nums">{formatPercent(optimal)}</span>
           </div>
           <div className="flex justify-between gap-4 pt-2 border-t border-border/50">
-            <span className="text-muted-foreground">borrow utilization</span>
+            <span className="text-muted-foreground">Current utilization</span>
             <span className={`font-bold tabular-nums ${isOverOptimal ? 'text-amber-600' : 'text-muted-foreground'}`}>{formatPercent(current)}</span>
           </div>
         </div>
