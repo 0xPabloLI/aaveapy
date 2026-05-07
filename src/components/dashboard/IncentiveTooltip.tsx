@@ -705,7 +705,7 @@ const IncentiveTooltip = ({
           style={tooltipSurfaceStyle}
         >
           {/* Handle bar */}
-          <div className="sticky top-0 bg-card border-b border-border px-[var(--ds-space-4)] py-[var(--ds-space-3)] flex items-center justify-between z-10">
+          <div className="sticky top-0 bg-card border-b border-border px-[var(--ds-space-2)] py-[var(--ds-space-1-5)] flex items-center justify-between z-10">
             <h3 className="ds-tooltip-title text-foreground">
               {type === 'supply' ? 'Supply' : 'Borrow'} Incentive Details
             </h3>
@@ -717,10 +717,10 @@ const IncentiveTooltip = ({
             </button>
           </div>
           
-          <div className="ds-tooltip-pad pt-[var(--ds-space-3)] pb-[var(--ds-space-3)]">
+          <div className="px-[var(--ds-space-3)] pt-[var(--ds-space-2)] pb-[var(--ds-space-2)]">
             {/* Detailed sources */}
             {hasDetails ? (
-              <div className="relative my-[var(--ds-space-2)] pl-[var(--ds-space-2)]">
+              <div className="relative mb-[var(--ds-space-2)] pl-[var(--ds-space-2)]">
                 <div className={`pointer-events-none absolute left-0 top-0 bottom-0 ${accentClass}`} />
                 <div className="divide-y divide-border/40">
                 {orderedIncentiveSources.map((source, index) => {

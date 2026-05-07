@@ -251,7 +251,7 @@ function MobileReserveHeroApy({
 
   if (activeTab === 'supply') {
     const heroValue = displaySupplyTotal;
-    const isDisabled = reserve.supplyDisabled;
+    const isDisabled = reserve.isFrozen || reserve.isPaused || reserve.supplyDisabled;
     const heroColorClass = heroValue === null || isDisabled ? 'text-secondary' : 'ds-text-emerald-500';
 
     return (
@@ -304,7 +304,7 @@ function MobileReserveHeroApy({
   }
 
   const heroValue = displayBorrowTotal;
-  const isDisabled = reserve.borrowDisabled;
+  const isDisabled = reserve.isFrozen || reserve.isPaused || reserve.borrowDisabled;
   const heroColorClass = heroValue === null || isDisabled ? 'text-secondary' : 'ds-text-brand-cyan';
 
   return (
@@ -605,6 +605,28 @@ const MobileReserveCard = memo(({
                     triggerClassName="shrink-0"
                   />
                 </div>
+                {displayUtilization != null && optimalPct != null && (
+                  <button
+                    type="button"
+                    onClick={() => setCapSheet('utilization')}
+                    className="inline-flex shrink-0 items-center gap-0.5 rounded-md px-1 py-0.5 transition-all hover:bg-muted/50 active:scale-[0.97] -translate-y-px"
+                    aria-label="Show utilization details"
+                  >
+                    <span className={`ds-text-11 font-medium tabular-nums leading-none ${
+                      optimalPct != null && displayUtilization > optimalPct
+                        ? 'text-amber-600'
+                        : 'text-foreground'
+                    }`}>
+                      {displayUtilization.toFixed(0)}%
+                    </span>
+                    <UtilizationIndicator
+                      current={displayUtilization}
+                      optimal={optimalPct}
+                      width={8}
+                      height={16}
+                    />
+                  </button>
+                )}
               </div>
 
               <div className="mt-0 flex min-w-0 items-center gap-1 ds-text-11 text-muted-foreground/80">
@@ -641,49 +663,6 @@ const MobileReserveCard = memo(({
             </div>
           </div>
           </div>
-
-        {/* Liquidity — primary metric */}
-        {availableLiquidityUsd != null && (
-          <button
-            type="button"
-            onClick={() => setCapSheet('utilization')}
-            className="w-full px-3 pb-1 text-left transition-colors hover:bg-muted/30 active:bg-muted/50"
-            aria-label="Show utilization details"
-          >
-            <div className="flex items-center justify-between">
-              <span className={`ds-text-14 font-bold tabular-nums ${
-                (availableLiquidityUsd < 10000)
-                  ? 'text-amber-600'
-                  : 'ds-text-purple-600'
-              }`}>
-                {formatScenarioSize(availableLiquidityUsd, { inputMode, tokenPrice: displayTokenPrice, tokenSymbol: reserve.tokenSymbol })}
-              </span>
-              {displayUtilization != null && optimalPct != null && (
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span className={`ds-text-11 tabular-nums cursor-default ${
-                        displayUtilization > optimalPct ? 'text-amber-600' : 'text-muted-foreground'
-                      }`}>
-                        {formatPercent(displayUtilization)}
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent side="top">
-                      <TooltipCalloutArrow />
-                      <p className="ds-text-12">Utilization = borrowed / (available + borrowed)</p>
-                    </TooltipContent>
-                  </Tooltip>
-                  <UtilizationIndicator
-                    current={displayUtilization}
-                    optimal={optimalPct}
-                    width={44}
-                    height={14}
-                  />
-                </div>
-              )}
-            </div>
-          </button>
-        )}
 
         {/* Pill tabs */}
         <div className="mx-3 mb-1 flex gap-[var(--ds-space-1)] rounded-lg bg-muted/40 p-0.5">
@@ -763,7 +742,7 @@ const MobileReserveCard = memo(({
             </motion.div>
           </AnimatePresence>
 
-          {/* Simulation toggle — horizontal single-line: Spread text on left, expand icon on right */}
+          {/* Simulation toggle — horizontal single-line: label on left, expand icon on right */}
           <div className="mt-1.5 px-3">
             <button
               type="button"
@@ -776,14 +755,7 @@ const MobileReserveCard = memo(({
                   : 'border border-border/60 bg-background hover:bg-muted/40 hover:border-border/80 dark:bg-card/50 dark:hover:bg-muted/30'
               }`}
             >
-              {/* Spread text on left */}
-              <span className="flex items-center gap-1">
-                <span className="ds-text-10 text-muted-foreground/70">Spread</span>
-                <span className={`ds-text-10 font-medium tabular-nums ${displaySpread !== null ? 'text-purple-500' : 'text-muted-foreground/70'}`}>
-                  {formatSpread(displaySpread)}
-                </span>
-              </span>
-              {/* Expand icon on the right */}
+              <span className="ds-text-10 text-muted-foreground/70">Details</span>
               <ListCollapse className={`h-3.5 w-3.5 shrink-0 transition-transform duration-300 ease-in-out ${isSimulationExpanded ? 'rotate-180' : ''}`} />
             </button>
           </div>
