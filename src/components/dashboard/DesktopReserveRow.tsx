@@ -54,9 +54,9 @@ const marketCellClassNames = {
   marketButton: 'inline-flex items-center justify-center gap-[var(--ds-space-1-5)] rounded-md border border-border/40 bg-card/50 px-[var(--ds-space-2)] py-[var(--ds-space-1)] text-muted-foreground transition-colors duration-150 hover:text-foreground hover:bg-card/80 active:scale-[0.98]',
   marketText: 'whitespace-nowrap ds-text-11 font-medium leading-tight',
   hubShell: 'group/hub-link relative inline-flex max-w-full items-center justify-center pl-3 pr-3',
-  hubPill: 'inline-flex max-w-[8.5rem] items-center truncate whitespace-nowrap rounded-md px-2 py-0.5 ds-text-11 font-normal leading-none',
-  hubPillV4: 'text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10 font-medium',
-  hubPillDefault: 'text-muted-foreground/70 bg-muted/40',
+  hubPill: 'inline-flex max-w-[8.5rem] items-center truncate whitespace-nowrap rounded-md border border-border/40 bg-card/50 px-2 py-0.5 ds-text-11 font-medium leading-none text-muted-foreground',
+  hubPillV4: 'text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10',
+  hubPillDefault: 'text-muted-foreground/70',
   externalLink: 'pointer-events-none absolute right-0 top-1/2 inline-flex -translate-y-1/2 items-center justify-center opacity-0 transition-opacity duration-100',
 };
 

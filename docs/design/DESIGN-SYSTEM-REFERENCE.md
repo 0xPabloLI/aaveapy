@@ -417,6 +417,7 @@ reserves desktop table 的 8 列对齐分配：
 |------|----------|
 | APR/APY 分段 | `AprApyToggle.tsx` → 使用 `SegmentedToggle` |
 | Token / Markets / Hub 筛选芯片 | `FilterBar.tsx` |
+| Reserves 表内 Market / Hub pill | `DesktopReserveRow.tsx`（同上 §5.2 未选中态规范） |
 | USD/Token 等模式分段 | `ScenarioControls.tsx` → 使用 `SegmentedToggle` |
 | **可复用分段组件** | **`src/components/ui/segmented-toggle.tsx`** |
 
