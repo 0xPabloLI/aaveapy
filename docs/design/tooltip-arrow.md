@@ -96,7 +96,7 @@
 ### 4.2 交互规则
 
 - **桌面**：点击 badge 打开 → 点击遮罩关闭
-- **移动**：点击 badge 打开 → bottom sheet 样式，顶部 sticky header + X 按钮关闭
+- **移动**：点击 badge 打开 → 底部抽屉（bottom sheet）样式，使用共享组件 [BottomSheet.tsx](../../src/components/dashboard/BottomSheet.tsx)（`surfaceStyle`=渐变纹理，`overlayOpacity`="20"），顶部 sticky header + X 按钮关闭
 - **不改为 hover**：内容含交互元素（whitelist 勾选框、外部链接），hover 会导致鼠标移入时 tooltip 消失
 
 ---
@@ -210,6 +210,7 @@ const TooltipCalloutArrow = (_props: { side?: 'top' | 'bottom' | 'left' | 'right
 - 箭头方向完全由 Radix 的 `data-side` 属性自动驱动。
 
 ---
+
 ## 10. 排序下拉菜单宽度规范（Sort Dropdown Width）
 
 > 适用范围：桌面端 `DesktopSortMenuPortal` + 移动端 `MobileSortMenu`。
@@ -239,6 +240,7 @@ const TooltipCalloutArrow = (_props: { side?: 'top' | 'bottom' | 'left' | 'right
 | [ReservesTableMobileSortBar.tsx](../../src/components/dashboard/ReservesTableMobileSortBar.tsx) | `MobileSortMenu` | `w-max max-w-[min(18rem,calc(100vw-1.5rem))]` |
 
 ---
+
 ## 11. 修复经验回顾（Debugging Lessons）
 
 | 阶段 | 尝试 | 结果 | 教训 |
@@ -247,6 +249,7 @@ const TooltipCalloutArrow = (_props: { side?: 'top' | 'bottom' | 'left' | 'right
 | 2 | 改为单层旋转 div + z-20 直接覆盖 body 边框 | 边框依然有微弱可见 seam | div + 1px CSS border 在旋转后会有 sub-pixel 渲染 artifact |
 | 3 | 旋转 div 中心精确落在 body 外边缘 | 视觉接近无 seam，但仍有"shoulder"细节 | CSS 旋转 border 仍非完美 |
 | 4 | **改用 SVG 双 path（fill+stroke 分离，stroke 不画底边）** | **完美无 seam，与 IncentiveTooltip 实现完全统一** | SVG 矢量无 sub-pixel 模糊；分离 fill/stroke 是消除 seam 的根本方法 |
+| 5 | Tailwind JIT 模板字符串 `bg-background/${opacity}` | IncentiveTooltip 移动端遮罩不可见（`bg-background/20` 未在别处静态引用） | **Tailwind JIT 只能识别完整静态类名字符串**。动态构造 opacity modifier 必须改用 inline style：`style={{ backgroundColor: 'hsl(var(--background) / opacityValue)' }}` |
 
 **核心结论**：CSS 旋转 div 模拟箭头先天有 sub-pixel + border join 问题，不要再走这条路；
 统一使用 SVG 双 path 模式。
@@ -269,6 +272,7 @@ const TooltipCalloutArrow = (_props: { side?: 'top' | 'bottom' | 'left' | 'right
 - [ ] 排序下拉框：两端均使用 `w-max` 内容驱动宽度，无 `minWidth` 残留
 - [ ] 排序下拉框：桌面端 `max-w-[min(18rem,calc(100vw-2rem))]`，移动端 `max-w-[min(18rem,calc(100vw-1.5rem))]`
 - [ ] `npm run lint && npm test && npx tsc --noEmit && npm run build` 全过
+- [ ] Tailwind JIT：所有动态构造的类名（如 `bg-${color}/${opacity}`）已改用 inline style
 
 ---
 
@@ -276,6 +280,7 @@ const TooltipCalloutArrow = (_props: { side?: 'top' | 'bottom' | 'left' | 'right
 
 - 系统① 实现：[src/components/ui/tooltip.tsx](../../src/components/ui/tooltip.tsx)
 - 系统② 实现：[src/components/dashboard/IncentiveTooltip.tsx](../../src/components/dashboard/IncentiveTooltip.tsx)
+- 移动端底部抽屉共享组件：[src/components/dashboard/BottomSheet.tsx](../../src/components/dashboard/BottomSheet.tsx)
 - 系统③ 实现：[src/components/dashboard/AprApyToggle.tsx](../../src/components/dashboard/AprApyToggle.tsx)（`DesktopTooltip` / `MobileTooltip`）
 - 排序下拉框 桌面端：[src/components/dashboard/ReservesTableDesktopHeader.tsx](../../src/components/dashboard/ReservesTableDesktopHeader.tsx)（`DesktopSortMenuPortal`）
 - 排序下拉框 移动端：[src/components/dashboard/ReservesTableMobileSortBar.tsx](../../src/components/dashboard/ReservesTableMobileSortBar.tsx)（`MobileSortMenu`）
@@ -294,3 +299,4 @@ const TooltipCalloutArrow = (_props: { side?: 'top' | 'bottom' | 'left' | 'right
   - [src/components/dashboard/InkAprCalculator.tsx](../../src/components/dashboard/InkAprCalculator.tsx)
 - 设计系统总览：[docs/design/DESIGN-SYSTEM-REFERENCE.md](./DESIGN-SYSTEM-REFERENCE.md)
 - 前端交互守则：[docs/design/frontend-interaction-guardrails.md](./frontend-interaction-guardrails.md)
+- Frozen/Paused 语义规范：[docs/conventions/frozen-paused-semantics.md](../conventions/frozen-paused-semantics.md)
