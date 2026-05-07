@@ -368,7 +368,11 @@ function MobileReserveHeroApy({
               <IncentiveIcon width={8} height={8} />
             </button>
           </div>
-        ) : !isDisabled ? noIncentivePlaceholder : null}
+        ) : isDisabled ? (
+          <span className="ds-text-10 font-medium leading-none text-muted-foreground/55">
+            Borrow disabled
+          </span>
+        ) : noIncentivePlaceholder}
       </div>
     </div>
   );
