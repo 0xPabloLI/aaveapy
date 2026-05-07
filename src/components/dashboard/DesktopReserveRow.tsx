@@ -547,8 +547,6 @@ const DesktopReserveRow = memo(({
                   <IncentiveIcon width={isMobile ? 8 : 10} height={isMobile ? 8 : 10} />
                 </button>
               </div>
-            ) : !reserve.supplyDisabled ? (
-              <span className="ds-text-10 text-muted-foreground/50">Base {isApy ? 'APY' : 'APR'} only</span>
             ) : null}
           </div>
         </TableCell>
@@ -602,8 +600,6 @@ const DesktopReserveRow = memo(({
                   <IncentiveIcon width={isMobile ? 8 : 10} height={isMobile ? 8 : 10} />
                 </button>
               </div>
-            ) : !reserve.borrowDisabled ? (
-              <span className="ds-text-10 text-muted-foreground/50">Base {isApy ? 'APR' : 'APY'} only</span>
             ) : null}
           </div>
         </TableCell>
