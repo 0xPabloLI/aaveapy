@@ -509,7 +509,7 @@ const InkAprCalculator = ({
           <div className="flex items-center gap-1.5 -mt-1">
             <div className="relative flex items-center justify-center w-16 ml-1">
               <div className="ds-info-inline">
-                <span className="ds-text-10 md:ds-text-11 text-muted-foreground/70 font-normal tracking-wide whitespace-nowrap">
+                <span className="ds-text-11 text-muted-foreground/70 font-normal tracking-wide whitespace-nowrap">
                   FDV (B)
                 </span>
                 <div className="relative inline-flex">
@@ -615,14 +615,14 @@ const InkAprCalculator = ({
           <div className="flex items-start gap-1.5 pointer-events-none">
             <div className="hidden lg:flex w-16 shrink-0 flex-col items-center justify-start pt-0.5 h-8 pointer-events-auto">
               <div className="flex w-full flex-col items-center leading-none gap-[2px]">
-                <span className="h-[0.875rem] flex items-center justify-center ds-text-10 md:ds-text-11 font-medium tabular-nums whitespace-nowrap leading-none text-muted-foreground">
+                <span className="h-[0.875rem] flex items-center justify-center ds-text-11 font-medium tabular-nums whitespace-nowrap leading-none text-muted-foreground">
                   = $<span className={`transition-colors duration-300 ${fdvJustChanged ? 'text-[rgb(var(--ds-brand-magenta-rgb))]' : 'text-muted-foreground'}`}>{formatInkPrice(currentFdvBillions)}</span>/INK
                 </span>
-                <span className="h-[0.875rem] flex items-center justify-center ds-text-9 md:ds-text-10 whitespace-nowrap leading-none text-muted-foreground/40">Kraken</span>
+                <span className="h-[0.875rem] flex items-center justify-center ds-text-10 whitespace-nowrap leading-none text-muted-foreground/40">Kraken</span>
                 <a
                   href="https://coinmarketcap.com/currencies/ink-token/"
                   {...externalLinkTabProps(isMobile)}
-                  className="h-[0.875rem] inline-flex items-center justify-center gap-0.5 ds-text-9 md:ds-text-10 whitespace-nowrap leading-none text-muted-foreground/50 hover:text-foreground transition-colors"
+                  className="h-[0.875rem] inline-flex items-center justify-center gap-0.5 ds-text-10 whitespace-nowrap leading-none text-muted-foreground/50 hover:text-foreground transition-colors"
                 >
                   Ink/INK
                   <ExternalLink className="w-2.5 h-2.5 shrink-0 opacity-70" aria-hidden />
@@ -665,21 +665,21 @@ const InkAprCalculator = ({
                     style={pointRgb ? { backgroundColor: `rgba(${pointRgb.r}, ${pointRgb.g}, ${pointRgb.b}, 0.12)` } : undefined}
                   >
                     <span
-                      className={`h-[0.875rem] flex items-center justify-center ds-text-10 md:ds-text-11 tabular-nums whitespace-nowrap font-medium leading-none ${!pointRgb ? 'text-muted-foreground' : ''}`}
+                      className={`h-[0.875rem] flex items-center justify-center ds-text-11 tabular-nums whitespace-nowrap font-medium leading-none ${!pointRgb ? 'text-muted-foreground' : ''}`}
                       style={pointRgb ? { color: `rgb(${pointRgb.r}, ${pointRgb.g}, ${pointRgb.b})` } : undefined}
                     >
                       ${formatFdv(point.fdv)}
                     </span>
                     {point.isDefault ? (
                       <span
-                        className={`h-[0.875rem] flex items-center justify-center ds-text-9 md:ds-text-10 whitespace-nowrap leading-none ${!pointRgb ? 'text-muted-foreground/50' : ''}`}
+                        className={`h-[0.875rem] flex items-center justify-center ds-text-10 whitespace-nowrap leading-none ${!pointRgb ? 'text-muted-foreground/50' : ''}`}
                         style={pointRgb ? { color: `rgba(${pointRgb.r}, ${pointRgb.g}, ${pointRgb.b}, 0.78)` } : undefined}
                       >
                         Default
                       </span>
                     ) : (
                       <span
-                        className={`h-[0.875rem] flex items-center justify-center ds-text-9 md:ds-text-10 whitespace-nowrap leading-none ${!pointRgb ? 'text-muted-foreground/40' : ''}`}
+                        className={`h-[0.875rem] flex items-center justify-center ds-text-10 whitespace-nowrap leading-none ${!pointRgb ? 'text-muted-foreground/40' : ''}`}
                         style={pointRgb ? { color: `rgba(${pointRgb.r}, ${pointRgb.g}, ${pointRgb.b}, 0.78)` } : undefined}
                       >
                         {point.exchange}
@@ -697,7 +697,7 @@ const InkAprCalculator = ({
                       onMouseEnter={() => setLinkHoveredPointId(point.id)}
                       onMouseLeave={() => setLinkHoveredPointId(null)}
                       title="Open CoinGecko (new tab)"
-                      className={`h-[0.875rem] inline-flex items-center justify-center gap-0.5 ds-text-9 md:ds-text-10 whitespace-nowrap leading-none transition-colors ${
+                      className={`h-[0.875rem] inline-flex items-center justify-center gap-0.5 ds-text-10 whitespace-nowrap leading-none transition-colors ${
                         linkHoveredPointId === point.id ? 'text-foreground' : !pointRgb ? 'text-muted-foreground/50 hover:text-foreground' : 'hover:text-foreground'
                       }`}
                       style={pointRgb && linkHoveredPointId !== point.id ? { color: `rgba(${pointRgb.r}, ${pointRgb.g}, ${pointRgb.b}, 0.72)` } : undefined}

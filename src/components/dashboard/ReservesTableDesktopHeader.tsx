@@ -433,7 +433,7 @@ export default function ReservesTableDesktopHeader({
                   }`}
                   title="Select size sort field"
                 >
-                  <span className="font-semibold text-[10px] md:ds-text-11">
+                  <span className="font-semibold ds-text-10 md:ds-text-11">
                     {sizeSortMode === 'supply'
                       ? 'Supplied'
                       : sizeSortMode === 'supplyAvailability'
@@ -489,7 +489,7 @@ export default function ReservesTableDesktopHeader({
                   }`}
                   title="Utilization = borrowed / (available + borrowed). Switch between rate (%) and available amount."
                 >
-                  <span className="font-semibold text-[10px] md:ds-text-11">
+                  <span className="font-semibold ds-text-10 md:ds-text-11">
                     {utilSortMode === 'util' ? 'Util' : 'Liq'}
                   </span>
                   <ChevronDown className="w-2.5 h-2.5" />
@@ -524,7 +524,7 @@ export default function ReservesTableDesktopHeader({
                   }`}
                   title="Select sort field"
                 >
-                  <span className="font-semibold text-[10px] md:ds-text-11">{supplySortLabel}</span>
+                  <span className="font-semibold ds-text-10 md:ds-text-11">{supplySortLabel}</span>
                   <ChevronDown className="w-2.5 h-2.5" />
                 </button>
                 <DesktopSortMenuPortal
@@ -577,7 +577,7 @@ export default function ReservesTableDesktopHeader({
                   }`}
                   title="Select sort field"
                 >
-                  <span className="font-semibold text-[10px] md:ds-text-11">{borrowSortLabel}</span>
+                  <span className="font-semibold ds-text-10 md:ds-text-11">{borrowSortLabel}</span>
                   <ChevronDown className="w-2.5 h-2.5" />
                 </button>
                 <DesktopSortMenuPortal
