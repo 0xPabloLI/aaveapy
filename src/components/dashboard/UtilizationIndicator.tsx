@@ -1,5 +1,5 @@
 import { memo, useId } from 'react';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipCalloutArrow } from '@/components/ui/tooltip';
 import { formatPercent } from '@/lib/formatters';
 
 interface UtilizationIndicatorProps {
@@ -36,10 +36,10 @@ const UtilizationIndicator = memo(({
   const trackRadius = trackWidth / 2;
 
   return (
-    <Tooltip>
+    <Tooltip delayDuration={0}>
       <TooltipTrigger asChild>
         <div 
-          className="inline-flex items-center cursor-auto"
+          className="inline-flex items-center cursor-default"
           style={{ width, height }}
         >
           <svg
@@ -96,6 +96,7 @@ const UtilizationIndicator = memo(({
         </div>
       </TooltipTrigger>
       <TooltipContent side="top" className="max-w-[220px] p-3">
+        <TooltipCalloutArrow />
         <div className="space-y-2 ds-text-12">
           <div className="flex justify-between gap-4">
             <span className="text-muted-foreground">Optimal utilization</span>

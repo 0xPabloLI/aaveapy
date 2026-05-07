@@ -436,7 +436,7 @@ const DesktopReserveRow = memo(({
                   poolExplorerUrl={poolExplorerUrl}
                 />
               ) : (
-                <Tooltip>
+                <Tooltip delayDuration={0}>
                   <TooltipTrigger asChild>
                     <button
                       type="button"
@@ -454,7 +454,7 @@ const DesktopReserveRow = memo(({
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="right" align="center" className="max-w-[18rem]">
-                    <TooltipCalloutArrow side="right" />
+                    <TooltipCalloutArrow />
                     <div className="space-y-1 ds-text-11">
                       <div className="flex items-center justify-between gap-4">
                         <span className="text-muted-foreground">USD</span>
@@ -487,7 +487,7 @@ const DesktopReserveRow = memo(({
               }`}>
                 {formatScenarioSize(availableLiquidityUsd, { inputMode, tokenPrice: displayTokenPrice, tokenSymbol: reserve.tokenSymbol })}
               </span>
-              <Tooltip>
+              <Tooltip delayDuration={0}>
                 <TooltipTrigger asChild>
                   <span className={`ds-text-11 tabular-nums cursor-default ${
                     displayUtilization != null && optimalPct != null && displayUtilization > optimalPct
@@ -498,6 +498,7 @@ const DesktopReserveRow = memo(({
                   </span>
                 </TooltipTrigger>
                 <TooltipContent side="top">
+                  <TooltipCalloutArrow />
                   <p className="ds-text-12">Utilization = borrowed / (liquidity + borrowed)</p>
                 </TooltipContent>
               </Tooltip>
@@ -525,7 +526,7 @@ const DesktopReserveRow = memo(({
                 {formatPercent(displaySupplyTotal)}
               </span>
             )}
-            {displaySupplyIncentive !== null && (
+            {displaySupplyIncentive !== null ? (
               <div className="flex items-center gap-[var(--ds-space-0-5)] ds-text-11 justify-end min-h-[1.25rem]">
                 <span className={`tabular-nums font-medium ${reserve.supplyDisabled ? 'text-secondary' : 'ds-text-emerald-500-70'}`}>
                   {formatPercent(displaySupplyNative)}
@@ -544,7 +545,9 @@ const DesktopReserveRow = memo(({
                   <IncentiveIcon width={isMobile ? 8 : 10} height={isMobile ? 8 : 10} />
                 </button>
               </div>
-            )}
+            ) : !reserve.supplyDisabled ? (
+              <span className="ds-text-10 text-muted-foreground/50">Base {isApy ? 'APY' : 'APR'} only</span>
+            ) : null}
           </div>
         </TableCell>
         {/* Spread */}
@@ -574,7 +577,7 @@ const DesktopReserveRow = memo(({
                 {displayBorrowTotal !== null ? formatPercent(displayBorrowTotal) : '-'}
               </span>
             )}
-            {displayBorrowIncentive !== null && (
+            {displayBorrowIncentive !== null ? (
               <div className="flex items-center gap-[var(--ds-space-0-5)] ds-text-11 justify-end min-h-[1.25rem]">
                 {displayBorrowNative !== null && (
                   <>
@@ -597,7 +600,9 @@ const DesktopReserveRow = memo(({
                   <IncentiveIcon width={isMobile ? 8 : 10} height={isMobile ? 8 : 10} />
                 </button>
               </div>
-            )}
+            ) : !reserve.borrowDisabled ? (
+              <span className="ds-text-10 text-muted-foreground/50">Base {isApy ? 'APR' : 'APY'} only</span>
+            ) : null}
           </div>
         </TableCell>
       </TableRow>
