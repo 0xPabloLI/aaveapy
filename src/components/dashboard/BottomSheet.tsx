@@ -66,32 +66,34 @@ export default function BottomSheet({
     </div>
   );
 
-  if (!open) return null;
-
   if (animate) {
     return (
       <AnimatePresence>
-        <>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-          >
-            {overlay}
-          </motion.div>
-          <motion.div
-            initial={{ y: '100%' }}
-            animate={{ y: 0 }}
-            exit={{ y: '100%' }}
-            transition={{ duration: 0.28, ease: [0.32, 0.72, 0, 1] }}
-          >
-            {sheet}
-          </motion.div>
-        </>
+        {open && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              {overlay}
+            </motion.div>
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ duration: 0.28, ease: [0.32, 0.72, 0, 1] }}
+            >
+              {sheet}
+            </motion.div>
+          </>
+        )}
       </AnimatePresence>
     );
   }
+
+  if (!open) return null;
 
   return (
     <>
