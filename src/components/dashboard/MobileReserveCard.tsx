@@ -758,7 +758,7 @@ const MobileReserveCard = memo(({
               }`}
             >
               {/* Liquidity text on left */}
-              <span className="flex items-center gap-1">
+              <span className="flex items-center gap-1.5">
                 <span className="ds-text-10 text-muted-foreground/70">Liquidity</span>
                 <span className={`ds-text-10 font-medium tabular-nums ${availableLiquidityUsd !== null && availableLiquidityUsd !== undefined ? (availableLiquidityUsd < 10000 ? 'text-amber-600' : 'text-purple-500') : 'text-muted-foreground/70'}`}>
                   {formatScenarioSize(availableLiquidityUsd ?? null, { inputMode, tokenPrice: displayTokenPrice, tokenSymbol: reserve.tokenSymbol })}
