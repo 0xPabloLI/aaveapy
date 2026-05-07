@@ -130,15 +130,10 @@ export function UtilizationSheetContent({ current, optimal }: { current: number;
         <span className="text-muted-foreground">Optimal</span>
         <span className="font-medium tabular-nums">{formatPercent(optimal)}</span>
       </div>
-      {isOverOptimal ? (
-        <p className="ds-text-amber-600 ds-text-11 pt-2 border-t border-border/50">
-          ⚠️ Above optimal
-        </p>
-      ) : (
-        <p className="text-muted-foreground ds-text-11 pt-2 border-t border-border/50">
-          Below optimal
-        </p>
-      )}
+      <div className="flex justify-between gap-4 pt-2 border-t border-border/50">
+        <span className="text-muted-foreground">borrow utilization</span>
+        <span className={`font-bold tabular-nums ${isOverOptimal ? 'text-amber-600' : 'text-muted-foreground'}`}>{formatPercent(current)}</span>
+      </div>
     </div>
   );
 }
