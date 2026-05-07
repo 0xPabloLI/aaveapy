@@ -186,10 +186,8 @@ const InkAprCalculator = ({
   const [showTooltip, setShowTooltip] = useState(false);
   const [isAprTooltipOpen, setIsAprTooltipOpen] = useState(false);
   const [isFdvTooltipOpen, setIsFdvTooltipOpen] = useState(false);
-  const [fdvTriggerRect, setFdvTriggerRect] = useState<DOMRect | null>(null);
   const [fdvInputValue, setFdvInputValue] = useState('1.00');
   const [isFdvInputFocused, setIsFdvInputFocused] = useState(false);
-  const fdvTriggerRef = useRef<HTMLButtonElement>(null);
   const fdvInputRef = useRef<HTMLInputElement>(null);
   const [pillHoveredPointId, setPillHoveredPointId] = useState<string | null>(null);
   const [linkHoveredPointId, setLinkHoveredPointId] = useState<string | null>(null);
@@ -513,46 +511,39 @@ const InkAprCalculator = ({
                   FDV (B)
                 </span>
                 <div className="relative inline-flex">
-                  <button
-                    ref={fdvTriggerRef}
-                    type="button"
+                  <InfoIconButton
                     aria-label="FDV definition"
-                    className="h-4 w-4 rounded-full flex items-center justify-center ds-bg-blue-500-10 ds-text-blue-500 shadow-sm hover:bg-[rgb(var(--ds-blue-500-rgb)/0.2)] hover:shadow-md transition-all duration-200 cursor-pointer md:cursor-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
-                    onMouseEnter={() => {
-                      if (fdvTriggerRef.current) setFdvTriggerRect(fdvTriggerRef.current.getBoundingClientRect());
-                      if (!isMobile) setIsFdvTooltipOpen(true);
-                    }}
-                    onMouseLeave={() => !isMobile && setIsFdvTooltipOpen(false)}
-                    onClick={() => {
-                      if (isMobile && fdvTriggerRef.current) setFdvTriggerRect(fdvTriggerRef.current.getBoundingClientRect());
-                      if (isMobile) setIsFdvTooltipOpen((o) => !o);
-                    }}
+                    isOpen={isFdvTooltipOpen}
+                    onToggle={() => setIsFdvTooltipOpen(!isFdvTooltipOpen)}
+                    onClose={() => setIsFdvTooltipOpen(false)}
+                    variant="blue"
                   >
-                    <Info className="h-2.5 w-2.5 shrink-0" aria-hidden />
-                  </button>
-                  {isMobile ? (
-                    <MobileTooltip
-                      isOpen={isFdvTooltipOpen}
-                      onClose={() => setIsFdvTooltipOpen(false)}
-                      title="FDV (B)"
-                      variant="purple"
-                    >
-                      {fdvTooltipContent}
-                    </MobileTooltip>
-                  ) : (
-                    <DesktopTooltip
-                      isOpen={isFdvTooltipOpen}
-                      alignLeft
-                      triggerRect={fdvTriggerRect}
-                      onMouseEnter={() => setIsFdvTooltipOpen(true)}
-                      onMouseLeave={() => setIsFdvTooltipOpen(false)}
-                      title="FDV (B)"
-                      variant="purple"
-                      hideTitle
-                    >
-                      {fdvTooltipContent}
-                    </DesktopTooltip>
-                  )}
+                    {(triggerRect) =>
+                      isMobile ? (
+                        <MobileTooltip
+                          isOpen={isFdvTooltipOpen}
+                          onClose={() => setIsFdvTooltipOpen(false)}
+                          title="FDV (B)"
+                          variant="purple"
+                        >
+                          {fdvTooltipContent}
+                        </MobileTooltip>
+                      ) : (
+                        <DesktopTooltip
+                          isOpen={isFdvTooltipOpen}
+                          alignLeft
+                          triggerRect={triggerRect}
+                          onMouseEnter={() => setIsFdvTooltipOpen(true)}
+                          onMouseLeave={() => setIsFdvTooltipOpen(false)}
+                          title="FDV (B)"
+                          variant="purple"
+                          hideTitle
+                        >
+                          {fdvTooltipContent}
+                        </DesktopTooltip>
+                      )
+                    }
+                  </InfoIconButton>
                 </div>
               </div>
             </div>
@@ -765,46 +756,39 @@ const InkAprCalculator = ({
         <span className="h-7 inline-flex items-center justify-center !text-[11px] leading-none text-muted-foreground/50 w-[1ch] shrink-0">B</span>
       </span>
       <div className="relative inline-flex shrink-0">
-        <button
-          ref={fdvTriggerRef}
-          type="button"
+        <InfoIconButton
           aria-label="FDV definition"
-          className="h-4 w-4 rounded-full flex items-center justify-center ds-bg-blue-500-10 ds-text-blue-500 shadow-sm hover:bg-[rgb(var(--ds-blue-500-rgb)/0.2)] hover:shadow-md transition-all duration-200 cursor-pointer md:cursor-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
-          onMouseEnter={() => {
-            if (fdvTriggerRef.current) setFdvTriggerRect(fdvTriggerRef.current.getBoundingClientRect());
-            if (!isMobile) setIsFdvTooltipOpen(true);
-          }}
-          onMouseLeave={() => !isMobile && setIsFdvTooltipOpen(false)}
-          onClick={() => {
-            if (isMobile && fdvTriggerRef.current) setFdvTriggerRect(fdvTriggerRef.current.getBoundingClientRect());
-            if (isMobile) setIsFdvTooltipOpen((o) => !o);
-          }}
+          isOpen={isFdvTooltipOpen}
+          onToggle={() => setIsFdvTooltipOpen(!isFdvTooltipOpen)}
+          onClose={() => setIsFdvTooltipOpen(false)}
+          variant="blue"
         >
-          <Info className="h-2.5 w-2.5 shrink-0" aria-hidden />
-        </button>
-        {isMobile ? (
-          <MobileTooltip
-            isOpen={isFdvTooltipOpen}
-            onClose={() => setIsFdvTooltipOpen(false)}
-            title="FDV (B)"
-            variant="purple"
-          >
-            {fdvTooltipContent}
-          </MobileTooltip>
-        ) : (
-          <DesktopTooltip
-            isOpen={isFdvTooltipOpen}
-            alignLeft
-            triggerRect={fdvTriggerRect}
-            onMouseEnter={() => setIsFdvTooltipOpen(true)}
-            onMouseLeave={() => setIsFdvTooltipOpen(false)}
-            title="FDV (B)"
-            variant="purple"
-            hideTitle
-          >
-            {fdvTooltipContent}
-          </DesktopTooltip>
-        )}
+          {(triggerRect) =>
+            isMobile ? (
+              <MobileTooltip
+                isOpen={isFdvTooltipOpen}
+                onClose={() => setIsFdvTooltipOpen(false)}
+                title="FDV (B)"
+                variant="purple"
+              >
+                {fdvTooltipContent}
+              </MobileTooltip>
+            ) : (
+              <DesktopTooltip
+                isOpen={isFdvTooltipOpen}
+                alignLeft
+                triggerRect={triggerRect}
+                onMouseEnter={() => setIsFdvTooltipOpen(true)}
+                onMouseLeave={() => setIsFdvTooltipOpen(false)}
+                title="FDV (B)"
+                variant="purple"
+                hideTitle
+              >
+                {fdvTooltipContent}
+              </DesktopTooltip>
+            )
+          }
+        </InfoIconButton>
       </div>
       <span className="shrink-0 whitespace-nowrap min-[360px]:hidden">⟳</span>
       <span className="hidden shrink-0 whitespace-nowrap min-[360px]:inline min-[470px]:hidden">to update</span>
