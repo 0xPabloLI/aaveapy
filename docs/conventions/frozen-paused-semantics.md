@@ -430,3 +430,13 @@ UI 文案采用 **最大公约数** 策略：只描述两个版本中行为一�
 - **不区分 V3/V4 版本**：当前对两个版本使用相同规则（最大公约数 + tooltip 补全），
   如需版本差异化展示，可给 `FrozenStatusBadge` 增加 `protocolVersion` 参数
 
+### 4.6 端侧有意差异
+
+- **移动端 disabled 提示文字作为空位占位**：当 supply/borrow 被禁用且无激励
+  时，移动端卡片内显示 `Supply unavailable` / `Borrow unavailable` 文字。桌
+  面端对应位置留空。这不是文案遗漏，而是移动端卡片布局的视觉填空策略，避免
+  卡片在该区域出现明显空白。
+- **文案统一用 `unavailable`**：Supply/Borrow disabled 状态统一使用
+  `unavailable` 一词（`Supply unavailable` / `Borrow unavailable`），不一
+  端一处用 `disabled` 另一处用 `unavailable`。
+

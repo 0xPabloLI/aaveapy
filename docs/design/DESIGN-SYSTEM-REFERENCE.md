@@ -504,6 +504,15 @@ className="cursor-pointer md:cursor-auto"
 
 **非数值状态描述不在此列**：仅文字描述（如「Below optimal」）无需加粗，使用 `text-muted-foreground` 中性色即可。
 
+#### 6.3.1 多行段落行高
+
+**多行阅读段落使用 `leading-relaxed`，不得沿用单行数据行的默认 `ds-text-*` 行高。**
+
+- `--ds-leading-11: 1.25` 为单行数据行（如 Supply/Borrow Sheet 的 label-value 行）设计。多行阅读段落行距过紧，视觉重量感不足。
+- tooltip / bottom sheet 内多行描述段落统一：`ds-text-12 text-muted-foreground leading-relaxed`（行高 1.625，12px 字体 → 19.5px）。
+- 例外：极短辅助说明（≤2 行、次要）可使用 `leading-snug`（1.375）。
+- 已生效：`AprApyToggle.tsx`、`FrozenStatusBadge.tsx`（FrozenStatusContent）。
+
 **多段说明文**（场景条 Net、类 FDV 信息泡）：与 `DesktopTooltip`/`MobileTooltip` 正文区 rhythm 对齐（`px-4 py-3` 量级、`ds-text-12`、可选顶部分割线）。**Radix 多段密度、壳层 `space-y-*`、参考实现**见 [frontend-interaction-guardrails.md](./frontend-interaction-guardrails.md) § A · Tooltip/Overlay（`AprApyToggle.tsx`、`InkAprCalculator.tsx`）。避免默认 Radix Tooltip 的紧间距堆段。
 
 `InkAprCalculator` 的 `Incentive APR formula` 弹窗内文顺序固定为：**INK 价格行在上，公式块在下**；公式行复用共享 `FormulaBlock` 样式，避免同类说明弹窗出现不同公式容器风格。

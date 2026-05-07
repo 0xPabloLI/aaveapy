@@ -205,7 +205,7 @@ const SimulationSubRow = ({
   const borrowDisabledNotice = isReserveLocked
     ? (reserve.isPaused ? 'Paused' : 'Frozen')
     : reserve.borrowDisabled
-      ? 'Borrow disabled'
+      ? 'Borrow unavailable'
       : null;
   const rateLabel = isApy ? 'APY' : 'APR';
   const showPriceMissingNotice =
@@ -487,6 +487,7 @@ const SimulationSubRow = ({
     if (disabled) {
       row = { ...row, after: null, delta: null, capNote: undefined, warning: false };
     }
+    const disabledAccent = disabled ? SIM_NEUTRAL_MUTED : accentClass;
     const deltaColorClass = row.delta === null || Number.isNaN(row.delta) ? SIM_NEUTRAL_MUTED : accentClass;
     const isBreakdownItem = row.isBreakdown;
     const isSubBreakdown = row.isSubBreakdown === true;
@@ -516,13 +517,13 @@ const SimulationSubRow = ({
     const noteAlignKey = getDesktopAlignKey(resolvedAlignBand, 'note');
 
     const mainRow = (
-      <tr data-align-key={mainAlignKey} className={row.warning ? 'ds-bg-warning-row' : ''}>
+      <tr data-align-key={mainAlignKey} className={`${row.warning ? 'ds-bg-warning-row' : ''} ${disabled ? 'opacity-60' : ''}`}>
         <td className={`${labelCellPy} ${metricCellPx} min-w-0 align-top`}>
           <div className={`min-w-0 ${isBreakdownItem ? `${breakdownIndentClass} ${borderColorClass}` : ''}`}>
             <div className="flex items-start gap-x-1.5 min-w-0">
               <span
                 title={typeof row.label === 'string' ? row.label : undefined}
-                className={`ds-text-12 whitespace-nowrap overflow-hidden text-ellipsis min-w-0 ${row.warning ? 'text-amber-700 dark:text-amber-400 font-medium' : isBreakdownItem ? rowAccentClass : accentClass}`}
+                className={`ds-text-12 whitespace-nowrap overflow-hidden text-ellipsis min-w-0 ${row.warning ? 'text-amber-700 dark:text-amber-400 font-medium' : isBreakdownItem ? disabledAccent : disabledAccent}`}
               >
                 {row.label}
               </span>
@@ -535,7 +536,7 @@ const SimulationSubRow = ({
           </div>
         </td>
         <td className={`${valueCellPy} ${valueCellPx} text-right align-top whitespace-nowrap`}>
-          <span className={`ds-text-12 tabular-nums whitespace-nowrap ${rowAccentClass}`}>
+          <span className={`ds-text-12 tabular-nums whitespace-nowrap ${disabledAccent}`}>
             {formatValue(row.current, row.type)}
           </span>
         </td>
@@ -631,10 +632,10 @@ const SimulationSubRow = ({
     const compactDeltaCell = 'pl-2.5 pr-3';
     const compactDisabledNotices: string[] = [];
     if (isReserveLocked) {
-      compactDisabledNotices.push(reserve.isPaused ? 'Reserve paused — supply & borrow disabled' : 'Reserve frozen — supply & borrow disabled');
+      compactDisabledNotices.push(reserve.isPaused ? 'Paused' : 'Frozen');
     } else {
       if (reserve.supplyDisabled) compactDisabledNotices.push('Supply unavailable');
-      if (reserve.borrowDisabled) compactDisabledNotices.push('Borrow disabled');
+      if (reserve.borrowDisabled) compactDisabledNotices.push('Borrow unavailable');
     }
     /** Parent card/panel already provides the outer border when embedded; inner borders misalign with thead lines. */
     return (

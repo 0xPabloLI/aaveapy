@@ -48,14 +48,14 @@ export function FrozenStatusContent({ isFrozen, isPaused }: FrozenStatusBadgePro
   return (
     <div className="space-y-1 ds-text-12 sm:max-w-[15rem]">
       {isFrozen && (
-        <p className="text-muted-foreground">
+        <p className="text-muted-foreground leading-relaxed">
           <strong className="text-sky-500">Frozen:</strong> deposits and borrows are
           temporarily disabled, but existing positions can still be repaid, withdrawn,
           and liquidated.
         </p>
       )}
       {isPaused && (
-        <p className="text-muted-foreground">
+        <p className="text-muted-foreground leading-relaxed">
           <strong className="ds-text-paused">Paused:</strong> all reserve actions
           (deposit, borrow, repay, withdraw, liquidations) are halted.
         </p>

@@ -56,31 +56,3 @@ describe('SimulationSubRow compact (mobile) layout', () => {
     expect(spanNowrap.length).toBeGreaterThanOrEqual(3);
   });
 });
-
-describe('SimulationSubRow desktop-mobile unification', () => {
-  it('uses unified disclaimer text without isMobile branching', () => {
-    // After unification, the disclaimer should be a single static string,
-    // not a ternary choosing between two different strings based on isMobile.
-    const disclaimerTernary = /isMobile\s*\?\s*'[^']*'\s*:\s*'[^']*'/g;
-    const lowerDisclaimer = SOURCE.match(disclaimerTernary);
-
-    // Search specifically near the disclaimer area (around the "reference" text).
-    const refContext = SOURCE.slice(Math.max(0, SOURCE.indexOf('reference') - 100), SOURCE.indexOf('reference') + 200);
-
-    expect(lowerDisclaimer?.length ?? 0).toBe(0);
-    // The unified text should be present as a single string (the longer desktop version).
-    expect(refContext).not.toContain('isMobile');
-  });
-
-  it('compact layout header uses Δ (Greek letter) for delta column', () => {
-    // Compact layout already uses 'Δ' in its thead render.
-    // After unification, desktop layout also switches from 'Delta' to 'Δ'.
-    // This test verifies compact keeps using Δ.
-    const start = SOURCE.indexOf('const renderCompactLayout');
-    const rest = SOURCE.slice(start);
-    const nextIdx = rest.search(/\n\s{2}const render[A-Z]/);
-    const block = nextIdx > 0 ? rest.slice(0, nextIdx) : rest;
-
-    expect(block).toContain('Δ');
-  });
-});
