@@ -177,10 +177,10 @@ export function MobileTooltip({
 
   const headerClass =
     variant === 'neutral'
-      ? 'bg-card px-4 py-2.5 rounded-t-xl flex items-center justify-between border-b border-border'
+      ? 'bg-card px-[var(--ds-space-2)] py-[var(--ds-space-1-5)] rounded-t-xl flex items-center justify-between border-b border-border'
       : variant === 'purple'
-        ? 'ds-bg-purple-500-10 px-4 py-2.5 rounded-t-xl flex items-center justify-between border-b ds-border-purple-200'
-        : 'ds-bg-emerald-500-10 px-4 py-2.5 rounded-t-xl flex items-center justify-between border-b ds-border-emerald-200';
+        ? 'ds-bg-purple-500-10 px-[var(--ds-space-2)] py-[var(--ds-space-1-5)] rounded-t-xl flex items-center justify-between border-b ds-border-purple-200'
+        : 'ds-bg-emerald-500-10 px-[var(--ds-space-2)] py-[var(--ds-space-1-5)] rounded-t-xl flex items-center justify-between border-b ds-border-emerald-200';
   const titleClass =
     variant === 'neutral'
       ? 'ds-text-14 font-semibold text-foreground'
@@ -202,11 +202,11 @@ export function MobileTooltip({
         aria-modal="true"
       >
         {hideTitle ? (
-          <div className="relative px-4 py-3.5 rounded-xl space-y-3 bg-card">
+          <div className="relative px-[var(--ds-space-3)] py-[var(--ds-space-2)] rounded-xl space-y-1 bg-card">
             <button
               type="button"
               onClick={onClose}
-              className="absolute top-3 right-3 text-muted-foreground hover:text-foreground transition-colors"
+              className="absolute top-2 right-2 text-muted-foreground hover:text-foreground transition-colors"
               aria-label="Close"
             >
               <X className="h-4 w-4" />
@@ -226,7 +226,7 @@ export function MobileTooltip({
                 <X className="h-4 w-4" />
               </button>
             </div>
-            <div className="px-4 py-3.5 rounded-b-xl space-y-3 bg-card">{children}</div>
+            <div className="px-[var(--ds-space-3)] py-[var(--ds-space-2)] rounded-b-xl space-y-1 bg-card">{children}</div>
           </>
         )}
       </div>
