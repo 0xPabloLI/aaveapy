@@ -165,7 +165,7 @@ describe('MobileReserveCard', () => {
     const { getByLabelText, getAllByText } = renderCard(false);
 
     expect(getByLabelText('Expand details panel')).toBeInTheDocument();
-    expect(getAllByText(/spread/i).length).toBeGreaterThan(0);
+    expect(getAllByText(/liquidity/i).length).toBeGreaterThan(0);
   });
 
   it('renders collapse details panel label when expanded', () => {
@@ -202,18 +202,12 @@ describe('MobileReserveCard', () => {
     expect(container.innerHTML).not.toContain('group-hover/hub-link:opacity-100');
   });
 
-  it('renders utilization before the market and hub metadata row', () => {
-    const { getByLabelText, getByText } = render(
+  it('renders utilization button in token header with correct styles', () => {
+    const { getByLabelText } = render(
       <QueryClientProvider client={new QueryClient()}>
         <TooltipProvider>
           <MobileReserveCard
-            reserve={{
-              ...reserve,
-              marketName: 'AaveV3EthereumHorizon',
-              chainName: 'Ethereum',
-              hubName: 'Prime',
-              hubId: 'hub-prime',
-            }}
+            reserve={reserve}
             isApy
             tydroPointToUsdRate={0}
             onIncentiveClick={() => {}}
@@ -230,13 +224,9 @@ describe('MobileReserveCard', () => {
     );
 
     const utilizationButton = getByLabelText('Show utilization details');
-    const marketLabel = getByText(/Horizon/);
-    const hubButton = getByLabelText('Filter by Prime hub');
-
-    expect(utilizationButton.compareDocumentPosition(marketLabel) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
-    expect(utilizationButton.compareDocumentPosition(hubButton) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
-    expect(utilizationButton.className).not.toContain('border-border/50');
-    expect(utilizationButton.className).not.toContain('bg-muted/35');
+    expect(utilizationButton.className).toContain('rounded-md');
+    expect(utilizationButton.className).toContain('-translate-y-px');
+    expect(utilizationButton.textContent).toContain('%');
   });
 
   it('treats reserve.optimalUsageRate as a percent number (not RAY) for utilization comparisons', () => {
@@ -273,8 +263,8 @@ describe('MobileReserveCard', () => {
     const utilValue = utilTrigger.querySelector('.ds-text-11');
     expect(utilValue).not.toBeNull();
     expect(utilValue.textContent).toContain('52');
-    expect(utilValue.className).toContain('text-muted-foreground');
-    expect(utilValue.className).not.toContain('text-amber-500');
+    expect(utilValue.className).toContain('text-foreground');
+    expect(utilValue.className).not.toContain('text-amber-600');
 
     // Flip to truly over-optimal utilization and ensure warning color appears.
     rerender(
@@ -344,7 +334,7 @@ describe('MobileReserveCard', () => {
 
     const html = container.innerHTML;
     expect(html).toContain('mx-3 mb-1 flex gap-[var(--ds-space-1)]');
-    expect(html).toContain('class="mt-0.5"');
+    expect(html).toContain('class="relative mt-0.5"');
   });
 
   it('shows a subtle base APY placeholder when there is no visible incentive', () => {
@@ -442,14 +432,12 @@ describe('MobileReserveCard', () => {
     expect(html).not.toContain('bg-gradient-to-r');
   });
 
-  it('formats utilization rate with formatPercent (two decimal places), same as desktop', () => {
-    const expectedUtilization = formatPercent(52);
-
+  it('formats utilization rate as integer percentage (no decimal places)', () => {
     const { getByLabelText } = renderCard(false);
 
     const utilButton = getByLabelText('Show utilization details');
     const utilText = utilButton.querySelector('.ds-text-11');
     expect(utilText).not.toBeNull();
-    expect(utilText!.textContent!.trim()).toBe(expectedUtilization);
+    expect(utilText!.textContent!.trim()).toBe('52%');
   });
 });
