@@ -120,7 +120,7 @@ function MobileReserveAmountRow({
   const tp = reserve.tokenPrice;
   const priceEl =
     tp != null && Number.isFinite(tp) ? (
-      <span className="ds-text-10 text-muted-foreground/60 tabular-nums shrink-0 leading-none sm:ds-text-11">
+      <span className="ds-text-11 text-muted-foreground/60 tabular-nums shrink-0 leading-none">
         {`$${tp < 0.01 ? tp.toExponential(1) : tp < 100 ? tp.toFixed(2) : tp.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
       </span>
     ) : null;
