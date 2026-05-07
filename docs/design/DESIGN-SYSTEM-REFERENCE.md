@@ -378,6 +378,8 @@ reserves desktop table 的 8 列对齐分配：
 - 未选中态：半透明 `bg-card/50` 背景 + 中性 `border-border/40` 边框
 - 特殊状态：部分市场芯片（如 Ethereum 含子市场时部分选中）可用虚线边框 `border-dashed border-[brand]` 表示"部分选中"
 
+**代码复用**：同页内多处出现同规格芯片时，提取共享 `chipBase` 类，各实例通过 `cn(chipBase, variantSpecific)` 组合。参考 `DesktopReserveRow.tsx` 的 Market/Hub pill 实现。
+
 ### 5.3 ~~多选芯片~~ → 已合并入 5.2
 
 ~~多选时可用品牌色边框区分"已选"~~ — 已统一。所有筛选芯片（Token Categories、Markets chain/hub chips、Hub chips、"All" 按钮）使用 §5.2 的统一样式。
