@@ -28,13 +28,11 @@ const DesktopSortMenuPortal = ({
   menuPos,
   onClose,
   options,
-  minWidth = 140,
 }: {
   open: boolean;
   menuPos: MenuPos | null;
   onClose: () => void;
   options: DesktopSortMenuOption[];
-  minWidth?: number;
 }) => {
   if (!open || !menuPos) return null;
 
@@ -45,8 +43,8 @@ const DesktopSortMenuPortal = ({
         onClick={onClose}
       />
       <div
-        className="fixed bg-card border border-border rounded-lg shadow-lg py-[var(--ds-space-1)] z-[10000]"
-        style={{ top: menuPos.top, left: menuPos.left, minWidth: `${minWidth}px` }}
+        className="fixed bg-card border border-border rounded-lg shadow-lg py-[var(--ds-space-1)] z-[10000] w-max max-w-[min(18rem,calc(100vw-2rem))]"
+        style={{ top: menuPos.top, left: menuPos.left }}
       >
         {options.map((option) => (
           <button
@@ -453,7 +451,6 @@ export default function ReservesTableDesktopHeader({
                   menuPos={sizeMenuPos}
                   onClose={onCloseSizeMenu}
                   options={sizeSortOptions}
-                  minWidth={160}
                 />
               </div>
             </div>

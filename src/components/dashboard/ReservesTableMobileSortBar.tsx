@@ -18,13 +18,11 @@ const MobileSortMenu = ({
   onClose,
   options,
   align = 'start',
-  minWidthClassName = 'min-w-[6.25rem]',
 }: {
   open: boolean;
   onClose: () => void;
   options: MobileSortOption[];
   align?: 'start' | 'end';
-  minWidthClassName?: string;
 }) => {
   if (!open) return null;
 
@@ -32,7 +30,7 @@ const MobileSortMenu = ({
     <>
       <div className="fixed inset-0 z-10" onClick={onClose} />
       <div
-        className={`absolute ${align === 'start' ? 'left-0' : 'right-0'} top-full mt-1 bg-card border border-border rounded-lg shadow-lg py-0.5 z-20 w-max ${minWidthClassName} max-w-[min(18rem,calc(100vw-1.5rem))]`}
+        className={`absolute ${align === 'start' ? 'left-0' : 'right-0'} top-full mt-1 bg-card border border-border rounded-lg shadow-lg py-0.5 z-20 w-max max-w-[min(18rem,calc(100vw-1.5rem))]`}
       >
         {options.map((option) => (
           <button
@@ -206,7 +204,6 @@ export default function ReservesTableMobileSortBar({
           onClose={onCloseMenus}
           options={extraSortOptions}
           align="end"
-          minWidthClassName="min-w-[7.5rem]"
         />
       </div>
     </div>

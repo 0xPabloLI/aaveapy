@@ -210,8 +210,36 @@ const TooltipCalloutArrow = (_props: { side?: 'top' | 'bottom' | 'left' | 'right
 - 箭头方向完全由 Radix 的 `data-side` 属性自动驱动。
 
 ---
+## 10. 排序下拉菜单宽度规范（Sort Dropdown Width）
 
-## 8. 修复经验回顾（Debugging Lessons）
+> 适用范围：桌面端 `DesktopSortMenuPortal` + 移动端 `MobileSortMenu`。
+> 编写背景：2026-05 统一两端排序下拉框的宽度策略，去掉多余的 `minWidth` 约束。
+
+### 规范
+
+| 属性 | 桌面端 | 移动端 |
+|---|---|---|
+| **宽度模式** | `w-max`（内容驱动） | `w-max`（内容驱动） |
+| **最大宽度** | `max-w-[min(18rem,calc(100vw-2rem))]` | `max-w-[min(18rem,calc(100vw-1.5rem))]` |
+| **定位方式** | `fixed` + `createPortal` 到 body | `absolute` 相对 trigger |
+| **禁止项** | ~~`minWidth` 固定值~~ | ~~`minWidthClassName` 最小宽度类~~ |
+
+### 设计原则
+
+- **内容驱动宽度**：菜单宽度由最宽选项的 label 决定，不用 `minWidth` 兜底。
+  排序选项文字天然较短（「Total APY」「Incentive APY」等），不会出现过于窄小的菜单。
+- **视口安全上限**：`max-w` 保证菜单在窄视口/极端场景下不溢出。
+- **两端策略一致**：桌面和移动使用相同的 `w-max` + `max-w` 模式，差异仅在于定位方式。
+
+### 实现
+
+| 文件 | 组件 | 关键样式 |
+|---|---|---|
+| [ReservesTableDesktopHeader.tsx](../../src/components/dashboard/ReservesTableDesktopHeader.tsx) | `DesktopSortMenuPortal` | `w-max max-w-[min(18rem,calc(100vw-2rem))]` |
+| [ReservesTableMobileSortBar.tsx](../../src/components/dashboard/ReservesTableMobileSortBar.tsx) | `MobileSortMenu` | `w-max max-w-[min(18rem,calc(100vw-1.5rem))]` |
+
+---
+## 11. 修复经验回顾（Debugging Lessons）
 
 | 阶段 | 尝试 | 结果 | 教训 |
 |---|---|---|---|
@@ -225,7 +253,7 @@ const TooltipCalloutArrow = (_props: { side?: 'top' | 'bottom' | 'left' | 'right
 
 ---
 
-## 9. 验收清单（Acceptance Checklist）
+## 12. 验收清单（Acceptance Checklist for Changes）
 
 修改任意 tooltip 实现时，必须验证：
 
@@ -238,15 +266,19 @@ const TooltipCalloutArrow = (_props: { side?: 'top' | 'bottom' | 'left' | 'right
 - [ ] 系统①：所有 `TooltipCalloutArrow` 不传 `side` prop
 - [ ] 系统②：激励 badge 点击能打开，遮罩点击能关闭，移动端为 bottom sheet
 - [ ] 系统③：`DesktopTooltip` hover 正常出现/消失，`MobileTooltip` 点击正常
+- [ ] 排序下拉框：两端均使用 `w-max` 内容驱动宽度，无 `minWidth` 残留
+- [ ] 排序下拉框：桌面端 `max-w-[min(18rem,calc(100vw-2rem))]`，移动端 `max-w-[min(18rem,calc(100vw-1.5rem))]`
 - [ ] `npm run lint && npm test && npx tsc --noEmit && npm run build` 全过
 
 ---
 
-## 10. 关联文件
+## 13. 关联文件
 
 - 系统① 实现：[src/components/ui/tooltip.tsx](../../src/components/ui/tooltip.tsx)
 - 系统② 实现：[src/components/dashboard/IncentiveTooltip.tsx](../../src/components/dashboard/IncentiveTooltip.tsx)
 - 系统③ 实现：[src/components/dashboard/AprApyToggle.tsx](../../src/components/dashboard/AprApyToggle.tsx)（`DesktopTooltip` / `MobileTooltip`）
+- 排序下拉框 桌面端：[src/components/dashboard/ReservesTableDesktopHeader.tsx](../../src/components/dashboard/ReservesTableDesktopHeader.tsx)（`DesktopSortMenuPortal`）
+- 排序下拉框 移动端：[src/components/dashboard/ReservesTableMobileSortBar.tsx](../../src/components/dashboard/ReservesTableMobileSortBar.tsx)（`MobileSortMenu`）
 - 系统① 调用方（`side="right"`）：
   - [src/components/dashboard/CapProgressRing.tsx](../../src/components/dashboard/CapProgressRing.tsx)
   - [src/components/dashboard/BorrowCapProgressRing.tsx](../../src/components/dashboard/BorrowCapProgressRing.tsx)
