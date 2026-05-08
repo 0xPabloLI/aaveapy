@@ -6,6 +6,80 @@ import { formatScenarioSize } from '@/lib/formatters';
 import { calculateDeficitShareRatio, getDeficitSeverity } from '@/lib/deficit';
 import { cn } from '@/lib/utils';
 
+export interface DeficitTooltipBodyProps {
+  deficitUsd: number;
+  totalSuppliedUsd: number | null | undefined;
+  deficitTokenLabel?: string;
+  displayMode?: 'usd' | 'token';
+  tokenPrice?: number | null;
+  tokenSymbol?: string | null;
+  poolExplorerUrl?: string | null;
+}
+
+export function DeficitTooltipBody({
+  deficitUsd,
+  totalSuppliedUsd,
+  deficitTokenLabel,
+  displayMode = 'usd',
+  tokenPrice,
+  tokenSymbol,
+  poolExplorerUrl,
+}: DeficitTooltipBodyProps) {
+  const ratio = calculateDeficitShareRatio({ deficitUsd, totalSuppliedUsd });
+  const percentage = ratio != null ? Math.min(Math.max(ratio * 100, 0), 100) : 0;
+  const severity = getDeficitSeverity(ratio);
+  const colorClass =
+    severity === 'critical' ? 'ds-text-amber-500' : severity === 'warning' ? 'ds-text-amber-600' : 'text-muted-foreground/60';
+  const hasTotalSupplied = totalSuppliedUsd != null && Number.isFinite(totalSuppliedUsd) && totalSuppliedUsd >= 0;
+
+  const deficitDisplay =
+    displayMode === 'token' && deficitTokenLabel
+      ? deficitTokenLabel
+      : formatScenarioSize(deficitUsd, { inputMode: 'usd' });
+  const totalDisplay = formatScenarioSize(totalSuppliedUsd, {
+    inputMode: displayMode,
+    tokenPrice,
+    tokenSymbol,
+  });
+
+  return (
+    <div className="space-y-1 ds-text-12">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-muted-foreground flex items-center gap-1">
+          Deficit
+          {poolExplorerUrl && (
+            <a
+              href={poolExplorerUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-muted-foreground/60 hover:text-foreground transition-colors"
+              onClick={(e) => e.stopPropagation()}
+              aria-label="Verify on-chain"
+            >
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          )}
+        </span>
+        <span className={`font-medium tabular-nums ${colorClass}`}>
+          {deficitDisplay}
+        </span>
+      </div>
+      <div className="flex justify-between gap-3">
+        <span className="text-muted-foreground">Total supplied</span>
+        <span className={`font-medium tabular-nums ${colorClass}`}>
+          {hasTotalSupplied ? totalDisplay : '—'}
+        </span>
+      </div>
+      <div className="flex items-center justify-between gap-3 pt-2 border-t border-border/35">
+        <span className="text-muted-foreground">% of total (incl. deficit)</span>
+        <span className={`font-bold tabular-nums leading-none ${colorClass}`}>
+          {ratio != null ? `${percentage.toFixed(2)}%` : '—'}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 interface DeficitLiquidityRingProps {
   deficitUsd: number | null | undefined;
   totalSuppliedUsd: number | null | undefined;
@@ -38,7 +112,6 @@ const DeficitLiquidityRing = memo(({
   poolExplorerUrl,
 }: DeficitLiquidityRingProps) => {
   const hasDeficit = deficitUsd != null && Number.isFinite(deficitUsd) && deficitUsd > 0;
-  const hasTotalSupplied = totalSuppliedUsd != null && Number.isFinite(totalSuppliedUsd) && totalSuppliedUsd >= 0;
   if (!hasDeficit) return null;
 
   const ratio = calculateDeficitShareRatio({ deficitUsd, totalSuppliedUsd });
@@ -54,58 +127,18 @@ const DeficitLiquidityRing = memo(({
     return 'rgb(var(--ds-muted-foreground-rgb, 100 116 139) / 0.75)';
   };
 
-  const getProgressColorClass = () => {
-    if (severity === 'critical') return 'ds-text-amber-500';
-    if (severity === 'warning') return 'ds-text-amber-600';
-    return 'text-muted-foreground/60';
-  };
-
-  const deficitDisplayValue = displayMode === 'token'
-    ? (tokenDeficitLabel ?? '—')
-    : formatScenarioSize(deficitUsd, { inputMode: 'usd' });
-  const totalSuppliedDisplayValue = formatScenarioSize(totalSuppliedUsd, {
-    inputMode: displayMode,
-    tokenPrice,
-    tokenSymbol,
-  });
-
   const tooltipContent = (
     <TooltipContent side="right" className="max-w-[240px]">
       <TooltipCalloutArrow />
-      <div className="space-y-1 ds-text-12">
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-muted-foreground flex items-center gap-1">
-            Deficit
-            {poolExplorerUrl && (
-              <a
-                href={poolExplorerUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-muted-foreground/60 hover:text-foreground transition-colors"
-                onClick={(e) => e.stopPropagation()}
-                aria-label="Verify on-chain"
-              >
-                <ExternalLink className="w-3 h-3" />
-              </a>
-            )}
-          </span>
-          <span className={`font-medium tabular-nums ${getProgressColorClass()}`}>
-            {deficitDisplayValue}
-          </span>
-        </div>
-        <div className="flex justify-between gap-3">
-          <span className="text-muted-foreground">Total supplied</span>
-          <span className={`font-medium tabular-nums ${getProgressColorClass()}`}>
-            {hasTotalSupplied ? totalSuppliedDisplayValue : '—'}
-          </span>
-        </div>
-        <div className="flex items-center justify-between gap-3 pt-2 border-t border-border/35">
-          <span className="text-muted-foreground">% of total (incl. deficit)</span>
-          <span className={`font-bold tabular-nums leading-none ${getProgressColorClass()}`}>
-            {ratio != null ? `${percentage.toFixed(2)}%` : '—'}
-          </span>
-        </div>
-      </div>
+      <DeficitTooltipBody
+        deficitUsd={deficitUsd}
+        totalSuppliedUsd={totalSuppliedUsd}
+        deficitTokenLabel={tokenDeficitLabel}
+        displayMode={displayMode}
+        tokenPrice={tokenPrice}
+        tokenSymbol={tokenSymbol}
+        poolExplorerUrl={poolExplorerUrl}
+      />
     </TooltipContent>
   );
 
