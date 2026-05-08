@@ -357,7 +357,7 @@ const SimulationSubRow = ({
   const supplyRows: TableRow[] = [
     {
       rowKey: 'supply-size',
-      label: effectiveCompact ? 'Total supplied' : 'Total',
+      label: effectiveCompact ? 'Supplied' : 'Total',
       current: currentSupplySizeUsd,
       after: afterSupplySizeUsd,
       delta: afterSupplySizeUsd !== null && currentSupplySizeUsd !== null ? afterSupplySizeUsd - currentSupplySizeUsd : null,
@@ -406,7 +406,7 @@ const SimulationSubRow = ({
   const borrowRows: TableRow[] = [
     {
       rowKey: 'borrow-size',
-      label: effectiveCompact ? 'Total borrowed' : 'Total',
+      label: effectiveCompact ? 'Borrowed' : 'Total',
       current: simulation.marketMetrics.totalBorrowedUsd,
       after: simulation.marketMetrics.totalBorrowedUsdAfter,
       delta: simulation.marketMetrics.totalBorrowedUsdDelta,
@@ -500,9 +500,15 @@ const SimulationSubRow = ({
           : 'ml-2 pl-2 border-l'
         : '';
     const cellPy = tight ? 'py-0.5' : 'py-1';
-    const metricCellPx = tight ? 'px-3' : 'px-4';
-    const valueCellPx = tight ? 'px-2.5' : 'px-3';
-    const deltaCellPx = tight ? 'px-3' : 'px-4';
+    /** Compact cell padding: only the outer edges (left of label, right of delta) keep
+     *  visual breathing room; inter-column gaps are squeezed to ~2px so numeric values
+     *  get the maximum width inside their fixed-width columns. */
+    const metricCellPx = tight ? 'pl-2 pr-0.5' : 'px-4';
+    const valueCellPx = tight ? 'px-0.5' : 'px-3';
+    const deltaCellPx = tight ? 'pl-0.5 pr-2' : 'px-4';
+    /** Numeric values stay nowrap; in compact (tight) mode we drop one tier in font size
+     *  so K/M/B-formatted values reliably fit within the table-fixed column widths. */
+    const numericFontClass = tight ? 'ds-text-11' : 'ds-text-12';
     // Supply = green, Borrow = cyan; breakdown rows (Native + Incentive) use same section color
     const rowAccentClass = accentClass;
 
@@ -520,15 +526,21 @@ const SimulationSubRow = ({
       <tr data-align-key={mainAlignKey} className={`${row.warning ? 'ds-bg-warning-row' : ''} ${disabled ? 'opacity-60' : ''}`}>
         <td className={`${labelCellPy} ${metricCellPx} min-w-0 align-top`}>
           <div className={`min-w-0 ${isBreakdownItem ? `${breakdownIndentClass} ${borderColorClass}` : ''}`}>
-            <div className="flex items-start gap-x-1.5 min-w-0">
+            {/* Label + cap are kept on a single line via `whitespace-nowrap`. The flex
+                container has no `min-w-0` and the spans are not truncated, so the content
+                visually bleeds into the right-aligned Current column's left-side whitespace
+                when the label cell alone is too narrow (e.g. Celo USDT `Supplied / Cap $19.50M`).
+                The outer table wrapper still hard-clips, so the bleed never causes horizontal
+                scrolling — it only consumes the natural inter-column gap. */}
+            <div className="flex items-baseline gap-x-1.5 whitespace-nowrap">
               <span
                 title={typeof row.label === 'string' ? row.label : undefined}
-                className={`ds-text-12 whitespace-nowrap overflow-hidden text-ellipsis min-w-0 ${row.warning ? 'text-amber-700 dark:text-amber-400 font-medium' : isBreakdownItem ? disabledAccent : disabledAccent}`}
+                className={`ds-text-12 whitespace-nowrap ${row.warning ? 'text-amber-700 dark:text-amber-400 font-medium' : isBreakdownItem ? disabledAccent : disabledAccent}`}
               >
                 {row.label}
               </span>
               {row.cap !== null && row.cap !== undefined && (
-                <span className={`ds-text-11 tabular-nums flex-shrink-0 ${row.warning ? 'text-amber-600' : SIM_NEUTRAL_SECONDARY}`}>
+                <span className={`ds-text-11 tabular-nums whitespace-nowrap ${row.warning ? 'text-amber-600' : SIM_NEUTRAL_SECONDARY}`}>
                   / Cap {formatScenarioSize(row.cap, { inputMode, tokenPrice: simulation.tokenPrice })}
                 </span>
               )}
@@ -536,17 +548,17 @@ const SimulationSubRow = ({
           </div>
         </td>
         <td className={`${valueCellPy} ${valueCellPx} text-right align-top whitespace-nowrap`}>
-          <span className={`ds-text-12 tabular-nums whitespace-nowrap ${disabledAccent}`}>
+          <span className={`${numericFontClass} tabular-nums whitespace-nowrap ${disabledAccent}`}>
             {formatValue(row.current, row.type)}
           </span>
         </td>
         <td className={`${valueCellPy} ${valueCellPx} text-right align-top whitespace-nowrap`}>
-          <span className={`ds-text-12 tabular-nums whitespace-nowrap ${row.after === null ? SIM_NEUTRAL_MUTED : rowAccentClass}`}>
+          <span className={`${numericFontClass} tabular-nums whitespace-nowrap ${row.after === null ? SIM_NEUTRAL_MUTED : rowAccentClass}`}>
             {formatValue(row.after, row.type)}
           </span>
         </td>
         <td className={`${valueCellPy} ${deltaCellPx} text-right align-top whitespace-nowrap`}>
-          <span className={`ds-text-12 tabular-nums whitespace-nowrap ${deltaColorClass}`}>
+          <span className={`${numericFontClass} tabular-nums whitespace-nowrap ${deltaColorClass}`}>
             {formatDeltaValue(row.delta, row.type)}
           </span>
         </td>
@@ -627,9 +639,10 @@ const SimulationSubRow = ({
 
   const renderCompactLayout = () => {
     const compactCellPy = 'py-1';
-    const compactMetricCell = 'px-3';
-    const compactNumCell = 'px-2.5';
-    const compactDeltaCell = 'pl-2.5 pr-3';
+    /** Mirror renderRow tight padding: outer edges breathe, inter-column gaps stay tiny. */
+    const compactMetricCell = 'pl-2 pr-0.5';
+    const compactNumCell = 'px-0.5';
+    const compactDeltaCell = 'pl-0.5 pr-2';
     const compactDisabledNotices: string[] = [];
     if (isReserveLocked) {
       compactDisabledNotices.push(reserve.isPaused ? 'Paused' : 'Frozen');
@@ -638,27 +651,31 @@ const SimulationSubRow = ({
       if (reserve.borrowDisabled) compactDisabledNotices.push('Borrow unavailable');
     }
     /** Parent card/panel already provides the outer border when embedded; inner borders misalign with thead lines. */
+    /** Hard-disable horizontal scroll on mobile: table-fixed + explicit fractional column widths
+     *  keep the 4-column layout within the panel width regardless of input size. Numeric values
+     *  use K/M/B compact formatting (formatScenarioSize) so they remain readable at this width. */
     return (
     <div
       className={`${
         embeddedFromTop
           ? 'rounded-none bg-transparent dark:bg-transparent'
           : 'bg-card/50 dark:bg-background/80 border border-border/60 rounded-xl'
-      } overflow-x-auto`}
+      } overflow-hidden`}
     >
       {compactDisabledNotices.length > 0 && (
         <div className="px-3 py-1.5 border-b border-border/50 bg-muted/30 ds-text-11 text-secondary">
           {compactDisabledNotices.join(' · ')}
         </div>
       )}
-      <table className="w-full min-w-0 table-auto">
+      <table className="w-full min-w-0 table-fixed">
         <colgroup>
-          {/* Auto-sized numeric columns prevent right-side truncation on narrow viewports.
-              Label column shrinks first via min-w-0 + break-words; numeric cells stay nowrap. */}
-          <col />
-          <col />
-          <col />
-          <col />
+          {/* Fixed column ratios prevent right-side truncation on narrow viewports without
+              triggering horizontal scroll. Label column gets the widest share; numeric columns
+              are equal so deltas always remain visible. */}
+          <col style={{ width: '34%' }} />
+          <col style={{ width: '22%' }} />
+          <col style={{ width: '22%' }} />
+          <col style={{ width: '22%' }} />
         </colgroup>
         <thead>
           <tr className="bg-muted/30 border-b border-border/50">
@@ -683,16 +700,16 @@ const SimulationSubRow = ({
               <span className="ds-text-12 ds-text-purple-600">Spread</span>
             </td>
             <td className={`${compactCellPy} ${compactNumCell} text-right whitespace-nowrap`}>
-              <span className="ds-text-12 tabular-nums ds-text-purple-600">{formatSpread(simulation.spread.current)}</span>
+              <span className="ds-text-11 tabular-nums ds-text-purple-600">{formatSpread(simulation.spread.current)}</span>
             </td>
             <td className={`${compactCellPy} ${compactNumCell} text-right whitespace-nowrap`}>
-              <span className={`ds-text-12 tabular-nums ${(isReserveLocked || simulation.spread.after === null) ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
+              <span className={`ds-text-11 tabular-nums ${(isReserveLocked || simulation.spread.after === null) ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
                 {isReserveLocked ? '-' : formatSpread(simulation.spread.after)}
               </span>
             </td>
             <td className={`${compactCellPy} ${compactDeltaCell} text-right whitespace-nowrap`}>
               {hasScenarioInput && !isReserveLocked ? (
-                <span className={`ds-text-12 tabular-nums ${simulation.spread.delta === null ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
+                <span className={`ds-text-11 tabular-nums ${simulation.spread.delta === null ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
                   {formatDelta(simulation.spread.delta)}
                 </span>
               ) : null}
@@ -705,12 +722,12 @@ const SimulationSubRow = ({
               </span>
             </td>
             <td className={`${compactCellPy} ${compactNumCell} text-right whitespace-nowrap`}>
-              <span className={`ds-text-12 tabular-nums whitespace-nowrap ${!isReserveLocked && borrowCapExceeded && borrowLimitedByLiquidity ? 'text-amber-700 dark:text-amber-400' : 'ds-text-purple-600'}`}>
+              <span className={`ds-text-11 tabular-nums whitespace-nowrap ${!isReserveLocked && borrowCapExceeded && borrowLimitedByLiquidity ? 'text-amber-700 dark:text-amber-400' : 'ds-text-purple-600'}`}>
                 {formatScenarioSize(simulation.marketMetrics.availableLiquidityUsd, { inputMode, tokenPrice: simulation.tokenPrice })}
               </span>
             </td>
             <td className={`${compactCellPy} ${compactNumCell} text-right whitespace-nowrap`}>
-              <span className={`ds-text-12 tabular-nums whitespace-nowrap ${
+              <span className={`ds-text-11 tabular-nums whitespace-nowrap ${
                 isReserveLocked || simulation.marketMetrics.availableLiquidityUsdAfter === null
                   ? 'text-muted-foreground'
                   : borrowCapExceeded && borrowLimitedByLiquidity
@@ -722,7 +739,7 @@ const SimulationSubRow = ({
             </td>
             <td className={`${compactCellPy} ${compactDeltaCell} text-right whitespace-nowrap`}>
               {hasScenarioInput && !isReserveLocked ? (
-                <span className={`ds-text-12 tabular-nums whitespace-nowrap ${
+                <span className={`ds-text-11 tabular-nums whitespace-nowrap ${
                   simulation.marketMetrics.availableLiquidityUsdDelta === null
                     ? 'text-muted-foreground'
                     : borrowCapExceeded && borrowLimitedByLiquidity

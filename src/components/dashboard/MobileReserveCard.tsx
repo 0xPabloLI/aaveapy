@@ -15,7 +15,6 @@ import { getReserveKey } from '@/lib/reserveKey';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { IncentiveIcon } from '@/components/IncentiveIcon';
 import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
-import { Tooltip, TooltipContent, TooltipTrigger, TooltipCalloutArrow } from '@/components/ui/tooltip';
 import SimulationSubRow from './SimulationSubRow';
 import UtilizationIndicator from './UtilizationIndicator';
 import CapProgressRing from './CapProgressRing';
@@ -264,19 +263,13 @@ function MobileReserveHeroApy({
 
     return (
       <div className="flex flex-col items-center gap-0.5">
-        {isDisabled ? (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <p className={`ds-text-22 font-bold tabular-nums ${heroColorClass} cursor-auto`}>
-                {formatPercent(heroValue)}
-              </p>
-            </TooltipTrigger>
-            <TooltipContent>Supply unavailable</TooltipContent>
-          </Tooltip>
-        ) : (
-          <p className={`ds-text-22 font-bold tabular-nums ${heroColorClass}`}>
-            {formatPercent(heroValue)}
-          </p>
+        <p className={`ds-text-22 font-bold tabular-nums ${heroColorClass}`}>
+          {formatPercent(heroValue)}
+        </p>
+        {isDisabled && (
+          <span className="ds-text-10 font-medium leading-none text-muted-foreground/55">
+            Supply unavailable
+          </span>
         )}
         <div className="flex min-h-[1rem] items-center justify-center">
           {visibleSupplyIncentive !== null ? (
@@ -301,11 +294,7 @@ function MobileReserveHeroApy({
                 <IncentiveIcon width={8} height={8} />
               </button>
             </div>
-          ) : isDisabled ? (
-            <span className="ds-text-10 font-medium leading-none text-muted-foreground/55">
-              Supply unavailable
-            </span>
-          ) : noIncentivePlaceholder}
+          ) : isDisabled ? null : noIncentivePlaceholder}
         </div>
       </div>
     );
@@ -317,19 +306,13 @@ function MobileReserveHeroApy({
 
   return (
     <div className="flex flex-col items-center gap-0.5">
-      {isDisabled ? (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <p className={`ds-text-22 font-bold tabular-nums ${heroColorClass} cursor-auto`}>
-              {formatPercent(heroValue)}
-            </p>
-          </TooltipTrigger>
-          <TooltipContent>Borrow unavailable</TooltipContent>
-        </Tooltip>
-      ) : (
-        <p className={`ds-text-22 font-bold tabular-nums ${heroColorClass}`}>
-          {formatPercent(heroValue)}
-        </p>
+      <p className={`ds-text-22 font-bold tabular-nums ${heroColorClass}`}>
+        {formatPercent(heroValue)}
+      </p>
+      {isDisabled && (
+        <span className="ds-text-10 font-medium leading-none text-muted-foreground/55">
+          Borrow unavailable
+        </span>
       )}
       <div className="flex min-h-[1rem] items-center justify-center">
         {visibleBorrowIncentive !== null ? (
@@ -354,11 +337,7 @@ function MobileReserveHeroApy({
               <IncentiveIcon width={8} height={8} />
             </button>
           </div>
-        ) : isDisabled ? (
-          <span className="ds-text-10 font-medium leading-none text-muted-foreground/55">
-            Borrow unavailable
-          </span>
-        ) : noIncentivePlaceholder}
+        ) : isDisabled ? null : noIncentivePlaceholder}
       </div>
     </div>
   );
@@ -554,25 +533,20 @@ const MobileReserveCard = memo(({
                   loading="eager"
                   logoURI={logoURI}
                 />
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
-                        type="button"
-                        data-testid="mobile-reserve-status-badge"
-                        data-status={reserve.isPaused ? (reserve.isFrozen ? 'paused-frozen' : 'paused') : 'frozen'}
-                        onClick={() => setCapSheet('frozen')}
-                        aria-label={reserve.isPaused ? 'Show paused details' : 'Show frozen details'}
-                        className="absolute -top-2 -left-2 z-10 grid place-items-center w-7 h-7 rounded-full bg-transparent"
-                      >
-                        <span
-                          className={`inline-flex items-center justify-center w-3.5 h-3.5 rounded-full text-white ${reserve.isPaused ? 'bg-[rgb(var(--ds-paused-rgb))]' : 'bg-sky-500'}`}
-                        >
-                          {reserve.isPaused ? <PauseCircle className="w-2 h-2" /> : <Snowflake className="w-2 h-2" />}
-                        </span>
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent>{reserve.isPaused && reserve.isFrozen ? 'Paused & frozen' : reserve.isPaused ? 'Paused' : 'Frozen'}</TooltipContent>
-                  </Tooltip>
+                <button
+                  type="button"
+                  data-testid="mobile-reserve-status-badge"
+                  data-status={reserve.isPaused ? (reserve.isFrozen ? 'paused-frozen' : 'paused') : 'frozen'}
+                  onClick={() => setCapSheet('frozen')}
+                  aria-label={reserve.isPaused ? 'Show paused details' : 'Show frozen details'}
+                  className="absolute -top-2 -left-2 z-10 grid place-items-center w-7 h-7 rounded-full bg-transparent"
+                >
+                  <span
+                    className={`inline-flex items-center justify-center w-3.5 h-3.5 rounded-full text-white ${reserve.isPaused ? 'bg-[rgb(var(--ds-paused-rgb))]' : 'bg-sky-500'}`}
+                  >
+                    {reserve.isPaused ? <PauseCircle className="w-2 h-2" /> : <Snowflake className="w-2 h-2" />}
+                  </span>
+                </button>
               </div>
             ) : (
               <TokenIcon
@@ -620,6 +594,7 @@ const MobileReserveCard = memo(({
                       optimal={optimalPct}
                       width={8}
                       height={16}
+                      disableTooltip
                     />
                   </button>
                 )}
@@ -785,8 +760,6 @@ const MobileReserveCard = memo(({
                     : 'Utilization'
           }
           titleId="cap-sheet-title"
-          showShadow
-          animate
         >
           {capSheet === 'supply' && (
             <SupplyCapSheetContent

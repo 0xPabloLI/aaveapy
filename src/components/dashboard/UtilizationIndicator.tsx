@@ -7,6 +7,7 @@ interface UtilizationIndicatorProps {
   optimal: number | null;
   width?: number;
   height?: number;
+  disableTooltip?: boolean;
 }
 
 const UtilizationIndicator = memo(({
@@ -14,6 +15,7 @@ const UtilizationIndicator = memo(({
   optimal,
   width = 10,
   height = 24,
+  disableTooltip = false,
 }: UtilizationIndicatorProps) => {
   const clipId = useId();
 
@@ -35,65 +37,70 @@ const UtilizationIndicator = memo(({
   const trackX = (width - trackWidth) / 2;
   const trackRadius = trackWidth / 2;
 
-  return (
-    <Tooltip delayDuration={0}>
-      <TooltipTrigger asChild>
-        <div 
-          className="inline-flex items-center cursor-default"
-          style={{ width, height }}
-        >
-          <svg
-            width={width}
-            height={height}
-            viewBox={`0 0 ${width} ${height}`}
-            className="overflow-visible"
-          >
-            <defs>
-              <clipPath id={clipId}>
-                <rect
-                  x={trackX}
-                  y={0}
-                  width={trackWidth}
-                  height={height}
-                  rx={trackRadius}
-                />
-              </clipPath>
-            </defs>
-            {/* Single continuous track with rounded corners */}
+  const svgNode = (
+    <div
+      className="inline-flex items-center cursor-default"
+      style={{ width, height }}
+    >
+      <svg
+        width={width}
+        height={height}
+        viewBox={`0 0 ${width} ${height}`}
+        className="overflow-visible"
+      >
+        <defs>
+          <clipPath id={clipId}>
             <rect
               x={trackX}
               y={0}
               width={trackWidth}
               height={height}
               rx={trackRadius}
-              className="fill-secondary/40"
             />
-            {/* Below optimal: zone = single tinted fill; dot = full brand cyan (same token as Borrow / util copy) */}
-            <rect
-              x={trackX}
-              y={optimalY}
-              width={trackWidth}
-              height={height - optimalY}
-              clipPath={`url(#${clipId})`}
-              className="fill-[rgb(var(--ds-brand-cyan-rgb)/0.32)]"
-            />
-            {/* Above optimal: zone amber-600; dot matches warning label (amber-600) — darker = warning, brighter = critical */}
-            <rect
-              x={trackX}
-              y={0}
-              width={trackWidth}
-              height={optimalY}
-              clipPath={`url(#${clipId})`}
-              className="fill-[rgb(var(--ds-amber-600-rgb))]"
-            />
-            <circle
-              cx={width / 2}
-              cy={currentY}
-              r={dotRadius}
-              className={isOverOptimal ? 'fill-[rgb(var(--ds-amber-600-rgb))]' : 'fill-[rgb(var(--ds-brand-cyan-rgb))]'}
-            />
-          </svg>
-        </div>
+          </clipPath>
+        </defs>
+        <rect
+          x={trackX}
+          y={0}
+          width={trackWidth}
+          height={height}
+          rx={trackRadius}
+          className="fill-secondary/40"
+        />
+        <rect
+          x={trackX}
+          y={optimalY}
+          width={trackWidth}
+          height={height - optimalY}
+          clipPath={`url(#${clipId})`}
+          className="fill-[rgb(var(--ds-brand-cyan-rgb)/0.32)]"
+        />
+        <rect
+          x={trackX}
+          y={0}
+          width={trackWidth}
+          height={optimalY}
+          clipPath={`url(#${clipId})`}
+          className="fill-[rgb(var(--ds-amber-600-rgb))]"
+        />
+        <circle
+          cx={width / 2}
+          cy={currentY}
+          r={dotRadius}
+          className={isOverOptimal ? 'fill-[rgb(var(--ds-amber-600-rgb))]' : 'fill-[rgb(var(--ds-brand-cyan-rgb))]'}
+        />
+      </svg>
+    </div>
+  );
+
+  if (disableTooltip) {
+    return svgNode;
+  }
+
+  return (
+    <Tooltip delayDuration={0}>
+      <TooltipTrigger asChild>
+        {svgNode}
       </TooltipTrigger>
       <TooltipContent side="top" className="max-w-[220px] p-3">
         <TooltipCalloutArrow />
