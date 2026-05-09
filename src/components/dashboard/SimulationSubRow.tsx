@@ -523,7 +523,7 @@ const SimulationSubRow = ({
     const noteAlignKey = getDesktopAlignKey(resolvedAlignBand, 'note');
 
     const mainRow = (
-      <tr data-align-key={mainAlignKey} className={`${row.warning ? 'ds-bg-warning-row' : ''} ${disabled ? 'opacity-60' : ''}`}>
+      <tr data-align-key={mainAlignKey} className={`${row.warning ? 'ds-bg-warning-row' : ''} ${disabled ? 'opacity-75' : ''}`}>
         <td className={`${labelCellPy} ${metricCellPx} min-w-0 align-top`}>
           <div className={`min-w-0 ${isBreakdownItem ? `${breakdownIndentClass} ${borderColorClass}` : ''}`}>
             {/* Label + cap are kept on a single line via `whitespace-nowrap`. The flex
@@ -663,7 +663,7 @@ const SimulationSubRow = ({
       } overflow-hidden`}
     >
       {compactDisabledNotices.length > 0 && (
-        <div className="px-3 py-1.5 border-b border-border/50 bg-muted/30 ds-text-11 text-secondary">
+        <div className="px-3 py-1.5 border-b border-border/50 bg-muted/30 ds-text-11 text-muted-foreground">
           {compactDisabledNotices.join(' · ')}
         </div>
       )}
@@ -789,9 +789,9 @@ const SimulationSubRow = ({
         <thead>
           <tr className="bg-muted/30 border-b border-border/50">
             <th className="px-4 py-1.5 text-left">
-              <span className={`ds-text-13 font-semibold ${disabledNotice ? 'text-secondary' : accentClass}`}>{title}</span>
+              <span className={`ds-text-13 font-semibold ${disabledNotice ? 'text-muted-foreground' : accentClass}`}>{title}</span>
               {disabledNotice && (
-                <span className="ml-2 ds-text-11 font-normal text-secondary">· {disabledNotice}</span>
+                <span className="ml-2 ds-text-11 font-normal text-muted-foreground">· {disabledNotice}</span>
               )}
             </th>
             <th className="px-3 py-1.5 text-right">
@@ -805,7 +805,7 @@ const SimulationSubRow = ({
             </th>
           </tr>
         </thead>
-        <tbody className={`[&>tr:last-child>td]:pb-2 ${disabledNotice ? 'opacity-60' : ''}`}>
+        <tbody className={`[&>tr:last-child>td]:pb-2 ${disabledNotice ? 'opacity-75' : ''}`}>
           {rows.map((row) => {
             const peer = peerRows ? findPeerRow(row.rowKey, peerRows) : undefined;
             const peerHasCapBar = peer != null && peer.cap != null && peer.type === 'usd';
@@ -1321,10 +1321,10 @@ const SimulationSubRow = ({
             ref={gridRef}
             className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_clamp(14.5rem,24.5vw,18rem)] gap-2 min-w-0 items-stretch overflow-hidden"
           >
-            <div className={`flex min-w-0 flex-col overflow-hidden${supplySideBlocked ? ' opacity-50' : ''}`}>
+            <div className={`flex min-w-0 flex-col overflow-hidden${supplySideBlocked ? ' opacity-70' : ''}`}>
               {renderTable('Supply', supplyRows, 'ds-text-emerald-600', 'border-emerald-500/40', 'border-l-[rgb(var(--ds-emerald-500-rgb))]', showSupplyCapWarning, borrowRows, supplyDisabledNotice)}
             </div>
-            <div className={`flex min-w-0 flex-col overflow-hidden${borrowSideBlocked ? ' opacity-50' : ''}`}>
+            <div className={`flex min-w-0 flex-col overflow-hidden${borrowSideBlocked ? ' opacity-70' : ''}`}>
               {renderTable('Borrow', borrowRows, 'ds-text-brand-cyan', 'border-[rgb(var(--ds-brand-cyan-rgb))]/40', 'border-l-[rgb(var(--ds-brand-cyan-rgb))]', showBorrowCapWarning, supplyRows, borrowDisabledNotice)}
             </div>
             <div className="flex min-h-0 min-w-0 flex-col overflow-hidden self-stretch">
