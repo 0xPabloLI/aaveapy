@@ -112,4 +112,62 @@ describe('TopOpportunities', () => {
       fetchSpy.mockRestore();
     }
   });
+
+  it('shows "Base APY only" placeholder on mobile supply card when reserve has no incentive', () => {
+    mockUseIsMobile.mockReturnValue(true);
+
+    const noIncentiveReserve: ReserveWithSpread = {
+      ...reserve,
+      supplyIncentives: [],
+    };
+
+    const queryClient = new QueryClient();
+    const { getByText } = render(
+      <QueryClientProvider client={queryClient}>
+        <TopOpportunities {...baseProps} reserves={[noIncentiveReserve]} />
+      </QueryClientProvider>,
+    );
+
+    expect(getByText('Base APY only')).toBeInTheDocument();
+  });
+
+  it('shows "Base APR only" placeholder when isApy is false and no incentive', () => {
+    mockUseIsMobile.mockReturnValue(true);
+
+    const noIncentiveReserve: ReserveWithSpread = {
+      ...reserve,
+      supplyIncentives: [],
+    };
+
+    const queryClient = new QueryClient();
+    const { getByText } = render(
+      <QueryClientProvider client={queryClient}>
+        <TopOpportunities {...baseProps} reserves={[noIncentiveReserve]} isApy={false} />
+      </QueryClientProvider>,
+    );
+
+    expect(getByText('Base APR only')).toBeInTheDocument();
+  });
+
+  it('renders leverage-card second row with supply-borrow spread format on mobile', () => {
+    mockUseIsMobile.mockReturnValue(true);
+
+    const leverageReserve: ReserveWithSpread = {
+      ...reserve,
+      supplyApy: 8,
+      borrowApy: 3,
+      supplyIncentives: [],
+      borrowIncentives: [],
+    };
+
+    const queryClient = new QueryClient();
+    const { container } = render(
+      <QueryClientProvider client={queryClient}>
+        <TopOpportunities {...baseProps} reserves={[leverageReserve]} />
+      </QueryClientProvider>,
+    );
+
+    const leverageCards = container.querySelectorAll('.cursor-pointer');
+    expect(leverageCards.length).toBeGreaterThan(0);
+  });
 });

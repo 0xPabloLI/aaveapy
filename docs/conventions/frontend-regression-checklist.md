@@ -71,6 +71,8 @@ When the UI shows a combined total and visible breakdowns, verify the display re
 Examples:
 
 - `TopOpportunities` APY cards: total must match the rendered `native + incentive` pair.
+- `TopOpportunities` mini card height: the second-row container must have `min-h-[1.125rem]` to keep all internal cards (supply with/without incentive, leverage) uniform height.
+- `MiniReserveApyRow` no-incentive branch: must render `Base APY/APR only` placeholder (not invisible empty elements) when `hasIncentive` is false.
 - Incentive breakdowns: displayed campaign rows must match the aggregate lane total.
 - Spread / leverage views: headline value must still map to the rendered source values after extraction or prop plumbing changes.
 

@@ -259,7 +259,7 @@ const MiniReserveApyRow = ({
 
   if (!hasIncentive) {
     return (
-      <span className="ds-text-10 font-medium leading-none text-muted-foreground/55">
+      <span className="ds-text-11 font-medium leading-none text-muted-foreground/55">
         Base {isApy ? 'APY' : 'APR'} only
       </span>
     );
