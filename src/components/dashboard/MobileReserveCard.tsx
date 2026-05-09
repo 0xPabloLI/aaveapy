@@ -47,6 +47,126 @@ import {
 } from './MobileReserveSheetContent';
 import { BATCH_RESERVE_ADD_BUTTON_CLASSES } from './batchTheme';
 
+interface MobileCapSheetProps {
+  capSheet: 'supply' | 'borrow' | 'utilization' | 'deficit' | 'frozen' | null;
+  onClose: () => void;
+  reserve: ReserveWithSpread;
+  displayReserveSizeUsd: number | null;
+  displayUtilization: number | null;
+  optimalPct: number | null;
+  deficitUsd: number | null | undefined;
+  deficitTokenLabel: string | undefined;
+  inputMode: 'usd' | 'token';
+  displayTokenPrice: number | null;
+  totalBorrowedUsd: number | null;
+  availableLiquidityUsd: number | null;
+}
+
+function MobileCapSheet({
+  capSheet,
+  onClose,
+  reserve,
+  displayReserveSizeUsd,
+  displayUtilization,
+  optimalPct,
+  deficitUsd,
+  deficitTokenLabel,
+  inputMode,
+  displayTokenPrice,
+  totalBorrowedUsd,
+  availableLiquidityUsd,
+}: MobileCapSheetProps) {
+  if (capSheet === null) return null;
+
+  const title =
+    capSheet === 'supply' ? 'Supply cap details'
+    : capSheet === 'borrow' ? 'Borrow cap details'
+    : capSheet === 'deficit' ? 'Deficit details'
+    : capSheet === 'frozen'
+      ? `Status: ${[reserve.isFrozen && 'Frozen', reserve.isPaused && 'Paused'].filter(Boolean).join(' & ') || 'Frozen'}`
+      : 'Utilization';
+
+  return (
+    <>
+      <motion.div
+        className="fixed inset-0 z-30 bg-background/40"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.2 }}
+        onClick={onClose}
+        aria-hidden="true"
+      />
+      <motion.div
+        className="fixed bottom-0 left-0 right-0 z-40 rounded-t-2xl border border-border/60 bg-card ds-tooltip-shadow-up max-h-[80vh] overflow-y-auto"
+        initial={{ y: '100%' }}
+        animate={{ y: 0 }}
+        exit={{ y: '100%' }}
+        transition={{ duration: 0.28, ease: [0.32, 0.72, 0, 1] }}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="cap-sheet-title"
+      >
+        <div className="sticky top-0 bg-card border-b border-border px-[var(--ds-space-2)] py-[var(--ds-space-1-5)] flex items-center justify-between z-10">
+          <h3 id="cap-sheet-title" className="ds-tooltip-title text-foreground">
+            {title}
+          </h3>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-[var(--ds-space-1-5)] rounded-full hover:bg-muted transition-colors"
+            aria-label="Close"
+          >
+            <X className="w-5 h-5 text-muted-foreground" />
+          </button>
+        </div>
+        <div className="px-[var(--ds-space-3)] pt-[var(--ds-space-2)] pb-[var(--ds-space-2)]">
+          {capSheet === 'supply' && (
+            <SupplyCapSheetContent
+              currentSize={displayReserveSizeUsd ?? 0}
+              cap={nativeToUsd(reserve.supplyCap, reserve.decimals, reserve.tokenPrice) ?? 0}
+              inputMode={inputMode}
+              tokenPrice={displayTokenPrice}
+              tokenSymbol={reserve.tokenSymbol}
+            />
+          )}
+          {capSheet === 'borrow' && (
+            <BorrowCapSheetContent
+              borrowed={totalBorrowedUsd ?? 0}
+              cap={nativeToUsd(reserve.borrowCap, reserve.decimals, reserve.tokenPrice) ?? 0}
+              availableLiquidityUsd={availableLiquidityUsd ?? 0}
+              inputMode={inputMode}
+              tokenPrice={displayTokenPrice}
+              tokenSymbol={reserve.tokenSymbol}
+              borrowDisabled={reserve.borrowDisabled}
+            />
+          )}
+          {capSheet === 'utilization' && optimalPct != null && displayUtilization != null && (
+            <UtilizationSheetContent
+              current={displayUtilization}
+              optimal={optimalPct}
+            />
+          )}
+          {capSheet === 'deficit' && deficitUsd != null && (
+            <DeficitSheetContent
+              deficitUsd={deficitUsd}
+              totalSuppliedUsd={displayReserveSizeUsd}
+              deficitTokenLabel={deficitTokenLabel}
+              inputMode={inputMode}
+              tokenPrice={displayTokenPrice}
+              tokenSymbol={reserve.tokenSymbol}
+              poolExplorerUrl={buildPoolExplorerUrl(reserve.marketName)}
+            />
+          )}
+          {capSheet === 'frozen' && (
+            <FrozenSheetContent isFrozen={reserve.isFrozen} isPaused={reserve.isPaused} />
+          )}
+        </div>
+      </motion.div>
+    </>
+  );
+}
+
 interface MobileReserveCardProps {
   reserve: ReserveWithSpread;
   isApy: boolean;
@@ -544,25 +664,20 @@ const MobileReserveCard = memo(({
                   loading="eager"
                   logoURI={logoURI}
                 />
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
-                        type="button"
-                        data-testid="mobile-reserve-status-badge"
-                        data-status={reserve.isPaused ? (reserve.isFrozen ? 'paused-frozen' : 'paused') : 'frozen'}
-                        onClick={() => setCapSheet('frozen')}
-                        aria-label={reserve.isPaused ? 'Show paused details' : 'Show frozen details'}
-                        className="absolute -top-2 -left-2 z-10 grid place-items-center w-7 h-7 rounded-full bg-transparent"
-                      >
-                        <span
-                          className={`inline-flex items-center justify-center w-3.5 h-3.5 rounded-full text-white ${reserve.isPaused ? 'bg-[rgb(var(--ds-paused-rgb))]' : 'bg-sky-500'}`}
-                        >
-                          {reserve.isPaused ? <PauseCircle className="w-2 h-2" /> : <Snowflake className="w-2 h-2" />}
-                        </span>
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent>{reserve.isPaused && reserve.isFrozen ? 'Paused & frozen' : reserve.isPaused ? 'Paused' : 'Frozen'}</TooltipContent>
-                  </Tooltip>
+                <button
+                  type="button"
+                  data-testid="mobile-reserve-status-badge"
+                  data-status={reserve.isPaused ? (reserve.isFrozen ? 'paused-frozen' : 'paused') : 'frozen'}
+                  onClick={() => setCapSheet('frozen')}
+                  aria-label={reserve.isPaused ? 'Show paused details' : 'Show frozen details'}
+                  className="absolute -top-2 -left-2 z-10 grid place-items-center w-7 h-7 rounded-full bg-transparent"
+                >
+                  <span
+                    className={`inline-flex items-center justify-center w-3.5 h-3.5 rounded-full text-white ${reserve.isPaused ? 'bg-[rgb(var(--ds-paused-rgb))]' : 'bg-sky-500'}`}
+                  >
+                    {reserve.isPaused ? <PauseCircle className="w-2 h-2" /> : <Snowflake className="w-2 h-2" />}
+                  </span>
+                </button>
               </div>
             ) : (
               <TokenIcon
@@ -762,91 +877,20 @@ const MobileReserveCard = memo(({
         {/* Mobile bottom sheet for cap / utilization details */}
         <AnimatePresence>
           {capSheet !== null && (
-            <>
-              <motion.div
-                className="fixed inset-0 z-30 bg-background/40"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                onClick={() => setCapSheet(null)}
-                aria-hidden="true"
-              />
-              <motion.div
-                className="fixed bottom-0 left-0 right-0 z-40 rounded-t-2xl border border-border/60 bg-card ds-tooltip-shadow-up max-h-[80vh] overflow-y-auto"
-                initial={{ y: '100%' }}
-                animate={{ y: 0 }}
-                exit={{ y: '100%' }}
-                transition={{ duration: 0.28, ease: [0.32, 0.72, 0, 1] }}
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="cap-sheet-title"
-              >
-                <div className="sticky top-0 bg-card border-b border-border px-[var(--ds-space-2)] py-[var(--ds-space-1-5)] flex items-center justify-between z-10">
-                  <h3 id="cap-sheet-title" className="ds-tooltip-title text-foreground">
-                    {capSheet === 'supply'
-                      ? 'Supply cap details'
-                      : capSheet === 'borrow'
-                        ? 'Borrow cap details'
-                 : capSheet === 'deficit'
-                  ? 'Deficit details'
-                  : capSheet === 'frozen'
-                    ? `Status: ${[reserve.isFrozen && 'Frozen', reserve.isPaused && 'Paused'].filter(Boolean).join(' & ') || 'Frozen'}`
-                    : 'Utilization'}
-                  </h3>
-                  <button
-                    type="button"
-                    onClick={() => setCapSheet(null)}
-                    className="p-[var(--ds-space-1-5)] rounded-full hover:bg-muted transition-colors"
-                    aria-label="Close"
-                  >
-                    <X className="w-5 h-5 text-muted-foreground" />
-                  </button>
-                </div>
-                <div className="px-[var(--ds-space-3)] pt-[var(--ds-space-2)] pb-[var(--ds-space-2)]">
-                  {capSheet === 'supply' && (
-                    <SupplyCapSheetContent
-                      currentSize={displayReserveSizeUsd ?? 0}
-                      cap={nativeToUsd(reserve.supplyCap, reserve.decimals, reserve.tokenPrice) ?? 0}
-                      inputMode={inputMode}
-                      tokenPrice={displayTokenPrice}
-                      tokenSymbol={reserve.tokenSymbol}
-                    />
-                  )}
-                  {capSheet === 'borrow' && (
-                    <BorrowCapSheetContent
-                      borrowed={totalBorrowedUsd ?? 0}
-                      cap={nativeToUsd(reserve.borrowCap, reserve.decimals, reserve.tokenPrice) ?? 0}
-                      availableLiquidityUsd={availableLiquidityUsd ?? 0}
-                      inputMode={inputMode}
-                      tokenPrice={displayTokenPrice}
-                      tokenSymbol={reserve.tokenSymbol}
-                      borrowDisabled={reserve.borrowDisabled}
-                    />
-                  )}
-                  {capSheet === 'utilization' && optimalPct != null && displayUtilization != null && (
-                    <UtilizationSheetContent
-                      current={displayUtilization}
-                      optimal={optimalPct}
-                    />
-                  )}
-                  {capSheet === 'deficit' && deficitUsd != null && (
-                    <DeficitSheetContent
-                      deficitUsd={deficitUsd}
-                      totalSuppliedUsd={displayReserveSizeUsd}
-                      deficitTokenLabel={deficitTokenLabel}
-                      inputMode={inputMode}
-                      tokenPrice={displayTokenPrice}
-                      tokenSymbol={reserve.tokenSymbol}
-                      poolExplorerUrl={buildPoolExplorerUrl(reserve.marketName)}
-                    />
-                  )}
-                  {capSheet === 'frozen' && (
-                    <FrozenSheetContent isFrozen={reserve.isFrozen} isPaused={reserve.isPaused} />
-                  )}
-                </div>
-              </motion.div>
-            </>
+            <MobileCapSheet
+              capSheet={capSheet}
+              onClose={() => setCapSheet(null)}
+              reserve={reserve}
+              displayReserveSizeUsd={displayReserveSizeUsd}
+              displayUtilization={displayUtilization}
+              optimalPct={optimalPct}
+              deficitUsd={deficitUsd}
+              deficitTokenLabel={deficitTokenLabel}
+              inputMode={inputMode}
+              displayTokenPrice={displayTokenPrice}
+              totalBorrowedUsd={totalBorrowedUsd}
+              availableLiquidityUsd={availableLiquidityUsd}
+            />
           )}
         </AnimatePresence>
       </div>
