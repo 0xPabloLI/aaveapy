@@ -251,25 +251,30 @@ const MiniReserveApyRow = ({
 }: MiniReserveApyRowProps) => {
   if (isLeverage) {
     return (
-      <span className={`${getSpreadAccentClass(mainValue, index, totalItems)} tabular-nums ds-text-9`}>
+      <span className={`${getSpreadAccentClass(mainValue, index, totalItems)} tabular-nums ds-text-11 py-px`}>
         {formatPercent(isApy ? reserve.totalSupplyApy : reserve.totalSupplyApr)} - {formatPercent(isApy ? reserve.totalBorrowApy : reserve.totalBorrowApr)}
+      </span>
+    );
+  }
+
+  if (!hasIncentive) {
+    return (
+      <span className="ds-text-10 font-medium leading-none text-muted-foreground/55">
+        Base {isApy ? 'APY' : 'APR'} only
       </span>
     );
   }
 
   return (
     <>
-      <span className={`ds-text-11 tabular-nums ${apyAccentText} ${hasIncentive ? '' : 'invisible'}`}>
+      <span className={`ds-text-11 tabular-nums ${apyAccentText}`}>
         {formatPercent(nativeValue ?? null)}
       </span>
-      {hasIncentive && <span className="text-muted-foreground ds-text-11">+</span>}
+      <span className="text-muted-foreground ds-text-11">+</span>
       <button
         type="button"
-        onClick={hasIncentive ? (e) => onIncentiveClick(e, reserve, 'supply', incentiveValue, mainValue) : undefined}
-        disabled={!hasIncentive}
-        aria-hidden={!hasIncentive}
-        tabIndex={hasIncentive ? 0 : -1}
-        className={`inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-1)] py-px rounded-full ring-1 transition-colors tabular-nums ds-text-11 ${apyAccentChip} ${hasIncentive ? 'cursor-pointer' : 'invisible pointer-events-none'}`}
+        onClick={(e) => onIncentiveClick(e, reserve, 'supply', incentiveValue, mainValue)}
+        className={`inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-1)] py-px rounded-full ring-1 transition-colors tabular-nums ds-text-11 cursor-pointer ${apyAccentChip}`}
       >
         <span>{formatPercent(incentiveValue ?? 0)}</span>
         <IncentiveIcon width={8} height={8} />
