@@ -33,6 +33,9 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: true,
     port: Number(process.env.PORT) || 8080,
+    watch: {
+      ignored: ["**/.codeartsdoer/**"],
+    },
   },
   preview: {
     host: true,

@@ -25,11 +25,9 @@ export default function BottomSheet({
   overlayOpacity = '40',
   animate = false,
 }: BottomSheetProps) {
-  const overlayOpacityValue = parseInt(overlayOpacity, 10) / 100;
   const overlay = (
     <div
-      className="fixed inset-0 z-30"
-      style={{ backgroundColor: `hsl(var(--background) / ${overlayOpacityValue})` }}
+      className={`fixed inset-0 z-30 bg-background/${overlayOpacity}`}
       onClick={onClose}
       aria-hidden="true"
     />
@@ -66,34 +64,32 @@ export default function BottomSheet({
     </div>
   );
 
+  if (!open) return null;
+
   if (animate) {
     return (
       <AnimatePresence>
-        {open && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-            >
-              {overlay}
-            </motion.div>
-            <motion.div
-              initial={{ y: '100%' }}
-              animate={{ y: 0 }}
-              exit={{ y: '100%' }}
-              transition={{ duration: 0.28, ease: [0.32, 0.72, 0, 1] }}
-            >
-              {sheet}
-            </motion.div>
-          </>
-        )}
+        <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            {overlay}
+          </motion.div>
+          <motion.div
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ duration: 0.28, ease: [0.32, 0.72, 0, 1] }}
+          >
+            {sheet}
+          </motion.div>
+        </>
       </AnimatePresence>
     );
   }
-
-  if (!open) return null;
 
   return (
     <>

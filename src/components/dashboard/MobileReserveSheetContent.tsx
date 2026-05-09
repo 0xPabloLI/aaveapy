@@ -1,11 +1,14 @@
+import { ExternalLink } from 'lucide-react';
 import {
   formatPercent,
   formatScenarioSize,
 } from '@/lib/formatters';
+import {
+  calculateDeficitShareRatio,
+  getDeficitSeverity,
+} from '@/lib/deficit';
 import { getAvailableToBorrowUsd } from '@/lib/scenarioSize';
 import { FrozenStatusContent } from './FrozenStatusBadge';
-import { DeficitTooltipBody } from './DeficitLiquidityRing';
-import type { DeficitTooltipBodyProps } from './DeficitLiquidityRing';
 
 /** Same content as CapProgressRing tooltip; used in mobile bottom sheet. */
 export function SupplyCapSheetContent({
@@ -135,12 +138,68 @@ export function UtilizationSheetContent({ current, optimal }: { current: number;
   );
 }
 
-/** Deficit details bottom sheet content — delegates to shared DeficitTooltipBody. */
+/** Deficit details bottom sheet content */
 export function DeficitSheetContent({
+  deficitUsd,
+  totalSuppliedUsd,
+  deficitTokenLabel,
   inputMode,
-  ...rest
-}: DeficitTooltipBodyProps & { inputMode?: 'usd' | 'token' }) {
-  return <DeficitTooltipBody displayMode={inputMode} {...rest} />;
+  tokenPrice,
+  tokenSymbol,
+  poolExplorerUrl,
+}: {
+  deficitUsd: number;
+  totalSuppliedUsd: number | null | undefined;
+  deficitTokenLabel?: string;
+  inputMode: 'usd' | 'token';
+  tokenPrice?: number | null;
+  tokenSymbol?: string | null;
+  poolExplorerUrl?: string | null;
+}) {
+  const ratio = calculateDeficitShareRatio({ deficitUsd, totalSuppliedUsd });
+  const percentage = ratio != null ? Math.min(Math.max(ratio * 100, 0), 100) : null;
+  const severity = getDeficitSeverity(ratio);
+  const percentColorClass =
+    severity === 'critical' ? 'ds-text-amber-500' : severity === 'warning' ? 'ds-text-amber-600' : 'text-muted-foreground/60';
+
+  const deficitDisplay = inputMode === 'token' && deficitTokenLabel
+    ? deficitTokenLabel
+    : formatScenarioSize(deficitUsd, { inputMode: 'usd' });
+  const totalDisplay = totalSuppliedUsd != null
+    ? formatScenarioSize(totalSuppliedUsd, { inputMode, tokenPrice, tokenSymbol })
+    : '—';
+
+  return (
+    <div className="space-y-1 ds-text-12">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-muted-foreground flex items-center gap-1">
+          Deficit
+          {poolExplorerUrl && (
+            <a
+              href={poolExplorerUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-muted-foreground/60 hover:text-foreground transition-colors"
+              aria-label="Verify on-chain"
+            >
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          )}
+        </span>
+        <span className={`font-medium tabular-nums ${percentColorClass}`}>{deficitDisplay}</span>
+      </div>
+      <div className="flex justify-between gap-3">
+        <span className="text-muted-foreground">Total supplied</span>
+        <span className={`font-medium tabular-nums ${percentColorClass}`}>{totalDisplay}</span>
+      </div>
+      <div className="flex items-center justify-between gap-3 pt-1 border-t border-border/50">
+        <span className="text-muted-foreground">% of total (incl. deficit)</span>
+        <span className={`font-bold tabular-nums ${percentColorClass}`}>
+          {percentage != null ? `${percentage.toFixed(2)}%` : '—'}
+        </span>
+      </div>
+    </div>
+  );
 }
 
 /** Frozen/paused status bottom sheet content */

@@ -445,11 +445,11 @@ describe('DesktopReserveRow', () => {
       </QueryClientProvider>
     );
 
-    expect(html).not.toMatch(/Base\s*<!--\s*-->\s*APY\s*<!--\s*-->\s*only/);
-    expect(html).not.toMatch(/Base\s*<!--\s*-->\s*APR\s*<!--\s*-->\s*only/);
+    expect(html).toMatch(/Base\s*<!--\s*-->\s*APY\s*<!--\s*-->\s*only/);
+    expect(html).toMatch(/Base\s*<!--\s*-->\s*APR\s*<!--\s*-->\s*only/);
   });
 
-  it('does not show Base APR only placeholder on desktop', () => {
+  it('shows Base APR only placeholder in APR mode when no incentive is visible', () => {
     const queryClient = new QueryClient();
     const html = renderToString(
       <QueryClientProvider client={queryClient}>
@@ -483,8 +483,8 @@ describe('DesktopReserveRow', () => {
       </QueryClientProvider>
     );
 
-    expect(html).not.toMatch(/Base\s*<!--\s*-->\s*APR\s*<!--\s*-->\s*only/);
-    expect(html).not.toMatch(/Base\s*<!--\s*-->\s*APY\s*<!--\s*-->\s*only/);
+    expect(html).toMatch(/Base\s*<!--\s*-->\s*APR\s*<!--\s*-->\s*only/);
+    expect(html).toMatch(/Base\s*<!--\s*-->\s*APY\s*<!--\s*-->\s*only/);
   });
 
   it('does not show Base placeholder when side is disabled even if no incentive', () => {

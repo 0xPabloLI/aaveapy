@@ -592,7 +592,7 @@ className="transition-all motion-reduce:transition-none"
 ## 9. 移动端与触控
 
 - **触控目标**：最小 44×44px（包括可点击的“Simulation ⌄”等）。
-- **浮层**：移动端详情类内容用**底部抽屉（bottom sheet）**：全宽、`rounded-t-2xl`、固定标题+关闭、内容区 `max-h-[80vh] overflow-y-auto`，背景 `fixed inset-0 z-30 bg-background/20` 点击关闭。间距全面紧凑：标题栏 `px-[var(--ds-space-2)] py-[var(--ds-space-1-5)]`，内容区 `px-[var(--ds-space-3)] pt-[var(--ds-space-2)] pb-[var(--ds-space-2)]`，内部行间距统一 `space-y-1`（移动端弹窗遮挡底层内容多，收紧垂直空间最大化可见表格区域）。所有底部抽屉统一使用共享组件 `src/components/dashboard/BottomSheet.tsx`（支持 `animate` / `showShadow` / `surfaceStyle` / `overlayOpacity` 等变体），避免壳层代码重复。三种 tooltip 系统的完整规范（箭头、排版、排版决策树）见 [tooltip-arrow.md](./tooltip-arrow.md)。不在移动端用小浮层 popover 锚定在触发点上。
+- **浮层**：移动端详情类内容用**底部抽屉（bottom sheet）**：全宽、`rounded-t-2xl`、固定标题+关闭、内容区 `max-h-[80vh] overflow-y-auto`，背景 `fixed inset-0 z-30 bg-background/20` 点击关闭。间距全面紧凑：标题栏 `px-[var(--ds-space-2)] py-[var(--ds-space-1-5)]`，内容区 `px-[var(--ds-space-3)] pt-[var(--ds-space-2)] pb-[var(--ds-space-2)]`，内部行间距统一 `space-y-1`（移动端弹窗遮挡底层内容多，收紧垂直空间最大化可见表格区域）。所有底部抽屉统一使用共享组件 `src/components/dashboard/BottomSheet.tsx`（支持 `animate` / `showShadow` / `surfaceStyle` / `overlayOpacity` 等变体），避免壳层代码重复。不在移动端用小浮层 popover 锚定在触发点上。
 - **轮播**：移动端轮播需包含：分页点、左右箭头（在可滚动时显示）、peek（如 `basis-[85%]`）、`align: "center"` + `containScroll: "trimSnaps"`。
 - **避免**：仅在 hover 上做交互，移动端需提供 tap/click 等价操作。
 
