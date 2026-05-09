@@ -643,13 +643,6 @@ const SimulationSubRow = ({
     const compactMetricCell = 'pl-2 pr-0.5';
     const compactNumCell = 'px-0.5';
     const compactDeltaCell = 'pl-0.5 pr-2';
-    const compactDisabledNotices: string[] = [];
-    if (isReserveLocked) {
-      compactDisabledNotices.push(reserve.isPaused ? 'Paused' : 'Frozen');
-    } else {
-      if (reserve.supplyDisabled) compactDisabledNotices.push('Supply unavailable');
-      if (reserve.borrowDisabled) compactDisabledNotices.push('Borrow unavailable');
-    }
     /** Parent card/panel already provides the outer border when embedded; inner borders misalign with thead lines. */
     /** Hard-disable horizontal scroll on mobile: table-fixed + explicit fractional column widths
      *  keep the 4-column layout within the panel width regardless of input size. Numeric values
@@ -662,11 +655,6 @@ const SimulationSubRow = ({
           : 'bg-card/50 dark:bg-background/80 border border-border/60 rounded-xl'
       } overflow-hidden`}
     >
-      {compactDisabledNotices.length > 0 && (
-        <div className="px-3 py-1.5 border-b border-border/50 bg-muted/30 ds-text-11 text-muted-foreground">
-          {compactDisabledNotices.join(' · ')}
-        </div>
-      )}
       <table className="w-full min-w-0 table-fixed">
         <colgroup>
           {/* Fixed column ratios prevent right-side truncation on narrow viewports without
@@ -790,9 +778,6 @@ const SimulationSubRow = ({
           <tr className="bg-muted/30 border-b border-border/50">
             <th className="px-4 py-1.5 text-left">
               <span className={`ds-text-13 font-semibold ${disabledNotice ? 'text-muted-foreground' : accentClass}`}>{title}</span>
-              {disabledNotice && (
-                <span className="ml-2 ds-text-11 font-normal text-muted-foreground">· {disabledNotice}</span>
-              )}
             </th>
             <th className="px-3 py-1.5 text-right">
               <span className="ds-text-11 text-muted-foreground">Current</span>
