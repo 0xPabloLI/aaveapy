@@ -78,13 +78,15 @@ function MobileCapSheet({
 }: MobileCapSheetProps) {
   if (capSheet === null) return null;
 
-  const title =
-    capSheet === 'supply' ? 'Supply cap details'
-    : capSheet === 'borrow' ? 'Borrow cap details'
-    : capSheet === 'deficit' ? 'Deficit details'
-    : capSheet === 'frozen'
-      ? `Status: ${[reserve.isFrozen && 'Frozen', reserve.isPaused && 'Paused'].filter(Boolean).join(' & ') || 'Frozen'}`
-      : 'Utilization';
+  const CAP_SHEET_TITLE: Record<string, string> = {
+    supply: 'Supply cap details',
+    borrow: 'Borrow cap details',
+    deficit: 'Deficit details',
+    utilization: 'Utilization',
+  };
+  const title = capSheet === 'frozen'
+    ? `Status: ${[reserve.isFrozen && 'Frozen', reserve.isPaused && 'Paused'].filter(Boolean).join(' & ') || 'Frozen'}`
+    : CAP_SHEET_TITLE[capSheet] ?? '';
 
   return (
     <>
@@ -664,20 +666,37 @@ const MobileReserveCard = memo(({
                   loading="eager"
                   logoURI={logoURI}
                 />
-                <button
-                  type="button"
-                  data-testid="mobile-reserve-status-badge"
-                  data-status={reserve.isPaused ? (reserve.isFrozen ? 'paused-frozen' : 'paused') : 'frozen'}
-                  onClick={() => setCapSheet('frozen')}
-                  aria-label={reserve.isPaused ? 'Show paused details' : 'Show frozen details'}
-                  className="absolute -top-2 -left-2 z-10 grid place-items-center w-7 h-7 rounded-full bg-transparent"
-                >
-                  <span
-                    className={`inline-flex items-center justify-center w-3.5 h-3.5 rounded-full text-white ${reserve.isPaused ? 'bg-[rgb(var(--ds-paused-rgb))]' : 'bg-sky-500'}`}
-                  >
-                    {reserve.isPaused ? <PauseCircle className="w-2 h-2" /> : <Snowflake className="w-2 h-2" />}
-                  </span>
-                </button>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        data-testid="mobile-reserve-status-badge"
+                        data-status={reserve.isPaused ? (reserve.isFrozen ? 'paused-frozen' : 'paused') : 'frozen'}
+                        onClick={() => setCapSheet('frozen')}
+                        aria-label={reserve.isPaused && reserve.isFrozen ? 'Show paused & frozen details' : reserve.isPaused ? 'Show paused details' : 'Show frozen details'}
+                        className="absolute -top-2 -left-2 z-10 grid place-items-center h-7 rounded-full bg-transparent"
+                        style={{ width: reserve.isFrozen && reserve.isPaused ? '2rem' : '1.75rem' }}
+                      >
+                        {reserve.isFrozen && reserve.isPaused ? (
+                          <span className="inline-flex items-center gap-[1px]">
+                            <span className="inline-flex items-center justify-center w-3 h-3 rounded-full bg-sky-500 text-white">
+                              <Snowflake className="w-[7px] h-[7px]" />
+                            </span>
+                            <span className="inline-flex items-center justify-center w-3 h-3 rounded-full bg-[rgb(var(--ds-paused-rgb))] text-white">
+                              <PauseCircle className="w-[7px] h-[7px]" />
+                            </span>
+                          </span>
+                        ) : (
+                          <span
+                            className={`inline-flex items-center justify-center w-3.5 h-3.5 rounded-full text-white ${reserve.isPaused ? 'bg-[rgb(var(--ds-paused-rgb))]' : 'bg-sky-500'}`}
+                          >
+                            {reserve.isPaused ? <PauseCircle className="w-2 h-2" /> : <Snowflake className="w-2 h-2" />}
+                          </span>
+                        )}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>{reserve.isPaused && reserve.isFrozen ? 'Paused & frozen' : reserve.isPaused ? 'Paused' : 'Frozen'}</TooltipContent>
+                  </Tooltip>
               </div>
             ) : (
               <TokenIcon
