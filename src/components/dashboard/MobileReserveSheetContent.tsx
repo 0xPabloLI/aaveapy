@@ -9,6 +9,27 @@ import {
 } from '@/lib/deficit';
 import { getAvailableToBorrowUsd } from '@/lib/scenarioSize';
 import { FrozenStatusContent } from './FrozenStatusBadge';
+import { cn } from '@/lib/utils';
+import type { ReactNode } from 'react';
+
+interface SheetRowProps {
+  label: ReactNode;
+  value: ReactNode;
+  divider?: boolean;
+  colorClass?: string;
+  labelClassName?: string;
+}
+
+function SheetRow({ label, value, divider, colorClass, labelClassName }: SheetRowProps) {
+  return (
+    <div className={`flex justify-between gap-3${divider ? ' pt-1 border-t border-border/50' : ''}`}>
+      <span className={cn('text-muted-foreground', labelClassName)}>{label}</span>
+      <span className={cn('font-medium tabular-nums', divider && 'font-bold', colorClass)}>
+        {value}
+      </span>
+    </div>
+  );
+}
 
 /** Same content as CapProgressRing tooltip; used in mobile bottom sheet. */
 export function SupplyCapSheetContent({
@@ -29,28 +50,10 @@ export function SupplyCapSheetContent({
     percentage >= 95 ? 'ds-text-amber-500' : percentage >= 80 ? 'ds-text-amber-600' : 'ds-text-emerald-500';
   return (
     <div className="space-y-1 ds-text-12">
-      <div className="flex justify-between gap-3">
-        <span className="text-muted-foreground">Total supplied</span>
-        <span className="font-medium tabular-nums ds-text-emerald-500">
-          {formatScenarioSize(currentSize, { inputMode, tokenPrice, tokenSymbol })}
-        </span>
-      </div>
-      <div className="flex justify-between gap-3">
-        <span className="text-muted-foreground">Supply cap</span>
-        <span className="font-medium tabular-nums ds-text-emerald-500">
-          {formatScenarioSize(cap, { inputMode, tokenPrice, tokenSymbol })}
-        </span>
-      </div>
-      <div className="flex justify-between gap-3">
-        <span className="text-muted-foreground">Available to supply</span>
-        <span className="font-medium tabular-nums ds-text-emerald-500">
-          {formatScenarioSize(Math.max(0, cap - currentSize), { inputMode, tokenPrice, tokenSymbol })}
-        </span>
-      </div>
-      <div className="flex justify-between gap-3 pt-1 border-t border-border/50">
-        <span className="text-muted-foreground">% of cap</span>
-        <span className={`font-bold tabular-nums ${colorClass}`}>{percentage.toFixed(1)}%</span>
-      </div>
+      <SheetRow label="Total supplied" value={formatScenarioSize(currentSize, { inputMode, tokenPrice, tokenSymbol })} colorClass="ds-text-emerald-500" />
+      <SheetRow label="Supply cap" value={formatScenarioSize(cap, { inputMode, tokenPrice, tokenSymbol })} colorClass="ds-text-emerald-500" />
+      <SheetRow label="Available to supply" value={formatScenarioSize(Math.max(0, cap - currentSize), { inputMode, tokenPrice, tokenSymbol })} colorClass="ds-text-emerald-500" />
+      <SheetRow divider label="% of cap" value={`${percentage.toFixed(1)}%`} colorClass={colorClass} />
     </div>
   );
 }
@@ -85,38 +88,15 @@ export function BorrowCapSheetContent({
     percentage >= 95 ? 'ds-text-amber-500' : percentage >= 80 ? 'ds-text-amber-600' : 'ds-text-brand-cyan';
   return (
     <div className="space-y-1 ds-text-12">
-      <div className="flex justify-between gap-3">
-        <span className="text-muted-foreground">Total borrowed</span>
-        <span className="font-medium tabular-nums ds-text-brand-cyan">
-          {formatScenarioSize(borrowed, { inputMode, tokenPrice, tokenSymbol })}
-        </span>
-      </div>
-      <div className="flex justify-between gap-3">
-        <span className="text-muted-foreground">Borrow cap</span>
-        <span className="font-medium tabular-nums ds-text-brand-cyan">
-          {formatScenarioSize(cap, { inputMode, tokenPrice, tokenSymbol })}
-        </span>
-      </div>
-      <div className="flex justify-between gap-3">
-        <span className="text-muted-foreground">Available liquidity</span>
-        <span className={`font-medium tabular-nums ${
-          availableLiquidityUsd < 10000
-            ? 'ds-text-amber-600'
-            : 'ds-text-purple-600'
-        }`}>
-          {formatScenarioSize(availableLiquidityUsd, { inputMode, tokenPrice, tokenSymbol })}
-        </span>
-      </div>
-      <div className="flex justify-between gap-3">
-        <span className="text-muted-foreground">Available to borrow</span>
-        <span className="font-medium tabular-nums ds-text-brand-cyan">
-          {formatScenarioSize(availableToBorrow, { inputMode, tokenPrice, tokenSymbol })}
-        </span>
-      </div>
-      <div className="flex justify-between gap-3 pt-1 border-t border-border/50">
-        <span className="text-muted-foreground">% of cap</span>
-        <span className={`font-bold tabular-nums ${colorClass}`}>{percentage.toFixed(1)}%</span>
-      </div>
+      <SheetRow label="Total borrowed" value={formatScenarioSize(borrowed, { inputMode, tokenPrice, tokenSymbol })} colorClass="ds-text-brand-cyan" />
+      <SheetRow label="Borrow cap" value={formatScenarioSize(cap, { inputMode, tokenPrice, tokenSymbol })} colorClass="ds-text-brand-cyan" />
+      <SheetRow
+        label="Available liquidity"
+        value={formatScenarioSize(availableLiquidityUsd, { inputMode, tokenPrice, tokenSymbol })}
+        colorClass={availableLiquidityUsd < 10000 ? 'ds-text-amber-600' : 'ds-text-purple-600'}
+      />
+      <SheetRow label="Available to borrow" value={formatScenarioSize(availableToBorrow, { inputMode, tokenPrice, tokenSymbol })} colorClass="ds-text-brand-cyan" />
+      <SheetRow divider label="% of cap" value={`${percentage.toFixed(1)}%`} colorClass={colorClass} />
     </div>
   );
 }
@@ -126,14 +106,8 @@ export function UtilizationSheetContent({ current, optimal }: { current: number;
   const isOverOptimal = current > optimal;
   return (
     <div className="space-y-1 ds-text-12">
-      <div className="flex justify-between gap-3">
-        <span className="text-muted-foreground">Optimal</span>
-        <span className="font-medium tabular-nums">{formatPercent(optimal)}</span>
-      </div>
-      <div className="flex justify-between gap-3 pt-1 border-t border-border/50">
-        <span className="text-muted-foreground">Current utilization</span>
-        <span className={`font-bold tabular-nums ${isOverOptimal ? 'text-amber-600' : 'text-muted-foreground'}`}>{formatPercent(current)}</span>
-      </div>
+      <SheetRow label="Optimal" value={formatPercent(optimal)} />
+      <SheetRow divider label="Current utilization" value={formatPercent(current)} colorClass={isOverOptimal ? 'text-amber-600' : 'text-muted-foreground'} />
     </div>
   );
 }
@@ -188,16 +162,8 @@ export function DeficitSheetContent({
         </span>
         <span className={`font-medium tabular-nums ${percentColorClass}`}>{deficitDisplay}</span>
       </div>
-      <div className="flex justify-between gap-3">
-        <span className="text-muted-foreground">Total supplied</span>
-        <span className={`font-medium tabular-nums ${percentColorClass}`}>{totalDisplay}</span>
-      </div>
-      <div className="flex items-center justify-between gap-3 pt-1 border-t border-border/50">
-        <span className="text-muted-foreground">% of total (incl. deficit)</span>
-        <span className={`font-bold tabular-nums ${percentColorClass}`}>
-          {percentage != null ? `${percentage.toFixed(2)}%` : '—'}
-        </span>
-      </div>
+      <SheetRow label="Total supplied" value={totalDisplay} colorClass={percentColorClass} />
+      <SheetRow divider label="% of total (incl. deficit)" value={percentage != null ? `${percentage.toFixed(2)}%` : '—'} colorClass={percentColorClass} />
     </div>
   );
 }
