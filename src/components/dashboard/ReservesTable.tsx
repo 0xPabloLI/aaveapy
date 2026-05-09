@@ -716,6 +716,18 @@ const ReservesTable = ({
   // Previously this auto-collapsed when the expanded row was not in the filtered list
   // Now we preserve the expansion state so it re-appears when switching back markets
 
+  // Collapse expanded rows when switching from mobile to desktop
+  // Mobile cards use a different layout (2x2 grid) that doesn't translate to desktop table rows
+  const prevIsMobileRef = useRef(isMobile);
+  useEffect(() => {
+    if (prevIsMobileRef.current && !isMobile && expandedReserveId) {
+      setExpandedReserveId(null);
+      suppressNextToggleReserveIdRef.current = null;
+    }
+    prevIsMobileRef.current = isMobile;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMobile]);
+
   const supplySortLabel = {
     total: 'Total',
     native: 'Native',
