@@ -1167,9 +1167,9 @@ const SimulationSubRow = ({
                 : 'text-muted-foreground'
           }`}>
             {reserve.isPaused
-              ? 'Paused: all actions are halted. Simulation not available.'
+              ? 'Paused: all actions are halted.'
               : reserve.isFrozen
-                ? 'Frozen: supply and borrow are disabled. Simulation not available.'
+                ? 'Frozen: supply and borrow are disabled.'
                 : supplySideBlocked && borrowSideBlocked
                   ? 'Supply and borrow are disabled for this reserve.'
                   : supplySideBlocked

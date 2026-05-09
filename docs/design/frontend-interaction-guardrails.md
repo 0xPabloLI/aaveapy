@@ -683,3 +683,12 @@ A regression test lives at
 `src/components/dashboard/SimulationSubRow.compact.test.tsx` — it asserts
 `whitespace-nowrap` is present on numeric cells and that the table is
 `table-auto`. Do not delete that test.
+
+## Mobile ReservesTable bottom spacing (normative)
+
+The mobile `ReservesTable` component ends with a bottom padding that reserves space so the last rows are not hidden behind the mobile browser's bottom navigation bar (safe-area inset). **This padding must stay compact** — large values create a visible empty gap when `FaqSection` renders immediately below the table.
+
+- **Rule**: Bottom padding must not exceed `pb-[calc(env(safe-area-inset-bottom,0px)+1rem)]`. A previous `+5rem` (~80px) was reduced to `+1rem` (~16px) because it produced a blank gap between "Show More Reserves" and the FAQ section on mobile.
+- The `+1rem` breathing room plus the safe-area inset is sufficient to keep the last card above the browser chrome without wasting vertical space.
+- Implementation: `src/components/dashboard/ReservesTable.tsx` — the `isMobile` return block's outer `<div>` class.
+- **Do not** increase this padding without verifying the gap between ReservesTable and FaqSection in a full mobile build.

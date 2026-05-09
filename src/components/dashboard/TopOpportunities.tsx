@@ -369,7 +369,7 @@ const MiniReserveCard = ({
         miniRightContent={mainValueNode}
       />
 
-      <div className="flex items-baseline justify-end gap-[var(--ds-space-1)]">
+      <div className="flex items-baseline justify-end gap-[var(--ds-space-1)] min-h-[1.125rem]">
         <MiniReserveApyRow
           isLeverage={isLeverage}
           hasIncentive={hasIncentive}

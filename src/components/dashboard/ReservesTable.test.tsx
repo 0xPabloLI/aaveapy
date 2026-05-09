@@ -211,3 +211,102 @@ describe('ReservesTable market chip filtering', () => {
     expect(screen.queryByLabelText('Filter by Prime market')).not.toBeInTheDocument();
   });
 });
+
+describe('ReservesTable mobile bottom spacing', () => {
+  const MAX_MOBILE_BOTTOM_PB_REM = 1;
+
+  beforeEach(() => {
+    vi.resetModules();
+  });
+
+  it('does not exceed the compact bottom-padding limit on mobile', async () => {
+    vi.doMock('@/hooks/use-mobile', () => ({
+      useIsMobile: () => true,
+    }));
+
+    vi.doMock('@/hooks/useSideDataMeta', () => ({
+      useSideDataMeta: () => ({ data: undefined }),
+    }));
+
+    vi.doMock('@/hooks/useRateSimulation', () => ({
+      getReserveSimulationId: (reserve: Pick<ReserveWithSpread, 'reserveId'>) => reserve.reserveId,
+      useSharedRateSimulations: () => ({
+        simulationsById: {},
+        hasAnyInput: false,
+      }),
+    }));
+
+    vi.doMock('@/lib/scrollExpandedSimulationIntoView', () => ({
+      scrollExpandedSimulationIntoView: vi.fn(),
+      shouldScrollExpandedSimulationIntoView: () => false,
+    }));
+
+    vi.doMock('./ScenarioControls', () => ({
+      default: () => <div data-testid="scenario-controls" />,
+    }));
+
+    vi.doMock('./ReservesTableMobileGrid', () => ({
+      default: () => null,
+    }));
+
+    vi.doMock('./ReservesTableMobileSortBar', () => ({
+      default: () => null,
+    }));
+
+    vi.doMock('./ReservesTableDesktopSkeleton', () => ({
+      default: () => null,
+    }));
+
+    vi.doMock('./ReservesTableTooltipOverlay', () => ({
+      default: () => null,
+    }));
+
+    vi.doMock('./PortfolioModeToggle', () => ({
+      default: () => null,
+    }));
+
+    vi.doMock('./ReservesTablePagination', () => ({
+      ReservesTableShowMore: () => null,
+      ReservesTableFloatingScroll: () => null,
+    }));
+
+    const MobileReservesTable = (await import('./ReservesTable')).default;
+
+    class MockIntersectionObserver {
+      observe() {}
+      disconnect() {}
+      unobserve() {}
+    }
+
+    class MockResizeObserver {
+      observe() {}
+      disconnect() {}
+      unobserve() {}
+    }
+
+    vi.stubGlobal('IntersectionObserver', MockIntersectionObserver);
+    vi.stubGlobal('ResizeObserver', MockResizeObserver);
+
+    const { container } = render(
+      <QueryClientProvider client={new QueryClient()}>
+        <MobileReservesTable
+          reserves={reserves}
+          sortField={null}
+          sortOrder="desc"
+          onSort={() => {}}
+          isApy
+          tydroPointToUsdRate={0}
+          whitelistMerklCampaignIds={new Set<string>()}
+          onToggleWhitelistMerklCampaign={() => {}}
+        />
+      </QueryClientProvider>,
+    );
+
+    const mobileRoot = container.querySelector('[class*="pb-[calc"]');
+    expect(mobileRoot).toBeInTheDocument();
+
+    const className = mobileRoot?.getAttribute('class') ?? '';
+    expect(className).not.toMatch(/pb-\[calc\(env\(safe-area-inset-bottom,0px\)\+[4-9]rem\)\]/);
+    expect(className).toMatch(/pb-\[calc\(env\(safe-area-inset-bottom,0px\)\+[0-2]rem\)\]/);
+  });
+});
