@@ -517,7 +517,7 @@ const DesktopReserveRow = memo(({
             {reserve.supplyDisabled ? (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className="font-bold text-muted-foreground tabular-nums ds-text-14 cursor-auto">
+                  <span className="font-bold ds-text-emerald-500/50 tabular-nums ds-text-14 cursor-auto">
                     {formatPercent(displaySupplyTotal)}
                   </span>
                 </TooltipTrigger>
@@ -530,7 +530,7 @@ const DesktopReserveRow = memo(({
             )}
             {displaySupplyIncentive !== null ? (
               <div className="flex items-center gap-[var(--ds-space-0-5)] ds-text-11 justify-end min-h-[1.25rem]">
-                <span className={`tabular-nums font-medium ${reserve.supplyDisabled ? 'text-muted-foreground' : 'ds-text-emerald-500-70'}`}>
+                <span className={`tabular-nums font-medium ${reserve.supplyDisabled ? 'ds-text-emerald-500/40' : 'ds-text-emerald-500-70'}`}>
                   {formatPercent(displaySupplyNative)}
                 </span>
                 <span className="text-muted-foreground/70">+</span>
@@ -539,7 +539,7 @@ const DesktopReserveRow = memo(({
                   onClick={(e) => onIncentiveClick(e, reserve, 'supply', displaySupplyIncentive)}
                   className={`inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-0-5)] py-[var(--ds-space-0)] rounded-full transition-all duration-150 cursor-pointer tabular-nums ring-1 ${
                     reserve.supplyDisabled
-                      ? 'bg-muted-foreground/10 text-muted-foreground hover:bg-muted-foreground/20 ring-muted-foreground/20'
+                      ? 'bg-emerald-500/10 text-emerald-500/50 hover:bg-emerald-500/20 ring-emerald-500/20'
                       : 'ds-bg-emerald-500-10 ds-text-emerald-500-70 hover:bg-[rgb(var(--ds-emerald-500-rgb)/0.25)] hover:ring-2 hover:ring-[rgb(var(--ds-emerald-500-rgb)/0.3)] ds-ring-emerald-500-15'
                   }`}
                 >
@@ -568,7 +568,7 @@ const DesktopReserveRow = memo(({
             {reserve.borrowDisabled ? (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className="font-bold text-muted-foreground tabular-nums ds-text-14 cursor-auto">
+                  <span className="font-bold ds-text-brand-cyan/50 tabular-nums ds-text-14 cursor-auto">
                     {displayBorrowTotal !== null ? formatPercent(displayBorrowTotal) : '-'}
                   </span>
                 </TooltipTrigger>
@@ -583,7 +583,7 @@ const DesktopReserveRow = memo(({
               <div className="flex items-center gap-[var(--ds-space-0-5)] ds-text-11 justify-end min-h-[1.25rem]">
                 {displayBorrowNative !== null && (
                   <>
-                    <span className={`tabular-nums font-medium ${reserve.borrowDisabled ? 'text-muted-foreground' : 'ds-text-brand-cyan-70'}`}>
+                    <span className={`tabular-nums font-medium ${reserve.borrowDisabled ? 'ds-text-brand-cyan/40' : 'ds-text-brand-cyan-70'}`}>
                       {formatPercent(displayBorrowNative)}
                     </span>
                     <span className="text-muted-foreground/70">-</span>
@@ -594,7 +594,7 @@ const DesktopReserveRow = memo(({
                   onClick={(e) => onIncentiveClick(e, reserve, 'borrow', displayBorrowIncentive)}
                   className={`inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-0-5)] py-[var(--ds-space-0)] rounded-full transition-all duration-150 cursor-pointer tabular-nums ring-1 ${
                     reserve.borrowDisabled
-                      ? 'bg-muted-foreground/10 text-muted-foreground hover:bg-muted-foreground/20 ring-muted-foreground/20'
+                      ? 'bg-cyan-500/10 text-cyan-500/50 hover:bg-cyan-500/20 ring-cyan-500/20'
                       : 'ds-bg-brand-cyan-10 ds-text-brand-cyan-70 hover:bg-[rgb(var(--ds-brand-cyan-rgb)/0.25)] hover:ring-2 hover:ring-[rgb(var(--ds-brand-cyan-rgb)/0.3)] ds-ring-brand-cyan-15'
                   }`}
                 >

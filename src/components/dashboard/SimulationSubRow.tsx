@@ -523,7 +523,7 @@ const SimulationSubRow = ({
     const noteAlignKey = getDesktopAlignKey(resolvedAlignBand, 'note');
 
     const mainRow = (
-      <tr data-align-key={mainAlignKey} className={`${row.warning ? 'ds-bg-warning-row' : ''} ${disabled ? 'opacity-75' : ''}`}>
+      <tr data-align-key={mainAlignKey} className={`${row.warning ? 'ds-bg-warning-row' : ''} ${disabled ? 'opacity-75 dark:opacity-60' : ''}`}>
         <td className={`${labelCellPy} ${metricCellPx} min-w-0 align-top`}>
           <div className={`min-w-0 ${isBreakdownItem ? `${breakdownIndentClass} ${borderColorClass}` : ''}`}>
             {/* Label + cap are kept on a single line via `whitespace-nowrap`. The flex
@@ -805,7 +805,7 @@ const SimulationSubRow = ({
             </th>
           </tr>
         </thead>
-        <tbody className={`[&>tr:last-child>td]:pb-2 ${disabledNotice ? 'opacity-75' : ''}`}>
+        <tbody className={`[&>tr:last-child>td]:pb-2 ${disabledNotice ? 'opacity-75 dark:opacity-60' : ''}`}>
           {rows.map((row) => {
             const peer = peerRows ? findPeerRow(row.rowKey, peerRows) : undefined;
             const peerHasCapBar = peer != null && peer.cap != null && peer.type === 'usd';
@@ -1321,10 +1321,10 @@ const SimulationSubRow = ({
             ref={gridRef}
             className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_clamp(14.5rem,24.5vw,18rem)] gap-2 min-w-0 items-stretch overflow-hidden"
           >
-            <div className={`flex min-w-0 flex-col overflow-hidden${supplySideBlocked ? ' opacity-70' : ''}`}>
+            <div className={`flex min-w-0 flex-col overflow-hidden${supplySideBlocked ? ' opacity-70 dark:opacity-60' : ''}`}>
               {renderTable('Supply', supplyRows, 'ds-text-emerald-600', 'border-emerald-500/40', 'border-l-[rgb(var(--ds-emerald-500-rgb))]', showSupplyCapWarning, borrowRows, supplyDisabledNotice)}
             </div>
-            <div className={`flex min-w-0 flex-col overflow-hidden${borrowSideBlocked ? ' opacity-70' : ''}`}>
+            <div className={`flex min-w-0 flex-col overflow-hidden${borrowSideBlocked ? ' opacity-70 dark:opacity-60' : ''}`}>
               {renderTable('Borrow', borrowRows, 'ds-text-brand-cyan', 'border-[rgb(var(--ds-brand-cyan-rgb))]/40', 'border-l-[rgb(var(--ds-brand-cyan-rgb))]', showBorrowCapWarning, supplyRows, borrowDisabledNotice)}
             </div>
             <div className="flex min-h-0 min-w-0 flex-col overflow-hidden self-stretch">

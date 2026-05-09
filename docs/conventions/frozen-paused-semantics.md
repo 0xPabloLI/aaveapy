@@ -445,39 +445,42 @@ UI 文案采用 **最大公约数** 策略：只描述两个版本中行为一�
 当 reserve 因 flag（paused / frozen / supplyDisabled / borrowDisabled）变灰时，
 **文字必须保持可读**，不能因为状态指示而牺牲信息获取。
 
-#### 主表格行（DesktopReserveRow）
+#### 主表格行（DesktopReserveRow）和移动端 Hero APY（MobileReserveCard）
 
-| 位置 | 正常状态 | Disabled 状态 |
+| 位置 | 正常状态 | Disabled 状态（保留颜色语义，只降低强度） |
 |------|----------|---------------|
-| Supply APY 主值 | `ds-text-emerald-500` | `text-muted-foreground`（不用 `text-secondary`） |
-| Supply Native APY | `ds-text-emerald-500-70` | `text-muted-foreground` |
-| Supply 激励按钮 | `ds-bg-emerald-500-10 ds-text-emerald-500-70` | `bg-muted-foreground/10 text-muted-foreground` |
-| Borrow APY 主值 | `ds-text-brand-cyan` | `text-muted-foreground` |
-| Borrow Native APY | `ds-text-brand-cyan-70` | `text-muted-foreground` |
-| Borrow 激励按钮 | `ds-bg-brand-cyan-10 ds-text-brand-cyan-70` | `bg-muted-foreground/10 text-muted-foreground` |
+| Supply APY 主值 | `ds-text-emerald-500` | `ds-text-emerald-500/50` |
+| Supply Native APY | `ds-text-emerald-500-70` | `ds-text-emerald-500/40` |
+| Supply 激励按钮 | `ds-bg-emerald-500-10 ds-text-emerald-500-70` | `bg-emerald-500/10 text-emerald-500/50` |
+| Borrow APY 主值 | `ds-text-brand-cyan` | `ds-text-brand-cyan/50` |
+| Borrow Native APY | `ds-text-brand-cyan-70` | `ds-text-brand-cyan/40` |
+| Borrow 激励按钮 | `ds-bg-brand-cyan-10 ds-text-brand-cyan-70` | `bg-cyan-500/10 text-cyan-500/50` |
 
-> **禁止使用 `text-secondary`** 作为 disabled 状态的文字颜色——在暗色模式下
-> `text-secondary` 仅 `hsl(220, 8%, 35%)`，几乎不可读。统一使用
-> `text-muted-foreground`（暗色模式 `hsl(60, 5%, 70%)`），既保留了 disabled
-> 的视觉暗示（比正常颜色柔和），又保证了文字清晰可读。
+> **保留颜色语义**：disabled 不意味着丢掉颜色身份。Supply 仍然是绿色系、
+> Borrow 仍然是青色系，只是降低不透明度来表示「不可操作」。
+> **禁止使用 `text-secondary`** 作为 disabled 的数值文字颜色：暗色模式下
+> `text-secondary = hsl(220, 8%, 35%)` 几乎不可读。
 
 #### 展开 Simulation 面板（SimulationSubRow）
 
-| 元素 | 之前 | 现在 | 原因 |
+| 元素 | 正常 | Disabled（亮色 / 暗色） | 原因 |
 |------|------|------|------|
-| Supply/Borrow 列整体 opacity | `opacity-50`（半透明不可读） | `opacity-70` | 轻度透明保留 disabled 暗示，不牺牲可读性 |
-| 禁用行 `<tr>` opacity | `opacity-60` | `opacity-75` | 同上 |
-| 禁用 `<tbody>` opacity | `opacity-60` | `opacity-75` | 同上 |
-| Section 标题 disabled | `text-secondary` | `text-muted-foreground` | 与主行规则一致 |
-| disabled 提示文字 | `text-secondary` | `text-muted-foreground` | 同上 |
-| Compact disabled 通知 | `text-secondary` | `text-muted-foreground` | 同上 |
+| Supply/Borrow 列整体 opacity | `''` | `opacity-70` / `dark:opacity-60` | 暗色模式下透明度衰减感知弱，需加强 |
+| 禁用行 `<tr>` opacity | `''` | `opacity-75` / `dark:opacity-60` | 同上 |
+| 禁用 `<tbody>` opacity | `''` | `opacity-75` / `dark:opacity-60` | 同上 |
+| Section 标题 disabled | accentClass | `text-muted-foreground` | 提示文字，不是数据值，用中性灰即可 |
+| disabled 提示文字 | — | `text-muted-foreground` | 同上 |
+| Compact disabled 通知 | — | `text-muted-foreground` | 同上 |
 
 #### 设计原则
 
-1. **Disabled ≠ Invisible**：用户仍需查看当前 APY/APR 数值来做决策对比，
-   变灰只是告诉用户「当下不能操作」，不是「不需要看」。
-2. **单层衰减策略**：用 `text-muted-foreground`（颜色变柔）或 `opacity-70`
-   （轻度透明）其一即可，不要同时叠加多层（如 `opacity-50` + `text-secondary`）。
-3. **端侧一致性**：桌面端和移动端的 disabled 文字颜色规则完全一致。`text-secondary`
+1. **Disabled ≠ Invisible**：用户仍需查看当前 APY/APR 数值来做决策对比。
+2. **保留颜色语义**：数值类的 disabled 用半透明彩色（`emerald/cyan/50%`），
+   而非中性灰，保持用户对 supply=绿 / borrow=青 的颜色直觉。
+3. **提示文字用中性色**：Section 标题的「Supply unavailable」等文案不是
+   数据值而是状态提示，用 `text-muted-foreground` 中性灰即可。
+4. **暗色模式 opacity 需加强**：透明度衰减在暗背景下感知弱（黑底 + 30% 透明 ≈ 变化微妙），
+   用 `dark:opacity-60` 在暗色模式下额外降低 10% 透明度，保证视觉差异。
+5. **端侧一致**：桌面端和移动端的 disabled 数值颜色规则完全一致。`text-secondary`
    在任何端侧、任何模式下都不得用于 disabled 状态的数值显示。
 
