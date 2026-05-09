@@ -22,6 +22,54 @@ interface CapProgressRingProps {
   triggerAriaLabel?: string;
 }
 
+/** Shared cap progress data display — reused by desktop tooltip and mobile bottom sheet. */
+export function CapProgressContent({
+  currentSize,
+  cap,
+  displayMode = 'usd',
+  tokenPrice,
+  tokenSymbol,
+}: {
+  currentSize: number;
+  cap: number;
+  displayMode?: 'usd' | 'token';
+  tokenPrice?: number | null;
+  tokenSymbol?: string | null;
+}) {
+  const percentage = Math.min((currentSize / cap) * 100, 100);
+  const colorClass =
+    percentage >= 95 ? 'ds-text-amber-500' : percentage >= 80 ? 'ds-text-amber-600' : 'ds-text-emerald-500';
+
+  return (
+    <div className="space-y-1 ds-text-12">
+      <div className="flex justify-between gap-3">
+        <span className="text-muted-foreground">Total supplied</span>
+        <span className="font-medium tabular-nums ds-text-emerald-500">
+          {formatScenarioSize(currentSize, { inputMode: displayMode, tokenPrice, tokenSymbol })}
+        </span>
+      </div>
+      <div className="flex justify-between gap-3">
+        <span className="text-muted-foreground">Supply cap</span>
+        <span className="font-medium tabular-nums ds-text-emerald-500">
+          {formatScenarioSize(cap, { inputMode: displayMode, tokenPrice, tokenSymbol })}
+        </span>
+      </div>
+      <div className="flex justify-between gap-3">
+        <span className="text-muted-foreground">Available to supply</span>
+        <span className="font-medium tabular-nums ds-text-emerald-500">
+          {formatScenarioSize(Math.max(0, cap - currentSize), { inputMode: displayMode, tokenPrice, tokenSymbol })}
+        </span>
+      </div>
+      <div className="flex justify-between gap-3 pt-1 border-t border-border/50">
+        <span className="text-muted-foreground">% of cap</span>
+        <span className={`font-bold tabular-nums ${colorClass}`}>
+          {percentage.toFixed(1)}%
+        </span>
+      </div>
+    </div>
+  );
+}
+
 const CapProgressRing = memo(({
   size,
   cap,
@@ -51,41 +99,16 @@ const CapProgressRing = memo(({
     return 'rgb(var(--ds-emerald-500-rgb, 16 185 129))';
   };
 
-  const getProgressColorClass = () => {
-    if (percentage >= 95) return 'ds-text-amber-500';
-    if (percentage >= 80) return 'ds-text-amber-600';
-    return 'ds-text-emerald-500';
-  };
-
   const tooltipContent = (
     <TooltipContent side="right" className="max-w-[220px]">
       <TooltipCalloutArrow />
-      <div className="space-y-1 ds-text-12">
-        <div className="flex justify-between gap-3">
-          <span className="text-muted-foreground">Total supplied</span>
-          <span className="font-medium tabular-nums ds-text-emerald-500">
-            {formatScenarioSize(currentSize, { inputMode: displayMode, tokenPrice, tokenSymbol })}
-          </span>
-        </div>
-        <div className="flex justify-between gap-3">
-          <span className="text-muted-foreground">Supply cap</span>
-          <span className="font-medium tabular-nums ds-text-emerald-500">
-            {formatScenarioSize(cap, { inputMode: displayMode, tokenPrice, tokenSymbol })}
-          </span>
-        </div>
-        <div className="flex justify-between gap-3">
-          <span className="text-muted-foreground">Available to supply</span>
-          <span className="font-medium tabular-nums ds-text-emerald-500">
-            {formatScenarioSize(Math.max(0, cap - currentSize), { inputMode: displayMode, tokenPrice, tokenSymbol })}
-          </span>
-        </div>
-        <div className="flex justify-between gap-3 pt-1 border-t border-border/50">
-          <span className="text-muted-foreground">% of cap</span>
-          <span className={`font-bold tabular-nums ${getProgressColorClass()}`}>
-            {percentage.toFixed(1)}%
-          </span>
-        </div>
-      </div>
+      <CapProgressContent
+        currentSize={currentSize}
+        cap={cap}
+        displayMode={displayMode}
+        tokenPrice={tokenPrice}
+        tokenSymbol={tokenSymbol}
+      />
     </TooltipContent>
   );
 

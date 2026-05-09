@@ -487,7 +487,6 @@ const SimulationSubRow = ({
     if (disabled) {
       row = { ...row, after: null, delta: null, capNote: undefined, warning: false };
     }
-    const disabledAccent = disabled ? SIM_NEUTRAL_MUTED : accentClass;
     const deltaColorClass = row.delta === null || Number.isNaN(row.delta) ? SIM_NEUTRAL_MUTED : accentClass;
     const isBreakdownItem = row.isBreakdown;
     const isSubBreakdown = row.isSubBreakdown === true;
@@ -523,7 +522,7 @@ const SimulationSubRow = ({
     const noteAlignKey = getDesktopAlignKey(resolvedAlignBand, 'note');
 
     const mainRow = (
-      <tr data-align-key={mainAlignKey} className={`${row.warning ? 'ds-bg-warning-row' : ''} ${disabled ? 'opacity-75 dark:opacity-60' : ''}`}>
+      <tr data-align-key={mainAlignKey} data-disabled={disabled ? 'true' : undefined} className={`group ${row.warning ? 'ds-bg-warning-row' : ''}`}>
         <td className={`${labelCellPy} ${metricCellPx} min-w-0 align-top`}>
           <div className={`min-w-0 ${isBreakdownItem ? `${breakdownIndentClass} ${borderColorClass}` : ''}`}>
             {/* Label + cap are kept on a single line via `whitespace-nowrap`. The flex
@@ -535,7 +534,7 @@ const SimulationSubRow = ({
             <div className="flex items-baseline gap-x-1.5 whitespace-nowrap">
               <span
                 title={typeof row.label === 'string' ? row.label : undefined}
-                className={`ds-text-12 whitespace-nowrap ${row.warning ? 'text-amber-700 dark:text-amber-400 font-medium' : isBreakdownItem ? disabledAccent : disabledAccent}`}
+                className={`ds-text-12 whitespace-nowrap ${row.warning ? 'text-amber-700 dark:text-amber-400 font-medium' : `${accentClass} group-data-[disabled]:text-muted-foreground`}`}
               >
                 {row.label}
               </span>
@@ -548,17 +547,17 @@ const SimulationSubRow = ({
           </div>
         </td>
         <td className={`${valueCellPy} ${valueCellPx} text-right align-top whitespace-nowrap`}>
-          <span className={`${numericFontClass} tabular-nums whitespace-nowrap ${disabledAccent}`}>
+          <span className={`${numericFontClass} tabular-nums whitespace-nowrap ${accentClass} group-data-[disabled]:text-muted-foreground`}>
             {formatValue(row.current, row.type)}
           </span>
         </td>
         <td className={`${valueCellPy} ${valueCellPx} text-right align-top whitespace-nowrap`}>
-          <span className={`${numericFontClass} tabular-nums whitespace-nowrap ${row.after === null ? SIM_NEUTRAL_MUTED : rowAccentClass}`}>
+          <span className={`${numericFontClass} tabular-nums whitespace-nowrap ${row.after === null ? SIM_NEUTRAL_MUTED : rowAccentClass} group-data-[disabled]:text-muted-foreground`}>
             {formatValue(row.after, row.type)}
           </span>
         </td>
         <td className={`${valueCellPy} ${deltaCellPx} text-right align-top whitespace-nowrap`}>
-          <span className={`${numericFontClass} tabular-nums whitespace-nowrap ${deltaColorClass}`}>
+          <span className={`${numericFontClass} tabular-nums whitespace-nowrap ${deltaColorClass} group-data-[disabled]:text-muted-foreground`}>
             {formatDeltaValue(row.delta, row.type)}
           </span>
         </td>
@@ -579,9 +578,9 @@ const SimulationSubRow = ({
         ? 'bg-[rgb(var(--ds-amber-500-rgb)/0.5)]'
         : accentClass.includes('emerald') ? 'bg-emerald-400/40' : 'bg-[rgb(var(--ds-brand-cyan-rgb))]/40';
       return (
-        <tr data-align-key={capAlignKey} className={row.warning ? 'ds-bg-warning-row' : ''}>
+        <tr data-align-key={capAlignKey} data-disabled={disabled ? 'true' : undefined} className={`group ${row.warning ? 'ds-bg-warning-row' : ''}`}>
           <td colSpan={4} className={`pt-0 pb-1 ${deltaCellPx}`}>
-            <div className="relative h-1.5 w-full rounded-full bg-muted/40 overflow-hidden">
+            <div className={`relative h-1.5 w-full rounded-full bg-muted/40 overflow-hidden ${disabled ? 'grayscale-[50%] opacity-50' : ''} group-data-[disabled]:grayscale-[50%] group-data-[disabled]:opacity-50`}>
               <div
                 className={`absolute inset-y-0 left-0 rounded-full ${barColorClass} transition-all duration-300`}
                 style={{ width: `${currentPct}%` }}
@@ -777,7 +776,7 @@ const SimulationSubRow = ({
         <thead>
           <tr className="bg-muted/30 border-b border-border/50">
             <th className="px-4 py-1.5 text-left">
-              <span className={`ds-text-13 font-semibold ${disabledNotice ? 'text-muted-foreground' : accentClass}`}>{title}</span>
+              <span className={`ds-text-13 font-semibold ${accentClass} group-data-[disabled]:text-muted-foreground`}>{title}</span>
             </th>
             <th className="px-3 py-1.5 text-right">
               <span className="ds-text-11 text-muted-foreground">Current</span>
@@ -790,7 +789,7 @@ const SimulationSubRow = ({
             </th>
           </tr>
         </thead>
-        <tbody className={`[&>tr:last-child>td]:pb-2 ${disabledNotice ? 'opacity-75 dark:opacity-60' : ''}`}>
+        <tbody className={`[&>tr:last-child>td]:pb-2 group-data-[disabled]:opacity-60`}>
           {rows.map((row) => {
             const peer = peerRows ? findPeerRow(row.rowKey, peerRows) : undefined;
             const peerHasCapBar = peer != null && peer.cap != null && peer.type === 'usd';
@@ -1306,10 +1305,10 @@ const SimulationSubRow = ({
             ref={gridRef}
             className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_clamp(14.5rem,24.5vw,18rem)] gap-2 min-w-0 items-stretch overflow-hidden"
           >
-            <div className={`flex min-w-0 flex-col overflow-hidden${supplySideBlocked ? ' opacity-70 dark:opacity-60' : ''}`}>
+            <div data-disabled={supplySideBlocked ? 'true' : undefined} className="group flex min-w-0 flex-col overflow-hidden">
               {renderTable('Supply', supplyRows, 'ds-text-emerald-600', 'border-emerald-500/40', 'border-l-[rgb(var(--ds-emerald-500-rgb))]', showSupplyCapWarning, borrowRows, supplyDisabledNotice)}
             </div>
-            <div className={`flex min-w-0 flex-col overflow-hidden${borrowSideBlocked ? ' opacity-70 dark:opacity-60' : ''}`}>
+            <div data-disabled={borrowSideBlocked ? 'true' : undefined} className="group flex min-w-0 flex-col overflow-hidden">
               {renderTable('Borrow', borrowRows, 'ds-text-brand-cyan', 'border-[rgb(var(--ds-brand-cyan-rgb))]/40', 'border-l-[rgb(var(--ds-brand-cyan-rgb))]', showBorrowCapWarning, supplyRows, borrowDisabledNotice)}
             </div>
             <div className="flex min-h-0 min-w-0 flex-col overflow-hidden self-stretch">

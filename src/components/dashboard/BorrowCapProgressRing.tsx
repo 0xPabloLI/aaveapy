@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { memo } from 'react';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipCalloutArrow } from '@/components/ui/tooltip';
 import { formatScenarioSize } from '@/lib/formatters';
+import { getAvailableToBorrowUsd } from '@/lib/scenarioSize';
 import { cn } from '@/lib/utils';
 
 interface BorrowCapProgressRingProps {
@@ -20,6 +21,71 @@ interface BorrowCapProgressRingProps {
   label?: ReactNode;
   triggerClassName?: string;
   triggerAriaLabel?: string;
+}
+
+/** Shared borrow cap progress data display — reused by desktop tooltip and mobile bottom sheet. */
+export function BorrowCapProgressContent({
+  borrowed,
+  cap,
+  availableLiquidityUsd,
+  disabled = false,
+  displayMode = 'usd',
+  tokenPrice,
+  tokenSymbol,
+}: {
+  borrowed: number;
+  cap: number;
+  availableLiquidityUsd: number;
+  disabled?: boolean;
+  displayMode?: 'usd' | 'token';
+  tokenPrice?: number | null;
+  tokenSymbol?: string | null;
+}) {
+  const percentage = Math.min((borrowed / cap) * 100, 100);
+  const availableToBorrow = disabled
+    ? 0
+    : getAvailableToBorrowUsd({
+        borrowedUsd: borrowed,
+        borrowCapUsd: cap,
+        availableLiquidityUsd,
+      }) ?? 0;
+  const colorClass =
+    percentage >= 95 ? 'ds-text-amber-500' : percentage >= 80 ? 'ds-text-amber-600' : 'ds-text-brand-cyan';
+
+  return (
+    <div className="space-y-1 ds-text-12">
+      <div className="flex justify-between gap-3">
+        <span className="text-muted-foreground">Total borrowed</span>
+        <span className="font-medium tabular-nums ds-text-brand-cyan">
+          {formatScenarioSize(borrowed, { inputMode: displayMode, tokenPrice, tokenSymbol })}
+        </span>
+      </div>
+      <div className="flex justify-between gap-3">
+        <span className="text-muted-foreground">Borrow cap</span>
+        <span className="font-medium tabular-nums ds-text-brand-cyan">
+          {formatScenarioSize(cap, { inputMode: displayMode, tokenPrice, tokenSymbol })}
+        </span>
+      </div>
+      <div className="flex justify-between gap-3">
+        <span className="text-muted-foreground">Available liquidity</span>
+        <span className={`font-medium tabular-nums ${availableLiquidityUsd < 10000 ? 'ds-text-amber-600' : 'ds-text-purple-600'}`}>
+          {formatScenarioSize(availableLiquidityUsd, { inputMode: displayMode, tokenPrice, tokenSymbol })}
+        </span>
+      </div>
+      <div className="flex justify-between gap-3">
+        <span className="text-muted-foreground">Available to borrow</span>
+        <span className="font-medium tabular-nums ds-text-brand-cyan">
+          {formatScenarioSize(availableToBorrow, { inputMode: displayMode, tokenPrice, tokenSymbol })}
+        </span>
+      </div>
+      <div className="flex justify-between gap-3 pt-1 border-t border-border/50">
+        <span className="text-muted-foreground">% of cap</span>
+        <span className={`font-bold tabular-nums ${colorClass}`}>
+          {percentage.toFixed(1)}%
+        </span>
+      </div>
+    </div>
+  );
 }
 
 const BorrowCapProgressRing = memo(({
@@ -47,9 +113,7 @@ const BorrowCapProgressRing = memo(({
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
-  const capRemaining = disabled ? 0 : Math.max(0, cap - currentBorrowed);
   const liquidityRemaining = availableLiquidityUsd ?? 0;
-  const availableToBorrow = disabled ? 0 : Math.min(capRemaining, liquidityRemaining);
 
   const getProgressColor = () => {
     if (percentage >= 95) return 'rgb(var(--ds-amber-500-rgb, 245 158 11))';
@@ -57,47 +121,18 @@ const BorrowCapProgressRing = memo(({
     return 'rgb(var(--ds-brand-cyan-rgb, 34 211 238))';
   };
 
-  const getProgressColorClass = () => {
-    if (percentage >= 95) return 'ds-text-amber-500';
-    if (percentage >= 80) return 'ds-text-amber-600';
-    return 'ds-text-brand-cyan';
-  };
-
   const tooltipContent = (
     <TooltipContent side="right" className="max-w-[220px]">
       <TooltipCalloutArrow />
-      <div className="space-y-1 ds-text-12">
-        <div className="flex justify-between gap-3">
-          <span className="text-muted-foreground">Total borrowed</span>
-          <span className="font-medium tabular-nums ds-text-brand-cyan">
-            {formatScenarioSize(currentBorrowed, { inputMode: displayMode, tokenPrice, tokenSymbol })}
-          </span>
-        </div>
-        <div className="flex justify-between gap-3">
-          <span className="text-muted-foreground">Borrow cap</span>
-          <span className="font-medium tabular-nums ds-text-brand-cyan">
-            {formatScenarioSize(cap, { inputMode: displayMode, tokenPrice, tokenSymbol })}
-          </span>
-        </div>
-        <div className="flex justify-between gap-3">
-          <span className="text-muted-foreground">Available liquidity</span>
-          <span className="font-medium tabular-nums ds-text-purple-600">
-            {formatScenarioSize(liquidityRemaining, { inputMode: displayMode, tokenPrice, tokenSymbol })}
-          </span>
-        </div>
-        <div className="flex justify-between gap-3">
-          <span className="text-muted-foreground">Available to borrow</span>
-          <span className="font-medium tabular-nums ds-text-brand-cyan">
-            {formatScenarioSize(availableToBorrow, { inputMode: displayMode, tokenPrice, tokenSymbol })}
-          </span>
-        </div>
-        <div className="flex justify-between gap-3 pt-1 border-t border-border/50">
-          <span className="text-muted-foreground">% of cap</span>
-          <span className={`font-bold tabular-nums ${getProgressColorClass()}`}>
-            {percentage.toFixed(1)}%
-          </span>
-        </div>
-      </div>
+      <BorrowCapProgressContent
+        borrowed={currentBorrowed}
+        cap={cap}
+        availableLiquidityUsd={liquidityRemaining}
+        disabled={disabled}
+        displayMode={displayMode}
+        tokenPrice={tokenPrice}
+        tokenSymbol={tokenSymbol}
+      />
     </TooltipContent>
   );
 

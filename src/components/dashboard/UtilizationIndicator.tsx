@@ -9,6 +9,25 @@ interface UtilizationIndicatorProps {
   height?: number;
 }
 
+/** Shared utilization data display — reused by desktop tooltip and mobile bottom sheet. */
+export function UtilizationContent({ current, optimal }: { current: number; optimal: number }) {
+  const isOverOptimal = current > optimal;
+  return (
+    <div className="space-y-1 ds-text-12">
+      <div className="flex justify-between gap-4">
+        <span className="text-muted-foreground">Optimal utilization</span>
+        <span className="font-medium tabular-nums">{formatPercent(optimal)}</span>
+      </div>
+      <div className="flex justify-between gap-4 pt-2 border-t border-border/50">
+        <span className="text-muted-foreground">Current utilization</span>
+        <span className={`font-bold tabular-nums ${isOverOptimal ? 'text-amber-600' : 'text-muted-foreground'}`}>
+          {formatPercent(current)}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 const UtilizationIndicator = memo(({
   current,
   optimal,
@@ -97,16 +116,7 @@ const UtilizationIndicator = memo(({
       </TooltipTrigger>
       <TooltipContent side="top" className="max-w-[220px] p-3">
         <TooltipCalloutArrow />
-        <div className="space-y-2 ds-text-12">
-          <div className="flex justify-between gap-4">
-            <span className="text-muted-foreground">Optimal utilization</span>
-            <span className="font-medium tabular-nums">{formatPercent(optimal)}</span>
-          </div>
-          <div className="flex justify-between gap-4 pt-2 border-t border-border/50">
-            <span className="text-muted-foreground">Current utilization</span>
-            <span className={`font-bold tabular-nums ${isOverOptimal ? 'text-amber-600' : 'text-muted-foreground'}`}>{formatPercent(current)}</span>
-          </div>
-        </div>
+        <UtilizationContent current={clampedCurrent} optimal={clampedOptimal} />
       </TooltipContent>
     </Tooltip>
   );

@@ -654,7 +654,7 @@ describe('MobileReserveCard', () => {
     expect(allSvgElements.length).toBeLessThanOrEqual(1);
   });
 
-  it('wraps frozen status badge in a Tooltip', () => {
+  it('renders frozen status badge with correct aria-label and data-status', () => {
     const frozenReserve: ReserveWithSpread = {
       ...reserve,
       isFrozen: true,
@@ -682,10 +682,11 @@ describe('MobileReserveCard', () => {
 
     const badge = getByTestId('mobile-reserve-status-badge');
     expect(badge).toBeInTheDocument();
-    expect(badge.hasAttribute('data-state')).toBe(true);
+    expect(badge.getAttribute('data-status')).toBe('frozen');
+    expect(badge.getAttribute('aria-label')).toBe('Show frozen details');
   });
 
-  it('wraps paused status badge in a Tooltip', () => {
+  it('renders paused status badge with correct aria-label and data-status', () => {
     const pausedReserve: ReserveWithSpread = {
       ...reserve,
       isPaused: true,
@@ -713,6 +714,69 @@ describe('MobileReserveCard', () => {
 
     const badge = getByTestId('mobile-reserve-status-badge');
     expect(badge).toBeInTheDocument();
-    expect(badge.hasAttribute('data-state')).toBe(true);
+    expect(badge.getAttribute('data-status')).toBe('paused');
+    expect(badge.getAttribute('aria-label')).toBe('Show paused details');
+  });
+
+  it('does not wrap frozen status badge in a Tooltip (click already opens bottom sheet)', () => {
+    const frozenReserve: ReserveWithSpread = {
+      ...reserve,
+      isFrozen: true,
+    };
+
+    const { getByTestId } = render(
+      <QueryClientProvider client={new QueryClient()}>
+        <TooltipProvider>
+          <MobileReserveCard
+            reserve={frozenReserve}
+            isApy
+            tydroPointToUsdRate={0}
+            onIncentiveClick={() => {}}
+            isSimulationExpanded={false}
+            onToggleSimulation={() => {}}
+            simulation={simulation}
+            supplyInput="1000"
+            borrowInput="500"
+            hasSharedScenario
+            inputMode="usd"
+          />
+        </TooltipProvider>
+      </QueryClientProvider>,
+    );
+
+    const badge = getByTestId('mobile-reserve-status-badge');
+    expect(badge).toBeInTheDocument();
+    expect(badge.hasAttribute('data-state')).toBe(false);
+  });
+
+  it('does not wrap paused status badge in a Tooltip (click already opens bottom sheet)', () => {
+    const pausedReserve: ReserveWithSpread = {
+      ...reserve,
+      isPaused: true,
+    };
+
+    const { getByTestId } = render(
+      <QueryClientProvider client={new QueryClient()}>
+        <TooltipProvider>
+          <MobileReserveCard
+            reserve={pausedReserve}
+            isApy
+            tydroPointToUsdRate={0}
+            onIncentiveClick={() => {}}
+            isSimulationExpanded={false}
+            onToggleSimulation={() => {}}
+            simulation={simulation}
+            supplyInput="1000"
+            borrowInput="500"
+            hasSharedScenario
+            inputMode="usd"
+          />
+        </TooltipProvider>
+      </QueryClientProvider>,
+    );
+
+    const badge = getByTestId('mobile-reserve-status-badge');
+    expect(badge).toBeInTheDocument();
+    expect(badge.hasAttribute('data-state')).toBe(false);
   });
 });

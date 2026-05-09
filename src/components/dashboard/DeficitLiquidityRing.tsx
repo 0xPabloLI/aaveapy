@@ -22,6 +22,79 @@ interface DeficitLiquidityRingProps {
   poolExplorerUrl?: string | null;
 }
 
+/** Shared deficit data display — reused by desktop tooltip and mobile bottom sheet. */
+export function DeficitProgressContent({
+  deficitUsd,
+  totalSuppliedUsd,
+  tokenDeficitLabel,
+  displayMode = 'usd',
+  tokenPrice,
+  tokenSymbol,
+  poolExplorerUrl,
+}: {
+  deficitUsd: number;
+  totalSuppliedUsd: number | null | undefined;
+  tokenDeficitLabel?: string;
+  displayMode?: 'usd' | 'token';
+  tokenPrice?: number | null;
+  tokenSymbol?: string | null;
+  poolExplorerUrl?: string | null;
+}) {
+  const ratio = calculateDeficitShareRatio({ deficitUsd, totalSuppliedUsd });
+  const percentage = ratio != null ? Math.min(Math.max(ratio * 100, 0), 100) : null;
+  const severity = getDeficitSeverity(ratio);
+
+  const getProgressColorClass = () => {
+    if (severity === 'critical') return 'ds-text-amber-500';
+    if (severity === 'warning') return 'ds-text-amber-600';
+    return 'text-muted-foreground/60';
+  };
+
+  const deficitDisplayValue = displayMode === 'token'
+    ? (tokenDeficitLabel ?? '—')
+    : formatScenarioSize(deficitUsd, { inputMode: 'usd' });
+  const totalSuppliedDisplayValue = totalSuppliedUsd != null
+    ? formatScenarioSize(totalSuppliedUsd, { inputMode: displayMode, tokenPrice, tokenSymbol })
+    : '—';
+
+  return (
+    <div className="space-y-1 ds-text-12">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-muted-foreground flex items-center gap-1">
+          Deficit
+          {poolExplorerUrl && (
+            <a
+              href={poolExplorerUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-muted-foreground/60 hover:text-foreground transition-colors"
+              onClick={(e) => e.stopPropagation()}
+              aria-label="Verify on-chain"
+            >
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          )}
+        </span>
+        <span className={`font-medium tabular-nums ${getProgressColorClass()}`}>
+          {deficitDisplayValue}
+        </span>
+      </div>
+      <div className="flex justify-between gap-3">
+        <span className="text-muted-foreground">Total supplied</span>
+        <span className={`font-medium tabular-nums ${getProgressColorClass()}`}>
+          {totalSuppliedDisplayValue}
+        </span>
+      </div>
+      <div className="flex items-center justify-between gap-3 pt-2 border-t border-border/35">
+        <span className="text-muted-foreground">% of total (incl. deficit)</span>
+        <span className={`font-bold tabular-nums leading-none ${getProgressColorClass()}`}>
+          {ratio != null ? `${percentage?.toFixed(2)}%` : '—'}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 const DeficitLiquidityRing = memo(({
   deficitUsd,
   totalSuppliedUsd,
@@ -54,58 +127,18 @@ const DeficitLiquidityRing = memo(({
     return 'rgb(var(--ds-muted-foreground-rgb, 100 116 139) / 0.75)';
   };
 
-  const getProgressColorClass = () => {
-    if (severity === 'critical') return 'ds-text-amber-500';
-    if (severity === 'warning') return 'ds-text-amber-600';
-    return 'text-muted-foreground/60';
-  };
-
-  const deficitDisplayValue = displayMode === 'token'
-    ? (tokenDeficitLabel ?? '—')
-    : formatScenarioSize(deficitUsd, { inputMode: 'usd' });
-  const totalSuppliedDisplayValue = formatScenarioSize(totalSuppliedUsd, {
-    inputMode: displayMode,
-    tokenPrice,
-    tokenSymbol,
-  });
-
   const tooltipContent = (
     <TooltipContent side="right" className="max-w-[240px]">
       <TooltipCalloutArrow />
-      <div className="space-y-1 ds-text-12">
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-muted-foreground flex items-center gap-1">
-            Deficit
-            {poolExplorerUrl && (
-              <a
-                href={poolExplorerUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-muted-foreground/60 hover:text-foreground transition-colors"
-                onClick={(e) => e.stopPropagation()}
-                aria-label="Verify on-chain"
-              >
-                <ExternalLink className="w-3 h-3" />
-              </a>
-            )}
-          </span>
-          <span className={`font-medium tabular-nums ${getProgressColorClass()}`}>
-            {deficitDisplayValue}
-          </span>
-        </div>
-        <div className="flex justify-between gap-3">
-          <span className="text-muted-foreground">Total supplied</span>
-          <span className={`font-medium tabular-nums ${getProgressColorClass()}`}>
-            {hasTotalSupplied ? totalSuppliedDisplayValue : '—'}
-          </span>
-        </div>
-        <div className="flex items-center justify-between gap-3 pt-2 border-t border-border/35">
-          <span className="text-muted-foreground">% of total (incl. deficit)</span>
-          <span className={`font-bold tabular-nums leading-none ${getProgressColorClass()}`}>
-            {ratio != null ? `${percentage.toFixed(2)}%` : '—'}
-          </span>
-        </div>
-      </div>
+      <DeficitProgressContent
+        deficitUsd={deficitUsd}
+        totalSuppliedUsd={totalSuppliedUsd}
+        tokenDeficitLabel={tokenDeficitLabel}
+        displayMode={displayMode}
+        tokenPrice={tokenPrice}
+        tokenSymbol={tokenSymbol}
+        poolExplorerUrl={poolExplorerUrl}
+      />
     </TooltipContent>
   );
 
