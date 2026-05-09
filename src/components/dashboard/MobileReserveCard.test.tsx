@@ -373,6 +373,11 @@ describe('MobileReserveCard', () => {
 
     expect(getByText('Base APY only')).toBeInTheDocument();
     expect(queryByText('+')).not.toBeInTheDocument();
+
+    // Base placeholder must use ds-text-11 (same as incentive values like "0.05% + 3.66%") for horizontal alignment
+    const placeholderEl = getByText('Base APY only');
+    expect(placeholderEl).toHaveClass('ds-text-11');
+    expect(placeholderEl).not.toHaveClass('ds-text-10');
   });
 
   it('switches the empty-state placeholder to APR wording when the card is in APR mode', () => {
@@ -649,7 +654,7 @@ describe('MobileReserveCard', () => {
     expect(allSvgElements.length).toBeLessThanOrEqual(1);
   });
 
-  it('wraps frozen status badge in a Tooltip for hover context', () => {
+  it('wraps frozen status badge in a Tooltip', () => {
     const frozenReserve: ReserveWithSpread = {
       ...reserve,
       isFrozen: true,
@@ -680,7 +685,7 @@ describe('MobileReserveCard', () => {
     expect(badge.hasAttribute('data-state')).toBe(true);
   });
 
-  it('wraps paused status badge in a Tooltip for hover context', () => {
+  it('wraps paused status badge in a Tooltip', () => {
     const pausedReserve: ReserveWithSpread = {
       ...reserve,
       isPaused: true,
