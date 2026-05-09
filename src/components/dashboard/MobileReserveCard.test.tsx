@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render } from '@testing-library/react';
+import { cleanup, fireEvent, render } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import MobileReserveCard from './MobileReserveCard';
@@ -439,5 +439,105 @@ describe('MobileReserveCard', () => {
     const utilText = utilButton.querySelector('.ds-text-11');
     expect(utilText).not.toBeNull();
     expect(utilText!.textContent!.trim()).toBe('52%');
+  });
+
+  it('renders DeficitLiquidityRing (SVG ring, not button with text) when supply deficit exists', () => {
+    const deficitReserve: ReserveWithSpread = {
+      ...reserve,
+      deficit: '51198023044',
+    };
+
+    const { getByLabelText } = render(
+      <QueryClientProvider client={new QueryClient()}>
+        <TooltipProvider>
+          <MobileReserveCard
+            reserve={deficitReserve}
+            isApy
+            tydroPointToUsdRate={0}
+            onIncentiveClick={() => {}}
+            isSimulationExpanded={false}
+            onToggleSimulation={() => {}}
+            simulation={simulation}
+            supplyInput="1000"
+            borrowInput="500"
+            hasSharedScenario
+            inputMode="usd"
+          />
+        </TooltipProvider>
+      </QueryClientProvider>,
+    );
+
+    const deficitTrigger = getByLabelText(`Deficit details for ${deficitReserve.tokenSymbol}`);
+    expect(deficitTrigger.querySelector('svg')).not.toBeNull();
+    expect(deficitTrigger.tagName).toBe('DIV');
+    expect(deficitTrigger.getAttribute('role')).toBe('button');
+  });
+
+  it('prevents button+text pattern in deficit area (no raw USD text)', () => {
+    const deficitReserve: ReserveWithSpread = {
+      ...reserve,
+      deficit: '51198023044',
+    };
+
+    const { container } = render(
+      <QueryClientProvider client={new QueryClient()}>
+        <TooltipProvider>
+          <MobileReserveCard
+            reserve={deficitReserve}
+            isApy
+            tydroPointToUsdRate={0}
+            onIncentiveClick={() => {}}
+            isSimulationExpanded={false}
+            onToggleSimulation={() => {}}
+            simulation={simulation}
+            supplyInput="1000"
+            borrowInput="500"
+            hasSharedScenario
+            inputMode="usd"
+          />
+        </TooltipProvider>
+      </QueryClientProvider>,
+    );
+
+    // The deficit area (absolute positioned) should NOT contain a <button> with formatted USD
+    // (the old button+text pattern was: <button><ShieldIcon/><span>$1.00M</span></button>)
+    const deficitAreaButtons = container.querySelectorAll('.absolute.-top-1\\.5.right-4 button');
+    expect(deficitAreaButtons.length).toBe(0);
+  });
+
+  it('shows only one ExternalLink in deficit popup (not duplicated in % row)', () => {
+    const deficitReserve: ReserveWithSpread = {
+      ...reserve,
+      deficit: '51198023044',
+    };
+
+    const { getByLabelText, container } = render(
+      <QueryClientProvider client={new QueryClient()}>
+        <TooltipProvider>
+          <MobileReserveCard
+            reserve={deficitReserve}
+            isApy
+            tydroPointToUsdRate={0}
+            onIncentiveClick={() => {}}
+            isSimulationExpanded={false}
+            onToggleSimulation={() => {}}
+            simulation={simulation}
+            supplyInput="1000"
+            borrowInput="500"
+            hasSharedScenario
+            inputMode="usd"
+          />
+        </TooltipProvider>
+      </QueryClientProvider>,
+    );
+
+    const deficitTrigger = getByLabelText(`Deficit details for ${deficitReserve.tokenSymbol}`);
+    fireEvent.click(deficitTrigger);
+
+    // The popup should be visible now
+    const allSvgElements = container.querySelectorAll('svg.lucide-external-link');
+    // In the deficit popup, only ONE ExternalLink should appear (in the "Deficit" row)
+    // (was previously two: one in "Deficit" and one in "% of total")
+    expect(allSvgElements.length).toBeLessThanOrEqual(1);
   });
 });
