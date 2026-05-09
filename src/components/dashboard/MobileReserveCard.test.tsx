@@ -540,4 +540,68 @@ describe('MobileReserveCard', () => {
     // (was previously two: one in "Deficit" and one in "% of total")
     expect(allSvgElements.length).toBeLessThanOrEqual(1);
   });
+
+  it('does not wrap frozen/paused status badge in a Tooltip (click already opens bottom sheet)', () => {
+    // Radix TooltipTrigger with asChild adds data-state to the child element.
+    // When the badge is NOT wrapped in Tooltip, it has no data-state attribute.
+    const frozenReserve: ReserveWithSpread = {
+      ...reserve,
+      isFrozen: true,
+    };
+
+    const { getByTestId } = render(
+      <QueryClientProvider client={new QueryClient()}>
+        <TooltipProvider>
+          <MobileReserveCard
+            reserve={frozenReserve}
+            isApy
+            tydroPointToUsdRate={0}
+            onIncentiveClick={() => {}}
+            isSimulationExpanded={false}
+            onToggleSimulation={() => {}}
+            simulation={simulation}
+            supplyInput="1000"
+            borrowInput="500"
+            hasSharedScenario
+            inputMode="usd"
+          />
+        </TooltipProvider>
+      </QueryClientProvider>,
+    );
+
+    const badge = getByTestId('mobile-reserve-status-badge');
+    expect(badge).toBeInTheDocument();
+    expect(badge.hasAttribute('data-state')).toBe(false);
+  });
+
+  it('does not wrap paused status badge in a Tooltip (click already opens bottom sheet)', () => {
+    const pausedReserve: ReserveWithSpread = {
+      ...reserve,
+      isPaused: true,
+    };
+
+    const { getByTestId } = render(
+      <QueryClientProvider client={new QueryClient()}>
+        <TooltipProvider>
+          <MobileReserveCard
+            reserve={pausedReserve}
+            isApy
+            tydroPointToUsdRate={0}
+            onIncentiveClick={() => {}}
+            isSimulationExpanded={false}
+            onToggleSimulation={() => {}}
+            simulation={simulation}
+            supplyInput="1000"
+            borrowInput="500"
+            hasSharedScenario
+            inputMode="usd"
+          />
+        </TooltipProvider>
+      </QueryClientProvider>,
+    );
+
+    const badge = getByTestId('mobile-reserve-status-badge');
+    expect(badge).toBeInTheDocument();
+    expect(badge.hasAttribute('data-state')).toBe(false);
+  });
 });
