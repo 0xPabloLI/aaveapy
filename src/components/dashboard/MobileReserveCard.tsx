@@ -88,6 +88,46 @@ function MobileCapSheet({
     ? `Status: ${[reserve.isFrozen && 'Frozen', reserve.isPaused && 'Paused'].filter(Boolean).join(' & ') || 'Frozen'}`
     : CAP_SHEET_TITLE[capSheet] ?? '';
 
+  const CAP_SHEET_CONTENT: Record<string, React.ReactNode> = {
+    supply: (
+      <SupplyCapSheetContent
+        currentSize={displayReserveSizeUsd ?? 0}
+        cap={nativeToUsd(reserve.supplyCap, reserve.decimals, reserve.tokenPrice) ?? 0}
+        inputMode={inputMode}
+        tokenPrice={displayTokenPrice}
+        tokenSymbol={reserve.tokenSymbol}
+      />
+    ),
+    borrow: (
+      <BorrowCapSheetContent
+        borrowed={totalBorrowedUsd ?? 0}
+        cap={nativeToUsd(reserve.borrowCap, reserve.decimals, reserve.tokenPrice) ?? 0}
+        availableLiquidityUsd={availableLiquidityUsd ?? 0}
+        inputMode={inputMode}
+        tokenPrice={displayTokenPrice}
+        tokenSymbol={reserve.tokenSymbol}
+        borrowDisabled={reserve.borrowDisabled}
+      />
+    ),
+    utilization: optimalPct != null && displayUtilization != null ? (
+      <UtilizationSheetContent current={displayUtilization} optimal={optimalPct} />
+    ) : null,
+    deficit: deficitUsd != null ? (
+      <DeficitSheetContent
+        deficitUsd={deficitUsd}
+        totalSuppliedUsd={displayReserveSizeUsd}
+        deficitTokenLabel={deficitTokenLabel}
+        inputMode={inputMode}
+        tokenPrice={displayTokenPrice}
+        tokenSymbol={reserve.tokenSymbol}
+        poolExplorerUrl={buildPoolExplorerUrl(reserve.marketName)}
+      />
+    ) : null,
+    frozen: (
+      <FrozenSheetContent isFrozen={reserve.isFrozen} isPaused={reserve.isPaused} />
+    ),
+  };
+
   return (
     <>
       <motion.div
@@ -123,46 +163,7 @@ function MobileCapSheet({
           </button>
         </div>
         <div className="px-[var(--ds-space-3)] pt-[var(--ds-space-2)] pb-[var(--ds-space-2)]">
-          {capSheet === 'supply' && (
-            <SupplyCapSheetContent
-              currentSize={displayReserveSizeUsd ?? 0}
-              cap={nativeToUsd(reserve.supplyCap, reserve.decimals, reserve.tokenPrice) ?? 0}
-              inputMode={inputMode}
-              tokenPrice={displayTokenPrice}
-              tokenSymbol={reserve.tokenSymbol}
-            />
-          )}
-          {capSheet === 'borrow' && (
-            <BorrowCapSheetContent
-              borrowed={totalBorrowedUsd ?? 0}
-              cap={nativeToUsd(reserve.borrowCap, reserve.decimals, reserve.tokenPrice) ?? 0}
-              availableLiquidityUsd={availableLiquidityUsd ?? 0}
-              inputMode={inputMode}
-              tokenPrice={displayTokenPrice}
-              tokenSymbol={reserve.tokenSymbol}
-              borrowDisabled={reserve.borrowDisabled}
-            />
-          )}
-          {capSheet === 'utilization' && optimalPct != null && displayUtilization != null && (
-            <UtilizationSheetContent
-              current={displayUtilization}
-              optimal={optimalPct}
-            />
-          )}
-          {capSheet === 'deficit' && deficitUsd != null && (
-            <DeficitSheetContent
-              deficitUsd={deficitUsd}
-              totalSuppliedUsd={displayReserveSizeUsd}
-              deficitTokenLabel={deficitTokenLabel}
-              inputMode={inputMode}
-              tokenPrice={displayTokenPrice}
-              tokenSymbol={reserve.tokenSymbol}
-              poolExplorerUrl={buildPoolExplorerUrl(reserve.marketName)}
-            />
-          )}
-          {capSheet === 'frozen' && (
-            <FrozenSheetContent isFrozen={reserve.isFrozen} isPaused={reserve.isPaused} />
-          )}
+          {CAP_SHEET_CONTENT[capSheet]}
         </div>
       </motion.div>
     </>
