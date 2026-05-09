@@ -378,7 +378,7 @@ function MobileReserveHeroApy({
   if (activeTab === 'supply') {
     const heroValue = displaySupplyTotal;
     const isDisabled = reserve.isFrozen || reserve.isPaused || reserve.supplyDisabled;
-    const heroColorClass = heroValue === null || isDisabled ? 'text-secondary' : 'ds-text-emerald-500';
+    const heroColorClass = heroValue === null || isDisabled ? 'ds-text-emerald-500/50' : 'ds-text-emerald-500';
 
     return (
       <div className="flex flex-col items-center gap-0.5">
@@ -399,7 +399,7 @@ function MobileReserveHeroApy({
         <div className="flex min-h-[1rem] items-center justify-center">
           {visibleSupplyIncentive !== null ? (
             <div className="flex items-center gap-[var(--ds-space-1)] ds-text-11">
-              <span className={isDisabled ? 'text-secondary' : 'ds-text-emerald-500-70 font-medium'}>
+              <span className={isDisabled ? 'ds-text-emerald-500/40' : 'ds-text-emerald-500-70 font-medium'}>
                 {formatPercent(displaySupplyNative)}
               </span>
               <span className="text-muted-foreground/70">+</span>
@@ -411,7 +411,7 @@ function MobileReserveHeroApy({
                 }}
                 className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-px shrink-0 ring-1 active:scale-95 transition-all hover:ring-2 ${
                   isDisabled
-                    ? 'text-secondary bg-secondary/10 ring-secondary/20 hover:bg-secondary/20 hover:ring-secondary/30'
+                    ? 'text-emerald-500/50 bg-emerald-500/10 ring-emerald-500/20 hover:bg-emerald-500/20 hover:ring-emerald-500/30'
                     : 'ds-text-emerald-500 ds-bg-emerald-500-10 hover:bg-[rgb(var(--ds-emerald-500-rgb)/0.25)] ds-ring-emerald-500-15 hover:ring-[rgb(var(--ds-emerald-500-rgb)/0.3)]'
                 }`}
               >
@@ -431,7 +431,7 @@ function MobileReserveHeroApy({
 
   const heroValue = displayBorrowTotal;
   const isDisabled = reserve.isFrozen || reserve.isPaused || reserve.borrowDisabled;
-  const heroColorClass = heroValue === null || isDisabled ? 'text-secondary' : 'ds-text-brand-cyan';
+  const heroColorClass = heroValue === null || isDisabled ? 'ds-text-brand-cyan/50' : 'ds-text-brand-cyan';
 
   return (
     <div className="flex flex-col items-center gap-0.5">
@@ -452,7 +452,7 @@ function MobileReserveHeroApy({
       <div className="flex min-h-[1rem] items-center justify-center">
         {visibleBorrowIncentive !== null ? (
           <div className="flex items-center gap-[var(--ds-space-1)] ds-text-11">
-            <span className={isDisabled ? 'text-secondary' : 'ds-text-brand-cyan-70 font-medium'}>
+            <span className={isDisabled ? 'ds-text-brand-cyan/40' : 'ds-text-brand-cyan-70 font-medium'}>
               {formatPercent(displayBorrowNative)}
             </span>
             <span className="text-muted-foreground/70">-</span>
@@ -464,7 +464,7 @@ function MobileReserveHeroApy({
               }}
               className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-px shrink-0 ring-1 active:scale-95 transition-all hover:ring-2 ${
                 isDisabled
-                  ? 'text-secondary bg-secondary/10 ring-secondary/20 hover:bg-secondary/20 hover:ring-secondary/30'
+                    ? 'text-cyan-500/50 bg-cyan-500/10 ring-cyan-500/20 hover:bg-cyan-500/20 hover:ring-cyan-500/30'
                   : 'ds-text-brand-cyan ds-bg-brand-cyan-10 hover:bg-[rgb(var(--ds-brand-cyan-rgb)/0.25)] ds-ring-brand-cyan-15 hover:ring-[rgb(var(--ds-brand-cyan-rgb)/0.3)]'
               }`}
             >
@@ -667,32 +667,37 @@ const MobileReserveCard = memo(({
                   loading="eager"
                   logoURI={logoURI}
                 />
-                <button
-                  type="button"
-                  data-testid="mobile-reserve-status-badge"
-                  data-status={reserve.isPaused ? (reserve.isFrozen ? 'paused-frozen' : 'paused') : 'frozen'}
-                  onClick={() => setCapSheet('frozen')}
-                  aria-label={reserve.isPaused && reserve.isFrozen ? 'Show paused & frozen details' : reserve.isPaused ? 'Show paused details' : 'Show frozen details'}
-                  className="absolute -top-2 -left-2 z-10 grid place-items-center h-7 rounded-full bg-transparent"
-                  style={{ width: reserve.isFrozen && reserve.isPaused ? '2rem' : '1.75rem' }}
-                >
-                  {reserve.isFrozen && reserve.isPaused ? (
-                    <span className="inline-flex items-center gap-[1px]">
-                      <span className="inline-flex items-center justify-center w-3 h-3 rounded-full bg-sky-500 text-white">
-                        <Snowflake className="w-[7px] h-[7px]" />
-                      </span>
-                      <span className="inline-flex items-center justify-center w-3 h-3 rounded-full bg-[rgb(var(--ds-paused-rgb))] text-white">
-                        <PauseCircle className="w-[7px] h-[7px]" />
-                      </span>
-                    </span>
-                  ) : (
-                    <span
-                      className={`inline-flex items-center justify-center w-3.5 h-3.5 rounded-full text-white ${reserve.isPaused ? 'bg-[rgb(var(--ds-paused-rgb))]' : 'bg-sky-500'}`}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      data-testid="mobile-reserve-status-badge"
+                      data-status={reserve.isPaused ? (reserve.isFrozen ? 'paused-frozen' : 'paused') : 'frozen'}
+                      onClick={() => setCapSheet('frozen')}
+                      aria-label={reserve.isPaused && reserve.isFrozen ? 'Show paused & frozen details' : reserve.isPaused ? 'Show paused details' : 'Show frozen details'}
+                      className="absolute -top-2 -left-2 z-10 grid place-items-center h-7 rounded-full bg-transparent"
+                      style={{ width: reserve.isFrozen && reserve.isPaused ? '2rem' : '1.75rem' }}
                     >
-                      {reserve.isPaused ? <PauseCircle className="w-2 h-2" /> : <Snowflake className="w-2 h-2" />}
-                    </span>
-                  )}
-                </button>
+                      {reserve.isFrozen && reserve.isPaused ? (
+                        <span className="inline-flex items-center gap-[1px]">
+                          <span className="inline-flex items-center justify-center w-3 h-3 rounded-full bg-sky-500 text-white">
+                            <Snowflake className="w-[7px] h-[7px]" />
+                          </span>
+                          <span className="inline-flex items-center justify-center w-3 h-3 rounded-full bg-[rgb(var(--ds-paused-rgb))] text-white">
+                            <PauseCircle className="w-[7px] h-[7px]" />
+                          </span>
+                        </span>
+                      ) : (
+                        <span
+                          className={`inline-flex items-center justify-center w-3.5 h-3.5 rounded-full text-white ${reserve.isPaused ? 'bg-[rgb(var(--ds-paused-rgb))]' : 'bg-sky-500'}`}
+                        >
+                          {reserve.isPaused ? <PauseCircle className="w-2 h-2" /> : <Snowflake className="w-2 h-2" />}
+                        </span>
+                      )}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>{reserve.isPaused && reserve.isFrozen ? 'Paused & frozen' : reserve.isPaused ? 'Paused' : 'Frozen'}</TooltipContent>
+                </Tooltip>
               </div>
             ) : (
               <TokenIcon

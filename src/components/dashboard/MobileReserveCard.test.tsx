@@ -505,6 +505,114 @@ describe('MobileReserveCard', () => {
     expect(deficitAreaButtons.length).toBe(0);
   });
 
+  it('renders frozen badge with snowflake icon and sky-500 background', () => {
+    const { getByTestId } = render(
+      <QueryClientProvider client={new QueryClient()}>
+        <TooltipProvider>
+          <MobileReserveCard
+            reserve={{ ...reserve, isFrozen: true }}
+            isApy
+            tydroPointToUsdRate={0}
+            onIncentiveClick={() => {}}
+            isSimulationExpanded={false}
+            onToggleSimulation={() => {}}
+            simulation={simulation}
+            supplyInput="1000"
+            borrowInput="500"
+            hasSharedScenario
+            inputMode="usd"
+          />
+        </TooltipProvider>
+      </QueryClientProvider>,
+    );
+
+    const badge = getByTestId('mobile-reserve-status-badge');
+    expect(badge.getAttribute('data-status')).toBe('frozen');
+    expect(badge.getAttribute('aria-label')).toBe('Show frozen details');
+
+    const circle = badge.querySelector('span.rounded-full');
+    expect(circle).not.toBeNull();
+    expect(circle!.className).toContain('bg-sky-500');
+    expect(circle!.className).not.toContain('ds-paused');
+    expect(badge.querySelectorAll('svg').length).toBe(1);
+  });
+
+  it('renders paused badge with PauseCircle icon and paused background', () => {
+    const { getByTestId } = render(
+      <QueryClientProvider client={new QueryClient()}>
+        <TooltipProvider>
+          <MobileReserveCard
+            reserve={{ ...reserve, isPaused: true }}
+            isApy
+            tydroPointToUsdRate={0}
+            onIncentiveClick={() => {}}
+            isSimulationExpanded={false}
+            onToggleSimulation={() => {}}
+            simulation={simulation}
+            supplyInput="1000"
+            borrowInput="500"
+            hasSharedScenario
+            inputMode="usd"
+          />
+        </TooltipProvider>
+      </QueryClientProvider>,
+    );
+
+    const badge = getByTestId('mobile-reserve-status-badge');
+    expect(badge.getAttribute('data-status')).toBe('paused');
+    expect(badge.getAttribute('aria-label')).toBe('Show paused details');
+
+    const circle = badge.querySelector('span.rounded-full');
+    expect(circle).not.toBeNull();
+    expect(circle!.className).toContain('ds-paused');
+    expect(circle!.className).not.toContain('bg-sky-500');
+    expect(badge.querySelectorAll('svg').length).toBe(1);
+  });
+
+  it('renders both frozen and paused icons side-by-side when both flags are active', () => {
+    const { getByTestId } = render(
+      <QueryClientProvider client={new QueryClient()}>
+        <TooltipProvider>
+          <MobileReserveCard
+            reserve={{ ...reserve, isFrozen: true, isPaused: true }}
+            isApy
+            tydroPointToUsdRate={0}
+            onIncentiveClick={() => {}}
+            isSimulationExpanded={false}
+            onToggleSimulation={() => {}}
+            simulation={simulation}
+            supplyInput="1000"
+            borrowInput="500"
+            hasSharedScenario
+            inputMode="usd"
+          />
+        </TooltipProvider>
+      </QueryClientProvider>,
+    );
+
+    const badge = getByTestId('mobile-reserve-status-badge');
+    expect(badge.getAttribute('data-status')).toBe('paused-frozen');
+    expect(badge.getAttribute('aria-label')).toBe('Show paused & frozen details');
+
+    const circles = badge.querySelectorAll(':scope > span > span.rounded-full');
+    expect(circles.length).toBe(2);
+
+    const [frozenCircle, pausedCircle] = circles;
+    expect(frozenCircle.className).toContain('bg-sky-500');
+    expect(pausedCircle.className).toContain('ds-paused');
+
+    expect(badge.querySelectorAll('svg').length).toBe(2);
+
+    const style = badge.getAttribute('style');
+    expect(style).toContain('2rem');
+  });
+
+  it('does not render frozen/paused badge when neither flag is set', () => {
+    const { queryByTestId } = renderCard(false);
+
+    expect(queryByTestId('mobile-reserve-status-badge')).toBeNull();
+  });
+
   it('shows only one ExternalLink in deficit popup (not duplicated in % row)', () => {
     const deficitReserve: ReserveWithSpread = {
       ...reserve,
@@ -541,9 +649,7 @@ describe('MobileReserveCard', () => {
     expect(allSvgElements.length).toBeLessThanOrEqual(1);
   });
 
-  it('does not wrap frozen/paused status badge in a Tooltip (click already opens bottom sheet)', () => {
-    // Radix TooltipTrigger with asChild adds data-state to the child element.
-    // When the badge is NOT wrapped in Tooltip, it has no data-state attribute.
+  it('wraps frozen status badge in a Tooltip for hover context', () => {
     const frozenReserve: ReserveWithSpread = {
       ...reserve,
       isFrozen: true,
@@ -571,10 +677,10 @@ describe('MobileReserveCard', () => {
 
     const badge = getByTestId('mobile-reserve-status-badge');
     expect(badge).toBeInTheDocument();
-    expect(badge.hasAttribute('data-state')).toBe(false);
+    expect(badge.hasAttribute('data-state')).toBe(true);
   });
 
-  it('does not wrap paused status badge in a Tooltip (click already opens bottom sheet)', () => {
+  it('wraps paused status badge in a Tooltip for hover context', () => {
     const pausedReserve: ReserveWithSpread = {
       ...reserve,
       isPaused: true,
@@ -602,6 +708,6 @@ describe('MobileReserveCard', () => {
 
     const badge = getByTestId('mobile-reserve-status-badge');
     expect(badge).toBeInTheDocument();
-    expect(badge.hasAttribute('data-state')).toBe(false);
+    expect(badge.hasAttribute('data-state')).toBe(true);
   });
 });
