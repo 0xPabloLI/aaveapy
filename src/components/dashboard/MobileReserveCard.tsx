@@ -667,37 +667,32 @@ const MobileReserveCard = memo(({
                   loading="eager"
                   logoURI={logoURI}
                 />
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
-                        type="button"
-                        data-testid="mobile-reserve-status-badge"
-                        data-status={reserve.isPaused ? (reserve.isFrozen ? 'paused-frozen' : 'paused') : 'frozen'}
-                        onClick={() => setCapSheet('frozen')}
-                        aria-label={reserve.isPaused && reserve.isFrozen ? 'Show paused & frozen details' : reserve.isPaused ? 'Show paused details' : 'Show frozen details'}
-                        className="absolute -top-2 -left-2 z-10 grid place-items-center h-7 rounded-full bg-transparent"
-                        style={{ width: reserve.isFrozen && reserve.isPaused ? '2rem' : '1.75rem' }}
-                      >
-                        {reserve.isFrozen && reserve.isPaused ? (
-                          <span className="inline-flex items-center gap-[1px]">
-                            <span className="inline-flex items-center justify-center w-3 h-3 rounded-full bg-sky-500 text-white">
-                              <Snowflake className="w-[7px] h-[7px]" />
-                            </span>
-                            <span className="inline-flex items-center justify-center w-3 h-3 rounded-full bg-[rgb(var(--ds-paused-rgb))] text-white">
-                              <PauseCircle className="w-[7px] h-[7px]" />
-                            </span>
-                          </span>
-                        ) : (
-                          <span
-                            className={`inline-flex items-center justify-center w-3.5 h-3.5 rounded-full text-white ${reserve.isPaused ? 'bg-[rgb(var(--ds-paused-rgb))]' : 'bg-sky-500'}`}
-                          >
-                            {reserve.isPaused ? <PauseCircle className="w-2 h-2" /> : <Snowflake className="w-2 h-2" />}
-                          </span>
-                        )}
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent>{reserve.isPaused && reserve.isFrozen ? 'Paused & frozen' : reserve.isPaused ? 'Paused' : 'Frozen'}</TooltipContent>
-                  </Tooltip>
+                <button
+                  type="button"
+                  data-testid="mobile-reserve-status-badge"
+                  data-status={reserve.isPaused ? (reserve.isFrozen ? 'paused-frozen' : 'paused') : 'frozen'}
+                  onClick={() => setCapSheet('frozen')}
+                  aria-label={reserve.isPaused && reserve.isFrozen ? 'Show paused & frozen details' : reserve.isPaused ? 'Show paused details' : 'Show frozen details'}
+                  className="absolute -top-2 -left-2 z-10 grid place-items-center h-7 rounded-full bg-transparent"
+                  style={{ width: reserve.isFrozen && reserve.isPaused ? '2rem' : '1.75rem' }}
+                >
+                  {reserve.isFrozen && reserve.isPaused ? (
+                    <span className="inline-flex items-center gap-[1px]">
+                      <span className="inline-flex items-center justify-center w-3 h-3 rounded-full bg-sky-500 text-white">
+                        <Snowflake className="w-[7px] h-[7px]" />
+                      </span>
+                      <span className="inline-flex items-center justify-center w-3 h-3 rounded-full bg-[rgb(var(--ds-paused-rgb))] text-white">
+                        <PauseCircle className="w-[7px] h-[7px]" />
+                      </span>
+                    </span>
+                  ) : (
+                    <span
+                      className={`inline-flex items-center justify-center w-3.5 h-3.5 rounded-full text-white ${reserve.isPaused ? 'bg-[rgb(var(--ds-paused-rgb))]' : 'bg-sky-500'}`}
+                    >
+                      {reserve.isPaused ? <PauseCircle className="w-2 h-2" /> : <Snowflake className="w-2 h-2" />}
+                    </span>
+                  )}
+                </button>
               </div>
             ) : (
               <TokenIcon
