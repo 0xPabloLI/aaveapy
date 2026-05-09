@@ -483,8 +483,8 @@ describe('DesktopReserveRow', () => {
       </QueryClientProvider>
     );
 
-    expect(html).toMatch(/Base\s*<!--\s*-->\s*APR\s*<!--\s*-->\s*only/);
     expect(html).toMatch(/Base\s*<!--\s*-->\s*APY\s*<!--\s*-->\s*only/);
+    expect(html).toMatch(/Base\s*<!--\s*-->\s*APR\s*<!--\s*-->\s*only/);
   });
 
   it('does not show Base placeholder when side is disabled even if no incentive', () => {
