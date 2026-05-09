@@ -401,13 +401,22 @@ Visual / interaction parity for the frozen/paused badge:
   paused token (`ds-paused` / `bg-[rgb(var(--ds-paused-rgb))]`) so it stays
   consistent with the amber/paused design-system semantics.
 - Same tooltip strings: `Frozen` / `Paused` / `Paused & frozen`.
+- **Desktop**: `FrozenStatusBadge` renders both icons inline side-by-side
+  (`inline-flex gap-[3px]`) when both `isFrozen` and `isPaused` are active.
+- **Mobile**: status badge overlay on token icon renders two compact circular
+  pills side-by-side (`w-3 h-3` each, `gap-[1px]`) when both flags are active,
+  with container width expanding from `1.75rem` (single) to `2rem` (dual).
+  Single-flag behavior is unchanged. The badge retains its Tooltip wrapper for
+  hover context, with click opening the frozen/paused bottom sheet.
 - Mobile badge MUST keep an enlarged transparent hit area (≥ 28×28 CSS px) around
   the small visual pill so it satisfies the 44px touch-target spirit without
   enlarging the visual mark.
 
 Regression coverage: see `e2e/top-opportunities-mobile-layout.spec.ts`
-(`mobile frozen / paused badge uses frozen/paused semantic color tokens`) and
-the desktop SimulationSubRow tests.
+(`mobile frozen / paused badge uses frozen/paused semantic color tokens`),
+the desktop `SimulationSubRow` tests, and
+`MobileReserveCard.test.tsx` (frozen/paused badge rendering tests
+covering single-flag and dual-flag states).
 
 
 ### Desktop reserves table: sticky stack and scrollport (normative)

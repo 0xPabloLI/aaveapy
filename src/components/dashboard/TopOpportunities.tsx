@@ -251,7 +251,7 @@ const MiniReserveApyRow = ({
 }: MiniReserveApyRowProps) => {
   if (isLeverage) {
     return (
-      <span className={`${getSpreadAccentClass(mainValue, index, totalItems)} tabular-nums ds-text-11 py-px`}>
+      <span className={`${getSpreadAccentClass(mainValue, index, totalItems)} tabular-nums ds-text-11`}>
         {formatPercent(isApy ? reserve.totalSupplyApy : reserve.totalSupplyApr)} - {formatPercent(isApy ? reserve.totalBorrowApy : reserve.totalBorrowApr)}
       </span>
     );
