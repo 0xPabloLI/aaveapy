@@ -15,7 +15,6 @@ import { getReserveKey } from '@/lib/reserveKey';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { IncentiveIcon } from '@/components/IncentiveIcon';
 import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
-import { Tooltip, TooltipContent, TooltipTrigger, TooltipCalloutArrow } from '@/components/ui/tooltip';
 import SimulationSubRow from './SimulationSubRow';
 import UtilizationIndicator from './UtilizationIndicator';
 import CapProgressRing from './CapProgressRing';
@@ -383,14 +382,9 @@ function MobileReserveHeroApy({
     return (
       <div className="flex flex-col items-center gap-0.5">
         {isDisabled ? (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <p className={`ds-text-22 font-bold tabular-nums ${heroColorClass} cursor-auto`}>
-                {formatPercent(heroValue)}
-              </p>
-            </TooltipTrigger>
-            <TooltipContent>Supply unavailable</TooltipContent>
-          </Tooltip>
+          <p className={`ds-text-22 font-bold tabular-nums ${heroColorClass} cursor-auto`}>
+            {formatPercent(heroValue)}
+          </p>
         ) : (
           <p className={`ds-text-22 font-bold tabular-nums ${heroColorClass}`}>
             {formatPercent(heroValue)}
@@ -436,14 +430,9 @@ function MobileReserveHeroApy({
   return (
     <div className="flex flex-col items-center gap-0.5">
       {isDisabled ? (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <p className={`ds-text-22 font-bold tabular-nums ${heroColorClass} cursor-auto`}>
-              {formatPercent(heroValue)}
-            </p>
-          </TooltipTrigger>
-          <TooltipContent>Borrow unavailable</TooltipContent>
-        </Tooltip>
+        <p className={`ds-text-22 font-bold tabular-nums ${heroColorClass} cursor-auto`}>
+          {formatPercent(heroValue)}
+        </p>
       ) : (
         <p className={`ds-text-22 font-bold tabular-nums ${heroColorClass}`}>
           {formatPercent(heroValue)}

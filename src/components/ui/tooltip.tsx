@@ -55,31 +55,47 @@ const TooltipArrow = React.forwardRef<
 TooltipArrow.displayName = TooltipPrimitive.Arrow.displayName;
 
 /**
+ * Shared arrow SVG paths (filled triangle + stroke on the two outward edges).
+ * Reused by both the Radix-based `TooltipCalloutArrow` and the manually-positioned
+ * `IncentiveTooltip` desktop popover. The `direction` prop determines which way
+ * the point faces (the base of the triangle is opposite). When rendered inside a
+ * Radix `TooltipContent`, it uses `group-data` to auto-flip; elsewhere the caller
+ * controls orientation through rotation/scaling.
+ */
+export function CalloutArrowSvg({
+  fill = 'hsl(var(--card))',
+  stroke = 'hsl(var(--border) / 0.6)',
+  width = 16,
+  height = 9,
+}: {
+  fill?: string;
+  stroke?: string;
+  width?: number;
+  height?: number;
+}) {
+  const points = `0 ${height} L${width / 2} 0 L${width} ${height}`;
+  return (
+    <>
+      <path d={points} fill={fill} />
+      <path d={points} stroke={stroke} strokeWidth="1" strokeLinejoin="round" fill="none" />
+    </>
+  );
+}
+
+/**
  * Callout arrow that integrates seamlessly with the TooltipContent border.
  *
  * Implementation:
- * - Uses an SVG path with separate fill (closed triangle) + stroke (only the two
- *   outward edges, so the base of the triangle is "open" and there's no seam where
- *   the arrow joins the body).
- * - Renders all four directional arrows; only the one matching the actual rendered
- *   side becomes visible via `group-data-[side=...]/tt` variants. This means the
- *   arrow automatically follows Radix's collision-detection flip — if the tooltip
- *   flips from `right` to `left` because right-side viewport space is insufficient,
- *   the arrow flips along with it.
+ * - Renders four directional arrows, each using `CalloutArrowSvg` appropriately
+ *   rotated. Only the one matching the actual rendered side becomes visible via
+ *   `group-data-[side=...]/tt` variants, so the arrow automatically follows
+ *   Radix's collision-detection flip.
  * - The `side` prop is kept only for API back-compat and as a documentation hint.
  *   It is intentionally ignored at render time.
  */
 const TooltipCalloutArrow = (_props: { side?: 'top' | 'bottom' | 'left' | 'right' }) => {
   const fill = 'hsl(var(--card))';
   const stroke = 'hsl(var(--border) / 0.6)';
-  const commonStrokeProps = {
-    stroke,
-    strokeWidth: '1',
-    strokeLinejoin: 'round' as const,
-    fill: 'none' as const,
-  };
-  // Each arrow is positioned with a tiny overlap into the body (left/right/top/bottom: -8px on a 9-deep arrow)
-  // so the body's 1px border at the arrow's base is hidden inside the body — eliminating any visible seam.
 
   return (
     <>
