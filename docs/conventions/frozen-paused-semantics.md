@@ -469,8 +469,6 @@ UI 文案采用 **最大公约数** 策略：只描述两个版本中行为一�
 | 禁用行 `<tr>` opacity | `''` | `opacity-75` / `dark:opacity-60` | 同上 |
 | 禁用 `<tbody>` opacity | `''` | `opacity-75` / `dark:opacity-60` | 同上 |
 | Section 标题 disabled | accentClass | `text-muted-foreground` | 提示文字，不是数据值，用中性灰即可 |
-| disabled 提示文字 | — | `text-muted-foreground` | 同上 |
-| Compact disabled 通知 | — | `text-muted-foreground` | 同上 |
 
 #### 设计原则
 
