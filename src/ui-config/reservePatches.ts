@@ -5,8 +5,8 @@ import {
   AaveV3Optimism,
   AaveV3Plasma,
   AaveV3Polygon,
-} from '@bgd-labs/aave-address-book';
-import tokenlist from '@bgd-labs/aave-address-book/tokenlist';
+} from '@aave-dao/aave-address-book';
+import tokenlist from '@aave-dao/aave-address-book/tokenlist';
 import { unPrefixSymbol } from '@/lib/tokenUtils';
 
 /**

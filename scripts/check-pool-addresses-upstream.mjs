@@ -2,13 +2,13 @@ import { readFile } from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-const RAW_GITHUB_BASE = 'https://raw.githubusercontent.com/bgd-labs/aave-address-book/main/src';
+const RAW_GITHUB_BASE = 'https://raw.githubusercontent.com/aave-dao/aave-address-book/main/src';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, '..');
 const poolExplorerLinksPath = path.join(repoRoot, 'src/lib/poolExplorerLinks.ts');
-const addressBookSrcDir = path.join(repoRoot, 'node_modules/@bgd-labs/aave-address-book/src');
+const addressBookSrcDir = path.join(repoRoot, 'node_modules/@aave-dao/aave-address-book/src');
 
 const MARKET_SOURCE_FILES = {
   AaveV3Ethereum: 'AaveV3Ethereum.sol',
@@ -80,14 +80,14 @@ async function main() {
   }
 
   if (mismatches.length > 0) {
-    console.error('Pool address drift detected against @bgd-labs/aave-address-book:');
+    console.error('Pool address drift detected against @aave-dao/aave-address-book:');
     for (const mismatch of mismatches) {
       console.error(`- ${mismatch}`);
     }
     process.exit(1);
   }
 
-  console.log('All pool addresses match @bgd-labs/aave-address-book');
+  console.log('All pool addresses match @aave-dao/aave-address-book');
 }
 
 main().catch((error) => {

@@ -123,7 +123,7 @@ describe('OKLink family URL format', () => {
 });
 
 describe('Pool addresses match aave-address-book', () => {
-  // Verified against @bgd-labs/aave-address-book src/{Market}.sol POOL constants.
+  // Verified against @aave-dao/aave-address-book src/{Market}.sol POOL constants.
   const expectedAddresses: Record<string, string> = {
     AaveV3Ethereum: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     AaveV3EthereumLido: '0x4e033931ad43597d96D6bcc25c280717730B58B1',

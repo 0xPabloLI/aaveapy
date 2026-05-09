@@ -57,6 +57,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Update address-book to latest
+        run: npm update @aave-dao/aave-address-book
+
       - name: Round 1 sync
         id: sync_round1
         env:

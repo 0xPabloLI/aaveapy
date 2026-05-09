@@ -8,9 +8,9 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    bgd-labs/aave-address-book               │
+│                    aave-dao/aave-address-book               │
 │              (Source of Truth - Pool Addresses)             │
-│           https://github.com/bgd-labs/aave-address-book     │
+│           https://github.com/aave-dao/aave-address-book     │
 └─────────────────────────────────────────────────────────────┘
                               │
                               │ (GitHub API / raw.githubusercontent.com)
@@ -31,14 +31,14 @@
 
 ## 地址来源
 
-所有 Pool 地址来自官方 **bgd-labs/aave-address-book**：
-- GitHub: https://github.com/bgd-labs/aave-address-book
-- npm: `@bgd-labs/aave-address-book`
+所有 Pool 地址来自官方 **aave-dao/aave-address-book**：
+- GitHub: https://github.com/aave-dao/aave-address-book
+- npm: `@aave-dao/aave-address-book`
 - UI: https://search.onaave.com/
 
 ### 验证渠道优先级
 
-1. **Primary**: bgd-labs/aave-address-book (GitHub/npm)
+1. **Primary**: aave-dao/aave-address-book (GitHub/npm)
 2. **Secondary**: search.onaave.com (UI 验证)
 3. **Tertiary**: 各链官方 explorer 人工验证
 
@@ -153,7 +153,7 @@ node scripts/sync-pool-addresses-upstream.mjs
 - 通过 `hardcode-sync` / `hardcode:verify` 链路接入
 - `hardcode:sync` 包含 `npm run sync:pool-addresses-upstream`
 - `hardcode:verify` 包含 `npm run check:pool-addresses-upstream`
-- 校验源优先读本地 `@bgd-labs/aave-address-book` npm 包，缺失文件时 fallback 到 GitHub raw `src/{Market}.sol`
+- 校验源优先读本地 `@aave-dao/aave-address-book` npm 包，缺失文件时 fallback 到 GitHub raw `src/{Market}.sol`
 
 ## 验证测试
 

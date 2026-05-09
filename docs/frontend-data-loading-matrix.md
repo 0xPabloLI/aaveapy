@@ -166,7 +166,7 @@ Frontend types and Zod schemas are aligned with the backend response shapes.
 Reserve token images (e.g. USDC, WETH) are resolved in this order:
 
 1. **logoURI** – If the reserve has a `logoURI` (from backend or from local config), it is used first.
-   - Local config: `src/ui-config/reservePatches.ts` builds a map from `@bgd-labs/aave-address-book` tokenlist (by `underlyingAsset` → `logoURI`) and optional `underlyingAssetMap` overrides.
+   - Local config: `src/ui-config/reservePatches.ts` builds a map from `@aave-dao/aave-address-book` tokenlist (by `underlyingAsset` → `logoURI`) and optional `underlyingAssetMap` overrides.
    - So if a token's contract address is in the address-book tokenlist with a `logoURI`, that URL is used.
 
 2. **Local static assets** – `getTokenIconSources(symbol)` in `src/lib/preloadUtils.ts` returns paths like `/icons/tokens/{symbol}.svg` (and .webp, .png).

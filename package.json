@@ -64,7 +64,7 @@
     "check:react-singleton": "node scripts/check-react-singleton.mjs"
   },
   "dependencies": {
-    "@bgd-labs/aave-address-book": "^4.38.0",
+    "@aave-dao/aave-address-book": "^4.38.0",
     "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.14",

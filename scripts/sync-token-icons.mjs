@@ -25,7 +25,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import * as addressBook from '@bgd-labs/aave-address-book';
+import * as addressBook from '@aave-dao/aave-address-book';
 import {
   DEFAULT_PRODUCTION_API_BASE,
   DEFAULT_STAGING_API_BASE,

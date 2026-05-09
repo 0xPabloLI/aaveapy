@@ -1,16 +1,16 @@
 /**
- * Sync Pool addresses from bgd-labs/aave-address-book
+ * Sync Pool addresses from aave-dao/aave-address-book
  * 
  * This script fetches the latest Pool addresses from the official
- * bgd-labs/aave-address-book repository and updates the local mapping.
+ * aave-dao/aave-address-book repository and updates the local mapping.
  * 
  * Usage: node scripts/sync-pool-addresses-upstream.mjs
  */
 
 import { writeFile } from 'fs/promises';
 
-const NPM_PACKAGE = '@bgd-labs/aave-address-book';
-const RAW_GITHUB_BASE = 'https://raw.githubusercontent.com/bgd-labs/aave-address-book/main/src';
+const NPM_PACKAGE = '@aave-dao/aave-address-book';
+const RAW_GITHUB_BASE = 'https://raw.githubusercontent.com/aave-dao/aave-address-book/main/src';
 
 // Markets to sync with their configuration
 const MARKET_CONFIG = {
@@ -83,7 +83,7 @@ async function fetchPoolAddress(marketName) {
 }
 
 async function syncPoolAddresses() {
-  console.log('🔍 Fetching Pool addresses from bgd-labs/aave-address-book...\n');
+  console.log('🔍 Fetching Pool addresses from aave-dao/aave-address-book...\n');
   
   const results = {};
   const errors = [];

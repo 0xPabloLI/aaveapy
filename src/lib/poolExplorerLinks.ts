@@ -5,8 +5,8 @@
  * The mapping is intentionally frontend-only and static because the
  * Pool address per market is an immutable deployment artefact.
  * 
- * Source of truth for Pool addresses: @bgd-labs/aave-address-book
- * GitHub: https://github.com/bgd-labs/aave-address-book
+ * Source of truth for Pool addresses: @aave-dao/aave-address-book
+ * GitHub: https://github.com/aave-dao/aave-address-book
  */
 
 interface PoolExplorerEntry {
@@ -98,7 +98,7 @@ interface PoolExplorerEntry {
  * Map from API `marketName` (e.g. `AaveV3Ethereum`) to Pool address + explorers.
  * 
  * Sources: 
- * - Pool addresses: bgd-labs/aave-address-book (GitHub/npm)
+ * - Pool addresses: aave-dao/aave-address-book (GitHub/npm)
  * - Explorer families: Verified via manual browser testing + CDP automation
  * 
  * Last verified: 2025-XX-XX

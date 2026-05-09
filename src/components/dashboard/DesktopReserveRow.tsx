@@ -389,11 +389,11 @@ const DesktopReserveRow = memo(({
                 tokenPrice={displayTokenPrice}
                 tokenSymbol={reserve.tokenSymbol}
                 label={<span className="font-medium tabular-nums">{supplySizeLabel}</span>}
-                triggerClassName={supplyBlocked ? 'text-secondary' : 'ds-text-emerald-500'}
+                triggerClassName={supplyBlocked ? 'ds-text-emerald-500/50' : 'ds-text-emerald-500'}
                 triggerAriaLabel={`Supply cap details for ${reserve.tokenSymbol}`}
               />
             ) : (
-              <div className={`inline-flex items-center gap-[var(--ds-space-1-5)] rounded-md py-0.5 pl-1 pr-0.5 -my-0.5 ${supplyBlocked ? 'text-secondary' : 'ds-text-emerald-500'}`}>
+              <div className={`inline-flex items-center gap-[var(--ds-space-1-5)] rounded-md py-0.5 pl-1 pr-0.5 -my-0.5 ${supplyBlocked ? 'ds-text-emerald-500/50' : 'ds-text-emerald-500'}`}>
                 <span className="font-medium tabular-nums">{supplySizeLabel}</span>
                 <span aria-hidden className="inline-block w-3 h-3 shrink-0" />
               </div>
@@ -413,7 +413,7 @@ const DesktopReserveRow = memo(({
                 triggerAriaLabel={`Borrow cap details for ${reserve.tokenSymbol}`}
               />
             ) : (
-              <div className={`inline-flex items-center gap-[var(--ds-space-1-5)] rounded-md py-0.5 pl-1 pr-0.5 -my-0.5 ${borrowBlocked ? 'text-secondary' : 'ds-text-brand-cyan'}`}>
+              <div className={`inline-flex items-center gap-[var(--ds-space-1-5)] rounded-md py-0.5 pl-1 pr-0.5 -my-0.5 ${borrowBlocked ? 'ds-text-brand-cyan/50' : 'ds-text-brand-cyan'}`}>
                 <span className="font-medium tabular-nums">{borrowSizeLabel}</span>
                 <span aria-hidden className="inline-block w-3 h-3 shrink-0" />
               </div>
