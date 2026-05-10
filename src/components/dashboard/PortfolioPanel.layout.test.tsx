@@ -5,11 +5,10 @@ import { resolve } from 'node:path';
 /**
  * Guard against regressions in the PortfolioPanel grid layout.
  *
- * Desktop: grid-cols-2 (two columns of token rows, each 50%).
- * Mobile:  grid-cols-1 (single column).
- *
- * Rows now use flex internally (see visual-gap test), so the parent
- * grid gap-x controls spacing BETWEEN rows (not within a row).
+ * Desktop: two side-by-side half-grids, each with auto + minmax columns.
+ *          Token info column uses `auto` so it matches the widest token
+ *          in that half-grid (natural column-level alignment).
+ * Mobile:  single grid with auto + minmax columns.
  */
 
 describe('PortfolioPanel batch grid layout', () => {
@@ -31,8 +30,11 @@ describe('PortfolioPanel batch grid layout', () => {
     ).toBe(true);
   });
 
-  it('desktop uses grid-cols-2, mobile uses grid-cols-1', () => {
-    expect(src).toMatch(/grid-cols-1/);
-    expect(src).toMatch(/grid-cols-2/);
+  it('half-grids use auto + minmax columns for natural token info alignment', () => {
+    const matches = src.match(/\[grid-template-columns:auto_minmax\(\d+(?:\.\d+)?rem,1fr\)\]/g) ?? [];
+    expect(
+      matches.length,
+      'Desktop half-grids must use auto minmax(_,1fr) so token info column auto-sizes to widest token',
+    ).toBeGreaterThanOrEqual(1);
   });
 });
