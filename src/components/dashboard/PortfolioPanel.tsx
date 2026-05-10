@@ -543,9 +543,8 @@ const PortfolioPanel = memo(function PortfolioPanel({
           </div>
         ) : (
           <div className="space-y-1.5">
-            {(() => {
-              const entries = Array.from(groupedByReserve.entries());
-              const renderRow = ([reserveId, entry]: [string, typeof groupedByReserve extends Map<string, infer V> ? V : never]) => (
+            <div className="grid gap-x-1 gap-y-1.5 [grid-template-columns:auto_minmax(11rem,1fr)]">
+              {Array.from(groupedByReserve.entries()).map(([reserveId, entry]) => (
                 <PortfolioTokenRow
                   key={reserveId}
                   reserveId={reserveId}
@@ -559,31 +558,8 @@ const PortfolioPanel = memo(function PortfolioPanel({
                   onUpdateAmount={actions.updateAmount}
                   onUpdateInputMode={actions.updateInputMode}
                 />
-              );
-
-              if (isMobile) {
-                return (
-                  <div className="grid gap-x-1 gap-y-1.5 [grid-template-columns:auto_minmax(0,1fr)]">
-                    {entries.map(renderRow)}
-                  </div>
-                );
-              }
-
-              const leftEntries = entries.filter((_, i) => i % 2 === 0);
-              const rightEntries = entries.filter((_, i) => i % 2 === 1);
-              return (
-                <div className="flex gap-x-2">
-                  <div className="grid flex-1 gap-y-1.5 [grid-template-columns:auto_minmax(11rem,1fr)]">
-                    {leftEntries.map(renderRow)}
-                  </div>
-                  {rightEntries.length > 0 && (
-                    <div className="grid flex-1 gap-y-1.5 [grid-template-columns:auto_minmax(11rem,1fr)]">
-                      {rightEntries.map(renderRow)}
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
+              ))}
+            </div>
           </div>
         )}
 

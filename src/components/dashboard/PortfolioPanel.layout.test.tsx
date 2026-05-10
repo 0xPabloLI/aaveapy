@@ -5,10 +5,9 @@ import { resolve } from 'node:path';
 /**
  * Guard against regressions in the PortfolioPanel grid layout.
  *
- * Desktop: two side-by-side half-grids, each with auto + minmax columns.
- *          Token info column uses `auto` so it matches the widest token
- *          in that half-grid (natural column-level alignment).
- * Mobile:  single grid with auto + minmax columns.
+ * Single-column unified grid for both desktop and mobile.
+ * Uses `auto minmax(11rem,1fr)` — the auto column matches the
+ * widest token in the list, so all inputs are aligned.
  */
 
 describe('PortfolioPanel batch grid layout', () => {
@@ -24,17 +23,10 @@ describe('PortfolioPanel batch grid layout', () => {
     const hasGapXAndY = allMatches.some(
       (cls) => /gap-x-\d/.test(cls) && /gap-y-\d/.test(cls),
     );
-    expect(
-      hasGapXAndY,
-      'Parent grid must include gap-x-* AND gap-y-* for spacing between rows',
-    ).toBe(true);
+    expect(hasGapXAndY).toBe(true);
   });
 
-  it('half-grids use auto + minmax columns for natural token info alignment', () => {
-    const matches = src.match(/\[grid-template-columns:auto_minmax\(\d+(?:\.\d+)?rem,1fr\)\]/g) ?? [];
-    expect(
-      matches.length,
-      'Desktop half-grids must use auto minmax(_,1fr) so token info column auto-sizes to widest token',
-    ).toBeGreaterThanOrEqual(1);
+  it('unified grid uses auto + minmax columns', () => {
+    expect(src).toMatch(/\[grid-template-columns:auto_minmax\(\d+(?:\.\d+)?rem,1fr\)\]/);
   });
 });

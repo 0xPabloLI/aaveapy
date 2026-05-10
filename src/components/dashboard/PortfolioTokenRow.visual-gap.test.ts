@@ -5,23 +5,17 @@ import { resolve } from 'node:path';
 /**
  * Visual gap regression guard for PortfolioTokenRow.
  *
- * The batch panel's token rows must NOT produce a "visual gap hole"
- * between token info (minus + icon + symbol + chain) and the supply/borrow
- * input area.
+ * The batch panel uses a unified single-column grid with
+ * `auto minmax(_,1fr)` parent columns. The `auto` column
+ * naturally matches the widest token in the list, so all
+ * inputs are aligned across rows.
  *
- * Desktop: rows live in half-grids with `auto minmax(_,1fr)` parent columns.
- *          The `auto` column naturally matches the widest token in that half,
- *          so all rows have their inputs aligned. Rows use subgrid to inherit
- *          the parent `auto` column width.
- * Mobile:  rows use flex with shrink-0 token info + flex-1 inputs for
- *          maximum compactness on narrow screens.
+ * Desktop and mobile share the same subgrid structure, differing
+ * only in icon/font/padding sizes.
  *
  * Structural invariants:
- * 1. Desktop row uses `grid-cols-subgrid` (inherits parent auto column width).
- * 2. Mobile row uses `flex` (not subgrid).
- * 3. Mobile token info has `shrink-0` — natural width.
- * 4. Mobile inputs have `flex-1` — absorbs remaining space.
- * 5. Gap between token info and inputs is ≤ 4px (gap-x-1) for both.
+ * 1. Both desktop and mobile rows use `grid-cols-subgrid`.
+ * 2. Gap between token info and inputs is ≤ 4px (gap-x-1).
  */
 
 describe('PortfolioTokenRow visual gap hole prevention', () => {
@@ -40,53 +34,25 @@ describe('PortfolioTokenRow visual gap hole prevention', () => {
       ? src.slice(mobileStart, mobileEnd)
       : '';
 
-  it('desktop row uses grid-cols-subgrid (inherits parent auto column width)', () => {
-    expect(
-      desktopSrc,
-      'Desktop row must use subgrid to inherit parent auto column for column-level alignment',
-    ).toMatch(/grid-cols-subgrid/);
+  it('desktop row uses grid-cols-subgrid', () => {
+    expect(desktopSrc, 'Desktop row must use subgrid').toMatch(/grid-cols-subgrid/);
   });
 
-  it('mobile row uses flex (NOT grid-cols-subgrid)', () => {
-    expect(
-      mobileSrc,
-      'Mobile row must use flex for compact layout on narrow screens',
-    ).not.toMatch(/grid-cols-subgrid/);
-    expect(mobileSrc).toMatch(/flex\s/);
-  });
-
-  it('mobile token info container has shrink-0', () => {
-    const flexChildren = mobileSrc.match(/shrink-0/g) ?? [];
-    expect(
-      flexChildren.length,
-      'Mobile row must have shrink-0 on token info container for natural width',
-    ).toBeGreaterThanOrEqual(1);
-  });
-
-  it('mobile inputs container has flex-1 (absorbs remaining space)', () => {
-    expect(
-      mobileSrc,
-      'Mobile inputs must have flex-1 to fill remaining width',
-    ).toMatch(/flex-1/);
+  it('mobile row uses grid-cols-subgrid (unified with desktop)', () => {
+    expect(mobileSrc, 'Mobile row must use subgrid').toMatch(/grid-cols-subgrid/);
   });
 
   it('desktop gap between token info and inputs ≤ 4px', () => {
     const match = desktopSrc.match(/gap-x-(\d+(?:\.\d+)?)/);
     expect(match, 'Desktop row must declare a gap-x class').not.toBeNull();
     const gap = parseFloat(match![1]);
-    expect(
-      gap,
-      `Desktop row gap-x-${gap} exceeds maximum of 4px (use gap-x-1)`,
-    ).toBeLessThanOrEqual(1);
+    expect(gap, `Desktop gap-x-${gap} > 4px`).toBeLessThanOrEqual(1);
   });
 
   it('mobile gap between token info and inputs ≤ 4px', () => {
     const match = mobileSrc.match(/gap-x-(\d+(?:\.\d+)?)/);
     expect(match, 'Mobile row must declare a gap-x class').not.toBeNull();
     const gap = parseFloat(match![1]);
-    expect(
-      gap,
-      `Mobile row gap-x-${gap} exceeds maximum of 4px (use gap-x-1)`,
-    ).toBeLessThanOrEqual(1);
+    expect(gap, `Mobile gap-x-${gap} > 4px`).toBeLessThanOrEqual(1);
   });
 });
