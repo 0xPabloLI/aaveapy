@@ -680,7 +680,7 @@ const SimulationSubRow = ({
             </th>
           </tr>
         </thead>
-        <tbody className="ds-text-12 [&>tr:last-child>td]:pb-2">
+        <tbody className={`ds-text-12 [&>tr:last-child>td]:pb-2 ${(supplySideBlocked || borrowSideBlocked) ? 'opacity-60' : ''}`}>
           {supplyRows.map((row) => renderRow(row, 'ds-text-emerald-600', 'border-l-[rgb(var(--ds-emerald-500-rgb))]', true, undefined, undefined, Boolean(supplyDisabledNotice)))}
           <tr className={!isReserveLocked && middleColumnWarning ? 'ds-bg-warning-row' : ''}>
             <td className={`${compactCellPy} ${compactMetricCell}`}>
