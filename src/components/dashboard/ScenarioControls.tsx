@@ -69,7 +69,6 @@ function IncentiveNetCheckboxTooltip({
 
 const INPUT_DEBOUNCE_MS = 300;
 
-
 export type ScenarioInputMode = 'usd' | 'token';
 
 export interface ScenarioControlsHandle {
@@ -85,6 +84,70 @@ interface ScenarioControlsProps {
   /** Controlled mobile net-open state — when provided, the SlidersHorizontal toggle is rendered externally and this component uses the supplied value. */
   mobileNetOpen?: boolean;
   onMobileNetToggle?: () => void;
+}
+
+interface ScenarioInputFieldProps {
+  side: 'supply' | 'borrow';
+  value: string;
+  onChange: (value: string) => void;
+  inputMode: ScenarioInputMode;
+  compact: boolean;
+}
+
+function ScenarioInputField({ side, value, onChange, inputMode, compact }: ScenarioInputFieldProps) {
+  const label = side === 'supply' ? 'Supply' : 'Borrow';
+  const accentClass = side === 'supply' ? 'ds-text-emerald-600' : 'ds-text-brand-cyan';
+  const labelFontSize = compact ? 'ds-text-11' : 'ds-text-12';
+  const labelClass = `${labelFontSize} font-semibold ${accentClass} shrink-0`;
+
+  const controlH = compact ? 'h-9' : 'h-8';
+  const fontSize = compact ? 'ds-text-11' : 'ds-text-12';
+  const inputPx = compact ? 'px-2' : 'px-[var(--ds-space-3)]';
+  const inputMinW = compact ? 'min-w-[5rem]' : 'min-w-[3.5rem]';
+  const inputBase = `w-full min-w-0 ${inputMinW} ${controlH} ${inputPx} ${fontSize} tabular-nums placeholder:italic`;
+
+  const wrapperGap = compact ? 'gap-1' : 'gap-[var(--ds-space-1-5)]';
+  const wrapperExtras = compact ? 'min-w-0' : 'flex-1';
+  const clearPr = compact ? 'pr-7' : 'pr-8';
+  const clearBtnRounded = compact ? 'rounded' : 'rounded-md';
+  const clearIconSize = compact ? 'size-3' : 'size-3.5';
+
+  const placeholder = side === 'supply'
+    ? (inputMode === 'usd' ? '100,000' : '50')
+    : (inputMode === 'usd' ? '20,000' : '10');
+
+  const hasValue = Boolean(value.trim());
+
+  return (
+    <div className={`flex items-center ${wrapperGap} ${wrapperExtras}`}>
+      <span className={labelClass}>{label}</span>
+      <div className="relative flex-1 min-w-0">
+        <input
+          value={value}
+          onChange={(event) => onChange(formatNumberInput(event.target.value))}
+          inputMode="decimal"
+          placeholder={placeholder}
+          className={cn(
+            inputBase,
+            cnDsInputSurface(hasValue, side),
+            'min-w-0 w-full',
+            hasValue ? clearPr : '',
+          )}
+          aria-label={`${label} amount`}
+        />
+        {hasValue && (
+          <button
+            type="button"
+            onClick={() => onChange('')}
+            className={`absolute right-1 top-1/2 -translate-y-1/2 ${clearBtnRounded} p-1 text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors`}
+            aria-label={`Clear ${label.toLowerCase()} amount`}
+          >
+            <Eraser className={clearIconSize} aria-hidden />
+          </button>
+        )}
+      </div>
+    </div>
+  );
 }
 
 const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControlsProps>(({
@@ -139,25 +202,11 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
     return () => window.clearTimeout(timer);
   }, [supplyInput, borrowInput, inputMode, onDebouncedChange]);
 
-  /* shared token classes — mobile: h-9 (36px) for max compactness; desktop h-8 */
-  const controlH = isMobile ? 'h-9' : 'h-8';
   const fontSize = isMobile ? 'ds-text-11' : 'ds-text-12';
-  const inputPx = isMobile ? 'px-2' : 'px-[var(--ds-space-3)]';
-  /* min-w on inputs so digits don't get clipped; mobile needs more room for long numbers */
-  const inputMinW = isMobile ? 'min-w-[5rem]' : 'min-w-[3.5rem]';
-  const inputBase = `w-full min-w-0 ${inputMinW} ${controlH} ${inputPx} ${fontSize} tabular-nums placeholder:italic`;
-
   const segmentedActiveTextClass = 'text-foreground';
 
   const showMeritMerklMode = typeof onMeritMerklNetPositionChange === 'function';
   const meritMerklCheckboxId = 'scenario-merit-merkl-net-lending-borrowing';
-
-  const fieldLabelMobileSupply =
-    'ds-text-11 font-semibold tracking-wide ds-text-emerald-600 shrink-0';
-  const fieldLabelMobileBorrow =
-    'ds-text-11 font-semibold tracking-wide ds-text-brand-cyan shrink-0';
-  const fieldLabelSupplyDesktop = `${fontSize} font-semibold shrink-0 ds-text-emerald-600`;
-  const fieldLabelBorrowDesktop = `${fontSize} font-semibold shrink-0 ds-text-brand-cyan`;
 
   if (isMobile) {
     return (
@@ -175,62 +224,20 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
             className="shrink-0 self-stretch"
           />
           <div className="flex flex-col gap-1 flex-1 min-w-0">
-            <div className="flex min-w-0 items-center gap-1">
-              <span className={`${fieldLabelMobileSupply} w-11 shrink-0`}>Supply</span>
-              <div className="relative flex-1 min-w-0">
-                <input
-                  value={supplyInput}
-                  onChange={(event) => setSupplyInput(formatNumberInput(event.target.value))}
-                  inputMode="decimal"
-                  placeholder={inputMode === 'usd' ? '100,000' : '50'}
-                  className={cn(
-                    inputBase,
-                    cnDsInputSurface(Boolean(supplyInput.trim()), 'supply'),
-                    'min-w-0 w-full',
-                    supplyInput.trim() ? 'pr-7' : '',
-                  )}
-                  aria-label="Supply amount"
-                />
-                {supplyInput.trim() && (
-                  <button
-                    type="button"
-                    onClick={() => setSupplyInput('')}
-                    className="absolute right-1 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors"
-                    aria-label="Clear supply amount"
-                  >
-                    <Eraser className="size-3" aria-hidden />
-                  </button>
-                )}
-              </div>
-            </div>
-            <div className="flex min-w-0 items-center gap-1">
-              <span className={`${fieldLabelMobileBorrow} w-11 shrink-0`}>Borrow</span>
-              <div className="relative flex-1 min-w-0">
-                <input
-                  value={borrowInput}
-                  onChange={(event) => setBorrowInput(formatNumberInput(event.target.value))}
-                  inputMode="decimal"
-                  placeholder={inputMode === 'usd' ? '20,000' : '10'}
-                  className={cn(
-                    inputBase,
-                    cnDsInputSurface(Boolean(borrowInput.trim()), 'borrow'),
-                    'min-w-0 w-full',
-                    borrowInput.trim() ? 'pr-7' : '',
-                  )}
-                  aria-label="Borrow amount"
-                />
-                {borrowInput.trim() && (
-                  <button
-                    type="button"
-                    onClick={() => setBorrowInput('')}
-                    className="absolute right-1 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors"
-                    aria-label="Clear borrow amount"
-                  >
-                    <Eraser className="size-3" aria-hidden />
-                  </button>
-                )}
-              </div>
-            </div>
+            <ScenarioInputField
+              side="supply"
+              value={supplyInput}
+              onChange={setSupplyInput}
+              inputMode={inputMode}
+              compact
+            />
+            <ScenarioInputField
+              side="borrow"
+              value={borrowInput}
+              onChange={setBorrowInput}
+              inputMode={inputMode}
+              compact
+            />
           </div>
           {showMeritMerklMode && !isMobileNetOpenControlled ? (
             <button
@@ -288,11 +295,9 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
     );
   }
 
-  /* Desktop: tinted inner well (no extra outer border — reserves card frame only). */
   return (
     <div className="w-full min-w-0 rounded-xl bg-card/60 px-3 py-1.5 backdrop-blur-sm">
       <div ref={desktopRowRef} className="flex flex-row items-center gap-x-4">
-        {/* USD/Token Mode Switch - Always on the left */}
         <SegmentedToggle
           options={[
             { value: 'usd', label: 'USD' },
@@ -304,69 +309,22 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
           className="shrink-0"
         />
 
-        {/* Simulation inputs and controls group - Wraps as a unit to keep alignment */}
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 min-w-0 flex-1">
-          {/* Supply Section - flex-grow to fill space */}
-          <div className="flex items-center gap-[var(--ds-space-1-5)] flex-1">
-            <span className={fieldLabelSupplyDesktop}>Supply</span>
-            <div className="relative flex-1 min-w-0">
-              <input
-                value={supplyInput}
-                onChange={(event) => setSupplyInput(formatNumberInput(event.target.value))}
-                inputMode="decimal"
-                placeholder={inputMode === 'usd' ? '100,000' : '50'}
-                className={cn(
-                  inputBase,
-                  cnDsInputSurface(Boolean(supplyInput.trim()), 'supply'),
-                  'w-full',
-                  supplyInput.trim() ? 'pr-8' : '',
-                )}
-                aria-label="Supply amount"
-              />
-              {supplyInput.trim() && (
-                <button
-                  type="button"
-                  onClick={() => setSupplyInput('')}
-                  className="absolute right-1 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors"
-                  aria-label="Clear supply amount"
-                >
-                  <Eraser className="size-3.5" aria-hidden />
-                </button>
-              )}
-            </div>
-          </div>
+          <ScenarioInputField
+            side="supply"
+            value={supplyInput}
+            onChange={setSupplyInput}
+            inputMode={inputMode}
+            compact={false}
+          />
+          <ScenarioInputField
+            side="borrow"
+            value={borrowInput}
+            onChange={setBorrowInput}
+            inputMode={inputMode}
+            compact={false}
+          />
 
-          {/* Borrow Section - flex-grow to fill space */}
-          <div className="flex items-center gap-[var(--ds-space-1-5)] flex-1">
-            <span className={fieldLabelBorrowDesktop}>Borrow</span>
-            <div className="relative flex-1 min-w-0">
-              <input
-                value={borrowInput}
-                onChange={(event) => setBorrowInput(formatNumberInput(event.target.value))}
-                inputMode="decimal"
-                placeholder={inputMode === 'usd' ? '20,000' : '10'}
-                className={cn(
-                  inputBase,
-                  cnDsInputSurface(Boolean(borrowInput.trim()), 'borrow'),
-                  'w-full',
-                  borrowInput.trim() ? 'pr-8' : '',
-                )}
-                aria-label="Borrow amount"
-              />
-              {borrowInput.trim() && (
-                <button
-                  type="button"
-                  onClick={() => setBorrowInput('')}
-                  className="absolute right-1 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors"
-                  aria-label="Clear borrow amount"
-                >
-                  <Eraser className="size-3.5" aria-hidden />
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Controls Section */}
           <div className="flex items-center gap-3 shrink-0">
             {showMeritMerklMode ? (
               <IncentiveNetCheckboxTooltip
