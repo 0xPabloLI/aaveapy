@@ -465,10 +465,11 @@ UI 文案采用 **最大公约数** 策略：只描述两个版本中行为一�
 
 | 元素 | 正常 | Disabled（亮色 / 暗色） | 原因 |
 |------|------|------|------|
-| Supply/Borrow 列整体 opacity | `''` | `opacity-70` / `dark:opacity-60` | 暗色模式下透明度衰减感知弱，需加强 |
-| 禁用行 `<tr>` opacity | `''` | `opacity-75` / `dark:opacity-60` | 同上 |
-| 禁用 `<tbody>` opacity | `''` | `opacity-75` / `dark:opacity-60` | 同上 |
+| 禁用 `<tbody>` opacity（桌面+紧凑） | `''` | `opacity-75` / `dark:opacity-60` | 暗色模式下透明度衰减感知弱，需加强 |
 | Section 标题 disabled | accentClass | `text-muted-foreground` | 提示文字，不是数据值，用中性灰即可 |
+
+> 桌面版用 `group-data-[disabled]:opacity-75 dark:group-data-[disabled]:opacity-60`，
+> 紧凑版用直接条件类 `${blocked ? 'opacity-75 dark:opacity-60' : ''}`，两者值一致。
 
 #### 设计原则
 

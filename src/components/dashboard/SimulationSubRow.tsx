@@ -636,16 +636,146 @@ const SimulationSubRow = ({
     );
   };
 
+  /**
+   * Render one TableRow as Grid cells: 4 main cells + optional cap-progress (col-span-4)
+   * + optional cap-note (col-span-4). Used by the mobile compact layout only.
+   *
+   * Background classes (warning / disabled-section opacity) are applied per-cell because
+   * the wrapping `display: contents` row groups do not paint backgrounds.
+   */
+  const renderCompactGridRow = (
+    row: TableRow,
+    accentClass: string,
+    indentBorderClass: string,
+    sectionClass = '',
+    disabled = false,
+  ) => {
+    if (disabled) {
+      row = { ...row, after: null, delta: null, capNote: undefined, warning: false };
+    }
+    const deltaColorClass = row.delta === null || Number.isNaN(row.delta) ? SIM_NEUTRAL_MUTED : accentClass;
+    const isBreakdownItem = row.isBreakdown;
+    const isSubBreakdown = row.isSubBreakdown === true;
+    const isNestedUnderIncentive = row.nestedUnderIncentive === true;
+    const breakdownIndentClass = isSubBreakdown
+      ? 'ml-4 pl-2 border-l'
+      : isBreakdownItem
+        ? isNestedUnderIncentive
+          ? 'ml-3 pl-2 border-l'
+          : 'ml-2 pl-2 border-l'
+        : '';
+    const capNoteAlignClass = isSubBreakdown ? 'pl-6' : isBreakdownItem ? 'pl-4' : '';
+    const rowBgClass = row.warning ? 'ds-bg-warning-row' : '';
+    const cellBgClass = `${rowBgClass} ${sectionClass}`.trim();
+    const labelCellPy = row.capNote ? 'pt-0.5 pb-0' : 'py-1';
+    const valueCellPy = row.capNote ? 'pt-0.5 pb-0' : 'py-1';
+
+    const capProgressBar = (() => {
+      if (row.cap == null || row.type !== 'usd') return null;
+      const currentVal = row.current ?? 0;
+      const afterVal = row.after;
+      const capVal = row.cap;
+      const currentPct = Math.min((currentVal / capVal) * 100, 100);
+      const afterPct = afterVal != null ? Math.min((afterVal / capVal) * 100, 100) : null;
+      const barColorClass = row.warning
+        ? 'bg-[rgb(var(--ds-amber-600-rgb))]'
+        : accentClass.includes('emerald') ? 'bg-emerald-500' : 'bg-[rgb(var(--ds-brand-cyan-rgb))]';
+      const afterBarColorClass = row.warning
+        ? 'bg-[rgb(var(--ds-amber-500-rgb)/0.5)]'
+        : accentClass.includes('emerald') ? 'bg-emerald-400/40' : 'bg-[rgb(var(--ds-brand-cyan-rgb))]/40';
+      return (
+        <div
+          role="row"
+          data-disabled={disabled ? 'true' : undefined}
+          className={`group col-span-4 pt-0 pb-1 pl-0.5 pr-2 ${cellBgClass}`}
+        >
+          <div className="relative h-1.5 w-full rounded-full bg-muted/40 overflow-hidden group-data-[disabled]:grayscale-[50%] group-data-[disabled]:opacity-50">
+            <div
+              className={`absolute inset-y-0 left-0 rounded-full ${barColorClass} transition-all duration-300`}
+              style={{ width: `${currentPct}%` }}
+            />
+            {afterPct != null && afterPct > currentPct && (
+              <div
+                className={`absolute inset-y-0 rounded-full ${afterBarColorClass} transition-all duration-300`}
+                style={{ left: `${currentPct}%`, width: `${afterPct - currentPct}%` }}
+              />
+            )}
+          </div>
+        </div>
+      );
+    })();
+
+    return (
+      <Fragment key={row.rowKey}>
+        {/* Main row: 4 grid cells (label / current / after / delta) */}
+        <div role="row" className="contents" data-disabled={disabled ? 'true' : undefined}>
+          <div role="cell" className={`group ${labelCellPy} pl-2 pr-0.5 min-w-0 ${cellBgClass}`}>
+            <div className={`min-w-0 ${isBreakdownItem ? `${breakdownIndentClass} ${indentBorderClass}` : ''}`}>
+              {/* flex flex-wrap + whitespace-nowrap children: keeps each token (label / cap)
+                  unbroken but lets the flex container wrap between them when the label cell
+                  cannot fit both on one line. */}
+              <div className="flex flex-wrap items-baseline gap-x-1.5">
+                <span
+                  title={typeof row.label === 'string' ? row.label : undefined}
+                  className={`ds-text-12 whitespace-nowrap ${row.warning ? 'text-amber-700 dark:text-amber-400 font-medium' : `${accentClass} group-data-[disabled]:text-muted-foreground`}`}
+                >
+                  {row.label}
+                </span>
+                {row.cap !== null && row.cap !== undefined && (
+                  <span className={`ds-text-11 tabular-nums whitespace-nowrap ${row.warning ? 'text-amber-600' : SIM_NEUTRAL_SECONDARY}`}>
+                    / Cap {formatScenarioSize(row.cap, { inputMode, tokenPrice: simulation.tokenPrice })}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+          <div role="cell" className={`${valueCellPy} px-0.5 text-right whitespace-nowrap ${cellBgClass}`}>
+            <span className={`ds-text-11 tabular-nums whitespace-nowrap ${accentClass}`}>
+              {formatValue(row.current, row.type)}
+            </span>
+          </div>
+          <div role="cell" className={`${valueCellPy} px-0.5 text-right whitespace-nowrap ${cellBgClass}`}>
+            <span className={`ds-text-11 tabular-nums whitespace-nowrap ${row.after === null ? SIM_NEUTRAL_MUTED : accentClass}`}>
+              {formatValue(row.after, row.type)}
+            </span>
+          </div>
+          <div role="cell" className={`${valueCellPy} pl-0.5 pr-2 text-right whitespace-nowrap ${cellBgClass}`}>
+            <span className={`ds-text-11 tabular-nums whitespace-nowrap ${deltaColorClass}`}>
+              {formatDeltaValue(row.delta, row.type)}
+            </span>
+          </div>
+        </div>
+        {capProgressBar}
+        {row.capNote ? (
+          <div role="row" className={`col-span-4 pt-0 pb-0.5 pl-2 pr-0.5 min-w-0 ${cellBgClass}`}>
+            <p
+              className={`ds-text-11 min-w-0 w-full max-w-none whitespace-normal break-words leading-snug ${capNoteAlignClass} ${row.capWarning ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}
+            >
+              {row.capNote}
+            </p>
+          </div>
+        ) : null}
+      </Fragment>
+    );
+  };
+
+  /**
+   * Mobile compact layout — CSS Grid with `grid-cols-[1fr_auto_auto_auto]`.
+   *
+   * Why Grid (not table-fixed): the label column's `1fr` sizing lets `Supplied / Cap $19.50M`
+   * naturally wrap onto a second line when both pieces cannot fit in one line, instead of
+   * triggering horizontal overflow. Numeric columns use `auto` so they stay just wide enough
+   * for K/M/B-formatted values.
+   *
+   * Each row is a `display: contents` wrapper containing 4 grid cells, optionally followed
+   * by `col-span-4` rows for cap-progress bars and cap notes. Backgrounds (warning highlight,
+   * section opacity) are applied per-cell because `display: contents` containers do not paint.
+   */
   const renderCompactLayout = () => {
-    const compactCellPy = 'py-1';
-    /** Mirror renderRow tight padding: outer edges breathe, inter-column gaps stay tiny. */
-    const compactMetricCell = 'pl-2 pr-0.5';
-    const compactNumCell = 'px-0.5';
-    const compactDeltaCell = 'pl-0.5 pr-2';
-    /** Parent card/panel already provides the outer border when embedded; inner borders misalign with thead lines. */
-    /** Hard-disable horizontal scroll on mobile: table-fixed + explicit fractional column widths
-     *  keep the 4-column layout within the panel width regardless of input size. Numeric values
-     *  use K/M/B compact formatting (formatScenarioSize) so they remain readable at this width. */
+    const liquidityWarning = !isReserveLocked && borrowCapExceeded && borrowLimitedByLiquidity;
+    const supplySectionClass = supplySideBlocked ? 'opacity-75 dark:opacity-60' : '';
+    const borrowSectionClass = borrowSideBlocked ? 'opacity-75 dark:opacity-60' : '';
+    const headerCellClass = 'bg-muted/30 border-b border-border/50';
     return (
     <div
       className={`${
@@ -654,97 +784,109 @@ const SimulationSubRow = ({
           : 'bg-card/50 dark:bg-background/80 border border-border/60 rounded-xl'
       } overflow-hidden`}
     >
-      <table className="w-full min-w-0 table-fixed">
-        <colgroup>
-          {/* Fixed column ratios prevent right-side truncation on narrow viewports without
-              triggering horizontal scroll. Label column gets the widest share; numeric columns
-              are equal so deltas always remain visible. */}
-          <col style={{ width: '34%' }} />
-          <col style={{ width: '22%' }} />
-          <col style={{ width: '22%' }} />
-          <col style={{ width: '22%' }} />
-        </colgroup>
-        <thead>
-          <tr className="bg-muted/30 border-b border-border/50">
-            <th className={`${compactCellPy} ${compactMetricCell} text-left`}>
-              <span className="ds-text-11 text-muted-foreground font-medium">{tokenOnChainLabel}</span>
-            </th>
-            <th className={`${compactCellPy} ${compactNumCell} text-right whitespace-nowrap`}>
-              <span className="ds-text-11 text-muted-foreground font-medium">Current</span>
-            </th>
-            <th className={`${compactCellPy} ${compactNumCell} text-right whitespace-nowrap`}>
-              <span className="ds-text-11 text-muted-foreground font-medium">After</span>
-            </th>
-            <th className={`${compactCellPy} ${compactDeltaCell} text-right whitespace-nowrap`}>
-              <span className="ds-text-11 text-muted-foreground font-medium">Δ</span>
-            </th>
-          </tr>
-        </thead>
-        <tbody className={`ds-text-12 [&>tr:last-child>td]:pb-2 ${supplySideBlocked ? 'opacity-75 dark:opacity-60' : ''}`}>
-          {supplyRows.map((row) => renderRow(row, 'ds-text-emerald-600', 'border-l-[rgb(var(--ds-emerald-500-rgb))]', true, undefined, undefined, Boolean(supplyDisabledNotice)))}
-        </tbody>
-        <tbody className="ds-text-12 [&>tr:last-child>td]:pb-2">
-          <tr className={!isReserveLocked && middleColumnWarning ? 'ds-bg-warning-row' : ''}>
-            <td className={`${compactCellPy} ${compactMetricCell}`}>
-              <span className="ds-text-12 ds-text-purple-600">Spread</span>
-            </td>
-            <td className={`${compactCellPy} ${compactNumCell} text-right whitespace-nowrap`}>
-              <span className="ds-text-11 tabular-nums ds-text-purple-600">{formatSpread(simulation.spread.current)}</span>
-            </td>
-            <td className={`${compactCellPy} ${compactNumCell} text-right whitespace-nowrap`}>
-              <span className={`ds-text-11 tabular-nums ${(isReserveLocked || simulation.spread.after === null) ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
-                {isReserveLocked ? '-' : formatSpread(simulation.spread.after)}
+      <div
+        role="table"
+        aria-label="Simulation breakdown"
+        className="grid grid-cols-[1fr_auto_auto_auto] gap-x-2 gap-y-1 w-full min-w-0 ds-text-12 pb-2"
+      >
+        {/* Header row */}
+        <div role="row" className="contents">
+          <div role="columnheader" className={`${headerCellClass} py-1 pl-2 pr-0.5 text-left`}>
+            <span className="ds-text-11 text-muted-foreground font-medium">{tokenOnChainLabel}</span>
+          </div>
+          <div role="columnheader" className={`${headerCellClass} py-1 px-0.5 text-right whitespace-nowrap`}>
+            <span className="ds-text-11 text-muted-foreground font-medium">Current</span>
+          </div>
+          <div role="columnheader" className={`${headerCellClass} py-1 px-0.5 text-right whitespace-nowrap`}>
+            <span className="ds-text-11 text-muted-foreground font-medium">After</span>
+          </div>
+          <div role="columnheader" className={`${headerCellClass} py-1 pl-0.5 pr-2 text-right whitespace-nowrap`}>
+            <span className="ds-text-11 text-muted-foreground font-medium">Δ</span>
+          </div>
+        </div>
+
+        {/* Supply section */}
+        {supplyRows.map((row) =>
+          renderCompactGridRow(
+            row,
+            'ds-text-emerald-600',
+            'border-l-[rgb(var(--ds-emerald-500-rgb))]',
+            supplySectionClass,
+            Boolean(supplyDisabledNotice),
+          ),
+        )}
+
+        {/* Spread row */}
+        <div role="row" className="contents">
+          <div role="cell" className={`py-1 pl-2 pr-0.5 ${!isReserveLocked && middleColumnWarning ? 'ds-bg-warning-row' : ''}`}>
+            <span className="ds-text-12 ds-text-purple-600">Spread</span>
+          </div>
+          <div role="cell" className={`py-1 px-0.5 text-right whitespace-nowrap ${!isReserveLocked && middleColumnWarning ? 'ds-bg-warning-row' : ''}`}>
+            <span className="ds-text-11 tabular-nums whitespace-nowrap ds-text-purple-600">{formatSpread(simulation.spread.current)}</span>
+          </div>
+          <div role="cell" className={`py-1 px-0.5 text-right whitespace-nowrap ${!isReserveLocked && middleColumnWarning ? 'ds-bg-warning-row' : ''}`}>
+            <span className={`ds-text-11 tabular-nums whitespace-nowrap ${(isReserveLocked || simulation.spread.after === null) ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
+              {isReserveLocked ? '-' : formatSpread(simulation.spread.after)}
+            </span>
+          </div>
+          <div role="cell" className={`py-1 pl-0.5 pr-2 text-right whitespace-nowrap ${!isReserveLocked && middleColumnWarning ? 'ds-bg-warning-row' : ''}`}>
+            {hasScenarioInput && !isReserveLocked ? (
+              <span className={`ds-text-11 tabular-nums whitespace-nowrap ${simulation.spread.delta === null ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
+                {formatDelta(simulation.spread.delta)}
               </span>
-            </td>
-            <td className={`${compactCellPy} ${compactDeltaCell} text-right whitespace-nowrap`}>
-              {hasScenarioInput && !isReserveLocked ? (
-                <span className={`ds-text-11 tabular-nums ${simulation.spread.delta === null ? 'text-muted-foreground' : 'ds-text-purple-600'}`}>
-                  {formatDelta(simulation.spread.delta)}
-                </span>
-              ) : null}
-            </td>
-          </tr>
-          <tr className={!isReserveLocked && borrowCapExceeded && borrowLimitedByLiquidity ? 'ds-bg-warning-row' : ''}>
-            <td className={`${compactCellPy} ${compactMetricCell}`}>
-              <span className={`ds-text-12 ${!isReserveLocked && borrowCapExceeded && borrowLimitedByLiquidity ? 'text-amber-700 dark:text-amber-400 font-medium' : 'ds-text-purple-600'}`}>
-                Liquidity
-              </span>
-            </td>
-            <td className={`${compactCellPy} ${compactNumCell} text-right whitespace-nowrap`}>
-              <span className={`ds-text-11 tabular-nums whitespace-nowrap ${!isReserveLocked && borrowCapExceeded && borrowLimitedByLiquidity ? 'text-amber-700 dark:text-amber-400' : 'ds-text-purple-600'}`}>
-                {formatScenarioSize(simulation.marketMetrics.availableLiquidityUsd, { inputMode, tokenPrice: simulation.tokenPrice })}
-              </span>
-            </td>
-            <td className={`${compactCellPy} ${compactNumCell} text-right whitespace-nowrap`}>
+            ) : null}
+          </div>
+        </div>
+
+        {/* Liquidity row */}
+        <div role="row" className="contents">
+          <div role="cell" className={`py-1 pl-2 pr-0.5 ${liquidityWarning ? 'ds-bg-warning-row' : ''}`}>
+            <span className={`ds-text-12 ${liquidityWarning ? 'text-amber-700 dark:text-amber-400 font-medium' : 'ds-text-purple-600'}`}>
+              Liquidity
+            </span>
+          </div>
+          <div role="cell" className={`py-1 px-0.5 text-right whitespace-nowrap ${liquidityWarning ? 'ds-bg-warning-row' : ''}`}>
+            <span className={`ds-text-11 tabular-nums whitespace-nowrap ${liquidityWarning ? 'text-amber-700 dark:text-amber-400' : 'ds-text-purple-600'}`}>
+              {formatScenarioSize(simulation.marketMetrics.availableLiquidityUsd, { inputMode, tokenPrice: simulation.tokenPrice })}
+            </span>
+          </div>
+          <div role="cell" className={`py-1 px-0.5 text-right whitespace-nowrap ${liquidityWarning ? 'ds-bg-warning-row' : ''}`}>
+            <span className={`ds-text-11 tabular-nums whitespace-nowrap ${
+              isReserveLocked || simulation.marketMetrics.availableLiquidityUsdAfter === null
+                ? 'text-muted-foreground'
+                : liquidityWarning
+                  ? 'text-amber-700 dark:text-amber-400'
+                  : 'ds-text-purple-600'
+            }`}>
+              {isReserveLocked ? '-' : formatScenarioSize(simulation.marketMetrics.availableLiquidityUsdAfter, { inputMode, tokenPrice: simulation.tokenPrice })}
+            </span>
+          </div>
+          <div role="cell" className={`py-1 pl-0.5 pr-2 text-right whitespace-nowrap ${liquidityWarning ? 'ds-bg-warning-row' : ''}`}>
+            {hasScenarioInput && !isReserveLocked ? (
               <span className={`ds-text-11 tabular-nums whitespace-nowrap ${
-                isReserveLocked || simulation.marketMetrics.availableLiquidityUsdAfter === null
+                simulation.marketMetrics.availableLiquidityUsdDelta === null
                   ? 'text-muted-foreground'
-                  : borrowCapExceeded && borrowLimitedByLiquidity
+                  : liquidityWarning
                     ? 'text-amber-700 dark:text-amber-400'
                     : 'ds-text-purple-600'
               }`}>
-                {isReserveLocked ? '-' : formatScenarioSize(simulation.marketMetrics.availableLiquidityUsdAfter, { inputMode, tokenPrice: simulation.tokenPrice })}
+                {formatScenarioSizeDelta(simulation.marketMetrics.availableLiquidityUsdDelta, { inputMode, tokenPrice: simulation.tokenPrice })}
               </span>
-            </td>
-            <td className={`${compactCellPy} ${compactDeltaCell} text-right whitespace-nowrap`}>
-              {hasScenarioInput && !isReserveLocked ? (
-                <span className={`ds-text-11 tabular-nums whitespace-nowrap ${
-                  simulation.marketMetrics.availableLiquidityUsdDelta === null
-                    ? 'text-muted-foreground'
-                    : borrowCapExceeded && borrowLimitedByLiquidity
-                      ? 'text-amber-700 dark:text-amber-400'
-                      : 'ds-text-purple-600'
-                }`}>
-                  {formatScenarioSizeDelta(simulation.marketMetrics.availableLiquidityUsdDelta, { inputMode, tokenPrice: simulation.tokenPrice })}
-                </span>
-              ) : null}
-            </td>
-          </tr>
-        </tbody>
-        <tbody className={`ds-text-12 [&>tr:last-child>td]:pb-2 ${borrowSideBlocked ? 'opacity-75 dark:opacity-60' : ''}`}>
-          {borrowRows.map((row) => renderRow(row, 'ds-text-brand-cyan', 'border-l-[rgb(var(--ds-brand-cyan-rgb))]', true, undefined, undefined, Boolean(borrowDisabledNotice)))}
-        </tbody>
-      </table>
+            ) : null}
+          </div>
+        </div>
+
+        {/* Borrow section */}
+        {borrowRows.map((row) =>
+          renderCompactGridRow(
+            row,
+            'ds-text-brand-cyan',
+            'border-l-[rgb(var(--ds-brand-cyan-rgb))]',
+            borrowSectionClass,
+            Boolean(borrowDisabledNotice),
+          ),
+        )}
+      </div>
     </div>
     );
   };

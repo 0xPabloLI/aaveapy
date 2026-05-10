@@ -1,19 +1,25 @@
 /**
- * Regression test for mobile (compact) Simulation table overflow.
+ * Regression test for mobile (compact) Simulation breakdown layout.
  * See: docs/design/frontend-interaction-guardrails.md
  *      "Simulation breakdown table — no horizontal scroll on mobile"
+ *      docs/specs/2026-05-10-mobile-simulation-grid-layout-plan.md
  *
- * Background: an earlier `table-fixed` attempt with hard % widths clipped large
- * Δ values; the follow-up switched to `table-auto + overflow-x-auto`, which
- * silently introduced horizontal scrolling on narrow viewports when supply
- * inputs grew (e.g. supply=10000 on Mantle USDC). The current fix forbids
- * horizontal scrolling and instead constrains the layout via `table-fixed`
- * fractional widths plus compact (`ds-text-11`) numeric typography so the
- * K/M/B-formatted values always fit.
+ * Background: previous implementations used `table-fixed` + percentage
+ * `<colgroup>` widths. That hard-clipped overflow but could not gracefully
+ * wrap a long `Supplied / Cap $19.50M` label onto a second line. The current
+ * implementation uses CSS Grid with `grid-cols-[1fr_auto_auto_auto]`:
+ * - The label cell (`1fr`) wraps via `flex flex-wrap` between unbreakable
+ *   `whitespace-nowrap` spans, so label + cap stay on one line when there is
+ *   room and break to two lines otherwise.
+ * - Numeric cells (`auto`) size to content, so K/M/B-formatted values always
+ *   fit without horizontal overflow.
  *
- * This test is source-level (regex) on purpose: rendering the real component
- * requires a heavy fixture, and the invariants we want to lock in are
- * structural class strings.
+ * The desktop layout remains `<table className="w-full min-w-0 table-fixed">`
+ * inside `renderTable` and is asserted to be untouched (TC-10).
+ *
+ * These assertions are source-level (regex). Rendering the real component
+ * requires a heavy fixture; the invariants we want to lock in are structural
+ * class strings and role attributes.
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -33,42 +39,82 @@ const getCompactBlock = (): string => {
   return end > 0 ? SOURCE.slice(start, end) : SOURCE.slice(start);
 };
 
-describe('SimulationSubRow compact (mobile) layout', () => {
-  it('never enables horizontal scrolling on the compact wrapper', () => {
+const getCompactGridRowBlock = (): string => {
+  const start = SOURCE.indexOf('const renderCompactGridRow');
+  expect(start).toBeGreaterThan(-1);
+  const rest = SOURCE.slice(start + 1);
+  const nextIdx = rest.search(/\n\s{2}const render[A-Z]/);
+  const end = nextIdx > 0 ? start + 1 + nextIdx : -1;
+  return end > 0 ? SOURCE.slice(start, end) : SOURCE.slice(start);
+};
+
+describe('SimulationSubRow compact (mobile) Grid layout', () => {
+  it('TC-01: renderCompactLayout no longer uses <table>, table-fixed, or <colgroup>', () => {
+    const block = getCompactBlock();
+    expect(block).not.toMatch(/<table/);
+    expect(block).not.toMatch(/table-fixed/);
+    expect(block).not.toMatch(/<colgroup/);
+    expect(block).not.toMatch(/<thead/);
+    expect(block).not.toMatch(/<tbody/);
+  });
+
+  it('TC-02: renderCompactLayout top-level container uses grid-cols-[1fr_auto_auto_auto]', () => {
+    const block = getCompactBlock();
+    const matches = block.match(/grid-cols-\[1fr_auto_auto_auto\]/g) ?? [];
+    expect(matches.length).toBe(1);
+  });
+
+  it('TC-03: never enables horizontal scrolling on the compact wrapper', () => {
     const block = getCompactBlock();
     expect(block).not.toMatch(/overflow-x-auto/);
     expect(block).not.toMatch(/overflow-x-scroll/);
   });
 
-  it('uses table-fixed with explicit fractional column widths so the layout cannot exceed the container', () => {
+  it('TC-04: numeric cells preserve whitespace-nowrap + tabular-nums + ds-text-11', () => {
     const block = getCompactBlock();
-    expect(block).toMatch(/table-fixed/);
-    expect(block).not.toMatch(/table-auto/);
-    // Four <col> entries with explicit % widths (label + 3 numeric).
-    const colWidthMatches = block.match(/style=\{\{\s*width:\s*['"]\d+%/g) ?? [];
-    expect(colWidthMatches.length).toBe(4);
+    const rowBlock = getCompactGridRowBlock();
+    const combined = `${block}\n${rowBlock}`;
+    const numericSpans = combined.match(/ds-text-11 tabular-nums whitespace-nowrap/g) ?? [];
+    expect(numericSpans.length).toBeGreaterThanOrEqual(3);
   });
 
-  it('headers for Current / After / Δ carry whitespace-nowrap', () => {
-    const numHeaderClass = /\$\{compactCellPy\} \$\{compactNumCell\} text-right whitespace-nowrap/;
-    const deltaHeaderClass = /\$\{compactCellPy\} \$\{compactDeltaCell\} text-right whitespace-nowrap/;
-    expect(SOURCE).toMatch(numHeaderClass);
-    expect(SOURCE).toMatch(deltaHeaderClass);
+  it('TC-05: cap progress / cap note rows use col-span-4', () => {
+    const rowBlock = getCompactGridRowBlock();
+    const colSpanMatches = rowBlock.match(/col-span-4/g) ?? [];
+    // At least cap progress + cap note (2 occurrences)
+    expect(colSpanMatches.length).toBeGreaterThanOrEqual(2);
   });
 
-  it('renderRow numeric <td>s and inner <span>s use whitespace-nowrap', () => {
-    const tdNowrap = SOURCE.match(/text-right align-top whitespace-nowrap/g) ?? [];
-    expect(tdNowrap.length).toBeGreaterThanOrEqual(3);
-
-    const spanNowrap = SOURCE.match(/tabular-nums whitespace-nowrap/g) ?? [];
-    expect(spanNowrap.length).toBeGreaterThanOrEqual(3);
+  it('TC-06: label cell uses flex flex-wrap items-baseline so cap can wrap to a new line', () => {
+    const rowBlock = getCompactGridRowBlock();
+    expect(rowBlock).toMatch(/flex flex-wrap items-baseline/);
   });
 
-  it('compact-mode numeric values use ds-text-11 so they fit fixed columns', () => {
+  it('TC-07: Grid layout exposes a11y roles (table / row / cell / columnheader)', () => {
     const block = getCompactBlock();
-    // Spread + Liquidity inline rows must use ds-text-11 for numeric spans.
-    expect(block).toMatch(/ds-text-11 tabular-nums/);
-    // The shared renderRow path uses a tight-mode flag that resolves to ds-text-11.
-    expect(SOURCE).toMatch(/numericFontClass = tight \? 'ds-text-11' : 'ds-text-12'/);
+    expect(block).toMatch(/role="table"/);
+    expect(block).toMatch(/role="row"/);
+    expect(block).toMatch(/role="cell"/);
+    expect(block).toMatch(/role="columnheader"/);
+    expect(block).toMatch(/aria-label="Simulation breakdown"/);
+  });
+
+  it('TC-08: Spread row is rewritten as Grid (no <tr>/<td> for Spread)', () => {
+    const block = getCompactBlock();
+    // Spread label is now inside a div role="cell", not <td>
+    expect(block).not.toMatch(/<tr[^>]*>[\s\S]*?<td[^>]*>[\s\S]*?Spread/);
+    expect(block).toMatch(/role="cell"[^>]*>[\s\S]*?Spread/);
+  });
+
+  it('TC-09: Liquidity row is rewritten as Grid (no <tr>/<td> for Liquidity)', () => {
+    const block = getCompactBlock();
+    expect(block).not.toMatch(/<tr[^>]*>[\s\S]*?<td[^>]*>[\s\S]*?Liquidity/);
+    expect(block).toMatch(/role="cell"[^>]*>[\s\S]*?Liquidity/);
+  });
+
+  it('TC-10: desktop renderTable is untouched (still uses w-full min-w-0 table-fixed)', () => {
+    const matches = SOURCE.match(/<table className="w-full min-w-0 table-fixed">/g) ?? [];
+    // renderTable + the EarnCost desktop fallback table
+    expect(matches.length).toBe(2);
   });
 });
