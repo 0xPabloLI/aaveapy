@@ -28,9 +28,9 @@ describe('PortfolioPanel batch grid layout', () => {
     ).toBe(true);
   });
 
-  it('mobile uses a 2-column grid template (token info + input column)', () => {
+  it('mobile uses a 2-column grid template (token info auto, input column expands)', () => {
     expect(src).toMatch(
-      /\[grid-template-columns:minmax\(0,max-content\)_minmax\(\d+(?:\.\d+)?rem,1fr\)\]/,
+      /\[grid-template-columns:auto_minmax\(\d+(?:\.\d+)?rem,1fr\)\]/,
     );
   });
 });
@@ -47,7 +47,14 @@ describe('PortfolioTokenRow subgrid integration', () => {
     expect(src).toMatch(/grid-cols-subgrid[^"']*col-span-2|col-span-2[^"']*grid-cols-subgrid/);
   });
 
-  it('desktop row uses grid-cols-subgrid with col-span-3', () => {
-    expect(src).toMatch(/grid-cols-subgrid[^"']*col-span-3|col-span-3[^"']*grid-cols-subgrid/);
+  it('desktop row uses flex layout (intentionally not subgrid)', () => {
+    // Desktop intentionally drops subgrid so per-row spacing is controlled
+    // locally (e.g. ml-2.5 + flex-1 between token info and inputs).
+    // See PortfolioTokenRow.tsx desktop branch comment.
+    expect(src).toMatch(/Desktop\s*[—-]\s*flex layout \(no subgrid\)/);
+    // The desktop return must not opt into grid-cols-subgrid / col-span-3.
+    const desktopReturn = src.slice(src.indexOf('Desktop'));
+    expect(desktopReturn).not.toMatch(/grid-cols-subgrid/);
+    expect(desktopReturn).not.toMatch(/col-span-3/);
   });
 });
