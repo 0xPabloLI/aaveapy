@@ -137,8 +137,8 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
         <div className="grid min-w-0 grid-cols-[1rem_minmax(0,1fr)] items-center gap-x-1 gap-y-0.5 leading-[1.15]">
           <span className="flex justify-center"><TokenIcon symbol={tokenSymbol} size={14} /></span>
           <span className="ds-text-12 font-semibold text-foreground truncate">{tokenSymbol}</span>
-          <span className="flex justify-center">
-            {chainSrc && <img src={chainSrc} alt={chainName} className="size-3 opacity-70" />}
+            <span className="flex justify-center">
+            {chainSrc && <img src={chainSrc} alt={chainName} className="size-3" />}
           </span>
           <span className="ds-text-10 text-muted-foreground truncate">{marketLabel}</span>
           {hubName && (
@@ -172,7 +172,7 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
           </span>
           <span className="ds-text-10 text-muted-foreground inline-flex items-center gap-1 min-w-0 flex-wrap">
             {chainSrc && (
-              <img src={chainSrc} alt={chainName} className="size-2.5 shrink-0 opacity-70" />
+              <img src={chainSrc} alt={chainName} className="size-2.5 shrink-0" />
             )}
             <span className="truncate">{marketLabel}</span>
             {hubName && (
