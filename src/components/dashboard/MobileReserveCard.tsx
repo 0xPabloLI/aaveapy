@@ -16,13 +16,13 @@ import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { IncentiveIcon } from '@/components/IncentiveIcon';
 import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
 import SimulationSubRow from './SimulationSubRow';
-import UtilizationIndicator from './UtilizationIndicator';
-import CapProgressRing from './CapProgressRing';
-import BorrowCapProgressRing from './BorrowCapProgressRing';
+import UtilizationIndicator, { UtilizationContent } from './UtilizationIndicator';
+import CapProgressRing, { CapProgressContent } from './CapProgressRing';
+import BorrowCapProgressRing, { BorrowCapProgressContent } from './BorrowCapProgressRing';
 import AssetActionMenu from './AssetActionMenu';
 
 import DeficitShieldIcon from './DeficitShieldIcon';
-import DeficitLiquidityRing from './DeficitLiquidityRing';
+import DeficitLiquidityRing, { DeficitProgressContent } from './DeficitLiquidityRing';
 import {
   calculateDeficitShareRatio,
   formatReserveDeficitTokenCompact,
@@ -37,13 +37,7 @@ import { buildPoolExplorerUrl } from '@/lib/poolExplorerLinks';
 import { buildAaveProHubUrl } from '@/lib/aaveLinks';
 import { getProtocolVersion } from '@/lib/protocolVersion';
 import { cn } from '@/lib/utils';
-import {
-  SupplyCapSheetContent,
-  BorrowCapSheetContent,
-  UtilizationSheetContent,
-  DeficitSheetContent,
-  FrozenSheetContent,
-} from './MobileReserveSheetContent';
+import { FrozenStatusContent } from './FrozenStatusBadge';
 import { BATCH_RESERVE_ADD_BUTTON_CLASSES } from './batchTheme';
 
 interface MobileCapSheetProps {
@@ -89,41 +83,41 @@ function MobileCapSheet({
 
   const CAP_SHEET_CONTENT: Record<string, React.ReactNode> = {
     supply: (
-      <SupplyCapSheetContent
+      <CapProgressContent
         currentSize={displayReserveSizeUsd ?? 0}
         cap={nativeToUsd(reserve.supplyCap, reserve.decimals, reserve.tokenPrice) ?? 0}
-        inputMode={inputMode}
+        displayMode={inputMode}
         tokenPrice={displayTokenPrice}
         tokenSymbol={reserve.tokenSymbol}
       />
     ),
     borrow: (
-      <BorrowCapSheetContent
+      <BorrowCapProgressContent
         borrowed={totalBorrowedUsd ?? 0}
         cap={nativeToUsd(reserve.borrowCap, reserve.decimals, reserve.tokenPrice) ?? 0}
         availableLiquidityUsd={availableLiquidityUsd ?? 0}
-        inputMode={inputMode}
+        displayMode={inputMode}
         tokenPrice={displayTokenPrice}
         tokenSymbol={reserve.tokenSymbol}
-        borrowDisabled={reserve.borrowDisabled}
+        disabled={reserve.borrowDisabled}
       />
     ),
     utilization: optimalPct != null && displayUtilization != null ? (
-      <UtilizationSheetContent current={displayUtilization} optimal={optimalPct} />
+      <UtilizationContent current={displayUtilization} optimal={optimalPct} />
     ) : null,
     deficit: deficitUsd != null ? (
-      <DeficitSheetContent
+      <DeficitProgressContent
         deficitUsd={deficitUsd}
         totalSuppliedUsd={displayReserveSizeUsd}
-        deficitTokenLabel={deficitTokenLabel}
-        inputMode={inputMode}
+        tokenDeficitLabel={deficitTokenLabel}
+        displayMode={inputMode}
         tokenPrice={displayTokenPrice}
         tokenSymbol={reserve.tokenSymbol}
         poolExplorerUrl={buildPoolExplorerUrl(reserve.marketName)}
       />
     ) : null,
     frozen: (
-      <FrozenSheetContent isFrozen={reserve.isFrozen} isPaused={reserve.isPaused} />
+      <FrozenStatusContent isFrozen={reserve.isFrozen} isPaused={reserve.isPaused} />
     ),
   };
 

@@ -23,6 +23,7 @@ import {
   getBrevisCampaignStartedAt,
 } from '@/lib/brevis';
 import { adjustTooltipAnchorForScroll, getWindowScroll } from '@/lib/tooltipPosition';
+import { CalloutArrowSvg } from '@/components/ui/tooltip';
 import { useIsMobile } from '@/hooks/use-mobile';
 import BottomSheet from './BottomSheet';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
@@ -819,8 +820,7 @@ const IncentiveTooltip = ({
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
           >
-            <path d="M0 10 L8 0 L16 10 Z" fill="hsl(var(--card))" />
-            <path d="M0 10 L8 0 L16 10" stroke="hsl(var(--border) / 0.6)" strokeWidth="1" strokeLinejoin="round" />
+            <CalloutArrowSvg fill="hsl(var(--card))" stroke="hsl(var(--border) / 0.6)" width={16} height={10} />
           </svg>
         )}
         {/* Content area */}

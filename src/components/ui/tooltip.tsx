@@ -108,7 +108,7 @@ const TooltipCalloutArrow = (_props: { side?: 'top' | 'bottom' | 'left' | 'right
         aria-hidden
       >
         <path d="M9 0 L0 8 L9 16 Z" fill={fill} />
-        <path d="M9 0 L0 8 L9 16" {...commonStrokeProps} />
+        <path d="M9 0 L0 8 L9 16" stroke={stroke} strokeWidth="1" strokeLinejoin="round" fill="none" />
       </svg>
 
       {/* tooltip on left of trigger → arrow points right (sits on body's right edge) */}
@@ -120,7 +120,7 @@ const TooltipCalloutArrow = (_props: { side?: 'top' | 'bottom' | 'left' | 'right
         aria-hidden
       >
         <path d="M0 0 L9 8 L0 16 Z" fill={fill} />
-        <path d="M0 0 L9 8 L0 16" {...commonStrokeProps} />
+        <path d="M0 0 L9 8 L0 16" stroke={stroke} strokeWidth="1" strokeLinejoin="round" fill="none" />
       </svg>
 
       {/* tooltip below trigger → arrow points up (sits on body's top edge) */}
@@ -132,7 +132,7 @@ const TooltipCalloutArrow = (_props: { side?: 'top' | 'bottom' | 'left' | 'right
         aria-hidden
       >
         <path d="M0 9 L8 0 L16 9 Z" fill={fill} />
-        <path d="M0 9 L8 0 L16 9" {...commonStrokeProps} />
+        <path d="M0 9 L8 0 L16 9" stroke={stroke} strokeWidth="1" strokeLinejoin="round" fill="none" />
       </svg>
 
       {/* tooltip above trigger → arrow points down (sits on body's bottom edge) */}
@@ -144,7 +144,7 @@ const TooltipCalloutArrow = (_props: { side?: 'top' | 'bottom' | 'left' | 'right
         aria-hidden
       >
         <path d="M0 0 L8 9 L16 0 Z" fill={fill} />
-        <path d="M0 0 L8 9 L16 0" {...commonStrokeProps} />
+        <path d="M0 0 L8 9 L16 0" stroke={stroke} strokeWidth="1" strokeLinejoin="round" fill="none" />
       </svg>
     </>
   );
