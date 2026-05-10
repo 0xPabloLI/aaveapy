@@ -3,13 +3,15 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 /**
- * Guard against regressions where the parent grid that wraps
- * PortfolioTokenRow loses its horizontal gap. Subgrid rows inherit
- * column gaps from the ancestor grid, so dropping `gap-x-*` collapses
- * the spacing between token info and the supply input on mobile.
+ * Guard against regressions in the PortfolioPanel grid layout.
  *
- * See: PortfolioPanel.tsx — the grid that maps groupedByReserve.
+ * Desktop: grid-cols-2 (two columns of token rows, each 50%).
+ * Mobile:  grid-cols-1 (single column).
+ *
+ * Rows now use flex internally (see visual-gap test), so the parent
+ * grid gap-x controls spacing BETWEEN rows (not within a row).
  */
+
 describe('PortfolioPanel batch grid layout', () => {
   const src = readFileSync(
     resolve(__dirname, 'PortfolioPanel.tsx'),
@@ -17,36 +19,20 @@ describe('PortfolioPanel batch grid layout', () => {
   );
 
   it('parent grid for token rows declares both gap-x and gap-y', () => {
-    const m = src.match(/"grid\s+([^"]*)"/g) ?? [];
-    const hasGapXAndY = m.some(
+    const doubleQuoted = src.match(/"grid\s+([^"]*)"/g) ?? [];
+    const singleQuoted = src.match(/'grid\s+([^']*)'/g) ?? [];
+    const allMatches = [...doubleQuoted, ...singleQuoted];
+    const hasGapXAndY = allMatches.some(
       (cls) => /gap-x-\d/.test(cls) && /gap-y-\d/.test(cls),
     );
     expect(
       hasGapXAndY,
-      'Parent grid wrapping PortfolioTokenRow must include gap-x-* AND gap-y-* so subgrid rows inherit column spacing',
+      'Parent grid must include gap-x-* AND gap-y-* for spacing between rows',
     ).toBe(true);
   });
 
-  it('batch grid uses 2-column 50/50 template (unified desktop + mobile)', () => {
-    expect(src).toMatch(
-      /\[grid-template-columns:1fr_1fr\]/,
-    );
-  });
-});
-
-describe('PortfolioTokenRow subgrid integration', () => {
-  const src = readFileSync(
-    resolve(__dirname, 'PortfolioTokenRow.tsx'),
-    'utf8',
-  );
-
-  it('mobile row uses grid-cols-subgrid with col-span-2', () => {
-    expect(src).toMatch(/grid-cols-subgrid[^"']*col-span-2|col-span-2[^"']*grid-cols-subgrid/);
-  });
-
-  it('desktop row also uses grid-cols-subgrid with col-span-2 (unified with mobile)', () => {
-    const desktopReturn = src.slice(src.indexOf('Desktop'));
-    expect(desktopReturn).toMatch(/grid-cols-subgrid/);
-    expect(desktopReturn).toMatch(/col-span-2/);
+  it('desktop uses grid-cols-2, mobile uses grid-cols-1', () => {
+    expect(src).toMatch(/grid-cols-1/);
+    expect(src).toMatch(/grid-cols-2/);
   });
 });

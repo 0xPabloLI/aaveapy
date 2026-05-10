@@ -543,7 +543,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
           </div>
         ) : (
           <div className="space-y-1.5">
-            <div className="grid gap-x-2 gap-y-1.5 [grid-template-columns:1fr_1fr]">
+            <div className={cn('grid gap-x-2 gap-y-1.5', isMobile ? 'grid-cols-1' : 'grid-cols-2')}>
               {Array.from(groupedByReserve.entries()).map(([reserveId, entry]) => (
                 <PortfolioTokenRow
                   key={reserveId}

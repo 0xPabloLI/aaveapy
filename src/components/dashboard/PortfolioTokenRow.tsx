@@ -115,8 +115,8 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
 
   if (isMobile) {
     return (
-      <div className="grid grid-cols-subgrid col-span-2 items-center gap-x-1.5 rounded-lg border border-border/50 bg-card/80 px-2 py-1.5 transition-colors hover:border-border">
-        <div className="flex min-w-0 items-center gap-1">
+      <div className="flex items-center gap-x-1 rounded-lg border border-border/50 bg-card/80 px-2 py-1.5 transition-colors hover:border-border">
+        <div className="flex min-w-0 items-center gap-1 shrink-0">
           {minusBtn}
           {/* Token info — 2-col grid (icons centered, text left-aligned), 3 rows */}
           <div className="grid min-w-0 grid-cols-[1rem_minmax(0,1fr)] items-center gap-x-1 gap-y-0.5 leading-[1.15]">
@@ -136,7 +136,7 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
             )}
           </div>
         </div>
-        <div className="flex flex-col items-stretch gap-1">
+        <div className="flex flex-col items-stretch gap-1 flex-1 min-w-0">
           {renderSideInput(supplyPosition, 'Supply')}
           {borrowPosition && renderSideInput(borrowPosition, 'Borrow')}
         </div>
@@ -144,10 +144,10 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
     );
   }
 
-  // Desktop — same 2-column structure as mobile, with larger icon/font sizes.
+  // Desktop — flex layout, token info fixed width so inputs align across rows.
   return (
-    <div className="grid grid-cols-subgrid col-span-2 items-center gap-x-2 rounded-lg border border-border/50 bg-card/80 px-2.5 py-2 transition-colors hover:border-border">
-      <div className="flex min-w-0 items-center gap-1.5">
+    <div className="flex items-center gap-x-1.5 rounded-lg border border-border/50 bg-card/80 px-2.5 py-2 transition-colors hover:border-border">
+      <div className="flex min-w-0 items-center gap-1.5 shrink-0 w-[160px]">
         {minusBtn}
         <TokenIcon symbol={tokenSymbol} size={20} />
         <div className="flex flex-col min-w-0 leading-tight">
@@ -167,7 +167,7 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
           </span>
         </div>
       </div>
-      <div className="flex flex-col items-stretch gap-1">
+      <div className="flex flex-col items-stretch gap-1 flex-1 min-w-0">
         {renderSideInput(supplyPosition, 'Supply')}
         {borrowPosition && renderSideInput(borrowPosition, 'Borrow')}
       </div>
