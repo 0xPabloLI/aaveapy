@@ -545,7 +545,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
           <div className="space-y-1.5">
             <div
               className={cn(
-                'grid gap-y-1.5',
+                'grid gap-x-2 gap-y-1.5',
                 isMobile
                   ? '[grid-template-columns:minmax(0,max-content)_minmax(11rem,1fr)]'
                   : '[grid-template-columns:auto_minmax(0,1fr)_auto]',
