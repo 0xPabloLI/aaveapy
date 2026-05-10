@@ -117,4 +117,30 @@ describe('SimulationSubRow compact (mobile) Grid layout', () => {
     // renderTable + the EarnCost desktop fallback table
     expect(matches.length).toBe(2);
   });
+
+  it('TC-11: renderCompactGridRow places data-disabled on the group cell (not the contents wrapper)', () => {
+    const rowBlock = getCompactGridRowBlock();
+    // The label cell div must carry both group AND data-disabled on the same element
+    // so that group-data-[disabled]:text-muted-foreground works correctly.
+    // Pattern: <div role="cell" data-disabled=... className={`group ...`}>
+    // Anti-pattern: <div role="row" className="contents" data-disabled=...>
+    //              <div role="cell" className={`group ...`}>  (group without data-disabled)
+    const labelCellMatch = rowBlock.match(
+      /<div\s+role="cell"\s+data-disabled=\{[^}]*\}\s+className=\{`group\s/,
+    );
+    expect(labelCellMatch).toBeTruthy();
+    // The contents wrapper must NOT carry data-disabled
+    const contentsWithDataDisabled = rowBlock.match(
+      /<div\s+role="row"\s+className="contents"\s+data-disabled/,
+    );
+    expect(contentsWithDataDisabled).toBeNull();
+  });
+
+  it('TC-12: supplySectionClass and borrowSectionClass use identical opacity-75 dark:opacity-60', () => {
+    const block = getCompactBlock();
+    const supplyMatch = block.match(/supplySectionClass\s*=\s*supplySideBlocked\s*\?\s*'opacity-75 dark:opacity-60'\s*:/);
+    const borrowMatch = block.match(/borrowSectionClass\s*=\s*borrowSideBlocked\s*\?\s*'opacity-75 dark:opacity-60'\s*:/);
+    expect(supplyMatch).toBeTruthy();
+    expect(borrowMatch).toBeTruthy();
+  });
 });

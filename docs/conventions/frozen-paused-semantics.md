@@ -465,11 +465,17 @@ UI 文案采用 **最大公约数** 策略：只描述两个版本中行为一�
 
 | 元素 | 正常 | Disabled（亮色 / 暗色） | 原因 |
 |------|------|------|------|
-| 禁用 `<tbody>` opacity（桌面+紧凑） | `''` | `opacity-75` / `dark:opacity-60` | 暗色模式下透明度衰减感知弱，需加强 |
-| Section 标题 disabled | accentClass | `text-muted-foreground` | 提示文字，不是数据值，用中性灰即可 |
+| Section 整列 opacity（桌面 `renderTable`） | `''` | `opacity-75` / `dark:opacity-60` | 暗色模式下透明度衰减感知弱，需加强 |
+| Section 整列 opacity（紧凑 Grid `renderCompactLayout`） | `''` | `opacity-75 dark:opacity-60`（per-cell via `cellBgClass`） | 与桌面等值，逐 cell 应用因 `display: contents` 不可绘制 |
+| Section 标题 disabled | `accentClass` | `text-muted-foreground` | 提示文字，不是数据值，用中性灰即可 |
 
-> 桌面版用 `group-data-[disabled]:opacity-75 dark:group-data-[disabled]:opacity-60`，
-> 紧凑版用直接条件类 `${blocked ? 'opacity-75 dark:opacity-60' : ''}`，两者值一致。
+> 桌面 `renderTable` 版用 `group-data-[disabled]:opacity-75 dark:group-data-[disabled]:opacity-60`，
+> 紧凑 Grid 版在 `renderCompactLayout` 中计算 `supplySectionClass` / `borrowSectionClass`（等值），
+> 通过 `renderCompactGridRow` 的 `cellBgClass` 逐 cell 应用。两者值一致。
+
+> **Grid 布局关键约束**：`renderCompactGridRow` 中 `data-disabled` 必须与 `group` 放在
+> **同一元素**上（同为 label cell `<div>`），否则 `group-data-[disabled]:text-muted-foreground`
+> 不会生效。禁止将 `data-disabled` 放在 `display: contents` 的 row wrapper 上。
 
 #### 设计原则
 

@@ -708,8 +708,8 @@ const SimulationSubRow = ({
     return (
       <Fragment key={row.rowKey}>
         {/* Main row: 4 grid cells (label / current / after / delta) */}
-        <div role="row" className="contents" data-disabled={disabled ? 'true' : undefined}>
-          <div role="cell" className={`group ${labelCellPy} pl-2 pr-0.5 min-w-0 ${cellBgClass}`}>
+        <div role="row" className="contents">
+          <div role="cell" data-disabled={disabled ? 'true' : undefined} className={`group ${labelCellPy} pl-2 pr-0.5 min-w-0 ${cellBgClass}`}>
             <div className={`min-w-0 ${isBreakdownItem ? `${breakdownIndentClass} ${indentBorderClass}` : ''}`}>
               {/* flex flex-wrap + whitespace-nowrap children: keeps each token (label / cap)
                   unbroken but lets the flex container wrap between them when the label cell
