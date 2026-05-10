@@ -582,6 +582,84 @@ className="transition-all motion-reduce:transition-none"
 - 仅视觉禁用且需说明：`text-muted-foreground cursor-auto` + tooltip。
 - 完全不可点击：`opacity-50 cursor-not-allowed pointer-events-none`。
 
+### 8.1.1 分层禁用状态模式（数据表 / 卡片专用，跨场景可迁移最佳实践）
+
+> 当一张带有**语义色**（emerald=Supply、cyan=Borrow、amber=Warning 等）的数据表或卡片面板因外部状态（frozen / paused / disabled）而整体不可操作时，**不要一刀切全部变灰**。正确的做法是**分层处理**——不同元素类型用不同的禁用信号，让用户在「不可操作」的前提下仍然能快速识别数据的原始分类与空间定位。
+
+#### 分层策略
+
+| 元素层 | 处理方式 | 效果 | 原理 |
+|--------|----------|------|------|
+| **数值（Current 列）** | 保留原语义色 + 整体容器 `opacity-60` | emerald/cyan 色彩可辨，但明显「暗了一档」 | 用户仍需区分「这是 Supply 侧还是 Borrow 侧的数据」；色相保留不干扰空间定位 |
+| **文字标签 / 标题** | 替换为 `text-muted-foreground`（去语义色） | 从 emerald/cyan/purple 变为中性灰 | 标签的语义色在不可操作时已失去意义，继续用语义色会误导用户以为该标签仍有效 |
+| **进度条 / 环形图** | `grayscale-[50%] opacity-50` | 颜色褪去，形状保留 | 图形元素在禁用时不应继续传递「容量状态」信号；灰度化表明此维度暂时无关 |
+| **After / Delta 列** | 值设为 null → 显示 `-` | 不展示任何模拟结果 | 禁用状态下没有「after」变化，显示模拟值会误导用户以为操作仍在生效 |
+| **背景行** | 保留 frozen/paused 专用底色（如 `ds-bg-paused`） | 整行有淡琥珀/淡天蓝底色 | 底色是**状态标记**而非数据语义色，在禁用时应保留以解释「为什么禁用」 |
+
+#### 为什么不用一刀切 `opacity-50` 全灰？
+
+| 一刀切做法 | 问题 |
+|---|---|
+| 整个容器 `opacity-50` | Supply/Borrow 两列都是灰色的，用户分不清 emerald 和 cyan 区域，扫读时失去空间锚点 |
+| 所有文字 + 数值统一 `text-muted-foreground` | 数值的颜色是数据分类信号（绿色=流入、青色=流出），全部去色后用户需要重新逐字阅读才能区分 |
+| 进度条保留原色 | 禁用状态下 cap 已无关，鲜艳的进度条会与「不可操作」的状态信号冲突 |
+
+#### 分层禁用的信号层级
+
+用户一眼扫过时，按优先级接收以下信号：
+
+1. **底色**（amber/sky 淡底）→ 「这个资产被 paused/frozen 了」
+2. **整体 opacity-60** → 「这张表当前不可操作」
+3. **数值颜色保留** → 「这是 Supply 侧（绿色）的数据」
+4. **文字变灰** → 「这些标签暂时不适用」
+5. **After/Δ 为 `-`** → 「没有模拟结果，因为被锁定了」
+
+#### Tailwind 实现参考
+
+```tsx
+// 容器级：整体降透明度
+<tbody className={isDisabled ? 'opacity-60' : ''}>
+
+// 文字标签：group-data 驱动去色
+<span className={cn(
+  'ds-text-emerald-600',                              // 正常状态
+  'group-data-[disabled]:text-muted-foreground'       // 禁用时去色
+)}>
+  Supplied
+</span>
+
+// 数值：保留原色不变（依赖容器 opacity 减弱）
+<span className="ds-text-emerald-600 tabular-nums">
+  {formatUsd(currentValue)}
+</span>
+
+// 进度条：灰度化
+<div className={cn(
+  'rounded-full bg-muted/40 overflow-hidden',
+  'group-data-[disabled]:grayscale-[50%]',
+  'group-data-[disabled]:opacity-50'
+)}>
+
+// After/Delta：disabled 时 mask 为 null
+const after = disabled ? null : simulation.after;
+```
+
+#### 适用场景
+
+- 金融/DeFi 数据表中因协议状态（frozen/paused/disabled）而不可操作的行
+- 任何带有语义色分类的多列数据面板（如 Supply/Borrow、收入/支出、流入/流出）
+- 仪表盘中因权限或状态而只读的卡片区域
+
+#### 不适用的场景
+
+- 简单的按钮/控件禁用 → 用 §8.1 的 `opacity-50 cursor-not-allowed` 即可
+- 整页只读模式 → 此时不需要区分语义色，统一中性色更合适
+- 单值指标卡 → 没有「分类色相」需要保留，直接降透明度即可
+
+#### 本仓库实现参考
+
+`SimulationSubRow.tsx` 的 `renderRow` 函数 + 容器级 `opacity-60` 是此模式的完整落地。`DesktopReserveRow.tsx` 的主数据行也遵循相同逻辑（背景底色保留，行内数值不受影响）。
+
 ### 8.2 加载
 
 - 骨架屏：`animate-pulse bg-muted rounded`，与最终布局一致。
@@ -592,7 +670,7 @@ className="transition-all motion-reduce:transition-none"
 ## 9. 移动端与触控
 
 - **触控目标**：最小 44×44px（包括可点击的“Simulation ⌄”等）。
-- **浮层**：移动端详情类内容用**底部抽屉（bottom sheet）**：全宽、`rounded-t-2xl`、固定标题+关闭、内容区 `max-h-[80vh] overflow-y-auto`，背景 `fixed inset-0 z-30 bg-background/20` 点击关闭。间距全面紧凑：标题栏 `px-[var(--ds-space-2)] py-[var(--ds-space-1-5)]`，内容区 `px-[var(--ds-space-3)] pt-[var(--ds-space-2)] pb-[var(--ds-space-2)]`，内部行间距统一 `space-y-1`（移动端弹窗遮挡底层内容多，收紧垂直空间最大化可见表格区域）。所有底部抽屉统一使用共享组件 `src/components/dashboard/BottomSheet.tsx`（支持 `animate` / `showShadow` / `surfaceStyle` / `overlayOpacity` 等变体），避免壳层代码重复。不在移动端用小浮层 popover 锚定在触发点上。
+- **浮层**：移动端详情类内容用**底部抽屉（bottom sheet）**：全宽、`rounded-t-2xl`、固定标题+关闭、内容区 `max-h-[80vh] overflow-y-auto`，背景 `fixed inset-0 z-30 bg-background/40` 点击关闭。间距全面紧凑：标题栏 `px-[var(--ds-space-2)] py-[var(--ds-space-1-5)]`，内容区 `px-[var(--ds-space-3)] pt-[var(--ds-space-2)] pb-[var(--ds-space-2)]`，内部行间距统一 `space-y-1`（移动端弹窗遮挡底层内容多，收紧垂直空间最大化可见表格区域）。动画使用 Framer Motion `AnimatePresence`：背景 opacity 0→1，面板 y: 100%→0、duration 0.28s。MobileReserveCard 的 cap/deficit/utilization/frozen 抽屉内联在组件内（`MobileCapSheet`），其他场景可用共享组件 `src/components/dashboard/BottomSheet.tsx`。不在移动端用小浮层 popover 锚定在触发点上。
 - **轮播**：移动端轮播需包含：分页点、左右箭头（在可滚动时显示）、peek（如 `basis-[85%]`）、`align: "center"` + `containScroll: "trimSnaps"`。
 - **避免**：仅在 hover 上做交互，移动端需提供 tap/click 等价操作。
 
