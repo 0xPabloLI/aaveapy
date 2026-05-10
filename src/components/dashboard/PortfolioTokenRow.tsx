@@ -97,8 +97,8 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
     );
   };
 
-  // Single delete button — uses Minus icon (distinct from bulk Clear-all Trash2).
-  const removeButton = (
+  // Minus button — always inline on the left, same position for both desktop and mobile.
+  const minusBtn = (
     <button
       type="button"
       onClick={() => onRemove(reserveId)}
@@ -114,41 +114,27 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
   );
 
   if (isMobile) {
-    // Corner remove badge — absolute, saves horizontal space.
-    const cornerRemove = (
-      <button
-        type="button"
-        onClick={() => onRemove(reserveId)}
-        className={cn(
-          'absolute -top-2 -left-2 z-10 grid place-items-center size-6 rounded-full border border-border/60 bg-card text-muted-foreground/70 transition-colors',
-          BATCH_THEME.trashHoverBg,
-          BATCH_THEME.trashHoverText,
-        )}
-        aria-label={`Remove ${tokenSymbol} from portfolio`}
-      >
-        <Minus className="size-3.5" strokeWidth={2.5} aria-hidden />
-      </button>
-    );
-
     return (
-      <div className="relative grid grid-cols-subgrid col-span-2 items-center gap-x-2 rounded-lg border border-border/50 bg-card/80 px-2 py-1.5 transition-colors hover:border-border">
-        {cornerRemove}
-        {/* Token info — 2-col grid (icons centered, text left-aligned), 3 rows */}
-        <div className="grid min-w-0 grid-cols-[1rem_minmax(0,1fr)] items-center gap-x-1 gap-y-0.5 leading-[1.15]">
-          <span className="flex justify-center"><TokenIcon symbol={tokenSymbol} size={14} /></span>
-          <span className="ds-text-12 font-semibold text-foreground truncate">{tokenSymbol}</span>
+      <div className="grid grid-cols-subgrid col-span-2 items-center gap-x-1.5 rounded-lg border border-border/50 bg-card/80 px-2 py-1.5 transition-colors hover:border-border">
+        <div className="flex min-w-0 items-center gap-1">
+          {minusBtn}
+          {/* Token info — 2-col grid (icons centered, text left-aligned), 3 rows */}
+          <div className="grid min-w-0 grid-cols-[1rem_minmax(0,1fr)] items-center gap-x-1 gap-y-0.5 leading-[1.15]">
+            <span className="flex justify-center"><TokenIcon symbol={tokenSymbol} size={14} /></span>
+            <span className="ds-text-12 font-semibold text-foreground truncate">{tokenSymbol}</span>
             <span className="flex justify-center">
-            {chainSrc && <img src={chainSrc} alt={chainName} className="size-3" />}
-          </span>
-          <span className="ds-text-10 text-muted-foreground truncate">{marketLabel}</span>
-          {hubName && (
-            <>
-              <span aria-hidden />
-              <span className={cn('justify-self-start max-w-full -ml-1.5 truncate', hubChipClass)} title={`Hub: ${hubName}`}>
-                <span className="truncate">{hubName}</span>
-              </span>
-            </>
-          )}
+              {chainSrc && <img src={chainSrc} alt={chainName} className="size-3" />}
+            </span>
+            <span className="ds-text-10 text-muted-foreground truncate">{marketLabel}</span>
+            {hubName && (
+              <>
+                <span aria-hidden />
+                <span className={cn('justify-self-start max-w-full -ml-1.5 truncate', hubChipClass)} title={`Hub: ${hubName}`}>
+                  <span className="truncate">{hubName}</span>
+                </span>
+              </>
+            )}
+          </div>
         </div>
         <div className="flex flex-col items-stretch gap-1">
           {renderSideInput(supplyPosition, 'Supply')}
@@ -158,13 +144,11 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
     );
   }
 
-  // Desktop — uses subgrid so left columns dynamically align to the widest row.
+  // Desktop — same 2-column structure as mobile, with larger icon/font sizes.
   return (
-    <div
-      className="grid grid-cols-subgrid col-span-3 items-center gap-x-2.5 rounded-lg border border-border/50 bg-card/80 px-2.5 py-2 transition-colors hover:border-border"
-    >
-      {removeButton}
+    <div className="grid grid-cols-subgrid col-span-2 items-center gap-x-2 rounded-lg border border-border/50 bg-card/80 px-2.5 py-2 transition-colors hover:border-border">
       <div className="flex min-w-0 items-center gap-1.5">
+        {minusBtn}
         <TokenIcon symbol={tokenSymbol} size={20} />
         <div className="flex flex-col min-w-0 leading-tight">
           <span className="ds-text-12 font-semibold text-foreground truncate">
@@ -172,7 +156,7 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
           </span>
           <span className="ds-text-10 text-muted-foreground inline-flex items-center gap-1 min-w-0 flex-wrap">
             {chainSrc && (
-              <img src={chainSrc} alt={chainName} className="size-2.5 shrink-0" />
+              <img src={chainSrc} alt={chainName} className="size-2.5 shrink-0 opacity-70" />
             )}
             <span className="truncate">{marketLabel}</span>
             {hubName && (
@@ -183,7 +167,7 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
           </span>
         </div>
       </div>
-      <div className="flex min-w-0 items-center gap-3">
+      <div className="flex flex-col items-stretch gap-1">
         {renderSideInput(supplyPosition, 'Supply')}
         {borrowPosition && renderSideInput(borrowPosition, 'Borrow')}
       </div>

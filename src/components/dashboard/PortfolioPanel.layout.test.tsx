@@ -17,8 +17,7 @@ describe('PortfolioPanel batch grid layout', () => {
   );
 
   it('parent grid for token rows declares both gap-x and gap-y', () => {
-    // Match the grid className that wraps the rendered PortfolioTokenRow list.
-    const m = src.match(/'grid\s+([^']*)'/g) ?? [];
+    const m = src.match(/"grid\s+([^"]*)"/g) ?? [];
     const hasGapXAndY = m.some(
       (cls) => /gap-x-\d/.test(cls) && /gap-y-\d/.test(cls),
     );
@@ -28,9 +27,9 @@ describe('PortfolioPanel batch grid layout', () => {
     ).toBe(true);
   });
 
-  it('mobile uses a 2-column grid template (token info auto, input column expands)', () => {
+  it('batch grid uses 2-column 50/50 template (unified desktop + mobile)', () => {
     expect(src).toMatch(
-      /\[grid-template-columns:auto_minmax\(\d+(?:\.\d+)?rem,1fr\)\]/,
+      /\[grid-template-columns:1fr_1fr\]/,
     );
   });
 });
@@ -42,19 +41,12 @@ describe('PortfolioTokenRow subgrid integration', () => {
   );
 
   it('mobile row uses grid-cols-subgrid with col-span-2', () => {
-    // The mobile branch must opt into subgrid so it inherits the parent
-    // grid's gap-x value rather than defining its own column spacing.
     expect(src).toMatch(/grid-cols-subgrid[^"']*col-span-2|col-span-2[^"']*grid-cols-subgrid/);
   });
 
-  it('desktop row uses flex layout (intentionally not subgrid)', () => {
-    // Desktop intentionally drops subgrid so per-row spacing is controlled
-    // locally (e.g. ml-2.5 + flex-1 between token info and inputs).
-    // See PortfolioTokenRow.tsx desktop branch comment.
-    expect(src).toMatch(/Desktop\s*[—-]\s*flex layout \(no subgrid\)/);
-    // The desktop return must not opt into grid-cols-subgrid / col-span-3.
+  it('desktop row also uses grid-cols-subgrid with col-span-2 (unified with mobile)', () => {
     const desktopReturn = src.slice(src.indexOf('Desktop'));
-    expect(desktopReturn).not.toMatch(/grid-cols-subgrid/);
-    expect(desktopReturn).not.toMatch(/col-span-3/);
+    expect(desktopReturn).toMatch(/grid-cols-subgrid/);
+    expect(desktopReturn).toMatch(/col-span-2/);
   });
 });
