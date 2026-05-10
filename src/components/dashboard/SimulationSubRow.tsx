@@ -580,7 +580,7 @@ const SimulationSubRow = ({
       return (
         <tr data-align-key={capAlignKey} data-disabled={disabled ? 'true' : undefined} className={`group ${row.warning ? 'ds-bg-warning-row' : ''}`}>
           <td colSpan={4} className={`pt-0 pb-1 ${deltaCellPx}`}>
-            <div className={`relative h-1.5 w-full rounded-full bg-muted/40 overflow-hidden ${disabled ? 'grayscale-[50%] opacity-50' : ''} group-data-[disabled]:grayscale-[50%] group-data-[disabled]:opacity-50`}>
+            <div className="relative h-1.5 w-full rounded-full bg-muted/40 overflow-hidden group-data-[disabled]:grayscale-[50%] group-data-[disabled]:opacity-50">
               <div
                 className={`absolute inset-y-0 left-0 rounded-full ${barColorClass} transition-all duration-300`}
                 style={{ width: `${currentPct}%` }}
