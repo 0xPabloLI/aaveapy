@@ -1,13 +1,24 @@
 # 移动端 Simulation 表格 Grid 布局改造方案
 
-> 文档版本：v1.2（二次核对 + 补齐测试用例）
+> 文档版本：v1.3（已实施 — 2026-05-10）
 > 创建日期：2026-05-08
 > 修订日期：2026-05-10
 > 适用版本：aaveapy v1.0+
+> 状态：✅ **已实施**（TC-01 ~ TC-10 源码正则 + TC-11 ~ TC-19 RTL 渲染 全部 GREEN；TC-20 视觉回归未单独执行，留待后续）
 > 关联文件：
-> - [src/components/dashboard/SimulationSubRow.tsx](../../src/components/dashboard/SimulationSubRow.tsx)
-> - [src/components/dashboard/SimulationSubRow.compact.test.tsx](../../src/components/dashboard/SimulationSubRow.compact.test.tsx)
-> - [src/components/dashboard/MobileExpandedReserveShell.tsx](../../src/components/dashboard/MobileExpandedReserveShell.tsx)
+> - [src/components/dashboard/SimulationSubRow.tsx](../../src/components/dashboard/SimulationSubRow.tsx) — `renderCompactGridRow` + `renderCompactLayout` Grid 改造
+> - [src/components/dashboard/SimulationSubRow.compact.test.tsx](../../src/components/dashboard/SimulationSubRow.compact.test.tsx) — 源码正则不变量
+> - [src/components/dashboard/SimulationSubRow.compact.render.test.tsx](../../src/components/dashboard/SimulationSubRow.compact.render.test.tsx) — RTL 渲染行为
+> - [src/components/dashboard/MobileExpandedReserveShell.tsx](../../src/components/dashboard/MobileExpandedReserveShell.tsx) — 内层 panel 横向 padding 收紧 (`px-2`)
+> - [docs/design/frontend-interaction-guardrails.md](../design/frontend-interaction-guardrails.md) — "Simulation breakdown table — Grid layout (mobile)" 小节同步更新
+
+## 实施备注（v1.3）
+
+实际实施与原方案的差异：
+
+- **`buildRowDescriptor` 数据模型抽取（§4.1 步骤 1）未单独实现**：现有 `TableRow` 类型本身已是数据模型，桌面端 `renderRow` 与新增的 `renderCompactGridRow` 均直接消费 `TableRow`，重复的 derived class 计算约 15 行，远低于「双份维护成本不可接受」的阈值。如未来又增加第三种渲染目标，可再抽 `computeRowDerivedClasses(row)` helper。
+- **TC-20 视觉回归**未在本次执行（需要 e2e + 截图基线）；行为不变量已由 TC-11 ~ TC-19 RTL 测试以结构断言锁定。
+- **`MobileExpandedReserveShell` padding** 采用 `ds-card-pad-sm` + `px-2` 覆写而非全局调整，避免影响 `LoadingState` / `ReservesTableMobileGrid` 等其他使用点。
 
 ---
 

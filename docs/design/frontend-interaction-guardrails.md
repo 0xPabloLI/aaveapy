@@ -660,29 +660,53 @@ When extracting the card–panel junction into a separate component (e.g. `Mobil
 
 **Rule**: When refactoring visual junction code into a new component, diff the old inline rendering output against the new component's output. Every `className`, `style`, and SVG element in the junction area must produce identical DOM. A visual-only refactor must not change any computed style.
 
-## Simulation breakdown table — numeric cell wrapping (mobile)
+## Simulation breakdown table — Grid layout (mobile)
 
 The Simulation expansion table (`SimulationSubRow.tsx`, compact layout) renders
-four columns: label, Current, After, Δ. On narrow viewports (375px CSS pixels)
-the Δ column can hold values like `+$399.88M` which previously got clipped
-because the table used `table-fixed` with hard percentage widths.
+four columns: label, Current, After, Δ. The compact layout uses **CSS Grid**
+(not `<table>`) so the long label `Supplied / Cap $19.50M` can naturally wrap
+onto a second line when both pieces cannot fit, instead of triggering horizontal
+overflow.
+
+Evolution: the original `table-auto` allowed Δ overflow on extreme inputs;
+`table-fixed` + percentage `<col>` widths fixed overflow but could not gracefully
+wrap a long label. The current Grid approach gets both: no horizontal scroll AND
+clean two-line wrapping when needed.
 
 Rules — must hold for any future change:
 
-1. **Use `table-auto`** in the compact layout so numeric columns size to their
-   content. Do not reintroduce `table-fixed` with percentage `<col>` widths.
-2. **All numeric cells** (`Current`, `After`, `Δ`, plus their headers) must
-   carry `whitespace-nowrap` on both the `<td>`/`<th>` and the inner `<span>`.
-   Numeric values must never wrap mid-token.
-3. **Label column shrinks first** via `min-w-0` + `break-words` on the label
-   `<td>`. The label is the only column allowed to wrap.
-4. The container must keep `overflow-hidden` + `min-w-0`; never set a fixed
-   width that would force the Δ column to clip.
+1. **Use Grid `grid-cols-[1fr_auto_auto_auto]`** in `renderCompactLayout` so the
+   label column flexes (`1fr`) and numeric columns size to content (`auto`).
+   Do not reintroduce `<table>`, `table-fixed`, or `<colgroup>` in the compact
+   path. Desktop `renderTable` keeps `table-fixed` and is unaffected.
+2. **Label cell wraps via flex-wrap between unbreakable spans**: the label cell
+   contains a `<div className="flex flex-wrap items-baseline">` with the label
+   `<span>` and the cap `<span>` as children, both `whitespace-nowrap`. This
+   keeps each token unbroken but lets the cap drop to a second line when needed.
+3. **Numeric cells** (Current / After / Δ + their `columnheader` cells) must
+   carry `whitespace-nowrap` on both the cell `<div>` and the inner `<span>`,
+   plus `tabular-nums ds-text-11` on the span so values fit and align.
+4. **A11y**: container is `<div role="table" aria-label="Simulation breakdown">`;
+   each row uses `display: contents` with `role="row"`; cells use `role="cell"`;
+   header cells use `role="columnheader"`. Backgrounds (warning / disabled
+   opacity) must be applied **per-cell** because `display: contents` parents do
+   not paint.
+5. **No horizontal overflow**: never reintroduce `overflow-x-auto` /
+   `overflow-x-scroll` on the compact wrapper or any ancestor inside
+   `MobileExpandedReserveShell`.
+6. **Cap progress / cap note rows** span all 4 columns via `col-span-4`. Do not
+   introduce custom rows that break the 4-column rhythm.
 
-A regression test lives at
-`src/components/dashboard/SimulationSubRow.compact.test.tsx` — it asserts
-`whitespace-nowrap` is present on numeric cells and that the table is
-`table-auto`. Do not delete that test.
+Regression tests:
+
+- Source-level invariants (Grid classes, no `<table>`, role attributes):
+  `src/components/dashboard/SimulationSubRow.compact.test.tsx`.
+- RTL render behavior (label cell flex-wrap structure, no overflow-x, a11y
+  roles, cap warning highlighting, frozen-state mask):
+  `src/components/dashboard/SimulationSubRow.compact.render.test.tsx`.
+
+Do not delete either test. The full design plan lives at
+[`docs/specs/2026-05-10-mobile-simulation-grid-layout-plan.md`](../specs/2026-05-10-mobile-simulation-grid-layout-plan.md).
 
 ## Mobile ReservesTable bottom spacing (normative)
 
