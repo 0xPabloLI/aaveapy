@@ -525,6 +525,119 @@ describe('DesktopReserveRow', () => {
     expect(html).not.toMatch(/Base\s*<!--\s*-->\s*APR\s*<!--\s*-->\s*only/);
   });
 
+  it('renders disabled supply APY with muted emerald color using Tailwind native opacity', () => {
+    const queryClient = new QueryClient();
+    const html = renderToString(
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Table>
+            <TableBody>
+              <DesktopReserveRow
+                reserve={{ ...reserve, supplyDisabled: true }}
+                reserveId="AaveV3Ethereum-0x0000000000000000000000000000000000000001"
+                isExpanded={false}
+                onToggleExpand={() => {}}
+                onIncentiveClick={() => {}}
+                displaySupplyTotal={4.2}
+                displaySupplyNative={2.1}
+                displaySupplyIncentive={null}
+                displayBorrowTotal={6.1}
+                displayBorrowNative={3.1}
+                displayBorrowIncentive={null}
+                displayUtilization={52}
+                spread={-0.4}
+                simulation={simulation}
+                supplyInput="1000"
+                borrowInput="500"
+                inputMode="usd"
+                isApy
+                isMobile={false}
+              />
+            </TableBody>
+          </Table>
+        </TooltipProvider>
+      </QueryClientProvider>
+    );
+
+    expect(html).toContain('text-emerald-500/50');
+    expect(html).not.toContain('ds-text-emerald-500/50');
+  });
+
+  it('renders disabled borrow APY with muted cyan color using Tailwind native opacity', () => {
+    const queryClient = new QueryClient();
+    const html = renderToString(
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Table>
+            <TableBody>
+              <DesktopReserveRow
+                reserve={{ ...reserve, borrowDisabled: true }}
+                reserveId="AaveV3Ethereum-0x0000000000000000000000000000000000000001"
+                isExpanded={false}
+                onToggleExpand={() => {}}
+                onIncentiveClick={() => {}}
+                displaySupplyTotal={4.2}
+                displaySupplyNative={2.1}
+                displaySupplyIncentive={null}
+                displayBorrowTotal={6.1}
+                displayBorrowNative={3.1}
+                displayBorrowIncentive={null}
+                displayUtilization={52}
+                spread={-0.4}
+                simulation={simulation}
+                supplyInput="1000"
+                borrowInput="500"
+                inputMode="usd"
+                isApy
+                isMobile={false}
+              />
+            </TableBody>
+          </Table>
+        </TooltipProvider>
+      </QueryClientProvider>
+    );
+
+    expect(html).toContain('text-cyan-500/50');
+    expect(html).not.toContain('ds-text-brand-cyan/50');
+  });
+
+  it('renders disabled supply native APY with text-emerald-500/40', () => {
+    const queryClient = new QueryClient();
+    const html = renderToString(
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Table>
+            <TableBody>
+              <DesktopReserveRow
+                reserve={{ ...reserve, supplyDisabled: true }}
+                reserveId="AaveV3Ethereum-0x0000000000000000000000000000000000000001"
+                isExpanded={false}
+                onToggleExpand={() => {}}
+                onIncentiveClick={() => {}}
+                displaySupplyTotal={4.2}
+                displaySupplyNative={2.1}
+                displaySupplyIncentive={0.3}
+                displayBorrowTotal={6.1}
+                displayBorrowNative={3.1}
+                displayBorrowIncentive={null}
+                displayUtilization={52}
+                spread={-0.4}
+                simulation={simulation}
+                supplyInput="1000"
+                borrowInput="500"
+                inputMode="usd"
+                isApy
+                isMobile={false}
+              />
+            </TableBody>
+          </Table>
+        </TooltipProvider>
+      </QueryClientProvider>
+    );
+
+    expect(html).toContain('text-emerald-500/40');
+  });
+
   it('treats reserve.optimalUsageRate as a percent number (not RAY) when sizing the UtilizationIndicator', () => {
     // Regression guard for the V3/V4 precision-unification migration:
     // After the backend switched optimalUsageRate from RAY/bps strings to

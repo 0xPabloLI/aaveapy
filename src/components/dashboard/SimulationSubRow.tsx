@@ -534,7 +534,7 @@ const SimulationSubRow = ({
             <div className="flex items-baseline gap-x-1.5 whitespace-nowrap">
               <span
                 title={typeof row.label === 'string' ? row.label : undefined}
-                className={`ds-text-12 whitespace-nowrap ${row.warning ? 'text-amber-700 dark:text-amber-400 font-medium' : `${accentClass} group-data-[disabled]:text-foreground/70`}`}
+                className={`ds-text-12 whitespace-nowrap ${row.warning ? 'text-amber-700 dark:text-amber-400 font-medium' : `${accentClass} group-data-[disabled]:text-muted-foreground`}`}
               >
                 {row.label}
               </span>
@@ -547,17 +547,17 @@ const SimulationSubRow = ({
           </div>
         </td>
         <td className={`${valueCellPy} ${valueCellPx} text-right align-top whitespace-nowrap`}>
-          <span className={`${numericFontClass} tabular-nums whitespace-nowrap ${accentClass} group-data-[disabled]:text-foreground/70`}>
+          <span className={`${numericFontClass} tabular-nums whitespace-nowrap ${accentClass}`}>
             {formatValue(row.current, row.type)}
           </span>
         </td>
         <td className={`${valueCellPy} ${valueCellPx} text-right align-top whitespace-nowrap`}>
-          <span className={`${numericFontClass} tabular-nums whitespace-nowrap ${row.after === null ? SIM_NEUTRAL_MUTED : rowAccentClass} group-data-[disabled]:text-foreground/70`}>
+          <span className={`${numericFontClass} tabular-nums whitespace-nowrap ${row.after === null ? SIM_NEUTRAL_MUTED : rowAccentClass}`}>
             {formatValue(row.after, row.type)}
           </span>
         </td>
         <td className={`${valueCellPy} ${deltaCellPx} text-right align-top whitespace-nowrap`}>
-          <span className={`${numericFontClass} tabular-nums whitespace-nowrap ${deltaColorClass} group-data-[disabled]:text-foreground/70`}>
+          <span className={`${numericFontClass} tabular-nums whitespace-nowrap ${deltaColorClass}`}>
             {formatDeltaValue(row.delta, row.type)}
           </span>
         </td>
@@ -680,8 +680,10 @@ const SimulationSubRow = ({
             </th>
           </tr>
         </thead>
-        <tbody className={`ds-text-12 [&>tr:last-child>td]:pb-2 ${(supplySideBlocked || borrowSideBlocked) ? 'opacity-60' : ''}`}>
+        <tbody className={`ds-text-12 [&>tr:last-child>td]:pb-2 ${supplySideBlocked ? 'opacity-75 dark:opacity-60' : ''}`}>
           {supplyRows.map((row) => renderRow(row, 'ds-text-emerald-600', 'border-l-[rgb(var(--ds-emerald-500-rgb))]', true, undefined, undefined, Boolean(supplyDisabledNotice)))}
+        </tbody>
+        <tbody className="ds-text-12 [&>tr:last-child>td]:pb-2">
           <tr className={!isReserveLocked && middleColumnWarning ? 'ds-bg-warning-row' : ''}>
             <td className={`${compactCellPy} ${compactMetricCell}`}>
               <span className="ds-text-12 ds-text-purple-600">Spread</span>
@@ -738,6 +740,8 @@ const SimulationSubRow = ({
               ) : null}
             </td>
           </tr>
+        </tbody>
+        <tbody className={`ds-text-12 [&>tr:last-child>td]:pb-2 ${borrowSideBlocked ? 'opacity-75 dark:opacity-60' : ''}`}>
           {borrowRows.map((row) => renderRow(row, 'ds-text-brand-cyan', 'border-l-[rgb(var(--ds-brand-cyan-rgb))]', true, undefined, undefined, Boolean(borrowDisabledNotice)))}
         </tbody>
       </table>
@@ -776,7 +780,7 @@ const SimulationSubRow = ({
         <thead>
           <tr className="bg-muted/30 border-b border-border/50">
             <th className="px-4 py-1.5 text-left">
-              <span className={`ds-text-13 font-semibold ${accentClass} group-data-[disabled]:text-foreground/70`}>{title}</span>
+              <span className={`ds-text-13 font-semibold ${accentClass} group-data-[disabled]:text-muted-foreground`}>{title}</span>
             </th>
             <th className="px-3 py-1.5 text-right">
               <span className="ds-text-11 text-muted-foreground">Current</span>
@@ -789,7 +793,7 @@ const SimulationSubRow = ({
             </th>
           </tr>
         </thead>
-        <tbody className={`[&>tr:last-child>td]:pb-2 group-data-[disabled]:opacity-60`}>
+        <tbody className={`[&>tr:last-child>td]:pb-2 group-data-[disabled]:opacity-75 dark:group-data-[disabled]:opacity-60`}>
           {rows.map((row) => {
             const peer = peerRows ? findPeerRow(row.rowKey, peerRows) : undefined;
             const peerHasCapBar = peer != null && peer.cap != null && peer.type === 'usd';

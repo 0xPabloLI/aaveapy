@@ -449,11 +449,11 @@ UI 文案采用 **最大公约数** 策略：只描述两个版本中行为一�
 
 | 位置 | 正常状态 | Disabled 状态（保留颜色语义，只降低强度） |
 |------|----------|---------------|
-| Supply APY 主值 | `ds-text-emerald-500` | `ds-text-emerald-500/50` |
-| Supply Native APY | `ds-text-emerald-500-70` | `ds-text-emerald-500/40` |
+| Supply APY 主值 | `ds-text-emerald-500` | `text-emerald-500/50` |
+| Supply Native APY | `ds-text-emerald-500-70` | `text-emerald-500/40` |
 | Supply 激励按钮 | `ds-bg-emerald-500-10 ds-text-emerald-500-70` | `bg-emerald-500/10 text-emerald-500/50` |
-| Borrow APY 主值 | `ds-text-brand-cyan` | `ds-text-brand-cyan/50` |
-| Borrow Native APY | `ds-text-brand-cyan-70` | `ds-text-brand-cyan/40` |
+| Borrow APY 主值 | `ds-text-brand-cyan` | `text-cyan-500/50` |
+| Borrow Native APY | `ds-text-brand-cyan-70` | `text-cyan-500/40` |
 | Borrow 激励按钮 | `ds-bg-brand-cyan-10 ds-text-brand-cyan-70` | `bg-cyan-500/10 text-cyan-500/50` |
 
 > **保留颜色语义**：disabled 不意味着丢掉颜色身份。Supply 仍然是绿色系、

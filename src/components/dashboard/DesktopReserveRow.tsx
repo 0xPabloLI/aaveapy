@@ -389,11 +389,11 @@ const DesktopReserveRow = memo(({
                 tokenPrice={displayTokenPrice}
                 tokenSymbol={reserve.tokenSymbol}
                 label={<span className="font-medium tabular-nums">{supplySizeLabel}</span>}
-                triggerClassName={supplyBlocked ? 'ds-text-emerald-500/50' : 'ds-text-emerald-500'}
+                triggerClassName={supplyBlocked ? 'text-emerald-500/50' : 'ds-text-emerald-500'}
                 triggerAriaLabel={`Supply cap details for ${reserve.tokenSymbol}`}
               />
             ) : (
-              <div className={`inline-flex items-center gap-[var(--ds-space-1-5)] rounded-md py-0.5 pl-1 pr-0.5 -my-0.5 ${supplyBlocked ? 'ds-text-emerald-500/50' : 'ds-text-emerald-500'}`}>
+              <div className={`inline-flex items-center gap-[var(--ds-space-1-5)] rounded-md py-0.5 pl-1 pr-0.5 -my-0.5 ${supplyBlocked ? 'text-emerald-500/50' : 'ds-text-emerald-500'}`}>
                 <span className="font-medium tabular-nums">{supplySizeLabel}</span>
                 <span aria-hidden className="inline-block w-3 h-3 shrink-0" />
               </div>
@@ -413,7 +413,7 @@ const DesktopReserveRow = memo(({
                 triggerAriaLabel={`Borrow cap details for ${reserve.tokenSymbol}`}
               />
             ) : (
-              <div className={`inline-flex items-center gap-[var(--ds-space-1-5)] rounded-md py-0.5 pl-1 pr-0.5 -my-0.5 ${borrowBlocked ? 'ds-text-brand-cyan/50' : 'ds-text-brand-cyan'}`}>
+              <div className={`inline-flex items-center gap-[var(--ds-space-1-5)] rounded-md py-0.5 pl-1 pr-0.5 -my-0.5 ${borrowBlocked ? 'text-cyan-500/50' : 'ds-text-brand-cyan'}`}>
                 <span className="font-medium tabular-nums">{borrowSizeLabel}</span>
                 <span aria-hidden className="inline-block w-3 h-3 shrink-0" />
               </div>
@@ -517,7 +517,7 @@ const DesktopReserveRow = memo(({
             {reserve.supplyDisabled ? (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className="font-bold ds-text-emerald-500/50 tabular-nums ds-text-14 cursor-auto">
+                  <span className="font-bold text-emerald-500/50 tabular-nums ds-text-14 cursor-auto">
                     {formatPercent(displaySupplyTotal)}
                   </span>
                 </TooltipTrigger>
@@ -530,7 +530,7 @@ const DesktopReserveRow = memo(({
             )}
             {displaySupplyIncentive !== null ? (
               <div className="flex items-center gap-[var(--ds-space-0-5)] ds-text-11 justify-end min-h-[1.25rem]">
-                <span className={`tabular-nums font-medium ${reserve.supplyDisabled ? 'ds-text-emerald-500/40' : 'ds-text-emerald-500-70'}`}>
+                <span className={`tabular-nums font-medium ${reserve.supplyDisabled ? 'text-emerald-500/40' : 'ds-text-emerald-500-70'}`}>
                   {formatPercent(displaySupplyNative)}
                 </span>
                 <span className="text-muted-foreground/70">+</span>
@@ -568,7 +568,7 @@ const DesktopReserveRow = memo(({
             {reserve.borrowDisabled ? (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className="font-bold ds-text-brand-cyan/50 tabular-nums ds-text-14 cursor-auto">
+                  <span className="font-bold text-cyan-500/50 tabular-nums ds-text-14 cursor-auto">
                     {displayBorrowTotal !== null ? formatPercent(displayBorrowTotal) : '-'}
                   </span>
                 </TooltipTrigger>
@@ -583,7 +583,7 @@ const DesktopReserveRow = memo(({
               <div className="flex items-center gap-[var(--ds-space-0-5)] ds-text-11 justify-end min-h-[1.25rem]">
                 {displayBorrowNative !== null && (
                   <>
-                    <span className={`tabular-nums font-medium ${reserve.borrowDisabled ? 'ds-text-brand-cyan/40' : 'ds-text-brand-cyan-70'}`}>
+                    <span className={`tabular-nums font-medium ${reserve.borrowDisabled ? 'text-cyan-500/40' : 'ds-text-brand-cyan-70'}`}>
                       {formatPercent(displayBorrowNative)}
                     </span>
                     <span className="text-muted-foreground/70">-</span>

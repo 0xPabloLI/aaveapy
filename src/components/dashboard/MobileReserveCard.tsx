@@ -371,7 +371,7 @@ function MobileReserveHeroApy({
   if (activeTab === 'supply') {
     const heroValue = displaySupplyTotal;
     const isDisabled = reserve.isFrozen || reserve.isPaused || reserve.supplyDisabled;
-    const heroColorClass = heroValue === null || isDisabled ? 'ds-text-emerald-500/50' : 'ds-text-emerald-500';
+    const heroColorClass = heroValue === null || isDisabled ? 'text-emerald-500/50' : 'ds-text-emerald-500';
 
     return (
       <div className="flex flex-col items-center gap-0.5">
@@ -400,7 +400,7 @@ function MobileReserveHeroApy({
                 className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-px shrink-0 ring-1 active:scale-95 transition-all hover:ring-2 ${
                   isDisabled
                     ? 'text-emerald-500/50 bg-emerald-500/10 ring-emerald-500/20 hover:bg-emerald-500/20 hover:ring-emerald-500/30'
-                    : 'ds-text-emerald-500 ds-bg-emerald-500-10 hover:bg-[rgb(var(--ds-emerald-500-rgb)/0.25)] ds-ring-emerald-500-15 hover:ring-[rgb(var(--ds-emerald-500-rgb)/0.3)]'
+                    : 'ds-text-emerald-500-70 ds-bg-emerald-500-10 hover:bg-[rgb(var(--ds-emerald-500-rgb)/0.25)] ds-ring-emerald-500-15 hover:ring-[rgb(var(--ds-emerald-500-rgb)/0.3)]'
                 }`}
               >
                 <span>{formatPercent(visibleSupplyIncentive)}</span>
@@ -448,7 +448,7 @@ function MobileReserveHeroApy({
               className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-px shrink-0 ring-1 active:scale-95 transition-all hover:ring-2 ${
                 isDisabled
                     ? 'text-cyan-500/50 bg-cyan-500/10 ring-cyan-500/20 hover:bg-cyan-500/20 hover:ring-cyan-500/30'
-                  : 'ds-text-brand-cyan ds-bg-brand-cyan-10 hover:bg-[rgb(var(--ds-brand-cyan-rgb)/0.25)] ds-ring-brand-cyan-15 hover:ring-[rgb(var(--ds-brand-cyan-rgb)/0.3)]'
+                  : 'ds-text-brand-cyan-70 ds-bg-brand-cyan-10 hover:bg-[rgb(var(--ds-brand-cyan-rgb)/0.25)] ds-ring-brand-cyan-15 hover:ring-[rgb(var(--ds-brand-cyan-rgb)/0.3)]'
               }`}
             >
               <span>{formatPercent(visibleBorrowIncentive)}</span>
