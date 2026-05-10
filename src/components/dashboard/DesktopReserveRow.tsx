@@ -409,7 +409,7 @@ const DesktopReserveRow = memo(({
                 tokenPrice={displayTokenPrice}
                 tokenSymbol={reserve.tokenSymbol}
                 label={<span className="font-medium tabular-nums">{borrowSizeLabel}</span>}
-                triggerClassName="ds-text-brand-cyan"
+                triggerClassName={borrowBlocked ? 'text-cyan-500/50' : 'ds-text-brand-cyan'}
                 triggerAriaLabel={`Borrow cap details for ${reserve.tokenSymbol}`}
               />
             ) : (

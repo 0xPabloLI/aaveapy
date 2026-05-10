@@ -7,6 +7,7 @@ Use this checklist for any refactor or UI behavior change touching:
 - `src/components/dashboard/MobileExpandedReserveShell.tsx`
 - `src/components/dashboard/ReservesTable.tsx`
 - `src/components/dashboard/ReservesTableDesktopHeader.tsx`
+- `src/components/dashboard/DesktopReserveRow.tsx`
 
 The goal is to catch the class of regressions where static checks pass but UI layout, runtime wiring, or displayed numbers drift.
 
@@ -38,6 +39,9 @@ Examples:
 - `ReservesTable`
   - Sort controls must preserve current sorting semantics.
   - Sticky/expanded row behavior must preserve the DOM contract documented in `docs/design/frontend-interaction-guardrails.md`.
+- `DesktopReserveRow` (and any row that fades color per side)
+  - When `supplyDisabled / borrowDisabled / isPaused / isFrozen` is true, every cell that exposes the corresponding side (Size ring trigger, APY total, native APY, incentive button, etc.) must switch to the muted color class.
+  - **Anti-pattern**: asserting `expect(html).toContain('text-cyan-500/50')` on whole-row HTML — multiple cells share that class, so a missing fade in one cell is hidden by another cell's fade. Always scope the assertion to the specific element (e.g. match the `<button aria-label="Borrow cap details for ...">` substring and assert the muted class on that match).
 
 If a visual or numeric bug is found during manual verification, add a focused regression test before shipping the fix.
 

@@ -561,6 +561,13 @@ describe('DesktopReserveRow', () => {
 
     expect(html).toContain('text-emerald-500/50');
     expect(html).not.toContain('ds-text-emerald-500/50');
+    // Size 列 supply 环触发器必须也被淡化:
+    // 仅断言 `text-emerald-500/50` 出现一次会被 Supply APY 单元格自身的淡化通过,
+    // 无法定位 Size 单元格,所以这里专门匹配 Size 列的 ring trigger 按钮。
+    const supplySizeTrigger = html.match(
+      /<button[^>]*aria-label="Supply cap details for [^"]+"[^>]*>/,
+    );
+    expect(supplySizeTrigger?.[0]).toContain('text-emerald-500/50');
   });
 
   it('renders disabled borrow APY with muted cyan color using Tailwind native opacity', () => {
@@ -599,6 +606,11 @@ describe('DesktopReserveRow', () => {
 
     expect(html).toContain('text-cyan-500/50');
     expect(html).not.toContain('ds-text-brand-cyan/50');
+    // Size 列 borrow 环触发器必须也被淡化(此前漏淡化的 bug 在这里捕获)。
+    const borrowSizeTrigger = html.match(
+      /<button[^>]*aria-label="Borrow cap details for [^"]+"[^>]*>/,
+    );
+    expect(borrowSizeTrigger?.[0]).toContain('text-cyan-500/50');
   });
 
   it('renders disabled supply native APY with text-emerald-500/40', () => {
