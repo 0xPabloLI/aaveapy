@@ -387,7 +387,7 @@ function MobileReserveHeroApy({
         <div className="flex min-h-[1rem] items-center justify-center">
           {visibleSupplyIncentive !== null ? (
             <div className="flex items-center gap-[var(--ds-space-1)] ds-text-11">
-              <span className={isDisabled ? 'ds-text-emerald-500/40' : 'ds-text-emerald-500-70 font-medium'}>
+              <span className={isDisabled ? 'text-emerald-500/40' : 'ds-text-emerald-500-70 font-medium'}>
                 {formatPercent(displaySupplyNative)}
               </span>
               <span className="text-muted-foreground/70">+</span>
@@ -419,7 +419,7 @@ function MobileReserveHeroApy({
 
   const heroValue = displayBorrowTotal;
   const isDisabled = reserve.isFrozen || reserve.isPaused || reserve.borrowDisabled;
-  const heroColorClass = heroValue === null || isDisabled ? 'ds-text-brand-cyan/50' : 'ds-text-brand-cyan';
+  const heroColorClass = heroValue === null || isDisabled ? 'text-cyan-500/50' : 'ds-text-brand-cyan';
 
   return (
     <div className="flex flex-col items-center gap-0.5">
@@ -435,7 +435,7 @@ function MobileReserveHeroApy({
       <div className="flex min-h-[1rem] items-center justify-center">
         {visibleBorrowIncentive !== null ? (
           <div className="flex items-center gap-[var(--ds-space-1)] ds-text-11">
-            <span className={isDisabled ? 'ds-text-brand-cyan/40' : 'ds-text-brand-cyan-70 font-medium'}>
+            <span className={isDisabled ? 'text-cyan-500/40' : 'ds-text-brand-cyan-70 font-medium'}>
               {formatPercent(displayBorrowNative)}
             </span>
             <span className="text-muted-foreground/70">-</span>
