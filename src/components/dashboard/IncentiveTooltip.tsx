@@ -691,6 +691,84 @@ const IncentiveTooltip = ({
     };
   }, [triggerCenterX, position, type, openedAtScroll, triggerHeight, triggerRect]);
 
+  function IncentiveSourceRow({
+    source,
+    index,
+    animated = false,
+  }: {
+    source: IncentiveSource;
+    index: number;
+    animated?: boolean;
+  }) {
+    const campaigns = source.campaigns ?? [];
+    const hasIncludedCampaign =
+      campaigns.length === 0 || campaigns.some((campaign) => campaign.included !== false);
+    const allWhitelistExcluded =
+      source.sourceType === 'Merkl' && campaigns.length > 0 && !hasIncludedCampaign;
+    const sourceDisplayValue = allWhitelistExcluded
+      ? campaigns.reduce((sum, campaign) => sum + (campaign.rawValue ?? campaign.value), 0)
+      : source.value;
+    const valueClass = `ds-tooltip-title ${allWhitelistExcluded ? 'text-zinc-500' : valueAccentClass}`;
+    const linkClass = `${allWhitelistExcluded ? 'text-zinc-500 bg-zinc-500/10' : `${valueAccentClass} ${valueBgClass}`} transition-opacity opacity-80 hover:opacity-100`;
+    const iconSrc = source.sourceType ? getSourceIcon(source.sourceType, isDark) : null;
+    const isBrevis = source.sourceType === 'Brevis';
+    const isWordmark = source.sourceType === 'Brevis' || source.sourceType === 'ACI' || source.sourceType === 'Merkl';
+    const logoWrapperClass = isWordmark ? 'min-w-[44px] px-[6px] py-[5px]' : 'h-[20px] w-[20px]';
+    const logoClass = isWordmark ? 'h-[11px] w-auto max-w-[60px]' : 'h-[11px] w-[11px]';
+    const keyPrefix = animated ? `desktop-${index}` : `mobile-${index}`;
+    return (
+      <div
+        className={`ds-tooltip-item relative px-[var(--ds-space-2)] py-[var(--ds-space-1)] ${
+          animated ? 'animate-in fade-in-0 slide-in-from-top-2' : ''
+        } ${allWhitelistExcluded ? 'bg-zinc-500/5 rounded-md' : ''}`}
+        style={animated ? { animationDelay: `${index * 45}ms` } : undefined}
+      >
+        <div className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-1)]">
+          <div className="flex items-center gap-[var(--ds-space-1-5)] min-w-0 flex-1 pr-1">
+            {iconSrc && (
+              <span
+                className={`flex items-center justify-center rounded-md ring-1 ring-border/50 shadow-sm flex-shrink-0 bg-muted/60 ${logoWrapperClass}`}
+              >
+                <img
+                  src={iconSrc}
+                  alt={`${source.sourceType} logo`}
+                  title={source.sourceType}
+                  className={logoClass}
+                  loading="eager"
+                />
+              </span>
+            )}
+            {isBrevis && !iconSrc && (
+              <span className="ds-text-9 font-semibold uppercase tracking-[0.22em] text-foreground/80 flex-shrink-0">
+                Brevis
+              </span>
+            )}
+            <span className="ds-tooltip-title text-foreground break-words block min-w-0">
+              {source.name}
+            </span>
+          </div>
+          <div className="flex items-center gap-[var(--ds-space-1-5)] flex-shrink-0">
+            {source.link && (
+              <a
+                href={source.link}
+                {...externalLinkTabProps(isMobile)}
+                onClick={(e) => e.stopPropagation()}
+                className={`${linkClass} flex h-7 w-7 items-center justify-center rounded-full transition-opacity opacity-80 hover:opacity-100 focus:outline-none focus-visible:outline-none focus-visible:ring-0`}
+                title="Open link"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            )}
+            <span className={`${valueClass} whitespace-nowrap`}>
+              {formatPercent(sourceDisplayValue)}
+            </span>
+          </div>
+        </div>
+        {renderSourceCampaigns(source, keyPrefix)}
+      </div>
+    );
+  }
+
   // Mobile: bottom sheet style
   if (isMobile) {
     const content = (
@@ -706,72 +784,9 @@ const IncentiveTooltip = ({
           <div className="relative mb-[var(--ds-space-2)] pl-[var(--ds-space-2)]">
             <div className={`pointer-events-none absolute left-0 top-0 bottom-0 ${accentClass}`} />
             <div className="divide-y divide-border/40">
-            {orderedIncentiveSources.map((source, index) => {
-                  const campaigns = source.campaigns ?? [];
-                  const hasIncludedCampaign =
-                    campaigns.length === 0 || campaigns.some((campaign) => campaign.included !== false);
-                  const allWhitelistExcluded =
-                    source.sourceType === 'Merkl' && campaigns.length > 0 && !hasIncludedCampaign;
-                  const sourceDisplayValue = allWhitelistExcluded
-                    ? campaigns.reduce((sum, campaign) => sum + (campaign.rawValue ?? campaign.value), 0)
-                    : source.value;
-                  const valueClass = `ds-tooltip-title ${allWhitelistExcluded ? 'text-zinc-500' : valueAccentClass}`;
-                  const linkClass = `${allWhitelistExcluded ? 'text-zinc-500 bg-zinc-500/10' : `${valueAccentClass} ${valueBgClass}`} transition-opacity opacity-80 hover:opacity-100`;
-                  const iconSrc = source.sourceType ? getSourceIcon(source.sourceType, isDark) : null;
-                  const isBrevis = source.sourceType === 'Brevis';
-                  const isWordmark = source.sourceType === 'Brevis' || source.sourceType === 'ACI' || source.sourceType === 'Merkl';
-                  const logoWrapperClass = isWordmark ? 'min-w-[44px] px-[6px] py-[5px]' : 'h-[20px] w-[20px]';
-                  const logoClass = isWordmark ? 'h-[11px] w-auto max-w-[60px]' : 'h-[11px] w-[11px]';
-                  return (
-                    <div 
-                      key={`${source.name}-${index}`}
-                      className={`ds-tooltip-item relative px-[var(--ds-space-2)] py-[var(--ds-space-1)] ${allWhitelistExcluded ? 'bg-zinc-500/5 rounded-md' : ''}`}
-                    >
-                      <div className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-1)]">
-                        <div className="flex items-center gap-[var(--ds-space-1-5)] min-w-0 flex-1 pr-1">
-                          {iconSrc && (
-                            <span
-                              className={`flex items-center justify-center rounded-md ring-1 ring-border/50 shadow-sm flex-shrink-0 bg-muted/60 ${logoWrapperClass}`}
-                            >
-                              <img
-                                src={iconSrc}
-                                alt={`${source.sourceType} logo`}
-                                title={source.sourceType}
-                                className={logoClass}
-                                loading="eager"
-                              />
-                            </span>
-                          )}
-                          {isBrevis && !iconSrc && (
-                            <span className="ds-text-9 font-semibold uppercase tracking-[0.22em] text-foreground/80 flex-shrink-0">
-                              Brevis
-                            </span>
-                          )}
-                          <span className="ds-tooltip-title text-foreground break-words block min-w-0">
-                            {source.name}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-[var(--ds-space-1-5)] flex-shrink-0">
-                          {source.link && (
-                            <a
-                              href={source.link}
-                              {...externalLinkTabProps(isMobile)}
-                              onClick={(e) => e.stopPropagation()}
-                              className={`${linkClass} flex h-7 w-7 items-center justify-center rounded-full transition-opacity opacity-80 hover:opacity-100 focus:outline-none focus-visible:outline-none focus-visible:ring-0`}
-                              title="Open link"
-                            >
-                              <ExternalLink className="w-3.5 h-3.5" />
-                            </a>
-                          )}
-                          <span className={`${valueClass} whitespace-nowrap`}>
-                            {formatPercent(sourceDisplayValue)}
-                          </span>
-                        </div>
-                      </div>
-                      {renderSourceCampaigns(source, `mobile-${index}`)}
-                    </div>
-                  );
-                })}
+            {orderedIncentiveSources.map((source, index) => (
+                  <IncentiveSourceRow key={`${source.name}-${index}`} source={source} index={index} />
+                ))}
                 </div>
               </div>
             ) : (
@@ -830,73 +845,9 @@ const IncentiveTooltip = ({
             <div className="relative my-[var(--ds-space-2)] pl-[var(--ds-space-2)]">
               <div className={`pointer-events-none absolute left-0 top-0 bottom-0 ${accentClass}`} />
               <div className="divide-y divide-border/40">
-              {orderedIncentiveSources.map((source, index) => {
-                const campaigns = source.campaigns ?? [];
-                const hasIncludedCampaign =
-                  campaigns.length === 0 || campaigns.some((campaign) => campaign.included !== false);
-                const allWhitelistExcluded =
-                  source.sourceType === 'Merkl' && campaigns.length > 0 && !hasIncludedCampaign;
-                const sourceDisplayValue = allWhitelistExcluded
-                  ? campaigns.reduce((sum, campaign) => sum + (campaign.rawValue ?? campaign.value), 0)
-                  : source.value;
-                const valueClass = `ds-tooltip-title ${allWhitelistExcluded ? 'text-zinc-500' : valueAccentClass}`;
-                const linkClass = `${allWhitelistExcluded ? 'text-zinc-500 bg-zinc-500/10' : `${valueAccentClass} ${valueBgClass}`} transition-opacity opacity-80 hover:opacity-100`;
-                const iconSrc = source.sourceType ? getSourceIcon(source.sourceType, isDark) : null;
-                const isBrevis = source.sourceType === 'Brevis';
-                const isWordmark = source.sourceType === 'Brevis' || source.sourceType === 'ACI' || source.sourceType === 'Merkl';
-                const logoWrapperClass = isWordmark ? 'min-w-[44px] px-[6px] py-[5px]' : 'h-[20px] w-[20px]';
-                const logoClass = isWordmark ? 'h-[11px] w-auto max-w-[60px]' : 'h-[11px] w-[11px]';
-                return (
-                  <div 
-                    key={`${source.name}-${index}`}
-                    className={`ds-tooltip-item relative px-[var(--ds-space-2)] py-[var(--ds-space-1)] animate-in fade-in-0 slide-in-from-top-2 ${allWhitelistExcluded ? 'bg-zinc-500/5 rounded-md' : ''}`}
-                    style={{ animationDelay: `${index * 45}ms` }}
-                  >
-                    <div className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-1)]">
-                      <div className="flex items-center gap-[var(--ds-space-1-5)] min-w-0 flex-1 pr-1">
-                        {iconSrc && (
-                          <span
-                            className={`flex items-center justify-center rounded-md ring-1 ring-border/50 shadow-sm flex-shrink-0 bg-muted/60 ${logoWrapperClass}`}
-                          >
-                            <img
-                              src={iconSrc}
-                              alt={`${source.sourceType} logo`}
-                              title={source.sourceType}
-                              className={logoClass}
-                              loading="eager"
-                            />
-                          </span>
-                        )}
-                        {isBrevis && !iconSrc && (
-                          <span className="ds-text-9 font-semibold uppercase tracking-[0.22em] text-foreground/80 flex-shrink-0">
-                            Brevis
-                          </span>
-                        )}
-                        <span className="ds-tooltip-title text-foreground break-words block min-w-0">
-                          {source.name}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-[var(--ds-space-1-5)] flex-shrink-0">
-                        {source.link && (
-                          <a
-                            href={source.link}
-                            {...externalLinkTabProps(isMobile)}
-                            onClick={(e) => e.stopPropagation()}
-                            className={`${linkClass} flex h-7 w-7 items-center justify-center rounded-full transition-opacity opacity-80 hover:opacity-100 focus:outline-none focus-visible:outline-none focus-visible:ring-0`}
-                            title="Open link"
-                          >
-                            <ExternalLink className="w-3.5 h-3.5" />
-                          </a>
-                        )}
-                        <span className={`${valueClass} whitespace-nowrap`}>
-                          {formatPercent(sourceDisplayValue)}
-                        </span>
-                      </div>
-                    </div>
-                    {renderSourceCampaigns(source, `desktop-${index}`)}
-                  </div>
-                );
-              })}
+              {orderedIncentiveSources.map((source, index) => (
+                <IncentiveSourceRow key={`${source.name}-${index}`} source={source} index={index} animated />
+              ))}
               </div>
             </div>
           ) : (

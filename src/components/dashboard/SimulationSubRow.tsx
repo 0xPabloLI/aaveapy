@@ -534,7 +534,7 @@ const SimulationSubRow = ({
             <div className="flex items-baseline gap-x-1.5 whitespace-nowrap">
               <span
                 title={typeof row.label === 'string' ? row.label : undefined}
-                className={`ds-text-12 whitespace-nowrap ${row.warning ? 'text-amber-700 dark:text-amber-400 font-medium' : `${accentClass} group-data-[disabled]:text-muted-foreground`}`}
+                className={`ds-text-12 whitespace-nowrap ${row.warning ? 'text-amber-700 dark:text-amber-400 font-medium' : `${accentClass} group-data-[disabled]:text-foreground/70`}`}
               >
                 {row.label}
               </span>
@@ -547,17 +547,17 @@ const SimulationSubRow = ({
           </div>
         </td>
         <td className={`${valueCellPy} ${valueCellPx} text-right align-top whitespace-nowrap`}>
-          <span className={`${numericFontClass} tabular-nums whitespace-nowrap ${accentClass} group-data-[disabled]:text-muted-foreground`}>
+          <span className={`${numericFontClass} tabular-nums whitespace-nowrap ${accentClass} group-data-[disabled]:text-foreground/70`}>
             {formatValue(row.current, row.type)}
           </span>
         </td>
         <td className={`${valueCellPy} ${valueCellPx} text-right align-top whitespace-nowrap`}>
-          <span className={`${numericFontClass} tabular-nums whitespace-nowrap ${row.after === null ? SIM_NEUTRAL_MUTED : rowAccentClass} group-data-[disabled]:text-muted-foreground`}>
+          <span className={`${numericFontClass} tabular-nums whitespace-nowrap ${row.after === null ? SIM_NEUTRAL_MUTED : rowAccentClass} group-data-[disabled]:text-foreground/70`}>
             {formatValue(row.after, row.type)}
           </span>
         </td>
         <td className={`${valueCellPy} ${deltaCellPx} text-right align-top whitespace-nowrap`}>
-          <span className={`${numericFontClass} tabular-nums whitespace-nowrap ${deltaColorClass} group-data-[disabled]:text-muted-foreground`}>
+          <span className={`${numericFontClass} tabular-nums whitespace-nowrap ${deltaColorClass} group-data-[disabled]:text-foreground/70`}>
             {formatDeltaValue(row.delta, row.type)}
           </span>
         </td>
@@ -776,7 +776,7 @@ const SimulationSubRow = ({
         <thead>
           <tr className="bg-muted/30 border-b border-border/50">
             <th className="px-4 py-1.5 text-left">
-              <span className={`ds-text-13 font-semibold ${accentClass} group-data-[disabled]:text-muted-foreground`}>{title}</span>
+              <span className={`ds-text-13 font-semibold ${accentClass} group-data-[disabled]:text-foreground/70`}>{title}</span>
             </th>
             <th className="px-3 py-1.5 text-right">
               <span className="ds-text-11 text-muted-foreground">Current</span>

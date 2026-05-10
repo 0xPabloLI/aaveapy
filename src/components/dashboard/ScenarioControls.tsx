@@ -153,9 +153,9 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
   const meritMerklCheckboxId = 'scenario-merit-merkl-net-lending-borrowing';
 
   const fieldLabelMobileSupply =
-    'ds-text-11 font-semibold uppercase tracking-wide ds-text-emerald-600 shrink-0';
+    'ds-text-11 font-semibold tracking-wide ds-text-emerald-600 shrink-0';
   const fieldLabelMobileBorrow =
-    'ds-text-11 font-semibold uppercase tracking-wide ds-text-brand-cyan shrink-0';
+    'ds-text-11 font-semibold tracking-wide ds-text-brand-cyan shrink-0';
   const fieldLabelSupplyDesktop = `${fontSize} font-semibold shrink-0 ds-text-emerald-600`;
   const fieldLabelBorrowDesktop = `${fontSize} font-semibold shrink-0 ds-text-brand-cyan`;
 
