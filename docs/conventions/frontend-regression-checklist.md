@@ -8,6 +8,8 @@ Use this checklist for any refactor or UI behavior change touching:
 - `src/components/dashboard/ReservesTable.tsx`
 - `src/components/dashboard/ReservesTableDesktopHeader.tsx`
 - `src/components/dashboard/DesktopReserveRow.tsx`
+- `src/components/dashboard/PortfolioPanel.tsx`
+- `src/components/dashboard/PortfolioTokenRow.tsx`
 
 The goal is to catch the class of regressions where static checks pass but UI layout, runtime wiring, or displayed numbers drift.
 
@@ -44,6 +46,28 @@ Examples:
   - **Anti-pattern**: asserting `expect(html).toContain('text-cyan-500/50')` on whole-row HTML — multiple cells share that class, so a missing fade in one cell is hidden by another cell's fade. Always scope the assertion to the specific element (e.g. match the `<button aria-label="Borrow cap details for ...">` substring and assert the muted class on that match).
 
 If a visual or numeric bug is found during manual verification, add a focused regression test before shipping the fix.
+
+### Batch panel layout (PortfolioPanel + PortfolioTokenRow)
+
+The batch panel uses a **unified single-column grid** for both desktop and mobile. Layout rules are normative and enforced by VisualGap source-level regression tests (`PortfolioTokenRow.visual-gap.test.ts`).
+
+**Grid architecture:**
+
+| Layer | Class / property | Purpose |
+|-------|-----------------|---------|
+| Parent grid | `grid gap-x-1 gap-y-1.5 [grid-template-columns:auto_minmax(11rem,1fr)]` | `auto` column matches widest token; `1fr` column fills remaining space |
+| Token row | `grid grid-cols-subgrid col-span-2 gap-x-1` | Inherits parent column widths; token info in auto-col, inputs in 1fr-col |
+
+**Mandatory invariants (do not regress):**
+
+1. **No `grid-cols-2` or split-logic on parent** — single-column grid only. A previous half-grid split produced visual gap holes and was removed.
+2. **Row uses `grid-cols-subgrid`** (both desktop and mobile) — not flex, not inline-flex. Subgrid ensures every row's token info column is identical in width.
+3. **Gap `gap-x-1` (4px)** between token info and inputs — must stay at or below `gap-x-1`. Larger gaps (≥8px) create the visual hole symptom this guard prevents.
+4. **Desktop supply/borrow side-by-side** (`flex items-center gap-2`), **mobile stacked** (`flex flex-col gap-1`) — do not flip these.
+5. **Minus button inline on the left** (both desktop and mobile) — no absolute corner positioning.
+6. **Token info width = `auto`** (matches widest token in list), not a hard-coded pixel value — the parent grid's `auto` column does this automatically.
+
+**Regression test location:** `src/components/dashboard/PortfolioTokenRow.visual-gap.test.ts` (6 tests verifying subgrid, gap ≤ 4px, flex direction per viewport). Run with: `npm test -- PortfolioTokenRow.visual-gap`.
 
 ## Browser regression pass
 
