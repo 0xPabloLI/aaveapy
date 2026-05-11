@@ -278,7 +278,45 @@ className="hidden group-data-[side=top]/tt:block absolute bottom-[-8px]"
 
 ---
 
-## 5. 文件索引
+## 5. AssetActionMenu Popover（Token 列操作菜单）
+
+**实现位置**: `src/components/dashboard/AssetActionMenu.tsx`  
+**依赖**: `@radix-ui/react-popover`（与 Market 列 Popover 一致）
+
+### 适用场景
+- Token 列点击 `↗` 图标触发的操作菜单
+- 包含 Open on Aave（trailing Aave logo）/ Open on Tydro（trailing Tydro/Ink logo）/ View token on explorer / View pool on explorer / Copy address 等操作
+
+### 技术特性
+
+| 特性 | 移动端 | 桌面端 |
+|------|--------|--------|
+| **渲染方式** | `BottomSheet` 底部弹出 | Radix `Popover`（声明式定位） |
+| **定位方式** | 无需定位 | `align="start"`, `sideOffset={6}`（与 Market 列一致） |
+| **碰撞处理** | 无需处理 | Radix Floating UI 自动碰撞检测和翻转 |
+| **宽度** | 全宽 | `w-[220px]` |
+| **Portal** | 手动 `createPortal(document.body)` | Radix `PopoverPrimitive.Portal` |
+| **动画** | BottomSheet 自带 | `fade-in-0 zoom-in-95` + 方向滑动 |
+
+### 定位一致性
+
+Token 列 `AssetActionMenu` 和 Market 列的外链 Popover 使用**相同的 Radix Popover 定位方式**：
+- `align="start"`：以 trigger 左边缘为水平锚点
+- `sideOffset={6}`：trigger 下方 6px 间距
+- 碰撞检测由 Radix Floating UI 自动处理
+
+### 菜单项布局一致性
+
+两个 Popover 的菜单项布局保持一致：
+- `justify-between` + `gap-3`：左侧图标+文字，右侧 trailing 元素
+- Aave 链接项 trailing Aave logo（`/icons/tokens/aave.svg`）
+- Tydro/Ink 链接项 trailing Tydro logo（`/icons/partners/inktoken.svg`）
+- Explorer 链接项 trailing chain icon（`getChainIconSrc`）
+- Copy address 项 trailing 截断地址
+
+---
+
+## 6. 文件索引
 
 | 文件 | 用途 |
 |------|------|
@@ -290,3 +328,6 @@ className="hidden group-data-[side=top]/tt:block absolute bottom-[-8px]"
 | `src/components/ui/tooltip.test.tsx` | Radix Tooltip 测试 |
 | `src/components/dashboard/IncentiveTooltip.test.tsx` | 激励浮层测试 |
 | `src/components/ui/tooltip-arrow.test.tsx` | 箭头组件测试 |
+| `src/components/dashboard/AssetActionMenu.tsx` | Token 列操作菜单（Radix Popover） |
+| `src/components/dashboard/AssetActionMenu.test.tsx` | Token 列操作菜单测试 |
+| `src/components/ui/popover.tsx` | Radix Popover 组件 |

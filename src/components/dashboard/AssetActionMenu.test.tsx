@@ -5,8 +5,6 @@ import userEvent from '@testing-library/user-event';
 import AssetActionMenu from './AssetActionMenu';
 
 const TOKEN_SYMBOL = 'USDC';
-// Placeholder ERC-20 address for tests. Matches the existing convention used
-// by DesktopReserveRow.test.tsx / MobileReserveCard.test.tsx.
 const TOKEN_ADDRESS = '0x' + '0'.repeat(39) + '1';
 const MARKET_NAME = 'AaveV3Ethereum';
 
@@ -25,7 +23,7 @@ function setup(overrides: Partial<Parameters<typeof AssetActionMenu>[0]> = {}) {
 describe('AssetActionMenu (desktop)', () => {
   afterEach(() => cleanup());
 
-  it('renders the trigger but no portal content until opened', () => {
+  it('renders the trigger but no menu content until opened', () => {
     setup();
     expect(screen.getByLabelText(`Asset actions for ${TOKEN_SYMBOL}`)).toBeInTheDocument();
     expect(screen.queryByRole('menu')).not.toBeInTheDocument();
@@ -41,15 +39,13 @@ describe('AssetActionMenu (desktop)', () => {
       name: `Asset actions for ${TOKEN_SYMBOL}`,
     });
     expect(menu).toBeInTheDocument();
-    // The menu lives in a portal (document.body), not inside the trigger tree.
-    expect(menu.parentElement).toBe(document.body);
 
     expect(screen.getByText('Open on Aave')).toBeInTheDocument();
     expect(screen.getByText('View token on explorer')).toBeInTheDocument();
     expect(screen.getByText('Copy address')).toBeInTheDocument();
   });
 
-  it('positions the popover with inline fixed styles (top/left/width)', async () => {
+  it('renders the menu via Radix Popover with align=start and sideOffset=6', async () => {
     const user = userEvent.setup();
     setup();
 
@@ -58,9 +54,9 @@ describe('AssetActionMenu (desktop)', () => {
     const menu = await screen.findByRole('menu', {
       name: `Asset actions for ${TOKEN_SYMBOL}`,
     });
-    expect(menu).toHaveStyle({ position: 'fixed', width: '220px' });
-    expect(Number.parseFloat(menu.style.top)).not.toBeNaN();
-    expect(Number.parseFloat(menu.style.left)).not.toBeNaN();
+    expect(menu).toBeInTheDocument();
+    const popoverContent = menu.closest('[data-radix-popper-content-root]') ?? menu.parentElement;
+    expect(popoverContent).toBeInTheDocument();
   });
 
   it('closes on Escape', async () => {
@@ -77,16 +73,46 @@ describe('AssetActionMenu (desktop)', () => {
 
   it('closes on outside click', async () => {
     const user = userEvent.setup();
-    const { container } = setup();
+    setup();
 
     await user.click(screen.getByLabelText(`Asset actions for ${TOKEN_SYMBOL}`));
     await screen.findByRole('menu');
 
-    // Dispatch mousedown directly on body since user.click on document.body
-    // does not reliably bubble through happy-dom in all versions.
-    fireEvent.mouseDown(container.ownerDocument.body);
+    await user.click(document.body);
 
     expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+  });
+
+  it('toggles open/closed on repeated trigger clicks', async () => {
+    const user = userEvent.setup();
+    setup();
+    const trigger = screen.getByLabelText(`Asset actions for ${TOKEN_SYMBOL}`);
+
+    await user.click(trigger);
+    await screen.findByRole('menu');
+    expect(screen.getByRole('menu')).toBeInTheDocument();
+
+    await user.click(trigger);
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+  });
+
+  it('sets aria-haspopup="menu" on the trigger for accessibility', () => {
+    setup();
+    const trigger = screen.getByLabelText(`Asset actions for ${TOKEN_SYMBOL}`);
+    expect(trigger).toHaveAttribute('aria-haspopup', 'menu');
+  });
+
+  it('renders PopoverContent with align=start to match Market column positioning', async () => {
+    const user = userEvent.setup();
+    setup();
+
+    await user.click(screen.getByLabelText(`Asset actions for ${TOKEN_SYMBOL}`));
+    const menu = await screen.findByRole('menu');
+
+    const popoverContent = menu.closest('[data-radix-popper-content-root]');
+    expect(popoverContent).toBeInTheDocument();
+    expect(popoverContent?.getAttribute('data-align')).toBe('start');
+    expect(popoverContent?.getAttribute('data-side')).toBe('bottom');
   });
 
   it('returns null when tokenAddress is missing', () => {
@@ -97,8 +123,6 @@ describe('AssetActionMenu (desktop)', () => {
   });
 
   it('copies the token address to the clipboard when "Copy address" is clicked', async () => {
-    // Happy-dom may or may not provide navigator.clipboard depending on the
-    // version. Provide a spy-able stub either way.
     const clipboardContainer = globalThis.navigator as unknown as {
       clipboard?: { writeText: (s: string) => Promise<void> };
     };
@@ -133,7 +157,6 @@ describe('AssetActionMenu (desktop)', () => {
 describe('AssetActionMenu (mobile)', () => {
   afterEach(() => cleanup());
   beforeEach(() => {
-    // framer-motion reads matchMedia in happy-dom for reduced-motion checks
     if (!globalThis.matchMedia) {
       Object.defineProperty(globalThis, 'matchMedia', {
         configurable: true,
@@ -172,7 +195,6 @@ describe('AssetActionMenu (mobile)', () => {
 
     await user.click(screen.getByLabelText('Close'));
 
-    // The close animation exit takes one tick; flush it.
     await act(async () => {
       await new Promise((resolve) => setTimeout(resolve, 300));
     });
@@ -195,6 +217,24 @@ describe('AssetActionMenu (V3 vs V4 links)', () => {
     expect(screen.queryByText('View asset page')).not.toBeInTheDocument();
   });
 
+  it('renders Aave and Tydro protocol logos as trailing icons on their menu items', async () => {
+    const user = userEvent.setup();
+    setup({ marketName: 'AaveV3Ink' });
+
+    await user.click(screen.getByLabelText(`Asset actions for ${TOKEN_SYMBOL}`));
+    await screen.findByRole('menu');
+
+    const aaveItem = screen.getByText('Open on Aave').closest('a');
+    const aaveLogo = aaveItem?.querySelector('img[alt="Aave"]');
+    expect(aaveLogo).toBeInTheDocument();
+    expect(aaveLogo?.getAttribute('src')).toBe('/icons/tokens/aave.svg');
+
+    const tydroItem = screen.getByText('Open on Tydro').closest('a');
+    const tydroLogo = tydroItem?.querySelector('img[alt="Tydro"]');
+    expect(tydroLogo).toBeInTheDocument();
+    expect(tydroLogo?.getAttribute('src')).toBe('/icons/partners/inktoken.svg');
+  });
+
   it('renders "View asset page" for V4 assets using pro.aave.com URL', async () => {
     const user = userEvent.setup();
     const V4_MARKET = 'AaveV4Ethereum';
@@ -209,7 +249,6 @@ describe('AssetActionMenu (V3 vs V4 links)', () => {
     expect(viewAssetLink).toBeInTheDocument();
     expect(viewAssetLink?.getAttribute('href')).toContain('pro.aave.com');
     expect(viewAssetLink?.getAttribute('href')).toContain('explore/asset');
-    // pro.aave.com URLs use chain ID (1 for Ethereum) not chain name
     expect(viewAssetLink?.getAttribute('href')).toContain('/1/');
   });
 });

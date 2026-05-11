@@ -718,4 +718,25 @@ describe('DesktopReserveRow', () => {
     const dangerousYExists = yValues.filter((y) => y === 24).length;
     expect(dangerousYExists, 'SVG must not render the bug-state y=24 (which means optimal collapsed to 0%)').toBe(0);
   });
+
+  it('includes Aave and Tydro protocol logo paths in Market Popover for Ink markets', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const source = fs.readFileSync(
+      path.resolve(__dirname, 'DesktopReserveRow.tsx'),
+      'utf-8',
+    );
+    expect(source).toContain('/icons/tokens/aave.svg');
+    expect(source).toContain('/icons/partners/inktoken.svg');
+  });
+
+  it('Market Popover uses align="start" matching AssetActionMenu positioning', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const source = fs.readFileSync(
+      path.resolve(__dirname, 'DesktopReserveRow.tsx'),
+      'utf-8',
+    );
+    expect(source).toMatch(/align="start"/);
+  });
 });

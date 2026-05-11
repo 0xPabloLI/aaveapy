@@ -387,20 +387,26 @@ const DesktopReserveRow = memo(({
                             href={aaveMarketUrl}
                             {...externalLinkTabProps(isMobile)}
                             onClick={(event) => event.stopPropagation()}
-                            className="flex items-center gap-2 rounded-md px-3 py-2 ds-text-13 text-foreground/90 transition-colors hover:bg-muted/70"
+                            className="flex items-center justify-between gap-3 rounded-md px-3 py-2 ds-text-13 text-foreground/90 transition-colors hover:bg-muted/70"
                           >
-                            <ExternalLink className="h-3.5 w-3.5 text-muted-foreground/70" />
-                            <span>Open on Aave</span>
+                            <span className="flex items-center gap-2">
+                              <ExternalLink className="h-3.5 w-3.5 text-muted-foreground/70" />
+                              <span>Open on Aave</span>
+                            </span>
+                            <img src="/icons/tokens/aave.svg" alt="Aave" className="h-3.5 w-3.5 rounded-full opacity-80" loading="lazy" />
                           </a>
                         )}
                         <a
                           href={tydroMarketUrl}
                           {...externalLinkTabProps(isMobile)}
                           onClick={(event) => event.stopPropagation()}
-                          className="flex items-center gap-2 rounded-md px-3 py-2 ds-text-13 text-foreground/90 transition-colors hover:bg-muted/70"
+                          className="flex items-center justify-between gap-3 rounded-md px-3 py-2 ds-text-13 text-foreground/90 transition-colors hover:bg-muted/70"
                         >
-                          <ExternalLink className="h-3.5 w-3.5 text-muted-foreground/70" />
-                          <span>Open on Tydro</span>
+                          <span className="flex items-center gap-2">
+                            <ExternalLink className="h-3.5 w-3.5 text-muted-foreground/70" />
+                            <span>Open on Tydro</span>
+                          </span>
+                          <img src="/icons/partners/inktoken.svg" alt="Tydro" className="h-3.5 w-3.5 rounded-full opacity-80" loading="lazy" />
                         </a>
                       </div>
                     </PopoverContent>
