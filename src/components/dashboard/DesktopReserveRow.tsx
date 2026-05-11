@@ -6,6 +6,7 @@ import { FrozenStatusBadge } from './FrozenStatusBadge';
 import { ReserveWithSpread } from '@/types/aave';
 import { formatPercent, formatScenarioSize, formatSpread, formatUsd, getReserveMarketDisplayName } from '@/lib/formatters';
 import { buildAaveMarketUrl, buildAaveUrl, buildAaveProHubUrl } from '@/lib/aaveLinks';
+import { buildTydroMarketUrl } from '@/lib/tydroLinks';
 import { getProtocolVersion } from '@/lib/protocolVersion';
 import { buildPoolExplorerUrl } from '@/lib/poolExplorerLinks';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
