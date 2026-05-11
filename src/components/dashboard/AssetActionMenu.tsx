@@ -4,6 +4,7 @@ import { Check, Copy, ExternalLink, SquareArrowOutUpRight, X } from 'lucide-reac
 import { AnimatePresence, motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { buildAaveUrl, buildAaveProAssetUrl } from '@/lib/aaveLinks';
+import { buildTydroReserveUrl } from '@/lib/tydroLinks';
 import { buildPoolExplorerUrl, buildTokenExplorerUrl, buildHubExplorerUrl } from '@/lib/poolExplorerLinks';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
 import { getChainIconSrc } from '@/lib/chainIcons';
