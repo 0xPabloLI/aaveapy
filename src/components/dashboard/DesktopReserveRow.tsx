@@ -357,17 +357,41 @@ const DesktopReserveRow = memo(({
                   <ChainIcon chain={reserve.chainName} />
                   <span className={marketCellClassNames.marketText}>{marketDisplayName}</span>
                 </button>
-                {aaveMarketUrl && (
-                  <a
-                    href={aaveMarketUrl}
-                    {...externalLinkTabProps(isMobile)}
-                    onClick={(event) => event.stopPropagation()}
-                    className={cn(marketCellClassNames.externalLink, 'group-hover/market-link:pointer-events-auto group-hover/market-link:opacity-100')}
-                    aria-label={`Open ${marketDisplayName} market on Aave`}
-                    title="Open market on Aave"
+                {(aaveMarketUrl || tydroMarketUrl) && (
+                  <div
+                    className={cn(
+                      marketCellClassNames.externalLink,
+                      'group-hover/market-link:pointer-events-auto group-hover/market-link:opacity-100',
+                      'flex-row gap-1',
+                    )}
                   >
-                    <ExternalLink className="w-3 h-3 text-muted-foreground" />
-                  </a>
+                    {aaveMarketUrl && (
+                      <a
+                        href={aaveMarketUrl}
+                        {...externalLinkTabProps(isMobile)}
+                        onClick={(event) => event.stopPropagation()}
+                        className="inline-flex items-center justify-center rounded px-0.5 ds-text-10 font-medium text-muted-foreground hover:text-foreground"
+                        aria-label={`Open ${marketDisplayName} market on Aave`}
+                        title="Open market on Aave"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        <span className="ml-0.5 leading-none">Aave</span>
+                      </a>
+                    )}
+                    {tydroMarketUrl && (
+                      <a
+                        href={tydroMarketUrl}
+                        {...externalLinkTabProps(isMobile)}
+                        onClick={(event) => event.stopPropagation()}
+                        className="inline-flex items-center justify-center rounded px-0.5 ds-text-10 font-medium text-muted-foreground hover:text-foreground"
+                        aria-label={`Open ${marketDisplayName} market on Tydro`}
+                        title="Open market on Tydro"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        <span className="ml-0.5 leading-none">Tydro</span>
+                      </a>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
