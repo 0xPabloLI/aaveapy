@@ -357,12 +357,12 @@ const DesktopReserveRow = memo(({
                   <ChainIcon chain={reserve.chainName} />
                   <span className={marketCellClassNames.marketText}>{marketDisplayName}</span>
                 </button>
-                {(aaveMarketUrl || tydroMarketUrl) && (
+                {tydroMarketUrl ? (
+                  // Ink market: inline split links (Aave + Tydro), shown on hover, no overlap
                   <div
                     className={cn(
-                      marketCellClassNames.externalLink,
+                      'pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-1 inline-flex items-center gap-1 opacity-0 transition-opacity duration-100',
                       'group-hover/market-link:pointer-events-auto group-hover/market-link:opacity-100',
-                      'flex-row gap-1',
                     )}
                   >
                     {aaveMarketUrl && (
@@ -370,28 +370,42 @@ const DesktopReserveRow = memo(({
                         href={aaveMarketUrl}
                         {...externalLinkTabProps(isMobile)}
                         onClick={(event) => event.stopPropagation()}
-                        className="inline-flex items-center justify-center rounded px-0.5 ds-text-10 font-medium text-muted-foreground hover:text-foreground"
+                        className="inline-flex items-center gap-0.5 rounded px-0.5 ds-text-10 font-medium text-muted-foreground hover:text-foreground"
                         aria-label={`Open ${marketDisplayName} market on Aave`}
                         title="Open market on Aave"
                       >
                         <ExternalLink className="w-3 h-3" />
-                        <span className="ml-0.5 leading-none">Aave</span>
+                        <span className="leading-none">Aave</span>
                       </a>
                     )}
-                    {tydroMarketUrl && (
-                      <a
-                        href={tydroMarketUrl}
-                        {...externalLinkTabProps(isMobile)}
-                        onClick={(event) => event.stopPropagation()}
-                        className="inline-flex items-center justify-center rounded px-0.5 ds-text-10 font-medium text-muted-foreground hover:text-foreground"
-                        aria-label={`Open ${marketDisplayName} market on Tydro`}
-                        title="Open market on Tydro"
-                      >
-                        <ExternalLink className="w-3 h-3" />
-                        <span className="ml-0.5 leading-none">Tydro</span>
-                      </a>
-                    )}
+                    <a
+                      href={tydroMarketUrl}
+                      {...externalLinkTabProps(isMobile)}
+                      onClick={(event) => event.stopPropagation()}
+                      className="inline-flex items-center gap-0.5 rounded px-0.5 ds-text-10 font-medium text-muted-foreground hover:text-foreground"
+                      aria-label={`Open ${marketDisplayName} market on Tydro`}
+                      title="Open market on Tydro"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                      <span className="leading-none">Tydro</span>
+                    </a>
                   </div>
+                ) : (
+                  aaveMarketUrl && (
+                    <a
+                      href={aaveMarketUrl}
+                      {...externalLinkTabProps(isMobile)}
+                      onClick={(event) => event.stopPropagation()}
+                      className={cn(
+                        marketCellClassNames.externalLink,
+                        'group-hover/market-link:pointer-events-auto group-hover/market-link:opacity-100',
+                      )}
+                      aria-label={`Open ${marketDisplayName} market on Aave`}
+                      title="Open market on Aave"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )
                 )}
               </div>
             </div>
