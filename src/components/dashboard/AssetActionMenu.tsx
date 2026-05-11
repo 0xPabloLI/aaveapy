@@ -4,6 +4,7 @@ import { Check, Copy, ExternalLink, SquareArrowOutUpRight, X } from 'lucide-reac
 import { AnimatePresence, motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { buildAaveUrl, buildAaveProAssetUrl } from '@/lib/aaveLinks';
+import { buildTydroReserveUrl } from '@/lib/tydroLinks';
 import { buildPoolExplorerUrl, buildTokenExplorerUrl, buildHubExplorerUrl } from '@/lib/poolExplorerLinks';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
 import { getChainIconSrc } from '@/lib/chainIcons';
@@ -147,6 +148,7 @@ export function AssetActionMenu({
   const chainIconSrc = getChainIconSrc(chainName);
 
   const aaveUrl = buildAaveUrl({ marketName, tokenAddress, aaveProReserveId });
+  const tydroUrl = buildTydroReserveUrl({ marketName, tokenAddress });
   const aaveProAssetUrl = buildAaveProAssetUrl({ tokenAddress, chainName });
   const isV4 = getProtocolVersion(marketName) === 'v4';
   const tokenExplorerUrl = buildTokenExplorerUrl(marketName, tokenAddress, { chainName: reserveChainName });
@@ -171,6 +173,7 @@ export function AssetActionMenu({
 
   const items: MenuItem[] = [
     aaveUrl ? { key: 'aave', label: 'Open on Aave', href: aaveUrl, icon: 'external' as const } : null,
+    tydroUrl ? { key: 'tydro', label: 'Open on Tydro', href: tydroUrl, icon: 'external' as const } : null,
     isV4 && aaveProAssetUrl
       ? { key: 'aave-pro-asset', label: 'View asset page', href: aaveProAssetUrl, icon: 'external' as const }
       : null,
