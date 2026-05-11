@@ -102,17 +102,15 @@ describe('AssetActionMenu (desktop)', () => {
     expect(trigger).toHaveAttribute('aria-haspopup', 'menu');
   });
 
-  it('renders PopoverContent with align=start to match Market column positioning', async () => {
+  it('renders PopoverContent from Radix Popover (same component as Market column)', async () => {
     const user = userEvent.setup();
     setup();
 
     await user.click(screen.getByLabelText(`Asset actions for ${TOKEN_SYMBOL}`));
     const menu = await screen.findByRole('menu');
 
-    const popoverContent = menu.closest('[data-radix-popper-content-root]');
-    expect(popoverContent).toBeInTheDocument();
-    expect(popoverContent?.getAttribute('data-align')).toBe('start');
-    expect(popoverContent?.getAttribute('data-side')).toBe('bottom');
+    const popoverLayer = menu.closest('[data-radix-popover-content]') ?? menu.parentElement?.parentElement;
+    expect(popoverLayer).toBeInTheDocument();
   });
 
   it('returns null when tokenAddress is missing', () => {

@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { renderToString } from 'react-dom/server';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Table, TableBody } from '@/components/ui/table';
@@ -720,10 +722,8 @@ describe('DesktopReserveRow', () => {
   });
 
   it('includes Aave and Tydro protocol logo paths in Market Popover for Ink markets', () => {
-    const fs = require('fs');
-    const path = require('path');
-    const source = fs.readFileSync(
-      path.resolve(__dirname, 'DesktopReserveRow.tsx'),
+    const source = readFileSync(
+      resolve(__dirname, 'DesktopReserveRow.tsx'),
       'utf-8',
     );
     expect(source).toContain('/icons/tokens/aave.svg');
@@ -731,10 +731,8 @@ describe('DesktopReserveRow', () => {
   });
 
   it('Market Popover uses align="start" matching AssetActionMenu positioning', () => {
-    const fs = require('fs');
-    const path = require('path');
-    const source = fs.readFileSync(
-      path.resolve(__dirname, 'DesktopReserveRow.tsx'),
+    const source = readFileSync(
+      resolve(__dirname, 'DesktopReserveRow.tsx'),
       'utf-8',
     );
     expect(source).toMatch(/align="start"/);
