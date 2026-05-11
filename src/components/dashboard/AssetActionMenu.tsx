@@ -173,6 +173,7 @@ export function AssetActionMenu({
 
   const items: MenuItem[] = [
     aaveUrl ? { key: 'aave', label: 'Open on Aave', href: aaveUrl, icon: 'external' as const } : null,
+    tydroUrl ? { key: 'tydro', label: 'Open on Tydro', href: tydroUrl, icon: 'external' as const } : null,
     isV4 && aaveProAssetUrl
       ? { key: 'aave-pro-asset', label: 'View asset page', href: aaveProAssetUrl, icon: 'external' as const }
       : null,
