@@ -159,6 +159,7 @@ const DesktopReserveRow = memo(({
 
   const aaveUrl = buildAaveUrl({ marketName: reserve.marketName, tokenAddress: reserve.tokenAddress, aaveProReserveId: reserve.aaveProReserveId }) || '#';
   const aaveMarketUrl = buildAaveMarketUrl(reserve.marketName);
+  const tydroMarketUrl = buildTydroMarketUrl(reserve.marketName);
   const poolExplorerUrl = buildPoolExplorerUrl(reserve.marketName);
   const aaveProHubUrl = buildAaveProHubUrl(reserve);
   const marketDisplayName = getReserveMarketDisplayName(reserve);
