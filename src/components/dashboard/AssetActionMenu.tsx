@@ -148,6 +148,7 @@ export function AssetActionMenu({
   const chainIconSrc = getChainIconSrc(chainName);
 
   const aaveUrl = buildAaveUrl({ marketName, tokenAddress, aaveProReserveId });
+  const tydroUrl = buildTydroReserveUrl({ marketName, tokenAddress });
   const aaveProAssetUrl = buildAaveProAssetUrl({ tokenAddress, chainName });
   const isV4 = getProtocolVersion(marketName) === 'v4';
   const tokenExplorerUrl = buildTokenExplorerUrl(marketName, tokenAddress, { chainName: reserveChainName });
