@@ -2,6 +2,7 @@ import { memo, Fragment, useEffect, useState, useCallback, useRef } from 'react'
 import { ExternalLink, Plus } from 'lucide-react';
 import { TableRow, TableCell } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipCalloutArrow } from '@/components/ui/tooltip';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { FrozenStatusBadge } from './FrozenStatusBadge';
 import { ReserveWithSpread } from '@/types/aave';
 import { formatPercent, formatScenarioSize, formatSpread, formatUsd, getReserveMarketDisplayName } from '@/lib/formatters';
@@ -358,38 +359,52 @@ const DesktopReserveRow = memo(({
                   <span className={marketCellClassNames.marketText}>{marketDisplayName}</span>
                 </button>
                 {tydroMarketUrl ? (
-                  // Ink market: inline split links (Aave + Tydro), shown on hover, no overlap
-                  <div
-                    className={cn(
-                      'pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-1 inline-flex items-center gap-1 opacity-0 transition-opacity duration-100',
-                      'group-hover/market-link:pointer-events-auto group-hover/market-link:opacity-100',
-                    )}
-                  >
-                    {aaveMarketUrl && (
-                      <a
-                        href={aaveMarketUrl}
-                        {...externalLinkTabProps(isMobile)}
+                  // Ink market: click-to-expand menu with Aave + Tydro options
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button
+                        type="button"
                         onClick={(event) => event.stopPropagation()}
-                        className="inline-flex items-center gap-0.5 rounded px-0.5 ds-text-10 font-medium text-muted-foreground hover:text-foreground"
-                        aria-label={`Open ${marketDisplayName} market on Aave`}
-                        title="Open market on Aave"
+                        className={cn(
+                          marketCellClassNames.externalLink,
+                          'group-hover/market-link:pointer-events-auto group-hover/market-link:opacity-100 data-[state=open]:pointer-events-auto data-[state=open]:opacity-100',
+                        )}
+                        aria-label={`Open ${marketDisplayName} market`}
+                        title="Open market"
                       >
                         <ExternalLink className="w-3 h-3" />
-                        <span className="leading-none">Aave</span>
-                      </a>
-                    )}
-                    <a
-                      href={tydroMarketUrl}
-                      {...externalLinkTabProps(isMobile)}
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      align="start"
+                      sideOffset={6}
+                      className="w-auto min-w-[10rem] p-1"
                       onClick={(event) => event.stopPropagation()}
-                      className="inline-flex items-center gap-0.5 rounded px-0.5 ds-text-10 font-medium text-muted-foreground hover:text-foreground"
-                      aria-label={`Open ${marketDisplayName} market on Tydro`}
-                      title="Open market on Tydro"
                     >
-                      <ExternalLink className="w-3 h-3" />
-                      <span className="leading-none">Tydro</span>
-                    </a>
-                  </div>
+                      <div className="flex flex-col">
+                        {aaveMarketUrl && (
+                          <a
+                            href={aaveMarketUrl}
+                            {...externalLinkTabProps(isMobile)}
+                            onClick={(event) => event.stopPropagation()}
+                            className="flex items-center gap-2 rounded-md px-3 py-2 ds-text-13 text-foreground/90 transition-colors hover:bg-muted/70"
+                          >
+                            <ExternalLink className="h-3.5 w-3.5 text-muted-foreground/70" />
+                            <span>Open on Aave</span>
+                          </a>
+                        )}
+                        <a
+                          href={tydroMarketUrl}
+                          {...externalLinkTabProps(isMobile)}
+                          onClick={(event) => event.stopPropagation()}
+                          className="flex items-center gap-2 rounded-md px-3 py-2 ds-text-13 text-foreground/90 transition-colors hover:bg-muted/70"
+                        >
+                          <ExternalLink className="h-3.5 w-3.5 text-muted-foreground/70" />
+                          <span>Open on Tydro</span>
+                        </a>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                 ) : (
                   aaveMarketUrl && (
                     <a
