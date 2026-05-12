@@ -555,7 +555,7 @@ const DesktopReserveRow = memo(({
                   <span className={`ds-text-11 tabular-nums cursor-default ${
                     displayUtilization != null && optimalPct != null && displayUtilization > optimalPct
                       ? 'text-amber-600'
-                      : 'text-muted-foreground'
+                      : 'text-foreground'
                   }`}>
                     {formatPercent(displayUtilization)}
                   </span>
