@@ -74,6 +74,16 @@
     --ds-dot: 0.5rem;
     --ds-dot-active: 0.625rem;
     --ds-info-gap: 0.25rem;
+    --ds-seg-track-h: 2rem;
+    --ds-seg-track-pad: 3px;
+    --ds-seg-chip-track-pad: 2px;
+    --ds-seg-seg-min-h: 1.75rem;
+    --ds-seg-seg-min-w: 3.5rem;
+    --ds-seg-chip-seg-min-w: 2.625rem;
+    --ds-seg-seg-pad-x: 0.75rem;
+    --ds-seg-seg-pad-y-pad-x: 0.625rem;
+    --ds-seg-chip-seg-pad-x: 0.5rem;
+    --ds-seg-gap: 0.125rem;
     --ds-shadow-rgb: 0 0 0;
     --ds-gradient-primary: 308 51% 51%;
     --ds-gradient-secondary: 175 71% 47%;
