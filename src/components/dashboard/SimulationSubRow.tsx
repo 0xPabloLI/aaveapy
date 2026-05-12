@@ -534,7 +534,7 @@ const SimulationSubRow = ({
             <div className="flex items-baseline gap-x-1.5 whitespace-nowrap">
               <span
                 title={typeof row.label === 'string' ? row.label : undefined}
-                className={`ds-text-12 whitespace-nowrap ${row.warning ? 'text-amber-700 dark:text-amber-400 font-medium' : `${accentClass} group-data-[disabled]:text-muted-foreground`}`}
+                className={`ds-text-12 whitespace-nowrap ${row.warning ? 'text-amber-700 dark:text-amber-400 font-medium' : `${accentClass}`}`}
               >
                 {row.label}
               </span>
@@ -580,7 +580,7 @@ const SimulationSubRow = ({
       return (
         <tr data-align-key={capAlignKey} data-disabled={disabled ? 'true' : undefined} className={`group ${row.warning ? 'ds-bg-warning-row' : ''}`}>
           <td colSpan={4} className={`pt-0 pb-1 ${deltaCellPx}`}>
-            <div className="relative h-1.5 w-full rounded-full bg-muted/40 overflow-hidden group-data-[disabled]:grayscale-[50%] group-data-[disabled]:opacity-50">
+            <div className="relative h-1.5 w-full rounded-full bg-muted/40 overflow-hidden">
               <div
                 className={`absolute inset-y-0 left-0 rounded-full ${barColorClass} transition-all duration-300`}
                 style={{ width: `${currentPct}%` }}
@@ -689,7 +689,7 @@ const SimulationSubRow = ({
           data-disabled={disabled ? 'true' : undefined}
           className={`group col-span-4 pt-0 pb-1 pl-0.5 pr-2 ${cellBgClass}`}
         >
-          <div className="relative h-1.5 w-full rounded-full bg-muted/40 overflow-hidden group-data-[disabled]:grayscale-[50%] group-data-[disabled]:opacity-50">
+          <div className="relative h-1.5 w-full rounded-full bg-muted/40 overflow-hidden">
             <div
               className={`absolute inset-y-0 left-0 rounded-full ${barColorClass} transition-all duration-300`}
               style={{ width: `${currentPct}%` }}
@@ -717,7 +717,7 @@ const SimulationSubRow = ({
               <div className="flex flex-wrap items-baseline gap-x-1.5">
                 <span
                   title={typeof row.label === 'string' ? row.label : undefined}
-                  className={`ds-text-12 whitespace-nowrap ${row.warning ? 'text-amber-700 dark:text-amber-400 font-medium' : `${accentClass} group-data-[disabled]:text-muted-foreground`}`}
+                  className={`ds-text-12 whitespace-nowrap ${row.warning ? 'text-amber-700 dark:text-amber-400 font-medium' : `${accentClass}`}`}
                 >
                   {row.label}
                 </span>
@@ -773,8 +773,8 @@ const SimulationSubRow = ({
    */
   const renderCompactLayout = () => {
     const liquidityWarning = !isReserveLocked && borrowCapExceeded && borrowLimitedByLiquidity;
-    const supplySectionClass = supplySideBlocked ? 'opacity-75 dark:opacity-60' : '';
-    const borrowSectionClass = borrowSideBlocked ? 'opacity-75 dark:opacity-60' : '';
+    const supplySectionClass = '';
+    const borrowSectionClass = '';
     const headerCellClass = 'bg-muted/30 border-b border-border/50';
     return (
     <div
@@ -922,7 +922,7 @@ const SimulationSubRow = ({
         <thead>
           <tr className="bg-muted/30 border-b border-border/50">
             <th className="px-4 py-1.5 text-left">
-              <span className={`ds-text-13 font-semibold ${accentClass} group-data-[disabled]:text-muted-foreground`}>{title}</span>
+              <span className={`ds-text-13 font-semibold ${accentClass}`}>{title}</span>
             </th>
             <th className="px-3 py-1.5 text-right">
               <span className="ds-text-11 text-muted-foreground">Current</span>
@@ -935,7 +935,7 @@ const SimulationSubRow = ({
             </th>
           </tr>
         </thead>
-        <tbody className={`[&>tr:last-child>td]:pb-2 group-data-[disabled]:opacity-75 dark:group-data-[disabled]:opacity-60`}>
+        <tbody className={`[&>tr:last-child>td]:pb-2`}>
           {rows.map((row) => {
             const peer = peerRows ? findPeerRow(row.rowKey, peerRows) : undefined;
             const peerHasCapBar = peer != null && peer.cap != null && peer.type === 'usd';

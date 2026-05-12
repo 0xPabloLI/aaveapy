@@ -592,10 +592,10 @@ className="transition-all motion-reduce:transition-none"
 | 元素层 | 处理方式 | 效果 | 原理 |
 |--------|----------|------|------|
 | **数值（Current 列）** | 保留原语义色 + 整体容器 `opacity-60` | emerald/cyan 色彩可辨，但明显「暗了一档」 | 用户仍需区分「这是 Supply 侧还是 Borrow 侧的数据」；色相保留不干扰空间定位 |
-| **文字标签 / 标题** | 替换为 `text-muted-foreground`（去语义色） | 从 emerald/cyan/purple 变为中性灰 | 标签的语义色在不可操作时已失去意义，继续用语义色会误导用户以为该标签仍有效 |
-| **进度条 / 环形图** | `grayscale-[50%] opacity-50` | 颜色褪去，形状保留 | 图形元素在禁用时不应继续传递「容量状态」信号；灰度化表明此维度暂时无关 |
+| **文字标签 / 标题** | 保留原语义色（`accentClass`） | emerald/cyan/purple 保持不变 | frozen/paused 行保持完全不透明，标签不褪色 |
+| **进度条 / 环形图** | 原色（无 grayscale / opacity 降级） | 颜色和形状完整保留 | 保持进度条可见性，让用户仍能看到容量状态 |
 | **After / Delta 列** | 值设为 null → 显示 `-` | 不展示任何模拟结果 | 禁用状态下没有「after」变化，显示模拟值会误导用户以为操作仍在生效 |
-| **背景行** | 保留 frozen/paused 专用底色（如 `ds-bg-paused`） | 整行有淡琥珀/淡天蓝底色 | 底色是**状态标记**而非数据语义色，在禁用时应保留以解释「为什么禁用」 |
+| **背景行** | `bg-card` 不透明底 + `background-image` tint 叠加 | 整行有淡琥珀/淡天蓝底色，完全不透明 | `ds-bg-paused` / `ds-bg-sky-500-8` 使用 `background-image: linear-gradient(...)` 不覆盖 `bg-card` 底色 |
 
 #### 为什么不用一刀切 `opacity-50` 全灰？
 

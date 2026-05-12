@@ -481,7 +481,7 @@
   }
 
   .ds-bg-paused {
-    background-color: rgb(var(--ds-paused-rgb) / 0.1);
+    background-image: linear-gradient(rgb(var(--ds-paused-rgb) / 0.1), rgb(var(--ds-paused-rgb) / 0.1));
   }
 
   .ds-bg-warning-row {
@@ -505,7 +505,7 @@
   }
 
   .ds-bg-sky-500-8 {
-    background-color: rgb(var(--ds-sky-500-rgb) / 0.08);
+    background-image: linear-gradient(rgb(var(--ds-sky-500-rgb) / 0.08), rgb(var(--ds-sky-500-rgb) / 0.08));
   }
 
   .ds-bg-teal-500-10 {
@@ -686,7 +686,7 @@
   }
 
   .dark .ds-bg-sky-500-8 {
-    background-color: rgb(var(--ds-sky-500-rgb) / 0.25);
+    background-image: linear-gradient(rgb(var(--ds-sky-500-rgb) / 0.25), rgb(var(--ds-sky-500-rgb) / 0.25));
   }
 
   .dark .ds-border-emerald-200 {

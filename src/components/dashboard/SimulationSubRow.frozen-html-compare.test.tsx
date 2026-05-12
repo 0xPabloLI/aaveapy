@@ -85,72 +85,65 @@ function renderDesktop(overrides: Partial<ReserveWithSpread>) {
   );
 }
 
-describe('Frozen — supply vs borrow EXACT HTML comparison', () => {
-  it('COMPACT: both supply and borrow rows have opacity-75 when frozen', () => {
+describe('Frozen/paused rows are fully opaque (no visual opacity reduction)', () => {
+  it('COMPACT: frozen rows have no opacity-75 or dark:opacity-60 classes', () => {
     const html = renderCompact({ isFrozen: true });
-
-    // Count opacity-75 dark:opacity-60 in supply rows vs borrow rows
-    const supplyBlock = html.substring(0, html.indexOf('Spread'));
-    const borrowBlock = html.substring(html.lastIndexOf('Spread') + 'Spread'.length);
-
-    const supplyOpacities = (supplyBlock.match(/opacity-75 dark:opacity-60/g) ?? []).length;
-    const borrowOpacities = (borrowBlock.match(/opacity-75 dark:opacity-60/g) ?? []).length;
-
-    console.log('COMPACT frozen: supply opacities =', supplyOpacities, 'borrow opacities =', borrowOpacities);
-    expect(supplyOpacities).toBe(borrowOpacities);
-    expect(supplyOpacities).toBeGreaterThan(0);
+    expect(html).not.toContain('opacity-75');
+    expect(html).not.toContain('dark:opacity-60');
   });
 
-  it('COMPACT: supplyDisabled only — only supply rows have opacity', () => {
+  it('COMPACT: paused rows have no opacity-75 or dark:opacity-60 classes', () => {
+    const html = renderCompact({ isPaused: true });
+    expect(html).not.toContain('opacity-75');
+    expect(html).not.toContain('dark:opacity-60');
+  });
+
+  it('COMPACT: supplyDisabled rows have no opacity-75 or dark:opacity-60 classes', () => {
     const html = renderCompact({ supplyDisabled: true });
-
-    const supplyBlock = html.substring(0, html.indexOf('Spread'));
-    const borrowBlock = html.substring(html.lastIndexOf('Spread') + 'Spread'.length);
-
-    const supplyOpacities = (supplyBlock.match(/opacity-75 dark:opacity-60/g) ?? []).length;
-    const borrowOpacities = (borrowBlock.match(/opacity-75 dark:opacity-60/g) ?? []).length;
-
-    console.log('COMPACT supplyDisabled: supply opacities =', supplyOpacities, 'borrow opacities =', borrowOpacities);
-    expect(supplyOpacities).toBeGreaterThan(0);
-    expect(borrowOpacities).toBe(0);
+    expect(html).not.toContain('opacity-75');
+    expect(html).not.toContain('dark:opacity-60');
   });
 
-  it('COMPACT: borrowDisabled only — only borrow rows have opacity', () => {
+  it('COMPACT: borrowDisabled rows have no opacity-75 or dark:opacity-60 classes', () => {
     const html = renderCompact({ borrowDisabled: true });
-
-    const supplyBlock = html.substring(0, html.indexOf('Spread'));
-    const borrowBlock = html.substring(html.lastIndexOf('Spread') + 'Spread'.length);
-
-    const supplyOpacities = (supplyBlock.match(/opacity-75 dark:opacity-60/g) ?? []).length;
-    const borrowOpacities = (borrowBlock.match(/opacity-75 dark:opacity-60/g) ?? []).length;
-
-    console.log('COMPACT borrowDisabled: supply opacities =', supplyOpacities, 'borrow opacities =', borrowOpacities);
-    expect(supplyOpacities).toBe(0);
-    expect(borrowOpacities).toBeGreaterThan(0);
+    expect(html).not.toContain('opacity-75');
+    expect(html).not.toContain('dark:opacity-60');
   });
 
-  it('DESKTOP: both supply and borrow columns have data-disabled="true" when frozen', () => {
+  it('DESKTOP: frozen rows — tbody has no group-data-[disabled]:opacity classes', () => {
     const html = renderDesktop({ isFrozen: true });
-
-    // Desktop format: <div data-disabled="true" class="group ..."> for each column
-    // Count data-disabled="true" near "group" class (column wrappers)
-    const count = (html.match(/data-disabled="true"/g) ?? []).length;
-
-    // Desktop: 2 column wrappers + tr rows inside each = 2 + supply_rows + borrow_rows
-    console.log('DESKTOP frozen: data-disabled count =', count);
-    expect(count).toBeGreaterThanOrEqual(8); // 2 wrappers + 4 supply tr + 4 borrow tr = 10
+    expect(html).not.toContain('group-data-[disabled]:opacity-75');
+    expect(html).not.toContain('dark:group-data-[disabled]:opacity-60');
   });
 
-  it('DESKTOP: supplyDisabled only — only supply column has data-disabled', () => {
-    const supplyHtml = renderDesktop({ supplyDisabled: true });
-    const borrowHtml = renderDesktop({ borrowDisabled: true });
+  it('DESKTOP: frozen rows — cap progress bars have no grayscale or opacity-50', () => {
+    const html = renderDesktop({ isFrozen: true });
+    expect(html).not.toContain('group-data-[disabled]:grayscale-[50%]');
+    expect(html).not.toContain('group-data-[disabled]:opacity-50');
+  });
 
-    const supplyCount = (supplyHtml.match(/data-disabled="true"/g) ?? []).length;
-    const borrowCount = (borrowHtml.match(/data-disabled="true"/g) ?? []).length;
+  it('DESKTOP: frozen rows — labels are not faded to text-muted-foreground', () => {
+    const html = renderDesktop({ isFrozen: true });
+    expect(html).not.toContain('group-data-[disabled]:text-muted-foreground');
+  });
 
-    console.log('DESKTOP supplyOnly: data-disabled count =', supplyCount);
-    console.log('DESKTOP borrowOnly: data-disabled count =', borrowCount);
-    expect(supplyCount).toBe(borrowCount);
-    expect(supplyCount).toBeGreaterThan(0);
+  it('DESKTOP: data-disabled semantic attribute is still present for accessibility', () => {
+    const html = renderDesktop({ isFrozen: true });
+    const count = (html.match(/data-disabled="true"/g) ?? []).length;
+    expect(count).toBeGreaterThanOrEqual(8);
+  });
+
+  it('DESKTOP: supplyDisabled only — data-disabled still present in supply column', () => {
+    const html = renderDesktop({ supplyDisabled: true });
+    const count = (html.match(/data-disabled="true"/g) ?? []).length;
+    expect(count).toBeGreaterThan(0);
+  });
+
+  it('DESKTOP: paused rows — same opacity-free guarantees as frozen', () => {
+    const html = renderDesktop({ isPaused: true });
+    expect(html).not.toContain('group-data-[disabled]:opacity-75');
+    expect(html).not.toContain('group-data-[disabled]:grayscale-[50%]');
+    expect(html).not.toContain('group-data-[disabled]:opacity-50');
+    expect(html).not.toContain('group-data-[disabled]:text-muted-foreground');
   });
 });

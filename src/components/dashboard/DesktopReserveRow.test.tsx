@@ -737,4 +737,118 @@ describe('DesktopReserveRow', () => {
     );
     expect(source).toMatch(/align="start"/);
   });
+
+  it('frozen row has bg-card opaque base + ds-bg-sky-500-8 tint overlay', () => {
+    const queryClient = new QueryClient();
+    const html = renderToString(
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Table>
+            <TableBody>
+              <DesktopReserveRow
+                reserve={{ ...reserve, isFrozen: true }}
+                reserveId="AaveV3Ethereum-0x0000000000000000000000000000000000000001"
+                isExpanded={false}
+                onToggleExpand={() => {}}
+                onIncentiveClick={() => {}}
+                displaySupplyTotal={2.9}
+                displaySupplyNative={2.5}
+                displaySupplyIncentive={0.4}
+                displayBorrowTotal={3.3}
+                displayBorrowNative={3.4}
+                displayBorrowIncentive={0.1}
+                displayUtilization={52}
+                spread={-0.4}
+                simulation={simulation}
+                supplyInput="1000"
+                borrowInput="500"
+                inputMode="usd"
+                isApy
+                isMobile={false}
+              />
+            </TableBody>
+          </Table>
+        </TooltipProvider>
+      </QueryClientProvider>,
+    );
+
+    expect(html).toContain('bg-card');
+    expect(html).toContain('ds-bg-sky-500-8');
+  });
+
+  it('paused row has bg-card opaque base + ds-bg-paused tint overlay', () => {
+    const queryClient = new QueryClient();
+    const html = renderToString(
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Table>
+            <TableBody>
+              <DesktopReserveRow
+                reserve={{ ...reserve, isPaused: true }}
+                reserveId="AaveV3Ethereum-0x0000000000000000000000000000000000000001"
+                isExpanded={false}
+                onToggleExpand={() => {}}
+                onIncentiveClick={() => {}}
+                displaySupplyTotal={2.9}
+                displaySupplyNative={2.5}
+                displaySupplyIncentive={0.4}
+                displayBorrowTotal={3.3}
+                displayBorrowNative={3.4}
+                displayBorrowIncentive={0.1}
+                displayUtilization={52}
+                spread={-0.4}
+                simulation={simulation}
+                supplyInput="1000"
+                borrowInput="500"
+                inputMode="usd"
+                isApy
+                isMobile={false}
+              />
+            </TableBody>
+          </Table>
+        </TooltipProvider>
+      </QueryClientProvider>,
+    );
+
+    expect(html).toContain('bg-card');
+    expect(html).toContain('ds-bg-paused');
+  });
+
+  it('expanded frozen row applies bg-card to all td cells', () => {
+    const queryClient = new QueryClient();
+    const html = renderToString(
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Table>
+            <TableBody>
+              <DesktopReserveRow
+                reserve={{ ...reserve, isFrozen: true }}
+                reserveId="AaveV3Ethereum-0x0000000000000000000000000000000000000001"
+                isExpanded
+                onToggleExpand={() => {}}
+                onIncentiveClick={() => {}}
+                displaySupplyTotal={2.9}
+                displaySupplyNative={2.5}
+                displaySupplyIncentive={0.4}
+                displayBorrowTotal={3.3}
+                displayBorrowNative={3.4}
+                displayBorrowIncentive={0.1}
+                displayUtilization={52}
+                spread={-0.4}
+                simulation={simulation}
+                supplyInput="1000"
+                borrowInput="500"
+                inputMode="usd"
+                isApy
+                isMobile={false}
+              />
+            </TableBody>
+          </Table>
+        </TooltipProvider>
+      </QueryClientProvider>,
+    );
+
+    expect(html).toContain('[&amp;_td]:bg-card');
+    expect(html).toContain('ds-bg-sky-500-8');
+  });
 });
