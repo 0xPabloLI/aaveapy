@@ -364,3 +364,106 @@ describe('resolveVisibleIncentiveBadgeValue', () => {
     expect(resolveVisibleIncentiveBadgeValue(0, minimalReserve, 'supply', true, 1)).toBe(null);
   });
 });
+
+describe('formatUsd', () => {
+  it('formats values >= 1000 with locale string and 2 decimal places', () => {
+    expect(formatters.formatUsd(1234.56)).toBe('$1,234.56');
+  });
+
+  it('formats values < 1000 with toFixed(2)', () => {
+    expect(formatters.formatUsd(999.99)).toBe('$999.99');
+  });
+
+  it('returns "-" for null', () => {
+    expect(formatters.formatUsd(null)).toBe('-');
+  });
+
+  it('returns "-" for undefined', () => {
+    expect(formatters.formatUsd(undefined)).toBe('-');
+  });
+
+  it('returns "-" for NaN', () => {
+    expect(formatters.formatUsd(NaN)).toBe('-');
+  });
+
+  it('formats zero as $0.00', () => {
+    expect(formatters.formatUsd(0)).toBe('$0.00');
+  });
+
+  it('formats large values with comma separators', () => {
+    expect(formatters.formatUsd(1_000_000)).toBe('$1,000,000.00');
+  });
+});
+
+describe('formatPercent', () => {
+  it('formats a normal percentage value', () => {
+    const result = formatters.formatPercent(5.23);
+    expect(result).toContain('5.23');
+  });
+
+  it('returns "-" for null', () => {
+    expect(formatters.formatPercent(null)).toBe('-');
+  });
+
+  it('returns "-" for undefined', () => {
+    expect(formatters.formatPercent(undefined)).toBe('-');
+  });
+
+  it('returns "-" for NaN', () => {
+    expect(formatters.formatPercent(NaN)).toBe('-');
+  });
+});
+
+describe('convertAprToApy', () => {
+  it('converts 0% APR to 0% APY', () => {
+    expect(convertAprToApy(0)).toBeCloseTo(0, 10);
+  });
+
+  it('converts positive APR to slightly higher APY due to compounding', () => {
+    const apy = convertAprToApy(12);
+    expect(apy).toBeGreaterThan(12);
+    expect(apy).toBeLessThan(13);
+  });
+
+  it('handles negative APR (compounding dampens the effect)', () => {
+    const apy = convertAprToApy(-5);
+    expect(apy).toBeLessThan(0);
+    expect(apy).toBeGreaterThan(-5);
+  });
+
+  it('handles very large APR', () => {
+    const apy = convertAprToApy(1000);
+    expect(apy).toBeGreaterThan(1000);
+    expect(Number.isFinite(apy)).toBe(true);
+  });
+});
+
+describe('formatReserveSizeUsd', () => {
+  it('formats billions with B suffix', () => {
+    expect(formatters.formatReserveSizeUsd(1_500_000_000)).toBe('$1.50B');
+  });
+
+  it('formats millions with M suffix', () => {
+    expect(formatters.formatReserveSizeUsd(5_200_000)).toBe('$5.20M');
+  });
+
+  it('formats thousands with K suffix', () => {
+    expect(formatters.formatReserveSizeUsd(18_800)).toBe('$18.80K');
+  });
+
+  it('formats sub-thousand without suffix', () => {
+    expect(formatters.formatReserveSizeUsd(999)).toBe('$999.00');
+  });
+
+  it('returns "-" for null', () => {
+    expect(formatters.formatReserveSizeUsd(null)).toBe('-');
+  });
+
+  it('returns "-" for undefined', () => {
+    expect(formatters.formatReserveSizeUsd(undefined)).toBe('-');
+  });
+
+  it('formats negative values with leading minus', () => {
+    expect(formatters.formatReserveSizeUsd(-18_800_000)).toBe('-$18.80M');
+  });
+});

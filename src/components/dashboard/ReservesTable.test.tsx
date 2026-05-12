@@ -310,3 +310,64 @@ describe('ReservesTable mobile bottom spacing', () => {
     expect(className).toMatch(/pb-\[calc\(env\(safe-area-inset-bottom,0px\)\+[0-2]rem\)\]/);
   });
 });
+
+describe('ReservesTable expand/collapse interaction', () => {
+  beforeEach(() => {
+    class MockIntersectionObserver {
+      observe() {}
+      disconnect() {}
+      unobserve() {}
+    }
+
+    class MockResizeObserver {
+      observe() {}
+      disconnect() {}
+      unobserve() {}
+    }
+
+    vi.stubGlobal('IntersectionObserver', MockIntersectionObserver);
+    vi.stubGlobal('ResizeObserver', MockResizeObserver);
+  });
+
+  it('toggles simulation panel on row click', () => {
+    renderWithQueryClient(
+      <ReservesTable
+        reserves={reserves}
+        sortField={null}
+        sortOrder="desc"
+        onSort={() => {}}
+        isApy
+        tydroPointToUsdRate={0}
+        whitelistMerklCampaignIds={new Set<string>()}
+        onToggleWhitelistMerklCampaign={() => {}}
+      />,
+    );
+    const toggleButtons = screen.getAllByText('toggle-USDC');
+    expect(screen.queryByTestId(`expanded-${reserves[0].reserveId}`)).not.toBeInTheDocument();
+    fireEvent.click(toggleButtons[0]);
+    expect(screen.getByTestId(`expanded-${reserves[0].reserveId}`)).toBeInTheDocument();
+    fireEvent.click(toggleButtons[0]);
+    expect(screen.queryByTestId(`expanded-${reserves[0].reserveId}`)).not.toBeInTheDocument();
+  });
+
+  it('expands a different row when clicking its toggle', () => {
+    renderWithQueryClient(
+      <ReservesTable
+        reserves={reserves}
+        sortField={null}
+        sortOrder="desc"
+        onSort={() => {}}
+        isApy
+        tydroPointToUsdRate={0}
+        whitelistMerklCampaignIds={new Set<string>()}
+        onToggleWhitelistMerklCampaign={() => {}}
+      />,
+    );
+    const usdcButtons = screen.getAllByText('toggle-USDC');
+    const usdtButtons = screen.getAllByText('toggle-USDT');
+    fireEvent.click(usdcButtons[0]);
+    expect(screen.getByTestId(`expanded-${reserves[0].reserveId}`)).toBeInTheDocument();
+    fireEvent.click(usdtButtons[0]);
+    expect(screen.getByTestId(`expanded-${reserves[1].reserveId}`)).toBeInTheDocument();
+  });
+});

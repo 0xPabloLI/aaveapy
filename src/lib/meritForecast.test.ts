@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { extractMeritSelfCapUsd, forecastMeritCampaign } from './meritForecast';
+import { extractMeritSelfCapUsd, forecastMeritCampaign, getMeritCampaignCycleDays } from './meritForecast';
 
 describe('extractMeritSelfCapUsd', () => {
   it('parses the Self-auth cap from structured Merit messages', () => {
@@ -13,6 +13,24 @@ describe('extractMeritSelfCapUsd', () => {
     ]);
 
     expect(cap).toBe(1000);
+  });
+
+  it('returns null when message has no Self reference', () => {
+    const cap = extractMeritSelfCapUsd([
+      { action: 'Base Reward', description: 'Standard merit reward.' },
+    ]);
+    expect(cap).toBeNull();
+  });
+
+  it('returns null for undefined message', () => {
+    expect(extractMeritSelfCapUsd(undefined)).toBeNull();
+  });
+
+  it('parses cap with comma-separated thousands when self and amount are on same line', () => {
+    const cap = extractMeritSelfCapUsd([
+      'Self Authentication: Supply and double your yield for the first $10,000 USDT supplied per user.',
+    ]);
+    expect(cap).toBe(10000);
   });
 });
 
@@ -80,5 +98,88 @@ describe('forecastMeritCampaign', () => {
     });
     expect(result?.apr).toBeCloseTo(0.0004084439890516138, 12);
     expect(result?.dailyRewards).toBeCloseTo((1000 * 0.04084439890516138) / 365, 10);
+  });
+
+  it('returns null for zero deposit', () => {
+    const result = forecastMeritCampaign({
+      mode: 'MERIT_BASE',
+      depositUsd: 0,
+      forecastAprPercent: 4,
+    });
+    expect(result).toBeNull();
+  });
+
+  it('returns null for negative deposit', () => {
+    const result = forecastMeritCampaign({
+      mode: 'MERIT_BASE',
+      depositUsd: -1000,
+      forecastAprPercent: 4,
+    });
+    expect(result).toBeNull();
+  });
+
+  it('returns null for zero APR', () => {
+    const result = forecastMeritCampaign({
+      mode: 'MERIT_BASE',
+      depositUsd: 100_000,
+      forecastAprPercent: 0,
+    });
+    expect(result).toBeNull();
+  });
+
+  it('returns null for MERIT_SELF_CAP with zero selfCapUsd', () => {
+    const result = forecastMeritCampaign({
+      mode: 'MERIT_SELF_CAP',
+      depositUsd: 100_000,
+      forecastAprPercent: 4,
+      selfCapUsd: 0,
+    });
+    expect(result).toBeNull();
+  });
+
+  it('clamps eligible deposit to selfCapUsd when deposit exceeds cap', () => {
+    const result = forecastMeritCampaign({
+      mode: 'MERIT_SELF_CAP',
+      depositUsd: 100_000,
+      forecastAprPercent: 4,
+      selfCapUsd: 1000,
+    });
+    expect(result).not.toBeNull();
+    expect(result?.selfEligibleUsd).toBe(1000);
+    expect(result?.selfCapUsd).toBe(1000);
+  });
+
+  it('uses anchorTvlUsd for MERIT_SELF_CAP base estimate', () => {
+    const result = forecastMeritCampaign({
+      mode: 'MERIT_SELF_CAP',
+      depositUsd: 100_000,
+      forecastAprPercent: 4,
+      selfCapUsd: 1000,
+      baseAprPercent: 3,
+      anchorTvlUsd: 5_000_000,
+    });
+    expect(result).not.toBeNull();
+    expect(result?.estimateKind).toBe('MERIT_SELF_CAP');
+    expect(result?.meritEstimateSource).toBe('reserve_tvl');
+  });
+});
+
+describe('getMeritCampaignCycleDays', () => {
+  it('computes days between start and end date', () => {
+    const days = getMeritCampaignCycleDays('2026-02-26', '2026-03-12');
+    expect(days).not.toBeNull();
+    expect(days!).toBeGreaterThan(0);
+  });
+
+  it('returns null for undefined dates', () => {
+    expect(getMeritCampaignCycleDays(undefined, undefined)).toBeNull();
+  });
+
+  it('returns null when end is before start', () => {
+    expect(getMeritCampaignCycleDays('2026-03-12', '2026-02-26')).toBeNull();
+  });
+
+  it('returns null for invalid date strings', () => {
+    expect(getMeritCampaignCycleDays('not-a-date', 'also-not-a-date')).toBeNull();
   });
 });
