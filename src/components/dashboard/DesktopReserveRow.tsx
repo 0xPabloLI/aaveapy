@@ -229,9 +229,10 @@ const DesktopReserveRow = memo(({
           isExpanded && 'bg-muted/30',
           isExpanded &&
             '[&_td]:sticky [&_td]:z-[25] [&_td]:border-b [&_td]:border-border/60 [&_td]:shadow-[0_1px_2px_0_rgb(0_0_0/0.04)] [&_td]:[top:var(--reserves-expanded-main-row-top,5.75rem)]',
-          isExpanded && !reserve.isPaused && !reserve.isFrozen && '[&_td]:bg-card',
+          isExpanded && '[&_td]:bg-card',
           isExpanded && reserve.isPaused && '[&_td]:ds-bg-paused',
           isExpanded && !reserve.isPaused && reserve.isFrozen && '[&_td]:ds-bg-sky-500-8',
+          (reserve.isPaused || reserve.isFrozen) && 'bg-card',
           reserve.isPaused && 'ds-bg-paused',
           (!reserve.isPaused && reserve.isFrozen) && 'ds-bg-sky-500-8',
         )}

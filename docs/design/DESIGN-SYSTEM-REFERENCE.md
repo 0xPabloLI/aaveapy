@@ -128,6 +128,7 @@
 - **字体**：Sans 用于正文与 UI，Mono 用于代码/数值；可选用同一字族的不同 weight。
 - **字号尺度**：统一使用设计 token（如 `ds-text-11` ~ `ds-text-24`），避免随意 `text-sm`/`text-base` 混用。
 - **数值**：一律 `tabular-nums` 保证对齐。
+- **数值溢出：硬切，不省略（强制）**：已通过 `formatReserveSizeUsd` / `formatReserveSizeToken` 缩写为 K/M/B 格式的金额/数量值（如 `$123.45M`、`1.08B`），移动端空间不足时必须使用 `overflow-hidden whitespace-nowrap`（硬切），**禁止**使用 `truncate` / `text-overflow: ellipsis`（尾部省略号）。省略号 `…` 在金融数值上会造成歧义（`$123.4…` 是 `$123.40M` 还是 `$123.45M` 无法分辨），硬切优于省略号。文本标签（market name、hub name 等）不受此条约束，可继续使用 `truncate`。
 - **文字与边框**：**强制** — 所有带边框的容器（卡片、表格单元格、警告条、按钮）内，文字与边框之间至少保留 8px（`--ds-space-2`）内边距，不得贴边。
 - **文字与箭头/图标**：**强制** — 文字与紧邻的箭头、chevron、展开/收起图标之间必须留有呼吸空间，使用 `gap-[var(--ds-space-1)]`（4px）或 `gap-[var(--ds-space-1-5)]`（6px）。等效的 Tailwind 简写 `gap-1` / `gap-1.5` 亦可。禁止文字与箭头紧贴（如 `gap-0` 或无 gap 的 flex）。此规则适用于：下拉按钮（如 Size ⌄）、下拉菜单选项、排序选项、展开指示器、导航箭头等所有文字+图标的组合。
 - **Token symbol 优先单行 + 放不下时换行（强制）**：所有端（桌面 + 移动）的 token symbol 必须**优先单行完整显示**；只有在真实可用宽度不足时，才**允许换行到下一行**继续显示完整 symbol（CSS：`break-words` + `min-w-0`，由 flex 父级配合 `flex w-full min-w-0`）。**禁止**对 short symbol 做提前缩写（如 `USDT` → `U...`），**禁止**使用 `truncate` / 尾部省略号、`break-all`、逐字符换行或中间截断。这是\"优先单行、放不下时换行（never truncate）\"的统一规则，覆盖之前\"放不下时尾部省略\"的旧约定。

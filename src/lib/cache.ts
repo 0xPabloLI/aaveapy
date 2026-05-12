@@ -87,21 +87,24 @@ export function clearLegacyCacheEntries(storage: StorageLike = localStorage): vo
 
 // Markets cache
 type DeficitFields = { deficit?: string | null; tokenPrice?: number | null };
-const isDeficitWithoutPrice = (r: DeficitFields): boolean =>
+export const isDeficitWithoutPrice = (r: DeficitFields): boolean =>
   !!r.deficit && r.deficit !== '0' && r.deficit !== '' &&
   (r.tokenPrice == null || !Number.isFinite(r.tokenPrice) || r.tokenPrice <= 0);
+
+export function sanitizeDeficitWithoutPrice(data: MarketsResponse): void {
+  const reserves = data?.reserves;
+  if (!Array.isArray(reserves)) return;
+  for (const r of reserves) {
+    if (isDeficitWithoutPrice(r)) {
+      r.deficit = '';
+    }
+  }
+}
 
 export function getCachedMarketsEntry(): CachedPayload<MarketsResponse> | null {
   const entry = getCacheEntry<MarketsResponse>(CACHE_KEYS.MARKETS);
   if (!entry) return null;
-  const reserves = entry.data?.reserves;
-  if (Array.isArray(reserves) && reserves.some((r) => isDeficitWithoutPrice(r))) {
-    for (const r of reserves) {
-      if (isDeficitWithoutPrice(r)) {
-        r.deficit = '';
-      }
-    }
-  }
+  sanitizeDeficitWithoutPrice(entry.data);
   return entry;
 }
 

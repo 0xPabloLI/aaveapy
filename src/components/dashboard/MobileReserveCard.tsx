@@ -24,11 +24,8 @@ import AssetActionMenu from './AssetActionMenu';
 import DeficitShieldIcon from './DeficitShieldIcon';
 import DeficitLiquidityRing, { DeficitProgressContent } from './DeficitLiquidityRing';
 import {
-  calculateDeficitShareRatio,
-  formatReserveDeficitTokenCompact,
-  getDeficitSeverity,
-  getReserveDeficitUsdAmount,
-  hasReserveDeficit,
+  computeDeficitDisplay,
+  type DeficitDisplay,
 } from '@/lib/deficit';
 import { RateSimulationResult } from '@/hooks/useRateSimulation';
 
@@ -47,8 +44,7 @@ interface MobileCapSheetProps {
   displayReserveSizeUsd: number | null;
   displayUtilization: number | null;
   optimalPct: number | null;
-  deficitUsd: number | null | undefined;
-  deficitTokenLabel: string | undefined;
+  deficitDisplay: DeficitDisplay;
   inputMode: 'usd' | 'token';
   displayTokenPrice: number | null;
   totalBorrowedUsd: number | null;
@@ -62,8 +58,7 @@ function MobileCapSheet({
   displayReserveSizeUsd,
   displayUtilization,
   optimalPct,
-  deficitUsd,
-  deficitTokenLabel,
+  deficitDisplay,
   inputMode,
   displayTokenPrice,
   totalBorrowedUsd,
@@ -105,11 +100,11 @@ function MobileCapSheet({
     utilization: optimalPct != null && displayUtilization != null ? (
       <UtilizationContent current={displayUtilization} optimal={optimalPct} />
     ) : null,
-    deficit: deficitUsd != null ? (
+    deficit: deficitDisplay.hasDeficit ? (
       <DeficitProgressContent
-        deficitUsd={deficitUsd}
+        deficitUsd={deficitDisplay.deficitUsd!}
         totalSuppliedUsd={displayReserveSizeUsd}
-        tokenDeficitLabel={deficitTokenLabel}
+        tokenDeficitLabel={deficitDisplay.deficitTokenLabel}
         displayMode={inputMode}
         tokenPrice={displayTokenPrice}
         tokenSymbol={reserve.tokenSymbol}
@@ -249,7 +244,7 @@ function MobileReserveAmountRow({
               aria-label="Show supply cap details"
               onClick={onShowSupplyCap}
             >
-              <span className="ds-text-13 font-medium tabular-nums leading-none truncate">
+              <span className="ds-text-13 font-medium tabular-nums leading-none overflow-hidden whitespace-nowrap">
                 {formatScenarioSize(displayReserveSizeUsd, {
                   inputMode,
                   tokenPrice: displayTokenPrice,
@@ -268,7 +263,7 @@ function MobileReserveAmountRow({
               />
             </button>
           ) : (
-            <span className="ds-text-13 font-medium tabular-nums leading-none ds-text-emerald-500 truncate">
+            <span className="ds-text-13 font-medium tabular-nums leading-none ds-text-emerald-500 overflow-hidden whitespace-nowrap">
               {formatScenarioSize(displayReserveSizeUsd, {
                 inputMode,
                 tokenPrice: displayTokenPrice,
@@ -297,7 +292,7 @@ function MobileReserveAmountRow({
             aria-label="Show borrow cap details"
             onClick={onShowBorrowCap}
           >
-            <span className="ds-text-13 font-medium tabular-nums leading-none truncate">
+            <span className="ds-text-13 font-medium tabular-nums leading-none overflow-hidden whitespace-nowrap">
               {formatScenarioSize(totalBorrowedUsd, {
                 inputMode,
                 tokenPrice: displayTokenPrice,
@@ -318,7 +313,7 @@ function MobileReserveAmountRow({
             />
           </button>
         ) : (
-          <span className="ds-text-13 font-medium tabular-nums leading-none ds-text-brand-cyan truncate">
+          <span className="ds-text-13 font-medium tabular-nums leading-none ds-text-brand-cyan overflow-hidden whitespace-nowrap">
             {formatScenarioSize(totalBorrowedUsd, {
               inputMode,
               tokenPrice: displayTokenPrice,
@@ -582,16 +577,13 @@ const MobileReserveCard = memo(({
   const availableLiquidityUsd = useBorrowAfter
     ? simulation?.marketMetrics.availableLiquidityUsdAfter ?? baseAvailableLiquidityUsd
     : baseAvailableLiquidityUsd;
-  const hasDeficit = hasReserveDeficit(reserve);
-  const deficitUsd = getReserveDeficitUsdAmount(reserve, displayTokenPrice);
-  const deficitTokenCompact = formatReserveDeficitTokenCompact(reserve);
-  const deficitTokenLabel = deficitTokenCompact !== '-' ? deficitTokenCompact : undefined;
-  const deficitShareRatio = calculateDeficitShareRatio({
+  const deficitDisplay = computeDeficitDisplay(reserve, displayTokenPrice, displayReserveSizeUsd, inputMode);
+  const {
+    hasDeficit,
     deficitUsd,
-    totalSuppliedUsd: displayReserveSizeUsd,
-  });
-  const deficitSeverity = getDeficitSeverity(deficitShareRatio);
-  const isNeutralDeficit = deficitSeverity === 'neutral';
+    deficitShareRatio,
+    isNeutralDeficit,
+  } = deficitDisplay;
 
   if (variant === 'simulationOnly') {
     return (
@@ -812,7 +804,7 @@ const MobileReserveCard = memo(({
               transition={{ duration: 0.18, ease: [0.25, 0.1, 0.25, 1] }}
               className="relative mt-0.5"
             >
-              {activeTab === 'supply' && hasDeficit && deficitUsd != null && (
+              {activeTab === 'supply' && hasDeficit && (
                 <div
                   className="absolute -top-1.5 right-4 z-10 cursor-pointer"
                   role="button"
@@ -822,7 +814,7 @@ const MobileReserveCard = memo(({
                   aria-label={`Deficit details for ${reserve.tokenSymbol}`}
                 >
                   <DeficitLiquidityRing
-                    deficitUsd={deficitUsd}
+                    deficitUsd={deficitUsd!}
                     totalSuppliedUsd={displayReserveSizeUsd}
                     displayMode={inputMode}
                     ringSize={11}
@@ -882,8 +874,7 @@ const MobileReserveCard = memo(({
               displayReserveSizeUsd={displayReserveSizeUsd}
               displayUtilization={displayUtilization}
               optimalPct={optimalPct}
-              deficitUsd={deficitUsd}
-              deficitTokenLabel={deficitTokenLabel}
+              deficitDisplay={deficitDisplay}
               inputMode={inputMode}
               displayTokenPrice={displayTokenPrice}
               totalBorrowedUsd={totalBorrowedUsd}

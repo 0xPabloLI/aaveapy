@@ -4,6 +4,7 @@ import {
   getCachedMarkets,
   setCachedMarkets,
   getCachedMarketsEntry,
+  sanitizeDeficitWithoutPrice,
 } from '@/lib/cache';
 import { API_BASE } from '@/lib/apiBase';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
@@ -21,7 +22,7 @@ export const fetchMarkets = async (): Promise<MarketsResponse> => {
       throw new Error(`Invalid markets response: ${parsed.error.message}`);
     }
     const data = parsed.data as MarketsResponse;
-    // Save to cache on success
+    sanitizeDeficitWithoutPrice(data);
     setCachedMarkets(data);
     return data;
   } catch (error) {
