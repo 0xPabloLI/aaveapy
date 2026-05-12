@@ -210,6 +210,7 @@ Set on the desktop table card (`desktopTableCardRef` in `ReservesTable.tsx`). **
   - This prevents the app from being "locked" to a manual choice after the user toggled once.
   - Implementation: `ThemeToggle.tsx` listens to `matchMedia('(prefers-color-scheme: dark)')` change events.
 - **Resource cost**: the `matchMedia` listener is event-driven (not polling), triggers only on actual OS theme change, and has negligible overhead.
+- **Theme transition CSS**: the `theme-transition` class is applied to `<html>` and `<body>` only (not `*` wildcard), limiting per-element transition computation to 2 nodes instead of the entire DOM tree. The class is removed after 350ms to avoid ongoing overhead.
 
 ### Link generation
 

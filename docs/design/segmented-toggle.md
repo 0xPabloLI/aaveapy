@@ -80,7 +80,33 @@
 - `src/components/dashboard/ScenarioControls.tsx` — 移动端 USD/Token（`vertical` + `self-stretch`）；桌面 APR/APY。
 - `src/components/dashboard/PortfolioPanel.tsx` 等位置使用 `horizontal` 默认形态。
 
-## 8. 修改清单
+## 8. 设计系统 Token 映射
+
+> 定义于 `src/index.css` `:root`，以 `--ds-seg-` 命名空间统一管理。
+
+| Token | 默认值 | 用途 | 原硬编码 |
+| --- | --- | --- | --- |
+| `--ds-seg-track-h` | `2rem` | 横向 default 容器高度 | `h-8` |
+| `--ds-seg-track-pad` | `3px` | default 容器内边距 | `p-[3px]` |
+| `--ds-seg-chip-track-pad` | `2px` | chip 容器内边距 | `p-[2px]` |
+| `--ds-seg-seg-min-h` | `1.75rem` | 纵向 default 段最小高度 | `min-h-[28px]` |
+| `--ds-seg-seg-min-w` | `3.5rem` | 横向 default 段最小宽度 | `min-w-[56px]` |
+| `--ds-seg-chip-seg-min-w` | `2.625rem` | 横向 chip 段最小宽度 | `min-w-[42px]` |
+| `--ds-seg-seg-pad-x` | `0.75rem` | 横向 default 段水平内边距 | `px-3` |
+| `--ds-seg-seg-pad-y-pad-x` | `0.625rem` | 纵向 default 段水平内边距 | `px-2.5` |
+| `--ds-seg-chip-seg-pad-x` | `0.5rem` | chip 段水平内边距（横/纵共用） | `px-2` |
+| `--ds-seg-gap` | `0.125rem` | 段间间距 | `gap-0.5` |
+
+**复用已有 token**（非 seg 命名空间）：
+
+| Token | 默认值 | 用途 |
+| --- | --- | --- |
+| `--ds-chip-h` | `1.75rem` | chip 模式容器高度 & 纵向 chip 段最小高度 |
+| `--ds-shadow-rgb` | `0 0 0` | 指示器阴影 RGB 通道 |
+
+**修改指引**：调整 toggle 尺寸/间距时只改 token 值，不改组件类名。例如纵向段需要更宽触控区时，增大 `--ds-seg-seg-min-h` 即可全局生效。
+
+## 9. 修改清单
 
 修改本组件前请确认：
 

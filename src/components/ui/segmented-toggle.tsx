@@ -95,12 +95,12 @@ export function SegmentedToggle<T extends string = string>({
         isVertical ? 'rounded-2xl' : 'rounded-full',
         isChip
           ? isVertical
-            ? 'p-[2px]'
-            : 'h-[var(--ds-chip-h)] p-[2px]'
+            ? 'p-[var(--ds-seg-chip-track-pad)]'
+            : 'h-[var(--ds-chip-h)] p-[var(--ds-seg-chip-track-pad)]'
           : isVertical
-            ? 'p-[3px]'
-            : 'h-8 p-[3px]',
-        'gap-0.5',
+            ? 'p-[var(--ds-seg-track-pad)]'
+            : 'h-[var(--ds-seg-track-h)] p-[var(--ds-seg-track-pad)]',
+        'gap-[var(--ds-seg-gap)]',
         className,
       )}
       style={
@@ -150,11 +150,11 @@ export function SegmentedToggle<T extends string = string>({
               // horizontal keeps a pill min-width so two segments don't collapse.
               isVertical
                 ? isChip
-                  ? 'min-w-0 px-2 text-[11px] h-full min-h-[var(--ds-chip-h)]'
-                  : 'min-w-0 px-2.5 text-[12px] h-full min-h-[28px]'
+                  ? 'min-w-0 px-[var(--ds-seg-chip-seg-pad-x)] text-[11px] h-full min-h-[var(--ds-chip-h)]'
+                  : 'min-w-0 px-[var(--ds-seg-seg-pad-y-pad-x)] text-[12px] h-full min-h-[var(--ds-seg-seg-min-h)]'
                 : isChip
-                  ? 'min-w-[42px] px-2 text-[11px] h-full'
-                  : 'min-w-[56px] px-3 text-[12px] h-full',
+                  ? 'min-w-[var(--ds-seg-chip-seg-min-w)] px-[var(--ds-seg-chip-seg-pad-x)] text-[11px] h-full'
+                  : 'min-w-[var(--ds-seg-seg-min-w)] px-[var(--ds-seg-seg-pad-x)] text-[12px] h-full',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
               isActive ? `font-semibold ${activeTextClassName}` : 'text-muted-foreground hover:text-foreground',
             )}

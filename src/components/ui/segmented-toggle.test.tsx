@@ -103,4 +103,22 @@ describe('SegmentedToggle (vertical)', () => {
       expect(btn.getAttribute('disabled')).toBeNull();
     });
   });
+
+  // ─── design-system token presence ──────────────────────────
+
+  it('applies ds-seg-* CSS variable classes on the track', () => {
+    render(<Harness />);
+    const group = screen.getByRole('radiogroup');
+    const classList = group.className;
+    expect(classList).toContain('ds-seg-track-pad');
+    expect(classList).toContain('ds-seg-gap');
+  });
+
+  it('applies ds-seg-* CSS variable classes on segments', () => {
+    render(<Harness />);
+    const radios = screen.getAllByRole('radio');
+    const classList = radios[0].className;
+    expect(classList).toContain('ds-seg-seg-min-h');
+    expect(classList).toContain('ds-seg-seg-pad');
+  });
 });

@@ -884,16 +884,13 @@
   }
 
   /* Smooth theme transition for all color-related properties */
-  html.theme-transition,
-  html.theme-transition *,
-  html.theme-transition *::before,
-  html.theme-transition *::after {
+  html.theme-transition {
     transition: background-color 300ms ease-out,
-                border-color 300ms ease-out,
-                color 200ms ease-out,
-                fill 200ms ease-out,
-                stroke 200ms ease-out,
-                box-shadow 300ms ease-out !important;
+                color 200ms ease-out !important;
+  }
+  html.theme-transition body {
+    transition: background-color 300ms ease-out,
+                color 200ms ease-out !important;
   }
 }
 
