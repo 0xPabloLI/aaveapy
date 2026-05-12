@@ -83,6 +83,11 @@ type SortableColumn = 'token' | 'price' | 'market' | 'size' | 'util' | 'supply' 
 
 const DEFAULT_VISIBLE_COUNT = 20;
 
+// Stable sentinel used as a gate dependency for `sortedData` when the active
+// sort column does not read simulation values. Sharing one frozen reference
+// across renders lets `useMemo` skip recomputing on simulation churn.
+const EMPTY_SIMULATIONS_GATE: Readonly<Record<string, unknown>> = Object.freeze({});
+
 const ReservesTable = ({
   reserves,
   sortField,
@@ -304,9 +309,13 @@ const ReservesTable = ({
     };
   }, [isMobile]);
 
-  // Helper: Get incentive values for a reserve (supply or borrow)
+  // Helper: Get incentive values for a reserve (supply or borrow).
+  // `forecastStates` is included here so the fallback path (used when
+  // `simulationsById` is the stable empty object — i.e. no scenario input)
+  // matches the previous behavior of `buildIncentiveCurrent`, which always
+  // factored Merkl forecast adjustments into "current" incentive values.
   const getIncentiveValues = (reserve: ReserveWithSpread, type: 'supply' | 'borrow') =>
-    getReserveIncentiveValues(reserve, type, tydroPointToUsdRate, { whitelistMerklCampaignIds });
+    getReserveIncentiveValues(reserve, type, tydroPointToUsdRate, { whitelistMerklCampaignIds, forecastStates });
 
   // Calculate totals for a reserve (frontend calculates incentive totals from details)
   const getTotalSupplyApy = (reserve: ReserveWithSpread): number | null => {
@@ -458,6 +467,17 @@ const ReservesTable = ({
     });
   };
 
+  // Token/market/price sort bodies never read `simulation` — they only compare
+  // raw reserve fields. Gating the simulation dep behind the active sort column
+  // prevents background simulation churn (e.g. price-query refreshes during an
+  // open scenario) from triggering a needless full re-sort + table re-render
+  // when the user is sorting alphabetically or by raw price.
+  const sortNeedsSimulation = useMemo(() => {
+    const col = activeSortColumn ?? 'supply';
+    return col !== 'token' && col !== 'market' && col !== 'price';
+  }, [activeSortColumn]);
+  const sortedDataSimGate = sortNeedsSimulation ? simulationsById : EMPTY_SIMULATIONS_GATE;
+
   // Sort data based on active column and its sort mode
   const sortedData = useMemo(() => {
     return [...reserves].sort((a, b) => {
@@ -604,8 +624,11 @@ const ReservesTable = ({
         return spreadSortOrder === 'desc' ? comparison : -comparison;
       }
     });
+  // sortedDataSimGate replaces a raw `simulationsById` dep so token/market/price
+  // sorts (which never touch simulation) skip needless re-sorts when background
+  // sim/price queries resolve. Other deps preserved verbatim from original.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reserves, activeSortColumn, tokenSortOrder, marketSortOrder, priceSortOrder, sizeSortMode, sizeSortOrder, utilSortMode, utilSortOrder, supplySortMode, supplySortOrder, borrowSortMode, borrowSortOrder, spreadSortOrder, simulationsById, hasSharedScenario, isApy, tydroPointToUsdRate, whitelistMerklCampaignIds, debouncedSharedSupplyInput, debouncedSharedBorrowInput, sharedInputMode, meritMerklNetPosition]);
+  }, [reserves, activeSortColumn, tokenSortOrder, marketSortOrder, priceSortOrder, sizeSortMode, sizeSortOrder, utilSortMode, utilSortOrder, supplySortMode, supplySortOrder, borrowSortMode, borrowSortOrder, spreadSortOrder, sortedDataSimGate, hasSharedScenario, isApy, tydroPointToUsdRate, whitelistMerklCampaignIds, debouncedSharedSupplyInput, debouncedSharedBorrowInput, sharedInputMode, meritMerklNetPosition]);
 
   /**
    * Simulation pin scroll — normative spec + implementation steps:

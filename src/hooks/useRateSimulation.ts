@@ -1658,6 +1658,42 @@ const buildEmptyRateSimulationResult = (
   forecastErrors: {},
 });
 
+// Stable empty references shared across no-op renders so consumer useMemos
+// do not re-run when nothing material changed.
+const EMPTY_PRICE_LOADING_LIST: readonly boolean[] = Object.freeze([]) as readonly boolean[];
+
+/**
+ * Build a stable structural signature for the price values returned by
+ * `useQueries`. JSON.stringify (over a normalized array) is used instead of
+ * a delimiter join to eliminate any theoretical ambiguity in this
+ * financial-display path — e.g. avoiding "[1, 23] vs [12, 3]" collisions
+ * if the price type ever broadens beyond `number|null`.
+ *
+ * Exported for unit tests; `priceDataKey` consumers should treat the result
+ * as opaque.
+ */
+export const buildPriceDataSignature = (
+  prices: ReadonlyArray<{ data?: number | null }>,
+): string =>
+  JSON.stringify(prices.map((q) => (q.data == null ? null : q.data)));
+
+/**
+ * Build a stable structural signature for the loading state of the price
+ * queries. When `needsTokenPrice` is false, no consumer reads the loading
+ * map, so we collapse to an empty signature for ref stability.
+ *
+ * Exported for unit tests.
+ */
+export const buildPriceLoadingSignature = (
+  prices: ReadonlyArray<{ isPending?: boolean; isFetching?: boolean }>,
+  needsTokenPrice: boolean,
+): string =>
+  JSON.stringify(
+    needsTokenPrice
+      ? prices.map((q) => Boolean(q.isPending || q.isFetching))
+      : EMPTY_PRICE_LOADING_LIST,
+  );
+
 export const useSharedRateSimulations = ({
   reserves,
   isApy,
@@ -1706,6 +1742,23 @@ export const useSharedRateSimulations = ({
     }),
   });
 
+  // `useQueries` returns a fresh array reference every render even when the
+  // underlying data is unchanged. Deriving stable structural signatures from
+  // the actual data/loading values lets `tokenPriceById` /
+  // `tokenPriceLoadingById` (and the downstream `simulationsById`) skip
+  // rebuilding on background re-renders triggered by unrelated state, removing
+  // a major source of ReservesTable re-render churn.
+  // See `buildPriceDataSignature` / `buildPriceLoadingSignature` for the
+  // collision-resistant signature contract (covered by unit tests).
+  const priceDataKey = useMemo(
+    () => buildPriceDataSignature(priceQueries),
+    [priceQueries],
+  );
+  const priceLoadingKey = useMemo(
+    () => buildPriceLoadingSignature(priceQueries, needsTokenPrice),
+    [needsTokenPrice, priceQueries],
+  );
+
   const tokenPriceById = useMemo(() => {
     const map: Record<string, number | undefined> = {};
     reserves.forEach((reserve, index) => {
@@ -1713,7 +1766,9 @@ export const useSharedRateSimulations = ({
       map[getReserveSimulationId(reserve)] = localPrice ?? priceQueries[index]?.data ?? undefined;
     });
     return map;
-  }, [priceQueries, reserves, tokenPrices]);
+    // priceQueries is intentionally referenced via priceDataKey to avoid ref-only churn.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [priceDataKey, reserves, tokenPrices]);
 
   const tokenPriceLoadingById = useMemo(() => {
     const map: Record<string, boolean> = {};
@@ -1725,7 +1780,9 @@ export const useSharedRateSimulations = ({
         Boolean(priceQueries[index]?.isPending || priceQueries[index]?.isFetching);
     });
     return map;
-  }, [needsTokenPrice, priceQueries, reserves, tokenPrices]);
+    // priceQueries is intentionally referenced via priceLoadingKey to avoid ref-only churn.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [needsTokenPrice, priceLoadingKey, reserves, tokenPrices]);
 
   // Get forecast data directly from side-data-meta (prefetched in App.tsx)
   const sideDataMetaQuery = useSideDataMeta(QUERY_STALE_TIMES.sideDataMeta);

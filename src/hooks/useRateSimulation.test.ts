@@ -6,7 +6,7 @@ import type {
   ReserveWithSpread,
 } from '@/types/aave';
 import type { RateCalcInput } from '@/lib/interestRateCalculator';
-import { buildForecastMerklOpportunities, buildRateSimulationResult } from '@/hooks/useRateSimulation';
+import { buildForecastMerklOpportunities, buildRateSimulationResult, buildPriceDataSignature, buildPriceLoadingSignature } from '@/hooks/useRateSimulation';
 
 const baseReserve: ReserveWithSpread & RateCalcInput = {
   reserveId: 'Core-0x0000000000000000000000000000000000000001',
@@ -1486,5 +1486,105 @@ describe('buildRateSimulationResult', () => {
 
     // dutch1 excluded, fix1 has forecast, fix2 missing forecast
     expect(result.forecastUnavailableCampaignCount).toBe(1);
+  });
+});
+
+/**
+ * Regression coverage for the perf optimization that replaced the unstable
+ * `priceQueries` array dep with stable structural signatures.
+ *
+ * Invariants under test:
+ *  - same logical price set → same signature (memo skip)
+ *  - any value change → different signature (memo invalidate)
+ *  - null vs undefined collapsed to same signature (transport quirk)
+ *  - structural encoding is collision-resistant for ordering / digit boundaries
+ *  - loading signature collapses to constant when consumer wouldn't read it
+ */
+describe('buildPriceDataSignature', () => {
+  it('produces identical signatures for identical price values across new array refs', () => {
+    const a = buildPriceDataSignature([{ data: 1 }, { data: 2.5 }, { data: null }]);
+    const b = buildPriceDataSignature([{ data: 1 }, { data: 2.5 }, { data: null }]);
+    expect(a).toBe(b);
+  });
+
+  it('treats null and undefined as equivalent (transport may emit either)', () => {
+    const withNull = buildPriceDataSignature([{ data: null }]);
+    const withUndef = buildPriceDataSignature([{ data: undefined }]);
+    const missing = buildPriceDataSignature([{}]);
+    expect(withNull).toBe(withUndef);
+    expect(withUndef).toBe(missing);
+  });
+
+  it('produces a different signature when any single price changes', () => {
+    const before = buildPriceDataSignature([{ data: 1 }, { data: 2 }, { data: 3 }]);
+    const after = buildPriceDataSignature([{ data: 1 }, { data: 2.0001 }, { data: 3 }]);
+    expect(before).not.toBe(after);
+  });
+
+  it('produces a different signature when price ordering changes', () => {
+    const a = buildPriceDataSignature([{ data: 1 }, { data: 2 }]);
+    const b = buildPriceDataSignature([{ data: 2 }, { data: 1 }]);
+    expect(a).not.toBe(b);
+  });
+
+  it('produces a different signature when array length changes', () => {
+    const shorter = buildPriceDataSignature([{ data: 1 }, { data: 2 }]);
+    const longer = buildPriceDataSignature([{ data: 1 }, { data: 2 }, { data: null }]);
+    expect(shorter).not.toBe(longer);
+  });
+
+  it('does NOT collide on digit-boundary cases that a delimiter join could fold', () => {
+    // [1, 23] and [12, 3] would both serialize to "1|23" / "12|3" with a join
+    // delimiter — JSON encoding makes the boundary unambiguous.
+    const a = buildPriceDataSignature([{ data: 1 }, { data: 23 }]);
+    const b = buildPriceDataSignature([{ data: 12 }, { data: 3 }]);
+    expect(a).not.toBe(b);
+  });
+
+  it('handles empty input deterministically', () => {
+    expect(buildPriceDataSignature([])).toBe(buildPriceDataSignature([]));
+  });
+});
+
+describe('buildPriceLoadingSignature', () => {
+  it('collapses to a stable empty signature when needsTokenPrice is false', () => {
+    const a = buildPriceLoadingSignature(
+      [{ isPending: true }, { isFetching: true }, {}],
+      false,
+    );
+    const b = buildPriceLoadingSignature(
+      [{}, {}, {}],
+      false,
+    );
+    // Loading state is irrelevant to consumers when not in token-price mode,
+    // so the signature should not change with it.
+    expect(a).toBe(b);
+  });
+
+  it('reflects loading flags when needsTokenPrice is true', () => {
+    const idle = buildPriceLoadingSignature([{}, {}], true);
+    const someLoading = buildPriceLoadingSignature(
+      [{ isPending: true }, {}],
+      true,
+    );
+    expect(idle).not.toBe(someLoading);
+  });
+
+  it('treats isPending and isFetching as equivalent loading sources', () => {
+    const pending = buildPriceLoadingSignature([{ isPending: true }], true);
+    const fetching = buildPriceLoadingSignature([{ isFetching: true }], true);
+    expect(pending).toBe(fetching);
+  });
+
+  it('produces stable signatures across calls with identical input', () => {
+    const a = buildPriceLoadingSignature(
+      [{ isPending: true }, { isFetching: false }, {}],
+      true,
+    );
+    const b = buildPriceLoadingSignature(
+      [{ isPending: true }, { isFetching: false }, {}],
+      true,
+    );
+    expect(a).toBe(b);
   });
 });

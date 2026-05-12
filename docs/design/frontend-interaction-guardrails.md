@@ -361,6 +361,54 @@ When tooltip/forecast behavior looks wrong, check:
 - Hide downstream source rows when both current and simulated values are effectively zero.
 - Use fixed numeric column widths so placeholders align with headers.
 
+### Performance: simulation/sort dependency stability — MANDATORY
+
+The shared simulation pipeline must preserve referential stability so unrelated
+React re-renders do not trigger a full table re-sort + row re-render. These
+invariants are **mandatory** for shared-simulation maintenance:
+
+1. **`tokenPriceById` / `tokenPriceLoadingById` deps must derive from value
+   signatures, not from the raw `priceQueries` array.**
+   - `useQueries` returns a fresh array reference every render even when data
+     is unchanged. Listing `priceQueries` as a `useMemo` dep makes the maps
+     rebuild on every render, cascading into `simulationsById` rebuilds and
+     full table re-sorts.
+   - Required pattern: derive `priceDataKey` via
+     [`buildPriceDataSignature`](../../src/hooks/useRateSimulation.ts) and
+     `priceLoadingKey` via `buildPriceLoadingSignature`, then list those
+     signatures as deps. Both functions are unit-tested for collision
+     resistance (digit boundaries, ordering, length, null/undefined
+     equivalence).
+   - The signature contract is **opaque**: callers must not parse it.
+
+2. **`ReservesTable` `sortedData` must gate `simulationsById` behind an
+   "active sort actually reads simulation" check.**
+   - Token / market / price sort bodies never read `simulation`; only compare
+     raw reserve fields. Including a live `simulationsById` in those deps
+     causes unnecessary re-sorts when scenario inputs or background price
+     queries resolve.
+   - Required pattern: pass `sortedDataSimGate` (a stable
+     `EMPTY_SIMULATIONS_GATE` sentinel for token/market/price, the live
+     `simulationsById` for everything else) instead of `simulationsById` to
+     the `useMemo` deps array.
+   - This gate **must not** be used to skip data updates: row components
+     still receive fresh `simulation` props on every parent re-render. The
+     gate only short-circuits sort recomputation.
+
+3. **Fallback incentive computation must accept `forecastStates`.**
+   - When `simulationsById` is absent for a row (e.g. transient empty
+     state), the fallback path goes through
+     `getReserveIncentiveValues(reserve, side, tydroPointToUsdRate, opts)`.
+     `opts` **must** include `forecastStates`, otherwise Merkl forecast
+     adjustments silently disappear from "current" incentive values, causing
+     visible numeric drift in browse mode.
+
+Regression check: any change touching `useSharedRateSimulations` or
+`ReservesTable.tsx` `sortedData` deps must keep the existing
+`buildPriceDataSignature` / `buildPriceLoadingSignature` tests green and
+must not reintroduce `priceQueries` or a raw `simulationsById` into those
+dependency arrays.
+
 ### Reserve simulation gating (frozen / paused / disabled) — MANDATORY
 
 When a reserve is **frozen**, **paused**, or has the relevant side `supplyDisabled` /

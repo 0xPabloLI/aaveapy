@@ -42,6 +42,7 @@ Examples:
 - `ReservesTable`
   - Sort controls must preserve current sorting semantics.
   - Sticky/expanded row behavior must preserve the DOM contract documented in `docs/design/frontend-interaction-guardrails.md`.
+  - Simulation/sort dependency stability (see `frontend-interaction-guardrails.md` § "Performance: simulation/sort dependency stability"): any change to `useSharedRateSimulations` or `ReservesTable.tsx` `sortedData` deps must keep `buildPriceDataSignature` / `buildPriceLoadingSignature` tests green and must NOT reintroduce raw `priceQueries` or unmodified `simulationsById` into those `useMemo` dep arrays.
 - `DesktopReserveRow` (and any row that fades color per side)
   - When `supplyDisabled / borrowDisabled / isPaused / isFrozen` is true, every cell that exposes the corresponding side (Size ring trigger, APY total, native APY, incentive button, etc.) must switch to the muted color class.
   - **Anti-pattern**: asserting `expect(html).toContain('text-cyan-500/50')` on whole-row HTML — multiple cells share that class, so a missing fade in one cell is hidden by another cell's fade. Always scope the assertion to the specific element (e.g. match the `<button aria-label="Borrow cap details for ...">` substring and assert the muted class on that match).
