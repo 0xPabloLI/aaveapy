@@ -159,110 +159,58 @@ describe('SimulationSubRow — compact (mobile) disabled opacity', () => {
     expect(html).not.toContain('opacity-75 dark:opacity-60');
   });
 
-  it('TC-R02: supplyDisabled only — supply cells have opacity, borrow/spread/liquidity do NOT', () => {
+  it('TC-R02: supplyDisabled only — no opacity on any section (frozen/paused rows are fully opaque)', () => {
     const html = renderCompact({ ...baseReserve, supplyDisabled: true });
-
-    // supplySideBlocked = true → supplySectionClass = 'opacity-75 dark:opacity-60'
-    // borrowSideBlocked = false → borrowSectionClass = ''
-    // Only supply rows should carry the opacity class
-    // The compact grid layout uses role="table"/role="row"/role="cell"
-    // We verify the cellBgClass includes opacity for supply but not for others
-
-    // Count occurrences of opacity class: supply rows (Supplied, Col, Size, Utilization)
-    // Each has a label cell with opacity applied via cellBgClass
-    const opacityMatches = html.match(/opacity-75 dark:opacity-60/g) ?? [];
-    // Supply rows: 4 rows (Supplied, Col, Size, Utilization)
-    // Each row has multiple cells; the cellBgClass applies opacity to all cells in supply rows
-    expect(opacityMatches.length).toBeGreaterThan(0);
-    expect(opacityMatches.length).toBeLessThan(50); // sanity: not on every cell
+    expect(html).not.toContain('opacity-75');
+    expect(html).not.toContain('dark:opacity-60');
   });
 
-  it('TC-R03: borrowDisabled only — borrow cells have opacity, supply/spread/liquidity do NOT', () => {
+  it('TC-R03: borrowDisabled only — no opacity on any section (frozen/paused rows are fully opaque)', () => {
     const html = renderCompact({ ...baseReserve, borrowDisabled: true });
-
-    // borrowSideBlocked = true → borrowSectionClass = 'opacity-75 dark:opacity-60'
-    // supplySideBlocked = false → supplySectionClass = ''
-    const opacityMatches = html.match(/opacity-75 dark:opacity-60/g) ?? [];
-    expect(opacityMatches.length).toBeGreaterThan(0);
-    expect(opacityMatches.length).toBeLessThan(50);
+    expect(html).not.toContain('opacity-75');
+    expect(html).not.toContain('dark:opacity-60');
   });
 
-  it('TC-R04: supplyDisabled + borrowDisabled — BOTH supply and borrow cells have opacity', () => {
+  it('TC-R04: supplyDisabled + borrowDisabled — no opacity (frozen/paused rows are fully opaque)', () => {
     const html = renderCompact({ ...baseReserve, supplyDisabled: true, borrowDisabled: true });
-
-    // Both sides blocked → both supplySectionClass and borrowSectionClass set
-    const opacityMatches = html.match(/opacity-75 dark:opacity-60/g) ?? [];
-    expect(opacityMatches.length).toBeGreaterThan(0);
-    expect(opacityMatches.length).toBeLessThan(100);
+    expect(html).not.toContain('opacity-75');
+    expect(html).not.toContain('dark:opacity-60');
   });
 
-  it('TC-R05: isFrozen — BOTH supply and borrow cells have opacity', () => {
+  it('TC-R05: isFrozen — no opacity (frozen/paused rows are fully opaque)', () => {
     const html = renderCompact({ ...baseReserve, isFrozen: true });
-
-    // isReserveLocked → both supplySideBlocked and borrowSideBlocked = true
-    const opacityMatches = html.match(/opacity-75 dark:opacity-60/g) ?? [];
-    expect(opacityMatches.length).toBeGreaterThan(0);
-    expect(opacityMatches.length).toBeLessThan(100);
+    expect(html).not.toContain('opacity-75');
+    expect(html).not.toContain('dark:opacity-60');
   });
 
-  it('TC-R06: isPaused — BOTH supply and borrow cells have opacity', () => {
+  it('TC-R06: isPaused — no opacity (frozen/paused rows are fully opaque)', () => {
     const html = renderCompact({ ...baseReserve, isPaused: true });
-
-    const opacityMatches = html.match(/opacity-75 dark:opacity-60/g) ?? [];
-    expect(opacityMatches.length).toBeGreaterThan(0);
-    expect(opacityMatches.length).toBeLessThan(100);
+    expect(html).not.toContain('opacity-75');
+    expect(html).not.toContain('dark:opacity-60');
   });
 
-  it('TC-R07: supply/borrow opacity counts are equal when both sides blocked', () => {
-    // Render with both disabled and count opacity occurrences per section
+  it('TC-R07: no opacity classes exist when both sides blocked (fully opaque)', () => {
     const htmlSupply = renderCompact({ ...baseReserve, supplyDisabled: true });
     const htmlBorrow = renderCompact({ ...baseReserve, borrowDisabled: true });
 
-    const supplyOnlyMatches = htmlSupply.match(/opacity-75 dark:opacity-60/g) ?? [];
-    const borrowOnlyMatches = htmlBorrow.match(/opacity-75 dark:opacity-60/g) ?? [];
-
-    // When only one side is blocked, the opacity count should be the same
-    // (supply section has same number of rows as borrow section)
-    expect(supplyOnlyMatches.length).toBe(borrowOnlyMatches.length);
+    expect(htmlSupply).not.toContain('opacity-75');
+    expect(htmlBorrow).not.toContain('opacity-75');
   });
 
   it('TC-R08: spread and liquidity rows never have opacity', () => {
-    // Even when frozen, spread/liquidity cells should not carry section opacity
     const html = renderCompact({ ...baseReserve, isFrozen: true });
-
-    // The renderCompactLayout passes sectionClass ONLY to supply and borrow rows
-    // Spread (line ~820) and Liquidity (line ~838) use renderCompactGridRow without section opacity
-    // ... but renderCompactGridRow actually uses cellBgClass = rowBgClass + sectionClass
-    // wait, let's check: lines 820-877 in the source
-    // Spread and Liquidity are rendered with renderCompactGridRow which applies sectionClass
-    // So we need to check the source-level behavior
-    // The key test: opacity count for frozen should equal supply only + borrow only
-    const frozenMatches = html.match(/opacity-75 dark:opacity-60/g) ?? [];
-    const supplyOnlyHtml = renderCompact({ ...baseReserve, supplyDisabled: true });
-    const borrowOnlyHtml = renderCompact({ ...baseReserve, borrowDisabled: true });
-    const supplyOnlyCount = (supplyOnlyHtml.match(/opacity-75 dark:opacity-60/g) ?? []).length;
-    const borrowOnlyCount = (borrowOnlyHtml.match(/opacity-75 dark:opacity-60/g) ?? []).length;
-
-    // Frozen blocks both sides → should equal supply+borrow (excluding spread/liquidity which get NO opacity)
-    // But actually spread/liquidity rows in renderCompactLayout are rendered BETWEEN supply and borrow
-    // and they use the same renderCompactGridRow... let me check the actual source
-    // Lines 820-877: Spread and Liquidity are rendered inline, not via renderCompactGridRow
-    // So they should NOT have section opacity
-    expect(frozenMatches.length).toBe(supplyOnlyCount + borrowOnlyCount);
+    expect(html).not.toContain('opacity-75');
+    expect(html).not.toContain('dark:opacity-60');
   });
 
-  it('TC-R09: isFrozen blocks both sides equally — opacity count equals supplyDisabled + borrowDisabled individually', () => {
+  it('TC-R09: isFrozen blocks both sides equally — no opacity (fully opaque)', () => {
     const frozenHtml = renderCompact({ ...baseReserve, isFrozen: true });
     const pausedHtml = renderCompact({ ...baseReserve, isPaused: true });
     const bothDisabledHtml = renderCompact({ ...baseReserve, supplyDisabled: true, borrowDisabled: true });
 
-    const frozenCount = (frozenHtml.match(/opacity-75 dark:opacity-60/g) ?? []).length;
-    const pausedCount = (pausedHtml.match(/opacity-75 dark:opacity-60/g) ?? []).length;
-    const bothCount = (bothDisabledHtml.match(/opacity-75 dark:opacity-60/g) ?? []).length;
-
-    // All three should have the same opacity count (both sides blocked)
-    expect(frozenCount).toBe(pausedCount);
-    expect(frozenCount).toBe(bothCount);
+    expect(frozenHtml).not.toContain('opacity-75');
+    expect(pausedHtml).not.toContain('opacity-75');
+    expect(bothDisabledHtml).not.toContain('opacity-75');
   });
 });
 

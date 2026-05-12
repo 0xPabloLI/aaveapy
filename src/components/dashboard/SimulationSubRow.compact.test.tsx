@@ -136,10 +136,10 @@ describe('SimulationSubRow compact (mobile) Grid layout', () => {
     expect(contentsWithDataDisabled).toBeNull();
   });
 
-  it('TC-12: supplySectionClass and borrowSectionClass use identical opacity-75 dark:opacity-60', () => {
+  it('TC-12: supplySectionClass and borrowSectionClass are empty (no opacity reduction for frozen/paused)', () => {
     const block = getCompactBlock();
-    const supplyMatch = block.match(/supplySectionClass\s*=\s*supplySideBlocked\s*\?\s*'opacity-75 dark:opacity-60'\s*:/);
-    const borrowMatch = block.match(/borrowSectionClass\s*=\s*borrowSideBlocked\s*\?\s*'opacity-75 dark:opacity-60'\s*:/);
+    const supplyMatch = block.match(/supplySectionClass\s*=\s*''/);
+    const borrowMatch = block.match(/borrowSectionClass\s*=\s*''/);
     expect(supplyMatch).toBeTruthy();
     expect(borrowMatch).toBeTruthy();
   });
