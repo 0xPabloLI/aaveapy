@@ -10,6 +10,7 @@ Use this checklist for any refactor or UI behavior change touching:
 - `src/components/dashboard/DesktopReserveRow.tsx`
 - `src/components/dashboard/PortfolioPanel.tsx`
 - `src/components/dashboard/PortfolioTokenRow.tsx`
+- `src/components/ui/segmented-toggle.tsx`
 
 The goal is to catch the class of regressions where static checks pass but UI layout, runtime wiring, or displayed numbers drift.
 
@@ -68,6 +69,27 @@ The batch panel uses a **unified single-column grid** for both desktop and mobil
 6. **Token info width = `auto`** (matches widest token in list), not a hard-coded pixel value — the parent grid's `auto` column does this automatically.
 
 **Regression test location:** `src/components/dashboard/PortfolioTokenRow.visual-gap.test.ts` (6 tests verifying subgrid, gap ≤ 4px, flex direction per viewport). Run with: `npm test -- PortfolioTokenRow.visual-gap`.
+
+### SegmentedToggle visual invariants
+
+The `SegmentedToggle` component supports `orientation` (`horizontal` | `vertical`) and `size` (`default` | `chip`). Layout rules are normative and enforced by visual invariant source-level regression tests (`segmented-toggle.visual-invariant.test.ts`) plus Playwright screenshot tests (`e2e/segmented-toggle-visual.spec.ts`).
+
+**Mandatory invariants (do not regress):**
+
+1. **Vertical track uses `rounded-2xl`** (card aesthetic), **horizontal track uses `rounded-full`** (pill aesthetic).
+2. **Vertical indicator uses `rounded-xl`** (nests inside rounded-2xl track), **horizontal indicator uses `rounded-full`**.
+3. **Vertical button uses `rounded-xl`**, **horizontal button uses `rounded-full`** — buttons match indicator radius for focus ring alignment.
+4. **Gap uses `--ds-seg-gap`** CSS variable (0.125rem = 2px).
+5. **Track padding uses `--ds-seg-track-pad`** (default) / **`--ds-seg-chip-track-pad`** (chip).
+6. **Segment min-width uses `--ds-seg-seg-min-w`** (default) / **`--ds-seg-chip-seg-min-w`** (chip).
+7. **Active segment uses `font-semibold`** + `activeTextClassName`.
+8. **Indicator has elevation shadow** + `motion-safe:transition-all duration-200`.
+9. **Vertical orientation uses `gridTemplateRows`**, horizontal uses `gridTemplateColumns`.
+10. **All `ds-seg-*` CSS custom properties** are defined in `src/index.css`.
+
+**Regression test locations:**
+- Source invariants: `src/components/ui/segmented-toggle.visual-invariant.test.ts` (20 tests). Run with: `npm test -- segmented-toggle.visual-invariant`.
+- Screenshot + layout: `e2e/segmented-toggle-visual.spec.ts` (6 tests across desktop/mobile). Run with: `npx playwright test segmented-toggle-visual`.
 
 ## Browser regression pass
 
