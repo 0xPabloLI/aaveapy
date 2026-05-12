@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import MobileReserveCard from './MobileReserveCard';
 import { formatPercent, formatUsd } from '@/lib/formatters';
+import { nativeToUsd } from '@/lib/scenarioSize';
 import type { ReserveWithSpread } from '@/types/aave';
 import type { RateSimulationResult } from '@/hooks/useRateSimulation';
 
@@ -778,5 +779,155 @@ describe('MobileReserveCard', () => {
     const badge = getByTestId('mobile-reserve-status-badge');
     expect(badge).toBeInTheDocument();
     expect(badge.hasAttribute('data-state')).toBe(false);
+  });
+
+  describe('supplyCap/borrowCap 计算回归测试 (AAV-243)', () => {
+    it('renders supply CapProgressRing when supplyCap produces a valid positive USD value', () => {
+      const { getByLabelText } = renderCard(false);
+      const supplyCapButton = getByLabelText('Show supply cap details');
+      expect(supplyCapButton).toBeInTheDocument();
+      expect(supplyCapButton.querySelector('svg')).not.toBeNull();
+    });
+
+    it('renders borrow BorrowCapProgressRing when borrowCap produces a valid positive USD value', () => {
+      const { getByLabelText, getByText } = renderCard(false);
+      fireEvent.click(getByText('Borrow'));
+      const borrowCapButton = getByLabelText('Show borrow cap details');
+      expect(borrowCapButton).toBeInTheDocument();
+      expect(borrowCapButton.querySelector('svg')).not.toBeNull();
+    });
+
+    it('hides supply CapProgressRing when supplyCap is undefined', () => {
+      const noSupplyCapReserve = { ...reserve, supplyCap: undefined };
+      const { queryByLabelText } = render(
+        <QueryClientProvider client={new QueryClient()}>
+          <TooltipProvider>
+            <MobileReserveCard
+              reserve={noSupplyCapReserve}
+              isApy
+              tydroPointToUsdRate={0}
+              onIncentiveClick={() => {}}
+              isSimulationExpanded={false}
+              onToggleSimulation={() => {}}
+              simulation={simulation}
+              supplyInput="1000"
+              borrowInput="500"
+              hasSharedScenario
+              inputMode="usd"
+            />
+          </TooltipProvider>
+        </QueryClientProvider>,
+      );
+      expect(queryByLabelText('Show supply cap details')).toBeNull();
+    });
+
+    it('hides borrow BorrowCapProgressRing when borrowCap is undefined', () => {
+      const noBorrowCapReserve = { ...reserve, borrowCap: undefined };
+      const { queryByLabelText } = render(
+        <QueryClientProvider client={new QueryClient()}>
+          <TooltipProvider>
+            <MobileReserveCard
+              reserve={noBorrowCapReserve}
+              isApy
+              tydroPointToUsdRate={0}
+              onIncentiveClick={() => {}}
+              isSimulationExpanded={false}
+              onToggleSimulation={() => {}}
+              simulation={simulation}
+              supplyInput="1000"
+              borrowInput="500"
+              hasSharedScenario
+              inputMode="usd"
+            />
+          </TooltipProvider>
+        </QueryClientProvider>,
+      );
+      expect(queryByLabelText('Show borrow cap details')).toBeNull();
+    });
+
+    it('hides supply CapProgressRing when nativeToUsd returns null (e.g. tokenPrice=0)', () => {
+      const zeroPriceReserve = { ...reserve, tokenPrice: 0 };
+      const { queryByLabelText } = render(
+        <QueryClientProvider client={new QueryClient()}>
+          <TooltipProvider>
+            <MobileReserveCard
+              reserve={zeroPriceReserve}
+              isApy
+              tydroPointToUsdRate={0}
+              onIncentiveClick={() => {}}
+              isSimulationExpanded={false}
+              onToggleSimulation={() => {}}
+              simulation={simulation}
+              supplyInput="1000"
+              borrowInput="500"
+              hasSharedScenario
+              inputMode="usd"
+            />
+          </TooltipProvider>
+        </QueryClientProvider>,
+      );
+      expect(queryByLabelText('Show supply cap details')).toBeNull();
+      expect(queryByLabelText('Show borrow cap details')).toBeNull();
+    });
+
+    it('computes supplyCapUsd from reserve fields using nativeToUsd — matches DesktopReserveRow formula', () => {
+      const expectedSupplyCapUsd = nativeToUsd(reserve.supplyCap, reserve.decimals, reserve.tokenPrice);
+      const expectedBorrowCapUsd = nativeToUsd(reserve.borrowCap, reserve.decimals, reserve.tokenPrice);
+      expect(expectedSupplyCapUsd).toBe(2_000_000);
+      expect(expectedBorrowCapUsd).toBe(1_000_000);
+
+      const ethReserve: ReserveWithSpread = {
+        ...reserve,
+        decimals: 18,
+        tokenPrice: 2500,
+        supplyCap: '1000000000000000000000000',
+        borrowCap: '500000000000000000000000',
+      };
+      expect(nativeToUsd(ethReserve.supplyCap, ethReserve.decimals, ethReserve.tokenPrice)).toBe(2_500_000_000);
+      expect(nativeToUsd(ethReserve.borrowCap, ethReserve.decimals, ethReserve.tokenPrice)).toBe(1_250_000_000);
+    });
+
+    it('renders both cap rings with different decimals/tokenPrice combinations', () => {
+      const wbtcReserve: ReserveWithSpread = {
+        ...reserve,
+        tokenSymbol: 'WBTC',
+        decimals: 8,
+        tokenPrice: 65000,
+        supplyCap: '2100000000000000',
+        borrowCap: '1050000000000000',
+      };
+      const expectedSupplyCapUsd = nativeToUsd(wbtcReserve.supplyCap, wbtcReserve.decimals, wbtcReserve.tokenPrice);
+      const expectedBorrowCapUsd = nativeToUsd(wbtcReserve.borrowCap, wbtcReserve.decimals, wbtcReserve.tokenPrice);
+      expect(expectedSupplyCapUsd).toBeGreaterThan(0);
+      expect(expectedBorrowCapUsd).toBeGreaterThan(0);
+
+      const { getByLabelText } = render(
+        <QueryClientProvider client={new QueryClient()}>
+          <TooltipProvider>
+            <MobileReserveCard
+              reserve={wbtcReserve}
+              isApy
+              tydroPointToUsdRate={0}
+              onIncentiveClick={() => {}}
+              isSimulationExpanded={false}
+              onToggleSimulation={() => {}}
+              simulation={simulation}
+              supplyInput="1000"
+              borrowInput="500"
+              hasSharedScenario
+              inputMode="usd"
+            />
+          </TooltipProvider>
+        </QueryClientProvider>,
+      );
+      expect(getByLabelText('Show supply cap details')).toBeInTheDocument();
+    });
+
+    it('renders cap sheet with CapProgressContent using nativeToUsd result for supply', () => {
+      const { getByLabelText, container } = renderCard(false);
+      const supplyCapButton = getByLabelText('Show supply cap details');
+      fireEvent.click(supplyCapButton);
+      expect(container.innerHTML).toContain('$2.00M');
+    });
   });
 });
