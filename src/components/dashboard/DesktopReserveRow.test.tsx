@@ -727,7 +727,7 @@ describe('DesktopReserveRow', () => {
       'utf-8',
     );
     expect(source).toContain('/icons/tokens/aave.svg');
-    expect(source).toContain('/icons/partners/inktoken.svg');
+    expect(source).toContain('/icons/partners/tydro-logo.png');
   });
 
   it('Market Popover uses align="start" matching AssetActionMenu positioning', () => {

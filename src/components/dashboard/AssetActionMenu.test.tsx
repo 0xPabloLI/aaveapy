@@ -230,7 +230,7 @@ describe('AssetActionMenu (V3 vs V4 links)', () => {
     const tydroItem = screen.getByText('Open on Tydro').closest('a');
     const tydroLogo = tydroItem?.querySelector('img[alt="Tydro"]');
     expect(tydroLogo).toBeInTheDocument();
-    expect(tydroLogo?.getAttribute('src')).toBe('/icons/partners/inktoken.svg');
+    expect(tydroLogo?.getAttribute('src')).toBe('/icons/partners/tydro-logo.png');
   });
 
   it('renders "View asset page" for V4 assets using pro.aave.com URL', async () => {

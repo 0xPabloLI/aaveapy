@@ -136,7 +136,7 @@ export function AssetActionMenu({
     const protocolIconSrc = item.key === 'aave'
       ? '/icons/tokens/aave.svg'
       : item.key === 'tydro'
-        ? '/icons/partners/inktoken.svg'
+        ? '/icons/partners/tydro-logo.png'
         : null;
     const trailing =
       item.key === 'copy' ? (

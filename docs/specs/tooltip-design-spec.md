@@ -310,7 +310,7 @@ Token 列 `AssetActionMenu` 和 Market 列的外链 Popover 使用**相同的 Ra
 两个 Popover 的菜单项布局保持一致：
 - `justify-between` + `gap-3`：左侧图标+文字，右侧 trailing 元素
 - Aave 链接项 trailing Aave logo（`/icons/tokens/aave.svg`）
-- Tydro/Ink 链接项 trailing Tydro logo（`/icons/partners/inktoken.svg`）
+- Tydro 链接项 trailing Tydro logo（`/icons/partners/tydro-logo.png`）
 - Explorer 链接项 trailing chain icon（`getChainIconSrc`）
 - Copy address 项 trailing 截断地址
 

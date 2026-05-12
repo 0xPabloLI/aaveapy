@@ -16,11 +16,7 @@ import { getChainIconSrc } from '@/lib/chainIcons';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { IncentiveIcon } from '@/components/IncentiveIcon';
 import {
-  calculateDeficitShareRatio,
-  formatReserveDeficitTokenCompact,
-  getDeficitSeverity,
-  getReserveDeficitUsdAmount,
-  hasReserveDeficit,
+  computeDeficitDisplay,
 } from '@/lib/deficit';
 import DeficitLiquidityRing from './DeficitLiquidityRing';
 import SimulationSubRow from './SimulationSubRow';
@@ -192,31 +188,20 @@ const DesktopReserveRow = memo(({
   const totalBorrowedUsd = simulation?.marketMetrics.totalBorrowedUsdAfter ?? baseTotalBorrowedUsd;
   const baseAvailableLiquidityUsd = simulation?.marketMetrics.availableLiquidityUsd ?? getDisplayAvailableLiquidityUsd(reserve, protocolVersion);
   const availableLiquidityUsd = simulation?.marketMetrics.availableLiquidityUsdAfter ?? baseAvailableLiquidityUsd;
-  const hasDeficit = hasReserveDeficit(reserve);
-  const deficitUsd = getReserveDeficitUsdAmount(reserve, displayTokenPrice);
-  const deficitTokenCompact = formatReserveDeficitTokenCompact(reserve);
-  const deficitInlineValue = inputMode === 'usd'
-    ? (deficitUsd != null ? formatScenarioSize(deficitUsd, { inputMode: 'usd' }) : '-')
-    : deficitTokenCompact;
-  const deficitTokenLabel = deficitTokenCompact !== '-' ? deficitTokenCompact : undefined;
-  const deficitUsdLabel = deficitUsd != null ? formatUsd(deficitUsd) : '— (token price unavailable)';
+  const {
+    hasDeficit,
+    deficitUsd,
+    deficitTokenLabel,
+    deficitInlineValue,
+    deficitShareRatio,
+    isNeutralDeficit,
+    deficitTextClass,
+  } = computeDeficitDisplay(reserve, displayTokenPrice, displayReserveSizeUsd, inputMode);
 
-  /** reserve.optimalUsageRate 是 percent number（如 45 = 45%），直接显示，无需 RAY 转换。 */
   const optimalPct =
     reserve.optimalUsageRate != null && Number(reserve.optimalUsageRate) > 0
       ? Number(reserve.optimalUsageRate)
       : null;
-  const deficitShareRatio = calculateDeficitShareRatio({
-    deficitUsd,
-    totalSuppliedUsd: displayReserveSizeUsd,
-  });
-  const deficitSeverity = getDeficitSeverity(deficitShareRatio);
-  const isNeutralDeficit = deficitSeverity === 'neutral';
-  const deficitTextClass = deficitSeverity === 'critical'
-    ? 'ds-text-amber-500'
-    : deficitSeverity === 'warning'
-      ? 'ds-text-amber-600'
-      : 'text-muted-foreground/60';
 
   const supplySizeLabel = formatScenarioSize(displayReserveSizeUsd, {
     inputMode,
@@ -406,7 +391,7 @@ const DesktopReserveRow = memo(({
                             <ExternalLink className="h-3.5 w-3.5 text-muted-foreground/70" />
                             <span>Open on Tydro</span>
                           </span>
-                          <img src="/icons/partners/inktoken.svg" alt="Tydro" className="h-3.5 w-3.5 rounded-full opacity-80" loading="lazy" />
+                          <img src="/icons/partners/tydro-logo.png" alt="Tydro" className="h-3.5 w-3.5 rounded-full opacity-80" loading="lazy" />
                         </a>
                       </div>
                     </PopoverContent>
@@ -480,57 +465,23 @@ const DesktopReserveRow = memo(({
               </div>
             )}
             {hasDeficit && (
-              deficitUsd != null ? (
-                <DeficitLiquidityRing
-                  deficitUsd={deficitUsd}
-                  totalSuppliedUsd={displayReserveSizeUsd}
-                  tokenDeficitLabel={deficitTokenLabel}
-                  displayMode={inputMode}
-                  tokenPrice={displayTokenPrice}
-                  tokenSymbol={reserve.tokenSymbol}
-                  label={(
-                    <span className={cn('inline-flex items-center gap-1 ds-text-11 tabular-nums', deficitTextClass)}>
-                      <DeficitShieldIcon ratio={deficitShareRatio} className={cn(isNeutralDeficit && 'opacity-70')} />
-                      <span>{deficitInlineValue}</span>
-                    </span>
-                  )}
-                  triggerClassName={deficitTextClass}
-                  triggerAriaLabel={`Deficit share of total supplied plus deficit for ${reserve.tokenSymbol}`}
-                  poolExplorerUrl={poolExplorerUrl}
-                />
-              ) : (
-                <Tooltip delayDuration={0}>
-                  <TooltipTrigger asChild>
-                    <button
-                      type="button"
-                      onClick={(event) => event.stopPropagation()}
-                      className={cn(
-                        'inline-flex items-center gap-1 ds-text-11 tabular-nums transition-colors',
-                        'rounded-md py-0.5 pl-1 pr-0.5 -my-0.5 hover:bg-muted/50',
-                        deficitTextClass,
-                        isNeutralDeficit ? 'hover:text-muted-foreground/70' : 'hover:text-amber-600',
-                      )}
-                      aria-label={`Deficit details for ${reserve.tokenSymbol}`}
-                    >
-                      <DeficitShieldIcon ratio={deficitShareRatio} />
-                      <span>{deficitInlineValue}</span>
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="right" align="center" className="max-w-[18rem]">
-                    <TooltipCalloutArrow />
-                    <div className="space-y-1 ds-text-11">
-                      <div className="flex items-center justify-between gap-4">
-                        <span className="text-muted-foreground">USD</span>
-                        <span className="tabular-nums">{deficitUsdLabel}</span>
-                      </div>
-                      <div className="flex items-center justify-between gap-4">
-                        <span className="text-muted-foreground">Token</span>
-                        <span className="tabular-nums">{deficitInlineValue}</span>
-                      </div>
-                    </div>
-                  </TooltipContent>
-                </Tooltip>
-              )
+              <DeficitLiquidityRing
+                deficitUsd={deficitUsd!}
+                totalSuppliedUsd={displayReserveSizeUsd}
+                tokenDeficitLabel={deficitTokenLabel}
+                displayMode={inputMode}
+                tokenPrice={displayTokenPrice}
+                tokenSymbol={reserve.tokenSymbol}
+                label={(
+                  <span className={cn('inline-flex items-center gap-1 ds-text-11 tabular-nums', deficitTextClass)}>
+                    <DeficitShieldIcon ratio={deficitShareRatio} className={cn(isNeutralDeficit && 'opacity-70')} />
+                    <span>{deficitInlineValue}</span>
+                  </span>
+                )}
+                triggerClassName={deficitTextClass}
+                triggerAriaLabel={`Deficit share of total supplied plus deficit for ${reserve.tokenSymbol}`}
+                poolExplorerUrl={poolExplorerUrl}
+              />
             )}
           </div>
         </TableCell>
