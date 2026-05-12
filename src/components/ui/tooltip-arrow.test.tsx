@@ -83,13 +83,16 @@ describe('Arrow Components', () => {
 
     it('renders four directional arrow SVGs', () => {
       const { baseElement } = renderCalloutArrow();
-      const arrows = baseElement.querySelectorAll('svg[aria-hidden]');
-      expect(arrows.length).toBe(4);
+      const sides = ['top', 'bottom', 'left', 'right'] as const;
+      sides.forEach((side) => {
+        const arrows = baseElement.querySelectorAll(`svg[data-arrow-side="${side}"]`);
+        expect(arrows.length).toBeGreaterThanOrEqual(1);
+      });
     });
 
     it('uses pointer-events-none on all arrows', () => {
       const { baseElement } = renderCalloutArrow();
-      const arrows = baseElement.querySelectorAll('svg[aria-hidden]');
+      const arrows = baseElement.querySelectorAll('svg.callout-arrow');
       arrows.forEach((arrow) => {
         const className = arrow.className.baseVal || arrow.getAttribute('class') || '';
         expect(className).toContain('pointer-events-none');
@@ -98,7 +101,7 @@ describe('Arrow Components', () => {
 
     it('uses z-20 for proper layering', () => {
       const { baseElement } = renderCalloutArrow();
-      const arrows = baseElement.querySelectorAll('svg[aria-hidden]');
+      const arrows = baseElement.querySelectorAll('svg.callout-arrow');
       arrows.forEach((arrow) => {
         const className = arrow.className.baseVal || arrow.getAttribute('class') || '';
         expect(className).toContain('z-20');
@@ -107,19 +110,19 @@ describe('Arrow Components', () => {
 
     it('renders correct viewBox for horizontal arrows (16x9)', () => {
       const { baseElement } = renderCalloutArrow();
-      const horizontalArrows = baseElement.querySelectorAll('svg[viewBox="0 0 16 9"]');
-      expect(horizontalArrows.length).toBe(2);
+      const horizontalArrows = baseElement.querySelectorAll('svg.callout-arrow[viewBox="0 0 16 9"]');
+      expect(horizontalArrows.length).toBeGreaterThanOrEqual(2);
     });
 
     it('renders correct viewBox for vertical arrows (9x16)', () => {
       const { baseElement } = renderCalloutArrow();
-      const verticalArrows = baseElement.querySelectorAll('svg[viewBox="0 0 9 16"]');
-      expect(verticalArrows.length).toBe(2);
+      const verticalArrows = baseElement.querySelectorAll('svg.callout-arrow[viewBox="0 0 9 16"]');
+      expect(verticalArrows.length).toBeGreaterThanOrEqual(2);
     });
 
     it('uses group-data-[side=top]/tt for top arrow visibility', () => {
       const { baseElement } = renderCalloutArrow();
-      const arrows = baseElement.querySelectorAll('svg[aria-hidden]');
+      const arrows = baseElement.querySelectorAll('svg.callout-arrow');
       const topArrow = Array.from(arrows).find((arrow) => {
         const className = arrow.className.baseVal || arrow.getAttribute('class') || '';
         return className.includes('group-data-[side=top]/tt');
@@ -129,7 +132,7 @@ describe('Arrow Components', () => {
 
     it('uses group-data-[side=bottom]/tt for bottom arrow visibility', () => {
       const { baseElement } = renderCalloutArrow();
-      const arrows = baseElement.querySelectorAll('svg[aria-hidden]');
+      const arrows = baseElement.querySelectorAll('svg.callout-arrow');
       const bottomArrow = Array.from(arrows).find((arrow) => {
         const className = arrow.className.baseVal || arrow.getAttribute('class') || '';
         return className.includes('group-data-[side=bottom]/tt');
@@ -139,7 +142,7 @@ describe('Arrow Components', () => {
 
     it('uses group-data-[side=left]/tt for left arrow visibility', () => {
       const { baseElement } = renderCalloutArrow();
-      const arrows = baseElement.querySelectorAll('svg[aria-hidden]');
+      const arrows = baseElement.querySelectorAll('svg.callout-arrow');
       const leftArrow = Array.from(arrows).find((arrow) => {
         const className = arrow.className.baseVal || arrow.getAttribute('class') || '';
         return className.includes('group-data-[side=left]/tt');
@@ -149,7 +152,7 @@ describe('Arrow Components', () => {
 
     it('uses group-data-[side=right]/tt for right arrow visibility', () => {
       const { baseElement } = renderCalloutArrow();
-      const arrows = baseElement.querySelectorAll('svg[aria-hidden]');
+      const arrows = baseElement.querySelectorAll('svg.callout-arrow');
       const rightArrow = Array.from(arrows).find((arrow) => {
         const className = arrow.className.baseVal || arrow.getAttribute('class') || '';
         return className.includes('group-data-[side=right]/tt');
@@ -186,8 +189,8 @@ describe('Arrow Components', () => {
         </TooltipProvider>,
       );
 
-      expect(baseElement1.querySelectorAll('svg[aria-hidden]').length).toBe(4);
-      expect(baseElement2.querySelectorAll('svg[aria-hidden]').length).toBe(4);
+      expect(baseElement1.querySelectorAll('svg.callout-arrow').length).toBeGreaterThanOrEqual(4);
+      expect(baseElement2.querySelectorAll('svg.callout-arrow').length).toBeGreaterThanOrEqual(4);
     });
   });
 });

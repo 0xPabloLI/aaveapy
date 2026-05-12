@@ -101,11 +101,12 @@ const TooltipCalloutArrow = (_props: { side?: 'top' | 'bottom' | 'left' | 'right
     <>
       {/* tooltip on right of trigger → arrow points left (sits on body's left edge) */}
       <svg
-        className="hidden group-data-[side=right]/tt:block absolute left-[-8px] top-1/2 -translate-y-1/2 pointer-events-none z-20"
+        className="callout-arrow hidden group-data-[side=right]/tt:block absolute left-[-8px] top-1/2 -translate-y-1/2 pointer-events-none z-20"
         width="9"
         height="16"
         viewBox="0 0 9 16"
         aria-hidden
+        data-arrow-side="right"
       >
         <path d="M9 0 L0 8 L9 16 Z" fill={fill} />
         <path d="M9 0 L0 8 L9 16" stroke={stroke} strokeWidth="1" strokeLinejoin="round" fill="none" />
@@ -113,11 +114,12 @@ const TooltipCalloutArrow = (_props: { side?: 'top' | 'bottom' | 'left' | 'right
 
       {/* tooltip on left of trigger → arrow points right (sits on body's right edge) */}
       <svg
-        className="hidden group-data-[side=left]/tt:block absolute right-[-8px] top-1/2 -translate-y-1/2 pointer-events-none z-20"
+        className="callout-arrow hidden group-data-[side=left]/tt:block absolute right-[-8px] top-1/2 -translate-y-1/2 pointer-events-none z-20"
         width="9"
         height="16"
         viewBox="0 0 9 16"
         aria-hidden
+        data-arrow-side="left"
       >
         <path d="M0 0 L9 8 L0 16 Z" fill={fill} />
         <path d="M0 0 L9 8 L0 16" stroke={stroke} strokeWidth="1" strokeLinejoin="round" fill="none" />
@@ -125,11 +127,12 @@ const TooltipCalloutArrow = (_props: { side?: 'top' | 'bottom' | 'left' | 'right
 
       {/* tooltip below trigger → arrow points up (sits on body's top edge) */}
       <svg
-        className="hidden group-data-[side=bottom]/tt:block absolute top-[-8px] left-1/2 -translate-x-1/2 pointer-events-none z-20"
+        className="callout-arrow hidden group-data-[side=bottom]/tt:block absolute top-[-8px] left-1/2 -translate-x-1/2 pointer-events-none z-20"
         width="16"
         height="9"
         viewBox="0 0 16 9"
         aria-hidden
+        data-arrow-side="bottom"
       >
         <path d="M0 9 L8 0 L16 9 Z" fill={fill} />
         <path d="M0 9 L8 0 L16 9" stroke={stroke} strokeWidth="1" strokeLinejoin="round" fill="none" />
@@ -137,11 +140,12 @@ const TooltipCalloutArrow = (_props: { side?: 'top' | 'bottom' | 'left' | 'right
 
       {/* tooltip above trigger → arrow points down (sits on body's bottom edge) */}
       <svg
-        className="hidden group-data-[side=top]/tt:block absolute bottom-[-8px] left-1/2 -translate-x-1/2 pointer-events-none z-20"
+        className="callout-arrow hidden group-data-[side=top]/tt:block absolute bottom-[-8px] left-1/2 -translate-x-1/2 pointer-events-none z-20"
         width="16"
         height="9"
         viewBox="0 0 16 9"
         aria-hidden
+        data-arrow-side="top"
       >
         <path d="M0 0 L8 9 L16 0 Z" fill={fill} />
         <path d="M0 0 L8 9 L16 0" stroke={stroke} strokeWidth="1" strokeLinejoin="round" fill="none" />
