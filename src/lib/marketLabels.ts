@@ -42,7 +42,7 @@ export function isV4Market(marketName: string): boolean {
  */
 export function getHubChipClass(isV4: boolean): string {
   return [
-    'inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-normal leading-none',
+    'inline-flex items-center rounded-full px-1.5 py-0.5 ds-text-9 !leading-none font-normal',
     isV4
       ? 'text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10'
       : 'text-muted-foreground/70 bg-muted/40',

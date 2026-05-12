@@ -353,7 +353,7 @@ const FilterBar = ({
             title={showFrozenOrPaused ? 'Hide frozen or paused assets' : 'Show frozen or paused assets'}
           >
             <Snowflake className="w-3 h-3" />
-            <span className="hidden lg:inline">{showFrozenOrPaused ? 'Frozen or paused assets shown' : 'Show frozen or paused assets'}</span>
+            <span className="hidden lg:inline">{showFrozenOrPaused ? 'Restricted assets shown' : 'Show restricted assets'}</span>
           </button>
         )}
 
@@ -380,7 +380,7 @@ const FilterBar = ({
             title={showFrozenOrPaused ? 'Hide frozen or paused assets' : 'Show frozen or paused assets'}
           >
             <Snowflake className="w-3.5 h-3.5 shrink-0" />
-            <span className="truncate">{showFrozenOrPaused ? 'Frozen or paused assets shown' : 'Show frozen or paused assets'}</span>
+            <span className="truncate">{showFrozenOrPaused ? 'Restricted assets shown' : 'Show restricted assets'}</span>
           </button>
         )}
 
@@ -535,7 +535,7 @@ const FilterBar = ({
                               title={market.marketName}
                             >
                               {isV4 && (
-                                <span className="inline-flex items-center px-1 py-0 rounded-full text-[9px] font-medium leading-none text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10">
+                                <span className="inline-flex items-center px-1 py-0 rounded-full ds-text-9 !leading-none font-medium text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10">
                                   V4
                                 </span>
                               )}

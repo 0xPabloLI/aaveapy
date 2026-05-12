@@ -196,17 +196,17 @@ const SimulationSubRow = ({
   }, [compact, containerNarrow]);
 
   const effectiveCompact = compact || containerNarrow;
-  const isReserveLocked = Boolean(reserve.isFrozen || reserve.isPaused);
-  const supplyDisabledNotice = isReserveLocked
-    ? (reserve.isPaused ? 'Paused' : 'Frozen')
-    : reserve.supplyDisabled
-      ? 'Supply unavailable'
-      : null;
-  const borrowDisabledNotice = isReserveLocked
-    ? (reserve.isPaused ? 'Paused' : 'Frozen')
-    : reserve.borrowDisabled
-      ? 'Borrow unavailable'
-      : null;
+  const isReserveLocked = Boolean(reserve.isFrozen || reserve.isPaused || reserve.isActive === false);
+  const supplyDisabledNotice = reserve.isPaused ? 'Paused'
+    : reserve.isActive === false ? 'Inactive'
+    : reserve.isFrozen ? 'Frozen'
+    : reserve.supplyDisabled ? 'Supply unavailable'
+    : null;
+  const borrowDisabledNotice = reserve.isPaused ? 'Paused'
+    : reserve.isActive === false ? 'Inactive'
+    : reserve.isFrozen ? 'Frozen'
+    : reserve.borrowDisabled ? 'Borrow unavailable'
+    : null;
   const rateLabel = isApy ? 'APY' : 'APR';
   const showPriceMissingNotice =
     inputMode === 'token' &&
@@ -216,8 +216,8 @@ const SimulationSubRow = ({
   const hasScenarioInput = simulation.supply.hasInput || simulation.borrow.hasInput;
   const showEmptyStateNote = !simulation.supply.hasInput && !simulation.borrow.hasInput;
 
-  const supplySideBlocked = !!(reserve.isPaused || reserve.isFrozen || reserve.supplyDisabled);
-  const borrowSideBlocked = !!(reserve.isPaused || reserve.isFrozen || reserve.borrowDisabled);
+  const supplySideBlocked = !!(reserve.isPaused || reserve.isFrozen || reserve.isActive === false || reserve.supplyDisabled);
+  const borrowSideBlocked = !!(reserve.isPaused || reserve.isFrozen || reserve.isActive === false || reserve.borrowDisabled);
   const hasDisabledState = supplySideBlocked || borrowSideBlocked;
 
   const aaveUrl = buildAaveUrl({ marketName: reserve.marketName, tokenAddress: reserve.tokenAddress, aaveProReserveId: reserve.aaveProReserveId });
@@ -1291,7 +1291,7 @@ const SimulationSubRow = ({
     <div ref={containerRef} className={`min-w-0 ${effectiveCompact ? 'p-0' : 'p-0'}`}>
       {hasDisabledState ? (
         <div className={`flex items-center gap-3 rounded-lg ${
-          reserve.isPaused
+          reserve.isPaused || reserve.isActive === false
             ? 'border border-[rgb(var(--ds-paused-rgb)/0.6)] ds-bg-critical-row'
             : reserve.isFrozen
               ? 'border border-sky-400/60 bg-sky-50/80 dark:bg-sky-950/30'
@@ -1299,6 +1299,8 @@ const SimulationSubRow = ({
         } ${effectiveCompact ? 'mb-2 px-3 py-1.5' : 'mb-3 px-4 py-2'}`}>
           {reserve.isPaused ? (
             <PauseCircle className="w-4 h-4 ds-text-paused shrink-0" />
+          ) : reserve.isActive === false ? (
+            <Ban className="w-4 h-4 ds-text-paused shrink-0" />
           ) : reserve.isFrozen ? (
             <Snowflake className="w-4 h-4 text-sky-500 shrink-0" />
           ) : (
@@ -1307,19 +1309,23 @@ const SimulationSubRow = ({
           <p className={`flex-1 ds-text-12 ${
             reserve.isPaused
               ? 'text-amber-800 dark:text-amber-300'
-              : reserve.isFrozen
-                ? 'text-sky-800 dark:text-sky-300'
-                : 'text-muted-foreground'
+              : reserve.isActive === false
+                ? 'text-amber-800 dark:text-amber-300'
+                : reserve.isFrozen
+                  ? 'text-sky-800 dark:text-sky-300'
+                  : 'text-muted-foreground'
           }`}>
             {reserve.isPaused
               ? 'Paused: all actions are halted.'
-              : reserve.isFrozen
-                ? 'Frozen: supply and borrow are disabled.'
-                : supplySideBlocked && borrowSideBlocked
-                  ? 'Supply and borrow are disabled for this reserve.'
-                  : supplySideBlocked
-                    ? 'Supply is disabled for this reserve.'
-                    : 'Borrow is disabled for this reserve.'}
+              : reserve.isActive === false
+                ? 'Inactive: the reserve is not active.'
+                : reserve.isFrozen
+                  ? 'Frozen: supply and borrow are disabled.'
+                  : supplySideBlocked && borrowSideBlocked
+                    ? 'Supply and borrow are disabled for this reserve.'
+                    : supplySideBlocked
+                      ? 'Supply is disabled for this reserve.'
+                      : 'Borrow is disabled for this reserve.'}
           </p>
         </div>
       ) : showHeaderBlock ? (

@@ -278,7 +278,7 @@ const Index = () => {
       }
 
       // Frozen/Paused filter
-      if (!showFrozenOrPaused && (reserve.isFrozen || reserve.isPaused)) {
+      if (!showFrozenOrPaused && (reserve.isFrozen || reserve.isPaused || reserve.isActive === false)) {
         return false;
       }
 

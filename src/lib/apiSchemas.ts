@@ -130,6 +130,8 @@ const ReserveWithSpreadSchema = z.object({
   borrowDisabled: z.boolean().optional(),
   isFrozen: z.boolean().optional(),
   isPaused: z.boolean().optional(),
+  /** V4 only: false when status.active is false. Absent = active. */
+  isActive: z.literal(false).optional(),
   aTokenAddress: z.string().nullish(),
   vTokenAddress: z.string().nullish(),
   /** V4 Hub contract address (for explorer links). */

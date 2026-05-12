@@ -42,7 +42,7 @@ const PopularTokenChip = memo(function PopularTokenChip({
       <TokenIcon symbol={tokenSymbol} size={14} />
       <span>{tokenSymbol}</span>
       <span aria-hidden className="h-3 w-px bg-border/60" />
-      <span className="inline-flex items-center gap-1 text-[10px] font-normal text-muted-foreground/70">
+      <span className="inline-flex items-center gap-1 ds-text-10 font-normal text-muted-foreground/70">
         {chainSrc && (
           <img
             src={chainSrc}
@@ -53,7 +53,7 @@ const PopularTokenChip = memo(function PopularTokenChip({
           />
         )}
         {v4 && (
-          <span className="inline-flex items-center px-1 py-0 rounded-full text-[9px] font-medium leading-none text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10">
+          <span className="inline-flex items-center px-1 py-0 rounded-full ds-text-9 !leading-none font-medium text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10">
             V4
           </span>
         )}

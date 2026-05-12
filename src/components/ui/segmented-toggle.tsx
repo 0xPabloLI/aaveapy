@@ -150,11 +150,11 @@ export function SegmentedToggle<T extends string = string>({
               // horizontal keeps a pill min-width so two segments don't collapse.
               isVertical
                 ? isChip
-                  ? 'min-w-0 px-[var(--ds-seg-chip-seg-pad-x)] text-[11px] h-full min-h-[var(--ds-chip-h)]'
-                  : 'min-w-0 px-[var(--ds-seg-seg-pad-y-pad-x)] text-[12px] h-full min-h-[var(--ds-seg-seg-min-h)]'
+                  ? 'min-w-0 px-[var(--ds-seg-chip-seg-pad-x)] ds-text-11 h-full min-h-[var(--ds-chip-h)]'
+                  : 'min-w-0 px-[var(--ds-seg-seg-pad-y-pad-x)] ds-text-12 h-full min-h-[var(--ds-seg-seg-min-h)]'
                 : isChip
-                  ? 'min-w-[var(--ds-seg-chip-seg-min-w)] px-[var(--ds-seg-chip-seg-pad-x)] text-[11px] h-full'
-                  : 'min-w-[var(--ds-seg-seg-min-w)] px-[var(--ds-seg-seg-pad-x)] text-[12px] h-full',
+                  ? 'min-w-[var(--ds-seg-chip-seg-min-w)] px-[var(--ds-seg-chip-seg-pad-x)] ds-text-11 h-full'
+                  : 'min-w-[var(--ds-seg-seg-min-w)] px-[var(--ds-seg-seg-pad-x)] ds-text-12 h-full',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
               isActive ? `font-semibold ${activeTextClassName}` : 'text-muted-foreground hover:text-foreground',
             )}

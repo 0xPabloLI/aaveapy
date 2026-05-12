@@ -3,7 +3,7 @@ import { ExternalLink, Plus } from 'lucide-react';
 import { TableRow, TableCell } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipCalloutArrow } from '@/components/ui/tooltip';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
-import { FrozenStatusBadge } from './FrozenStatusBadge';
+import { ReserveStatusBadge } from './ReserveStatusBadge';
 import { ReserveWithSpread } from '@/types/aave';
 import { formatPercent, formatScenarioSize, formatSpread, formatUsd, getReserveMarketDisplayName } from '@/lib/formatters';
 import { buildAaveMarketUrl, buildAaveUrl, buildAaveProHubUrl } from '@/lib/aaveLinks';
@@ -13,6 +13,7 @@ import { buildPoolExplorerUrl } from '@/lib/poolExplorerLinks';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
 import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
 import { getChainIconSrc } from '@/lib/chainIcons';
+import { getPrimaryReserveStatus } from '@/lib/reserveStatus';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { IncentiveIcon } from '@/components/IncentiveIcon';
 import {
@@ -163,8 +164,9 @@ const DesktopReserveRow = memo(({
   const protocolVersion = getProtocolVersion(reserve.marketName);
   const isV4Market = protocolVersion === 'v4';
 
-  const supplyBlocked = !!(reserve.isPaused || reserve.isFrozen || reserve.supplyDisabled);
-  const borrowBlocked = !!(reserve.isPaused || reserve.isFrozen || reserve.borrowDisabled);
+  const supplyBlocked = !!(reserve.isPaused || reserve.isFrozen || reserve.isActive === false || reserve.supplyDisabled);
+  const borrowBlocked = !!(reserve.isPaused || reserve.isFrozen || reserve.isActive === false || reserve.borrowDisabled);
+  const primaryStatus = getPrimaryReserveStatus(reserve);
 
   // Token price from reserve directly (must be positive finite number)
   const displayTokenPrice =
@@ -230,11 +232,13 @@ const DesktopReserveRow = memo(({
           isExpanded &&
             '[&_td]:sticky [&_td]:z-[25] [&_td]:border-b [&_td]:border-border/60 [&_td]:shadow-[0_1px_2px_0_rgb(0_0_0/0.04)] [&_td]:[top:var(--reserves-expanded-main-row-top,5.75rem)]',
           isExpanded && '[&_td]:bg-card',
-          isExpanded && reserve.isPaused && '[&_td]:ds-bg-paused',
-          isExpanded && !reserve.isPaused && reserve.isFrozen && '[&_td]:ds-bg-sky-500-8',
-          (reserve.isPaused || reserve.isFrozen) && 'bg-card',
-          reserve.isPaused && 'ds-bg-paused',
-          (!reserve.isPaused && reserve.isFrozen) && 'ds-bg-sky-500-8',
+          isExpanded && primaryStatus === 'paused' && '[&_td]:ds-bg-paused',
+          isExpanded && primaryStatus === 'inactive' && '[&_td]:ds-bg-paused',
+          isExpanded && primaryStatus === 'frozen' && '[&_td]:ds-bg-sky-500-8',
+          (primaryStatus === 'paused' || primaryStatus === 'frozen') && 'bg-card',
+          primaryStatus === 'paused' && 'ds-bg-paused',
+          primaryStatus === 'inactive' && 'ds-bg-paused',
+          primaryStatus === 'frozen' && 'ds-bg-sky-500-8',
         )}
         onClick={() => onToggleExpand(reserveId)}
       >
@@ -267,7 +271,7 @@ const DesktopReserveRow = memo(({
           <div className={`group/token flex min-w-0 max-w-full justify-start gap-[var(--ds-space-1-5)] ${isTokenWrapped ? 'items-start' : 'items-center'}`}>
             <TokenIcon symbol={iconSymbol} size={28} loading="eager" logoURI={logoURI} className={`shrink-0 ${isTokenWrapped ? 'mt-0.5' : ''}`} />
             <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-[var(--ds-space-1-5)] gap-y-0">
-              <FrozenStatusBadge isFrozen={reserve.isFrozen} isPaused={reserve.isPaused} />
+              <ReserveStatusBadge reserve={reserve} />
               <span ref={tokenTextRef} className="font-semibold text-foreground ds-text-13 break-words min-w-0 [max-width:max-content]">
                 {reserve.tokenSymbol}
               </span>

@@ -36,7 +36,7 @@ const FAQ_ITEMS: { q: string; a: ReactNode }[] = [
     a:
       <div className="space-y-[var(--ds-space-2)]">
         <p><strong>Borrow APY</strong> follows a piecewise-linear curve based on utilization:</p>
-        <div className="bg-muted/40 rounded-[var(--ds-radius-sm)] px-[var(--ds-space-3)] py-[var(--ds-space-2)] font-mono text-[13px] space-y-[var(--ds-space-1)]">
+        <div className="bg-muted/40 rounded-[var(--ds-radius-sm)] px-[var(--ds-space-3)] py-[var(--ds-space-2)] font-mono ds-text-13 space-y-[var(--ds-space-1)]">
           <div>U ≤ U<sub>opt</sub>: &nbsp;Borrow APY = baseRate + slope1 × (U / U<sub>opt</sub>)</div>
           <div>U &gt; U<sub>opt</sub>: &nbsp;Borrow APY = baseRate + slope1 + slope2 × (U − U<sub>opt</sub>) / (1 − U<sub>opt</sub>)</div>
         </div>
@@ -46,14 +46,14 @@ const FAQ_ITEMS: { q: string; a: ReactNode }[] = [
         <p>
           <strong>Supply APY</strong> is whatever borrowers paid, minus the protocol fee, divided across <em>all</em> suppliers (including the liquidity nobody is borrowing):
         </p>
-        <div className="bg-muted/40 rounded-[var(--ds-radius-sm)] px-[var(--ds-space-3)] py-[var(--ds-space-2)] font-mono text-[13px] space-y-[var(--ds-space-1)]">
+        <div className="bg-muted/40 rounded-[var(--ds-radius-sm)] px-[var(--ds-space-3)] py-[var(--ds-space-2)] font-mono ds-text-13 space-y-[var(--ds-space-1)]">
           <div>Supply APY ≈ Borrow APY × Utilization × (1 − fee)</div>
           <div>Utilization = borrowed / (borrowed + liquidity + deficit)</div>
         </div>
         <p>
           <strong>Spread</strong> is the gap between the two. Without incentives it is always ≤ 0 — suppliers always earn less than borrowers pay:
         </p>
-        <div className="bg-muted/40 rounded-[var(--ds-radius-sm)] px-[var(--ds-space-3)] py-[var(--ds-space-2)] font-mono text-[13px]">
+        <div className="bg-muted/40 rounded-[var(--ds-radius-sm)] px-[var(--ds-space-3)] py-[var(--ds-space-2)] font-mono ds-text-13">
           Spread = Supply APY − Borrow APY
         </div>
         <p>What moves Supply APY:</p>
@@ -66,14 +66,14 @@ const FAQ_ITEMS: { q: string; a: ReactNode }[] = [
         <p>
           <strong>V4 twist — risk premium.</strong> In V4, riskier borrowers pay an extra surcharge on top of the headline Borrow APY, so their effective rate is roughly:
         </p>
-        <div className="bg-muted/40 rounded-[var(--ds-radius-sm)] px-[var(--ds-space-3)] py-[var(--ds-space-2)] font-mono text-[13px]">
+        <div className="bg-muted/40 rounded-[var(--ds-radius-sm)] px-[var(--ds-space-3)] py-[var(--ds-space-2)] font-mono ds-text-13">
           Effective Borrow APY ≈ Borrow APY × (1 + riskPremium)
         </div>
         <p>
           That extra interest flows back to suppliers, so the more risky borrowing a market has, the tighter (less negative) the spread becomes. In V3 there is no such surcharge.
         </p>
         <p>With incentives, the effective spread can even flip positive:</p>
-        <div className="bg-muted/40 rounded-[var(--ds-radius-sm)] px-[var(--ds-space-3)] py-[var(--ds-space-2)] font-mono text-[13px]">
+        <div className="bg-muted/40 rounded-[var(--ds-radius-sm)] px-[var(--ds-space-3)] py-[var(--ds-space-2)] font-mono ds-text-13">
           Effective Spread = (Supply APY + Incentive APR) − Borrow APY
         </div>
         <p>

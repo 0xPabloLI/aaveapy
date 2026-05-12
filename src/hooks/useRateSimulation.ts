@@ -975,8 +975,8 @@ export function buildRateSimulationResult({
   // In USD mode, convert to token amounts for native simulation
   const supplyAmount = inputMode === 'usd' && tokenPrice ? rawSupply / tokenPrice : rawSupply;
   const borrowAmount = inputMode === 'usd' && tokenPrice ? rawBorrow / tokenPrice : rawBorrow;
-  const supplyBlocked = !!(reserve.supplyDisabled || reserve.isPaused || reserve.isFrozen);
-  const borrowBlocked = !!(reserve.borrowDisabled || reserve.isPaused || reserve.isFrozen);
+  const supplyBlocked = !!(reserve.supplyDisabled || reserve.isPaused || reserve.isFrozen || reserve.isActive === false);
+  const borrowBlocked = !!(reserve.borrowDisabled || reserve.isPaused || reserve.isFrozen || reserve.isActive === false);
   const hasSupplyInput = supplyBlocked ? false : rawSupply > 0;
   const hasBorrowInput = borrowBlocked ? false : rawBorrow > 0;
   const hasAnyInput = hasSupplyInput || hasBorrowInput;
