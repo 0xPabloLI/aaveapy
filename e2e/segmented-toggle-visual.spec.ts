@@ -3,6 +3,7 @@ import { expect, test } from '@playwright/test';
 /**
  * Visual regression screenshot tests for SegmentedToggle (vertical & horizontal).
  *
+ * Uses `toHaveScreenshot()` for automatic pixel-diff snapshot comparison.
  * Captures the component in-situ within the live dashboard at both desktop and
  * mobile viewports, covering:
  * - Track border-radius (rounded-2xl vertical / rounded-full horizontal)
@@ -11,8 +12,8 @@ import { expect, test } from '@playwright/test';
  * - Active segment styling (bg-card indicator, font-semibold text)
  * - Size variants (default vs chip)
  *
- * Screenshots are saved per-project for manual diff review.
  * Bounding-box assertions guard against layout collapse regressions.
+ * Run `npx playwright test --update-snapshots` to regenerate baselines.
  */
 
 test.describe('SegmentedToggle — visual regression', () => {
@@ -30,13 +31,11 @@ test.describe('SegmentedToggle — visual regression', () => {
       expect(trackBox, 'vertical track must have non-zero bounding box').not.toBeNull();
       if (!trackBox) return;
 
-      // Vertical track height > width (stacked segments)
       expect(
         trackBox.height,
         `vertical track height (${trackBox.height}) should exceed width (${trackBox.width})`,
       ).toBeGreaterThan(trackBox.width);
 
-      // Verify segments are stacked (each segment's top > previous segment's bottom)
       const segments = verticalToggle.locator('button[role="radio"]');
       const count = await segments.count();
       expect(count, 'vertical toggle should have at least 2 segments').toBeGreaterThanOrEqual(2);
@@ -57,7 +56,6 @@ test.describe('SegmentedToggle — visual regression', () => {
         ).toBeLessThanOrEqual(4);
       }
 
-      // Active segment has font-semibold
       const activeSegment = verticalToggle.locator('button[aria-checked="true"]');
       await expect(activeSegment).toBeVisible();
       const activeFontWeight = await activeSegment.evaluate(
@@ -68,7 +66,6 @@ test.describe('SegmentedToggle — visual regression', () => {
         'active segment font-weight should be ≥ 600 (semibold)',
       ).toBeGreaterThanOrEqual(600);
 
-      // Indicator element (absolute positioned div) exists
       const indicator = verticalToggle.locator('div[aria-hidden]').first();
       await expect(indicator).toBeVisible();
       const indicatorRadius = await indicator.evaluate(
@@ -79,10 +76,7 @@ test.describe('SegmentedToggle — visual regression', () => {
         'vertical indicator should use rounded-xl (not fully rounded)',
       ).not.toBe('9999px');
 
-      // Screenshot for visual review
-      await verticalToggle.screenshot({
-        path: testInfo.outputPath('seg-toggle-vertical-mobile.png'),
-      });
+      await expect(verticalToggle).toHaveScreenshot();
     });
   });
 
@@ -100,13 +94,11 @@ test.describe('SegmentedToggle — visual regression', () => {
       expect(trackBox, 'horizontal track must have non-zero bounding box').not.toBeNull();
       if (!trackBox) return;
 
-      // Horizontal track width > height (pill shape)
       expect(
         trackBox.width,
         `horizontal track width (${trackBox.width}) should exceed height (${trackBox.height})`,
       ).toBeGreaterThan(trackBox.height);
 
-      // Segments are side by side
       const segments = horizontalToggle.locator('button[role="radio"]');
       const count = await segments.count();
       expect(count, 'horizontal toggle should have at least 2 segments').toBeGreaterThanOrEqual(2);
@@ -127,7 +119,6 @@ test.describe('SegmentedToggle — visual regression', () => {
         ).toBeLessThanOrEqual(4);
       }
 
-      // Indicator uses rounded-full (fully round)
       const indicator = horizontalToggle.locator('div[aria-hidden]').first();
       await expect(indicator).toBeVisible();
       const indicatorRadius = await indicator.evaluate(
@@ -138,7 +129,6 @@ test.describe('SegmentedToggle — visual regression', () => {
         'horizontal indicator should use rounded-full (fully round pill)',
       ).toBe('9999px');
 
-      // Track also uses rounded-full
       const trackRadius = await horizontalToggle.evaluate(
         (el) => getComputedStyle(el).borderRadius,
       );
@@ -147,10 +137,7 @@ test.describe('SegmentedToggle — visual regression', () => {
         'horizontal track should use rounded-full',
       ).toBe('9999px');
 
-      // Screenshot
-      await horizontalToggle.screenshot({
-        path: testInfo.outputPath('seg-toggle-horizontal-desktop.png'),
-      });
+      await expect(horizontalToggle).toHaveScreenshot();
     });
 
     test('AprApyToggle (chip size) renders at desktop viewport', async ({ page }, testInfo) => {
@@ -159,7 +146,6 @@ test.describe('SegmentedToggle — visual regression', () => {
       await page.goto('/');
       await expect(page.getByRole('radiogroup').first()).toBeVisible({ timeout: 30_000 });
 
-      // AprApyToggle is a horizontal radiogroup with APR/APY options
       const aprApyGroup = page.locator('[aria-orientation="horizontal"]').filter({
         has: page.locator('button[role="radio"]', { hasText: 'APR' }),
       }).first();
@@ -169,17 +155,12 @@ test.describe('SegmentedToggle — visual regression', () => {
       expect(trackBox, 'AprApyToggle track must render').not.toBeNull();
       if (!trackBox) return;
 
-      // Chip size should be shorter than default size
-      // Default track-h = 2rem = 32px; chip track uses --ds-chip-h
       expect(
         trackBox.height,
         'chip toggle height should be ≤ 28px (smaller than default 2rem)',
       ).toBeLessThanOrEqual(28);
 
-      // Screenshot
-      await aprApyGroup.screenshot({
-        path: testInfo.outputPath('seg-toggle-chip-horizontal-desktop.png'),
-      });
+      await expect(aprApyGroup).toHaveScreenshot();
     });
 
     test('AprApyToggle (chip size) renders at mobile viewport', async ({ page }, testInfo) => {
@@ -190,15 +171,16 @@ test.describe('SegmentedToggle — visual regression', () => {
 
       const aprApyGroup = page.locator('[aria-orientation="horizontal"]').filter({
         has: page.locator('button[role="radio"]', { hasText: 'APR' }),
-      }).first();
-      await expect(aprApyGroup).toBeVisible();
+      });
+      const aprApyCount = await aprApyGroup.count();
+      const aprApy = aprApyCount > 1 ? aprApyGroup.nth(1) : aprApyGroup.first();
+      await aprApy.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+      await expect(aprApy).toBeVisible();
 
-      const trackBox = await aprApyGroup.boundingBox();
+      const trackBox = await aprApy.boundingBox();
       expect(trackBox, 'AprApyToggle mobile track must render').not.toBeNull();
 
-      await aprApyGroup.screenshot({
-        path: testInfo.outputPath('seg-toggle-chip-horizontal-mobile.png'),
-      });
+      await expect(aprApy).toHaveScreenshot();
     });
   });
 
@@ -217,7 +199,6 @@ test.describe('SegmentedToggle — visual regression', () => {
 
       const indicatorBoxBefore = await indicator.boundingBox();
       await inactiveSegment.click();
-      // Wait for transition (200ms ease-out + buffer)
       await page.waitForTimeout(350);
       const indicatorBoxAfter = await indicator.boundingBox();
 
@@ -225,16 +206,12 @@ test.describe('SegmentedToggle — visual regression', () => {
       expect(indicatorBoxAfter, 'indicator must exist after click').not.toBeNull();
       if (!indicatorBoxBefore || !indicatorBoxAfter) return;
 
-      // Indicator should have moved
       const moved =
         Math.abs(indicatorBoxAfter.x - indicatorBoxBefore.x) > 1 ||
         Math.abs(indicatorBoxAfter.y - indicatorBoxBefore.y) > 1;
       expect(moved, 'indicator should slide to the newly active segment').toBe(true);
 
-      // Screenshot after switch
-      await horizontalToggle.screenshot({
-        path: testInfo.outputPath('seg-toggle-horizontal-desktop-after-switch.png'),
-      });
+      await expect(horizontalToggle).toHaveScreenshot();
     });
 
     test('clicking a segment slides the indicator vertically (mobile)', async ({ page }, testInfo) => {
@@ -263,9 +240,7 @@ test.describe('SegmentedToggle — visual regression', () => {
         Math.abs(indicatorBoxAfter.x - indicatorBoxBefore.x) > 1;
       expect(moved, 'indicator should slide vertically to the newly active segment').toBe(true);
 
-      await verticalToggle.screenshot({
-        path: testInfo.outputPath('seg-toggle-vertical-mobile-after-switch.png'),
-      });
+      await expect(verticalToggle).toHaveScreenshot();
     });
   });
 });
