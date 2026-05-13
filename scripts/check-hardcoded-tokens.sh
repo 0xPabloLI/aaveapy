@@ -7,6 +7,7 @@
 # Default: report-only mode, exits 0 unless grep fails
 
 set -euo pipefail
+# Disable ! history expansion to allow grep patterns containing ! (e.g. !ds-text-N)
 set +H
 
 STRICT=false
