@@ -16,6 +16,7 @@ import { clearLegacyCacheEntries } from "@/lib/cache";
 // Lazy load route components
 const Index = lazy(() => import("./pages/Index"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const ChainPage = lazy(() => import("./pages/ChainPage"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
