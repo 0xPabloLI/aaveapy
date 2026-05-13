@@ -12,8 +12,8 @@ describe('nativeToUsd', () => {
     expect(nativeToUsd(undefined, 18, 1)).toBeNull();
   });
 
-  it('returns null when decimals is missing or invalid', () => {
-    expect(nativeToUsd('1', null, 1)).toBeNull();
+  it('defaults decimals to 18 when missing, returns null when negative', () => {
+    expect(nativeToUsd('1', null, 1)).toBe(1e-18);
     expect(nativeToUsd('1', -1, 1)).toBeNull();
   });
 
@@ -103,8 +103,8 @@ describe('getReserveAvailableLiquidityUsd', () => {
     expect(getReserveAvailableLiquidityUsd({ liquidity: '', decimals: 6, tokenPrice: 1 })).toBeNull();
   });
 
-  it('returns null when decimals is missing or invalid', () => {
-    expect(getReserveAvailableLiquidityUsd({ liquidity: '1', tokenPrice: 1 })).toBeNull();
+  it('defaults decimals to 18 when missing, returns null when negative', () => {
+    expect(getReserveAvailableLiquidityUsd({ liquidity: '1', tokenPrice: 1 })).toBe(1e-18);
     expect(getReserveAvailableLiquidityUsd({ liquidity: '1', decimals: -1, tokenPrice: 1 })).toBeNull();
   });
 
@@ -148,8 +148,8 @@ describe('getReserveTotalBorrowedUsd', () => {
     expect(getReserveTotalBorrowedUsd({ borrowed: '', decimals: 6, tokenPrice: 1 })).toBeNull();
   });
 
-  it('returns null when decimals is missing or invalid', () => {
-    expect(getReserveTotalBorrowedUsd({ borrowed: '1', tokenPrice: 1 })).toBeNull();
+  it('defaults decimals to 18 when missing, returns null when negative', () => {
+    expect(getReserveTotalBorrowedUsd({ borrowed: '1', tokenPrice: 1 })).toBe(1e-18);
     expect(getReserveTotalBorrowedUsd({ borrowed: '1', decimals: -1, tokenPrice: 1 })).toBeNull();
   });
 

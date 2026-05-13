@@ -9,11 +9,12 @@ export const nativeToUsd = (
   tokenPrice: number | null | undefined,
 ): number | null => {
   if (!raw) return null;
-  if (decimals == null || !Number.isFinite(decimals) || decimals < 0) return null;
+  const d = decimals ?? 18;
+  if (!Number.isFinite(d) || d < 0) return null;
   if (tokenPrice == null || !Number.isFinite(tokenPrice) || tokenPrice <= 0) return null;
   const value = Number(raw);
   if (!Number.isFinite(value) || value < 0) return null;
-  const tokens = value / Math.pow(10, decimals);
+  const tokens = value / Math.pow(10, d);
   return tokens * tokenPrice;
 };
 
@@ -116,11 +117,12 @@ export const getReserveTotalBorrowedUsd = (reserve: {
 }): number | null => {
   const { borrowed, decimals, tokenPrice } = reserve;
   if (!borrowed) return null;
-  if (decimals == null || !Number.isFinite(decimals) || decimals < 0) return null;
+  const d = decimals ?? 18;
+  if (!Number.isFinite(d) || d < 0) return null;
   if (tokenPrice == null || !Number.isFinite(tokenPrice) || tokenPrice <= 0) return null;
   const raw = Number(borrowed);
   if (!Number.isFinite(raw) || raw < 0) return null;
-  const tokens = raw / Math.pow(10, decimals);
+  const tokens = raw / Math.pow(10, d);
   return tokens * tokenPrice;
 };
 
@@ -147,11 +149,12 @@ export const getReserveAvailableLiquidityUsd = (reserve: {
 }): number | null => {
   const { liquidity, decimals, tokenPrice } = reserve;
   if (!liquidity) return null;
-  if (decimals == null || !Number.isFinite(decimals) || decimals < 0) return null;
+  const d = decimals ?? 18;
+  if (!Number.isFinite(d) || d < 0) return null;
   if (tokenPrice == null || !Number.isFinite(tokenPrice) || tokenPrice <= 0) return null;
   const raw = Number(liquidity);
   if (!Number.isFinite(raw) || raw < 0) return null;
-  const tokens = raw / Math.pow(10, decimals);
+  const tokens = raw / Math.pow(10, d);
   return tokens * tokenPrice;
 };
 
