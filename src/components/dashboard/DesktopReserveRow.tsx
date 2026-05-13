@@ -173,7 +173,7 @@ const DesktopReserveRow = memo(({
     reserve.tokenPrice != null && Number.isFinite(reserve.tokenPrice) && reserve.tokenPrice > 0
       ? reserve.tokenPrice
       : null;
-  const reserveSizeUsd = nativeToUsd(reserve.reserveSize, reserve.decimals, reserve.tokenPrice);
+  const reserveSizeUsd = nativeToUsd(reserve.supplied, reserve.decimals, reserve.tokenPrice);
   const displayReserveSizeUsd =
     reserveSizeUsd != null && Number.isFinite(reserveSizeUsd)
       ? supplyBlocked
@@ -201,8 +201,8 @@ const DesktopReserveRow = memo(({
   } = computeDeficitDisplay(reserve, displayTokenPrice, displayReserveSizeUsd, inputMode);
 
   const optimalPct =
-    reserve.optimalUsageRate != null && Number(reserve.optimalUsageRate) > 0
-      ? Number(reserve.optimalUsageRate)
+    reserve.optimalUtilization != null && Number(reserve.optimalUtilization) > 0
+      ? Number(reserve.optimalUtilization)
       : null;
 
   const supplySizeLabel = formatScenarioSize(displayReserveSizeUsd, {

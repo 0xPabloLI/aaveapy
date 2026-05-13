@@ -149,6 +149,39 @@ Recommended flow:
 
 This replay is especially useful for extraction-only commits that can preserve types while breaking runtime behavior.
 
+## Design Token Regression Guards
+
+When adding or changing CSS design tokens (`--ds-*` in `src/index.css`), or replacing hardcoded values with token references, the following regression tests and scripts must pass:
+
+### Regression test files
+
+| File | Guards | Run |
+|------|--------|-----|
+| `src/test/font-size-token-regression.test.ts` | 禁止 `text-[Npx]`，禁止 `!ds-text-N` 反模式 | `npm test -- font-size-token-regression` |
+| `src/test/control-height-token-regression.test.ts` | 禁止 `h-8`/`h-9`/`h-11`，禁止 `max-w-[220px]`，要求芯片用法使用 `var(--ds-chip-h)` | `npm test -- control-height-token-regression` |
+| `src/test/design-tokens.test.ts` | 验证 token 定义存在且值正确 | `npm test -- design-tokens` |
+
+### Grep 巡检脚本
+
+```bash
+bash scripts/check-hardcoded-tokens.sh --strict
+```
+
+- `--strict` 模式：发现硬编码值时 exit 1（CI 兼容）
+- 默认模式：只报告，exit 0
+- 检查范围：`text-[Npx]`、`h-8`/`h-9`/`h-11`、`max-w-[220px]`、`!ds-text-N` 反模式
+
+### Token 迁移 TDD 流程
+
+新增或迁移设计 token 时遵循：
+
+1. **写回归测试**（源文件级，读源码检查模式，不需要渲染组件）
+2. **运行测试确认 RED**（因硬编码值仍存在而失败）
+3. **实施替换**（最小改动，1:1 值保持）
+4. **运行测试确认 GREEN**（全部通过）
+5. **运行完整验证门禁**：`npm run lint && npm test && npm run build && npx tsc --noEmit`
+6. **运行 grep 巡检**：`bash scripts/check-hardcoded-tokens.sh --strict`
+
 ## Shipping rule
 
 Do not describe a display-layer refactor as "verified" unless the evidence includes:

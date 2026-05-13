@@ -19,7 +19,7 @@ const reserve: ReserveWithSpread = {
   tokenAddress: '0x0000000000000000000000000000000000000001',
   tokenPrice: 1,
   decimals: 6,
-  reserveSize: '1000000000000',
+  supplied: '1000000000000',
   supplyCap: '2000000000000',
   borrowCap: '1000000000000',
   utilizationPct: 45,
@@ -28,11 +28,11 @@ const reserve: ReserveWithSpread = {
   // Rate-model parameters are unified percent numbers (e.g., 80 = 80%); see
   // docs/api/v3-v4-precision-unification-plan.md. Components must NOT apply
   // any RAY/bps divisor when consuming these fields.
-  optimalUsageRate: 80,
-  variableRateSlope1: 4,
-  variableRateSlope2: 60,
-  baseVariableBorrowRate: 0,
-  reserveFactor: 10,
+  optimalUtilization: 80,
+  slopeBelowOptimal: 4,
+  slopeAboveOptimal: 60,
+  baseBorrowRate: 0,
+  protocolFee: 10,
   supplyDisabled: false,
   borrowDisabled: false,
   supplyIncentives: [],
@@ -119,7 +119,7 @@ const simulation: RateSimulationResult = {
     totalBorrowedUsdDelta: 2_000,
     supplyCapUsd: 2_000_000,
     borrowCapUsd: 1_000_000,
-    reserveFactor: 0.1,
+    protocolFee: 0.1,
     optimalUtilization: 0.8,
     availableSupplyRoomUsd: 999_000,
     supplyCapExceeded: false,
@@ -652,9 +652,9 @@ describe('DesktopReserveRow', () => {
     expect(html).toContain('text-emerald-500/40');
   });
 
-  it('treats reserve.optimalUsageRate as a percent number (not RAY) when sizing the UtilizationIndicator', () => {
+  it('treats reserve.optimalUtilization as a percent number (not RAY) when sizing the UtilizationIndicator', () => {
     // Regression guard for the V3/V4 precision-unification migration:
-    // After the backend switched optimalUsageRate from RAY/bps strings to
+    // After the backend switched optimalUtilization from RAY/bps strings to
     // percent numbers (e.g., 80 = 80%), the desktop row used to divide the
     // value by `1e25` to convert RAY → percent. With unified percent input
     // that division turned every "Optimal" marker into ~0, making the

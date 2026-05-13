@@ -116,7 +116,7 @@ const reserveBase: Omit<ReserveWithSpread, 'reserveId' | 'marketName' | 'tokenSy
   chainId: 1,
   tokenPrice: 1,
   decimals: 6,
-  reserveSize: '1000000000000',
+  supplied: '1000000000000',
   supplyCap: '2000000000000',
   borrowCap: '1000000000000',
   utilizationPct: 45,

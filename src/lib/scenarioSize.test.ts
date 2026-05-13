@@ -77,11 +77,11 @@ describe('convertUsdToInputValue', () => {
 });
 
 describe('getReserveAvailableLiquidityUsd', () => {
-  it('computes USD liquidity from on-chain raw availableLiquidity', () => {
+  it('computes USD liquidity from on-chain raw liquidity', () => {
     // AaveV4Forex USDT real numbers: 76,610,908,377 raw / 10^6 * 1.0002 ≈ $76,626.23
     expect(
       getReserveAvailableLiquidityUsd({
-        availableLiquidity: '76610908377',
+        liquidity: '76610908377',
         decimals: 6,
         tokenPrice: 1.0002,
       }),
@@ -91,42 +91,42 @@ describe('getReserveAvailableLiquidityUsd', () => {
   it('handles 18-decimal tokens', () => {
     expect(
       getReserveAvailableLiquidityUsd({
-        availableLiquidity: '1000000000000000000', // 1 token
+        liquidity: '1000000000000000000', // 1 token
         decimals: 18,
         tokenPrice: 2500,
       }),
     ).toBe(2500);
   });
 
-  it('returns null when availableLiquidity is missing', () => {
+  it('returns null when liquidity is missing', () => {
     expect(getReserveAvailableLiquidityUsd({ decimals: 6, tokenPrice: 1 })).toBeNull();
-    expect(getReserveAvailableLiquidityUsd({ availableLiquidity: '', decimals: 6, tokenPrice: 1 })).toBeNull();
+    expect(getReserveAvailableLiquidityUsd({ liquidity: '', decimals: 6, tokenPrice: 1 })).toBeNull();
   });
 
   it('returns null when decimals is missing or invalid', () => {
-    expect(getReserveAvailableLiquidityUsd({ availableLiquidity: '1', tokenPrice: 1 })).toBeNull();
-    expect(getReserveAvailableLiquidityUsd({ availableLiquidity: '1', decimals: -1, tokenPrice: 1 })).toBeNull();
+    expect(getReserveAvailableLiquidityUsd({ liquidity: '1', tokenPrice: 1 })).toBeNull();
+    expect(getReserveAvailableLiquidityUsd({ liquidity: '1', decimals: -1, tokenPrice: 1 })).toBeNull();
   });
 
   it('returns null when tokenPrice is missing or non-positive', () => {
-    expect(getReserveAvailableLiquidityUsd({ availableLiquidity: '1', decimals: 6 })).toBeNull();
-    expect(getReserveAvailableLiquidityUsd({ availableLiquidity: '1', decimals: 6, tokenPrice: 0 })).toBeNull();
-    expect(getReserveAvailableLiquidityUsd({ availableLiquidity: '1', decimals: 6, tokenPrice: -1 })).toBeNull();
+    expect(getReserveAvailableLiquidityUsd({ liquidity: '1', decimals: 6 })).toBeNull();
+    expect(getReserveAvailableLiquidityUsd({ liquidity: '1', decimals: 6, tokenPrice: 0 })).toBeNull();
+    expect(getReserveAvailableLiquidityUsd({ liquidity: '1', decimals: 6, tokenPrice: -1 })).toBeNull();
   });
 
-  it('returns null when availableLiquidity is not numeric', () => {
+  it('returns null when liquidity is not numeric', () => {
     expect(
-      getReserveAvailableLiquidityUsd({ availableLiquidity: 'not-a-number', decimals: 6, tokenPrice: 1 }),
+      getReserveAvailableLiquidityUsd({ liquidity: 'not-a-number', decimals: 6, tokenPrice: 1 }),
     ).toBeNull();
   });
 });
 
 describe('getReserveTotalBorrowedUsd', () => {
-  it('computes USD borrowed from on-chain raw totalVariableDebt', () => {
+  it('computes USD borrowed from on-chain raw borrowed', () => {
     // AaveV4Bluechip USDT real numbers: 1,037,279,054,299 raw / 10^6 * 1.0002 ≈ $1,037,486.51
     expect(
       getReserveTotalBorrowedUsd({
-        totalVariableDebt: '1037279054299',
+        borrowed: '1037279054299',
         decimals: 6,
         tokenPrice: 1.0002,
       }),
@@ -136,97 +136,97 @@ describe('getReserveTotalBorrowedUsd', () => {
   it('handles 18-decimal tokens', () => {
     expect(
       getReserveTotalBorrowedUsd({
-        totalVariableDebt: '5000000000000000000', // 5 tokens
+        borrowed: '5000000000000000000', // 5 tokens
         decimals: 18,
         tokenPrice: 2500,
       }),
     ).toBe(12500);
   });
 
-  it('returns null when totalVariableDebt is missing', () => {
+  it('returns null when borrowed is missing', () => {
     expect(getReserveTotalBorrowedUsd({ decimals: 6, tokenPrice: 1 })).toBeNull();
-    expect(getReserveTotalBorrowedUsd({ totalVariableDebt: '', decimals: 6, tokenPrice: 1 })).toBeNull();
+    expect(getReserveTotalBorrowedUsd({ borrowed: '', decimals: 6, tokenPrice: 1 })).toBeNull();
   });
 
   it('returns null when decimals is missing or invalid', () => {
-    expect(getReserveTotalBorrowedUsd({ totalVariableDebt: '1', tokenPrice: 1 })).toBeNull();
-    expect(getReserveTotalBorrowedUsd({ totalVariableDebt: '1', decimals: -1, tokenPrice: 1 })).toBeNull();
+    expect(getReserveTotalBorrowedUsd({ borrowed: '1', tokenPrice: 1 })).toBeNull();
+    expect(getReserveTotalBorrowedUsd({ borrowed: '1', decimals: -1, tokenPrice: 1 })).toBeNull();
   });
 
   it('returns null when tokenPrice is missing or non-positive', () => {
-    expect(getReserveTotalBorrowedUsd({ totalVariableDebt: '1', decimals: 6 })).toBeNull();
-    expect(getReserveTotalBorrowedUsd({ totalVariableDebt: '1', decimals: 6, tokenPrice: 0 })).toBeNull();
-    expect(getReserveTotalBorrowedUsd({ totalVariableDebt: '1', decimals: 6, tokenPrice: -1 })).toBeNull();
+    expect(getReserveTotalBorrowedUsd({ borrowed: '1', decimals: 6 })).toBeNull();
+    expect(getReserveTotalBorrowedUsd({ borrowed: '1', decimals: 6, tokenPrice: 0 })).toBeNull();
+    expect(getReserveTotalBorrowedUsd({ borrowed: '1', decimals: 6, tokenPrice: -1 })).toBeNull();
   });
 
-  it('returns null when totalVariableDebt is not numeric', () => {
+  it('returns null when borrowed is not numeric', () => {
     expect(
-      getReserveTotalBorrowedUsd({ totalVariableDebt: 'not-a-number', decimals: 6, tokenPrice: 1 }),
+      getReserveTotalBorrowedUsd({ borrowed: 'not-a-number', decimals: 6, tokenPrice: 1 }),
     ).toBeNull();
   });
 });
 
 describe('getDisplayTotalBorrowedUsd', () => {
   const v4Reserve = {
-    totalVariableDebt: '1037279054299',
+    borrowed: '1037279054299',
     decimals: 6,
     tokenPrice: 1.0002,
-    reserveSize: '0',
+    supplied: '0',
     utilizationPct: 93.14,
   };
 
-  it('V3: uses on-chain totalVariableDebt when available', () => {
+  it('V3: uses on-chain borrowed when available', () => {
     expect(getDisplayTotalBorrowedUsd(v4Reserve, 'v3')).toBeCloseTo(1037486.51, 2);
   });
 
-  it('V4: uses on-chain totalVariableDebt when available', () => {
+  it('V4: uses on-chain borrowed when available', () => {
     expect(getDisplayTotalBorrowedUsd(v4Reserve, 'v4')).toBeCloseTo(1037486.51, 2);
   });
 
-  it('V3: falls back to derived native reserveSize * utilizationPct / 100 when on-chain unavailable', () => {
-    const noOnChain = { reserveSize: '1000000000000000000000', decimals: 18, tokenPrice: 1, utilizationPct: 50 };
+  it('V3: falls back to derived native supplied * utilizationPct / 100 when on-chain unavailable', () => {
+    const noOnChain = { supplied: '1000000000000000000000', decimals: 18, tokenPrice: 1, utilizationPct: 50 };
     expect(getDisplayTotalBorrowedUsd(noOnChain, 'v3')).toBe(500);
   });
 
   it('V4: returns null when on-chain unavailable (no derived fallback)', () => {
-    const noOnChain = { reserveSize: '0', decimals: 18, tokenPrice: 1, utilizationPct: 93.14 };
+    const noOnChain = { supplied: '0', decimals: 18, tokenPrice: 1, utilizationPct: 93.14 };
     expect(getDisplayTotalBorrowedUsd(noOnChain, 'v4')).toBeNull();
   });
 });
 
 describe('getDisplayAvailableLiquidityUsd', () => {
-  it('V3: uses on-chain availableLiquidity when available', () => {
+  it('V3: uses on-chain liquidity when available', () => {
     expect(
       getDisplayAvailableLiquidityUsd({
-        availableLiquidity: '76610908377',
+        liquidity: '76610908377',
         decimals: 6,
         tokenPrice: 1.0002,
-        reserveSize: '100000000000000',
+        supplied: '100000000000000',
         utilizationPct: 50,
       }, 'v3'),
     ).toBeCloseTo(76626.23, 2);
   });
 
-  it('V4: uses on-chain availableLiquidity when available', () => {
+  it('V4: uses on-chain liquidity when available', () => {
     expect(
       getDisplayAvailableLiquidityUsd({
-        availableLiquidity: '76610908377',
+        liquidity: '76610908377',
         decimals: 6,
         tokenPrice: 1.0002,
-        reserveSize: '0',
+        supplied: '0',
         utilizationPct: 93.14,
       }, 'v4'),
     ).toBeCloseTo(76626.23, 2);
   });
 
-  it('V3: falls back to derived reserveSize - totalBorrowed when on-chain unavailable', () => {
-    const noOnChain = { reserveSize: '1000000000000000000000', decimals: 18, tokenPrice: 1, utilizationPct: 50 };
+  it('V3: falls back to derived supplied - totalBorrowed when on-chain unavailable', () => {
+    const noOnChain = { supplied: '1000000000000000000000', decimals: 18, tokenPrice: 1, utilizationPct: 50 };
     // totalBorrowed = 1000 * 50/100 = 500, liquidity = 1000 - 500 = 500
     expect(getDisplayAvailableLiquidityUsd(noOnChain, 'v3')).toBe(500);
   });
 
   it('V4: returns null when on-chain unavailable (no derived fallback)', () => {
-    const noOnChain = { reserveSize: '0', decimals: 18, tokenPrice: 1, utilizationPct: 93.14 };
+    const noOnChain = { supplied: '0', decimals: 18, tokenPrice: 1, utilizationPct: 93.14 };
     expect(getDisplayAvailableLiquidityUsd(noOnChain, 'v4')).toBeNull();
   });
 });
@@ -242,12 +242,12 @@ describe('getScenarioSupplySizeUsd (reserve size context)', () => {
     expect(reserveSizeUsd).toBeNull();
   });
 
-  it('returns 0 when reserveSize-derived USD is 0', () => {
+  it('returns 0 when supplied-derived USD is 0', () => {
     const reserveSizeUsd = nativeToUsd('0', 18, 1);
     expect(reserveSizeUsd).toBe(0);
   });
 
-  it('applies scenario input when reserveSize is non-zero', () => {
+  it('applies scenario input when supplied is non-zero', () => {
     expect(
       getScenarioSupplySizeUsd({
         reserveSizeUsd: 1000,
@@ -259,7 +259,7 @@ describe('getScenarioSupplySizeUsd (reserve size context)', () => {
     ).toBe(1500);
   });
 
-  it('applies scenario input when reserveSize is 0', () => {
+  it('applies scenario input when supplied is 0', () => {
     expect(
       getScenarioSupplySizeUsd({
         reserveSizeUsd: 0,
@@ -279,11 +279,11 @@ describe('getSuppliableUsd', () => {
     ).toBe(1000);
   });
 
-  it('falls back to supplyCap - reserveSize when suppliable is missing', () => {
+  it('falls back to supplyCap - supplied when suppliable is missing', () => {
     expect(
       getSuppliableUsd({
         supplyCap: '2000000000000000000000',
-        reserveSize: '1000000000000000000000',
+        supplied: '1000000000000000000000',
         decimals: 18,
         tokenPrice: 1,
       }),
@@ -292,7 +292,7 @@ describe('getSuppliableUsd', () => {
 
   it('returns null when suppliable missing and supplyCap missing', () => {
     expect(
-      getSuppliableUsd({ reserveSize: '1000', decimals: 18, tokenPrice: 1 }),
+      getSuppliableUsd({ supplied: '1000', decimals: 18, tokenPrice: 1 }),
     ).toBeNull();
   });
 });
@@ -308,8 +308,8 @@ describe('getBorrowableUsd', () => {
     expect(
       getBorrowableUsd({
         borrowCap: '1000000000000000000000',
-        totalVariableDebt: '400000000000000000000',
-        availableLiquidity: '700000000000000000000',
+        borrowed: '400000000000000000000',
+        liquidity: '700000000000000000000',
         decimals: 18,
         tokenPrice: 1,
       }),

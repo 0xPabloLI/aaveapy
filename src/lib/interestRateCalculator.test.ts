@@ -11,14 +11,14 @@ import type { ReserveWithSpread } from '@/types/aave';
 const baseRateInput: RateCalcInput = {
   decimals: 18,
   deficit: '0',
-  availableLiquidity: '1000000000000000000000000',  // 1M tokens (18 decimals)
-  totalVariableDebt: '500000000000000000000000',    // 500k tokens
+  liquidity: '1000000000000000000000000',  // 1M tokens (18 decimals)
+  borrowed: '500000000000000000000000',    // 500k tokens
   /* Rate params are now percent numbers (not RAY strings) */
-  reserveFactor: 10,         // 10%
-  variableRateSlope1: 4,     // 4%
-  variableRateSlope2: 60,    // 60%
-  baseVariableBorrowRate: 0, // 0%
-  optimalUsageRate: 80,      // 80%
+  protocolFee: 10,         // 10%
+  slopeBelowOptimal: 4,     // 4%
+  slopeAboveOptimal: 60,    // 60%
+  baseBorrowRate: 0, // 0%
+  optimalUtilization: 80,      // 80%
 };
 
 describe('simulateNativeRatesAfterSupply', () => {
@@ -41,7 +41,7 @@ describe('simulateNativeRatesAfterSupply', () => {
   it('returns zero rates when debt is zero', () => {
     const zeroDebtInput: RateCalcInput = {
       ...baseRateInput,
-      totalVariableDebt: '0',
+      borrowed: '0',
     };
     const forecast = simulateNativeRatesAfterSupply(zeroDebtInput, '1000');
 
@@ -122,16 +122,16 @@ describe('simulateNativeRatesAfterActions', () => {
   });
 });
 
-describe('totalVariableDebt precision (replaces totalScaledVariableDebt × variableBorrowIndex)', () => {
+describe('borrowed precision (replaces totalScaledVariableDebt × variableBorrowIndex)', () => {
   it('produces correct utilization for 33.33% utilization (debt=500k, liquidity=1M, 18 decimals)', () => {
     const result = simulateNativeRatesAfterActions(baseRateInput, { supplyAmount: '0', borrowAmount: '0' });
     expect(result.utilizationRatePercent).toBeCloseTo(33.33, 1);
   });
 
-  it('handles non-trivial borrow index (totalVariableDebt already includes index multiplication)', () => {
+  it('handles non-trivial borrow index (borrowed already includes index multiplication)', () => {
     const inputWithIndex: RateCalcInput = {
       ...baseRateInput,
-      totalVariableDebt: '500000000000000000000000', // 500k tokens (already index-adjusted)
+      borrowed: '500000000000000000000000', // 500k tokens (already index-adjusted)
     };
     const result = simulateNativeRatesAfterActions(inputWithIndex, { supplyAmount: '0', borrowAmount: '0' });
     // utilization = 500k / (1M + 500k) = 33.33%
@@ -144,19 +144,19 @@ describe('totalVariableDebt precision (replaces totalScaledVariableDebt × varia
     const usdcInput: RateCalcInput = {
       ...baseRateInput,
       decimals: 6,
-      availableLiquidity: '1000000000000',  // 1M USDC (6 decimals)
-      totalVariableDebt: '500000000000',    // 500k USDC
+      liquidity: '1000000000000',  // 1M USDC (6 decimals)
+      borrowed: '500000000000',    // 500k USDC
     };
     const result = simulateNativeRatesAfterActions(usdcInput, { supplyAmount: '0', borrowAmount: '0' });
     expect(result.utilizationRatePercent).toBeCloseTo(33.33, 1);
   });
 
-  it('handles very large totalVariableDebt values without precision loss', () => {
+  it('handles very large borrowed values without precision loss', () => {
     // ~4.5M tokens with 18 decimals
     const largeDebtInput: RateCalcInput = {
       ...baseRateInput,
-      availableLiquidity: '5000000000000000000000000',  // 5M
-      totalVariableDebt: '4512942554869044630386380',   // ~4.51M (realistic on-chain value)
+      liquidity: '5000000000000000000000000',  // 5M
+      borrowed: '4512942554869044630386380',   // ~4.51M (realistic on-chain value)
     };
     const result = simulateNativeRatesAfterActions(largeDebtInput, { supplyAmount: '0', borrowAmount: '0' });
     // utilization ≈ 4.51M / (5M + 4.51M) ≈ 47.4%
@@ -199,13 +199,13 @@ describe('deficit impact on rates', () => {
   });
 });
 
-describe('baseVariableBorrowRate impact on rates', () => {
-  it('non-zero baseVariableBorrowRate raises both borrow and supply rates', () => {
+describe('baseBorrowRate impact on rates', () => {
+  it('non-zero baseBorrowRate raises both borrow and supply rates', () => {
     const zeroBase = simulateNativeRatesAfterActions(baseRateInput, { supplyAmount: '0', borrowAmount: '0' });
 
     const withBase: RateCalcInput = {
       ...baseRateInput,
-      baseVariableBorrowRate: 1, // 1% (was '10000000000000000000000000' in RAY)
+      baseBorrowRate: 1, // 1% (was '10000000000000000000000000' in RAY)
     };
     const baseResult = simulateNativeRatesAfterActions(withBase, { supplyAmount: '0', borrowAmount: '0' });
 
@@ -213,9 +213,9 @@ describe('baseVariableBorrowRate impact on rates', () => {
     expect(baseResult.supplyAprPercent).toBeGreaterThan(zeroBase.supplyAprPercent);
   });
 
-  it('zero baseVariableBorrowRate is the default behavior', () => {
+  it('zero baseBorrowRate is the default behavior', () => {
     const result = simulateNativeRatesAfterActions(
-      { ...baseRateInput, baseVariableBorrowRate: 0 },
+      { ...baseRateInput, baseBorrowRate: 0 },
       { supplyAmount: '0', borrowAmount: '0' }
     );
     const baseline = simulateNativeRatesAfterActions(baseRateInput, { supplyAmount: '0', borrowAmount: '0' });
@@ -235,15 +235,15 @@ describe('hasRateCalcFields', () => {
     tokenSymbol: 'USDC',
     tokenAddress: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
     decimals: 6,
-    availableLiquidity: '1000000000000',
-    totalVariableDebt: '500000000000',
+    liquidity: '1000000000000',
+    borrowed: '500000000000',
     /* Rate params are now percent numbers */
-    reserveFactor: 10,
-    variableRateSlope1: 4,
-    variableRateSlope2: 60,
-    optimalUsageRate: 80,
+    protocolFee: 10,
+    slopeBelowOptimal: 4,
+    slopeAboveOptimal: 60,
+    optimalUtilization: 80,
     deficit: '0',
-    baseVariableBorrowRate: 0,
+    baseBorrowRate: 0,
   };
 
   it('returns true when all 9 rate fields are present', () => {
@@ -258,9 +258,9 @@ describe('hasRateCalcFields', () => {
   });
 
   const requiredFields = [
-    'decimals', 'availableLiquidity', 'totalVariableDebt', 'deficit',
-    'reserveFactor', 'variableRateSlope1', 'variableRateSlope2',
-    'baseVariableBorrowRate', 'optimalUsageRate',
+    'decimals', 'liquidity', 'borrowed', 'deficit',
+    'protocolFee', 'slopeBelowOptimal', 'slopeAboveOptimal',
+    'baseBorrowRate', 'optimalUtilization',
   ] as const;
 
   for (const field of requiredFields) {

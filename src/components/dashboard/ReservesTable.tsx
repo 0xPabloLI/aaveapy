@@ -426,7 +426,7 @@ const ReservesTable = ({
   };
 
   const getDisplayReserveSizeUsd = (reserve: ReserveWithSpread): number | null => {
-    const usd = nativeToUsd(reserve.reserveSize, reserve.decimals, reserve.tokenPrice);
+    const usd = nativeToUsd(reserve.supplied, reserve.decimals, reserve.tokenPrice);
     if (usd == null || !Number.isFinite(usd)) return usd ?? null;
     return getScenarioSupplySizeUsd({
       reserveSizeUsd: usd,

@@ -124,20 +124,20 @@ export interface ReserveWithSpread extends BannedReserveUsdFields {
   
   // Rate calculation fields (from /api/markets reserves)
   decimals?: number;
-  availableLiquidity?: string;
-  totalVariableDebt?: string;
-  reserveSize?: string;
+  supplied?: string;
+  borrowed?: string;
+  liquidity?: string;
   supplyCap?: string;
   borrowCap?: string;
   suppliable?: string;
   borrowable?: string;
   // Rate-model fields are percent numbers (e.g., 9 means 9%) for V3/V4 unified API.
-  reserveFactor?: number;
-  variableRateSlope1?: number;
-  variableRateSlope2?: number;
-  optimalUsageRate?: number;
+  protocolFee?: number;
+  slopeBelowOptimal?: number;
+  slopeAboveOptimal?: number;
+  optimalUtilization?: number;
   deficit?: string;
-  baseVariableBorrowRate?: number;
+  baseBorrowRate?: number;
 
   // Protocol incentives (from Aave protocol, array of percentage values)
   supplyIncentives?: number[];

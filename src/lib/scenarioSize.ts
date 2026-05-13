@@ -110,15 +110,15 @@ export const getTotalBorrowedUsd = ({
  * back to the derived calculation (V3 only).
  */
 export const getReserveTotalBorrowedUsd = (reserve: {
-  totalVariableDebt?: string | null;
+  borrowed?: string | null;
   decimals?: number | null;
   tokenPrice?: number | null;
 }): number | null => {
-  const { totalVariableDebt, decimals, tokenPrice } = reserve;
-  if (!totalVariableDebt) return null;
+  const { borrowed, decimals, tokenPrice } = reserve;
+  if (!borrowed) return null;
   if (decimals == null || !Number.isFinite(decimals) || decimals < 0) return null;
   if (tokenPrice == null || !Number.isFinite(tokenPrice) || tokenPrice <= 0) return null;
-  const raw = Number(totalVariableDebt);
+  const raw = Number(borrowed);
   if (!Number.isFinite(raw) || raw < 0) return null;
   const tokens = raw / Math.pow(10, decimals);
   return tokens * tokenPrice;
@@ -126,30 +126,30 @@ export const getReserveTotalBorrowedUsd = (reserve: {
 
 /**
  * Compute current available liquidity (USD) directly from the reserve's on-chain
- * `availableLiquidity` field (raw token units). This is the source of truth
+ * `liquidity` field (raw token units). This is the source of truth
  * from the Aave Pool / Spoke contract and matches what users see on
  * app.aave.com / pro.aave.com.
  *
- * For V4, availableLiquidity is Hub-level (free liquidity shared across Spokes).
+ * For V4, liquidity is Hub-level (free liquidity shared across Spokes).
  * Do NOT derive from `reserveSizeUsd - totalBorrowedUsd` — even though both
- * reserveSize and totalVariableDebt are Reserve-level (same-layer), the result
+ * supplied and borrowed are Reserve-level (same-layer), the result
  * of that subtraction is a per-Spoke remainder, NOT the Hub-level
- * availableLiquidity. They are fundamentally different quantities in V4's
+ * liquidity. They are fundamentally different quantities in V4's
  * architecture (see Hub vs Reserve boundary comment above).
  *
  * Returns `null` when any required input is missing/invalid so callers can fall
  * back to the derived calculation (V3 only).
  */
 export const getReserveAvailableLiquidityUsd = (reserve: {
-  availableLiquidity?: string | null;
+  liquidity?: string | null;
   decimals?: number | null;
   tokenPrice?: number | null;
 }): number | null => {
-  const { availableLiquidity, decimals, tokenPrice } = reserve;
-  if (!availableLiquidity) return null;
+  const { liquidity, decimals, tokenPrice } = reserve;
+  if (!liquidity) return null;
   if (decimals == null || !Number.isFinite(decimals) || decimals < 0) return null;
   if (tokenPrice == null || !Number.isFinite(tokenPrice) || tokenPrice <= 0) return null;
-  const raw = Number(availableLiquidity);
+  const raw = Number(liquidity);
   if (!Number.isFinite(raw) || raw < 0) return null;
   const tokens = raw / Math.pow(10, decimals);
   return tokens * tokenPrice;
@@ -234,17 +234,17 @@ export const getAvailableToBorrowUsd = ({
 
 /**
  * V4-aware total borrowed (USD).
- * V3: on-chain totalVariableDebt ?? reserveSizeUsd * utilizationPct / 100
+ * V3: on-chain borrowed ?? reserveSizeUsd * utilizationPct / 100
  *     (V3: both Pool-level, safe)
- * V4: on-chain totalVariableDebt only (no derived fallback —
- *     reserveSize(Reserve) * utilizationPct(Hub) is cross-layer)
+ * V4: on-chain borrowed only (no derived fallback —
+ *     supplied(Reserve) * utilizationPct(Hub) is cross-layer)
  */
 export const getDisplayTotalBorrowedUsd = (
   reserve: {
-    totalVariableDebt?: string | null;
+    borrowed?: string | null;
     decimals?: number | null;
     tokenPrice?: number | null;
-    reserveSize?: string | null;
+    supplied?: string | null;
     utilizationPct?: number | null;
   },
   protocolVersion: ProtocolVersion,
@@ -253,7 +253,7 @@ export const getDisplayTotalBorrowedUsd = (
   if (onChain != null) return onChain;
   // V4: cross-layer — reserveSize(Reserve) × utilizationPct(Hub)
   if (protocolVersion === 'v4') return null;
-  const reserveSizeUsd = nativeToUsd(reserve.reserveSize, reserve.decimals, reserve.tokenPrice);
+  const reserveSizeUsd = nativeToUsd(reserve.supplied, reserve.decimals, reserve.tokenPrice);
   return getTotalBorrowedUsd({
     reserveSizeUsd,
     utilizationPct: reserve.utilizationPct,
@@ -262,19 +262,19 @@ export const getDisplayTotalBorrowedUsd = (
 
 /**
  * V4-aware available liquidity (USD).
- * V3: on-chain availableLiquidity ?? reserveSizeUsd - totalBorrowedUsd
+ * V3: on-chain liquidity ?? reserveSizeUsd - totalBorrowedUsd
  *     (V3: both Pool-level, safe)
- * V4: on-chain availableLiquidity only (no derived fallback —
- *     availableLiquidity is Hub-level while reserveSize - totalBorrowed
+ * V4: on-chain liquidity only (no derived fallback —
+ *     liquidity is Hub-level while supplied - totalBorrowed
  *     is per-Spoke, fundamentally different quantities in V4)
  */
 export const getDisplayAvailableLiquidityUsd = (
   reserve: {
-    availableLiquidity?: string | null;
-    totalVariableDebt?: string | null;
+    liquidity?: string | null;
+    borrowed?: string | null;
     decimals?: number | null;
     tokenPrice?: number | null;
-    reserveSize?: string | null;
+    supplied?: string | null;
     utilizationPct?: number | null;
   },
   protocolVersion: ProtocolVersion,
@@ -283,7 +283,7 @@ export const getDisplayAvailableLiquidityUsd = (
   if (onChain != null) return onChain;
   // V4: availableLiquidity is Hub-level; reserveSize - totalBorrowed is per-Spoke
   if (protocolVersion === 'v4') return null;
-  const reserveSizeUsd = nativeToUsd(reserve.reserveSize, reserve.decimals, reserve.tokenPrice);
+  const reserveSizeUsd = nativeToUsd(reserve.supplied, reserve.decimals, reserve.tokenPrice);
   const totalBorrowedUsd = getTotalBorrowedUsd({
     reserveSizeUsd,
     utilizationPct: reserve.utilizationPct,
@@ -299,14 +299,14 @@ export const getDisplayAvailableLiquidityUsd = (
  * Both Reserve-level: supplyCap and reserveSize are per-Spoke.
  *
  * API priority: reserve.suppliable (native token units).
- * Fallback: supplyCap - reserveSize (same-layer, safe for V4).
+ * Fallback: supplyCap - supplied (same-layer, safe for V4).
  *
  * Result is clamped to ≥ 0 (Math.max).
  */
 export const getSuppliableUsd = (reserve: {
   suppliable?: string | null;
   supplyCap?: string | null;
-  reserveSize?: string | null;
+  supplied?: string | null;
   decimals?: number | null;
   tokenPrice?: number | null;
   supplyDisabled?: boolean;
@@ -315,7 +315,7 @@ export const getSuppliableUsd = (reserve: {
   const fromApi = nativeToUsd(reserve.suppliable, reserve.decimals, reserve.tokenPrice);
   if (fromApi != null) return Math.max(0, fromApi);
   const supplyCapUsd = nativeToUsd(reserve.supplyCap, reserve.decimals, reserve.tokenPrice);
-  const reserveSizeUsd = nativeToUsd(reserve.reserveSize, reserve.decimals, reserve.tokenPrice);
+  const reserveSizeUsd = nativeToUsd(reserve.supplied, reserve.decimals, reserve.tokenPrice);
   if (supplyCapUsd == null || !Number.isFinite(supplyCapUsd) || supplyCapUsd <= 0) return null;
   if (reserveSizeUsd == null || !Number.isFinite(reserveSizeUsd)) return null;
   return Math.max(0, supplyCapUsd - reserveSizeUsd);
@@ -325,7 +325,7 @@ export const getSuppliableUsd = (reserve: {
  * Borrowable USD — how much more can be borrowed.
  *
  * API priority: reserve.borrowable (native token units).
- * Fallback: min(borrowCap - totalVariableDebt, availableLiquidity).
+ * Fallback: min(borrowCap - borrowed, liquidity).
  *   Valid for both V3 and V4 (verified against on-chain data).
  *
  * Result is clamped to ≥ 0 via getAvailableToBorrowUsd (Math.max).
@@ -333,8 +333,8 @@ export const getSuppliableUsd = (reserve: {
 export const getBorrowableUsd = (reserve: {
   borrowable?: string | null;
   borrowCap?: string | null;
-  totalVariableDebt?: string | null;
-  availableLiquidity?: string | null;
+  borrowed?: string | null;
+  liquidity?: string | null;
   decimals?: number | null;
   tokenPrice?: number | null;
   borrowDisabled?: boolean;
@@ -343,7 +343,7 @@ export const getBorrowableUsd = (reserve: {
   const fromApi = nativeToUsd(reserve.borrowable, reserve.decimals, reserve.tokenPrice);
   if (fromApi != null) return Math.max(0, fromApi);
   const borrowCapUsd = nativeToUsd(reserve.borrowCap, reserve.decimals, reserve.tokenPrice);
-  const borrowedUsd = nativeToUsd(reserve.totalVariableDebt, reserve.decimals, reserve.tokenPrice);
-  const availableLiquidityUsd = nativeToUsd(reserve.availableLiquidity, reserve.decimals, reserve.tokenPrice);
+  const borrowedUsd = nativeToUsd(reserve.borrowed, reserve.decimals, reserve.tokenPrice);
+  const availableLiquidityUsd = nativeToUsd(reserve.liquidity, reserve.decimals, reserve.tokenPrice);
   return getAvailableToBorrowUsd({ borrowedUsd, borrowCapUsd, availableLiquidityUsd });
 };

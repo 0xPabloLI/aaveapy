@@ -36,7 +36,7 @@ const reserve: ReserveWithSpread = {
   tokenAddress: '0x0000000000000000000000000000000000000001',
   tokenPrice: 1,
   decimals: 18,
-  reserveSize: '1000000000000000000000000',
+  supplied: '1000000000000000000000000',
   supplyCap: '2000000000000000000000000',
   borrowCap: '1000000000000000000000000',
   utilizationPct: 45,

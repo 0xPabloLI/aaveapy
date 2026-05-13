@@ -8,36 +8,35 @@ import type { ReserveWithSpread } from '@/types/aave';
  */
 export interface RateCalcInput {
   decimals: number;
-  availableLiquidity: string;
-  totalVariableDebt: string;
+  liquidity: string;
+  borrowed: string;
   deficit: string;
-  reserveFactor: number;
-  variableRateSlope1: number;
-  variableRateSlope2: number;
-  baseVariableBorrowRate: number;
-  optimalUsageRate: number;
+  protocolFee: number;
+  slopeBelowOptimal: number;
+  slopeAboveOptimal: number;
+  baseBorrowRate: number;
+  optimalUtilization: number;
 }
 
 /** Type guard: returns true when a reserve has all fields needed for rate calculation. */
 export function hasRateCalcFields(reserve: ReserveWithSpread): reserve is ReserveWithSpread & RateCalcInput {
   return (
     reserve.decimals != null &&
-    reserve.availableLiquidity != null &&
-    reserve.totalVariableDebt != null &&
+    reserve.liquidity != null &&
+    reserve.borrowed != null &&
     reserve.deficit != null &&
-    reserve.reserveFactor != null &&
-    reserve.variableRateSlope1 != null &&
-    reserve.variableRateSlope2 != null &&
-    reserve.baseVariableBorrowRate != null &&
-    reserve.optimalUsageRate != null
+    reserve.protocolFee != null &&
+    reserve.slopeBelowOptimal != null &&
+    reserve.slopeAboveOptimal != null &&
+    reserve.baseBorrowRate != null &&
+    reserve.optimalUtilization != null
   );
 }
 
 /**
  * Aave two-slope interest rate model using Float percent math.
  *
- * Inputs are percent numbers (e.g., optimalUsageRate = 80 for 80%).
- * Returns all rates as percent numbers (e.g., supplyAprPercent = 4.5 for 4.5%).
+ * Inputs are percent numbers (e.g., optimalUtilization = 80 for 80%).
  *
  * Borrow rate (two-slope model):
  *   if utilization <= optimal:
@@ -46,8 +45,8 @@ export function hasRateCalcFields(reserve: ReserveWithSpread): reserve is Reserv
  *     borrowRate = baseRate + slope1 + slope2 * (utilization - optimal) / (100 - optimal)
  *
  * Supply rate (liquidity rate):
- *   supplyRate = borrowRate * utilization * (1 - reserveFactor / 100)
- *   where utilization = totalVariableDebt / (availableLiquidity + totalVariableDebt)
+ *   supplyRate = borrowRate * utilization * (1 - protocolFee / 100)
+ *   where utilization = borrowed / (liquidity + borrowed)
  *   (Note: supply-side utilization includes deficit in denominator)
  *
  * APY conversion:
@@ -118,7 +117,7 @@ function computeRates(
   rateInput: RateCalcInput,
   borrowUsageDenominator: bigint,
   supplyUsageDenominator: bigint,
-  totalVariableDebt: bigint,
+  totalBorrowed: bigint,
   addedLiquidityRaw: bigint,
   addedBorrowRaw: bigint,
 ): NativeRateSimulation {
@@ -129,37 +128,37 @@ function computeRates(
   const decimals = Number.isFinite(rateInput.decimals) ? rateInput.decimals : 18;
   const scaleNumber = Math.pow(10, decimals);
 
-  const totalVariableDebtTokens = Number(totalVariableDebt) / scaleNumber;
+  const totalBorrowedTokens = Number(totalBorrowed) / scaleNumber;
   const borrowDenominatorTokens = Number(borrowUsageDenominator) / scaleNumber;
   const supplyDenominatorTokens = Number(supplyUsageDenominator) / scaleNumber;
 
   // Utilization as percent (0-100)
   const borrowUsageRatePct =
     borrowDenominatorTokens > 0
-      ? (totalVariableDebtTokens / borrowDenominatorTokens) * 100
+      ? (totalBorrowedTokens / borrowDenominatorTokens) * 100
       : 0;
 
   const supplyUsageRatePct =
     supplyDenominatorTokens > 0
-      ? (totalVariableDebtTokens / supplyDenominatorTokens) * 100
+      ? (totalBorrowedTokens / supplyDenominatorTokens) * 100
       : 0;
 
   const borrowRatePct = calculateVariableBorrowRate(
     borrowUsageRatePct,
-    rateInput.optimalUsageRate,
-    rateInput.baseVariableBorrowRate,
-    rateInput.variableRateSlope1,
-    rateInput.variableRateSlope2
+    rateInput.optimalUtilization,
+    rateInput.baseBorrowRate,
+    rateInput.slopeBelowOptimal,
+    rateInput.slopeAboveOptimal
   );
 
-  // supplyRate = borrowRate * utilization * (1 - reserveFactor / 100)
-  const reserveFactorFraction = Math.max(0, Math.min(100, rateInput.reserveFactor)) / 100;
-  const supplyRatePct = borrowRatePct * (supplyUsageRatePct / 100) * (1 - reserveFactorFraction);
+  // supplyRate = borrowRate * utilization * (1 - protocolFee / 100)
+  const protocolFeeFraction = Math.max(0, Math.min(100, rateInput.protocolFee)) / 100;
+  const supplyRatePct = borrowRatePct * (supplyUsageRatePct / 100) * (1 - protocolFeeFraction);
 
   return {
     utilizationRateRay: String(borrowUsageRatePct),
     utilizationRatePercent: Math.max(0, borrowUsageRatePct),
-    optimalUtilizationPercent: rateInput.optimalUsageRate,
+    optimalUtilizationPercent: rateInput.optimalUtilization,
     supplyAprPercent: Math.max(0, supplyRatePct),
     borrowAprPercent: Math.max(0, borrowRatePct),
     supplyApyPercent: Math.max(0, aprPercentToApyPercent(supplyRatePct)),
@@ -184,20 +183,20 @@ export function simulateNativeRatesAfterActions(
 
   // On-chain raw string values are already in base units (e.g., 1e18 per token).
   // Use BigInt directly — no additional parseUnits scaling.
-  const baseAvailableLiquidity = BigInt(rateInput.availableLiquidity || '0');
-  const baseTotalVariableDebt = BigInt(rateInput.totalVariableDebt || '0');
+  const baseLiquidity = BigInt(rateInput.liquidity || '0');
+  const baseBorrowed = BigInt(rateInput.borrowed || '0');
   const baseDeficit = BigInt(rateInput.deficit || '0');
-  const totalVariableDebt = baseTotalVariableDebt + addedBorrow;
+  const newBorrowed = baseBorrowed + addedBorrow;
 
   // borrowUsageDenominator: does NOT include deficit (used for borrow rate, external utilization display)
-  const borrowUsageDenominatorRaw = baseAvailableLiquidity + baseTotalVariableDebt + addedLiquidity;
+  const borrowUsageDenominatorRaw = baseLiquidity + baseBorrowed + addedLiquidity;
   const borrowUsageDenominator = borrowUsageDenominatorRaw > 0n ? borrowUsageDenominatorRaw : 0n;
 
   // supplyUsageDenominator: includes deficit (used for liquidity rate calculation)
-  const supplyUsageDenominatorRaw = baseAvailableLiquidity + baseTotalVariableDebt + baseDeficit + addedLiquidity;
+  const supplyUsageDenominatorRaw = baseLiquidity + baseBorrowed + baseDeficit + addedLiquidity;
   const supplyUsageDenominator = supplyUsageDenominatorRaw > 0n ? supplyUsageDenominatorRaw : 0n;
 
-  return computeRates(rateInput, borrowUsageDenominator, supplyUsageDenominator, totalVariableDebt, addedLiquidity, addedBorrow);
+  return computeRates(rateInput, borrowUsageDenominator, supplyUsageDenominator, newBorrowed, addedLiquidity, addedBorrow);
 }
 
 export function simulateNativeRatesAfterSupply(

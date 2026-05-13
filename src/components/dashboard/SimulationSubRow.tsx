@@ -255,7 +255,7 @@ const SimulationSubRow = ({
   };
 
   const currentSupplySizeUsd = (() => {
-    const size = nativeToUsd(reserve.reserveSize, reserve.decimals, reserve.tokenPrice);
+    const size = nativeToUsd(reserve.supplied, reserve.decimals, reserve.tokenPrice);
     return size != null && Number.isFinite(size) ? size : null;
   })();
   const afterSupplySizeUsd =

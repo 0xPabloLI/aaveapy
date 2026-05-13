@@ -206,7 +206,7 @@ export interface MarketMetrics {
   totalBorrowedUsdDelta: number | null;
   supplyCapUsd: number | null;
   borrowCapUsd: number | null;
-  reserveFactor: number | null;
+  protocolFee: number | null; // percent (e.g., 10 = 10%)
   optimalUtilization: number | null;
   availableSupplyRoomUsd: number | null;
   supplyCapExceeded: boolean;
@@ -332,22 +332,22 @@ const sumMeritValues = (values?: MeritIncentive[], isApy = false): number => {
 };
 
 /**
- * Supply: reserveSize (native → USD). Borrow: borrowed USD ≈ reserveSize × utilization (Merit TVL proxy when no campaign TVL exists).
- * V4: reserveSize may be 0 or a per-Spoke slice — use on-chain totalVariableDebt for borrow side,
- *     and return undefined for supply side when reserveSize-derived USD is 0/unreliable.
+ * Supply: supplied (native → USD). Borrow: borrowed USD ≈ supplied × utilization (Merit TVL proxy when no campaign TVL exists).
+ * V4: supplied may be 0 or a per-Spoke slice — use on-chain borrowed for borrow side,
+ *     and return undefined for supply side when supplied-derived USD is 0/unreliable.
  */
 const getMeritAnchorTvlUsd = (reserve: ReserveWithSpread, side: RateSide, protocolVersion: ProtocolVersion): number | undefined => {
   if (protocolVersion === 'v4') {
     // V4: reserveSizeUsd is unreliable for both supply and borrow anchor
     if (side === 'supply') {
-      const size = nativeToUsd(reserve.reserveSize, reserve.decimals, reserve.tokenPrice);
+      const size = nativeToUsd(reserve.supplied, reserve.decimals, reserve.tokenPrice);
       if (size != null && Number.isFinite(size) && size > 0) return size;
       return undefined;
     }
-    // Borrow: use on-chain totalVariableDebt if available
-    const { totalVariableDebt, decimals, tokenPrice } = reserve;
-    if (totalVariableDebt && decimals != null && tokenPrice != null && tokenPrice > 0) {
-      const raw = Number(totalVariableDebt);
+    // Borrow: use on-chain borrowed if available
+    const { borrowed, decimals, tokenPrice } = reserve;
+    if (borrowed && decimals != null && tokenPrice != null && tokenPrice > 0) {
+      const raw = Number(borrowed);
       if (Number.isFinite(raw) && raw >= 0) {
         const tokens = raw / Math.pow(10, decimals);
         const usd = tokens * tokenPrice;
@@ -356,8 +356,8 @@ const getMeritAnchorTvlUsd = (reserve: ReserveWithSpread, side: RateSide, protoc
     }
     return undefined;
   }
-  // V3: reserveSize is reliable
-  const size = nativeToUsd(reserve.reserveSize, reserve.decimals, reserve.tokenPrice);
+  // V3: supplied is reliable
+  const size = nativeToUsd(reserve.supplied, reserve.decimals, reserve.tokenPrice);
   if (size == null || !Number.isFinite(size) || size <= 0) return undefined;
   if (side === 'supply') return size;
   const u = reserve.utilizationPct;
@@ -989,7 +989,7 @@ export function buildRateSimulationResult({
   // Calculate cap constraints for capping inputs
   const supplyCapUsd = nativeToUsd(reserve.supplyCap, reserve.decimals, reserve.tokenPrice) ?? null;
   const borrowCapUsd = nativeToUsd(reserve.borrowCap, reserve.decimals, reserve.tokenPrice) ?? null;
-  const currentReserveSizeUsd = nativeToUsd(reserve.reserveSize, reserve.decimals, reserve.tokenPrice) ?? null;
+  const currentReserveSizeUsd = nativeToUsd(reserve.supplied, reserve.decimals, reserve.tokenPrice) ?? null;
   
   // Calculate available supply room (prefer API suppliable, fallback to cap-size)
   const availableSupplyRoomUsd = (() => {
@@ -1019,7 +1019,7 @@ export function buildRateSimulationResult({
     ? (() => {
         const decimals = reserveRateInput.decimals ?? 18;
         const scale = Math.pow(10, decimals);
-        const totalDebt = Number(reserveRateInput.totalVariableDebt) / scale;
+        const totalDebt = Number(reserveRateInput.borrowed) / scale;
         return totalDebt * tokenPrice;
       })()
     : null;
@@ -1037,8 +1037,8 @@ export function buildRateSimulationResult({
       ? (() => {
           const decimals = reserveRateInput.decimals ?? 18;
           const scale = Math.pow(10, decimals);
-          const availableLiquidityRaw = Number(reserveRateInput.availableLiquidity) / scale;
-          return availableLiquidityRaw * tokenPrice + effectiveSupplyInputUsd;
+          const liquidityRaw = Number(reserveRateInput.liquidity) / scale;
+            return liquidityRaw * tokenPrice + effectiveSupplyInputUsd;
         })()
       : null;
 
@@ -1528,7 +1528,7 @@ export function buildRateSimulationResult({
     if (!reserveRateInput || !tokenPrice) {
       const protocolVersion = getProtocolVersion(reserve.marketName);
       const isV3 = protocolVersion === 'v3';
-      const computedReserveSizeUsd = nativeToUsd(reserve.reserveSize, reserve.decimals, reserve.tokenPrice);
+      const computedReserveSizeUsd = nativeToUsd(reserve.supplied, reserve.decimals, reserve.tokenPrice);
       const fallbackTotalBorrowedUsd = isV3
         ? deriveTotalBorrowedUsd(computedReserveSizeUsd, reserve.utilizationPct)
         : null;
@@ -1546,7 +1546,7 @@ export function buildRateSimulationResult({
         totalBorrowedUsdDelta: null,
         supplyCapUsd,
         borrowCapUsd,
-        reserveFactor: null,
+        protocolFee: null,
         optimalUtilization: null,
         ...supplyCapFields,
         ...borrowCapFields,
@@ -1556,15 +1556,15 @@ export function buildRateSimulationResult({
     const decimals = reserveRateInput.decimals ?? 18;
     const scale = Math.pow(10, decimals);
 
-    const availableLiquidityRaw = Number(reserveRateInput.availableLiquidity) / scale;
-    const onChainAvailableLiquidityUsd = availableLiquidityRaw * tokenPrice;
+    const liquidityRaw = Number(reserveRateInput.liquidity) / scale;
+    const onChainAvailableLiquidityUsd = liquidityRaw * tokenPrice;
 
-    const totalBorrowedRaw = Number(reserveRateInput.totalVariableDebt) / scale;
+    const totalBorrowedRaw = Number(reserveRateInput.borrowed) / scale;
     const onChainTotalBorrowedUsd = totalBorrowedRaw * tokenPrice;
 
     const protocolVersion = getProtocolVersion(reserve.marketName);
     const isV3 = protocolVersion === 'v3';
-    const computedReserveSizeUsd = nativeToUsd(reserve.reserveSize, reserve.decimals, reserve.tokenPrice);
+    const computedReserveSizeUsd2 = nativeToUsd(reserve.supplied, reserve.decimals, reserve.tokenPrice);
 
     const totalBorrowedUsd =
       Number.isFinite(onChainTotalBorrowedUsd) && onChainTotalBorrowedUsd >= 0
@@ -1577,15 +1577,14 @@ export function buildRateSimulationResult({
       Number.isFinite(onChainAvailableLiquidityUsd) && onChainAvailableLiquidityUsd >= 0
         ? onChainAvailableLiquidityUsd
         : isV3
-          ? deriveAvailableLiquidityUsd(computedReserveSizeUsd, totalBorrowedUsd)
+          ? deriveAvailableLiquidityUsd(computedReserveSizeUsd2, totalBorrowedUsd)
           : null;
 
-    const reserveFactor = Number.isFinite(reserveRateInput.reserveFactor) && reserveRateInput.reserveFactor > 0
-      ? reserveRateInput.reserveFactor
-      : null;
-
-    const optimalUtilization = Number.isFinite(reserveRateInput.optimalUsageRate) && reserveRateInput.optimalUsageRate > 0
-      ? reserveRateInput.optimalUsageRate
+    const protocolFee = Number.isFinite(reserveRateInput.protocolFee) && reserveRateInput.protocolFee > 0
+      ? reserveRateInput.protocolFee
+      : 0;
+    const optimalUtilization = Number.isFinite(reserveRateInput.optimalUtilization) && reserveRateInput.optimalUtilization > 0
+      ? reserveRateInput.optimalUtilization
       : null;
 
     // Use capped inputs for after values (supplyInputUsd and borrowInputUsd are already capped)
@@ -1612,7 +1611,7 @@ export function buildRateSimulationResult({
         : null,
       supplyCapUsd,
       borrowCapUsd,
-      reserveFactor,
+      protocolFee,
       optimalUtilization,
       ...supplyCapFields,
       ...borrowCapFields,

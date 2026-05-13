@@ -31,13 +31,13 @@ const baseReserve: ReserveWithSpread & RateCalcInput = {
   // Rate calc fields (inline on reserve, no separate rate-input object)
   decimals: 6,
   deficit: '0',
-  availableLiquidity: '1000000000000',
-  totalVariableDebt: '500000000000',
-  reserveFactor: 10,
-  variableRateSlope1: 4,
-  variableRateSlope2: 60,
-  baseVariableBorrowRate: 0,
-  optimalUsageRate: 80,
+  liquidity: '1000000000000',
+  borrowed: '500000000000',
+  protocolFee: 10,
+  slopeBelowOptimal: 4,
+  slopeAboveOptimal: 60,
+  baseBorrowRate: 0,
+  optimalUtilization: 80,
 };
 
 const SECONDS_PER_YEAR = 365 * 24 * 60 * 60;
@@ -454,7 +454,7 @@ describe('buildRateSimulationResult', () => {
       ...baseReserve,
       tokenSymbol: 'USDG',
       tokenPrice: 1,
-      reserveSize: '23655388009228',
+      supplied: '23655388009228',
       merklSupplys: [
         {
           name: 'Lend USDG on Tydro',
@@ -508,7 +508,7 @@ describe('buildRateSimulationResult', () => {
       ...baseReserve,
       tokenSymbol: 'USDG',
       tokenPrice: 1,
-      reserveSize: '23655388009228',
+      supplied: '23655388009228',
       merklSupplys: [
         {
           name: 'Lend USDG on Tydro',

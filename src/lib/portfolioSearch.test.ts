@@ -22,12 +22,12 @@ const mk = (
     reserveId: `${marketName}-${symbol}`,
     decimals,
     tokenPrice,
-    reserveSize: String(BigInt(Math.floor(reserveSizeTokens)) * BigInt(10) ** BigInt(decimals)),
+    supplied: String(BigInt(Math.floor(reserveSizeTokens)) * BigInt(10) ** BigInt(decimals)),
   }) as ReserveWithSpread;
 
 describe('portfolioSearch', () => {
   describe('getReserveTvlUsd', () => {
-    it('computes USD TVL from reserveSize/decimals/tokenPrice', () => {
+    it('computes USD TVL from supplied/decimals/tokenPrice', () => {
       const r = mk('WETH', 'AaveV3Ink', 1000, 3000);
       expect(getReserveTvlUsd(r)).toBe(3_000_000);
     });

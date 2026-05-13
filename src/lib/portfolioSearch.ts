@@ -15,7 +15,7 @@ import { normalizeTokenSymbolForSearch } from './tokenSymbolNormalization';
 import { nativeToUsd } from './scenarioSize';
 
 export const getReserveTvlUsd = (r: ReserveWithSpread): number => {
-  const usd = nativeToUsd(r.reserveSize, r.decimals, r.tokenPrice);
+  const usd = nativeToUsd(r.supplied, r.decimals, r.tokenPrice);
   return usd != null && Number.isFinite(usd) ? usd : 0;
 };
 

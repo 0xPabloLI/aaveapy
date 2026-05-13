@@ -560,7 +560,7 @@ const MobileReserveCard = memo(({
       : null;
   const protocolVersion = getProtocolVersion(reserve.marketName);
   const displayReserveSizeUsd = (() => {
-    const usd = nativeToUsd(reserve.reserveSize, reserve.decimals, reserve.tokenPrice);
+    const usd = nativeToUsd(reserve.supplied, reserve.decimals, reserve.tokenPrice);
     if (usd == null || !Number.isFinite(usd)) return usd ?? null;
     return getScenarioSupplySizeUsd({
       reserveSizeUsd: usd,
@@ -607,10 +607,10 @@ const MobileReserveCard = memo(({
 
   const showUpperOnly = variant === 'upperOnly';
 
-  /** reserve.optimalUsageRate 是 percent number（如 45 = 45%），直接显示，无需 RAY 转换。 */
+  /** reserve.optimalUtilization 是 percent number（如 45 = 45%），直接显示，无需 RAY 转换。 */
   const optimalPct =
-    reserve.optimalUsageRate != null && Number(reserve.optimalUsageRate) > 0
-      ? Number(reserve.optimalUsageRate)
+    reserve.optimalUtilization != null && Number(reserve.optimalUtilization) > 0
+      ? Number(reserve.optimalUtilization)
       : null;
   const reserveId = getReserveKey(reserve);
 
