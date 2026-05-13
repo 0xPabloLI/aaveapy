@@ -115,12 +115,10 @@ _Last inventory pass: 2026-04-30._
 | `docs/archive/merit-base-anchor-vs-last-round-staging.md` | Historical empirical snapshot | 2026-03-31 | Historical supporting note | `docs/rate-calculation.md` | keep |
 | `docs/HARDCODE-AND-EXTERNAL-IMPORTS.md` | Upstream sync and hardcode map | 2026-04-04 | Canonical | none significant | keep |
 | `docs/ci-remediation-automation.md` | CI auto-remediation workflow | 2026-03-15 | Canonical | none significant | keep |
-| `docs/archive/2026-03-26-cap-ceiling-unification-plan.md` | Archived cap/ceiling plan (summary only) | 2026-03-31 | Historical archive | `docs/rate-calculation.md`, `AGENTS.md` | keep |
 | `docs/archive/2026-04-02-mobile-reserve-ios-connector-plan.md` | Mobile reserve iOS connector design plan | 2026-04-09 | Historical archive | `docs/design/mobile-reserve-card-ascii-layout.md` | keep |
 | `docs/archive/2026-04-08-campaign-apr-reconciliation.md` | Campaign APR reconciliation analysis | 2026-04-09 | Historical archive | `scripts/reconcile-campaign-apr.mjs` | keep |
 | `docs/archive/2026-04-08-campaign-apr-reconciliation-script.md` | Campaign APR reconciliation script notes | 2026-04-09 | Historical archive | `scripts/reconcile-campaign-apr.mjs` | keep |
 | `docs/archive/2026-04-09-reserve-id-canonical-key.md` | Reserve key canonicalization note | 2026-04-09 | Supporting implementation note | `src/lib/reserveKey.ts`, `src/hooks/useRateSimulation.ts` | keep |
-| `docs/archive/2026-04-26-utilization-two-levels-design.md` | Utilization two-levels design exploration | 2026-04-28 | Historical archive | `docs/design/frontend-interaction-guardrails.md` | keep |
 | `docs/archive/frontend-redundancy-review-2026-04-06.md` | Frontend redundancy review | 2026-04-06 | Historical archive | none significant | keep |
 | `docs/design/DESIGN.md` | Project-specific design defaults | 2026-04-26 | Canonical | `docs/design/DESIGN-SYSTEM-REFERENCE.md` | keep |
 | `docs/design/DESIGN-SYSTEM-REFERENCE.md` | Reusable design/interaction rules | 2026-04-26 | Canonical | old design split docs | keep |
