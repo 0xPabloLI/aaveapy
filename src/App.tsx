@@ -55,6 +55,7 @@ const App = () => (
           <Suspense fallback={<LoadingState />}>
             <Routes>
               <Route path="/" element={<Index />} />
+              <Route path="/chain/:slug" element={<ChainPage />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
