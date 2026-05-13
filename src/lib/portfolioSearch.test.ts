@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   filterAndRankReservesForPortfolioSearch,
   getReserveTvlUsd,
+  PORTFOLIO_SEARCH_HARD_LIMIT,
 } from './portfolioSearch';
 import type { ReserveWithSpread } from '@/types/aave';
 
@@ -97,6 +98,18 @@ describe('portfolioSearch', () => {
       expect(out).toHaveLength(3);
       // Highest TVL first (M9, M8, M7)
       expect(out.map((r) => r.marketName)).toEqual(['M9', 'M8', 'M7']);
+    });
+
+    it('PORTFOLIO_SEARCH_HARD_LIMIT is 500', () => {
+      expect(PORTFOLIO_SEARCH_HARD_LIMIT).toBe(500);
+    });
+
+    it('default limit uses PORTFOLIO_SEARCH_HARD_LIMIT', () => {
+      const reserves: ReserveWithSpread[] = Array.from({ length: 600 }, (_, i) =>
+        mk('WETH', `M${i}`, i + 1, 1000),
+      );
+      const out = filterAndRankReservesForPortfolioSearch(reserves, 'weth');
+      expect(out).toHaveLength(PORTFOLIO_SEARCH_HARD_LIMIT);
     });
   });
 });

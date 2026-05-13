@@ -60,6 +60,7 @@ _Last inventory pass: 2026-04-30._
 - Canonical: `docs/v3-v4-sdk-field-mapping.md` (Aave V3 vs V4 SDK field mapping)
 - Canonical: `docs/api-field-optimization.md` (API field-shape optimization analysis)
 - Canonical: `docs/pool-explorer-links.md` (pool address explorer deep-link mapping; e2e validation in `e2e/explorer-links-*.spec.ts`)
+- Implemented: Portfolio Simulation — 多 token 组合模拟（✅ 全部完成 2026-05-10）；5 Phase 实施完毕，文件：`src/types/portfolio.ts`, `src/hooks/usePortfolioSimulation.ts`, `src/lib/portfolioCalculator.ts`, `src/components/dashboard/Portfolio*.tsx`；三种添加入口：表格 checkbox / 展开面板按钮 / 搜索栏
 - Historical supporting note: `docs/archive/merit-base-anchor-vs-last-round-staging.md`
 - Historical execution archive: `docs/archive/frontend-redundancy-review-2026-04-06.md`
 - Supporting implementation note: `docs/archive/2026-04-09-reserve-id-canonical-key.md`
@@ -71,6 +72,7 @@ _Last inventory pass: 2026-04-30._
 - Canonical (product-critical interaction guardrails): `docs/design/frontend-interaction-guardrails.md`
 - Canonical (mobile ASCII reference): `docs/design/mobile-reserve-card-ascii-layout.md`
 - Canonical (tooltip callout arrow spec): `docs/design/tooltip-arrow.md` (SVG double-path, auto-flip via Radix `data-side`, side-by-side comparison with `IncentiveTooltip`'s custom arrow)
+- Implemented: `docs/specs/tooltip-design-spec.md` → Tooltip 设计规范（✅ 已实施，测试全绿）；Radix Tooltip（轻量）+ IncentiveTooltip（丰富浮层）+ AssetActionMenu Popover 三组件使用场景、API、测试要求；核心规则已合入 DSR §6
 - Entry stub: `docs/design/README.md` (index page only)
 
   > `frontend-interaction-guardrails.md` is *not* under `docs/conventions/` because it is a product-behavior rulebook, not a repo-process convention.
@@ -79,6 +81,7 @@ _Last inventory pass: 2026-04-30._
 
 - Canonical: `docs/specs/reserve-table-market-hub-filtering.md`
 - Canonical: `docs/specs/v4-reserveId-uniqueness.md`
+- Implemented: `docs/specs/2026-05-10-mobile-simulation-grid-layout-plan.md` → 移动端 Simulation 表格 Grid 布局改造（✅ 已实施 2026-05-10）；核心结论已合入 `frontend-interaction-guardrails.md` § Simulation breakdown table — Grid layout (mobile)
 
 ### Ops and historical plans
 

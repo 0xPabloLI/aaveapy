@@ -14,7 +14,7 @@ import type { ReserveWithSpread } from '@/types/aave';
 import type { PortfolioPosition, PortfolioPositionResult, PortfolioSummary, PortfolioSnapshot } from '@/types/portfolio';
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
 import { normalizeTokenSymbolForSearch } from '@/lib/tokenSymbolNormalization';
-import { filterAndRankReservesForPortfolioSearch, getReserveTvlUsd } from '@/lib/portfolioSearch';
+import { filterAndRankReservesForPortfolioSearch, getReserveTvlUsd, PORTFOLIO_SEARCH_HARD_LIMIT } from '@/lib/portfolioSearch';
 import { isStablecoinSymbol, isEthRelatedSymbol, isBtcRelatedSymbol } from '@/lib/tokenCategories';
 import { getReserveKey } from '@/lib/reserveKey';
 import { getChainIconSrc } from '@/lib/chainIcons';
@@ -183,6 +183,9 @@ const PortfolioPanel = memo(function PortfolioPanel({
 }: PortfolioPanelProps) {
   const isMobile = useIsMobile();
   const [searchQuery, setSearchQuery] = useState('');
+  const SEARCH_PAGE_SIZE = 20;
+  const [visibleSearchCount, setVisibleSearchCount] = useState(SEARCH_PAGE_SIZE);
+  const sentinelRef = useRef<HTMLDivElement>(null);
   // Always default the search bar open whenever the batch panel mounts/opens.
   // Users can still collapse it manually via the X button.
   const [searchOpen, setSearchOpen] = useState(true);
@@ -200,9 +203,31 @@ const PortfolioPanel = memo(function PortfolioPanel({
   }, []);
 
   const filteredReserves = useMemo(
-    () => filterAndRankReservesForPortfolioSearch(reserves, searchQuery, { limit: 50 }),
+    () => filterAndRankReservesForPortfolioSearch(reserves, searchQuery),
     [reserves, searchQuery],
   );
+
+  const visibleReserves = filteredReserves.slice(0, visibleSearchCount);
+  const hasMoreResults = filteredReserves.length > visibleSearchCount;
+
+  useEffect(() => {
+    setVisibleSearchCount(SEARCH_PAGE_SIZE);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel || !hasMoreResults) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisibleSearchCount((prev) => prev + SEARCH_PAGE_SIZE);
+        }
+      },
+      { threshold: 0 },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMoreResults]);
 
   // Add both supply and borrow positions for the selected token.
   // - If both already exist: do nothing (button is disabled in search results).
@@ -454,8 +479,8 @@ const PortfolioPanel = memo(function PortfolioPanel({
               aria-label="Search tokens to add"
             />
             {filteredReserves.length > 0 && (
-              <div className="mt-1.5 max-h-[200px] overflow-y-auto rounded-lg border border-border/40 bg-card py-1">
-                {filteredReserves.map((r) => (
+              <div className="mt-1.5 max-h-[320px] overflow-y-auto rounded-lg border border-border/40 bg-card py-1">
+                {visibleReserves.map((r) => (
                   <SearchResultRow
                     key={getReserveKey(r)}
                     reserve={r}
@@ -463,6 +488,9 @@ const PortfolioPanel = memo(function PortfolioPanel({
                     existingPositions={positions}
                   />
                 ))}
+                {hasMoreResults && (
+                  <div ref={sentinelRef} className="h-1" aria-hidden="true" />
+                )}
               </div>
             )}
             {searchQuery.trim() && filteredReserves.length === 0 && (

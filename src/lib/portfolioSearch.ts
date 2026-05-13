@@ -23,10 +23,12 @@ export interface PortfolioSearchOptions {
   limit?: number;
 }
 
+export const PORTFOLIO_SEARCH_HARD_LIMIT = 500;
+
 export const filterAndRankReservesForPortfolioSearch = (
   reserves: ReserveWithSpread[],
   query: string,
-  { limit = 50 }: PortfolioSearchOptions = {},
+  { limit = PORTFOLIO_SEARCH_HARD_LIMIT }: PortfolioSearchOptions = {},
 ): ReserveWithSpread[] => {
   if (!query.trim()) return [];
   const q = query.toLowerCase().trim();

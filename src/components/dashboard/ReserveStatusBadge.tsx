@@ -69,9 +69,9 @@ export function StatusContent({ reserve }: StatusBadgeProps) {
       )}
       {isFrozen && (
         <p className="text-muted-foreground leading-relaxed">
-          <strong className="text-sky-500">Frozen:</strong> new deposits and borrows
-          are disabled. Exit actions may remain available when the reserve is active
-          and not paused.
+          <strong className="text-sky-500">Frozen:</strong> deposits and borrows are
+          temporarily disabled, but existing positions can still be repaid, withdrawn,
+          and liquidated.
         </p>
       )}
     </div>

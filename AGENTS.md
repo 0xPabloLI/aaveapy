@@ -66,6 +66,7 @@ For API contract changes, follow `docs/conventions/api-contract-checklist.md`.
 - `docs/conventions/merge-summary.md`
 - `docs/conventions/frontend-regression-checklist.md`
 - `docs/conventions/api-contract-checklist.md`
+- Portfolio Simulation (✅ completed): `src/types/portfolio.ts`, `src/hooks/usePortfolioSimulation.ts`, `src/lib/portfolioCalculator.ts`, `src/components/dashboard/Portfolio*.tsx`
 
 ## Learned Preferences (Condensed)
 - Prefer Chinese for collaboration text and direct execution once confirmed.
