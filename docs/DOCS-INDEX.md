@@ -72,7 +72,7 @@ _Last inventory pass: 2026-04-30._
 - Canonical (product-critical interaction guardrails): `docs/design/frontend-interaction-guardrails.md`
 - Canonical (mobile ASCII reference): `docs/design/mobile-reserve-card-ascii-layout.md`
 - Canonical (tooltip callout arrow spec): `docs/design/tooltip-arrow.md` (SVG double-path, auto-flip via Radix `data-side`, side-by-side comparison with `IncentiveTooltip`'s custom arrow)
-- Implemented: `docs/specs/tooltip-design-spec.md` → Tooltip 设计规范（✅ 已实施，测试全绿）；Radix Tooltip（轻量）+ IncentiveTooltip（丰富浮层）+ AssetActionMenu Popover 三组件使用场景、API、测试要求；核心规则已合入 DSR §6
+- Implemented: Tooltip 设计规范（✅ 已实施，测试全绿）；Radix Tooltip（轻量）+ IncentiveTooltip（丰富浮层）+ AssetActionMenu Popover 三组件使用场景、API、测试要求；核心规则已合入 DSR §6
 - Entry stub: `docs/design/README.md` (index page only)
 
   > `frontend-interaction-guardrails.md` is *not* under `docs/conventions/` because it is a product-behavior rulebook, not a repo-process convention.
@@ -81,18 +81,20 @@ _Last inventory pass: 2026-04-30._
 
 - Canonical: `docs/specs/reserve-table-market-hub-filtering.md`
 - Canonical: `docs/specs/v4-reserveId-uniqueness.md`
-- Implemented: `docs/specs/2026-05-10-mobile-simulation-grid-layout-plan.md` → 移动端 Simulation 表格 Grid 布局改造（✅ 已实施 2026-05-10）；核心结论已合入 `frontend-interaction-guardrails.md` § Simulation breakdown table — Grid layout (mobile)
+- Implemented: 移动端 Simulation 表格 Grid 布局改造（✅ 已实施 2026-05-10）；核心结论已合入 `frontend-interaction-guardrails.md` § Simulation breakdown table — Grid layout (mobile)
 
 ### Ops and historical plans
 
 - Canonical: `docs/HARDCODE-AND-EXTERNAL-IMPORTS.md`
 - Canonical: `docs/ci-remediation-automation.md`
-- Historical archive: `docs/archive/2026-03-26-cap-ceiling-unification-plan.md`
 - Historical archive: `docs/archive/2026-04-02-mobile-reserve-ios-connector-plan.md`
 - Historical archive: `docs/archive/2026-04-08-campaign-apr-reconciliation.md`
 - Historical archive: `docs/archive/2026-04-08-campaign-apr-reconciliation-script.md`
-- Historical archive: `docs/archive/2026-04-26-utilization-two-levels-design.md`
 - Archive folder: `docs/archive/` (historical notes, plans, and execution snapshots)
+
+> **已清理的 archive plans**（摘要已合入主文档，源文件已删除）：
+> - `2026-03-26-cap-ceiling-unification-plan.md` — 结论在 `docs/rate-calculation.md` + `AGENTS.md`
+> - `2026-04-26-utilization-two-levels-design.md` — superseded by `DESIGN-SYSTEM-REFERENCE.md` §2.1
 
 ## Inventory and Action Classification
 
