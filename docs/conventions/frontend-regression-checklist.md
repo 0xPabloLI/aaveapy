@@ -21,7 +21,8 @@ Run these in the current branch before commit when the touched scope includes an
 1. `npm run lint`
 2. `npm run build`
 3. Run a targeted regression test for the touched surface.
-4. Run a browser regression pass against a valid local app instance.
+4. `bash scripts/check-hardcoded-tokens.sh --strict` — 验证无硬编码 `text-[Npx]`/`h-8`/`h-9`/`h-11`/`max-w-[220px]` 等值
+5. Run a browser regression pass against a valid local app instance.
 
 Do not treat `lint` + `build` alone as sufficient evidence for display-layer refactors.
 

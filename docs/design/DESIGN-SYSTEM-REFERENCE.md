@@ -127,6 +127,7 @@
 
 - **字体**：Sans 用于正文与 UI，Mono 用于代码/数值；可选用同一字族的不同 weight。
 - **字号尺度**：统一使用设计 token（`ds-text-9` ~ `ds-text-24`），避免随意 `text-sm`/`text-base` 混用。其中 `ds-text-9` (9px) 用于极小标签（如热门币提示徽章）、`ds-text-10` (10px) 用于紧凑标签，`ds-text-11` (11px) ~ `ds-text-13` (13px) 为常用小字。**禁止**在组件源码中使用 `text-[Npx]` 任意值硬编码字号——所有字号必须通过 `ds-text-N` token 引用。
+- **⚠️ 反模式：`!ds-text-N`（禁止）**：`!ds-text-N` 会同时生成 `font-size: Npx !important` **和** `line-height: calc(Npx * 1.25) !important`，后者会覆盖业务元素（如 `<Input>` 的 `leading-4`/`leading-7`）上精心设定的行高。如果需要覆盖第三方 Input 组件的字号，使用 CSS 任意属性语法 `![font-size:var(--ds-text-N)]`，它只覆盖 `font-size`，不引入 `line-height`。已有回归测试守卫此反模式：`src/test/font-size-token-regression.test.ts`。
 - **数值**：一律 `tabular-nums` 保证对齐。
 - **数值溢出：硬切，不省略（强制）**：已通过 `formatReserveSizeUsd` / `formatReserveSizeToken` 缩写为 K/M/B 格式的金额/数量值（如 `$123.45M`、`1.08B`），移动端空间不足时必须使用 `overflow-hidden whitespace-nowrap`（硬切），**禁止**使用 `truncate` / `text-overflow: ellipsis`（尾部省略号）。省略号 `…` 在金融数值上会造成歧义（`$123.4…` 是 `$123.40M` 还是 `$123.45M` 无法分辨），硬切优于省略号。文本标签（market name、hub name 等）不受此条约束，可继续使用 `truncate`。
 - **文字与边框**：**强制** — 所有带边框的容器（卡片、表格单元格、警告条、按钮）内，文字与边框之间至少保留 8px（`--ds-space-2`）内边距，不得贴边。
@@ -152,6 +153,21 @@
 3. **Spread 与主列同强**：桌面 Spread 列用 **`font-bold`**，与 Supply/Borrow APY 主值同级。
 4. **次级 ≠ Size**：Native/Incentive 是 **分解行**（`ds-text-11` + `*-70`）；Size 是 **主数据**（`ds-text-13` + 满饱和 + `font-medium`）—层级不同，**不是**同一套字体规格。
 5. **移动/桌面 token 对齐**：移动端 Size、tab、cap sheet 与桌面共用 `emerald-500` / `brand-cyan`，避免无端深一档（如 `emerald-600`）。
+
+### 控件高度 Token 参考
+
+所有控件高度（按钮、输入框、分段控制器、tooltip）必须通过 CSS 自定义属性引用，禁止硬编码 `h-8`/`h-9`/`h-11` 等 Tailwind 固定高度。
+
+| Token | 值 | Tailwind 写法 | 适用场景 |
+|-------|-----|-------------|---------|
+| `--ds-chip-h` | 1.75rem (28px) | `h-[var(--ds-chip-h)]` | 筛选芯片、热门币标签、分段控制器 chip 模式、批量面板 token 输入 |
+| `--ds-control-h` | 2rem (32px) | `h-[var(--ds-control-h)]` | 桌面输入框、分段控制器默认模式、图标按钮（32px）、toast 按钮 |
+| `--ds-button-sm-h` | 2.25rem (36px) | `h-[var(--ds-button-sm-h)]` | `<Button size="sm">`、表格表头行、主题切换按钮、分页按钮 |
+| `--ds-button-h` | 2.5rem (40px) | `h-[var(--ds-button-h)]` | `<Button>` 默认尺寸 |
+| `--ds-button-lg-h` | 2.75rem (44px) | `h-[var(--ds-button-lg-h)]` | `<Button size="lg">`、下拉刷新指示器、滑块手柄 |
+| `--ds-ring-tooltip-max-w` | 220px | `max-w-[var(--ds-ring-tooltip-max-w)]` | 利用率/借出上限环形图的 TooltipContent |
+
+**禁止**在组件源码中硬编码 `h-8`/`h-9`/`h-11`。回归测试：`src/test/control-height-token-regression.test.ts`。巡检脚本：`bash scripts/check-hardcoded-tokens.sh --strict`。
 
 ---
 

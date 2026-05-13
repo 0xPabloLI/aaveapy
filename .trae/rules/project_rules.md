@@ -53,6 +53,7 @@ npx tsc --noEmit    # TypeScript type-checking — catches missing imports and t
 
 For changes in these areas, also follow the relevant checklists after validation passes:
 - Simulation/reserves/table UI: `docs/conventions/frontend-regression-checklist.md`
+- Design token / hardcoded style migrations: `docs/conventions/frontend-regression-checklist.md` § Design Token Regression Guards + `bash scripts/check-hardcoded-tokens.sh --strict`
 - API contract changes: `docs/conventions/api-contract-checklist.md`
 
 ## Mobile Layout Design Principle (移动端布局设计原则)
