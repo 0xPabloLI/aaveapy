@@ -738,6 +738,207 @@ describe('DesktopReserveRow', () => {
     expect(source).toMatch(/align="start"/);
   });
 
+  it('renders disabled borrow native APY with text-cyan-500/40', () => {
+    const queryClient = new QueryClient();
+    const html = renderToString(
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Table>
+            <TableBody>
+              <DesktopReserveRow
+                reserve={{ ...reserve, borrowDisabled: true }}
+                reserveId="AaveV3Ethereum-0x0000000000000000000000000000000000000001"
+                isExpanded={false}
+                onToggleExpand={() => {}}
+                onIncentiveClick={() => {}}
+                displaySupplyTotal={4.2}
+                displaySupplyNative={2.1}
+                displaySupplyIncentive={null}
+                displayBorrowTotal={6.1}
+                displayBorrowNative={3.1}
+                displayBorrowIncentive={0.2}
+                displayUtilization={52}
+                spread={-0.4}
+                simulation={simulation}
+                supplyInput="1000"
+                borrowInput="500"
+                inputMode="usd"
+                isApy
+                isMobile={false}
+              />
+            </TableBody>
+          </Table>
+        </TooltipProvider>
+      </QueryClientProvider>
+    );
+
+    expect(html).toContain('text-cyan-500/40');
+  });
+
+  it('renders disabled supply incentive badge with muted emerald styles', () => {
+    const queryClient = new QueryClient();
+    const html = renderToString(
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Table>
+            <TableBody>
+              <DesktopReserveRow
+                reserve={{ ...reserve, supplyDisabled: true }}
+                reserveId="AaveV3Ethereum-0x0000000000000000000000000000000000000001"
+                isExpanded={false}
+                onToggleExpand={() => {}}
+                onIncentiveClick={() => {}}
+                displaySupplyTotal={4.2}
+                displaySupplyNative={2.1}
+                displaySupplyIncentive={0.3}
+                displayBorrowTotal={6.1}
+                displayBorrowNative={3.1}
+                displayBorrowIncentive={null}
+                displayUtilization={52}
+                spread={-0.4}
+                simulation={simulation}
+                supplyInput="1000"
+                borrowInput="500"
+                inputMode="usd"
+                isApy
+                isMobile={false}
+              />
+            </TableBody>
+          </Table>
+        </TooltipProvider>
+      </QueryClientProvider>
+    );
+
+    expect(html).toContain('bg-emerald-500/10');
+    expect(html).toContain('text-emerald-500/50');
+    expect(html).toContain('ring-emerald-500/20');
+  });
+
+  it('renders disabled borrow incentive badge with muted cyan styles', () => {
+    const queryClient = new QueryClient();
+    const html = renderToString(
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Table>
+            <TableBody>
+              <DesktopReserveRow
+                reserve={{ ...reserve, borrowDisabled: true }}
+                reserveId="AaveV3Ethereum-0x0000000000000000000000000000000000000001"
+                isExpanded={false}
+                onToggleExpand={() => {}}
+                onIncentiveClick={() => {}}
+                displaySupplyTotal={4.2}
+                displaySupplyNative={2.1}
+                displaySupplyIncentive={null}
+                displayBorrowTotal={6.1}
+                displayBorrowNative={3.1}
+                displayBorrowIncentive={0.2}
+                displayUtilization={52}
+                spread={-0.4}
+                simulation={simulation}
+                supplyInput="1000"
+                borrowInput="500"
+                inputMode="usd"
+                isApy
+                isMobile={false}
+              />
+            </TableBody>
+          </Table>
+        </TooltipProvider>
+      </QueryClientProvider>
+    );
+
+    expect(html).toContain('bg-cyan-500/10');
+    expect(html).toContain('text-cyan-500/50');
+    expect(html).toContain('ring-cyan-500/20');
+  });
+
+  it('renders disabled supply no-cap row with text-emerald-500/50', () => {
+    const queryClient = new QueryClient();
+    const reserveWithoutCaps: ReserveWithSpread = {
+      ...reserve,
+      supplyCap: undefined,
+      borrowCap: undefined,
+      supplyDisabled: true,
+    };
+    const html = renderToString(
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Table>
+            <TableBody>
+              <DesktopReserveRow
+                reserve={reserveWithoutCaps}
+                reserveId="AaveV3Ethereum-0x0000000000000000000000000000000000000001"
+                isExpanded={false}
+                onToggleExpand={() => {}}
+                onIncentiveClick={() => {}}
+                displaySupplyTotal={4.2}
+                displaySupplyNative={2.1}
+                displaySupplyIncentive={null}
+                displayBorrowTotal={6.1}
+                displayBorrowNative={3.1}
+                displayBorrowIncentive={null}
+                displayUtilization={52}
+                spread={-0.4}
+                simulation={simulation}
+                supplyInput="1000"
+                borrowInput="500"
+                inputMode="usd"
+                isApy
+                isMobile={false}
+              />
+            </TableBody>
+          </Table>
+        </TooltipProvider>
+      </QueryClientProvider>
+    );
+
+    expect(html).toContain('text-emerald-500/50');
+  });
+
+  it('renders disabled borrow no-cap row with text-cyan-500/50', () => {
+    const queryClient = new QueryClient();
+    const reserveWithoutCaps: ReserveWithSpread = {
+      ...reserve,
+      supplyCap: undefined,
+      borrowCap: undefined,
+      borrowDisabled: true,
+    };
+    const html = renderToString(
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Table>
+            <TableBody>
+              <DesktopReserveRow
+                reserve={reserveWithoutCaps}
+                reserveId="AaveV3Ethereum-0x0000000000000000000000000000000000000001"
+                isExpanded={false}
+                onToggleExpand={() => {}}
+                onIncentiveClick={() => {}}
+                displaySupplyTotal={4.2}
+                displaySupplyNative={2.1}
+                displaySupplyIncentive={null}
+                displayBorrowTotal={6.1}
+                displayBorrowNative={3.1}
+                displayBorrowIncentive={null}
+                displayUtilization={52}
+                spread={-0.4}
+                simulation={simulation}
+                supplyInput="1000"
+                borrowInput="500"
+                inputMode="usd"
+                isApy
+                isMobile={false}
+              />
+            </TableBody>
+          </Table>
+        </TooltipProvider>
+      </QueryClientProvider>
+    );
+
+    expect(html).toContain('text-cyan-500/50');
+  });
+
   it('frozen row has bg-card opaque base + ds-bg-sky-500-8 tint overlay', () => {
     const queryClient = new QueryClient();
     const html = renderToString(

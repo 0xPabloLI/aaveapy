@@ -76,7 +76,7 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
             inputMode="decimal"
             placeholder={position.inputMode === 'usd' ? '10,000' : '100'}
             className={cn(
-              'h-7 w-full min-w-[4rem] rounded-md pl-2 ds-text-12 tabular-nums placeholder:italic',
+              'h-[var(--ds-chip-h)] w-full min-w-[4rem] rounded-md pl-2 ds-text-12 tabular-nums placeholder:italic',
               hasValue ? 'pr-7' : 'pr-2',
               cnDsInputSurface(hasValue, inputVariant),
             )}

@@ -35,7 +35,7 @@ const PortfolioPanelSkeleton = memo(function PortfolioPanelSkeleton() {
         </div>
 
         {/* Search input placeholder */}
-        <Skeleton variant="subtle" className="h-8 w-full rounded-lg mb-2.5" />
+        <Skeleton variant="subtle" className="h-[var(--ds-control-h)] w-full rounded-lg mb-2.5" />
 
         {/* Empty state */}
         <div className="flex flex-col items-center justify-center py-6 text-center gap-2">

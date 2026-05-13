@@ -40,7 +40,7 @@ const ThemeToggle = () => {
 
   if (!mounted) {
     return (
-      <div className="h-9 w-9 rounded-full bg-muted animate-pulse" />
+      <div className="h-[var(--ds-button-sm-h)] w-[var(--ds-button-sm-h)] rounded-full bg-muted animate-pulse" />
     );
   }
 
@@ -54,7 +54,7 @@ const ThemeToggle = () => {
           variant="ghost"
           size="icon"
           onClick={handleToggle}
-          className="relative h-9 w-9 rounded-full bg-muted/60 text-interactive transition-colors duration-200 hover:bg-muted/80
+          className="relative h-[var(--ds-button-sm-h)] w-[var(--ds-button-sm-h)] rounded-full bg-muted/60 text-interactive transition-colors duration-200 hover:bg-muted/80
             focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
           {isDark ? (

@@ -44,7 +44,11 @@
     --ds-title-line: 1.2;
     --ds-chip-h: 1.75rem;
     --ds-button-h: 2.5rem;
+    --ds-button-sm-h: 2.25rem;
+    --ds-button-lg-h: 2.75rem;
+    --ds-control-h: 2rem;
     --ds-icon-button: 1.75rem;
+    --ds-ring-tooltip-max-w: 220px;
     --ds-tooltip-pad: 0.75rem;
     --ds-tooltip-item-pad: 0.5rem;
     --ds-row-pad-y: 0.5rem;

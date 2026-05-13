@@ -307,7 +307,7 @@ const FilterBar = ({
             placeholder={searchPlaceholder}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-7 pl-[var(--ds-space-7)] pr-[var(--ds-space-6)] md:h-7 ds-text-11 text-muted-foreground/60 placeholder:text-muted-foreground/60 focus:text-foreground md:ds-text-11"
+            className="h-[var(--ds-chip-h)] pl-[var(--ds-space-7)] pr-[var(--ds-space-6)] md:h-[var(--ds-chip-h)] ds-text-11 text-muted-foreground/60 placeholder:text-muted-foreground/60 focus:text-foreground md:ds-text-11"
           />
           {searchQuery && (
             <button
@@ -328,7 +328,7 @@ const FilterBar = ({
             placeholder={searchPlaceholder}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-7 pl-[var(--ds-space-8)] pr-[var(--ds-space-6)] ds-text-11 text-muted-foreground/50 placeholder:text-muted-foreground/50 focus:text-foreground"
+            className="h-[var(--ds-chip-h)] pl-[var(--ds-space-8)] pr-[var(--ds-space-6)] ds-text-11 text-muted-foreground/50 placeholder:text-muted-foreground/50 focus:text-foreground"
           />
           {searchQuery && (
             <button
@@ -345,7 +345,7 @@ const FilterBar = ({
           <button
             type="button"
             onClick={() => setShowFrozenOrPaused(!showFrozenOrPaused)}
-            className={`hidden md:inline-flex items-center gap-1 h-7 px-2 rounded-md ds-text-11 font-medium transition-colors ${
+            className={`hidden md:inline-flex items-center gap-1 h-[var(--ds-chip-h)] px-2 rounded-md ds-text-11 font-medium transition-colors ${
               showFrozenOrPaused
                 ? 'bg-sky-500/15 text-sky-600 shadow-sm border border-sky-400/50'
                 : 'bg-card/50 text-muted-foreground hover:text-foreground hover:bg-card/80 border border-border/40'
@@ -372,7 +372,7 @@ const FilterBar = ({
           <button
             type="button"
             onClick={() => setShowFrozenOrPaused(!showFrozenOrPaused)}
-            className={`flex-1 min-w-0 inline-flex items-center justify-center gap-1.5 h-7 px-2 rounded-md ds-text-11 font-medium transition-colors ${
+            className={`flex-1 min-w-0 inline-flex items-center justify-center gap-1.5 h-[var(--ds-chip-h)] px-2 rounded-md ds-text-11 font-medium transition-colors ${
               showFrozenOrPaused
                 ? 'bg-sky-500/15 text-sky-600 shadow-sm border border-sky-400/50'
                 : 'bg-card/50 text-muted-foreground hover:text-foreground hover:bg-card/80 border border-border/40'

@@ -604,7 +604,7 @@ const InkAprCalculator = ({
         {/* Wrapper: content shifted down slightly so space(slider→labels) ≈ space(labels bottom→card bottom); minimal pt so a little space remains between thumb bottom and labels/shadow. */}
         <div className="relative flex-1 min-w-[120px] lg:ml-4 lg:mr-6 flex flex-col justify-start min-h-[3.5rem] pt-[0.6875rem] pointer-events-none">
           <div className="flex items-start gap-1.5 pointer-events-none">
-            <div className="hidden lg:flex w-16 shrink-0 flex-col items-center justify-start pt-0.5 h-8 pointer-events-auto">
+            <div className="hidden lg:flex w-16 shrink-0 flex-col items-center justify-start pt-0.5 h-[var(--ds-control-h)] pointer-events-auto">
               <div className="flex w-full flex-col items-center leading-none gap-[2px]">
                 <span className="h-[0.875rem] flex items-center justify-center ds-text-11 font-medium tabular-nums whitespace-nowrap leading-none text-muted-foreground">
                   = $<span className={`transition-colors duration-300 ${fdvJustChanged ? 'text-[rgb(var(--ds-brand-magenta-rgb))]' : 'text-muted-foreground'}`}>{formatInkPrice(currentFdvBillions)}</span>/INK
@@ -621,7 +621,7 @@ const InkAprCalculator = ({
               </div>
             </div>
             {/* Labels container same width as track (flex-1 after left anchor + gap-2) */}
-            <div className="relative flex-1 min-w-0 h-8 pointer-events-none">
+            <div className="relative flex-1 min-w-0 h-[var(--ds-control-h)] pointer-events-none">
            {/* FDV label at 0 */}
           <div
             className="absolute flex flex-col items-center justify-start pt-0.5 h-full"
@@ -877,7 +877,7 @@ const InkAprCalculator = ({
 
           {/* Current value thumb - enlarged hit area for mobile touch */}
           <div
-            className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-11 h-11 flex items-center justify-center cursor-pointer"
+            className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-[var(--ds-button-lg-h)] h-[var(--ds-button-lg-h)] flex items-center justify-center cursor-pointer"
             style={{ left: `${sliderPosition}%` }}
           >
             <div

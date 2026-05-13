@@ -28,6 +28,7 @@ import {
 } from '@/lib/simulationIncentiveTableRows';
 import type { ReserveWithSpread, MeritIncentive, MerklOpportunityGroup, BrevisIncentive } from '@/types/aave';
 import { ETHEREUM_MARKET_NAMES } from '@/types/aave';
+import { isSupplyDisabled, isBorrowDisabled } from '@/lib/reserveStatus';
 import { getFirstActiveBrevisLink } from '@/lib/brevis';
 
 const getFirstMeritLink = (merits?: MeritIncentive[]): string | null => {
@@ -200,12 +201,12 @@ const SimulationSubRow = ({
   const supplyDisabledNotice = reserve.isPaused ? 'Paused'
     : reserve.isActive === false ? 'Inactive'
     : reserve.isFrozen ? 'Frozen'
-    : reserve.supplyDisabled ? 'Supply unavailable'
+    : isSupplyDisabled(reserve) ? 'Supply unavailable'
     : null;
   const borrowDisabledNotice = reserve.isPaused ? 'Paused'
     : reserve.isActive === false ? 'Inactive'
     : reserve.isFrozen ? 'Frozen'
-    : reserve.borrowDisabled ? 'Borrow unavailable'
+    : isBorrowDisabled(reserve) ? 'Borrow unavailable'
     : null;
   const rateLabel = isApy ? 'APY' : 'APR';
   const showPriceMissingNotice =
@@ -216,8 +217,8 @@ const SimulationSubRow = ({
   const hasScenarioInput = simulation.supply.hasInput || simulation.borrow.hasInput;
   const showEmptyStateNote = !simulation.supply.hasInput && !simulation.borrow.hasInput;
 
-  const supplySideBlocked = !!(reserve.isPaused || reserve.isFrozen || reserve.isActive === false || reserve.supplyDisabled);
-  const borrowSideBlocked = !!(reserve.isPaused || reserve.isFrozen || reserve.isActive === false || reserve.borrowDisabled);
+  const supplySideBlocked = isSupplyDisabled(reserve);
+  const borrowSideBlocked = isBorrowDisabled(reserve);
   const hasDisabledState = supplySideBlocked || borrowSideBlocked;
 
   const aaveUrl = buildAaveUrl({ marketName: reserve.marketName, tokenAddress: reserve.tokenAddress, aaveProReserveId: reserve.aaveProReserveId });

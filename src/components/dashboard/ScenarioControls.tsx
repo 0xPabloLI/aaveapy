@@ -100,7 +100,7 @@ function ScenarioInputField({ side, value, onChange, inputMode, compact }: Scena
   const labelFontSize = compact ? 'ds-text-11' : 'ds-text-12';
   const labelClass = `${labelFontSize} font-semibold ${accentClass} shrink-0`;
 
-  const controlH = compact ? 'h-9' : 'h-8';
+  const controlH = compact ? 'h-[var(--ds-button-sm-h)]' : 'h-[var(--ds-control-h)]';
   const fontSize = compact ? 'ds-text-11' : 'ds-text-12';
   const inputPx = compact ? 'px-2' : 'px-[var(--ds-space-3)]';
   const inputMinW = compact ? 'min-w-[5rem]' : 'min-w-[3.5rem]';
@@ -244,7 +244,7 @@ const ScenarioControls = memo(forwardRef<ScenarioControlsHandle, ScenarioControl
               type="button"
               onClick={() => setInternalMobileNetOpen((prev) => !prev)}
               className={cn(
-                'shrink-0 inline-flex h-8 w-8 items-center justify-center text-muted-foreground/65 transition-colors',
+                'shrink-0 inline-flex h-[var(--ds-control-h)] w-[var(--ds-control-h)] items-center justify-center text-muted-foreground/65 transition-colors',
                 mobileNetOpen
                   ? 'text-foreground'
                   : 'hover:text-foreground/85',

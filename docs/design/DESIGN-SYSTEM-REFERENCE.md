@@ -126,7 +126,7 @@
 ## 3. 排版与间距
 
 - **字体**：Sans 用于正文与 UI，Mono 用于代码/数值；可选用同一字族的不同 weight。
-- **字号尺度**：统一使用设计 token（如 `ds-text-11` ~ `ds-text-24`），避免随意 `text-sm`/`text-base` 混用。
+- **字号尺度**：统一使用设计 token（`ds-text-9` ~ `ds-text-24`），避免随意 `text-sm`/`text-base` 混用。其中 `ds-text-9` (9px) 用于极小标签（如热门币提示徽章）、`ds-text-10` (10px) 用于紧凑标签，`ds-text-11` (11px) ~ `ds-text-13` (13px) 为常用小字。**禁止**在组件源码中使用 `text-[Npx]` 任意值硬编码字号——所有字号必须通过 `ds-text-N` token 引用。
 - **数值**：一律 `tabular-nums` 保证对齐。
 - **数值溢出：硬切，不省略（强制）**：已通过 `formatReserveSizeUsd` / `formatReserveSizeToken` 缩写为 K/M/B 格式的金额/数量值（如 `$123.45M`、`1.08B`），移动端空间不足时必须使用 `overflow-hidden whitespace-nowrap`（硬切），**禁止**使用 `truncate` / `text-overflow: ellipsis`（尾部省略号）。省略号 `…` 在金融数值上会造成歧义（`$123.4…` 是 `$123.40M` 还是 `$123.45M` 无法分辨），硬切优于省略号。文本标签（market name、hub name 等）不受此条约束，可继续使用 `truncate`。
 - **文字与边框**：**强制** — 所有带边框的容器（卡片、表格单元格、警告条、按钮）内，文字与边框之间至少保留 8px（`--ds-space-2`）内边距，不得贴边。
@@ -346,15 +346,15 @@ reserves desktop table 的 8 列对齐分配：
 
 | 区域     | Tailwind 示例 |
 |----------|----------------|
-| 容器     | `inline-grid box-border h-8 gap-0.5 bg-muted/60 rounded-full p-[3px] shadow-inner shadow-black/[0.02]` |
+| 容器     | `inline-grid box-border h-[var(--ds-control-h)] gap-0.5 bg-muted/60 rounded-full p-[3px] shadow-inner shadow-black/[0.02]` |
 | 选中项   | `h-full min-w-[56px] px-3 rounded-full font-semibold bg-card text-foreground shadow-[0_1px_4px_rgb(var(--ds-shadow-rgb)/0.16),0_1px_2px_rgb(var(--ds-shadow-rgb)/0.10)]` |
 | 未选中   | `h-full min-w-[56px] px-3 rounded-full font-medium text-muted-foreground hover:text-foreground` |
 
 **视觉特征**：
-- 默认容器高度为 32px（`h-8`，`box-border` 固定外框尺寸），用于和桌面场景输入 `h-8` 对齐。
+- 默认容器高度为 32px（`h-[var(--ds-control-h)]` = `--ds-control-h`: 2rem，`box-border` 固定外框尺寸），用于和桌面场景输入 `h-[var(--ds-control-h)]` 对齐。
 - `size="chip"` 容器高度为 28px（`--ds-chip-h`，`box-border` 固定外框尺寸），用于和 `ds-chip` 对齐。
 - 横向与纵向都使用等宽 / 等高网格分段，滑块宽高跟随当前分段，避免 USD/Token 这类不同字数选项来回跳。
-- 当分段控制器与筛选芯片（§5.2）同行排列时（如 Chain/Hub toggle、APR/APY toggle），使用 `size="chip"`（28px）以保持行高一致；仅当与 `h-8` 输入框对齐时（如桌面场景条 USD/Token）使用默认 32px。
+- 当分段控制器与筛选芯片（§5.2）同行排列时（如 Chain/Hub toggle、APR/APY toggle），使用 `size="chip"`（28px = `--ds-chip-h`）以保持行高一致；仅当与 `h-[var(--ds-control-h)]` 输入框对齐时（如桌面场景条 USD/Token）使用默认 32px。
 
 **形态规则（横向 vs 纵向）**：
 - **横向（默认）**：容器与活动段均为 `rounded-full` 药丸形，按钮带 `min-w-[56px]`（chip：`42px`），保证短文案对称。

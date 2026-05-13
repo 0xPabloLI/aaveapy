@@ -58,7 +58,7 @@ const Header = ({ lastUpdated }: HeaderProps) => {
               <PopoverTrigger asChild>
                 <button
                   type="button"
-                  className="flex items-center justify-center w-8 h-8 rounded-full bg-card/60 border border-border/40 text-muted-foreground touch-manipulation hover:bg-muted/60 hover:border-border focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  className="flex items-center justify-center w-[var(--ds-control-h)] h-[var(--ds-control-h)] rounded-full bg-card/60 border border-border/40 text-muted-foreground touch-manipulation hover:bg-muted/60 hover:border-border focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                   aria-label={`Last updated ${formatRelativeTime(lastUpdated)}`}
                 >
                   <Clock className="w-3.5 h-3.5" />
@@ -71,7 +71,7 @@ const Header = ({ lastUpdated }: HeaderProps) => {
           )}
           <a
             href="#faq"
-            className="flex items-center justify-center w-8 h-8 rounded-full bg-card/60 border border-border/40 text-muted-foreground hover-gradient-text hover:bg-muted/60 hover:border-border touch-manipulation"
+            className="flex items-center justify-center w-[var(--ds-control-h)] h-[var(--ds-control-h)] rounded-full bg-card/60 border border-border/40 text-muted-foreground hover-gradient-text hover:bg-muted/60 hover:border-border touch-manipulation"
             aria-label="FAQ"
           >
             <HelpCircle className="w-4 h-4" />

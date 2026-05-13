@@ -12,6 +12,7 @@ import {
 } from '@/lib/formatters';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { getReserveKey } from '@/lib/reserveKey';
+import { isBorrowDisabled, isSupplyDisabled } from '@/lib/reserveStatus';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { IncentiveIcon } from '@/components/IncentiveIcon';
 import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
@@ -94,7 +95,7 @@ function MobileCapSheet({
         displayMode={inputMode}
         tokenPrice={displayTokenPrice}
         tokenSymbol={reserve.tokenSymbol}
-        disabled={reserve.borrowDisabled}
+        disabled={isBorrowDisabled(reserve)}
       />
     ),
     utilization: optimalPct != null && displayUtilization != null ? (
@@ -303,7 +304,7 @@ function MobileReserveAmountRow({
               borrowed={totalBorrowedUsd}
               cap={computedBorrowCapUsd}
               availableLiquidityUsd={availableLiquidityUsd}
-              disabled={reserve.borrowDisabled}
+              disabled={isBorrowDisabled(reserve)}
               displayMode={inputMode}
               tokenPrice={displayTokenPrice}
               tokenSymbol={reserve.tokenSymbol}
@@ -365,7 +366,7 @@ function MobileReserveHeroApy({
 
   if (activeTab === 'supply') {
     const heroValue = displaySupplyTotal;
-    const isDisabled = reserve.isFrozen || reserve.isPaused || reserve.isActive === false || reserve.supplyDisabled;
+    const isDisabled = isSupplyDisabled(reserve);
     const heroColorClass = heroValue === null || isDisabled ? 'text-emerald-500/50' : 'ds-text-emerald-500';
 
     return (
@@ -413,7 +414,7 @@ function MobileReserveHeroApy({
   }
 
   const heroValue = displayBorrowTotal;
-  const isDisabled = reserve.isFrozen || reserve.isPaused || reserve.isActive === false || reserve.borrowDisabled;
+  const isDisabled = isBorrowDisabled(reserve);
   const heroColorClass = heroValue === null || isDisabled ? 'text-cyan-500/50' : 'ds-text-brand-cyan';
 
   return (
@@ -502,8 +503,8 @@ const MobileReserveCard = memo(({
   // Frozen/paused/disabled gating: keep parity with desktop SimulationSubRow.
   // See docs/design/frontend-interaction-guardrails.md "Reserve simulation gating".
   const isReserveLocked = Boolean(reserve.isFrozen || reserve.isPaused || reserve.isActive === false);
-  const supplyLocked = isReserveLocked || Boolean(reserve.supplyDisabled);
-  const borrowLocked = isReserveLocked || Boolean(reserve.borrowDisabled);
+  const supplyLocked = isReserveLocked || isSupplyDisabled(reserve);
+  const borrowLocked = isReserveLocked || isBorrowDisabled(reserve);
   const useSupplyAfter = hasSharedScenario && !supplyLocked;
   const useBorrowAfter = hasSharedScenario && !borrowLocked;
   const useSpreadAfter = hasSharedScenario && !supplyLocked && !borrowLocked;

@@ -114,7 +114,7 @@ const UtilizationIndicator = memo(({
           </svg>
         </div>
       </TooltipTrigger>
-      <TooltipContent side="top" className="max-w-[220px] p-3">
+      <TooltipContent side="top" className="max-w-[var(--ds-ring-tooltip-max-w)] p-3">
         <TooltipCalloutArrow />
         <UtilizationContent current={clampedCurrent} optimal={clampedOptimal} />
       </TooltipContent>

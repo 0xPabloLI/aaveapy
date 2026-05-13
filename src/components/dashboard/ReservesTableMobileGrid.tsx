@@ -39,7 +39,7 @@ function MobileReservesSkeletonGrid() {
       {Array.from({ length: 6 }).map((_, i) => (
         <div key={i} className="bg-card rounded-xl border border-border/60 ds-card-pad-sm">
           <div className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-3)]">
-            <Skeleton variant="gradient" className="w-8 h-8 rounded-full border-transparent shrink-0" />
+            <Skeleton variant="gradient" className="w-[var(--ds-control-h)] h-[var(--ds-control-h)] rounded-full border-transparent shrink-0" />
             <div className="space-y-1 flex-1 min-w-0">
               <Skeleton variant="gradient" className="h-4 w-14 rounded-md" />
               <Skeleton variant="subtle" className="h-3 w-20 rounded-md" />

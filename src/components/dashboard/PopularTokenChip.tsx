@@ -34,7 +34,7 @@ const PopularTokenChip = memo(function PopularTokenChip({
       type="button"
       onClick={() => onAdd(reserveId)}
       className={cn(
-        'inline-flex h-7 items-center gap-1.5 rounded-full border border-border/50 bg-card/70 px-2.5 leading-none',
+        'inline-flex h-[var(--ds-chip-h)] items-center gap-1.5 rounded-full border border-border/50 bg-card/70 px-2.5 leading-none',
         'ds-text-11 font-semibold text-foreground transition-colors duration-200 hover:bg-muted/60',
       )}
       aria-label={`Add ${tokenSymbol} on ${marketName} to batch`}

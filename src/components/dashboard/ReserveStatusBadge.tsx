@@ -36,9 +36,9 @@ export function ReserveStatusBadge({ reserve }: StatusBadgeProps) {
           className="inline-flex shrink-0 items-center gap-[3px]"
           aria-label={`Show ${labels.join(' & ')} status details`}
         >
-          {isFrozen && <Snowflake className="w-2.5 h-2.5 text-sky-500" />}
-          {isActive === false && <Ban className="w-2.5 h-2.5 ds-text-paused" />}
           {isPaused && <PauseCircle className="w-2.5 h-2.5 ds-text-paused" />}
+          {isActive === false && <Ban className="w-2.5 h-2.5 ds-text-paused" />}
+          {isFrozen && <Snowflake className="w-2.5 h-2.5 text-sky-500" />}
         </button>
       </TooltipTrigger>
       <TooltipContent>

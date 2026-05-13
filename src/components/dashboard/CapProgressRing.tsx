@@ -100,7 +100,7 @@ const CapProgressRing = memo(({
   };
 
   const tooltipContent = (
-    <TooltipContent side="right" className="max-w-[220px]">
+    <TooltipContent side="right" className="max-w-[var(--ds-ring-tooltip-max-w)]">
       <TooltipCalloutArrow />
       <CapProgressContent
         currentSize={currentSize}

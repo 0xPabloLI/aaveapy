@@ -32,17 +32,17 @@ function HeaderSkeleton({ isMobile }: { isMobile: boolean }) {
         <Skeleton variant="gradient" className="w-12 h-12 md:w-16 md:h-16 rounded-xl" />
         <div className="flex-1 min-w-0 space-y-1.5">
           <div className="flex items-center gap-[var(--ds-space-2)]">
-            <Skeleton variant="gradient" className="h-6 md:h-8 w-28 md:w-36" />
+            <Skeleton variant="gradient" className="h-6 md:h-[var(--ds-control-h)] w-28 md:w-36" />
             {isMobile && <Skeleton variant="subtle" className="w-6 h-6 rounded-full" />}
           </div>
           <Skeleton variant="subtle" className="h-3 md:h-4 w-44 md:w-64 rounded-md" />
         </div>
-        {isMobile && <Skeleton variant="subtle" className="w-8 h-8 rounded-lg shrink-0" />}
+        {isMobile && <Skeleton variant="subtle" className="w-[var(--ds-control-h)] h-[var(--ds-control-h)] rounded-lg shrink-0" />}
       </div>
       <div className="hidden md:flex items-center gap-[var(--ds-space-3)]">
         <Skeleton variant="subtle" className="w-4 h-4 rounded-md" />
         <Skeleton variant="subtle" className="h-4 w-32 rounded-md" />
-        <Skeleton variant="subtle" className="w-8 h-8 rounded-lg" />
+        <Skeleton variant="subtle" className="w-[var(--ds-control-h)] h-[var(--ds-control-h)] rounded-lg" />
       </div>
     </motion.header>
   );
@@ -85,7 +85,7 @@ function TopOpportunitiesSkeleton({ isMobile }: { isMobile: boolean }) {
         >
           {/* Category header: icon + title + subtitle */}
           <div className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-2)] md:mb-[var(--ds-space-3)]">
-            <Skeleton variant="gradient" className="w-8 h-8 md:w-9 md:h-9 rounded-lg" />
+            <Skeleton variant="gradient" className="w-[var(--ds-control-h)] h-[var(--ds-control-h)] md:w-[var(--ds-button-sm-h)] md:h-[var(--ds-button-sm-h)] rounded-lg" />
             <div className="space-y-1 flex-1 min-w-0">
               <Skeleton variant="gradient" className={`h-4 md:h-5 ${cardIndex % 2 === 0 ? 'w-16 md:w-24' : 'w-20 md:w-28'}`} />
               <Skeleton variant="subtle" className="h-2.5 md:h-3 w-20 md:w-32 rounded-md" />
@@ -98,7 +98,7 @@ function TopOpportunitiesSkeleton({ isMobile }: { isMobile: boolean }) {
                 key={i}
                 className="grid grid-cols-[auto,minmax(0,1fr),auto] grid-rows-[auto,auto] items-center gap-x-[var(--ds-space-1-5)] md:gap-x-[var(--ds-space-2)] gap-y-[var(--ds-space-0-5)] px-[var(--ds-space-2)] md:px-[var(--ds-space-3)] h-12 md:h-14 rounded-lg border border-border/70 bg-card/45 overflow-hidden"
               >
-                <Skeleton variant="gradient" className="w-7 h-7 md:w-8 md:h-8 rounded-full row-span-2 border-transparent" />
+                <Skeleton variant="gradient" className="w-7 h-7 md:w-[var(--ds-control-h)] md:h-[var(--ds-control-h)] rounded-full border-transparent" />
                 <Skeleton variant={isMobile ? 'subtle' : 'default'} className={`h-3.5 md:h-4 rounded-md ${i % 2 === 0 ? 'w-8 md:w-14' : 'w-10 md:w-16'}`} />
                 <Skeleton variant="gradient" className={`h-4 md:h-5 justify-self-end rounded-md ${i % 3 === 0 ? 'w-10 md:w-16' : 'w-12 md:w-[4.5rem]'}`} />
                 <div className="flex items-center gap-[var(--ds-space-0-5)] md:gap-[var(--ds-space-1)] min-w-0">
@@ -175,15 +175,15 @@ function ScenarioControlsSkeleton({ isMobile }: { isMobile: boolean }) {
           <div className="flex flex-col gap-1 flex-1 min-w-0">
             <div className="flex items-center gap-1">
               <Skeleton variant="gradient" className="h-3 w-11 rounded-md shrink-0" />
-              <Skeleton variant="subtle" className="h-9 flex-1 rounded-md" />
+              <Skeleton variant="subtle" className="h-[var(--ds-button-sm-h)] flex-1 rounded-md" />
             </div>
             <div className="flex items-center gap-1">
               <Skeleton variant="gradient" className="h-3 w-11 rounded-md shrink-0" />
-              <Skeleton variant="subtle" className="h-9 flex-1 rounded-md" />
+              <Skeleton variant="subtle" className="h-[var(--ds-button-sm-h)] flex-1 rounded-md" />
             </div>
           </div>
           {/* Clear + settings */}
-          <Skeleton variant="subtle" className="w-8 h-8 rounded-md shrink-0" />
+          <Skeleton variant="subtle" className="w-[var(--ds-control-h)] h-[var(--ds-control-h)] rounded-md shrink-0" />
         </div>
       </div>
     );
@@ -192,15 +192,15 @@ function ScenarioControlsSkeleton({ isMobile }: { isMobile: boolean }) {
     <div className="w-full rounded-xl bg-card/60 px-3 py-0.5 backdrop-blur-sm">
       <div className="flex w-full items-center gap-3">
         <div className="flex shrink-0 items-center gap-0.5">
-          <Skeleton variant="subtle" className="h-8 w-12 rounded-md" />
-          <Skeleton variant="subtle" className="h-8 w-14 rounded-md" />
+          <Skeleton variant="subtle" className="h-[var(--ds-control-h)] w-12 rounded-md" />
+          <Skeleton variant="subtle" className="h-[var(--ds-control-h)] w-14 rounded-md" />
         </div>
         <Skeleton variant="gradient" className="h-3 w-12 rounded-md shrink-0" />
-        <Skeleton variant="subtle" className="h-8 flex-1 min-w-[6rem] rounded-md" />
+        <Skeleton variant="subtle" className="h-[var(--ds-control-h)] flex-1 min-w-[6rem] rounded-md" />
         <Skeleton variant="gradient" className="h-3 w-12 rounded-md shrink-0" />
-        <Skeleton variant="subtle" className="h-8 flex-1 min-w-[6rem] rounded-md" />
+        <Skeleton variant="subtle" className="h-[var(--ds-control-h)] flex-1 min-w-[6rem] rounded-md" />
         <Skeleton variant="subtle" className="h-4 w-36 rounded-md shrink-0" />
-        <Skeleton variant="subtle" className="h-8 w-16 rounded-md shrink-0" />
+        <Skeleton variant="subtle" className="h-[var(--ds-control-h)] w-16 rounded-md shrink-0" />
       </div>
     </div>
   );
@@ -246,7 +246,7 @@ function MobileCardSkeleton() {
       </div>
       {/* Spread toggle */}
       <div className="mt-1.5 px-3">
-        <Skeleton variant="subtle" className="h-8 w-full rounded-lg border-border/60" />
+        <Skeleton variant="subtle" className="h-[var(--ds-control-h)] w-full rounded-lg border-border/60" />
       </div>
     </div>
   );

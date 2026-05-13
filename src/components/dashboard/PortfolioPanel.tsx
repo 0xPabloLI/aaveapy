@@ -423,7 +423,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
               autoFocus
               onKeyDown={(e) => e.key === 'Enter' && handleSaveSnapshot()}
               className={cn(
-                'h-7 flex-1 rounded-lg border border-border/50 bg-muted/40 px-2.5 ds-text-11 text-foreground placeholder:text-muted-foreground/50',
+                'h-[var(--ds-chip-h)] flex-1 rounded-lg border border-border/50 bg-muted/40 px-2.5 ds-text-11 text-foreground placeholder:text-muted-foreground/50',
                 `focus:${BATCH_THEME.border} focus:outline-none focus:ring-1 focus:${BATCH_THEME.ringSoft}`,
               )}
               aria-label="Snapshot name"
@@ -448,7 +448,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
               placeholder="Search token…"
               autoFocus
               className={cn(
-                'h-8 w-full rounded-lg border border-border/50 bg-muted/40 px-3 ds-text-12 text-foreground placeholder:text-muted-foreground/50 placeholder:italic',
+                'h-[var(--ds-control-h)] w-full rounded-lg border border-border/50 bg-muted/40 px-3 ds-text-12 text-foreground placeholder:text-muted-foreground/50 placeholder:italic',
                 `focus:${BATCH_THEME.border} focus:outline-none focus:ring-1 focus:${BATCH_THEME.ringSoft}`,
               )}
               aria-label="Search tokens to add"
@@ -479,7 +479,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
           if (visible.length === 0) return null;
           return (
             <div
-              className="mb-2.5 flex flex-wrap items-start content-start gap-x-1.5 gap-y-1.5 leading-7 [&>*]:h-7"
+              className="mb-2.5 flex flex-wrap items-start content-start gap-x-1.5 gap-y-1.5 leading-7 [&>*]:h-[var(--ds-chip-h)]"
               style={{ minHeight: '28px' }}
             >
               {visible.map((r) => {
@@ -502,7 +502,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
                     new Set(suggestedReserves.map((r) => getReserveKey(r))),
                   )
                 }
-                className="inline-flex h-7 items-center gap-1 rounded-full border border-border/50 bg-card/70 px-2 ds-text-11 font-medium leading-none text-muted-foreground transition-colors duration-200 hover:bg-muted/60 hover:text-foreground"
+                className="inline-flex h-[var(--ds-chip-h)] items-center gap-1 rounded-full border border-border/50 bg-card/70 px-2 ds-text-11 font-medium leading-none text-muted-foreground transition-colors duration-200 hover:bg-muted/60 hover:text-foreground"
                 aria-label="Dismiss all popular token suggestions"
                 title="Clear all suggestions"
               >

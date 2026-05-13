@@ -781,6 +781,316 @@ describe('MobileReserveCard', () => {
     expect(badge.hasAttribute('data-state')).toBe(false);
   });
 
+  describe('supplyDisable/borrowDisable 变暗效果', () => {
+    it('supplyDisabled → APY 使用 text-emerald-500/50 变暗', () => {
+      const supplyDisabledReserve = { ...reserve, supplyDisabled: true };
+
+      const { container } = render(
+        <QueryClientProvider client={new QueryClient()}>
+          <TooltipProvider>
+            <MobileReserveCard
+              reserve={supplyDisabledReserve}
+              isApy
+              tydroPointToUsdRate={0}
+              onIncentiveClick={() => {}}
+              isSimulationExpanded={false}
+              onToggleSimulation={() => {}}
+              simulation={simulation}
+              supplyInput="1000"
+              borrowInput="500"
+              hasSharedScenario
+              inputMode="usd"
+            />
+          </TooltipProvider>
+        </QueryClientProvider>,
+      );
+
+      expect(container.innerHTML).toContain('text-emerald-500/50');
+    });
+
+    it('supplyDisabled → 显示 "Supply unavailable" 而非 "Base APY only"', () => {
+      const supplyDisabledReserve = { ...reserve, supplyDisabled: true };
+      const noIncentiveSim = {
+        ...simulation,
+        supply: { ...simulation.supply, currentIncentive: 0, afterIncentive: 0 },
+      };
+
+      const { getByText, queryByText } = render(
+        <QueryClientProvider client={new QueryClient()}>
+          <TooltipProvider>
+            <MobileReserveCard
+              reserve={supplyDisabledReserve}
+              isApy
+              tydroPointToUsdRate={0}
+              onIncentiveClick={() => {}}
+              isSimulationExpanded={false}
+              onToggleSimulation={() => {}}
+              simulation={noIncentiveSim}
+              supplyInput="1000"
+              borrowInput="500"
+              hasSharedScenario
+              inputMode="usd"
+            />
+          </TooltipProvider>
+        </QueryClientProvider>,
+      );
+
+      expect(getByText('Supply unavailable')).toBeInTheDocument();
+      expect(queryByText('Base APY only')).not.toBeInTheDocument();
+      expect(queryByText('Base APR only')).not.toBeInTheDocument();
+    });
+
+    it('supplyDisabled + 有激励 → Native APY 用 text-emerald-500/40 变暗', () => {
+      const supplyDisabledReserve = { ...reserve, supplyDisabled: true };
+
+      const { container } = render(
+        <QueryClientProvider client={new QueryClient()}>
+          <TooltipProvider>
+            <MobileReserveCard
+              reserve={supplyDisabledReserve}
+              isApy
+              tydroPointToUsdRate={0}
+              onIncentiveClick={() => {}}
+              isSimulationExpanded={false}
+              onToggleSimulation={() => {}}
+              simulation={simulation}
+              supplyInput="1000"
+              borrowInput="500"
+              hasSharedScenario
+              inputMode="usd"
+            />
+          </TooltipProvider>
+        </QueryClientProvider>,
+      );
+
+      expect(container.innerHTML).toContain('text-emerald-500/40');
+    });
+
+    it('supplyDisabled + 有激励 → 激励标签使用变暗样式', () => {
+      const supplyDisabledReserve = { ...reserve, supplyDisabled: true };
+
+      const { container } = render(
+        <QueryClientProvider client={new QueryClient()}>
+          <TooltipProvider>
+            <MobileReserveCard
+              reserve={supplyDisabledReserve}
+              isApy
+              tydroPointToUsdRate={0}
+              onIncentiveClick={() => {}}
+              isSimulationExpanded={false}
+              onToggleSimulation={() => {}}
+              simulation={simulation}
+              supplyInput="1000"
+              borrowInput="500"
+              hasSharedScenario
+              inputMode="usd"
+            />
+          </TooltipProvider>
+        </QueryClientProvider>,
+      );
+
+      expect(container.innerHTML).toContain('text-emerald-500/50');
+      expect(container.innerHTML).toContain('bg-emerald-500/10');
+      expect(container.innerHTML).toContain('ring-emerald-500/20');
+    });
+
+    it('borrowDisabled → APY 使用 text-cyan-500/50 变暗', () => {
+      const borrowDisabledReserve = { ...reserve, borrowDisabled: true };
+
+      const { container } = render(
+        <QueryClientProvider client={new QueryClient()}>
+          <TooltipProvider>
+            <MobileReserveCard
+              reserve={borrowDisabledReserve}
+              isApy
+              tydroPointToUsdRate={0}
+              onIncentiveClick={() => {}}
+              isSimulationExpanded={false}
+              onToggleSimulation={() => {}}
+              simulation={simulation}
+              supplyInput="1000"
+              borrowInput="500"
+              hasSharedScenario
+              inputMode="usd"
+              defaultTab="borrow"
+            />
+          </TooltipProvider>
+        </QueryClientProvider>,
+      );
+
+      expect(container.innerHTML).toContain('text-cyan-500/50');
+    });
+
+    it('borrowDisabled → 显示 "Borrow unavailable" 而非 "Base APY/APR only"', () => {
+      const borrowDisabledReserve = { ...reserve, borrowDisabled: true };
+      const noIncentiveSim = {
+        ...simulation,
+        borrow: { ...simulation.borrow, currentIncentive: 0, afterIncentive: 0 },
+      };
+
+      const { getByText, queryByText } = render(
+        <QueryClientProvider client={new QueryClient()}>
+          <TooltipProvider>
+            <MobileReserveCard
+              reserve={borrowDisabledReserve}
+              isApy
+              tydroPointToUsdRate={0}
+              onIncentiveClick={() => {}}
+              isSimulationExpanded={false}
+              onToggleSimulation={() => {}}
+              simulation={noIncentiveSim}
+              supplyInput="1000"
+              borrowInput="500"
+              hasSharedScenario
+              inputMode="usd"
+              defaultTab="borrow"
+            />
+          </TooltipProvider>
+        </QueryClientProvider>,
+      );
+
+      expect(getByText('Borrow unavailable')).toBeInTheDocument();
+      expect(queryByText('Base APY only')).not.toBeInTheDocument();
+      expect(queryByText('Base APR only')).not.toBeInTheDocument();
+    });
+
+    it('borrowDisabled + 有激励 → Native APY 用 text-cyan-500/40 变暗', () => {
+      const borrowDisabledReserve = { ...reserve, borrowDisabled: true };
+
+      const { container } = render(
+        <QueryClientProvider client={new QueryClient()}>
+          <TooltipProvider>
+            <MobileReserveCard
+              reserve={borrowDisabledReserve}
+              isApy
+              tydroPointToUsdRate={0}
+              onIncentiveClick={() => {}}
+              isSimulationExpanded={false}
+              onToggleSimulation={() => {}}
+              simulation={simulation}
+              supplyInput="1000"
+              borrowInput="500"
+              hasSharedScenario
+              inputMode="usd"
+              defaultTab="borrow"
+            />
+          </TooltipProvider>
+        </QueryClientProvider>,
+      );
+
+      expect(container.innerHTML).toContain('text-cyan-500/40');
+    });
+
+    it('borrowDisabled + 有激励 → 激励标签使用变暗样式', () => {
+      const borrowDisabledReserve = { ...reserve, borrowDisabled: true };
+
+      const { container } = render(
+        <QueryClientProvider client={new QueryClient()}>
+          <TooltipProvider>
+            <MobileReserveCard
+              reserve={borrowDisabledReserve}
+              isApy
+              tydroPointToUsdRate={0}
+              onIncentiveClick={() => {}}
+              isSimulationExpanded={false}
+              onToggleSimulation={() => {}}
+              simulation={simulation}
+              supplyInput="1000"
+              borrowInput="500"
+              hasSharedScenario
+              inputMode="usd"
+              defaultTab="borrow"
+            />
+          </TooltipProvider>
+        </QueryClientProvider>,
+      );
+
+      expect(container.innerHTML).toContain('text-cyan-500/50');
+      expect(container.innerHTML).toContain('bg-cyan-500/10');
+      expect(container.innerHTML).toContain('ring-cyan-500/20');
+    });
+
+    it('frozen → supply APY 变暗 (text-emerald-500/50)', () => {
+      const frozenReserve = { ...reserve, isFrozen: true };
+
+      const { container } = render(
+        <QueryClientProvider client={new QueryClient()}>
+          <TooltipProvider>
+            <MobileReserveCard
+              reserve={frozenReserve}
+              isApy
+              tydroPointToUsdRate={0}
+              onIncentiveClick={() => {}}
+              isSimulationExpanded={false}
+              onToggleSimulation={() => {}}
+              simulation={simulation}
+              supplyInput="1000"
+              borrowInput="500"
+              hasSharedScenario
+              inputMode="usd"
+            />
+          </TooltipProvider>
+        </QueryClientProvider>,
+      );
+
+      expect(container.innerHTML).toContain('text-emerald-500/50');
+    });
+
+    it('frozen → borrow APY 变暗 (text-cyan-500/50)', () => {
+      const frozenReserve = { ...reserve, isFrozen: true };
+
+      const { container } = render(
+        <QueryClientProvider client={new QueryClient()}>
+          <TooltipProvider>
+            <MobileReserveCard
+              reserve={frozenReserve}
+              isApy
+              tydroPointToUsdRate={0}
+              onIncentiveClick={() => {}}
+              isSimulationExpanded={false}
+              onToggleSimulation={() => {}}
+              simulation={simulation}
+              supplyInput="1000"
+              borrowInput="500"
+              hasSharedScenario
+              inputMode="usd"
+              defaultTab="borrow"
+            />
+          </TooltipProvider>
+        </QueryClientProvider>,
+      );
+
+      expect(container.innerHTML).toContain('text-cyan-500/50');
+    });
+
+    it('supplyDisabled 时 APR 模式下也不显示 "Base APR only"', () => {
+      const supplyDisabledReserve = { ...reserve, supplyDisabled: true };
+
+      const { queryByText } = render(
+        <QueryClientProvider client={new QueryClient()}>
+          <TooltipProvider>
+            <MobileReserveCard
+              reserve={supplyDisabledReserve}
+              isApy={false}
+              tydroPointToUsdRate={0}
+              onIncentiveClick={() => {}}
+              isSimulationExpanded={false}
+              onToggleSimulation={() => {}}
+              simulation={simulation}
+              supplyInput="1000"
+              borrowInput="500"
+              hasSharedScenario
+              inputMode="usd"
+            />
+          </TooltipProvider>
+        </QueryClientProvider>,
+      );
+
+      expect(queryByText('Base APR only')).not.toBeInTheDocument();
+      expect(queryByText('Base APY only')).not.toBeInTheDocument();
+    });
+  });
+
   describe('supplyCap/borrowCap 计算回归测试 (AAV-243)', () => {
     it('renders supply CapProgressRing when supplyCap produces a valid positive USD value', () => {
       const { getByLabelText } = renderCard(false);
