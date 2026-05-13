@@ -476,13 +476,65 @@ Applied consistently to Merkl, Merit, Brevis, protocol incentive rows, and incen
 
 The toggle changes incentive contribution only, not the native base rate.
 
-### Scenario USD/day semantics
+### Scenario USD/day (`scenarioUsdAccrual`)
 
-`scenarioUsdAccrual` should stay stable when APR/APY toggles change.
+Source: `src/hooks/useRateSimulation.ts` (`buildSupplyUsdAccrualSide`, `buildBorrowUsdAccrualSide`).
 
-- Native daily USD uses simulated native APR with Aave per-second compounding semantics.
-- Incentive daily USD uses fixed APR-linear daily conversion.
-- Total daily USD = native + incentive.
+Each scenario side computes a daily USD cashflow from the **after-simulation** rates.
+
+#### Supply side
+
+```text
+nativeUsdPerDay    = principalUsd × ((1 + nativeApyDecimal)^(1/365) − 1)    // Aave per-second APY → daily
+incentiveUsdPerDay = principalUsd × incentiveAprPercent / 100 / 365          // APR-linear
+totalUsdPerDay     = nativeUsdPerDay + incentiveUsdPerDay
+```
+
+Where `nativeApyDecimal` comes from `nativeAprPercentToApyPercent` (Aave per-second compounding: `(1 + apr / SECONDS_PER_YEAR)^SECONDS_PER_YEAR − 1`).
+
+#### Borrow side
+
+```text
+nativeUsdPerDay    = −principalUsd × ((1 + nativeApyDecimal)^(1/365) − 1)   // negative (interest paid)
+incentiveUsdPerDay =  principalUsd × incentiveAprPercent / 100 / 365          // positive (rebate)
+totalUsdPerDay     = nativeUsdPerDay + incentiveUsdPerDay
+```
+
+#### Net USD/day
+
+```text
+netUsdPerDay = supplyTotalUsdPerDay + borrowTotalUsdPerDay
+```
+
+Supply is positive earnings; borrow native is negative cost; borrow incentive is positive rebate. `netUsdPerDay` is the combined daily cashflow for the position.
+
+#### Type structure
+
+```typescript
+interface ScenarioUsdAccrualSide {
+  nativeUsdPerDay: number | null;      // supply: positive; borrow: negative
+  incentiveUsdPerDay: number | null;   // supply: positive; borrow: positive (rebate)
+  totalUsdPerDay: number | null;       // native + incentive for this side
+}
+
+interface ScenarioUsdAccrual {
+  supply: ScenarioUsdAccrualSide | null;
+  borrow: ScenarioUsdAccrualSide | null;
+  netUsdPerDay: number | null;         // supply total + borrow total
+}
+```
+
+Present when at least one side has scenario principal; `null` otherwise.
+
+#### Key invariant
+
+Toggling APR/APY display mode must **not** change `scenarioUsdAccrual` outputs. Native daily USD uses Aave per-second compounding; incentive daily USD uses APR-linear dailyization. Both are independent of the display toggle.
+
+#### UI consumption
+
+| Component | File | Usage |
+|-----------|------|-------|
+| `SimulationSubRow` | `src/components/dashboard/SimulationSubRow.tsx` | Displays `netUsdPerDay` alongside per-side native/incentive breakdown |
 
 ### Net Position Eligibility (Scenario Simulation)
 
@@ -580,7 +632,7 @@ This section groups cap / ceiling semantics for Merit, Merkl, and Brevis.
 - `src/lib/incentiveCeilings.ts` – Domain-layer ceiling effects → simulation `capNote` / `capWarning`
 - `src/lib/brevisForecast.ts` – Brevis per-user reward cap forecast
 - `src/lib/tydro.ts` – Tydro points-to-USD conversion
-- `src/hooks/useRateSimulation.ts` – React hook: native simulation + incentive forecast overlay
-- `src/lib/formatters.ts` – Display formatting utilities
+- `src/hooks/useRateSimulation.ts` – React hook: native simulation + incentive forecast overlay; `buildSupplyUsdAccrualSide` / `buildBorrowUsdAccrualSide` for USD/day
+- `src/lib/formatters.ts` – Display formatting; `annualPercentToDailyFraction` (APY compound vs APR-linear dailyization)
 - `docs/frontend-data-loading-matrix.md` – Data loading architecture
 - `docs/design/frontend-interaction-guardrails.md` – Interaction design guardrails
