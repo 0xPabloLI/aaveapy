@@ -16,6 +16,7 @@ import { clearLegacyCacheEntries } from "@/lib/cache";
 // Lazy load route components
 const Index = lazy(() => import("./pages/Index"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const ChainPage = lazy(() => import("./pages/ChainPage"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -54,6 +55,7 @@ const App = () => (
           <Suspense fallback={<LoadingState />}>
             <Routes>
               <Route path="/" element={<Index />} />
+              <Route path="/chain/:slug" element={<ChainPage />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
