@@ -70,7 +70,7 @@ describe('FilterBar', () => {
     render(<TestWrapper />);
 
     const tokensRow = screen.getAllByTestId('tokens-row')[0];
-    const tokenLabels = ['All', 'Stables', 'ETH', 'BTC', 'Pendle'];
+    const tokenLabels = ['All', 'Stables', 'xETH', 'xBTC', 'Pendle'];
     tokenLabels.forEach((label) => {
       const chip = within(tokensRow).getByRole('button', { name: label });
       expect(chip.className).toContain('ds-chip');
@@ -121,7 +121,7 @@ describe('FilterBar', () => {
     const tokensRow = screen.getAllByTestId('tokens-row')[0];
     const marketsRow = screen.getAllByTestId('markets-row')[0];
 
-    const tokenChips = ['All', 'Stables', 'ETH', 'BTC', 'Pendle'].map((label) =>
+    const tokenChips = ['All', 'Stables', 'xETH', 'xBTC', 'Pendle'].map((label) =>
       within(tokensRow).getByRole('button', { name: label })
     );
     const allChip = within(marketsRow).getByRole('button', { name: 'All' });
