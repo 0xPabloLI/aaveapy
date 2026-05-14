@@ -103,9 +103,22 @@ const FAQ_ITEMS: { q: string; a: ReactNode }[] = [
   },
 ];
 
+const FAQ_JSON_LD = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: Object.entries(FAQ_PLAIN_ANSWERS).map(([q, a]) => ({
+    '@type': 'Question',
+    name: q,
+    acceptedAnswer: { '@type': 'Answer', text: a },
+  })),
+};
+
 const FaqSection = memo(function FaqSection() {
   return (
     <section id="faq" className="border-t border-border/50 pt-[var(--ds-space-6)] pb-[var(--ds-space-2)]">
+      <Helmet>
+        <script type="application/ld+json">{JSON.stringify(FAQ_JSON_LD)}</script>
+      </Helmet>
       <h2 className="ds-text-18 font-semibold text-foreground mb-[var(--ds-space-3)]">
         FAQ
       </h2>
