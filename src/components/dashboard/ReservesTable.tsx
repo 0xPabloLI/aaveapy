@@ -28,10 +28,14 @@ import DesktopReserveRow from './DesktopReserveRow';
 import ReservesTableDesktopHeader from './ReservesTableDesktopHeader';
 import ReservesTableMobileGrid from './ReservesTableMobileGrid';
 import ReservesTableMobileSortBar, {
-  type MobileSortMenuKey,
   type MobileSortOption,
 } from './ReservesTableMobileSortBar';
 import { useIsMobile } from '@/hooks/use-mobile';
+import {
+  useReservesTableSort,
+  type SortMode,
+  type SortableColumn,
+} from '@/hooks/reserves-table/useReservesTableSort';
 import { getReserveSimulationId, useSharedRateSimulations } from '@/hooks/useRateSimulation';
 import { useSideDataMeta } from '@/hooks/useSideDataMeta';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
@@ -77,10 +81,6 @@ interface ReservesTableProps {
   topOppsRef?: React.RefObject<HTMLDivElement | null>;
 }
 
-type SortMode = 'total' | 'native' | 'incentive';
-
-type SortableColumn = 'token' | 'price' | 'market' | 'size' | 'util' | 'supply' | 'borrow' | 'spread';
-
 const DEFAULT_VISIBLE_COUNT = 20;
 
 // Stable sentinel used as a gate dependency for `sortedData` when the active
@@ -123,30 +123,6 @@ const ReservesTable = ({
     return states;
   }, [sideDataMetaQuery.data?.forecast]);
 
-  const [activeSortColumn, setActiveSortColumn] = useState<SortableColumn | null>('supply');
-  const [tokenSortOrder, setTokenSortOrder] = useState<'asc' | 'desc'>('asc');
-  const [marketSortOrder, setMarketSortOrder] = useState<'asc' | 'desc'>('asc');
-  const [priceSortOrder, setPriceSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [sizeSortMode, setSizeSortMode] = useState<'supply' | 'borrow' | 'borrowAvailability' | 'supplyAvailability' | 'deficitRatio' | 'deficitAmount'>('supply');
-  const [sizeSortOrder, setSizeSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [utilSortOrder, setUtilSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [utilSortMode, setUtilSortMode] = useState<'util' | 'liquidity'>('util');
-  const [showUtilSortMenu, setShowUtilSortMenu] = useState(false);
-  const utilSortButtonRef = useRef<HTMLButtonElement>(null);
-  const [utilMenuPos, setUtilMenuPos] = useState<{ top: number; left: number } | null>(null);
-  const [showSizeSortMenu, setShowSizeSortMenu] = useState(false);
-  const sizeSortButtonRef = useRef<HTMLButtonElement>(null);
-  const [sizeMenuPos, setSizeMenuPos] = useState<{ top: number; left: number } | null>(null);
-  const [supplySortMode, setSupplySortMode] = useState<SortMode>('incentive');
-  const [supplySortOrder, setSupplySortOrder] = useState<'asc' | 'desc'>('desc');
-  const [borrowSortMode, setBorrowSortMode] = useState<SortMode>('total');
-  const [borrowSortOrder, setBorrowSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [spreadSortOrder, setSpreadSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [showSupplySortMenu, setShowSupplySortMenu] = useState(false);
-  const [showBorrowSortMenu, setShowBorrowSortMenu] = useState(false);
-  const [showExtraSortMenu, setShowExtraSortMenu] = useState(false);
-  const borrowSortButtonRef = useRef<HTMLButtonElement>(null);
-  const supplySortButtonRef = useRef<HTMLButtonElement>(null);
   const scenarioControlsRef = useRef<ScenarioControlsHandle>(null);
   const scenarioPinControllerRef = useRef(createScenarioPinControllerState());
   const scenarioPinScheduleTokenRef = useRef(0);
@@ -155,8 +131,6 @@ const ReservesTable = ({
   const cancelFilterPinScrollRef = useRef<(() => void) | null>(null);
   const suppressNextToggleReserveIdRef = useRef<string | null>(null);
   const pendingMarketFilterPinReserveIdRef = useRef<string | null>(null);
-  const [borrowMenuPos, setBorrowMenuPos] = useState<{ top: number; left: number } | null>(null);
-  const [supplyMenuPos, setSupplyMenuPos] = useState<{ top: number; left: number } | null>(null);
   const [minVisibleCount, setMinVisibleCount] = useState<number | null>(null);
   const [expandedReserveId, setExpandedReserveId] = useState<string | null>(null);
   const [debouncedSharedSupplyInput, setDebouncedSharedSupplyInput] = useState('');
@@ -179,33 +153,62 @@ const ReservesTable = ({
     scenarioControlsRef.current?.setBorrowInput(correctedValue);
   }, []);
 
-  useEffect(() => {
-    if (showBorrowSortMenu && borrowSortButtonRef.current) {
-      const rect = borrowSortButtonRef.current.getBoundingClientRect();
-      setBorrowMenuPos({ top: rect.bottom + 4, left: rect.right - 140 });
-    }
-  }, [showBorrowSortMenu]);
+  // Closing any expanded reserve row is the side-effect every column-sort
+  // change shares; wired into the sort hook below so all `handleSort*` and
+  // `toggle*SortOrder` helpers run it before mutating sort state.
+  const collapseExpandedOnSort = useCallback(() => {
+    setExpandedReserveId(null);
+  }, []);
 
-  useEffect(() => {
-    if (showSupplySortMenu && supplySortButtonRef.current) {
-      const rect = supplySortButtonRef.current.getBoundingClientRect();
-      setSupplyMenuPos({ top: rect.bottom + 4, left: rect.right - 140 });
-    }
-  }, [showSupplySortMenu]);
-
-  useEffect(() => {
-    if (showSizeSortMenu && sizeSortButtonRef.current) {
-      const rect = sizeSortButtonRef.current.getBoundingClientRect();
-      setSizeMenuPos({ top: rect.bottom + 4, left: rect.right - 140 });
-    }
-  }, [showSizeSortMenu]);
-
-  useEffect(() => {
-    if (showUtilSortMenu && utilSortButtonRef.current) {
-      const rect = utilSortButtonRef.current.getBoundingClientRect();
-      setUtilMenuPos({ top: rect.bottom + 4, left: rect.right - 180 });
-    }
-  }, [showUtilSortMenu]);
+  const sortState = useReservesTableSort({ collapseExpanded: collapseExpandedOnSort });
+  const {
+    activeSortColumn,
+    setActiveSortColumn,
+    tokenSortOrder,
+    marketSortOrder,
+    priceSortOrder,
+    sizeSortMode,
+    setSizeSortMode,
+    sizeSortOrder,
+    utilSortOrder,
+    utilSortMode,
+    setUtilSortMode,
+    supplySortMode,
+    setSupplySortMode,
+    supplySortOrder,
+    borrowSortMode,
+    setBorrowSortMode,
+    borrowSortOrder,
+    spreadSortOrder,
+    showUtilSortMenu,
+    setShowUtilSortMenu,
+    utilSortButtonRef,
+    utilMenuPos,
+    showSizeSortMenu,
+    setShowSizeSortMenu,
+    sizeSortButtonRef,
+    sizeMenuPos,
+    showSupplySortMenu,
+    setShowSupplySortMenu,
+    supplySortButtonRef,
+    supplyMenuPos,
+    showBorrowSortMenu,
+    setShowBorrowSortMenu,
+    borrowSortButtonRef,
+    borrowMenuPos,
+    showExtraSortMenu,
+    setShowExtraSortMenu,
+    handleSortToken,
+    handleSortMarket,
+    handleSortPrice,
+    handleSortSize,
+    handleSortUtil,
+    toggleSupplySortOrder,
+    toggleBorrowSortOrder,
+    toggleSpreadSortOrder,
+    closeAllMobileSortMenus,
+    toggleMobileSortMenu,
+  } = sortState;
 
   const handleToggleExpand = useCallback((reserveId: string) => {
     if (suppressNextToggleReserveIdRef.current === reserveId) {
@@ -488,19 +491,156 @@ const ReservesTable = ({
 
       if (sortColumn === 'token') {
         const order = tokenSortOrder === 'asc' ? 1 : -1;
-        return order * (a.tokenSymbol.localeCompare(b.tokenSymbol, undefined, { sensitivity: 'base' }));
+        const byToken = a.tokenSymbol.localeCompare(b.tokenSymbol, undefined, { sensitivity: 'base' });
+        if (byToken !== 0) return order * byToken;
+        const byMarket = a.marketName.localeCompare(b.marketName, undefined, { sensitivity: 'base' });
+        if (byMarket !== 0) return order * byMarket;
+        return order * a.reserveId.localeCompare(b.reserveId);
       }
       if (sortColumn === 'market') {
         const order = marketSortOrder === 'asc' ? 1 : -1;
         const byMarket = a.marketName.localeCompare(b.marketName, undefined, { sensitivity: 'base' });
         if (byMarket !== 0) return order * byMarket;
-        return order * a.tokenSymbol.localeCompare(b.tokenSymbol, undefined, { sensitivity: 'base' });
+        const byToken = a.tokenSymbol.localeCompare(b.tokenSymbol, undefined, { sensitivity: 'base' });
+        if (byToken !== 0) return order * byToken;
+        return order * a.reserveId.localeCompare(b.reserveId);
       }
       if (sortColumn === 'price') {
         const aP = a.tokenPrice ?? -Infinity;
         const bP = b.tokenPrice ?? -Infinity;
         comparison = aP - bP;
-        return priceSortOrder === 'desc' ? -comparison : comparison;
+        if (comparison !== 0) return priceSortOrder === 'desc' ? -comparison : comparison;
+        return a.reserveId.localeCompare(b.reserveId);
+      }
+      if (sortColumn === 'size') {
+        if (sizeSortMode === 'borrow') {
+          const aT = getTotalBorrowedUsd(a) ?? -Infinity;
+          const bT = getTotalBorrowedUsd(b) ?? -Infinity;
+          comparison = aT - bT;
+        } else if (sizeSortMode === 'borrowAvailability') {
+          const aT = getDisplayAvailableToBorrowUsd(a) ?? -Infinity;
+          const bT = getDisplayAvailableToBorrowUsd(b) ?? -Infinity;
+          comparison = aT - bT;
+        } else if (sizeSortMode === 'supplyAvailability') {
+          const aT = getDisplaySupplyAvailabilityUsd(a) ?? -Infinity;
+          const bT = getDisplaySupplyAvailabilityUsd(b) ?? -Infinity;
+          comparison = aT - bT;
+        } else if (sizeSortMode === 'deficitRatio') {
+          const aT = getDisplayDeficitRatio(a) ?? -Infinity;
+          const bT = getDisplayDeficitRatio(b) ?? -Infinity;
+          comparison = aT - bT;
+        } else if (sizeSortMode === 'deficitAmount') {
+          const aT = getDisplayDeficit(a) ?? -Infinity;
+          const bT = getDisplayDeficit(b) ?? -Infinity;
+          comparison = aT - bT;
+        } else {
+          const aT = getDisplayReserveSizeUsd(a) ?? -Infinity;
+          const bT = getDisplayReserveSizeUsd(b) ?? -Infinity;
+          comparison = aT - bT;
+        }
+        if (comparison !== 0) return sizeSortOrder === 'desc' ? -comparison : comparison;
+        return a.reserveId.localeCompare(b.reserveId);
+      }
+      if (sortColumn === 'util') {
+        if (utilSortMode === 'liquidity') {
+          const aL = getDisplayLiquidityUsd(a) ?? -Infinity;
+          const bL = getDisplayLiquidityUsd(b) ?? -Infinity;
+          comparison = aL - bL;
+        } else {
+          const aU = getDisplayUtilization(a) ?? -Infinity;
+          const bU = getDisplayUtilization(b) ?? -Infinity;
+          comparison = aU - bU;
+        }
+        if (comparison !== 0) return utilSortOrder === 'desc' ? -comparison : comparison;
+        return a.reserveId.localeCompare(b.reserveId);
+      }
+
+      if (sortColumn === 'supply') {
+        // Supply sorting
+        if (supplySortMode === 'native') {
+          const aNative = getDisplaySupplyNative(a);
+          const bNative = getDisplaySupplyNative(b);
+          if (aNative === null && bNative === null) return a.reserveId.localeCompare(b.reserveId);
+          if (aNative === null) return 1;
+          if (bNative === null) return -1;
+          comparison = bNative - aNative;
+        } else if (supplySortMode === 'incentive') {
+          const aIncentive = getDisplaySupplyIncentive(a);
+          const bIncentive = getDisplaySupplyIncentive(b);
+          const aNative = getDisplaySupplyNative(a);
+          const bNative = getDisplaySupplyNative(b);
+          const aHasIncentiveSource = hasSupplyIncentiveSource(a);
+          const bHasIncentiveSource = hasSupplyIncentiveSource(b);
+          const result = compareIncentiveWithNative(
+            aIncentive,
+            bIncentive,
+            aNative,
+            bNative,
+            supplySortOrder,
+            aHasIncentiveSource,
+            bHasIncentiveSource,
+          );
+          if (result !== 0) return result;
+          return a.reserveId.localeCompare(b.reserveId);
+        } else {
+          // Total sorting - use totalSupplyApy (Native + Incentive)
+          const aTotal = getDisplaySupplyTotal(a);
+          const bTotal = getDisplaySupplyTotal(b);
+          if (aTotal === null && bTotal === null) return a.reserveId.localeCompare(b.reserveId);
+          if (aTotal === null) return 1;
+          if (bTotal === null) return -1;
+          comparison = bTotal - aTotal;
+        }
+        if (comparison !== 0) return supplySortOrder === 'desc' ? comparison : -comparison;
+        return a.reserveId.localeCompare(b.reserveId);
+      } else if (sortColumn === 'borrow') {
+        // Borrow sorting
+        if (borrowSortMode === 'native') {
+          const aNative = getDisplayBorrowNative(a);
+          const bNative = getDisplayBorrowNative(b);
+          if (aNative === null && bNative === null) return a.reserveId.localeCompare(b.reserveId);
+          if (aNative === null) return 1;
+          if (bNative === null) return -1;
+          comparison = bNative - aNative;
+        } else if (borrowSortMode === 'incentive') {
+          const aIncentive = getDisplayBorrowIncentive(a);
+          const bIncentive = getDisplayBorrowIncentive(b);
+          const aNative = getDisplayBorrowNative(a);
+          const bNative = getDisplayBorrowNative(b);
+          const aHasIncentiveSource = hasBorrowIncentiveSource(a);
+          const bHasIncentiveSource = hasBorrowIncentiveSource(b);
+          const result = compareIncentiveWithNative(
+            aIncentive,
+            bIncentive,
+            aNative,
+            bNative,
+            borrowSortOrder,
+            aHasIncentiveSource,
+            bHasIncentiveSource,
+          );
+          if (result !== 0) return result;
+          return a.reserveId.localeCompare(b.reserveId);
+        } else {
+          // Total sorting
+          const aTotal = getDisplayBorrowTotal(a);
+          const bTotal = getDisplayBorrowTotal(b);
+          if (aTotal === null && bTotal === null) return a.reserveId.localeCompare(b.reserveId);
+          if (aTotal === null) return 1;
+          if (bTotal === null) return -1;
+          comparison = bTotal - aTotal;
+        }
+        if (comparison !== 0) return borrowSortOrder === 'desc' ? comparison : -comparison;
+        return a.reserveId.localeCompare(b.reserveId);
+      } else {
+        // Spread sorting (or default when activeSortColumn is null)
+        const aSpread = getDisplaySpread(a);
+        const bSpread = getDisplaySpread(b);
+        if (aSpread === null && bSpread === null) return a.reserveId.localeCompare(b.reserveId);
+        if (aSpread === null) return 1;
+        if (bSpread === null) return -1;
+        comparison = bSpread - aSpread;
+        if (comparison !== 0) return spreadSortOrder === 'desc' ? comparison : -comparison;
+        return a.reserveId.localeCompare(b.reserveId);
       }
       if (sortColumn === 'size') {
         if (sizeSortMode === 'borrow') {
@@ -791,84 +931,6 @@ const ReservesTable = ({
     activeSortColumn === 'token' ||
     activeSortColumn === 'market' ||
     activeSortColumn === 'price';
-
-  const toggleSupplySortOrder = () => {
-    collapseExpandedOnSort();
-    setActiveSortColumn('supply');
-    setSupplySortOrder(supplySortOrder === 'desc' ? 'asc' : 'desc');
-  };
-
-  const toggleBorrowSortOrder = () => {
-    collapseExpandedOnSort();
-    setActiveSortColumn('borrow');
-    setBorrowSortOrder(borrowSortOrder === 'desc' ? 'asc' : 'desc');
-  };
-
-  const toggleSpreadSortOrder = () => {
-    collapseExpandedOnSort();
-    setActiveSortColumn('spread');
-    setSpreadSortOrder(spreadSortOrder === 'desc' ? 'asc' : 'desc');
-  };
-
-  const collapseExpandedOnSort = useCallback(() => {
-    setExpandedReserveId(null);
-  }, []);
-
-  const handleSortToken = () => {
-    collapseExpandedOnSort();
-    setActiveSortColumn('token');
-    setTokenSortOrder((o) => (o === 'asc' ? 'desc' : 'asc'));
-  };
-  const handleSortMarket = () => {
-    collapseExpandedOnSort();
-    setActiveSortColumn('market');
-    setMarketSortOrder((o) => (o === 'asc' ? 'desc' : 'asc'));
-  };
-  const handleSortPrice = () => {
-    collapseExpandedOnSort();
-    setActiveSortColumn('price');
-    setPriceSortOrder((o) => (o === 'desc' ? 'asc' : 'desc'));
-  };
-  const handleSortSize = () => {
-    collapseExpandedOnSort();
-    setActiveSortColumn('size');
-    setSizeSortOrder((o) => (o === 'desc' ? 'asc' : 'desc'));
-  };
-  const handleSortUtil = () => {
-    collapseExpandedOnSort();
-    setActiveSortColumn('util');
-    setUtilSortOrder((o) => (o === 'desc' ? 'asc' : 'desc'));
-    setShowUtilSortMenu(false);
-  };
-
-  const closeAllMobileSortMenus = useCallback((except: MobileSortMenuKey | null = null) => {
-    if (except !== 'size') setShowSizeSortMenu(false);
-    if (except !== 'supply') setShowSupplySortMenu(false);
-    if (except !== 'borrow') setShowBorrowSortMenu(false);
-    if (except !== 'extra') setShowExtraSortMenu(false);
-    setShowUtilSortMenu(false);
-  }, []);
-
-  const toggleMobileSortMenu = useCallback((menu: MobileSortMenuKey) => {
-    closeAllMobileSortMenus(menu);
-    switch (menu) {
-      case 'size':
-        setShowSizeSortMenu((prev) => !prev);
-        break;
-      case 'util':
-        setShowUtilSortMenu((prev) => !prev);
-        break;
-      case 'supply':
-        setShowSupplySortMenu((prev) => !prev);
-        break;
-      case 'borrow':
-        setShowBorrowSortMenu((prev) => !prev);
-        break;
-      case 'extra':
-        setShowExtraSortMenu((prev) => !prev);
-        break;
-    }
-  }, [closeAllMobileSortMenus]);
 
   const sizeSortOptions: MobileSortOption[] = [
     {
