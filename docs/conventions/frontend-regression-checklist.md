@@ -42,6 +42,7 @@ Examples:
   - When no incentive is visible, the hero empty-state helper copy must remain present and follow the active rate mode wording (`APY` vs `APR`).
 - `ReservesTable`
   - Sort controls must preserve current sorting semantics.
+  - **Stable sort invariant**: every sort column's comparator must form a total order — when the primary comparison returns 0, a deterministic tiebreaker (currently `reserveId`) must be used. Without this, `Array.sort` produces non-deterministic order for equal items in V8, causing rows to shuffle on every data refresh. See `docs/conventions/sort-stability.md` for the full rule and examples.
   - Sticky/expanded row behavior must preserve the DOM contract documented in `docs/design/frontend-interaction-guardrails.md`.
   - Simulation/sort dependency stability (see `frontend-interaction-guardrails.md` § "Performance: simulation/sort dependency stability"): any change to `useSharedRateSimulations` or `ReservesTable.tsx` `sortedData` deps must keep `buildPriceDataSignature` / `buildPriceLoadingSignature` tests green and must NOT reintroduce raw `priceQueries` or unmodified `simulationsById` into those `useMemo` dep arrays.
 - `DesktopReserveRow` (and any row that fades color per side)
