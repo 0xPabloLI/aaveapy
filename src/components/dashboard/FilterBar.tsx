@@ -23,11 +23,11 @@ interface FilterBarProps {
   marketsList?: MarketListItem[];
   showFrozenOrPaused?: boolean;
   setShowFrozenOrPaused?: (value: boolean) => void;
-  /** Available hub names derived from current reserves. */
-  hubNames?: string[];
-  /** Currently selected hub names (empty = "All"). */
+  /** Available hub entries derived from current reserves (id for filtering, name for display). */
+  hubEntries?: { id: string; name: string }[];
+  /** Currently selected hub IDs (empty = "All"). */
   selectedHubs: string[];
-  /** Set selected hub names. */
+  /** Set selected hub IDs. */
   setSelectedHubs: (hubs: string[]) => void;
   /** Current market view mode. */
   marketViewMode?: 'chain' | 'hub';
@@ -107,7 +107,7 @@ const FilterBar = ({
   marketsList,
   showFrozenOrPaused,
   setShowFrozenOrPaused,
-  hubNames,
+  hubEntries,
   selectedHubs,
   setSelectedHubs,
   marketViewMode: controlledMarketViewMode,
@@ -274,7 +274,7 @@ const FilterBar = ({
     };
   }, [searchQuery, isMobile, stableResizeHandler]);
 
-  const hasHubs = hubNames && hubNames.length > 0;
+  const hasHubs = hubEntries && hubEntries.length > 0;
 
   return (
     <div className="space-y-2 md:space-y-2.5">
@@ -417,23 +417,23 @@ const FilterBar = ({
 
         {marketViewMode === 'hub' && hasHubs
           ? (
-            /* Hub mode: show hub name chips (multi-select) */
-            hubNames!.map((hub) => {
-              const isSelected = selectedHubs.includes(hub);
+            /* Hub mode: show hub chips (multi-select, keyed by id, labeled by name) */
+            hubEntries!.map((hub) => {
+              const isSelected = selectedHubs.includes(hub.id);
               return (
                 <FilterChip
-                  key={hub}
+                  key={hub.id}
                   selected={isSelected}
                   onClick={() => {
                     if (isSelected) {
-                      setSelectedHubs(selectedHubs.filter((h) => h !== hub));
+                      setSelectedHubs(selectedHubs.filter((h) => h !== hub.id));
                     } else {
-                      setSelectedHubs([...selectedHubs, hub]);
+                      setSelectedHubs([...selectedHubs, hub.id]);
                     }
                   }}
-                  title={hub}
+                  title={hub.name}
                 >
-                  {hub}
+                  {hub.name}
                 </FilterChip>
               );
             })

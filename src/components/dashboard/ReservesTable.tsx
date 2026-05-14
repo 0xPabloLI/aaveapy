@@ -36,6 +36,11 @@ import {
   type SortMode,
   type SortableColumn,
 } from '@/hooks/reserves-table/useReservesTableSort';
+import {
+  useReservesPagination,
+  DEFAULT_VISIBLE_COUNT,
+} from '@/hooks/reserves-table/useReservesPagination';
+import { useReserveExpansion } from '@/hooks/reserves-table/useReserveExpansion';
 import { getReserveSimulationId, useSharedRateSimulations } from '@/hooks/useRateSimulation';
 import { useSideDataMeta } from '@/hooks/useSideDataMeta';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
@@ -64,7 +69,7 @@ interface ReservesTableProps {
   isApy: boolean;
   isLoading?: boolean;
   onSelectMarket?: (marketName: string) => void;
-  onSelectHub?: (hubName: string) => void;
+  onSelectHub?: (hubId: string) => void;
   tydroPointToUsdRate: number;
   whitelistMerklCampaignIds: ReadonlySet<string>;
   onToggleWhitelistMerklCampaign: (campaignId: string, enabled: boolean) => void;
@@ -80,8 +85,6 @@ interface ReservesTableProps {
   dataUpdatedAt?: number;
   topOppsRef?: React.RefObject<HTMLDivElement | null>;
 }
-
-const DEFAULT_VISIBLE_COUNT = 20;
 
 // Stable sentinel used as a gate dependency for `sortedData` when the active
 // sort column does not read simulation values. Sharing one frozen reference
@@ -129,10 +132,14 @@ const ReservesTable = ({
   const cancelScenarioPinScrollRef = useRef<(() => void) | null>(null);
   const lastReservesKeyForFilterPinRef = useRef<string | null>(null);
   const cancelFilterPinScrollRef = useRef<(() => void) | null>(null);
-  const suppressNextToggleReserveIdRef = useRef<string | null>(null);
   const pendingMarketFilterPinReserveIdRef = useRef<string | null>(null);
-  const [minVisibleCount, setMinVisibleCount] = useState<number | null>(null);
-  const [expandedReserveId, setExpandedReserveId] = useState<string | null>(null);
+  const {
+    expandedReserveId,
+    setExpandedReserveId,
+    collapseExpanded: collapseExpandedOnSort,
+    handleToggleExpand,
+    suppressNextToggleReserveIdRef,
+  } = useReserveExpansion({ isMobile });
   const [debouncedSharedSupplyInput, setDebouncedSharedSupplyInput] = useState('');
   const [debouncedSharedBorrowInput, setDebouncedSharedBorrowInput] = useState('');
   const [sharedInputMode, setSharedInputMode] = useState<import('@/hooks/useRateSimulation').ScenarioInputMode>('usd');
@@ -151,13 +158,6 @@ const ReservesTable = ({
 
   const handleCorrectBorrowInput = useCallback((correctedValue: string) => {
     scenarioControlsRef.current?.setBorrowInput(correctedValue);
-  }, []);
-
-  // Closing any expanded reserve row is the side-effect every column-sort
-  // change shares; wired into the sort hook below so all `handleSort*` and
-  // `toggle*SortOrder` helpers run it before mutating sort state.
-  const collapseExpandedOnSort = useCallback(() => {
-    setExpandedReserveId(null);
   }, []);
 
   const sortState = useReservesTableSort({ collapseExpanded: collapseExpandedOnSort });
@@ -210,14 +210,6 @@ const ReservesTable = ({
     toggleMobileSortMenu,
   } = sortState;
 
-  const handleToggleExpand = useCallback((reserveId: string) => {
-    if (suppressNextToggleReserveIdRef.current === reserveId) {
-      suppressNextToggleReserveIdRef.current = null;
-      return;
-    }
-    setExpandedReserveId((prev) => (prev === reserveId ? null : reserveId));
-  }, []);
-
   const handleMarketChipClick = useCallback((reserveId: string) => {
     // Preserve an already-expanded row across filter updates, but do not
     // implicitly expand a collapsed row just because its market chip was clicked.
@@ -227,7 +219,7 @@ const ReservesTable = ({
     if (shouldKeepExpanded) {
       setExpandedReserveId(reserveId);
     }
-  }, [expandedReserveId]);
+  }, [expandedReserveId, setExpandedReserveId]);
 
   const [tooltipState, setTooltipState] = useState<TooltipState | null>(null);
 
@@ -770,6 +762,14 @@ const ReservesTable = ({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reserves, activeSortColumn, tokenSortOrder, marketSortOrder, priceSortOrder, sizeSortMode, sizeSortOrder, utilSortMode, utilSortOrder, supplySortMode, supplySortOrder, borrowSortMode, borrowSortOrder, spreadSortOrder, sortedDataSimGate, hasSharedScenario, isApy, tydroPointToUsdRate, whitelistMerklCampaignIds, debouncedSharedSupplyInput, debouncedSharedBorrowInput, sharedInputMode, meritMerklNetPosition]);
 
+  const {
+    displayData,
+    showAll,
+    minVisibleCount,
+    showAllRows,
+    resetVisibleCount,
+  } = useReservesPagination({ sortedData, scrollToReserveId, expandedReserveId });
+
   /**
    * Simulation pin scroll — normative spec + implementation steps:
    * `docs/design/frontend-interaction-guardrails.md` § "Simulation pin scroll".
@@ -868,28 +868,19 @@ const ReservesTable = ({
     };
   }, []);
 
+  // Clear the filter-pin staging ref whenever expansion drops to null.
+  // The matching cleanup of `suppressNextToggleReserveIdRef` is handled
+  // inside `useReserveExpansion`. The mobile→desktop transition collapse
+  // also lives there.
   useEffect(() => {
     if (!expandedReserveId) {
       pendingMarketFilterPinReserveIdRef.current = null;
-      suppressNextToggleReserveIdRef.current = null;
     }
   }, [expandedReserveId]);
 
   // Keep expansion even when reserves change (e.g., market filter applied)
   // Previously this auto-collapsed when the expanded row was not in the filtered list
   // Now we preserve the expansion state so it re-appears when switching back markets
-
-  // Collapse expanded rows when switching from mobile to desktop
-  // Mobile cards use a different layout (2x2 grid) that doesn't translate to desktop table rows
-  const prevIsMobileRef = useRef(isMobile);
-  useEffect(() => {
-    if (prevIsMobileRef.current && !isMobile && expandedReserveId) {
-      setExpandedReserveId(null);
-      suppressNextToggleReserveIdRef.current = null;
-    }
-    prevIsMobileRef.current = isMobile;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isMobile]);
 
   const supplySortLabel = {
     total: 'Total',
@@ -1231,52 +1222,6 @@ const ReservesTable = ({
     }
   };
 
-  // Auto-expand to target reserve + 5 rows buffer when scrolling to a specific reserve
-  useEffect(() => {
-    if (scrollToReserveId) {
-      const targetIndex = sortedData.findIndex(
-        (r) => getReserveKey(r) === scrollToReserveId
-      );
-      if (targetIndex >= 0) {
-        const neededCount = targetIndex + 6; // target row + 5 buffer rows
-        if (neededCount > DEFAULT_VISIBLE_COUNT) {
-          setMinVisibleCount(neededCount);
-        }
-      }
-    }
-  }, [scrollToReserveId, sortedData]);
-
-  // Reset minVisibleCount when sortedData becomes empty to avoid stale "Show Less" state
-  useEffect(() => {
-    if (sortedData.length === 0 && minVisibleCount !== null) {
-      setMinVisibleCount(null);
-    }
-  }, [sortedData.length, minVisibleCount]);
-
-  // Auto-expand visible count when a row is expanded (persist even after collapse)
-  useEffect(() => {
-    if (!expandedReserveId) return;
-    const expandedIndex = sortedData.findIndex(
-      (r) => getReserveSimulationId(r) === expandedReserveId
-    );
-    if (expandedIndex < 0) return;
-    const neededCount = expandedIndex + 6; // expanded row + 5 buffer rows
-    const currentCount = minVisibleCount ?? DEFAULT_VISIBLE_COUNT;
-    if (neededCount > currentCount) {
-      const nextCount = Math.min(neededCount, sortedData.length);
-      setMinVisibleCount(nextCount > 0 ? nextCount : null);
-    }
-  }, [expandedReserveId, sortedData, minVisibleCount]);
-
-  // Display data with pagination - must be before conditional returns
-  const displayData = useMemo(() => {
-    const baseCount = (minVisibleCount != null && minVisibleCount > 0) ? minVisibleCount : DEFAULT_VISIBLE_COUNT;
-    if (baseCount >= sortedData.length) return sortedData;
-    return sortedData.slice(0, baseCount);
-  }, [sortedData, minVisibleCount]);
-  
-  const showAll = sortedData.length > 0 && minVisibleCount !== null && minVisibleCount >= sortedData.length;
-
   const isPortfolioMode = simulationMode === 'portfolio';
 
   // Set of reserveIds currently in the portfolio
@@ -1569,8 +1514,8 @@ const ReservesTable = ({
           showAll={showAll}
           defaultVisibleCount={DEFAULT_VISIBLE_COUNT}
           variant="mobile"
-          onShowAll={() => setMinVisibleCount(sortedData.length > 0 ? sortedData.length : null)}
-          onShowLess={() => setMinVisibleCount(null)}
+          onShowAll={showAllRows}
+          onShowLess={resetVisibleCount}
         />
 
 
@@ -1683,8 +1628,8 @@ const ReservesTable = ({
             onSelectUtilSortUtil={() => {
               collapseExpandedOnSort();
               const isAlreadySelected = utilSortMode === 'util' && activeSortColumn === 'util';
-              if (isAlreadySelected && utilSortOrder === 'desc') {
-                setUtilSortOrder('asc');
+              if (isAlreadySelected) {
+                setUtilSortOrder((o) => (o === 'desc' ? 'asc' : 'desc'));
               } else {
                 setUtilSortMode('util');
                 setActiveSortColumn('util');
@@ -1695,8 +1640,8 @@ const ReservesTable = ({
             onSelectUtilSortLiquidity={() => {
               collapseExpandedOnSort();
               const isAlreadySelected = utilSortMode === 'liquidity' && activeSortColumn === 'util';
-              if (isAlreadySelected && utilSortOrder === 'desc') {
-                setUtilSortOrder('asc');
+              if (isAlreadySelected) {
+                setUtilSortOrder((o) => (o === 'desc' ? 'asc' : 'desc'));
               } else {
                 setUtilSortMode('liquidity');
                 setActiveSortColumn('util');
@@ -1927,8 +1872,8 @@ const ReservesTable = ({
         showAll={showAll}
         defaultVisibleCount={DEFAULT_VISIBLE_COUNT}
         variant="desktop"
-        onShowAll={() => setMinVisibleCount(sortedData.length > 0 ? sortedData.length : null)}
-        onShowLess={() => setMinVisibleCount(null)}
+        onShowAll={showAllRows}
+        onShowLess={resetVisibleCount}
       />
       
       <div ref={desktopTableBottomAnchorRef} aria-hidden className="h-px w-full" />

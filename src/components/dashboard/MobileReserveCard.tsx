@@ -192,7 +192,7 @@ interface MobileReserveCardProps {
   /** Callback to add/remove from portfolio. */
   onPortfolioToggle?: (reserveId: string, reserve: ReserveWithSpread, side?: 'supply' | 'borrow') => void;
   /** Callback when hub pill is clicked for filtering. */
-  onSelectHub?: (hubName: string) => void;
+  onSelectHub?: (hubId: string) => void;
   onHubChipClick?: (reserveId: string) => void;
 }
 
@@ -742,7 +742,7 @@ const MobileReserveCard = memo(({
                   <img src={chainIconSrc} alt={reserve.chainName} className="w-3 h-3 shrink-0 opacity-80" />
                 )}
                 <span className="min-w-0 flex-1 truncate">{getReserveMarketDisplayName(reserve)}</span>
-                {reserve.hubName && (() => {
+                {reserve.hubName && reserve.hubId && (() => {
                   const aaveProHubUrl = buildAaveProHubUrl(reserve);
                   const isV4 = protocolVersion === 'v4';
                   const hubClass = cn(
@@ -757,7 +757,7 @@ const MobileReserveCard = memo(({
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        onSelectHub?.(reserve.hubName!);
+                        onSelectHub?.(reserve.hubId!);
                       }}
                       className={cn("inline-flex max-w-full shrink-0 items-center px-1.5 py-0.5 cursor-pointer transition-all duration-150 hover:opacity-80 active:scale-[0.98]", hubClass)}
                       aria-label={`Filter by ${reserve.hubName} hub`}

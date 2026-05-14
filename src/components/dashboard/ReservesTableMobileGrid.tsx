@@ -30,7 +30,7 @@ interface ReservesTableMobileGridProps {
   isPortfolioMode?: boolean;
   portfolioReserveIds?: Set<string>;
   onPortfolioToggle?: (reserveId: string, reserve: ReserveWithSpread) => void;
-  onSelectHub?: (hubName: string) => void;
+  onSelectHub?: (hubId: string) => void;
 }
 
 function MobileReservesSkeletonGrid() {

@@ -1240,4 +1240,30 @@ describe('MobileReserveCard', () => {
       expect(container.innerHTML).toContain('$2.00M');
     });
   });
+
+  it('calls onSelectHub with hubId (not hubName) when hub badge is clicked', () => {
+    const onSelectHub = vi.fn();
+    const { getByLabelText } = render(
+      <QueryClientProvider client={new QueryClient()}>
+        <TooltipProvider>
+          <MobileReserveCard
+            reserve={{ ...reserve, hubName: 'Core', hubId: 'hub-core' }}
+            isApy
+            tydroPointToUsdRate={0}
+            onIncentiveClick={() => {}}
+            onSelectHub={onSelectHub}
+            isSimulationExpanded={false}
+            onToggleSimulation={() => {}}
+            simulation={simulation}
+            supplyInput="1000"
+            borrowInput="500"
+            hasSharedScenario
+            inputMode="usd"
+          />
+        </TooltipProvider>
+      </QueryClientProvider>,
+    );
+    fireEvent.click(getByLabelText('Filter by Core hub'));
+    expect(onSelectHub).toHaveBeenCalledWith('hub-core');
+  });
 });

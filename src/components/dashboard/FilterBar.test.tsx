@@ -56,7 +56,7 @@ function TestWrapper({
       isApy={isApy}
       setIsApy={setIsApy}
       marketsList={marketsList}
-      hubNames={['Core', 'Prime']}
+      hubEntries={[{ id: 'hub-core', name: 'Core' }, { id: 'hub-prime', name: 'Prime' }]}
       selectedHubs={hubs}
       setSelectedHubs={setHubs}
       expandedChain={expandedChain}
@@ -98,6 +98,35 @@ describe('FilterBar', () => {
       expect(chip.className).toContain('ds-chip');
       expect(chip.className).toContain('font-medium');
     });
+  });
+
+  it('passes hubId (not hubName) when hub chip is clicked', () => {
+    const setHubsFn = vi.fn();
+    const { container } = render(
+      <FilterBar
+        searchQuery=""
+        setSearchQuery={() => {}}
+        selectedMarkets={[]}
+        setSelectedMarkets={() => {}}
+        selectedCategory="all"
+        setSelectedCategory={() => {}}
+        isApy
+        setIsApy={() => {}}
+        marketsList={ETH_MULTI_MARKETS}
+        hubEntries={[{ id: 'hub-core', name: 'Core' }, { id: 'hub-prime', name: 'Prime' }]}
+        selectedHubs={[]}
+        setSelectedHubs={setHubsFn}
+        marketViewMode="hub"
+        setMarketViewMode={() => {}}
+      />
+    );
+
+    const marketsRow = container.querySelector('[data-testid="markets-row"]');
+    expect(marketsRow).not.toBeNull();
+    const coreChip = Array.from(marketsRow!.querySelectorAll('button')).find(b => b.textContent === 'Core');
+    expect(coreChip).toBeDefined();
+    fireEvent.click(coreChip!);
+    expect(setHubsFn).toHaveBeenCalledWith(['hub-core']);
   });
 
   it('toggles token category selection', () => {

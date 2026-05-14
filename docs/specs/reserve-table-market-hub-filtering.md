@@ -35,7 +35,7 @@ Use a separate hub filter state instead of overloading `selectedMarkets`.
 
 Recommended page state additions:
 
-- `selectedHubIds: string[]`
+- `selectedHubIds: string[]` (stores `hubId`, not `hubName`)
 
 Recommended filtering behavior in `Index.tsx`:
 
@@ -49,6 +49,8 @@ Hub matching should use `hubId` as the canonical key, not `hubName`, because:
 - names are presentation-level
 - ids are more stable
 - duplicate names across future markets are less risky
+
+**Implementation status**: `selectedHubs` in `Index.tsx` now stores `hubId` values. The `onSelectHub` callback receives `hubId`. The `FilterBar` receives `hubEntries: {id, name}[]` and uses `id` for selection logic while displaying `name`. Hub badge click guards require both `hubId` and `hubName` to be present before rendering the filterable button.
 
 ## UI options
 

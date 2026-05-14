@@ -68,7 +68,7 @@ interface DesktopReserveRowProps {
   onToggleExpand: (reserveId: string) => void;
   onSelectMarket?: (marketName: string) => void;
   onMarketChipClick?: (reserveId: string) => void;
-  onSelectHub?: (hubName: string) => void;
+  onSelectHub?: (hubId: string) => void;
   onHubChipClick?: (reserveId: string) => void;
   onIncentiveClick: (e: React.MouseEvent, reserve: ReserveWithSpread, type: 'supply' | 'borrow', apy: number | null) => void;
   displaySupplyTotal: number | null;
@@ -296,14 +296,14 @@ const DesktopReserveRow = memo(({
         <TableCell className="ds-reserves-cell-td ds-row-pad text-center hidden md:table-cell">
           <div className="flex items-center justify-center">
             <div className={marketCellClassNames.stack}>
-              {reserve.hubName && (
+              {reserve.hubName && reserve.hubId && (
                 <div className={marketCellClassNames.hubShell}>
                   <button
                     type="button"
                     onClick={(event) => {
                       event.stopPropagation();
                       onHubChipClick?.(reserveId);
-                      onSelectHub?.(reserve.hubName!);
+                      onSelectHub?.(reserve.hubId!);
                     }}
                     className={cn(
                       marketCellClassNames.chipBase,

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { renderToString } from 'react-dom/server';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
@@ -1051,5 +1051,43 @@ describe('DesktopReserveRow', () => {
 
     expect(html).toContain('[&amp;_td]:bg-card');
     expect(html).toContain('ds-bg-sky-500-8');
+  });
+
+  it('calls onSelectHub with hubId (not hubName) when hub badge is clicked', () => {
+    const onSelectHub = vi.fn();
+    const html = renderToString(
+      <QueryClientProvider client={new QueryClient()}>
+        <TooltipProvider>
+          <Table>
+            <TableBody>
+              <DesktopReserveRow
+                reserve={{ ...reserve, hubName: 'Core', hubId: 'hub-core' }}
+                reserveId="AaveV3Ethereum-0x0000000000000000000000000000000000000001"
+                isExpanded={false}
+                onToggleExpand={() => {}}
+                onSelectHub={onSelectHub}
+                onIncentiveClick={() => {}}
+                displaySupplyTotal={2.9}
+                displaySupplyNative={2.5}
+                displaySupplyIncentive={0.4}
+                displayBorrowTotal={3.3}
+                displayBorrowNative={3.4}
+                displayBorrowIncentive={0.1}
+                displayUtilization={52}
+                spread={-0.4}
+                simulation={simulation}
+                supplyInput="1000"
+                borrowInput="500"
+                inputMode="usd"
+                isApy
+                isMobile={false}
+              />
+            </TableBody>
+          </Table>
+        </TooltipProvider>
+      </QueryClientProvider>,
+    );
+    expect(html).toContain('Filter by Core hub');
+    expect(html).toContain('hub-core');
   });
 });

@@ -217,14 +217,18 @@ const Index = () => {
     }
   };
 
-  // Derive unique hub names from current reserves (stable, alphabetical)
-  const hubNames = useMemo(() => {
+  // Derive unique hub entries (id + display name) from current reserves (stable, alphabetical by name)
+  const hubEntries = useMemo(() => {
     const reserves = effectiveReservesData?.reserves ?? [];
-    const names = new Set<string>();
+    const map = new Map<string, string>();
     for (const r of reserves) {
-      if (r.hubName?.trim()) names.add(r.hubName.trim());
+      if (r.hubId?.trim() && r.hubName?.trim()) {
+        map.set(r.hubId.trim(), r.hubName.trim());
+      }
     }
-    return Array.from(names).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+    return Array.from(map.entries())
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
   }, [effectiveReservesData?.reserves]);
 
   const filteredReserves = useMemo(() => {
@@ -251,9 +255,9 @@ const Index = () => {
         }
       }
 
-      // Hub filter
+      // Hub filter (by hubId, not hubName)
       if (selectedHubs.length > 0) {
-        if (!reserve.hubName || !selectedHubs.includes(reserve.hubName)) {
+        if (!reserve.hubId || !selectedHubs.includes(reserve.hubId)) {
           return false;
         }
       }
@@ -389,7 +393,7 @@ const Index = () => {
               marketsList={effectiveMarketsList}
               showFrozenOrPaused={showFrozenOrPaused}
               setShowFrozenOrPaused={setShowFrozenOrPaused}
-              hubNames={hubNames}
+              hubEntries={hubEntries}
               selectedHubs={selectedHubs}
               setSelectedHubs={setSelectedHubs}
               marketViewMode={marketViewMode}
@@ -431,9 +435,9 @@ const Index = () => {
                   window.scrollTo({ top: y, behavior: 'smooth' });
                 }
               }}
-              onSelectHub={(hubName) => {
+              onSelectHub={(hubId) => {
                 setSelectedHubs((prev) =>
-                  prev.length === 1 && prev[0] === hubName ? [] : [hubName]
+                  prev.length === 1 && prev[0] === hubId ? [] : [hubId]
                 );
                 setSelectedMarkets([]);
                 setMarketViewMode('hub');
