@@ -428,7 +428,7 @@ reserves desktop table 的 8 列对齐分配：
 | 焦点 | `focus-visible:ring-2 focus-visible:ring-ring`（键盘可见焦点） |
 | 触控 | 小框可接受；**整段 `label` 可点**，满足可点区域 |
 
-选中态：深色模式下通过全局 CSS 规则 `.dark input[type="checkbox"]:checked { accent-color: hsl(var(--ring)); }` 将勾选填充色设为 `--ring`（金色），保证高对比可见性；亮色模式沿用浏览器默认。**共享场景条（`ScenarioControls`）** 等对表内 Supply/Borrow 语义色不重复：可在常量后追加 `accent-muted-foreground`，与表头/单元格的 emerald、cyan 分工。
+选中态：深色模式下通过全局 CSS 规则 `.dark input[type="checkbox"]:checked { accent-color: hsl(var(--foreground)); }` 将勾选填充色设为 `--foreground`（中性近白色），清晰且不带色相；亮色模式沿用浏览器默认。**共享场景条（`ScenarioControls`）** 等对表内 Supply/Borrow 语义色不重复：可在常量后追加 `accent-muted-foreground`，与表头/单元格的 emerald、cyan 分工。
 
 ### 5.7 本仓库实现参考
 

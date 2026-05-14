@@ -712,7 +712,7 @@
   }
 
   .dark input[type="checkbox"]:checked {
-    accent-color: hsl(var(--ring));
+    accent-color: hsl(var(--foreground));
   }
 }
 
