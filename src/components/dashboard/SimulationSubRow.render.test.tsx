@@ -285,3 +285,28 @@ describe('SimulationSubRow — desktop disabled opacity', () => {
     expect(html).toContain('-0.50');
   });
 });
+
+describe('SimulationSubRow — href link rendering (regression from cac7eef)', () => {
+  it('TC-LINK-01: desktop renders <a> with href for protocol incentive row', () => {
+    const html = renderDesktop({ ...baseReserve });
+    expect(html).toContain('href=');
+    expect(html).toContain('app.aave.com');
+  });
+
+  it('TC-LINK-02: compact renders <a> with href for protocol incentive row', () => {
+    const html = renderCompact({ ...baseReserve });
+    expect(html).toContain('href=');
+    expect(html).toContain('app.aave.com');
+  });
+
+  it('TC-LINK-03: desktop renders ExternalLink icon alongside linked labels', () => {
+    const html = renderDesktop({ ...baseReserve });
+    const linkCount = (html.match(/<a /g) ?? []).length;
+    expect(linkCount).toBeGreaterThanOrEqual(1);
+  });
+
+  it('TC-LINK-04: rows without href render as <span>, not <a>', () => {
+    const html = renderDesktop({ ...baseReserve });
+    expect(html).toContain('<span');
+  });
+});

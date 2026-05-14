@@ -1,5 +1,5 @@
 import { Fragment, useRef, useState, useEffect } from 'react';
-import { AlertTriangle, Ban, PauseCircle, Snowflake } from 'lucide-react';
+import { AlertTriangle, Ban, ExternalLink, PauseCircle, Snowflake } from 'lucide-react';
 import {
   annualPercentToDailyFraction,
   formatPercent,
@@ -10,6 +10,7 @@ import {
   formatUsd,
 } from '@/lib/formatters';
 import { buildAaveUrl } from '@/lib/aaveLinks';
+import { externalLinkTabProps } from '@/lib/externalNavigation';
 import { convertUsdToInputValue, nativeToUsd } from '@/lib/scenarioSize';
 import { getProtocolVersion } from '@/lib/protocolVersion';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -533,12 +534,24 @@ const SimulationSubRow = ({
                 The outer table wrapper still hard-clips, so the bleed never causes horizontal
                 scrolling — it only consumes the natural inter-column gap. */}
             <div className="flex items-baseline gap-x-1.5 whitespace-nowrap">
-              <span
-                title={typeof row.label === 'string' ? row.label : undefined}
-                className={`ds-text-12 whitespace-nowrap ${row.warning ? 'text-amber-700 dark:text-amber-400 font-medium' : `${accentClass}`}`}
-              >
-                {row.label}
-              </span>
+              {row.href ? (
+                <a
+                  href={row.href}
+                  {...externalLinkTabProps(isMobile)}
+                  onClick={(e) => e.stopPropagation()}
+                  className={`ds-text-12 flex items-center gap-1 whitespace-nowrap ${row.warning ? 'text-amber-700 dark:text-amber-400' : `${accentClass} hover:opacity-90`}`}
+                >
+                  <span className="break-words">{row.label}</span>
+                  <ExternalLink className="w-3 h-3 flex-shrink-0 opacity-50" />
+                </a>
+              ) : (
+                <span
+                  title={typeof row.label === 'string' ? row.label : undefined}
+                  className={`ds-text-12 whitespace-nowrap ${row.warning ? 'text-amber-700 dark:text-amber-400 font-medium' : `${accentClass}`}`}
+                >
+                  {row.label}
+                </span>
+              )}
               {row.cap !== null && row.cap !== undefined && (
                 <span className={`ds-text-11 tabular-nums whitespace-nowrap ${row.warning ? 'text-amber-600' : SIM_NEUTRAL_SECONDARY}`}>
                   / Cap {formatScenarioSize(row.cap, { inputMode, tokenPrice: simulation.tokenPrice })}
@@ -716,12 +729,24 @@ const SimulationSubRow = ({
                   unbroken but lets the flex container wrap between them when the label cell
                   cannot fit both on one line. */}
               <div className="flex flex-wrap items-baseline gap-x-1.5">
-                <span
-                  title={typeof row.label === 'string' ? row.label : undefined}
-                  className={`ds-text-12 whitespace-nowrap ${row.warning ? 'text-amber-700 dark:text-amber-400 font-medium' : `${accentClass}`}`}
-                >
-                  {row.label}
-                </span>
+                {row.href ? (
+                  <a
+                    href={row.href}
+                    {...externalLinkTabProps(isMobile)}
+                    onClick={(e) => e.stopPropagation()}
+                    className={`ds-text-12 flex items-center gap-1 whitespace-nowrap ${row.warning ? 'text-amber-700 dark:text-amber-400' : `${accentClass} hover:opacity-90`}`}
+                  >
+                    <span className="break-words">{row.label}</span>
+                    <ExternalLink className="w-3 h-3 flex-shrink-0 opacity-50" />
+                  </a>
+                ) : (
+                  <span
+                    title={typeof row.label === 'string' ? row.label : undefined}
+                    className={`ds-text-12 whitespace-nowrap ${row.warning ? 'text-amber-700 dark:text-amber-400 font-medium' : `${accentClass}`}`}
+                  >
+                    {row.label}
+                  </span>
+                )}
                 {row.cap !== null && row.cap !== undefined && (
                   <span className={`ds-text-11 tabular-nums whitespace-nowrap ${row.warning ? 'text-amber-600' : SIM_NEUTRAL_SECONDARY}`}>
                     / Cap {formatScenarioSize(row.cap, { inputMode, tokenPrice: simulation.tokenPrice })}
@@ -1264,7 +1289,19 @@ const SimulationSubRow = ({
                   <tr data-align-key={mainAlignKey} className={row.capWarning ? 'ds-bg-warning-row' : ''}>
                     <td className={`${labelCellPy} ${metricPx} min-w-0 align-top`}>
                       <div className={`min-w-0 ${indentClass}`}>
-                        <span className={`${sizeClass} ${fontClass} ${textClass} break-words`}>{row.label}</span>
+                        {row.href ? (
+                          <a
+                            href={row.href}
+                            {...externalLinkTabProps(isMobile)}
+                            onClick={(e) => e.stopPropagation()}
+                            className={`${sizeClass} ${fontClass} flex items-center gap-1 break-words ${textClass} hover:opacity-90`}
+                          >
+                            <span className="break-words">{row.label}</span>
+                            <ExternalLink className="w-3 h-3 flex-shrink-0 opacity-50" />
+                          </a>
+                        ) : (
+                          <span className={`${sizeClass} ${fontClass} ${textClass} break-words`}>{row.label}</span>
+                        )}
                       </div>
                     </td>
                     <td className={`${valueCellPy} ${valuePx} text-right align-top`}>
