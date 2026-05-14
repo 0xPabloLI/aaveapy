@@ -710,6 +710,10 @@
   .dark .ds-border-purple-200 {
     border-color: rgb(var(--ds-purple-500-rgb) / 0.3);
   }
+
+  .dark input[type="checkbox"]:checked {
+    accent-color: hsl(var(--ring));
+  }
 }
 
 @media (min-width: 640px) {
