@@ -57,7 +57,7 @@ _Last inventory pass: 2026-04-30._
 - Canonical: `docs/rate-calculation.md`
 - Canonical: `docs/fallback-reference.md` (frontend variable fallback chains)
 - Canonical: `docs/TERMINOLOGY.md` (variable / field naming reference)
-- Canonical: `docs/v3-v4-sdk-field-mapping.md` (Aave V3 vs V4 SDK field mapping)
+- Canonical: `aaveapy-doc/v3-v4-sdk-field-mapping.md` (Aave V3 vs V4 SDK field mapping)
 - Canonical: `docs/api-field-optimization.md` (API field-shape optimization analysis)
 - Canonical: `docs/pool-explorer-links.md` (pool address explorer deep-link mapping; e2e validation in `e2e/explorer-links-*.spec.ts`)
 - Implemented: Portfolio Simulation — 多 token 组合模拟（✅ 全部完成 2026-05-10）；5 Phase 实施完毕，文件：`src/types/portfolio.ts`, `src/hooks/usePortfolioSimulation.ts`, `src/lib/portfolioCalculator.ts`, `src/components/dashboard/Portfolio*.tsx`；三种添加入口：表格 checkbox / 展开面板按钮 / 搜索栏
@@ -106,8 +106,8 @@ _Last inventory pass: 2026-04-30._
 | `docs/frontend-data-loading-matrix.md` | Data-loading architecture | 2026-04-27 | Canonical | `README.md` freshness notes | keep |
 | `docs/rate-calculation.md` | Unified rate simulation formulas (native, Merkl, display, cap/ceiling) | 2026-04-28 | Canonical | none (consolidated) | keep |
 | `docs/fallback-reference.md` | Frontend variable fallback chains | 2026-04-28 | Canonical | `docs/rate-calculation.md` | keep |
-| `docs/TERMINOLOGY.md` | Variable / field naming reference | 2026-04-28 | Canonical | `docs/v3-v4-sdk-field-mapping.md` | keep |
-| `docs/v3-v4-sdk-field-mapping.md` | Aave V3 vs V4 SDK field mapping | 2026-04-28 | Canonical | `docs/TERMINOLOGY.md`, `docs/fallback-reference.md` | keep |
+| `docs/TERMINOLOGY.md` | Variable / field naming reference | 2026-04-28 | Canonical | `aaveapy-doc/v3-v4-sdk-field-mapping.md` | keep |
+| `aaveapy-doc/v3-v4-sdk-field-mapping.md` | Aave V3 vs V4 SDK field mapping | 2026-04-28 | Canonical | `docs/TERMINOLOGY.md`, `docs/fallback-reference.md` | keep |
 | `docs/api-field-optimization.md` | API field-shape optimization analysis | 2026-04-20 | Canonical | none significant | keep |
 | `docs/pool-explorer-links.md` | Pool address explorer deep-link mapping | 2026-04-16 | Canonical | live validation in `e2e/explorer-links-*.spec.ts` | keep |
 | `docs/specs/reserve-table-market-hub-filtering.md` | Reserve table market/hub filtering behavior contract | 2026-04-22 | Canonical | `src/components/dashboard/ReservesTable.tsx` | keep |

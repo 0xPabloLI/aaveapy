@@ -204,7 +204,7 @@ export const getAvailableToBorrowUsd = ({
  * ## Hub-level vs Reserve-level data boundary
  *
  * Aave V4 introduces a Hub & Spoke architecture where fields belong to two
- * distinct semantic layers. Per docs/v3-v4-sdk-field-mapping.md:
+ * distinct semantic layers. Per aaveapy-doc/v3-v4-sdk-field-mapping.md:
  *
  *   Hub-level (from r.asset.summary / r.asset.settings, shared across Spokes):
  *     utilizationPct, availableLiquidity, supplyApy, borrowApy,
