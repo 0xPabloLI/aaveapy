@@ -42,8 +42,8 @@ interface FilterBarProps {
 const categories: { value: TokenCategory; label: string }[] = [
   { value: 'all', label: 'All' },
   { value: 'stablecoin', label: 'Stables' },
-  { value: 'eth-related', label: 'xETH' },
-  { value: 'btc-related', label: 'xBTC' },
+  { value: 'eth-related', label: 'ETH' },
+  { value: 'btc-related', label: 'BTC' },
   { value: 'pendle', label: 'Pendle' },
 ];
 

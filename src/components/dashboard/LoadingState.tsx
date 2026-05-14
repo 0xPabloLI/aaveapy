@@ -127,7 +127,7 @@ function FilterBarSkeleton({ isMobile }: { isMobile: boolean }) {
       {/* Row 1: Token categories + search + APR/APY */}
       <div className="flex flex-wrap items-center gap-[var(--ds-space-1-5)] md:gap-[var(--ds-space-2)]">
         <Skeleton variant="subtle" className="hidden sm:block h-4 w-12 rounded-md" />
-        {['All', 'Stables', 'xETH', 'xBTC', 'Pendle'].map((_, i) => (
+        {['All', 'Stables', 'ETH', 'BTC', 'Pendle'].map((_, i) => (
           <Skeleton
             key={i}
             variant={i === 0 ? 'gradient' : 'default'}
