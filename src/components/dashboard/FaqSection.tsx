@@ -1,10 +1,26 @@
 import { memo, type ReactNode } from 'react';
+import { Helmet } from 'react-helmet-async';
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+
+const FAQ_PLAIN_ANSWERS: Record<string, string> = {
+  'What are incentives (Merit / Merkl / Brevis) and the INK Incentive Calculator?':
+    'Incentives are additional reward programs layered on top of native Aave rates. Merit rewards loyal Aave users, Merkl distributes token incentives for specific markets, and Brevis provides ZK-proof based rewards. The INK Incentive Calculator lets you adjust the assumed FDV of the INK token to see how it affects the incentive APR on Ink-chain markets.',
+  'How does the Scenario Simulation work?':
+    'Click any reserve row to expand it, then enter a hypothetical supply or borrow amount. The simulator recalculates interest rates based on the new utilization, showing you how your deposit or borrow would shift the market rate.',
+  'What is APY vs APR?':
+    'APR (Annual Percentage Rate) is the simple interest rate. APY (Annual Percentage Yield) includes compound interest. You can toggle between them using the APY/APR switch in the filter bar.',
+  'How do I filter by chain or token type?':
+    'Use the category buttons (All / Stable / ETH / BTC / Pendle) to filter by asset type. Use the market chips below to filter by specific Aave deployments such as Ethereum, Arbitrum, or Base.',
+  'How are Supply APY, Borrow APY and Spread calculated?':
+    'Borrow APY follows a piecewise-linear curve based on utilization, with a steeper slope above the optimal utilization. Supply APY equals Borrow APY times Utilization times (1 − fee). Spread is Supply APY minus Borrow APY and is normally negative; with incentives, the effective spread can flip positive, enabling profitable looping strategies.',
+  'How fresh is the data?':
+    'The freshness dot on the floating refresh button shows green (fresh), yellow (slightly stale), or red (stale). You can pull down or click the refresh button to force an update.',
+};
 
 const FAQ_ITEMS: { q: string; a: ReactNode }[] = [
   {
@@ -87,9 +103,22 @@ const FAQ_ITEMS: { q: string; a: ReactNode }[] = [
   },
 ];
 
+const FAQ_JSON_LD = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: Object.entries(FAQ_PLAIN_ANSWERS).map(([q, a]) => ({
+    '@type': 'Question',
+    name: q,
+    acceptedAnswer: { '@type': 'Answer', text: a },
+  })),
+};
+
 const FaqSection = memo(function FaqSection() {
   return (
     <section id="faq" className="border-t border-border/50 pt-[var(--ds-space-6)] pb-[var(--ds-space-2)]">
+      <Helmet>
+        <script type="application/ld+json">{JSON.stringify(FAQ_JSON_LD)}</script>
+      </Helmet>
       <h2 className="ds-text-18 font-semibold text-foreground mb-[var(--ds-space-3)]">
         FAQ
       </h2>
