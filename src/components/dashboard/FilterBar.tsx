@@ -117,9 +117,6 @@ const FilterBar = ({
 }: FilterBarProps) => {
   const isMobile = useIsMobile();
   const [searchPlaceholder, setSearchPlaceholder] = useState('Search token');
-  const [marketFilterQuery, setMarketFilterQuery] = useState('');
-  const [marketFilterOpen, setMarketFilterOpen] = useState(false);
-  const marketFilterInputRef = useRef<HTMLInputElement>(null);
   const desktopSearchInputRef = useRef<HTMLInputElement>(null);
   const mobileSearchInputRef = useRef<HTMLInputElement>(null);
   const debouncedUpdateRef = useRef<(() => void) | null>(null);
@@ -143,40 +140,6 @@ const FilterBar = ({
   }, []);
 
   const chainGroups = useMemo(() => groupMarketsByChain(marketsList), [marketsList]);
-
-  const filteredChainGroups = useMemo(() => {
-    if (!marketFilterQuery) return chainGroups;
-    const q = marketFilterQuery.toLowerCase().trim();
-    return chainGroups
-      .map((group) => {
-        const chainMatches = group.chainName.toLowerCase().includes(q);
-        const matchedMarkets = group.markets.filter((m) => m.marketName.toLowerCase().includes(q));
-        if (chainMatches) return group;
-        if (matchedMarkets.length > 0) return { ...group, markets: matchedMarkets };
-        return null;
-      })
-      .filter((g): g is ChainGroup => g !== null);
-  }, [chainGroups, marketFilterQuery]);
-
-  const filteredHubEntries = useMemo(() => {
-    if (!marketFilterQuery || !hubEntries) return hubEntries;
-    const q = marketFilterQuery.toLowerCase().trim();
-    return hubEntries.filter((h) => h.name.toLowerCase().includes(q) || h.id.toLowerCase().includes(q));
-  }, [hubEntries, marketFilterQuery]);
-
-  useEffect(() => {
-    if (!marketFilterQuery) return;
-    const q = marketFilterQuery.toLowerCase().trim();
-    const hasSubMarketMatch = chainGroups.some(
-      (g) => g.expandable && !g.chainName.toLowerCase().includes(q) && g.markets.some((m) => m.marketName.toLowerCase().includes(q)),
-    );
-    if (hasSubMarketMatch && expandedChain === null) {
-      const expandableGroup = chainGroups.find(
-        (g) => g.expandable && g.markets.some((m) => m.marketName.toLowerCase().includes(q)),
-      );
-      if (expandableGroup) setExpandedChain(expandableGroup.chainName);
-    }
-  }, [marketFilterQuery, chainGroups, expandedChain, setExpandedChain]);
 
   // Derive which chains are fully selected (all their markets are in selectedMarkets)
   const isChainSelected = useCallback(
@@ -356,22 +319,26 @@ const FilterBar = ({
           )}
         </div>
 
-        {/* Include frozen/paused assets toggle – mobile, inline with category chips */}
-        {setShowFrozenOrPaused && (
-          <button
-            type="button"
-            onClick={() => setShowFrozenOrPaused(!showFrozenOrPaused)}
-            className={`md:hidden inline-flex items-center gap-1.5 h-[var(--ds-chip-h)] px-2 rounded-md ds-text-11 font-medium transition-colors ${
-              showFrozenOrPaused
-                ? 'bg-sky-500/15 text-sky-600 shadow-sm border border-sky-400/50'
-                : 'bg-card/50 text-muted-foreground hover:text-foreground hover:bg-card/80 border border-border/40'
-            }`}
-            title={showFrozenOrPaused ? 'Hide frozen or paused assets' : 'Show frozen or paused assets'}
-          >
-            <Snowflake className="w-3.5 h-3.5 shrink-0" />
-            <span className="truncate">Restricted</span>
-          </button>
-        )}
+        {/* Mobile search – flows inline with category chips, fills remaining row space */}
+        <div className="relative flex-1 min-w-[7rem] md:hidden">
+          <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
+          <Input
+            ref={mobileSearchInputRef}
+            surfaceVariant="magenta"
+            placeholder={searchPlaceholder}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="h-[var(--ds-chip-h)] pl-[var(--ds-space-8)] pr-[var(--ds-space-6)] ds-text-11 text-muted-foreground/50 placeholder:text-muted-foreground/50 focus:text-foreground"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <Eraser className="w-3 h-3" />
+            </button>
+          )}
+        </div>
 
         {/* Include frozen/paused assets toggle – desktop only */}
         {setShowFrozenOrPaused && (
@@ -398,28 +365,24 @@ const FilterBar = ({
         </div>
       </div>
 
-      {/* Row 2: Search + APR/APY toggle – mobile only */}
+      {/* Row 2: Frozen toggle (full label) + APR/APY toggle – mobile only */}
       <div className="flex items-center gap-1.5 md:hidden">
-        {/* Mobile search – fills remaining row space */}
-        <div className="relative flex-1 min-w-[7rem]">
-          <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
-          <Input
-            ref={mobileSearchInputRef}
-            surfaceVariant="magenta"
-            placeholder={searchPlaceholder}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-[var(--ds-chip-h)] pl-[var(--ds-space-8)] pr-[var(--ds-space-6)] ds-text-11 text-muted-foreground/50 placeholder:text-muted-foreground/50 focus:text-foreground"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-            >
-              <Eraser className="w-3 h-3" />
-            </button>
-          )}
-        </div>
+        {/* Include frozen/paused assets toggle – mobile, with full label */}
+        {setShowFrozenOrPaused && (
+          <button
+            type="button"
+            onClick={() => setShowFrozenOrPaused(!showFrozenOrPaused)}
+            className={`flex-1 min-w-0 inline-flex items-center justify-center gap-1.5 h-[var(--ds-chip-h)] px-2 rounded-md ds-text-11 font-medium transition-colors ${
+              showFrozenOrPaused
+                ? 'bg-sky-500/15 text-sky-600 shadow-sm border border-sky-400/50'
+                : 'bg-card/50 text-muted-foreground hover:text-foreground hover:bg-card/80 border border-border/40'
+            }`}
+            title={showFrozenOrPaused ? 'Hide frozen or paused assets' : 'Show frozen or paused assets'}
+          >
+            <Snowflake className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">{showFrozenOrPaused ? 'Restricted assets shown' : 'Show restricted assets'}</span>
+          </button>
+        )}
 
         <div className="shrink-0">
           <AprApyToggle isApy={isApy} setIsApy={setIsApy} />
@@ -438,28 +401,6 @@ const FilterBar = ({
           All
         </FilterChip>
 
-        {/* Market filter search */}
-        <div className="relative w-20 sm:w-24 md:w-32 ml-0.5">
-          <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/60" />
-          <Input
-            ref={marketFilterInputRef}
-            surfaceVariant="magenta"
-            placeholder="Market"
-            value={marketFilterQuery}
-            onChange={(e) => setMarketFilterQuery(e.target.value)}
-            className="h-[var(--ds-chip-h)] pl-[var(--ds-space-7)] pr-[var(--ds-space-6)] ds-text-11 text-muted-foreground/60 placeholder:text-muted-foreground/60 focus:text-foreground"
-            data-testid="market-filter-input"
-          />
-          {marketFilterQuery && (
-            <button
-              onClick={() => setMarketFilterQuery('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-            >
-              <Eraser className="w-3 h-3" />
-            </button>
-          )}
-        </div>
-
         {/* Chain/Hub segmented toggle – only when hubs exist */}
         {hasHubs && (
           <SegmentedToggle
@@ -477,7 +418,7 @@ const FilterBar = ({
         {marketViewMode === 'hub' && hasHubs
           ? (
             /* Hub mode: show hub chips (multi-select, keyed by id, labeled by name) */
-            (filteredHubEntries ?? []).map((hub) => {
+            hubEntries!.map((hub) => {
               const isSelected = selectedHubs.includes(hub.id);
               return (
                 <FilterChip
@@ -498,8 +439,8 @@ const FilterBar = ({
             })
           )
           : (
-            /* Chain mode: filtered chain chips */
-            filteredChainGroups.map((group) => {
+            /* Chain mode: original chain chips */
+            chainGroups.map((group) => {
               const selected = isChainSelected(group);
               const subSelected = hasSubMarketSelected(group);
               const expanded = expandedChain === group.chainName;
