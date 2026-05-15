@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo, memo, Fragment } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Search, Eraser, ChevronRight, ChevronLeft, Snowflake } from 'lucide-react';
+import { Search, Eraser, ChevronRight, ChevronLeft, Snowflake, Filter } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { FilterChip } from '@/components/ui/filter-chip';
 import { SegmentedToggle } from '@/components/ui/segmented-toggle';
@@ -117,6 +117,9 @@ const FilterBar = ({
 }: FilterBarProps) => {
   const isMobile = useIsMobile();
   const [searchPlaceholder, setSearchPlaceholder] = useState('Search token');
+  const [marketFilterQuery, setMarketFilterQuery] = useState('');
+  const [marketFilterOpen, setMarketFilterOpen] = useState(false);
+  const marketFilterInputRef = useRef<HTMLInputElement>(null);
   const desktopSearchInputRef = useRef<HTMLInputElement>(null);
   const mobileSearchInputRef = useRef<HTMLInputElement>(null);
   const debouncedUpdateRef = useRef<(() => void) | null>(null);
@@ -140,6 +143,26 @@ const FilterBar = ({
   }, []);
 
   const chainGroups = useMemo(() => groupMarketsByChain(marketsList), [marketsList]);
+
+  const filteredChainGroups = useMemo(() => {
+    if (!marketFilterQuery) return chainGroups;
+    const q = marketFilterQuery.toLowerCase().trim();
+    return chainGroups
+      .map((group) => {
+        const chainMatches = group.chainName.toLowerCase().includes(q);
+        const matchedMarkets = group.markets.filter((m) => m.marketName.toLowerCase().includes(q));
+        if (chainMatches) return group;
+        if (matchedMarkets.length > 0) return { ...group, markets: matchedMarkets };
+        return null;
+      })
+      .filter((g): g is ChainGroup => g !== null);
+  }, [chainGroups, marketFilterQuery]);
+
+  const filteredHubEntries = useMemo(() => {
+    if (!marketFilterQuery || !hubEntries) return hubEntries;
+    const q = marketFilterQuery.toLowerCase().trim();
+    return hubEntries.filter((h) => h.name.toLowerCase().includes(q) || h.id.toLowerCase().includes(q));
+  }, [hubEntries, marketFilterQuery]);
 
   // Derive which chains are fully selected (all their markets are in selectedMarkets)
   const isChainSelected = useCallback(
@@ -401,6 +424,57 @@ const FilterBar = ({
           All
         </FilterChip>
 
+        {/* Market filter search */}
+        <button
+          type="button"
+          onClick={() => {
+            setMarketFilterOpen((prev) => !prev);
+            if (marketFilterOpen) setMarketFilterQuery('');
+            else setTimeout(() => marketFilterInputRef.current?.focus(), 50);
+          }}
+          className={`inline-flex items-center justify-center h-[var(--ds-chip-h)] w-[var(--ds-chip-h)] rounded-md transition-colors ${
+            marketFilterOpen || marketFilterQuery
+              ? 'bg-card text-foreground shadow-sm border border-[rgb(var(--ds-brand-magenta-rgb)))]'
+              : 'bg-card/50 text-muted-foreground border border-border/40 hover:text-foreground hover:bg-card/80'
+          }`}
+          title="Filter markets"
+          data-testid="market-filter-toggle"
+        >
+          <Filter className="w-3 h-3" />
+        </button>
+        <AnimatePresence>
+          {marketFilterOpen && (
+            <motion.div
+              initial={{ width: 0, opacity: 0 }}
+              animate={{ width: 'auto', opacity: 1 }}
+              exit={{ width: 0, opacity: 0 }}
+              transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+              className="overflow-hidden"
+            >
+              <div className="relative w-28 md:w-36">
+                <Search className="absolute left-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/60" />
+                <Input
+                  ref={marketFilterInputRef}
+                  surfaceVariant="magenta"
+                  placeholder="Market"
+                  value={marketFilterQuery}
+                  onChange={(e) => setMarketFilterQuery(e.target.value)}
+                  className="h-[var(--ds-chip-h)] pl-5 pr-5 ds-text-11 text-muted-foreground/60 placeholder:text-muted-foreground/60 focus:text-foreground"
+                  data-testid="market-filter-input"
+                />
+                {marketFilterQuery && (
+                  <button
+                    onClick={() => setMarketFilterQuery('')}
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    <Eraser className="w-2.5 h-2.5" />
+                  </button>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Chain/Hub segmented toggle – only when hubs exist */}
         {hasHubs && (
           <SegmentedToggle
@@ -418,7 +492,7 @@ const FilterBar = ({
         {marketViewMode === 'hub' && hasHubs
           ? (
             /* Hub mode: show hub chips (multi-select, keyed by id, labeled by name) */
-            hubEntries!.map((hub) => {
+            (filteredHubEntries ?? []).map((hub) => {
               const isSelected = selectedHubs.includes(hub.id);
               return (
                 <FilterChip
@@ -440,7 +514,7 @@ const FilterBar = ({
           )
           : (
             /* Chain mode: original chain chips */
-            chainGroups.map((group) => {
+            filteredChainGroups.map((group) => {
               const selected = isChainSelected(group);
               const subSelected = hasSubMarketSelected(group);
               const expanded = expandedChain === group.chainName;

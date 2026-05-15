@@ -278,3 +278,101 @@ describe('FilterBar setExpandedChain type contract', () => {
     expect(true).toBe(true);
   });
 });
+
+describe('FilterBar market filter search', () => {
+  it('renders market filter toggle button in markets row', () => {
+    render(<TestWrapper />);
+    const marketsRow = screen.getAllByTestId('markets-row')[0];
+    const filterToggle = within(marketsRow).getByTestId('market-filter-toggle');
+    expect(filterToggle).toBeInTheDocument();
+  });
+
+  it('opens market filter input when toggle is clicked', () => {
+    render(<TestWrapper />);
+    const marketsRow = screen.getAllByTestId('markets-row')[0];
+    const filterToggle = within(marketsRow).getByTestId('market-filter-toggle');
+    fireEvent.click(filterToggle);
+    const filterInput = within(marketsRow).getByTestId('market-filter-input');
+    expect(filterInput).toBeInTheDocument();
+  });
+
+  it('closes market filter input and clears query when toggle is clicked again', () => {
+    render(<TestWrapper />);
+    const marketsRow = screen.getAllByTestId('markets-row')[0];
+    const filterToggle = within(marketsRow).getByTestId('market-filter-toggle');
+    fireEvent.click(filterToggle);
+    const filterInput = within(marketsRow).getByTestId('market-filter-input');
+    fireEvent.change(filterInput, { target: { value: 'arb' } });
+    act(() => { fireEvent.click(filterToggle); });
+  });
+
+  it('filters chain chips by chain name when query is entered', () => {
+    const manyMarkets = [
+      { marketName: 'AaveV3Ethereum', chainName: 'Ethereum' },
+      { marketName: 'AaveV3Arbitrum', chainName: 'Arbitrum' },
+      { marketName: 'AaveV3Base', chainName: 'Base' },
+    ];
+    const { container } = render(
+      <FilterBar
+        searchQuery=""
+        setSearchQuery={() => {}}
+        selectedMarkets={[]}
+        setSelectedMarkets={() => {}}
+        selectedCategory="all"
+        setSelectedCategory={() => {}}
+        isApy
+        setIsApy={() => {}}
+        marketsList={manyMarkets}
+        hubEntries={[]}
+        selectedHubs={[]}
+        setSelectedHubs={() => {}}
+      />
+    );
+
+    const marketsRow = container.querySelector('[data-testid="markets-row"]')!;
+    const filterToggle = marketsRow.querySelector('[data-testid="market-filter-toggle"]') as HTMLElement;
+    fireEvent.click(filterToggle);
+    const filterInput = within(marketsRow as HTMLElement).getByTestId('market-filter-input');
+    fireEvent.change(filterInput, { target: { value: 'base' } });
+
+    const chainButtons = Array.from(marketsRow.querySelectorAll('button'))
+      .filter(b => b.textContent && !['All', 'Chain', 'Hub'].includes(b.textContent.trim()) && !b.getAttribute('data-testid'));
+    const chainNames = chainButtons.map(b => b.textContent?.trim());
+    expect(chainNames).toContain('Base');
+    expect(chainNames).not.toContain('Arbitrum');
+  });
+
+  it('filters hub chips by hub name when in hub view', () => {
+    const setHubsFn = vi.fn();
+    const { container } = render(
+      <FilterBar
+        searchQuery=""
+        setSearchQuery={() => {}}
+        selectedMarkets={[]}
+        setSelectedMarkets={() => {}}
+        selectedCategory="all"
+        setSelectedCategory={() => {}}
+        isApy
+        setIsApy={() => {}}
+        marketsList={ETH_MULTI_MARKETS}
+        hubEntries={[{ id: 'hub-core', name: 'Core' }, { id: 'hub-prime', name: 'Prime' }]}
+        selectedHubs={[]}
+        setSelectedHubs={setHubsFn}
+        marketViewMode="hub"
+        setMarketViewMode={() => {}}
+      />
+    );
+
+    const marketsRow = container.querySelector('[data-testid="markets-row"]')!;
+    const filterToggle = marketsRow.querySelector('[data-testid="market-filter-toggle"]') as HTMLElement;
+    fireEvent.click(filterToggle);
+    const filterInput = within(marketsRow as HTMLElement).getByTestId('market-filter-input');
+    fireEvent.change(filterInput, { target: { value: 'prime' } });
+
+    const hubButtons = Array.from(marketsRow.querySelectorAll('button'))
+      .filter(b => b.textContent && ['Core', 'Prime'].includes(b.textContent.trim()) && !b.getAttribute('data-testid'));
+    const hubNames = hubButtons.map(b => b.textContent?.trim());
+    expect(hubNames).toContain('Prime');
+    expect(hubNames).not.toContain('Core');
+  });
+});
