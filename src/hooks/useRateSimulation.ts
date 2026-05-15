@@ -15,6 +15,7 @@ import {
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
 import { simulateNativeRatesAfterActions, hasRateCalcFields } from '@/lib/interestRateCalculator';
 import type { RateCalcInput } from '@/lib/interestRateCalculator';
+import { buildHubAggregationMap, getHubAssetKey, validateHubAggregateConsistency } from '@/lib/hubAggregation';
 import {
   forecastBreakdownApr,
   getMerklBreakdownApr,
@@ -336,18 +337,23 @@ const sumMeritValues = (values?: MeritIncentive[], isApy = false): number => {
  * V4: supplied may be 0 or a per-Spoke slice — use on-chain borrowed for borrow side,
  *     and return undefined for supply side when supplied-derived USD is 0/unreliable.
  */
-const getMeritAnchorTvlUsd = (reserve: ReserveWithSpread, side: RateSide, protocolVersion: ProtocolVersion): number | undefined => {
+const getMeritAnchorTvlUsd = (
+  reserve: ReserveWithSpread,
+  side: RateSide,
+  protocolVersion: ProtocolVersion,
+  hubSupplied?: string,
+  hubBorrowed?: string,
+): number | undefined => {
   if (protocolVersion === 'v4') {
-    // V4: reserveSizeUsd is unreliable for both supply and borrow anchor
     if (side === 'supply') {
-      const size = nativeToUsd(reserve.supplied, reserve.decimals, reserve.tokenPrice);
+      const size = nativeToUsd(hubSupplied ?? reserve.supplied, reserve.decimals, reserve.tokenPrice);
       if (size != null && Number.isFinite(size) && size > 0) return size;
       return undefined;
     }
-    // Borrow: use on-chain borrowed if available
-    const { borrowed, decimals, tokenPrice } = reserve;
-    if (borrowed && decimals != null && tokenPrice != null && tokenPrice > 0) {
-      const raw = Number(borrowed);
+    const borrowedToUse = hubBorrowed ?? reserve.borrowed;
+    const { decimals, tokenPrice } = reserve;
+    if (borrowedToUse && decimals != null && tokenPrice != null && tokenPrice > 0) {
+      const raw = Number(borrowedToUse);
       if (Number.isFinite(raw) && raw >= 0) {
         const tokens = raw / Math.pow(10, decimals);
         const usd = tokens * tokenPrice;
@@ -356,7 +362,6 @@ const getMeritAnchorTvlUsd = (reserve: ReserveWithSpread, side: RateSide, protoc
     }
     return undefined;
   }
-  // V3: supplied is reliable
   const size = nativeToUsd(reserve.supplied, reserve.decimals, reserve.tokenPrice);
   if (size == null || !Number.isFinite(size) || size <= 0) return undefined;
   if (side === 'supply') return size;
@@ -858,7 +863,9 @@ const buildIncentiveAfter = (
   forecastStates: Record<string, MerklForecastWireItem>,
   tydroPointToUsdRate: number,
   whitelistMerklCampaignIds: ReadonlySet<string> | undefined,
-  brevisSharedDepositsByCampaignId?: ReadonlyMap<string, number>,
+  brevisSharedDepositsByCampaignId: ReadonlyMap<string, number> | undefined,
+  hubSupplied?: string,
+  hubBorrowed?: string,
 ): number => {
   const merit = side === 'supply' ? reserve.meritSupplys : reserve.meritBorrows;
   const merkl = side === 'supply' ? reserve.merklSupplys : reserve.merklBorrows;
@@ -874,7 +881,7 @@ const buildIncentiveAfter = (
 
   return (
     sumNumberArray(protocol, isApy) +
-    sumForecastMeritValues(merit, isApy, netInputUsd, getMeritAnchorTvlUsd(reserve, side, getProtocolVersion(reserve.marketName))) * eligibilityRatio +
+    sumForecastMeritValues(merit, isApy, netInputUsd, getMeritAnchorTvlUsd(reserve, side, getProtocolVersion(reserve.marketName), hubSupplied, hubBorrowed)) * eligibilityRatio +
     sumMerklValues(forecastedMerkl, isApy, tydroPointToUsdRate, whitelistMerklCampaignIds) * eligibilityRatio +
     sumForecastBrevisValues(brevis, isApy, grossInputUsd, brevisSharedDepositsByCampaignId)
   );
@@ -1015,11 +1022,12 @@ export function buildRateSimulationResult({
     : null;
 
   // Calculate totalBorrowedUsd for borrow cap constraint
-  const currentTotalBorrowedUsd = reserveRateInput && tokenPrice
+  // Must use per-Spoke borrowed (reserve.borrowed), not Hub-level (reserveRateInput.borrowed)
+  const currentTotalBorrowedUsd = tokenPrice && reserve.borrowed
     ? (() => {
-        const decimals = reserveRateInput.decimals ?? 18;
+        const decimals = reserve.decimals ?? 18;
         const scale = Math.pow(10, decimals);
-        const totalDebt = Number(reserveRateInput.borrowed) / scale;
+        const totalDebt = Number(reserve.borrowed) / scale;
         return totalDebt * tokenPrice;
       })()
     : null;
@@ -1139,6 +1147,8 @@ export function buildRateSimulationResult({
         tydroPointToUsdRate,
         whitelistMerklCampaignIds,
         brevisSharedDepositsByCampaignId,
+        reserveRateInput?.hubSupplied,
+        reserveRateInput?.hubBorrowed,
       )
     : null;
   const borrowAfterIncentiveRaw = hasAnyInput
@@ -1153,6 +1163,8 @@ export function buildRateSimulationResult({
         tydroPointToUsdRate,
         whitelistMerklCampaignIds,
         brevisSharedDepositsByCampaignId,
+        reserveRateInput?.hubSupplied,
+        reserveRateInput?.hubBorrowed,
       )
     : null;
   const supplyAfterIncentiveAprRaw = hasAnyInput
@@ -1167,6 +1179,8 @@ export function buildRateSimulationResult({
         tydroPointToUsdRate,
         whitelistMerklCampaignIds,
         brevisSharedDepositsByCampaignId,
+        reserveRateInput?.hubSupplied,
+        reserveRateInput?.hubBorrowed,
       )
     : null;
   const borrowAfterIncentiveAprRaw = hasAnyInput
@@ -1181,6 +1195,8 @@ export function buildRateSimulationResult({
         tydroPointToUsdRate,
         whitelistMerklCampaignIds,
         brevisSharedDepositsByCampaignId,
+        reserveRateInput?.hubSupplied,
+        reserveRateInput?.hubBorrowed,
       )
     : null;
   // Shared scenario represents extra market-side size, so same-side incentive should not increase.
@@ -1290,7 +1306,7 @@ export function buildRateSimulationResult({
     isApy,
     supplyMeritMerklInputUsd,
     hasAnyInput,
-    getMeritAnchorTvlUsd(reserve, 'supply', getProtocolVersion(reserve.marketName)),
+    getMeritAnchorTvlUsd(reserve, 'supply', getProtocolVersion(reserve.marketName), reserveRateInput?.hubSupplied, reserveRateInput?.hubBorrowed),
     supplyMeritMerklEligibilityRatio,
     supplyInputUsd,
   );
@@ -1317,7 +1333,7 @@ export function buildRateSimulationResult({
     isApy,
     borrowMeritMerklInputUsd,
     hasAnyInput,
-    getMeritAnchorTvlUsd(reserve, 'borrow', getProtocolVersion(reserve.marketName)),
+    getMeritAnchorTvlUsd(reserve, 'borrow', getProtocolVersion(reserve.marketName), reserveRateInput?.hubSupplied, reserveRateInput?.hubBorrowed),
     borrowMeritMerklEligibilityRatio,
     borrowInputUsd,
   );
@@ -1806,10 +1822,31 @@ export const useSharedRateSimulations = ({
 
   const forecastLoading = sideDataMetaQuery.isPending || sideDataMetaQuery.isFetching;
 
+  const hubAggregationMap = useMemo(
+    () => buildHubAggregationMap(reserves),
+    [reserves]
+  );
+
+  if (import.meta.env.DEV) {
+    const warnings = validateHubAggregateConsistency(reserves, hubAggregationMap);
+    if (warnings.length > 0) {
+      console.warn('[V4 HubAggregation] utilization mismatch:', warnings);
+    }
+  }
+
   const simulationsById = useMemo(() => {
     return reserves.reduce<Record<string, RateSimulationResult>>((acc, reserve) => {
       const reserveId = getReserveSimulationId(reserve);
-      const reserveRateInput = hasRateCalcFields(reserve) ? reserve : null;
+      const reserveRateInput: RateCalcInput | null = hasRateCalcFields(reserve) ? { ...reserve } : null;
+      if (reserveRateInput && reserve.hubId) {
+        const hubKey = getHubAssetKey(reserve);
+        const hubAgg = hubKey ? hubAggregationMap.get(hubKey) : undefined;
+        if (hubAgg) {
+          reserveRateInput.borrowed = hubAgg.hubBorrowed;
+          reserveRateInput.hubBorrowed = hubAgg.hubBorrowed;
+          reserveRateInput.hubSupplied = hubAgg.hubSupplied;
+        }
+      }
       acc[reserveId] = {
         ...buildRateSimulationResult({
           reserve,
@@ -1836,6 +1873,7 @@ export const useSharedRateSimulations = ({
     forecastErrors,
     forecastLoading,
     forecastStates,
+    hubAggregationMap,
     whitelistMerklCampaignIds,
     inputMode,
     isApy,
