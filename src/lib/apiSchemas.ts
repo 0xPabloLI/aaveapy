@@ -166,6 +166,7 @@ const ReserveWithSpreadSchema = z.object({
   optimalUtilization: z.number().optional(),
   baseBorrowRate: z.number().optional(),
   // V4 Hub & Spoke identifiers
+  aaveProReserveId: z.string().optional(),
   hubId: z.string().optional(),
   hubName: z.string().optional(),
   spokeId: z.string().optional(),

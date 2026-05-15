@@ -254,6 +254,44 @@ describe('apiSchemas', () => {
     expect(parsed.reserves[3].isActive).toBeUndefined();
   });
 
+  it('preserves V4 Hub & Spoke identifiers on reserves', () => {
+    const parsed = MarketsResponseSchema.parse({
+      snapshot: {
+        lastUpdated: '2026-05-15T00:00:00.000Z',
+        version: '1.0.0',
+      },
+      reserves: [
+        {
+          reserveId: 'AaveV4Ethereum-0xv4hub',
+          marketName: 'AaveV4Ethereum',
+          chainName: 'Ethereum',
+          chainId: 1,
+          tokenName: 'USDC',
+          tokenSymbol: 'USDC',
+          tokenAddress: '0xv4hub',
+          aTokenAddress: '0xa1',
+          vTokenAddress: '0xb1',
+          aaveProReserveId: 'pro-reserve-123',
+          hubId: 'hub-core',
+          hubName: 'Core',
+          hubAddress: '0xhub123',
+          spokeId: 'spoke-eth',
+          spokeName: 'Ethereum Spoke',
+          spokeAddress: '0xspoke456',
+        },
+      ],
+    });
+
+    const r = parsed.reserves[0];
+    expect(r.aaveProReserveId).toBe('pro-reserve-123');
+    expect(r.hubId).toBe('hub-core');
+    expect(r.hubName).toBe('Core');
+    expect(r.hubAddress).toBe('0xhub123');
+    expect(r.spokeId).toBe('spoke-eth');
+    expect(r.spokeName).toBe('Ethereum Spoke');
+    expect(r.spokeAddress).toBe('0xspoke456');
+  });
+
   it('normalizes grouped Brevis breakdowns from /markets into flat Brevis incentives', () => {
     const parsed = MarketsResponseSchema.parse({
       snapshot: {
