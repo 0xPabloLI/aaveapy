@@ -230,6 +230,34 @@ describe('FilterBar setExpandedChain', () => {
   });
 });
 
+describe('FilterBar mobile layout', () => {
+  it('renders mobile restricted toggle with md:hidden class when showFrozenOrPaused is provided', () => {
+    render(
+      <FilterBar
+        searchQuery=""
+        setSearchQuery={() => {}}
+        selectedMarkets={[]}
+        setSelectedMarkets={() => {}}
+        selectedCategory="all"
+        setSelectedCategory={() => {}}
+        isApy
+        setIsApy={() => {}}
+        marketsList={ETH_MULTI_MARKETS}
+        hubEntries={[]}
+        selectedHubs={[]}
+        setSelectedHubs={() => {}}
+        showFrozenOrPaused={false}
+        setShowFrozenOrPaused={() => {}}
+      />,
+    );
+
+    const frozenButtons = screen.getAllByTitle('Show frozen or paused assets');
+    const mobileFrozen = frozenButtons.find((b) => b.className.includes('md:hidden'));
+    expect(mobileFrozen).toBeDefined();
+    expect(mobileFrozen!.className).toContain('inline-flex');
+  });
+});
+
 describe('FilterBar setExpandedChain type contract', () => {
   it('setExpandedChain prop only accepts (chain: string | null) => void', () => {
     const setExpandedChain: (chain: string | null) => void = vi.fn();

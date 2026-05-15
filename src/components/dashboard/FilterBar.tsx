@@ -319,26 +319,22 @@ const FilterBar = ({
           )}
         </div>
 
-        {/* Mobile search – flows inline with category chips, fills remaining row space */}
-        <div className="relative flex-1 min-w-[7rem] md:hidden">
-          <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
-          <Input
-            ref={mobileSearchInputRef}
-            surfaceVariant="magenta"
-            placeholder={searchPlaceholder}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-[var(--ds-chip-h)] pl-[var(--ds-space-8)] pr-[var(--ds-space-6)] ds-text-11 text-muted-foreground/50 placeholder:text-muted-foreground/50 focus:text-foreground"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-            >
-              <Eraser className="w-3 h-3" />
-            </button>
-          )}
-        </div>
+        {/* Include frozen/paused assets toggle – mobile, inline with category chips */}
+        {setShowFrozenOrPaused && (
+          <button
+            type="button"
+            onClick={() => setShowFrozenOrPaused(!showFrozenOrPaused)}
+            className={`md:hidden inline-flex items-center gap-1.5 h-[var(--ds-chip-h)] px-2 rounded-md ds-text-11 font-medium transition-colors ${
+              showFrozenOrPaused
+                ? 'bg-sky-500/15 text-sky-600 shadow-sm border border-sky-400/50'
+                : 'bg-card/50 text-muted-foreground hover:text-foreground hover:bg-card/80 border border-border/40'
+            }`}
+            title={showFrozenOrPaused ? 'Hide frozen or paused assets' : 'Show frozen or paused assets'}
+          >
+            <Snowflake className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">{showFrozenOrPaused ? 'Restricted assets shown' : 'Show restricted assets'}</span>
+          </button>
+        )}
 
         {/* Include frozen/paused assets toggle – desktop only */}
         {setShowFrozenOrPaused && (
@@ -365,24 +361,28 @@ const FilterBar = ({
         </div>
       </div>
 
-      {/* Row 2: Frozen toggle (full label) + APR/APY toggle – mobile only */}
+      {/* Row 2: Search + APR/APY toggle – mobile only */}
       <div className="flex items-center gap-1.5 md:hidden">
-        {/* Include frozen/paused assets toggle – mobile, with full label */}
-        {setShowFrozenOrPaused && (
-          <button
-            type="button"
-            onClick={() => setShowFrozenOrPaused(!showFrozenOrPaused)}
-            className={`flex-1 min-w-0 inline-flex items-center justify-center gap-1.5 h-[var(--ds-chip-h)] px-2 rounded-md ds-text-11 font-medium transition-colors ${
-              showFrozenOrPaused
-                ? 'bg-sky-500/15 text-sky-600 shadow-sm border border-sky-400/50'
-                : 'bg-card/50 text-muted-foreground hover:text-foreground hover:bg-card/80 border border-border/40'
-            }`}
-            title={showFrozenOrPaused ? 'Hide frozen or paused assets' : 'Show frozen or paused assets'}
-          >
-            <Snowflake className="w-3.5 h-3.5 shrink-0" />
-            <span className="truncate">{showFrozenOrPaused ? 'Restricted assets shown' : 'Show restricted assets'}</span>
-          </button>
-        )}
+        {/* Mobile search – fills remaining row space alongside APR/APY toggle */}
+        <div className="relative flex-1 min-w-[7rem]">
+          <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
+          <Input
+            ref={mobileSearchInputRef}
+            surfaceVariant="magenta"
+            placeholder={searchPlaceholder}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="h-[var(--ds-chip-h)] pl-[var(--ds-space-8)] pr-[var(--ds-space-6)] ds-text-11 text-muted-foreground/50 placeholder:text-muted-foreground/50 focus:text-foreground"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <Eraser className="w-3 h-3" />
+            </button>
+          )}
+        </div>
 
         <div className="shrink-0">
           <AprApyToggle isApy={isApy} setIsApy={setIsApy} />
