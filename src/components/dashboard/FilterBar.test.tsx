@@ -1,7 +1,9 @@
 // @vitest-environment happy-dom
 import { act, useState } from 'react';
-import { fireEvent, render, screen, within } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
+afterEach(cleanup);
 
 import FilterBar from './FilterBar';
 import type { TokenCategory } from '@/types/aave';
@@ -374,5 +376,25 @@ describe('FilterBar market filter search', () => {
     const hubNames = hubButtons.map(b => b.textContent?.trim());
     expect(hubNames).toContain('Prime');
     expect(hubNames).not.toContain('Core');
+  });
+
+  it('auto-expands Ethereum when market filter matches a sub-market name', () => {
+    const ethSubMarkets = [
+      { marketName: 'AaveV3Ethereum', chainName: 'Ethereum' },
+      { marketName: 'AaveV3EthereumLido', chainName: 'Ethereum' },
+      { marketName: 'AaveV4Ethereum', chainName: 'Ethereum' },
+      { marketName: 'AaveV3Arbitrum', chainName: 'Arbitrum' },
+    ];
+    const { container } = render(<TestWrapper marketsList={ethSubMarkets} />);
+
+    expect(screen.queryAllByTitle('Collapse Ethereum markets').length).toBe(0);
+
+    const marketsRow = container.querySelector('[data-testid="markets-row"]')!;
+    const filterToggle = marketsRow.querySelector('[data-testid="market-filter-toggle"]') as HTMLElement;
+    fireEvent.click(filterToggle);
+    const filterInput = within(marketsRow as HTMLElement).getByTestId('market-filter-input');
+    act(() => { fireEvent.change(filterInput, { target: { value: 'lido' } }); });
+
+    expect(screen.getAllByTitle('Collapse Ethereum markets').length).toBeGreaterThan(0);
   });
 });

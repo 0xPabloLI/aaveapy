@@ -158,6 +158,20 @@ const FilterBar = ({
       .filter((g): g is ChainGroup => g !== null);
   }, [chainGroups, marketFilterQuery]);
 
+  useEffect(() => {
+    if (!marketFilterQuery) return;
+    const q = marketFilterQuery.toLowerCase().trim();
+    const hasSubMarketMatch = chainGroups.some(
+      (g) => g.expandable && !g.chainName.toLowerCase().includes(q) && g.markets.some((m) => m.marketName.toLowerCase().includes(q)),
+    );
+    if (hasSubMarketMatch && expandedChain === null) {
+      const expandableGroup = chainGroups.find(
+        (g) => g.expandable && g.markets.some((m) => m.marketName.toLowerCase().includes(q)),
+      );
+      if (expandableGroup) setExpandedChain(expandableGroup.chainName);
+    }
+  }, [marketFilterQuery, chainGroups, expandedChain, setExpandedChain]);
+
   const filteredHubEntries = useMemo(() => {
     if (!marketFilterQuery || !hubEntries) return hubEntries;
     const q = marketFilterQuery.toLowerCase().trim();
