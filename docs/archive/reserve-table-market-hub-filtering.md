@@ -1,5 +1,7 @@
 # Reserve Table Market/Hub Filtering
 
+Status: **implemented**. Key decisions merged into `docs/design/frontend-interaction-guardrails.md` §Hub filter guardrails.
+
 This note records the current filtering architecture around the reserves table and the recommended path for adding row-level hub filtering.
 
 ## Current structure

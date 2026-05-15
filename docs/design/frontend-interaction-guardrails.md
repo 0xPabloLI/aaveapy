@@ -765,3 +765,13 @@ The mobile `ReservesTable` component ends with a bottom padding that reserves sp
 - The `+1rem` breathing room plus the safe-area inset is sufficient to keep the last card above the browser chrome without wasting vertical space.
 - Implementation: `src/components/dashboard/ReservesTable.tsx` — the `isMobile` return block's outer `<div>` class.
 - **Do not** increase this padding without verifying the gap between ReservesTable and FaqSection in a full mobile build.
+
+## Hub filter guardrails (normative)
+
+- **Hub filter must key off `hubId`, not `hubName`**: `selectedHubs` stores `hubId` values. `hubName` is presentation-level and may duplicate across markets; `hubId` is the stable canonical identifier.
+- **`FilterBar` receives `hubEntries: {id, name}[]`**: selection logic uses `id`, display uses `name`. Never pass bare `hubName[]` to the filter bar.
+- **Hub badge click guard requires both `hubId` and `hubName`**: if either is missing, the badge must not be filterable. This prevents passing `undefined` to `onSelectHub`.
+- **Mobile hub badge stays an outbound link**: do not overload the tiny hub badge on mobile with both filter and navigation. Hub filtering on mobile is triggered from the filter bar (hub chips visible in hub view mode).
+- **Filter order in `Index.tsx`**: search → market → hub → category. Hub filter is independent of market filter; both are separate state arrays (`selectedMarkets`, `selectedHubs`).
+- **Switching to hub view mode clears market selection**, and vice versa. The "All" chip clears both.
+- **Pinning helpers still use market-specific naming**: a future refactor should generalize to filter-agnostic naming, but this is cosmetic, not blocking.
