@@ -524,8 +524,10 @@ export function buildTokenExplorerUrl(
 
 /**
  * Build an explorer URL for a V4 Hub contract address.
- * V4 uses Hub & Spoke architecture, where Hub is the cross-chain coordination
- * contract that also holds assets (unlike V3's single Pool).
+ * V4 uses Hub & Spoke architecture, where Hub is the on-chain liquidity
+ * coordination contract that aggregates same-chain Spokes and holds assets
+ * (unlike V3's single Pool). Hub is per-chain (hubId = base64(chainId::hubAddress)),
+ * it does NOT aggregate across chains.
  *
  * Uses chainName to determine the appropriate explorer base URL.
  */

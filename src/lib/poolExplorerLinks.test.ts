@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   buildPoolExplorerUrl,
+  buildHubExplorerUrl,
   getPoolAddress,
   getExplorerFamily,
   getExplorerMarketNames,
@@ -221,6 +222,28 @@ describe('Specific URL snapshots', () => {
   it('XLayer OKLink with proxy-read', () => {
     expect(buildPoolExplorerUrl('AaveV3XLayer')).toBe(
       'https://www.oklink.com/x-layer/address/0xE3F3Caefdd7180F884c01E57f65Df979Af84f116/contract#category=proxy-read&id=22'
+    );
+  });
+});
+
+describe('buildHubExplorerUrl', () => {
+  it('returns null for null/undefined hubAddress', () => {
+    expect(buildHubExplorerUrl(null)).toBeNull();
+    expect(buildHubExplorerUrl(undefined)).toBeNull();
+  });
+
+  it('returns null when chainName is not in CHAIN_EXPLORER_MAP', () => {
+    expect(
+      buildHubExplorerUrl('0xCca8260D641e5c1D5b0a4f4a6E2e6b1E1f0cA3b9', {
+        chainName: 'UnknownChain',
+      }),
+    ).toBeNull();
+  });
+
+  it('builds etherscan family URL for Ethereum Hub', () => {
+    const hubAddr = '0xCca8260D641e5c1D5b0a4f4a6E2e6b1E1f0cA3b9';
+    expect(buildHubExplorerUrl(hubAddr, { chainName: 'Ethereum' })).toBe(
+      `https://etherscan.io/address/${hubAddr}`,
     );
   });
 });
