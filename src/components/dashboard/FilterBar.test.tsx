@@ -231,7 +231,7 @@ describe('FilterBar setExpandedChain', () => {
 });
 
 describe('FilterBar mobile layout', () => {
-  it('renders mobile restricted toggle with md:hidden class when showFrozenOrPaused is provided', () => {
+  it('renders mobile restricted toggle in Row 2 alongside search when showFrozenOrPaused is provided', () => {
     render(
       <FilterBar
         searchQuery=""
@@ -252,7 +252,7 @@ describe('FilterBar mobile layout', () => {
     );
 
     const frozenButtons = screen.getAllByTitle('Show frozen or paused assets');
-    const mobileFrozen = frozenButtons.find((b) => b.className.includes('md:hidden'));
+    const mobileFrozen = frozenButtons.find((b) => b.className.includes('shrink-0'));
     expect(mobileFrozen).toBeDefined();
     expect(mobileFrozen!.className).toContain('inline-flex');
   });

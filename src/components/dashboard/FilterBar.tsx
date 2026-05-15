@@ -278,7 +278,7 @@ const FilterBar = ({
 
   return (
     <div className="space-y-2 md:space-y-2.5">
-      {/* Row 1: Token Categories + Search + Frozen Toggle + APY Toggle */}
+      {/* Row 1: Token Categories + Frozen Toggle + APY Toggle */}
       <div data-testid="tokens-row" className="flex flex-wrap items-center gap-1.5 md:gap-2">
         <span className="ds-text-11 leading-none text-muted-foreground/70 hidden sm:inline">Tokens</span>
 
@@ -319,23 +319,6 @@ const FilterBar = ({
           )}
         </div>
 
-        {/* Include frozen/paused assets toggle – mobile, inline with category chips */}
-        {setShowFrozenOrPaused && (
-          <button
-            type="button"
-            onClick={() => setShowFrozenOrPaused(!showFrozenOrPaused)}
-            className={`md:hidden inline-flex items-center gap-1.5 h-[var(--ds-chip-h)] px-2 rounded-md ds-text-11 font-medium transition-colors ${
-              showFrozenOrPaused
-                ? 'bg-sky-500/15 text-sky-600 shadow-sm border border-sky-400/50'
-                : 'bg-card/50 text-muted-foreground hover:text-foreground hover:bg-card/80 border border-border/40'
-            }`}
-            title={showFrozenOrPaused ? 'Hide frozen or paused assets' : 'Show frozen or paused assets'}
-          >
-            <Snowflake className="w-3.5 h-3.5 shrink-0" />
-            <span className="truncate">{showFrozenOrPaused ? 'Restricted assets shown' : 'Show restricted assets'}</span>
-          </button>
-        )}
-
         {/* Include frozen/paused assets toggle – desktop only */}
         {setShowFrozenOrPaused && (
           <button
@@ -361,8 +344,25 @@ const FilterBar = ({
         </div>
       </div>
 
-      {/* Row 2: Search + APR/APY toggle – mobile only */}
+      {/* Row 2: Frozen toggle + Search + APR/APY toggle – mobile only */}
       <div className="flex items-center gap-1.5 md:hidden">
+        {/* Include frozen/paused assets toggle – mobile, with full label */}
+        {setShowFrozenOrPaused && (
+          <button
+            type="button"
+            onClick={() => setShowFrozenOrPaused(!showFrozenOrPaused)}
+            className={`shrink-0 inline-flex items-center gap-1.5 h-[var(--ds-chip-h)] px-2 rounded-md ds-text-11 font-medium transition-colors ${
+              showFrozenOrPaused
+                ? 'bg-sky-500/15 text-sky-600 shadow-sm border border-sky-400/50'
+                : 'bg-card/50 text-muted-foreground hover:text-foreground hover:bg-card/80 border border-border/40'
+            }`}
+            title={showFrozenOrPaused ? 'Hide frozen or paused assets' : 'Show frozen or paused assets'}
+          >
+            <Snowflake className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">{showFrozenOrPaused ? 'Restricted assets shown' : 'Show restricted assets'}</span>
+          </button>
+        )}
+
         {/* Mobile search – fills remaining row space alongside APR/APY toggle */}
         <div className="relative flex-1 min-w-[7rem]">
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
