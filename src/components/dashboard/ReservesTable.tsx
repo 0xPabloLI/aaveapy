@@ -206,9 +206,6 @@ const ReservesTable = ({
     handleSortPrice,
     handleSortSize,
     handleSortUtil,
-    toggleSupplySortOrder,
-    toggleBorrowSortOrder,
-    toggleSpreadSortOrder,
     closeAllMobileSortMenus,
     toggleMobileSortMenu,
   } = sortState;
@@ -1628,11 +1625,14 @@ const ReservesTable = ({
             }}
             onToggleSpreadSort={() => {
               if (activeSortColumn === 'spread') {
-                toggleSpreadSortOrder();
+                setSpreadSortOrder(toggleSortOrder);
               } else {
                 collapseExpandedOnSort();
-                setActiveSortColumn('spread');
-                setSpreadSortOrder('desc');
+                selectSortOption({
+                  isAlreadySelected: false,
+                  setSortOrder: setSpreadSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
+                  setActiveSortColumn, targetColumn: 'spread',
+                });
               }
             }}
             onToggleSizeMenu={() => setShowSizeSortMenu(!showSizeSortMenu)}

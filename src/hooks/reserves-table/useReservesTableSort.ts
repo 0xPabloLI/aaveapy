@@ -146,9 +146,6 @@ export interface UseReservesTableSortResult {
   handleSortPrice: () => void;
   handleSortSize: () => void;
   handleSortUtil: () => void;
-  toggleSupplySortOrder: () => void;
-  toggleBorrowSortOrder: () => void;
-  toggleSpreadSortOrder: () => void;
 
   // Mobile sort menu controls
   closeAllMobileSortMenus: (except?: MobileSortMenuKey | null) => void;
@@ -265,24 +262,6 @@ export function useReservesTableSort(
     setShowUtilSortMenu(false);
   }, [collapseExpanded]);
 
-  const toggleSupplySortOrder = useCallback(() => {
-    collapseExpanded();
-    setActiveSortColumn('supply');
-    setSupplySortOrder(toggleSortOrder);
-  }, [collapseExpanded]);
-
-  const toggleBorrowSortOrder = useCallback(() => {
-    collapseExpanded();
-    setActiveSortColumn('borrow');
-    setBorrowSortOrder(toggleSortOrder);
-  }, [collapseExpanded]);
-
-  const toggleSpreadSortOrder = useCallback(() => {
-    collapseExpanded();
-    setActiveSortColumn('spread');
-    setSpreadSortOrder(toggleSortOrder);
-  }, [collapseExpanded]);
-
   // Mobile sort menu visibility helpers.
   const closeAllMobileSortMenus = useCallback((except: MobileSortMenuKey | null = null) => {
     if (except !== 'size') setShowSizeSortMenu(false);
@@ -365,9 +344,6 @@ export function useReservesTableSort(
     handleSortPrice,
     handleSortSize,
     handleSortUtil,
-    toggleSupplySortOrder,
-    toggleBorrowSortOrder,
-    toggleSpreadSortOrder,
 
     closeAllMobileSortMenus,
     toggleMobileSortMenu,

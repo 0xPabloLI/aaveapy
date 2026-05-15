@@ -168,63 +168,9 @@ describe('useReservesTableSort', () => {
       expect(result.current.showUtilSortMenu).toBe(false);
     });
 
-    it('toggleSupplySortOrder / toggleBorrowSortOrder / toggleSpreadSortOrder set the active column and flip order', () => {
-      const collapseExpanded = vi.fn();
-      const { result } = renderHook(() => useReservesTableSort({ collapseExpanded }));
-
-      act(() => result.current.toggleSupplySortOrder());
-      expect(result.current.activeSortColumn).toBe('supply');
-      expect(result.current.supplySortOrder).toBe('asc');
-
-      act(() => result.current.toggleBorrowSortOrder());
-      expect(result.current.activeSortColumn).toBe('borrow');
-      expect(result.current.borrowSortOrder).toBe('asc');
-
-      act(() => result.current.toggleSpreadSortOrder());
-      expect(result.current.activeSortColumn).toBe('spread');
-      expect(result.current.spreadSortOrder).toBe('asc');
-
-      expect(collapseExpanded).toHaveBeenCalledTimes(3);
-    });
   });
 
   describe('bidirectional sort-order toggle (regression: asc→desc must work)', () => {
-    it('toggleSupplySortOrder toggles desc→asc→desc', () => {
-      const { result } = renderHook(() =>
-        useReservesTableSort({ collapseExpanded: collapseExpandedNoop }),
-      );
-
-      expect(result.current.supplySortOrder).toBe('desc');
-      act(() => result.current.toggleSupplySortOrder());
-      expect(result.current.supplySortOrder).toBe('asc');
-      act(() => result.current.toggleSupplySortOrder());
-      expect(result.current.supplySortOrder).toBe('desc');
-    });
-
-    it('toggleBorrowSortOrder toggles desc→asc→desc', () => {
-      const { result } = renderHook(() =>
-        useReservesTableSort({ collapseExpanded: collapseExpandedNoop }),
-      );
-
-      expect(result.current.borrowSortOrder).toBe('desc');
-      act(() => result.current.toggleBorrowSortOrder());
-      expect(result.current.borrowSortOrder).toBe('asc');
-      act(() => result.current.toggleBorrowSortOrder());
-      expect(result.current.borrowSortOrder).toBe('desc');
-    });
-
-    it('toggleSpreadSortOrder toggles desc→asc→desc', () => {
-      const { result } = renderHook(() =>
-        useReservesTableSort({ collapseExpanded: collapseExpandedNoop }),
-      );
-
-      expect(result.current.spreadSortOrder).toBe('desc');
-      act(() => result.current.toggleSpreadSortOrder());
-      expect(result.current.spreadSortOrder).toBe('asc');
-      act(() => result.current.toggleSpreadSortOrder());
-      expect(result.current.spreadSortOrder).toBe('desc');
-    });
-
     it('setSizeSortOrder with toggleSortOrder toggles desc→asc→desc', () => {
       const { result } = renderHook(() =>
         useReservesTableSort({ collapseExpanded: collapseExpandedNoop }),
