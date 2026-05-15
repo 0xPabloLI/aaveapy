@@ -1,10 +1,12 @@
 // @vitest-environment happy-dom
 import { act, useState } from 'react';
-import { fireEvent, render, screen, within } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import FilterBar from './FilterBar';
 import type { TokenCategory } from '@/types/aave';
+
+afterEach(cleanup);
 
 vi.mock('@/hooks/use-mobile', () => ({
   useIsMobile: () => false,
@@ -274,5 +276,98 @@ describe('FilterBar setExpandedChain type contract', () => {
       unmount();
     });
     expect(true).toBe(true);
+  });
+});
+
+describe('FilterBar market filter search', () => {
+  it('renders market filter input in markets row', () => {
+    render(<TestWrapper />);
+    const marketsRow = screen.getAllByTestId('markets-row')[0];
+    const filterInput = within(marketsRow).getByTestId('market-filter-input');
+    expect(filterInput).toBeInTheDocument();
+  });
+
+  it('filters chain chips by chain name when query is entered', () => {
+    const manyMarkets = [
+      { marketName: 'AaveV3Ethereum', chainName: 'Ethereum' },
+      { marketName: 'AaveV3Arbitrum', chainName: 'Arbitrum' },
+      { marketName: 'AaveV3Base', chainName: 'Base' },
+    ];
+    const { container } = render(
+      <FilterBar
+        searchQuery=""
+        setSearchQuery={() => {}}
+        selectedMarkets={[]}
+        setSelectedMarkets={() => {}}
+        selectedCategory="all"
+        setSelectedCategory={() => {}}
+        isApy
+        setIsApy={() => {}}
+        marketsList={manyMarkets}
+        hubEntries={[]}
+        selectedHubs={[]}
+        setSelectedHubs={() => {}}
+      />
+    );
+
+    const marketsRow = container.querySelector('[data-testid="markets-row"]')!;
+    const filterInput = within(marketsRow as HTMLElement).getByTestId('market-filter-input');
+    fireEvent.change(filterInput, { target: { value: 'base' } });
+
+    const chainButtons = Array.from(marketsRow.querySelectorAll('button'))
+      .filter(b => b.textContent && !['All', 'Chain', 'Hub'].includes(b.textContent.trim()) && !b.getAttribute('data-testid'));
+    const chainNames = chainButtons.map(b => b.textContent?.trim());
+    expect(chainNames).toContain('Base');
+    expect(chainNames).not.toContain('Arbitrum');
+  });
+
+  it('filters hub chips by hub name when in hub view', () => {
+    const setHubsFn = vi.fn();
+    const { container } = render(
+      <FilterBar
+        searchQuery=""
+        setSearchQuery={() => {}}
+        selectedMarkets={[]}
+        setSelectedMarkets={() => {}}
+        selectedCategory="all"
+        setSelectedCategory={() => {}}
+        isApy
+        setIsApy={() => {}}
+        marketsList={ETH_MULTI_MARKETS}
+        hubEntries={[{ id: 'hub-core', name: 'Core' }, { id: 'hub-prime', name: 'Prime' }]}
+        selectedHubs={[]}
+        setSelectedHubs={setHubsFn}
+        marketViewMode="hub"
+        setMarketViewMode={() => {}}
+      />
+    );
+
+    const marketsRow = container.querySelector('[data-testid="markets-row"]')!;
+    const filterInput = within(marketsRow as HTMLElement).getByTestId('market-filter-input');
+    fireEvent.change(filterInput, { target: { value: 'prime' } });
+
+    const hubButtons = Array.from(marketsRow.querySelectorAll('button'))
+      .filter(b => b.textContent && ['Core', 'Prime'].includes(b.textContent.trim()) && !b.getAttribute('data-testid'));
+    const hubNames = hubButtons.map(b => b.textContent?.trim());
+    expect(hubNames).toContain('Prime');
+    expect(hubNames).not.toContain('Core');
+  });
+
+  it('auto-expands Ethereum when market filter matches a sub-market name', () => {
+    const ethSubMarkets = [
+      { marketName: 'AaveV3Ethereum', chainName: 'Ethereum' },
+      { marketName: 'AaveV3EthereumLido', chainName: 'Ethereum' },
+      { marketName: 'AaveV4Ethereum', chainName: 'Ethereum' },
+      { marketName: 'AaveV3Arbitrum', chainName: 'Arbitrum' },
+    ];
+    const { container } = render(<TestWrapper marketsList={ethSubMarkets} />);
+
+    expect(screen.queryAllByTitle('Collapse Ethereum markets').length).toBe(0);
+
+    const marketsRow = container.querySelector('[data-testid="markets-row"]')!;
+    const filterInput = within(marketsRow as HTMLElement).getByTestId('market-filter-input');
+    act(() => { fireEvent.change(filterInput, { target: { value: 'lido' } }); });
+
+    expect(screen.getAllByTitle('Collapse Ethereum markets').length).toBeGreaterThan(0);
   });
 });

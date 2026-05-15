@@ -117,6 +117,9 @@ const FilterBar = ({
 }: FilterBarProps) => {
   const isMobile = useIsMobile();
   const [searchPlaceholder, setSearchPlaceholder] = useState('Search token');
+  const [marketFilterQuery, setMarketFilterQuery] = useState('');
+  const [marketFilterOpen, setMarketFilterOpen] = useState(false);
+  const marketFilterInputRef = useRef<HTMLInputElement>(null);
   const desktopSearchInputRef = useRef<HTMLInputElement>(null);
   const mobileSearchInputRef = useRef<HTMLInputElement>(null);
   const debouncedUpdateRef = useRef<(() => void) | null>(null);
@@ -140,6 +143,40 @@ const FilterBar = ({
   }, []);
 
   const chainGroups = useMemo(() => groupMarketsByChain(marketsList), [marketsList]);
+
+  const filteredChainGroups = useMemo(() => {
+    if (!marketFilterQuery) return chainGroups;
+    const q = marketFilterQuery.toLowerCase().trim();
+    return chainGroups
+      .map((group) => {
+        const chainMatches = group.chainName.toLowerCase().includes(q);
+        const matchedMarkets = group.markets.filter((m) => m.marketName.toLowerCase().includes(q));
+        if (chainMatches) return group;
+        if (matchedMarkets.length > 0) return { ...group, markets: matchedMarkets };
+        return null;
+      })
+      .filter((g): g is ChainGroup => g !== null);
+  }, [chainGroups, marketFilterQuery]);
+
+  const filteredHubEntries = useMemo(() => {
+    if (!marketFilterQuery || !hubEntries) return hubEntries;
+    const q = marketFilterQuery.toLowerCase().trim();
+    return hubEntries.filter((h) => h.name.toLowerCase().includes(q) || h.id.toLowerCase().includes(q));
+  }, [hubEntries, marketFilterQuery]);
+
+  useEffect(() => {
+    if (!marketFilterQuery) return;
+    const q = marketFilterQuery.toLowerCase().trim();
+    const hasSubMarketMatch = chainGroups.some(
+      (g) => g.expandable && !g.chainName.toLowerCase().includes(q) && g.markets.some((m) => m.marketName.toLowerCase().includes(q)),
+    );
+    if (hasSubMarketMatch && expandedChain === null) {
+      const expandableGroup = chainGroups.find(
+        (g) => g.expandable && g.markets.some((m) => m.marketName.toLowerCase().includes(q)),
+      );
+      if (expandableGroup) setExpandedChain(expandableGroup.chainName);
+    }
+  }, [marketFilterQuery, chainGroups, expandedChain, setExpandedChain]);
 
   // Derive which chains are fully selected (all their markets are in selectedMarkets)
   const isChainSelected = useCallback(
@@ -332,7 +369,7 @@ const FilterBar = ({
             title={showFrozenOrPaused ? 'Hide frozen or paused assets' : 'Show frozen or paused assets'}
           >
             <Snowflake className="w-3.5 h-3.5 shrink-0" />
-            <span className="truncate">{showFrozenOrPaused ? 'Restricted assets shown' : 'Show restricted assets'}</span>
+            <span className="truncate">{showFrozenOrPaused ? 'Restricted' : 'Restricted'}</span>
           </button>
         )}
 
@@ -401,6 +438,28 @@ const FilterBar = ({
           All
         </FilterChip>
 
+        {/* Market filter search */}
+        <div className="relative w-20 sm:w-24 md:w-32 ml-0.5">
+          <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/60" />
+          <Input
+            ref={marketFilterInputRef}
+            surfaceVariant="magenta"
+            placeholder="Market"
+            value={marketFilterQuery}
+            onChange={(e) => setMarketFilterQuery(e.target.value)}
+            className="h-[var(--ds-chip-h)] pl-[var(--ds-space-7)] pr-[var(--ds-space-6)] ds-text-11 text-muted-foreground/60 placeholder:text-muted-foreground/60 focus:text-foreground"
+            data-testid="market-filter-input"
+          />
+          {marketFilterQuery && (
+            <button
+              onClick={() => setMarketFilterQuery('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <Eraser className="w-3 h-3" />
+            </button>
+          )}
+        </div>
+
         {/* Chain/Hub segmented toggle – only when hubs exist */}
         {hasHubs && (
           <SegmentedToggle
@@ -418,7 +477,7 @@ const FilterBar = ({
         {marketViewMode === 'hub' && hasHubs
           ? (
             /* Hub mode: show hub chips (multi-select, keyed by id, labeled by name) */
-            hubEntries!.map((hub) => {
+            (filteredHubEntries ?? []).map((hub) => {
               const isSelected = selectedHubs.includes(hub.id);
               return (
                 <FilterChip
@@ -439,8 +498,8 @@ const FilterBar = ({
             })
           )
           : (
-            /* Chain mode: original chain chips */
-            chainGroups.map((group) => {
+            /* Chain mode: filtered chain chips */
+            filteredChainGroups.map((group) => {
               const selected = isChainSelected(group);
               const subSelected = hasSubMarketSelected(group);
               const expanded = expandedChain === group.chainName;
