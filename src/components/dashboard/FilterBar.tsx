@@ -369,7 +369,7 @@ const FilterBar = ({
             title={showFrozenOrPaused ? 'Hide frozen or paused assets' : 'Show frozen or paused assets'}
           >
             <Snowflake className="w-3.5 h-3.5 shrink-0" />
-            <span className="truncate">{showFrozenOrPaused ? 'Restricted' : 'Restricted'}</span>
+            <span className="truncate">Restricted</span>
           </button>
         )}
 
