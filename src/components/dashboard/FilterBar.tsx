@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo, memo, Fragment } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Search, Eraser, ChevronRight, ChevronLeft, Snowflake, Filter } from 'lucide-react';
+import { Search, Eraser, ChevronRight, ChevronLeft, Snowflake } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { FilterChip } from '@/components/ui/filter-chip';
 import { SegmentedToggle } from '@/components/ui/segmented-toggle';
@@ -440,7 +440,7 @@ const FilterBar = ({
           title="Filter markets"
           data-testid="market-filter-toggle"
         >
-          <Filter className="w-3 h-3" />
+          <Search className="w-3 h-3" />
         </button>
         <AnimatePresence>
           {marketFilterOpen && (
