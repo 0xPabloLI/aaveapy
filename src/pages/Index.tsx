@@ -354,6 +354,7 @@ const Index = () => {
             lastUpdated={effectiveReservesData?.snapshot?.lastUpdated}
           />
 
+          <main>
           {/* INK Incentive APR Calculator */}
           <>
             <InkAprCalculator
