@@ -26,6 +26,14 @@ export type UtilSortMode = 'util' | 'liquidity';
 
 export type SortOrder = 'asc' | 'desc';
 
+export function toggleSortOrder(order: SortOrder): SortOrder {
+  return order === 'desc' ? 'asc' : 'desc';
+}
+
+export function toggleSortOrderAscFirst(order: SortOrder): SortOrder {
+  return order === 'asc' ? 'desc' : 'asc';
+}
+
 export type MenuPosition = { top: number; left: number };
 
 interface UseReservesTableSortOptions {
@@ -188,50 +196,50 @@ export function useReservesTableSort(
   const handleSortToken = useCallback(() => {
     collapseExpanded();
     setActiveSortColumn('token');
-    setTokenSortOrder((o) => (o === 'asc' ? 'desc' : 'asc'));
+    setTokenSortOrder(toggleSortOrderAscFirst);
   }, [collapseExpanded]);
 
   const handleSortMarket = useCallback(() => {
     collapseExpanded();
     setActiveSortColumn('market');
-    setMarketSortOrder((o) => (o === 'asc' ? 'desc' : 'asc'));
+    setMarketSortOrder(toggleSortOrderAscFirst);
   }, [collapseExpanded]);
 
   const handleSortPrice = useCallback(() => {
     collapseExpanded();
     setActiveSortColumn('price');
-    setPriceSortOrder((o) => (o === 'desc' ? 'asc' : 'desc'));
+    setPriceSortOrder(toggleSortOrder);
   }, [collapseExpanded]);
 
   const handleSortSize = useCallback(() => {
     collapseExpanded();
     setActiveSortColumn('size');
-    setSizeSortOrder((o) => (o === 'desc' ? 'asc' : 'desc'));
+    setSizeSortOrder(toggleSortOrder);
   }, [collapseExpanded]);
 
   const handleSortUtil = useCallback(() => {
     collapseExpanded();
     setActiveSortColumn('util');
-    setUtilSortOrder((o) => (o === 'desc' ? 'asc' : 'desc'));
+    setUtilSortOrder(toggleSortOrder);
     setShowUtilSortMenu(false);
   }, [collapseExpanded]);
 
   const toggleSupplySortOrder = useCallback(() => {
     collapseExpanded();
     setActiveSortColumn('supply');
-    setSupplySortOrder((o) => (o === 'desc' ? 'asc' : 'desc'));
+    setSupplySortOrder(toggleSortOrder);
   }, [collapseExpanded]);
 
   const toggleBorrowSortOrder = useCallback(() => {
     collapseExpanded();
     setActiveSortColumn('borrow');
-    setBorrowSortOrder((o) => (o === 'desc' ? 'asc' : 'desc'));
+    setBorrowSortOrder(toggleSortOrder);
   }, [collapseExpanded]);
 
   const toggleSpreadSortOrder = useCallback(() => {
     collapseExpanded();
     setActiveSortColumn('spread');
-    setSpreadSortOrder((o) => (o === 'desc' ? 'asc' : 'desc'));
+    setSpreadSortOrder(toggleSortOrder);
   }, [collapseExpanded]);
 
   // Mobile sort menu visibility helpers.

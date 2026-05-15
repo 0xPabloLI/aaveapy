@@ -2,11 +2,23 @@
 import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { useReservesTableSort } from './useReservesTableSort';
+import { useReservesTableSort, toggleSortOrder, toggleSortOrderAscFirst } from './useReservesTableSort';
 
 const collapseExpandedNoop = () => {};
 
 describe('useReservesTableSort', () => {
+  describe('toggleSortOrder / toggleSortOrderAscFirst pure functions', () => {
+    it('toggleSortOrder flips desc↔asc', () => {
+      expect(toggleSortOrder('desc')).toBe('asc');
+      expect(toggleSortOrder('asc')).toBe('desc');
+    });
+
+    it('toggleSortOrderAscFirst flips asc↔desc', () => {
+      expect(toggleSortOrderAscFirst('asc')).toBe('desc');
+      expect(toggleSortOrderAscFirst('desc')).toBe('asc');
+    });
+  });
+
   describe('initial defaults', () => {
     it('starts with `supply` as the active column and per-column defaults matching the legacy inline state', () => {
       const { result } = renderHook(() =>
@@ -130,6 +142,126 @@ describe('useReservesTableSort', () => {
       expect(result.current.spreadSortOrder).toBe('asc');
 
       expect(collapseExpanded).toHaveBeenCalledTimes(3);
+    });
+  });
+
+  describe('bidirectional sort-order toggle (regression: asc→desc must work)', () => {
+    it('toggleSupplySortOrder toggles desc→asc→desc', () => {
+      const { result } = renderHook(() =>
+        useReservesTableSort({ collapseExpanded: collapseExpandedNoop }),
+      );
+
+      expect(result.current.supplySortOrder).toBe('desc');
+      act(() => result.current.toggleSupplySortOrder());
+      expect(result.current.supplySortOrder).toBe('asc');
+      act(() => result.current.toggleSupplySortOrder());
+      expect(result.current.supplySortOrder).toBe('desc');
+    });
+
+    it('toggleBorrowSortOrder toggles desc→asc→desc', () => {
+      const { result } = renderHook(() =>
+        useReservesTableSort({ collapseExpanded: collapseExpandedNoop }),
+      );
+
+      expect(result.current.borrowSortOrder).toBe('desc');
+      act(() => result.current.toggleBorrowSortOrder());
+      expect(result.current.borrowSortOrder).toBe('asc');
+      act(() => result.current.toggleBorrowSortOrder());
+      expect(result.current.borrowSortOrder).toBe('desc');
+    });
+
+    it('toggleSpreadSortOrder toggles desc→asc→desc', () => {
+      const { result } = renderHook(() =>
+        useReservesTableSort({ collapseExpanded: collapseExpandedNoop }),
+      );
+
+      expect(result.current.spreadSortOrder).toBe('desc');
+      act(() => result.current.toggleSpreadSortOrder());
+      expect(result.current.spreadSortOrder).toBe('asc');
+      act(() => result.current.toggleSpreadSortOrder());
+      expect(result.current.spreadSortOrder).toBe('desc');
+    });
+
+    it('setSizeSortOrder with toggleSortOrder toggles desc→asc→desc', () => {
+      const { result } = renderHook(() =>
+        useReservesTableSort({ collapseExpanded: collapseExpandedNoop }),
+      );
+
+      expect(result.current.sizeSortOrder).toBe('desc');
+      act(() => result.current.setSizeSortOrder(toggleSortOrder));
+      expect(result.current.sizeSortOrder).toBe('asc');
+      act(() => result.current.setSizeSortOrder(toggleSortOrder));
+      expect(result.current.sizeSortOrder).toBe('desc');
+    });
+
+    it('setUtilSortOrder with toggleSortOrder toggles desc→asc→desc', () => {
+      const { result } = renderHook(() =>
+        useReservesTableSort({ collapseExpanded: collapseExpandedNoop }),
+      );
+
+      expect(result.current.utilSortOrder).toBe('desc');
+      act(() => result.current.setUtilSortOrder(toggleSortOrder));
+      expect(result.current.utilSortOrder).toBe('asc');
+      act(() => result.current.setUtilSortOrder(toggleSortOrder));
+      expect(result.current.utilSortOrder).toBe('desc');
+    });
+
+    it('setSupplySortOrder with toggleSortOrder toggles desc→asc→desc', () => {
+      const { result } = renderHook(() =>
+        useReservesTableSort({ collapseExpanded: collapseExpandedNoop }),
+      );
+
+      act(() => result.current.setSupplySortOrder(toggleSortOrder));
+      expect(result.current.supplySortOrder).toBe('asc');
+      act(() => result.current.setSupplySortOrder(toggleSortOrder));
+      expect(result.current.supplySortOrder).toBe('desc');
+    });
+
+    it('setBorrowSortOrder with toggleSortOrder toggles desc→asc→desc', () => {
+      const { result } = renderHook(() =>
+        useReservesTableSort({ collapseExpanded: collapseExpandedNoop }),
+      );
+
+      act(() => result.current.setBorrowSortOrder(toggleSortOrder));
+      expect(result.current.borrowSortOrder).toBe('asc');
+      act(() => result.current.setBorrowSortOrder(toggleSortOrder));
+      expect(result.current.borrowSortOrder).toBe('desc');
+    });
+
+    it('setTokenSortOrder with toggleSortOrderAscFirst toggles asc→desc→asc', () => {
+      const { result } = renderHook(() =>
+        useReservesTableSort({ collapseExpanded: collapseExpandedNoop }),
+      );
+
+      expect(result.current.tokenSortOrder).toBe('asc');
+      act(() => result.current.setTokenSortOrder(toggleSortOrderAscFirst));
+      expect(result.current.tokenSortOrder).toBe('desc');
+      act(() => result.current.setTokenSortOrder(toggleSortOrderAscFirst));
+      expect(result.current.tokenSortOrder).toBe('asc');
+    });
+
+    it('setMarketSortOrder with toggleSortOrderAscFirst toggles asc→desc→asc', () => {
+      const { result } = renderHook(() =>
+        useReservesTableSort({ collapseExpanded: collapseExpandedNoop }),
+      );
+
+      expect(result.current.marketSortOrder).toBe('asc');
+      act(() => result.current.setMarketSortOrder(toggleSortOrderAscFirst));
+      expect(result.current.marketSortOrder).toBe('desc');
+      act(() => result.current.setMarketSortOrder(toggleSortOrderAscFirst));
+      expect(result.current.marketSortOrder).toBe('asc');
+    });
+
+    it('setPriceSortOrder with toggleSortOrder toggles desc→asc→desc', () => {
+      const { result } = renderHook(() =>
+        useReservesTableSort({ collapseExpanded: collapseExpandedNoop }),
+      );
+
+      expect(result.current.priceSortOrder).toBe('desc');
+      act(() => result.current.setPriceSortOrder(toggleSortOrder));
+      expect(result.current.priceSortOrder).toBe('asc');
+      act(() => result.current.setPriceSortOrder(toggleSortOrder));
+      expect(result.current.priceSortOrder).toBe('desc');
     });
   });
 

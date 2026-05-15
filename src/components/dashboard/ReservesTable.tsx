@@ -33,6 +33,8 @@ import ReservesTableMobileSortBar, {
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
   useReservesTableSort,
+  toggleSortOrder,
+  toggleSortOrderAscFirst,
   type SortMode,
   type SortableColumn,
 } from '@/hooks/reserves-table/useReservesTableSort';
@@ -165,21 +167,29 @@ const ReservesTable = ({
     activeSortColumn,
     setActiveSortColumn,
     tokenSortOrder,
+    setTokenSortOrder,
     marketSortOrder,
+    setMarketSortOrder,
     priceSortOrder,
+    setPriceSortOrder,
     sizeSortMode,
     setSizeSortMode,
     sizeSortOrder,
+    setSizeSortOrder,
     utilSortOrder,
+    setUtilSortOrder,
     utilSortMode,
     setUtilSortMode,
     supplySortMode,
     setSupplySortMode,
     supplySortOrder,
+    setSupplySortOrder,
     borrowSortMode,
     setBorrowSortMode,
     borrowSortOrder,
+    setBorrowSortOrder,
     spreadSortOrder,
+    setSpreadSortOrder,
     showUtilSortMenu,
     setShowUtilSortMenu,
     utilSortButtonRef,
@@ -932,8 +942,8 @@ const ReservesTable = ({
       activeClassName: 'ds-text-emerald-600',
       onSelect: () => {
         const isAlreadySelected = sizeSortMode === 'supply' && activeSortColumn === 'size';
-        if (isAlreadySelected && sizeSortOrder === 'desc') {
-          setSizeSortOrder('asc');
+        if (isAlreadySelected) {
+          setSizeSortOrder(toggleSortOrder);
         } else {
           setSizeSortMode('supply');
           setActiveSortColumn('size');
@@ -950,8 +960,8 @@ const ReservesTable = ({
       activeClassName: 'ds-text-emerald-600',
       onSelect: () => {
         const isAlreadySelected = sizeSortMode === 'supplyAvailability' && activeSortColumn === 'size';
-        if (isAlreadySelected && sizeSortOrder === 'desc') {
-          setSizeSortOrder('asc');
+        if (isAlreadySelected) {
+          setSizeSortOrder(toggleSortOrder);
         } else {
           setSizeSortMode('supplyAvailability');
           setActiveSortColumn('size');
@@ -968,8 +978,8 @@ const ReservesTable = ({
       activeClassName: 'ds-text-brand-cyan',
       onSelect: () => {
         const isAlreadySelected = sizeSortMode === 'borrow' && activeSortColumn === 'size';
-        if (isAlreadySelected && sizeSortOrder === 'desc') {
-          setSizeSortOrder('asc');
+        if (isAlreadySelected) {
+          setSizeSortOrder(toggleSortOrder);
         } else {
           setSizeSortMode('borrow');
           setActiveSortColumn('size');
@@ -986,8 +996,8 @@ const ReservesTable = ({
       activeClassName: 'ds-text-brand-cyan',
       onSelect: () => {
         const isAlreadySelected = sizeSortMode === 'borrowAvailability' && activeSortColumn === 'size';
-        if (isAlreadySelected && sizeSortOrder === 'desc') {
-          setSizeSortOrder('asc');
+        if (isAlreadySelected) {
+          setSizeSortOrder(toggleSortOrder);
         } else {
           setSizeSortMode('borrowAvailability');
           setActiveSortColumn('size');
@@ -1004,8 +1014,8 @@ const ReservesTable = ({
       activeClassName: 'text-foreground',
       onSelect: () => {
         const isAlreadySelected = sizeSortMode === 'deficitAmount' && activeSortColumn === 'size';
-        if (isAlreadySelected && sizeSortOrder === 'desc') {
-          setSizeSortOrder('asc');
+        if (isAlreadySelected) {
+          setSizeSortOrder(toggleSortOrder);
         } else {
           setSizeSortMode('deficitAmount');
           setActiveSortColumn('size');
@@ -1022,8 +1032,8 @@ const ReservesTable = ({
       activeClassName: 'text-foreground',
       onSelect: () => {
         const isAlreadySelected = sizeSortMode === 'deficitRatio' && activeSortColumn === 'size';
-        if (isAlreadySelected && sizeSortOrder === 'desc') {
-          setSizeSortOrder('asc');
+        if (isAlreadySelected) {
+          setSizeSortOrder(toggleSortOrder);
         } else {
           setSizeSortMode('deficitRatio');
           setActiveSortColumn('size');
@@ -1042,8 +1052,8 @@ const ReservesTable = ({
     activeClassName: 'ds-text-emerald-600',
     onSelect: () => {
       const isAlreadySelected = supplySortMode === mode && activeSortColumn === 'supply';
-      if (isAlreadySelected && supplySortOrder === 'desc') {
-        setSupplySortOrder('asc');
+      if (isAlreadySelected) {
+        setSupplySortOrder(toggleSortOrder);
       } else {
         setSupplySortMode(mode);
         setActiveSortColumn('supply');
@@ -1061,8 +1071,8 @@ const ReservesTable = ({
     activeClassName: 'ds-text-brand-cyan',
     onSelect: () => {
       const isAlreadySelected = borrowSortMode === mode && activeSortColumn === 'borrow';
-      if (isAlreadySelected && borrowSortOrder === 'desc') {
-        setBorrowSortOrder('asc');
+      if (isAlreadySelected) {
+        setBorrowSortOrder(toggleSortOrder);
       } else {
         setBorrowSortMode(mode);
         setActiveSortColumn('borrow');
@@ -1081,8 +1091,8 @@ const ReservesTable = ({
       activeClassName: 'text-foreground',
       onSelect: () => {
         collapseExpandedOnSort();
-        if (activeSortColumn === 'util' && utilSortMode === 'util' && utilSortOrder === 'desc') {
-          setUtilSortOrder('asc');
+        if (activeSortColumn === 'util' && utilSortMode === 'util') {
+          setUtilSortOrder(toggleSortOrder);
         } else {
           setUtilSortMode('util');
           setActiveSortColumn('util');
@@ -1099,8 +1109,8 @@ const ReservesTable = ({
       activeClassName: 'ds-text-purple-600',
       onSelect: () => {
         collapseExpandedOnSort();
-        if (activeSortColumn === 'util' && utilSortMode === 'liquidity' && utilSortOrder === 'desc') {
-          setUtilSortOrder('asc');
+        if (activeSortColumn === 'util' && utilSortMode === 'liquidity') {
+          setUtilSortOrder(toggleSortOrder);
         } else {
           setUtilSortMode('liquidity');
           setActiveSortColumn('util');
@@ -1120,8 +1130,8 @@ const ReservesTable = ({
       activeClassName: 'ds-text-purple-600',
       onSelect: () => {
         collapseExpandedOnSort();
-        if (activeSortColumn === 'spread' && spreadSortOrder === 'desc') {
-          setSpreadSortOrder('asc');
+        if (activeSortColumn === 'spread') {
+          setSpreadSortOrder(toggleSortOrder);
         } else {
           setActiveSortColumn('spread');
           setSpreadSortOrder('desc');
@@ -1137,8 +1147,8 @@ const ReservesTable = ({
       activeClassName: 'text-foreground',
       onSelect: () => {
         collapseExpandedOnSort();
-        if (activeSortColumn === 'token' && tokenSortOrder === 'asc') {
-          setTokenSortOrder('desc');
+        if (activeSortColumn === 'token') {
+          setTokenSortOrder(toggleSortOrderAscFirst);
         } else {
           setActiveSortColumn('token');
           setTokenSortOrder('asc');
@@ -1154,8 +1164,8 @@ const ReservesTable = ({
       activeClassName: 'text-foreground',
       onSelect: () => {
         collapseExpandedOnSort();
-        if (activeSortColumn === 'market' && marketSortOrder === 'asc') {
-          setMarketSortOrder('desc');
+        if (activeSortColumn === 'market') {
+          setMarketSortOrder(toggleSortOrderAscFirst);
         } else {
           setActiveSortColumn('market');
           setMarketSortOrder('asc');
@@ -1171,8 +1181,8 @@ const ReservesTable = ({
       activeClassName: 'text-foreground',
       onSelect: () => {
         collapseExpandedOnSort();
-        if (activeSortColumn === 'price' && priceSortOrder === 'desc') {
-          setPriceSortOrder('asc');
+        if (activeSortColumn === 'price') {
+          setPriceSortOrder(toggleSortOrder);
         } else {
           setActiveSortColumn('price');
           setPriceSortOrder('desc');
@@ -1629,7 +1639,7 @@ const ReservesTable = ({
               collapseExpandedOnSort();
               const isAlreadySelected = utilSortMode === 'util' && activeSortColumn === 'util';
               if (isAlreadySelected) {
-                setUtilSortOrder((o) => (o === 'desc' ? 'asc' : 'desc'));
+                setUtilSortOrder(toggleSortOrder);
               } else {
                 setUtilSortMode('util');
                 setActiveSortColumn('util');
@@ -1641,7 +1651,7 @@ const ReservesTable = ({
               collapseExpandedOnSort();
               const isAlreadySelected = utilSortMode === 'liquidity' && activeSortColumn === 'util';
               if (isAlreadySelected) {
-                setUtilSortOrder((o) => (o === 'desc' ? 'asc' : 'desc'));
+                setUtilSortOrder(toggleSortOrder);
               } else {
                 setUtilSortMode('liquidity');
                 setActiveSortColumn('util');
@@ -1663,8 +1673,8 @@ const ReservesTable = ({
             onSelectSizeSortSupply={() => {
               collapseExpandedOnSort();
               const isAlreadySelected = sizeSortMode === 'supply' && activeSortColumn === 'size';
-              if (isAlreadySelected && sizeSortOrder === 'desc') {
-                setSizeSortOrder('asc');
+              if (isAlreadySelected) {
+                setSizeSortOrder(toggleSortOrder);
               } else {
                 setSizeSortMode('supply');
                 setActiveSortColumn('size');
@@ -1675,8 +1685,8 @@ const ReservesTable = ({
             onSelectSizeSortBorrow={() => {
               collapseExpandedOnSort();
               const isAlreadySelected = sizeSortMode === 'borrow' && activeSortColumn === 'size';
-              if (isAlreadySelected && sizeSortOrder === 'desc') {
-                setSizeSortOrder('asc');
+              if (isAlreadySelected) {
+                setSizeSortOrder(toggleSortOrder);
               } else {
                 setSizeSortMode('borrow');
                 setActiveSortColumn('size');
@@ -1687,8 +1697,8 @@ const ReservesTable = ({
             onSelectSizeSortBorrowAvailability={() => {
               collapseExpandedOnSort();
               const isAlreadySelected = sizeSortMode === 'borrowAvailability' && activeSortColumn === 'size';
-              if (isAlreadySelected && sizeSortOrder === 'desc') {
-                setSizeSortOrder('asc');
+              if (isAlreadySelected) {
+                setSizeSortOrder(toggleSortOrder);
               } else {
                 setSizeSortMode('borrowAvailability');
                 setActiveSortColumn('size');
@@ -1699,8 +1709,8 @@ const ReservesTable = ({
             onSelectSizeSortSupplyAvailability={() => {
               collapseExpandedOnSort();
               const isAlreadySelected = sizeSortMode === 'supplyAvailability' && activeSortColumn === 'size';
-              if (isAlreadySelected && sizeSortOrder === 'desc') {
-                setSizeSortOrder('asc');
+              if (isAlreadySelected) {
+                setSizeSortOrder(toggleSortOrder);
               } else {
                 setSizeSortMode('supplyAvailability');
                 setActiveSortColumn('size');
@@ -1711,8 +1721,8 @@ const ReservesTable = ({
             onSelectSizeSortDeficitAmount={() => {
               collapseExpandedOnSort();
               const isAlreadySelected = sizeSortMode === 'deficitAmount' && activeSortColumn === 'size';
-              if (isAlreadySelected && sizeSortOrder === 'desc') {
-                setSizeSortOrder('asc');
+              if (isAlreadySelected) {
+                setSizeSortOrder(toggleSortOrder);
               } else {
                 setSizeSortMode('deficitAmount');
                 setActiveSortColumn('size');
@@ -1723,8 +1733,8 @@ const ReservesTable = ({
             onSelectSizeSortDeficitRatio={() => {
               collapseExpandedOnSort();
               const isAlreadySelected = sizeSortMode === 'deficitRatio' && activeSortColumn === 'size';
-              if (isAlreadySelected && sizeSortOrder === 'desc') {
-                setSizeSortOrder('asc');
+              if (isAlreadySelected) {
+                setSizeSortOrder(toggleSortOrder);
               } else {
                 setSizeSortMode('deficitRatio');
                 setActiveSortColumn('size');
@@ -1737,8 +1747,8 @@ const ReservesTable = ({
             onSelectSupplySortTotal={() => {
               collapseExpandedOnSort();
               const isAlreadySelected = supplySortMode === 'total' && activeSortColumn === 'supply';
-              if (isAlreadySelected && supplySortOrder === 'desc') {
-                setSupplySortOrder('asc');
+              if (isAlreadySelected) {
+                setSupplySortOrder(toggleSortOrder);
               } else {
                 setSupplySortMode('total');
                 setActiveSortColumn('supply');
@@ -1749,8 +1759,8 @@ const ReservesTable = ({
             onSelectSupplySortNative={() => {
               collapseExpandedOnSort();
               const isAlreadySelected = supplySortMode === 'native' && activeSortColumn === 'supply';
-              if (isAlreadySelected && supplySortOrder === 'desc') {
-                setSupplySortOrder('asc');
+              if (isAlreadySelected) {
+                setSupplySortOrder(toggleSortOrder);
               } else {
                 setSupplySortMode('native');
                 setActiveSortColumn('supply');
@@ -1761,8 +1771,8 @@ const ReservesTable = ({
             onSelectSupplySortIncentive={() => {
               collapseExpandedOnSort();
               const isAlreadySelected = supplySortMode === 'incentive' && activeSortColumn === 'supply';
-              if (isAlreadySelected && supplySortOrder === 'desc') {
-                setSupplySortOrder('asc');
+              if (isAlreadySelected) {
+                setSupplySortOrder(toggleSortOrder);
               } else {
                 setSupplySortMode('incentive');
                 setActiveSortColumn('supply');
@@ -1775,8 +1785,8 @@ const ReservesTable = ({
             onSelectBorrowSortTotal={() => {
               collapseExpandedOnSort();
               const isAlreadySelected = borrowSortMode === 'total' && activeSortColumn === 'borrow';
-              if (isAlreadySelected && borrowSortOrder === 'desc') {
-                setBorrowSortOrder('asc');
+              if (isAlreadySelected) {
+                setBorrowSortOrder(toggleSortOrder);
               } else {
                 setBorrowSortMode('total');
                 setActiveSortColumn('borrow');
@@ -1787,8 +1797,8 @@ const ReservesTable = ({
             onSelectBorrowSortNative={() => {
               collapseExpandedOnSort();
               const isAlreadySelected = borrowSortMode === 'native' && activeSortColumn === 'borrow';
-              if (isAlreadySelected && borrowSortOrder === 'desc') {
-                setBorrowSortOrder('asc');
+              if (isAlreadySelected) {
+                setBorrowSortOrder(toggleSortOrder);
               } else {
                 setBorrowSortMode('native');
                 setActiveSortColumn('borrow');
@@ -1799,8 +1809,8 @@ const ReservesTable = ({
             onSelectBorrowSortIncentive={() => {
               collapseExpandedOnSort();
               const isAlreadySelected = borrowSortMode === 'incentive' && activeSortColumn === 'borrow';
-              if (isAlreadySelected && borrowSortOrder === 'desc') {
-                setBorrowSortOrder('asc');
+              if (isAlreadySelected) {
+                setBorrowSortOrder(toggleSortOrder);
               } else {
                 setBorrowSortMode('incentive');
                 setActiveSortColumn('borrow');
