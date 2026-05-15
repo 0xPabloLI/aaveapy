@@ -1684,16 +1684,6 @@ const ReservesTable = ({
               selectSortOption({ isAlreadySelected: supplySortMode === 'incentive' && activeSortColumn === 'supply', setSortOrder: setSupplySortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc', setSortMode: setSupplySortMode, targetMode: 'incentive', setActiveSortColumn, targetColumn: 'supply' });
               setShowSupplySortMenu(false);
             }}
-            onSelectSupplySortNative={() => {
-              collapseExpandedOnSort();
-              selectSortOption({ isAlreadySelected: supplySortMode === 'native' && activeSortColumn === 'supply', setSortOrder: setSupplySortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc', setSortMode: setSupplySortMode, targetMode: 'native', setActiveSortColumn, targetColumn: 'supply' });
-              setShowSupplySortMenu(false);
-            }}
-            onSelectSupplySortIncentive={() => {
-              collapseExpandedOnSort();
-              selectSortOption({ isAlreadySelected: supplySortMode === 'incentive' && activeSortColumn === 'supply', setSortOrder: setSupplySortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc', setSortMode: setSupplySortMode, targetMode: 'incentive', setActiveSortColumn, targetColumn: 'supply' });
-              setShowSupplySortMenu(false);
-            }}
             onToggleBorrowMenu={() => setShowBorrowSortMenu(!showBorrowSortMenu)}
             onCloseBorrowMenu={() => setShowBorrowSortMenu(false)}
             onSelectBorrowSortTotal={() => {
