@@ -100,13 +100,13 @@ describe('buildHubAggregationMap', () => {
         marketName: 'AaveV4Main', reserveId: 'v4:1:usdc:Core',
         chainName: 'Ethereum', chainId: 1,
         tokenName: 'USDC', tokenSymbol: 'USDC', tokenAddress: '0xA0b8',
-        hubId, borrowed: '4000', supplied: '6000', utilizationPct: 40,
+        hubId, borrowed: '4000', supplied: '10000', utilizationPct: 40,
       }),
     ];
     const map = buildHubAggregationMap(reserves);
     const key = getHubAssetKey(reserves[0]);
     const agg = map.get(key!);
-    const calcUtil = (BigInt(agg!.hubBorrowed) * 100n) / (BigInt(agg!.hubSupplied) + BigInt(agg!.hubBorrowed));
+    const calcUtil = (BigInt(agg!.hubBorrowed) * 100n) / BigInt(agg!.hubSupplied);
     expect(Number(calcUtil)).toBeCloseTo(40, 0);
   });
 });
@@ -185,7 +185,7 @@ describe('validateHubAggregateConsistency', () => {
         marketName: 'AaveV4Main', reserveId: 'v4:1:usdc:Core',
         chainName: 'Ethereum', chainId: 1,
         tokenName: 'USDC', tokenSymbol: 'USDC', tokenAddress: '0xA0b8',
-        hubId, borrowed: '4000', supplied: '6000', utilizationPct: 40,
+        hubId, borrowed: '4000', supplied: '10000', utilizationPct: 40,
       }),
     ];
     const map = buildHubAggregationMap(reserves);

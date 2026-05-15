@@ -54,10 +54,9 @@ export function validateHubAggregateConsistency(
 
     const totalBorrowed = BigInt(agg.hubBorrowed);
     const totalSupplied = BigInt(agg.hubSupplied);
-    const denominator = totalSupplied + totalBorrowed;
-    if (denominator === 0n) continue;
+    if (totalSupplied === 0n) continue;
 
-    const calcUtil = Number((totalBorrowed * 100n) / denominator);
+    const calcUtil = Number((totalBorrowed * 100n) / totalSupplied);
     const apiUtil = r.utilizationPct;
     const deltaPct = Math.abs(calcUtil - apiUtil);
 
