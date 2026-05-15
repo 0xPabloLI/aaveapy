@@ -480,6 +480,7 @@ const Index = () => {
 
           {/* FAQ */}
           <FaqSection />
+          </main>
 
           {/* Footer */}
           <footer className="border-t border-border/50 py-[var(--ds-space-8)]">
