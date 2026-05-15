@@ -34,6 +34,47 @@ export function toggleSortOrderAscFirst(order: SortOrder): SortOrder {
   return order === 'asc' ? 'desc' : 'asc';
 }
 
+/**
+ * Unified sort-option selection logic. When the user clicks a sort dropdown
+ * option that is already selected, toggle the sort direction (desc↔asc).
+ * When clicking a different option, switch to it with the default order.
+ *
+ * Before this helper existed, every dropdown option repeated the same
+ * `if (isAlreadySelected) { setOrder(toggle) } else { setMode; setColumn; setOrder(default) }`
+ * pattern — 22+ call sites that all had to stay in sync. A missing toggle
+ * in any one of them caused the "can only sort one direction" regression.
+ */
+export function selectSortOption<M extends string>(params: {
+  isAlreadySelected: boolean;
+  setSortOrder: Dispatch<SetStateAction<SortOrder>>;
+  toggleOrderFn: (o: SortOrder) => SortOrder;
+  defaultOrder: SortOrder;
+  setSortMode?: Dispatch<SetStateAction<M>>;
+  targetMode?: M;
+  setActiveSortColumn: Dispatch<SetStateAction<SortableColumn | null>>;
+  targetColumn: SortableColumn;
+}): void {
+  const {
+    isAlreadySelected,
+    setSortOrder,
+    toggleOrderFn,
+    defaultOrder,
+    setSortMode,
+    targetMode,
+    setActiveSortColumn,
+    targetColumn,
+  } = params;
+  if (isAlreadySelected) {
+    setSortOrder(toggleOrderFn);
+  } else {
+    if (setSortMode && targetMode !== undefined) {
+      setSortMode(targetMode);
+    }
+    setActiveSortColumn(targetColumn);
+    setSortOrder(defaultOrder);
+  }
+}
+
 export type MenuPosition = { top: number; left: number };
 
 interface UseReservesTableSortOptions {

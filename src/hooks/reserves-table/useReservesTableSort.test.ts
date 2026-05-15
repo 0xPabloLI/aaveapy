@@ -2,7 +2,7 @@
 import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { useReservesTableSort, toggleSortOrder, toggleSortOrderAscFirst } from './useReservesTableSort';
+import { useReservesTableSort, toggleSortOrder, toggleSortOrderAscFirst, selectSortOption } from './useReservesTableSort';
 
 const collapseExpandedNoop = () => {};
 
@@ -16,6 +16,49 @@ describe('useReservesTableSort', () => {
     it('toggleSortOrderAscFirst flips asc↔desc', () => {
       expect(toggleSortOrderAscFirst('asc')).toBe('desc');
       expect(toggleSortOrderAscFirst('desc')).toBe('asc');
+    });
+  });
+
+  describe('selectSortOption', () => {
+    it('toggles order when already selected', () => {
+      const setSortOrder = vi.fn();
+      const setSortMode = vi.fn();
+      const setActiveSortColumn = vi.fn();
+      selectSortOption({
+        isAlreadySelected: true,
+        setSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
+        setSortMode, targetMode: 'total',
+        setActiveSortColumn, targetColumn: 'supply',
+      });
+      expect(setSortOrder).toHaveBeenCalledWith(toggleSortOrder);
+      expect(setSortMode).not.toHaveBeenCalled();
+      expect(setActiveSortColumn).not.toHaveBeenCalled();
+    });
+
+    it('sets mode + column + default order when not already selected', () => {
+      const setSortOrder = vi.fn();
+      const setSortMode = vi.fn();
+      const setActiveSortColumn = vi.fn();
+      selectSortOption({
+        isAlreadySelected: false,
+        setSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
+        setSortMode, targetMode: 'native',
+        setActiveSortColumn, targetColumn: 'supply',
+      });
+      expect(setSortOrder).toHaveBeenCalledWith('desc');
+      expect(setSortMode).toHaveBeenCalledWith('native');
+      expect(setActiveSortColumn).toHaveBeenCalledWith('supply');
+    });
+
+    it('works without mode (no-mode columns like spread/price)', () => {
+      const setSortOrder = vi.fn();
+      const setActiveSortColumn = vi.fn();
+      selectSortOption({
+        isAlreadySelected: true,
+        setSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
+        setActiveSortColumn, targetColumn: 'spread',
+      });
+      expect(setSortOrder).toHaveBeenCalledWith(toggleSortOrder);
     });
   });
 

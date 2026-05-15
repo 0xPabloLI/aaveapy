@@ -33,6 +33,7 @@ import ReservesTableMobileSortBar, {
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
   useReservesTableSort,
+  selectSortOption,
   toggleSortOrder,
   toggleSortOrderAscFirst,
   type SortMode,
@@ -71,7 +72,7 @@ interface ReservesTableProps {
   isApy: boolean;
   isLoading?: boolean;
   onSelectMarket?: (marketName: string) => void;
-  onSelectHub?: (hubId: string) => void;
+  onSelectHub?: (hubName: string) => void;
   tydroPointToUsdRate: number;
   whitelistMerklCampaignIds: ReadonlySet<string>;
   onToggleWhitelistMerklCampaign: (campaignId: string, enabled: boolean) => void;
@@ -167,29 +168,21 @@ const ReservesTable = ({
     activeSortColumn,
     setActiveSortColumn,
     tokenSortOrder,
-    setTokenSortOrder,
     marketSortOrder,
-    setMarketSortOrder,
     priceSortOrder,
-    setPriceSortOrder,
     sizeSortMode,
     setSizeSortMode,
     sizeSortOrder,
-    setSizeSortOrder,
     utilSortOrder,
-    setUtilSortOrder,
     utilSortMode,
     setUtilSortMode,
     supplySortMode,
     setSupplySortMode,
     supplySortOrder,
-    setSupplySortOrder,
     borrowSortMode,
     setBorrowSortMode,
     borrowSortOrder,
-    setBorrowSortOrder,
     spreadSortOrder,
-    setSpreadSortOrder,
     showUtilSortMenu,
     setShowUtilSortMenu,
     utilSortButtonRef,
@@ -941,14 +934,12 @@ const ReservesTable = ({
       order: sizeSortOrder,
       activeClassName: 'ds-text-emerald-600',
       onSelect: () => {
-        const isAlreadySelected = sizeSortMode === 'supply' && activeSortColumn === 'size';
-        if (isAlreadySelected) {
-          setSizeSortOrder(toggleSortOrder);
-        } else {
-          setSizeSortMode('supply');
-          setActiveSortColumn('size');
-          setSizeSortOrder('desc');
-        }
+        selectSortOption({
+          isAlreadySelected: sizeSortMode === 'supply' && activeSortColumn === 'size',
+          setSortOrder: setSizeSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
+          setSortMode: setSizeSortMode, targetMode: 'supply',
+          setActiveSortColumn, targetColumn: 'size',
+        });
         closeAllMobileSortMenus();
       },
     },
@@ -959,14 +950,12 @@ const ReservesTable = ({
       order: sizeSortOrder,
       activeClassName: 'ds-text-emerald-600',
       onSelect: () => {
-        const isAlreadySelected = sizeSortMode === 'supplyAvailability' && activeSortColumn === 'size';
-        if (isAlreadySelected) {
-          setSizeSortOrder(toggleSortOrder);
-        } else {
-          setSizeSortMode('supplyAvailability');
-          setActiveSortColumn('size');
-          setSizeSortOrder('desc');
-        }
+        selectSortOption({
+          isAlreadySelected: sizeSortMode === 'supplyAvailability' && activeSortColumn === 'size',
+          setSortOrder: setSizeSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
+          setSortMode: setSizeSortMode, targetMode: 'supplyAvailability',
+          setActiveSortColumn, targetColumn: 'size',
+        });
         closeAllMobileSortMenus();
       },
     },
@@ -977,14 +966,12 @@ const ReservesTable = ({
       order: sizeSortOrder,
       activeClassName: 'ds-text-brand-cyan',
       onSelect: () => {
-        const isAlreadySelected = sizeSortMode === 'borrow' && activeSortColumn === 'size';
-        if (isAlreadySelected) {
-          setSizeSortOrder(toggleSortOrder);
-        } else {
-          setSizeSortMode('borrow');
-          setActiveSortColumn('size');
-          setSizeSortOrder('desc');
-        }
+        selectSortOption({
+          isAlreadySelected: sizeSortMode === 'borrow' && activeSortColumn === 'size',
+          setSortOrder: setSizeSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
+          setSortMode: setSizeSortMode, targetMode: 'borrow',
+          setActiveSortColumn, targetColumn: 'size',
+        });
         closeAllMobileSortMenus();
       },
     },
@@ -995,14 +982,12 @@ const ReservesTable = ({
       order: sizeSortOrder,
       activeClassName: 'ds-text-brand-cyan',
       onSelect: () => {
-        const isAlreadySelected = sizeSortMode === 'borrowAvailability' && activeSortColumn === 'size';
-        if (isAlreadySelected) {
-          setSizeSortOrder(toggleSortOrder);
-        } else {
-          setSizeSortMode('borrowAvailability');
-          setActiveSortColumn('size');
-          setSizeSortOrder('desc');
-        }
+        selectSortOption({
+          isAlreadySelected: sizeSortMode === 'borrowAvailability' && activeSortColumn === 'size',
+          setSortOrder: setSizeSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
+          setSortMode: setSizeSortMode, targetMode: 'borrowAvailability',
+          setActiveSortColumn, targetColumn: 'size',
+        });
         closeAllMobileSortMenus();
       },
     },
@@ -1013,14 +998,12 @@ const ReservesTable = ({
       order: sizeSortOrder,
       activeClassName: 'text-foreground',
       onSelect: () => {
-        const isAlreadySelected = sizeSortMode === 'deficitAmount' && activeSortColumn === 'size';
-        if (isAlreadySelected) {
-          setSizeSortOrder(toggleSortOrder);
-        } else {
-          setSizeSortMode('deficitAmount');
-          setActiveSortColumn('size');
-          setSizeSortOrder('desc');
-        }
+        selectSortOption({
+          isAlreadySelected: sizeSortMode === 'deficitAmount' && activeSortColumn === 'size',
+          setSortOrder: setSizeSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
+          setSortMode: setSizeSortMode, targetMode: 'deficitAmount',
+          setActiveSortColumn, targetColumn: 'size',
+        });
         closeAllMobileSortMenus();
       },
     },
@@ -1031,14 +1014,12 @@ const ReservesTable = ({
       order: sizeSortOrder,
       activeClassName: 'text-foreground',
       onSelect: () => {
-        const isAlreadySelected = sizeSortMode === 'deficitRatio' && activeSortColumn === 'size';
-        if (isAlreadySelected) {
-          setSizeSortOrder(toggleSortOrder);
-        } else {
-          setSizeSortMode('deficitRatio');
-          setActiveSortColumn('size');
-          setSizeSortOrder('desc');
-        }
+        selectSortOption({
+          isAlreadySelected: sizeSortMode === 'deficitRatio' && activeSortColumn === 'size',
+          setSortOrder: setSizeSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
+          setSortMode: setSizeSortMode, targetMode: 'deficitRatio',
+          setActiveSortColumn, targetColumn: 'size',
+        });
         closeAllMobileSortMenus();
       },
     },
@@ -1051,14 +1032,12 @@ const ReservesTable = ({
     order: supplySortOrder,
     activeClassName: 'ds-text-emerald-600',
     onSelect: () => {
-      const isAlreadySelected = supplySortMode === mode && activeSortColumn === 'supply';
-      if (isAlreadySelected) {
-        setSupplySortOrder(toggleSortOrder);
-      } else {
-        setSupplySortMode(mode);
-        setActiveSortColumn('supply');
-        setSupplySortOrder('desc');
-      }
+      selectSortOption({
+        isAlreadySelected: supplySortMode === mode && activeSortColumn === 'supply',
+        setSortOrder: setSupplySortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
+        setSortMode: setSupplySortMode, targetMode: mode,
+        setActiveSortColumn, targetColumn: 'supply',
+      });
       closeAllMobileSortMenus();
     },
   }));
@@ -1070,14 +1049,12 @@ const ReservesTable = ({
     order: borrowSortOrder,
     activeClassName: 'ds-text-brand-cyan',
     onSelect: () => {
-      const isAlreadySelected = borrowSortMode === mode && activeSortColumn === 'borrow';
-      if (isAlreadySelected) {
-        setBorrowSortOrder(toggleSortOrder);
-      } else {
-        setBorrowSortMode(mode);
-        setActiveSortColumn('borrow');
-        setBorrowSortOrder('desc');
-      }
+      selectSortOption({
+        isAlreadySelected: borrowSortMode === mode && activeSortColumn === 'borrow',
+        setSortOrder: setBorrowSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
+        setSortMode: setBorrowSortMode, targetMode: mode,
+        setActiveSortColumn, targetColumn: 'borrow',
+      });
       closeAllMobileSortMenus();
     },
   }));
@@ -1091,13 +1068,12 @@ const ReservesTable = ({
       activeClassName: 'text-foreground',
       onSelect: () => {
         collapseExpandedOnSort();
-        if (activeSortColumn === 'util' && utilSortMode === 'util') {
-          setUtilSortOrder(toggleSortOrder);
-        } else {
-          setUtilSortMode('util');
-          setActiveSortColumn('util');
-          setUtilSortOrder('desc');
-        }
+        selectSortOption({
+          isAlreadySelected: utilSortMode === 'util' && activeSortColumn === 'util',
+          setSortOrder: setUtilSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
+          setSortMode: setUtilSortMode, targetMode: 'util',
+          setActiveSortColumn, targetColumn: 'util',
+        });
         closeAllMobileSortMenus();
       },
     },
@@ -1109,13 +1085,12 @@ const ReservesTable = ({
       activeClassName: 'ds-text-purple-600',
       onSelect: () => {
         collapseExpandedOnSort();
-        if (activeSortColumn === 'util' && utilSortMode === 'liquidity') {
-          setUtilSortOrder(toggleSortOrder);
-        } else {
-          setUtilSortMode('liquidity');
-          setActiveSortColumn('util');
-          setUtilSortOrder('desc');
-        }
+        selectSortOption({
+          isAlreadySelected: utilSortMode === 'liquidity' && activeSortColumn === 'util',
+          setSortOrder: setUtilSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
+          setSortMode: setUtilSortMode, targetMode: 'liquidity',
+          setActiveSortColumn, targetColumn: 'util',
+        });
         closeAllMobileSortMenus();
       },
     },
@@ -1130,12 +1105,11 @@ const ReservesTable = ({
       activeClassName: 'ds-text-purple-600',
       onSelect: () => {
         collapseExpandedOnSort();
-        if (activeSortColumn === 'spread') {
-          setSpreadSortOrder(toggleSortOrder);
-        } else {
-          setActiveSortColumn('spread');
-          setSpreadSortOrder('desc');
-        }
+        selectSortOption({
+          isAlreadySelected: activeSortColumn === 'spread',
+          setSortOrder: setSpreadSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
+          setActiveSortColumn, targetColumn: 'spread',
+        });
         closeAllMobileSortMenus();
       },
     },
@@ -1147,12 +1121,11 @@ const ReservesTable = ({
       activeClassName: 'text-foreground',
       onSelect: () => {
         collapseExpandedOnSort();
-        if (activeSortColumn === 'token') {
-          setTokenSortOrder(toggleSortOrderAscFirst);
-        } else {
-          setActiveSortColumn('token');
-          setTokenSortOrder('asc');
-        }
+        selectSortOption({
+          isAlreadySelected: activeSortColumn === 'token',
+          setSortOrder: setTokenSortOrder, toggleOrderFn: toggleSortOrderAscFirst, defaultOrder: 'asc',
+          setActiveSortColumn, targetColumn: 'token',
+        });
         closeAllMobileSortMenus();
       },
     },
@@ -1164,12 +1137,11 @@ const ReservesTable = ({
       activeClassName: 'text-foreground',
       onSelect: () => {
         collapseExpandedOnSort();
-        if (activeSortColumn === 'market') {
-          setMarketSortOrder(toggleSortOrderAscFirst);
-        } else {
-          setActiveSortColumn('market');
-          setMarketSortOrder('asc');
-        }
+        selectSortOption({
+          isAlreadySelected: activeSortColumn === 'market',
+          setSortOrder: setMarketSortOrder, toggleOrderFn: toggleSortOrderAscFirst, defaultOrder: 'asc',
+          setActiveSortColumn, targetColumn: 'market',
+        });
         closeAllMobileSortMenus();
       },
     },
@@ -1181,12 +1153,11 @@ const ReservesTable = ({
       activeClassName: 'text-foreground',
       onSelect: () => {
         collapseExpandedOnSort();
-        if (activeSortColumn === 'price') {
-          setPriceSortOrder(toggleSortOrder);
-        } else {
-          setActiveSortColumn('price');
-          setPriceSortOrder('desc');
-        }
+        selectSortOption({
+          isAlreadySelected: activeSortColumn === 'price',
+          setSortOrder: setPriceSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
+          setActiveSortColumn, targetColumn: 'price',
+        });
         closeAllMobileSortMenus();
       },
     },
@@ -1637,26 +1608,22 @@ const ReservesTable = ({
             onCloseUtilMenu={() => setShowUtilSortMenu(false)}
             onSelectUtilSortUtil={() => {
               collapseExpandedOnSort();
-              const isAlreadySelected = utilSortMode === 'util' && activeSortColumn === 'util';
-              if (isAlreadySelected) {
-                setUtilSortOrder(toggleSortOrder);
-              } else {
-                setUtilSortMode('util');
-                setActiveSortColumn('util');
-                setUtilSortOrder('desc');
-              }
+              selectSortOption({
+                isAlreadySelected: utilSortMode === 'util' && activeSortColumn === 'util',
+                setSortOrder: setUtilSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
+                setSortMode: setUtilSortMode, targetMode: 'util',
+                setActiveSortColumn, targetColumn: 'util',
+              });
               setShowUtilSortMenu(false);
             }}
             onSelectUtilSortLiquidity={() => {
               collapseExpandedOnSort();
-              const isAlreadySelected = utilSortMode === 'liquidity' && activeSortColumn === 'util';
-              if (isAlreadySelected) {
-                setUtilSortOrder(toggleSortOrder);
-              } else {
-                setUtilSortMode('liquidity');
-                setActiveSortColumn('util');
-                setUtilSortOrder('desc');
-              }
+              selectSortOption({
+                isAlreadySelected: utilSortMode === 'liquidity' && activeSortColumn === 'util',
+                setSortOrder: setUtilSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
+                setSortMode: setUtilSortMode, targetMode: 'liquidity',
+                setActiveSortColumn, targetColumn: 'util',
+              });
               setShowUtilSortMenu(false);
             }}
             onToggleSpreadSort={() => {
@@ -1672,150 +1639,76 @@ const ReservesTable = ({
             onCloseSizeMenu={() => setShowSizeSortMenu(false)}
             onSelectSizeSortSupply={() => {
               collapseExpandedOnSort();
-              const isAlreadySelected = sizeSortMode === 'supply' && activeSortColumn === 'size';
-              if (isAlreadySelected) {
-                setSizeSortOrder(toggleSortOrder);
-              } else {
-                setSizeSortMode('supply');
-                setActiveSortColumn('size');
-                setSizeSortOrder('desc');
-              }
+              selectSortOption({ isAlreadySelected: sizeSortMode === 'supply' && activeSortColumn === 'size', setSortOrder: setSizeSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc', setSortMode: setSizeSortMode, targetMode: 'supply', setActiveSortColumn, targetColumn: 'size' });
               setShowSizeSortMenu(false);
             }}
             onSelectSizeSortBorrow={() => {
               collapseExpandedOnSort();
-              const isAlreadySelected = sizeSortMode === 'borrow' && activeSortColumn === 'size';
-              if (isAlreadySelected) {
-                setSizeSortOrder(toggleSortOrder);
-              } else {
-                setSizeSortMode('borrow');
-                setActiveSortColumn('size');
-                setSizeSortOrder('desc');
-              }
+              selectSortOption({ isAlreadySelected: sizeSortMode === 'borrow' && activeSortColumn === 'size', setSortOrder: setSizeSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc', setSortMode: setSizeSortMode, targetMode: 'borrow', setActiveSortColumn, targetColumn: 'size' });
               setShowSizeSortMenu(false);
             }}
             onSelectSizeSortBorrowAvailability={() => {
               collapseExpandedOnSort();
-              const isAlreadySelected = sizeSortMode === 'borrowAvailability' && activeSortColumn === 'size';
-              if (isAlreadySelected) {
-                setSizeSortOrder(toggleSortOrder);
-              } else {
-                setSizeSortMode('borrowAvailability');
-                setActiveSortColumn('size');
-                setSizeSortOrder('desc');
-              }
+              selectSortOption({ isAlreadySelected: sizeSortMode === 'borrowAvailability' && activeSortColumn === 'size', setSortOrder: setSizeSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc', setSortMode: setSizeSortMode, targetMode: 'borrowAvailability', setActiveSortColumn, targetColumn: 'size' });
               setShowSizeSortMenu(false);
             }}
             onSelectSizeSortSupplyAvailability={() => {
               collapseExpandedOnSort();
-              const isAlreadySelected = sizeSortMode === 'supplyAvailability' && activeSortColumn === 'size';
-              if (isAlreadySelected) {
-                setSizeSortOrder(toggleSortOrder);
-              } else {
-                setSizeSortMode('supplyAvailability');
-                setActiveSortColumn('size');
-                setSizeSortOrder('desc');
-              }
+              selectSortOption({ isAlreadySelected: sizeSortMode === 'supplyAvailability' && activeSortColumn === 'size', setSortOrder: setSizeSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc', setSortMode: setSizeSortMode, targetMode: 'supplyAvailability', setActiveSortColumn, targetColumn: 'size' });
               setShowSizeSortMenu(false);
             }}
             onSelectSizeSortDeficitAmount={() => {
               collapseExpandedOnSort();
-              const isAlreadySelected = sizeSortMode === 'deficitAmount' && activeSortColumn === 'size';
-              if (isAlreadySelected) {
-                setSizeSortOrder(toggleSortOrder);
-              } else {
-                setSizeSortMode('deficitAmount');
-                setActiveSortColumn('size');
-                setSizeSortOrder('desc');
-              }
+              selectSortOption({ isAlreadySelected: sizeSortMode === 'deficitAmount' && activeSortColumn === 'size', setSortOrder: setSizeSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc', setSortMode: setSizeSortMode, targetMode: 'deficitAmount', setActiveSortColumn, targetColumn: 'size' });
               setShowSizeSortMenu(false);
             }}
             onSelectSizeSortDeficitRatio={() => {
               collapseExpandedOnSort();
-              const isAlreadySelected = sizeSortMode === 'deficitRatio' && activeSortColumn === 'size';
-              if (isAlreadySelected) {
-                setSizeSortOrder(toggleSortOrder);
-              } else {
-                setSizeSortMode('deficitRatio');
-                setActiveSortColumn('size');
-                setSizeSortOrder('desc');
-              }
+              selectSortOption({ isAlreadySelected: sizeSortMode === 'deficitRatio' && activeSortColumn === 'size', setSortOrder: setSizeSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc', setSortMode: setSizeSortMode, targetMode: 'deficitRatio', setActiveSortColumn, targetColumn: 'size' });
               setShowSizeSortMenu(false);
             }}
             onToggleSupplyMenu={() => setShowSupplySortMenu(!showSupplySortMenu)}
             onCloseSupplyMenu={() => setShowSupplySortMenu(false)}
             onSelectSupplySortTotal={() => {
               collapseExpandedOnSort();
-              const isAlreadySelected = supplySortMode === 'total' && activeSortColumn === 'supply';
-              if (isAlreadySelected) {
-                setSupplySortOrder(toggleSortOrder);
-              } else {
-                setSupplySortMode('total');
-                setActiveSortColumn('supply');
-                setSupplySortOrder('desc');
-              }
+              selectSortOption({ isAlreadySelected: supplySortMode === 'total' && activeSortColumn === 'supply', setSortOrder: setSupplySortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc', setSortMode: setSupplySortMode, targetMode: 'total', setActiveSortColumn, targetColumn: 'supply' });
               setShowSupplySortMenu(false);
             }}
             onSelectSupplySortNative={() => {
               collapseExpandedOnSort();
-              const isAlreadySelected = supplySortMode === 'native' && activeSortColumn === 'supply';
-              if (isAlreadySelected) {
-                setSupplySortOrder(toggleSortOrder);
-              } else {
-                setSupplySortMode('native');
-                setActiveSortColumn('supply');
-                setSupplySortOrder('desc');
-              }
+              selectSortOption({ isAlreadySelected: supplySortMode === 'native' && activeSortColumn === 'supply', setSortOrder: setSupplySortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc', setSortMode: setSupplySortMode, targetMode: 'native', setActiveSortColumn, targetColumn: 'supply' });
               setShowSupplySortMenu(false);
             }}
             onSelectSupplySortIncentive={() => {
               collapseExpandedOnSort();
-              const isAlreadySelected = supplySortMode === 'incentive' && activeSortColumn === 'supply';
-              if (isAlreadySelected) {
-                setSupplySortOrder(toggleSortOrder);
-              } else {
-                setSupplySortMode('incentive');
-                setActiveSortColumn('supply');
-                setSupplySortOrder('desc');
-              }
+              selectSortOption({ isAlreadySelected: supplySortMode === 'incentive' && activeSortColumn === 'supply', setSortOrder: setSupplySortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc', setSortMode: setSupplySortMode, targetMode: 'incentive', setActiveSortColumn, targetColumn: 'supply' });
+              setShowSupplySortMenu(false);
+            }}
+            onSelectSupplySortNative={() => {
+              collapseExpandedOnSort();
+              selectSortOption({ isAlreadySelected: supplySortMode === 'native' && activeSortColumn === 'supply', setSortOrder: setSupplySortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc', setSortMode: setSupplySortMode, targetMode: 'native', setActiveSortColumn, targetColumn: 'supply' });
+              setShowSupplySortMenu(false);
+            }}
+            onSelectSupplySortIncentive={() => {
+              collapseExpandedOnSort();
+              selectSortOption({ isAlreadySelected: supplySortMode === 'incentive' && activeSortColumn === 'supply', setSortOrder: setSupplySortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc', setSortMode: setSupplySortMode, targetMode: 'incentive', setActiveSortColumn, targetColumn: 'supply' });
               setShowSupplySortMenu(false);
             }}
             onToggleBorrowMenu={() => setShowBorrowSortMenu(!showBorrowSortMenu)}
             onCloseBorrowMenu={() => setShowBorrowSortMenu(false)}
             onSelectBorrowSortTotal={() => {
               collapseExpandedOnSort();
-              const isAlreadySelected = borrowSortMode === 'total' && activeSortColumn === 'borrow';
-              if (isAlreadySelected) {
-                setBorrowSortOrder(toggleSortOrder);
-              } else {
-                setBorrowSortMode('total');
-                setActiveSortColumn('borrow');
-                setBorrowSortOrder('desc');
-              }
+              selectSortOption({ isAlreadySelected: borrowSortMode === 'total' && activeSortColumn === 'borrow', setSortOrder: setBorrowSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc', setSortMode: setBorrowSortMode, targetMode: 'total', setActiveSortColumn, targetColumn: 'borrow' });
               setShowBorrowSortMenu(false);
             }}
             onSelectBorrowSortNative={() => {
               collapseExpandedOnSort();
-              const isAlreadySelected = borrowSortMode === 'native' && activeSortColumn === 'borrow';
-              if (isAlreadySelected) {
-                setBorrowSortOrder(toggleSortOrder);
-              } else {
-                setBorrowSortMode('native');
-                setActiveSortColumn('borrow');
-                setBorrowSortOrder('desc');
-              }
+              selectSortOption({ isAlreadySelected: borrowSortMode === 'native' && activeSortColumn === 'borrow', setSortOrder: setBorrowSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc', setSortMode: setBorrowSortMode, targetMode: 'native', setActiveSortColumn, targetColumn: 'borrow' });
               setShowBorrowSortMenu(false);
             }}
             onSelectBorrowSortIncentive={() => {
               collapseExpandedOnSort();
-              const isAlreadySelected = borrowSortMode === 'incentive' && activeSortColumn === 'borrow';
-              if (isAlreadySelected) {
-                setBorrowSortOrder(toggleSortOrder);
-              } else {
-                setBorrowSortMode('incentive');
-                setActiveSortColumn('borrow');
-                setBorrowSortOrder('desc');
-              }
+              selectSortOption({ isAlreadySelected: borrowSortMode === 'incentive' && activeSortColumn === 'borrow', setSortOrder: setBorrowSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc', setSortMode: setBorrowSortMode, targetMode: 'incentive', setActiveSortColumn, targetColumn: 'borrow' });
               setShowBorrowSortMenu(false);
             }}
           />
