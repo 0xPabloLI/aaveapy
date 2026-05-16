@@ -156,7 +156,7 @@
                                   "type": "string"
                                 },
                                 "message": {
-                                  "$ref": "#/$defs/__schema0"
+                                  "$ref": "#/components/schemas/IncentiveMessage"
                                 },
                                 "startDate": {
                                   "type": "string"
@@ -194,7 +194,7 @@
                                   "type": "string"
                                 },
                                 "message": {
-                                  "$ref": "#/$defs/__schema0"
+                                  "$ref": "#/components/schemas/IncentiveMessage"
                                 },
                                 "startDate": {
                                   "type": "string"
@@ -780,51 +780,7 @@
                   "required": [
                     "snapshot",
                     "reserves"
-                  ],
-                  "$defs": {
-                    "__schema0": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "object",
-                          "propertyNames": {
-                            "type": "string"
-                          },
-                          "additionalProperties": {
-                            "anyOf": [
-                              {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "number"
-                                  },
-                                  {
-                                    "type": "boolean"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
-                                ]
-                              },
-                              {
-                                "$ref": "#/$defs/__schema0"
-                              }
-                            ]
-                          }
-                        },
-                        {
-                          "type": "array",
-                          "items": {
-                            "$ref": "#/$defs/__schema0"
-                          }
-                        }
-                      ]
-                    }
-                  }
+                  ]
                 }
               }
             }
@@ -1012,6 +968,52 @@
             }
           }
         }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "IncentiveMessage": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                {
+                  "$ref": "#/components/schemas/IncentiveMessage"
+                }
+              ]
+            }
+          },
+          {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IncentiveMessage"
+            }
+          }
+        ]
       }
     }
   }

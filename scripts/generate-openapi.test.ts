@@ -57,4 +57,15 @@ describe('generateOpenApiDocument', () => {
     // reserves should be an array type
     expect(reserves?.type === 'array' || reserves?.items).toBeTruthy();
   });
+
+  it('flattens nested $defs into components.schemas', () => {
+    const doc = generateOpenApiDocument();
+
+    const schemas = (doc.components as Record<string, unknown>)?.schemas as Record<string, unknown>;
+    expect(schemas).toBeDefined();
+    expect(schemas?.IncentiveMessage).toBeDefined();
+
+    const docJson = JSON.stringify(doc);
+    expect(docJson).not.toContain('#/$defs/');
+  });
 });
