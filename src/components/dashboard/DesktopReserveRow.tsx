@@ -13,6 +13,7 @@ import { buildPoolExplorerUrl } from '@/lib/poolExplorerLinks';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
 import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
 import { getChainIconSrc } from '@/lib/chainIcons';
+import { isSupplyDisabled, isBorrowDisabled } from '@/lib/reserveStatus';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { IncentiveIcon } from '@/components/IncentiveIcon';
 import {
@@ -164,8 +165,8 @@ const DesktopReserveRow = memo(({
   const protocolVersion = getProtocolVersion(reserve.marketName);
   const isV4Market = protocolVersion === 'v4';
 
-  const supplyBlocked = !!(reserve.isPaused || reserve.isActive === false || reserve.isFrozen || reserve.supplyDisabled);
-  const borrowBlocked = !!(reserve.isPaused || reserve.isActive === false || reserve.isFrozen || reserve.borrowDisabled);
+  const supplyBlocked = isSupplyDisabled(reserve);
+  const borrowBlocked = isBorrowDisabled(reserve);
 
   // Token price from reserve directly (must be positive finite number)
   const displayTokenPrice =
@@ -222,9 +223,10 @@ const DesktopReserveRow = memo(({
           isExpanded && 'bg-muted/30',
           isExpanded &&
             '[&_td]:sticky [&_td]:z-[25] [&_td]:border-b [&_td]:border-border/60 [&_td]:shadow-[0_1px_2px_0_rgb(0_0_0/0.04)] [&_td]:[top:var(--reserves-expanded-main-row-top,5.75rem)]',
-          isExpanded && !reserve.isPaused && !reserve.isFrozen && '[&_td]:bg-card',
+          isExpanded && '[&_td]:bg-card',
           isExpanded && reserve.isPaused && '[&_td]:ds-bg-paused',
-          isExpanded && !reserve.isPaused && reserve.isFrozen && '[&_td]:ds-bg-sky-500-8',
+          isExpanded && reserve.isFrozen && '[&_td]:ds-bg-sky-500-8',
+          (reserve.isPaused || reserve.isFrozen) && 'bg-card',
           reserve.isPaused && 'ds-bg-paused',
           (!reserve.isPaused && reserve.isFrozen) && 'ds-bg-sky-500-8',
         )}
@@ -443,7 +445,7 @@ const DesktopReserveRow = memo(({
                 borrowed={totalBorrowedUsd}
                 cap={computedBorrowCapUsd}
                 availableLiquidityUsd={availableLiquidityUsd}
-                disabled={reserve.borrowDisabled}
+                disabled={borrowBlocked}
                 displayMode={inputMode}
                 tokenPrice={displayTokenPrice}
                 tokenSymbol={reserve.tokenSymbol}
@@ -553,7 +555,7 @@ const DesktopReserveRow = memo(({
         {/* Supply */}
         <TableCell className="ds-reserves-cell-td ds-row-pad whitespace-nowrap text-right">
           <div className="flex flex-col items-end justify-center gap-[var(--ds-space-0-5)] min-h-[2.75rem]">
-            {reserve.supplyDisabled ? (
+            {supplyBlocked ? (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <span className="font-bold text-emerald-500/50 tabular-nums ds-text-14 cursor-auto">
@@ -569,7 +571,7 @@ const DesktopReserveRow = memo(({
             )}
             {displaySupplyIncentive !== null ? (
               <div className="flex items-center gap-[var(--ds-space-0-5)] ds-text-11 justify-end min-h-[1.25rem]">
-                <span className={`tabular-nums font-medium ${reserve.supplyDisabled ? 'text-emerald-500/40' : 'ds-text-emerald-500-70'}`}>
+                <span className={`tabular-nums font-medium ${supplyBlocked ? 'text-emerald-500/40' : 'ds-text-emerald-500-70'}`}>
                   {formatPercent(displaySupplyNative)}
                 </span>
                 <span className="text-muted-foreground/70">+</span>
@@ -577,7 +579,7 @@ const DesktopReserveRow = memo(({
                   type="button"
                   onClick={(e) => onIncentiveClick(e, reserve, 'supply', displaySupplyIncentive)}
                   className={`inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-0-5)] py-[var(--ds-space-0)] rounded-full transition-all duration-150 cursor-pointer tabular-nums ring-1 ${
-                    reserve.supplyDisabled
+                    supplyBlocked
                       ? 'bg-emerald-500/10 text-emerald-500/50 hover:bg-emerald-500/20 ring-emerald-500/20'
                       : 'ds-bg-emerald-500-10 ds-text-emerald-500-70 hover:bg-[rgb(var(--ds-emerald-500-rgb)/0.25)] hover:ring-2 hover:ring-[rgb(var(--ds-emerald-500-rgb)/0.3)] ds-ring-emerald-500-15'
                   }`}
@@ -586,7 +588,7 @@ const DesktopReserveRow = memo(({
                   <IncentiveIcon width={isMobile ? 8 : 10} height={isMobile ? 8 : 10} />
                 </button>
               </div>
-            ) : !reserve.supplyDisabled ? (
+            ) : !supplyBlocked ? (
               <span className="ds-text-10 text-muted-foreground/50">Base {isApy ? 'APY' : 'APR'} only</span>
             ) : null}
           </div>
@@ -604,7 +606,7 @@ const DesktopReserveRow = memo(({
         {/* Borrow */}
         <TableCell className="ds-reserves-cell-td-edge-r ds-row-pad whitespace-nowrap text-right">
           <div className="flex flex-col items-end justify-center gap-[var(--ds-space-0-5)] min-h-[2.75rem]">
-            {reserve.borrowDisabled ? (
+            {borrowBlocked ? (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <span className="font-bold text-cyan-500/50 tabular-nums ds-text-14 cursor-auto">
@@ -622,7 +624,7 @@ const DesktopReserveRow = memo(({
               <div className="flex items-center gap-[var(--ds-space-0-5)] ds-text-11 justify-end min-h-[1.25rem]">
                 {displayBorrowNative !== null && (
                   <>
-                    <span className={`tabular-nums font-medium ${reserve.borrowDisabled ? 'text-cyan-500/40' : 'ds-text-brand-cyan-70'}`}>
+                    <span className={`tabular-nums font-medium ${borrowBlocked ? 'text-cyan-500/40' : 'ds-text-brand-cyan-70'}`}>
                       {formatPercent(displayBorrowNative)}
                     </span>
                     <span className="text-muted-foreground/70">-</span>
@@ -632,7 +634,7 @@ const DesktopReserveRow = memo(({
                   type="button"
                   onClick={(e) => onIncentiveClick(e, reserve, 'borrow', displayBorrowIncentive)}
                   className={`inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-0-5)] py-[var(--ds-space-0)] rounded-full transition-all duration-150 cursor-pointer tabular-nums ring-1 ${
-                    reserve.borrowDisabled
+                    borrowBlocked
                       ? 'bg-cyan-500/10 text-cyan-500/50 hover:bg-cyan-500/20 ring-cyan-500/20'
                       : 'ds-bg-brand-cyan-10 ds-text-brand-cyan-70 hover:bg-[rgb(var(--ds-brand-cyan-rgb)/0.25)] hover:ring-2 hover:ring-[rgb(var(--ds-brand-cyan-rgb)/0.3)] ds-ring-brand-cyan-15'
                   }`}
@@ -641,7 +643,7 @@ const DesktopReserveRow = memo(({
                   <IncentiveIcon width={isMobile ? 8 : 10} height={isMobile ? 8 : 10} />
                 </button>
               </div>
-            ) : !reserve.borrowDisabled ? (
+            ) : !borrowBlocked ? (
               <span className="ds-text-10 text-muted-foreground/50">Base {isApy ? 'APR' : 'APY'} only</span>
             ) : null}
           </div>
