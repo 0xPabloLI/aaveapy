@@ -1,5 +1,5 @@
 import { memo, useEffect, useState } from 'react';
-import { Ban, ListCollapse, PauseCircle, Plus, Snowflake, X } from 'lucide-react';
+import { ListCollapse, PauseCircle, Plus, Snowflake, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ReserveWithSpread } from '@/types/aave';
 import {
@@ -12,7 +12,6 @@ import {
 } from '@/lib/formatters';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { getReserveKey } from '@/lib/reserveKey';
-import { isBorrowDisabled, isSupplyDisabled } from '@/lib/reserveStatus';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { IncentiveIcon } from '@/components/IncentiveIcon';
 import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
@@ -25,8 +24,11 @@ import AssetActionMenu from './AssetActionMenu';
 import DeficitShieldIcon from './DeficitShieldIcon';
 import DeficitLiquidityRing, { DeficitProgressContent } from './DeficitLiquidityRing';
 import {
-  computeDeficitDisplay,
-  type DeficitDisplay,
+  calculateDeficitShareRatio,
+  formatReserveDeficitTokenCompact,
+  getDeficitSeverity,
+  getReserveDeficitUsdAmount,
+  hasReserveDeficit,
 } from '@/lib/deficit';
 import { RateSimulationResult } from '@/hooks/useRateSimulation';
 
@@ -35,7 +37,7 @@ import { buildPoolExplorerUrl } from '@/lib/poolExplorerLinks';
 import { buildAaveProHubUrl } from '@/lib/aaveLinks';
 import { getProtocolVersion } from '@/lib/protocolVersion';
 import { cn } from '@/lib/utils';
-import { StatusContent } from './ReserveStatusBadge';
+import { FrozenStatusContent } from './ReserveStatusBadge';
 import { BATCH_RESERVE_ADD_BUTTON_CLASSES } from './batchTheme';
 
 interface MobileCapSheetProps {
@@ -45,7 +47,9 @@ interface MobileCapSheetProps {
   displayReserveSizeUsd: number | null;
   displayUtilization: number | null;
   optimalPct: number | null;
-  deficitDisplay: DeficitDisplay;
+  hasDeficit: boolean;
+  deficitUsd: number | null | undefined;
+  deficitTokenLabel: string | undefined;
   inputMode: 'usd' | 'token';
   displayTokenPrice: number | null;
   totalBorrowedUsd: number | null;
@@ -59,7 +63,9 @@ function MobileCapSheet({
   displayReserveSizeUsd,
   displayUtilization,
   optimalPct,
-  deficitDisplay,
+  hasDeficit,
+  deficitUsd,
+  deficitTokenLabel,
   inputMode,
   displayTokenPrice,
   totalBorrowedUsd,
@@ -74,7 +80,7 @@ function MobileCapSheet({
     utilization: 'Utilization',
   };
   const title = capSheet === 'frozen'
-    ? `Status: ${[reserve.isFrozen && 'Frozen', reserve.isPaused && 'Paused', reserve.isActive === false && 'Inactive'].filter(Boolean).join(' & ') || 'Frozen'}`
+    ? `Status: ${[reserve.isFrozen && 'Frozen', reserve.isPaused && 'Paused'].filter(Boolean).join(' & ') || 'Frozen'}`
     : CAP_SHEET_TITLE[capSheet] ?? '';
 
   const CAP_SHEET_CONTENT: Record<string, React.ReactNode> = {
@@ -95,17 +101,17 @@ function MobileCapSheet({
         displayMode={inputMode}
         tokenPrice={displayTokenPrice}
         tokenSymbol={reserve.tokenSymbol}
-        disabled={isBorrowDisabled(reserve)}
+        disabled={reserve.borrowDisabled}
       />
     ),
     utilization: optimalPct != null && displayUtilization != null ? (
       <UtilizationContent current={displayUtilization} optimal={optimalPct} />
     ) : null,
-    deficit: deficitDisplay.hasDeficit ? (
+    deficit: hasDeficit ? (
       <DeficitProgressContent
-        deficitUsd={deficitDisplay.deficitUsd!}
+        deficitUsd={deficitUsd!}
         totalSuppliedUsd={displayReserveSizeUsd}
-        tokenDeficitLabel={deficitDisplay.deficitTokenLabel}
+        tokenDeficitLabel={deficitTokenLabel}
         displayMode={inputMode}
         tokenPrice={displayTokenPrice}
         tokenSymbol={reserve.tokenSymbol}
@@ -113,7 +119,7 @@ function MobileCapSheet({
       />
     ) : null,
     frozen: (
-      <StatusContent reserve={reserve} />
+      <FrozenStatusContent isFrozen={reserve.isFrozen} isPaused={reserve.isPaused} />
     ),
   };
 
@@ -304,7 +310,7 @@ function MobileReserveAmountRow({
               borrowed={totalBorrowedUsd}
               cap={computedBorrowCapUsd}
               availableLiquidityUsd={availableLiquidityUsd}
-              disabled={isBorrowDisabled(reserve)}
+              disabled={reserve.borrowDisabled}
               displayMode={inputMode}
               tokenPrice={displayTokenPrice}
               tokenSymbol={reserve.tokenSymbol}
@@ -366,7 +372,7 @@ function MobileReserveHeroApy({
 
   if (activeTab === 'supply') {
     const heroValue = displaySupplyTotal;
-    const isDisabled = isSupplyDisabled(reserve);
+    const isDisabled = reserve.isFrozen || reserve.isPaused || reserve.supplyDisabled;
     const heroColorClass = heroValue === null || isDisabled ? 'text-emerald-500/50' : 'ds-text-emerald-500';
 
     return (
@@ -414,7 +420,7 @@ function MobileReserveHeroApy({
   }
 
   const heroValue = displayBorrowTotal;
-  const isDisabled = isBorrowDisabled(reserve);
+  const isDisabled = reserve.isFrozen || reserve.isPaused || reserve.borrowDisabled;
   const heroColorClass = heroValue === null || isDisabled ? 'text-cyan-500/50' : 'ds-text-brand-cyan';
 
   return (
@@ -502,9 +508,9 @@ const MobileReserveCard = memo(({
 
   // Frozen/paused/disabled gating: keep parity with desktop SimulationSubRow.
   // See docs/design/frontend-interaction-guardrails.md "Reserve simulation gating".
-  const isReserveLocked = Boolean(reserve.isFrozen || reserve.isPaused || reserve.isActive === false);
-  const supplyLocked = isReserveLocked || isSupplyDisabled(reserve);
-  const borrowLocked = isReserveLocked || isBorrowDisabled(reserve);
+  const isReserveLocked = Boolean(reserve.isFrozen || reserve.isPaused);
+  const supplyLocked = isReserveLocked || Boolean(reserve.supplyDisabled);
+  const borrowLocked = isReserveLocked || Boolean(reserve.borrowDisabled);
   const useSupplyAfter = hasSharedScenario && !supplyLocked;
   const useBorrowAfter = hasSharedScenario && !borrowLocked;
   const useSpreadAfter = hasSharedScenario && !supplyLocked && !borrowLocked;
@@ -560,7 +566,7 @@ const MobileReserveCard = memo(({
       : null;
   const protocolVersion = getProtocolVersion(reserve.marketName);
   const displayReserveSizeUsd = (() => {
-    const usd = nativeToUsd(reserve.supplied, reserve.decimals, reserve.tokenPrice);
+    const usd = nativeToUsd(reserve.reserveSize, reserve.decimals, reserve.tokenPrice);
     if (usd == null || !Number.isFinite(usd)) return usd ?? null;
     return getScenarioSupplySizeUsd({
       reserveSizeUsd: usd,
@@ -578,13 +584,16 @@ const MobileReserveCard = memo(({
   const availableLiquidityUsd = useBorrowAfter
     ? simulation?.marketMetrics.availableLiquidityUsdAfter ?? baseAvailableLiquidityUsd
     : baseAvailableLiquidityUsd;
-  const deficitDisplay = computeDeficitDisplay(reserve, displayTokenPrice, displayReserveSizeUsd, inputMode);
-  const {
-    hasDeficit,
+  const hasDeficit = hasReserveDeficit(reserve);
+  const deficitUsd = getReserveDeficitUsdAmount(reserve, displayTokenPrice);
+  const deficitTokenCompact = formatReserveDeficitTokenCompact(reserve);
+  const deficitTokenLabel = deficitTokenCompact !== '-' ? deficitTokenCompact : undefined;
+  const deficitShareRatio = calculateDeficitShareRatio({
     deficitUsd,
-    deficitShareRatio,
-    isNeutralDeficit,
-  } = deficitDisplay;
+    totalSuppliedUsd: displayReserveSizeUsd,
+  });
+  const deficitSeverity = getDeficitSeverity(deficitShareRatio);
+  const isNeutralDeficit = deficitSeverity === 'neutral';
 
   if (variant === 'simulationOnly') {
     return (
@@ -607,10 +616,10 @@ const MobileReserveCard = memo(({
 
   const showUpperOnly = variant === 'upperOnly';
 
-  /** reserve.optimalUtilization 是 percent number（如 45 = 45%），直接显示，无需 RAY 转换。 */
+  /** reserve.optimalUsageRate 是 percent number（如 45 = 45%），直接显示，无需 RAY 转换。 */
   const optimalPct =
-    reserve.optimalUtilization != null && Number(reserve.optimalUtilization) > 0
-      ? Number(reserve.optimalUtilization)
+    reserve.optimalUsageRate != null && Number(reserve.optimalUsageRate) > 0
+      ? Number(reserve.optimalUsageRate)
       : null;
   const reserveId = getReserveKey(reserve);
 
@@ -624,7 +633,7 @@ const MobileReserveCard = memo(({
     <div data-reserve-id={reserveId} className={isSimulationExpanded && !showUpperOnly ? 'shadow-sm rounded-xl border border-border/60 bg-card' : ''}>
       {/* Card upper part */}
       <div
-        className={`bg-card py-3 transition-all duration-300 ${reserve.isPaused || reserve.isActive === false ? 'ds-bg-paused ' : reserve.isFrozen ? 'ds-bg-sky-500-8 ' : ''}${
+        className={`bg-card py-3 transition-all duration-300 ${reserve.isPaused ? 'ds-bg-paused ' : reserve.isFrozen ? 'ds-bg-sky-500-8 ' : ''}${
           isSimulationExpanded && !showUpperOnly
             ? 'rounded-t-xl rounded-b-none'
             : connectedBelow
@@ -635,7 +644,7 @@ const MobileReserveCard = memo(({
         {/* Token header */}
         <div className="flex items-start gap-[var(--ds-space-2)] mb-1.5 min-h-[36px] px-3">
           <div className="flex items-start gap-1 min-w-0 flex-1">
-            {(reserve.isFrozen || reserve.isPaused || reserve.isActive === false) ? (
+            {reserve.isFrozen || reserve.isPaused ? (
               <div className="relative shrink-0">
                 <TokenIcon
                   symbol={iconSymbol}
@@ -646,19 +655,9 @@ const MobileReserveCard = memo(({
                 <button
                   type="button"
                   data-testid="mobile-reserve-status-badge"
-                  data-status={
-                    reserve.isPaused && reserve.isFrozen ? 'paused-frozen'
-                    : reserve.isPaused ? 'paused'
-                    : reserve.isActive === false ? 'inactive'
-                    : 'frozen'
-                  }
+                  data-status={reserve.isPaused ? (reserve.isFrozen ? 'paused-frozen' : 'paused') : 'frozen'}
                   onClick={() => setCapSheet('frozen')}
-                  aria-label={
-                    reserve.isPaused && reserve.isFrozen ? 'Show paused & frozen details'
-                    : reserve.isPaused ? 'Show paused details'
-                    : reserve.isActive === false ? 'Show inactive details'
-                    : 'Show frozen details'
-                  }
+                  aria-label={reserve.isPaused && reserve.isFrozen ? 'Show paused & frozen details' : reserve.isPaused ? 'Show paused details' : 'Show frozen details'}
                   className="absolute -top-2 -left-2 z-10 grid place-items-center h-7 rounded-full bg-transparent"
                   style={{ width: reserve.isFrozen && reserve.isPaused ? '2rem' : '1.75rem' }}
                 >
@@ -673,15 +672,9 @@ const MobileReserveCard = memo(({
                     </span>
                   ) : (
                     <span
-                      className={`inline-flex items-center justify-center w-3.5 h-3.5 rounded-full text-white ${
-                        reserve.isPaused || reserve.isActive === false
-                          ? 'bg-[rgb(var(--ds-paused-rgb))]'
-                          : 'bg-sky-500'
-                      }`}
+                      className={`inline-flex items-center justify-center w-3.5 h-3.5 rounded-full text-white ${reserve.isPaused ? 'bg-[rgb(var(--ds-paused-rgb))]' : 'bg-sky-500'}`}
                     >
-                      {reserve.isPaused ? <PauseCircle className="w-2 h-2" />
-                        : reserve.isActive === false ? <Ban className="w-2 h-2" />
-                        : <Snowflake className="w-2 h-2" />}
+                      {reserve.isPaused ? <PauseCircle className="w-2 h-2" /> : <Snowflake className="w-2 h-2" />}
                     </span>
                   )}
                 </button>
@@ -891,7 +884,9 @@ const MobileReserveCard = memo(({
               displayReserveSizeUsd={displayReserveSizeUsd}
               displayUtilization={displayUtilization}
               optimalPct={optimalPct}
-              deficitDisplay={deficitDisplay}
+              hasDeficit={hasDeficit}
+              deficitUsd={deficitUsd}
+              deficitTokenLabel={deficitTokenLabel}
               inputMode={inputMode}
               displayTokenPrice={displayTokenPrice}
               totalBorrowedUsd={totalBorrowedUsd}

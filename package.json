@@ -36,6 +36,8 @@
     "lint:all": "npm run lint && npm run lint:colors",
     "preflight:release": "node scripts/preflight-release.mjs",
     "preview": "vite preview",
+    "openapi:generate": "node --experimental-strip-types scripts/generate-openapi.ts",
+    "openapi:check": "node --experimental-strip-types scripts/generate-openapi.ts && git diff --exit-code -- public/openapi.json",
     "sync-token-icons": "node scripts/sync-token-icons.mjs",
     "sync:cloudflare-gh-actions-allowlist": "node scripts/sync-cloudflare-gh-actions-allowlist.mjs",
     "sync:reserve-patches-upstream": "node scripts/sync-reserve-patches-upstream.mjs",

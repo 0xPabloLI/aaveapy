@@ -3,7 +3,7 @@ import { ExternalLink, Plus } from 'lucide-react';
 import { TableRow, TableCell } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipCalloutArrow } from '@/components/ui/tooltip';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
-import { ReserveStatusBadge } from './ReserveStatusBadge';
+import { FrozenStatusBadge } from './ReserveStatusBadge';
 import { ReserveWithSpread } from '@/types/aave';
 import { formatPercent, formatScenarioSize, formatSpread, formatUsd, getReserveMarketDisplayName } from '@/lib/formatters';
 import { buildAaveMarketUrl, buildAaveUrl, buildAaveProHubUrl } from '@/lib/aaveLinks';
@@ -13,11 +13,14 @@ import { buildPoolExplorerUrl } from '@/lib/poolExplorerLinks';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
 import { fetchIconSymbolAndName } from '@/ui-config/reservePatches';
 import { getChainIconSrc } from '@/lib/chainIcons';
-import { getPrimaryReserveStatus, isSupplyDisabled, isBorrowDisabled } from '@/lib/reserveStatus';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { IncentiveIcon } from '@/components/IncentiveIcon';
 import {
-  computeDeficitDisplay,
+  calculateDeficitShareRatio,
+  formatReserveDeficitTokenCompact,
+  getDeficitSeverity,
+  getReserveDeficitUsdAmount,
+  hasReserveDeficit,
 } from '@/lib/deficit';
 import DeficitLiquidityRing from './DeficitLiquidityRing';
 import SimulationSubRow from './SimulationSubRow';
@@ -68,7 +71,7 @@ interface DesktopReserveRowProps {
   onToggleExpand: (reserveId: string) => void;
   onSelectMarket?: (marketName: string) => void;
   onMarketChipClick?: (reserveId: string) => void;
-  onSelectHub?: (hubId: string) => void;
+  onSelectHub?: (hubName: string) => void;
   onHubChipClick?: (reserveId: string) => void;
   onIncentiveClick: (e: React.MouseEvent, reserve: ReserveWithSpread, type: 'supply' | 'borrow', apy: number | null) => void;
   displaySupplyTotal: number | null;
@@ -164,16 +167,15 @@ const DesktopReserveRow = memo(({
   const protocolVersion = getProtocolVersion(reserve.marketName);
   const isV4Market = protocolVersion === 'v4';
 
-  const supplyBlocked = isSupplyDisabled(reserve);
-  const borrowBlocked = isBorrowDisabled(reserve);
-  const primaryStatus = getPrimaryReserveStatus(reserve);
+  const supplyBlocked = !!(reserve.isPaused || reserve.isFrozen || reserve.supplyDisabled);
+  const borrowBlocked = !!(reserve.isPaused || reserve.isFrozen || reserve.borrowDisabled);
 
   // Token price from reserve directly (must be positive finite number)
   const displayTokenPrice =
     reserve.tokenPrice != null && Number.isFinite(reserve.tokenPrice) && reserve.tokenPrice > 0
       ? reserve.tokenPrice
       : null;
-  const reserveSizeUsd = nativeToUsd(reserve.supplied, reserve.decimals, reserve.tokenPrice);
+  const reserveSizeUsd = nativeToUsd(reserve.reserveSize, reserve.decimals, reserve.tokenPrice);
   const displayReserveSizeUsd =
     reserveSizeUsd != null && Number.isFinite(reserveSizeUsd)
       ? supplyBlocked
@@ -190,20 +192,31 @@ const DesktopReserveRow = memo(({
   const totalBorrowedUsd = simulation?.marketMetrics.totalBorrowedUsdAfter ?? baseTotalBorrowedUsd;
   const baseAvailableLiquidityUsd = simulation?.marketMetrics.availableLiquidityUsd ?? getDisplayAvailableLiquidityUsd(reserve, protocolVersion);
   const availableLiquidityUsd = simulation?.marketMetrics.availableLiquidityUsdAfter ?? baseAvailableLiquidityUsd;
-  const {
-    hasDeficit,
-    deficitUsd,
-    deficitTokenLabel,
-    deficitInlineValue,
-    deficitShareRatio,
-    isNeutralDeficit,
-    deficitTextClass,
-  } = computeDeficitDisplay(reserve, displayTokenPrice, displayReserveSizeUsd, inputMode);
+  const hasDeficit = hasReserveDeficit(reserve);
+  const deficitUsd = getReserveDeficitUsdAmount(reserve, displayTokenPrice);
+  const deficitTokenCompact = formatReserveDeficitTokenCompact(reserve);
+  const deficitInlineValue = inputMode === 'usd'
+    ? (deficitUsd != null ? formatScenarioSize(deficitUsd, { inputMode: 'usd' }) : '-')
+    : deficitTokenCompact;
+  const deficitTokenLabel = deficitTokenCompact !== '-' ? deficitTokenCompact : undefined;
+  const deficitUsdLabel = deficitUsd != null ? formatUsd(deficitUsd) : '— (token price unavailable)';
 
+  /** reserve.optimalUsageRate 是 percent number（如 45 = 45%），直接显示，无需 RAY 转换。 */
   const optimalPct =
-    reserve.optimalUtilization != null && Number(reserve.optimalUtilization) > 0
-      ? Number(reserve.optimalUtilization)
+    reserve.optimalUsageRate != null && Number(reserve.optimalUsageRate) > 0
+      ? Number(reserve.optimalUsageRate)
       : null;
+  const deficitShareRatio = calculateDeficitShareRatio({
+    deficitUsd,
+    totalSuppliedUsd: displayReserveSizeUsd,
+  });
+  const deficitSeverity = getDeficitSeverity(deficitShareRatio);
+  const isNeutralDeficit = deficitSeverity === 'neutral';
+  const deficitTextClass = deficitSeverity === 'critical'
+    ? 'ds-text-amber-500'
+    : deficitSeverity === 'warning'
+      ? 'ds-text-amber-600'
+      : 'text-muted-foreground/60';
 
   const supplySizeLabel = formatScenarioSize(displayReserveSizeUsd, {
     inputMode,
@@ -231,14 +244,11 @@ const DesktopReserveRow = memo(({
           isExpanded && 'bg-muted/30',
           isExpanded &&
             '[&_td]:sticky [&_td]:z-[25] [&_td]:border-b [&_td]:border-border/60 [&_td]:shadow-[0_1px_2px_0_rgb(0_0_0/0.04)] [&_td]:[top:var(--reserves-expanded-main-row-top,5.75rem)]',
-          isExpanded && '[&_td]:bg-card',
-          isExpanded && primaryStatus === 'paused' && '[&_td]:ds-bg-paused',
-          isExpanded && primaryStatus === 'inactive' && '[&_td]:ds-bg-paused',
-          isExpanded && primaryStatus === 'frozen' && '[&_td]:ds-bg-sky-500-8',
-          (primaryStatus === 'paused' || primaryStatus === 'frozen') && 'bg-card',
-          primaryStatus === 'paused' && 'ds-bg-paused',
-          primaryStatus === 'inactive' && 'ds-bg-paused',
-          primaryStatus === 'frozen' && 'ds-bg-sky-500-8',
+          isExpanded && !reserve.isPaused && !reserve.isFrozen && '[&_td]:bg-card',
+          isExpanded && reserve.isPaused && '[&_td]:ds-bg-paused',
+          isExpanded && !reserve.isPaused && reserve.isFrozen && '[&_td]:ds-bg-sky-500-8',
+          reserve.isPaused && 'ds-bg-paused',
+          (!reserve.isPaused && reserve.isFrozen) && 'ds-bg-sky-500-8',
         )}
         onClick={() => onToggleExpand(reserveId)}
       >
@@ -271,7 +281,7 @@ const DesktopReserveRow = memo(({
           <div className={`group/token flex min-w-0 max-w-full justify-start gap-[var(--ds-space-1-5)] ${isTokenWrapped ? 'items-start' : 'items-center'}`}>
             <TokenIcon symbol={iconSymbol} size={28} loading="eager" logoURI={logoURI} className={`shrink-0 ${isTokenWrapped ? 'mt-0.5' : ''}`} />
             <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-[var(--ds-space-1-5)] gap-y-0">
-              <ReserveStatusBadge reserve={reserve} />
+              <FrozenStatusBadge isFrozen={reserve.isFrozen} isPaused={reserve.isPaused} />
               <span ref={tokenTextRef} className="font-semibold text-foreground ds-text-13 break-words min-w-0 [max-width:max-content]">
                 {reserve.tokenSymbol}
               </span>
@@ -296,14 +306,14 @@ const DesktopReserveRow = memo(({
         <TableCell className="ds-reserves-cell-td ds-row-pad text-center hidden md:table-cell">
           <div className="flex items-center justify-center">
             <div className={marketCellClassNames.stack}>
-              {reserve.hubName && reserve.hubId && (
+              {reserve.hubName && (
                 <div className={marketCellClassNames.hubShell}>
                   <button
                     type="button"
                     onClick={(event) => {
                       event.stopPropagation();
                       onHubChipClick?.(reserveId);
-                      onSelectHub?.(reserve.hubId!);
+                      onSelectHub?.(reserve.hubName!);
                     }}
                     className={cn(
                       marketCellClassNames.chipBase,
@@ -396,7 +406,7 @@ const DesktopReserveRow = memo(({
                             <ExternalLink className="h-3.5 w-3.5 text-muted-foreground/70" />
                             <span>Open on Tydro</span>
                           </span>
-                          <img src="/icons/partners/tydro-logo.png" alt="Tydro" className="h-3.5 w-3.5 rounded-full opacity-80" loading="lazy" />
+                          <img src="/icons/partners/inktoken.svg" alt="Tydro" className="h-3.5 w-3.5 rounded-full opacity-80" loading="lazy" />
                         </a>
                       </div>
                     </PopoverContent>
@@ -455,7 +465,7 @@ const DesktopReserveRow = memo(({
                 borrowed={totalBorrowedUsd}
                 cap={computedBorrowCapUsd}
                 availableLiquidityUsd={availableLiquidityUsd}
-                disabled={isBorrowDisabled(reserve)}
+                disabled={reserve.borrowDisabled}
                 displayMode={inputMode}
                 tokenPrice={displayTokenPrice}
                 tokenSymbol={reserve.tokenSymbol}
@@ -470,23 +480,57 @@ const DesktopReserveRow = memo(({
               </div>
             )}
             {hasDeficit && (
-              <DeficitLiquidityRing
-                deficitUsd={deficitUsd!}
-                totalSuppliedUsd={displayReserveSizeUsd}
-                tokenDeficitLabel={deficitTokenLabel}
-                displayMode={inputMode}
-                tokenPrice={displayTokenPrice}
-                tokenSymbol={reserve.tokenSymbol}
-                label={(
-                  <span className={cn('inline-flex items-center gap-1 ds-text-11 tabular-nums', deficitTextClass)}>
-                    <DeficitShieldIcon ratio={deficitShareRatio} className={cn(isNeutralDeficit && 'opacity-70')} />
-                    <span>{deficitInlineValue}</span>
-                  </span>
-                )}
-                triggerClassName={deficitTextClass}
-                triggerAriaLabel={`Deficit share of total supplied plus deficit for ${reserve.tokenSymbol}`}
-                poolExplorerUrl={poolExplorerUrl}
-              />
+              deficitUsd != null ? (
+                <DeficitLiquidityRing
+                  deficitUsd={deficitUsd}
+                  totalSuppliedUsd={displayReserveSizeUsd}
+                  tokenDeficitLabel={deficitTokenLabel}
+                  displayMode={inputMode}
+                  tokenPrice={displayTokenPrice}
+                  tokenSymbol={reserve.tokenSymbol}
+                  label={(
+                    <span className={cn('inline-flex items-center gap-1 ds-text-11 tabular-nums', deficitTextClass)}>
+                      <DeficitShieldIcon ratio={deficitShareRatio} className={cn(isNeutralDeficit && 'opacity-70')} />
+                      <span>{deficitInlineValue}</span>
+                    </span>
+                  )}
+                  triggerClassName={deficitTextClass}
+                  triggerAriaLabel={`Deficit share of total supplied plus deficit for ${reserve.tokenSymbol}`}
+                  poolExplorerUrl={poolExplorerUrl}
+                />
+              ) : (
+                <Tooltip delayDuration={0}>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={(event) => event.stopPropagation()}
+                      className={cn(
+                        'inline-flex items-center gap-1 ds-text-11 tabular-nums transition-colors',
+                        'rounded-md py-0.5 pl-1 pr-0.5 -my-0.5 hover:bg-muted/50',
+                        deficitTextClass,
+                        isNeutralDeficit ? 'hover:text-muted-foreground/70' : 'hover:text-amber-600',
+                      )}
+                      aria-label={`Deficit details for ${reserve.tokenSymbol}`}
+                    >
+                      <DeficitShieldIcon ratio={deficitShareRatio} />
+                      <span>{deficitInlineValue}</span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" align="center" className="max-w-[18rem]">
+                    <TooltipCalloutArrow />
+                    <div className="space-y-1 ds-text-11">
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-muted-foreground">USD</span>
+                        <span className="tabular-nums">{deficitUsdLabel}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-muted-foreground">Token</span>
+                        <span className="tabular-nums">{deficitInlineValue}</span>
+                      </div>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              )
             )}
           </div>
         </TableCell>
@@ -531,7 +575,7 @@ const DesktopReserveRow = memo(({
         {/* Supply */}
         <TableCell className="ds-reserves-cell-td ds-row-pad whitespace-nowrap text-right">
           <div className="flex flex-col items-end justify-center gap-[var(--ds-space-0-5)] min-h-[2.75rem]">
-            {isSupplyDisabled(reserve) ? (
+            {reserve.supplyDisabled ? (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <span className="font-bold text-emerald-500/50 tabular-nums ds-text-14 cursor-auto">
@@ -547,7 +591,7 @@ const DesktopReserveRow = memo(({
             )}
             {displaySupplyIncentive !== null ? (
               <div className="flex items-center gap-[var(--ds-space-0-5)] ds-text-11 justify-end min-h-[1.25rem]">
-                <span className={`tabular-nums font-medium ${isSupplyDisabled(reserve) ? 'text-emerald-500/40' : 'ds-text-emerald-500-70'}`}>
+                <span className={`tabular-nums font-medium ${reserve.supplyDisabled ? 'text-emerald-500/40' : 'ds-text-emerald-500-70'}`}>
                   {formatPercent(displaySupplyNative)}
                 </span>
                 <span className="text-muted-foreground/70">+</span>
@@ -555,7 +599,7 @@ const DesktopReserveRow = memo(({
                   type="button"
                   onClick={(e) => onIncentiveClick(e, reserve, 'supply', displaySupplyIncentive)}
                   className={`inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-0-5)] py-[var(--ds-space-0)] rounded-full transition-all duration-150 cursor-pointer tabular-nums ring-1 ${
-                    isSupplyDisabled(reserve)
+                    reserve.supplyDisabled
                       ? 'bg-emerald-500/10 text-emerald-500/50 hover:bg-emerald-500/20 ring-emerald-500/20'
                       : 'ds-bg-emerald-500-10 ds-text-emerald-500-70 hover:bg-[rgb(var(--ds-emerald-500-rgb)/0.25)] hover:ring-2 hover:ring-[rgb(var(--ds-emerald-500-rgb)/0.3)] ds-ring-emerald-500-15'
                   }`}
@@ -564,7 +608,7 @@ const DesktopReserveRow = memo(({
                   <IncentiveIcon width={isMobile ? 8 : 10} height={isMobile ? 8 : 10} />
                 </button>
               </div>
-            ) : !isSupplyDisabled(reserve) ? (
+            ) : !reserve.supplyDisabled ? (
               <span className="ds-text-10 text-muted-foreground/50">Base {isApy ? 'APY' : 'APR'} only</span>
             ) : null}
           </div>
@@ -582,7 +626,7 @@ const DesktopReserveRow = memo(({
         {/* Borrow */}
         <TableCell className="ds-reserves-cell-td-edge-r ds-row-pad whitespace-nowrap text-right">
           <div className="flex flex-col items-end justify-center gap-[var(--ds-space-0-5)] min-h-[2.75rem]">
-            {isBorrowDisabled(reserve) ? (
+            {reserve.borrowDisabled ? (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <span className="font-bold text-cyan-500/50 tabular-nums ds-text-14 cursor-auto">
@@ -600,7 +644,7 @@ const DesktopReserveRow = memo(({
               <div className="flex items-center gap-[var(--ds-space-0-5)] ds-text-11 justify-end min-h-[1.25rem]">
                 {displayBorrowNative !== null && (
                   <>
-                    <span className={`tabular-nums font-medium ${isBorrowDisabled(reserve) ? 'text-cyan-500/40' : 'ds-text-brand-cyan-70'}`}>
+                    <span className={`tabular-nums font-medium ${reserve.borrowDisabled ? 'text-cyan-500/40' : 'ds-text-brand-cyan-70'}`}>
                       {formatPercent(displayBorrowNative)}
                     </span>
                     <span className="text-muted-foreground/70">-</span>
@@ -610,7 +654,7 @@ const DesktopReserveRow = memo(({
                   type="button"
                   onClick={(e) => onIncentiveClick(e, reserve, 'borrow', displayBorrowIncentive)}
                   className={`inline-flex items-center gap-[var(--ds-space-0-5)] px-[var(--ds-space-0-5)] py-[var(--ds-space-0)] rounded-full transition-all duration-150 cursor-pointer tabular-nums ring-1 ${
-                    isBorrowDisabled(reserve)
+                    reserve.borrowDisabled
                       ? 'bg-cyan-500/10 text-cyan-500/50 hover:bg-cyan-500/20 ring-cyan-500/20'
                       : 'ds-bg-brand-cyan-10 ds-text-brand-cyan-70 hover:bg-[rgb(var(--ds-brand-cyan-rgb)/0.25)] hover:ring-2 hover:ring-[rgb(var(--ds-brand-cyan-rgb)/0.3)] ds-ring-brand-cyan-15'
                   }`}
@@ -619,7 +663,7 @@ const DesktopReserveRow = memo(({
                   <IncentiveIcon width={isMobile ? 8 : 10} height={isMobile ? 8 : 10} />
                 </button>
               </div>
-            ) : !isBorrowDisabled(reserve) ? (
+            ) : !reserve.borrowDisabled ? (
               <span className="ds-text-10 text-muted-foreground/50">Base {isApy ? 'APR' : 'APY'} only</span>
             ) : null}
           </div>

@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { fileURLToPath } from "node:url";
+import { execSync } from "node:child_process";
 import { componentTagger } from "lovable-tagger";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -27,6 +28,22 @@ function deployShaMetaPlugin() {
   };
 }
 
+function generateOpenApiPlugin() {
+  return {
+    name: "generate-openapi",
+    buildStart() {
+      try {
+        execSync("node --experimental-strip-types scripts/generate-openapi.ts", {
+          cwd: __dirname,
+          stdio: "inherit",
+        });
+      } catch {
+        console.warn("[generate-openapi] Failed to generate openapi.json — skipping");
+      }
+    },
+  };
+}
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   base: '/',
@@ -43,6 +60,7 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
+    generateOpenApiPlugin(),
     deployShaMetaPlugin(),
     mode === "development" && componentTagger(),
   ].filter(Boolean),
