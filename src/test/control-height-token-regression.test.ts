@@ -87,6 +87,29 @@ describe('Phase 2: chip h-7 uses h-[var(--ds-chip-h)]', () => {
   }
 });
 
+// ─── Layout: <main> must own section spacing ────────────────────
+
+describe('Layout: <main> owns content section spacing', () => {
+  const indexSrc = readFile('pages/Index.tsx');
+  const loadingSrc = readFile('components/dashboard/LoadingState.tsx');
+
+  it('Index.tsx: <main> has space-y-3 md:space-y-5', () => {
+    expect(indexSrc).toMatch(/<main[^>]*space-y-3[^>]*md:space-y-5/);
+  });
+
+  it('Index.tsx: parent wrapper does NOT use space-y (spacing delegated to <main>)', () => {
+    const parentDivMatch = indexSrc.match(
+      /relative z-10 w-full[^"]*py-\[var\(--ds-space-5\)\][^"]*"/,
+    );
+    expect(parentDivMatch).toBeTruthy();
+    expect(parentDivMatch![0]).not.toMatch(/space-y-3/);
+  });
+
+  it('LoadingState.tsx: <main> has space-y-3 md:space-y-5', () => {
+    expect(loadingSrc).toMatch(/<main[^>]*space-y-3[^>]*md:space-y-5/);
+  });
+});
+
 // ─── Phase 3 ring tooltip max-width ─────────────────────────────
 
 const PHASE_3_TOOLTIP_FILES = [

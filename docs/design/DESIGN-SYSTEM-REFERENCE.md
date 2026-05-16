@@ -779,7 +779,8 @@ jsdom 单测无法测量真实布局，但可**结构性锁定**三层防护的�
 - **语义色**：琥珀=警告、红=错误、绿=成功/正常，不用于普通数据。
 - **多列**：等宽、统一内边距；表格留足 padding，文字不贴边。
 - **对称**：成对区块（如 Supply / Borrow）在位置与权重上对称。
-- **几何**：若需求给出具体尺寸/间距，按给定实现（如用 `getBoundingClientRect()` 计算），不随意近似。
+ - **几何**：若需求给出具体尺寸/间距，按给定实现（如用 `getBoundingClientRect()` 计算），不随意近似。
+- **页面区间距**：内容区板块间距由 `<main>` 的 `space-y-3 md:space-y-5` 单一管控；父容器只负责 padding；`<Header>` 和 banner 自带 `mb-3 md:mb-5`；`<footer>` 靠 `border-t` 分隔。不要在父容器和 `<main>` 同时使用 `space-y`，避免双重间距系统不同步。
 - **轮廓与圆角拼接**：用 SVG 绘制 1px 边框以衔接 CSS 边框时，坐标必须对齐到半像素（如 `0.5`）以避免抗锯齿模糊或变粗；若需修改局部轮廓（如内侧反向圆角），优先使用 `clip-path` 局部切断底层原生边框，并使用单个包含精确几何指令（如 `A` 画圆弧）的 SVG `path` 一次性绘制连续轮廓，严禁使用“原边框 + 补丁层 + mask 遮罩”的多层叠加拼凑做法。
 - **圆角卡片 + 全宽不透明子层**：子元素（尤其 `position: sticky` + `bg-card`）会按绘制顺序盖住父元素圆角处的 **`border`**，顶角看起来像断线。优先用 **`rounded-2xl` 外层 `p-px bg-border/60` + 内层 `rounded-[calc(1rem-1px)] bg-card`** 的 1px 沟槽描边；**不要**为此对含视口 sticky 的卡片使用 `overflow: hidden`（会改变 sticky 参照）。桌面 `ReservesTable` 卡片即此模式。
 

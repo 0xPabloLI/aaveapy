@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, useRef, startTransition } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import type { SimulationMode } from '@/components/dashboard/PortfolioModeToggle';
 import { usePortfolioSimulation } from '@/hooks/usePortfolioSimulation';
 import { useIsFetching } from '@tanstack/react-query';
@@ -108,6 +109,31 @@ const Index = () => {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const chainParamAppliedRef = useRef(false);
+
+  useEffect(() => {
+    if (chainParamAppliedRef.current) return;
+    const chainParam = searchParams.get('chain');
+    if (!chainParam) return;
+    const chainFilter = chainParam.trim().toLowerCase();
+    if (!chainFilter) return;
+
+    const matchedMarketNames = effectiveMarketsList
+      .filter((m) => m.chainName.toLowerCase().includes(chainFilter))
+      .map((m) => m.marketName);
+
+    if (matchedMarketNames.length > 0) {
+      setSelectedMarkets(matchedMarketNames);
+      setMarketViewMode('chain');
+      chainParamAppliedRef.current = true;
+      setSearchParams((prev) => {
+        prev.delete('chain');
+        return prev;
+      }, { replace: true });
+    }
+  }, [effectiveMarketsList, searchParams, setSearchParams]);
 
   useEffect(() => {
     if (!isUsingCache) {
@@ -303,10 +329,10 @@ const Index = () => {
         <div className="fixed inset-0 bg-gradient-radial from-primary/5 via-transparent to-transparent pointer-events-none" />
         <div className="fixed top-0 right-0 w-1/2 h-1/2 bg-gradient-radial from-secondary/5 via-transparent to-transparent pointer-events-none" />
 
-        <div className="relative z-10 w-full px-[var(--ds-space-3)] md:px-[var(--ds-space-5)] xl:px-[var(--ds-space-8)] 2xl:px-[4.5rem] py-[var(--ds-space-3)] md:py-[var(--ds-space-5)] space-y-3 md:space-y-5">
+        <div className="relative z-10 w-full px-[var(--ds-space-3)] md:px-[var(--ds-space-5)] xl:px-[var(--ds-space-8)] 2xl:px-[4.5rem] py-[var(--ds-space-3)] md:py-[var(--ds-space-5)]">
           {/* Cache warning banner */}
           {showCacheWarning && (
-            <div className="rounded-lg border ds-border-amber-500-50 ds-bg-amber-500-10 p-[var(--ds-space-3)] md:p-[var(--ds-space-4)] flex items-start gap-[var(--ds-space-3)]">
+            <div className="rounded-lg border ds-border-amber-500-50 ds-bg-amber-500-10 p-[var(--ds-space-3)] md:p-[var(--ds-space-4)] flex items-start gap-[var(--ds-space-3)] mb-3 md:mb-5">
               <AlertTriangle className="w-5 h-5 ds-text-amber-600 shrink-0 mt-[var(--ds-space-0-5)]" />
               <div className="flex-1 min-w-0">
                 <p className="ds-text-14 font-medium ds-text-amber-900">
@@ -321,7 +347,7 @@ const Index = () => {
 
           {/* Error banner (only show if no cache available) */}
           {error && !effectiveReservesData && (
-            <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-[var(--ds-space-3)] md:p-[var(--ds-space-4)] flex items-start gap-[var(--ds-space-3)]">
+            <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-[var(--ds-space-3)] md:p-[var(--ds-space-4)] flex items-start gap-[var(--ds-space-3)] mb-3 md:mb-5">
               <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-[var(--ds-space-0-5)]" />
               <div className="flex-1 min-w-0">
                 <p className="ds-text-14 font-medium text-destructive">
@@ -336,7 +362,7 @@ const Index = () => {
 
           {/* No data warning banner (when there's no data, no error, and no cache) */}
           {!effectiveReservesData && !isLoading && !error && (
-            <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-[var(--ds-space-3)] md:p-[var(--ds-space-4)] flex items-start gap-[var(--ds-space-3)]">
+            <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-[var(--ds-space-3)] md:p-[var(--ds-space-4)] flex items-start gap-[var(--ds-space-3)] mb-3 md:mb-5">
               <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-[var(--ds-space-0-5)]" />
               <div className="flex-1 min-w-0">
                 <p className="ds-text-14 font-medium text-destructive">
@@ -350,11 +376,13 @@ const Index = () => {
           )}
 
           {/* Header */}
-          <Header
-            lastUpdated={effectiveReservesData?.snapshot?.lastUpdated}
-          />
+          <div className="mb-3 md:mb-5">
+            <Header
+              lastUpdated={effectiveReservesData?.snapshot?.lastUpdated}
+            />
+          </div>
 
-          <main>
+          <main className="space-y-3 md:space-y-5">
           {/* INK Incentive APR Calculator */}
           <>
             <InkAprCalculator
