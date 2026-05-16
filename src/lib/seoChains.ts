@@ -81,12 +81,12 @@ export const SEO_CHAINS: SeoChainConfig[] = [
     chainNameMatchers: ['polygon'],
     title: 'Polygon Aave APY — Live Rates for POL, USDC & WBTC',
     description:
-      'Compare live Aave lending and borrowing APYs for POL, USDC, WBTC and all Polygon PoS reserves across V2 and V3 markets. Merit incentives included.',
+      'Compare live Aave lending and borrowing APYs for POL, USDC, WBTC and all Polygon PoS reserves. Merit incentives included.',
     intro:
-      'Polygon PoS is one of the longest-running Aave deployments outside Ethereum, serving both V2 and V3 users with deep liquidity for POL, stablecoins (USDC, USDT, DAI), WBTC, and more. Live supply and borrow rates for every reserve, plus Merit incentives to show the full effective APY.',
+      'Polygon PoS is one of the longest-running Aave deployments outside Ethereum, with deep liquidity for POL, stablecoins (USDC, USDT, DAI), WBTC, and more. Live supply and borrow rates for every reserve, plus Merit incentives to show the full effective APY.',
     highlights: [
       'Live supply and borrow APYs for every Polygon reserve',
-      'V2 and V3 markets covered with Merit incentives included',
+      'All markets covered with Merit incentives included',
       'Covers POL, USDC, USDT, DAI, WBTC, ETH, and more',
     ],
   },
@@ -96,12 +96,12 @@ export const SEO_CHAINS: SeoChainConfig[] = [
     chainNameMatchers: ['avalanche'],
     title: 'Avalanche Aave APY — Live Rates for AVAX, USDC & WBTC',
     description:
-      'Live Aave lending and borrowing APYs for AVAX, USDC, WBTC and all C-Chain reserves across V2 and V3 markets. Incentive programs included.',
+      'Live Aave lending and borrowing APYs for AVAX, USDC, WBTC and all C-Chain reserves. Incentive programs included.',
     intro:
-      'Avalanche C-Chain delivers a fast, low-cost Aave experience with active V2 and V3 markets backed by a mature DeFi ecosystem, covering AVAX, stablecoins (USDC, USDT, DAI), WBTC, BTC.b, and more. Live supply and borrow APYs with incentive programs folded into the effective yield.',
+      'Avalanche C-Chain delivers a fast, low-cost Aave experience backed by a mature DeFi ecosystem, covering AVAX, stablecoins (USDC, USDT, DAI), WBTC, BTC.b, and more. Live supply and borrow APYs with incentive programs folded into the effective yield.',
     highlights: [
       'Live C-Chain supply and borrow APYs for every reserve',
-      'V2 and V3 markets with active incentive programs included',
+      'All markets with active incentive programs included',
       'Covers AVAX, USDC, USDT, DAI, WBTC, BTC.b, and more',
     ],
   },
