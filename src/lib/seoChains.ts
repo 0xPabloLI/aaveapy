@@ -244,14 +244,14 @@ export const SEO_CHAINS: SeoChainConfig[] = [
     slug: 'ink',
     displayName: 'Ink',
     chainNameMatchers: ['ink'],
-    title: 'Ink Aave APY — Live Rates with Tydro Points & Merkl',
+    title: 'Ink Aave APY — Live Rates with Ink Airdrop Rewards & Merkl',
     description:
-      'Live Aave lending and borrowing APYs for ETH, USDC, WBTC and all Ink reserves. Tydro point rewards and Merkl incentives factored into effective yield.',
+      'Live Aave lending and borrowing APYs for ETH, USDC, WBTC and all Ink reserves. Ink airdrop rewards and Merkl incentives factored into effective yield.',
     intro:
-      'Ink has a one-of-a-kind Aave incentive setup: Tydro point rewards (with a configurable FDV slider) plus Merkl campaign incentives, covering ETH, stablecoins (USDC, USDT), WBTC, and more. Tune the Tydro FDV assumption and watch your effective APY update in real time—the only tool that models this combo end-to-end.',
+      'Ink has a one-of-a-kind Aave incentive setup: Ink airdrop rewards (Tydro points with a configurable FDV slider) plus Merkl campaign incentives, covering ETH, stablecoins (USDC, USDT), WBTC, and more. Tune the FDV assumption and watch your effective APY update in real time—the only tool that models this combo end-to-end.',
     highlights: [
       'Live supply and borrow APYs for every Ink reserve',
-      'Tydro point rewards with adjustable FDV slider',
+      'Ink airdrop rewards with adjustable FDV slider',
       'Covers ETH, USDC, USDT, WBTC, and more',
     ],
   },
