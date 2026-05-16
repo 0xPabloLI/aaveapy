@@ -21,11 +21,11 @@ export const SEO_CHAINS: SeoChainConfig[] = [
     chainNameMatchers: ['ethereum'],
     title: 'Ethereum Aave APY — Live Rates for ETH, USDC & WBTC',
     description:
-      'Real-time Aave lending and borrowing APYs for ETH, USDC, WBTC, and all Ethereum reserves across Core, Prime, and EtherFi markets. Merit incentives included.',
+      'Real-time Aave lending and borrowing APYs for ETH, USDC, and all Ethereum reserves across Core, Prime, EtherFi & Horizon RWA markets. Merit incentives included.',
     intro:
-      'Ethereum mainnet runs Aave\'s deepest liquidity pools, with three active markets—Core, Prime, and EtherFi—covering ETH and liquid staking derivatives (wstETH, weETH), stablecoins (USDC, USDT, DAI, GHO), BTC proxies (WBTC, cbBTC), and more. This page shows live supply and borrow APYs for every reserve, with Merit program incentives factored into the effective yield so you see exactly what you\'ll earn or pay.',
+      'Ethereum mainnet runs Aave\'s deepest liquidity pools, with four active markets—Core, Prime, EtherFi, and Horizon RWA—covering ETH and liquid staking derivatives (wstETH, weETH), stablecoins (USDC, USDT, DAI, GHO), BTC proxies (WBTC, cbBTC), and more. This page shows live supply and borrow APYs for every reserve, with Merit program incentives factored into the effective yield.',
     highlights: [
-      'Live rates across Core, Prime, and EtherFi markets',
+      'Live rates across Core, Prime, EtherFi, and Horizon RWA markets',
       'Merit incentives included in effective APY for every reserve',
       'Covers ETH, wstETH, weETH, USDC, USDT, DAI, GHO, WBTC, and more',
     ],
@@ -107,7 +107,7 @@ export const SEO_CHAINS: SeoChainConfig[] = [
   },
   {
     slug: 'gnosis',
-    displayName: 'Gnosis',
+    displayName: 'Gnosis Chain',
     chainNameMatchers: ['gnosis'],
     title: 'Gnosis Chain Aave APY — Live Rates for sDAI, GNO & USDC',
     description:
