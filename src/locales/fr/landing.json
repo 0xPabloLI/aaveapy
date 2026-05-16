@@ -1,0 +1,67 @@
+{
+  "meta": {
+    "title": "Aave APY France — Comparez les rendements DeFi en temps réel",
+    "description": "Comparez les taux de dépôt et d'emprunt Aave V3 sur 17 blockchains. Suivez les incentives Merit, Merkl et Brevis en direct. Gratuit, sans wallet.",
+    "ogLocale": "fr_FR"
+  },
+  "hero": {
+    "eyebrow": "Tableau de bord DeFi · France",
+    "title": "Le cours et les meilleurs APY Aave en temps réel",
+    "subtitle": "Comparez les rendements de dépôt et coûts d'emprunt Aave V3 sur 17 blockchains, avec les incentives Merit, Merkl et Brevis déjà intégrés à l'APY effectif.",
+    "cta": "Ouvrir le tableau de bord",
+    "secondaryCta": "Voir toutes les chaînes"
+  },
+  "trustBar": [
+    "17 blockchains",
+    "Mise à jour chaque minute",
+    "Sans wallet, sans inscription"
+  ],
+  "features": [
+    {
+      "title": "Tous les incentives en un seul endroit",
+      "body": "Récompenses Merit, Merkl et Brevis fusionnées dans un APY effectif unique, pour voir le vrai rendement et non le taux affiché."
+    },
+    {
+      "title": "Multichain, une seule vue",
+      "body": "Ethereum, Arbitrum, Base, Polygon, Avalanche et 12 autres chaînes côte à côte."
+    },
+    {
+      "title": "Simulateur d'impact sur le taux",
+      "body": "Entrez votre montant de dépôt ou d'emprunt et voyez comment votre position déplace la courbe avant de signer."
+    },
+    {
+      "title": "Gratuit et en lecture seule",
+      "body": "Aucune connexion wallet, aucun tracking, aucun frais. Uniquement des données on-chain en direct."
+    }
+  ],
+  "faqs": [
+    {
+      "q": "Qu'est-ce qu'Aave et comment fonctionne le rendement ?",
+      "a": "Aave est un protocole DeFi où vous déposez de la crypto pour gagner des intérêts (APY de dépôt) ou empruntez en payant des intérêts (APY d'emprunt). Les taux dépendent de l'utilisation du pool sur chaque chaîne."
+    },
+    {
+      "q": "Comment lire le cours et l'APY Aave sur aaveapy.com ?",
+      "a": "Le tableau de bord affiche pour chaque actif le prix en USD, l'APY de dépôt et d'emprunt, avec et sans incentives. Cliquez sur une ligne pour voir l'analyse technique du pool et le détail des récompenses."
+    },
+    {
+      "q": "Quelle est la meilleure chaîne pour déposer sur Aave aujourd'hui ?",
+      "a": "Cela varie minute par minute. Les stablecoins (USDC, USDT, DAI) sur les L2 (Base, Arbitrum, Optimism) offrent généralement les APY les plus compétitifs grâce aux incentives Merit et Merkl actifs."
+    },
+    {
+      "q": "Comment Merit, Merkl et Brevis affectent mon APY réel ?",
+      "a": "Ce sont des programmes de récompense en token qui s'ajoutent à l'APR de base d'un dépôt ou réduisent le coût d'un emprunt. Nous affichons l'APY effectif (base + incentives) pour des comparaisons honnêtes."
+    },
+    {
+      "q": "Dois-je connecter mon wallet pour utiliser aaveapy.com ?",
+      "a": "Non. L'outil est 100% lecture seule. Vous ne connectez votre wallet que sur l'application officielle Aave, le moment venu de déposer ou d'emprunter."
+    },
+    {
+      "q": "Le service est-il vraiment gratuit ?",
+      "a": "Oui, totalement. Pas d'abonnement, pas de commission. C'est un tableau de bord d'analyse on-chain public, indépendant du protocole Aave."
+    },
+    {
+      "q": "Quelle chaîne a le coût d'emprunt le plus bas sur Aave ?",
+      "a": "Les L2 (Arbitrum, Base, Optimism) offrent généralement le gaz le moins cher et le coût effectif le plus bas, surtout lorsque des incentives Merit sont actifs côté emprunteur. Utilisez le simulateur pour valider avec votre propre montant."
+    }
+  ]
+}
