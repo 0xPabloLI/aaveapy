@@ -72,4 +72,49 @@ describe('generateOpenApiDocument', () => {
     const docJson = JSON.stringify(doc);
     expect(docJson).not.toContain('#/$defs/');
   });
+
+  it('all $ref targets resolve to existing schemas', () => {
+    const doc = generateOpenApiDocument();
+    const schemas = (doc.components as Record<string, unknown>)?.schemas as Record<string, unknown>;
+    const schemaKeys = new Set(Object.keys(schemas ?? {}));
+
+    const refs = new Set<string>();
+    const collectRefs = (node: unknown): void => {
+      if (!node || typeof node !== 'object') return;
+      const record = node as Record<string, unknown>;
+      if (typeof record.$ref === 'string') {
+        refs.add(record.$ref);
+      }
+      for (const value of Object.values(record)) {
+        if (typeof value === 'object' && value !== null) collectRefs(value);
+      }
+    };
+    collectRefs(doc);
+
+    for (const ref of refs) {
+      const m = ref.match(/^#\/components\/schemas\/(.+)$/);
+      if (m) {
+        expect(schemaKeys.has(m[1]),
+          `Unresolved $ref: ${ref} (target '${m[1]}' not in components.schemas)`
+        ).toBe(true);
+      }
+    }
+  });
+
+  it('response bodies use $ref not inline schema', () => {
+    const doc = generateOpenApiDocument();
+
+    const mktsSchema = (doc.paths as Record<string, unknown>)?.['/markets'] as Record<string, unknown>;
+    const sideSchema = (doc.paths as Record<string, unknown>)?.['/meta/side-data'] as Record<string, unknown>;
+
+    const getMkts = (mktsSchema?.get as Record<string, unknown>)?.responses?.['200']
+      ?.content?.['application/json']?.schema as Record<string, unknown>;
+    expect(getMkts?.$ref).toBe('#/components/schemas/MarketsResponse');
+    expect(getMkts?.type).toBeUndefined();
+
+    const getSide = (sideSchema?.get as Record<string, unknown>)?.responses?.['200']
+      ?.content?.['application/json']?.schema as Record<string, unknown>;
+    expect(getSide?.$ref).toBe('#/components/schemas/SideDataMetaResponse');
+    expect(getSide?.type).toBeUndefined();
+  });
 });
