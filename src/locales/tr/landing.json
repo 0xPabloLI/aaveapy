@@ -1,0 +1,67 @@
+{
+  "meta": {
+    "title": "Aave APY Türkiye — DeFi getirilerini canlı karşılaştır",
+    "description": "Aave V3 mevduat ve borçlanma faizlerini 17 zincirde karşılaştırın. Merit, Merkl ve Brevis teşviklerini canlı izleyin. Ücretsiz, cüzdan gerektirmez.",
+    "ogLocale": "tr_TR"
+  },
+  "hero": {
+    "eyebrow": "DeFi Paneli · Türkiye",
+    "title": "Aave coin için canlı APY ve fiyat paneli",
+    "subtitle": "17 blok zincirinde Aave V3 mevduat getirilerini ve borçlanma maliyetlerini karşılaştırın. Merit, Merkl ve Brevis teşvikleri efektif APY'ye dahil edilmiştir.",
+    "cta": "Canlı paneli aç",
+    "secondaryCta": "Tüm zincirleri gör"
+  },
+  "trustBar": [
+    "17 blok zinciri",
+    "Her dakika güncellenir",
+    "Cüzdansız, kayıtsız"
+  ],
+  "features": [
+    {
+      "title": "Tüm teşvikler tek yerde",
+      "body": "Merit, Merkl ve Brevis ödülleri tek bir efektif APY'de birleştirilir; vitrin oranını değil gerçek getiriyi görürsünüz."
+    },
+    {
+      "title": "Çoklu zincir, tek görünüm",
+      "body": "Ethereum, Arbitrum, Base, Polygon, Avalanche ve 12 zincir daha yan yana."
+    },
+    {
+      "title": "Faiz etki simülatörü",
+      "body": "Yatırmak veya borç almak istediğiniz miktarı girin; imzalamadan önce pozisyonunuzun eğriyi nasıl etkilediğini görün."
+    },
+    {
+      "title": "Ücretsiz ve salt okunur",
+      "body": "Cüzdan bağlantısı yok, izleme yok, ücret yok. Sadece canlı on-chain veri."
+    }
+  ],
+  "faqs": [
+    {
+      "q": "Aave nedir ve getiri nasıl çalışır?",
+      "a": "Aave, kripto yatırarak faiz kazanabileceğiniz (mevduat APY) veya faiz ödeyerek borç alabileceğiniz (borçlanma APY) bir DeFi protokolüdür. Oranlar her zincirdeki havuz kullanım oranıyla belirlenir."
+    },
+    {
+      "q": "Aave coin fiyatı ve APY'sini nasıl yorumlamalıyım?",
+      "a": "Panel her varlık için USD fiyatını, mevduat ve borçlanma APY'lerini (teşvikli ve teşviksiz) gösterir. Bir satıra tıklayarak havuzun teknik analizini ve ödül detaylarını görebilirsiniz."
+    },
+    {
+      "q": "Aave geleceği için en iyi zincir hangisi?",
+      "a": "Anlık olarak değişir. Genelde L2'lerdeki (Base, Arbitrum, Optimism) stablecoin'ler (USDC, USDT) en rekabetçi APY'leri sunar; Merit ve Merkl teşvikleri aktifken farkı daha da açar."
+    },
+    {
+      "q": "USDT için Aave'de en iyi mevduat fırsatı hangisi?",
+      "a": "Üst Fırsatlar bölümünde USDT'yi filtreleyebilirsiniz. Teşvikli efektif APY'ye göre sıraladığımız için gerçek getiriyi tek bakışta görürsünüz."
+    },
+    {
+      "q": "aaveapy.com'u kullanmak için cüzdan bağlamalı mıyım?",
+      "a": "Hayır. Panel %100 salt okunurdur. Cüzdanınızı yalnızca depozito yatırmak veya borç almak istediğinizde resmi Aave uygulamasında bağlarsınız."
+    },
+    {
+      "q": "Ücretsiz mi? Verilerim toplanıyor mu?",
+      "a": "Tamamen ücretsiz. Cüzdan bağlamadığınız için hiçbir kişisel veri toplanmaz. Sadece anonim sayfa analitiği vardır."
+    },
+    {
+      "q": "Aave coin yorumu için hangi göstergelere bakmalıyım?",
+      "a": "Havuz kullanımı (utilization), toplam mevduat, borçlanma talebi ve aktif teşvik kampanyaları — hepsi panelde görünür. Bu dört metrik Aave için temel piyasa sağlığını anlatır."
+    }
+  ]
+}
