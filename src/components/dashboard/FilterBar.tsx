@@ -455,7 +455,7 @@ const FilterBar = ({
                 return (
                   <Fragment key={group.chainName}>
                     <div
-                      className={`ds-chip flex items-center rounded-md font-medium transition-colors overflow-hidden ${chipStyle}`}
+                      className={`ds-chip ds-text-11 flex items-center rounded-md font-medium transition-colors overflow-hidden ${chipStyle}`}
                     >
                       <button
                         onClick={() => handleChainLabelClick(group)}
@@ -527,7 +527,7 @@ const FilterBar = ({
                               custom={index}
                               transition={{ layout: { duration: 0.22, ease: [0.22, 1, 0.36, 1] } }}
                               onClick={() => toggleSubMarket(market.marketName)}
-                              className={`ds-chip gap-0.5 px-1 md:px-1.5 py-0.5 rounded-md font-medium whitespace-nowrap overflow-hidden transition-colors hover:scale-105 active:scale-95 ${
+                              className={`ds-chip ds-text-11 gap-0.5 px-1 md:px-1.5 py-0.5 rounded-md font-medium whitespace-nowrap overflow-hidden transition-colors hover:scale-105 active:scale-95 ${
                                 isSubSelected
                                   ? 'bg-card text-foreground shadow-sm border border-[rgb(var(--ds-brand-magenta-rgb))]'
                                   : 'bg-card/50 text-muted-foreground border border-border/40 hover:text-foreground hover:bg-card/80'
@@ -554,7 +554,7 @@ const FilterBar = ({
                 <button
                   key={group.chainName}
                   onClick={() => handleOtherChainClick(group)}
-                  className={`ds-chip gap-0.5 px-1 md:px-1.5 py-0.5 rounded-md font-medium transition-colors ${
+                  className={`ds-chip ds-text-11 gap-0.5 px-1 md:px-1.5 py-0.5 rounded-md font-medium transition-colors ${
                     selected
                       ? 'bg-card text-foreground shadow-sm border border-[rgb(var(--ds-brand-magenta-rgb))]'
                       : 'bg-card/50 text-muted-foreground border border-border/40 hover:text-foreground hover:bg-card/80'

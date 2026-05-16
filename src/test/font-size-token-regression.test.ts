@@ -92,6 +92,27 @@ describe('No !ds-text-N anti-pattern anywhere', () => {
   }
 });
 
+// ─── .ds-chip: line-height must NOT use !important ──────────────────
+
+describe('.ds-chip: no line-height !important regression', () => {
+  const cssSrc = readFile('index.css');
+
+  it('.ds-chip must not use line-height: 1 !important (use line-height: 1 instead)', () => {
+    // !important forces line-height on all descendants, breaking ds-text-N token line-height
+    expect(cssSrc).not.toMatch(/\.ds-chip\s*\{[^}]*line-height:\s*1\s*!important/);
+  });
+});
+
+// ─── filter-chip.tsx: must include ds-text-11 for correct line-height ──
+
+describe('filter-chip: ds-text-11 present for line-height', () => {
+  const src = readFile('components/ui/filter-chip.tsx');
+
+  it('filter-chip must include ds-text-11 (provides line-height via token)', () => {
+    expect(src).toMatch(/ds-text-11/);
+  });
+});
+
 // ─── index.css: allowed to contain text-[Npx] in design token definitions ──
 
 describe('index.css: design token definitions are exempt', () => {
