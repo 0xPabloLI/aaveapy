@@ -60,6 +60,9 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/chain/:slug" element={<ChainPage />} />
+              <Route path="/pt-br" element={<LandingPT />} />
+              <Route path="/fr" element={<LandingFR />} />
+              <Route path="/tr" element={<LandingTR />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
