@@ -21,12 +21,12 @@ export const SEO_CHAINS: SeoChainConfig[] = [
     chainNameMatchers: ['ethereum'],
     title: 'Ethereum Aave APY — Live Rates for ETH, USDC & WBTC',
     description:
-      'Real-time Aave lending and borrowing APYs for ETH, USDC, and all Ethereum reserves across Core, Prime, EtherFi & Horizon RWA markets. Merit incentives included.',
+      'Real-time Aave lending and borrowing APYs for ETH, USDC, and all Ethereum V3 & V4 markets. All incentive programs included.',
     intro:
-      'Ethereum mainnet runs Aave\'s deepest liquidity pools, with four active markets—Core, Prime, EtherFi, and Horizon RWA—covering ETH and liquid staking derivatives (wstETH, weETH), stablecoins (USDC, USDT, DAI, GHO), BTC proxies (WBTC, cbBTC), and more. This page shows live supply and borrow APYs for every reserve, with Merit program incentives factored into the effective yield.',
+      'Ethereum mainnet runs Aave\'s deepest liquidity pools: four V3 markets (Core, Prime, EtherFi, Horizon RWA) plus Aave V4 Hub & Spoke. Covers ETH, liquid staking derivatives (wstETH, weETH), stablecoins (USDC, USDT, DAI, GHO), BTC proxies (WBTC, cbBTC), and more. This page shows live supply and borrow APYs for every reserve, with all incentive programs factored into the effective yield.',
     highlights: [
-      'Live rates across Core, Prime, EtherFi, and Horizon RWA markets',
-      'Merit incentives included in effective APY for every reserve',
+      'Live rates across V3 markets (Core, Prime, EtherFi, Horizon RWA) and V4 Hub & Spoke',
+      'All active incentive programs included in effective APY',
       'Covers ETH, wstETH, weETH, USDC, USDT, DAI, GHO, WBTC, and more',
     ],
   },
@@ -36,12 +36,12 @@ export const SEO_CHAINS: SeoChainConfig[] = [
     chainNameMatchers: ['arbitrum'],
     title: 'Arbitrum Aave APY — Live Rates for ETH, USDC & ARB',
     description:
-      'Live Aave lending and borrowing APYs for ETH, USDC, ARB, WBTC and all Arbitrum One reserves. Merit and Merkl incentives factored into effective yield.',
+      'Live Aave lending and borrowing APYs for ETH, USDC, ARB, WBTC and all Arbitrum One reserves. All active incentives factored into effective yield.',
     intro:
-      'Arbitrum One hosts one of Aave\'s most active deployments, with deep liquidity for ETH, stablecoins (USDC, USDT, DAI), WBTC, and ARB across a broad range of reserves. This page shows real-time supply and borrow APYs with both Merit and Merkl rewards baked into the effective yield—no manual math needed to compare the real cost or return of any position.',
+      'Arbitrum One hosts one of Aave\'s most active deployments, with deep liquidity for ETH, stablecoins (USDC, USDT, DAI), WBTC, and ARB across a broad range of reserves. This page shows real-time supply and borrow APYs with all active rewards baked into the effective yield—no manual math needed to compare the real cost or return of any position.',
     highlights: [
       'Real-time supply and borrow APYs for every Arbitrum reserve',
-      'Merit and Merkl incentives combined into effective yield',
+      'All active incentives combined into effective yield',
       'Covers ETH, USDC, USDT, DAI, WBTC, ARB, and more',
     ],
   },
@@ -51,12 +51,12 @@ export const SEO_CHAINS: SeoChainConfig[] = [
     chainNameMatchers: ['base'],
     title: 'Base Aave APY — Live Rates for ETH, USDC & cbETH',
     description:
-      'Track live Aave lending and borrowing APYs for ETH, USDC, cbETH and all Base reserves. Merit and Merkl incentives included in effective yield.',
+      'Track live Aave lending and borrowing APYs for ETH, USDC, cbETH and all Base reserves. All active incentives included in effective yield.',
     intro:
-      'Base has become one of Aave\'s busiest deployments, fueled by native USDC liquidity and Coinbase\'s growing onchain user base. Key reserves include ETH, cbETH, USDC, USDT, DAI, and WBTC. See live supply and borrow APYs with Merit and Merkl incentives layered into the effective yield for every position.',
+      'Base has become one of Aave\'s busiest deployments, fueled by native USDC liquidity and Coinbase\'s growing onchain user base. Key reserves include ETH, cbETH, USDC, USDT, DAI, and WBTC. See live supply and borrow APYs with all active incentives layered into the effective yield for every position.',
     highlights: [
       'Live supply and borrow APYs for every Base reserve',
-      'Merit and Merkl rewards baked into effective yield',
+      'All active rewards baked into effective yield',
       'Covers ETH, cbETH, USDC, USDT, DAI, WBTC, and more',
     ],
   },
@@ -66,12 +66,12 @@ export const SEO_CHAINS: SeoChainConfig[] = [
     chainNameMatchers: ['optimism'],
     title: 'Optimism Aave APY — Live Rates for ETH, USDC & OP',
     description:
-      'Compare live Aave lending and borrowing APYs for ETH, USDC, OP, WBTC and all Optimism reserves. Merit incentives factored into effective yield.',
+      'Compare live Aave lending and borrowing APYs for ETH, USDC, OP, WBTC and all Optimism reserves. All active incentives factored into effective yield.',
     intro:
-      'Optimism, the OP Stack pioneer, runs a mature Aave deployment with solid liquidity for ETH, stablecoins (USDC, USDT, DAI), WBTC, and OP. Real-time supply and borrow APYs for every reserve, plus Merit incentives folded in so you can spot the highest-yielding opportunities on OP Mainnet.',
+      'Optimism, the OP Stack pioneer, runs a mature Aave deployment with solid liquidity for ETH, stablecoins (USDC, USDT, DAI), WBTC, and OP. Real-time supply and borrow APYs for every reserve, plus all active incentives folded in so you can spot the highest-yielding opportunities on OP Mainnet.',
     highlights: [
       'Live supply and borrow APYs for every Optimism reserve',
-      'Merit incentives included in effective yield',
+      'All active incentives included in effective yield',
       'Covers ETH, USDC, USDT, DAI, WBTC, OP, and more',
     ],
   },
@@ -81,12 +81,12 @@ export const SEO_CHAINS: SeoChainConfig[] = [
     chainNameMatchers: ['polygon'],
     title: 'Polygon Aave APY — Live Rates for POL, USDC & WBTC',
     description:
-      'Compare live Aave lending and borrowing APYs for POL, USDC, WBTC and all Polygon PoS reserves. Merit incentives included.',
+      'Compare live Aave lending and borrowing APYs for POL, USDC, WBTC and all Polygon PoS reserves. All active incentives included.',
     intro:
-      'Polygon PoS is one of the longest-running Aave deployments outside Ethereum, with deep liquidity for POL, stablecoins (USDC, USDT, DAI), WBTC, and more. Live supply and borrow rates for every reserve, plus Merit incentives to show the full effective APY.',
+      'Polygon PoS is one of the longest-running Aave deployments outside Ethereum, with deep liquidity for POL, stablecoins (USDC, USDT, DAI), WBTC, and more. Live supply and borrow rates for every reserve, plus active incentive programs to show the full effective APY.',
     highlights: [
       'Live supply and borrow APYs for every Polygon reserve',
-      'All markets covered with Merit incentives included',
+      'All markets covered with active incentives included',
       'Covers POL, USDC, USDT, DAI, WBTC, ETH, and more',
     ],
   },
@@ -124,14 +124,14 @@ export const SEO_CHAINS: SeoChainConfig[] = [
     slug: 'scroll',
     displayName: 'Scroll',
     chainNameMatchers: ['scroll'],
-    title: 'Scroll Aave APY — Live Rates for ETH, USDC & WBTC',
+    title: 'Scroll Aave APY — Live zkEVM Rates for ETH & USDC',
     description:
-      'Live Aave lending and borrowing APYs on Scroll zkEVM. Covers ETH, USDC, WBTC and all reserves. Merit incentives factored into effective yield.',
+      'Live Aave lending and borrowing APYs on Scroll zkEVM. Covers ETH, USDC, WBTC and all reserves. All active incentives factored into effective yield.',
     intro:
-      'Scroll, a zkEVM Layer 2 with a growing DeFi footprint, runs a dedicated Aave deployment with Merit incentives covering ETH, stablecoins (USDC, USDT), WBTC, and more. Live supply and borrow APYs for every reserve, with Merit factored into the effective yield.',
+      'Scroll, a zkEVM Layer 2 with a growing DeFi footprint, runs a dedicated Aave deployment covering ETH, stablecoins (USDC, USDT), WBTC, and more. Live supply and borrow APYs for every reserve, with all active incentives factored into the effective yield.',
     highlights: [
       'Live supply and borrow APYs for every Scroll reserve',
-      'Merit incentives factored into effective yield',
+      'All active incentives factored into effective yield',
       'Covers ETH, USDC, USDT, WBTC, and more',
     ],
   },
@@ -169,14 +169,14 @@ export const SEO_CHAINS: SeoChainConfig[] = [
     slug: 'linea',
     displayName: 'Linea',
     chainNameMatchers: ['linea'],
-    title: 'Linea Aave APY — Live Rates for ETH, USDC & WBTC',
+    title: 'Linea Aave APY — Consensys zkEVM Rates for ETH & USDC',
     description:
-      'Compare live Aave lending and borrowing APYs for ETH, USDC, WBTC and all Linea zkEVM reserves. Merit incentives factored into effective yield.',
+      'Compare live Aave lending and borrowing APYs for ETH, USDC, WBTC and all Linea zkEVM reserves. All active incentives factored into effective yield.',
     intro:
-      'Linea, Consensys\' zkEVM L2, hosts an active Aave deployment with growing liquidity for ETH, stablecoins (USDC, USDT, DAI), WBTC, and more, plus Merit incentives across all reserves. Live supply and borrow APYs with Merit folded into the effective yield for every position.',
+      'Linea, Consensys\' zkEVM L2, hosts an active Aave deployment with growing liquidity for ETH, stablecoins (USDC, USDT, DAI), WBTC, and more. Live supply and borrow APYs with all active incentives folded into the effective yield for every position.',
     highlights: [
       'Live supply and borrow APYs for every Linea reserve',
-      'Merit incentives factored into effective yield',
+      'All active incentives factored into effective yield',
       'Covers ETH, USDC, USDT, DAI, WBTC, and more',
     ],
   },
@@ -184,7 +184,7 @@ export const SEO_CHAINS: SeoChainConfig[] = [
     slug: 'zksync',
     displayName: 'zkSync Era',
     chainNameMatchers: ['zksync'],
-    title: 'zkSync Era Aave APY — Live Rates for ETH, USDC & WBTC',
+    title: 'zkSync Era Aave APY — ZK Rollup Rates for ETH & USDC',
     description:
       'Live Aave lending and borrowing APYs for ETH, USDC, WBTC and all zkSync Era reserves. All active incentives factored into effective yield.',
     intro:
@@ -214,7 +214,7 @@ export const SEO_CHAINS: SeoChainConfig[] = [
     slug: 'sonic',
     displayName: 'Sonic',
     chainNameMatchers: ['sonic'],
-    title: 'Sonic Aave APY — Live Rates for ETH, USDC & WBTC',
+    title: 'Sonic Aave APY — High-Speed Rates for ETH & USDC',
     description:
       'Live Aave lending and borrowing APYs for ETH, USDC, WBTC and all Sonic reserves. All active incentives factored into effective yield.',
     intro:
@@ -229,7 +229,7 @@ export const SEO_CHAINS: SeoChainConfig[] = [
     slug: 'soneium',
     displayName: 'Soneium',
     chainNameMatchers: ['soneium'],
-    title: 'Soneium Aave APY — Live Rates for ETH, USDC & WBTC',
+    title: 'Soneium Aave APY — Sony L2 Rates for ETH & USDC',
     description:
       'Compare live Aave lending and borrowing APYs for ETH, USDC, WBTC and all Soneium reserves. All active incentives factored into effective yield.',
     intro:
@@ -244,11 +244,11 @@ export const SEO_CHAINS: SeoChainConfig[] = [
     slug: 'ink',
     displayName: 'Ink',
     chainNameMatchers: ['ink'],
-    title: 'Ink Aave APY — Live Rates with Ink Airdrop Rewards & Merkl',
+    title: 'Ink Aave APY — Live Rates with Ink Airdrop Rewards',
     description:
-      'Live Aave lending and borrowing APYs for ETH, USDC, WBTC and all Ink reserves. Ink airdrop rewards and Merkl incentives factored into effective yield.',
+      'Live Aave lending and borrowing APYs for ETH, USDC, WBTC and all Ink reserves. Ink airdrop rewards and active incentives factored into effective yield.',
     intro:
-      'Ink has a one-of-a-kind Aave incentive setup: Ink airdrop rewards (Tydro points with a configurable FDV slider) plus Merkl campaign incentives, covering ETH, stablecoins (USDC, USDT), WBTC, and more. Tune the FDV assumption and watch your effective APY update in real time—the only tool that models this combo end-to-end.',
+      'Ink has a one-of-a-kind Aave incentive setup: Ink airdrop rewards (Tydro points with a configurable FDV slider) plus active campaign incentives, covering ETH, stablecoins (USDC, USDT), WBTC, and more. Tune the FDV assumption and watch your effective APY update in real time—the only tool that models this combo end-to-end.',
     highlights: [
       'Live supply and borrow APYs for every Ink reserve',
       'Ink airdrop rewards with adjustable FDV slider',
