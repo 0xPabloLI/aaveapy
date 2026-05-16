@@ -64,7 +64,8 @@
     "probe:live-api": "node scripts/probe-live-api.mjs",
     "check:campaign-apr-reconcile": "node scripts/reconcile-campaign-apr.mjs",
     "ci:lockcheck": "npm ci",
-    "check:react-singleton": "node scripts/check-react-singleton.mjs"
+    "check:react-singleton": "node scripts/check-react-singleton.mjs",
+    "prepare": "husky"
   },
   "dependencies": {
     "@aave-dao/aave-address-book": "^4.38.0",
@@ -155,6 +156,7 @@
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.4.0",
     "happy-dom": "^20.9.0",
+    "husky": "^9.1.7",
     "lovable-tagger": "^1.1.13",
     "picomatch": "^4.0.4",
     "postcss": "^8.5.6",

@@ -24,11 +24,8 @@ import AssetActionMenu from './AssetActionMenu';
 import DeficitShieldIcon from './DeficitShieldIcon';
 import DeficitLiquidityRing, { DeficitProgressContent } from './DeficitLiquidityRing';
 import {
-  calculateDeficitShareRatio,
-  formatReserveDeficitTokenCompact,
-  getDeficitSeverity,
-  getReserveDeficitUsdAmount,
-  hasReserveDeficit,
+  computeDeficitDisplay,
+  type DeficitDisplay,
 } from '@/lib/deficit';
 import { RateSimulationResult } from '@/hooks/useRateSimulation';
 
@@ -119,7 +116,7 @@ function MobileCapSheet({
       />
     ) : null,
     frozen: (
-      <FrozenStatusContent isFrozen={reserve.isFrozen} isPaused={reserve.isPaused} />
+      <FrozenStatusContent reserve={reserve} />
     ),
   };
 
@@ -372,7 +369,7 @@ function MobileReserveHeroApy({
 
   if (activeTab === 'supply') {
     const heroValue = displaySupplyTotal;
-    const isDisabled = reserve.isFrozen || reserve.isPaused || reserve.supplyDisabled;
+    const isDisabled = reserve.isFrozen || reserve.isPaused || reserve.isActive === false || reserve.supplyDisabled;
     const heroColorClass = heroValue === null || isDisabled ? 'text-emerald-500/50' : 'ds-text-emerald-500';
 
     return (
@@ -584,16 +581,7 @@ const MobileReserveCard = memo(({
   const availableLiquidityUsd = useBorrowAfter
     ? simulation?.marketMetrics.availableLiquidityUsdAfter ?? baseAvailableLiquidityUsd
     : baseAvailableLiquidityUsd;
-  const hasDeficit = hasReserveDeficit(reserve);
-  const deficitUsd = getReserveDeficitUsdAmount(reserve, displayTokenPrice);
-  const deficitTokenCompact = formatReserveDeficitTokenCompact(reserve);
-  const deficitTokenLabel = deficitTokenCompact !== '-' ? deficitTokenCompact : undefined;
-  const deficitShareRatio = calculateDeficitShareRatio({
-    deficitUsd,
-    totalSuppliedUsd: displayReserveSizeUsd,
-  });
-  const deficitSeverity = getDeficitSeverity(deficitShareRatio);
-  const isNeutralDeficit = deficitSeverity === 'neutral';
+  const deficitDisplay: DeficitDisplay = computeDeficitDisplay(reserve, displayTokenPrice, displayReserveSizeUsd, inputMode);
 
   if (variant === 'simulationOnly') {
     return (
@@ -734,7 +722,7 @@ const MobileReserveCard = memo(({
                   <img src={chainIconSrc} alt={reserve.chainName} className="w-3 h-3 shrink-0 opacity-80" />
                 )}
                 <span className="min-w-0 flex-1 truncate">{getReserveMarketDisplayName(reserve)}</span>
-                {reserve.hubName && (() => {
+                {reserve.hubName && reserve.hubId && (() => {
                   const aaveProHubUrl = buildAaveProHubUrl(reserve);
                   const isV4 = protocolVersion === 'v4';
                   const hubClass = cn(
@@ -813,7 +801,7 @@ const MobileReserveCard = memo(({
               transition={{ duration: 0.18, ease: [0.25, 0.1, 0.25, 1] }}
               className="relative mt-0.5"
             >
-              {activeTab === 'supply' && hasDeficit && (
+              {activeTab === 'supply' && deficitDisplay.hasDeficit && (
                 <div
                   className="absolute -top-1.5 right-4 z-10 cursor-pointer"
                   role="button"
@@ -823,12 +811,12 @@ const MobileReserveCard = memo(({
                   aria-label={`Deficit details for ${reserve.tokenSymbol}`}
                 >
                   <DeficitLiquidityRing
-                    deficitUsd={deficitUsd!}
+                    deficitUsd={deficitDisplay.deficitUsd!}
                     totalSuppliedUsd={displayReserveSizeUsd}
                     displayMode={inputMode}
                     ringSize={11}
                     strokeWidth={1.5}
-                    label={<DeficitShieldIcon ratio={deficitShareRatio} className={cn('h-2.5 w-2.5', isNeutralDeficit && 'opacity-70')} />}
+                    label={<DeficitShieldIcon ratio={deficitDisplay.deficitShareRatio} className={cn('h-2.5 w-2.5', deficitDisplay.isNeutralDeficit && 'opacity-70')} />}
                     disableTooltip
                   />
                 </div>
@@ -883,9 +871,9 @@ const MobileReserveCard = memo(({
               displayReserveSizeUsd={displayReserveSizeUsd}
               displayUtilization={displayUtilization}
               optimalPct={optimalPct}
-              hasDeficit={hasDeficit}
-              deficitUsd={deficitUsd}
-              deficitTokenLabel={deficitTokenLabel}
+              hasDeficit={deficitDisplay.hasDeficit}
+              deficitUsd={deficitDisplay.deficitUsd}
+              deficitTokenLabel={deficitDisplay.deficitTokenLabel}
               inputMode={inputMode}
               displayTokenPrice={displayTokenPrice}
               totalBorrowedUsd={totalBorrowedUsd}

@@ -68,7 +68,7 @@ interface ReservesTableProps {
   isApy: boolean;
   isLoading?: boolean;
   onSelectMarket?: (marketName: string) => void;
-  onSelectHub?: (hubName: string) => void;
+  onSelectHub?: (hubId: string) => void;
   tydroPointToUsdRate: number;
   whitelistMerklCampaignIds: ReadonlySet<string>;
   onToggleWhitelistMerklCampaign: (campaignId: string, enabled: boolean) => void;

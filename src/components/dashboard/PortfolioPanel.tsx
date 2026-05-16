@@ -96,7 +96,7 @@ function SearchResultRow({
         )}
         <span className="truncate">{marketLabel}</span>
       </span>
-      {reserve.hubName && (
+      {reserve.hubName && reserve.hubId && (
         <>
           <span aria-hidden className="h-3 w-px bg-border/60 shrink-0" />
           <span

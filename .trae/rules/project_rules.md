@@ -49,6 +49,28 @@ npx tsc --noEmit    # TypeScript type-checking — catches missing imports and t
 - For targeted changes, you may run a subset first for quick feedback, but the full sequence MUST pass before declaring done
 - If `ci:remote` is available and relevant, run it as the final gate
 
+### Pre-Commit Hook (安全网)
+
+项目已配置 Husky pre-commit hook（`.husky/pre-commit`），每次 `git commit` 前自动运行：
+
+```bash
+npx tsc --noEmit --pretty  # TypeScript 类型检查
+npm run lint                # ESLint
+npm test                    # Vitest 单元测试
+```
+
+**任何一步失败都会阻止 commit。** 不要用 `--no-verify` 跳过——跳过意味着你引入了本可被 tsc 拦截的错误。
+
+### Field-Name Canary Test (字段名金丝雀测试)
+
+`src/types/field-canary.test.ts` 穷举了前端所有依赖的 `ReserveWithSpread` 字段，并用 `nativeToUsd`、`getReserveTotalBorrowedUsd` 等 canonical helper 验证值正确性。
+
+**如果字段被重命名为不存在的名字：**
+1. `npx tsc --noEmit` 编译失败 → pre-commit hook 阻止 commit
+2. `npm test` 失败 → canary 测试不通过
+
+两个防线同时生效，确保 `reserveSize` → `supplied` 这类回归不再发生。
+
 ### High-Risk Areas (Extra Care Required)
 
 For changes in these areas, also follow the relevant checklists after validation passes:
