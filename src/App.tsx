@@ -12,11 +12,15 @@ import { fetchMarkets } from "@/hooks/useAaveMarkets";
 import { fetchSideDataMeta, SIDE_DATA_META_QUERY_KEY } from "@/hooks/useSideDataMeta";
 import { QUERY_STALE_TIMES } from "@/config/queryStaleTimes";
 import { clearLegacyCacheEntries } from "@/lib/cache";
+import "@/i18n";
 
 // Lazy load route components
 const Index = lazy(() => import("./pages/Index"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const ChainPage = lazy(() => import("./pages/ChainPage"));
+const LandingPT = lazy(() => import("./pages/LandingPT"));
+const LandingFR = lazy(() => import("./pages/LandingFR"));
+const LandingTR = lazy(() => import("./pages/LandingTR"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
