@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
 
 import { SEO_CHAINS, getSeoChainBySlug } from './seoChains';
 
@@ -79,6 +81,34 @@ describe('SEO_CHAINS', () => {
     it('matches case-insensitively', () => {
       expect(getSeoChainBySlug('ETHEREUM')?.displayName).toBe('Ethereum');
       expect(getSeoChainBySlug('Arbitrum')?.displayName).toBe('Arbitrum');
+    });
+  });
+
+  describe('URL catalog consistency', () => {
+    const canonicalSlugs = new Set(SEO_CHAINS.map((c) => c.slug));
+
+    describe('sitemap.xml', () => {
+      it('lists all chain slugs correctly', () => {
+        const sitemapPath = resolve(__dirname, '../../public/sitemap.xml');
+        const xml = readFileSync(sitemapPath, 'utf-8');
+        const sitemapSlugs = Array.from(
+          xml.matchAll(/\/chain\/([^<]+)<\/loc>/g),
+          (m) => m[1],
+        );
+        expect(new Set(sitemapSlugs)).toEqual(canonicalSlugs);
+      });
+    });
+
+    describe('llms.txt', () => {
+      it('lists all chain slugs correctly', () => {
+        const llmsTxtPath = resolve(__dirname, '../../public/llms.txt');
+        const txt = readFileSync(llmsTxtPath, 'utf-8');
+        const llmsSlugs = Array.from(
+          txt.matchAll(/\]\(\/chain\/([^)]+)\)/g),
+          (m) => m[1],
+        );
+        expect(new Set(llmsSlugs)).toEqual(canonicalSlugs);
+      });
     });
   });
 });

@@ -19,7 +19,7 @@ Aave APY aggregates live reserve data from the Aave protocol (v3 and v4) and ove
 - [Gnosis](/chain/gnosis): Aave APY analytics for Gnosis Chain markets.
 - [Scroll](/chain/scroll): Aave APY analytics for Scroll markets.
 - [Metis](/chain/metis): Aave APY analytics for Metis markets.
-- [BNB Chain](/chain/bnb): Aave APY analytics for BNB Chain markets.
+- [BNB Chain](/chain/bnb-chain): Aave APY analytics for BNB Chain markets.
 - [Linea](/chain/linea): Aave APY analytics for Linea markets.
 - [zkSync](/chain/zksync): Aave APY analytics for zkSync Era markets.
 - [Celo](/chain/celo): Aave APY analytics for Celo markets.
