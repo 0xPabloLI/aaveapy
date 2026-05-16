@@ -4,6 +4,12 @@ import { fileURLToPath } from 'node:url';
 import {
   MarketsResponseSchema,
   SideDataMetaResponseSchema,
+  ReserveWithSpreadSchema,
+  MeritIncentiveSchema,
+  MerklCampaignBreakdownSchema,
+  MerklOpportunityGroupSchema,
+  BrevisCampaignBreakdownSchema,
+  BrevisIncentiveSchema,
 } from '../src/lib/apiSchemas.ts';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -12,17 +18,18 @@ const __dirname = dirname(__filename);
 const PUBLIC_DIR = resolve(__dirname, '..', 'public');
 const OUTPUT_FILE = resolve(PUBLIC_DIR, 'openapi.json');
 
-function flattenSchemaDefs(doc: Record<string, unknown>): Record<string, unknown> {
-  const defSchemas = new Map<string, unknown>();
+function extractNestedDefsInPlace(schemas: Record<string, unknown>): void {
+  const defs = new Map<string, unknown>();
   const keyToName = new Map<string, string>();
 
-  const collect = (obj: unknown): void => {
-    if (!obj || typeof obj !== 'object') return;
-    const record = obj as Record<string, unknown>;
+  const collect = (node: unknown): void => {
+    if (!node || typeof node !== 'object') return;
+    const record = node as Record<string, unknown>;
     if (record.$defs && typeof record.$defs === 'object') {
       for (const [key] of Object.entries(record.$defs as Record<string, unknown>)) {
-        const name = `IncentiveMessage${defSchemas.size > 0 ? '_' + defSchemas.size : ''}`;
-        defSchemas.set(name, (record.$defs as Record<string, unknown>)[key]);
+        if (keyToName.has(key)) continue;
+        const name = `IncentiveMessage${defs.size > 0 ? '_' + defs.size : ''}`;
+        defs.set(name, (record.$defs as Record<string, unknown>)[key]);
         keyToName.set(key, name);
       }
     }
@@ -31,15 +38,13 @@ function flattenSchemaDefs(doc: Record<string, unknown>): Record<string, unknown
     }
   };
 
-  collect(doc.paths);
+  collect(schemas);
 
-  if (defSchemas.size === 0) return doc;
+  if (defs.size === 0) return;
 
-  const cloned = JSON.parse(JSON.stringify(doc)) as Record<string, unknown>;
-
-  const fix = (obj: unknown): void => {
-    if (!obj || typeof obj !== 'object') return;
-    const record = obj as Record<string, unknown>;
+  const fix = (node: unknown): void => {
+    if (!node || typeof node !== 'object') return;
+    const record = node as Record<string, unknown>;
     if (typeof record.$ref === 'string') {
       const m = record.$ref.match(/^#\/\$defs\/(.+)$/);
       if (m && keyToName.has(m[1])) {
@@ -52,19 +57,29 @@ function flattenSchemaDefs(doc: Record<string, unknown>): Record<string, unknown
     delete record.$defs;
   };
 
-  fix(cloned);
-
-  if (!cloned.components) cloned.components = {};
-  const schemas: Record<string, unknown> = {};
-  for (const [k, v] of defSchemas) schemas[k] = v;
-  (cloned.components as Record<string, unknown>).schemas = schemas;
   fix(schemas);
 
-  return cloned;
+  const extracted: Record<string, unknown> = {};
+  for (const [k, v] of defs) extracted[k] = v;
+  fix(extracted);
+  Object.assign(schemas, extracted);
 }
 
 export function generateOpenApiDocument(): Record<string, unknown> {
-  const doc = {
+  const schemas: Record<string, unknown> = {
+    MarketsResponse: MarketsResponseSchema.toJSONSchema({ io: 'input' }),
+    SideDataMetaResponse: SideDataMetaResponseSchema.toJSONSchema({ io: 'input' }),
+    Reserve: ReserveWithSpreadSchema.toJSONSchema({ io: 'input' }),
+    MeritIncentive: MeritIncentiveSchema.toJSONSchema({ io: 'input' }),
+    MerklCampaignBreakdown: MerklCampaignBreakdownSchema.toJSONSchema({ io: 'input' }),
+    MerklOpportunityGroup: MerklOpportunityGroupSchema.toJSONSchema({ io: 'input' }),
+    BrevisCampaignBreakdown: BrevisCampaignBreakdownSchema.toJSONSchema({ io: 'input' }),
+    BrevisIncentive: BrevisIncentiveSchema.toJSONSchema({ io: 'input' }),
+  };
+
+  extractNestedDefsInPlace(schemas);
+
+  return {
     openapi: '3.1.0',
     info: {
       title: 'AaveAPY API',
@@ -85,7 +100,7 @@ export function generateOpenApiDocument(): Record<string, unknown> {
               description: 'Market snapshot and reserve array',
               content: {
                 'application/json': {
-                  schema: MarketsResponseSchema.toJSONSchema({ io: 'input' }),
+                  schema: { $ref: '#/components/schemas/MarketsResponse' },
                 },
               },
             },
@@ -101,7 +116,7 @@ export function generateOpenApiDocument(): Record<string, unknown> {
               description: 'Side data response',
               content: {
                 'application/json': {
-                  schema: SideDataMetaResponseSchema.toJSONSchema({ io: 'input' }),
+                  schema: { $ref: '#/components/schemas/SideDataMetaResponse' },
                 },
               },
             },
@@ -109,9 +124,8 @@ export function generateOpenApiDocument(): Record<string, unknown> {
         },
       },
     },
+    components: { schemas },
   } as Record<string, unknown>;
-
-  return flattenSchemaDefs(doc);
 }
 
 export function writeOpenApiDocument(): void {

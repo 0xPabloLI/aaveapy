@@ -11,7 +11,7 @@ const IncentiveMessageSchema: z.ZodType<IncentiveMessage> = z.lazy(() =>
 );
 
 // ── Merit incentive ──
-const MeritIncentiveSchema = z.object({
+export const MeritIncentiveSchema = z.object({
   apr: z.number(),
   selfApr: z.number().optional(),
   link: z.string(),
@@ -23,7 +23,7 @@ const MeritIncentiveSchema = z.object({
 });
 
 // ── Merkl campaign breakdown ──
-const MerklCampaignBreakdownSchema = z.object({
+export const MerklCampaignBreakdownSchema = z.object({
   campaignApr: z.number(),
   campaignStartedAt: z.string(),
   campaignEndedAt: z.string(),
@@ -37,14 +37,14 @@ const MerklCampaignBreakdownSchema = z.object({
   plannedDaily: z.number().optional(),
 });
 
-const MerklOpportunityGroupSchema = z.object({
+export const MerklOpportunityGroupSchema = z.object({
   link: z.string().optional(),
   name: z.string().optional(),
   message: z.string().optional(),
   breakdowns: z.array(MerklCampaignBreakdownSchema),
 });
 
-const BrevisCampaignBreakdownSchema = z.object({
+export const BrevisCampaignBreakdownSchema = z.object({
   campaignApr: z.number(),
   campaignStartedAt: z.string(),
   campaignEndedAt: z.string(),
@@ -55,7 +55,7 @@ const BrevisCampaignBreakdownSchema = z.object({
 }).passthrough();
 
 // ── Brevis incentive ──
-const BrevisIncentiveSchema = z.object({
+export const BrevisIncentiveSchema = z.object({
   link: z.string(),
   name: z.string().optional(),
   message: z.string().optional(),
@@ -116,7 +116,7 @@ const TokenPriceEntrySchema = z.object({
 }).passthrough();
 
 // ── Reserve ── (matches backend /markets reserves[])
-const ReserveWithSpreadSchema = z.object({
+export const ReserveWithSpreadSchema = z.object({
   reserveId: z.string(),
   marketName: z.string(),
   chainName: z.string(),

@@ -7,64 +7,68 @@ describe('generateOpenApiDocument', () => {
 
     expect(doc.openapi).toBe('3.1.0');
     expect(doc.info).toBeDefined();
-    expect(doc.info.title).toBe('AaveAPY API');
-    expect(doc.info.version).toBe('1.0.0');
+    expect(doc.info?.title).toBe('AaveAPY API');
+    expect(doc.info?.version).toBe('1.0.0');
     expect(doc.servers).toBeInstanceOf(Array);
-    expect(doc.servers.length).toBeGreaterThan(0);
+    expect(doc.servers?.length).toBeGreaterThan(0);
     expect(doc.paths).toBeDefined();
   });
 
-  it('defines GET /markets endpoint', () => {
+  it('defines GET /markets endpoint with $ref to MarketsResponse', () => {
     const doc = generateOpenApiDocument();
 
-    expect(doc.paths['/markets']).toBeDefined();
-    expect(doc.paths['/markets'].get).toBeDefined();
-    const response200 = doc.paths['/markets'].get.responses?.['200'];
+    const path = doc.paths?.['/markets'] as Record<string, unknown>;
+    expect(path).toBeDefined();
+    expect(path?.get).toBeDefined();
+    const response200 = (path?.get as Record<string, unknown>)?.responses?.['200'] as Record<string, unknown>;
     expect(response200).toBeDefined();
-    expect(response200.content?.['application/json']?.schema).toBeDefined();
+    const schema = (response200?.content?.['application/json'] as Record<string, unknown>)?.schema as Record<string, unknown>;
+    expect(schema?.$ref).toBe('#/components/schemas/MarketsResponse');
   });
 
-  it('defines GET /meta/side-data endpoint', () => {
+  it('defines GET /meta/side-data endpoint with $ref to SideDataMetaResponse', () => {
     const doc = generateOpenApiDocument();
 
-    expect(doc.paths['/meta/side-data']).toBeDefined();
-    expect(doc.paths['/meta/side-data'].get).toBeDefined();
-    const response200 = doc.paths['/meta/side-data'].get.responses?.['200'];
+    const path = doc.paths?.['/meta/side-data'] as Record<string, unknown>;
+    expect(path).toBeDefined();
+    expect(path?.get).toBeDefined();
+    const response200 = (path?.get as Record<string, unknown>)?.responses?.['200'] as Record<string, unknown>;
     expect(response200).toBeDefined();
-    expect(response200.content?.['application/json']?.schema).toBeDefined();
+    const schema = (response200?.content?.['application/json'] as Record<string, unknown>)?.schema as Record<string, unknown>;
+    expect(schema?.$ref).toBe('#/components/schemas/SideDataMetaResponse');
   });
 
-  it('includes nested schema: snapshot has lastUpdated and version', () => {
+  it('has MarketsResponse schema in components.schemas with snapshot and reserves', () => {
     const doc = generateOpenApiDocument();
 
-    const schema = doc.paths['/markets'].get.responses?.['200']
-      ?.content?.['application/json']?.schema;
-    expect(schema).toBeDefined();
-    // MarketsResponseSchema wraps { snapshot, reserves } — both should be present
-    const properties = schema?.properties ?? schema?.allOf?.find(
-      (s: Record<string, unknown>) => s?.properties
-    )?.properties;
-    expect(properties?.snapshot || properties).toBeDefined();
+    const schemas = (doc.components as Record<string, unknown>)?.schemas as Record<string, unknown>;
+    expect(schemas?.MarketsResponse).toBeDefined();
+    const marketsResponse = schemas?.MarketsResponse as Record<string, unknown>;
+    expect(marketsResponse?.properties).toBeDefined();
+    const props = marketsResponse?.properties as Record<string, unknown>;
+    expect(props?.snapshot).toBeDefined();
+    expect(props?.reserves).toBeDefined();
   });
 
-  it('includes nested schema: reserves is an array', () => {
-    const doc = generateOpenApiDocument();
-
-    const schema = doc.paths['/markets'].get.responses?.['200']
-      ?.content?.['application/json']?.schema;
-    const props = schema?.properties ?? {};
-    const reserves = props?.reserves;
-    // reserves should be an array type
-    expect(reserves?.type === 'array' || reserves?.items).toBeTruthy();
-  });
-
-  it('flattens nested $defs into components.schemas', () => {
+  it('has all named schemas in components.schemas', () => {
     const doc = generateOpenApiDocument();
 
     const schemas = (doc.components as Record<string, unknown>)?.schemas as Record<string, unknown>;
     expect(schemas).toBeDefined();
-    expect(schemas?.IncentiveMessage).toBeDefined();
+    const keys = Object.keys(schemas ?? {});
+    expect(keys).toContain('MarketsResponse');
+    expect(keys).toContain('SideDataMetaResponse');
+    expect(keys).toContain('Reserve');
+    expect(keys).toContain('MeritIncentive');
+    expect(keys).toContain('MerklCampaignBreakdown');
+    expect(keys).toContain('MerklOpportunityGroup');
+    expect(keys).toContain('BrevisCampaignBreakdown');
+    expect(keys).toContain('BrevisIncentive');
+    expect(keys).toContain('IncentiveMessage');
+  });
 
+  it('contains no unresolved $defs references', () => {
+    const doc = generateOpenApiDocument();
     const docJson = JSON.stringify(doc);
     expect(docJson).not.toContain('#/$defs/');
   });
