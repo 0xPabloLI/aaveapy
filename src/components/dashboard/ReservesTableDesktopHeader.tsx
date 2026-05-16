@@ -5,7 +5,7 @@ import { TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 type SortMode = 'total' | 'native' | 'incentive';
 type SortableColumn = 'token' | 'price' | 'market' | 'size' | 'util' | 'supply' | 'borrow' | 'spread';
-type SizeSortMode = 'supply' | 'borrow' | 'borrowAvailability' | 'supplyAvailability' | 'deficitRatio' | 'deficitAmount';
+type SizeSortMode = 'supply' | 'borrow' | 'borrowAvailability' | 'supplyAvailability' | 'deficitAmount' | 'supplyCapPct' | 'borrowCapPct' | 'deficitRatio';
 type UtilSortMode = 'util' | 'liquidity';
 
 interface MenuPos {
@@ -121,7 +121,6 @@ interface ReservesTableDesktopHeaderProps {
   onSelectSizeSortBorrowAvailability: () => void;
   onSelectSizeSortSupplyAvailability: () => void;
   onSelectSizeSortDeficitAmount: () => void;
-  onSelectSizeSortDeficitRatio: () => void;
   onToggleSupplyMenu: () => void;
   onCloseSupplyMenu: () => void;
   onSelectSupplySortTotal: () => void;
@@ -180,7 +179,6 @@ export default function ReservesTableDesktopHeader({
   onSelectSizeSortBorrowAvailability,
   onSelectSizeSortSupplyAvailability,
   onSelectSizeSortDeficitAmount,
-  onSelectSizeSortDeficitRatio,
   onToggleSupplyMenu,
   onCloseSupplyMenu,
   onSelectSupplySortTotal,
@@ -237,15 +235,6 @@ export default function ReservesTableDesktopHeader({
       activeClassName: 'text-foreground',
       hoverClassName: 'hover:bg-muted/50',
       onSelect: onSelectSizeSortDeficitAmount,
-    },
-    {
-      key: 'deficitRatio',
-      label: 'Sort by Deficit (%)',
-      isSelected: sizeSortMode === 'deficitRatio' && activeSortColumn === 'size',
-      order: sizeSortOrder,
-      activeClassName: 'text-foreground',
-      hoverClassName: 'hover:bg-muted/50',
-      onSelect: onSelectSizeSortDeficitRatio,
     },
   ];
 
@@ -432,11 +421,11 @@ export default function ReservesTableDesktopHeader({
                   title="Select size sort field"
                 >
                   <span className="font-semibold ds-text-10 md:ds-text-11">
-                    {sizeSortMode === 'supply'
+                    {sizeSortMode === 'supply' || sizeSortMode === 'supplyCapPct'
                       ? 'Supplied'
                       : sizeSortMode === 'supplyAvailability'
                         ? 'Suppliable'
-                        : sizeSortMode === 'borrow'
+                        : sizeSortMode === 'borrow' || sizeSortMode === 'borrowCapPct'
                           ? 'Borrowed'
                           : sizeSortMode === 'borrowAvailability'
                             ? 'Borrowable'

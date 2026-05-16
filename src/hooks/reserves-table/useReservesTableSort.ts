@@ -20,7 +20,9 @@ export type SizeSortMode =
   | 'borrowAvailability'
   | 'supplyAvailability'
   | 'deficitRatio'
-  | 'deficitAmount';
+  | 'deficitAmount'
+  | 'supplyCapPct'
+  | 'borrowCapPct';
 
 export type UtilSortMode = 'util' | 'liquidity';
 

@@ -1266,4 +1266,27 @@ describe('MobileReserveCard', () => {
     fireEvent.click(getByLabelText('Filter by Core hub'));
     expect(onSelectHub).toHaveBeenCalledWith('hub-core');
   });
+
+  it('renders supply size from reserve.supplied field', () => {
+    const { container } = render(
+      <QueryClientProvider client={new QueryClient()}>
+        <TooltipProvider>
+          <MobileReserveCard
+            reserve={reserve}
+            isApy
+            tydroPointToUsdRate={0}
+            onIncentiveClick={() => {}}
+            isSimulationExpanded={false}
+            onToggleSimulation={() => {}}
+            simulation={simulation}
+            supplyInput="1000"
+            borrowInput="500"
+            hasSharedScenario={false}
+            inputMode="usd"
+          />
+        </TooltipProvider>
+      </QueryClientProvider>,
+    );
+    expect(container.textContent).toContain('$1.00M');
+  });
 });

@@ -71,7 +71,7 @@ interface DesktopReserveRowProps {
   onToggleExpand: (reserveId: string) => void;
   onSelectMarket?: (marketName: string) => void;
   onMarketChipClick?: (reserveId: string) => void;
-  onSelectHub?: (hubName: string) => void;
+  onSelectHub?: (hubId: string) => void;
   onHubChipClick?: (reserveId: string) => void;
   onIncentiveClick: (e: React.MouseEvent, reserve: ReserveWithSpread, type: 'supply' | 'borrow', apy: number | null) => void;
   displaySupplyTotal: number | null;
@@ -175,7 +175,7 @@ const DesktopReserveRow = memo(({
     reserve.tokenPrice != null && Number.isFinite(reserve.tokenPrice) && reserve.tokenPrice > 0
       ? reserve.tokenPrice
       : null;
-  const reserveSizeUsd = nativeToUsd(reserve.reserveSize, reserve.decimals, reserve.tokenPrice);
+  const reserveSizeUsd = nativeToUsd(reserve.supplied, reserve.decimals, reserve.tokenPrice);
   const displayReserveSizeUsd =
     reserveSizeUsd != null && Number.isFinite(reserveSizeUsd)
       ? supplyBlocked
@@ -201,10 +201,9 @@ const DesktopReserveRow = memo(({
   const deficitTokenLabel = deficitTokenCompact !== '-' ? deficitTokenCompact : undefined;
   const deficitUsdLabel = deficitUsd != null ? formatUsd(deficitUsd) : '— (token price unavailable)';
 
-  /** reserve.optimalUsageRate 是 percent number（如 45 = 45%），直接显示，无需 RAY 转换。 */
   const optimalPct =
-    reserve.optimalUsageRate != null && Number(reserve.optimalUsageRate) > 0
-      ? Number(reserve.optimalUsageRate)
+    reserve.optimalUtilization != null && Number(reserve.optimalUtilization) > 0
+      ? Number(reserve.optimalUtilization)
       : null;
   const deficitShareRatio = calculateDeficitShareRatio({
     deficitUsd,
@@ -281,7 +280,7 @@ const DesktopReserveRow = memo(({
           <div className={`group/token flex min-w-0 max-w-full justify-start gap-[var(--ds-space-1-5)] ${isTokenWrapped ? 'items-start' : 'items-center'}`}>
             <TokenIcon symbol={iconSymbol} size={28} loading="eager" logoURI={logoURI} className={`shrink-0 ${isTokenWrapped ? 'mt-0.5' : ''}`} />
             <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-[var(--ds-space-1-5)] gap-y-0">
-              <FrozenStatusBadge isFrozen={reserve.isFrozen} isPaused={reserve.isPaused} />
+              <FrozenStatusBadge reserve={reserve} />
               <span ref={tokenTextRef} className="font-semibold text-foreground ds-text-13 break-words min-w-0 [max-width:max-content]">
                 {reserve.tokenSymbol}
               </span>
@@ -306,14 +305,14 @@ const DesktopReserveRow = memo(({
         <TableCell className="ds-reserves-cell-td ds-row-pad text-center hidden md:table-cell">
           <div className="flex items-center justify-center">
             <div className={marketCellClassNames.stack}>
-              {reserve.hubName && (
+              {reserve.hubName && reserve.hubId && (
                 <div className={marketCellClassNames.hubShell}>
                   <button
                     type="button"
                     onClick={(event) => {
                       event.stopPropagation();
                       onHubChipClick?.(reserveId);
-                      onSelectHub?.(reserve.hubName!);
+                      onSelectHub?.(reserve.hubId!);
                     }}
                     className={cn(
                       marketCellClassNames.chipBase,

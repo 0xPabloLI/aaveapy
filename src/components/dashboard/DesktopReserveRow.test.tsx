@@ -1090,4 +1090,116 @@ describe('DesktopReserveRow', () => {
     expect(html).toContain('Filter by Core hub');
     expect(html).toContain('hub-core');
   });
+
+  describe('field-name regression gates', () => {
+    it('renders supply size from reserve.supplied, not a non-existent field', () => {
+      const html = renderToString(
+        <QueryClientProvider client={new QueryClient()}>
+          <TooltipProvider>
+            <Table>
+              <TableBody>
+                <DesktopReserveRow
+                  reserve={reserve}
+                  reserveId="AaveV3Ethereum-0x0000000000000000000000000000000000000001"
+                  isExpanded={false}
+                  onToggleExpand={() => {}}
+                  onIncentiveClick={() => {}}
+                  displaySupplyTotal={2.9}
+                  displaySupplyNative={2.5}
+                  displaySupplyIncentive={0.4}
+                  displayBorrowTotal={3.3}
+                  displayBorrowNative={3.4}
+                  displayBorrowIncentive={0.1}
+                  displayUtilization={52}
+                  spread={-0.4}
+                  simulation={simulation}
+                  supplyInput="1000"
+                  borrowInput="500"
+                  inputMode="usd"
+                  isApy
+                  isMobile={false}
+                />
+              </TableBody>
+            </Table>
+          </TooltipProvider>
+        </QueryClientProvider>,
+      );
+      expect(html).toContain('$1.00M');
+    });
+
+    it('renders utilization bar with optimalUtilization from reserve', () => {
+      const html = renderToString(
+        <QueryClientProvider client={new QueryClient()}>
+          <TooltipProvider>
+            <Table>
+              <TableBody>
+                <DesktopReserveRow
+                  reserve={reserve}
+                  reserveId="AaveV3Ethereum-0x0000000000000000000000000000000000000001"
+                  isExpanded={false}
+                  onToggleExpand={() => {}}
+                  onIncentiveClick={() => {}}
+                  displaySupplyTotal={2.9}
+                  displaySupplyNative={2.5}
+                  displaySupplyIncentive={0.4}
+                  displayBorrowTotal={3.3}
+                  displayBorrowNative={3.4}
+                  displayBorrowIncentive={0.1}
+                  displayUtilization={52}
+                  spread={-0.4}
+                  simulation={simulation}
+                  supplyInput="1000"
+                  borrowInput="500"
+                  inputMode="usd"
+                  isApy
+                  isMobile={false}
+                />
+              </TableBody>
+            </Table>
+          </TooltipProvider>
+        </QueryClientProvider>,
+      );
+      expect(html).toContain('52.00%');
+      expect(html).toContain('viewBox="0 0 10 24"');
+    });
+
+    it('renders non-empty borrow size derived from reserve fields', () => {
+      const html = renderToString(
+        <QueryClientProvider client={new QueryClient()}>
+          <TooltipProvider>
+            <Table>
+              <TableBody>
+                <DesktopReserveRow
+                  reserve={reserve}
+                  reserveId="AaveV3Ethereum-0x0000000000000000000000000000000000000001"
+                  isExpanded={false}
+                  onToggleExpand={() => {}}
+                  onIncentiveClick={() => {}}
+                  displaySupplyTotal={2.9}
+                  displaySupplyNative={2.5}
+                  displaySupplyIncentive={0.4}
+                  displayBorrowTotal={3.3}
+                  displayBorrowNative={3.4}
+                  displayBorrowIncentive={0.1}
+                  displayUtilization={52}
+                  spread={-0.4}
+                  simulation={simulation}
+                  supplyInput="1000"
+                  borrowInput="500"
+                  inputMode="usd"
+                  isApy
+                  isMobile={false}
+                />
+              </TableBody>
+            </Table>
+          </TooltipProvider>
+        </QueryClientProvider>,
+      );
+      expect(html).toContain('2.50%');
+      expect(html).toContain('0.40%');
+      expect(html).toContain('3.40%');
+      expect(html).toContain('0.10%');
+      expect(html).toContain('-0.40%');
+    });
+  });
 });

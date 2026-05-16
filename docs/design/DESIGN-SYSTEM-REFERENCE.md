@@ -126,8 +126,7 @@
 ## 3. 排版与间距
 
 - **字体**：Sans 用于正文与 UI，Mono 用于代码/数值；可选用同一字族的不同 weight。
-- **字号尺度**：统一使用设计 token（`ds-text-9` ~ `ds-text-24`），避免随意 `text-sm`/`text-base` 混用。其中 `ds-text-9` (9px) 用于极小标签（如热门币提示徽章）、`ds-text-10` (10px) 用于紧凑标签，`ds-text-11` (11px) ~ `ds-text-13` (13px) 为常用小字。**禁止**在组件源码中使用 `text-[Npx]` 任意值硬编码字号——所有字号必须通过 `ds-text-N` token 引用。
-- **⚠️ 反模式：`!ds-text-N`（禁止）**：`!ds-text-N` 会同时生成 `font-size: Npx !important` **和** `line-height: calc(Npx * 1.25) !important`，后者会覆盖业务元素（如 `<Input>` 的 `leading-4`/`leading-7`）上精心设定的行高。如果需要覆盖第三方 Input 组件的字号，使用 CSS 任意属性语法 `![font-size:var(--ds-text-N)]`，它只覆盖 `font-size`，不引入 `line-height`。已有回归测试守卫此反模式：`src/test/font-size-token-regression.test.ts`。
+- **字号尺度**：统一使用设计 token（如 `ds-text-11` ~ `ds-text-24`），避免随意 `text-sm`/`text-base` 混用。
 - **数值**：一律 `tabular-nums` 保证对齐。
 - **数值溢出：硬切，不省略（强制）**：已通过 `formatReserveSizeUsd` / `formatReserveSizeToken` 缩写为 K/M/B 格式的金额/数量值（如 `$123.45M`、`1.08B`），移动端空间不足时必须使用 `overflow-hidden whitespace-nowrap`（硬切），**禁止**使用 `truncate` / `text-overflow: ellipsis`（尾部省略号）。省略号 `…` 在金融数值上会造成歧义（`$123.4…` 是 `$123.40M` 还是 `$123.45M` 无法分辨），硬切优于省略号。文本标签（market name、hub name 等）不受此条约束，可继续使用 `truncate`。
 - **文字与边框**：**强制** — 所有带边框的容器（卡片、表格单元格、警告条、按钮）内，文字与边框之间至少保留 8px（`--ds-space-2`）内边距，不得贴边。
@@ -153,21 +152,6 @@
 3. **Spread 与主列同强**：桌面 Spread 列用 **`font-bold`**，与 Supply/Borrow APY 主值同级。
 4. **次级 ≠ Size**：Native/Incentive 是 **分解行**（`ds-text-11` + `*-70`）；Size 是 **主数据**（`ds-text-13` + 满饱和 + `font-medium`）—层级不同，**不是**同一套字体规格。
 5. **移动/桌面 token 对齐**：移动端 Size、tab、cap sheet 与桌面共用 `emerald-500` / `brand-cyan`，避免无端深一档（如 `emerald-600`）。
-
-### 控件高度 Token 参考
-
-所有控件高度（按钮、输入框、分段控制器、tooltip）必须通过 CSS 自定义属性引用，禁止硬编码 `h-8`/`h-9`/`h-11` 等 Tailwind 固定高度。
-
-| Token | 值 | Tailwind 写法 | 适用场景 |
-|-------|-----|-------------|---------|
-| `--ds-chip-h` | 1.75rem (28px) | `h-[var(--ds-chip-h)]` | 筛选芯片、热门币标签、分段控制器 chip 模式、批量面板 token 输入 |
-| `--ds-control-h` | 2rem (32px) | `h-[var(--ds-control-h)]` | 桌面输入框、分段控制器默认模式、图标按钮（32px）、toast 按钮 |
-| `--ds-button-sm-h` | 2.25rem (36px) | `h-[var(--ds-button-sm-h)]` | `<Button size="sm">`、表格表头行、主题切换按钮、分页按钮 |
-| `--ds-button-h` | 2.5rem (40px) | `h-[var(--ds-button-h)]` | `<Button>` 默认尺寸 |
-| `--ds-button-lg-h` | 2.75rem (44px) | `h-[var(--ds-button-lg-h)]` | `<Button size="lg">`、下拉刷新指示器、滑块手柄 |
-| `--ds-ring-tooltip-max-w` | 220px | `max-w-[var(--ds-ring-tooltip-max-w)]` | 利用率/借出上限环形图的 TooltipContent |
-
-**禁止**在组件源码中硬编码 `h-8`/`h-9`/`h-11`。回归测试：`src/test/control-height-token-regression.test.ts`。巡检脚本：`bash scripts/check-hardcoded-tokens.sh --strict`。
 
 ---
 
@@ -362,15 +346,15 @@ reserves desktop table 的 8 列对齐分配：
 
 | 区域     | Tailwind 示例 |
 |----------|----------------|
-| 容器     | `inline-grid box-border h-[var(--ds-control-h)] gap-0.5 bg-muted/60 rounded-full p-[3px] shadow-inner shadow-black/[0.02]` |
+| 容器     | `inline-grid box-border h-8 gap-0.5 bg-muted/60 rounded-full p-[3px] shadow-inner shadow-black/[0.02]` |
 | 选中项   | `h-full min-w-[56px] px-3 rounded-full font-semibold bg-card text-foreground shadow-[0_1px_4px_rgb(var(--ds-shadow-rgb)/0.16),0_1px_2px_rgb(var(--ds-shadow-rgb)/0.10)]` |
 | 未选中   | `h-full min-w-[56px] px-3 rounded-full font-medium text-muted-foreground hover:text-foreground` |
 
 **视觉特征**：
-- 默认容器高度为 32px（`h-[var(--ds-control-h)]` = `--ds-control-h`: 2rem，`box-border` 固定外框尺寸），用于和桌面场景输入 `h-[var(--ds-control-h)]` 对齐。
+- 默认容器高度为 32px（`h-8`，`box-border` 固定外框尺寸），用于和桌面场景输入 `h-8` 对齐。
 - `size="chip"` 容器高度为 28px（`--ds-chip-h`，`box-border` 固定外框尺寸），用于和 `ds-chip` 对齐。
 - 横向与纵向都使用等宽 / 等高网格分段，滑块宽高跟随当前分段，避免 USD/Token 这类不同字数选项来回跳。
-- 当分段控制器与筛选芯片（§5.2）同行排列时（如 Chain/Hub toggle、APR/APY toggle），使用 `size="chip"`（28px = `--ds-chip-h`）以保持行高一致；仅当与 `h-[var(--ds-control-h)]` 输入框对齐时（如桌面场景条 USD/Token）使用默认 32px。
+- 当分段控制器与筛选芯片（§5.2）同行排列时（如 Chain/Hub toggle、APR/APY toggle），使用 `size="chip"`（28px）以保持行高一致；仅当与 `h-8` 输入框对齐时（如桌面场景条 USD/Token）使用默认 32px。
 
 **形态规则（横向 vs 纵向）**：
 - **横向（默认）**：容器与活动段均为 `rounded-full` 药丸形，按钮带 `min-w-[56px]`（chip：`42px`），保证短文案对称。
@@ -428,7 +412,7 @@ reserves desktop table 的 8 列对齐分配：
 | 焦点 | `focus-visible:ring-2 focus-visible:ring-ring`（键盘可见焦点） |
 | 触控 | 小框可接受；**整段 `label` 可点**，满足可点区域 |
 
-选中态：深色模式下通过全局 CSS 规则 `.dark input[type="checkbox"]:checked { accent-color: hsl(var(--foreground)); }` 将勾选填充色设为 `--foreground`（中性近白色），清晰且不带色相；亮色模式沿用浏览器默认。**共享场景条（`ScenarioControls`）** 等对表内 Supply/Borrow 语义色不重复：可在常量后追加 `accent-muted-foreground`，与表头/单元格的 emerald、cyan 分工。
+选中态依赖浏览器原生勾选样式；若未来需要与品牌色强绑定，再在常量上扩展 `accent-*`（须全站勾选一并评估）。**共享场景条（`ScenarioControls`）** 等对表内 Supply/Borrow 语义色不重复：可在常量后追加 `accent-muted-foreground`，与表头/单元格的 emerald、cyan 分工。
 
 ### 5.7 本仓库实现参考
 
@@ -608,10 +592,10 @@ className="transition-all motion-reduce:transition-none"
 | 元素层 | 处理方式 | 效果 | 原理 |
 |--------|----------|------|------|
 | **数值（Current 列）** | 保留原语义色 + 整体容器 `opacity-60` | emerald/cyan 色彩可辨，但明显「暗了一档」 | 用户仍需区分「这是 Supply 侧还是 Borrow 侧的数据」；色相保留不干扰空间定位 |
-| **文字标签 / 标题** | 保留原语义色（`accentClass`） | emerald/cyan/purple 保持不变 | frozen/paused 行保持完全不透明，标签不褪色 |
-| **进度条 / 环形图** | 原色（无 grayscale / opacity 降级） | 颜色和形状完整保留 | 保持进度条可见性，让用户仍能看到容量状态 |
+| **文字标签 / 标题** | 替换为 `text-muted-foreground`（去语义色） | 从 emerald/cyan/purple 变为中性灰 | 标签的语义色在不可操作时已失去意义，继续用语义色会误导用户以为该标签仍有效 |
+| **进度条 / 环形图** | `grayscale-[50%] opacity-50` | 颜色褪去，形状保留 | 图形元素在禁用时不应继续传递「容量状态」信号；灰度化表明此维度暂时无关 |
 | **After / Delta 列** | 值设为 null → 显示 `-` | 不展示任何模拟结果 | 禁用状态下没有「after」变化，显示模拟值会误导用户以为操作仍在生效 |
-| **背景行** | `bg-card` 不透明底 + `background-image` tint 叠加 | 整行有淡琥珀/淡天蓝底色，完全不透明 | `ds-bg-paused` / `ds-bg-sky-500-8` 使用 `background-image: linear-gradient(...)` 不覆盖 `bg-card` 底色 |
+| **背景行** | 保留 frozen/paused 专用底色（如 `ds-bg-paused`） | 整行有淡琥珀/淡天蓝底色 | 底色是**状态标记**而非数据语义色，在禁用时应保留以解释「为什么禁用」 |
 
 #### 为什么不用一刀切 `opacity-50` 全灰？
 
@@ -779,8 +763,7 @@ jsdom 单测无法测量真实布局，但可**结构性锁定**三层防护的�
 - **语义色**：琥珀=警告、红=错误、绿=成功/正常，不用于普通数据。
 - **多列**：等宽、统一内边距；表格留足 padding，文字不贴边。
 - **对称**：成对区块（如 Supply / Borrow）在位置与权重上对称。
- - **几何**：若需求给出具体尺寸/间距，按给定实现（如用 `getBoundingClientRect()` 计算），不随意近似。
-- **页面区间距**：内容区板块间距由 `<main>` 的 `space-y-3 md:space-y-5` 单一管控；父容器只负责 padding；`<Header>` 和 banner 自带 `mb-3 md:mb-5`；`<footer>` 靠 `border-t` 分隔。不要在父容器和 `<main>` 同时使用 `space-y`，避免双重间距系统不同步。
+- **几何**：若需求给出具体尺寸/间距，按给定实现（如用 `getBoundingClientRect()` 计算），不随意近似。
 - **轮廓与圆角拼接**：用 SVG 绘制 1px 边框以衔接 CSS 边框时，坐标必须对齐到半像素（如 `0.5`）以避免抗锯齿模糊或变粗；若需修改局部轮廓（如内侧反向圆角），优先使用 `clip-path` 局部切断底层原生边框，并使用单个包含精确几何指令（如 `A` 画圆弧）的 SVG `path` 一次性绘制连续轮廓，严禁使用“原边框 + 补丁层 + mask 遮罩”的多层叠加拼凑做法。
 - **圆角卡片 + 全宽不透明子层**：子元素（尤其 `position: sticky` + `bg-card`）会按绘制顺序盖住父元素圆角处的 **`border`**，顶角看起来像断线。优先用 **`rounded-2xl` 外层 `p-px bg-border/60` + 内层 `rounded-[calc(1rem-1px)] bg-card`** 的 1px 沟槽描边；**不要**为此对含视口 sticky 的卡片使用 `overflow: hidden`（会改变 sticky 参照）。桌面 `ReservesTable` 卡片即此模式。
 

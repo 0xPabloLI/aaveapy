@@ -17,7 +17,7 @@ import {
   resolveVisibleIncentiveBadgeValue,
 } from '@/lib/formatters';
 import ScenarioControls, { type ScenarioControlsHandle } from './ScenarioControls';
-import { compareIncentiveWithNative } from '@/lib/sorters';
+import { compareIncentiveWithNative, compareSizeToCapPct } from '@/lib/sorters';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { buildAaveUrl } from '@/lib/aaveLinks';
 import { openExternalUrl } from '@/lib/externalNavigation';
@@ -44,16 +44,12 @@ import {
   DEFAULT_VISIBLE_COUNT,
 } from '@/hooks/reserves-table/useReservesPagination';
 import { useReserveExpansion } from '@/hooks/reserves-table/useReserveExpansion';
+import { useScenarioPinScroll } from '@/hooks/reserves-table/useScenarioPinScroll';
 import { getReserveSimulationId, useSharedRateSimulations } from '@/hooks/useRateSimulation';
 import { useSideDataMeta } from '@/hooks/useSideDataMeta';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
 import { getDisplayAvailableLiquidityUsd as computeDisplayAvailableLiquidityUsd, getDisplayTotalBorrowedUsd as computeDisplayTotalBorrowedUsd, getAvailableToBorrowUsd, nativeToUsd, getSuppliableUsd, getBorrowableUsd, getScenarioSupplySizeUsd } from '@/lib/scenarioSize';
 import { getProtocolVersion } from '@/lib/protocolVersion';
-import {
-  scrollExpandedSimulationIntoView,
-  shouldScrollExpandedSimulationIntoView,
-} from '@/lib/scrollExpandedSimulationIntoView';
-import { createScenarioPinControllerState, transitionScenarioPinController } from '@/lib/scenarioPinController';
 import ReservesTableDesktopSkeleton from './ReservesTableDesktopSkeleton';
 
 import PortfolioModeToggle, { type SimulationMode } from './PortfolioModeToggle';
@@ -130,12 +126,6 @@ const ReservesTable = ({
   }, [sideDataMetaQuery.data?.forecast]);
 
   const scenarioControlsRef = useRef<ScenarioControlsHandle>(null);
-  const scenarioPinControllerRef = useRef(createScenarioPinControllerState());
-  const scenarioPinScheduleTokenRef = useRef(0);
-  const cancelScenarioPinScrollRef = useRef<(() => void) | null>(null);
-  const lastReservesKeyForFilterPinRef = useRef<string | null>(null);
-  const cancelFilterPinScrollRef = useRef<(() => void) | null>(null);
-  const pendingMarketFilterPinReserveIdRef = useRef<string | null>(null);
   const {
     expandedReserveId,
     setExpandedReserveId,
@@ -210,17 +200,6 @@ const ReservesTable = ({
     toggleMobileSortMenu,
   } = sortState;
 
-  const handleMarketChipClick = useCallback((reserveId: string) => {
-    // Preserve an already-expanded row across filter updates, but do not
-    // implicitly expand a collapsed row just because its market chip was clicked.
-    // The chip stops propagation, so row expansion stays an explicit action.
-    const shouldKeepExpanded = expandedReserveId === reserveId;
-    pendingMarketFilterPinReserveIdRef.current = shouldKeepExpanded ? reserveId : null;
-    if (shouldKeepExpanded) {
-      setExpandedReserveId(reserveId);
-    }
-  }, [expandedReserveId, setExpandedReserveId]);
-
   const [tooltipState, setTooltipState] = useState<TooltipState | null>(null);
 
   const { simulationsById, hasAnyInput: hasSharedScenario } = useSharedRateSimulations({
@@ -243,66 +222,6 @@ const ReservesTable = ({
     if (col === 'size' && sizeSortMode !== 'supply') return false;
     return true;
   }, [hasSharedScenario, activeSortColumn, sizeSortMode]);
-
-  const schedulePinScrollToReserve = useCallback((reserveId: string, delayMs: number, opts?: { instant?: boolean; onSettled?: () => void }) => {
-    const mode = isMobile ? 'minimal-if-clipped' : 'pin-main-row-top';
-    const instant = opts?.instant ?? false;
-    const escapeId = (raw: string) => (
-      typeof CSS !== 'undefined' && typeof CSS.escape === 'function' ? CSS.escape(raw) : raw
-    );
-    const escapedId = escapeId(reserveId);
-
-    let cancelled = false;
-    let attempt = 0;
-    const maxAttempts = 12;
-    const retryMs = 70;
-    let finalized = false;
-
-    const finalizeAttempt = () => {
-      if (finalized) return;
-      finalized = true;
-      opts?.onSettled?.();
-    };
-
-    const runAttempt = () => {
-      if (cancelled) return;
-      const anchor = document.querySelector(`[data-reserve-expanded-anchor="${escapedId}"]`);
-      const row = document.querySelector(`tr[data-reserve-id="${escapedId}"]`);
-      if (anchor instanceof HTMLElement || row instanceof HTMLElement) {
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            if (cancelled) return;
-            // Keep pin-scroll deterministic: one primary pass + at most one
-            // follow-up correction after layout settles. Repeated corrections
-            // create visible "stair-step" jank on long pages.
-            if (!shouldScrollExpandedSimulationIntoView(reserveId, { mode })) {
-              finalizeAttempt();
-              return;
-            }
-            scrollExpandedSimulationIntoView(reserveId, {
-              mode,
-              instant,
-            });
-            finalizeAttempt();
-          });
-        });
-        return;
-      }
-      attempt += 1;
-      if (attempt >= maxAttempts) {
-        finalizeAttempt();
-        return;
-      }
-      window.setTimeout(runAttempt, retryMs);
-    };
-
-    const starter = window.setTimeout(runAttempt, delayMs);
-    return () => {
-      cancelled = true;
-      window.clearTimeout(starter);
-      finalizeAttempt();
-    };
-  }, [isMobile]);
 
   // Helper: Get incentive values for a reserve (supply or borrow).
   // `forecastStates` is included here so the fallback path (used when
@@ -525,6 +444,24 @@ const ReservesTable = ({
           const aT = getDisplayDeficit(a) ?? -Infinity;
           const bT = getDisplayDeficit(b) ?? -Infinity;
           comparison = aT - bT;
+        } else if (sizeSortMode === 'supplyCapPct') {
+          const aPrice = getSimulation(a)?.tokenPrice ?? a.tokenPrice;
+          const bPrice = getSimulation(b)?.tokenPrice ?? b.tokenPrice;
+          return compareSizeToCapPct(
+            getDisplayReserveSizeUsd(a), getDisplayReserveSizeUsd(b),
+            nativeToUsd(a.supplyCap, a.decimals, aPrice),
+            nativeToUsd(b.supplyCap, b.decimals, bPrice),
+            sizeSortOrder,
+          );
+        } else if (sizeSortMode === 'borrowCapPct') {
+          const aPrice = getSimulation(a)?.tokenPrice ?? a.tokenPrice;
+          const bPrice = getSimulation(b)?.tokenPrice ?? b.tokenPrice;
+          return compareSizeToCapPct(
+            getTotalBorrowedUsd(a), getTotalBorrowedUsd(b),
+            nativeToUsd(a.borrowCap, a.decimals, aPrice),
+            nativeToUsd(b.borrowCap, b.decimals, bPrice),
+            sizeSortOrder,
+          );
         } else {
           const aT = getDisplayReserveSizeUsd(a) ?? -Infinity;
           const bT = getDisplayReserveSizeUsd(b) ?? -Infinity;
@@ -770,113 +707,23 @@ const ReservesTable = ({
     resetVisibleCount,
   } = useReservesPagination({ sortedData, scrollToReserveId, expandedReserveId });
 
-  /**
-   * Simulation pin scroll — normative spec + implementation steps:
-   * `docs/design/frontend-interaction-guardrails.md` § "Simulation pin scroll".
-   * Do not move to `expandedReserveId`-only effects or index-based scroll without updating that doc.
-   */
-  useEffect(() => {
-    const scenarioKey = `${debouncedSharedSupplyInput}\0${debouncedSharedBorrowInput}\0${sharedInputMode}\0${meritMerklNetPosition ? '1' : '0'}`;
-    const ids = sortedData.map((r) => getReserveSimulationId(r));
-    const expandedIndex = expandedReserveId
-      ? sortedData.findIndex((r) => getReserveSimulationId(r) === expandedReserveId)
-      : -1;
-    const currentCount = minVisibleCount ?? DEFAULT_VISIBLE_COUNT;
-    const requiredCount =
-      expandedIndex >= 0 ? Math.min(expandedIndex + 6, sortedData.length) : 0;
-    const hasRequiredVisibleCount =
-      expandedIndex >= 0 ? currentCount >= requiredCount : false;
-
-    const controllerResult = transitionScenarioPinController(
-      scenarioPinControllerRef.current,
-      {
-        scenarioKey,
-        sortedIds: ids,
-        expandedReserveId,
-        hasScenarioInput: hasSharedScenario,
-        expandScrollFollowsScenarioSort,
-        hasRequiredVisibleCount,
-        isExpandedStillVisible: expandedIndex >= 0,
-      },
-    );
-    scenarioPinControllerRef.current = controllerResult.nextState;
-
-    if (!controllerResult.shouldSchedulePin || !controllerResult.pinReserveId) return;
-
-    cancelFilterPinScrollRef.current?.();
-    cancelFilterPinScrollRef.current = null;
-    cancelScenarioPinScrollRef.current?.();
-    const scheduleToken = scenarioPinScheduleTokenRef.current + 1;
-    scenarioPinScheduleTokenRef.current = scheduleToken;
-    cancelScenarioPinScrollRef.current = schedulePinScrollToReserve(
-      controllerResult.pinReserveId,
-      320,
-      {
-        // Keep first pass smooth; follow-up corrections (if any) remain instant.
-        instant: false,
-        onSettled: () => {
-          if (scenarioPinScheduleTokenRef.current !== scheduleToken) return;
-          cancelScenarioPinScrollRef.current = null;
-        },
-      },
-    ) ?? null;
-  }, [
-    debouncedSharedSupplyInput,
-    debouncedSharedBorrowInput,
-    sharedInputMode,
-    meritMerklNetPosition,
+  const { schedulePinScrollToReserve, handleMarketChipClick } = useScenarioPinScroll({
+    reserves,
     sortedData,
+    isMobile,
     expandedReserveId,
+    setExpandedReserveId,
     minVisibleCount,
+    defaultVisibleCount: DEFAULT_VISIBLE_COUNT,
     hasSharedScenario,
     expandScrollFollowsScenarioSort,
-    schedulePinScrollToReserve,
-  ]);
-
-  useEffect(() => {
-    const reservesKey = reserves.map((r) => getReserveSimulationId(r)).join('\0');
-    if (lastReservesKeyForFilterPinRef.current === null) {
-      lastReservesKeyForFilterPinRef.current = reservesKey;
-      return;
-    }
-    if (reservesKey === lastReservesKeyForFilterPinRef.current) return;
-    lastReservesKeyForFilterPinRef.current = reservesKey;
-
-    const targetReserveId = pendingMarketFilterPinReserveIdRef.current ?? expandedReserveId;
-    if (!targetReserveId) return;
-    const stillVisible = sortedData.some((r) => getReserveSimulationId(r) === targetReserveId);
-    if (!stillVisible) {
-      pendingMarketFilterPinReserveIdRef.current = null;
-      return;
-    }
-
-    pendingMarketFilterPinReserveIdRef.current = null;
-    // Cancel any prior scheduled pin so filter-driven pin is the only jump.
-    // Store the cancel fn in a ref so that unrelated sortedData changes
-    // (which re-run this effect but bail at the reservesKey guard) do
-    // not invoke effect cleanup and cancel the pending scroll.
-    cancelScenarioPinScrollRef.current?.();
-    cancelScenarioPinScrollRef.current = null;
-    cancelFilterPinScrollRef.current?.();
-    cancelFilterPinScrollRef.current = schedulePinScrollToReserve(targetReserveId, 280, { instant: true }) ?? null;
-  }, [reserves, sortedData, expandedReserveId, schedulePinScrollToReserve]);
-
-  useEffect(() => {
-    return () => {
-      cancelFilterPinScrollRef.current?.();
-      cancelScenarioPinScrollRef.current?.();
-    };
-  }, []);
-
-  // Clear the filter-pin staging ref whenever expansion drops to null.
-  // The matching cleanup of `suppressNextToggleReserveIdRef` is handled
-  // inside `useReserveExpansion`. The mobile→desktop transition collapse
-  // also lives there.
-  useEffect(() => {
-    if (!expandedReserveId) {
-      pendingMarketFilterPinReserveIdRef.current = null;
-    }
-  }, [expandedReserveId]);
+    scenarioKey: {
+      supplyInput: debouncedSharedSupplyInput,
+      borrowInput: debouncedSharedBorrowInput,
+      inputMode: sharedInputMode,
+      meritMerklNetPosition,
+    },
+  });
 
   // Keep expansion even when reserves change (e.g., market filter applied)
   // Previously this auto-collapsed when the expanded row was not in the filtered list
@@ -999,22 +846,6 @@ const ReservesTable = ({
           isAlreadySelected: sizeSortMode === 'deficitAmount' && activeSortColumn === 'size',
           setSortOrder: setSizeSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
           setSortMode: setSizeSortMode, targetMode: 'deficitAmount',
-          setActiveSortColumn, targetColumn: 'size',
-        });
-        closeAllMobileSortMenus();
-      },
-    },
-    {
-      key: 'deficitRatio',
-      label: 'Deficit (%)',
-      isSelected: sizeSortMode === 'deficitRatio' && activeSortColumn === 'size',
-      order: sizeSortOrder,
-      activeClassName: 'text-foreground',
-      onSelect: () => {
-        selectSortOption({
-          isAlreadySelected: sizeSortMode === 'deficitRatio' && activeSortColumn === 'size',
-          setSortOrder: setSizeSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
-          setSortMode: setSizeSortMode, targetMode: 'deficitRatio',
           setActiveSortColumn, targetColumn: 'size',
         });
         closeAllMobileSortMenus();
@@ -1662,11 +1493,6 @@ const ReservesTable = ({
               selectSortOption({ isAlreadySelected: sizeSortMode === 'deficitAmount' && activeSortColumn === 'size', setSortOrder: setSizeSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc', setSortMode: setSizeSortMode, targetMode: 'deficitAmount', setActiveSortColumn, targetColumn: 'size' });
               setShowSizeSortMenu(false);
             }}
-            onSelectSizeSortDeficitRatio={() => {
-              collapseExpandedOnSort();
-              selectSortOption({ isAlreadySelected: sizeSortMode === 'deficitRatio' && activeSortColumn === 'size', setSortOrder: setSizeSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc', setSortMode: setSizeSortMode, targetMode: 'deficitRatio', setActiveSortColumn, targetColumn: 'size' });
-              setShowSizeSortMenu(false);
-            }}
             onToggleSupplyMenu={() => setShowSupplySortMenu(!showSupplySortMenu)}
             onCloseSupplyMenu={() => setShowSupplySortMenu(false)}
             onSelectSupplySortTotal={() => {
@@ -1752,6 +1578,33 @@ const ReservesTable = ({
                   isPortfolioMode={isPortfolioMode}
                   isInPortfolio={portfolioReserveIds.has(reserveId)}
                   onPortfolioToggle={handlePortfolioToggle}
+                  onSortSupplyCapPct={() => {
+                    collapseExpandedOnSort();
+                    selectSortOption({
+                      isAlreadySelected: sizeSortMode === 'supplyCapPct' && activeSortColumn === 'size',
+                      setSortOrder: setSizeSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
+                      setSortMode: setSizeSortMode, targetMode: 'supplyCapPct',
+                      setActiveSortColumn, targetColumn: 'size',
+                    });
+                  }}
+                  onSortBorrowCapPct={() => {
+                    collapseExpandedOnSort();
+                    selectSortOption({
+                      isAlreadySelected: sizeSortMode === 'borrowCapPct' && activeSortColumn === 'size',
+                      setSortOrder: setSizeSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
+                      setSortMode: setSizeSortMode, targetMode: 'borrowCapPct',
+                      setActiveSortColumn, targetColumn: 'size',
+                    });
+                  }}
+                  onSortDeficitRatio={() => {
+                    collapseExpandedOnSort();
+                    selectSortOption({
+                      isAlreadySelected: sizeSortMode === 'deficitRatio' && activeSortColumn === 'size',
+                      setSortOrder: setSizeSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
+                      setSortMode: setSizeSortMode, targetMode: 'deficitRatio',
+                      setActiveSortColumn, targetColumn: 'size',
+                    });
+                  }}
                 />
               );
             })

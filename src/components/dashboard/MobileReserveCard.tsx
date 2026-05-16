@@ -198,7 +198,7 @@ interface MobileReserveCardProps {
   /** Callback to add/remove from portfolio. */
   onPortfolioToggle?: (reserveId: string, reserve: ReserveWithSpread, side?: 'supply' | 'borrow') => void;
   /** Callback when hub pill is clicked for filtering. */
-  onSelectHub?: (hubName: string) => void;
+  onSelectHub?: (hubId: string) => void;
   onHubChipClick?: (reserveId: string) => void;
 }
 
@@ -566,7 +566,7 @@ const MobileReserveCard = memo(({
       : null;
   const protocolVersion = getProtocolVersion(reserve.marketName);
   const displayReserveSizeUsd = (() => {
-    const usd = nativeToUsd(reserve.reserveSize, reserve.decimals, reserve.tokenPrice);
+    const usd = nativeToUsd(reserve.supplied, reserve.decimals, reserve.tokenPrice);
     if (usd == null || !Number.isFinite(usd)) return usd ?? null;
     return getScenarioSupplySizeUsd({
       reserveSizeUsd: usd,
@@ -616,10 +616,9 @@ const MobileReserveCard = memo(({
 
   const showUpperOnly = variant === 'upperOnly';
 
-  /** reserve.optimalUsageRate 是 percent number（如 45 = 45%），直接显示，无需 RAY 转换。 */
   const optimalPct =
-    reserve.optimalUsageRate != null && Number(reserve.optimalUsageRate) > 0
-      ? Number(reserve.optimalUsageRate)
+    reserve.optimalUtilization != null && Number(reserve.optimalUtilization) > 0
+      ? Number(reserve.optimalUtilization)
       : null;
   const reserveId = getReserveKey(reserve);
 
@@ -750,7 +749,7 @@ const MobileReserveCard = memo(({
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        onSelectHub?.(reserve.hubName!);
+                        onSelectHub?.(reserve.hubId!);
                       }}
                       className={cn("inline-flex max-w-full shrink-0 items-center px-1.5 py-0.5 cursor-pointer transition-all duration-150 hover:opacity-80 active:scale-[0.98]", hubClass)}
                       aria-label={`Filter by ${reserve.hubName} hub`}

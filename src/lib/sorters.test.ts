@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { compareIncentiveWithNative } from './sorters';
+import { compareIncentiveWithNative, compareSizeToCapPct } from './sorters';
 
 describe('compareIncentiveWithNative', () => {
   it('sorts by incentive value in descending order', () => {
@@ -74,6 +74,48 @@ describe('compareIncentiveWithNative', () => {
 
   it('returns 0 when both incentives and natives are null', () => {
     const result = compareIncentiveWithNative(null, null, null, null, 'desc');
+    expect(result).toBe(0);
+  });
+});
+
+describe('compareSizeToCapPct', () => {
+  it('sorts by cap% in descending order (higher pct first)', () => {
+    const result = compareSizeToCapPct(50, 30, 100, 100, 'desc');
+    expect(result).toBeLessThan(0);
+  });
+
+  it('sorts by cap% in ascending order (lower pct first)', () => {
+    const result = compareSizeToCapPct(50, 30, 100, 100, 'asc');
+    expect(result).toBeGreaterThan(0);
+  });
+
+  it('null size sorts after valid size in desc', () => {
+    const result = compareSizeToCapPct(null, 30, 100, 100, 'desc');
+    expect(result).toBeGreaterThan(0);
+  });
+
+  it('null size sorts after valid size in asc', () => {
+    const result = compareSizeToCapPct(null, 30, 100, 100, 'asc');
+    expect(result).toBeGreaterThan(0);
+  });
+
+  it('null or zero cap treated as 0% (both equal, fallback is 0)', () => {
+    const result = compareSizeToCapPct(50, 30, null, null, 'desc');
+    expect(result).toBe(0);
+  });
+
+  it('reserve with cap has higher priority than reserve without cap in desc', () => {
+    const result = compareSizeToCapPct(50, 30, 100, null, 'desc');
+    expect(result).toBeLessThan(0);
+  });
+
+  it('both null sizes return 0', () => {
+    const result = compareSizeToCapPct(null, null, 100, 100, 'desc');
+    expect(result).toBe(0);
+  });
+
+  it('same percentage returns 0', () => {
+    const result = compareSizeToCapPct(30, 60, 100, 200, 'desc');
     expect(result).toBe(0);
   });
 });

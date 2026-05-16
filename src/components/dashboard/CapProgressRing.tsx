@@ -20,6 +20,8 @@ interface CapProgressRingProps {
   triggerClassName?: string;
   /** Accessible name when `label` wraps the trigger. */
   triggerAriaLabel?: string;
+  /** When provided, clicking the ring triggers this sort callback instead of showing tooltip only. */
+  onSort?: () => void;
 }
 
 /** Shared cap progress data display — reused by desktop tooltip and mobile bottom sheet. */
@@ -82,6 +84,7 @@ const CapProgressRing = memo(({
   label,
   triggerClassName,
   triggerAriaLabel,
+  onSort,
 }: CapProgressRingProps) => {
   if (cap == null || !Number.isFinite(cap) || cap <= 0) {
     return null;
@@ -166,13 +169,32 @@ const CapProgressRing = memo(({
             className={cn(
               'inline-flex items-center justify-center gap-[var(--ds-space-1-5)] cursor-default text-left',
               'rounded-md py-0.5 pl-1 pr-0.5 -my-0.5 transition-colors hover:bg-muted/50',
+              onSort && 'cursor-pointer',
               triggerClassName,
             )}
             aria-label={triggerAriaLabel}
-            onClick={(event) => event.stopPropagation()}
+            onClick={(event) => { event.stopPropagation(); if (onSort) onSort(); }}
           >
             {label}
             {ringNode}
+          </button>
+        </TooltipTrigger>
+        {tooltipContent}
+      </Tooltip>
+    );
+  }
+
+  if (onSort) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            className="inline-flex items-center p-0.5 -m-0.5 rounded-full transition-all duration-150 hover:bg-muted/70 hover:scale-[1.12] cursor-pointer"
+            onClick={(event) => { event.stopPropagation(); onSort(); }}
+            aria-label="Sort by supply cap %"
+          >
+            {ringNode.props.children}
           </button>
         </TooltipTrigger>
         {tooltipContent}

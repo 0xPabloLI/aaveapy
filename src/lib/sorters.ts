@@ -14,6 +14,24 @@ const compareNullableNumbers = (a: number | null, b: number | null, order: SortO
   return compareNumbers(a, b, order);
 };
 
+export const compareSizeToCapPct = (
+  aSize: number | null,
+  bSize: number | null,
+  aCap: number | null,
+  bCap: number | null,
+  order: SortOrder,
+): number => {
+  const aPct = (aSize != null && aCap != null && aCap > 0) ? (aSize / aCap) * 100 : null;
+  const bPct = (bSize != null && bCap != null && bCap > 0) ? (bSize / bCap) * 100 : null;
+
+  if (aPct === null && bPct === null) return 0;
+  if (aPct === null) return 1;
+  if (bPct === null) return -1;
+
+  const diff = bPct - aPct;
+  return order === 'desc' ? diff : -diff;
+};
+
 export const compareIncentiveWithNative = (
   aIncentive: number | null,
   bIncentive: number | null,

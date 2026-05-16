@@ -21,6 +21,8 @@ interface BorrowCapProgressRingProps {
   label?: ReactNode;
   triggerClassName?: string;
   triggerAriaLabel?: string;
+  /** When provided, clicking the ring triggers this sort callback. */
+  onSort?: () => void;
 }
 
 /** Shared borrow cap progress data display — reused by desktop tooltip and mobile bottom sheet. */
@@ -102,6 +104,7 @@ const BorrowCapProgressRing = memo(({
   label,
   triggerClassName,
   triggerAriaLabel,
+  onSort,
 }: BorrowCapProgressRingProps) => {
   if (cap == null || !Number.isFinite(cap) || cap <= 0) {
     return null;
@@ -190,13 +193,59 @@ const BorrowCapProgressRing = memo(({
             className={cn(
               'inline-flex items-center justify-center gap-[var(--ds-space-1-5)] cursor-default text-left',
               'rounded-md py-0.5 pl-1 pr-0.5 -my-0.5 transition-colors hover:bg-muted/50',
+              onSort && 'cursor-pointer',
               triggerClassName,
             )}
             aria-label={triggerAriaLabel}
-            onClick={(event) => event.stopPropagation()}
+            onClick={(event) => { event.stopPropagation(); if (onSort) onSort(); }}
           >
             {label}
             {ringNode}
+          </button>
+        </TooltipTrigger>
+        {tooltipContent}
+      </Tooltip>
+    );
+  }
+
+  if (onSort) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            className="inline-flex items-center p-0.5 -m-0.5 rounded-full transition-all duration-150 hover:bg-muted/70 hover:scale-[1.12] cursor-pointer"
+            onClick={(event) => { event.stopPropagation(); onSort(); }}
+            aria-label="Sort by borrow cap %"
+          >
+            <svg
+              width={ringSize}
+              height={ringSize}
+              viewBox={`0 0 ${ringSize} ${ringSize}`}
+              className="transform -rotate-90"
+            >
+              <circle
+                cx={ringSize / 2}
+                cy={ringSize / 2}
+                r={radius}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={strokeWidth}
+                className="text-muted-foreground/15"
+              />
+              <circle
+                cx={ringSize / 2}
+                cy={ringSize / 2}
+                r={radius}
+                fill="none"
+                stroke={getProgressColor()}
+                strokeWidth={strokeWidth}
+                strokeLinecap="round"
+                strokeDasharray={circumference}
+                strokeDashoffset={strokeDashoffset}
+                className="transition-all duration-300"
+              />
+            </svg>
           </button>
         </TooltipTrigger>
         {tooltipContent}

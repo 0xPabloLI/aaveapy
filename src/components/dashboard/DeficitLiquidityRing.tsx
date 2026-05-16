@@ -20,6 +20,8 @@ interface DeficitLiquidityRingProps {
   triggerClassName?: string;
   triggerAriaLabel?: string;
   poolExplorerUrl?: string | null;
+  /** When provided, clicking the ring triggers this sort callback. */
+  onSort?: () => void;
 }
 
 /** Shared deficit data display — reused by desktop tooltip and mobile bottom sheet. */
@@ -109,6 +111,7 @@ const DeficitLiquidityRing = memo(({
   triggerClassName,
   triggerAriaLabel,
   poolExplorerUrl,
+  onSort,
 }: DeficitLiquidityRingProps) => {
   const hasDeficit = deficitUsd != null && Number.isFinite(deficitUsd) && deficitUsd > 0;
   const hasTotalSupplied = totalSuppliedUsd != null && Number.isFinite(totalSuppliedUsd) && totalSuppliedUsd >= 0;
@@ -203,13 +206,64 @@ const DeficitLiquidityRing = memo(({
             className={cn(
               'inline-flex items-center justify-center gap-[var(--ds-space-1-5)] cursor-default text-left',
               'rounded-md py-0.5 pl-1 pr-0.5 -my-0.5 transition-colors hover:bg-muted/50',
+              onSort && 'cursor-pointer',
               triggerClassName,
             )}
             aria-label={triggerAriaLabel}
-            onClick={(event) => event.stopPropagation()}
+            onClick={(event) => { event.stopPropagation(); if (onSort) onSort(); }}
           >
             {label}
             {ringNode}
+          </button>
+        </TooltipTrigger>
+        {tooltipContent}
+      </Tooltip>
+    );
+  }
+
+  if (onSort) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            className={cn(
+              'inline-flex items-center p-0.5 -m-0.5 rounded-full transition-all duration-150 cursor-pointer',
+              severity === 'neutral'
+                ? 'opacity-70 saturate-0 hover:bg-muted/40 hover:scale-100'
+                : 'hover:bg-muted/70 hover:scale-[1.12]',
+            )}
+            onClick={(event) => { event.stopPropagation(); onSort(); }}
+            aria-label="Sort by deficit %"
+          >
+            <svg
+              width={ringSize}
+              height={ringSize}
+              viewBox={`0 0 ${ringSize} ${ringSize}`}
+              className="transform -rotate-90"
+            >
+              <circle
+                cx={ringSize / 2}
+                cy={ringSize / 2}
+                r={radius}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={strokeWidth}
+                className="text-muted-foreground/15"
+              />
+              <circle
+                cx={ringSize / 2}
+                cy={ringSize / 2}
+                r={radius}
+                fill="none"
+                stroke={getProgressColor()}
+                strokeWidth={strokeWidth}
+                strokeLinecap="round"
+                strokeDasharray={circumference}
+                strokeDashoffset={strokeDashoffset}
+                className="transition-all duration-300"
+              />
+            </svg>
           </button>
         </TooltipTrigger>
         {tooltipContent}
