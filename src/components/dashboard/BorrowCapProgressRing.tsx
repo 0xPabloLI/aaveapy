@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { memo } from 'react';
+import { ArrowDown, ArrowUp } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipCalloutArrow } from '@/components/ui/tooltip';
 import { formatScenarioSize } from '@/lib/formatters';
 import { getAvailableToBorrowUsd } from '@/lib/scenarioSize';
@@ -66,7 +67,7 @@ export function BorrowCapProgressContent({
     percentage >= 95 ? 'ds-text-amber-500' : percentage >= 80 ? 'ds-text-amber-600' : 'ds-text-brand-cyan';
 
   const sortArrow = onSortPercentage
-    ? (isSortActive ? (sortOrder === 'desc' ? '↓' : '↑') : '↕')
+    ? (isSortActive ? (sortOrder === 'desc' ? <ArrowDown className="w-3 h-3" /> : <ArrowUp className="w-3 h-3" />) : <ArrowDown className="w-3 h-3 opacity-50" />)
     : null;
 
   return (

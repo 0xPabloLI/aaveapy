@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { memo } from 'react';
-import { ExternalLink } from 'lucide-react';
+import { ArrowDown, ArrowUp, ExternalLink } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipCalloutArrow } from '@/components/ui/tooltip';
 import { formatScenarioSize } from '@/lib/formatters';
 import { calculateDeficitShareRatio, getDeficitSeverity } from '@/lib/deficit';
@@ -64,7 +64,7 @@ export function DeficitProgressContent({
   };
 
   const sortArrow = onSortPercentage
-    ? (isSortActive ? (sortOrder === 'desc' ? '↓' : '↑') : '↕')
+    ? (isSortActive ? (sortOrder === 'desc' ? <ArrowDown className="w-3 h-3" /> : <ArrowUp className="w-3 h-3" />) : <ArrowDown className="w-3 h-3 opacity-50" />)
     : null;
 
   const deficitDisplayValue = displayMode === 'token'
