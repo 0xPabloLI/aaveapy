@@ -6,7 +6,7 @@
   },
   "hero": {
     "eyebrow": "DeFi Paneli · Türkiye",
-    "title": "Aave coin için canlı APY ve fiyat paneli",
+    "title": "Aave APY'lerini tüm zincirlerde canlı karşılaştır",
     "subtitle": "17 blok zincirinde Aave V3 mevduat getirilerini ve borçlanma maliyetlerini karşılaştırın. Merit, Merkl ve Brevis teşvikleri efektif APY'ye dahil edilmiştir.",
     "cta": "Canlı paneli aç",
     "secondaryCta": "Tüm zincirleri gör"
@@ -44,7 +44,7 @@
       "a": "Panel her varlık için USD fiyatını, mevduat ve borçlanma APY'lerini (teşvikli ve teşviksiz) gösterir. Bir satıra tıklayarak havuzun teknik analizini ve ödül detaylarını görebilirsiniz."
     },
     {
-      "q": "Aave geleceği için en iyi zincir hangisi?",
+      "q": "Bugün en iyi Aave APY'sini hangi zincir sunuyor?",
       "a": "Anlık olarak değişir. Genelde L2'lerdeki (Base, Arbitrum, Optimism) stablecoin'ler (USDC, USDT) en rekabetçi APY'leri sunar; Merit ve Merkl teşvikleri aktifken farkı daha da açar."
     },
     {
@@ -60,7 +60,7 @@
       "a": "Tamamen ücretsiz. Cüzdan bağlamadığınız için hiçbir kişisel veri toplanmaz. Sadece anonim sayfa analitiği vardır."
     },
     {
-      "q": "Aave coin yorumu için hangi göstergelere bakmalıyım?",
+      "q": "Aave havuz göstergelerine hangi metriklerle bakmalıyım?",
       "a": "Havuz kullanımı (utilization), toplam mevduat, borçlanma talebi ve aktif teşvik kampanyaları — hepsi panelde görünür. Bu dört metrik Aave için temel piyasa sağlığını anlatır."
     }
   ]
