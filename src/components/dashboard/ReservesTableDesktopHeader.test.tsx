@@ -35,27 +35,17 @@ describe('ReservesTableDesktopHeader', () => {
             showBorrowSortMenu={false}
             borrowMenuPos={null}
             spreadSortOrder="desc"
-            showSizeSortMenu={false}
-            sizeMenuPos={null}
-            sizeSortButtonRef={createRef<HTMLButtonElement>()}
             supplySortButtonRef={createRef<HTMLButtonElement>()}
             borrowSortButtonRef={createRef<HTMLButtonElement>()}
             onSortToken={() => {}}
             onSortMarket={() => {}}
             onSortPrice={() => {}}
+            onSortSizeDefault={() => {}}
             onToggleUtilMenu={() => {}}
             onCloseUtilMenu={() => {}}
             onSelectUtilSortUtil={() => {}}
             onSelectUtilSortLiquidity={() => {}}
             onToggleSpreadSort={() => {}}
-            onToggleSizeMenu={() => {}}
-            onCloseSizeMenu={() => {}}
-            onSelectSizeSortSupply={() => {}}
-            onSelectSizeSortBorrow={() => {}}
-            onSelectSizeSortBorrowAvailability={() => {}}
-            onSelectSizeSortSupplyAvailability={() => {}}
-            onSelectSizeSortDeficitAmount={() => {}}
-            onSelectSizeSortDeficitRatio={() => {}}
             onToggleSupplyMenu={() => {}}
             onCloseSupplyMenu={() => {}}
             onSelectSupplySortTotal={() => {}}

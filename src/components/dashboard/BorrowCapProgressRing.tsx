@@ -11,18 +11,20 @@ function SortArrowButton({
   isActive,
   sortOrder,
   ariaLabel,
+  className,
 }: {
   onClick: () => void;
   isActive: boolean;
   sortOrder?: 'asc' | 'desc';
   ariaLabel: string;
+  className?: string;
 }) {
   return (
     <button
       type="button"
       onClick={(e) => { e.stopPropagation(); onClick(); }}
       className={`ml-1 inline-flex items-center transition-colors ${
-        isActive ? 'text-foreground' : 'text-muted-foreground/60 hover:text-foreground'
+        isActive ? (className ?? 'text-foreground') : 'text-muted-foreground/60 hover:text-foreground'
       }`}
       aria-label={ariaLabel}
     >
@@ -66,6 +68,14 @@ interface BorrowCapProgressRingProps {
   onSortBorrowable?: () => void;
   isSortBorrowableActive?: boolean;
   borrowableSortOrder?: 'asc' | 'desc';
+  /** Sort callbacks and state for borrow cap value arrow in tooltip. */
+  onSortBorrowCapValue?: () => void;
+  isSortBorrowCapValueActive?: boolean;
+  borrowCapValueSortOrder?: 'asc' | 'desc';
+  /** Sort callbacks and state for available liquidity arrow in tooltip. */
+  onSortAvailableLiquidity?: () => void;
+  isSortAvailableLiquidityActive?: boolean;
+  availableLiquiditySortOrder?: 'asc' | 'desc';
 }
 
 /** Shared borrow cap progress data display — reused by desktop tooltip and mobile bottom sheet. */
@@ -86,6 +96,12 @@ export function BorrowCapProgressContent({
   onSortBorrowable,
   isSortBorrowableActive,
   borrowableSortOrder,
+  onSortBorrowCapValue,
+  isSortBorrowCapValueActive,
+  borrowCapValueSortOrder,
+  onSortAvailableLiquidity,
+  isSortAvailableLiquidityActive,
+  availableLiquiditySortOrder,
 }: {
   borrowed: number;
   cap: number;
@@ -103,6 +119,12 @@ export function BorrowCapProgressContent({
   onSortBorrowable?: () => void;
   isSortBorrowableActive?: boolean;
   borrowableSortOrder?: 'asc' | 'desc';
+  onSortBorrowCapValue?: () => void;
+  isSortBorrowCapValueActive?: boolean;
+  borrowCapValueSortOrder?: 'asc' | 'desc';
+  onSortAvailableLiquidity?: () => void;
+  isSortAvailableLiquidityActive?: boolean;
+  availableLiquiditySortOrder?: 'asc' | 'desc';
 }) {
   const percentage = Math.min((borrowed / cap) * 100, 100);
   const availableToBorrow = disabled
@@ -116,15 +138,23 @@ export function BorrowCapProgressContent({
     percentage >= 95 ? 'ds-text-amber-500' : percentage >= 80 ? 'ds-text-amber-600' : 'ds-text-brand-cyan';
 
   const sortArrow = onSortPercentage
-    ? <SortArrowButton onClick={onSortPercentage} isActive={!!isSortActive} sortOrder={sortOrder} ariaLabel="Sort by borrow cap %" />
+    ? <SortArrowButton onClick={onSortPercentage} isActive={!!isSortActive} sortOrder={sortOrder} ariaLabel="Sort by borrow cap %" className={colorClass} />
     : null;
 
   const borrowSizeArrow = onSortBorrowSize
-    ? <SortArrowButton onClick={onSortBorrowSize} isActive={!!isSortBorrowSizeActive} sortOrder={borrowSizeSortOrder} ariaLabel="Sort by borrow size" />
+    ? <SortArrowButton onClick={onSortBorrowSize} isActive={!!isSortBorrowSizeActive} sortOrder={borrowSizeSortOrder} ariaLabel="Sort by borrow size" className="ds-text-brand-cyan" />
     : null;
 
   const borrowableArrow = onSortBorrowable
-    ? <SortArrowButton onClick={onSortBorrowable} isActive={!!isSortBorrowableActive} sortOrder={borrowableSortOrder} ariaLabel="Sort by borrowable" />
+    ? <SortArrowButton onClick={onSortBorrowable} isActive={!!isSortBorrowableActive} sortOrder={borrowableSortOrder} ariaLabel="Sort by borrowable" className="ds-text-brand-cyan" />
+    : null;
+
+  const borrowCapValueArrow = onSortBorrowCapValue
+    ? <SortArrowButton onClick={onSortBorrowCapValue} isActive={!!isSortBorrowCapValueActive} sortOrder={borrowCapValueSortOrder} ariaLabel="Sort by borrow cap value" className="ds-text-brand-cyan" />
+    : null;
+
+  const availableLiquidityArrow = onSortAvailableLiquidity
+    ? <SortArrowButton onClick={onSortAvailableLiquidity} isActive={!!isSortAvailableLiquidityActive} sortOrder={availableLiquiditySortOrder} ariaLabel="Sort by available liquidity" className={availableLiquidityUsd < 10000 ? 'ds-text-amber-600' : 'ds-text-purple-600'} />
     : null;
 
   return (
@@ -140,12 +170,14 @@ export function BorrowCapProgressContent({
         <span className="text-muted-foreground">Borrow cap</span>
         <span className="font-medium tabular-nums ds-text-brand-cyan">
           {formatScenarioSize(cap, { inputMode: displayMode, tokenPrice, tokenSymbol })}
+          {borrowCapValueArrow}
         </span>
       </div>
       <div className="flex justify-between gap-3">
         <span className="text-muted-foreground">Available liquidity</span>
         <span className={`font-medium tabular-nums ${availableLiquidityUsd < 10000 ? 'ds-text-amber-600' : 'ds-text-purple-600'}`}>
           {formatScenarioSize(availableLiquidityUsd, { inputMode: displayMode, tokenPrice, tokenSymbol })}
+          {availableLiquidityArrow}
         </span>
       </div>
       <div className="flex justify-between gap-3">
@@ -190,6 +222,12 @@ const BorrowCapProgressRing = memo(({
   onSortBorrowable,
   isSortBorrowableActive,
   borrowableSortOrder,
+  onSortBorrowCapValue,
+  isSortBorrowCapValueActive,
+  borrowCapValueSortOrder,
+  onSortAvailableLiquidity,
+  isSortAvailableLiquidityActive,
+  availableLiquiditySortOrder,
 }: BorrowCapProgressRingProps) => {
   if (cap == null || !Number.isFinite(cap) || cap <= 0) {
     return null;
@@ -229,6 +267,12 @@ const BorrowCapProgressRing = memo(({
         onSortBorrowable={onSortBorrowable}
         isSortBorrowableActive={isSortBorrowableActive}
         borrowableSortOrder={borrowableSortOrder}
+        onSortBorrowCapValue={onSortBorrowCapValue}
+        isSortBorrowCapValueActive={isSortBorrowCapValueActive}
+        borrowCapValueSortOrder={borrowCapValueSortOrder}
+        onSortAvailableLiquidity={onSortAvailableLiquidity}
+        isSortAvailableLiquidityActive={isSortAvailableLiquidityActive}
+        availableLiquiditySortOrder={availableLiquiditySortOrder}
       />
     </TooltipContent>
   );

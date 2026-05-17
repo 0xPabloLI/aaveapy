@@ -36,6 +36,10 @@ interface CapProgressRingProps {
   onSortSuppliable?: () => void;
   isSortSuppliableActive?: boolean;
   suppliableSortOrder?: 'asc' | 'desc';
+  /** Sort callbacks and state for supply cap value arrow in tooltip. */
+  onSortSupplyCapValue?: () => void;
+  isSortSupplyCapValueActive?: boolean;
+  supplyCapValueSortOrder?: 'asc' | 'desc';
 }
 
 /** Shared cap progress data display — reused by desktop tooltip and mobile bottom sheet. */
@@ -45,18 +49,20 @@ function SortArrowButton({
   isActive,
   sortOrder,
   ariaLabel,
+  className,
 }: {
   onClick: () => void;
   isActive: boolean;
   sortOrder?: 'asc' | 'desc';
   ariaLabel: string;
+  className?: string;
 }) {
   return (
     <button
       type="button"
       onClick={(e) => { e.stopPropagation(); onClick(); }}
       className={`ml-1 inline-flex items-center transition-colors ${
-        isActive ? 'text-foreground' : 'text-muted-foreground/60 hover:text-foreground'
+        isActive ? (className ?? 'text-foreground') : 'text-muted-foreground/60 hover:text-foreground'
       }`}
       aria-label={ariaLabel}
     >
@@ -84,6 +90,9 @@ export function CapProgressContent({
   onSortSuppliable,
   isSortSuppliableActive,
   suppliableSortOrder,
+  onSortSupplyCapValue,
+  isSortSupplyCapValueActive,
+  supplyCapValueSortOrder,
 }: {
   currentSize: number;
   cap: number;
@@ -99,21 +108,28 @@ export function CapProgressContent({
   onSortSuppliable?: () => void;
   isSortSuppliableActive?: boolean;
   suppliableSortOrder?: 'asc' | 'desc';
+  onSortSupplyCapValue?: () => void;
+  isSortSupplyCapValueActive?: boolean;
+  supplyCapValueSortOrder?: 'asc' | 'desc';
 }) {
   const percentage = Math.min((currentSize / cap) * 100, 100);
   const colorClass =
     percentage >= 95 ? 'ds-text-amber-500' : percentage >= 80 ? 'ds-text-amber-600' : 'ds-text-emerald-500';
 
   const sortArrow = onSortPercentage
-    ? <SortArrowButton onClick={onSortPercentage} isActive={!!isSortActive} sortOrder={sortOrder} ariaLabel="Sort by supply cap %" />
+    ? <SortArrowButton onClick={onSortPercentage} isActive={!!isSortActive} sortOrder={sortOrder} ariaLabel="Sort by supply cap %" className={colorClass} />
     : null;
 
   const supplySizeArrow = onSortSupplySize
-    ? <SortArrowButton onClick={onSortSupplySize} isActive={!!isSortSupplySizeActive} sortOrder={supplySizeSortOrder} ariaLabel="Sort by supply size" />
+    ? <SortArrowButton onClick={onSortSupplySize} isActive={!!isSortSupplySizeActive} sortOrder={supplySizeSortOrder} ariaLabel="Sort by supply size" className="ds-text-emerald-500" />
     : null;
 
   const suppliableArrow = onSortSuppliable
-    ? <SortArrowButton onClick={onSortSuppliable} isActive={!!isSortSuppliableActive} sortOrder={suppliableSortOrder} ariaLabel="Sort by suppliable" />
+    ? <SortArrowButton onClick={onSortSuppliable} isActive={!!isSortSuppliableActive} sortOrder={suppliableSortOrder} ariaLabel="Sort by suppliable" className="ds-text-emerald-500" />
+    : null;
+
+  const supplyCapValueArrow = onSortSupplyCapValue
+    ? <SortArrowButton onClick={onSortSupplyCapValue} isActive={!!isSortSupplyCapValueActive} sortOrder={supplyCapValueSortOrder} ariaLabel="Sort by supply cap value" className="ds-text-emerald-500" />
     : null;
 
   return (
@@ -129,6 +145,7 @@ export function CapProgressContent({
         <span className="text-muted-foreground">Supply cap</span>
         <span className="font-medium tabular-nums ds-text-emerald-500">
           {formatScenarioSize(cap, { inputMode: displayMode, tokenPrice, tokenSymbol })}
+          {supplyCapValueArrow}
         </span>
       </div>
       <div className="flex justify-between gap-3">
@@ -171,6 +188,9 @@ const CapProgressRing = memo(({
   onSortSuppliable,
   isSortSuppliableActive,
   suppliableSortOrder,
+  onSortSupplyCapValue,
+  isSortSupplyCapValueActive,
+  supplyCapValueSortOrder,
 }: CapProgressRingProps) => {
   if (cap == null || !Number.isFinite(cap) || cap <= 0) {
     return null;
@@ -206,6 +226,9 @@ const CapProgressRing = memo(({
         onSortSuppliable={onSortSuppliable}
         isSortSuppliableActive={isSortSuppliableActive}
         suppliableSortOrder={suppliableSortOrder}
+        onSortSupplyCapValue={onSortSupplyCapValue}
+        isSortSupplyCapValueActive={isSortSupplyCapValueActive}
+        supplyCapValueSortOrder={supplyCapValueSortOrder}
       />
     </TooltipContent>
   );

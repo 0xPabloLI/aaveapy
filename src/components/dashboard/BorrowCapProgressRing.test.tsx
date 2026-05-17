@@ -44,6 +44,40 @@ describe('BorrowCapProgressContent sort arrows', () => {
     expect(html).not.toContain('aria-label="Sort by borrowable"');
   });
 
+  it('renders "Borrow cap" sort arrow button when onSortBorrowCapValue is provided', () => {
+    const html = renderToString(
+      <BorrowCapProgressContent
+        {...baseProps}
+        onSortBorrowCapValue={() => {}}
+      />,
+    );
+    expect(html).toContain('aria-label="Sort by borrow cap value"');
+  });
+
+  it('does not render "Borrow cap" sort arrow when onSortBorrowCapValue not provided', () => {
+    const html = renderToString(
+      <BorrowCapProgressContent {...baseProps} />,
+    );
+    expect(html).not.toContain('aria-label="Sort by borrow cap value"');
+  });
+
+  it('renders "Available liquidity" sort arrow button when onSortAvailableLiquidity is provided', () => {
+    const html = renderToString(
+      <BorrowCapProgressContent
+        {...baseProps}
+        onSortAvailableLiquidity={() => {}}
+      />,
+    );
+    expect(html).toContain('aria-label="Sort by available liquidity"');
+  });
+
+  it('does not render "Available liquidity" sort arrow when onSortAvailableLiquidity not provided', () => {
+    const html = renderToString(
+      <BorrowCapProgressContent {...baseProps} />,
+    );
+    expect(html).not.toContain('aria-label="Sort by available liquidity"');
+  });
+
   it('shows ArrowDown with opacity-50 when borrow size sort is inactive', () => {
     const html = renderToString(
       <BorrowCapProgressContent

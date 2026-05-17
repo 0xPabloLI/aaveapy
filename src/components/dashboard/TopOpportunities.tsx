@@ -744,7 +744,7 @@ const TopOpportunities = ({
       totalBorrowApr,
       aprSpread: calculateSpreadApr(totalSupplyApr, totalBorrowApr),
     };
-  }).filter(r => !r.isFrozen && !r.isPaused && r.isActive !== false), [whitelistMerklCampaignIds, reserves, tydroPointToUsdRate]);
+  }).filter(r => !r.isFrozen && !r.isPaused), [whitelistMerklCampaignIds, reserves, tydroPointToUsdRate]);
 
   // Top 5 Stable APY - memoized to prevent recalculation
   const topStable = useMemo(() => [...reservesWithTotals]

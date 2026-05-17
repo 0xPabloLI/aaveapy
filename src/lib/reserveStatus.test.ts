@@ -25,12 +25,6 @@ describe('hasProtocolRestriction (internal via isSupplyDisabled)', () => {
     expect(isBorrowDisabled(r)).toBe(true);
   });
 
-  it('inactive reserve (isActive=false) → supply/borrow disabled', () => {
-    const r = { ...BASE_RESERVE, isActive: false };
-    expect(isSupplyDisabled(r)).toBe(true);
-    expect(isBorrowDisabled(r)).toBe(true);
-  });
-
   it('frozen + paused → both protocol reasons, supply/borrow disabled', () => {
     const r = { ...BASE_RESERVE, isFrozen: true, isPaused: true };
     expect(isSupplyDisabled(r)).toBe(true);
@@ -50,23 +44,12 @@ describe('hasProtocolRestriction (internal via isSupplyDisabled)', () => {
     expect(isSupplyDisabled(borrowOnly)).toBe(false);
     expect(isBorrowDisabled(borrowOnly)).toBe(true);
   });
-
-  it('V3 frozen reserve (no isActive field) → not treated as inactive', () => {
-    const r = { ...BASE_RESERVE, isFrozen: true, isPaused: false };
-    // isActive undefined → not counted as inactive
-    expect(isSupplyDisabled(r)).toBe(true);
-  });
 });
 
 describe('getPrimaryReserveStatus', () => {
-  it('paused wins over everything', () => {
-    expect(getPrimaryReserveStatus({ ...BASE_RESERVE, isPaused: true, isFrozen: true, isActive: false } as ReserveWithSpread))
+  it('paused wins over frozen', () => {
+    expect(getPrimaryReserveStatus({ ...BASE_RESERVE, isPaused: true, isFrozen: true } as ReserveWithSpread))
       .toBe('paused');
-  });
-
-  it('inactive wins over frozen', () => {
-    expect(getPrimaryReserveStatus({ ...BASE_RESERVE, isActive: false, isFrozen: true } as ReserveWithSpread))
-      .toBe('inactive');
   });
 
   it('frozen → frozen', () => {
@@ -86,27 +69,22 @@ describe('getPrimaryReserveStatus', () => {
 describe('getReserveFlags', () => {
   it('parses paused', () => {
     const flags = getReserveFlags({ ...BASE_RESERVE, isPaused: true } as ReserveWithSpread);
-    expect(flags).toEqual({ paused: true, inactive: false, frozen: false });
+    expect(flags).toEqual({ paused: true, frozen: false });
   });
 
   it('parses frozen', () => {
     const flags = getReserveFlags({ ...BASE_RESERVE, isFrozen: true } as ReserveWithSpread);
-    expect(flags).toEqual({ paused: false, inactive: false, frozen: true });
-  });
-
-  it('parses inactive (isActive=false)', () => {
-    const flags = getReserveFlags({ ...BASE_RESERVE, isActive: false } as ReserveWithSpread);
-    expect(flags).toEqual({ paused: false, inactive: true, frozen: false });
+    expect(flags).toEqual({ paused: false, frozen: true });
   });
 
   it('parses paused+frozen', () => {
     const flags = getReserveFlags({ ...BASE_RESERVE, isPaused: true, isFrozen: true } as ReserveWithSpread);
-    expect(flags).toEqual({ paused: true, inactive: false, frozen: true });
+    expect(flags).toEqual({ paused: true, frozen: true });
   });
 
   it('normal reserve → all false', () => {
     const flags = getReserveFlags({ ...BASE_RESERVE } as ReserveWithSpread);
-    expect(flags).toEqual({ paused: false, inactive: false, frozen: false });
+    expect(flags).toEqual({ paused: false, frozen: false });
   });
 });
 
@@ -116,9 +94,6 @@ describe('isRestrictedReserve', () => {
   });
   it('true for paused', () => {
     expect(isRestrictedReserve({ ...BASE_RESERVE, isPaused: true } as ReserveWithSpread)).toBe(true);
-  });
-  it('true for inactive', () => {
-    expect(isRestrictedReserve({ ...BASE_RESERVE, isActive: false } as ReserveWithSpread)).toBe(true);
   });
   it('false for normal', () => {
     expect(isRestrictedReserve({ ...BASE_RESERVE } as ReserveWithSpread)).toBe(false);

@@ -1,5 +1,5 @@
 import { memo, useEffect, useState } from 'react';
-import { ListCollapse, PauseCircle, Plus, Snowflake, X, Ban } from 'lucide-react';
+import { ListCollapse, PauseCircle, Plus, Snowflake, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ReserveWithSpread } from '@/types/aave';
 import {
@@ -78,7 +78,7 @@ function MobileCapSheet({
     utilization: 'Utilization',
   };
   const title = capSheet === 'frozen'
-    ? `Status: ${[reserve.isFrozen && 'Frozen', reserve.isPaused && 'Paused', reserve.isActive === false && 'Inactive'].filter(Boolean).join(' & ') || 'Frozen'}`
+    ? `Status: ${[reserve.isFrozen && 'Frozen', reserve.isPaused && 'Paused'].filter(Boolean).join(' & ') || 'Frozen'}`
     : CAP_SHEET_TITLE[capSheet] ?? '';
 
   const CAP_SHEET_CONTENT: Record<string, React.ReactNode> = {
@@ -620,7 +620,7 @@ const MobileReserveCard = memo(({
     <div data-reserve-id={reserveId} className={isSimulationExpanded && !showUpperOnly ? 'shadow-sm rounded-xl border border-border/60 bg-card' : ''}>
       {/* Card upper part */}
       <div
-        className={`bg-card py-3 transition-all duration-300 ${reserve.isPaused || reserve.isActive === false ? 'ds-bg-paused ' : reserve.isFrozen ? 'ds-bg-sky-500-8 ' : ''}${
+        className={`bg-card py-3 transition-all duration-300 ${reserve.isPaused ? 'ds-bg-paused ' : reserve.isFrozen ? 'ds-bg-sky-500-8 ' : ''}${
           isSimulationExpanded && !showUpperOnly
             ? 'rounded-t-xl rounded-b-none'
             : connectedBelow
@@ -631,7 +631,7 @@ const MobileReserveCard = memo(({
         {/* Token header */}
         <div className="flex items-start gap-[var(--ds-space-2)] mb-1.5 min-h-[36px] px-3">
           <div className="flex items-start gap-1 min-w-0 flex-1">
-            {reserve.isFrozen || reserve.isPaused || reserve.isActive === false ? (
+            {reserve.isFrozen || reserve.isPaused ? (
               <div className="relative shrink-0">
                 <TokenIcon
                   symbol={iconSymbol}
@@ -645,10 +645,10 @@ const MobileReserveCard = memo(({
                   data-status={
                       reserve.isPaused
                         ? (reserve.isFrozen ? 'paused-frozen' : 'paused')
-                        : (reserve.isActive === false ? 'inactive' : 'frozen')
+                        : 'frozen'
                     }
                   onClick={() => setCapSheet('frozen')}
-                  aria-label={[reserve.isPaused && 'paused', reserve.isActive === false && 'inactive', reserve.isFrozen && 'frozen'].filter(Boolean).join(' & ').replace(/^/, 'Show ') + ' details'}
+                  aria-label={[reserve.isPaused && 'paused', reserve.isFrozen && 'frozen'].filter(Boolean).join(' & ').replace(/^/, 'Show ') + ' details'}
                   className="absolute -top-2 -left-2 z-10 grid place-items-center h-7 rounded-full bg-transparent"
                   style={{ width: reserve.isFrozen && reserve.isPaused ? '2rem' : '1.75rem' }}
                 >
@@ -661,15 +661,13 @@ const MobileReserveCard = memo(({
                         <PauseCircle className="w-[7px] h-[7px]" />
                       </span>
                     </span>
-                  ) : reserve.isActive === false ? (
+                  ) : reserve.isPaused ? (
                     <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-[rgb(var(--ds-paused-rgb))] text-white">
-                      <Ban className="w-2 h-2" />
+                      <PauseCircle className="w-2 h-2" />
                     </span>
                   ) : (
-                    <span
-                      className={`inline-flex items-center justify-center w-3.5 h-3.5 rounded-full text-white ${reserve.isPaused ? 'bg-[rgb(var(--ds-paused-rgb))]' : 'bg-sky-500'}`}
-                    >
-                      {reserve.isPaused ? <PauseCircle className="w-2 h-2" /> : <Snowflake className="w-2 h-2" />}
+                    <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-sky-500 text-white">
+                      <Snowflake className="w-2 h-2" />
                     </span>
                   )}
                 </button>

@@ -185,10 +185,6 @@ const ReservesTable = ({
     setShowUtilSortMenu,
     utilSortButtonRef,
     utilMenuPos,
-    showSizeSortMenu,
-    setShowSizeSortMenu,
-    sizeSortButtonRef,
-    sizeMenuPos,
     showSupplySortMenu,
     setShowSupplySortMenu,
     supplySortButtonRef,
@@ -197,6 +193,7 @@ const ReservesTable = ({
     setShowBorrowSortMenu,
     borrowSortButtonRef,
     borrowMenuPos,
+    showSizeSortMenu,
     showExtraSortMenu,
     setShowExtraSortMenu,
     handleSortToken,
@@ -456,6 +453,18 @@ const ReservesTable = ({
           const aT = getDisplayDeficit(a) ?? -Infinity;
           const bT = getDisplayDeficit(b) ?? -Infinity;
           comparison = aT - bT;
+        } else if (sizeSortMode === 'supplyCapValue') {
+          const aPrice = getSimulation(a)?.tokenPrice ?? a.tokenPrice;
+          const bPrice = getSimulation(b)?.tokenPrice ?? b.tokenPrice;
+          const aT = nativeToUsd(a.supplyCap, a.decimals, aPrice) ?? -Infinity;
+          const bT = nativeToUsd(b.supplyCap, b.decimals, bPrice) ?? -Infinity;
+          comparison = aT - bT;
+        } else if (sizeSortMode === 'borrowCapValue') {
+          const aPrice = getSimulation(a)?.tokenPrice ?? a.tokenPrice;
+          const bPrice = getSimulation(b)?.tokenPrice ?? b.tokenPrice;
+          const aT = nativeToUsd(a.borrowCap, a.decimals, aPrice) ?? -Infinity;
+          const bT = nativeToUsd(b.borrowCap, b.decimals, bPrice) ?? -Infinity;
+          comparison = aT - bT;
         } else if (sizeSortMode === 'supplyCapPct') {
           const aPrice = getSimulation(a)?.tokenPrice ?? a.tokenPrice;
           const bPrice = getSimulation(b)?.tokenPrice ?? b.tokenPrice;
@@ -474,6 +483,10 @@ const ReservesTable = ({
             nativeToUsd(b.borrowCap, b.decimals, bPrice),
             sizeSortOrder,
           );
+        } else if (sizeSortMode === 'availableLiquidity') {
+          const aL = getDisplayLiquidityUsd(a) ?? -Infinity;
+          const bL = getDisplayLiquidityUsd(b) ?? -Infinity;
+          comparison = aL - bL;
         } else {
           const aT = getDisplayReserveSizeUsd(a) ?? -Infinity;
           const bT = getDisplayReserveSizeUsd(b) ?? -Infinity;
@@ -1295,14 +1308,12 @@ const ReservesTable = ({
             showBorrowSortMenu={showBorrowSortMenu}
             borrowMenuPos={borrowMenuPos}
             spreadSortOrder={spreadSortOrder}
-            showSizeSortMenu={showSizeSortMenu}
-            sizeMenuPos={sizeMenuPos}
-            sizeSortButtonRef={sizeSortButtonRef}
             supplySortButtonRef={supplySortButtonRef}
             borrowSortButtonRef={borrowSortButtonRef}
             onSortToken={handleSortToken}
             onSortMarket={handleSortMarket}
             onSortPrice={handleSortPrice}
+            onSortSizeDefault={handleSortSize}
             utilSortMode={utilSortMode}
             showUtilSortMenu={showUtilSortMenu}
             utilMenuPos={utilMenuPos}
@@ -1340,33 +1351,6 @@ const ReservesTable = ({
                   setActiveSortColumn, targetColumn: 'spread',
                 });
               }
-            }}
-            onToggleSizeMenu={() => setShowSizeSortMenu(!showSizeSortMenu)}
-            onCloseSizeMenu={() => setShowSizeSortMenu(false)}
-            onSelectSizeSortSupply={() => {
-              collapseExpandedOnSort();
-              selectSortOption({ isAlreadySelected: sizeSortMode === 'supply' && activeSortColumn === 'size', setSortOrder: setSizeSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc', setSortMode: setSizeSortMode, targetMode: 'supply', setActiveSortColumn, targetColumn: 'size' });
-              setShowSizeSortMenu(false);
-            }}
-            onSelectSizeSortBorrow={() => {
-              collapseExpandedOnSort();
-              selectSortOption({ isAlreadySelected: sizeSortMode === 'borrow' && activeSortColumn === 'size', setSortOrder: setSizeSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc', setSortMode: setSizeSortMode, targetMode: 'borrow', setActiveSortColumn, targetColumn: 'size' });
-              setShowSizeSortMenu(false);
-            }}
-            onSelectSizeSortBorrowAvailability={() => {
-              collapseExpandedOnSort();
-              selectSortOption({ isAlreadySelected: sizeSortMode === 'borrowAvailability' && activeSortColumn === 'size', setSortOrder: setSizeSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc', setSortMode: setSizeSortMode, targetMode: 'borrowAvailability', setActiveSortColumn, targetColumn: 'size' });
-              setShowSizeSortMenu(false);
-            }}
-            onSelectSizeSortSupplyAvailability={() => {
-              collapseExpandedOnSort();
-              selectSortOption({ isAlreadySelected: sizeSortMode === 'supplyAvailability' && activeSortColumn === 'size', setSortOrder: setSizeSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc', setSortMode: setSizeSortMode, targetMode: 'supplyAvailability', setActiveSortColumn, targetColumn: 'size' });
-              setShowSizeSortMenu(false);
-            }}
-            onSelectSizeSortDeficitAmount={() => {
-              collapseExpandedOnSort();
-              selectSortOption({ isAlreadySelected: sizeSortMode === 'deficitAmount' && activeSortColumn === 'size', setSortOrder: setSizeSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc', setSortMode: setSizeSortMode, targetMode: 'deficitAmount', setActiveSortColumn, targetColumn: 'size' });
-              setShowSizeSortMenu(false);
             }}
             onToggleSupplyMenu={() => setShowSupplySortMenu(!showSupplySortMenu)}
             onCloseSupplyMenu={() => setShowSupplySortMenu(false)}
@@ -1525,6 +1509,51 @@ const ReservesTable = ({
                       setActiveSortColumn, targetColumn: 'size',
                     });
                   }}
+                  onSortSupplyCapValue={() => {
+                    collapseExpandedOnSort();
+                    selectSortOption({
+                      isAlreadySelected: sizeSortMode === 'supplyCapValue' && activeSortColumn === 'size',
+                      setSortOrder: setSizeSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
+                      setSortMode: setSizeSortMode, targetMode: 'supplyCapValue',
+                      setActiveSortColumn, targetColumn: 'size',
+                    });
+                  }}
+                  onSortBorrowCapValue={() => {
+                    collapseExpandedOnSort();
+                    selectSortOption({
+                      isAlreadySelected: sizeSortMode === 'borrowCapValue' && activeSortColumn === 'size',
+                      setSortOrder: setSizeSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
+                      setSortMode: setSizeSortMode, targetMode: 'borrowCapValue',
+                      setActiveSortColumn, targetColumn: 'size',
+                    });
+                  }}
+                  onSortAvailableLiquidity={() => {
+                    collapseExpandedOnSort();
+                    selectSortOption({
+                      isAlreadySelected: sizeSortMode === 'availableLiquidity' && activeSortColumn === 'size',
+                      setSortOrder: setSizeSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
+                      setSortMode: setSizeSortMode, targetMode: 'availableLiquidity',
+                      setActiveSortColumn, targetColumn: 'size',
+                    });
+                  }}
+                  onSortUtilization={() => {
+                    collapseExpandedOnSort();
+                    selectSortOption({
+                      isAlreadySelected: utilSortMode === 'util' && activeSortColumn === 'util',
+                      setSortOrder: setUtilSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
+                      setSortMode: setUtilSortMode, targetMode: 'util',
+                      setActiveSortColumn, targetColumn: 'util',
+                    });
+                  }}
+                  onSortLiquidity={() => {
+                    collapseExpandedOnSort();
+                    selectSortOption({
+                      isAlreadySelected: utilSortMode === 'liquidity' && activeSortColumn === 'util',
+                      setSortOrder: setUtilSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
+                      setSortMode: setUtilSortMode, targetMode: 'liquidity',
+                      setActiveSortColumn, targetColumn: 'util',
+                    });
+                  }}
                   isSortSupplyCapPctActive={activeSortColumn === 'size' && sizeSortMode === 'supplyCapPct'}
                   supplyCapPctSortOrder={sizeSortOrder}
                   isSortBorrowCapPctActive={activeSortColumn === 'size' && sizeSortMode === 'borrowCapPct'}
@@ -1541,6 +1570,16 @@ const ReservesTable = ({
                   borrowableSortOrder={sizeSortOrder}
                   isSortDeficitAmountActive={activeSortColumn === 'size' && sizeSortMode === 'deficitAmount'}
                   deficitAmountSortOrder={sizeSortOrder}
+                  isSortSupplyCapValueActive={activeSortColumn === 'size' && sizeSortMode === 'supplyCapValue'}
+                  supplyCapValueSortOrder={sizeSortOrder}
+                  isSortBorrowCapValueActive={activeSortColumn === 'size' && sizeSortMode === 'borrowCapValue'}
+                  borrowCapValueSortOrder={sizeSortOrder}
+                  isSortAvailableLiquidityActive={activeSortColumn === 'size' && sizeSortMode === 'availableLiquidity'}
+                  availableLiquiditySortOrder={sizeSortOrder}
+                  isSortUtilizationActive={activeSortColumn === 'util' && utilSortMode === 'util'}
+                  utilizationSortOrder={utilSortOrder}
+                  isSortLiquidityActive={activeSortColumn === 'util' && utilSortMode === 'liquidity'}
+                  liquiditySortOrder={utilSortOrder}
                 />
               );
             })

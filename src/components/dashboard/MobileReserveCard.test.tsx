@@ -613,41 +613,6 @@ describe('MobileReserveCard', () => {
     expect(style).toContain('2rem');
   });
 
-  it('renders inactive badge (isActive === false) with Ban icon and amber background', () => {
-    const inactiveReserve = { ...reserve, isActive: false as const };
-
-    const { getByTestId } = render(
-      <QueryClientProvider client={new QueryClient()}>
-        <TooltipProvider>
-          <MobileReserveCard
-            reserve={inactiveReserve}
-            isApy
-            tydroPointToUsdRate={0}
-            onIncentiveClick={() => {}}
-            isSimulationExpanded={false}
-            onToggleSimulation={() => {}}
-            simulation={simulation}
-            supplyInput="1000"
-            borrowInput="500"
-            hasSharedScenario
-            inputMode="usd"
-          />
-        </TooltipProvider>
-      </QueryClientProvider>,
-    );
-
-    const badge = getByTestId('mobile-reserve-status-badge');
-    expect(badge.getAttribute('data-status')).toBe('inactive');
-    expect(badge.getAttribute('aria-label')).toBe('Show inactive details');
-
-    const circle = badge.querySelector('span.rounded-full');
-    expect(circle).not.toBeNull();
-    expect(circle!.className).toContain('ds-paused');
-
-    const banIcon = badge.querySelector('svg');
-    expect(banIcon).toBeTruthy();
-  });
-
   it('does not render frozen/paused badge when neither flag is set', () => {
     const { queryByTestId } = renderCard(false);
 

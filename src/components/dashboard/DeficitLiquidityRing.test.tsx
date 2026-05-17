@@ -26,6 +26,23 @@ describe('DeficitProgressContent sort arrows', () => {
     expect(html).not.toContain('aria-label="Sort by deficit amount"');
   });
 
+  it('renders "Total supplied" sort arrow button when onSortSupplySize is provided', () => {
+    const html = renderToString(
+      <DeficitProgressContent
+        {...baseProps}
+        onSortSupplySize={() => {}}
+      />,
+    );
+    expect(html).toContain('aria-label="Sort by supply size"');
+  });
+
+  it('does not render "Total supplied" sort arrow when onSortSupplySize not provided', () => {
+    const html = renderToString(
+      <DeficitProgressContent {...baseProps} />,
+    );
+    expect(html).not.toContain('aria-label="Sort by supply size"');
+  });
+
   it('shows ArrowDown with opacity-50 when deficit amount sort is inactive', () => {
     const html = renderToString(
       <DeficitProgressContent

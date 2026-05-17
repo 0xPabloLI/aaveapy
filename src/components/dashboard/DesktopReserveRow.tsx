@@ -1,5 +1,5 @@
 import { memo, Fragment, useEffect, useState, useCallback, useRef } from 'react';
-import { ExternalLink, Plus } from 'lucide-react';
+import { ExternalLink, Plus, ArrowDown, ArrowUp } from 'lucide-react';
 import { TableRow, TableCell } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipCalloutArrow } from '@/components/ui/tooltip';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
@@ -124,6 +124,51 @@ interface DesktopReserveRowProps {
   borrowableSortOrder?: 'asc' | 'desc';
   isSortDeficitAmountActive?: boolean;
   deficitAmountSortOrder?: 'asc' | 'desc';
+  /** Sort callbacks and state for supply cap value arrow in tooltip. */
+  onSortSupplyCapValue?: () => void;
+  isSortSupplyCapValueActive?: boolean;
+  supplyCapValueSortOrder?: 'asc' | 'desc';
+  /** Sort callbacks and state for borrow cap value arrow in tooltip. */
+  onSortBorrowCapValue?: () => void;
+  isSortBorrowCapValueActive?: boolean;
+  borrowCapValueSortOrder?: 'asc' | 'desc';
+  /** Sort callbacks and state for available liquidity arrow in tooltip. */
+  onSortAvailableLiquidity?: () => void;
+  isSortAvailableLiquidityActive?: boolean;
+  availableLiquiditySortOrder?: 'asc' | 'desc';
+  /** Sort callbacks and state for utilization tooltip arrows. */
+  onSortUtilization?: () => void;
+  isSortUtilizationActive?: boolean;
+  utilizationSortOrder?: 'asc' | 'desc';
+  onSortLiquidity?: () => void;
+  isSortLiquidityActive?: boolean;
+  liquiditySortOrder?: 'asc' | 'desc';
+}
+
+type SortArrowButtonProps = {
+  onClick: () => void;
+  isActive: boolean;
+  sortOrder?: 'asc' | 'desc';
+  ariaLabel: string;
+};
+
+function SortArrowButton({ onClick, isActive, sortOrder, ariaLabel, className }: SortArrowButtonProps & { className?: string }) {
+  return (
+    <button
+      type="button"
+      onClick={(e) => { e.stopPropagation(); onClick(); }}
+      aria-label={ariaLabel}
+      className={`ml-1 inline-flex items-center transition-colors ${
+        isActive ? (className ?? 'text-foreground') : 'text-muted-foreground/60 hover:text-foreground'
+      }`}
+    >
+      {isActive ? (
+        sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
+      ) : (
+        <ArrowDown className="w-3 h-3 opacity-50" />
+      )}
+    </button>
+  );
 }
 
 const DesktopReserveRow = memo(({
@@ -179,6 +224,21 @@ const DesktopReserveRow = memo(({
   borrowableSortOrder,
   isSortDeficitAmountActive,
   deficitAmountSortOrder,
+  onSortSupplyCapValue,
+  isSortSupplyCapValueActive,
+  supplyCapValueSortOrder,
+  onSortBorrowCapValue,
+  isSortBorrowCapValueActive,
+  borrowCapValueSortOrder,
+  onSortAvailableLiquidity,
+  isSortAvailableLiquidityActive,
+  availableLiquiditySortOrder,
+  onSortUtilization,
+  isSortUtilizationActive,
+  utilizationSortOrder,
+  onSortLiquidity,
+  isSortLiquidityActive,
+  liquiditySortOrder,
 }: DesktopReserveRowProps) => {
   const [hasSimulationMounted, setHasSimulationMounted] = useState(isExpanded);
 
@@ -268,6 +328,14 @@ const DesktopReserveRow = memo(({
   const hasBorrowCap =
     computedBorrowCapUsd != null && Number.isFinite(computedBorrowCapUsd) && computedBorrowCapUsd > 0;
 
+  const supplySizeSortArrow = onSortSupplySize ? (
+    <SortArrowButton onClick={onSortSupplySize} isActive={!!isSortSupplySizeActive} sortOrder={supplySizeSortOrder} ariaLabel="Sort by supply size" className="ds-text-emerald-500" />
+  ) : null;
+
+  const borrowSizeSortArrow = onSortBorrowSize ? (
+    <SortArrowButton onClick={onSortBorrowSize} isActive={!!isSortBorrowSizeActive} sortOrder={borrowSizeSortOrder} ariaLabel="Sort by borrow size" className="ds-text-brand-cyan" />
+  ) : null;
+
   return (
     <Fragment>
       <TableRow
@@ -279,12 +347,10 @@ const DesktopReserveRow = memo(({
             '[&_td]:sticky [&_td]:z-[25] [&_td]:border-b [&_td]:border-border/60 [&_td]:shadow-[0_1px_2px_0_rgb(0_0_0/0.04)] [&_td]:[top:var(--reserves-expanded-main-row-top,5.75rem)]',
           isExpanded && '[&_td]:bg-card',
           isExpanded && reserve.isPaused && '[&_td]:ds-bg-paused',
-          isExpanded && reserve.isActive === false && !reserve.isPaused && '[&_td]:ds-bg-paused',
-          isExpanded && reserve.isFrozen && !reserve.isPaused && reserve.isActive !== false && '[&_td]:ds-bg-sky-500-8',
+          isExpanded && reserve.isFrozen && !reserve.isPaused && '[&_td]:ds-bg-sky-500-8',
           (reserve.isPaused || reserve.isFrozen) && 'bg-card',
           reserve.isPaused && 'ds-bg-paused',
           (!reserve.isPaused && reserve.isFrozen) && 'ds-bg-sky-500-8',
-          reserve.isActive === false && 'ds-bg-paused',
         )}
         onClick={() => onToggleExpand(reserveId)}
       >
@@ -496,16 +562,33 @@ const DesktopReserveRow = memo(({
                 onSortSuppliable={onSortSuppliable}
                 isSortSuppliableActive={isSortSuppliableActive}
                 suppliableSortOrder={suppliableSortOrder}
+                onSortSupplyCapValue={onSortSupplyCapValue}
+                isSortSupplyCapValueActive={isSortSupplyCapValueActive}
+                supplyCapValueSortOrder={supplyCapValueSortOrder}
                 isSortActive={isSortSupplyCapPctActive}
                 sortOrder={supplyCapPctSortOrder}
               />
             ) : (
-              <div className={`inline-flex items-center gap-[var(--ds-space-1-5)] rounded-md py-0.5 pl-1 pr-0.5 -my-0.5 ${supplyBlocked ? 'text-emerald-500/50' : 'ds-text-emerald-500'}`}>
-                <button type="button" className="font-medium tabular-nums cursor-pointer" onClick={(e) => { e.stopPropagation(); onSortSupplySize?.(); }} aria-label="Sort by supply size">
-                  {supplySizeLabel}
-                </button>
-                <span aria-hidden className="inline-block w-3 h-3 shrink-0" />
-              </div>
+              <Tooltip delayDuration={0}>
+                <TooltipTrigger asChild>
+                  <div className={`inline-flex items-center gap-[var(--ds-space-1-5)] rounded-md py-0.5 pl-1 pr-0.5 -my-0.5 cursor-pointer ${supplyBlocked ? 'text-emerald-500/50' : 'ds-text-emerald-500'}`}>
+                    <span className="font-medium tabular-nums">{supplySizeLabel}</span>
+                    <span aria-hidden className="inline-block w-3 h-3 shrink-0" />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="right" align="center" className="max-w-[18rem]">
+                  <TooltipCalloutArrow />
+                  <div className="space-y-1 ds-text-11">
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-muted-foreground">Total supplied</span>
+                      <span className="font-medium tabular-nums ds-text-emerald-500">
+                        {supplySizeLabel}
+                        {supplySizeSortArrow}
+                      </span>
+                    </div>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
             )}
             {/* Borrow Size - Cyan (match tooltip: font-medium + ds-text-brand-cyan) */}
             {hasBorrowCap ? (
@@ -528,16 +611,36 @@ const DesktopReserveRow = memo(({
                 onSortBorrowable={onSortBorrowable}
                 isSortBorrowableActive={isSortBorrowableActive}
                 borrowableSortOrder={borrowableSortOrder}
+                onSortBorrowCapValue={onSortBorrowCapValue}
+                isSortBorrowCapValueActive={isSortBorrowCapValueActive}
+                borrowCapValueSortOrder={borrowCapValueSortOrder}
+                onSortAvailableLiquidity={onSortAvailableLiquidity}
+                isSortAvailableLiquidityActive={isSortAvailableLiquidityActive}
+                availableLiquiditySortOrder={availableLiquiditySortOrder}
                 isSortActive={isSortBorrowCapPctActive}
                 sortOrder={borrowCapPctSortOrder}
               />
             ) : (
-              <div className={`inline-flex items-center gap-[var(--ds-space-1-5)] rounded-md py-0.5 pl-1 pr-0.5 -my-0.5 ${borrowBlocked ? 'text-cyan-500/50' : 'ds-text-brand-cyan'}`}>
-                <button type="button" className="font-medium tabular-nums cursor-pointer" onClick={(e) => { e.stopPropagation(); onSortBorrowSize?.(); }} aria-label="Sort by borrow size">
-                  {borrowSizeLabel}
-                </button>
-                <span aria-hidden className="inline-block w-3 h-3 shrink-0" />
-              </div>
+              <Tooltip delayDuration={0}>
+                <TooltipTrigger asChild>
+                  <div className={`inline-flex items-center gap-[var(--ds-space-1-5)] rounded-md py-0.5 pl-1 pr-0.5 -my-0.5 cursor-pointer ${borrowBlocked ? 'text-cyan-500/50' : 'ds-text-brand-cyan'}`}>
+                    <span className="font-medium tabular-nums">{borrowSizeLabel}</span>
+                    <span aria-hidden className="inline-block w-3 h-3 shrink-0" />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="right" align="center" className="max-w-[18rem]">
+                  <TooltipCalloutArrow />
+                  <div className="space-y-1 ds-text-11">
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-muted-foreground">Total borrowed</span>
+                      <span className="font-medium tabular-nums ds-text-brand-cyan">
+                        {borrowSizeLabel}
+                        {borrowSizeSortArrow}
+                      </span>
+                    </div>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
             )}
             {deficitDisplay.hasDeficit && (
               deficitDisplay.deficitUsd != null ? (
@@ -562,6 +665,9 @@ const DesktopReserveRow = memo(({
                   onSortDeficitAmount={onSortDeficitAmount}
                   isSortDeficitAmountActive={isSortDeficitAmountActive}
                   deficitAmountSortOrder={deficitAmountSortOrder}
+                  onSortSupplySize={onSortSupplySize}
+                  isSortSupplySizeActive={isSortSupplySizeActive}
+                  supplySizeSortOrder={supplySizeSortOrder}
                   isSortActive={isSortDeficitRatioActive}
                   sortOrder={deficitRatioSortOrder}
                 />
@@ -636,6 +742,16 @@ const DesktopReserveRow = memo(({
             <UtilizationIndicator
               current={displayUtilization}
               optimal={optimalPct}
+              availableLiquidityUsd={availableLiquidityUsd}
+              displayMode={inputMode}
+              tokenPrice={displayTokenPrice}
+              tokenSymbol={reserve.tokenSymbol}
+              onSortUtilization={onSortUtilization}
+              isSortUtilizationActive={isSortUtilizationActive}
+              utilizationSortOrder={utilizationSortOrder}
+              onSortLiquidity={onSortLiquidity}
+              isSortLiquidityActive={isSortLiquidityActive}
+              liquiditySortOrder={liquiditySortOrder}
             />
           </div>
         </TableCell>

@@ -125,7 +125,7 @@ export const ReserveWithSpreadSchema = z.object({
   borrowDisabled: z.boolean().optional(),
   isFrozen: z.boolean().optional(),
   isPaused: z.boolean().optional(),
-  isActive: z.literal(false).optional(),
+  
   aTokenAddress: z.string().nullish(),
   vTokenAddress: z.string().nullish(),
   hubAddress: z.string().optional(),

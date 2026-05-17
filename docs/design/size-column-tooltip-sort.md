@@ -64,19 +64,23 @@ Cell:    supply ring (hover → Total supplied [↑↓] | Suppliable [↑↓] | 
 
 - 无 cap 的 supply/borrow 数字包裹在简单 tooltip 中，含 sort arrow
 
-### Phase 6: 全量验证 + 清理
+### Phase 6: DesktopReserveRow sort state wiring
+
+- DesktopReserveRow 中间桥接层传递所有 sort callbacks + sort state (isActive/sortOrder) 到 Ring 组件
+
+### Phase 7: 全量验证 + 清理
 
 - lint + test + tsc --noEmit + build
 - 确认 ReservesTableDesktopHeader.test.tsx 更新
-- 确认 DesktopReserveRow.test.tsx 更新
 
 ## 进度
 
 | Phase | 状态 | Commit |
 |-------|------|--------|
-| Phase 1: Suppliable sort arrow | ⏳ | — |
-| Phase 2: Borrowable sort arrow | ⏳ | — |
-| Phase 3: Deficit sort arrow in tooltip | ⏳ | — |
-| Phase 4: Header 简化 | ⏳ | — |
-| Phase 5: No-cap tooltip | ⏳ | — |
-| Phase 6: 验证 + 清理 | ⏳ | — |
+| Phase 1: Suppliable sort arrow | ✅ | — |
+| Phase 2: Borrowable sort arrow | ✅ | — |
+| Phase 3: Deficit sort arrow in tooltip | ✅ | — |
+| Phase 4: Header 简化 | ✅ | — |
+| Phase 5: No-cap tooltip | ✅ | — |
+| Phase 6: DesktopReserveRow wiring | ✅ | — |
+| Phase 7: 验证 + 清理 | ✅ | — |

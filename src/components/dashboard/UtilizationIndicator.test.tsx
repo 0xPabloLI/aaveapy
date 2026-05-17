@@ -1,8 +1,9 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest';
 import { render } from '@testing-library/react';
+import { renderToString } from 'react-dom/server';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import UtilizationIndicator from './UtilizationIndicator';
+import UtilizationIndicator, { UtilizationContent } from './UtilizationIndicator';
 
 function renderIndicator(current: number | null, optimal: number | null) {
   return render(
@@ -52,5 +53,61 @@ describe('UtilizationIndicator', () => {
     const { container } = renderIndicator(30, 80);
     const svg = container.querySelector('svg');
     expect(svg).not.toBeNull();
+  });
+});
+
+describe('UtilizationContent sort arrows', () => {
+
+  const baseProps = {
+    current: 50,
+    optimal: 80,
+  };
+
+  it('renders "Current utilization" sort arrow button when onSortUtilization is provided', () => {
+    const html = renderToString(
+      <UtilizationContent
+        {...baseProps}
+        onSortUtilization={() => {}}
+      />,
+    );
+    expect(html).toContain('aria-label="Sort by utilization"');
+  });
+
+  it('does not render "Current utilization" sort arrow when onSortUtilization not provided', () => {
+    const html = renderToString(
+      <UtilizationContent {...baseProps} />,
+    );
+    expect(html).not.toContain('aria-label="Sort by utilization"');
+  });
+
+  it('renders "Available liquidity" sort arrow when onSortLiquidity and availableLiquidityUsd provided', () => {
+    const html = renderToString(
+      <UtilizationContent
+        {...baseProps}
+        availableLiquidityUsd={700_000_000}
+        onSortLiquidity={() => {}}
+      />,
+    );
+    expect(html).toContain('aria-label="Sort by liquidity"');
+  });
+
+  it('does not render "Available liquidity" sort arrow when onSortLiquidity not provided', () => {
+    const html = renderToString(
+      <UtilizationContent
+        {...baseProps}
+        availableLiquidityUsd={700_000_000}
+      />,
+    );
+    expect(html).not.toContain('aria-label="Sort by liquidity"');
+  });
+
+  it('does not show Available liquidity row when value not provided', () => {
+    const html = renderToString(
+      <UtilizationContent
+        {...baseProps}
+        onSortLiquidity={() => {}}
+      />,
+    );
+    expect(html).not.toContain('Available liquidity');
   });
 });

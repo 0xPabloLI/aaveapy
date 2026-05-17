@@ -43,6 +43,23 @@ describe('CapProgressContent sort arrows', () => {
     expect(html).not.toContain('aria-label="Sort by suppliable"');
   });
 
+  it('renders "Supply cap" sort arrow button when onSortSupplyCapValue is provided', () => {
+    const html = renderToString(
+      <CapProgressContent
+        {...baseProps}
+        onSortSupplyCapValue={() => {}}
+      />,
+    );
+    expect(html).toContain('aria-label="Sort by supply cap value"');
+  });
+
+  it('does not render "Supply cap" sort arrow when onSortSupplyCapValue not provided', () => {
+    const html = renderToString(
+      <CapProgressContent {...baseProps} />,
+    );
+    expect(html).not.toContain('aria-label="Sort by supply cap value"');
+  });
+
   it('shows ArrowDown with opacity-50 when supply size sort is inactive', () => {
     const html = renderToString(
       <CapProgressContent

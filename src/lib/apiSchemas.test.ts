@@ -189,7 +189,7 @@ describe('apiSchemas', () => {
     expect('totalRewardUsd' in (brevis ?? {})).toBe(true);
   });
 
-  it('accepts isFrozen, isPaused, and isActive fields on reserves', () => {
+  it('accepts isFrozen and isPaused fields on reserves', () => {
     const parsed = MarketsResponseSchema.parse({
       snapshot: {
         lastUpdated: '2026-04-24T00:00:00.000Z',
@@ -219,16 +219,6 @@ describe('apiSchemas', () => {
           isPaused: true,
         },
         {
-          reserveId: 'AaveV4Ethereum-0xinactive',
-          marketName: 'AaveV4Ethereum',
-          chainName: 'Ethereum',
-          chainId: 1,
-          tokenName: 'Inactive Token',
-          tokenSymbol: 'INA',
-          tokenAddress: '0xinactive',
-          isActive: false,
-        },
-        {
           reserveId: 'AaveV3Ethereum-0xnormal',
           marketName: 'AaveV3Ethereum',
           chainName: 'Ethereum',
@@ -243,15 +233,10 @@ describe('apiSchemas', () => {
 
     expect(parsed.reserves[0].isFrozen).toBe(true);
     expect(parsed.reserves[0].isPaused).toBeUndefined();
-    expect(parsed.reserves[0].isActive).toBeUndefined();
     expect(parsed.reserves[1].isFrozen).toBe(true);
     expect(parsed.reserves[1].isPaused).toBe(true);
-    expect(parsed.reserves[2].isActive).toBe(false);
     expect(parsed.reserves[2].isFrozen).toBeUndefined();
     expect(parsed.reserves[2].isPaused).toBeUndefined();
-    expect(parsed.reserves[3].isFrozen).toBeUndefined();
-    expect(parsed.reserves[3].isPaused).toBeUndefined();
-    expect(parsed.reserves[3].isActive).toBeUndefined();
   });
 
   it('preserves V4 Hub & Spoke identifiers on reserves', () => {

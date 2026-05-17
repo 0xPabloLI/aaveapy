@@ -1,20 +1,106 @@
 import { memo, useId } from 'react';
+import { ArrowDown, ArrowUp } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipCalloutArrow } from '@/components/ui/tooltip';
-import { formatPercent } from '@/lib/formatters';
+import { formatPercent, formatScenarioSize } from '@/lib/formatters';
 
 interface UtilizationIndicatorProps {
   current: number | null;
   optimal: number | null;
   width?: number;
   height?: number;
+  availableLiquidityUsd?: number | null;
+  displayMode?: 'usd' | 'token';
+  tokenPrice?: number | null;
+  tokenSymbol?: string | null;
+  onSortUtilization?: () => void;
+  isSortUtilizationActive?: boolean;
+  utilizationSortOrder?: 'asc' | 'desc';
+  onSortLiquidity?: () => void;
+  isSortLiquidityActive?: boolean;
+  liquiditySortOrder?: 'asc' | 'desc';
+}
+
+function SortArrowButton({
+  onClick,
+  isActive,
+  sortOrder,
+  ariaLabel,
+  className,
+}: {
+  onClick: () => void;
+  isActive: boolean;
+  sortOrder?: 'asc' | 'desc';
+  ariaLabel: string;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={(e) => { e.stopPropagation(); onClick(); }}
+      className={`ml-1 inline-flex items-center transition-colors ${
+        isActive ? (className ?? 'text-foreground') : 'text-muted-foreground/60 hover:text-foreground'
+      }`}
+      aria-label={ariaLabel}
+    >
+      {isActive ? (
+        sortOrder === 'desc' ? <ArrowDown className="w-3 h-3" /> : <ArrowUp className="w-3 h-3" />
+      ) : (
+        <ArrowDown className="w-3 h-3 opacity-50" />
+      )}
+    </button>
+  );
 }
 
 /** Shared utilization data display — reused by desktop tooltip and mobile bottom sheet. */
-export function UtilizationContent({ current, optimal }: { current: number; optimal: number }) {
+export function UtilizationContent({
+  current,
+  optimal,
+  availableLiquidityUsd,
+  displayMode,
+  tokenPrice,
+  tokenSymbol,
+  onSortUtilization,
+  isSortUtilizationActive,
+  utilizationSortOrder,
+  onSortLiquidity,
+  isSortLiquidityActive,
+  liquiditySortOrder,
+}: {
+  current: number;
+  optimal: number;
+  availableLiquidityUsd?: number | null;
+  displayMode?: 'usd' | 'token';
+  tokenPrice?: number | null;
+  tokenSymbol?: string | null;
+  onSortUtilization?: () => void;
+  isSortUtilizationActive?: boolean;
+  utilizationSortOrder?: 'asc' | 'desc';
+  onSortLiquidity?: () => void;
+  isSortLiquidityActive?: boolean;
+  liquiditySortOrder?: 'asc' | 'desc';
+}) {
   const isOverOptimal = current > optimal;
+
+  const utilizationArrow = onSortUtilization
+    ? <SortArrowButton onClick={onSortUtilization} isActive={!!isSortUtilizationActive} sortOrder={utilizationSortOrder} ariaLabel="Sort by utilization" className={isOverOptimal ? 'ds-text-amber-600' : 'text-foreground'} />
+    : null;
+
+  const liquidityArrow = onSortLiquidity && availableLiquidityUsd != null
+    ? <SortArrowButton onClick={onSortLiquidity} isActive={!!isSortLiquidityActive} sortOrder={liquiditySortOrder} ariaLabel="Sort by liquidity" className={availableLiquidityUsd < 10000 ? 'ds-text-amber-600' : 'ds-text-purple-600'} />
+    : null;
+
   return (
     <div className="space-y-1 ds-text-12">
-      <div className="flex justify-between gap-4">
+      {availableLiquidityUsd != null && (
+        <div className="flex justify-between gap-4">
+          <span className="text-muted-foreground">Available liquidity</span>
+          <span className={`font-medium tabular-nums ${availableLiquidityUsd < 10000 ? 'ds-text-amber-600' : 'ds-text-purple-600'}`}>
+            {formatScenarioSize(availableLiquidityUsd, { inputMode: displayMode, tokenPrice, tokenSymbol })}
+            {liquidityArrow}
+          </span>
+        </div>
+      )}
+      <div className={`flex justify-between gap-4${availableLiquidityUsd != null ? ' pt-2 border-t border-border/50' : ''}`}>
         <span className="text-muted-foreground">Optimal utilization</span>
         <span className="font-medium tabular-nums">{formatPercent(optimal)}</span>
       </div>
@@ -22,6 +108,7 @@ export function UtilizationContent({ current, optimal }: { current: number; opti
         <span className="text-muted-foreground">Current utilization</span>
         <span className={`font-bold tabular-nums ${isOverOptimal ? 'text-amber-600' : 'text-muted-foreground'}`}>
           {formatPercent(current)}
+          {utilizationArrow}
         </span>
       </div>
     </div>
@@ -33,6 +120,16 @@ const UtilizationIndicator = memo(({
   optimal,
   width = 10,
   height = 24,
+  availableLiquidityUsd,
+  displayMode,
+  tokenPrice,
+  tokenSymbol,
+  onSortUtilization,
+  isSortUtilizationActive,
+  utilizationSortOrder,
+  onSortLiquidity,
+  isSortLiquidityActive,
+  liquiditySortOrder,
 }: UtilizationIndicatorProps) => {
   const clipId = useId();
 
@@ -116,7 +213,20 @@ const UtilizationIndicator = memo(({
       </TooltipTrigger>
       <TooltipContent side="top" className="max-w-[var(--ds-ring-tooltip-max-w)] p-3">
         <TooltipCalloutArrow />
-        <UtilizationContent current={clampedCurrent} optimal={clampedOptimal} />
+        <UtilizationContent
+          current={clampedCurrent}
+          optimal={clampedOptimal}
+          availableLiquidityUsd={availableLiquidityUsd}
+          displayMode={displayMode}
+          tokenPrice={tokenPrice}
+          tokenSymbol={tokenSymbol}
+          onSortUtilization={onSortUtilization}
+          isSortUtilizationActive={isSortUtilizationActive}
+          utilizationSortOrder={utilizationSortOrder}
+          onSortLiquidity={onSortLiquidity}
+          isSortLiquidityActive={isSortLiquidityActive}
+          liquiditySortOrder={liquiditySortOrder}
+        />
       </TooltipContent>
     </Tooltip>
   );

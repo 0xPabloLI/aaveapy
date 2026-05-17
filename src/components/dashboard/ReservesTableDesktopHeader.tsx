@@ -5,7 +5,7 @@ import { TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 type SortMode = 'total' | 'native' | 'incentive';
 type SortableColumn = 'token' | 'price' | 'market' | 'size' | 'util' | 'supply' | 'borrow' | 'spread';
-type SizeSortMode = 'supply' | 'borrow' | 'borrowAvailability' | 'supplyAvailability' | 'deficitAmount' | 'supplyCapPct' | 'borrowCapPct' | 'deficitRatio';
+type SizeSortMode = 'supply' | 'borrow' | 'borrowAvailability' | 'supplyAvailability' | 'deficitAmount' | 'supplyCapPct' | 'borrowCapPct' | 'deficitRatio' | 'supplyCapValue' | 'borrowCapValue' | 'availableLiquidity';
 type UtilSortMode = 'util' | 'liquidity';
 
 interface MenuPos {
@@ -101,9 +101,6 @@ interface ReservesTableDesktopHeaderProps {
   showBorrowSortMenu: boolean;
   borrowMenuPos: MenuPos | null;
   spreadSortOrder: 'asc' | 'desc';
-  showSizeSortMenu: boolean;
-  sizeMenuPos: MenuPos | null;
-  sizeSortButtonRef: RefObject<HTMLButtonElement | null>;
   supplySortButtonRef: RefObject<HTMLButtonElement | null>;
   borrowSortButtonRef: RefObject<HTMLButtonElement | null>;
   onSortToken: () => void;
@@ -114,13 +111,6 @@ interface ReservesTableDesktopHeaderProps {
   onSelectUtilSortUtil: () => void;
   onSelectUtilSortLiquidity: () => void;
   onToggleSpreadSort: () => void;
-  onToggleSizeMenu: () => void;
-  onCloseSizeMenu: () => void;
-  onSelectSizeSortSupply: () => void;
-  onSelectSizeSortBorrow: () => void;
-  onSelectSizeSortBorrowAvailability: () => void;
-  onSelectSizeSortSupplyAvailability: () => void;
-  onSelectSizeSortDeficitAmount: () => void;
   onToggleSupplyMenu: () => void;
   onCloseSupplyMenu: () => void;
   onSelectSupplySortTotal: () => void;
@@ -131,6 +121,7 @@ interface ReservesTableDesktopHeaderProps {
   onSelectBorrowSortTotal: () => void;
   onSelectBorrowSortNative: () => void;
   onSelectBorrowSortIncentive: () => void;
+  onSortSizeDefault: () => void;
 }
 
 export default function ReservesTableDesktopHeader({
@@ -159,9 +150,6 @@ export default function ReservesTableDesktopHeader({
   showBorrowSortMenu,
   borrowMenuPos,
   spreadSortOrder,
-  showSizeSortMenu,
-  sizeMenuPos,
-  sizeSortButtonRef,
   supplySortButtonRef,
   borrowSortButtonRef,
   onSortToken,
@@ -172,13 +160,6 @@ export default function ReservesTableDesktopHeader({
   onSelectUtilSortUtil,
   onSelectUtilSortLiquidity,
   onToggleSpreadSort,
-  onToggleSizeMenu,
-  onCloseSizeMenu,
-  onSelectSizeSortSupply,
-  onSelectSizeSortBorrow,
-  onSelectSizeSortBorrowAvailability,
-  onSelectSizeSortSupplyAvailability,
-  onSelectSizeSortDeficitAmount,
   onToggleSupplyMenu,
   onCloseSupplyMenu,
   onSelectSupplySortTotal,
@@ -189,55 +170,8 @@ export default function ReservesTableDesktopHeader({
   onSelectBorrowSortTotal,
   onSelectBorrowSortNative,
   onSelectBorrowSortIncentive,
+  onSortSizeDefault,
 }: ReservesTableDesktopHeaderProps) {
-  const sizeSortOptions: DesktopSortMenuOption[] = [
-    {
-      key: 'supply',
-      label: 'Sort by Supplied',
-      isSelected: sizeSortMode === 'supply' && activeSortColumn === 'size',
-      order: sizeSortOrder,
-      activeClassName: 'ds-text-emerald-600',
-      hoverClassName: 'hover:bg-[rgb(var(--ds-emerald-50-rgb)/0.5)]',
-      onSelect: onSelectSizeSortSupply,
-    },
-    {
-      key: 'supplyAvailability',
-      label: 'Sort by Suppliable',
-      isSelected: sizeSortMode === 'supplyAvailability' && activeSortColumn === 'size',
-      order: sizeSortOrder,
-      activeClassName: 'ds-text-emerald-600',
-      hoverClassName: 'hover:bg-[rgb(var(--ds-emerald-50-rgb)/0.5)]',
-      onSelect: onSelectSizeSortSupplyAvailability,
-    },
-    {
-      key: 'borrow',
-      label: 'Sort by Borrowed',
-      isSelected: sizeSortMode === 'borrow' && activeSortColumn === 'size',
-      order: sizeSortOrder,
-      activeClassName: 'ds-text-brand-cyan',
-      hoverClassName: 'hover:bg-[rgb(var(--ds-brand-cyan-rgb)/0.1)]',
-      onSelect: onSelectSizeSortBorrow,
-    },
-    {
-      key: 'borrowAvailability',
-      label: 'Sort by Borrowable',
-      isSelected: sizeSortMode === 'borrowAvailability' && activeSortColumn === 'size',
-      order: sizeSortOrder,
-      activeClassName: 'ds-text-brand-cyan',
-      hoverClassName: 'hover:bg-[rgb(var(--ds-brand-cyan-rgb)/0.1)]',
-      onSelect: onSelectSizeSortBorrowAvailability,
-    },
-    {
-      key: 'deficitAmount',
-      label: 'Sort by Deficit',
-      isSelected: sizeSortMode === 'deficitAmount' && activeSortColumn === 'size',
-      order: sizeSortOrder,
-      activeClassName: 'text-foreground',
-      hoverClassName: 'hover:bg-muted/50',
-      onSelect: onSelectSizeSortDeficitAmount,
-    },
-  ];
-
   const supplySortOptions: DesktopSortMenuOption[] = [
     {
       key: 'total',
@@ -382,6 +316,7 @@ export default function ReservesTableDesktopHeader({
                 : 'text-muted-foreground hover:text-foreground/80'
             }`}
           >
+            <span>Price</span>
             {activeSortColumn === 'price' ? (
               priceSortOrder === 'desc' ? (
                 <ArrowDown className="w-3 h-3" />
@@ -391,59 +326,27 @@ export default function ReservesTableDesktopHeader({
             ) : (
               <ArrowDown className="w-3 h-3 opacity-50" />
             )}
-            <span>Price</span>
           </button>
         </TableHead>
         <TableHead className="ds-reserves-cell-th py-[var(--ds-space-3)] ds-text-14 md:ds-text-16 font-semibold text-muted-foreground text-right hidden md:table-cell">
-          <div className="flex items-center justify-end">
-            <div className="flex flex-wrap items-center justify-end gap-x-[var(--ds-space-1-5)] gap-y-[var(--ds-space-1)]">
-              <span
-                className={`whitespace-nowrap transition-all duration-200 ${activeSortColumn === 'size' ? sizeSortActiveHeadingClass : 'text-muted-foreground'}`}
-              >
-                Size
-              </span>
-              <div className="relative">
-                <button
-                  ref={sizeSortButtonRef}
-                  type="button"
-                  onClick={onToggleSizeMenu}
-                  className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-lg border transition-colors ${
-                    showSizeSortMenu || activeSortColumn === 'size'
-                      ? `bg-card/60 border-border/70 ${
-                          sizeSortMode === 'supply'
-                            ? 'ds-text-emerald-700'
-                            : sizeSortMode === 'borrow' || sizeSortMode === 'borrowAvailability' || sizeSortMode === 'supplyAvailability'
-                              ? 'ds-text-brand-cyan'
-                              : 'text-foreground'
-                        }`
-                      : 'bg-card/60 border-border/70 text-muted-foreground'
-                  }`}
-                  title="Select size sort field"
-                >
-                  <span className="font-semibold ds-text-10 md:ds-text-11">
-                    {sizeSortMode === 'supply' || sizeSortMode === 'supplyCapPct'
-                      ? 'Supplied'
-                      : sizeSortMode === 'supplyAvailability'
-                        ? 'Suppliable'
-                        : sizeSortMode === 'borrow' || sizeSortMode === 'borrowCapPct'
-                          ? 'Borrowed'
-                          : sizeSortMode === 'borrowAvailability'
-                            ? 'Borrowable'
-                            : sizeSortMode === 'deficitRatio'
-                              ? 'Deficit (%)'
-                              : 'Deficit'}
-                  </span>
-                  <ChevronDown className="w-2.5 h-2.5" />
-                </button>
-                <DesktopSortMenuPortal
-                  open={showSizeSortMenu}
-                  menuPos={sizeMenuPos}
-                  onClose={onCloseSizeMenu}
-                  options={sizeSortOptions}
-                />
-              </div>
-            </div>
-          </div>
+          <button
+            type="button"
+            onClick={onSortSizeDefault}
+            className={`ds-chip-heading md:ds-text-16 gap-[var(--ds-space-1)] transition-all duration-200 ml-auto ${
+              activeSortColumn === 'size' ? sizeSortActiveHeadingClass : 'text-muted-foreground hover:text-foreground/80'
+            }`}
+          >
+            <span>Size</span>
+            {activeSortColumn === 'size' ? (
+              sizeSortOrder === 'desc' ? (
+                <ArrowDown className="w-3 h-3" />
+              ) : (
+                <ArrowUp className="w-3 h-3" />
+              )
+            ) : (
+              <ArrowDown className="w-3 h-3 opacity-50" />
+            )}
+          </button>
         </TableHead>
         <TableHead className="ds-reserves-cell-th py-[var(--ds-space-3)] ds-text-14 md:ds-text-16 font-semibold text-muted-foreground text-right hidden md:table-cell">
           <div className="flex items-center justify-end">

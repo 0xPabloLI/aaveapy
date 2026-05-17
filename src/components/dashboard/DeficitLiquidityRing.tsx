@@ -11,18 +11,20 @@ function SortArrowButton({
   isActive,
   sortOrder,
   ariaLabel,
+  className,
 }: {
   onClick: () => void;
   isActive: boolean;
   sortOrder?: 'asc' | 'desc';
   ariaLabel: string;
+  className?: string;
 }) {
   return (
     <button
       type="button"
       onClick={(e) => { e.stopPropagation(); onClick(); }}
       className={`ml-1 inline-flex items-center transition-colors ${
-        isActive ? 'text-foreground' : 'text-muted-foreground/60 hover:text-foreground'
+        isActive ? (className ?? 'text-foreground') : 'text-muted-foreground/60 hover:text-foreground'
       }`}
       aria-label={ariaLabel}
     >
@@ -60,6 +62,10 @@ interface DeficitLiquidityRingProps {
   onSortDeficitAmount?: () => void;
   isSortDeficitAmountActive?: boolean;
   deficitAmountSortOrder?: 'asc' | 'desc';
+  /** Sort callbacks and state for supply size arrow (Total supplied) in tooltip. */
+  onSortSupplySize?: () => void;
+  isSortSupplySizeActive?: boolean;
+  supplySizeSortOrder?: 'asc' | 'desc';
 }
 
 /** Shared deficit data display — reused by desktop tooltip and mobile bottom sheet. */
@@ -77,6 +83,9 @@ export function DeficitProgressContent({
   onSortDeficitAmount,
   isSortDeficitAmountActive,
   deficitAmountSortOrder,
+  onSortSupplySize,
+  isSortSupplySizeActive,
+  supplySizeSortOrder,
 }: {
   deficitUsd: number;
   totalSuppliedUsd: number | null | undefined;
@@ -91,6 +100,9 @@ export function DeficitProgressContent({
   onSortDeficitAmount?: () => void;
   isSortDeficitAmountActive?: boolean;
   deficitAmountSortOrder?: 'asc' | 'desc';
+  onSortSupplySize?: () => void;
+  isSortSupplySizeActive?: boolean;
+  supplySizeSortOrder?: 'asc' | 'desc';
 }) {
   const ratio = calculateDeficitShareRatio({ deficitUsd, totalSuppliedUsd });
   const percentage = ratio != null ? Math.min(Math.max(ratio * 100, 0), 100) : null;
@@ -103,11 +115,15 @@ export function DeficitProgressContent({
   };
 
   const sortArrow = onSortPercentage
-    ? <SortArrowButton onClick={onSortPercentage} isActive={!!isSortActive} sortOrder={sortOrder} ariaLabel="Sort by deficit %" />
+    ? <SortArrowButton onClick={onSortPercentage} isActive={!!isSortActive} sortOrder={sortOrder} ariaLabel="Sort by deficit %" className={getProgressColorClass()} />
     : null;
 
   const deficitAmountArrow = onSortDeficitAmount
-    ? <SortArrowButton onClick={onSortDeficitAmount} isActive={!!isSortDeficitAmountActive} sortOrder={deficitAmountSortOrder} ariaLabel="Sort by deficit amount" />
+    ? <SortArrowButton onClick={onSortDeficitAmount} isActive={!!isSortDeficitAmountActive} sortOrder={deficitAmountSortOrder} ariaLabel="Sort by deficit amount" className={getProgressColorClass()} />
+    : null;
+
+  const supplySizeArrow = onSortSupplySize
+    ? <SortArrowButton onClick={onSortSupplySize} isActive={!!isSortSupplySizeActive} sortOrder={supplySizeSortOrder} ariaLabel="Sort by supply size" className="ds-text-emerald-500" />
     : null;
 
   const deficitDisplayValue = displayMode === 'token'
@@ -142,8 +158,9 @@ export function DeficitProgressContent({
       </div>
       <div className="flex justify-between gap-3">
         <span className="text-muted-foreground">Total supplied</span>
-        <span className={`font-medium tabular-nums ${getProgressColorClass()}`}>
+        <span className="font-medium tabular-nums ds-text-emerald-500">
           {totalSuppliedDisplayValue}
+          {supplySizeArrow}
         </span>
       </div>
       <div className="flex items-center justify-between gap-3 pt-2 border-t border-border/35">
@@ -178,6 +195,9 @@ const DeficitLiquidityRing = memo(({
   onSortDeficitAmount,
   isSortDeficitAmountActive,
   deficitAmountSortOrder,
+  onSortSupplySize,
+  isSortSupplySizeActive,
+  supplySizeSortOrder,
 }: DeficitLiquidityRingProps) => {
   const hasDeficit = deficitUsd != null && Number.isFinite(deficitUsd) && deficitUsd > 0;
   const hasTotalSupplied = totalSuppliedUsd != null && Number.isFinite(totalSuppliedUsd) && totalSuppliedUsd >= 0;
@@ -213,6 +233,9 @@ const DeficitLiquidityRing = memo(({
         onSortDeficitAmount={onSortSize || onSortDeficitAmount}
         isSortDeficitAmountActive={isSortDeficitAmountActive}
         deficitAmountSortOrder={deficitAmountSortOrder}
+        onSortSupplySize={onSortSupplySize}
+        isSortSupplySizeActive={isSortSupplySizeActive}
+        supplySizeSortOrder={supplySizeSortOrder}
       />
     </TooltipContent>
   );

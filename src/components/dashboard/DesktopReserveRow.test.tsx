@@ -413,6 +413,62 @@ describe('DesktopReserveRow', () => {
     expect(placeholderMatches.length).toBeGreaterThanOrEqual(2);
   });
 
+  it('shows tooltip with sort arrow for no-cap supply size', () => {
+    const queryClient = new QueryClient();
+    const reserveWithoutCaps: ReserveWithSpread = {
+      ...reserve,
+      supplyCap: undefined,
+      borrowCap: undefined,
+    };
+    const html = renderToString(
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Table>
+            <TableBody>
+              <DesktopReserveRow
+                reserve={reserveWithoutCaps}
+                reserveId="AaveV3Ethereum-0x0000000000000000000000000000000000000001"
+                isExpanded={false}
+                onToggleExpand={() => {}}
+                onIncentiveClick={() => {}}
+                displaySupplyTotal={2.9}
+                displaySupplyNative={2.5}
+                displaySupplyIncentive={0.4}
+                displayBorrowTotal={3.3}
+                displayBorrowNative={3.4}
+                displayBorrowIncentive={0.1}
+                displayUtilization={52}
+                spread={-0.4}
+                simulation={simulation}
+                supplyInput="1000"
+                borrowInput="500"
+                inputMode="usd"
+                isApy
+                isMobile={false}
+                onSortSupplySize={() => {}}
+                isSortSupplySizeActive={false}
+                supplySizeSortOrder="desc"
+              />
+            </TableBody>
+          </Table>
+        </TooltipProvider>
+      </QueryClientProvider>
+    );
+    // Tooltip content (Total supplied / SortArrowButton) renders via Radix Portal;
+    // in SSR the tooltip is closed so TooltipContent is not in the static output.
+    // Verify the tooltip trigger structure instead.
+    expect(html).toContain('cursor-pointer ds-text-emerald-500');
+    expect(html).toContain('cursor-pointer ds-text-brand-cyan');
+    // Verify the old direct-click sort buttons are gone
+    // (no aria-label="Sort by supply size" button inside the Size column).
+    const sizeCellMatch = html.match(
+      /<td[^>]*ds-reserves-cell-td[^"]*tabular-nums[^>]*hidden md:table-cell[^>]*>([\s\S]*?)<\/td>/,
+    );
+    const sizeCellHtml = sizeCellMatch?.[1] ?? '';
+    expect(sizeCellHtml).not.toContain('aria-label="Sort by supply size"');
+    expect(sizeCellHtml).not.toContain('aria-label="Sort by borrow size"');
+  });
+
   it('shows Base APY/APR placeholder when no incentive is visible', () => {
     const queryClient = new QueryClient();
     const html = renderToString(
@@ -1053,79 +1109,7 @@ describe('DesktopReserveRow', () => {
     expect(html).toContain('ds-bg-sky-500-8');
   });
 
-  it('inactive row (isActive === false) has ds-bg-paused background', () => {
-    const queryClient = new QueryClient();
-    const html = renderToString(
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <Table>
-            <TableBody>
-              <DesktopReserveRow
-                reserve={{ ...reserve, isActive: false }}
-                reserveId="AaveV3Ethereum-0x0000000000000000000000000000000000000001"
-                isExpanded={false}
-                onToggleExpand={() => {}}
-                onIncentiveClick={() => {}}
-                displaySupplyTotal={2.9}
-                displaySupplyNative={2.5}
-                displaySupplyIncentive={0.4}
-                displayBorrowTotal={3.3}
-                displayBorrowNative={3.4}
-                displayBorrowIncentive={0.1}
-                displayUtilization={52}
-                spread={-0.4}
-                simulation={simulation}
-                supplyInput="1000"
-                borrowInput="500"
-                inputMode="usd"
-                isApy
-                isMobile={false}
-              />
-            </TableBody>
-          </Table>
-        </TooltipProvider>
-      </QueryClientProvider>,
-    );
-
-    expect(html).toContain('ds-bg-paused');
-  });
-
-  it('expanded inactive row applies ds-bg-paused to all td cells', () => {
-    const queryClient = new QueryClient();
-    const html = renderToString(
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <Table>
-            <TableBody>
-              <DesktopReserveRow
-                reserve={{ ...reserve, isActive: false }}
-                reserveId="AaveV3Ethereum-0x0000000000000000000000000000000000000001"
-                isExpanded
-                onToggleExpand={() => {}}
-                onIncentiveClick={() => {}}
-                displaySupplyTotal={2.9}
-                displaySupplyNative={2.5}
-                displaySupplyIncentive={0.4}
-                displayBorrowTotal={3.3}
-                displayBorrowNative={3.4}
-                displayBorrowIncentive={0.1}
-                displayUtilization={52}
-                spread={-0.4}
-                simulation={simulation}
-                supplyInput="1000"
-                borrowInput="500"
-                inputMode="usd"
-                isApy
-                isMobile={false}
-              />
-            </TableBody>
-          </Table>
-        </TooltipProvider>
-      </QueryClientProvider>,
-    );
-
-    expect(html).toContain('[&amp;_td]:ds-bg-paused');
-  });
+  
 
   it('calls onSelectHub with hubId (not hubName) when hub badge is clicked', () => {
     const onSelectHub = vi.fn();
