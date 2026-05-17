@@ -22,7 +22,6 @@ import { getChainIconSrc } from '@/lib/chainIcons';
 import { buildAaveUrl } from '@/lib/aaveLinks';
 import { openExternalUrl } from '@/lib/externalNavigation';
 import { calculateDeficitShareRatio, getReserveDeficitUsdAmount } from '@/lib/deficit';
-import { getReserveKey } from '@/lib/reserveKey';
 import ReservesTableTooltipOverlay from './ReservesTableTooltipOverlay';
 import DesktopReserveRow from './DesktopReserveRow';
 import ReservesTableDesktopHeader from './ReservesTableDesktopHeader';
@@ -46,6 +45,7 @@ import {
 import { useReserveExpansion } from '@/hooks/reserves-table/useReserveExpansion';
 import { useScenarioPinScroll } from '@/hooks/reserves-table/useScenarioPinScroll';
 import { useReservesTooltip } from '@/hooks/reserves-table/useReservesTooltip';
+import { usePortfolioToggle } from '@/hooks/reserves-table/usePortfolioToggle';
 import { getReserveSimulationId, useSharedRateSimulations } from '@/hooks/useRateSimulation';
 import { useSideDataMeta } from '@/hooks/useSideDataMeta';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
@@ -54,10 +54,8 @@ import { getProtocolVersion } from '@/lib/protocolVersion';
 import ReservesTableDesktopSkeleton from './ReservesTableDesktopSkeleton';
 
 import PortfolioModeToggle, { type SimulationMode } from './PortfolioModeToggle';
-import type { PortfolioPosition, PortfolioPositionResult, PortfolioSummary } from '@/types/portfolio';
+import type { PortfolioPosition } from '@/types/portfolio';
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
-import { resolvePositionAmountUsd, buildPortfolioPositionResult } from '@/hooks/usePortfolioSimulation';
-import { aggregatePortfolioSummary } from '@/lib/portfolioCalculator';
 import PortfolioPanel from './PortfolioPanel';
 import PortfolioPanelSkeleton from './PortfolioPanelSkeleton';
 
@@ -1019,85 +1017,17 @@ const ReservesTable = ({
 
   const isPortfolioMode = simulationMode === 'portfolio';
 
-  // Set of reserveIds currently in the portfolio
-  const portfolioReserveIds = useMemo(() => {
-    if (!portfolioPositions) return new Set<string>();
-    return new Set(portfolioPositions.map((p) => p.reserveId));
-  }, [portfolioPositions]);
-
-  // Callback: toggle a reserve in/out of portfolio (adds as specific side if provided, else defaults to supply)
-  const handlePortfolioToggle = useCallback((reserveId: string, reserve: ReserveWithSpread, side?: 'supply' | 'borrow') => {
-    if (!portfolioActions) return;
-
-    if (side) {
-      const existing = portfolioPositions?.find((p) => p.reserveId === reserveId && p.side === side);
-      if (existing) {
-        portfolioActions.removePosition(existing.positionId);
-      } else {
-        portfolioActions.addPosition({
-          reserveId,
-          marketName: reserve.marketName,
-          chainName: reserve.chainName,
-          tokenSymbol: reserve.tokenSymbol,
-          side,
-        });
-      }
-    } else {
-      if (portfolioReserveIds.has(reserveId)) {
-        const toRemove = portfolioPositions?.filter((p) => p.reserveId === reserveId) ?? [];
-        toRemove.forEach((p) => portfolioActions.removePosition(p.positionId));
-      } else {
-        portfolioActions.addPosition({
-          reserveId,
-          marketName: reserve.marketName,
-          chainName: reserve.chainName,
-          tokenSymbol: reserve.tokenSymbol,
-          side: 'supply',
-        });
-        portfolioActions.addPosition({
-          reserveId,
-          marketName: reserve.marketName,
-          chainName: reserve.chainName,
-          tokenSymbol: reserve.tokenSymbol,
-          side: 'borrow',
-        });
-      }
-    }
-  }, [portfolioActions, portfolioPositions, portfolioReserveIds]);
-
-  // Portfolio results computation (Phase 3)
-  const { portfolioResults, portfolioSummary } = useMemo<{
-    portfolioResults: PortfolioPositionResult[];
-    portfolioSummary: PortfolioSummary;
-  }>(() => {
-    if (!isPortfolioMode || !portfolioPositions || portfolioPositions.length === 0) {
-      return { portfolioResults: [], portfolioSummary: aggregatePortfolioSummary([]) };
-    }
-    const reserveMap = new Map(
-      reserves.map((r) => [getReserveKey(r), r]),
-    );
-    const results: PortfolioPositionResult[] = portfolioPositions
-      .map((pos) => {
-        const reserve = reserveMap.get(pos.reserveId);
-        const amountUsd = resolvePositionAmountUsd(pos, reserve);
-        if (amountUsd <= 0 || !reserve) return null;
-        // Use current reserve APY as baseline (full sim integration in later phase)
-        const nativePercent = pos.side === 'supply'
-          ? (reserve.supplyApy ?? 0)
-          : (reserve.borrowApy ?? 0);
-        // Sum incentive arrays
-        const incentiveArr = pos.side === 'supply'
-          ? (reserve.supplyIncentives ?? [])
-          : (reserve.borrowIncentives ?? []);
-        const incentivePercent = incentiveArr.reduce((s, v) => s + v, 0);
-        return buildPortfolioPositionResult(pos, amountUsd, nativePercent, incentivePercent);
-      })
-      .filter((r): r is PortfolioPositionResult => r !== null);
-    return {
-      portfolioResults: results,
-      portfolioSummary: aggregatePortfolioSummary(results),
-    };
-  }, [isPortfolioMode, portfolioPositions, reserves]);
+  const {
+    portfolioReserveIds,
+    handlePortfolioToggle,
+    portfolioResults,
+    portfolioSummary,
+  } = usePortfolioToggle({
+    isPortfolioMode,
+    reserves,
+    portfolioPositions,
+    portfolioActions,
+  });
 
   const scenarioControls = (
     <div className={cn("space-y-2", isMobile && "rounded-xl border border-border/60 bg-card/60 backdrop-blur-sm px-1.5 py-1.5")}>
