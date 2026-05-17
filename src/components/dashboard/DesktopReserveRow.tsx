@@ -100,6 +100,18 @@ interface DesktopReserveRowProps {
   onSortBorrowCapPct?: () => void;
   /** Ring-click-to-sort: sort by deficit ratio. */
   onSortDeficitRatio?: () => void;
+  /** Click supply size number to sort by supply amount. */
+  onSortSupplySize?: () => void;
+  /** Click borrow size number to sort by borrow amount. */
+  onSortBorrowSize?: () => void;
+  /** Click deficit number to sort by deficit amount. */
+  onSortDeficitAmount?: () => void;
+  isSortSupplyCapPctActive?: boolean;
+  supplyCapPctSortOrder?: 'asc' | 'desc';
+  isSortBorrowCapPctActive?: boolean;
+  borrowCapPctSortOrder?: 'asc' | 'desc';
+  isSortDeficitRatioActive?: boolean;
+  deficitRatioSortOrder?: 'asc' | 'desc';
 }
 
 const DesktopReserveRow = memo(({
@@ -134,6 +146,15 @@ const DesktopReserveRow = memo(({
   onSortSupplyCapPct,
   onSortBorrowCapPct,
   onSortDeficitRatio,
+  onSortSupplySize,
+  onSortBorrowSize,
+  onSortDeficitAmount,
+  isSortSupplyCapPctActive,
+  supplyCapPctSortOrder,
+  isSortBorrowCapPctActive,
+  borrowCapPctSortOrder,
+  isSortDeficitRatioActive,
+  deficitRatioSortOrder,
 }: DesktopReserveRowProps) => {
   const [hasSimulationMounted, setHasSimulationMounted] = useState(isExpanded);
 
@@ -444,10 +465,15 @@ const DesktopReserveRow = memo(({
                 triggerClassName={supplyBlocked ? 'text-emerald-500/50' : 'ds-text-emerald-500'}
                 triggerAriaLabel={`Supply cap details for ${reserve.tokenSymbol}`}
                 onSort={onSortSupplyCapPct}
+                onSortSize={onSortSupplySize}
+                isSortActive={isSortSupplyCapPctActive}
+                sortOrder={supplyCapPctSortOrder}
               />
             ) : (
               <div className={`inline-flex items-center gap-[var(--ds-space-1-5)] rounded-md py-0.5 pl-1 pr-0.5 -my-0.5 ${supplyBlocked ? 'text-emerald-500/50' : 'ds-text-emerald-500'}`}>
-                <span className="font-medium tabular-nums">{supplySizeLabel}</span>
+                <button type="button" className="font-medium tabular-nums cursor-pointer" onClick={(e) => { e.stopPropagation(); onSortSupplySize?.(); }} aria-label="Sort by supply size">
+                  {supplySizeLabel}
+                </button>
                 <span aria-hidden className="inline-block w-3 h-3 shrink-0" />
               </div>
             )}
@@ -465,10 +491,15 @@ const DesktopReserveRow = memo(({
                 triggerClassName={borrowBlocked ? 'text-cyan-500/50' : 'ds-text-brand-cyan'}
                 triggerAriaLabel={`Borrow cap details for ${reserve.tokenSymbol}`}
                 onSort={onSortBorrowCapPct}
+                onSortSize={onSortBorrowSize}
+                isSortActive={isSortBorrowCapPctActive}
+                sortOrder={borrowCapPctSortOrder}
               />
             ) : (
               <div className={`inline-flex items-center gap-[var(--ds-space-1-5)] rounded-md py-0.5 pl-1 pr-0.5 -my-0.5 ${borrowBlocked ? 'text-cyan-500/50' : 'ds-text-brand-cyan'}`}>
-                <span className="font-medium tabular-nums">{borrowSizeLabel}</span>
+                <button type="button" className="font-medium tabular-nums cursor-pointer" onClick={(e) => { e.stopPropagation(); onSortBorrowSize?.(); }} aria-label="Sort by borrow size">
+                  {borrowSizeLabel}
+                </button>
                 <span aria-hidden className="inline-block w-3 h-3 shrink-0" />
               </div>
             )}
@@ -491,6 +522,9 @@ const DesktopReserveRow = memo(({
                   triggerAriaLabel={`Deficit share of total supplied plus deficit for ${reserve.tokenSymbol}`}
                   poolExplorerUrl={poolExplorerUrl}
                   onSort={onSortDeficitRatio}
+                  onSortSize={onSortDeficitAmount}
+                  isSortActive={isSortDeficitRatioActive}
+                  sortOrder={deficitRatioSortOrder}
                 />
               ) : (
                 <Tooltip delayDuration={0}>

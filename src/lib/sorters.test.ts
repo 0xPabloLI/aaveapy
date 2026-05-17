@@ -114,8 +114,13 @@ describe('compareSizeToCapPct', () => {
     expect(result).toBe(0);
   });
 
-  it('same percentage returns 0', () => {
+  it('same percentage falls back to absolute size tiebreaker in desc', () => {
     const result = compareSizeToCapPct(30, 60, 100, 200, 'desc');
-    expect(result).toBe(0);
+    expect(result).toBeGreaterThan(0);
+  });
+
+  it('same percentage falls back to absolute size tiebreaker in asc', () => {
+    const result = compareSizeToCapPct(30, 60, 100, 200, 'asc');
+    expect(result).toBeLessThan(0);
   });
 });

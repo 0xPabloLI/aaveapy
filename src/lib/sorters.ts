@@ -29,6 +29,12 @@ export const compareSizeToCapPct = (
   if (bPct === null) return -1;
 
   const diff = bPct - aPct;
+  if (diff === 0) {
+    const aAbs = aSize ?? 0;
+    const bAbs = bSize ?? 0;
+    const sizeDiff = bAbs - aAbs;
+    return order === 'desc' ? sizeDiff : -sizeDiff;
+  }
   return order === 'desc' ? diff : -diff;
 };
 

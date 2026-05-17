@@ -22,6 +22,11 @@ interface CapProgressRingProps {
   triggerAriaLabel?: string;
   /** When provided, clicking the ring triggers this sort callback instead of showing tooltip only. */
   onSort?: () => void;
+  /** When provided, clicking the label number sorts by that size. */
+  onSortSize?: () => void;
+  /** Sort state for percentage arrow in tooltip. */
+  isSortActive?: boolean;
+  sortOrder?: 'asc' | 'desc';
 }
 
 /** Shared cap progress data display — reused by desktop tooltip and mobile bottom sheet. */
@@ -31,16 +36,26 @@ export function CapProgressContent({
   displayMode = 'usd',
   tokenPrice,
   tokenSymbol,
+  onSortPercentage,
+  isSortActive,
+  sortOrder,
 }: {
   currentSize: number;
   cap: number;
   displayMode?: 'usd' | 'token';
   tokenPrice?: number | null;
   tokenSymbol?: string | null;
+  onSortPercentage?: () => void;
+  isSortActive?: boolean;
+  sortOrder?: 'asc' | 'desc';
 }) {
   const percentage = Math.min((currentSize / cap) * 100, 100);
   const colorClass =
     percentage >= 95 ? 'ds-text-amber-500' : percentage >= 80 ? 'ds-text-amber-600' : 'ds-text-emerald-500';
+
+  const sortArrow = onSortPercentage
+    ? (isSortActive ? (sortOrder === 'desc' ? '↓' : '↑') : '↕')
+    : null;
 
   return (
     <div className="space-y-1 ds-text-12">
@@ -66,6 +81,18 @@ export function CapProgressContent({
         <span className="text-muted-foreground">% of cap</span>
         <span className={`font-bold tabular-nums ${colorClass}`}>
           {percentage.toFixed(1)}%
+          {sortArrow && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onSortPercentage!(); }}
+              className={`ml-1 inline-flex items-center transition-colors ${
+                isSortActive ? 'text-foreground' : 'text-muted-foreground/60 hover:text-foreground'
+              }`}
+              aria-label={`Sort by supply cap %`}
+            >
+              {sortArrow}
+            </button>
+          )}
         </span>
       </div>
     </div>
@@ -85,6 +112,9 @@ const CapProgressRing = memo(({
   triggerClassName,
   triggerAriaLabel,
   onSort,
+  onSortSize,
+  isSortActive,
+  sortOrder,
 }: CapProgressRingProps) => {
   if (cap == null || !Number.isFinite(cap) || cap <= 0) {
     return null;
@@ -111,6 +141,9 @@ const CapProgressRing = memo(({
         displayMode={displayMode}
         tokenPrice={tokenPrice}
         tokenSymbol={tokenSymbol}
+        onSortPercentage={onSort}
+        isSortActive={isSortActive}
+        sortOrder={sortOrder}
       />
     </TooltipContent>
   );
@@ -169,32 +202,23 @@ const CapProgressRing = memo(({
             className={cn(
               'inline-flex items-center justify-center gap-[var(--ds-space-1-5)] cursor-default text-left',
               'rounded-md py-0.5 pl-1 pr-0.5 -my-0.5 transition-colors hover:bg-muted/50',
-              onSort && 'cursor-pointer',
               triggerClassName,
             )}
             aria-label={triggerAriaLabel}
-            onClick={(event) => { event.stopPropagation(); if (onSort) onSort(); }}
           >
-            {label}
+            {onSortSize ? (
+              <span
+                onClick={(e) => { e.stopPropagation(); e.preventDefault(); onSortSize(); }}
+                className="cursor-pointer"
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); onSortSize(); } }}
+                aria-label={`Sort by supply size`}
+              >
+                {label}
+              </span>
+            ) : label}
             {ringNode}
-          </button>
-        </TooltipTrigger>
-        {tooltipContent}
-      </Tooltip>
-    );
-  }
-
-  if (onSort) {
-    return (
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <button
-            type="button"
-            className="inline-flex items-center p-0.5 -m-0.5 rounded-full transition-all duration-150 hover:bg-muted/70 hover:scale-[1.12] cursor-pointer"
-            onClick={(event) => { event.stopPropagation(); onSort(); }}
-            aria-label="Sort by supply cap %"
-          >
-            {ringNode.props.children}
           </button>
         </TooltipTrigger>
         {tooltipContent}
