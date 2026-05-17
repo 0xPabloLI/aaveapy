@@ -28,9 +28,47 @@ interface CapProgressRingProps {
   /** Sort state for percentage arrow in tooltip. */
   isSortActive?: boolean;
   sortOrder?: 'asc' | 'desc';
+  /** Sort callbacks and state for supply size arrow in tooltip. */
+  onSortSupplySize?: () => void;
+  isSortSupplySizeActive?: boolean;
+  supplySizeSortOrder?: 'asc' | 'desc';
+  /** Sort callbacks and state for suppliable arrow in tooltip. */
+  onSortSuppliable?: () => void;
+  isSortSuppliableActive?: boolean;
+  suppliableSortOrder?: 'asc' | 'desc';
 }
 
 /** Shared cap progress data display — reused by desktop tooltip and mobile bottom sheet. */
+
+function SortArrowButton({
+  onClick,
+  isActive,
+  sortOrder,
+  ariaLabel,
+}: {
+  onClick: () => void;
+  isActive: boolean;
+  sortOrder?: 'asc' | 'desc';
+  ariaLabel: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={(e) => { e.stopPropagation(); onClick(); }}
+      className={`ml-1 inline-flex items-center transition-colors ${
+        isActive ? 'text-foreground' : 'text-muted-foreground/60 hover:text-foreground'
+      }`}
+      aria-label={ariaLabel}
+    >
+      {isActive ? (
+        sortOrder === 'desc' ? <ArrowDown className="w-3 h-3" /> : <ArrowUp className="w-3 h-3" />
+      ) : (
+        <ArrowDown className="w-3 h-3 opacity-50" />
+      )}
+    </button>
+  );
+}
+
 export function CapProgressContent({
   currentSize,
   cap,
@@ -40,6 +78,12 @@ export function CapProgressContent({
   onSortPercentage,
   isSortActive,
   sortOrder,
+  onSortSupplySize,
+  isSortSupplySizeActive,
+  supplySizeSortOrder,
+  onSortSuppliable,
+  isSortSuppliableActive,
+  suppliableSortOrder,
 }: {
   currentSize: number;
   cap: number;
@@ -49,13 +93,27 @@ export function CapProgressContent({
   onSortPercentage?: () => void;
   isSortActive?: boolean;
   sortOrder?: 'asc' | 'desc';
+  onSortSupplySize?: () => void;
+  isSortSupplySizeActive?: boolean;
+  supplySizeSortOrder?: 'asc' | 'desc';
+  onSortSuppliable?: () => void;
+  isSortSuppliableActive?: boolean;
+  suppliableSortOrder?: 'asc' | 'desc';
 }) {
   const percentage = Math.min((currentSize / cap) * 100, 100);
   const colorClass =
     percentage >= 95 ? 'ds-text-amber-500' : percentage >= 80 ? 'ds-text-amber-600' : 'ds-text-emerald-500';
 
   const sortArrow = onSortPercentage
-    ? (isSortActive ? (sortOrder === 'desc' ? <ArrowDown className="w-3 h-3" /> : <ArrowUp className="w-3 h-3" />) : <ArrowDown className="w-3 h-3 opacity-50" />)
+    ? <SortArrowButton onClick={onSortPercentage} isActive={!!isSortActive} sortOrder={sortOrder} ariaLabel="Sort by supply cap %" />
+    : null;
+
+  const supplySizeArrow = onSortSupplySize
+    ? <SortArrowButton onClick={onSortSupplySize} isActive={!!isSortSupplySizeActive} sortOrder={supplySizeSortOrder} ariaLabel="Sort by supply size" />
+    : null;
+
+  const suppliableArrow = onSortSuppliable
+    ? <SortArrowButton onClick={onSortSuppliable} isActive={!!isSortSuppliableActive} sortOrder={suppliableSortOrder} ariaLabel="Sort by suppliable" />
     : null;
 
   return (
@@ -64,6 +122,7 @@ export function CapProgressContent({
         <span className="text-muted-foreground">Total supplied</span>
         <span className="font-medium tabular-nums ds-text-emerald-500">
           {formatScenarioSize(currentSize, { inputMode: displayMode, tokenPrice, tokenSymbol })}
+          {supplySizeArrow}
         </span>
       </div>
       <div className="flex justify-between gap-3">
@@ -76,24 +135,14 @@ export function CapProgressContent({
         <span className="text-muted-foreground">Available to supply</span>
         <span className="font-medium tabular-nums ds-text-emerald-500">
           {formatScenarioSize(Math.max(0, cap - currentSize), { inputMode: displayMode, tokenPrice, tokenSymbol })}
+          {suppliableArrow}
         </span>
       </div>
       <div className="flex justify-between gap-3 pt-1 border-t border-border/50">
         <span className="text-muted-foreground">% of cap</span>
         <span className={`font-bold tabular-nums ${colorClass}`}>
           {percentage.toFixed(1)}%
-          {sortArrow && (
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); onSortPercentage!(); }}
-              className={`ml-1 inline-flex items-center transition-colors ${
-                isSortActive ? 'text-foreground' : 'text-muted-foreground/60 hover:text-foreground'
-              }`}
-              aria-label={`Sort by supply cap %`}
-            >
-              {sortArrow}
-            </button>
-          )}
+          {sortArrow}
         </span>
       </div>
     </div>
@@ -116,6 +165,12 @@ const CapProgressRing = memo(({
   onSortSize,
   isSortActive,
   sortOrder,
+  onSortSupplySize,
+  isSortSupplySizeActive,
+  supplySizeSortOrder,
+  onSortSuppliable,
+  isSortSuppliableActive,
+  suppliableSortOrder,
 }: CapProgressRingProps) => {
   if (cap == null || !Number.isFinite(cap) || cap <= 0) {
     return null;
@@ -145,6 +200,12 @@ const CapProgressRing = memo(({
         onSortPercentage={onSort}
         isSortActive={isSortActive}
         sortOrder={sortOrder}
+        onSortSupplySize={onSortSize || onSortSupplySize}
+        isSortSupplySizeActive={isSortSupplySizeActive}
+        supplySizeSortOrder={supplySizeSortOrder}
+        onSortSuppliable={onSortSuppliable}
+        isSortSuppliableActive={isSortSuppliableActive}
+        suppliableSortOrder={suppliableSortOrder}
       />
     </TooltipContent>
   );
