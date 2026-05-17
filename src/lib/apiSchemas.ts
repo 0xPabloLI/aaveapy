@@ -1,187 +1,19 @@
 import { z } from 'zod';
-import type { IncentiveMessage } from '@/types/aave';
 
-const IncentiveMessageScalarSchema = z.union([z.string(), z.number(), z.boolean(), z.null()]);
-const IncentiveMessageSchema: z.ZodType<IncentiveMessage> = z.lazy(() =>
-  z.union([
-    z.string(),
-    z.record(z.string(), z.union([IncentiveMessageScalarSchema, IncentiveMessageSchema])),
-    z.array(IncentiveMessageSchema),
-  ])
-);
-
-// ── Merit incentive ──
-export const MeritIncentiveSchema = z.object({
-  apr: z.number(),
-  selfApr: z.number().optional(),
-  link: z.string(),
-  name: z.string().optional(),
-  message: IncentiveMessageSchema.optional(),
-  startDate: z.string(),
-  endDate: z.string(),
-  lastRoundRewardUsd: z.number().optional(),
-});
-
-// ── Merkl campaign breakdown ──
-export const MerklCampaignBreakdownSchema = z.object({
-  campaignApr: z.number(),
-  campaignStartedAt: z.string(),
-  campaignEndedAt: z.string(),
-  campaignId: z.string(),
-  whitelistOnly: z.boolean().optional(),
-  pointsPerThousandUsd: z.number().optional(),
-  campaignType: z.string().optional(),
-  totalBudget: z.number().optional(),
-  aprCap: z.number().nullable().optional(),
-  latestTvl: z.number().optional(),
-  plannedDaily: z.number().optional(),
-});
-
-export const MerklOpportunityGroupSchema = z.object({
-  link: z.string().optional(),
-  name: z.string().optional(),
-  message: z.string().optional(),
-  breakdowns: z.array(MerklCampaignBreakdownSchema),
-});
-
-export const BrevisCampaignBreakdownSchema = z.object({
-  campaignApr: z.number(),
-  campaignStartedAt: z.string(),
-  campaignEndedAt: z.string(),
-  latestTvl: z.number().optional(),
-  totalBudget: z.number().optional(),
-  perUserRewardCapUsd: z.number().optional(),
-  campaignId: z.string().optional(),
-}).passthrough();
-
-// ── Brevis incentive ──
-export const BrevisIncentiveSchema = z.object({
-  link: z.string(),
-  name: z.string().optional(),
-  message: z.string().optional(),
-  breakdowns: z.array(BrevisCampaignBreakdownSchema).optional(),
-  campaignApr: z.number().optional(),
-  campaignStartedAt: z.string().optional(),
-  campaignEndedAt: z.string().optional(),
-  latestTvl: z.number().optional(),
-  totalBudget: z.number().optional(),
-  perUserRewardCapUsd: z.number().optional(),
-  campaignId: z.string().optional(),
-}).passthrough();
-
-const BrevisGroupedIncentiveSchema = z.object({
-  link: z.string(),
-  name: z.string().optional(),
-  message: z.string().optional(),
-  breakdowns: z.array(BrevisCampaignBreakdownSchema),
-}).passthrough();
-
-const BrevisRawIncentiveSchema = z.union([
-  BrevisGroupedIncentiveSchema,
+export {
+  MarketsResponseSchema,
+  ReserveWithSpreadSchema,
+  MeritIncentiveSchema,
+  MerklCampaignBreakdownSchema,
+  MerklOpportunityGroupSchema,
   BrevisIncentiveSchema,
-]);
-
-type BrevisRawIncentive = z.infer<typeof BrevisRawIncentiveSchema>;
-type BrevisIncentive = z.infer<typeof BrevisIncentiveSchema>;
-
-const isBrevisGroupedIncentive = (
-  entry: BrevisRawIncentive
-): entry is z.infer<typeof BrevisGroupedIncentiveSchema> =>
-  Object.prototype.hasOwnProperty.call(entry, 'breakdowns');
-
-const normalizeBrevisIncentives = (
-  entries: BrevisRawIncentive[] | undefined,
-): BrevisIncentive[] | undefined => {
-  if (!entries?.length) return undefined;
-  const normalized: BrevisIncentive[] = [];
-  for (const entry of entries) {
-    if (isBrevisGroupedIncentive(entry)) {
-      const { breakdowns, ...groupFields } = entry;
-      for (const breakdown of breakdowns) {
-        normalized.push({
-          ...groupFields,
-          ...breakdown,
-        });
-      }
-      continue;
-    }
-    normalized.push(entry);
-  }
-  return normalized.length > 0 ? normalized : undefined;
-};
+  BrevisCampaignBreakdownSchema,
+} from '../shared/market-contract/schemas.ts';
 
 // ── Token price entry ──
 const TokenPriceEntrySchema = z.object({
   price: z.number(),
 }).passthrough();
-
-// ── Reserve ── (matches backend /markets reserves[])
-export const ReserveWithSpreadSchema = z.object({
-  reserveId: z.string(),
-  marketName: z.string(),
-  chainName: z.string(),
-  chainId: z.number(),
-  tokenName: z.string(),
-  tokenSymbol: z.string(),
-  tokenAddress: z.string(),
-  tokenPrice: z.number().optional(),
-  utilizationPct: z.number().optional(),
-  supplyDisabled: z.boolean().optional(),
-  borrowDisabled: z.boolean().optional(),
-  isFrozen: z.boolean().optional(),
-  isPaused: z.boolean().optional(),
-  /** V4 only: false when status.active is false. Absent = active. */
-  isActive: z.literal(false).optional(),
-  aTokenAddress: z.string().nullish(),
-  vTokenAddress: z.string().nullish(),
-  /** V4 Hub contract address (for explorer links). */
-  hubAddress: z.string().optional(),
-  /** V4 Spoke contract address (for explorer links). */
-  spokeAddress: z.string().optional(),
-  supplyApy: z.number().optional(),
-  borrowApy: z.number().optional(),
-  supplyIncentives: z.array(z.number()).optional(),
-  borrowIncentives: z.array(z.number()).optional(),
-  meritSupplys: z.array(MeritIncentiveSchema).optional(),
-  meritBorrows: z.array(MeritIncentiveSchema).optional(),
-  merklSupplys: z.array(MerklOpportunityGroupSchema).optional(),
-  merklBorrows: z.array(MerklOpportunityGroupSchema).optional(),
-  merklHolds: z.array(MerklOpportunityGroupSchema).optional(),
-  brevisSupplys: z.array(BrevisRawIncentiveSchema).optional().transform(normalizeBrevisIncentives),
-  brevisBorrows: z.array(BrevisRawIncentiveSchema).optional().transform(normalizeBrevisIncentives),
-  // Rate-calculation raw token fields
-  decimals: z.number().optional(),
-  supplied: z.string().optional(),
-  borrowed: z.string().optional(),
-  liquidity: z.string().optional(),
-  supplyCap: z.string().optional(),
-  borrowCap: z.string().optional(),
-  suppliable: z.string().optional(),
-  borrowable: z.string().optional(),
-  deficit: z.string().optional(),
-  // Rate-model fields are percent numbers (e.g., 9 means 9%)
-  protocolFee: z.number().optional(),
-  slopeBelowOptimal: z.number().optional(),
-  slopeAboveOptimal: z.number().optional(),
-  optimalUtilization: z.number().optional(),
-  baseBorrowRate: z.number().optional(),
-  // V4 Hub & Spoke identifiers
-  aaveProReserveId: z.string().optional(),
-  hubId: z.string().optional(),
-  hubName: z.string().optional(),
-  spokeId: z.string().optional(),
-  spokeName: z.string().optional(),
-}).passthrough(); // allow any future API additions without breaking
-
-// ── Markets response ── (current API: { snapshot, reserves })
-export const MarketsResponseSchema = z.object({
-  snapshot: z.object({
-    lastUpdated: z.string(),
-    version: z.string().optional(),
-    staleTimeMs: z.number().optional(),
-  }),
-  reserves: z.array(ReserveWithSpreadSchema),
-});
 
 // ── CoinGecko FDV ──
 const CoingeckoFdvItemSchema = z.object({
