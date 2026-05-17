@@ -18,6 +18,42 @@ const __dirname = dirname(__filename);
 const PUBLIC_DIR = resolve(__dirname, '..', 'public');
 const OUTPUT_FILE = resolve(PUBLIC_DIR, 'openapi.json');
 
+function inlineLazyRefs(schema: Record<string, unknown>): void {
+  const defs = schema.$defs as Record<string, unknown> | undefined;
+  if (!defs) return;
+
+  const replaceRefs = (node: unknown): void => {
+    if (!node || typeof node !== 'object') return;
+    const record = node as Record<string, unknown>;
+    if (typeof record.$ref === 'string') {
+      const m = record.$ref.match(/^#\/\$defs\/(.+)$/);
+      if (m && defs[m[1]]) {
+        const expanded: Record<string, unknown> = JSON.parse(JSON.stringify(defs[m[1]]));
+        const truncateRecursive = (n: unknown): void => {
+          if (!n || typeof n !== 'object') return;
+          const r = n as Record<string, unknown>;
+          if (typeof r.$ref === 'string' && /^#\/\$defs\//.test(r.$ref)) {
+            delete r.$ref;
+          }
+          for (const v of Object.values(r)) {
+            if (typeof v === 'object' && v !== null) truncateRecursive(v);
+          }
+        };
+        truncateRecursive(expanded);
+        delete record.$ref;
+        Object.assign(record, expanded);
+      }
+    }
+    if (record === schema.$defs) return;
+    for (const value of Object.values(record)) {
+      if (typeof value === 'object' && value !== null) replaceRefs(value);
+    }
+  };
+
+  replaceRefs(schema);
+  delete schema.$defs;
+}
+
 function extractNestedDefsInPlace(schemas: Record<string, unknown>): void {
   const defs = new Map<string, unknown>();
   const keyToName = new Map<string, string>();
@@ -76,6 +112,10 @@ export function generateOpenApiDocument(): Record<string, unknown> {
     BrevisCampaignBreakdown: BrevisCampaignBreakdownSchema.toJSONSchema({ io: 'input' }),
     BrevisIncentive: BrevisIncentiveSchema.toJSONSchema({ io: 'input' }),
   };
+
+  for (const key of Object.keys(schemas)) {
+    inlineLazyRefs(schemas[key] as Record<string, unknown>);
+  }
 
   extractNestedDefsInPlace(schemas);
 

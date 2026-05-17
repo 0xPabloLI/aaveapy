@@ -64,7 +64,6 @@ describe('generateOpenApiDocument', () => {
     expect(keys).toContain('MerklOpportunityGroup');
     expect(keys).toContain('BrevisCampaignBreakdown');
     expect(keys).toContain('BrevisIncentive');
-    expect(keys).toContain('IncentiveMessage');
   });
 
   it('contains no unresolved $defs references', () => {
@@ -99,6 +98,16 @@ describe('generateOpenApiDocument', () => {
         ).toBe(true);
       }
     }
+  });
+
+  it('MeritIncentive.message is inlined, not an orphan $ref', () => {
+    const doc = generateOpenApiDocument();
+    const schemas = (doc.components as Record<string, unknown>)?.schemas as Record<string, unknown>;
+    const meritIncentive = schemas?.MeritIncentive as Record<string, unknown>;
+    const props = meritIncentive?.properties as Record<string, unknown>;
+    const message = props?.message as Record<string, unknown>;
+    expect(message?.$ref).toBeUndefined();
+    expect(message?.anyOf).toBeDefined();
   });
 
   it('response bodies use $ref not inline schema', () => {

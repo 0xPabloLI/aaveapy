@@ -186,7 +186,42 @@
                         "type": "string"
                       },
                       "message": {
-                        "$ref": "#/components/schemas/IncentiveMessage"
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "object",
+                            "propertyNames": {
+                              "type": "string"
+                            },
+                            "additionalProperties": {
+                              "anyOf": [
+                                {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "number"
+                                    },
+                                    {
+                                      "type": "boolean"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                {}
+                              ]
+                            }
+                          },
+                          {
+                            "type": "array",
+                            "items": {}
+                          }
+                        ]
                       },
                       "startDate": {
                         "type": "string"
@@ -224,7 +259,42 @@
                         "type": "string"
                       },
                       "message": {
-                        "$ref": "#/components/schemas/IncentiveMessage"
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "object",
+                            "propertyNames": {
+                              "type": "string"
+                            },
+                            "additionalProperties": {
+                              "anyOf": [
+                                {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "number"
+                                    },
+                                    {
+                                      "type": "boolean"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                {}
+                              ]
+                            }
+                          },
+                          {
+                            "type": "array",
+                            "items": {}
+                          }
+                        ]
                       },
                       "startDate": {
                         "type": "string"
@@ -1088,7 +1158,42 @@
                   "type": "string"
                 },
                 "message": {
-                  "$ref": "#/components/schemas/IncentiveMessage"
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {
+                        "anyOf": [
+                          {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "boolean"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          {}
+                        ]
+                      }
+                    },
+                    {
+                      "type": "array",
+                      "items": {}
+                    }
+                  ]
                 },
                 "startDate": {
                   "type": "string"
@@ -1126,7 +1231,42 @@
                   "type": "string"
                 },
                 "message": {
-                  "$ref": "#/components/schemas/IncentiveMessage"
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {
+                        "anyOf": [
+                          {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "boolean"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          {}
+                        ]
+                      }
+                    },
+                    {
+                      "type": "array",
+                      "items": {}
+                    }
+                  ]
                 },
                 "startDate": {
                   "type": "string"
@@ -1724,7 +1864,42 @@
             "type": "string"
           },
           "message": {
-            "$ref": "#/components/schemas/IncentiveMessage"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    {}
+                  ]
+                }
+              },
+              {
+                "type": "array",
+                "items": {}
+              }
+            ]
           },
           "startDate": {
             "type": "string"
@@ -1974,48 +2149,6 @@
           "link"
         ],
         "additionalProperties": {}
-      },
-      "IncentiveMessage": {
-        "anyOf": [
-          {
-            "type": "string"
-          },
-          {
-            "type": "object",
-            "propertyNames": {
-              "type": "string"
-            },
-            "additionalProperties": {
-              "anyOf": [
-                {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "number"
-                    },
-                    {
-                      "type": "boolean"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                {
-                  "$ref": "#/components/schemas/IncentiveMessage"
-                }
-              ]
-            }
-          },
-          {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/IncentiveMessage"
-            }
-          }
-        ]
       }
     }
   }
