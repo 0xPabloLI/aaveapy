@@ -23,7 +23,7 @@ import { buildAaveUrl } from '@/lib/aaveLinks';
 import { openExternalUrl } from '@/lib/externalNavigation';
 import { calculateDeficitShareRatio, getReserveDeficitUsdAmount } from '@/lib/deficit';
 import { getReserveKey } from '@/lib/reserveKey';
-import ReservesTableTooltipOverlay, { type TooltipState } from './ReservesTableTooltipOverlay';
+import ReservesTableTooltipOverlay from './ReservesTableTooltipOverlay';
 import DesktopReserveRow from './DesktopReserveRow';
 import ReservesTableDesktopHeader from './ReservesTableDesktopHeader';
 import ReservesTableMobileGrid from './ReservesTableMobileGrid';
@@ -45,6 +45,7 @@ import {
 } from '@/hooks/reserves-table/useReservesPagination';
 import { useReserveExpansion } from '@/hooks/reserves-table/useReserveExpansion';
 import { useScenarioPinScroll } from '@/hooks/reserves-table/useScenarioPinScroll';
+import { useReservesTooltip } from '@/hooks/reserves-table/useReservesTooltip';
 import { getReserveSimulationId, useSharedRateSimulations } from '@/hooks/useRateSimulation';
 import { useSideDataMeta } from '@/hooks/useSideDataMeta';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
@@ -200,7 +201,11 @@ const ReservesTable = ({
     toggleMobileSortMenu,
   } = sortState;
 
-  const [tooltipState, setTooltipState] = useState<TooltipState | null>(null);
+  const {
+    tooltipState,
+    handleIncentiveClick,
+    closeTooltip,
+  } = useReservesTooltip();
 
   const { simulationsById, hasAnyInput: hasSharedScenario } = useSharedRateSimulations({
     reserves,
@@ -991,33 +996,6 @@ const ReservesTable = ({
     },
   ];
 
-  const handleIncentiveClick = useCallback((
-    e: React.MouseEvent,
-    reserve: ReserveWithSpread,
-    type: 'supply' | 'borrow',
-    apy: number | null,
-  ) => {
-    e.stopPropagation();
-    if (apy === null || isNaN(apy)) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const triggerCenterX = rect.left + rect.width / 2;
-    setTooltipState({
-      reserve,
-      type,
-      position: { x: rect.left, y: rect.bottom },
-      triggerCenterX,
-      triggerHeight: rect.height,
-      triggerRect: {
-        top: rect.top,
-        bottom: rect.bottom,
-        left: rect.left,
-        right: rect.right,
-        width: rect.width,
-        height: rect.height,
-      },
-    });
-  }, []);
-
   
 
   const handleRowClick = (reserve: ReserveWithSpread) => {
@@ -1328,7 +1306,7 @@ const ReservesTable = ({
         />
 
 
-        <ReservesTableTooltipOverlay tooltipState={tooltipState} onClose={() => setTooltipState(null)} isApy={isApy} tydroPointToUsdRate={tydroPointToUsdRate} whitelistMerklCampaignIds={whitelistMerklCampaignIds} onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign} forecastStates={forecastStates} />
+        <ReservesTableTooltipOverlay tooltipState={tooltipState} onClose={closeTooltip} isApy={isApy} tydroPointToUsdRate={tydroPointToUsdRate} whitelistMerklCampaignIds={whitelistMerklCampaignIds} onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign} forecastStates={forecastStates} />
 
         <ReservesTableFloatingScroll
           tableInView={tableInView}
@@ -1629,7 +1607,7 @@ const ReservesTable = ({
         <div aria-hidden style={{ height: 'calc(100dvh - var(--reserves-expanded-main-row-top, 5.75rem))' }} />
       )}
 
-      <ReservesTableTooltipOverlay tooltipState={tooltipState} onClose={() => setTooltipState(null)} isApy={isApy} tydroPointToUsdRate={tydroPointToUsdRate} whitelistMerklCampaignIds={whitelistMerklCampaignIds} onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign} forecastStates={forecastStates} />
+      <ReservesTableTooltipOverlay tooltipState={tooltipState} onClose={closeTooltip} isApy={isApy} tydroPointToUsdRate={tydroPointToUsdRate} whitelistMerklCampaignIds={whitelistMerklCampaignIds} onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign} forecastStates={forecastStates} />
 
       <ReservesTableFloatingScroll
         tableInView={tableInView}
