@@ -46,6 +46,7 @@ import { useReserveExpansion } from '@/hooks/reserves-table/useReserveExpansion'
 import { useScenarioPinScroll } from '@/hooks/reserves-table/useScenarioPinScroll';
 import { useReservesTooltip } from '@/hooks/reserves-table/useReservesTooltip';
 import { usePortfolioToggle } from '@/hooks/reserves-table/usePortfolioToggle';
+import { useReservesLayoutRefs } from '@/hooks/reserves-table/useReservesLayoutRefs';
 import { getReserveSimulationId, useSharedRateSimulations } from '@/hooks/useRateSimulation';
 import { useSideDataMeta } from '@/hooks/useSideDataMeta';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
@@ -1118,56 +1119,14 @@ const ReservesTable = ({
     </div>
   );
 
-  const mobileTableRef = useRef<HTMLDivElement>(null);
-  const desktopTableCardRef = useRef<HTMLDivElement>(null);
-  const desktopTableBottomAnchorRef = useRef<HTMLDivElement>(null);
-  const desktopStickyScenarioRef = useRef<HTMLDivElement>(null);
-  const desktopStickyTheadRef = useRef<HTMLTableSectionElement>(null);
-  const [tableInView, setTableInView] = useState(false);
-
-  useEffect(() => {
-    const target = isMobile ? mobileTableRef.current : desktopTableCardRef.current;
-    if (!target) return;
-    const io = new IntersectionObserver(
-      ([entry]) => setTableInView(entry.isIntersecting),
-      { threshold: 0, rootMargin: '200px 0px 200px 0px' },
-    );
-    io.observe(target);
-    return () => io.disconnect();
-  }, [isMobile]);
-
-  useEffect(() => {
-    if (isMobile) return;
-    const stickyEl = desktopStickyScenarioRef.current;
-    const theadEl = desktopStickyTheadRef.current;
-    const card = desktopTableCardRef.current;
-    if (!stickyEl || !card) return undefined;
-    const apply = () => {
-      const scenarioH = stickyEl.getBoundingClientRect().height;
-      card.style.setProperty('--reserves-sticky-scenario-height', `${scenarioH}px`);
-      const theadH =
-        theadEl instanceof HTMLElement ? theadEl.getBoundingClientRect().height : 0;
-      if (theadH > 0) {
-        card.style.setProperty(
-          '--reserves-expanded-main-row-top',
-          `${scenarioH + theadH}px`,
-        );
-      } else {
-        card.style.removeProperty('--reserves-expanded-main-row-top');
-      }
-    };
-    apply();
-    const ro = new ResizeObserver(apply);
-    ro.observe(stickyEl);
-    if (theadEl instanceof HTMLElement) {
-      ro.observe(theadEl);
-    }
-    return () => {
-      ro.disconnect();
-      card.style.removeProperty('--reserves-sticky-scenario-height');
-      card.style.removeProperty('--reserves-expanded-main-row-top');
-    };
-  }, [isMobile]);
+  const {
+    mobileTableRef,
+    desktopTableCardRef,
+    desktopTableBottomAnchorRef,
+    desktopStickyScenarioRef,
+    desktopStickyTheadRef,
+    tableInView,
+  } = useReservesLayoutRefs({ isMobile });
 
   // Mobile card view — compact bottom padding (safe area + small breathing room)
   if (isMobile) {
