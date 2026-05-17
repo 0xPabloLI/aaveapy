@@ -6,6 +6,35 @@ import { formatScenarioSize } from '@/lib/formatters';
 import { getAvailableToBorrowUsd } from '@/lib/scenarioSize';
 import { cn } from '@/lib/utils';
 
+function SortArrowButton({
+  onClick,
+  isActive,
+  sortOrder,
+  ariaLabel,
+}: {
+  onClick: () => void;
+  isActive: boolean;
+  sortOrder?: 'asc' | 'desc';
+  ariaLabel: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={(e) => { e.stopPropagation(); onClick(); }}
+      className={`ml-1 inline-flex items-center transition-colors ${
+        isActive ? 'text-foreground' : 'text-muted-foreground/60 hover:text-foreground'
+      }`}
+      aria-label={ariaLabel}
+    >
+      {isActive ? (
+        sortOrder === 'desc' ? <ArrowDown className="w-3 h-3" /> : <ArrowUp className="w-3 h-3" />
+      ) : (
+        <ArrowDown className="w-3 h-3 opacity-50" />
+      )}
+    </button>
+  );
+}
+
 interface BorrowCapProgressRingProps {
   borrowed: number | null | undefined;
   cap: number | null | undefined;
@@ -29,6 +58,14 @@ interface BorrowCapProgressRingProps {
   /** Sort state for percentage arrow in tooltip. */
   isSortActive?: boolean;
   sortOrder?: 'asc' | 'desc';
+  /** Sort callbacks and state for borrow size arrow in tooltip. */
+  onSortBorrowSize?: () => void;
+  isSortBorrowSizeActive?: boolean;
+  borrowSizeSortOrder?: 'asc' | 'desc';
+  /** Sort callbacks and state for borrowable arrow in tooltip. */
+  onSortBorrowable?: () => void;
+  isSortBorrowableActive?: boolean;
+  borrowableSortOrder?: 'asc' | 'desc';
 }
 
 /** Shared borrow cap progress data display — reused by desktop tooltip and mobile bottom sheet. */
@@ -43,6 +80,12 @@ export function BorrowCapProgressContent({
   onSortPercentage,
   isSortActive,
   sortOrder,
+  onSortBorrowSize,
+  isSortBorrowSizeActive,
+  borrowSizeSortOrder,
+  onSortBorrowable,
+  isSortBorrowableActive,
+  borrowableSortOrder,
 }: {
   borrowed: number;
   cap: number;
@@ -54,6 +97,12 @@ export function BorrowCapProgressContent({
   onSortPercentage?: () => void;
   isSortActive?: boolean;
   sortOrder?: 'asc' | 'desc';
+  onSortBorrowSize?: () => void;
+  isSortBorrowSizeActive?: boolean;
+  borrowSizeSortOrder?: 'asc' | 'desc';
+  onSortBorrowable?: () => void;
+  isSortBorrowableActive?: boolean;
+  borrowableSortOrder?: 'asc' | 'desc';
 }) {
   const percentage = Math.min((borrowed / cap) * 100, 100);
   const availableToBorrow = disabled
@@ -67,7 +116,15 @@ export function BorrowCapProgressContent({
     percentage >= 95 ? 'ds-text-amber-500' : percentage >= 80 ? 'ds-text-amber-600' : 'ds-text-brand-cyan';
 
   const sortArrow = onSortPercentage
-    ? (isSortActive ? (sortOrder === 'desc' ? <ArrowDown className="w-3 h-3" /> : <ArrowUp className="w-3 h-3" />) : <ArrowDown className="w-3 h-3 opacity-50" />)
+    ? <SortArrowButton onClick={onSortPercentage} isActive={!!isSortActive} sortOrder={sortOrder} ariaLabel="Sort by borrow cap %" />
+    : null;
+
+  const borrowSizeArrow = onSortBorrowSize
+    ? <SortArrowButton onClick={onSortBorrowSize} isActive={!!isSortBorrowSizeActive} sortOrder={borrowSizeSortOrder} ariaLabel="Sort by borrow size" />
+    : null;
+
+  const borrowableArrow = onSortBorrowable
+    ? <SortArrowButton onClick={onSortBorrowable} isActive={!!isSortBorrowableActive} sortOrder={borrowableSortOrder} ariaLabel="Sort by borrowable" />
     : null;
 
   return (
@@ -76,6 +133,7 @@ export function BorrowCapProgressContent({
         <span className="text-muted-foreground">Total borrowed</span>
         <span className="font-medium tabular-nums ds-text-brand-cyan">
           {formatScenarioSize(borrowed, { inputMode: displayMode, tokenPrice, tokenSymbol })}
+          {borrowSizeArrow}
         </span>
       </div>
       <div className="flex justify-between gap-3">
@@ -94,24 +152,14 @@ export function BorrowCapProgressContent({
         <span className="text-muted-foreground">Available to borrow</span>
         <span className="font-medium tabular-nums ds-text-brand-cyan">
           {formatScenarioSize(availableToBorrow, { inputMode: displayMode, tokenPrice, tokenSymbol })}
+          {borrowableArrow}
         </span>
       </div>
       <div className="flex justify-between gap-3 pt-1 border-t border-border/50">
         <span className="text-muted-foreground">% of cap</span>
         <span className={`font-bold tabular-nums ${colorClass}`}>
           {percentage.toFixed(1)}%
-          {sortArrow && (
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); onSortPercentage!(); }}
-              className={`ml-1 inline-flex items-center transition-colors ${
-                isSortActive ? 'text-foreground' : 'text-muted-foreground/60 hover:text-foreground'
-              }`}
-              aria-label={`Sort by borrow cap %`}
-            >
-              {sortArrow}
-            </button>
-          )}
+          {sortArrow}
         </span>
       </div>
     </div>
@@ -136,6 +184,12 @@ const BorrowCapProgressRing = memo(({
   onSortSize,
   isSortActive,
   sortOrder,
+  onSortBorrowSize,
+  isSortBorrowSizeActive,
+  borrowSizeSortOrder,
+  onSortBorrowable,
+  isSortBorrowableActive,
+  borrowableSortOrder,
 }: BorrowCapProgressRingProps) => {
   if (cap == null || !Number.isFinite(cap) || cap <= 0) {
     return null;
@@ -169,6 +223,12 @@ const BorrowCapProgressRing = memo(({
         onSortPercentage={onSort}
         isSortActive={isSortActive}
         sortOrder={sortOrder}
+        onSortBorrowSize={onSortSize || onSortBorrowSize}
+        isSortBorrowSizeActive={isSortBorrowSizeActive}
+        borrowSizeSortOrder={borrowSizeSortOrder}
+        onSortBorrowable={onSortBorrowable}
+        isSortBorrowableActive={isSortBorrowableActive}
+        borrowableSortOrder={borrowableSortOrder}
       />
     </TooltipContent>
   );

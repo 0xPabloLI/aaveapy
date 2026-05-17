@@ -6,6 +6,35 @@ import { formatScenarioSize } from '@/lib/formatters';
 import { calculateDeficitShareRatio, getDeficitSeverity } from '@/lib/deficit';
 import { cn } from '@/lib/utils';
 
+function SortArrowButton({
+  onClick,
+  isActive,
+  sortOrder,
+  ariaLabel,
+}: {
+  onClick: () => void;
+  isActive: boolean;
+  sortOrder?: 'asc' | 'desc';
+  ariaLabel: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={(e) => { e.stopPropagation(); onClick(); }}
+      className={`ml-1 inline-flex items-center transition-colors ${
+        isActive ? 'text-foreground' : 'text-muted-foreground/60 hover:text-foreground'
+      }`}
+      aria-label={ariaLabel}
+    >
+      {isActive ? (
+        sortOrder === 'desc' ? <ArrowDown className="w-3 h-3" /> : <ArrowUp className="w-3 h-3" />
+      ) : (
+        <ArrowDown className="w-3 h-3 opacity-50" />
+      )}
+    </button>
+  );
+}
+
 interface DeficitLiquidityRingProps {
   deficitUsd: number | null | undefined;
   totalSuppliedUsd: number | null | undefined;
@@ -27,6 +56,10 @@ interface DeficitLiquidityRingProps {
   /** Sort state for percentage arrow in tooltip. */
   isSortActive?: boolean;
   sortOrder?: 'asc' | 'desc';
+  /** Sort callbacks and state for deficit amount arrow in tooltip. */
+  onSortDeficitAmount?: () => void;
+  isSortDeficitAmountActive?: boolean;
+  deficitAmountSortOrder?: 'asc' | 'desc';
 }
 
 /** Shared deficit data display — reused by desktop tooltip and mobile bottom sheet. */
@@ -41,6 +74,9 @@ export function DeficitProgressContent({
   onSortPercentage,
   isSortActive,
   sortOrder,
+  onSortDeficitAmount,
+  isSortDeficitAmountActive,
+  deficitAmountSortOrder,
 }: {
   deficitUsd: number;
   totalSuppliedUsd: number | null | undefined;
@@ -52,6 +88,9 @@ export function DeficitProgressContent({
   onSortPercentage?: () => void;
   isSortActive?: boolean;
   sortOrder?: 'asc' | 'desc';
+  onSortDeficitAmount?: () => void;
+  isSortDeficitAmountActive?: boolean;
+  deficitAmountSortOrder?: 'asc' | 'desc';
 }) {
   const ratio = calculateDeficitShareRatio({ deficitUsd, totalSuppliedUsd });
   const percentage = ratio != null ? Math.min(Math.max(ratio * 100, 0), 100) : null;
@@ -64,7 +103,11 @@ export function DeficitProgressContent({
   };
 
   const sortArrow = onSortPercentage
-    ? (isSortActive ? (sortOrder === 'desc' ? <ArrowDown className="w-3 h-3" /> : <ArrowUp className="w-3 h-3" />) : <ArrowDown className="w-3 h-3 opacity-50" />)
+    ? <SortArrowButton onClick={onSortPercentage} isActive={!!isSortActive} sortOrder={sortOrder} ariaLabel="Sort by deficit %" />
+    : null;
+
+  const deficitAmountArrow = onSortDeficitAmount
+    ? <SortArrowButton onClick={onSortDeficitAmount} isActive={!!isSortDeficitAmountActive} sortOrder={deficitAmountSortOrder} ariaLabel="Sort by deficit amount" />
     : null;
 
   const deficitDisplayValue = displayMode === 'token'
@@ -94,6 +137,7 @@ export function DeficitProgressContent({
         </span>
         <span className={`font-medium tabular-nums ${getProgressColorClass()}`}>
           {deficitDisplayValue}
+          {deficitAmountArrow}
         </span>
       </div>
       <div className="flex justify-between gap-3">
@@ -106,18 +150,7 @@ export function DeficitProgressContent({
         <span className="text-muted-foreground">% of total (incl. deficit)</span>
         <span className={`font-bold tabular-nums leading-none ${getProgressColorClass()}`}>
           {ratio != null ? `${percentage?.toFixed(2)}%` : '—'}
-          {sortArrow && (
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); onSortPercentage!(); }}
-              className={`ml-1 inline-flex items-center transition-colors ${
-                isSortActive ? 'text-foreground' : 'text-muted-foreground/60 hover:text-foreground'
-              }`}
-              aria-label={`Sort by deficit %`}
-            >
-              {sortArrow}
-            </button>
-          )}
+          {sortArrow}
         </span>
       </div>
     </div>
@@ -142,6 +175,9 @@ const DeficitLiquidityRing = memo(({
   onSortSize,
   isSortActive,
   sortOrder,
+  onSortDeficitAmount,
+  isSortDeficitAmountActive,
+  deficitAmountSortOrder,
 }: DeficitLiquidityRingProps) => {
   const hasDeficit = deficitUsd != null && Number.isFinite(deficitUsd) && deficitUsd > 0;
   const hasTotalSupplied = totalSuppliedUsd != null && Number.isFinite(totalSuppliedUsd) && totalSuppliedUsd >= 0;
@@ -174,6 +210,9 @@ const DeficitLiquidityRing = memo(({
         onSortPercentage={onSort}
         isSortActive={isSortActive}
         sortOrder={sortOrder}
+        onSortDeficitAmount={onSortSize || onSortDeficitAmount}
+        isSortDeficitAmountActive={isSortDeficitAmountActive}
+        deficitAmountSortOrder={deficitAmountSortOrder}
       />
     </TooltipContent>
   );
