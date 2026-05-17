@@ -71,6 +71,33 @@ npm test                    # Vitest 单元测试
 
 两个防线同时生效，确保 `reserveSize` → `supplied` 这类回归不再发生。
 
+### Git Stash Safety (Stash 安全规则)
+
+**规则：Agent 在任何情况下都不得在未经用户明确确认的情况下执行以下命令：**
+
+- `git stash pop`
+- `git stash apply`
+- `git stash drop`
+- `git stash clear`
+
+**必须在执行前询问用户确认，并展示当前的 stash 列表供用户审查。**
+
+**原因：** 历史 stash 中的代码可能来自不同 session 的中间态 rebase，pop 后会污染当前工作区（例如 `f9a5c13` 的 OpenAPI session 因 pop 旧 stash 导致 18 处回归）。
+
+**安全替代方案：**
+- 需要暂存工作区时用 `git stash push -m "descriptive message"`，清楚标注用途
+- 恢复时先 `git stash list` 让用户确认恢复哪个
+- 定期清理：pre-push hook 会在 stash > 3 时警告
+
+### Pre-Push Hook (Push 前检查)
+
+`.husky/pre-push` 在每次 `git push` 前运行：
+
+1. **Stash 数量检查** — 当 stash > 3 个时警告，提醒清理以避免 rebase 污染
+2. 不包含耗时操作（lint/test/build 已在 pre-commit 完成）
+
+**注意：** pre-push hook 只是警告，不会阻止 push。stash 清理由用户手动执行。
+
 ### High-Risk Areas (Extra Care Required)
 
 For changes in these areas, also follow the relevant checklists after validation passes:
