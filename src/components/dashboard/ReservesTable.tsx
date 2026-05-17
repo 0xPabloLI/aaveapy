@@ -1507,12 +1507,40 @@ const ReservesTable = ({
                       setActiveSortColumn, targetColumn: 'size',
                     });
                   }}
+                  onSortSuppliable={() => {
+                    collapseExpandedOnSort();
+                    selectSortOption({
+                      isAlreadySelected: sizeSortMode === 'supplyAvailability' && activeSortColumn === 'size',
+                      setSortOrder: setSizeSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
+                      setSortMode: setSizeSortMode, targetMode: 'supplyAvailability',
+                      setActiveSortColumn, targetColumn: 'size',
+                    });
+                  }}
+                  onSortBorrowable={() => {
+                    collapseExpandedOnSort();
+                    selectSortOption({
+                      isAlreadySelected: sizeSortMode === 'borrowAvailability' && activeSortColumn === 'size',
+                      setSortOrder: setSizeSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
+                      setSortMode: setSizeSortMode, targetMode: 'borrowAvailability',
+                      setActiveSortColumn, targetColumn: 'size',
+                    });
+                  }}
                   isSortSupplyCapPctActive={activeSortColumn === 'size' && sizeSortMode === 'supplyCapPct'}
                   supplyCapPctSortOrder={sizeSortOrder}
                   isSortBorrowCapPctActive={activeSortColumn === 'size' && sizeSortMode === 'borrowCapPct'}
                   borrowCapPctSortOrder={sizeSortOrder}
                   isSortDeficitRatioActive={activeSortColumn === 'size' && sizeSortMode === 'deficitRatio'}
                   deficitRatioSortOrder={sizeSortOrder}
+                  isSortSupplySizeActive={activeSortColumn === 'size' && sizeSortMode === 'supply'}
+                  supplySizeSortOrder={sizeSortOrder}
+                  isSortSuppliableActive={activeSortColumn === 'size' && sizeSortMode === 'supplyAvailability'}
+                  suppliableSortOrder={sizeSortOrder}
+                  isSortBorrowSizeActive={activeSortColumn === 'size' && sizeSortMode === 'borrow'}
+                  borrowSizeSortOrder={sizeSortOrder}
+                  isSortBorrowableActive={activeSortColumn === 'size' && sizeSortMode === 'borrowAvailability'}
+                  borrowableSortOrder={sizeSortOrder}
+                  isSortDeficitAmountActive={activeSortColumn === 'size' && sizeSortMode === 'deficitAmount'}
+                  deficitAmountSortOrder={sizeSortOrder}
                 />
               );
             })

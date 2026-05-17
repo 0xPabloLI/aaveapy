@@ -112,6 +112,18 @@ interface DesktopReserveRowProps {
   borrowCapPctSortOrder?: 'asc' | 'desc';
   isSortDeficitRatioActive?: boolean;
   deficitRatioSortOrder?: 'asc' | 'desc';
+  isSortSupplySizeActive?: boolean;
+  supplySizeSortOrder?: 'asc' | 'desc';
+  onSortSuppliable?: () => void;
+  isSortSuppliableActive?: boolean;
+  suppliableSortOrder?: 'asc' | 'desc';
+  isSortBorrowSizeActive?: boolean;
+  borrowSizeSortOrder?: 'asc' | 'desc';
+  onSortBorrowable?: () => void;
+  isSortBorrowableActive?: boolean;
+  borrowableSortOrder?: 'asc' | 'desc';
+  isSortDeficitAmountActive?: boolean;
+  deficitAmountSortOrder?: 'asc' | 'desc';
 }
 
 const DesktopReserveRow = memo(({
@@ -155,6 +167,18 @@ const DesktopReserveRow = memo(({
   borrowCapPctSortOrder,
   isSortDeficitRatioActive,
   deficitRatioSortOrder,
+  isSortSupplySizeActive,
+  supplySizeSortOrder,
+  onSortSuppliable,
+  isSortSuppliableActive,
+  suppliableSortOrder,
+  isSortBorrowSizeActive,
+  borrowSizeSortOrder,
+  onSortBorrowable,
+  isSortBorrowableActive,
+  borrowableSortOrder,
+  isSortDeficitAmountActive,
+  deficitAmountSortOrder,
 }: DesktopReserveRowProps) => {
   const [hasSimulationMounted, setHasSimulationMounted] = useState(isExpanded);
 
@@ -466,6 +490,12 @@ const DesktopReserveRow = memo(({
                 triggerAriaLabel={`Supply cap details for ${reserve.tokenSymbol}`}
                 onSort={onSortSupplyCapPct}
                 onSortSize={onSortSupplySize}
+                onSortSupplySize={onSortSupplySize}
+                isSortSupplySizeActive={isSortSupplySizeActive}
+                supplySizeSortOrder={supplySizeSortOrder}
+                onSortSuppliable={onSortSuppliable}
+                isSortSuppliableActive={isSortSuppliableActive}
+                suppliableSortOrder={suppliableSortOrder}
                 isSortActive={isSortSupplyCapPctActive}
                 sortOrder={supplyCapPctSortOrder}
               />
@@ -492,6 +522,12 @@ const DesktopReserveRow = memo(({
                 triggerAriaLabel={`Borrow cap details for ${reserve.tokenSymbol}`}
                 onSort={onSortBorrowCapPct}
                 onSortSize={onSortBorrowSize}
+                onSortBorrowSize={onSortBorrowSize}
+                isSortBorrowSizeActive={isSortBorrowSizeActive}
+                borrowSizeSortOrder={borrowSizeSortOrder}
+                onSortBorrowable={onSortBorrowable}
+                isSortBorrowableActive={isSortBorrowableActive}
+                borrowableSortOrder={borrowableSortOrder}
                 isSortActive={isSortBorrowCapPctActive}
                 sortOrder={borrowCapPctSortOrder}
               />
@@ -523,6 +559,9 @@ const DesktopReserveRow = memo(({
                   poolExplorerUrl={poolExplorerUrl}
                   onSort={onSortDeficitRatio}
                   onSortSize={onSortDeficitAmount}
+                  onSortDeficitAmount={onSortDeficitAmount}
+                  isSortDeficitAmountActive={isSortDeficitAmountActive}
+                  deficitAmountSortOrder={deficitAmountSortOrder}
                   isSortActive={isSortDeficitRatioActive}
                   sortOrder={deficitRatioSortOrder}
                 />
