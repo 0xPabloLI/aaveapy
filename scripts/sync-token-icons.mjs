@@ -236,8 +236,10 @@ async function getMissingSymbols() {
   });
 
   const existing = getExistingIconBaseSet();
-  const missing = toSortedArray(requiredSymbols).filter((symbol) => !existing.has(symbol));
-  return { missing, logoHints };
+  const requiredArray = toSortedArray(requiredSymbols);
+  const missing = requiredArray.filter((symbol) => !existing.has(symbol));
+  const orphaned = [...existing].filter((s) => !requiredSymbols.has(s) && s !== 'default').sort();
+  return { missing, orphaned, logoHints };
 }
 
 async function fetchCoingeckoImageUrl(symbol) {
@@ -333,7 +335,14 @@ async function main() {
     console.warn('--extra-only is deprecated and ignored. Symbols are now derived from used interface resources.');
   }
 
-  const { missing, logoHints } = await getMissingSymbols();
+  const { missing, orphaned, logoHints } = await getMissingSymbols();
+
+  if (orphaned.length > 0) {
+    console.warn(
+      `Orphaned token icons (local but not in API): ${orphaned.join(', ')} (${orphaned.length})`
+    );
+  }
+
   if (missing.length === 0) {
     console.log('No missing token icons.');
     return;
