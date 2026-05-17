@@ -90,3 +90,6 @@ For API contract changes, follow `docs/conventions/api-contract-checklist.md`.
 - **tokenIconManifest 不可用于差集检测** — 它从目录自动生成，目录中不可能有不在 manifest 的文件。
 - **扩展现有基础设施优于新建** — 遇到 sync/check/clean 类需求时，优先在 `scripts/sync-*.mjs` 或 `scripts/check-*.mjs` 中扩展，而非新建脚本或 workflow。
 - **Token icon 受保护列表** — `default` 等兜底 icon 不可被标记为可清理。
+- **共享 schema 模块** — frontend 和 Node scripts 都依赖的 zod contract 放在 `src/shared/<domain>/`，用相对 `.ts` 路径引入（Node `--experimental-strip-types` 不解析 Vite `@/` alias）。
+- **Script 桥接文件** — Node scripts 需要 typed 数据时，在 `scripts/lib/<name>.ts` 中封装 schema 验证 + fetch，由 `.mjs` entrypoint 动态 import。
+- **Frontend/script 错误语义分离** — frontend 的 cache fallback 和 script 的 strict validation 不应合并。前者接受降级形状，后者拒绝任何合约偏差。
