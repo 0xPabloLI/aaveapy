@@ -1,6 +1,6 @@
 # ReservesTable Hook Extraction Plan
 
-> **Status (2026-05-15)**: PR-1 ~ PR-4 已完成；PR-5 未开始。
+> **Status (2026-05-17)**: PR-1 ~ PR-6 全部完成。
 > **Goal**: 把 `src/components/dashboard/ReservesTable.tsx` 的 state machine 拆到 `src/hooks/reserves-table/` 下的多个聚合 hook，主壳只剩组合 + JSX，**零外部 props / 零行为改变**。
 > **Out of scope**: 不引入 `react-virtual`；不动 `DesktopReserveRow` / `MobileReserveCard` / 任何子组件；不改 a11y / 不改 sort 算法。
 
@@ -13,7 +13,11 @@
 | PR-2 done | `useReservesPagination` | 10 测试 | 1930（含 PR-1 后用户增量提交 `a808e0a`） |
 | PR-3 done | `useReserveExpansion` | 12 测试 | 1912 |
 | PR-4 done | `useSharedScenarioInputs` | 9 测试 | **1916** |
-| 累计 | 4 hooks + 4 tests = 8 文件 | 45 个新单测 | **-51 行**（vs HEAD 1967） |
+| PR-5 done | `useScenarioPinScroll` | — | 1658 |
+| PR-6.1 done | `useReservesTooltip` | 8 测试 | 1632 |
+| PR-6.2 done | `usePortfolioToggle` | 11 测试 | 1604 |
+| PR-6.3 done | `useReservesLayoutRefs` | 7 测试 | **1566** |
+| 累计 | 8 hooks + 7 tests = 15 文件 | 71 个新单测 | **-401 行**（vs HEAD 1967） |
 
 > 行数没继续显著下降的原因：destructure 块比 inline state 略大；真正收益在 **关注点聚合**，不在行数。
 
