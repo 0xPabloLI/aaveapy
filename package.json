@@ -44,7 +44,7 @@
     "sync:market-name-map-upstream": "node scripts/sync-market-name-map-upstream.mjs",
     "sync:chain-icons-upstream": "node scripts/sync-chain-icon-map-upstream.mjs",
     "sync:chain-network-icons-upstream": "node scripts/sync-chain-network-icons-upstream.mjs",
-    "sync:coingecko-platform-map": "node scripts/sync-coingecko-platform-map.mjs",
+    "sync:coingecko-platform-map": "node --experimental-strip-types scripts/sync-coingecko-platform-map.mjs",
     "sync:pool-addresses-upstream": "node scripts/sync-pool-addresses-upstream.mjs",
     "check:pool-addresses-upstream": "node scripts/check-pool-addresses-upstream.mjs",
     "hardcode:sync": "npm run sync:reserve-patches-upstream && npm run sync:market-name-map-upstream && npm run sync:chain-icons-upstream && npm run sync:chain-network-icons-upstream && node scripts/generate-chain-icon-manifest.mjs && npm run sync:coingecko-platform-map && npm run sync-token-icons && npm run sync:pool-addresses-upstream",

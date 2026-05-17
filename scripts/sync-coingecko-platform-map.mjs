@@ -37,10 +37,10 @@ async function fetchJson(url) {
 }
 
 async function loadMarketChainIds() {
-  const payload = await fetchJson(`${getApiBase()}/markets`);
-  const reserves = Array.isArray(payload?.reserves) ? payload.reserves : [];
+  const { fetchAndValidateMarkets } = await import('./lib/market-fetch.ts');
+  const { rows } = await fetchAndValidateMarkets(`${getApiBase()}/markets`);
   const chainIds = new Set();
-  for (const item of reserves) {
+  for (const item of rows) {
     if (typeof item?.chainId === 'number' && Number.isFinite(item.chainId) && item.chainId > 0) {
       chainIds.add(item.chainId);
     }
