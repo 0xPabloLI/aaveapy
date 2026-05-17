@@ -71,6 +71,12 @@ For API contract changes, follow `docs/conventions/api-contract-checklist.md`.
 ## Learned Preferences (Condensed)
 - Prefer Chinese for collaboration text and direct execution once confirmed.
 - Prefer evidence-based debugging (logs/API/runtime artifacts) over speculation.
-- If user requests “先给方案”, provide plan first before coding.
+- If user requests "先给方案", provide plan first before coding.
 - Keep implementation scoped; avoid unrelated refactors.
 - Avoid filling missing backend fields with guessed defaults.
+
+## Learned Lessons (Condensed)
+- **Token icon 引用是动态的** — icon 通过 URL 路径 `/icons/tokens/{symbol}.{ext}` 在运行时加载，非静态 import；静态源码扫描无法判断哪些 icon 在使用。判断"过时"须依赖 API 运行时数据（活跃 token symbol）。
+- **tokenIconManifest 不可用于差集检测** — 它从目录自动生成，目录中不可能有不在 manifest 的文件。
+- **扩展现有基础设施优于新建** — 遇到 sync/check/clean 类需求时，优先在 `scripts/sync-*.mjs` 或 `scripts/check-*.mjs` 中扩展，而非新建脚本或 workflow。
+- **Token icon 受保护列表** — `default` 等兜底 icon 不可被标记为可清理。
