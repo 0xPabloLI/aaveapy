@@ -167,22 +167,8 @@ function getExistingIconBaseSet() {
 }
 
 async function fetchMarketsFromUrl(url) {
-  const res = await fetch(url);
-  if (!res.ok) {
-    const err = new Error(`HTTP ${res.status}`);
-    err.status = res.status;
-    err.url = url;
-    throw err;
-  }
-  const payload = await res.json();
-  const rows = Array.isArray(payload?.reserves) ? payload.reserves
-    : Array.isArray(payload?.data) ? payload.data
-    : null;
-  if (!rows) {
-    const err = new Error('response missing reserves/data array');
-    err.url = url;
-    throw err;
-  }
+  const { fetchAndValidateMarkets } = await import('./lib/market-fetch.ts');
+  const { rows } = await fetchAndValidateMarkets(url);
   return rows;
 }
 

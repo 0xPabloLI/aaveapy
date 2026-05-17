@@ -38,7 +38,7 @@
     "preview": "vite preview",
     "openapi:generate": "node --experimental-strip-types scripts/generate-openapi.ts",
     "openapi:check": "node --experimental-strip-types scripts/generate-openapi.ts && git diff --exit-code -- public/openapi.json",
-    "sync-token-icons": "node scripts/sync-token-icons.mjs",
+    "sync-token-icons": "node --experimental-strip-types scripts/sync-token-icons.mjs",
     "sync:cloudflare-gh-actions-allowlist": "node scripts/sync-cloudflare-gh-actions-allowlist.mjs",
     "sync:reserve-patches-upstream": "node scripts/sync-reserve-patches-upstream.mjs",
     "sync:market-name-map-upstream": "node scripts/sync-market-name-map-upstream.mjs",
