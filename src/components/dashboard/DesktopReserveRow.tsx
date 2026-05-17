@@ -94,6 +94,12 @@ interface DesktopReserveRowProps {
   isInPortfolio?: boolean;
   /** Callback to add/remove from portfolio. */
   onPortfolioToggle?: (reserveId: string, reserve: ReserveWithSpread, side?: 'supply' | 'borrow') => void;
+  /** Ring-click-to-sort: sort by supply % of cap. */
+  onSortSupplyCapPct?: () => void;
+  /** Ring-click-to-sort: sort by borrow % of cap. */
+  onSortBorrowCapPct?: () => void;
+  /** Ring-click-to-sort: sort by deficit ratio. */
+  onSortDeficitRatio?: () => void;
 }
 
 const DesktopReserveRow = memo(({
@@ -125,6 +131,9 @@ const DesktopReserveRow = memo(({
   isPortfolioMode,
   isInPortfolio,
   onPortfolioToggle,
+  onSortSupplyCapPct,
+  onSortBorrowCapPct,
+  onSortDeficitRatio,
 }: DesktopReserveRowProps) => {
   const [hasSimulationMounted, setHasSimulationMounted] = useState(isExpanded);
 
@@ -225,10 +234,12 @@ const DesktopReserveRow = memo(({
             '[&_td]:sticky [&_td]:z-[25] [&_td]:border-b [&_td]:border-border/60 [&_td]:shadow-[0_1px_2px_0_rgb(0_0_0/0.04)] [&_td]:[top:var(--reserves-expanded-main-row-top,5.75rem)]',
           isExpanded && '[&_td]:bg-card',
           isExpanded && reserve.isPaused && '[&_td]:ds-bg-paused',
+          isExpanded && reserve.isActive === false && '[&_td]:ds-bg-paused',
           isExpanded && reserve.isFrozen && '[&_td]:ds-bg-sky-500-8',
           (reserve.isPaused || reserve.isFrozen) && 'bg-card',
           reserve.isPaused && 'ds-bg-paused',
           (!reserve.isPaused && reserve.isFrozen) && 'ds-bg-sky-500-8',
+          reserve.isActive === false && 'ds-bg-paused',
         )}
         onClick={() => onToggleExpand(reserveId)}
       >
@@ -386,7 +397,7 @@ const DesktopReserveRow = memo(({
                             <ExternalLink className="h-3.5 w-3.5 text-muted-foreground/70" />
                             <span>Open on Tydro</span>
                           </span>
-                          <img src="/icons/partners/tydro-logo.png" alt="Tydro" className="h-3.5 w-3.5 rounded-full opacity-80" loading="lazy" />
+                          <img src="/icons/partners/tydro-logo.svg" alt="Tydro" className="h-3.5 w-3.5 rounded-full opacity-80" loading="lazy" />
                         </a>
                       </div>
                     </PopoverContent>
@@ -432,6 +443,7 @@ const DesktopReserveRow = memo(({
                 label={<span className="font-medium tabular-nums">{supplySizeLabel}</span>}
                 triggerClassName={supplyBlocked ? 'text-emerald-500/50' : 'ds-text-emerald-500'}
                 triggerAriaLabel={`Supply cap details for ${reserve.tokenSymbol}`}
+                onSort={onSortSupplyCapPct}
               />
             ) : (
               <div className={`inline-flex items-center gap-[var(--ds-space-1-5)] rounded-md py-0.5 pl-1 pr-0.5 -my-0.5 ${supplyBlocked ? 'text-emerald-500/50' : 'ds-text-emerald-500'}`}>
@@ -452,6 +464,7 @@ const DesktopReserveRow = memo(({
                 label={<span className="font-medium tabular-nums">{borrowSizeLabel}</span>}
                 triggerClassName={borrowBlocked ? 'text-cyan-500/50' : 'ds-text-brand-cyan'}
                 triggerAriaLabel={`Borrow cap details for ${reserve.tokenSymbol}`}
+                onSort={onSortBorrowCapPct}
               />
             ) : (
               <div className={`inline-flex items-center gap-[var(--ds-space-1-5)] rounded-md py-0.5 pl-1 pr-0.5 -my-0.5 ${borrowBlocked ? 'text-cyan-500/50' : 'ds-text-brand-cyan'}`}>
@@ -477,6 +490,7 @@ const DesktopReserveRow = memo(({
                   triggerClassName={deficitDisplay.deficitTextClass}
                   triggerAriaLabel={`Deficit share of total supplied plus deficit for ${reserve.tokenSymbol}`}
                   poolExplorerUrl={poolExplorerUrl}
+                  onSort={onSortDeficitRatio}
                 />
               ) : (
                 <Tooltip delayDuration={0}>
