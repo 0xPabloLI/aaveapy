@@ -737,7 +737,6 @@ const DesktopReserveRow = memo(({
                   <UtilizationIndicator
                     current={displayUtilization}
                     optimal={optimalPct}
-                    disableTooltip
                   />
                 </div>
               </TooltipTrigger>

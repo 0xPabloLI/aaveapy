@@ -2,15 +2,10 @@
 import { describe, expect, it } from 'vitest';
 import { render } from '@testing-library/react';
 import { renderToString } from 'react-dom/server';
-import { TooltipProvider } from '@/components/ui/tooltip';
 import UtilizationIndicator, { UtilizationContent } from './UtilizationIndicator';
 
 function renderIndicator(current: number | null, optimal: number | null) {
-  return render(
-    <TooltipProvider>
-      <UtilizationIndicator current={current} optimal={optimal} />
-    </TooltipProvider>,
-  );
+  return render(<UtilizationIndicator current={current} optimal={optimal} />);
 }
 
 describe('UtilizationIndicator', () => {
@@ -37,10 +32,10 @@ describe('UtilizationIndicator', () => {
     expect(container.querySelector('svg')).toBeNull();
   });
 
-  it('always wraps SVG in a Tooltip (disableTooltip prop has been removed)', () => {
+  it('renders only SVG bar without tooltip wrapper (caller wraps Tooltip as needed)', () => {
     const { container } = renderIndicator(50, 80);
-    const tooltipTrigger = container.querySelector('[data-state]');
-    expect(tooltipTrigger).not.toBeNull();
+    expect(container.querySelector('svg')).not.toBeNull();
+    expect(container.querySelector('[data-state]')).toBeNull();
   });
 
   it('clamps utilization values to 0-100 range', () => {
@@ -57,7 +52,6 @@ describe('UtilizationIndicator', () => {
 });
 
 describe('UtilizationContent sort arrows', () => {
-
   const baseProps = {
     current: 50,
     optimal: 80,
@@ -78,5 +72,23 @@ describe('UtilizationContent sort arrows', () => {
       <UtilizationContent {...baseProps} />,
     );
     expect(html).not.toContain('aria-label="Sort by utilization"');
+  });
+});
+
+describe('UtilizationContent formula layout', () => {
+  it('renders CSS fraction formula with borrowed and liquidity terms', () => {
+    const html = renderToString(
+      <UtilizationContent current={50} optimal={80} />,
+    );
+    expect(html).toContain('Utilization =');
+    expect(html).toContain('borrowed');
+    expect(html).toContain('liquidity');
+  });
+
+  it('does not render Available liquidity row', () => {
+    const html = renderToString(
+      <UtilizationContent current={50} optimal={80} />,
+    );
+    expect(html).not.toContain('Available liquidity');
   });
 });
