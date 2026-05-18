@@ -30,13 +30,27 @@
 
 ### 3. push 后改写历史用 `--force-with-lease`,绝不用 `--force`
 
+**注意：这只适用于改写历史（amend、rebase、squash 等）的场景。新增 commit 一律用普通 `git push`，不要带 `--force-with-lease`。**
+
 `--force-with-lease` 会在 remote ref 与你 fetch 的 ref 不一致时拒绝(防止把别人的新 commit 推没了)。`--force` 不做这个检查,会盲覆盖。
 
 ```bash
 git push --force-with-lease origin <branch>
 ```
 
-### 4. stage 时显式列出自己改的文件,绝不 `git add -A` / `git add .`
+### 4. 新增 commit 用普通 `git push`（不是 force push）
+
+```bash
+# ✅ 正确：新增 commit
+git push
+
+# ❌ 错误：新增 commit 还用 force push
+git push --force-with-lease
+```
+
+理由：`--force-with-lease` 的语义是「我知道我重写了历史，请确保没覆盖别人」。新增 commit 没有重写历史，用它反而是多余的——而且会掩盖你应该先 `git pull --rebase` 再 push 的正确流程。
+
+### 5. stage 时显式列出自己改的文件,绝不 `git add -A` / `git add .`
 
 ```bash
 # ✅ 正确
@@ -50,7 +64,7 @@ git add --all
 
 如果不确定自己改了哪些文件,先看 `git status --short`,把带 ` M ` / ` D ` / `??` 前缀但**不是你改的**那些挑出来排除掉,只 add 自己的。
 
-### 5. 绝不还原他人的未提交改动
+### 6. 绝不还原他人的未提交改动
 
 worktree 里出现的非己出改动一律**不动**:
 - 不 `git checkout -- <file>` 还原它
@@ -68,6 +82,9 @@ worktree 里出现的非己出改动一律**不动**:
 npm run lint && npx tsc --noEmit && npm test -- --run && npm run build
 git add <自己改的具体路径>
 git commit -m "type(scope): message"
+
+# 新增 commit，普通 push
+git push
 
 # 同任务发现问题,amend
 git add <修改路径>
