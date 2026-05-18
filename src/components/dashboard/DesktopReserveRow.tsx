@@ -741,7 +741,7 @@ const DesktopReserveRow = memo(({
                   />
                 </div>
               </TooltipTrigger>
-              <TooltipContent side="bottom" className="max-w-[var(--ds-ring-tooltip-max-w)] p-3">
+              <TooltipContent side="bottom" className="w-[min(var(--ds-ring-tooltip-max-w),calc(100vw-2rem))] max-w-[var(--ds-ring-tooltip-max-w)] overflow-hidden p-3">
                 <TooltipCalloutArrow />
                 <UtilizationContent
                   current={displayUtilization ?? 0}
