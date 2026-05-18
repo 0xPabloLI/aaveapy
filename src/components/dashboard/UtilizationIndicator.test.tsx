@@ -80,7 +80,6 @@ describe('UtilizationContent formula layout', () => {
     const html = renderToString(
       <UtilizationContent current={50} optimal={80} />,
     );
-    expect(html).toContain('Utilization =');
     expect(html).toContain('borrowed');
     expect(html).toContain('liquidity');
   });
@@ -90,5 +89,12 @@ describe('UtilizationContent formula layout', () => {
       <UtilizationContent current={50} optimal={80} />,
     );
     expect(html).not.toContain('Available liquidity');
+  });
+
+  it('does not render redundant Utilization = label', () => {
+    const html = renderToString(
+      <UtilizationContent current={50} optimal={80} />,
+    );
+    expect(html).not.toContain('Utilization =');
   });
 });
