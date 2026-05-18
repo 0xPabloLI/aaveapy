@@ -16,18 +16,18 @@ import { formatPercent, formatScenarioSize } from '@/lib/formatters';
  */
 function UtilizationFormula() {
   return (
-    <div className="rounded-lg border border-border bg-muted/40 px-3 py-2.5">
-      <div className="flex items-center justify-center gap-2 font-mono ds-text-12 text-foreground">
+    <div className="rounded-lg border border-border bg-muted/40 px-2 py-2">
+      <div className="flex items-center justify-center gap-1.5 font-mono ds-text-11 text-foreground">
         <span className="text-muted-foreground">Utilization</span>
         <span className="text-muted-foreground">=</span>
-        <div className="inline-flex flex-col items-center leading-tight">
-          <span className="px-2 pb-0.5">
+        <div className="inline-flex flex-col items-center leading-[1.1]">
+          <span className="px-1.5 pb-0.5 whitespace-nowrap">
             <span className="ds-text-brand-cyan font-semibold">borrowed</span>
           </span>
           <span className="h-px w-full bg-foreground/60" />
-          <span className="px-2 pt-0.5 whitespace-nowrap">
+          <span className="px-1.5 pt-0.5 whitespace-nowrap">
             <span className="ds-text-purple-600 font-semibold">liquidity</span>
-            <span className="text-muted-foreground mx-1">+</span>
+            <span className="text-muted-foreground mx-0.5">+</span>
             <span className="ds-text-brand-cyan font-semibold">borrowed</span>
           </span>
         </div>
