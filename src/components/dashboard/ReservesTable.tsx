@@ -1081,7 +1081,7 @@ const ReservesTable = ({
                     onClick={handleMobileNetToggle}
                     className={cn(
                       'shrink-0 inline-flex h-7 w-7 items-center justify-center text-muted-foreground/65 transition-colors',
-                      mobileNetOpen ? 'text-foreground' : 'hover:text-foreground/85',
+                      mobileNetOpen ? 'text-foreground' : 'active:text-foreground/85',
                     )}
                     aria-label={mobileNetOpen ? 'Collapse advanced controls' : 'Expand advanced controls'}
                     aria-expanded={mobileNetOpen}

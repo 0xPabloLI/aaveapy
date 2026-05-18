@@ -149,7 +149,7 @@ function MobileCapSheet({
           <button
             type="button"
             onClick={onClose}
-            className="p-[var(--ds-space-1-5)] rounded-full hover:bg-muted transition-colors"
+            className="p-[var(--ds-space-1-5)] rounded-full active:bg-muted transition-colors"
             aria-label="Close"
           >
             <X className="w-5 h-5 text-muted-foreground" />
@@ -245,7 +245,7 @@ function MobileReserveAmountRow({
           {hasSupplyCap ? (
             <button
               type="button"
-              className="flex min-w-0 items-center gap-1 rounded-md py-0 pl-1 pr-0 ds-text-emerald-500 transition-all hover:bg-muted/50 active:scale-[0.98] cursor-pointer"
+              className="flex min-w-0 items-center gap-1 rounded-md py-0 pl-1 pr-0 ds-text-emerald-500 transition-all active:bg-muted/50 active:scale-[0.98] cursor-pointer"
               aria-label="Show supply cap details"
               onClick={onShowSupplyCap}
             >
@@ -293,7 +293,7 @@ function MobileReserveAmountRow({
         {hasBorrowCap ? (
           <button
             type="button"
-            className="flex min-w-0 items-center gap-1 rounded-md py-0 pl-1 pr-0 ds-text-brand-cyan transition-all hover:bg-muted/50 active:scale-[0.98] cursor-pointer"
+            className="flex min-w-0 items-center gap-1 rounded-md py-0 pl-1 pr-0 ds-text-brand-cyan transition-all active:bg-muted/50 active:scale-[0.98] cursor-pointer"
             aria-label="Show borrow cap details"
             onClick={onShowBorrowCap}
           >
@@ -397,10 +397,10 @@ function MobileReserveHeroApy({
                   e.stopPropagation();
                   onIncentiveClick(e, reserve, 'supply', visibleSupplyIncentive);
                 }}
-                className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-px shrink-0 ring-1 active:scale-95 transition-all hover:ring-2 ${
+                className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-px shrink-0 ring-1 active:scale-95 transition-all active:ring-2 ${
                   isDisabled
-                    ? 'text-emerald-500/50 bg-emerald-500/10 ring-emerald-500/20 hover:bg-emerald-500/20 hover:ring-emerald-500/30'
-                    : 'ds-text-emerald-500-70 ds-bg-emerald-500-10 hover:bg-[rgb(var(--ds-emerald-500-rgb)/0.25)] ds-ring-emerald-500-15 hover:ring-[rgb(var(--ds-emerald-500-rgb)/0.3)]'
+                    ? 'text-emerald-500/50 bg-emerald-500/10 ring-emerald-500/20 active:bg-emerald-500/20 active:ring-emerald-500/30'
+                    : 'ds-text-emerald-500-70 ds-bg-emerald-500-10 active:bg-[rgb(var(--ds-emerald-500-rgb)/0.25)] ds-ring-emerald-500-15 active:ring-[rgb(var(--ds-emerald-500-rgb)/0.3)]'
                 }`}
               >
                 <span>{formatPercent(visibleSupplyIncentive)}</span>
@@ -445,10 +445,10 @@ function MobileReserveHeroApy({
                 e.stopPropagation();
                 onIncentiveClick(e, reserve, 'borrow', visibleBorrowIncentive);
               }}
-              className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-px shrink-0 ring-1 active:scale-95 transition-all hover:ring-2 ${
+              className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-px shrink-0 ring-1 active:scale-95 transition-all active:ring-2 ${
                 isDisabled
-                    ? 'text-cyan-500/50 bg-cyan-500/10 ring-cyan-500/20 hover:bg-cyan-500/20 hover:ring-cyan-500/30'
-                  : 'ds-text-brand-cyan-70 ds-bg-brand-cyan-10 hover:bg-[rgb(var(--ds-brand-cyan-rgb)/0.25)] ds-ring-brand-cyan-15 hover:ring-[rgb(var(--ds-brand-cyan-rgb)/0.3)]'
+                    ? 'text-cyan-500/50 bg-cyan-500/10 ring-cyan-500/20 active:bg-cyan-500/20 active:ring-cyan-500/30'
+                  : 'ds-text-brand-cyan-70 ds-bg-brand-cyan-10 active:bg-[rgb(var(--ds-brand-cyan-rgb)/0.25)] ds-ring-brand-cyan-15 active:ring-[rgb(var(--ds-brand-cyan-rgb)/0.3)]'
               }`}
             >
               <span>{formatPercent(visibleBorrowIncentive)}</span>
@@ -707,7 +707,7 @@ const MobileReserveCard = memo(({
                   <button
                     type="button"
                     onClick={() => setCapSheet('utilization')}
-                    className="inline-flex shrink-0 items-center gap-0.5 rounded-md px-1 py-0.5 transition-all hover:bg-muted/50 active:scale-[0.97] -translate-y-px"
+                    className="inline-flex shrink-0 items-center gap-0.5 rounded-md px-1 py-0.5 transition-all active:bg-muted/50 active:scale-[0.97] -translate-y-px"
                     aria-label="Show utilization details"
                   >
                     <span className={`ds-text-11 font-medium tabular-nums leading-none ${
@@ -749,7 +749,7 @@ const MobileReserveCard = memo(({
                         e.stopPropagation();
                         onSelectHub?.(reserve.hubId!);
                       }}
-                      className={cn("inline-flex max-w-full shrink-0 items-center px-1.5 py-0.5 cursor-pointer transition-all duration-150 hover:opacity-80 active:scale-[0.98]", hubClass)}
+                      className={cn("inline-flex max-w-full shrink-0 items-center px-1.5 py-0.5 cursor-pointer transition-all duration-150 active:opacity-80 active:scale-[0.98]", hubClass)}
                       aria-label={`Filter by ${reserve.hubName} hub`}
                       title={`Filter by ${reserve.hubName}`}
                     >
@@ -770,7 +770,7 @@ const MobileReserveCard = memo(({
             className={`flex-1 ds-text-12 font-medium py-1 rounded-md transition-all duration-200 ${
               activeTab === 'supply'
                 ? 'ds-bg-emerald-500-10 ds-text-emerald-500 shadow-sm ring-1 ds-ring-emerald-500-15'
-                : 'text-muted-foreground hover:text-foreground/70'
+                : 'text-muted-foreground active:text-foreground/70'
             }`}
           >
             Supply
@@ -781,7 +781,7 @@ const MobileReserveCard = memo(({
             className={`flex-1 ds-text-12 font-medium py-1 rounded-md transition-all duration-200 ${
               activeTab === 'borrow'
                 ? 'ds-bg-brand-cyan-10 ds-text-brand-cyan shadow-sm ring-1 ds-ring-brand-cyan-15'
-                : 'text-muted-foreground hover:text-foreground/70'
+                : 'text-muted-foreground active:text-foreground/70'
             }`}
           >
             Borrow
@@ -856,7 +856,7 @@ const MobileReserveCard = memo(({
               className={`flex w-full items-center justify-between rounded-lg px-2 py-1 ds-text-12 text-muted-foreground transition-all duration-200 active:scale-[0.995] ${
                 isSimulationExpanded
                   ? 'border border-foreground/25 bg-muted/60 shadow-sm dark:border-foreground/20 dark:bg-muted/40'
-                  : 'border border-border/60 bg-background hover:bg-muted/40 hover:border-border/80 dark:bg-card/50 dark:hover:bg-muted/30'
+                  : 'border border-border/60 bg-background active:bg-muted/40 active:border-border/80 dark:bg-card/50 dark:active:bg-muted/30'
               }`}
             >
               {/* Liquidity text on left */}

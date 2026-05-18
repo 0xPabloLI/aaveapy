@@ -1324,4 +1324,15 @@ describe('MobileReserveCard', () => {
     );
     expect(container.textContent).toContain('$1.00M');
   });
+
+  it('uses active: instead of hover: for all interactive elements (mobile no-hover rule)', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const source = fs.readFileSync(
+      path.resolve(__dirname, 'MobileReserveCard.tsx'),
+      'utf8',
+    );
+    const hoverMatches = source.match(/\bhover:[a-z]/g);
+    expect(hoverMatches).toBeNull();
+  });
 });

@@ -6,6 +6,11 @@ This is a project-specific guardrail file, not the reusable design reference. If
 
 ## A. Frontend-wide guardrails (generic)
 
+### Mobile no-hover rule
+
+- **Mobile components must not use `hover:` pseudo-class**. Touch devices have no reliable hover; `hover:` causes iOS sticky-hover (tap once to "hover", tap again to act) or no feedback at all. Use `active:` for press feedback instead. Desktop+mobile hybrid components use `md:hover:xxx active:xxx`. Regression: `MobileReserveCard.test.tsx` asserts rendered HTML contains zero `hover:` classes.
+- **Files in scope**: `MobileReserveCard.tsx`, `ReservesTableMobileGrid.tsx`, `ReservesTableMobileSortBar.tsx`, `MobileExpandedReserveShell.tsx`, and any `Mobile*` / `*Mobile*.tsx` component. Also any mobile-only JSX branches in shared components (e.g. `ReservesTable.tsx` mobileNetToggle).
+
 ### Tooltip / Overlay behavior
 
 - **Distinguish auto-show vs click-to-show tooltips**:
