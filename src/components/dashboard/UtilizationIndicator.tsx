@@ -16,7 +16,7 @@ import { formatPercent } from '@/lib/formatters';
 function UtilizationFormula() {
   return (
     <div className="rounded-lg border border-border bg-muted/40 px-1.5 py-2">
-      <div className="flex items-start gap-1 font-mono ds-text-11 text-foreground leading-[1.1]">
+      <div className="flex items-center justify-center gap-1 font-mono ds-text-11 text-foreground leading-[1.1]">
         <span className="shrink-0 text-muted-foreground">=</span>
         <div className="flex flex-col items-stretch text-center">
           <span className="px-1 pb-0.5">
