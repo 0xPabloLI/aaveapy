@@ -113,7 +113,6 @@ describe('Layout: <main> owns content section spacing', () => {
 // ─── Phase 3 ring tooltip max-width ─────────────────────────────
 
 const PHASE_3_TOOLTIP_FILES = [
-  'components/dashboard/UtilizationIndicator.tsx',
   'components/dashboard/BorrowCapProgressRing.tsx',
   'components/dashboard/CapProgressRing.tsx',
 ];
