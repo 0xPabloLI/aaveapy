@@ -131,9 +131,7 @@ export function UtilizationContent({
         </span>
       </div>
       <div className="pt-2 border-t border-border/50">
-        <FormulaBlock className="rounded-lg border border-border bg-muted/40 px-3 py-2 [&>code]:!break-normal">
-          Utilization = borrowed / (liquidity + borrowed)
-        </FormulaBlock>
+        <UtilizationFormula />
       </div>
     </div>
   );
