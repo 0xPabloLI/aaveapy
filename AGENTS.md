@@ -23,7 +23,7 @@
 **TL;DR**: 每完成一个原子任务立即 commit;同任务的后续修复 amend 原 commit;`stage` 时显式列路径(绝不 `git add -A` / `.`);不还原他人未提交改动;push 改写用 `--force-with-lease`。详见 `docs/conventions/commit-cadence.md`。
 
 ## 每次修改都用最佳实践
-修改前先验证：调用方组合能否替代？是否引入补丁 prop？职责是否单一？重复样式是否提取？详见 `docs/conventions/design-principles.md`；架构守卫测试 `src/test/architecture-guard.test.ts` 自动拦截。
+详见 `docs/conventions/design-principles.md`；架构守卫测试 `src/test/architecture-guard.test.ts` 自动拦截。
 
 ## Coding Conventions
 - TypeScript + functional React components/hooks.
