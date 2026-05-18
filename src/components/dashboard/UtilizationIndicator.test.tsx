@@ -76,10 +76,11 @@ describe('UtilizationContent sort arrows', () => {
 });
 
 describe('UtilizationContent formula layout', () => {
-  it('renders CSS fraction formula with borrowed and liquidity terms', () => {
+  it('renders CSS fraction formula with =, borrowed and liquidity terms', () => {
     const html = renderToString(
       <UtilizationContent current={50} optimal={80} />,
     );
+    expect(html).toContain('=');
     expect(html).toContain('borrowed');
     expect(html).toContain('liquidity');
   });
@@ -89,12 +90,5 @@ describe('UtilizationContent formula layout', () => {
       <UtilizationContent current={50} optimal={80} />,
     );
     expect(html).not.toContain('Available liquidity');
-  });
-
-  it('does not render redundant Utilization = label', () => {
-    const html = renderToString(
-      <UtilizationContent current={50} optimal={80} />,
-    );
-    expect(html).not.toContain('Utilization =');
   });
 });

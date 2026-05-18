@@ -15,13 +15,14 @@ import { formatPercent } from '@/lib/formatters';
  */
 function UtilizationFormula() {
   return (
-    <div className="w-full max-w-full overflow-hidden rounded-lg border border-border bg-muted/40 px-1.5 py-2">
-      <div className="flex w-full min-w-0 flex-col items-center gap-0.5 font-mono ds-text-11 text-foreground leading-[1.1]">
-        <span className="min-w-0 px-1 pb-0.5 text-center">
+    <div className="rounded-lg border border-border bg-muted/40 px-1.5 py-2">
+      <div className="flex flex-col items-center gap-0.5 font-mono ds-text-11 text-foreground leading-[1.1]">
+        <span className="text-muted-foreground">=</span>
+        <span className="px-1 pb-0.5 text-center">
           <span className="ds-text-brand-cyan font-semibold">borrowed</span>
         </span>
         <span className="h-px w-full bg-foreground/60" />
-        <span className="flex min-w-0 max-w-full flex-wrap items-center justify-center gap-x-0.5 gap-y-0 px-1 pt-0.5">
+        <span className="flex flex-wrap items-center justify-center gap-x-0.5 gap-y-0 px-1 pt-0.5">
           <span className="ds-text-purple-600 font-semibold">liquidity</span>
           <span className="text-muted-foreground">+</span>
           <span className="ds-text-brand-cyan font-semibold">borrowed</span>
