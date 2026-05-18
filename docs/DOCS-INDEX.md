@@ -7,13 +7,14 @@ Use it to avoid duplicate policy text and to keep each topic in one canonical lo
 **Entry points:** [`README.md`](../README.md) (onboarding), root [`DESIGN.md`](../DESIGN.md) (design links table), this file (full map).
 **Reusable templates:** [`docs/reusable/`](./reusable/) (project-agnostic engineering patterns, portable to any repo).
 
-_Last inventory pass: 2026-04-30._
+_Last inventory pass: 2026-05-19._
 
 ## Canonical Structure
 
 ### Product and repo operation
 
 - Canonical: `README.md` (project onboarding, scripts, high-level behavior)
+- Canonical: `docs/ARCHITECTURE.md` (技术架构：目录结构、数据流、shared schema、simulation、错误处理模式)
 - Canonical: `docs/PR_ANALYSIS.md` (PR batching/automerge policy)
 - Canonical: `AGENTS.md` → **PR review threads: no cosmetic resolve** (merge / `resolveReviewThread` policy); workflow copy: `.claude/commands/merge.md` (keep aligned with `~/.cursor/commands/merge.md`)
 - Canonical: `docs/dependabot-behavior.md` (Dependabot behavior summary + pointers)

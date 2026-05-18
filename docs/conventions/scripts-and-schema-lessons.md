@@ -18,6 +18,8 @@
 - **用相对 `.ts` 路径引入,不要用 `@/` alias**: Node 的 `--experimental-strip-types` 不解析 Vite 的 `@/` 路径别名。frontend 端用 `@/shared/x` 可以,Node 脚本端必须用相对路径(如 `../src/shared/x.ts`)。
 - **Script 桥接文件**: Node `.mjs` 入口脚本不能直接 import `.ts`。约定:在 `scripts/lib/<name>.ts` 中封装 schema 验证 + fetch 逻辑,`.mjs` entrypoint 用动态 `await import('./lib/foo.ts')` 引入。
 - **错误语义分离**: frontend 的 cache fallback (接受降级形状,优先维持用户可见) 和 script 的 strict validation (拒绝任何合约偏差,优先报错让 CI 红) **不应合并**到同一个 helper。两者目标相反。
+- **`--experimental-strip-types` 优于 `tsx`**: 项目 CI 用 Node 22,已有 `--experimental-strip-types` 基础设施(如 `openapi:generate`)。对纯类型/zod schema 的 `.ts` 文件完全够用,不要引入 `tsx` 依赖。
+- **shared 模块内类型内联,不要 `@/` import**: `src/shared/` 下的 schema 文件若 `import type { X } from '@/types/y'`,在 Node 端 `--experimental-strip-types` 会报 ERR_MODULE_NOT_FOUND。小型类型(如 `IncentiveMessage`)直接内联定义;大型类型考虑从 shared 模块 re-export。
 
 ## 反例(不要这么做)
 

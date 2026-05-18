@@ -4,6 +4,7 @@
 - Frontend app: React + TypeScript + Vite for Aave market analysis UI.
 - Main data sources: backend `GET /markets` and `GET /meta/side-data`.
 - Core directories: `src/` (app code), `public/` (assets), `e2e/` (Playwright), `scripts/` (checks/sync), `docs/` (deep conventions).
+- **技术架构**: `docs/ARCHITECTURE.md`（目录结构、数据流、shared schema、simulation、错误处理模式）。
 
 ## Core Commands
 - `npm run dev` — local development
@@ -68,6 +69,19 @@ npm run lint && npm test && npm run build && npx tsc --noEmit
 - If user requests "先给方案", provide plan first before coding.
 - Keep implementation scoped; avoid unrelated refactors.
 - Avoid filling missing backend fields with guessed defaults.
+
+## Git Stash Safety
+禁止未经确认执行 `stash pop/apply/drop/clear`；暂存用 `stash push -m "msg"`，恢复前先 `stash list` 供审查。
+
+## Session Boundary
+不修非本 session 引入的问题；`git diff` 确认来源，已有问题告知用户决定。
+
+## Mobile Layout
+紧凑原则：复用留白不加独占行；去冗余标签优先图标+Tooltip；一行多信息纵向省空间；次要信息用最小档字体/间距；absolute 定位元素不含可变长度文字。
+
+## Canary & Hooks
+- `src/types/field-canary.test.ts` 穷举字段名，重命名时 tsc + test 双防线拦截。
+- Pre-push: stash > 3 警告清理。
 
 ## Learned Lessons
 - Scripts / token icons / 共享 schema 改动前先看 `docs/conventions/scripts-and-schema-lessons.md`(icon 动态加载/manifest 不能找 orphan/扩展现有脚本/`src/shared/<domain>/` 相对路径/桥接 `scripts/lib/`/frontend vs script 错误语义分离)。
