@@ -2,6 +2,7 @@ import { memo, useId } from 'react';
 import { ArrowDown, ArrowUp } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipCalloutArrow } from '@/components/ui/tooltip';
 import { formatPercent, formatScenarioSize } from '@/lib/formatters';
+import { FormulaBlock } from './AprApyToggle';
 
 interface UtilizationIndicatorProps {
   current: number | null;
@@ -18,6 +19,11 @@ interface UtilizationIndicatorProps {
   onSortLiquidity?: () => void;
   isSortLiquidityActive?: boolean;
   liquiditySortOrder?: 'asc' | 'desc';
+  onSortOptimal?: () => void;
+  isSortOptimalActive?: boolean;
+  optimalSortOrder?: 'asc' | 'desc';
+  /** When true, renders only the bar SVG — caller is responsible for the Tooltip. */
+  disableTooltip?: boolean;
 }
 
 function SortArrowButton({
@@ -65,6 +71,9 @@ export function UtilizationContent({
   onSortLiquidity,
   isSortLiquidityActive,
   liquiditySortOrder,
+  onSortOptimal,
+  isSortOptimalActive,
+  optimalSortOrder,
 }: {
   current: number;
   optimal: number;
@@ -78,6 +87,9 @@ export function UtilizationContent({
   onSortLiquidity?: () => void;
   isSortLiquidityActive?: boolean;
   liquiditySortOrder?: 'asc' | 'desc';
+  onSortOptimal?: () => void;
+  isSortOptimalActive?: boolean;
+  optimalSortOrder?: 'asc' | 'desc';
 }) {
   const isOverOptimal = current > optimal;
 
@@ -87,6 +99,10 @@ export function UtilizationContent({
 
   const liquidityArrow = onSortLiquidity && availableLiquidityUsd != null
     ? <SortArrowButton onClick={onSortLiquidity} isActive={!!isSortLiquidityActive} sortOrder={liquiditySortOrder} ariaLabel="Sort by liquidity" className={availableLiquidityUsd < 10000 ? 'ds-text-amber-600' : 'ds-text-purple-600'} />
+    : null;
+
+  const optimalArrow = onSortOptimal
+    ? <SortArrowButton onClick={onSortOptimal} isActive={!!isSortOptimalActive} sortOrder={optimalSortOrder} ariaLabel="Sort by optimal utilization" className="text-foreground" />
     : null;
 
   return (
@@ -102,7 +118,10 @@ export function UtilizationContent({
       )}
       <div className={`flex justify-between gap-4${availableLiquidityUsd != null ? ' pt-2 border-t border-border/50' : ''}`}>
         <span className="text-muted-foreground">Optimal utilization</span>
-        <span className="font-medium tabular-nums">{formatPercent(optimal)}</span>
+        <span className="font-medium tabular-nums">
+          {formatPercent(optimal)}
+          {optimalArrow}
+        </span>
       </div>
       <div className="flex justify-between gap-4 pt-2 border-t border-border/50">
         <span className="text-muted-foreground">Current utilization</span>
@@ -110,6 +129,11 @@ export function UtilizationContent({
           {formatPercent(current)}
           {utilizationArrow}
         </span>
+      </div>
+      <div className="pt-2 border-t border-border/50">
+        <FormulaBlock className="rounded-lg border border-border bg-muted/40 px-3 py-2 [&>code]:!break-normal">
+          Utilization = borrowed / (liquidity + borrowed)
+        </FormulaBlock>
       </div>
     </div>
   );
@@ -130,6 +154,10 @@ const UtilizationIndicator = memo(({
   onSortLiquidity,
   isSortLiquidityActive,
   liquiditySortOrder,
+  onSortOptimal,
+  isSortOptimalActive,
+  optimalSortOrder,
+  disableTooltip,
 }: UtilizationIndicatorProps) => {
   const clipId = useId();
 
@@ -151,65 +179,73 @@ const UtilizationIndicator = memo(({
   const trackX = (width - trackWidth) / 2;
   const trackRadius = trackWidth / 2;
 
-  return (
-    <Tooltip delayDuration={0}>
-      <TooltipTrigger asChild>
-        <div 
-          className="inline-flex items-center cursor-default"
-          style={{ width, height }}
-        >
-          <svg
-            width={width}
-            height={height}
-            viewBox={`0 0 ${width} ${height}`}
-            className="overflow-visible"
-          >
-            <defs>
-              <clipPath id={clipId}>
-                <rect
-                  x={trackX}
-                  y={0}
-                  width={trackWidth}
-                  height={height}
-                  rx={trackRadius}
-                />
-              </clipPath>
-            </defs>
-            {/* Single continuous track with rounded corners */}
+  const bar = (
+    <div
+      className="inline-flex items-center cursor-default"
+      style={{ width, height }}
+    >
+      <svg
+        width={width}
+        height={height}
+        viewBox={`0 0 ${width} ${height}`}
+        className="overflow-visible"
+      >
+        <defs>
+          <clipPath id={clipId}>
             <rect
               x={trackX}
               y={0}
               width={trackWidth}
               height={height}
               rx={trackRadius}
-              className="fill-secondary/40"
             />
-            {/* Below optimal: zone = single tinted fill; dot = full brand cyan (same token as Borrow / util copy) */}
-            <rect
-              x={trackX}
-              y={optimalY}
-              width={trackWidth}
-              height={height - optimalY}
-              clipPath={`url(#${clipId})`}
-              className="fill-[rgb(var(--ds-brand-cyan-rgb)/0.32)]"
-            />
-            {/* Above optimal: zone amber-600; dot matches warning label (amber-600) — darker = warning, brighter = critical */}
-            <rect
-              x={trackX}
-              y={0}
-              width={trackWidth}
-              height={optimalY}
-              clipPath={`url(#${clipId})`}
-              className="fill-[rgb(var(--ds-amber-600-rgb))]"
-            />
-            <circle
-              cx={width / 2}
-              cy={currentY}
-              r={dotRadius}
-              className={isOverOptimal ? 'fill-[rgb(var(--ds-amber-600-rgb))]' : 'fill-[rgb(var(--ds-brand-cyan-rgb))]'}
-            />
-          </svg>
-        </div>
+          </clipPath>
+        </defs>
+        {/* Single continuous track with rounded corners */}
+        <rect
+          x={trackX}
+          y={0}
+          width={trackWidth}
+          height={height}
+          rx={trackRadius}
+          className="fill-secondary/40"
+        />
+        {/* Below optimal: zone = single tinted fill; dot = full brand cyan (same token as Borrow / util copy) */}
+        <rect
+          x={trackX}
+          y={optimalY}
+          width={trackWidth}
+          height={height - optimalY}
+          clipPath={`url(#${clipId})`}
+          className="fill-[rgb(var(--ds-brand-cyan-rgb)/0.32)]"
+        />
+        {/* Above optimal: zone amber-600; dot matches warning label (amber-600) — darker = warning, brighter = critical */}
+        <rect
+          x={trackX}
+          y={0}
+          width={trackWidth}
+          height={optimalY}
+          clipPath={`url(#${clipId})`}
+          className="fill-[rgb(var(--ds-amber-600-rgb))]"
+        />
+        <circle
+          cx={width / 2}
+          cy={currentY}
+          r={dotRadius}
+          className={isOverOptimal ? 'fill-[rgb(var(--ds-amber-600-rgb))]' : 'fill-[rgb(var(--ds-brand-cyan-rgb))]'}
+        />
+      </svg>
+    </div>
+  );
+
+  if (disableTooltip) {
+    return bar;
+  }
+
+  return (
+    <Tooltip delayDuration={0}>
+      <TooltipTrigger asChild>
+        {bar}
       </TooltipTrigger>
       <TooltipContent side="top" className="max-w-[var(--ds-ring-tooltip-max-w)] p-3">
         <TooltipCalloutArrow />
@@ -226,6 +262,9 @@ const UtilizationIndicator = memo(({
           onSortLiquidity={onSortLiquidity}
           isSortLiquidityActive={isSortLiquidityActive}
           liquiditySortOrder={liquiditySortOrder}
+          onSortOptimal={onSortOptimal}
+          isSortOptimalActive={isSortOptimalActive}
+          optimalSortOrder={optimalSortOrder}
         />
       </TooltipContent>
     </Tooltip>

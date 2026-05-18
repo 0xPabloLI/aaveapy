@@ -198,12 +198,14 @@ const SimulationSubRow = ({
   }, [compact, containerNarrow]);
 
   const effectiveCompact = compact || containerNarrow;
-  const isReserveLocked = Boolean(reserve.isFrozen || reserve.isPaused);
+  const isReserveLocked = Boolean(reserve.isFrozen || reserve.isPaused || reserve.isActive === false);
   const supplyDisabledNotice = reserve.isPaused ? 'Paused'
+    : reserve.isActive === false ? 'Inactive'
     : reserve.isFrozen ? 'Frozen'
     : isSupplyDisabled(reserve) ? 'Supply unavailable'
     : null;
   const borrowDisabledNotice = reserve.isPaused ? 'Paused'
+    : reserve.isActive === false ? 'Inactive'
     : reserve.isFrozen ? 'Frozen'
     : isBorrowDisabled(reserve) ? 'Borrow unavailable'
     : null;
@@ -1327,7 +1329,7 @@ const SimulationSubRow = ({
     <div ref={containerRef} className={`min-w-0 ${effectiveCompact ? 'p-0' : 'p-0'}`}>
       {hasDisabledState ? (
         <div className={`flex items-center gap-3 rounded-lg ${
-          reserve.isPaused
+          reserve.isPaused || reserve.isActive === false
             ? 'border border-[rgb(var(--ds-paused-rgb)/0.6)] ds-bg-critical-row'
             : reserve.isFrozen
               ? 'border border-sky-400/60 bg-sky-50/80 dark:bg-sky-950/30'
@@ -1335,6 +1337,8 @@ const SimulationSubRow = ({
         } ${effectiveCompact ? 'mb-2 px-3 py-1.5' : 'mb-3 px-4 py-2'}`}>
           {reserve.isPaused ? (
             <PauseCircle className="w-4 h-4 ds-text-paused shrink-0" />
+          ) : reserve.isActive === false ? (
+            <Ban className="w-4 h-4 ds-text-paused shrink-0" />
           ) : reserve.isFrozen ? (
             <Snowflake className="w-4 h-4 text-sky-500 shrink-0" />
           ) : (
@@ -1343,14 +1347,18 @@ const SimulationSubRow = ({
           <p className={`flex-1 ds-text-12 ${
             reserve.isPaused
               ? 'text-amber-800 dark:text-amber-300'
-              : reserve.isFrozen
-                ? 'text-sky-800 dark:text-sky-300'
-                : 'text-muted-foreground'
+              : reserve.isActive === false
+                ? 'text-amber-800 dark:text-amber-300'
+                : reserve.isFrozen
+                  ? 'text-sky-800 dark:text-sky-300'
+                  : 'text-muted-foreground'
           }`}>
             {reserve.isPaused
               ? 'Paused: all reserve actions are halted.'
-              : reserve.isFrozen
-                ? 'Frozen: deposits and borrows temporarily disabled; exits allowed.'
+              : reserve.isActive === false
+                ? 'Inactive: the reserve is not active.'
+                : reserve.isFrozen
+                  ? 'Frozen: deposits and borrows temporarily disabled; exits allowed.'
                   : supplySideBlocked && borrowSideBlocked
                     ? 'Supply and borrow are disabled for this reserve.'
                     : supplySideBlocked

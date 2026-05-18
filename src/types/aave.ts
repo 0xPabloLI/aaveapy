@@ -119,6 +119,8 @@ export interface ReserveWithSpread extends BannedReserveUsdFields {
   borrowDisabled?: boolean;
   isFrozen?: boolean;
   isPaused?: boolean;
+  /** V4 only: false when status.active is false. Absent = active (V3 / V4 normal). */
+  isActive?: false;
   
   
   // Rate calculation fields (from /api/markets reserves)

@@ -6,7 +6,7 @@ import { TableHead, TableHeader, TableRow } from '@/components/ui/table';
 type SortMode = 'total' | 'native' | 'incentive';
 type SortableColumn = 'token' | 'price' | 'market' | 'size' | 'util' | 'supply' | 'borrow' | 'spread';
 type SizeSortMode = 'supply' | 'borrow' | 'borrowAvailability' | 'supplyAvailability' | 'deficitAmount' | 'supplyCapPct' | 'borrowCapPct' | 'deficitRatio' | 'supplyCapValue' | 'borrowCapValue' | 'availableLiquidity';
-type UtilSortMode = 'util' | 'liquidity';
+type UtilSortMode = 'util' | 'liquidity' | 'optimal';
 
 interface MenuPos {
   top: number;
@@ -87,9 +87,6 @@ interface ReservesTableDesktopHeaderProps {
   sizeSortActiveHeadingClass: string;
   utilSortMode: UtilSortMode;
   utilSortOrder: 'asc' | 'desc';
-  showUtilSortMenu: boolean;
-  utilMenuPos: MenuPos | null;
-  utilSortButtonRef: RefObject<HTMLButtonElement | null>;
   supplySortLabel: string;
   supplySortMode: SortMode;
   supplySortOrder: 'asc' | 'desc';
@@ -106,10 +103,7 @@ interface ReservesTableDesktopHeaderProps {
   onSortToken: () => void;
   onSortMarket: () => void;
   onSortPrice: () => void;
-  onToggleUtilMenu: () => void;
-  onCloseUtilMenu: () => void;
-  onSelectUtilSortUtil: () => void;
-  onSelectUtilSortLiquidity: () => void;
+  onSortUtil: () => void;
   onToggleSpreadSort: () => void;
   onToggleSupplyMenu: () => void;
   onCloseSupplyMenu: () => void;
@@ -136,9 +130,6 @@ export default function ReservesTableDesktopHeader({
   sizeSortActiveHeadingClass,
   utilSortMode,
   utilSortOrder,
-  showUtilSortMenu,
-  utilMenuPos,
-  utilSortButtonRef,
   supplySortLabel,
   supplySortMode,
   supplySortOrder,
@@ -155,10 +146,7 @@ export default function ReservesTableDesktopHeader({
   onSortToken,
   onSortMarket,
   onSortPrice,
-  onToggleUtilMenu,
-  onCloseUtilMenu,
-  onSelectUtilSortUtil,
-  onSelectUtilSortLiquidity,
+  onSortUtil,
   onToggleSpreadSort,
   onToggleSupplyMenu,
   onCloseSupplyMenu,
@@ -229,27 +217,6 @@ export default function ReservesTableDesktopHeader({
       activeClassName: 'ds-text-brand-cyan',
       hoverClassName: 'hover:bg-[rgb(var(--ds-brand-cyan-rgb)/0.1)]',
       onSelect: onSelectBorrowSortIncentive,
-    },
-  ];
-
-  const utilSortOptions: DesktopSortMenuOption[] = [
-    {
-      key: 'util',
-      label: 'Sort by Utilization',
-      isSelected: utilSortMode === 'util' && activeSortColumn === 'util',
-      order: utilSortOrder,
-      activeClassName: 'text-foreground',
-      hoverClassName: 'hover:bg-muted/50',
-      onSelect: onSelectUtilSortUtil,
-    },
-    {
-      key: 'liquidity',
-      label: 'Sort by Liquidity',
-      isSelected: utilSortMode === 'liquidity' && activeSortColumn === 'util',
-      order: utilSortOrder,
-      activeClassName: 'ds-text-purple-600',
-      hoverClassName: 'hover:bg-[rgb(var(--ds-purple-50-rgb)/0.5)]',
-      onSelect: onSelectUtilSortLiquidity,
     },
   ];
 
@@ -349,49 +316,24 @@ export default function ReservesTableDesktopHeader({
           </button>
         </TableHead>
         <TableHead className="ds-reserves-cell-th py-[var(--ds-space-3)] ds-text-14 md:ds-text-16 font-semibold text-muted-foreground text-right hidden md:table-cell">
-          <div className="flex items-center justify-end">
-            <div className="flex flex-wrap items-center justify-end gap-x-[var(--ds-space-1-5)] gap-y-[var(--ds-space-1)]">
-              <span
-                className={`whitespace-nowrap transition-all duration-200 ${
-                  activeSortColumn === 'util'
-                    ? utilSortMode === 'liquidity'
-                      ? 'ds-text-purple-600 font-bold scale-105'
-                      : 'text-foreground font-bold scale-105'
-                    : 'text-muted-foreground'
-                }`}
-              >
-                Liquidity
-              </span>
-              <div className="relative">
-                <button
-                  ref={utilSortButtonRef}
-                  type="button"
-                  onClick={onToggleUtilMenu}
-                  className={`ds-chip gap-[var(--ds-space-1)] px-[var(--ds-space-2)] py-[var(--ds-space-1)] rounded-lg border transition-colors ${
-                    showUtilSortMenu || activeSortColumn === 'util'
-                      ? `bg-card/60 border-border/70 ${
-                          utilSortMode === 'liquidity'
-                            ? 'ds-text-purple-700'
-                            : 'text-foreground'
-                        }`
-                      : 'bg-card/60 border-border/70 text-muted-foreground'
-                  }`}
-                  title="Utilization = borrowed / (available + borrowed). Switch between rate (%) and available amount."
-                >
-                  <span className="font-semibold ds-text-10 md:ds-text-11">
-                    {utilSortMode === 'util' ? 'Util' : 'Liq'}
-                  </span>
-                  <ChevronDown className="w-2.5 h-2.5" />
-                </button>
-                <DesktopSortMenuPortal
-                  open={showUtilSortMenu}
-                  menuPos={utilMenuPos}
-                  onClose={onCloseUtilMenu}
-                  options={utilSortOptions}
-                />
-              </div>
-            </div>
-          </div>
+          <button
+            type="button"
+            onClick={onSortUtil}
+            className={`ds-chip-heading md:ds-text-16 gap-[var(--ds-space-1)] transition-all duration-200 ml-auto ${
+              activeSortColumn === 'util' ? 'ds-text-purple-600 font-bold scale-105' : 'text-muted-foreground hover:text-foreground/80'
+            }`}
+          >
+            <span>Liquidity</span>
+            {activeSortColumn === 'util' ? (
+              utilSortOrder === 'desc' ? (
+                <ArrowDown className="w-3 h-3" />
+              ) : (
+                <ArrowUp className="w-3 h-3" />
+              )
+            ) : (
+              <ArrowDown className="w-3 h-3 opacity-50" />
+            )}
+          </button>
         </TableHead>
         <TableHead className="ds-reserves-cell-th py-[var(--ds-space-3)] ds-text-14 md:ds-text-16 font-semibold text-muted-foreground text-right">
           <div className="flex items-center justify-end">

@@ -24,7 +24,7 @@ import DeficitLiquidityRing from './DeficitLiquidityRing';
 import SimulationSubRow from './SimulationSubRow';
 import CapProgressRing from './CapProgressRing';
 import BorrowCapProgressRing from './BorrowCapProgressRing';
-import UtilizationIndicator from './UtilizationIndicator';
+import UtilizationIndicator, { UtilizationContent } from './UtilizationIndicator';
 import DeficitShieldIcon from './DeficitShieldIcon';
 import AssetActionMenu from './AssetActionMenu';
 import { BATCH_RESERVE_ADD_BUTTON_CLASSES } from './batchTheme';
@@ -143,6 +143,10 @@ interface DesktopReserveRowProps {
   onSortLiquidity?: () => void;
   isSortLiquidityActive?: boolean;
   liquiditySortOrder?: 'asc' | 'desc';
+  /** Sort callbacks and state for optimal utilization arrow in util tooltip. */
+  onSortOptimal?: () => void;
+  isSortOptimalActive?: boolean;
+  optimalSortOrder?: 'asc' | 'desc';
 }
 
 type SortArrowButtonProps = {
@@ -239,6 +243,9 @@ const DesktopReserveRow = memo(({
   onSortLiquidity,
   isSortLiquidityActive,
   liquiditySortOrder,
+  onSortOptimal,
+  isSortOptimalActive,
+  optimalSortOrder,
 }: DesktopReserveRowProps) => {
   const [hasSimulationMounted, setHasSimulationMounted] = useState(isExpanded);
 
@@ -347,9 +354,11 @@ const DesktopReserveRow = memo(({
             '[&_td]:sticky [&_td]:z-[25] [&_td]:border-b [&_td]:border-border/60 [&_td]:shadow-[0_1px_2px_0_rgb(0_0_0/0.04)] [&_td]:[top:var(--reserves-expanded-main-row-top,5.75rem)]',
           isExpanded && '[&_td]:bg-card',
           isExpanded && reserve.isPaused && '[&_td]:ds-bg-paused',
-          isExpanded && reserve.isFrozen && !reserve.isPaused && '[&_td]:ds-bg-sky-500-8',
+          isExpanded && reserve.isActive === false && !reserve.isPaused && '[&_td]:ds-bg-paused',
+          isExpanded && reserve.isFrozen && !reserve.isPaused && reserve.isActive !== false && '[&_td]:ds-bg-sky-500-8',
           (reserve.isPaused || reserve.isFrozen) && 'bg-card',
           reserve.isPaused && 'ds-bg-paused',
+          reserve.isActive === false && 'ds-bg-paused',
           (!reserve.isPaused && reserve.isFrozen) && 'ds-bg-sky-500-8',
         )}
         onClick={() => onToggleExpand(reserveId)}
@@ -712,47 +721,57 @@ const DesktopReserveRow = memo(({
          * UtilizationIndicator (bar) 在数字右侧作为视觉后缀。*/}
         <TableCell className="ds-reserves-cell-td ds-row-pad whitespace-nowrap text-right hidden md:table-cell tabular-nums ds-text-13">
           <div className="inline-flex items-center justify-end gap-[var(--ds-space-1-5)] w-full">
-            <div className="flex flex-col items-end gap-[var(--ds-space-0-5)]">
-              {/* Liquidity: primary metric.
-                   * Safe (>= $10K) → purple brand color
-                   * Warning (< $10K or borrow exceeds liquidity in shared scenario) → amber-600 */}
-              <span className={`ds-text-13 font-bold tabular-nums ${
-                (availableLiquidityUsd != null && availableLiquidityUsd < 10000)
-                  ? 'text-amber-600'
-                  : 'ds-text-purple-600'
-              }`}>
-                {formatScenarioSize(availableLiquidityUsd, { inputMode, tokenPrice: displayTokenPrice, tokenSymbol: reserve.tokenSymbol })}
-              </span>
-              <Tooltip delayDuration={0}>
-                <TooltipTrigger asChild>
-                  <span className={`ds-text-11 tabular-nums cursor-default ${
-                    displayUtilization != null && optimalPct != null && displayUtilization > optimalPct
-                      ? 'text-amber-600'
-                      : 'text-foreground'
-                  }`}>
-                    {formatPercent(displayUtilization)}
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">
-                  <TooltipCalloutArrow />
-                  <p className="ds-text-12">Utilization = borrowed / (liquidity + borrowed)</p>
-                </TooltipContent>
-              </Tooltip>
-            </div>
-            <UtilizationIndicator
-              current={displayUtilization}
-              optimal={optimalPct}
-              availableLiquidityUsd={availableLiquidityUsd}
-              displayMode={inputMode}
-              tokenPrice={displayTokenPrice}
-              tokenSymbol={reserve.tokenSymbol}
-              onSortUtilization={onSortUtilization}
-              isSortUtilizationActive={isSortUtilizationActive}
-              utilizationSortOrder={utilizationSortOrder}
-              onSortLiquidity={onSortLiquidity}
-              isSortLiquidityActive={isSortLiquidityActive}
-              liquiditySortOrder={liquiditySortOrder}
-            />
+            <Tooltip delayDuration={0}>
+              <TooltipTrigger asChild>
+                <div className="inline-flex items-center justify-end gap-[var(--ds-space-1-5)] cursor-default">
+                  <div className="flex flex-col items-end gap-[var(--ds-space-0-5)]">
+                    <span className={`ds-text-13 font-bold tabular-nums ${
+                      (availableLiquidityUsd != null && availableLiquidityUsd < 10000)
+                        ? 'text-amber-600'
+                        : 'ds-text-purple-600'
+                    }`}>
+                      {formatScenarioSize(availableLiquidityUsd, { inputMode, tokenPrice: displayTokenPrice, tokenSymbol: reserve.tokenSymbol })}
+                    </span>
+                    <span className={`ds-text-11 tabular-nums ${
+                      displayUtilization != null && optimalPct != null && displayUtilization > optimalPct
+                        ? 'text-amber-600'
+                        : 'text-foreground'
+                    }`}>
+                      {formatPercent(displayUtilization)}
+                    </span>
+                  </div>
+                  <UtilizationIndicator
+                    current={displayUtilization}
+                    optimal={optimalPct}
+                    availableLiquidityUsd={availableLiquidityUsd}
+                    displayMode={inputMode}
+                    tokenPrice={displayTokenPrice}
+                    tokenSymbol={reserve.tokenSymbol}
+                    disableTooltip
+                  />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-[var(--ds-ring-tooltip-max-w)] p-3">
+                <TooltipCalloutArrow />
+                <UtilizationContent
+                  current={displayUtilization ?? 0}
+                  optimal={optimalPct ?? 0}
+                  availableLiquidityUsd={availableLiquidityUsd}
+                  displayMode={inputMode}
+                  tokenPrice={displayTokenPrice}
+                  tokenSymbol={reserve.tokenSymbol}
+                  onSortUtilization={onSortUtilization}
+                  isSortUtilizationActive={isSortUtilizationActive}
+                  utilizationSortOrder={utilizationSortOrder}
+                  onSortLiquidity={onSortLiquidity}
+                  isSortLiquidityActive={isSortLiquidityActive}
+                  liquiditySortOrder={liquiditySortOrder}
+                  onSortOptimal={onSortOptimal}
+                  isSortOptimalActive={isSortOptimalActive}
+                  optimalSortOrder={optimalSortOrder}
+                />
+              </TooltipContent>
+            </Tooltip>
           </div>
         </TableCell>
         {/* Supply */}

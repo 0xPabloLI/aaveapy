@@ -120,6 +120,10 @@
                 "isPaused": {
                   "type": "boolean"
                 },
+                "isActive": {
+                  "type": "boolean",
+                  "const": false
+                },
                 "aTokenAddress": {
                   "anyOf": [
                     {
@@ -1087,6 +1091,10 @@
           },
           "isPaused": {
             "type": "boolean"
+          },
+          "isActive": {
+            "type": "boolean",
+            "const": false
           },
           "aTokenAddress": {
             "anyOf": [

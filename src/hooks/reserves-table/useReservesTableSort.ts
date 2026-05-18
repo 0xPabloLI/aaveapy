@@ -27,7 +27,7 @@ export type SizeSortMode =
   | 'borrowCapValue'
   | 'availableLiquidity';
 
-export type UtilSortMode = 'util' | 'liquidity';
+export type UtilSortMode = 'util' | 'liquidity' | 'optimal';
 
 export type SortOrder = 'asc' | 'desc';
 
@@ -263,6 +263,7 @@ export function useReservesTableSort(
   const handleSortUtil = useCallback(() => {
     collapseExpanded();
     setActiveSortColumn('util');
+    setUtilSortMode('liquidity');
     setUtilSortOrder(toggleSortOrder);
     setShowUtilSortMenu(false);
   }, [collapseExpanded]);

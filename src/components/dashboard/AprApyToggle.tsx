@@ -335,9 +335,9 @@ function TooltipModeRow({ mode, hint }: { mode: string; hint: string }) {
 }
 
 /** Shared formula chrome for help tooltips (AprApyToggle, InkAprCalculator, etc.). */
-export function FormulaBlock({ children }: { children: ReactNode }) {
+export function FormulaBlock({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <div className="rounded-lg border border-border bg-muted/40 px-3 py-2">
+    <div className={className}>
       <code className="ds-text-12 font-mono font-medium text-foreground block break-all leading-snug">{children}</code>
     </div>
   );
