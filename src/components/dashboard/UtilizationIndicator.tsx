@@ -2,7 +2,39 @@ import { memo, useId } from 'react';
 import { ArrowDown, ArrowUp } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipCalloutArrow } from '@/components/ui/tooltip';
 import { formatPercent, formatScenarioSize } from '@/lib/formatters';
-import { FormulaBlock } from './AprApyToggle';
+
+
+/**
+ * Visual fraction display for the utilization formula.
+ *
+ *   Utilization = ────────────────────────
+ *                  borrowed
+ *                  liquidity + borrowed
+ *
+ * Color-codes `borrowed` (brand cyan) and `liquidity` (purple) to match
+ * the semantic tokens used elsewhere in the tooltip.
+ */
+function UtilizationFormula() {
+  return (
+    <div className="rounded-lg border border-border bg-muted/40 px-3 py-2.5">
+      <div className="flex items-center justify-center gap-2 font-mono ds-text-12 text-foreground">
+        <span className="text-muted-foreground">Utilization</span>
+        <span className="text-muted-foreground">=</span>
+        <div className="inline-flex flex-col items-center leading-tight">
+          <span className="px-2 pb-0.5">
+            <span className="ds-text-brand-cyan font-semibold">borrowed</span>
+          </span>
+          <span className="h-px w-full bg-foreground/60" />
+          <span className="px-2 pt-0.5 whitespace-nowrap">
+            <span className="ds-text-purple-600 font-semibold">liquidity</span>
+            <span className="text-muted-foreground mx-1">+</span>
+            <span className="ds-text-brand-cyan font-semibold">borrowed</span>
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 interface UtilizationIndicatorProps {
   current: number | null;
@@ -131,9 +163,7 @@ export function UtilizationContent({
         </span>
       </div>
       <div className="pt-2 border-t border-border/50">
-        <FormulaBlock className="rounded-lg border border-border bg-muted/40 px-3 py-2 [&>code]:!break-normal">
-          Utilization = borrowed / (liquidity + borrowed)
-        </FormulaBlock>
+        <UtilizationFormula />
       </div>
     </div>
   );
