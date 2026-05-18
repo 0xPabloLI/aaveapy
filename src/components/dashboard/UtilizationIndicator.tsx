@@ -16,18 +16,17 @@ import { formatPercent, formatScenarioSize } from '@/lib/formatters';
  */
 function UtilizationFormula() {
   return (
-    <div className="rounded-lg border border-border bg-muted/40 px-2 py-2">
-      <div className="flex items-center justify-center gap-1.5 font-mono ds-text-11 text-foreground">
-        <span className="text-muted-foreground">Utilization</span>
-        <span className="text-muted-foreground">=</span>
-        <div className="inline-flex flex-col items-center leading-[1.1]">
-          <span className="px-1.5 pb-0.5 whitespace-nowrap">
+    <div className="max-w-full overflow-hidden rounded-lg border border-border bg-muted/40 px-1.5 py-2">
+      <div className="grid max-w-full min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-x-1.5 font-mono ds-text-11 text-foreground">
+        <span className="shrink-0 whitespace-nowrap text-muted-foreground">Utilization =</span>
+        <div className="flex min-w-0 max-w-full flex-col items-stretch text-center leading-[1.1]">
+          <span className="min-w-0 px-1 pb-0.5">
             <span className="ds-text-brand-cyan font-semibold">borrowed</span>
           </span>
           <span className="h-px w-full bg-foreground/60" />
-          <span className="px-1.5 pt-0.5 whitespace-nowrap">
+          <span className="flex min-w-0 flex-wrap items-center justify-center gap-x-0.5 gap-y-0 px-1 pt-0.5">
             <span className="ds-text-purple-600 font-semibold">liquidity</span>
-            <span className="text-muted-foreground mx-0.5">+</span>
+            <span className="text-muted-foreground">+</span>
             <span className="ds-text-brand-cyan font-semibold">borrowed</span>
           </span>
         </div>
