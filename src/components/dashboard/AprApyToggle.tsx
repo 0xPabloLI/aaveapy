@@ -347,7 +347,7 @@ function AprTooltipContent() {
   return (
     <div className="space-y-3">
       <TooltipModeRow mode="APR" hint="Linear incentive annual %" />
-      <FormulaBlock>APR = Native APY + Incentive APR</FormulaBlock>
+      <FormulaBlock className="rounded-lg border border-border bg-muted/40 px-3 py-2">APR = Native APY + Incentive APR</FormulaBlock>
       <p className="ds-text-12 text-muted-foreground leading-relaxed">
         Only incentive annual % follows this switch; native stays APY. Incentive here is linear APR (no reinvest
         assumption).
@@ -361,11 +361,11 @@ function ApyTooltipContent() {
   return (
     <div className="space-y-3">
       <TooltipModeRow mode="APY" hint="Compounded incentive annual %" />
-      <FormulaBlock>APY = Native APY + Incentive APY</FormulaBlock>
+      <FormulaBlock className="rounded-lg border border-border bg-muted/40 px-3 py-2">APY = Native APY + Incentive APY</FormulaBlock>
       <p className="ds-text-12 text-muted-foreground leading-relaxed">
         Only incentive annual % follows this switch; native stays APY. Incentive APY assumes ~monthly reinvest.
       </p>
-      <FormulaBlock>(1 + APR/12)¹² − 1</FormulaBlock>
+      <FormulaBlock className="rounded-lg border border-border bg-muted/40 px-3 py-2">(1 + APR/12)¹² − 1</FormulaBlock>
       <EarnPerDayFootnote />
     </div>
   );

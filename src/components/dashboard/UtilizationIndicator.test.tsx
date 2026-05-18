@@ -79,35 +79,4 @@ describe('UtilizationContent sort arrows', () => {
     );
     expect(html).not.toContain('aria-label="Sort by utilization"');
   });
-
-  it('renders "Available liquidity" sort arrow when onSortLiquidity and availableLiquidityUsd provided', () => {
-    const html = renderToString(
-      <UtilizationContent
-        {...baseProps}
-        availableLiquidityUsd={700_000_000}
-        onSortLiquidity={() => {}}
-      />,
-    );
-    expect(html).toContain('aria-label="Sort by liquidity"');
-  });
-
-  it('does not render "Available liquidity" sort arrow when onSortLiquidity not provided', () => {
-    const html = renderToString(
-      <UtilizationContent
-        {...baseProps}
-        availableLiquidityUsd={700_000_000}
-      />,
-    );
-    expect(html).not.toContain('aria-label="Sort by liquidity"');
-  });
-
-  it('does not show Available liquidity row when value not provided', () => {
-    const html = renderToString(
-      <UtilizationContent
-        {...baseProps}
-        onSortLiquidity={() => {}}
-      />,
-    );
-    expect(html).not.toContain('Available liquidity');
-  });
 });

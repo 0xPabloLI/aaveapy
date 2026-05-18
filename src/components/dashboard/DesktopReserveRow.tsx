@@ -140,9 +140,6 @@ interface DesktopReserveRowProps {
   onSortUtilization?: () => void;
   isSortUtilizationActive?: boolean;
   utilizationSortOrder?: 'asc' | 'desc';
-  onSortLiquidity?: () => void;
-  isSortLiquidityActive?: boolean;
-  liquiditySortOrder?: 'asc' | 'desc';
   /** Sort callbacks and state for optimal utilization arrow in util tooltip. */
   onSortOptimal?: () => void;
   isSortOptimalActive?: boolean;
@@ -240,9 +237,6 @@ const DesktopReserveRow = memo(({
   onSortUtilization,
   isSortUtilizationActive,
   utilizationSortOrder,
-  onSortLiquidity,
-  isSortLiquidityActive,
-  liquiditySortOrder,
   onSortOptimal,
   isSortOptimalActive,
   optimalSortOrder,
@@ -743,10 +737,6 @@ const DesktopReserveRow = memo(({
                   <UtilizationIndicator
                     current={displayUtilization}
                     optimal={optimalPct}
-                    availableLiquidityUsd={availableLiquidityUsd}
-                    displayMode={inputMode}
-                    tokenPrice={displayTokenPrice}
-                    tokenSymbol={reserve.tokenSymbol}
                     disableTooltip
                   />
                 </div>
@@ -756,16 +746,9 @@ const DesktopReserveRow = memo(({
                 <UtilizationContent
                   current={displayUtilization ?? 0}
                   optimal={optimalPct ?? 0}
-                  availableLiquidityUsd={availableLiquidityUsd}
-                  displayMode={inputMode}
-                  tokenPrice={displayTokenPrice}
-                  tokenSymbol={reserve.tokenSymbol}
                   onSortUtilization={onSortUtilization}
                   isSortUtilizationActive={isSortUtilizationActive}
                   utilizationSortOrder={utilizationSortOrder}
-                  onSortLiquidity={onSortLiquidity}
-                  isSortLiquidityActive={isSortLiquidityActive}
-                  liquiditySortOrder={liquiditySortOrder}
                   onSortOptimal={onSortOptimal}
                   isSortOptimalActive={isSortOptimalActive}
                   optimalSortOrder={optimalSortOrder}

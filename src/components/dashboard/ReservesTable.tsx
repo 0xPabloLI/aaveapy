@@ -1525,15 +1525,6 @@ const ReservesTable = ({
                       setActiveSortColumn, targetColumn: 'util',
                     });
                   }}
-                  onSortLiquidity={() => {
-                    collapseExpandedOnSort();
-                    selectSortOption({
-                      isAlreadySelected: utilSortMode === 'liquidity' && activeSortColumn === 'util',
-                      setSortOrder: setUtilSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
-                      setSortMode: setUtilSortMode, targetMode: 'liquidity',
-                      setActiveSortColumn, targetColumn: 'util',
-                    });
-                  }}
                   onSortOptimal={() => {
                     collapseExpandedOnSort();
                     selectSortOption({
@@ -1567,8 +1558,6 @@ const ReservesTable = ({
                   availableLiquiditySortOrder={sizeSortOrder}
                   isSortUtilizationActive={activeSortColumn === 'util' && utilSortMode === 'util'}
                   utilizationSortOrder={utilSortOrder}
-                  isSortLiquidityActive={activeSortColumn === 'util' && utilSortMode === 'liquidity'}
-                  liquiditySortOrder={utilSortOrder}
                   isSortOptimalActive={activeSortColumn === 'util' && utilSortMode === 'optimal'}
                   optimalSortOrder={utilSortOrder}
                 />

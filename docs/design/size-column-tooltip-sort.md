@@ -84,3 +84,29 @@ Cell:    supply ring (hover → Total supplied [↑↓] | Suppliable [↑↓] | 
 | Phase 5: No-cap tooltip | ✅ | — |
 | Phase 6: DesktopReserveRow wiring | ✅ | — |
 | Phase 7: 验证 + 清理 | ✅ | — |
+
+---
+
+## Liquidity/Utilization 列 Tooltip 合并 + 公式美化 (2026-05-18)
+
+### 改动摘要
+
+| 改动 | 内容 |
+|------|------|
+| Liquidity 列下拉框移除 | Header 简化为 "Liquidity" + 排序方向箭头（与 Size/Spread 列一致） |
+| Optimal utilization 排序 | 新增 `UtilSortMode: 'optimal'`，tooltip 内添加 SortArrowButton |
+| Tooltip 合并 | 两个 tooltip（数字 + 条形图）合并为一个，公式和数值在同一 tooltip 展示 |
+| 公式美化 | 复用 `FormulaBlock`（加 `className` prop），CSS 分数排版替代 plain `/` |
+| Available liquidity 移除 | Tooltip 内不再显示 liquidity 行（外部表头已固定按 liquidity 排序） |
+| Liquidity 表头语义 | `handleSortUtil` 固定按 `liquidity` 模式排序（无歧义列名） |
+| FormulaBlock 扩展 | 新增可选 `className` prop，默认样式移至调用方传入 |
+
+### CSS 分数公式
+
+```
+              borrowed
+Utilization = ──────────────
+              liquidity + borrowed
+```
+
+零依赖实现：`flex flex-col` + `border-t` 分数线 + `font-mono` 等宽字体。
