@@ -16,15 +16,15 @@ import { formatPercent, formatScenarioSize } from '@/lib/formatters';
  */
 function UtilizationFormula() {
   return (
-    <div className="max-w-full overflow-hidden rounded-lg border border-border bg-muted/40 px-1.5 py-2">
-      <div className="grid max-w-full min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-x-1.5 font-mono ds-text-11 text-foreground">
-        <span className="shrink-0 whitespace-nowrap text-muted-foreground">Utilization =</span>
+    <div className="w-full max-w-full overflow-hidden rounded-lg border border-border bg-muted/40 px-1.5 py-2">
+      <div className="flex w-full min-w-0 flex-col items-center gap-1 font-mono ds-text-11 text-foreground">
+        <span className="max-w-full truncate text-muted-foreground">Utilization =</span>
         <div className="flex min-w-0 max-w-full flex-col items-stretch text-center leading-[1.1]">
           <span className="min-w-0 px-1 pb-0.5">
             <span className="ds-text-brand-cyan font-semibold">borrowed</span>
           </span>
           <span className="h-px w-full bg-foreground/60" />
-          <span className="flex min-w-0 flex-wrap items-center justify-center gap-x-0.5 gap-y-0 px-1 pt-0.5">
+          <span className="flex min-w-0 max-w-full flex-wrap items-center justify-center gap-x-0.5 gap-y-0 px-1 pt-0.5">
             <span className="ds-text-purple-600 font-semibold">liquidity</span>
             <span className="text-muted-foreground">+</span>
             <span className="ds-text-brand-cyan font-semibold">borrowed</span>
@@ -276,7 +276,7 @@ const UtilizationIndicator = memo(({
       <TooltipTrigger asChild>
         {bar}
       </TooltipTrigger>
-      <TooltipContent side="top" className="max-w-[var(--ds-ring-tooltip-max-w)] p-3">
+      <TooltipContent side="top" className="w-[min(var(--ds-ring-tooltip-max-w),calc(100vw-2rem))] max-w-[var(--ds-ring-tooltip-max-w)] overflow-hidden p-3">
         <TooltipCalloutArrow />
         <UtilizationContent
           current={clampedCurrent}
