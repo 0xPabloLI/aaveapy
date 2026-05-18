@@ -30,30 +30,18 @@
 - For new domain naming, prefer *ceiling* semantics (`depositCeilingUsd`, `rewardCeilingUsd`) and existing helpers.
 - Reuse existing UI patterns/tokens before introducing new ones.
 
-## Validation Gate (修改后必跑验证 — 所有代码修改强制执行)
-
-**After EVERY code change, run ALL of these in order. The change is NOT complete until all pass:**
+## Validation Gate (修改后必跑 — 强制)
+每次代码改动后按序跑 4 项,**全部通过**才算完成。任一失败 → 修根因 → 从头重跑。
 
 ```bash
-npm run lint        # ESLint
-npm test            # Vitest
-npm run build       # Vite production build
-npx tsc --noEmit    # TypeScript type-checking
+npm run lint && npm test && npm run build && npx tsc --noEmit
 ```
 
-**If ANY check fails:**
-- Fix the root cause in the code
-- Re-run the full sequence from the beginning
-- Repeat until ALL checks pass
-- Do NOT hand back to the user with failing validation
-
-For high-risk reserves/simulation/table UI changes, follow `docs/conventions/frontend-regression-checklist.md` (including targeted e2e/manual checks).
-For API contract changes, follow `docs/conventions/api-contract-checklist.md`.
+高风险表格/模拟器改动另参 `docs/conventions/frontend-regression-checklist.md`;API 合约改动参 `docs/conventions/api-contract-checklist.md`。
 
 ## PR / Merge Guardrails
-- Keep commits concise and conventional; no URL in commit message.
-- Do not “cosmetically resolve” review threads without actual fix or maintainer-approved rationale.
-- For branch sync/force update scenarios, prefer `git push --force-with-lease` (not `--force`).
+- Commits: 简洁的 conventional 格式;不在 message 里放 URL。
+- 不要 "cosmetically resolve" review thread,要么真修要么留待 maintainer 拍板。
 
 ## High-Risk Areas (Coordinate Carefully)
 - Simulation + reserves table: `src/components/dashboard/ReservesTable*`, `DesktopReserveRow*`, `MobileReserve*`, `src/hooks/useRateSimulation.ts`, `src/hooks/reserves-table/` (8 个聚合 hook: useReservesTableSort / useReservesPagination / useReserveExpansion / useSharedScenarioInputs / useScenarioPinScroll / useReservesTooltip / usePortfolioToggle / useReservesLayoutRefs;每个都有 co-located 单测).
@@ -78,11 +66,5 @@ For API contract changes, follow `docs/conventions/api-contract-checklist.md`.
 - Keep implementation scoped; avoid unrelated refactors.
 - Avoid filling missing backend fields with guessed defaults.
 
-## Learned Lessons (Condensed)
-- **Token icon 引用是动态的** — icon 通过 URL 路径 `/icons/tokens/{symbol}.{ext}` 在运行时加载，非静态 import；静态源码扫描无法判断哪些 icon 在使用。判断"过时"须依赖 API 运行时数据（活跃 token symbol）。
-- **tokenIconManifest 不可用于差集检测** — 它从目录自动生成，目录中不可能有不在 manifest 的文件。
-- **扩展现有基础设施优于新建** — 遇到 sync/check/clean 类需求时，优先在 `scripts/sync-*.mjs` 或 `scripts/check-*.mjs` 中扩展，而非新建脚本或 workflow。
-- **Token icon 受保护列表** — `default` 等兜底 icon 不可被标记为可清理。
-- **共享 schema 模块** — frontend 和 Node scripts 都依赖的 zod contract 放在 `src/shared/<domain>/`，用相对 `.ts` 路径引入（Node `--experimental-strip-types` 不解析 Vite `@/` alias）。
-- **Script 桥接文件** — Node scripts 需要 typed 数据时，在 `scripts/lib/<name>.ts` 中封装 schema 验证 + fetch，由 `.mjs` entrypoint 动态 import。
-- **Frontend/script 错误语义分离** — frontend 的 cache fallback 和 script 的 strict validation 不应合并。前者接受降级形状，后者拒绝任何合约偏差。
+## Learned Lessons
+- Scripts / token icons / 共享 schema 改动前先看 `docs/conventions/scripts-and-schema-lessons.md`(icon 动态加载/manifest 不能找 orphan/扩展现有脚本/`src/shared/<domain>/` 相对路径/桥接 `scripts/lib/`/frontend vs script 错误语义分离)。
