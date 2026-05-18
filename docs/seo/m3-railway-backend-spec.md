@@ -210,13 +210,47 @@ http://localhost:5173, :8080    # 本地
 
 ---
 
-## 6. 交付清单
+## 6. Semrush 数据来源与种子数据
+
+**不需要付费 Semrush 订阅。** `semrush_snapshots` 表通过以下方式喂数据：
+
+1. **Lovable 内置 Semrush 工具**（`keyword_compare`）由 Lovable agent 跑,产出 seed JSON。
+2. **刷新节奏**：季度一次,或在某地区流量明显变化时按需重跑。
+3. **手动补录**：如需临时补一个关键词,可直接调 `POST /seo/semrush`。
+
+### 6.1 种子文件
+首批种子已生成: [`docs/seo/semrush-seed-2026-05-18.json`](./semrush-seed-2026-05-18.json)
+覆盖 6 个国家(br/fr/tr/us/de/in)、~33 个关键词,字段对齐 `semrush_snapshots` schema。
+`position` 字段统一留空——首次种子只关心市场需求(volume/difficulty/cpc),实际排名由 GSC cron 跑够 ≥7 天后再回填,或前端 Dashboard 直接展示「尚未排名」。
+
+### 6.2 灌库命令
+后端 migration 上线 + `SEO_ADMIN_TOKEN` 配好后,一条命令灌完整批:
+
+```bash
+# 假设 API base 是 https://api.aaveapy.com/api
+TOKEN="<SEO_ADMIN_TOKEN>"
+BASE="https://api.aaveapy.com/api"
+
+jq -c '.rows[]' docs/seo/semrush-seed-2026-05-18.json | while read -r row; do
+  curl -sS -X POST "$BASE/seo/semrush" \
+    -H "X-Admin-Token: $TOKEN" \
+    -H "Content-Type: application/json" \
+    -d "$row" | jq -r '.id // .error'
+done
+```
+
+`POST /seo/semrush` 的 `ON CONFLICT (snapshot_date, country, keyword) DO UPDATE` 保证幂等,重复跑无副作用。
+
+---
+
+## 7. 交付清单
 
 请后端同学完成后告知：
 1. ✅ 数据库 migration 已上线
 2. ✅ cron 已运行 ≥ 1 天,`SELECT count(*), max(date) FROM gsc_daily` 有数据
 3. ✅ 4 个接口可访问（curl 示例验过）
-4. ✅ 告知我：
+4. ✅ Semrush seed 已灌库(`SELECT count(*) FROM semrush_snapshots` 应 ≈ 33)
+5. ✅ 告知我：
    - API base URL（如已有则沿用 `https://api.aaveapy.com/api`，新路径就是 `/api/seo/*`）
    - `SEO_ADMIN_TOKEN` 的值（我配到 Vercel 的 `VITE_SEO_ADMIN_TOKEN`）
 
@@ -224,8 +258,8 @@ http://localhost:5173, :8080    # 本地
 
 ---
 
-## 7. 时间预估
+## 8. 时间预估
 - DB migration + GSC cron：0.5 天
 - 4 个接口 + 鉴权 + CORS：0.5 天
-- 联调 + 文档：0.5 天
+- Semrush seed 灌库 + 联调：0.5 天
 - **合计 ~1.5 人日**
