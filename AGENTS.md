@@ -20,14 +20,7 @@
 3. **Hook policy**: do not bypass `pre-commit`/`pre-push`; if `ci:remote` fails, fix root cause.
 
 ## Commit Cadence (并行 agent 安全)
-
-**核心原则**: 这个仓库里可能同时有多个 agent / 用户在同一 worktree 工作。未提交的改动随时可能被其它 agent 的 `git add -A` / 工具刷新 / 重写覆盖掉。所以:
-
-1. **每完成一个原子任务立即 commit**（不要攒成一大堆）。"原子任务" = 一个 hook 抽取、一个 bug fix、一个独立 feature slice。验证全绿 (lint / tsc / test / build) 立刻 commit。
-2. **同一任务后续发现问题,优先 amend 原 commit**（`git commit --amend`）或紧跟 `fixup!` commit,**不要**把同一任务的修复散落在跨任务 commit 里。这样 history 干净,任务边界清晰。
-3. **commit 已经 push 后要改写**,用 `git push --force-with-lease` 而非 `--force`。
-4. **stage 时显式列出自己改的文件**(`git add path1 path2 ...`),不要 `git add -A` / `git add .`,以免把并行 agent 的未提交改动一起提交。
-5. **绝不还原他人的未提交改动**。worktree 里的非己出改动一律不动;只 stage 并 commit 自己改的路径。
+**TL;DR**: 每完成一个原子任务立即 commit;同任务的后续修复 amend 原 commit;`stage` 时显式列路径(绝不 `git add -A` / `.`);不还原他人未提交改动;push 改写用 `--force-with-lease`。详见 `docs/conventions/commit-cadence.md`。
 
 ## Coding Conventions
 - TypeScript + functional React components/hooks.
