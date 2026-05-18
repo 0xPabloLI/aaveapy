@@ -518,6 +518,8 @@ className="cursor-pointer md:cursor-auto"
 
 `InkAprCalculator` 的 `Incentive APR formula` 弹窗内文顺序固定为：**INK 价格行在上，公式块在下**；公式行复用共享 `FormulaBlock` 样式，避免同类说明弹窗出现不同公式容器风格。
 
+**公式对齐规范**：等式型公式（`FormulaBlock`：`APR = ...`、`APY = ...`）左对齐，符合数学等式排版惯例；分数型公式（`UtilizationFormula`：分子/分数线/分母）居中，符合分数对称结构排法。两者对齐方式不同是有意差异化，不是不一致。
+
 ### 6.4 Tooltip 定位与视口
 
 - 限制在视口内：使用 `max-h` + 内部 `overflow-y-auto`，避免溢出视口底部。
