@@ -14,6 +14,7 @@ on:
     branches:
       - main
       - dev
+      - lovable
 
 permissions:
   contents: read
@@ -300,7 +301,7 @@ jobs:
 
       - name: Create rollback notification issue
         if: always()
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v7
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7
         with:
           script: |
             const env = '${{ env.ENV_LABEL }}';
@@ -317,24 +318,54 @@ jobs:
               rollbackStatus = '❌ Auto-rollback failed — manual intervention required';
             }
 
-            await github.rest.issues.create({
+            const failureEntry = [
+              `## Repeat Trigger — \`${sha.slice(0, 7)}\``,
+              '',
+              `| Field | Value |`,
+              `|-------|-------|`,
+              `| Commit | \`${sha.slice(0, 7)}\` |`,
+              `| Rollback | ${rollbackStatus} |`,
+              `| Workflow Run | [View logs](${runUrl}) |`,
+            ].join('\n');
+
+            const existingIssues = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: `🚨 ${env} smoke test failed — deployment rolled back`,
-              body: [
-                `## Smoke Test Failure (${env})`,
-                '',
-                `| Field | Value |`,
-                `|-------|-------|`,
-                `| Environment | **${env}** |`,
-                `| Commit | \`${sha.slice(0, 7)}\` |`,
-                `| Rollback | ${rollbackStatus} |`,
-                `| Workflow Run | [View logs](${runUrl}) |`,
-                '',
-                'Check the workflow logs for details on which check failed.',
-                '',
-                '> **Note:** After rollback, Vercel disables auto-assignment of production domains.',
-                '> Push a fix and then run `vercel promote` or re-enable auto-assign in project settings.',
-              ].join('\n'),
-              labels: ['smoke-test-failure'],
+              state: 'open',
+              labels: 'smoke-test-failure',
             });
+
+            const dedupTitle = `🚨 ${env} smoke test failed — deployment rolled back`;
+            const match = existingIssues.data.find(i => i.title === dedupTitle);
+
+            if (match) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: match.number,
+                body: failureEntry,
+              });
+              core.info(`Dedup: appended to existing issue #${match.number}`);
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: dedupTitle,
+                body: [
+                  `## Smoke Test Failure (${env})`,
+                  '',
+                  `| Field | Value |`,
+                  `|-------|-------|`,
+                  `| Environment | **${env}** |`,
+                  `| Commit | \`${sha.slice(0, 7)}\` |`,
+                  `| Rollback | ${rollbackStatus} |`,
+                  `| Workflow Run | [View logs](${runUrl}) |`,
+                  '',
+                  'Check the workflow logs for details on which check failed.',
+                  '',
+                  '> **Note:** After rollback, Vercel disables auto-assignment of production domains.',
+                  '> Push a fix and then run `vercel promote` or re-enable auto-assign in project settings.',
+                ].join('\n'),
+                labels: ['smoke-test-failure'],
+              });
+            }
