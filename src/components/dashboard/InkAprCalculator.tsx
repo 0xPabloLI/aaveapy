@@ -168,7 +168,7 @@ function InkAprTooltipContent({
         <span>INK</span>
         <span className="tabular-nums">${formatInkPrice(currentFdvBillions)}</span>
       </div>
-      <FormulaBlock className="rounded-lg border border-border bg-muted/40 px-3 py-2">APR = daily_points × $INK × 365%</FormulaBlock>
+      <FormulaBlock>APR = daily_points × $INK × 365%</FormulaBlock>
     </div>
   );
 }
