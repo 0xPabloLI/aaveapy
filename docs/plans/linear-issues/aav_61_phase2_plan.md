@@ -5,6 +5,9 @@
 - **Native 和 Incentive 机制上就是分开的**，不算问题，不再追踪。
 - **V4 Hub 聚合不只是校验**：`hubBorrowed/hubSupplied` 被 `simulateNativeRatesAfterActions`（utilization 计算）和 `getMeritAnchorTvlUsd`（anchor TVL）实际消费。`validateHubAggregateConsistency` 才是纯校验（DEV 模式）。
 - **Portfolio 模式 = 点 Batch 开关后的模式**（`simulationMode === 'portfolio'`）。
+- **ReserveId 与 ReserveKey 等价**：`getReserveKey(r)` 实现就是 `r.reserveId.trim()`（见 `src/lib/reserveKey.ts`），后端保证全局唯一（V4 含 Hub 维度）。Portfolio 用 `reserveId` 直接做 Map key 在语义上正确，但**保持与现有简化路径一致仍用 `getReserveKey`**，避免出现未 trim 的边角问题。
+- **Hub mutate 是 deep-copy 上的 mutate**：`useSharedRateSimulations` L1845 先 `{ ...reserve }` 再覆写字段，源 reserve 不受污染。Portfolio 复用同一模式，无需额外 spread。
+- **meritMerklNetPosition 复用默认值 `true`**：Single 模式由 ReservesTable 注入，Portfolio 不引入新开关，传 `true`（或不传，让 `buildRateSimulationResult` 走默认）。
 
 ---
 
@@ -48,21 +51,21 @@
 | 7 | `src/components/dashboard/PortfolioTokenRow.visual-gap.test.ts` | 7 | ✅ |
 | 8 | `src/components/dashboard/PortfolioPanel.layout.test.tsx` | 2 | ✅ |
 
-### ❌ 未完成（Phase 2 — 核心计算引擎）
+### ✅ 已完成（Phase 2 — 核心计算引擎）
 
-| # | 任务 | 依赖 | 风险 |
-|---|------|------|------|
-| P2-1 | 提取纯函数 `simulatePortfolioPositions` | 无 | 低 |
-| P2-2 | 扩展 `usePortfolioToggle` 参数接口 | P2-1 | 低 |
-| P2-3 | 替换简化计算为完整模拟 | P2-1, P2-2 | 中 |
-| P2-4 | Hub Aggregation 接入 | P2-3 | 低 |
-| P2-5 | ReservesTable 传参 | P2-2 | 低 |
-| P2-6 | Fallback 降级逻辑 | P2-3 | 低 |
-| P2-7 | `portfolioSimulator` 单元测试（8 cases） | P2-1 | 低 |
-| P2-8 | `usePortfolioToggle` 更新测试 | P2-3 | 低 |
-| P2-9 | `portfolioCalculator` 补充 v3/v4 测试 | P2-3 | 低 |
-| P2-10 | 端到端数值验证 | P2-7 | 中 |
-| P2-11 | Validation gate（lint + test + build + tsc） | 全部 | 低 |
+| # | 任务 | 依赖 | 风险 | 状态 |
+|---|------|------|------|------|
+| P2-1 | 提取纯函数 `simulatePortfolioPositions` | 无 | 低 | ✅ |
+| P2-2 | 扩展 `usePortfolioToggle` 参数接口 | P2-1 | 低 | ✅ |
+| P2-3 | 替换简化计算为完整模拟 | P2-1, P2-2 | 中 | ✅ |
+| P2-4 | Hub Aggregation 接入 | P2-3 | 低 | ✅ |
+| P2-5 | ReservesTable 传参 | P2-2 | 低 | ✅ |
+| P2-6 | Fallback 降级逻辑 | P2-3 | 低 | ✅ |
+| P2-7 | `portfolioSimulator` 单元测试（8 cases） | P2-1 | 低 | ✅ |
+| P2-8 | `usePortfolioToggle` 更新测试 | P2-3 | 低 | ✅ |
+| P2-9 | `portfolioCalculator` 补充 v3/v4 测试 | P2-3 | 低 | ✅ |
+| P2-10 | 端到端数值验证 | P2-7 | 中 | ✅ |
+| P2-11 | Validation gate（lint + test + build + tsc） | 全部 | 低 | ✅ |
 
 ---
 
@@ -97,43 +100,49 @@ export function simulatePortfolioPositions(
 
 **核心逻辑**：
 
-1. **按 reserveId 分组**：同一 reserveId 的 supply + borrow position 合并为一组
-2. **对每组调用 `buildRateSimulationResult`**：
-   - 构造 `reserveRateInput`：`hasRateCalcFields(reserve)` ? `{ ...reserve }` : `null`
-   - v4 Hub：若 `reserve.hubId`，从 `hubAggregationMap` 取 `hubBorrowed/hubSupplied` 覆写
-   - `supplyInput` = supply position 的 USD 金额字符串（`inputMode: 'usd'`）
-   - `borrowInput` = borrow position 的 USD 金额字符串
-   - 调用 `buildRateSimulationResult`
-3. **从结果提取 per-position APR**：
-   - supply position：`nativeAprPercent = result.supply.afterNative ?? reserve.supplyApy`，`incentiveAprPercent = result.supply.afterIncentive ?? 0`
-   - borrow position：`nativeAprPercent = result.borrow.afterNative ?? reserve.borrowApy`，`incentiveAprPercent = result.borrow.afterIncentive ?? 0`
-   - 注意：`afterNative`/`afterIncentive` 为 `null` 时（no input），fallback 到 current 值
+1. **按 reserveKey 分组**：以 `getReserveKey(reserve)` 为 Map key（等同 `reserveId.trim()`），同 key 的 supply + borrow position 合并为一组；同 side 多 position 求和（CRUD 未强约束，防御式去重）。
+2. **对每组调用 `buildRateSimulationResult`**（每个 reserve **只调一次**，supply+borrow 联动）：
+   - 构造 `reserveRateInput`：`hasRateCalcFields(reserve)` ? `{ ...reserve }` : `null`（**deep-copy 后再 mutate 安全**，与 `useSharedRateSimulations` L1845 一致）
+   - v4 Hub：若 `reserve.hubId`，从 `hubAggregationMap` 取 `hubBorrowed/hubSupplied` 覆写到 copy 上
+   - `supplyInput` = supply position 的 USD 金额字符串（`inputMode: 'usd'`）；无 supply position 则传 `'0'`
+   - `borrowInput` = borrow position 的 USD 金额字符串；无 borrow position 则传 `'0'`
+   - `meritMerklNetPosition`: 不传，使用默认 `true`，与 Single 默认行为一致
+   - 调用 `buildRateSimulationResult`，得到一份 `RateSimulationComputedResult`
+3. **从结果提取 per-position APR**（一份 result 拆给同 reserve 的多个 position）：
+   - supply position：`nativeAprPercent = result.supply.afterNative ?? result.supply.currentNative ?? reserve.supplyApy ?? 0`
+   - supply position：`incentiveAprPercent = result.supply.afterIncentive ?? result.supply.currentIncentive ?? 0`
+   - borrow 同理走 `result.borrow.*`
+   - 注意：`afterNative`/`afterIncentive` 为 `null` 时（该 side 无 input 或被 blocked），fallback 到 `current*`
 4. **构建 `PortfolioPositionResult[]`**：调用 `buildPortfolioPositionResult`
 5. **聚合**：调用 `aggregatePortfolioSummary`
 
 **Fallback 路径**（与 P2-6 合并）：
-- 当 `reserveRateInput === null`（无 rate calc 字段）→ 退回当前简化计算
+- 当 `reserveRateInput === null`（无 rate calc 字段）→ 该 reserve 退回当前简化计算（`reserve.supplyApy` + sum `supplyIncentives`）
 - 当 `forecastStates` 为空对象 → Merkl forecast 退回 current APR（`buildRateSimulationResult` 内部已处理）
 
 ### P2-2：扩展 `usePortfolioToggle` 参数接口
 
 **修改**：`src/hooks/reserves-table/usePortfolioToggle.ts`
 
+把 4 个 Phase 2 参数收成单个**可选** `simulationContext` 对象，避免 `isApy=false`/`tydroPointToUsdRate=0` 等"真值假"被误判为"未传"。`simulationContext === undefined` ⇒ 走 fallback；传入则进完整模拟。
+
 ```ts
+export interface PortfolioSimulationContext {
+  isApy: boolean;
+  whitelistMerklCampaignIds: ReadonlySet<string>;
+  tydroPointToUsdRate: number;
+  forecastStates: Record<string, MerklForecastWireItem>;
+}
+
 export interface UsePortfolioToggleArgs {
   isPortfolioMode: boolean;
   reserves: ReserveWithSpread[];
   portfolioPositions?: PortfolioPosition[];
   portfolioActions?: PortfolioSimulationActions;
-  // Phase 2
-  isApy?: boolean;
-  whitelistMerklCampaignIds?: ReadonlySet<string>;
-  tydroPointToUsdRate?: number;
-  forecastStates?: Record<string, MerklForecastWireItem>;
+  /** Phase 2: 传入则启用完整 buildRateSimulationResult；省略则使用现有简化计算 */
+  simulationContext?: PortfolioSimulationContext;
 }
 ```
-
-所有 Phase 2 参数可选（`?`），缺省时退回简化计算。
 
 ### P2-3：替换简化计算为完整模拟
 
@@ -148,34 +157,32 @@ const incentivePercent = incentiveArr.reduce((s, v) => s + v, 0);
 
 **之后**（完整模拟）：
 ```ts
-// 判断是否具备完整模拟条件
-const canFullSim = isApy !== undefined && whitelistMerklCampaignIds !== undefined
-  && tydroPointToUsdRate !== undefined && forecastStates !== undefined;
-
-if (canFullSim) {
+if (simulationContext) {
   const hubAggregationMap = buildHubAggregationMap(reserves);
   const { results, summary } = simulatePortfolioPositions({
     positions: portfolioPositions,
     reserves,
     hubAggregationMap,
-    isApy,
-    whitelistMerklCampaignIds,
-    tydroPointToUsdRate,
-    forecastStates,
+    ...simulationContext,
   });
   return { portfolioResults: results, portfolioSummary: summary };
 }
 
-// Fallback: 简化计算（保持当前逻辑不变）
+// Fallback: 简化计算（保持当前逻辑不变 — 同时也是 simulator 内部 per-reserve fallback 的兜底）
 ```
+
+**注**：simulator 内部对单个无 `reserveRateInput` 的 reserve 已有 fallback；这里的外层 `if (!simulationContext)` 是"调用方未提供 context"的全局兜底，二者层级不同、互不冲突。
 
 ### P2-4：Hub Aggregation 接入
 
 **位置**：`portfolioSimulator.ts` 内部
 
-逻辑与 `useSharedRateSimulations` L1841-1848 一致：
+逻辑与 `useSharedRateSimulations` L1845-1854 完全一致 — `reserveRateInput` 是 `{ ...reserve }` 浅拷贝，mutate 安全（不污染源 reserve）：
 
 ```ts
+const reserveRateInput: RateCalcInput | null = hasRateCalcFields(reserve)
+  ? { ...reserve }
+  : null;
 if (reserveRateInput && reserve.hubId) {
   const hubKey = getHubAssetKey(reserve);
   const hubAgg = hubKey ? hubAggregationMap.get(hubKey) : undefined;
@@ -207,19 +214,23 @@ const { ... } = usePortfolioToggle({
 
 改为：
 ```ts
+const portfolioSimulationContext = useMemo<PortfolioSimulationContext>(() => ({
+  isApy,
+  whitelistMerklCampaignIds,
+  tydroPointToUsdRate,
+  forecastStates,
+}), [isApy, whitelistMerklCampaignIds, tydroPointToUsdRate, forecastStates]);
+
 const { ... } = usePortfolioToggle({
   isPortfolioMode,
   reserves,
   portfolioPositions,
   portfolioActions,
-  isApy,
-  whitelistMerklCampaignIds,
-  tydroPointToUsdRate,
-  forecastStates,
+  simulationContext: portfolioSimulationContext,
 });
 ```
 
-这 4 个变量已在 `ReservesTable` 中可用（L102-103 props，L120-126 forecastStates）。
+这 4 个变量已在 `ReservesTable` 中可用（L98-103 props，L120-126 forecastStates）。`useMemo` 包一层防止每渲染都产生新引用触发 `usePortfolioToggle` 内 `useMemo` 失效。
 
 ### P2-6：Fallback 降级逻辑
 
@@ -230,7 +241,8 @@ const { ... } = usePortfolioToggle({
 | `reserveRateInput === null`（reserve 无 rate calc 字段） | 该 position 用 `reserve.supplyApy/borrowApy` + sum `supplyIncentives` |
 | `forecastStates` 为 `{}` | Merkl forecast 退回 current APR（`buildRateSimulationResult` 内部已处理，无需额外代码） |
 | `reserve.tokenPrice` 不可用 | `resolvePositionAmountUsd` 返回 0 → position 被跳过（已有逻辑） |
-| `isApy`/`whitelistMerklCampaignIds`/`tydroPointToUsdRate` 未传入 | `usePortfolioToggle` 不调用 `simulatePortfolioPositions`，走现有简化路径 |
+| `simulationContext` 未传入 | `usePortfolioToggle` 不调用 `simulatePortfolioPositions`，走现有简化路径 |
+| 同 reserve 同 side 出现多 position | simulator 内部对 USD 金额求和后再单次调用（防御式，正常 CRUD 路径不会出现） |
 
 ### P2-7：`portfolioSimulator.test.ts`（8 个测试用例）
 
@@ -328,11 +340,12 @@ const { ... } = usePortfolioToggle({
 
 **手动验证步骤**（非自动化，但需记录）：
 
-1. 选一个 v3 Ethereum USDC reserve
-2. 在 Single 模式输入 supply $10000 + borrow $5000，记录 simulation 结果
-3. 切到 Portfolio 模式，同样 USDC supply $10000 + borrow $5000
+1. 选一个 v3 Ethereum USDC reserve，**确保金额未触顶 supplyCap/borrowCap**（否则 Single 端会被 `availableBorrowRoomUsd` 截断，Portfolio 同样会，但需明确这是预期）
+2. 在 Single 模式 USD inputMode 下输入 supply $10000 + borrow $5000，记录 simulation 结果
+3. 切到 Portfolio 模式，同 reserve 创建 supply $10000 + borrow $5000 两个 position
 4. 对比两者的 native APR、incentive APR、USD/day
-5. **预期：Portfolio 的数值与 Single 完全一致**（因为底层都调 `buildRateSimulationResult`）
+5. **预期**：在未触顶 cap、未触发 supplyBlocked/borrowBlocked、`meritMerklNetPosition=true` 一致的前提下，Portfolio 的 `result.supply.afterNative` 与 Single 完全一致（同一函数同一参数）
+6. **追加验证**：v4 reserve（同 hubId 至少 2 个 Spoke）也跑一遍，确认 Hub 聚合一致
 
 ### P2-11：Validation Gate
 
@@ -403,6 +416,11 @@ const makeRateCalcReserve = (overrides: Partial<ReserveWithSpread> = {}): Reserv
     borrowed: '20000000000000',       // 20M USDC
     liquidity: '30000000000000',      // 30M USDC
     deficit: '0',
+    // Cap-related (用大数避免 Test 1/2/3/4/7/8 被 cap 截断；Test 5 单独覆写小 cap)
+    supplyCap: '100000000000000',     // 100M
+    borrowCap: '80000000000000',      // 80M
+    suppliable: '50000000000000',     // 50M room
+    borrowable: '60000000000000',     // 60M room
     protocolFee: 10,                  // 10%
     slopeBelowOptimal: 4,             // 4%
     slopeAboveOptimal: 75,            // 75%
@@ -422,6 +440,8 @@ const makeRateCalcReserve = (overrides: Partial<ReserveWithSpread> = {}): Reserv
     ...overrides,
   }) as ReserveWithSpread;
 ```
+
+**Test 5（Brevis cap）特别说明**：要触发 `capWarning`，应该构造 `brevisSupplys[].perUserRewardCapUsd = 100` 这类小 cap，而不是 reserve 级别的 supplyCap。reserve 级 cap 截断的是 input 金额（影响 native APR），Brevis cap 截断的是 per-user incentive 奖励（影响 incentive APR）。
 
 v4 mock 增加字段：
 ```ts

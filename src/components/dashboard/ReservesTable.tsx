@@ -45,7 +45,7 @@ import {
 import { useReserveExpansion } from '@/hooks/reserves-table/useReserveExpansion';
 import { useScenarioPinScroll } from '@/hooks/reserves-table/useScenarioPinScroll';
 import { useReservesTooltip } from '@/hooks/reserves-table/useReservesTooltip';
-import { usePortfolioToggle } from '@/hooks/reserves-table/usePortfolioToggle';
+import { usePortfolioToggle, PortfolioSimulationContext } from '@/hooks/reserves-table/usePortfolioToggle';
 import { useReservesLayoutRefs } from '@/hooks/reserves-table/useReservesLayoutRefs';
 import { getReserveSimulationId, useSharedRateSimulations } from '@/hooks/useRateSimulation';
 import { useSideDataMeta } from '@/hooks/useSideDataMeta';
@@ -1035,6 +1035,13 @@ const ReservesTable = ({
 
   const isPortfolioMode = simulationMode === 'portfolio';
 
+  const portfolioSimulationContext = useMemo<PortfolioSimulationContext>(() => ({
+    isApy,
+    whitelistMerklCampaignIds,
+    tydroPointToUsdRate,
+    forecastStates,
+  }), [isApy, whitelistMerklCampaignIds, tydroPointToUsdRate, forecastStates]);
+
   const {
     portfolioReserveIds,
     handlePortfolioToggle,
@@ -1045,6 +1052,7 @@ const ReservesTable = ({
     reserves,
     portfolioPositions,
     portfolioActions,
+    simulationContext: portfolioSimulationContext,
   });
 
   const scenarioControls = (

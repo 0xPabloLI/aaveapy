@@ -3,9 +3,11 @@ import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { usePortfolioToggle } from './usePortfolioToggle';
+import type { PortfolioSimulationContext } from './usePortfolioToggle';
 import type { PortfolioPosition } from '@/types/portfolio';
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
 import type { ReserveWithSpread } from '@/types/aave';
+import type { RateCalcInput } from '@/lib/interestRateCalculator';
 
 const makeReserve = (overrides: Partial<ReserveWithSpread> = {}): ReserveWithSpread =>
   ({
@@ -231,6 +233,122 @@ describe('usePortfolioToggle', () => {
         }),
       );
       expect(result.current.portfolioResults).toEqual([]);
+    });
+  });
+
+  describe('simulationContext (Phase 2)', () => {
+    const makeRateCalcReserve = (
+      overrides: Partial<ReserveWithSpread> = {},
+    ): ReserveWithSpread & RateCalcInput =>
+      ({
+        reserveId: 'r-1',
+        marketName: 'Core',
+        chainName: 'Ethereum',
+        chainId: 1,
+        tokenSymbol: 'USDC',
+        tokenAddress: '0x0000000000000000000000000000000000000001',
+        aTokenAddress: '0x0000000000000000000000000000000000000002',
+        vTokenAddress: '0x0000000000000000000000000000000000000003',
+        decimals: 6,
+        tokenPrice: 1,
+        supplied: '50000000000000',
+        borrowed: '20000000000000',
+        liquidity: '30000000000000',
+        deficit: '0',
+        supplyCap: '100000000000000',
+        borrowCap: '80000000000000',
+        suppliable: '50000000000000',
+        borrowable: '60000000000000',
+        protocolFee: 10,
+        slopeBelowOptimal: 4,
+        slopeAboveOptimal: 75,
+        baseBorrowRate: 0,
+        optimalUtilization: 80,
+        supplyApy: 2.5,
+        borrowApy: 4.8,
+        utilizationPct: 40,
+        supplyIncentives: [],
+        borrowIncentives: [],
+        meritSupplys: [],
+        meritBorrows: [],
+        merklSupplys: [],
+        merklBorrows: [],
+        brevisSupplys: [],
+        brevisBorrows: [],
+        ...overrides,
+      }) as ReserveWithSpread & RateCalcInput;
+
+    it('uses full simulation when simulationContext is provided', () => {
+      const reserve = makeRateCalcReserve();
+      const positions = [
+        makePosition({
+          positionId: 'p-sup',
+          side: 'supply',
+          amount: '10000',
+        }),
+        makePosition({
+          positionId: 'p-bor',
+          side: 'borrow',
+          amount: '5000',
+        }),
+      ];
+      const ctx: PortfolioSimulationContext = {
+        isApy: true,
+        whitelistMerklCampaignIds: new Set(),
+        tydroPointToUsdRate: 0,
+        forecastStates: {},
+      };
+      const { result } = renderHook(() =>
+        usePortfolioToggle({
+          isPortfolioMode: true,
+          reserves: [reserve],
+          portfolioPositions: positions,
+          simulationContext: ctx,
+        }),
+      );
+      expect(result.current.portfolioResults).toHaveLength(2);
+      expect(result.current.portfolioSummary.totalSupplyUsd).toBeGreaterThan(0);
+      expect(result.current.portfolioSummary.totalBorrowUsd).toBeGreaterThan(0);
+    });
+
+    it('falls back to simplified calculation without simulationContext', () => {
+      const reserve = makeRateCalcReserve({ supplyApy: 3.0, supplyIncentives: [0.5] });
+      const positions = [
+        makePosition({ positionId: 'p-sup', side: 'supply', amount: '10000' }),
+      ];
+      const { result } = renderHook(() =>
+        usePortfolioToggle({
+          isPortfolioMode: true,
+          reserves: [reserve],
+          portfolioPositions: positions,
+        }),
+      );
+      expect(result.current.portfolioResults).toHaveLength(1);
+      expect(result.current.portfolioResults[0].nativePercent).toBe(3.0);
+      expect(result.current.portfolioResults[0].incentivePercent).toBe(0.5);
+    });
+
+    it('with simulationContext but empty forecastStates, still produces results', () => {
+      const reserve = makeRateCalcReserve();
+      const positions = [
+        makePosition({ positionId: 'p-sup', side: 'supply', amount: '10000' }),
+      ];
+      const ctx: PortfolioSimulationContext = {
+        isApy: true,
+        whitelistMerklCampaignIds: new Set(),
+        tydroPointToUsdRate: 0,
+        forecastStates: {},
+      };
+      const { result } = renderHook(() =>
+        usePortfolioToggle({
+          isPortfolioMode: true,
+          reserves: [reserve],
+          portfolioPositions: positions,
+          simulationContext: ctx,
+        }),
+      );
+      expect(result.current.portfolioResults).toHaveLength(1);
+      expect(result.current.portfolioResults[0].nativePercent).toBeGreaterThan(0);
     });
   });
 });

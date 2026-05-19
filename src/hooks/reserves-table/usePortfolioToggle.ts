@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from 'react';
 
-import type { ReserveWithSpread } from '@/types/aave';
+import type { ReserveWithSpread, MerklForecastWireItem } from '@/types/aave';
 import type {
   PortfolioPosition,
   PortfolioPositionResult,
@@ -13,12 +13,21 @@ import {
 } from '@/hooks/usePortfolioSimulation';
 import { aggregatePortfolioSummary } from '@/lib/portfolioCalculator';
 import { getReserveKey } from '@/lib/reserveKey';
+import { simulatePortfolioPositions } from '@/lib/portfolioSimulator';
+
+export interface PortfolioSimulationContext {
+  isApy: boolean;
+  whitelistMerklCampaignIds: ReadonlySet<string>;
+  tydroPointToUsdRate: number;
+  forecastStates: Record<string, MerklForecastWireItem>;
+}
 
 export interface UsePortfolioToggleArgs {
   isPortfolioMode: boolean;
   reserves: ReserveWithSpread[];
   portfolioPositions?: PortfolioPosition[];
   portfolioActions?: PortfolioSimulationActions;
+  simulationContext?: PortfolioSimulationContext;
 }
 
 export interface UsePortfolioToggleResult {
@@ -52,6 +61,7 @@ export const usePortfolioToggle = ({
   reserves,
   portfolioPositions,
   portfolioActions,
+  simulationContext,
 }: UsePortfolioToggleArgs): UsePortfolioToggleResult => {
   // Set of reserveIds currently in the portfolio
   const portfolioReserveIds = useMemo(() => {
@@ -104,7 +114,7 @@ export const usePortfolioToggle = ({
     [portfolioActions, portfolioPositions, portfolioReserveIds],
   );
 
-  // Portfolio results computation (Phase 3)
+  // Portfolio results computation
   const { portfolioResults, portfolioSummary } = useMemo<{
     portfolioResults: PortfolioPositionResult[];
     portfolioSummary: PortfolioSummary;
@@ -112,16 +122,26 @@ export const usePortfolioToggle = ({
     if (!isPortfolioMode || !portfolioPositions || portfolioPositions.length === 0) {
       return { portfolioResults: [], portfolioSummary: aggregatePortfolioSummary([]) };
     }
+    if (simulationContext) {
+      const { results, summary } = simulatePortfolioPositions({
+        positions: portfolioPositions,
+        reserves,
+        isApy: simulationContext.isApy,
+        whitelistMerklCampaignIds: simulationContext.whitelistMerklCampaignIds,
+        tydroPointToUsdRate: simulationContext.tydroPointToUsdRate,
+        forecastStates: simulationContext.forecastStates,
+      });
+      return { portfolioResults: results, portfolioSummary: summary };
+    }
+    // Fallback: simplified calculation (no buildRateSimulationResult)
     const reserveMap = new Map(reserves.map((r) => [getReserveKey(r), r]));
     const results: PortfolioPositionResult[] = portfolioPositions
       .map((pos) => {
         const reserve = reserveMap.get(pos.reserveId);
         const amountUsd = resolvePositionAmountUsd(pos, reserve);
         if (amountUsd <= 0 || !reserve) return null;
-        // Use current reserve APY as baseline (full sim integration in later phase)
         const nativePercent =
           pos.side === 'supply' ? (reserve.supplyApy ?? 0) : (reserve.borrowApy ?? 0);
-        // Sum incentive arrays
         const incentiveArr =
           pos.side === 'supply'
             ? (reserve.supplyIncentives ?? [])
@@ -134,7 +154,7 @@ export const usePortfolioToggle = ({
       portfolioResults: results,
       portfolioSummary: aggregatePortfolioSummary(results),
     };
-  }, [isPortfolioMode, portfolioPositions, reserves]);
+  }, [isPortfolioMode, portfolioPositions, reserves, simulationContext]);
 
   return {
     portfolioReserveIds,
