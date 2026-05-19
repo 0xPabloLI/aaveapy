@@ -60,11 +60,12 @@ export function simulatePortfolioPositions(
 
   const groupMap = new Map<string, PositionGroup>();
   for (const pos of positions) {
-    const reserve = reserveMap.get(pos.reserveId);
+    const key = getReserveKey({ reserveId: pos.reserveId });
+    const reserve = reserveMap.get(key);
     const amountUsd = resolvePositionAmountUsd(pos, reserve);
     if (amountUsd <= 0 || !reserve) continue;
 
-    const existing = groupMap.get(pos.reserveId) ?? {
+    const existing = groupMap.get(key) ?? {
       supplyPositions: [],
       borrowPositions: [],
       supplyUsd: 0,
@@ -78,13 +79,13 @@ export function simulatePortfolioPositions(
       existing.borrowPositions.push(pos);
       existing.borrowUsd += amountUsd;
     }
-    groupMap.set(pos.reserveId, existing);
+    groupMap.set(key, existing);
   }
 
   const results: PortfolioPositionResult[] = [];
 
-  for (const [reserveId, group] of groupMap) {
-    const reserve = reserveMap.get(reserveId);
+  for (const [key, group] of groupMap) {
+    const reserve = reserveMap.get(key);
     if (!reserve) continue;
 
     const reserveRateInput: RateCalcInput | null = hasRateCalcFields(reserve)

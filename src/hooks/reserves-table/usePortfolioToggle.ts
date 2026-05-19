@@ -137,7 +137,7 @@ export const usePortfolioToggle = ({
     const reserveMap = new Map(reserves.map((r) => [getReserveKey(r), r]));
     const results: PortfolioPositionResult[] = portfolioPositions
       .map((pos) => {
-        const reserve = reserveMap.get(pos.reserveId);
+        const reserve = reserveMap.get(getReserveKey({ reserveId: pos.reserveId }));
         const amountUsd = resolvePositionAmountUsd(pos, reserve);
         if (amountUsd <= 0 || !reserve) return null;
         const nativePercent =
