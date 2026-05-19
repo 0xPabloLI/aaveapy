@@ -119,8 +119,8 @@ DO UPDATE SET clicks=EXCLUDED.clicks, impressions=EXCLUDED.impressions,
 ### 3.1 鉴权
 - 新增环境变量 `SEO_ADMIN_TOKEN`（随机 32 字节 hex），**仅存 Railway Secret，不使用 `VITE_` 前缀暴露前端**。
 - 中间件：要求请求头 `X-Admin-Token: <token>`，不匹配返回 401；未配置 `SEO_ADMIN_TOKEN` 返回 503。
-- 前端通过 **Vercel serverless function 或构建时环境变量注入**（非 `VITE_SEO_ADMIN_TOKEN` 打包进 bundle）。
-- 不在 sitemap、加 `robots.txt` Disallow `/admin/`。
+- **前端 BFF（已实现，M4）**：Lovable Cloud Edge Function `seo-proxy`（`supabase/functions/seo-proxy/index.ts`）作为浏览器与 Railway 之间的代理。Edge Function 从 Lovable Cloud secret 读取 `SEO_ADMIN_TOKEN` 并注入 `X-Admin-Token` 头转发到 `${SEO_API_BASE}/seo/*`（默认 staging-api.aaveapy.com/api，可通过 Edge Function env `SEO_API_BASE` 覆盖到 prod）。Token 永不进入浏览器 bundle。
+- 不在 sitemap，已在 `public/robots.txt` 加 `Disallow: /admin/`。
 
 ### 3.2 `GET /api/seo/gsc`
 查询 GSC 每日聚合数据。

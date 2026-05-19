@@ -1,1 +1,4 @@
 project_id = "jgxkqnxmcjvowkcckuuo"
+
+[functions.seo-proxy]
+verify_jwt = false
