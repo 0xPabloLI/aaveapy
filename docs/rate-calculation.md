@@ -275,6 +275,8 @@ hypotheticalTvl = max(0, latestTvl + inputUsd)
 
 1. `campaignApr > 0` → use directly
 2. `pointsPerThousandUsd` present and positive → Tydro points formula (`points × pointToUsdRate × 36.5`)
+
+`safePointToUsdRate` guard: `pointToUsdRate = 0` is **passed through** (user explicitly set $0/INK to zero out rewards); only NaN, Infinity, or negative values fall back to the default rate (1).
 3. `DUTCH_AUCTION` → implied APR from `plannedDaily / latestTvl × 365 × 100`
    (points-to-USD conversion applied only when `pointsPerThousandUsd` field is present;
    non-points campaigns use neutral rate 1)
