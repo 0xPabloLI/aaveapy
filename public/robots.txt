@@ -12,5 +12,6 @@ Allow: /
 
 User-agent: *
 Allow: /
+Disallow: /admin/
 
 Sitemap: https://aaveapy.com/sitemap.xml

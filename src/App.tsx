@@ -21,6 +21,7 @@ const ChainPage = lazy(() => import("./pages/ChainPage"));
 const LandingPT = lazy(() => import("./pages/LandingPT"));
 const LandingFR = lazy(() => import("./pages/LandingFR"));
 const LandingTR = lazy(() => import("./pages/LandingTR"));
+const AdminSeo = lazy(() => import("./pages/AdminSeo"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -63,6 +64,7 @@ const App = () => (
               <Route path="/pt-br" element={<LandingPT />} />
               <Route path="/fr" element={<LandingFR />} />
               <Route path="/tr" element={<LandingTR />} />
+              <Route path="/admin/seo" element={<AdminSeo />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
