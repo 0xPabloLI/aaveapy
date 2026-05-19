@@ -264,7 +264,7 @@ const InkAprCalculator = ({
   }, [currentFdvBillions, isFdvInputFocused]);
   
   useEffect(() => {
-    if (!rateInput || rateInput === '0') {
+    if (!rateInput) {
       const defaultPrice = (DEFAULT_FDV * 1e9) / TOTAL_SUPPLY;
       setRateInput(defaultPrice.toFixed(4));
     }

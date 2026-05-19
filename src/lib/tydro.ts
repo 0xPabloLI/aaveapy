@@ -15,7 +15,8 @@ function parseMerklNumeric(value: unknown): number | undefined {
 }
 
 function safePointToUsdRate(pointToUsdRate: number): number {
-  return Number.isFinite(pointToUsdRate) && pointToUsdRate > 0 ? pointToUsdRate : TYDRO_POINT_TO_USD_RATE;
+  if (!Number.isFinite(pointToUsdRate) || pointToUsdRate < 0) return TYDRO_POINT_TO_USD_RATE;
+  return pointToUsdRate;
 }
 
 const calculateTydroApr = (pointsPerThousandUsd: number, pointToUsdRate = TYDRO_POINT_TO_USD_RATE): number => {
