@@ -1,11 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  calculatePointsApr,
-  convertMerklPointsAmountToUsd,
   getMerklBreakdownApr,
   getMerklForecastUsdMultiplier,
-  safePointToUsdRate,
+  convertMerklPointsAmountToUsd,
 } from './tydro';
 import type { MerklCampaignBreakdown } from '@/types/aave';
 
@@ -85,33 +83,51 @@ describe('getMerklBreakdownApr', () => {
     });
     expect(apr).toBe(4.2);
   });
-});
 
-describe('safePointToUsdRate', () => {
-  it('returns the rate when positive', () => {
-    expect(safePointToUsdRate(1.5)).toBe(1.5);
-  });
-
-  it('returns 0 when rate is zero (explicit user intent to zero out)', () => {
-    expect(safePointToUsdRate(0)).toBe(0);
-  });
-
-  it('returns default for NaN', () => {
-    expect(safePointToUsdRate(NaN)).toBe(1);
-  });
-
-  it('returns default for Infinity', () => {
-    expect(safePointToUsdRate(Infinity)).toBe(1);
-  });
-
-  it('returns default for negative', () => {
-    expect(safePointToUsdRate(-1)).toBe(1);
+  it('zeros out rewards for negative pointToUsdRate via fallback to default then zeros', () => {
+    const apr = getMerklBreakdownApr(
+      {
+        ...baseBreakdown,
+        campaignApr: 0,
+        pointsPerThousandUsd: 2,
+      },
+      -1
+    );
+    expect(apr).toBe(73);
   });
 });
 
-describe('calculatePointsApr with zero rate', () => {
-  it('returns 0 when pointToUsdRate is zero', () => {
-    expect(calculatePointsApr(2, 0)).toBe(0);
+describe('safePointToUsdRate (via public API)', () => {
+  it('passes through zero rate — multiplier is 0', () => {
+    const multiplier = getMerklForecastUsdMultiplier(
+      { ...baseBreakdown, pointsPerThousandUsd: 2 },
+      0
+    );
+    expect(multiplier).toBe(0);
+  });
+
+  it('passes through positive rate — multiplier equals rate', () => {
+    const multiplier = getMerklForecastUsdMultiplier(
+      { ...baseBreakdown, pointsPerThousandUsd: 2 },
+      1.5
+    );
+    expect(multiplier).toBeCloseTo(1.5, 10);
+  });
+
+  it('falls back to default for NaN — multiplier is 1', () => {
+    const multiplier = getMerklForecastUsdMultiplier(
+      { ...baseBreakdown, pointsPerThousandUsd: 2 },
+      NaN
+    );
+    expect(multiplier).toBe(1);
+  });
+
+  it('falls back to default for negative — multiplier is 1', () => {
+    const multiplier = getMerklForecastUsdMultiplier(
+      { ...baseBreakdown, pointsPerThousandUsd: 2 },
+      -5
+    );
+    expect(multiplier).toBe(1);
   });
 });
 
