@@ -462,7 +462,7 @@ describe('buildRateSimulationResult', () => {
           breakdowns: [
             {
               campaignApr: 0,
-              campaignStartedAt: '2020-03-24T14:00:00.000Z',
+              campaignStartedAt: '2026-03-24T14:00:00.000Z',
               campaignEndedAt: '2099-03-31T14:00:00.000Z',
               campaignId: '16403393592832236981',
               campaignType: 'DUTCH_AUCTION',
@@ -515,7 +515,7 @@ describe('buildRateSimulationResult', () => {
           breakdowns: [
             {
               campaignApr: 0,
-              campaignStartedAt: '2020-03-24T14:00:00.000Z',
+              campaignStartedAt: '2026-03-24T14:00:00.000Z',
               campaignEndedAt: '2099-03-31T14:00:00.000Z',
               campaignId: '16403393592832236981',
               campaignType: 'DUTCH_AUCTION',
