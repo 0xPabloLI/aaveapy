@@ -83,8 +83,8 @@ export function simulatePortfolioPositions(
 
   const results: PortfolioPositionResult[] = [];
 
-  for (const [reserveKey, group] of groupMap) {
-    const reserve = reserveMap.get(reserveKey);
+  for (const [reserveId, group] of groupMap) {
+    const reserve = reserveMap.get(reserveId);
     if (!reserve) continue;
 
     const reserveRateInput: RateCalcInput | null = hasRateCalcFields(reserve)
