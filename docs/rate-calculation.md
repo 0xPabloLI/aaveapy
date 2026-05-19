@@ -635,6 +635,52 @@ This section groups cap / ceiling semantics for Merit, Merkl, and Brevis.
 - `src/lib/brevisForecast.ts` – Brevis per-user reward cap forecast
 - `src/lib/tydro.ts` – Tydro points-to-USD conversion
 - `src/hooks/useRateSimulation.ts` – React hook: native simulation + incentive forecast overlay; `buildSupplyUsdAccrualSide` / `buildBorrowUsdAccrualSide` for USD/day
+- `src/lib/portfolioSimulator.ts` – Portfolio mode: groups positions by reserve, calls buildRateSimulationResult per group with supply+borrow USD, Hub aggregation, fallback to static APY
+- `src/hooks/reserves-table/usePortfolioToggle.ts` – Portfolio toggle handler; optional `simulationContext` param bridges full rate simulation into portfolio mode; fallback uses reserve.supplyApy/borrowApy + sum incentives
 - `src/lib/formatters.ts` – Display formatting; `annualPercentToDailyFraction` (APY compound vs APR-linear dailyization)
 - `docs/frontend-data-loading-matrix.md` – Data loading architecture
 - `docs/design/frontend-interaction-guardrails.md` – Interaction design guardrails
+
+---
+
+## Part 5: Portfolio Mode Rate Simulation
+
+Source: `src/lib/portfolioSimulator.ts`
+
+Portfolio mode (Batch toggle) computes per-position APR by reusing the same `buildRateSimulationResult` pipeline as single-reserve simulation, with supply+borrow on the same reserve **grouped** into a single call.
+
+### Grouping
+
+Positions are grouped by `getReserveKey(reserve)` (= `reserveId.trim()`). Same-reserve supply + borrow positions are merged; same side positions have their USD amounts summed.
+
+### Per-group simulation
+
+For each group:
+
+1. **deep-copy**: `reserveRateInput = hasRateCalcFields(reserve) ? { ...reserve } : null`
+2. **Hub aggregation** (v4): if `reserve.hubId`, lookup `hubAggregationMap.get(getHubAssetKey(reserve))` and overwrite `reserveRateInput.borrowed`, `.hubBorrowed`, `.hubSupplied`
+3. **Call `buildRateSimulationResult`** with `supplyInput = String(supplyUsd)`, `borrowInput = String(borrowUsd)`, `inputMode: 'usd'`, `meritMerklNetPosition` defaults to `true`
+4. **Extract per-position APR**: `afterNative ?? currentNative ?? reserve.supplyApy ?? 0` (supply) / analogous for borrow; `afterIncentive ?? currentIncentive ?? 0`
+5. **Build `PortfolioPositionResult`** via `buildPortfolioPositionResult`
+
+### Fallback (simplified calculation)
+
+When `simulationContext` is not provided, or a reserve lacks rate calc fields:
+
+- `nativePercent = reserve.supplyApy / borrowApy` (backend static value)
+- `incentivePercent = sum(reserve.supplyIncentives / borrowIncentives)` (raw array sum, no forecast)
+
+This matches the pre-Phase-2 behavior exactly.
+
+### `simulationContext` fields
+
+| Field | Source | Role |
+|-------|--------|------|
+| `isApy` | AprApyToggle | APY compounding vs APR display |
+| `whitelistMerklCampaignIds` | scenario strip | Merkl whitelist-only campaign opt-in |
+| `tydroPointToUsdRate` | side-data | Tydro points→USD conversion |
+| `forecastStates` | side-data | Merkl 10-min metrics for forecast |
+
+### Hub aggregation in Portfolio
+
+Same semantics as single-reserve `useSharedRateSimulations`: `hubBorrowed`/`hubSupplied` replace per-Spoke `borrowed`/`supplied` on the deep-copy, affecting both `simulateNativeRatesAfterActions` (utilization denominator) and `getMeritAnchorTvlUsd` (Merit anchor TVL). Multiple positions on the same reserve share one Hub-overwritten `reserveRateInput`, so no double-counting.

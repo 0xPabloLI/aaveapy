@@ -780,3 +780,20 @@ The mobile `ReservesTable` component ends with a bottom padding that reserves sp
 - **Filter order in `Index.tsx`**: search → market → hub → category. Hub filter is independent of market filter; both are separate state arrays (`selectedMarkets`, `selectedHubs`).
 - **Switching to hub view mode clears market selection**, and vice versa. The "All" chip clears both.
 - **Pinning helpers still use market-specific naming**: a future refactor should generalize to filter-agnostic naming, but this is cosmetic, not blocking.
+
+## F. Portfolio Mode Simulation (Batch Toggle)
+
+### simulationContext
+
+When `simulationMode === 'portfolio'`, `ReservesTable` builds a `PortfolioSimulationContext` (`useMemo`) from `{ isApy, whitelistMerklCampaignIds, tydroPointToUsdRate, forecastStates }` and passes it to `usePortfolioToggle`. These controls **follow the same scenario-strip state** as single-reserve simulation — APR/APY toggle, Merkl whitelist, and forecast data are shared, not portfolio-specific.
+
+### Full simulation vs Fallback
+
+- **Full simulation** (`simulationContext` provided + reserve has rate calc fields): per-position APR comes from `buildRateSimulationResult`. Same-reserve supply+borrow positions are grouped into a single call, producing **coupled** rate changes (borrow increases utilization → supply rate rises).
+- **Fallback** (no `simulationContext`, or reserve lacks rate calc fields): per-position APR uses `reserve.supplyApy/borrowApy` + sum of `reserve.supplyIncentives/borrowIncentives`. These are **static backend values** with no scenario coupling and no forecast.
+
+The fallback path is **user-visible** when a reserve lacks on-chain rate model data. The displayed APR will not respond to scenario input changes on that reserve. This matches pre-Phase-2 behavior.
+
+### Hub aggregation (v4)
+
+Portfolio simulation uses the same `hubAggregationMap` as single-reserve simulation. Per-reserve `reserveRateInput` is a shallow copy (`{ ...reserve }`) with `hubBorrowed`/`hubSupplied` overwritten. Multiple positions on the same reserve share one Hub-overwritten copy — no double-counting.
