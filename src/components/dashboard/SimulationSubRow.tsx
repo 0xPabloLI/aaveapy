@@ -2,6 +2,7 @@ import { Fragment, useRef, useState, useEffect } from 'react';
 import { AlertTriangle, Ban, ExternalLink, PauseCircle, Snowflake } from 'lucide-react';
 import {
   annualPercentToDailyFraction,
+  formatForecastUnavailableLabel,
   formatPercent,
   formatScenarioSize,
   formatScenarioSizeDelta,
@@ -1516,7 +1517,12 @@ const SimulationSubRow = ({
             <p className="ds-text-11 text-muted-foreground">Price unavailable for {reserve.tokenSymbol}; using current supply for forecast.</p>
           )}
           {!simulation.forecastLoading && simulation.forecastUnavailableCampaignCount > 0 && (
-            <p className="ds-text-11 text-muted-foreground">Some Merkl campaigns have no forecast; using current APR.</p>
+            <p className="ds-text-11 text-muted-foreground">
+              {formatForecastUnavailableLabel(
+                simulation.forecastUnavailableCampaignIds,
+                simulation.forecastUnavailableCampaignCount,
+              )}
+            </p>
           )}
         </div>
       )}

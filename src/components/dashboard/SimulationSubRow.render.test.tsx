@@ -50,6 +50,7 @@ const baseSimulation: RateSimulationResult = {
   forecastLoading: false,
   forecastErrors: {},
   forecastUnavailableCampaignCount: 0,
+  forecastUnavailableCampaignIds: [],
   scenarioUsdAccrual: null,
   supply: {
     currentNative: 2.1,
@@ -308,5 +309,59 @@ describe('SimulationSubRow — href link rendering (regression from cac7eef)', (
   it('TC-LINK-04: rows without href render as <span>, not <a>', () => {
     const html = renderDesktop({ ...baseReserve });
     expect(html).toContain('<span');
+  });
+});
+
+describe('SimulationSubRow — forecast unavailable campaign IDs', () => {
+  it('TC-F01: displays campaign IDs when forecast unavailable', () => {
+    const sim: RateSimulationResult = {
+      ...baseSimulation,
+      forecastUnavailableCampaignCount: 2,
+      forecastUnavailableCampaignIds: ['123', '456'],
+    };
+    const html = renderToString(
+      <QueryClientProvider client={new QueryClient()}>
+        <TooltipProvider>
+          <SimulationSubRow
+            reserve={baseReserve}
+            simulation={sim}
+            isApy={false}
+            tydroPointToUsdRate={0}
+            whitelistMerklCampaignIds={new Set()}
+            forecastStates={{}}
+          />
+        </TooltipProvider>
+      </QueryClientProvider>,
+    );
+    expect(html).toContain('#123');
+    expect(html).toContain('#456');
+    expect(html).toContain('without forecast');
+  });
+
+  it('TC-F02: truncates after 3 campaign IDs with +N more', () => {
+    const sim: RateSimulationResult = {
+      ...baseSimulation,
+      forecastUnavailableCampaignCount: 5,
+      forecastUnavailableCampaignIds: ['1', '2', '3', '4', '5'],
+    };
+    const html = renderToString(
+      <QueryClientProvider client={new QueryClient()}>
+        <TooltipProvider>
+          <SimulationSubRow
+            reserve={baseReserve}
+            simulation={sim}
+            isApy={false}
+            tydroPointToUsdRate={0}
+            whitelistMerklCampaignIds={new Set()}
+            forecastStates={{}}
+          />
+        </TooltipProvider>
+      </QueryClientProvider>,
+    );
+    expect(html).toContain('#1');
+    expect(html).toContain('#2');
+    expect(html).toContain('#3');
+    expect(html).toContain('+2 more');
+    expect(html).not.toContain('#4');
   });
 });

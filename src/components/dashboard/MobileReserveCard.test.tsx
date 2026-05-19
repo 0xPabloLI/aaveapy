@@ -61,6 +61,7 @@ const simulation: RateSimulationResult = {
   forecastLoading: false,
   forecastErrors: {},
   forecastUnavailableCampaignCount: 0,
+  forecastUnavailableCampaignIds: [],
   scenarioUsdAccrual: null,
   supply: {
     currentNative: 2.1,

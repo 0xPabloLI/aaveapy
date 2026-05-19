@@ -236,6 +236,8 @@ export interface RateSimulationComputedResult {
   };
   marketMetrics: MarketMetrics;
   forecastUnavailableCampaignCount: number;
+  /** Campaign IDs that are active but have no forecast state available. */
+  forecastUnavailableCampaignIds: string[];
   /** Present when at least one side has scenario principal; uses after-simulation rates. */
   scenarioUsdAccrual: ScenarioUsdAccrual | null;
 }
@@ -1468,14 +1470,16 @@ export function buildRateSimulationResult({
   const utilizationCurrent = currentNativeSimulation?.utilizationRatePercent ?? null;
   const utilizationAfter = combinedNativeSimulation?.utilizationRatePercent ?? null;
   const utilizationOptimal = currentNativeSimulation?.optimalUtilizationPercent ?? null;
-  const forecastUnavailableCampaignCount = hasAnyInput
+  const allActiveCampaignIds = hasAnyInput
     ? Array.from(
         new Set([
           ...collectActiveCampaignIds(reserve.merklSupplys),
           ...collectActiveCampaignIds(reserve.merklBorrows),
         ])
-      ).filter((id) => !forecastStates[id]).length
-    : 0;
+      )
+    : [];
+  const forecastUnavailableCampaignIds = allActiveCampaignIds.filter((id) => !forecastStates[id]);
+  const forecastUnavailableCampaignCount = forecastUnavailableCampaignIds.length;
 
   const deriveTotalBorrowedUsd = (
     reserveSizeUsd: number | null | undefined,
@@ -1657,6 +1661,7 @@ export function buildRateSimulationResult({
     },
     marketMetrics,
     forecastUnavailableCampaignCount,
+    forecastUnavailableCampaignIds,
     scenarioUsdAccrual,
   };
 }
