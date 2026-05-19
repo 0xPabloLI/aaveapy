@@ -15,7 +15,12 @@ function parseMerklNumeric(value: unknown): number | undefined {
 }
 
 function safePointToUsdRate(pointToUsdRate: number): number {
-  if (!Number.isFinite(pointToUsdRate) || pointToUsdRate < 0) return TYDRO_POINT_TO_USD_RATE;
+  if (!Number.isFinite(pointToUsdRate) || pointToUsdRate < 0) {
+    if (import.meta.env.DEV) {
+      console.warn('[safePointToUsdRate] invalid pointToUsdRate:', pointToUsdRate, '— falling back to default', TYDRO_POINT_TO_USD_RATE);
+    }
+    return TYDRO_POINT_TO_USD_RATE;
+  }
   return pointToUsdRate;
 }
 
