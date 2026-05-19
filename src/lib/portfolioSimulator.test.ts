@@ -73,37 +73,42 @@ const baseSimArgs = (
 });
 
 describe('simulatePortfolioPositions', () => {
-  it('v3: supply+borrow on same reserve triggers rate coupling', () => {
+  it('v3: borrow increases utilization → supply afterNative rises', () => {
     const reserve = makeRateCalcReserve();
-    const positions = [
-      makePosition({
-        positionId: 'p-sup',
-        side: 'supply',
-        amount: '10000',
-      }),
-      makePosition({
-        positionId: 'p-bor',
-        side: 'borrow',
-        amount: '5000',
-      }),
+    const basePositions = [
+      makePosition({ positionId: 'p-sup', side: 'supply', amount: '10000' }),
     ];
-    const args = baseSimArgs({
-      positions,
-      reserves: [reserve],
-    });
-    const { results } = simulatePortfolioPositions(args);
-    expect(results).toHaveLength(2);
-    const supplyResult = results.find((r) => r.side === 'supply');
-    const borrowResult = results.find((r) => r.side === 'borrow');
-    expect(supplyResult).toBeDefined();
-    expect(borrowResult).toBeDefined();
-    expect(supplyResult!.nativePercent).toBeGreaterThan(0);
-    expect(borrowResult!.nativePercent).toBeGreaterThan(0);
-    expect(supplyResult!.amountUsd).toBe(10000);
-    expect(borrowResult!.amountUsd).toBe(5000);
+    const withBorrow = [
+      makePosition({ positionId: 'p-sup', side: 'supply', amount: '10000' }),
+      makePosition({ positionId: 'p-bor', side: 'borrow', amount: '5000' }),
+    ];
+    const baseArgs = baseSimArgs({ positions: basePositions, reserves: [reserve] });
+    const coupledArgs = baseSimArgs({ positions: withBorrow, reserves: [reserve] });
+    const baseResult = simulatePortfolioPositions(baseArgs);
+    const coupledResult = simulatePortfolioPositions(coupledArgs);
+    const baseSupply = baseResult.results.find((r) => r.side === 'supply')!;
+    const coupledSupply = coupledResult.results.find((r) => r.side === 'supply')!;
+    expect(coupledSupply.nativePercent).toBeGreaterThan(baseSupply.nativePercent);
   });
 
-  it('v4 Hub: hubAggregationMap influences utilization', () => {
+  it('v3: borrow increases utilization → borrow afterNative rises', () => {
+    const reserve = makeRateCalcReserve();
+    const smallBorrow = [
+      makePosition({ positionId: 'p-bor', side: 'borrow', amount: '1000' }),
+    ];
+    const largeBorrow = [
+      makePosition({ positionId: 'p-bor', side: 'borrow', amount: '10000' }),
+    ];
+    const smallArgs = baseSimArgs({ positions: smallBorrow, reserves: [reserve] });
+    const largeArgs = baseSimArgs({ positions: largeBorrow, reserves: [reserve] });
+    const smallResult = simulatePortfolioPositions(smallArgs);
+    const largeResult = simulatePortfolioPositions(largeArgs);
+    expect(largeResult.results[0].nativePercent).toBeGreaterThan(
+      smallResult.results[0].nativePercent,
+    );
+  });
+
+  it('v4 Hub: hubAggregationMap raises supply rate vs per-spoke baseline', () => {
     const reserve = makeRateCalcReserve({
       reserveId: 'r-usdc-v4',
       hubId: 'hub-usdc',
@@ -113,33 +118,19 @@ describe('simulatePortfolioPositions', () => {
     const hubAggregationMap = new Map([
       [
         'hub-usdc:0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
-        { hubBorrowed: '30000000000000', hubSupplied: '60000000000000' },
+        { hubBorrowed: '40000000000000', hubSupplied: '60000000000000' },
       ],
     ]);
     const positions = [
-      makePosition({
-        positionId: 'p-sup',
-        reserveId: 'r-usdc-v4',
-        side: 'supply',
-        amount: '10000',
-      }),
-      makePosition({
-        positionId: 'p-bor',
-        reserveId: 'r-usdc-v4',
-        side: 'borrow',
-        amount: '5000',
-      }),
+      makePosition({ positionId: 'p-sup', reserveId: 'r-usdc-v4', side: 'supply', amount: '10000' }),
     ];
-    const args = baseSimArgs({
-      positions,
-      reserves: [reserve],
-      hubAggregationMap,
-    });
-    const { results } = simulatePortfolioPositions(args);
-    expect(results.length).toBeGreaterThanOrEqual(1);
-    const supplyResult = results.find((r) => r.side === 'supply');
-    expect(supplyResult).toBeDefined();
-    expect(supplyResult!.nativePercent).toBeGreaterThan(0);
+    const perSpokeArgs = baseSimArgs({ positions, reserves: [reserve] });
+    const hubArgs = baseSimArgs({ positions, reserves: [reserve], hubAggregationMap });
+    const perSpokeResult = simulatePortfolioPositions(perSpokeArgs);
+    const hubResult = simulatePortfolioPositions(hubArgs);
+    const perSpokeSupply = perSpokeResult.results.find((r) => r.side === 'supply')!;
+    const hubSupply = hubResult.results.find((r) => r.side === 'supply')!;
+    expect(hubSupply.nativePercent).toBeGreaterThan(perSpokeSupply.nativePercent);
   });
 
   it('fallback: reserve without rate calc fields uses baseline APY', () => {
