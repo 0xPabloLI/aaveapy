@@ -167,6 +167,7 @@ export const MarketsResponseSchema = z.object({
     lastUpdated: z.string(),
     version: z.string().optional(),
     staleTimeMs: z.number().optional(),
+    schemaFingerprint: z.string().optional(),
   }),
   reserves: z.array(ReserveWithSpreadSchema),
 });

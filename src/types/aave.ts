@@ -172,6 +172,7 @@ export interface MarketsResponse {
     lastUpdated: string;
     version?: string;
     staleTimeMs?: number;
+    schemaFingerprint?: string; // Hash of API response field names; changes when shape changes
   };
   reserves: ReserveWithSpread[];
 }

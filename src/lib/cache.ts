@@ -1,4 +1,5 @@
 import { MarketsResponse } from '@/types/aave';
+import { SCHEMA_FP } from '@/shared/schema-fingerprint';
 
 const CACHE_KEYS = {
   MARKETS: 'aave-markets-cache',
@@ -12,13 +13,25 @@ const CACHE_KEYS = {
 
 const LEGACY_CACHE_KEYS = ['aave-markets-list-cache'] as const;
 
-// Bump cache version when schema changes.
-const CACHE_VERSION = '1.2.0';
+// Bump this when you need to force cache invalidation for reasons
+// that don't change the API shape (value format change, data fix, etc).
+// When the API shape changes, SCHEMA_FP handles it automatically.
+const CACHE_VERSION = '1';
+
+// Effective fingerprint = schema fingerprint + manual version.
+// Either one changing invalidates all cached entries.
+const effectiveFp = `${SCHEMA_FP}:${CACHE_VERSION}`;
+
+// Separate key for the effective fingerprint received from the latest
+// API response. Acts as a lazy-updated reference for runtime drift
+// detection (e.g. backend deployed but frontend not yet rebuilt).
+const SCHEMA_FP_KEY = 'aave-schema-fingerprint';
 
 interface CacheEntry<T> {
   data: T;
   timestamp: string;
-  version: string;
+  /** Effective fingerprint (SCHEMA_FP:CACHE_VERSION) at write time. */
+  fp: string;
 }
 
 export interface CachedPayload<T> {
@@ -42,15 +55,28 @@ function getCacheEntry<T>(key: string): CachedPayload<T> | null {
     const cached = localStorage.getItem(key);
     if (!cached) return null;
 
-    const entry: CacheEntry<T> = JSON.parse(cached);
+    const raw = JSON.parse(cached);
+    if (!raw || typeof raw !== 'object') return null;
 
-    // Check version compatibility
-    if (entry.version !== CACHE_VERSION) {
+    // Backward compat: entries with 'version' (pre-fingerprint) → keep as-is
+    if ('version' in raw && !('fp' in raw)) {
+      return toCachedPayload({ data: raw.data, timestamp: raw.timestamp, fp: 'legacy' });
+    }
+
+    // Primary check: baked-in effective fingerprint (immediate on deploy)
+    if (raw.fp && raw.fp !== effectiveFp) {
       localStorage.removeItem(key);
       return null;
     }
 
-    return toCachedPayload(entry);
+    // Secondary check: stored fingerprint (lazy, updated from API responses)
+    const storedFp = localStorage.getItem(SCHEMA_FP_KEY);
+    if (storedFp && raw.fp && raw.fp !== storedFp) {
+      localStorage.removeItem(key);
+      return null;
+    }
+
+    return toCachedPayload(raw as CacheEntry<T>);
   } catch (error) {
     console.warn(`Failed to read cache for ${key}:`, error);
     return null;
@@ -63,9 +89,11 @@ function setCacheEntry<T>(key: string, data: T): void {
     const entry: CacheEntry<T> = {
       data,
       timestamp: new Date().toISOString(),
-      version: CACHE_VERSION,
+      fp: effectiveFp,
     };
     localStorage.setItem(key, JSON.stringify(entry));
+    // Keep the lazy fingerprint key in sync for the secondary check
+    localStorage.setItem(SCHEMA_FP_KEY, effectiveFp);
   } catch (error) {
     console.warn(`Failed to write cache for ${key}:`, error);
   }
