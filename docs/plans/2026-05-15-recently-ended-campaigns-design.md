@@ -26,7 +26,6 @@
   └── 过期 campaign：按 (opportunity, campaignType) 去重，只保留最近一条过期
        ↓
 前端 Zod 解析（MeritIncentive / MerklCampaignBreakdown / BrevisIncentive）
-  ├── 过期 campaign 含 _isExpired: true 标记（后端序列化时附加）
        ↓
 isCampaignActive(startDate, endDate, Date.now()) → 只保留 nowMs <= endMs
        ↓
@@ -36,11 +35,10 @@ APY 汇总 / IncentiveTooltip 渲染 / 模拟面板 → 只展示活跃的
 
 ### 2.1a 后端数据契约
 
-后端 `change-detection-and-incentive-normalization.md` 定义了：
+后端 `change-detection-and-incentive-normalization.md` 定义了过期数据范围：
 
 - **数据范围**：Merkl LIVE opportunities 中的过期 campaign，按 `(opportunity, campaignType)` 去重，只保留最近一条过期（121 → ~25 条）
-- **标记字段**：序列化时对 `endDate < now` 的 campaign 附加 `_isExpired: true`
-- **APY 排除**：后端/前端 `sum()` 时排除 `_isExpired` 条目
+- **APY 排除**：后端 `sum()` 时排除过期条目（`endDate < now`）
 - **Merit / Brevis**：同理，保留最近一条过期的 round/campaign
 
 前端收到的过期数据是**精选过的**（每个来源类型只保留最近一条过期），不是全量。
@@ -94,11 +92,9 @@ export const isCampaignActive = (startDate, endDate, nowMs = Date.now(), allowOp
 
 默认展示 **过去 7 天**内结束的 campaign。
 
-过期判断策略：**`_isExpired` 优先，endDate 兜底**。
+直接用 `endDate` / `campaignEndedAt` 判断：`endMs >= nowMs - 7 * 86400000 && endMs < nowMs`。
 
-- 主路径：后端已标记 `_isExpired: true` → 直接纳入最近过期集合
-- 兜底路径：后端未标记 → 用 `endDate / campaignEndedAt` 自己算（兼容后端未升级或过渡期）
-- 安全阀：即使 `_isExpired = true`，如果 `endDate` 超出 7 天窗口，也排除（防止后端发来太旧的）
+`_isExpired` 是后端序列化时的辅助标记，前端已有 `endDate` 可直接判断，不需依赖该字段。
 
 阈值写为组件常量，后续可调。
 
@@ -180,37 +176,16 @@ export const isCampaignActive = (startDate, endDate, nowMs = Date.now(), allowOp
 
 ## 5. 核心函数设计
 
-### 5.1 `isRecentlyEnded(campaign, nowMs?, lookbackDays?)` — `src/lib/recentlyEndedCampaigns.ts`
+### 5.1 `isRecentlyEnded(endDate, nowMs?, lookbackDays?)` — `src/lib/recentlyEndedCampaigns.ts`
 
 ```typescript
 const DEFAULT_LOOKBACK_DAYS = 7;
 
-/**
- * 判断 campaign 是否在最近 N 天内结束。
- *
- * 策略：主路径用后端 _isExpired 标记，兜底用 endDate 自行计算。
- */
 export function isRecentlyEnded(
-  campaign: {
-    _isExpired?: boolean;
-    endDate?: string;       // Merit: endDate
-    campaignEndedAt?: string; // Merkl/Brevis: campaignEndedAt
-  },
+  endDate: string | undefined,
   nowMs: number = Date.now(),
   lookbackDays: number = DEFAULT_LOOKBACK_DAYS,
 ): boolean {
-  // 主路径：后端标记了 _isExpired
-  if (campaign._isExpired === true) {
-    // 安全阀：仍需 endDate 在 7 天窗口内
-    const endDate = campaign.endDate ?? campaign.campaignEndedAt;
-    const endMs = parseCampaignBoundaryMs(endDate, 'end');
-    if (endMs === null) return true;  // 无 endDate 但有标记 → 信任后端
-    const thresholdMs = nowMs - lookbackDays * 86400000;
-    return endMs >= thresholdMs;
-  }
-
-  // 兜底路径：后端未标记，自己用 endDate 算
-  const endDate = campaign.endDate ?? campaign.campaignEndedAt;
   const endMs = parseCampaignBoundaryMs(endDate, 'end');
   if (endMs === null) return false;
   const thresholdMs = nowMs - lookbackDays * 86400000;
@@ -237,10 +212,10 @@ export function collectRecentlyEndedCampaigns(
 ): RecentlyEndedSource[];
 ```
 
-内部按 Merit / Merkl breakdowns / Brevis breakdowns 三类分别调用 `isRecentlyEnded()`：
-- Merit：取 `reserve.meritSupplys` / `reserve.meritBorrows`，传入 `{ _isExpired, endDate }`
-- Merkl：遍历 group，过滤 breakdowns，传入 `{ _isExpired, campaignEndedAt }`
-- Brevis：遍历 incentives，过滤 breakdowns，传入 `{ _isExpired, campaignEndedAt }`
+内部按 Merit / Merkl breakdowns / Brevis breakdowns 三类分别过滤：
+- Merit：取 `reserve.meritSupplys` / `reserve.meritBorrows`，用 `endDate` 判断
+- Merkl：遍历 group，过滤 breakdowns，用 `campaignEndedAt` 判断
+- Brevis：遍历 incentives，过滤 breakdowns，用 `campaignEndedAt` 判断
 
 ---
 
@@ -310,12 +285,9 @@ function RecentlyEndedSection({ reserve, supplyOrBorrow }: {
 
 ### 9.1 `recentlyEndedCampaigns.test.ts`
 
-- `isRecentlyEnded` — `_isExpired=true` + 3 天前结束 → true
-- `isRecentlyEnded` — `_isExpired=true` + 30 天前结束（超出窗口） → false
-- `isRecentlyEnded` — `_isExpired=true` + 无 endDate → true（信任后端标记）
-- `isRecentlyEnded` — `_isExpired` 缺失 + 刚好 7 天前结束 → true（兜底路径）
-- `isRecentlyEnded` — `_isExpired` 缺失 + 8 天前结束 → false
-- `isRecentlyEnded` — `_isExpired` 缺失 + 无 endDate → false
+- `isRecentlyEnded` — 刚好 7 天前结束 → true
+- `isRecentlyEnded` — 8 天前结束 → false
+- `isRecentlyEnded` — 无 endDate → false
 - `isRecentlyEnded` — 未来日期 → false
 - `collectRecentlyEndedCampaigns` — 混合活跃 + 过期 → 只返回过期且在窗口内的
 - `collectRecentlyEndedCampaigns` — 空 reserve → 空数组
