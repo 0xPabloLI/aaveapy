@@ -187,3 +187,49 @@ describe('generateOpenApiDocument', () => {
     expect(errorCode?.enum).toEqual(['MARKETS_SNAPSHOT_NOT_READY', 'MARKETS_SNAPSHOT_STALE']);
   });
 });
+
+describe('Architecture guard: all GET endpoints must define 429 and 503 responses', () => {
+  it('every GET endpoint has 429 with Retry-After header', () => {
+    const doc = generateOpenApiDocument();
+    const paths = doc.paths as Record<string, unknown>;
+    const violations: string[] = [];
+
+    for (const [pathKey, pathObj] of Object.entries(paths ?? {})) {
+      const get = (pathObj as Record<string, unknown>)?.get as Record<string, unknown>;
+      if (!get) continue;
+      const responses = get.responses as Record<string, unknown>;
+      const r429 = responses?.['429'] as Record<string, unknown>;
+      if (!r429) {
+        violations.push(`${pathKey} missing 429`);
+        continue;
+      }
+      const retryAfter = (r429.headers as Record<string, unknown>)?.['Retry-After'];
+      if (!retryAfter) violations.push(`${pathKey} 429 missing Retry-After header`);
+    }
+
+    expect(violations, `Endpoints missing 429/Retry-After: ${violations.join(', ')}`).toEqual([]);
+  });
+
+  it('every GET endpoint has 503 with Retry-After header and error body $ref', () => {
+    const doc = generateOpenApiDocument();
+    const paths = doc.paths as Record<string, unknown>;
+    const violations: string[] = [];
+
+    for (const [pathKey, pathObj] of Object.entries(paths ?? {})) {
+      const get = (pathObj as Record<string, unknown>)?.get as Record<string, unknown>;
+      if (!get) continue;
+      const responses = get.responses as Record<string, unknown>;
+      const r503 = responses?.['503'] as Record<string, unknown>;
+      if (!r503) {
+        violations.push(`${pathKey} missing 503`);
+        continue;
+      }
+      const retryAfter = (r503.headers as Record<string, unknown>)?.['Retry-After'];
+      if (!retryAfter) violations.push(`${pathKey} 503 missing Retry-After header`);
+      const schema = (r503?.content?.['application/json'] as Record<string, unknown>)?.schema as Record<string, unknown>;
+      if (!schema?.$ref) violations.push(`${pathKey} 503 missing error body $ref`);
+    }
+
+    expect(violations, `Endpoints missing 503/error body: ${violations.join(', ')}`).toEqual([]);
+  });
+});
