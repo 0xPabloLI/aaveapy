@@ -57,6 +57,7 @@ describe('generateOpenApiDocument', () => {
     expect(schemas).toBeDefined();
     const keys = Object.keys(schemas ?? {});
     expect(keys).toContain('MarketsResponse');
+    expect(keys).toContain('MarketsErrorResponse');
     expect(keys).toContain('SideDataMetaResponse');
     expect(keys).toContain('Reserve');
     expect(keys).toContain('MeritIncentive');
@@ -125,5 +126,51 @@ describe('generateOpenApiDocument', () => {
       ?.content?.['application/json']?.schema as Record<string, unknown>;
     expect(getSide?.$ref).toBe('#/components/schemas/SideDataMetaResponse');
     expect(getSide?.type).toBeUndefined();
+  });
+
+  it('/markets defines 429 rate-limit response with Retry-After header', () => {
+    const doc = generateOpenApiDocument();
+    const getMarkets = ((doc.paths as Record<string, unknown>)?.['/markets'] as Record<string, unknown>)?.get as Record<string, unknown>;
+    const r429 = (getMarkets?.responses as Record<string, unknown>)?.['429'] as Record<string, unknown>;
+
+    expect(r429).toBeDefined();
+    expect(r429.description).toContain('120 requests/min');
+    const retryAfter = (r429.headers as Record<string, unknown>)?.['Retry-After'] as Record<string, unknown>;
+    expect(retryAfter).toBeDefined();
+    expect((retryAfter?.schema as Record<string, unknown>)?.type).toBe('integer');
+  });
+
+  it('/markets defines 503 response with Retry-After header and MarketsErrorResponse $ref', () => {
+    const doc = generateOpenApiDocument();
+    const getMarkets = ((doc.paths as Record<string, unknown>)?.['/markets'] as Record<string, unknown>)?.get as Record<string, unknown>;
+    const r503 = (getMarkets?.responses as Record<string, unknown>)?.['503'] as Record<string, unknown>;
+
+    expect(r503).toBeDefined();
+    expect(r503.description).toContain('data not ready');
+    const retryAfter = (r503.headers as Record<string, unknown>)?.['Retry-After'] as Record<string, unknown>;
+    expect(retryAfter).toBeDefined();
+    const schema = (r503?.content?.['application/json'] as Record<string, unknown>)?.schema as Record<string, unknown>;
+    expect(schema?.$ref).toBe('#/components/schemas/MarketsErrorResponse');
+  });
+
+  it('/meta/side-data defines 429 rate-limit response with Retry-After header', () => {
+    const doc = generateOpenApiDocument();
+    const getSide = ((doc.paths as Record<string, unknown>)?.['/meta/side-data'] as Record<string, unknown>)?.get as Record<string, unknown>;
+    const r429 = (getSide?.responses as Record<string, unknown>)?.['429'] as Record<string, unknown>;
+
+    expect(r429).toBeDefined();
+    expect(r429.description).toContain('120 requests/min');
+    const retryAfter = (r429.headers as Record<string, unknown>)?.['Retry-After'] as Record<string, unknown>;
+    expect(retryAfter).toBeDefined();
+  });
+
+  it('MarketsErrorResponse schema has errorCode enum with stale/not-ready codes', () => {
+    const doc = generateOpenApiDocument();
+    const schemas = (doc.components as Record<string, unknown>)?.schemas as Record<string, unknown>;
+    const errSchema = schemas?.MarketsErrorResponse as Record<string, unknown>;
+    expect(errSchema).toBeDefined();
+    const errorCode = (errSchema?.properties as Record<string, unknown>)?.errorCode as Record<string, unknown>;
+    expect(errorCode?.type).toBe('string');
+    expect(errorCode?.enum).toEqual(['MARKETS_SNAPSHOT_NOT_READY', 'MARKETS_SNAPSHOT_STALE']);
   });
 });

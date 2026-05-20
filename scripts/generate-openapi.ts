@@ -11,6 +11,7 @@ import {
   BrevisCampaignBreakdownSchema,
   BrevisIncentiveSchema,
 } from '../src/lib/apiSchemas.ts';
+import { z } from 'zod';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -102,8 +103,15 @@ function extractNestedDefsInPlace(schemas: Record<string, unknown>): void {
 }
 
 export function generateOpenApiDocument(): Record<string, unknown> {
+  const MarketsErrorResponseSchema = z.object({
+    errorCode: z.enum(['MARKETS_SNAPSHOT_NOT_READY', 'MARKETS_SNAPSHOT_STALE']),
+    error: z.string(),
+    message: z.string(),
+  });
+
   const schemas: Record<string, unknown> = {
     MarketsResponse: MarketsResponseSchema.toJSONSchema({ io: 'input' }),
+    MarketsErrorResponse: MarketsErrorResponseSchema.toJSONSchema({ io: 'input' }),
     SideDataMetaResponse: SideDataMetaResponseSchema.toJSONSchema({ io: 'input' }),
     Reserve: ReserveWithSpreadSchema.toJSONSchema({ io: 'input' }),
     MeritIncentive: MeritIncentiveSchema.toJSONSchema({ io: 'input' }),
@@ -144,6 +152,19 @@ export function generateOpenApiDocument(): Record<string, unknown> {
                 },
               },
             },
+            '429': {
+              description: 'Rate limit exceeded (120 requests/min per IP)',
+              headers: { 'Retry-After': { schema: { type: 'integer' }, description: 'Seconds until retry' } },
+            },
+            '503': {
+              description: 'Service unavailable — data not ready or too stale',
+              headers: { 'Retry-After': { schema: { type: 'integer' }, description: 'Seconds until retry (10=loading, 60=stale)' } },
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/MarketsErrorResponse' },
+                },
+              },
+            },
           },
         },
       },
@@ -159,6 +180,10 @@ export function generateOpenApiDocument(): Record<string, unknown> {
                   schema: { $ref: '#/components/schemas/SideDataMetaResponse' },
                 },
               },
+            },
+            '429': {
+              description: 'Rate limit exceeded (120 requests/min per IP)',
+              headers: { 'Retry-After': { schema: { type: 'integer' }, description: 'Seconds until retry' } },
             },
           },
         },

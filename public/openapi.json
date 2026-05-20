@@ -30,6 +30,35 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "Rate limit exceeded (120 requests/min per IP)",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds until retry"
+              }
+            }
+          },
+          "503": {
+            "description": "Service unavailable — data not ready or too stale",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds until retry (10=loading, 60=stale)"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketsErrorResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -46,6 +75,17 @@
                 "schema": {
                   "$ref": "#/components/schemas/SideDataMetaResponse"
                 }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded (120 requests/min per IP)",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds until retry"
               }
             }
           }
@@ -70,6 +110,9 @@
               },
               "staleTimeMs": {
                 "type": "number"
+              },
+              "schemaFingerprint": {
+                "type": "string"
               }
             },
             "required": [
@@ -880,6 +923,30 @@
         "required": [
           "snapshot",
           "reserves"
+        ]
+      },
+      "MarketsErrorResponse": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "errorCode": {
+            "type": "string",
+            "enum": [
+              "MARKETS_SNAPSHOT_NOT_READY",
+              "MARKETS_SNAPSHOT_STALE"
+            ]
+          },
+          "error": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "errorCode",
+          "error",
+          "message"
         ]
       },
       "SideDataMetaResponse": {
