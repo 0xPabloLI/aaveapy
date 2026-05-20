@@ -10,6 +10,12 @@ export {
   BrevisCampaignBreakdownSchema,
 } from '../shared/market-contract/schemas.ts';
 
+export const MarketsErrorResponseSchema = z.object({
+  errorCode: z.enum(['MARKETS_SNAPSHOT_NOT_READY', 'MARKETS_SNAPSHOT_STALE']),
+  error: z.string(),
+  message: z.string(),
+});
+
 // ── Token price entry ──
 const TokenPriceEntrySchema = z.object({
   price: z.number(),

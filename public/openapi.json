@@ -88,6 +88,24 @@
                 "description": "Seconds until retry"
               }
             }
+          },
+          "503": {
+            "description": "Service unavailable — data not ready or too stale",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds until retry (10=loading, 60=stale)"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketsErrorResponse"
+                }
+              }
+            }
           }
         }
       }

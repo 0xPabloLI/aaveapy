@@ -164,6 +164,19 @@ describe('generateOpenApiDocument', () => {
     expect(retryAfter).toBeDefined();
   });
 
+  it('/meta/side-data defines 503 response with Retry-After header and MarketsErrorResponse $ref', () => {
+    const doc = generateOpenApiDocument();
+    const getSide = ((doc.paths as Record<string, unknown>)?.['/meta/side-data'] as Record<string, unknown>)?.get as Record<string, unknown>;
+    const r503 = (getSide?.responses as Record<string, unknown>)?.['503'] as Record<string, unknown>;
+
+    expect(r503).toBeDefined();
+    expect(r503.description).toContain('data not ready');
+    const retryAfter = (r503.headers as Record<string, unknown>)?.['Retry-After'] as Record<string, unknown>;
+    expect(retryAfter).toBeDefined();
+    const schema = (r503?.content?.['application/json'] as Record<string, unknown>)?.schema as Record<string, unknown>;
+    expect(schema?.$ref).toBe('#/components/schemas/MarketsErrorResponse');
+  });
+
   it('MarketsErrorResponse schema has errorCode enum with stale/not-ready codes', () => {
     const doc = generateOpenApiDocument();
     const schemas = (doc.components as Record<string, unknown>)?.schemas as Record<string, unknown>;
