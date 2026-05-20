@@ -89,6 +89,22 @@ async function seoFetch<T>(
   return text ? (JSON.parse(text) as T) : ({} as T);
 }
 
+// Backend may return either a bare array or { rows, total }. Normalize.
+function unwrapRows<T>(raw: unknown): { rows: T[]; total: number } {
+  if (Array.isArray(raw)) return { rows: raw as T[], total: raw.length };
+  if (raw && typeof raw === "object" && "rows" in raw) {
+    const r = (raw as { rows: T[]; total?: number }).rows ?? [];
+    return { rows: r, total: (raw as { total?: number }).total ?? r.length };
+  }
+  return { rows: [], total: 0 };
+}
+
+const toNum = (v: unknown): number | null => {
+  if (v === null || v === undefined || v === "") return null;
+  const n = typeof v === "number" ? v : Number(v);
+  return Number.isFinite(n) ? n : null;
+};
+
 export interface FetchGscParams {
   from: string;
   to: string;
@@ -97,14 +113,15 @@ export interface FetchGscParams {
   groupBy?: Array<"date" | "country" | "page" | "query">;
 }
 
-export function fetchGscRows(params: FetchGscParams): Promise<GscResponse> {
+export async function fetchGscRows(params: FetchGscParams): Promise<GscResponse> {
   const sp = new URLSearchParams();
   sp.set("from", params.from);
   sp.set("to", params.to);
   if (params.country?.length) sp.set("country", params.country.join(","));
   if (params.page) sp.set("page", params.page);
   if (params.groupBy?.length) sp.set("groupBy", params.groupBy.join(","));
-  return seoFetch<GscResponse>(`/gsc?${sp.toString()}`);
+  const raw = await seoFetch<unknown>(`/gsc?${sp.toString()}`);
+  return unwrapRows<GscRow>(raw);
 }
 
 export interface FetchSemrushParams {
@@ -114,7 +131,7 @@ export interface FetchSemrushParams {
   keyword?: string;
 }
 
-export function fetchSemrushRows(
+export async function fetchSemrushRows(
   params: FetchSemrushParams = {},
 ): Promise<SemrushResponse> {
   const sp = new URLSearchParams();
@@ -123,7 +140,21 @@ export function fetchSemrushRows(
   if (params.to) sp.set("to", params.to);
   if (params.keyword) sp.set("keyword", params.keyword);
   const qs = sp.toString();
-  return seoFetch<SemrushResponse>(`/semrush${qs ? `?${qs}` : ""}`);
+  const raw = await seoFetch<unknown>(`/semrush${qs ? `?${qs}` : ""}`);
+  const { rows } = unwrapRows<Record<string, unknown>>(raw);
+  // Postgres numeric/bigint columns serialize as strings — coerce to numbers.
+  const normalized: SemrushRow[] = rows.map((r) => ({
+    id: Number(r.id),
+    snapshot_date: String(r.snapshot_date),
+    country: String(r.country),
+    keyword: String(r.keyword),
+    volume: toNum(r.volume),
+    position: toNum(r.position),
+    cpc_usd: toNum(r.cpc_usd),
+    difficulty: toNum(r.difficulty),
+    notes: r.notes == null ? null : String(r.notes),
+  }));
+  return { rows: normalized };
 }
 
 export function postSemrushBatch(
@@ -138,3 +169,4 @@ export function postSemrushBatch(
 export function deleteSemrush(id: number): Promise<{ deleted: true; id: number }> {
   return seoFetch(`/semrush/${id}`, { method: "DELETE" });
 }
+
