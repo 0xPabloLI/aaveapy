@@ -53,6 +53,18 @@ export interface SemrushBatchInput {
   notes?: string | null;
 }
 
+const DASHBOARD_PASSWORD_KEY = "seo-dashboard-password";
+
+export function setDashboardPassword(pw: string) {
+  sessionStorage.setItem(DASHBOARD_PASSWORD_KEY, pw);
+}
+export function getDashboardPassword(): string {
+  return sessionStorage.getItem(DASHBOARD_PASSWORD_KEY) || "";
+}
+export function clearDashboardPassword() {
+  sessionStorage.removeItem(DASHBOARD_PASSWORD_KEY);
+}
+
 async function seoFetch<T>(
   path: string,
   init?: RequestInit,
@@ -66,6 +78,7 @@ async function seoFetch<T>(
       // the function itself is configured with verify_jwt = false.
       apikey: ANON_KEY,
       Authorization: `Bearer ${ANON_KEY}`,
+      "X-Dashboard-Password": getDashboardPassword(),
       ...(init?.headers || {}),
     },
   });
