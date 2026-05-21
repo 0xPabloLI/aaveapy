@@ -4,8 +4,9 @@ import { SEO_COUNTRIES, countryFromAlpha3, countryFromSemrush } from "@/lib/seoC
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Trash2, RefreshCw, AlertCircle } from "lucide-react";
+import { Trash2, RefreshCw, AlertCircle, LogOut } from "lucide-react";
 import { Helmet } from "react-helmet-async";
+import SeoDashboardGate from "@/components/admin/SeoDashboardGate";
 
 type RangePreset = "7d" | "28d" | "90d";
 
@@ -42,7 +43,7 @@ function fmtUsd(n: number | null | undefined) {
   return `$${n.toFixed(2)}`;
 }
 
-const AdminSeo = () => {
+const AdminSeoInner = ({ onSignOut }: { onSignOut: () => void }) => {
   const [preset, setPreset] = useState<RangePreset>("28d");
   const [selectedCountries, setSelectedCountries] = useState<Set<string>>(
     new Set(SEO_COUNTRIES.map((c) => c.alpha3)),
@@ -119,11 +120,17 @@ const AdminSeo = () => {
 
       <div className="min-h-screen bg-background text-foreground">
         <div className="container mx-auto px-4 py-6 max-w-7xl">
-          <header className="mb-6">
-            <h1 className="ds-text-24 font-semibold gradient-text">SEO Dashboard</h1>
-            <p className="ds-text-13 text-muted-foreground mt-1">
-              GSC daily aggregates and Semrush seed data. Admin only — not indexed.
-            </p>
+          <header className="mb-6 flex items-start justify-between gap-4">
+            <div>
+              <h1 className="ds-text-24 font-semibold gradient-text">SEO Dashboard</h1>
+              <p className="ds-text-13 text-muted-foreground mt-1">
+                GSC daily aggregates and Semrush seed data. Admin only — not indexed.
+              </p>
+            </div>
+            <Button variant="ghost" size="sm" onClick={onSignOut} className="gap-1.5">
+              <LogOut className="w-3.5 h-3.5" />
+              Sign out
+            </Button>
           </header>
 
           {/* Filter bar */}
@@ -433,5 +440,11 @@ function ErrorCard({ error }: { error: unknown }) {
     </div>
   );
 }
+
+const AdminSeo = () => (
+  <SeoDashboardGate>
+    {(signOut) => <AdminSeoInner onSignOut={signOut} />}
+  </SeoDashboardGate>
+);
 
 export default AdminSeo;

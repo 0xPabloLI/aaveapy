@@ -5,7 +5,7 @@
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-dashboard-password",
   "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
 };
 
@@ -21,6 +21,23 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({ error: "SEO_ADMIN_TOKEN not configured" }),
       { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+
+  // Dashboard password gate. Caller (the AdminSeo UI) must send
+  // X-Dashboard-Password matching the SEO_DASHBOARD_PASSWORD secret.
+  const dashboardPassword = Deno.env.get("SEO_DASHBOARD_PASSWORD");
+  if (!dashboardPassword) {
+    return new Response(
+      JSON.stringify({ error: "SEO_DASHBOARD_PASSWORD not configured" }),
+      { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+  const provided = req.headers.get("x-dashboard-password");
+  if (provided !== dashboardPassword) {
+    return new Response(
+      JSON.stringify({ error: "unauthorized" }),
+      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
 
