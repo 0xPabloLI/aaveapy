@@ -85,3 +85,17 @@ npm run lint && npm test && npm run build && npx tsc --noEmit
 
 ## Learned Lessons
 - Scripts / token icons / 共享 schema 改动前先看 `docs/conventions/scripts-and-schema-lessons.md`(icon 动态加载/manifest 不能找 orphan/扩展现有脚本/`src/shared/<domain>/` 相对路径/桥接 `scripts/lib/`/frontend vs script 错误语义分离)。
+
+## Agent skills
+
+### Issue tracker
+
+Issues tracked in Linear (team: Aaveapy). See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Using default triage label vocabulary. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context layout (one CONTEXT.md + docs/adr/ at root). See `docs/agents/domain.md`.
