@@ -4,11 +4,12 @@ Canonical workflow: [`.github/workflows/deployment-smoke-test.yml`](../../.githu
 
 ## Triggers and environments
 
-- Runs on **push** to `main` and `dev`.
+- Runs on **push** to `main`, `dev`, and `lovable`.
 - **Production** (`main`): `SITE_URL` is the public site; Vercel target is `production`.
 - **Staging** (`dev`): `SITE_URL` is `https://staging.aaveapy.com`; Vercel target is `preview`.
+- **Preview** (`lovable`): No custom domain (`SITE_URL` is empty); Vercel target is `preview`. The `site_check` step is skipped; verification relies on `deploy_url_check` (Vercel preview URL) and `api_check` (staging API).
 
-> **Note:** The `lovable` branch is excluded because `staging.aaveapy.com` is bound to the `dev` branch in Vercel. Running smoke tests from `lovable` would always fail the deploy-SHA check since the custom domain serves the `dev` deployment.
+> **Note:** `lovable` has no bound custom domain in Vercel. Running the full `site_check` with custom-domain SHA verification would always fail, so it is skipped. The deployment URL check confirms the correct SHA is served on the preview URL.
 
 ## Secrets
 
@@ -27,9 +28,10 @@ If `VERCEL_TOKEN` is missing, the smoke test and rollback steps **skip** (exit 0
 Production builds inject a short-lived proof of which commit is live:
 
 - Vite plugin in `vite.config.ts` adds `<meta name="aaveapy-deploy-sha" content="…">` to `index.html`, using `VERCEL_GIT_COMMIT_SHA` (or `GITHUB_SHA` / `CF_PAGES_COMMIT_SHA` when set).
-- **`main`**: `site_check` requires `staging.aaveapy.com` / production URL to serve `github.sha` immediately.
-- **Staging branches**: `deploy_url_check` requires the Vercel deployment URL for this commit to serve `github.sha`. `site_check` on the custom domain **polls up to 5 minutes** when the alias lags behind a READY preview deployment.
-- **`api_check`** calls `/api/markets` for diagnostics only; HTTP failures are warnings and do **not** fail the job.
+- **`main`**: `site_check` requires production URL to serve `github.sha` immediately.
+- **Staging branches (`dev`)**: `deploy_url_check` requires the Vercel deployment URL for this commit to serve `github.sha`. `site_check` on the custom domain **polls up to 5 minutes** when the alias lags behind a READY preview deployment.
+- **Preview branches (`lovable`)**: `site_check` is **skipped** (no custom domain). `deploy_url_check` on the Vercel preview URL is the primary SHA verification.
+- **`api_check`** calls `/api/markets` for diagnostics only; HTTP failures are warnings and do **not** fail the job. `lovable` uses the staging API.
 
 ## Failure notifications (GitHub Issues)
 

@@ -17,7 +17,7 @@ staging 环境部署后自动触发的 smoke test **持续失败**，每次失�
 
 **主因（已修复）**：`staging.aaveapy.com` 在 Vercel 绑定 `dev` 分支（gitBranch: "dev"），但 smoke test 由 `lovable` 分支推送触发。`lovable` 的 preview deployment SHA 永远不会出现在 `staging.aaveapy.com` 上（该域名只服务 `dev` 分支的 deployment），导致 deploy-sha 检查必然失败。
 
-**修复**：从 workflow `on.push.branches` 移除 `lovable`，smoke test 仅在 `main` 和 `dev` 触发。
+**修复（v2 — lovable reduced smoke test）**：`lovable` 重新加入 `on.push.branches`，但 `SITE_URL` 为空（无 custom domain），`site_check` 通过 `if: env.SITE_URL != ''` 条件跳过。lovable 分支验证仅依赖 `deploy_url_check`（preview URL SHA 验证）+ `api_check`（staging API 诊断）。
 
 **非 gate**：`api_check` 仅 warning，不会导致 job 失败。
 

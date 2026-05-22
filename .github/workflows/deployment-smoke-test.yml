@@ -14,6 +14,7 @@ on:
     branches:
       - main
       - dev
+      - lovable
 
 permissions:
   contents: read
@@ -29,8 +30,9 @@ jobs:
     runs-on: ubuntu-latest
     env:
       # Map branch → site URL and environment target
-      SITE_URL: ${{ github.ref_name == 'main' && 'https://aaveapy.com' || 'https://staging.aaveapy.com' }}
-      ENV_LABEL: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
+      # lovable has no custom domain; SITE_URL is empty so site_check skips
+      SITE_URL: ${{ github.ref_name == 'main' && 'https://aaveapy.com' || github.ref_name == 'dev' && 'https://staging.aaveapy.com' || '' }}
+      ENV_LABEL: ${{ github.ref_name == 'main' && 'production' || github.ref_name == 'dev' && 'staging' || 'preview' }}
       VERCEL_TARGET: ${{ github.ref_name == 'main' && 'production' || 'preview' }}
 
     steps:
@@ -96,6 +98,7 @@ jobs:
 
       - name: Check production domain
         id: site_check
+        if: env.SITE_URL != ''
         run: |
           echo "🌐 Checking ${{ env.ENV_LABEL }} site (${{ env.SITE_URL }})..."
           HTTP_CODE=$(curl -s -o /tmp/page.html -w "%{http_code}" \
@@ -241,7 +244,7 @@ jobs:
     if: failure()
     runs-on: ubuntu-latest
     env:
-      ENV_LABEL: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
+      ENV_LABEL: ${{ github.ref_name == 'main' && 'production' || github.ref_name == 'dev' && 'staging' || 'preview' }}
       VERCEL_TARGET: ${{ github.ref_name == 'main' && 'production' || 'preview' }}
     steps:
       - name: Rollback Vercel deployment
