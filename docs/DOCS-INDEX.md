@@ -57,7 +57,8 @@ _Last inventory pass: 2026-05-19._
 - Canonical: `docs/frontend-data-loading-matrix.md`
 - Canonical: `docs/rate-calculation.md`
 - Canonical: `docs/fallback-reference.md` (frontend variable fallback chains)
-- Canonical: `docs/TERMINOLOGY.md` (variable / field naming reference)
+- Canonical: `CONTEXT.md` (opinionated domain glossary: 正名 + _Avoid_ aliases)
+- Canonical: `docs/TERMINOLOGY.md` (variable / field naming reference; full mapping chains + units)
 - Canonical: `aaveapy-doc/v3-v4-sdk-field-mapping.md` (Aave V3 vs V4 SDK field mapping)
 - Canonical: `docs/api-field-optimization.md` (API field-shape optimization analysis)
 - Canonical: `docs/pool-explorer-links.md` (pool address explorer deep-link mapping; e2e validation in `e2e/explorer-links-*.spec.ts`)

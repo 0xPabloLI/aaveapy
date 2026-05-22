@@ -1,6 +1,6 @@
 # Project Terminology Reference
 
-This document provides a consolidated reference for terminology, variable names, and field mappings used across the codebase.
+> 领域术语正名见根目录 [`CONTEXT.md`](../CONTEXT.md)（opinionated glossary）。本文档是完整字段映射/单位/计算链参考，两者并存。
 
 ---
 
