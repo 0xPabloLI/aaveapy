@@ -71,6 +71,7 @@ Railway 后端 (staging-api.aaveapy.com/api/seo/*)
 | GSC tab 空 | cron 未跑满 / 站点无展示 | 等 cron 跑 ≥ 3 天，或手动触发后端 cron |
 | Semrush 数值显示 NaN | 后端 numeric 序列化成 string | 已在 `seoApi.ts` 用 `toNum()` 兜底 |
 | CORS 报错 | Railway `SEO_ALLOWED_ORIGINS` 未含当前域名 | 加上 `https://aaveapy.lovable.app` 等精确域名 |
+| `Unexpected token '<'` JSON 解析报错 | 本地/Vercel 缺 `VITE_SUPABASE_URL`，请求打到 Vite dev server 返回 HTML | 在 `.env.local`（本地）或 Vercel 环境变量（部署）补上三个 Supabase 变量 |
 
 ---
 
