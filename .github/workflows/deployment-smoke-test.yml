@@ -14,7 +14,6 @@ on:
     branches:
       - main
       - dev
-      - lovable
 
 permissions:
   contents: read

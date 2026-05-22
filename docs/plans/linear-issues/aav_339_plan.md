@@ -15,7 +15,9 @@ staging 环境部署后自动触发的 smoke test **持续失败**，每次失�
 | [#26015997962](https://github.com/0xPabloLI/aaveapy/actions/runs/26015997962) | `lovable` | **Check production domain** (`site_check`) | Vercel deployment 已 READY；`staging.aaveapy.com` HTTP 200，但 `aaveapy-deploy-sha` **不等于** 本次 `github.sha`（域名仍指向旧 deployment） |
 | [#25896995693](https://github.com/0xPabloLI/aaveapy/actions/runs/25896995693) | `lovable` | **Wait for Vercel deployment** | 10 分钟内未找到匹配 commit 的 READY deployment（次要模式） |
 
-**主因（高频）**：preview deployment READY 后，`staging.aaveapy.com` 自定义域名别名更新滞后，`site_check` 在约 30s 内即判定 SHA 不匹配而失败。
+**主因（已修复）**：`staging.aaveapy.com` 在 Vercel 绑定 `dev` 分支（gitBranch: "dev"），但 smoke test 由 `lovable` 分支推送触发。`lovable` 的 preview deployment SHA 永远不会出现在 `staging.aaveapy.com` 上（该域名只服务 `dev` 分支的 deployment），导致 deploy-sha 检查必然失败。
+
+**修复**：从 workflow `on.push.branches` 移除 `lovable`，smoke test 仅在 `main` 和 `dev` 触发。
 
 **非 gate**：`api_check` 仅 warning，不会导致 job 失败。
 

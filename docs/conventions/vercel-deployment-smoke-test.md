@@ -4,9 +4,11 @@ Canonical workflow: [`.github/workflows/deployment-smoke-test.yml`](../../.githu
 
 ## Triggers and environments
 
-- Runs on **push** to `main`, `dev`, and `lovable`.
+- Runs on **push** to `main` and `dev`.
 - **Production** (`main`): `SITE_URL` is the public site; Vercel target is `production`.
-- **Staging** (`dev`, `lovable`): `SITE_URL` is `https://staging.aaveapy.com`; Vercel target is `preview`.
+- **Staging** (`dev`): `SITE_URL` is `https://staging.aaveapy.com`; Vercel target is `preview`.
+
+> **Note:** The `lovable` branch is excluded because `staging.aaveapy.com` is bound to the `dev` branch in Vercel. Running smoke tests from `lovable` would always fail the deploy-SHA check since the custom domain serves the `dev` deployment.
 
 ## Secrets
 
