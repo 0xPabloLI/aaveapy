@@ -8,6 +8,8 @@ import { formatPercent, formatUsd } from '@/lib/formatters';
 import { nativeToUsd } from '@/lib/scenarioSize';
 import type { ReserveWithSpread } from '@/types/aave';
 import type { RateSimulationResult } from '@/hooks/useRateSimulation';
+import fs from 'fs';
+import path from 'path';
 
 vi.mock('@/hooks/use-mobile', () => ({
   useIsMobile: () => true,
@@ -1327,8 +1329,6 @@ describe('MobileReserveCard', () => {
   });
 
   it('uses active: instead of hover: for all interactive elements (mobile no-hover rule)', () => {
-    const fs = require('fs');
-    const path = require('path');
     const source = fs.readFileSync(
       path.resolve(__dirname, 'MobileReserveCard.tsx'),
       'utf8',
