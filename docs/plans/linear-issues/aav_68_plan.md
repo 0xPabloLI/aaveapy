@@ -391,6 +391,16 @@ B1 (opportunityType + description 透传)
 - **修复**：改为提取 `.underlyingToken`（底层 token 地址）
 - **验证**：491/491 全匹配 reserveLookup
 
+### Bug 3：`extractNetPositionConstraint()` 跳过自身 token 导致同 token 抵消丢失
+
+- **根因**：`merkl-api.ts` L1219 `if (addrLower === sourceAddrLower) continue;` 无条件跳过自身 token
+- **语义**：`AAVE_NET_LENDING` 意味着 "supply X minus borrow X"，自身永远是 offset。跳过自身只适用于跨 token offset 场景
+- **受影响**：4 个 `AAVE_NET_LENDING` opportunity 全部丢失 constraint：
+  - MegaETH USDm, Ethereum RLUSD, Ink WETH, Ink kBTC
+- **修复**：仅对非 `AAVE_NET_*` 类型跳过自身（`if (!isNetType && addrLower === sourceAddrLower) continue;`）
+- **测试**：3 个新增测试 + 1 个更新测试，84/84 全绿
+- **commit**：`6c51361 fix(merkl): include self token as offset for AAVE_NET_* types (Bug3)`
+
 ## 13. 验证结果（2026-05-23）
 
 | 验证项 | 结果 |
