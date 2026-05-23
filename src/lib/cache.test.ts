@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { clearLegacyCacheEntries, isDeficitWithoutPrice, sanitizeDeficitWithoutPrice } from './cache';
+import { clearLegacyCacheEntries, isDeficitWithoutPrice, sanitizeDeficitWithoutPrice, updateSchemaFingerprintFromApi } from './cache';
 import type { MarketsResponse } from '@/types/aave';
 
 class MemoryStorage implements Pick<Storage, 'getItem' | 'setItem' | 'removeItem'> {
@@ -77,5 +77,21 @@ describe('sanitizeDeficitWithoutPrice', () => {
 
   it('handles missing reserves gracefully', () => {
     expect(() => sanitizeDeficitWithoutPrice({} as MarketsResponse)).not.toThrow();
+  });
+});
+
+describe('updateSchemaFingerprintFromApi', () => {
+  it('updates the lazy schema fingerprint in storage', () => {
+    const storage = new MemoryStorage();
+    updateSchemaFingerprintFromApi('abc123', storage);
+    expect(storage.getItem('aave-schema-fingerprint')).toBe('abc123:1');
+  });
+
+  it('overwrites previous fingerprint', () => {
+    const storage = new MemoryStorage();
+    updateSchemaFingerprintFromApi('old456', storage);
+    expect(storage.getItem('aave-schema-fingerprint')).toBe('old456:1');
+    updateSchemaFingerprintFromApi('new789', storage);
+    expect(storage.getItem('aave-schema-fingerprint')).toBe('new789:1');
   });
 });

@@ -108,9 +108,9 @@ function normalizeSymbolKey(symbol: string): string {
 // reference so getCacheEntry's secondary check invalidates stale
 // entries on next access. This handles "backend deployed new schema
 // but frontend hasn't rebuilt yet".
-export function updateSchemaFingerprintFromApi(apiFp: string): void {
+export function updateSchemaFingerprintFromApi(apiFp: string, storage: StorageLike = localStorage): void {
   const newFp = `${apiFp}:${CACHE_VERSION}`;
-  localStorage.setItem(SCHEMA_FP_KEY, newFp);
+  storage.setItem(SCHEMA_FP_KEY, newFp);
 }
 
 export function clearLegacyCacheEntries(storage: StorageLike = localStorage): void {
