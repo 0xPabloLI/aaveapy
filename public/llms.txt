@@ -7,6 +7,7 @@ Aave APY aggregates live reserve data from the Aave protocol (v3 and v4) and ove
 ## Pages
 
 - [Dashboard](/): Compare deposit and borrow APY/APR across all Aave markets with incentive overlays and rate simulation.
+- [DeFi Yield Tracker](/defi-yield-tracker): Free DeFi yield and Aave portfolio tracker across every supported chain, with FAQ.
 
 ## Chains
 

@@ -22,6 +22,7 @@ const LandingPT = lazy(() => import("./pages/LandingPT"));
 const LandingFR = lazy(() => import("./pages/LandingFR"));
 const LandingTR = lazy(() => import("./pages/LandingTR"));
 const AdminSeo = lazy(() => import("./pages/AdminSeo"));
+const DefiYieldTracker = lazy(() => import("./pages/DefiYieldTracker"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -65,6 +66,7 @@ const App = () => (
               <Route path="/fr" element={<LandingFR />} />
               <Route path="/tr" element={<LandingTR />} />
               <Route path="/admin/seo" element={<AdminSeo />} />
+              <Route path="/defi-yield-tracker" element={<DefiYieldTracker />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
