@@ -32,7 +32,7 @@ import { RateSimulationResult } from '@/hooks/useRateSimulation';
 
 import { getDisplayAvailableLiquidityUsd, getDisplayTotalBorrowedUsd, nativeToUsd, getScenarioSupplySizeUsd } from '@/lib/scenarioSize';
 import { buildPoolExplorerUrl } from '@/lib/poolExplorerLinks';
-import { buildAaveV4HubUrl, buildAaveV4MarketUrl } from '@/lib/aaveLinks';
+import { buildAaveV4MarketUrl } from '@/lib/aaveLinks';
 import { getProtocolVersion } from '@/lib/protocolVersion';
 import { cn } from '@/lib/utils';
 import { FrozenStatusContent } from './ReserveStatusBadge';
