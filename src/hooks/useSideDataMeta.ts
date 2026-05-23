@@ -23,7 +23,9 @@ export interface SideDataForecastError {
 }
 
 export interface SideDataMetaResponse {
+  /** Debug timestamp for side-data generation time. */
   generatedAt?: string;
+  /** True when a sub-source fetch failed; UI may surface warning. */
   partial?: boolean;
   categories?: {
     uniqueSymbolsStablecoins: string[];
@@ -33,11 +35,8 @@ export interface SideDataMetaResponse {
   };
   fdv?: {
     items: Array<{
-      id: string;
       symbol: string | null;
-      name: string | null;
       fdvUsd: number | null;
-      source?: string;
     }>;
     fetchedAt: string;
     staleTimeMs: number;

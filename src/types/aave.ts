@@ -32,7 +32,7 @@ export interface CampaignGroup<TBreakdown extends BaseCampaignBreakdown = BaseCa
   name?: string;
   message?: string;
   breakdowns: TBreakdown[];
-  opportunityType?: string;
+  opportunityType?: string; // Kept: high debug value (aav_68_plan.md); future Ethena looping needs it
   netPositionConstraint?: NetPositionConstraint | null;
 }
 
@@ -168,6 +168,7 @@ export interface ReserveWithSpread extends BannedReserveUsdFields {
   hubId?: string;
   hubName?: string;
   hubAddress?: string;
+  /** Kept: future spoke detail page needs spoke identity fields. */
   spokeId?: string;
   spokeName?: string;
   spokeAddress?: string;
@@ -179,6 +180,7 @@ export interface MarketsResponse {
     lastUpdated: string;
     version?: string;
     staleTimeMs?: number;
+    /** Kept: frontend uses hardcoded SCHEMA_FP for cache invalidation, not this backend value. Mechanism preserved. */
     schemaFingerprint?: string; // Hash of API response field names; changes when shape changes
   };
   reserves: ReserveWithSpread[];
@@ -213,6 +215,8 @@ export type MerklForecastWireItem =
     };
 
 // Campaign access — Merkl whitelist/blacklist per campaign
+// Dead code: useCampaignAccess.ts calls non-existent /meta/campaign-access endpoint.
+// Will be reimplemented per aav_66_plan.md (embed in side-data). Tracked in Epic: wallet-merkl-portfolio.
 export interface CampaignAccessEntry {
   chainId: number;
   whitelist: string[];
