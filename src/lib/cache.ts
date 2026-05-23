@@ -103,6 +103,16 @@ function normalizeSymbolKey(symbol: string): string {
   return symbol.trim().toLowerCase();
 }
 
+// Runtime drift detection: when the API reports a different schema
+// fingerprint than what's baked into this bundle, update the lazy
+// reference so getCacheEntry's secondary check invalidates stale
+// entries on next access. This handles "backend deployed new schema
+// but frontend hasn't rebuilt yet".
+export function updateSchemaFingerprintFromApi(apiFp: string): void {
+  const newFp = `${apiFp}:${CACHE_VERSION}`;
+  localStorage.setItem(SCHEMA_FP_KEY, newFp);
+}
+
 export function clearLegacyCacheEntries(storage: StorageLike = localStorage): void {
   for (const key of LEGACY_CACHE_KEYS) {
     try {

@@ -5,7 +5,9 @@ import {
   setCachedMarkets,
   getCachedMarketsEntry,
   sanitizeDeficitWithoutPrice,
+  updateSchemaFingerprintFromApi,
 } from '@/lib/cache';
+import { SCHEMA_FP } from '@/shared/schema-fingerprint';
 import { API_BASE } from '@/lib/apiBase';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
 import { MarketsResponseSchema } from '@/lib/apiSchemas';
@@ -23,6 +25,14 @@ export const fetchMarkets = async (): Promise<MarketsResponse> => {
     }
     const data = parsed.data as MarketsResponse;
     sanitizeDeficitWithoutPrice(data);
+
+    // Runtime drift detection: if backend deployed a new schema before
+    // frontend was rebuilt, update the lazy fingerprint so cached entries
+    // from the old schema are invalidated on next access.
+    if (data.meta?.schemaFingerprint && data.meta.schemaFingerprint !== SCHEMA_FP) {
+      updateSchemaFingerprintFromApi(data.meta.schemaFingerprint);
+    }
+
     setCachedMarkets(data);
     return data;
   } catch (error) {
