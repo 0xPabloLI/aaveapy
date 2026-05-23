@@ -6,7 +6,7 @@ import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover
 import { FrozenStatusBadge } from './ReserveStatusBadge';
 import { ReserveWithSpread } from '@/types/aave';
 import { formatPercent, formatScenarioSize, formatSpread, formatUsd, getReserveMarketDisplayName } from '@/lib/formatters';
-import { buildAaveMarketUrl, buildAaveUrl, buildAaveProHubUrl } from '@/lib/aaveLinks';
+import { buildAaveMarketUrl, buildAaveUrl, buildAaveV4HubUrl, buildAaveV4MarketUrl } from '@/lib/aaveLinks';
 import { buildTydroMarketUrl } from '@/lib/tydroLinks';
 import { getProtocolVersion } from '@/lib/protocolVersion';
 import { buildPoolExplorerUrl } from '@/lib/poolExplorerLinks';
@@ -275,7 +275,8 @@ const DesktopReserveRow = memo(({
   const aaveMarketUrl = buildAaveMarketUrl(reserve.marketName);
   const tydroMarketUrl = buildTydroMarketUrl(reserve.marketName);
   const poolExplorerUrl = buildPoolExplorerUrl(reserve.marketName);
-  const aaveProHubUrl = buildAaveProHubUrl(reserve);
+  const aaveV4HubUrl = buildAaveV4HubUrl(reserve);
+  const aaveV4MarketUrl = buildAaveV4MarketUrl(reserve);
   const marketDisplayName = getReserveMarketDisplayName(reserve);
   const protocolVersion = getProtocolVersion(reserve.marketName);
   const isV4Market = protocolVersion === 'v4';
@@ -431,14 +432,14 @@ const DesktopReserveRow = memo(({
                   >
                     {reserve.hubName}
                   </button>
-                  {aaveProHubUrl && (
+                  {aaveV4HubUrl && (
                     <a
-                      href={aaveProHubUrl}
+                      href={aaveV4HubUrl}
                       {...externalLinkTabProps(isMobile)}
                       onClick={(event) => event.stopPropagation()}
                       className={cn(marketCellClassNames.externalLink, 'group-hover/hub-link:pointer-events-auto group-hover/hub-link:opacity-100')}
-                      aria-label={`View ${reserve.hubName} hub on Aave Pro`}
-                      title={`Open hub ${reserve.hubName} on Aave Pro`}
+                      aria-label={`View ${reserve.hubName} hub on Aave V4`}
+                      title={`Open hub ${reserve.hubName} on Aave V4`}
                     >
                       <ExternalLink className={cn(
                         "w-2.5 h-2.5",
@@ -487,9 +488,9 @@ const DesktopReserveRow = memo(({
                       onClick={(event) => event.stopPropagation()}
                     >
                       <div className="flex flex-col">
-                        {aaveMarketUrl && (
+                        {(aaveV4MarketUrl ?? aaveMarketUrl) && (
                           <a
-                            href={aaveMarketUrl}
+                            href={aaveV4MarketUrl ?? aaveMarketUrl!}
                             {...externalLinkTabProps(isMobile)}
                             onClick={(event) => event.stopPropagation()}
                             className="flex items-center justify-between gap-3 rounded-md px-3 py-2 ds-text-13 text-foreground/90 transition-colors hover:bg-muted/70"
@@ -516,6 +517,20 @@ const DesktopReserveRow = memo(({
                       </div>
                     </PopoverContent>
                   </Popover>
+                ) : aaveV4MarketUrl ? (
+                  <a
+                    href={aaveV4MarketUrl}
+                    {...externalLinkTabProps(isMobile)}
+                    onClick={(event) => event.stopPropagation()}
+                    className={cn(
+                      marketCellClassNames.externalLink,
+                      'group-hover/market-link:pointer-events-auto group-hover/market-link:opacity-100',
+                    )}
+                    aria-label={`Open ${marketDisplayName} market on Aave V4`}
+                    title="Open market on Aave V4"
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
                 ) : (
                   aaveMarketUrl && (
                     <a

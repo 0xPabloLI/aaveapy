@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { Check, Copy, ExternalLink, SquareArrowOutUpRight, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { toast } from 'sonner';
-import { buildAaveUrl, buildAaveProAssetUrl } from '@/lib/aaveLinks';
+import { buildAaveUrl, buildAaveV4AssetUrl } from '@/lib/aaveLinks';
 import { buildTydroReserveUrl } from '@/lib/tydroLinks';
 import { buildPoolExplorerUrl, buildTokenExplorerUrl, buildHubExplorerUrl } from '@/lib/poolExplorerLinks';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
@@ -79,7 +79,7 @@ export function AssetActionMenu({
 
   const aaveUrl = buildAaveUrl({ marketName, tokenAddress, aaveProReserveId });
   const tydroUrl = buildTydroReserveUrl({ marketName, tokenAddress });
-  const aaveProAssetUrl = buildAaveProAssetUrl({ tokenAddress, chainName });
+  const aaveV4AssetUrl = buildAaveV4AssetUrl({ tokenAddress, chainName });
   const isV4 = getProtocolVersion(marketName) === 'v4';
   const tokenExplorerUrl = buildTokenExplorerUrl(marketName, tokenAddress, { chainName: reserveChainName });
   const poolExplorerUrl = buildPoolExplorerUrl(marketName, { deepLink: false, chainName: reserveChainName });
@@ -104,8 +104,8 @@ export function AssetActionMenu({
   const items: MenuItem[] = [
     aaveUrl ? { key: 'aave', label: 'Open on Aave', href: aaveUrl, icon: 'external' as const } : null,
     tydroUrl ? { key: 'tydro', label: 'Open on Tydro', href: tydroUrl, icon: 'external' as const } : null,
-    isV4 && aaveProAssetUrl
-      ? { key: 'aave-pro-asset', label: 'View asset page', href: aaveProAssetUrl, icon: 'external' as const }
+    isV4 && aaveV4AssetUrl
+      ? { key: 'aave-v4-asset', label: 'View asset page', href: aaveV4AssetUrl, icon: 'external' as const }
       : null,
     tokenExplorerUrl
       ? { key: 'token-explorer', label: 'View token on explorer', href: tokenExplorerUrl, icon: 'external' as const }

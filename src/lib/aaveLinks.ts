@@ -70,7 +70,7 @@ export function buildAaveMarketUrl(marketName: string): string | null {
   return `${AAVE_APP_BASE}/markets/?marketName=${encodeURIComponent(resolvedMarketName)}`;
 }
 
-const AAVE_PRO_BASE = 'https://pro.aave.com';
+const AAVE_V4_BASE = 'https://pro.aave.com';
 
 /** Chain name to chain ID mapping for pro.aave.com asset URLs. */
 const CHAIN_NAME_TO_ID: Record<string, string> = {
@@ -96,32 +96,42 @@ const CHAIN_NAME_TO_ID: Record<string, string> = {
 };
 
 /** Build a pro.aave.com deep-link for a V4 asset. Returns null for non-V4 reserves. */
-export function buildAaveProAssetUrl(asset: {
+export function buildAaveV4AssetUrl(asset: {
   tokenAddress: string;
   chainName?: string;
 }): string | null {
   if (!asset.tokenAddress || !asset.chainName) return null;
   const chainId = CHAIN_NAME_TO_ID[asset.chainName];
   if (!chainId) return null;
-  return `${AAVE_PRO_BASE}/explore/asset/${chainId}/${asset.tokenAddress.toLowerCase()}`;
+  return `${AAVE_V4_BASE}/explore/asset/${chainId}/${asset.tokenAddress.toLowerCase()}`;
 }
 
 /** Build a pro.aave.com deep-link for a V4 reserve. Returns null for non-V4 reserves. */
-export function buildAaveProUrl(reserve: {
+export function buildAaveV4Url(reserve: {
   aaveProReserveId?: string;
 }): string | null {
   if (reserve.aaveProReserveId) {
-    return `${AAVE_PRO_BASE}/explore/reserve/${reserve.aaveProReserveId}`;
+    return `${AAVE_V4_BASE}/explore/reserve/${reserve.aaveProReserveId}`;
   }
   return null;
 }
 
 /** Build a pro.aave.com deep-link for a V4 hub. Returns null for non-V4 reserves. */
-export function buildAaveProHubUrl(reserve: {
+export function buildAaveV4HubUrl(reserve: {
   hubId?: string;
 }): string | null {
   if (reserve.hubId) {
-    return `${AAVE_PRO_BASE}/explore/hub/${reserve.hubId}`;
+    return `${AAVE_V4_BASE}/explore/hub/${reserve.hubId}`;
+  }
+  return null;
+}
+
+/** Build a pro.aave.com deep-link for a V4 spoke (market). Returns null if no spokeId. */
+export function buildAaveV4MarketUrl(reserve: {
+  spokeId?: string;
+}): string | null {
+  if (reserve.spokeId) {
+    return `${AAVE_V4_BASE}/explore/market/${reserve.spokeId}`;
   }
   return null;
 }
@@ -135,5 +145,5 @@ export function buildAaveUrl(reserve: {
   tokenAddress: string;
   aaveProReserveId?: string;
 }): string | null {
-  return buildAaveReserveUrl(reserve) ?? buildAaveProUrl(reserve);
+  return buildAaveV4Url(reserve) ?? buildAaveReserveUrl(reserve);
 }

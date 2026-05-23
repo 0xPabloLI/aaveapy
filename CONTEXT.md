@@ -42,6 +42,16 @@ _Avoid_: Brevis Campaign, Brevis Program
 仅 Merkl Campaign 的可选 points 路径产出的积分。转换公式：`points × pointToUsdRate × 36.5`。Merit / Brevis / 协议激励**不是** Tydro Points。
 _Avoid_: Points（太泛）
 
+## Net Position
+
+**Net Position Constraint**:
+Merkl opportunity 自身的 eligibility 约束：只有 net position（source 侧头寸减去 offset 侧头寸）部分才 eligible 获得奖励，其余被抵消。`sourceSide` 声明哪侧是被奖励的（supply 或 borrow），`offsetTokens` 声明另一侧被抵消的 token 列表。与 Deposit Ceiling 同层——都是限制"多少头寸 eligible"的条件。
+_Avoid_: Net Rule, Net Lending Rule, Offset Rule, direction
+
+**Offset Token**:
+Net Position Constraint 中被抵消的那一侧的 token。例如 USDT0 supply minus USDT0+USDe+GHO borrows 中，USDT0/USDe/GHO 是 offset tokens，`sourceSide` 为 supply。
+_Avoid_: Deduction Token, Exclusion Token
+
 ## Limits
 
 **Deposit Ceiling**:
@@ -61,6 +71,19 @@ _Avoid_: Supply Ceiling, Borrow Ceiling（Ceiling 保留给 per-user 语义）
 **Reserve ID**:
 单个字段作为 reserve 的 canonical key。代码中禁止用 `(underlyingAsset, chainId)` 组合作为 key 的 fallback 路径。
 _Avoid_: Composite key, (underlyingAsset, chainId) pair
+
+## External Links
+
+**Aave V3 URL** (`buildAaveReserveUrl` / `buildAaveMarketUrl`):
+指向 `app.aave.com` 的 V3 市场/资产页面。参数为 `marketName` + `tokenAddress`。
+
+**Aave V4 URL** (`buildAaveV4Url` / `buildAaveV4HubUrl` / `buildAaveV4MarketUrl` / `buildAaveV4AssetUrl`):
+指向 `pro.aave.com` 的 V4 深度链接。`buildAaveV4MarketUrl` 生成 spoke 跳转：`/explore/market/{spokeId}`（非 `/explore/spoke/`，后者 404）。`buildAaveV4HubUrl` 生成 hub 跳转：`/explore/hub/{hubId}`。
+
+**Link Priority**:
+Market chip 外链优先级：tydro > aaveV4MarketUrl (spoke) > aaveMarketUrl (V3)。`buildAaveUrl` 统一入口：V4 优先于 V3。
+
+_Avoid_: `buildAavePro*`（已重命名为 `buildAaveV4*`），`AAVE_PRO_BASE`（已重命名为 `AAVE_V4_BASE`）
 
 ---
 
