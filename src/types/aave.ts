@@ -22,11 +22,18 @@ export interface BaseCampaignBreakdown {
   campaignId?: string;
 }
 
+export interface NetPositionConstraint {
+  sourceSide: 'supply' | 'borrow';
+  offsetReserveIds: string[];
+}
+
 export interface CampaignGroup<TBreakdown extends BaseCampaignBreakdown = BaseCampaignBreakdown> {
   link?: string;
   name?: string;
   message?: string;
   breakdowns: TBreakdown[];
+  opportunityType?: string;
+  netPositionConstraint?: NetPositionConstraint | null;
 }
 
 // Merkl opportunity data structure
@@ -204,6 +211,20 @@ export type MerklForecastWireItem =
       distributedSoFar: number;
       endTimestamp: number;
     };
+
+// Campaign access — Merkl whitelist/blacklist per campaign
+export interface CampaignAccessEntry {
+  chainId: number;
+  whitelist: string[];
+  blacklist: string[];
+}
+
+export interface CampaignAccessResponse {
+  generatedAt: string;
+  campaigns: Record<string, CampaignAccessEntry>;
+  updatedAt: string;
+  staleTimeMs: number;
+}
 
 export type SortField = 'totalSupplyApy' | 'totalBorrowApy' | 'apySpread' | null;
 export type SortOrder = 'asc' | 'desc';

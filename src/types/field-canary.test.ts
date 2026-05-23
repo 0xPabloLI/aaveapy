@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type { ReserveWithSpread } from './aave';
+import type { ReserveWithSpread, CampaignGroup } from './aave';
 import { nativeToUsd, getReserveTotalBorrowedUsd } from '@/lib/scenarioSize';
 
 const mock: ReserveWithSpread = {
@@ -72,5 +72,38 @@ describe('ReserveWithSpread canonical field-name canary', () => {
   it('reserve.supplyApy and reserve.borrowApy are numbers', () => {
     expect(typeof mock.supplyApy).toBe('number');
     expect(typeof mock.borrowApy).toBe('number');
+  });
+});
+
+describe('CampaignGroup netPositionConstraint field-name canary', () => {
+  const group: CampaignGroup = {
+    link: 'https://merkl.xyz',
+    breakdowns: [],
+    opportunityType: 'AAVE_NET_LENDING',
+    netPositionConstraint: {
+      sourceSide: 'supply',
+      offsetReserveIds: ['1:0xPool:0xUsde', '1:0xPool:0xGho'],
+    },
+  };
+
+  it('group.opportunityType is an optional string', () => {
+    expect(typeof group.opportunityType).toBe('string');
+    expect(group.opportunityType).toBe('AAVE_NET_LENDING');
+  });
+
+  it('group.netPositionConstraint.sourceSide is supply or borrow', () => {
+    expect(['supply', 'borrow']).toContain(group.netPositionConstraint!.sourceSide);
+  });
+
+  it('group.netPositionConstraint.offsetReserveIds is string[]', () => {
+    expect(Array.isArray(group.netPositionConstraint!.offsetReserveIds)).toBe(true);
+    group.netPositionConstraint!.offsetReserveIds.forEach(id => {
+      expect(typeof id).toBe('string');
+    });
+  });
+
+  it('group without netPositionConstraint is valid (optional)', () => {
+    const plain: CampaignGroup = { link: 'https://merkl.xyz', breakdowns: [] };
+    expect(plain.netPositionConstraint).toBeUndefined();
   });
 });

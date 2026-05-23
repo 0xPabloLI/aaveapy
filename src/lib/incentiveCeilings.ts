@@ -147,3 +147,18 @@ export function buildNetEligibilityNote(netUsd: number, grossUsd: number): strin
   if (grossUsd <= 0 || netUsd >= grossUsd) return null;
   return `Net eligible ${formatUsd(netUsd)} of ${formatUsd(grossUsd)}`;
 }
+
+export interface CrossReserveNetNoteInput {
+  netUsd: number;
+  grossUsd: number;
+  sourceSide: 'supply' | 'borrow';
+  offsetSymbols: string[];
+}
+
+export function buildCrossReserveNetEligibilityNote(input: CrossReserveNetNoteInput): string | null {
+  const { netUsd, grossUsd, sourceSide, offsetSymbols } = input;
+  if (grossUsd <= 0 || netUsd >= grossUsd) return null;
+  const sideLabel = sourceSide === 'supply' ? 'supply' : 'borrow';
+  const offsets = offsetSymbols.length > 0 ? ` minus ${offsetSymbols.join('+')} ${sourceSide === 'supply' ? 'borrows' : 'supplies'}` : '';
+  return `Net eligible ${formatUsd(netUsd)} of ${formatUsd(grossUsd)} (${sideLabel}${offsets})`;
+}

@@ -1590,3 +1590,289 @@ describe('buildPriceLoadingSignature', () => {
     expect(a).toBe(b);
   });
 });
+
+describe('buildRateSimulationResult — merkl per-group cross-reserve net eligibility', () => {
+  const usdeReserveId = '1:0xPool:0xUSDe';
+
+  const noIncentiveReserve = { ...baseReserve, supplyIncentives: [] as number[], borrowIncentives: [] as number[] };
+
+  const merklGroupWithConstraint: MerklOpportunityGroup = {
+    name: 'USDT0 net lending',
+    breakdowns: [
+      {
+        campaignApr: 10,
+        campaignStartedAt: '2020-01-01T00:00:00.000Z',
+        campaignEndedAt: '2099-01-01T00:00:00.000Z',
+        campaignId: 'net-lend-1',
+      },
+    ],
+    opportunityType: 'AAVE_NET_LENDING',
+    netPositionConstraint: {
+      sourceSide: 'supply',
+      offsetReserveIds: [usdeReserveId],
+    },
+  };
+
+  it('no reservePositions → full merkl APR (backward compat)', () => {
+    const reserve: ReserveWithSpread = {
+      ...noIncentiveReserve,
+      merklSupplys: [merklGroupWithConstraint],
+    };
+    const withoutPositions = buildRateSimulationResult({
+      reserve,
+      reserveRateInput: noIncentiveReserve,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '1000',
+      borrowInput: '0',
+      forecastStates: {},
+      meritMerklNetPosition: false,
+    });
+    const withEmptyPositions = buildRateSimulationResult({
+      reserve,
+      reserveRateInput: noIncentiveReserve,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '1000',
+      borrowInput: '0',
+      forecastStates: {},
+      meritMerklNetPosition: false,
+      reservePositions: new Map(),
+    });
+    expect(withoutPositions.supply.afterIncentive).toBe(withEmptyPositions.supply.afterIncentive);
+    expect(withoutPositions.supply.afterIncentive).toBeCloseTo(10, 1);
+  });
+
+  it('offset reserve has borrow → supply incentive scaled down', () => {
+    const reserve: ReserveWithSpread = {
+      ...noIncentiveReserve,
+      merklSupplys: [merklGroupWithConstraint],
+    };
+    const reservePositions = new Map([
+      [usdeReserveId, { supplyUsd: 0, borrowUsd: 600 }],
+    ]);
+    const result = buildRateSimulationResult({
+      reserve,
+      reserveRateInput: noIncentiveReserve,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '1000',
+      borrowInput: '0',
+      forecastStates: {},
+      meritMerklNetPosition: false,
+      reservePositions,
+    });
+    expect(result.supply.afterIncentive).toBeCloseTo(4, 1);
+  });
+
+  it('offset reserve has no borrow → full incentive', () => {
+    const reserve: ReserveWithSpread = {
+      ...noIncentiveReserve,
+      merklSupplys: [merklGroupWithConstraint],
+    };
+    const reservePositions = new Map([
+      [usdeReserveId, { supplyUsd: 500, borrowUsd: 0 }],
+    ]);
+    const result = buildRateSimulationResult({
+      reserve,
+      reserveRateInput: noIncentiveReserve,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '1000',
+      borrowInput: '0',
+      forecastStates: {},
+      meritMerklNetPosition: false,
+      reservePositions,
+    });
+    expect(result.supply.afterIncentive).toBeCloseTo(10, 1);
+  });
+
+  it('offset borrow >= supply → incentive zeroed', () => {
+    const reserve: ReserveWithSpread = {
+      ...noIncentiveReserve,
+      merklSupplys: [merklGroupWithConstraint],
+    };
+    const reservePositions = new Map([
+      [usdeReserveId, { supplyUsd: 0, borrowUsd: 1200 }],
+    ]);
+    const result = buildRateSimulationResult({
+      reserve,
+      reserveRateInput: noIncentiveReserve,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '1000',
+      borrowInput: '0',
+      forecastStates: {},
+      meritMerklNetPosition: false,
+      reservePositions,
+    });
+    expect(result.supply.afterIncentive).toBeCloseTo(0, 1);
+  });
+
+  it('multiple groups: constrained scaled, unconstrained full', () => {
+    const unconstrainedGroup: MerklOpportunityGroup = {
+      name: 'Standard merkl',
+      breakdowns: [
+        {
+          campaignApr: 5,
+          campaignStartedAt: '2020-01-01T00:00:00.000Z',
+          campaignEndedAt: '2099-01-01T00:00:00.000Z',
+          campaignId: 'std-1',
+        },
+      ],
+    };
+    const reserve: ReserveWithSpread = {
+      ...noIncentiveReserve,
+      merklSupplys: [merklGroupWithConstraint, unconstrainedGroup],
+    };
+    const reservePositions = new Map([
+      [usdeReserveId, { supplyUsd: 0, borrowUsd: 500 }],
+    ]);
+    const result = buildRateSimulationResult({
+      reserve,
+      reserveRateInput: noIncentiveReserve,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '1000',
+      borrowInput: '0',
+      forecastStates: {},
+      meritMerklNetPosition: false,
+      reservePositions,
+    });
+    expect(result.supply.afterIncentive).toBeCloseTo(10, 1);
+  });
+});
+
+describe('buildRateSimulationResult — merkl cross-reserve note in campaign details', () => {
+  const usdeReserveId = '1:0xPool:0xUSDe';
+  const noIncentiveReserve = { ...baseReserve, supplyIncentives: [] as number[], borrowIncentives: [] as number[] };
+
+  const merklGroupWithConstraint: MerklOpportunityGroup = {
+    name: 'USDT0 net lending',
+    breakdowns: [
+      {
+        campaignApr: 10,
+        campaignStartedAt: '2020-01-01T00:00:00.000Z',
+        campaignEndedAt: '2099-01-01T00:00:00.000Z',
+        campaignId: 'net-lend-note-1',
+      },
+    ],
+    opportunityType: 'AAVE_NET_LENDING',
+    netPositionConstraint: {
+      sourceSide: 'supply',
+      offsetReserveIds: [usdeReserveId],
+    },
+  };
+
+  it('includes cross-reserve note when groupMultiplier < 1 and reserveSymbolById provided', () => {
+    const reserve: ReserveWithSpread = {
+      ...noIncentiveReserve,
+      merklSupplys: [merklGroupWithConstraint],
+    };
+    const reservePositions = new Map([
+      [usdeReserveId, { supplyUsd: 0, borrowUsd: 600 }],
+    ]);
+    const reserveSymbolById = new Map([
+      [usdeReserveId, 'USDe'],
+    ]);
+    const result = buildRateSimulationResult({
+      reserve,
+      reserveRateInput: noIncentiveReserve,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '1000',
+      borrowInput: '0',
+      forecastStates: {},
+      meritMerklNetPosition: false,
+      reservePositions,
+      reserveSymbolById,
+    });
+    const merklCampaigns = result.supply.sources.merkl.campaigns;
+    expect(merklCampaigns).toBeDefined();
+    expect(merklCampaigns!.length).toBeGreaterThan(0);
+    expect(merklCampaigns![0].capNote).toContain('USDe');
+  });
+
+  it('no cross-reserve note when no reserveSymbolById', () => {
+    const reserve: ReserveWithSpread = {
+      ...noIncentiveReserve,
+      merklSupplys: [merklGroupWithConstraint],
+    };
+    const reservePositions = new Map([
+      [usdeReserveId, { supplyUsd: 0, borrowUsd: 600 }],
+    ]);
+    const result = buildRateSimulationResult({
+      reserve,
+      reserveRateInput: noIncentiveReserve,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '1000',
+      borrowInput: '0',
+      forecastStates: {},
+      meritMerklNetPosition: false,
+      reservePositions,
+    });
+    const merklCampaigns = result.supply.sources.merkl.campaigns;
+    expect(merklCampaigns).toBeDefined();
+    expect(merklCampaigns!.length).toBeGreaterThan(0);
+    expect(merklCampaigns![0].capNote).toBeUndefined();
+  });
+
+  it('no cross-reserve note when no constraint on group', () => {
+    const unconstrainedGroup: MerklOpportunityGroup = {
+      name: 'Standard merkl',
+      breakdowns: [
+        {
+          campaignApr: 10,
+          campaignStartedAt: '2020-01-01T00:00:00.000Z',
+          campaignEndedAt: '2099-01-01T00:00:00.000Z',
+          campaignId: 'std-note-1',
+        },
+      ],
+    };
+    const reserve: ReserveWithSpread = {
+      ...noIncentiveReserve,
+      merklSupplys: [unconstrainedGroup],
+    };
+    const reservePositions = new Map([
+      [usdeReserveId, { supplyUsd: 0, borrowUsd: 600 }],
+    ]);
+    const reserveSymbolById = new Map([
+      [usdeReserveId, 'USDe'],
+    ]);
+    const result = buildRateSimulationResult({
+      reserve,
+      reserveRateInput: noIncentiveReserve,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '1000',
+      borrowInput: '0',
+      forecastStates: {},
+      meritMerklNetPosition: false,
+      reservePositions,
+      reserveSymbolById,
+    });
+    const merklCampaigns = result.supply.sources.merkl.campaigns;
+    expect(merklCampaigns).toBeDefined();
+    expect(merklCampaigns!.length).toBeGreaterThan(0);
+    expect(merklCampaigns![0].capNote).toBeUndefined();
+  });
+});

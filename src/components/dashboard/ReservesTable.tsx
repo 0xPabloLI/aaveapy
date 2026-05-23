@@ -47,7 +47,9 @@ import { useScenarioPinScroll } from '@/hooks/reserves-table/useScenarioPinScrol
 import { useReservesTooltip } from '@/hooks/reserves-table/useReservesTooltip';
 import { usePortfolioToggle, PortfolioSimulationContext } from '@/hooks/reserves-table/usePortfolioToggle';
 import { useReservesLayoutRefs } from '@/hooks/reserves-table/useReservesLayoutRefs';
-import { getReserveSimulationId, useSharedRateSimulations } from '@/hooks/useRateSimulation';
+import { getReserveSimulationId, useSharedRateSimulations, type ScenarioInputMode } from '@/hooks/useRateSimulation';
+import { parseNumberInput } from '@/lib/numberFormat';
+import type { ReservePositions } from '@/lib/netLendingCrossReserve';
 import { useSideDataMeta } from '@/hooks/useSideDataMeta';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
 import { getDisplayAvailableLiquidityUsd as computeDisplayAvailableLiquidityUsd, getDisplayTotalBorrowedUsd as computeDisplayTotalBorrowedUsd, getAvailableToBorrowUsd, nativeToUsd, getSuppliableUsd, getBorrowableUsd, getScenarioSupplySizeUsd } from '@/lib/scenarioSize';
@@ -135,11 +137,11 @@ const ReservesTable = ({
   } = useReserveExpansion({ isMobile });
   const [debouncedSharedSupplyInput, setDebouncedSharedSupplyInput] = useState('');
   const [debouncedSharedBorrowInput, setDebouncedSharedBorrowInput] = useState('');
-  const [sharedInputMode, setSharedInputMode] = useState<import('@/hooks/useRateSimulation').ScenarioInputMode>('usd');
+  const [sharedInputMode, setSharedInputMode] = useState<ScenarioInputMode>('usd');
   const [meritMerklNetPosition, setMeritMerklNetPosition] = useState(true);
   const [mobileNetOpen, setMobileNetOpen] = useState(false);
   const handleMobileNetToggle = useCallback(() => setMobileNetOpen(prev => !prev), []);
-  const handleScenarioChange = useCallback((supply: string, borrow: string, mode: import('@/components/dashboard/ScenarioControls').ScenarioInputMode) => {
+  const handleScenarioChange = useCallback((supply: string, borrow: string, mode: ScenarioInputMode) => {
     setDebouncedSharedSupplyInput(supply);
     setDebouncedSharedBorrowInput(borrow);
     setSharedInputMode(mode);
@@ -211,6 +213,31 @@ const ReservesTable = ({
     closeTooltip,
   } = useReservesTooltip();
 
+  const reservePositions = useMemo((): Map<string, ReservePositions> | undefined => {
+    const rawSupply = parseNumberInput(debouncedSharedSupplyInput);
+    const rawBorrow = parseNumberInput(debouncedSharedBorrowInput);
+    if (rawSupply === 0 && rawBorrow === 0) return undefined;
+    const map = new Map<string, ReservePositions>();
+    for (const r of reserves) {
+      const tp = r.tokenPrice ?? 0;
+      const supplyUsd = sharedInputMode === 'usd' ? rawSupply : rawSupply * tp;
+      const borrowUsd = sharedInputMode === 'usd' ? rawBorrow : rawBorrow * tp;
+      if (supplyUsd > 0 || borrowUsd > 0) {
+        map.set(r.reserveId, { supplyUsd, borrowUsd });
+      }
+    }
+    return map.size > 0 ? map : undefined;
+  }, [reserves, debouncedSharedSupplyInput, debouncedSharedBorrowInput, sharedInputMode]);
+
+  const reserveSymbolById = useMemo((): Map<string, string> | undefined => {
+    if (!reservePositions) return undefined;
+    const map = new Map<string, string>();
+    for (const r of reserves) {
+      if (r.symbol) map.set(r.reserveId, r.symbol);
+    }
+    return map.size > 0 ? map : undefined;
+  }, [reserves, reservePositions]);
+
   const { simulationsById, hasAnyInput: hasSharedScenario } = useSharedRateSimulations({
     reserves,
     isApy,
@@ -221,6 +248,8 @@ const ReservesTable = ({
     borrowInput: debouncedSharedBorrowInput,
     inputMode: sharedInputMode,
     meritMerklNetPosition,
+    reservePositions,
+    reserveSymbolById,
   });
 
   /** Scroll-on-expand only when list order can change with shared scenario (matches `pickScenarioValue` / size supply USD). */
