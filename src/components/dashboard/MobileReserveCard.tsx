@@ -1,5 +1,5 @@
 import { memo, useEffect, useState } from 'react';
-import { ListCollapse, PauseCircle, Plus, Snowflake, X, Ban, ExternalLink } from 'lucide-react';
+import { ListCollapse, PauseCircle, Plus, Snowflake, X, Ban } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ReserveWithSpread } from '@/types/aave';
 import {
@@ -32,7 +32,6 @@ import { RateSimulationResult } from '@/hooks/useRateSimulation';
 
 import { getDisplayAvailableLiquidityUsd, getDisplayTotalBorrowedUsd, nativeToUsd, getScenarioSupplySizeUsd } from '@/lib/scenarioSize';
 import { buildPoolExplorerUrl } from '@/lib/poolExplorerLinks';
-import { buildAaveV4MarketUrl } from '@/lib/aaveLinks';
 import { getProtocolVersion } from '@/lib/protocolVersion';
 import { cn } from '@/lib/utils';
 import { FrozenStatusContent } from './ReserveStatusBadge';
@@ -756,23 +755,7 @@ const MobileReserveCard = memo(({
                     </button>
                   );
                 })()}
-                {(() => {
-                  const aaveV4MarketUrl = buildAaveV4MarketUrl(reserve);
-                  if (!aaveV4MarketUrl) return null;
-                  return (
-                    <a
-                      href={aaveV4MarketUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="shrink-0 text-muted-foreground/60 transition-opacity active:opacity-60"
-                      aria-label={`Open market on Aave V4`}
-                      title="Open market on Aave V4"
-                    >
-                      <ExternalLink className="w-2.5 h-2.5" />
-                    </a>
-                  );
-                })()}
+
               </div>
             </div>
           </div>

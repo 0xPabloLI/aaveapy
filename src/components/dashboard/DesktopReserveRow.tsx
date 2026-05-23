@@ -443,7 +443,7 @@ const DesktopReserveRow = memo(({
                     >
                       <ExternalLink className={cn(
                         "w-2.5 h-2.5",
-                        isV4Market ? "text-foreground/60" : "text-muted-foreground/60"
+                        isV4Market ? "text-foreground" : "text-muted-foreground"
                       )} />
                     </a>
                   )}
