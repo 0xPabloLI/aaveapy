@@ -376,3 +376,27 @@ B1 (opportunityType + description 透传)
 | F3 ceiling 效应集成 | ✅ 完成 | incentiveCeilings.ts 新增 buildCrossReserveNetEligibilityNote、useRateSimulation.ts 闭包+守卫、3 测试通过 |
 | F4 UI 展示 (SimulationSubRow) | ✅ 完成 | capNote 已被 SimulationSubRow 自动渲染，无需额外改动 |
 | D1 方案文档定稿 | ✅ 完成 | 本文档 |
+
+## 12. Bug 修复记录
+
+### Bug 1：`pruneMerklGroup()` 遗漏 `netPositionConstraint`
+
+- **根因**：`packages/aave-fetcher/src/incentive-prune.ts` L40-48 显式构造新对象时未包含 `netPositionConstraint`
+- **修复**：添加 `...(g.netPositionConstraint !== undefined ? { netPositionConstraint: g.netPositionConstraint } : {})` — 用 `!== undefined` 而非 truthy，因为 `null` 表示"检测过但无约束"
+- **验证**：API 返回 13/25 个 merkl group 含 `netPositionConstraint`
+
+### Bug 2：`extractOffsetTokenAddresses` 使用 `.address` 而非 `.underlyingToken`
+
+- **根因**：`merkl-api.ts` 中提取 offset token 地址时使用了 aToken/vToken 地址
+- **修复**：改为提取 `.underlyingToken`（底层 token 地址）
+- **验证**：491/491 全匹配 reserveLookup
+
+## 13. 验证结果（2026-05-23）
+
+| 验证项 | 结果 |
+|--------|------|
+| 后端 API netPositionConstraint | 13/25 merkl group 含字段 ✓ |
+| 前端单元测试 | 1686 passed ✓ |
+| 前端 tsc + lint + build | 全通过 ✓ |
+| Playwright e2e | 6/6 passed ✓ |
+| 后端 tsc | 通过 ✓ |
