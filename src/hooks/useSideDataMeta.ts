@@ -10,7 +10,7 @@ import {
   setCachedTokenCategories,
 } from '@/lib/cache';
 import { shouldSurfaceForecastError } from '@/lib/merklForecastErrors';
-import type { MerklForecastWireItem } from '@/types/aave';
+import type { CampaignAccessPayload, MerklForecastWireItem } from '@/types/aave';
 
 export const SIDE_DATA_META_QUERY_KEY = ['side-data-meta'] as const;
 
@@ -46,6 +46,8 @@ export interface SideDataMetaResponse {
     errors: SideDataForecastError[];
     staleTimeMs: number;
   };
+  /** Merkl campaign whitelist/blacklist per campaign (AAV-66). */
+  campaignAccess?: CampaignAccessPayload;
 }
 
 export async function fetchSideDataMeta(): Promise<SideDataMetaResponse> {

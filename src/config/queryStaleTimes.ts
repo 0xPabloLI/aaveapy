@@ -14,7 +14,6 @@ export const QUERY_STALE_TIMES = {
   coingeckoFdv: 5 * 60 * 1000,
   tokenCategories: 6 * 60 * 60 * 1000,
   merklForecast: 10 * 60 * 1000,
-  campaignAccess: 30 * 60 * 1000,
 
   // Token images (long TTL).
   coingeckoTokenImage: 24 * 60 * 60 * 1000,

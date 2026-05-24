@@ -1,67 +1,69 @@
 /**
- * DEAD CODE — do not use.
+ * useCampaignAccess — consume Merkl whitelist/blacklist (AAV-66).
  *
- * This hook calls `/meta/campaign-access` which does not exist on the backend.
- * Per aav_66_plan.md, campaign access is embedded in `/api/meta/side-data.campaignAccess`.
- * Rewrite this hook to consume from useSideDataMeta() when implementing AAV-66.
+ * Data source: `/api/meta/side-data.campaignAccess`, fetched via useSideDataMeta().
+ * No separate network request — piggybacks on the side-data query that the app
+ * already loads on first render.
+ *
+ * Backend does NOT lowercase addresses; this hook normalizes defensively on both
+ * sides of the comparison.
  */
-import { useQuery } from '@tanstack/react-query';
-import { API_BASE } from '@/lib/apiBase';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
-import { CampaignAccessResponseSchema } from '@/lib/apiSchemas';
-import type { CampaignAccessResponse } from '@/types/aave';
-
-export const CAMPAIGN_ACCESS_QUERY_KEY = ['campaign-access'] as const;
+import { useSideDataMeta } from './useSideDataMeta';
+import type { CampaignAccessEntry } from '@/types/aave';
 
 export type CampaignAccessStatus = 'allowed' | 'whitelist-blocked' | 'blacklisted';
 
-export async function fetchCampaignAccess(): Promise<CampaignAccessResponse> {
-  const response = await fetch(`${API_BASE}/meta/campaign-access`);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch campaign access (${response.status})`);
-  }
-  const raw = await response.json();
-  return CampaignAccessResponseSchema.parse(raw) as CampaignAccessResponse;
-}
-
 /**
- * Check user's access status for a specific campaign.
- * Pure function — no side effects, no React dependency.
+ * Pure resolver — no React dependency. Safe to use in selectors and tests.
  *
- * @param userAddress - connected wallet address
- * @param campaignId - Merkl campaign ID
- * @param campaigns - campaign access data from API
+ * Semantics:
+ * - No entry for this campaign → public campaign → 'allowed'
+ * - Non-empty whitelist → only listed addresses are 'allowed'; others 'whitelist-blocked'
+ * - Empty whitelist + blacklist hit → 'blacklisted'
+ * - Otherwise → 'allowed'
  */
 export function getUserCampaignStatus(
   userAddress: string,
   campaignId: string,
-  campaigns: Record<string, { whitelist: string[]; blacklist: string[] }>,
+  campaigns: Record<string, CampaignAccessEntry> | undefined,
 ): CampaignAccessStatus {
+  if (!campaigns) return 'allowed';
+
   const access = campaigns[campaignId];
-  if (!access) return 'allowed'; // no access data = public campaign
+  if (!access) return 'allowed';
 
   const addr = userAddress.toLowerCase();
 
   if (access.whitelist.length > 0) {
-    return access.whitelist.includes(addr) ? 'allowed' : 'whitelist-blocked';
+    const allowed = access.whitelist.some((entry) => entry.toLowerCase() === addr);
+    return allowed ? 'allowed' : 'whitelist-blocked';
   }
 
-  if (access.blacklist.includes(addr)) return 'blacklisted';
+  if (access.blacklist.some((entry) => entry.toLowerCase() === addr)) {
+    return 'blacklisted';
+  }
 
   return 'allowed';
 }
 
 /**
- * Hook to fetch Merkl campaign whitelist/blacklist data.
- * Gated by `enabled` — set to `true` only when wallet is connected.
+ * Hook that exposes the campaign-access payload and a resolver bound to it.
  *
- * @param enabled - whether to fetch (wallet connected)
+ * The hook never gates the underlying request — side-data is always loaded —
+ * but callers should gate UI surfacing on wallet connection state.
  */
-export function useCampaignAccess(enabled: boolean) {
-  return useQuery({
-    queryKey: CAMPAIGN_ACCESS_QUERY_KEY,
-    queryFn: fetchCampaignAccess,
-    enabled,
-    staleTime: QUERY_STALE_TIMES.campaignAccess,
-  });
+export function useCampaignAccess() {
+  const query = useSideDataMeta(QUERY_STALE_TIMES.sideDataMeta);
+  const payload = query.data?.campaignAccess;
+
+  return {
+    campaigns: payload?.campaigns,
+    updatedAt: payload?.updatedAt,
+    isLoading: query.isLoading,
+    isError: query.isError,
+    error: query.error,
+    getUserStatus: (userAddress: string, campaignId: string): CampaignAccessStatus =>
+      getUserCampaignStatus(userAddress, campaignId, payload?.campaigns),
+  };
 }

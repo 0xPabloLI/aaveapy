@@ -213,20 +213,17 @@ export type MerklForecastWireItem =
       endTimestamp: number;
     };
 
-// Campaign access — Merkl whitelist/blacklist per campaign
-// Dead code: useCampaignAccess.ts calls non-existent /meta/campaign-access endpoint.
-// Will be reimplemented per aav_66_plan.md (embed in side-data). Tracked in Epic: wallet-merkl-portfolio.
+// Campaign access — Merkl whitelist/blacklist per campaign (AAV-66).
+// Embedded in side-data response; consumed by useCampaignAccess() gated on wallet connection.
 export interface CampaignAccessEntry {
   chainId: number;
   whitelist: string[];
   blacklist: string[];
 }
 
-export interface CampaignAccessResponse {
-  generatedAt: string;
+export interface CampaignAccessPayload {
   campaigns: Record<string, CampaignAccessEntry>;
   updatedAt: string;
-  staleTimeMs: number;
 }
 
 export type SortField = 'totalSupplyApy' | 'totalBorrowApy' | 'apySpread' | null;

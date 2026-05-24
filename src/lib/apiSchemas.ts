@@ -65,20 +65,14 @@ export const SideDataMetaResponseSchema = z.object({
     errors: z.array(MerklForecastErrorSchema),
     staleTimeMs: z.number(),
   }).optional(),
+  // Campaign access — Merkl whitelist/blacklist per campaign (AAV-66).
+  // Embedded in side-data; consumed by useCampaignAccess() gated on wallet connection.
+  campaignAccess: z.object({
+    campaigns: z.record(z.string(), z.object({
+      chainId: z.number(),
+      whitelist: z.array(z.string()),
+      blacklist: z.array(z.string()),
+    })),
+    updatedAt: z.string(),
+  }).optional(),
 }).passthrough();
-
-// ── Campaign access (dead code — see useCampaignAccess.ts) ──
-// Kept: will be reimplemented per aav_66_plan.md (embed in side-data, not separate endpoint).
-// Tracked in Epic: wallet-merkl-portfolio.
-const CampaignAccessEntrySchema = z.object({
-  chainId: z.number(),
-  whitelist: z.array(z.string()),
-  blacklist: z.array(z.string()),
-});
-
-export const CampaignAccessResponseSchema = z.object({
-  generatedAt: z.string(),
-  campaigns: z.record(z.string(), CampaignAccessEntrySchema),
-  updatedAt: z.string(),
-  staleTimeMs: z.number(),
-});
