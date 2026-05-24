@@ -41,6 +41,8 @@ npm run lint && npm test && npm run build && npx tsc --noEmit
 
 高风险表格/模拟器改动另参 `docs/conventions/frontend-regression-checklist.md`;API 合约改动参 `docs/conventions/api-contract-checklist.md`。
 
+**前端浏览器验证**：涉及 UI 交互/布局/样式的改动，CI gate 后需在浏览器中确认。优先用 `webapp-testing` skill（自动打开 dev server + Playwright 验证）；需手动探索交互时用 `playwright-interactive`；仅截图/快照用 `playwright`。
+
 ## PR / Merge Guardrails
 - Commits: 简洁的 conventional 格式;不在 message 里放 URL。
 - 不要 "cosmetically resolve" review thread,要么真修要么留待 maintainer 拍板。
