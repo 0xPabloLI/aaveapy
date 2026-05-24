@@ -102,7 +102,7 @@ function MobileCapSheet({
       />
     ),
     utilization: optimalPct != null && displayUtilization != null ? (
-      <UtilizationContent current={displayUtilization} optimal={optimalPct} formulaVariant="inline" formulaLabel="U" />
+      <UtilizationContent current={displayUtilization} optimal={optimalPct} formulaVariant="inline" formulaLabel="Utilization" />
     ) : null,
     deficit: hasDeficit ? (
       <DeficitProgressContent
@@ -742,18 +742,13 @@ const MobileReserveCard = memo(({
                   );
 
                   return (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onSelectHub?.(reserve.hubId!);
-                      }}
-                      className={cn("inline-flex max-w-full shrink-0 items-center px-1.5 py-0.5 cursor-pointer transition-all duration-150 active:opacity-80 active:scale-[0.98]", hubClass)}
-                      aria-label={`Filter by ${reserve.hubName} hub`}
-                      title={`Filter by ${reserve.hubName}`}
+                    <span
+                      data-testid="hub-pill"
+                      className={cn("inline-flex max-w-full shrink-0 items-center px-1.5 py-0.5", hubClass)}
+                      title={reserve.hubName}
                     >
                       <span className="truncate">{reserve.hubName}</span>
-                    </button>
+                    </span>
                   );
                 })()}
 

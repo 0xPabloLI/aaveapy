@@ -178,8 +178,8 @@ describe('MobileReserveCard', () => {
     expect(getByLabelText('Collapse details panel')).toBeInTheDocument();
   });
 
-  it('renders the mobile hub chip as a single clickable area without a separate external icon', () => {
-    const { container, getByLabelText } = render(
+  it('renders the mobile hub chip as a non-interactive span without a separate external icon', () => {
+    const { container } = render(
       <QueryClientProvider client={new QueryClient()}>
         <TooltipProvider>
           <MobileReserveCard
@@ -199,10 +199,10 @@ describe('MobileReserveCard', () => {
       </QueryClientProvider>,
     );
 
-    const hubButton = getByLabelText('Filter by Core hub');
-    expect(hubButton.className).toContain('px-1.5');
-    expect(hubButton.className).not.toContain('group/hub-link');
-    expect(hubButton.className).not.toContain('pr-3');
+    const hubSpan = container.querySelector('span[data-testid="hub-pill"]');
+    expect(hubSpan).not.toBeNull();
+    expect(hubSpan!.className).toContain('px-1.5');
+    expect(hubSpan!.className).not.toContain('cursor-pointer');
     expect(container.innerHTML).not.toContain('group-hover/hub-link:opacity-100');
   });
 
@@ -1279,9 +1279,9 @@ describe('MobileReserveCard', () => {
     });
   });
 
-  it('calls onSelectHub with hubId (not hubName) when hub badge is clicked', () => {
+  it('renders hub name as non-interactive span on mobile (no click-to-filter)', () => {
     const onSelectHub = vi.fn();
-    const { getByLabelText } = render(
+    const { container, queryByLabelText } = render(
       <QueryClientProvider client={new QueryClient()}>
         <TooltipProvider>
           <MobileReserveCard
@@ -1301,8 +1301,12 @@ describe('MobileReserveCard', () => {
         </TooltipProvider>
       </QueryClientProvider>,
     );
-    fireEvent.click(getByLabelText('Filter by Core hub'));
-    expect(onSelectHub).toHaveBeenCalledWith('hub-core');
+    expect(queryByLabelText('Filter by Core hub')).toBeNull();
+    const hubSpans = container.querySelectorAll('span[data-testid="hub-pill"]');
+    expect(hubSpans.length).toBeGreaterThanOrEqual(1);
+    expect(hubSpans[0].textContent).toBe('Core');
+    fireEvent.click(hubSpans[0]);
+    expect(onSelectHub).not.toHaveBeenCalled();
   });
 
   it('renders supply size from reserve.supplied field', () => {
