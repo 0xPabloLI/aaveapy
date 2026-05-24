@@ -111,27 +111,58 @@ const Index = () => {
   }, []);
 
   const [searchParams, setSearchParams] = useSearchParams();
-  const chainParamAppliedRef = useRef(false);
+  const queryParamsAppliedRef = useRef(false);
 
   useEffect(() => {
-    if (chainParamAppliedRef.current) return;
+    if (queryParamsAppliedRef.current) return;
+
     const chainParam = searchParams.get('chain');
-    if (!chainParam) return;
-    const chainFilter = chainParam.trim().toLowerCase();
-    if (!chainFilter) return;
+    const categoryParam = searchParams.get('category');
+    const searchParam = searchParams.get('search');
 
-    const matchedMarketNames = effectiveMarketsList
-      .filter((m) => m.chainName.toLowerCase().includes(chainFilter))
-      .map((m) => m.marketName);
+    if (!chainParam && !categoryParam && !searchParam) return;
 
-    if (matchedMarketNames.length > 0) {
-      setSelectedMarkets(matchedMarketNames);
-      setMarketViewMode('chain');
-      chainParamAppliedRef.current = true;
-      setSearchParams((prev) => {
-        prev.delete('chain');
-        return prev;
-      }, { replace: true });
+    let applied = false;
+    let chainHandled = !chainParam;
+
+    if (chainParam) {
+      const chainFilter = chainParam.trim().toLowerCase();
+      if (chainFilter && effectiveMarketsList.length > 0) {
+        const matchedMarketNames = effectiveMarketsList
+          .filter((m) => m.chainName.toLowerCase().includes(chainFilter))
+          .map((m) => m.marketName);
+        if (matchedMarketNames.length > 0) {
+          setSelectedMarkets(matchedMarketNames);
+          setMarketViewMode('chain');
+          applied = true;
+        }
+        chainHandled = true;
+      }
+    }
+
+    if (categoryParam) {
+      const cat = categoryParam.trim().toLowerCase() as TokenCategory;
+      if (['stablecoin', 'eth-related', 'btc-related', 'pendle', 'all'].includes(cat)) {
+        setSelectedCategory(cat);
+        applied = true;
+      }
+    }
+
+    if (searchParam) {
+      setSearchQuery(searchParam.trim());
+      applied = true;
+    }
+
+    if (chainHandled) {
+      queryParamsAppliedRef.current = true;
+      if (applied) {
+        setSearchParams((prev) => {
+          prev.delete('chain');
+          prev.delete('category');
+          prev.delete('search');
+          return prev;
+        }, { replace: true });
+      }
     }
   }, [effectiveMarketsList, searchParams, setSearchParams]);
 
