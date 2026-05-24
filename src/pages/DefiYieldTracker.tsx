@@ -90,10 +90,10 @@ const DefiYieldTracker = () => {
           </header>
 
           <Link
-            to="/"
+            to="/?category=stablecoin"
             className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-primary-foreground font-medium ring-1 ring-border hover:ring-2 transition-all"
           >
-            Open the dashboard
+            Compare stablecoin yields now
             <ArrowRight className="h-4 w-4" aria-hidden />
           </Link>
 
@@ -146,11 +146,11 @@ const DefiYieldTracker = () => {
             </h2>
             <p className="text-muted-foreground leading-relaxed">
               Unlike generic DeFi portfolio trackers that read your wallet, Aave APY is a focused tracker for Aave positions. Model deposits and borrows across any chain, see the net effective APY after every incentive, and save snapshots to compare over time. Open the{' '}
-              <Link to="/" className="text-primary underline-offset-4 hover:underline">portfolio simulator</Link>{' '}
-              on the main dashboard to start tracking, or browse per-chain breakdowns like{' '}
-              <Link to="/chain/ethereum" className="text-primary underline-offset-4 hover:underline">Ethereum</Link>,{' '}
-              <Link to="/chain/arbitrum" className="text-primary underline-offset-4 hover:underline">Arbitrum</Link>, and{' '}
-              <Link to="/chain/base" className="text-primary underline-offset-4 hover:underline">Base</Link>.
+              <Link to="/?category=stablecoin" className="text-primary underline-offset-4 hover:underline">stablecoin comparison</Link>{' '}
+              on the main dashboard to start tracking, or jump into per-chain breakdowns like{' '}
+              <Link to="/?chain=ethereum&category=stablecoin" className="text-primary underline-offset-4 hover:underline">Ethereum stables</Link>,{' '}
+              <Link to="/?chain=arbitrum&category=eth-related" className="text-primary underline-offset-4 hover:underline">Arbitrum ETH</Link>, and{' '}
+              <Link to="/?chain=base&category=stablecoin" className="text-primary underline-offset-4 hover:underline">Base stables</Link>.
             </p>
           </section>
 
@@ -160,11 +160,11 @@ const DefiYieldTracker = () => {
             </h2>
             <p className="text-muted-foreground leading-relaxed">
               Build an Aave portfolio across any combination of markets and chains. The portfolio panel aggregates supply and borrow positions, computes weighted APY, and highlights which reserves are pulling your yield up or down. Jump into the{' '}
-              <Link to="/" className="text-primary underline-offset-4 hover:underline">dashboard</Link>{' '}
+              <Link to="/?category=stablecoin" className="text-primary underline-offset-4 hover:underline">dashboard with stablecoins preselected</Link>{' '}
               to add positions, or explore high-yield chains like{' '}
-              <Link to="/chain/polygon" className="text-primary underline-offset-4 hover:underline">Polygon</Link>,{' '}
-              <Link to="/chain/avalanche" className="text-primary underline-offset-4 hover:underline">Avalanche</Link>, and{' '}
-              <Link to="/chain/optimism" className="text-primary underline-offset-4 hover:underline">Optimism</Link>.
+              <Link to="/?chain=polygon&category=stablecoin" className="text-primary underline-offset-4 hover:underline">Polygon stables</Link>,{' '}
+              <Link to="/?chain=avalanche&category=stablecoin" className="text-primary underline-offset-4 hover:underline">Avalanche stables</Link>, and{' '}
+              <Link to="/?chain=optimism&category=eth-related" className="text-primary underline-offset-4 hover:underline">Optimism ETH</Link>.
             </p>
           </section>
 
@@ -174,9 +174,9 @@ const DefiYieldTracker = () => {
             </h2>
             <p className="text-muted-foreground leading-relaxed">
               Every reserve includes a live APY tracker with rate simulation — enter a deposit or borrow size and see how the curve responds before you commit on-chain. Incentives from Merit, Merkl, and Brevis are baked into the effective APY shown on every row. Try it on{' '}
-              <Link to="/chain/ethereum" className="text-primary underline-offset-4 hover:underline">Ethereum</Link>,{' '}
-              <Link to="/chain/scroll" className="text-primary underline-offset-4 hover:underline">Scroll</Link>, or{' '}
-              <Link to="/chain/linea" className="text-primary underline-offset-4 hover:underline">Linea</Link>{' '}
+              <Link to="/?chain=ethereum" className="text-primary underline-offset-4 hover:underline">Ethereum</Link>,{' '}
+              <Link to="/?chain=scroll" className="text-primary underline-offset-4 hover:underline">Scroll</Link>, or{' '}
+              <Link to="/?chain=linea" className="text-primary underline-offset-4 hover:underline">Linea</Link>{' '}
               for chain-specific rate breakdowns.
             </p>
           </section>
@@ -189,9 +189,9 @@ const DefiYieldTracker = () => {
               Beyond rates, Aave APY surfaces analytics that matter for capital deployment: utilization, supply and borrow caps, incentive ceilings, and per-user reward caps. Use the{' '}
               <Link to="/" className="text-primary underline-offset-4 hover:underline">main analytics dashboard</Link>{' '}
               to filter and sort across every chain, or drill into deployments like{' '}
-              <Link to="/chain/sonic" className="text-primary underline-offset-4 hover:underline">Sonic</Link>,{' '}
-              <Link to="/chain/ink" className="text-primary underline-offset-4 hover:underline">Ink</Link>, and{' '}
-              <Link to="/chain/soneium" className="text-primary underline-offset-4 hover:underline">Soneium</Link>.
+              <Link to="/?chain=sonic" className="text-primary underline-offset-4 hover:underline">Sonic</Link>,{' '}
+              <Link to="/?chain=ink" className="text-primary underline-offset-4 hover:underline">Ink</Link>, and{' '}
+              <Link to="/?chain=soneium" className="text-primary underline-offset-4 hover:underline">Soneium</Link>.
             </p>
           </section>
 
