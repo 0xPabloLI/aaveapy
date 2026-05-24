@@ -122,7 +122,9 @@ const DefiYieldTracker = () => {
               Track DeFi yields across multiple blockchains
             </h2>
             <p className="text-muted-foreground leading-relaxed">
-              Aave is deployed across 17 chains, each with different reserves, incentives, and utilization. A multi-chain DeFi yield tracker is the only way to spot where your capital earns the most after rewards. Browse a chain below or jump straight into the dashboard to compare them side by side.
+              Aave is deployed across 17 chains, each with different reserves, incentives, and utilization. A multi-chain DeFi yield tracker is the only way to spot where your capital earns the most after rewards. Browse a chain below or jump straight into the{' '}
+              <Link to="/" className="text-primary underline-offset-4 hover:underline">main dashboard</Link>{' '}
+              to compare them side by side.
             </p>
             <ul className="mt-4 flex flex-wrap gap-2">
               {CHAINS.map((slug) => (
@@ -136,6 +138,61 @@ const DefiYieldTracker = () => {
                 </li>
               ))}
             </ul>
+          </section>
+
+          <section aria-labelledby="defi-portfolio-tracker" className="mt-10">
+            <h2 id="defi-portfolio-tracker" className="text-xl font-semibold mb-3">
+              DeFi portfolio tracker
+            </h2>
+            <p className="text-muted-foreground leading-relaxed">
+              Unlike generic DeFi portfolio trackers that read your wallet, Aave APY is a focused tracker for Aave positions. Model deposits and borrows across any chain, see the net effective APY after every incentive, and save snapshots to compare over time. Open the{' '}
+              <Link to="/" className="text-primary underline-offset-4 hover:underline">portfolio simulator</Link>{' '}
+              on the main dashboard to start tracking, or browse per-chain breakdowns like{' '}
+              <Link to="/chain/ethereum" className="text-primary underline-offset-4 hover:underline">Ethereum</Link>,{' '}
+              <Link to="/chain/arbitrum" className="text-primary underline-offset-4 hover:underline">Arbitrum</Link>, and{' '}
+              <Link to="/chain/base" className="text-primary underline-offset-4 hover:underline">Base</Link>.
+            </p>
+          </section>
+
+          <section aria-labelledby="aave-portfolio" className="mt-10">
+            <h2 id="aave-portfolio" className="text-xl font-semibold mb-3">
+              Aave portfolio
+            </h2>
+            <p className="text-muted-foreground leading-relaxed">
+              Build an Aave portfolio across any combination of markets and chains. The portfolio panel aggregates supply and borrow positions, computes weighted APY, and highlights which reserves are pulling your yield up or down. Jump into the{' '}
+              <Link to="/" className="text-primary underline-offset-4 hover:underline">dashboard</Link>{' '}
+              to add positions, or explore high-yield chains like{' '}
+              <Link to="/chain/polygon" className="text-primary underline-offset-4 hover:underline">Polygon</Link>,{' '}
+              <Link to="/chain/avalanche" className="text-primary underline-offset-4 hover:underline">Avalanche</Link>, and{' '}
+              <Link to="/chain/optimism" className="text-primary underline-offset-4 hover:underline">Optimism</Link>.
+            </p>
+          </section>
+
+          <section aria-labelledby="aave-apy-tracker" className="mt-10">
+            <h2 id="aave-apy-tracker" className="text-xl font-semibold mb-3">
+              Aave APY tracker
+            </h2>
+            <p className="text-muted-foreground leading-relaxed">
+              Every reserve includes a live APY tracker with rate simulation — enter a deposit or borrow size and see how the curve responds before you commit on-chain. Incentives from Merit, Merkl, and Brevis are baked into the effective APY shown on every row. Try it on{' '}
+              <Link to="/chain/ethereum" className="text-primary underline-offset-4 hover:underline">Ethereum</Link>,{' '}
+              <Link to="/chain/scroll" className="text-primary underline-offset-4 hover:underline">Scroll</Link>, or{' '}
+              <Link to="/chain/linea" className="text-primary underline-offset-4 hover:underline">Linea</Link>{' '}
+              for chain-specific rate breakdowns.
+            </p>
+          </section>
+
+          <section aria-labelledby="aave-analytics" className="mt-10">
+            <h2 id="aave-analytics" className="text-xl font-semibold mb-3">
+              Aave analytics
+            </h2>
+            <p className="text-muted-foreground leading-relaxed">
+              Beyond rates, Aave APY surfaces analytics that matter for capital deployment: utilization, supply and borrow caps, incentive ceilings, and per-user reward caps. Use the{' '}
+              <Link to="/" className="text-primary underline-offset-4 hover:underline">main analytics dashboard</Link>{' '}
+              to filter and sort across every chain, or drill into deployments like{' '}
+              <Link to="/chain/sonic" className="text-primary underline-offset-4 hover:underline">Sonic</Link>,{' '}
+              <Link to="/chain/ink" className="text-primary underline-offset-4 hover:underline">Ink</Link>, and{' '}
+              <Link to="/chain/soneium" className="text-primary underline-offset-4 hover:underline">Soneium</Link>.
+            </p>
           </section>
 
           <section aria-labelledby="faq" className="mt-12">
