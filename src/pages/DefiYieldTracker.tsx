@@ -160,11 +160,11 @@ const DefiYieldTracker = () => {
             </h2>
             <p className="text-muted-foreground leading-relaxed">
               Build an Aave portfolio across any combination of markets and chains. The portfolio panel aggregates supply and borrow positions, computes weighted APY, and highlights which reserves are pulling your yield up or down. Jump into the{' '}
-              <Link to="/" className="text-primary underline-offset-4 hover:underline">dashboard</Link>{' '}
+              <Link to="/?category=stablecoin" className="text-primary underline-offset-4 hover:underline">dashboard with stablecoins preselected</Link>{' '}
               to add positions, or explore high-yield chains like{' '}
-              <Link to="/chain/polygon" className="text-primary underline-offset-4 hover:underline">Polygon</Link>,{' '}
-              <Link to="/chain/avalanche" className="text-primary underline-offset-4 hover:underline">Avalanche</Link>, and{' '}
-              <Link to="/chain/optimism" className="text-primary underline-offset-4 hover:underline">Optimism</Link>.
+              <Link to="/?chain=polygon&category=stablecoin" className="text-primary underline-offset-4 hover:underline">Polygon stables</Link>,{' '}
+              <Link to="/?chain=avalanche&category=stablecoin" className="text-primary underline-offset-4 hover:underline">Avalanche stables</Link>, and{' '}
+              <Link to="/?chain=optimism&category=eth-related" className="text-primary underline-offset-4 hover:underline">Optimism ETH</Link>.
             </p>
           </section>
 
