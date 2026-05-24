@@ -29,8 +29,8 @@ export const fetchMarkets = async (): Promise<MarketsResponse> => {
     // Runtime drift detection: if backend deployed a new schema before
     // frontend was rebuilt, update the lazy fingerprint so cached entries
     // from the old schema are invalidated on next access.
-    if (data.meta?.schemaFingerprint && data.meta.schemaFingerprint !== SCHEMA_FP) {
-      updateSchemaFingerprintFromApi(data.meta.schemaFingerprint);
+    if (data.snapshot?.schemaFingerprint && data.snapshot.schemaFingerprint !== SCHEMA_FP) {
+      updateSchemaFingerprintFromApi(data.snapshot.schemaFingerprint);
     }
 
     setCachedMarkets(data);

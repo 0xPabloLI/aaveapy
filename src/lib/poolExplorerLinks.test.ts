@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   buildPoolExplorerUrl,
   buildHubExplorerUrl,
+  buildSpokeExplorerUrl,
   getPoolAddress,
   getExplorerFamily,
   getExplorerMarketNames,
@@ -245,5 +246,40 @@ describe('buildHubExplorerUrl', () => {
     expect(buildHubExplorerUrl(hubAddr, { chainName: 'Ethereum' })).toBe(
       `https://etherscan.io/address/${hubAddr}`,
     );
+  });
+});
+
+describe('buildSpokeExplorerUrl', () => {
+  it('returns null for null/undefined spokeAddress', () => {
+    expect(buildSpokeExplorerUrl(null)).toBeNull();
+    expect(buildSpokeExplorerUrl(undefined)).toBeNull();
+  });
+
+  it('returns null when chainName is not in CHAIN_EXPLORER_MAP', () => {
+    expect(
+      buildSpokeExplorerUrl('0xCca8260D641e5c1D5b0a4f4a6E2e6b1E1f0cA3b9', {
+        chainName: 'UnknownChain',
+      }),
+    ).toBeNull();
+  });
+
+  it('builds etherscan family URL for Ethereum Spoke', () => {
+    const spokeAddr = '0xAa11Bb22Cc33Dd44Ee55Ff66Aa77Bb88Cc99Dd00';
+    expect(buildSpokeExplorerUrl(spokeAddr, { chainName: 'Ethereum' })).toBe(
+      `https://etherscan.io/address/${spokeAddr}`,
+    );
+  });
+
+  it('builds arbiscan URL for Arbitrum Spoke', () => {
+    const spokeAddr = '0xAa11Bb22Cc33Dd44Ee55Ff66Aa77Bb88Cc99Dd00';
+    expect(buildSpokeExplorerUrl(spokeAddr, { chainName: 'Arbitrum' })).toBe(
+      `https://arbiscan.io/address/${spokeAddr}`,
+    );
+  });
+
+  it('returns null when no chainName provided', () => {
+    expect(
+      buildSpokeExplorerUrl('0xCca8260D641e5c1D5b0a4f4a6E2e6b1E1f0cA3b9'),
+    ).toBeNull();
   });
 });

@@ -164,7 +164,6 @@ export const ReserveWithSpreadSchema = z.object({
   hubId: z.string().optional(),
   hubName: z.string().optional(),
   spokeId: z.string().optional(),
-  spokeName: z.string().optional(),
 }).passthrough();
 
 export const MarketsResponseSchema = z.object({

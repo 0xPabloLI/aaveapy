@@ -549,3 +549,27 @@ export function buildHubExplorerUrl(
 
   return null;
 }
+
+/**
+ * Build an explorer URL for a V4 Spoke contract address.
+ * Spoke is the per-market contract where users actually supply/borrow.
+ * Uses the same logic as buildHubExplorerUrl but for spokeAddress.
+ */
+export function buildSpokeExplorerUrl(
+  spokeAddress: string | null | undefined,
+  options: { chainName?: string } = {},
+): string | null {
+  if (!spokeAddress) return null;
+
+  const chainName = options.chainName;
+  if (chainName && CHAIN_EXPLORER_MAP[chainName]) {
+    const explorer = CHAIN_EXPLORER_MAP[chainName];
+    let path = '/address/' + spokeAddress;
+    if (explorer.pathFormat) {
+      path = explorer.pathFormat.replace('{pool}', spokeAddress);
+    }
+    return `${explorer.base}${path}`;
+  }
+
+  return null;
+}

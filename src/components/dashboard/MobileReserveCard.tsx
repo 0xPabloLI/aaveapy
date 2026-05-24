@@ -102,7 +102,7 @@ function MobileCapSheet({
       />
     ),
     utilization: optimalPct != null && displayUtilization != null ? (
-      <UtilizationContent current={displayUtilization} optimal={optimalPct} formulaVariant="inline" formulaLabel="Utilization" />
+      <UtilizationContent current={displayUtilization} optimal={optimalPct} formulaVariant="inline" formulaLabel="U" />
     ) : null,
     deficit: hasDeficit ? (
       <DeficitProgressContent

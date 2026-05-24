@@ -276,7 +276,6 @@ describe('apiSchemas', () => {
           hubName: 'Core',
           hubAddress: '0xhub123',
           spokeId: 'spoke-eth',
-          spokeName: 'Ethereum Spoke',
           spokeAddress: '0xspoke456',
         },
       ],
@@ -288,7 +287,6 @@ describe('apiSchemas', () => {
     expect(r.hubName).toBe('Core');
     expect(r.hubAddress).toBe('0xhub123');
     expect(r.spokeId).toBe('spoke-eth');
-    expect(r.spokeName).toBe('Ethereum Spoke');
     expect(r.spokeAddress).toBe('0xspoke456');
   });
 

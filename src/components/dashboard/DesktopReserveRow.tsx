@@ -399,6 +399,7 @@ const DesktopReserveRow = memo(({
                   aaveProReserveId={reserve.aaveProReserveId}
                   chainName={reserve.chainName}
                   hubAddress={reserve.hubAddress}
+                  spokeAddress={reserve.spokeAddress}
                   isMobile={isMobile}
                   triggerSize={12}
                   triggerClassName="shrink-0 self-center"
@@ -766,6 +767,7 @@ const DesktopReserveRow = memo(({
                   onSortOptimal={onSortOptimal}
                   isSortOptimalActive={isSortOptimalActive}
                   optimalSortOrder={optimalSortOrder}
+                  formulaLabel="U"
                 />
               </TooltipContent>
             </Tooltip>

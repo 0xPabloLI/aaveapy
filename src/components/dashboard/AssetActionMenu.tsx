@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { buildAaveUrl, buildAaveV4AssetUrl } from '@/lib/aaveLinks';
 import { buildTydroReserveUrl } from '@/lib/tydroLinks';
-import { buildPoolExplorerUrl, buildTokenExplorerUrl, buildHubExplorerUrl } from '@/lib/poolExplorerLinks';
+import { buildPoolExplorerUrl, buildTokenExplorerUrl, buildHubExplorerUrl, buildSpokeExplorerUrl } from '@/lib/poolExplorerLinks';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { getProtocolVersion } from '@/lib/protocolVersion';
@@ -30,6 +30,8 @@ export interface AssetActionMenuProps {
   chainName?: string;
   /** V4 Hub contract address (for explorer links). */
   hubAddress?: string;
+  /** V4 Spoke contract address (for explorer links). */
+  spokeAddress?: string;
   /** When true, render bottom-sheet style; otherwise render desktop popover. */
   isMobile: boolean;
   /** Optional extra classes for the trigger button. */
@@ -64,6 +66,7 @@ export function AssetActionMenu({
   aaveProReserveId,
   chainName: reserveChainName,
   hubAddress,
+  spokeAddress,
   isMobile,
   triggerClassName,
   triggerSize = 12,
@@ -84,6 +87,7 @@ export function AssetActionMenu({
   const tokenExplorerUrl = buildTokenExplorerUrl(marketName, tokenAddress, { chainName: reserveChainName });
   const poolExplorerUrl = buildPoolExplorerUrl(marketName, { deepLink: false, chainName: reserveChainName });
   const hubExplorerUrl = buildHubExplorerUrl(hubAddress, { chainName: reserveChainName });
+  const spokeExplorerUrl = buildSpokeExplorerUrl(spokeAddress, { chainName: reserveChainName });
 
   const handleCopy = async () => {
     try {
@@ -116,6 +120,9 @@ export function AssetActionMenu({
     hubExplorerUrl
       ? { key: 'hub-explorer', label: 'View hub on explorer', href: hubExplorerUrl, icon: 'external' as const }
       : null,
+    spokeExplorerUrl
+      ? { key: 'spoke-explorer', label: 'View spoke on explorer', href: spokeExplorerUrl, icon: 'external' as const }
+      : null,
     {
       key: 'copy',
       label: copied ? 'Copied!' : 'Copy address',
@@ -132,7 +139,7 @@ export function AssetActionMenu({
       'transition-colors hover:bg-muted/70 active:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
     );
     const truncatedAddress = `${tokenAddress.slice(0, 6)}…${tokenAddress.slice(-4)}`;
-    const isExplorerItem = item.key === 'token-explorer' || item.key === 'pool-explorer' || item.key === 'hub-explorer';
+    const isExplorerItem = item.key === 'token-explorer' || item.key === 'pool-explorer' || item.key === 'hub-explorer' || item.key === 'spoke-explorer';
     const protocolIconSrc = item.key === 'aave'
       ? '/icons/tokens/aave.svg'
       : item.key === 'tydro'
