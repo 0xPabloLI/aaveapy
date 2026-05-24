@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { render } from '@testing-library/react';
 import { renderToString } from 'react-dom/server';
-import UtilizationIndicator, { UtilizationContent } from './UtilizationIndicator';
+import UtilizationIndicator, { UtilizationContent, UtilizationFormula } from './UtilizationIndicator';
 
 function renderIndicator(current: number | null, optimal: number | null) {
   return render(<UtilizationIndicator current={current} optimal={optimal} />);
@@ -90,5 +90,61 @@ describe('UtilizationContent formula layout', () => {
       <UtilizationContent current={50} optimal={80} />,
     );
     expect(html).not.toContain('Available liquidity');
+  });
+
+  it('passes formulaVariant="inline" to UtilizationFormula', () => {
+    const html = renderToString(
+      <UtilizationContent current={50} optimal={80} formulaVariant="inline" />,
+    );
+    expect(html).toMatch(/>\/</);
+    expect(html).toMatch(/>\(</);
+  });
+
+  it('passes formulaLabel to UtilizationFormula', () => {
+    const html = renderToString(
+      <UtilizationContent current={50} optimal={80} formulaLabel="U" />,
+    );
+    expect(html).toMatch(/>U</);
+  });
+
+  it('defaults to fraction layout when no formulaVariant provided', () => {
+    const html = renderToString(
+      <UtilizationContent current={50} optimal={80} />,
+    );
+    expect(html).not.toMatch(/>\/</);
+  });
+});
+
+describe('UtilizationFormula variant', () => {
+  it('renders inline formula with /, ( and ) when variant="inline"', () => {
+    const html = renderToString(<UtilizationFormula variant="inline" />);
+    expect(html).toMatch(/>\/</);
+    expect(html).toMatch(/>\(</);
+    expect(html).toMatch(/>\)</);
+    expect(html).toContain('borrowed');
+    expect(html).toContain('liquidity');
+  });
+
+  it('renders fraction formula (no inline division or parentheses) when variant="fraction" or omitted', () => {
+    const htmlDefault = renderToString(<UtilizationFormula />);
+    expect(htmlDefault).toContain('borrowed');
+    expect(htmlDefault).toContain('liquidity');
+    expect(htmlDefault).not.toMatch(/>\/</);
+    expect(htmlDefault).not.toMatch(/>\(</);
+
+    const htmlFraction = renderToString(<UtilizationFormula variant="fraction" />);
+    expect(htmlFraction).not.toMatch(/>\/</);
+    expect(htmlFraction).not.toMatch(/>\(</);
+  });
+
+  it('renders label before = when label prop is provided', () => {
+    const html = renderToString(<UtilizationFormula label="Utilization" />);
+    expect(html).toContain('Utilization');
+  });
+
+  it('renders only = when label is not provided', () => {
+    const html = renderToString(<UtilizationFormula />);
+    expect(html).toMatch(/>=</);
+    expect(html).not.toMatch(/>Utilization</);
   });
 });

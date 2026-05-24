@@ -3,20 +3,38 @@ import { ArrowDown, ArrowUp } from 'lucide-react';
 import { formatPercent } from '@/lib/formatters';
 
 
-/**
- * Visual fraction display for the utilization formula.
- *
- *       borrowed
- *   = ─────────────
- *      liquidity + borrowed
- *
- * Color-codes `borrowed` (brand cyan) and `liquidity` (purple) to match
- * the semantic tokens used elsewhere in the tooltip.
- */
-function UtilizationFormula() {
+const formulaBoxClass = 'rounded-lg border border-border bg-muted/40 px-1.5 py-2';
+
+interface UtilizationFormulaProps {
+  variant?: 'inline' | 'fraction';
+  label?: string;
+}
+
+export function UtilizationFormula({ variant = 'fraction', label }: UtilizationFormulaProps = {}) {
+  const labelPrefix = label ? <span className="shrink-0 text-muted-foreground">{label}</span> : null;
+
+  if (variant === 'inline') {
+    return (
+      <div className={formulaBoxClass}>
+        <div className="flex items-center justify-start gap-1 font-mono ds-text-11 text-foreground leading-[1.1]">
+          {labelPrefix}
+          <span className="shrink-0 text-muted-foreground">=</span>
+          <span className="ds-text-brand-cyan font-semibold">borrowed</span>
+          <span className="text-muted-foreground">/</span>
+          <span className="text-muted-foreground">(</span>
+          <span className="ds-text-purple-600 font-semibold">liquidity</span>
+          <span className="text-muted-foreground">+</span>
+          <span className="ds-text-brand-cyan font-semibold">borrowed</span>
+          <span className="text-muted-foreground">)</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="rounded-lg border border-border bg-muted/40 px-1.5 py-2">
+    <div className={formulaBoxClass}>
       <div className="flex items-center justify-center gap-1 font-mono ds-text-11 text-foreground leading-[1.1]">
+        {labelPrefix}
         <span className="shrink-0 text-muted-foreground">=</span>
         <div className="flex flex-col items-stretch text-center">
           <span className="px-1 pb-0.5">
@@ -82,6 +100,8 @@ export function UtilizationContent({
   onSortOptimal,
   isSortOptimalActive,
   optimalSortOrder,
+  formulaVariant,
+  formulaLabel,
 }: {
   current: number;
   optimal: number;
@@ -91,6 +111,8 @@ export function UtilizationContent({
   onSortOptimal?: () => void;
   isSortOptimalActive?: boolean;
   optimalSortOrder?: 'asc' | 'desc';
+  formulaVariant?: 'inline' | 'fraction';
+  formulaLabel?: string;
 }) {
   const isOverOptimal = current > optimal;
 
@@ -119,7 +141,7 @@ export function UtilizationContent({
         </span>
       </div>
       <div className="pt-2 border-t border-border/50">
-        <UtilizationFormula />
+        <UtilizationFormula variant={formulaVariant} label={formulaLabel} />
       </div>
     </div>
   );

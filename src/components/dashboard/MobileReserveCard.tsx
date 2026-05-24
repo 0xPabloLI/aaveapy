@@ -102,7 +102,7 @@ function MobileCapSheet({
       />
     ),
     utilization: optimalPct != null && displayUtilization != null ? (
-      <UtilizationContent current={displayUtilization} optimal={optimalPct} />
+      <UtilizationContent current={displayUtilization} optimal={optimalPct} formulaVariant="inline" formulaLabel="Utilization" />
     ) : null,
     deficit: hasDeficit ? (
       <DeficitProgressContent
@@ -697,6 +697,7 @@ const MobileReserveCard = memo(({
                     aaveProReserveId={reserve.aaveProReserveId}
                     chainName={reserve.chainName}
                     hubAddress={reserve.hubAddress}
+                    spokeAddress={reserve.spokeAddress}
                     isMobile
                     triggerSize={13}
                     triggerClassName="shrink-0"
