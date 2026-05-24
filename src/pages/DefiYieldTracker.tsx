@@ -174,9 +174,9 @@ const DefiYieldTracker = () => {
             </h2>
             <p className="text-muted-foreground leading-relaxed">
               Every reserve includes a live APY tracker with rate simulation — enter a deposit or borrow size and see how the curve responds before you commit on-chain. Incentives from Merit, Merkl, and Brevis are baked into the effective APY shown on every row. Try it on{' '}
-              <Link to="/chain/ethereum" className="text-primary underline-offset-4 hover:underline">Ethereum</Link>,{' '}
-              <Link to="/chain/scroll" className="text-primary underline-offset-4 hover:underline">Scroll</Link>, or{' '}
-              <Link to="/chain/linea" className="text-primary underline-offset-4 hover:underline">Linea</Link>{' '}
+              <Link to="/?chain=ethereum" className="text-primary underline-offset-4 hover:underline">Ethereum</Link>,{' '}
+              <Link to="/?chain=scroll" className="text-primary underline-offset-4 hover:underline">Scroll</Link>, or{' '}
+              <Link to="/?chain=linea" className="text-primary underline-offset-4 hover:underline">Linea</Link>{' '}
               for chain-specific rate breakdowns.
             </p>
           </section>
@@ -189,9 +189,9 @@ const DefiYieldTracker = () => {
               Beyond rates, Aave APY surfaces analytics that matter for capital deployment: utilization, supply and borrow caps, incentive ceilings, and per-user reward caps. Use the{' '}
               <Link to="/" className="text-primary underline-offset-4 hover:underline">main analytics dashboard</Link>{' '}
               to filter and sort across every chain, or drill into deployments like{' '}
-              <Link to="/chain/sonic" className="text-primary underline-offset-4 hover:underline">Sonic</Link>,{' '}
-              <Link to="/chain/ink" className="text-primary underline-offset-4 hover:underline">Ink</Link>, and{' '}
-              <Link to="/chain/soneium" className="text-primary underline-offset-4 hover:underline">Soneium</Link>.
+              <Link to="/?chain=sonic" className="text-primary underline-offset-4 hover:underline">Sonic</Link>,{' '}
+              <Link to="/?chain=ink" className="text-primary underline-offset-4 hover:underline">Ink</Link>, and{' '}
+              <Link to="/?chain=soneium" className="text-primary underline-offset-4 hover:underline">Soneium</Link>.
             </p>
           </section>
 
