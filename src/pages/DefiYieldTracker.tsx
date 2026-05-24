@@ -90,10 +90,10 @@ const DefiYieldTracker = () => {
           </header>
 
           <Link
-            to="/"
+            to="/?category=stablecoin"
             className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-primary-foreground font-medium ring-1 ring-border hover:ring-2 transition-all"
           >
-            Open the dashboard
+            Compare stablecoin yields now
             <ArrowRight className="h-4 w-4" aria-hidden />
           </Link>
 
