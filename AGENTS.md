@@ -18,11 +18,6 @@
 2. **Git safety**: never run `stash`/`checkout` related commands without explicit user confirmation in current chat.
 3. **Hook policy**: do not bypass `pre-commit`/`pre-push`; if `ci:remote` fails, fix root cause.
 
-## Session Rules (代码修改前 — 强制)
-1. 如果对话已很长，主动提醒可能需要新 session。
-2. 判断变更复杂度：涉及设计决策/方案歧义/跨模块影响 → 按序完成 `grill-with-docs` → `to-prd` → `to-issues`；简单明确的修改 → 跳过。
-3. 业务逻辑代码 → 使用 `tdd` skill。
-
 ## Commit Cadence (并行 agent 安全)
 **TL;DR**: 每完成一个原子任务立即 commit;同任务的后续修复 amend 原 commit;`stage` 时显式列路径(绝不 `git add -A` / `.`);不还原他人未提交改动;push 改写用 `--force-with-lease`。详见 `docs/conventions/commit-cadence.md`。
 
