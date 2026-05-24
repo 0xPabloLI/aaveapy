@@ -146,11 +146,11 @@ const DefiYieldTracker = () => {
             </h2>
             <p className="text-muted-foreground leading-relaxed">
               Unlike generic DeFi portfolio trackers that read your wallet, Aave APY is a focused tracker for Aave positions. Model deposits and borrows across any chain, see the net effective APY after every incentive, and save snapshots to compare over time. Open the{' '}
-              <Link to="/" className="text-primary underline-offset-4 hover:underline">portfolio simulator</Link>{' '}
-              on the main dashboard to start tracking, or browse per-chain breakdowns like{' '}
-              <Link to="/chain/ethereum" className="text-primary underline-offset-4 hover:underline">Ethereum</Link>,{' '}
-              <Link to="/chain/arbitrum" className="text-primary underline-offset-4 hover:underline">Arbitrum</Link>, and{' '}
-              <Link to="/chain/base" className="text-primary underline-offset-4 hover:underline">Base</Link>.
+              <Link to="/?category=stablecoin" className="text-primary underline-offset-4 hover:underline">stablecoin comparison</Link>{' '}
+              on the main dashboard to start tracking, or jump into per-chain breakdowns like{' '}
+              <Link to="/?chain=ethereum&category=stablecoin" className="text-primary underline-offset-4 hover:underline">Ethereum stables</Link>,{' '}
+              <Link to="/?chain=arbitrum&category=eth-related" className="text-primary underline-offset-4 hover:underline">Arbitrum ETH</Link>, and{' '}
+              <Link to="/?chain=base&category=stablecoin" className="text-primary underline-offset-4 hover:underline">Base stables</Link>.
             </p>
           </section>
 
