@@ -23,7 +23,6 @@ import {
   getBrevisCampaignStartedAt,
 } from '@/lib/brevis';
 import { adjustTooltipAnchorForScroll, getWindowScroll } from '@/lib/tooltipPosition';
-import { CalloutArrowSvg } from '@/components/ui/tooltip';
 import { useIsMobile } from '@/hooks/use-mobile';
 import BottomSheet from './BottomSheet';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
@@ -825,18 +824,19 @@ const IncentiveTooltip = ({
           ...tooltipSurfaceStyle,
         }}
       >
+        {/* Upward-pointing arrow - dynamically positioned, appears as border extension */}
         {showTooltipArrow && (
-          <svg
-            className={`absolute pointer-events-none ${
-              tooltipPlacement === 'top' ? '-bottom-[10px] rotate-180' : '-top-[10px]'
+          <div 
+            className={`absolute w-4 h-4 border-border/60 transform bg-card ${
+              tooltipPlacement === 'top'
+                ? '-bottom-2 border-r border-b rotate-45'
+                : '-top-2 border-l border-t rotate-45'
             }`}
-            style={{ left: `${arrowLeft}px`, width: '16px', height: '10px' }}
-            viewBox="0 0 16 10"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <CalloutArrowSvg fill="hsl(var(--card))" stroke="hsl(var(--border) / 0.6)" width={16} height={10} />
-          </svg>
+            style={{ 
+              left: `${arrowLeft}px`,
+              ...tooltipSurfaceStyle,
+            }}
+          />
         )}
         {/* Content area */}
         <div className="w-full min-w-0 max-h-[calc(100vh-32px)] overflow-y-auto overscroll-contain pr-1">
