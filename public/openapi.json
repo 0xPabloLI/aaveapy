@@ -442,6 +442,38 @@
                             "campaignId"
                           ]
                         }
+                      },
+                      "opportunityType": {
+                        "type": "string"
+                      },
+                      "netPositionConstraint": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "sourceSide": {
+                                "type": "string",
+                                "enum": [
+                                  "supply",
+                                  "borrow"
+                                ]
+                              },
+                              "offsetReserveIds": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "required": [
+                              "sourceSide",
+                              "offsetReserveIds"
+                            ]
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
                       }
                     },
                     "required": [
@@ -516,6 +548,38 @@
                             "campaignId"
                           ]
                         }
+                      },
+                      "opportunityType": {
+                        "type": "string"
+                      },
+                      "netPositionConstraint": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "sourceSide": {
+                                "type": "string",
+                                "enum": [
+                                  "supply",
+                                  "borrow"
+                                ]
+                              },
+                              "offsetReserveIds": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "required": [
+                              "sourceSide",
+                              "offsetReserveIds"
+                            ]
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
                       }
                     },
                     "required": [
@@ -590,6 +654,38 @@
                             "campaignId"
                           ]
                         }
+                      },
+                      "opportunityType": {
+                        "type": "string"
+                      },
+                      "netPositionConstraint": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "sourceSide": {
+                                "type": "string",
+                                "enum": [
+                                  "supply",
+                                  "borrow"
+                                ]
+                              },
+                              "offsetReserveIds": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "required": [
+                              "sourceSide",
+                              "offsetReserveIds"
+                            ]
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
                       }
                     },
                     "required": [
@@ -920,9 +1016,6 @@
                 },
                 "spokeId": {
                   "type": "string"
-                },
-                "spokeName": {
-                  "type": "string"
                 }
               },
               "required": [
@@ -1014,20 +1107,7 @@
                 "items": {
                   "type": "object",
                   "properties": {
-                    "id": {
-                      "type": "string"
-                    },
                     "symbol": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    },
-                    "name": {
                       "anyOf": [
                         {
                           "type": "string"
@@ -1049,9 +1129,7 @@
                     }
                   },
                   "required": [
-                    "id",
                     "symbol",
-                    "name",
                     "fdvUsd"
                   ],
                   "additionalProperties": {}
@@ -1438,6 +1516,38 @@
                       "campaignId"
                     ]
                   }
+                },
+                "opportunityType": {
+                  "type": "string"
+                },
+                "netPositionConstraint": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "sourceSide": {
+                          "type": "string",
+                          "enum": [
+                            "supply",
+                            "borrow"
+                          ]
+                        },
+                        "offsetReserveIds": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "required": [
+                        "sourceSide",
+                        "offsetReserveIds"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 }
               },
               "required": [
@@ -1512,6 +1622,38 @@
                       "campaignId"
                     ]
                   }
+                },
+                "opportunityType": {
+                  "type": "string"
+                },
+                "netPositionConstraint": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "sourceSide": {
+                          "type": "string",
+                          "enum": [
+                            "supply",
+                            "borrow"
+                          ]
+                        },
+                        "offsetReserveIds": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "required": [
+                        "sourceSide",
+                        "offsetReserveIds"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 }
               },
               "required": [
@@ -1586,6 +1728,38 @@
                       "campaignId"
                     ]
                   }
+                },
+                "opportunityType": {
+                  "type": "string"
+                },
+                "netPositionConstraint": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "sourceSide": {
+                          "type": "string",
+                          "enum": [
+                            "supply",
+                            "borrow"
+                          ]
+                        },
+                        "offsetReserveIds": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "required": [
+                        "sourceSide",
+                        "offsetReserveIds"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 }
               },
               "required": [
@@ -1916,9 +2090,6 @@
           },
           "spokeId": {
             "type": "string"
-          },
-          "spokeName": {
-            "type": "string"
           }
         },
         "required": [
@@ -2121,6 +2292,38 @@
                 "campaignId"
               ]
             }
+          },
+          "opportunityType": {
+            "type": "string"
+          },
+          "netPositionConstraint": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "sourceSide": {
+                    "type": "string",
+                    "enum": [
+                      "supply",
+                      "borrow"
+                    ]
+                  },
+                  "offsetReserveIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "sourceSide",
+                  "offsetReserveIds"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
