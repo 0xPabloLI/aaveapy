@@ -1,69 +1,188 @@
-# 开发方案 - AAV-66 连接钱包读取自己是不是在merkl 白名单/黑名单
+# 开发方案 - AAV-66 前端：消费 Merkl Campaign Access Side Data
 
-## 1. Issue 概述
-实现前端连接用户钱包，读取用户地址后调用后端接口判断该地址是否在 Merkl 的白名单或黑名单中，并在前端界面展示相应状态。
+> **Status: Active** — 依赖后端 `campaignAccess` side-data 端点就绪。
+> **后端方案**：`aave-protocol-analysis/docs/plans/linear-issues/aav_66_plan.md`
 
-## 2. 当前状态
-未开始。  
-目前后端已有 `whitelistOnly` 标志，但未实现钱包连接及白名单/黑名单校验逻辑，前端无钱包连接功能。
+## 1. 概述
 
-## 3. 影响范围
-- 前端仓库：aaveapy/lovable 分支  
-- 后端仓库：aave-protocol-analysis/railway 分支（可能需要新增接口支持）
+AAV-66 的后端部分已在 side-data 端点 `/api/meta/side-data` 中增加了 `campaignAccess` 字段，提供 Merkl campaign 的 whitelist/blacklist 地址数组。本文档覆盖前端消费侧的实现。
+
+### 与 Epic 方案的关系
+
+Epic 方案（`aav_epic_wallet_merkl_portfolio_plan.md`）Phase 1 中 `useMerklEligibility` 原设计为从前端直读 reserves 中的 campaign params。现改为**从后端 side-data 获取**，理由：
+
+1. 后端已聚合完整 whitelist/blacklist 数据，前端无需自行从 Merkl API 提取
+2. Side-data 有 cron 刷新 + 缓存，前端消费更稳定
+3. Reserves payload 中不包含完整地址数组（仅有 `whitelistOnly` 布尔值），直读不可行
+
+## 2. Repo 信息
+
+| 项 | 值 |
+|---|---|
+| GitHub | [`0xPabloLI/aaveapy`](https://github.com/0xPabloLI/aaveapy) |
+| 本地路径 | `/Users/pabloli/Documents/code/aaveapy` |
+
+## 3. 数据源
+
+**端点**：`GET /api/meta/side-data` → `payload.campaignAccess`
+
+```ts
+interface CampaignAccessPayload {
+  campaigns: Record<string, {
+    chainId: number;
+    whitelist: string[];   // 空数组 = 无白名单限制
+    blacklist: string[];   // 空数组 = 无黑名单
+  }>;
+  updatedAt: string;       // ISO timestamp
+}
+```
+
+- Key 为 `campaignId`（string）
+- 只包含有 whitelist 或 blacklist 的 campaign（两者都为空的不出现在响应中）
+- Payload ~30KB gzipped
 
 ## 4. 实现方案
 
-### 4.1 后端改动
-- **新增接口**：  
-  - 路由：`GET /api/user/merkl-status?address=0x...`  
-  - 功能：根据请求地址查询 Merkl 白名单和黑名单状态，返回 `{ isWhitelisted: boolean, isBlacklisted: boolean }`  
-- **数据来源**：  
-  - 使用已有 Merkl 白名单/黑名单数据源（如果无，需从 Merkl API 或数据库同步）  
-- **文件修改**：  
-  - `backend/src/routes/userRoutes.ts`（新建或扩展）  
-  - `backend/src/controllers/userController.ts`（新增查询逻辑）  
-  - `backend/src/services/merklService.ts`（封装白名单/黑名单查询逻辑）  
+### 4.1 类型定义
 
-### 4.2 前端改动
-- **钱包连接功能**：  
-  - 使用 `ethers.js` 或 `web3-react` 实现钱包连接（MetaMask 等）  
-  - 在 `src/components/Header/` 或独立组件中添加“连接钱包”按钮和状态显示  
-- **调用后端接口**：  
-  - 连接钱包后，获取用户地址，调用后端 `/api/user/merkl-status` 接口  
-  - 根据返回结果显示用户是否在白名单或黑名单  
-- **状态展示**：  
-  - 在 Dashboard 或 Header 显示用户 Merkl 状态（例如绿色“白名单用户”，红色“黑名单用户”，灰色“未认证”）  
-- **文件修改**：  
-  - `src/components/Header/WalletConnect.tsx`（新增或扩展）  
-  - `src/hooks/useWallet.ts`（新增钱包连接钩子）  
-  - `src/hooks/useMerklStatus.ts`（新增调用接口钩子）  
-  - 可能修改 `src/pages/Index.tsx` 或 Dashboard 相关组件，显示状态  
+**文件**：`src/types/aave.ts`
 
-### 4.3 数据流变更
-- 用户通过前端钱包连接获得地址  
-- 前端调用后端接口查询该地址 Merkl 状态  
-- 后端返回白名单/黑名单状态  
-- 前端根据状态更新 UI 显示  
+新增：
 
-## 5. 依赖关系
-- 依赖后端 Merkl 白名单/黑名单数据的准确性和同步机制  
-- 依赖钱包连接库（ethers.js 或 web3-react）  
-- 可能依赖后端已有 Merkl API 集成  
+```ts
+export interface MerklCampaignAccessEntry {
+  chainId: number;
+  whitelist: string[];
+  blacklist: string[];
+}
 
-## 6. 验收标准
-- 用户能成功连接钱包，前端显示钱包地址  
-- 前端能正确调用后端接口，显示当前钱包地址的 Merkl 白名单/黑名单状态  
-- 状态显示符合预期（白名单绿色，黑名单红色，未认证灰色）  
-- 接口返回正确，支持多地址查询  
-- 代码覆盖相关单元测试和集成测试  
-- UI 交互流畅，无明显卡顿或错误  
+export interface MerklCampaignAccessPayload {
+  campaigns: Record<string, MerklCampaignAccessEntry>;
+  updatedAt: string;
+}
+```
 
-## 7. 复杂度评估
-Medium  
-- 钱包连接是标准功能，但需兼容多钱包和网络  
-- 需要设计后端接口并保证数据准确  
-- 前后端联动涉及多处改动，需保证安全性和性能  
+### 4.2 Side Data 响应类型扩展
 
----
+**文件**：`src/hooks/useSideDataMeta.ts`
 
-以上方案覆盖了从钱包连接到 Merkl 白名单/黑名单状态展示的完整流程，建议先从后端接口设计和数据准备开始，再实现前端钱包连接及状态展示。
+`SideDataMetaResponse` 接口增加：
+
+```ts
+campaignAccess?: MerklCampaignAccessPayload;
+```
+
+`fetchSideDataMeta` 中增加缓存逻辑：
+
+```ts
+if (parsed.campaignAccess) {
+  setCachedCampaignAccess(parsed.campaignAccess);
+}
+```
+
+### 4.3 缓存层
+
+**文件**：`src/lib/cache.ts`
+
+新增：
+
+```ts
+export function setCachedCampaignAccess(data: MerklCampaignAccessPayload): void { ... }
+export function getCachedCampaignAccess(): MerklCampaignAccessPayload | null { ... }
+```
+
+### 4.4 Zod Schema
+
+**文件**：`src/lib/apiSchemas.ts`
+
+`SideDataMetaResponseSchema` 增加 `campaignAccess` 字段校验：
+
+```ts
+campaignAccess: z.object({
+  campaigns: z.record(z.object({
+    chainId: z.number(),
+    whitelist: z.array(z.string()),
+    blacklist: z.array(z.string()),
+  })),
+  updatedAt: z.string(),
+}).optional(),
+```
+
+### 4.5 Campaign Access Hook
+
+**新增文件**：`src/hooks/useMerklCampaignAccess.ts`
+
+```ts
+export type CampaignAccessStatus = 'allowed' | 'whitelist-blocked' | 'blacklisted';
+
+export function getUserCampaignStatus(
+  userAddress: string,
+  campaignId: string,
+  access: MerklCampaignAccessPayload | null
+): CampaignAccessStatus {
+  if (!access) return 'allowed';
+  const entry = access.campaigns[campaignId];
+  if (!entry) return 'allowed'; // 无名单数据 = 公开 campaign
+  const addr = userAddress.toLowerCase();
+  if (entry.whitelist.length > 0) {
+    return entry.whitelist.some(a => a.toLowerCase() === addr)
+      ? 'allowed' : 'whitelist-blocked';
+  }
+  if (entry.blacklist.some(a => a.toLowerCase() === addr)) return 'blacklisted';
+  return 'allowed';
+}
+
+export function useMerklCampaignAccess(): {
+  data: MerklCampaignAccessPayload | null;
+  getUserStatus: (userAddress: string, campaignId: string) => CampaignAccessStatus;
+} {
+  const access = getCachedCampaignAccess();
+  return {
+    data: access,
+    getUserStatus: (addr, campaignId) => getUserCampaignStatus(addr, campaignId, access),
+  };
+}
+```
+
+### 4.6 UI 集成
+
+**文件**：`src/components/dashboard/ReservesTable.tsx`
+
+Merkl breakdown 行渲染时：
+- 读取 `useMerklCampaignAccess()` + `useWallet()` 的 address
+- 对每个 Merkl campaign breakdown 调用 `getUserStatus(address, campaignId)`
+- `whitelist-blocked` 或 `blacklisted` 状态时显示对应标记（样式待设计）
+
+## 5. 修改清单
+
+| 文件（相对 repo root） | 改动类型 | 改动说明 |
+|---|---|---|
+| `src/types/aave.ts` | 修改 | +`MerklCampaignAccessEntry` / `MerklCampaignAccessPayload` 类型 |
+| `src/hooks/useSideDataMeta.ts` | 修改 | `SideDataMetaResponse` 增加 `campaignAccess`，`fetchSideDataMeta` 缓存 |
+| `src/lib/cache.ts` | 修改 | +`setCachedCampaignAccess` / `getCachedCampaignAccess` |
+| `src/lib/apiSchemas.ts` | 修改 | `SideDataMetaResponseSchema` 增加 `campaignAccess` zod schema |
+| `src/hooks/useMerklCampaignAccess.ts` | **新增** | `getUserCampaignStatus` + `useMerklCampaignAccess` hook |
+| `src/components/dashboard/ReservesTable.tsx` | 修改 | Merkl breakdown 行显示准入状态标记 |
+
+**6 个文件**（1 新增 + 5 修改）。
+
+## 6. 依赖关系
+
+```
+后端 campaignAccess side-data 就绪（已部署）
+        ↓
+前端 type + cache + schema（4.1–4.4）
+        ↓
+前端 useMerklCampaignAccess hook（4.5）
+        ↓
+前端 UI 集成（4.6，依赖钱包 hook 就位）
+```
+
+- 4.1–4.5 可在钱包连接之前实现（hook 接受 address 参数，不依赖 wagmi）
+- 4.6 需要 `useWallet()` 的 `address` 可用，依赖 AAV-66 epic Phase 1 的钱包连接实现
+
+## 7. 验证
+
+- `npm run lint && npm test && npm run build && npx tsc --noEmit`
+- 手测：调用 `/api/meta/side-data` 确认 `campaignAccess` 字段存在
+- 单测：`useMerklCampaignAccess.test.ts` — 覆盖 whitelist hit/miss、blacklist hit/miss、空数据 fallback

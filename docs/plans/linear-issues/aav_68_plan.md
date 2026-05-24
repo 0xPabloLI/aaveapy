@@ -401,6 +401,22 @@ B1 (opportunityType + description 透传)
 - **测试**：3 个新增测试 + 1 个更新测试，84/84 全绿
 - **commit**：`6c51361 fix(merkl): include self token as offset for AAVE_NET_* types (Bug3)`
 
+### Bug 4 回滚：Pool expansion fallback 方向错误
+
+- **问题**：对 `AAVE_NET_LENDING` opp（RLUSD/USDm/WETH/kBTC），offset 就是自身 token（同 token supply-borrow 净抵消），pool expansion 把同 pool 的 GHO/USDC borrow 也纳入是错误的
+- **commit**：`b7caba6` 回滚 `1458761`
+
+### 方案B：`OffsetTokenInfo` 消除 reserveLookup 碰撞 + LLM fallback 接入
+
+- **变更**：`offsetTokenAddresses: string[]` → `OffsetTokenInfo[]`（`{ address, reserveId }[]`）
+- **`extractOffsetTokenAddresses`**：接收 `reserveLookup`，每个 token 尝试解析 reserveId
+- **`extractNetPositionConstraint`**：优先用 `info.reserveId`，fallback `reserveLookup.get()`
+- **`index.ts`**：从 `baseDataset` 构建 `reserveLookupForMerkl` 传给 `processMerklData`
+- **LLM fallback**：`index.ts` 从 `LLM_API_KEY` + `LLM_BASE_URL` 环境变量构建 `llmConfig`，`detectNetPositionConstraint` 调用时传入 `llmFn`
+- **Fix**：`buildLlmPrompt` 调用字段名对齐（`type`/`action`/`description`/`tokenSymbols`）
+- **测试**：17/17 pass（`detectNetPositionConstraint` 10 + `netPositionConstraint` 7）
+- **commit**：`6c0af3d fix(merkl): scheme B — OffsetTokenInfo with reserveId + LLM fallback wiring`
+
 ## 13. 验证结果（2026-05-23）
 
 | 验证项 | 结果 |
@@ -410,3 +426,6 @@ B1 (opportunityType + description 透传)
 | 前端 tsc + lint + build | 全通过 ✓ |
 | Playwright e2e | 6/6 passed ✓ |
 | 后端 tsc | 通过 ✓ |
+| 方案B 后端测试 | 17/17 pass ✓ |
+| 方案B 后端 tsc | 通过 ✓ |
+| 方案B Railway staging | 已部署 ✓ |
