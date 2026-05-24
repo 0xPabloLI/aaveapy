@@ -41,23 +41,19 @@
        ↓
 useAccount() → { address, chainId, isWatchMode }
        ↓
-并行（基于 reserves 已加载的 chainIds 集合，逐链 fan-out）:
-  ├─ useMerklEligibility(address)
-  │     遍历当前 reserves 上挂的 merkl campaigns
-  │     → 检查 campaign.params.whitelist / .blacklist 是否含 address
-  │     → 输出 { whitelistedCampaignIds, blacklistedCampaignIds }
-  │     → 写入 usePortfolioToggle 的 whitelistMerklCampaignIds
+数据来源:
+  ├─ useMerklCampaignAccess()  ← 来自 useSideDataMeta() 的 campaignAccess 字段（后端 cron）
+  │     getUserCampaignStatus(address, campaignId) → 'allowed' | 'whitelist-blocked' | 'blacklisted'
+  │     → 驱动 ReservesTable 准入标记 + usePortfolioToggle 的 whitelistMerklCampaignIds
   │
-  ├─ useMerklClaim(address, chainIds[])
-  │     for each chainId: GET https://api.merkl.xyz/v4/claim?user=&chainId=
-  │     → claimable rewards by token+chain
-  │
-  ├─ useMerklPositions(address, chainIds[])      ← beta，失败抛错
-  │     for each chainId: GET https://api.merkl.xyz/v0/positions/{address}/{chainId}
-  │
-  └─ useAaveUserData(address, chainIds[])        ← viem multicall
-        for each chainId: Pool.getUserAccountData + getReservesList + getUserReserveData (multicall)
-        → 用本地 (chainId, tokenAddress) → reserveId 反查表回写 canonical reserveId
+  └─ 并行（基于 reserves 已加载的 chainIds 集合，逐链 fan-out）:
+       ├─ useUserMerklRewards(address, chainIds[])    ← 前端直调 Merkl
+       │     GET https://api.merkl.xyz/v4/users/{address}/rewards?chainId=1,42161,...
+       │     → 一次拿所有链的 amount/pending/claimed/proofs/breakdowns
+       │
+       └─ useAaveUserData(address, chainIds[])        ← viem multicall
+             for each chainId: Pool.getUserAccountData + getUserReserveData (multicall)
+             → 用本地 (chainId, tokenAddress) → reserveId 反查表回写 canonical reserveId
        ↓
 聚合为 UserPosition[] → mapUserPositionsToPortfolioPositions
        ↓
@@ -277,7 +273,7 @@ Phase 1 (AAV-66) ──→ Phase 2 (AAV-69) ──→ Phase 3 (AAV-62 扩展) �
 
 **外部依赖**：
 - Merkl `/v4/claim`（成熟）
-- Merkl `/v0/positions/*`（beta，失败抛错）
+- Merkl `/v4/users/{addr}/rewards`（成熟稳定，前端直调）
 - 公共 RPC（mainnet/base/arbitrum 等）—— 需要在 wagmi config 配 fallback RPC 提升可靠性
 - RainbowKit / wagmi v2 / viem v2 LTS 版本（用 context7 skill 确认）
 
@@ -420,7 +416,7 @@ function mapUserPositionToPortfolioPosition(
 
 剩余风险：
 - ⚠️ React Query 是新依赖（评估见 §10）
-- ⚠️ Merkl `/v0/positions` beta —— 已决策报错
+- ✅ Merkl `/v4/users/{addr}/rewards` 成熟稳定，已 CORS 实测通过
 - ⚠️ Bundle size +200KB —— 需 build 后实测
 - ⚠️ 多链并行 fetch 错误处理 —— UI 设计要清晰展示部分失败状态
 
@@ -496,7 +492,7 @@ A、B 完全独立，可并行；C 需等 A+B。
 1. [src/lib/wagmi/watchModeConnector.ts](file:///Users/pabloli/Documents/code/aaveapy/src/lib/wagmi/watchModeConnector.ts) — Watch Mode connector + 单测
 2. [src/hooks/useWallet.ts](file:///Users/pabloli/Documents/code/aaveapy/src/hooks/useWallet.ts) — 薄封装 + 单测
 3. [src/components/dashboard/Header.tsx](file:///Users/pabloli/Documents/code/aaveapy/src/components/dashboard/Header.tsx) — 集成 `<ConnectButton />` + Watch 入口
-4. [src/hooks/useMerklEligibility.ts](file:///Users/pabloli/Documents/code/aaveapy/src/hooks/useMerklEligibility.ts) — 资格计算（基于已 fetch 的 reserves，无新增网络请求）+ 单测
+4. [src/hooks/useMerklCampaignAccess.ts](file:///Users/pabloli/Documents/code/aaveapy/src/hooks/useMerklCampaignAccess.ts) — 按 [aav_66_plan.md §4.5](file:///Users/pabloli/Documents/code/aaveapy/docs/plans/linear-issues/aav_66_plan.md) 实现，从 `useSideDataMeta().campaignAccess` 消费 + 单测；同时删除 dead code `src/hooks/useCampaignAccess.ts`
 5. 联动 [src/hooks/reserves-table/usePortfolioToggle.ts](file:///Users/pabloli/Documents/code/aaveapy/src/hooks/reserves-table/usePortfolioToggle.ts) 的 `whitelistMerklCampaignIds`
 
 **Phase 1 Definition of Done**：
@@ -545,7 +541,7 @@ A、B 完全独立，可并行；C 需等 A+B。
 |---|---|---|
 | Bundle size +200KB 超阈值 | 警告 / 加载变慢 | Step 0 B 完成立即测；超阈值则用动态 import 把 RainbowKit 延迟加载 |
 | React Query 与现有 hooks 行为冲突 | 数据不一致 | 严格按 §10 #1 隔离策略：新代码用 RQ，旧 hooks 不动 |
-| Merkl `/v0/positions` beta 变更 | Phase 2 中断 | 在 [src/lib/userData/merklClient.ts](file:///Users/pabloli/Documents/code/aaveapy/src/lib/userData/merklClient.ts) 加 schema 校验；变更立即 throw |
+| Merkl `/v4/users/{addr}/rewards` schema 变更 | Phase 2 中断 | 在 [src/lib/userData/merklUserClient.ts](file:///Users/pabloli/Documents/code/aaveapy/src/lib/userData/merklUserClient.ts) 加 zod 校验；变更立即 throw |
 | Watch Mode 被误用做交易 | 用户混淆 | UI 强制 "watching" 标签 + 任何签名 hook 抛 throw |
 | 多链 fetch 部分失败 | UX 不清晰 | `UserPositionsResult.perChain[]` 明确每链状态，UI 显示失败链 banner |
 
@@ -561,7 +557,8 @@ npm run lint && npm test && npm run build && npx tsc --noEmit
 
 新增的 hook / lib 必须有 co-located 单测（[reserves-table/](file:///Users/pabloli/Documents/code/aaveapy/src/hooks/reserves-table) 模式）：
 - `useWallet.test.ts`
-- `useMerklEligibility.test.ts`
+- `useMerklCampaignAccess.test.ts`（含 whitelist hit/miss、blacklist hit/miss、空数据 fallback）
+- `useUserMerklRewards.test.ts`
 - `useUserPositions.test.ts`
 - `userPositionMapper.test.ts`
 - `chainIdLookup.test.ts`
