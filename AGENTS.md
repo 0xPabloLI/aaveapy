@@ -13,10 +13,8 @@
 - `npm run build` — production build
 - `npm run ci:remote` — full local gate (used by hooks)
 
-## Mandatory Session Workflow
-1. **Bootstrap first** (every new session — BEFORE any other action):
-   - **Codex**: `~/.codex/superpowers/.codex/superpowers-codex bootstrap && ~/.codex/superpowers/.codex/superpowers-codex use-skill brainstorming`
-   - **CodeArts**: Use the `skill` tool to load `using-superpowers`, then load `brainstorming`. This is mandatory — do not skip even for simple questions.
+## Session Workflow
+1. **Bootstrap when needed**: For substantial implementation, debugging, or design sessions, load `using-superpowers` via skill tool. Load `brainstorming` only for feature design, behavior changes, or solution exploration — skip for lightweight inspection, explanation, and routine work.
 2. **Git safety**: never run `stash`/`checkout` related commands without explicit user confirmation in current chat.
 3. **Hook policy**: do not bypass `pre-commit`/`pre-push`; if `ci:remote` fails, fix root cause.
 
