@@ -126,6 +126,8 @@ const Index = () => {
     // Wait for markets list before resolving chain param (so chain → markets mapping works).
     if (chainParam && effectiveMarketsList.length === 0) return;
 
+    let hasInvalidParam = false;
+
     if (chainParam) {
       const chainFilter = chainParam.trim().toLowerCase();
       if (chainFilter) {
@@ -135,6 +137,9 @@ const Index = () => {
         if (matchedMarketNames.length > 0) {
           setSelectedMarkets(matchedMarketNames);
           setMarketViewMode('chain');
+        } else {
+          hasInvalidParam = true;
+          toast.info(`Chain "${chainParam}" not supported — showing all chains`);
         }
       }
     }
@@ -143,6 +148,9 @@ const Index = () => {
       const cat = categoryParam.trim().toLowerCase() as TokenCategory;
       if (['stablecoin', 'eth-related', 'btc-related', 'pendle', 'all'].includes(cat)) {
         setSelectedCategory(cat);
+      } else {
+        hasInvalidParam = true;
+        toast.info(`Category "${categoryParam}" not recognized — showing all categories`);
       }
     }
 
@@ -150,8 +158,26 @@ const Index = () => {
       setSearchQuery(searchParam.trim());
     }
 
+    // Clean invalid params from URL so the user gets a valid shareable link.
+    if (hasInvalidParam) {
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        const chainFilter = chainParam?.trim().toLowerCase() ?? '';
+        const chainMatched =
+          chainFilter &&
+          effectiveMarketsList.some((m) => m.chainName.toLowerCase().includes(chainFilter));
+        if (!chainMatched) next.delete('chain');
+
+        const cat = categoryParam?.trim().toLowerCase() ?? '';
+        const catValid = ['stablecoin', 'eth-related', 'btc-related', 'pendle', 'all'].includes(cat);
+        if (!catValid) next.delete('category');
+
+        return next.toString() === prev.toString() ? prev : next;
+      }, { replace: true });
+    }
+
     initialParamsAppliedRef.current = true;
-  }, [effectiveMarketsList, searchParams]);
+  }, [effectiveMarketsList, searchParams, setSearchParams]);
 
   // Derive chain slug from selected markets — only when all share a single chain.
   const derivedChainSlug = useMemo(() => {
