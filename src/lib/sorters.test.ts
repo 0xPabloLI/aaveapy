@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { compareIncentiveWithNative, compareSizeToCapPct } from './sorters';
+import { compareIncentiveWithNative, compareSizeToCapPct, compareNullableNumbers, compareNumbers, isValidNumber } from './sorters';
 
 describe('compareIncentiveWithNative', () => {
   it('sorts by incentive value in descending order', () => {
@@ -122,5 +122,64 @@ describe('compareSizeToCapPct', () => {
   it('same percentage falls back to absolute size tiebreaker in asc', () => {
     const result = compareSizeToCapPct(30, 60, 100, 200, 'asc');
     expect(result).toBeLessThan(0);
+  });
+});
+
+describe('isValidNumber', () => {
+  it('returns true for finite numbers', () => {
+    expect(isValidNumber(0)).toBe(true);
+    expect(isValidNumber(42)).toBe(true);
+    expect(isValidNumber(-3.14)).toBe(true);
+  });
+
+  it('returns false for NaN', () => {
+    expect(isValidNumber(NaN)).toBe(false);
+  });
+
+  it('returns false for Infinity', () => {
+    expect(isValidNumber(Infinity)).toBe(false);
+    expect(isValidNumber(-Infinity)).toBe(false);
+  });
+});
+
+describe('compareNumbers', () => {
+  it('sorts descending: larger first', () => {
+    expect(compareNumbers(1, 5, 'desc')).toBeGreaterThan(0);
+    expect(compareNumbers(5, 1, 'desc')).toBeLessThan(0);
+  });
+
+  it('sorts ascending: smaller first', () => {
+    expect(compareNumbers(1, 5, 'asc')).toBeLessThan(0);
+    expect(compareNumbers(5, 1, 'asc')).toBeGreaterThan(0);
+  });
+
+  it('returns 0 for equal numbers', () => {
+    expect(compareNumbers(3, 3, 'desc')).toBe(0);
+    expect(compareNumbers(3, 3, 'asc')).toBe(0);
+  });
+});
+
+describe('compareNullableNumbers', () => {
+  it('sorts by value when both non-null (desc)', () => {
+    expect(compareNullableNumbers(1, 5, 'desc')).toBeGreaterThan(0);
+    expect(compareNullableNumbers(5, 1, 'desc')).toBeLessThan(0);
+  });
+
+  it('sorts by value when both non-null (asc)', () => {
+    expect(compareNullableNumbers(1, 5, 'asc')).toBeLessThan(0);
+  });
+
+  it('null sorts after non-null (both orders)', () => {
+    expect(compareNullableNumbers(null, 5, 'desc')).toBeGreaterThan(0);
+    expect(compareNullableNumbers(5, null, 'desc')).toBeLessThan(0);
+    expect(compareNullableNumbers(null, 5, 'asc')).toBeGreaterThan(0);
+  });
+
+  it('both null returns 0', () => {
+    expect(compareNullableNumbers(null, null, 'desc')).toBe(0);
+  });
+
+  it('equal non-null returns 0', () => {
+    expect(compareNullableNumbers(3, 3, 'desc')).toBe(0);
   });
 });

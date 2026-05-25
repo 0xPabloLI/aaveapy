@@ -29,7 +29,7 @@ export type SizeSortMode =
 
 export type UtilSortMode = 'util' | 'liquidity' | 'optimal';
 
-export type SortOrder = 'asc' | 'desc';
+export type { SortOrder } from '@/lib/sorters';
 
 export function toggleSortOrder(order: SortOrder): SortOrder {
   return order === 'desc' ? 'asc' : 'desc';

@@ -1,13 +1,14 @@
-type SortOrder = 'asc' | 'desc';
+export type SortOrder = 'asc' | 'desc';
 
-const isValidNumber = (value: number): boolean => Number.isFinite(value);
+export const isValidNumber = (value: number): boolean => Number.isFinite(value);
 
-const compareNumbers = (a: number, b: number, order: SortOrder): number => {
+export const compareNumbers = (a: number, b: number, order: SortOrder): number => {
+  if (a === b) return 0;
   const diff = b - a;
   return order === 'desc' ? diff : -diff;
 };
 
-const compareNullableNumbers = (a: number | null, b: number | null, order: SortOrder): number => {
+export const compareNullableNumbers = (a: number | null, b: number | null, order: SortOrder): number => {
   if (a === null && b === null) return 0;
   if (a === null) return 1;
   if (b === null) return -1;

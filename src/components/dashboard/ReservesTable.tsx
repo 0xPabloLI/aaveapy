@@ -14,7 +14,7 @@ import {
 import { formatPercent, formatSpread, formatUsd } from '@/lib/formatters';
 import { getReserveIncentiveValues, resolveVisibleIncentiveBadgeValue } from '@/lib/incentiveAggregation';
 import ScenarioControls, { type ScenarioControlsHandle } from './ScenarioControls';
-import { compareIncentiveWithNative, compareSizeToCapPct } from '@/lib/sorters';
+import { sortReserves, type ReserveSortConfig, type ReserveSortValueGetters } from '@/lib/reservesSorter';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { buildAaveUrl } from '@/lib/aaveLinks';
 import { openExternalUrl } from '@/lib/externalNavigation';
@@ -428,332 +428,59 @@ const ReservesTable = ({
   }, [activeSortColumn]);
   const sortedDataSimGate = sortNeedsSimulation ? simulationsById : EMPTY_SIMULATIONS_GATE;
 
-  // Sort data based on active column and its sort mode
-  const sortedData = useMemo(() => {
-    return [...reserves].sort((a, b) => {
-      let comparison: number;
+  const sortConfig: ReserveSortConfig = useMemo(() => ({
+    activeSortColumn,
+    tokenSortOrder,
+    marketSortOrder,
+    priceSortOrder,
+    sizeSortMode,
+    sizeSortOrder,
+    utilSortMode,
+    utilSortOrder,
+    supplySortMode,
+    supplySortOrder,
+    borrowSortMode,
+    borrowSortOrder,
+    spreadSortOrder,
+  }), [activeSortColumn, tokenSortOrder, marketSortOrder, priceSortOrder, sizeSortMode, sizeSortOrder, utilSortMode, utilSortOrder, supplySortMode, supplySortOrder, borrowSortMode, borrowSortOrder, spreadSortOrder]);
 
-      // Default to supply total desc when no column is selected
-      const sortColumn = activeSortColumn ?? 'supply';
-
-      if (sortColumn === 'token') {
-        const order = tokenSortOrder === 'asc' ? 1 : -1;
-        const byToken = a.tokenSymbol.localeCompare(b.tokenSymbol, undefined, { sensitivity: 'base' });
-        if (byToken !== 0) return order * byToken;
-        const byMarket = a.marketName.localeCompare(b.marketName, undefined, { sensitivity: 'base' });
-        if (byMarket !== 0) return order * byMarket;
-        return order * a.reserveId.localeCompare(b.reserveId);
-      }
-      if (sortColumn === 'market') {
-        const order = marketSortOrder === 'asc' ? 1 : -1;
-        const byMarket = a.marketName.localeCompare(b.marketName, undefined, { sensitivity: 'base' });
-        if (byMarket !== 0) return order * byMarket;
-        const byToken = a.tokenSymbol.localeCompare(b.tokenSymbol, undefined, { sensitivity: 'base' });
-        if (byToken !== 0) return order * byToken;
-        return order * a.reserveId.localeCompare(b.reserveId);
-      }
-      if (sortColumn === 'price') {
-        const aP = a.tokenPrice ?? -Infinity;
-        const bP = b.tokenPrice ?? -Infinity;
-        comparison = aP - bP;
-        if (comparison !== 0) return priceSortOrder === 'desc' ? -comparison : comparison;
-        return a.reserveId.localeCompare(b.reserveId);
-      }
-      if (sortColumn === 'size') {
-        if (sizeSortMode === 'borrow') {
-          const aT = getTotalBorrowedUsd(a) ?? -Infinity;
-          const bT = getTotalBorrowedUsd(b) ?? -Infinity;
-          comparison = aT - bT;
-        } else if (sizeSortMode === 'borrowAvailability') {
-          const aT = getDisplayAvailableToBorrowUsd(a) ?? -Infinity;
-          const bT = getDisplayAvailableToBorrowUsd(b) ?? -Infinity;
-          comparison = aT - bT;
-        } else if (sizeSortMode === 'supplyAvailability') {
-          const aT = getDisplaySupplyAvailabilityUsd(a) ?? -Infinity;
-          const bT = getDisplaySupplyAvailabilityUsd(b) ?? -Infinity;
-          comparison = aT - bT;
-        } else if (sizeSortMode === 'deficitRatio') {
-          const aT = getDisplayDeficitRatio(a) ?? -Infinity;
-          const bT = getDisplayDeficitRatio(b) ?? -Infinity;
-          comparison = aT - bT;
-        } else if (sizeSortMode === 'deficitAmount') {
-          const aT = getDisplayDeficit(a) ?? -Infinity;
-          const bT = getDisplayDeficit(b) ?? -Infinity;
-          comparison = aT - bT;
-        } else if (sizeSortMode === 'supplyCapValue') {
-          const aPrice = getSimulation(a)?.tokenPrice ?? a.tokenPrice;
-          const bPrice = getSimulation(b)?.tokenPrice ?? b.tokenPrice;
-          const aT = nativeToUsd(a.supplyCap, a.decimals, aPrice) ?? -Infinity;
-          const bT = nativeToUsd(b.supplyCap, b.decimals, bPrice) ?? -Infinity;
-          comparison = aT - bT;
-        } else if (sizeSortMode === 'borrowCapValue') {
-          const aPrice = getSimulation(a)?.tokenPrice ?? a.tokenPrice;
-          const bPrice = getSimulation(b)?.tokenPrice ?? b.tokenPrice;
-          const aT = nativeToUsd(a.borrowCap, a.decimals, aPrice) ?? -Infinity;
-          const bT = nativeToUsd(b.borrowCap, b.decimals, bPrice) ?? -Infinity;
-          comparison = aT - bT;
-        } else if (sizeSortMode === 'supplyCapPct') {
-          const aPrice = getSimulation(a)?.tokenPrice ?? a.tokenPrice;
-          const bPrice = getSimulation(b)?.tokenPrice ?? b.tokenPrice;
-          return compareSizeToCapPct(
-            getDisplayReserveSizeUsd(a), getDisplayReserveSizeUsd(b),
-            nativeToUsd(a.supplyCap, a.decimals, aPrice),
-            nativeToUsd(b.supplyCap, b.decimals, bPrice),
-            sizeSortOrder,
-          );
-        } else if (sizeSortMode === 'borrowCapPct') {
-          const aPrice = getSimulation(a)?.tokenPrice ?? a.tokenPrice;
-          const bPrice = getSimulation(b)?.tokenPrice ?? b.tokenPrice;
-          return compareSizeToCapPct(
-            getTotalBorrowedUsd(a), getTotalBorrowedUsd(b),
-            nativeToUsd(a.borrowCap, a.decimals, aPrice),
-            nativeToUsd(b.borrowCap, b.decimals, bPrice),
-            sizeSortOrder,
-          );
-        } else if (sizeSortMode === 'availableLiquidity') {
-          const aL = getDisplayLiquidityUsd(a) ?? -Infinity;
-          const bL = getDisplayLiquidityUsd(b) ?? -Infinity;
-          comparison = aL - bL;
-        } else {
-          const aT = getDisplayReserveSizeUsd(a) ?? -Infinity;
-          const bT = getDisplayReserveSizeUsd(b) ?? -Infinity;
-          comparison = aT - bT;
-        }
-        if (comparison !== 0) return sizeSortOrder === 'desc' ? -comparison : comparison;
-        return a.reserveId.localeCompare(b.reserveId);
-      }
-      if (sortColumn === 'util') {
-        if (utilSortMode === 'liquidity') {
-          const aL = getDisplayLiquidityUsd(a) ?? -Infinity;
-          const bL = getDisplayLiquidityUsd(b) ?? -Infinity;
-          comparison = aL - bL;
-        } else if (utilSortMode === 'optimal') {
-          const aO = a.optimalUtilization ?? -Infinity;
-          const bO = b.optimalUtilization ?? -Infinity;
-          comparison = aO - bO;
-        } else {
-          const aU = getDisplayUtilization(a) ?? -Infinity;
-          const bU = getDisplayUtilization(b) ?? -Infinity;
-          comparison = aU - bU;
-        }
-        if (comparison !== 0) return utilSortOrder === 'desc' ? -comparison : comparison;
-        return a.reserveId.localeCompare(b.reserveId);
-      }
-
-      if (sortColumn === 'supply') {
-        // Supply sorting
-        if (supplySortMode === 'native') {
-          const aNative = getDisplaySupplyNative(a);
-          const bNative = getDisplaySupplyNative(b);
-          if (aNative === null && bNative === null) return a.reserveId.localeCompare(b.reserveId);
-          if (aNative === null) return 1;
-          if (bNative === null) return -1;
-          comparison = bNative - aNative;
-        } else if (supplySortMode === 'incentive') {
-          const aIncentive = getDisplaySupplyIncentive(a);
-          const bIncentive = getDisplaySupplyIncentive(b);
-          const aNative = getDisplaySupplyNative(a);
-          const bNative = getDisplaySupplyNative(b);
-          const aHasIncentiveSource = hasSupplyIncentiveSource(a);
-          const bHasIncentiveSource = hasSupplyIncentiveSource(b);
-          const result = compareIncentiveWithNative(
-            aIncentive,
-            bIncentive,
-            aNative,
-            bNative,
-            supplySortOrder,
-            aHasIncentiveSource,
-            bHasIncentiveSource,
-          );
-          if (result !== 0) return result;
-          return a.reserveId.localeCompare(b.reserveId);
-        } else {
-          // Total sorting - use totalSupplyApy (Native + Incentive)
-          const aTotal = getDisplaySupplyTotal(a);
-          const bTotal = getDisplaySupplyTotal(b);
-          if (aTotal === null && bTotal === null) return a.reserveId.localeCompare(b.reserveId);
-          if (aTotal === null) return 1;
-          if (bTotal === null) return -1;
-          comparison = bTotal - aTotal;
-        }
-        if (comparison !== 0) return supplySortOrder === 'desc' ? comparison : -comparison;
-        return a.reserveId.localeCompare(b.reserveId);
-      } else if (sortColumn === 'borrow') {
-        // Borrow sorting
-        if (borrowSortMode === 'native') {
-          const aNative = getDisplayBorrowNative(a);
-          const bNative = getDisplayBorrowNative(b);
-          if (aNative === null && bNative === null) return a.reserveId.localeCompare(b.reserveId);
-          if (aNative === null) return 1;
-          if (bNative === null) return -1;
-          comparison = bNative - aNative;
-        } else if (borrowSortMode === 'incentive') {
-          const aIncentive = getDisplayBorrowIncentive(a);
-          const bIncentive = getDisplayBorrowIncentive(b);
-          const aNative = getDisplayBorrowNative(a);
-          const bNative = getDisplayBorrowNative(b);
-          const aHasIncentiveSource = hasBorrowIncentiveSource(a);
-          const bHasIncentiveSource = hasBorrowIncentiveSource(b);
-          const result = compareIncentiveWithNative(
-            aIncentive,
-            bIncentive,
-            aNative,
-            bNative,
-            borrowSortOrder,
-            aHasIncentiveSource,
-            bHasIncentiveSource,
-          );
-          if (result !== 0) return result;
-          return a.reserveId.localeCompare(b.reserveId);
-        } else {
-          // Total sorting
-          const aTotal = getDisplayBorrowTotal(a);
-          const bTotal = getDisplayBorrowTotal(b);
-          if (aTotal === null && bTotal === null) return a.reserveId.localeCompare(b.reserveId);
-          if (aTotal === null) return 1;
-          if (bTotal === null) return -1;
-          comparison = bTotal - aTotal;
-        }
-        if (comparison !== 0) return borrowSortOrder === 'desc' ? comparison : -comparison;
-        return a.reserveId.localeCompare(b.reserveId);
-      } else {
-        // Spread sorting (or default when activeSortColumn is null)
-        const aSpread = getDisplaySpread(a);
-        const bSpread = getDisplaySpread(b);
-        if (aSpread === null && bSpread === null) return a.reserveId.localeCompare(b.reserveId);
-        if (aSpread === null) return 1;
-        if (bSpread === null) return -1;
-        comparison = bSpread - aSpread;
-        if (comparison !== 0) return spreadSortOrder === 'desc' ? comparison : -comparison;
-        return a.reserveId.localeCompare(b.reserveId);
-      }
-      if (sortColumn === 'size') {
-        if (sizeSortMode === 'borrow') {
-          const aT = getTotalBorrowedUsd(a) ?? -Infinity;
-          const bT = getTotalBorrowedUsd(b) ?? -Infinity;
-          comparison = aT - bT;
-        } else if (sizeSortMode === 'borrowAvailability') {
-          const aT = getDisplayAvailableToBorrowUsd(a) ?? -Infinity;
-          const bT = getDisplayAvailableToBorrowUsd(b) ?? -Infinity;
-          comparison = aT - bT;
-        } else if (sizeSortMode === 'supplyAvailability') {
-          const aT = getDisplaySupplyAvailabilityUsd(a) ?? -Infinity;
-          const bT = getDisplaySupplyAvailabilityUsd(b) ?? -Infinity;
-          comparison = aT - bT;
-        } else if (sizeSortMode === 'deficitRatio') {
-          const aT = getDisplayDeficitRatio(a) ?? -Infinity;
-          const bT = getDisplayDeficitRatio(b) ?? -Infinity;
-          comparison = aT - bT;
-        } else if (sizeSortMode === 'deficitAmount') {
-          const aT = getDisplayDeficit(a) ?? -Infinity;
-          const bT = getDisplayDeficit(b) ?? -Infinity;
-          comparison = aT - bT;
-        } else {
-          const aT = getDisplayReserveSizeUsd(a) ?? -Infinity;
-          const bT = getDisplayReserveSizeUsd(b) ?? -Infinity;
-          comparison = aT - bT;
-        }
-        return sizeSortOrder === 'desc' ? -comparison : comparison;
-      }
-      if (sortColumn === 'util') {
-        if (utilSortMode === 'liquidity') {
-          const aL = getDisplayLiquidityUsd(a) ?? -Infinity;
-          const bL = getDisplayLiquidityUsd(b) ?? -Infinity;
-          comparison = aL - bL;
-        } else {
-          const aU = getDisplayUtilization(a) ?? -Infinity;
-          const bU = getDisplayUtilization(b) ?? -Infinity;
-          comparison = aU - bU;
-        }
-        return utilSortOrder === 'desc' ? -comparison : comparison;
-      }
-
-      if (sortColumn === 'supply') {
-        // Supply sorting
-        if (supplySortMode === 'native') {
-          const aNative = getDisplaySupplyNative(a);
-          const bNative = getDisplaySupplyNative(b);
-          if (aNative === null && bNative === null) return 0;
-          if (aNative === null) return 1;
-          if (bNative === null) return -1;
-          comparison = bNative - aNative;
-        } else if (supplySortMode === 'incentive') {
-          const aIncentive = getDisplaySupplyIncentive(a);
-          const bIncentive = getDisplaySupplyIncentive(b);
-          const aNative = getDisplaySupplyNative(a);
-          const bNative = getDisplaySupplyNative(b);
-          const aHasIncentiveSource = hasSupplyIncentiveSource(a);
-          const bHasIncentiveSource = hasSupplyIncentiveSource(b);
-          return compareIncentiveWithNative(
-            aIncentive,
-            bIncentive,
-            aNative,
-            bNative,
-            supplySortOrder,
-            aHasIncentiveSource,
-            bHasIncentiveSource,
-          );
-        } else {
-          // Total sorting - use totalSupplyApy (Native + Incentive)
-          const aTotal = getDisplaySupplyTotal(a);
-          const bTotal = getDisplaySupplyTotal(b);
-          if (aTotal === null && bTotal === null) return 0;
-          if (aTotal === null) return 1;
-          if (bTotal === null) return -1;
-          comparison = bTotal - aTotal;
-        }
-        return supplySortOrder === 'desc' ? comparison : -comparison;
-      } else if (sortColumn === 'borrow') {
-        // Borrow sorting
-        if (borrowSortMode === 'native') {
-          const aNative = getDisplayBorrowNative(a);
-          const bNative = getDisplayBorrowNative(b);
-          if (aNative === null && bNative === null) return 0;
-          if (aNative === null) return 1;
-          if (bNative === null) return -1;
-          comparison = bNative - aNative;
-        } else if (borrowSortMode === 'incentive') {
-          const aIncentive = getDisplayBorrowIncentive(a);
-          const bIncentive = getDisplayBorrowIncentive(b);
-          const aNative = getDisplayBorrowNative(a);
-          const bNative = getDisplayBorrowNative(b);
-          const aHasIncentiveSource = hasBorrowIncentiveSource(a);
-          const bHasIncentiveSource = hasBorrowIncentiveSource(b);
-          return compareIncentiveWithNative(
-            aIncentive,
-            bIncentive,
-            aNative,
-            bNative,
-            borrowSortOrder,
-            aHasIncentiveSource,
-            bHasIncentiveSource,
-          );
-        } else {
-          // Total sorting
-          const aTotal = getDisplayBorrowTotal(a);
-          const bTotal = getDisplayBorrowTotal(b);
-          if (aTotal === null && bTotal === null) return 0;
-          if (aTotal === null) return 1;
-          if (bTotal === null) return -1;
-          comparison = bTotal - aTotal;
-        }
-        return borrowSortOrder === 'desc' ? comparison : -comparison;
-      } else {
-        // Spread sorting (or default when activeSortColumn is null)
-        const aSpread = getDisplaySpread(a);
-        const bSpread = getDisplaySpread(b);
-        if (aSpread === null && bSpread === null) return 0;
-        if (aSpread === null) return 1;
-        if (bSpread === null) return -1;
-        comparison = bSpread - aSpread;
-        return spreadSortOrder === 'desc' ? comparison : -comparison;
-      }
-    });
-  // sortedDataSimGate replaces a raw `simulationsById` dep so token/market/price
-  // sorts (which never touch simulation) skip needless re-sorts when background
-  // sim/price queries resolve. Other deps preserved verbatim from original.
+  const valueGetters: ReserveSortValueGetters<ReserveWithSpread> = useMemo(() => ({
+    getReserveId: (r) => r.reserveId,
+    getTokenSymbol: (r) => r.tokenSymbol,
+    getMarketName: (r) => r.marketName,
+    getTokenPrice: (r) => r.tokenPrice,
+    getReserveSizeUsd: getDisplayReserveSizeUsd,
+    getTotalBorrowedUsd,
+    getAvailableToBorrowUsd: getDisplayAvailableToBorrowUsd,
+    getSupplyAvailabilityUsd: getDisplaySupplyAvailabilityUsd,
+    getDeficitRatio: getDisplayDeficitRatio,
+    getDeficitAmount: getDisplayDeficit,
+    getSupplyCapUsd: (r) => {
+      const price = getSimulation(r)?.tokenPrice ?? r.tokenPrice;
+      return nativeToUsd(r.supplyCap, r.decimals, price);
+    },
+    getBorrowCapUsd: (r) => {
+      const price = getSimulation(r)?.tokenPrice ?? r.tokenPrice;
+      return nativeToUsd(r.borrowCap, r.decimals, price);
+    },
+    getAvailableLiquidityUsd: getDisplayLiquidityUsd,
+    getUtilization: getDisplayUtilization,
+    getOptimalUtilization: (r) => r.optimalUtilization,
+    getDisplaySupplyTotal,
+    getDisplaySupplyNative,
+    getDisplaySupplyIncentive,
+    hasSupplyIncentiveSource,
+    getDisplayBorrowTotal,
+    getDisplayBorrowNative,
+    getDisplayBorrowIncentive,
+    hasBorrowIncentiveSource,
+    getDisplaySpread,
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reserves, activeSortColumn, tokenSortOrder, marketSortOrder, priceSortOrder, sizeSortMode, sizeSortOrder, utilSortMode, utilSortOrder, supplySortMode, supplySortOrder, borrowSortMode, borrowSortOrder, spreadSortOrder, sortedDataSimGate, hasSharedScenario, isApy, tydroPointToUsdRate, whitelistMerklCampaignIds, debouncedSharedSupplyInput, debouncedSharedBorrowInput, sharedInputMode, meritMerklNetPosition]);
+  }), [sortedDataSimGate, hasSharedScenario, isApy, tydroPointToUsdRate, whitelistMerklCampaignIds, debouncedSharedSupplyInput, sharedInputMode]);
+
+  const sortedData = useMemo(() => {
+    return sortReserves(reserves, sortConfig, valueGetters);
+  }, [reserves, sortConfig, valueGetters]);
 
   const {
     displayData,
