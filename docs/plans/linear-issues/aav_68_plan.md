@@ -429,3 +429,24 @@ B1 (opportunityType + description 透传)
 | 方案B 后端测试 | 17/17 pass ✓ |
 | 方案B 后端 tsc | 通过 ✓ |
 | 方案B Railway staging | 已部署 ✓ |
+
+### Bug 5：reserveLookup 跨 pool 污染——推翻重做为 pool/spoke 精确匹配
+
+- **旧方案（commit `085d82d`，已推翻）**：reserveLookup key = `chainId:tokenAddress`，value 改为 `ReserveLookupEntry[]` 按 `protocolVersion` 过滤。**只能区分 V3 vs V4，无法区分同链同版本的多个 pool**（如 Ethereum V3 Main vs V3 Horizon）
+- **实际跨 pool 污染**：RLUSD（Horizon pool, reserveId `1:0xae05cd...:0x8292bb...`）的 offsetReserveIds 指向了 Main pool 的 reserveId `1:0x87870b...:0x8292bb...`——pool 地址不同，跨 pool 匹配
+- **新方案核心**：从 opp 自身 reserveId 提取 pool/spoke 前缀，拼接 offset token 地址构建 candidate reserveId，在 `reserveIdSet` 中验证
+- **新辅助函数**：
+  - `inferVersionFromReserveId(reserveId)` → `'v3' | 'v4' | null`
+  - `extractPoolSpokePrefix(reserveId)` → `'chainId:poolOrSpokeAddress' | null`
+  - `resolveOffsetReserveIds(oppReserveId, offsetTokenAddress, reserveIdSet)` → `string[]`
+    - V3: 构建 `prefix:offsetToken`，Set 精确查找，返回唯一 reserveId
+    - V4: 构建 `prefix:offsetToken:`，遍历 Set 找所有前缀匹配（跨 hub）
+- **函数签名变更**：
+  - `extractOffsetTokenAddresses`: `(opp, reserveLookup, protocolVersion)` → `(opp, oppReserveId, reserveIdSet)`
+  - `extractNetPositionConstraint`: `(opp, sourceTokenAddress, reserveLookup)` → `(opp, sourceTokenAddress, oppReserveId, reserveIdSet)`
+  - `detectNetPositionConstraint`: 新增 `oppReserveId` + `reserveIdSet` + `symbolLookup` 参数
+- **新增 `symbolLookup`**：`Map<string, string>`，key = `chainId:tokenSymbol`，value = `tokenAddress`。用于 LLM fallback 路径
+- **删除旧代码**：`ReserveLookupEntry`、`ReserveLookup`、`findReserveIdByProtocolVersion`、`inferProtocolVersionFromReserveId`
+- **测试**：117/117 pass（含 bug5-pool-spoke-resolution 11 个专项测试）
+- **commit**：`b484be6 fix(bug5): replace reserveLookup with pool/spoke-scoped reserveIdSet resolution`
+- **验证**：后端 tsc ✓、117/117 测试 ✓、**staging 跨 pool 污染 = 0** ✓、前端浏览器 ✓（页面正常、无 JS 错误、reserves table 可见）
