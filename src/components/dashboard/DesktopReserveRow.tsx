@@ -28,7 +28,7 @@ import UtilizationIndicator, { UtilizationContent } from './UtilizationIndicator
 import DeficitShieldIcon from './DeficitShieldIcon';
 import AssetActionMenu from './AssetActionMenu';
 import { BATCH_RESERVE_ADD_BUTTON_CLASSES } from './batchTheme';
-import type { RateSimulationResult, ScenarioInputMode } from '@/hooks/useRateSimulation';
+import type { RateSimulationResult, ScenarioInputMode } from '@/lib/rateSimulationCalculator';
 
 import { getDisplayAvailableLiquidityUsd, getDisplayTotalBorrowedUsd, nativeToUsd, getScenarioSupplySizeUsd } from '@/lib/scenarioSize';
 import { cn } from '@/lib/utils';

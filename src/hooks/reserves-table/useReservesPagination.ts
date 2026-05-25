@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import type { ReserveWithSpread } from '@/types/aave';
 import { getReserveKey } from '@/lib/reserveKey';
-import { getReserveSimulationId } from '@/hooks/useRateSimulation';
+import { getReserveSimulationId } from '@/lib/rateSimulationCalculator';
 
 /** Default number of rows shown before the user opts into "Show all". */
 export const DEFAULT_VISIBLE_COUNT = 20;

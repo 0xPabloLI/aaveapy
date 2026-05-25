@@ -47,7 +47,8 @@ import { useScenarioPinScroll } from '@/hooks/reserves-table/useScenarioPinScrol
 import { useReservesTooltip } from '@/hooks/reserves-table/useReservesTooltip';
 import { usePortfolioToggle, PortfolioSimulationContext } from '@/hooks/reserves-table/usePortfolioToggle';
 import { useReservesLayoutRefs } from '@/hooks/reserves-table/useReservesLayoutRefs';
-import { getReserveSimulationId, useSharedRateSimulations, type ScenarioInputMode } from '@/hooks/useRateSimulation';
+import { useSharedRateSimulations } from '@/hooks/useRateSimulation';
+import { getReserveSimulationId, type ScenarioInputMode } from '@/lib/rateSimulationCalculator';
 import { parseNumberInput } from '@/lib/numberFormat';
 import type { ReservePositions } from '@/lib/netLendingCrossReserve';
 import { useSideDataMeta } from '@/hooks/useSideDataMeta';

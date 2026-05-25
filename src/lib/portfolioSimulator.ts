@@ -4,7 +4,7 @@ import type {
   PortfolioPositionResult,
   PortfolioSummary,
 } from '@/types/portfolio';
-import { buildRateSimulationResult } from '@/hooks/useRateSimulation';
+import { buildRateSimulationResult } from '@/lib/rateSimulationCalculator';
 import {
   buildPortfolioPositionResult,
   resolvePositionAmountUsd,

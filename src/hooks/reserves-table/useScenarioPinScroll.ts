@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, type Dispatch, type SetStateAction } from 'react';
 
 import type { ReserveWithSpread } from '@/types/aave';
-import { getReserveSimulationId } from '@/hooks/useRateSimulation';
+import { getReserveSimulationId } from '@/lib/rateSimulationCalculator';
 import type { ScenarioInputMode } from '@/components/dashboard/ScenarioControls';
 import {
   createScenarioPinControllerState,

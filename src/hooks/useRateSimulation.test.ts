@@ -6,7 +6,7 @@ import type {
   ReserveWithSpread,
 } from '@/types/aave';
 import type { RateCalcInput } from '@/lib/interestRateCalculator';
-import { buildForecastMerklOpportunities, buildRateSimulationResult, buildPriceDataSignature, buildPriceLoadingSignature } from '@/hooks/useRateSimulation';
+import { buildForecastMerklOpportunities, buildRateSimulationResult, buildPriceDataSignature, buildPriceLoadingSignature } from '@/lib/rateSimulationCalculator';
 
 const baseReserve: ReserveWithSpread & RateCalcInput = {
   reserveId: 'Core-0x0000000000000000000000000000000000000001',

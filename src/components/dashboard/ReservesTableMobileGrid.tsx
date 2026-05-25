@@ -1,4 +1,4 @@
-import type { ScenarioInputMode, RateSimulationResult } from '@/hooks/useRateSimulation';
+import type { ScenarioInputMode, RateSimulationResult } from '@/lib/rateSimulationCalculator';
 import type { ReserveWithSpread } from '@/types/aave';
 import { getReserveKey } from '@/lib/reserveKey';
 import { Skeleton } from '@/components/ui/skeleton';

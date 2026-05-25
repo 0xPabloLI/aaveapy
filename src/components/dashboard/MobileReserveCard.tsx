@@ -28,7 +28,7 @@ import {
   type DeficitDisplay,
 } from '@/lib/deficit';
 import { isSupplyDisabled, isBorrowDisabled } from '@/lib/reserveStatus';
-import { RateSimulationResult } from '@/hooks/useRateSimulation';
+import type { RateSimulationResult } from '@/lib/rateSimulationCalculator';
 
 import { getDisplayAvailableLiquidityUsd, getDisplayTotalBorrowedUsd, nativeToUsd, getScenarioSupplySizeUsd } from '@/lib/scenarioSize';
 import { buildPoolExplorerUrl } from '@/lib/poolExplorerLinks';

@@ -1,7 +1,7 @@
 import { Fragment, useRef, useState, useEffect } from 'react';
 import { AlertTriangle, Ban, ExternalLink, PauseCircle, Snowflake } from 'lucide-react';
+import { annualPercentToDailyFraction } from '@/lib/rateCalculations';
 import {
-  annualPercentToDailyFraction,
   formatForecastUnavailableLabel,
   formatPercent,
   formatScenarioSize,
@@ -19,7 +19,7 @@ import type {
   RateSimulationResult,
   SimulationCampaignDetail,
   SimulationSourceDetail,
-} from '@/hooks/useRateSimulation';
+} from '@/lib/rateSimulationCalculator';
 import {
   hasAnyIncentiveBreakdownHref,
   includeIncentiveSourceInBreakdown,
