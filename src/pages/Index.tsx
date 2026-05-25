@@ -73,6 +73,7 @@ const Index = () => {
     });
   }, []);
   const [pendingScrollReserveId, setPendingScrollReserveId] = useState<string | null>(null);
+  const [copiedLink, setCopiedLink] = useState(false);
   // Always start at FDV default 1 on load/refresh (do not restore from cache)
   const [tydroPointToUsdRateInput, setTydroPointToUsdRateInput] = useState('1.0000');
   const tydroPointToUsdRate = useMemo(() => {
