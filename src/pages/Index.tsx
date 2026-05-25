@@ -476,6 +476,24 @@ const Index = () => {
 
           {/* Filters + Reserves Table (tighter gap) */}
           <div className="space-y-2 md:space-y-3">
+            {/* Copy shareable filter link */}
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={handleCopyFilterLink}
+                className="inline-flex items-center gap-[var(--ds-space-1-5)] rounded-md border border-border/60 bg-card/80 px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] ds-text-13 text-interactive-strong transition-colors hover:bg-muted/80 hover:border-border hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                aria-label={copiedLink ? 'Link copied' : 'Copy filter link'}
+                title={copiedLink ? 'Link copied' : 'Copy shareable filter link'}
+              >
+                {copiedLink ? (
+                  <Check className="h-3.5 w-3.5 text-emerald-500" />
+                ) : (
+                  <Link2 className="h-3.5 w-3.5" />
+                )}
+                <span>{copiedLink ? 'Copied!' : 'Copy filter link'}</span>
+              </button>
+            </div>
+
             <FilterBar
               searchQuery={searchQuery}
               setSearchQuery={setSearchQuery}
