@@ -50,11 +50,8 @@ const jsonLd = {
   ],
 };
 
-const CHAINS = [
-  'ethereum', 'arbitrum', 'base', 'optimism', 'polygon', 'avalanche',
-  'gnosis', 'scroll', 'metis', 'bnb-chain', 'linea', 'zksync',
-  'celo', 'sonic', 'soneium', 'ink', 'mantle',
-];
+// Derived from SEO_CHAINS so this list cannot drift from the actual /chain/:slug routes.
+const CHAINS = SEO_CHAINS.map((c) => ({ slug: c.slug, displayName: c.displayName }));
 
 const DefiYieldTracker = () => {
   return (
