@@ -289,6 +289,26 @@ const Index = () => {
     }
   };
 
+  // Copy current filter state as a shareable URL
+  const handleCopyFilterLink = useCallback(() => {
+    const params = new URLSearchParams();
+    if (derivedChainSlug) params.set('chain', derivedChainSlug);
+    if (selectedCategory && selectedCategory !== 'all') params.set('category', selectedCategory);
+    const trimmed = searchQuery.trim();
+    if (trimmed) params.set('search', trimmed);
+
+    const baseUrl = window.location.origin + window.location.pathname;
+    const shareUrl = params.toString() ? `${baseUrl}?${params.toString()}` : baseUrl;
+
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      setCopiedLink(true);
+      toast.success('Filter link copied to clipboard');
+      window.setTimeout(() => setCopiedLink(false), 2000);
+    }).catch(() => {
+      toast.error('Failed to copy link');
+    });
+  }, [derivedChainSlug, selectedCategory, searchQuery]);
+
   // Derive unique hub entries (id + display name) from current reserves (stable, alphabetical by name)
   const hubEntries = useMemo(() => {
     const reserves = effectiveReservesData?.reserves ?? [];
