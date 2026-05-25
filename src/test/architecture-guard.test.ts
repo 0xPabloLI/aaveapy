@@ -77,6 +77,51 @@ describe('Architecture guard: ring/indicator components must not import Tooltip'
   it.todo('DeficitLiquidityRing: extract tooltip to caller');
 });
 
+describe('Architecture guard: formatters must not re-import extracted module symbols', () => {
+  const EXTRACTED_MODULES = [
+    { module: 'rateCalculations', symbols: ['calculateTotalSupplyApy', 'calculateTotalBorrowApy', 'calculateSpreadApy', 'calculateTotalSupplyApr', 'calculateTotalBorrowApr', 'calculateSpreadApr', 'annualPercentToDailyFraction'] },
+    { module: 'rateSimulationCalculator', symbols: ['simulateRate'] },
+    { module: 'merklWhitelist', symbols: ['MERKL_WHITELIST_NO_CAMPAIGN_ID_SENTINEL', 'MERKL_WHITELIST_CHAIN_IDS', 'isMerklWhitelisted'] },
+    { module: 'incentiveAggregation', symbols: ['getReserveIncentiveValues', 'resolveVisibleIncentiveBadgeValue', 'formatForecastUnavailableLabel', 'IncentiveCalculationOptions'] },
+    { module: 'marketLabels', symbols: ['getReserveMarketDisplayName', 'getHubChipLabel', 'getHubChipClass'] },
+  ];
+
+  it('formatters.ts does not import or re-export any symbol from extracted modules', () => {
+    const src = readFile('lib/formatters.ts');
+    for (const { module, symbols } of EXTRACTED_MODULES) {
+      for (const symbol of symbols) {
+        expect(
+          src,
+          `formatters.ts must not reference ${symbol} from ${module}`,
+        ).not.toMatch(new RegExp(`\\b${symbol}\\b`));
+      }
+    }
+  });
+
+  for (const { module, symbols } of EXTRACTED_MODULES) {
+    it(`no consumer imports ${module} symbols via formatters (star import)`, () => {
+      const libFiles = globTsFiles('lib').filter(f => !f.includes('formatters'));
+      const componentFiles = globTsFiles('components');
+      const hookFiles = globTsFiles('hooks');
+      const allFiles = [...libFiles, ...componentFiles, ...hookFiles];
+      const violations: string[] = [];
+      for (const file of allFiles) {
+        const src = readFile(file);
+        if (!src.includes("'@/lib/formatters'") && !src.includes("'./formatters'")) continue;
+        const hasStarImport = /import\s+\*\s+as\s+\w+\s+from.*formatters/.test(src);
+        if (hasStarImport) {
+          for (const symbol of symbols) {
+            if (new RegExp(`\\b${symbol}\\b`).test(src)) {
+              violations.push(`${file} uses ${symbol} via star import from formatters (should import from ${module})`);
+            }
+          }
+        }
+      }
+      expect(violations, violations.join('\n')).toEqual([]);
+    });
+  }
+});
+
 describe('Architecture guard: all GET endpoints must define 429 and 503 responses', () => {
   it('every GET endpoint has 429 with Retry-After header', () => {
     const doc = generateOpenApiDocument();
