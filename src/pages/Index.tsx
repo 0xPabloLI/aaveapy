@@ -111,32 +111,29 @@ const Index = () => {
   }, []);
 
   const [searchParams, setSearchParams] = useSearchParams();
-  const queryParamsAppliedRef = useRef(false);
+  const initialParamsAppliedRef = useRef(false);
 
+  // One-time hydration: read initial URL params (chain/category/search) into state.
   useEffect(() => {
-    if (queryParamsAppliedRef.current) return;
+    if (initialParamsAppliedRef.current) return;
 
     const chainParam = searchParams.get('chain');
     const categoryParam = searchParams.get('category');
     const searchParam = searchParams.get('search');
 
-    if (!chainParam && !categoryParam && !searchParam) return;
-
-    let applied = false;
-    let chainHandled = !chainParam;
+    // Wait for markets list before resolving chain param (so chain → markets mapping works).
+    if (chainParam && effectiveMarketsList.length === 0) return;
 
     if (chainParam) {
       const chainFilter = chainParam.trim().toLowerCase();
-      if (chainFilter && effectiveMarketsList.length > 0) {
+      if (chainFilter) {
         const matchedMarketNames = effectiveMarketsList
           .filter((m) => m.chainName.toLowerCase().includes(chainFilter))
           .map((m) => m.marketName);
         if (matchedMarketNames.length > 0) {
           setSelectedMarkets(matchedMarketNames);
           setMarketViewMode('chain');
-          applied = true;
         }
-        chainHandled = true;
       }
     }
 
@@ -144,27 +141,43 @@ const Index = () => {
       const cat = categoryParam.trim().toLowerCase() as TokenCategory;
       if (['stablecoin', 'eth-related', 'btc-related', 'pendle', 'all'].includes(cat)) {
         setSelectedCategory(cat);
-        applied = true;
       }
     }
 
     if (searchParam) {
       setSearchQuery(searchParam.trim());
-      applied = true;
     }
 
-    if (chainHandled) {
-      queryParamsAppliedRef.current = true;
-      if (applied) {
-        setSearchParams((prev) => {
-          prev.delete('chain');
-          prev.delete('category');
-          prev.delete('search');
-          return prev;
-        }, { replace: true });
-      }
+    initialParamsAppliedRef.current = true;
+  }, [effectiveMarketsList, searchParams]);
+
+  // Derive chain slug from selected markets — only when all share a single chain.
+  const derivedChainSlug = useMemo(() => {
+    if (selectedMarkets.length === 0 || effectiveMarketsList.length === 0) return null;
+    const chains = new Set<string>();
+    for (const name of selectedMarkets) {
+      const m = effectiveMarketsList.find((x) => x.marketName === name);
+      if (m?.chainName) chains.add(m.chainName);
     }
-  }, [effectiveMarketsList, searchParams, setSearchParams]);
+    if (chains.size !== 1) return null;
+    return [...chains][0].toLowerCase().replace(/\s+/g, '-');
+  }, [selectedMarkets, effectiveMarketsList]);
+
+  // Two-way sync: push current filter state into URL whenever it changes.
+  useEffect(() => {
+    if (!initialParamsAppliedRef.current) return;
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (derivedChainSlug) next.set('chain', derivedChainSlug);
+      else next.delete('chain');
+      if (selectedCategory && selectedCategory !== 'all') next.set('category', selectedCategory);
+      else next.delete('category');
+      const trimmed = searchQuery.trim();
+      if (trimmed) next.set('search', trimmed);
+      else next.delete('search');
+      return next.toString() === prev.toString() ? prev : next;
+    }, { replace: true });
+  }, [derivedChainSlug, selectedCategory, searchQuery, setSearchParams]);
 
   useEffect(() => {
     if (!isUsingCache) {
