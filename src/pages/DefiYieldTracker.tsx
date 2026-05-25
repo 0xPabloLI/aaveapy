@@ -125,13 +125,13 @@ const DefiYieldTracker = () => {
               to compare them side by side.
             </p>
             <ul className="mt-4 flex flex-wrap gap-2">
-              {CHAINS.map((slug) => (
-                <li key={slug}>
+              {CHAINS.map((c) => (
+                <li key={c.slug}>
                   <Link
-                    to={`/chain/${slug}`}
-                    className="inline-flex items-center rounded-full border border-border/60 bg-card px-3 py-1 text-sm hover:ring-2 hover:ring-border transition-all capitalize"
+                    to={`/chain/${c.slug}`}
+                    className="inline-flex items-center rounded-full border border-border/60 bg-card px-3 py-1 text-sm hover:ring-2 hover:ring-border transition-all"
                   >
-                    {slug.replace('-', ' ')}
+                    {c.displayName}
                   </Link>
                 </li>
               ))}
