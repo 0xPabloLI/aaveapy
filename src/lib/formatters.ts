@@ -151,39 +151,3 @@ export const formatScenarioSizeDelta = (
 
 export const formatTvl = formatReserveSizeUsd;
 export const formatSupplyUsd = formatReserveSizeUsd;
-
-// ─── @deprecated re-exports from rateCalculations ───
-/** @deprecated Import from '@/lib/rateCalculations' instead. */
-export {
-  convertAprToApy,
-  apyToApr,
-  annualPercentToDailyFraction,
-  calculateTotalSupplyApr,
-  calculateTotalSupplyApy,
-  calculateTotalBorrowApr,
-  calculateTotalBorrowApy,
-  calculateSpreadApr,
-  calculateSpreadApy,
-} from './rateCalculations';
-
-// ─── @deprecated re-exports from merklWhitelist ───
-/** @deprecated Import from '@/lib/merklWhitelist' instead. */
-export {
-  isMerklWhitelistBreakdownIncluded,
-  MERKL_WHITELIST_NO_CAMPAIGN_ID_SENTINEL,
-  MERKL_WHITELIST_TOGGLE_LABEL,
-  MERKL_WHITELIST_TOGGLE_ARIA,
-} from './merklWhitelist';
-
-// ─── @deprecated re-exports from incentiveAggregation ───
-/** @deprecated Import from '@/lib/incentiveAggregation' instead. */
-export type IncentiveCalculationOptions = import('./incentiveAggregation').IncentiveCalculationOptions;
-/** @deprecated Import from '@/lib/incentiveAggregation' instead. */
-export {
-  calculateTotalIncentiveApr,
-  calculateTotalIncentiveApy,
-  getReserveIncentiveValues,
-  reserveHasIncentiveTooltipSources,
-  resolveVisibleIncentiveBadgeValue,
-  formatForecastUnavailableLabel,
-} from './incentiveAggregation';
