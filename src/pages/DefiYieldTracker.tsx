@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { ArrowRight } from 'lucide-react';
+import { SEO_CHAINS } from '@/lib/seoChains';
 
 const SITE_ORIGIN = 'https://aaveapy.com';
 const CANONICAL = `${SITE_ORIGIN}/defi-yield-tracker`;
@@ -49,11 +50,8 @@ const jsonLd = {
   ],
 };
 
-const CHAINS = [
-  'ethereum', 'arbitrum', 'base', 'optimism', 'polygon', 'avalanche',
-  'gnosis', 'scroll', 'metis', 'bnb-chain', 'linea', 'zksync',
-  'celo', 'sonic', 'soneium', 'ink', 'mantle',
-];
+// Derived from SEO_CHAINS so this list cannot drift from the actual /chain/:slug routes.
+const CHAINS = SEO_CHAINS.map((c) => ({ slug: c.slug, displayName: c.displayName }));
 
 const DefiYieldTracker = () => {
   return (
@@ -127,13 +125,13 @@ const DefiYieldTracker = () => {
               to compare them side by side.
             </p>
             <ul className="mt-4 flex flex-wrap gap-2">
-              {CHAINS.map((slug) => (
-                <li key={slug}>
+              {CHAINS.map((c) => (
+                <li key={c.slug}>
                   <Link
-                    to={`/chain/${slug}`}
-                    className="inline-flex items-center rounded-full border border-border/60 bg-card px-3 py-1 text-sm hover:ring-2 hover:ring-border transition-all capitalize"
+                    to={`/chain/${c.slug}`}
+                    className="inline-flex items-center rounded-full border border-border/60 bg-card px-3 py-1 text-sm hover:ring-2 hover:ring-border transition-all"
                   >
-                    {slug.replace('-', ' ')}
+                    {c.displayName}
                   </Link>
                 </li>
               ))}
