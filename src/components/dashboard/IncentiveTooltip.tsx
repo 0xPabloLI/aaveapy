@@ -3,14 +3,14 @@ import { createPortal } from 'react-dom';
 import { ExternalLink } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { ReserveWithSpread, MeritIncentive, MerklOpportunityGroup, BrevisIncentive } from '@/types/aave';
+import { formatPercent } from '@/lib/formatters';
+import { convertAprToApy } from '@/lib/rateCalculations';
 import {
-  formatPercent,
-  convertAprToApy,
   isMerklWhitelistBreakdownIncluded,
   MERKL_WHITELIST_NO_CAMPAIGN_ID_SENTINEL,
   MERKL_WHITELIST_TOGGLE_ARIA,
   MERKL_WHITELIST_TOGGLE_LABEL,
-} from '@/lib/formatters';
+} from '@/lib/merklWhitelist';
 import { getMerklBreakdownApr, forecastBreakdownApr, sanitizePercent } from '@/lib/merklForecast';
 import type { MerklForecastWireItem } from '@/types/aave';
 import { splitMeritMessageBySelfAuth } from '@/lib/meritForecast';

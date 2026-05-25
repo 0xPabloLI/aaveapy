@@ -1,5 +1,5 @@
 import type { ReserveWithSpread, MerklOpportunityGroup } from '@/types/aave';
-import { isMerklWhitelistBreakdownIncluded, MERKL_WHITELIST_NO_CAMPAIGN_ID_SENTINEL } from '@/lib/formatters';
+import { isMerklWhitelistBreakdownIncluded, MERKL_WHITELIST_NO_CAMPAIGN_ID_SENTINEL } from '@/lib/merklWhitelist';
 
 export interface MerklCampaignOption {
   campaignId: string;

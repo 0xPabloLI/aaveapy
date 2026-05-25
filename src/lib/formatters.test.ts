@@ -5,9 +5,9 @@ import {
   calculateTotalIncentiveApr,
   calculateTotalIncentiveApy,
   convertAprToApy,
-  MERKL_WHITELIST_NO_CAMPAIGN_ID_SENTINEL,
   resolveVisibleIncentiveBadgeValue,
 } from './formatters';
+import { MERKL_WHITELIST_NO_CAMPAIGN_ID_SENTINEL } from './merklWhitelist';
 import type { BrevisIncentive, MeritIncentive, MerklOpportunityGroup, ReserveWithSpread } from '@/types/aave';
 
 const daysFromNowIso = (days: number): string => {
@@ -471,31 +471,31 @@ describe('formatReserveSizeUsd', () => {
 describe('formatForecastUnavailableLabel', () => {
   it('shows single campaign ID', () => {
     expect(formatters.formatForecastUnavailableLabel(['123'], 1))
-      .toBe('Campaign #123 without forecast — using current APR.');
+      .toBe('Campaign #123 without forecast – using current APR.');
   });
 
   it('shows multiple campaign IDs', () => {
     expect(formatters.formatForecastUnavailableLabel(['123', '456'], 2))
-      .toBe('Campaigns #123, #456 without forecast — using current APR.');
+      .toBe('Campaigns #123, #456 without forecast – using current APR.');
   });
 
   it('truncates after 3 with +N more', () => {
     expect(formatters.formatForecastUnavailableLabel(['1', '2', '3', '4', '5'], 5))
-      .toBe('Campaigns #1, #2, #3 +2 more without forecast — using current APR.');
+      .toBe('Campaigns #1, #2, #3 +2 more without forecast – using current APR.');
   });
 
   it('falls back to count when ids is undefined', () => {
     expect(formatters.formatForecastUnavailableLabel(undefined, 3))
-      .toBe('3 campaigns without forecast — using current APR.');
+      .toBe('3 campaigns without forecast – using current APR.');
   });
 
   it('falls back to count when ids is empty but count > 0', () => {
     expect(formatters.formatForecastUnavailableLabel([], 2))
-      .toBe('2 campaigns without forecast — using current APR.');
+      .toBe('2 campaigns without forecast – using current APR.');
   });
 
   it('uses singular "campaign" for count=1', () => {
     expect(formatters.formatForecastUnavailableLabel(undefined, 1))
-      .toBe('1 campaign without forecast — using current APR.');
+      .toBe('1 campaign without forecast – using current APR.');
   });
 });

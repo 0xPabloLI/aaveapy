@@ -6,11 +6,8 @@ import {
   calculateTotalSupplyApr,
   convertAprToApy,
 } from '@/lib/rateCalculations';
-import {
-  calculateTotalIncentiveApy,
-  calculateTotalIncentiveApr,
-  isMerklWhitelistBreakdownIncluded,
-} from '@/lib/formatters';
+import { calculateTotalIncentiveApy, calculateTotalIncentiveApr } from '@/lib/incentiveAggregation';
+import { isMerklWhitelistBreakdownIncluded } from '@/lib/merklWhitelist';
 import { simulateNativeRatesAfterActions } from '@/lib/interestRateCalculator';
 import type { RateCalcInput } from '@/lib/interestRateCalculator';
 import {
