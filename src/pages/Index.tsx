@@ -21,7 +21,8 @@ import LoadingState from '@/components/dashboard/LoadingState';
 import PullToRefresh from '@/components/dashboard/PullToRefresh';
 import { getCachedMarkets, setCachedTydroRate } from '@/lib/cache';
 import { TYDRO_POINT_TO_USD_RATE } from '@/lib/tydro';
-import { AlertTriangle, Send, Github } from 'lucide-react';
+import { AlertTriangle, Send, Github, Link2, Check } from 'lucide-react';
+import { toast } from 'sonner';
 import {
   preloadIncentiveIcons,
   setPreloadPaused,
