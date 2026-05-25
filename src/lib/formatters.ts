@@ -175,10 +175,6 @@ export {
   MERKL_WHITELIST_TOGGLE_ARIA,
 } from './merklWhitelist';
 
-// ─── @deprecated re-exports from marketLabels ───
-/** @deprecated Import from '@/lib/marketLabels' instead. */
-export { getReserveMarketDisplayName } from './marketLabels';
-
 // ─── @deprecated re-exports from incentiveAggregation ───
 /** @deprecated Import from '@/lib/incentiveAggregation' instead. */
 export type IncentiveCalculationOptions = import('./incentiveAggregation').IncentiveCalculationOptions;
