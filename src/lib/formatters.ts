@@ -54,26 +54,23 @@ export const formatRelativeTime = (dateString: string): string => {
  * @param apr - Annual Percentage Rate as a percentage (e.g., 5 for 5%)
  * @returns APY as a percentage
  */
-export const convertAprToApy = (apr: number): number => {
-  // Convert percentage to decimal for calculation
-  const aprDecimal = apr / 100;
-  const monthlyRate = aprDecimal / 12;
-  const apyDecimal = Math.pow(1 + monthlyRate, 12) - 1;
-  // Convert back to percentage
-  return apyDecimal * 100;
-};
+// Re-exports from rateCalculations (internal import also used by functions below)
+import {
+  convertAprToApy as _convertAprToApy,
+  apyToApr as _apyToApr,
+  annualPercentToDailyFraction as _annualPercentToDailyFraction,
+  calculateTotalSupplyApr as _calculateTotalSupplyApr,
+  calculateTotalSupplyApy as _calculateTotalSupplyApy,
+  calculateTotalBorrowApr as _calculateTotalBorrowApr,
+  calculateTotalBorrowApy as _calculateTotalBorrowApy,
+  calculateSpreadApr as _calculateSpreadApr,
+  calculateSpreadApy as _calculateSpreadApy,
+} from './rateCalculations';
 
-// Convert APY to APR (reverse of convertAprToApy)
-export const apyToApr = (apy: number): number => {
-  // Convert percentage to decimal
-  const apyDecimal = apy / 100;
-  // Reverse the monthly compounding formula
-  // APY = (1 + APR/12)^12 - 1
-  // APR = 12 * ((1 + APY)^(1/12) - 1)
-  const aprDecimal = 12 * (Math.pow(1 + apyDecimal, 1 / 12) - 1);
-  // Convert back to percentage
-  return aprDecimal * 100;
-};
+/** @deprecated Import from '@/lib/rateCalculations' instead. */
+export const convertAprToApy = _convertAprToApy;
+/** @deprecated Import from '@/lib/rateCalculations' instead. */
+export const apyToApr = _apyToApr;
 
 import {
   ETHEREUM_MARKET_NAMES,
@@ -199,10 +196,10 @@ const sumMeritIncentivesApy = (meritIncentives?: MeritIncentive[]): number => {
     const selfApr = incentive.selfApr || 0;
     let totalApy = 0;
     if (!isNaN(apr) && apr >= 0) {
-      totalApy += convertAprToApy(apr);
+      totalApy += _convertAprToApy(apr);
     }
     if (!isNaN(selfApr) && selfApr >= 0) {
-      totalApy += convertAprToApy(selfApr);
+      totalApy += _convertAprToApy(selfApr);
     }
     return sum + totalApy;
   }, 0);
@@ -249,7 +246,7 @@ const sumMerklOpportunitiesApy = (
       const apr = options.forecastStates
         ? sanitizePercent(forecastBreakdownApr(breakdown, 0, options.forecastStates, pointToUsdRate))
         : getMerklBreakdownApr(breakdown, pointToUsdRate);
-      return !isNaN(apr) && apr >= 0 ? convertAprToApy(apr) : 0;
+      return !isNaN(apr) && apr >= 0 ? _convertAprToApy(apr) : 0;
     },
   });
 };
@@ -283,7 +280,7 @@ const sumBrevisIncentivesApy = (brevis?: BrevisIncentive[]): number => {
     getEndDate: (group, breakdown) => getBrevisResolvedBreakdown(group, breakdown).campaignEndedAt,
     mapValue: (group, breakdown) => {
       const apr = getBrevisResolvedBreakdown(group, breakdown).campaignApr;
-      return !isNaN(apr) && apr >= 0 ? convertAprToApy(apr) : 0;
+      return !isNaN(apr) && apr >= 0 ? _convertAprToApy(apr) : 0;
     },
   });
 };
@@ -336,7 +333,7 @@ export const calculateTotalIncentiveApy = (
   if (protocolIncentives && Array.isArray(protocolIncentives)) {
     protocolIncentives.forEach(apr => {
       if (!isNaN(apr) && apr >= 0) {
-        protocolApy += convertAprToApy(apr);
+        protocolApy += _convertAprToApy(apr);
       }
     });
   }
@@ -380,45 +377,18 @@ export function getReserveIncentiveValues(
   };
 }
 
-// Calculate total Supply APR (native + incentive)
-export const calculateTotalSupplyApr = (nativeSupplyApr: number | null | undefined, incentiveApr: number): number | null => {
-  if (nativeSupplyApr === null || nativeSupplyApr === undefined) return null;
-  if (isNaN(nativeSupplyApr) || isNaN(incentiveApr)) return null;
-  return nativeSupplyApr + incentiveApr;
-};
-
-// Calculate total Supply APY (native + incentive)
-export const calculateTotalSupplyApy = (nativeSupplyApy: number | null | undefined, incentiveApy: number): number | null => {
-  if (nativeSupplyApy === null || nativeSupplyApy === undefined) return null;
-  if (isNaN(nativeSupplyApy) || isNaN(incentiveApy)) return null;
-  return nativeSupplyApy + incentiveApy;
-};
-
-// Calculate total Borrow APR (native - incentive)
-export const calculateTotalBorrowApr = (nativeBorrowApr: number | null | undefined, incentiveApr: number): number | null => {
-  if (nativeBorrowApr === null || nativeBorrowApr === undefined) return null;
-  if (isNaN(nativeBorrowApr) || isNaN(incentiveApr)) return null;
-  return nativeBorrowApr - incentiveApr;
-};
-
-// Calculate total Borrow APY (native - incentive)
-export const calculateTotalBorrowApy = (nativeBorrowApy: number | null | undefined, incentiveApy: number): number | null => {
-  if (nativeBorrowApy === null || nativeBorrowApy === undefined) return null;
-  if (isNaN(nativeBorrowApy) || isNaN(incentiveApy)) return null;
-  return nativeBorrowApy - incentiveApy;
-};
-
-// Calculate spread (APY version)
-export const calculateSpreadApy = (totalSupplyApy: number | null, totalBorrowApy: number | null): number | null => {
-  if (totalSupplyApy === null || totalBorrowApy === null) return null;
-  return totalSupplyApy - totalBorrowApy;
-};
-
-// Calculate spread (APR version)
-export const calculateSpreadApr = (totalSupplyApr: number | null, totalBorrowApr: number | null): number | null => {
-  if (totalSupplyApr === null || totalBorrowApr === null) return null;
-  return totalSupplyApr - totalBorrowApr;
-};
+/** @deprecated Import from '@/lib/rateCalculations' instead. */
+export const calculateTotalSupplyApr = _calculateTotalSupplyApr;
+/** @deprecated Import from '@/lib/rateCalculations' instead. */
+export const calculateTotalSupplyApy = _calculateTotalSupplyApy;
+/** @deprecated Import from '@/lib/rateCalculations' instead. */
+export const calculateTotalBorrowApr = _calculateTotalBorrowApr;
+/** @deprecated Import from '@/lib/rateCalculations' instead. */
+export const calculateTotalBorrowApy = _calculateTotalBorrowApy;
+/** @deprecated Import from '@/lib/rateCalculations' instead. */
+export const calculateSpreadApy = _calculateSpreadApy;
+/** @deprecated Import from '@/lib/rateCalculations' instead. */
+export const calculateSpreadApr = _calculateSpreadApr;
 
 // Format USD price (e.g., 3942.52 → "$3,942.52", 0.9998 → "$1.00")
 export const formatUsd = (value: number | null | undefined): string => {
@@ -429,15 +399,8 @@ export const formatUsd = (value: number | null | undefined): string => {
   return '$' + value.toFixed(2);
 };
 
-/** Daily fraction of principal from an annual rate expressed as percent (e.g. 5 for 5%). */
-export function annualPercentToDailyFraction(ratePercent: number, isApy: boolean): number {
-  if (!Number.isFinite(ratePercent)) return Number.NaN;
-  if (isApy) {
-    const r = ratePercent / 100;
-    return Math.pow(1 + r, 1 / 365) - 1;
-  }
-  return (ratePercent / 100) / 365;
-}
+/** @deprecated Import from '@/lib/rateCalculations' instead. */
+export const annualPercentToDailyFraction = _annualPercentToDailyFraction;
 
 /** USD with leading + / − (Unicode minus) for signed cashflows; null/NaN → em dash. */
 export function formatSignedUsd(value: number | null | undefined): string {
@@ -574,8 +537,8 @@ export function reserveHasIncentiveTooltipSources(
       const selfAprPercent = !isNaN(selfApr) && selfApr >= 0 ? selfApr : 0;
       let totalValue = 0;
       if (isApy) {
-        if (baseAprPercent > 0) totalValue += convertAprToApy(baseAprPercent);
-        if (selfAprPercent > 0) totalValue += convertAprToApy(selfAprPercent);
+        if (baseAprPercent > 0) totalValue += _convertAprToApy(baseAprPercent);
+        if (selfAprPercent > 0) totalValue += _convertAprToApy(selfAprPercent);
       } else {
         totalValue = baseAprPercent + selfAprPercent;
       }
