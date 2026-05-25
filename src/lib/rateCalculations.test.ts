@@ -59,6 +59,12 @@ describe('apyToApr', () => {
     const roundTrip = apyToApr(apy);
     expect(roundTrip).toBeCloseTo(originalApr, 10);
   });
+
+  it('handles negative APY (returns negative APR with larger magnitude)', () => {
+    const apr = apyToApr(-5);
+    expect(apr).toBeLessThan(0);
+    expect(apr).toBeLessThan(-5);
+  });
 });
 
 describe('annualPercentToDailyFraction', () => {
@@ -142,6 +148,15 @@ describe('calculateSpreadApr', () => {
     expect(calculateSpreadApr(null, 4)).toBeNull();
     expect(calculateSpreadApr(10, null)).toBeNull();
   });
+
+  it('returns NaN when inputs are NaN (subtraction propagates NaN)', () => {
+    expect(calculateSpreadApr(NaN, 4)).toBeNaN();
+    expect(calculateSpreadApr(10, NaN)).toBeNaN();
+  });
+
+  it('returns negative spread when borrow exceeds supply', () => {
+    expect(calculateSpreadApr(3, 10)).toBe(-7);
+  });
 });
 
 describe('calculateSpreadApy', () => {
@@ -152,5 +167,14 @@ describe('calculateSpreadApy', () => {
   it('returns null if either input is null', () => {
     expect(calculateSpreadApy(null, 4)).toBeNull();
     expect(calculateSpreadApy(10, null)).toBeNull();
+  });
+
+  it('returns NaN when inputs are NaN', () => {
+    expect(calculateSpreadApy(NaN, 4)).toBeNaN();
+    expect(calculateSpreadApy(10, NaN)).toBeNaN();
+  });
+
+  it('returns negative spread when borrow exceeds supply', () => {
+    expect(calculateSpreadApy(3, 10)).toBe(-7);
   });
 });
