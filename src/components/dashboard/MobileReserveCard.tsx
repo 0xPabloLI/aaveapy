@@ -7,9 +7,9 @@ import {
   formatScenarioSize,
   formatSpread,
   formatUsd,
-  getReserveMarketDisplayName,
-  resolveVisibleIncentiveBadgeValue,
 } from '@/lib/formatters';
+import { getReserveMarketDisplayName } from '@/lib/marketLabels';
+import { resolveVisibleIncentiveBadgeValue } from '@/lib/incentiveAggregation';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { getReserveKey } from '@/lib/reserveKey';
 import { TokenIcon } from '@/components/primitives/TokenIcon';

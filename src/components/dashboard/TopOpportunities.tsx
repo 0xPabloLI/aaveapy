@@ -8,18 +8,17 @@ import {
   isBtcRelatedSymbol,
   TokenCategoryGroups,
 } from '@/lib/tokenCategories';
-import { 
-  formatPercent, 
-  formatSpread, 
-  calculateTotalSupplyApy, 
+import { formatPercent, formatSpread } from '@/lib/formatters';
+import {
+  calculateTotalSupplyApy,
   calculateTotalBorrowApy,
   calculateSpreadApy,
   calculateTotalSupplyApr,
   calculateTotalBorrowApr,
   calculateSpreadApr,
-  getReserveIncentiveValues,
-  getReserveMarketDisplayName,
-} from '@/lib/formatters';
+} from '@/lib/rateCalculations';
+import { getReserveIncentiveValues } from '@/lib/incentiveAggregation';
+import { getReserveMarketDisplayName } from '@/lib/marketLabels';
 import { IncentiveIcon } from '@/components/IncentiveIcon';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getChainIconSrc } from '@/lib/chainIcons';

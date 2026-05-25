@@ -2,7 +2,6 @@ import { Fragment, useRef, useState, useEffect } from 'react';
 import { AlertTriangle, Ban, ExternalLink, PauseCircle, Snowflake } from 'lucide-react';
 import { annualPercentToDailyFraction } from '@/lib/rateCalculations';
 import {
-  formatForecastUnavailableLabel,
   formatPercent,
   formatScenarioSize,
   formatScenarioSizeDelta,
@@ -10,6 +9,7 @@ import {
   formatSpread,
   formatUsd,
 } from '@/lib/formatters';
+import { formatForecastUnavailableLabel } from '@/lib/incentiveAggregation';
 import { buildAaveUrl } from '@/lib/aaveLinks';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
 import { convertUsdToInputValue, nativeToUsd } from '@/lib/scenarioSize';

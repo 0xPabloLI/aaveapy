@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { MERKL_WHITELIST_NO_CAMPAIGN_ID_SENTINEL } from './formatters';
+import { MERKL_WHITELIST_NO_CAMPAIGN_ID_SENTINEL } from './merklWhitelist';
 import { collectMerklCampaignOptions, collectWhitelistOnlyMerklCampaignEntries } from './merklCampaigns';
 import type { ReserveWithSpread } from '@/types/aave';
 

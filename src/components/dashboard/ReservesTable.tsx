@@ -11,13 +11,8 @@ import {
   calculateTotalBorrowApr,
   calculateTotalBorrowApy,
 } from '@/lib/rateCalculations';
-import {
-  formatPercent,
-  formatSpread,
-  formatUsd,
-  getReserveIncentiveValues,
-  resolveVisibleIncentiveBadgeValue,
-} from '@/lib/formatters';
+import { formatPercent, formatSpread, formatUsd } from '@/lib/formatters';
+import { getReserveIncentiveValues, resolveVisibleIncentiveBadgeValue } from '@/lib/incentiveAggregation';
 import ScenarioControls, { type ScenarioControlsHandle } from './ScenarioControls';
 import { compareIncentiveWithNative, compareSizeToCapPct } from '@/lib/sorters';
 import { getChainIconSrc } from '@/lib/chainIcons';

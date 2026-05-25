@@ -3,7 +3,7 @@
  * (FilterBar, PortfolioPanel, etc.). Keeps a single source of truth for
  * how marketName / chainName map to user-facing labels.
  */
-import { ETHEREUM_MARKET_NAMES } from '@/types/aave';
+import { ETHEREUM_MARKET_NAMES, type ReserveWithSpread } from '@/types/aave';
 import { getProtocolVersion } from '@/lib/protocolVersion';
 
 /**
@@ -47,4 +47,31 @@ export function getHubChipClass(isV4: boolean): string {
       ? 'text-[rgb(var(--ds-brand-magenta-rgb))] bg-[rgb(var(--ds-brand-magenta-rgb))]/10'
       : 'text-muted-foreground/70 bg-muted/40',
   ].join(' ');
+}
+
+/**
+ * Shared market label rendering for reserves table and top opportunities.
+ *  - V4 markets: extract suffix from marketName (e.g., "AaveV4EthereumLido" → "Ethereum Lido")
+ *  - V3 Ethereum: use canonical mapped names (Core, Prime, etc.)
+ *  - V3 non-Ethereum: extract suffix from marketName (e.g., "AaveV3Base" → "Base")
+ *    This ensures consistency with V4 and supports future sub-markets.
+ */
+export function getReserveMarketDisplayName(
+  market: Pick<ReserveWithSpread, 'chainName' | 'marketName'>
+): string {
+  if (market.marketName?.startsWith('AaveV4')) {
+    const withoutPrefix = market.marketName.replace(/^AaveV4/i, '');
+    return withoutPrefix.replace(/([a-z])([A-Z])/g, '$1 $2');
+  }
+
+  if (market.chainName === 'Ethereum' && ETHEREUM_MARKET_NAMES[market.marketName]) {
+    return ETHEREUM_MARKET_NAMES[market.marketName];
+  }
+
+  if (market.marketName?.startsWith('AaveV3')) {
+    const withoutPrefix = market.marketName.replace(/^AaveV3/i, '');
+    return withoutPrefix.replace(/([a-z])([A-Z])/g, '$1 $2');
+  }
+
+  return market.chainName;
 }

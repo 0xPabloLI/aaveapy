@@ -5,7 +5,8 @@ import { Tooltip, TooltipContent, TooltipTrigger, TooltipCalloutArrow } from '@/
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { FrozenStatusBadge } from './ReserveStatusBadge';
 import { ReserveWithSpread } from '@/types/aave';
-import { formatPercent, formatScenarioSize, formatSpread, formatUsd, getReserveMarketDisplayName } from '@/lib/formatters';
+import { formatPercent, formatScenarioSize, formatSpread, formatUsd } from '@/lib/formatters';
+import { getReserveMarketDisplayName } from '@/lib/marketLabels';
 import { buildAaveMarketUrl, buildAaveUrl, buildAaveV4HubUrl, buildAaveV4MarketUrl } from '@/lib/aaveLinks';
 import { buildTydroMarketUrl } from '@/lib/tydroLinks';
 import { getProtocolVersion } from '@/lib/protocolVersion';
