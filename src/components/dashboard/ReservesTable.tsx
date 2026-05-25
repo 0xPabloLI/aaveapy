@@ -6,13 +6,15 @@ import { ReservesTableShowMore, ReservesTableFloatingScroll } from './ReservesTa
 import { Table, TableBody } from '@/components/ui/table';
 import { ReserveWithSpread, TokenPricesIndex, MerklForecastWireItem } from '@/types/aave';
 import {
-  formatPercent,
-  formatSpread,
-  formatUsd,
   calculateTotalSupplyApr,
   calculateTotalSupplyApy,
   calculateTotalBorrowApr,
   calculateTotalBorrowApy,
+} from '@/lib/rateCalculations';
+import {
+  formatPercent,
+  formatSpread,
+  formatUsd,
   getReserveIncentiveValues,
   resolveVisibleIncentiveBadgeValue,
 } from '@/lib/formatters';
@@ -234,7 +236,7 @@ const ReservesTable = ({
     if (!reservePositions) return undefined;
     const map = new Map<string, string>();
     for (const r of reserves) {
-      if (r.symbol) map.set(r.reserveId, r.symbol);
+      if (r.tokenSymbol) map.set(r.reserveId, r.tokenSymbol);
     }
     return map.size > 0 ? map : undefined;
   }, [reserves, reservePositions]);

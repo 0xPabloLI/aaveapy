@@ -15,6 +15,7 @@ import { buildHubAggregationMap, getHubAssetKey } from '@/lib/hubAggregation';
 import type { HubAggregate, HubAssetKey } from '@/lib/hubAggregation';
 import { aggregatePortfolioSummary } from '@/lib/portfolioCalculator';
 import { getReserveKey } from '@/lib/reserveKey';
+import type { ReservePositions } from '@/lib/netLendingCrossReserve';
 
 export interface SimulatePortfolioPositionsArgs {
   positions: PortfolioPosition[];
@@ -84,6 +85,22 @@ export function simulatePortfolioPositions(
 
   const results: PortfolioPositionResult[] = [];
 
+  const reservePositions = new Map<string, ReservePositions>();
+  const reserveSymbolById = new Map<string, string>();
+  for (const [key, group] of groupMap) {
+    const reserve = reserveMap.get(key);
+    if (!reserve) continue;
+    if (group.supplyUsd > 0 || group.borrowUsd > 0) {
+      reservePositions.set(reserve.reserveId, {
+        supplyUsd: group.supplyUsd,
+        borrowUsd: group.borrowUsd,
+      });
+    }
+    if (reserve.tokenSymbol) {
+      reserveSymbolById.set(reserve.reserveId, reserve.tokenSymbol);
+    }
+  }
+
   for (const [key, group] of groupMap) {
     const reserve = reserveMap.get(key);
     if (!reserve) continue;
@@ -114,6 +131,8 @@ export function simulatePortfolioPositions(
         borrowInput: String(group.borrowUsd),
         inputMode: 'usd',
         forecastStates,
+        reservePositions,
+        reserveSymbolById,
       });
 
       for (const pos of group.supplyPositions) {
