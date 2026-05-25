@@ -1208,6 +1208,49 @@
               "errors",
               "staleTimeMs"
             ]
+          },
+          "campaignAccess": {
+            "type": "object",
+            "properties": {
+              "campaigns": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {
+                  "type": "object",
+                  "properties": {
+                    "chainId": {
+                      "type": "number"
+                    },
+                    "whitelist": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "blacklist": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": [
+                    "chainId",
+                    "whitelist",
+                    "blacklist"
+                  ]
+                }
+              },
+              "updatedAt": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "campaigns",
+              "updatedAt"
+            ]
           }
         },
         "additionalProperties": {}
