@@ -16,10 +16,9 @@ import type {
 } from '@/types/portfolio';
 import {
   aggregatePortfolioSummary,
-  computePositionUsdPerDay,
+  resolvePositionAmountUsd as _resolvePositionAmountUsd,
+  buildPortfolioPositionResult as _buildPortfolioPositionResult,
 } from '@/lib/portfolioCalculator';
-import type { ReserveWithSpread } from '@/types/aave';
-import { parseNumberInput } from '@/lib/numberFormat';
 
 let nextPositionId = 1;
 const generatePositionId = (): string => `port-${nextPositionId++}`;
@@ -165,55 +164,11 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
 }
 
 // ---------------------------------------------------------------------------
-// Utility: resolve position USD amount given reserves data
+// Re-exports from portfolioCalculator (deprecated: import from @/lib/portfolioCalculator instead)
 // ---------------------------------------------------------------------------
 
-/**
- * Resolve a position's USD value.
- * When `inputMode === 'usd'` the raw string is the USD amount.
- * When `inputMode === 'token'` we need the token price from the reserve.
- */
-export function resolvePositionAmountUsd(
-  position: PortfolioPosition,
-  reserve: ReserveWithSpread | undefined
-): number {
-  const raw = parseNumberInput(position.amount);
-  if (raw <= 0) return 0;
-  if (position.inputMode === 'usd') return raw;
-  const price = reserve?.tokenPrice;
-  if (!price || price <= 0) return 0;
-  return raw * price;
-}
+/** @deprecated Import from @/lib/portfolioCalculator instead */
+export const resolvePositionAmountUsd = _resolvePositionAmountUsd;
 
-/**
- * Build a PortfolioPositionResult from per-position simulation outputs.
- * This is a thin bridge between `buildRateSimulationResult` output and
- * the portfolio aggregation layer.
- */
-export function buildPortfolioPositionResult(
-  position: PortfolioPosition,
-  amountUsd: number,
-  /** After-simulation native APR percent for the relevant side. */
-  nativeAprPercent: number,
-  /** After-simulation incentive APR percent for the relevant side. */
-  incentiveAprPercent: number
-): PortfolioPositionResult {
-  const totalPercent = nativeAprPercent + incentiveAprPercent;
-  const usdPerDay = computePositionUsdPerDay(
-    position.side,
-    amountUsd,
-    nativeAprPercent,
-    incentiveAprPercent
-  );
-
-  return {
-    positionId: position.positionId,
-    reserveId: position.reserveId,
-    side: position.side,
-    amountUsd,
-    nativePercent: nativeAprPercent,
-    incentivePercent: incentiveAprPercent,
-    totalPercent,
-    usdPerDay,
-  };
-}
+/** @deprecated Import from @/lib/portfolioCalculator instead */
+export const buildPortfolioPositionResult = _buildPortfolioPositionResult;

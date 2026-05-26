@@ -8,12 +8,12 @@ import { buildRateSimulationResult } from '@/lib/rateSimulationCalculator';
 import {
   buildPortfolioPositionResult,
   resolvePositionAmountUsd,
-} from '@/hooks/usePortfolioSimulation';
+  aggregatePortfolioSummary,
+} from '@/lib/portfolioCalculator';
 import { hasRateCalcFields } from '@/lib/interestRateCalculator';
 import type { RateCalcInput } from '@/lib/interestRateCalculator';
 import { buildHubAggregationMap, getHubAssetKey } from '@/lib/hubAggregation';
 import type { HubAggregate, HubAssetKey } from '@/lib/hubAggregation';
-import { aggregatePortfolioSummary } from '@/lib/portfolioCalculator';
 import { getReserveKey } from '@/lib/reserveKey';
 import type { ReservePositions } from '@/lib/netLendingCrossReserve';
 

@@ -10,8 +10,8 @@ import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation'
 import {
   buildPortfolioPositionResult,
   resolvePositionAmountUsd,
-} from '@/hooks/usePortfolioSimulation';
-import { aggregatePortfolioSummary } from '@/lib/portfolioCalculator';
+  aggregatePortfolioSummary,
+} from '@/lib/portfolioCalculator';
 import { getReserveKey } from '@/lib/reserveKey';
 import { simulatePortfolioPositions } from '@/lib/portfolioSimulator';
 

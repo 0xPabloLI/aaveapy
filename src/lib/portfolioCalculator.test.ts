@@ -2,8 +2,11 @@ import { describe, it, expect } from 'vitest';
 import {
   aggregatePortfolioSummary,
   computePositionUsdPerDay,
+  resolvePositionAmountUsd,
+  buildPortfolioPositionResult,
 } from './portfolioCalculator';
-import type { PortfolioPositionResult } from '@/types/portfolio';
+import type { PortfolioPositionResult, PortfolioPosition } from '@/types/portfolio';
+import type { ReserveWithSpread } from '@/types/aave';
 
 describe('computePositionUsdPerDay', () => {
   it('returns positive for supply', () => {
@@ -93,5 +96,78 @@ describe('aggregatePortfolioSummary', () => {
     expect(summary.totalBorrowUsd).toBe(11000);
     expect(summary.netUsdPerDay).toBeCloseTo(results.reduce((s, r) => s + r.usdPerDay, 0), 2);
     expect(summary.netEffectiveApy).toBeGreaterThan(0);
+  });
+});
+
+describe('resolvePositionAmountUsd', () => {
+  const basePos: PortfolioPosition = {
+    positionId: 'p1',
+    reserveId: 'r1',
+    marketName: 'M',
+    chainName: 'C',
+    tokenSymbol: 'T',
+    side: 'supply',
+    amount: '',
+    inputMode: 'usd',
+  };
+
+  it('returns 0 for empty amount', () => {
+    expect(resolvePositionAmountUsd({ ...basePos, amount: '' }, undefined)).toBe(0);
+  });
+
+  it('returns raw value when inputMode is usd', () => {
+    expect(resolvePositionAmountUsd({ ...basePos, amount: '5000' }, undefined)).toBe(5000);
+  });
+
+  it('multiplies by tokenPrice when inputMode is token', () => {
+    const reserve = { tokenPrice: 2.5 } as ReserveWithSpread;
+    expect(resolvePositionAmountUsd({ ...basePos, amount: '100', inputMode: 'token' }, reserve)).toBe(250);
+  });
+
+  it('returns 0 when token mode but no price', () => {
+    expect(resolvePositionAmountUsd({ ...basePos, amount: '100', inputMode: 'token' }, undefined)).toBe(0);
+  });
+
+  it('returns 0 when token mode but price is 0', () => {
+    const reserve = { tokenPrice: 0 } as ReserveWithSpread;
+    expect(resolvePositionAmountUsd({ ...basePos, amount: '100', inputMode: 'token' }, reserve)).toBe(0);
+  });
+});
+
+describe('buildPortfolioPositionResult', () => {
+  const pos: PortfolioPosition = {
+    positionId: 'p1',
+    reserveId: 'r1',
+    marketName: 'M',
+    chainName: 'C',
+    tokenSymbol: 'T',
+    side: 'supply',
+    amount: '10000',
+    inputMode: 'usd',
+  };
+
+  it('builds supply result with correct fields', () => {
+    const result = buildPortfolioPositionResult(pos, 10000, 3, 1);
+    expect(result.positionId).toBe('p1');
+    expect(result.reserveId).toBe('r1');
+    expect(result.side).toBe('supply');
+    expect(result.amountUsd).toBe(10000);
+    expect(result.nativePercent).toBe(3);
+    expect(result.incentivePercent).toBe(1);
+    expect(result.totalPercent).toBe(4);
+    expect(result.usdPerDay).toBeGreaterThan(0);
+  });
+
+  it('builds borrow result with negative usdPerDay for net cost', () => {
+    const borrowPos = { ...pos, side: 'borrow' as const };
+    const result = buildPortfolioPositionResult(borrowPos, 10000, 5, 0);
+    expect(result.side).toBe('borrow');
+    expect(result.usdPerDay).toBeLessThan(0);
+  });
+
+  it('computes usdPerDay via computePositionUsdPerDay', () => {
+    const result = buildPortfolioPositionResult(pos, 10000, 3.65, 0);
+    const expected = computePositionUsdPerDay('supply', 10000, 3.65, 0);
+    expect(result.usdPerDay).toBeCloseTo(expected, 10);
   });
 });

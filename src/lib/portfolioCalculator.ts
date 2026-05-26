@@ -8,9 +8,12 @@
  */
 
 import type {
+  PortfolioPosition,
   PortfolioPositionResult,
   PortfolioSummary,
 } from '@/types/portfolio';
+import type { ReserveWithSpread } from '@/types/aave';
+import { parseNumberInput } from '@/lib/numberFormat';
 
 const DAYS_PER_YEAR = 365;
 
@@ -76,4 +79,42 @@ export function computePositionUsdPerDay(
   }
   // Borrow: native is cost (negative), incentive is rebate (positive)
   return -nativeDaily + incentiveDaily;
+}
+
+export function resolvePositionAmountUsd(
+  position: PortfolioPosition,
+  reserve: ReserveWithSpread | undefined
+): number {
+  const raw = parseNumberInput(position.amount);
+  if (raw <= 0) return 0;
+  if (position.inputMode === 'usd') return raw;
+  const price = reserve?.tokenPrice;
+  if (!price || price <= 0) return 0;
+  return raw * price;
+}
+
+export function buildPortfolioPositionResult(
+  position: PortfolioPosition,
+  amountUsd: number,
+  nativeAprPercent: number,
+  incentiveAprPercent: number
+): PortfolioPositionResult {
+  const totalPercent = nativeAprPercent + incentiveAprPercent;
+  const usdPerDay = computePositionUsdPerDay(
+    position.side,
+    amountUsd,
+    nativeAprPercent,
+    incentiveAprPercent
+  );
+
+  return {
+    positionId: position.positionId,
+    reserveId: position.reserveId,
+    side: position.side,
+    amountUsd,
+    nativePercent: nativeAprPercent,
+    incentivePercent: incentiveAprPercent,
+    totalPercent,
+    usdPerDay,
+  };
 }
