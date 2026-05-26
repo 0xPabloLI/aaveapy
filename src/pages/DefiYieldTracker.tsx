@@ -16,6 +16,26 @@ const FAQS: { q: string; a: string }[] = [
     a: 'Aave APY aggregates live reserve data from every chain Aave supports — Ethereum, Arbitrum, Base, Optimism, Polygon, Avalanche, Gnosis, Scroll, Linea, zkSync, BNB Chain, Celo, Sonic, Soneium, Ink, Mantle, and Metis — into a single dashboard. Supply and borrow APYs include all active incentive programs, so you can compare effective yields across chains without manual math.',
   },
   {
+    q: 'What is DeFi yield farming?',
+    a: 'DeFi yield farming is the practice of depositing crypto assets into decentralized protocols to earn interest or rewards. On Aave, yield farming works by supplying liquidity to lending pools; borrowers pay interest, and suppliers earn a share of it. Additional reward programs like Merit, Merkl, and Brevis can boost the effective yield beyond the base rate.',
+  },
+  {
+    q: 'What are the best stablecoin APY rates today?',
+    a: 'Stablecoin APYs change minute to minute based on pool utilization and active incentives. USDC and USDT on L2s like Base, Arbitrum, and Polygon often offer the most competitive effective APYs once Merit and Merkl rewards are included. Use the dashboard to compare live stablecoin APYs across all 17 chains side by side.',
+  },
+  {
+    q: 'How does crypto staking work on DeFi platforms?',
+    a: 'Crypto staking in DeFi typically means locking assets in a protocol to earn yield. On Aave, "staking" takes the form of supplying assets to liquidity pools — there is no lockup, and you earn a supply APY proportional to borrower demand. Unlike proof-of-stake staking, DeFi staking rewards come from interest paid by borrowers, plus any incentive tokens.',
+  },
+  {
+    q: 'What is the best DeFi staking platform?',
+    a: 'The best DeFi staking platform depends on your assets and risk tolerance. Aave is one of the largest and most audited lending protocols, with markets on 17 chains. Aave APY helps you compare Aave yields across chains so you can find the best rate for your stablecoins, ETH, or BTC without switching between dApps.',
+  },
+  {
+    q: 'What are DeFi lending rates and how are they set?',
+    a: 'DeFi lending rates are set algorithmically based on pool utilization — the ratio of borrowed assets to supplied assets. When utilization is low, rates stay moderate; when liquidity runs tight, rates spike sharply to attract new deposits. Aave governance sets each pool\'s base rate, slope parameters, and optimal utilization point, which together define the rate curve.',
+  },
+  {
     q: 'How do I track my DeFi portfolio on Aave?',
     a: 'Use the portfolio simulator to enter your deposit and borrow positions across any reserve and chain. It calculates your net effective APY, daily earnings, and shows how each incentive program contributes to your yield. Snapshots let you compare scenarios over time.',
   },
@@ -28,6 +48,7 @@ const FAQS: { q: string; a: string }[] = [
     a: 'Reserve rates refresh every minute from the Aave protocol. Incentive forecasts (Merit, Merkl, Brevis) update on their respective campaign cadences and are baked into the effective APY shown on every row.',
   },
 ];
+
 
 const jsonLd = {
   '@context': 'https://schema.org',
