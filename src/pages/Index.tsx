@@ -116,12 +116,29 @@ const Index = () => {
   const initialParamsAppliedRef = useRef(false);
 
   // One-time hydration: read initial URL params (chain/category/search) into state.
+  // Fall back to localStorage when URL params are missing, so refresh/reopen restores filters.
   useEffect(() => {
     if (initialParamsAppliedRef.current) return;
 
-    const chainParam = searchParams.get('chain');
-    const categoryParam = searchParams.get('category');
-    const searchParam = searchParams.get('search');
+    let chainParam = searchParams.get('chain');
+    let categoryParam = searchParams.get('category');
+    let searchParam = searchParams.get('search');
+
+    // Fallback to persisted filters when URL params are absent.
+    let persisted: { chain?: string | null; category?: string | null; search?: string | null } | null = null;
+    if (chainParam === null && categoryParam === null && searchParam === null) {
+      try {
+        const raw = typeof window !== 'undefined' ? window.localStorage.getItem('aaveapy:filters') : null;
+        if (raw) persisted = JSON.parse(raw);
+      } catch {
+        persisted = null;
+      }
+      if (persisted) {
+        chainParam = persisted.chain ?? null;
+        categoryParam = persisted.category ?? null;
+        searchParam = persisted.search ?? null;
+      }
+    }
 
     // Wait for markets list before resolving chain param (so chain → markets mapping works).
     if (chainParam && effectiveMarketsList.length === 0) return;
@@ -165,21 +182,40 @@ const Index = () => {
     return [...chains][0].toLowerCase().replace(/\s+/g, '-');
   }, [selectedMarkets, effectiveMarketsList]);
 
-  // Two-way sync: push current filter state into URL whenever it changes.
+  // Two-way sync: push current filter state into URL whenever it changes,
+  // and mirror to localStorage so refresh/reopen restores the same view.
   useEffect(() => {
     if (!initialParamsAppliedRef.current) return;
+    const trimmed = searchQuery.trim();
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
       if (derivedChainSlug) next.set('chain', derivedChainSlug);
       else next.delete('chain');
       if (selectedCategory && selectedCategory !== 'all') next.set('category', selectedCategory);
       else next.delete('category');
-      const trimmed = searchQuery.trim();
       if (trimmed) next.set('search', trimmed);
       else next.delete('search');
       return next.toString() === prev.toString() ? prev : next;
     }, { replace: true });
+
+    try {
+      if (typeof window !== 'undefined') {
+        const payload = {
+          chain: derivedChainSlug ?? null,
+          category: selectedCategory && selectedCategory !== 'all' ? selectedCategory : null,
+          search: trimmed || null,
+        };
+        if (!payload.chain && !payload.category && !payload.search) {
+          window.localStorage.removeItem('aaveapy:filters');
+        } else {
+          window.localStorage.setItem('aaveapy:filters', JSON.stringify(payload));
+        }
+      }
+    } catch {
+      // ignore storage errors (quota / private mode)
+    }
   }, [derivedChainSlug, selectedCategory, searchQuery, setSearchParams]);
+
 
   useEffect(() => {
     if (!isUsingCache) {
