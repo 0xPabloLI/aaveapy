@@ -25,14 +25,14 @@ const ALL_SIZE_KEYS: SizeSortMode[] = [
   'supplyCapValue', 'borrowCapValue', 'availableLiquidity',
 ];
 
-const ALL_UTIL_KEYS: UtilSortMode[] = ['util', 'optimal'];
+const ALL_UTIL_KEYS: UtilSortMode[] = ['util', 'liquidity', 'optimal'];
 
 const ALL_SORT_KEYS: SortKey[] = [...ALL_SIZE_KEYS, ...ALL_UTIL_KEYS];
 
 describe('buildSortActions', () => {
-  it('produces exactly 13 SortActions (11 size + 2 util)', () => {
+  it('produces exactly 14 SortActions (11 size + 3 util)', () => {
     const actions = buildSortActions(makeInput());
-    expect(Object.keys(actions)).toHaveLength(13);
+    expect(Object.keys(actions)).toHaveLength(14);
     for (const key of ALL_SORT_KEYS) {
       expect(actions[key]).toBeDefined();
       expect(actions[key]).toHaveProperty('onSort');

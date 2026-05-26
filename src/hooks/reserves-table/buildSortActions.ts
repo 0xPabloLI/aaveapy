@@ -28,12 +28,7 @@ const SIZE_SORT_KEYS: readonly SizeSortMode[] = [
   'availableLiquidity',
 ];
 
-const UTIL_SORT_KEYS: readonly UtilSortMode[] = ['util', 'optimal'];
-
-function sortColumnOf(key: SortKey): SortColumn {
-  if (SIZE_SORT_KEYS.includes(key as SizeSortMode)) return 'size';
-  return 'util';
-}
+const UTIL_SORT_KEYS: readonly UtilSortMode[] = ['util', 'liquidity', 'optimal'];
 
 export interface BuildSortActionsInput {
   activeSortColumn: SortableColumn | null;
