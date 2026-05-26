@@ -1,6 +1,34 @@
 import type { SortOrder } from './sorters';
-import type { SortableColumn, SizeSortMode, UtilSortMode, SortMode } from '@/hooks/reserves-table/useReservesTableSort';
 import { compareNullableNumbers, compareNumbers, compareSizeToCapPct, compareIncentiveWithNative } from './sorters';
+
+export type { SortOrder } from './sorters';
+
+export type SortMode = 'total' | 'native' | 'incentive';
+
+export type SortableColumn =
+  | 'token'
+  | 'price'
+  | 'market'
+  | 'size'
+  | 'util'
+  | 'supply'
+  | 'borrow'
+  | 'spread';
+
+export type SizeSortMode =
+  | 'supply'
+  | 'borrow'
+  | 'borrowAvailability'
+  | 'supplyAvailability'
+  | 'deficitRatio'
+  | 'deficitAmount'
+  | 'supplyCapPct'
+  | 'borrowCapPct'
+  | 'supplyCapValue'
+  | 'borrowCapValue'
+  | 'availableLiquidity';
+
+export type UtilSortMode = 'util' | 'liquidity' | 'optimal';
 
 export interface ReserveSortConfig {
   activeSortColumn: SortableColumn | null;

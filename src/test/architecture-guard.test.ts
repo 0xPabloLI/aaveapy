@@ -167,3 +167,18 @@ describe('Architecture guard: all GET endpoints must define 429 and 503 response
     expect(violations, `Endpoints missing 503/error body: ${violations.join(', ')}`).toEqual([]);
   });
 });
+
+describe('Architecture guard: no lib→hook import direction violations', () => {
+  it('lib files must not import from hooks', () => {
+    const libFiles = globTsFiles('lib');
+    const violations: string[] = [];
+    for (const file of libFiles) {
+      const src = readFile(file);
+      const hookImports = src.match(/from\s+['"][^'"]*\/hooks\/[^'"]*['"]/g);
+      if (hookImports) {
+        violations.push(`${file} imports from hooks: ${hookImports.join(', ')}`);
+      }
+    }
+    expect(violations, violations.join('\n')).toEqual([]);
+  });
+});

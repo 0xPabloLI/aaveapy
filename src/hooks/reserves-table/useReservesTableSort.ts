@@ -1,34 +1,9 @@
 import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 
 import type { MobileSortMenuKey } from '@/components/dashboard/ReservesTableMobileSortBar';
+import type { SortMode, SortableColumn, SizeSortMode, UtilSortMode } from '@/lib/reservesSorter';
 
-export type SortMode = 'total' | 'native' | 'incentive';
-
-export type SortableColumn =
-  | 'token'
-  | 'price'
-  | 'market'
-  | 'size'
-  | 'util'
-  | 'supply'
-  | 'borrow'
-  | 'spread';
-
-export type SizeSortMode =
-  | 'supply'
-  | 'borrow'
-  | 'borrowAvailability'
-  | 'supplyAvailability'
-  | 'deficitRatio'
-  | 'deficitAmount'
-  | 'supplyCapPct'
-  | 'borrowCapPct'
-  | 'supplyCapValue'
-  | 'borrowCapValue'
-  | 'availableLiquidity';
-
-export type UtilSortMode = 'util' | 'liquidity' | 'optimal';
-
+export type { SortMode, SortableColumn, SizeSortMode, UtilSortMode };
 export type { SortOrder } from '@/lib/sorters';
 
 export function toggleSortOrder(order: SortOrder): SortOrder {

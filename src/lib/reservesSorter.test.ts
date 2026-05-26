@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { sortReserves, compareSupplyOrBorrow, type ReserveSortConfig, type ReserveSortValueGetters } from './reservesSorter';
-import type { SortOrder, SortableColumn, SizeSortMode, UtilSortMode, SortMode } from '@/hooks/reserves-table/useReservesTableSort';
+import { sortReserves, compareSupplyOrBorrow, type ReserveSortConfig, type ReserveSortValueGetters, type SortOrder, type SortableColumn, type SizeSortMode, type UtilSortMode, type SortMode } from './reservesSorter';
 
 interface StubReserve {
   reserveId: string;
