@@ -5,7 +5,8 @@ import { usePortfolioSimulation } from '@/hooks/usePortfolioSimulation';
 import { useIsFetching } from '@tanstack/react-query';
 import { useAaveMarkets } from '@/hooks/useAaveMarkets';
 import { useTokenCategories } from '@/hooks/useTokenCategories';
-import { SortField, SortOrder, TokenCategory, ReserveWithSpread, TokenPricesIndex } from '@/types/aave';
+import { SortField, TokenCategory, ReserveWithSpread, TokenPricesIndex } from '@/types/aave';
+import type { SortOrder } from '@/lib/sorters';
 import {
   buildTokenCategoryGroups,
   isStablecoinSymbol,

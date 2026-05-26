@@ -14,7 +14,7 @@ export type SortActions = Record<SortKey, SortAction>;
 
 type SortColumn = 'size' | 'util';
 
-const SIZE_SORT_KEYS: readonly SizeSortMode[] = [
+const SIZE_SORT_KEYS = [
   'supply',
   'borrow',
   'borrowAvailability',
@@ -26,9 +26,9 @@ const SIZE_SORT_KEYS: readonly SizeSortMode[] = [
   'supplyCapValue',
   'borrowCapValue',
   'availableLiquidity',
-];
+] as const satisfies readonly SizeSortMode[];
 
-const UTIL_SORT_KEYS: readonly UtilSortMode[] = ['util', 'liquidity', 'optimal'];
+const UTIL_SORT_KEYS = ['util', 'liquidity', 'optimal'] as const satisfies readonly UtilSortMode[];
 
 export interface BuildSortActionsInput {
   activeSortColumn: SortableColumn | null;
@@ -42,6 +42,13 @@ export interface BuildSortActionsInput {
   setUtilSortOrder: React.Dispatch<React.SetStateAction<SortOrder>>;
   setActiveSortColumn: React.Dispatch<React.SetStateAction<SortableColumn | null>>;
   collapseExpandedOnSort: () => void;
+}
+
+function assertCompleteSortActions(actions: Partial<SortActions>): asserts actions is SortActions {
+  const missing = ([] as SortKey[]).concat(SIZE_SORT_KEYS, UTIL_SORT_KEYS).filter((k) => actions[k] === undefined);
+  if (missing.length > 0) {
+    throw new Error(`buildSortActions: missing keys: ${missing.join(', ')}`);
+  }
 }
 
 export function buildSortActions(input: BuildSortActionsInput): SortActions {
@@ -89,5 +96,6 @@ export function buildSortActions(input: BuildSortActionsInput): SortActions {
     };
   }
 
-  return actions as SortActions;
+  assertCompleteSortActions(actions);
+  return actions;
 }
