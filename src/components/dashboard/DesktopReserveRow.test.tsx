@@ -8,6 +8,24 @@ import { Table, TableBody } from '@/components/ui/table';
 import DesktopReserveRow from './DesktopReserveRow';
 import type { ReserveWithSpread } from '@/types/aave';
 import type { RateSimulationResult } from '@/hooks/useRateSimulation';
+import type { SortActions } from '@/hooks/reserves-table/buildSortActions';
+
+const stubSortAction = { onSort: () => {}, isActive: false, sortOrder: 'desc' as const };
+const stubSortActions: SortActions = {
+  supply: stubSortAction,
+  borrow: stubSortAction,
+  borrowAvailability: stubSortAction,
+  supplyAvailability: stubSortAction,
+  deficitRatio: stubSortAction,
+  deficitAmount: stubSortAction,
+  supplyCapPct: stubSortAction,
+  borrowCapPct: stubSortAction,
+  supplyCapValue: stubSortAction,
+  borrowCapValue: stubSortAction,
+  availableLiquidity: stubSortAction,
+  util: stubSortAction,
+  optimal: stubSortAction,
+};
 
 const reserve: ReserveWithSpread = {
   reserveId: 'AaveV3Ethereum-0x0000000000000000000000000000000000000001',
@@ -161,6 +179,7 @@ describe('DesktopReserveRow', () => {
                 inputMode="usd"
                 isApy
                 isMobile={false}
+                sortActions={stubSortActions}
               />
             </TableBody>
           </Table>
@@ -196,6 +215,7 @@ describe('DesktopReserveRow', () => {
                 inputMode="usd"
                 isApy
                 isMobile={false}
+                sortActions={stubSortActions}
               />
             </TableBody>
           </Table>
@@ -251,6 +271,7 @@ describe('DesktopReserveRow', () => {
                 inputMode="usd"
                 isApy
                 isMobile={false}
+                sortActions={stubSortActions}
               />
             </TableBody>
           </Table>
@@ -336,6 +357,7 @@ describe('DesktopReserveRow', () => {
                 inputMode="usd"
                 isApy
                 isMobile={false}
+                sortActions={stubSortActions}
               />
             </TableBody>
           </Table>
@@ -401,6 +423,7 @@ describe('DesktopReserveRow', () => {
                 inputMode="usd"
                 isApy
                 isMobile={false}
+                sortActions={stubSortActions}
               />
             </TableBody>
           </Table>
@@ -446,9 +469,7 @@ describe('DesktopReserveRow', () => {
                 inputMode="usd"
                 isApy
                 isMobile={false}
-                onSortSupplySize={() => {}}
-                isSortSupplySizeActive={false}
-                supplySizeSortOrder="desc"
+                sortActions={stubSortActions}
               />
             </TableBody>
           </Table>
@@ -497,6 +518,7 @@ describe('DesktopReserveRow', () => {
                 inputMode="usd"
                 isApy
                 isMobile={false}
+                sortActions={stubSortActions}
               />
             </TableBody>
           </Table>
@@ -535,6 +557,7 @@ describe('DesktopReserveRow', () => {
                 inputMode="usd"
                 isApy={false}
                 isMobile={false}
+                sortActions={stubSortActions}
               />
             </TableBody>
           </Table>
@@ -573,6 +596,7 @@ describe('DesktopReserveRow', () => {
                 inputMode="usd"
                 isApy
                 isMobile={false}
+                sortActions={stubSortActions}
               />
             </TableBody>
           </Table>
@@ -611,6 +635,7 @@ describe('DesktopReserveRow', () => {
                 inputMode="usd"
                 isApy
                 isMobile={false}
+                sortActions={stubSortActions}
               />
             </TableBody>
           </Table>
@@ -656,6 +681,7 @@ describe('DesktopReserveRow', () => {
                 inputMode="usd"
                 isApy
                 isMobile={false}
+                sortActions={stubSortActions}
               />
             </TableBody>
           </Table>
@@ -699,6 +725,7 @@ describe('DesktopReserveRow', () => {
                 inputMode="usd"
                 isApy
                 isMobile={false}
+                sortActions={stubSortActions}
               />
             </TableBody>
           </Table>
@@ -752,6 +779,7 @@ describe('DesktopReserveRow', () => {
                 inputMode="usd"
                 isApy
                 isMobile={false}
+                sortActions={stubSortActions}
               />
             </TableBody>
           </Table>
@@ -822,6 +850,7 @@ describe('DesktopReserveRow', () => {
                 inputMode="usd"
                 isApy
                 isMobile={false}
+                sortActions={stubSortActions}
               />
             </TableBody>
           </Table>
@@ -859,6 +888,7 @@ describe('DesktopReserveRow', () => {
                 inputMode="usd"
                 isApy
                 isMobile={false}
+                sortActions={stubSortActions}
               />
             </TableBody>
           </Table>
@@ -898,6 +928,7 @@ describe('DesktopReserveRow', () => {
                 inputMode="usd"
                 isApy
                 isMobile={false}
+                sortActions={stubSortActions}
               />
             </TableBody>
           </Table>
@@ -943,6 +974,7 @@ describe('DesktopReserveRow', () => {
                 inputMode="usd"
                 isApy
                 isMobile={false}
+                sortActions={stubSortActions}
               />
             </TableBody>
           </Table>
@@ -986,6 +1018,7 @@ describe('DesktopReserveRow', () => {
                 inputMode="usd"
                 isApy
                 isMobile={false}
+                sortActions={stubSortActions}
               />
             </TableBody>
           </Table>
@@ -1023,6 +1056,7 @@ describe('DesktopReserveRow', () => {
                 inputMode="usd"
                 isApy
                 isMobile={false}
+                sortActions={stubSortActions}
               />
             </TableBody>
           </Table>
@@ -1061,6 +1095,7 @@ describe('DesktopReserveRow', () => {
                 inputMode="usd"
                 isApy
                 isMobile={false}
+                sortActions={stubSortActions}
               />
             </TableBody>
           </Table>
@@ -1099,6 +1134,7 @@ describe('DesktopReserveRow', () => {
                 inputMode="usd"
                 isApy
                 isMobile={false}
+                sortActions={stubSortActions}
               />
             </TableBody>
           </Table>
@@ -1137,6 +1173,7 @@ describe('DesktopReserveRow', () => {
                 inputMode="usd"
                 isApy
                 isMobile={false}
+                sortActions={stubSortActions}
               />
             </TableBody>
           </Table>
@@ -1174,6 +1211,7 @@ describe('DesktopReserveRow', () => {
                 inputMode="usd"
                 isApy
                 isMobile={false}
+                sortActions={stubSortActions}
               />
             </TableBody>
           </Table>
@@ -1212,6 +1250,7 @@ describe('DesktopReserveRow', () => {
                 inputMode="usd"
                 isApy
                 isMobile={false}
+                sortActions={stubSortActions}
               />
             </TableBody>
           </Table>
@@ -1249,6 +1288,7 @@ describe('DesktopReserveRow', () => {
                   inputMode="usd"
                   isApy
                   isMobile={false}
+                sortActions={stubSortActions}
                 />
               </TableBody>
             </Table>
@@ -1284,6 +1324,7 @@ describe('DesktopReserveRow', () => {
                   inputMode="usd"
                   isApy
                   isMobile={false}
+                sortActions={stubSortActions}
                 />
               </TableBody>
             </Table>
@@ -1320,6 +1361,7 @@ describe('DesktopReserveRow', () => {
                   inputMode="usd"
                   isApy
                   isMobile={false}
+                sortActions={stubSortActions}
                 />
               </TableBody>
             </Table>

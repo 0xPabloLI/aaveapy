@@ -227,7 +227,6 @@ export interface CampaignAccessPayload {
 }
 
 export type SortField = 'totalSupplyApy' | 'totalBorrowApy' | 'apySpread' | null;
-export type SortOrder = 'asc' | 'desc';
 export type TokenCategory = 'stablecoin' | 'eth-related' | 'btc-related' | 'pendle' | 'all';
 
 export const STABLECOINS = [

@@ -33,6 +33,7 @@ import type { RateSimulationResult, ScenarioInputMode } from '@/lib/rateSimulati
 
 import { getDisplayAvailableLiquidityUsd, getDisplayTotalBorrowedUsd, nativeToUsd, getScenarioSupplySizeUsd } from '@/lib/scenarioSize';
 import { cn } from '@/lib/utils';
+import type { SortActions } from '@/hooks/reserves-table/buildSortActions';
 
 /* ─── Memoised chain icon ─── */
 const ChainIcon = memo(({ chain, className = '' }: { chain: string; className?: string }) => {
@@ -93,58 +94,8 @@ interface DesktopReserveRowProps {
   isPortfolioMode?: boolean;
   /** Whether this reserve is already in the portfolio. */
   isInPortfolio?: boolean;
-  /** Callback to add/remove from portfolio. */
   onPortfolioToggle?: (reserveId: string, reserve: ReserveWithSpread, side?: 'supply' | 'borrow') => void;
-  /** Ring-click-to-sort: sort by supply % of cap. */
-  onSortSupplyCapPct?: () => void;
-  /** Ring-click-to-sort: sort by borrow % of cap. */
-  onSortBorrowCapPct?: () => void;
-  /** Ring-click-to-sort: sort by deficit ratio. */
-  onSortDeficitRatio?: () => void;
-  /** Click supply size number to sort by supply amount. */
-  onSortSupplySize?: () => void;
-  /** Click borrow size number to sort by borrow amount. */
-  onSortBorrowSize?: () => void;
-  /** Click deficit number to sort by deficit amount. */
-  onSortDeficitAmount?: () => void;
-  isSortSupplyCapPctActive?: boolean;
-  supplyCapPctSortOrder?: 'asc' | 'desc';
-  isSortBorrowCapPctActive?: boolean;
-  borrowCapPctSortOrder?: 'asc' | 'desc';
-  isSortDeficitRatioActive?: boolean;
-  deficitRatioSortOrder?: 'asc' | 'desc';
-  isSortSupplySizeActive?: boolean;
-  supplySizeSortOrder?: 'asc' | 'desc';
-  onSortSuppliable?: () => void;
-  isSortSuppliableActive?: boolean;
-  suppliableSortOrder?: 'asc' | 'desc';
-  isSortBorrowSizeActive?: boolean;
-  borrowSizeSortOrder?: 'asc' | 'desc';
-  onSortBorrowable?: () => void;
-  isSortBorrowableActive?: boolean;
-  borrowableSortOrder?: 'asc' | 'desc';
-  isSortDeficitAmountActive?: boolean;
-  deficitAmountSortOrder?: 'asc' | 'desc';
-  /** Sort callbacks and state for supply cap value arrow in tooltip. */
-  onSortSupplyCapValue?: () => void;
-  isSortSupplyCapValueActive?: boolean;
-  supplyCapValueSortOrder?: 'asc' | 'desc';
-  /** Sort callbacks and state for borrow cap value arrow in tooltip. */
-  onSortBorrowCapValue?: () => void;
-  isSortBorrowCapValueActive?: boolean;
-  borrowCapValueSortOrder?: 'asc' | 'desc';
-  /** Sort callbacks and state for available liquidity arrow in tooltip. */
-  onSortAvailableLiquidity?: () => void;
-  isSortAvailableLiquidityActive?: boolean;
-  availableLiquiditySortOrder?: 'asc' | 'desc';
-  /** Sort callbacks and state for utilization tooltip arrows. */
-  onSortUtilization?: () => void;
-  isSortUtilizationActive?: boolean;
-  utilizationSortOrder?: 'asc' | 'desc';
-  /** Sort callbacks and state for optimal utilization arrow in util tooltip. */
-  onSortOptimal?: () => void;
-  isSortOptimalActive?: boolean;
-  optimalSortOrder?: 'asc' | 'desc';
+  sortActions: SortActions;
 }
 
 type SortArrowButtonProps = {
@@ -202,45 +153,7 @@ const DesktopReserveRow = memo(({
   isPortfolioMode,
   isInPortfolio,
   onPortfolioToggle,
-  onSortSupplyCapPct,
-  onSortBorrowCapPct,
-  onSortDeficitRatio,
-  onSortSupplySize,
-  onSortBorrowSize,
-  onSortDeficitAmount,
-  isSortSupplyCapPctActive,
-  supplyCapPctSortOrder,
-  isSortBorrowCapPctActive,
-  borrowCapPctSortOrder,
-  isSortDeficitRatioActive,
-  deficitRatioSortOrder,
-  isSortSupplySizeActive,
-  supplySizeSortOrder,
-  onSortSuppliable,
-  isSortSuppliableActive,
-  suppliableSortOrder,
-  isSortBorrowSizeActive,
-  borrowSizeSortOrder,
-  onSortBorrowable,
-  isSortBorrowableActive,
-  borrowableSortOrder,
-  isSortDeficitAmountActive,
-  deficitAmountSortOrder,
-  onSortSupplyCapValue,
-  isSortSupplyCapValueActive,
-  supplyCapValueSortOrder,
-  onSortBorrowCapValue,
-  isSortBorrowCapValueActive,
-  borrowCapValueSortOrder,
-  onSortAvailableLiquidity,
-  isSortAvailableLiquidityActive,
-  availableLiquiditySortOrder,
-  onSortUtilization,
-  isSortUtilizationActive,
-  utilizationSortOrder,
-  onSortOptimal,
-  isSortOptimalActive,
-  optimalSortOrder,
+  sortActions,
 }: DesktopReserveRowProps) => {
   const [hasSimulationMounted, setHasSimulationMounted] = useState(isExpanded);
 
@@ -331,13 +244,13 @@ const DesktopReserveRow = memo(({
   const hasBorrowCap =
     computedBorrowCapUsd != null && Number.isFinite(computedBorrowCapUsd) && computedBorrowCapUsd > 0;
 
-  const supplySizeSortArrow = onSortSupplySize ? (
-    <SortArrowButton onClick={onSortSupplySize} isActive={!!isSortSupplySizeActive} sortOrder={supplySizeSortOrder} ariaLabel="Sort by supply size" className="ds-text-emerald-500" />
-  ) : null;
+  const supplySizeSortArrow = (
+    <SortArrowButton onClick={sortActions.supply.onSort} isActive={sortActions.supply.isActive} sortOrder={sortActions.supply.sortOrder} ariaLabel="Sort by supply size" className="ds-text-emerald-500" />
+  );
 
-  const borrowSizeSortArrow = onSortBorrowSize ? (
-    <SortArrowButton onClick={onSortBorrowSize} isActive={!!isSortBorrowSizeActive} sortOrder={borrowSizeSortOrder} ariaLabel="Sort by borrow size" className="ds-text-brand-cyan" />
-  ) : null;
+  const borrowSizeSortArrow = (
+    <SortArrowButton onClick={sortActions.borrow.onSort} isActive={sortActions.borrow.isActive} sortOrder={sortActions.borrow.sortOrder} ariaLabel="Sort by borrow size" className="ds-text-brand-cyan" />
+  );
 
   return (
     <Fragment>
@@ -574,19 +487,19 @@ const DesktopReserveRow = memo(({
                 label={<span className="font-medium tabular-nums">{supplySizeLabel}</span>}
                 triggerClassName={supplyBlocked ? 'text-emerald-500/50' : 'ds-text-emerald-500'}
                 triggerAriaLabel={`Supply cap details for ${reserve.tokenSymbol}`}
-                onSort={onSortSupplyCapPct}
-                onSortSize={onSortSupplySize}
-                onSortSupplySize={onSortSupplySize}
-                isSortSupplySizeActive={isSortSupplySizeActive}
-                supplySizeSortOrder={supplySizeSortOrder}
-                onSortSuppliable={onSortSuppliable}
-                isSortSuppliableActive={isSortSuppliableActive}
-                suppliableSortOrder={suppliableSortOrder}
-                onSortSupplyCapValue={onSortSupplyCapValue}
-                isSortSupplyCapValueActive={isSortSupplyCapValueActive}
-                supplyCapValueSortOrder={supplyCapValueSortOrder}
-                isSortActive={isSortSupplyCapPctActive}
-                sortOrder={supplyCapPctSortOrder}
+                onSort={sortActions.supplyCapPct.onSort}
+                onSortSize={sortActions.supply.onSort}
+                onSortSupplySize={sortActions.supply.onSort}
+                isSortSupplySizeActive={sortActions.supply.isActive}
+                supplySizeSortOrder={sortActions.supply.sortOrder}
+                onSortSuppliable={sortActions.supplyAvailability.onSort}
+                isSortSuppliableActive={sortActions.supplyAvailability.isActive}
+                suppliableSortOrder={sortActions.supplyAvailability.sortOrder}
+                onSortSupplyCapValue={sortActions.supplyCapValue.onSort}
+                isSortSupplyCapValueActive={sortActions.supplyCapValue.isActive}
+                supplyCapValueSortOrder={sortActions.supplyCapValue.sortOrder}
+                isSortActive={sortActions.supplyCapPct.isActive}
+                sortOrder={sortActions.supplyCapPct.sortOrder}
               />
             ) : (
               <Tooltip delayDuration={0}>
@@ -623,22 +536,22 @@ const DesktopReserveRow = memo(({
                 label={<span className="font-medium tabular-nums">{borrowSizeLabel}</span>}
                 triggerClassName={borrowBlocked ? 'text-cyan-500/50' : 'ds-text-brand-cyan'}
                 triggerAriaLabel={`Borrow cap details for ${reserve.tokenSymbol}`}
-                onSort={onSortBorrowCapPct}
-                onSortSize={onSortBorrowSize}
-                onSortBorrowSize={onSortBorrowSize}
-                isSortBorrowSizeActive={isSortBorrowSizeActive}
-                borrowSizeSortOrder={borrowSizeSortOrder}
-                onSortBorrowable={onSortBorrowable}
-                isSortBorrowableActive={isSortBorrowableActive}
-                borrowableSortOrder={borrowableSortOrder}
-                onSortBorrowCapValue={onSortBorrowCapValue}
-                isSortBorrowCapValueActive={isSortBorrowCapValueActive}
-                borrowCapValueSortOrder={borrowCapValueSortOrder}
-                onSortAvailableLiquidity={onSortAvailableLiquidity}
-                isSortAvailableLiquidityActive={isSortAvailableLiquidityActive}
-                availableLiquiditySortOrder={availableLiquiditySortOrder}
-                isSortActive={isSortBorrowCapPctActive}
-                sortOrder={borrowCapPctSortOrder}
+                onSort={sortActions.borrowCapPct.onSort}
+                onSortSize={sortActions.borrow.onSort}
+                onSortBorrowSize={sortActions.borrow.onSort}
+                isSortBorrowSizeActive={sortActions.borrow.isActive}
+                borrowSizeSortOrder={sortActions.borrow.sortOrder}
+                onSortBorrowable={sortActions.borrowAvailability.onSort}
+                isSortBorrowableActive={sortActions.borrowAvailability.isActive}
+                borrowableSortOrder={sortActions.borrowAvailability.sortOrder}
+                onSortBorrowCapValue={sortActions.borrowCapValue.onSort}
+                isSortBorrowCapValueActive={sortActions.borrowCapValue.isActive}
+                borrowCapValueSortOrder={sortActions.borrowCapValue.sortOrder}
+                onSortAvailableLiquidity={sortActions.availableLiquidity.onSort}
+                isSortAvailableLiquidityActive={sortActions.availableLiquidity.isActive}
+                availableLiquiditySortOrder={sortActions.availableLiquidity.sortOrder}
+                isSortActive={sortActions.borrowCapPct.isActive}
+                sortOrder={sortActions.borrowCapPct.sortOrder}
               />
             ) : (
               <Tooltip delayDuration={0}>
@@ -680,16 +593,16 @@ const DesktopReserveRow = memo(({
                   triggerClassName={deficitDisplay.deficitTextClass}
                   triggerAriaLabel={`Deficit share of total supplied plus deficit for ${reserve.tokenSymbol}`}
                   poolExplorerUrl={poolExplorerUrl}
-                  onSort={onSortDeficitRatio}
-                  onSortSize={onSortDeficitAmount}
-                  onSortDeficitAmount={onSortDeficitAmount}
-                  isSortDeficitAmountActive={isSortDeficitAmountActive}
-                  deficitAmountSortOrder={deficitAmountSortOrder}
-                  onSortSupplySize={onSortSupplySize}
-                  isSortSupplySizeActive={isSortSupplySizeActive}
-                  supplySizeSortOrder={supplySizeSortOrder}
-                  isSortActive={isSortDeficitRatioActive}
-                  sortOrder={deficitRatioSortOrder}
+                  onSort={sortActions.deficitRatio.onSort}
+                  onSortSize={sortActions.deficitAmount.onSort}
+                  onSortDeficitAmount={sortActions.deficitAmount.onSort}
+                  isSortDeficitAmountActive={sortActions.deficitAmount.isActive}
+                  deficitAmountSortOrder={sortActions.deficitAmount.sortOrder}
+                  onSortSupplySize={sortActions.supply.onSort}
+                  isSortSupplySizeActive={sortActions.supply.isActive}
+                  supplySizeSortOrder={sortActions.supply.sortOrder}
+                  isSortActive={sortActions.deficitRatio.isActive}
+                  sortOrder={sortActions.deficitRatio.sortOrder}
                 />
               ) : (
                 <Tooltip delayDuration={0}>
@@ -762,12 +675,12 @@ const DesktopReserveRow = memo(({
                 <UtilizationContent
                   current={displayUtilization ?? 0}
                   optimal={optimalPct ?? 0}
-                  onSortUtilization={onSortUtilization}
-                  isSortUtilizationActive={isSortUtilizationActive}
-                  utilizationSortOrder={utilizationSortOrder}
-                  onSortOptimal={onSortOptimal}
-                  isSortOptimalActive={isSortOptimalActive}
-                  optimalSortOrder={optimalSortOrder}
+                  onSortUtilization={sortActions.util.onSort}
+                  isSortUtilizationActive={sortActions.util.isActive}
+                  utilizationSortOrder={sortActions.util.sortOrder}
+                  onSortOptimal={sortActions.optimal.onSort}
+                  isSortOptimalActive={sortActions.optimal.isActive}
+                  optimalSortOrder={sortActions.optimal.sortOrder}
                   formulaLabel="U"
                 />
               </TooltipContent>

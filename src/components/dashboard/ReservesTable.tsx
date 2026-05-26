@@ -35,6 +35,7 @@ import {
   type SortMode,
   type SortableColumn,
 } from '@/hooks/reserves-table/useReservesTableSort';
+import { buildSortActions, type SortActions } from '@/hooks/reserves-table/buildSortActions';
 import {
   useReservesPagination,
   DEFAULT_VISIBLE_COUNT,
@@ -204,6 +205,20 @@ const ReservesTable = ({
     closeAllMobileSortMenus,
     toggleMobileSortMenu,
   } = sortState;
+
+  const sortActions = buildSortActions({
+    activeSortColumn,
+    sizeSortMode,
+    sizeSortOrder,
+    utilSortMode,
+    utilSortOrder,
+    setSizeSortMode,
+    setSizeSortOrder,
+    setUtilSortMode,
+    setUtilSortOrder,
+    setActiveSortColumn,
+    collapseExpandedOnSort,
+  });
 
   const {
     tooltipState,
@@ -1179,149 +1194,7 @@ const ReservesTable = ({
                   isPortfolioMode={isPortfolioMode}
                   isInPortfolio={portfolioReserveIds.has(reserveId)}
                   onPortfolioToggle={handlePortfolioToggle}
-                  onSortSupplyCapPct={() => {
-                    collapseExpandedOnSort();
-                    selectSortOption({
-                      isAlreadySelected: sizeSortMode === 'supplyCapPct' && activeSortColumn === 'size',
-                      setSortOrder: setSizeSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
-                      setSortMode: setSizeSortMode, targetMode: 'supplyCapPct',
-                      setActiveSortColumn, targetColumn: 'size',
-                    });
-                  }}
-                  onSortBorrowCapPct={() => {
-                    collapseExpandedOnSort();
-                    selectSortOption({
-                      isAlreadySelected: sizeSortMode === 'borrowCapPct' && activeSortColumn === 'size',
-                      setSortOrder: setSizeSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
-                      setSortMode: setSizeSortMode, targetMode: 'borrowCapPct',
-                      setActiveSortColumn, targetColumn: 'size',
-                    });
-                  }}
-                  onSortDeficitRatio={() => {
-                    collapseExpandedOnSort();
-                    selectSortOption({
-                      isAlreadySelected: sizeSortMode === 'deficitRatio' && activeSortColumn === 'size',
-                      setSortOrder: setSizeSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
-                      setSortMode: setSizeSortMode, targetMode: 'deficitRatio',
-                      setActiveSortColumn, targetColumn: 'size',
-                    });
-                  }}
-                  onSortSupplySize={() => {
-                    collapseExpandedOnSort();
-                    selectSortOption({
-                      isAlreadySelected: sizeSortMode === 'supply' && activeSortColumn === 'size',
-                      setSortOrder: setSizeSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
-                      setSortMode: setSizeSortMode, targetMode: 'supply',
-                      setActiveSortColumn, targetColumn: 'size',
-                    });
-                  }}
-                  onSortBorrowSize={() => {
-                    collapseExpandedOnSort();
-                    selectSortOption({
-                      isAlreadySelected: sizeSortMode === 'borrow' && activeSortColumn === 'size',
-                      setSortOrder: setSizeSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
-                      setSortMode: setSizeSortMode, targetMode: 'borrow',
-                      setActiveSortColumn, targetColumn: 'size',
-                    });
-                  }}
-                  onSortDeficitAmount={() => {
-                    collapseExpandedOnSort();
-                    selectSortOption({
-                      isAlreadySelected: sizeSortMode === 'deficitAmount' && activeSortColumn === 'size',
-                      setSortOrder: setSizeSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
-                      setSortMode: setSizeSortMode, targetMode: 'deficitAmount',
-                      setActiveSortColumn, targetColumn: 'size',
-                    });
-                  }}
-                  onSortSuppliable={() => {
-                    collapseExpandedOnSort();
-                    selectSortOption({
-                      isAlreadySelected: sizeSortMode === 'supplyAvailability' && activeSortColumn === 'size',
-                      setSortOrder: setSizeSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
-                      setSortMode: setSizeSortMode, targetMode: 'supplyAvailability',
-                      setActiveSortColumn, targetColumn: 'size',
-                    });
-                  }}
-                  onSortBorrowable={() => {
-                    collapseExpandedOnSort();
-                    selectSortOption({
-                      isAlreadySelected: sizeSortMode === 'borrowAvailability' && activeSortColumn === 'size',
-                      setSortOrder: setSizeSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
-                      setSortMode: setSizeSortMode, targetMode: 'borrowAvailability',
-                      setActiveSortColumn, targetColumn: 'size',
-                    });
-                  }}
-                  onSortSupplyCapValue={() => {
-                    collapseExpandedOnSort();
-                    selectSortOption({
-                      isAlreadySelected: sizeSortMode === 'supplyCapValue' && activeSortColumn === 'size',
-                      setSortOrder: setSizeSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
-                      setSortMode: setSizeSortMode, targetMode: 'supplyCapValue',
-                      setActiveSortColumn, targetColumn: 'size',
-                    });
-                  }}
-                  onSortBorrowCapValue={() => {
-                    collapseExpandedOnSort();
-                    selectSortOption({
-                      isAlreadySelected: sizeSortMode === 'borrowCapValue' && activeSortColumn === 'size',
-                      setSortOrder: setSizeSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
-                      setSortMode: setSizeSortMode, targetMode: 'borrowCapValue',
-                      setActiveSortColumn, targetColumn: 'size',
-                    });
-                  }}
-                  onSortAvailableLiquidity={() => {
-                    collapseExpandedOnSort();
-                    selectSortOption({
-                      isAlreadySelected: sizeSortMode === 'availableLiquidity' && activeSortColumn === 'size',
-                      setSortOrder: setSizeSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
-                      setSortMode: setSizeSortMode, targetMode: 'availableLiquidity',
-                      setActiveSortColumn, targetColumn: 'size',
-                    });
-                  }}
-                  onSortUtilization={() => {
-                    collapseExpandedOnSort();
-                    selectSortOption({
-                      isAlreadySelected: utilSortMode === 'util' && activeSortColumn === 'util',
-                      setSortOrder: setUtilSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
-                      setSortMode: setUtilSortMode, targetMode: 'util',
-                      setActiveSortColumn, targetColumn: 'util',
-                    });
-                  }}
-                  onSortOptimal={() => {
-                    collapseExpandedOnSort();
-                    selectSortOption({
-                      isAlreadySelected: utilSortMode === 'optimal' && activeSortColumn === 'util',
-                      setSortOrder: setUtilSortOrder, toggleOrderFn: toggleSortOrder, defaultOrder: 'desc',
-                      setSortMode: setUtilSortMode, targetMode: 'optimal',
-                      setActiveSortColumn, targetColumn: 'util',
-                    });
-                  }}
-                  isSortSupplyCapPctActive={activeSortColumn === 'size' && sizeSortMode === 'supplyCapPct'}
-                  supplyCapPctSortOrder={sizeSortOrder}
-                  isSortBorrowCapPctActive={activeSortColumn === 'size' && sizeSortMode === 'borrowCapPct'}
-                  borrowCapPctSortOrder={sizeSortOrder}
-                  isSortDeficitRatioActive={activeSortColumn === 'size' && sizeSortMode === 'deficitRatio'}
-                  deficitRatioSortOrder={sizeSortOrder}
-                  isSortSupplySizeActive={activeSortColumn === 'size' && sizeSortMode === 'supply'}
-                  supplySizeSortOrder={sizeSortOrder}
-                  isSortSuppliableActive={activeSortColumn === 'size' && sizeSortMode === 'supplyAvailability'}
-                  suppliableSortOrder={sizeSortOrder}
-                  isSortBorrowSizeActive={activeSortColumn === 'size' && sizeSortMode === 'borrow'}
-                  borrowSizeSortOrder={sizeSortOrder}
-                  isSortBorrowableActive={activeSortColumn === 'size' && sizeSortMode === 'borrowAvailability'}
-                  borrowableSortOrder={sizeSortOrder}
-                  isSortDeficitAmountActive={activeSortColumn === 'size' && sizeSortMode === 'deficitAmount'}
-                  deficitAmountSortOrder={sizeSortOrder}
-                  isSortSupplyCapValueActive={activeSortColumn === 'size' && sizeSortMode === 'supplyCapValue'}
-                  supplyCapValueSortOrder={sizeSortOrder}
-                  isSortBorrowCapValueActive={activeSortColumn === 'size' && sizeSortMode === 'borrowCapValue'}
-                  borrowCapValueSortOrder={sizeSortOrder}
-                  isSortAvailableLiquidityActive={activeSortColumn === 'size' && sizeSortMode === 'availableLiquidity'}
-                  availableLiquiditySortOrder={sizeSortOrder}
-                  isSortUtilizationActive={activeSortColumn === 'util' && utilSortMode === 'util'}
-                  utilizationSortOrder={utilSortOrder}
-                  isSortOptimalActive={activeSortColumn === 'util' && utilSortMode === 'optimal'}
-                  optimalSortOrder={utilSortOrder}
+                  sortActions={sortActions}
                 />
               );
             })
