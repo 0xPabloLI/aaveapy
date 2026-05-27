@@ -281,6 +281,26 @@ export function fetchIconSymbolAndName({ underlyingAsset, symbol, name }: IconSy
       name: 'Wrapped XLP',
       iconSymbol: 'wxlp',
     },
+    '0x23b17d3944742ace3d0c71586fcb320d1e4a1ed2': {
+      symbol: 'PT USDe June 18th 2026',
+      name: 'PT USDe June 2026',
+      iconSymbol: 'ptusde',
+    },
+    '0x30559e3d35e33ab69399a3fe9f383d32bd3c016e': {
+      symbol: 'PT sUSDe June 18th 2026',
+      name: 'PT sUSDe June 2026',
+      iconSymbol: 'ptsusde',
+    },
+    '0x619d75e3b790ebc21c289f2805bb7177a7d732e2': {
+      symbol: 'PT Strata Senior USDe June 25th 2026',
+      name: 'PT Strata Senior USDe June 2026',
+      iconSymbol: 'ptsrusde',
+    },
+    '0x9db38d74a0d29380899ad354121dfb521adb0548': {
+      symbol: 'PT USDG 28MAY2026',
+      name: 'PT USDG May 2026',
+      iconSymbol: 'ptusdg',
+    },
 };
 
   const lowerUnderlyingAsset = underlyingAsset?.toLowerCase();

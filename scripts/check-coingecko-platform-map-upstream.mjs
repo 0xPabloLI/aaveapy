@@ -85,12 +85,14 @@ function parseLocalHardcodedMap(content) {
   return local;
 }
 
-function isCiMarkets403(error) {
+const CI_RECOVERABLE_MARKETS_STATUS = new Set([403, 429, 502, 503]);
+
+function isCiMarketsRecoverableError(error) {
   return (
     process.env.CI === 'true' &&
     error &&
     typeof error === 'object' &&
-    Number(error.status) === 403 &&
+    CI_RECOVERABLE_MARKETS_STATUS.has(Number(error.status)) &&
     typeof error.url === 'string' &&
     error.url.endsWith('/markets')
   );
@@ -105,10 +107,10 @@ async function main() {
   try {
     marketChainIds = await loadMarketChainIds();
   } catch (error) {
-    if (!isCiMarkets403(error)) throw error;
+    if (!isCiMarketsRecoverableError(error)) throw error;
     marketChainIds = Array.from(local.keys()).sort((a, b) => a - b);
     console.warn(
-      'Warning: /markets returned 403 in CI. Falling back to local HARDCODED_PLATFORM_BY_CHAIN_ID chainIds.'
+      `Warning: /markets returned ${error.status} in CI. Falling back to local HARDCODED_PLATFORM_BY_CHAIN_ID chainIds.`
     );
   }
 
