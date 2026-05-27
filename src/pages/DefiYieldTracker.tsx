@@ -151,13 +151,24 @@ const DefiYieldTracker = () => {
             </p>
           </header>
 
-          <Link
-            to="/?category=stablecoin"
-            className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-primary-foreground font-medium ring-1 ring-border hover:ring-2 transition-all"
-          >
-            Compare stablecoin yields now
-            <ArrowRight className="h-4 w-4" aria-hidden />
-          </Link>
+          <div className="flex flex-wrap items-center gap-3">
+            <Link
+              to="/?category=stablecoin"
+              className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-primary-foreground font-medium ring-1 ring-border hover:ring-2 transition-all"
+            >
+              Compare stablecoin yields now
+              <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
+            <a
+              href="#faq"
+              onClick={handleJumpToFaq}
+              className="inline-flex items-center gap-2 rounded-xl bg-card px-5 py-3 font-medium text-foreground ring-1 ring-border hover:ring-2 transition-all"
+            >
+              <HelpCircle className="h-4 w-4" aria-hidden />
+              Jump to FAQ
+            </a>
+          </div>
+
 
           <section aria-labelledby="what" className="mt-12">
             <h2 id="what" className="text-xl font-semibold mb-3">
