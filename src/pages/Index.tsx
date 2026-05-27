@@ -22,7 +22,7 @@ import LoadingState from '@/components/dashboard/LoadingState';
 import PullToRefresh from '@/components/dashboard/PullToRefresh';
 import { getCachedMarkets, setCachedTydroRate } from '@/lib/cache';
 import { TYDRO_POINT_TO_USD_RATE } from '@/lib/tydro';
-import { AlertTriangle, Send, Github, Link2, Check } from 'lucide-react';
+import { AlertTriangle, Send, Github } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   preloadIncentiveIcons,
@@ -74,7 +74,9 @@ const Index = () => {
     });
   }, []);
   const [pendingScrollReserveId, setPendingScrollReserveId] = useState<string | null>(null);
-  const [copiedLink, setCopiedLink] = useState(false);
+
+
+
   // Always start at FDV default 1 on load/refresh (do not restore from cache)
   const [tydroPointToUsdRateInput, setTydroPointToUsdRateInput] = useState('1.0000');
   const tydroPointToUsdRate = useMemo(() => {
@@ -208,6 +210,7 @@ const Index = () => {
     if (chains.size !== 1) return null;
     return [...chains][0].toLowerCase().replace(/\s+/g, '-');
   }, [selectedMarkets, effectiveMarketsList]);
+
 
   // Two-way sync: push current filter state into URL whenever it changes,
   // and mirror to localStorage so refresh/reopen restores the same view.
@@ -352,25 +355,6 @@ const Index = () => {
     }
   };
 
-  // Copy current filter state as a shareable URL
-  const handleCopyFilterLink = useCallback(() => {
-    const params = new URLSearchParams();
-    if (derivedChainSlug) params.set('chain', derivedChainSlug);
-    if (selectedCategory && selectedCategory !== 'all') params.set('category', selectedCategory);
-    const trimmed = searchQuery.trim();
-    if (trimmed) params.set('search', trimmed);
-
-    const baseUrl = window.location.origin + window.location.pathname;
-    const shareUrl = params.toString() ? `${baseUrl}?${params.toString()}` : baseUrl;
-
-    navigator.clipboard.writeText(shareUrl).then(() => {
-      setCopiedLink(true);
-      toast.success('Filter link copied to clipboard');
-      window.setTimeout(() => setCopiedLink(false), 2000);
-    }).catch(() => {
-      toast.error('Failed to copy link');
-    });
-  }, [derivedChainSlug, selectedCategory, searchQuery]);
 
   // Derive unique hub entries (id + display name) from current reserves (stable, alphabetical by name)
   const hubEntries = useMemo(() => {
@@ -539,23 +523,6 @@ const Index = () => {
 
           {/* Filters + Reserves Table (tighter gap) */}
           <div className="space-y-2 md:space-y-3">
-            {/* Copy shareable filter link */}
-            <div className="flex justify-end">
-              <button
-                type="button"
-                onClick={handleCopyFilterLink}
-                className="inline-flex items-center gap-[var(--ds-space-1-5)] rounded-md border border-border/60 bg-card/80 px-[var(--ds-space-3)] py-[var(--ds-space-1-5)] ds-text-13 text-interactive-strong transition-colors hover:bg-muted/80 hover:border-border hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                aria-label={copiedLink ? 'Link copied' : 'Copy filter link'}
-                title={copiedLink ? 'Link copied' : 'Copy shareable filter link'}
-              >
-                {copiedLink ? (
-                  <Check className="h-3.5 w-3.5 text-emerald-500" />
-                ) : (
-                  <Link2 className="h-3.5 w-3.5" />
-                )}
-                <span>{copiedLink ? 'Copied!' : 'Copy filter link'}</span>
-              </button>
-            </div>
 
             <FilterBar
               searchQuery={searchQuery}
@@ -588,6 +555,7 @@ const Index = () => {
               }}
               expandedChain={expandedChain}
               setExpandedChain={setExpandedChain}
+
             />
 
             <ReservesTable
