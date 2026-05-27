@@ -98,6 +98,26 @@ const jsonLd = {
 const CHAINS = SEO_CHAINS.map((c) => ({ slug: c.slug, displayName: c.displayName }));
 
 const DefiYieldTracker = () => {
+  const faqRef = useRef<HTMLElement | null>(null);
+  const [faqInView, setFaqInView] = useState(false);
+
+  useEffect(() => {
+    const el = faqRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setFaqInView(entry.isIntersecting),
+      { threshold: 0.15 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const handleJumpToFaq = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    faqRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (typeof history !== 'undefined') history.replaceState(null, '', '#faq');
+  };
+
   return (
     <>
       <Helmet>
