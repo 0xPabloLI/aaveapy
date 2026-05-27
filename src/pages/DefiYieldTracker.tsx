@@ -268,7 +268,13 @@ const DefiYieldTracker = () => {
             </p>
           </section>
 
-          <section aria-labelledby="faq" className="mt-12">
+          <section
+            ref={faqRef}
+            aria-labelledby="faq"
+            className={`mt-12 scroll-mt-20 rounded-xl transition-all duration-500 ${
+              faqInView ? 'ring-2 ring-primary/60 bg-primary/[0.03] p-4 -m-4' : 'ring-0 p-0 m-0'
+            }`}
+          >
             <h2 id="faq" className="text-xl font-semibold mb-4">
               Frequently asked questions
             </h2>
