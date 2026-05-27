@@ -33,7 +33,7 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: 'What are DeFi lending rates and how are they set?',
-    a: 'DeFi lending rates are set algorithmically based on pool utilization — the ratio of borrowed assets to supplied assets. When utilization is low, rates stay moderate; when liquidity runs tight, rates spike sharply to attract new deposits. Aave governance sets each pool\'s base rate, slope parameters, and optimal utilization point, which together define the rate curve.',
+    a: "DeFi lending rates are set algorithmically based on pool utilization — the ratio of borrowed assets to supplied assets. When utilization is low, rates stay moderate; when liquidity runs tight, rates spike sharply to attract new deposits. Aave governance sets each pool's base rate, slope parameters, and optimal utilization point, which together define the rate curve.",
   },
   {
     q: 'How do I track my DeFi portfolio on Aave?',
@@ -49,24 +49,46 @@ const FAQS: { q: string; a: string }[] = [
   },
 ];
 
+function faqSlug(q: string) {
+  return q
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .substring(0, 64);
+}
 
 const jsonLd = {
   '@context': 'https://schema.org',
   '@graph': [
     {
       '@type': 'WebPage',
+      '@id': CANONICAL,
       name: TITLE,
       description: DESCRIPTION,
       url: CANONICAL,
-      isPartOf: { '@type': 'WebSite', name: 'AAVE APY', url: `${SITE_ORIGIN}/` },
+      isPartOf: { '@type': 'WebSite', '@id': `${SITE_ORIGIN}/`, name: 'AAVE APY', url: `${SITE_ORIGIN}/` },
+      inLanguage: 'en',
     },
     {
       '@type': 'FAQPage',
-      mainEntity: FAQS.map((f) => ({
-        '@type': 'Question',
-        name: f.q,
-        acceptedAnswer: { '@type': 'Answer', text: f.a },
-      })),
+      '@id': `${CANONICAL}#faq`,
+      url: CANONICAL,
+      mainEntity: FAQS.map((f) => {
+        const slug = faqSlug(f.q);
+        return {
+          '@type': 'Question',
+          '@id': `${CANONICAL}#${slug}`,
+          url: `${CANONICAL}#${slug}`,
+          name: f.q,
+          acceptedAnswer: {
+            '@type': 'Answer',
+            '@id': `${CANONICAL}#${slug}-answer`,
+            text: f.a,
+            inLanguage: 'en',
+          },
+        };
+      }),
     },
   ],
 };
@@ -220,7 +242,7 @@ const DefiYieldTracker = () => {
             </h2>
             <dl className="space-y-5">
               {FAQS.map((f) => (
-                <div key={f.q}>
+                <div key={f.q} id={faqSlug(f.q)}>
                   <dt className="font-medium text-foreground">{f.q}</dt>
                   <dd className="mt-1 text-muted-foreground leading-relaxed">{f.a}</dd>
                 </div>
