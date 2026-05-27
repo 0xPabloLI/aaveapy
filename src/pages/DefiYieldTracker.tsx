@@ -1,6 +1,7 @@
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, HelpCircle } from 'lucide-react';
 import { SEO_CHAINS } from '@/lib/seoChains';
 
 const SITE_ORIGIN = 'https://aaveapy.com';
@@ -97,6 +98,26 @@ const jsonLd = {
 const CHAINS = SEO_CHAINS.map((c) => ({ slug: c.slug, displayName: c.displayName }));
 
 const DefiYieldTracker = () => {
+  const faqRef = useRef<HTMLElement | null>(null);
+  const [faqInView, setFaqInView] = useState(false);
+
+  useEffect(() => {
+    const el = faqRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setFaqInView(entry.isIntersecting),
+      { threshold: 0.15 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const handleJumpToFaq = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    faqRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (typeof history !== 'undefined') history.replaceState(null, '', '#faq');
+  };
+
   return (
     <>
       <Helmet>
@@ -130,13 +151,24 @@ const DefiYieldTracker = () => {
             </p>
           </header>
 
-          <Link
-            to="/?category=stablecoin"
-            className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-primary-foreground font-medium ring-1 ring-border hover:ring-2 transition-all"
-          >
-            Compare stablecoin yields now
-            <ArrowRight className="h-4 w-4" aria-hidden />
-          </Link>
+          <div className="flex flex-wrap items-center gap-3">
+            <Link
+              to="/?category=stablecoin"
+              className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-primary-foreground font-medium ring-1 ring-border hover:ring-2 transition-all"
+            >
+              Compare stablecoin yields now
+              <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
+            <a
+              href="#faq"
+              onClick={handleJumpToFaq}
+              className="inline-flex items-center gap-2 rounded-xl bg-card px-5 py-3 font-medium text-foreground ring-1 ring-border hover:ring-2 transition-all"
+            >
+              <HelpCircle className="h-4 w-4" aria-hidden />
+              Jump to FAQ
+            </a>
+          </div>
+
 
           <section aria-labelledby="what" className="mt-12">
             <h2 id="what" className="text-xl font-semibold mb-3">
@@ -236,7 +268,13 @@ const DefiYieldTracker = () => {
             </p>
           </section>
 
-          <section aria-labelledby="faq" className="mt-12">
+          <section
+            ref={faqRef}
+            aria-labelledby="faq"
+            className={`mt-12 scroll-mt-20 rounded-xl transition-all duration-500 ${
+              faqInView ? 'ring-2 ring-primary/60 bg-primary/[0.03] p-4 -m-4' : 'ring-0 p-0 m-0'
+            }`}
+          >
             <h2 id="faq" className="text-xl font-semibold mb-4">
               Frequently asked questions
             </h2>
