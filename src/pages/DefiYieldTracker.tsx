@@ -1,6 +1,7 @@
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, HelpCircle } from 'lucide-react';
 import { SEO_CHAINS } from '@/lib/seoChains';
 
 const SITE_ORIGIN = 'https://aaveapy.com';
