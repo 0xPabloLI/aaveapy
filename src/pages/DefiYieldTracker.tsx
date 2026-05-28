@@ -99,11 +99,13 @@ const CHAINS = SEO_CHAINS.map((c) => ({ slug: c.slug, displayName: c.displayName
 
 const DefiYieldTracker = () => {
   const faqRef = useRef<HTMLElement | null>(null);
+  const faqHeadingRef = useRef<HTMLHeadingElement | null>(null);
   const [faqInView, setFaqInView] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.location.hash === '#faq') {
       faqRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setTimeout(() => faqHeadingRef.current?.focus(), 600);
     }
   }, []);
 
@@ -122,6 +124,7 @@ const DefiYieldTracker = () => {
     e.preventDefault();
     faqRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     if (typeof history !== 'undefined') history.replaceState(null, '', '#faq');
+    setTimeout(() => faqHeadingRef.current?.focus(), 600);
   };
 
   return (
@@ -168,6 +171,7 @@ const DefiYieldTracker = () => {
             <a
               href="#faq"
               onClick={handleJumpToFaq}
+              aria-label="Jump to frequently asked questions"
               className="inline-flex items-center gap-2 rounded-xl bg-card px-5 py-3 font-medium text-foreground ring-1 ring-border hover:ring-2 transition-all"
             >
               <HelpCircle className="h-4 w-4" aria-hidden />
@@ -288,7 +292,7 @@ const DefiYieldTracker = () => {
               aria-hidden="true"
             />
             <div className="relative p-4 -m-4">
-              <h2 id="faq" className="text-xl font-semibold mb-4">
+              <h2 id="faq" ref={faqHeadingRef} tabIndex={-1} className="text-xl font-semibold mb-4 outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded">
                 Frequently asked questions
               </h2>
               <dl className="space-y-5">
