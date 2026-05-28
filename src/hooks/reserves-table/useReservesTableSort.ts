@@ -2,9 +2,10 @@ import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateA
 
 import type { MobileSortMenuKey } from '@/components/dashboard/ReservesTableMobileSortBar';
 import type { SortMode, SortableColumn, SizeSortMode, UtilSortMode } from '@/lib/reservesSorter';
+import type { SortOrder } from '@/lib/sorters';
 
 export type { SortMode, SortableColumn, SizeSortMode, UtilSortMode };
-export type { SortOrder } from '@/lib/sorters';
+export type { SortOrder };
 
 export function toggleSortOrder(order: SortOrder): SortOrder {
   return order === 'desc' ? 'asc' : 'desc';

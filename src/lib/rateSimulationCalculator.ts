@@ -1623,7 +1623,7 @@ export function buildRateSimulationResult({
       Number.isFinite(onChainTotalBorrowedUsd) && onChainTotalBorrowedUsd >= 0
         ? onChainTotalBorrowedUsd
         : isV3
-          ? deriveTotalBorrowedUsd(computedReserveSizeUsd, reserve.utilizationPct)
+          ? deriveTotalBorrowedUsd(computedReserveSizeUsd2, reserve.utilizationPct)
           : null;
 
     const availableLiquidityUsd =
