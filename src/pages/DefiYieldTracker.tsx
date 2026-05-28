@@ -292,7 +292,7 @@ const DefiYieldTracker = () => {
               aria-hidden="true"
             />
             <div className="relative p-4 -m-4">
-              <h2 id="faq" className="text-xl font-semibold mb-4">
+              <h2 id="faq" ref={faqHeadingRef} tabIndex={-1} className="text-xl font-semibold mb-4 outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded">
                 Frequently asked questions
               </h2>
               <dl className="space-y-5">
