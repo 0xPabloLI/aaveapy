@@ -102,6 +102,12 @@ const DefiYieldTracker = () => {
   const [faqInView, setFaqInView] = useState(false);
 
   useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.hash === '#faq') {
+      faqRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, []);
+
+  useEffect(() => {
     const el = faqRef.current;
     if (!el || typeof IntersectionObserver === 'undefined') return;
     const observer = new IntersectionObserver(
