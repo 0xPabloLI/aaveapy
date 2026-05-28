@@ -277,21 +277,29 @@ const DefiYieldTracker = () => {
           <section
             ref={faqRef}
             aria-labelledby="faq"
-            className={`mt-12 scroll-mt-20 rounded-xl transition-all duration-500 ${
-              faqInView ? 'ring-2 ring-primary/60 bg-primary/[0.03] p-4 -m-4' : 'ring-0 p-0 m-0'
-            }`}
+            className="relative mt-12 scroll-mt-20 rounded-xl"
           >
-            <h2 id="faq" className="text-xl font-semibold mb-4">
-              Frequently asked questions
-            </h2>
-            <dl className="space-y-5">
-              {FAQS.map((f) => (
-                <div key={f.q} id={faqSlug(f.q)}>
-                  <dt className="font-medium text-foreground">{f.q}</dt>
-                  <dd className="mt-1 text-muted-foreground leading-relaxed">{f.a}</dd>
-                </div>
-              ))}
-            </dl>
+            <div
+              className={`pointer-events-none absolute inset-0 rounded-xl transition-all duration-700 ease-out ${
+                faqInView
+                  ? 'opacity-100 scale-[1.015] shadow-[0_0_40px_-8px_hsl(var(--primary)/0.25)] ring-2 ring-primary/50 bg-primary/[0.05]'
+                  : 'opacity-0 scale-100 ring-0 shadow-none'
+              }`}
+              aria-hidden="true"
+            />
+            <div className="relative p-4 -m-4">
+              <h2 id="faq" className="text-xl font-semibold mb-4">
+                Frequently asked questions
+              </h2>
+              <dl className="space-y-5">
+                {FAQS.map((f) => (
+                  <div key={f.q} id={faqSlug(f.q)}>
+                    <dt className="font-medium text-foreground">{f.q}</dt>
+                    <dd className="mt-1 text-muted-foreground leading-relaxed">{f.a}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
           </section>
         </div>
       </main>
