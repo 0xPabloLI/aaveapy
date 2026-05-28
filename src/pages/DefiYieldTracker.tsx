@@ -99,11 +99,13 @@ const CHAINS = SEO_CHAINS.map((c) => ({ slug: c.slug, displayName: c.displayName
 
 const DefiYieldTracker = () => {
   const faqRef = useRef<HTMLElement | null>(null);
+  const faqHeadingRef = useRef<HTMLHeadingElement | null>(null);
   const [faqInView, setFaqInView] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.location.hash === '#faq') {
       faqRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setTimeout(() => faqHeadingRef.current?.focus(), 600);
     }
   }, []);
 
@@ -122,6 +124,7 @@ const DefiYieldTracker = () => {
     e.preventDefault();
     faqRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     if (typeof history !== 'undefined') history.replaceState(null, '', '#faq');
+    setTimeout(() => faqHeadingRef.current?.focus(), 600);
   };
 
   return (
