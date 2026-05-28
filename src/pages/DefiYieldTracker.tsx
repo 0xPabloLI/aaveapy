@@ -171,6 +171,7 @@ const DefiYieldTracker = () => {
             <a
               href="#faq"
               onClick={handleJumpToFaq}
+              aria-label="Jump to frequently asked questions"
               className="inline-flex items-center gap-2 rounded-xl bg-card px-5 py-3 font-medium text-foreground ring-1 ring-border hover:ring-2 transition-all"
             >
               <HelpCircle className="h-4 w-4" aria-hidden />
