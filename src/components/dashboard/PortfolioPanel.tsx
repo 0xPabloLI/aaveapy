@@ -26,6 +26,7 @@ import PortfolioSummaryCard from './PortfolioSummaryCard';
 import PortfolioResultsTable from './PortfolioResultsTable';
 import { BATCH_THEME } from './batchTheme';
 import { ConfirmPopover } from '@/components/ui/confirm-popover';
+import { sortPositionsByHidden } from '@/lib/portfolioSoftDelete';
 
 const PortfolioCompareView = lazy(() => import('./PortfolioCompareView'));
 
@@ -297,9 +298,11 @@ const PortfolioPanel = memo(function PortfolioPanel({
     return { a, b };
   }, [canCompare, compareIds, snapshots]);
 
+  const sortedPositions = useMemo(() => sortPositionsByHidden(positions), [positions]);
+
   const groupedByReserve = useMemo(() => {
     const map = new Map<string, { tokenSymbol: string; chainName: string; marketName: string; hubName?: string; supply: PortfolioPosition | null; borrow: PortfolioPosition | null }>();
-    for (const p of positions) {
+    for (const p of sortedPositions) {
       if (!map.has(p.reserveId)) {
         const reserve = reserves.find((r) => getReserveKey(r) === p.reserveId);
         map.set(p.reserveId, {
@@ -316,7 +319,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
       else entry.borrow = p;
     }
     return map;
-  }, [positions, reserves]);
+  }, [sortedPositions, reserves]);
 
   // Suggested popular tokens for quick-add: top 2 stablecoins, top 2 ETH-related,
   // and top 1 BTC-related by reserve size (TVL). Excludes already-added symbols.
@@ -351,6 +354,14 @@ const PortfolioPanel = memo(function PortfolioPanel({
       if (p.reserveId === reserveId) actions.removePosition(p.positionId);
     }
   }, [actions, positions]);
+
+  const handleToggleHidden = useCallback((positionId: string) => {
+    actions.toggleHidden(positionId);
+  }, [actions]);
+
+  const handleRestorePosition = useCallback((positionId: string) => {
+    actions.restorePosition(positionId);
+  }, [actions]);
 
   // When positions transition from non-empty to empty (e.g. clear all),
   // reopen search so users can immediately add the next token.
@@ -585,9 +596,18 @@ const PortfolioPanel = memo(function PortfolioPanel({
                   onRemove={handleRemoveToken}
                   onUpdateAmount={actions.updateAmount}
                   onUpdateInputMode={actions.updateInputMode}
+                  onToggleHidden={handleToggleHidden}
+                  onRestorePosition={handleRestorePosition}
                 />
               ))}
             </div>
+            {positions.some(p => p.hidden) && (
+              <div className="flex items-center gap-2 ds-text-10 text-muted-foreground/60 pt-1">
+                <div className="flex-1 h-px bg-border/20" />
+                <span>{positions.filter(p => p.hidden).length} hidden</span>
+                <div className="flex-1 h-px bg-border/20" />
+              </div>
+            )}
           </div>
         )}
 

@@ -1,5 +1,5 @@
-import { memo } from 'react';
-import { Eraser, Minus } from 'lucide-react';
+import { memo, useCallback } from 'react';
+import { Eraser, Minus, Wallet, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatNumberInput } from '@/lib/numberFormat';
 import { cnDsInputSurface } from '@/lib/dsInputSurface';
@@ -7,6 +7,8 @@ import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { getMarketChipLabel, isV4Market, getHubChipClass } from '@/lib/marketLabels';
+import { getWalletSyncState } from '@/lib/portfolioWalletSync';
+import { getSoftDeleteAction } from '@/lib/portfolioSoftDelete';
 
 import { BATCH_THEME } from './batchTheme';
 import type { PortfolioPosition, PortfolioInputMode } from '@/types/portfolio';
@@ -22,6 +24,39 @@ interface PortfolioTokenRowProps {
   reserveId: string;
   onUpdateAmount: (positionId: string, amount: string) => void;
   onUpdateInputMode: (positionId: string, mode: PortfolioInputMode) => void;
+  onToggleHidden?: (positionId: string) => void;
+  onRestorePosition?: (positionId: string) => void;
+}
+
+function WalletSyncIndicator({ position, onRestore }: {
+  position: PortfolioPosition;
+  onRestore?: (positionId: string) => void;
+}) {
+  const state = getWalletSyncState(position);
+
+  if (state === 'synced') {
+    return (
+      <Wallet className="size-3.5 shrink-0 text-emerald-500" aria-label="Synced from wallet" />
+    );
+  }
+
+  if (state === 'modified') {
+    return (
+      <button
+        type="button"
+        onClick={onRestore ? () => onRestore(position.positionId) : undefined}
+        className="group relative shrink-0"
+        aria-label={`Modified, wallet value ${position.walletValue}, click to restore`}
+      >
+        <div className="relative">
+          <Wallet className="size-3.5 text-amber-500" />
+          <div className="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-amber-500 border border-card" />
+        </div>
+      </button>
+    );
+  }
+
+  return <div className="size-3.5 shrink-0" aria-hidden="true" />;
 }
 
 const PortfolioTokenRow = memo(function PortfolioTokenRow({
@@ -35,12 +70,17 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
   reserveId,
   onUpdateAmount,
   onUpdateInputMode,
+  onToggleHidden,
+  onRestorePosition,
 }: PortfolioTokenRowProps) {
   const isMobile = useIsMobile();
   const chainSrc = getChainIconSrc(chainName);
   const marketLabel = getMarketChipLabel(marketName, chainName);
   const showV4 = isV4Market(marketName);
   const hubChipClass = getHubChipClass(showV4);
+
+  const anyPosition = supplyPosition ?? borrowPosition;
+  const isHidden = anyPosition?.hidden ?? false;
 
   const renderSideInput = (position: PortfolioPosition | null, sideLabel: string) => {
     if (!position) return null;
@@ -97,31 +137,72 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
     );
   };
 
-  // Minus button — always inline on the left, same position for both desktop and mobile.
+  const handleMinusClick = useCallback(() => {
+    if (!anyPosition) return;
+    const action = getSoftDeleteAction(anyPosition);
+    if (action === 'toggleHidden' && onToggleHidden) {
+      onToggleHidden(anyPosition.positionId);
+    } else {
+      onRemove(reserveId);
+    }
+  }, [anyPosition, onToggleHidden, onRemove, reserveId]);
+
   const minusBtn = (
     <button
       type="button"
-      onClick={() => onRemove(reserveId)}
+      onClick={handleMinusClick}
       className={cn(
         'shrink-0 rounded-md p-1 text-muted-foreground/60 transition-colors',
         BATCH_THEME.trashHoverBg,
         BATCH_THEME.trashHoverText,
       )}
-      aria-label={`Remove ${tokenSymbol} from portfolio`}
+      aria-label={isHidden ? `Restore ${tokenSymbol}` : `Remove ${tokenSymbol} from portfolio`}
     >
       <Minus className="size-3.5" strokeWidth={2.5} aria-hidden />
     </button>
   );
 
+  const walletIndicatorSupply = supplyPosition && (
+    <WalletSyncIndicator position={supplyPosition} onRestore={onRestorePosition} />
+  );
+  const walletIndicatorBorrow = borrowPosition && (
+    <WalletSyncIndicator position={borrowPosition} onRestore={onRestorePosition} />
+  );
+
+  const hiddenSuffix = isHidden ? (
+    <div className="flex items-center gap-1 shrink-0 text-muted-foreground/60">
+      {anyPosition && getWalletSyncState(anyPosition) !== 'manual' && (
+        <Wallet className="size-3 text-emerald-500/60 shrink-0" aria-hidden />
+      )}
+      <EyeOff className="size-3 shrink-0" aria-hidden />
+    </div>
+  ) : null;
+
+  const rowBaseClass = cn(
+    'grid grid-cols-subgrid col-span-2 items-center transition-colors',
+    isHidden
+      ? 'border-border/20 bg-muted/5 opacity-40 hover:opacity-60'
+      : 'border-border/50 bg-card/80 hover:border-border',
+    isHidden ? 'rounded-lg border px-2.5 py-2' : 'rounded-lg border px-2.5 py-2',
+  );
+
   if (isMobile) {
     return (
-      <div className="grid grid-cols-subgrid col-span-2 items-center gap-x-1 rounded-lg border border-border/50 bg-card/80 px-2 py-1.5 transition-colors hover:border-border">
+      <div
+        className={cn(
+          'grid grid-cols-subgrid col-span-2 items-center gap-x-1 rounded-lg border transition-colors',
+          isHidden
+            ? 'border-border/20 bg-muted/5 opacity-40 hover:opacity-60'
+            : 'border-border/50 bg-card/80 hover:border-border',
+          isHidden && 'cursor-pointer',
+        )}
+        onClick={isHidden && onToggleHidden && anyPosition ? () => onToggleHidden(anyPosition.positionId) : undefined}
+      >
         <div className="flex min-w-0 items-center gap-1">
           {minusBtn}
-          {/* Token info — 2-col grid (icons centered, text left-aligned), 3 rows */}
           <div className="grid min-w-0 grid-cols-[1rem_minmax(0,1fr)] items-center gap-x-1 gap-y-0.5 leading-[1.15]">
             <span className="flex justify-center"><TokenIcon symbol={tokenSymbol} size={14} /></span>
-            <span className="ds-text-12 font-semibold text-foreground truncate">{tokenSymbol}</span>
+            <span className={cn('ds-text-12 font-semibold truncate', isHidden ? 'text-muted-foreground line-through' : 'text-foreground')}>{tokenSymbol}</span>
             <span className="flex justify-center">
               {chainSrc && <img src={chainSrc} alt={chainName} className="size-3" />}
             </span>
@@ -140,18 +221,32 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
           {renderSideInput(supplyPosition, 'Supply')}
           {borrowPosition && renderSideInput(borrowPosition, 'Borrow')}
         </div>
+        <div className="flex items-center gap-1 self-center justify-self-end">
+          {!isHidden && walletIndicatorSupply}
+          {!isHidden && walletIndicatorBorrow}
+          {hiddenSuffix}
+        </div>
       </div>
     );
   }
 
-  // Desktop — subgrid row, auto column matches widest token.
+  // Desktop
   return (
-    <div className="grid grid-cols-subgrid col-span-2 items-center gap-x-1 rounded-lg border border-border/50 bg-card/80 px-2.5 py-2 transition-colors hover:border-border">
+    <div
+      className={cn(
+        'grid grid-cols-subgrid col-span-2 items-center gap-x-1 rounded-lg border transition-colors',
+        isHidden
+          ? 'border-border/20 bg-muted/5 opacity-40 hover:opacity-60'
+          : 'border-border/50 bg-card/80 hover:border-border',
+        isHidden && 'cursor-pointer',
+      )}
+      onClick={isHidden && onToggleHidden && anyPosition ? () => onToggleHidden(anyPosition.positionId) : undefined}
+    >
       <div className="flex min-w-0 items-center gap-1.5">
         {minusBtn}
         <TokenIcon symbol={tokenSymbol} size={20} />
         <div className="flex flex-col min-w-0 leading-tight">
-          <span className="ds-text-12 font-semibold text-foreground truncate">
+          <span className={cn('ds-text-12 font-semibold truncate', isHidden ? 'text-muted-foreground line-through' : 'text-foreground')}>
             {tokenSymbol}
           </span>
           <span className="ds-text-10 text-muted-foreground inline-flex items-center gap-1 min-w-0 flex-wrap">
@@ -170,6 +265,9 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
       <div className="flex items-center gap-2">
         {renderSideInput(supplyPosition, 'Supply')}
         {borrowPosition && renderSideInput(borrowPosition, 'Borrow')}
+        {!isHidden && walletIndicatorSupply}
+        {!isHidden && walletIndicatorBorrow}
+        {hiddenSuffix}
       </div>
     </div>
   );
