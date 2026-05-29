@@ -107,3 +107,44 @@ describe('preload image fallback tracking', () => {
     );
   });
 });
+
+describe('getTokenIconSymbolKeys', () => {
+  it('returns plain key for standard symbol', async () => {
+    const { getTokenIconSymbolKeys } = await import('./preloadUtils');
+    expect(getTokenIconSymbolKeys('USDC')).toEqual(['usdc']);
+  });
+
+  it('adds SYMBOL_MAP fallback for variant symbols (Celo USDT)', async () => {
+    const { getTokenIconSymbolKeys } = await import('./preloadUtils');
+    expect(getTokenIconSymbolKeys('USD₮')).toEqual(['usd₮', 'usdt']);
+  });
+
+  it('adds SYMBOL_MAP fallback for bridge-prefixed symbols (Avalanche)', async () => {
+    const { getTokenIconSymbolKeys } = await import('./preloadUtils');
+    expect(getTokenIconSymbolKeys('USDT.e')).toEqual(['usdt.e', 'usdt']);
+    expect(getTokenIconSymbolKeys('USDC.e')).toEqual(['usdc.e', 'usdc']);
+  });
+
+  it('adds SYMBOL_MAP fallback for Metis prefixed symbols', async () => {
+    const { getTokenIconSymbolKeys } = await import('./preloadUtils');
+    expect(getTokenIconSymbolKeys('m.USDT')).toEqual(['m.usdt', 'usdt']);
+  });
+
+  it('does not duplicate when mapped key equals original', async () => {
+    const { getTokenIconSymbolKeys } = await import('./preloadUtils');
+    expect(getTokenIconSymbolKeys('USDT')).toEqual(['usdt']);
+  });
+
+  it('still resolves PT tokens with upstream mapping', async () => {
+    const { getTokenIconSymbolKeys } = await import('./preloadUtils');
+    const keys = getTokenIconSymbolKeys('pt-susde-28may2026');
+    expect(keys.length).toBeGreaterThanOrEqual(2);
+    expect(keys[0]).toBe('ptsusde');
+    expect(keys[1]).toBe('susde');
+  });
+
+  it('resolves PT tokens without upstream mapping', async () => {
+    const { getTokenIconSymbolKeys } = await import('./preloadUtils');
+    expect(getTokenIconSymbolKeys('pt-usdg-28may2026')).toEqual(['ptusdg', 'usdg']);
+  });
+});

@@ -35,6 +35,7 @@ import {
   collectRequiredIconSymbols,
   collectIconSymbolLogoHints,
   getReservePatchesPath,
+  getTokenSymbolMapPath,
   toSortedArray,
 } from './lib/token-icon-symbols.mjs';
 
@@ -42,6 +43,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 const TOKENS_DIR = path.join(ROOT, 'public', 'icons', 'tokens');
 const RESERVE_PATCHES_PATH = getReservePatchesPath(ROOT);
+const TOKEN_SYMBOL_MAP_PATH = getTokenSymbolMapPath(ROOT);
 const COINGECKO_SEARCH = 'https://api.coingecko.com/api/v3/search';
 const INTERFACE_TOKEN_ICONS_BASE = String(
   process.env.INTERFACE_TOKEN_ICONS_BASE ||
@@ -206,16 +208,19 @@ async function loadMarketsRows() {
 
 async function getMissingSymbols() {
   const reservePatchesContent = fs.readFileSync(RESERVE_PATCHES_PATH, 'utf8');
+  const tokenSymbolMapContent = fs.readFileSync(TOKEN_SYMBOL_MAP_PATH, 'utf8');
   const { rows: marketsRows } = await loadMarketsRows();
 
   const requiredSymbols = collectRequiredIconSymbols({
     reservePatchesContent,
+    tokenSymbolMapContent,
     marketsRows,
     tokenListSymbols: [],
     addressBookContext: addressBook,
   });
   const logoHints = collectIconSymbolLogoHints({
     reservePatchesContent,
+    tokenSymbolMapContent,
     marketsRows,
     addressBookContext: addressBook,
     tokenLogoByAddress: new Map(),

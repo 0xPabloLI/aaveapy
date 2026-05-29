@@ -1,6 +1,7 @@
 import { getChainIconSrc } from './chainIcons';
 import { TOKEN_ICON_MANIFEST } from './tokenIconManifest.generated';
 import { PT_ICON_FALLBACK_MAP } from './ptIconFallback.generated';
+import { SYMBOL_MAP } from './tokenSymbolMap';
 
 /**
  * Performance Optimization - Phase 3
@@ -65,25 +66,35 @@ export function shouldUseFullPreloadMode(): boolean {
 
 /**
  * Resolve symbol to the icon keys used for static assets, ordered by priority.
- * PT tokens use upstream mapping (from reservePatches.ts) for the first layer,
- * then fall back to the bare base asset name.
  *
- * With upstream mappings:        pt-susde-28may2026 → ['ptsusde', 'susde']
- * Without upstream mapping:      pt-usdg-28may2026  → ['ptusdg', 'usdg']
- * Non-PT symbols pass through:   usdc               → ['usdc']
+ * Three layers of resolution:
+ * 1. PT tokens: extract base asset key, with optional upstream mapping
+ *    e.g. pt-susde-28may2026 → ['ptsusde', 'susde']
+ * 2. SYMBOL_MAP fallback: bridge/variant symbols → canonical icon key
+ *    e.g. USD₮ → ['usd₮', 'usdt']   (try original first, then mapped)
+ * 3. Plain symbols pass through: usdc → ['usdc']
  */
 export function getTokenIconSymbolKeys(symbol: string): string[] {
   const key = symbol.trim().toLowerCase();
+
   const ptMatch = key.match(/^pt-(.+)$/);
-  if (!ptMatch) return [key];
+  if (ptMatch) {
+    const rest = ptMatch[1];
+    const baseEnd = rest.indexOf('-');
+    const base = baseEnd >= 0 ? rest.slice(0, baseEnd) : rest;
 
-  const rest = ptMatch[1];
-  const baseEnd = rest.indexOf('-');
-  const base = baseEnd >= 0 ? rest.slice(0, baseEnd) : rest;
+    const upstreamIcon = PT_ICON_FALLBACK_MAP[base];
+    const firstLayer = upstreamIcon ?? `pt${base}`;
+    return [firstLayer, base];
+  }
 
-  const upstreamIcon = PT_ICON_FALLBACK_MAP[base];
-  const firstLayer = upstreamIcon ?? `pt${base}`;
-  return [firstLayer, base];
+  const mapped = SYMBOL_MAP[symbol.trim()];
+  if (mapped) {
+    const mappedKey = mapped.toLowerCase();
+    return mappedKey !== key ? [key, mappedKey] : [key];
+  }
+
+  return [key];
 }
 
 export function getTokenIconSources(symbol: string): string[] {

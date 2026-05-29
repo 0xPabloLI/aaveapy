@@ -110,8 +110,8 @@ function evaluateObjectLiteral(objectLiteral, evalContext = {}) {
   return Function(...keys, `return (${objectLiteral});`)(...values);
 }
 
-function resolveSymbolMap(reservePatchesContent) {
-  const symbolMapLiteral = extractAssignedObjectLiteral(reservePatchesContent, 'export const SYMBOL_MAP');
+function resolveSymbolMap(tokenSymbolMapContent) {
+  const symbolMapLiteral = extractAssignedObjectLiteral(tokenSymbolMapContent, 'export const SYMBOL_MAP');
   const symbolMap = evaluateObjectLiteral(symbolMapLiteral, {});
   if (!symbolMap || typeof symbolMap !== 'object') {
     throw new Error('SYMBOL_MAP did not evaluate to an object');
@@ -172,12 +172,13 @@ function resolveRuntimeIconSymbol({ row, underlyingAssetMap, symbolMap }) {
 
 export function collectRequiredIconSymbols({
   reservePatchesContent,
+  tokenSymbolMapContent,
   marketsRows = [],
   tokenListSymbols = [],
   addressBookContext = {},
 }) {
   const required = new Set();
-  const symbolMap = resolveSymbolMap(reservePatchesContent);
+  const symbolMap = resolveSymbolMap(tokenSymbolMapContent);
   const underlyingAssetMap = resolveUnderlyingAssetMap(reservePatchesContent, addressBookContext);
 
   for (const value of Object.values(underlyingAssetMap)) {
@@ -208,12 +209,13 @@ export function collectRequiredIconSymbols({
 
 export function collectIconSymbolLogoHints({
   reservePatchesContent,
+  tokenSymbolMapContent,
   marketsRows = [],
   addressBookContext = {},
   tokenLogoByAddress = new Map(),
 }) {
   const hints = new Map();
-  const symbolMap = resolveSymbolMap(reservePatchesContent);
+  const symbolMap = resolveSymbolMap(tokenSymbolMapContent);
   const underlyingAssetMap = resolveUnderlyingAssetMap(reservePatchesContent, addressBookContext);
 
   const addHint = (iconSymbol, logoURI) => {
@@ -258,4 +260,8 @@ export function toSortedArray(setLike) {
 
 export function getReservePatchesPath(rootDir) {
   return path.join(rootDir, 'src', 'ui-config', 'reservePatches.ts');
+}
+
+export function getTokenSymbolMapPath(rootDir) {
+  return path.join(rootDir, 'src', 'lib', 'tokenSymbolMap.ts');
 }

@@ -8,49 +8,8 @@ import {
 } from '@aave-dao/aave-address-book';
 import tokenlist from '@aave-dao/aave-address-book/tokenlist';
 import { unPrefixSymbol } from '@/lib/tokenUtils';
-
-/**
- * Maps onchain symbols to different symbols.
- * This is useful when you want to explode symbols via _ to render multiple symbols
- * or when the symbol has a bridge prefix or suffix.
- */
-export const SYMBOL_MAP: { [key: string]: string } = {
-  BPTBALWETH: 'BPT_BAL_WETH',
-  BPTWBTCWETH: 'BPT_WBTC_WETH',
-  UNIAAVEWETH: 'UNI_AAVE_WETH',
-  UNIBATWETH: 'UNI_BAT_WETH',
-  UNICRVWETH: 'UNI_CRV_WETH',
-  UNIDAIUSDC: 'UNI_DAI_USDC',
-  UNIDAIWETH: 'UNI_DAI_WETH',
-  UNILINKWETH: 'UNI_LINK_WETH',
-  UNIMKRWETH: 'UNI_MKR_WETH',
-  UNIRENWETH: 'UNI_REN_WETH',
-  UNISNXWETH: 'UNI_SNX_WETH',
-  UNIUNIWETH: 'UNI_UNI_WETH',
-  UNIUSDCWETH: 'UNI_USDC_WETH',
-  UNIWBTCUSDC: 'UNI_WBTC_USDC',
-  UNIWBTCWETH: 'UNI_WBTC_WETH',
-  UNIYFIWETH: 'UNI_YFI_WETH',
-  fUSDT: 'USDT',
-  // avalanche
-  'DAI.e': 'DAI',
-  'LINK.e': 'LINK',
-  'WBTC.e': 'WBTC',
-  'WETH.e': 'WETH',
-  'AAVE.e': 'AAVE',
-  'USDT.e': 'USDT',
-  'USDC.e': 'USDC',
-  'BTC.b': 'BTC',
-  // polygon
-  miMATIC: 'MAI',
-  // metis
-  'm.USDC': 'USDC',
-  'm.USDT': 'USDT',
-  'm.DAI': 'DAI',
-  // celo
-  'USD₮': 'USDT',
-  'USD₮0': 'USDT0',
-};
+export { SYMBOL_MAP } from '@/lib/tokenSymbolMap';
+import { SYMBOL_MAP } from '@/lib/tokenSymbolMap';
 
 /**
  * Maps (potentially altered via SYMBOL_MAP) symbols to a name.
