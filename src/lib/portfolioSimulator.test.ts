@@ -57,6 +57,9 @@ const makePosition = (
   side: 'supply',
   amount: '10000',
   inputMode: 'usd',
+  walletValue: null,
+  hidden: false,
+  isOrphan: false,
   ...overrides,
 });
 
@@ -246,5 +249,178 @@ describe('simulatePortfolioPositions', () => {
     const args = baseSimArgs({ positions, reserves: [reserve] });
     const { results } = simulatePortfolioPositions(args);
     expect(results).toEqual([]);
+  });
+
+  describe('cross-reserve net position constraint', () => {
+    it('equal supply+borrow across reserves → Merkl incentive fully offset', () => {
+      const usdcReserveId = 'r-usdc-ink';
+      const usdtReserveId = 'r-usdt-ink';
+      const campaignId = 'merkl-campaign-1';
+      const now = new Date();
+      const farFuture = new Date(now.getTime() + 365 * 24 * 3600 * 1000).toISOString();
+      const recentPast = new Date(now.getTime() - 24 * 3600 * 1000).toISOString();
+
+      const usdcReserve = makeRateCalcReserve({
+        reserveId: usdcReserveId,
+        tokenSymbol: 'USDC',
+        merklBorrows: [
+          {
+            breakdowns: [{ campaignId, campaignApr: 5, campaignStartedAt: recentPast, campaignEndedAt: farFuture }],
+          },
+        ],
+      });
+
+      const usdtReserve = makeRateCalcReserve({
+        reserveId: usdtReserveId,
+        tokenSymbol: 'USDT',
+        merklSupplys: [
+          {
+            breakdowns: [{ campaignId: `${campaignId}-s`, campaignApr: 10, campaignStartedAt: recentPast, campaignEndedAt: farFuture }],
+            netPositionConstraint: {
+              sourceSide: 'supply',
+              offsetReserveIds: [usdcReserveId],
+            },
+          },
+        ],
+      });
+
+      const positions = [
+        makePosition({
+          positionId: 'p-usdt-sup',
+          reserveId: usdtReserveId,
+          tokenSymbol: 'USDT',
+          side: 'supply',
+          amount: '10000',
+        }),
+        makePosition({
+          positionId: 'p-usdc-bor',
+          reserveId: usdcReserveId,
+          tokenSymbol: 'USDC',
+          side: 'borrow',
+          amount: '10000',
+        }),
+      ];
+
+      const args = baseSimArgs({ positions, reserves: [usdtReserve, usdcReserve] });
+      const { results } = simulatePortfolioPositions(args);
+
+      const usdtSupply = results.find((r) => r.reserveId === usdtReserveId && r.side === 'supply');
+      expect(usdtSupply).toBeDefined();
+      expect(usdtSupply!.incentivePercent).toBe(0);
+    });
+
+    it('partial offset → Merkl incentive partially reduced', () => {
+      const usdcReserveId = 'r-usdc-ink';
+      const usdtReserveId = 'r-usdt-ink';
+      const campaignId = 'merkl-campaign-2';
+      const now = new Date();
+      const farFuture = new Date(now.getTime() + 365 * 24 * 3600 * 1000).toISOString();
+      const recentPast = new Date(now.getTime() - 24 * 3600 * 1000).toISOString();
+
+      const usdcReserve = makeRateCalcReserve({
+        reserveId: usdcReserveId,
+        tokenSymbol: 'USDC',
+      });
+
+      const usdtReserve = makeRateCalcReserve({
+        reserveId: usdtReserveId,
+        tokenSymbol: 'USDT',
+        merklSupplys: [
+          {
+            breakdowns: [{ campaignId, campaignApr: 10, campaignStartedAt: recentPast, campaignEndedAt: farFuture }],
+            netPositionConstraint: {
+              sourceSide: 'supply',
+              offsetReserveIds: [usdcReserveId],
+            },
+          },
+        ],
+      });
+
+      const noBorrowPositions = [
+        makePosition({
+          positionId: 'p-usdt-sup',
+          reserveId: usdtReserveId,
+          tokenSymbol: 'USDT',
+          side: 'supply',
+          amount: '10000',
+        }),
+      ];
+      const withBorrowPositions = [
+        makePosition({
+          positionId: 'p-usdt-sup',
+          reserveId: usdtReserveId,
+          tokenSymbol: 'USDT',
+          side: 'supply',
+          amount: '10000',
+        }),
+        makePosition({
+          positionId: 'p-usdc-bor',
+          reserveId: usdcReserveId,
+          tokenSymbol: 'USDC',
+          side: 'borrow',
+          amount: '5000',
+        }),
+      ];
+
+      const noBorrowArgs = baseSimArgs({ positions: noBorrowPositions, reserves: [usdtReserve, usdcReserve] });
+      const withBorrowArgs = baseSimArgs({ positions: withBorrowPositions, reserves: [usdtReserve, usdcReserve] });
+
+      const noBorrowResult = simulatePortfolioPositions(noBorrowArgs);
+      const withBorrowResult = simulatePortfolioPositions(withBorrowArgs);
+
+      const noBorrowSupply = noBorrowResult.results.find((r) => r.reserveId === usdtReserveId && r.side === 'supply')!;
+      const withBorrowSupply = withBorrowResult.results.find((r) => r.reserveId === usdtReserveId && r.side === 'supply')!;
+
+      expect(noBorrowSupply.incentivePercent).toBeGreaterThan(0);
+      expect(withBorrowSupply.incentivePercent).toBeGreaterThan(0);
+      expect(withBorrowSupply.incentivePercent).toBeLessThan(noBorrowSupply.incentivePercent);
+    });
+
+    it('no netPositionConstraint → Merkl incentive unaffected by cross-reserve borrow', () => {
+      const usdcReserveId = 'r-usdc-ink';
+      const usdtReserveId = 'r-usdt-ink';
+      const campaignId = 'merkl-campaign-3';
+      const now = new Date();
+      const farFuture = new Date(now.getTime() + 365 * 24 * 3600 * 1000).toISOString();
+      const recentPast = new Date(now.getTime() - 24 * 3600 * 1000).toISOString();
+
+      const usdcReserve = makeRateCalcReserve({
+        reserveId: usdcReserveId,
+        tokenSymbol: 'USDC',
+      });
+
+      const usdtReserve = makeRateCalcReserve({
+        reserveId: usdtReserveId,
+        tokenSymbol: 'USDT',
+        merklSupplys: [
+          {
+            breakdowns: [{ campaignId, campaignApr: 10, campaignStartedAt: recentPast, campaignEndedAt: farFuture }],
+          },
+        ],
+      });
+
+      const positions = [
+        makePosition({
+          positionId: 'p-usdt-sup',
+          reserveId: usdtReserveId,
+          tokenSymbol: 'USDT',
+          side: 'supply',
+          amount: '10000',
+        }),
+        makePosition({
+          positionId: 'p-usdc-bor',
+          reserveId: usdcReserveId,
+          tokenSymbol: 'USDC',
+          side: 'borrow',
+          amount: '10000',
+        }),
+      ];
+
+      const args = baseSimArgs({ positions, reserves: [usdtReserve, usdcReserve] });
+      const { results } = simulatePortfolioPositions(args);
+
+      const usdtSupply = results.find((r) => r.reserveId === usdtReserveId && r.side === 'supply')!;
+      expect(usdtSupply.incentivePercent).toBeGreaterThan(0);
+    });
   });
 });

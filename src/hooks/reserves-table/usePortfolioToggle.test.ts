@@ -32,6 +32,9 @@ const makePosition = (overrides: Partial<PortfolioPosition> = {}): PortfolioPosi
     side: 'supply',
     amount: '100',
     inputMode: 'usd',
+    walletValue: null,
+    hidden: false,
+    isOrphan: false,
     ...overrides,
   }) as PortfolioPosition;
 
@@ -44,6 +47,9 @@ const makeActions = (): PortfolioSimulationActions => ({
   clearAll: vi.fn(),
   saveSnapshot: vi.fn(),
   deleteSnapshot: vi.fn(),
+  importPositions: vi.fn(),
+  restorePosition: vi.fn(),
+  toggleHidden: vi.fn(),
 });
 
 describe('usePortfolioToggle', () => {

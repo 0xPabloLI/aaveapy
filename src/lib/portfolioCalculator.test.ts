@@ -109,6 +109,9 @@ describe('resolvePositionAmountUsd', () => {
     side: 'supply',
     amount: '',
     inputMode: 'usd',
+    walletValue: null,
+    hidden: false,
+    isOrphan: false,
   };
 
   it('returns 0 for empty amount', () => {
@@ -144,6 +147,9 @@ describe('buildPortfolioPositionResult', () => {
     side: 'supply',
     amount: '10000',
     inputMode: 'usd',
+    walletValue: null,
+    hidden: false,
+    isOrphan: false,
   };
 
   it('builds supply result with correct fields', () => {

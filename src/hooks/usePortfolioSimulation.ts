@@ -19,6 +19,7 @@ import {
   resolvePositionAmountUsd as _resolvePositionAmountUsd,
   buildPortfolioPositionResult as _buildPortfolioPositionResult,
 } from '@/lib/portfolioCalculator';
+import { mergePositions } from '@/lib/portfolioMerger';
 
 let nextPositionId = 1;
 const generatePositionId = (): string => `port-${nextPositionId++}`;
@@ -55,6 +56,12 @@ export interface PortfolioSimulationActions {
   saveSnapshot: (label: string, results?: PortfolioPositionResult[], summary?: PortfolioSummary) => void;
   /** Delete a saved snapshot. */
   deleteSnapshot: (snapshotId: string) => void;
+  /** Merge wallet positions into current positions (replace/add/keep semantics). */
+  importPositions: (incoming: PortfolioPosition[]) => void;
+  /** Restore a hidden position (unhide). */
+  restorePosition: (positionId: string) => void;
+  /** Toggle hidden flag on a position (soft delete). */
+  toggleHidden: (positionId: string) => void;
 }
 
 export interface UsePortfolioSimulationReturn {
@@ -95,6 +102,9 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
         side: params.side,
         amount: params.amount ?? '',
         inputMode: params.inputMode ?? 'usd',
+        walletValue: null,
+        hidden: false,
+        isOrphan: false,
       };
       setPositions((prev) => [...prev, position]);
       return positionId;
@@ -141,6 +151,22 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
     setSnapshots((prev) => prev.filter((s) => s.id !== snapshotId));
   }, []);
 
+  const importPositions = useCallback((incoming: PortfolioPosition[]) => {
+    setPositions((prev) => mergePositions({ current: prev, incoming }));
+  }, []);
+
+  const restorePosition = useCallback((positionId: string) => {
+    setPositions((prev) =>
+      prev.map((p) => (p.positionId === positionId ? { ...p, hidden: false } : p))
+    );
+  }, []);
+
+  const toggleHidden = useCallback((positionId: string) => {
+    setPositions((prev) =>
+      prev.map((p) => (p.positionId === positionId ? { ...p, hidden: !p.hidden } : p))
+    );
+  }, []);
+
   const actions = useMemo<PortfolioSimulationActions>(
     () => ({
       setActive,
@@ -151,8 +177,11 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
       clearAll,
       saveSnapshot,
       deleteSnapshot,
+      importPositions,
+      restorePosition,
+      toggleHidden,
     }),
-    [addPosition, removePosition, updateAmount, updateInputMode, clearAll, saveSnapshot, deleteSnapshot]
+    [addPosition, removePosition, updateAmount, updateInputMode, clearAll, saveSnapshot, deleteSnapshot, importPositions, restorePosition, toggleHidden]
   );
 
   return {

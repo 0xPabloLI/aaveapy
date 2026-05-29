@@ -3,6 +3,9 @@
 export type PortfolioSide = 'supply' | 'borrow';
 export type PortfolioInputMode = 'usd' | 'token';
 
+/** Wallet sync visual tri-state for a position row. */
+export type WalletSyncState = 'synced' | 'modified' | 'manual';
+
 /** A single position in the portfolio (one token, one side). */
 export interface PortfolioPosition {
   /** Unique key for this position within the portfolio (client-generated). */
@@ -19,6 +22,12 @@ export interface PortfolioPosition {
   /** Raw user input string (allows empty / partial). */
   amount: string;
   inputMode: PortfolioInputMode;
+  /** Wallet-synced onchain USD value. null = not from wallet (manual entry). */
+  walletValue: number | null;
+  /** Soft delete flag. Hidden positions are grayed + sunk to bottom. */
+  hidden: boolean;
+  /** Whether this position is an orphan (reserveId not found in market data). */
+  isOrphan: boolean;
 }
 
 /** Computed result for a single position after simulation. */
