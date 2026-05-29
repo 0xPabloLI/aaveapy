@@ -8,8 +8,8 @@ import {
 } from '@aave-dao/aave-address-book';
 import tokenlist from '@aave-dao/aave-address-book/tokenlist';
 import { unPrefixSymbol } from '@/lib/tokenUtils';
-export { SYMBOL_MAP } from '@/lib/tokenSymbolMap';
 import { SYMBOL_MAP } from '@/lib/tokenSymbolMap';
+export { SYMBOL_MAP };
 
 /**
  * Maps (potentially altered via SYMBOL_MAP) symbols to a name.

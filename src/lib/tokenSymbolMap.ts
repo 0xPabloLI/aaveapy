@@ -5,6 +5,9 @@
  * - Bridge prefixes/suffixes: 'USDT.e' → 'USDT' (Avalanche)
  * - Unicode variants:          'USD₮'    → 'USDT' (Celo)
  * - Wrapped/aliased tokens:    'miMATIC' → 'MAI'  (Polygon)
+ *
+ * Keys MUST match the exact onchain symbol casing (e.g. 'USDT.e', not 'usdt.e')
+ * because lookup is performed on the raw symbol before lowercasing.
  */
 export const SYMBOL_MAP: { [key: string]: string } = {
   BPTBALWETH: 'BPT_BAL_WETH',

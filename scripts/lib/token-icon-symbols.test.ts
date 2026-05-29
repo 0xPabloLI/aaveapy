@@ -75,7 +75,7 @@ export function fetchIconSymbolAndName() {
 
     const hints = collectIconSymbolLogoHints({
       reservePatchesContent: fixture,
-      tokenSymbolMapContent,
+      tokenSymbolMapContent: 'export const SYMBOL_MAP: { [key: string]: string } = {};',
       marketsRows: [],
       addressBookContext: {},
       tokenLogoByAddress: new Map([
