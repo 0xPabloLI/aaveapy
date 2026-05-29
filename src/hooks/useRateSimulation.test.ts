@@ -1876,3 +1876,142 @@ describe('buildRateSimulationResult — merkl cross-reserve note in campaign det
     expect(merklCampaigns![0].capNote).toBeUndefined();
   });
 });
+
+describe('buildRateSimulationResult ─ merkl per-group same-reserve net eligibility', () => {
+  const noIncentiveReserve = { ...baseReserve, supplyIncentives: [] as number[], borrowIncentives: [] as number[] };
+
+  const constrainedGroup: MerklOpportunityGroup = {
+    name: 'Net lending group',
+    breakdowns: [
+      {
+        campaignApr: 10,
+        campaignStartedAt: '2020-01-01T00:00:00.000Z',
+        campaignEndedAt: '2099-01-01T00:00:00.000Z',
+        campaignId: 'net-lend-same',
+      },
+    ],
+    opportunityType: 'AAVE_NET_LENDING',
+    netPositionConstraint: {
+      sourceSide: 'supply',
+      offsetReserveIds: [],
+    },
+  };
+
+  const unconstrainedGroup: MerklOpportunityGroup = {
+    name: 'Standard group',
+    breakdowns: [
+      {
+        campaignApr: 5,
+        campaignStartedAt: '2020-01-01T00:00:00.000Z',
+        campaignEndedAt: '2099-01-01T00:00:00.000Z',
+        campaignId: 'std-same',
+      },
+    ],
+  };
+
+  it('same reserve: constrained group scaled by eligibilityRatio, unconstrained group full', () => {
+    const reserve: ReserveWithSpread = {
+      ...noIncentiveReserve,
+      merklSupplys: [constrainedGroup, unconstrainedGroup],
+    };
+    // supply=1000, borrow=600 → eligibilityRatio = 400/1000 = 0.4
+    const result = buildRateSimulationResult({
+      reserve,
+      reserveRateInput: noIncentiveReserve,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '1000',
+      borrowInput: '600',
+      forecastStates: {},
+      meritMerklNetPosition: true,
+    });
+    // constrained: 10 * 0.4 = 4, unconstrained: 5 * 1 = 5, total = 9
+    expect(result.supply.afterIncentive).toBeCloseTo(9, 1);
+  });
+
+  it('same reserve: only constrained group present ─ scaled', () => {
+    const reserve: ReserveWithSpread = {
+      ...noIncentiveReserve,
+      merklSupplys: [constrainedGroup],
+    };
+    const result = buildRateSimulationResult({
+      reserve,
+      reserveRateInput: noIncentiveReserve,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '1000',
+      borrowInput: '600',
+      forecastStates: {},
+      meritMerklNetPosition: true,
+    });
+    // 10 * 0.4 = 4
+    expect(result.supply.afterIncentive).toBeCloseTo(4, 1);
+  });
+
+  it('same reserve: only unconstrained group present ─ full APR', () => {
+    const reserve: ReserveWithSpread = {
+      ...noIncentiveReserve,
+      merklSupplys: [unconstrainedGroup],
+    };
+    const result = buildRateSimulationResult({
+      reserve,
+      reserveRateInput: noIncentiveReserve,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '1000',
+      borrowInput: '600',
+      forecastStates: {},
+      meritMerklNetPosition: true,
+    });
+    expect(result.supply.afterIncentive).toBeCloseTo(5, 1);
+  });
+
+  it('same reserve: meritMerklNetPosition=false ─ both groups full APR', () => {
+    const reserve: ReserveWithSpread = {
+      ...noIncentiveReserve,
+      merklSupplys: [constrainedGroup, unconstrainedGroup],
+    };
+    const result = buildRateSimulationResult({
+      reserve,
+      reserveRateInput: noIncentiveReserve,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '1000',
+      borrowInput: '600',
+      forecastStates: {},
+      meritMerklNetPosition: false,
+    });
+    // both groups get full APR: 10 + 5 = 15
+    expect(result.supply.afterIncentive).toBeCloseTo(15, 1);
+  });
+
+  it('same reserve: borrow >= supply ─ constrained group zeroed, unconstrained full', () => {
+    const reserve: ReserveWithSpread = {
+      ...noIncentiveReserve,
+      merklSupplys: [constrainedGroup, unconstrainedGroup],
+    };
+    // supply=1000, borrow=1000 → eligibilityRatio = 0
+    const result = buildRateSimulationResult({
+      reserve,
+      reserveRateInput: noIncentiveReserve,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '1000',
+      borrowInput: '1000',
+      forecastStates: {},
+      meritMerklNetPosition: true,
+    });
+    // constrained: 10 * 0 = 0, unconstrained: 5 * 1 = 5
+    expect(result.supply.afterIncentive).toBeCloseTo(5, 1);
+  });
+});

@@ -866,7 +866,7 @@ export const buildIncentiveAfter = (
   return (
     sumNumberArray(protocol, isApy) +
     sumForecastMeritValues(merit, isApy, netInputUsd, getMeritAnchorTvlUsd(reserve, side, getProtocolVersion(reserve.marketName), hubSupplied, hubBorrowed)) * eligibilityRatio +
-    sumMerklValues(forecastedMerkl, isApy, tydroPointToUsdRate, whitelistMerklCampaignIds, undefined, merklGroupMultiplier) * eligibilityRatio +
+    sumMerklValues(forecastedMerkl, isApy, tydroPointToUsdRate, whitelistMerklCampaignIds, undefined, merklGroupMultiplier) +
     sumForecastBrevisValues(brevis, isApy, grossInputUsd, brevisSharedDepositsByCampaignId)
   );
 };
@@ -1123,15 +1123,19 @@ export function buildRateSimulationResult({
 
   const merklGroupMultiplier = (side: RateSide): ((group: MerklOpportunityGroup) => number) => {
     const grossUsd = side === 'supply' ? supplyInputUsd : borrowInputUsd;
+    const sameReserveRatio = side === 'supply' ? supplyMeritMerklEligibilityRatio : borrowMeritMerklEligibilityRatio;
     return (group) => {
       const constraint = group.netPositionConstraint;
-      if (!constraint || !reservePositions || reservePositions.size === 0) return 1;
-      return computeCrossReserveEligibilityRatio({
-        sourceSide: constraint.sourceSide,
-        sourceGrossUsd: grossUsd,
-        constraint,
-        reservePositions,
-      });
+      const crossReserveRatio = constraint && reservePositions && reservePositions.size > 0
+        ? computeCrossReserveEligibilityRatio({
+            sourceSide: constraint.sourceSide,
+            sourceGrossUsd: grossUsd,
+            constraint,
+            reservePositions,
+          })
+        : 1;
+      const sameReserveFactor = constraint ? sameReserveRatio : 1;
+      return crossReserveRatio * sameReserveFactor;
     };
   };
 
@@ -1283,7 +1287,7 @@ export function buildRateSimulationResult({
           whitelistMerklCampaignIds,
           undefined,
           merklGroupMultiplier('supply')
-        ) * supplyMeritMerklEligibilityRatio;
+        );
         const brevisAfterRaw = sumForecastBrevisValues(
           reserve.brevisSupplys,
           isApy,
@@ -1316,7 +1320,7 @@ export function buildRateSimulationResult({
           whitelistMerklCampaignIds,
           undefined,
           merklGroupMultiplier('borrow')
-        ) * borrowMeritMerklEligibilityRatio;
+        );
         const brevisAfterRaw = sumForecastBrevisValues(
           reserve.brevisBorrows,
           isApy,
