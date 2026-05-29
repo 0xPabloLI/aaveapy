@@ -22,8 +22,8 @@ import {
   getBrevisCampaignMessage,
   getBrevisCampaignStartedAt,
 } from '@/lib/brevis';
-import { isCampaignActive, parseCampaignBoundaryMs } from '@/lib/campaignGroups';
-import { collectRecentlyEndedCampaigns, type RecentlyEndedSource, type RecentlyEndedCampaign } from '@/lib/recentlyEndedCampaigns';
+import { isCampaignActive } from '@/lib/campaignGroups';
+import { collectRecentlyEndedCampaigns, type RecentlyEndedCampaign } from '@/lib/recentlyEndedCampaigns';
 import { adjustTooltipAnchorForScroll, getWindowScroll } from '@/lib/tooltipPosition';
 import { useIsMobile } from '@/hooks/use-mobile';
 import BottomSheet from './BottomSheet';

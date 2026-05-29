@@ -47,7 +47,7 @@ export function collectRecentlyEndedCampaigns(
 
       const campaigns: RecentlyEndedCampaign[] = [];
 
-      if (merit.apr > 0) {
+      if (merit.apr >= 0) {
         campaigns.push({
           apr: merit.apr,
           endDate: merit.endDate,
@@ -57,7 +57,7 @@ export function collectRecentlyEndedCampaigns(
         });
       }
 
-      if (merit.selfApr && merit.selfApr > 0) {
+      if (merit.selfApr !== undefined && merit.selfApr !== null) {
         campaigns.push({
           apr: merit.selfApr,
           endDate: merit.endDate,
@@ -130,22 +130,19 @@ export function collectRecentlyEndedCampaigns(
           campaigns,
         });
       } else if (brevis.campaignEndedAt && isRecentlyEnded(brevis.campaignEndedAt, nowMs, lookbackDays)) {
-        const totalApr = brevis.campaignApr ?? 0;
-        if (totalApr > 0) {
-          sources.push({
-            sourceType: 'brevis',
-            name: brevis.name || 'Brevis Incentive',
-            link: brevis.link,
-            campaigns: [
-              {
-                apr: totalApr,
-                endDate: brevis.campaignEndedAt,
-                startDate: brevis.campaignStartedAt,
-                campaignId: brevis.campaignId,
-              },
-            ],
-          });
-        }
+        sources.push({
+          sourceType: 'brevis',
+          name: brevis.name || 'Brevis Incentive',
+          link: brevis.link,
+          campaigns: [
+            {
+              apr: brevis.campaignApr ?? 0,
+              endDate: brevis.campaignEndedAt,
+              startDate: brevis.campaignStartedAt,
+              campaignId: brevis.campaignId,
+            },
+          ],
+        });
       }
     }
   }

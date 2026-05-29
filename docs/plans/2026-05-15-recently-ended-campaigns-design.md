@@ -1,7 +1,7 @@
 # Recently Ended Campaigns — 设计文档
 
-**日期**: 2026-05-15（更新 2026-05-19）
-**状态**: 待审批
+**日期**: 2026-05-15（更新 2026-05-29）
+**状态**: ✅ 已实现
 **关联文档**: `docs/backend/change-detection-and-incentive-normalization.md`（后端 repo `aave-protocol-analysis`）
 
 ---
@@ -257,6 +257,55 @@ function RecentlyEndedSection({ reserve, supplyOrBorrow }: {
 在 `orderedIncentiveSources.map()` 渲染完毕后，`</div>`（`divide-y` 容器）**之后**插入 `<RecentlyEndedSection>`（不在 `divide-y` 容器内，用独立的 `border-t` 分割线）。
 
 `hasDetails` 条件放宽为 `hasDetails || hasRecentlyEnded`，确保无活跃 campaign 但有 recently ended 时也渲染 accent-border 区块。
+
+### 6.3 业务数据流
+
+```mermaid
+flowchart TD
+    A[IncentiveTooltip 渲染] --> B{有活跃 campaign?}
+    B -->|Yes| C[渲染活跃 sources]
+    B -->|No| D["No breakdown available"]
+    C --> E[recentlyEndedCampaigns.ts]
+    D --> E
+    E --> F[collectRecentlyEndedCampaigns]
+    F --> G[扫描 Merit supplies/borrows]
+    F --> H[扫描 Merkl supplies/borrows]
+    F --> I[扫描 Brevis supplies/borrows]
+    G --> J["isRecentlyEnded(endDate)?"]
+    H --> J
+    I --> J
+    J -->|Yes| K[收集到 sources 数组]
+    J -->|No| L[跳过]
+    K --> M{有 recently ended?}
+    M -->|Yes| N[渲染 RecentlyEndedSection]
+    M -->|No| O[返回 null — 零影响]
+
+    style E fill:#c8e6c9,color:#1a5e20
+    style J fill:#c8e6c9,color:#1a5e20
+    style K fill:#c8e6c9,color:#1a5e20
+    style N fill:#c8e6c9,color:#1a5e20
+    style O fill:#f3e5f5,color:#7b1fa2
+```
+
+### 6.4 技术调用序列
+
+```mermaid
+sequenceDiagram
+    participant IT as IncentiveTooltip
+    participant RS as RecentlyEndedSection
+    participant REC as recentlyEndedCampaigns.ts
+    participant CG as campaignGroups.ts
+
+    IT->>IT: 导入 isCampaignActive 从 CG（去重）
+    IT->>RS: 渲染（传入 reserve, type, isDark, isMobile）
+    RS->>REC: collectRecentlyEndedCampaigns(reserve, type)
+    REC->>CG: parseCampaignBoundaryMs(endDate, 'end') [每个 campaign]
+    CG-->>REC: endMs 时间戳
+    REC->>REC: endMs >= nowMs - 7d && endMs < nowMs?
+    REC-->>RS: RecentlyEndedSource[]
+    RS->>RS: sources.length === 0 ? return null
+    RS->>RS: 渲染折叠头 + 灰度行
+```
 
 ---
 
