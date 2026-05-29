@@ -63,7 +63,7 @@ const App = () => (
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
         <RainbowKitProvider
-          theme={{ light: lightTheme(), dark: darkTheme() }}
+          theme={{ lightMode: lightTheme(), darkMode: darkTheme() }}
           modalSize="compact"
         >
           <TooltipProvider delayDuration={200}>
