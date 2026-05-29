@@ -6,13 +6,15 @@
  * so users can fill in either / both amounts directly without picking a side.
  */
 import { useState, useMemo, useEffect, useRef, memo, useCallback, lazy, Suspense } from 'react';
-import { Search, X, Layers, Trash2, Save, ArrowRightLeft, Check } from 'lucide-react';
+import { Search, X, Layers, Trash2, Save, ArrowRightLeft, Check, RefreshCw, Wallet } from 'lucide-react';
+import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { ReserveWithSpread } from '@/types/aave';
 import type { PortfolioPosition, PortfolioPositionResult, PortfolioSummary, PortfolioSnapshot } from '@/types/portfolio';
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
+import type { WalletLoadState } from '@/hooks/useUserPositions';
 import { normalizeTokenSymbolForSearch } from '@/lib/tokenSymbolNormalization';
 import { filterAndRankReservesForPortfolioSearch, getReserveTvlUsd, PORTFOLIO_SEARCH_HARD_LIMIT } from '@/lib/portfolioSearch';
 import { isStablecoinSymbol, isEthRelatedSymbol, isBtcRelatedSymbol } from '@/lib/tokenCategories';
@@ -40,6 +42,10 @@ interface PortfolioPanelProps {
   summary?: PortfolioSummary;
   /** Saved snapshots. */
   snapshots?: PortfolioSnapshot[];
+  /** Trigger wallet onchain position sync. */
+  onWalletSync?: () => void;
+  /** Wallet position loading state. */
+  walletLoadState?: WalletLoadState;
 }
 
 /**
@@ -181,6 +187,8 @@ const PortfolioPanel = memo(function PortfolioPanel({
   positionResults,
   summary,
   snapshots = [],
+  onWalletSync,
+  walletLoadState,
 }: PortfolioPanelProps) {
   const isMobile = useIsMobile();
   const [searchQuery, setSearchQuery] = useState('');
@@ -301,7 +309,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
   const sortedPositions = useMemo(() => sortPositionsByHidden(positions), [positions]);
 
   const groupedByReserve = useMemo(() => {
-    const map = new Map<string, { tokenSymbol: string; chainName: string; marketName: string; hubName?: string; supply: PortfolioPosition | null; borrow: PortfolioPosition | null }>();
+    const map = new Map<string, { tokenSymbol: string; chainName: string; marketName: string; hubName?: string; isOrphan: boolean; supply: PortfolioPosition | null; borrow: PortfolioPosition | null }>();
     for (const p of sortedPositions) {
       if (!map.has(p.reserveId)) {
         const reserve = reserves.find((r) => getReserveKey(r) === p.reserveId);
@@ -310,6 +318,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
           chainName: p.chainName,
           marketName: p.marketName,
           hubName: reserve?.hubName,
+          isOrphan: p.isOrphan,
           supply: null,
           borrow: null,
         });
@@ -393,6 +402,43 @@ const PortfolioPanel = memo(function PortfolioPanel({
             </span>
           </div>
           <div className="flex items-center gap-1.5">
+            {/* Wallet connect & sync */}
+            <ConnectButton.Custom>
+              {({ account, openConnectModal, mounted }) => {
+                const connected = mounted && account;
+                return (
+                  <div
+                    {...(!mounted ? { className: 'opacity-0 pointer-events-none' } : {})}
+                  >
+                    {connected ? (
+                      <button
+                        type="button"
+                        onClick={onWalletSync}
+                        disabled={walletLoadState === 'loading' || walletLoadState === 'idle'}
+                        className={cn(
+                          'rounded-md p-1.5 transition-colors',
+                          walletLoadState === 'loading'
+                            ? 'animate-spin text-muted-foreground'
+                            : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground',
+                        )}
+                        aria-label="Sync wallet positions"
+                      >
+                        <RefreshCw className="size-3.5" aria-hidden />
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={openConnectModal}
+                        className="rounded-md p-1.5 text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors"
+                        aria-label="Connect wallet"
+                      >
+                        <Wallet className="size-3.5" aria-hidden />
+                      </button>
+                    )}
+                  </div>
+                );
+              }}
+            </ConnectButton.Custom>
             {/* Save snapshot */}
             {positions.length > 0 && summary && (
               <button
@@ -448,6 +494,21 @@ const PortfolioPanel = memo(function PortfolioPanel({
             )}
           </div>
         </div>
+
+        {/* Wallet status bar */}
+        {walletLoadState && walletLoadState !== 'idle' && (
+          <div className="flex items-center gap-1.5 mb-2.5 ds-text-11 text-muted-foreground">
+            {walletLoadState === 'loading' && (
+              <><RefreshCw className="size-3 animate-spin" aria-hidden /> Syncing…</>
+            )}
+            {walletLoadState === 'success-empty' && (
+              <><Wallet className="size-3" aria-hidden /> Wallet has no positions</>
+            )}
+            {walletLoadState === 'error' && (
+              <span className="text-destructive/80">Wallet sync failed</span>
+            )}
+          </div>
+        )}
 
         {/* Save snapshot input */}
         {showSaveInput && (
@@ -591,6 +652,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
                   chainName={entry.chainName}
                   marketName={entry.marketName}
                   hubName={entry.hubName}
+                  isOrphan={entry.isOrphan}
                   supplyPosition={entry.supply}
                   borrowPosition={entry.borrow}
                   onRemove={handleRemoveToken}

@@ -58,6 +58,7 @@ import ReservesTableDesktopSkeleton from './ReservesTableDesktopSkeleton';
 import PortfolioModeToggle, { type SimulationMode } from './PortfolioModeToggle';
 import type { PortfolioPosition } from '@/types/portfolio';
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
+import type { WalletLoadState } from '@/hooks/useUserPositions';
 import PortfolioPanel from './PortfolioPanel';
 import PortfolioPanelSkeleton from './PortfolioPanelSkeleton';
 
@@ -81,6 +82,8 @@ interface ReservesTableProps {
   portfolioPositions?: PortfolioPosition[];
   portfolioActions?: PortfolioSimulationActions;
   portfolioSnapshots?: import('@/types/portfolio').PortfolioSnapshot[];
+  onWalletSync?: () => void;
+  walletLoadState?: WalletLoadState;
   onRefresh?: () => Promise<void>;
   dataUpdatedAt?: number;
   topOppsRef?: React.RefObject<HTMLDivElement | null>;
@@ -110,6 +113,8 @@ const ReservesTable = ({
   portfolioPositions,
   portfolioActions,
   portfolioSnapshots,
+  onWalletSync,
+  walletLoadState,
   onRefresh,
   dataUpdatedAt,
   topOppsRef,
@@ -907,6 +912,8 @@ const ReservesTable = ({
             positionResults={portfolioResults}
             summary={portfolioSummary}
             snapshots={portfolioSnapshots}
+            onWalletSync={onWalletSync}
+            walletLoadState={walletLoadState}
           />
         ) : null
       )}

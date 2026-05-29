@@ -2,8 +2,11 @@ import { useState, useMemo, useCallback, useEffect, useRef, startTransition } fr
 import { useSearchParams } from 'react-router-dom';
 import type { SimulationMode } from '@/components/dashboard/PortfolioModeToggle';
 import { usePortfolioSimulation } from '@/hooks/usePortfolioSimulation';
+import { useUserPositions, type WalletLoadState } from '@/hooks/useUserPositions';
 import { useIsFetching } from '@tanstack/react-query';
 import { useAaveMarkets } from '@/hooks/useAaveMarkets';
+import { deriveV3AssetsByChain, deriveV4ReservesBySpoke } from '@/lib/deriveOnchainConfig';
+import { convertWalletPositionsToPortfolio } from '@/lib/walletPositionToPortfolio';
 import { useTokenCategories } from '@/hooks/useTokenCategories';
 import { SortField, TokenCategory, ReserveWithSpread, TokenPricesIndex } from '@/types/aave';
 import type { SortOrder } from '@/lib/sorters';
@@ -267,6 +270,25 @@ const Index = () => {
     [effectiveReservesData?.reserves]
   );
   const hasReserves = stableReserves.length > 0;
+
+  // Wallet onchain position sync
+  const v3AssetsByChain = useMemo(() => deriveV3AssetsByChain(stableReserves), [stableReserves]);
+  const v4ReservesBySpoke = useMemo(() => deriveV4ReservesBySpoke(stableReserves), [stableReserves]);
+  const { walletLoadState, result: walletResult } = useUserPositions(stableReserves, v3AssetsByChain, v4ReservesBySpoke);
+
+  const handleWalletSync = useCallback(() => {
+    if (walletResult.status === 'success' || walletResult.status === 'partial') {
+      const incoming = convertWalletPositionsToPortfolio(walletResult.data.positions, stableReserves);
+      if (incoming.length === 0) {
+        toast.info('Wallet has no positions');
+        return;
+      }
+      portfolio.actions.importPositions(incoming);
+      toast.success(`Imported ${incoming.length} position${incoming.length > 1 ? 's' : ''} from wallet`);
+    } else if (walletResult.status === 'error') {
+      toast.error('Failed to load wallet positions');
+    }
+  }, [walletResult, stableReserves, portfolio.actions]);
   const preloadMode = useMemo(
     () => (shouldUseFullPreloadMode() ? 'full' : 'adaptive'),
     []
@@ -601,6 +623,8 @@ const Index = () => {
               portfolioPositions={portfolio.positions}
               portfolioActions={portfolio.actions}
               portfolioSnapshots={portfolio.snapshots}
+              onWalletSync={handleWalletSync}
+              walletLoadState={walletLoadState}
               onRefresh={handleRefresh}
               dataUpdatedAt={dataUpdatedAt}
               topOppsRef={topOppsRef}

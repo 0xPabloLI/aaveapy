@@ -2,6 +2,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { WagmiProvider, createConfig, http } from 'wagmi';
+import { mainnet } from 'wagmi/chains';
+import { RainbowKitProvider } from '@rainbow-me/rainbowkit';
 import PortfolioPanel from './PortfolioPanel';
 import type { ReserveWithSpread } from '@/types/aave';
 import type { PortfolioPosition, PortfolioSimulationActions } from '@/types/portfolio';
@@ -17,6 +20,21 @@ vi.mock('sonner', () => ({
     error: vi.fn(),
   },
 }));
+
+vi.mock('wagmi', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('wagmi')>();
+  return {
+    ...actual,
+    useAccount: () => ({ address: undefined, isConnected: false }),
+  };
+});
+
+const testWagmiConfig = createConfig({
+  chains: [mainnet],
+  connectors: [],
+  transports: { [mainnet.id]: http() },
+  ssr: true,
+});
 
 const makeReserve = (symbol: string, market = 'AaveV3Ethereum'): ReserveWithSpread => ({
   reserveId: `${market}-${symbol}`,
@@ -65,13 +83,17 @@ describe('PortfolioPanel', () => {
   it('renders search input when panel mounts', () => {
     const reserves = [makeReserve('USDC'), makeReserve('USDT')];
     render(
-      <QueryClientProvider client={new QueryClient()}>
-        <PortfolioPanel
-          positions={[]}
-          actions={makeActions()}
-          reserves={reserves}
-        />
-      </QueryClientProvider>,
+      <WagmiProvider config={testWagmiConfig}>
+        <QueryClientProvider client={new QueryClient()}>
+          <RainbowKitProvider>
+            <PortfolioPanel
+              positions={[]}
+              actions={makeActions()}
+              reserves={reserves}
+            />
+          </RainbowKitProvider>
+        </QueryClientProvider>
+      </WagmiProvider>,
     );
     expect(screen.getByPlaceholderText(/search/i)).toBeInTheDocument();
   });
@@ -80,13 +102,17 @@ describe('PortfolioPanel', () => {
     const reserves = [makeReserve('USDC')];
     const actions = makeActions();
     render(
-      <QueryClientProvider client={new QueryClient()}>
-        <PortfolioPanel
-          positions={[]}
-          actions={actions}
-          reserves={reserves}
-        />
-      </QueryClientProvider>,
+      <WagmiProvider config={testWagmiConfig}>
+        <QueryClientProvider client={new QueryClient()}>
+          <RainbowKitProvider>
+            <PortfolioPanel
+              positions={[]}
+              actions={actions}
+              reserves={reserves}
+            />
+          </RainbowKitProvider>
+        </QueryClientProvider>
+      </WagmiProvider>,
     );
     const searchInput = screen.getByPlaceholderText(/search/i);
     fireEvent.change(searchInput, { target: { value: 'USDC' } });
@@ -102,13 +128,17 @@ describe('PortfolioPanel', () => {
       { positionId: 'p2', reserveId: 'AaveV3Ethereum-USDC', side: 'borrow', amount: '2000', inputMode: 'usd', tokenSymbol: 'USDC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum' },
     ];
     render(
-      <QueryClientProvider client={new QueryClient()}>
-        <PortfolioPanel
-          positions={positions}
-          actions={makeActions()}
-          reserves={reserves}
-        />
-      </QueryClientProvider>,
+      <WagmiProvider config={testWagmiConfig}>
+        <QueryClientProvider client={new QueryClient()}>
+          <RainbowKitProvider>
+            <PortfolioPanel
+              positions={positions}
+              actions={makeActions()}
+              reserves={reserves}
+            />
+          </RainbowKitProvider>
+        </QueryClientProvider>
+      </WagmiProvider>,
     );
     expect(screen.getByText('USDC')).toBeInTheDocument();
   });
@@ -116,13 +146,17 @@ describe('PortfolioPanel', () => {
   it('renders empty state when no positions are added', () => {
     const reserves = [makeReserve('USDC')];
     const { container } = render(
-      <QueryClientProvider client={new QueryClient()}>
-        <PortfolioPanel
-          positions={[]}
-          actions={makeActions()}
-          reserves={reserves}
-        />
-      </QueryClientProvider>,
+      <WagmiProvider config={testWagmiConfig}>
+        <QueryClientProvider client={new QueryClient()}>
+          <RainbowKitProvider>
+            <PortfolioPanel
+              positions={[]}
+              actions={makeActions()}
+              reserves={reserves}
+            />
+          </RainbowKitProvider>
+        </QueryClientProvider>
+      </WagmiProvider>,
     );
     expect(container.innerHTML).not.toContain('position-results');
   });

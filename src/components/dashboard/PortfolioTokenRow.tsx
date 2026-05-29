@@ -20,6 +20,7 @@ interface PortfolioTokenRowProps {
   chainName: string;
   marketName: string;
   hubName?: string;
+  isOrphan?: boolean;
   onRemove: (reserveId: string) => void;
   reserveId: string;
   onUpdateAmount: (positionId: string, amount: string) => void;
@@ -66,6 +67,7 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
   chainName,
   marketName,
   hubName,
+  isOrphan,
   onRemove,
   reserveId,
   onUpdateAmount,
@@ -237,7 +239,9 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
         'grid grid-cols-subgrid col-span-2 items-center gap-x-1 rounded-lg border transition-colors',
         isHidden
           ? 'border-border/20 bg-muted/5 opacity-40 hover:opacity-60'
-          : 'border-border/50 bg-card/80 hover:border-border',
+          : isOrphan
+            ? 'border-border/20 bg-muted/5 opacity-60'
+            : 'border-border/50 bg-card/80 hover:border-border',
         isHidden && 'cursor-pointer',
       )}
       onClick={isHidden && onToggleHidden && anyPosition ? () => onToggleHidden(anyPosition.positionId) : undefined}
