@@ -1,6 +1,6 @@
 import { useRef, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, Clock, ChevronDown } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { ReserveWithSpread, MeritIncentive, MerklOpportunityGroup, BrevisIncentive } from '@/types/aave';
 import { formatPercent } from '@/lib/formatters';
@@ -22,6 +22,8 @@ import {
   getBrevisCampaignMessage,
   getBrevisCampaignStartedAt,
 } from '@/lib/brevis';
+import { isCampaignActive, parseCampaignBoundaryMs } from '@/lib/campaignGroups';
+import { collectRecentlyEndedCampaigns, type RecentlyEndedSource, type RecentlyEndedCampaign } from '@/lib/recentlyEndedCampaigns';
 import { adjustTooltipAnchorForScroll, getWindowScroll } from '@/lib/tooltipPosition';
 import { useIsMobile } from '@/hooks/use-mobile';
 import BottomSheet from './BottomSheet';
@@ -78,32 +80,6 @@ interface IncentiveSource {
   }>;
 }
 
-const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
-
-const parseCampaignBoundaryMs = (value: string | undefined, boundary: 'start' | 'end'): number | null => {
-  if (!value) return null;
-  if (DATE_ONLY_PATTERN.test(value)) {
-    const normalized = boundary === 'start' ? `${value}T00:00:00.000Z` : `${value}T23:59:59.999Z`;
-    const timestamp = Date.parse(normalized);
-    return Number.isNaN(timestamp) ? null : timestamp;
-  }
-  const timestamp = Date.parse(value);
-  return Number.isNaN(timestamp) ? null : timestamp;
-};
-
-const isCampaignActive = (
-  startDate: string | undefined,
-  endDate: string | undefined,
-  nowMs = Date.now(),
-  allowOpenEnd = false,
-): boolean => {
-  const startMs = parseCampaignBoundaryMs(startDate, 'start');
-  if (startMs === null || nowMs < startMs) return false;
-  const endMs = parseCampaignBoundaryMs(endDate, 'end');
-  if (endMs === null) return allowOpenEnd;
-  return nowMs <= endMs;
-};
-
 const lightSourceIconMap: Record<NonNullable<IncentiveSource['sourceType']>, string> = {
   Protocol: '/icons/tokens/aave.svg',
   Brevis: '/icons/partners/brevis-black.svg',
@@ -126,6 +102,128 @@ const getSourceIcon = (
   const map = isDark ? darkSourceIconMap : lightSourceIconMap;
   return map[sourceType];
 };
+
+function formatDateSafe(dateString?: string): string | null {
+  if (!dateString) return null;
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
+
+interface RecentlyEndedSectionProps {
+  reserve: ReserveWithSpread;
+  type: 'supply' | 'borrow';
+  isDark: boolean;
+  isMobile: boolean;
+}
+
+function RecentlyEndedSection({ reserve, type, isDark, isMobile }: RecentlyEndedSectionProps) {
+  const [expanded, setExpanded] = useState(false);
+  const sources = useMemo(
+    () => collectRecentlyEndedCampaigns(reserve, type),
+    [reserve, type],
+  );
+
+  if (sources.length === 0) return null;
+
+  const renderCampaignMessage = (message: unknown, keyPrefix: string) => {
+    if (!message) return null;
+    const text = typeof message === 'string'
+      ? message
+      : JSON.stringify(message);
+    if (!text) return null;
+    return (
+      <p key={`${keyPrefix}-msg`} className="ds-tooltip-body text-zinc-400 mt-[var(--ds-space-0-5)]">
+        {text}
+      </p>
+    );
+  };
+
+  return (
+    <div className="border-t border-border/30 mt-[var(--ds-space-1)] pt-[var(--ds-space-1)]">
+      <button
+        onClick={() => setExpanded((prev) => !prev)}
+        className="flex items-center justify-between w-full px-[var(--ds-space-2)] py-[var(--ds-space-1)] ds-tooltip-body text-muted-foreground hover:text-foreground/80 transition-colors"
+      >
+        <span className="flex items-center gap-[var(--ds-space-1-5)]">
+          <Clock className="w-3.5 h-3.5" />
+          <span>Recently Ended ({sources.length})</span>
+        </span>
+        <ChevronDown
+          className={`w-3.5 h-3.5 transition-transform duration-150 ${expanded ? 'rotate-180' : ''}`}
+        />
+      </button>
+      {expanded && (
+        <div className={isMobile ? '' : 'animate-in fade-in slide-in-from-top-1 duration-150'}>
+          {sources.map((source, sourceIndex) => {
+            const iconSrc = source.sourceType !== 'merit'
+              ? getSourceIcon(source.sourceType === 'merkl' ? 'Merkl' : 'Brevis', isDark)
+              : null;
+
+            return (
+              <div
+                key={`ended-${sourceIndex}`}
+                className="px-[var(--ds-space-2)] py-[var(--ds-space-1)]"
+              >
+                <div className="flex items-center gap-[var(--ds-space-2)] mb-[var(--ds-space-1)]">
+                  <div className="flex items-center gap-[var(--ds-space-1-5)] min-w-0 flex-1">
+                    {iconSrc && (
+                      <span
+                        className="flex items-center justify-center rounded-md ring-1 ring-zinc-500/30 shadow-sm flex-shrink-0 bg-muted/60 min-w-[44px] px-[6px] py-[5px]"
+                        style={{ filter: 'grayscale(100%)', opacity: 0.5 }}
+                      >
+                        <img
+                          src={iconSrc}
+                          alt={source.sourceType}
+                          className="h-[11px] w-auto max-w-[60px]"
+                          loading="eager"
+                        />
+                      </span>
+                    )}
+                    <span className="ds-tooltip-title text-zinc-400 break-words block min-w-0">
+                      {source.name}
+                    </span>
+                  </div>
+                  {source.link && (
+                    <a
+                      href={source.link}
+                      {...externalLinkTabProps(isMobile)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="flex h-7 w-7 items-center justify-center rounded-full transition-opacity opacity-40 hover:opacity-60 text-zinc-400 bg-zinc-500/10"
+                      title="Open link"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  )}
+                </div>
+                {source.campaigns.map((campaign: RecentlyEndedCampaign, ci: number) => (
+                  <div
+                    key={`ended-${sourceIndex}-c-${ci}`}
+                    className={ci > 0 ? 'mt-[var(--ds-space-1)] pt-[var(--ds-space-0-5)]' : ''}
+                  >
+                    <div className="flex items-start justify-between gap-[var(--ds-space-2)]">
+                      <p className="ds-tooltip-body break-words min-w-0 text-zinc-400">
+                        Ended: {formatDateSafe(campaign.endDate)}
+                      </p>
+                      <span className="ds-tooltip-body tabular-nums font-semibold whitespace-nowrap text-zinc-500">
+                        {formatPercent(0)}
+                      </span>
+                    </div>
+                    {renderCampaignMessage(campaign.message, `ended-${sourceIndex}-c-${ci}`)}
+                  </div>
+                ))}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 const IncentiveTooltip = ({
   reserve,
@@ -780,23 +878,28 @@ const IncentiveTooltip = ({
       >
         {/* Detailed sources */}
         {hasDetails ? (
-          <div className="relative mb-[var(--ds-space-2)] pl-[var(--ds-space-2)]">
-            <div className={`pointer-events-none absolute left-0 top-0 bottom-0 ${accentClass}`} />
-            <div className="divide-y divide-border/40">
-            {orderedIncentiveSources.map((source, index) => (
-                  <IncentiveSourceRow key={`${source.name}-${index}`} source={source} index={index} />
-                ))}
-                </div>
-              </div>
-            ) : (
-              <div className="mb-[var(--ds-space-2)]">
-                <p className="ds-tooltip-body text-muted-foreground italic">
-                  No detailed breakdown available
-                </p>
-              </div>
-            )}
-            
-        </BottomSheet>
+              <div className="relative mb-[var(--ds-space-2)] pl-[var(--ds-space-2)]">
+                <div className={`pointer-events-none absolute left-0 top-0 bottom-0 ${accentClass}`} />
+                <div className="divide-y divide-border/40">
+                {orderedIncentiveSources.map((source, index) => (
+                      <IncentiveSourceRow key={`${source.name}-${index}`} source={source} index={index} />
+                    ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mb-[var(--ds-space-2)]">
+                    <p className="ds-tooltip-body text-muted-foreground italic">
+                      No detailed breakdown available
+                    </p>
+                  </div>
+                )}
+                <RecentlyEndedSection
+                  reserve={reserve}
+                  type={type}
+                  isDark={isDark}
+                  isMobile={true}
+                />
+            </BottomSheet>
     );
     if (usePortal && portalTarget) {
       return createPortal(content, portalTarget);
@@ -857,6 +960,12 @@ const IncentiveTooltip = ({
               </p>
             </div>
           )}
+          <RecentlyEndedSection
+            reserve={reserve}
+            type={type}
+            isDark={isDark}
+            isMobile={false}
+          />
         </div>
       </div>
     </>

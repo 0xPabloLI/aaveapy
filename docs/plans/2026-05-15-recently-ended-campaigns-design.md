@@ -254,7 +254,9 @@ function RecentlyEndedSection({ reserve, supplyOrBorrow }: {
 
 ### 6.2 渲染位置
 
-在 `orderedIncentiveSources.map()` 渲染完毕后，`</div>`（`divide-y` 容器）之前插入 `<RecentlyEndedSection>`。
+在 `orderedIncentiveSources.map()` 渲染完毕后，`</div>`（`divide-y` 容器）**之后**插入 `<RecentlyEndedSection>`（不在 `divide-y` 容器内，用独立的 `border-t` 分割线）。
+
+`hasDetails` 条件放宽为 `hasDetails || hasRecentlyEnded`，确保无活跃 campaign 但有 recently ended 时也渲染 accent-border 区块。
 
 ---
 
