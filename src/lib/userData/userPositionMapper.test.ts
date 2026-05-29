@@ -1,0 +1,272 @@
+import { describe, it, expect } from 'vitest'
+import {
+  mapV3PositionToWalletPosition,
+  mapV4PositionToWalletPosition,
+  resolvePositionMeta,
+  type WalletPosition,
+  type WalletPositionSource,
+  type PositionMeta,
+} from './userPositionMapper'
+import type { V3UserPosition, V3AccountSummary } from './aaveV3UserClient'
+import type { V4UserPosition, V4AccountSummary } from './aaveV4UserClient'
+import type { ReserveWithSpread } from '@/types/aave'
+
+const WAD = 10n ** 18n
+const RAY = 10n ** 27n
+
+describe('WalletPosition unified type', () => {
+  it('has all required fields', () => {
+    const pos: WalletPosition = {
+      reserveId: '0xabc-1',
+      chainId: 1,
+      asset: '0xabc' as `0x${string}`,
+      tokenSymbol: 'USDC',
+      side: 'supply',
+      amountWad: 1000n * WAD,
+      amountUsd: 1000,
+      isCollateral: true,
+      source: 'onchain-v3' as WalletPositionSource,
+      isOrphan: false,
+    }
+    expect(pos.reserveId).toBe('0xabc-1')
+    expect(pos.side).toBe('supply')
+    expect(pos.isOrphan).toBe(false)
+  })
+})
+
+describe('mapV3PositionToWalletPosition', () => {
+  const v3Pos: V3UserPosition = {
+    chainId: 1,
+    asset: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' as `0x${string}`,
+    supplyWad: 5000n * WAD,
+    stableBorrowWad: 0n,
+    variableBorrowWad: 2000n * WAD,
+    isCollateral: true,
+  }
+
+  it('maps V3 supply position', () => {
+    const result = mapV3PositionToWalletPosition(v3Pos, 'supply', {
+      reserveId: 'usdc-1',
+      tokenSymbol: 'USDC',
+      tokenPrice: 1,
+      decimals: 6,
+    })
+    expect(result.reserveId).toBe('usdc-1')
+    expect(result.side).toBe('supply')
+    expect(result.amountWad).toBe(5000n * WAD)
+    expect(result.amountUsd).toBe(5000)
+    expect(result.isCollateral).toBe(true)
+    expect(result.source).toBe('onchain-v3')
+    expect(result.isOrphan).toBe(false)
+  })
+
+  it('maps V3 variable borrow position', () => {
+    const result = mapV3PositionToWalletPosition(v3Pos, 'borrow', {
+      reserveId: 'usdc-1',
+      tokenSymbol: 'USDC',
+      tokenPrice: 1,
+      decimals: 6,
+    })
+    expect(result.side).toBe('borrow')
+    expect(result.amountWad).toBe(2000n * WAD)
+    expect(result.amountUsd).toBe(2000)
+  })
+
+  it('maps V3 stable borrow position when stableBorrow > 0', () => {
+    const v3Stable: V3UserPosition = {
+      ...v3Pos,
+      supplyWad: 0n,
+      stableBorrowWad: 1000n * WAD,
+      variableBorrowWad: 0n,
+    }
+    const result = mapV3PositionToWalletPosition(v3Stable, 'borrow', {
+      reserveId: 'usdc-1',
+      tokenSymbol: 'USDC',
+      tokenPrice: 1,
+      decimals: 6,
+    })
+    expect(result.amountWad).toBe(1000n * WAD)
+    expect(result.amountUsd).toBe(1000)
+  })
+
+  it('computes amountUsd from WAD amount and tokenPrice', () => {
+    const result = mapV3PositionToWalletPosition(v3Pos, 'supply', {
+      reserveId: 'weth-1',
+      tokenSymbol: 'WETH',
+      tokenPrice: 3000,
+      decimals: 18,
+    })
+    expect(result.amountUsd).toBe(5000 * 3000)
+  })
+
+  it('marks orphan when reserveId is undefined', () => {
+    const result = mapV3PositionToWalletPosition(v3Pos, 'supply', {
+      reserveId: undefined,
+      tokenSymbol: 'USDC',
+      tokenPrice: 1,
+      decimals: 6,
+    })
+    expect(result.isOrphan).toBe(true)
+    expect(result.reserveId).toBe('')
+  })
+})
+
+describe('mapV4PositionToWalletPosition', () => {
+  const v4Pos: V4UserPosition = {
+    chainId: 1,
+    spokeName: 'MAIN_SPOKE',
+    reserveId: 1n,
+    asset: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2' as `0x${string}`,
+    suppliedAssets: 10n * WAD,
+    stableDebt: 0n,
+    variableDebt: 3n * WAD,
+    isCollateral: true,
+  }
+
+  it('maps V4 supply position', () => {
+    const result = mapV4PositionToWalletPosition(v4Pos, 'supply', {
+      reserveId: 'weth-1',
+      tokenSymbol: 'WETH',
+      tokenPrice: 3000,
+      decimals: 18,
+    })
+    expect(result.reserveId).toBe('weth-1')
+    expect(result.side).toBe('supply')
+    expect(result.amountWad).toBe(10n * WAD)
+    expect(result.amountUsd).toBe(10 * 3000)
+    expect(result.source).toBe('onchain-v4')
+    expect(result.isOrphan).toBe(false)
+  })
+
+  it('maps V4 borrow position', () => {
+    const result = mapV4PositionToWalletPosition(v4Pos, 'borrow', {
+      reserveId: 'weth-1',
+      tokenSymbol: 'WETH',
+      tokenPrice: 3000,
+      decimals: 18,
+    })
+    expect(result.side).toBe('borrow')
+    expect(result.amountWad).toBe(3n * WAD)
+    expect(result.amountUsd).toBe(3 * 3000)
+  })
+
+  it('marks orphan when reserveId is undefined', () => {
+    const result = mapV4PositionToWalletPosition(v4Pos, 'supply', {
+      reserveId: undefined,
+      tokenSymbol: 'WETH',
+      tokenPrice: 3000,
+      decimals: 18,
+    })
+    expect(result.isOrphan).toBe(true)
+  })
+})
+
+describe('WalletPositionSource type', () => {
+  it('accepts all valid source values', () => {
+    const sources: WalletPositionSource[] = ['onchain-v3', 'onchain-v4', 'sdk']
+    expect(sources).toHaveLength(3)
+  })
+})
+
+describe('resolvePositionMeta', () => {
+  const USDC_ADDR = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' as `0x${string}`
+  const WETH_ADDR = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2' as `0x${string}`
+  const UNKNOWN_ADDR = '0x000000000000000000000000000000000000dEaD' as `0x${string}`
+
+  const reserves: ReserveWithSpread[] = [
+    {
+      marketName: 'Aave V3 Ethereum',
+      chainName: 'Ethereum',
+      chainId: 1,
+      tokenName: 'USD Coin',
+      tokenSymbol: 'USDC',
+      tokenAddress: USDC_ADDR,
+      reserveId: 'usdc-1',
+      tokenPrice: 1,
+      decimals: 6,
+    },
+    {
+      marketName: 'Aave V3 Ethereum',
+      chainName: 'Ethereum',
+      chainId: 1,
+      tokenName: 'Wrapped Ether',
+      tokenSymbol: 'WETH',
+      tokenAddress: WETH_ADDR,
+      reserveId: 'weth-1',
+      tokenPrice: 3000,
+      decimals: 18,
+    },
+    {
+      marketName: 'Aave V3 Arbitrum',
+      chainName: 'Arbitrum',
+      chainId: 42161,
+      tokenName: 'USD Coin',
+      tokenSymbol: 'USDC',
+      tokenAddress: USDC_ADDR,
+      reserveId: 'usdc-42161',
+      tokenPrice: 1,
+      decimals: 6,
+    },
+  ]
+
+  it('finds reserve by asset + chainId and returns PositionMeta', () => {
+    const meta = resolvePositionMeta(USDC_ADDR, 1, reserves)
+    expect(meta.reserveId).toBe('usdc-1')
+    expect(meta.tokenSymbol).toBe('USDC')
+    expect(meta.tokenPrice).toBe(1)
+    expect(meta.decimals).toBe(6)
+  })
+
+  it('distinguishes same asset on different chains', () => {
+    const meta = resolvePositionMeta(USDC_ADDR, 42161, reserves)
+    expect(meta.reserveId).toBe('usdc-42161')
+    expect(meta.tokenSymbol).toBe('USDC')
+  })
+
+  it('returns orphan meta when asset not found in reserves', () => {
+    const meta = resolvePositionMeta(UNKNOWN_ADDR, 1, reserves)
+    expect(meta.reserveId).toBeUndefined()
+    expect(meta.tokenSymbol).toBe('')
+    expect(meta.tokenPrice).toBe(0)
+    expect(meta.decimals).toBe(0)
+  })
+
+  it('returns orphan meta when chainId not found', () => {
+    const meta = resolvePositionMeta(USDC_ADDR, 999, reserves)
+    expect(meta.reserveId).toBeUndefined()
+  })
+
+  it('uses tokenPrice 0 when reserve has no tokenPrice', () => {
+    const noPriceReserves: ReserveWithSpread[] = [
+      {
+        marketName: 'Test',
+        chainName: 'Test',
+        chainId: 1,
+        tokenName: 'Token',
+        tokenSymbol: 'TKN',
+        tokenAddress: USDC_ADDR,
+        reserveId: 'tkn-1',
+        decimals: 18,
+      },
+    ]
+    const meta = resolvePositionMeta(USDC_ADDR, 1, noPriceReserves)
+    expect(meta.tokenPrice).toBe(0)
+  })
+
+  it('uses decimals 0 when reserve has no decimals', () => {
+    const noDecimalsReserves: ReserveWithSpread[] = [
+      {
+        marketName: 'Test',
+        chainName: 'Test',
+        chainId: 1,
+        tokenName: 'Token',
+        tokenSymbol: 'TKN',
+        tokenAddress: USDC_ADDR,
+        reserveId: 'tkn-1',
+        tokenPrice: 100,
+      },
+    ]
+    const meta = resolvePositionMeta(USDC_ADDR, 1, noDecimalsReserves)
+    expect(meta.decimals).toBe(0)
+  })
+})

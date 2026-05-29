@@ -7,11 +7,15 @@ import { lazy, Suspense } from "react";
 import { ThemeProvider } from "next-themes";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
+import { WagmiProvider } from "wagmi";
+import { RainbowKitProvider, darkTheme, lightTheme } from "@rainbow-me/rainbowkit";
+import "@rainbow-me/rainbowkit/styles.css";
 import LoadingState from "@/components/dashboard/LoadingState";
 import { fetchMarkets } from "@/hooks/useAaveMarkets";
 import { fetchSideDataMeta, SIDE_DATA_META_QUERY_KEY } from "@/hooks/useSideDataMeta";
 import { QUERY_STALE_TIMES } from "@/config/queryStaleTimes";
 import { clearLegacyCacheEntries } from "@/lib/cache";
+import { wagmiConfig } from "@/lib/wagmi/config";
 import "@/i18n";
 
 // Lazy load route components
@@ -25,6 +29,7 @@ const AdminSeo = lazy(() => import("./pages/AdminSeo"));
 const DefiYieldTracker = lazy(() => import("./pages/DefiYieldTracker"));
 const AssetPage = lazy(() => import("./pages/AssetPage"));
 const UsaStablecoinApy = lazy(() => import("./pages/UsaStablecoinApy"));
+const PortfolioMergeProtoPage = lazy(() => import("./pages/PortfolioMergeProto"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -55,31 +60,40 @@ queryClient.prefetchQuery({
 
 const App = () => (
   <ThemeProvider attribute="class" defaultTheme="system" enableSystem={true}>
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider delayDuration={200}>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter future={{ v7_relativeSplatPath: true }}>
-          <Suspense fallback={<LoadingState />}>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/chain/:slug" element={<ChainPage />} />
-              <Route path="/pt-br" element={<LandingPT />} />
-              <Route path="/fr" element={<LandingFR />} />
-              <Route path="/tr" element={<LandingTR />} />
-              <Route path="/admin/seo" element={<AdminSeo />} />
-              <Route path="/defi-yield-tracker" element={<DefiYieldTracker />} />
-              <Route path="/asset/:slug" element={<AssetPage />} />
-              <Route path="/usa-stablecoin-apy" element={<UsaStablecoinApy />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Suspense>
-        </BrowserRouter>
-        <Analytics />
-        <SpeedInsights />
-      </TooltipProvider>
-    </QueryClientProvider>
+    <WagmiProvider config={wagmiConfig}>
+      <QueryClientProvider client={queryClient}>
+        <RainbowKitProvider
+          theme={{ light: lightTheme(), dark: darkTheme() }}
+          modalSize="compact"
+        >
+          <TooltipProvider delayDuration={200}>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter future={{ v7_relativeSplatPath: true }}>
+              <Suspense fallback={<LoadingState />}>
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/chain/:slug" element={<ChainPage />} />
+                  <Route path="/pt-br" element={<LandingPT />} />
+                  <Route path="/fr" element={<LandingFR />} />
+                  <Route path="/tr" element={<LandingTR />} />
+                  <Route path="/admin/seo" element={<AdminSeo />} />
+                  <Route path="/defi-yield-tracker" element={<DefiYieldTracker />} />
+                  <Route path="/asset/:slug" element={<AssetPage />} />
+                  <Route path="/usa-stablecoin-apy" element={<UsaStablecoinApy />} />
+                  {/* PROTOTYPE — delete after PortfolioMerge decision */}
+                  <Route path="/prototype/portfolio-merge" element={<PortfolioMergeProtoPage />} />
+                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Suspense>
+            </BrowserRouter>
+            <Analytics />
+            <SpeedInsights />
+          </TooltipProvider>
+        </RainbowKitProvider>
+      </QueryClientProvider>
+    </WagmiProvider>
   </ThemeProvider>
 );
 
