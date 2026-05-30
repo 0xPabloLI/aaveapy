@@ -23,6 +23,8 @@ const LandingFR = lazy(() => import("./pages/LandingFR"));
 const LandingTR = lazy(() => import("./pages/LandingTR"));
 const AdminSeo = lazy(() => import("./pages/AdminSeo"));
 const DefiYieldTracker = lazy(() => import("./pages/DefiYieldTracker"));
+const AssetPage = lazy(() => import("./pages/AssetPage"));
+const UsaStablecoinApy = lazy(() => import("./pages/UsaStablecoinApy"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -67,6 +69,8 @@ const App = () => (
               <Route path="/tr" element={<LandingTR />} />
               <Route path="/admin/seo" element={<AdminSeo />} />
               <Route path="/defi-yield-tracker" element={<DefiYieldTracker />} />
+              <Route path="/asset/:slug" element={<AssetPage />} />
+              <Route path="/usa-stablecoin-apy" element={<UsaStablecoinApy />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

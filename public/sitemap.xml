@@ -59,4 +59,11 @@
   <url><loc>https://aaveapy.com/chain/soneium</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
   <url><loc>https://aaveapy.com/chain/ink</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
   <url><loc>https://aaveapy.com/chain/mantle</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://aaveapy.com/usa-stablecoin-apy</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://aaveapy.com/asset/usdc</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://aaveapy.com/asset/usdt</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://aaveapy.com/asset/eth</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://aaveapy.com/asset/wbtc</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://aaveapy.com/asset/dai</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://aaveapy.com/asset/gho</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
 </urlset>
