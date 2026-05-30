@@ -40,11 +40,10 @@ export function WalletButton({ mobile = false, onWatchSubmit }: WalletButtonProp
 
   return (
     <ConnectButton.Custom>
-      {({ account, openConnectModal, mounted }) => {
-        const connected = mounted && account
+      {({ openConnectModal, mounted }) => {
         return (
           <div {...(!mounted ? { className: 'opacity-0 pointer-events-none' } : {})}>
-            {connected && address ? (
+            {isConnected && address ? (
               <Popover>
                 <PopoverTrigger asChild>
                   <button
