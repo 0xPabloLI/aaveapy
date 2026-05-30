@@ -7,6 +7,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import ThemeToggle from '@/components/ThemeToggle';
+import { WalletButton } from './WalletButton';
 
 interface HeaderProps {
   lastUpdated?: string;
@@ -51,7 +52,7 @@ const Header = ({ lastUpdated }: HeaderProps) => {
           </p>
         </div>
         
-        {/* Mobile: Updated clock + FAQ + Theme toggle */}
+        {/* Mobile: Updated clock + Wallet + FAQ + Theme toggle */}
         <div className="md:hidden shrink-0 flex items-center gap-[var(--ds-space-2)]">
           {lastUpdated && (
             <Popover>
@@ -69,6 +70,7 @@ const Header = ({ lastUpdated }: HeaderProps) => {
               </PopoverContent>
             </Popover>
           )}
+          <WalletButton mobile />
           <a
             href="#faq"
             className="flex items-center justify-center w-[var(--ds-control-h)] h-[var(--ds-control-h)] rounded-full bg-card/60 border border-border/40 text-muted-foreground hover-gradient-text hover:bg-muted/60 hover:border-border touch-manipulation"
@@ -80,8 +82,9 @@ const Header = ({ lastUpdated }: HeaderProps) => {
         </div>
       </div>
 
-      {/* Desktop Right side: FAQ + Theme toggle */}
+      {/* Desktop Right side: Wallet + FAQ + Theme toggle */}
       <div className="hidden md:flex items-center gap-[var(--ds-space-3)]">
+        <WalletButton />
         {/* Desktop: FAQ link with gradient hover */}
         <a
           href="#faq"
