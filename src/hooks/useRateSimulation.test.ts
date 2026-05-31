@@ -2014,4 +2014,97 @@ describe('buildRateSimulationResult ─ merkl per-group same-reserve net eligibi
     // constrained: 10 * 0 = 0, unconstrained: 5 * 1 = 5
     expect(result.supply.afterIncentive).toBeCloseTo(5, 1);
   });
+
+  it('borrow side: constrained group scaled by eligibilityRatio, unconstrained full', () => {
+    const borrowConstrainedGroup: MerklOpportunityGroup = {
+      name: 'Net borrow group',
+      breakdowns: [
+        {
+          campaignApr: 8,
+          campaignStartedAt: '2020-01-01T00:00:00.000Z',
+          campaignEndedAt: '2099-01-01T00:00:00.000Z',
+          campaignId: 'net-borrow-same',
+        },
+      ],
+      opportunityType: 'AAVE_NET_LENDING',
+      netPositionConstraint: {
+        sourceSide: 'borrow',
+        offsetReserveIds: [],
+      },
+    };
+    const borrowUnconstrainedGroup: MerklOpportunityGroup = {
+      name: 'Standard borrow group',
+      breakdowns: [
+        {
+          campaignApr: 3,
+          campaignStartedAt: '2020-01-01T00:00:00.000Z',
+          campaignEndedAt: '2099-01-01T00:00:00.000Z',
+          campaignId: 'std-borrow-same',
+        },
+      ],
+    };
+    const reserve: ReserveWithSpread = {
+      ...noIncentiveReserve,
+      merklBorrows: [borrowConstrainedGroup, borrowUnconstrainedGroup],
+    };
+    // borrow=1000, supply=400 → borrowEligibilityRatio = 600/1000 = 0.6
+    const result = buildRateSimulationResult({
+      reserve,
+      reserveRateInput: noIncentiveReserve,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '400',
+      borrowInput: '1000',
+      forecastStates: {},
+      meritMerklNetPosition: true,
+    });
+    // constrained: 8 * 0.6 = 4.8, unconstrained: 3 * 1 = 3, total = 7.8
+    expect(result.borrow.afterIncentive).toBeCloseTo(7.8, 1);
+  });
+
+  it('combined: cross-reserve + same-reserve both apply to constrained group', () => {
+    const offsetReserveId = '1:0xPool:0xUSDe';
+    const combinedGroup: MerklOpportunityGroup = {
+      name: 'Combined net lending',
+      breakdowns: [
+        {
+          campaignApr: 12,
+          campaignStartedAt: '2020-01-01T00:00:00.000Z',
+          campaignEndedAt: '2099-01-01T00:00:00.000Z',
+          campaignId: 'combined-1',
+        },
+      ],
+      opportunityType: 'AAVE_NET_LENDING',
+      netPositionConstraint: {
+        sourceSide: 'supply',
+        offsetReserveIds: [offsetReserveId],
+      },
+    };
+    const reserve: ReserveWithSpread = {
+      ...noIncentiveReserve,
+      merklSupplys: [combinedGroup],
+    };
+    // supply=1000, borrow=600 → sameReserveRatio = 400/1000 = 0.4
+    // offset reserve borrow=500 → crossReserveRatio = (1000-500)/1000 = 0.5
+    // combined: 12 * 0.5 * 0.4 = 2.4
+    const reservePositions = new Map([
+      [offsetReserveId, { supplyUsd: 0, borrowUsd: 500 }],
+    ]);
+    const result = buildRateSimulationResult({
+      reserve,
+      reserveRateInput: noIncentiveReserve,
+      isApy: false,
+      whitelistMerklCampaignIds: undefined,
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '1000',
+      borrowInput: '600',
+      forecastStates: {},
+      meritMerklNetPosition: true,
+      reservePositions,
+    });
+    expect(result.supply.afterIncentive).toBeCloseTo(2.4, 1);
+  });
 });

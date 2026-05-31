@@ -31,5 +31,10 @@ describe('wagmi/config', () => {
     it('has at least one connector', () => {
       expect(wagmiConfig.connectors.length).toBeGreaterThanOrEqual(1)
     })
+
+    it('includes watchMode connector', () => {
+      const ids = wagmiConfig.connectors.map((c) => c.id)
+      expect(ids).toContain('watchMode')
+    })
   })
 })

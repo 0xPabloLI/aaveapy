@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import type { SimulationMode } from '@/components/dashboard/PortfolioModeToggle';
 import { usePortfolioSimulation } from '@/hooks/usePortfolioSimulation';
 import { useUserPositions, type WalletLoadState } from '@/hooks/useUserPositions';
+import { useCampaignAccess } from '@/hooks/useCampaignAccess';
 import { useIsFetching } from '@tanstack/react-query';
 import { useAaveMarkets } from '@/hooks/useAaveMarkets';
 import { deriveV3AssetsByChain, deriveV4ReservesBySpoke } from '@/lib/deriveOnchainConfig';
@@ -66,6 +67,7 @@ const Index = () => {
   const [simulationMode, setSimulationMode] = useState<SimulationMode>('single');
   const portfolio = usePortfolioSimulation();
   const [whitelistMerklCampaignIds, setWhitelistMerklCampaignIds] = useState<Set<string>>(() => new Set());
+  const { campaignAccessStatuses } = useCampaignAccess();
   const toggleWhitelistMerklCampaign = useCallback((campaignId: string, enabled: boolean) => {
     const id = String(campaignId || '').trim();
     if (!id) return;
@@ -539,6 +541,7 @@ const Index = () => {
                 categoryGroups={tokenCategoryGroups}
                 onCardClick={handleTopCardClick}
                 tydroPointToUsdRate={tydroPointToUsdRate}
+                campaignAccessStatuses={campaignAccessStatuses}
               />
             )}
           </div>
@@ -628,6 +631,7 @@ const Index = () => {
               onRefresh={handleRefresh}
               dataUpdatedAt={dataUpdatedAt}
               topOppsRef={topOppsRef}
+              campaignAccessStatuses={campaignAccessStatuses}
             />
           </div>
 

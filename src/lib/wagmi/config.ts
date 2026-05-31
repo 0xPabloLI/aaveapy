@@ -20,6 +20,7 @@ import {
 } from 'wagmi/chains'
 import { injected, walletConnect } from 'wagmi/connectors'
 import { PUBLIC_RPC_URLS } from '../publicRpcUrls'
+import { watchModeConnector } from './watchModeConnector'
 
 const WALLETCONNECT_PROJECT_ID = 'aaveapy-wallet'
 
@@ -55,6 +56,7 @@ export const wagmiConfig = createConfig({
   connectors: [
     injected(),
     walletConnect({ projectId: WALLETCONNECT_PROJECT_ID }),
+    watchModeConnector(),
   ],
   transports: Object.fromEntries(
     WALLET_SUPPORTED_CHAINS.map((chain) => [chain.id, chainTransport(chain.id)]),

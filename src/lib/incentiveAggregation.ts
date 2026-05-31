@@ -19,6 +19,8 @@ export interface IncentiveCalculationOptions {
   whitelistMerklCampaignIds?: ReadonlySet<string>;
   /** When provided, enables forecastWithTVL-based fallback for campaigns where getMerklBreakdownApr returns 0. */
   forecastStates?: Record<string, MerklForecastWireItem>;
+  /** Per-campaignId access status from /meta/side-data.campaignAccess (AAV-66). */
+  campaignAccessStatuses?: Record<string, 'allowed' | 'whitelist-blocked' | 'blacklisted'>;
 }
 
 const sumNumberArray = (arr?: number[]): number => {
@@ -65,7 +67,7 @@ const sumMerklOpportunities = (
     getBreakdowns: (group) => group.breakdowns,
     getStartDate: (_group, breakdown) => breakdown.campaignStartedAt,
     getEndDate: (_group, breakdown) => breakdown.campaignEndedAt,
-    include: (_group, breakdown) => isMerklWhitelistBreakdownIncluded(breakdown, options.whitelistMerklCampaignIds),
+    include: (_group, breakdown) => isMerklWhitelistBreakdownIncluded(breakdown, options.whitelistMerklCampaignIds, options.campaignAccessStatuses?.[breakdown.campaignId]),
     mapValue: (_group, breakdown) => {
       const apr = options.forecastStates
         ? sanitizePercent(forecastBreakdownApr(breakdown, 0, options.forecastStates, pointToUsdRate))
@@ -84,7 +86,7 @@ const sumMerklOpportunitiesApy = (
     getBreakdowns: (group) => group.breakdowns,
     getStartDate: (_group, breakdown) => breakdown.campaignStartedAt,
     getEndDate: (_group, breakdown) => breakdown.campaignEndedAt,
-    include: (_group, breakdown) => isMerklWhitelistBreakdownIncluded(breakdown, options.whitelistMerklCampaignIds),
+    include: (_group, breakdown) => isMerklWhitelistBreakdownIncluded(breakdown, options.whitelistMerklCampaignIds, options.campaignAccessStatuses?.[breakdown.campaignId]),
     mapValue: (_group, breakdown) => {
       const apr = options.forecastStates
         ? sanitizePercent(forecastBreakdownApr(breakdown, 0, options.forecastStates, pointToUsdRate))

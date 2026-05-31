@@ -1,7 +1,17 @@
-import { useState, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useEnsName } from 'wagmi'
 
 const ETH_ADDRESS_RE = /^0x[0-9a-fA-F]{40}$/
+const ENS_DEBOUNCE_MS = 300
+
+function useDebouncedValue<T>(value: T, delay: number): T {
+  const [debounced, setDebounced] = useState(value)
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), delay)
+    return () => clearTimeout(timer)
+  }, [value, delay])
+  return debounced
+}
 
 interface WatchAddressInputProps {
   onSubmit: (address: `0x${string}`) => void
@@ -14,9 +24,10 @@ export function WatchAddressInput({ onSubmit, onCancel, autoFocus = true }: Watc
   const [error, setError] = useState(false)
 
   const isValidAddress = ETH_ADDRESS_RE.test(input)
+  const debouncedEnsInput = useDebouncedValue(input.endsWith('.eth') ? input : '', ENS_DEBOUNCE_MS)
 
   const { data: ensAddress, isLoading: ensLoading } = useEnsName({
-    name: input.endsWith('.eth') ? input : undefined,
+    name: debouncedEnsInput || undefined,
   })
 
   const resolvedAddress = ensAddress ?? (isValidAddress ? input as `0x${string}` : null)

@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef, memo, forwardRef, useCallback, type ReactNode } from 'react';
 import { TrendingUp, Zap, ChevronLeft, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ReserveWithSpread, MerklForecastWireItem } from '@/types/aave';
+import { ReserveWithSpread, MerklForecastWireItem, CampaignAccessStatus } from '@/types/aave';
 import {
   isStablecoinSymbol,
   isEthRelatedSymbol,
@@ -49,6 +49,7 @@ interface TopOpportunitiesProps {
   categoryGroups: TokenCategoryGroups;
   onCardClick?: (reserve: ReserveWithSpread) => void;
   tydroPointToUsdRate: number;
+  campaignAccessStatuses?: Record<string, CampaignAccessStatus>;
 }
 
 type TopOpportunitiesTooltipState = {
@@ -686,6 +687,7 @@ const TopOpportunities = ({
   categoryGroups,
   onCardClick,
   tydroPointToUsdRate,
+  campaignAccessStatuses,
 }: TopOpportunitiesProps) => {
   const isMobile = useIsMobile();
 
@@ -997,6 +999,7 @@ const TopOpportunities = ({
             whitelistMerklCampaignIds={whitelistMerklCampaignIds}
             onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign}
             forecastStates={forecastStates}
+            campaignAccessStatuses={campaignAccessStatuses}
             usePortal
           />
         )}
@@ -1120,6 +1123,7 @@ const TopOpportunities = ({
           whitelistMerklCampaignIds={whitelistMerklCampaignIds}
           onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign}
           forecastStates={forecastStates}
+          campaignAccessStatuses={campaignAccessStatuses}
           usePortal
         />
       )}

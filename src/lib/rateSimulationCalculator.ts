@@ -263,6 +263,7 @@ export interface BuildRateSimulationResultParams {
   reservePositions?: Map<string, ReservePositions>;
   /** reserveId b symbol lookup for cross-reserve note (offset reserve symbols). */
   reserveSymbolById?: Map<string, string>;
+  campaignAccessStatuses?: Record<string, 'allowed' | 'whitelist-blocked' | 'blacklisted'>;
 }
 
 export const buildIncentiveCurrent = (
@@ -272,12 +273,13 @@ export const buildIncentiveCurrent = (
   tydroPointToUsdRate: number,
   whitelistMerklCampaignIds: ReadonlySet<string> | undefined,
   forecastStates?: Record<string, MerklForecastWireItem>,
+  campaignAccessStatuses?: Record<string, 'allowed' | 'whitelist-blocked' | 'blacklisted'>,
 ): number => {
   const merit = side === 'supply' ? reserve.meritSupplys : reserve.meritBorrows;
   const merkl = side === 'supply' ? reserve.merklSupplys : reserve.merklBorrows;
   const brevis = side === 'supply' ? reserve.brevisSupplys : reserve.brevisBorrows;
   const protocol = side === 'supply' ? reserve.supplyIncentives : reserve.borrowIncentives;
-  const options = { whitelistMerklCampaignIds, forecastStates };
+  const options = { whitelistMerklCampaignIds, forecastStates, campaignAccessStatuses };
   return isApy
     ? calculateTotalIncentiveApy(merit, merkl, brevis, protocol, tydroPointToUsdRate, options)
     : calculateTotalIncentiveApr(merit, merkl, brevis, protocol, tydroPointToUsdRate, options);
@@ -495,12 +497,13 @@ export const sumMerklValues = (
   whitelistMerklCampaignIds: ReadonlySet<string> | undefined,
   forecastStates?: Record<string, MerklForecastWireItem>,
   groupMultiplier?: (group: MerklOpportunityGroup) => number,
+  campaignAccessStatuses?: Record<string, 'allowed' | 'whitelist-blocked' | 'blacklisted'>,
 ): number => {
   return sumActiveCampaignBreakdownValues(opportunities, {
     getBreakdowns: (group) => group.breakdowns,
     getStartDate: (_group, breakdown) => breakdown.campaignStartedAt,
     getEndDate: (_group, breakdown) => breakdown.campaignEndedAt,
-    include: (_group, breakdown) => isMerklWhitelistBreakdownIncluded(breakdown, whitelistMerklCampaignIds),
+    include: (_group, breakdown) => isMerklWhitelistBreakdownIncluded(breakdown, whitelistMerklCampaignIds, campaignAccessStatuses?.[breakdown.campaignId]),
     mapValue: (_group, breakdown) => {
       const apr = forecastStates
         ? sanitizePercent(forecastBreakdownApr(breakdown, 0, forecastStates, tydroPointToUsdRate))
@@ -694,6 +697,7 @@ export const buildMerklCampaignDetails = (
   grossInputUsd?: number,
   merklGroupMultiplier?: (group: MerklOpportunityGroup) => number,
   merklCrossReserveNote?: (group: MerklOpportunityGroup) => string | null,
+  campaignAccessStatuses?: Record<string, 'allowed' | 'whitelist-blocked' | 'blacklisted'>,
 ): SimulationCampaignDetail[] => {
   if (!opportunities?.length) return [];
 
@@ -713,7 +717,7 @@ export const buildMerklCampaignDetails = (
   opportunities.forEach((opportunity, oppIndex) => {
     (opportunity.breakdowns ?? []).forEach((bd, bdIndex) => {
       if (!isCampaignActive(bd.campaignStartedAt, bd.campaignEndedAt)) return;
-      if (!isMerklWhitelistBreakdownIncluded(bd, whitelistMerklCampaignIds)) return;
+      if (!isMerklWhitelistBreakdownIncluded(bd, whitelistMerklCampaignIds, campaignAccessStatuses?.[bd.campaignId])) return;
 
       const currentApr = sanitizePercent(forecastBreakdownApr(bd, 0, forecastStates, tydroPointToUsdRate));
       const current = isApy ? convertAprToApy(currentApr) : currentApr;
@@ -850,6 +854,7 @@ export const buildIncentiveAfter = (
   hubSupplied?: string,
   hubBorrowed?: string,
   merklGroupMultiplier?: (group: MerklOpportunityGroup) => number,
+  campaignAccessStatuses?: Record<string, 'allowed' | 'whitelist-blocked' | 'blacklisted'>,
 ): number => {
   const merit = side === 'supply' ? reserve.meritSupplys : reserve.meritBorrows;
   const merkl = side === 'supply' ? reserve.merklSupplys : reserve.merklBorrows;
@@ -866,7 +871,7 @@ export const buildIncentiveAfter = (
   return (
     sumNumberArray(protocol, isApy) +
     sumForecastMeritValues(merit, isApy, netInputUsd, getMeritAnchorTvlUsd(reserve, side, getProtocolVersion(reserve.marketName), hubSupplied, hubBorrowed)) * eligibilityRatio +
-    sumMerklValues(forecastedMerkl, isApy, tydroPointToUsdRate, whitelistMerklCampaignIds, undefined, merklGroupMultiplier) +
+    sumMerklValues(forecastedMerkl, isApy, tydroPointToUsdRate, whitelistMerklCampaignIds, undefined, merklGroupMultiplier, campaignAccessStatuses) +
     sumForecastBrevisValues(brevis, isApy, grossInputUsd, brevisSharedDepositsByCampaignId)
   );
 };
@@ -962,6 +967,7 @@ export function buildRateSimulationResult({
   meritMerklNetPosition = true,
   reservePositions,
   reserveSymbolById,
+  campaignAccessStatuses,
 }: BuildRateSimulationResultParams): RateSimulationComputedResult {
   const rawSupply = parseNumberInput(supplyInput);
   const rawBorrow = parseNumberInput(borrowInput);
@@ -1072,16 +1078,16 @@ export function buildRateSimulationResult({
   const supplyCurrentNative = toDisplayNative(reserve.supplyApy);
   const borrowCurrentNative = toDisplayNative(reserve.borrowApy);
   const supplyCurrentIncentive = buildIncentiveCurrent(
-    reserve, 'supply', isApy, tydroPointToUsdRate, whitelistMerklCampaignIds, forecastStates,
+    reserve, 'supply', isApy, tydroPointToUsdRate, whitelistMerklCampaignIds, forecastStates, campaignAccessStatuses,
   );
   const borrowCurrentIncentive = buildIncentiveCurrent(
-    reserve, 'borrow', isApy, tydroPointToUsdRate, whitelistMerklCampaignIds, forecastStates,
+    reserve, 'borrow', isApy, tydroPointToUsdRate, whitelistMerklCampaignIds, forecastStates, campaignAccessStatuses,
   );
   const supplyCurrentIncentiveApr = buildIncentiveCurrent(
-    reserve, 'supply', false, tydroPointToUsdRate, whitelistMerklCampaignIds, forecastStates,
+    reserve, 'supply', false, tydroPointToUsdRate, whitelistMerklCampaignIds, forecastStates, campaignAccessStatuses,
   );
   const borrowCurrentIncentiveApr = buildIncentiveCurrent(
-    reserve, 'borrow', false, tydroPointToUsdRate, whitelistMerklCampaignIds, forecastStates,
+    reserve, 'borrow', false, tydroPointToUsdRate, whitelistMerklCampaignIds, forecastStates, campaignAccessStatuses,
   );
 
   const supplyCurrentTotal = isApy
@@ -1177,6 +1183,7 @@ export function buildRateSimulationResult({
         reserveRateInput?.hubSupplied,
         reserveRateInput?.hubBorrowed,
         merklGroupMultiplier('supply'),
+        campaignAccessStatuses,
       )
     : null;
   const borrowAfterIncentiveRaw = hasAnyInput
@@ -1194,6 +1201,7 @@ export function buildRateSimulationResult({
         reserveRateInput?.hubSupplied,
         reserveRateInput?.hubBorrowed,
         merklGroupMultiplier('borrow'),
+        campaignAccessStatuses,
       )
     : null;
   const supplyAfterIncentiveAprRaw = hasAnyInput
@@ -1211,6 +1219,7 @@ export function buildRateSimulationResult({
         reserveRateInput?.hubSupplied,
         reserveRateInput?.hubBorrowed,
         merklGroupMultiplier('supply'),
+        campaignAccessStatuses,
       )
     : null;
   const borrowAfterIncentiveAprRaw = hasAnyInput
@@ -1228,6 +1237,7 @@ export function buildRateSimulationResult({
         reserveRateInput?.hubSupplied,
         reserveRateInput?.hubBorrowed,
         merklGroupMultiplier('borrow'),
+        campaignAccessStatuses,
       )
     : null;
   // Shared scenario represents extra market-side size, so same-side incentive should not increase.
@@ -1260,13 +1270,13 @@ export function buildRateSimulationResult({
   const supplyCurrentSources = {
     protocol: sumNumberArray(reserve.supplyIncentives, isApy),
     merit: sumMeritValues(reserve.meritSupplys, isApy),
-    merkl: sumMerklValues(reserve.merklSupplys, isApy, tydroPointToUsdRate, whitelistMerklCampaignIds, forecastStates, merklGroupMultiplier('supply')),
+    merkl: sumMerklValues(reserve.merklSupplys, isApy, tydroPointToUsdRate, whitelistMerklCampaignIds, forecastStates, merklGroupMultiplier('supply'), campaignAccessStatuses),
     brevis: sumBrevisValues(reserve.brevisSupplys, isApy),
   };
   const borrowCurrentSources = {
     protocol: sumNumberArray(reserve.borrowIncentives, isApy),
     merit: sumMeritValues(reserve.meritBorrows, isApy),
-    merkl: sumMerklValues(reserve.merklBorrows, isApy, tydroPointToUsdRate, whitelistMerklCampaignIds, forecastStates, merklGroupMultiplier('borrow')),
+    merkl: sumMerklValues(reserve.merklBorrows, isApy, tydroPointToUsdRate, whitelistMerklCampaignIds, forecastStates, merklGroupMultiplier('borrow'), campaignAccessStatuses),
     brevis: sumBrevisValues(reserve.brevisBorrows, isApy),
   };
 
@@ -1286,7 +1296,8 @@ export function buildRateSimulationResult({
           tydroPointToUsdRate,
           whitelistMerklCampaignIds,
           undefined,
-          merklGroupMultiplier('supply')
+          merklGroupMultiplier('supply'),
+          campaignAccessStatuses
         );
         const brevisAfterRaw = sumForecastBrevisValues(
           reserve.brevisSupplys,
@@ -1319,7 +1330,8 @@ export function buildRateSimulationResult({
           tydroPointToUsdRate,
           whitelistMerklCampaignIds,
           undefined,
-          merklGroupMultiplier('borrow')
+          merklGroupMultiplier('borrow'),
+          campaignAccessStatuses
         );
         const brevisAfterRaw = sumForecastBrevisValues(
           reserve.brevisBorrows,
@@ -1357,6 +1369,7 @@ export function buildRateSimulationResult({
     supplyInputUsd,
     merklGroupMultiplier('supply'),
     merklCrossReserveNote('supply'),
+    campaignAccessStatuses,
   );
   const supplyBrevisCampaignRows = buildBrevisCampaignDetails(
     reserve.brevisSupplys,
@@ -1386,6 +1399,7 @@ export function buildRateSimulationResult({
     borrowInputUsd,
     merklGroupMultiplier('borrow'),
     merklCrossReserveNote('borrow'),
+    campaignAccessStatuses,
   );
   const borrowBrevisCampaignRows = buildBrevisCampaignDetails(
     reserve.brevisBorrows,

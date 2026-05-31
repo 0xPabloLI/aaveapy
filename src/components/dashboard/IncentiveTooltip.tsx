@@ -2,7 +2,7 @@ import { useRef, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ExternalLink, Clock, ChevronDown } from 'lucide-react';
 import { useTheme } from 'next-themes';
-import { ReserveWithSpread, MeritIncentive, MerklOpportunityGroup, BrevisIncentive } from '@/types/aave';
+import { ReserveWithSpread, MeritIncentive, MerklOpportunityGroup, BrevisIncentive, CampaignAccessStatus } from '@/types/aave';
 import { formatPercent } from '@/lib/formatters';
 import { convertAprToApy } from '@/lib/rateCalculations';
 import {
@@ -54,6 +54,7 @@ interface IncentiveTooltipProps {
   whitelistMerklCampaignIds: ReadonlySet<string>;
   onToggleWhitelistMerklCampaign: (campaignId: string, enabled: boolean) => void;
   forecastStates?: Record<string, MerklForecastWireItem>;
+  campaignAccessStatuses?: Record<string, CampaignAccessStatus>;
 }
 
 interface IncentiveSource {
@@ -242,6 +243,7 @@ const IncentiveTooltip = ({
   whitelistMerklCampaignIds,
   onToggleWhitelistMerklCampaign,
   forecastStates,
+  campaignAccessStatuses,
 }: IncentiveTooltipProps) => {
   const { resolvedTheme } = useTheme();
   const isMobile = useIsMobile();
@@ -543,7 +545,7 @@ const IncentiveTooltip = ({
             ? sanitizePercent(forecastBreakdownApr(breakdown, 0, forecastStates, tydroPointToUsdRate))
             : getMerklBreakdownApr(breakdown, tydroPointToUsdRate);
           const whitelistOnly = breakdown.whitelistOnly === true;
-          const included = isMerklWhitelistBreakdownIncluded(breakdown, whitelistMerklCampaignIds);
+          const included = isMerklWhitelistBreakdownIncluded(breakdown, whitelistMerklCampaignIds, campaignAccessStatuses?.[breakdown.campaignId]);
           if (!isNaN(apr) && apr >= 0) {
             const displayValue = isApy ? convertAprToApy(apr) : apr;
             sources.push({
@@ -589,6 +591,21 @@ const IncentiveTooltip = ({
     return [...incentiveSources].sort((a, b) => sourcePriority(a) - sourcePriority(b));
   }, [incentiveSources]);
   const hasDetails = incentiveSources.length > 0;
+
+  const hasIneligibleCampaigns = useMemo(() => {
+    if (!campaignAccessStatuses) return false;
+    return incentiveSources.some(
+      (source) =>
+        source.sourceType === 'Merkl' &&
+        source.campaigns?.some(
+          (campaign) =>
+            campaign.included === false &&
+            campaign.campaignId != null &&
+            (campaignAccessStatuses[campaign.campaignId] === 'blacklisted' ||
+              campaignAccessStatuses[campaign.campaignId] === 'whitelist-blocked'),
+        ),
+    );
+  }, [incentiveSources, campaignAccessStatuses]);
 
   const renderSourceCampaigns = (source: IncentiveSource, keyPrefix: string) => {
     const campaignsBase =
@@ -943,6 +960,12 @@ const IncentiveTooltip = ({
         )}
         {/* Content area */}
         <div className="w-full min-w-0 max-h-[calc(100vh-32px)] overflow-y-auto overscroll-contain pr-1">
+          {hasIneligibleCampaigns && (
+            <div className="flex items-center gap-1.5 px-2 py-1.5 mb-1 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-medium">
+              <span>⚠</span>
+              <span>Your address is not eligible for some campaigns</span>
+            </div>
+          )}
           {/* Detailed sources */}
           {hasDetails ? (
             <div className="relative my-[var(--ds-space-2)] pl-[var(--ds-space-2)]">

@@ -5,8 +5,12 @@
 
 ## 2. 当前状态
 - 状态：未开始（Backlog）
-- 目前后端已有 Hub/Spoke 相关字段（hubId、hubName、hubAddress、spokeId、spokeName、spokeAddress）在 `/api/markets` 接口返回中，但尚无 supply cap、total supplied 等 Hub 级别的汇总数据。
-- 前端暂无 Hub 相关数据展示组件或字段。
+- 目前后端已有 Hub/Spoke 相关字段在 `/api/markets` 接口返回中。**消费现状（2026-05 更新）**：
+  - `hubId`、`hubName`、`hubAddress`：已消费（Hub 过滤、badge 显示、浏览器链接）
+  - `spokeId`、`spokeAddress`：已消费（V4 市场深链接、浏览器链接）
+  - `spokeName`：已移除（语义与 `marketName` 冗余）
+- 但尚无 supply cap、total supplied 等 Hub 级别的汇总数据。
+- 前端已有 Hub badge 展示（DesktopReserveRow、MobileReserveCard）和 Hub 过滤功能，但尚无独立 Hub 汇总视图。
 
 ## 3. 影响范围
 - 后端仓库：`aave-protocol-analysis`（railway 分支）

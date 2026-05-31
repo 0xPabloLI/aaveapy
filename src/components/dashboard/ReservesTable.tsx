@@ -4,7 +4,7 @@ import { SlidersHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ReservesTableShowMore, ReservesTableFloatingScroll } from './ReservesTablePagination';
 import { Table, TableBody } from '@/components/ui/table';
-import { ReserveWithSpread, TokenPricesIndex, MerklForecastWireItem } from '@/types/aave';
+import { ReserveWithSpread, TokenPricesIndex, MerklForecastWireItem, CampaignAccessStatus } from '@/types/aave';
 import {
   calculateTotalSupplyApr,
   calculateTotalSupplyApy,
@@ -87,6 +87,7 @@ interface ReservesTableProps {
   onRefresh?: () => Promise<void>;
   dataUpdatedAt?: number;
   topOppsRef?: React.RefObject<HTMLDivElement | null>;
+  campaignAccessStatuses?: Record<string, CampaignAccessStatus>;
 }
 
 // Stable sentinel used as a gate dependency for `sortedData` when the active
@@ -118,6 +119,7 @@ const ReservesTable = ({
   onRefresh,
   dataUpdatedAt,
   topOppsRef,
+  campaignAccessStatuses,
 }: ReservesTableProps) => {
   const isMobile = useIsMobile();
 
@@ -1004,7 +1006,7 @@ const ReservesTable = ({
         />
 
 
-        <ReservesTableTooltipOverlay tooltipState={tooltipState} onClose={closeTooltip} isApy={isApy} tydroPointToUsdRate={tydroPointToUsdRate} whitelistMerklCampaignIds={whitelistMerklCampaignIds} onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign} forecastStates={forecastStates} />
+        <ReservesTableTooltipOverlay tooltipState={tooltipState} onClose={closeTooltip} isApy={isApy} tydroPointToUsdRate={tydroPointToUsdRate} whitelistMerklCampaignIds={whitelistMerklCampaignIds} onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign} forecastStates={forecastStates} campaignAccessStatuses={campaignAccessStatuses} />
 
         <ReservesTableFloatingScroll
           tableInView={tableInView}
@@ -1226,7 +1228,7 @@ const ReservesTable = ({
         <div aria-hidden style={{ height: 'calc(100dvh - var(--reserves-expanded-main-row-top, 5.75rem))' }} />
       )}
 
-      <ReservesTableTooltipOverlay tooltipState={tooltipState} onClose={closeTooltip} isApy={isApy} tydroPointToUsdRate={tydroPointToUsdRate} whitelistMerklCampaignIds={whitelistMerklCampaignIds} onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign} forecastStates={forecastStates} />
+      <ReservesTableTooltipOverlay tooltipState={tooltipState} onClose={closeTooltip} isApy={isApy} tydroPointToUsdRate={tydroPointToUsdRate} whitelistMerklCampaignIds={whitelistMerklCampaignIds} onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign} forecastStates={forecastStates} campaignAccessStatuses={campaignAccessStatuses} />
 
       <ReservesTableFloatingScroll
         tableInView={tableInView}

@@ -1,9 +1,11 @@
-# 开发方案 - AAV-174 [Cleanup] 移除 V4 spoke 无消费字段 (spokeId/spokeName/spokeAddress)
+# 开发方案 - AAV-174 [Cleanup] 积除 V4 spoke 无消费字段 (spokeId/spokeName/spokeAddress)
+
+> **状态更新（2026-05）**：本方案撰写时三个字段均未消费，但后来 `spokeId` 和 `spokeAddress` 已被前端消费，仅 `spokeName` 被移除。详见下方 §8。
 
 ## 1. Issue 概述
 清理代码中未被使用的 V4 spoke 相关字段 `spokeId`、`spokeName`、`spokeAddress`。这三个字段在类型定义和部分 Zod schema 中声明，但项目中无任何读取或使用，存在冗余。需移除这些字段以简化代码，或若为预留字段则补全 schema 并加注释说明。
 
-## 2. 当前状态
+## 2. 当前状态（原文档）
 - 字段在 `src/types/aave.ts` 中声明（可选字段）
 - 仅 `spokeAddress` 在 `src/lib/apiSchemas.ts` 的 Zod schema 中声明
 - `spokeId` 和 `spokeName` 未在 schema 中声明，仅靠 `.passthrough()` 放行
@@ -60,6 +62,12 @@
 - 复杂度：Low
 - 理由：仅涉及类型定义和 schema 的简单增删，无业务逻辑改动，风险低，改动面小
 
----
+## 8. 实际执行结果（2026-05 更新）
 
-以上为 AAV-174 的详细开发方案。建议优先确认字段是否预留，若无使用计划则直接移除，保持代码整洁。
+| 字段 | 最终状态 | 消费位置 |
+|---|---|---|
+| `spokeName` | **已移除** | 全项目零引用；语义被 `hubName` + `marketName` 覆盖，V4 的 spoke 名称与 market 名称同义 |
+| `spokeId` | **保留且已消费** | `src/lib/aaveLinks.ts:129-137` — `buildAaveV4MarketUrl()` 构建 pro.aave.com spoke 深链接 |
+| `spokeAddress` | **保留且已消费** | `src/lib/poolExplorerLinks.ts:558-575` — `buildSpokeExplorerUrl()` 构建区块链浏览器 URL；`AssetActionMenu.tsx:69-90` 使用 |
+
+**`spokeName` 为何冗余**：`marketName` 已标识市场名称（如 `AaveV4EthereumCore`），`hubName` 标识 Hub（如 `"Core"`）。V4 中一个 Hub 下多个 Spoke 各自对应独立 Reserve，其 spokeName 与该 Reserve 的 `marketName` 语义重叠，故无需单独字段。

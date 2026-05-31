@@ -1,5 +1,5 @@
 import IncentiveTooltip from './IncentiveTooltip';
-import type { ReserveWithSpread, MerklForecastWireItem } from '@/types/aave';
+import type { ReserveWithSpread, MerklForecastWireItem, CampaignAccessStatus } from '@/types/aave';
 
 export interface TooltipState {
   reserve: ReserveWithSpread;
@@ -18,6 +18,7 @@ interface ReservesTableTooltipOverlayProps {
   whitelistMerklCampaignIds: ReadonlySet<string>;
   onToggleWhitelistMerklCampaign: (campaignId: string, enabled: boolean) => void;
   forecastStates?: Record<string, MerklForecastWireItem>;
+  campaignAccessStatuses?: Record<string, CampaignAccessStatus>;
 }
 
 export default function ReservesTableTooltipOverlay({
@@ -28,6 +29,7 @@ export default function ReservesTableTooltipOverlay({
   whitelistMerklCampaignIds,
   onToggleWhitelistMerklCampaign,
   forecastStates,
+  campaignAccessStatuses,
 }: ReservesTableTooltipOverlayProps) {
   if (!tooltipState) return null;
   return (
@@ -46,6 +48,7 @@ export default function ReservesTableTooltipOverlay({
       whitelistMerklCampaignIds={whitelistMerklCampaignIds}
       onToggleWhitelistMerklCampaign={onToggleWhitelistMerklCampaign}
       forecastStates={forecastStates}
+      campaignAccessStatuses={campaignAccessStatuses}
     />
   );
 }

@@ -1,0 +1,61 @@
+import { describe, expect, it } from 'vitest'
+import { getUserCampaignStatus } from './useCampaignAccess'
+import type { CampaignAccessEntry } from '@/types/aave'
+
+describe('getUserCampaignStatus', () => {
+  const USER = '0xAAA111222333444555666777888999AAABBBCCC'
+  const OTHER = '0xBBB111222333444555666777888999AAABBBCCC'
+
+  it('returns allowed when no campaigns data', () => {
+    expect(getUserCampaignStatus(USER, 'camp-1', undefined)).toBe('allowed')
+  })
+
+  it('returns allowed when campaign has no entry', () => {
+    const campaigns: Record<string, CampaignAccessEntry> = {}
+    expect(getUserCampaignStatus(USER, 'camp-1', campaigns)).toBe('allowed')
+  })
+
+  it('returns allowed when on whitelist', () => {
+    const campaigns: Record<string, CampaignAccessEntry> = {
+      'camp-1': { whitelist: [USER], blacklist: [] },
+    }
+    expect(getUserCampaignStatus(USER, 'camp-1', campaigns)).toBe('allowed')
+  })
+
+  it('returns whitelist-blocked when not on whitelist', () => {
+    const campaigns: Record<string, CampaignAccessEntry> = {
+      'camp-1': { whitelist: [OTHER], blacklist: [] },
+    }
+    expect(getUserCampaignStatus(USER, 'camp-1', campaigns)).toBe('whitelist-blocked')
+  })
+
+  it('returns blacklisted when on blacklist', () => {
+    const campaigns: Record<string, CampaignAccessEntry> = {
+      'camp-1': { whitelist: [], blacklist: [USER] },
+    }
+    expect(getUserCampaignStatus(USER, 'camp-1', campaigns)).toBe('blacklisted')
+  })
+
+  it('returns allowed when not on blacklist and no whitelist', () => {
+    const campaigns: Record<string, CampaignAccessEntry> = {
+      'camp-1': { whitelist: [], blacklist: [OTHER] },
+    }
+    expect(getUserCampaignStatus(USER, 'camp-1', campaigns)).toBe('allowed')
+  })
+
+  it('whitelist takes precedence over blacklist', () => {
+    const campaigns: Record<string, CampaignAccessEntry> = {
+      'camp-1': { whitelist: [USER], blacklist: [USER] },
+    }
+    expect(getUserCampaignStatus(USER, 'camp-1', campaigns)).toBe('allowed')
+  })
+
+  it('comparison is case-insensitive', () => {
+    const upperAddr = USER.toUpperCase()
+    const lowerEntry = USER.toLowerCase()
+    const campaigns: Record<string, CampaignAccessEntry> = {
+      'camp-1': { whitelist: [lowerEntry], blacklist: [] },
+    }
+    expect(getUserCampaignStatus(upperAddr, 'camp-1', campaigns)).toBe('allowed')
+  })
+})

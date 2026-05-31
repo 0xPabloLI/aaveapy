@@ -14,7 +14,7 @@
 ## 2. 当前状态
 
 - SimulationTableRow.href 字段赋值和传递已实现，但渲染逻辑中被遗漏，导致功能回退（回归）。
-- spokeName 和 spokeAddress 字段仅存在类型定义中，未被任何代码引用或渲染。
+- spokeName 已移除（语义被 marketName 覆盖）；spokeAddress 已被消费（构建浏览器链接）。详见 AAV-174 §8。
 - 该 Issue 处于 Backlog，尚未开始开发。
 
 ---
@@ -57,7 +57,9 @@
 
 ---
 
-### 4.2 处理 V4 Spoke 字段（中优先级）
+### 4.2 处理 V4 Spoke 字段（中优先级）— **已解决（2026-05 更新）**
+
+> `spokeName` 已移除（语义与 `marketName` 冗余）；`spokeAddress` 已消费（`buildSpokeExplorerUrl` + `AssetActionMenu`）。无需再执行本节方案。
 
 #### 4.2.1 目标
 

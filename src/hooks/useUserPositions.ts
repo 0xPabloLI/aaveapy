@@ -1,4 +1,4 @@
-import { useAccount } from 'wagmi'
+import { useWallet } from './useWallet'
 import { useQuery } from '@tanstack/react-query'
 import { getV3UserPositionsMultiChain } from '@/lib/userData/aaveV3UserClient'
 import { getV4UserPositionsAllSpokes } from '@/lib/userData/aaveV4UserClient'
@@ -74,7 +74,7 @@ export function useUserPositions(
   v3AssetsByChain: Record<number, `0x${string}`[]>,
   v4ReservesBySpoke: Record<string, { reserveId: bigint; asset: `0x${string}` }[]>,
 ) {
-  const { address, isConnected } = useAccount()
+  const { address, isConnected } = useWallet()
 
   const query = useQuery({
     queryKey: ['user-positions', address ?? 'no-wallet'],
