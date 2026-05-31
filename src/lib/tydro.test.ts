@@ -103,6 +103,18 @@ describe('getMerklBreakdownApr', () => {
     );
     expect(apr).toBe(0);
   });
+
+  it('zeros out rewards for negative pointToUsdRate via fallback to default then zeros', () => {
+    const apr = getMerklBreakdownApr(
+      {
+        ...baseBreakdown,
+        campaignApr: 0,
+        pointsPerThousandUsd: 2,
+      },
+      -1
+    );
+    expect(apr).toBe(73);
+  });
 });
 
 describe('safePointToUsdRate', () => {
@@ -124,6 +136,40 @@ describe('safePointToUsdRate', () => {
 
   it('returns default for negative', () => {
     expect(safePointToUsdRate(-1)).toBe(1);
+  });
+});
+
+describe('safePointToUsdRate (via public API)', () => {
+  it('passes through zero rate — multiplier is 0', () => {
+    const multiplier = getMerklForecastUsdMultiplier(
+      { ...baseBreakdown, pointsPerThousandUsd: 2 },
+      0
+    );
+    expect(multiplier).toBe(0);
+  });
+
+  it('passes through positive rate — multiplier equals rate', () => {
+    const multiplier = getMerklForecastUsdMultiplier(
+      { ...baseBreakdown, pointsPerThousandUsd: 2 },
+      1.5
+    );
+    expect(multiplier).toBeCloseTo(1.5, 10);
+  });
+
+  it('falls back to default for NaN — multiplier is 1', () => {
+    const multiplier = getMerklForecastUsdMultiplier(
+      { ...baseBreakdown, pointsPerThousandUsd: 2 },
+      NaN
+    );
+    expect(multiplier).toBe(1);
+  });
+
+  it('falls back to default for negative — multiplier is 1', () => {
+    const multiplier = getMerklForecastUsdMultiplier(
+      { ...baseBreakdown, pointsPerThousandUsd: 2 },
+      -5
+    );
+    expect(multiplier).toBe(1);
   });
 });
 
