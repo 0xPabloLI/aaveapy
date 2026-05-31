@@ -77,25 +77,6 @@ export const getScenarioSupplySizeUsd = ({
   return rawAfterSize;
 };
 
-export const getTotalBorrowedUsd = ({
-  reserveSizeUsd,
-  utilizationPct,
-}: {
-  reserveSizeUsd: number | null | undefined;
-  utilizationPct: number | null | undefined;
-}): number | null => {
-  if (
-    reserveSizeUsd == null ||
-    utilizationPct == null ||
-    !Number.isFinite(reserveSizeUsd) ||
-    !Number.isFinite(utilizationPct)
-  ) {
-    return null;
-  }
-
-  return reserveSizeUsd * (utilizationPct / 100);
-};
-
 /**
  * Compute total borrowed (USD) directly from the reserve's on-chain
  * `totalVariableDebt` field (raw token units). This is the source of truth
@@ -158,25 +139,6 @@ export const getReserveAvailableLiquidityUsd = (reserve: {
   return tokens * tokenPrice;
 };
 
-export const getDerivedAvailableLiquidityUsd = ({
-  reserveSizeUsd,
-  totalBorrowedUsd,
-}: {
-  reserveSizeUsd: number | null | undefined;
-  totalBorrowedUsd: number | null | undefined;
-}): number | null => {
-  if (
-    reserveSizeUsd == null ||
-    totalBorrowedUsd == null ||
-    !Number.isFinite(reserveSizeUsd) ||
-    !Number.isFinite(totalBorrowedUsd)
-  ) {
-    return null;
-  }
-
-  return reserveSizeUsd - totalBorrowedUsd;
-};
-
 export const getAvailableToBorrowUsd = ({
   borrowedUsd,
   borrowCapUsd,
@@ -199,7 +161,7 @@ export const getAvailableToBorrowUsd = ({
   return Math.min(capRemaining, liquidityRemaining);
 };
 
-/* ─── V4-aware unified display functions ───
+/* ─── V4-aware unified helpers ───
  *
  * ## Hub-level vs Reserve-level data boundary
  *
@@ -212,8 +174,8 @@ export const getAvailableToBorrowUsd = ({
  *
  *   Reserve-level (from r.summary / r.settings, per-Spoke):
  *     reserveSize (supplied), supplyCap, borrowCap, totalVariableDebt,
- *     suppliable (派生: supplyCap - reserveSize, same-layer),
- *     borrowable (派生: min(borrowCap-debt, availableLiquidity), cross-layer)
+ *     suppliable (supplyCap - reserveSize, same-layer),
+ *     borrowable (min(borrowCap-debt, availableLiquidity), cross-layer)
  *
  * Cross-layer mixing rule:
  *   - supplyCap(reserve) - reserveSize(reserve) → same-layer, safe for V4
@@ -222,80 +184,7 @@ export const getAvailableToBorrowUsd = ({
  *     (verified against on-chain data, except when borrowDisabled=true)
  *   - reserveSize(reserve) * utilizationPct(hub) → cross-layer for V4,
  *     unreliable when reserveSize is a per-Spoke slice
- *
- * ## Fallback policy
- *
- * V3: All fields are Pool-level (single layer), so on-chain ?? derived is safe.
- * V4: On-chain field only — derived fallbacks that involve cross-layer
- *     reserveSize × utilizationPct are invalid. Return null (display "—" in UI).
- *
- * All three display functions share the same pattern:
- *   1. Try on-chain source of truth
- *   2. If null AND V3: fall back to derived calculation (same-layer, safe)
- *   3. If null AND V4: return null (unreliable or cross-layer derivation)
  */
-
-/**
- * V4-aware total borrowed (USD).
- * V3: on-chain borrowed ?? reserveSizeUsd * utilizationPct / 100
- *     (V3: both Pool-level, safe)
- * V4: on-chain borrowed only (no derived fallback —
- *     supplied(Reserve) * utilizationPct(Hub) is cross-layer)
- */
-export const getDisplayTotalBorrowedUsd = (
-  reserve: {
-    borrowed?: string | null;
-    decimals?: number | null;
-    tokenPrice?: number | null;
-    supplied?: string | null;
-    utilizationPct?: number | null;
-  },
-  protocolVersion: ProtocolVersion,
-): number | null => {
-  const onChain = getReserveTotalBorrowedUsd(reserve);
-  if (onChain != null) return onChain;
-  // V4: cross-layer — reserveSize(Reserve) × utilizationPct(Hub)
-  if (protocolVersion === 'v4') return null;
-  const reserveSizeUsd = nativeToUsd(reserve.supplied, reserve.decimals, reserve.tokenPrice);
-  return getTotalBorrowedUsd({
-    reserveSizeUsd,
-    utilizationPct: reserve.utilizationPct,
-  });
-};
-
-/**
- * V4-aware available liquidity (USD).
- * V3: on-chain liquidity ?? reserveSizeUsd - totalBorrowedUsd
- *     (V3: both Pool-level, safe)
- * V4: on-chain liquidity only (no derived fallback —
- *     liquidity is Hub-level while supplied - totalBorrowed
- *     is per-Spoke, fundamentally different quantities in V4)
- */
-export const getDisplayAvailableLiquidityUsd = (
-  reserve: {
-    liquidity?: string | null;
-    borrowed?: string | null;
-    decimals?: number | null;
-    tokenPrice?: number | null;
-    supplied?: string | null;
-    utilizationPct?: number | null;
-  },
-  protocolVersion: ProtocolVersion,
-): number | null => {
-  const onChain = getReserveAvailableLiquidityUsd(reserve);
-  if (onChain != null) return onChain;
-  // V4: availableLiquidity is Hub-level; reserveSize - totalBorrowed is per-Spoke
-  if (protocolVersion === 'v4') return null;
-  const reserveSizeUsd = nativeToUsd(reserve.supplied, reserve.decimals, reserve.tokenPrice);
-  const totalBorrowedUsd = getTotalBorrowedUsd({
-    reserveSizeUsd,
-    utilizationPct: reserve.utilizationPct,
-  });
-  return getDerivedAvailableLiquidityUsd({
-    reserveSizeUsd,
-    totalBorrowedUsd,
-  });
-};
 
 /**
  * Suppliable USD — how much more can be supplied.

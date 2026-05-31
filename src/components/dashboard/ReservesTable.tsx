@@ -51,7 +51,7 @@ import { parseNumberInput } from '@/lib/numberFormat';
 import type { ReservePositions } from '@/lib/netLendingCrossReserve';
 import { useSideDataMeta } from '@/hooks/useSideDataMeta';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
-import { getDisplayAvailableLiquidityUsd as computeDisplayAvailableLiquidityUsd, getDisplayTotalBorrowedUsd as computeDisplayTotalBorrowedUsd, getAvailableToBorrowUsd, nativeToUsd, getSuppliableUsd, getBorrowableUsd, getScenarioSupplySizeUsd } from '@/lib/scenarioSize';
+import { getAvailableToBorrowUsd, nativeToUsd, getSuppliableUsd, getBorrowableUsd, getScenarioSupplySizeUsd } from '@/lib/scenarioSize';
 import { getProtocolVersion } from '@/lib/protocolVersion';
 import ReservesTableDesktopSkeleton from './ReservesTableDesktopSkeleton';
 
@@ -411,12 +411,12 @@ const ReservesTable = ({
 
   const getTotalBorrowedUsd = (reserve: ReserveWithSpread): number | null => {
     const simulation = getSimulation(reserve);
-    return simulation?.marketMetrics.totalBorrowedUsd ?? computeDisplayTotalBorrowedUsd(reserve, getProtocolVersion(reserve.marketName));
+    return simulation?.marketMetrics.totalBorrowedUsd ?? null;
   };
 
   const getDisplayLiquidityUsd = (reserve: ReserveWithSpread): number | null => {
     const simulation = getSimulation(reserve);
-    return simulation?.marketMetrics.availableLiquidityUsd ?? computeDisplayAvailableLiquidityUsd(reserve, getProtocolVersion(reserve.marketName));
+    return simulation?.marketMetrics.availableLiquidityUsd ?? null;
   };
 
   const getDisplaySupplyAvailabilityUsd = (reserve: ReserveWithSpread): number | null => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { convertUsdToInputValue, getDisplayAvailableLiquidityUsd, getDisplayTotalBorrowedUsd, getReserveAvailableLiquidityUsd, getReserveTotalBorrowedUsd, getScenarioSupplySizeUsd, nativeToUsd, getSuppliableUsd, getBorrowableUsd } from './scenarioSize';
+import { convertUsdToInputValue, getReserveAvailableLiquidityUsd, getReserveTotalBorrowedUsd, getScenarioSupplySizeUsd, nativeToUsd, getSuppliableUsd, getBorrowableUsd } from './scenarioSize';
 
 describe('nativeToUsd', () => {
   it('converts raw token units to USD', () => {
@@ -163,71 +163,6 @@ describe('getReserveTotalBorrowedUsd', () => {
     expect(
       getReserveTotalBorrowedUsd({ borrowed: 'not-a-number', decimals: 6, tokenPrice: 1 }),
     ).toBeNull();
-  });
-});
-
-describe('getDisplayTotalBorrowedUsd', () => {
-  const v4Reserve = {
-    borrowed: '1037279054299',
-    decimals: 6,
-    tokenPrice: 1.0002,
-    supplied: '0',
-    utilizationPct: 93.14,
-  };
-
-  it('V3: uses on-chain borrowed when available', () => {
-    expect(getDisplayTotalBorrowedUsd(v4Reserve, 'v3')).toBeCloseTo(1037486.51, 2);
-  });
-
-  it('V4: uses on-chain borrowed when available', () => {
-    expect(getDisplayTotalBorrowedUsd(v4Reserve, 'v4')).toBeCloseTo(1037486.51, 2);
-  });
-
-  it('V3: falls back to derived native supplied * utilizationPct / 100 when on-chain unavailable', () => {
-    const noOnChain = { supplied: '1000000000000000000000', decimals: 18, tokenPrice: 1, utilizationPct: 50 };
-    expect(getDisplayTotalBorrowedUsd(noOnChain, 'v3')).toBe(500);
-  });
-
-  it('V4: returns null when on-chain unavailable (no derived fallback)', () => {
-    const noOnChain = { supplied: '0', decimals: 18, tokenPrice: 1, utilizationPct: 93.14 };
-    expect(getDisplayTotalBorrowedUsd(noOnChain, 'v4')).toBeNull();
-  });
-});
-
-describe('getDisplayAvailableLiquidityUsd', () => {
-  it('V3: uses on-chain liquidity when available', () => {
-    expect(
-      getDisplayAvailableLiquidityUsd({
-        liquidity: '76610908377',
-        decimals: 6,
-        tokenPrice: 1.0002,
-        supplied: '100000000000000',
-        utilizationPct: 50,
-      }, 'v3'),
-    ).toBeCloseTo(76626.23, 2);
-  });
-
-  it('V4: uses on-chain liquidity when available', () => {
-    expect(
-      getDisplayAvailableLiquidityUsd({
-        liquidity: '76610908377',
-        decimals: 6,
-        tokenPrice: 1.0002,
-        supplied: '0',
-        utilizationPct: 93.14,
-      }, 'v4'),
-    ).toBeCloseTo(76626.23, 2);
-  });
-
-  it('V3: falls back to derived supplied - totalBorrowed when on-chain unavailable', () => {
-    const noOnChain = { supplied: '1000000000000000000000', decimals: 18, tokenPrice: 1, utilizationPct: 50 };
-    // totalBorrowed = 1000 * 50/100 = 500, liquidity = 1000 - 500 = 500
-    expect(getDisplayAvailableLiquidityUsd(noOnChain, 'v3')).toBe(500);
-  });
-
-  it('V4: returns null when on-chain unavailable (no derived fallback)', () => {
-    const noOnChain = { supplied: '0', decimals: 18, tokenPrice: 1, utilizationPct: 93.14 };
-    expect(getDisplayAvailableLiquidityUsd(noOnChain, 'v4')).toBeNull();
   });
 });
 

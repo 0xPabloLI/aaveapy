@@ -79,10 +79,13 @@ export interface BrevisIncentive extends Omit<CampaignGroup<BrevisCampaignBreakd
  * All USD values MUST be derived in the frontend through the canonical
  * helpers in `src/lib/scenarioSize.ts`:
  *   - `nativeToUsd(raw, decimals, tokenPrice)` — base primitive
- *   - `getDisplayReserveSizeUsd` / `getDisplayTotalBorrowedUsd` /
- *     `getDisplayAvailableLiquidityUsd` — V4-aware display values
+ *   - `getDisplayReserveSizeUsd` — V4-aware reserve size display
  *   - `getSuppliableUsd` / `getBorrowableUsd` / `getAvailableToBorrowUsd`
  *   - `getReserveTvlUsd` (for portfolio search)
+ *
+ * Borrowed and liquidity values are provided by simulation
+ * (`marketMetrics.totalBorrowedUsd`, `marketMetrics.availableLiquidityUsd`)
+ * which include Hub aggregation for V4.
  *
  * Each banned key is typed as `never` so any access like
  * `reserve.reserveSizeUsd` produces a TypeScript error and the build

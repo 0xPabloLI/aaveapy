@@ -30,7 +30,7 @@ import {
 import { isSupplyDisabled, isBorrowDisabled } from '@/lib/reserveStatus';
 import type { RateSimulationResult } from '@/lib/rateSimulationCalculator';
 
-import { getDisplayAvailableLiquidityUsd, getDisplayTotalBorrowedUsd, nativeToUsd, getScenarioSupplySizeUsd } from '@/lib/scenarioSize';
+import { nativeToUsd, getScenarioSupplySizeUsd } from '@/lib/scenarioSize';
 import { buildPoolExplorerUrl } from '@/lib/poolExplorerLinks';
 import { getProtocolVersion } from '@/lib/protocolVersion';
 import { cn } from '@/lib/utils';
@@ -572,11 +572,11 @@ const MobileReserveCard = memo(({
       tokenPrice: displayTokenPrice,
     });
   })();
-  const baseTotalBorrowedUsd = simulation?.marketMetrics.totalBorrowedUsd ?? getDisplayTotalBorrowedUsd(reserve, protocolVersion);
+  const baseTotalBorrowedUsd = simulation?.marketMetrics.totalBorrowedUsd ?? null;
   const totalBorrowedUsd = useBorrowAfter
     ? simulation?.marketMetrics.totalBorrowedUsdAfter ?? baseTotalBorrowedUsd
     : baseTotalBorrowedUsd;
-  const baseAvailableLiquidityUsd = simulation?.marketMetrics.availableLiquidityUsd ?? getDisplayAvailableLiquidityUsd(reserve, protocolVersion);
+  const baseAvailableLiquidityUsd = simulation?.marketMetrics.availableLiquidityUsd ?? null;
   const availableLiquidityUsd = useBorrowAfter
     ? simulation?.marketMetrics.availableLiquidityUsdAfter ?? baseAvailableLiquidityUsd
     : baseAvailableLiquidityUsd;
