@@ -87,16 +87,108 @@ Minus 按钮条件逻辑：wallet 来源 → toggleHidden；manual 来源 → �
 ### M4: 旧 prototype 清理 ✅
 - 删除 PortfolioImportModalProto.tsx + PortfolioImportProto.tsx + App.tsx 引用/路由
 
-## 剩余待做（按优先级）
+## Grill 验证结论（Session 2 完成）
+
+### Q1: `chainIdLookup.ts` → ❌ 不需要
+- `campaignId→reserveId` 关系已通过数据嵌套隐含（`reserve.merklSupplys[].breakdowns[].campaignId`）
+- `campaignAccess` payload 按 `campaignId` 索引，IncentiveTooltip 直接查表
+- `offsetReserveIds` 存的就是 reserveId 格式字符串，通过现有 `Map<reserveId, ReservePositions>` 做 O(1) 查找
+
+### Q2: `PortfolioImportModal` → ❌ 不需要 Modal
+- 连钱包 = 自动导入，静默 merge + toast，永远不需要用户确认
+- **plan Phase 3（627-635 行）的预览 Modal + Merge/Replace/Append 三选一 + 确认按钮 → 必须删除**
+- Prototype `PortfolioMergeProto.tsx` 10 个场景全部用 toast / inline 提示，无 Modal
+
+### Q3: Merkl Rewards 展示区
+- **位置**：PortfolioPanel 内，Portfolio 子区，钱包连接后才可见
+- **形式**：详细行列表——每个 MerklClaimable 一行：token symbol + chain + claimable amount + 已领取/待结算 + breakdown 折叠
+- **数据层**：已完成（`merklUserClient.ts`），缺 hook 层（`useMerklRewards` / `useUserClaimable`）和 UI 层
+
+### Q4: SDK 首选路径 ✅ 完全确认
+
+#### 降级策略 = 方案 B（按版本独立降级）
+- V3 SDK 挂 → V3 走 viem；V4 SDK 挂 → V4 走 viem；各自独立
+- 理由：V3 和 V4 是完全不同的 SDK 实例和 API，故障不相关
+
+#### V3 SDK
+- **前端包**：`@aave/react@^0.9.1`（npm `@latest` tag）— 封装了 `@aave/client@0.11.0` + React hooks + AaveProvider
+- **后端包**：`@aave/client@^0.6.1`（纯 client，无 React）
+- **官方 V3 前端同款**（`/Users/pabloli/Documents/code/interface/` 已验证：`@aave/react@0.9.1` + `@aave/graphql@0.12.0` + `@aave/contract-helpers@1.38.0`）
+- **仓位路径 B（推荐）**：`userSupplies` + `userBorrows` 独立查询（字段完整：isCollateral/apy/balance.usd/debt.usd/currency）
+- **仓位路径 A（补充）**：`markets({ chainIds, user })` → `Market.userState`（聚合指标：healthFactor/netAPY/netWorth）
+- **Client 创建**：`AaveClient.create({ environment: production })`
+
+#### V4 SDK
+- **前端包**：`@aave/react@^4.2.0`（npm `@next` tag）— 封装了 `@aave/client@4.2.0` + React hooks + AaveProvider + Suspense/Pausable
+- **后端包**：`@aave/client@^4.2.0`（aliased as `@aave/client-v4`，纯 client，无 React）
+- **官方文档推荐 `@next`**，后端 repo 同策略
+- **Client 创建**：`AaveClient.create()`（无需 environment 参数）
+- **仓位 hook**：`useUserPositions` / `useUserSupplies` / `useUserBorrows`
+- **摘要 hook**：`useUserSummary`（healthFactor/netApy/netBalance）
+- **奖励 hook**：`useUserClaimableRewards` → `UserMerklClaimableReward`
+- **V4 特有**：Suspense + Pausable + Action hooks + `@aave/react/viem` sub-path export
+
+#### V3 vs V4 对比
+
+| 维度 | V3 SDK | V4 SDK |
+|---|---|---|
+| 前端包 | `@aave/react@^0.9.1` (`@latest`) | `@aave/react@^4.2.0` (`@next`) |
+| 后端包 | `@aave/client@^0.6.1` | `@aave/client@^4.2.0` |
+| Client 创建 | `AaveClient.create({ environment: production })` | `AaveClient.create()` |
+| 仓位 hook | `useUserSupplies` / `useUserBorrows` | `useUserSupplies` / `useUserBorrows` / `useUserPositions` |
+| isCollateral | ✅ `MarketUserReserveSupplyPosition.isCollateral` | ✅ `UserSupplyItem.isCollateral` |
+| USD 换算 | ✅ `TokenAmount.usd` | ✅ `Erc20Amount.exchange.value` |
+| healthFactor | ✅ per-market `MarketUserState.healthFactor` | ✅ `UserPosition.healthFactor.current` / `UserSummary.lowestHealthFactor` |
+| 奖励 | `useUserMeritRewards` | `useUserClaimableRewards` |
+| Suspense/Pausable | ❌ | ✅ |
+| Action hooks | ❌ | ✅ |
+| viem sub-path | ❌ | ✅ `@aave/react/viem` |
+
+#### V4 类型字段映射（从 graphql fragments 源码确认 ✅）
+
+| SDK 类型 | 关键字段 | 映射到项目 |
+|---|---|---|
+| `UserSupplyItem` | `isCollateral: boolean`, `balance.exchange.value` (USD) | `WalletPosition.isCollateral`, `WalletPosition.amountUsd` |
+| `UserBorrowItem` | `debt.exchange.value` (USD) | `WalletPosition.amountUsd` |
+| `UserPosition` | `healthFactor.current`, `netApy`, `netBalance` | Portfolio 聚合指标 |
+| `UserClaimableReward` | `claimable: Erc20Amount` (token+amount+exchange) | `MerklClaimable` |
+| `UserSummary` | `lowestHealthFactor`, `netApy` | 全局摘要 |
+| `Erc20Amount` | `amount.value`, `exchange.value` (USD), `token.info.symbol` | 金额+USD换算 |
+
+#### 分工原则
+- **前端用 `@aave/react`**（React hooks 封装），**后端用 `@aave/client`**（纯 Node.js client）
+- 两条版本线一致（V3: 0.x / V4: 4.2.0），只是前端多了 React 层
+
+## 剩余待做（按优先级，grill 后更新）
 
 | # | Item | 依赖 | 备注 |
 |---|------|------|------|
-| 1 | **chainIdLookup.ts** — reserveId 回写反查表 + 单测 | M3 | 准入标记需要 chainId↔reserveId 映射 |
-| 2 | **PortfolioImportModal** — 连钱包=自动导入，静默 merge + toast | M2 | 需 mergePositions / importPositions |
-| 3 | **Merkl Rewards 展示区** — merklUserClient + UI | M1 | 需 Merkl SDK 用户奖励查询 |
-| 4 | **SDK 首选路径** | M3 | 延后 |
+| 1 | **SDK 首选路径** — 安装 `@aave/react` + 实现 SDK hook + viem fallback | M3 | V3: `@aave/react@^0.9.1` / V4: `@aave/react@^4.2.0` |
+| 2 | **Portfolio 自动导入** — 连钱包=静默 merge + toast（无 Modal） | M2 | 需 mergePositions / importPositions；删除 plan Phase 3 Modal |
+| 3 | **Merkl Rewards 展示区** — hook 层 + UI | M1 | 数据层已有 `merklUserClient.ts`；放 PortfolioPanel 内 |
+
+## PRD & Linear
+
+- PRD 已发布到 Linear（project id: `69e00ecd-f6fe-4218-a3e6-fc459cf19edc`），没有单独的 PRD 文档文件
+- PRD Document id: `db0dfcab-e233-424d-8d6b-2a0cf435a8f6`
 
 ## 关键文件索引
+
+### 用户仓位数据链路（SDK 实现重点）
+- `src/hooks/useUserPositions.ts` — 当前只有 viem multicall，**需改为 SDK 首选 + onchain fallback**
+- `src/lib/userData/userPositionMapper.ts` — WalletPosition 类型（已预留 `source: 'sdk'` 但未使用）
+- `src/lib/userData/onchainPositionConverter.ts` — V3/V4 onchain → WalletPosition 转换（已完成）
+- `src/lib/userData/aaveV3UserClient.ts` — V3 viem multicall（已完成，将降级为 fallback）
+- `src/lib/userData/aave-v4UserClient.ts` — V4 viem multicall（已完成，将降级为 fallback）
+- `src/lib/userData/merklUserClient.ts` — Merkl SDK API + Zod schema + MerklClaimable 类型（已完成）
+- `package.json` — **需新增 `@aave/react@^0.9.1` + `@aave/react@^4.2.0`**
+
+### Aave SDK 本地源码（只读参考）
+- V3 官方前端：`/Users/pabloli/Documents/code/interface/`（`@aave/react@0.9.1` 用法参考）
+- V4 SDK monorepo：`/Users/pabloli/Documents/code/aave-v4-sdk/`（4.2.0，hooks + fragments 源码）
+  - `packages/graphql/src/fragments/` — V4 类型定义（user.ts / rewards.ts / common.ts / reserve.ts）
+  - `packages/react/src/` — V4 React hooks（user.ts / rewards.ts）
+- 后端 repo：`/Users/pabloli/Documents/code/aave-protocol-analysis/`（`@aave/client` dual-version 策略参考，后端 V3 用 `@aave/client@^0.6.1`，V4 用 `@aave/client@^4.2.0`，均为纯 client 非 React）
 
 ### 准入标记相关（M3）
 - `src/hooks/useCampaignAccess.ts` (69行) — `getUserCampaignStatus()` + `useCampaignAccess()` hook

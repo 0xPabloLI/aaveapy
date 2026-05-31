@@ -52,6 +52,16 @@ _Avoid_: Net Rule, Net Lending Rule, Offset Rule, direction
 Net Position Constraint 中被抵消的那一侧的 token。例如 USDT0 supply minus USDT0+USDe+GHO borrows 中，USDT0/USDe/GHO 是 offset tokens，`sourceSide` 为 supply。
 _Avoid_: Deduction Token, Exclusion Token
 
+## Campaign Access
+
+**Campaign Whitelist**:
+Per-campaign address allowlist. A non-empty whitelist means only listed addresses are eligible; others get status 'whitelist-blocked'. An empty whitelist means the campaign is public (any address eligible).
+_Avoid_: Allowlist（保留 whitelist 跟协议原词）
+
+**Campaign Blacklist**:
+Per-campaign address blocklist. Addresses on this list are excluded from campaign APR contributions in portfolio simulation, but the campaign itself remains active for other users.
+_Avoid_: Blocklist
+
 ## Limits
 
 **Deposit Ceiling**:
@@ -84,6 +94,41 @@ _Avoid_: Composite key, (underlyingAsset, chainId) pair
 Market chip 外链优先级：tydro > aaveV4MarketUrl (spoke) > aaveMarketUrl (V3)。`buildAaveUrl` 统一入口：V4 优先于 V3。
 
 _Avoid_: `buildAavePro*`（已重命名为 `buildAaveV4*`），`AAVE_PRO_BASE`（已重命名为 `AAVE_V4_BASE`）
+
+## Wallet Portfolio
+
+**Onchain Fallback**:
+SDK GraphQL（主路径，跨链）失败时，从 `@aave-dao/aave-address-book` 提取 chain ID 集合，逐链并行查 RPC 的 Pool/Spoke 合约。不硬编码链列表。
+_Avoid_: private RPC（前端只用 public RPC）
+
+**V3 Fallback Path**:
+`Pool.getUserReserveData(asset, user)` → `currentATokenBalance` / `currentStableDebt` / `currentVariableDebt`（直接值，零换算）。合约地址从 address-book 取。
+_Avoid_: UiPoolDataProvider（缩放值需额外换算，已否决）
+
+**V4 Fallback Path**:
+Spoke 串行，同 Spoke 内 Multicall3 批量。`getUserSuppliedAssets`/`getUserDebt`（直接值零换算）。`totalDebtValueRay` 入口处统一 `/ RAY` 降精度。合约地址从 address-book 取。
+
+**Spoke Discovery**:
+遍历 address-book 中所有 Spoke，Multicall3 批量聚合查询。不做"先探再查"。
+_Avoid_: 后端 reserves 推断（可能遗漏新 Spoke）
+
+**Portfolio Merge**:
+同 token 同 side = 替换（链上为准）；同 token 不同 side = 加缺失 side；全新 token = 直接加入；链上没有但 Simulator 有 = 保留；找不到 reserveId = orphan。
+
+**Dual-Value Tracking**:
+`walletValue: number | null`（链上值，null = 钱包无/断连）+ `currentValue: number`（Simulator 当前值）+ `hidden: boolean`（soft delete）。三态视觉：🟢 钱包同步未改、🟡 钱包同步已改（可恢复）、⚪ 纯手动。
+
+**Wallet Disconnect Behavior**:
+断连时 `walletValue → null`，`currentValue` 保持不变。重连时重新 sync 刷新 walletValue。
+_Avoid_: 清空 currentValue（用户可能还在操作 Simulator）
+
+**Soft Delete**:
+方案 A+沉底：灰+沉底+EyeOff 图标+点击恢复一步操作。Resync 时 hidden → 强制 unhidden。
+_Avoid_: 完全隐藏（用户不知道仓位存在）、Undo 机制
+
+**Watch Mode UI**:
+Header + PortfolioPanel 两处入口。Header 图标点击 → RainbowKit 弹窗（watchMode connector 作为钱包选项嵌入）→ 选后弹窗关闭 → Header 地址区内联展开输入框 → Enter 确认 / ESC 取消。已连接状态：地址缩略 + 下拉菜单（disconnect/switch）。Watch mode 用 Eye 图标 + tooltip "Viewing" 区分于钱包连接的绿色点。输入框支持 ENS 实时解析（debounce 300ms + useEnsName）。移动端：圆形钱包图标（同 FAQ/Clock 按钮）+ 连接后缩略地址。
+_Avoid_: 行内常驻输入框（占 Header 空间）、二次弹窗输入地址
 
 ---
 
