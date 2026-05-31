@@ -5,11 +5,13 @@ import { resolvePositionMeta } from './userPositionMapper'
 const WAD = 10n ** 18n
 
 function decimalToWad(value: string, decimals: number): bigint {
+  if (!value || value.trim() === '') return 0n
   const negative = value.startsWith('-')
   const abs = negative ? value.slice(1) : value
   const [intPart, fracPart = ''] = abs.split('.')
+  if (!intPart && !fracPart) return 0n
   const paddedFrac = (fracPart + '0'.repeat(18)).slice(0, 18)
-  const wadValue = BigInt(intPart) * WAD + BigInt(paddedFrac)
+  const wadValue = BigInt(intPart || '0') * WAD + BigInt(paddedFrac || '0')
   return negative ? -wadValue : wadValue
 }
 
@@ -35,7 +37,13 @@ interface SdkBorrowPosition {
 }
 
 function extractChainId(chainIdStr: string): number {
-  return Number(chainIdStr)
+  const id = Number(chainIdStr)
+  return Number.isInteger(id) ? id : -1
+}
+
+function toSafeUsd(value: string, tokenPrice: number): number {
+  const raw = parseFloat(value) * tokenPrice
+  return Number.isFinite(raw) ? raw : 0
 }
 
 function sdkSupplyToWalletPosition(
@@ -61,7 +69,7 @@ function sdkSupplyToWalletPosition(
     tokenSymbol: meta.tokenSymbol || supply.reserve.symbol,
     side: 'supply',
     amountWad,
-    amountUsd: Number(supply.balance.amount.value) * meta.tokenPrice,
+    amountUsd: toSafeUsd(supply.balance.amount.value, meta.tokenPrice),
     isCollateral: supply.isCollateral,
     source,
     isOrphan,
@@ -91,7 +99,7 @@ function sdkBorrowToWalletPosition(
     tokenSymbol: meta.tokenSymbol || borrow.reserve.symbol,
     side: 'borrow',
     amountWad,
-    amountUsd: Number(borrow.debt.amount.value) * meta.tokenPrice,
+    amountUsd: toSafeUsd(borrow.debt.amount.value, meta.tokenPrice),
     isCollateral: false,
     source,
     isOrphan,

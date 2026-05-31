@@ -91,11 +91,12 @@ export function useUserPositionsSdk(
   const { address, isConnected } = useWallet()
 
   const enabled = isConnected && !!address
+  const account = (enabled ? address : undefined) as `0x${string}`
 
-  const v3Supplies = useV3UserSupplies({ account: address! }, { enabled })
-  const v3Borrows = useV3UserBorrows({ account: address! }, { enabled })
-  const v4Supplies = useV4UserSupplies({ account: address! }, { enabled })
-  const v4Borrows = useV4UserBorrows({ account: address! }, { enabled })
+  const v3Supplies = useV3UserSupplies({ account }, { enabled })
+  const v3Borrows = useV3UserBorrows({ account }, { enabled })
+  const v4Supplies = useV4UserSupplies({ account }, { enabled })
+  const v4Borrows = useV4UserBorrows({ account }, { enabled })
 
   const sdkLoading = v3Supplies.loading || v3Borrows.loading || v4Supplies.loading || v4Borrows.loading
   const v3SdkFailed = !!v3Supplies.error || !!v3Borrows.error
