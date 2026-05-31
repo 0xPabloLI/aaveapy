@@ -16,6 +16,8 @@ import { fetchSideDataMeta, SIDE_DATA_META_QUERY_KEY } from "@/hooks/useSideData
 import { QUERY_STALE_TIMES } from "@/config/queryStaleTimes";
 import { clearLegacyCacheEntries } from "@/lib/cache";
 import { wagmiConfig } from "@/lib/wagmi/config";
+import { AaveProviders } from "@/providers/AaveProviders";
+import { SdkErrorBoundary } from "@/providers/SdkErrorBoundary";
 import "@/i18n";
 
 // Lazy load route components
@@ -66,7 +68,9 @@ const App = () => (
           theme={{ lightMode: lightTheme(), darkMode: darkTheme() }}
           modalSize="compact"
         >
-          <TooltipProvider delayDuration={200}>
+          <SdkErrorBoundary>
+            <AaveProviders>
+            <TooltipProvider delayDuration={200}>
             <Toaster />
             <Sonner />
             <BrowserRouter future={{ v7_relativeSplatPath: true }}>
@@ -91,6 +95,8 @@ const App = () => (
             <Analytics />
             <SpeedInsights />
           </TooltipProvider>
+            </AaveProviders>
+          </SdkErrorBoundary>
         </RainbowKitProvider>
       </QueryClientProvider>
     </WagmiProvider>

@@ -1,6 +1,10 @@
-import type { WalletPosition } from './userData/userPositionMapper'
+import type { WalletPosition, WalletPositionSource } from './userData/userPositionMapper'
 import type { ReserveWithSpread } from '@/types/aave'
-import type { PortfolioPosition } from '@/types/portfolio'
+import type { PortfolioPosition, PositionSource } from '@/types/portfolio'
+
+function walletSourceToPositionSource(src: WalletPositionSource): PositionSource {
+  return src
+}
 
 export function convertWalletPositionsToPortfolio(
   walletPositions: WalletPosition[],
@@ -33,6 +37,7 @@ export function convertWalletPositionsToPortfolio(
       walletValue: wp.amountUsd,
       hidden: false,
       isOrphan: wp.isOrphan,
+      source: walletSourceToPositionSource(wp.source),
     })
   }
 

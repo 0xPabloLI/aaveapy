@@ -2,7 +2,10 @@ import { useState, useMemo, useCallback, useEffect, useRef, startTransition } fr
 import { useSearchParams } from 'react-router-dom';
 import type { SimulationMode } from '@/components/dashboard/PortfolioModeToggle';
 import { usePortfolioSimulation } from '@/hooks/usePortfolioSimulation';
-import { useUserPositions, type WalletLoadState } from '@/hooks/useUserPositions';
+import { useUserPositionsSdk, type WalletLoadState } from '@/hooks/useUserPositionsSdk';
+import { useUserClaimableRewardsSdk, type ClaimableRewardData } from '@/hooks/useUserClaimableRewardsSdk';
+import { useWalletAutoImport } from '@/hooks/useWalletAutoImport';
+import { useWallet } from '@/hooks/useWallet';
 import { useCampaignAccess } from '@/hooks/useCampaignAccess';
 import { useIsFetching } from '@tanstack/react-query';
 import { useAaveMarkets } from '@/hooks/useAaveMarkets';
@@ -273,10 +276,31 @@ const Index = () => {
   );
   const hasReserves = stableReserves.length > 0;
 
-  // Wallet onchain position sync
+  // Wallet position sync (SDK-first + on-chain fallback)
   const v3AssetsByChain = useMemo(() => deriveV3AssetsByChain(stableReserves), [stableReserves]);
   const v4ReservesBySpoke = useMemo(() => deriveV4ReservesBySpoke(stableReserves), [stableReserves]);
-  const { walletLoadState, result: walletResult } = useUserPositions(stableReserves, v3AssetsByChain, v4ReservesBySpoke);
+  const {
+    walletLoadState,
+    result: walletResult,
+    v3SdkFailed,
+    v4SdkFailed,
+  } = useUserPositionsSdk(stableReserves, v3AssetsByChain, v4ReservesBySpoke);
+
+  const { data: claimableRewards, loading: claimableRewardsLoading } = useUserClaimableRewardsSdk();
+
+  const { address: walletAddress, isConnected: walletConnected } = useWallet();
+
+  // Auto-import: wallet connect → SDK query → merge → toast
+  useWalletAutoImport({
+    address: walletAddress,
+    isConnected: walletConnected,
+    walletLoadState,
+    walletResult,
+    v3SdkFailed,
+    v4SdkFailed,
+    reserves: stableReserves,
+    portfolioActions: portfolio.actions,
+  });
 
   const handleWalletSync = useCallback(() => {
     if (walletResult.status === 'success' || walletResult.status === 'partial') {
@@ -628,6 +652,8 @@ const Index = () => {
               portfolioSnapshots={portfolio.snapshots}
               onWalletSync={handleWalletSync}
               walletLoadState={walletLoadState}
+              claimableRewards={claimableRewards}
+              claimableRewardsLoading={claimableRewardsLoading}
               onRefresh={handleRefresh}
               dataUpdatedAt={dataUpdatedAt}
               topOppsRef={topOppsRef}

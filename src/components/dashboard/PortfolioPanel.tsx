@@ -6,15 +6,17 @@
  * so users can fill in either / both amounts directly without picking a side.
  */
 import { useState, useMemo, useEffect, useRef, memo, useCallback, lazy, Suspense } from 'react';
-import { Search, X, Layers, Trash2, Save, ArrowRightLeft, Check, RefreshCw, Wallet } from 'lucide-react';
+import { Search, X, Layers, Trash2, Save, ArrowRightLeft, Check, RefreshCw, Wallet, Gift } from 'lucide-react';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { formatUsd } from '@/lib/formatters';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { ReserveWithSpread } from '@/types/aave';
 import type { PortfolioPosition, PortfolioPositionResult, PortfolioSummary, PortfolioSnapshot } from '@/types/portfolio';
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
 import type { WalletLoadState } from '@/hooks/useUserPositions';
+import type { ClaimableRewardData } from '@/hooks/useUserClaimableRewardsSdk';
 import { normalizeTokenSymbolForSearch } from '@/lib/tokenSymbolNormalization';
 import { filterAndRankReservesForPortfolioSearch, getReserveTvlUsd, PORTFOLIO_SEARCH_HARD_LIMIT } from '@/lib/portfolioSearch';
 import { isStablecoinSymbol, isEthRelatedSymbol, isBtcRelatedSymbol } from '@/lib/tokenCategories';
@@ -46,6 +48,10 @@ interface PortfolioPanelProps {
   onWalletSync?: () => void;
   /** Wallet position loading state. */
   walletLoadState?: WalletLoadState;
+  /** Merkl claimable rewards from SDK. */
+  claimableRewards?: ClaimableRewardData[];
+  /** Whether claimable rewards are loading. */
+  claimableRewardsLoading?: boolean;
 }
 
 /**
@@ -189,6 +195,8 @@ const PortfolioPanel = memo(function PortfolioPanel({
   snapshots = [],
   onWalletSync,
   walletLoadState,
+  claimableRewards,
+  claimableRewardsLoading,
 }: PortfolioPanelProps) {
   const isMobile = useIsMobile();
   const [searchQuery, setSearchQuery] = useState('');
@@ -507,6 +515,34 @@ const PortfolioPanel = memo(function PortfolioPanel({
             {walletLoadState === 'error' && (
               <span className="text-destructive/80">Wallet sync failed</span>
             )}
+          </div>
+        )}
+
+        {/* Merkl claimable rewards */}
+        {claimableRewardsLoading && (
+          <div className="flex items-center gap-1.5 mb-2.5 ds-text-11 text-muted-foreground">
+            <Gift className="size-3 animate-pulse" aria-hidden /> Loading rewards…
+          </div>
+        )}
+        {!claimableRewardsLoading && claimableRewards && claimableRewards.length > 0 && (
+          <div className="mb-2.5 rounded-lg border border-border/40 bg-muted/20 px-2.5 py-2">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <Gift className="size-3 text-emerald-600 dark:text-emerald-400" aria-hidden />
+              <span className="ds-text-11 font-semibold text-foreground">Merkl Rewards</span>
+            </div>
+            <div className="flex flex-wrap gap-x-3 gap-y-1">
+              {claimableRewards.map((reward) => (
+                <span
+                  key={reward.id}
+                  className="inline-flex items-center gap-1 ds-text-11 text-muted-foreground"
+                  title={`Claimable ${reward.symbol} reward (${reward.startDate} → ${reward.endDate})`}
+                >
+                  <TokenIcon symbol={reward.symbol} size={12} />
+                  <span className="font-medium text-foreground">{formatUsd(reward.claimable)}</span>
+                  <span>{reward.symbol}</span>
+                </span>
+              ))}
+            </div>
           </div>
         )}
 

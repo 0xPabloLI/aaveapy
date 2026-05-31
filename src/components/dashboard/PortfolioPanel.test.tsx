@@ -160,4 +160,69 @@ describe('PortfolioPanel', () => {
     );
     expect(container.innerHTML).not.toContain('position-results');
   });
+
+  it('renders Merkl rewards section when claimableRewards are provided', () => {
+    const reserves = [makeReserve('USDC')];
+    const claimableRewards = [
+      { id: 'r1', claimable: 12.34, symbol: 'USDC', startDate: '2025-01-01', endDate: '2025-06-01', claimUntil: '2025-12-01' },
+      { id: 'r2', claimable: 0.56, symbol: 'ETH', startDate: '2025-01-01', endDate: '2025-06-01', claimUntil: '2025-12-01' },
+    ];
+    render(
+      <WagmiProvider config={testWagmiConfig}>
+        <QueryClientProvider client={new QueryClient()}>
+          <RainbowKitProvider>
+            <PortfolioPanel
+              positions={[]}
+              actions={makeActions()}
+              reserves={reserves}
+              claimableRewards={claimableRewards}
+              claimableRewardsLoading={false}
+            />
+          </RainbowKitProvider>
+        </QueryClientProvider>
+      </WagmiProvider>,
+    );
+    expect(screen.getByText('Merkl Rewards')).toBeInTheDocument();
+    expect(screen.getAllByText('USDC').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('ETH').length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('shows loading state for Merkl rewards', () => {
+    const reserves = [makeReserve('USDC')];
+    render(
+      <WagmiProvider config={testWagmiConfig}>
+        <QueryClientProvider client={new QueryClient()}>
+          <RainbowKitProvider>
+            <PortfolioPanel
+              positions={[]}
+              actions={makeActions()}
+              reserves={reserves}
+              claimableRewardsLoading={true}
+            />
+          </RainbowKitProvider>
+        </QueryClientProvider>
+      </WagmiProvider>,
+    );
+    expect(screen.getByText(/loading rewards/i)).toBeInTheDocument();
+  });
+
+  it('does not render Merkl section when rewards array is empty', () => {
+    const reserves = [makeReserve('USDC')];
+    const { queryByText } = render(
+      <WagmiProvider config={testWagmiConfig}>
+        <QueryClientProvider client={new QueryClient()}>
+          <RainbowKitProvider>
+            <PortfolioPanel
+              positions={[]}
+              actions={makeActions()}
+              reserves={reserves}
+              claimableRewards={[]}
+              claimableRewardsLoading={false}
+            />
+          </RainbowKitProvider>
+        </QueryClientProvider>
+      </WagmiProvider>,
+    );
+    expect(queryByText('Merkl Rewards')).not.toBeInTheDocument();
+  });
 });

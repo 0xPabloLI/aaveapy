@@ -6,6 +6,9 @@ export type PortfolioInputMode = 'usd' | 'token';
 /** Wallet sync visual tri-state for a position row. */
 export type WalletSyncState = 'synced' | 'modified' | 'manual';
 
+/** Source of the position data — SDK preferred, onchain viem fallback, or manual entry. */
+export type PositionSource = 'sdk' | 'onchain-v3' | 'onchain-v4' | 'manual';
+
 /** A single position in the portfolio (one token, one side). */
 export interface PortfolioPosition {
   /** Unique key for this position within the portfolio (client-generated). */
@@ -28,6 +31,8 @@ export interface PortfolioPosition {
   hidden: boolean;
   /** Whether this position is an orphan (reserveId not found in market data). */
   isOrphan: boolean;
+  /** Data source of this position — SDK preferred, onchain viem fallback, or manual entry. */
+  source?: PositionSource;
 }
 
 /** Computed result for a single position after simulation. */

@@ -1,5 +1,5 @@
 import { memo, useCallback } from 'react';
-import { Eraser, Minus, Wallet, EyeOff } from 'lucide-react';
+import { Eraser, Minus, Wallet, EyeOff, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatNumberInput } from '@/lib/numberFormat';
 import { cnDsInputSurface } from '@/lib/dsInputSurface';
@@ -36,8 +36,14 @@ function WalletSyncIndicator({ position, onRestore }: {
   const state = getWalletSyncState(position);
 
   if (state === 'synced') {
+    const isSdk = position.source === 'sdk';
     return (
-      <Wallet className="size-3.5 shrink-0 text-emerald-500" aria-label="Synced from wallet" />
+      <div className="relative shrink-0">
+        <Wallet className="size-3.5 text-emerald-500" aria-label={isSdk ? 'Synced from SDK' : 'Synced from wallet'} />
+        {isSdk && (
+          <Zap className="absolute -bottom-0.5 -right-1 size-2 text-indigo-400 fill-indigo-400" aria-hidden />
+        )}
+      </div>
     );
   }
 

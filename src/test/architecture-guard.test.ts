@@ -182,3 +182,49 @@ describe('Architecture guard: no lib→hook import direction violations', () => 
     expect(violations, violations.join('\n')).toEqual([]);
   });
 });
+
+describe('Architecture guard: WalletPositionSource and PositionSource must stay in sync', () => {
+  it('both type unions contain the same set of non-manual values', () => {
+    const mapperSrc = readFile('lib/userData/userPositionMapper.ts');
+    const portfolioSrc = readFile('types/portfolio.ts');
+
+    const mapperMatch = mapperSrc.match(/type WalletPositionSource\s*=\s*([^;\n]+)/);
+    const portfolioMatch = portfolioSrc.match(/type PositionSource\s*=\s*([^;\n]+)/);
+
+    expect(mapperMatch, 'WalletPositionSource type definition not found').toBeTruthy();
+    expect(portfolioMatch, 'PositionSource type definition not found').toBeTruthy();
+
+    const parseUnion = (raw: string): Set<string> => {
+      const values = raw.match(/'[^']+'/g) ?? [];
+      return new Set(values.map(v => v.slice(1, -1)));
+    };
+
+    const walletSources = parseUnion(mapperMatch![1]);
+    const positionSources = parseUnion(portfolioMatch![1]);
+
+    const walletOnly = [...walletSources].filter(v => !positionSources.has(v));
+    const positionOnly = [...positionSources].filter(v => !walletSources.has(v) && v !== 'manual');
+
+    expect(
+      { walletOnly, positionOnly },
+      'WalletPositionSource and PositionSource (excluding manual) must match. ' +
+      `Only in WalletPositionSource: ${walletOnly}. Only in PositionSource: ${positionOnly}.`,
+    ).toEqual({ walletOnly: [], positionOnly: [] });
+  });
+});
+
+describe('Architecture guard: convertWalletPositionsToPortfolio must preserve source field', () => {
+  it('converter output includes source: walletSourceToPositionSource(wp.source)', () => {
+    const src = readFile('lib/walletPositionToPortfolio.ts');
+    expect(
+      src,
+      'convertWalletPositionsToPortfolio must set source from walletSourceToPositionSource',
+    ).toMatch(/source:\s*walletSourceToPositionSource\(wp\.source\)/);
+  });
+
+  it('walletSourceToPositionSource function exists and is not a no-op placeholder', () => {
+    const src = readFile('lib/walletPositionToPortfolio.ts');
+    expect(src).toMatch(/function walletSourceToPositionSource/);
+    expect(src).not.toMatch(/walletSourceToPositionSource.*\/\/\s*TODO/);
+  });
+});

@@ -40,19 +40,20 @@ describe('convertWalletPositionsToPortfolio', () => {
     ]
     const result = convertWalletPositionsToPortfolio(wallet, reserves)
     expect(result).toHaveLength(1)
-    expect(result[0]).toEqual({
-      positionId: 'eth-usdc-v3:supply',
-      reserveId: 'eth-usdc-v3',
-      marketName: 'AaveV3Ethereum',
-      chainName: 'Ethereum',
-      tokenSymbol: 'USDC',
-      side: 'supply',
-      amount: '5000',
-      inputMode: 'usd',
-      walletValue: 5000,
-      hidden: false,
-      isOrphan: false,
-    })
+      expect(result[0]).toEqual({
+        positionId: 'eth-usdc-v3:supply',
+        reserveId: 'eth-usdc-v3',
+        marketName: 'AaveV3Ethereum',
+        chainName: 'Ethereum',
+        tokenSymbol: 'USDC',
+        side: 'supply',
+        amount: '5000',
+        inputMode: 'usd',
+        walletValue: 5000,
+        hidden: false,
+        isOrphan: false,
+        source: 'onchain-v3',
+      })
   })
 
   it('maps a borrow position with different side', () => {
@@ -136,5 +137,21 @@ describe('convertWalletPositionsToPortfolio', () => {
     const result = convertWalletPositionsToPortfolio(wallet, reserves)
     expect(result[0].amount).toBe('1234.5678')
     expect(result[0].walletValue).toBeCloseTo(1234.5678, 4)
+  })
+
+  it('passes source through from WalletPosition', () => {
+    const wallet: WalletPosition[] = [
+      makeWalletPos({ reserveId: 'eth-usdc-v3', chainId: 1, side: 'supply', source: 'sdk' }),
+    ]
+    const result = convertWalletPositionsToPortfolio(wallet, reserves)
+    expect(result[0].source).toBe('sdk')
+  })
+
+  it('preserves onchain-v4 source', () => {
+    const wallet: WalletPosition[] = [
+      makeWalletPos({ reserveId: 'eth-usdc-v4', chainId: 1, side: 'supply', source: 'onchain-v4' }),
+    ]
+    const result = convertWalletPositionsToPortfolio(wallet, reserves)
+    expect(result[0].source).toBe('onchain-v4')
   })
 })
