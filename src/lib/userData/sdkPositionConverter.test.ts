@@ -3,12 +3,15 @@ import { describe, it, expect } from 'vitest'
 import {
   convertSdkSuppliesToWalletPositions,
   convertSdkBorrowsToWalletPositions,
+  buildReserveLookupByChainAndToken,
 } from '@/lib/userData/sdkPositionConverter'
 import type { ReserveWithSpread } from '@/types/aave'
 
+const POOL_ADDR = '0x87870Bca3F3fD6b5bB36c0221BCC5C4c1F7C69c6' as `0x${string}`
+
 const mockReserves = [
   {
-    reserveId: 'v3-eth',
+    reserveId: `1:${POOL_ADDR}:0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2`,
     tokenSymbol: 'ETH',
     tokenAddress: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2' as `0x${string}`,
     chainId: 1,
@@ -16,7 +19,7 @@ const mockReserves = [
     decimals: 18,
   },
   {
-    reserveId: 'v4-usdc',
+    reserveId: `1:${POOL_ADDR}:0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48`,
     tokenSymbol: 'USDC',
     tokenAddress: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' as `0x${string}`,
     chainId: 1,
@@ -25,13 +28,15 @@ const mockReserves = [
   },
 ] as unknown as ReserveWithSpread[]
 
+const lookupMap = buildReserveLookupByChainAndToken(mockReserves)
+
 describe('sdkPositionConverter', () => {
   describe('convertSdkSuppliesToWalletPositions', () => {
     it('converts a single supply position', () => {
       const supplies = [
         {
           reserve: {
-            id: 'reserve-1',
+            id: 'v3-eth',
             symbol: 'ETH',
             decimals: 18,
             underlyingAsset: {
@@ -50,10 +55,10 @@ describe('sdkPositionConverter', () => {
         },
       ]
 
-      const result = convertSdkSuppliesToWalletPositions(supplies, mockReserves)
+      const result = convertSdkSuppliesToWalletPositions(supplies, lookupMap)
 
       expect(result).toHaveLength(1)
-      expect(result[0].reserveId).toBe('v3-eth')
+      expect(result[0].reserveId).toBe(`1:${POOL_ADDR}:0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2`)
       expect(result[0].tokenSymbol).toBe('ETH')
       expect(result[0].side).toBe('supply')
       expect(result[0].isCollateral).toBe(true)
@@ -82,7 +87,7 @@ describe('sdkPositionConverter', () => {
         },
       ]
 
-      const result = convertSdkSuppliesToWalletPositions(supplies, mockReserves)
+      const result = convertSdkSuppliesToWalletPositions(supplies, lookupMap)
       expect(result[0].isOrphan).toBe(true)
       expect(result[0].tokenSymbol).toBe('UNKNOWN')
     })
@@ -93,7 +98,7 @@ describe('sdkPositionConverter', () => {
       const borrows = [
         {
           reserve: {
-            id: 'reserve-2',
+            id: 'v4-usdc',
             symbol: 'USDC',
             decimals: 6,
             underlyingAsset: {
@@ -111,7 +116,7 @@ describe('sdkPositionConverter', () => {
         },
       ]
 
-      const result = convertSdkBorrowsToWalletPositions(borrows, mockReserves)
+      const result = convertSdkBorrowsToWalletPositions(borrows, lookupMap)
 
       expect(result).toHaveLength(1)
       expect(result[0].side).toBe('borrow')

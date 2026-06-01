@@ -1,16 +1,19 @@
+import { useMemo } from 'react'
 import { useWallet } from './useWallet'
 import { useQuery } from '@tanstack/react-query'
 import { useUserSupplies as useV4UserSupplies, useUserBorrows as useV4UserBorrows } from '@aave/react'
 import { useUserSupplies as useV3UserSupplies, useUserBorrows as useV3UserBorrows } from '@aave/react-v3'
-import { getV3UserPositionsMultiChain } from '@/lib/userData/aaveV3UserClient'
+import { getV3UserPositionsMultiChain, type V3AssetsByMarket } from '@/lib/userData/aaveV3UserClient'
 import { getV4UserPositionsAllSpokes } from '@/lib/userData/aaveV4UserClient'
 import {
   convertV3PositionsToWalletPositions,
   convertV4PositionsToWalletPositions,
+  buildReserveLookupByChainAndToken,
 } from '@/lib/userData/onchainPositionConverter'
 import {
   convertSdkSuppliesToWalletPositions,
   convertSdkBorrowsToWalletPositions,
+  buildReserveLookupByChainAndToken as buildSdkReserveLookup,
 } from '@/lib/userData/sdkPositionConverter'
 import type { WalletPosition } from '@/lib/userData/userPositionMapper'
 import type { ReserveWithSpread } from '@/types/aave'
@@ -33,24 +36,25 @@ const STALE_TIME = QUERY_STALE_TIMES.default
 interface FetchFallbackParams {
   userAddress: `0x${string}`
   reserves: ReserveWithSpread[]
-  v3AssetsByChain: Record<number, `0x${string}`[]>
+  v3AssetsByMarket: Record<string, V3AssetsByMarket>
   v4ReservesBySpoke: Record<string, { reserveId: bigint; asset: `0x${string}` }[]>
 }
 
 async function fetchV3Fallback(
   userAddress: `0x${string}`,
   reserves: ReserveWithSpread[],
-  v3AssetsByChain: Record<number, `0x${string}`[]>,
+  v3AssetsByMarket: Record<string, V3AssetsByMarket>,
 ): Promise<{ positions: WalletPosition[]; failedSources: string[] }> {
   const positions: WalletPosition[] = []
   const failedSources: string[] = []
-  const v3ChainIds = Object.keys(v3AssetsByChain).map(Number)
-  if (v3ChainIds.length === 0) return { positions, failedSources }
+  const v3MarketNames = Object.keys(v3AssetsByMarket)
+  if (v3MarketNames.length === 0) return { positions, failedSources }
 
+  const lookupMap = buildReserveLookupByChainAndToken(reserves)
   try {
-    const v3Response = await getV3UserPositionsMultiChain(userAddress, v3AssetsByChain)
+    const v3Response = await getV3UserPositionsMultiChain(userAddress, v3AssetsByMarket)
     for (const result of v3Response.results) {
-      positions.push(...convertV3PositionsToWalletPositions(result.positions, reserves))
+      positions.push(...convertV3PositionsToWalletPositions(result.positions, lookupMap))
     }
     for (const err of v3Response.errors) {
       failedSources.push(`onchain-v3-chain-${err.chainId}`)
@@ -69,10 +73,11 @@ async function fetchV4Fallback(
   const positions: WalletPosition[] = []
   const failedSources: string[] = []
 
+  const lookupMap = buildReserveLookupByChainAndToken(reserves)
   try {
     const v4Response = await getV4UserPositionsAllSpokes(1, userAddress, v4ReservesBySpoke)
     for (const result of v4Response.results) {
-      positions.push(...convertV4PositionsToWalletPositions(result.positions, reserves))
+      positions.push(...convertV4PositionsToWalletPositions(result.positions, lookupMap))
     }
     for (const err of v4Response.errors) {
       failedSources.push(`onchain-v4-chain-${err.chainId}-spoke-${err.spokeName ?? 'unknown'}`)
@@ -85,7 +90,7 @@ async function fetchV4Fallback(
 
 export function useUserPositionsSdk(
   reserves: ReserveWithSpread[],
-  v3AssetsByChain: Record<number, `0x${string}`[]>,
+  v3AssetsByMarket: Record<string, V3AssetsByMarket>,
   v4ReservesBySpoke: Record<string, { reserveId: bigint; asset: `0x${string}` }[]>,
 ) {
   const { address, isConnected } = useWallet()
@@ -110,7 +115,7 @@ export function useUserPositionsSdk(
       const failedSources: string[] = []
 
       if (v3SdkFailed) {
-        const v3 = await fetchV3Fallback(address, reserves, v3AssetsByChain)
+        const v3 = await fetchV3Fallback(address, reserves, v3AssetsByMarket)
         positions.push(...v3.positions)
         failedSources.push(...v3.failedSources, 'sdk-v3-fallback')
       }
@@ -128,9 +133,11 @@ export function useUserPositionsSdk(
   const allPositions: WalletPosition[] = []
   const allFailedSources: string[] = []
 
+  const sdkLookupMap = useMemo(() => buildSdkReserveLookup(reserves), [reserves])
+
   if (!v3SdkFailed && v3Supplies.data && v3Borrows.data) {
-    allPositions.push(...convertSdkSuppliesToWalletPositions(v3Supplies.data, reserves, 'sdk'))
-    allPositions.push(...convertSdkBorrowsToWalletPositions(v3Borrows.data, reserves, 'sdk'))
+    allPositions.push(...convertSdkSuppliesToWalletPositions(v3Supplies.data, sdkLookupMap, 'sdk'))
+    allPositions.push(...convertSdkBorrowsToWalletPositions(v3Borrows.data, sdkLookupMap, 'sdk'))
   } else if (v3SdkFailed) {
     allFailedSources.push('sdk-v3')
     if (fallbackQuery.data) {
@@ -140,8 +147,8 @@ export function useUserPositionsSdk(
   }
 
   if (!v4SdkFailed && v4Supplies.data && v4Borrows.data) {
-    allPositions.push(...convertSdkSuppliesToWalletPositions(v4Supplies.data, reserves, 'sdk'))
-    allPositions.push(...convertSdkBorrowsToWalletPositions(v4Borrows.data, reserves, 'sdk'))
+    allPositions.push(...convertSdkSuppliesToWalletPositions(v4Supplies.data, sdkLookupMap, 'sdk'))
+    allPositions.push(...convertSdkBorrowsToWalletPositions(v4Borrows.data, sdkLookupMap, 'sdk'))
   } else if (v4SdkFailed) {
     allFailedSources.push('sdk-v4')
     if (fallbackQuery.data) {

@@ -15,8 +15,9 @@ import { getV4UserPositionsAllSpokes } from '@/lib/userData/aaveV4UserClient';
 import {
   convertV3PositionsToWalletPositions,
   convertV4PositionsToWalletPositions,
+  buildReserveLookupByChainAndToken,
 } from '@/lib/userData/onchainPositionConverter';
-import { deriveV3AssetsByChain, deriveV4ReservesBySpoke } from '@/lib/deriveOnchainConfig';
+import { deriveV3AssetsByMarket, deriveV4ReservesBySpoke } from '@/lib/deriveOnchainConfig';
 import { convertWalletPositionsToPortfolio } from '@/lib/walletPositionToPortfolio';
 import type { ReserveWithSpread } from '@/types/aave';
 import type { WalletPosition } from '@/lib/userData/userPositionMapper';
@@ -97,14 +98,15 @@ describe('SDK vs ABI Consistency (HITL)', () => {
   it('V3 Ethereum: onchain positions match API positions', async () => {
     if (skipIfNoWallet()) return;
     const reserves = await fetchReserves();
-    const v3Assets = deriveV3AssetsByChain(reserves);
-    const ethAssets = v3Assets[1];
-    if (!ethAssets || ethAssets.length === 0) return;
+    const lookupMap = buildReserveLookupByChainAndToken(reserves);
+    const v3AssetsByMarket = deriveV3AssetsByMarket(reserves);
+    const ethMarket = Object.entries(v3AssetsByMarket).find(([, v]) => v.chainId === 1);
+    if (!ethMarket) return;
 
-    const v3Response = await getV3UserPositionsMultiChain(WALLET!, { 1: ethAssets });
+    const v3Response = await getV3UserPositionsMultiChain(WALLET!, { [ethMarket[0]]: ethMarket[1] });
     const abiPositions = convertV3PositionsToWalletPositions(
       v3Response.results.flatMap((r) => r.positions),
-      reserves,
+      lookupMap,
     );
 
     const sdkPositions: WalletPosition[] = [];
@@ -123,14 +125,15 @@ describe('SDK vs ABI Consistency (HITL)', () => {
   it('V3 L2 (Optimism): onchain positions match API positions', async () => {
     if (skipIfNoWallet()) return;
     const reserves = await fetchReserves();
-    const v3Assets = deriveV3AssetsByChain(reserves);
-    const opAssets = v3Assets[10];
-    if (!opAssets || opAssets.length === 0) return;
+    const lookupMap = buildReserveLookupByChainAndToken(reserves);
+    const v3AssetsByMarket = deriveV3AssetsByMarket(reserves);
+    const opMarket = Object.entries(v3AssetsByMarket).find(([, v]) => v.chainId === 10);
+    if (!opMarket) return;
 
-    const v3Response = await getV3UserPositionsMultiChain(WALLET!, { 10: opAssets });
+    const v3Response = await getV3UserPositionsMultiChain(WALLET!, { [opMarket[0]]: opMarket[1] });
     const abiPositions = convertV3PositionsToWalletPositions(
       v3Response.results.flatMap((r) => r.positions),
-      reserves,
+      lookupMap,
     );
 
     const sdkPositions: WalletPosition[] = [];
@@ -147,13 +150,14 @@ describe('SDK vs ABI Consistency (HITL)', () => {
   it('V4 Ethereum: onchain positions match API positions', async () => {
     if (skipIfNoWallet()) return;
     const reserves = await fetchReserves();
+    const lookupMap = buildReserveLookupByChainAndToken(reserves);
     const v4BySpoke = deriveV4ReservesBySpoke(reserves);
     if (Object.keys(v4BySpoke).length === 0) return;
 
     const v4Response = await getV4UserPositionsAllSpokes(1, WALLET!, v4BySpoke);
     const abiPositions = convertV4PositionsToWalletPositions(
       v4Response.results.flatMap((r) => r.positions),
-      reserves,
+      lookupMap,
     );
 
     const sdkPositions: WalletPosition[] = [];
@@ -170,17 +174,18 @@ describe('SDK vs ABI Consistency (HITL)', () => {
   it('V3+V4 combined: no duplicate positions after wallet→portfolio conversion', async () => {
     if (skipIfNoWallet()) return;
     const reserves = await fetchReserves();
-    const v3Assets = deriveV3AssetsByChain(reserves);
+    const lookupMap = buildReserveLookupByChainAndToken(reserves);
+    const v3AssetsByMarket = deriveV3AssetsByMarket(reserves);
     const v4BySpoke = deriveV4ReservesBySpoke(reserves);
 
     const allPositions: WalletPosition[] = [];
 
-    const v3ChainIds = Object.keys(v3Assets).map(Number);
-    if (v3ChainIds.length > 0) {
-      const v3Response = await getV3UserPositionsMultiChain(WALLET!, v3Assets);
+    const v3MarketNames = Object.keys(v3AssetsByMarket);
+    if (v3MarketNames.length > 0) {
+      const v3Response = await getV3UserPositionsMultiChain(WALLET!, v3AssetsByMarket);
       allPositions.push(...convertV3PositionsToWalletPositions(
         v3Response.results.flatMap((r) => r.positions),
-        reserves,
+        lookupMap,
       ));
     }
 
@@ -188,7 +193,7 @@ describe('SDK vs ABI Consistency (HITL)', () => {
       const v4Response = await getV4UserPositionsAllSpokes(1, WALLET!, v4BySpoke);
       allPositions.push(...convertV4PositionsToWalletPositions(
         v4Response.results.flatMap((r) => r.positions),
-        reserves,
+        lookupMap,
       ));
     }
 

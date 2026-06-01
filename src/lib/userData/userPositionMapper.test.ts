@@ -3,10 +3,13 @@ import {
   mapV3PositionToWalletPosition,
   mapV4PositionToWalletPosition,
   resolvePositionMeta,
+  buildReserveMapFromReserves,
   type WalletPosition,
   type WalletPositionSource,
   type PositionMeta,
+  type ReserveMap,
 } from './userPositionMapper'
+import { buildReserveLookupByChainAndToken, type ReserveChainTokenMap } from '@/lib/reserveKey'
 import type { V3UserPosition, V3AccountSummary } from './aaveV3UserClient'
 import type { V4UserPosition, V4AccountSummary } from './aaveV4UserClient'
 import type { ReserveWithSpread } from '@/types/aave'
@@ -181,7 +184,7 @@ describe('resolvePositionMeta', () => {
       tokenName: 'USD Coin',
       tokenSymbol: 'USDC',
       tokenAddress: USDC_ADDR,
-      reserveId: 'usdc-1',
+      reserveId: '1:0xpool1:0xA0b8',
       tokenPrice: 1,
       decimals: 6,
     },
@@ -192,7 +195,7 @@ describe('resolvePositionMeta', () => {
       tokenName: 'Wrapped Ether',
       tokenSymbol: 'WETH',
       tokenAddress: WETH_ADDR,
-      reserveId: 'weth-1',
+      reserveId: '1:0xpool1:0xC02a',
       tokenPrice: 3000,
       decimals: 18,
     },
@@ -203,36 +206,38 @@ describe('resolvePositionMeta', () => {
       tokenName: 'USD Coin',
       tokenSymbol: 'USDC',
       tokenAddress: USDC_ADDR,
-      reserveId: 'usdc-42161',
+      reserveId: '42161:0xpool2:0xA0b8',
       tokenPrice: 1,
       decimals: 6,
     },
   ]
 
-  it('finds reserve by asset + chainId and returns PositionMeta', () => {
-    const meta = resolvePositionMeta(USDC_ADDR, 1, reserves)
-    expect(meta.reserveId).toBe('usdc-1')
+  const lookupMap = buildReserveLookupByChainAndToken(reserves)
+
+  it('finds reserve by (chainId, tokenAddress) and returns PositionMeta', () => {
+    const meta = resolvePositionMeta(1, USDC_ADDR, lookupMap)
+    expect(meta.reserveId).toBe('1:0xpool1:0xA0b8')
     expect(meta.tokenSymbol).toBe('USDC')
     expect(meta.tokenPrice).toBe(1)
     expect(meta.decimals).toBe(6)
   })
 
-  it('distinguishes same asset on different chains', () => {
-    const meta = resolvePositionMeta(USDC_ADDR, 42161, reserves)
-    expect(meta.reserveId).toBe('usdc-42161')
+  it('distinguishes same asset on different chains via (chainId, tokenAddress)', () => {
+    const meta = resolvePositionMeta(42161, USDC_ADDR, lookupMap)
+    expect(meta.reserveId).toBe('42161:0xpool2:0xA0b8')
     expect(meta.tokenSymbol).toBe('USDC')
   })
 
-  it('returns orphan meta when asset not found in reserves', () => {
-    const meta = resolvePositionMeta(UNKNOWN_ADDR, 1, reserves)
+  it('returns orphan meta when (chainId, tokenAddress) not found in map', () => {
+    const meta = resolvePositionMeta(1, UNKNOWN_ADDR, lookupMap)
     expect(meta.reserveId).toBeUndefined()
     expect(meta.tokenSymbol).toBe('')
     expect(meta.tokenPrice).toBe(0)
     expect(meta.decimals).toBe(0)
   })
 
-  it('returns orphan meta when chainId not found', () => {
-    const meta = resolvePositionMeta(USDC_ADDR, 999, reserves)
+  it('returns orphan meta when (chainId, tokenAddress) not found in empty map', () => {
+    const meta = resolvePositionMeta(1, USDC_ADDR, new Map() as ReserveChainTokenMap)
     expect(meta.reserveId).toBeUndefined()
   })
 
@@ -245,11 +250,12 @@ describe('resolvePositionMeta', () => {
         tokenName: 'Token',
         tokenSymbol: 'TKN',
         tokenAddress: USDC_ADDR,
-        reserveId: 'tkn-1',
+        reserveId: '1:0xpool:0xA0b8',
         decimals: 18,
       },
     ]
-    const meta = resolvePositionMeta(USDC_ADDR, 1, noPriceReserves)
+    const noPriceLookupMap = buildReserveLookupByChainAndToken(noPriceReserves)
+    const meta = resolvePositionMeta(1, USDC_ADDR, noPriceLookupMap)
     expect(meta.tokenPrice).toBe(0)
   })
 
@@ -262,11 +268,12 @@ describe('resolvePositionMeta', () => {
         tokenName: 'Token',
         tokenSymbol: 'TKN',
         tokenAddress: USDC_ADDR,
-        reserveId: 'tkn-1',
+        reserveId: '1:0xpool:0xA0b8',
         tokenPrice: 100,
       },
     ]
-    const meta = resolvePositionMeta(USDC_ADDR, 1, noDecimalsReserves)
+    const noDecimalsLookupMap = buildReserveLookupByChainAndToken(noDecimalsReserves)
+    const meta = resolvePositionMeta(1, USDC_ADDR, noDecimalsLookupMap)
     expect(meta.decimals).toBe(18)
   })
 })

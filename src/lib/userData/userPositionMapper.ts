@@ -1,6 +1,8 @@
 import type { V3UserPosition } from './aaveV3UserClient'
 import type { V4UserPosition } from './aaveV4UserClient'
 import type { ReserveWithSpread } from '@/types/aave'
+import type { ReserveMap, ReserveChainTokenMap } from '@/lib/reserveKey'
+import { buildReserveMap, toChainTokenKey } from '@/lib/reserveKey'
 
 export type WalletPositionSource = 'onchain-v3' | 'onchain-v4' | 'sdk'
 
@@ -89,14 +91,20 @@ const ORPHAN_META: PositionMeta = {
   decimals: 0,
 }
 
+/**
+ * Resolve position metadata by (chainId, tokenAddress) using O(1) Map lookup.
+ *
+ * This is the correct lookup strategy because both chainId and tokenAddress
+ * are available in all data sources (SDK, onchain, backend) and are
+ * semantically stable — unlike reserveId whose format varies by source.
+ */
 export function resolvePositionMeta(
-  asset: `0x${string}`,
   chainId: number,
-  reserves: ReserveWithSpread[],
+  tokenAddress: string,
+  lookupMap: ReserveChainTokenMap,
 ): PositionMeta {
-  const reserve = reserves.find(
-    r => r.tokenAddress === asset && r.chainId === chainId,
-  )
+  const key = toChainTokenKey(chainId, tokenAddress)
+  const reserve = lookupMap.get(key)
   if (!reserve) return ORPHAN_META
   return {
     reserveId: reserve.reserveId,
@@ -105,3 +113,6 @@ export function resolvePositionMeta(
     decimals: reserve.decimals ?? 18,
   }
 }
+
+/** Convenience: build a ReserveMap from a flat array. */
+export const buildReserveMapFromReserves = buildReserveMap

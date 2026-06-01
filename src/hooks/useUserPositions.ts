@@ -1,10 +1,11 @@
 import { useWallet } from './useWallet'
 import { useQuery } from '@tanstack/react-query'
-import { getV3UserPositionsMultiChain } from '@/lib/userData/aaveV3UserClient'
+import { getV3UserPositionsMultiChain, type V3AssetsByMarket } from '@/lib/userData/aaveV3UserClient'
 import { getV4UserPositionsAllSpokes } from '@/lib/userData/aaveV4UserClient'
 import {
   convertV3PositionsToWalletPositions,
   convertV4PositionsToWalletPositions,
+  buildReserveLookupByChainAndToken,
 } from '@/lib/userData/onchainPositionConverter'
 import type { WalletPosition } from '@/lib/userData/userPositionMapper'
 import type { ReserveWithSpread } from '@/types/aave'
@@ -27,21 +28,22 @@ const STALE_TIME = QUERY_STALE_TIMES.default
 interface FetchPositionsParams {
   userAddress: `0x${string}`
   reserves: ReserveWithSpread[]
-  v3AssetsByChain: Record<number, `0x${string}`[]>
+  v3AssetsByMarket: Record<string, V3AssetsByMarket>
   v4ReservesBySpoke: Record<string, { reserveId: bigint; asset: `0x${string}` }[]>
 }
 
 async function fetchOnchainPositions(params: FetchPositionsParams): Promise<UserPositionsData> {
-  const { userAddress, reserves, v3AssetsByChain, v4ReservesBySpoke } = params
+  const { userAddress, reserves, v3AssetsByMarket, v4ReservesBySpoke } = params
+  const lookupMap = buildReserveLookupByChainAndToken(reserves)
   const positions: WalletPosition[] = []
   const failedSources: string[] = []
 
-  const v3ChainIds = Object.keys(v3AssetsByChain).map(Number)
-  if (v3ChainIds.length > 0) {
+  const v3MarketNames = Object.keys(v3AssetsByMarket)
+  if (v3MarketNames.length > 0) {
     try {
-      const v3Response = await getV3UserPositionsMultiChain(userAddress, v3AssetsByChain)
+      const v3Response = await getV3UserPositionsMultiChain(userAddress, v3AssetsByMarket)
       for (const result of v3Response.results) {
-        positions.push(...convertV3PositionsToWalletPositions(result.positions, reserves))
+        positions.push(...convertV3PositionsToWalletPositions(result.positions, lookupMap))
       }
       for (const err of v3Response.errors) {
         failedSources.push(`onchain-v3-chain-${err.chainId}`)
@@ -56,7 +58,7 @@ async function fetchOnchainPositions(params: FetchPositionsParams): Promise<User
     try {
       const v4Response = await getV4UserPositionsAllSpokes(chainId, userAddress, v4ReservesBySpoke)
       for (const result of v4Response.results) {
-        positions.push(...convertV4PositionsToWalletPositions(result.positions, reserves))
+        positions.push(...convertV4PositionsToWalletPositions(result.positions, lookupMap))
       }
       for (const err of v4Response.errors) {
         failedSources.push(`onchain-v4-chain-${err.chainId}-spoke-${err.spokeName ?? 'unknown'}`)
@@ -71,7 +73,7 @@ async function fetchOnchainPositions(params: FetchPositionsParams): Promise<User
 
 export function useUserPositions(
   reserves: ReserveWithSpread[],
-  v3AssetsByChain: Record<number, `0x${string}`[]>,
+  v3AssetsByMarket: Record<string, V3AssetsByMarket>,
   v4ReservesBySpoke: Record<string, { reserveId: bigint; asset: `0x${string}` }[]>,
 ) {
   const { address, isConnected } = useWallet()
@@ -81,7 +83,7 @@ export function useUserPositions(
     queryFn: () => fetchOnchainPositions({
       userAddress: address!,
       reserves,
-      v3AssetsByChain,
+      v3AssetsByMarket,
       v4ReservesBySpoke,
     }),
     enabled: isConnected && !!address,

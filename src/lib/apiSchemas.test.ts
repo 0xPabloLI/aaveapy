@@ -8,7 +8,7 @@ const buildMarketsPayload = (message: unknown) => ({
   },
     reserves: [
       {
-        reserveId: 'AaveV3Celo-0x1234',
+        reserveId: '42220:0xpool:0x1234',
         marketName: 'AaveV3Celo',
         chainName: 'Celo',
         chainId: 42220,
@@ -64,7 +64,7 @@ describe('apiSchemas', () => {
       },
       reserves: [
         {
-          reserveId: 'AaveV3Ink-0x1',
+          reserveId: '57073:0xpool:0x1',
           marketName: 'AaveV3Ink',
           chainName: 'Ink',
           chainId: 57073,
@@ -135,7 +135,7 @@ describe('apiSchemas', () => {
       },
       reserves: [
         {
-          reserveId: 'AaveV3Linea-0x1',
+          reserveId: '59144:0xpool:0x1',
           marketName: 'AaveV3Linea',
           chainName: 'Linea',
           chainId: 59144,
@@ -197,7 +197,7 @@ describe('apiSchemas', () => {
       },
       reserves: [
         {
-          reserveId: 'AaveV3Ethereum-0xfrozen',
+          reserveId: '1:0xpool:0xfrozen',
           marketName: 'AaveV3Ethereum',
           chainName: 'Ethereum',
           chainId: 1,
@@ -208,7 +208,7 @@ describe('apiSchemas', () => {
           supplyApy: 2.5,
         },
         {
-          reserveId: 'AaveV3Ethereum-0xpaused',
+          reserveId: '1:0xpool:0xpaused',
           marketName: 'AaveV3Ethereum',
           chainName: 'Ethereum',
           chainId: 1,
@@ -219,7 +219,7 @@ describe('apiSchemas', () => {
           isPaused: true,
         },
         {
-          reserveId: 'AaveV4Ethereum-0xinactive',
+          reserveId: '1:0xpool:0xinactive',
           marketName: 'AaveV4Ethereum',
           chainName: 'Ethereum',
           chainId: 1,
@@ -229,7 +229,7 @@ describe('apiSchemas', () => {
           isActive: false,
         },
         {
-          reserveId: 'AaveV3Ethereum-0xnormal',
+          reserveId: '1:0xpool:0xnormal',
           marketName: 'AaveV3Ethereum',
           chainName: 'Ethereum',
           chainId: 1,
@@ -262,7 +262,7 @@ describe('apiSchemas', () => {
       },
       reserves: [
         {
-          reserveId: 'AaveV4Ethereum-0xv4hub',
+          reserveId: '1:0xpool:0xv4hub',
           marketName: 'AaveV4Ethereum',
           chainName: 'Ethereum',
           chainId: 1,
@@ -298,7 +298,7 @@ describe('apiSchemas', () => {
       },
       reserves: [
         {
-          reserveId: 'AaveV3Linea-0x1',
+          reserveId: '59144:0xpool:0x1',
           marketName: 'AaveV3Linea',
           chainName: 'Linea',
           chainId: 59144,
