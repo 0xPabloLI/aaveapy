@@ -9,7 +9,7 @@ import { useWallet } from '@/hooks/useWallet';
 import { useCampaignAccess } from '@/hooks/useCampaignAccess';
 import { useIsFetching } from '@tanstack/react-query';
 import { useAaveMarkets } from '@/hooks/useAaveMarkets';
-import { deriveV3AssetsByChain, deriveV4ReservesBySpoke } from '@/lib/deriveOnchainConfig';
+import { deriveV3AssetsByMarket, deriveV4ReservesBySpoke } from '@/lib/deriveOnchainConfig';
 import { convertWalletPositionsToPortfolio } from '@/lib/walletPositionToPortfolio';
 import { useTokenCategories } from '@/hooks/useTokenCategories';
 import { SortField, TokenCategory, ReserveWithSpread, TokenPricesIndex } from '@/types/aave';
@@ -277,14 +277,14 @@ const Index = () => {
   const hasReserves = stableReserves.length > 0;
 
   // Wallet position sync (SDK-first + on-chain fallback)
-  const v3AssetsByChain = useMemo(() => deriveV3AssetsByChain(stableReserves), [stableReserves]);
+  const v3AssetsByMarket = useMemo(() => deriveV3AssetsByMarket(stableReserves), [stableReserves]);
   const v4ReservesBySpoke = useMemo(() => deriveV4ReservesBySpoke(stableReserves), [stableReserves]);
   const {
     walletLoadState,
     result: walletResult,
     v3SdkFailed,
     v4SdkFailed,
-  } = useUserPositionsSdk(stableReserves, v3AssetsByChain, v4ReservesBySpoke);
+  } = useUserPositionsSdk(stableReserves, v3AssetsByMarket, v4ReservesBySpoke);
 
   const { data: claimableRewards, loading: claimableRewardsLoading } = useUserClaimableRewardsSdk();
 

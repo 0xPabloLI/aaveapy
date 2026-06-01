@@ -1,11 +1,12 @@
 // @vitest-environment happy-dom
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { WagmiProvider, createConfig, http } from 'wagmi';
 import { mainnet } from 'wagmi/chains';
 import { RainbowKitProvider } from '@rainbow-me/rainbowkit';
 import PortfolioPanel from './PortfolioPanel';
+import { useWatchModeConnect } from '@/hooks/useWatchModeConnect';
 import type { ReserveWithSpread } from '@/types/aave';
 import type { PortfolioPosition, PortfolioSimulationActions } from '@/types/portfolio';
 
@@ -20,6 +21,8 @@ vi.mock('sonner', () => ({
     error: vi.fn(),
   },
 }));
+
+vi.mock('@/hooks/useWatchModeConnect');
 
 vi.mock('wagmi', async (importOriginal) => {
   const actual = await importOriginal<typeof import('wagmi')>();
@@ -80,6 +83,12 @@ const makeActions = (): PortfolioSimulationActions => ({
 describe('PortfolioPanel', () => {
   afterEach(() => cleanup());
 
+  beforeEach(() => {
+    vi.mocked(useWatchModeConnect).mockReturnValue({
+      connectWatchAddress: vi.fn(),
+    });
+  });
+
   it('renders search input when panel mounts', () => {
     const reserves = [makeReserve('USDC'), makeReserve('USDT')];
     render(
@@ -96,6 +105,27 @@ describe('PortfolioPanel', () => {
       </WagmiProvider>,
     );
     expect(screen.getByPlaceholderText(/search/i)).toBeInTheDocument();
+  });
+
+  it('exposes View address from the Batch wallet actions', () => {
+    const reserves = [makeReserve('USDC')];
+    render(
+      <WagmiProvider config={testWagmiConfig}>
+        <QueryClientProvider client={new QueryClient()}>
+          <RainbowKitProvider>
+            <PortfolioPanel
+              positions={[]}
+              actions={makeActions()}
+              reserves={reserves}
+            />
+          </RainbowKitProvider>
+        </QueryClientProvider>
+      </WagmiProvider>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /wallet actions/i }));
+
+    expect(screen.getByRole('button', { name: /view address/i })).toBeInTheDocument();
   });
 
   it('calls addPosition with supply and borrow sides when token is added from search', () => {

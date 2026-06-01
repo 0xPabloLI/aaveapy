@@ -120,6 +120,7 @@ describe('useWalletAutoImport', () => {
       }),
     )
 
+    expect(mockImportPositions).not.toHaveBeenCalled()
     expect(toast.info).toHaveBeenCalledWith('Wallet has no positions')
   })
 

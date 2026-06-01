@@ -7,6 +7,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import ThemeToggle from '@/components/ThemeToggle';
+import { useWatchModeConnect } from '@/hooks/useWatchModeConnect';
 import { WalletButton } from './WalletButton';
 
 interface HeaderProps {
@@ -15,6 +16,7 @@ interface HeaderProps {
 
 const Header = ({ lastUpdated }: HeaderProps) => {
   const [, setNowTick] = useState(() => Date.now());
+  const { connectWatchAddress } = useWatchModeConnect();
 
   useEffect(() => {
     if (!lastUpdated) return;
@@ -70,7 +72,7 @@ const Header = ({ lastUpdated }: HeaderProps) => {
               </PopoverContent>
             </Popover>
           )}
-          <WalletButton mobile />
+          <WalletButton mobile onWatchSubmit={connectWatchAddress} />
           <a
             href="#faq"
             className="flex items-center justify-center w-[var(--ds-control-h)] h-[var(--ds-control-h)] rounded-full bg-card/60 border border-border/40 text-muted-foreground hover-gradient-text hover:bg-muted/60 hover:border-border touch-manipulation"
@@ -84,7 +86,7 @@ const Header = ({ lastUpdated }: HeaderProps) => {
 
       {/* Desktop Right side: Wallet + FAQ + Theme toggle */}
       <div className="hidden md:flex items-center gap-[var(--ds-space-3)]">
-        <WalletButton />
+        <WalletButton onWatchSubmit={connectWatchAddress} />
         {/* Desktop: FAQ link with gradient hover */}
         <a
           href="#faq"

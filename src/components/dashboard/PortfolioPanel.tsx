@@ -7,7 +7,6 @@
  */
 import { useState, useMemo, useEffect, useRef, memo, useCallback, lazy, Suspense } from 'react';
 import { Search, X, Layers, Trash2, Save, ArrowRightLeft, Check, RefreshCw, Wallet, Gift } from 'lucide-react';
-import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { formatUsd } from '@/lib/formatters';
@@ -31,6 +30,9 @@ import PortfolioResultsTable from './PortfolioResultsTable';
 import { BATCH_THEME } from './batchTheme';
 import { ConfirmPopover } from '@/components/ui/confirm-popover';
 import { sortPositionsByHidden } from '@/lib/portfolioSoftDelete';
+import { useWallet } from '@/hooks/useWallet';
+import { useWatchModeConnect } from '@/hooks/useWatchModeConnect';
+import { WalletButton } from './WalletButton';
 
 const PortfolioCompareView = lazy(() => import('./PortfolioCompareView'));
 
@@ -199,6 +201,8 @@ const PortfolioPanel = memo(function PortfolioPanel({
   claimableRewardsLoading,
 }: PortfolioPanelProps) {
   const isMobile = useIsMobile();
+  const { isConnected: walletConnected } = useWallet();
+  const { connectWatchAddress } = useWatchModeConnect();
   const [searchQuery, setSearchQuery] = useState('');
   const SEARCH_PAGE_SIZE = 20;
   const [visibleSearchCount, setVisibleSearchCount] = useState(SEARCH_PAGE_SIZE);
@@ -410,43 +414,23 @@ const PortfolioPanel = memo(function PortfolioPanel({
             </span>
           </div>
           <div className="flex items-center gap-1.5">
-            {/* Wallet connect & sync */}
-            <ConnectButton.Custom>
-              {({ account, openConnectModal, mounted }) => {
-                const connected = mounted && account;
-                return (
-                  <div
-                    {...(!mounted ? { className: 'opacity-0 pointer-events-none' } : {})}
-                  >
-                    {connected ? (
-                      <button
-                        type="button"
-                        onClick={onWalletSync}
-                        disabled={walletLoadState === 'loading' || walletLoadState === 'idle'}
-                        className={cn(
-                          'rounded-md p-1.5 transition-colors',
-                          walletLoadState === 'loading'
-                            ? 'animate-spin text-muted-foreground'
-                            : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground',
-                        )}
-                        aria-label="Sync wallet positions"
-                      >
-                        <RefreshCw className="size-3.5" aria-hidden />
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={openConnectModal}
-                        className="rounded-md p-1.5 text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors"
-                        aria-label="Connect wallet"
-                      >
-                        <Wallet className="size-3.5" aria-hidden />
-                      </button>
-                    )}
-                  </div>
-                );
-              }}
-            </ConnectButton.Custom>
+            {walletConnected && (
+              <button
+                type="button"
+                onClick={onWalletSync}
+                disabled={walletLoadState === 'loading' || walletLoadState === 'idle'}
+                className={cn(
+                  'rounded-md p-1.5 transition-colors',
+                  walletLoadState === 'loading'
+                    ? 'animate-spin text-muted-foreground'
+                    : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground',
+                )}
+                aria-label="Sync wallet positions"
+              >
+                <RefreshCw className="size-3.5" aria-hidden />
+              </button>
+            )}
+            <WalletButton mobile onWatchSubmit={connectWatchAddress} />
             {/* Save snapshot */}
             {positions.length > 0 && summary && (
               <button

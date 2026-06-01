@@ -66,6 +66,16 @@ export function WalletButton({ mobile = false, onWatchSubmit }: WalletButtonProp
                   </button>
                 </PopoverTrigger>
                 <PopoverContent side="bottom" align="end" sideOffset={4} className="w-40 p-1">
+                  {!isWatchMode && onWatchSubmit && (
+                    <button
+                      type="button"
+                      className="w-full flex items-center gap-2 rounded-sm px-2 py-1.5 ds-text-11 hover:bg-muted/60"
+                      onClick={() => setShowWatchInput(true)}
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      Switch to watch mode
+                    </button>
+                  )}
                   {isWatchMode && (
                     <button
                       type="button"
@@ -86,21 +96,66 @@ export function WalletButton({ mobile = false, onWatchSubmit }: WalletButtonProp
                   </button>
                 </PopoverContent>
               </Popover>
+            ) : mobile && onWatchSubmit ? (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className="flex items-center justify-center w-[var(--ds-control-h)] h-[var(--ds-control-h)] rounded-full bg-card/60 border border-border/40 text-muted-foreground hover:bg-muted/60 hover:border-border focus-visible:ring-2 focus-visible:ring-ring"
+                    aria-label="Wallet actions"
+                  >
+                    <Wallet className="w-3.5 h-3.5" aria-hidden />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent side="bottom" align="end" sideOffset={4} className="w-40 p-1">
+                  <button
+                    type="button"
+                    className="w-full flex items-center gap-2 rounded-sm px-2 py-1.5 ds-text-11 hover:bg-muted/60"
+                    onClick={openConnectModal}
+                    aria-label="Connect wallet"
+                  >
+                    <Wallet className="w-3.5 h-3.5" />
+                    Connect
+                  </button>
+                  <button
+                    type="button"
+                    className="w-full flex items-center gap-2 rounded-sm px-2 py-1.5 ds-text-11 hover:bg-muted/60"
+                    onClick={() => setShowWatchInput(true)}
+                    aria-label="View address"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    View address
+                  </button>
+                </PopoverContent>
+              </Popover>
             ) : (
-              <button
-                type="button"
-                onClick={openConnectModal}
-                className={cn(
-                  'flex items-center gap-1 transition-colors',
-                  mobile
-                    ? 'justify-center w-[var(--ds-control-h)] h-[var(--ds-control-h)] rounded-full bg-card/60 border border-border/40 text-muted-foreground hover:bg-muted/60 hover:border-border focus-visible:ring-2 focus-visible:ring-ring'
-                    : 'rounded-md px-2 py-1 ds-text-11 text-muted-foreground hover:bg-muted/60 hover:text-foreground',
+              <div className={cn('flex items-center', !mobile && onWatchSubmit && 'gap-1')}>
+                <button
+                  type="button"
+                  onClick={openConnectModal}
+                  className={cn(
+                    'flex items-center gap-1 transition-colors',
+                    mobile
+                      ? 'justify-center w-[var(--ds-control-h)] h-[var(--ds-control-h)] rounded-full bg-card/60 border border-border/40 text-muted-foreground hover:bg-muted/60 hover:border-border focus-visible:ring-2 focus-visible:ring-ring'
+                      : 'rounded-md px-2 py-1 ds-text-11 text-muted-foreground hover:bg-muted/60 hover:text-foreground',
+                  )}
+                  aria-label="Connect wallet"
+                >
+                  <Wallet className="w-3.5 h-3.5" aria-hidden />
+                  {!mobile && <span>Connect</span>}
+                </button>
+                {!mobile && onWatchSubmit && (
+                  <button
+                    type="button"
+                    onClick={() => setShowWatchInput(true)}
+                    className="flex items-center gap-1 rounded-md px-2 py-1 ds-text-11 text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+                    aria-label="View address"
+                  >
+                    <Eye className="w-3.5 h-3.5" aria-hidden />
+                    <span>View address</span>
+                  </button>
                 )}
-                aria-label="Connect wallet"
-              >
-                <Wallet className="w-3.5 h-3.5" aria-hidden />
-                {!mobile && <span>Connect</span>}
-              </button>
+              </div>
             )}
           </div>
         )
