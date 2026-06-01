@@ -101,6 +101,10 @@ _Avoid_: `buildAavePro*`（已重命名为 `buildAaveV4*`），`AAVE_PRO_BASE`�
 SDK GraphQL（主路径，跨链）失败时，从 `@aave-dao/aave-address-book` 提取 chain ID 集合，逐链并行查 RPC 的 Pool/Spoke 合约。不硬编码链列表。
 _Avoid_: private RPC（前端只用 public RPC）
 
+**SDK Degradation Boundary**:
+仅以下情况视为 SDK 故障并降级到 onchain fallback：(1) GraphQL 网络错误（5xx / timeout / fetch reject）；(2) hook 抛 JS 异常（type guard 失败 / 字段缺失）；(3) `AaveClient.create()` 初始化失败。空数组/空仓位 = 合法结果，不降级（见决议 #11：0 仓位 vs SDK 失败必须区分）。hook 返回 error + data 非空时：data 缺字段 → 归入 (2) 降级；error 仅 warning → 不降级。
+_Avoid_: "SDK 挂了"（太模糊——需明确是基础设施故障还是合法空结果）
+
 **V3 Fallback Path**:
 `Pool.getUserReserveData(asset, user)` → `currentATokenBalance` / `currentStableDebt` / `currentVariableDebt`（直接值，零换算）。合约地址从 address-book 取。
 _Avoid_: UiPoolDataProvider（缩放值需额外换算，已否决）
@@ -115,12 +119,20 @@ _Avoid_: 后端 reserves 推断（可能遗漏新 Spoke）
 **Portfolio Merge**:
 同 token 同 side = 替换（链上为准）；同 token 不同 side = 加缺失 side；全新 token = 直接加入；链上没有但 Simulator 有 = 保留；找不到 reserveId = orphan。
 
+**Merge Match Key**:
+reserveId 作为仓位匹配的唯一 key（方案 A）。reserveId 本身已编码 chain 信息（格式如 `v3-ethereum-0x...`），side 隐含在记录本身（supply/borrow 是两条独立记录）。禁止用 `(tokenAddress, chainId, side)` 组合 key 做主匹配——仅作为 `resolvePositionMeta()` 的查找路径，最终仍以 reserveId 锚定。
+_Avoid_: 组合 key 做主匹配（方案 B）——冗余且易漏 side
+
 **Dual-Value Tracking**:
 `walletValue: number | null`（链上值，null = 钱包无/断连）+ `currentValue: number`（Simulator 当前值）+ `hidden: boolean`（soft delete）。三态视觉：🟢 钱包同步未改、🟡 钱包同步已改（可恢复）、⚪ 纯手动。
 
 **Wallet Disconnect Behavior**:
 断连时 `walletValue → null`，`currentValue` 保持不变。重连时重新 sync 刷新 walletValue。
 _Avoid_: 清空 currentValue（用户可能还在操作 Simulator）
+
+**Wallet Address Switch Behavior**:
+切换钱包地址（含 watch mode 切换）时：清空 Simulator 中 `source: 'wallet'` 的仓位，保留 `source: 'manual'` 仓位不动，然后 import 新地址的链上仓位。钱包仓位始终属于当前连接地址，切换 = 替换钱包部分。
+_Avoid_: 混合多地址仓位（方案 α）、清空全部含手动仓位（方案 γ）
 
 **Soft Delete**:
 方案 A+沉底：灰+沉底+EyeOff 图标+点击恢复一步操作。Resync 时 hidden → 强制 unhidden。
