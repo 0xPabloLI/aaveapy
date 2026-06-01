@@ -1622,8 +1622,8 @@ export function buildRateSimulationResult({
         totalBorrowedUsdDelta: null,
         supplyCapUsd,
         borrowCapUsd,
-        protocolFee: null,
-        optimalUtilization: null,
+        protocolFee: reserve.protocolFee ?? null,
+        optimalUtilization: reserve.optimalUtilization ?? null,
         ...supplyCapFields,
         ...borrowCapFields,
       };
@@ -1656,12 +1656,12 @@ export function buildRateSimulationResult({
           ? deriveAvailableLiquidityUsd(computedReserveSizeUsd2, totalBorrowedUsd)
           : null;
 
-    const protocolFee = Number.isFinite(reserveRateInput.protocolFee) && reserveRateInput.protocolFee > 0
+    const protocolFee = Number.isFinite(reserveRateInput.protocolFee) && reserveRateInput.protocolFee >= 0
       ? reserveRateInput.protocolFee
-      : 0;
-    const optimalUtilization = Number.isFinite(reserveRateInput.optimalUtilization) && reserveRateInput.optimalUtilization > 0
+      : reserve.protocolFee ?? 0;
+    const optimalUtilization = Number.isFinite(reserveRateInput.optimalUtilization) && reserveRateInput.optimalUtilization >= 0
       ? reserveRateInput.optimalUtilization
-      : null;
+      : reserve.optimalUtilization ?? null;
 
     // Use capped inputs for after values (supplyInputUsd and borrowInputUsd are already capped)
     const availableLiquidityUsdAfter = hasAnyInput

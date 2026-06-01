@@ -2137,6 +2137,7 @@ describe('buildRateSimulationResult fallback behavior', () => {
     supplied: '10000000000000000000000',
     borrowed: '4500000000000000000000',
     tokenPrice: 1,
+    protocolFee: 15,
   };
 
   it('uses reserve.utilizationPct when reserveRateInput is null', () => {
@@ -2167,6 +2168,99 @@ describe('buildRateSimulationResult fallback behavior', () => {
       forecastStates: {},
     });
     expect(result.utilization.optimal).toBe(80);
+  });
+
+  it('uses reserve.protocolFee when reserveRateInput is null', () => {
+    const result = buildRateSimulationResult({
+      reserve: reserveWithoutRateCalc,
+      reserveRateInput: null,
+      isApy: false,
+      whitelistMerklCampaignIds: new Set(),
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '',
+      borrowInput: '',
+      forecastStates: {},
+    });
+    expect(result.marketMetrics.protocolFee).toBe(15);
+  });
+
+  it('uses reserve.protocolFee when reserveRateInput.protocolFee is invalid', () => {
+    const rateInputNoFee: RateCalcInput = {
+      decimals: 18,
+      deficit: '0',
+      liquidity: '5000000000000000000000',
+      borrowed: '4500000000000000000000',
+      protocolFee: NaN,
+      slopeBelowOptimal: 4,
+      slopeAboveOptimal: 60,
+      baseBorrowRate: 0,
+      optimalUtilization: 80,
+    };
+    const result = buildRateSimulationResult({
+      reserve: reserveWithoutRateCalc,
+      reserveRateInput: rateInputNoFee,
+      isApy: false,
+      whitelistMerklCampaignIds: new Set(),
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '1000',
+      borrowInput: '',
+      forecastStates: {},
+    });
+    expect(result.marketMetrics.protocolFee).toBe(15);
+  });
+
+  it('accepts protocolFee=0 as valid rateInput value', () => {
+    const rateInputZeroFee: RateCalcInput = {
+      decimals: 18,
+      deficit: '0',
+      liquidity: '5000000000000000000000',
+      borrowed: '4500000000000000000000',
+      protocolFee: 0,
+      slopeBelowOptimal: 4,
+      slopeAboveOptimal: 60,
+      baseBorrowRate: 0,
+      optimalUtilization: 80,
+    };
+    const result = buildRateSimulationResult({
+      reserve: reserveWithoutRateCalc,
+      reserveRateInput: rateInputZeroFee,
+      isApy: false,
+      whitelistMerklCampaignIds: new Set(),
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '1000',
+      borrowInput: '',
+      forecastStates: {},
+    });
+    expect(result.marketMetrics.protocolFee).toBe(0);
+  });
+
+  it('uses reserve.optimalUtilization when reserveRateInput.optimalUtilization is invalid', () => {
+    const rateInputNoOptimal: RateCalcInput = {
+      decimals: 18,
+      deficit: '0',
+      liquidity: '5000000000000000000000',
+      borrowed: '4500000000000000000000',
+      protocolFee: 10,
+      slopeBelowOptimal: 4,
+      slopeAboveOptimal: 60,
+      baseBorrowRate: 0,
+      optimalUtilization: NaN,
+    };
+    const result = buildRateSimulationResult({
+      reserve: reserveWithoutRateCalc,
+      reserveRateInput: rateInputNoOptimal,
+      isApy: false,
+      whitelistMerklCampaignIds: new Set(),
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '1000',
+      borrowInput: '',
+      forecastStates: {},
+    });
+    expect(result.marketMetrics.optimalUtilization).toBe(80);
   });
 
   it('passes hubSupplied param to incentive calc (prefers over reserveRateInput.hubSupplied)', () => {
