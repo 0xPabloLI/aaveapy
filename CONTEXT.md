@@ -79,8 +79,21 @@ _Avoid_: Supply Ceiling, Borrow Ceiling（Ceiling 保留给 per-user 语义）
 ## Identity
 
 **Reserve ID**:
-单个字段作为 reserve 的 canonical key。代码中禁止用 `(underlyingAsset, chainId)` 组合作为 key 的 fallback 路径。
-_Avoid_: Composite key, (underlyingAsset, chainId) pair
+单个字段作为 reserve 的 canonical key。后端真实格式为 `{chainId}:{poolAddress}:{tokenAddress}`（如 `1:0x8787...:0xC02a...`）。代码中禁止用 `(underlyingAsset, chainId)` 组合作为 key 的 fallback 路径——但 `(chainId, tokenAddress)` 二元组可用于从 onchain/SDK 数据反查 reserve（`buildReserveLookupByChainAndToken`），因为这两字段在三侧（SDK、onchain、后端）都可用且语义稳定。
+_Avoid_: Composite key, (underlyingAsset, chainId) pair 作为主匹配路径
+
+**Reserve Lookup Strategy**:
+`buildReserveMap`（key=reserveId）用于已知 reserveId 的 O(1) 查找；`buildReserveLookupByChainAndToken`（key=`{chainId}:{tokenAddress}`）用于从 onchain/SDK 数据反查 reserve meta。两条路径并存，各有适用场景。
+
+---
+
+## Hard-Learned Lessons
+
+**LL1: 绝不能从测试 fixture 的硬编码值推断真实 API 格式**:
+测试 fixture 中的 reserveId（如 `AaveV3Celo-0x1234`）只是占位值，不反映后端真实格式。推断真实格式必须：直接 curl 生产/staging API、查阅后端源码、或查阅 API 文档。从 fixture 推断是根本性方法错误，曾导致实现 `composeReserveId(marketName, tokenAddress)` 格式与后端 `{chainId}:{poolAddress}:{tokenAddress}` 不匹配。
+
+**LL2: 测试 fixture 必须尽量使用真实格式**:
+即使 fixture 是构造数据，也应使用与生产 API 一致的格式（如 `42220:0xpool:0x1234` 而非 `AaveV3Celo-0x1234`）。这能避免新开发者从 fixture 推断格式时被误导，也使测试更接近真实场景。
 
 ## External Links
 
@@ -131,7 +144,7 @@ _Avoid_: 组合 key 做主匹配（方案 B）——冗余且易漏 side
 _Avoid_: 清空 currentValue（用户可能还在操作 Simulator）
 
 **Wallet Address Switch Behavior**:
-切换钱包地址（含 watch mode 切换）时：清空 Simulator 中 `source: 'wallet'` 的仓位，保留 `source: 'manual'` 仓位不动，然后 import 新地址的链上仓位。钱包仓位始终属于当前连接地址，切换 = 替换钱包部分。
+切换钱包地址（含 watch mode 切换）时：清空 Simulator 中 `source: 'wallet'` 的仓位，保留 `source: 'manual'` 仓位不动，然后自动 sync/import 新地址的链上仓位。钱包仓位始终属于当前连接地址，切换 = 替换钱包部分。
 _Avoid_: 混合多地址仓位（方案 α）、清空全部含手动仓位（方案 γ）
 
 **Soft Delete**:
@@ -139,8 +152,20 @@ _Avoid_: 混合多地址仓位（方案 α）、清空全部含手动仓位（�
 _Avoid_: 完全隐藏（用户不知道仓位存在）、Undo 机制
 
 **Watch Mode UI**:
-Header + PortfolioPanel 两处入口。Header 图标点击 → RainbowKit 弹窗（watchMode connector 作为钱包选项嵌入）→ 选后弹窗关闭 → Header 地址区内联展开输入框 → Enter 确认 / ESC 取消。已连接状态：地址缩略 + 下拉菜单（disconnect/switch）。Watch mode 用 Eye 图标 + tooltip "Viewing" 区分于钱包连接的绿色点。输入框支持 ENS 实时解析（debounce 300ms + useEnsName）。移动端：圆形钱包图标（同 FAQ/Clock 按钮）+ 连接后缩略地址。
-_Avoid_: 行内常驻输入框（占 Header 空间）、二次弹窗输入地址
+Header + PortfolioPanel 两处入口，语义保持一致。Watch Mode 和真实钱包互斥：同一时间只能有一个 active account，切换 Watch Mode 等同于切换当前钱包地址。入口文案统一为 "View address"，连接后的状态文案统一为 "Viewing"；真实钱包已连接时仍提供显式的 "Switch to watch mode" 入口。Header 桌面端 disconnected 状态并列显示 "Connect" 和 "View address"，移动端用同一个圆形钱包按钮打开紧凑菜单承载两个动作。Watch Mode 用 Eye 图标 + tooltip "Viewing" 区分于钱包连接的绿色点，地址输入支持 ENS 解析。
+_Avoid_: Watch Mode 和真实钱包并存、先断开真实钱包才能 Watch、把 Watch Mode 当作 RainbowKit 钱包选项依赖、行内常驻输入框（占 Header 空间）、二次弹窗输入地址
+
+---
+
+## Rate Simulation Phases
+
+**buildCurrentRates**:
+Phase 1 of rate simulation. 从 reserve/API 数据组装当前利率值（A 类字段）。不执行 rate model，不依赖用户模拟输入。输出不随 simulation input 变化。
+_Avoid_: computeSnapshot（Phase 1 不是执行模拟模型，而是组装已有数据）
+
+**calcPredictedRates**:
+Phase 2 of rate simulation. 基于用户模拟输入执行 rate model 预测未来利率（B 类字段）。调用 `simulateNativeRatesAfterActions`。输出随 simulation input 变化。无输入时返回 nullPrediction（After/Delta 全 null）。
+_Avoid_: computeSimulation（"Prediction" 比 "Simulation" 更精确——本质是预测而非模拟）
 
 ---
 

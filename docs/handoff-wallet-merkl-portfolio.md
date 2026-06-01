@@ -62,10 +62,12 @@ Minus 按钮条件逻辑：wallet 来源 → toggleHidden；manual 来源 → �
 
 ## 已完成（按里程碑）
 
-### M1: Watch Mode UI ✅
+### M1: Watch Mode UI ⚠️ Partial — AAV-485 open
 - `WatchAddressInput.tsx` + test
 - `WalletButton.tsx` + test
-- Header 集成
+- Header 集成缺口：`Header.tsx` 未传 `onWatchSubmit`，入口不可用
+- Watch Mode 不再依赖 RainbowKit Connect 弹窗展示自定义 connector；入口应由 Header / PortfolioPanel 显式提供
+- PortfolioPanel 也需要 `View address` 入口，保持与 Header 语义一致
 - watchModeConnector (wagmi v3 createConnector)
 
 ### M2: Portfolio Simulation Soft Delete ✅
@@ -214,6 +216,7 @@ Minus 按钮条件逻辑：wallet 来源 → toggleHidden；manual 来源 → �
 - `src/components/dashboard/WatchAddressInput.tsx` + test
 - `src/components/dashboard/WalletButton.tsx` + test
 - `src/components/dashboard/Header.tsx`
+- `src/components/dashboard/PortfolioPanel.tsx` — AAV-485: 需要补 `View address` 入口
 
 ### 类型
 - `src/types/aave.ts` — CampaignAccessEntry / CampaignAccessPayload / CampaignAccessStatus (`'allowed' | 'whitelist-blocked' | 'blacklisted'`)

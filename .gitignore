@@ -49,5 +49,9 @@ test-results/
 # Cursor local state
 .cursor/hooks/state/continual-learning.json
 
+# Personal agent skill symlinks (absolute paths into ~/.agents)
+.agents/
+.trae/skills/
+
 # Local-only notes and drafts (not committed)
 /local/
