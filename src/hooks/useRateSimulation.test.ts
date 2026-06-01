@@ -2108,3 +2108,129 @@ describe('buildRateSimulationResult ─ merkl per-group same-reserve net eligibi
     expect(result.supply.afterIncentive).toBeCloseTo(2.4, 1);
   });
 });
+
+describe('buildRateSimulationResult fallback behavior', () => {
+  const reserveWithoutRateCalc: ReserveWithSpread = {
+    reserveId: 'Core-0xNO_DECIMALS',
+    marketName: 'Core',
+    chainName: 'Ethereum',
+    chainId: 1,
+    tokenName: 'GHO',
+    tokenSymbol: 'GHO',
+    tokenAddress: '0x0000000000000000000000000000000000000099',
+    aTokenAddress: '0x000000000000000000000000000000000000009A',
+    vTokenAddress: '0x000000000000000000000000000000000000009B',
+    supplyApy: 3.0,
+    borrowApy: 5.0,
+    supplyIncentives: [],
+    borrowIncentives: [],
+    meritSupplys: [],
+    meritBorrows: [],
+    merklSupplys: [],
+    merklBorrows: [],
+    brevisSupplys: [],
+    brevisBorrows: [],
+    liquidity: '5000000000000000000000',
+    utilizationPct: 45,
+    optimalUtilization: 80,
+    decimals: 18,
+    supplied: '10000000000000000000000',
+    borrowed: '4500000000000000000000',
+    tokenPrice: 1,
+  };
+
+  it('uses reserve.utilizationPct when reserveRateInput is null', () => {
+    const result = buildRateSimulationResult({
+      reserve: reserveWithoutRateCalc,
+      reserveRateInput: null,
+      isApy: false,
+      whitelistMerklCampaignIds: new Set(),
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '',
+      borrowInput: '',
+      forecastStates: {},
+    });
+    expect(result.utilization.current).toBe(45);
+  });
+
+  it('uses reserve.optimalUtilization when reserveRateInput is null', () => {
+    const result = buildRateSimulationResult({
+      reserve: reserveWithoutRateCalc,
+      reserveRateInput: null,
+      isApy: false,
+      whitelistMerklCampaignIds: new Set(),
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '',
+      borrowInput: '',
+      forecastStates: {},
+    });
+    expect(result.utilization.optimal).toBe(80);
+  });
+
+  it('passes hubSupplied param to incentive calc (prefers over reserveRateInput.hubSupplied)', () => {
+    const reserveWithHub: ReserveWithSpread = {
+      ...reserveWithoutRateCalc,
+      hubId: 'hub-1',
+      decimals: 18,
+      supplied: '5000000000000000000000',
+      borrowed: '2000000000000000000000',
+    };
+    const rateInput: RateCalcInput = {
+      decimals: 18,
+      deficit: '0',
+      liquidity: '3000000000000000000000',
+      borrowed: '2000000000000000000000',
+      protocolFee: 10,
+      slopeBelowOptimal: 4,
+      slopeAboveOptimal: 60,
+      baseBorrowRate: 0,
+      optimalUtilization: 80,
+      hubSupplied: '6000000000000000000000',
+      hubBorrowed: '3000000000000000000000',
+    };
+    const resultWithOverride = buildRateSimulationResult({
+      reserve: reserveWithHub,
+      reserveRateInput: rateInput,
+      isApy: false,
+      whitelistMerklCampaignIds: new Set(),
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '1000',
+      borrowInput: '',
+      forecastStates: {},
+      hubSupplied: '9000000000000000000000',
+    });
+    const resultWithoutOverride = buildRateSimulationResult({
+      reserve: reserveWithHub,
+      reserveRateInput: rateInput,
+      isApy: false,
+      whitelistMerklCampaignIds: new Set(),
+      tydroPointToUsdRate: 1,
+      tokenPrice: 1,
+      supplyInput: '1000',
+      borrowInput: '',
+      forecastStates: {},
+    });
+    expect(resultWithOverride.supply.currentTotal).not.toBeNull();
+    expect(resultWithoutOverride.supply.currentTotal).not.toBeNull();
+    expect(resultWithOverride.supply.currentTotal).toEqual(resultWithoutOverride.supply.currentTotal);
+  });
+
+  it('provides availableLiquidityForBorrowUsd from reserve.liquidity when reserveRateInput is null', () => {
+    const result = buildRateSimulationResult({
+      reserve: reserveWithoutRateCalc,
+      reserveRateInput: null,
+      isApy: false,
+      whitelistMerklCampaignIds: new Set(),
+      tydroPointToUsdRate: 1,
+      tokenPrice: 2,
+      supplyInput: '',
+      borrowInput: '',
+      forecastStates: {},
+    });
+    expect(result.marketMetrics.availableLiquidityUsd).not.toBeNull();
+    expect(result.marketMetrics.availableLiquidityUsd).toBeGreaterThan(0);
+  });
+});

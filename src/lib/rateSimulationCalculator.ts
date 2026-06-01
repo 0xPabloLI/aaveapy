@@ -1523,9 +1523,9 @@ export function buildRateSimulationResult({
     supplyAfterTotal !== null && borrowAfterTotal !== null ? supplyAfterTotal - borrowAfterTotal : null;
   const spreadDelta = spreadAfter !== null && spreadCurrent !== null ? spreadAfter - spreadCurrent : null;
 
-  const utilizationCurrent = currentNativeSimulation?.utilizationRatePercent ?? null;
+  const utilizationCurrent = currentNativeSimulation?.utilizationRatePercent ?? reserve.utilizationPct ?? null;
   const utilizationAfter = combinedNativeSimulation?.utilizationRatePercent ?? null;
-  const utilizationOptimal = currentNativeSimulation?.optimalUtilizationPercent ?? null;
+  const utilizationOptimal = currentNativeSimulation?.optimalUtilizationPercent ?? reserve.optimalUtilization ?? null;
   const allActiveCampaignIds = hasAnyInput
     ? Array.from(
         new Set([
