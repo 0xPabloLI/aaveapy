@@ -22,6 +22,34 @@ export function decodeV4ReserveId(aaveProReserveId?: string): bigint | null {
   }
 }
 
+export interface V3AssetsByMarket {
+  chainId: number
+  assets: `0x${string}`[]
+}
+
+export function deriveV3AssetsByMarket(
+  reserves: ReserveWithSpread[],
+): Record<string, V3AssetsByMarket> {
+  const map = new Map<string, { chainId: number; assets: Set<string> }>()
+
+  for (const r of reserves) {
+    if (r.spokeAddress) continue
+    const existing = map.get(r.marketName)
+    if (existing) {
+      existing.assets.add(r.tokenAddress)
+    } else {
+      map.set(r.marketName, { chainId: r.chainId, assets: new Set([r.tokenAddress]) })
+    }
+  }
+
+  const result: Record<string, V3AssetsByMarket> = {}
+  for (const [marketName, { chainId, assets }] of map) {
+    result[marketName] = { chainId, assets: [...assets] as `0x${string}`[] }
+  }
+  return result
+}
+
+/** @deprecated Use deriveV3AssetsByMarket() instead. */
 export function deriveV3AssetsByChain(
   reserves: ReserveWithSpread[],
 ): Record<number, `0x${string}`[]> {

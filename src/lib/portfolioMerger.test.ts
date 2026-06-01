@@ -76,6 +76,21 @@ describe('mergePositions', () => {
     expect(dai.walletValue).toBeNull()
   })
 
+  it('replaces wallet-sourced positions while preserving manual positions', () => {
+    const current = [
+      makePos({ positionId: 'old-wallet', reserveId: 'r-usdc', tokenSymbol: 'USDC', side: 'supply', amount: '2000', walletValue: 2000 }),
+      makePos({ positionId: 'manual', reserveId: 'r-dai', tokenSymbol: 'DAI', side: 'supply', amount: '3000', walletValue: null }),
+    ]
+    const incoming = [
+      makePos({ positionId: 'new-wallet', reserveId: 'r-weth', tokenSymbol: 'WETH', side: 'supply', amount: '5000', walletValue: 5000 }),
+    ]
+    const result = mergePositions({ current, incoming })
+
+    expect(result.some((p) => p.positionId === 'old-wallet')).toBe(false)
+    expect(result.some((p) => p.positionId === 'manual')).toBe(true)
+    expect(result.some((p) => p.positionId === 'new-wallet')).toBe(true)
+  })
+
   it('unhides hidden positions when wallet sync provides new value', () => {
     const current = [
       makePos({ positionId: 'p1', reserveId: 'r-usdc', tokenSymbol: 'USDC', side: 'supply', amount: '2000', walletValue: 2000, hidden: true }),

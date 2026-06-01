@@ -35,7 +35,9 @@ export function mergePositions({ current, incoming }: MergeParams): PortfolioPos
   }
 
   for (const [, pos] of currentMap) {
-    result.set(positionKey(pos), pos)
+    if (pos.walletValue === null) {
+      result.set(positionKey(pos), pos)
+    }
   }
 
   return Array.from(result.values())

@@ -62,6 +62,7 @@ export interface V3UserAccountData {
 
 export interface V3UserPosition {
   chainId: number
+  marketName: string
   asset: `0x${string}`
   supplyWad: bigint
   stableBorrowWad: bigint
@@ -146,6 +147,7 @@ export async function getV3UserPositionsOnChain(
   chainId: number,
   userAddress: `0x${string}`,
   reserveIds: `0x${string}`[],
+  marketName: string,
   client?: PublicClient,
 ): Promise<V3OnchainResult> {
   const poolAddress = getV3PoolAddress(chainId)
@@ -187,6 +189,7 @@ export async function getV3UserPositionsOnChain(
     if (currentATokenBalance === 0n && currentStableDebt === 0n && currentVariableDebt === 0n) continue
     positions.push({
       chainId,
+      marketName,
       asset: reserveIds[i],
       supplyWad: currentATokenBalance,
       stableBorrowWad: currentStableDebt,
@@ -212,15 +215,21 @@ export async function getV3UserPositionsOnChain(
   return { positions, accountSummary }
 }
 
+export interface V3AssetsByMarket {
+  chainId: number
+  assets: `0x${string}`[]
+}
+
 export async function getV3UserPositionsMultiChain(
   userAddress: `0x${string}`,
-  reserveIdsByChain: Record<number, `0x${string}`[]>,
+  assetsByMarket: Record<string, V3AssetsByMarket>,
 ): Promise<V3OnchainResponse> {
-  const chainIds = Object.keys(reserveIdsByChain).map(Number)
+  const marketNames = Object.keys(assetsByMarket)
   const settled = await Promise.allSettled(
-    chainIds.map((chainId) =>
-      getV3UserPositionsOnChain(chainId, userAddress, reserveIdsByChain[chainId]),
-    ),
+    marketNames.map((marketName) => {
+      const { chainId, assets } = assetsByMarket[marketName]
+      return getV3UserPositionsOnChain(chainId, userAddress, assets, marketName)
+    }),
   )
 
   const results: V3OnchainResult[] = []
@@ -231,7 +240,8 @@ export async function getV3UserPositionsMultiChain(
     if (outcome.status === 'fulfilled') {
       results.push(outcome.value)
     } else {
-      errors.push({ chainId: chainIds[i], error: outcome.reason })
+      const { chainId } = assetsByMarket[marketNames[i]]
+      errors.push({ chainId, error: outcome.reason })
     }
   }
 

@@ -6,6 +6,7 @@ import {
   getV3UserPositionsOnChain,
   getV3UserPositionsMultiChain,
   type V3OnchainResult,
+  type V3AssetsByMarket,
 } from './aaveV3UserClient'
 import { AAVE_V3_CHAIN_IDS } from '../aaveChains'
 import { createPublicClient, http } from 'viem'
@@ -106,11 +107,12 @@ describe('getV3UserPositionsOnChain', () => {
       },
     ])
 
-    const result = await getV3UserPositionsOnChain(1, USER, [DAI, USDC], client)
+    const result = await getV3UserPositionsOnChain(1, USER, [DAI, USDC], 'AaveV3Ethereum', client)
 
     expect(result.positions).toHaveLength(1)
     expect(result.positions[0]).toEqual({
       chainId: 1,
+      marketName: 'AaveV3Ethereum',
       asset: DAI,
       supplyWad: 1000n * 10n ** 18n,
       stableBorrowWad: 0n,
@@ -146,7 +148,7 @@ describe('getV3UserPositionsOnChain', () => {
       },
     ])
 
-    const result = await getV3UserPositionsOnChain(1, USER, [DAI], client)
+    const result = await getV3UserPositionsOnChain(1, USER, [DAI], 'AaveV3Ethereum', client)
     expect(result.positions).toHaveLength(0)
   })
 
@@ -166,12 +168,12 @@ describe('getV3UserPositionsOnChain', () => {
       },
     ])
 
-    const result = await getV3UserPositionsOnChain(1, USER, [DAI], client)
+    const result = await getV3UserPositionsOnChain(1, USER, [DAI], 'AaveV3Ethereum', client)
     expect(result.positions).toHaveLength(0)
   })
 
   it('returns empty for unknown chain', async () => {
-    const result = await getV3UserPositionsOnChain(999999, USER, [DAI])
+    const result = await getV3UserPositionsOnChain(999999, USER, [DAI], 'AaveV3Ethereum')
     expect(result.positions).toHaveLength(0)
     expect(result.accountSummary).toBeNull()
   })
@@ -191,7 +193,7 @@ describe('getV3UserPositionsOnChain', () => {
       { status: 'failure', result: undefined },
     ])
 
-    const result = await getV3UserPositionsOnChain(1, USER, [DAI], client)
+    const result = await getV3UserPositionsOnChain(1, USER, [DAI], 'AaveV3Ethereum', client)
     expect(result.positions).toHaveLength(1)
     expect(result.accountSummary).toBeNull()
   })
@@ -228,15 +230,15 @@ describe('getV3UserPositionsMultiChain', () => {
       getV3UserPositionsOnChain: vi
         .fn()
         .mockResolvedValueOnce({
-          positions: [{ chainId: 1, asset: DAI, supplyWad: 100n * 10n ** 18n, stableBorrowWad: 0n, variableBorrowWad: 0n, isCollateral: true }],
+          positions: [{ chainId: 1, marketName: 'AaveV3Ethereum', asset: DAI, supplyWad: 100n * 10n ** 18n, stableBorrowWad: 0n, variableBorrowWad: 0n, isCollateral: true }],
           accountSummary: null,
         })
         .mockRejectedValueOnce(new Error('RPC error')),
     }))
 
     const result = await getV3UserPositionsMultiChain(USER, {
-      1: [DAI],
-      42161: [USDC],
+      'AaveV3Ethereum': { chainId: 1, assets: [DAI] },
+      'AaveV3Arbitrum': { chainId: 42161, assets: [USDC] },
     })
 
     expect(result.results.length + result.errors.length).toBe(2)

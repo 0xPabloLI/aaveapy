@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   deriveV3AssetsByChain,
+  deriveV3AssetsByMarket,
   deriveV4ReservesBySpoke,
   decodeV4ReserveId,
 } from './deriveOnchainConfig'
@@ -75,6 +76,50 @@ describe('decodeV4ReserveId', () => {
   it('returns null for non-numeric reserveId part', () => {
     const encoded = Buffer.from('abc::0x1234').toString('base64')
     expect(decodeV4ReserveId(encoded)).toBeNull()
+  })
+})
+
+describe('deriveV3AssetsByMarket', () => {
+  it('groups V3 token addresses by marketName', () => {
+    const reserves = [
+      makeV3Reserve(1, '0xAa', { marketName: 'AaveV3Ethereum' }),
+      makeV3Reserve(1, '0xBb', { marketName: 'AaveV3Ethereum' }),
+      makeV3Reserve(1, '0xCc', { marketName: 'AaveV3EthereumLido' }),
+    ]
+    const result = deriveV3AssetsByMarket(reserves)
+    expect(result['AaveV3Ethereum']).toEqual({ chainId: 1, assets: ['0xAa', '0xBb'] })
+    expect(result['AaveV3EthereumLido']).toEqual({ chainId: 1, assets: ['0xCc'] })
+  })
+
+  it('separates same chainId but different marketNames', () => {
+    const reserves = [
+      makeV3Reserve(1, '0xAa', { marketName: 'AaveV3Ethereum' }),
+      makeV3Reserve(1, '0xAa', { marketName: 'AaveV3EthereumLido' }),
+    ]
+    const result = deriveV3AssetsByMarket(reserves)
+    expect(Object.keys(result).sort()).toEqual(['AaveV3Ethereum', 'AaveV3EthereumLido'])
+  })
+
+  it('excludes V4 reserves (those with spokeAddress)', () => {
+    const reserves = [
+      makeV3Reserve(1, '0xAa'),
+      makeV4Reserve(1, '0xBb', '0xSpoke', 'encoded'),
+    ]
+    const result = deriveV3AssetsByMarket(reserves)
+    expect(Object.keys(result)).toHaveLength(1)
+  })
+
+  it('returns empty record for empty reserves', () => {
+    expect(deriveV3AssetsByMarket([])).toEqual({})
+  })
+
+  it('deduplicates token addresses within a market', () => {
+    const reserves = [
+      makeV3Reserve(1, '0xAa', { marketName: 'AaveV3Ethereum' }),
+      makeV3Reserve(1, '0xAa', { marketName: 'AaveV3Ethereum' }),
+    ]
+    const result = deriveV3AssetsByMarket(reserves)
+    expect(result['AaveV3Ethereum'].assets).toEqual(['0xAa'])
   })
 })
 
