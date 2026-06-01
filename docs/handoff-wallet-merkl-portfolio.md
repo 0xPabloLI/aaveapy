@@ -244,3 +244,59 @@ Minus 按钮条件逻辑：wallet 来源 → toggleHidden；manual 来源 → �
 
 - `docs/plans/linear-issues/aav_epic_wallet_merkl_portfolio_plan.md` (1082行) — 完整 plan
 - `docs/design/frontend-interaction-guardrails.md` (L292-323) — Merkl whitelist-only campaigns 行为规则
+
+## 切片实现完成状态（2026-06-01 更新）
+
+### 全部 6 切片已完成 ✅
+
+| 切片 | Linear Issue | 内容 | 状态 |
+|------|-------------|------|------|
+| 1 | AAV-469 | SDK hooks + AaveProviders + SdkErrorBoundary | ✅ Done |
+| 2 | AAV-470 | SDK → WalletPosition 转换 + useWalletAutoImport | ✅ Done |
+| 3 | AAV-471 | Index.tsx 集成 + degradation toasts | ✅ Done |
+| 4 | AAV-472 | PortfolioPanel Merkl rewards 渲染 | ✅ Done |
+| 5 | AAV-473 | Hidden 仓位样式 + WalletSyncIndicator | ✅ Done |
+| 6 | AAV-474 | 架构守卫测试 + 类型扩展 | ✅ Done |
+
+### Code Review 修复完成 ✅
+
+**3 Critical + 5 Important 全部修复**（commit `0be6cd55`）：
+
+- **C1** `useUserPositionsSdk.ts` — `address!` → conditional cast
+- **C2** `useUserSummarySdk.ts` — unsafe cast → `__typename` type guard
+- **C3** `useUserSummarySdk.ts` — falsy bug → `!= null` check
+- **I3** `sdkPositionConverter.ts` — `extractChainId` NaN guard
+- **I4** `sdkPositionConverter.ts` — `toSafeUsd()` 守卫
+- **I5** `SdkErrorBoundary.tsx` — 重试按钮
+- **I6** `SdkErrorBoundary.tsx` — amber → orange 配色
+- **I7** `sdkPositionConverter.ts` — `decimalToWad` 空输入校验
+- **I8** `useUserSummarySdk.ts` — `Number()` → `parseFloat()`
+
+### PR #297 状态
+
+- **OPEN / MERGEABLE** ✅（已解决与 main 的合并冲突）
+- head: `538a73ab`（包含 code review 修复 + main merge）
+
+### 已知遗留项（Nice-to-have，低优先级）
+
+- **N1** `sdkPositionConverter.test.ts` 测试覆盖不足（仅 3 个）
+- **N2** `useWalletAutoImport` 缺钱包切换地址场景测试
+- **N3** `AaveProviders.tsx` client 创建在 module scope
+- **N4** `walletSourceToPositionSource` 冗余 identity 函数
+- **N5** `AaveProviders` JSX 缩进不一致
+
+### 文档待做项（非功能缺失）
+
+1. Phase 5 HF — 明确延后
+2. 共享 chainId 真理表抽取 — 重构任务
+3. Bundle size spike — 运维/性能任务
+4. `useCampaignAccess.test.ts` — plan 标注未做
+5. E2E Playwright wallet smoke test — 需真实钱包
+
+### 未提交改动（非本次 scope，来自之前 session）
+
+- `src/lib/interestRateCalculator.ts` — decimals 从 required 改为 optional
+- `src/lib/interestRateCalculator.test.ts` — 对应测试更新
+- `src/hooks/useRateSimulation.ts` / `portfolioSimulator.ts` / `rateSimulationCalculator.ts` — 有改动
+- `.trae/rules/project_rules.md` — modified
+- `.agents/` — untracked directory
