@@ -109,14 +109,13 @@ export function simulatePortfolioPositions(
       ? { ...reserve }
       : null;
 
-    if (reserveRateInput && reserve.hubId) {
-      const hubKey = getHubAssetKey(reserve);
-      const hubAgg = hubKey ? hubMap.get(hubKey) : undefined;
-      if (hubAgg) {
-        reserveRateInput.borrowed = hubAgg.hubBorrowed;
-        reserveRateInput.hubBorrowed = hubAgg.hubBorrowed;
-        reserveRateInput.hubSupplied = hubAgg.hubSupplied;
-      }
+    const hubKey = reserve.hubId ? getHubAssetKey(reserve) : null;
+    const hubAgg = hubKey ? hubMap.get(hubKey) : undefined;
+
+    if (reserveRateInput && hubAgg) {
+      reserveRateInput.borrowed = hubAgg.hubBorrowed;
+      reserveRateInput.hubBorrowed = hubAgg.hubBorrowed;
+      reserveRateInput.hubSupplied = hubAgg.hubSupplied;
     }
 
     if (reserveRateInput) {
@@ -133,6 +132,8 @@ export function simulatePortfolioPositions(
         forecastStates,
         reservePositions,
         reserveSymbolById,
+        hubSupplied: hubAgg?.hubSupplied,
+        hubBorrowed: hubAgg?.hubBorrowed,
       });
 
       for (const pos of group.supplyPositions) {

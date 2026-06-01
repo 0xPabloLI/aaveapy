@@ -257,8 +257,13 @@ describe('hasRateCalcFields', () => {
     }
   });
 
+  it('returns true when decimals is missing (defaults to 18 downstream)', () => {
+    const { decimals: _, ...withoutDecimals } = fullReserve;
+    expect(hasRateCalcFields(withoutDecimals as ReserveWithSpread)).toBe(true);
+  });
+
   const requiredFields = [
-    'decimals', 'liquidity', 'borrowed', 'deficit',
+    'liquidity', 'borrowed', 'deficit',
     'protocolFee', 'slopeBelowOptimal', 'slopeAboveOptimal',
     'baseBorrowRate', 'optimalUtilization',
   ] as const;

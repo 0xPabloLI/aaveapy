@@ -7,7 +7,7 @@ import type { ReserveWithSpread } from '@/types/aave';
  * by the unified V3/V4 backend. No RAY/bps string conversion needed.
  */
 export interface RateCalcInput {
-  decimals: number;
+  decimals?: number;
   liquidity: string;
   borrowed: string;
   deficit: string;
@@ -20,10 +20,10 @@ export interface RateCalcInput {
   hubSupplied?: string;
 }
 
-/** Type guard: returns true when a reserve has all fields needed for rate calculation. */
+/** Type guard: returns true when a reserve has all fields needed for rate calculation.
+ *  decimals is optional — downstream defaults to 18 when missing. */
 export function hasRateCalcFields(reserve: ReserveWithSpread): reserve is ReserveWithSpread & RateCalcInput {
   return (
-    reserve.decimals != null &&
     reserve.liquidity != null &&
     reserve.borrowed != null &&
     reserve.deficit != null &&

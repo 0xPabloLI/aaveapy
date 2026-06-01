@@ -264,6 +264,8 @@ export interface BuildRateSimulationResultParams {
   /** reserveId b symbol lookup for cross-reserve note (offset reserve symbols). */
   reserveSymbolById?: Map<string, string>;
   campaignAccessStatuses?: Record<string, 'allowed' | 'whitelist-blocked' | 'blacklisted'>;
+  hubSupplied?: string;
+  hubBorrowed?: string;
 }
 
 export const buildIncentiveCurrent = (
@@ -968,6 +970,8 @@ export function buildRateSimulationResult({
   reservePositions,
   reserveSymbolById,
   campaignAccessStatuses,
+  hubSupplied,
+  hubBorrowed,
 }: BuildRateSimulationResultParams): RateSimulationComputedResult {
   const rawSupply = parseNumberInput(supplyInput);
   const rawBorrow = parseNumberInput(borrowInput);
@@ -1032,12 +1036,13 @@ export function buildRateSimulationResult({
 
   // If supply is disabled, new supply input does not increase available liquidity.
   const effectiveSupplyInputUsd = supplyBlocked ? 0 : supplyInputUsd;
+  const liquiditySource = reserveRateInput ?? reserve;
   const availableLiquidityForBorrowUsd = borrowBlocked ? null
-    : reserveRateInput && tokenPrice
+    : liquiditySource.liquidity != null && tokenPrice
       ? (() => {
-          const decimals = reserveRateInput.decimals ?? 18;
+          const decimals = liquiditySource.decimals ?? 18;
           const scale = Math.pow(10, decimals);
-          const liquidityRaw = Number(reserveRateInput.liquidity) / scale;
+          const liquidityRaw = Number(liquiditySource.liquidity) / scale;
             return liquidityRaw * tokenPrice + effectiveSupplyInputUsd;
         })()
       : null;
@@ -1180,8 +1185,8 @@ export function buildRateSimulationResult({
         tydroPointToUsdRate,
         whitelistMerklCampaignIds,
         brevisSharedDepositsByCampaignId,
-        reserveRateInput?.hubSupplied,
-        reserveRateInput?.hubBorrowed,
+        hubSupplied ?? reserveRateInput?.hubSupplied,
+        hubBorrowed ?? reserveRateInput?.hubBorrowed,
         merklGroupMultiplier('supply'),
         campaignAccessStatuses,
       )
@@ -1198,8 +1203,8 @@ export function buildRateSimulationResult({
         tydroPointToUsdRate,
         whitelistMerklCampaignIds,
         brevisSharedDepositsByCampaignId,
-        reserveRateInput?.hubSupplied,
-        reserveRateInput?.hubBorrowed,
+        hubSupplied ?? reserveRateInput?.hubSupplied,
+        hubBorrowed ?? reserveRateInput?.hubBorrowed,
         merklGroupMultiplier('borrow'),
         campaignAccessStatuses,
       )
@@ -1216,8 +1221,8 @@ export function buildRateSimulationResult({
         tydroPointToUsdRate,
         whitelistMerklCampaignIds,
         brevisSharedDepositsByCampaignId,
-        reserveRateInput?.hubSupplied,
-        reserveRateInput?.hubBorrowed,
+        hubSupplied ?? reserveRateInput?.hubSupplied,
+        hubBorrowed ?? reserveRateInput?.hubBorrowed,
         merklGroupMultiplier('supply'),
         campaignAccessStatuses,
       )
@@ -1234,8 +1239,8 @@ export function buildRateSimulationResult({
         tydroPointToUsdRate,
         whitelistMerklCampaignIds,
         brevisSharedDepositsByCampaignId,
-        reserveRateInput?.hubSupplied,
-        reserveRateInput?.hubBorrowed,
+        hubSupplied ?? reserveRateInput?.hubSupplied,
+        hubBorrowed ?? reserveRateInput?.hubBorrowed,
         merklGroupMultiplier('borrow'),
         campaignAccessStatuses,
       )
@@ -1353,7 +1358,7 @@ export function buildRateSimulationResult({
     isApy,
     supplyMeritMerklInputUsd,
     hasAnyInput,
-    getMeritAnchorTvlUsd(reserve, 'supply', getProtocolVersion(reserve.marketName), reserveRateInput?.hubSupplied, reserveRateInput?.hubBorrowed),
+    getMeritAnchorTvlUsd(reserve, 'supply', getProtocolVersion(reserve.marketName), hubSupplied ?? reserveRateInput?.hubSupplied, hubBorrowed ?? reserveRateInput?.hubBorrowed),
     supplyMeritMerklEligibilityRatio,
     supplyInputUsd,
   );
@@ -1383,7 +1388,7 @@ export function buildRateSimulationResult({
     isApy,
     borrowMeritMerklInputUsd,
     hasAnyInput,
-    getMeritAnchorTvlUsd(reserve, 'borrow', getProtocolVersion(reserve.marketName), reserveRateInput?.hubSupplied, reserveRateInput?.hubBorrowed),
+    getMeritAnchorTvlUsd(reserve, 'borrow', getProtocolVersion(reserve.marketName), hubSupplied ?? reserveRateInput?.hubSupplied, hubBorrowed ?? reserveRateInput?.hubBorrowed),
     borrowMeritMerklEligibilityRatio,
     borrowInputUsd,
   );

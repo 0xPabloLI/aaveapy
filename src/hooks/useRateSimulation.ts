@@ -209,13 +209,19 @@ export const useSharedRateSimulations = ({
     return reserves.reduce<Record<string, RateSimulationResult>>((acc, reserve) => {
       const reserveId = getReserveSimulationId(reserve);
       const reserveRateInput: RateCalcInput | null = hasRateCalcFields(reserve) ? { ...reserve } : null;
-      if (reserveRateInput && reserve.hubId) {
+      let hubSupplied: string | undefined;
+      let hubBorrowed: string | undefined;
+      if (reserve.hubId) {
         const hubKey = getHubAssetKey(reserve);
         const hubAgg = hubKey ? hubAggregationMap.get(hubKey) : undefined;
         if (hubAgg) {
-          reserveRateInput.borrowed = hubAgg.hubBorrowed;
-          reserveRateInput.hubBorrowed = hubAgg.hubBorrowed;
-          reserveRateInput.hubSupplied = hubAgg.hubSupplied;
+          hubSupplied = hubAgg.hubSupplied;
+          hubBorrowed = hubAgg.hubBorrowed;
+          if (reserveRateInput) {
+            reserveRateInput.borrowed = hubAgg.hubBorrowed;
+            reserveRateInput.hubBorrowed = hubAgg.hubBorrowed;
+            reserveRateInput.hubSupplied = hubAgg.hubSupplied;
+          }
         }
       }
       acc[reserveId] = {
@@ -233,6 +239,8 @@ export const useSharedRateSimulations = ({
           meritMerklNetPosition,
           reservePositions,
           reserveSymbolById,
+          hubSupplied,
+          hubBorrowed,
         }),
         tokenPriceLoading: tokenPriceLoadingById[reserveId] ?? false,
         forecastLoading: hasAnyInput && forecastLoading,

@@ -102,6 +102,6 @@ export function resolvePositionMeta(
     reserveId: reserve.reserveId,
     tokenSymbol: reserve.tokenSymbol,
     tokenPrice: reserve.tokenPrice ?? 0,
-    decimals: reserve.decimals ?? 0,
+    decimals: reserve.decimals ?? 18,
   }
 }

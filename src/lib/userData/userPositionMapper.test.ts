@@ -253,7 +253,7 @@ describe('resolvePositionMeta', () => {
     expect(meta.tokenPrice).toBe(0)
   })
 
-  it('uses decimals 0 when reserve has no decimals', () => {
+  it('defaults to 18 decimals when reserve has no decimals', () => {
     const noDecimalsReserves: ReserveWithSpread[] = [
       {
         marketName: 'Test',
@@ -267,6 +267,6 @@ describe('resolvePositionMeta', () => {
       },
     ]
     const meta = resolvePositionMeta(USDC_ADDR, 1, noDecimalsReserves)
-    expect(meta.decimals).toBe(0)
+    expect(meta.decimals).toBe(18)
   })
 })
