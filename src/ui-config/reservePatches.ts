@@ -301,6 +301,11 @@ export function fetchIconSymbolAndName({ underlyingAsset, symbol, name }: IconSy
       name: 'PT USDG May 2026',
       iconSymbol: 'ptusdg',
     },
+    '0xc96de26018a54d51c097160568752c4e3bd6c364': {
+      iconSymbol: 'FBTC',
+      name: 'Function Bitcoin',
+      symbol: 'FBTC',
+    },
 };
 
   const lowerUnderlyingAsset = underlyingAsset?.toLowerCase();
