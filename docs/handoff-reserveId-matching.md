@@ -1,118 +1,87 @@
-# Handoff: Wallet User Position → Reserve 匹配
+# Handoff: Wallet User Position → Reserve 精确匹配（方案A实现完成）
 
 ## 核心问题
 
-前端需要将 SDK 一次性获取的所有 user position 匹配到后端 `/markets` 返回的对应 Reserve。
+前端需要将 SDK 一次性获取的所有 user position 精确匹配到后端 `/markets` 返回的对应 Reserve（通过 `reserveId`），以获取 price、symbol 等 meta 信息。
 
-**关键发现：后端 reserveId 真实格式是 `{chainId}:{poolAddress}:{tokenAddress}`（如 `1:0x8787...:0x1111...`），不是之前错误假设的 `{marketName}-{tokenAddress}`。**
+## 解决方案（方案A — 已实现）
 
-这一发现来自直接 curl staging API (`https://staging-api.aaveapy.com/api/markets`)，而非测试 fixture。
+从 SDK 数据构造 reserveId 字符串，然后 `Map.get(reserveId)` 精确查找，fallback 到 `(chainId, tokenAddress)` 查找。
 
-## 当前状态
+### 后端 reserveId 真实格式（从 staging API 验证）
 
-### 已完成但有缺陷的代码
+- **V3**: `{chainId}:{poolAddress}:{tokenAddress}`
+- **V4**: `{chainId}:{poolAddress}:{tokenAddress}:{hubName}`（hubName 取值为 `Core` / `Plus` / `Prime`）
+- 所有地址组件统一 lowercase
+- V3 Ethereum mainnet 有 4 个不同 poolAddress 都有 USDC，证明 `(chainId, tokenAddress)` 二元组匹配不够精确
 
-以下文件基于**错误的 reserveId 格式假设**（`{marketName}-{tokenAddress}`）实现，需要修正：
+### SDK 数据结构关键字段
 
-- `src/lib/reserveKey.ts` — `composeReserveId(marketName, tokenAddress)` 格式错误；`buildReserveMap` 用 `reserve.reserveId.trim()` 做 key 这部分是对的
-- `src/lib/userData/onchainPositionConverter.ts` — 第 34、59 行用 `composeReserveId()` 组 key 查 Map，格式与后端不匹配
-- `src/lib/userData/sdkPositionConverter.ts` — 用 `reserve.id` 做 Map.get，**这条路径可能是对的**，因为 SDK 的 `reserve.id` 应该就是后端 reserveId
-- `src/lib/userData/userPositionMapper.ts` — `resolvePositionMeta(reserveId, reserveMap)` 签名本身没问题，问题在调用方传入的 reserveId 格式
+- **V4** (`@aave/react`): `position.reserve.spoke.address` → poolAddress；`position.reserve.spoke.chain.chainId` → chainId；`position.reserve.underlyingAsset.address` → tokenAddress；`position.reserve.spoke.connectedHubs[].hub.name` → hubName
+- **V3** (`@aave/react-v3`): `position.market.address` → poolAddress；`position.market.chain.chainId` → chainId；`position.currency.address` → tokenAddress；V3 无 HubName 概念
+- **重要**: SDK `reserve.id` 是 Base64 编码的 ReserveId，**不等于**后端 reserveId，不能直接用于 Map.get
 
-### 已正确实现的部分
+## 已完成的修改
 
-- `buildReserveMap` 直接用 `r.reserveId.trim()` 做 key — 正确
-- SDK converter 用 `supply.reserve.id` / `borrow.reserve.id` — 需要确认 SDK 的 `.id` 是否就是后端 reserveId
-- `ReserveWithSpread.reserveId` 字段从 API 拿到的是真实格式 — 正确
-- V3UserPosition 新增 marketName 字段 — 仍需要
-- deriveV3AssetsByMarket — 仍需要
+### 1. `src/lib/reserveKey.ts` — 新增 `composeReserveId()`
 
-### 用户明确说的问题
-
-1. **SDK 优先**：V3/V4 都是优先从 SDK 拿 user position，不是 onchain
-2. **一次性获取**：user position 是一次性全量获取，不是一个 market 一个 market 地获取
-3. **尚未讨论 onchain**：当前应聚焦 SDK 路径的匹配逻辑
-4. **composeReserveId 格式假设错误**：不能从测试 fixture 推断真实格式
-
-## 后端真实数据（来自 staging API）
-
+```ts
+composeReserveId(chainId, poolAddress, tokenAddress, hubName?) → string | undefined
 ```
-reserveId                                              | marketName              | tokenAddress
-1:0x8787...:0x1111...                                 | AaveV3Ethereum         | 0x1111...
-1:0x0aa9...:0x853d...                                 | AaveV3EthereumEtherFi  | 0x853d...
-1:0x4e03...:0x40d1...                                 | AaveV3EthereumLido     | 0x40d1...
-1:0xae05...:0x1741...                                 | AaveV3EthereumHorizon  | 0x1741...
-42161:0x794a...:0xba5d...                             | AaveV3Arbitrum         | 0xba5d...
+- V3 格式: `{chainId}:{poolAddress.toLowerCase()}:{tokenAddress.toLowerCase()}`
+- V4 格式: 额外拼接 `:{hubName}`
+- 任一必需参数缺失返回 undefined
+
+### 2. `src/lib/userData/userPositionMapper.ts` — 新增 `resolvePositionMetaByReserveId()`
+
+```ts
+resolvePositionMetaByReserveId(composedId?, chainId, tokenAddress, reserveMap, chainTokenLookupMap) → PositionMeta
 ```
+- 优先用 composedId 精确查找 reserveMap
+- 找不到则 fallback 到 `(chainId, tokenAddress)` 查 chainTokenLookupMap
+- 都找不到返回 orphan meta（reserveId=undefined, tokenPrice=0）
 
-格式：`{chainId}:{poolAddress}:{tokenAddress}`
+### 3. `src/lib/userData/sdkPositionConverter.ts` — 接口 + 转换逻辑改用 reserveId 精确查找
 
-## 需要解决的关键问题
+- `SdkSupplyPosition.reserve` 加 `poolAddress?: `0x${string}`` 和 `hubName?: string`
+- `SdkBorrowPosition.reserve` 同上
+- 转换函数签名改为 `(positions, reserveMap, chainTokenLookupMap, source)` 双 map
+- 转换逻辑: 先 `composeReserveId(chainId, poolAddress, asset, hubName)` → 再 `resolvePositionMetaByReserveId()`
+- re-export `buildReserveMap`
 
-### 1. SDK `reserve.id` 是否等于后端 reserveId？
+### 4. `src/hooks/useUserPositionsSdk.ts` — 数据提取层 + 双 map 构建
 
-SDK position 里 `supply.reserve.id` / `borrow.reserve.id` 的值是什么格式？如果是后端 reserveId，那 SDK converter 路径直接 Map.get 就行。
+- 新增 `enrichV3SupplyPositions` / `enrichV3BorrowPositions`：从 `market.address` 提取 poolAddress
+- 新增 `enrichV4SupplyPositions` / `enrichV4BorrowPositions`：从 `reserve.spoke.address` 提取 poolAddress，从 `reserve.spoke.connectedHubs[0].hub.name` 提取 hubName
+- 构建 `sdkReserveMap` (by reserveId) + `sdkLookupMap` (by chainId:tokenAddress) 双 map
+- V3/V4 数据传入 converter 前先经 enrich 函数
 
-### 2. 如何从 SDK user position 唯一匹配到 Reserve？
+### 5. 测试
 
-SDK 一次性返回所有 market 的 positions。匹配 key 需要能区分同链不同 market 的同名资产（如 Ethereum 上 4 个 V3 market 都有 USDC）。
+- `src/lib/reserveKey.test.ts` — 22 tests（含 composeReserveId 的 V3/V4 格式、lowercase、undefined、hubName 段数）
+- `src/lib/userData/userPositionMapper.test.ts` — 23 tests（含 resolvePositionMetaByReserveId 的精确匹配、同币种不同 pool 区分、V4 hubName、fallback、orphan）
+- `src/lib/userData/sdkPositionConverter.test.ts` — 6 tests（适配双 map 签名、poolAddress/hubName fixture、V4 hubName 匹配、fallback、orphan）
 
-可能的匹配方式：
-- 如果 SDK position 自带 `reserve.id`（= 后端 reserveId）→ 直接 Map.get，最简单
-- 如果没有，需要从 `(marketName, tokenAddress)` 或 `(chainId, poolAddress, tokenAddress)` 查找
+## 验证 Gate
 
-### 3. composeReserveId 该怎么改？
+✅ lint (0 errors) ✅ test (2212 passed) ✅ build ✅ tsc --noEmit
 
-**不要猜测格式**。两种选择：
-- 删掉它，改为从 ReserveWithSpread 中查找（如建 `Map<marketName:tokenAddress, ReserveWithSpread>`）
-- 保留但改用真实格式组合（需 chainId + poolAddress + tokenAddress），但前提是链上/onchain 数据有 poolAddress
+## 已知限制
+
+1. **V4 多 hubName 场景**：当前取 `connectedHubs[0].hub.name`。实际中一个 spoke 通常只连 1 个 hub（Core 为主），但理论上可能有多个。如需精确处理多 hub，需要尝试每个 hubName 在 reserveMap 中查找匹配。
+2. **onchain converter 路径未修改**：`onchainPositionConverter.ts` 仍用 chainTokenKey 查找，暂不修改。
 
 ## 教训
 
-**绝不能用测试 fixture 的硬编码值推断真实 API 格式**。测试里的 `AaveV3Celo-0x1234` 只是占位值，不代表真实格式。以后确认格式必须：
-1. 直接调真实/staging API 验证
-2. 或从后端代码/schema 文档确认
-3. 或从 `apiSchemas.ts` 的 Zod schema 解析确认（看是否有 transform/normalize 逻辑）
+1. **绝不能用测试 fixture 的硬编码值推断真实 API 格式** — 必须直接调 staging API 验证
+2. **SDK `reserve.id` 不等于后端 reserveId** — 它是 Base64 编码的复合 ID，不能直接用于 Map.get
+3. **V3 多 pool 同币种** — Ethereum mainnet 有 4 个不同 poolAddress 都有 USDC，`(chainId, tokenAddress)` 二元组不够精确
 
 ## 相关文件
 
-### 类型/Schema
-- `src/types/aave.ts:117` — `reserveId: string` 带注释 "Canonical backend reserve key"
-- `src/types/aave.ts:106-130` — ReserveWithSpread 完整定义
-
-### SDK Converter（核心关注）
-- `src/lib/userData/sdkPositionConverter.ts`
+- `src/lib/reserveKey.ts` / `.test.ts`
+- `src/lib/userData/userPositionMapper.ts` / `.test.ts`
+- `src/lib/userData/sdkPositionConverter.ts` / `.test.ts`
 - `src/hooks/useUserPositionsSdk.ts`
-
-### Onchain Converter（暂不关注）
-- `src/lib/userData/onchainPositionConverter.ts`
-- `src/hooks/useUserPositions.ts`
-
-### 已修改的文件列表
-- `src/lib/reserveKey.ts`
-- `src/lib/userData/userPositionMapper.ts`
-- `src/lib/userData/onchainPositionConverter.ts`
-- `src/lib/userData/sdkPositionConverter.ts`
-- `src/lib/userData/aaveV3UserClient.ts`
-- `src/lib/deriveOnchainConfig.ts`
-- `src/hooks/useUserPositions.ts`
-- `src/hooks/useUserPositionsSdk.ts`
-- `src/pages/Index.tsx`
-- 对应的测试文件
-
-### 文档
-- `docs/handoff-wallet-merkl-portfolio.md` — 原始设计文档
-
-## 建议的 Session 流程
-
-1. **先确认 SDK `reserve.id` 的真实值** — 看代码或跑真实数据
-2. **基于确认结果决定匹配策略** — 不要猜测
-3. **修复 composeReserveId / 查找逻辑** — 用真实格式
-4. **更新测试** — fixture 使用真实格式
-5. **验证** — lint + test + build + tsc
-
-## Suggested Skills
-
-- `grill-with-docs` — 继续设计决策的 grill
-- `verification-before-completion` — 改完后验证
-- `tdd` — 补测试
+- `src/lib/userData/onchainPositionConverter.ts` (未修改，参考)
+- `src/types/aave.ts` (ReserveWithSpread 类型定义)
