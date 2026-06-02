@@ -154,6 +154,10 @@ describe('composeReserveId', () => {
     expect(composeReserveId(0, '0x8787', '0xA0b8')).toBeUndefined()
   })
 
+  it('returns undefined when chainId is negative', () => {
+    expect(composeReserveId(-1, '0x8787', '0xA0b8')).toBeUndefined()
+  })
+
   it('works without hubName (V3 format)', () => {
     const result = composeReserveId(137, '0xPool', '0xToken')
     expect(result).toBe('137:0xpool:0xtoken')

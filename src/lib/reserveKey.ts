@@ -80,7 +80,7 @@ export function composeReserveId(
   tokenAddress: string,
   hubName?: string,
 ): string | undefined {
-  if (!chainId || !poolAddress || !tokenAddress) return undefined
+  if (chainId <= 0 || !poolAddress || !tokenAddress) return undefined
   const base = `${chainId}:${poolAddress.toLowerCase()}:${tokenAddress.toLowerCase()}`
   return hubName ? `${base}:${hubName}` : base
 }
