@@ -282,11 +282,19 @@ Minus 按钮条件逻辑：wallet 来源 → toggleHidden；manual 来源 → �
 
 ### 已知遗留项（Nice-to-have，低优先级）
 
-- **N1** `sdkPositionConverter.test.ts` 测试覆盖不足（仅 3 个）
+- **N1** `sdkPositionConverter.test.ts` — 已改善至 6 tests（含 reserveId 精确匹配、V4 hubName、fallback、orphan）
 - **N2** `useWalletAutoImport` 缺钱包切换地址场景测试
 - **N3** `AaveProviders.tsx` client 创建在 module scope
 - **N4** `walletSourceToPositionSource` 冗余 identity 函数
 - **N5** `AaveProviders` JSX 缩进不一致
+- **N6** `enrichV3/V4SupplyPositions` 零测试（useUserPositionsSdk.ts 中的类型提取函数）
+
+### Reserve 匹配策略（补充实现 ✅）
+
+详见 `docs/handoff-reserveId-matching.md`。核心变更：
+- 从 `(chainId, tokenAddress)` 查找升级为 `composeReserveId(chainId, poolAddress, tokenAddress, hubName?)` 精确匹配 + chainToken fallback
+- 测试 fixture 全部更新为真实 reserveId 格式
+- Linear AAV-489 跟踪：全面审查测试 fixture 真实性
 
 ### 文档待做项（非功能缺失）
 
@@ -295,11 +303,3 @@ Minus 按钮条件逻辑：wallet 来源 → toggleHidden；manual 来源 → �
 3. Bundle size spike — 运维/性能任务
 4. `useCampaignAccess.test.ts` — plan 标注未做
 5. E2E Playwright wallet smoke test — 需真实钱包
-
-### 未提交改动（非本次 scope，来自之前 session）
-
-- `src/lib/interestRateCalculator.ts` — decimals 从 required 改为 optional
-- `src/lib/interestRateCalculator.test.ts` — 对应测试更新
-- `src/hooks/useRateSimulation.ts` / `portfolioSimulator.ts` / `rateSimulationCalculator.ts` — 有改动
-- `.trae/rules/project_rules.md` — modified
-- `.agents/` — untracked directory

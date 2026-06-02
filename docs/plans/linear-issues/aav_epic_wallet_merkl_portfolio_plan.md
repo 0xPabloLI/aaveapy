@@ -312,6 +312,36 @@ function mapV3PositionsToUserPositions(
 - `useAaveChains` 有 urql 缓存，仅首次发请求
 - `isCollateral` 需映射到 `UserPosition.isCollateral`（V4 无此字段，设为 `undefined`）
 
+#### 2a-reserveId. Reserve 匹配策略（实现完成 ✅）
+
+> **关键发现**：原 plan 假设 `(chainId, tokenAddress)` 二元组可唯一匹配 reserve，**这是错误的**。V3 Ethereum mainnet 有 4 个不同 poolAddress 都有 USDC，`(chainId, tokenAddress)` 会映射到同一 reserve（第一个插入 Map 的），导致匹配不精确。
+
+**后端 reserveId 真实格式**（从 staging API 验证，非从测试 fixture 推断）：
+
+- **V3**: `{chainId}:{poolAddress}:{tokenAddress}`（3 段，地址 lowercase）
+- **V4**: `{chainId}:{poolAddress}:{tokenAddress}:{hubName}`（4 段，hubName = `Core` / `Plus` / `Prime`）
+
+**已实现的匹配策略（方案 A）**：primary → fallback 双路径
+
+1. **Primary**: 从 SDK 数据构造 `composeReserveId(chainId, poolAddress, tokenAddress, hubName?)` → `Map.get(reserveId)` 精确 O(1) 查找
+2. **Fallback**: 无 poolAddress 时退化为 `(chainId, tokenAddress)` 查找（同链同币种取第一个 reserve）
+3. **Orphan**: 双路均未命中 → `reserveId=undefined, tokenPrice=0`
+
+**SDK 数据 → reserveId 字段提取**：
+
+| 版本 | poolAddress 来源 | hubName 来源 |
+|------|-----------------|-------------|
+| V3 | `position.market.address` | 无（V3 无 Hub 概念） |
+| V4 | `position.reserve.spoke.address` | `position.reserve.spoke.connectedHubs[0].hub.name` |
+
+**⚠️ 重要**：SDK `reserve.id` 是 Base64 编码的 opaque ID，**不等于**后端 reserveId，不能直接用于 `Map.get`。
+
+**已知限制**：
+1. V4 多 hubName 场景只取 `connectedHubs[0]`（一个 spoke 通常只连 1 个 hub）
+2. onchain fallback 路径仍用 `(chainId, tokenAddress)` 查找，无法区分同链同币种不同 pool
+
+**关键文件**：`src/lib/reserveKey.ts`（composeReserveId + buildReserveMap + buildReserveLookupByChainAndToken）、`src/lib/userData/userPositionMapper.ts`（resolvePositionMetaByReserveId）、`src/lib/userData/sdkPositionConverter.ts`（双 map 签名）、`src/hooks/useUserPositionsSdk.ts`（enrich 函数）
+
 ---
 
 **方案 B（fallback）：viem multicall 直读链上合约**
