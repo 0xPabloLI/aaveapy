@@ -62,12 +62,11 @@ Minus 按钮条件逻辑：wallet 来源 → toggleHidden；manual 来源 → �
 
 ## 已完成（按里程碑）
 
-### M1: Watch Mode UI ⚠️ Partial — AAV-485 open
+### M1: Watch Mode UI ✅ — AAV-485 closed
 - `WatchAddressInput.tsx` + test
 - `WalletButton.tsx` + test
-- Header 集成缺口：`Header.tsx` 未传 `onWatchSubmit`，入口不可用
-- Watch Mode 不再依赖 RainbowKit Connect 弹窗展示自定义 connector；入口应由 Header / PortfolioPanel 显式提供
-- PortfolioPanel 也需要 `View address` 入口，保持与 Header 语义一致
+- Header 集成 ✅：`Header.tsx` 已传 `onWatchSubmit={connectWatchAddress}`
+- PortfolioPanel 集成 ✅：已传 `onWatchSubmit={connectWatchAddress}`
 - watchModeConnector (wagmi v3 createConnector)
 
 ### M2: Portfolio Simulation Soft Delete ✅
@@ -104,7 +103,9 @@ Minus 按钮条件逻辑：wallet 来源 → toggleHidden；manual 来源 → �
 ### Q3: Merkl Rewards 展示区
 - **位置**：PortfolioPanel 内，Portfolio 子区，钱包连接后才可见
 - **形式**：详细行列表——每个 MerklClaimable 一行：token symbol + chain + claimable amount + 已领取/待结算 + breakdown 折叠
-- **数据层**：已完成（`merklUserClient.ts`），缺 hook 层（`useMerklRewards` / `useUserClaimable`）和 UI 层
+- **数据层** ✅：`merklUserClient.ts`
+- **hook 层** ✅：`useUserClaimableRewardsSdk.ts`
+- **UI 层** ✅：PortfolioPanel 内 `claimableRewards` prop 渲染
 
 ### Q4: SDK 首选路径 ✅ 完全确认
 
@@ -282,12 +283,12 @@ Minus 按钮条件逻辑：wallet 来源 → toggleHidden；manual 来源 → �
 
 ### 已知遗留项（Nice-to-have，低优先级）
 
-- **N1** `sdkPositionConverter.test.ts` — 已改善至 6 tests（含 reserveId 精确匹配、V4 hubName、fallback、orphan）
-- **N2** `useWalletAutoImport` 缺钱包切换地址场景测试
+- **N1** `sdkPositionConverter.test.ts` — ✅ 已改善至 6 tests
+- **N2** `useWalletAutoImport` — ✅ 已补钱包切换地址 + checksum 大小写测试（8 tests）
 - **N3** `AaveProviders.tsx` client 创建在 module scope
 - **N4** `walletSourceToPositionSource` 冗余 identity 函数
 - **N5** `AaveProviders` JSX 缩进不一致
-- **N6** `enrichV3/V4SupplyPositions` 零测试（useUserPositionsSdk.ts 中的类型提取函数）
+- **N6** `enrichV3/V4SupplyPositions` — ✅ 已补测试（6 tests，useUserPositionsSdk.test.ts）
 
 ### Reserve 匹配策略（补充实现 ✅）
 

@@ -211,4 +211,60 @@ describe('useWalletAutoImport', () => {
 
     expect(mockImportPositions).toHaveBeenCalledTimes(2)
   })
+
+  it('re-imports when wallet switches to a different address', () => {
+    const addressA = '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' as `0x${string}`
+    const addressB = '0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' as `0x${string}`
+    const positionsA = [{ reserveId: 'r1', side: 'supply' }]
+    const positionsB = [{ reserveId: 'r2', side: 'borrow' }]
+
+    const { rerender } = renderHook(
+      (props: { address: `0x${string}`; positions: WalletPosition[] }) =>
+        useWalletAutoImport({
+          address: props.address,
+          isConnected: true,
+          walletLoadState: 'success',
+          walletResult: makeSuccessResult(props.positions),
+          v3SdkFailed: false,
+          v4SdkFailed: false,
+          reserves: emptyReserves,
+          portfolioActions: mockPortfolioActions,
+        }),
+      { initialProps: { address: addressA, positions: positionsA } },
+    )
+
+    expect(mockImportPositions).toHaveBeenCalledTimes(1)
+
+    rerender({ address: addressB, positions: positionsB })
+
+    expect(mockImportPositions).toHaveBeenCalledTimes(2)
+    expect(mockConvert).toHaveBeenLastCalledWith(positionsB, emptyReserves)
+  })
+
+  it('does not re-import when same address with different checksum casing', () => {
+    const addressLower = '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' as `0x${string}`
+    const addressUpper = '0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' as `0x${string}`
+    const positions = [{ reserveId: 'r1', side: 'supply' }]
+
+    const { rerender } = renderHook(
+      (props: { address: `0x${string}` }) =>
+        useWalletAutoImport({
+          address: props.address,
+          isConnected: true,
+          walletLoadState: 'success',
+          walletResult: makeSuccessResult(positions),
+          v3SdkFailed: false,
+          v4SdkFailed: false,
+          reserves: emptyReserves,
+          portfolioActions: mockPortfolioActions,
+        }),
+      { initialProps: { address: addressLower } },
+    )
+
+    expect(mockImportPositions).toHaveBeenCalledTimes(1)
+
+    rerender({ address: addressUpper })
+
+    expect(mockImportPositions).toHaveBeenCalledTimes(1)
+  })
 })

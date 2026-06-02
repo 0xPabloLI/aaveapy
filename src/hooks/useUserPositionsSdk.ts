@@ -35,7 +35,7 @@ export type DegradedResult =
 
 const STALE_TIME = QUERY_STALE_TIMES.default
 
-function enrichV3SupplyPositions(
+export function enrichV3SupplyPositions(
   positions: { market: { address: `0x${string}`; chain: { chainId: number; [k: string]: unknown }; [k: string]: unknown }; currency: { address: `0x${string}`; symbol: string; decimals: number; chainId: number; [k: string]: unknown }; balance: { amount: { value: string; raw: string; decimals: number; [k: string]: unknown }; [k: string]: unknown }; isCollateral: boolean; [k: string]: unknown }[],
 ): SdkSupplyPosition[] {
   return positions.map(p => ({
@@ -51,7 +51,7 @@ function enrichV3SupplyPositions(
   }))
 }
 
-function enrichV3BorrowPositions(
+export function enrichV3BorrowPositions(
   positions: { market: { address: `0x${string}`; chain: { chainId: number; [k: string]: unknown }; [k: string]: unknown }; currency: { address: `0x${string}`; symbol: string; decimals: number; chainId: number; [k: string]: unknown }; debt: { amount: { value: string; raw: string; decimals: number; [k: string]: unknown }; [k: string]: unknown }; [k: string]: unknown }[],
 ): SdkBorrowPosition[] {
   return positions.map(p => ({
@@ -66,7 +66,7 @@ function enrichV3BorrowPositions(
   }))
 }
 
-function enrichV4SupplyPositions(
+export function enrichV4SupplyPositions(
   positions: { id: string; reserve: { id: string; spoke: { address: `0x${string}`; chain: { chainId: number; [k: string]: unknown }; connectedHubs?: { hub: { name: string } }[]; [k: string]: unknown }; summary: { supplied: { token: { address: `0x${string}`; info: { symbol: string; decimals: number; [k: string]: unknown }; [k: string]: unknown }; [k: string]: unknown }; [k: string]: unknown }; [k: string]: unknown }; balance: { amount: { value: string; onChainValue: bigint; decimals: number; [k: string]: unknown }; [k: string]: unknown }; isCollateral: boolean; [k: string]: unknown }[],
 ): SdkSupplyPosition[] {
   return positions.map(p => ({
@@ -83,7 +83,7 @@ function enrichV4SupplyPositions(
   }))
 }
 
-function enrichV4BorrowPositions(
+export function enrichV4BorrowPositions(
   positions: { id: string; reserve: { id: string; spoke: { address: `0x${string}`; chain: { chainId: number; [k: string]: unknown }; connectedHubs?: { hub: { name: string } }[]; [k: string]: unknown }; summary: { borrowed: { token: { address: `0x${string}`; info: { symbol: string; decimals: number; [k: string]: unknown }; [k: string]: unknown }; [k: string]: unknown }; [k: string]: unknown }; [k: string]: unknown }; principal: { amount: { value: string; onChainValue: bigint; decimals: number; [k: string]: unknown }; [k: string]: unknown }; [k: string]: unknown }[],
 ): SdkBorrowPosition[] {
   return positions.map(p => ({
