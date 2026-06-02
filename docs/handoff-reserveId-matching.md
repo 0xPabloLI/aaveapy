@@ -68,8 +68,13 @@ resolvePositionMetaByReserveId(composedId?, chainId, tokenAddress, reserveMap, c
 
 ## 已知限制
 
-1. **V4 多 hubName 场景**：当前取 `connectedHubs[0].hub.name`。实际中一个 spoke 通常只连 1 个 hub（Core 为主），但理论上可能有多个。如需精确处理多 hub，需要尝试每个 hubName 在 reserveMap 中查找匹配。
-2. **onchain converter 路径未修改**：`onchainPositionConverter.ts` 仍用 chainTokenKey 查找，暂不修改。
+1. **onchain converter 路径未修改**：`onchainPositionConverter.ts` 仍用 chainTokenKey 查找，fallback 命中时有 `console.warn` 歧义提醒。
+
+## 已修复（code review 后）
+
+- **V4 多 hubName**：✅ 现遍历 `hubNames[]` 尝试每个 hubName 在 reserveMap 中匹配
+- **enrich 中 reserve.id 一致性**：✅ V3 用 `composeReserveId` 构造，V4 标注为 opaque
+- **chainToken fallback 歧义检测**：✅ `_ambiguousFallback` 标记 + `console.warn`
 
 ## 教训
 

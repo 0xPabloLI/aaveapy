@@ -79,11 +79,11 @@ _Avoid_: Supply Ceiling, Borrow Ceiling（Ceiling 保留给 per-user 语义）
 ## Identity
 
 **Reserve ID**:
-单个字段作为 reserve 的 canonical key。后端真实格式为 `{chainId}:{poolAddress}:{tokenAddress}`（如 `1:0x8787...:0xC02a...`）。代码中禁止用 `(underlyingAsset, chainId)` 组合作为 key 的 fallback 路径——但 `(chainId, tokenAddress)` 二元组可用于从 onchain/SDK 数据反查 reserve（`buildReserveLookupByChainAndToken`），因为这两字段在三侧（SDK、onchain、后端）都可用且语义稳定。
-_Avoid_: Composite key, (underlyingAsset, chainId) pair 作为主匹配路径
+单个字段作为 reserve 的 canonical key。后端真实格式 V3=`{chainId}:{poolAddress}:{tokenAddress}`，V4=`{chainId}:{poolAddress}:{tokenAddress}:{hubName}`（如 `1:0x8787...:0xC02a...:Core`）。代码中 `composeReserveId(chainId, poolAddress, tokenAddress, hubName?)` 构造此格式。`(chainId, tokenAddress)` 二元组仅作 fallback 查找用（`buildReserveLookupByChainAndToken`），V3 同链同币种多 pool 时有歧义（`_ambiguousFallback` 标记 + `console.warn`）。
+_Avoid_: Composite key, (underlyingAsset, chainId) pair 作为主匹配路径; SDK `reserve.id`（Base64 编码 opaque ID）用于 Map.get
 
 **Reserve Lookup Strategy**:
-`buildReserveMap`（key=reserveId）用于已知 reserveId 的 O(1) 查找；`buildReserveLookupByChainAndToken`（key=`{chainId}:{tokenAddress}`）用于从 onchain/SDK 数据反查 reserve meta。两条路径并存，各有适用场景。
+`buildReserveMap`（key=reserveId）用于精确 O(1) 查找；`buildReserveLookupByChainAndToken`（key=`{chainId}:{tokenAddress}`）用于 fallback 反查。`resolvePositionMetaByReserveId` 实现三级查找：composeReserveId 精确 → chainToken fallback（带歧义警告）→ orphan。V4 多 hubName 场景遍历 `hubNames[]` 尝试匹配。
 
 ---
 

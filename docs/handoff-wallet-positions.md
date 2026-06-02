@@ -117,10 +117,8 @@
 
 ## 已知限制
 
-1. **Onchain fallback 无法区分多 pool**：`onchainPositionConverter.ts` 用 `(chainId, tokenAddress)` 查找，V3 多 pool 同币种会匹配到第一个 reserve
-2. **V4 connectedHubs 通常只有 1 个**：但理论上可能有多个 hub，当前已遍历尝试
-3. **I4: PortfolioPanel 同步按钮缺 RainbowKit mounted 保护**：可能导致 hydration 闪烁
-4. **enrich 函数依赖 SDK 内部结构**：SDK 升级可能破坏 enrich 的字段提取
+1. **Onchain fallback 无法区分多 pool**：`onchainPositionConverter.ts` 用 `(chainId, tokenAddress)` 查找，V3 多 pool 同币种会匹配到第一个 reserve（fallback 命中时 `console.warn` 歧义提醒）
+2. **enrich 函数依赖 SDK 内部结构**：SDK 升级可能破坏 enrich 的字段提取
 
 ## 教训
 
@@ -132,7 +130,6 @@
 
 - **AAV-489**: 审查所有测试 fixture 真实性
 - **deriveV3AssetsByChain** (@deprecated 无消费者): 清理函数 + 测试
-- **PortfolioPanel mounted 保护**: 同步按钮加 RainbowKit mounted 状态
 
 ## 关联文档
 

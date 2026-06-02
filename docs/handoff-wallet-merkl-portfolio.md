@@ -217,7 +217,7 @@ Minus 按钮条件逻辑：wallet 来源 → toggleHidden；manual 来源 → �
 - `src/components/dashboard/WatchAddressInput.tsx` + test
 - `src/components/dashboard/WalletButton.tsx` + test
 - `src/components/dashboard/Header.tsx`
-- `src/components/dashboard/PortfolioPanel.tsx` — AAV-485: 需要补 `View address` 入口
+- `src/components/dashboard/PortfolioPanel.tsx` — ✅ AAV-485: View address 入口已完成
 
 ### 类型
 - `src/types/aave.ts` — CampaignAccessEntry / CampaignAccessPayload / CampaignAccessStatus (`'allowed' | 'whitelist-blocked' | 'blacklisted'`)
