@@ -426,6 +426,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
                     : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground',
                 )}
                 aria-label="Sync wallet positions"
+                style={{ visibility: walletConnected ? 'visible' : 'hidden' }}
               >
                 <RefreshCw className="size-3.5" aria-hidden />
               </button>
