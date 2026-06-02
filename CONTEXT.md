@@ -167,6 +167,22 @@ _Avoid_: computeSnapshot（Phase 1 不是执行模拟模型，而是组装已有
 Phase 2 of rate simulation. 基于用户模拟输入执行 rate model 预测未来利率（B 类字段）。调用 `simulateNativeRatesAfterActions`。输出随 simulation input 变化。无输入时返回 nullPrediction（After/Delta 全 null）。
 _Avoid_: computeSimulation（"Prediction" 比 "Simulation" 更精确——本质是预测而非模拟）
 
+### A/B 类字段分类标准
+
+**语义依赖**："用户改了 simulation input，这个值会变吗？"——非实现依赖。例：`availableBorrowRoomUsd` 实现上依赖 `availableLiquidityForBorrowUsd`（含 `effectiveSupplyInputUsd`），supply input 会影响此值，但 borrow input 不会 → 归入 A/B 混合类（多数场景视为 A 类）。
+
+**A 类（Current Snapshot）**：当前快照值。有模拟用模拟，无模拟 fallback 到 API 原值 → "当前值永远显示"。
+
+**B 类（Simulated Prediction）**：模拟预测值。无模拟 = null，无 fallback → "没模拟就没模拟值"。
+
+### A 类字段清单
+
+`totalBorrowedUsd`, `availableLiquidityUsd`, `utilization.current`, `optimalUtilization`, `supplyCapUsd`, `borrowCapUsd`, `protocolFee`, `tokenPrice`, `atSupplyCap`/`nearSupplyCap`/`atBorrowCap`/`nearBorrowCap`, `availableSupplyRoomUsd`, `availableBorrowRoomUsd`, `supply.current*`, `borrow.current*`, `spread.current`
+
+### B 类字段清单
+
+所有 `*After`/`*Delta`, `supply.after*`/`supply.delta*`, `borrow.after*`/`borrow.delta*`, `spread.after`/`spread.delta`, `utilization.after`/`utilization.delta`, `borrowLimitedByLiquidity`, `scenarioUsdAccrual`
+
 ---
 
 ## Example Dialogue

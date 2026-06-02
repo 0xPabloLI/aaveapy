@@ -1049,11 +1049,14 @@ export function buildRateSimulationResult({
 
   // Available to borrow = min(borrow cap remaining, available liquidity + scenario supply)
   // Valid for both V3 and V4. If borrow is disabled, borrow room is 0 (skip all calculation).
+  // A/B 混合类: borrowCapRemaining (A 类), 但 availableLiquidityForBorrow 含 effectiveSupplyInputUsd (B 类),
+  // 故 supply input 会影响此值, borrow input 不会。
   const availableBorrowRoomUsd = borrowBlocked ? 0
     : borrowCapRemainingUsd !== null && availableLiquidityForBorrowUsd !== null
       ? Math.min(borrowCapRemainingUsd, availableLiquidityForBorrowUsd)
       : borrowCapRemainingUsd ?? availableLiquidityForBorrowUsd ?? (nativeToUsd(reserve.borrowable, reserve.decimals, reserve.tokenPrice) ?? null);
 
+  // ─── B 类字段: borrowLimitedByLiquidity (随 simulation input 变化) ───
   // Track which constraint is binding (for UI messaging)
   const borrowLimitedByLiquidity =
     availableLiquidityForBorrowUsd !== null &&
@@ -1080,6 +1083,8 @@ export function buildRateSimulationResult({
       })
     : null;
 
+  // ─── A 类字段: Current snapshot (不随 simulation input 变化) ───
+
   const supplyCurrentNative = toDisplayNative(reserve.supplyApy);
   const borrowCurrentNative = toDisplayNative(reserve.borrowApy);
   const supplyCurrentIncentive = buildIncentiveCurrent(
@@ -1101,6 +1106,8 @@ export function buildRateSimulationResult({
   const borrowCurrentTotal = isApy
     ? calculateTotalBorrowApy(reserve.borrowApy, borrowCurrentIncentive)
     : calculateTotalBorrowApr(borrowCurrentNative, borrowCurrentIncentive);
+
+  // ─── B 类字段: After/Delta (随 simulation input 变化, 无模拟 → null) ───
 
   const supplyAfterNative = combinedNativeSimulation
     ? isApy
@@ -1172,6 +1179,8 @@ export function buildRateSimulationResult({
       });
     };
   };
+
+  // ─── B 类字段: Incentive after (hasAnyInput → 有值, 否则 null) ───
 
   const supplyAfterIncentiveRaw = hasAnyInput
     ? buildIncentiveAfter(
@@ -1272,6 +1281,8 @@ export function buildRateSimulationResult({
         : calculateTotalBorrowApr(borrowAfterNative, borrowAfterIncentive)
       : null;
 
+  // ─── A 类字段: Current sources (不随 simulation input 变化) ───
+
   const supplyCurrentSources = {
     protocol: sumNumberArray(reserve.supplyIncentives, isApy),
     merit: sumMeritValues(reserve.meritSupplys, isApy),
@@ -1284,6 +1295,8 @@ export function buildRateSimulationResult({
     merkl: sumMerklValues(reserve.merklBorrows, isApy, tydroPointToUsdRate, whitelistMerklCampaignIds, forecastStates, merklGroupMultiplier('borrow'), campaignAccessStatuses),
     brevis: sumBrevisValues(reserve.brevisBorrows, isApy),
   };
+
+  // ─── B 类字段: After sources (hasAnyInput → 有值, 否则 null) ───
 
   const supplyAfterSources = hasAnyInput
     ? (() => {
@@ -1414,13 +1427,17 @@ export function buildRateSimulationResult({
     hasAnyInput,
   );
 
+  // ─── Supply lane: A 类 + B 类 + sources ───
+
   const supplyLane: SimulationLane = {
+    // ─── A 类: Current (不随 simulation input 变化) ───
     hasInput: supplyBlocked ? false : hasSupplyInput,
     inputAmount: supplyBlocked ? 0 : supplyAmount,
     inputUsd: supplyBlocked ? 0 : supplyInputUsd,
     currentNative: supplyCurrentNative,
     currentIncentive: supplyCurrentIncentive,
     currentTotal: supplyCurrentTotal,
+    // ─── B 类: After/Delta (随 simulation input 变化, 无模拟 → null) ───
     afterNative: supplyBlocked ? null : supplyAfterNative,
     afterIncentive: supplyBlocked ? null : supplyAfterIncentive,
     afterTotal: supplyBlocked ? null : supplyAfterTotal,
@@ -1447,13 +1464,17 @@ export function buildRateSimulationResult({
     },
   };
 
+  // ─── Borrow lane: A 类 + B 类 + sources ───
+
   const borrowLane: SimulationLane = {
+    // ─── A 类: Current (不随 simulation input 变化) ───
     hasInput: borrowBlocked ? false : hasBorrowInput,
     inputAmount: borrowBlocked ? 0 : borrowAmount,
     inputUsd: borrowBlocked ? 0 : borrowInputUsd,
     currentNative: borrowCurrentNative,
     currentIncentive: borrowCurrentIncentive,
     currentTotal: borrowCurrentTotal,
+    // ─── B 类: After/Delta (随 simulation input 变化, 无模拟 → null) ───
     afterNative: borrowBlocked ? null : borrowAfterNative,
     afterIncentive: borrowBlocked ? null : borrowAfterIncentive,
     afterTotal: borrowBlocked ? null : borrowAfterTotal,
@@ -1479,6 +1500,8 @@ export function buildRateSimulationResult({
       ),
     },
   };
+
+  // ─── B 类字段: scenarioUsdAccrual (仅在有模拟输入时才有值) ───
 
   const supplyUsdAccrualSide =
     supplyLane.hasInput && supplyLane.inputUsd > 0
@@ -1515,10 +1538,14 @@ export function buildRateSimulationResult({
         }
       : null;
 
+  // ─── A 类字段: spread/utilization current (不随 simulation input 变化) ───
+
   const spreadCurrent =
     supplyCurrentTotal !== null && borrowCurrentTotal !== null
       ? supplyCurrentTotal - borrowCurrentTotal
       : null;
+  // ─── B 类字段: spread/utilization after/delta (随 simulation input 变化) ───
+
   const spreadAfter =
     supplyAfterTotal !== null && borrowAfterTotal !== null ? supplyAfterTotal - borrowAfterTotal : null;
   const spreadDelta = spreadAfter !== null && spreadCurrent !== null ? spreadAfter - spreadCurrent : null;
@@ -1562,7 +1589,9 @@ export function buildRateSimulationResult({
   const computeMarketMetrics = (): MarketMetrics => {
     // Use raw input values to determine if caps are exceeded (for warnings)
     // But use capped values for actual calculations (supplyInputUsd, borrowInputUsd are already capped)
-    
+
+    // ─── A 类字段 helpers: Current Snapshot (不随 simulation input 变化) ───
+
     const computeSupplyCapFields = () => {
       if (supplyCapUsd === null || supplyCapUsd <= 0) {
         return {
@@ -1601,6 +1630,8 @@ export function buildRateSimulationResult({
       };
     };
 
+    // ─── Fallback 分支: 无 reserveRateInput 时，A 类有值，B 类为 null ───
+
     if (!reserveRateInput || !tokenPrice) {
       const protocolVersion = getProtocolVersion(reserve.marketName);
       const isV3 = protocolVersion === 'v3';
@@ -1614,20 +1645,24 @@ export function buildRateSimulationResult({
       const supplyCapFields = computeSupplyCapFields();
       const borrowCapFields = computeBorrowCapFields(fallbackTotalBorrowedUsd);
       return {
+        // ─── A 类字段: Current Snapshot ───
         availableLiquidityUsd: fallbackAvailableLiquidityUsd,
-        availableLiquidityUsdAfter: null,
-        availableLiquidityUsdDelta: null,
         totalBorrowedUsd: fallbackTotalBorrowedUsd,
-        totalBorrowedUsdAfter: null,
-        totalBorrowedUsdDelta: null,
         supplyCapUsd,
         borrowCapUsd,
         protocolFee: reserve.protocolFee ?? null,
         optimalUtilization: reserve.optimalUtilization ?? null,
+        // ─── B 类字段: After/Delta (无模拟 → null) ───
+        availableLiquidityUsdAfter: null,
+        availableLiquidityUsdDelta: null,
+        totalBorrowedUsdAfter: null,
+        totalBorrowedUsdDelta: null,
         ...supplyCapFields,
         ...borrowCapFields,
       };
     }
+
+    // ─── A 类字段: On-chain current snapshot (有 fallback) ───
 
     const decimals = reserveRateInput.decimals ?? 18;
     const scale = Math.pow(10, decimals);
@@ -1663,6 +1698,8 @@ export function buildRateSimulationResult({
       ? reserveRateInput.optimalUtilization
       : reserve.optimalUtilization ?? null;
 
+    // ─── B 类字段: After/Delta (随 simulation input 变化, 无模拟 → null) ───
+
     // Use capped inputs for after values (supplyInputUsd and borrowInputUsd are already capped)
     const availableLiquidityUsdAfter = hasAnyInput
       ? availableLiquidityUsd + effectiveSupplyInputUsd - borrowInputUsd
@@ -1675,20 +1712,22 @@ export function buildRateSimulationResult({
     const borrowCapFields = computeBorrowCapFields(totalBorrowedUsd);
 
     return {
+      // ─── A 类字段: Current Snapshot ───
       availableLiquidityUsd,
-      availableLiquidityUsdAfter,
-      availableLiquidityUsdDelta: availableLiquidityUsdAfter !== null
-        ? availableLiquidityUsdAfter - availableLiquidityUsd
-        : null,
       totalBorrowedUsd,
-      totalBorrowedUsdAfter,
-      totalBorrowedUsdDelta: totalBorrowedUsdAfter !== null
-        ? totalBorrowedUsdAfter - totalBorrowedUsd
-        : null,
       supplyCapUsd,
       borrowCapUsd,
       protocolFee,
       optimalUtilization,
+      // ─── B 类字段: After/Delta (hasAnyInput → 有值, 否则 null) ───
+      availableLiquidityUsdAfter,
+      availableLiquidityUsdDelta: availableLiquidityUsdAfter !== null
+        ? availableLiquidityUsdAfter - availableLiquidityUsd
+        : null,
+      totalBorrowedUsdAfter,
+      totalBorrowedUsdDelta: totalBorrowedUsdAfter !== null
+        ? totalBorrowedUsdAfter - totalBorrowedUsd
+        : null,
       ...supplyCapFields,
       ...borrowCapFields,
     };
@@ -1697,25 +1736,31 @@ export function buildRateSimulationResult({
   const marketMetrics = computeMarketMetrics();
 
   return {
+    // ─── A 类字段: Current Snapshot ───
     tokenPrice,
     supply: supplyLane,
     borrow: borrowLane,
     spread: {
+      // ─── A 类: current ───
       current: spreadCurrent,
+      // ─── B 类: after/delta ───
       after: spreadAfter,
       delta: spreadDelta,
       usesCurrentSide: null,
     },
     utilization: {
+      // ─── A 类: current/optimal ───
       current: utilizationCurrent,
+      optimal: utilizationOptimal,
+      // ─── B 类: after/delta ───
       after: utilizationAfter,
       delta:
         utilizationCurrent !== null && utilizationAfter !== null
           ? utilizationAfter - utilizationCurrent
           : null,
-      optimal: utilizationOptimal,
     },
     marketMetrics,
+    // ─── B 类字段: Scenario-only (无模拟 → null) ───
     forecastUnavailableCampaignCount,
     forecastUnavailableCampaignIds,
     scenarioUsdAccrual,
