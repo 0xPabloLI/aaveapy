@@ -5,6 +5,7 @@ import {
   enrichV4SupplyPositions,
   enrichV4BorrowPositions,
 } from './useUserPositionsSdk'
+import { composeReserveId } from '@/lib/reserveKey'
 
 const POOL = '0x87870bca3f3fd6b5bb36c0221bcc5c4c1f7c69c6' as `0x${string}`
 const USDC = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48' as `0x${string}`
@@ -27,14 +28,14 @@ describe('enrichV3SupplyPositions', () => {
     expect(result[0].isCollateral).toBe(true)
   })
 
-  it('constructs reserve.id from chain:pool:token', () => {
+  it('constructs reserve.id via composeReserveId (lowercase consistent)', () => {
     const result = enrichV3SupplyPositions([{
       market: { address: POOL, chain: { chainId: 1 } },
       currency: { address: USDC, symbol: 'USDC', decimals: 6, chainId: 1 },
       balance: { amount: { value: '0', raw: '0', decimals: 6 } },
       isCollateral: false,
     }])
-    expect(result[0].reserve.id).toBe(`1:${POOL}:${USDC}`)
+    expect(result[0].reserve.id).toBe(composeReserveId(1, POOL, USDC))
   })
 })
 

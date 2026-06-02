@@ -3,6 +3,7 @@ import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { Wallet, Eye, ChevronDown, X } from 'lucide-react'
 import { useWallet } from '@/hooks/useWallet'
 import { WatchAddressInput } from './WatchAddressInput'
+import { cn } from '@/lib/utils'
 import {
   Popover,
   PopoverContent,
@@ -16,10 +17,6 @@ interface WalletButtonProps {
 
 function truncateAddress(addr: string) {
   return `${addr.slice(0, 6)}…${addr.slice(-4)}`
-}
-
-function cn(...classes: (string | boolean | undefined)[]) {
-  return classes.filter(Boolean).join(' ')
 }
 
 export function WalletButton({ mobile = false, onWatchSubmit }: WalletButtonProps) {

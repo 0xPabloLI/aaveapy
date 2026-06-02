@@ -68,4 +68,4 @@ export function convertV4PositionsToWalletPositions(
   return result
 }
 
-export { buildReserveMapFromReserves, buildSpokeNameToMarketNameMap, buildReserveLookupByChainAndToken }
+export { buildReserveMapFromReserves, buildReserveLookupByChainAndToken }

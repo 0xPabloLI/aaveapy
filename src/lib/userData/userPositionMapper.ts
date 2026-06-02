@@ -106,6 +106,14 @@ export function resolvePositionMeta(
   const key = toChainTokenKey(chainId, tokenAddress)
   const reserve = lookupMap.get(key)
   if (!reserve) return ORPHAN_META
+  if (reserve._ambiguousFallback) {
+    console.warn(
+      `[resolvePositionMeta] Ambiguous chainToken fallback for key "${key}": ` +
+      `multiple reserves share this (chainId, tokenAddress). ` +
+      `Matched reserveId="${reserve.reserveId}" but others exist. ` +
+      `Prefer reserveId-precise lookup via composeReserveId.`,
+    )
+  }
   return {
     reserveId: reserve.reserveId,
     tokenSymbol: reserve.tokenSymbol,

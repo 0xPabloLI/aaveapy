@@ -41,27 +41,40 @@ function toChainTokenKey(chainId: number, tokenAddress: string): ChainTokenKey {
   return `${chainId}:${tokenAddress.toLowerCase()}`;
 }
 
+export const AMBIGUOUS_FALLBACK = Symbol('ambiguousFallback')
+
 /**
  * Builds a Map<(chainId,tokenAddress), ReserveWithSpread> for O(1) lookup.
  * This is the correct way to find a reserve when you have chainId + tokenAddress
  * but don't know the backend's reserveId format.
+ *
+ * When multiple reserves share the same (chainId, tokenAddress), the first
+ * is kept and marked with _ambiguousFallback for runtime warning.
  */
 export const buildReserveLookupByChainAndToken = (
   reserves: ReserveWithSpread[],
-): Map<string, ReserveWithSpread> => {
-  const map = new Map<string, ReserveWithSpread>();
+): Map<string, ReserveWithSpread & { _ambiguousFallback?: boolean }> => {
+  const map = new Map<string, ReserveWithSpread & { _ambiguousFallback?: boolean }>();
+  const keyCounts = new Map<string, number>()
   for (const r of reserves) {
     if (r.chainId != null && r.tokenAddress) {
       const key = toChainTokenKey(r.chainId, r.tokenAddress);
+      keyCounts.set(key, (keyCounts.get(key) ?? 0) + 1)
       if (!map.has(key)) {
         map.set(key, r);
       }
     }
   }
+  for (const [key, count] of keyCounts) {
+    if (count > 1) {
+      const existing = map.get(key)
+      if (existing) map.set(key, { ...existing, _ambiguousFallback: true })
+    }
+  }
   return map;
 };
 
-export type ReserveChainTokenMap = Map<string, ReserveWithSpread>;
+export type ReserveChainTokenMap = Map<string, ReserveWithSpread & { _ambiguousFallback?: boolean }>;
 
 export { toChainTokenKey };
 

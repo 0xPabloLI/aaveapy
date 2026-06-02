@@ -20,6 +20,7 @@ import type { WalletPosition } from '@/lib/userData/userPositionMapper'
 import type { SdkSupplyPosition, SdkBorrowPosition } from '@/lib/userData/sdkPositionConverter'
 import type { ReserveWithSpread } from '@/types/aave'
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes'
+import { composeReserveId } from '@/lib/reserveKey'
 
 export type WalletLoadState = 'idle' | 'loading' | 'success-empty' | 'success' | 'error'
 
@@ -40,7 +41,7 @@ export function enrichV3SupplyPositions(
 ): SdkSupplyPosition[] {
   return positions.map(p => ({
     reserve: {
-      id: `${p.market.chain.chainId}:${p.market.address}:${p.currency.address}`,
+      id: composeReserveId(p.market.chain.chainId, p.market.address, p.currency.address) ?? '',
       symbol: p.currency.symbol,
       decimals: p.currency.decimals,
       underlyingAsset: { address: p.currency.address, chain: { id: String(p.currency.chainId) } },
@@ -56,7 +57,7 @@ export function enrichV3BorrowPositions(
 ): SdkBorrowPosition[] {
   return positions.map(p => ({
     reserve: {
-      id: `${p.market.chain.chainId}:${p.market.address}:${p.currency.address}`,
+      id: composeReserveId(p.market.chain.chainId, p.market.address, p.currency.address) ?? '',
       symbol: p.currency.symbol,
       decimals: p.currency.decimals,
       underlyingAsset: { address: p.currency.address, chain: { id: String(p.currency.chainId) } },
@@ -71,12 +72,14 @@ export function enrichV4SupplyPositions(
 ): SdkSupplyPosition[] {
   return positions.map(p => ({
     reserve: {
+      // SDK reserve.id is Base64-encoded opaque ID, not usable for reserveMap lookup
       id: p.reserve.id,
       symbol: p.reserve.summary.supplied.token.info.symbol,
       decimals: p.reserve.summary.supplied.token.info.decimals,
       underlyingAsset: { address: p.reserve.summary.supplied.token.address, chain: { id: String(p.reserve.spoke.chain.chainId) } },
       spokeAddress: p.reserve.spoke.address,
       hubName: p.reserve.spoke.connectedHubs?.[0]?.hub.name,
+      hubNames: p.reserve.spoke.connectedHubs?.map(h => h.hub.name),
     },
     balance: { amount: { value: p.balance.amount.value, onChainValue: p.balance.amount.onChainValue, decimals: p.balance.amount.decimals } },
     isCollateral: p.isCollateral,
@@ -88,12 +91,14 @@ export function enrichV4BorrowPositions(
 ): SdkBorrowPosition[] {
   return positions.map(p => ({
     reserve: {
+      // SDK reserve.id is Base64-encoded opaque ID, not usable for reserveMap lookup
       id: p.reserve.id,
       symbol: p.reserve.summary.borrowed.token.info.symbol,
       decimals: p.reserve.summary.borrowed.token.info.decimals,
       underlyingAsset: { address: p.reserve.summary.borrowed.token.address, chain: { id: String(p.reserve.spoke.chain.chainId) } },
       spokeAddress: p.reserve.spoke.address,
       hubName: p.reserve.spoke.connectedHubs?.[0]?.hub.name,
+      hubNames: p.reserve.spoke.connectedHubs?.map(h => h.hub.name),
     },
     debt: { amount: { value: p.principal.amount.value, onChainValue: p.principal.amount.onChainValue, decimals: p.principal.amount.decimals } },
   }))
