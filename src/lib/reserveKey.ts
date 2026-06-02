@@ -64,3 +64,23 @@ export const buildReserveLookupByChainAndToken = (
 export type ReserveChainTokenMap = Map<string, ReserveWithSpread>;
 
 export { toChainTokenKey };
+
+/**
+ * Composes a reserveId string matching the backend format.
+ *
+ * V3: `{chainId}:{poolAddress}:{tokenAddress}`
+ * V4: `{chainId}:{poolAddress}:{tokenAddress}:{hubName}`
+ *
+ * All address components are lowercased for consistent matching.
+ * Returns undefined if any required component is missing.
+ */
+export function composeReserveId(
+  chainId: number,
+  poolAddress: string,
+  tokenAddress: string,
+  hubName?: string,
+): string | undefined {
+  if (!chainId || !poolAddress || !tokenAddress) return undefined
+  const base = `${chainId}:${poolAddress.toLowerCase()}:${tokenAddress.toLowerCase()}`
+  return hubName ? `${base}:${hubName}` : base
+}

@@ -3,6 +3,7 @@ import {
   mapV3PositionToWalletPosition,
   mapV4PositionToWalletPosition,
   resolvePositionMeta,
+  resolvePositionMetaByReserveId,
   buildReserveMapFromReserves,
   type WalletPosition,
   type WalletPositionSource,
@@ -275,5 +276,98 @@ describe('resolvePositionMeta', () => {
     const noDecimalsLookupMap = buildReserveLookupByChainAndToken(noDecimalsReserves)
     const meta = resolvePositionMeta(1, USDC_ADDR, noDecimalsLookupMap)
     expect(meta.decimals).toBe(18)
+  })
+})
+
+describe('resolvePositionMetaByReserveId', () => {
+  const USDC_ADDR = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' as `0x${string}`
+  const WETH_ADDR = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2' as `0x${string}`
+  const POOL1 = '0x87870bca3f3fd6b5bb36c0221bcc5c4c1f7c69c6'
+  const POOL2 = '0x0aa9f05a7b7b57b7b7b57b7b57b7b57b7b57b7b5'
+
+  const reserves: ReserveWithSpread[] = [
+    {
+      marketName: 'Aave V3 Ethereum',
+      chainName: 'Ethereum',
+      chainId: 1,
+      tokenName: 'USD Coin',
+      tokenSymbol: 'USDC',
+      tokenAddress: USDC_ADDR,
+      reserveId: `1:${POOL1}:0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48`,
+      tokenPrice: 1,
+      decimals: 6,
+    },
+    {
+      marketName: 'Aave V3 Ethereum',
+      chainName: 'Ethereum',
+      chainId: 1,
+      tokenName: 'USD Coin',
+      tokenSymbol: 'USDC',
+      tokenAddress: USDC_ADDR,
+      reserveId: `1:${POOL2}:0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48`,
+      tokenPrice: 1,
+      decimals: 6,
+    },
+    {
+      marketName: 'Aave V4 Ethereum Core',
+      chainName: 'Ethereum',
+      chainId: 1,
+      tokenName: 'Wrapped Ether',
+      tokenSymbol: 'WETH',
+      tokenAddress: WETH_ADDR,
+      reserveId: `1:${POOL1}:0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2:Core`,
+      tokenPrice: 3000,
+      decimals: 18,
+    },
+  ]
+
+  const reserveMap = buildReserveMapFromReserves(reserves)
+  const chainTokenLookupMap = buildReserveLookupByChainAndToken(reserves)
+
+  it('finds reserve by composed reserveId (V3 format)', () => {
+    const composedId = `1:${POOL1}:0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48`
+    const meta = resolvePositionMetaByReserveId(composedId, 1, USDC_ADDR, reserveMap, chainTokenLookupMap)
+    expect(meta.reserveId).toBe(`1:${POOL1}:0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48`)
+    expect(meta.tokenSymbol).toBe('USDC')
+  })
+
+  it('distinguishes same token on different pools via reserveId', () => {
+    const id1 = `1:${POOL1}:0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48`
+    const id2 = `1:${POOL2}:0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48`
+    const meta1 = resolvePositionMetaByReserveId(id1, 1, USDC_ADDR, reserveMap, chainTokenLookupMap)
+    const meta2 = resolvePositionMetaByReserveId(id2, 1, USDC_ADDR, reserveMap, chainTokenLookupMap)
+    expect(meta1.reserveId).toBe(id1)
+    expect(meta2.reserveId).toBe(id2)
+    expect(meta1.reserveId).not.toBe(meta2.reserveId)
+  })
+
+  it('finds reserve by composed reserveId (V4 format with hubName)', () => {
+    const composedId = `1:${POOL1}:0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2:Core`
+    const meta = resolvePositionMetaByReserveId(composedId, 1, WETH_ADDR, reserveMap, chainTokenLookupMap)
+    expect(meta.reserveId).toBe(composedId)
+    expect(meta.tokenSymbol).toBe('WETH')
+  })
+
+  it('falls back to chainTokenLookup when reserveId is undefined', () => {
+    const meta = resolvePositionMetaByReserveId(undefined, 1, USDC_ADDR, reserveMap, chainTokenLookupMap)
+    expect(meta.tokenSymbol).toBe('USDC')
+  })
+
+  it('falls back to chainTokenLookup when reserveId not found in reserveMap', () => {
+    const meta = resolvePositionMetaByReserveId('nonexistent-id', 1, USDC_ADDR, reserveMap, chainTokenLookupMap)
+    expect(meta.tokenSymbol).toBe('USDC')
+  })
+
+  it('returns orphan meta when both reserveId and chainToken lookups fail', () => {
+    const UNKNOWN = '0x000000000000000000000000000000000000dEaD' as `0x${string}`
+    const meta = resolvePositionMetaByReserveId(undefined, 1, UNKNOWN, reserveMap, chainTokenLookupMap)
+    expect(meta.reserveId).toBeUndefined()
+    expect(meta.tokenSymbol).toBe('')
+  })
+
+  it('trims whitespace on reserveId before lookup', () => {
+    const composedId = `  1:${POOL1}:0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48  `
+    const meta = resolvePositionMetaByReserveId(composedId, 1, USDC_ADDR, reserveMap, chainTokenLookupMap)
+    expect(meta.reserveId).toBe(`1:${POOL1}:0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48`)
   })
 })

@@ -4,6 +4,7 @@ import {
   buildReserveMap,
   buildReserveLookupByChainAndToken,
   toChainTokenKey,
+  composeReserveId,
 } from './reserveKey';
 import type { ReserveWithSpread } from '@/types/aave';
 
@@ -122,3 +123,45 @@ describe('buildReserveMap', () => {
     expect(map.has('1:0xp:0xaaa')).toBe(true);
   });
 });
+
+describe('composeReserveId', () => {
+  it('composes V3 reserveId: chainId:poolAddress:tokenAddress', () => {
+    expect(
+      composeReserveId(1, '0x87870Bca3F3fD6b5bB36c0221BCC5C4c1F7C69c6', '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'),
+    ).toBe('1:0x87870bca3f3fd6b5bb36c0221bcc5c4c1f7c69c6:0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48')
+  })
+
+  it('composes V4 reserveId with hubName: chainId:poolAddress:tokenAddress:hubName', () => {
+    expect(
+      composeReserveId(1, '0x8787...', '0xA0b8...', 'Core'),
+    ).toBe('1:0x8787...:0xa0b8...:Core')
+  })
+
+  it('lowercases poolAddress and tokenAddress but preserves hubName case', () => {
+    const result = composeReserveId(42161, '0xABC', '0xDEF', 'Plus')
+    expect(result).toBe('42161:0xabc:0xdef:Plus')
+  })
+
+  it('returns undefined when poolAddress is empty', () => {
+    expect(composeReserveId(1, '', '0xA0b8')).toBeUndefined()
+  })
+
+  it('returns undefined when tokenAddress is empty', () => {
+    expect(composeReserveId(1, '0x8787', '')).toBeUndefined()
+  })
+
+  it('returns undefined when chainId is 0', () => {
+    expect(composeReserveId(0, '0x8787', '0xA0b8')).toBeUndefined()
+  })
+
+  it('works without hubName (V3 format)', () => {
+    const result = composeReserveId(137, '0xPool', '0xToken')
+    expect(result).toBe('137:0xpool:0xtoken')
+    expect(result!.split(':')).toHaveLength(3)
+  })
+
+  it('with hubName produces 4 colon-separated segments', () => {
+    const result = composeReserveId(1, '0xPool', '0xToken', 'Prime')
+    expect(result!.split(':')).toHaveLength(4)
+  })
+})

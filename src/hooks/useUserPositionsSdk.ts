@@ -14,8 +14,10 @@ import {
   convertSdkSuppliesToWalletPositions,
   convertSdkBorrowsToWalletPositions,
   buildReserveLookupByChainAndToken as buildSdkReserveLookup,
+  buildReserveMap as buildSdkReserveMap,
 } from '@/lib/userData/sdkPositionConverter'
 import type { WalletPosition } from '@/lib/userData/userPositionMapper'
+import type { SdkSupplyPosition, SdkBorrowPosition } from '@/lib/userData/sdkPositionConverter'
 import type { ReserveWithSpread } from '@/types/aave'
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes'
 
@@ -32,6 +34,50 @@ export type DegradedResult =
   | { status: 'error'; error: Error; retry: () => void }
 
 const STALE_TIME = QUERY_STALE_TIMES.default
+
+function enrichV3SupplyPositions(
+  positions: { market: { address: `0x${string}`; [k: string]: unknown }; [k: string]: unknown }[],
+): SdkSupplyPosition[] {
+  return positions.map(p => ({
+    ...p,
+    reserve: { ...(p as unknown as { reserve: unknown }).reserve, spokeAddress: p.market.address },
+  })) as SdkSupplyPosition[]
+}
+
+function enrichV3BorrowPositions(
+  positions: { market: { address: `0x${string}`; [k: string]: unknown }; [k: string]: unknown }[],
+): SdkBorrowPosition[] {
+  return positions.map(p => ({
+    ...p,
+    reserve: { ...(p as unknown as { reserve: unknown }).reserve, spokeAddress: p.market.address },
+  })) as SdkBorrowPosition[]
+}
+
+function enrichV4SupplyPositions(
+  positions: { reserve: { spoke: { address: `0x${string}`; connectedHubs?: { hub: { name: string } }[]; [k: string]: unknown }; [k: string]: unknown }; [k: string]: unknown }[],
+): SdkSupplyPosition[] {
+  return positions.map(p => ({
+    ...p,
+    reserve: {
+      ...p.reserve,
+      spokeAddress: p.reserve.spoke.address,
+      hubName: p.reserve.spoke.connectedHubs?.[0]?.hub.name,
+    },
+  })) as SdkSupplyPosition[]
+}
+
+function enrichV4BorrowPositions(
+  positions: { reserve: { spoke: { address: `0x${string}`; connectedHubs?: { hub: { name: string } }[]; [k: string]: unknown }; [k: string]: unknown }; [k: string]: unknown }[],
+): SdkBorrowPosition[] {
+  return positions.map(p => ({
+    ...p,
+    reserve: {
+      ...p.reserve,
+      spokeAddress: p.reserve.spoke.address,
+      hubName: p.reserve.spoke.connectedHubs?.[0]?.hub.name,
+    },
+  })) as SdkBorrowPosition[]
+}
 
 interface FetchFallbackParams {
   userAddress: `0x${string}`
@@ -134,10 +180,11 @@ export function useUserPositionsSdk(
   const allFailedSources: string[] = []
 
   const sdkLookupMap = useMemo(() => buildSdkReserveLookup(reserves), [reserves])
+  const sdkReserveMap = useMemo(() => buildSdkReserveMap(reserves), [reserves])
 
   if (!v3SdkFailed && v3Supplies.data && v3Borrows.data) {
-    allPositions.push(...convertSdkSuppliesToWalletPositions(v3Supplies.data, sdkLookupMap, 'sdk'))
-    allPositions.push(...convertSdkBorrowsToWalletPositions(v3Borrows.data, sdkLookupMap, 'sdk'))
+    allPositions.push(...convertSdkSuppliesToWalletPositions(enrichV3SupplyPositions(v3Supplies.data), sdkReserveMap, sdkLookupMap, 'sdk'))
+    allPositions.push(...convertSdkBorrowsToWalletPositions(enrichV3BorrowPositions(v3Borrows.data), sdkReserveMap, sdkLookupMap, 'sdk'))
   } else if (v3SdkFailed) {
     allFailedSources.push('sdk-v3')
     if (fallbackQuery.data) {
@@ -147,8 +194,8 @@ export function useUserPositionsSdk(
   }
 
   if (!v4SdkFailed && v4Supplies.data && v4Borrows.data) {
-    allPositions.push(...convertSdkSuppliesToWalletPositions(v4Supplies.data, sdkLookupMap, 'sdk'))
-    allPositions.push(...convertSdkBorrowsToWalletPositions(v4Borrows.data, sdkLookupMap, 'sdk'))
+    allPositions.push(...convertSdkSuppliesToWalletPositions(enrichV4SupplyPositions(v4Supplies.data), sdkReserveMap, sdkLookupMap, 'sdk'))
+    allPositions.push(...convertSdkBorrowsToWalletPositions(enrichV4BorrowPositions(v4Borrows.data), sdkReserveMap, sdkLookupMap, 'sdk'))
   } else if (v4SdkFailed) {
     allFailedSources.push('sdk-v4')
     if (fallbackQuery.data) {

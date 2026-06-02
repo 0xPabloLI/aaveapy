@@ -114,5 +114,34 @@ export function resolvePositionMeta(
   }
 }
 
+/**
+ * Resolve position metadata by reserveId using O(1) Map lookup.
+ *
+ * This is the primary lookup strategy for SDK positions where we can
+ * construct the reserveId from poolAddress + tokenAddress (+ hubName).
+ * Falls back to chainTokenLookupMap when the constructed reserveId
+ * doesn't match (e.g. format mismatch, missing hubName).
+ */
+export function resolvePositionMetaByReserveId(
+  reserveId: string | undefined,
+  chainId: number,
+  tokenAddress: string,
+  reserveMap: ReserveMap,
+  chainTokenLookupMap: ReserveChainTokenMap,
+): PositionMeta {
+  if (reserveId) {
+    const reserve = reserveMap.get(reserveId.trim())
+    if (reserve) {
+      return {
+        reserveId: reserve.reserveId,
+        tokenSymbol: reserve.tokenSymbol,
+        tokenPrice: reserve.tokenPrice ?? 0,
+        decimals: reserve.decimals ?? 18,
+      }
+    }
+  }
+  return resolvePositionMeta(chainId, tokenAddress, chainTokenLookupMap)
+}
+
 /** Convenience: build a ReserveMap from a flat array. */
 export const buildReserveMapFromReserves = buildReserveMap

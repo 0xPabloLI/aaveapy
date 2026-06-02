@@ -1,8 +1,8 @@
 import type { ReserveWithSpread } from '@/types/aave'
 import type { WalletPosition, PositionMeta, WalletPositionSource } from './userPositionMapper'
-import type { ReserveChainTokenMap } from '@/lib/reserveKey'
-import { resolvePositionMeta } from './userPositionMapper'
-import { buildReserveLookupByChainAndToken } from '@/lib/reserveKey'
+import type { ReserveChainTokenMap, ReserveMap } from '@/lib/reserveKey'
+import { resolvePositionMetaByReserveId } from './userPositionMapper'
+import { buildReserveLookupByChainAndToken, buildReserveMap, composeReserveId } from '@/lib/reserveKey'
 
 const WAD = 10n ** 18n
 
@@ -23,6 +23,8 @@ interface SdkSupplyPosition {
     symbol: string
     decimals: number
     underlyingAsset: { address: `0x${string}`; chain: { id: string } }
+    spokeAddress?: `0x${string}`
+    hubName?: string
   }
   balance: { amount: { value: string; onChainValue: bigint; decimals: number } }
   isCollateral: boolean
@@ -34,6 +36,8 @@ interface SdkBorrowPosition {
     symbol: string
     decimals: number
     underlyingAsset: { address: `0x${string}`; chain: { id: string } }
+    spokeAddress?: `0x${string}`
+    hubName?: string
   }
   debt: { amount: { value: string; onChainValue: bigint; decimals: number } }
 }
@@ -50,12 +54,18 @@ function toSafeUsd(value: string, tokenPrice: number): number {
 
 function sdkSupplyToWalletPosition(
   supply: SdkSupplyPosition,
-  lookupMap: ReserveChainTokenMap,
+  reserveMap: ReserveMap,
+  chainTokenLookupMap: ReserveChainTokenMap,
   source: WalletPositionSource,
 ): WalletPosition {
   const asset = supply.reserve.underlyingAsset.address
   const chainId = extractChainId(supply.reserve.underlyingAsset.chain.id)
-  const meta: PositionMeta = resolvePositionMeta(chainId, asset, lookupMap)
+  const composedId = supply.reserve.spokeAddress
+    ? composeReserveId(chainId, supply.reserve.spokeAddress, asset, supply.reserve.hubName)
+    : undefined
+  const meta: PositionMeta = resolvePositionMetaByReserveId(
+    composedId, chainId, asset, reserveMap, chainTokenLookupMap,
+  )
 
   const onChainValue = supply.balance.amount.onChainValue
   const amountWad = onChainValue !== undefined && onChainValue !== null
@@ -65,7 +75,7 @@ function sdkSupplyToWalletPosition(
   const isOrphan = meta.reserveId === undefined
 
   return {
-    reserveId: meta.reserveId ?? supply.reserve.id ?? '',
+    reserveId: meta.reserveId ?? '',
     chainId,
     asset,
     tokenSymbol: meta.tokenSymbol || supply.reserve.symbol,
@@ -80,12 +90,18 @@ function sdkSupplyToWalletPosition(
 
 function sdkBorrowToWalletPosition(
   borrow: SdkBorrowPosition,
-  lookupMap: ReserveChainTokenMap,
+  reserveMap: ReserveMap,
+  chainTokenLookupMap: ReserveChainTokenMap,
   source: WalletPositionSource,
 ): WalletPosition {
   const asset = borrow.reserve.underlyingAsset.address
   const chainId = extractChainId(borrow.reserve.underlyingAsset.chain.id)
-  const meta: PositionMeta = resolvePositionMeta(chainId, asset, lookupMap)
+  const composedId = borrow.reserve.spokeAddress
+    ? composeReserveId(chainId, borrow.reserve.spokeAddress, asset, borrow.reserve.hubName)
+    : undefined
+  const meta: PositionMeta = resolvePositionMetaByReserveId(
+    composedId, chainId, asset, reserveMap, chainTokenLookupMap,
+  )
 
   const onChainValue = borrow.debt.amount.onChainValue
   const amountWad = onChainValue !== undefined && onChainValue !== null
@@ -95,7 +111,7 @@ function sdkBorrowToWalletPosition(
   const isOrphan = meta.reserveId === undefined
 
   return {
-    reserveId: meta.reserveId ?? borrow.reserve.id ?? '',
+    reserveId: meta.reserveId ?? '',
     chainId,
     asset,
     tokenSymbol: meta.tokenSymbol || borrow.reserve.symbol,
@@ -110,19 +126,21 @@ function sdkBorrowToWalletPosition(
 
 export function convertSdkSuppliesToWalletPositions(
   supplies: SdkSupplyPosition[],
-  lookupMap: ReserveChainTokenMap,
+  reserveMap: ReserveMap,
+  chainTokenLookupMap: ReserveChainTokenMap,
   source: WalletPositionSource = 'sdk',
 ): WalletPosition[] {
-  return supplies.map(s => sdkSupplyToWalletPosition(s, lookupMap, source))
+  return supplies.map(s => sdkSupplyToWalletPosition(s, reserveMap, chainTokenLookupMap, source))
 }
 
 export function convertSdkBorrowsToWalletPositions(
   borrows: SdkBorrowPosition[],
-  lookupMap: ReserveChainTokenMap,
+  reserveMap: ReserveMap,
+  chainTokenLookupMap: ReserveChainTokenMap,
   source: WalletPositionSource = 'sdk',
 ): WalletPosition[] {
-  return borrows.map(b => sdkBorrowToWalletPosition(b, lookupMap, source))
+  return borrows.map(b => sdkBorrowToWalletPosition(b, reserveMap, chainTokenLookupMap, source))
 }
 
-export { buildReserveLookupByChainAndToken }
+export { buildReserveLookupByChainAndToken, buildReserveMap }
 export type { SdkSupplyPosition, SdkBorrowPosition }
