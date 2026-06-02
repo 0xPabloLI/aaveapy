@@ -16,7 +16,7 @@ const LEGACY_CACHE_KEYS = ['aave-markets-list-cache'] as const;
 // Bump this when you need to force cache invalidation for reasons
 // that don't change the API shape (value format change, data fix, etc).
 // When the API shape changes, SCHEMA_FP handles it automatically.
-const CACHE_VERSION = '1';
+const CACHE_VERSION = '2';
 
 // Effective fingerprint = schema fingerprint + manual version.
 // Either one changing invalidates all cached entries.

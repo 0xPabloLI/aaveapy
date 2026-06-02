@@ -173,6 +173,7 @@ export interface ReserveWithSpread extends BannedReserveUsdFields {
   hubAddress?: string;
   /** Kept: future spoke detail page needs spoke identity. */
   spokeId?: string;
+  spokeName?: string;
   spokeAddress?: string;
 
 }

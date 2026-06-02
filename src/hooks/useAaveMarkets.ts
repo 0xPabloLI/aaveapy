@@ -11,6 +11,7 @@ import { SCHEMA_FP } from '@/shared/schema-fingerprint';
 import { API_BASE } from '@/lib/apiBase';
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes';
 import { MarketsResponseSchema } from '@/lib/apiSchemas';
+import { enrichReservesFromId } from '@/lib/reserveIdParser';
 
 // Fetch all market data — validated against MarketsResponseSchema (single source of truth)
 export const fetchMarkets = async (): Promise<MarketsResponse> => {
@@ -25,6 +26,7 @@ export const fetchMarkets = async (): Promise<MarketsResponse> => {
     }
     const data = parsed.data as MarketsResponse;
     sanitizeDeficitWithoutPrice(data);
+    enrichReservesFromId(data);
 
     // Runtime drift detection: if backend deployed a new schema before
     // frontend was rebuilt, update the lazy fingerprint so cached entries

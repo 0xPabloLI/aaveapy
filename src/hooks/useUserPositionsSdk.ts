@@ -3,8 +3,10 @@ import { useWallet } from './useWallet'
 import { useQuery } from '@tanstack/react-query'
 import { useUserSupplies as useV4UserSupplies, useUserBorrows as useV4UserBorrows } from '@aave/react'
 import { useUserSupplies as useV3UserSupplies, useUserBorrows as useV3UserBorrows } from '@aave/react-v3'
-import { getV3UserPositionsMultiChain, type V3AssetsByMarket } from '@/lib/userData/aaveV3UserClient'
+import { evmAddress, chainId } from '@aave/types'
+import { getV3UserPositionsMultiChain, type V3AssetsByMarket, V3_POOL_ADDRESSES } from '@/lib/userData/aaveV3UserClient'
 import { getV4UserPositionsAllSpokes } from '@/lib/userData/aaveV4UserClient'
+import { getProtocolVersion } from '@/lib/protocolVersion'
 import {
   convertV3PositionsToWalletPositions,
   convertV4PositionsToWalletPositions,
@@ -79,7 +81,7 @@ export function enrichV4SupplyPositions(
       underlyingAsset: { address: p.reserve.summary.supplied.token.address, chain: { id: String(p.reserve.spoke.chain.chainId) } },
       spokeAddress: p.reserve.spoke.address,
       hubName: p.reserve.spoke.connectedHubs?.[0]?.hub.name,
-      hubNames: p.reserve.spoke.connectedHubs?.map(h => h.hub.name),
+      hubAddresses: p.reserve.spoke.connectedHubs?.map(h => h.hub.address) as `0x${string}`[] | undefined,
     },
     balance: { amount: { value: p.balance.amount.value, onChainValue: p.balance.amount.onChainValue, decimals: p.balance.amount.decimals } },
     isCollateral: p.isCollateral,
@@ -98,7 +100,7 @@ export function enrichV4BorrowPositions(
       underlyingAsset: { address: p.reserve.summary.borrowed.token.address, chain: { id: String(p.reserve.spoke.chain.chainId) } },
       spokeAddress: p.reserve.spoke.address,
       hubName: p.reserve.spoke.connectedHubs?.[0]?.hub.name,
-      hubNames: p.reserve.spoke.connectedHubs?.map(h => h.hub.name),
+      hubAddresses: p.reserve.spoke.connectedHubs?.map(h => h.hub.address) as `0x${string}`[] | undefined,
     },
     debt: { amount: { value: p.principal.amount.value, onChainValue: p.principal.amount.onChainValue, decimals: p.principal.amount.decimals } },
   }))
@@ -130,7 +132,8 @@ async function fetchV3Fallback(
     for (const err of v3Response.errors) {
       failedSources.push(`onchain-v3-chain-${err.chainId}`)
     }
-  } catch {
+  } catch (err) {
+    console.error('[onchain-v3] Failed to fetch V3 onchain positions:', err)
     failedSources.push('onchain-v3')
   }
   return { positions, failedSources }
@@ -153,7 +156,8 @@ async function fetchV4Fallback(
     for (const err of v4Response.errors) {
       failedSources.push(`onchain-v4-chain-${err.chainId}-spoke-${err.spokeName ?? 'unknown'}`)
     }
-  } catch {
+  } catch (err) {
+    console.error('[onchain-v4] Failed to fetch V4 onchain positions:', err)
     failedSources.push('onchain-v4')
   }
   return { positions, failedSources }
@@ -169,14 +173,58 @@ export function useUserPositionsSdk(
   const enabled = isConnected && !!address
   const account = (enabled ? address : undefined) as `0x${string}`
 
-  const v3Supplies = useV3UserSupplies({ account }, { enabled })
-  const v3Borrows = useV3UserBorrows({ account }, { enabled })
-  const v4Supplies = useV4UserSupplies({ account }, { enabled })
-  const v4Borrows = useV4UserBorrows({ account }, { enabled })
+  const v3MarketInputs = useMemo(() => {
+    const seen = new Set<string>()
+    const inputs: { address: ReturnType<typeof evmAddress>; chainId: ReturnType<typeof chainId> }[] = []
+    for (const r of reserves) {
+      if (getProtocolVersion(r.marketName) === 'v4') continue
+      const pool = V3_POOL_ADDRESSES[r.chainId]
+      if (!pool) continue
+      const key = `${r.chainId}:${pool}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      inputs.push({ address: evmAddress(pool), chainId: chainId(r.chainId) })
+    }
+    return inputs
+  }, [reserves])
+
+  const v4ChainIds = useMemo(() => {
+    const chainIdsSet = new Set<number>()
+    for (const r of reserves) {
+      if (getProtocolVersion(r.marketName) === 'v4') chainIdsSet.add(r.chainId)
+    }
+    return [...chainIdsSet]
+  }, [reserves])
+
+  const v3SdkArgs = useMemo(() => {
+    if (!enabled || !account || v3MarketInputs.length === 0) {
+      return { markets: [{ address: evmAddress('0x0000000000000000000000000000000000000000'), chainId: chainId(1) }], user: evmAddress('0x0000000000000000000000000000000000000000') }
+    }
+    return { markets: v3MarketInputs, user: evmAddress(account) }
+  }, [enabled, account, v3MarketInputs])
+
+  const v4SdkArgs = useMemo(() => {
+    if (!enabled || !account || v4ChainIds.length === 0) {
+      return { query: { userChains: { user: evmAddress('0x0000000000000000000000000000000000000000'), chainIds: [chainId(1)] } } }
+    }
+    return { query: { userChains: { user: evmAddress(account), chainIds: v4ChainIds.map(id => chainId(id)) } } }
+  }, [enabled, account, v4ChainIds])
+
+  const v3Supplies = useV3UserSupplies(v3SdkArgs)
+  const v3Borrows = useV3UserBorrows(v3SdkArgs)
+  const v4Supplies = useV4UserSupplies(v4SdkArgs)
+  const v4Borrows = useV4UserBorrows(v4SdkArgs)
 
   const sdkLoading = v3Supplies.loading || v3Borrows.loading || v4Supplies.loading || v4Borrows.loading
   const v3SdkFailed = !!v3Supplies.error || !!v3Borrows.error
   const v4SdkFailed = !!v4Supplies.error || !!v4Borrows.error
+
+  if (v3SdkFailed) {
+    console.error('[sdk-v3] V3 SDK failed:', v3Supplies.error ?? v3Borrows.error)
+  }
+  if (v4SdkFailed) {
+    console.error('[sdk-v4] V4 SDK failed:', v4Supplies.error ?? v4Borrows.error)
+  }
 
   const fallbackQuery = useQuery({
     queryKey: ['user-positions-fallback', address ?? 'no-wallet', v3SdkFailed, v4SdkFailed],
@@ -184,6 +232,10 @@ export function useUserPositionsSdk(
       if (!address) return { positions: [], failedSources: [] }
       const positions: WalletPosition[] = []
       const failedSources: string[] = []
+
+      const v3Markets = Object.keys(v3AssetsByMarket)
+      const v4Spokes = Object.keys(v4ReservesBySpoke)
+      console.info('[fallback] V3 markets:', v3Markets.length, 'V4 spokes:', v4Spokes.length, 'reserves:', reserves.length)
 
       if (v3SdkFailed) {
         const v3 = await fetchV3Fallback(address, reserves, v3AssetsByMarket)

@@ -79,7 +79,7 @@ _Avoid_: Supply Ceiling, Borrow Ceiling（Ceiling 保留给 per-user 语义）
 ## Identity
 
 **Reserve ID**:
-单个字段作为 reserve 的 canonical key。后端真实格式 V3=`{chainId}:{poolAddress}:{tokenAddress}`，V4=`{chainId}:{poolAddress}:{tokenAddress}:{hubName}`（如 `1:0x8787...:0xC02a...:Core`）。代码中 `composeReserveId(chainId, poolAddress, tokenAddress, hubName?)` 构造此格式。`(chainId, tokenAddress)` 二元组仅作 fallback 查找用（`buildReserveLookupByChainAndToken`），V3 同链同币种多 pool 时有歧义（`_ambiguousFallback` 标记 + `console.warn`）。
+单个字段作为 reserve 的 canonical key。后端真实格式 V3=`{chainId}:{poolAddress}:{tokenAddress}`，V4=`{chainId}:{spokeAddress}:{tokenAddress}:{hubAddress}`（如 `1:0x8787...:0xC02a...:0xCca8...26c9`）。代码中 `composeReserveId(chainId, poolAddress, tokenAddress, hubAddress?)` 构造此格式。`parseReserveId(reserveId)` 反向解析各段（`reserveIdParser.ts`），仅用于从 reserveId 提取 hubAddress/spokeAddress（API 不再返回这两个字段）。`(chainId, tokenAddress)` 二元组仅作 fallback 查找用（`buildReserveLookupByChainAndToken`），V3 同链同币种多 pool 时有歧义（`_ambiguousFallback` 标记 + `console.warn`）。
 _Avoid_: Composite key, (underlyingAsset, chainId) pair 作为主匹配路径; SDK `reserve.id`（Base64 编码 opaque ID）用于 Map.get
 
 **Reserve Lookup Strategy**:
@@ -128,6 +128,9 @@ Spoke 串行，同 Spoke 内 Multicall3 批量。`getUserSuppliedAssets`/`getUse
 **Spoke Discovery**:
 遍历 address-book 中所有 Spoke，Multicall3 批量聚合查询。不做"先探再查"。
 _Avoid_: 后端 reserves 推断（可能遗漏新 Spoke）
+
+**Tech Debt: onchain 查询 spokeAddress 来源**:
+`getV4UserPositionsAllSpokes` 通过 `V4_SPOKE_ADDRESSES`（从 `@aave-dao/aave-address-book` 导入）以 spokeName 反查 spokeAddress，而非从 reserveId 解析。当前可行（address-book 跟随链上部署更新），但新增 Spoke 时需等 address-book 发版。未来可改为从 reserveId 第2段直接获取 spokeAddress，消除对 address-book 的依赖。
 
 **Portfolio Merge**:
 同 token 同 side = 替换（链上为准）；同 token 不同 side = 加缺失 side；全新 token = 直接加入；链上没有但 Simulator 有 = 保留；找不到 reserveId = orphan。

@@ -131,15 +131,15 @@ describe('composeReserveId', () => {
     ).toBe('1:0x87870bca3f3fd6b5bb36c0221bcc5c4c1f7c69c6:0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48')
   })
 
-  it('composes V4 reserveId with hubName: chainId:poolAddress:tokenAddress:hubName', () => {
+  it('composes V4 reserveId with hubAddress: chainId:poolAddress:tokenAddress:hubAddress', () => {
     expect(
-      composeReserveId(1, '0x8787...', '0xA0b8...', 'Core'),
-    ).toBe('1:0x8787...:0xa0b8...:Core')
+      composeReserveId(1, '0x8787...', '0xA0b8...', '0xCca8A2316a28C583e12c8844d2D4E1f4D8F8D26c9'),
+    ).toBe('1:0x8787...:0xa0b8...:0xcca8a2316a28c583e12c8844d2d4e1f4d8f8d26c9')
   })
 
-  it('lowercases poolAddress and tokenAddress but preserves hubName case', () => {
-    const result = composeReserveId(42161, '0xABC', '0xDEF', 'Plus')
-    expect(result).toBe('42161:0xabc:0xdef:Plus')
+  it('lowercases all address components including hubAddress', () => {
+    const result = composeReserveId(42161, '0xABC', '0xDEF', '0xCca8AbC123')
+    expect(result).toBe('42161:0xabc:0xdef:0xcca8abc123')
   })
 
   it('returns undefined when poolAddress is empty', () => {
@@ -158,14 +158,14 @@ describe('composeReserveId', () => {
     expect(composeReserveId(-1, '0x8787', '0xA0b8')).toBeUndefined()
   })
 
-  it('works without hubName (V3 format)', () => {
+  it('works without hubAddress (V3 format)', () => {
     const result = composeReserveId(137, '0xPool', '0xToken')
     expect(result).toBe('137:0xpool:0xtoken')
     expect(result!.split(':')).toHaveLength(3)
   })
 
-  it('with hubName produces 4 colon-separated segments', () => {
-    const result = composeReserveId(1, '0xPool', '0xToken', 'Prime')
+  it('with hubAddress produces 4 colon-separated segments', () => {
+    const result = composeReserveId(1, '0xPool', '0xToken', '0xHubAbc')
     expect(result!.split(':')).toHaveLength(4)
   })
 })

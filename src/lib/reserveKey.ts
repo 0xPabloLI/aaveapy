@@ -82,7 +82,7 @@ export { toChainTokenKey };
  * Composes a reserveId string matching the backend format.
  *
  * V3: `{chainId}:{poolAddress}:{tokenAddress}`
- * V4: `{chainId}:{poolAddress}:{tokenAddress}:{hubName}`
+ * V4: `{chainId}:{poolAddress}:{tokenAddress}:{hubAddress}`
  *
  * All address components are lowercased for consistent matching.
  * Returns undefined if any required component is missing.
@@ -91,9 +91,9 @@ export function composeReserveId(
   chainId: number,
   poolAddress: string,
   tokenAddress: string,
-  hubName?: string,
+  hubAddress?: string,
 ): string | undefined {
   if (chainId <= 0 || !poolAddress || !tokenAddress) return undefined
   const base = `${chainId}:${poolAddress.toLowerCase()}:${tokenAddress.toLowerCase()}`
-  return hubName ? `${base}:${hubName}` : base
+  return hubAddress ? `${base}:${hubAddress.toLowerCase()}` : base
 }

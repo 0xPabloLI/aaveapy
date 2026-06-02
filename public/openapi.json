@@ -205,12 +205,6 @@
                     }
                   ]
                 },
-                "hubAddress": {
-                  "type": "string"
-                },
-                "spokeAddress": {
-                  "type": "string"
-                },
                 "supplyApy": {
                   "type": "number"
                 },
@@ -1016,6 +1010,9 @@
                 },
                 "spokeId": {
                   "type": "string"
+                },
+                "spokeName": {
+                  "type": "string"
                 }
               },
               "required": [
@@ -1321,12 +1318,6 @@
                 "type": "null"
               }
             ]
-          },
-          "hubAddress": {
-            "type": "string"
-          },
-          "spokeAddress": {
-            "type": "string"
           },
           "supplyApy": {
             "type": "number"
@@ -2132,6 +2123,9 @@
             "type": "string"
           },
           "spokeId": {
+            "type": "string"
+          },
+          "spokeName": {
             "type": "string"
           }
         },

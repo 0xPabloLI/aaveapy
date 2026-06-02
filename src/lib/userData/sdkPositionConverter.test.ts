@@ -9,6 +9,7 @@ import type { ReserveWithSpread } from '@/types/aave'
 
 const SPOKE_V3 = '0x87870bca3f3fd6b5bb36c0221bcc5c4c1f7c69c6' as `0x${string}`
 const SPOKE_V4 = '0x794a61358d682efdc006d42ba3808ad9c1fa5d07' as `0x${string}`
+const HUB_V4 = '0xccA8a2316A28c583E12c8844d2D4E1f4d8F8d26c9' as `0x${string}`
 const ETH = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2' as `0x${string}`
 const USDC = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48' as `0x${string}`
 
@@ -30,7 +31,7 @@ const mockReserves = [
     decimals: 6,
   },
   {
-    reserveId: `1:${SPOKE_V4}:${USDC}:Core`,
+    reserveId: `1:${SPOKE_V4}:${USDC}:${HUB_V4.toLowerCase()}`,
     tokenSymbol: 'USDC',
     tokenAddress: USDC,
     chainId: 1,
@@ -70,7 +71,7 @@ describe('sdkPositionConverter', () => {
       expect(result[0].amountWad).toBe(1500000000000000000n)
     })
 
-    it('matches V4 with hubName', () => {
+    it('matches V4 with hubAddresses', () => {
       const supplies = [
         {
           reserve: {
@@ -79,7 +80,7 @@ describe('sdkPositionConverter', () => {
             decimals: 6,
             underlyingAsset: { address: USDC, chain: { id: '1' } },
             spokeAddress: SPOKE_V4,
-            hubName: 'Core',
+            hubAddresses: [HUB_V4],
           },
           balance: {
             amount: { value: '500', onChainValue: 500000000n, decimals: 6 },
@@ -89,7 +90,7 @@ describe('sdkPositionConverter', () => {
       ]
 
       const result = convertSdkSuppliesToWalletPositions(supplies, reserveMap, chainTokenLookupMap)
-      expect(result[0].reserveId).toBe(`1:${SPOKE_V4}:${USDC}:Core`)
+      expect(result[0].reserveId).toBe(`1:${SPOKE_V4}:${USDC}:${HUB_V4.toLowerCase()}`)
       expect(result[0].isOrphan).toBe(false)
     })
 

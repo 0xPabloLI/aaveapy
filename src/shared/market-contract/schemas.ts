@@ -133,8 +133,6 @@ export const ReserveWithSpreadSchema = z.object({
   isActive: z.literal(false).optional(),
   aTokenAddress: z.string().nullish(),
   vTokenAddress: z.string().nullish(),
-  hubAddress: z.string().optional(),
-  spokeAddress: z.string().optional(),
   supplyApy: z.number().optional(),
   borrowApy: z.number().optional(),
   supplyIncentives: z.array(z.number()).optional(),
@@ -164,6 +162,7 @@ export const ReserveWithSpreadSchema = z.object({
   hubId: z.string().optional(),
   hubName: z.string().optional(),
   spokeId: z.string().optional(),
+  spokeName: z.string().optional(),
 }).passthrough();
 
 export const MarketsResponseSchema = z.object({

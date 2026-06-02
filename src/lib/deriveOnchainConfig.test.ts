@@ -6,10 +6,6 @@ import {
   decodeV4ReserveId,
 } from './deriveOnchainConfig'
 import type { ReserveWithSpread } from '@/types/aave'
-import { V4_SPOKE_ADDRESSES } from '@/lib/userData/aaveV4UserClient'
-
-const MAIN_SPOKE_ADDR = V4_SPOKE_ADDRESSES[1]?.find(s => s.name === 'MAIN_SPOKE')?.address ?? '0x0'
-const BLUECHIP_SPOKE_ADDR = V4_SPOKE_ADDRESSES[1]?.find(s => s.name === 'BLUECHIP_SPOKE')?.address ?? '0x0'
 
 const makeV3Reserve = (
   chainId: number,
@@ -29,7 +25,7 @@ const makeV3Reserve = (
 const makeV4Reserve = (
   chainId: number,
   tokenAddress: string,
-  spokeAddress: string,
+  spokeName: string,
   aaveProReserveId: string,
   overrides?: Partial<ReserveWithSpread>,
 ): ReserveWithSpread => ({
@@ -40,7 +36,7 @@ const makeV4Reserve = (
   tokenName: 'Token',
   tokenSymbol: 'TKN',
   tokenAddress,
-  spokeAddress,
+  spokeName,
   aaveProReserveId,
   ...overrides,
 } as ReserveWithSpread)
@@ -100,10 +96,10 @@ describe('deriveV3AssetsByMarket', () => {
     expect(Object.keys(result).sort()).toEqual(['AaveV3Ethereum', 'AaveV3EthereumLido'])
   })
 
-  it('excludes V4 reserves (those with spokeAddress)', () => {
+  it('excludes V4 reserves (those with spokeName)', () => {
     const reserves = [
       makeV3Reserve(1, '0xAa'),
-      makeV4Reserve(1, '0xBb', '0xSpoke', 'encoded'),
+      makeV4Reserve(1, '0xBb', 'MAIN_SPOKE', 'encoded'),
     ]
     const result = deriveV3AssetsByMarket(reserves)
     expect(Object.keys(result)).toHaveLength(1)
@@ -135,10 +131,10 @@ describe('deriveV3AssetsByChain', () => {
     expect(result[137]).toEqual(['0xCc'])
   })
 
-  it('excludes V4 reserves (those with spokeAddress)', () => {
+  it('excludes V4 reserves (those with spokeName)', () => {
     const reserves = [
       makeV3Reserve(1, '0xAa'),
-      makeV4Reserve(1, '0xBb', '0xSpoke', 'encoded'),
+      makeV4Reserve(1, '0xBb', 'MAIN_SPOKE', 'encoded'),
     ]
     const result = deriveV3AssetsByChain(reserves)
     expect(Object.keys(result)).toEqual(['1'])
@@ -159,12 +155,12 @@ describe('deriveV3AssetsByChain', () => {
 })
 
 describe('deriveV4ReservesBySpoke', () => {
-  it('groups V4 reserves by spokeName (looked up from V4_SPOKE_ADDRESSES)', () => {
+  it('groups V4 reserves by spokeName', () => {
     const encoded1 = Buffer.from('1::0xAa').toString('base64')
     const encoded2 = Buffer.from('2::0xBb').toString('base64')
     const reserves = [
-      makeV4Reserve(1, '0xAa', MAIN_SPOKE_ADDR, encoded1, { hubName: 'Core' }),
-      makeV4Reserve(1, '0xBb', MAIN_SPOKE_ADDR, encoded2, { hubName: 'Core' }),
+      makeV4Reserve(1, '0xAa', 'MAIN_SPOKE', encoded1, { hubName: 'Core' }),
+      makeV4Reserve(1, '0xBb', 'MAIN_SPOKE', encoded2, { hubName: 'Core' }),
     ]
     const result = deriveV4ReservesBySpoke(reserves)
     expect(Object.keys(result)).toEqual(['MAIN_SPOKE'])
@@ -177,8 +173,8 @@ describe('deriveV4ReservesBySpoke', () => {
     const encoded1 = Buffer.from('1::0xAa').toString('base64')
     const encoded2 = Buffer.from('2::0xBb').toString('base64')
     const reserves = [
-      makeV4Reserve(1, '0xAa', MAIN_SPOKE_ADDR, encoded1),
-      makeV4Reserve(1, '0xBb', BLUECHIP_SPOKE_ADDR, encoded2),
+      makeV4Reserve(1, '0xAa', 'MAIN_SPOKE', encoded1),
+      makeV4Reserve(1, '0xBb', 'BLUECHIP_SPOKE', encoded2),
     ]
     const result = deriveV4ReservesBySpoke(reserves)
     expect(Object.keys(result).sort()).toEqual(['BLUECHIP_SPOKE', 'MAIN_SPOKE'])
@@ -187,7 +183,7 @@ describe('deriveV4ReservesBySpoke', () => {
   it('excludes V3 reserves', () => {
     const reserves = [
       makeV3Reserve(1, '0xAa'),
-      makeV4Reserve(1, '0xBb', MAIN_SPOKE_ADDR, Buffer.from('1::0xBb').toString('base64')),
+      makeV4Reserve(1, '0xBb', 'MAIN_SPOKE', Buffer.from('1::0xBb').toString('base64')),
     ]
     const result = deriveV4ReservesBySpoke(reserves)
     expect(Object.keys(result)).toEqual(['MAIN_SPOKE'])
@@ -195,7 +191,7 @@ describe('deriveV4ReservesBySpoke', () => {
 
   it('skips V4 reserves without aaveProReserveId', () => {
     const reserves = [
-      makeV4Reserve(1, '0xAa', MAIN_SPOKE_ADDR, ''),
+      makeV4Reserve(1, '0xAa', 'MAIN_SPOKE', ''),
     ]
     const result = deriveV4ReservesBySpoke(reserves)
     expect(result['MAIN_SPOKE']).toBeUndefined()
@@ -203,16 +199,16 @@ describe('deriveV4ReservesBySpoke', () => {
 
   it('skips V4 reserves with unparseable aaveProReserveId', () => {
     const reserves = [
-      makeV4Reserve(1, '0xAa', MAIN_SPOKE_ADDR, 'invalid!!!'),
+      makeV4Reserve(1, '0xAa', 'MAIN_SPOKE', 'invalid!!!'),
     ]
     const result = deriveV4ReservesBySpoke(reserves)
     expect(result['MAIN_SPOKE']).toBeUndefined()
   })
 
-  it('skips V4 reserves whose spokeAddress is not in V4_SPOKE_ADDRESSES', () => {
+  it('skips V4 reserves without spokeName', () => {
     const encoded = Buffer.from('1::0xAa').toString('base64')
     const reserves = [
-      makeV4Reserve(1, '0xAa', '0xUnknownSpoke', encoded),
+      makeV4Reserve(1, '0xAa', '', encoded),
     ]
     const result = deriveV4ReservesBySpoke(reserves)
     expect(Object.keys(result)).toHaveLength(0)

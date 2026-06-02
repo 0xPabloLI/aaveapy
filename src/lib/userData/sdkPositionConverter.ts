@@ -25,7 +25,7 @@ interface SdkSupplyPosition {
     underlyingAsset: { address: `0x${string}`; chain: { id: string } }
     spokeAddress?: `0x${string}`
     hubName?: string
-    hubNames?: string[]
+    hubAddresses?: string[]
   }
   balance: { amount: { value: string; onChainValue: bigint; decimals: number } }
   isCollateral: boolean
@@ -39,7 +39,7 @@ interface SdkBorrowPosition {
     underlyingAsset: { address: `0x${string}`; chain: { id: string } }
     spokeAddress?: `0x${string}`
     hubName?: string
-    hubNames?: string[]
+    hubAddresses?: string[]
   }
   debt: { amount: { value: string; onChainValue: bigint; decimals: number } }
 }
@@ -64,15 +64,13 @@ function sdkSupplyToWalletPosition(
   const chainId = extractChainId(supply.reserve.underlyingAsset.chain.id)
   let composedId: string | undefined
   if (supply.reserve.spokeAddress) {
-    const hubNames = supply.reserve.hubNames?.length
-      ? supply.reserve.hubNames
-      : supply.reserve.hubName
-        ? [supply.reserve.hubName]
-        : [undefined]
-    composedId = hubNames
+    const hubAddresses = supply.reserve.hubAddresses?.length
+      ? supply.reserve.hubAddresses
+      : [undefined]
+    composedId = hubAddresses
       .map(h => composeReserveId(chainId, supply.reserve.spokeAddress!, asset, h))
       .find(id => id && reserveMap.has(id))
-      ?? composeReserveId(chainId, supply.reserve.spokeAddress, asset, supply.reserve.hubName)
+      ?? composeReserveId(chainId, supply.reserve.spokeAddress, asset, supply.reserve.hubAddresses?.[0])
   }
   const meta: PositionMeta = resolvePositionMetaByReserveId(
     composedId, chainId, asset, reserveMap, chainTokenLookupMap,
@@ -109,15 +107,13 @@ function sdkBorrowToWalletPosition(
   const chainId = extractChainId(borrow.reserve.underlyingAsset.chain.id)
   let composedId: string | undefined
   if (borrow.reserve.spokeAddress) {
-    const hubNames = borrow.reserve.hubNames?.length
-      ? borrow.reserve.hubNames
-      : borrow.reserve.hubName
-        ? [borrow.reserve.hubName]
-        : [undefined]
-    composedId = hubNames
+    const hubAddresses = borrow.reserve.hubAddresses?.length
+      ? borrow.reserve.hubAddresses
+      : [undefined]
+    composedId = hubAddresses
       .map(h => composeReserveId(chainId, borrow.reserve.spokeAddress!, asset, h))
       .find(id => id && reserveMap.has(id))
-      ?? composeReserveId(chainId, borrow.reserve.spokeAddress, asset, borrow.reserve.hubName)
+      ?? composeReserveId(chainId, borrow.reserve.spokeAddress, asset, borrow.reserve.hubAddresses?.[0])
   }
   const meta: PositionMeta = resolvePositionMetaByReserveId(
     composedId, chainId, asset, reserveMap, chainTokenLookupMap,

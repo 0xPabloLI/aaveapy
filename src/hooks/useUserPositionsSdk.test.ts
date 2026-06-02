@@ -11,6 +11,7 @@ const POOL = '0x87870bca3f3fd6b5bb36c0221bcc5c4c1f7c69c6' as `0x${string}`
 const USDC = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48' as `0x${string}`
 const WETH = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2' as `0x${string}`
 const SPOKE = '0x794a61358d682efdc006d42ba3808ad9c1fa5d07' as `0x${string}`
+const HUB = '0xcca852bc40e560adc3b1cc58ca5b55638ce826c9' as `0x${string}`
 
 describe('enrichV3SupplyPositions', () => {
   it('extracts spokeAddress from market.address', () => {
@@ -53,12 +54,12 @@ describe('enrichV3BorrowPositions', () => {
 })
 
 describe('enrichV4SupplyPositions', () => {
-  it('extracts spokeAddress and hubName from spoke', () => {
+  it('extracts spokeAddress, hubName, and hubAddresses from spoke', () => {
     const result = enrichV4SupplyPositions([{
       id: 'v4-supply-1',
       reserve: {
         id: 'v4-reserve',
-        spoke: { address: SPOKE, chain: { chainId: 42161 }, connectedHubs: [{ hub: { name: 'Core' } }] },
+        spoke: { address: SPOKE, chain: { chainId: 42161 }, connectedHubs: [{ hub: { name: 'Core', address: HUB } }] },
         summary: { supplied: { token: { address: USDC, info: { symbol: 'USDC', decimals: 6 } } } },
       },
       balance: { amount: { value: '500', onChainValue: 500000000n, decimals: 6 } },
@@ -67,10 +68,11 @@ describe('enrichV4SupplyPositions', () => {
     expect(result).toHaveLength(1)
     expect(result[0].reserve.spokeAddress).toBe(SPOKE)
     expect(result[0].reserve.hubName).toBe('Core')
+    expect(result[0].reserve.hubAddresses).toEqual([HUB])
     expect(result[0].reserve.underlyingAsset.address).toBe(USDC)
   })
 
-  it('handles missing connectedHubs (no hubName)', () => {
+  it('handles missing connectedHubs (no hubName, no hubAddresses)', () => {
     const result = enrichV4SupplyPositions([{
       id: 'v4-supply-2',
       reserve: {
@@ -82,16 +84,17 @@ describe('enrichV4SupplyPositions', () => {
       isCollateral: true,
     }])
     expect(result[0].reserve.hubName).toBeUndefined()
+    expect(result[0].reserve.hubAddresses).toBeUndefined()
   })
 })
 
 describe('enrichV4BorrowPositions', () => {
-  it('extracts spokeAddress and hubName from spoke', () => {
+  it('extracts spokeAddress, hubName, and hubAddresses from spoke', () => {
     const result = enrichV4BorrowPositions([{
       id: 'v4-borrow-1',
       reserve: {
         id: 'v4-reserve-3',
-        spoke: { address: SPOKE, chain: { chainId: 1 }, connectedHubs: [{ hub: { name: 'Plus' } }] },
+        spoke: { address: SPOKE, chain: { chainId: 1 }, connectedHubs: [{ hub: { name: 'Plus', address: HUB } }] },
         summary: { borrowed: { token: { address: USDC, info: { symbol: 'USDC', decimals: 6 } } } },
       },
       principal: { amount: { value: '1000', onChainValue: 1000000000n, decimals: 6 } },
@@ -99,6 +102,7 @@ describe('enrichV4BorrowPositions', () => {
     expect(result).toHaveLength(1)
     expect(result[0].reserve.spokeAddress).toBe(SPOKE)
     expect(result[0].reserve.hubName).toBe('Plus')
+    expect(result[0].reserve.hubAddresses).toEqual([HUB])
     expect(result[0].reserve.underlyingAsset.address).toBe(USDC)
   })
 })

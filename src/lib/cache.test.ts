@@ -84,14 +84,14 @@ describe('updateSchemaFingerprintFromApi', () => {
   it('updates the lazy schema fingerprint in storage', () => {
     const storage = new MemoryStorage();
     updateSchemaFingerprintFromApi('abc123', storage);
-    expect(storage.getItem('aave-schema-fingerprint')).toBe('abc123:1');
+    expect(storage.getItem('aave-schema-fingerprint')).toBe('abc123:2');
   });
 
   it('overwrites previous fingerprint', () => {
     const storage = new MemoryStorage();
     updateSchemaFingerprintFromApi('old456', storage);
-    expect(storage.getItem('aave-schema-fingerprint')).toBe('old456:1');
+    expect(storage.getItem('aave-schema-fingerprint')).toBe('old456:2');
     updateSchemaFingerprintFromApi('new789', storage);
-    expect(storage.getItem('aave-schema-fingerprint')).toBe('new789:1');
+    expect(storage.getItem('aave-schema-fingerprint')).toBe('new789:2');
   });
 });

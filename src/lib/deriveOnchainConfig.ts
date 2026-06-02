@@ -1,12 +1,5 @@
 import type { ReserveWithSpread } from '@/types/aave'
-import { V4_SPOKE_ADDRESSES } from '@/lib/userData/aaveV4UserClient'
-
-function lookupSpokeName(chainId: number, spokeAddress: string): string | null {
-  const spokes = V4_SPOKE_ADDRESSES[chainId]
-  if (!spokes) return null
-  const spoke = spokes.find(s => s.address.toLowerCase() === spokeAddress.toLowerCase())
-  return spoke?.name ?? null
-}
+import { getProtocolVersion } from '@/lib/protocolVersion'
 
 export function decodeV4ReserveId(aaveProReserveId?: string): bigint | null {
   if (!aaveProReserveId) return null
@@ -33,7 +26,7 @@ export function deriveV3AssetsByMarket(
   const map = new Map<string, { chainId: number; assets: Set<string> }>()
 
   for (const r of reserves) {
-    if (r.spokeAddress) continue
+    if (getProtocolVersion(r.marketName) === 'v4') continue
     const existing = map.get(r.marketName)
     if (existing) {
       existing.assets.add(r.tokenAddress)
@@ -56,7 +49,7 @@ export function deriveV3AssetsByChain(
   const map = new Map<number, Set<string>>()
 
   for (const r of reserves) {
-    if (r.spokeAddress) continue
+    if (getProtocolVersion(r.marketName) === 'v4') continue
     const assets = map.get(r.chainId) ?? new Set<string>()
     assets.add(r.tokenAddress)
     map.set(r.chainId, assets)
@@ -75,11 +68,11 @@ export function deriveV4ReservesBySpoke(
   const map = new Map<string, { reserveId: bigint; asset: `0x${string}` }[]>()
 
   for (const r of reserves) {
-    if (!r.spokeAddress) continue
+    if (getProtocolVersion(r.marketName) !== 'v4') continue
     const reserveId = decodeV4ReserveId(r.aaveProReserveId)
     if (reserveId === null) continue
 
-    const spokeName = lookupSpokeName(r.chainId, r.spokeAddress)
+    const spokeName = r.spokeName
     if (!spokeName) continue
 
     const entries = map.get(spokeName) ?? []

@@ -11,19 +11,6 @@ import {
   buildReserveMapFromReserves,
 } from './userPositionMapper'
 
-function buildSpokeNameToMarketNameMap(reserves: ReserveWithSpread[]): Map<string, string> {
-  const map = new Map<string, string>()
-  for (const r of reserves) {
-    if (r.spokeAddress && r.marketName) {
-      const spokeKey = `${r.chainId}:${r.spokeAddress.toLowerCase()}`
-      if (!map.has(spokeKey)) {
-        map.set(spokeKey, r.marketName)
-      }
-    }
-  }
-  return map
-}
-
 export function convertV3PositionsToWalletPositions(
   positions: V3UserPosition[],
   lookupMap: ReserveChainTokenMap,
