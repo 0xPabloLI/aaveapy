@@ -4,14 +4,36 @@ import {
   enrichV3BorrowPositions,
   enrichV4SupplyPositions,
   enrichV4BorrowPositions,
+  buildV3MarketInputs,
+  buildV4ChainIds,
+  buildV3SdkArgs,
+  buildV4SdkArgs,
 } from './useUserPositionsSdk'
 import { composeReserveId } from '@/lib/reserveKey'
+import { V3_POOL_ADDRESSES } from '@/lib/userData/aaveV3UserClient'
+import type { ReserveWithSpread } from '@/types/aave'
+import { evmAddress, chainId } from '@aave/types'
 
 const POOL = '0x87870bca3f3fd6b5bb36c0221bcc5c4c1f7c69c6' as `0x${string}`
 const USDC = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48' as `0x${string}`
 const WETH = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2' as `0x${string}`
 const SPOKE = '0x794a61358d682efdc006d42ba3808ad9c1fa5d07' as `0x${string}`
 const HUB = '0xcca852bc40e560adc3b1cc58ca5b55638ce826c9' as `0x${string}`
+const USER = '0x742d35Cc6634C0532925a3b844Bc454e4438f44e' as `0x${string}`
+const ZERO = '0x0000000000000000000000000000000000000000' as `0x${string}`
+
+function makeReserve(overrides: Partial<ReserveWithSpread> & { marketName: string; chainId: number; tokenAddress: string }): ReserveWithSpread {
+  return {
+    reserveId: `${overrides.chainId}:${POOL}:${overrides.tokenAddress}`,
+    marketName: overrides.marketName,
+    chainName: 'Ethereum',
+    chainId: overrides.chainId,
+    tokenName: 'Token',
+    tokenSymbol: 'TKN',
+    tokenAddress: overrides.tokenAddress,
+    ...overrides,
+  } as ReserveWithSpread
+}
 
 describe('enrichV3SupplyPositions', () => {
   it('extracts spokeAddress from market.address', () => {
@@ -104,5 +126,139 @@ describe('enrichV4BorrowPositions', () => {
     expect(result[0].reserve.hubName).toBe('Plus')
     expect(result[0].reserve.hubAddresses).toEqual([HUB])
     expect(result[0].reserve.underlyingAsset.address).toBe(USDC)
+  })
+})
+
+describe('buildV3MarketInputs', () => {
+  it('returns empty for empty reserves', () => {
+    expect(buildV3MarketInputs([])).toHaveLength(0)
+  })
+
+  it('builds market inputs from V3 reserves using V3_POOL_ADDRESSES', () => {
+    const reserves = [makeReserve({
+      marketName: 'AaveV3Ethereum',
+      chainId: 1,
+      tokenAddress: USDC,
+    })]
+    const result = buildV3MarketInputs(reserves)
+    expect(result).toHaveLength(1)
+    expect(String(result[0].address)).toBe(String(evmAddress(V3_POOL_ADDRESSES[1]!)))
+    expect(String(result[0].chainId)).toBe(String(chainId(1)))
+  })
+
+  it('skips V4 reserves (those with spokeAddress)', () => {
+    const reserves = [
+      makeReserve({
+        marketName: 'AaveV3Ethereum',
+        chainId: 1,
+        tokenAddress: USDC,
+      }),
+      makeReserve({
+        marketName: 'AaveV4Ethereum',
+        chainId: 1,
+        tokenAddress: WETH,
+        spokeAddress: SPOKE,
+      }),
+    ]
+    const result = buildV3MarketInputs(reserves)
+    expect(result).toHaveLength(1)
+  })
+
+  it('deduplicates by chainId:poolAddress', () => {
+    const reserves = [
+      makeReserve({ marketName: 'AaveV3Ethereum', chainId: 1, tokenAddress: USDC }),
+      makeReserve({ marketName: 'AaveV3Ethereum', chainId: 1, tokenAddress: WETH }),
+    ]
+    const result = buildV3MarketInputs(reserves)
+    expect(result).toHaveLength(1)
+  })
+
+  it('skips chains not in V3_POOL_ADDRESSES', () => {
+    const reserves = [makeReserve({
+      marketName: 'AaveV3Unknown',
+      chainId: 999999,
+      tokenAddress: USDC,
+    })]
+    expect(buildV3MarketInputs(reserves)).toHaveLength(0)
+  })
+})
+
+describe('buildV4ChainIds', () => {
+  it('returns empty for empty reserves', () => {
+    expect(buildV4ChainIds([])).toHaveLength(0)
+  })
+
+  it('extracts unique chainIds from V4 reserves', () => {
+    const reserves = [
+      makeReserve({ marketName: 'AaveV4Ethereum', chainId: 1, tokenAddress: USDC, spokeAddress: SPOKE }),
+      makeReserve({ marketName: 'AaveV4Ethereum', chainId: 1, tokenAddress: WETH, spokeAddress: SPOKE }),
+    ]
+    expect(buildV4ChainIds(reserves)).toEqual([1])
+  })
+
+  it('skips V3 reserves', () => {
+    const reserves = [
+      makeReserve({ marketName: 'AaveV3Ethereum', chainId: 1, tokenAddress: USDC }),
+    ]
+    expect(buildV4ChainIds(reserves)).toHaveLength(0)
+  })
+
+  it('returns multiple unique chainIds', () => {
+    const reserves = [
+      makeReserve({ marketName: 'AaveV4Ethereum', chainId: 1, tokenAddress: USDC, spokeAddress: SPOKE }),
+      makeReserve({ marketName: 'AaveV4Arbitrum', chainId: 42161, tokenAddress: WETH, spokeAddress: SPOKE }),
+    ]
+    expect(buildV4ChainIds(reserves)).toEqual([1, 42161])
+  })
+})
+
+describe('buildV3SdkArgs', () => {
+  it('returns dummy args when disabled', () => {
+    const result = buildV3SdkArgs(false, undefined, [])
+    expect(String(result.user)).toBe(String(evmAddress(ZERO)))
+    expect(result.markets).toHaveLength(1)
+    expect(String(result.markets[0].address)).toBe(String(evmAddress(ZERO)))
+  })
+
+  it('returns dummy args when no market inputs', () => {
+    const result = buildV3SdkArgs(true, USER, [])
+    expect(String(result.user)).toBe(String(evmAddress(ZERO)))
+  })
+
+  it('returns dummy args when account is undefined despite enabled', () => {
+    const marketInputs = [{ address: evmAddress(V3_POOL_ADDRESSES[1]!), chainId: chainId(1) }]
+    const result = buildV3SdkArgs(true, undefined, marketInputs)
+    expect(String(result.user)).toBe(String(evmAddress(ZERO)))
+  })
+
+  it('returns real args when enabled with markets', () => {
+    const marketInputs = [{ address: evmAddress(V3_POOL_ADDRESSES[1]!), chainId: chainId(1) }]
+    const result = buildV3SdkArgs(true, USER, marketInputs)
+    expect(String(result.user)).toBe(String(evmAddress(USER)))
+    expect(result.markets).toBe(marketInputs)
+  })
+})
+
+describe('buildV4SdkArgs', () => {
+  it('returns dummy args when disabled', () => {
+    const result = buildV4SdkArgs(false, undefined, [])
+    expect(String(result.query.userChains.user)).toBe(String(evmAddress(ZERO)))
+    expect(result.query.userChains.chainIds).toHaveLength(1)
+  })
+
+  it('returns dummy args when no chainIds', () => {
+    const result = buildV4SdkArgs(true, USER, [])
+    expect(String(result.query.userChains.user)).toBe(String(evmAddress(ZERO)))
+  })
+
+  it('returns dummy args when account is undefined despite enabled', () => {
+    const result = buildV4SdkArgs(true, undefined, [1])
+    expect(String(result.query.userChains.user)).toBe(String(evmAddress(ZERO)))
+  })
+
+  it('returns real args when enabled with chainIds', () => {
+    const result = buildV4SdkArgs(true, USER, [1, 42161])
+    expect(String(result.query.userChains.user)).toBe(String(evmAddress(USER)))
+    expect(result.query.userChains.chainIds.map(String)).toEqual([String(chainId(1)), String(chainId(42161))])
   })
 })

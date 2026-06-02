@@ -241,6 +241,7 @@ export async function getV3UserPositionsMultiChain(
       results.push(outcome.value)
     } else {
       const { chainId } = assetsByMarket[marketNames[i]]
+      console.error(`[onchain-v3] Chain ${chainId} (${marketNames[i]}) failed:`, outcome.reason)
       errors.push({ chainId, error: outcome.reason })
     }
   }

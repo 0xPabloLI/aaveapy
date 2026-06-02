@@ -163,6 +163,55 @@ async function fetchV4Fallback(
   return { positions, failedSources }
 }
 
+export function buildV3MarketInputs(
+  reserves: ReserveWithSpread[],
+): { address: ReturnType<typeof evmAddress>; chainId: ReturnType<typeof chainId> }[] {
+  const seen = new Set<string>()
+  const inputs: { address: ReturnType<typeof evmAddress>; chainId: ReturnType<typeof chainId> }[] = []
+  for (const r of reserves) {
+    if (getProtocolVersion(r.marketName) === 'v4') continue
+    const pool = V3_POOL_ADDRESSES[r.chainId]
+    if (!pool) continue
+    const key = `${r.chainId}:${pool}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    inputs.push({ address: evmAddress(pool), chainId: chainId(r.chainId) })
+  }
+  return inputs
+}
+
+export function buildV4ChainIds(
+  reserves: ReserveWithSpread[],
+): number[] {
+  const chainIdsSet = new Set<number>()
+  for (const r of reserves) {
+    if (getProtocolVersion(r.marketName) === 'v4') chainIdsSet.add(r.chainId)
+  }
+  return [...chainIdsSet]
+}
+
+export function buildV3SdkArgs(
+  enabled: boolean,
+  account: `0x${string}` | undefined,
+  v3MarketInputs: ReturnType<typeof buildV3MarketInputs>,
+) {
+  if (!enabled || !account || v3MarketInputs.length === 0) {
+    return { markets: [{ address: evmAddress('0x0000000000000000000000000000000000000000'), chainId: chainId(1) }], user: evmAddress('0x0000000000000000000000000000000000000000') }
+  }
+  return { markets: v3MarketInputs, user: evmAddress(account) }
+}
+
+export function buildV4SdkArgs(
+  enabled: boolean,
+  account: `0x${string}` | undefined,
+  v4ChainIds: number[],
+) {
+  if (!enabled || !account || v4ChainIds.length === 0) {
+    return { query: { userChains: { user: evmAddress('0x0000000000000000000000000000000000000000'), chainIds: [chainId(1)] } } }
+  }
+  return { query: { userChains: { user: evmAddress(account), chainIds: v4ChainIds.map(id => chainId(id)) } } }
+}
+
 export function useUserPositionsSdk(
   reserves: ReserveWithSpread[],
   v3AssetsByMarket: Record<string, V3AssetsByMarket>,
@@ -173,42 +222,13 @@ export function useUserPositionsSdk(
   const enabled = isConnected && !!address
   const account = (enabled ? address : undefined) as `0x${string}`
 
-  const v3MarketInputs = useMemo(() => {
-    const seen = new Set<string>()
-    const inputs: { address: ReturnType<typeof evmAddress>; chainId: ReturnType<typeof chainId> }[] = []
-    for (const r of reserves) {
-      if (getProtocolVersion(r.marketName) === 'v4') continue
-      const pool = V3_POOL_ADDRESSES[r.chainId]
-      if (!pool) continue
-      const key = `${r.chainId}:${pool}`
-      if (seen.has(key)) continue
-      seen.add(key)
-      inputs.push({ address: evmAddress(pool), chainId: chainId(r.chainId) })
-    }
-    return inputs
-  }, [reserves])
+  const v3MarketInputs = useMemo(() => buildV3MarketInputs(reserves), [reserves])
 
-  const v4ChainIds = useMemo(() => {
-    const chainIdsSet = new Set<number>()
-    for (const r of reserves) {
-      if (getProtocolVersion(r.marketName) === 'v4') chainIdsSet.add(r.chainId)
-    }
-    return [...chainIdsSet]
-  }, [reserves])
+  const v4ChainIds = useMemo(() => buildV4ChainIds(reserves), [reserves])
 
-  const v3SdkArgs = useMemo(() => {
-    if (!enabled || !account || v3MarketInputs.length === 0) {
-      return { markets: [{ address: evmAddress('0x0000000000000000000000000000000000000000'), chainId: chainId(1) }], user: evmAddress('0x0000000000000000000000000000000000000000') }
-    }
-    return { markets: v3MarketInputs, user: evmAddress(account) }
-  }, [enabled, account, v3MarketInputs])
+  const v3SdkArgs = useMemo(() => buildV3SdkArgs(enabled, account, v3MarketInputs), [enabled, account, v3MarketInputs])
 
-  const v4SdkArgs = useMemo(() => {
-    if (!enabled || !account || v4ChainIds.length === 0) {
-      return { query: { userChains: { user: evmAddress('0x0000000000000000000000000000000000000000'), chainIds: [chainId(1)] } } }
-    }
-    return { query: { userChains: { user: evmAddress(account), chainIds: v4ChainIds.map(id => chainId(id)) } } }
-  }, [enabled, account, v4ChainIds])
+  const v4SdkArgs = useMemo(() => buildV4SdkArgs(enabled, account, v4ChainIds), [enabled, account, v4ChainIds])
 
   const v3Supplies = useV3UserSupplies(v3SdkArgs)
   const v3Borrows = useV3UserBorrows(v3SdkArgs)

@@ -53,6 +53,7 @@ export function useWalletAutoImport({
       toast.success(`Imported ${incoming.length} position${incoming.length > 1 ? 's' : ''} from wallet`)
     } else if (walletResult.status === 'error') {
       lastImportedAddress.current = addressKey
+      console.error('[wallet-import] All sources failed:', walletResult.error)
       toast.error('Failed to load wallet positions')
     }
   }, [isConnected, address, walletLoadState, walletResult, reserves, portfolioActions])

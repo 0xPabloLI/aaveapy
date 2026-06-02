@@ -95,6 +95,9 @@ _Avoid_: Composite key, (underlyingAsset, chainId) pair 作为主匹配路径; S
 **LL2: 测试 fixture 必须尽量使用真实格式**:
 即使 fixture 是构造数据，也应使用与生产 API 一致的格式（如 `42220:0xpool:0x1234` 而非 `AaveV3Celo-0x1234`）。这能避免新开发者从 fixture 推断格式时被误导，也使测试更接近真实场景。
 
+**LL3: SDK hook 参数格式必须与 SDK 版本匹配 — 不能凭旧版 API 猜测**:
+V3 SDK (`@aave/react-v3` 0.9.1) 需要 `{ markets: [{ address, chainId }], user }` 格式；V4 SDK (`@aave/react` 4.2.0) 需要 `{ query: { userChains: { user, chainIds } } }` 格式。旧代码传 `{ account }` 导致 GraphQL 报错 `field "query"/"markets" is required but not provided`，SDK 两路同时失败 → onchain fallback 也连锁失败 → 用户看到 "Failed to load wallet positions"。**教训：SDK 升级后必须验证 hook 参数签名，不能假设向后兼容；catch 块必须 console.error 实际错误，否则吞掉异常无法诊断。**
+
 ## External Links
 
 **Aave V3 URL** (`buildAaveReserveUrl` / `buildAaveMarketUrl`):

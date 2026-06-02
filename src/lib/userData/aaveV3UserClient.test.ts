@@ -243,4 +243,21 @@ describe('getV3UserPositionsMultiChain', () => {
 
     expect(result.results.length + result.errors.length).toBe(2)
   })
+
+  it('logs console.error on per-chain failure', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const result = await getV3UserPositionsMultiChain(USER, {
+      'AaveV3Ethereum': { chainId: 1, assets: [DAI] },
+      'AaveV3Arbitrum': { chainId: 42161, assets: [USDC] },
+    })
+
+    if (result.errors.length > 0) {
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('[onchain-v3]'),
+        expect.any(Error),
+      )
+    }
+    consoleSpy.mockRestore()
+  })
 })
