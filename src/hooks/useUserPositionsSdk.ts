@@ -36,47 +36,67 @@ export type DegradedResult =
 const STALE_TIME = QUERY_STALE_TIMES.default
 
 function enrichV3SupplyPositions(
-  positions: { market: { address: `0x${string}`; [k: string]: unknown }; [k: string]: unknown }[],
+  positions: { market: { address: `0x${string}`; chain: { chainId: number; [k: string]: unknown }; [k: string]: unknown }; currency: { address: `0x${string}`; symbol: string; decimals: number; chainId: number; [k: string]: unknown }; balance: { amount: { value: string; raw: string; decimals: number; [k: string]: unknown }; [k: string]: unknown }; isCollateral: boolean; [k: string]: unknown }[],
 ): SdkSupplyPosition[] {
   return positions.map(p => ({
-    ...p,
-    reserve: { ...(p as unknown as { reserve: unknown }).reserve, spokeAddress: p.market.address },
-  })) as SdkSupplyPosition[]
+    reserve: {
+      id: `${p.market.chain.chainId}:${p.market.address}:${p.currency.address}`,
+      symbol: p.currency.symbol,
+      decimals: p.currency.decimals,
+      underlyingAsset: { address: p.currency.address, chain: { id: String(p.currency.chainId) } },
+      spokeAddress: p.market.address,
+    },
+    balance: { amount: { value: p.balance.amount.value, onChainValue: BigInt(p.balance.amount.raw || '0'), decimals: p.balance.amount.decimals } },
+    isCollateral: p.isCollateral,
+  }))
 }
 
 function enrichV3BorrowPositions(
-  positions: { market: { address: `0x${string}`; [k: string]: unknown }; [k: string]: unknown }[],
+  positions: { market: { address: `0x${string}`; chain: { chainId: number; [k: string]: unknown }; [k: string]: unknown }; currency: { address: `0x${string}`; symbol: string; decimals: number; chainId: number; [k: string]: unknown }; debt: { amount: { value: string; raw: string; decimals: number; [k: string]: unknown }; [k: string]: unknown }; [k: string]: unknown }[],
 ): SdkBorrowPosition[] {
   return positions.map(p => ({
-    ...p,
-    reserve: { ...(p as unknown as { reserve: unknown }).reserve, spokeAddress: p.market.address },
-  })) as SdkBorrowPosition[]
+    reserve: {
+      id: `${p.market.chain.chainId}:${p.market.address}:${p.currency.address}`,
+      symbol: p.currency.symbol,
+      decimals: p.currency.decimals,
+      underlyingAsset: { address: p.currency.address, chain: { id: String(p.currency.chainId) } },
+      spokeAddress: p.market.address,
+    },
+    debt: { amount: { value: p.debt.amount.value, onChainValue: BigInt(p.debt.amount.raw || '0'), decimals: p.debt.amount.decimals } },
+  }))
 }
 
 function enrichV4SupplyPositions(
-  positions: { reserve: { spoke: { address: `0x${string}`; connectedHubs?: { hub: { name: string } }[]; [k: string]: unknown }; [k: string]: unknown }; [k: string]: unknown }[],
+  positions: { id: string; reserve: { id: string; spoke: { address: `0x${string}`; chain: { chainId: number; [k: string]: unknown }; connectedHubs?: { hub: { name: string } }[]; [k: string]: unknown }; summary: { supplied: { token: { address: `0x${string}`; info: { symbol: string; decimals: number; [k: string]: unknown }; [k: string]: unknown }; [k: string]: unknown }; [k: string]: unknown }; [k: string]: unknown }; balance: { amount: { value: string; onChainValue: bigint; decimals: number; [k: string]: unknown }; [k: string]: unknown }; isCollateral: boolean; [k: string]: unknown }[],
 ): SdkSupplyPosition[] {
   return positions.map(p => ({
-    ...p,
     reserve: {
-      ...p.reserve,
+      id: p.reserve.id,
+      symbol: p.reserve.summary.supplied.token.info.symbol,
+      decimals: p.reserve.summary.supplied.token.info.decimals,
+      underlyingAsset: { address: p.reserve.summary.supplied.token.address, chain: { id: String(p.reserve.spoke.chain.chainId) } },
       spokeAddress: p.reserve.spoke.address,
       hubName: p.reserve.spoke.connectedHubs?.[0]?.hub.name,
     },
-  })) as SdkSupplyPosition[]
+    balance: { amount: { value: p.balance.amount.value, onChainValue: p.balance.amount.onChainValue, decimals: p.balance.amount.decimals } },
+    isCollateral: p.isCollateral,
+  }))
 }
 
 function enrichV4BorrowPositions(
-  positions: { reserve: { spoke: { address: `0x${string}`; connectedHubs?: { hub: { name: string } }[]; [k: string]: unknown }; [k: string]: unknown }; [k: string]: unknown }[],
+  positions: { id: string; reserve: { id: string; spoke: { address: `0x${string}`; chain: { chainId: number; [k: string]: unknown }; connectedHubs?: { hub: { name: string } }[]; [k: string]: unknown }; summary: { borrowed: { token: { address: `0x${string}`; info: { symbol: string; decimals: number; [k: string]: unknown }; [k: string]: unknown }; [k: string]: unknown }; [k: string]: unknown }; [k: string]: unknown }; principal: { amount: { value: string; onChainValue: bigint; decimals: number; [k: string]: unknown }; [k: string]: unknown }; [k: string]: unknown }[],
 ): SdkBorrowPosition[] {
   return positions.map(p => ({
-    ...p,
     reserve: {
-      ...p.reserve,
+      id: p.reserve.id,
+      symbol: p.reserve.summary.borrowed.token.info.symbol,
+      decimals: p.reserve.summary.borrowed.token.info.decimals,
+      underlyingAsset: { address: p.reserve.summary.borrowed.token.address, chain: { id: String(p.reserve.spoke.chain.chainId) } },
       spokeAddress: p.reserve.spoke.address,
       hubName: p.reserve.spoke.connectedHubs?.[0]?.hub.name,
     },
-  })) as SdkBorrowPosition[]
+    debt: { amount: { value: p.principal.amount.value, onChainValue: p.principal.amount.onChainValue, decimals: p.principal.amount.decimals } },
+  }))
 }
 
 interface FetchFallbackParams {
