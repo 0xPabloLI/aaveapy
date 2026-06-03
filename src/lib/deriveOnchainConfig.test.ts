@@ -10,9 +10,9 @@ import type { ReserveWithSpread } from '@/types/aave'
 const makeV3Reserve = (
   chainId: number,
   tokenAddress: string,
-  overrides?: Partial<ReserveWithSpread>,
+  overrides?: Partial<ReserveWithSpread> & { poolAddress?: string },
 ): ReserveWithSpread => ({
-  reserveId: `v3-${chainId}-${tokenAddress}`,
+  reserveId: `${chainId}:${overrides?.poolAddress ?? '0xpool'}:${tokenAddress}`,
   marketName: `AaveV3Chain${chainId}`,
   chainName: 'Test',
   chainId,
@@ -27,9 +27,9 @@ const makeV4Reserve = (
   tokenAddress: string,
   spokeName: string,
   aaveProReserveId: string,
-  overrides?: Partial<ReserveWithSpread>,
+  overrides?: Partial<ReserveWithSpread> & { spokeAddress?: string; hubAddress?: string },
 ): ReserveWithSpread => ({
-  reserveId: `v4-${chainId}-${tokenAddress}-Core`,
+  reserveId: `${chainId}:${overrides?.spokeAddress ?? '0xspoke'}:${tokenAddress}:${overrides?.hubAddress ?? '0xhub'}`,
   marketName: `AaveV4Hub${chainId}`,
   chainName: 'Ethereum',
   chainId,

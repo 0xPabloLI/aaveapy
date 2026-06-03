@@ -21,7 +21,7 @@ const RAY = 10n ** 27n
 describe('WalletPosition unified type', () => {
   it('has all required fields', () => {
     const pos: WalletPosition = {
-      reserveId: '0xabc-1',
+      reserveId: '1:0xpool:0xabc',
       chainId: 1,
       asset: '0xabc' as `0x${string}`,
       tokenSymbol: 'USDC',
@@ -32,7 +32,7 @@ describe('WalletPosition unified type', () => {
       source: 'onchain-v3' as WalletPositionSource,
       isOrphan: false,
     }
-    expect(pos.reserveId).toBe('0xabc-1')
+    expect(pos.reserveId).toBe('1:0xpool:0xabc')
     expect(pos.side).toBe('supply')
     expect(pos.isOrphan).toBe(false)
   })
@@ -50,12 +50,12 @@ describe('mapV3PositionToWalletPosition', () => {
 
   it('maps V3 supply position', () => {
     const result = mapV3PositionToWalletPosition(v3Pos, 'supply', {
-      reserveId: 'usdc-1',
+      reserveId: '1:0xpool:0xA0b8',
       tokenSymbol: 'USDC',
       tokenPrice: 1,
       decimals: 6,
     })
-    expect(result.reserveId).toBe('usdc-1')
+    expect(result.reserveId).toBe('1:0xpool:0xA0b8')
     expect(result.side).toBe('supply')
     expect(result.amountWad).toBe(5000n * WAD)
     expect(result.amountUsd).toBe(5000)
@@ -66,7 +66,7 @@ describe('mapV3PositionToWalletPosition', () => {
 
   it('maps V3 variable borrow position', () => {
     const result = mapV3PositionToWalletPosition(v3Pos, 'borrow', {
-      reserveId: 'usdc-1',
+      reserveId: '1:0xpool:0xA0b8',
       tokenSymbol: 'USDC',
       tokenPrice: 1,
       decimals: 6,
@@ -84,7 +84,7 @@ describe('mapV3PositionToWalletPosition', () => {
       variableBorrowWad: 0n,
     }
     const result = mapV3PositionToWalletPosition(v3Stable, 'borrow', {
-      reserveId: 'usdc-1',
+      reserveId: '1:0xpool:0xA0b8',
       tokenSymbol: 'USDC',
       tokenPrice: 1,
       decimals: 6,
@@ -95,7 +95,7 @@ describe('mapV3PositionToWalletPosition', () => {
 
   it('computes amountUsd from WAD amount and tokenPrice', () => {
     const result = mapV3PositionToWalletPosition(v3Pos, 'supply', {
-      reserveId: 'weth-1',
+      reserveId: '1:0xpool:0xC02a',
       tokenSymbol: 'WETH',
       tokenPrice: 3000,
       decimals: 18,
@@ -129,12 +129,12 @@ describe('mapV4PositionToWalletPosition', () => {
 
   it('maps V4 supply position', () => {
     const result = mapV4PositionToWalletPosition(v4Pos, 'supply', {
-      reserveId: 'weth-1',
+      reserveId: '1:0xspoke:0xC02a:0xhub',
       tokenSymbol: 'WETH',
       tokenPrice: 3000,
       decimals: 18,
     })
-    expect(result.reserveId).toBe('weth-1')
+    expect(result.reserveId).toBe('1:0xspoke:0xC02a:0xhub')
     expect(result.side).toBe('supply')
     expect(result.amountWad).toBe(10n * WAD)
     expect(result.amountUsd).toBe(10 * 3000)
@@ -144,7 +144,7 @@ describe('mapV4PositionToWalletPosition', () => {
 
   it('maps V4 borrow position', () => {
     const result = mapV4PositionToWalletPosition(v4Pos, 'borrow', {
-      reserveId: 'weth-1',
+      reserveId: '1:0xspoke:0xC02a:0xhub',
       tokenSymbol: 'WETH',
       tokenPrice: 3000,
       decimals: 18,
