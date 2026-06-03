@@ -14,6 +14,7 @@ import {
   type V4ReserveInfo,
 } from './aaveV4UserClient'
 import { createPublicClient } from 'viem'
+import { createClientWithRpcRotation } from './rpcResilience'
 
 describe('AAV-456 Slice 1: V4 address mapping + ABI types', () => {
   it('V4_SPOKE_ADDRESSES has only chain ID 1 (Ethereum mainnet)', () => {
@@ -314,5 +315,17 @@ describe('AAV-456 Slice 3: getV4UserPositionsAllSpokes', () => {
   it('skips spokes not in reservesBySpoke', async () => {
     const result = await getV4UserPositionsAllSpokes(1, USER, {})
     expect(result.results).toHaveLength(0)
+  })
+})
+
+describe('createClientWithRpcRotation', () => {
+  it('returns null for chain with no RPC URLs', async () => {
+    const result = await createClientWithRpcRotation(999991)
+    expect(result).toBeNull()
+  })
+
+  it('returns a client for a known chain', async () => {
+    const result = await createClientWithRpcRotation(1)
+    expect(result).not.toBeNull()
   })
 })

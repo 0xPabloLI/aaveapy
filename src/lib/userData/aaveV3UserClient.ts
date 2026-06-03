@@ -119,7 +119,7 @@ import {
   type PublicClient,
   type MulticallResponse,
 } from 'viem'
-import { getPublicRpcUrls } from '../publicRpcUrls'
+import { createClientWithRpcRotation } from './rpcResilience'
 
 export interface V3OnchainResult {
   positions: V3UserPosition[]
@@ -136,13 +136,6 @@ export interface V3OnchainResponse {
   errors: V3OnchainError[]
 }
 
-function createClientWithRetry(chainId: number): PublicClient | null {
-  const rpcUrls = getPublicRpcUrls(chainId)
-  if (rpcUrls.length === 0) return null
-  const chain = { id: chainId, name: `chain-${chainId}`, nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 }, rpcUrls: { default: { http: rpcUrls } } }
-  return createPublicClient({ chain, transport: http(rpcUrls[0]), batch: { multicall: true } })
-}
-
 export async function getV3UserPositionsOnChain(
   chainId: number,
   userAddress: `0x${string}`,
@@ -153,7 +146,7 @@ export async function getV3UserPositionsOnChain(
   const poolAddress = getV3PoolAddress(chainId)
   if (!poolAddress) return { positions: [], accountSummary: null }
 
-  const publicClient = client ?? createClientWithRetry(chainId)
+  const publicClient = client ?? (await createClientWithRpcRotation(chainId))
   if (!publicClient) return { positions: [], accountSummary: null }
 
   const reserveCalls = reserveIds.map((asset) => ({

@@ -126,19 +126,7 @@ import {
   type PublicClient,
   type MulticallResponse,
 } from 'viem'
-import { getPublicRpcUrls } from '../publicRpcUrls'
-
-function createClientWithRetry(chainId: number): PublicClient | null {
-  const rpcUrls = getPublicRpcUrls(chainId)
-  if (rpcUrls.length === 0) return null
-  const chain = {
-    id: chainId,
-    name: `chain-${chainId}`,
-    nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
-    rpcUrls: { default: { http: rpcUrls } },
-  }
-  return createPublicClient({ chain, transport: http(rpcUrls[0]), batch: { multicall: true } })
-}
+import { createClientWithRpcRotation } from './rpcResilience'
 
 export interface V4ReserveInfo {
   reserveId: bigint
@@ -153,7 +141,7 @@ export async function getV4UserPositionsOnChain(
   reserves: V4ReserveInfo[],
   client?: PublicClient,
 ): Promise<V4OnchainResult> {
-  const publicClient = client ?? createClientWithRetry(chainId)
+  const publicClient = client ?? (await createClientWithRpcRotation(chainId))
   if (!publicClient) return { positions: [], accountSummaries: [] }
 
   const reserveCalls = reserves.flatMap((reserve) => [

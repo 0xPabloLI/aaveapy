@@ -114,19 +114,19 @@ _Avoid_: `buildAavePro*`（已重命名为 `buildAaveV4*`），`AAVE_PRO_BASE`�
 ## Wallet Portfolio
 
 **Onchain Fallback**:
-SDK GraphQL（主路径，跨链）失败时，从 `@aave-dao/aave-address-book` 提取 chain ID 集合，逐链并行查 RPC 的 Pool/Spoke 合约。不硬编码链列表。
-_Avoid_: private RPC（前端只用 public RPC）
+Reactive 模式：SDK 失败后才触发 onchain 查询，不提前并发（省 public RPC 配额）。V3/V4 fallback 拆为独立 useQuery，各自 15s timeout、独立 retry、互不阻塞。fallback query staleTime 30s，不 refetchOnWindowFocus / refetchOnReconnect。合约地址从 `@aave-dao/aave-address-book` 取，不硬编码链列表。
+_Avoid_: proactive 并发（浪费 RPC）、private RPC（前端只用 public RPC）、V3/V4 合并单 query（互相阻塞）
 
 **SDK Degradation Boundary**:
-仅以下情况视为 SDK 故障并降级到 onchain fallback：(1) GraphQL 网络错误（5xx / timeout / fetch reject）；(2) hook 抛 JS 异常（type guard 失败 / 字段缺失）；(3) `AaveClient.create()` 初始化失败。空数组/空仓位 = 合法结果，不降级（见决议 #11：0 仓位 vs SDK 失败必须区分）。hook 返回 error + data 非空时：data 缺字段 → 归入 (2) 降级；error 仅 warning → 不降级。
-_Avoid_: "SDK 挂了"（太模糊——需明确是基础设施故障还是合法空结果）
+`isInfrastructureFailure()` 精细判定，仅以下情况降级：(1) GraphQL 网络错误（5xx / timeout / fetch reject）；(2) hook 抛 JS 异常（type guard 失败 / 字段缺失）；(3) `AaveClient.create()` 初始化失败。空数组/空仓位 = 合法结果，不降级。hook 返回 error + data 非空时：data 缺字段 → 归入 (2) 降级；error 仅 warning → 不降级。见 ADR-0004。
+_Avoid_: `!!error` 一揽子判定（warning + data 时误触发）、"SDK 挂了"（太模糊）
 
 **V3 Fallback Path**:
 `Pool.getUserReserveData(asset, user)` → `currentATokenBalance` / `currentStableDebt` / `currentVariableDebt`（直接值，零换算）。合约地址从 address-book 取。
 _Avoid_: UiPoolDataProvider（缩放值需额外换算，已否决）
 
 **V4 Fallback Path**:
-Spoke 串行，同 Spoke 内 Multicall3 批量。`getUserSuppliedAssets`/`getUserDebt`（直接值零换算）。`totalDebtValueRay` 入口处统一 `/ RAY` 降精度。合约地址从 address-book 取。
+遍历 `V4_SPOKE_ADDRESSES` 所有链（不硬编码 chainId=1），同链 Spoke 并行，同 Spoke 内 Multicall3 批量。`getUserSuppliedAssets`/`getUserDebt`（直接值零换算）。`totalDebtValueRay` 入口处统一 `/ RAY` 降精度。合约地址从 address-book 取。
 
 **Spoke Discovery**:
 遍历 address-book 中所有 Spoke，Multicall3 批量聚合查询。不做"先探再查"。
@@ -134,6 +134,13 @@ _Avoid_: 后端 reserves 推断（可能遗漏新 Spoke）
 
 **Tech Debt: onchain 查询 spokeAddress 来源**:
 `getV4UserPositionsAllSpokes` 通过 `V4_SPOKE_ADDRESSES`（从 `@aave-dao/aave-address-book` 导入）以 spokeName 反查 spokeAddress，而非从 reserveId 解析。当前可行（address-book 跟随链上部署更新），但新增 Spoke 时需等 address-book 发版。未来可改为从 reserveId 第2段直接获取 spokeAddress，消除对 address-book 的依赖。
+
+**RPC Rotation**:
+多 public RPC URL 逐个试连通性（`getChainId` 验证），首个可用即用。全挂才返回 null。见 ADR-0004。
+_Avoid_: 单 URL 首选 + 失败静默空（`createClientWithRetry` 名不副实）
+
+**Fallback Timeout Budget**:
+onchain fallback 独立 15s request timeout（`withTimeout`），超时走 `failedSources` + 返回已拿到的部分数据。对齐 AAV-388 PRD "RPC fallback independent 15s timeout"。
 
 **Portfolio Merge**:
 同 token 同 side = 替换（链上为准）；同 token 不同 side = 加缺失 side；全新 token = 直接加入；链上没有但 Simulator 有 = 保留；找不到 reserveId = orphan。

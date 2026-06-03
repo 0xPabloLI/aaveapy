@@ -8,6 +8,7 @@ import {
   type V3OnchainResult,
   type V3AssetsByMarket,
 } from './aaveV3UserClient'
+import { createClientWithRpcRotation } from './rpcResilience'
 import { AAVE_V3_CHAIN_IDS } from '../aaveChains'
 import { createPublicClient, http } from 'viem'
 
@@ -259,5 +260,12 @@ describe('getV3UserPositionsMultiChain', () => {
       )
     }
     consoleSpy.mockRestore()
+  })
+})
+
+describe('createClientWithRpcRotation (V3)', () => {
+  it('returns null for chain with no RPC URLs', async () => {
+    const result = await createClientWithRpcRotation(999991)
+    expect(result).toBeNull()
   })
 })
