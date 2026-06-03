@@ -1,6 +1,6 @@
 # 开发方案 - AAV-66 前端：消费 Merkl Campaign Access Side Data
 
-> **Status: Active** — 依赖后端 `campaignAccess` side-data 端点就绪。
+> **Status: Done** — 实现完成，`campaignAccessStatuses` 已连线。
 > **后端方案**：`aave-protocol-analysis/docs/plans/linear-issues/aav_66_plan.md`
 
 ## 1. 概述
@@ -186,3 +186,29 @@ Merkl breakdown 行渲染时：
 - `npm run lint && npm test && npm run build && npx tsc --noEmit`
 - 手测：调用 `/api/meta/side-data` 确认 `campaignAccess` 字段存在
 - 单测：`useMerklCampaignAccess.test.ts` — 覆盖 whitelist hit/miss、blacklist hit/miss、空数据 fallback
+
+## 8. 实现与计划的分歧
+
+实际实现与以上计划有以下差异：
+
+| 计划 | 实际 |
+|---|---|
+| `useMerklCampaignAccess.ts`（新文件） | `useCampaignAccess.ts`（文件名简化） |
+| Hook 从 `cache.ts` 直读 | Hook 通过 `useSideDataMeta()` (React Query) 消费 |
+| Hook 返回 `{ data, getUserStatus }` | Hook 返回 `{ campaigns, campaignAccessStatuses, getUserStatus, ... }`，通过 `useMemo` 计算 `campaignAccessStatuses: Record<campaignId, CampaignAccessStatus>` |
+| UI 集成在 `ReservesTable.tsx` 逐行调用 | 集成在 `Index.tsx`，一次性计算 `campaignAccessStatuses` 后传给 `ReservesTable`、`IncentiveTooltip`、`TopOpportunities` 等组件 |
+| 无 `computeCampaignAccessStatuses` 纯函数 | 导出 `computeCampaignAccessStatuses()` 用于批量计算和测试 |
+
+**连线流程**：
+
+```
+useWallet() → walletAddress
+       ↓
+useCampaignAccess(walletAddress) → useMemo: computeCampaignAccessStatuses(address, campaigns)
+       ↓
+campaignAccessStatuses: Record<campaignId, 'allowed' | 'whitelist-blocked' | 'blacklisted'>
+       ↓
+isMerklWhitelistBreakdownIncluded(breakdown, whitelistMerklCampaignIds, campaignAccessStatus)
+       ↓
+'blacklisted' / 'whitelist-blocked' → 排除该 campaign 的 APR 贡献
+```
