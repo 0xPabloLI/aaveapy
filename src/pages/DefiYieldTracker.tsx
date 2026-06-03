@@ -278,6 +278,60 @@ const DefiYieldTracker = () => {
             </p>
           </section>
 
+          <section aria-labelledby="vs-debank-zerion" className="mt-10">
+            <h2 id="vs-debank-zerion" className="text-xl font-semibold mb-3">
+              Aave APY vs DeBank vs Zerion
+            </h2>
+            <p className="text-muted-foreground leading-relaxed">
+              DeBank and Zerion are excellent multi-protocol portfolio trackers — they read your wallet across hundreds of dApps. Aave APY is different: it's a focused Aave-only yield tracker built for capital allocation decisions. Use the comparison below to pick the right tool for the job.
+            </p>
+
+            <div className="mt-5 overflow-x-auto rounded-xl border border-border/60 bg-card">
+              <table className="w-full text-sm tabular-nums">
+                <thead className="bg-muted/40 text-left text-muted-foreground">
+                  <tr>
+                    <th className="px-4 py-3 font-medium">Capability</th>
+                    <th className="px-4 py-3 font-medium">Aave APY</th>
+                    <th className="px-4 py-3 font-medium">DeBank</th>
+                    <th className="px-4 py-3 font-medium">Zerion</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/60">
+                  {[
+                    ['Live Aave APY across all 17 chains', 'Yes — primary focus', 'Partial — current positions only', 'Partial — current positions only'],
+                    ['All incentives baked in (Merit, Merkl, Brevis)', 'Yes', 'No', 'No'],
+                    ['Rate simulation before depositing', 'Yes — per reserve', 'No', 'No'],
+                    ['Portfolio simulation without a wallet', 'Yes', 'No — wallet required', 'No — wallet required'],
+                    ['Multi-protocol wallet tracking', 'No — Aave only', 'Yes — hundreds of dApps', 'Yes — hundreds of dApps'],
+                    ['Free, no signup', 'Yes', 'Yes', 'Yes'],
+                  ].map(([cap, a, d, z]) => (
+                    <tr key={cap}>
+                      <td className="px-4 py-3 text-foreground">{cap}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{a}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{d}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{z}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <h3 className="mt-6 text-base font-semibold">When to use which</h3>
+            <ul className="mt-3 space-y-2">
+              {[
+                <><strong className="text-foreground">Aave APY</strong> — when you need to find the highest effective Aave yield across chains, simulate a deposit size before committing, or model a multi-position Aave portfolio without connecting a wallet.</>,
+                <><strong className="text-foreground">DeBank</strong> — when you want a unified view of every token and DeFi position across your wallet, including protocols outside Aave.</>,
+                <><strong className="text-foreground">Zerion</strong> — when you want a polished mobile-first wallet tracker with NFT support and basic swap functionality.</>,
+                <>Use them together: track your overall portfolio in DeBank or Zerion, then come back to <Link to="/" className="text-primary underline-offset-4 hover:underline">Aave APY</Link> when you're deciding where to deposit next.</>,
+              ].map((item, i) => (
+                <li key={i} className="flex gap-2">
+                  <span aria-hidden className="text-primary">•</span>
+                  <span className="text-muted-foreground leading-relaxed">{item}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+
           <section
             ref={faqRef}
             aria-labelledby="faq"
