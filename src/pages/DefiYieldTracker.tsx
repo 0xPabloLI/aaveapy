@@ -116,11 +116,43 @@ const DefiYieldTracker = () => {
   const [faqInView, setFaqInView] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.location.hash === '#faq') {
-      faqRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      setTimeout(() => faqHeadingRef.current?.focus(), 600);
-    }
+    if (typeof window === 'undefined') return;
+    const hash = window.location.hash.replace(/^#/, '');
+    if (!hash) return;
+    const scrollToHash = () => {
+      if (hash === 'faq') {
+        faqRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        setTimeout(() => faqHeadingRef.current?.focus(), 600);
+        return;
+      }
+      const el = document.getElementById(hash);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (el instanceof HTMLElement) {
+          el.setAttribute('tabindex', '-1');
+          setTimeout(() => el.focus({ preventScroll: true }), 600);
+        }
+      }
+    };
+    // Defer to allow layout/fonts to settle
+    const t = setTimeout(scrollToHash, 50);
+    return () => clearTimeout(t);
   }, []);
+
+  const handleFaqAnchorClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    const href = e.currentTarget.getAttribute('href') || '';
+    const id = href.startsWith('#') ? href.slice(1) : '';
+    if (!id) return;
+    const el = document.getElementById(id);
+    if (!el) return;
+    e.preventDefault();
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (typeof history !== 'undefined') history.replaceState(null, '', `#${id}`);
+    if (el instanceof HTMLElement) {
+      el.setAttribute('tabindex', '-1');
+      setTimeout(() => el.focus({ preventScroll: true }), 600);
+    }
+  };
 
   useEffect(() => {
     const el = faqRef.current;
