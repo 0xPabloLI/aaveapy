@@ -129,7 +129,7 @@
 ## 后续改进（Linear Issues）
 
 - **AAV-489**: 审查所有测试 fixture 真实性
-- **deriveV3AssetsByChain** (@deprecated 无消费者): 清理函数 + 测试
+- ~~deriveV3AssetsByChain~~: ✅ 已清理（函数 + 测试已删除）
 
 ## 关联文档
 

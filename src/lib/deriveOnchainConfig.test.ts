@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest'
 import {
-  deriveV3AssetsByChain,
   deriveV3AssetsByMarket,
   deriveV4ReservesBySpoke,
   decodeV4ReserveId,
@@ -116,41 +115,6 @@ describe('deriveV3AssetsByMarket', () => {
     ]
     const result = deriveV3AssetsByMarket(reserves)
     expect(result['AaveV3Ethereum'].assets).toEqual(['0xAa'])
-  })
-})
-
-describe('deriveV3AssetsByChain', () => {
-  it('groups V3 token addresses by chainId', () => {
-    const reserves = [
-      makeV3Reserve(1, '0xAa'),
-      makeV3Reserve(1, '0xBb'),
-      makeV3Reserve(137, '0xCc'),
-    ]
-    const result = deriveV3AssetsByChain(reserves)
-    expect(result[1]).toEqual(['0xAa', '0xBb'])
-    expect(result[137]).toEqual(['0xCc'])
-  })
-
-  it('excludes V4 reserves (those with spokeName)', () => {
-    const reserves = [
-      makeV3Reserve(1, '0xAa'),
-      makeV4Reserve(1, '0xBb', 'MAIN_SPOKE', 'encoded'),
-    ]
-    const result = deriveV3AssetsByChain(reserves)
-    expect(Object.keys(result)).toEqual(['1'])
-  })
-
-  it('returns empty record for empty reserves', () => {
-    expect(deriveV3AssetsByChain([])).toEqual({})
-  })
-
-  it('deduplicates token addresses within a chain', () => {
-    const reserves = [
-      makeV3Reserve(1, '0xAa'),
-      makeV3Reserve(1, '0xAa'),
-    ]
-    const result = deriveV3AssetsByChain(reserves)
-    expect(result[1]).toEqual(['0xAa'])
   })
 })
 

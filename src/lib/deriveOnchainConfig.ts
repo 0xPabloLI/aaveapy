@@ -42,26 +42,6 @@ export function deriveV3AssetsByMarket(
   return result
 }
 
-/** @deprecated Use deriveV3AssetsByMarket() instead. */
-export function deriveV3AssetsByChain(
-  reserves: ReserveWithSpread[],
-): Record<number, `0x${string}`[]> {
-  const map = new Map<number, Set<string>>()
-
-  for (const r of reserves) {
-    if (getProtocolVersion(r.marketName) === 'v4') continue
-    const assets = map.get(r.chainId) ?? new Set<string>()
-    assets.add(r.tokenAddress)
-    map.set(r.chainId, assets)
-  }
-
-  const result: Record<number, `0x${string}`[]> = {}
-  for (const [chainId, assets] of map) {
-    result[chainId] = [...assets] as `0x${string}`[]
-  }
-  return result
-}
-
 export function deriveV4ReservesBySpoke(
   reserves: ReserveWithSpread[],
 ): Record<string, { reserveId: bigint; asset: `0x${string}` }[]> {

@@ -302,5 +302,5 @@ Minus 按钮条件逻辑：wallet 来源 → toggleHidden；manual 来源 → �
 1. Phase 5 HF — 明确延后
 2. 共享 chainId 真理表抽取 — 重构任务
 3. Bundle size spike — 运维/性能任务
-4. `useCampaignAccess.test.ts` — plan 标注未做
+4. ~~`useCampaignAccess.test.ts`~~ — ✅ 已有 8 tests
 5. E2E Playwright wallet smoke test — 需真实钱包
