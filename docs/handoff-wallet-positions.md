@@ -126,10 +126,18 @@
 2. **SDK `reserve.id` 不等于后端 reserveId** — 它是 Base64 编码的复合 ID
 3. **V3 多 pool 同币种** — Ethereum mainnet 有 4 个不同 poolAddress 都有 USDC
 
-## 后续改进（Linear Issues）
+## Issue 状态总结
 
-- ~~AAV-489~~: ✅ 审查所有测试 fixture 真实性已完成
-- ~~deriveV3AssetsByChain~~: ✅ 已清理（函数 + 测试已删除）
+| Issue | 标题 | 状态 | 说明 |
+|-------|------|------|------|
+| AAV-66 | 连接钱包 + Merkl 资格 | ✅ Done | Phase 1 |
+| AAV-67 | 读取自己的portfolio | ✅ Done | 被 Epic 覆盖，拆解到各 Phase |
+| AAV-68 | 读取 net lending/borrow | ✅ Done | AAV-62 子任务 |
+| AAV-69 | 读取 Merkl dashboard 数据 | ✅ Done | Phase 2，Merkl rewards 已实现 |
+| AAV-80 | 个人 position/liquidity | ✅ Done | Phase 4，展示已实现 |
+| AAV-62 | 支持导入现有portfolio | ❌ Canceled | 手动导入按钮不做，用自动导入替代 |
+| AAV-489 | 审查测试 fixture 真实性 | ✅ Done | |
+| deriveV3AssetsByChain | — | ✅ Done | 函数 + 测试已删除 |
 
 ## 关联文档
 

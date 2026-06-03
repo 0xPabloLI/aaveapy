@@ -1,4 +1,6 @@
-# Handoff: Wallet + Merkl + Portfolio Import
+# Handoff: Wallet + Merkl + Portfolio Import（已完结）
+
+> **状态**: Epic 已完结。AAV-66/67/68/69/80 → Done，AAV-62 → Canceled。实现入口见 `docs/handoff-wallet-positions.md`。
 
 ## 决议
 

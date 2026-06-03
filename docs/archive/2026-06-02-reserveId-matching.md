@@ -1,4 +1,6 @@
-# Handoff: Wallet User Position → Reserve 精确匹配（方案A实现完成）
+# Handoff: Wallet User Position → Reserve 精确匹配（方案A实现完成，已归档）
+
+> **状态**: 设计已落地到 `src/lib/reserveKey.ts` 等文件，实现入口见 `docs/handoff-wallet-positions.md`。
 
 ## 核心问题
 

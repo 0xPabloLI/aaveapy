@@ -47,7 +47,7 @@
 许多 Issue 存在依赖关系，建议按以下顺序推进：
 
 1. **基础设施层**：AAV-116 (Error Boundary) → AAV-118 (环境校验) → AAV-329 (告警 SOP)
-2. **钱包连接层**：AAV-67 (读取 portfolio) → AAV-66/106/105 (白名单/黑名单) → AAV-69/68 (Merkl/net lending)
+2. **钱包连接层**：AAV-66/106/105 (白名单/黑名单) ✅ → AAV-69/68 (Merkl/net lending) ✅ → AAV-67 (读取 portfolio) ✅ 已覆盖 → AAV-62 (手动导入) ❌ Canceled → AAV-80 (position/liquidity) ✅
 3. **历史数据层**：AAV-344/262/90 (历史数据获取) → AAV-75 (趋势变化) → AAV-91 (APY 预测)
 4. **V4 完善层**：AAV-170 (V4 deficit) → AAV-187 (fallback 修复) → AAV-189 (Hub 数据)
 5. **高级功能层**：AAV-84 (推荐 reserve) → AAV-85/87/86 (跨链/swap/部署)

@@ -1,4 +1,6 @@
-# 联合方案 - 钱包连接 + Merkl 持仓 + Portfolio 导入
+# 联合方案 - 钱包连接 + Merkl 持仓 + Portfolio 导入（已完结）
+
+> **状态**: 本方案涉及的 Linear issues 已全部关闭。AAV-66/67/68/69/80 → Done，AAV-62 → Canceled（手动导入不做，用自动导入替代）。实现入口见 `docs/handoff-wallet-positions.md`。
 
 > **修订记录**
 > - v7 (本版)：Phase 2a 新增 **V3 用户仓位获取方案** ——
