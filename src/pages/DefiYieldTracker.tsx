@@ -406,7 +406,7 @@ const DefiYieldTracker = () => {
               </h2>
               <dl className="space-y-5">
                 {FAQS.map((f) => (
-                  <div key={f.q} id={faqSlug(f.q)}>
+                  <div key={f.q} id={faqSlug(f.q)} className="scroll-mt-24">
                     <dt className="font-medium text-foreground">{f.q}</dt>
                     <dd className="mt-1 text-muted-foreground leading-relaxed">{f.a}</dd>
                   </div>
