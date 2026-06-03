@@ -64,6 +64,7 @@ function makeErrorResult(): DegradedResult {
 
 const address = '0x1234567890abcdef1234567890abcdef12345678' as `0x${string}`
 const emptyReserves: ReserveWithSpread[] = []
+// reserveId: simplified placeholder — tests do not depend on real API format
 const convertedPositions: PortfolioPosition[] = [
   { positionId: 'r1:supply', reserveId: 'r1' } as PortfolioPosition,
 ]
@@ -120,7 +121,7 @@ describe('useWalletAutoImport', () => {
       }),
     )
 
-    expect(mockImportPositions).not.toHaveBeenCalled()
+    expect(mockImportPositions).toHaveBeenCalledWith([])
     expect(toast.info).toHaveBeenCalledWith('Wallet has no positions')
   })
 

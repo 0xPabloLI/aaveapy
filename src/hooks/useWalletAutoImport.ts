@@ -45,6 +45,7 @@ export function useWalletAutoImport({
       lastImportedAddress.current = addressKey
 
       if (incoming.length === 0) {
+        portfolioActions.importPositions([])
         toast.info('Wallet has no positions')
         return
       }
