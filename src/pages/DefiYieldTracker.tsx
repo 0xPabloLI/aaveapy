@@ -116,11 +116,43 @@ const DefiYieldTracker = () => {
   const [faqInView, setFaqInView] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.location.hash === '#faq') {
-      faqRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      setTimeout(() => faqHeadingRef.current?.focus(), 600);
-    }
+    if (typeof window === 'undefined') return;
+    const hash = window.location.hash.replace(/^#/, '');
+    if (!hash) return;
+    const scrollToHash = () => {
+      if (hash === 'faq') {
+        faqRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        setTimeout(() => faqHeadingRef.current?.focus(), 600);
+        return;
+      }
+      const el = document.getElementById(hash);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (el instanceof HTMLElement) {
+          el.setAttribute('tabindex', '-1');
+          setTimeout(() => el.focus({ preventScroll: true }), 600);
+        }
+      }
+    };
+    // Defer to allow layout/fonts to settle
+    const t = setTimeout(scrollToHash, 50);
+    return () => clearTimeout(t);
   }, []);
+
+  const handleFaqAnchorClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    const href = e.currentTarget.getAttribute('href') || '';
+    const id = href.startsWith('#') ? href.slice(1) : '';
+    if (!id) return;
+    const el = document.getElementById(id);
+    if (!el) return;
+    e.preventDefault();
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (typeof history !== 'undefined') history.replaceState(null, '', `#${id}`);
+    if (el instanceof HTMLElement) {
+      el.setAttribute('tabindex', '-1');
+      setTimeout(() => el.focus({ preventScroll: true }), 600);
+    }
+  };
 
   useEffect(() => {
     const el = faqRef.current;
@@ -346,11 +378,11 @@ const DefiYieldTracker = () => {
 
             <p className="mt-5 text-sm text-muted-foreground">
               Related FAQs:{' '}
-              <a href={`#${faqSlug('Aave APY vs DeBank: which should I use?')}`} className="text-primary underline-offset-4 hover:underline">Aave APY vs DeBank</a>
+              <a href={`#${faqSlug('Aave APY vs DeBank: which should I use?')}`} onClick={handleFaqAnchorClick} className="text-primary underline-offset-4 hover:underline">Aave APY vs DeBank</a>
               {' · '}
-              <a href={`#${faqSlug('Aave APY vs Zerion: what is the difference?')}`} className="text-primary underline-offset-4 hover:underline">Aave APY vs Zerion</a>
+              <a href={`#${faqSlug('Aave APY vs Zerion: what is the difference?')}`} onClick={handleFaqAnchorClick} className="text-primary underline-offset-4 hover:underline">Aave APY vs Zerion</a>
               {' · '}
-              <a href={`#${faqSlug('Is there a DeFi portfolio tracker that does not need a wallet connection?')}`} className="text-primary underline-offset-4 hover:underline">No-wallet portfolio tracker</a>
+              <a href={`#${faqSlug('Is there a DeFi portfolio tracker that does not need a wallet connection?')}`} onClick={handleFaqAnchorClick} className="text-primary underline-offset-4 hover:underline">No-wallet portfolio tracker</a>
             </p>
           </section>
 
@@ -374,7 +406,7 @@ const DefiYieldTracker = () => {
               </h2>
               <dl className="space-y-5">
                 {FAQS.map((f) => (
-                  <div key={f.q} id={faqSlug(f.q)}>
+                  <div key={f.q} id={faqSlug(f.q)} className="scroll-mt-24">
                     <dt className="font-medium text-foreground">{f.q}</dt>
                     <dd className="mt-1 text-muted-foreground leading-relaxed">{f.a}</dd>
                   </div>
