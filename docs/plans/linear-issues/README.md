@@ -6,8 +6,8 @@
 
 | 仓库 | 路径 | 数量 |
 |------|------|------|
-| aaveapy (lovable) | `docs/plans/linear-issues/` | 78 |
-| aave-protocol-analysis (railway) | `docs/plans/linear-issues/` | 7 |
+| aaveapy (lovable) | `docs/plans/linear-issues/` | 42 (+ 4 归档至 completed/) |
+| aave-protocol-analysis (railway) | `docs/plans/linear-issues/` | 10 |
 
 注：涉及前后端的 Issue（target=both）会同时存放在两个仓库中。
 
@@ -20,8 +20,8 @@
 | AAV-121 | 添加 OpenAPI 文档和 Postman 集合 | 已实现：scripts/generate-openapi.ts, public/openapi.json, public/swagger.html |
 | AAV-122 | 增加前后端传输的压缩方案 | 已实现：后端 server.ts 使用 compression 中间件 (gzip) |
 | AAV-124 | 增加 sort by supply%，sort by borrow% | 已实现：supplyCapPct/borrowCapPct 排序模式 |
-| AAV-143 | 在 market filter 里面加 search markets | 已实现：FilterBar 已有 searchQuery 搜索功能 |
-| AAV-110 | Refactor: split shared contracts into shared package | 部分实现：packages/aave-shared-config 已存在 |
+| AAV-143 | 在 market filter 里面加 search markets | 已取消：功能已由 FilterBar searchQuery 覆盖，Linear 标记 Canceled |
+| AAV-174 | 移除 V4 spoke 无消费字段 | 已实现：spokeName 移除，spokeId/spokeAddress 已消费 |
 
 ## Issue 分类统计
 
