@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { getUserCampaignStatus } from './useCampaignAccess'
+import { getUserCampaignStatus, computeCampaignAccessStatuses } from './useCampaignAccess'
 import type { CampaignAccessEntry } from '@/types/aave'
 
-describe('getUserCampaignStatus', () => {
-  const USER = '0xAAA111222333444555666777888999AAABBBCCC'
-  const OTHER = '0xBBB111222333444555666777888999AAABBBCCC'
+const USER = '0xAAA111222333444555666777888999AAABBBCCC'
+const OTHER = '0xBBB111222333444555666777888999AAABBBCCC'
 
+describe('getUserCampaignStatus', () => {
   it('returns allowed when no campaigns data', () => {
     expect(getUserCampaignStatus(USER, 'camp-1', undefined)).toBe('allowed')
   })
@@ -57,5 +57,51 @@ describe('getUserCampaignStatus', () => {
       'camp-1': { whitelist: [lowerEntry], blacklist: [] },
     }
     expect(getUserCampaignStatus(upperAddr, 'camp-1', campaigns)).toBe('allowed')
+  })
+})
+
+describe('computeCampaignAccessStatuses', () => {
+  it('returns undefined when no userAddress', () => {
+    const campaigns: Record<string, CampaignAccessEntry> = {
+      'camp-1': { whitelist: [USER], blacklist: [] },
+    }
+    expect(computeCampaignAccessStatuses(undefined, campaigns)).toBeUndefined()
+  })
+
+  it('returns undefined when no campaigns', () => {
+    expect(computeCampaignAccessStatuses(USER, undefined)).toBeUndefined()
+  })
+
+  it('returns allowed for user on whitelist', () => {
+    const campaigns: Record<string, CampaignAccessEntry> = {
+      'camp-1': { whitelist: [USER], blacklist: [] },
+    }
+    expect(computeCampaignAccessStatuses(USER, campaigns)).toEqual({
+      'camp-1': 'allowed',
+    })
+  })
+
+  it('returns whitelist-blocked for user not on whitelist', () => {
+    const campaigns: Record<string, CampaignAccessEntry> = {
+      'camp-1': { whitelist: [OTHER], blacklist: [] },
+    }
+    expect(computeCampaignAccessStatuses(USER, campaigns)).toEqual({
+      'camp-1': 'whitelist-blocked',
+    })
+  })
+
+  it('returns mix of statuses across multiple campaigns', () => {
+    const campaigns: Record<string, CampaignAccessEntry> = {
+      'camp-1': { whitelist: [USER], blacklist: [] },
+      'camp-2': { whitelist: [OTHER], blacklist: [] },
+      'camp-3': { whitelist: [], blacklist: [USER] },
+      'camp-4': { whitelist: [], blacklist: [] },
+    }
+    expect(computeCampaignAccessStatuses(USER, campaigns)).toEqual({
+      'camp-1': 'allowed',
+      'camp-2': 'whitelist-blocked',
+      'camp-3': 'blacklisted',
+      'camp-4': 'allowed',
+    })
   })
 })

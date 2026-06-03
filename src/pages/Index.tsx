@@ -70,7 +70,8 @@ const Index = () => {
   const [simulationMode, setSimulationMode] = useState<SimulationMode>('single');
   const portfolio = usePortfolioSimulation();
   const [whitelistMerklCampaignIds, setWhitelistMerklCampaignIds] = useState<Set<string>>(() => new Set());
-  const { campaignAccessStatuses } = useCampaignAccess();
+  const { address: walletAddress, isConnected: walletConnected } = useWallet();
+  const { campaignAccessStatuses } = useCampaignAccess(walletAddress);
   const toggleWhitelistMerklCampaign = useCallback((campaignId: string, enabled: boolean) => {
     const id = String(campaignId || '').trim();
     if (!id) return;
@@ -287,8 +288,6 @@ const Index = () => {
   } = useUserPositionsSdk(stableReserves, v3AssetsByMarket, v4ReservesBySpoke);
 
   const { data: claimableRewards, loading: claimableRewardsLoading } = useUserClaimableRewardsSdk();
-
-  const { address: walletAddress, isConnected: walletConnected } = useWallet();
 
   // Auto-import: wallet connect → SDK query → merge → toast
   useWalletAutoImport({
