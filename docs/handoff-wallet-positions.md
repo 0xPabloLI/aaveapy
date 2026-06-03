@@ -133,7 +133,7 @@
 
 ## 关联文档
 
-- `docs/handoff-reserveId-matching.md` — reserveId 匹配详细设计
-- `docs/handoff-wallet-merkl-portfolio.md` — 完整 epic 里程碑
-- `docs/plans/linear-issues/aav_epic_wallet_merkl_portfolio_plan.md` — 原始 plan
+- `docs/archive/2026-06-02-reserveId-matching.md` — reserveId 匹配详细设计（已归档）
+- `docs/archive/2026-06-02-wallet-merkl-portfolio-epic.md` — 完整 epic 里程碑（已归档）
+- `docs/archive/2026-06-02-wallet-merkl-portfolio-plan.md` — 原始 plan（已归档）
 - `CONTEXT.md` — 领域术语 + 教训 (LL1, LL2)
