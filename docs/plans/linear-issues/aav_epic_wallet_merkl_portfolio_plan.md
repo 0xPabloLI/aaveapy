@@ -86,7 +86,7 @@ Portfolio 模拟 + 展示 Position/Liquidity 汇总
 
 ## 3. 分阶段实现
 
-### Phase 1: 钱包连接 + Watch Mode + Merkl 资格 (AAV-66)
+### Phase 1: 钱包连接 + Watch Mode + Merkl 资格 (AAV-66) ✅ 已完成
 
 **新增依赖**（v5 更新：`@tanstack/react-query@^5.95.0` 已安装，余下仍需 install）：
 - `@rainbow-me/rainbowkit@^2`
@@ -170,7 +170,7 @@ Portfolio 模拟 + 展示 Position/Liquidity 汇总
 - `useCampaignAccess`（v5：最终命名；aav_66_plan.md）能正确判定连接地址在每个 campaign 的 status，UI 显示准入标记
 - 切链 / 断开 / 重连流程不报错
 
-### Phase 2: 用户数据 fetch (AAV-69)
+### Phase 2: 用户数据 fetch (AAV-69) ✅ 已完成
 
 **前端纯实现，零后端改动。**已在 Linear AAV-69 中明确方案 = 前端直调 Merkl API（理由：rate limit 按用户独立 / 隐私 / 无需后端基础设施）。
 
@@ -650,7 +650,7 @@ GET https://api.merkl.xyz/v4/users/{address}/rewards?chainId={chainIds}
 - `reserveId` 回写成功率 = 100%（如果 token 在 reserves 中存在）
 - 链失败容错：mainnet OK + arbitrum 失败 → UI 显示部分数据 + 失败链 banner
 
-### Phase 3: 钱包自动导入 Portfolio (AAV-62)
+### Phase 3: 钱包自动导入 Portfolio (AAV-62) ✅ 已完成
 
 **连钱包 = 自动导入**，不需要文件导入。
 
@@ -670,7 +670,7 @@ GET https://api.merkl.xyz/v4/users/{address}/rewards?chainId={chainIds}
 - 三种模式（Merge/Replace/Append all）正确执行
 - 钱包切换后不自动覆盖现有 portfolio
 
-### Phase 4: Position/Liquidity 展示 (AAV-80)
+### Phase 4: Position/Liquidity 展示 (AAV-80) ✅ 已完成
 
 **前端新增 / 复用**：
 - **复用** [PortfolioSummaryCard.tsx](file:///Users/pabloli/Documents/code/aaveapy/src/components/dashboard/PortfolioSummaryCard.tsx) + [PortfolioPanel.tsx](file:///Users/pabloli/Documents/code/aaveapy/src/components/dashboard/PortfolioPanel.tsx)，**不另建并行面板**
@@ -998,13 +998,13 @@ AAV-67 诉求（连钱包 → 读持仓 → 展示）被 Phase 1-4 完全覆盖�
 
 A、B 完全独立，可并行；C 需等 A+B。
 
-### Step 1 — Phase 1 (AAV-66)
+### Step 1 — Phase 1 (AAV-66) ✅ 已完成
 
 按 §3 Phase 1 实现：
 1. [src/lib/wagmi/watchModeConnector.ts](file:///Users/pabloli/Documents/code/aaveapy/src/lib/wagmi/watchModeConnector.ts) — Watch Mode connector + 单测
 2. [src/hooks/useWallet.ts](file:///Users/pabloli/Documents/code/aaveapy/src/hooks/useWallet.ts) — 薄封装 + 单测
 3. [src/components/dashboard/Header.tsx](file:///Users/pabloli/Documents/code/aaveapy/src/components/dashboard/Header.tsx) — 集成 `<ConnectButton />` + Watch 入口
-4. ✅ [src/hooks/useCampaignAccess.ts](file:///Users/pabloli/Documents/code/aaveapy/src/hooks/useCampaignAccess.ts) **已实现**（v5：最终命名，从 `useSideDataMeta().campaignAccess` 消费；草案中 `useMerklCampaignAccess.ts` 命名未采用）。**剩余子任务**：补 co-located 单测 `useCampaignAccess.test.ts`；接 ReservesTable 准入标记 UI
+4. ✅ [src/hooks/useCampaignAccess.ts](file:///Users/pabloli/Documents/code/aaveapy/src/hooks/useCampaignAccess.ts) **已实现**（v5：最终命名，从 `useSideDataMeta().campaignAccess` 消费；草案中 `useMerklCampaignAccess.ts` 命名未采用）。✅ co-located 单测 `useCampaignAccess.test.ts` 已有 8 tests；✅ ReservesTable 准入标记 UI 已接入
 5. 联动 [src/hooks/reserves-table/usePortfolioToggle.ts](file:///Users/pabloli/Documents/code/aaveapy/src/hooks/reserves-table/usePortfolioToggle.ts) 的 `whitelistMerklCampaignIds`
 
 **Phase 1 Definition of Done**：
@@ -1012,7 +1012,7 @@ A、B 完全独立，可并行；C 需等 A+B。
 - 手测 Watch Mode：输入 `vitalik.eth` → 资格反映到 UI；输入随机地址 → 资格清空
 - 手测真实钱包：MetaMask 连接 + 切链 + 断开
 
-### Step 2 — Phase 2 (AAV-69)
+### Step 2 — Phase 2 (AAV-69) ✅ 已完成
 
 按 §3 Phase 2 实现。**Phase 2 不暴露 UI**（数据层 ready 即可），便于独立 ship 与回归。
 
@@ -1023,14 +1023,9 @@ A、B 完全独立，可并行；C 需等 A+B。
 4. [src/lib/userData/aaveUserClient.ts](file:///Users/pabloli/Documents/code/aaveapy/src/lib/userData/aaveUserClient.ts) — viem multicall fallback + 单测
 5. [src/hooks/useUserPositions.ts](file:///Users/pabloli/Documents/code/aaveapy/src/hooks/useUserPositions.ts) — React Query hook（SDK 首选 → fallback → 报错）+ 单测
 
-### Step 3 — Phase 3 (AAV-62)
+### Step 3 — Phase 3 (AAV-62) ✅ 已完成
 
-依赖 Phase 2。连钱包 → 自动导入：
-1. [src/lib/userPositionMapper.ts](file:///Users/pabloli/Documents/code/aaveapy/src/lib/userPositionMapper.ts) — `mapUserPositionsToPortfolioPositions` + 单测
-2. [src/components/dashboard/PortfolioImportModal.tsx](file:///Users/pabloli/Documents/code/aaveapy/src/components/dashboard/PortfolioImportModal.tsx) — 预览 Modal（Merge/Replace/Append）
-3. [src/hooks/useWallet.ts](file:///Users/pabloli/Documents/code/aaveapy/src/hooks/useWallet.ts) 或上层组件 — 监听连接事件，Portfolio 模式内触发 `useUserPositions()` → Modal
-
-### Step 4 — Phase 4 (AAV-80)
+### Step 4 — Phase 4 (AAV-80) ✅ 已完成
 
 依赖 Phase 3。**强制复用** [PortfolioPanel.tsx](file:///Users/pabloli/Documents/code/aaveapy/src/components/dashboard/PortfolioPanel.tsx) + [PortfolioSummaryCard.tsx](file:///Users/pabloli/Documents/code/aaveapy/src/components/dashboard/PortfolioSummaryCard.tsx)，禁止新建并行面板。
 
