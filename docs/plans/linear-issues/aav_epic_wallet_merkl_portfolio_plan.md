@@ -15,7 +15,8 @@
 > - v5：与最新代码对齐 + grill 决议整合 ——
 >   * AAV-66 前端消费部分已实现：[useCampaignAccess.ts](file:///Users/pabloli/Documents/code/aaveapy/src/hooks/useCampaignAccess.ts)（**最终命名**，非草案中的 `useMerklCampaignAccess.ts`）+ [src/types/aave.ts](file:///Users/pabloli/Documents/code/aaveapy/src/types/aave.ts) `CampaignAccessEntry`/`CampaignAccessPayload`（已正式化，不再是 dead code）+ [src/lib/apiSchemas.ts](file:///Users/pabloli/Documents/code/aaveapy/src/lib/apiSchemas.ts) zod schema + [src/hooks/useSideDataMeta.ts](file:///Users/pabloli/Documents/code/aaveapy/src/hooks/useSideDataMeta.ts) `campaignAccess` 字段
 >   * `@tanstack/react-query@^5.95.0` 已安装（移出"新增依赖"清单）
->   * 仍未做：wagmi/rainbowkit/viem 安装、`src/lib/wagmi/*`、`src/providers/Web3Provider.tsx`、`src/hooks/useWallet.ts`、`useUserPositions.ts`、`src/lib/userData/*`、`src/lib/userPositionMapper.ts`、`src/lib/abis/*`、chainId 真理表抽取、`useCampaignAccess.test.ts` co-located 单测
+>   * 仍未做（截至 v6）：chainId 真理表抽取、`useCampaignAccess.test.ts` co-located 单测
+>   * ✅ 已实现：wagmi/rainbowkit/viem 安装、`src/lib/wagmi/*`、`src/providers/Web3Provider.tsx`、`src/hooks/useWallet.ts`、`useUserPositions.ts` / `useUserPositionsSdk.ts`、`src/lib/userData/*`、`src/lib/userPositionMapper.ts`、`src/lib/abis/*`、reserveId 匹配策略（§2a-reserveId）
 > - v4：根据 AAV-66 后端已实现（合并进 side-data 字段 `/api/meta/side-data.campaignAccess`，见 [aav_66_plan.md](file:///Users/pabloli/Documents/code/aaveapy/docs/plans/linear-issues/aav_66_plan.md)）+ AAV-69 Linear 描述（明确前端直调 `/v4/users/{addr}/rewards`）修订：拆分用户级数据 vs campaign 元数据的获取路径；删除 `/v0/positions` beta；补 claim 流程。
 > - v3：根据 owner 回答简化 —— Custom Connector = read-only watch mode；数据获取全部在前端；HF 延后；KV-store 不做。
 > - v2：根据真实后端结构修订。
@@ -149,8 +150,8 @@ Portfolio 模拟 + 展示 Position/Liquidity 汇总
     - ✅ [src/lib/apiSchemas.ts](file:///Users/pabloli/Documents/code/aaveapy/src/lib/apiSchemas.ts) — zod schema 已加 `campaignAccess`
     - ✅ **[src/hooks/useCampaignAccess.ts](file:///Users/pabloli/Documents/code/aaveapy/src/hooks/useCampaignAccess.ts)（最终命名）** — `getUserCampaignStatus(addr, campaignId, campaigns)` 已实现，返回 `'allowed' | 'whitelist-blocked' | 'blacklisted'`
     - ⚠️ `src/lib/cache.ts` 中 `setCachedCampaignAccess` / `getCachedCampaignAccess` —— 视当前缓存策略决定是否仍需要（campaignAccess 已随 side-data 一起缓存）
-    - ❌ `src/components/dashboard/ReservesTable.tsx` 准入标记 UI —— **未做**
-    - ❌ co-located 单测 `useCampaignAccess.test.ts` —— **未做**（验收 Gate 要求）
+    - ✅ `src/components/dashboard/ReservesTable.tsx` 准入标记 UI —— **已实现**（M3 milestone）
+    - ⚠️ co-located 单测 `useCampaignAccess.test.ts` —— **未做**（验收 Gate 要求，留作后续）
   - 与 [usePortfolioToggle.whitelistMerklCampaignIds](file:///Users/pabloli/Documents/code/aaveapy/src/hooks/reserves-table/usePortfolioToggle.ts) 联动：根据每个 campaign 的 status 决定是否计入用户的有效 APR（联动尚未接入）
 
 **关键事实更正**：
