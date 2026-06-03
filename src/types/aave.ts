@@ -220,7 +220,7 @@ export type MerklForecastWireItem =
 // Campaign access — Merkl whitelist/blacklist per campaign (AAV-66).
 // Embedded in side-data response; consumed by useCampaignAccess() gated on wallet connection.
 export interface CampaignAccessEntry {
-  chainId: number;
+  chainId?: number;
   whitelist: string[];
   blacklist: string[];
 }

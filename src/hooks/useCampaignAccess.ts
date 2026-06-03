@@ -56,7 +56,8 @@ export function computeCampaignAccessStatuses(
   userAddress: string | undefined,
   campaigns: Record<string, CampaignAccessEntry> | undefined,
 ): Record<string, CampaignAccessStatus> | undefined {
-  if (!userAddress || !campaigns) return undefined;
+  if (!userAddress) return undefined;
+  if (!campaigns) return undefined;
   const result: Record<string, CampaignAccessStatus> = {};
   for (const campaignId of Object.keys(campaigns)) {
     result[campaignId] = getUserCampaignStatus(userAddress, campaignId, campaigns);

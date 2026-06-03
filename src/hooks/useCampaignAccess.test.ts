@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { getUserCampaignStatus, computeCampaignAccessStatuses } from './useCampaignAccess'
 import type { CampaignAccessEntry } from '@/types/aave'
 
-const USER = '0xAAA111222333444555666777888999AAABBBCCC'
-const OTHER = '0xBBB111222333444555666777888999AAABBBCCC'
+const USER = '0xaaa111222333444555666777888999aaabbbccc1'
+const OTHER = '0xbbb111222333444555666777888999aaabbbccc2'
 
 describe('getUserCampaignStatus', () => {
   it('returns allowed when no campaigns data', () => {
@@ -70,6 +70,10 @@ describe('computeCampaignAccessStatuses', () => {
 
   it('returns undefined when no campaigns', () => {
     expect(computeCampaignAccessStatuses(USER, undefined)).toBeUndefined()
+  })
+
+  it('returns empty object when campaigns is empty record', () => {
+    expect(computeCampaignAccessStatuses(USER, {})).toEqual({})
   })
 
   it('returns allowed for user on whitelist', () => {
