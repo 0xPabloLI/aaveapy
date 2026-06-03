@@ -378,11 +378,11 @@ const DefiYieldTracker = () => {
 
             <p className="mt-5 text-sm text-muted-foreground">
               Related FAQs:{' '}
-              <a href={`#${faqSlug('Aave APY vs DeBank: which should I use?')}`} className="text-primary underline-offset-4 hover:underline">Aave APY vs DeBank</a>
+              <a href={`#${faqSlug('Aave APY vs DeBank: which should I use?')}`} onClick={handleFaqAnchorClick} className="text-primary underline-offset-4 hover:underline">Aave APY vs DeBank</a>
               {' · '}
-              <a href={`#${faqSlug('Aave APY vs Zerion: what is the difference?')}`} className="text-primary underline-offset-4 hover:underline">Aave APY vs Zerion</a>
+              <a href={`#${faqSlug('Aave APY vs Zerion: what is the difference?')}`} onClick={handleFaqAnchorClick} className="text-primary underline-offset-4 hover:underline">Aave APY vs Zerion</a>
               {' · '}
-              <a href={`#${faqSlug('Is there a DeFi portfolio tracker that does not need a wallet connection?')}`} className="text-primary underline-offset-4 hover:underline">No-wallet portfolio tracker</a>
+              <a href={`#${faqSlug('Is there a DeFi portfolio tracker that does not need a wallet connection?')}`} onClick={handleFaqAnchorClick} className="text-primary underline-offset-4 hover:underline">No-wallet portfolio tracker</a>
             </p>
           </section>
 
