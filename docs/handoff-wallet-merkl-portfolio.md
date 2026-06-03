@@ -164,11 +164,13 @@ Minus 按钮条件逻辑：wallet 来源 → toggleHidden；manual 来源 → �
 
 ## 剩余待做（按优先级，grill 后更新）
 
-| # | Item | 依赖 | 备注 |
-|---|------|------|------|
-| 1 | **SDK 首选路径** — 安装 `@aave/react` + 实现 SDK hook + viem fallback | M3 | V3: `@aave/react@^0.9.1` / V4: `@aave/react@^4.2.0` |
-| 2 | **Portfolio 自动导入** — 连钱包=静默 merge + toast（无 Modal） | M2 | 需 mergePositions / importPositions；删除 plan Phase 3 Modal |
-| 3 | **Merkl Rewards 展示区** — hook 层 + UI | M1 | 数据层已有 `merklUserClient.ts`；放 PortfolioPanel 内 |
+全部已完成 ✅
+
+| # | Item | 状态 |
+|---|------|------|
+| 1 | **SDK 首选路径** — 安装 `@aave/react` + 实现 SDK hook + viem fallback | ✅ Slice 1~6 |
+| 2 | **Portfolio 自动导入** — 连钱包=静默 merge + toast（无 Modal） | ✅ Slice 2 |
+| 3 | **Merkl Rewards 展示区** — hook 层 + UI | ✅ Slice 4 |
 
 ## PRD & Linear
 
@@ -295,12 +297,11 @@ Minus 按钮条件逻辑：wallet 来源 → toggleHidden；manual 来源 → �
 详见 `docs/handoff-reserveId-matching.md`。核心变更：
 - 从 `(chainId, tokenAddress)` 查找升级为 `composeReserveId(chainId, poolAddress, tokenAddress, hubName?)` 精确匹配 + chainToken fallback
 - 测试 fixture 全部更新为真实 reserveId 格式
-- Linear AAV-489 跟踪：全面审查测试 fixture 真实性
+- ~~Linear AAV-489~~: ✅ 全面审查测试 fixture 真实性已完成
 
 ### 文档待做项（非功能缺失）
 
 1. Phase 5 HF — 明确延后
 2. 共享 chainId 真理表抽取 — 重构任务
 3. Bundle size spike — 运维/性能任务
-4. ~~`useCampaignAccess.test.ts`~~ — ✅ 已有 8 tests
 5. E2E Playwright wallet smoke test — 需真实钱包
