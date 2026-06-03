@@ -48,7 +48,20 @@ const FAQS: { q: string; a: string }[] = [
     q: 'How often is the APY data updated?',
     a: 'Reserve rates refresh every minute from the Aave protocol. Incentive forecasts (Merit, Merkl, Brevis) update on their respective campaign cadences and are baked into the effective APY shown on every row.',
   },
+  {
+    q: 'Aave APY vs DeBank: which should I use?',
+    a: 'Use DeBank for a multi-protocol wallet overview across hundreds of dApps. Use Aave APY when you need live Aave supply and borrow rates across all 17 chains with Merit, Merkl, and Brevis incentives included, plus rate simulation before depositing. They complement each other: DeBank tracks what you hold, Aave APY helps decide where to deposit next.',
+  },
+  {
+    q: 'Aave APY vs Zerion: what is the difference?',
+    a: 'Zerion is a polished mobile-first wallet tracker with NFT support and basic swaps. Aave APY is an Aave-only yield tracker — no wallet required — focused on effective APY comparison across chains, incentive breakdowns, and portfolio simulation. Pick Zerion to monitor a wallet, pick Aave APY to optimize Aave allocation.',
+  },
+  {
+    q: 'Is there a DeFi portfolio tracker that does not need a wallet connection?',
+    a: 'Yes. Aave APY\'s portfolio simulator lets you model any combination of Aave deposits and borrows across chains without connecting a wallet. DeBank and Zerion both require a wallet address to display positions. The simulator computes net effective APY, daily earnings, and per-incentive contribution for any scenario you enter.',
+  },
 ];
+
 
 function faqSlug(q: string) {
   return q
