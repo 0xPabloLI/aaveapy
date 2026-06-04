@@ -1,4 +1,4 @@
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { fileURLToPath } from "node:url";
@@ -24,6 +24,23 @@ function deployShaMetaPlugin() {
         "</head>",
         `    <meta name="aaveapy-deploy-sha" content="${sha}" />\n  </head>`,
       );
+    },
+  };
+}
+
+/** Validate VITE_API_BASE_URL is set for production builds. */
+function validateEnvPlugin() {
+  return {
+    name: "validate-env",
+    apply: "build" as const,
+    config(_config: unknown, { mode }: { mode: string }) {
+      const env = loadEnv(mode, process.cwd(), "");
+      if (env.VITE_API_BASE_URL == null) {
+        throw new Error(
+          "VITE_API_BASE_URL is required for production builds. " +
+            "Set it to your API base URL (e.g. https://api.aaveapy.com/api).",
+        );
+      }
     },
   };
 }
@@ -60,6 +77,7 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
+    validateEnvPlugin(),
     generateOpenApiPlugin(),
     deployShaMetaPlugin(),
     mode === "development" && componentTagger(),
