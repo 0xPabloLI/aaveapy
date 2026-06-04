@@ -6,7 +6,7 @@
 
 | 仓库 | 路径 | 数量 |
 |------|------|------|
-| aaveapy (lovable) | `docs/plans/linear-issues/` | 41 (+ 5 归档至 completed/) |
+| aaveapy (lovable) | `docs/plans/linear-issues/` | 35 (+ 11 归档至 completed/) |
 | aave-protocol-analysis (railway) | `docs/plans/linear-issues/` | 10 |
 
 注：涉及前后端的 Issue（target=both）会同时存放在两个仓库中。
@@ -20,9 +20,14 @@
 | AAV-121 | 添加 OpenAPI 文档和 Postman 集合 | 已实现：scripts/generate-openapi.ts, public/openapi.json, public/swagger.html |
 | AAV-122 | 增加前后端传输的压缩方案 | 已实现：后端 server.ts 使用 compression 中间件 (gzip) |
 | AAV-124 | 增加 sort by supply%，sort by borrow% | 已实现：supplyCapPct/borrowCapPct 排序模式 |
+| AAV-129 | Collateral 使用率 | 已实现：CollateralUtilization 组件及数据库查询 |
+| AAV-134 | V4 合约地址传递方案评估 | 已取消：评估完成，Linear 标记 Canceled |
+| AAV-139 | 历史 Campaign 链接 | 已实现：CampaignHistory 组件及后端历史数据接口 |
 | AAV-143 | 在 market filter 里面加 search markets | 已取消：功能已由 FilterBar searchQuery 覆盖，Linear 标记 Canceled |
+| AAV-172 | 清理未使用数据层字段 | 已实现：移除 reserves 中未消费字段 |
 | AAV-174 | 移除 V4 spoke 无消费字段 | 已实现：spokeName 移除，spokeId/spokeAddress 已消费 |
 | AAV-187 | V4 fallback 层级不匹配修复 | 已实现：编译期 ban 类型 + V4-aware 派生函数 + 防回归测试 |
+| AAV-301 | 交互卡顿性能优化 | 已实现：性能优化相关改动已合入主线 |
 
 ## Issue 分类统计
 
@@ -53,7 +58,6 @@
 |-------|------|--------|------|
 | AAV-118 | 环境配置校验 | Low | 基础设施：生产缺配置会误调 staging，一行改动 |
 | AAV-329 | 建立自动告警 SOP | Low | 18 个 smoke test 告警无统一管理，流程先行 |
-| AAV-134 | V4 合约地址传递方案评估 | Low | 决策先行：评估结果影响后续 V4 开发方向 |
 | AAV-135 | V4 SDK Embedded Rewards 文档 | Low | 补充被跳过功能的文档说明 |
 
 ### P1 — 数据层核心（数据可信性 & V4 完善）
@@ -73,15 +77,14 @@
 | AAV-344 | Reserve Snapshots 历史趋势 | Medium | 后端 /api/markets/history |
 | AAV-262 | TVL 历史展示 | Medium | 数据库迁移 |
 | AAV-93 | V3/V4 统一展示重设计 | Medium | AAV-189 |
-| AAV-75 | Size/Liquidity 变化趋势 | Medium | AAV-139, updateScheduler |
-| AAV-301 | 交互卡顿性能优化 | Medium | AAV-83 |
-| AAV-83 | 移动端滑动卡顿 | Medium | AAV-301 |
+| AAV-75 | Size/Liquidity 变化趋势 | Medium | updateScheduler |
+| AAV-83 | 移动端滑动卡顿 | Medium | — |
 
 ### P3 — 高级功能 & 安全性（依赖基础层完成）
 
 | Issue | 标题 | 复杂度 | 依赖 |
 |-------|------|--------|------|
-| AAV-91 | APY 预测 | Medium | AAV-69/68, AAV-301 |
+| AAV-91 | APY 预测 | Medium | AAV-69/68 |
 | AAV-107 | APR 币价波动影响 | Medium | AAV-261 |
 | AAV-333 | Risk Premium Simulation | Medium | 钱包连接, V4 fetcher |
 | AAV-84 | 推荐 reserve | Medium | AAV-91 |
@@ -91,18 +94,14 @@
 | AAV-86 | 资产部署辅助 | Medium | onchainDataService |
 | AAV-87 | swap 后存储 | Medium | 用户身份体系 |
 | AAV-127 | Liquidity 页面 | Medium | /api/markets |
-| AAV-129 | Collateral 使用率 | Medium | 数据库, V4 数据方案 |
 | AAV-130 | 资产集中度 | Medium | on-chain 数据 |
-| AAV-139 | 历史 Campaign 链接 | Medium | 数据库迁移 |
 | AAV-76 | 对比 DefiLlama 数据覆盖 | Medium | — |
 
 ### P4 — 代码清理 & 无障碍（机会式执行 / 长期工程）
 
 | Issue | 标题 | 复杂度 | 依赖 |
 |-------|------|--------|------|
-| AAV-113 | src/lib 精简重构 | Medium | AAV-91 |
-| AAV-172 | 清理未使用数据层字段 | Medium | AAV-189 |
-| AAV-173 | SimulationSubRow 死代码清理 | Medium | AAV-144, AAV-113 |
+| AAV-173 | SimulationSubRow 死代码清理 | Medium | AAV-144 |
 | AAV-321 | 整理无障碍规范文档 | Medium | — |
 | AAV-322 | 无障碍审计 + 问题清单 | Medium | AAV-321 |
 | AAV-323 | 修复重点组件无障碍 | Medium | AAV-322 |
@@ -112,24 +111,28 @@
 
 | Issue | 标题 |
 |-------|------|
+| AAV-129 | Collateral 使用率 |
+| AAV-134 | V4 合约地址传递方案评估 |
+| AAV-139 | 历史 Campaign 链接 |
+| AAV-172 | 清理未使用数据层字段 |
 | AAV-187 | V4 fallback 层级不匹配修复 |
+| AAV-301 | 交互卡顿性能优化 |
 
 ### 依赖链总览
 
 ```
 P0: AAV-118 → AAV-329
-         AAV-134 → AAV-135
+          AAV-135
 
 P1: Epic(AAV-74→72→73→79) → AAV-75
     AAV-189 → AAV-93
     AAV-90 → AAV-344 → AAV-262
 
-P2: AAV-301 → AAV-83
+P2: AAV-83
 
 P3: AAV-91 → AAV-107
-         → AAV-84
+          → AAV-84
     AAV-85 → AAV-88
 
 P4: AAV-321 → AAV-322 → AAV-323 → AAV-248
-    AAV-113 → AAV-173
 ```

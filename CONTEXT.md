@@ -142,6 +142,10 @@ _Avoid_: 单 URL 首选 + 失败静默空（`createClientWithRetry` 名不副实
 **Fallback Timeout Budget**:
 onchain fallback 独立 15s request timeout（`withTimeout`），超时走 `failedSources` + 返回已拿到的部分数据。对齐 AAV-388 PRD "RPC fallback independent 15s timeout"。
 
+**Portfolio Input Mode Toggle**:
+Portfolio 模式下每个 position 的 supply/borrow 侧有独立的 $/T 切换按钮（`PortfolioInputMode = 'usd' | 'token'`）。切换时自动按 `priceInUsd` 转换数值：USD→Token = `amount / price`，Token→USD = `amount × price`。price ≤ 0 或 undefined 时清空输入值。supply/borrow 两侧独立，互不影响。结果区域（PortfolioResultsTable / PortfolioSummaryCard）始终以 USD 显示，因为多 token 单位不同只能统一。
+_Avoid_: 清空输入（非 portfolio 模式的行为，portfolio 应转换而非清空）、联动两侧切换
+
 **Portfolio Merge**:
 同 token 同 side = 替换（链上为准）；同 token 不同 side = 加缺失 side；全新 token = 直接加入；链上没有但 Simulator 有 = 保留；找不到 reserveId = orphan。
 
