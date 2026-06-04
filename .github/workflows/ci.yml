@@ -315,7 +315,6 @@ jobs:
       LIVE_API_BASE: ${{ vars.LIVE_TEST_API_BASE_CI != '' && vars.LIVE_TEST_API_BASE_CI || 'https://staging-api.aaveapy.com/api' }}
     permissions:
       contents: write
-      pull-requests: write
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -343,21 +342,11 @@ jobs:
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Create sync PR
+      - name: Commit and push spec sync
         if: steps.diff.outputs.changed == 'true'
-        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
-        with:
-          commit-message: "chore(openapi): sync spec from backend"
-          branch: "bot/openapi-sync-${{ github.run_id }}"
-          delete-branch: true
-          title: "chore(openapi): sync spec from backend API"
-          body: |
-            Auto-generated PR to sync the OpenAPI spec with the backend.
-
-            Trigger:
-            - Backend deployed a new OpenAPI spec, detected by `openapi-check` failure.
-            - This PR fetches the canonical spec from `${{ env.LIVE_API_BASE }}/docs/openapi.json`.
-
-            Review the diff and merge if the changes look correct.
-          labels: ci-auto-remediation,openapi-spec
-          base: ${{ github.ref_name }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add public/openapi.json
+          git commit -m "chore(openapi): sync spec from backend"
+          git push
