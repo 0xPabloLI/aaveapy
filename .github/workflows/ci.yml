@@ -186,6 +186,8 @@ jobs:
       - name: Install dependencies
         run: npm run ci:lockcheck
       - name: Check OpenAPI spec is up to date
+        env:
+          LIVE_API_BASE: ${{ vars.LIVE_TEST_API_BASE_CI != '' && vars.LIVE_TEST_API_BASE_CI || 'https://staging-api.aaveapy.com/api' }}
         run: npm run openapi:check
 
   security-audit:
@@ -297,4 +299,64 @@ jobs:
             - `npm run build`
             - `npm audit --omit=dev --audit-level=high`
           labels: ci-auto-remediation,dependencies
+          base: ${{ github.ref_name }}
+
+  openapi-sync:
+    name: openapi-sync
+    needs:
+      - openapi-check
+    if: >
+      always() &&
+      github.event_name == 'push' &&
+      needs.openapi-check.result == 'failure'
+    runs-on: ubuntu-latest
+    env:
+      LIVE_API_BASE: ${{ vars.LIVE_TEST_API_BASE_CI != '' && vars.LIVE_TEST_API_BASE_CI || 'https://staging-api.aaveapy.com/api' }}
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Setup Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm run ci:lockcheck
+
+      - name: Fetch OpenAPI spec from backend
+        run: npm run openapi:fetch
+
+      - name: Check for spec changes
+        id: diff
+        run: |
+          if git diff --quiet -- public/openapi.json; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create sync PR
+        if: steps.diff.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        with:
+          commit-message: "chore(openapi): sync spec from backend"
+          branch: "bot/openapi-sync-${{ github.run_id }}"
+          delete-branch: true
+          title: "chore(openapi): sync spec from backend API"
+          body: |
+            Auto-generated PR to sync the OpenAPI spec with the backend.
+
+            Trigger:
+            - Backend deployed a new OpenAPI spec, detected by `openapi-check` failure.
+            - This PR fetches the canonical spec from `${{ env.LIVE_API_BASE }}/docs/openapi.json`.
+
+            Review the diff and merge if the changes look correct.
+          labels: ci-auto-remediation,openapi-spec
           base: ${{ github.ref_name }}
