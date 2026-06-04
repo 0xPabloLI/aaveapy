@@ -8,6 +8,7 @@ import { formatNumberInput } from '@/lib/numberFormat';
 import { cnDsInputSurface } from '@/lib/dsInputSurface';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { BATCH_THEME } from './batchTheme';
 import type { PortfolioPosition, PortfolioInputMode } from '@/types/portfolio';
 
@@ -15,7 +16,8 @@ interface PortfolioPositionRowProps {
   position: PortfolioPosition;
   onRemove: (positionId: string) => void;
   onUpdateAmount: (positionId: string, amount: string) => void;
-  onUpdateInputMode: (positionId: string, mode: PortfolioInputMode) => void;
+  onUpdateInputMode: (positionId: string, mode: PortfolioInputMode, priceInUsd?: number) => void;
+  tokenPriceInUsd?: number;
 }
 
 const PortfolioPositionRow = memo(function PortfolioPositionRow({
@@ -23,6 +25,7 @@ const PortfolioPositionRow = memo(function PortfolioPositionRow({
   onRemove,
   onUpdateAmount,
   onUpdateInputMode,
+  tokenPriceInUsd,
 }: PortfolioPositionRowProps) {
   const isMobile = useIsMobile();
   const isBorrow = position.side === 'borrow';
@@ -69,19 +72,33 @@ const PortfolioPositionRow = memo(function PortfolioPositionRow({
 
       {/* Amount input */}
       <div className="flex min-w-0 flex-1 items-center gap-1">
-        <button
-          type="button"
-          onClick={() =>
-            onUpdateInputMode(
-              position.positionId,
-              position.inputMode === 'usd' ? 'token' : 'usd',
-            )
-          }
-          className="shrink-0 rounded border border-border/40 bg-muted/60 px-1.5 py-0.5 ds-text-10 font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          aria-label={`Switch to ${position.inputMode === 'usd' ? 'token' : 'USD'} input`}
-        >
-          {position.inputMode === 'usd' ? '$' : 'T'}
-        </button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              disabled={tokenPriceInUsd === undefined}
+              onClick={() =>
+                onUpdateInputMode(
+                  position.positionId,
+                  position.inputMode === 'usd' ? 'token' : 'usd',
+                  tokenPriceInUsd,
+                )
+              }
+              className={cn(
+                'shrink-0 rounded border border-border/40 bg-muted/60 px-1.5 py-0.5 ds-text-10 font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground',
+                tokenPriceInUsd === undefined && 'opacity-40 cursor-not-allowed hover:bg-muted/60 hover:text-muted-foreground',
+              )}
+              aria-label={`Switch to ${position.inputMode === 'usd' ? 'token' : 'USD'} input`}
+            >
+              {position.inputMode === 'usd' ? '$' : 'T'}
+            </button>
+          </TooltipTrigger>
+          {tokenPriceInUsd === undefined && (
+            <TooltipContent side="top" className="ds-text-11">
+              Price unavailable for this position
+            </TooltipContent>
+          )}
+        </Tooltip>
         <input
           value={position.amount}
           onChange={(e) =>

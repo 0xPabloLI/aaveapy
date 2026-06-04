@@ -2,6 +2,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { cleanup, render, screen, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import PortfolioTokenRow from './PortfolioTokenRow';
 import type { PortfolioPosition } from '@/types/portfolio';
 
@@ -16,7 +17,7 @@ const queryClient = new QueryClient({
 function Wrapper({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
-      {children}
+      <TooltipProvider>{children}</TooltipProvider>
     </QueryClientProvider>
   );
 }
@@ -121,11 +122,12 @@ describe('PortfolioTokenRow callbacks', () => {
         onRemove={vi.fn()}
         onUpdateAmount={vi.fn()}
         onUpdateInputMode={onUpdateInputMode}
+        tokenPriceInUsd={1}
       />,
       { wrapper: Wrapper },
     );
     fireEvent.click(screen.getByRole('button', { name: /switch to token input/i }));
-    expect(onUpdateInputMode).toHaveBeenCalledWith('pos-1', 'token');
+    expect(onUpdateInputMode).toHaveBeenCalledWith('pos-1', 'token', 1);
   });
 
   it('calls onUpdateInputMode when switching supply input mode from token to USD', () => {
@@ -141,11 +143,12 @@ describe('PortfolioTokenRow callbacks', () => {
         onRemove={vi.fn()}
         onUpdateAmount={vi.fn()}
         onUpdateInputMode={onUpdateInputMode}
+        tokenPriceInUsd={1}
       />,
       { wrapper: Wrapper },
     );
     fireEvent.click(screen.getByRole('button', { name: /switch to usd input/i }));
-    expect(onUpdateInputMode).toHaveBeenCalledWith('pos-1', 'usd');
+    expect(onUpdateInputMode).toHaveBeenCalledWith('pos-1', 'usd', 1);
   });
 
   it('clears supply amount when clear button is clicked', () => {

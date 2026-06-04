@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { WagmiProvider, createConfig, http } from 'wagmi';
 import { mainnet } from 'wagmi/chains';
 import { RainbowKitProvider } from '@rainbow-me/rainbowkit';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import PortfolioPanel from './PortfolioPanel';
 import { useWatchModeConnect } from '@/hooks/useWatchModeConnect';
 import type { ReserveWithSpread } from '@/types/aave';
@@ -95,11 +96,13 @@ describe('PortfolioPanel', () => {
       <WagmiProvider config={testWagmiConfig}>
         <QueryClientProvider client={new QueryClient()}>
           <RainbowKitProvider>
+            <TooltipProvider>
             <PortfolioPanel
               positions={[]}
               actions={makeActions()}
               reserves={reserves}
             />
+            </TooltipProvider>
           </RainbowKitProvider>
         </QueryClientProvider>
       </WagmiProvider>,
@@ -113,11 +116,13 @@ describe('PortfolioPanel', () => {
       <WagmiProvider config={testWagmiConfig}>
         <QueryClientProvider client={new QueryClient()}>
           <RainbowKitProvider>
+            <TooltipProvider>
             <PortfolioPanel
               positions={[]}
               actions={makeActions()}
               reserves={reserves}
             />
+            </TooltipProvider>
           </RainbowKitProvider>
         </QueryClientProvider>
       </WagmiProvider>,
@@ -135,11 +140,13 @@ describe('PortfolioPanel', () => {
       <WagmiProvider config={testWagmiConfig}>
         <QueryClientProvider client={new QueryClient()}>
           <RainbowKitProvider>
+            <TooltipProvider>
             <PortfolioPanel
               positions={[]}
               actions={actions}
               reserves={reserves}
             />
+            </TooltipProvider>
           </RainbowKitProvider>
         </QueryClientProvider>
       </WagmiProvider>,
@@ -161,11 +168,13 @@ describe('PortfolioPanel', () => {
       <WagmiProvider config={testWagmiConfig}>
         <QueryClientProvider client={new QueryClient()}>
           <RainbowKitProvider>
+            <TooltipProvider>
             <PortfolioPanel
               positions={positions}
               actions={makeActions()}
               reserves={reserves}
             />
+            </TooltipProvider>
           </RainbowKitProvider>
         </QueryClientProvider>
       </WagmiProvider>,
@@ -179,11 +188,13 @@ describe('PortfolioPanel', () => {
       <WagmiProvider config={testWagmiConfig}>
         <QueryClientProvider client={new QueryClient()}>
           <RainbowKitProvider>
+            <TooltipProvider>
             <PortfolioPanel
               positions={[]}
               actions={makeActions()}
               reserves={reserves}
             />
+            </TooltipProvider>
           </RainbowKitProvider>
         </QueryClientProvider>
       </WagmiProvider>,
@@ -201,6 +212,7 @@ describe('PortfolioPanel', () => {
       <WagmiProvider config={testWagmiConfig}>
         <QueryClientProvider client={new QueryClient()}>
           <RainbowKitProvider>
+            <TooltipProvider>
             <PortfolioPanel
               positions={[]}
               actions={makeActions()}
@@ -208,6 +220,7 @@ describe('PortfolioPanel', () => {
               claimableRewards={claimableRewards}
               claimableRewardsLoading={false}
             />
+            </TooltipProvider>
           </RainbowKitProvider>
         </QueryClientProvider>
       </WagmiProvider>,
@@ -223,12 +236,14 @@ describe('PortfolioPanel', () => {
       <WagmiProvider config={testWagmiConfig}>
         <QueryClientProvider client={new QueryClient()}>
           <RainbowKitProvider>
+            <TooltipProvider>
             <PortfolioPanel
               positions={[]}
               actions={makeActions()}
               reserves={reserves}
               claimableRewardsLoading={true}
             />
+            </TooltipProvider>
           </RainbowKitProvider>
         </QueryClientProvider>
       </WagmiProvider>,
@@ -242,6 +257,7 @@ describe('PortfolioPanel', () => {
       <WagmiProvider config={testWagmiConfig}>
         <QueryClientProvider client={new QueryClient()}>
           <RainbowKitProvider>
+            <TooltipProvider>
             <PortfolioPanel
               positions={[]}
               actions={makeActions()}
@@ -249,6 +265,7 @@ describe('PortfolioPanel', () => {
               claimableRewards={[]}
               claimableRewardsLoading={false}
             />
+            </TooltipProvider>
           </RainbowKitProvider>
         </QueryClientProvider>
       </WagmiProvider>,

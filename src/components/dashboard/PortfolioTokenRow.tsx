@@ -8,6 +8,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { getMarketChipLabel, isV4Market, getHubChipClass } from '@/lib/marketLabels';
 import { getWalletSyncState } from '@/lib/portfolioWalletSync';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { getSoftDeleteAction } from '@/lib/portfolioSoftDelete';
 
 import { BATCH_THEME } from './batchTheme';
@@ -24,9 +25,10 @@ interface PortfolioTokenRowProps {
   onRemove: (reserveId: string) => void;
   reserveId: string;
   onUpdateAmount: (positionId: string, amount: string) => void;
-  onUpdateInputMode: (positionId: string, mode: PortfolioInputMode) => void;
+  onUpdateInputMode: (positionId: string, mode: PortfolioInputMode, priceInUsd?: number) => void;
   onToggleHidden?: (positionId: string) => void;
   onRestorePosition?: (positionId: string) => void;
+  tokenPriceInUsd?: number;
 }
 
 function WalletSyncIndicator({ position, onRestore }: {
@@ -80,6 +82,7 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
   onUpdateInputMode,
   onToggleHidden,
   onRestorePosition,
+  tokenPriceInUsd,
 }: PortfolioTokenRowProps) {
   const isMobile = useIsMobile();
   const chainSrc = getChainIconSrc(chainName);
@@ -102,19 +105,33 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
         <span className={cn('shrink-0 ds-text-12 font-semibold', isMobile ? 'w-10' : 'w-11', labelColor)}>
           {sideLabel}
         </span>
-        <button
-          type="button"
-          onClick={() =>
-            onUpdateInputMode(
-              position.positionId,
-              position.inputMode === 'usd' ? 'token' : 'usd',
-            )
-          }
-          className="shrink-0 rounded border border-border/40 bg-muted/60 px-1.5 py-0.5 ds-text-10 font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          aria-label={`Switch to ${position.inputMode === 'usd' ? 'token' : 'USD'} input`}
-        >
-          {position.inputMode === 'usd' ? '$' : 'T'}
-        </button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              disabled={tokenPriceInUsd === undefined}
+              onClick={() =>
+                onUpdateInputMode(
+                  position.positionId,
+                  position.inputMode === 'usd' ? 'token' : 'usd',
+                  tokenPriceInUsd,
+                )
+              }
+              className={cn(
+                'shrink-0 rounded border border-border/40 bg-muted/60 px-1.5 py-0.5 ds-text-10 font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground',
+                tokenPriceInUsd === undefined && 'opacity-40 cursor-not-allowed hover:bg-muted/60 hover:text-muted-foreground',
+              )}
+              aria-label={`Switch to ${position.inputMode === 'usd' ? 'token' : 'USD'} input`}
+            >
+              {position.inputMode === 'usd' ? '$' : 'T'}
+            </button>
+          </TooltipTrigger>
+          {tokenPriceInUsd === undefined && (
+            <TooltipContent side="top" className="ds-text-11">
+              Price unavailable for this position
+            </TooltipContent>
+          )}
+        </Tooltip>
         <div className="relative flex-1 min-w-0">
           <input
             value={position.amount}

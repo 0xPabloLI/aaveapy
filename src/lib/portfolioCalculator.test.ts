@@ -4,6 +4,8 @@ import {
   computePositionUsdPerDay,
   resolvePositionAmountUsd,
   buildPortfolioPositionResult,
+  convertPortfolioInputAmount,
+  formatConvertedAmount,
 } from './portfolioCalculator';
 import type { PortfolioPositionResult, PortfolioPosition } from '@/types/portfolio';
 import type { ReserveWithSpread } from '@/types/aave';
@@ -175,5 +177,88 @@ describe('buildPortfolioPositionResult', () => {
     const result = buildPortfolioPositionResult(pos, 10000, 3.65, 0);
     const expected = computePositionUsdPerDay('supply', 10000, 3.65, 0);
     expect(result.usdPerDay).toBeCloseTo(expected, 10);
+  });
+});
+
+describe('convertPortfolioInputAmount', () => {
+  it('usd → token: divides amount by price', () => {
+    // 5000 USD, price $2500/token → 2 tokens
+    expect(convertPortfolioInputAmount(5000, 'usd', 'token', 2500)).toBeCloseTo(2, 10);
+  });
+
+  it('token → usd: multiplies amount by price', () => {
+    // 2 tokens, price $2500/token → 5000 USD
+    expect(convertPortfolioInputAmount(2, 'token', 'usd', 2500)).toBeCloseTo(5000, 10);
+  });
+
+  it('same mode: returns amount unchanged', () => {
+    expect(convertPortfolioInputAmount(100, 'usd', 'usd', 50)).toBe(100);
+    expect(convertPortfolioInputAmount(100, 'token', 'token', 50)).toBe(100);
+  });
+
+  it('returns null when price is zero', () => {
+    expect(convertPortfolioInputAmount(100, 'usd', 'token', 0)).toBeNull();
+  });
+
+  it('returns null when price is negative', () => {
+    expect(convertPortfolioInputAmount(100, 'usd', 'token', -1)).toBeNull();
+  });
+
+  it('returns null when price is NaN', () => {
+    expect(convertPortfolioInputAmount(100, 'usd', 'token', NaN)).toBeNull();
+  });
+
+  it('handles decimal prices correctly', () => {
+    // 1000 USD, price $0.001/token → 1_000_000 tokens
+    expect(convertPortfolioInputAmount(1000, 'usd', 'token', 0.001)).toBeCloseTo(1_000_000, 1);
+  });
+
+  it('amount=0 returns 0 (not null)', () => {
+    expect(convertPortfolioInputAmount(0, 'usd', 'token', 2500)).toBe(0);
+    expect(convertPortfolioInputAmount(0, 'token', 'usd', 2500)).toBe(0);
+  });
+
+  it('amount=NaN returns null', () => {
+    expect(convertPortfolioInputAmount(NaN, 'usd', 'token', 2500)).toBeNull();
+    expect(convertPortfolioInputAmount(NaN, 'token', 'usd', 2500)).toBeNull();
+  });
+
+  it('amount=Infinity returns null', () => {
+    expect(convertPortfolioInputAmount(Infinity, 'usd', 'token', 2500)).toBeNull();
+    expect(convertPortfolioInputAmount(Infinity, 'token', 'usd', 2500)).toBeNull();
+  });
+
+  it('price=Infinity returns null', () => {
+    expect(convertPortfolioInputAmount(100, 'usd', 'token', Infinity)).toBeNull();
+  });
+});
+
+describe('formatConvertedAmount', () => {
+  it('returns "0" for zero', () => {
+    expect(formatConvertedAmount(0)).toBe('0');
+  });
+
+  it('formats whole numbers without decimals', () => {
+    expect(formatConvertedAmount(2)).toBe('2');
+    expect(formatConvertedAmount(100)).toBe('100');
+  });
+
+  it('strips trailing zeros', () => {
+    expect(formatConvertedAmount(1.5)).toBe('1.5');
+    expect(formatConvertedAmount(2.0)).toBe('2');
+  });
+
+  it('limits precision to avoid float noise', () => {
+    const result = formatConvertedAmount(1.5000015000015);
+    expect(result.length).toBeLessThan(18);
+    expect(parseFloat(result)).toBeCloseTo(1.5000015000015, 6);
+  });
+
+  it('handles small decimals', () => {
+    expect(formatConvertedAmount(0.001)).toBe('0.001');
+  });
+
+  it('handles large numbers', () => {
+    expect(formatConvertedAmount(1000000)).toBe('1000000');
   });
 });

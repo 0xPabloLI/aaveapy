@@ -681,6 +681,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
                   onUpdateInputMode={actions.updateInputMode}
                   onToggleHidden={handleToggleHidden}
                   onRestorePosition={handleRestorePosition}
+                  tokenPriceInUsd={reserves.find((r) => getReserveKey(r) === reserveId)?.tokenPrice}
                 />
               ))}
             </div>

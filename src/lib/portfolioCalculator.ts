@@ -11,6 +11,7 @@ import type {
   PortfolioPosition,
   PortfolioPositionResult,
   PortfolioSummary,
+  PortfolioInputMode,
 } from '@/types/portfolio';
 import type { ReserveWithSpread } from '@/types/aave';
 import { parseNumberInput } from '@/lib/numberFormat';
@@ -117,4 +118,26 @@ export function buildPortfolioPositionResult(
     totalPercent,
     usdPerDay,
   };
+}
+
+export function convertPortfolioInputAmount(
+  amount: number,
+  from: PortfolioInputMode,
+  to: PortfolioInputMode,
+  priceInUsd: number,
+): number | null {
+  if (from === to) return amount;
+  if (!Number.isFinite(amount)) return null;
+  if (!Number.isFinite(priceInUsd) || priceInUsd <= 0) return null;
+  return from === 'usd' ? amount / priceInUsd : amount * priceInUsd;
+}
+
+const MAX_SIGNIFICANT_DIGITS = 8;
+
+export function formatConvertedAmount(value: number): string {
+  if (value === 0) return '0';
+  const abs = Math.abs(value);
+  const digits = Math.max(0, MAX_SIGNIFICANT_DIGITS - Math.ceil(Math.log10(abs + 1)));
+  const fixed = value.toFixed(digits);
+  return fixed.includes('.') ? fixed.replace(/\.?0+$/, '') : fixed;
 }

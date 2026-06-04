@@ -18,6 +18,8 @@ import {
   aggregatePortfolioSummary,
   resolvePositionAmountUsd as _resolvePositionAmountUsd,
   buildPortfolioPositionResult as _buildPortfolioPositionResult,
+  convertPortfolioInputAmount,
+  formatConvertedAmount,
 } from '@/lib/portfolioCalculator';
 import { mergePositions } from '@/lib/portfolioMerger';
 
@@ -48,8 +50,8 @@ export interface PortfolioSimulationActions {
   removePosition: (positionId: string) => void;
   /** Update amount for a position. */
   updateAmount: (positionId: string, amount: string) => void;
-  /** Update input mode for a position. */
-  updateInputMode: (positionId: string, mode: PortfolioInputMode) => void;
+  /** Update input mode for a position; converts amount if priceInUsd is provided. */
+  updateInputMode: (positionId: string, mode: PortfolioInputMode, priceInUsd?: number) => void;
   /** Remove all positions. */
   clearAll: () => void;
   /** Save current state as a named snapshot (with pre-computed results). */
@@ -122,9 +124,18 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
     );
   }, []);
 
-  const updateInputMode = useCallback((positionId: string, mode: PortfolioInputMode) => {
+  const updateInputMode = useCallback((positionId: string, mode: PortfolioInputMode, priceInUsd?: number) => {
     setPositions((prev) =>
-      prev.map((p) => (p.positionId === positionId ? { ...p, inputMode: mode } : p))
+      prev.map((p) => {
+        if (p.positionId !== positionId) return p;
+        const currentAmount = parseFloat(p.amount);
+        let newAmount = p.amount;
+        if (priceInUsd !== undefined && p.amount.trim() !== '' && Number.isFinite(currentAmount)) {
+          const converted = convertPortfolioInputAmount(currentAmount, p.inputMode, mode, priceInUsd);
+          newAmount = converted !== null ? formatConvertedAmount(converted) : '';
+        }
+        return { ...p, inputMode: mode, amount: newAmount };
+      })
     );
   }, []);
 
