@@ -26,7 +26,225 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MarketsResponse"
+                  "type": "object",
+                  "properties": {
+                    "snapshot": {
+                      "type": "object",
+                      "properties": {
+                        "lastUpdated": {
+                          "type": "string"
+                        },
+                        "version": {
+                          "type": "string"
+                        },
+                        "staleTimeMs": {
+                          "type": "number"
+                        },
+                        "schemaFingerprint": {
+                          "type": "string"
+                        },
+                        "deficitFallbackReserveIds": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "v4FallbackReserveIds": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "stale": {
+                          "type": "boolean"
+                        },
+                        "staleAgeMs": {
+                          "type": "number",
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "lastUpdated"
+                      ]
+                    },
+                    "reserves": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "reserveId": {
+                            "type": "string"
+                          },
+                          "marketName": {
+                            "type": "string"
+                          },
+                          "chainName": {
+                            "type": "string"
+                          },
+                          "chainId": {
+                            "type": "number"
+                          },
+                          "tokenName": {
+                            "type": "string"
+                          },
+                          "tokenSymbol": {
+                            "type": "string"
+                          },
+                          "tokenAddress": {
+                            "type": "string"
+                          },
+                          "tokenPrice": {
+                            "type": "number"
+                          },
+                          "utilizationPct": {
+                            "type": "number"
+                          },
+                          "aTokenAddress": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "vTokenAddress": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "supplied": {
+                            "type": "string"
+                          },
+                          "borrowed": {
+                            "type": "string"
+                          },
+                          "liquidity": {
+                            "type": "string"
+                          },
+                          "supplyCap": {
+                            "type": "string"
+                          },
+                          "borrowCap": {
+                            "type": "string"
+                          },
+                          "deficit": {
+                            "type": "string"
+                          },
+                          "hubId": {
+                            "type": "string"
+                          },
+                          "hubName": {
+                            "type": "string"
+                          },
+                          "spokeId": {
+                            "type": "string"
+                          },
+                          "spokeName": {
+                            "type": "string"
+                          },
+                          "supplyDisabled": {
+                            "type": "boolean"
+                          },
+                          "borrowDisabled": {
+                            "type": "boolean"
+                          },
+                          "isFrozen": {
+                            "type": "boolean"
+                          },
+                          "isPaused": {
+                            "type": "boolean"
+                          },
+                          "isActive": {
+                            "type": "boolean",
+                            "description": "Always false when present"
+                          },
+                          "aaveProReserveId": {
+                            "type": "string"
+                          },
+                          "decimals": {
+                            "type": "number",
+                            "description": "Present when !== 18"
+                          },
+                          "supplyApy": {
+                            "type": "number",
+                            "nullable": true
+                          },
+                          "borrowApy": {
+                            "type": "number",
+                            "nullable": true
+                          },
+                          "protocolFee": {
+                            "type": "number"
+                          },
+                          "slopeBelowOptimal": {
+                            "type": "number"
+                          },
+                          "slopeAboveOptimal": {
+                            "type": "number"
+                          },
+                          "optimalUtilization": {
+                            "type": "number"
+                          },
+                          "baseBorrowRate": {
+                            "type": "number"
+                          },
+                          "collateralRisk": {
+                            "type": "number"
+                          },
+                          "meritSupplys": {
+                            "type": "array",
+                            "items": {
+                              "$ref": "#/components/schemas/MeritAprEntry"
+                            }
+                          },
+                          "meritBorrows": {
+                            "type": "array",
+                            "items": {
+                              "$ref": "#/components/schemas/MeritAprEntry"
+                            }
+                          },
+                          "merklSupplys": {
+                            "type": "array",
+                            "items": {
+                              "$ref": "#/components/schemas/MerklOpportunityGroup"
+                            }
+                          },
+                          "merklBorrows": {
+                            "type": "array",
+                            "items": {
+                              "$ref": "#/components/schemas/MerklOpportunityGroup"
+                            }
+                          },
+                          "merklHolds": {
+                            "type": "array",
+                            "items": {
+                              "$ref": "#/components/schemas/MerklOpportunityGroup"
+                            }
+                          },
+                          "brevisSupplys": {
+                            "type": "array",
+                            "items": {
+                              "$ref": "#/components/schemas/BrevisCampaignItem"
+                            }
+                          },
+                          "brevisBorrows": {
+                            "type": "array",
+                            "items": {
+                              "$ref": "#/components/schemas/BrevisCampaignItem"
+                            }
+                          }
+                        },
+                        "required": [
+                          "reserveId",
+                          "marketName",
+                          "chainName",
+                          "chainId",
+                          "tokenName",
+                          "tokenSymbol",
+                          "tokenAddress"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "snapshot",
+                    "reserves"
+                  ]
                 }
               }
             }
@@ -55,7 +273,27 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MarketsErrorResponse"
+                  "type": "object",
+                  "properties": {
+                    "errorCode": {
+                      "type": "string",
+                      "enum": [
+                        "MARKETS_SNAPSHOT_NOT_READY",
+                        "MARKETS_SNAPSHOT_STALE"
+                      ]
+                    },
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "errorCode",
+                    "error",
+                    "message"
+                  ]
                 }
               }
             }
@@ -73,7 +311,179 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SideDataMetaResponse"
+                  "type": "object",
+                  "properties": {
+                    "generatedAt": {
+                      "type": "string"
+                    },
+                    "partial": {
+                      "type": "boolean"
+                    },
+                    "categories": {
+                      "type": "object",
+                      "properties": {
+                        "uniqueSymbolsStablecoins": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "uniqueSymbolsEth": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "fetchedAt": {
+                          "type": "string"
+                        },
+                        "staleTimeMs": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "uniqueSymbolsStablecoins",
+                        "uniqueSymbolsEth",
+                        "fetchedAt",
+                        "staleTimeMs"
+                      ]
+                    },
+                    "fdv": {
+                      "type": "object",
+                      "properties": {
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "symbol": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "fdvUsd": {
+                                "type": "number",
+                                "nullable": true
+                              }
+                            },
+                            "required": [
+                              "symbol",
+                              "fdvUsd"
+                            ]
+                          }
+                        },
+                        "fetchedAt": {
+                          "type": "string"
+                        },
+                        "staleTimeMs": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "items",
+                        "fetchedAt",
+                        "staleTimeMs"
+                      ]
+                    },
+                    "forecast": {
+                      "type": "object",
+                      "properties": {
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "campaignId": {
+                                "type": "string"
+                              },
+                              "requiredDaily": {
+                                "type": "number"
+                              },
+                              "distributedSoFar": {
+                                "type": "number"
+                              },
+                              "endTimestamp": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "campaignId",
+                              "distributedSoFar",
+                              "endTimestamp"
+                            ]
+                          }
+                        },
+                        "errors": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "campaignId": {
+                                "type": "string"
+                              },
+                              "status": {
+                                "type": "number"
+                              },
+                              "message": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "campaignId",
+                              "message"
+                            ]
+                          }
+                        },
+                        "staleTimeMs": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "items",
+                        "errors",
+                        "staleTimeMs"
+                      ]
+                    },
+                    "campaignAccess": {
+                      "type": "object",
+                      "properties": {
+                        "campaigns": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "object",
+                            "properties": {
+                              "chainId": {
+                                "type": "number"
+                              },
+                              "whitelist": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "blacklist": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "required": [
+                              "chainId",
+                              "whitelist",
+                              "blacklist"
+                            ]
+                          }
+                        },
+                        "updatedAt": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "campaigns",
+                        "updatedAt"
+                      ]
+                    }
+                  }
                 }
               }
             }
@@ -102,7 +512,27 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MarketsErrorResponse"
+                  "type": "object",
+                  "properties": {
+                    "errorCode": {
+                      "type": "string",
+                      "enum": [
+                        "MARKETS_SNAPSHOT_NOT_READY",
+                        "MARKETS_SNAPSHOT_STALE"
+                      ]
+                    },
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "errorCode",
+                    "error",
+                    "message"
+                  ]
                 }
               }
             }
@@ -114,7 +544,6 @@
   "components": {
     "schemas": {
       "MarketsResponse": {
-        "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
         "properties": {
           "snapshot": {
@@ -131,6 +560,25 @@
               },
               "schemaFingerprint": {
                 "type": "string"
+              },
+              "deficitFallbackReserveIds": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "v4FallbackReserveIds": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "stale": {
+                "type": "boolean"
+              },
+              "staleAgeMs": {
+                "type": "number",
+                "nullable": true
               }
             },
             "required": [
@@ -169,796 +617,13 @@
                 "utilizationPct": {
                   "type": "number"
                 },
-                "supplyDisabled": {
-                  "type": "boolean"
-                },
-                "borrowDisabled": {
-                  "type": "boolean"
-                },
-                "isFrozen": {
-                  "type": "boolean"
-                },
-                "isPaused": {
-                  "type": "boolean"
-                },
-                "isActive": {
-                  "type": "boolean",
-                  "const": false
-                },
                 "aTokenAddress": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
+                  "type": "string",
+                  "nullable": true
                 },
                 "vTokenAddress": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "supplyApy": {
-                  "type": "number"
-                },
-                "borrowApy": {
-                  "type": "number"
-                },
-                "supplyIncentives": {
-                  "type": "array",
-                  "items": {
-                    "type": "number"
-                  }
-                },
-                "borrowIncentives": {
-                  "type": "array",
-                  "items": {
-                    "type": "number"
-                  }
-                },
-                "meritSupplys": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "apr": {
-                        "type": "number"
-                      },
-                      "selfApr": {
-                        "type": "number"
-                      },
-                      "link": {
-                        "type": "string"
-                      },
-                      "name": {
-                        "type": "string"
-                      },
-                      "message": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "object",
-                            "propertyNames": {
-                              "type": "string"
-                            },
-                            "additionalProperties": {
-                              "anyOf": [
-                                {
-                                  "anyOf": [
-                                    {
-                                      "type": "string"
-                                    },
-                                    {
-                                      "type": "number"
-                                    },
-                                    {
-                                      "type": "boolean"
-                                    },
-                                    {
-                                      "type": "null"
-                                    }
-                                  ]
-                                },
-                                {}
-                              ]
-                            }
-                          },
-                          {
-                            "type": "array",
-                            "items": {}
-                          }
-                        ]
-                      },
-                      "startDate": {
-                        "type": "string"
-                      },
-                      "endDate": {
-                        "type": "string"
-                      },
-                      "lastRoundRewardUsd": {
-                        "type": "number"
-                      }
-                    },
-                    "required": [
-                      "apr",
-                      "link",
-                      "startDate",
-                      "endDate"
-                    ]
-                  }
-                },
-                "meritBorrows": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "apr": {
-                        "type": "number"
-                      },
-                      "selfApr": {
-                        "type": "number"
-                      },
-                      "link": {
-                        "type": "string"
-                      },
-                      "name": {
-                        "type": "string"
-                      },
-                      "message": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "object",
-                            "propertyNames": {
-                              "type": "string"
-                            },
-                            "additionalProperties": {
-                              "anyOf": [
-                                {
-                                  "anyOf": [
-                                    {
-                                      "type": "string"
-                                    },
-                                    {
-                                      "type": "number"
-                                    },
-                                    {
-                                      "type": "boolean"
-                                    },
-                                    {
-                                      "type": "null"
-                                    }
-                                  ]
-                                },
-                                {}
-                              ]
-                            }
-                          },
-                          {
-                            "type": "array",
-                            "items": {}
-                          }
-                        ]
-                      },
-                      "startDate": {
-                        "type": "string"
-                      },
-                      "endDate": {
-                        "type": "string"
-                      },
-                      "lastRoundRewardUsd": {
-                        "type": "number"
-                      }
-                    },
-                    "required": [
-                      "apr",
-                      "link",
-                      "startDate",
-                      "endDate"
-                    ]
-                  }
-                },
-                "merklSupplys": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "link": {
-                        "type": "string"
-                      },
-                      "name": {
-                        "type": "string"
-                      },
-                      "message": {
-                        "type": "string"
-                      },
-                      "breakdowns": {
-                        "type": "array",
-                        "items": {
-                          "type": "object",
-                          "properties": {
-                            "campaignApr": {
-                              "type": "number"
-                            },
-                            "campaignStartedAt": {
-                              "type": "string"
-                            },
-                            "campaignEndedAt": {
-                              "type": "string"
-                            },
-                            "campaignId": {
-                              "type": "string"
-                            },
-                            "whitelistOnly": {
-                              "type": "boolean"
-                            },
-                            "pointsPerThousandUsd": {
-                              "type": "number"
-                            },
-                            "campaignType": {
-                              "type": "string"
-                            },
-                            "totalBudget": {
-                              "type": "number"
-                            },
-                            "aprCap": {
-                              "anyOf": [
-                                {
-                                  "type": "number"
-                                },
-                                {
-                                  "type": "null"
-                                }
-                              ]
-                            },
-                            "latestTvl": {
-                              "type": "number"
-                            },
-                            "plannedDaily": {
-                              "type": "number"
-                            }
-                          },
-                          "required": [
-                            "campaignApr",
-                            "campaignStartedAt",
-                            "campaignEndedAt",
-                            "campaignId"
-                          ]
-                        }
-                      },
-                      "opportunityType": {
-                        "type": "string"
-                      },
-                      "netPositionConstraint": {
-                        "anyOf": [
-                          {
-                            "type": "object",
-                            "properties": {
-                              "sourceSide": {
-                                "type": "string",
-                                "enum": [
-                                  "supply",
-                                  "borrow"
-                                ]
-                              },
-                              "offsetReserveIds": {
-                                "type": "array",
-                                "items": {
-                                  "type": "string"
-                                }
-                              }
-                            },
-                            "required": [
-                              "sourceSide",
-                              "offsetReserveIds"
-                            ]
-                          },
-                          {
-                            "type": "null"
-                          }
-                        ]
-                      }
-                    },
-                    "required": [
-                      "breakdowns"
-                    ]
-                  }
-                },
-                "merklBorrows": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "link": {
-                        "type": "string"
-                      },
-                      "name": {
-                        "type": "string"
-                      },
-                      "message": {
-                        "type": "string"
-                      },
-                      "breakdowns": {
-                        "type": "array",
-                        "items": {
-                          "type": "object",
-                          "properties": {
-                            "campaignApr": {
-                              "type": "number"
-                            },
-                            "campaignStartedAt": {
-                              "type": "string"
-                            },
-                            "campaignEndedAt": {
-                              "type": "string"
-                            },
-                            "campaignId": {
-                              "type": "string"
-                            },
-                            "whitelistOnly": {
-                              "type": "boolean"
-                            },
-                            "pointsPerThousandUsd": {
-                              "type": "number"
-                            },
-                            "campaignType": {
-                              "type": "string"
-                            },
-                            "totalBudget": {
-                              "type": "number"
-                            },
-                            "aprCap": {
-                              "anyOf": [
-                                {
-                                  "type": "number"
-                                },
-                                {
-                                  "type": "null"
-                                }
-                              ]
-                            },
-                            "latestTvl": {
-                              "type": "number"
-                            },
-                            "plannedDaily": {
-                              "type": "number"
-                            }
-                          },
-                          "required": [
-                            "campaignApr",
-                            "campaignStartedAt",
-                            "campaignEndedAt",
-                            "campaignId"
-                          ]
-                        }
-                      },
-                      "opportunityType": {
-                        "type": "string"
-                      },
-                      "netPositionConstraint": {
-                        "anyOf": [
-                          {
-                            "type": "object",
-                            "properties": {
-                              "sourceSide": {
-                                "type": "string",
-                                "enum": [
-                                  "supply",
-                                  "borrow"
-                                ]
-                              },
-                              "offsetReserveIds": {
-                                "type": "array",
-                                "items": {
-                                  "type": "string"
-                                }
-                              }
-                            },
-                            "required": [
-                              "sourceSide",
-                              "offsetReserveIds"
-                            ]
-                          },
-                          {
-                            "type": "null"
-                          }
-                        ]
-                      }
-                    },
-                    "required": [
-                      "breakdowns"
-                    ]
-                  }
-                },
-                "merklHolds": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "link": {
-                        "type": "string"
-                      },
-                      "name": {
-                        "type": "string"
-                      },
-                      "message": {
-                        "type": "string"
-                      },
-                      "breakdowns": {
-                        "type": "array",
-                        "items": {
-                          "type": "object",
-                          "properties": {
-                            "campaignApr": {
-                              "type": "number"
-                            },
-                            "campaignStartedAt": {
-                              "type": "string"
-                            },
-                            "campaignEndedAt": {
-                              "type": "string"
-                            },
-                            "campaignId": {
-                              "type": "string"
-                            },
-                            "whitelistOnly": {
-                              "type": "boolean"
-                            },
-                            "pointsPerThousandUsd": {
-                              "type": "number"
-                            },
-                            "campaignType": {
-                              "type": "string"
-                            },
-                            "totalBudget": {
-                              "type": "number"
-                            },
-                            "aprCap": {
-                              "anyOf": [
-                                {
-                                  "type": "number"
-                                },
-                                {
-                                  "type": "null"
-                                }
-                              ]
-                            },
-                            "latestTvl": {
-                              "type": "number"
-                            },
-                            "plannedDaily": {
-                              "type": "number"
-                            }
-                          },
-                          "required": [
-                            "campaignApr",
-                            "campaignStartedAt",
-                            "campaignEndedAt",
-                            "campaignId"
-                          ]
-                        }
-                      },
-                      "opportunityType": {
-                        "type": "string"
-                      },
-                      "netPositionConstraint": {
-                        "anyOf": [
-                          {
-                            "type": "object",
-                            "properties": {
-                              "sourceSide": {
-                                "type": "string",
-                                "enum": [
-                                  "supply",
-                                  "borrow"
-                                ]
-                              },
-                              "offsetReserveIds": {
-                                "type": "array",
-                                "items": {
-                                  "type": "string"
-                                }
-                              }
-                            },
-                            "required": [
-                              "sourceSide",
-                              "offsetReserveIds"
-                            ]
-                          },
-                          {
-                            "type": "null"
-                          }
-                        ]
-                      }
-                    },
-                    "required": [
-                      "breakdowns"
-                    ]
-                  }
-                },
-                "brevisSupplys": {
-                  "type": "array",
-                  "items": {
-                    "anyOf": [
-                      {
-                        "type": "object",
-                        "properties": {
-                          "link": {
-                            "type": "string"
-                          },
-                          "name": {
-                            "type": "string"
-                          },
-                          "message": {
-                            "type": "string"
-                          },
-                          "breakdowns": {
-                            "type": "array",
-                            "items": {
-                              "type": "object",
-                              "properties": {
-                                "campaignApr": {
-                                  "type": "number"
-                                },
-                                "campaignStartedAt": {
-                                  "type": "string"
-                                },
-                                "campaignEndedAt": {
-                                  "type": "string"
-                                },
-                                "latestTvl": {
-                                  "type": "number"
-                                },
-                                "totalBudget": {
-                                  "type": "number"
-                                },
-                                "perUserRewardCapUsd": {
-                                  "type": "number"
-                                },
-                                "campaignId": {
-                                  "type": "string"
-                                }
-                              },
-                              "required": [
-                                "campaignApr",
-                                "campaignStartedAt",
-                                "campaignEndedAt"
-                              ],
-                              "additionalProperties": {}
-                            }
-                          }
-                        },
-                        "required": [
-                          "link",
-                          "breakdowns"
-                        ],
-                        "additionalProperties": {}
-                      },
-                      {
-                        "type": "object",
-                        "properties": {
-                          "link": {
-                            "type": "string"
-                          },
-                          "name": {
-                            "type": "string"
-                          },
-                          "message": {
-                            "type": "string"
-                          },
-                          "breakdowns": {
-                            "type": "array",
-                            "items": {
-                              "type": "object",
-                              "properties": {
-                                "campaignApr": {
-                                  "type": "number"
-                                },
-                                "campaignStartedAt": {
-                                  "type": "string"
-                                },
-                                "campaignEndedAt": {
-                                  "type": "string"
-                                },
-                                "latestTvl": {
-                                  "type": "number"
-                                },
-                                "totalBudget": {
-                                  "type": "number"
-                                },
-                                "perUserRewardCapUsd": {
-                                  "type": "number"
-                                },
-                                "campaignId": {
-                                  "type": "string"
-                                }
-                              },
-                              "required": [
-                                "campaignApr",
-                                "campaignStartedAt",
-                                "campaignEndedAt"
-                              ],
-                              "additionalProperties": {}
-                            }
-                          },
-                          "campaignApr": {
-                            "type": "number"
-                          },
-                          "campaignStartedAt": {
-                            "type": "string"
-                          },
-                          "campaignEndedAt": {
-                            "type": "string"
-                          },
-                          "latestTvl": {
-                            "type": "number"
-                          },
-                          "totalBudget": {
-                            "type": "number"
-                          },
-                          "perUserRewardCapUsd": {
-                            "type": "number"
-                          },
-                          "campaignId": {
-                            "type": "string"
-                          }
-                        },
-                        "required": [
-                          "link"
-                        ],
-                        "additionalProperties": {}
-                      }
-                    ]
-                  }
-                },
-                "brevisBorrows": {
-                  "type": "array",
-                  "items": {
-                    "anyOf": [
-                      {
-                        "type": "object",
-                        "properties": {
-                          "link": {
-                            "type": "string"
-                          },
-                          "name": {
-                            "type": "string"
-                          },
-                          "message": {
-                            "type": "string"
-                          },
-                          "breakdowns": {
-                            "type": "array",
-                            "items": {
-                              "type": "object",
-                              "properties": {
-                                "campaignApr": {
-                                  "type": "number"
-                                },
-                                "campaignStartedAt": {
-                                  "type": "string"
-                                },
-                                "campaignEndedAt": {
-                                  "type": "string"
-                                },
-                                "latestTvl": {
-                                  "type": "number"
-                                },
-                                "totalBudget": {
-                                  "type": "number"
-                                },
-                                "perUserRewardCapUsd": {
-                                  "type": "number"
-                                },
-                                "campaignId": {
-                                  "type": "string"
-                                }
-                              },
-                              "required": [
-                                "campaignApr",
-                                "campaignStartedAt",
-                                "campaignEndedAt"
-                              ],
-                              "additionalProperties": {}
-                            }
-                          }
-                        },
-                        "required": [
-                          "link",
-                          "breakdowns"
-                        ],
-                        "additionalProperties": {}
-                      },
-                      {
-                        "type": "object",
-                        "properties": {
-                          "link": {
-                            "type": "string"
-                          },
-                          "name": {
-                            "type": "string"
-                          },
-                          "message": {
-                            "type": "string"
-                          },
-                          "breakdowns": {
-                            "type": "array",
-                            "items": {
-                              "type": "object",
-                              "properties": {
-                                "campaignApr": {
-                                  "type": "number"
-                                },
-                                "campaignStartedAt": {
-                                  "type": "string"
-                                },
-                                "campaignEndedAt": {
-                                  "type": "string"
-                                },
-                                "latestTvl": {
-                                  "type": "number"
-                                },
-                                "totalBudget": {
-                                  "type": "number"
-                                },
-                                "perUserRewardCapUsd": {
-                                  "type": "number"
-                                },
-                                "campaignId": {
-                                  "type": "string"
-                                }
-                              },
-                              "required": [
-                                "campaignApr",
-                                "campaignStartedAt",
-                                "campaignEndedAt"
-                              ],
-                              "additionalProperties": {}
-                            }
-                          },
-                          "campaignApr": {
-                            "type": "number"
-                          },
-                          "campaignStartedAt": {
-                            "type": "string"
-                          },
-                          "campaignEndedAt": {
-                            "type": "string"
-                          },
-                          "latestTvl": {
-                            "type": "number"
-                          },
-                          "totalBudget": {
-                            "type": "number"
-                          },
-                          "perUserRewardCapUsd": {
-                            "type": "number"
-                          },
-                          "campaignId": {
-                            "type": "string"
-                          }
-                        },
-                        "required": [
-                          "link"
-                        ],
-                        "additionalProperties": {}
-                      }
-                    ]
-                  }
-                },
-                "decimals": {
-                  "type": "number"
+                  "type": "string",
+                  "nullable": true
                 },
                 "supplied": {
                   "type": "string"
@@ -975,14 +640,51 @@
                 "borrowCap": {
                   "type": "string"
                 },
-                "suppliable": {
-                  "type": "string"
-                },
-                "borrowable": {
-                  "type": "string"
-                },
                 "deficit": {
                   "type": "string"
+                },
+                "hubId": {
+                  "type": "string"
+                },
+                "hubName": {
+                  "type": "string"
+                },
+                "spokeId": {
+                  "type": "string"
+                },
+                "spokeName": {
+                  "type": "string"
+                },
+                "supplyDisabled": {
+                  "type": "boolean"
+                },
+                "borrowDisabled": {
+                  "type": "boolean"
+                },
+                "isFrozen": {
+                  "type": "boolean"
+                },
+                "isPaused": {
+                  "type": "boolean"
+                },
+                "isActive": {
+                  "type": "boolean",
+                  "description": "Always false when present"
+                },
+                "aaveProReserveId": {
+                  "type": "string"
+                },
+                "decimals": {
+                  "type": "number",
+                  "description": "Present when !== 18"
+                },
+                "supplyApy": {
+                  "type": "number",
+                  "nullable": true
+                },
+                "borrowApy": {
+                  "type": "number",
+                  "nullable": true
                 },
                 "protocolFee": {
                   "type": "number"
@@ -999,20 +701,50 @@
                 "baseBorrowRate": {
                   "type": "number"
                 },
-                "aaveProReserveId": {
-                  "type": "string"
+                "collateralRisk": {
+                  "type": "number"
                 },
-                "hubId": {
-                  "type": "string"
+                "meritSupplys": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MeritAprEntry"
+                  }
                 },
-                "hubName": {
-                  "type": "string"
+                "meritBorrows": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MeritAprEntry"
+                  }
                 },
-                "spokeId": {
-                  "type": "string"
+                "merklSupplys": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MerklOpportunityGroup"
+                  }
                 },
-                "spokeName": {
-                  "type": "string"
+                "merklBorrows": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MerklOpportunityGroup"
+                  }
+                },
+                "merklHolds": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MerklOpportunityGroup"
+                  }
+                },
+                "brevisSupplys": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BrevisCampaignItem"
+                  }
+                },
+                "brevisBorrows": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BrevisCampaignItem"
+                  }
                 }
               },
               "required": [
@@ -1023,8 +755,7 @@
                 "tokenName",
                 "tokenSymbol",
                 "tokenAddress"
-              ],
-              "additionalProperties": {}
+              ]
             }
           }
         },
@@ -1034,7 +765,6 @@
         ]
       },
       "MarketsErrorResponse": {
-        "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
         "properties": {
           "errorCode": {
@@ -1058,7 +788,6 @@
         ]
       },
       "SideDataMetaResponse": {
-        "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
         "properties": {
           "generatedAt": {
@@ -1105,31 +834,18 @@
                   "type": "object",
                   "properties": {
                     "symbol": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
+                      "type": "string",
+                      "nullable": true
                     },
                     "fdvUsd": {
-                      "anyOf": [
-                        {
-                          "type": "number"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
+                      "type": "number",
+                      "nullable": true
                     }
                   },
                   "required": [
                     "symbol",
                     "fdvUsd"
-                  ],
-                  "additionalProperties": {}
+                  ]
                 }
               },
               "fetchedAt": {
@@ -1170,8 +886,7 @@
                     "campaignId",
                     "distributedSoFar",
                     "endTimestamp"
-                  ],
-                  "additionalProperties": {}
+                  ]
                 }
               },
               "errors": {
@@ -1192,8 +907,7 @@
                   "required": [
                     "campaignId",
                     "message"
-                  ],
-                  "additionalProperties": {}
+                  ]
                 }
               },
               "staleTimeMs": {
@@ -1211,9 +925,6 @@
             "properties": {
               "campaigns": {
                 "type": "object",
-                "propertyNames": {
-                  "type": "string"
-                },
                 "additionalProperties": {
                   "type": "object",
                   "properties": {
@@ -1249,11 +960,9 @@
               "updatedAt"
             ]
           }
-        },
-        "additionalProperties": {}
+        }
       },
       "Reserve": {
-        "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
         "properties": {
           "reserveId": {
@@ -1283,796 +992,13 @@
           "utilizationPct": {
             "type": "number"
           },
-          "supplyDisabled": {
-            "type": "boolean"
-          },
-          "borrowDisabled": {
-            "type": "boolean"
-          },
-          "isFrozen": {
-            "type": "boolean"
-          },
-          "isPaused": {
-            "type": "boolean"
-          },
-          "isActive": {
-            "type": "boolean",
-            "const": false
-          },
           "aTokenAddress": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "type": "string",
+            "nullable": true
           },
           "vTokenAddress": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "supplyApy": {
-            "type": "number"
-          },
-          "borrowApy": {
-            "type": "number"
-          },
-          "supplyIncentives": {
-            "type": "array",
-            "items": {
-              "type": "number"
-            }
-          },
-          "borrowIncentives": {
-            "type": "array",
-            "items": {
-              "type": "number"
-            }
-          },
-          "meritSupplys": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "apr": {
-                  "type": "number"
-                },
-                "selfApr": {
-                  "type": "number"
-                },
-                "link": {
-                  "type": "string"
-                },
-                "name": {
-                  "type": "string"
-                },
-                "message": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "object",
-                      "propertyNames": {
-                        "type": "string"
-                      },
-                      "additionalProperties": {
-                        "anyOf": [
-                          {
-                            "anyOf": [
-                              {
-                                "type": "string"
-                              },
-                              {
-                                "type": "number"
-                              },
-                              {
-                                "type": "boolean"
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
-                          },
-                          {}
-                        ]
-                      }
-                    },
-                    {
-                      "type": "array",
-                      "items": {}
-                    }
-                  ]
-                },
-                "startDate": {
-                  "type": "string"
-                },
-                "endDate": {
-                  "type": "string"
-                },
-                "lastRoundRewardUsd": {
-                  "type": "number"
-                }
-              },
-              "required": [
-                "apr",
-                "link",
-                "startDate",
-                "endDate"
-              ]
-            }
-          },
-          "meritBorrows": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "apr": {
-                  "type": "number"
-                },
-                "selfApr": {
-                  "type": "number"
-                },
-                "link": {
-                  "type": "string"
-                },
-                "name": {
-                  "type": "string"
-                },
-                "message": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "object",
-                      "propertyNames": {
-                        "type": "string"
-                      },
-                      "additionalProperties": {
-                        "anyOf": [
-                          {
-                            "anyOf": [
-                              {
-                                "type": "string"
-                              },
-                              {
-                                "type": "number"
-                              },
-                              {
-                                "type": "boolean"
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
-                          },
-                          {}
-                        ]
-                      }
-                    },
-                    {
-                      "type": "array",
-                      "items": {}
-                    }
-                  ]
-                },
-                "startDate": {
-                  "type": "string"
-                },
-                "endDate": {
-                  "type": "string"
-                },
-                "lastRoundRewardUsd": {
-                  "type": "number"
-                }
-              },
-              "required": [
-                "apr",
-                "link",
-                "startDate",
-                "endDate"
-              ]
-            }
-          },
-          "merklSupplys": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "link": {
-                  "type": "string"
-                },
-                "name": {
-                  "type": "string"
-                },
-                "message": {
-                  "type": "string"
-                },
-                "breakdowns": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "campaignApr": {
-                        "type": "number"
-                      },
-                      "campaignStartedAt": {
-                        "type": "string"
-                      },
-                      "campaignEndedAt": {
-                        "type": "string"
-                      },
-                      "campaignId": {
-                        "type": "string"
-                      },
-                      "whitelistOnly": {
-                        "type": "boolean"
-                      },
-                      "pointsPerThousandUsd": {
-                        "type": "number"
-                      },
-                      "campaignType": {
-                        "type": "string"
-                      },
-                      "totalBudget": {
-                        "type": "number"
-                      },
-                      "aprCap": {
-                        "anyOf": [
-                          {
-                            "type": "number"
-                          },
-                          {
-                            "type": "null"
-                          }
-                        ]
-                      },
-                      "latestTvl": {
-                        "type": "number"
-                      },
-                      "plannedDaily": {
-                        "type": "number"
-                      }
-                    },
-                    "required": [
-                      "campaignApr",
-                      "campaignStartedAt",
-                      "campaignEndedAt",
-                      "campaignId"
-                    ]
-                  }
-                },
-                "opportunityType": {
-                  "type": "string"
-                },
-                "netPositionConstraint": {
-                  "anyOf": [
-                    {
-                      "type": "object",
-                      "properties": {
-                        "sourceSide": {
-                          "type": "string",
-                          "enum": [
-                            "supply",
-                            "borrow"
-                          ]
-                        },
-                        "offsetReserveIds": {
-                          "type": "array",
-                          "items": {
-                            "type": "string"
-                          }
-                        }
-                      },
-                      "required": [
-                        "sourceSide",
-                        "offsetReserveIds"
-                      ]
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                }
-              },
-              "required": [
-                "breakdowns"
-              ]
-            }
-          },
-          "merklBorrows": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "link": {
-                  "type": "string"
-                },
-                "name": {
-                  "type": "string"
-                },
-                "message": {
-                  "type": "string"
-                },
-                "breakdowns": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "campaignApr": {
-                        "type": "number"
-                      },
-                      "campaignStartedAt": {
-                        "type": "string"
-                      },
-                      "campaignEndedAt": {
-                        "type": "string"
-                      },
-                      "campaignId": {
-                        "type": "string"
-                      },
-                      "whitelistOnly": {
-                        "type": "boolean"
-                      },
-                      "pointsPerThousandUsd": {
-                        "type": "number"
-                      },
-                      "campaignType": {
-                        "type": "string"
-                      },
-                      "totalBudget": {
-                        "type": "number"
-                      },
-                      "aprCap": {
-                        "anyOf": [
-                          {
-                            "type": "number"
-                          },
-                          {
-                            "type": "null"
-                          }
-                        ]
-                      },
-                      "latestTvl": {
-                        "type": "number"
-                      },
-                      "plannedDaily": {
-                        "type": "number"
-                      }
-                    },
-                    "required": [
-                      "campaignApr",
-                      "campaignStartedAt",
-                      "campaignEndedAt",
-                      "campaignId"
-                    ]
-                  }
-                },
-                "opportunityType": {
-                  "type": "string"
-                },
-                "netPositionConstraint": {
-                  "anyOf": [
-                    {
-                      "type": "object",
-                      "properties": {
-                        "sourceSide": {
-                          "type": "string",
-                          "enum": [
-                            "supply",
-                            "borrow"
-                          ]
-                        },
-                        "offsetReserveIds": {
-                          "type": "array",
-                          "items": {
-                            "type": "string"
-                          }
-                        }
-                      },
-                      "required": [
-                        "sourceSide",
-                        "offsetReserveIds"
-                      ]
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                }
-              },
-              "required": [
-                "breakdowns"
-              ]
-            }
-          },
-          "merklHolds": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "link": {
-                  "type": "string"
-                },
-                "name": {
-                  "type": "string"
-                },
-                "message": {
-                  "type": "string"
-                },
-                "breakdowns": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "campaignApr": {
-                        "type": "number"
-                      },
-                      "campaignStartedAt": {
-                        "type": "string"
-                      },
-                      "campaignEndedAt": {
-                        "type": "string"
-                      },
-                      "campaignId": {
-                        "type": "string"
-                      },
-                      "whitelistOnly": {
-                        "type": "boolean"
-                      },
-                      "pointsPerThousandUsd": {
-                        "type": "number"
-                      },
-                      "campaignType": {
-                        "type": "string"
-                      },
-                      "totalBudget": {
-                        "type": "number"
-                      },
-                      "aprCap": {
-                        "anyOf": [
-                          {
-                            "type": "number"
-                          },
-                          {
-                            "type": "null"
-                          }
-                        ]
-                      },
-                      "latestTvl": {
-                        "type": "number"
-                      },
-                      "plannedDaily": {
-                        "type": "number"
-                      }
-                    },
-                    "required": [
-                      "campaignApr",
-                      "campaignStartedAt",
-                      "campaignEndedAt",
-                      "campaignId"
-                    ]
-                  }
-                },
-                "opportunityType": {
-                  "type": "string"
-                },
-                "netPositionConstraint": {
-                  "anyOf": [
-                    {
-                      "type": "object",
-                      "properties": {
-                        "sourceSide": {
-                          "type": "string",
-                          "enum": [
-                            "supply",
-                            "borrow"
-                          ]
-                        },
-                        "offsetReserveIds": {
-                          "type": "array",
-                          "items": {
-                            "type": "string"
-                          }
-                        }
-                      },
-                      "required": [
-                        "sourceSide",
-                        "offsetReserveIds"
-                      ]
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                }
-              },
-              "required": [
-                "breakdowns"
-              ]
-            }
-          },
-          "brevisSupplys": {
-            "type": "array",
-            "items": {
-              "anyOf": [
-                {
-                  "type": "object",
-                  "properties": {
-                    "link": {
-                      "type": "string"
-                    },
-                    "name": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "breakdowns": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "campaignApr": {
-                            "type": "number"
-                          },
-                          "campaignStartedAt": {
-                            "type": "string"
-                          },
-                          "campaignEndedAt": {
-                            "type": "string"
-                          },
-                          "latestTvl": {
-                            "type": "number"
-                          },
-                          "totalBudget": {
-                            "type": "number"
-                          },
-                          "perUserRewardCapUsd": {
-                            "type": "number"
-                          },
-                          "campaignId": {
-                            "type": "string"
-                          }
-                        },
-                        "required": [
-                          "campaignApr",
-                          "campaignStartedAt",
-                          "campaignEndedAt"
-                        ],
-                        "additionalProperties": {}
-                      }
-                    }
-                  },
-                  "required": [
-                    "link",
-                    "breakdowns"
-                  ],
-                  "additionalProperties": {}
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "link": {
-                      "type": "string"
-                    },
-                    "name": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "breakdowns": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "campaignApr": {
-                            "type": "number"
-                          },
-                          "campaignStartedAt": {
-                            "type": "string"
-                          },
-                          "campaignEndedAt": {
-                            "type": "string"
-                          },
-                          "latestTvl": {
-                            "type": "number"
-                          },
-                          "totalBudget": {
-                            "type": "number"
-                          },
-                          "perUserRewardCapUsd": {
-                            "type": "number"
-                          },
-                          "campaignId": {
-                            "type": "string"
-                          }
-                        },
-                        "required": [
-                          "campaignApr",
-                          "campaignStartedAt",
-                          "campaignEndedAt"
-                        ],
-                        "additionalProperties": {}
-                      }
-                    },
-                    "campaignApr": {
-                      "type": "number"
-                    },
-                    "campaignStartedAt": {
-                      "type": "string"
-                    },
-                    "campaignEndedAt": {
-                      "type": "string"
-                    },
-                    "latestTvl": {
-                      "type": "number"
-                    },
-                    "totalBudget": {
-                      "type": "number"
-                    },
-                    "perUserRewardCapUsd": {
-                      "type": "number"
-                    },
-                    "campaignId": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "link"
-                  ],
-                  "additionalProperties": {}
-                }
-              ]
-            }
-          },
-          "brevisBorrows": {
-            "type": "array",
-            "items": {
-              "anyOf": [
-                {
-                  "type": "object",
-                  "properties": {
-                    "link": {
-                      "type": "string"
-                    },
-                    "name": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "breakdowns": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "campaignApr": {
-                            "type": "number"
-                          },
-                          "campaignStartedAt": {
-                            "type": "string"
-                          },
-                          "campaignEndedAt": {
-                            "type": "string"
-                          },
-                          "latestTvl": {
-                            "type": "number"
-                          },
-                          "totalBudget": {
-                            "type": "number"
-                          },
-                          "perUserRewardCapUsd": {
-                            "type": "number"
-                          },
-                          "campaignId": {
-                            "type": "string"
-                          }
-                        },
-                        "required": [
-                          "campaignApr",
-                          "campaignStartedAt",
-                          "campaignEndedAt"
-                        ],
-                        "additionalProperties": {}
-                      }
-                    }
-                  },
-                  "required": [
-                    "link",
-                    "breakdowns"
-                  ],
-                  "additionalProperties": {}
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "link": {
-                      "type": "string"
-                    },
-                    "name": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "breakdowns": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "campaignApr": {
-                            "type": "number"
-                          },
-                          "campaignStartedAt": {
-                            "type": "string"
-                          },
-                          "campaignEndedAt": {
-                            "type": "string"
-                          },
-                          "latestTvl": {
-                            "type": "number"
-                          },
-                          "totalBudget": {
-                            "type": "number"
-                          },
-                          "perUserRewardCapUsd": {
-                            "type": "number"
-                          },
-                          "campaignId": {
-                            "type": "string"
-                          }
-                        },
-                        "required": [
-                          "campaignApr",
-                          "campaignStartedAt",
-                          "campaignEndedAt"
-                        ],
-                        "additionalProperties": {}
-                      }
-                    },
-                    "campaignApr": {
-                      "type": "number"
-                    },
-                    "campaignStartedAt": {
-                      "type": "string"
-                    },
-                    "campaignEndedAt": {
-                      "type": "string"
-                    },
-                    "latestTvl": {
-                      "type": "number"
-                    },
-                    "totalBudget": {
-                      "type": "number"
-                    },
-                    "perUserRewardCapUsd": {
-                      "type": "number"
-                    },
-                    "campaignId": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "link"
-                  ],
-                  "additionalProperties": {}
-                }
-              ]
-            }
-          },
-          "decimals": {
-            "type": "number"
+            "type": "string",
+            "nullable": true
           },
           "supplied": {
             "type": "string"
@@ -2089,14 +1015,51 @@
           "borrowCap": {
             "type": "string"
           },
-          "suppliable": {
-            "type": "string"
-          },
-          "borrowable": {
-            "type": "string"
-          },
           "deficit": {
             "type": "string"
+          },
+          "hubId": {
+            "type": "string"
+          },
+          "hubName": {
+            "type": "string"
+          },
+          "spokeId": {
+            "type": "string"
+          },
+          "spokeName": {
+            "type": "string"
+          },
+          "supplyDisabled": {
+            "type": "boolean"
+          },
+          "borrowDisabled": {
+            "type": "boolean"
+          },
+          "isFrozen": {
+            "type": "boolean"
+          },
+          "isPaused": {
+            "type": "boolean"
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "Always false when present"
+          },
+          "aaveProReserveId": {
+            "type": "string"
+          },
+          "decimals": {
+            "type": "number",
+            "description": "Present when !== 18"
+          },
+          "supplyApy": {
+            "type": "number",
+            "nullable": true
+          },
+          "borrowApy": {
+            "type": "number",
+            "nullable": true
           },
           "protocolFee": {
             "type": "number"
@@ -2113,20 +1076,50 @@
           "baseBorrowRate": {
             "type": "number"
           },
-          "aaveProReserveId": {
-            "type": "string"
+          "collateralRisk": {
+            "type": "number"
           },
-          "hubId": {
-            "type": "string"
+          "meritSupplys": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MeritAprEntry"
+            }
           },
-          "hubName": {
-            "type": "string"
+          "meritBorrows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MeritAprEntry"
+            }
           },
-          "spokeId": {
-            "type": "string"
+          "merklSupplys": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MerklOpportunityGroup"
+            }
           },
-          "spokeName": {
-            "type": "string"
+          "merklBorrows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MerklOpportunityGroup"
+            }
+          },
+          "merklHolds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MerklOpportunityGroup"
+            }
+          },
+          "brevisSupplys": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BrevisCampaignItem"
+            }
+          },
+          "brevisBorrows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BrevisCampaignItem"
+            }
           }
         },
         "required": [
@@ -2137,11 +1130,9 @@
           "tokenName",
           "tokenSymbol",
           "tokenAddress"
-        ],
-        "additionalProperties": {}
+        ]
       },
-      "MeritIncentive": {
-        "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "MeritAprEntry": {
         "type": "object",
         "properties": {
           "apr": {
@@ -2157,42 +1148,10 @@
             "type": "string"
           },
           "message": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "object",
-                "propertyNames": {
-                  "type": "string"
-                },
-                "additionalProperties": {
-                  "anyOf": [
-                    {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "number"
-                        },
-                        {
-                          "type": "boolean"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    },
-                    {}
-                  ]
-                }
-              },
-              {
-                "type": "array",
-                "items": {}
-              }
-            ]
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
           },
           "startDate": {
             "type": "string"
@@ -2212,7 +1171,6 @@
         ]
       },
       "MerklCampaignBreakdown": {
-        "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
         "properties": {
           "campaignApr": {
@@ -2240,14 +1198,8 @@
             "type": "number"
           },
           "aprCap": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "type": "number",
+            "nullable": true
           },
           "latestTvl": {
             "type": "number"
@@ -2264,7 +1216,6 @@
         ]
       },
       "MerklOpportunityGroup": {
-        "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
         "properties": {
           "link": {
@@ -2306,14 +1257,8 @@
                   "type": "number"
                 },
                 "aprCap": {
-                  "anyOf": [
-                    {
-                      "type": "number"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
+                  "type": "number",
+                  "nullable": true
                 },
                 "latestTvl": {
                   "type": "number"
@@ -2334,33 +1279,27 @@
             "type": "string"
           },
           "netPositionConstraint": {
-            "anyOf": [
-              {
-                "type": "object",
-                "properties": {
-                  "sourceSide": {
-                    "type": "string",
-                    "enum": [
-                      "supply",
-                      "borrow"
-                    ]
-                  },
-                  "offsetReserveIds": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    }
-                  }
-                },
-                "required": [
-                  "sourceSide",
-                  "offsetReserveIds"
+            "type": "object",
+            "properties": {
+              "sourceSide": {
+                "type": "string",
+                "enum": [
+                  "supply",
+                  "borrow"
                 ]
               },
-              {
-                "type": "null"
+              "offsetReserveIds": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
               }
-            ]
+            },
+            "required": [
+              "sourceSide",
+              "offsetReserveIds"
+            ],
+            "nullable": true
           }
         },
         "required": [
@@ -2368,7 +1307,6 @@
         ]
       },
       "BrevisCampaignBreakdown": {
-        "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
         "properties": {
           "campaignApr": {
@@ -2380,16 +1318,22 @@
           "campaignEndedAt": {
             "type": "string"
           },
-          "latestTvl": {
-            "type": "number"
+          "campaignId": {
+            "type": "string"
           },
           "totalBudget": {
+            "type": "number"
+          },
+          "latestTvl": {
             "type": "number"
           },
           "perUserRewardCapUsd": {
             "type": "number"
           },
-          "campaignId": {
+          "budgetNormalizedAmount": {
+            "type": "number"
+          },
+          "budgetTokenSymbol": {
             "type": "string"
           }
         },
@@ -2397,11 +1341,9 @@
           "campaignApr",
           "campaignStartedAt",
           "campaignEndedAt"
-        ],
-        "additionalProperties": {}
+        ]
       },
-      "BrevisIncentive": {
-        "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "BrevisCampaignItem": {
         "type": "object",
         "properties": {
           "link": {
@@ -2427,16 +1369,22 @@
                 "campaignEndedAt": {
                   "type": "string"
                 },
-                "latestTvl": {
-                  "type": "number"
+                "campaignId": {
+                  "type": "string"
                 },
                 "totalBudget": {
+                  "type": "number"
+                },
+                "latestTvl": {
                   "type": "number"
                 },
                 "perUserRewardCapUsd": {
                   "type": "number"
                 },
-                "campaignId": {
+                "budgetNormalizedAmount": {
+                  "type": "number"
+                },
+                "budgetTokenSymbol": {
                   "type": "string"
                 }
               },
@@ -2444,8 +1392,7 @@
                 "campaignApr",
                 "campaignStartedAt",
                 "campaignEndedAt"
-              ],
-              "additionalProperties": {}
+              ]
             }
           },
           "campaignApr": {
@@ -2457,23 +1404,22 @@
           "campaignEndedAt": {
             "type": "string"
           },
-          "latestTvl": {
-            "type": "number"
+          "campaignId": {
+            "type": "string"
           },
           "totalBudget": {
             "type": "number"
           },
-          "perUserRewardCapUsd": {
+          "latestTvl": {
             "type": "number"
           },
-          "campaignId": {
-            "type": "string"
+          "perUserRewardCapUsd": {
+            "type": "number"
           }
         },
         "required": [
           "link"
-        ],
-        "additionalProperties": {}
+        ]
       }
     }
   }
