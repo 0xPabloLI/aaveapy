@@ -13,6 +13,14 @@
 | Lovable 发布（staging） | https://aaveapy.lovable.app/admin/seo |
 | 本地 dev | http://localhost:8080/admin/seo（或 5173） |
 
+### 1.1 Aave News Backlinks（Semrush 外链分析）
+
+| 环境 | URL |
+|---|---|
+| Lovable 预览 | https://id-preview--52846798-e3d8-4735-9a82-ed028b26625d.lovable.app/admin/aave-news-backlinks |
+| Lovable 发布（staging） | https://aaveapy.lovable.app/admin/aave-news-backlinks |
+| 本地 dev | http://localhost:8080/admin/aave-news-backlinks（或 5173） |
+
 > **没有登录墙**——靠路径不公开 + `robots.txt` Disallow。链接谁拿到谁能看，**不要外发**。
 
 ---
