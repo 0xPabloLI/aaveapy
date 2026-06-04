@@ -1,3 +1,24 @@
+/**
+ * Generate OpenAPI 3.1.0 spec from Zod schemas.
+ *
+ * Usage:
+ *   npm run openapi:generate
+ *
+ * Prerequisites:
+ *   - Zod v4 schemas defined in `src/lib/apiSchemas.ts`
+ *   - `tsx` available (dev dependency)
+ *
+ * Output:
+ *   - `public/openapi.json` — OpenAPI 3.1.0 specification
+ *
+ * CI check (detects schema drift):
+ *   npm run openapi:check
+ *   (generates spec + diffs against committed openapi.json; exits 1 on drift)
+ *
+ * When to re-generate:
+ *   After any change to Zod schemas in `src/lib/apiSchemas.ts`,
+ *   run `npm run openapi:generate` and commit the updated `public/openapi.json`.
+ */
 import { writeFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
