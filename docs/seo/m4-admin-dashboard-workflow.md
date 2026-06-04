@@ -13,6 +13,14 @@
 | Lovable 发布（staging） | https://aaveapy.lovable.app/admin/seo |
 | 本地 dev | http://localhost:8080/admin/seo（或 5173） |
 
+### 1.1 Aave News Backlinks（Semrush 外链分析）
+
+| 环境 | URL |
+|---|---|
+| Lovable 预览 | https://id-preview--52846798-e3d8-4735-9a82-ed028b26625d.lovable.app/admin/aave-news-backlinks |
+| Lovable 发布（staging） | https://aaveapy.lovable.app/admin/aave-news-backlinks |
+| 本地 dev | http://localhost:8080/admin/aave-news-backlinks（或 5173） |
+
 > **没有登录墙**——靠路径不公开 + `robots.txt` Disallow。链接谁拿到谁能看，**不要外发**。
 
 ---
@@ -84,3 +92,9 @@ Railway 后端 (staging-api.aaveapy.com/api/seo/*)
 - BFF：`supabase/functions/seo-proxy/index.ts`
 - 后端规格：`docs/seo/m3-railway-backend-spec.md`
 - Semrush 种子：`docs/seo/semrush-seed-2026-05-18.json`
+
+## 7. Aave News Backlinks 相关代码
+
+- 前端页面：`src/pages/AdminAaveNewsBacklinks.tsx`（在 `src/App.tsx` 注册路由 `/admin/aave-news-backlinks`）
+- BFF Edge Function：`supabase/functions/aave-news-backlinks/index.ts`
+- 数据源：Semrush API（`backlinks_pages` endpoint）
