@@ -19,7 +19,8 @@ on:
       target_ref:
         description: "Ref (branch or SHA) to run CI against"
         required: false
-        type: string
+  schedule:
+    - cron: '0 6 * * *'  # daily UTC 6:00 — detect backend spec drift
 
 permissions:
   contents: write
@@ -307,7 +308,7 @@ jobs:
       - openapi-check
     if: >
       always() &&
-      github.event_name == 'push' &&
+      (github.event_name == 'push' || github.event_name == 'schedule') &&
       needs.openapi-check.result == 'failure'
     runs-on: ubuntu-latest
     env:
