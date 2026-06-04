@@ -38,4 +38,12 @@ describe('validateApiBaseEnv', () => {
 
     expect(warn).not.toHaveBeenCalled();
   });
+
+  it('warns when VITE_API_BASE_URL is null in production', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    validateApiBaseEnv({ MODE: 'production', VITE_API_BASE_URL: null as unknown as string });
+
+    expect(warn).toHaveBeenCalledOnce();
+  });
 });

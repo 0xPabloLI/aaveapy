@@ -1,6 +1,6 @@
 export const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://staging-api.aaveapy.com/api';
 
-type EnvLike = { MODE?: string; VITE_API_BASE_URL?: string };
+export type EnvLike = { MODE?: string; VITE_API_BASE_URL?: string };
 
 export function validateApiBaseEnv(env: EnvLike): void {
   if (env.MODE === 'production' && env.VITE_API_BASE_URL == null) {
