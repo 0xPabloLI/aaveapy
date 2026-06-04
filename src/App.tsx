@@ -28,6 +28,7 @@ const LandingPT = lazy(() => import("./pages/LandingPT"));
 const LandingFR = lazy(() => import("./pages/LandingFR"));
 const LandingTR = lazy(() => import("./pages/LandingTR"));
 const AdminSeo = lazy(() => import("./pages/AdminSeo"));
+const AdminAaveNewsBacklinks = lazy(() => import("./pages/AdminAaveNewsBacklinks"));
 const DefiYieldTracker = lazy(() => import("./pages/DefiYieldTracker"));
 const AssetPage = lazy(() => import("./pages/AssetPage"));
 const UsaStablecoinApy = lazy(() => import("./pages/UsaStablecoinApy"));
@@ -82,6 +83,7 @@ const App = () => (
                   <Route path="/fr" element={<LandingFR />} />
                   <Route path="/tr" element={<LandingTR />} />
                   <Route path="/admin/seo" element={<AdminSeo />} />
+                  <Route path="/admin/aave-news-backlinks" element={<AdminAaveNewsBacklinks />} />
                   <Route path="/defi-yield-tracker" element={<DefiYieldTracker />} />
                   <Route path="/asset/:slug" element={<AssetPage />} />
                   <Route path="/usa-stablecoin-apy" element={<UsaStablecoinApy />} />
