@@ -32,39 +32,8 @@ import type { ReserveWithSpread, MeritIncentive, MerklOpportunityGroup, BrevisIn
 import { ETHEREUM_MARKET_NAMES } from '@/types/aave';
 import { isSupplyDisabled, isBorrowDisabled } from '@/lib/reserveStatus';
 import { getFirstActiveBrevisLink } from '@/lib/brevis';
-
-const getFirstMeritLink = (merits?: MeritIncentive[]): string | null => {
-  if (!merits || !Array.isArray(merits)) return null;
-  const now = Date.now();
-  for (const merit of merits) {
-    const start = Date.parse(merit.startDate);
-    const end = Date.parse(merit.endDate);
-    if (!Number.isNaN(start) && !Number.isNaN(end) && now >= start && now <= end && merit.link) {
-      return merit.link;
-    }
-  }
-  return null;
-};
-
-const getFirstMerklLink = (opportunities?: MerklOpportunityGroup[]): string | null => {
-  if (!opportunities || !Array.isArray(opportunities)) return null;
-  const now = Date.now();
-  for (const opp of opportunities) {
-    const link = opp.link;
-    if (!link) continue;
-    const hasActive = opp.breakdowns?.some((bd) => {
-      const start = Date.parse(bd.campaignStartedAt);
-      const end = Date.parse(bd.campaignEndedAt);
-      return !Number.isNaN(start) && !Number.isNaN(end) && now >= start && now <= end;
-    });
-    if (hasActive) return link;
-  }
-  return null;
-};
-
-const getFirstBrevisLink = (brevis?: BrevisIncentive[]): string | null => {
-  return getFirstActiveBrevisLink(brevis);
-};
+import { getFirstActiveMeritLink } from '@/lib/merit';
+import { getFirstActiveMerklLink } from '@/lib/merkl';
 
 interface SimulationSubRowProps {
   reserve: ReserveWithSpread;
@@ -279,13 +248,13 @@ const SimulationSubRow = ({
     borrowCapBaseExceeded ? currentBorrowedSizeUsd - borrowCapUsd : null;
   const showBorrowCapWarning = (borrowCapExceeded || borrowCapBaseExceeded) && !borrowSideBlocked;
 
-  const supplyMeritLink = getFirstMeritLink(reserve.meritSupplys);
-  const supplyMerklLink = getFirstMerklLink(reserve.merklSupplys);
-  const supplyBrevisLink = getFirstBrevisLink(reserve.brevisSupplys);
+  const supplyMeritLink = getFirstActiveMeritLink(reserve.meritSupplys);
+  const supplyMerklLink = getFirstActiveMerklLink(reserve.merklSupplys);
+  const supplyBrevisLink = getFirstActiveBrevisLink(reserve.brevisSupplys);
 
-  const borrowMeritLink = getFirstMeritLink(reserve.meritBorrows);
-  const borrowMerklLink = getFirstMerklLink(reserve.merklBorrows);
-  const borrowBrevisLink = getFirstBrevisLink(reserve.brevisBorrows);
+  const borrowMeritLink = getFirstActiveMeritLink(reserve.meritBorrows);
+  const borrowMerklLink = getFirstActiveMerklLink(reserve.merklBorrows);
+  const borrowBrevisLink = getFirstActiveBrevisLink(reserve.brevisBorrows);
 
   const incentiveLabel = (full: string, short: string) => (effectiveCompact ? short : full);
   const supplyIncentiveSources: IncentiveSourceRow[] = [
