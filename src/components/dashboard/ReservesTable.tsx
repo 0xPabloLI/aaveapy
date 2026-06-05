@@ -47,6 +47,7 @@ import { usePortfolioToggle, PortfolioSimulationContext } from '@/hooks/reserves
 import { useReservesLayoutRefs } from '@/hooks/reserves-table/useReservesLayoutRefs';
 import { useSharedRateSimulations } from '@/hooks/useRateSimulation';
 import { getReserveSimulationId, type ScenarioInputMode } from '@/lib/rateSimulationCalculator';
+import { buildPerReserveInputs } from '@/lib/portfolioSimulator';
 import { parseNumberInput } from '@/lib/numberFormat';
 import type { ReservePositions } from '@/lib/netLendingCrossReserve';
 import { useSideDataMeta } from '@/hooks/useSideDataMeta';
@@ -262,18 +263,26 @@ const ReservesTable = ({
     return map.size > 0 ? map : undefined;
   }, [reserves, reservePositions]);
 
+  const isPortfolioMode = simulationMode === 'portfolio';
+
+  const perReserveInputs = useMemo(
+    () => (isPortfolioMode && portfolioPositions ? buildPerReserveInputs(portfolioPositions, reserves) : undefined),
+    [isPortfolioMode, portfolioPositions, reserves],
+  );
+
   const { simulationsById, hasAnyInput: hasScenarioInput } = useSharedRateSimulations({
     reserves,
     isApy,
     whitelistMerklCampaignIds,
     tydroPointToUsdRate,
     tokenPrices,
-    supplyInput: debouncedSharedSupplyInput,
-    borrowInput: debouncedSharedBorrowInput,
+    supplyInput: isPortfolioMode ? '' : debouncedSharedSupplyInput,
+    borrowInput: isPortfolioMode ? '' : debouncedSharedBorrowInput,
     inputMode: sharedInputMode,
     meritMerklNetPosition,
     reservePositions,
     reserveSymbolById,
+    perReserveInputs,
   });
 
   /** Scroll-on-expand only when list order can change with shared scenario (matches `pickScenarioValue` / size supply USD). */
@@ -812,8 +821,6 @@ const ReservesTable = ({
       openExternalUrl(url, isMobile);
     }
   };
-
-  const isPortfolioMode = simulationMode === 'portfolio';
 
   const portfolioSimulationContext = useMemo<PortfolioSimulationContext>(() => ({
     isApy,
