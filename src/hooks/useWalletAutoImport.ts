@@ -14,6 +14,8 @@ interface UseWalletAutoImportParams {
   v4SdkFailed: boolean
   reserves: ReserveWithSpread[]
   portfolioActions: PortfolioSimulationActions
+  /** Called when wallet positions are successfully imported (non-empty). */
+  onImport?: () => void
 }
 
 export function useWalletAutoImport({
@@ -25,6 +27,7 @@ export function useWalletAutoImport({
   v4SdkFailed,
   reserves,
   portfolioActions,
+  onImport,
 }: UseWalletAutoImportParams) {
   const lastImportedAddress = useRef<string | null>(null)
   const lastDegradedShown = useRef(false)
@@ -51,13 +54,14 @@ export function useWalletAutoImport({
       }
 
       portfolioActions.importPositions(incoming)
+      onImport?.()
       toast.success(`Imported ${incoming.length} position${incoming.length > 1 ? 's' : ''} from wallet`)
     } else if (walletResult.status === 'error') {
       lastImportedAddress.current = addressKey
       console.error('[wallet-import] All sources failed:', walletResult.error)
       toast.error('Failed to load wallet positions')
     }
-  }, [isConnected, address, walletLoadState, walletResult, reserves, portfolioActions])
+  }, [isConnected, address, walletLoadState, walletResult, reserves, portfolioActions, onImport])
 
   useEffect(() => {
     if (!isConnected || !address) {
