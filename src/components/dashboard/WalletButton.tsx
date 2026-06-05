@@ -5,6 +5,15 @@ import { useWallet } from '@/hooks/useWallet'
 import { WatchAddressInput } from './WatchAddressInput'
 import { cn } from '@/lib/utils'
 import {
+  HEADER_CONTROL_AFFORDANCE_ICON_CLASS,
+  HEADER_CONTROL_DESKTOP_ACTIVE_CLASS,
+  HEADER_CONTROL_DESKTOP_CLASS,
+  HEADER_CONTROL_GROUP_GAP_CLASS,
+  HEADER_CONTROL_ICON_CLASS,
+  HEADER_CONTROL_MOBILE_CLASS,
+  HEADER_CONTROL_POPOVER_ITEM_CLASS,
+} from '@/lib/headerControlStyles'
+import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -45,50 +54,50 @@ export function WalletButton({ mobile = false, onWatchSubmit }: WalletButtonProp
                 <PopoverTrigger asChild>
                   <button
                     type="button"
-                    className={cn(
-                      'flex items-center gap-[var(--ds-space-1)] transition-colors',
-                      mobile
-                        ? 'justify-center w-[var(--ds-control-h)] h-[var(--ds-control-h)] rounded-full bg-card/60 border border-border/40 text-muted-foreground hover:bg-muted/60 hover:border-border focus-visible:ring-2 focus-visible:ring-ring'
-                        : 'rounded-md px-[var(--ds-space-2)] py-[var(--ds-space-1)] ds-text-14 text-foreground hover:bg-muted/60',
-                    )}
+                    className={cn(mobile ? HEADER_CONTROL_MOBILE_CLASS : HEADER_CONTROL_DESKTOP_ACTIVE_CLASS)}
                     aria-label={isWatchMode ? `Viewing ${truncateAddress(address)}` : `Wallet ${truncateAddress(address)}`}
                   >
                     {isWatchMode ? (
-                      <Eye className="w-4 h-4" aria-hidden />
+                      <Eye className={HEADER_CONTROL_ICON_CLASS} aria-hidden />
                     ) : (
                       <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" aria-hidden />
                     )}
                     {!mobile && <span>{truncateAddress(address)}</span>}
-                    {!mobile && <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" aria-hidden />}
+                    {!mobile && (
+                      <ChevronDown
+                        className={cn(HEADER_CONTROL_AFFORDANCE_ICON_CLASS, 'text-muted-foreground')}
+                        aria-hidden
+                      />
+                    )}
                   </button>
                 </PopoverTrigger>
                 <PopoverContent side="bottom" align="end" sideOffset={4} className="w-40 p-1">
                   {!isWatchMode && onWatchSubmit && (
                     <button
                       type="button"
-                      className="w-full flex items-center gap-2 rounded-sm px-2 py-1.5 ds-text-11 hover:bg-muted/60"
+                      className={HEADER_CONTROL_POPOVER_ITEM_CLASS}
                       onClick={() => setShowWatchInput(true)}
                     >
-                      <Eye className="w-3.5 h-3.5" />
+                      <Eye className={HEADER_CONTROL_AFFORDANCE_ICON_CLASS} />
                       Switch to watch mode
                     </button>
                   )}
                   {isWatchMode && (
                     <button
                       type="button"
-                      className="w-full flex items-center gap-2 rounded-sm px-2 py-1.5 ds-text-11 hover:bg-muted/60"
+                      className={HEADER_CONTROL_POPOVER_ITEM_CLASS}
                       onClick={() => setShowWatchInput(true)}
                     >
-                      <Eye className="w-3.5 h-3.5" />
+                      <Eye className={HEADER_CONTROL_AFFORDANCE_ICON_CLASS} />
                       Switch address
                     </button>
                   )}
                   <button
                     type="button"
-                    className="w-full flex items-center gap-2 rounded-sm px-2 py-1.5 ds-text-11 hover:bg-muted/60 text-destructive"
+                    className={cn(HEADER_CONTROL_POPOVER_ITEM_CLASS, 'text-destructive')}
                     onClick={() => disconnect()}
                   >
-                    <X className="w-3.5 h-3.5" />
+                    <X className={HEADER_CONTROL_AFFORDANCE_ICON_CLASS} />
                     Disconnect
                   </button>
                 </PopoverContent>
@@ -96,59 +105,50 @@ export function WalletButton({ mobile = false, onWatchSubmit }: WalletButtonProp
             ) : mobile && onWatchSubmit ? (
               <Popover>
                 <PopoverTrigger asChild>
-                  <button
-                    type="button"
-                    className="flex items-center justify-center w-[var(--ds-control-h)] h-[var(--ds-control-h)] rounded-full bg-card/60 border border-border/40 text-muted-foreground hover:bg-muted/60 hover:border-border focus-visible:ring-2 focus-visible:ring-ring"
-                    aria-label="Wallet actions"
-                  >
-                    <Wallet className="w-4 h-4" aria-hidden />
+                  <button type="button" className={HEADER_CONTROL_MOBILE_CLASS} aria-label="Wallet actions">
+                    <Wallet className={HEADER_CONTROL_ICON_CLASS} aria-hidden />
                   </button>
                 </PopoverTrigger>
                 <PopoverContent side="bottom" align="end" sideOffset={4} className="w-40 p-1">
                   <button
                     type="button"
-                    className="w-full flex items-center gap-2 rounded-sm px-2 py-1.5 ds-text-11 hover:bg-muted/60"
+                    className={HEADER_CONTROL_POPOVER_ITEM_CLASS}
                     onClick={openConnectModal}
                     aria-label="Connect wallet"
                   >
-                    <Wallet className="w-3.5 h-3.5" />
+                    <Wallet className={HEADER_CONTROL_AFFORDANCE_ICON_CLASS} />
                     Connect
                   </button>
                   <button
                     type="button"
-                    className="w-full flex items-center gap-2 rounded-sm px-2 py-1.5 ds-text-11 hover:bg-muted/60"
+                    className={HEADER_CONTROL_POPOVER_ITEM_CLASS}
                     onClick={() => setShowWatchInput(true)}
                     aria-label="View address"
                   >
-                    <Eye className="w-3.5 h-3.5" />
+                    <Eye className={HEADER_CONTROL_AFFORDANCE_ICON_CLASS} />
                     View address
                   </button>
                 </PopoverContent>
               </Popover>
             ) : (
-              <div className={cn('flex items-center', !mobile && onWatchSubmit && 'gap-[var(--ds-space-1)]')}>
+              <div className={cn('flex items-center', !mobile && onWatchSubmit && HEADER_CONTROL_GROUP_GAP_CLASS)}>
                 <button
                   type="button"
                   onClick={openConnectModal}
-                  className={cn(
-                    'flex items-center gap-[var(--ds-space-1)] transition-colors',
-                    mobile
-                      ? 'justify-center w-[var(--ds-control-h)] h-[var(--ds-control-h)] rounded-full bg-card/60 border border-border/40 text-muted-foreground hover:bg-muted/60 hover:border-border focus-visible:ring-2 focus-visible:ring-ring'
-                      : 'rounded-md px-[var(--ds-space-2)] py-[var(--ds-space-1)] ds-text-14 text-muted-foreground hover:bg-muted/60 hover:text-foreground',
-                  )}
+                  className={mobile ? HEADER_CONTROL_MOBILE_CLASS : HEADER_CONTROL_DESKTOP_CLASS}
                   aria-label="Connect wallet"
                 >
-                  <Wallet className="w-4 h-4" aria-hidden />
+                  <Wallet className={HEADER_CONTROL_ICON_CLASS} aria-hidden />
                   {!mobile && <span>Connect</span>}
                 </button>
                 {!mobile && onWatchSubmit && (
                   <button
                     type="button"
                     onClick={() => setShowWatchInput(true)}
-                    className="flex items-center gap-[var(--ds-space-1)] rounded-md px-[var(--ds-space-2)] py-[var(--ds-space-1)] ds-text-14 text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+                    className={HEADER_CONTROL_DESKTOP_CLASS}
                     aria-label="View address"
                   >
-                    <Eye className="w-4 h-4" aria-hidden />
+                    <Eye className={HEADER_CONTROL_ICON_CLASS} aria-hidden />
                     <span>View address</span>
                   </button>
                 )}
