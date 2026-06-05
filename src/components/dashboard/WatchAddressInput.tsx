@@ -88,9 +88,10 @@ export function WatchAddressInput({ onSubmit, onCancel, autoFocus = true }: Watc
         aria-invalid={error || undefined}
         aria-label="Watch wallet address"
         className={cn(
-          'ds-text-14 h-[var(--ds-control-h)] w-56 rounded-md border bg-background px-[var(--ds-space-2)] outline-none',
+          'ds-text-14 h-[var(--ds-control-h)] w-56 rounded-full border bg-card/60 px-[var(--ds-space-3)] outline-none transition-colors',
+          'hover:border-border',
           HEADER_CONTROL_FOCUS_RING_CLASS,
-          error ? 'border-destructive text-destructive' : 'border-border text-foreground',
+          error ? 'border-destructive text-destructive' : 'border-border/40 text-foreground',
         )}
       />
       {ensLoading && (
