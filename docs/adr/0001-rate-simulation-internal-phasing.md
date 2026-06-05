@@ -11,7 +11,7 @@ Superseded by ADR-002
 问题：
 1. **代码组织**：A/B 类字段混杂，职责不清
 2. **性能**：纯浏览场景（无模拟输入）仍执行 rate model 计算
-3. **消费侧**：几乎所有组件都用 `pickScenarioValue(current, after)` 模式，需要 A+B 同在一个对象
+3. **消费侧**：几乎所有组件都用 `after ?? current` 模式（AAV-554 移除了 `pickScenarioValue` 门控），需要 A+B 同在一个对象
 
 ## Decision
 

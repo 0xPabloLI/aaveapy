@@ -30,7 +30,7 @@ function makeOpts(overrides: Partial<Parameters<typeof useScenarioPinScroll>[0]>
     setExpandedReserveId: vi.fn(),
     minVisibleCount: null as number | null,
     defaultVisibleCount: 20,
-    hasSharedScenario: false,
+    hasScenarioInput: false,
     expandScrollFollowsScenarioSort: false,
     scenarioKey: baseScenarioKey,
     ...overrides,

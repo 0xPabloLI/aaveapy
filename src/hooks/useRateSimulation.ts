@@ -269,7 +269,6 @@ export const useSharedRateSimulations = ({
   ]);
 
   return {
-    hasAnyInput,
     simulationsById,
     forecastLoading: hasAnyInput && forecastLoading,
     forecastErrors,

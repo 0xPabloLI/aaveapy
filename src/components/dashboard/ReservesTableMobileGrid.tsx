@@ -12,7 +12,7 @@ interface ReservesTableMobileGridProps {
   reservesCount: number;
   isApy: boolean;
   tydroPointToUsdRate: number;
-  hasSharedScenario: boolean;
+  hasScenarioInput: boolean;
   inputMode: ScenarioInputMode;
   supplyInput: string;
   borrowInput: string;
@@ -75,7 +75,7 @@ export default function ReservesTableMobileGrid({
   reservesCount,
   isApy,
   tydroPointToUsdRate,
-  hasSharedScenario,
+  hasScenarioInput,
   inputMode,
   supplyInput,
   borrowInput,
@@ -130,7 +130,7 @@ export default function ReservesTableMobileGrid({
         simulation={simulationsById[leftId]}
         supplyInput={supplyInput}
         borrowInput={borrowInput}
-        hasSharedScenario={hasSharedScenario}
+        hasScenarioInput={hasScenarioInput}
         inputMode={inputMode}
         onCorrectSupplyInput={onCorrectSupplyInput}
         onCorrectBorrowInput={onCorrectBorrowInput}
@@ -153,7 +153,7 @@ export default function ReservesTableMobileGrid({
         simulation={simulationsById[rightId!]}
         supplyInput={supplyInput}
         borrowInput={borrowInput}
-        hasSharedScenario={hasSharedScenario}
+        hasScenarioInput={hasScenarioInput}
         inputMode={inputMode}
         onCorrectSupplyInput={onCorrectSupplyInput}
         onCorrectBorrowInput={onCorrectBorrowInput}
@@ -186,7 +186,7 @@ export default function ReservesTableMobileGrid({
                 simulation={simulationsById[activeId]}
                 supplyInput={supplyInput}
                 borrowInput={borrowInput}
-                hasSharedScenario={hasSharedScenario}
+        hasScenarioInput={hasScenarioInput}
                 inputMode={inputMode}
                 onCorrectSupplyInput={onCorrectSupplyInput}
                 onCorrectBorrowInput={onCorrectBorrowInput}

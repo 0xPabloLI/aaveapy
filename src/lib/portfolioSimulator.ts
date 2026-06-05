@@ -4,6 +4,7 @@ import type {
   PortfolioPositionResult,
   PortfolioSummary,
 } from '@/types/portfolio';
+import type { ScenarioInputMode } from '@/lib/rateSimulationCalculator';
 import { buildRateSimulationResult } from '@/lib/rateSimulationCalculator';
 import {
   buildPortfolioPositionResult,
@@ -16,6 +17,12 @@ import { buildHubAggregationMap, getHubAssetKey } from '@/lib/hubAggregation';
 import type { HubAggregate, HubAssetKey } from '@/lib/hubAggregation';
 import { getReserveKey } from '@/lib/reserveKey';
 import type { ReservePositions } from '@/lib/netLendingCrossReserve';
+
+export interface PerReserveInput {
+  supplyInput: string;
+  borrowInput: string;
+  inputMode: ScenarioInputMode;
+}
 
 export interface SimulatePortfolioPositionsArgs {
   positions: PortfolioPosition[];
@@ -194,4 +201,39 @@ export function simulatePortfolioPositions(
     results,
     summary: aggregatePortfolioSummary(results),
   };
+}
+
+export function buildPerReserveInputs(
+  positions: PortfolioPosition[],
+  reserves: ReserveWithSpread[],
+): Map<string, PerReserveInput> {
+  const reserveMap = new Map(reserves.map((r) => [getReserveKey(r), r]));
+  const grouped = new Map<string, { supplyUsd: number; borrowUsd: number }>();
+
+  for (const pos of positions) {
+    if (pos.hidden || pos.isOrphan) continue;
+    const key = getReserveKey({ reserveId: pos.reserveId });
+    const reserve = reserveMap.get(key);
+    if (!reserve) continue;
+    const amountUsd = resolvePositionAmountUsd(pos, reserve);
+    if (amountUsd <= 0) continue;
+
+    const existing = grouped.get(pos.reserveId) ?? { supplyUsd: 0, borrowUsd: 0 };
+    if (pos.side === 'supply') {
+      existing.supplyUsd += amountUsd;
+    } else {
+      existing.borrowUsd += amountUsd;
+    }
+    grouped.set(pos.reserveId, existing);
+  }
+
+  const result = new Map<string, PerReserveInput>();
+  for (const [reserveId, group] of grouped) {
+    result.set(reserveId, {
+      supplyInput: String(group.supplyUsd),
+      borrowInput: String(group.borrowUsd),
+      inputMode: 'usd',
+    });
+  }
+  return result;
 }

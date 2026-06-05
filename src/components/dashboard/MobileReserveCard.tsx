@@ -178,7 +178,7 @@ interface MobileReserveCardProps {
   simulation: RateSimulationResult;
   supplyInput: string;
   borrowInput: string;
-  hasSharedScenario: boolean;
+  hasScenarioInput: boolean;
   inputMode?: 'usd' | 'token';
   onCorrectSupplyInput?: (correctedValue: string) => void;
   onCorrectBorrowInput?: (correctedValue: string) => void;
@@ -474,7 +474,7 @@ const MobileReserveCard = memo(({
   simulation,
   supplyInput,
   borrowInput,
-  hasSharedScenario,
+  hasScenarioInput,
   inputMode = 'usd',
   onCorrectSupplyInput,
   onCorrectBorrowInput,
@@ -507,9 +507,9 @@ const MobileReserveCard = memo(({
   // See docs/design/frontend-interaction-guardrails.md "Reserve simulation gating".
   const supplyLocked = isSupplyDisabled(reserve);
   const borrowLocked = isBorrowDisabled(reserve);
-  const useSupplyAfter = hasSharedScenario && !supplyLocked;
-  const useBorrowAfter = hasSharedScenario && !borrowLocked;
-  const useSpreadAfter = hasSharedScenario && !supplyLocked && !borrowLocked;
+  const useSupplyAfter = !supplyLocked;
+  const useBorrowAfter = !borrowLocked;
+  const useSpreadAfter = !supplyLocked && !borrowLocked;
 
   const displaySupplyTotal = useSupplyAfter
     ? simulation.supply.afterTotal ?? simulation.supply.currentTotal

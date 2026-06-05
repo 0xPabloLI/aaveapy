@@ -101,7 +101,7 @@ function renderGrid(overrides: Partial<Parameters<typeof ReservesTableMobileGrid
     reservesCount: reserves.length,
     isApy: true,
     tydroPointToUsdRate: 0,
-    hasSharedScenario: true,
+    hasScenarioInput: true,
     inputMode: 'usd',
     supplyInput: '1000',
     borrowInput: '500',
@@ -163,7 +163,7 @@ describe('ReservesTableMobileGrid', () => {
             reservesCount={3}
             isApy
             tydroPointToUsdRate={0}
-            hasSharedScenario
+            hasScenarioInput
             inputMode="usd"
             supplyInput="1000"
             borrowInput="500"
@@ -215,7 +215,7 @@ describe('ReservesTableMobileGrid', () => {
             reservesCount={1}
             isApy
             tydroPointToUsdRate={0}
-            hasSharedScenario
+            hasScenarioInput
             inputMode="usd"
             supplyInput="1000"
             borrowInput="500"

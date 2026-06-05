@@ -262,7 +262,7 @@ const ReservesTable = ({
     return map.size > 0 ? map : undefined;
   }, [reserves, reservePositions]);
 
-  const { simulationsById, hasAnyInput: hasSharedScenario } = useSharedRateSimulations({
+  const { simulationsById, hasAnyInput: hasScenarioInput } = useSharedRateSimulations({
     reserves,
     isApy,
     whitelistMerklCampaignIds,
@@ -278,12 +278,12 @@ const ReservesTable = ({
 
   /** Scroll-on-expand only when list order can change with shared scenario (matches `pickScenarioValue` / size supply USD). */
   const expandScrollFollowsScenarioSort = useMemo(() => {
-    if (!hasSharedScenario) return false;
+    if (!hasScenarioInput) return false;
     const col = activeSortColumn ?? 'supply';
     if (col === 'token' || col === 'market' || col === 'price') return false;
     if (col === 'size' && sizeSortMode !== 'supply') return false;
     return true;
-  }, [hasSharedScenario, activeSortColumn, sizeSortMode]);
+  }, [hasScenarioInput, activeSortColumn, sizeSortMode]);
 
   // Helper: Get incentive values for a reserve (supply or borrow).
   // `forecastStates` is included here so the fallback path (used when
@@ -330,7 +330,7 @@ const ReservesTable = ({
   const getSimulation = (reserve: ReserveWithSpread) => simulationsById[getReserveSimulationId(reserve)];
 
   const pickScenarioValue = (current: number | null, after: number | null): number | null =>
-    hasSharedScenario ? after ?? current : current;
+    after ?? current;
 
   const getDisplaySupplyTotal = (reserve: ReserveWithSpread): number | null => {
     const simulation = getSimulation(reserve);
@@ -502,7 +502,7 @@ const ReservesTable = ({
     hasBorrowIncentiveSource,
     getDisplaySpread,
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [sortedDataSimGate, hasSharedScenario, isApy, tydroPointToUsdRate, whitelistMerklCampaignIds, debouncedSharedSupplyInput, sharedInputMode]);
+  }), [sortedDataSimGate, hasScenarioInput, isApy, tydroPointToUsdRate, whitelistMerklCampaignIds, debouncedSharedSupplyInput, sharedInputMode]);
 
   const sortedData = useMemo(() => {
     return sortReserves(reserves, sortConfig, valueGetters);
@@ -524,7 +524,7 @@ const ReservesTable = ({
     setExpandedReserveId,
     minVisibleCount,
     defaultVisibleCount: DEFAULT_VISIBLE_COUNT,
-    hasSharedScenario,
+    hasScenarioInput,
     expandScrollFollowsScenarioSort,
     scenarioKey: {
       supplyInput: debouncedSharedSupplyInput,
@@ -984,7 +984,7 @@ const ReservesTable = ({
             reservesCount={reserves.length}
             isApy={isApy}
             tydroPointToUsdRate={tydroPointToUsdRate}
-            hasSharedScenario={hasSharedScenario}
+            hasScenarioInput={hasScenarioInput}
             inputMode={sharedInputMode}
             supplyInput={debouncedSharedSupplyInput}
             borrowInput={debouncedSharedBorrowInput}

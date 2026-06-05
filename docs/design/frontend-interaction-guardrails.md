@@ -96,7 +96,7 @@ This is a project-specific guardrail file, not the reusable design reference. If
 | Secondary/muted info | `text-muted-foreground`, `text-secondary` | Labels, descriptions |
 
 **Utilization display value (mobile vs desktop)**:
-- Mobile reserve header and bottom sheet must use the same **display** utilization as the desktop Utilization column: `hasSharedScenario ? after ?? current : current` from rate simulation (not raw `reserve.utilizationPct` when a scenario is active).
+- Mobile reserve header and bottom sheet must use the same **display** utilization as the desktop Utilization column: `after ?? current` from rate simulation (not raw `reserve.utilizationPct` when a scenario is active). The `hasSharedScenario` gate was removed in AAV-554 — `after ?? current` falls back to `current` naturally when no simulation input exists.
 
 **UtilizationIndicator color scheme** (minimize same-hue steps: one **zone tint** + one **full semantic** per state):
 - Below optimal (borrow-friendly / flatter borrow curve): track zone `fill-[rgb(var(--ds-brand-cyan-rgb)/0.32)]`; dot **full** `fill-[rgb(var(--ds-brand-cyan-rgb))]` — same as Borrow (`ds-text-brand-cyan`), not emerald; avoid mixing `-70` text with other cyan opacities
@@ -154,7 +154,7 @@ These rules are **product constraints**. Any PR that changes reserve-table scrol
 
 **Debounced scenario key** (must stay consistent with the effect): `` `${debouncedSharedSupplyInput}\0${debouncedSharedBorrowInput}\0${sharedInputMode}\0${meritMerklNetPosition ? '1' : '0'}` `` — shared inputs plus Merit/Merkl net-vs-per-side mode (not debounced; must match `useSharedRateSimulations` / sort inputs).
 
-**Scenario-driven sort gate** (`expandScrollFollowsScenarioSort` in `ReservesTable.tsx`): pinning is allowed only when **`hasSharedScenario`** is true **and** the active column can change sort keys from shared scenario (`pickScenarioValue` / supply size USD). **Exclude**: Token, Market, Price; Size when `sizeSortMode === 'borrow'`. **Include**: Supply, Borrow, Spread, Util; Size when `sizeSortMode === 'supply'`. If you add a new sort column that uses scenario-sized or `after` totals, extend this `useMemo` in the same PR.
+**Scenario-driven sort gate** (`expandScrollFollowsScenarioSort` in `ReservesTable.tsx`): pinning is allowed only when **`hasScenarioInput`** is true **and** the active column can change sort keys from shared scenario (`after ?? current` / supply size USD). **Exclude**: Token, Market, Price; Size when `sizeSortMode === 'borrow'`. **Include**: Supply, Borrow, Spread, Util; Size when `sizeSortMode === 'supply'`. If you add a new sort column that uses scenario-sized or `after` totals, extend this `useMemo` in the same PR.
 
 #### Simulation pin scroll — implementation reference (maintainers)
 

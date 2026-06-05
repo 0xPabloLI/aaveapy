@@ -154,7 +154,7 @@ function renderCard(isSimulationExpanded: boolean) {
           simulation={simulation}
           supplyInput="1000"
           borrowInput="500"
-          hasSharedScenario
+          hasScenarioInput
           inputMode="usd"
         />
       </TooltipProvider>
@@ -192,7 +192,7 @@ describe('MobileReserveCard', () => {
             simulation={simulation}
             supplyInput="1000"
             borrowInput="500"
-            hasSharedScenario
+            hasScenarioInput
             inputMode="usd"
           />
         </TooltipProvider>
@@ -220,7 +220,7 @@ describe('MobileReserveCard', () => {
             simulation={simulation}
             supplyInput="1000"
             borrowInput="500"
-            hasSharedScenario
+            hasScenarioInput
             inputMode="usd"
           />
         </TooltipProvider>
@@ -256,7 +256,7 @@ describe('MobileReserveCard', () => {
             simulation={simulation}
             supplyInput="1000"
             borrowInput="500"
-            hasSharedScenario={false}
+            hasScenarioInput={false}
             inputMode="usd"
           />
         </TooltipProvider>
@@ -281,10 +281,13 @@ describe('MobileReserveCard', () => {
             onIncentiveClick={() => {}}
             isSimulationExpanded={false}
             onToggleSimulation={() => {}}
-            simulation={simulation}
+            simulation={{
+              ...simulation,
+              utilization: { ...simulation.utilization, after: 92, delta: 40 },
+            }}
             supplyInput="1000"
             borrowInput="500"
-            hasSharedScenario={false}
+            hasScenarioInput={false}
             inputMode="usd"
           />
         </TooltipProvider>
@@ -311,7 +314,7 @@ describe('MobileReserveCard', () => {
             simulation={simulation}
             supplyInput="1000"
             borrowInput="500"
-            hasSharedScenario
+            hasScenarioInput
             inputMode="usd"
           />
         </TooltipProvider>
@@ -368,7 +371,7 @@ describe('MobileReserveCard', () => {
             simulation={noIncentiveSimulation}
             supplyInput="1000"
             borrowInput="500"
-            hasSharedScenario
+            hasScenarioInput
             inputMode="usd"
           />
         </TooltipProvider>
@@ -411,7 +414,7 @@ describe('MobileReserveCard', () => {
             simulation={noIncentiveSimulation}
             supplyInput="1000"
             borrowInput="500"
-            hasSharedScenario
+            hasScenarioInput
             inputMode="usd"
           />
         </TooltipProvider>
@@ -469,7 +472,7 @@ describe('MobileReserveCard', () => {
             simulation={simulation}
             supplyInput="1000"
             borrowInput="500"
-            hasSharedScenario
+            hasScenarioInput
             inputMode="usd"
           />
         </TooltipProvider>
@@ -501,7 +504,7 @@ describe('MobileReserveCard', () => {
             simulation={simulation}
             supplyInput="1000"
             borrowInput="500"
-            hasSharedScenario
+            hasScenarioInput
             inputMode="usd"
           />
         </TooltipProvider>
@@ -528,7 +531,7 @@ describe('MobileReserveCard', () => {
             simulation={simulation}
             supplyInput="1000"
             borrowInput="500"
-            hasSharedScenario
+            hasScenarioInput
             inputMode="usd"
           />
         </TooltipProvider>
@@ -560,7 +563,7 @@ describe('MobileReserveCard', () => {
             simulation={simulation}
             supplyInput="1000"
             borrowInput="500"
-            hasSharedScenario
+            hasScenarioInput
             inputMode="usd"
           />
         </TooltipProvider>
@@ -592,7 +595,7 @@ describe('MobileReserveCard', () => {
             simulation={simulation}
             supplyInput="1000"
             borrowInput="500"
-            hasSharedScenario
+            hasScenarioInput
             inputMode="usd"
           />
         </TooltipProvider>
@@ -632,7 +635,7 @@ describe('MobileReserveCard', () => {
             simulation={simulation}
             supplyInput="1000"
             borrowInput="500"
-            hasSharedScenario
+            hasScenarioInput
             inputMode="usd"
           />
         </TooltipProvider>
@@ -676,7 +679,7 @@ describe('MobileReserveCard', () => {
             simulation={simulation}
             supplyInput="1000"
             borrowInput="500"
-            hasSharedScenario
+            hasScenarioInput
             inputMode="usd"
           />
         </TooltipProvider>
@@ -712,7 +715,7 @@ describe('MobileReserveCard', () => {
             simulation={simulation}
             supplyInput="1000"
             borrowInput="500"
-            hasSharedScenario
+            hasScenarioInput
             inputMode="usd"
           />
         </TooltipProvider>
@@ -744,7 +747,7 @@ describe('MobileReserveCard', () => {
             simulation={simulation}
             supplyInput="1000"
             borrowInput="500"
-            hasSharedScenario
+            hasScenarioInput
             inputMode="usd"
           />
         </TooltipProvider>
@@ -776,7 +779,7 @@ describe('MobileReserveCard', () => {
             simulation={simulation}
             supplyInput="1000"
             borrowInput="500"
-            hasSharedScenario
+            hasScenarioInput
             inputMode="usd"
           />
         </TooltipProvider>
@@ -807,7 +810,7 @@ describe('MobileReserveCard', () => {
             simulation={simulation}
             supplyInput="1000"
             borrowInput="500"
-            hasSharedScenario
+            hasScenarioInput
             inputMode="usd"
           />
         </TooltipProvider>
@@ -836,7 +839,7 @@ describe('MobileReserveCard', () => {
               simulation={simulation}
               supplyInput="1000"
               borrowInput="500"
-              hasSharedScenario
+              hasScenarioInput
               inputMode="usd"
             />
           </TooltipProvider>
@@ -866,7 +869,7 @@ describe('MobileReserveCard', () => {
               simulation={noIncentiveSim}
               supplyInput="1000"
               borrowInput="500"
-              hasSharedScenario
+              hasScenarioInput
               inputMode="usd"
             />
           </TooltipProvider>
@@ -894,7 +897,7 @@ describe('MobileReserveCard', () => {
               simulation={simulation}
               supplyInput="1000"
               borrowInput="500"
-              hasSharedScenario
+              hasScenarioInput
               inputMode="usd"
             />
           </TooltipProvider>
@@ -920,7 +923,7 @@ describe('MobileReserveCard', () => {
               simulation={simulation}
               supplyInput="1000"
               borrowInput="500"
-              hasSharedScenario
+              hasScenarioInput
               inputMode="usd"
             />
           </TooltipProvider>
@@ -948,7 +951,7 @@ describe('MobileReserveCard', () => {
               simulation={simulation}
               supplyInput="1000"
               borrowInput="500"
-              hasSharedScenario
+              hasScenarioInput
               inputMode="usd"
               defaultTab="borrow"
             />
@@ -979,7 +982,7 @@ describe('MobileReserveCard', () => {
               simulation={noIncentiveSim}
               supplyInput="1000"
               borrowInput="500"
-              hasSharedScenario
+              hasScenarioInput
               inputMode="usd"
               defaultTab="borrow"
             />
@@ -1008,7 +1011,7 @@ describe('MobileReserveCard', () => {
               simulation={simulation}
               supplyInput="1000"
               borrowInput="500"
-              hasSharedScenario
+              hasScenarioInput
               inputMode="usd"
               defaultTab="borrow"
             />
@@ -1035,7 +1038,7 @@ describe('MobileReserveCard', () => {
               simulation={simulation}
               supplyInput="1000"
               borrowInput="500"
-              hasSharedScenario
+              hasScenarioInput
               inputMode="usd"
               defaultTab="borrow"
             />
@@ -1064,7 +1067,7 @@ describe('MobileReserveCard', () => {
               simulation={simulation}
               supplyInput="1000"
               borrowInput="500"
-              hasSharedScenario
+              hasScenarioInput
               inputMode="usd"
             />
           </TooltipProvider>
@@ -1090,7 +1093,7 @@ describe('MobileReserveCard', () => {
               simulation={simulation}
               supplyInput="1000"
               borrowInput="500"
-              hasSharedScenario
+              hasScenarioInput
               inputMode="usd"
               defaultTab="borrow"
             />
@@ -1117,7 +1120,7 @@ describe('MobileReserveCard', () => {
               simulation={simulation}
               supplyInput="1000"
               borrowInput="500"
-              hasSharedScenario
+              hasScenarioInput
               inputMode="usd"
             />
           </TooltipProvider>
@@ -1160,7 +1163,7 @@ describe('MobileReserveCard', () => {
               simulation={simulation}
               supplyInput="1000"
               borrowInput="500"
-              hasSharedScenario
+              hasScenarioInput
               inputMode="usd"
             />
           </TooltipProvider>
@@ -1184,7 +1187,7 @@ describe('MobileReserveCard', () => {
               simulation={simulation}
               supplyInput="1000"
               borrowInput="500"
-              hasSharedScenario
+              hasScenarioInput
               inputMode="usd"
             />
           </TooltipProvider>
@@ -1208,7 +1211,7 @@ describe('MobileReserveCard', () => {
               simulation={simulation}
               supplyInput="1000"
               borrowInput="500"
-              hasSharedScenario
+              hasScenarioInput
               inputMode="usd"
             />
           </TooltipProvider>
@@ -1262,7 +1265,7 @@ describe('MobileReserveCard', () => {
               simulation={simulation}
               supplyInput="1000"
               borrowInput="500"
-              hasSharedScenario
+              hasScenarioInput
               inputMode="usd"
             />
           </TooltipProvider>
@@ -1295,7 +1298,7 @@ describe('MobileReserveCard', () => {
             simulation={simulation}
             supplyInput="1000"
             borrowInput="500"
-            hasSharedScenario
+            hasScenarioInput
             inputMode="usd"
           />
         </TooltipProvider>
@@ -1323,7 +1326,7 @@ describe('MobileReserveCard', () => {
             simulation={simulation}
             supplyInput="1000"
             borrowInput="500"
-            hasSharedScenario={false}
+            hasScenarioInput={false}
             inputMode="usd"
           />
         </TooltipProvider>

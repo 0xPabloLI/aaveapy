@@ -19,7 +19,6 @@ vi.mock('@/hooks/useRateSimulation', () => ({
   getReserveSimulationId: (reserve: Pick<ReserveWithSpread, 'reserveId'>) => reserve.reserveId,
   useSharedRateSimulations: () => ({
     simulationsById: {},
-    hasAnyInput: false,
   }),
 }));
 
@@ -232,7 +231,6 @@ describe('ReservesTable mobile bottom spacing', () => {
       getReserveSimulationId: (reserve: Pick<ReserveWithSpread, 'reserveId'>) => reserve.reserveId,
       useSharedRateSimulations: () => ({
         simulationsById: {},
-        hasAnyInput: false,
       }),
     }));
 

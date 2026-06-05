@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import type { ReserveWithSpread } from '@/types/aave';
 import type { PortfolioPosition } from '@/types/portfolio';
 import type { RateCalcInput } from '@/lib/interestRateCalculator';
-import { simulatePortfolioPositions } from './portfolioSimulator';
+import { simulatePortfolioPositions, buildPerReserveInputs } from './portfolioSimulator';
 import type { SimulatePortfolioPositionsArgs } from './portfolioSimulator';
 
 const makeRateCalcReserve = (
@@ -73,6 +73,92 @@ const baseSimArgs = (
   tydroPointToUsdRate: 0,
   forecastStates: {},
   ...overrides,
+});
+
+describe('buildPerReserveInputs', () => {
+  it('aggregates supply+borrow USD per reserveId', () => {
+    const positions = [
+      makePosition({ positionId: 'p1', reserveId: 'r-usdc', side: 'supply', amount: '1000' }),
+      makePosition({ positionId: 'p2', reserveId: 'r-usdc', side: 'borrow', amount: '500' }),
+      makePosition({ positionId: 'p3', reserveId: 'r-weth', side: 'supply', amount: '2000' }),
+    ];
+    const reserves = [
+      makeRateCalcReserve({ reserveId: 'r-usdc', tokenSymbol: 'USDC', tokenPrice: 1 }),
+      makeRateCalcReserve({ reserveId: 'r-weth', tokenSymbol: 'WETH', tokenPrice: 3000 }),
+    ];
+    const result = buildPerReserveInputs(positions, reserves);
+    expect(result.get('r-usdc')).toEqual({ supplyInput: '1000', borrowInput: '500', inputMode: 'usd' });
+    expect(result.get('r-weth')).toEqual({ supplyInput: '2000', borrowInput: '0', inputMode: 'usd' });
+  });
+
+  it('returns empty map for empty positions', () => {
+    const result = buildPerReserveInputs([], [makeRateCalcReserve()]);
+    expect(result.size).toBe(0);
+  });
+
+  it('skips positions with zero or invalid amount', () => {
+    const positions = [
+      makePosition({ positionId: 'p1', reserveId: 'r-usdc', side: 'supply', amount: '0' }),
+      makePosition({ positionId: 'p2', reserveId: 'r-usdc', side: 'borrow', amount: 'abc' }),
+    ];
+    const reserves = [makeRateCalcReserve({ reserveId: 'r-usdc' })];
+    const result = buildPerReserveInputs(positions, reserves);
+    expect(result.size).toBe(0);
+  });
+
+  it('skips positions whose reserve is not found', () => {
+    const positions = [
+      makePosition({ positionId: 'p1', reserveId: 'r-missing', side: 'supply', amount: '1000' }),
+    ];
+    const reserves = [makeRateCalcReserve({ reserveId: 'r-usdc' })];
+    const result = buildPerReserveInputs(positions, reserves);
+    expect(result.size).toBe(0);
+  });
+
+  it('defaults borrowInput to "0" when only supply exists', () => {
+    const positions = [
+      makePosition({ positionId: 'p1', reserveId: 'r-usdc', side: 'supply', amount: '3000' }),
+    ];
+    const reserves = [makeRateCalcReserve({ reserveId: 'r-usdc' })];
+    const result = buildPerReserveInputs(positions, reserves);
+    expect(result.get('r-usdc')).toEqual({ supplyInput: '3000', borrowInput: '0', inputMode: 'usd' });
+  });
+
+  it('defaults supplyInput to "0" when only borrow exists', () => {
+    const positions = [
+      makePosition({ positionId: 'p1', reserveId: 'r-usdc', side: 'borrow', amount: '2000' }),
+    ];
+    const reserves = [makeRateCalcReserve({ reserveId: 'r-usdc' })];
+    const result = buildPerReserveInputs(positions, reserves);
+    expect(result.get('r-usdc')).toEqual({ supplyInput: '0', borrowInput: '2000', inputMode: 'usd' });
+  });
+
+  it('resolves token amount to USD using tokenPrice', () => {
+    const positions = [
+      makePosition({ positionId: 'p1', reserveId: 'r-weth', side: 'supply', amount: '2', inputMode: 'token' }),
+    ];
+    const reserves = [makeRateCalcReserve({ reserveId: 'r-weth', tokenSymbol: 'WETH', tokenPrice: 3000 })];
+    const result = buildPerReserveInputs(positions, reserves);
+    expect(result.get('r-weth')).toEqual({ supplyInput: '6000', borrowInput: '0', inputMode: 'usd' });
+  });
+
+  it('ignores hidden positions', () => {
+    const positions = [
+      makePosition({ positionId: 'p1', reserveId: 'r-usdc', side: 'supply', amount: '1000', hidden: true }),
+    ];
+    const reserves = [makeRateCalcReserve({ reserveId: 'r-usdc' })];
+    const result = buildPerReserveInputs(positions, reserves);
+    expect(result.size).toBe(0);
+  });
+
+  it('ignores orphan positions', () => {
+    const positions = [
+      makePosition({ positionId: 'p1', reserveId: 'r-usdc', side: 'supply', amount: '1000', isOrphan: true }),
+    ];
+    const reserves = [makeRateCalcReserve({ reserveId: 'r-usdc' })];
+    const result = buildPerReserveInputs(positions, reserves);
+    expect(result.size).toBe(0);
+  });
 });
 
 describe('simulatePortfolioPositions', () => {

@@ -29,8 +29,8 @@ interface UseScenarioPinScrollOptions {
   minVisibleCount: number | null;
   /** Pagination's default cap (typically `DEFAULT_VISIBLE_COUNT`). */
   defaultVisibleCount: number;
-  /** True when any scenario input is non-empty. */
-  hasSharedScenario: boolean;
+  /** True when any scenario input is non-empty (shared or portfolio mode). */
+  hasScenarioInput: boolean;
   /** True when the active sort column reads scenario values (and thus list order can change on input). */
   expandScrollFollowsScenarioSort: boolean;
   scenarioKey: ScenarioKeyInputs;
@@ -81,7 +81,7 @@ export function useScenarioPinScroll(
     setExpandedReserveId,
     minVisibleCount,
     defaultVisibleCount,
-    hasSharedScenario,
+    hasScenarioInput,
     expandScrollFollowsScenarioSort,
     scenarioKey,
   }: UseScenarioPinScrollOptions,
@@ -179,7 +179,7 @@ export function useScenarioPinScroll(
         scenarioKey: composedKey,
         sortedIds: ids,
         expandedReserveId,
-        hasScenarioInput: hasSharedScenario,
+        hasScenarioInput,
         expandScrollFollowsScenarioSort,
         hasRequiredVisibleCount,
         isExpandedStillVisible: expandedIndex >= 0,
@@ -212,7 +212,7 @@ export function useScenarioPinScroll(
     expandedReserveId,
     minVisibleCount,
     defaultVisibleCount,
-    hasSharedScenario,
+    hasScenarioInput,
     expandScrollFollowsScenarioSort,
     schedulePinScrollToReserve,
   ]);
