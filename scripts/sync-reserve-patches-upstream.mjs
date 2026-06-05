@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
- * Merges aave/interface reservePatches drift into local `reservePatches.ts`:
- * - SYMBOL_MAP: upstream values win on shared keys; local-only keys preserved (see reserve-patches-symbol-map.mjs).
- * - underlyingAssetMap: append upstream entries missing locally (address / expression keys).
+ * Merges aave/interface reservePatches drift into local files:
+ * - SYMBOL_MAP (in src/lib/tokenSymbolMap.ts): upstream values win on shared keys; local-only keys preserved (see reserve-patches-symbol-map.mjs).
+ * - underlyingAssetMap (in src/ui-config/reservePatches.ts): append upstream entries missing locally (address / expression keys).
  */
 import { readFile, writeFile } from 'fs/promises';
 import path from 'path';
@@ -14,6 +14,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const UPSTREAM_RESERVE_PATCHES_URL =
   'https://raw.githubusercontent.com/aave/interface/main/src/ui-config/reservePatches.ts';
 const LOCAL_RESERVE_PATCHES_PATH = path.join(ROOT, 'src/ui-config/reservePatches.ts');
+const LOCAL_TOKEN_SYMBOL_MAP_PATH = path.join(ROOT, 'src/lib/tokenSymbolMap.ts');
 
 function normalizeExpressionKey(value) {
   return value.replace(/\s+/g, '');
@@ -223,23 +224,25 @@ function applyUnderlyingAssetMapMerge(localContent, upstreamContent) {
 }
 
 async function main() {
-  const [localContent, upstreamContent] = await Promise.all([
+  const [localReserveContent, upstreamContent, localSymbolMapContent] = await Promise.all([
     readFile(LOCAL_RESERVE_PATCHES_PATH, 'utf8'),
     fetchWithTimeout(UPSTREAM_RESERVE_PATCHES_URL),
+    readFile(LOCAL_TOKEN_SYMBOL_MAP_PATH, 'utf8'),
   ]);
 
-  let next = localContent;
+  let nextReserveContent = localReserveContent;
+  let nextSymbolMapContent = localSymbolMapContent;
   const notes = [];
 
-  const symbolMerge = mergeSymbolMapInContent(next, upstreamContent);
+  const symbolMerge = mergeSymbolMapInContent(nextSymbolMapContent, upstreamContent);
   if (symbolMerge.changed) {
-    next = symbolMerge.content;
+    nextSymbolMapContent = symbolMerge.content;
     notes.push('SYMBOL_MAP merged from upstream (local-only keys preserved)');
   }
 
-  const underlyingMerge = applyUnderlyingAssetMapMerge(next, upstreamContent);
+  const underlyingMerge = applyUnderlyingAssetMapMerge(nextReserveContent, upstreamContent);
   if (underlyingMerge.changed) {
-    next = underlyingMerge.content;
+    nextReserveContent = underlyingMerge.content;
     notes.push(`underlyingAssetMap: added ${underlyingMerge.addedCount} missing entr(y/ies)`);
   }
 
@@ -248,11 +251,17 @@ async function main() {
     return;
   }
 
-  await writeFile(LOCAL_RESERVE_PATCHES_PATH, next, 'utf8');
+  if (symbolMerge.changed) {
+    await writeFile(LOCAL_TOKEN_SYMBOL_MAP_PATH, nextSymbolMapContent, 'utf8');
+    console.log('Updated src/lib/tokenSymbolMap.ts');
+  }
+  if (underlyingMerge.changed) {
+    await writeFile(LOCAL_RESERVE_PATCHES_PATH, nextReserveContent, 'utf8');
+    console.log('Updated src/ui-config/reservePatches.ts');
+  }
   for (const line of notes) {
     console.log(line);
   }
-  console.log('Updated src/ui-config/reservePatches.ts');
 }
 
 main().catch((error) => {
