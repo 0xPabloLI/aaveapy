@@ -46,20 +46,20 @@ export function WalletButton({ mobile = false, onWatchSubmit }: WalletButtonProp
                   <button
                     type="button"
                     className={cn(
-                      'flex items-center gap-1 transition-colors',
+                      'flex items-center gap-[var(--ds-space-1)] transition-colors',
                       mobile
                         ? 'justify-center w-[var(--ds-control-h)] h-[var(--ds-control-h)] rounded-full bg-card/60 border border-border/40 text-muted-foreground hover:bg-muted/60 hover:border-border focus-visible:ring-2 focus-visible:ring-ring'
-                        : 'rounded-md px-2 py-1 ds-text-11 text-foreground hover:bg-muted/60',
+                        : 'rounded-md px-[var(--ds-space-2)] py-[var(--ds-space-1)] ds-text-14 text-foreground hover:bg-muted/60',
                     )}
                     aria-label={isWatchMode ? `Viewing ${truncateAddress(address)}` : `Wallet ${truncateAddress(address)}`}
                   >
                     {isWatchMode ? (
-                      <Eye className="w-3.5 h-3.5" aria-hidden />
+                      <Eye className="w-4 h-4" aria-hidden />
                     ) : (
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" aria-hidden />
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" aria-hidden />
                     )}
                     {!mobile && <span>{truncateAddress(address)}</span>}
-                    {!mobile && <ChevronDown className="w-3 h-3 text-muted-foreground" aria-hidden />}
+                    {!mobile && <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" aria-hidden />}
                   </button>
                 </PopoverTrigger>
                 <PopoverContent side="bottom" align="end" sideOffset={4} className="w-40 p-1">
