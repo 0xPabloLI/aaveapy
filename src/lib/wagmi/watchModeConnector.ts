@@ -15,6 +15,7 @@ export function watchModeConnector() {
     id: 'watchMode' as const,
     name: 'View any address',
     type: 'watchMode' as const,
+    setWatchAddress,
 
     async connect({ chainId } = {}) {
       const address = watchAddress
