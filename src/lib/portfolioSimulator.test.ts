@@ -509,4 +509,72 @@ describe('simulatePortfolioPositions', () => {
       expect(usdtSupply.incentivePercent).toBeGreaterThan(0);
     });
   });
+
+  describe('buildPerReserveInputs — per-reserve vs shared mutual exclusion', () => {
+    it('builds per-reserve inputs from supply positions', () => {
+      const reserveId = 'r-usdc-v3';
+      const reserve = makeRateCalcReserve({ reserveId });
+      const positions = [
+        makePosition({ reserveId, side: 'supply', amount: '5000', tokenSymbol: 'USDC' }),
+      ];
+      const result = buildPerReserveInputs(positions, [reserve]);
+      expect(result.has(reserveId)).toBe(true);
+      const input = result.get(reserveId)!;
+      expect(input.supplyInput).toBe('5000');
+      expect(input.borrowInput).toBe('0');
+      expect(input.inputMode).toBe('usd');
+    });
+
+    it('builds per-reserve inputs from borrow positions', () => {
+      const reserveId = 'r-usdc-v3';
+      const reserve = makeRateCalcReserve({ reserveId });
+      const positions = [
+        makePosition({ reserveId, side: 'borrow', amount: '3000', tokenSymbol: 'USDC' }),
+      ];
+      const result = buildPerReserveInputs(positions, [reserve]);
+      expect(result.has(reserveId)).toBe(true);
+      const input = result.get(reserveId)!;
+      expect(input.supplyInput).toBe('0');
+      expect(input.borrowInput).toBe('3000');
+      expect(input.inputMode).toBe('usd');
+    });
+
+    it('combines supply and borrow on same reserve', () => {
+      const reserveId = 'r-usdc-v3';
+      const reserve = makeRateCalcReserve({ reserveId });
+      const positions = [
+        makePosition({ reserveId, side: 'supply', amount: '5000', tokenSymbol: 'USDC' }),
+        makePosition({ reserveId, side: 'borrow', amount: '3000', tokenSymbol: 'USDC' }),
+      ];
+      const result = buildPerReserveInputs(positions, [reserve]);
+      const input = result.get(reserveId)!;
+      expect(input.supplyInput).toBe('5000');
+      expect(input.borrowInput).toBe('3000');
+    });
+
+    it('returns empty map when no positions match reserves', () => {
+      const reserve = makeRateCalcReserve({ reserveId: 'r-usdc-v3' });
+      const positions = [
+        makePosition({ reserveId: 'r-dai-v3', side: 'supply', amount: '5000', tokenSymbol: 'DAI' }),
+      ];
+      const result = buildPerReserveInputs(positions, [reserve]);
+      expect(result.size).toBe(0);
+    });
+
+    it('handles multiple reserves independently', () => {
+      const usdcId = 'r-usdc-v3';
+      const usdtId = 'r-usdt-v3';
+      const usdcReserve = makeRateCalcReserve({ reserveId: usdcId, tokenSymbol: 'USDC' });
+      const usdtReserve = makeRateCalcReserve({ reserveId: usdtId, tokenSymbol: 'USDT' });
+      const positions = [
+        makePosition({ reserveId: usdcId, side: 'supply', amount: '5000', tokenSymbol: 'USDC' }),
+        makePosition({ reserveId: usdtId, side: 'borrow', amount: '2000', tokenSymbol: 'USDT' }),
+      ];
+      const result = buildPerReserveInputs(positions, [usdcReserve, usdtReserve]);
+      expect(result.get(usdcId)!.supplyInput).toBe('5000');
+      expect(result.get(usdcId)!.borrowInput).toBe('0');
+      expect(result.get(usdtId)!.supplyInput).toBe('0');
+      expect(result.get(usdtId)!.borrowInput).toBe('2000');
+    });
+  });
 });

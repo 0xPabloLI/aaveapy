@@ -14,6 +14,7 @@ import type {
   TokenPricesIndex,
 } from '@/types/aave';
 import type { ReservePositions } from '@/lib/netLendingCrossReserve';
+import type { PerReserveInput } from '@/lib/portfolioSimulator';
 import {
   buildRateSimulationResult,
   buildEmptyRateSimulationResult,
@@ -77,6 +78,7 @@ interface UseSharedRateSimulationsParams {
   meritMerklNetPosition?: boolean;
   reservePositions?: Map<string, ReservePositions>;
   reserveSymbolById?: Map<string, string>;
+  perReserveInputs?: Map<string, PerReserveInput>;
 }
 
 export const useSharedRateSimulations = ({
@@ -92,13 +94,35 @@ export const useSharedRateSimulations = ({
   meritMerklNetPosition = true,
   reservePositions,
   reserveSymbolById,
+  perReserveInputs,
 }: UseSharedRateSimulationsParams) => {
-  const hasAnyInput = useMemo(() => parseNumberInput(supplyInput) > 0 || parseNumberInput(borrowInput) > 0, [borrowInput, supplyInput]);
+  const hasPerReserveInput = useMemo(
+    () =>
+      perReserveInputs != null &&
+      Array.from(perReserveInputs.values()).some(
+        (v) => parseNumberInput(v.supplyInput) > 0 || parseNumberInput(v.borrowInput) > 0,
+      ),
+    [perReserveInputs],
+  );
+  const hasAnyInput = useMemo(
+    () =>
+      parseNumberInput(supplyInput) > 0 ||
+      parseNumberInput(borrowInput) > 0 ||
+      hasPerReserveInput,
+    [borrowInput, supplyInput, hasPerReserveInput],
+  );
   const needsTokenPrice = inputMode === 'token';
 
   const priceQueries = useQueries({
     queries: reserves.map((reserve) => {
       const localPrice = resolveLocalReserveTokenPrice(reserve, tokenPrices);
+      const reserveId = getReserveSimulationId(reserve);
+      const perReserve = perReserveInputs?.get(reserveId);
+      const reserveNeedsPrice =
+        parseNumberInput(supplyInput) > 0 ||
+        parseNumberInput(borrowInput) > 0 ||
+        (perReserve != null &&
+          (parseNumberInput(perReserve.supplyInput) > 0 || parseNumberInput(perReserve.borrowInput) > 0));
       return {
         queryKey: [
           ...FORECAST_TOKEN_PRICE_QUERY_KEY,
@@ -121,9 +145,9 @@ export const useSharedRateSimulations = ({
             null
           );
         },
-        // Shared simulation in token mode relies on backend-provided prices only.
-        // Table-wide third-party fetches create a request storm and hit browser CORS/rate limits.
-        enabled: enabled && hasAnyInput && needsTokenPrice && localPrice === undefined,
+        // Per-reserve price query is enabled when either shared or per-reserve
+        // input exists for that reserve, avoiding request storms when no input.
+        enabled: enabled && reserveNeedsPrice && needsTokenPrice && localPrice === undefined,
         staleTime: QUERY_STALE_TIMES.default,
       };
     }),
@@ -208,6 +232,10 @@ export const useSharedRateSimulations = ({
   const simulationsById = useMemo(() => {
     return reserves.reduce<Record<string, RateSimulationResult>>((acc, reserve) => {
       const reserveId = getReserveSimulationId(reserve);
+      const perReserve = perReserveInputs?.get(reserveId);
+      const effectiveSupplyInput = perReserve?.supplyInput ?? supplyInput;
+      const effectiveBorrowInput = perReserve?.borrowInput ?? borrowInput;
+      const effectiveInputMode = perReserve?.inputMode ?? inputMode;
       const reserveRateInput: RateCalcInput | null = hasRateCalcFields(reserve) ? { ...reserve } : null;
       let hubSupplied: string | undefined;
       let hubBorrowed: string | undefined;
@@ -224,6 +252,8 @@ export const useSharedRateSimulations = ({
           }
         }
       }
+      const hasEffectiveInput =
+        parseNumberInput(effectiveSupplyInput) > 0 || parseNumberInput(effectiveBorrowInput) > 0;
       acc[reserveId] = {
         ...buildRateSimulationResult({
           reserve,
@@ -232,9 +262,9 @@ export const useSharedRateSimulations = ({
           whitelistMerklCampaignIds,
           tydroPointToUsdRate,
           tokenPrice: tokenPriceById[reserveId],
-          supplyInput,
-          borrowInput,
-          inputMode,
+          supplyInput: effectiveSupplyInput,
+          borrowInput: effectiveBorrowInput,
+          inputMode: effectiveInputMode,
           forecastStates,
           meritMerklNetPosition,
           reservePositions,
@@ -243,14 +273,13 @@ export const useSharedRateSimulations = ({
           hubBorrowed,
         }),
         tokenPriceLoading: tokenPriceLoadingById[reserveId] ?? false,
-        forecastLoading: hasAnyInput && forecastLoading,
+        forecastLoading: hasEffectiveInput && forecastLoading,
         forecastErrors,
       };
       return acc;
     }, {});
   }, [
     borrowInput,
-    hasAnyInput,
     forecastErrors,
     forecastLoading,
     forecastStates,
@@ -259,6 +288,7 @@ export const useSharedRateSimulations = ({
     inputMode,
     isApy,
     meritMerklNetPosition,
+    perReserveInputs,
     reserves,
     supplyInput,
     tokenPriceById,
