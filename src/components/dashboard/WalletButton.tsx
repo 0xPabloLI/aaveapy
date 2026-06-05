@@ -101,7 +101,7 @@ export function WalletButton({ mobile = false, onWatchSubmit }: WalletButtonProp
                     className="flex items-center justify-center w-[var(--ds-control-h)] h-[var(--ds-control-h)] rounded-full bg-card/60 border border-border/40 text-muted-foreground hover:bg-muted/60 hover:border-border focus-visible:ring-2 focus-visible:ring-ring"
                     aria-label="Wallet actions"
                   >
-                    <Wallet className="w-3.5 h-3.5" aria-hidden />
+                    <Wallet className="w-4 h-4" aria-hidden />
                   </button>
                 </PopoverTrigger>
                 <PopoverContent side="bottom" align="end" sideOffset={4} className="w-40 p-1">
