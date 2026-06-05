@@ -9,6 +9,13 @@ import {
 import ThemeToggle from '@/components/ThemeToggle';
 import { useWatchModeConnect } from '@/hooks/useWatchModeConnect';
 import { WalletButton } from './WalletButton';
+import {
+  HEADER_CONTROL_AFFORDANCE_ICON_CLASS,
+  HEADER_CONTROL_DESKTOP_CLASS,
+  HEADER_CONTROL_ICON_CLASS,
+  HEADER_CONTROL_MOBILE_CLASS,
+} from '@/lib/headerControlStyles';
+import { cn } from '@/lib/utils';
 
 interface HeaderProps {
   lastUpdated?: string;
