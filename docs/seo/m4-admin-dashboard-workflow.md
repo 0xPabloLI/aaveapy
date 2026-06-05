@@ -7,19 +7,19 @@
 
 ## 1. 访问链接
 
-| 环境 | URL |
-|---|---|
-| Lovable 预览 | https://id-preview--52846798-e3d8-4735-9a82-ed028b26625d.lovable.app/admin/seo |
-| Lovable 发布（staging） | https://aaveapy.lovable.app/admin/seo |
-| 本地 dev | http://localhost:8080/admin/seo（或 5173） |
+| 环境 | URL | 状态 |
+|---|---|---|
+| dev（本地） | http://localhost:8080/admin/seo（或 5173） | 需本地 `npm run dev` |
+| staging（Lovable Preview） | https://id-preview--52846798-e3d8-4735-9a82-ed028b26625d.lovable.app/admin/seo | 需 Lovable 登录 |
+| prod（Lovable Published / Live） | https://aaveapy.lovable.app/admin/seo | ✅ 200 OK |
 
 ### 1.1 Aave News Backlinks（Semrush 外链分析）
 
-| 环境 | URL |
-|---|---|
-| Lovable 预览 | https://id-preview--52846798-e3d8-4735-9a82-ed028b26625d.lovable.app/admin/aave-news-backlinks |
-| Lovable 发布（staging） | https://aaveapy.lovable.app/admin/aave-news-backlinks |
-| 本地 dev | http://localhost:8080/admin/aave-news-backlinks（或 5173） |
+| 环境 | URL | 状态 |
+|---|---|---|
+| dev（本地） | http://localhost:8080/admin/aave-news-backlinks（或 5173） | 需本地 `npm run dev` |
+| staging（Lovable Preview） | https://id-preview--52846798-e3d8-4735-9a82-ed028b26625d.lovable.app/admin/aave-news-backlinks | 需 Lovable 登录 |
+| prod（Lovable Published / Live） | https://aaveapy.lovable.app/admin/aave-news-backlinks | ✅ 200 OK |
 
 > **没有登录墙**——靠路径不公开 + `robots.txt` Disallow。链接谁拿到谁能看，**不要外发**。
 
