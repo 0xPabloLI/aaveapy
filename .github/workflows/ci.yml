@@ -223,7 +223,8 @@ jobs:
       always() &&
       github.event_name == 'push' &&
       !startsWith(github.ref_name, 'bot/ci-auto-remediation-') &&
-      (needs.peer-dep-check.result == 'failure' || needs.lint.result == 'failure' || needs.build.result == 'failure' || needs.openapi-check.result == 'failure' || needs.security-audit.result == 'failure')
+      needs.peer-dep-check.result != 'failure' &&
+      (needs.lint.result == 'failure' || needs.build.result == 'failure' || needs.openapi-check.result == 'failure' || needs.security-audit.result == 'failure')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout target branch
