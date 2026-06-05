@@ -1,3 +1,5 @@
+> **⚠️ STALE** — 本文档内容可能已过时。开始实现前，务必先到 [Linear AAV-344](https://linear.app/aaveapy/issue/AAV-344) 同步最新 description，并据此更新本文件。
+
 # AAV-344 前端：Reserve Snapshots 历史趋势展示
 
 ## 1. 目标
