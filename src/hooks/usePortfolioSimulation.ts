@@ -163,7 +163,50 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
   }, []);
 
   const importPositions = useCallback((incoming: PortfolioPosition[]) => {
-    setPositions((prev) => mergePositions({ current: prev, incoming }));
+    // Auto-complete: for each reserve in incoming positions, ensure both
+    // supply and borrow sides exist so users can manually adjust either side.
+    const withMissingSides: PortfolioPosition[] = [];
+    const seenReserves = new Map<string, Set<PortfolioSide>>();
+    for (const pos of incoming) {
+      const sides = seenReserves.get(pos.reserveId) ?? new Set<PortfolioSide>();
+      sides.add(pos.side);
+      seenReserves.set(pos.reserveId, sides);
+      withMissingSides.push(pos);
+    }
+    for (const [reserveId, sides] of seenReserves) {
+      const ref = incoming.find(p => p.reserveId === reserveId)!;
+      if (!sides.has('supply')) {
+        withMissingSides.push({
+          positionId: generatePositionId(),
+          reserveId,
+          marketName: ref.marketName,
+          chainName: ref.chainName,
+          tokenSymbol: ref.tokenSymbol,
+          side: 'supply',
+          amount: '',
+          inputMode: 'usd',
+          walletValue: null,
+          hidden: false,
+          isOrphan: ref.isOrphan,
+        });
+      }
+      if (!sides.has('borrow')) {
+        withMissingSides.push({
+          positionId: generatePositionId(),
+          reserveId,
+          marketName: ref.marketName,
+          chainName: ref.chainName,
+          tokenSymbol: ref.tokenSymbol,
+          side: 'borrow',
+          amount: '',
+          inputMode: 'usd',
+          walletValue: null,
+          hidden: false,
+          isOrphan: ref.isOrphan,
+        });
+      }
+    }
+    setPositions((prev) => mergePositions({ current: prev, incoming: withMissingSides }));
   }, []);
 
   const restorePosition = useCallback((positionId: string) => {

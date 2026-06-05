@@ -58,10 +58,8 @@ interface PortfolioPanelProps {
 
 /**
  * Search result row.
- * - Click adds whichever sides (supply/borrow) are missing for this reserve.
- * - Disabled only when BOTH sides are already added.
- * - Always shows per-side status badges so users can see at a glance which
- *   inputs already exist and which will be created on click.
+ * - Click adds BOTH supply and borrow positions for this reserve.
+ * - Disabled when the reserve is already in the portfolio.
  */
 function SearchResultRow({
   reserve,
@@ -73,17 +71,7 @@ function SearchResultRow({
   existingPositions: PortfolioPosition[];
 }) {
   const reserveId = getReserveKey(reserve);
-  const sidesForReserve = existingPositions.filter((p) => p.reserveId === reserveId);
-  const hasSupply = sidesForReserve.some((p) => p.side === 'supply');
-  const hasBorrow = sidesForReserve.some((p) => p.side === 'borrow');
-  const fullyAdded = hasSupply && hasBorrow;
-  const partiallyAdded = (hasSupply || hasBorrow) && !fullyAdded;
-
-  const ariaLabel = fullyAdded
-    ? `${reserve.tokenSymbol} already added (supply and borrow)`
-    : partiallyAdded
-      ? `Add missing ${hasSupply ? 'borrow' : 'supply'} side for ${reserve.tokenSymbol}`
-      : `Add ${reserve.tokenSymbol} (supply and borrow)`;
+  const alreadyAdded = existingPositions.some((p) => p.reserveId === reserveId);
 
   const chainSrc = getChainIconSrc(reserve.chainName);
   const marketLabel = getMarketChipLabel(reserve.marketName, reserve.chainName);
@@ -91,13 +79,15 @@ function SearchResultRow({
   return (
     <button
       type="button"
-      disabled={fullyAdded}
+      disabled={alreadyAdded}
       onClick={() => onAdd(reserveId)}
       className={cn(
         'flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left transition-colors',
-        fullyAdded ? 'opacity-60 cursor-not-allowed' : 'hover:bg-muted/60',
+        alreadyAdded ? 'opacity-60 cursor-not-allowed' : 'hover:bg-muted/60',
       )}
-      aria-label={ariaLabel}
+      aria-label={alreadyAdded
+        ? `${reserve.tokenSymbol} already added`
+        : `Add ${reserve.tokenSymbol} (supply and borrow)`}
     >
       {/* Horizontal compact row: token | divider | chain+market | divider | hub */}
       <span className="inline-flex items-center gap-1 shrink-0">
@@ -123,16 +113,12 @@ function SearchResultRow({
         </>
       )}
       <span className="ml-auto flex items-center gap-1 shrink-0">
-        {fullyAdded ? (
+        {alreadyAdded && (
           <span className={cn('ds-text-10 font-semibold inline-flex items-center gap-0.5', BATCH_THEME.text)}>
             <Check className="size-3" aria-hidden />
             Added
           </span>
-        ) : partiallyAdded ? (
-          <span className={cn('ds-text-10 font-semibold', BATCH_THEME.text)}>
-            Add {hasSupply ? 'Borrow' : 'Supply'}
-          </span>
-        ) : null}
+        )}
       </span>
     </button>
   );
@@ -251,22 +237,15 @@ const PortfolioPanel = memo(function PortfolioPanel({
   }, [hasMoreResults]);
 
   // Add both supply and borrow positions for the selected token.
-  // - If both already exist: do nothing (button is disabled in search results).
-  // - If only one side exists: add the missing side and inform the user.
-  // - If none exist: add both.
+  // If the reserve is already in the portfolio (any side exists), do nothing.
+  // Otherwise add both — mergePositions deduplicates any that already exist.
   // Search auto-focus is preserved ONLY when the search panel is already open,
   // so clicking a quick-add chip while search is collapsed will NOT reopen it.
   const handleAddToken = useCallback(
     (reserveId: string) => {
       const reserve = reserves.find((r) => getReserveKey(r) === reserveId);
       if (!reserve) return;
-      const existingSides = new Set(
-        positions.filter((p) => p.reserveId === reserveId).map((p) => p.side),
-      );
-      const hadSupply = existingSides.has('supply');
-      const hadBorrow = existingSides.has('borrow');
-
-      if (hadSupply && hadBorrow) {
+      if (positions.some((p) => p.reserveId === reserveId)) {
         toast.info(`${reserve.tokenSymbol} is already in the batch`);
         return;
       }
@@ -277,13 +256,8 @@ const PortfolioPanel = memo(function PortfolioPanel({
         chainName: reserve.chainName ?? reserve.marketName,
         tokenSymbol: reserve.tokenSymbol,
       };
-      if (!hadSupply) actions.addPosition({ ...common, side: 'supply' });
-      if (!hadBorrow) actions.addPosition({ ...common, side: 'borrow' });
-
-      if (hadSupply || hadBorrow) {
-        const missing = hadSupply ? 'borrow' : 'supply';
-        toast.success(`Added missing ${missing} side for ${reserve.tokenSymbol}`);
-      }
+      actions.addPosition({ ...common, side: 'supply' });
+      actions.addPosition({ ...common, side: 'borrow' });
 
       // Keep focus on the search input only if search is already open;
       // do not force-open it (quick-add chips should not toggle the panel).

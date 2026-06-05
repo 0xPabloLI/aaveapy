@@ -200,3 +200,102 @@ describe('updateInputMode — amount conversion', () => {
     expect(borrow.inputMode).toBe('usd');
   });
 });
+
+describe('importPositions — auto-complete missing sides', () => {
+  const makeWalletPos = (overrides: Partial<{
+    reserveId: string;
+    marketName: string;
+    chainName: string;
+    tokenSymbol: string;
+    side: 'supply' | 'borrow';
+    amount: string;
+    walletValue: number | null;
+    isOrphan: boolean;
+    source: 'sdk' | 'onchain-v3' | 'onchain-v4';
+  }>) => ({
+    positionId: `w-${Math.random()}`,
+    reserveId: overrides.reserveId ?? 'r1',
+    marketName: overrides.marketName ?? 'AaveV3Ethereum',
+    chainName: overrides.chainName ?? 'Ethereum',
+    tokenSymbol: overrides.tokenSymbol ?? 'USDC',
+    side: overrides.side ?? 'supply',
+    amount: overrides.amount ?? '5000',
+    inputMode: 'usd' as const,
+    walletValue: overrides.walletValue ?? 5000,
+    hidden: false,
+    isOrphan: overrides.isOrphan ?? false,
+    source: overrides.source ?? 'sdk',
+  });
+
+  it('creates both supply and borrow rows when wallet only has supply', () => {
+    const { result } = renderHook(() => usePortfolioSimulation());
+    act(() => { result.current.actions.setActive(true); });
+
+    act(() => {
+      result.current.actions.importPositions([
+        makeWalletPos({ reserveId: 'r-weth', tokenSymbol: 'WETH', side: 'supply', amount: '1737', walletValue: 1737 }),
+      ]);
+    });
+
+    const wethPositions = result.current.positions.filter(p => p.reserveId === 'r-weth');
+    expect(wethPositions).toHaveLength(2);
+    expect(wethPositions.find(p => p.side === 'supply')?.walletValue).toBe(1737);
+    expect(wethPositions.find(p => p.side === 'borrow')?.walletValue).toBeNull();
+    expect(wethPositions.find(p => p.side === 'borrow')?.amount).toBe('');
+  });
+
+  it('creates both supply and borrow rows when wallet only has borrow', () => {
+    const { result } = renderHook(() => usePortfolioSimulation());
+    act(() => { result.current.actions.setActive(true); });
+
+    act(() => {
+      result.current.actions.importPositions([
+        makeWalletPos({ reserveId: 'r-gho', tokenSymbol: 'GHO', side: 'borrow', amount: '9674', walletValue: 9674 }),
+      ]);
+    });
+
+    const ghoPositions = result.current.positions.filter(p => p.reserveId === 'r-gho');
+    expect(ghoPositions).toHaveLength(2);
+    expect(ghoPositions.find(p => p.side === 'borrow')?.walletValue).toBe(9674);
+    expect(ghoPositions.find(p => p.side === 'supply')?.walletValue).toBeNull();
+  });
+
+  it('keeps both sides when wallet already has both', () => {
+    const { result } = renderHook(() => usePortfolioSimulation());
+    act(() => { result.current.actions.setActive(true); });
+
+    act(() => {
+      result.current.actions.importPositions([
+        makeWalletPos({ reserveId: 'r-usdt0', tokenSymbol: 'USDT0', side: 'supply', amount: '10000', walletValue: 10000 }),
+        makeWalletPos({ reserveId: 'r-usdt0', tokenSymbol: 'USDT0', side: 'borrow', amount: '5000', walletValue: 5000 }),
+      ]);
+    });
+
+    const usdt0Positions = result.current.positions.filter(p => p.reserveId === 'r-usdt0');
+    expect(usdt0Positions).toHaveLength(2);
+    expect(usdt0Positions.find(p => p.side === 'supply')?.walletValue).toBe(10000);
+    expect(usdt0Positions.find(p => p.side === 'borrow')?.walletValue).toBe(5000);
+  });
+
+  it('handles multiple reserves with different side combinations', () => {
+    const { result } = renderHook(() => usePortfolioSimulation());
+    act(() => { result.current.actions.setActive(true); });
+
+    act(() => {
+      result.current.actions.importPositions([
+        makeWalletPos({ reserveId: 'r-weth', tokenSymbol: 'WETH', side: 'supply', amount: '1000', walletValue: 1000 }),
+        makeWalletPos({ reserveId: 'r-gho', tokenSymbol: 'GHO', side: 'borrow', amount: '2000', walletValue: 2000 }),
+      ]);
+    });
+
+    expect(result.current.positions).toHaveLength(4);
+    const wethSupply = result.current.positions.find(p => p.reserveId === 'r-weth' && p.side === 'supply');
+    const wethBorrow = result.current.positions.find(p => p.reserveId === 'r-weth' && p.side === 'borrow');
+    const ghoSupply = result.current.positions.find(p => p.reserveId === 'r-gho' && p.side === 'supply');
+    const ghoBorrow = result.current.positions.find(p => p.reserveId === 'r-gho' && p.side === 'borrow');
+    expect(wethSupply?.walletValue).toBe(1000);
+    expect(wethBorrow?.walletValue).toBeNull();
+    expect(ghoBorrow?.walletValue).toBe(2000);
+    expect(ghoSupply?.walletValue).toBeNull();
+  });
+});
