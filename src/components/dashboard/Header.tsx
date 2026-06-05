@@ -9,6 +9,13 @@ import {
 import ThemeToggle from '@/components/ThemeToggle';
 import { useWatchModeConnect } from '@/hooks/useWatchModeConnect';
 import { WalletButton } from './WalletButton';
+import {
+  HEADER_CONTROL_AFFORDANCE_ICON_CLASS,
+  HEADER_CONTROL_DESKTOP_CLASS,
+  HEADER_CONTROL_ICON_CLASS,
+  HEADER_CONTROL_MOBILE_CLASS,
+} from '@/lib/headerControlStyles';
+import { cn } from '@/lib/utils';
 
 interface HeaderProps {
   lastUpdated?: string;
@@ -61,10 +68,10 @@ const Header = ({ lastUpdated }: HeaderProps) => {
               <PopoverTrigger asChild>
                 <button
                   type="button"
-                  className="flex items-center justify-center w-[var(--ds-control-h)] h-[var(--ds-control-h)] rounded-full bg-card/60 border border-border/40 text-muted-foreground touch-manipulation hover:bg-muted/60 hover:border-border focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  className={HEADER_CONTROL_MOBILE_CLASS}
                   aria-label={`Last updated ${formatRelativeTime(lastUpdated)}`}
                 >
-                  <Clock className="w-3.5 h-3.5" />
+                  <Clock className={HEADER_CONTROL_AFFORDANCE_ICON_CLASS} />
                 </button>
               </PopoverTrigger>
               <PopoverContent side="bottom" align="start" sideOffset={6} className="w-auto py-2 px-3 ds-text-11">
@@ -75,10 +82,10 @@ const Header = ({ lastUpdated }: HeaderProps) => {
           <WalletButton mobile onWatchSubmit={connectWatchAddress} />
           <a
             href="#faq"
-            className="flex items-center justify-center w-[var(--ds-control-h)] h-[var(--ds-control-h)] rounded-full bg-card/60 border border-border/40 text-muted-foreground hover-gradient-text hover:bg-muted/60 hover:border-border touch-manipulation"
+            className={cn(HEADER_CONTROL_MOBILE_CLASS, 'hover-gradient-text')}
             aria-label="FAQ"
           >
-            <HelpCircle className="w-4 h-4" />
+            <HelpCircle className={HEADER_CONTROL_ICON_CLASS} />
           </a>
           <ThemeToggle />
         </div>
@@ -90,10 +97,12 @@ const Header = ({ lastUpdated }: HeaderProps) => {
         {/* Desktop: FAQ link with gradient hover */}
         <a
           href="#faq"
-          className="group flex items-center gap-[var(--ds-space-1)] ds-text-14 text-muted-foreground transition-colors shrink-0"
+          className={cn(HEADER_CONTROL_DESKTOP_CLASS, 'group shrink-0')}
           aria-label="FAQ"
         >
-          <HelpCircle className="w-4 h-4 transition-colors group-hover:text-[hsl(var(--ds-gradient-primary))]" />
+          <HelpCircle
+            className={cn(HEADER_CONTROL_ICON_CLASS, 'transition-colors group-hover:text-[hsl(var(--ds-gradient-primary))]')}
+          />
           <span className="group-hover-gradient-text">FAQ</span>
         </a>
         

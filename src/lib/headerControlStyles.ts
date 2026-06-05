@@ -7,16 +7,25 @@
  * resolve to CSS variables defined in `src/index.css` (`--ds-control-h`,
  * `--ds-space-*`, `--ds-text-*`) so theming/density changes flow through
  * automatically.
+ *
+ * See `docs/design/header-controls.md` for token → pixel mapping.
  */
 
 /** Icon size used inside every header control (matches `ds-text-14`). */
 export const HEADER_CONTROL_ICON_CLASS = 'w-4 h-4'
 
-/** Smaller icon used for trailing affordances (chevrons, dots). */
+/** Smaller icon used for trailing affordances (chevrons, dots, popover items). */
 export const HEADER_CONTROL_AFFORDANCE_ICON_CLASS = 'w-3.5 h-3.5'
 
 /** Gap between icon and label inside a header control. */
 export const HEADER_CONTROL_INNER_GAP_CLASS = 'gap-[var(--ds-space-1)]'
+
+/**
+ * Shared focus ring — `ring-2 ring-ring` with `ring-offset-2 ring-offset-background`,
+ * matches the clock popover, ThemeToggle and every other header control.
+ */
+export const HEADER_CONTROL_FOCUS_RING_CLASS =
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background'
 
 /**
  * Mobile circular icon button — used for FAQ, clock popover, wallet,
@@ -28,13 +37,13 @@ export const HEADER_CONTROL_MOBILE_CLASS = [
   'w-[var(--ds-control-h)] h-[var(--ds-control-h)] rounded-full',
   'bg-card/60 border border-border/40 text-muted-foreground',
   'hover:bg-muted/60 hover:border-border',
-  'focus-visible:ring-2 focus-visible:ring-ring',
-  'transition-colors',
+  'touch-manipulation transition-colors',
+  HEADER_CONTROL_FOCUS_RING_CLASS,
 ].join(' ')
 
 /**
- * Desktop inline text button — used for wallet Connect / View address
- * and similar header actions. Sized to align with the FAQ link.
+ * Desktop inline text button — used for wallet Connect / View address,
+ * FAQ link, and similar header actions. Sized to align with neighbours.
  */
 export const HEADER_CONTROL_DESKTOP_CLASS = [
   'flex items-center',
@@ -42,6 +51,7 @@ export const HEADER_CONTROL_DESKTOP_CLASS = [
   'rounded-md px-[var(--ds-space-2)] py-[var(--ds-space-1)] ds-text-14',
   'text-muted-foreground hover:bg-muted/60 hover:text-foreground',
   'transition-colors',
+  HEADER_CONTROL_FOCUS_RING_CLASS,
 ].join(' ')
 
 /**
@@ -54,6 +64,7 @@ export const HEADER_CONTROL_DESKTOP_ACTIVE_CLASS = [
   'rounded-md px-[var(--ds-space-2)] py-[var(--ds-space-1)] ds-text-14',
   'text-foreground hover:bg-muted/60',
   'transition-colors',
+  HEADER_CONTROL_FOCUS_RING_CLASS,
 ].join(' ')
 
 /** Spacing between sibling header controls (desktop). */
