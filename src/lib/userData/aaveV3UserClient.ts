@@ -1,42 +1,6 @@
-import {
-  AaveV3Ethereum,
-  AaveV3Arbitrum,
-  AaveV3Avalanche,
-  AaveV3BNB,
-  AaveV3Base,
-  AaveV3Celo,
-  AaveV3Gnosis,
-  AaveV3Linea,
-  AaveV3Mantle,
-  AaveV3Metis,
-  AaveV3Optimism,
-  AaveV3Polygon,
-  AaveV3Scroll,
-  AaveV3Soneium,
-  AaveV3Sonic,
-  AaveV3XLayer,
-  AaveV3ZkSync,
-} from '@aave-dao/aave-address-book'
+import { V3_POOL_ADDRESSES } from '../chainRegistry'
 
-export const V3_POOL_ADDRESSES: Record<number, `0x${string}`> = {
-  [AaveV3Ethereum.CHAIN_ID]: AaveV3Ethereum.POOL,
-  [AaveV3Arbitrum.CHAIN_ID]: AaveV3Arbitrum.POOL,
-  [AaveV3Avalanche.CHAIN_ID]: AaveV3Avalanche.POOL,
-  [AaveV3BNB.CHAIN_ID]: AaveV3BNB.POOL,
-  [AaveV3Base.CHAIN_ID]: AaveV3Base.POOL,
-  [AaveV3Celo.CHAIN_ID]: AaveV3Celo.POOL,
-  [AaveV3Gnosis.CHAIN_ID]: AaveV3Gnosis.POOL,
-  [AaveV3Linea.CHAIN_ID]: AaveV3Linea.POOL,
-  [AaveV3Mantle.CHAIN_ID]: AaveV3Mantle.POOL,
-  [AaveV3Metis.CHAIN_ID]: AaveV3Metis.POOL,
-  [AaveV3Optimism.CHAIN_ID]: AaveV3Optimism.POOL,
-  [AaveV3Polygon.CHAIN_ID]: AaveV3Polygon.POOL,
-  [AaveV3Scroll.CHAIN_ID]: AaveV3Scroll.POOL,
-  [AaveV3Soneium.CHAIN_ID]: AaveV3Soneium.POOL,
-  [AaveV3Sonic.CHAIN_ID]: AaveV3Sonic.POOL,
-  [AaveV3XLayer.CHAIN_ID]: AaveV3XLayer.POOL,
-  [AaveV3ZkSync.CHAIN_ID]: AaveV3ZkSync.POOL,
-}
+export { V3_POOL_ADDRESSES }
 
 export const MULTICALL3_ADDRESS = '0xcA11bde05977b7Ac6400656eDA8769A2C45a8c3' as const
 

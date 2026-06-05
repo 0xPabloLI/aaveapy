@@ -35,10 +35,10 @@ export function classifyRpcError(err: unknown): 'network' | 'contract' | 'unknow
 }
 
 import { createPublicClient, http, type PublicClient } from 'viem'
-import { getPublicRpcUrls } from '../publicRpcUrls'
+import { getAllRpcUrls } from './chainDiscovery'
 
 export async function createClientWithRpcRotation(chainId: number): Promise<PublicClient | null> {
-  const rpcUrls = getPublicRpcUrls(chainId)
+  const rpcUrls = getAllRpcUrls(chainId)
   if (rpcUrls.length === 0) return null
 
   for (const url of rpcUrls) {

@@ -8,10 +8,10 @@ import {
 
 describe('aaveChains', () => {
   describe('AAVE_V3_CHAIN_IDS', () => {
-    it('contains all 17 V3 mainnet chain IDs', () => {
+    it('contains all 18 V3 mainnet chain IDs', () => {
       const expected = [
         1, 42161, 43114, 56, 8453, 42220, 100, 59144, 5000,
-        1088, 10, 137, 534352, 1868, 146, 196, 324,
+        1088, 10, 137, 534352, 1868, 146, 196, 324, 57073,
       ]
       expect(AAVE_V3_CHAIN_IDS).toHaveLength(expected.length)
       for (const id of expected) {

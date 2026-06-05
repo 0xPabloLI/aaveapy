@@ -8,6 +8,7 @@ import { useWalletAutoImport } from '@/hooks/useWalletAutoImport';
 import { useWallet } from '@/hooks/useWallet';
 import { useCampaignAccess } from '@/hooks/useCampaignAccess';
 import { useIsFetching } from '@tanstack/react-query';
+import { useChainDiscovery } from '@/hooks/useChainDiscovery';
 import { useAaveMarkets } from '@/hooks/useAaveMarkets';
 import { deriveV3AssetsByMarket, deriveV4ReservesBySpoke } from '@/lib/deriveOnchainConfig';
 import { convertWalletPositionsToPortfolio } from '@/lib/walletPositionToPortfolio';
@@ -105,6 +106,9 @@ const Index = () => {
   // Fetch data - API returns { snapshot, reserves } (breaking change)
   const { data, isLoading, error, isError, refetch, dataUpdatedAt } = useAaveMarkets();
   const { data: tokenCategoryOverrides } = useTokenCategories();
+
+  // Trigger runtime chain discovery for any unregistered chains in reserves
+  useChainDiscovery();
 
   const cachedMarkets = useMemo(() => getCachedMarkets(), []);
   const effectiveReservesData = data ?? cachedMarkets;
@@ -299,6 +303,7 @@ const Index = () => {
     v4SdkFailed,
     reserves: stableReserves,
     portfolioActions: portfolio.actions,
+    onImport: () => setSimulationMode('portfolio'),
   });
 
   const handleWalletSync = useCallback(() => {
@@ -309,6 +314,7 @@ const Index = () => {
         return;
       }
       portfolio.actions.importPositions(incoming);
+      setSimulationMode('portfolio');
       toast.success(`Imported ${incoming.length} position${incoming.length > 1 ? 's' : ''} from wallet`);
     } else if (walletResult.status === 'error') {
       toast.error('Failed to load wallet positions');

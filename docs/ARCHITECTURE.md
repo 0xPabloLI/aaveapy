@@ -48,6 +48,7 @@ src/
 ├── config/           # queryStaleTimes 等配置常量
 ├── test/             # 架构守卫 + 回归测试
 ├── integrations/     # Supabase client
+├── providers/        # Error Boundary 等 Provider 组件
 ├── i18n/ + locales/  # i18next 初始化 + 翻译文件
 ├── ui-config/        # reservePatches 显示覆盖
 └── pages/            # 6 个路由页面
@@ -117,8 +118,13 @@ src/shared/market-contract/schemas.ts   ← 权威 Zod schema（单一真相源�
 | Schema 校验失败 | `safeParse` → cache fallback → 有 cache 就用 | `safeParse` → 直接 throw |
 | 网络失败 | try/catch → 返回缓存数据 | 直接 throw（带 status + url） |
 | Deficit 无价格 | `sanitizeDeficitWithoutPrice()` | N/A |
+| 组件渲染错误 | `SdkErrorBoundary` → 友好提示 + 重试按钮 | N/A |
 
 > 前端优先可用性（优雅降级），脚本优先正确性（严格校验）。两者不应合并。
+
+### SdkErrorBoundary
+
+`src/providers/SdkErrorBoundary.tsx` 包裹路由内容（`App.tsx`），捕获 SDK 数据加载等渲染异常，展示友好提示并提供重试按钮。详见 AAV-116。
 
 ## Simulation Architecture
 
