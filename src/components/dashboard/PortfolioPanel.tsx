@@ -432,18 +432,23 @@ const PortfolioPanel = memo(function PortfolioPanel({
 
 
   const handleRemoveToken = useCallback((reserveId: string) => {
-    for (const p of positions) {
-      if (p.reserveId === reserveId) actions.removePosition(p.positionId);
-    }
-  }, [actions, positions]);
+    actions.removeReserve(reserveId);
+  }, [actions]);
 
   const handleToggleHidden = useCallback((positionId: string) => {
     actions.toggleHidden(positionId);
   }, [actions]);
 
   const handleRestorePosition = useCallback((positionId: string) => {
-    actions.restorePosition(positionId);
+    actions.restoreToWallet(positionId);
   }, [actions]);
+
+  const handleWalletSyncClick = useCallback(() => {
+    onWalletSync?.();
+    // Reverse cross-trigger: pull fresh market data alongside the wallet
+    // re-sync so portfolio aggregates reflect the latest reserves immediately.
+    if (onRefresh) void onRefresh();
+  }, [onWalletSync, onRefresh]);
 
   // When positions transition from non-empty to empty (e.g. clear all),
   // reopen search so users can immediately add the next token.
