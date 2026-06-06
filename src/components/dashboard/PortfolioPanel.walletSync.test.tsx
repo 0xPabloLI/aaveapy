@@ -184,6 +184,7 @@ describe('PortfolioPanel — Wallet Sync button states', () => {
   });
 
   it('error → success recovers to idle-synced (no longer error)', () => {
+    const reserves = [makeReserve('USDC')];
     const rerenderWith = (state: 'loading' | 'error' | 'success-empty') => (
       <WagmiProvider config={testWagmiConfig}>
         <QueryClientProvider client={new QueryClient()}>
@@ -192,7 +193,7 @@ describe('PortfolioPanel — Wallet Sync button states', () => {
               <PortfolioPanel
                 positions={[]}
                 actions={actions}
-                reserves={[makeReserve('USDC')]}
+                reserves={reserves}
                 walletLoadState={state}
               />
             </TooltipProvider>
