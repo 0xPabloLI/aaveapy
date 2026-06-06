@@ -64,6 +64,10 @@ export interface PortfolioSimulationActions {
   restorePosition: (positionId: string) => void;
   /** Toggle hidden flag on a position (soft delete). */
   toggleHidden: (positionId: string) => void;
+  /** Restore amount/inputMode for a wallet-synced position back to its walletValue (USD). Also unhides. */
+  restoreToWallet: (positionId: string) => void;
+  /** Soft-delete (hide) or hard-remove every position that shares the given reserveId. */
+  removeReserve: (reserveId: string) => void;
 }
 
 export interface UsePortfolioSimulationReturn {
@@ -221,6 +225,36 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
     );
   }, []);
 
+  const restoreToWallet = useCallback((positionId: string) => {
+    setPositions((prev) =>
+      prev.map((p) => {
+        if (p.positionId !== positionId) return p;
+        if (p.walletValue === null) return p;
+        return {
+          ...p,
+          amount: formatConvertedAmount(p.walletValue),
+          inputMode: 'usd',
+          hidden: false,
+        };
+      })
+    );
+  }, []);
+
+  const removeReserve = useCallback((reserveId: string) => {
+    setPositions((prev) => {
+      const group = prev.filter((p) => p.reserveId === reserveId);
+      const anyWallet = group.some((p) => p.walletValue !== null);
+      if (anyWallet) {
+        // Soft-hide every side in the group; manual additions stay so they can
+        // come back when the user restores from wallet.
+        return prev.map((p) =>
+          p.reserveId === reserveId ? { ...p, hidden: true } : p
+        );
+      }
+      return prev.filter((p) => p.reserveId !== reserveId);
+    });
+  }, []);
+
   const actions = useMemo<PortfolioSimulationActions>(
     () => ({
       setActive,
@@ -234,8 +268,10 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
       importPositions,
       restorePosition,
       toggleHidden,
+      restoreToWallet,
+      removeReserve,
     }),
-    [addPosition, removePosition, updateAmount, updateInputMode, clearAll, saveSnapshot, deleteSnapshot, importPositions, restorePosition, toggleHidden]
+    [addPosition, removePosition, updateAmount, updateInputMode, clearAll, saveSnapshot, deleteSnapshot, importPositions, restorePosition, toggleHidden, restoreToWallet, removeReserve]
   );
 
   return {

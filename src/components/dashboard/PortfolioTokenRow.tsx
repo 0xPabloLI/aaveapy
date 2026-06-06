@@ -55,7 +55,8 @@ function WalletSyncIndicator({ position, onRestore }: {
         type="button"
         onClick={onRestore ? () => onRestore(position.positionId) : undefined}
         className="group relative shrink-0"
-        aria-label={`Modified, wallet value ${position.walletValue}, click to restore`}
+        aria-label={`Modified — click to restore amount to wallet value`}
+        title="Restore to wallet value"
       >
         <div className="relative">
           <Wallet className="size-3.5 text-amber-500" />
@@ -292,8 +293,12 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
       <div className="flex items-center gap-2">
         {renderSideInput(supplyPosition, 'Supply')}
         {borrowPosition && renderSideInput(borrowPosition, 'Borrow')}
-        {!isHidden && walletIndicatorSupply}
-        {!isHidden && walletIndicatorBorrow}
+        {!isHidden && (
+          <div className="flex items-center justify-end gap-1 shrink-0 w-[2.25rem]">
+            {walletIndicatorSupply}
+            {walletIndicatorBorrow}
+          </div>
+        )}
         {hiddenSuffix}
       </div>
     </div>

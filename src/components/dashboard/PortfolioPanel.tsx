@@ -52,6 +52,8 @@ interface PortfolioPanelProps {
   snapshots?: PortfolioSnapshot[];
   /** Trigger wallet onchain position sync. */
   onWalletSync?: () => void;
+  /** Trigger a market data refresh (cross-trigger from Wallet Sync). */
+  onRefresh?: () => Promise<void> | void;
   /** Wallet position loading state. */
   walletLoadState?: WalletLoadState;
   /** Merkl claimable rewards from SDK. */
@@ -186,6 +188,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
   summary,
   snapshots = [],
   onWalletSync,
+  onRefresh,
   walletLoadState,
   claimableRewards,
   claimableRewardsLoading,
@@ -429,18 +432,23 @@ const PortfolioPanel = memo(function PortfolioPanel({
 
 
   const handleRemoveToken = useCallback((reserveId: string) => {
-    for (const p of positions) {
-      if (p.reserveId === reserveId) actions.removePosition(p.positionId);
-    }
-  }, [actions, positions]);
+    actions.removeReserve(reserveId);
+  }, [actions]);
 
   const handleToggleHidden = useCallback((positionId: string) => {
     actions.toggleHidden(positionId);
   }, [actions]);
 
   const handleRestorePosition = useCallback((positionId: string) => {
-    actions.restorePosition(positionId);
+    actions.restoreToWallet(positionId);
   }, [actions]);
+
+  const handleWalletSyncClick = useCallback(() => {
+    onWalletSync?.();
+    // Reverse cross-trigger: pull fresh market data alongside the wallet
+    // re-sync so portfolio aggregates reflect the latest reserves immediately.
+    if (onRefresh) void onRefresh();
+  }, [onWalletSync, onRefresh]);
 
   // When positions transition from non-empty to empty (e.g. clear all),
   // reopen search so users can immediately add the next token.
@@ -476,7 +484,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
               <div className="relative">
                 <button
                   type="button"
-                  onClick={onWalletSync}
+                  onClick={handleWalletSyncClick}
                   disabled={walletLoadState === 'loading'}
                   className={cn(HEADER_CONTROL_ICON_BUTTON_CLASS)}
                   aria-label={walletSyncAriaLabel}
