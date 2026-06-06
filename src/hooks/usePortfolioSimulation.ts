@@ -87,6 +87,9 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
   const [active, setActive] = useState(false);
   const [positions, setPositions] = useState<PortfolioPosition[]>([]);
   const [snapshots, setSnapshots] = useState<PortfolioSnapshot[]>([]);
+  // Snapshot of positions captured immediately before the last removeReserve call,
+  // used by undoLastRemove to restore the prior state verbatim.
+  const lastRemoveSnapshotRef = useRef<PortfolioPosition[] | null>(null);
 
   // --- Actions ---
 
