@@ -1,5 +1,5 @@
 /**
- * @vitest-environment jsdom
+ * @vitest-environment happy-dom
  *
  * Regression: removeReserve resets a wallet-touched reserve back to the wallet
  * amounts on every side, drops any purely-manual sides layered on top, and
