@@ -27,6 +27,49 @@ export const HEADER_CONTROL_INNER_GAP_CLASS = 'gap-[var(--ds-space-1)]'
 export const HEADER_CONTROL_FOCUS_RING_CLASS =
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background'
 
+/** Shared surface treatment for header controls and inline watch inputs. */
+export const HEADER_CONTROL_SURFACE_CLASS =
+  'bg-card/60 border border-border/40 text-muted-foreground'
+
+/** Shared hover border/background treatment for header controls. */
+export const HEADER_CONTROL_HOVER_CLASS = 'hover:bg-muted/60 hover:border-border'
+
+/** Shared disabled treatment that preserves the same border color family. */
+export const HEADER_CONTROL_DISABLED_CLASS =
+  'disabled:opacity-40 disabled:hover:bg-card/60 disabled:hover:border-border/40 disabled:cursor-not-allowed'
+
+/** Error treatment for header-control inputs. */
+export const HEADER_CONTROL_ERROR_CLASS =
+  'border-destructive text-destructive focus-visible:ring-destructive'
+
+/** Input field used inside header controls, e.g. View address. */
+export const HEADER_CONTROL_INPUT_CLASS = [
+  'ds-text-14 h-[var(--ds-control-h)] rounded-full px-[var(--ds-space-3)] outline-none',
+  'transition-colors',
+  'bg-card/60 border border-border/40 text-foreground',
+  HEADER_CONTROL_HOVER_CLASS,
+  HEADER_CONTROL_DISABLED_CLASS,
+  HEADER_CONTROL_FOCUS_RING_CLASS,
+].join(' ')
+
+/** Circular icon action used next to header-control inputs. */
+export const HEADER_CONTROL_ICON_BUTTON_CLASS = [
+  'flex items-center justify-center',
+  'w-[var(--ds-control-h)] h-[var(--ds-control-h)] rounded-full',
+  HEADER_CONTROL_SURFACE_CLASS,
+  HEADER_CONTROL_HOVER_CLASS,
+  'transition-colors',
+  HEADER_CONTROL_DISABLED_CLASS,
+  HEADER_CONTROL_FOCUS_RING_CLASS,
+].join(' ')
+
+/** Compact text action rendered inside a header-control status line. */
+export const HEADER_CONTROL_STATUS_ACTION_CLASS = [
+  'rounded-sm px-[var(--ds-space-2)] py-[var(--ds-space-0-5)] ds-text-11',
+  'text-foreground hover:bg-muted/60 transition-colors',
+  HEADER_CONTROL_FOCUS_RING_CLASS,
+].join(' ')
+
 /**
  * Mobile circular icon button — used for FAQ, clock popover, wallet,
  * and theme toggle on small viewports. Renders at `--ds-control-h`
@@ -35,8 +78,8 @@ export const HEADER_CONTROL_FOCUS_RING_CLASS =
 export const HEADER_CONTROL_MOBILE_CLASS = [
   'flex items-center justify-center',
   'w-[var(--ds-control-h)] h-[var(--ds-control-h)] rounded-full',
-  'bg-card/60 border border-border/40 text-muted-foreground',
-  'hover:bg-muted/60 hover:border-border',
+  HEADER_CONTROL_SURFACE_CLASS,
+  HEADER_CONTROL_HOVER_CLASS,
   'touch-manipulation transition-colors',
   HEADER_CONTROL_FOCUS_RING_CLASS,
 ].join(' ')

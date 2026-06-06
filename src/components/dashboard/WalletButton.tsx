@@ -21,7 +21,7 @@ import {
 
 interface WalletButtonProps {
   mobile?: boolean
-  onWatchSubmit?: (address: `0x${string}`) => void
+  onWatchSubmit?: (address: `0x${string}`) => void | Promise<void>
 }
 
 function truncateAddress(addr: string) {
@@ -36,8 +36,7 @@ export function WalletButton({ mobile = false, onWatchSubmit }: WalletButtonProp
     return (
       <WatchAddressInput
         onSubmit={(addr) => {
-          onWatchSubmit(addr)
-          setShowWatchInput(false)
+          return onWatchSubmit(addr)
         }}
         onCancel={() => setShowWatchInput(false)}
       />
