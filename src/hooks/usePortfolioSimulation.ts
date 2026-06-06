@@ -248,6 +248,9 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
   const removeReserve = useCallback((reserveId: string) => {
     setPositions((prev) => {
       const group = prev.filter((p) => p.reserveId === reserveId);
+      if (group.length === 0) return prev;
+      // Capture snapshot for undo before mutating.
+      lastRemoveSnapshotRef.current = prev.map((p) => ({ ...p }));
       const anyWallet = group.some((p) => p.walletValue !== null);
       if (anyWallet) {
         // Reset the group to its actual wallet state:
@@ -268,6 +271,15 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
       return prev.filter((p) => p.reserveId !== reserveId);
     });
   }, []);
+
+  const undoLastRemove = useCallback((): boolean => {
+    const snapshot = lastRemoveSnapshotRef.current;
+    if (!snapshot) return false;
+    lastRemoveSnapshotRef.current = null;
+    setPositions(snapshot);
+    return true;
+  }, []);
+
 
   const actions = useMemo<PortfolioSimulationActions>(
     () => ({
