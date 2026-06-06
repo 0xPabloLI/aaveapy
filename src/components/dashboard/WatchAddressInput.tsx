@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useEnsAddress } from 'wagmi'
-import { Check, Loader2, RotateCcw, X } from 'lucide-react'
+import { Check, HelpCircle, Loader2, RotateCcw, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
   HEADER_CONTROL_AFFORDANCE_ICON_CLASS,
