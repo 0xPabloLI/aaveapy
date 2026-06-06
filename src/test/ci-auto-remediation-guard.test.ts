@@ -42,8 +42,26 @@ describe('CI auto-remediation workflow guard', () => {
     expect(yaml).toMatch(/workflows:\s*\[\s*["']CI["']/);
   });
 
-  it('does not run on its own bot branches (prevents infinite loop)', () => {
+  it('workflow_run branches allow list does not include bot/** (prevents infinite loop)', () => {
     const yaml = readWorkflow();
-    expect(yaml).toMatch(/bot\/ci-auto-remediation-/);
+    const branchesMatch = yaml.match(/branches:\s*\n((?:\s*-\s*.+\n?)+)/);
+    expect(branchesMatch, 'workflow_run.branches section must exist').toBeTruthy();
+    const branchesList = branchesMatch![1];
+    expect(branchesList, 'allow list must not contain bot/** patterns').not.toMatch(/bot\//);
+  });
+
+  it('declares actions:read permission for log download', () => {
+    const yaml = readWorkflow();
+    expect(yaml).toMatch(/actions:\s*read/);
+  });
+
+  it('creates PR with delete-branch:true to avoid orphan branches', () => {
+    const yaml = readWorkflow();
+    expect(yaml).toMatch(/delete-branch:\s*true/);
+  });
+
+  it('auto-merge uses SQUASH method (not MERGE)', () => {
+    const yaml = readWorkflow();
+    expect(yaml).toMatch(/mergeMethod:\s*SQUASH/);
   });
 });

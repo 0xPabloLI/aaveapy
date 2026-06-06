@@ -53,11 +53,18 @@ jobs:
                 core.notice('peer-dep-check failed — peer dep conflict cannot be fixed by audit. Skipping.');
                 return;
               }
-              const { data: log } = await github.rest.actions.downloadJobLogsForWorkflowRun({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                job_id: job.id,
-              });
+              let log;
+              try {
+                const resp = await github.rest.actions.downloadJobLogsForWorkflowRun({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  job_id: job.id,
+                });
+                log = resp.data;
+              } catch (e) {
+                core.warning(`Could not download logs for job ${job.name} (id=${job.id}): ${e.message}. Assuming no ERESOLVE.`);
+                continue;
+              }
               if (/npm error code ERESOLVE/.test(log)) {
                 core.setOutput('skip', 'true');
                 core.notice('CI failure contains ERESOLVE — peer dep conflict cannot be fixed by audit. Skipping.');
