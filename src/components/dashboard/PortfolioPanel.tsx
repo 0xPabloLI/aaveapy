@@ -391,7 +391,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
               Batch
             </span>
           </div>
-          <div className="flex items-center gap-[var(--ds-space-1)]">
+          <div className="flex items-center gap-[var(--ds-space-1)] pr-[11px]">
             {walletConnected && (
               <button
                 type="button"
@@ -465,8 +465,8 @@ const PortfolioPanel = memo(function PortfolioPanel({
               </ConfirmPopover>
             )}
           </div>
-        </div>
 
+        </div>
 
         {/* Wallet status bar */}
         {walletLoadState && walletLoadState !== 'idle' && (
