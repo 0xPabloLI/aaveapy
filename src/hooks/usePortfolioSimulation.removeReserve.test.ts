@@ -9,10 +9,6 @@ import { describe, it, expect } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { usePortfolioSimulation } from './usePortfolioSimulation'
 import type { PortfolioPosition } from '@/types/portfolio'
-import { describe, it, expect } from 'vitest'
-import { renderHook, act } from '@testing-library/react'
-import { usePortfolioSimulation } from './usePortfolioSimulation'
-import type { PortfolioPosition } from '@/types/portfolio'
 
 const basePos = (o: Partial<PortfolioPosition> & { positionId: string }): PortfolioPosition => ({
   reserveId: 'reserve-weth',
