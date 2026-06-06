@@ -24,6 +24,9 @@ import type { ReserveWithSpread } from '@/types/aave'
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes'
 import { composeReserveId } from '@/lib/reserveKey'
 import { isInfrastructureFailure, withTimeout } from '@/lib/userData/rpcResilience'
+import { computeGapChainIds, type SdkCoverage } from '@/lib/userData/gapChainComputation'
+import { useGapFallbackQuery } from '@/lib/userData/gapFallbackQuery'
+import { mergeAndDedupPositions, mergeFailedSources } from '@/lib/userData/positionMerge'
 
 export type WalletLoadState = 'idle' | 'loading' | 'success-empty' | 'success' | 'error'
 
@@ -253,6 +256,16 @@ export function useUserPositionsSdk(
 
   const v4SdkArgs = useMemo(() => buildV4SdkArgs(enabled, account, v4ChainIds), [enabled, account, v4ChainIds])
 
+  const sdkCoverage = useMemo<SdkCoverage>(() => ({
+    v3SdkChainIds: Object.keys(V3_POOL_ADDRESSES).map(Number),
+    v4SdkChainIds: Object.keys(V4_SPOKE_ADDRESSES).map(Number),
+  }), [])
+
+  const gapChainIds = useMemo(
+    () => computeGapChainIds(reserves, sdkCoverage),
+    [reserves, sdkCoverage],
+  )
+
   const v3Supplies = useV3UserSupplies(v3SdkArgs)
   const v3Borrows = useV3UserBorrows(v3SdkArgs)
   const v4Supplies = useV4UserSupplies(v4SdkArgs)
@@ -301,37 +314,59 @@ export function useUserPositionsSdk(
     refetchOnReconnect: false,
   })
 
-  const allPositions: WalletPosition[] = []
-  const allFailedSources: string[] = []
+  const v3SdkSucceeded = !v3SdkFailed && !sdkLoading
+  const v4SdkSucceeded = !v4SdkFailed && !sdkLoading
+  const hasV3Gap = gapChainIds.v3Gap.length > 0 && v3SdkSucceeded
+  const hasV4Gap = gapChainIds.v4Gap.length > 0 && v4SdkSucceeded
+
+  const gapFallbackQuery = useGapFallbackQuery({
+    gapChainIds,
+    address: account,
+    reserves,
+    v3AssetsByMarket,
+    v4ReservesBySpoke,
+    enabled: enabled && !sdkLoading && (hasV3Gap || hasV4Gap),
+  })
+
+  const sdkPositions: WalletPosition[] = []
+  const sdkFailed: string[] = []
+  const fallbackPositions: WalletPosition[] = []
+  const fallbackFailed: string[] = []
 
   const sdkLookupMap = useMemo(() => buildSdkReserveLookup(reserves), [reserves])
   const sdkReserveMap = useMemo(() => buildSdkReserveMap(reserves), [reserves])
 
   if (!v3SdkFailed && v3Supplies.data && v3Borrows.data) {
-    allPositions.push(...convertSdkSuppliesToWalletPositions(enrichV3SupplyPositions(v3Supplies.data), sdkReserveMap, sdkLookupMap, 'sdk'))
-    allPositions.push(...convertSdkBorrowsToWalletPositions(enrichV3BorrowPositions(v3Borrows.data), sdkReserveMap, sdkLookupMap, 'sdk'))
+    sdkPositions.push(...convertSdkSuppliesToWalletPositions(enrichV3SupplyPositions(v3Supplies.data), sdkReserveMap, sdkLookupMap, 'sdk'))
+    sdkPositions.push(...convertSdkBorrowsToWalletPositions(enrichV3BorrowPositions(v3Borrows.data), sdkReserveMap, sdkLookupMap, 'sdk'))
   } else if (v3SdkFailed) {
-    allFailedSources.push('sdk-v3')
+    sdkFailed.push('sdk-v3')
     if (v3FallbackQuery.data) {
-      allPositions.push(...v3FallbackQuery.data.positions)
-      allFailedSources.push(...v3FallbackQuery.data.failedSources)
+      fallbackPositions.push(...v3FallbackQuery.data.positions)
+      fallbackFailed.push(...v3FallbackQuery.data.failedSources)
     }
   }
 
   if (!v4SdkFailed && v4Supplies.data && v4Borrows.data) {
-    allPositions.push(...convertSdkSuppliesToWalletPositions(enrichV4SupplyPositions(v4Supplies.data), sdkReserveMap, sdkLookupMap, 'sdk'))
-    allPositions.push(...convertSdkBorrowsToWalletPositions(enrichV4BorrowPositions(v4Borrows.data), sdkReserveMap, sdkLookupMap, 'sdk'))
+    sdkPositions.push(...convertSdkSuppliesToWalletPositions(enrichV4SupplyPositions(v4Supplies.data), sdkReserveMap, sdkLookupMap, 'sdk'))
+    sdkPositions.push(...convertSdkBorrowsToWalletPositions(enrichV4BorrowPositions(v4Borrows.data), sdkReserveMap, sdkLookupMap, 'sdk'))
   } else if (v4SdkFailed) {
-    allFailedSources.push('sdk-v4')
+    sdkFailed.push('sdk-v4')
     if (v4FallbackQuery.data) {
-      allPositions.push(...v4FallbackQuery.data.positions)
-      allFailedSources.push(...v4FallbackQuery.data.failedSources)
+      fallbackPositions.push(...v4FallbackQuery.data.positions)
+      fallbackFailed.push(...v4FallbackQuery.data.failedSources)
     }
   }
 
-  const isLoading = sdkLoading || v3FallbackQuery.isLoading || v4FallbackQuery.isLoading
+  const gapPositions = gapFallbackQuery.data?.positions ?? []
+  const gapFailed = gapFallbackQuery.data?.failedSources ?? []
+
+  const allPositions = mergeAndDedupPositions(sdkPositions, fallbackPositions, gapPositions)
+  const allFailedSources = mergeFailedSources(sdkFailed, fallbackFailed, gapFailed)
+
+  const isLoading = sdkLoading || v3FallbackQuery.isLoading || v4FallbackQuery.isLoading || gapFallbackQuery.isLoading
   const isError = !isLoading && allPositions.length === 0 && allFailedSources.length > 0
-  const retry = () => { v3FallbackQuery.refetch(); v4FallbackQuery.refetch() }
+  const retry = () => { v3FallbackQuery.refetch(); v4FallbackQuery.refetch(); gapFallbackQuery.refetch() }
 
   let walletLoadState: WalletLoadState
   if (!isConnected || !address) {
