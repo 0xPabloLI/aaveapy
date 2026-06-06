@@ -31,42 +31,47 @@ interface PortfolioTokenRowProps {
   tokenPriceInUsd?: number;
 }
 
-function WalletSyncIndicator({ position, onRestore }: {
-  position: PortfolioPosition;
+function WalletSyncIndicator({ positions, onRestore }: {
+  positions: Array<PortfolioPosition | null>;
   onRestore?: (positionId: string) => void;
 }) {
-  const state = getWalletSyncState(position);
+  const present = positions.filter((p): p is PortfolioPosition => p !== null);
+  if (present.length === 0) {
+    return <div className="size-3.5 shrink-0" aria-hidden="true" />;
+  }
+  // Aggregate: modified wins over synced; if any side has wallet origin show wallet.
+  const states = present.map(getWalletSyncState);
+  const aggregate: 'modified' | 'synced' | 'manual' = states.includes('modified')
+    ? 'modified'
+    : states.includes('synced')
+      ? 'synced'
+      : 'manual';
 
-  if (state === 'synced') {
-    const isSdk = position.source === 'sdk';
+  if (aggregate === 'manual') {
+    return <div className="size-3.5 shrink-0" aria-hidden="true" />;
+  }
+
+  if (aggregate === 'synced') {
     return (
-      <div className="relative shrink-0">
-        <Wallet className="size-3.5 text-emerald-500" aria-label={isSdk ? 'Synced from SDK' : 'Synced from wallet'} />
-        {isSdk && (
-          <Zap className="absolute -bottom-0.5 -right-1 size-2 text-indigo-400 fill-indigo-400" aria-hidden />
-        )}
+      <div className="shrink-0">
+        <Wallet className="size-3.5 text-emerald-500" aria-label="Synced from wallet" />
       </div>
     );
   }
 
-  if (state === 'modified') {
-    return (
-      <button
-        type="button"
-        onClick={onRestore ? () => onRestore(position.positionId) : undefined}
-        className="group relative shrink-0"
-        aria-label={`Modified — click to restore amount to wallet value`}
-        title="Restore to wallet value"
-      >
-        <div className="relative">
-          <Wallet className="size-3.5 text-amber-500" />
-          <div className="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-amber-500 border border-card" />
-        </div>
-      </button>
-    );
-  }
-
-  return <div className="size-3.5 shrink-0" aria-hidden="true" />;
+  // modified — clicking restores every modified side back to its wallet value.
+  const modifiedPositions = present.filter((p) => getWalletSyncState(p) === 'modified');
+  return (
+    <button
+      type="button"
+      onClick={onRestore ? () => modifiedPositions.forEach((p) => onRestore(p.positionId)) : undefined}
+      className="group relative shrink-0"
+      aria-label="Modified — click to restore amounts to wallet values"
+      title="Restore to wallet value"
+    >
+      <Wallet className="size-3.5 text-amber-500" />
+    </button>
+  );
 }
 
 const PortfolioTokenRow = memo(function PortfolioTokenRow({
