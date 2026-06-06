@@ -225,6 +225,36 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
     );
   }, []);
 
+  const restoreToWallet = useCallback((positionId: string) => {
+    setPositions((prev) =>
+      prev.map((p) => {
+        if (p.positionId !== positionId) return p;
+        if (p.walletValue === null) return p;
+        return {
+          ...p,
+          amount: formatConvertedAmount(p.walletValue),
+          inputMode: 'usd',
+          hidden: false,
+        };
+      })
+    );
+  }, []);
+
+  const removeReserve = useCallback((reserveId: string) => {
+    setPositions((prev) => {
+      const group = prev.filter((p) => p.reserveId === reserveId);
+      const anyWallet = group.some((p) => p.walletValue !== null);
+      if (anyWallet) {
+        // Soft-hide every side in the group; manual additions stay so they can
+        // come back when the user restores from wallet.
+        return prev.map((p) =>
+          p.reserveId === reserveId ? { ...p, hidden: true } : p
+        );
+      }
+      return prev.filter((p) => p.reserveId !== reserveId);
+    });
+  }, []);
+
   const actions = useMemo<PortfolioSimulationActions>(
     () => ({
       setActive,
@@ -238,8 +268,10 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
       importPositions,
       restorePosition,
       toggleHidden,
+      restoreToWallet,
+      removeReserve,
     }),
-    [addPosition, removePosition, updateAmount, updateInputMode, clearAll, saveSnapshot, deleteSnapshot, importPositions, restorePosition, toggleHidden]
+    [addPosition, removePosition, updateAmount, updateInputMode, clearAll, saveSnapshot, deleteSnapshot, importPositions, restorePosition, toggleHidden, restoreToWallet, removeReserve]
   );
 
   return {
