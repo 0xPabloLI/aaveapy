@@ -302,9 +302,8 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
         {renderSideInput(supplyPosition, 'Supply')}
         {borrowPosition && renderSideInput(borrowPosition, 'Borrow')}
         {!isHidden && (
-          <div className="flex items-center justify-end gap-1 shrink-0 w-[2.25rem]">
-            {walletIndicatorSupply}
-            {walletIndicatorBorrow}
+          <div className="flex items-center justify-end shrink-0 w-4">
+            {walletIndicator}
           </div>
         )}
         {hiddenSuffix}
