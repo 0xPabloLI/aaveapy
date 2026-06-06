@@ -391,22 +391,20 @@ const PortfolioPanel = memo(function PortfolioPanel({
               Batch
             </span>
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-[var(--ds-space-1)] pr-[11px]">
             {walletConnected && (
               <button
                 type="button"
                 onClick={onWalletSync}
-                disabled={walletLoadState === 'loading' || walletLoadState === 'idle'}
+                disabled={walletLoadState === 'loading'}
                 className={cn(
-                  'rounded-md p-1.5 transition-colors',
-                  walletLoadState === 'loading'
-                    ? 'animate-spin text-muted-foreground'
-                    : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground',
+                  HEADER_CONTROL_ICON_BUTTON_CLASS,
+                  walletLoadState === 'loading' && 'animate-spin',
                 )}
                 aria-label="Sync wallet positions"
-                style={{ visibility: walletConnected ? 'visible' : 'hidden' }}
+                title="Sync wallet positions"
               >
-                <RefreshCw className="size-3.5" aria-hidden />
+                <RefreshCw className={HEADER_CONTROL_ICON_CLASS} aria-hidden />
               </button>
             )}
             <WalletButton mobile onWatchSubmit={connectWatchAddress} />
@@ -416,17 +414,16 @@ const PortfolioPanel = memo(function PortfolioPanel({
                 type="button"
                 onClick={() => setShowSaveInput((p) => !p)}
                 className={cn(
-                  'rounded-md p-1.5 transition-colors',
-                  showSaveInput
-                    ? 'bg-muted text-foreground'
-                    : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground',
+                  HEADER_CONTROL_ICON_BUTTON_CLASS,
+                  showSaveInput && 'bg-muted text-foreground',
                 )}
                 aria-label={showSaveInput ? 'Cancel save' : 'Save snapshot'}
+                title={showSaveInput ? 'Cancel save' : 'Save snapshot'}
               >
                 {showSaveInput ? (
-                  <X className="size-3.5" aria-hidden />
+                  <X className={HEADER_CONTROL_ICON_CLASS} aria-hidden />
                 ) : (
-                  <Save className="size-3.5" aria-hidden />
+                  <Save className={HEADER_CONTROL_ICON_CLASS} aria-hidden />
                 )}
               </button>
             )}
@@ -434,17 +431,16 @@ const PortfolioPanel = memo(function PortfolioPanel({
               type="button"
               onClick={() => setSearchOpen((p) => !p)}
               className={cn(
-                'rounded-md p-1.5 transition-colors',
-                searchOpen
-                  ? 'bg-muted text-foreground'
-                  : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground',
+                HEADER_CONTROL_ICON_BUTTON_CLASS,
+                searchOpen && 'bg-muted text-foreground',
               )}
               aria-label={searchOpen ? 'Close search' : 'Search tokens'}
+              title={searchOpen ? 'Close search' : 'Search tokens'}
             >
               {searchOpen ? (
-                <X className="size-3.5" aria-hidden />
+                <X className={HEADER_CONTROL_ICON_CLASS} aria-hidden />
               ) : (
-                <Search className="size-3.5" aria-hidden />
+                <Search className={HEADER_CONTROL_ICON_CLASS} aria-hidden />
               )}
             </button>
             {positions.length > 0 && (
@@ -456,14 +452,20 @@ const PortfolioPanel = memo(function PortfolioPanel({
               >
                 <button
                   type="button"
-                  className={`rounded-md p-1.5 text-muted-foreground/60 transition-colors ${BATCH_THEME.trashHoverBg} ${BATCH_THEME.trashHoverText}`}
+                  className={cn(
+                    HEADER_CONTROL_ICON_BUTTON_CLASS,
+                    BATCH_THEME.trashHoverBg,
+                    BATCH_THEME.trashHoverText,
+                  )}
                   aria-label="Clear all positions"
+                  title="Clear all positions"
                 >
-                  <Trash2 className="size-3.5" aria-hidden />
+                  <Trash2 className={HEADER_CONTROL_ICON_CLASS} aria-hidden />
                 </button>
               </ConfirmPopover>
             )}
           </div>
+
         </div>
 
         {/* Wallet status bar */}
