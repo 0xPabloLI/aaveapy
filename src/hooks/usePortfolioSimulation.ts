@@ -5,7 +5,7 @@
  * delegating to `buildRateSimulationResult`, and aggregates via `portfolioCalculator`.
  */
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import type {
   PortfolioInputMode,
   PortfolioPosition,
@@ -68,6 +68,8 @@ export interface PortfolioSimulationActions {
   restoreToWallet: (positionId: string) => void;
   /** Soft-delete (hide) or hard-remove every position that shares the given reserveId. */
   removeReserve: (reserveId: string) => void;
+  /** Undo the most recent removeReserve call, restoring prior positions verbatim. Returns true if anything was restored. */
+  undoLastRemove: () => boolean;
 }
 
 export interface UsePortfolioSimulationReturn {
@@ -85,6 +87,9 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
   const [active, setActive] = useState(false);
   const [positions, setPositions] = useState<PortfolioPosition[]>([]);
   const [snapshots, setSnapshots] = useState<PortfolioSnapshot[]>([]);
+  // Snapshot of positions captured immediately before the last removeReserve call,
+  // used by undoLastRemove to restore the prior state verbatim.
+  const lastRemoveSnapshotRef = useRef<PortfolioPosition[] | null>(null);
 
   // --- Actions ---
 
@@ -243,6 +248,9 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
   const removeReserve = useCallback((reserveId: string) => {
     setPositions((prev) => {
       const group = prev.filter((p) => p.reserveId === reserveId);
+      if (group.length === 0) return prev;
+      // Capture snapshot for undo before mutating.
+      lastRemoveSnapshotRef.current = prev.map((p) => ({ ...p }));
       const anyWallet = group.some((p) => p.walletValue !== null);
       if (anyWallet) {
         // Reset the group to its actual wallet state:
@@ -264,6 +272,15 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
     });
   }, []);
 
+  const undoLastRemove = useCallback((): boolean => {
+    const snapshot = lastRemoveSnapshotRef.current;
+    if (!snapshot) return false;
+    lastRemoveSnapshotRef.current = null;
+    setPositions(snapshot);
+    return true;
+  }, []);
+
+
   const actions = useMemo<PortfolioSimulationActions>(
     () => ({
       setActive,
@@ -279,8 +296,9 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
       toggleHidden,
       restoreToWallet,
       removeReserve,
+      undoLastRemove,
     }),
-    [addPosition, removePosition, updateAmount, updateInputMode, clearAll, saveSnapshot, deleteSnapshot, importPositions, restorePosition, toggleHidden, restoreToWallet, removeReserve]
+    [addPosition, removePosition, updateAmount, updateInputMode, clearAll, saveSnapshot, deleteSnapshot, importPositions, restorePosition, toggleHidden, restoreToWallet, removeReserve, undoLastRemove]
   );
 
   return {

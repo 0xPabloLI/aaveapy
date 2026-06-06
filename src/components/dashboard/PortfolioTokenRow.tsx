@@ -31,42 +31,47 @@ interface PortfolioTokenRowProps {
   tokenPriceInUsd?: number;
 }
 
-function WalletSyncIndicator({ position, onRestore }: {
-  position: PortfolioPosition;
+function WalletSyncIndicator({ positions, onRestore }: {
+  positions: Array<PortfolioPosition | null>;
   onRestore?: (positionId: string) => void;
 }) {
-  const state = getWalletSyncState(position);
+  const present = positions.filter((p): p is PortfolioPosition => p !== null);
+  if (present.length === 0) {
+    return <div className="size-3.5 shrink-0" aria-hidden="true" />;
+  }
+  // Aggregate: modified wins over synced; if any side has wallet origin show wallet.
+  const states = present.map(getWalletSyncState);
+  const aggregate: 'modified' | 'synced' | 'manual' = states.includes('modified')
+    ? 'modified'
+    : states.includes('synced')
+      ? 'synced'
+      : 'manual';
 
-  if (state === 'synced') {
-    const isSdk = position.source === 'sdk';
+  if (aggregate === 'manual') {
+    return <div className="size-3.5 shrink-0" aria-hidden="true" />;
+  }
+
+  if (aggregate === 'synced') {
     return (
-      <div className="relative shrink-0">
-        <Wallet className="size-3.5 text-emerald-500" aria-label={isSdk ? 'Synced from SDK' : 'Synced from wallet'} />
-        {isSdk && (
-          <Zap className="absolute -bottom-0.5 -right-1 size-2 text-indigo-400 fill-indigo-400" aria-hidden />
-        )}
+      <div className="shrink-0">
+        <Wallet className="size-3.5 text-emerald-500" aria-label="Synced from wallet" />
       </div>
     );
   }
 
-  if (state === 'modified') {
-    return (
-      <button
-        type="button"
-        onClick={onRestore ? () => onRestore(position.positionId) : undefined}
-        className="group relative shrink-0"
-        aria-label={`Modified — click to restore amount to wallet value`}
-        title="Restore to wallet value"
-      >
-        <div className="relative">
-          <Wallet className="size-3.5 text-amber-500" />
-          <div className="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-amber-500 border border-card" />
-        </div>
-      </button>
-    );
-  }
-
-  return <div className="size-3.5 shrink-0" aria-hidden="true" />;
+  // modified — clicking restores every modified side back to its wallet value.
+  const modifiedPositions = present.filter((p) => getWalletSyncState(p) === 'modified');
+  return (
+    <button
+      type="button"
+      onClick={onRestore ? () => modifiedPositions.forEach((p) => onRestore(p.positionId)) : undefined}
+      className="group relative shrink-0"
+      aria-label="Modified — click to restore amounts to wallet values"
+      title="Restore to wallet value"
+    >
+      <Wallet className="size-3.5 text-amber-500" />
+    </button>
+  );
 }
 
 const PortfolioTokenRow = memo(function PortfolioTokenRow({
@@ -188,21 +193,14 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
     </button>
   );
 
-  // Always render two fixed-width slots so the supply/borrow wallet icons
-  // align vertically across rows regardless of which sides are present.
-  const walletSlotPlaceholder = <div className="size-3.5 shrink-0" aria-hidden="true" />;
-  const walletIndicatorSupply = (
+  // Single unified wallet indicator per row so that the icon sits at the same
+  // x-position across rows (e.g. WETH and GHO line up vertically).
+  const walletIndicator = (
     <div className="flex w-4 justify-center shrink-0">
-      {supplyPosition ? (
-        <WalletSyncIndicator position={supplyPosition} onRestore={onRestorePosition} />
-      ) : walletSlotPlaceholder}
-    </div>
-  );
-  const walletIndicatorBorrow = (
-    <div className="flex w-4 justify-center shrink-0">
-      {borrowPosition ? (
-        <WalletSyncIndicator position={borrowPosition} onRestore={onRestorePosition} />
-      ) : walletSlotPlaceholder}
+      <WalletSyncIndicator
+        positions={[supplyPosition, borrowPosition]}
+        onRestore={onRestorePosition}
+      />
     </div>
   );
 
@@ -259,8 +257,7 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
           {borrowPosition && renderSideInput(borrowPosition, 'Borrow')}
         </div>
         <div className="flex items-center gap-1 self-center justify-self-end">
-          {!isHidden && walletIndicatorSupply}
-          {!isHidden && walletIndicatorBorrow}
+          {!isHidden && walletIndicator}
           {hiddenSuffix}
         </div>
       </div>
@@ -305,9 +302,8 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
         {renderSideInput(supplyPosition, 'Supply')}
         {borrowPosition && renderSideInput(borrowPosition, 'Borrow')}
         {!isHidden && (
-          <div className="flex items-center justify-end gap-1 shrink-0 w-[2.25rem]">
-            {walletIndicatorSupply}
-            {walletIndicatorBorrow}
+          <div className="flex items-center justify-end shrink-0 w-4">
+            {walletIndicator}
           </div>
         )}
         {hiddenSuffix}

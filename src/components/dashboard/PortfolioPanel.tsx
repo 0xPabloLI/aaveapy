@@ -432,8 +432,22 @@ const PortfolioPanel = memo(function PortfolioPanel({
 
 
   const handleRemoveToken = useCallback((reserveId: string) => {
+    // Capture the affected token symbol for the toast label before mutating.
+    const affected = positions.find((p) => p.reserveId === reserveId);
     actions.removeReserve(reserveId);
-  }, [actions]);
+    toast('Reset to wallet', {
+      description: affected?.tokenSymbol
+        ? `${affected.tokenSymbol} reset to wallet amounts. Manual edits dropped.`
+        : 'Row reset to wallet amounts. Manual edits dropped.',
+      action: {
+        label: 'Undo',
+        onClick: () => {
+          const restored = actions.undoLastRemove();
+          if (restored) toast.success('Restored previous edits');
+        },
+      },
+    });
+  }, [actions, positions]);
 
   const handleToggleHidden = useCallback((positionId: string) => {
     actions.toggleHidden(positionId);
