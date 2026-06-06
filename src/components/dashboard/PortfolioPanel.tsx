@@ -33,6 +33,10 @@ import { sortPositionsByHidden } from '@/lib/portfolioSoftDelete';
 import { useWallet } from '@/hooks/useWallet';
 import { useWatchModeConnect } from '@/hooks/useWatchModeConnect';
 import { WalletButton } from './WalletButton';
+import {
+  HEADER_CONTROL_ICON_BUTTON_CLASS,
+  HEADER_CONTROL_ICON_CLASS,
+} from '@/lib/headerControlStyles';
 
 const PortfolioCompareView = lazy(() => import('./PortfolioCompareView'));
 
