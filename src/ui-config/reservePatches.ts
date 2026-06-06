@@ -1,6 +1,7 @@
 import {
   AaveV3Arbitrum,
   AaveV3Ethereum,
+  AaveV3EthereumHorizon,
   AaveV3Gnosis,
   AaveV3Optimism,
   AaveV3Plasma,
@@ -259,6 +260,21 @@ export function fetchIconSymbolAndName({ underlyingAsset, symbol, name }: IconSy
       symbol: 'PT USDG 28MAY2026',
       name: 'PT USDG May 2026',
       iconSymbol: 'ptusdg',
+    },
+    [AaveV3EthereumHorizon.ASSETS.USCC.UNDERLYING.toLowerCase()]: {
+      symbol: 'USCC',
+      name: 'Bitwise Crypto Carry Fund',
+      iconSymbol: 'uscc',
+    },
+    [AaveV3EthereumHorizon.ASSETS.USTB.UNDERLYING.toLowerCase()]: {
+      symbol: 'USTB',
+      name: 'Invesco Short Duration US Government Securities Fund',
+      iconSymbol: 'ustb',
+    },
+    '0xc96de26018a54d51c097160568752c4e3bd6c364': {
+      iconSymbol: 'FBTC',
+      name: 'Function Bitcoin',
+      symbol: 'FBTC',
     },
 };
 
