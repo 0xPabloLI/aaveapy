@@ -33,7 +33,11 @@ vi.mock('wagmi', async (importOriginal) => {
   };
 });
 
-const testWagmiConfig = createConfig({
+// Cast to `any` because the global wagmi Register augmentation
+// (src/lib/wagmi/config.ts) types the config with the production connectors
+// (injected/walletConnect/watch); tests use an empty connector list.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const testWagmiConfig: any = createConfig({
   chains: [mainnet],
   connectors: [],
   transports: { [mainnet.id]: http() },
