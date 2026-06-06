@@ -1,0 +1,3 @@
+export const FALLBACK_TIMEOUT_MS = 15_000
+export const FALLBACK_STALE_TIME = 30_000
+export const FALLBACK_GC_TIME = 5 * 60_000

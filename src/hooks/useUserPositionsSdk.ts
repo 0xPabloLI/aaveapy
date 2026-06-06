@@ -41,9 +41,7 @@ export type DegradedResult =
   | { status: 'error'; error: Error; retry: () => void }
 
 const STALE_TIME = QUERY_STALE_TIMES.default
-const FALLBACK_STALE_TIME = 30_000
-const FALLBACK_GC_TIME = 5 * 60_000
-const FALLBACK_TIMEOUT_MS = 15_000
+import { FALLBACK_TIMEOUT_MS, FALLBACK_STALE_TIME, FALLBACK_GC_TIME } from '@/lib/userData/fallbackConstants'
 
 export function enrichV3SupplyPositions(
   positions: { market: { address: `0x${string}`; chain: { chainId: number; [k: string]: unknown }; [k: string]: unknown }; currency: { address: `0x${string}`; symbol: string; decimals: number; chainId: number; [k: string]: unknown }; balance: { amount: { value: string; raw: string; decimals: number; [k: string]: unknown }; [k: string]: unknown }; isCollateral: boolean; [k: string]: unknown }[],

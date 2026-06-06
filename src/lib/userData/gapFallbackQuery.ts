@@ -10,8 +10,7 @@ import type { WalletPosition } from './userPositionMapper'
 import type { ReserveWithSpread } from '@/types/aave'
 import type { GapChainIds } from './gapChainComputation'
 import { withTimeout } from './rpcResilience'
-
-const FALLBACK_TIMEOUT_MS = 15_000
+import { FALLBACK_TIMEOUT_MS, FALLBACK_STALE_TIME, FALLBACK_GC_TIME } from './fallbackConstants'
 
 export interface FetchGapPositionsParams {
   gapChainIds: GapChainIds
@@ -123,9 +122,6 @@ async function fetchGapV4Positions(
 
   return { positions, failedSources }
 }
-
-const FALLBACK_STALE_TIME = 30_000
-const FALLBACK_GC_TIME = 5 * 60_000
 
 export function useGapFallbackQuery(
   params: Omit<FetchGapPositionsParams, 'address'> & { address: `0x${string}` | undefined; enabled?: boolean },
