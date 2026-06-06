@@ -46,7 +46,7 @@ export const HEADER_CONTROL_ERROR_CLASS =
 export const HEADER_CONTROL_INPUT_CLASS = [
   'ds-text-14 h-[var(--ds-control-h)] rounded-full px-[var(--ds-space-3)] outline-none',
   'transition-colors',
-  HEADER_CONTROL_SURFACE_CLASS,
+  'bg-card/60 border border-border/40 text-foreground',
   HEADER_CONTROL_HOVER_CLASS,
   HEADER_CONTROL_DISABLED_CLASS,
   HEADER_CONTROL_FOCUS_RING_CLASS,
