@@ -193,21 +193,14 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
     </button>
   );
 
-  // Always render two fixed-width slots so the supply/borrow wallet icons
-  // align vertically across rows regardless of which sides are present.
-  const walletSlotPlaceholder = <div className="size-3.5 shrink-0" aria-hidden="true" />;
-  const walletIndicatorSupply = (
+  // Single unified wallet indicator per row so that the icon sits at the same
+  // x-position across rows (e.g. WETH and GHO line up vertically).
+  const walletIndicator = (
     <div className="flex w-4 justify-center shrink-0">
-      {supplyPosition ? (
-        <WalletSyncIndicator position={supplyPosition} onRestore={onRestorePosition} />
-      ) : walletSlotPlaceholder}
-    </div>
-  );
-  const walletIndicatorBorrow = (
-    <div className="flex w-4 justify-center shrink-0">
-      {borrowPosition ? (
-        <WalletSyncIndicator position={borrowPosition} onRestore={onRestorePosition} />
-      ) : walletSlotPlaceholder}
+      <WalletSyncIndicator
+        positions={[supplyPosition, borrowPosition]}
+        onRestore={onRestorePosition}
+      />
     </div>
   );
 
