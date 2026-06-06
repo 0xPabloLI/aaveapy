@@ -3,6 +3,16 @@ import { createConnector } from 'wagmi'
 const STORAGE_KEY = 'wagmi.watchAddress'
 const READ_ONLY_ERROR = 'Watch mode is read-only'
 
+type WatchProvider = {
+  request: (args: { method: string; params?: unknown }) => Promise<unknown>
+  on: () => void
+  removeListener: () => void
+}
+
+function toHexChainId(chainId: number) {
+  return `0x${chainId.toString(16)}`
+}
+
 export function watchModeConnector() {
   let watchAddress: `0x${string}` | undefined
   let emitWatchAddressChange: ((address: `0x${string}`) => void) | undefined
@@ -50,6 +60,28 @@ export function watchModeConnector() {
         return config.chains[0].id
       },
 
+      async getProvider({ chainId } = {}) {
+        const resolvedChainId = chainId ?? config.chains[0].id
+        const provider: WatchProvider = {
+          async request({ method }) {
+            const address = watchAddress
+              ?? (localStorage.getItem(STORAGE_KEY) as `0x${string}` | null)
+              ?? undefined
+
+            if (method === 'eth_chainId') return toHexChainId(resolvedChainId)
+            if (method === 'eth_accounts') return address ? [address] : []
+            if (method === 'eth_requestAccounts') return address ? [address] : []
+            if (method.startsWith('personal_') || method.startsWith('wallet_') || method.includes('sign')) {
+              throw new Error(READ_ONLY_ERROR)
+            }
+            throw new Error(`Watch mode provider does not support ${method}`)
+          },
+          on() {},
+          removeListener() {},
+        }
+        return provider
+      },
+
       async isAuthorized() {
         const address = watchAddress
           ?? (localStorage.getItem(STORAGE_KEY) as `0x${string}` | null)
@@ -72,6 +104,9 @@ export function watchModeConnector() {
 
       onAccountsChanged() {},
       onChainChanged() {},
+      onDisconnect() {
+        config.emitter.emit('disconnect')
+      },
     }
   })
 
