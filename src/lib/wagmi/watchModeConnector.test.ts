@@ -106,6 +106,18 @@ describe('watchModeConnector', () => {
     })
   })
 
+  describe('getProvider', () => {
+    it('exposes a read-only EIP-1193 provider for RainbowKit compatibility', async () => {
+      const { connector, connectorFn } = createTestConfig()
+      connectorFn.setWatchAddress(TEST_ADDRESS)
+      const provider = await connector.getProvider()
+
+      await expect(provider.request({ method: 'eth_accounts' })).resolves.toEqual([TEST_ADDRESS])
+      await expect(provider.request({ method: 'eth_chainId' })).resolves.toBe('0x1')
+      await expect(provider.request({ method: 'personal_sign' })).rejects.toThrow(READ_ONLY_ERROR)
+    })
+  })
+
   describe('read-only enforcement', () => {
     it('signMessage throws read-only error', async () => {
       const { connector, connectorFn } = createTestConfig()
