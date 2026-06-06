@@ -35,8 +35,9 @@ export function WalletButton({ mobile = false, onWatchSubmit }: WalletButtonProp
   if (showWatchInput && onWatchSubmit) {
     return (
       <WatchAddressInput
-        onSubmit={(addr) => {
-          return onWatchSubmit(addr)
+        onSubmit={async (addr) => {
+          await onWatchSubmit(addr)
+          setShowWatchInput(false)
         }}
         onCancel={() => setShowWatchInput(false)}
       />
