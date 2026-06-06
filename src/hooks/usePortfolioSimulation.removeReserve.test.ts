@@ -28,14 +28,9 @@ describe('usePortfolioSimulation.removeReserve', () => {
   it('resets a manually-edited wallet side back to the wallet amount and drops purely-manual sides on the same row', () => {
     const { result } = renderHook(() => usePortfolioSimulation())
 
-    // Seed: wallet supply (edited to 9999) + purely manual borrow on same reserve.
     act(() => {
       result.current.actions.importPositions([
         basePos({ positionId: 'p-supply', side: 'supply', walletValue: 5000, amount: '9999', inputMode: 'usd' }),
-      ])
-    })
-    act(() => {
-      result.current.actions.importPositions([
         basePos({ positionId: 'p-borrow', side: 'borrow', walletValue: null, amount: '1234' }),
       ])
     })
