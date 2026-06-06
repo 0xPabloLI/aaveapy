@@ -189,6 +189,53 @@ function alignEntryIndent(entry) {
     .join('\n');
 }
 
+function extractAddressBookReferences(content) {
+  const bounds = findUnderlyingAssetMapBounds(content);
+  const mapBody = content.slice(bounds.openIndex, bounds.closeIndex + 1);
+  const refs = new Set();
+  const refRegex = /\b(AaveV3[A-Za-z0-9_]+)\b/g;
+  let match;
+  while ((match = refRegex.exec(mapBody)) !== null) {
+    refs.add(match[1]);
+  }
+  return refs;
+}
+
+function parseCurrentAddressBookImports(content) {
+  const importMatch = content.match(
+    /import\s*\{([\s\S]*?)\}\s*from\s*['"]@aave-dao\/aave-address-book['"]/
+  );
+  if (!importMatch) return { names: new Set(), fullMatchStart: -1, fullMatchEnd: -1 };
+  const names = new Set(
+    importMatch[1]
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean)
+      .map((item) => item.replace(/\s+as\s+[A-Za-z0-9_]+$/, '').trim())
+  );
+  return {
+    names,
+    fullMatchStart: importMatch.index,
+    fullMatchEnd: importMatch.index + importMatch[0].length,
+  };
+}
+
+function syncAddressBookImports(content) {
+  const referenced = extractAddressBookReferences(content);
+  const { names: imported, fullMatchStart, fullMatchEnd } = parseCurrentAddressBookImports(content);
+
+  const missing = [...referenced].filter((r) => !imported.has(r)).sort();
+  if (missing.length === 0) {
+    return { content, changed: false, addedImports: [] };
+  }
+
+  const allNames = [...imported, ...missing].sort();
+  const newImportStatement = `import {\n${allNames.map((n) => `  ${n},`).join('\n')},\n} from '@aave-dao/aave-address-book';`;
+  const newContent =
+    content.slice(0, fullMatchStart) + newImportStatement + content.slice(fullMatchEnd);
+  return { content: newContent, changed: true, addedImports: missing };
+}
+
 function applyUnderlyingAssetMapMerge(localContent, upstreamContent) {
   const localBounds = findUnderlyingAssetMapBounds(localContent);
   const upstreamBounds = findUnderlyingAssetMapBounds(upstreamContent);
@@ -246,7 +293,13 @@ async function main() {
     notes.push(`underlyingAssetMap: added ${underlyingMerge.addedCount} missing entr(y/ies)`);
   }
 
-  if (!symbolMerge.changed && !underlyingMerge.changed) {
+  const importSync = syncAddressBookImports(nextReserveContent);
+  if (importSync.changed) {
+    nextReserveContent = importSync.content;
+    notes.push(`imports: added ${importSync.addedImports.join(', ')} to @aave-dao/aave-address-book import`);
+  }
+
+  if (!symbolMerge.changed && !underlyingMerge.changed && !importSync.changed) {
     console.log('reservePatches is already aligned (SYMBOL_MAP + underlyingAssetMap).');
     return;
   }
@@ -255,7 +308,7 @@ async function main() {
     await writeFile(LOCAL_TOKEN_SYMBOL_MAP_PATH, nextSymbolMapContent, 'utf8');
     console.log('Updated src/lib/tokenSymbolMap.ts');
   }
-  if (underlyingMerge.changed) {
+  if (underlyingMerge.changed || importSync.changed) {
     await writeFile(LOCAL_RESERVE_PATCHES_PATH, nextReserveContent, 'utf8');
     console.log('Updated src/ui-config/reservePatches.ts');
   }
