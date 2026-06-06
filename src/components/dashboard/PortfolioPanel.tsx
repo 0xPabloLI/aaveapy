@@ -207,6 +207,38 @@ const PortfolioPanel = memo(function PortfolioPanel({
   const [dismissedSuggestions, setDismissedSuggestions] = useState<Set<string>>(() => new Set());
   const searchInputRef = useRef<HTMLInputElement>(null);
 
+  // Wallet sync freshness: record timestamp when a sync settles, then expose age.
+  const [walletSyncedAt, setWalletSyncedAt] = useState<number | null>(null);
+  const [walletSyncAgeS, setWalletSyncAgeS] = useState(0);
+  const prevWalletLoadStateRef = useRef<WalletLoadState | undefined>(walletLoadState);
+  useEffect(() => {
+    const prev = prevWalletLoadStateRef.current;
+    if (prev === 'loading' && walletLoadState && walletLoadState !== 'loading') {
+      setWalletSyncedAt(Date.now());
+    }
+    prevWalletLoadStateRef.current = walletLoadState;
+  }, [walletLoadState]);
+  useEffect(() => {
+    if (!walletSyncedAt) return;
+    const update = () => setWalletSyncAgeS(Math.floor((Date.now() - walletSyncedAt) / 1000));
+    update();
+    const id = window.setInterval(update, 1000);
+    return () => window.clearInterval(id);
+  }, [walletSyncedAt]);
+  const walletFreshnessColor = walletSyncAgeS < 30
+    ? 'bg-emerald-400'
+    : walletSyncAgeS < 60
+      ? 'bg-amber-400'
+      : 'bg-red-400';
+  const walletAgeLabel = walletSyncedAt
+    ? walletSyncAgeS < 60
+      ? `${walletSyncAgeS}s ago`
+      : walletSyncAgeS < 3600
+        ? `${Math.floor(walletSyncAgeS / 60)}m ago`
+        : `${Math.floor(walletSyncAgeS / 3600)}h ago`
+    : null;
+
+
 
   const focusSearch = useCallback(() => {
     setSearchOpen(true);
