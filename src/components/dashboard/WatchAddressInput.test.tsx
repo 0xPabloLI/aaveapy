@@ -108,10 +108,27 @@ describe('WatchAddressInput', () => {
     fireEvent.click(screen.getByRole('button', { name: /confirm watch address/i }))
 
     expect(await screen.findByText('Watch connector unavailable')).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: /re-import watch address/i }))
+    const reimportBtn = screen.getByRole('button', { name: /re-import watch address/i })
+    expect(reimportBtn).toBeInTheDocument()
+    expect(reimportBtn).toHaveAttribute('title', 'Retry importing the previously entered address after a connection failure')
+    fireEvent.click(reimportBtn)
 
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(2))
     expect(await screen.findByText(/Watch mode connected/i)).toBeInTheDocument()
+  })
+
+  it('shows inline help hint next to Re-import on failure', async () => {
+    const onSubmit = vi.fn().mockRejectedValueOnce(new Error('network'))
+    render(<WatchAddressInput onSubmit={onSubmit} onCancel={vi.fn()} />)
+
+    fireEvent.change(screen.getByLabelText(/watch wallet address/i), {
+      target: { value: '0x1234567890abcdef1234567890abcdef12345678' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /confirm watch address/i }))
+
+    expect(await screen.findByText('network')).toBeInTheDocument()
+    const helpIcon = screen.getByTitle('Available only when the previous import failed')
+    expect(helpIcon).toBeInTheDocument()
   })
 
   it('reuses header-control border and focus tokens for input and actions', () => {
