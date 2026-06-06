@@ -176,18 +176,28 @@ export function WatchAddressInput({ onSubmit, onCancel, autoFocus = true }: Watc
           {statusMessage}
         </span>
         {showRetry && (
-          <button
-            type="button"
-            onClick={handleRetry}
-            disabled={isImporting}
-            className={HEADER_CONTROL_STATUS_ACTION_CLASS}
-            aria-label="Re-import watch address"
-          >
-            <span className="inline-flex items-center gap-[var(--ds-space-1)]">
-              <RotateCcw className={HEADER_CONTROL_AFFORDANCE_ICON_CLASS} aria-hidden />
-              Re-import
+          <span className="inline-flex items-center gap-[var(--ds-space-1)]">
+            <button
+              type="button"
+              onClick={handleRetry}
+              disabled={isImporting}
+              className={HEADER_CONTROL_STATUS_ACTION_CLASS}
+              aria-label="Re-import watch address"
+              title="Retry importing the previously entered address after a connection failure"
+            >
+              <span className="inline-flex items-center gap-[var(--ds-space-1)]">
+                <RotateCcw className={HEADER_CONTROL_AFFORDANCE_ICON_CLASS} aria-hidden />
+                Re-import
+              </span>
+            </button>
+            <span
+              className="inline-flex items-center gap-[var(--ds-space-0-5)] text-muted-foreground/60"
+              title="Available only when the previous import failed"
+            >
+              <HelpCircle className="w-3 h-3" aria-hidden />
+              <span className="sr-only">Why is Re-import shown?</span>
             </span>
-          </button>
+          </span>
         )}
       </div>
     </div>
