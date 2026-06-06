@@ -7,9 +7,9 @@ type WatchModeConnector = {
 }
 
 export function useWatchModeConnect() {
-  const { connect, connectors } = useConnect()
+  const { connectAsync, connectors } = useConnect()
 
-  const connectWatchAddress = useCallback((address: `0x${string}`) => {
+  const connectWatchAddress = useCallback(async (address: `0x${string}`) => {
     const connector = connectors.find((item) => item.id === 'watchMode')
     const watchConnector = connector as WatchModeConnector | undefined
 
@@ -18,8 +18,8 @@ export function useWatchModeConnect() {
     }
 
     watchConnector.setWatchAddress(address)
-    connect({ connector })
-  }, [connect, connectors])
+    await connectAsync({ connector })
+  }, [connectAsync, connectors])
 
   return { connectWatchAddress }
 }
