@@ -207,6 +207,38 @@ const PortfolioPanel = memo(function PortfolioPanel({
   const [dismissedSuggestions, setDismissedSuggestions] = useState<Set<string>>(() => new Set());
   const searchInputRef = useRef<HTMLInputElement>(null);
 
+  // Wallet sync freshness: record timestamp when a sync settles, then expose age.
+  const [walletSyncedAt, setWalletSyncedAt] = useState<number | null>(null);
+  const [walletSyncAgeS, setWalletSyncAgeS] = useState(0);
+  const prevWalletLoadStateRef = useRef<WalletLoadState | undefined>(walletLoadState);
+  useEffect(() => {
+    const prev = prevWalletLoadStateRef.current;
+    if (prev === 'loading' && walletLoadState && walletLoadState !== 'loading') {
+      setWalletSyncedAt(Date.now());
+    }
+    prevWalletLoadStateRef.current = walletLoadState;
+  }, [walletLoadState]);
+  useEffect(() => {
+    if (!walletSyncedAt) return;
+    const update = () => setWalletSyncAgeS(Math.floor((Date.now() - walletSyncedAt) / 1000));
+    update();
+    const id = window.setInterval(update, 1000);
+    return () => window.clearInterval(id);
+  }, [walletSyncedAt]);
+  const walletFreshnessColor = walletSyncAgeS < 30
+    ? 'bg-emerald-400'
+    : walletSyncAgeS < 60
+      ? 'bg-amber-400'
+      : 'bg-red-400';
+  const walletAgeLabel = walletSyncedAt
+    ? walletSyncAgeS < 60
+      ? `${walletSyncAgeS}s ago`
+      : walletSyncAgeS < 3600
+        ? `${Math.floor(walletSyncAgeS / 60)}m ago`
+        : `${Math.floor(walletSyncAgeS / 3600)}h ago`
+    : null;
+
+
 
   const focusSearch = useCallback(() => {
     setSearchOpen(true);
@@ -393,20 +425,44 @@ const PortfolioPanel = memo(function PortfolioPanel({
           </div>
           <div className="flex items-center gap-[var(--ds-space-1)] pr-[11px]">
             {walletConnected && (
-              <button
-                type="button"
-                onClick={onWalletSync}
-                disabled={walletLoadState === 'loading'}
-                className={cn(
-                  HEADER_CONTROL_ICON_BUTTON_CLASS,
-                  walletLoadState === 'loading' && 'animate-spin',
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={onWalletSync}
+                  disabled={walletLoadState === 'loading'}
+                  className={cn(HEADER_CONTROL_ICON_BUTTON_CLASS)}
+                  aria-label={
+                    walletLoadState === 'loading'
+                      ? 'Syncing wallet positions'
+                      : walletAgeLabel
+                        ? `Sync wallet positions (updated ${walletAgeLabel})`
+                        : 'Sync wallet positions'
+                  }
+                  title={
+                    walletLoadState === 'loading'
+                      ? 'Syncing…'
+                      : walletAgeLabel
+                        ? `Updated ${walletAgeLabel}`
+                        : 'Sync wallet positions'
+                  }
+                >
+                  <RefreshCw
+                    className={cn(HEADER_CONTROL_ICON_CLASS, walletLoadState === 'loading' && 'animate-spin')}
+                    aria-hidden
+                  />
+                </button>
+                {walletSyncedAt != null && walletLoadState !== 'loading' && (
+                  <span
+                    className={cn(
+                      'pointer-events-none absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border border-card/80 transition-colors duration-700',
+                      walletLoadState === 'error' ? 'bg-red-400' : walletFreshnessColor,
+                    )}
+                    aria-hidden
+                  />
                 )}
-                aria-label="Sync wallet positions"
-                title="Sync wallet positions"
-              >
-                <RefreshCw className={HEADER_CONTROL_ICON_CLASS} aria-hidden />
-              </button>
+              </div>
             )}
+
             <WalletButton mobile onWatchSubmit={connectWatchAddress} />
             {/* Save snapshot */}
             {positions.length > 0 && summary && (
