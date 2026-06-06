@@ -68,6 +68,8 @@ export interface PortfolioSimulationActions {
   restoreToWallet: (positionId: string) => void;
   /** Soft-delete (hide) or hard-remove every position that shares the given reserveId. */
   removeReserve: (reserveId: string) => void;
+  /** Undo the most recent removeReserve call, restoring prior positions verbatim. Returns true if anything was restored. */
+  undoLastRemove: () => boolean;
 }
 
 export interface UsePortfolioSimulationReturn {
