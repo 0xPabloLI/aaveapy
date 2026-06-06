@@ -75,7 +75,7 @@ describe('WatchAddressInput', () => {
 
     expect(await screen.findByText(/Watch mode connected/i)).toBeInTheDocument()
     expect(screen.getByText(/listening to 0x1234…5678/i)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /re-import watch address/i })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /re-import watch address/i })).not.toBeInTheDocument()
   })
 
   it('keeps loading visible while switching to Watch mode', async () => {
