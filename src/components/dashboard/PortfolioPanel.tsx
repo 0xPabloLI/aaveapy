@@ -479,19 +479,19 @@ const PortfolioPanel = memo(function PortfolioPanel({
                   onClick={onWalletSync}
                   disabled={walletLoadState === 'loading'}
                   className={cn(HEADER_CONTROL_ICON_BUTTON_CLASS)}
-                  aria-label={
+                  aria-label={walletSyncAriaLabel}
+                  title={walletSyncTitle}
+                  data-testid="wallet-sync-button"
+                  data-wallet-sync-state={
                     walletLoadState === 'loading'
-                      ? 'Syncing wallet positions'
-                      : walletAgeLabel
-                        ? `Sync wallet positions (updated ${walletAgeLabel})`
-                        : 'Sync wallet positions'
-                  }
-                  title={
-                    walletLoadState === 'loading'
-                      ? 'Syncing…'
-                      : walletAgeLabel
-                        ? `Updated ${walletAgeLabel}`
-                        : 'Sync wallet positions'
+                      ? 'loading'
+                      : walletInError
+                        ? 'error'
+                        : walletHasMarketUpdate
+                          ? 'has-update'
+                          : walletSyncedAt
+                            ? 'idle-synced'
+                            : 'idle'
                   }
                 >
                   <RefreshCw
@@ -499,11 +499,12 @@ const PortfolioPanel = memo(function PortfolioPanel({
                     aria-hidden
                   />
                 </button>
-                {walletSyncedAt != null && walletLoadState !== 'loading' && (
+                {(walletSyncedAt != null || walletInError) && walletLoadState !== 'loading' && (
                   <span
+                    data-testid="wallet-sync-freshness-dot"
                     className={cn(
                       'pointer-events-none absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border border-card/80 transition-colors duration-700',
-                      walletLoadState === 'error' ? 'bg-red-400' : walletFreshnessColor,
+                      walletFreshnessColor,
                     )}
                     aria-hidden
                   />
