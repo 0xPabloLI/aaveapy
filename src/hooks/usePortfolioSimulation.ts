@@ -5,7 +5,7 @@
  * delegating to `buildRateSimulationResult`, and aggregates via `portfolioCalculator`.
  */
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import type {
   PortfolioInputMode,
   PortfolioPosition,
