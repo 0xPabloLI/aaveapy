@@ -16,7 +16,7 @@ vi.mock('@rainbow-me/rainbowkit', () => ({
 }))
 
 vi.mock('wagmi', () => ({
-  useEnsName: () => ({ data: null, isLoading: false }),
+  useEnsAddress: () => ({ data: null, isLoading: false }),
 }))
 
 vi.mock('@/hooks/useWallet')
