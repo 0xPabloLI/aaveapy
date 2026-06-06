@@ -484,7 +484,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
               <div className="relative">
                 <button
                   type="button"
-                  onClick={onWalletSync}
+                  onClick={handleWalletSyncClick}
                   disabled={walletLoadState === 'loading'}
                   className={cn(HEADER_CONTROL_ICON_BUTTON_CLASS)}
                   aria-label={walletSyncAriaLabel}
