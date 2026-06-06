@@ -188,11 +188,22 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
     </button>
   );
 
-  const walletIndicatorSupply = supplyPosition && (
-    <WalletSyncIndicator position={supplyPosition} onRestore={onRestorePosition} />
+  // Always render two fixed-width slots so the supply/borrow wallet icons
+  // align vertically across rows regardless of which sides are present.
+  const walletSlotPlaceholder = <div className="size-3.5 shrink-0" aria-hidden="true" />;
+  const walletIndicatorSupply = (
+    <div className="flex w-4 justify-center shrink-0">
+      {supplyPosition ? (
+        <WalletSyncIndicator position={supplyPosition} onRestore={onRestorePosition} />
+      ) : walletSlotPlaceholder}
+    </div>
   );
-  const walletIndicatorBorrow = borrowPosition && (
-    <WalletSyncIndicator position={borrowPosition} onRestore={onRestorePosition} />
+  const walletIndicatorBorrow = (
+    <div className="flex w-4 justify-center shrink-0">
+      {borrowPosition ? (
+        <WalletSyncIndicator position={borrowPosition} onRestore={onRestorePosition} />
+      ) : walletSlotPlaceholder}
+    </div>
   );
 
   const hiddenSuffix = isHidden ? (
