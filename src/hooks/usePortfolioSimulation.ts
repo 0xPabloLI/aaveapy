@@ -64,6 +64,10 @@ export interface PortfolioSimulationActions {
   restorePosition: (positionId: string) => void;
   /** Toggle hidden flag on a position (soft delete). */
   toggleHidden: (positionId: string) => void;
+  /** Restore amount/inputMode for a wallet-synced position back to its walletValue (USD). Also unhides. */
+  restoreToWallet: (positionId: string) => void;
+  /** Soft-delete (hide) or hard-remove every position that shares the given reserveId. */
+  removeReserve: (reserveId: string) => void;
 }
 
 export interface UsePortfolioSimulationReturn {
