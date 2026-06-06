@@ -2,7 +2,7 @@
 
 > 本文档汇总前端所有存在 fallback 链的变量获取逻辑。
 >
-> 最后更新：2026-04-28
+> 最后更新：2026-06-06
 
 ---
 
@@ -93,6 +93,51 @@ const baseUtilization = reserve.utilizationPct ?? simulation.utilization.current
 
 ---
 
-## 四、相关文档
+## 四、Wallet Position 三路 Fallback
+
+### 4.1 概述
+
+用户链上仓位通过三路数据获取，按优先级合并去重：
+
+| 路径 | 触发条件 | 查询范围 | 数据源标记 | 关键文件 |
+|---|---|---|---|---|
+| SDK | 始终尝试 | SDK 覆盖的链 | `'sdk'` | `useV3UserSupplies` / `useV4UserSupplies` 等 |
+| Onchain Fallback | SDK 失败（`isInfrastructureFailure`） | 全部链 | `'onchain-v3'` / `'onchain-v4'` | `useUserPositionsSdk.ts` → `fetchV3Fallback` / `fetchV4Fallback` |
+| Gap Fallback | SDK 成功且差集非空 | 仅差集链 | `'gap-v3'` / `'gap-v4'` | `useGapFallbackQuery.ts` → `fetchGapPositions` |
+
+### 4.2 Onchain Fallback vs Gap Fallback
+
+| 维度 | Onchain Fallback | Gap Fallback |
+|---|---|---|
+| 触发条件 | SDK 整体失败 | SDK 成功但覆盖不全 |
+| 查询范围 | 全部链（V3/V4 各自全量） | 仅差集链（`gapChainIds.v3Gap` / `v4Gap`） |
+| V3 构建差异 | 完整 `v3AssetsByMarket` | 从中筛选仅含 gap 链的条目 |
+| V4 构建差异 | `Object.keys(V4_SPOKE_ADDRESSES)` | 仅 `gapChainIds.v4Gap` |
+| RPC 消耗 | 全链查询（较多） | 仅差集链查询（较少） |
+| 互斥性 | 与 gap fallback 互斥 | 与 onchain fallback 互斥 |
+
+### 4.3 合并去重
+
+`mergeAndDedupPositions(sdkPositions, fallbackPositions, gapPositions)`:
+- 三路 concat 后按 `reserveId::side` 去重
+- 去重时 SDK 优先级最高（SDK 数据最权威）
+- 失败源独立收集: `mergeFailedSources(sdkFailed, fallbackFailed, gapFailed)`
+
+### 4.4 Gap Chain ID 计算
+
+`computeGapChainIds(reserves, sdkCoverage)`:
+- 输入: 后端 reserves（含所有链）+ SDK 覆盖的链集合
+- 输出: `{ v3Gap: number[], v4Gap: number[] }` — V3/V4 独立差集
+- 差集 = address-book 中存在的链 - SDK 覆盖的链
+
+### 4.5 相关文档
+
+- [ADR-0003](adr/0003-onchain-fallback-reactive-architecture.md) — Onchain Fallback Reactive Architecture
+- [ADR-0004](adr/0004-sdk-failure-classification-rpc-rotation-timeout.md) — SDK Failure Classification
+- [ADR-0006](adr/0006-gap-fallback-design.md) — Gap Fallback Design（Q1-Q6 决策）
+
+---
+
+## 五、相关文档
 
 - [rate-calculation.md](rate-calculation.md) — 利率计算详细说明
