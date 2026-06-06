@@ -4,7 +4,7 @@ import type { ReserveWithSpread } from '@/types/aave'
 import type { ReserveMap, ReserveChainTokenMap } from '@/lib/reserveKey'
 import { buildReserveMap, toChainTokenKey } from '@/lib/reserveKey'
 
-export type WalletPositionSource = 'onchain-v3' | 'onchain-v4' | 'sdk'
+export type WalletPositionSource = 'sdk' | 'onchain-v3' | 'onchain-v4' | 'gap-v3' | 'gap-v4'
 
 export interface WalletPosition {
   reserveId: string

@@ -98,6 +98,35 @@ Simulation (useRateSimulation → interestRateCalculator + *Forecast)
 Display (formatters.ts + scenarioSize.ts)
 ```
 
+## Wallet Position Data Flow（三路合并）
+
+```
+reserves (from /markets API)
+    │
+    ├─→ computeGapChainIds(reserves, sdkCoverage) → { v3Gap, v4Gap }
+    │
+    ├─→ [SDK path] V3 SDK hooks + V4 SDK hooks
+    │       │
+    │       ├─ SDK success → sdkPositions (source: 'sdk')
+    │       │
+    │       └─ SDK failure (isInfrastructureFailure) → existing full fallback
+    │               ├─ V3 fallback: all chains → source: 'onchain-v3'
+    │               └─ V4 fallback: all chains → source: 'onchain-v4'
+    │
+    └─→ [Gap path] enabled = SDK succeeded AND gapChainIds non-empty
+            ├─ V3 gap: only gap chains → source: 'gap-v3'
+            └─ V4 gap: only gap chains → source: 'gap-v4'
+
+    mergeAndDedupPositions(sdkPositions, fallbackPositions, gapPositions)
+        → dedup by reserveId::side, SDK priority highest
+    mergeFailedSources(sdkFailed, fallbackFailed, gapFailed)
+```
+
+- **SDK path**: Aave GraphQL SDK 查用户仓位，覆盖 address-book 中已注册链
+- **Onchain fallback**: SDK 基础设施失败时触发，查询**全部**链的链上合约（ADR-0003 reactive 模式）
+- **Gap fallback**: SDK 成功但覆盖不全时触发，仅查询**差集链**的链上合约（ADR-0006）
+- **三路合并**: `mergeAndDedupPositions` 按 `reserveId::side` 去重，SDK > gap > onchain 优先级
+
 ## Shared Schema Architecture
 
 ```

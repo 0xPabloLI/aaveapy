@@ -119,10 +119,10 @@ _Avoid_: proactive 并发（浪费 RPC）、private RPC（前端只用 public RP
 
 **Gap Fallback**:
 SDK 成功但覆盖不全时，补查差集链上的用户仓位。与 onchain fallback 互补：onchain fallback = SDK 全挂时全量替代；gap fallback = SDK 部分覆盖时补齐缺口。触发条件：`sdkSucceeded && computeGapChainIds(reserves, sdkCoverage) non-empty`。差集按 V3/V4 独立计算（`gapChainIds.v3Gap` / `gapChainIds.v4Gap`），只查差集链（省 RPC）。数据源标记 `'gap-v3'` / `'gap-v4'`，与 onchain fallback 的 `'onchain-v3'` / `'onchain-v4'` 区分。详见 ADR-0006。
-_Avoid_: 差集全量混查（浪费 RPC）、gap 与 existing fallback 耦合（触发条件不同应独立）
+_Avoid_: 差集全量混查（浪费 RPC）、gap 与 onchain fallback 耦合（触发条件不同应独立）
 
 **Wallet Position 三路合并**:
-`useUserPositionsSdk` 合并三路仓位数据：SDK（source `'sdk'`）→ 现有 onchain fallback（source `'onchain-v3'`/`'onchain-v4'`）→ gap fallback（source `'gap-v3'`/`'gap-v4'`）。`mergeAndDedupPositions` 按 `reserveId::side` 去重，SDK 优先级最高。`mergeFailedSources` 独立收集三路失败源。SDK 失败时 gap fallback 不触发（无差集意义），与 existing fallback 互斥。
+`useUserPositionsSdk` 合并三路仓位数据：SDK（source `'sdk'`）→ onchain fallback（source `'onchain-v3'`/`'onchain-v4'`）→ gap fallback（source `'gap-v3'`/`'gap-v4'`）。`mergeAndDedupPositions` 按 `reserveId::side` 去重，SDK 优先级最高。`mergeFailedSources` 独立收集三路失败源。SDK 失败时 gap fallback 不触发（无差集意义），与 onchain fallback 互斥。
 
 **SDK Degradation Boundary**:
 `isInfrastructureFailure()` 精细判定，仅以下情况降级：(1) GraphQL 网络错误（5xx / timeout / fetch reject）；(2) hook 抛 JS 异常（type guard 失败 / 字段缺失）；(3) `AaveClient.create()` 初始化失败。空数组/空仓位 = 合法结果，不降级。hook 返回 error + data 非空时：data 缺字段 → 归入 (2) 降级；error 仅 warning → 不降级。见 ADR-0004。
@@ -150,7 +150,7 @@ _Avoid_: 单 URL 首选 + 失败静默空（`createClientWithRetry` 名不副实
 onchain fallback / gap fallback 均独立 15s request timeout（`withTimeout`），超时走 `failedSources` + 返回已拿到的部分数据。对齐 AAV-388 PRD "RPC fallback independent 15s timeout"。
 
 **WalletPositionSource**:
-仓位数据来源枚举：`'sdk'`（SDK 返回）、`'onchain-v3'`/`'onchain-v4'`（现有 fallback 全量替代）、`'gap-v3'`/`'gap-v4'`（gap fallback 补差集）。Portfolio 侧 `PositionSource` 同步此枚举。`userPositionMapper.ts` 和 `portfolio.ts` 的类型守卫由 `architecture-guard.test.ts` 自动同步验证。
+仓位数据来源枚举：`'sdk'`（SDK 返回）、`'onchain-v3'`/`'onchain-v4'`（onchain fallback 全量替代）、`'gap-v3'`/`'gap-v4'`（gap fallback 补差集）。Portfolio 侧 `PositionSource` 同步此枚举。`userPositionMapper.ts` 和 `portfolio.ts` 的类型守卫由 `architecture-guard.test.ts` 自动同步验证。
 
 **Portfolio Input Mode Toggle**:
 Portfolio 模式下每个 position 的 supply/borrow 侧有独立的 $/T 切换按钮（`PortfolioInputMode = 'usd' | 'token'`）。切换时自动按 `priceInUsd` 转换数值：USD→Token = `amount / price`，Token→USD = `amount × price`。price ≤ 0 或 undefined 时清空输入值。supply/borrow 两侧独立，互不影响。结果区域（PortfolioResultsTable / PortfolioSummaryCard）始终以 USD 显示，因为多 token 单位不同只能统一。

@@ -7,7 +7,7 @@ export type PortfolioInputMode = 'usd' | 'token';
 export type WalletSyncState = 'synced' | 'modified' | 'manual';
 
 /** Source of the position data — SDK preferred, onchain viem fallback, or manual entry. */
-export type PositionSource = 'sdk' | 'onchain-v3' | 'onchain-v4' | 'manual';
+export type PositionSource = 'sdk' | 'onchain-v3' | 'onchain-v4' | 'gap-v3' | 'gap-v4' | 'manual';
 
 /** A single position in the portfolio (one token, one side). */
 export interface PortfolioPosition {

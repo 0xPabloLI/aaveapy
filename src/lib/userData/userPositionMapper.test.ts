@@ -167,8 +167,8 @@ describe('mapV4PositionToWalletPosition', () => {
 
 describe('WalletPositionSource type', () => {
   it('accepts all valid source values', () => {
-    const sources: WalletPositionSource[] = ['onchain-v3', 'onchain-v4', 'sdk']
-    expect(sources).toHaveLength(3)
+    const sources: WalletPositionSource[] = ['sdk', 'onchain-v3', 'onchain-v4', 'gap-v3', 'gap-v4']
+    expect(sources).toHaveLength(5)
   })
 })
 

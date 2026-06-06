@@ -4,14 +4,10 @@ import { useQuery } from '@tanstack/react-query'
 import { useUserSupplies as useV4UserSupplies, useUserBorrows as useV4UserBorrows } from '@aave/react'
 import { useUserSupplies as useV3UserSupplies, useUserBorrows as useV3UserBorrows } from '@aave/react-v3'
 import { evmAddress, chainId } from '@aave/types'
-import { getV3UserPositionsMultiChain, type V3AssetsByMarket, V3_POOL_ADDRESSES } from '@/lib/userData/aaveV3UserClient'
-import { getV4UserPositionsAllSpokes, V4_SPOKE_ADDRESSES } from '@/lib/userData/aaveV4UserClient'
+import { type V3AssetsByMarket, V3_POOL_ADDRESSES } from '@/lib/userData/aaveV3UserClient'
+import { V4_SPOKE_ADDRESSES } from '@/lib/userData/aaveV4UserClient'
 import { getProtocolVersion } from '@/lib/protocolVersion'
-import {
-  convertV3PositionsToWalletPositions,
-  convertV4PositionsToWalletPositions,
-  buildReserveLookupByChainAndToken,
-} from '@/lib/userData/onchainPositionConverter'
+import { fetchFallbackPositions, type FallbackPositionsConfig, type FallbackLabels } from '@/lib/userData/fallbackPositions'
 import {
   convertSdkSuppliesToWalletPositions,
   convertSdkBorrowsToWalletPositions,
@@ -23,7 +19,7 @@ import type { SdkSupplyPosition, SdkBorrowPosition } from '@/lib/userData/sdkPos
 import type { ReserveWithSpread } from '@/types/aave'
 import { QUERY_STALE_TIMES } from '@/config/queryStaleTimes'
 import { composeReserveId } from '@/lib/reserveKey'
-import { isInfrastructureFailure, withTimeout } from '@/lib/userData/rpcResilience'
+import { isInfrastructureFailure } from '@/lib/userData/rpcResilience'
 import { computeGapChainIds, type SdkCoverage } from '@/lib/userData/gapChainComputation'
 import { useGapFallbackQuery } from '@/lib/userData/gapFallbackQuery'
 import { mergeAndDedupPositions, mergeFailedSources } from '@/lib/userData/positionMerge'
@@ -41,7 +37,7 @@ export type DegradedResult =
   | { status: 'error'; error: Error; retry: () => void }
 
 const STALE_TIME = QUERY_STALE_TIMES.default
-import { FALLBACK_TIMEOUT_MS, FALLBACK_STALE_TIME, FALLBACK_GC_TIME } from '@/lib/userData/fallbackConstants'
+import { FALLBACK_STALE_TIME, FALLBACK_GC_TIME } from '@/lib/userData/fallbackConstants'
 
 export function enrichV3SupplyPositions(
   positions: { market: { address: `0x${string}`; chain: { chainId: number; [k: string]: unknown }; [k: string]: unknown }; currency: { address: `0x${string}`; symbol: string; decimals: number; chainId: number; [k: string]: unknown }; balance: { amount: { value: string; raw: string; decimals: number; [k: string]: unknown }; [k: string]: unknown }; isCollateral: boolean; [k: string]: unknown }[],
@@ -111,80 +107,24 @@ export function enrichV4BorrowPositions(
   }))
 }
 
-interface FetchFallbackParams {
-  userAddress: `0x${string}`
-  reserves: ReserveWithSpread[]
-  v3AssetsByMarket: Record<string, V3AssetsByMarket>
-  v4ReservesBySpoke: Record<string, { reserveId: bigint; asset: `0x${string}` }[]>
-}
-
-async function fetchV3Fallback(
+async function fetchOnchainFallback(
   userAddress: `0x${string}`,
   reserves: ReserveWithSpread[],
   v3AssetsByMarket: Record<string, V3AssetsByMarket>,
-): Promise<{ positions: WalletPosition[]; failedSources: string[] }> {
-  const positions: WalletPosition[] = []
-  const failedSources: string[] = []
-  const v3MarketNames = Object.keys(v3AssetsByMarket)
-  if (v3MarketNames.length === 0) return { positions, failedSources }
-
-  const lookupMap = buildReserveLookupByChainAndToken(reserves)
-  try {
-    const v3Response = await withTimeout(
-      getV3UserPositionsMultiChain(userAddress, v3AssetsByMarket),
-      FALLBACK_TIMEOUT_MS,
-      'onchain-v3',
-    )
-    for (const result of v3Response.results) {
-      positions.push(...convertV3PositionsToWalletPositions(result.positions, lookupMap))
-    }
-    for (const err of v3Response.errors) {
-      failedSources.push(`onchain-v3-chain-${err.chainId}`)
-    }
-  } catch (err) {
-    console.error('[onchain-v3] Failed to fetch V3 onchain positions:', err)
-    failedSources.push('onchain-v3')
-  }
-  return { positions, failedSources }
-}
-
-async function fetchV4Fallback(
-  userAddress: `0x${string}`,
-  reserves: ReserveWithSpread[],
   v4ReservesBySpoke: Record<string, { reserveId: bigint; asset: `0x${string}` }[]>,
 ): Promise<{ positions: WalletPosition[]; failedSources: string[] }> {
-  const positions: WalletPosition[] = []
-  const failedSources: string[] = []
-  const v4ChainIds = Object.keys(V4_SPOKE_ADDRESSES).map(Number)
-  if (v4ChainIds.length === 0) return { positions, failedSources }
-
-  const lookupMap = buildReserveLookupByChainAndToken(reserves)
-  const settled = await Promise.allSettled(
-    v4ChainIds.map(chainId =>
-      withTimeout(
-        getV4UserPositionsAllSpokes(chainId, userAddress, v4ReservesBySpoke),
-        FALLBACK_TIMEOUT_MS,
-        `onchain-v4-chain-${chainId}`,
-      )
-    ),
-  )
-
-  for (let i = 0; i < settled.length; i++) {
-    const outcome = settled[i]
-    const chainId = v4ChainIds[i]
-    if (outcome.status === 'fulfilled') {
-      for (const result of outcome.value.results) {
-        positions.push(...convertV4PositionsToWalletPositions(result.positions, lookupMap))
-      }
-      for (const err of outcome.value.errors) {
-        failedSources.push(`onchain-v4-chain-${err.chainId}-spoke-${err.spokeName ?? 'unknown'}`)
-      }
-    } else {
-      console.error(`[onchain-v4] Chain ${chainId} failed:`, outcome.reason)
-      failedSources.push(`onchain-v4-chain-${chainId}`)
-    }
+  const config: FallbackPositionsConfig = {
+    userAddress,
+    reserves,
+    v3AssetsByMarket,
+    v4ReservesBySpoke,
+    v4ChainIds: Object.keys(V4_SPOKE_ADDRESSES).map(Number),
   }
-  return { positions, failedSources }
+  const labels: FallbackLabels = {
+    v3Prefix: 'onchain-v3',
+    v4Prefix: 'onchain-v4',
+  }
+  return fetchFallbackPositions(config, {}, labels)
 }
 
 export function buildV3MarketInputs(
@@ -280,32 +220,18 @@ export function useUserPositionsSdk(
     console.error('[sdk-v4] V4 SDK failed:', v4Supplies.error ?? v4Borrows.error)
   }
 
-  const v3FallbackQuery = useQuery({
-    queryKey: ['user-positions-fallback-v3', address ?? 'no-wallet', v3SdkFailed],
+  const onchainFallbackQuery = useQuery({
+    queryKey: ['user-positions-onchain-fallback', address ?? 'no-wallet', v3SdkFailed, v4SdkFailed],
     queryFn: async () => {
       if (!address) return { positions: [] as WalletPosition[], failedSources: [] as string[] }
-      const v3Markets = Object.keys(v3AssetsByMarket)
-      console.info('[fallback-v3] V3 markets:', v3Markets.length, 'reserves:', reserves.length)
-      const v3 = await fetchV3Fallback(address, reserves, v3AssetsByMarket)
-      return { positions: v3.positions, failedSources: [...v3.failedSources, 'sdk-v3-fallback'] }
+      const failedLabels: string[] = []
+      if (v3SdkFailed) failedLabels.push('sdk-v3-fallback')
+      if (v4SdkFailed) failedLabels.push('sdk-v4-fallback')
+      console.info('[onchain-fallback] Fetching onchain fallback positions, reserves:', reserves.length)
+      const result = await fetchOnchainFallback(address, reserves, v3AssetsByMarket, v4ReservesBySpoke)
+      return { positions: result.positions, failedSources: [...result.failedSources, ...failedLabels] }
     },
-    enabled: enabled && v3SdkFailed && !sdkLoading,
-    staleTime: FALLBACK_STALE_TIME,
-    gcTime: FALLBACK_GC_TIME,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-  })
-
-  const v4FallbackQuery = useQuery({
-    queryKey: ['user-positions-fallback-v4', address ?? 'no-wallet', v4SdkFailed],
-    queryFn: async () => {
-      if (!address) return { positions: [] as WalletPosition[], failedSources: [] as string[] }
-      const v4Spokes = Object.keys(v4ReservesBySpoke)
-      console.info('[fallback-v4] V4 spokes:', v4Spokes.length, 'reserves:', reserves.length)
-      const v4 = await fetchV4Fallback(address, reserves, v4ReservesBySpoke)
-      return { positions: v4.positions, failedSources: [...v4.failedSources, 'sdk-v4-fallback'] }
-    },
-    enabled: enabled && v4SdkFailed && !sdkLoading,
+    enabled: enabled && (v3SdkFailed || v4SdkFailed) && !sdkLoading,
     staleTime: FALLBACK_STALE_TIME,
     gcTime: FALLBACK_GC_TIME,
     refetchOnWindowFocus: false,
@@ -339,10 +265,6 @@ export function useUserPositionsSdk(
     sdkPositions.push(...convertSdkBorrowsToWalletPositions(enrichV3BorrowPositions(v3Borrows.data), sdkReserveMap, sdkLookupMap, 'sdk'))
   } else if (v3SdkFailed) {
     sdkFailed.push('sdk-v3')
-    if (v3FallbackQuery.data) {
-      fallbackPositions.push(...v3FallbackQuery.data.positions)
-      fallbackFailed.push(...v3FallbackQuery.data.failedSources)
-    }
   }
 
   if (!v4SdkFailed && v4Supplies.data && v4Borrows.data) {
@@ -350,10 +272,11 @@ export function useUserPositionsSdk(
     sdkPositions.push(...convertSdkBorrowsToWalletPositions(enrichV4BorrowPositions(v4Borrows.data), sdkReserveMap, sdkLookupMap, 'sdk'))
   } else if (v4SdkFailed) {
     sdkFailed.push('sdk-v4')
-    if (v4FallbackQuery.data) {
-      fallbackPositions.push(...v4FallbackQuery.data.positions)
-      fallbackFailed.push(...v4FallbackQuery.data.failedSources)
-    }
+  }
+
+  if ((v3SdkFailed || v4SdkFailed) && onchainFallbackQuery.data) {
+    fallbackPositions.push(...onchainFallbackQuery.data.positions)
+    fallbackFailed.push(...onchainFallbackQuery.data.failedSources)
   }
 
   const gapPositions = gapFallbackQuery.data?.positions ?? []
@@ -362,9 +285,9 @@ export function useUserPositionsSdk(
   const allPositions = mergeAndDedupPositions(sdkPositions, fallbackPositions, gapPositions)
   const allFailedSources = mergeFailedSources(sdkFailed, fallbackFailed, gapFailed)
 
-  const isLoading = sdkLoading || v3FallbackQuery.isLoading || v4FallbackQuery.isLoading || gapFallbackQuery.isLoading
+  const isLoading = sdkLoading || onchainFallbackQuery.isLoading || gapFallbackQuery.isLoading
   const isError = !isLoading && allPositions.length === 0 && allFailedSources.length > 0
-  const retry = () => { v3FallbackQuery.refetch(); v4FallbackQuery.refetch(); gapFallbackQuery.refetch() }
+  const retry = () => { onchainFallbackQuery.refetch(); gapFallbackQuery.refetch() }
 
   let walletLoadState: WalletLoadState
   if (!isConnected || !address) {
