@@ -112,7 +112,7 @@ export function WatchAddressInput({ onSubmit, onCancel, autoFocus = true }: Watc
   )
 
   const isImporting = status === 'importing'
-  const showRetry = status === 'error' || status === 'connected'
+  const showRetry = status === 'error'
 
   return (
     <div className="flex flex-col gap-[var(--ds-space-1)]" data-watch-status={status}>
