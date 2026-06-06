@@ -926,6 +926,7 @@ const ReservesTable = ({
             summary={portfolioSummary}
             snapshots={portfolioSnapshots}
             onWalletSync={onWalletSync}
+            onRefresh={onRefresh}
             walletLoadState={walletLoadState}
             claimableRewards={claimableRewards}
             claimableRewardsLoading={claimableRewardsLoading}
