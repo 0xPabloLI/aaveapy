@@ -46,8 +46,14 @@ const MerklForecastErrorSchema = z.object({
 export const SideDataMetaResponseSchema = z.object({
   // Kept: debug timestamp for side-data generation time (zero cost, aids debugging)
   generatedAt: z.string().optional(),
-  // Kept: indicates side-data is partially generated (a sub-source fetch failed); UI may surface warning
-  partial: z.boolean().optional(),
+  // Replaced partial (boolean) with structured per-sub-source errors (ADR-0007).
+  // Keys are strict; unknown sub-sources are not type-safe at compile time.
+  errors: z.object({
+    categories: z.string().optional(),
+    fdv: z.string().optional(),
+    forecast: z.string().optional(),
+    campaignAccess: z.string().optional(),
+  }).optional(),
   categories: z.object({
     uniqueSymbolsStablecoins: z.array(z.string()),
     uniqueSymbolsEth: z.array(z.string()),

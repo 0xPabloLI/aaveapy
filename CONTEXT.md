@@ -98,6 +98,17 @@ _Avoid_: Composite key, (underlyingAsset, chainId) pair 作为主匹配路径; S
 **LL3: SDK hook 参数格式必须与 SDK 版本匹配 — 不能凭旧版 API 猜测**:
 V3 SDK (`@aave/react-v3` 0.9.1) 需要 `{ markets: [{ address, chainId }], user }` 格式；V4 SDK (`@aave/react` 4.2.0) 需要 `{ query: { userChains: { user, chainIds } } }` 格式。旧代码传 `{ account }` 导致 GraphQL 报错 `field "query"/"markets" is required but not provided`，SDK 两路同时失败 → onchain fallback 也连锁失败 → 用户看到 "Failed to load wallet positions"。**教训：SDK 升级后必须验证 hook 参数签名，不能假设向后兼容；catch 块必须 console.error 实际错误，否则吞掉异常无法诊断。**
 
+## Side Data
+
+**Side Data Sub-Source**:
+后端 `/meta/side-data` 的 4 个独立子数据源：`categories`（Token 分类）、`fdv`（CoinGecko FDV）、`forecast`（Merkl 预测）、`campaignAccess`（Merkl 白名单/黑名单）。任一子源可能独立失败，不影响其他子源返回。
+
+**Side Data Errors**:
+结构化错误字段 `errors: Partial<Record<SubSource, string>>`，替代原 `partial: boolean`。键为失败的子源名（`categories`/`fdv`/`forecast`/`campaignAccess`），值为人类可读失败原因。`errors` 不存在或为空对象 → 全部子源成功。前端当前不展示 UI，仅更新类型/schema。
+_Avoid_: `partial: boolean`（已移除，仅告知"有子源失败"但不知具体哪个和原因）
+
+---
+
 ## External Links
 
 **Aave V3 URL** (`buildAaveReserveUrl` / `buildAaveMarketUrl`):

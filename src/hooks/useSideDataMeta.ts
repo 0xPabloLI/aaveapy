@@ -22,11 +22,18 @@ export interface SideDataForecastError {
   message: string;
 }
 
+export interface SideDataSubSourceErrors {
+  categories?: string;
+  fdv?: string;
+  forecast?: string;
+  campaignAccess?: string;
+}
+
 export interface SideDataMetaResponse {
   /** Debug timestamp for side-data generation time. */
   generatedAt?: string;
-  /** True when a sub-source fetch failed; UI may surface warning. */
-  partial?: boolean;
+  /** Per-sub-source error messages; absent or empty ≡ no errors. */
+  errors?: SideDataSubSourceErrors;
   categories?: {
     uniqueSymbolsStablecoins: string[];
     uniqueSymbolsEth: string[];

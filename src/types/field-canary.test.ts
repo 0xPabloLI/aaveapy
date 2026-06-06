@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { ReserveWithSpread, CampaignGroup } from './aave';
+import type { SideDataMetaResponse, SideDataSubSourceErrors } from '@/hooks/useSideDataMeta';
 import { nativeToUsd, getReserveTotalBorrowedUsd } from '@/lib/scenarioSize';
 
 const mock: ReserveWithSpread = {
@@ -105,5 +106,44 @@ describe('CampaignGroup netPositionConstraint field-name canary', () => {
   it('group without netPositionConstraint is valid (optional)', () => {
     const plain: CampaignGroup = { link: 'https://merkl.xyz', breakdowns: [] };
     expect(plain.netPositionConstraint).toBeUndefined();
+  });
+});
+
+describe('SideDataSubSourceErrors field-name canary', () => {
+  const errors: SideDataSubSourceErrors = {
+    categories: 'fetch timeout',
+    fdv: 'rate limited',
+    forecast: 'parse error',
+    campaignAccess: 'unauthorized',
+  };
+
+  it('errors.categories is an optional string', () => {
+    expect(typeof errors.categories).toBe('string');
+  });
+
+  it('errors.fdv is an optional string', () => {
+    expect(typeof errors.fdv).toBe('string');
+  });
+
+  it('errors.forecast is an optional string', () => {
+    expect(typeof errors.forecast).toBe('string');
+  });
+
+  it('errors.campaignAccess is an optional string', () => {
+    expect(typeof errors.campaignAccess).toBe('string');
+  });
+});
+
+describe('SideDataMetaResponse.errors field-name canary (partial removed)', () => {
+  const meta: SideDataMetaResponse = {
+    errors: { fdv: 'rate limited' },
+  };
+
+  it('meta.errors is an optional SideDataSubSourceErrors', () => {
+    expect(typeof meta.errors?.fdv).toBe('string');
+  });
+
+  it('meta.partial is removed from type', () => {
+    expect('partial' in meta).toBe(false);
   });
 });

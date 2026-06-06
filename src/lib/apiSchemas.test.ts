@@ -127,6 +127,65 @@ describe('apiSchemas', () => {
     expect(item?.endTimestamp).toBe(1774965600);
   });
 
+  describe('SideDataMetaResponseSchema.errors (replaces partial)', () => {
+    it('parses successfully when errors is absent', () => {
+      const result = SideDataMetaResponseSchema.safeParse({ generatedAt: '2026-01-01' });
+      expect(result.success).toBe(true);
+    });
+
+    it('parses successfully when errors is an empty object', () => {
+      const result = SideDataMetaResponseSchema.safeParse({ errors: {} });
+      expect(result.success).toBe(true);
+    });
+
+    it('parses successfully with valid error keys', () => {
+      const parsed = SideDataMetaResponseSchema.parse({
+        errors: { fdv: 'rate limited', forecast: 'timeout' },
+      });
+      expect(parsed.errors?.fdv).toBe('rate limited');
+      expect(parsed.errors?.forecast).toBe('timeout');
+    });
+
+    it('strips unknown error keys (strict object mode)', () => {
+      const parsed = SideDataMetaResponseSchema.parse({
+        errors: { unknown: 'mystery', fdv: 'ok' },
+      });
+      expect((parsed.errors as Record<string, string>)?.unknown).toBeUndefined();
+      expect(parsed.errors?.fdv).toBe('ok');
+    });
+
+    it('rejects non-string error values', () => {
+      const result = SideDataMetaResponseSchema.safeParse({
+        errors: { fdv: 123 },
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it('preserves partial field via passthrough for backend transition', () => {
+      const parsed = SideDataMetaResponseSchema.parse({
+        partial: true,
+        errors: { fdv: 'rate limited' },
+      });
+      expect((parsed as Record<string, unknown>).partial).toBe(true);
+      expect(parsed.errors?.fdv).toBe('rate limited');
+    });
+
+    it('parses successfully with errors alongside sub-source data', () => {
+      const parsed = SideDataMetaResponseSchema.parse({
+        errors: { categories: 'fetch failed' },
+        categories: {
+          uniqueSymbolsStablecoins: ['USDT'],
+          uniqueSymbolsEth: ['WETH'],
+          fetchedAt: '2026-01-01',
+          staleTimeMs: 60000,
+        },
+        fdv: { items: [], fetchedAt: '2026-01-01', staleTimeMs: 60000 },
+      });
+      expect(parsed.errors?.categories).toBe('fetch failed');
+      expect(parsed.categories?.uniqueSymbolsStablecoins).toEqual(['USDT']);
+    });
+  });
+
   it('normalizes grouped Brevis payloads to flat incentives', () => {
     const parsed = MarketsResponseSchema.parse({
       snapshot: {
