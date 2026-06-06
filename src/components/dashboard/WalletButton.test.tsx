@@ -54,6 +54,20 @@ describe('WalletButton — disconnected', () => {
     expect(onWatchSubmit).toHaveBeenCalledWith('0xabcdefabcdefabcdefabcdefabcdefabcdefabcd')
   })
 
+  it('returns to the wallet control after a successful watch import', async () => {
+    const onWatchSubmit = vi.fn(async () => undefined)
+    render(<WalletButton onWatchSubmit={onWatchSubmit} />)
+
+    fireEvent.click(screen.getByRole('button', { name: /view address/i }))
+    fireEvent.change(screen.getByPlaceholderText(/0x/i), {
+      target: { value: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' },
+    })
+    fireEvent.keyDown(screen.getByPlaceholderText(/0x/i), { key: 'Enter' })
+
+    expect(await screen.findByRole('button', { name: /connect wallet/i })).toBeInTheDocument()
+    expect(screen.queryByLabelText(/watch wallet address/i)).not.toBeInTheDocument()
+  })
+
   it('renders as circular button on mobile', () => {
     render(<WalletButton mobile />)
     const btn = screen.getByLabelText(/connect/i)
