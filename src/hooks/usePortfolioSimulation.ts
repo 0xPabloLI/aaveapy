@@ -245,11 +245,20 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
       const group = prev.filter((p) => p.reserveId === reserveId);
       const anyWallet = group.some((p) => p.walletValue !== null);
       if (anyWallet) {
-        // Soft-hide every side in the group; manual additions stay so they can
-        // come back when the user restores from wallet.
-        return prev.map((p) =>
-          p.reserveId === reserveId ? { ...p, hidden: true } : p
-        );
+        // Reset the group to its actual wallet state:
+        // - Wallet-owned sides: restore amount/inputMode to wallet value, un-hide.
+        // - Purely manual sides (walletValue === null) layered on top of a wallet
+        //   reserve: drop them entirely so the row reflects only what the wallet holds.
+        return prev.flatMap((p) => {
+          if (p.reserveId !== reserveId) return [p];
+          if (p.walletValue === null) return [];
+          return [{
+            ...p,
+            amount: formatConvertedAmount(p.walletValue),
+            inputMode: 'usd' as const,
+            hidden: false,
+          }];
+        });
       }
       return prev.filter((p) => p.reserveId !== reserveId);
     });
