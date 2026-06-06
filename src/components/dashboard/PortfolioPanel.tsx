@@ -52,6 +52,8 @@ interface PortfolioPanelProps {
   snapshots?: PortfolioSnapshot[];
   /** Trigger wallet onchain position sync. */
   onWalletSync?: () => void;
+  /** Trigger a market data refresh (cross-trigger from Wallet Sync). */
+  onRefresh?: () => Promise<void> | void;
   /** Wallet position loading state. */
   walletLoadState?: WalletLoadState;
   /** Merkl claimable rewards from SDK. */
