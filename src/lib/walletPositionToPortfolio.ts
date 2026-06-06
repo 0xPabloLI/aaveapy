@@ -1,6 +1,7 @@
 import type { WalletPosition, WalletPositionSource } from './userData/userPositionMapper'
 import type { ReserveWithSpread } from '@/types/aave'
 import type { PortfolioPosition, PositionSource } from '@/types/portfolio'
+import { formatConvertedAmount } from './portfolioCalculator'
 
 function walletSourceToPositionSource(src: WalletPositionSource): PositionSource {
   return src
@@ -32,7 +33,7 @@ export function convertWalletPositionsToPortfolio(
       chainName: reserve?.chainName ?? '',
       tokenSymbol: wp.tokenSymbol,
       side: wp.side,
-      amount: String(wp.amountUsd),
+      amount: formatConvertedAmount(wp.amountUsd),
       inputMode: 'usd',
       walletValue: wp.amountUsd,
       hidden: false,
