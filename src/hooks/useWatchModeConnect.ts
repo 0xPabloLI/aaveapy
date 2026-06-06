@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import { useConnect } from 'wagmi'
+import { useAccount, useConnect } from 'wagmi'
 
 type WatchModeConnector = {
   id: string
@@ -8,6 +8,7 @@ type WatchModeConnector = {
 
 export function useWatchModeConnect() {
   const { connectAsync, connectors } = useConnect()
+  const { connector: activeConnector } = useAccount()
 
   const connectWatchAddress = useCallback(async (address: `0x${string}`) => {
     const connector = connectors.find((item) => item.id === 'watchMode')
@@ -18,8 +19,16 @@ export function useWatchModeConnect() {
     }
 
     watchConnector.setWatchAddress(address)
-    await connectAsync({ connector })
-  }, [connectAsync, connectors])
+
+    if (activeConnector?.id === 'watchMode') return
+
+    try {
+      await connectAsync({ connector })
+    } catch (err) {
+      if (err instanceof Error && /Connector already connected/i.test(err.message)) return
+      throw err
+    }
+  }, [activeConnector?.id, connectAsync, connectors])
 
   return { connectWatchAddress }
 }
