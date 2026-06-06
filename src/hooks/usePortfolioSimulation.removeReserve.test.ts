@@ -1,8 +1,14 @@
 /**
+ * @vitest-environment jsdom
+ *
  * Regression: removeReserve resets a wallet-touched reserve back to the wallet
  * amounts on every side, drops any purely-manual sides layered on top, and
  * allows the prior state to be restored via undoLastRemove.
  */
+import { describe, it, expect } from 'vitest'
+import { renderHook, act } from '@testing-library/react'
+import { usePortfolioSimulation } from './usePortfolioSimulation'
+import type { PortfolioPosition } from '@/types/portfolio'
 import { describe, it, expect } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { usePortfolioSimulation } from './usePortfolioSimulation'
