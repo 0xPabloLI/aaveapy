@@ -55,7 +55,8 @@ function WalletSyncIndicator({ position, onRestore }: {
         type="button"
         onClick={onRestore ? () => onRestore(position.positionId) : undefined}
         className="group relative shrink-0"
-        aria-label={`Modified, wallet value ${position.walletValue}, click to restore`}
+        aria-label={`Modified — click to restore amount to wallet value`}
+        title="Restore to wallet value"
       >
         <div className="relative">
           <Wallet className="size-3.5 text-amber-500" />
