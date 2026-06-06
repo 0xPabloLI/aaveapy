@@ -3,6 +3,7 @@
  * Merges aave/interface reservePatches drift into local files:
  * - SYMBOL_MAP (in src/lib/tokenSymbolMap.ts): upstream values win on shared keys; local-only keys preserved (see reserve-patches-symbol-map.mjs).
  * - underlyingAssetMap (in src/ui-config/reservePatches.ts): append upstream entries missing locally (address / expression keys).
+ * - address-book imports: auto-append missing AaveV3/V4 imports referenced by underlyingAssetMap entries.
  */
 import { readFile, writeFile } from 'fs/promises';
 import path from 'path';
@@ -20,7 +21,7 @@ function normalizeExpressionKey(value) {
   return value.replace(/\s+/g, '');
 }
 
-function findUnderlyingAssetMapBounds(content) {
+export function findUnderlyingAssetMapBounds(content) {
   const marker = 'const underlyingAssetMap';
   const markerIndex = content.indexOf(marker);
   if (markerIndex < 0) {
@@ -189,11 +190,11 @@ function alignEntryIndent(entry) {
     .join('\n');
 }
 
-function extractAddressBookReferences(content) {
+export function extractAddressBookReferences(content) {
   const bounds = findUnderlyingAssetMapBounds(content);
   const mapBody = content.slice(bounds.openIndex, bounds.closeIndex + 1);
   const refs = new Set();
-  const refRegex = /\b(AaveV3[A-Za-z0-9_]+)\b/g;
+  const refRegex = /\b(AaveV[34][A-Za-z0-9_]+)\b/g;
   let match;
   while ((match = refRegex.exec(mapBody)) !== null) {
     refs.add(match[1]);
@@ -201,7 +202,7 @@ function extractAddressBookReferences(content) {
   return refs;
 }
 
-function parseCurrentAddressBookImports(content) {
+export function parseCurrentAddressBookImports(content) {
   const importMatch = content.match(
     /import\s*\{([\s\S]*?)\}\s*from\s*['"]@aave-dao\/aave-address-book['"]/
   );
@@ -220,7 +221,7 @@ function parseCurrentAddressBookImports(content) {
   };
 }
 
-function syncAddressBookImports(content) {
+export function syncAddressBookImports(content) {
   const referenced = extractAddressBookReferences(content);
   const { names: imported, fullMatchStart, fullMatchEnd } = parseCurrentAddressBookImports(content);
 
