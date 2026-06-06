@@ -188,6 +188,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
   summary,
   snapshots = [],
   onWalletSync,
+  onRefresh,
   walletLoadState,
   claimableRewards,
   claimableRewardsLoading,
