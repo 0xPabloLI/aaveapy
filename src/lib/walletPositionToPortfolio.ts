@@ -33,7 +33,7 @@ export function convertWalletPositionsToPortfolio(
       chainName: reserve?.chainName ?? '',
       tokenSymbol: wp.tokenSymbol,
       side: wp.side,
-      amount: String(wp.amountUsd),
+      amount: formatConvertedAmount(wp.amountUsd),
       inputMode: 'usd',
       walletValue: wp.amountUsd,
       hidden: false,
