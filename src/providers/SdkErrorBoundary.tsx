@@ -33,13 +33,13 @@ export class SdkErrorBoundary extends Component<SdkErrorBoundaryProps, SdkErrorB
       return (
         <div className="flex items-center gap-2 p-3 rounded-md bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800/40 text-orange-700 dark:text-orange-400 text-sm">
           <AlertTriangle className="w-4 h-4 shrink-0" />
-          <span>SDK 数据加载异常，部分功能可能受限。</span>
+          <span>SDK data loading error. Some features may be limited.</span>
           <button
             onClick={this.handleReset}
             className="ml-auto inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-orange-100 dark:bg-orange-900/40 hover:bg-orange-200 dark:hover:bg-orange-900/60 transition-colors"
           >
             <RefreshCw className="w-3 h-3" />
-            重试
+            Retry
           </button>
         </div>
       );

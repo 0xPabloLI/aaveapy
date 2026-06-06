@@ -35,7 +35,7 @@ export default function PortfolioMergeProtoPage() {
 
         {/* Scenario navigation */}
         <div className="mt-6 space-y-3">
-          <p className="ds-text-12 font-medium text-foreground">全部场景</p>
+          <p className="ds-text-12 font-medium text-foreground">All Scenarios</p>
           <div className="flex flex-wrap gap-1.5">
             {SCENARIO_IDS.map(id => (
               <button

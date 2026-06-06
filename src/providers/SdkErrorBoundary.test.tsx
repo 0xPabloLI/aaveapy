@@ -28,7 +28,7 @@ describe('SdkErrorBoundary', () => {
         <ThrowingChild shouldThrow={true} />
       </SdkErrorBoundary>,
     );
-    expect(screen.getByText(/SDK 数据加载异常/)).toBeInTheDocument();
+    expect(screen.getByText(/SDK data loading error/)).toBeInTheDocument();
   });
 
   it('logs error to console', () => {
