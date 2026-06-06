@@ -296,8 +296,9 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
       toggleHidden,
       restoreToWallet,
       removeReserve,
+      undoLastRemove,
     }),
-    [addPosition, removePosition, updateAmount, updateInputMode, clearAll, saveSnapshot, deleteSnapshot, importPositions, restorePosition, toggleHidden, restoreToWallet, removeReserve]
+    [addPosition, removePosition, updateAmount, updateInputMode, clearAll, saveSnapshot, deleteSnapshot, importPositions, restorePosition, toggleHidden, restoreToWallet, removeReserve, undoLastRemove]
   );
 
   return {
