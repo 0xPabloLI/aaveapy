@@ -16,3 +16,4 @@ Migration fit classification is maintained in [`../DOCS-INDEX.md`](../DOCS-INDEX
 | `merge-summary.md` | PR/merge review flow and follow-up comments (merge policy docs and AGENTS/PR process) |
 | `frontend-regression-checklist.md` | Manual verification gate used during UI refactor PRs, typically before/alongside `ci.yml` checks |
 | `sort-stability.md` | Sort comparator must form total order — `reserveId` tiebreaker rule (AAV-203) |
+| `partner-logo-variants.md` | SVG fill rules and dark/light variant pattern for partner logos (AAV-634) |
