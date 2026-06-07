@@ -1,5 +1,17 @@
-import { describe, it, expect, vi } from 'vitest'
-import { isInfrastructureFailure, withTimeout, classifyRpcError } from './rpcResilience'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { isInfrastructureFailure, withTimeout, classifyRpcError, createClientWithRpcRotation } from './rpcResilience'
+import { getAllRpcUrls } from './chainDiscovery'
+
+vi.mock('./chainDiscovery', () => ({
+  getAllRpcUrls: vi.fn(),
+}))
+
+vi.mock('viem', () => ({
+  createPublicClient: vi.fn(() => ({
+    getChainId: vi.fn(),
+  })),
+  http: vi.fn(() => 'mocked-transport'),
+}))
 
 describe('isInfrastructureFailure', () => {
   it('returns false for null', () => {
@@ -139,5 +151,61 @@ describe('classifyRpcError', () => {
 
   it('classifies undefined as unknown', () => {
     expect(classifyRpcError(undefined)).toBe('unknown')
+  })
+})
+
+describe('createClientWithRpcRotation catch path', () => {
+  const mockedGetAllRpcUrls = vi.mocked(getAllRpcUrls)
+
+  beforeEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('logs network error type when RPC fails with ETIMEDOUT', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    mockedGetAllRpcUrls.mockReturnValue(['https://failing-rpc.example.com'])
+    const { createPublicClient } = await import('viem')
+    vi.mocked(createPublicClient).mockReturnValue({
+      getChainId: vi.fn().mockRejectedValue(new Error('ETIMEDOUT')),
+    } as any)
+
+    await createClientWithRpcRotation(1)
+
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('(network)'),
+      expect.any(Error),
+    )
+  })
+
+  it('logs contract error type when RPC fails with CALL_EXCEPTION', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    mockedGetAllRpcUrls.mockReturnValue(['https://failing-rpc.example.com'])
+    const { createPublicClient } = await import('viem')
+    vi.mocked(createPublicClient).mockReturnValue({
+      getChainId: vi.fn().mockRejectedValue(new Error('CALL_EXCEPTION')),
+    } as any)
+
+    await createClientWithRpcRotation(1)
+
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('(contract)'),
+      expect.any(Error),
+    )
+  })
+
+  it('logs unknown error type when RPC fails with generic error', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    mockedGetAllRpcUrls.mockReturnValue(['https://failing-rpc.example.com'])
+    const { createPublicClient } = await import('viem')
+    vi.mocked(createPublicClient).mockReturnValue({
+      getChainId: vi.fn().mockRejectedValue(new Error('something unexpected')),
+    } as any)
+
+    await createClientWithRpcRotation(1)
+
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('(unknown)'),
+      expect.any(Error),
+    )
   })
 })

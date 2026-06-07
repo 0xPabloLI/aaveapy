@@ -25,7 +25,6 @@ export function withTimeout<T>(promise: Promise<T>, ms: number, label: string): 
   })
 }
 
-// TODO: integrate classifyRpcError into createClientWithRpcRotation for per-URL error-type metrics (ADR-0004 follow-up)
 export function classifyRpcError(err: unknown): 'network' | 'contract' | 'unknown' {
   if (!(err instanceof Error)) return 'unknown'
   const msg = err.message.toLowerCase()
@@ -53,7 +52,8 @@ export async function createClientWithRpcRotation(chainId: number): Promise<Publ
       await withTimeout(client.getChainId(), 3000, `rpc-rotation-chain-${chainId}`)
       return client
     } catch (err) {
-      console.warn(`[rpc-rotation] ${url} failed for chain ${chainId}:`, err)
+      const errorType = classifyRpcError(err)
+      console.warn(`[rpc-rotation] ${url} failed for chain ${chainId} (${errorType}):`, err)
       continue
     }
   }
