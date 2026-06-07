@@ -18,4 +18,5 @@ SDK 失效判定从 `!!error` 一揽子改为 `isInfrastructureFailure()` 精细
 - SDK 返回 warning + data 时不再误触发 fallback，保留 SDK 数据。
 - 第一个 RPC 不可用时自动切到备用，减少整链静默丢数据。
 - 15s 超时兜底，用户不会无限 loading。
-- References: AAV-388, CONTEXT.md "SDK Degradation Boundary"
+- **`classifyRpcError`** 已实现（区分 `network` / `contract` / `unknown`），但尚未集成到 `createClientWithRpcRotation` 做 per-URL error-type metrics。待后续优化。
+- References: CONTEXT.md "SDK Degradation Boundary"
