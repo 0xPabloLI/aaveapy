@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { validateApiBaseEnv } from './apiBase';
+import { validateApiBaseEnv, isMissingApiBase } from './apiBase';
 
 describe('validateApiBaseEnv', () => {
   beforeEach(() => {
@@ -45,5 +45,35 @@ describe('validateApiBaseEnv', () => {
     validateApiBaseEnv({ MODE: 'production', VITE_API_BASE_URL: null as unknown as string });
 
     expect(warn).toHaveBeenCalledOnce();
+  });
+});
+
+describe('isMissingApiBase', () => {
+  it('returns true for null', () => {
+    expect(isMissingApiBase(null)).toBe(true);
+  });
+
+  it('returns true for undefined', () => {
+    expect(isMissingApiBase(undefined)).toBe(true);
+  });
+
+  it('returns true for empty string', () => {
+    expect(isMissingApiBase('')).toBe(true);
+  });
+
+  it('returns true for whitespace-only string', () => {
+    expect(isMissingApiBase('   ')).toBe(true);
+  });
+
+  it('returns false for a valid URL', () => {
+    expect(isMissingApiBase('https://api.aaveapy.com/api')).toBe(false);
+  });
+
+  it('returns false for "0"', () => {
+    expect(isMissingApiBase('0')).toBe(false);
+  });
+
+  it('returns false for "/"', () => {
+    expect(isMissingApiBase('/')).toBe(false);
   });
 });

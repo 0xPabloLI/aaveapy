@@ -2,6 +2,10 @@ export const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://staging-ap
 
 export type EnvLike = { MODE?: string; VITE_API_BASE_URL?: string };
 
+export function isMissingApiBase(v: string | null | undefined): boolean {
+  return v == null || v.trim() === '';
+}
+
 export function validateApiBaseEnv(env: EnvLike): void {
   if (env.MODE === 'production' && env.VITE_API_BASE_URL == null) {
     console.warn(
