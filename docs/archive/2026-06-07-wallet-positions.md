@@ -136,7 +136,12 @@
 | AAV-69 | 读取 Merkl dashboard 数据 | ✅ Done | Phase 2，Merkl rewards 已实现 |
 | AAV-80 | 个人 position/liquidity | ✅ Done | Phase 4，展示已实现 |
 | AAV-62 | 支持导入现有portfolio | ❌ Canceled | 手动导入按钮不做，用自动导入替代 |
+| AAV-488 | WatchMode 入口不可用 | ✅ Done | Header 已传 onWatchSubmit，WalletButton 自定义渲染已提供入口 |
 | AAV-489 | 审查测试 fixture 真实性 | ✅ Done | |
+| AAV-597 | PRD: classifyRpcError 集成 RPC rotation | ✅ Done | ADR-0004 follow-up, per-URL error-type metrics |
+| AAV-598 | TDD: catch 路径集成测试 | ✅ Done | 3 个 catch path 测试 (network/contract/unknown) |
+| AAV-599 | 实现: catch 块集成 + 删 TODO | ✅ Done | rpcResilience.ts catch 块调用 classifyRpcError |
+| AAV-600 | 更新 ADR-0004 Consequences | ✅ Done | 反映集成完成 |
 | deriveV3AssetsByChain | — | ✅ Done | 函数 + 测试已删除 |
 
 ## 关联文档
