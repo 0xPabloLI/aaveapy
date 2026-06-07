@@ -1,3 +1,6 @@
+import { createPublicClient, http, type PublicClient } from 'viem'
+import { getAllRpcUrls } from './chainDiscovery'
+
 export function isInfrastructureFailure(error: unknown): boolean {
   if (!error) return false
   if (!(error instanceof Error)) return false
@@ -32,9 +35,6 @@ export function classifyRpcError(err: unknown): 'network' | 'contract' | 'unknow
   if (msg.includes('call_exception') || msg.includes('unpredictable_gas_limit') || msg.includes('revert')) return 'contract'
   return 'unknown'
 }
-
-import { createPublicClient, http, type PublicClient } from 'viem'
-import { getAllRpcUrls } from './chainDiscovery'
 
 export async function createClientWithRpcRotation(chainId: number): Promise<PublicClient | null> {
   const rpcUrls = getAllRpcUrls(chainId)

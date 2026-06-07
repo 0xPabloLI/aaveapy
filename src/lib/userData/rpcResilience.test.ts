@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { isInfrastructureFailure, withTimeout, classifyRpcError, createClientWithRpcRotation } from './rpcResilience'
 import { getAllRpcUrls } from './chainDiscovery'
+import { createPublicClient } from 'viem'
 
 vi.mock('./chainDiscovery', () => ({
   getAllRpcUrls: vi.fn(),
@@ -164,7 +165,6 @@ describe('createClientWithRpcRotation catch path', () => {
   it('logs network error type when RPC fails with ETIMEDOUT', async () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     mockedGetAllRpcUrls.mockReturnValue(['https://failing-rpc.example.com'])
-    const { createPublicClient } = await import('viem')
     vi.mocked(createPublicClient).mockReturnValue({
       getChainId: vi.fn().mockRejectedValue(new Error('ETIMEDOUT')),
     } as any)
@@ -180,7 +180,6 @@ describe('createClientWithRpcRotation catch path', () => {
   it('logs contract error type when RPC fails with CALL_EXCEPTION', async () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     mockedGetAllRpcUrls.mockReturnValue(['https://failing-rpc.example.com'])
-    const { createPublicClient } = await import('viem')
     vi.mocked(createPublicClient).mockReturnValue({
       getChainId: vi.fn().mockRejectedValue(new Error('CALL_EXCEPTION')),
     } as any)
@@ -196,7 +195,6 @@ describe('createClientWithRpcRotation catch path', () => {
   it('logs unknown error type when RPC fails with generic error', async () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     mockedGetAllRpcUrls.mockReturnValue(['https://failing-rpc.example.com'])
-    const { createPublicClient } = await import('viem')
     vi.mocked(createPublicClient).mockReturnValue({
       getChainId: vi.fn().mockRejectedValue(new Error('something unexpected')),
     } as any)
