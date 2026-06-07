@@ -17,11 +17,14 @@ import { buildHubAggregationMap, getHubAssetKey } from '@/lib/hubAggregation';
 import type { HubAggregate, HubAssetKey } from '@/lib/hubAggregation';
 import { getReserveKey } from '@/lib/reserveKey';
 import type { ReservePositions } from '@/lib/netLendingCrossReserve';
+import { computeDelta } from '@/lib/deltaCalculator';
 
 export interface PerReserveInput {
   supplyInput: string;
   borrowInput: string;
   inputMode: ScenarioInputMode;
+  principalSupplyUsd?: number;
+  principalBorrowUsd?: number;
 }
 
 export interface SimulatePortfolioPositionsArgs {
@@ -44,6 +47,8 @@ interface PositionGroup {
   borrowPositions: PortfolioPosition[];
   supplyUsd: number;
   borrowUsd: number;
+  supplyDeltaUsd: number;
+  borrowDeltaUsd: number;
 }
 
 export function simulatePortfolioPositions(
@@ -73,19 +78,30 @@ export function simulatePortfolioPositions(
     const amountUsd = resolvePositionAmountUsd(pos, reserve);
     if (amountUsd <= 0 || !reserve) continue;
 
+    const delta = computeDelta({
+      amount: pos.amount,
+      walletValue: pos.walletValue,
+      inputMode: pos.inputMode,
+      tokenPrice: reserve.tokenPrice,
+    });
+
     const existing = groupMap.get(key) ?? {
       supplyPositions: [],
       borrowPositions: [],
       supplyUsd: 0,
       borrowUsd: 0,
+      supplyDeltaUsd: 0,
+      borrowDeltaUsd: 0,
     };
 
     if (pos.side === 'supply') {
       existing.supplyPositions.push(pos);
-      existing.supplyUsd += amountUsd;
+      existing.supplyUsd += delta.effectiveAmountUsd;
+      existing.supplyDeltaUsd += delta.deltaUsd;
     } else {
       existing.borrowPositions.push(pos);
-      existing.borrowUsd += amountUsd;
+      existing.borrowUsd += delta.effectiveAmountUsd;
+      existing.borrowDeltaUsd += delta.deltaUsd;
     }
     groupMap.set(key, existing);
   }
@@ -133,9 +149,11 @@ export function simulatePortfolioPositions(
         whitelistMerklCampaignIds,
         tydroPointToUsdRate,
         tokenPrice: reserve.tokenPrice,
-        supplyInput: String(group.supplyUsd),
-        borrowInput: String(group.borrowUsd),
+        supplyInput: String(group.supplyDeltaUsd),
+        borrowInput: String(group.borrowDeltaUsd),
         inputMode: 'usd',
+        principalSupplyUsd: group.supplyUsd,
+        principalBorrowUsd: group.borrowUsd,
         forecastStates,
         reservePositions,
         reserveSymbolById,
@@ -208,7 +226,10 @@ export function buildPerReserveInputs(
   reserves: ReserveWithSpread[],
 ): Map<string, PerReserveInput> {
   const reserveMap = new Map(reserves.map((r) => [getReserveKey(r), r]));
-  const grouped = new Map<string, { supplyUsd: number; borrowUsd: number }>();
+  const grouped = new Map<
+    string,
+    { supplyUsd: number; borrowUsd: number; supplyDeltaUsd: number; borrowDeltaUsd: number }
+  >();
 
   for (const pos of positions) {
     if (pos.hidden || pos.isOrphan) continue;
@@ -218,11 +239,25 @@ export function buildPerReserveInputs(
     const amountUsd = resolvePositionAmountUsd(pos, reserve);
     if (amountUsd <= 0) continue;
 
-    const existing = grouped.get(pos.reserveId) ?? { supplyUsd: 0, borrowUsd: 0 };
+    const delta = computeDelta({
+      amount: pos.amount,
+      walletValue: pos.walletValue,
+      inputMode: pos.inputMode,
+      tokenPrice: reserve.tokenPrice,
+    });
+
+    const existing = grouped.get(pos.reserveId) ?? {
+      supplyUsd: 0,
+      borrowUsd: 0,
+      supplyDeltaUsd: 0,
+      borrowDeltaUsd: 0,
+    };
     if (pos.side === 'supply') {
-      existing.supplyUsd += amountUsd;
+      existing.supplyUsd += delta.effectiveAmountUsd;
+      existing.supplyDeltaUsd += delta.deltaUsd;
     } else {
-      existing.borrowUsd += amountUsd;
+      existing.borrowUsd += delta.effectiveAmountUsd;
+      existing.borrowDeltaUsd += delta.deltaUsd;
     }
     grouped.set(pos.reserveId, existing);
   }
@@ -230,9 +265,11 @@ export function buildPerReserveInputs(
   const result = new Map<string, PerReserveInput>();
   for (const [reserveId, group] of grouped) {
     result.set(reserveId, {
-      supplyInput: String(group.supplyUsd),
-      borrowInput: String(group.borrowUsd),
+      supplyInput: String(group.supplyDeltaUsd),
+      borrowInput: String(group.borrowDeltaUsd),
       inputMode: 'usd',
+      principalSupplyUsd: group.supplyUsd,
+      principalBorrowUsd: group.borrowUsd,
     });
   }
   return result;
