@@ -20,7 +20,7 @@ Rename all remaining "Batch" references to "Portfolio" across:
 
 ### Excluded (not renamed)
 
-- `rpcResilience.ts` viem `batch: { multicell }` — RPC batching, different domain
+- `rpcResilience.ts` viem `batch: { multicall }` — RPC batching, different domain
 - `seoApi.ts` / `useSeoData.ts` Semrush batch API — external API parameter, not our terminology
 - `docs/TERMINOLOGY.md` "forecast batch cache" — React Query module caching/deduplication, technical term
 - `docs/conventions/commit-cadence.md` "攒 batch" — colloquial metaphor for batching commits, not user-facing
