@@ -266,6 +266,21 @@ export interface BuildRateSimulationResultParams {
   campaignAccessStatuses?: Record<string, 'allowed' | 'whitelist-blocked' | 'blacklisted'>;
   hubSupplied?: string;
   hubBorrowed?: string;
+  /**
+   * Principal USD for supply-side USD accrual calculation.
+   * When provided, used instead of supplyInputUsd as the principal
+   * in buildSupplyUsdAccrualSide (earnings = principal × rate).
+   * This decouples "what moves the rate curve" (supplyInputUsd = delta)
+   * from "what earns interest" (principalSupplyUsd = effective amount after rebalance).
+   * Defaults to supplyInputUsd for backward compatibility.
+   */
+  principalSupplyUsd?: number;
+  /**
+   * Principal USD for borrow-side USD accrual calculation.
+   * Same semantics as principalSupplyUsd but for the borrow side.
+   * Defaults to borrowInputUsd for backward compatibility.
+   */
+  principalBorrowUsd?: number;
 }
 
 export const buildIncentiveCurrent = (
@@ -972,6 +987,8 @@ export function buildRateSimulationResult({
   campaignAccessStatuses,
   hubSupplied,
   hubBorrowed,
+  principalSupplyUsd,
+  principalBorrowUsd,
 }: BuildRateSimulationResultParams): RateSimulationComputedResult {
   const rawSupply = parseNumberInput(supplyInput);
   const rawBorrow = parseNumberInput(borrowInput);
@@ -1503,18 +1520,21 @@ export function buildRateSimulationResult({
 
   // ─── B 类字段: scenarioUsdAccrual (仅在有模拟输入时才有值) ───
 
+  const effectiveSupplyPrincipalUsd = principalSupplyUsd ?? supplyLane.inputUsd;
+  const effectiveBorrowPrincipalUsd = principalBorrowUsd ?? borrowLane.inputUsd;
+
   const supplyUsdAccrualSide =
-    supplyLane.hasInput && supplyLane.inputUsd > 0
+    supplyLane.hasInput && effectiveSupplyPrincipalUsd > 0
       ? buildSupplyUsdAccrualSide(
-          supplyLane.inputUsd,
+          effectiveSupplyPrincipalUsd,
           combinedNativeSimulation?.supplyAprPercent ?? null,
           supplyAfterIncentiveApr
         )
       : null;
   const borrowUsdAccrualSide =
-    borrowLane.hasInput && borrowLane.inputUsd > 0
+    borrowLane.hasInput && effectiveBorrowPrincipalUsd > 0
       ? buildBorrowUsdAccrualSide(
-          borrowLane.inputUsd,
+          effectiveBorrowPrincipalUsd,
           combinedNativeSimulation?.borrowAprPercent ?? null,
           borrowAfterIncentiveApr
         )

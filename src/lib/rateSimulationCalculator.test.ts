@@ -259,3 +259,84 @@ describe('A/B category: availableBorrowRoomUsd boundary', () => {
       .toBeGreaterThan(noInput.marketMetrics.availableBorrowRoomUsd!);
   });
 });
+
+describe('principalSupplyUsd / principalBorrowUsd', () => {
+  it('defaults to supplyInputUsd when principalSupplyUsd is omitted', () => {
+    const withoutPrincipal = buildRateSimulationResult({
+      reserve: BASE_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      supplyInput: '1000',
+    });
+    const withPrincipalExplicit = buildRateSimulationResult({
+      reserve: BASE_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      supplyInput: '1000',
+      principalSupplyUsd: 1000,
+    });
+    expect(withPrincipalExplicit.scenarioUsdAccrual?.supply.totalUsdPerDay)
+      .toBe(withoutPrincipal.scenarioUsdAccrual?.supply.totalUsdPerDay);
+  });
+
+  it('uses principalSupplyUsd for accrual instead of supplyInputUsd', () => {
+    const base = buildRateSimulationResult({
+      reserve: BASE_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      supplyInput: '1000',
+    });
+    const withLargerPrincipal = buildRateSimulationResult({
+      reserve: BASE_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      supplyInput: '1000',
+      principalSupplyUsd: 2000,
+    });
+    expect(withLargerPrincipal.scenarioUsdAccrual?.supply.totalUsdPerDay)
+      .toBeGreaterThan(base.scenarioUsdAccrual?.supply.totalUsdPerDay ?? 0);
+  });
+
+  it('uses principalBorrowUsd for accrual instead of borrowInputUsd', () => {
+    const base = buildRateSimulationResult({
+      reserve: BASE_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      borrowInput: '500',
+    });
+    const withLargerBorrowPrincipal = buildRateSimulationResult({
+      reserve: BASE_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      borrowInput: '500',
+      principalBorrowUsd: 1000,
+    });
+    expect(
+      Math.abs(
+        withLargerBorrowPrincipal.scenarioUsdAccrual?.borrow.totalUsdPerDay ?? 0
+      ),
+    ).toBeGreaterThan(
+      Math.abs(base.scenarioUsdAccrual?.borrow.totalUsdPerDay ?? 0),
+    );
+  });
+
+  it('does not affect rate simulation (after rates) when only principal differs', () => {
+    const withoutPrincipal = buildRateSimulationResult({
+      reserve: BASE_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      supplyInput: '1000',
+    });
+    const withPrincipal = buildRateSimulationResult({
+      reserve: BASE_RESERVE,
+      reserveRateInput: VALID_RATE_INPUT,
+      ...BASE_PARAMS,
+      supplyInput: '1000',
+      principalSupplyUsd: 5000,
+    });
+    expect(withPrincipal.supply.afterNative)
+      .toBe(withoutPrincipal.supply.afterNative);
+    expect(withPrincipal.supply.afterTotal)
+      .toBe(withoutPrincipal.supply.afterTotal);
+  });
+});
