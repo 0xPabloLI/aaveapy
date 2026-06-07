@@ -1,4 +1,5 @@
 import { memo, Fragment, useEffect, useState, useCallback, useRef } from 'react';
+import { useTheme } from 'next-themes';
 import { ExternalLink, Plus, ArrowDown, ArrowUp } from 'lucide-react';
 import { TableRow, TableCell } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipCalloutArrow } from '@/components/ui/tooltip';
@@ -155,6 +156,8 @@ const DesktopReserveRow = memo(({
   onPortfolioToggle,
   sortActions,
 }: DesktopReserveRowProps) => {
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
   const [hasSimulationMounted, setHasSimulationMounted] = useState(isExpanded);
 
   useEffect(() => {
@@ -427,7 +430,7 @@ const DesktopReserveRow = memo(({
                             <ExternalLink className="h-3.5 w-3.5 text-muted-foreground/70" />
                             <span>Open on Tydro</span>
                           </span>
-                          <img src="/icons/partners/tydro-logo.svg" alt="Tydro" className="h-3.5 w-3.5 rounded-full opacity-80" loading="lazy" />
+                          <img src={isDark ? '/icons/partners/tydro-white.svg' : '/icons/partners/tydro-black.svg'} alt="Tydro" className="h-3.5 w-3.5 rounded-full" loading="lazy" />
                         </a>
                       </div>
                     </PopoverContent>

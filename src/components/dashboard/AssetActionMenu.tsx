@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { useTheme } from 'next-themes';
 import { Check, Copy, ExternalLink, SquareArrowOutUpRight, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { toast } from 'sonner';
@@ -71,6 +72,8 @@ export function AssetActionMenu({
   triggerClassName,
   triggerSize = 12,
 }: AssetActionMenuProps) {
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -142,17 +145,22 @@ export function AssetActionMenu({
     const isExplorerItem = item.key === 'token-explorer' || item.key === 'pool-explorer' || item.key === 'hub-explorer' || item.key === 'spoke-explorer';
     const protocolIconSrc = item.key === 'aave'
       ? '/icons/tokens/aave.svg'
-      : item.key === 'tydro'
-        ? '/icons/partners/tydro-logo.svg'
-        : null;
+      : item.key === 'aave-v4-asset'
+        ? '/icons/tokens/aave-pro.svg'
+        : item.key === 'tydro'
+          ? (isDark ? '/icons/partners/tydro-white.svg' : '/icons/partners/tydro-black.svg')
+          : null;
     const trailing =
       item.key === 'copy' ? (
         <span className="ds-text-11 text-muted-foreground/70 tabular-nums">{truncatedAddress}</span>
       ) : protocolIconSrc ? (
         <img
           src={protocolIconSrc}
-          alt={item.key === 'aave' ? 'Aave' : 'Tydro'}
-          className="h-3.5 w-3.5 rounded-full opacity-80"
+          alt={item.key === 'aave' ? 'Aave' : item.key === 'aave-v4-asset' ? 'Aave Pro' : 'Tydro'}
+          className={cn(
+            'h-3.5 w-3.5 rounded-full',
+            item.key !== 'tydro' && 'opacity-80',
+          )}
           loading="lazy"
         />
       ) : isExplorerItem && chainIconSrc ? (

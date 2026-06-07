@@ -4,6 +4,10 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event';
 import AssetActionMenu from './AssetActionMenu';
 
+vi.mock('next-themes', () => ({
+  useTheme: () => ({ resolvedTheme: 'light' }),
+}));
+
 const TOKEN_SYMBOL = 'USDC';
 const TOKEN_ADDRESS = '0x' + '0'.repeat(39) + '1';
 const MARKET_NAME = 'AaveV3Ethereum';
@@ -230,7 +234,7 @@ describe('AssetActionMenu (V3 vs V4 links)', () => {
     const tydroItem = screen.getByText('Open on Tydro').closest('a');
     const tydroLogo = tydroItem?.querySelector('img[alt="Tydro"]');
     expect(tydroLogo).toBeInTheDocument();
-    expect(tydroLogo?.getAttribute('src')).toBe('/icons/partners/tydro-logo.svg');
+    expect(tydroLogo?.getAttribute('src')).toBe('/icons/partners/tydro-black.svg');
   });
 
   it('renders "View asset page" for V4 assets using pro.aave.com URL', async () => {
@@ -248,5 +252,9 @@ describe('AssetActionMenu (V3 vs V4 links)', () => {
     expect(viewAssetLink?.getAttribute('href')).toContain('pro.aave.com');
     expect(viewAssetLink?.getAttribute('href')).toContain('explore/asset');
     expect(viewAssetLink?.getAttribute('href')).toContain('/1/');
+
+    const aaveProLogo = viewAssetLink?.querySelector('img[alt="Aave Pro"]');
+    expect(aaveProLogo).toBeInTheDocument();
+    expect(aaveProLogo?.getAttribute('src')).toBe('/icons/tokens/aave-pro.svg');
   });
 });
