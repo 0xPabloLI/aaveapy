@@ -28,17 +28,16 @@ function deployShaMetaPlugin() {
   };
 }
 
-/** Validate VITE_API_BASE_URL is set for production builds. */
+/** Warn (don't fail) if VITE_API_BASE_URL is missing — falls back to staging via src/lib/apiBase.ts. */
 function validateEnvPlugin() {
   return {
     name: "validate-env",
     apply: "build" as const,
     config(_config: unknown, { mode }: { mode: string }) {
       const env = loadEnv(mode, process.cwd(), "");
-      if (env.VITE_API_BASE_URL == null) {
-        throw new Error(
-          "VITE_API_BASE_URL is required for production builds. " +
-            "Set it to your API base URL (e.g. https://api.aaveapy.com/api).",
+      if (!env.VITE_API_BASE_URL) {
+        console.warn(
+          "[validate-env] VITE_API_BASE_URL not set — falling back to staging API (https://staging-api.aaveapy.com/api).",
         );
       }
     },
