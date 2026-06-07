@@ -35,6 +35,7 @@ function validateEnvPlugin() {
     apply: "build" as const,
     config(_config: unknown, { mode }: { mode: string }) {
       const env = loadEnv(mode, process.cwd(), "");
+      // Must stay in sync with isMissingApiBase() in src/lib/apiBase.ts
       if (env.VITE_API_BASE_URL == null || env.VITE_API_BASE_URL.trim() === '') {
         console.warn(
           "[validate-env] VITE_API_BASE_URL not set — falling back to staging API (https://staging-api.aaveapy.com/api).",
