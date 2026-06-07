@@ -28,7 +28,7 @@ import BorrowCapProgressRing from './BorrowCapProgressRing';
 import UtilizationIndicator, { UtilizationContent } from './UtilizationIndicator';
 import DeficitShieldIcon from './DeficitShieldIcon';
 import AssetActionMenu from './AssetActionMenu';
-import { BATCH_RESERVE_ADD_BUTTON_CLASSES } from './batchTheme';
+import { PORTFOLIO_RESERVE_ADD_BUTTON_CLASSES } from './portfolioTheme';
 import type { RateSimulationResult, ScenarioInputMode } from '@/lib/rateSimulationCalculator';
 
 import { nativeToUsd, getScenarioSupplySizeUsd } from '@/lib/scenarioSize';
@@ -285,8 +285,8 @@ const DesktopReserveRow = memo(({
               className={cn(
                 'flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-all duration-150',
                 isInPortfolio
-                  ? BATCH_RESERVE_ADD_BUTTON_CLASSES.selected
-                  : BATCH_RESERVE_ADD_BUTTON_CLASSES.unselected,
+                  ? PORTFOLIO_RESERVE_ADD_BUTTON_CLASSES.selected
+                  : PORTFOLIO_RESERVE_ADD_BUTTON_CLASSES.unselected,
               )}
               aria-label={isInPortfolio ? `Remove ${reserve.tokenSymbol} from portfolio` : `Add ${reserve.tokenSymbol} to portfolio`}
               title={isInPortfolio ? 'Remove from portfolio' : 'Add to portfolio'}

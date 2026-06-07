@@ -1,15 +1,15 @@
 /**
  * PortfolioPanelSkeleton — lightweight placeholder shown while reserves
  * data is still loading. Mirrors the real PortfolioPanel chrome (header
- * with Batch title + action buttons, search input, empty state) so that
- * toggling Batch on does not produce a blank flash or layout jump.
+ * with Portfolio title + action buttons, search input, empty state) so that
+ * toggling Portfolio on does not produce a blank flash or layout jump.
  */
 import { memo } from 'react';
 import { Layers, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Skeleton } from '@/components/ui/skeleton';
-import { BATCH_THEME } from './batchTheme';
+import { PORTFOLIO_THEME } from './portfolioTheme';
 
 const PortfolioPanelSkeleton = memo(function PortfolioPanelSkeleton() {
   const isMobile = useIsMobile();
@@ -24,8 +24,8 @@ const PortfolioPanelSkeleton = memo(function PortfolioPanelSkeleton() {
         {/* Header */}
         <div className="flex items-center justify-between mb-2.5">
           <div className="flex items-center gap-2">
-            <Layers className={`size-4 ${BATCH_THEME.text}`} aria-hidden />
-            <span className="ds-text-14 font-semibold text-foreground">Batch</span>
+            <Layers className={`size-4 ${PORTFOLIO_THEME.text}`} aria-hidden />
+            <span className="ds-text-14 font-semibold text-foreground">Portfolio</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="rounded-md p-1.5 text-muted-foreground/60">

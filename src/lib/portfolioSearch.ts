@@ -1,5 +1,5 @@
 /**
- * Search ranking for the Portfolio (Batch) panel token picker.
+ * Search ranking for the Portfolio panel token picker.
  *
  * Tier 1 (rank): exact symbol > prefix > substring (lower = better).
  * Tier 2 (TVL): higher TVL first within the same rank.

@@ -41,8 +41,8 @@ test.describe('Portfolio — Wallet Sync precision', () => {
   test('amount inputs keep ≤8 significant digits after Wallet Sync', async ({ page }) => {
     await page.goto('/');
 
-    // Enable batch / portfolio mode.
-    await page.getByText('Batch', { exact: true }).first().click();
+    // Enable portfolio mode.
+    await page.getByText('Portfolio', { exact: true }).first().click();
 
     // Open Watch Address input, submit the address.
     await page.getByRole('button', { name: /View address/i }).first().click();

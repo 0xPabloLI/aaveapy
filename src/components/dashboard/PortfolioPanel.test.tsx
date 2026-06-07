@@ -114,7 +114,7 @@ describe('PortfolioPanel', () => {
     expect(screen.getByPlaceholderText(/search/i)).toBeInTheDocument();
   });
 
-  it('exposes View address from the Batch wallet actions', () => {
+  it('exposes View address from the Portfolio wallet actions', () => {
     const reserves = [makeReserve('USDC')];
     render(
       <WagmiProvider config={testWagmiConfig}>

@@ -1,4 +1,4 @@
-# ADR-005: Per-Reserve Simulation Inputs for Portfolio/Batch Mode
+# ADR-005: Per-Reserve Simulation Inputs for Portfolio Mode
 
 ## Status
 
@@ -6,7 +6,7 @@ Accepted
 
 ## Context
 
-Shared scenario mode provides a single `supplyInput`/`borrowInput` pair applied uniformly to all reserves. Portfolio/batch mode has per-reserve positions (e.g. supply 5000 USDC, borrow 2000 USDT) that must drive per-reserve simulation independently.
+Shared scenario mode provides a single `supplyInput`/`borrowInput` pair applied uniformly to all reserves. Portfolio mode has per-reserve positions (e.g. supply 5000 USDC, borrow 2000 USDT) that must drive per-reserve simulation independently.
 
 Previously, expanding a reserve row in portfolio mode showed only the current snapshot (no after/delta) because `useSharedRateSimulations` only consumed the shared input pair.
 
@@ -31,7 +31,7 @@ Previously, expanding a reserve row in portfolio mode showed only the current sn
 ## Consequences
 
 ### Positive
-- Reserve rows show after/delta from batch positions in portfolio mode
+- Reserve rows show after/delta from portfolio positions in portfolio mode
 - Mutual exclusion is simple: one mode blanks the other's inputs
 - `after ?? current` fallback is zero-cost and natural
 - `buildPerReserveInputs` is a pure function with full test coverage

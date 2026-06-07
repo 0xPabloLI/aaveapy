@@ -124,6 +124,10 @@ _Avoid_: `buildAavePro*`（已重命名为 `buildAaveV4*`），`AAVE_PRO_BASE`�
 
 ## Wallet Portfolio
 
+**Portfolio Mode**:
+Multi-reserve simulation mode where users manage aggregate positions across multiple assets (supply/borrow per reserve). Toggled via `PortfolioModeToggle`; internally `SimulationMode = 'single' | 'portfolio'`. UI uses "Portfolio" label exclusively — no "Batch" anywhere.
+_Avoid_: Batch Mode, Batch toggle, "Build your batch portfolio"
+
 **Onchain Fallback**:
 Reactive 模式：SDK 失败后才触发 onchain 查询，不提前并发（省 public RPC 配额）。V3/V4 fallback 拆为独立 useQuery，各自 15s timeout、独立 retry、互不阻塞。fallback query staleTime 30s，不 refetchOnWindowFocus / refetchOnReconnect。合约地址从 `@aave-dao/aave-address-book` 取，不硬编码链列表。
 _Avoid_: proactive 并发（浪费 RPC）、private RPC（前端只用 public RPC）、V3/V4 合并单 query（互相阻塞）

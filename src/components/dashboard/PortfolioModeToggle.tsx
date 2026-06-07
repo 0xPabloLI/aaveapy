@@ -1,5 +1,5 @@
 /**
- * PortfolioModeToggle — "Batch" toggle switch.
+ * PortfolioModeToggle — "Portfolio" toggle switch.
  * Uses an iOS-style sliding toggle to clearly signal a higher-level mode
  * switch (vs. the segmented pills used for USD/Token, APR/APY).
  * On mobile the label stacks below the switch.
@@ -9,7 +9,7 @@ import { memo, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { BATCH_THEME } from './batchTheme';
+import { PORTFOLIO_THEME } from './portfolioTheme';
 import { prefetchPortfolioPanel } from './portfolioPrefetch';
 
 export type SimulationMode = 'single' | 'portfolio';
@@ -49,10 +49,10 @@ const PortfolioModeToggle = memo(function PortfolioModeToggle({
         className={cn(
           isMobile ? 'ds-text-10' : 'ds-text-12',
           'font-semibold transition-colors duration-200',
-          isPortfolio ? BATCH_THEME.text : 'text-muted-foreground',
+          isPortfolio ? PORTFOLIO_THEME.text : 'text-muted-foreground',
         )}
       >
-        Batch
+        Portfolio
       </span>
       <Switch
         checked={isPortfolio}
@@ -60,7 +60,7 @@ const PortfolioModeToggle = memo(function PortfolioModeToggle({
           if (checked) prefetchPortfolioPanel();
           onModeChange(checked ? 'portfolio' : 'single');
         }}
-        className={`${BATCH_THEME.switchCheckedBg} data-[state=unchecked]:bg-muted-foreground/30`}
+        className={`${PORTFOLIO_THEME.switchCheckedBg} data-[state=unchecked]:bg-muted-foreground/30`}
         thumbContent={
           positionCount > 0 ? (
             <span className="ds-text-9 font-bold leading-none tabular-nums text-foreground">

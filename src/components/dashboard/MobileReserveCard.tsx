@@ -35,7 +35,7 @@ import { buildPoolExplorerUrl } from '@/lib/poolExplorerLinks';
 import { getProtocolVersion } from '@/lib/protocolVersion';
 import { cn } from '@/lib/utils';
 import { FrozenStatusContent } from './ReserveStatusBadge';
-import { BATCH_RESERVE_ADD_BUTTON_CLASSES } from './batchTheme';
+import { PORTFOLIO_RESERVE_ADD_BUTTON_CLASSES } from './portfolioTheme';
 
 interface MobileCapSheetProps {
   capSheet: 'supply' | 'borrow' | 'utilization' | 'deficit' | 'frozen' | null;

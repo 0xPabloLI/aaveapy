@@ -11,7 +11,7 @@ import { getWalletSyncState } from '@/lib/portfolioWalletSync';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { getSoftDeleteAction } from '@/lib/portfolioSoftDelete';
 
-import { BATCH_THEME } from './batchTheme';
+import { PORTFOLIO_THEME } from './portfolioTheme';
 import type { PortfolioPosition, PortfolioInputMode } from '@/types/portfolio';
 
 interface PortfolioTokenRowProps {
@@ -184,8 +184,8 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
       onClick={handleMinusClick}
       className={cn(
         'shrink-0 rounded-md p-1 text-muted-foreground/60 transition-colors',
-        BATCH_THEME.trashHoverBg,
-        BATCH_THEME.trashHoverText,
+        PORTFOLIO_THEME.trashHoverBg,
+        PORTFOLIO_THEME.trashHoverText,
       )}
       aria-label={isHidden ? `Restore ${tokenSymbol}` : `Remove ${tokenSymbol} from portfolio`}
     >

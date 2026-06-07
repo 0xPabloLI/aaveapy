@@ -10,7 +10,7 @@ import { resolve } from 'node:path';
  * widest token in the list, so all inputs are aligned.
  */
 
-describe('PortfolioPanel batch grid layout', () => {
+describe('PortfolioPanel portfolio grid layout', () => {
   const src = readFileSync(
     resolve(__dirname, 'PortfolioPanel.tsx'),
     'utf8',

@@ -5,7 +5,7 @@ import { resolve } from 'node:path';
 /**
  * Visual gap regression guard for PortfolioTokenRow + PortfolioPanel.
  *
- * The batch panel uses a unified single-column grid with `auto minmax(_,1fr)`
+ * The portfolio panel uses a unified single-column grid with `auto minmax(_,1fr)`
  * parent columns. The `auto` column matches the widest token so all inputs
  * are aligned. Desktop and mobile share the same subgrid row structure,
  * differing only in icon/font/padding sizes and input-direction.

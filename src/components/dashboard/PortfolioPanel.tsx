@@ -27,7 +27,7 @@ import PortfolioTokenRow from './PortfolioTokenRow';
 import PopularTokenChip from './PopularTokenChip';
 import PortfolioSummaryCard from './PortfolioSummaryCard';
 import PortfolioResultsTable from './PortfolioResultsTable';
-import { BATCH_THEME } from './batchTheme';
+import { PORTFOLIO_THEME } from './portfolioTheme';
 import { ConfirmPopover } from '@/components/ui/confirm-popover';
 import { sortPositionsByHidden } from '@/lib/portfolioSoftDelete';
 import { useWallet } from '@/hooks/useWallet';
@@ -120,7 +120,7 @@ function SearchResultRow({
       )}
       <span className="ml-auto flex items-center gap-1 shrink-0">
         {alreadyAdded && (
-          <span className={cn('ds-text-10 font-semibold inline-flex items-center gap-0.5', BATCH_THEME.text)}>
+          <span className={cn('ds-text-10 font-semibold inline-flex items-center gap-0.5', PORTFOLIO_THEME.text)}>
             <Check className="size-3" aria-hidden />
             Added
           </span>
@@ -149,7 +149,7 @@ const SnapshotItem = memo(function SnapshotItem({
   return (
     <div className={cn(
       'flex items-center gap-2 rounded-lg px-2.5 py-1.5 border transition-colors',
-      isSelectedForCompare ? `${BATCH_THEME.border} ${BATCH_THEME.bgSubtle}` : 'border-border/30 hover:bg-muted/40',
+      isSelectedForCompare ? `${PORTFOLIO_THEME.border} ${PORTFOLIO_THEME.bgSubtle}` : 'border-border/30 hover:bg-muted/40',
     )}>
       <button
         type="button"
@@ -157,8 +157,8 @@ const SnapshotItem = memo(function SnapshotItem({
         className={cn(
           'size-4 rounded border flex items-center justify-center transition-colors shrink-0',
           isSelectedForCompare
-            ? `${BATCH_THEME.border} ${BATCH_THEME.text} ${BATCH_THEME.bgSoft}`
-            : `border-border/60 hover:${BATCH_THEME.border}`,
+            ? `${PORTFOLIO_THEME.border} ${PORTFOLIO_THEME.text} ${PORTFOLIO_THEME.bgSoft}`
+            : `border-border/60 hover:${PORTFOLIO_THEME.border}`,
         )}
         aria-label={`${isSelectedForCompare ? 'Deselect' : 'Select'} ${snapshot.label} for comparison`}
       >
@@ -200,7 +200,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
   const SEARCH_PAGE_SIZE = 20;
   const [visibleSearchCount, setVisibleSearchCount] = useState(SEARCH_PAGE_SIZE);
   const sentinelRef = useRef<HTMLDivElement>(null);
-  // Always default the search bar open whenever the batch panel mounts/opens.
+  // Always default the search bar open whenever the portfolio panel mounts/opens.
   // Users can still collapse it manually via the X button.
   const [searchOpen, setSearchOpen] = useState(true);
   const [snapshotName, setSnapshotName] = useState('');
@@ -333,7 +333,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
       const reserve = reserves.find((r) => getReserveKey(r) === reserveId);
       if (!reserve) return;
       if (positions.some((p) => p.reserveId === reserveId)) {
-        toast.info(`${reserve.tokenSymbol} is already in the batch`);
+        toast.info(`${reserve.tokenSymbol} is already in the portfolio`);
         return;
       }
 
@@ -488,9 +488,9 @@ const PortfolioPanel = memo(function PortfolioPanel({
         {/* Header */}
         <div className="flex items-center justify-between mb-2.5">
           <div className="flex items-center gap-2">
-            <Layers className={`size-4 ${BATCH_THEME.text}`} aria-hidden />
+            <Layers className={`size-4 ${PORTFOLIO_THEME.text}`} aria-hidden />
             <span className="ds-text-14 font-semibold text-foreground">
-              Batch
+              Portfolio
             </span>
           </div>
           <div className="flex items-center gap-[var(--ds-space-1)] pr-[11px]">
@@ -581,8 +581,8 @@ const PortfolioPanel = memo(function PortfolioPanel({
                   type="button"
                   className={cn(
                     HEADER_CONTROL_ICON_BUTTON_CLASS,
-                    BATCH_THEME.trashHoverBg,
-                    BATCH_THEME.trashHoverText,
+                    PORTFOLIO_THEME.trashHoverBg,
+                    PORTFOLIO_THEME.trashHoverText,
                   )}
                   aria-label="Clear all positions"
                   title="Clear all positions"
@@ -649,14 +649,14 @@ const PortfolioPanel = memo(function PortfolioPanel({
               onKeyDown={(e) => e.key === 'Enter' && handleSaveSnapshot()}
               className={cn(
                 'h-[var(--ds-chip-h)] flex-1 rounded-lg border border-border/50 bg-muted/40 px-2.5 ds-text-11 text-foreground placeholder:text-muted-foreground/50',
-                `focus:${BATCH_THEME.border} focus:outline-none focus:ring-1 focus:${BATCH_THEME.ringSoft}`,
+                `focus:${PORTFOLIO_THEME.border} focus:outline-none focus:ring-1 focus:${PORTFOLIO_THEME.ringSoft}`,
               )}
               aria-label="Snapshot name"
             />
             <button
               type="button"
               onClick={handleSaveSnapshot}
-              className={`rounded-lg ${BATCH_THEME.bgSoft} px-3 py-1 ds-text-11 font-semibold ${BATCH_THEME.text} hover:${BATCH_THEME.bgSubtle} transition-colors`}
+              className={`rounded-lg ${PORTFOLIO_THEME.bgSoft} px-3 py-1 ds-text-11 font-semibold ${PORTFOLIO_THEME.text} hover:${PORTFOLIO_THEME.bgSubtle} transition-colors`}
             >
               Save
             </button>
@@ -674,7 +674,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
               autoFocus
               className={cn(
                 'h-[var(--ds-control-h)] w-full rounded-lg border border-border/50 bg-muted/40 px-3 ds-text-12 text-foreground placeholder:text-muted-foreground/50 placeholder:italic',
-                `focus:${BATCH_THEME.border} focus:outline-none focus:ring-1 focus:${BATCH_THEME.ringSoft}`,
+                `focus:${PORTFOLIO_THEME.border} focus:outline-none focus:ring-1 focus:${PORTFOLIO_THEME.ringSoft}`,
               )}
               aria-label="Search tokens to add"
             />
@@ -745,12 +745,12 @@ const PortfolioPanel = memo(function PortfolioPanel({
           <div
             className={cn(
               'rounded-xl border border-dashed px-3 py-4 text-center',
-              BATCH_THEME.border,
-              BATCH_THEME.bgSubtle,
+              PORTFOLIO_THEME.border,
+              PORTFOLIO_THEME.bgSubtle,
             )}
           >
             <p className="ds-text-13 font-semibold text-foreground">
-              Build your batch portfolio
+              Build your portfolio
             </p>
 
             <div className="mt-3 flex items-center justify-center gap-2">
@@ -759,9 +759,9 @@ const PortfolioPanel = memo(function PortfolioPanel({
                 onClick={focusSearch}
                 className={cn(
                   'inline-flex items-center gap-1 rounded-lg px-3 py-1.5 ds-text-11 font-semibold transition-colors',
-                  BATCH_THEME.bgSoft,
-                  BATCH_THEME.text,
-                  `hover:${BATCH_THEME.bgSubtle}`,
+                  PORTFOLIO_THEME.bgSoft,
+                  PORTFOLIO_THEME.text,
+                  `hover:${PORTFOLIO_THEME.bgSubtle}`,
                 )}
               >
                 <Search className="size-3" aria-hidden />
@@ -831,7 +831,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
               <button
                 type="button"
                 onClick={() => setShowCompare(true)}
-                className={`flex items-center gap-1 rounded-lg ${BATCH_THEME.bgSoft} px-2.5 py-1 ds-text-11 font-semibold ${BATCH_THEME.text} hover:${BATCH_THEME.bgSubtle} transition-colors`}
+                className={`flex items-center gap-1 rounded-lg ${PORTFOLIO_THEME.bgSoft} px-2.5 py-1 ds-text-11 font-semibold ${PORTFOLIO_THEME.text} hover:${PORTFOLIO_THEME.bgSubtle} transition-colors`}
               >
                 <ArrowRightLeft className="size-3" aria-hidden />
                 Compare
