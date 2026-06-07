@@ -233,6 +233,66 @@ describe('convertPortfolioInputAmount', () => {
   });
 });
 
+describe('delta model: effective amount as principal for accrual', () => {
+  it('wallet position unchanged: effective amount = walletValue, delta = 0', () => {
+    const effectiveAmount = 1000;
+    const delta = 0;
+    const afterRate = 3.65;
+    const accrual = computePositionUsdPerDay('supply', effectiveAmount, afterRate, 0);
+    expect(accrual).toBeCloseTo(1000 * 3.65 / 100 / 365, 6);
+    expect(delta).toBe(0);
+  });
+
+  it('wallet position with extra deposit: effective amount > walletValue', () => {
+    const walletValue = 1000;
+    const extraDeposit = 500;
+    const effectiveAmount = walletValue + extraDeposit;
+    const afterRate = 3.65;
+    const accrual = computePositionUsdPerDay('supply', effectiveAmount, afterRate, 0);
+    expect(accrual).toBeCloseTo(1500 * 3.65 / 100 / 365, 6);
+  });
+
+  it('wallet position partially withdrawn: effective amount < walletValue', () => {
+    const walletValue = 1000;
+    const withdrawal = 500;
+    const effectiveAmount = walletValue - withdrawal;
+    const afterRate = 3.65;
+    const accrual = computePositionUsdPerDay('supply', effectiveAmount, afterRate, 0);
+    expect(accrual).toBeCloseTo(500 * 3.65 / 100 / 365, 6);
+  });
+
+  it('manual position (no wallet): effective amount = amount, delta = amount', () => {
+    const effectiveAmount = 2000;
+    const afterRate = 3.65;
+    const accrual = computePositionUsdPerDay('supply', effectiveAmount, afterRate, 0);
+    expect(accrual).toBeCloseTo(2000 * 3.65 / 100 / 365, 6);
+  });
+
+  it('delta does NOT leak into principal calculation', () => {
+    const walletValue = 1000;
+    const extraDeposit = 500;
+    const delta = extraDeposit;
+    const effectiveAmount = walletValue + delta;
+    const accrualWithEffective = computePositionUsdPerDay('supply', effectiveAmount, 3.65, 0);
+    const accrualWithDelta = computePositionUsdPerDay('supply', delta, 3.65, 0);
+    expect(accrualWithEffective).toBeGreaterThan(accrualWithDelta);
+    expect(accrualWithEffective).toBeCloseTo(1500 * 3.65 / 100 / 365, 6);
+  });
+
+  it('borrow: effective amount as principal for borrow cost calculation', () => {
+    const walletBorrow = 500;
+    const extraBorrow = 300;
+    const effectiveAmount = walletBorrow + extraBorrow;
+    const borrowRate = 5;
+    const incentiveRate = 2;
+    const accrual = computePositionUsdPerDay('borrow', effectiveAmount, borrowRate, incentiveRate);
+    expect(accrual).toBeCloseTo(
+      (-800 * 5 / 100 / 365) + (800 * 2 / 100 / 365),
+      6,
+    );
+  });
+});
+
 describe('formatConvertedAmount', () => {
   it('returns "0" for zero', () => {
     expect(formatConvertedAmount(0)).toBe('0');
