@@ -1,4 +1,5 @@
 import type { PortfolioPosition } from '@/types/portfolio'
+import { formatConvertedAmount } from './portfolioCalculator'
 
 interface MergeParams {
   current: PortfolioPosition[]
@@ -7,6 +8,20 @@ interface MergeParams {
 
 function positionKey(pos: PortfolioPosition): string {
   return `${pos.reserveId}::${pos.side}`
+}
+
+/**
+ * True when the existing position's amount differs from what its previous
+ * walletValue would have produced — i.e. the user manually edited it.
+ */
+function isManuallyEdited(existing: PortfolioPosition): boolean {
+  if (existing.walletValue === null) {
+    // Purely manual row (no wallet backing) — any non-empty amount is manual.
+    return existing.amount.trim() !== ''
+  }
+  if (existing.inputMode !== 'usd') return true
+  const expected = formatConvertedAmount(existing.walletValue)
+  return existing.amount.trim() !== expected
 }
 
 export function mergePositions({ current, incoming }: MergeParams): PortfolioPosition[] {
@@ -21,9 +36,12 @@ export function mergePositions({ current, incoming }: MergeParams): PortfolioPos
     const key = positionKey(walletPos)
     const existing = currentMap.get(key)
     if (existing) {
+      const manual = isManuallyEdited(existing)
       result.set(key, {
         ...existing,
-        amount: walletPos.amount,
+        // Preserve manual edits; only refresh wallet-tracking rows.
+        amount: manual ? existing.amount : walletPos.amount,
+        inputMode: manual ? existing.inputMode : walletPos.inputMode,
         walletValue: walletPos.walletValue,
         hidden: false,
         isOrphan: walletPos.isOrphan,
