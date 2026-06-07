@@ -58,7 +58,7 @@ describe('mergePositions', () => {
     expect(borrow.walletValue).toBe(1000)
   })
 
-  it('keeps simulator-only positions unchanged', () => {
+  it('applies delta-fixed policy for simulator-only position meeting incoming wallet row', () => {
     const current = [
       makePos({ positionId: 'p1', reserveId: 'r-usdc', tokenSymbol: 'USDC', side: 'supply', amount: '2000', walletValue: null }),
       makePos({ positionId: 'p2', reserveId: 'r-dai', tokenSymbol: 'DAI', side: 'supply', amount: '3000', walletValue: null }),
@@ -70,8 +70,8 @@ describe('mergePositions', () => {
     expect(result).toHaveLength(2)
     const usdc = result.find(p => p.reserveId === 'r-usdc')!
     const dai = result.find(p => p.reserveId === 'r-dai')!
-    expect(usdc.amount).toBe('5000')
     expect(usdc.walletValue).toBe(5000)
+    expect(parseFloat(usdc.amount)).toBeCloseTo(7000, 0)
     expect(dai.amount).toBe('3000')
     expect(dai.walletValue).toBeNull()
   })
@@ -126,5 +126,69 @@ describe('mergePositions', () => {
     ]
     const result = mergePositions({ current: [], incoming })
     expect(result).toHaveLength(2)
+  })
+})
+
+describe('mergePositions — delta-fixed sync policy', () => {
+  it('preserves delta when walletValue changes (positive delta)', () => {
+    const current = [
+      makePos({ reserveId: 'r-usdc', amount: '3000', walletValue: 2000, inputMode: 'usd' }),
+    ]
+    const incoming = [
+      makePos({ reserveId: 'r-usdc', amount: '2500', walletValue: 2500, inputMode: 'usd' }),
+    ]
+    const result = mergePositions({ current, incoming })
+    expect(result).toHaveLength(1)
+    expect(result[0].walletValue).toBe(2500)
+    expect(parseFloat(result[0].amount)).toBeCloseTo(3500, 0)
+  })
+
+  it('preserves delta when walletValue changes (negative delta / partial withdrawal)', () => {
+    const current = [
+      makePos({ reserveId: 'r-usdc', amount: '500', walletValue: 1000, inputMode: 'usd' }),
+    ]
+    const incoming = [
+      makePos({ reserveId: 'r-usdc', amount: '1200', walletValue: 1200, inputMode: 'usd' }),
+    ]
+    const result = mergePositions({ current, incoming })
+    expect(result).toHaveLength(1)
+    expect(result[0].walletValue).toBe(1200)
+    expect(parseFloat(result[0].amount)).toBeCloseTo(700, 0)
+  })
+
+  it('keeps amount unchanged when delta is zero (synced position)', () => {
+    const current = [
+      makePos({ reserveId: 'r-usdc', amount: '2000', walletValue: 2000, inputMode: 'usd' }),
+    ]
+    const incoming = [
+      makePos({ reserveId: 'r-usdc', amount: '2500', walletValue: 2500, inputMode: 'usd' }),
+    ]
+    const result = mergePositions({ current, incoming })
+    expect(result[0].walletValue).toBe(2500)
+    expect(result[0].amount).toBe('2500')
+  })
+
+  it('clamps effective amount to 0 when delta would go negative past walletValue', () => {
+    const current = [
+      makePos({ reserveId: 'r-usdc', amount: '500', walletValue: 1000, inputMode: 'usd' }),
+    ]
+    const incoming = [
+      makePos({ reserveId: 'r-usdc', amount: '400', walletValue: 400, inputMode: 'usd' }),
+    ]
+    const result = mergePositions({ current, incoming })
+    expect(result[0].walletValue).toBe(400)
+    expect(parseFloat(result[0].amount)).toBeCloseTo(0, 0)
+  })
+
+  it('applies delta-fixed policy when manual position (walletValue=null) meets incoming wallet row', () => {
+    const current = [
+      makePos({ reserveId: 'r-dai', amount: '3000', walletValue: null, inputMode: 'usd' }),
+    ]
+    const incoming = [
+      makePos({ reserveId: 'r-dai', amount: '5000', walletValue: 5000, inputMode: 'usd' }),
+    ]
+    const result = mergePositions({ current, incoming })
+    expect(result[0].walletValue).toBe(5000)
+    expect(parseFloat(result[0].amount)).toBeCloseTo(8000, 0)
   })
 })

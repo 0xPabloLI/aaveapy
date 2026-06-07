@@ -1,5 +1,6 @@
 import type { PortfolioPosition } from '@/types/portfolio'
 import { formatConvertedAmount } from './portfolioCalculator'
+import { computeDelta } from './deltaCalculator'
 
 interface MergeParams {
   current: PortfolioPosition[]
@@ -10,18 +11,27 @@ function positionKey(pos: PortfolioPosition): string {
   return `${pos.reserveId}::${pos.side}`
 }
 
-/**
- * True when the existing position's amount differs from what its previous
- * walletValue would have produced — i.e. the user manually edited it.
- */
-function isManuallyEdited(existing: PortfolioPosition): boolean {
+function hasNonZeroDelta(existing: PortfolioPosition): boolean {
   if (existing.walletValue === null) {
-    // Purely manual row (no wallet backing) — any non-empty amount is manual.
     return existing.amount.trim() !== ''
   }
   if (existing.inputMode !== 'usd') return true
-  const expected = formatConvertedAmount(existing.walletValue)
-  return existing.amount.trim() !== expected
+  const { deltaUsd } = computeDelta({
+    amount: existing.amount,
+    walletValue: existing.walletValue,
+    inputMode: existing.inputMode,
+  })
+  return deltaUsd !== 0
+}
+
+function computeNewAmount(existing: PortfolioPosition, newWalletValue: number): string {
+  const { deltaUsd } = computeDelta({
+    amount: existing.amount,
+    walletValue: existing.walletValue,
+    inputMode: existing.inputMode,
+  })
+  const newEffective = Math.max(newWalletValue + deltaUsd, 0)
+  return formatConvertedAmount(newEffective)
 }
 
 export function mergePositions({ current, incoming }: MergeParams): PortfolioPosition[] {
@@ -36,12 +46,14 @@ export function mergePositions({ current, incoming }: MergeParams): PortfolioPos
     const key = positionKey(walletPos)
     const existing = currentMap.get(key)
     if (existing) {
-      const manual = isManuallyEdited(existing)
+      const edited = hasNonZeroDelta(existing)
+      const newAmount = edited && walletPos.walletValue !== null
+        ? computeNewAmount(existing, walletPos.walletValue)
+        : edited ? existing.amount : walletPos.amount
       result.set(key, {
         ...existing,
-        // Preserve manual edits; only refresh wallet-tracking rows.
-        amount: manual ? existing.amount : walletPos.amount,
-        inputMode: manual ? existing.inputMode : walletPos.inputMode,
+        amount: newAmount,
+        inputMode: edited ? existing.inputMode : walletPos.inputMode,
         walletValue: walletPos.walletValue,
         hidden: false,
         isOrphan: walletPos.isOrphan,

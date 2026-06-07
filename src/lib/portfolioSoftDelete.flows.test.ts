@@ -114,12 +114,12 @@ describe('wallet re-sync recovery via mergePositions', () => {
     expect(merged).toHaveLength(0)
   })
 
-  it('user edits to a wallet position are overwritten by fresh wallet values on re-sync', () => {
+  it('user edits to a wallet position are preserved via delta-fixed policy on re-sync', () => {
     const edited = makePos({ positionId: 'w1', walletValue: 1000, amount: '9999' })
     const incoming = makePos({ positionId: 'fresh', walletValue: 1000, amount: '1000' })
     const merged = mergePositions({ current: [edited], incoming: [incoming] })
-    expect(merged[0].amount).toBe('1000')
-    expect(getWalletSyncState(merged[0])).toBe('synced')
+    expect(merged[0].amount).toBe('9999')
+    expect(getWalletSyncState(merged[0])).toBe('modified')
   })
 })
 
