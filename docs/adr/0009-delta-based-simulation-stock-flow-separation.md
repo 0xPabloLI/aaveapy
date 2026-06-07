@@ -1,0 +1,68 @@
+# ADR-009: Delta-Based Simulation with Stock-Flow Separation
+
+## Status
+
+Accepted
+
+## Context
+
+Portfolio mode imports wallet positions into the simulator. Each position has `walletValue` (onchain amount) and `amount` (user-adjusted amount). Currently `buildPerReserveInputs` passes `position.amount` directly as `supplyInput` to `buildRateSimulationResult`, which uses the same value both as the simulation input (affecting utilization/after rate) and as the principal for yield calculation.
+
+**The bug**: Onchain `totalLiquidity` already includes the wallet position. Passing `position.amount` (= walletValue when unadjusted) as `supplyInput` adds the same funds to the utilization denominator a second time — a double-count that inflates supply-side liquidity and deflates after rates incorrectly.
+
+This does not affect ReservesTable Shared Scenario, where inputs are pure increments (no wallet stock to double-count).
+
+## Decision
+
+**Separate simulation input (delta) from yield principal (effective amount)**:
+
+1. `delta = parseNumberInput(position.amount) - (position.walletValue ?? 0)` — only the change relative to onchain stock enters the rate model
+2. `effectiveAmount = walletValue + delta` (= `position.amount`) — the full position after adjustment is the principal for yield
+3. `buildRateSimulationResult` gains a new `principalUsd` parameter, independent from `supplyInputUsd`
+4. Portfolio path: `supplyInputUsd = delta`, `principalUsd = effectiveAmount`
+5. Shared Scenario path: `principalUsd = supplyInputUsd` (pure increment, no stock, backward compatible)
+
+### Scenario Table
+
+| Scenario | Wallet | Adjusted To | Delta | Rate Used | Yield Calculation |
+|----------|--------|-------------|-------|-----------|-------------------|
+| Unchanged | $1000 | $1000 | $0 | current | currentRate × $1000 |
+| Add | $1000 | $1500 | +$500 | after(+500) | afterRate × $1500 |
+| Withdraw | $1000 | $500 | -$500 | after(-500) | afterRate × $500 |
+| Manual (no wallet) | — | $2000 | +$2000 | after(+2000) | afterRate × $2000 |
+
+### Delta Sync Policy
+
+When `walletValue` changes (chain re-sync), **delta is held constant** — user intent "add $500 extra" should not shift with onchain fluctuations. `effectiveAmount` recomputes as `newWalletValue + delta`.
+
+### Delta Clamp
+
+`delta >= -walletValue` (cannot withdraw more than onchain). `effectiveAmount = 0` is legal (simulate full withdrawal), separate from soft delete (`hidden: true`).
+
+## Consequences
+
+### Positive
+- Fixes double-count bug: wallet stock no longer inflates utilization
+- `buildRateSimulationResult` API is more honest — input and principal serve different purposes
+- Shared Scenario unchanged — `principalUsd = supplyInputUsd` preserves existing behavior
+- Delta sync policy is intuitive: "add $500" stays "add $500" even if chain value drifts
+
+### Negative
+- `buildRateSimulationResult` signature change: all callers must supply `principalUsd`
+- UI must display delta (increment input) alongside effective amount, adding complexity
+- Incentive APRs use stale data for wallet positions (known limitation, not fixed here — data source timeliness, not calculation logic)
+
+## Alternatives Considered
+
+### A: Deduct walletValue inside buildRateSimulationResult
+Rejected. The function would need to know about wallet context, breaking its purity. The caller (portfolio path) has the domain knowledge to compute delta; the calculator should remain a pure math function.
+
+### B: Set supplyInput = 0 for wallet positions, only simulate deltas
+This is what we do — but we also need `principalUsd` for yield. Without the principal parameter, after-rate yield would be calculated on delta only (e.g. $500 yield on a $1500 position), which is wrong.
+
+### C: Track walletValue in PortfolioPosition type
+Rejected (Decision 3). `PortfolioPosition` already has `walletValue`; delta is a computed property (`amount - walletValue`), not a persisted field. No type change needed.
+
+## Related Issues
+
+AAV-563 (wallet import double-count), AAV-468 (parent portfolio epic)

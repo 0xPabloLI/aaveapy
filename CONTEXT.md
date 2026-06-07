@@ -199,6 +199,26 @@ _Avoid_: Watch Mode 和真实钱包并存、先断开真实钱包才能 Watch、
 
 ---
 
+## Delta-Based Simulation (Stock-Flow Separation)
+
+**Delta**:
+Rate simulation 的输入增量 = 用户调整后金额 - 链上存量。`delta = parseNumberInput(position.amount) - (position.walletValue ?? 0)`。仅 delta 影响 after rate（改变 utilization），链上存量已在 `totalLiquidity` 中，不算 delta 的一部分。
+_Avoid_: 把 position.amount 整体当 simulation input（导致链上存量 double-count）
+
+**Effective Amount**:
+收益计算的本金 = 链上存量 + delta = 用户在 UI 上设置的 amount。`effectiveAmount = walletValue + delta`。收益 = afterRate × effectiveAmount。
+_Avoid_: 用 delta 算收益（只算增量部分利息，遗漏存量部分）
+
+**Stock-Flow Separation**:
+Rate simulation 内部将 stock（链上存量）和 flow（用户增量）分开处理：flow 进入 utilization 计算改变 after rate，stock + flow 合并作为收益计算的 principal。`buildRateSimulationResult` 新增 `principalUsd` 参数与 `supplyInputUsd` 分开。Shared Scenario（纯增量）传 `principalUsd = supplyInputUsd` 保持原行为。
+_Avoid_: 单一值既当 simulation input 又当 principal（Shared Scenario 可以，Portfolio 不行）
+
+**Delta Sync Policy**:
+链上值变化时 delta 固定不变（用户意图"额外加 $500"不因链上波动改变）。effective amount = 新 walletValue + 原始 delta。
+_Avoid_: effective amount 固定（链上波动时用户意图应是 delta 不变）
+
+---
+
 ## Rate Simulation Phases
 
 **buildCurrentRates**:
