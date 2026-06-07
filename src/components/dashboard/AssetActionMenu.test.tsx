@@ -219,7 +219,7 @@ describe('AssetActionMenu (V3 vs V4 links)', () => {
     expect(screen.queryByText('View asset page')).not.toBeInTheDocument();
   });
 
-  it('renders Aave and Tydro protocol logos as trailing icons on their menu items', async () => {
+  it('renders Aave and Tydro protocol logos as trailing icons on their menu items (V3)', async () => {
     const user = userEvent.setup();
     setup({ marketName: 'AaveV3Ink' });
 
@@ -237,6 +237,19 @@ describe('AssetActionMenu (V3 vs V4 links)', () => {
     expect(tydroLogo?.getAttribute('src')).toBe('/icons/partners/tydro-black.svg');
   });
 
+  it('uses aave-pro logo for all Aave items in V4 markets', async () => {
+    const user = userEvent.setup();
+    setup({ marketName: 'AaveV4Ethereum', chainName: 'Ethereum' });
+
+    await user.click(screen.getByLabelText(`Asset actions for ${TOKEN_SYMBOL}`));
+    await screen.findByRole('menu');
+
+    const viewAssetItem = screen.getByText('View asset page').closest('a');
+    const aaveProLogo = viewAssetItem?.querySelector('img[alt="Aave Pro"]');
+    expect(aaveProLogo).toBeInTheDocument();
+    expect(aaveProLogo?.getAttribute('src')).toBe('/icons/tokens/aave-pro.svg');
+  });
+
   it('renders "View asset page" for V4 assets using pro.aave.com URL', async () => {
     const user = userEvent.setup();
     const V4_MARKET = 'AaveV4Ethereum';
@@ -252,9 +265,5 @@ describe('AssetActionMenu (V3 vs V4 links)', () => {
     expect(viewAssetLink?.getAttribute('href')).toContain('pro.aave.com');
     expect(viewAssetLink?.getAttribute('href')).toContain('explore/asset');
     expect(viewAssetLink?.getAttribute('href')).toContain('/1/');
-
-    const aaveProLogo = viewAssetLink?.querySelector('img[alt="Aave Pro"]');
-    expect(aaveProLogo).toBeInTheDocument();
-    expect(aaveProLogo?.getAttribute('src')).toBe('/icons/tokens/aave-pro.svg');
   });
 });

@@ -143,20 +143,19 @@ export function AssetActionMenu({
     );
     const truncatedAddress = `${tokenAddress.slice(0, 6)}…${tokenAddress.slice(-4)}`;
     const isExplorerItem = item.key === 'token-explorer' || item.key === 'pool-explorer' || item.key === 'hub-explorer' || item.key === 'spoke-explorer';
-    const protocolIconSrc = item.key === 'aave'
-      ? '/icons/tokens/aave.svg'
-      : item.key === 'aave-v4-asset'
-        ? '/icons/tokens/aave-pro.svg'
-        : item.key === 'tydro'
-          ? (isDark ? '/icons/partners/tydro-white.svg' : '/icons/partners/tydro-black.svg')
-          : null;
+    const isAaveItem = item.key === 'aave' || item.key === 'aave-v4-asset';
+    const protocolIconSrc = isAaveItem
+      ? (isV4 ? '/icons/tokens/aave-pro.svg' : '/icons/tokens/aave.svg')
+      : item.key === 'tydro'
+        ? (isDark ? '/icons/partners/tydro-white.svg' : '/icons/partners/tydro-black.svg')
+        : null;
     const trailing =
       item.key === 'copy' ? (
         <span className="ds-text-11 text-muted-foreground/70 tabular-nums">{truncatedAddress}</span>
       ) : protocolIconSrc ? (
         <img
           src={protocolIconSrc}
-          alt={item.key === 'aave' ? 'Aave' : item.key === 'aave-v4-asset' ? 'Aave Pro' : 'Tydro'}
+          alt={isAaveItem ? (isV4 ? 'Aave Pro' : 'Aave') : 'Tydro'}
           className={cn(
             'h-3.5 w-3.5 rounded-full',
             item.key !== 'tydro' && 'opacity-80',
