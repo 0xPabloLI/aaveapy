@@ -17,5 +17,3 @@ export function validateApiBaseEnv(env: EnvLike): void {
     );
   }
 }
-
-validateApiBaseEnv(import.meta.env);

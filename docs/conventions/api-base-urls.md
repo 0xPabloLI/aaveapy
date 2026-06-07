@@ -14,6 +14,7 @@ Single reference for **which hostname** each layer uses and **which env var** ov
 | Mechanism | Resolution |
 |-----------|------------|
 | Runtime | `import.meta.env.VITE_API_BASE_URL` → else **`src/lib/apiBase.ts`** default (**staging**) |
+| Missing semantics | `isMissingApiBase(value)` (see ADR-0011): null / undefined / empty / whitespace = missing |
 | Local file | `.env`, `.env.local`, etc. |
 
 Production traffic in deployed sites is expected to set `VITE_API_BASE_URL` at build/deploy time.
