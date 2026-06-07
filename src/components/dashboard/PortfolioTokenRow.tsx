@@ -1,7 +1,7 @@
-import { memo, useCallback } from 'react';
-import { Eraser, Minus, Wallet, EyeOff, Zap } from 'lucide-react';
+import { memo, useCallback, useState } from 'react';
+import { Eraser, Minus, Wallet, EyeOff, Zap, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { formatNumberInput } from '@/lib/numberFormat';
+import { formatNumberInput, parseNumberInput } from '@/lib/numberFormat';
 import { cnDsInputSurface } from '@/lib/dsInputSurface';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -104,7 +104,62 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
     const isBorrow = position.side === 'borrow';
     const labelColor = isBorrow ? 'ds-text-brand-cyan' : 'ds-text-emerald-600';
     const inputVariant = isBorrow ? 'borrow' as const : 'supply' as const;
-    const hasValue = Boolean(position.amount.trim());
+    const hasWallet = position.walletValue !== null;
+
+    // --- Delta mode for wallet-synced positions ---
+    // Delta display: derive from effective amount stored in position.amount
+    const deltaDisplay = hasWallet
+      ? (() => {
+          const effectiveUsd = position.inputMode === 'usd'
+            ? parseNumberInput(position.amount)
+            : parseNumberInput(position.amount) * (tokenPriceInUsd ?? 0);
+          const deltaUsd = effectiveUsd - position.walletValue!;
+          if (Math.abs(deltaUsd) < 0.005) return '';
+          return formatNumberInput(String(Math.abs(deltaUsd)));
+        })()
+      : position.amount;
+
+    const hasValue = Boolean(deltaDisplay.trim());
+
+    // +/- sign for delta mode: true = positive delta (adding), false = negative (reducing)
+    // For borrow: semantics invert — "adding borrow" is negative delta on net worth
+    const effectiveUsdForSign = hasWallet
+      ? (position.inputMode === 'usd'
+          ? parseNumberInput(position.amount)
+          : parseNumberInput(position.amount) * (tokenPriceInUsd ?? 0))
+      : 0;
+    const deltaUsdForSign = hasWallet ? effectiveUsdForSign - position.walletValue! : 0;
+    const isPositiveDelta = deltaUsdForSign >= 0;
+
+    const handleDeltaChange = (rawValue: string) => {
+      const formatted = formatNumberInput(rawValue);
+      if (!hasWallet) {
+        onUpdateAmount(position.positionId, formatted);
+        return;
+      }
+      // Delta → effective amount
+      const absDeltaUsd = parseNumberInput(formatted);
+      const sign = isPositiveDelta ? 1 : -1;
+      const effectiveUsd = Math.max(position.walletValue! + sign * absDeltaUsd, 0);
+      onUpdateAmount(position.positionId, formatNumberInput(String(effectiveUsd)));
+    };
+
+    const toggleDeltaSign = () => {
+      if (!hasWallet || !deltaDisplay.trim()) return;
+      const absDeltaUsd = parseNumberInput(deltaDisplay);
+      const newSign = isPositiveDelta ? -1 : 1;
+      const effectiveUsd = Math.max(position.walletValue! + newSign * absDeltaUsd, 0);
+      onUpdateAmount(position.positionId, formatNumberInput(String(effectiveUsd)));
+    };
+
+    const handleClearDelta = () => {
+      if (!hasWallet) {
+        onUpdateAmount(position.positionId, '');
+        return;
+      }
+      // Clear delta → restore to wallet value (effective = walletValue)
+      onUpdateAmount(position.positionId, formatNumberInput(String(position.walletValue!)));
+    };
 
     return (
       <div className="flex min-w-0 flex-1 items-center gap-1.5">
@@ -138,25 +193,44 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
             </TooltipContent>
           )}
         </Tooltip>
+        {hasWallet && (
+          <span className="shrink-0 ds-text-10 text-muted-foreground/70" aria-label="Wallet position">
+            🔒{formatNumberInput(String(position.walletValue!))}
+          </span>
+        )}
         <div className="relative flex-1 min-w-0">
+          {hasWallet && (
+            <button
+              type="button"
+              onClick={toggleDeltaSign}
+              className={cn(
+                'absolute left-1 top-1/2 -translate-y-1/2 z-10 rounded-sm px-0.5 ds-text-11 font-bold transition-colors',
+                isPositiveDelta
+                  ? 'text-emerald-600 hover:bg-emerald-500/10'
+                  : 'text-red-500 hover:bg-red-500/10',
+              )}
+              aria-label={isPositiveDelta ? 'Adding to position' : 'Reducing position'}
+            >
+              {isPositiveDelta ? '+' : '−'}
+            </button>
+          )}
           <input
-            value={position.amount}
-            onChange={(e) =>
-              onUpdateAmount(position.positionId, formatNumberInput(e.target.value))
-            }
+            value={deltaDisplay}
+            onChange={(e) => handleDeltaChange(e.target.value)}
+            onFocus={(e) => e.target.select()}
             inputMode="decimal"
-            placeholder={position.inputMode === 'usd' ? '10,000' : '100'}
+            placeholder={hasWallet ? '' : (position.inputMode === 'usd' ? '10,000' : '100')}
             className={cn(
-              'h-[var(--ds-chip-h)] w-full min-w-[4rem] rounded-md pl-2 ds-text-12 tabular-nums placeholder:italic',
-              hasValue ? 'pr-7' : 'pr-2',
+              'h-[var(--ds-chip-h)] w-full min-w-[4rem] rounded-md ds-text-12 tabular-nums placeholder:italic',
+              hasWallet ? 'pl-5 pr-7' : hasValue ? 'pl-2 pr-7' : 'pl-2 pr-2',
               cnDsInputSurface(hasValue, inputVariant),
             )}
-            aria-label={`${sideLabel} amount for ${tokenSymbol}`}
+            aria-label={`${sideLabel} ${hasWallet ? 'delta' : 'amount'} for ${tokenSymbol}`}
           />
           {hasValue && (
             <button
               type="button"
-              onClick={() => onUpdateAmount(position.positionId, '')}
+              onClick={handleClearDelta}
               className="absolute right-1 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors"
               aria-label={`Clear ${tokenSymbol} ${sideLabel.toLowerCase()}`}
             >

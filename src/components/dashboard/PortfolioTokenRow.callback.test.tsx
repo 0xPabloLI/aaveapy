@@ -29,6 +29,7 @@ function makeSupply(overrides: Partial<PortfolioPosition> = {}): PortfolioPositi
     side: 'supply',
     amount: '5000',
     inputMode: 'usd',
+    walletValue: null,
     ...overrides,
   };
 }
@@ -40,6 +41,7 @@ function makeBorrow(overrides: Partial<PortfolioPosition> = {}): PortfolioPositi
     side: 'borrow',
     amount: '2000',
     inputMode: 'usd',
+    walletValue: null,
     ...overrides,
   };
 }
@@ -169,5 +171,116 @@ describe('PortfolioTokenRow callbacks', () => {
     );
     fireEvent.click(screen.getByRole('button', { name: /clear.*USDC.*supply/i }));
     expect(onUpdateAmount).toHaveBeenCalledWith('pos-1', '');
+  });
+
+  describe('delta mode (walletValue present)', () => {
+    it('shows delta input with aria-label containing "delta"', () => {
+      render(
+        <PortfolioTokenRow
+          reserveId="reserve-1"
+          tokenSymbol="USDC"
+          chainName="Ethereum"
+          marketName="AaveV3Ethereum"
+          supplyPosition={makeSupply({ amount: '5000', walletValue: 3000 })}
+          borrowPosition={null}
+          onRemove={vi.fn()}
+          onUpdateAmount={vi.fn()}
+          onUpdateInputMode={vi.fn()}
+        />,
+        { wrapper: Wrapper },
+      );
+      expect(screen.getByRole('textbox', { name: /supply.*delta.*USDC/i })).toBeInTheDocument();
+    });
+
+    it('calls onUpdateAmount with effective amount when positive delta input changes', () => {
+      const onUpdateAmount = vi.fn();
+      render(
+        <PortfolioTokenRow
+          reserveId="reserve-1"
+          tokenSymbol="USDC"
+          chainName="Ethereum"
+          marketName="AaveV3Ethereum"
+          supplyPosition={makeSupply({ amount: '5000', walletValue: 3000 })}
+          borrowPosition={null}
+          onRemove={vi.fn()}
+          onUpdateAmount={onUpdateAmount}
+          onUpdateInputMode={vi.fn()}
+        />,
+        { wrapper: Wrapper },
+      );
+      const input = screen.getByRole('textbox', { name: /supply.*delta.*USDC/i });
+      fireEvent.change(input, { target: { value: '4000' } });
+      // walletValue(3000) + delta(4000) = effective(7000)
+      expect(onUpdateAmount).toHaveBeenCalledWith('pos-1', '7,000');
+    });
+
+    it('calls onUpdateAmount with effective amount when negative delta input changes', () => {
+      const onUpdateAmount = vi.fn();
+      render(
+        <PortfolioTokenRow
+          reserveId="reserve-1"
+          tokenSymbol="USDC"
+          chainName="Ethereum"
+          marketName="AaveV3Ethereum"
+          // amount=2000, wallet=5000 → delta = -3000 (negative)
+          supplyPosition={makeSupply({ amount: '2000', walletValue: 5000 })}
+          borrowPosition={null}
+          onRemove={vi.fn()}
+          onUpdateAmount={onUpdateAmount}
+          onUpdateInputMode={vi.fn()}
+        />,
+        { wrapper: Wrapper },
+      );
+      const input = screen.getByRole('textbox', { name: /supply.*delta.*USDC/i });
+      // Type 2000 into the delta input (still negative because sign preserved)
+      fireEvent.change(input, { target: { value: '2000' } });
+      // walletValue(5000) + (-1)*2000 = effective(3000)
+      expect(onUpdateAmount).toHaveBeenCalledWith('pos-1', '3,000');
+    });
+
+    it('clears delta by restoring to walletValue', () => {
+      const onUpdateAmount = vi.fn();
+      render(
+        <PortfolioTokenRow
+          reserveId="reserve-1"
+          tokenSymbol="USDC"
+          chainName="Ethereum"
+          marketName="AaveV3Ethereum"
+          // amount=7000, wallet=3000 → delta=+4000 (hasValue=true → clear button shown)
+          supplyPosition={makeSupply({ amount: '7000', walletValue: 3000 })}
+          borrowPosition={null}
+          onRemove={vi.fn()}
+          onUpdateAmount={onUpdateAmount}
+          onUpdateInputMode={vi.fn()}
+        />,
+        { wrapper: Wrapper },
+      );
+      fireEvent.click(screen.getByRole('button', { name: /clear.*USDC.*supply/i }));
+      // Clear → effective = walletValue = 3000
+      expect(onUpdateAmount).toHaveBeenCalledWith('pos-1', '3,000');
+    });
+
+    it('toggles delta sign from positive to negative', () => {
+      const onUpdateAmount = vi.fn();
+      render(
+        <PortfolioTokenRow
+          reserveId="reserve-1"
+          tokenSymbol="USDC"
+          chainName="Ethereum"
+          marketName="AaveV3Ethereum"
+          // amount=7000, wallet=3000 → delta=+4000
+          supplyPosition={makeSupply({ amount: '7000', walletValue: 3000 })}
+          borrowPosition={null}
+          onRemove={vi.fn()}
+          onUpdateAmount={onUpdateAmount}
+          onUpdateInputMode={vi.fn()}
+        />,
+        { wrapper: Wrapper },
+      );
+      // Click the "Adding to position" button to toggle to negative
+      fireEvent.click(screen.getByRole('button', { name: /adding to position/i }));
+      // walletValue(3000) + (-1)*4000 = max(-1000, 0) = 0
+      expect(onUpdateAmount).toHaveBeenCalledWith('pos-1', '0');
+    });
   });
 });
