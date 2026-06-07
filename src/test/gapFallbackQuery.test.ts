@@ -28,7 +28,7 @@ const mockV3Positions = (chainId: number, assets: `0x${string}`[]): WalletPositi
     amountWad: 100n,
     amountUsd: 100,
     isCollateral: true,
-    source: 'onchain-v3' as const,
+    source: 'gap-v3' as const,
     isOrphan: false,
   }))
 
@@ -42,7 +42,7 @@ const mockV4Positions = (chainId: number, assets: `0x${string}`[]): WalletPositi
     amountWad: 200n,
     amountUsd: 200,
     isCollateral: true,
-    source: 'onchain-v4' as const,
+    source: 'gap-v4' as const,
     isOrphan: false,
   }))
 

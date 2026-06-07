@@ -36,6 +36,7 @@ export function mapV3PositionToWalletPosition(
   pos: V3UserPosition,
   side: 'supply' | 'borrow',
   meta: PositionMeta,
+  source: WalletPositionSource,
 ): WalletPosition {
   const amountWad = side === 'supply'
     ? pos.supplyWad
@@ -54,7 +55,7 @@ export function mapV3PositionToWalletPosition(
     amountWad,
     amountUsd: wadToHuman(amountWad) * meta.tokenPrice,
     isCollateral: pos.isCollateral,
-    source: 'onchain-v3',
+    source,
     isOrphan,
   }
 }
@@ -63,6 +64,7 @@ export function mapV4PositionToWalletPosition(
   pos: V4UserPosition,
   side: 'supply' | 'borrow',
   meta: PositionMeta,
+  source: WalletPositionSource,
 ): WalletPosition {
   const amountWad = side === 'supply'
     ? pos.suppliedAssets
@@ -79,7 +81,7 @@ export function mapV4PositionToWalletPosition(
     amountWad,
     amountUsd: wadToHuman(amountWad) * meta.tokenPrice,
     isCollateral: pos.isCollateral,
-    source: 'onchain-v4',
+    source,
     isOrphan,
   }
 }

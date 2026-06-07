@@ -43,7 +43,7 @@ async function fetchOnchainPositions(params: FetchPositionsParams): Promise<User
     try {
       const v3Response = await getV3UserPositionsMultiChain(userAddress, v3AssetsByMarket)
       for (const result of v3Response.results) {
-        positions.push(...convertV3PositionsToWalletPositions(result.positions, lookupMap))
+        positions.push(...convertV3PositionsToWalletPositions(result.positions, lookupMap, 'onchain-v3'))
       }
       for (const err of v3Response.errors) {
         failedSources.push(`onchain-v3-chain-${err.chainId}`)
@@ -58,7 +58,7 @@ async function fetchOnchainPositions(params: FetchPositionsParams): Promise<User
     try {
       const v4Response = await getV4UserPositionsAllSpokes(chainId, userAddress, v4ReservesBySpoke)
       for (const result of v4Response.results) {
-        positions.push(...convertV4PositionsToWalletPositions(result.positions, lookupMap))
+        positions.push(...convertV4PositionsToWalletPositions(result.positions, lookupMap, 'onchain-v4'))
       }
       for (const err of v4Response.errors) {
         failedSources.push(`onchain-v4-chain-${err.chainId}-spoke-${err.spokeName ?? 'unknown'}`)

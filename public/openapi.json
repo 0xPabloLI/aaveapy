@@ -1064,8 +1064,22 @@
           "generatedAt": {
             "type": "string"
           },
-          "partial": {
-            "type": "boolean"
+          "errors": {
+            "type": "object",
+            "properties": {
+              "categories": {
+                "type": "string"
+              },
+              "fdv": {
+                "type": "string"
+              },
+              "forecast": {
+                "type": "string"
+              },
+              "campaignAccess": {
+                "type": "string"
+              }
+            }
           },
           "categories": {
             "type": "object",

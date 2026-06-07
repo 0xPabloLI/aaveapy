@@ -5,7 +5,7 @@ import {
   convertV4PositionsToWalletPositions,
   buildReserveLookupByChainAndToken,
 } from './onchainPositionConverter'
-import type { WalletPosition } from './userPositionMapper'
+import type { WalletPosition, WalletPositionSource } from './userPositionMapper'
 import type { ReserveWithSpread } from '@/types/aave'
 import { withTimeout } from './rpcResilience'
 import { FALLBACK_TIMEOUT_MS } from './fallbackConstants'
@@ -81,6 +81,7 @@ async function fetchV3Positions(
   const positions: WalletPosition[] = []
   const failedSources: string[] = []
 
+  const source: WalletPositionSource = prefix as WalletPositionSource
   const lookupMap = buildReserveLookupByChainAndToken(reserves)
   try {
     const v3Response = await withTimeout(
@@ -89,7 +90,7 @@ async function fetchV3Positions(
       prefix,
     )
     for (const result of v3Response.results) {
-      positions.push(...convertV3PositionsToWalletPositions(result.positions, lookupMap))
+      positions.push(...convertV3PositionsToWalletPositions(result.positions, lookupMap, source))
     }
     for (const err of v3Response.errors) {
       failedSources.push(`${prefix}-chain-${err.chainId}`)
@@ -112,6 +113,7 @@ async function fetchV4Positions(
   const positions: WalletPosition[] = []
   const failedSources: string[] = []
 
+  const source: WalletPositionSource = prefix as WalletPositionSource
   const lookupMap = buildReserveLookupByChainAndToken(reserves)
   const settled = await Promise.allSettled(
     chainIds.map(chainId =>
@@ -128,7 +130,7 @@ async function fetchV4Positions(
     const chainId = chainIds[i]
     if (outcome.status === 'fulfilled') {
       for (const result of outcome.value.results) {
-        positions.push(...convertV4PositionsToWalletPositions(result.positions, lookupMap))
+        positions.push(...convertV4PositionsToWalletPositions(result.positions, lookupMap, source))
       }
       for (const err of outcome.value.errors) {
         failedSources.push(`${prefix}-chain-${err.chainId}-spoke-${err.spokeName ?? 'unknown'}`)

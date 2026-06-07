@@ -59,7 +59,7 @@ describe('convertV3PositionsToWalletPositions', () => {
         isCollateral: true,
       },
     ]
-    const result = convertV3PositionsToWalletPositions(positions, lookupMap)
+    const result = convertV3PositionsToWalletPositions(positions, lookupMap, 'onchain-v3')
     expect(result).toHaveLength(1)
     expect(result[0].side).toBe('supply')
     expect(result[0].amountWad).toBe(5000n * WAD)
@@ -81,7 +81,7 @@ describe('convertV3PositionsToWalletPositions', () => {
         isCollateral: true,
       },
     ]
-    const result = convertV3PositionsToWalletPositions(positions, lookupMap)
+    const result = convertV3PositionsToWalletPositions(positions, lookupMap, 'onchain-v3')
     expect(result).toHaveLength(2)
     const supply = result.find(p => p.side === 'supply')!
     const borrow = result.find(p => p.side === 'borrow')!
@@ -102,7 +102,7 @@ describe('convertV3PositionsToWalletPositions', () => {
         isCollateral: false,
       },
     ]
-    const result = convertV3PositionsToWalletPositions(positions, lookupMap)
+    const result = convertV3PositionsToWalletPositions(positions, lookupMap, 'onchain-v3')
     expect(result).toHaveLength(1)
     expect(result[0].side).toBe('borrow')
   })
@@ -119,7 +119,7 @@ describe('convertV3PositionsToWalletPositions', () => {
         isCollateral: false,
       },
     ]
-    const result = convertV3PositionsToWalletPositions(positions, lookupMap)
+    const result = convertV3PositionsToWalletPositions(positions, lookupMap, 'onchain-v3')
     expect(result).toHaveLength(0)
   })
 
@@ -135,7 +135,7 @@ describe('convertV3PositionsToWalletPositions', () => {
         isCollateral: true,
       },
     ]
-    const result = convertV3PositionsToWalletPositions(positions, lookupMap)
+    const result = convertV3PositionsToWalletPositions(positions, lookupMap, 'onchain-v3')
     expect(result).toHaveLength(1)
     expect(result[0].isOrphan).toBe(true)
     expect(result[0].tokenSymbol).toBe('')
@@ -163,7 +163,7 @@ describe('convertV3PositionsToWalletPositions', () => {
         isCollateral: true,
       },
     ]
-    const result = convertV3PositionsToWalletPositions(positions, lookupMap)
+    const result = convertV3PositionsToWalletPositions(positions, lookupMap, 'onchain-v3')
     expect(result).toHaveLength(3)
     expect(result.filter(p => p.tokenSymbol === 'USDC')).toHaveLength(1)
     expect(result.filter(p => p.tokenSymbol === 'WETH')).toHaveLength(2)
@@ -184,7 +184,7 @@ describe('convertV4PositionsToWalletPositions', () => {
         isCollateral: true,
       },
     ]
-    const result = convertV4PositionsToWalletPositions(positions, lookupMap)
+    const result = convertV4PositionsToWalletPositions(positions, lookupMap, 'onchain-v4')
     expect(result).toHaveLength(1)
     expect(result[0].side).toBe('supply')
     expect(result[0].amountWad).toBe(10n * WAD)
@@ -206,7 +206,7 @@ describe('convertV4PositionsToWalletPositions', () => {
         isCollateral: true,
       },
     ]
-    const result = convertV4PositionsToWalletPositions(positions, lookupMap)
+    const result = convertV4PositionsToWalletPositions(positions, lookupMap, 'onchain-v4')
     expect(result).toHaveLength(2)
     const supply = result.find(p => p.side === 'supply')!
     const borrow = result.find(p => p.side === 'borrow')!
@@ -227,7 +227,7 @@ describe('convertV4PositionsToWalletPositions', () => {
         isCollateral: false,
       },
     ]
-    const result = convertV4PositionsToWalletPositions(positions, lookupMap)
+    const result = convertV4PositionsToWalletPositions(positions, lookupMap, 'onchain-v4')
     expect(result).toHaveLength(1)
     expect(result[0].side).toBe('borrow')
   })
@@ -245,7 +245,7 @@ describe('convertV4PositionsToWalletPositions', () => {
         isCollateral: true,
       },
     ]
-    const result = convertV4PositionsToWalletPositions(positions, lookupMap)
+    const result = convertV4PositionsToWalletPositions(positions, lookupMap, 'onchain-v4')
     expect(result).toHaveLength(1)
     expect(result[0].isOrphan).toBe(true)
   })

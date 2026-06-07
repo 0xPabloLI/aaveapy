@@ -54,7 +54,7 @@ describe('mapV3PositionToWalletPosition', () => {
       tokenSymbol: 'USDC',
       tokenPrice: 1,
       decimals: 6,
-    })
+    }, 'onchain-v3')
     expect(result.reserveId).toBe('1:0xpool:0xA0b8')
     expect(result.side).toBe('supply')
     expect(result.amountWad).toBe(5000n * WAD)
@@ -70,7 +70,7 @@ describe('mapV3PositionToWalletPosition', () => {
       tokenSymbol: 'USDC',
       tokenPrice: 1,
       decimals: 6,
-    })
+    }, 'onchain-v3')
     expect(result.side).toBe('borrow')
     expect(result.amountWad).toBe(2000n * WAD)
     expect(result.amountUsd).toBe(2000)
@@ -88,7 +88,7 @@ describe('mapV3PositionToWalletPosition', () => {
       tokenSymbol: 'USDC',
       tokenPrice: 1,
       decimals: 6,
-    })
+    }, 'onchain-v3')
     expect(result.amountWad).toBe(1000n * WAD)
     expect(result.amountUsd).toBe(1000)
   })
@@ -99,7 +99,7 @@ describe('mapV3PositionToWalletPosition', () => {
       tokenSymbol: 'WETH',
       tokenPrice: 3000,
       decimals: 18,
-    })
+    }, 'onchain-v3')
     expect(result.amountUsd).toBe(5000 * 3000)
   })
 
@@ -109,7 +109,7 @@ describe('mapV3PositionToWalletPosition', () => {
       tokenSymbol: 'USDC',
       tokenPrice: 1,
       decimals: 6,
-    })
+    }, 'onchain-v3')
     expect(result.isOrphan).toBe(true)
     expect(result.reserveId).toBe('')
   })
@@ -133,7 +133,7 @@ describe('mapV4PositionToWalletPosition', () => {
       tokenSymbol: 'WETH',
       tokenPrice: 3000,
       decimals: 18,
-    })
+    }, 'onchain-v4')
     expect(result.reserveId).toBe('1:0xspoke:0xC02a:0xhub')
     expect(result.side).toBe('supply')
     expect(result.amountWad).toBe(10n * WAD)
@@ -148,7 +148,7 @@ describe('mapV4PositionToWalletPosition', () => {
       tokenSymbol: 'WETH',
       tokenPrice: 3000,
       decimals: 18,
-    })
+    }, 'onchain-v4')
     expect(result.side).toBe('borrow')
     expect(result.amountWad).toBe(3n * WAD)
     expect(result.amountUsd).toBe(3 * 3000)
@@ -160,7 +160,7 @@ describe('mapV4PositionToWalletPosition', () => {
       tokenSymbol: 'WETH',
       tokenPrice: 3000,
       decimals: 18,
-    })
+    }, 'onchain-v4')
     expect(result.isOrphan).toBe(true)
   })
 })

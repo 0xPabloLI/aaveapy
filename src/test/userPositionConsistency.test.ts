@@ -107,6 +107,7 @@ describe('SDK vs ABI Consistency (HITL)', () => {
     const abiPositions = convertV3PositionsToWalletPositions(
       v3Response.results.flatMap((r) => r.positions),
       lookupMap,
+      'onchain-v3',
     );
 
     const sdkPositions: WalletPosition[] = [];
@@ -134,6 +135,7 @@ describe('SDK vs ABI Consistency (HITL)', () => {
     const abiPositions = convertV3PositionsToWalletPositions(
       v3Response.results.flatMap((r) => r.positions),
       lookupMap,
+      'onchain-v3',
     );
 
     const sdkPositions: WalletPosition[] = [];
@@ -158,6 +160,7 @@ describe('SDK vs ABI Consistency (HITL)', () => {
     const abiPositions = convertV4PositionsToWalletPositions(
       v4Response.results.flatMap((r) => r.positions),
       lookupMap,
+      'onchain-v4',
     );
 
     const sdkPositions: WalletPosition[] = [];
@@ -186,6 +189,7 @@ describe('SDK vs ABI Consistency (HITL)', () => {
       allPositions.push(...convertV3PositionsToWalletPositions(
         v3Response.results.flatMap((r) => r.positions),
         lookupMap,
+        'onchain-v3',
       ));
     }
 
@@ -194,6 +198,7 @@ describe('SDK vs ABI Consistency (HITL)', () => {
       allPositions.push(...convertV4PositionsToWalletPositions(
         v4Response.results.flatMap((r) => r.positions),
         lookupMap,
+        'onchain-v4',
       ));
     }
 
