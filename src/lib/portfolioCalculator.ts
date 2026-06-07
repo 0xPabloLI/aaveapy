@@ -132,12 +132,11 @@ export function convertPortfolioInputAmount(
   return from === 'usd' ? amount / priceInUsd : amount * priceInUsd;
 }
 
-const MAX_SIGNIFICANT_DIGITS = 8;
+// Re-exported for back-compat. The canonical implementation lives in
+// `./portfolioAmountFormat` — all wallet/import/reset/merge paths must
+// route through that helper to guarantee identical 8-sig-digit precision.
+export {
+  formatPortfolioAmount as formatConvertedAmount,
+  MAX_PORTFOLIO_AMOUNT_SIG_DIGITS,
+} from './portfolioAmountFormat';
 
-export function formatConvertedAmount(value: number): string {
-  if (value === 0) return '0';
-  const abs = Math.abs(value);
-  const digits = Math.max(0, MAX_SIGNIFICANT_DIGITS - Math.ceil(Math.log10(abs + 1)));
-  const fixed = value.toFixed(digits);
-  return fixed.includes('.') ? fixed.replace(/\.?0+$/, '') : fixed;
-}
