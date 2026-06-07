@@ -6,6 +6,7 @@ import { memo } from 'react';
 import { TrendingUp, TrendingDown, DollarSign, Percent } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatPercent } from '@/lib/formatters';
+import { useIsMobile } from '@/hooks/use-mobile';
 import type { PortfolioSummary } from '@/types/portfolio';
 
 interface PortfolioSummaryCardProps {
@@ -62,6 +63,7 @@ const PortfolioSummaryCard = memo(function PortfolioSummaryCard({
 }: PortfolioSummaryCardProps) {
   const netPositive = summary.netUsdPerDay >= 0;
   const netColor = netPositive ? 'ds-text-emerald-600' : 'text-destructive';
+  const isMobile = useIsMobile();
 
   return (
     <div className="grid grid-cols-2 gap-3 rounded-lg border border-border/50 bg-muted/30 px-3 py-2.5 sm:grid-cols-4">
@@ -89,6 +91,11 @@ const PortfolioSummaryCard = memo(function PortfolioSummaryCard({
         icon={<Percent className="size-3" aria-hidden />}
         valueClass={netColor}
       />
+      <p className="col-span-full ds-text-10 text-muted-foreground/70 italic">
+        {isMobile
+          ? 'Simulation only; final result is on-chain.'
+          : 'Simulation is for reference only. Final result depends on on-chain execution.'}
+      </p>
     </div>
   );
 });
