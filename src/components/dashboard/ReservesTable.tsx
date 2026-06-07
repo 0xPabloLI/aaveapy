@@ -953,7 +953,7 @@ const ReservesTable = ({
           data-reserves-sticky-scenario
           className={cn(
             '-mx-[var(--ds-space-3)] px-[var(--ds-space-3)] pt-1 pb-0',
-// In portfolio mode, the panel can grow taller than the viewport
+            // In portfolio mode, the panel can grow taller than the viewport
             // (search + suggested chips + many position rows + summary). If we keep
             // it sticky, the content overflows the sticky box and becomes unscrollable
             // — only the cards below it scroll. Disable sticky in portfolio mode so the

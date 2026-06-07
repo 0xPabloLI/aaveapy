@@ -647,7 +647,7 @@ This section groups cap / ceiling semantics for Merit, Merkl, and Brevis.
 
 Source: `src/lib/portfolioSimulator.ts`
 
-Portfolio mode (Batch toggle) computes per-position APR by reusing the same `buildRateSimulationResult` pipeline as single-reserve simulation, with supply+borrow on the same reserve **grouped** into a single call.
+Portfolio mode (Portfolio toggle) computes per-position APR by reusing the same `buildRateSimulationResult` pipeline as single-reserve simulation, with supply+borrow on the same reserve **grouped** into a single call.
 
 ### Grouping
 

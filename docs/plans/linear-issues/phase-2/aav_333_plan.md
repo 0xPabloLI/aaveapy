@@ -30,7 +30,7 @@
 #### 4.2.1 新增 collateral 标记
 - 类型定义：`src/types/portfolio.ts` 新增 `isCollateral: boolean` 字段到 `PortfolioPosition`
 - 连接钱包时，从链上仓位数据读取每个资产的抵押品状态，设置 `isCollateral`
-- Batch模式下，允许用户在 PortfolioPanel 手动切换 `isCollateral` 状态（UI新增开关）
+- Portfolio模式下，允许用户在 PortfolioPanel 手动切换 `isCollateral` 状态（UI新增开关）
 
 ### 4.3 计算逻辑
 
@@ -65,7 +65,7 @@
 #### 4.4.2 PortfolioPanel 汇总区
 - 文件：`src/components/dashboard/Portfolio/PortfolioPanel.tsx`
 - 显示 portfolio-level Risk Premium 总值
-- 支持用户在 batch 模式下切换资产 collateral 状态，实时刷新 RP 计算结果
+- 支持用户在 portfolio 模式下切换资产 collateral 状态，实时刷新 RP 计算结果
 
 ### 4.5 连接钱包功能（前置依赖）
 - 需完成钱包连接及链上仓位读取功能，确保能获取资产的抵押品状态

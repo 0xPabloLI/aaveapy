@@ -51,9 +51,9 @@ Examples:
 
 If a visual or numeric bug is found during manual verification, add a focused regression test before shipping the fix.
 
-### Batch panel layout (PortfolioPanel + PortfolioTokenRow)
+### Portfolio panel layout (PortfolioPanel + PortfolioTokenRow)
 
-The batch panel uses a **unified single-column grid** for both desktop and mobile. Layout rules are normative and enforced by VisualGap source-level regression tests (`PortfolioTokenRow.visual-gap.test.ts`).
+The portfolio panel uses a **unified single-column grid** for both desktop and mobile. Layout rules are normative and enforced by VisualGap source-level regression tests (`PortfolioTokenRow.visual-gap.test.ts`).
 
 **Grid architecture:**
 

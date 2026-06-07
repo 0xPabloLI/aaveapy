@@ -71,7 +71,7 @@
 | 控件 | 何时使用 | 何时不使用 |
 | --- | --- | --- |
 | `SegmentedToggle` | 互斥的视图选项（USD/Token、APR/APY） | 开关式 on/off 状态 |
-| `Switch` | 单一布尔状态（如 Batch 模式开启/关闭） | 多选项视图切换 |
+| `Switch` | 单一布尔状态（如 Portfolio 模式开启/关闭） | 多选项视图切换 |
 | `FilterChip` | 多选过滤条件（链、市场、类别） | 互斥单选 |
 | `Select` | 选项 > 4 或动态长列表 | 静态 2–3 项 |
 

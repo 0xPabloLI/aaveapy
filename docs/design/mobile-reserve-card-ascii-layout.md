@@ -28,12 +28,12 @@
 
 ---
 
-### 2. Batch Toggle（批量模式开关）
+### 2. Portfolio Toggle（组合模式开关）
 
 **改动前（横向）:**
 ```
 ┌──────────┐
-│ Batch [3] │ ← 文字和数字左右并排
+│ Portfolio [3] │ ← 文字和数字左右并排
 │    ⚪⚪   │ ← Switch 在下方（mobile 已垂直）
 └──────────┘
 ```
@@ -41,7 +41,7 @@
 **改动后（纵向 - 仅在 Portfolio 模式）:**
 ```
 ┌──────────┐
-│   Batch   │  ← 标签单独一行
+│   Portfolio   │  ← 标签单独一行
 │    [3]    │  ← position count 在其下方
 │   ⚪⚪    │  ← Switch
 └──────────┘
@@ -99,12 +99,12 @@
 
 ---
 
-### Batch Toggle 详细对比
+### Portfolio Toggle 详细对比
 
 **改动前 - 非 Portfolio 模式（mobile）:**
 ```
 ┌────────────────┐
-│  Batch         │
+│  Portfolio    │
 │  ⚪⚪          │  ← 已经是上下（Switch 在下）
 └────────────────┘
 ```
@@ -112,14 +112,14 @@
 **改动前 - Portfolio 模式:**
 ```
 ┌────────────────┐
-│  Batch [3] ⚪⚪ │  ← Batch 和 [3] 横向
+│  Portfolio [3] ⚪⚪ │  ← Portfolio 和 [3] 横向
 └────────────────┘
 ```
 
 **改动后 - Portfolio 模式:**
 ```
 ┌────────────────┐
-│     Batch      │  ← Batch 单独一行
+│     Portfolio      │  ← Portfolio 单独一行
 │      [3]       │  ← position count 在下
 │     ⚪⚪       │  ← Switch 在最下
 └────────────────┘
@@ -127,14 +127,14 @@
 
 ---
 
-## Mobile Scenario Strip: Batch & Expand Icon 居中规则
+## Mobile Scenario Strip: Portfolio & Expand Icon 居中规则
 
-在移动端 scenario strip 中，右侧列（Batch toggle + 展开 icon）必须与左侧 ScenarioControls 的上下两部分**各自居中**：
+在移动端 scenario strip 中，右侧列（Portfolio toggle + 展开 icon）必须与左侧 ScenarioControls 的上下两部分**各自居中**：
 
 ```
 ┌──────────────────────────────────────────────────────────┐
 │  ┌── ScenarioControls (上) ──┐  ┌── 右侧列 (上) ──┐     │
-│  │  USD│Token  Supply [____] │  │    Batch [3]     │     │  ← Batch 在上半区垂直居中
+│  │  USD│Token  Supply [____] │  │    Portfolio [3]     │     │  ← Portfolio 在上半区垂直居中
 │  │          Borrow [____]    │  │      ⚪⚪        │     │
 │  └───────────────────────────┘  └──────────────────┘     │
 │  ┌── ScenarioControls (下) ──┐  ┌── 右侧列 (下) ──┐     │
@@ -147,18 +147,18 @@
 **实现要点：**
 - 外层行使用 `flex items-stretch`（非 `items-start`），使右侧列拉伸到 ScenarioControls 全高
 - 右侧列分为两个 `flex-1` 区块，各用 `flex items-center justify-center` 实现垂直居中
-- 上半区：Batch toggle（`PortfolioModeToggle`）
+- 上半区：Portfolio toggle（`PortfolioModeToggle`）
 - 下半区：展开 icon（`SlidersHorizontal` 按钮），仅在 `!isPortfolioMode` 时渲染
 - 当 Net 面板收起（`mobileNetOpen === false`）时，下半区高度为 0，展开 icon 自然贴紧上半区底部
 
 ## Mobile Scenario Strip: 展开 Icon 位置稳定性规则
 
-当 Net lending & borrowing 面板展开/收起时，Batch toggle 和展开 icon **位置不能移动**：
+当 Net lending & borrowing 面板展开/收起时，Portfolio toggle 和展开 icon **位置不能移动**：
 
 ```
 收起状态:                          展开状态:
 ┌──────────────────────┬────┐     ┌──────────────────────┬────┐
-│ USD│Token Supply [__] │Batch│     │ USD│Token Supply [__] │Batch│  ← Batch 位置不变
+│ USD│Token Supply [__] │Portf│     │ USD│Token Supply [__] │Portf│  ← Portfolio 位置不变
 │        Borrow [__]    │ ⌄  │     │        Borrow [__]    │ ⌄  │  ← ⌄ 位置不变
 └──────────────────────┴────┘     └──────────────────────┴────┘
                                          ┌─────────────────┐
@@ -170,7 +170,7 @@
 **实现要点：**
 - Net 面板使用 `position: absolute`（`absolute left-0 right-0 top-full z-10`），脱离文档流
 - ScenarioControls 父容器使用 `relative` 锚定绝对定位面板
-- **禁止**将 Net 面板改回流式布局（如 `mt-1.5 px-0.5 pb-0.5`），否则 ScenarioControls 高度变化会导致右侧列 Batch/⌄ 位移
+- **禁止**将 Net 面板改回流式布局（如 `mt-1.5 px-0.5 pb-0.5`），否则 ScenarioControls 高度变化会导致右侧列 Portfolio/⌄ 位移
 - 此规则与居中规则**同时满足**：绝对定位保证位置稳定，`items-stretch` + 双 `flex-1` 居中块保证各自居中
 
 ---

@@ -16,12 +16,14 @@ Rename all remaining "Batch" references to "Portfolio" across:
 2. **Code exports**: `BATCH_THEME` → `PORTFOLIO_THEME`, `BATCH_RESERVE_ADD_BUTTON_CLASSES` → `PORTFOLIO_RESERVE_ADD_BUTTON_CLASSES`
 3. **File names**: `batchTheme.ts` → `portfolioTheme.ts`, e2e `portfolio-batch-mobile-spacing.spec.ts` → `portfolio-mobile-spacing.spec.ts`
 4. **Comments/test descriptions**: all inline comments and `describe`/`it` names
-5. **Documentation**: ADR-0005 title, CONTEXT.md terminology
+5. **Documentation**: ADR-0005 title, CONTEXT.md terminology, docs/design/\*, docs/conventions/\*, docs/rate-calculation.md, docs/plans/
 
 ### Excluded (not renamed)
 
 - `rpcResilience.ts` viem `batch: { multicell }` — RPC batching, different domain
 - `seoApi.ts` / `useSeoData.ts` Semrush batch API — external API parameter, not our terminology
+- `docs/TERMINOLOGY.md` "forecast batch cache" — React Query module caching/deduplication, technical term
+- `docs/conventions/commit-cadence.md` "攒 batch" — colloquial metaphor for batching commits, not user-facing
 
 ## Consequences
 

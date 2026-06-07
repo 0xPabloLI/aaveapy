@@ -22,7 +22,7 @@
 - Supply: `ds-text-emerald-500` / `ds-bg-emerald-500-10`
 - Borrow: `ds-text-brand-cyan` / `ds-bg-brand-cyan-10`
 - Spread: `ds-text-purple-600`
-- Batch mode (UI mode cue only): `ds-text-blue-500` / `ds-bg-blue-500-10`
+- Portfolio mode (UI mode cue only): `ds-text-blue-500` / `ds-bg-blue-500-10`
 - Warning: amber scale (Critical: `amber-500`, Warning: `amber-600` — 越严重越亮越醒目)
 - Paused: `ds-text-paused` / `ds-bg-paused`（视觉同 `amber-500`，语义独立）
 - Frozen: `sky-500` / `ds-bg-sky-500-8`
@@ -30,7 +30,7 @@
 ### Rule
 
 - Use semantic colors for meaning, not decoration.
-- Keep mode-level accents (like Batch toggle/panel cues) separate from metric semantics.
+- Keep mode-level accents (like Portfolio toggle/panel cues) separate from metric semantics.
 
 ## 3. Typography Rules
 
