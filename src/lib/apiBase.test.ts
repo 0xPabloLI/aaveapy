@@ -31,12 +31,12 @@ describe('validateApiBaseEnv', () => {
     expect(warn).not.toHaveBeenCalled();
   });
 
-  it('does not warn when VITE_API_BASE_URL is empty string in production', () => {
+  it('warns when VITE_API_BASE_URL is empty string in production (treated as missing)', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
     validateApiBaseEnv({ MODE: 'production', VITE_API_BASE_URL: '' });
 
-    expect(warn).not.toHaveBeenCalled();
+    expect(warn).toHaveBeenCalledOnce();
   });
 
   it('warns when VITE_API_BASE_URL is null in production', () => {
