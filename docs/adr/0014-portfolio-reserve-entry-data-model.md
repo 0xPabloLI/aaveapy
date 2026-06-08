@@ -83,11 +83,11 @@ interface ReservePatch {
 | `restorePosition(positionId)` | `unhideReserve(reserveId)` |
 | `updateAmount(positionId, amount)` | `updateReserve(reserveId, {supplyAmount/borrowAmount})` |
 | `updateInputMode(positionId, mode, price?)` | `updateReserve(reserveId, {supplyInputMode/borrowInputMode}, price?)` |
-| `hideOrRemoveReserveAction(reserveId)` | `hideReserve(reserveId)` or `removeReserve(reserveId)` (callers decide) |
+| `hideOrRemoveReserveAction(reserveId)` | Callers inline the decision: `anyWallet` check becomes `entry.supply.walletValue !== null || entry.borrow.walletValue !== null` → `hideReserve`, else `removeReserve` |
 
 ### Implementation path (gradual — each step independently committable)
 
-1. **Type + Hook layer**: Define `PortfolioReserveEntry`/`PortfolioSideData` in `portfolio.ts`. Refactor `usePortfolioSimulation` to manage `PortfolioReserveEntry[]` internally, expose new API surface. Adapt `walletPositionToPortfolio` to output `PortfolioReserveEntry[]`. Delete dead code (`toggleHidden`, `removePosition`, `addPosition`).
+1. **Type + Hook layer**: Define `PortfolioReserveEntry`/`PortfolioSideData` in `portfolio.ts`. Refactor `usePortfolioSimulation` to manage `PortfolioReserveEntry[]` internally, expose new API surface. Adapt `walletPositionToPortfolio` to output `PortfolioReserveEntry[]`. Deprecate per-side APIs (`addPosition`, `removePosition`, `toggleHidden`) and redirect all callers to new reserve-level APIs.
 2. **Downstream logic**: Adapt `portfolioCalculator`, `portfolioMerger`, `portfolioSoftDelete`, `portfolioWalletSync` to consume/produce `PortfolioReserveEntry`.
 3. **UI layer**: `PortfolioPanel` removes `groupedByReserve` (data is already per-reserve). `PortfolioTokenRow` receives `PortfolioReserveEntry` prop. `PortfolioResultsTable`/`PortfolioCompareView`/`PortfolioSummaryCard`/`PortfolioPositionRow` adapt.
 4. **Cleanup**: Delete `PortfolioPosition` type, remove `groupedByReserve` runtime merge, remove `getGroupSoftDeleteAction` (no longer needed — entry is already a group), update `architecture-guard.test.ts`, update all co-located tests.
