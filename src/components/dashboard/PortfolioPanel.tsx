@@ -6,7 +6,7 @@
  * so users can fill in either / both amounts directly without picking a side.
  */
 import { useState, useMemo, useEffect, useRef, memo, useCallback, lazy, Suspense } from 'react';
-import { Search, X, Layers, Trash2, Save, ArrowRightLeft, Check, RefreshCw, Wallet } from 'lucide-react';
+import { Search, X, Layers, Trash2, Save, ArrowRightLeft, Check, RefreshCw, Wallet, Download } from 'lucide-react';
 import PortfolioModeToggle, { type SimulationMode } from './PortfolioModeToggle';
 import { features } from '@/config/features';
 import { toast } from 'sonner';
@@ -23,7 +23,7 @@ import { isStablecoinSymbol, isEthRelatedSymbol, isBtcRelatedSymbol } from '@/li
 import { getReserveKey } from '@/lib/reserveKey';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { getMarketChipLabel, isV4Market, getHubChipClass } from '@/lib/marketLabels';
-import { freshnessColor } from '@/lib/freshnessColor';
+
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import PortfolioTokenRow from './PortfolioTokenRow';
 import PopularTokenChip from './PopularTokenChip';
@@ -208,54 +208,6 @@ const PortfolioPanel = memo(function PortfolioPanel({
   const [dismissedSuggestions, setDismissedSuggestions] = useState<Set<string>>(() => new Set());
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Wallet sync freshness: record timestamp when a sync settles, then expose age.
-  const [walletSyncedAt, setWalletSyncedAt] = useState<number | null>(null);
-  const [walletSyncAgeS, setWalletSyncAgeS] = useState(0);
-  const prevWalletLoadStateRef = useRef<WalletLoadState | undefined>(walletLoadState);
-  useEffect(() => {
-    const prev = prevWalletLoadStateRef.current;
-    if (prev === 'loading' && walletLoadState && walletLoadState !== 'loading') {
-      setWalletSyncedAt(Date.now());
-    }
-    prevWalletLoadStateRef.current = walletLoadState;
-  }, [walletLoadState]);
-  useEffect(() => {
-    if (!walletSyncedAt) return;
-    // Update immediately so the title reflects the new timestamp without
-    // waiting up to one full second for the interval to tick.
-    setWalletSyncAgeS(Math.floor((Date.now() - walletSyncedAt) / 1000));
-    const id = window.setInterval(
-      () => setWalletSyncAgeS(Math.floor((Date.now() - walletSyncedAt) / 1000)),
-      1000,
-    );
-    return () => window.clearInterval(id);
-  }, [walletSyncedAt]);
-  const walletInError = walletLoadState === 'error';
-  const walletFreshnessColor = walletInError
-    ? 'bg-red-400'
-    : freshnessColor(walletSyncAgeS);
-  const walletAgeLabel = walletSyncedAt
-    ? walletSyncAgeS < 60
-      ? `${walletSyncAgeS}s ago`
-      : walletSyncAgeS < 3600
-        ? `${Math.floor(walletSyncAgeS / 60)}m ago`
-        : `${Math.floor(walletSyncAgeS / 3600)}h ago`
-    : null;
-  const walletSyncTitle = walletLoadState === 'loading'
-    ? 'Syncing…'
-    : walletInError
-      ? 'Sync failed — click to retry'
-      : walletAgeLabel
-        ? `Updated ${walletAgeLabel}`
-        : 'Sync wallet positions';
-  const walletSyncAriaLabel = walletLoadState === 'loading'
-    ? 'Syncing wallet positions'
-    : walletInError
-      ? 'Retry wallet sync (last attempt failed)'
-      : walletAgeLabel
-        ? `Sync wallet positions (updated ${walletAgeLabel})`
-        : 'Sync wallet positions';
-
 
 
   const focusSearch = useCallback(() => {
@@ -433,43 +385,23 @@ const PortfolioPanel = memo(function PortfolioPanel({
                 : 'Simulation is for reference only. Final result depends on on-chain execution.'}
             </span>
           </div>
-          <div className="flex items-center gap-[var(--ds-space-1)] pr-[11px]">
+          <div className="flex items-center gap-[var(--ds-space-1)] pr-[11px] -mr-[27px]">
             {walletConnected && (
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={handleWalletSyncClick}
-                  disabled={walletLoadState === 'loading'}
-                  className={cn(HEADER_CONTROL_ICON_BUTTON_CLASS)}
-                  aria-label={walletSyncAriaLabel}
-                  title={walletSyncTitle}
-                  data-testid="wallet-sync-button"
-                  data-wallet-sync-state={
-                    walletLoadState === 'loading'
-                      ? 'loading'
-                      : walletInError
-                        ? 'error'
-                        : walletSyncedAt
-                          ? 'idle-synced'
-                          : 'idle'
-                  }
-                >
-                  <RefreshCw
-                    className={cn(HEADER_CONTROL_ICON_CLASS, walletLoadState === 'loading' && 'animate-spin')}
-                    aria-hidden
-                  />
-                </button>
-                {(walletSyncedAt != null || walletInError) && walletLoadState !== 'loading' && (
-                  <span
-                    data-testid="wallet-sync-freshness-dot"
-                    className={cn(
-                      'pointer-events-none absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border border-card/80 transition-colors duration-700',
-                      walletFreshnessColor,
-                    )}
-                    aria-hidden
-                  />
+              <button
+                type="button"
+                onClick={handleWalletSyncClick}
+                disabled={walletLoadState === 'loading'}
+                className={cn(HEADER_CONTROL_ICON_BUTTON_CLASS)}
+                aria-label={walletLoadState === 'loading' ? 'Importing wallet positions' : 'Import wallet positions'}
+                title={walletLoadState === 'loading' ? 'Importing…' : 'Import from wallet'}
+                data-testid="wallet-sync-button"
+              >
+                {walletLoadState === 'loading' ? (
+                  <RefreshCw className={cn(HEADER_CONTROL_ICON_CLASS, 'animate-spin')} aria-hidden />
+                ) : (
+                  <Download className={HEADER_CONTROL_ICON_CLASS} aria-hidden />
                 )}
-              </div>
+              </button>
             )}
 
             {/* Save snapshot */}
