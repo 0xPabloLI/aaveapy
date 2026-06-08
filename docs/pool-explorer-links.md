@@ -1,5 +1,7 @@
 # Pool Explorer Links - 完整文档
 
+> **相关文档**: [`docs/explorer-icons.md`](explorer-icons.md) — block explorer brand icon pipeline + 添加/替换 explorer base 的 runbook。本文档聚焦 URL 构造与市场链接表；icon 资产状态以 `## 各链 Explorer 类型确认` 表的 Icon 列 + runbook 为准。
+
 ## 概述
 
 本系统为 Aave V3 市场提供区块链浏览器深度链接，直接跳转到 Pool 合约的 `getReserveData` 读取函数。

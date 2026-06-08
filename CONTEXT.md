@@ -123,7 +123,7 @@ Market chip 外链优先级：tydro > aaveV4MarketUrl (spoke) > aaveMarketUrl (V
 _Avoid_: `buildAavePro*`（已重命名为 `buildAaveV4*`），`AAVE_PRO_BASE`（已重命名为 `AAVE_V4_BASE`）
 
 **Block Explorer**:
-第三方 chain-level 区块链浏览器（Etherscan / Routescan / Blockscout / OKLink 四大 family），用于查询 address / tx / contract storage / read proxy 等链上信息。与 Aave 官方 URL 不同：Block Explorer **不是 Aave 维护的**，跳转后离开 aaveapy 域名，进入第三方站点的 trust boundary。每个 base URL 在 `src/lib/explorerIconMap.ts` 注册到对应 brand（`etherscan` / `routescan` / `blockscout` / `oklink` 之一，1:N 去重）。
+第三方 chain-level 区块链浏览器（Etherscan / Routescan / Blockscout / OKLink 四大 family），用于查询 address / tx / contract storage / read proxy 等链上信息。与 Aave 官方 URL 不同：Block Explorer **不是 Aave 维护的**，跳转后离开 aaveapy 域名，进入第三方站点的 trust boundary。每个 base URL 在 `src/lib/explorerIconMap.ts` 注册到对应 brand（`etherscan` / `routescan` / `blockscout` / `oklink` 之一，1:N 去重）。详细 pipeline + runbook 见 [`docs/explorer-icons.md`](docs/explorer-icons.md)。
 _Avoid_: explorer URL、scan URL、chain browser（跟 aaveapy 自有链概念混淆）
 
 **Block Explorer Icon** (`ExplorerIconStack`):
