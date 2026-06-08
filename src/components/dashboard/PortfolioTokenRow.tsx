@@ -207,11 +207,31 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
             </TooltipContent>
           )}
         </Tooltip>
-        {hasWallet && (
-          <span className="shrink-0 ds-text-10 text-muted-foreground/70" aria-label="Wallet position">
-            🔒{formatNumberInput(String(position.walletValue!))}
-          </span>
-        )}
+        {hasWallet && (() => {
+          const effectiveDisplay = position.inputMode === 'usd'
+            ? formatNumberInput(String(effectiveUsdForSign))
+            : position.amount;
+          const priceUnavailable = position.inputMode !== 'usd' && tokenPriceInUsd === undefined;
+          const isModified = !priceUnavailable && Math.abs(deltaUsdForSign) >= 0.005;
+          return (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span
+                  className={cn(
+                    'shrink-0 ds-text-10 tabular-nums',
+                    isModified ? 'text-foreground' : 'text-muted-foreground/70',
+                  )}
+                  aria-label={`Effective amount, wallet: ${formatNumberInput(String(position.walletValue!))}`}
+                >
+                  {effectiveDisplay}
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="ds-text-11">
+                Wallet: {formatNumberInput(String(position.walletValue!))}
+              </TooltipContent>
+            </Tooltip>
+          );
+        })()}
         <div className="relative flex-1 min-w-0">
           {hasWallet && (
             <button

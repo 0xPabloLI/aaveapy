@@ -50,7 +50,7 @@ function makeBorrow(overrides: Partial<PortfolioPosition> = {}): PortfolioPositi
 
 const noop = () => {};
 
-function renderRow(opts?: { isMobile?: boolean; borrow?: boolean }) {
+function renderRow(opts?: { isMobile?: boolean; borrow?: boolean; supplyOverrides?: Partial<PortfolioPosition>; tokenPriceInUsd?: number }) {
   vi.mocked(useIsMobile).mockReturnValue(opts?.isMobile ?? false);
   return render(
     <PortfolioTokenRow
@@ -58,11 +58,12 @@ function renderRow(opts?: { isMobile?: boolean; borrow?: boolean }) {
       tokenSymbol="USDC"
       chainName="Ethereum"
       marketName="AaveV3Ethereum"
-      supplyPosition={makeSupply()}
+      supplyPosition={makeSupply(opts?.supplyOverrides)}
       borrowPosition={opts?.borrow ? makeBorrow() : null}
       onRemove={noop}
       onUpdateAmount={noop}
       onUpdateInputMode={noop}
+      tokenPriceInUsd={opts?.tokenPriceInUsd}
     />,
     { wrapper: Wrapper },
   );
@@ -128,6 +129,61 @@ describe('PortfolioTokenRow render', () => {
     const wrapperClasses = Array.from(rowWrapper?.classList ?? []);
     const allClasses = [...parentClasses, ...wrapperClasses];
     expect(allClasses.filter((c) => c.includes('absolute')).length).toBe(0);
+  });
+
+  // ─── effective amount display ─────────────────────────────
+
+  it('shows effective amount with muted color when synced (delta ≈ 0)', () => {
+    renderRow({
+      supplyOverrides: { amount: '5000', walletValue: 5000, inputMode: 'usd' },
+    });
+    const el = screen.getByLabelText(/effective amount/i);
+    expect(el).toBeTruthy();
+    expect(el.textContent).toBe('5,000');
+    expect(el.className).toContain('text-muted-foreground');
+  });
+
+  it('shows effective amount with foreground color when modified (delta ≠ 0)', () => {
+    renderRow({
+      supplyOverrides: { amount: '7500', walletValue: 5000, inputMode: 'usd' },
+    });
+    const el = screen.getByLabelText(/effective amount/i);
+    expect(el).toBeTruthy();
+    expect(el.textContent).toBe('7,500');
+    expect(el.className).toContain('text-foreground');
+  });
+
+  it('shows token amount in token input mode', () => {
+    renderRow({
+      supplyOverrides: { amount: '100', walletValue: 50, inputMode: 'token' },
+      tokenPriceInUsd: 50,
+    });
+    const el = screen.getByLabelText(/effective amount/i);
+    expect(el.textContent).toBe('100');
+  });
+
+  it('uses muted color when token price is unavailable in token mode', () => {
+    renderRow({
+      supplyOverrides: { amount: '100', walletValue: 50, inputMode: 'token' },
+      tokenPriceInUsd: undefined,
+    });
+    const el = screen.getByLabelText(/effective amount/i);
+    expect(el.className).toContain('text-muted-foreground');
+  });
+
+  it('aria-label includes wallet value for screen readers', () => {
+    renderRow({
+      supplyOverrides: { amount: '7500', walletValue: 5000, inputMode: 'usd' },
+    });
+    const el = screen.getByLabelText(/effective amount.*wallet.*5,000/i);
+    expect(el).toBeTruthy();
+  });
+
+  it('does not show effective amount for manual positions (no wallet)', () => {
+    renderRow({
+      supplyOverrides: { amount: '5000', walletValue: null },
+    });
+    expect(screen.queryByLabelText(/effective amount/i)).toBeNull();
   });
 
   // ─── minus inline ───────────────────────────────────────────
