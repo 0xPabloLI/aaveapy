@@ -86,5 +86,5 @@ export function useWalletAutoImport({
         duration: 5000,
       })
     }
-  }, [isConnected, address, v3SdkFailed, v4SdkFailed, walletLoadState])
+  }, [isConnected, address, v3SdkFailed, v4SdkFailed, walletLoadState, portfolioActions])
 }
