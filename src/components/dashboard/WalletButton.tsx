@@ -54,7 +54,7 @@ export function WalletButton({ mobile = false, onWatchSubmit }: WalletButtonProp
                 <PopoverTrigger asChild>
                   <button
                     type="button"
-                    className={cn(mobile ? HEADER_CONTROL_MOBILE_CLASS : HEADER_CONTROL_DESKTOP_ACTIVE_CLASS)}
+                    className={cn(mobile ? HEADER_CONTROL_MOBILE_CLASS : HEADER_CONTROL_DESKTOP_ACTIVE_CLASS, 'group')}
                     aria-label={isWatchMode ? `Viewing ${truncateAddress(address)}` : `Wallet ${truncateAddress(address)}`}
                   >
                     {isWatchMode ? (
@@ -65,7 +65,11 @@ export function WalletButton({ mobile = false, onWatchSubmit }: WalletButtonProp
                     {!mobile && <span>{truncateAddress(address)}</span>}
                     {!mobile && (
                       <ChevronDown
-                        className={cn(HEADER_CONTROL_AFFORDANCE_ICON_CLASS, 'text-muted-foreground')}
+                        className={cn(
+                          HEADER_CONTROL_AFFORDANCE_ICON_CLASS,
+                          'opacity-60 transition-transform duration-200',
+                          'group-data-[state=open]:rotate-180',
+                        )}
                         aria-hidden
                       />
                     )}
