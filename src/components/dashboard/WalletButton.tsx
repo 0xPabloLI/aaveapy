@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
-import { Wallet, Eye, ChevronDown, X } from 'lucide-react'
+import { Wallet, Eye, ChevronDown, X, Copy, Check } from 'lucide-react'
 import { useWallet } from '@/hooks/useWallet'
 import { WatchAddressInput } from './WatchAddressInput'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 import {
   HEADER_CONTROL_AFFORDANCE_ICON_CLASS,
   HEADER_CONTROL_DESKTOP_ACTIVE_CLASS,
@@ -31,6 +32,30 @@ function truncateAddress(addr: string) {
 export function WalletButton({ mobile = false, onWatchSubmit }: WalletButtonProps) {
   const { address, isConnected, isWatchMode, disconnect } = useWallet()
   const [showWatchInput, setShowWatchInput] = useState(false)
+  const [pendingSwitch, setPendingSwitch] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const openConnectModalRef = useRef<(() => void) | null>(null)
+
+  const handleCopy = async () => {
+    if (!address) return
+    try {
+      await navigator.clipboard.writeText(address)
+      setCopied(true)
+      toast.success('Address copied', {
+        description: truncateAddress(address),
+      })
+      window.setTimeout(() => setCopied(false), 900)
+    } catch {
+      toast.error('Failed to copy address')
+    }
+  }
+
+  useEffect(() => {
+    if (pendingSwitch && !isConnected) {
+      setPendingSwitch(false)
+      openConnectModalRef.current?.()
+    }
+  }, [pendingSwitch, isConnected])
 
   if (showWatchInput && onWatchSubmit) {
     return (
@@ -47,6 +72,8 @@ export function WalletButton({ mobile = false, onWatchSubmit }: WalletButtonProp
   return (
     <ConnectButton.Custom>
       {({ openConnectModal, mounted }) => {
+        openConnectModalRef.current = openConnectModal
+
         return (
           <div {...(!mounted ? { className: 'opacity-0 pointer-events-none' } : {})}>
             {isConnected && address ? (
@@ -79,7 +106,18 @@ export function WalletButton({ mobile = false, onWatchSubmit }: WalletButtonProp
                   <button
                     type="button"
                     className={HEADER_CONTROL_POPOVER_ITEM_CLASS}
-                    onClick={openConnectModal}
+                    onClick={handleCopy}
+                  >
+                    {copied
+                      ? <Check className={HEADER_CONTROL_AFFORDANCE_ICON_CLASS} aria-hidden />
+                      : <Copy className={HEADER_CONTROL_AFFORDANCE_ICON_CLASS} aria-hidden />
+                    }
+                    {copied ? 'Copied!' : 'Copy address'}
+                  </button>
+                  <button
+                    type="button"
+                    className={HEADER_CONTROL_POPOVER_ITEM_CLASS}
+                    onClick={() => { setPendingSwitch(true); disconnect() }}
                   >
                     <Wallet className={HEADER_CONTROL_AFFORDANCE_ICON_CLASS} aria-hidden />
                     Switch wallet

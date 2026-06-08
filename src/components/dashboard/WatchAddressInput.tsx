@@ -1,5 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
-import { useEnsAddress } from 'wagmi'
+import { useState, useCallback } from 'react'
 import { Check, HelpCircle, Loader2, RotateCcw, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
@@ -12,15 +11,9 @@ import {
 import { toast } from 'sonner'
 
 const ETH_ADDRESS_RE = /^0x[0-9a-fA-F]{40}$/
-const ENS_DEBOUNCE_MS = 300
 
-function useDebouncedValue<T>(value: T, delay: number): T {
-  const [debounced, setDebounced] = useState(value)
-  useEffect(() => {
-    const timer = setTimeout(() => setDebounced(value), delay)
-    return () => clearTimeout(timer)
-  }, [value, delay])
-  return debounced
+function formatShortAddress(addr: `0x${string}`) {
+  return `${addr.slice(0, 6)}…${addr.slice(-4)}`
 }
 
 interface WatchAddressInputProps {
@@ -31,27 +24,16 @@ interface WatchAddressInputProps {
 
 type WatchStatus = 'idle' | 'importing' | 'connected' | 'error'
 
-function formatShortAddress(addr: `0x${string}`) {
-  return `${addr.slice(0, 6)}…${addr.slice(-4)}`
-}
-
 export function WatchAddressInput({ onSubmit, onCancel, autoFocus = true }: WatchAddressInputProps) {
   const [input, setInput] = useState('')
   const [error, setError] = useState(false)
   const [status, setStatus] = useState<WatchStatus>('idle')
-  const [statusMessage, setStatusMessage] = useState('Enter an address to view it in Watch mode')
+  const [statusMessage, setStatusMessage] = useState('')
   const [lastSubmittedAddress, setLastSubmittedAddress] = useState<`0x${string}` | null>(null)
 
   const isValidAddress = ETH_ADDRESS_RE.test(input)
-  const debouncedEnsInput = useDebouncedValue(input.endsWith('.eth') ? input : '', ENS_DEBOUNCE_MS)
-
-  const { data: ensAddress, isLoading: ensLoading } = useEnsAddress({
-    name: debouncedEnsInput || undefined,
-  })
-
-  const resolvedAddress =
-    (ensAddress as `0x${string}` | undefined) ?? (isValidAddress ? (input as `0x${string}`) : null)
-  const canSubmit = !!resolvedAddress && ETH_ADDRESS_RE.test(resolvedAddress) && !ensLoading
+  const resolvedAddress = isValidAddress ? (input as `0x${string}`) : null
+  const canSubmit = !!resolvedAddress
 
   const submitAddress = useCallback(async (address: `0x${string}`) => {
     const shortAddress = formatShortAddress(address)
@@ -65,7 +47,7 @@ export function WatchAddressInput({ onSubmit, onCancel, autoFocus = true }: Watc
     try {
       await onSubmit(address)
       setStatus('connected')
-      setStatusMessage(`Watch mode connected · listening to ${shortAddress}`)
+      setStatusMessage(`Connected · viewing ${shortAddress}`)
       toast.success('Watch mode active', { id: toastId })
     } catch (err) {
       const reason = err instanceof Error ? err.message : 'Unable to switch to Watch mode'
@@ -82,7 +64,7 @@ export function WatchAddressInput({ onSubmit, onCancel, autoFocus = true }: Watc
     } else {
       setError(true)
       setStatus('error')
-      setStatusMessage('Enter a valid 0x address or resolved ENS name')
+      setStatusMessage('Enter a valid 0x address')
     }
   }, [canSubmit, resolvedAddress, submitAddress])
 
@@ -91,7 +73,7 @@ export function WatchAddressInput({ onSubmit, onCancel, autoFocus = true }: Watc
     if (!retryAddress) {
       setError(true)
       setStatus('error')
-      setStatusMessage('Enter a valid 0x address or resolved ENS name')
+      setStatusMessage('Enter a valid 0x address')
       return
     }
     void submitAddress(retryAddress)
@@ -113,93 +95,87 @@ export function WatchAddressInput({ onSubmit, onCancel, autoFocus = true }: Watc
 
   const isImporting = status === 'importing'
   const showRetry = status === 'error'
+  const hasStatusMessage = status !== 'idle'
 
   return (
-    <div className="flex flex-col gap-[var(--ds-space-1)]" data-watch-status={status}>
-      <div className="flex items-center gap-[var(--ds-space-1)]">
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => {
-            setInput(e.target.value)
-            setError(false)
-            setStatus('idle')
-            setStatusMessage('Enter an address to view it in Watch mode')
-          }}
-          onKeyDown={handleKeyDown}
-          placeholder="0x… or name.eth"
-          autoFocus={autoFocus}
-          disabled={isImporting}
-          aria-invalid={error || undefined}
-          aria-label="Watch wallet address"
-          className={cn(
-            HEADER_CONTROL_INPUT_CLASS,
-            'w-52 sm:w-56 text-foreground',
-            error && HEADER_CONTROL_ERROR_CLASS,
-          )}
-        />
-        {ensLoading && (
-          <span className="ds-text-10 text-muted-foreground animate-pulse">resolving…</span>
+    <div className="relative flex items-center gap-[var(--ds-space-1)]" data-watch-status={status}>
+      <input
+        type="text"
+        value={input}
+        onChange={(e) => {
+          setInput(e.target.value)
+          setError(false)
+          setStatus('idle')
+          setStatusMessage('')
+        }}
+        onKeyDown={handleKeyDown}
+        placeholder="0x…"
+        autoFocus={autoFocus}
+        disabled={isImporting}
+        aria-invalid={error || undefined}
+        aria-label="Watch wallet address"
+        className={cn(
+          HEADER_CONTROL_INPUT_CLASS,
+          'w-52 sm:w-56 text-foreground',
+          error && HEADER_CONTROL_ERROR_CLASS,
         )}
-        {resolvedAddress && !ensLoading && input.endsWith('.eth') && (
-          <span className="ds-text-10 text-muted-foreground truncate max-w-24">
-            {resolvedAddress.slice(0, 10)}…
-          </span>
+      />
+      <button
+        type="button"
+        onClick={handleSubmit}
+        disabled={!canSubmit || isImporting}
+        className={cn(HEADER_CONTROL_ICON_BUTTON_CLASS, canSubmit && !isImporting && 'text-success hover:text-success')}
+        aria-label="Confirm watch address"
+        title="Confirm (Enter)"
+      >
+        {isImporting ? (
+          <Loader2 className={cn(HEADER_CONTROL_AFFORDANCE_ICON_CLASS, 'animate-spin')} aria-hidden />
+        ) : (
+          <Check className={HEADER_CONTROL_AFFORDANCE_ICON_CLASS} aria-hidden />
         )}
-        <button
-          type="button"
-          onClick={handleSubmit}
-          disabled={!canSubmit || isImporting}
-          className={cn(HEADER_CONTROL_ICON_BUTTON_CLASS, canSubmit && !isImporting && 'text-success hover:text-success')}
-          aria-label="Confirm watch address"
-          title="Confirm (Enter)"
-        >
-          {isImporting ? (
-            <Loader2 className={cn(HEADER_CONTROL_AFFORDANCE_ICON_CLASS, 'animate-spin')} aria-hidden />
-          ) : (
-            <Check className={HEADER_CONTROL_AFFORDANCE_ICON_CLASS} aria-hidden />
-          )}
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          disabled={isImporting}
-          className={HEADER_CONTROL_ICON_BUTTON_CLASS}
-          aria-label="Cancel"
-          title="Cancel (Esc)"
-        >
-          <X className={HEADER_CONTROL_AFFORDANCE_ICON_CLASS} aria-hidden />
-        </button>
-      </div>
-      <div className="flex min-h-[1rem] items-center gap-[var(--ds-space-1)] pl-[var(--ds-space-3)] ds-text-11 text-muted-foreground" role="status">
-        <span className={cn(status === 'error' && 'text-destructive', status === 'connected' && 'text-success')}>
+      </button>
+      <button
+        type="button"
+        onClick={onCancel}
+        disabled={isImporting}
+        className={HEADER_CONTROL_ICON_BUTTON_CLASS}
+        aria-label="Cancel"
+        title="Cancel (Esc)"
+      >
+        <X className={HEADER_CONTROL_AFFORDANCE_ICON_CLASS} aria-hidden />
+      </button>
+      {hasStatusMessage && (
+        <span className={cn(
+          'absolute top-full left-0 mt-1 ds-text-11',
+          status === 'error' ? 'text-destructive' : status === 'connected' ? 'text-success' : 'text-muted-foreground',
+        )} role="status">
           {statusMessage}
-        </span>
-        {showRetry && (
-          <span className="inline-flex items-center gap-[var(--ds-space-1)]">
-            <button
-              type="button"
-              onClick={handleRetry}
-              disabled={isImporting}
-              className={HEADER_CONTROL_STATUS_ACTION_CLASS}
-              aria-label="Re-import watch address"
-              title="Retry importing the previously entered address after a connection failure"
-            >
-              <span className="inline-flex items-center gap-[var(--ds-space-1)]">
-                <RotateCcw className={HEADER_CONTROL_AFFORDANCE_ICON_CLASS} aria-hidden />
-                Re-import
+          {showRetry && (
+            <span className="inline-flex items-center gap-[var(--ds-space-1)] ml-1">
+              <button
+                type="button"
+                onClick={handleRetry}
+                disabled={isImporting}
+                className={HEADER_CONTROL_STATUS_ACTION_CLASS}
+                aria-label="Re-import watch address"
+                title="Retry importing the previously entered address after a connection failure"
+              >
+                <span className="inline-flex items-center gap-[var(--ds-space-1)]">
+                  <RotateCcw className={HEADER_CONTROL_AFFORDANCE_ICON_CLASS} aria-hidden />
+                  Re-import
+                </span>
+              </button>
+              <span
+                className="inline-flex items-center gap-[var(--ds-space-0-5)] text-muted-foreground/60"
+                title="Available only when the previous import failed"
+              >
+                <HelpCircle className="w-3 h-3" aria-hidden />
+                <span className="sr-only">Why is Re-import shown?</span>
               </span>
-            </button>
-            <span
-              className="inline-flex items-center gap-[var(--ds-space-0-5)] text-muted-foreground/60"
-              title="Available only when the previous import failed"
-            >
-              <HelpCircle className="w-3 h-3" aria-hidden />
-              <span className="sr-only">Why is Re-import shown?</span>
             </span>
-          </span>
-        )}
-      </div>
+          )}
+        </span>
+      )}
     </div>
   )
 }

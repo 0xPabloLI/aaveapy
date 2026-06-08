@@ -10,10 +10,6 @@ import {
 
 afterEach(cleanup)
 
-vi.mock('wagmi', () => ({
-  useEnsAddress: vi.fn(() => ({ data: undefined, isLoading: false })),
-}))
-
 vi.mock('sonner', () => ({
   toast: {
     loading: vi.fn(() => 'toast-id'),
@@ -73,8 +69,8 @@ describe('WatchAddressInput', () => {
     })
     fireEvent.click(screen.getByRole('button', { name: /confirm watch address/i }))
 
-    expect(await screen.findByText(/Watch mode connected/i)).toBeInTheDocument()
-    expect(screen.getByText(/listening to 0x1234…5678/i)).toBeInTheDocument()
+    expect(await screen.findByText(/Connected/i)).toBeInTheDocument()
+    expect(screen.getByText(/viewing 0x1234…5678/i)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /re-import watch address/i })).not.toBeInTheDocument()
   })
 
@@ -92,7 +88,7 @@ describe('WatchAddressInput', () => {
     expect(screen.getByLabelText(/watch wallet address/i)).toBeDisabled()
 
     resolveSubmit()
-    await screen.findByText(/Watch mode connected/i)
+    await screen.findByText(/Connected/i)
   })
 
   it('shows failure reason and supports re-import', async () => {
@@ -114,7 +110,7 @@ describe('WatchAddressInput', () => {
     fireEvent.click(reimportBtn)
 
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(2))
-    expect(await screen.findByText(/Watch mode connected/i)).toBeInTheDocument()
+    expect(await screen.findByText(/Connected/i)).toBeInTheDocument()
   })
 
   it('shows inline help hint next to Re-import on failure', async () => {

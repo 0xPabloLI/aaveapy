@@ -123,29 +123,6 @@ describe('PortfolioPanel', () => {
     expect(screen.getByPlaceholderText(/search/i)).toBeInTheDocument();
   });
 
-  it('exposes View address from the Portfolio wallet actions', () => {
-    const reserves = [makeReserve('USDC')];
-    render(
-      <WagmiProvider config={testWagmiConfig}>
-        <QueryClientProvider client={new QueryClient()}>
-          <RainbowKitProvider>
-            <TooltipProvider>
-            <PortfolioPanel
-              entries={[]}
-              actions={makeActions()}
-              reserves={reserves}
-            />
-            </TooltipProvider>
-          </RainbowKitProvider>
-        </QueryClientProvider>
-      </WagmiProvider>,
-    );
-
-    fireEvent.click(screen.getByRole('button', { name: /wallet actions/i }));
-
-    expect(screen.getByRole('button', { name: /view address/i })).toBeInTheDocument();
-  });
-
   it('calls addReserve when token is added from search', () => {
     const reserves = [makeReserve('USDC')];
     const actions = makeActions();

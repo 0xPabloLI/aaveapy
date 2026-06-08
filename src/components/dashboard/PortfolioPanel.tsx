@@ -35,7 +35,7 @@ import { sortEntriesByHidden } from '@/lib/portfolioSoftDelete';
 import { isSupplyDisabled, isBorrowDisabled } from '@/lib/reserveStatus';
 import { useWallet } from '@/hooks/useWallet';
 import { useWatchModeConnect } from '@/hooks/useWatchModeConnect';
-import { WalletButton } from './WalletButton';
+
 import {
   HEADER_CONTROL_ICON_BUTTON_CLASS,
   HEADER_CONTROL_ICON_CLASS,
@@ -55,8 +55,6 @@ interface PortfolioPanelProps {
   snapshots?: PortfolioSnapshot[];
   /** Trigger wallet onchain position sync. */
   onWalletSync?: () => void;
-  /** Trigger a market data refresh (cross-trigger from Wallet Sync). */
-  onRefresh?: () => Promise<void> | void;
   /** Wallet position loading state. */
   walletLoadState?: WalletLoadState;
   simulationMode?: SimulationMode;
@@ -189,7 +187,6 @@ const PortfolioPanel = memo(function PortfolioPanel({
   summary,
   snapshots = [],
   onWalletSync,
-  onRefresh,
   walletLoadState,
   simulationMode,
   onSimulationModeChange,
@@ -395,10 +392,7 @@ const PortfolioPanel = memo(function PortfolioPanel({
 
   const handleWalletSyncClick = useCallback(() => {
     onWalletSync?.();
-    // Reverse cross-trigger: pull fresh market data alongside the wallet
-    // re-sync so portfolio aggregates reflect the latest reserves immediately.
-    if (onRefresh) void onRefresh();
-  }, [onWalletSync, onRefresh]);
+  }, [onWalletSync]);
 
   // When entries transition from non-empty to empty (e.g. clear all),
   // reopen search so users can immediately add the next token.
@@ -478,7 +472,6 @@ const PortfolioPanel = memo(function PortfolioPanel({
               </div>
             )}
 
-            <WalletButton mobile onWatchSubmit={connectWatchAddress} />
             {/* Save snapshot */}
             {features.snapshot && entries.length > 0 && summary && (
               <button

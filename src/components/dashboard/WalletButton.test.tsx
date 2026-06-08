@@ -7,11 +7,12 @@ import { useWallet } from '@/hooks/useWallet'
 afterEach(cleanup)
 
 const mockOpenConnectModal = vi.fn()
+const mockOpenAccountModal = vi.fn()
 
 vi.mock('@rainbow-me/rainbowkit', () => ({
   ConnectButton: {
     Custom: ({ children }: { children: (props: Record<string, unknown>) => React.ReactNode }) =>
-      children({ openConnectModal: mockOpenConnectModal, mounted: true }),
+      children({ openConnectModal: mockOpenConnectModal, openAccountModal: mockOpenAccountModal, mounted: true }),
   },
 }))
 
@@ -102,14 +103,79 @@ describe('WalletButton — wallet connected (non-watch)', () => {
     expect(dot).toBeTruthy()
   })
 
-  it('shows unified popover menu with Switch wallet, View another address, and Disconnect', () => {
+  it('shows popover menu with Copy address, Switch wallet, View another address, and Disconnect', () => {
     render(<WalletButton onWatchSubmit={vi.fn()} />)
 
     fireEvent.click(screen.getByLabelText(/wallet/i))
 
+    expect(screen.getByRole('button', { name: /copy address/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /switch wallet/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /view another address/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /disconnect/i })).toBeInTheDocument()
+  })
+
+  it('Copy address writes to clipboard', () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    vi.spyOn(navigator, 'clipboard', 'get').mockReturnValue({ writeText } as unknown as Clipboard)
+    render(<WalletButton />)
+
+    fireEvent.click(screen.getByLabelText(/wallet/i))
+    fireEvent.click(screen.getByRole('button', { name: /copy address/i }))
+
+    expect(writeText).toHaveBeenCalledWith('0x1234567890abcdef1234567890abcdef12345678')
+  })
+
+  it('Switch wallet disconnects and opens connect modal', async () => {
+    const mockDisconnect = vi.fn()
+    mockWallet({
+      address: '0x1234567890abcdef1234567890abcdef12345678' as `0x${string}`,
+      isConnected: true,
+      isWatchMode: false,
+      disconnect: () => {
+        mockDisconnect()
+        vi.mocked(useWallet).mockReturnValue({
+          address: undefined,
+          chainId: 1,
+          isConnected: false,
+          isWatchMode: false,
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        } as ReturnType<typeof useWallet>)
+      },
+    })
+    mockOpenConnectModal.mockClear()
+    const { rerender } = render(<WalletButton onWatchSubmit={vi.fn()} />)
+
+    fireEvent.click(screen.getByLabelText(/wallet/i))
+    fireEvent.click(screen.getByRole('button', { name: /switch wallet/i }))
+
+    expect(mockDisconnect).toHaveBeenCalled()
+
+    rerender(<WalletButton onWatchSubmit={vi.fn()} />)
+
+    expect(mockOpenConnectModal).toHaveBeenCalled()
+  })
+
+  it('shows Copy address, Switch wallet and Disconnect even without onWatchSubmit', () => {
+    render(<WalletButton />)
+
+    fireEvent.click(screen.getByLabelText(/wallet/i))
+
+    expect(screen.getByRole('button', { name: /copy address/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /switch wallet/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /disconnect/i })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /view another address/i })).not.toBeInTheDocument()
+  })
+
+  it('View another address opens address input flow', () => {
+    const onWatchSubmit = vi.fn(async () => undefined)
+    render(<WalletButton onWatchSubmit={onWatchSubmit} />)
+
+    fireEvent.click(screen.getByLabelText(/wallet/i))
+    fireEvent.click(screen.getByRole('button', { name: /view another address/i }))
+
+    expect(screen.getByPlaceholderText(/0x/i)).toBeInTheDocument()
+  })
 })
 
 describe('WalletButton — chevron affordance (connected, desktop)', () => {
@@ -157,37 +223,6 @@ describe('WalletButton — chevron affordance (connected, desktop)', () => {
   })
 })
 
-  it('Switch wallet opens RainbowKit connect modal', () => {
-    mockOpenConnectModal.mockClear()
-    render(<WalletButton onWatchSubmit={vi.fn()} />)
-
-    fireEvent.click(screen.getByLabelText(/wallet/i))
-    fireEvent.click(screen.getByRole('button', { name: /switch wallet/i }))
-
-    expect(mockOpenConnectModal).toHaveBeenCalled()
-  })
-
-  it('shows Switch wallet and Disconnect even without onWatchSubmit', () => {
-    render(<WalletButton />)
-
-    fireEvent.click(screen.getByLabelText(/wallet/i))
-
-    expect(screen.getByRole('button', { name: /switch wallet/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /disconnect/i })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /view another address/i })).not.toBeInTheDocument()
-  })
-
-  it('View another address opens address input flow', () => {
-    const onWatchSubmit = vi.fn(async () => undefined)
-    render(<WalletButton onWatchSubmit={onWatchSubmit} />)
-
-    fireEvent.click(screen.getByLabelText(/wallet/i))
-    fireEvent.click(screen.getByRole('button', { name: /view another address/i }))
-
-    expect(screen.getByPlaceholderText(/0x/i)).toBeInTheDocument()
-  })
-})
-
 describe('WalletButton — watch mode connected', () => {
   beforeEach(() => mockWallet({
     address: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' as `0x${string}`,
@@ -206,11 +241,12 @@ describe('WalletButton — watch mode connected', () => {
     expect(trigger.querySelector('[class*="bg-emerald"]')).not.toBeTruthy()
   })
 
-  it('shows unified popover menu identical to wallet connected state', () => {
+  it('shows popover menu with Copy address, Switch wallet, View another address, and Disconnect', () => {
     render(<WalletButton onWatchSubmit={vi.fn()} />)
 
     fireEvent.click(screen.getByLabelText(/viewing/i))
 
+    expect(screen.getByRole('button', { name: /copy address/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /switch wallet/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /view another address/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /disconnect/i })).toBeInTheDocument()
