@@ -203,8 +203,8 @@ _Avoid_: 清空 currentValue（用户可能还在操作 Simulator）
 _Avoid_: 混合多地址仓位（方案 α）、清空全部含手动仓位（方案 γ）
 
 **Supply-Borrow Inseparability**:
-一个 reserve 的 supply 和 borrow 永远作为一体操作——隐藏/删除/恢复作用于整个 reserve（supply + borrow 一起），不允许独立隐藏单个 side。这跟 Aave 协议的 Reserve 模型一致：Reserve 是原子单元，supply/borrow 是它的两个属性而非独立实体。
-_Avoid_: 独立隐藏/删除 supply 或 borrow（破坏 Reserve 原子性）
+一个 reserve 的 supply 和 borrow 永远作为一体操作——隐藏/删除/恢复作用于整个 reserve（supply + borrow 一起），不允许独立隐藏单个 side。这跟 Aave 协议的 Reserve 模型一致：Reserve 是原子单元，supply/borrow 是它的两个属性而非独立实体。数据模型层面通过 `PortfolioReserveEntry`（per-reserve）替代 `PortfolioPosition`（per-side）来强制保证，编译时即不可能出现单 side 缺失。详见 ADR-0014。
+_Avoid_: 独立隐藏/删除 supply 或 borrow（破坏 Reserve 原子性）、per-side 数据模型（允许单 side 缺失）
 
 **Soft Delete**:
 方案 A+沉底：灰+沉底+EyeOff 图标+点击恢复一步操作。Resync 时 hidden → 强制 unhidden。按 Supply-Borrow Inseparability，软删除作用于整个 reserve（同 reserveId 的所有 position 一并 hidden/unhidden）。
