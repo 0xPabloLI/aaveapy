@@ -195,4 +195,39 @@ describe('PortfolioTokenRow render', () => {
     expect(parentDiv).toBeTruthy();
     expect(parentDiv!.className.includes('absolute')).toBe(false);
   });
+
+  // ─── hidden state ────────────────────────────────────────────
+
+  describe('hidden state', () => {
+    function renderHiddenRow() {
+      return renderRow({
+        supplyOverrides: { hidden: true, walletValue: 5000 },
+      });
+    }
+
+    it('shows Restore button instead of Remove when hidden', () => {
+      renderHiddenRow();
+      expect(
+        screen.getByRole('button', { name: /restore.*USDC/i }),
+      ).toBeTruthy();
+      expect(
+        screen.queryByRole('button', { name: /remove.*USDC/i }),
+      ).toBeNull();
+    });
+
+    it('renders no small EyeOff icon in hiddenSuffix (only the Restore button EyeOff)', () => {
+      renderHiddenRow();
+      const restoreBtn = screen.getByRole('button', { name: /restore/i });
+      const svgInBtn = restoreBtn.querySelector('svg');
+      expect(svgInBtn).toBeTruthy();
+      expect(svgInBtn!.classList.contains('size-3.5')).toBe(true);
+      const smallSvgs = Array.from(document.querySelectorAll('svg.size-3'));
+      const isEyeOffPath = (svg: SVGSVGElement) => {
+        const paths = svg.querySelectorAll('path');
+        return Array.from(paths).some((p) => p.getAttribute('d')?.includes('17'));
+      };
+      const eyeOffSmall = smallSvgs.filter(isEyeOffPath);
+      expect(eyeOffSmall.length).toBe(0);
+    });
+  });
 });

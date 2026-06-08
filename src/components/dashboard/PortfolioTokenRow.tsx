@@ -308,7 +308,6 @@ const PortfolioTokenRow = memo(function PortfolioTokenRow({
       {anyPosition && getWalletSyncState(anyPosition) !== 'manual' && (
         <Wallet className="size-3 text-emerald-500/60 shrink-0" aria-hidden />
       )}
-      <EyeOff className="size-3 shrink-0" aria-hidden />
     </div>
   ) : null;
 
