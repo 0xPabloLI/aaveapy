@@ -1,11 +1,41 @@
 # Handoff: PortfolioReserveEntry 重构 (ADR-014) — COMPLETED
 
-> 合并自 3 个临时 handoff 文档 + 阶段 4 最终清理。  
 > 完成日期: 2026-06-08
 
 ## 概要
 
 将 Portfolio 数据模型从 `PortfolioPosition`（per-side）重构为 `PortfolioReserveEntry`（per-reserve），从编译时保证 supply-borrow 不可分性。**所有 4 个阶段已完成。**
+
+## Commit 对应表
+
+| 阶段 | Commit | 说明 |
+|------|--------|------|
+| 2 | `16d8e6a0` | migrate to PortfolioReserveEntry per-reserve (AAV-671, ADR-0014) |
+| 3 | `edacaea9` | move PortfolioModeToggle into PortfolioPanel header row |
+| 3 | `34be66d1` | move PortfolioModeToggle (duplicate — same change, different take) |
+| 3 | `2127fbcb` | exclude hidden positions from Earn calculation (AAV-671) |
+| 3 | `ba83534b` | remove outer border, position Portfolio panel inline with ScenarioControls |
+| 3+钱包 | `88196cab` | ⚠️ **混合 commit**: 钱包功能 + Portfolio 改动（见下） |
+| 4 | `b245f1d5` | delete PortfolioPosition + deprecated modules, complete ADR-014 (AAV-704) |
+| 4 | `dddfd8d1` | delete deprecated simulatePortfolioPositions, fix review I1/I3/I4 |
+| 4 | `a2362f35` | add architecture guards for simulatePortfolioPositions + entriesToPositions |
+
+### ⚠️ 混合 Commit: `88196cab`
+
+该 commit 的 message 是 `feat(wallet): ...`，但实际包含了 **2 类不相关改动**：
+
+1. **钱包改动**（属于钱包功能）:
+   - `WalletButton.tsx` / `WalletButton.test.tsx` — Copy address + Switch wallet
+   - `WatchAddressInput.tsx` / `WatchAddressInput.test.tsx` — layout shift fix + 移除 ENS
+
+2. **Portfolio 改动**（应属于 Portfolio 阶段 3/4）:
+   - `PortfolioPanel.tsx` — 删除 `WalletButton` import + 删除 `onWalletSync` prop
+   - `PortfolioPanel.test.tsx` — 删除 WalletButton 相关断言
+   - `ReservesTable.tsx` — 删除 WalletButton 引用
+
+**影响**: `b245f1d5`（阶段 4 主清理）改了 PortfolioPanel 的测试文件但未改 `.tsx`，因为 `.tsx` 的改动已被 `88196cab` 抢先 commit。
+
+**建议**: 后续做 `git rebase -i` 将 `88196cab` 中的 Portfolio 部分拆到独立 commit，或将 Portfolio 改动 squash 进阶段 3 的某个 commit。
 
 ## Linear Issue 进度
 
@@ -59,7 +89,7 @@ interface PortfolioSimulationActions {
 
 ---
 
-## 阶段 2: Type/Hook/Logic 层 (AAV-687) — ✅
+## 阶段 2: Type/Hook/Logic 层 (AAV-687) — ✅  [`16d8e6a0`]
 
 | 改动 | 文件 | 说明 |
 |---|---|---|
@@ -71,7 +101,7 @@ interface PortfolioSimulationActions {
 
 ---
 
-## 阶段 3: UI Layer + Cleanup (AAV-688) — ✅
+## 阶段 3: UI Layer + Cleanup (AAV-688) — ✅  [`edacaea9`..`88196cab`]
 
 | 改动 | 文件 | 说明 |
 |---|---|---|
@@ -85,7 +115,7 @@ interface PortfolioSimulationActions {
 
 ---
 
-## 阶段 4: 最终清理 (AAV-704) — ✅
+## 阶段 4: 最终清理 (AAV-704) — ✅  [`b245f1d5`..`a2362f35`]
 
 | 改动 | 文件 | 说明 |
 |---|---|---|
@@ -94,15 +124,17 @@ interface PortfolioSimulationActions {
 | 删除 10 个 deprecated actions | `usePortfolioSimulation.ts` | addPosition/removePosition/updateAmount/updateDeltaSign/updateInputMode/importPositions/restorePosition/toggleHidden/hideOrRemoveReserveAction/unhideReserveAction |
 | 删除 re-exports | `usePortfolioSimulation.ts` | resolvePositionAmountUsd/buildPortfolioPositionResult |
 | 迁移 `portfolioCalculator` | `portfolioCalculator.ts` | `resolvePositionAmountUsd(PortfolioSideData, reserve)` + `buildPortfolioPositionResult(reserveId, side, ...)` |
-| 迁移 `portfolioSimulator` | `portfolioSimulator.ts` | 新增 `simulatePortfolioFromEntries`；内部用 `SideSlot`/`EntryGroup` 而非 `PortfolioPosition` |
+| 迁移 `portfolioSimulator` | `portfolioSimulator.ts` | `simulatePortfolioFromEntries`（仅入口）；内部用 `SideSlot`/`EntryGroup` |
+| 删除 `simulatePortfolioPositions` | `portfolioSimulator.ts` | deprecated 入口已彻底删除 |
 | 迁移 `usePortfolioToggle` | `usePortfolioToggle.ts` | 删除 `entriesToPositionsForToggle`，改调 `simulatePortfolioFromEntries` |
 | 删除 `portfolioMerger.ts` | — | 文件 + 2 个测试文件删除 |
 | 删除废弃函数 | `portfolioSoftDelete.ts` | sortPositionsByHidden/getSoftDeleteAction/getGroupSoftDeleteAction/hideOrRemoveReserve/unhideReserve |
 | 删除 `getWalletSyncState` | `portfolioWalletSync.ts` | 被 `getSideSyncState` 取代 |
 | 删除 `convertWalletPositionsToPortfolio` | `walletPositionToPortfolio.ts` | 被 `convertWalletPositionsToEntries` 取代 |
-| 更新 architecture-guard | `architecture-guard.test.ts` | 新增 5 条 guard 确保旧 API 不会回归 |
+| 更新 architecture-guard | `architecture-guard.test.ts` | 10 条 guard 确保旧 API 不会回归 |
 | 更新 ADR-014 status | `0014-*.md` | Accepted → Completed |
 | 更新 CONTEXT.md | `CONTEXT.md` | `PortfolioPosition` 标记已删除 |
+| 更新 AGENTS.md | `AGENTS.md` | addPosition 教训 → addReserve 类型保证说明 |
 
 ---
 
@@ -129,19 +161,29 @@ interface PortfolioSimulationActions {
 
 - `PortfolioPosition` interface
 - `portfolioMerger.ts` + `portfolioMerger.test.ts` + `portfolioMerger.actions.test.ts`
+- `PortfolioPositionRow.tsx`
 - `convertWalletPositionsToPortfolio` / `getWalletSyncState` / `sortPositionsByHidden` / `getSoftDeleteAction` / `getGroupSoftDeleteAction` / `hideOrRemoveReserve`(旧) / `unhideReserve`(旧)
-- `buildPerReserveInputs`(旧, position-based) / `simulatePortfolioPositions`(标记 @deprecated)
+- `buildPerReserveInputs`(旧, position-based) / `simulatePortfolioPositions` / `SimulatePortfolioPositionsArgs`
 - `entriesToPositions` / `positions` 派生 / 10 个 deprecated actions
 
 ---
 
-## Suggested Skills
+## Architecture Guards (10 条)
 
-- `verification-before-completion` — 浏览器验证 disabled input + minus button
-- `webapp-testing` / `playwright-interactive` — 交互验证
+1. PortfolioPanel uses `entries` prop (not `positions`)
+2. PortfolioTokenRow uses `entry` prop (not `supplyPosition/borrowPosition`)
+3. PortfolioResultsTable uses `entries` prop (not `positions`)
+4. PortfolioSnapshot.entries is required (`positions` field removed)
+5. `PortfolioPosition` interface does not exist in non-test source
+6. `portfolioMerger.ts` file does not exist
+7. `getWalletSyncState` does not exist in portfolioWalletSync
+8. `convertWalletPositionsToPortfolio` does not exist
+9. `simulatePortfolioPositions` does not exist
+10. `entriesToPositions` does not exist in usePortfolioSimulation
+
+---
 
 ## 注意事项
 
 - Supply-Borrow 不可分：添加/移除 token 必须同时操作 supply+borrow（见 design-principles §7）
-- `simulatePortfolioPositions` 保留为 @deprecated 入口，后续可删
-- `SimulatePortfolioPositionsArgs.positions` 改为内联类型（不再引用 PortfolioPosition）
+- `PortfolioReserveEntry` 从类型层面保证不可分；`addReserve` 总是创建 supply+borrow 两侧
