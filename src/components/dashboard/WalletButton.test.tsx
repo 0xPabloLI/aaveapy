@@ -3,6 +3,10 @@ import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { WalletButton } from './WalletButton'
 import { useWallet } from '@/hooks/useWallet'
+import {
+  HEADER_CONTROL_AFFORDANCE_ICON_CLASS,
+  HEADER_CONTROL_TRANSITION_DURATION,
+} from '@/lib/headerControlStyles'
 
 afterEach(cleanup)
 
@@ -213,15 +217,17 @@ describe('WalletButton — chevron affordance (connected, desktop)', () => {
     expect(chevron).toBeTruthy()
   })
 
-  it('chevron inherits parent color (no hardcoded text-muted-foreground) and has rotation transition wired', () => {
+  it('chevron inherits parent color and uses shared affordance/duration tokens', () => {
     const { container } = render(<WalletButton />)
     const chevron = container.querySelector('svg.lucide-chevron-down') as SVGElement | null
     expect(chevron).toBeTruthy()
     const cls = chevron!.getAttribute('class') ?? ''
     expect(cls).not.toContain('text-muted-foreground')
+    expect(cls).not.toContain('opacity-60')
+    expect(cls).toContain(HEADER_CONTROL_AFFORDANCE_ICON_CLASS)
     expect(cls).toContain('transition-transform')
+    expect(cls).toContain(HEADER_CONTROL_TRANSITION_DURATION)
     expect(cls).toContain('group-data-[state=open]:rotate-180')
-    expect(cls).toContain('opacity-60')
   })
 
   it('trigger button carries the `group` class so chevron rotation responds to data-state', () => {

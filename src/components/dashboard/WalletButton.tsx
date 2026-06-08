@@ -14,6 +14,7 @@ import {
   HEADER_CONTROL_ICON_CLASS,
   HEADER_CONTROL_MOBILE_CLASS,
   HEADER_CONTROL_POPOVER_ITEM_CLASS,
+  HEADER_CONTROL_TRANSITION_DURATION,
 } from '@/lib/headerControlStyles'
 import {
   Popover,
@@ -100,10 +101,10 @@ export function WalletButton({ mobile = false, onWatchSubmit }: WalletButtonProp
                     {!mobile && (
                       <ChevronDown
                         className={cn(
-                          HEADER_CONTROL_AFFORDANCE_ICON_CLASS,
-                          'opacity-60 transition-transform duration-200',
-                          'group-data-[state=open]:rotate-180',
-                        )}
+                           HEADER_CONTROL_AFFORDANCE_ICON_CLASS,
+                           `transition-transform ${HEADER_CONTROL_TRANSITION_DURATION}`,
+                           'group-data-[state=open]:rotate-180',
+                         )}
                         aria-hidden
                       />
                     )}

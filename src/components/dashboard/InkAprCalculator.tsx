@@ -3,6 +3,10 @@ import { ChevronDown, ExternalLink, Info } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { FormulaBlock, InfoIconButton, DesktopTooltip, MobileTooltip } from '@/components/dashboard/AprApyToggle';
+import {
+  HEADER_CONTROL_AFFORDANCE_ICON_CLASS,
+  HEADER_CONTROL_TRANSITION_DURATION,
+} from '@/lib/headerControlStyles';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useCoingeckoFdv } from '@/hooks/useCoingeckoFdv';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -906,7 +910,7 @@ const InkAprCalculator = ({
       <Collapsible open={isReferenceOpen} onOpenChange={setIsReferenceOpen} className="mt-[var(--ds-space-0-5)] -mb-1">
         <CollapsibleTrigger className="flex items-center gap-[var(--ds-space-1-5)] ds-text-11 text-muted-foreground hover:text-foreground transition-colors w-full py-1.5">
           <ChevronDown 
-            className={`w-3.5 h-3.5 transition-transform duration-200 ${isReferenceOpen ? 'rotate-180' : ''}`} 
+            className={`${HEADER_CONTROL_AFFORDANCE_ICON_CLASS} transition-transform ${HEADER_CONTROL_TRANSITION_DURATION} ${isReferenceOpen ? 'rotate-180' : ''}`} 
           />
           <span>Reference FDVs</span>
           <span className="ds-text-11 text-muted-foreground/50">(CEX chain tokens)</span>

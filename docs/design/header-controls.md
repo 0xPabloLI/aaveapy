@@ -13,6 +13,7 @@ Header 区域所有交互控件（FAQ 链接、Wallet 按钮、时钟 popover、
 | `HEADER_CONTROL_DESKTOP_ACTIVE_CLASS` | 同上 | — | 同上 | 桌面端已连接钱包等"激活"态（前景色） |
 | `HEADER_CONTROL_ICON_CLASS` | — | **16px** (`w-4 h-4`) | **16px** | 主图标（Wallet / HelpCircle / Eye…） |
 | `HEADER_CONTROL_AFFORDANCE_ICON_CLASS` | — | **14px** (`w-3.5 h-3.5`) | **14px** | 次级/装饰图标（Chevron / 时钟 / popover 列表项） |
+| `HEADER_CONTROL_TRANSITION_DURATION` | — | `duration-200` (200ms) | `duration-200` | Chevron 旋转过渡时长（IncentiveTooltip 除外，保持 `duration-150`） |
 | `HEADER_CONTROL_INNER_GAP_CLASS` | `--ds-space-1` | **4px** | **4px** | 控件内部 图标↔文字 间距 |
 | `HEADER_CONTROL_GROUP_GAP_CLASS` | `--ds-space-1` | — | **4px** | 同组兄弟控件水平间距（如 Connect + View address） |
 | `HEADER_CONTROL_POPOVER_ITEM_CLASS` | `--ds-space-2` / `--ds-space-1-5` / `--ds-text-11` | 11px 字号 | 11px 字号 | Popover 内列表行（Switch / Disconnect） |
@@ -76,3 +77,51 @@ import { HEADER_CONTROL_DESKTOP_CLASS, HEADER_CONTROL_ICON_CLASS } from '@/lib/h
 | `src/components/dashboard/WalletButton.tsx` | 消费者：Connect / View address / 已连接态 + popover |
 | `src/components/dashboard/WatchAddressInput.tsx` | 消费者：watch 地址输入框、Confirm / Cancel 圆按钮 |
 | `src/test/header-controls.test.ts` | 视觉回归 / 一致性守卫 |
+
+## 5. Chevron Affordance Icon 规范
+
+Header 区域内所有可展开/折叠控件的 chevron 图标（`ChevronDown`）必须遵守以下规则：
+
+### 尺寸与 token
+
+- Chevron 图标尺寸 **统一 14px**，使用 `HEADER_CONTROL_AFFORDANCE_ICON_CLASS`（`w-3.5 h-3.5`）。
+- **禁止**使用 `h-4 w-4`（16px）或其他硬编码尺寸。
+
+### 过渡时长
+
+- Chevron 旋转过渡时长使用 `HEADER_CONTROL_TRANSITION_DURATION`（`duration-200`）。
+- **例外**：`IncentiveTooltip` 的 chevron 保持 `duration-150` 不变（语义为"轻量级提示"而非"控件展开"）。
+- **禁止**在 header 控件文件中硬编码 `duration-200`；必须使用 token。
+
+### 颜色
+
+- Chevron 颜色 **纯继承父色**（`currentColor`），不附加任何 opacity 修饰。
+- **禁止**添加 `opacity-60` 或类似透明度类。如果需要弱化视觉权重，在父元素上统一调整 `text-muted-foreground`，不在 icon 本身上加 opacity。
+
+### 旋转驱动方式
+
+- **WalletButton**：保留 CSS `group-data-[state=open]:rotate-180` 驱动（Radix 原语）。
+- **其余组件**：使用 JS 布尔条件驱动 `rotate-180`（如 `data-[state=open]:rotate-180` 或条件 className）。
+- **禁止**在不同组件间"统一"旋转驱动方式；两种模式各有语义，不应强行对齐。
+
+### 消费者清单
+
+| 组件 | 尺寸 token | 时长 token | 旋转驱动 |
+|---|---|---|---|
+| `WalletButton` | ✅ `AFFORDANCE_ICON` | ✅ `TRANSITION_DURATION` | CSS `group-data-[state=open]` |
+| `accordion.tsx` | ✅ `AFFORDANCE_ICON` | ✅ `TRANSITION_DURATION` | JS 条件 |
+| `InkAprCalculator` | ✅ `AFFORDANCE_ICON` | ✅ `TRANSITION_DURATION` | JS 条件 |
+| `IncentiveTooltip` | ✅ `AFFORDANCE_ICON` | ⏭ `duration-150`（例外） | JS 条件 |
+
+### 否定条款（守卫测试强制）
+
+在 `HEADER_CONTROL_FILES`（Header.tsx, WalletButton.tsx, WatchAddressInput.tsx, accordion.tsx）中：
+
+- ❌ 不允许出现 `h-4 w-4`（16px chevron）
+- ❌ 不允许出现 `opacity-60`
+- ❌ 不允许出现硬编码 `duration-200`（必须用 token）
+
+在 chevron 消费者（含 InkAprCalculator.tsx, IncentiveTooltip.tsx）中：
+
+- ❌ ChevronDown 相关行不允许出现硬编码 `w-3.5 h-3.5`（必须用 `HEADER_CONTROL_AFFORDANCE_ICON_CLASS`）
+- ❌ ChevronDown 相关行不允许出现 `opacity-60`

@@ -2,12 +2,14 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import {
+  HEADER_CONTROL_AFFORDANCE_ICON_CLASS,
   HEADER_CONTROL_DESKTOP_ACTIVE_CLASS,
   HEADER_CONTROL_DESKTOP_CLASS,
   HEADER_CONTROL_FOCUS_RING_CLASS,
   HEADER_CONTROL_ICON_CLASS,
   HEADER_CONTROL_MOBILE_CLASS,
   HEADER_CONTROL_POPOVER_ITEM_CLASS,
+  HEADER_CONTROL_TRANSITION_DURATION,
 } from '@/lib/headerControlStyles'
 
 /**
@@ -29,6 +31,16 @@ const CONSUMERS = [
   'components/dashboard/Header.tsx',
   'components/dashboard/WalletButton.tsx',
   'components/dashboard/WatchAddressInput.tsx',
+  'components/ui/accordion.tsx',
+  'components/dashboard/InkAprCalculator.tsx',
+  'components/dashboard/IncentiveTooltip.tsx',
+] as const
+
+const HEADER_CONTROL_FILES = [
+  'components/dashboard/Header.tsx',
+  'components/dashboard/WalletButton.tsx',
+  'components/dashboard/WatchAddressInput.tsx',
+  'components/ui/accordion.tsx',
 ] as const
 
 describe('Header controls: token contract', () => {
@@ -63,6 +75,14 @@ describe('Header controls: token contract', () => {
     expect(HEADER_CONTROL_DESKTOP_CLASS).toContain('px-[var(--ds-space-2)]')
     expect(HEADER_CONTROL_DESKTOP_CLASS).toContain('py-[var(--ds-space-1)]')
   })
+
+  it('chevron affordance icon size is 14px (w-3.5 h-3.5)', () => {
+    expect(HEADER_CONTROL_AFFORDANCE_ICON_CLASS).toBe('w-3.5 h-3.5')
+  })
+
+  it('transition duration token resolves to duration-200', () => {
+    expect(HEADER_CONTROL_TRANSITION_DURATION).toBe('duration-200')
+  })
 })
 
 describe('Header controls: consumers reference shared tokens', () => {
@@ -83,15 +103,48 @@ describe('Header controls: no hardcoded geometry regressions', () => {
     { name: 'small focus ring (use shared focus ring)', re: /focus-visible:ring-1\b/ },
     { name: 'inline px-2 py-1 (use --ds-space-* tokens)', re: /\bpx-2 py-1\b/ },
     { name: 'inline gap-1 on header controls (use ds-space-1)', re: /className="[^"]*\bgap-1\b[^"]*"/ },
+    { name: 'hardcoded h-4 w-4 chevron (use HEADER_CONTROL_AFFORDANCE_ICON_CLASS)', re: /\bh-4\s+w-4\b/ },
+    { name: 'hardcoded opacity-60 on chevron (chevron inherits parent color)', re: /opacity-60/ },
+    { name: 'hardcoded duration-200 (use HEADER_CONTROL_TRANSITION_DURATION)', re: /duration-200/ },
   ]
 
-  for (const file of CONSUMERS) {
+  for (const file of HEADER_CONTROL_FILES) {
     const src = read(file)
     for (const { name, re } of FORBIDDEN) {
       it(`${file} has no ${name}`, () => {
         expect(src).not.toMatch(re)
       })
     }
+  }
+})
+
+describe('Chevron consumers: no hardcoded chevron geometry', () => {
+  const CHEVRON_CONSUMERS = [
+    'components/dashboard/InkAprCalculator.tsx',
+    'components/dashboard/IncentiveTooltip.tsx',
+  ] as const
+
+  for (const file of CHEVRON_CONSUMERS) {
+    const src = read(file)
+    it(`${file} chevron uses HEADER_CONTROL_AFFORDANCE_ICON_CLASS (no inline w-3.5 h-3.5 on ChevronDown)`, () => {
+      const chevronLines = src.split('\n').filter(l => /ChevronDown/.test(l) || (/className/.test(l) && /transition-transform/.test(l)))
+      for (const line of chevronLines) {
+        expect(line).not.toMatch(/\bw-3\.5\s+h-3\.5\b/)
+        expect(line).not.toMatch(/\bh-4\s+w-4\b/)
+      }
+    })
+    it(`${file} chevron has no hardcoded opacity-60`, () => {
+      const chevronLines = src.split('\n').filter(l => /ChevronDown/.test(l))
+      for (const line of chevronLines) {
+        expect(line).not.toMatch(/opacity-60/)
+      }
+    })
+    it(`${file} chevron has no hardcoded duration-200 (use token or keep non-200 duration)`, () => {
+      const chevronLines = src.split('\n').filter(l => /ChevronDown/.test(l))
+      for (const line of chevronLines) {
+        expect(line).not.toMatch(/duration-200/)
+      }
+    })
   }
 })
 
@@ -106,7 +159,9 @@ describe('Header controls: WatchAddressInput exposes confirm + cancel affordance
     expect(src).toMatch(/aria-label="Cancel"/)
   })
 
-  it('uses the shared focus ring token', () => {
-    expect(src).toContain('HEADER_CONTROL_FOCUS_RING_CLASS')
+  it('uses cnDsInputSurface for input styling (DESIGN.md §4)', () => {
+    expect(src).toContain('cnDsInputSurface')
+    expect(src).not.toContain('HEADER_CONTROL_INPUT_CLASS')
+    expect(src).not.toContain('border-border/40')
   })
 })

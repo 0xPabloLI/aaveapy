@@ -17,6 +17,9 @@ export const HEADER_CONTROL_ICON_CLASS = 'w-4 h-4'
 /** Smaller icon used for trailing affordances (chevrons, dots, popover items). */
 export const HEADER_CONTROL_AFFORDANCE_ICON_CLASS = 'w-3.5 h-3.5'
 
+/** Transition duration for chevron rotation in header controls. */
+export const HEADER_CONTROL_TRANSITION_DURATION = 'duration-200'
+
 /** Gap between icon and label inside a header control. */
 export const HEADER_CONTROL_INNER_GAP_CLASS = 'gap-[var(--ds-space-1)]'
 
@@ -41,16 +44,6 @@ export const HEADER_CONTROL_DISABLED_CLASS =
 /** Error treatment for header-control inputs. */
 export const HEADER_CONTROL_ERROR_CLASS =
   'border-destructive text-destructive focus-visible:ring-destructive'
-
-/** Input field used inside header controls, e.g. View address. */
-export const HEADER_CONTROL_INPUT_CLASS = [
-  'ds-text-14 h-[var(--ds-control-h)] rounded-full px-[var(--ds-space-3)] outline-none',
-  'transition-colors',
-  'bg-card/60 border border-border/40 text-foreground',
-  HEADER_CONTROL_HOVER_CLASS,
-  HEADER_CONTROL_DISABLED_CLASS,
-  HEADER_CONTROL_FOCUS_RING_CLASS,
-].join(' ')
 
 /** Circular icon action used next to header-control inputs. */
 export const HEADER_CONTROL_ICON_BUTTON_CLASS = [

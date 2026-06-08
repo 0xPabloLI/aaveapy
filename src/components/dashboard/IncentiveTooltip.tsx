@@ -23,6 +23,7 @@ import {
   getBrevisCampaignStartedAt,
 } from '@/lib/brevis';
 import { isCampaignActive } from '@/lib/campaignGroups';
+import { HEADER_CONTROL_AFFORDANCE_ICON_CLASS } from '@/lib/headerControlStyles';
 import { collectRecentlyEndedCampaigns, type RecentlyEndedCampaign } from '@/lib/recentlyEndedCampaigns';
 import { adjustTooltipAnchorForScroll, getWindowScroll } from '@/lib/tooltipPosition';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -155,7 +156,7 @@ function RecentlyEndedSection({ reserve, type, isDark, isMobile }: RecentlyEnded
           <span>Recently Ended ({sources.length})</span>
         </span>
         <ChevronDown
-          className={`w-3.5 h-3.5 transition-transform duration-150 ${expanded ? 'rotate-180' : ''}`}
+          className={`${HEADER_CONTROL_AFFORDANCE_ICON_CLASS} transition-transform duration-150 ${expanded ? 'rotate-180' : ''}`}
         />
       </button>
       {expanded && (
