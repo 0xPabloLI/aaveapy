@@ -920,7 +920,7 @@ const ReservesTable = ({
     desktopStickyScenarioRef,
     desktopStickyTheadRef,
     tableInView,
-  } = useReservesLayoutRefs({ isMobile });
+  } = useReservesLayoutRefs({ isMobile, isPortfolioMode });
 
   // Mobile card view — compact bottom padding (safe area + small breathing room)
   if (isMobile) {
@@ -1035,7 +1035,10 @@ const ReservesTable = ({
       <div
         ref={desktopStickyScenarioRef}
         data-reserves-sticky-scenario
-        className="sticky top-0 z-20 rounded-t-[calc(1rem-1px)] border-b border-border/60 bg-card p-[var(--ds-space-3)]"
+        className={cn(
+          'rounded-t-[calc(1rem-1px)] border-b border-border/60 bg-card p-[var(--ds-space-3)]',
+          !isPortfolioMode && 'sticky top-0 z-20',
+        )}
       >
         {scenarioControls}
       </div>

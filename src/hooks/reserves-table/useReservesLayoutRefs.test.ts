@@ -171,6 +171,33 @@ describe('useReservesLayoutRefs', () => {
     unmount();
   });
 
+  it('sets scenario-height to 0px when isPortfolioMode is true (desktop)', () => {
+    const card = document.createElement('div');
+    const scenarioEl = document.createElement('div');
+    scenarioEl.getBoundingClientRect = () => ({ height: 40 }) as unknown as DOMRect;
+    const theadEl = document.createElement('thead');
+    theadEl.getBoundingClientRect = () => ({ height: 24 }) as unknown as DOMRect;
+
+    renderHook(() => {
+      const r = useReservesLayoutRefs({ isMobile: false, isPortfolioMode: true });
+      r.desktopTableCardRef.current = card;
+      r.desktopStickyScenarioRef.current = scenarioEl;
+      r.desktopStickyTheadRef.current = theadEl;
+      return r;
+    });
+
+    renderHook(() => {
+      const r = useReservesLayoutRefs({ isMobile: false, isPortfolioMode: true });
+      r.desktopTableCardRef.current = card;
+      r.desktopStickyScenarioRef.current = scenarioEl;
+      r.desktopStickyTheadRef.current = theadEl;
+      return r;
+    });
+
+    expect(card.style.getPropertyValue('--reserves-sticky-scenario-height')).toBe('0px');
+    expect(card.style.getPropertyValue('--reserves-expanded-main-row-top')).toBe('24px');
+  });
+
   it('publishes expanded-main-row-top when thead height > 0', () => {
     const card = document.createElement('div');
     const scenarioEl = document.createElement('div');

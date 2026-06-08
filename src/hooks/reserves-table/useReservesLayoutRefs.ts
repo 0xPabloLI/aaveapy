@@ -22,6 +22,7 @@ import { useEffect, useRef, useState } from 'react';
  */
 export interface UseReservesLayoutRefsArgs {
   isMobile: boolean;
+  isPortfolioMode?: boolean;
 }
 
 export interface UseReservesLayoutRefsResult {
@@ -35,6 +36,7 @@ export interface UseReservesLayoutRefsResult {
 
 export const useReservesLayoutRefs = ({
   isMobile,
+  isPortfolioMode = false,
 }: UseReservesLayoutRefsArgs): UseReservesLayoutRefsResult => {
   const mobileTableRef = useRef<HTMLDivElement>(null);
   const desktopTableCardRef = useRef<HTMLDivElement>(null);
@@ -61,7 +63,8 @@ export const useReservesLayoutRefs = ({
     const card = desktopTableCardRef.current;
     if (!stickyEl || !card) return undefined;
     const apply = () => {
-      const scenarioH = stickyEl.getBoundingClientRect().height;
+      const measuredH = stickyEl.getBoundingClientRect().height;
+      const scenarioH = isPortfolioMode ? 0 : measuredH;
       card.style.setProperty('--reserves-sticky-scenario-height', `${scenarioH}px`);
       const theadH =
         theadEl instanceof HTMLElement ? theadEl.getBoundingClientRect().height : 0;
@@ -85,7 +88,7 @@ export const useReservesLayoutRefs = ({
       card.style.removeProperty('--reserves-sticky-scenario-height');
       card.style.removeProperty('--reserves-expanded-main-row-top');
     };
-  }, [isMobile]);
+  }, [isMobile, isPortfolioMode]);
 
   return {
     mobileTableRef,

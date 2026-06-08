@@ -122,10 +122,19 @@ Market chip 外链优先级：tydro > aaveV4MarketUrl (spoke) > aaveMarketUrl (V
 
 _Avoid_: `buildAavePro*`（已重命名为 `buildAaveV4*`），`AAVE_PRO_BASE`（已重命名为 `AAVE_V4_BASE`）
 
+**Block Explorer**:
+第三方 chain-level 区块链浏览器（Etherscan / Routescan / Blockscout / OKLink 四大 family），用于查询 address / tx / contract storage / read proxy 等链上信息。与 Aave 官方 URL 不同：Block Explorer **不是 Aave 维护的**，跳转后离开 aaveapy 域名，进入第三方站点的 trust boundary。每个 base URL 在 `src/lib/explorerIconMap.ts` 注册到对应 brand（`etherscan` / `routescan` / `blockscout` / `oklink` 之一，1:N 去重）。
+_Avoid_: explorer URL、scan URL、chain browser（跟 aaveapy 自有链概念混淆）
+
+**Block Explorer Icon** (`ExplorerIconStack`):
+`AssetActionMenu` 中 4 个 explorer item（`token-explorer` / `pool-explorer` / `hub-explorer` / `spoke-explorer`）trailing 位置展示的视觉 = 链网络 icon + 该 explorer base 对应 brand icon **并排叠放**（12×12，1/3 overlap）。从 `getExplorerIconSrc(base)` 拉 brand 图标，与 chain icon 共同渲染。Asset 缺失时静默 fallback：仅 explorer 缺失 → 只显示 chain icon；仅 chain 缺失 → 只显示 explorer icon；双空 → 隐藏整个 trailing slot。不 console.warn（运行时噪音与已建模的 missing 状态重复）。
+_Avoid_: 在 trailing 位置放链网络 icon 单独表示 explorer（缺失 explorer brand 识别）、`!warn when icon missing`（破坏 `silent fallback` 约定）
+
 ## Wallet Portfolio
 
 **Portfolio Mode**:
 Multi-reserve simulation mode where users manage aggregate positions across multiple assets (supply/borrow per reserve). Toggled via `PortfolioModeToggle`; internally `SimulationMode = 'single' | 'portfolio'`. UI uses "Portfolio" label exclusively — no "Batch" anywhere.
+**Sticky behavior**: In Portfolio mode, the scenario bar (containing PortfolioPanel) is **not sticky** on both desktop and mobile — it scrolls naturally with the page. This prevents the panel from trapping content when it exceeds viewport height. Single mode keeps the scenario bar sticky at viewport top. See ADR-0013.
 _Avoid_: Batch Mode, Batch toggle, "Build your batch portfolio"
 
 **Snapshot Feature Flag**:
