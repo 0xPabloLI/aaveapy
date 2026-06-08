@@ -1,13 +1,13 @@
-import type { PortfolioPosition, WalletSyncState } from '@/types/portfolio'
+import type { PortfolioSideData, WalletSyncState } from '@/types/portfolio'
 import { computeDelta } from './deltaCalculator'
 
-export function getWalletSyncState(pos: PortfolioPosition): WalletSyncState {
-  if (pos.walletValue === null) return 'manual'
-  if (pos.inputMode !== 'usd') return 'modified'
+export function getSideSyncState(side: PortfolioSideData): WalletSyncState {
+  if (side.walletValue === null) return 'manual'
+  if (side.inputMode !== 'usd') return 'modified'
   const { deltaUsd } = computeDelta({
-    amount: pos.amount,
-    walletValue: pos.walletValue,
-    inputMode: pos.inputMode,
+    amount: side.amount,
+    walletValue: side.walletValue,
+    inputMode: side.inputMode,
   })
   if (deltaUsd === 0) return 'synced'
   return 'modified'

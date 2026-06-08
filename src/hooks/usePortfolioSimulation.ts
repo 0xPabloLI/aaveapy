@@ -5,15 +5,13 @@
  * results by delegating to `buildRateSimulationResult`, and aggregates via
  * `portfolioCalculator`.
  *
- * Primary state: `entries: PortfolioReserveEntry[]` (new API).
- * Derived: `positions: PortfolioPosition[]` (legacy, one position per side).
+ * Primary state: `entries: PortfolioReserveEntry[]`.
  */
 
 import { useCallback, useMemo, useRef, useState } from 'react';
 import type {
   DeltaSign,
   PortfolioInputMode,
-  PortfolioPosition,
   PortfolioPositionResult,
   PortfolioReserveEntry,
   PortfolioSide,
@@ -23,54 +21,15 @@ import type {
 } from '@/types/portfolio';
 import {
   aggregatePortfolioSummary,
-  resolvePositionAmountUsd as _resolvePositionAmountUsd,
-  buildPortfolioPositionResult as _buildPortfolioPositionResult,
   convertPortfolioInputAmount,
   formatConvertedAmount,
 } from '@/lib/portfolioCalculator';
 import { computeDelta } from '@/lib/deltaCalculator';
 
-let nextPositionId = 1;
-const generatePositionId = (): string => `port-${nextPositionId++}`;
-
 let nextSnapshotId = 1;
 const generateSnapshotId = (): string => `snap-${nextSnapshotId++}`;
 
-// ---------------------------------------------------------------------------
-// Entry ↔ Position conversion helpers
-// ---------------------------------------------------------------------------
-
 const EMPTY_SIDE = { amount: '', inputMode: 'usd' as const, walletValue: null };
-
-function entriesToPositions(entries: PortfolioReserveEntry[]): PortfolioPosition[] {
-  return entries.flatMap((e) => {
-    const sides: PortfolioPosition[] = [];
-    const makePos = (side: PortfolioSide, s: PortfolioReserveEntry['supply']): PortfolioPosition => ({
-      positionId: `${e.reserveId}::${side}`,
-      reserveId: e.reserveId,
-      marketName: e.marketName,
-      chainName: e.chainName,
-      tokenSymbol: e.tokenSymbol,
-      side,
-      amount: s.amount,
-      inputMode: s.inputMode,
-      walletValue: s.walletValue,
-      hidden: e.hidden,
-      isOrphan: e.isOrphan,
-      source: s.source,
-      deltaSign: s.deltaSign ?? 1,
-    });
-    if (e.hidden && e.supply.walletValue === null && e.borrow.walletValue !== null) {
-      sides.push(makePos('borrow', e.borrow));
-    } else if (e.hidden && e.borrow.walletValue === null && e.supply.walletValue !== null) {
-      sides.push(makePos('supply', e.supply));
-    } else {
-      sides.push(makePos('supply', e.supply));
-      sides.push(makePos('borrow', e.borrow));
-    }
-    return sides;
-  });
-}
 
 function mergeEntriesWithDelta(
   current: PortfolioReserveEntry[],
@@ -133,73 +92,29 @@ function mergeSideWithDelta(
 // ---------------------------------------------------------------------------
 
 export interface PortfolioSimulationActions {
-  /** Toggle portfolio mode on/off. */
   setActive: (active: boolean) => void;
-  /** Add a reserve entry (supply + borrow together). No-op if reserveId already exists. */
   addReserve: (params: {
     reserveId: string;
     marketName: string;
     chainName: string;
     tokenSymbol: string;
   }) => void;
-  /** Remove an entire reserve entry by reserveId. */
   removeReserve: (reserveId: string) => void;
-  /** Patch specific fields on a reserve entry. priceInUsd used for inputMode conversion. */
   updateReserve: (reserveId: string, patch: ReservePatch, priceInUsd?: number) => void;
-  /** Hide a reserve entry (soft delete). */
   hideReserve: (reserveId: string) => void;
-  /** Unhide a reserve entry. */
   unhideReserve: (reserveId: string) => void;
-  /** Import wallet entries with delta-preserving merge. */
   importReserves: (incoming: PortfolioReserveEntry[]) => void;
-  /** Restore one or both sides to wallet values. */
   restoreToWallet: (reserveId: string, side?: PortfolioSide) => void;
-  /** Remove all entries. */
+  removeHiddenEntries: () => number;
   clearAll: () => void;
-  /** Save current state as a named snapshot. */
   saveSnapshot: (label: string, results?: PortfolioPositionResult[], summary?: PortfolioSummary) => void;
-  /** Delete a saved snapshot. */
   deleteSnapshot: (snapshotId: string) => void;
-  /** Undo the most recent removeReserve call. Returns true if anything was restored. */
   undoLastRemove: () => boolean;
-
-  // --- Legacy position-level actions (deprecated, will be removed after UI migration) ---
-  /** @deprecated Use addReserve instead. */
-  addPosition: (params: {
-    reserveId: string;
-    marketName: string;
-    chainName: string;
-    tokenSymbol: string;
-    side: PortfolioSide;
-    amount?: string;
-    inputMode?: PortfolioInputMode;
-  }) => string;
-  /** @deprecated Use removeReserve instead. */
-  removePosition: (positionId: string) => void;
-  /** @deprecated Use updateReserve instead. */
-  updateAmount: (positionId: string, amount: string) => void;
-  /** @deprecated */
-  updateDeltaSign: (positionId: string, sign: DeltaSign) => void;
-  /** @deprecated Use updateReserve instead. */
-  updateInputMode: (positionId: string, mode: PortfolioInputMode, priceInUsd?: number) => void;
-  /** @deprecated Use importReserves instead. */
-  importPositions: (incoming: PortfolioPosition[]) => void;
-  /** @deprecated Use unhideReserve instead. */
-  restorePosition: (positionId: string) => void;
-  /** @deprecated Use hideReserve/unhideReserve instead. */
-  toggleHidden: (positionId: string) => void;
-  /** @deprecated Use hideOrRemoveReserveAction instead. */
-  hideOrRemoveReserveAction: (reserveId: string) => void;
-  /** @deprecated Use unhideReserve instead. */
-  unhideReserveAction: (reserveId: string) => void;
 }
 
 export interface UsePortfolioSimulationReturn {
   active: boolean;
-  /** Reserve-level entries (primary API). */
   entries: PortfolioReserveEntry[];
-  /** @deprecated Side-level positions (derived from entries). Use entries instead. */
-  positions: PortfolioPosition[];
   snapshots: PortfolioSnapshot[];
   actions: PortfolioSimulationActions;
 }
@@ -213,10 +128,8 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
   const [entries, setEntries] = useState<PortfolioReserveEntry[]>([]);
   const [snapshots, setSnapshots] = useState<PortfolioSnapshot[]>([]);
   const lastRemoveSnapshotRef = useRef<PortfolioReserveEntry[] | null>(null);
-
-  const positions = useMemo(() => entriesToPositions(entries), [entries]);
-
-  // --- Entry-level actions ---
+  const entriesRef = useRef(entries);
+  entriesRef.current = entries;
 
   const addReserve = useCallback(
     (params: { reserveId: string; marketName: string; chainName: string; tokenSymbol: string }) => {
@@ -293,6 +206,8 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
             }
             borrow = { ...borrow, inputMode: patch.borrowInputMode, amount: newAmount };
           }
+          if (patch.supplyDeltaSign !== undefined) supply = { ...supply, deltaSign: patch.supplyDeltaSign };
+          if (patch.borrowDeltaSign !== undefined) borrow = { ...borrow, deltaSign: patch.borrowDeltaSign };
 
           return { ...e, supply, borrow };
         }),
@@ -337,6 +252,14 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
     );
   }, []);
 
+  const removeHiddenEntries = useCallback((): number => {
+    const currentEntries = entriesRef.current;
+    const hiddenCount = currentEntries.filter((e) => e.hidden).length;
+    if (hiddenCount === 0) return 0;
+    setEntries((prev) => prev.filter((e) => !e.hidden));
+    return hiddenCount;
+  }, []);
+
   const clearAll = useCallback(() => {
     setEntries([]);
   }, []);
@@ -368,183 +291,6 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
     return true;
   }, []);
 
-  // --- Legacy position-level actions (operate on entries internally) ---
-
-  const addPosition = useCallback(
-    (params: {
-      reserveId: string;
-      marketName: string;
-      chainName: string;
-      tokenSymbol: string;
-      side: PortfolioSide;
-      amount?: string;
-      inputMode?: PortfolioInputMode;
-    }): string => {
-      const positionId = `${params.reserveId}::${params.side}`;
-      setEntries((prev) => {
-        const existing = prev.find((e) => e.reserveId === params.reserveId);
-        if (existing) {
-          return prev.map((e) => {
-            if (e.reserveId !== params.reserveId) return e;
-            return {
-              ...e,
-              [params.side]: {
-                ...e[params.side],
-                amount: params.amount ?? e[params.side].amount,
-                inputMode: params.inputMode ?? e[params.side].inputMode,
-              },
-            };
-          });
-        }
-        return [
-          ...prev,
-          {
-            reserveId: params.reserveId,
-            marketName: params.marketName,
-            chainName: params.chainName,
-            tokenSymbol: params.tokenSymbol,
-            supply: params.side === 'supply'
-              ? { amount: params.amount ?? '', inputMode: params.inputMode ?? 'usd', walletValue: null }
-              : { ...EMPTY_SIDE },
-            borrow: params.side === 'borrow'
-              ? { amount: params.amount ?? '', inputMode: params.inputMode ?? 'usd', walletValue: null }
-              : { ...EMPTY_SIDE },
-            hidden: false,
-            isOrphan: false,
-          },
-        ];
-      });
-      return positionId;
-    },
-    [],
-  );
-
-  const removePosition = useCallback((positionId: string) => {
-    const reserveId = positionId.split('::')[0];
-    setEntries((prev) => prev.filter((e) => e.reserveId !== reserveId));
-  }, []);
-
-  const updateAmount = useCallback((positionId: string, amount: string) => {
-    const [reserveId, sideStr] = positionId.split('::');
-    const side = sideStr as PortfolioSide;
-    setEntries((prev) =>
-      prev.map((e) => {
-        if (e.reserveId !== reserveId) return e;
-        return { ...e, [side]: { ...e[side], amount } };
-      }),
-    );
-  }, []);
-
-  const updateDeltaSign = useCallback((positionId: string, sign: DeltaSign) => {
-    const [reserveId, sideStr] = positionId.split('::');
-    const side = sideStr as PortfolioSide;
-    setEntries((prev) =>
-      prev.map((e) => {
-        if (e.reserveId !== reserveId) return e;
-        return { ...e, [side]: { ...e[side], deltaSign: sign } };
-      }),
-    );
-  }, []);
-
-  const updateInputMode = useCallback(
-    (positionId: string, mode: PortfolioInputMode, priceInUsd?: number) => {
-      const [reserveId, sideStr] = positionId.split('::');
-      const side = sideStr as PortfolioSide;
-      setEntries((prev) =>
-        prev.map((e) => {
-          if (e.reserveId !== reserveId) return e;
-          const s = e[side];
-          const currentAmount = parseFloat(s.amount);
-          let newAmount = s.amount;
-          if (priceInUsd !== undefined && s.amount.trim() !== '' && Number.isFinite(currentAmount)) {
-            const converted = convertPortfolioInputAmount(currentAmount, s.inputMode, mode, priceInUsd);
-            newAmount = converted !== null ? formatConvertedAmount(converted) : '';
-          }
-          return { ...e, [side]: { ...s, inputMode: mode, amount: newAmount } };
-        }),
-      );
-    },
-    [],
-  );
-
-  const importPositions = useCallback((incoming: PortfolioPosition[]) => {
-    const reserveMap = new Map<string, PortfolioReserveEntry>();
-    for (const pos of incoming) {
-      let entry = reserveMap.get(pos.reserveId);
-      if (!entry) {
-        entry = {
-          reserveId: pos.reserveId,
-          marketName: pos.marketName,
-          chainName: pos.chainName,
-          tokenSymbol: pos.tokenSymbol,
-          supply: { ...EMPTY_SIDE },
-          borrow: { ...EMPTY_SIDE },
-          hidden: pos.hidden,
-          isOrphan: pos.isOrphan,
-        };
-      }
-      entry = {
-        ...entry,
-        [pos.side]: {
-          amount: pos.amount,
-          inputMode: pos.inputMode,
-          walletValue: pos.walletValue,
-          source: pos.source,
-          deltaSign: pos.deltaSign,
-        },
-      };
-      reserveMap.set(pos.reserveId, entry);
-    }
-    const incomingEntries = Array.from(reserveMap.values());
-    setEntries((prev) => mergeEntriesWithDelta(prev, incomingEntries));
-  }, []);
-
-  const restorePosition = useCallback((positionId: string) => {
-    const reserveId = positionId.split('::')[0];
-    unhideReserve(reserveId);
-  }, [unhideReserve]);
-
-  const toggleHidden = useCallback((positionId: string) => {
-    const reserveId = positionId.split('::')[0];
-    setEntries((prev) =>
-      prev.map((e) => (e.reserveId === reserveId ? { ...e, hidden: !e.hidden } : e)),
-    );
-  }, []);
-
-  const hideOrRemoveReserveAction = useCallback((reserveId: string) => {
-    setEntries((prev) => {
-      const entry = prev.find((e) => e.reserveId === reserveId);
-      if (!entry) return prev;
-      const anyWallet = entry.supply.walletValue !== null || entry.borrow.walletValue !== null;
-      if (anyWallet) {
-        return prev.map((e) => {
-          if (e.reserveId !== reserveId) return e;
-          return {
-            ...e,
-            supply: {
-              ...e.supply,
-              amount: e.supply.walletValue !== null ? formatConvertedAmount(e.supply.walletValue) : '',
-              inputMode: e.supply.walletValue !== null ? 'usd' as const : e.supply.inputMode,
-              walletValue: e.supply.walletValue,
-            },
-            borrow: {
-              ...e.borrow,
-              amount: e.borrow.walletValue !== null ? formatConvertedAmount(e.borrow.walletValue) : '',
-              inputMode: e.borrow.walletValue !== null ? 'usd' as const : e.borrow.inputMode,
-              walletValue: e.borrow.walletValue,
-            },
-            hidden: true,
-          };
-        });
-      }
-      return prev.filter((e) => e.reserveId !== reserveId);
-    });
-  }, []);
-
-  const unhideReserveAction = useCallback((reserveId: string) => {
-    unhideReserve(reserveId);
-  }, [unhideReserve]);
-
   const actions = useMemo<PortfolioSimulationActions>(
     () => ({
       setActive,
@@ -555,45 +301,23 @@ export function usePortfolioSimulation(): UsePortfolioSimulationReturn {
       unhideReserve,
       importReserves,
       restoreToWallet,
+      removeHiddenEntries,
       clearAll,
       saveSnapshot,
       deleteSnapshot,
       undoLastRemove,
-      addPosition,
-      removePosition,
-      updateAmount,
-      updateDeltaSign,
-      updateInputMode,
-      importPositions,
-      restorePosition,
-      toggleHidden,
-      hideOrRemoveReserveAction,
-      unhideReserveAction,
     }),
     [
       addReserve, removeReserve, updateReserve, hideReserve, unhideReserve,
-      importReserves, restoreToWallet, clearAll, saveSnapshot, deleteSnapshot,
-      undoLastRemove, addPosition, removePosition, updateAmount, updateDeltaSign,
-      updateInputMode, importPositions, restorePosition, toggleHidden,
-      hideOrRemoveReserveAction, unhideReserveAction,
+      importReserves, restoreToWallet, removeHiddenEntries, clearAll, saveSnapshot, deleteSnapshot,
+      undoLastRemove,
     ],
   );
 
   return {
     active,
     entries,
-    positions,
     snapshots,
     actions,
   };
 }
-
-// ---------------------------------------------------------------------------
-// Re-exports from portfolioCalculator (deprecated: import from @/lib/portfolioCalculator instead)
-// ---------------------------------------------------------------------------
-
-/** @deprecated Import from @/lib/portfolioCalculator instead */
-export const resolvePositionAmountUsd = _resolvePositionAmountUsd;
-
-/** @deprecated Import from @/lib/portfolioCalculator instead */
-export const buildPortfolioPositionResult = _buildPortfolioPositionResult;

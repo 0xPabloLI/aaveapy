@@ -228,3 +228,49 @@ describe('Architecture guard: walletPositionToPortfolio must preserve source fie
     expect(src).not.toMatch(/walletSourceToPositionSource.*\/\/\s*TODO/);
   });
 });
+
+describe('Architecture guard: PortfolioReserveEntry is primary data model', () => {
+  it('PortfolioPanel uses entries prop (not positions)', () => {
+    const src = readFile('components/dashboard/PortfolioPanel.tsx');
+    expect(src).toMatch(/entries:\s*PortfolioReserveEntry\[\]/);
+    expect(src).not.toMatch(/positions:\s*PortfolioPosition\[\]/);
+  });
+
+  it('PortfolioTokenRow uses entry prop (not supplyPosition/borrowPosition)', () => {
+    const src = readFile('components/dashboard/PortfolioTokenRow.tsx');
+    expect(src).toMatch(/entry:\s*PortfolioReserveEntry/);
+    expect(src).not.toMatch(/supplyPosition:\s*PortfolioPosition/);
+  });
+
+  it('PortfolioResultsTable uses entries prop (not positions)', () => {
+    const src = readFile('components/dashboard/PortfolioResultsTable.tsx');
+    expect(src).toMatch(/entries:\s*PortfolioReserveEntry\[\]/);
+    expect(src).not.toMatch(/positions:\s*PortfolioPosition\[\]/);
+  });
+
+  it('PortfolioSnapshot.entries is required (positions field removed)', () => {
+    const src = readFile('types/portfolio.ts');
+    expect(src).toMatch(/entries:\s*PortfolioReserveEntry\[\]/);
+    expect(src).not.toMatch(/positions\?.*PortfolioPosition\[\]/);
+  });
+
+  it('PortfolioPosition type does not exist in non-test source', () => {
+    const src = readFile('types/portfolio.ts');
+    expect(src).not.toMatch(/export interface PortfolioPosition\b/);
+  });
+
+  it('portfolioMerger.ts does not exist', () => {
+    const filePath = resolve(__dirname, '..', 'lib', 'portfolioMerger.ts');
+    expect(() => readFileSync(filePath, 'utf8')).toThrow();
+  });
+
+  it('getWalletSyncState does not exist in portfolioWalletSync', () => {
+    const src = readFile('lib/portfolioWalletSync.ts');
+    expect(src).not.toMatch(/export function getWalletSyncState/);
+  });
+
+  it('convertWalletPositionsToPortfolio does not exist', () => {
+    const src = readFile('lib/walletPositionToPortfolio.ts');
+    expect(src).not.toMatch(/export function convertWalletPositionsToPortfolio/);
+  });
+});

@@ -18,7 +18,7 @@ import {
   buildReserveLookupByChainAndToken,
 } from '@/lib/userData/onchainPositionConverter';
 import { deriveV3AssetsByMarket, deriveV4ReservesBySpoke } from '@/lib/deriveOnchainConfig';
-import { convertWalletPositionsToPortfolio } from '@/lib/walletPositionToPortfolio';
+import { convertWalletPositionsToEntries } from '@/lib/walletPositionToPortfolio';
 import type { ReserveWithSpread } from '@/types/aave';
 import type { WalletPosition } from '@/lib/userData/userPositionMapper';
 
@@ -111,7 +111,7 @@ describe('SDK vs ABI Consistency (HITL)', () => {
     );
 
     const sdkPositions: WalletPosition[] = [];
-    const sdkPortfolio = convertWalletPositionsToPortfolio(sdkPositions, reserves);
+    const sdkPortfolio = convertWalletPositionsToEntries(sdkPositions, reserves);
 
     const diffs = comparePositions(sdkPositions, abiPositions);
 
@@ -202,8 +202,8 @@ describe('SDK vs ABI Consistency (HITL)', () => {
       ));
     }
 
-    const portfolio = convertWalletPositionsToPortfolio(allPositions, reserves);
-    const ids = portfolio.map((p) => p.positionId);
+    const portfolio = convertWalletPositionsToEntries(allPositions, reserves);
+    const ids = portfolio.map((e) => e.reserveId);
     const uniqueIds = new Set(ids);
 
     expect(uniqueIds.size).toBe(ids.length);

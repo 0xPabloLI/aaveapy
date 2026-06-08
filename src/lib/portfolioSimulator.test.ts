@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import type { ReserveWithSpread } from '@/types/aave';
-import type { PortfolioPosition } from '@/types/portfolio';
+import type { PortfolioReserveEntry, PortfolioSideData } from '@/types/portfolio';
 import type { RateCalcInput } from '@/lib/interestRateCalculator';
 import type { SimulationLane } from '@/lib/rateSimulationCalculator';
-import { simulatePortfolioPositions, buildPerReserveInputs, buildMetricsFromLane } from './portfolioSimulator';
-import type { SimulatePortfolioPositionsArgs } from './portfolioSimulator';
+import { simulatePortfolioPositions, buildPerReserveInputsFromEntries, buildMetricsFromLane, simulatePortfolioFromEntries } from './portfolioSimulator';
+import type { SimulatePortfolioPositionsArgs, SimulatePortfolioEntriesArgs } from './portfolioSimulator';
 
 const makeRateCalcReserve = (
   overrides: Partial<ReserveWithSpread> = {},
@@ -47,18 +47,41 @@ const makeRateCalcReserve = (
     ...overrides,
   }) as ReserveWithSpread & RateCalcInput;
 
+type InlinePosition = {
+  reserveId: string;
+  side: 'supply' | 'borrow';
+  amount: string;
+  inputMode: 'usd' | 'token';
+  walletValue: number | null;
+  hidden: boolean;
+  isOrphan: boolean;
+  deltaSign?: 1 | -1;
+};
+
 const makePosition = (
-  overrides: Partial<PortfolioPosition> = {},
-): PortfolioPosition => ({
-  positionId: 'p-1',
+  overrides: Partial<InlinePosition> = {},
+): InlinePosition => ({
   reserveId: 'r-usdc-v3',
-  marketName: 'AaveV3Ethereum',
-  chainName: 'Ethereum',
-  tokenSymbol: 'USDC',
   side: 'supply',
   amount: '10000',
   inputMode: 'usd',
   walletValue: null,
+  hidden: false,
+  isOrphan: false,
+  ...overrides,
+});
+
+const emptySide: PortfolioSideData = { amount: '', inputMode: 'usd', walletValue: null };
+
+const makeEntry = (
+  overrides: Partial<PortfolioReserveEntry> = {},
+): PortfolioReserveEntry => ({
+  reserveId: 'r-usdc-v3',
+  marketName: 'AaveV3Ethereum',
+  chainName: 'Ethereum',
+  tokenSymbol: 'USDC',
+  supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+  borrow: { ...emptySide },
   hidden: false,
   isOrphan: false,
   ...overrides,
@@ -76,18 +99,29 @@ const baseSimArgs = (
   ...overrides,
 });
 
-describe('buildPerReserveInputs', () => {
+const baseEntriesSimArgs = (
+  overrides: Partial<SimulatePortfolioEntriesArgs> = {},
+): SimulatePortfolioEntriesArgs => ({
+  entries: [],
+  reserves: [],
+  isApy: true,
+  whitelistMerklCampaignIds: undefined,
+  tydroPointToUsdRate: 0,
+  forecastStates: {},
+  ...overrides,
+});
+
+describe('buildPerReserveInputsFromEntries', () => {
   it('aggregates supply+borrow USD per reserveId', () => {
-    const positions = [
-      makePosition({ positionId: 'p1', reserveId: 'r-usdc', side: 'supply', amount: '1000' }),
-      makePosition({ positionId: 'p2', reserveId: 'r-usdc', side: 'borrow', amount: '500' }),
-      makePosition({ positionId: 'p3', reserveId: 'r-weth', side: 'supply', amount: '2000' }),
+    const entries = [
+      makeEntry({ reserveId: 'r-usdc', tokenSymbol: 'USDC', supply: { amount: '1000', inputMode: 'usd', walletValue: null }, borrow: { amount: '500', inputMode: 'usd', walletValue: null } }),
+      makeEntry({ reserveId: 'r-weth', tokenSymbol: 'WETH', supply: { amount: '2000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
     ];
     const reserves = [
       makeRateCalcReserve({ reserveId: 'r-usdc', tokenSymbol: 'USDC', tokenPrice: 1 }),
       makeRateCalcReserve({ reserveId: 'r-weth', tokenSymbol: 'WETH', tokenPrice: 3000 }),
     ];
-    const result = buildPerReserveInputs(positions, reserves);
+    const result = buildPerReserveInputsFromEntries(entries, reserves);
     expect(result.get('r-usdc')).toEqual({
       supplyInput: '1000',
       borrowInput: '500',
@@ -104,85 +138,232 @@ describe('buildPerReserveInputs', () => {
     });
   });
 
-  it('returns empty map for empty positions', () => {
-    const result = buildPerReserveInputs([], [makeRateCalcReserve()]);
+  it('returns empty map for empty entries', () => {
+    const result = buildPerReserveInputsFromEntries([], [makeRateCalcReserve()]);
     expect(result.size).toBe(0);
   });
 
-  it('skips positions with zero or invalid amount', () => {
-    const positions = [
-      makePosition({ positionId: 'p1', reserveId: 'r-usdc', side: 'supply', amount: '0' }),
-      makePosition({ positionId: 'p2', reserveId: 'r-usdc', side: 'borrow', amount: 'abc' }),
+  it('skips entries with zero or invalid amount', () => {
+    const entries = [
+      makeEntry({ reserveId: 'r-usdc', supply: { amount: '0', inputMode: 'usd', walletValue: null }, borrow: { amount: 'abc', inputMode: 'usd', walletValue: null } }),
     ];
     const reserves = [makeRateCalcReserve({ reserveId: 'r-usdc' })];
-    const result = buildPerReserveInputs(positions, reserves);
+    const result = buildPerReserveInputsFromEntries(entries, reserves);
     expect(result.size).toBe(0);
   });
 
-  it('skips positions whose reserve is not found', () => {
-    const positions = [
-      makePosition({ positionId: 'p1', reserveId: 'r-missing', side: 'supply', amount: '1000' }),
+  it('skips entries whose reserve is not found', () => {
+    const entries = [
+      makeEntry({ reserveId: 'r-missing', supply: { amount: '1000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
     ];
     const reserves = [makeRateCalcReserve({ reserveId: 'r-usdc' })];
-    const result = buildPerReserveInputs(positions, reserves);
+    const result = buildPerReserveInputsFromEntries(entries, reserves);
     expect(result.size).toBe(0);
   });
 
   it('defaults borrowInput to "0" when only supply exists', () => {
-    const positions = [
-      makePosition({ positionId: 'p1', reserveId: 'r-usdc', side: 'supply', amount: '3000' }),
+    const entries = [
+      makeEntry({ reserveId: 'r-usdc', supply: { amount: '3000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
     ];
     const reserves = [makeRateCalcReserve({ reserveId: 'r-usdc' })];
-    const result = buildPerReserveInputs(positions, reserves);
+    const result = buildPerReserveInputsFromEntries(entries, reserves);
     expect(result.get('r-usdc')).toEqual({ supplyInput: '3000', borrowInput: '0', inputMode: 'usd', principalSupplyUsd: 3000, principalBorrowUsd: 0 });
   });
 
   it('defaults supplyInput to "0" when only borrow exists', () => {
-    const positions = [
-      makePosition({ positionId: 'p1', reserveId: 'r-usdc', side: 'borrow', amount: '2000' }),
+    const entries = [
+      makeEntry({ reserveId: 'r-usdc', supply: { ...emptySide }, borrow: { amount: '2000', inputMode: 'usd', walletValue: null } }),
     ];
     const reserves = [makeRateCalcReserve({ reserveId: 'r-usdc' })];
-    const result = buildPerReserveInputs(positions, reserves);
+    const result = buildPerReserveInputsFromEntries(entries, reserves);
     expect(result.get('r-usdc')).toEqual({ supplyInput: '0', borrowInput: '2000', inputMode: 'usd', principalSupplyUsd: 0, principalBorrowUsd: 2000 });
   });
 
   it('resolves token amount to USD using tokenPrice', () => {
-    const positions = [
-      makePosition({ positionId: 'p1', reserveId: 'r-weth', side: 'supply', amount: '2', inputMode: 'token' }),
+    const entries = [
+      makeEntry({ reserveId: 'r-weth', tokenSymbol: 'WETH', supply: { amount: '2', inputMode: 'token', walletValue: null }, borrow: { ...emptySide } }),
     ];
     const reserves = [makeRateCalcReserve({ reserveId: 'r-weth', tokenSymbol: 'WETH', tokenPrice: 3000 })];
-    const result = buildPerReserveInputs(positions, reserves);
+    const result = buildPerReserveInputsFromEntries(entries, reserves);
     expect(result.get('r-weth')).toEqual({ supplyInput: '6000', borrowInput: '0', inputMode: 'usd', principalSupplyUsd: 6000, principalBorrowUsd: 0 });
   });
 
-  it('ignores hidden positions', () => {
-    const positions = [
-      makePosition({ positionId: 'p1', reserveId: 'r-usdc', side: 'supply', amount: '1000', hidden: true }),
+  it('ignores hidden entries', () => {
+    const entries = [
+      makeEntry({ reserveId: 'r-usdc', hidden: true, supply: { amount: '1000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
     ];
     const reserves = [makeRateCalcReserve({ reserveId: 'r-usdc' })];
-    const result = buildPerReserveInputs(positions, reserves);
+    const result = buildPerReserveInputsFromEntries(entries, reserves);
     expect(result.size).toBe(0);
   });
 
-  it('ignores orphan positions', () => {
-    const positions = [
-      makePosition({ positionId: 'p1', reserveId: 'r-usdc', side: 'supply', amount: '1000', isOrphan: true }),
+  it('ignores orphan entries', () => {
+    const entries = [
+      makeEntry({ reserveId: 'r-usdc', isOrphan: true, supply: { amount: '1000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
     ];
     const reserves = [makeRateCalcReserve({ reserveId: 'r-usdc' })];
-    const result = buildPerReserveInputs(positions, reserves);
+    const result = buildPerReserveInputsFromEntries(entries, reserves);
     expect(result.size).toBe(0);
+  });
+
+  it('builds per-reserve inputs from supply side', () => {
+    const reserveId = 'r-usdc-v3';
+    const reserve = makeRateCalcReserve({ reserveId });
+    const entries = [
+      makeEntry({ reserveId, supply: { amount: '5000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
+    ];
+    const result = buildPerReserveInputsFromEntries(entries, [reserve]);
+    expect(result.has(reserveId)).toBe(true);
+    const input = result.get(reserveId)!;
+    expect(input.supplyInput).toBe('5000');
+    expect(input.borrowInput).toBe('0');
+    expect(input.inputMode).toBe('usd');
+    expect(input.principalSupplyUsd).toBe(5000);
+    expect(input.principalBorrowUsd).toBe(0);
+  });
+
+  it('builds per-reserve inputs from borrow side', () => {
+    const reserveId = 'r-usdc-v3';
+    const reserve = makeRateCalcReserve({ reserveId });
+    const entries = [
+      makeEntry({ reserveId, supply: { ...emptySide }, borrow: { amount: '3000', inputMode: 'usd', walletValue: null } }),
+    ];
+    const result = buildPerReserveInputsFromEntries(entries, [reserve]);
+    expect(result.has(reserveId)).toBe(true);
+    const input = result.get(reserveId)!;
+    expect(input.supplyInput).toBe('0');
+    expect(input.borrowInput).toBe('3000');
+    expect(input.inputMode).toBe('usd');
+    expect(input.principalSupplyUsd).toBe(0);
+    expect(input.principalBorrowUsd).toBe(3000);
+  });
+
+  it('combines supply and borrow on same reserve', () => {
+    const reserveId = 'r-usdc-v3';
+    const reserve = makeRateCalcReserve({ reserveId });
+    const entries = [
+      makeEntry({ reserveId, supply: { amount: '5000', inputMode: 'usd', walletValue: null }, borrow: { amount: '3000', inputMode: 'usd', walletValue: null } }),
+    ];
+    const result = buildPerReserveInputsFromEntries(entries, [reserve]);
+    const input = result.get(reserveId)!;
+    expect(input.supplyInput).toBe('5000');
+    expect(input.borrowInput).toBe('3000');
+    expect(input.principalSupplyUsd).toBe(5000);
+    expect(input.principalBorrowUsd).toBe(3000);
+  });
+
+  it('returns empty map when no entries match reserves', () => {
+    const reserve = makeRateCalcReserve({ reserveId: 'r-usdc-v3' });
+    const entries = [
+      makeEntry({ reserveId: 'r-dai-v3', supply: { amount: '5000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
+    ];
+    const result = buildPerReserveInputsFromEntries(entries, [reserve]);
+    expect(result.size).toBe(0);
+  });
+
+  it('handles multiple reserves independently', () => {
+    const usdcId = 'r-usdc-v3';
+    const usdtId = 'r-usdt-v3';
+    const usdcReserve = makeRateCalcReserve({ reserveId: usdcId, tokenSymbol: 'USDC' });
+    const usdtReserve = makeRateCalcReserve({ reserveId: usdtId, tokenSymbol: 'USDT' });
+    const entries = [
+      makeEntry({ reserveId: usdcId, tokenSymbol: 'USDC', supply: { amount: '5000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
+      makeEntry({ reserveId: usdtId, tokenSymbol: 'USDT', supply: { ...emptySide }, borrow: { amount: '2000', inputMode: 'usd', walletValue: null } }),
+    ];
+    const result = buildPerReserveInputsFromEntries(entries, [usdcReserve, usdtReserve]);
+    expect(result.get(usdcId)!.supplyInput).toBe('5000');
+    expect(result.get(usdcId)!.borrowInput).toBe('0');
+    expect(result.get(usdcId)!.principalSupplyUsd).toBe(5000);
+    expect(result.get(usdcId)!.principalBorrowUsd).toBe(0);
+    expect(result.get(usdtId)!.supplyInput).toBe('0');
+    expect(result.get(usdtId)!.borrowInput).toBe('2000');
+    expect(result.get(usdtId)!.principalSupplyUsd).toBe(0);
+    expect(result.get(usdtId)!.principalBorrowUsd).toBe(2000);
+  });
+
+  it('wallet position unchanged: delta=0, principal=walletValue', () => {
+    const reserveId = 'r-usdc';
+    const reserve = makeRateCalcReserve({ reserveId, tokenPrice: 1 });
+    const entries = [
+      makeEntry({ reserveId, supply: { amount: '1000', inputMode: 'usd', walletValue: 1000 }, borrow: { ...emptySide } }),
+    ];
+    const result = buildPerReserveInputsFromEntries(entries, [reserve]);
+    const input = result.get(reserveId)!;
+    expect(input.supplyInput).toBe('0');
+    expect(input.principalSupplyUsd).toBe(1000);
+  });
+
+  it('wallet position with top-up: delta=positive, principal=effectiveAmount', () => {
+    const reserveId = 'r-usdc';
+    const reserve = makeRateCalcReserve({ reserveId, tokenPrice: 1 });
+    const entries = [
+      makeEntry({ reserveId, supply: { amount: '1500', inputMode: 'usd', walletValue: 1000 }, borrow: { ...emptySide } }),
+    ];
+    const result = buildPerReserveInputsFromEntries(entries, [reserve]);
+    const input = result.get(reserveId)!;
+    expect(input.supplyInput).toBe('500');
+    expect(input.principalSupplyUsd).toBe(1500);
+  });
+
+  it('wallet position with partial withdrawal: delta=negative, principal=effectiveAmount', () => {
+    const reserveId = 'r-usdc';
+    const reserve = makeRateCalcReserve({ reserveId, tokenPrice: 1 });
+    const entries = [
+      makeEntry({ reserveId, supply: { amount: '500', inputMode: 'usd', walletValue: 1000 }, borrow: { ...emptySide } }),
+    ];
+    const result = buildPerReserveInputsFromEntries(entries, [reserve]);
+    const input = result.get(reserveId)!;
+    expect(input.supplyInput).toBe('-500');
+    expect(input.principalSupplyUsd).toBe(500);
+  });
+
+  it('manual position (walletValue=null): delta=full amount, principal=full amount', () => {
+    const reserveId = 'r-usdc';
+    const reserve = makeRateCalcReserve({ reserveId, tokenPrice: 1 });
+    const entries = [
+      makeEntry({ reserveId, supply: { amount: '2000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
+    ];
+    const result = buildPerReserveInputsFromEntries(entries, [reserve]);
+    const input = result.get(reserveId)!;
+    expect(input.supplyInput).toBe('2000');
+    expect(input.principalSupplyUsd).toBe(2000);
+  });
+
+  it('mixed wallet + manual entries on same reserve: deltas aggregated', () => {
+    const reserveId = 'r-usdc';
+    const reserve = makeRateCalcReserve({ reserveId, tokenPrice: 1 });
+    const entries = [
+      makeEntry({ reserveId, supply: { amount: '1500', inputMode: 'usd', walletValue: 1000 }, borrow: { ...emptySide } }),
+      makeEntry({ reserveId, supply: { amount: '500', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
+    ];
+    const result = buildPerReserveInputsFromEntries(entries, [reserve]);
+    const input = result.get(reserveId)!;
+    expect(input.supplyInput).toBe('1000');
+    expect(input.principalSupplyUsd).toBe(2000);
+  });
+
+  it('borrow with walletValue: delta and principal separated', () => {
+    const reserveId = 'r-usdc';
+    const reserve = makeRateCalcReserve({ reserveId, tokenPrice: 1 });
+    const entries = [
+      makeEntry({ reserveId, supply: { ...emptySide }, borrow: { amount: '800', inputMode: 'usd', walletValue: 500 } }),
+    ];
+    const result = buildPerReserveInputsFromEntries(entries, [reserve]);
+    const input = result.get(reserveId)!;
+    expect(input.borrowInput).toBe('300');
+    expect(input.principalBorrowUsd).toBe(800);
   });
 });
 
 describe('simulatePortfolioPositions', () => {
-  it('v3: borrow increases utilization → supply afterNative rises', () => {
+  it('v3: borrow increases utilization b supply afterNative rises', () => {
     const reserve = makeRateCalcReserve();
     const basePositions = [
-      makePosition({ positionId: 'p-sup', side: 'supply', amount: '10000' }),
+      makePosition({ side: 'supply', amount: '10000' }),
     ];
     const withBorrow = [
-      makePosition({ positionId: 'p-sup', side: 'supply', amount: '10000' }),
-      makePosition({ positionId: 'p-bor', side: 'borrow', amount: '5000' }),
+      makePosition({ side: 'supply', amount: '10000' }),
+      makePosition({ side: 'borrow', amount: '5000' }),
     ];
     const baseArgs = baseSimArgs({ positions: basePositions, reserves: [reserve] });
     const coupledArgs = baseSimArgs({ positions: withBorrow, reserves: [reserve] });
@@ -193,13 +374,13 @@ describe('simulatePortfolioPositions', () => {
     expect(coupledSupply.nativePercent).toBeGreaterThan(baseSupply.nativePercent);
   });
 
-  it('v3: borrow increases utilization → borrow afterNative rises', () => {
+  it('v3: borrow increases utilization b borrow afterNative rises', () => {
     const reserve = makeRateCalcReserve();
     const smallBorrow = [
-      makePosition({ positionId: 'p-bor', side: 'borrow', amount: '1000' }),
+      makePosition({ side: 'borrow', amount: '1000' }),
     ];
     const largeBorrow = [
-      makePosition({ positionId: 'p-bor', side: 'borrow', amount: '10000' }),
+      makePosition({ side: 'borrow', amount: '10000' }),
     ];
     const smallArgs = baseSimArgs({ positions: smallBorrow, reserves: [reserve] });
     const largeArgs = baseSimArgs({ positions: largeBorrow, reserves: [reserve] });
@@ -224,7 +405,7 @@ describe('simulatePortfolioPositions', () => {
       ],
     ]);
     const positions = [
-      makePosition({ positionId: 'p-sup', reserveId: 'r-usdc-v4', side: 'supply', amount: '10000' }),
+      makePosition({ reserveId: 'r-usdc-v4', side: 'supply', amount: '10000' }),
     ];
     const perSpokeArgs = baseSimArgs({ positions, reserves: [reserve] });
     const hubArgs = baseSimArgs({ positions, reserves: [reserve], hubAggregationMap });
@@ -249,7 +430,6 @@ describe('simulatePortfolioPositions', () => {
     } as ReserveWithSpread;
     const positions = [
       makePosition({
-        positionId: 'p-sup',
         reserveId: 'r-no-calc',
         side: 'supply',
         amount: '10000',
@@ -278,17 +458,14 @@ describe('simulatePortfolioPositions', () => {
     });
     const positions = [
       makePosition({
-        positionId: 'p-usdc-sup',
         reserveId: 'r-usdc',
         side: 'supply',
         amount: '10000',
       }),
       makePosition({
-        positionId: 'p-weth-bor',
         reserveId: 'r-weth',
         side: 'borrow',
         amount: '5000',
-        tokenSymbol: 'WETH',
       }),
     ];
     const args = baseSimArgs({
@@ -309,7 +486,6 @@ describe('simulatePortfolioPositions', () => {
     const reserve = makeRateCalcReserve();
     const positions = [
       makePosition({
-        positionId: 'p-bor',
         side: 'borrow',
         amount: '5000',
       }),
@@ -333,7 +509,7 @@ describe('simulatePortfolioPositions', () => {
   it('skips positions with zero amount', () => {
     const reserve = makeRateCalcReserve();
     const positions = [
-      makePosition({ positionId: 'p-zero', side: 'supply', amount: '0' }),
+      makePosition({ side: 'supply', amount: '0' }),
     ];
     const args = baseSimArgs({ positions, reserves: [reserve] });
     const { results } = simulatePortfolioPositions(args);
@@ -343,7 +519,7 @@ describe('simulatePortfolioPositions', () => {
   it('skips positions whose reserve is not found', () => {
     const reserve = makeRateCalcReserve({ reserveId: 'r-exists' });
     const positions = [
-      makePosition({ positionId: 'p-missing', reserveId: 'r-missing', side: 'supply', amount: '10000' }),
+      makePosition({ reserveId: 'r-missing', side: 'supply', amount: '10000' }),
     ];
     const args = baseSimArgs({ positions, reserves: [reserve] });
     const { results } = simulatePortfolioPositions(args);
@@ -353,36 +529,31 @@ describe('simulatePortfolioPositions', () => {
   it('skips hidden positions from results and summary', () => {
     const reserve = makeRateCalcReserve();
     const positions = [
-      makePosition({ positionId: 'p-visible', side: 'supply', amount: '10000', hidden: false }),
-      makePosition({ positionId: 'p-hidden', side: 'supply', amount: '5000', hidden: true }),
+      makePosition({ side: 'supply', amount: '10000', hidden: false }),
+      makePosition({ side: 'supply', amount: '5000', hidden: true }),
     ];
     const args = baseSimArgs({ positions, reserves: [reserve] });
     const { results, summary } = simulatePortfolioPositions(args);
-    // Only the visible position should appear in results
     expect(results).toHaveLength(1);
-    expect(results[0].positionId).toBe('p-visible');
-    // Summary should only include the visible position's contribution
     expect(summary.totalSupplyUsd).toBe(10000);
   });
 
   it('mixed hidden + visible positions: summary excludes hidden contribution', () => {
     const reserve = makeRateCalcReserve();
     const positions = [
-      makePosition({ positionId: 'p-sup', side: 'supply', amount: '10000', hidden: false }),
-      makePosition({ positionId: 'p-bor', side: 'borrow', amount: '3000', hidden: true }),
+      makePosition({ side: 'supply', amount: '10000', hidden: false }),
+      makePosition({ side: 'borrow', amount: '3000', hidden: true }),
     ];
     const args = baseSimArgs({ positions, reserves: [reserve] });
     const { results, summary } = simulatePortfolioPositions(args);
-    // Only supply position should appear
     expect(results).toHaveLength(1);
     expect(results[0].side).toBe('supply');
-    // Borrow should be 0 since it's hidden
     expect(summary.totalBorrowUsd).toBe(0);
     expect(summary.totalSupplyUsd).toBe(10000);
   });
 
   describe('cross-reserve net position constraint', () => {
-    it('equal supply+borrow across reserves → Merkl incentive fully offset', () => {
+    it('equal supply+borrow across reserves b Merkl incentive fully offset', () => {
       const usdcReserveId = 'r-usdc-ink';
       const usdtReserveId = 'r-usdt-ink';
       const campaignId = 'merkl-campaign-1';
@@ -416,16 +587,12 @@ describe('simulatePortfolioPositions', () => {
 
       const positions = [
         makePosition({
-          positionId: 'p-usdt-sup',
           reserveId: usdtReserveId,
-          tokenSymbol: 'USDT',
           side: 'supply',
           amount: '10000',
         }),
         makePosition({
-          positionId: 'p-usdc-bor',
           reserveId: usdcReserveId,
-          tokenSymbol: 'USDC',
           side: 'borrow',
           amount: '10000',
         }),
@@ -439,7 +606,7 @@ describe('simulatePortfolioPositions', () => {
       expect(usdtSupply!.incentivePercent).toBe(0);
     });
 
-    it('partial offset → Merkl incentive partially reduced', () => {
+    it('partial offset b Merkl incentive partially reduced', () => {
       const usdcReserveId = 'r-usdc-ink';
       const usdtReserveId = 'r-usdt-ink';
       const campaignId = 'merkl-campaign-2';
@@ -468,25 +635,19 @@ describe('simulatePortfolioPositions', () => {
 
       const noBorrowPositions = [
         makePosition({
-          positionId: 'p-usdt-sup',
           reserveId: usdtReserveId,
-          tokenSymbol: 'USDT',
           side: 'supply',
           amount: '10000',
         }),
       ];
       const withBorrowPositions = [
         makePosition({
-          positionId: 'p-usdt-sup',
           reserveId: usdtReserveId,
-          tokenSymbol: 'USDT',
           side: 'supply',
           amount: '10000',
         }),
         makePosition({
-          positionId: 'p-usdc-bor',
           reserveId: usdcReserveId,
-          tokenSymbol: 'USDC',
           side: 'borrow',
           amount: '5000',
         }),
@@ -506,7 +667,7 @@ describe('simulatePortfolioPositions', () => {
       expect(withBorrowSupply.incentivePercent).toBeLessThan(noBorrowSupply.incentivePercent);
     });
 
-    it('no netPositionConstraint → Merkl incentive unaffected by cross-reserve borrow', () => {
+    it('no netPositionConstraint b Merkl incentive unaffected by cross-reserve borrow', () => {
       const usdcReserveId = 'r-usdc-ink';
       const usdtReserveId = 'r-usdt-ink';
       const campaignId = 'merkl-campaign-3';
@@ -531,16 +692,12 @@ describe('simulatePortfolioPositions', () => {
 
       const positions = [
         makePosition({
-          positionId: 'p-usdt-sup',
           reserveId: usdtReserveId,
-          tokenSymbol: 'USDT',
           side: 'supply',
           amount: '10000',
         }),
         makePosition({
-          positionId: 'p-usdc-bor',
           reserveId: usdcReserveId,
-          tokenSymbol: 'USDC',
           side: 'borrow',
           amount: '10000',
         }),
@@ -553,158 +710,47 @@ describe('simulatePortfolioPositions', () => {
       expect(usdtSupply.incentivePercent).toBeGreaterThan(0);
     });
   });
+});
 
-  describe('buildPerReserveInputs — per-reserve vs shared mutual exclusion', () => {
-    it('builds per-reserve inputs from supply positions', () => {
-      const reserveId = 'r-usdc-v3';
-      const reserve = makeRateCalcReserve({ reserveId });
-      const positions = [
-        makePosition({ reserveId, side: 'supply', amount: '5000', tokenSymbol: 'USDC' }),
-      ];
-      const result = buildPerReserveInputs(positions, [reserve]);
-      expect(result.has(reserveId)).toBe(true);
-      const input = result.get(reserveId)!;
-      expect(input.supplyInput).toBe('5000');
-      expect(input.borrowInput).toBe('0');
-      expect(input.inputMode).toBe('usd');
-      expect(input.principalSupplyUsd).toBe(5000);
-      expect(input.principalBorrowUsd).toBe(0);
-    });
-
-    it('builds per-reserve inputs from borrow positions', () => {
-      const reserveId = 'r-usdc-v3';
-      const reserve = makeRateCalcReserve({ reserveId });
-      const positions = [
-        makePosition({ reserveId, side: 'borrow', amount: '3000', tokenSymbol: 'USDC' }),
-      ];
-      const result = buildPerReserveInputs(positions, [reserve]);
-      expect(result.has(reserveId)).toBe(true);
-      const input = result.get(reserveId)!;
-      expect(input.supplyInput).toBe('0');
-      expect(input.borrowInput).toBe('3000');
-      expect(input.inputMode).toBe('usd');
-      expect(input.principalSupplyUsd).toBe(0);
-      expect(input.principalBorrowUsd).toBe(3000);
-    });
-
-    it('combines supply and borrow on same reserve', () => {
-      const reserveId = 'r-usdc-v3';
-      const reserve = makeRateCalcReserve({ reserveId });
-      const positions = [
-        makePosition({ reserveId, side: 'supply', amount: '5000', tokenSymbol: 'USDC' }),
-        makePosition({ reserveId, side: 'borrow', amount: '3000', tokenSymbol: 'USDC' }),
-      ];
-      const result = buildPerReserveInputs(positions, [reserve]);
-      const input = result.get(reserveId)!;
-      expect(input.supplyInput).toBe('5000');
-      expect(input.borrowInput).toBe('3000');
-      expect(input.principalSupplyUsd).toBe(5000);
-      expect(input.principalBorrowUsd).toBe(3000);
-    });
-
-    it('returns empty map when no positions match reserves', () => {
-      const reserve = makeRateCalcReserve({ reserveId: 'r-usdc-v3' });
-      const positions = [
-        makePosition({ reserveId: 'r-dai-v3', side: 'supply', amount: '5000', tokenSymbol: 'DAI' }),
-      ];
-      const result = buildPerReserveInputs(positions, [reserve]);
-      expect(result.size).toBe(0);
-    });
-
-    it('handles multiple reserves independently', () => {
-      const usdcId = 'r-usdc-v3';
-      const usdtId = 'r-usdt-v3';
-      const usdcReserve = makeRateCalcReserve({ reserveId: usdcId, tokenSymbol: 'USDC' });
-      const usdtReserve = makeRateCalcReserve({ reserveId: usdtId, tokenSymbol: 'USDT' });
-      const positions = [
-        makePosition({ reserveId: usdcId, side: 'supply', amount: '5000', tokenSymbol: 'USDC' }),
-        makePosition({ reserveId: usdtId, side: 'borrow', amount: '2000', tokenSymbol: 'USDT' }),
-      ];
-      const result = buildPerReserveInputs(positions, [usdcReserve, usdtReserve]);
-      expect(result.get(usdcId)!.supplyInput).toBe('5000');
-      expect(result.get(usdcId)!.borrowInput).toBe('0');
-      expect(result.get(usdcId)!.principalSupplyUsd).toBe(5000);
-      expect(result.get(usdcId)!.principalBorrowUsd).toBe(0);
-      expect(result.get(usdtId)!.supplyInput).toBe('0');
-      expect(result.get(usdtId)!.borrowInput).toBe('2000');
-      expect(result.get(usdtId)!.principalSupplyUsd).toBe(0);
-      expect(result.get(usdtId)!.principalBorrowUsd).toBe(2000);
-    });
+describe('simulatePortfolioFromEntries', () => {
+  it('computes results from entries with supply and borrow', () => {
+    const reserve = makeRateCalcReserve();
+    const entries = [
+      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '5000', inputMode: 'usd', walletValue: null } }),
+    ];
+    const args = baseEntriesSimArgs({ entries, reserves: [reserve] });
+    const { results, summary } = simulatePortfolioFromEntries(args);
+    expect(results.length).toBeGreaterThan(0);
+    expect(summary.totalSupplyUsd).toBeGreaterThan(0);
+    expect(summary.totalBorrowUsd).toBeGreaterThan(0);
   });
 
-  describe('buildPerReserveInputs with walletValue (delta/effective separation)', () => {
-    it('wallet position unchanged: delta=0, principal=walletValue', () => {
-      const reserveId = 'r-usdc';
-      const reserve = makeRateCalcReserve({ reserveId, tokenPrice: 1 });
-      const positions = [
-        makePosition({ reserveId, side: 'supply', amount: '1000', walletValue: 1000 }),
-      ];
-      const result = buildPerReserveInputs(positions, [reserve]);
-      const input = result.get(reserveId)!;
-      expect(input.supplyInput).toBe('0');
-      expect(input.principalSupplyUsd).toBe(1000);
-    });
+  it('empty entries returns empty results', () => {
+    const args = baseEntriesSimArgs({ entries: [], reserves: [makeRateCalcReserve()] });
+    const { results, summary } = simulatePortfolioFromEntries(args);
+    expect(results).toEqual([]);
+    expect(summary.totalSupplyUsd).toBe(0);
+    expect(summary.totalBorrowUsd).toBe(0);
+  });
 
-    it('wallet position with top-up: delta=positive, principal=effectiveAmount', () => {
-      const reserveId = 'r-usdc';
-      const reserve = makeRateCalcReserve({ reserveId, tokenPrice: 1 });
-      const positions = [
-        makePosition({ reserveId, side: 'supply', amount: '1500', walletValue: 1000 }),
-      ];
-      const result = buildPerReserveInputs(positions, [reserve]);
-      const input = result.get(reserveId)!;
-      expect(input.supplyInput).toBe('500');
-      expect(input.principalSupplyUsd).toBe(1500);
-    });
+  it('skips hidden entries', () => {
+    const reserve = makeRateCalcReserve();
+    const entries = [
+      makeEntry({ hidden: true, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
+    ];
+    const args = baseEntriesSimArgs({ entries, reserves: [reserve] });
+    const { results } = simulatePortfolioFromEntries(args);
+    expect(results).toEqual([]);
+  });
 
-    it('wallet position with partial withdrawal: delta=negative, principal=effectiveAmount', () => {
-      const reserveId = 'r-usdc';
-      const reserve = makeRateCalcReserve({ reserveId, tokenPrice: 1 });
-      const positions = [
-        makePosition({ reserveId, side: 'supply', amount: '500', walletValue: 1000 }),
-      ];
-      const result = buildPerReserveInputs(positions, [reserve]);
-      const input = result.get(reserveId)!;
-      expect(input.supplyInput).toBe('-500');
-      expect(input.principalSupplyUsd).toBe(500);
-    });
-
-    it('manual position (walletValue=null): delta=full amount, principal=full amount', () => {
-      const reserveId = 'r-usdc';
-      const reserve = makeRateCalcReserve({ reserveId, tokenPrice: 1 });
-      const positions = [
-        makePosition({ reserveId, side: 'supply', amount: '2000', walletValue: null }),
-      ];
-      const result = buildPerReserveInputs(positions, [reserve]);
-      const input = result.get(reserveId)!;
-      expect(input.supplyInput).toBe('2000');
-      expect(input.principalSupplyUsd).toBe(2000);
-    });
-
-    it('mixed wallet + manual positions on same reserve: deltas aggregated', () => {
-      const reserveId = 'r-usdc';
-      const reserve = makeRateCalcReserve({ reserveId, tokenPrice: 1 });
-      const positions = [
-        makePosition({ positionId: 'p-wallet', reserveId, side: 'supply', amount: '1500', walletValue: 1000 }),
-        makePosition({ positionId: 'p-manual', reserveId, side: 'supply', amount: '500', walletValue: null }),
-      ];
-      const result = buildPerReserveInputs(positions, [reserve]);
-      const input = result.get(reserveId)!;
-      expect(input.supplyInput).toBe('1000');
-      expect(input.principalSupplyUsd).toBe(2000);
-    });
-
-    it('borrow with walletValue: delta and principal separated', () => {
-      const reserveId = 'r-usdc';
-      const reserve = makeRateCalcReserve({ reserveId, tokenPrice: 1 });
-      const positions = [
-        makePosition({ reserveId, side: 'borrow', amount: '800', walletValue: 500 }),
-      ];
-      const result = buildPerReserveInputs(positions, [reserve]);
-      const input = result.get(reserveId)!;
-      expect(input.borrowInput).toBe('300');
-      expect(input.principalBorrowUsd).toBe(800);
-    });
+  it('skips orphan entries', () => {
+    const reserve = makeRateCalcReserve();
+    const entries = [
+      makeEntry({ isOrphan: true, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
+    ];
+    const args = baseEntriesSimArgs({ entries, reserves: [reserve] });
+    const { results } = simulatePortfolioFromEntries(args);
+    expect(results).toEqual([]);
   });
 });
 

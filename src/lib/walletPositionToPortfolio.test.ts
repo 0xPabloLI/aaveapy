@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { convertWalletPositionsToEntries, convertWalletPositionsToPortfolio } from './walletPositionToPortfolio'
+import { convertWalletPositionsToEntries } from './walletPositionToPortfolio'
 import type { WalletPosition } from './userData/userPositionMapper'
 import type { ReserveWithSpread } from '@/types/aave'
 
@@ -134,28 +134,5 @@ describe('convertWalletPositionsToEntries', () => {
     ]
     const result = convertWalletPositionsToEntries(wallet, reserves)
     expect(result[0].supply.source).toBe('onchain-v4')
-  })
-})
-
-describe('convertWalletPositionsToPortfolio (deprecated wrapper)', () => {
-  it('derives positions from entries', () => {
-    const wallet: WalletPosition[] = [
-      makeWalletPos({ reserveId: 'eth-usdc-v3', chainId: 1, side: 'supply', amountUsd: 5000 }),
-    ]
-    const result = convertWalletPositionsToPortfolio(wallet, reserves)
-    expect(result.length).toBeGreaterThanOrEqual(1)
-    expect(result[0].reserveId).toBe('eth-usdc-v3')
-    expect(result[0].side).toBe('supply')
-    expect(result[0].walletValue).toBe(5000)
-  })
-
-  it('produces supply+borrow positions for entry with both sides', () => {
-    const wallet: WalletPosition[] = [
-      makeWalletPos({ reserveId: 'eth-usdc-v3', chainId: 1, side: 'supply', amountUsd: 1000 }),
-      makeWalletPos({ reserveId: 'eth-usdc-v3', chainId: 1, side: 'borrow', amountUsd: 500 }),
-    ]
-    const result = convertWalletPositionsToPortfolio(wallet, reserves)
-    expect(result).toHaveLength(2)
-    expect(result.map(p => p.side).sort()).toEqual(['borrow', 'supply'])
   })
 })

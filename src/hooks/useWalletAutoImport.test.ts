@@ -25,6 +25,7 @@ import type { WalletPosition } from '@/lib/userData/userPositionMapper'
 import type { ReserveWithSpread } from '@/types/aave'
 
 const mockImportReserves = vi.fn()
+const mockRemoveHiddenEntries = vi.fn(() => 0)
 const mockPortfolioActions: PortfolioSimulationActions = {
   setActive: vi.fn(),
   addReserve: vi.fn(),
@@ -34,20 +35,11 @@ const mockPortfolioActions: PortfolioSimulationActions = {
   unhideReserve: vi.fn(),
   importReserves: mockImportReserves,
   restoreToWallet: vi.fn(),
+  removeHiddenEntries: mockRemoveHiddenEntries,
   clearAll: vi.fn(),
   saveSnapshot: vi.fn(),
   deleteSnapshot: vi.fn(),
   undoLastRemove: vi.fn(),
-  addPosition: vi.fn(),
-  removePosition: vi.fn(),
-  updateAmount: vi.fn(),
-  updateDeltaSign: vi.fn(),
-  updateInputMode: vi.fn(),
-  importPositions: vi.fn(),
-  restorePosition: vi.fn(),
-  toggleHidden: vi.fn(),
-  hideOrRemoveReserveAction: vi.fn(),
-  unhideReserveAction: vi.fn(),
 }
 
 function makeSuccessResult(positions: WalletPosition[] = []): DegradedResult {
@@ -277,5 +269,76 @@ describe('useWalletAutoImport', () => {
     rerender({ address: addressUpper })
 
     expect(mockImportReserves).toHaveBeenCalledTimes(1)
+  })
+
+  describe('disconnect cleanup', () => {
+    it('calls removeHiddenEntries when wallet disconnects', () => {
+      const { rerender } = renderHook(
+        (props: { isConnected: boolean }) =>
+          useWalletAutoImport({
+            address: props.isConnected ? address : undefined,
+            isConnected: props.isConnected,
+            walletLoadState: props.isConnected ? 'success' : 'idle',
+            walletResult: props.isConnected ? makeSuccessResult() : makeErrorResult(),
+            v3SdkFailed: false,
+            v4SdkFailed: false,
+            reserves: emptyReserves,
+            portfolioActions: mockPortfolioActions,
+          }),
+        { initialProps: { isConnected: true } },
+      )
+
+      mockRemoveHiddenEntries.mockClear()
+
+      rerender({ isConnected: false })
+
+      expect(mockRemoveHiddenEntries).toHaveBeenCalledTimes(1)
+    })
+
+    it('shows toast when hidden entries are removed', () => {
+      mockRemoveHiddenEntries.mockReturnValue(3)
+
+      const { rerender } = renderHook(
+        (props: { isConnected: boolean }) =>
+          useWalletAutoImport({
+            address: props.isConnected ? address : undefined,
+            isConnected: props.isConnected,
+            walletLoadState: props.isConnected ? 'success' : 'idle',
+            walletResult: props.isConnected ? makeSuccessResult() : makeErrorResult(),
+            v3SdkFailed: false,
+            v4SdkFailed: false,
+            reserves: emptyReserves,
+            portfolioActions: mockPortfolioActions,
+          }),
+        { initialProps: { isConnected: true } },
+      )
+
+      rerender({ isConnected: false })
+
+      expect(toast.info).toHaveBeenCalledWith('Removed 3 hidden positions')
+    })
+
+    it('does not show toast when zero hidden entries removed', () => {
+      mockRemoveHiddenEntries.mockReturnValue(0)
+
+      const { rerender } = renderHook(
+        (props: { isConnected: boolean }) =>
+          useWalletAutoImport({
+            address: props.isConnected ? address : undefined,
+            isConnected: props.isConnected,
+            walletLoadState: props.isConnected ? 'success' : 'idle',
+            walletResult: props.isConnected ? makeSuccessResult() : makeErrorResult(),
+            v3SdkFailed: false,
+            v4SdkFailed: false,
+            reserves: emptyReserves,
+            portfolioActions: mockPortfolioActions,
+          }),
+        { initialProps: { isConnected: true } },
+      )
+
+      rerender({ isConnected: false })
+
+      expect(toast.info).not.toHaveBeenCalledWith(expect.stringContaining('hidden'))
+    })
   })
 })

@@ -10,7 +10,7 @@ import PortfolioPanel from './PortfolioPanel';
 import { useWatchModeConnect } from '@/hooks/useWatchModeConnect';
 import { features } from '@/config/features';
 import type { ReserveWithSpread } from '@/types/aave';
-import type { PortfolioPosition, PortfolioSimulationActions, PortfolioSnapshot } from '@/types/portfolio';
+import type { PortfolioSimulationActions, PortfolioSnapshot } from '@/types/portfolio';
 
 vi.mock('@/hooks/use-mobile', () => ({
   useIsMobile: () => false,
@@ -76,11 +76,18 @@ const makeReserve = (symbol: string): ReserveWithSpread => ({
 });
 
 const makeActions = (): PortfolioSimulationActions => ({
-  addPosition: vi.fn(),
-  removePosition: vi.fn(),
-  updateAmount: vi.fn(),
-  updateInputMode: vi.fn(),
+  setActive: vi.fn(),
+  addReserve: vi.fn(),
+  removeReserve: vi.fn(),
+  updateReserve: vi.fn(),
+  hideReserve: vi.fn(),
+  unhideReserve: vi.fn(),
+  importReserves: vi.fn(),
+  restoreToWallet: vi.fn(),
   clearAll: vi.fn(),
+  saveSnapshot: vi.fn(),
+  deleteSnapshot: vi.fn(),
+  undoLastRemove: vi.fn(),
 });
 
 const makeSnapshot = (label: string): PortfolioSnapshot => ({
@@ -106,7 +113,7 @@ function renderPanel(snapshots?: PortfolioSnapshot[]) {
         <RainbowKitProvider>
           <TooltipProvider>
             <PortfolioPanel
-              positions={[]}
+              entries={[]}
               actions={makeActions()}
               reserves={[makeReserve('USDC')]}
               snapshots={snapshots}

@@ -10,7 +10,7 @@ import { useIsFetching } from '@tanstack/react-query';
 import { useChainDiscovery } from '@/hooks/useChainDiscovery';
 import { useAaveMarkets } from '@/hooks/useAaveMarkets';
 import { deriveV3AssetsByMarket, deriveV4ReservesBySpoke } from '@/lib/deriveOnchainConfig';
-import { convertWalletPositionsToPortfolio } from '@/lib/walletPositionToPortfolio';
+import { convertWalletPositionsToEntries } from '@/lib/walletPositionToPortfolio';
 import { useTokenCategories } from '@/hooks/useTokenCategories';
 import { SortField, TokenCategory, ReserveWithSpread, TokenPricesIndex } from '@/types/aave';
 import type { SortOrder } from '@/lib/sorters';
@@ -306,12 +306,12 @@ const Index = () => {
 
   const handleWalletSync = useCallback(() => {
     if (walletResult.status === 'success' || walletResult.status === 'partial') {
-      const incoming = convertWalletPositionsToPortfolio(walletResult.data.positions, stableReserves);
+      const incoming = convertWalletPositionsToEntries(walletResult.data.positions, stableReserves);
       if (incoming.length === 0) {
         toast.info('Wallet has no positions');
         return;
       }
-      portfolio.actions.importPositions(incoming);
+      portfolio.actions.importReserves(incoming);
       setSimulationMode('portfolio');
       toast.success(`Imported ${incoming.length} position${incoming.length > 1 ? 's' : ''} from wallet`);
     } else if (walletResult.status === 'error') {
@@ -650,7 +650,6 @@ const Index = () => {
               scrollToReserveId={pendingScrollReserveId}
               simulationMode={simulationMode}
               onSimulationModeChange={setSimulationMode}
-              portfolioPositions={portfolio.positions}
               portfolioEntries={portfolio.entries}
               portfolioActions={portfolio.actions}
               portfolioSnapshots={portfolio.snapshots}

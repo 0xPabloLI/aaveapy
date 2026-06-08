@@ -1,7 +1,7 @@
 /**
  * Canonical amount formatter for portfolio positions.
  *
- * Every entry point that produces a `PortfolioPosition.amount` string MUST
+ * Every entry point that produces a `PortfolioSideData.amount` string MUST
  * funnel through `formatPortfolioAmount` so the displayed precision is
  * uniform (≤ 8 significant digits, trailing zeros stripped). Bypassing this
  * helper — e.g. `String(walletPosition.amountUsd)` — leaks raw float noise
@@ -9,7 +9,6 @@
  *
  * Callers (keep in sync — see `portfolioAmountFormat.test.ts`):
  *  - Wallet import:        src/lib/walletPositionToPortfolio.ts
- *  - Merger / re-sync:     src/lib/portfolioMerger.ts
  *  - Reset / restore:      src/hooks/usePortfolioSimulation.ts
  *  - USD/Token toggle:     src/hooks/usePortfolioSimulation.ts
  */

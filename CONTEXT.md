@@ -196,7 +196,8 @@ _Avoid_: 组合 key 做主匹配（方案 B）——冗余且易漏 side
 
 **Wallet Disconnect Behavior**:
 断连时 `walletValue → null`，`currentValue` 保持不变。重连时重新 sync 刷新 walletValue。
-_Avoid_: 清空 currentValue（用户可能还在操作 Simulator）
+**Disconnect Cleanup**: 断连时自动删除所有 `hidden: true` 的 entry（不管是钱包来源还是手动来源）。`hidden: false` 的 entry 保留不动，用户手写内容不被清空。无 hidden entry 时静默（不 toast）。有 hidden entry 被删除时 toast "Removed N hidden position(s)"。实现位置：`usePortfolioSimulation` 新增 `removeHiddenEntries()` action，`useWalletAutoImport` 在 `!isConnected` 时调用。
+_Avoid_: 清空 currentValue（用户可能还在操作 Simulator）、断连时清空全部 entry（包括非 hidden 的）
 
 **Wallet Address Switch Behavior**:
 切换钱包地址（含 watch mode 切换）时：清空 Simulator 中 `source: 'wallet'` 的仓位，保留 `source: 'manual'` 仓位不动，然后自动 sync/import 新地址的链上仓位。钱包仓位始终属于当前连接地址，切换 = 替换钱包部分。
@@ -219,7 +220,7 @@ _Avoid_: 清空 currentValue（用户可能还在操作 Simulator）
 详见 ADR-0015。_Avoid_: 三个路径各写一份 invalidate 逻辑、用 React state 传 nonce（同地址 reentry 不会触发 re-render）、直接 `location.reload()`（违反 manual 仓位保留规则）
 
 **Supply-Borrow Inseparability**:
-一个 reserve 的 supply 和 borrow 永远作为一体操作——隐藏/删除/恢复作用于整个 reserve（supply + borrow 一起），不允许独立隐藏单个 side。这跟 Aave 协议的 Reserve 模型一致：Reserve 是原子单元，supply/borrow 是它的两个属性而非独立实体。数据模型层面通过 `PortfolioReserveEntry`（per-reserve）替代 `PortfolioPosition`（per-side）来强制保证，编译时即不可能出现单 side 缺失。详见 ADR-0014。
+一个 reserve 的 supply 和 borrow 永远作为一体操作——隐藏/删除/恢复作用于整个 reserve（supply + borrow 一起），不允许独立隐藏单个 side。这跟 Aave 协议的 Reserve 模型一致：Reserve 是原子单元，supply/borrow 是它的两个属性而非独立实体。数据模型层面通过 `PortfolioReserveEntry`（per-reserve）来强制保证，编译时即不可能出现单 side 缺失。`PortfolioPosition`（per-side）已被删除。详见 ADR-0014。
 _Avoid_: 独立隐藏/删除 supply 或 borrow（破坏 Reserve 原子性）、per-side 数据模型（允许单 side 缺失）
 
 **Soft Delete**:

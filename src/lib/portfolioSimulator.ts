@@ -1,9 +1,11 @@
 import type { ReserveWithSpread, MerklForecastWireItem } from '@/types/aave';
 import type {
-  PortfolioPosition,
   PortfolioPositionResult,
+  PortfolioReserveEntry,
+  PortfolioSideData,
   PortfolioSummary,
   PortfolioSimulationMetric,
+  PortfolioSide,
 } from '@/types/portfolio';
 import type { ScenarioInputMode, SimulationLane } from '@/lib/rateSimulationCalculator';
 import { buildRateSimulationResult } from '@/lib/rateSimulationCalculator';
@@ -30,8 +32,7 @@ export interface PerReserveInput {
   principalBorrowUsd?: number;
 }
 
-export interface SimulatePortfolioPositionsArgs {
-  positions: PortfolioPosition[];
+interface SimulateCommonArgs {
   reserves: ReserveWithSpread[];
   hubAggregationMap?: Map<HubAssetKey, HubAggregate>;
   isApy: boolean;
@@ -40,14 +41,37 @@ export interface SimulatePortfolioPositionsArgs {
   forecastStates: Record<string, MerklForecastWireItem>;
 }
 
+export interface SimulatePortfolioEntriesArgs extends SimulateCommonArgs {
+  entries: PortfolioReserveEntry[];
+}
+
+export interface SimulatePortfolioPositionsArgs extends SimulateCommonArgs {
+  /** @deprecated Use SimulatePortfolioEntriesArgs.entries instead. */
+  positions: Array<{
+    reserveId: string;
+    side: PortfolioSide;
+    amount: string;
+    inputMode: 'usd' | 'token';
+    walletValue: number | null;
+    hidden: boolean;
+    isOrphan: boolean;
+    deltaSign?: 1 | -1;
+  }>;
+}
+
 export interface SimulatePortfolioPositionsResult {
   results: PortfolioPositionResult[];
   summary: PortfolioSummary;
 }
 
-interface PositionGroup {
-  supplyPositions: PortfolioPosition[];
-  borrowPositions: PortfolioPosition[];
+interface SideSlot {
+  sideData: PortfolioSideData;
+  reserveId: string;
+}
+
+interface EntryGroup {
+  supplySlots: SideSlot[];
+  borrowSlots: SideSlot[];
   supplyUsd: number;
   borrowUsd: number;
   supplyDeltaUsd: number;
@@ -98,67 +122,56 @@ export function buildMetricsFromLane(
   return { nativeMetric, incentiveMetric, totalMetric, usdPerDayMetric };
 }
 
-export function simulatePortfolioPositions(
-  args: SimulatePortfolioPositionsArgs,
-): SimulatePortfolioPositionsResult {
-  const {
-    positions,
-    reserves,
-    hubAggregationMap: externalHubMap,
-    isApy,
-    whitelistMerklCampaignIds,
-    tydroPointToUsdRate,
-    forecastStates,
-  } = args;
-
-  if (positions.length === 0) {
-    return { results: [], summary: aggregatePortfolioSummary([]) };
-  }
-
-  // Hidden positions should not contribute to Earn calculations (AAV-671)
-  const visiblePositions = positions.filter((p) => !p.hidden);
-  if (visiblePositions.length === 0) {
-    return { results: [], summary: aggregatePortfolioSummary([]) };
-  }
-
-  const hubMap = externalHubMap ?? buildHubAggregationMap(reserves);
-  const reserveMap = new Map(reserves.map((r) => [getReserveKey(r), r]));
-
-  const groupMap = new Map<string, PositionGroup>();
-  for (const pos of visiblePositions) {
-    const key = getReserveKey({ reserveId: pos.reserveId });
+function buildGroupMapFromSlots(
+  slots: Iterable<SideSlot>,
+  side: PortfolioSide,
+  reserveMap: Map<string, ReserveWithSpread>,
+  groupMap: Map<string, EntryGroup>,
+): void {
+  for (const slot of slots) {
+    const key = getReserveKey({ reserveId: slot.reserveId });
     const reserve = reserveMap.get(key);
-    const amountUsd = resolvePositionAmountUsd(pos, reserve);
+    const amountUsd = resolvePositionAmountUsd(slot.sideData, reserve);
     if (amountUsd <= 0 || !reserve) continue;
 
     const delta = computeDelta({
-      amount: pos.amount,
-      walletValue: pos.walletValue,
-      inputMode: pos.inputMode,
+      amount: slot.sideData.amount,
+      walletValue: slot.sideData.walletValue,
+      inputMode: slot.sideData.inputMode,
       tokenPrice: reserve.tokenPrice,
     });
 
     const existing = groupMap.get(key) ?? {
-      supplyPositions: [],
-      borrowPositions: [],
+      supplySlots: [],
+      borrowSlots: [],
       supplyUsd: 0,
       borrowUsd: 0,
       supplyDeltaUsd: 0,
       borrowDeltaUsd: 0,
     };
 
-    if (pos.side === 'supply') {
-      existing.supplyPositions.push(pos);
+    if (side === 'supply') {
+      existing.supplySlots.push(slot);
       existing.supplyUsd += delta.effectiveAmountUsd;
       existing.supplyDeltaUsd += delta.deltaUsd;
     } else {
-      existing.borrowPositions.push(pos);
+      existing.borrowSlots.push(slot);
       existing.borrowUsd += delta.effectiveAmountUsd;
       existing.borrowDeltaUsd += delta.deltaUsd;
     }
     groupMap.set(key, existing);
   }
+}
 
+function computeResultsFromGroups(
+  groupMap: Map<string, EntryGroup>,
+  reserveMap: Map<string, ReserveWithSpread>,
+  hubMap: Map<HubAssetKey, HubAggregate>,
+  isApy: boolean,
+  whitelistMerklCampaignIds: ReadonlySet<string> | undefined,
+  tydroPointToUsdRate: number,
+  forecastStates: Record<string, MerklForecastWireItem>,
+): PortfolioPositionResult[] {
   const results: PortfolioPositionResult[] = [];
 
   const reservePositions = new Map<string, ReservePositions>();
@@ -214,8 +227,8 @@ export function simulatePortfolioPositions(
         hubBorrowed: hubAgg?.hubBorrowed,
       });
 
-      for (const pos of group.supplyPositions) {
-        const amountUsd = resolvePositionAmountUsd(pos, reserve);
+      for (const slot of group.supplySlots) {
+        const amountUsd = resolvePositionAmountUsd(slot.sideData, reserve);
         const nativePercent =
           simResult.supply.afterNative ??
           simResult.supply.currentNative ??
@@ -227,12 +240,12 @@ export function simulatePortfolioPositions(
           0;
         const metrics = buildMetricsFromLane(simResult.supply, 'supply', amountUsd);
         results.push(
-          buildPortfolioPositionResult(pos, amountUsd, nativePercent, incentivePercent, metrics),
+          buildPortfolioPositionResult(slot.reserveId, 'supply', amountUsd, nativePercent, incentivePercent, metrics),
         );
       }
 
-      for (const pos of group.borrowPositions) {
-        const amountUsd = resolvePositionAmountUsd(pos, reserve);
+      for (const slot of group.borrowSlots) {
+        const amountUsd = resolvePositionAmountUsd(slot.sideData, reserve);
         const nativePercent =
           simResult.borrow.afterNative ??
           simResult.borrow.currentNative ??
@@ -244,31 +257,79 @@ export function simulatePortfolioPositions(
           0;
         const metrics = buildMetricsFromLane(simResult.borrow, 'borrow', amountUsd);
         results.push(
-          buildPortfolioPositionResult(pos, amountUsd, nativePercent, incentivePercent, metrics),
+          buildPortfolioPositionResult(slot.reserveId, 'borrow', amountUsd, nativePercent, incentivePercent, metrics),
         );
       }
     } else {
-      for (const pos of group.supplyPositions) {
-        const amountUsd = resolvePositionAmountUsd(pos, reserve);
+      for (const slot of group.supplySlots) {
+        const amountUsd = resolvePositionAmountUsd(slot.sideData, reserve);
         const nativePercent = reserve.supplyApy ?? 0;
         const incentiveArr = reserve.supplyIncentives ?? [];
         const incentivePercent = incentiveArr.reduce((s, v) => s + v, 0);
         results.push(
-          buildPortfolioPositionResult(pos, amountUsd, nativePercent, incentivePercent),
+          buildPortfolioPositionResult(slot.reserveId, 'supply', amountUsd, nativePercent, incentivePercent),
         );
       }
 
-      for (const pos of group.borrowPositions) {
-        const amountUsd = resolvePositionAmountUsd(pos, reserve);
+      for (const slot of group.borrowSlots) {
+        const amountUsd = resolvePositionAmountUsd(slot.sideData, reserve);
         const nativePercent = reserve.borrowApy ?? 0;
         const incentiveArr = reserve.borrowIncentives ?? [];
         const incentivePercent = incentiveArr.reduce((s, v) => s + v, 0);
         results.push(
-          buildPortfolioPositionResult(pos, amountUsd, nativePercent, incentivePercent),
+          buildPortfolioPositionResult(slot.reserveId, 'borrow', amountUsd, nativePercent, incentivePercent),
         );
       }
     }
   }
+
+  return results;
+}
+
+export function simulatePortfolioFromEntries(
+  args: SimulatePortfolioEntriesArgs,
+): SimulatePortfolioPositionsResult {
+  const {
+    entries,
+    reserves,
+    hubAggregationMap: externalHubMap,
+    isApy,
+    whitelistMerklCampaignIds,
+    tydroPointToUsdRate,
+    forecastStates,
+  } = args;
+
+  const visibleEntries = entries.filter((e) => !e.hidden && !e.isOrphan);
+  if (visibleEntries.length === 0) {
+    return { results: [], summary: aggregatePortfolioSummary([]) };
+  }
+
+  const hubMap = externalHubMap ?? buildHubAggregationMap(reserves);
+  const reserveMap = new Map(reserves.map((r) => [getReserveKey(r), r]));
+
+  const groupMap = new Map<string, EntryGroup>();
+
+  const supplySlots: SideSlot[] = [];
+  const borrowSlots: SideSlot[] = [];
+  for (const e of visibleEntries) {
+    if (e.supply.amount !== '' || e.supply.walletValue !== null) {
+      supplySlots.push({ sideData: e.supply, reserveId: e.reserveId });
+    }
+    if (e.borrow.amount !== '' || e.borrow.walletValue !== null) {
+      borrowSlots.push({ sideData: e.borrow, reserveId: e.reserveId });
+    }
+  }
+
+  buildGroupMapFromSlots(supplySlots, 'supply', reserveMap, groupMap);
+  buildGroupMapFromSlots(borrowSlots, 'borrow', reserveMap, groupMap);
+
+  if (groupMap.size === 0) {
+    return { results: [], summary: aggregatePortfolioSummary([]) };
+  }
+
+  const results = computeResultsFromGroups(
+    groupMap, reserveMap, hubMap, isApy, whitelistMerklCampaignIds, tydroPointToUsdRate, forecastStates,
+  );
 
   return {
     results,
@@ -276,8 +337,71 @@ export function simulatePortfolioPositions(
   };
 }
 
-export function buildPerReserveInputs(
-  positions: PortfolioPosition[],
+/** @deprecated Use simulatePortfolioFromEntries instead. */
+export function simulatePortfolioPositions(
+  args: SimulatePortfolioPositionsArgs,
+): SimulatePortfolioPositionsResult {
+  const {
+    positions,
+    reserves,
+    hubAggregationMap: externalHubMap,
+    isApy,
+    whitelistMerklCampaignIds,
+    tydroPointToUsdRate,
+    forecastStates,
+  } = args;
+
+  if (positions.length === 0) {
+    return { results: [], summary: aggregatePortfolioSummary([]) };
+  }
+
+  const visiblePositions = positions.filter((p) => !p.hidden);
+  if (visiblePositions.length === 0) {
+    return { results: [], summary: aggregatePortfolioSummary([]) };
+  }
+
+  const hubMap = externalHubMap ?? buildHubAggregationMap(reserves);
+  const reserveMap = new Map(reserves.map((r) => [getReserveKey(r), r]));
+
+  const groupMap = new Map<string, EntryGroup>();
+  const supplySlots: SideSlot[] = [];
+  const borrowSlots: SideSlot[] = [];
+  for (const pos of visiblePositions) {
+    const slot: SideSlot = {
+      sideData: {
+        amount: pos.amount,
+        inputMode: pos.inputMode,
+        walletValue: pos.walletValue,
+        deltaSign: pos.deltaSign,
+      },
+      reserveId: pos.reserveId,
+    };
+    if (pos.side === 'supply') {
+      supplySlots.push(slot);
+    } else {
+      borrowSlots.push(slot);
+    }
+  }
+
+  buildGroupMapFromSlots(supplySlots, 'supply', reserveMap, groupMap);
+  buildGroupMapFromSlots(borrowSlots, 'borrow', reserveMap, groupMap);
+
+  if (groupMap.size === 0) {
+    return { results: [], summary: aggregatePortfolioSummary([]) };
+  }
+
+  const results = computeResultsFromGroups(
+    groupMap, reserveMap, hubMap, isApy, whitelistMerklCampaignIds, tydroPointToUsdRate, forecastStates,
+  );
+
+  return {
+    results,
+    summary: aggregatePortfolioSummary(results),
+  };
+}
+
+export function buildPerReserveInputsFromEntries(
+  entries: PortfolioReserveEntry[],
   reserves: ReserveWithSpread[],
 ): Map<string, PerReserveInput> {
   const reserveMap = new Map(reserves.map((r) => [getReserveKey(r), r]));
@@ -286,35 +410,39 @@ export function buildPerReserveInputs(
     { supplyUsd: number; borrowUsd: number; supplyDeltaUsd: number; borrowDeltaUsd: number }
   >();
 
-  for (const pos of positions) {
-    if (pos.hidden || pos.isOrphan) continue;
-    const key = getReserveKey({ reserveId: pos.reserveId });
+  for (const entry of entries) {
+    if (entry.hidden || entry.isOrphan) continue;
+    const key = getReserveKey({ reserveId: entry.reserveId });
     const reserve = reserveMap.get(key);
     if (!reserve) continue;
-    const amountUsd = resolvePositionAmountUsd(pos, reserve);
-    if (amountUsd <= 0) continue;
 
-    const delta = computeDelta({
-      amount: pos.amount,
-      walletValue: pos.walletValue,
-      inputMode: pos.inputMode,
-      tokenPrice: reserve.tokenPrice,
-    });
+    for (const side of ['supply', 'borrow'] as const) {
+      const s = entry[side];
+      const amountUsd = resolvePositionAmountUsd(s, reserve);
+      if (amountUsd <= 0) continue;
 
-    const existing = grouped.get(pos.reserveId) ?? {
-      supplyUsd: 0,
-      borrowUsd: 0,
-      supplyDeltaUsd: 0,
-      borrowDeltaUsd: 0,
-    };
-    if (pos.side === 'supply') {
-      existing.supplyUsd += delta.effectiveAmountUsd;
-      existing.supplyDeltaUsd += delta.deltaUsd;
-    } else {
-      existing.borrowUsd += delta.effectiveAmountUsd;
-      existing.borrowDeltaUsd += delta.deltaUsd;
+      const delta = computeDelta({
+        amount: s.amount,
+        walletValue: s.walletValue,
+        inputMode: s.inputMode,
+        tokenPrice: reserve.tokenPrice,
+      });
+
+      const existing = grouped.get(entry.reserveId) ?? {
+        supplyUsd: 0,
+        borrowUsd: 0,
+        supplyDeltaUsd: 0,
+        borrowDeltaUsd: 0,
+      };
+      if (side === 'supply') {
+        existing.supplyUsd += delta.effectiveAmountUsd;
+        existing.supplyDeltaUsd += delta.deltaUsd;
+      } else {
+        existing.borrowUsd += delta.effectiveAmountUsd;
+        existing.borrowDeltaUsd += delta.deltaUsd;
+      }
+      grouped.set(entry.reserveId, existing);
     }
-    grouped.set(pos.reserveId, existing);
   }
 
   const result = new Map<string, PerReserveInput>();

@@ -7,10 +7,10 @@ import { memo } from 'react';
 import { cn } from '@/lib/utils';
 import { formatPercent } from '@/lib/formatters';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
-import type { PortfolioPositionResult, PortfolioPosition, PortfolioSimulationMetric } from '@/types/portfolio';
+import type { PortfolioPositionResult, PortfolioReserveEntry, PortfolioSimulationMetric } from '@/types/portfolio';
 
 interface PortfolioResultsTableProps {
-  positions: PortfolioPosition[];
+  entries: PortfolioReserveEntry[];
   results: PortfolioPositionResult[];
 }
 
@@ -56,16 +56,15 @@ const InlineDelta = memo(function InlineDelta({
 });
 
 const PortfolioResultsTable = memo(function PortfolioResultsTable({
-  positions,
+  entries,
   results,
 }: PortfolioResultsTableProps) {
   if (results.length === 0) return null;
 
-  const reserveIds = new Set(results.map((r) => r.reserveId));
+  const entryMap = new Map(entries.map(e => [e.reserveId, e]));
   const rows = results.map((r) => {
-    const pos = positions.find((p) => p.positionId === `${r.reserveId}::${r.side}`) ??
-      positions.find((p) => p.reserveId === r.reserveId && p.side === r.side);
-    return { ...r, tokenSymbol: pos?.tokenSymbol ?? '?', chainName: pos?.chainName ?? '', marketName: pos?.marketName ?? '' };
+    const entry = entryMap.get(r.reserveId);
+    return { ...r, tokenSymbol: entry?.tokenSymbol ?? '?', chainName: entry?.chainName ?? '', marketName: entry?.marketName ?? '' };
   });
 
   const supplyRows = rows.filter((r) => r.side === 'supply');

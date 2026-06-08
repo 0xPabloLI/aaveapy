@@ -318,6 +318,61 @@ describe('usePortfolioSimulation — PortfolioReserveEntry API', () => {
     })
   })
 
+  describe('removeHiddenEntries', () => {
+    it('removes hidden entries and returns count', () => {
+      const { result } = renderHook(() => usePortfolioSimulation())
+      act(() => { result.current.actions.setActive(true) })
+
+      act(() => {
+        result.current.actions.addReserve({ reserveId: 'r-weth', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', tokenSymbol: 'WETH' })
+        result.current.actions.addReserve({ reserveId: 'r-gho', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', tokenSymbol: 'GHO' })
+        result.current.actions.addReserve({ reserveId: 'r-usdc', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', tokenSymbol: 'USDC' })
+      })
+
+      act(() => { result.current.actions.hideReserve('r-weth') })
+      act(() => { result.current.actions.hideReserve('r-gho') })
+
+      let removedCount = 0
+      act(() => { removedCount = result.current.actions.removeHiddenEntries() })
+
+      expect(removedCount).toBe(2)
+      expect(result.current.entries).toHaveLength(1)
+      expect(result.current.entries[0].reserveId).toBe('r-usdc')
+    })
+
+    it('returns 0 when no hidden entries exist', () => {
+      const { result } = renderHook(() => usePortfolioSimulation())
+      act(() => { result.current.actions.setActive(true) })
+
+      act(() => {
+        result.current.actions.addReserve({ reserveId: 'r-weth', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', tokenSymbol: 'WETH' })
+      })
+
+      let removedCount = -1
+      act(() => { removedCount = result.current.actions.removeHiddenEntries() })
+
+      expect(removedCount).toBe(0)
+      expect(result.current.entries).toHaveLength(1)
+    })
+
+    it('removes all entries when all are hidden', () => {
+      const { result } = renderHook(() => usePortfolioSimulation())
+      act(() => { result.current.actions.setActive(true) })
+
+      act(() => {
+        result.current.actions.addReserve({ reserveId: 'r-weth', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', tokenSymbol: 'WETH' })
+      })
+
+      act(() => { result.current.actions.hideReserve('r-weth') })
+
+      let removedCount = 0
+      act(() => { removedCount = result.current.actions.removeHiddenEntries() })
+
+      expect(removedCount).toBe(1)
+      expect(result.current.entries).toHaveLength(0)
+    })
+  })
+
   describe('clearAll', () => {
     it('removes all entries', () => {
       const { result } = renderHook(() => usePortfolioSimulation())

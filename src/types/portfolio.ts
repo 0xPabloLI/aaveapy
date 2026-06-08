@@ -35,8 +35,10 @@ export interface PortfolioSideData {
 export interface ReservePatch {
   supplyAmount?: string;
   supplyInputMode?: PortfolioInputMode;
+  supplyDeltaSign?: DeltaSign;
   borrowAmount?: string;
   borrowInputMode?: PortfolioInputMode;
+  borrowDeltaSign?: DeltaSign;
 }
 
 /** A reserve-level portfolio entry (one token, supply + borrow together). */
@@ -51,34 +53,6 @@ export interface PortfolioReserveEntry {
   hidden: boolean;
   /** Whether this entry is an orphan (reserveId not found in market data). */
   isOrphan: boolean;
-}
-
-/** @deprecated Use PortfolioReserveEntry instead. */
-export interface PortfolioPosition {
-  /** Unique key for this position within the portfolio (client-generated). */
-  positionId: string;
-  /** Canonical reserve key from market data; frontend falls back to the composite key when missing. */
-  reserveId: string;
-  /** Market name for display and lookup (e.g. "AaveV3Ethereum"). */
-  marketName: string;
-  /** Chain name for display (e.g. "Ethereum"). */
-  chainName: string;
-  /** Token symbol for display (e.g. "USDC"). */
-  tokenSymbol: string;
-  side: PortfolioSide;
-  /** Raw user input string (allows empty / partial). */
-  amount: string;
-  inputMode: PortfolioInputMode;
-  /** Wallet-synced onchain USD value. null = not from wallet (manual entry). */
-  walletValue: number | null;
-  /** Soft delete flag. Hidden positions are grayed + sunk to bottom. */
-  hidden: boolean;
-  /** Whether this position is an orphan (reserveId not found in market data). */
-  isOrphan: boolean;
-  /** Data source of this position — SDK preferred, onchain viem fallback, or manual entry. */
-  source?: PositionSource;
-  /** Explicit delta sign for wallet-synced positions: 1 = positive (adding), -1 = negative (reducing). Default 1. */
-  deltaSign?: DeltaSign;
 }
 
 /** Computed result for a single side after simulation. */
@@ -132,8 +106,6 @@ export interface PortfolioSnapshot {
   label: string;
   createdAt: number;
   entries: PortfolioReserveEntry[];
-  /** @deprecated Derived from entries. Use entries instead. */
-  positions?: PortfolioPosition[];
   summary: PortfolioSummary;
   positionResults: PortfolioPositionResult[];
 }

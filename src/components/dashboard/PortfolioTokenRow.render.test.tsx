@@ -4,7 +4,8 @@ import { cleanup, render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import PortfolioTokenRow from './PortfolioTokenRow';
-import type { PortfolioPosition } from '@/types/portfolio';
+import type { PortfolioReserveEntry, PortfolioSideData } from '@/types/portfolio';
+import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
 
 vi.mock('@/hooks/use-mobile', () => ({
   useIsMobile: vi.fn(() => false),
@@ -26,44 +27,52 @@ function Wrapper({ children }: { children: React.ReactNode }) {
   );
 }
 
-function makeSupply(overrides: Partial<PortfolioPosition> = {}): PortfolioPosition {
-  return {
-    positionId: 'pos-1',
-    reserveId: 'reserve-1',
-    side: 'supply',
-    amount: '5000',
-    inputMode: 'usd',
-    ...overrides,
-  };
-}
-
-function makeBorrow(overrides: Partial<PortfolioPosition> = {}): PortfolioPosition {
-  return {
-    positionId: 'pos-2',
-    reserveId: 'reserve-1',
-    side: 'borrow',
-    amount: '2000',
-    inputMode: 'usd',
-    ...overrides,
-  };
-}
+const EMPTY_SIDE: PortfolioSideData = { amount: '', inputMode: 'usd', walletValue: null };
 
 const noop = () => {};
 
-function renderRow(opts?: { isMobile?: boolean; borrow?: boolean; supplyOverrides?: Partial<PortfolioPosition>; tokenPriceInUsd?: number }) {
+const makeActions = (): PortfolioSimulationActions => ({
+  setActive: vi.fn(),
+  addReserve: vi.fn(),
+  removeReserve: vi.fn(),
+  updateReserve: vi.fn(),
+  hideReserve: vi.fn(),
+  unhideReserve: vi.fn(),
+  importReserves: vi.fn(),
+  restoreToWallet: vi.fn(),
+  clearAll: vi.fn(),
+  saveSnapshot: vi.fn(),
+  deleteSnapshot: vi.fn(),
+  undoLastRemove: vi.fn(),
+});
+
+function makeEntry(overrides: Partial<PortfolioReserveEntry> = {}): PortfolioReserveEntry {
+  return {
+    reserveId: 'reserve-1',
+    marketName: 'AaveV3Ethereum',
+    chainName: 'Ethereum',
+    tokenSymbol: 'USDC',
+    supply: { amount: '5000', inputMode: 'usd', walletValue: null },
+    borrow: { ...EMPTY_SIDE },
+    hidden: false,
+    isOrphan: false,
+    ...overrides,
+  };
+}
+
+function renderRow(opts?: { isMobile?: boolean; supplyOverrides?: Partial<PortfolioSideData>; borrowOverrides?: Partial<PortfolioSideData>; tokenPriceInUsd?: number; hidden?: boolean }) {
   vi.mocked(useIsMobile).mockReturnValue(opts?.isMobile ?? false);
+  const entry = makeEntry({
+    supply: opts?.supplyOverrides ? { ...EMPTY_SIDE, ...opts.supplyOverrides } : { amount: '5000', inputMode: 'usd', walletValue: null },
+    borrow: opts?.borrowOverrides ? { ...EMPTY_SIDE, ...opts.borrowOverrides } : { ...EMPTY_SIDE },
+    hidden: opts?.hidden ?? false,
+  });
   return render(
     <PortfolioTokenRow
+      entry={entry}
+      actions={makeActions()}
       reserveId="reserve-1"
-      tokenSymbol="USDC"
-      chainName="Ethereum"
-      marketName="AaveV3Ethereum"
-      supplyPosition={makeSupply(opts?.supplyOverrides)}
-      borrowPosition={opts?.borrow ? makeBorrow() : null}
       onRemove={noop}
-      onUpdateAmount={noop}
-      onUpdateInputMode={noop}
-      onUpdateDeltaSign={noop}
       tokenPriceInUsd={opts?.tokenPriceInUsd}
     />,
     { wrapper: Wrapper },
@@ -74,8 +83,6 @@ describe('PortfolioTokenRow render', () => {
   beforeEach(() => {
     cleanup();
   });
-
-  // ─── render ─────────────────────────────────────────────────
 
   it('renders token symbol', () => {
     renderRow();
@@ -96,21 +103,19 @@ describe('PortfolioTokenRow render', () => {
     ).toBeTruthy();
   });
 
-  it('renders Borrow input when borrow position exists', () => {
-    renderRow({ borrow: true });
+  it('renders Borrow input when entry has borrow data', () => {
+    renderRow({ borrowOverrides: { amount: '2000' } });
     expect(
       screen.getByRole('textbox', { name: /borrow.*USDC/i }),
     ).toBeTruthy();
   });
 
-  it('does not render Borrow input without borrow position', () => {
-    renderRow({ borrow: false });
+  it('always renders Borrow input (entry always has both sides)', () => {
+    renderRow();
     expect(
       screen.queryByRole('textbox', { name: /borrow/i }),
-    ).toBeNull();
+    ).toBeTruthy();
   });
-
-  // ─── subgrid ────────────────────────────────────────────────
 
   it('row has grid-cols-subgrid class', () => {
     renderRow();
@@ -119,8 +124,6 @@ describe('PortfolioTokenRow render', () => {
     const subgridEl = row?.parentElement;
     expect(subgridEl?.classList.contains('grid-cols-subgrid')).toBe(true);
   });
-
-  // ─── minus inline ───────────────────────────────────────────
 
   it('minus button is not absolute-positioned (inline on the left)', () => {
     renderRow();
@@ -131,8 +134,6 @@ describe('PortfolioTokenRow render', () => {
     const allClasses = [...parentClasses, ...wrapperClasses];
     expect(allClasses.filter((c) => c.includes('absolute')).length).toBe(0);
   });
-
-  // ─── effective amount display ─────────────────────────────
 
   it('shows effective amount with muted color when synced (delta ≈ 0)', () => {
     renderRow({
@@ -187,8 +188,6 @@ describe('PortfolioTokenRow render', () => {
     expect(screen.queryByLabelText(/effective amount/i)).toBeNull();
   });
 
-  // ─── minus inline ───────────────────────────────────────────
-
   it('minus button is not absolute-positioned (inline on the left)', () => {
     renderRow();
     const btn = screen.getByRole('button', { name: /remove.*USDC/i });
@@ -197,12 +196,11 @@ describe('PortfolioTokenRow render', () => {
     expect(parentDiv!.className.includes('absolute')).toBe(false);
   });
 
-  // ─── hidden state ────────────────────────────────────────────
-
   describe('hidden state', () => {
     function renderHiddenRow() {
       return renderRow({
-        supplyOverrides: { hidden: true, walletValue: 5000 },
+        hidden: true,
+        supplyOverrides: { walletValue: 5000 },
       });
     }
 

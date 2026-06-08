@@ -7,18 +7,16 @@ import {
   convertPortfolioInputAmount,
   formatConvertedAmount,
 } from './portfolioCalculator';
-import type { PortfolioPositionResult, PortfolioPosition } from '@/types/portfolio';
+import type { PortfolioPositionResult, PortfolioSideData } from '@/types/portfolio';
 import type { ReserveWithSpread } from '@/types/aave';
 
 describe('computePositionUsdPerDay', () => {
   it('returns positive for supply', () => {
-    // 10000 USD at 3.65% APR → ~1 USD/day
     const result = computePositionUsdPerDay('supply', 10000, 3.65, 0);
     expect(result).toBeCloseTo(1, 1);
   });
 
   it('returns negative native + positive incentive for borrow', () => {
-    // 10000 USD, 5% borrow cost, 2% incentive rebate → net ≈ -0.822/day
     const result = computePositionUsdPerDay('borrow', 10000, 5, 2);
     expect(result).toBeCloseTo(-0.8219, 2);
   });
@@ -32,24 +30,22 @@ describe('aggregatePortfolioSummary', () => {
   it('aggregates supply and borrow positions', () => {
     const results: PortfolioPositionResult[] = [
       {
-        positionId: 'a',
         reserveId: 'r1',
         side: 'supply',
         amountUsd: 10000,
         nativePercent: 3,
         incentivePercent: 1,
         totalPercent: 4,
-        usdPerDay: 1.0959, // ~10000 * 4% / 365
+        usdPerDay: 1.0959,
       },
       {
-        positionId: 'b',
         reserveId: 'r2',
         side: 'borrow',
         amountUsd: 5000,
         nativePercent: 6,
         incentivePercent: 2,
-        totalPercent: 4, // net after rebate
-        usdPerDay: -0.5479, // -(5000*6%/365) + (5000*2%/365)
+        totalPercent: 4,
+        usdPerDay: -0.5479,
       },
     ];
 
@@ -59,14 +55,12 @@ describe('aggregatePortfolioSummary', () => {
     expect(summary.supplyUsdPerDay).toBeCloseTo(1.0959, 2);
     expect(summary.borrowUsdPerDay).toBeCloseTo(-0.5479, 2);
     expect(summary.netUsdPerDay).toBeCloseTo(0.548, 1);
-    // netEffectiveApy = netUsdPerDay * 365 / totalSupplyUsd * 100
     expect(summary.netEffectiveApy).toBeGreaterThan(0);
   });
 
   it('returns zero APY when no supply positions', () => {
     const results: PortfolioPositionResult[] = [
       {
-        positionId: 'b',
         reserveId: 'r2',
         side: 'borrow',
         amountUsd: 5000,
@@ -87,11 +81,11 @@ describe('aggregatePortfolioSummary', () => {
 
   it('aggregates multiple supply and borrow positions', () => {
     const results: PortfolioPositionResult[] = [
-      { positionId: 's1', reserveId: 'r1', side: 'supply', amountUsd: 10000, nativePercent: 3, incentivePercent: 1, totalPercent: 4, usdPerDay: 1.0959 },
-      { positionId: 's2', reserveId: 'r2', side: 'supply', amountUsd: 20000, nativePercent: 2, incentivePercent: 0.5, totalPercent: 2.5, usdPerDay: 1.3699 },
-      { positionId: 's3', reserveId: 'r3', side: 'supply', amountUsd: 5000, nativePercent: 5, incentivePercent: 2, totalPercent: 7, usdPerDay: 0.9589 },
-      { positionId: 'b1', reserveId: 'r4', side: 'borrow', amountUsd: 8000, nativePercent: 4, incentivePercent: 1, totalPercent: -3, usdPerDay: -0.6575 },
-      { positionId: 'b2', reserveId: 'r5', side: 'borrow', amountUsd: 3000, nativePercent: 6, incentivePercent: 0, totalPercent: -6, usdPerDay: -0.4932 },
+      { reserveId: 'r1', side: 'supply', amountUsd: 10000, nativePercent: 3, incentivePercent: 1, totalPercent: 4, usdPerDay: 1.0959 },
+      { reserveId: 'r2', side: 'supply', amountUsd: 20000, nativePercent: 2, incentivePercent: 0.5, totalPercent: 2.5, usdPerDay: 1.3699 },
+      { reserveId: 'r3', side: 'supply', amountUsd: 5000, nativePercent: 5, incentivePercent: 2, totalPercent: 7, usdPerDay: 0.9589 },
+      { reserveId: 'r4', side: 'borrow', amountUsd: 8000, nativePercent: 4, incentivePercent: 1, totalPercent: -3, usdPerDay: -0.6575 },
+      { reserveId: 'r5', side: 'borrow', amountUsd: 3000, nativePercent: 6, incentivePercent: 0, totalPercent: -6, usdPerDay: -0.4932 },
     ];
     const summary = aggregatePortfolioSummary(results);
     expect(summary.totalSupplyUsd).toBe(35000);
@@ -103,12 +97,12 @@ describe('aggregatePortfolioSummary', () => {
   it('computes delta summary metrics from position metrics', () => {
     const results: PortfolioPositionResult[] = [
       {
-        positionId: 's1', reserveId: 'r1', side: 'supply', amountUsd: 10000,
+        reserveId: 'r1', side: 'supply', amountUsd: 10000,
         nativePercent: 3, incentivePercent: 1, totalPercent: 4, usdPerDay: 1.1,
         usdPerDayMetric: { current: 0.9, after: 1.1, delta: 0.2 },
       },
       {
-        positionId: 'b1', reserveId: 'r2', side: 'borrow', amountUsd: 5000,
+        reserveId: 'r2', side: 'borrow', amountUsd: 5000,
         nativePercent: 5, incentivePercent: 0, totalPercent: 5, usdPerDay: -0.68,
         usdPerDayMetric: { current: -0.5, after: -0.68, delta: -0.18 },
       },
@@ -128,7 +122,7 @@ describe('aggregatePortfolioSummary', () => {
 
   it('omits summary metrics when no position has metrics', () => {
     const results: PortfolioPositionResult[] = [
-      { positionId: 's1', reserveId: 'r1', side: 'supply', amountUsd: 10000, nativePercent: 3, incentivePercent: 1, totalPercent: 4, usdPerDay: 1.1 },
+      { reserveId: 'r1', side: 'supply', amountUsd: 10000, nativePercent: 3, incentivePercent: 1, totalPercent: 4, usdPerDay: 1.1 },
     ];
     const summary = aggregatePortfolioSummary(results);
     expect(summary.supplyUsdPerDayMetric).toBeUndefined();
@@ -138,61 +132,38 @@ describe('aggregatePortfolioSummary', () => {
 });
 
 describe('resolvePositionAmountUsd', () => {
-  const basePos: PortfolioPosition = {
-    positionId: 'p1',
-    reserveId: 'r1',
-    marketName: 'M',
-    chainName: 'C',
-    tokenSymbol: 'T',
-    side: 'supply',
+  const baseSide: PortfolioSideData = {
     amount: '',
     inputMode: 'usd',
     walletValue: null,
-    hidden: false,
-    isOrphan: false,
   };
 
   it('returns 0 for empty amount', () => {
-    expect(resolvePositionAmountUsd({ ...basePos, amount: '' }, undefined)).toBe(0);
+    expect(resolvePositionAmountUsd({ ...baseSide, amount: '' }, undefined)).toBe(0);
   });
 
   it('returns raw value when inputMode is usd', () => {
-    expect(resolvePositionAmountUsd({ ...basePos, amount: '5000' }, undefined)).toBe(5000);
+    expect(resolvePositionAmountUsd({ ...baseSide, amount: '5000' }, undefined)).toBe(5000);
   });
 
   it('multiplies by tokenPrice when inputMode is token', () => {
     const reserve = { tokenPrice: 2.5 } as ReserveWithSpread;
-    expect(resolvePositionAmountUsd({ ...basePos, amount: '100', inputMode: 'token' }, reserve)).toBe(250);
+    expect(resolvePositionAmountUsd({ ...baseSide, amount: '100', inputMode: 'token' }, reserve)).toBe(250);
   });
 
   it('returns 0 when token mode but no price', () => {
-    expect(resolvePositionAmountUsd({ ...basePos, amount: '100', inputMode: 'token' }, undefined)).toBe(0);
+    expect(resolvePositionAmountUsd({ ...baseSide, amount: '100', inputMode: 'token' }, undefined)).toBe(0);
   });
 
   it('returns 0 when token mode but price is 0', () => {
     const reserve = { tokenPrice: 0 } as ReserveWithSpread;
-    expect(resolvePositionAmountUsd({ ...basePos, amount: '100', inputMode: 'token' }, reserve)).toBe(0);
+    expect(resolvePositionAmountUsd({ ...baseSide, amount: '100', inputMode: 'token' }, reserve)).toBe(0);
   });
 });
 
 describe('buildPortfolioPositionResult', () => {
-  const pos: PortfolioPosition = {
-    positionId: 'p1',
-    reserveId: 'r1',
-    marketName: 'M',
-    chainName: 'C',
-    tokenSymbol: 'T',
-    side: 'supply',
-    amount: '10000',
-    inputMode: 'usd',
-    walletValue: null,
-    hidden: false,
-    isOrphan: false,
-  };
-
   it('builds supply result with correct fields', () => {
-    const result = buildPortfolioPositionResult(pos, 10000, 3, 1);
-    expect(result.positionId).toBe('p1');
+    const result = buildPortfolioPositionResult('r1', 'supply', 10000, 3, 1);
     expect(result.reserveId).toBe('r1');
     expect(result.side).toBe('supply');
     expect(result.amountUsd).toBe(10000);
@@ -203,14 +174,13 @@ describe('buildPortfolioPositionResult', () => {
   });
 
   it('builds borrow result with negative usdPerDay for net cost', () => {
-    const borrowPos = { ...pos, side: 'borrow' as const };
-    const result = buildPortfolioPositionResult(borrowPos, 10000, 5, 0);
+    const result = buildPortfolioPositionResult('r1', 'borrow', 10000, 5, 0);
     expect(result.side).toBe('borrow');
     expect(result.usdPerDay).toBeLessThan(0);
   });
 
   it('computes usdPerDay via computePositionUsdPerDay', () => {
-    const result = buildPortfolioPositionResult(pos, 10000, 3.65, 0);
+    const result = buildPortfolioPositionResult('r1', 'supply', 10000, 3.65, 0);
     const expected = computePositionUsdPerDay('supply', 10000, 3.65, 0);
     expect(result.usdPerDay).toBeCloseTo(expected, 10);
   });
@@ -222,7 +192,7 @@ describe('buildPortfolioPositionResult', () => {
       totalMetric: { current: 3.7, after: 4, delta: 0.3 },
       usdPerDayMetric: { current: 1.01, after: 1.1, delta: 0.09 },
     };
-    const result = buildPortfolioPositionResult(pos, 10000, 3, 1, metrics);
+    const result = buildPortfolioPositionResult('r1', 'supply', 10000, 3, 1, metrics);
     expect(result.nativeMetric).toEqual(metrics.nativeMetric);
     expect(result.incentiveMetric).toEqual(metrics.incentiveMetric);
     expect(result.totalMetric).toEqual(metrics.totalMetric);
@@ -230,7 +200,7 @@ describe('buildPortfolioPositionResult', () => {
   });
 
   it('result without metrics has undefined metric fields', () => {
-    const result = buildPortfolioPositionResult(pos, 10000, 3, 1);
+    const result = buildPortfolioPositionResult('r1', 'supply', 10000, 3, 1);
     expect(result.nativeMetric).toBeUndefined();
     expect(result.incentiveMetric).toBeUndefined();
     expect(result.totalMetric).toBeUndefined();
@@ -240,12 +210,10 @@ describe('buildPortfolioPositionResult', () => {
 
 describe('convertPortfolioInputAmount', () => {
   it('usd → token: divides amount by price', () => {
-    // 5000 USD, price $2500/token → 2 tokens
     expect(convertPortfolioInputAmount(5000, 'usd', 'token', 2500)).toBeCloseTo(2, 10);
   });
 
   it('token → usd: multiplies amount by price', () => {
-    // 2 tokens, price $2500/token → 5000 USD
     expect(convertPortfolioInputAmount(2, 'token', 'usd', 2500)).toBeCloseTo(5000, 10);
   });
 
@@ -267,7 +235,6 @@ describe('convertPortfolioInputAmount', () => {
   });
 
   it('handles decimal prices correctly', () => {
-    // 1000 USD, price $0.001/token → 1_000_000 tokens
     expect(convertPortfolioInputAmount(1000, 'usd', 'token', 0.001)).toBeCloseTo(1_000_000, 1);
   });
 

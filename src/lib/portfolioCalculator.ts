@@ -8,7 +8,7 @@
  */
 
 import type {
-  PortfolioPosition,
+  PortfolioSideData,
   PortfolioPositionResult,
   PortfolioSummary,
   PortfolioInputMode,
@@ -133,12 +133,12 @@ export function computePositionUsdPerDay(
 }
 
 export function resolvePositionAmountUsd(
-  position: PortfolioPosition,
+  sideData: PortfolioSideData,
   reserve: ReserveWithSpread | undefined
 ): number {
-  const raw = parseNumberInput(position.amount);
+  const raw = parseNumberInput(sideData.amount);
   if (raw <= 0) return 0;
-  if (position.inputMode === 'usd') return raw;
+  if (sideData.inputMode === 'usd') return raw;
   const price = reserve?.tokenPrice;
   if (!price || price <= 0) return 0;
   return raw * price;
@@ -152,7 +152,8 @@ export interface BuildPositionResultMetrics {
 }
 
 export function buildPortfolioPositionResult(
-  position: PortfolioPosition,
+  reserveId: string,
+  side: 'supply' | 'borrow',
   amountUsd: number,
   nativeAprPercent: number,
   incentiveAprPercent: number,
@@ -160,16 +161,15 @@ export function buildPortfolioPositionResult(
 ): PortfolioPositionResult {
   const totalPercent = nativeAprPercent + incentiveAprPercent;
   const usdPerDay = computePositionUsdPerDay(
-    position.side,
+    side,
     amountUsd,
     nativeAprPercent,
     incentiveAprPercent
   );
 
   return {
-    positionId: position.positionId,
-    reserveId: position.reserveId,
-    side: position.side,
+    reserveId,
+    side,
     amountUsd,
     nativePercent: nativeAprPercent,
     incentivePercent: incentiveAprPercent,

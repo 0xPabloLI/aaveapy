@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { usePortfolioToggle } from './usePortfolioToggle';
 import type { PortfolioSimulationContext } from './usePortfolioToggle';
-import type { PortfolioReserveEntry, PortfolioPosition } from '@/types/portfolio';
+import type { PortfolioReserveEntry } from '@/types/portfolio';
 import type { PortfolioSimulationActions } from '@/hooks/usePortfolioSimulation';
 import type { ReserveWithSpread } from '@/types/aave';
 import type { RateCalcInput } from '@/lib/interestRateCalculator';
@@ -35,22 +35,6 @@ const makeEntry = (overrides: Partial<PortfolioReserveEntry> = {}): PortfolioRes
     ...overrides,
   }) as PortfolioReserveEntry;
 
-const makePosition = (overrides: Partial<PortfolioPosition> = {}): PortfolioPosition =>
-  ({
-    positionId: 'p-1',
-    reserveId: 'r-1',
-    marketName: 'Ethereum-Core',
-    chainName: 'Ethereum',
-    tokenSymbol: 'WETH',
-    side: 'supply',
-    amount: '100',
-    inputMode: 'usd',
-    walletValue: null,
-    hidden: false,
-    isOrphan: false,
-    ...overrides,
-  }) as PortfolioPosition;
-
 const makeActions = (): PortfolioSimulationActions => ({
   setActive: vi.fn(),
   addReserve: vi.fn(),
@@ -64,16 +48,6 @@ const makeActions = (): PortfolioSimulationActions => ({
   saveSnapshot: vi.fn(),
   deleteSnapshot: vi.fn(),
   undoLastRemove: vi.fn(),
-  addPosition: vi.fn(() => 'new-id'),
-  removePosition: vi.fn(),
-  updateAmount: vi.fn(),
-  updateDeltaSign: vi.fn(),
-  updateInputMode: vi.fn(),
-  importPositions: vi.fn(),
-  restorePosition: vi.fn(),
-  toggleHidden: vi.fn(),
-  hideOrRemoveReserveAction: vi.fn(),
-  unhideReserveAction: vi.fn(),
 });
 
 describe('usePortfolioToggle', () => {
@@ -139,10 +113,10 @@ describe('usePortfolioToggle', () => {
 
       act(() => result.current.handlePortfolioToggle('r-1', reserve, 'supply'));
 
-      expect(actions.hideOrRemoveReserveAction).toHaveBeenCalledWith('r-1');
+      expect(actions.removeReserve).toHaveBeenCalledWith('r-1');
     });
 
-    it('calls hideOrRemoveReserveAction when the matching side exists', () => {
+    it('calls hideReserve when the matching side is wallet-owned', () => {
       const actions = makeActions();
       const reserve = makeReserve();
       const entries = [
@@ -159,8 +133,8 @@ describe('usePortfolioToggle', () => {
 
       act(() => result.current.handlePortfolioToggle('r-1', reserve, 'supply'));
 
-      expect(actions.hideOrRemoveReserveAction).toHaveBeenCalledWith('r-1');
-      expect(actions.hideOrRemoveReserveAction).toHaveBeenCalledTimes(1);
+      expect(actions.hideReserve).toHaveBeenCalledWith('r-1');
+      expect(actions.hideReserve).toHaveBeenCalledTimes(1);
       expect(actions.addReserve).not.toHaveBeenCalled();
     });
   });
@@ -189,11 +163,11 @@ describe('usePortfolioToggle', () => {
       });
     });
 
-    it('calls hideOrRemoveReserveAction for the reserve when entry is present', () => {
+    it('calls hideReserve for wallet-owned entry when entry is present', () => {
       const actions = makeActions();
       const reserve = makeReserve();
       const entries = [
-        makeEntry({ reserveId: 'r-1' }),
+        makeEntry({ reserveId: 'r-1', supply: { amount: '100', inputMode: 'usd', walletValue: 100 } }),
         makeEntry({ reserveId: 'r-2' }),
       ];
       const { result } = renderHook(() =>
@@ -207,8 +181,8 @@ describe('usePortfolioToggle', () => {
 
       act(() => result.current.handlePortfolioToggle('r-1', reserve));
 
-      expect(actions.hideOrRemoveReserveAction).toHaveBeenCalledWith('r-1');
-      expect(actions.hideOrRemoveReserveAction).toHaveBeenCalledTimes(1);
+      expect(actions.hideReserve).toHaveBeenCalledWith('r-1');
+      expect(actions.hideReserve).toHaveBeenCalledTimes(1);
       expect(actions.addReserve).not.toHaveBeenCalled();
     });
 

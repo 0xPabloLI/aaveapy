@@ -20,6 +20,7 @@ import PortfolioPanel from './PortfolioPanel';
 import { useWatchModeConnect } from '@/hooks/useWatchModeConnect';
 import { useWallet } from '@/hooks/useWallet';
 import type { ReserveWithSpread } from '@/types/aave';
+import type { PortfolioSimulationActions } from '@/types/portfolio';
 
 vi.mock('@/hooks/use-mobile', () => ({ useIsMobile: () => false }));
 vi.mock('sonner', () => ({ toast: { info: vi.fn(), success: vi.fn(), error: vi.fn() } }));
@@ -63,12 +64,19 @@ const makeReserve = (symbol: string): ReserveWithSpread => ({
   brevisSupplys: [], brevisBorrows: [],
 });
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const actions: any = {
-  setActive: vi.fn(), addPosition: vi.fn(), removePosition: vi.fn(),
-  updateAmount: vi.fn(), updateInputMode: vi.fn(), clearAll: vi.fn(),
-  saveSnapshot: vi.fn(), deleteSnapshot: vi.fn(),
-  importPositions: vi.fn(), restorePosition: vi.fn(), toggleHidden: vi.fn(),
+const actions: PortfolioSimulationActions = {
+  setActive: vi.fn(),
+  addReserve: vi.fn(),
+  removeReserve: vi.fn(),
+  updateReserve: vi.fn(),
+  hideReserve: vi.fn(),
+  unhideReserve: vi.fn(),
+  importReserves: vi.fn(),
+  restoreToWallet: vi.fn(),
+  clearAll: vi.fn(),
+  saveSnapshot: vi.fn(),
+  deleteSnapshot: vi.fn(),
+  undoLastRemove: vi.fn(),
 };
 
 function renderPanel(props: {
@@ -82,7 +90,7 @@ function renderPanel(props: {
         <RainbowKitProvider>
           <TooltipProvider>
             <PortfolioPanel
-              positions={[]}
+              entries={[]}
               actions={actions}
               reserves={props.reserves}
               walletLoadState={props.walletLoadState}
@@ -134,7 +142,7 @@ describe('PortfolioPanel — Wallet Sync button states', () => {
           <RainbowKitProvider>
             <TooltipProvider>
               <PortfolioPanel
-                positions={[]}
+                entries={[]}
                 actions={actions}
                 reserves={[makeReserve('USDC')]}
                 walletLoadState="success-empty"
@@ -162,7 +170,7 @@ describe('PortfolioPanel — Wallet Sync button states', () => {
           <RainbowKitProvider>
             <TooltipProvider>
               <PortfolioPanel
-                positions={[]}
+                entries={[]}
                 actions={actions}
                 reserves={[makeReserve('USDC')]}
                 walletLoadState="error"
@@ -192,7 +200,7 @@ describe('PortfolioPanel — Wallet Sync button states', () => {
           <RainbowKitProvider>
             <TooltipProvider>
               <PortfolioPanel
-                positions={[]}
+                entries={[]}
                 actions={actions}
                 reserves={reserves}
                 walletLoadState={state}
@@ -221,7 +229,7 @@ describe('PortfolioPanel — Wallet Sync button states', () => {
           <RainbowKitProvider>
             <TooltipProvider>
               <PortfolioPanel
-                positions={[]}
+                entries={[]}
                 actions={actions}
                 reserves={reserves}
                 walletLoadState={walletLoadState}

@@ -6,17 +6,9 @@ import {
   formatPortfolioAmount,
 } from './portfolioAmountFormat'
 import { formatConvertedAmount } from './portfolioCalculator'
-import { convertWalletPositionsToPortfolio } from './walletPositionToPortfolio'
-import { mergePositions } from './portfolioMerger'
+import { convertWalletPositionsToEntries } from './walletPositionToPortfolio'
 import type { WalletPosition } from './userData/userPositionMapper'
 import type { ReserveWithSpread } from '@/types/aave'
-
-/**
- * Single source of truth: every portfolio entry path must format amount
- * strings through `formatPortfolioAmount`. These tests cover the formatter
- * itself and every caller (import, merger, back-compat alias) so a new
- * entry point can't accidentally leak >8-sig-digit floats.
- */
 
 const NOISY: number[] = [
   0,
@@ -70,8 +62,6 @@ describe('formatPortfolioAmount', () => {
   })
 })
 
-// ---- Caller coverage: every entry path → ≤ 8 sig digits ---------------- //
-
 const reserves = [
   { reserveId: 'r-weth', marketName: 'M', chainName: 'C', tokenPrice: 3500 } as unknown as ReserveWithSpread,
   { reserveId: 'r-gho', marketName: 'M', chainName: 'C', tokenPrice: 1 } as unknown as ReserveWithSpread,
@@ -93,30 +83,7 @@ function expectAllClipped(values: string[], label: string) {
 
 describe('Portfolio amount entry paths use formatPortfolioAmount', () => {
   it('wallet → portfolio conversion clips amounts', () => {
-    const out = convertWalletPositionsToPortfolio(wallet, reserves)
-    expectAllClipped(out.map((p) => p.amount), 'walletPositionToPortfolio')
-  })
-
-  it('merger refresh does not regress precision (no manual edits)', () => {
-    const first = convertWalletPositionsToPortfolio(wallet, reserves)
-    const merged = mergePositions({ current: first, incoming: first })
-    expectAllClipped(merged.map((p) => p.amount), 'mergePositions')
-    // And the merger must not mutate a fresh wallet-tracking row.
-    for (const m of merged) {
-      const ref = first.find((p) => p.positionId === m.positionId)!
-      expect(m.amount).toBe(ref.amount)
-    }
-  })
-
-  it('manual edits survive the merger (and remain clipped where unedited)', () => {
-    const first = convertWalletPositionsToPortfolio(wallet, reserves)
-    const edited = first.map((p) =>
-      p.reserveId === 'r-weth' ? { ...p, amount: '1234.5678' } : p,
-    )
-    const merged = mergePositions({ current: edited, incoming: first })
-    const weth = merged.find((p) => p.reserveId === 'r-weth')!
-    expect(weth.amount).toBe('1234.5678')
-    const gho = merged.find((p) => p.reserveId === 'r-gho')!
-    expect(countSignificantDigits(gho.amount)).toBeLessThanOrEqual(MAX_PORTFOLIO_AMOUNT_SIG_DIGITS)
+    const out = convertWalletPositionsToEntries(wallet, reserves)
+    expectAllClipped(out.flatMap(e => [e.supply.amount, e.borrow.amount].filter(a => a !== '')), 'walletPositionToEntries')
   })
 })
