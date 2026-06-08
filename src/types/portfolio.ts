@@ -9,6 +9,8 @@ export type WalletSyncState = 'synced' | 'modified' | 'manual';
 /** Source of the position data — SDK preferred, onchain viem fallback, or manual entry. */
 export type PositionSource = 'sdk' | 'onchain-v3' | 'onchain-v4' | 'gap-v3' | 'gap-v4' | 'manual';
 
+export type DeltaSign = 1 | -1;
+
 /** Per-side data within a reserve entry. Always present — never null. */
 export interface PortfolioSideData {
   /** Raw user input string (allows empty / partial). */
@@ -18,6 +20,8 @@ export interface PortfolioSideData {
   walletValue: number | null;
   /** Data source of this side — SDK preferred, onchain viem fallback, or manual entry. */
   source?: PositionSource;
+  /** Explicit delta sign for wallet-synced positions: 1 = positive (adding), -1 = negative (reducing). Default 1. */
+  deltaSign?: DeltaSign;
 }
 
 /** Patch object for updateReserve — only specified fields are changed. */
@@ -66,6 +70,8 @@ export interface PortfolioPosition {
   isOrphan: boolean;
   /** Data source of this position — SDK preferred, onchain viem fallback, or manual entry. */
   source?: PositionSource;
+  /** Explicit delta sign for wallet-synced positions: 1 = positive (adding), -1 = negative (reducing). Default 1. */
+  deltaSign?: DeltaSign;
 }
 
 /** Computed result for a single side after simulation. */
