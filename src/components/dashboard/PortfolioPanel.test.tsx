@@ -9,7 +9,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import PortfolioPanel from './PortfolioPanel';
 import { useWatchModeConnect } from '@/hooks/useWatchModeConnect';
 import type { ReserveWithSpread } from '@/types/aave';
-import type { PortfolioPosition, PortfolioSimulationActions } from '@/types/portfolio';
+import type { PortfolioReserveEntry, PortfolioSimulationActions } from '@/types/portfolio';
 
 vi.mock('@/hooks/use-mobile', () => ({
   useIsMobile: () => false,
@@ -78,12 +78,31 @@ const makeReserve = (symbol: string, market = 'AaveV3Ethereum'): ReserveWithSpre
 });
 
 const makeActions = (): PortfolioSimulationActions => ({
+  setActive: vi.fn(),
+  addReserve: vi.fn(),
+  removeReserve: vi.fn(),
+  updateReserve: vi.fn(),
+  hideReserve: vi.fn(),
+  unhideReserve: vi.fn(),
+  importReserves: vi.fn(),
+  restoreToWallet: vi.fn(),
+  clearAll: vi.fn(),
+  saveSnapshot: vi.fn(),
+  deleteSnapshot: vi.fn(),
+  undoLastRemove: vi.fn(),
   addPosition: vi.fn(),
   removePosition: vi.fn(),
   updateAmount: vi.fn(),
+  updateDeltaSign: vi.fn(),
   updateInputMode: vi.fn(),
-  clearAll: vi.fn(),
+  importPositions: vi.fn(),
+  restorePosition: vi.fn(),
+  toggleHidden: vi.fn(),
+  hideOrRemoveReserveAction: vi.fn(),
+  unhideReserveAction: vi.fn(),
 });
+
+const EMPTY_SIDE = { amount: '', inputMode: 'usd' as const, walletValue: null };
 
 describe('PortfolioPanel', () => {
   afterEach(() => cleanup());
@@ -102,7 +121,7 @@ describe('PortfolioPanel', () => {
           <RainbowKitProvider>
             <TooltipProvider>
             <PortfolioPanel
-              positions={[]}
+              entries={[]}
               actions={makeActions()}
               reserves={reserves}
             />
@@ -122,7 +141,7 @@ describe('PortfolioPanel', () => {
           <RainbowKitProvider>
             <TooltipProvider>
             <PortfolioPanel
-              positions={[]}
+              entries={[]}
               actions={makeActions()}
               reserves={reserves}
             />
@@ -137,7 +156,7 @@ describe('PortfolioPanel', () => {
     expect(screen.getByRole('button', { name: /view address/i })).toBeInTheDocument();
   });
 
-  it('calls addPosition with supply and borrow sides when token is added from search', () => {
+  it('calls addReserve when token is added from search', () => {
     const reserves = [makeReserve('USDC')];
     const actions = makeActions();
     render(
@@ -146,7 +165,7 @@ describe('PortfolioPanel', () => {
           <RainbowKitProvider>
             <TooltipProvider>
             <PortfolioPanel
-              positions={[]}
+              entries={[]}
               actions={actions}
               reserves={reserves}
             />
@@ -159,14 +178,13 @@ describe('PortfolioPanel', () => {
     fireEvent.change(searchInput, { target: { value: 'USDC' } });
     const addButtons = screen.getAllByRole('button', { name: /add.*USDC/i });
     fireEvent.click(addButtons[0]);
-    expect(actions.addPosition).toHaveBeenCalledTimes(2);
+    expect(actions.addReserve).toHaveBeenCalledTimes(1);
   });
 
-  it('shows position rows for existing positions', () => {
+  it('shows entry rows for existing entries', () => {
     const reserves = [makeReserve('USDC')];
-    const positions: PortfolioPosition[] = [
-      { positionId: 'p1', reserveId: 'AaveV3Ethereum-USDC', side: 'supply', amount: '5000', inputMode: 'usd', tokenSymbol: 'USDC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum' },
-      { positionId: 'p2', reserveId: 'AaveV3Ethereum-USDC', side: 'borrow', amount: '2000', inputMode: 'usd', tokenSymbol: 'USDC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum' },
+    const entries: PortfolioReserveEntry[] = [
+      { reserveId: 'AaveV3Ethereum-USDC', tokenSymbol: 'USDC', marketName: 'AaveV3Ethereum', chainName: 'Ethereum', supply: { ...EMPTY_SIDE, amount: '5000' }, borrow: { ...EMPTY_SIDE, amount: '2000' }, hidden: false, isOrphan: false },
     ];
     render(
       <WagmiProvider config={testWagmiConfig}>
@@ -174,7 +192,7 @@ describe('PortfolioPanel', () => {
           <RainbowKitProvider>
             <TooltipProvider>
             <PortfolioPanel
-              positions={positions}
+              entries={entries}
               actions={makeActions()}
               reserves={reserves}
             />
@@ -186,7 +204,7 @@ describe('PortfolioPanel', () => {
     expect(screen.getByText('USDC')).toBeInTheDocument();
   });
 
-  it('renders empty state when no positions are added', () => {
+  it('renders empty state when no entries are added', () => {
     const reserves = [makeReserve('USDC')];
     const { container } = render(
       <WagmiProvider config={testWagmiConfig}>
@@ -194,7 +212,7 @@ describe('PortfolioPanel', () => {
           <RainbowKitProvider>
             <TooltipProvider>
             <PortfolioPanel
-              positions={[]}
+              entries={[]}
               actions={makeActions()}
               reserves={reserves}
             />
@@ -204,5 +222,49 @@ describe('PortfolioPanel', () => {
       </WagmiProvider>,
     );
     expect(container.innerHTML).not.toContain('position-results');
+  });
+
+  it('renders PortfolioModeToggle in header when simulationMode is provided', () => {
+    const reserves = [makeReserve('USDC')];
+    const onModeChange = vi.fn();
+    render(
+      <WagmiProvider config={testWagmiConfig}>
+        <QueryClientProvider client={new QueryClient()}>
+          <RainbowKitProvider>
+            <TooltipProvider>
+            <PortfolioPanel
+              entries={[]}
+              actions={makeActions()}
+              reserves={reserves}
+              simulationMode="portfolio"
+              onSimulationModeChange={onModeChange}
+            />
+            </TooltipProvider>
+          </RainbowKitProvider>
+        </QueryClientProvider>
+      </WagmiProvider>,
+    );
+    const toggle = screen.getByRole('switch', { name: /portfolio/i });
+    expect(toggle).toBeInTheDocument();
+  });
+
+  it('does not render PortfolioModeToggle when simulationMode is not provided', () => {
+    const reserves = [makeReserve('USDC')];
+    render(
+      <WagmiProvider config={testWagmiConfig}>
+        <QueryClientProvider client={new QueryClient()}>
+          <RainbowKitProvider>
+            <TooltipProvider>
+            <PortfolioPanel
+              entries={[]}
+              actions={makeActions()}
+              reserves={reserves}
+            />
+            </TooltipProvider>
+          </RainbowKitProvider>
+        </QueryClientProvider>
+      </WagmiProvider>,
+    );
+    expect(screen.queryByRole('switch', { name: /portfolio/i })).not.toBeInTheDocument();
   });
 });

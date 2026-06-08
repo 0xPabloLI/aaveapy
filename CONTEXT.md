@@ -133,7 +133,7 @@ _Avoid_: 在 trailing 位置放链网络 icon 单独表示 explorer（缺失 exp
 ## Wallet Portfolio
 
 **Portfolio Mode**:
-Multi-reserve simulation mode where users manage aggregate positions across multiple assets (supply/borrow per reserve). Toggled via `PortfolioModeToggle`; internally `SimulationMode = 'single' | 'portfolio'`. UI uses "Portfolio" label exclusively — no "Batch" anywhere.
+Multi-reserve simulation mode where users manage aggregate positions across multiple assets (supply/borrow per reserve). Toggled via `PortfolioModeToggle`; internally `SimulationMode = 'single' | 'portfolio'`. UI uses "Portfolio" label exclusively — no "Batch" anywhere. In Portfolio mode, the toggle renders inside the `PortfolioPanel` header row alongside action buttons; in Single mode, it renders in the `ReservesTable` scenario controls area.
 **Sticky behavior**: In Portfolio mode, the scenario bar (containing PortfolioPanel) is **not sticky** on both desktop and mobile — it scrolls naturally with the page. This prevents the panel from trapping content when it exceeds viewport height. Single mode keeps the scenario bar sticky at viewport top. See ADR-0013.
 _Avoid_: Batch Mode, Batch toggle, "Build your batch portfolio"
 
