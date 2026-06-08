@@ -47,14 +47,18 @@ export interface UsePortfolioToggleResult {
  *
  * - `portfolioReserveIds`: a Set of reserveIds currently in the portfolio.
  * - `handlePortfolioToggle`: add/remove a reserve in/out of the portfolio.
- *   When `side` is provided, toggles only that side. When `side` is omitted,
- *   adds BOTH supply and borrow if absent, or removes ALL positions for that
- *   reserve if any side is present.
+ *   When `side` is provided, adds that side AND mirrors the opposite side
+ *   if not already present (supply-borrow inseparability, see
+ *   [b8a89191]); to remove, use the explicit `hideOrRemoveReserveAction`
+ *   instead. When `side` is omitted, adds BOTH supply and borrow if
+ *   absent, or removes ALL positions for that reserve if any side is
+ *   present.
  * - `portfolioResults` / `portfolioSummary`: derived view-model rows and
  *   aggregate summary; empty when not in portfolio mode or no positions.
  *
  * Behavior preserved verbatim from the original inline implementation in
- * `src/components/dashboard/ReservesTable.tsx`.
+ * `src/components/dashboard/ReservesTable.tsx`, with the side-toggled
+ * addition extended to also add the opposite side when missing.
  */
 export const usePortfolioToggle = ({
   isPortfolioMode,
@@ -69,6 +73,20 @@ export const usePortfolioToggle = ({
     return new Set(portfolioPositions.map((p) => p.reserveId));
   }, [portfolioPositions]);
 
+  // Local helper: add one position with the standard payload shape.
+  const addOneSide = useCallback(
+    (reserve: ReserveWithSpread, side: 'supply' | 'borrow') => {
+      portfolioActions?.addPosition({
+        reserveId: reserve.reserveId,
+        marketName: reserve.marketName,
+        chainName: reserve.chainName,
+        tokenSymbol: reserve.tokenSymbol,
+        side,
+      });
+    },
+    [portfolioActions],
+  );
+
   // Callback: toggle a reserve in/out of portfolio (adds as specific side if provided, else defaults to supply+borrow)
   const handlePortfolioToggle = useCallback(
     (reserveId: string, reserve: ReserveWithSpread, side?: 'supply' | 'borrow') => {
@@ -81,36 +99,25 @@ export const usePortfolioToggle = ({
         if (existing) {
           portfolioActions.hideOrRemoveReserveAction(reserveId);
         } else {
-          portfolioActions.addPosition({
-            reserveId,
-            marketName: reserve.marketName,
-            chainName: reserve.chainName,
-            tokenSymbol: reserve.tokenSymbol,
-            side,
-          });
+          const oppositeSide = side === 'supply' ? 'borrow' : 'supply';
+          const hasOpposite = portfolioPositions?.some(
+            (p) => p.reserveId === reserveId && p.side === oppositeSide,
+          );
+          addOneSide(reserve, side);
+          if (!hasOpposite) {
+            addOneSide(reserve, oppositeSide);
+          }
         }
       } else {
         if (portfolioReserveIds.has(reserveId)) {
           portfolioActions.hideOrRemoveReserveAction(reserveId);
         } else {
-          portfolioActions.addPosition({
-            reserveId,
-            marketName: reserve.marketName,
-            chainName: reserve.chainName,
-            tokenSymbol: reserve.tokenSymbol,
-            side: 'supply',
-          });
-          portfolioActions.addPosition({
-            reserveId,
-            marketName: reserve.marketName,
-            chainName: reserve.chainName,
-            tokenSymbol: reserve.tokenSymbol,
-            side: 'borrow',
-          });
+          addOneSide(reserve, 'supply');
+          addOneSide(reserve, 'borrow');
         }
       }
     },
-    [portfolioActions, portfolioPositions, portfolioReserveIds],
+    [addOneSide, portfolioActions, portfolioPositions, portfolioReserveIds],
   );
 
   // Portfolio results computation

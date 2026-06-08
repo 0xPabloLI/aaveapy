@@ -94,6 +94,42 @@ describe('usePortfolioToggle', () => {
 
       act(() => result.current.handlePortfolioToggle('r-1', reserve, 'supply'));
 
+      expect(actions.addPosition).toHaveBeenCalledTimes(2);
+      expect(actions.addPosition).toHaveBeenNthCalledWith(1, {
+        reserveId: 'r-1',
+        marketName: 'Ethereum-Core',
+        chainName: 'Ethereum',
+        tokenSymbol: 'WETH',
+        side: 'supply',
+      });
+      expect(actions.addPosition).toHaveBeenNthCalledWith(2, {
+        reserveId: 'r-1',
+        marketName: 'Ethereum-Core',
+        chainName: 'Ethereum',
+        tokenSymbol: 'WETH',
+        side: 'borrow',
+      });
+      expect(actions.removePosition).not.toHaveBeenCalled();
+    });
+
+    it('adds only the missing side when opposite side already exists', () => {
+      const actions = makeActions();
+      const reserve = makeReserve();
+      const positions = [
+        makePosition({ positionId: 'p-bor', reserveId: 'r-1', side: 'borrow' }),
+      ];
+      const { result } = renderHook(() =>
+        usePortfolioToggle({
+          isPortfolioMode: true,
+          reserves: [reserve],
+          portfolioPositions: positions,
+          portfolioActions: actions,
+        }),
+      );
+
+      act(() => result.current.handlePortfolioToggle('r-1', reserve, 'supply'));
+
+      expect(actions.addPosition).toHaveBeenCalledTimes(1);
       expect(actions.addPosition).toHaveBeenCalledWith({
         reserveId: 'r-1',
         marketName: 'Ethereum-Core',
@@ -101,7 +137,6 @@ describe('usePortfolioToggle', () => {
         tokenSymbol: 'WETH',
         side: 'supply',
       });
-      expect(actions.removePosition).not.toHaveBeenCalled();
     });
 
     it('calls hideOrRemoveReserveAction when the matching side exists', () => {
