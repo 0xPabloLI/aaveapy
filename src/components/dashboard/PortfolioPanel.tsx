@@ -7,6 +7,7 @@
  */
 import { useState, useMemo, useEffect, useRef, memo, useCallback, lazy, Suspense } from 'react';
 import { Search, X, Layers, Trash2, Save, ArrowRightLeft, Check, RefreshCw, Wallet } from 'lucide-react';
+import PortfolioModeToggle, { type SimulationMode } from './PortfolioModeToggle';
 import { features } from '@/config/features';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -57,6 +58,8 @@ interface PortfolioPanelProps {
   onRefresh?: () => Promise<void> | void;
   /** Wallet position loading state. */
   walletLoadState?: WalletLoadState;
+  simulationMode?: SimulationMode;
+  onSimulationModeChange?: (mode: SimulationMode) => void;
 }
 
 /**
@@ -558,11 +561,15 @@ const PortfolioPanel = memo(function PortfolioPanel({
                 </button>
               </ConfirmPopover>
             )}
+            {simulationMode && onSimulationModeChange && (
+              <PortfolioModeToggle
+                mode={simulationMode}
+                onModeChange={onSimulationModeChange}
+                positionCount={new Set(positions.map(p => p.reserveId)).size}
+              />
+            )}
           </div>
-
         </div>
-
-        {/* Wallet status bar */}
         {walletLoadState && walletLoadState !== 'idle' && (
           <div className="flex items-center gap-1.5 mb-2.5 ds-text-11 text-muted-foreground">
             {walletLoadState === 'loading' && (
