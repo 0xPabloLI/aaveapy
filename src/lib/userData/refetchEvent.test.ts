@@ -162,8 +162,3 @@ describe('refetchEvent', () => {
     })
   })
 })
-
-// keep a reference to afterEach to satisfy linters if needed
-afterEach(() => {
-  _resetRefetchListeners()
-})

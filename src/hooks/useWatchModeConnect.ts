@@ -1,6 +1,6 @@
 import { useCallback } from 'react'
 import { useAccount, useConnect } from 'wagmi'
-import { useQueryClient } from '@tanstack/react-query'
+import { bumpRefetch } from '../lib/userData/refetchEvent'
 
 type WatchModeConnector = {
   id: string
@@ -10,7 +10,6 @@ type WatchModeConnector = {
 export function useWatchModeConnect() {
   const { connectAsync, connectors } = useConnect()
   const { connector: activeConnector } = useAccount()
-  const queryClient = useQueryClient()
 
   const connectWatchAddress = useCallback(async (address: `0x${string}`) => {
     const connector = connectors.find((item) => item.id === 'watchMode')
@@ -26,11 +25,13 @@ export function useWatchModeConnect() {
     if (isReentry) {
       // Re-entry: the user re-submitted an address while Watch Mode is already
       // active. `setWatchAddress` is a no-op when the address is unchanged, so
-      // wagmi never propagates a 'change' event and React Query's
-      // `['user-positions', address]` cache key stays the same — leaving the
-      // user with a silent, unresponsive UI and stale positions. Force a
-      // refetch so the action is observable and positions reload.
-      await queryClient.invalidateQueries({ queryKey: ['user-positions', address] })
+      // wagmi never propagates a 'change' event and downstream hooks
+      // (`useUserPositionsSdk`, urql V3/V4 queries, RQ fallback) all see the
+      // same args/key references and skip refetch. Route through
+      // `refetchEvent` so re-submit is unified with F5 / Refresh button and
+      // consumers can `invalidateQueries` / `refetchQueries` from one place.
+      // See ADR-0015.
+      bumpRefetch('watch-reentry')
       return
     }
 
@@ -40,7 +41,7 @@ export function useWatchModeConnect() {
       if (err instanceof Error && /Connector already connected/i.test(err.message)) return
       throw err
     }
-  }, [activeConnector?.id, connectAsync, connectors, queryClient])
+  }, [activeConnector?.id, connectAsync, connectors])
 
   return { connectWatchAddress }
 }
