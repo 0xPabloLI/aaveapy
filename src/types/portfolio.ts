@@ -9,7 +9,40 @@ export type WalletSyncState = 'synced' | 'modified' | 'manual';
 /** Source of the position data — SDK preferred, onchain viem fallback, or manual entry. */
 export type PositionSource = 'sdk' | 'onchain-v3' | 'onchain-v4' | 'gap-v3' | 'gap-v4' | 'manual';
 
-/** A single position in the portfolio (one token, one side). */
+/** Per-side data within a reserve entry. Always present — never null. */
+export interface PortfolioSideData {
+  /** Raw user input string (allows empty / partial). */
+  amount: string;
+  inputMode: PortfolioInputMode;
+  /** Wallet-synced onchain USD value. null = not from wallet (manual entry). */
+  walletValue: number | null;
+  /** Data source of this side — SDK preferred, onchain viem fallback, or manual entry. */
+  source?: PositionSource;
+}
+
+/** Patch object for updateReserve — only specified fields are changed. */
+export interface ReservePatch {
+  supplyAmount?: string;
+  supplyInputMode?: PortfolioInputMode;
+  borrowAmount?: string;
+  borrowInputMode?: PortfolioInputMode;
+}
+
+/** A reserve-level portfolio entry (one token, supply + borrow together). */
+export interface PortfolioReserveEntry {
+  reserveId: string;
+  marketName: string;
+  chainName: string;
+  tokenSymbol: string;
+  supply: PortfolioSideData;
+  borrow: PortfolioSideData;
+  /** Soft delete flag. Hidden entries are grayed + sunk to bottom. */
+  hidden: boolean;
+  /** Whether this entry is an orphan (reserveId not found in market data). */
+  isOrphan: boolean;
+}
+
+/** @deprecated Use PortfolioReserveEntry instead. */
 export interface PortfolioPosition {
   /** Unique key for this position within the portfolio (client-generated). */
   positionId: string;
@@ -35,9 +68,8 @@ export interface PortfolioPosition {
   source?: PositionSource;
 }
 
-/** Computed result for a single position after simulation. */
+/** Computed result for a single side after simulation. */
 export interface PortfolioPositionResult {
-  positionId: string;
   reserveId: string;
   side: PortfolioSide;
   /** USD value of position (resolved from token amount × price or direct USD input). */
@@ -71,7 +103,7 @@ export interface PortfolioSnapshot {
   id: string;
   label: string;
   createdAt: number;
-  positions: PortfolioPosition[];
+  entries: PortfolioReserveEntry[];
   summary: PortfolioSummary;
   positionResults: PortfolioPositionResult[];
 }
@@ -80,6 +112,6 @@ export interface PortfolioSnapshot {
 export interface PortfolioState {
   /** Whether portfolio mode is active. */
   active: boolean;
-  positions: PortfolioPosition[];
+  entries: PortfolioReserveEntry[];
   savedSnapshots: PortfolioSnapshot[];
 }
