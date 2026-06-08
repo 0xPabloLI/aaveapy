@@ -142,8 +142,8 @@
 | AAV-80 | 个人 position/liquidity | ✅ Done | Phase 4，展示已实现 |
 | AAV-62 | 支持导入现有portfolio | ❌ Canceled | 手动导入按钮不做，用自动导入替代 |
 | AAV-488 | WatchMode 入口不可用 | ✅ Done | Header 已传 onWatchSubmit，WalletButton 自定义渲染已提供入口 |
+| AAV-641 | Watch mode 地址刷新后消失且无法重输 (中文 original) | ⛔ Canceled | 与 AAV-643 是同一 bug 的两份报告（641 早 11 分钟创建，描述几乎逐字相同），fix 实际在 [AAV-643](https://linear.app/aaveapy/issue/AAV-643) 上完成（commit `9198da23` + `28618fee`）。Linear MCP 缺 `duplicateOf` 字段，改用 Canceled state；closing comment 引用 AAV-643 + AAV-679。 |
 | AAV-643 | Watch Mode 重复提交地址 positions 不刷新 | ✅ Done (PARTIAL) | 2026-06-08, RQ fallback 路径已修（`useWatchModeConnect` isReentry 分支 invalidate `['user-positions', address]`），**生产主路径未修** — `useUserPositions` 是死代码，生产走 `useUserPositionsSdk`/urql，cache key 不匹配；AAV-643 已切到 Done state，follow-up → [AAV-679](https://linear.app/aaveapy/issue/AAV-679) (High, Todo, parent=AAV-643; 推荐 c. `location.reload()` 兜底) |
-| AAV-489 | 审查测试 fixture 真实性 | ✅ Done | |
 | AAV-597 | PRD: classifyRpcError 集成 RPC rotation | ✅ Done | ADR-0004 follow-up, per-URL error-type metrics |
 | AAV-598 | TDD: catch 路径集成测试 | ✅ Done | 3 个 catch path 测试 (network/contract/unknown) |
 | AAV-599 | 实现: catch 块集成 + 删 TODO | ✅ Done | rpcResilience.ts catch 块调用 classifyRpcError |
