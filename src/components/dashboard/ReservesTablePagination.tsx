@@ -1,5 +1,6 @@
 import { ArrowUp, ArrowDown, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
 import { useState, useCallback, useEffect } from 'react';
+import { freshnessColor } from '@/lib/freshnessColor';
 
 interface ReservesTableShowMoreProps {
   totalCount: number;
@@ -60,13 +61,6 @@ export function ReservesTableShowMore({
 
 /** Max age in seconds before data is considered fully stale for the visual indicator. */
 const FRESHNESS_MAX_AGE_S = 60;
-
-/** Returns a semantic color class for the freshness dot: green → yellow → red. */
-function freshnessColor(ageS: number): string {
-  if (ageS < 30) return 'bg-emerald-400';
-  if (ageS < 60) return 'bg-amber-400';
-  return 'bg-red-400';
-}
 
 function useDataAge(dataUpdatedAt?: number) {
   const [ageS, setAgeS] = useState(0);

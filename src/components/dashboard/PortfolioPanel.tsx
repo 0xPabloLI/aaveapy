@@ -23,6 +23,7 @@ import { isStablecoinSymbol, isEthRelatedSymbol, isBtcRelatedSymbol } from '@/li
 import { getReserveKey } from '@/lib/reserveKey';
 import { getChainIconSrc } from '@/lib/chainIcons';
 import { getMarketChipLabel, isV4Market, getHubChipClass } from '@/lib/marketLabels';
+import { freshnessColor } from '@/lib/freshnessColor';
 import { TokenIcon } from '@/components/primitives/TokenIcon';
 import PortfolioTokenRow from './PortfolioTokenRow';
 import PopularTokenChip from './PopularTokenChip';
@@ -214,21 +215,11 @@ const PortfolioPanel = memo(function PortfolioPanel({
   // Wallet sync freshness: record timestamp when a sync settles, then expose age.
   const [walletSyncedAt, setWalletSyncedAt] = useState<number | null>(null);
   const [walletSyncAgeS, setWalletSyncAgeS] = useState(0);
-  // Cross-trigger (decision #25): when market reserves identity changes after the
-  // last successful wallet sync, surface a `has-update` hint on the Sync button
-  // so users know re-syncing may produce different aggregated results.
-  const [walletHasMarketUpdate, setWalletHasMarketUpdate] = useState(false);
   const prevWalletLoadStateRef = useRef<WalletLoadState | undefined>(walletLoadState);
   useEffect(() => {
     const prev = prevWalletLoadStateRef.current;
     if (prev === 'loading' && walletLoadState && walletLoadState !== 'loading') {
       setWalletSyncedAt(Date.now());
-      // Successful settle clears the cross-trigger hint and the previous error
-      // state recovers to idle; errors keep their own red dot via the
-      // `walletInError` branch below.
-      if (walletLoadState !== 'error') {
-        setWalletHasMarketUpdate(false);
-      }
     }
     prevWalletLoadStateRef.current = walletLoadState;
   }, [walletLoadState]);
@@ -243,25 +234,10 @@ const PortfolioPanel = memo(function PortfolioPanel({
     );
     return () => window.clearInterval(id);
   }, [walletSyncedAt]);
-  // Cross-trigger: flip `walletHasMarketUpdate` when reserves identity changes
-  // after a successful wallet sync. Watches identity (not deep-equality)
-  // because the parent already memoizes the reserves array.
-  useEffect(() => {
-    if (!walletSyncedAt) return;
-    if (walletLoadState === 'loading') return;
-    setWalletHasMarketUpdate(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reserves]);
   const walletInError = walletLoadState === 'error';
   const walletFreshnessColor = walletInError
     ? 'bg-red-400'
-    : walletHasMarketUpdate
-      ? 'bg-sky-400'
-      : walletSyncAgeS < 30
-        ? 'bg-emerald-400'
-        : walletSyncAgeS < 60
-          ? 'bg-amber-400'
-          : 'bg-red-400';
+    : freshnessColor(walletSyncAgeS);
   const walletAgeLabel = walletSyncedAt
     ? walletSyncAgeS < 60
       ? `${walletSyncAgeS}s ago`
@@ -273,22 +249,16 @@ const PortfolioPanel = memo(function PortfolioPanel({
     ? 'Syncing…'
     : walletInError
       ? 'Sync failed — click to retry'
-      : walletHasMarketUpdate
-        ? walletAgeLabel
-          ? `Market data updated — click to re-sync (last sync ${walletAgeLabel})`
-          : 'Market data updated — click to re-sync'
-        : walletAgeLabel
-          ? `Updated ${walletAgeLabel}`
-          : 'Sync wallet positions';
+      : walletAgeLabel
+        ? `Updated ${walletAgeLabel}`
+        : 'Sync wallet positions';
   const walletSyncAriaLabel = walletLoadState === 'loading'
     ? 'Syncing wallet positions'
     : walletInError
       ? 'Retry wallet sync (last attempt failed)'
-      : walletHasMarketUpdate
-        ? 'Re-sync wallet positions (market data updated)'
-        : walletAgeLabel
-          ? `Sync wallet positions (updated ${walletAgeLabel})`
-          : 'Sync wallet positions';
+      : walletAgeLabel
+        ? `Sync wallet positions (updated ${walletAgeLabel})`
+        : 'Sync wallet positions';
 
 
 
@@ -515,11 +485,9 @@ const PortfolioPanel = memo(function PortfolioPanel({
                       ? 'loading'
                       : walletInError
                         ? 'error'
-                        : walletHasMarketUpdate
-                          ? 'has-update'
-                          : walletSyncedAt
-                            ? 'idle-synced'
-                            : 'idle'
+                        : walletSyncedAt
+                          ? 'idle-synced'
+                          : 'idle'
                   }
                 >
                   <RefreshCw

@@ -1,11 +1,12 @@
 // @vitest-environment happy-dom
 /**
- * Wallet Sync button — verifies the idle / loading / has-update / error
+ * Wallet Sync button — verifies the idle / loading / error
  * state machine for the freshness dot, disabled state, spinner, and titles.
  *
  * Decisions covered:
  *  - #20/#23 — sync button has three states with freshness dot
- *  - #25 — market refresh cross-triggers wallet sync's has-update hint
+ *  - market-update sky dot removed; reserves identity change no longer
+ *    produces a distinct state — dot falls through to age-based color
  *  - error UX recovers to idle on successful retry
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -211,9 +212,9 @@ describe('PortfolioPanel — Wallet Sync button states', () => {
     expect(btn.getAttribute('title')).toMatch(/^Updated /);
   });
 
-  it('cross-trigger: reserves identity change after sync flips to has-update (sky dot)', () => {
+  it('reserves identity change after sync does not produce has-update (sky dot removed)', () => {
     const reservesA = [makeReserve('USDC')];
-    const reservesB = [makeReserve('USDC')]; // new identity
+    const reservesB = [makeReserve('USDC')];
     const tree = (reserves: ReserveWithSpread[], walletLoadState: 'loading' | 'success-empty') => (
       <WagmiProvider config={testWagmiConfig}>
         <QueryClientProvider client={new QueryClient()}>
@@ -235,8 +236,8 @@ describe('PortfolioPanel — Wallet Sync button states', () => {
     expect(screen.getByTestId('wallet-sync-button').getAttribute('data-wallet-sync-state')).toBe('idle-synced');
     rerender(tree(reservesB, 'success-empty'));
     const btn = screen.getByTestId('wallet-sync-button');
-    expect(btn.getAttribute('data-wallet-sync-state')).toBe('has-update');
-    expect(btn.getAttribute('title')).toMatch(/Market data updated/);
-    expect(screen.getByTestId('wallet-sync-freshness-dot').className).toContain('bg-sky-400');
+    expect(btn.getAttribute('data-wallet-sync-state')).toBe('idle-synced');
+    expect(btn.getAttribute('title')).toMatch(/^Updated /);
+    expect(screen.getByTestId('wallet-sync-freshness-dot').className).toContain('bg-emerald-400');
   });
 });
