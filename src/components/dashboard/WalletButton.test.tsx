@@ -110,7 +110,52 @@ describe('WalletButton — wallet connected (non-watch)', () => {
     expect(screen.getByRole('button', { name: /switch wallet/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /view another address/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /disconnect/i })).toBeInTheDocument()
+})
+
+describe('WalletButton — chevron affordance (connected, desktop)', () => {
+  beforeEach(() => mockWallet({
+    address: '0x1234567890abcdef1234567890abcdef12345678' as `0x${string}`,
+    isConnected: true,
+    isWatchMode: false,
+  }))
+
+  it('renders a chevron icon on desktop trigger', () => {
+    const { container } = render(<WalletButton />)
+    const trigger = screen.getByLabelText(/wallet/i)
+    const chevron = trigger.querySelector('svg.lucide-chevron-down')
+    expect(chevron).toBeTruthy()
   })
+
+  it('chevron inherits parent color (no hardcoded text-muted-foreground) and has rotation transition wired', () => {
+    const { container } = render(<WalletButton />)
+    const chevron = container.querySelector('svg.lucide-chevron-down') as SVGElement | null
+    expect(chevron).toBeTruthy()
+    const cls = chevron!.getAttribute('class') ?? ''
+    expect(cls).not.toContain('text-muted-foreground')
+    expect(cls).toContain('transition-transform')
+    expect(cls).toContain('group-data-[state=open]:rotate-180')
+    expect(cls).toContain('opacity-60')
+  })
+
+  it('trigger button carries the `group` class so chevron rotation responds to data-state', () => {
+    render(<WalletButton />)
+    const trigger = screen.getByLabelText(/wallet/i)
+    expect(trigger.className).toContain('group')
+  })
+
+  it('trigger flips data-state to open after click (drives chevron rotation)', () => {
+    render(<WalletButton />)
+    const trigger = screen.getByLabelText(/wallet/i)
+    expect(trigger.getAttribute('data-state')).toBe('closed')
+    fireEvent.click(trigger)
+    expect(trigger.getAttribute('data-state')).toBe('open')
+  })
+
+  it('does NOT render the chevron on mobile (circular icon-only trigger)', () => {
+    const { container } = render(<WalletButton mobile />)
+    expect(container.querySelector('svg.lucide-chevron-down')).toBeNull()
+  })
+})
 
   it('Switch wallet opens RainbowKit connect modal', () => {
     mockOpenConnectModal.mockClear()
