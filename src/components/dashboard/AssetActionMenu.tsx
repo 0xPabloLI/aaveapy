@@ -9,9 +9,11 @@ import { buildTydroReserveUrl } from '@/lib/tydroLinks';
 import { buildPoolExplorerUrl, buildTokenExplorerUrl, buildHubExplorerUrl, buildSpokeExplorerUrl } from '@/lib/poolExplorerLinks';
 import { externalLinkTabProps } from '@/lib/externalNavigation';
 import { getChainIconSrc } from '@/lib/chainIcons';
+import { getExplorerIconSrc, getExplorerBrand } from '@/lib/explorerIcons';
 import { getProtocolVersion } from '@/lib/protocolVersion';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { ExplorerIconStack } from '@/components/ui/ExplorerIconStack';
 
 /** Strip Aave market prefix to get the chain name (e.g. "AaveV3Arbitrum" → "Arbitrum"). */
 function deriveChainFromMarketName(marketName: string): string {
@@ -149,6 +151,12 @@ export function AssetActionMenu({
       : item.key === 'tydro'
         ? (isDark ? '/icons/partners/tydro-white.svg' : '/icons/partners/tydro-black.svg')
         : null;
+    const explorerIconSrc =
+      isExplorerItem && item.href ? getExplorerIconSrc(item.href) : undefined;
+    // `explorerName` is only meaningful when `explorerIconSrc` is set; the
+    // `ExplorerIconStack` returns null when the explorer icon is missing.
+    const explorerName =
+      isExplorerItem && item.href ? (getExplorerBrand(item.href) ?? chainName) : chainName;
     const trailing =
       item.key === 'copy' ? (
         <span className="ds-text-11 text-muted-foreground/70 tabular-nums">{truncatedAddress}</span>
@@ -162,13 +170,12 @@ export function AssetActionMenu({
           )}
           loading="lazy"
         />
-      ) : isExplorerItem && chainIconSrc ? (
-        <img
-          src={chainIconSrc}
-          alt={chainName}
-          title={chainName}
-          className="h-3.5 w-3.5 rounded-full opacity-80"
-          loading="lazy"
+      ) : isExplorerItem ? (
+        <ExplorerIconStack
+          chainIconSrc={chainIconSrc}
+          chainName={chainName}
+          explorerIconSrc={explorerIconSrc}
+          explorerName={explorerName}
         />
       ) : null;
     if (item.href) {

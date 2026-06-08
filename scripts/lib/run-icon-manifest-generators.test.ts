@@ -26,12 +26,17 @@ describe('runIconManifestGenerators', () => {
       [path.join('/repo', 'scripts', 'generate-chain-icon-manifest.mjs')],
       { stdio: 'inherit' }
     );
-    expect(run).toHaveBeenNthCalledWith(
-      3,
-      '/custom/node',
-      [path.join('/repo', 'scripts', 'generate-pt-icon-fallback.mjs')],
-      { stdio: 'inherit' }
+    const calledPaths = (run as unknown as ReturnType<typeof vi.fn>).mock.calls
+      .map(([, args]) => (args as string[])[0])
+      .filter((p): p is string => typeof p === 'string');
+    expect(calledPaths).toEqual(
+      expect.arrayContaining([
+        path.join('/repo', 'scripts', 'generate-token-icon-manifest.mjs'),
+        path.join('/repo', 'scripts', 'generate-chain-icon-manifest.mjs'),
+        path.join('/repo', 'scripts', 'generate-explorer-icon-manifest.mjs'),
+        path.join('/repo', 'scripts', 'generate-pt-icon-fallback.mjs'),
+      ]),
     );
-    expect(run).toHaveBeenCalledTimes(3);
+    expect(run).toHaveBeenCalledTimes(4);
   });
 });

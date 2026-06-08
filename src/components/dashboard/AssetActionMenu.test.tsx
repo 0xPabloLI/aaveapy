@@ -272,3 +272,27 @@ describe('AssetActionMenu (V3 vs V4 links)', () => {
     expect(viewAssetLink?.getAttribute('href')).toContain('/1/');
   });
 });
+
+describe('AssetActionMenu (explorer icon stack)', () => {
+  afterEach(() => cleanup());
+
+  it('renders both chain and Etherscan icons stacked for the token-explorer item on Ethereum', async () => {
+    const user = userEvent.setup();
+    setup({ marketName: 'AaveV3Ethereum' });
+
+    await user.click(screen.getByLabelText(`Asset actions for ${TOKEN_SYMBOL}`));
+    await screen.findByRole('menu');
+
+    const tokenItem = screen.getByText('View token on explorer').closest('a');
+    expect(tokenItem).not.toBeNull();
+
+    // Assert against the asset path prefix (rather than alt text) so the
+    // test stays decoupled from the chain icon registry's name resolution
+    // and from ExplorerIconStack's internal DOM structure.
+    const chainIcon = tokenItem?.querySelector('img[src^="/icons/networks/"]');
+    const explorerIcon = tokenItem?.querySelector('img[src^="/icons/explorers/"]');
+    expect(chainIcon).toBeInTheDocument();
+    expect(explorerIcon).toBeInTheDocument();
+    expect(explorerIcon?.getAttribute('src')).toBe('/icons/explorers/etherscan.svg');
+  });
+});
