@@ -127,11 +127,10 @@ describe('WalletButton — chevron affordance (connected, desktop)', () => {
   })
 
   it('chevron inherits parent color (no hardcoded text-muted-foreground) and has rotation transition wired', () => {
-    const trigger = screen.getByLabelText(/wallet/i) ?? render(<WalletButton />).container
     const { container } = render(<WalletButton />)
-    const chevron = container.querySelector('svg.lucide-chevron-down') as SVGElement
+    const chevron = container.querySelector('svg.lucide-chevron-down') as SVGElement | null
     expect(chevron).toBeTruthy()
-    const cls = chevron.getAttribute('class') ?? ''
+    const cls = chevron!.getAttribute('class') ?? ''
     expect(cls).not.toContain('text-muted-foreground')
     expect(cls).toContain('transition-transform')
     expect(cls).toContain('group-data-[state=open]:rotate-180')
