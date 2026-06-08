@@ -29,6 +29,10 @@ const { mockInvalidateQueries, lastOnchainFallbackQueryKey } = vi.hoisted(() => 
   mockInvalidateQueries: vi.fn(),
   lastOnchainFallbackQueryKey: { value: undefined as readonly unknown[] | undefined },
 }))
+const { mockV3RefreshQueryWhere, mockV4RefreshQueryWhere } = vi.hoisted(() => ({
+  mockV3RefreshQueryWhere: vi.fn(),
+  mockV4RefreshQueryWhere: vi.fn(),
+}))
 
 vi.mock('./useWallet', () => ({
   useWallet: useWalletMock,
@@ -37,11 +41,13 @@ vi.mock('./useWallet', () => ({
 vi.mock('@aave/react', () => ({
   useUserSupplies: vi.fn(() => ({ data: undefined, loading: true, error: undefined })),
   useUserBorrows: vi.fn(() => ({ data: undefined, loading: true, error: undefined })),
+  useAaveClient: () => ({ refreshQueryWhere: mockV4RefreshQueryWhere }),
 }))
 
 vi.mock('@aave/react-v3', () => ({
   useUserSupplies: vi.fn(() => ({ data: undefined, loading: true, error: undefined })),
   useUserBorrows: vi.fn(() => ({ data: undefined, loading: true, error: undefined })),
+  useAaveClient: () => ({ refreshQueryWhere: mockV3RefreshQueryWhere }),
 }))
 
 vi.mock('@/lib/userData/gapFallbackQuery', () => ({
@@ -332,6 +338,8 @@ describe('useUserPositionsSdk - refetchEvent subscription (S3, AAV-679)', () => 
     _resetRefetchListeners()
     mockInvalidateQueries.mockClear()
     mockGapRefetch.mockClear()
+    mockV3RefreshQueryWhere.mockClear()
+    mockV4RefreshQueryWhere.mockClear()
     lastOnchainFallbackQueryKey.value = undefined
     useWalletMock.mockReturnValue({
       address: USER,
@@ -378,11 +386,13 @@ describe('useUserPositionsSdk - refetchEvent subscription (S3, AAV-679)', () => 
       { wrapper },
     )
 
+    // No subscription is created when there's no address, so bumping
+    // refetchEvent must not trigger any refresh.
     bumpRefetch('watch-reentry')
-
-    expect(mockInvalidateQueries).toHaveBeenCalledWith({
-      queryKey: ['user-positions-onchain-fallback', 'no-wallet'],
-    })
+    expect(mockInvalidateQueries).not.toHaveBeenCalled()
+    expect(mockGapRefetch).not.toHaveBeenCalled()
+    expect(mockV3RefreshQueryWhere).not.toHaveBeenCalled()
+    expect(mockV4RefreshQueryWhere).not.toHaveBeenCalled()
     unmount()
   })
 
@@ -396,5 +406,205 @@ describe('useUserPositionsSdk - refetchEvent subscription (S3, AAV-679)', () => 
     bumpRefetch('watch-reentry')
     expect(mockInvalidateQueries).not.toHaveBeenCalled()
     expect(mockGapRefetch).not.toHaveBeenCalled()
+    expect(mockV3RefreshQueryWhere).not.toHaveBeenCalled()
+    expect(mockV4RefreshQueryWhere).not.toHaveBeenCalled()
+  })
+})
+
+// ---------- urql refetch (S4, AAV-698) ----------
+
+describe('useUserPositionsSdk - urql refetch on refetchEvent (S4, AAV-698)', () => {
+  beforeEach(() => {
+    _resetRefetchListeners()
+    mockV3RefreshQueryWhere.mockClear()
+    mockV4RefreshQueryWhere.mockClear()
+    useWalletMock.mockReturnValue({
+      address: USER,
+      isConnected: true,
+      isWatchMode: false,
+    })
+  })
+
+  it('refreshes V3 + V4 UserSupplies and UserBorrows queries on bump', async () => {
+    const { unmount } = renderHook(
+      () => useUserPositionsSdk([], {}, {}),
+      { wrapper },
+    )
+
+    bumpRefetch('watch-reentry')
+
+    expect(mockV3RefreshQueryWhere).toHaveBeenCalledTimes(2)
+    expect(mockV4RefreshQueryWhere).toHaveBeenCalledTimes(2)
+    unmount()
+  })
+
+  it('passes a V3 predicate that matches the connected user address', async () => {
+    const { unmount } = renderHook(
+      () => useUserPositionsSdk([], {}, {}),
+      { wrapper },
+    )
+
+    bumpRefetch('watch-reentry')
+
+    const calls = mockV3RefreshQueryWhere.mock.calls
+    expect(calls.length).toBeGreaterThan(0)
+    // Each call: [document, predicate]. Invoke the predicate with a fake
+    // variable shape; the V3 path reads `request.user`.
+    for (const [, predicate] of calls) {
+      const matched = (predicate as (vars: { request: { user: unknown } }) => boolean)({
+        request: { user: USER },
+      })
+      expect(matched).toBe(true)
+
+      const unmatched = (predicate as (vars: { request: { user: unknown } }) => boolean)({
+        request: { user: '0x0000000000000000000000000000000000000fff' },
+      })
+      expect(unmatched).toBe(false)
+    }
+    unmount()
+  })
+
+  it('passes a V4 predicate that matches `userChains.user`', async () => {
+    const { unmount } = renderHook(
+      () => useUserPositionsSdk([], {}, {}),
+      { wrapper },
+    )
+
+    bumpRefetch('watch-reentry')
+
+    const calls = mockV4RefreshQueryWhere.mock.calls
+    expect(calls.length).toBeGreaterThan(0)
+    for (const [, predicate] of calls) {
+      const matched = (predicate as (vars: { request: { query: { userChains?: { user: unknown } } } }) => boolean)({
+        request: { query: { userChains: { user: USER } } },
+      })
+      expect(matched).toBe(true)
+
+      const unmatched = (predicate as (vars: { request: { query: { userChains?: { user: unknown } } } }) => boolean)({
+        request: { query: { userChains: { user: '0x0000000000000000000000000000000000000fff' } } },
+      })
+      expect(unmatched).toBe(false)
+    }
+    unmount()
+  })
+
+  it('re-subscribes with a fresh address when the wallet address changes', () => {
+    useWalletMock.mockReturnValueOnce({
+      address: USER,
+      isConnected: true,
+      isWatchMode: false,
+    })
+    const { rerender, unmount } = renderHook(
+      () => useUserPositionsSdk([], {}, {}),
+      { wrapper },
+    )
+
+    bumpRefetch('watch-reentry')
+    expect(mockV3RefreshQueryWhere).toHaveBeenCalledTimes(2)
+
+    const NEW_USER = '0x1111111111111111111111111111111111111111'
+    useWalletMock.mockReturnValue({
+      address: NEW_USER,
+      isConnected: true,
+      isWatchMode: false,
+    })
+    rerender()
+    mockV3RefreshQueryWhere.mockClear()
+    mockV4RefreshQueryWhere.mockClear()
+
+    bumpRefetch('button')
+
+    // V3 predicate should now match the new address only.
+    for (const [, predicate] of mockV3RefreshQueryWhere.mock.calls) {
+      const matchNew = (predicate as (vars: { request: { user: unknown } }) => boolean)({
+        request: { user: NEW_USER },
+      })
+      const matchOld = (predicate as (vars: { request: { user: unknown } }) => boolean)({
+        request: { user: USER },
+      })
+      expect(matchNew).toBe(true)
+      expect(matchOld).toBe(false)
+    }
+    unmount()
+  })
+
+  // EIP-55 / mixed-case regression: wagmi returns checksummed addresses
+  // (e.g. `0xAbCd…`) while the Aave SDK may or may not normalize the
+  // branded `user` value. The predicate must match regardless of case so
+  // the refetch actually fires against the right query.
+  it('V3 predicate matches the wallet address regardless of hex case (EIP-55 regression)', () => {
+    const CHECKSUMMED = '0xAbCdEfAbCdEfAbCdEfAbCdEfAbCdEfAbCdEfAbCd' as `0x${string}`
+    useWalletMock.mockReturnValue({
+      address: CHECKSUMMED,
+      isConnected: true,
+      isWatchMode: false,
+    })
+
+    const { unmount } = renderHook(
+      () => useUserPositionsSdk([], {}, {}),
+      { wrapper },
+    )
+    bumpRefetch('button')
+
+    const calls = mockV3RefreshQueryWhere.mock.calls
+    expect(calls.length).toBeGreaterThan(0)
+    for (const [, predicate] of calls) {
+      const lower = (predicate as (vars: { request: { user: unknown } }) => boolean)({
+        request: { user: CHECKSUMMED.toLowerCase() },
+      })
+      const upper = (predicate as (vars: { request: { user: unknown } }) => boolean)({
+        request: { user: CHECKSUMMED.toUpperCase().replace('0X', '0x') },
+      })
+      const checksum = (predicate as (vars: { request: { user: unknown } }) => boolean)({
+        request: { user: CHECKSUMMED },
+      })
+      expect(lower).toBe(true)
+      expect(upper).toBe(true)
+      expect(checksum).toBe(true)
+
+      const other = (predicate as (vars: { request: { user: unknown } }) => boolean)({
+        request: { user: '0x0000000000000000000000000000000000000fff' },
+      })
+      expect(other).toBe(false)
+    }
+    unmount()
+  })
+
+  it('V4 predicate matches the wallet address regardless of hex case (EIP-55 regression)', () => {
+    const CHECKSUMMED = '0xAbCdEfAbCdEfAbCdEfAbCdEfAbCdEfAbCdEfAbCd' as `0x${string}`
+    useWalletMock.mockReturnValue({
+      address: CHECKSUMMED,
+      isConnected: true,
+      isWatchMode: false,
+    })
+
+    const { unmount } = renderHook(
+      () => useUserPositionsSdk([], {}, {}),
+      { wrapper },
+    )
+    bumpRefetch('button')
+
+    const calls = mockV4RefreshQueryWhere.mock.calls
+    expect(calls.length).toBeGreaterThan(0)
+    for (const [, predicate] of calls) {
+      const lower = (predicate as (vars: { request: { query: { userChains?: { user: unknown } } } }) => boolean)({
+        request: { query: { userChains: { user: CHECKSUMMED.toLowerCase() } } },
+      })
+      const upper = (predicate as (vars: { request: { query: { userChains?: { user: unknown } } } }) => boolean)({
+        request: { query: { userChains: { user: CHECKSUMMED.toUpperCase().replace('0X', '0x') } } },
+      })
+      const checksum = (predicate as (vars: { request: { query: { userChains?: { user: unknown } } } }) => boolean)({
+        request: { query: { userChains: { user: CHECKSUMMED } } },
+      })
+      expect(lower).toBe(true)
+      expect(upper).toBe(true)
+      expect(checksum).toBe(true)
+
+      const other = (predicate as (vars: { request: { query: { userChains?: { user: unknown } } } }) => boolean)({
+        request: { query: { userChains: { user: '0x0000000000000000000000000000000000000fff' } } },
+      })
+      expect(other).toBe(false)
+    }
+    unmount()
   })
 })

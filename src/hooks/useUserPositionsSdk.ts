@@ -1,8 +1,31 @@
 import { useEffect, useMemo } from 'react'
 import { useWallet } from './useWallet'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useUserSupplies as useV4UserSupplies, useUserBorrows as useV4UserBorrows } from '@aave/react'
-import { useUserSupplies as useV3UserSupplies, useUserBorrows as useV3UserBorrows } from '@aave/react-v3'
+import {
+  useUserSupplies as useV4UserSupplies,
+  useUserBorrows as useV4UserBorrows,
+  useAaveClient as useV4AaveClient,
+} from '@aave/react'
+import {
+  useUserSupplies as useV3UserSupplies,
+  useUserBorrows as useV3UserBorrows,
+  useAaveClient as useV3AaveClient,
+} from '@aave/react-v3'
+import {
+  UserSuppliesQuery as V4UserSuppliesQuery,
+  UserBorrowsQuery as V4UserBorrowsQuery,
+} from '@aave/graphql'
+// `@aave/react-v3` ships its own bundled copy of `@aave/graphql` (V3 schema),
+// so the V3 urql client tracks the V3 document — not the V4 one. We must
+// pass the matching document to `refreshQueryWhere` or the query hash will
+// not match any active operation. The V3 docs are reached through a
+// project-local Vite alias (see `vite.config.ts`) because Vite blocks deep
+// `node_modules/...` paths via the `@aave/react` `exports` field.
+// See ADR-0015 §S4.
+import {
+  UserSuppliesQuery as V3UserSuppliesQuery,
+  UserBorrowsQuery as V3UserBorrowsQuery,
+} from '@aave/react-v3/graphql-queries'
 import { evmAddress, chainId } from '@aave/types'
 import { type V3AssetsByMarket, V3_POOL_ADDRESSES } from '@/lib/userData/aaveV3UserClient'
 import { V4_SPOKE_ADDRESSES } from '@/lib/userData/aaveV4UserClient'
@@ -184,6 +207,12 @@ export function useUserPositionsSdk(
 ) {
   const { address, isConnected } = useWallet()
   const queryClient = useQueryClient()
+  // Both V3 and V4 AaveClient are provided via nested <AaveProvider> trees in
+  // `AaveProviders`. Each client tracks its own urql query registry, so we
+  // must call `refreshQueryWhere` on each one to invalidate every active
+  // user-position query. See ADR-0015 §S4.
+  const v3Client = useV3AaveClient()
+  const v4Client = useV4AaveClient()
 
   const enabled = isConnected && !!address
   const account = (enabled ? address : undefined) as `0x${string}`
@@ -255,26 +284,65 @@ export function useUserPositionsSdk(
   })
 
   // Subscribe to the unified `refetchEvent` emitter. On every bump (F5,
-  // Refresh button, Watch Mode re-submit) invalidate the onchain-fallback
-  // RQ key and refetch the gap-fallback query. The SDK/urql refetch path
-  // is handled separately (S4) — S3 covers the RQ + gap paths so the
-  // "infrastructure failure" recovery path is responsive.
+  // Refresh button, Watch Mode re-submit) we:
+  //   1. Invalidate the onchain-fallback RQ key so the RPC fallback replays.
+  //   2. Refetch the gap-fallback query (covers chains the SDK does not
+  //      support).
+  //   3. Call `refreshQueryWhere` on the V3 + V4 AaveClient to refresh the
+  //      urql-tracked `UserSupplies` / `UserBorrows` queries. Without
+  //      this, the SDK paths would still serve stale data because the urql
+  //      cache is keyed by the (stale) `args` reference. See ADR-0015 §S4.
   //
   // The subscription is re-established on every address change so the
   // closure captures the current `address`. The returned unsubscribe is
   // called on unmount or before the next subscription is created.
-  // See ADR-0015.
   useEffect(() => {
+    if (!address) return () => undefined
     return subscribeRefetch(() => {
       void queryClient.invalidateQueries({
-        queryKey: ['user-positions-onchain-fallback', address ?? 'no-wallet'],
+        queryKey: ['user-positions-onchain-fallback', address],
       })
       void gapFallbackQuery.refetch()
+
+      // V3: `request.user` is a branded EVM address. The brand may or may
+      // not normalize the underlying hex (depends on the Aave SDK version),
+      // and wagmi returns EIP-55 checksummed addresses, so we compare
+      // case-insensitively to remove the ambiguity. A safe EOA address is
+      // 42 chars; `toLowerCase` is a single pass and adds no measurable
+      // cost over the predicate call.
+      const v3Matches = (user: unknown) =>
+        typeof user === 'string' && user.toLowerCase() === address.toLowerCase()
+      void v3Client.refreshQueryWhere(
+        V3UserSuppliesQuery,
+        (variables) => v3Matches(variables.request.user),
+      )
+      void v3Client.refreshQueryWhere(
+        V3UserBorrowsQuery,
+        (variables) => v3Matches(variables.request.user),
+      )
+
+      // V4: `request.query` is a union of `userChains` and `userSpoke`.
+      // The app always uses `userChains` (see `buildV4SdkArgs`), but we
+      // still defensively check `userSpoke` to be future-proof.
+      const matchesV4User = (
+        variables: { request: { query: { userChains?: { user: unknown }; userSpoke?: { user: unknown } } } },
+      ) => {
+        const q = variables.request.query
+        return v3Matches(q.userChains?.user) || v3Matches(q.userSpoke?.user)
+      }
+      void v4Client.refreshQueryWhere(V4UserSuppliesQuery, matchesV4User)
+      void v4Client.refreshQueryWhere(V4UserBorrowsQuery, matchesV4User)
     })
-    // gapFallbackQuery is intentionally omitted: the gap fallback is a
-    // stable useQuery result and calling `refetch()` on the latest
-    // instance is safe. We only re-subscribe when `address` changes so the
-    // captured `address` value stays accurate.
+    // Deps rationale:
+    //   * `address` — must re-subscribe on wallet change so the captured
+    //     `address` stays accurate and the predicate matches the new user.
+    //   * `queryClient` — included for clarity; RQ clients are stable across
+    //     renders in practice but we keep the dep so future refactors that
+    //     swap the provider don't silently capture a stale client.
+    //   * `gapFallbackQuery` / `v3Client` / `v4Client` — omitted: their
+    //     `refetch` functions and urql client instances are stable refs
+    //     held in module / provider scope. Including them would re-subscribe
+    //     on every render with no behavioral change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [address, queryClient])
 

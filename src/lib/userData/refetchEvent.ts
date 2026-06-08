@@ -56,8 +56,12 @@ export function subscribeRefetch(listener: RefetchListener): () => void {
 
 /**
  * Test-only: remove all listeners.
- * Production code should never need this — use the unsubscribe function returned
- * from `subscribeRefetch` instead.
+ *
+ * @internal
+ * Production code should never need this — use the unsubscribe function
+ * returned from `subscribeRefetch` instead. The leading underscore is the
+ * project convention for "not part of the public API", and the `@internal`
+ * tag is the machine-readable signal that IDEs / type checkers honour.
  */
 export function _resetRefetchListeners(): void {
   listeners.clear()

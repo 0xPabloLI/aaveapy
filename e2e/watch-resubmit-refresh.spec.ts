@@ -112,10 +112,17 @@ test.describe('Watch Mode re-submit refreshes positions (AAV-679 / AAV-699)', ()
   }) => {
     test.skip(!WATCH_ADDRESS, 'E2E_WATCH_ADDRESS not set');
 
-    const alternateAddress = process.env.E2E_WATCH_ADDRESS_ALT ?? WATCH_ADDRESS!;
+    // E2E_WATCH_ADDRESS_ALT is REQUIRED for this test — it covers the
+    // address-change path of `useWatchModeConnect`, which only triggers
+    // when the new address differs from the active one. We deliberately
+    // do not default to WATCH_ADDRESS: a self-default would silently skip
+    // the test in CI and erode coverage. Provide a second throwaway
+    // address via env var to exercise this path.
+    const alternateAddress = process.env.E2E_WATCH_ADDRESS_ALT;
     test.skip(
-      alternateAddress.toLowerCase() === WATCH_ADDRESS!.toLowerCase(),
-      'E2E_WATCH_ADDRESS_ALT must differ from E2E_WATCH_ADDRESS',
+      !alternateAddress ||
+        alternateAddress.toLowerCase() === WATCH_ADDRESS!.toLowerCase(),
+      'E2E_WATCH_ADDRESS_ALT must be set and differ from E2E_WATCH_ADDRESS',
     );
 
     const userPositionRequests: number[] = [];

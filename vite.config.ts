@@ -95,6 +95,19 @@ export default defineConfig(({ mode }) => ({
       "react-dom": reactDomRoot,
       "react/jsx-runtime": path.join(reactRoot, "jsx-runtime.js"),
       "react/jsx-dev-runtime": path.join(reactRoot, "jsx-dev-runtime.js"),
+      // `@aave/react-v3` ships its own bundled copy of `@aave/graphql` (V3
+      // schema) under `node_modules/@aave/react-v3/node_modules/@aave/graphql`.
+      // Vite refuses to resolve through `node_modules/*` because the
+      // @aave/react package's `exports` field blocks deep paths. We expose
+      // the V3 GraphQL document bundle under a project-local alias so the
+      // V3 urql client can be refreshed with the matching V3 documents
+      // (the V4 documents from the top-level `@aave/graphql` would not
+      // match `r.query === document` inside `refreshQueryWhere`).
+      // See ADR-0015 §S4.
+      "@aave/react-v3/graphql-queries": path.resolve(
+        __dirname,
+        "node_modules/@aave/react-v3/node_modules/@aave/graphql/dist/index.js",
+      ),
     },
   },
   test: {
