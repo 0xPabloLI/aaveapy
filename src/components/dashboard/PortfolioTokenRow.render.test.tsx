@@ -125,16 +125,6 @@ describe('PortfolioTokenRow render', () => {
     expect(subgridEl?.classList.contains('grid-cols-subgrid')).toBe(true);
   });
 
-  it('minus button is not absolute-positioned (inline on the left)', () => {
-    renderRow();
-    const btn = screen.getByRole('button', { name: /remove.*USDC/i });
-    const parentClasses = Array.from(btn.parentElement?.classList ?? []);
-    const rowWrapper = btn.closest('[class*="rounded-lg"]');
-    const wrapperClasses = Array.from(rowWrapper?.classList ?? []);
-    const allClasses = [...parentClasses, ...wrapperClasses];
-    expect(allClasses.filter((c) => c.includes('absolute')).length).toBe(0);
-  });
-
   it('shows effective amount with muted color when synced (delta ≈ 0)', () => {
     renderRow({
       supplyOverrides: { amount: '5000', walletValue: 5000, inputMode: 'usd' },

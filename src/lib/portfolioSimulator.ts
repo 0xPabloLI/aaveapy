@@ -45,21 +45,7 @@ export interface SimulatePortfolioEntriesArgs extends SimulateCommonArgs {
   entries: PortfolioReserveEntry[];
 }
 
-export interface SimulatePortfolioPositionsArgs extends SimulateCommonArgs {
-  /** @deprecated Use SimulatePortfolioEntriesArgs.entries instead. */
-  positions: Array<{
-    reserveId: string;
-    side: PortfolioSide;
-    amount: string;
-    inputMode: 'usd' | 'token';
-    walletValue: number | null;
-    hidden: boolean;
-    isOrphan: boolean;
-    deltaSign?: 1 | -1;
-  }>;
-}
-
-export interface SimulatePortfolioPositionsResult {
+export interface SimulatePortfolioResult {
   results: PortfolioPositionResult[];
   summary: PortfolioSummary;
 }
@@ -288,7 +274,7 @@ function computeResultsFromGroups(
 
 export function simulatePortfolioFromEntries(
   args: SimulatePortfolioEntriesArgs,
-): SimulatePortfolioPositionsResult {
+): SimulatePortfolioResult {
   const {
     entries,
     reserves,
@@ -317,69 +303,6 @@ export function simulatePortfolioFromEntries(
     }
     if (e.borrow.amount !== '' || e.borrow.walletValue !== null) {
       borrowSlots.push({ sideData: e.borrow, reserveId: e.reserveId });
-    }
-  }
-
-  buildGroupMapFromSlots(supplySlots, 'supply', reserveMap, groupMap);
-  buildGroupMapFromSlots(borrowSlots, 'borrow', reserveMap, groupMap);
-
-  if (groupMap.size === 0) {
-    return { results: [], summary: aggregatePortfolioSummary([]) };
-  }
-
-  const results = computeResultsFromGroups(
-    groupMap, reserveMap, hubMap, isApy, whitelistMerklCampaignIds, tydroPointToUsdRate, forecastStates,
-  );
-
-  return {
-    results,
-    summary: aggregatePortfolioSummary(results),
-  };
-}
-
-/** @deprecated Use simulatePortfolioFromEntries instead. */
-export function simulatePortfolioPositions(
-  args: SimulatePortfolioPositionsArgs,
-): SimulatePortfolioPositionsResult {
-  const {
-    positions,
-    reserves,
-    hubAggregationMap: externalHubMap,
-    isApy,
-    whitelistMerklCampaignIds,
-    tydroPointToUsdRate,
-    forecastStates,
-  } = args;
-
-  if (positions.length === 0) {
-    return { results: [], summary: aggregatePortfolioSummary([]) };
-  }
-
-  const visiblePositions = positions.filter((p) => !p.hidden);
-  if (visiblePositions.length === 0) {
-    return { results: [], summary: aggregatePortfolioSummary([]) };
-  }
-
-  const hubMap = externalHubMap ?? buildHubAggregationMap(reserves);
-  const reserveMap = new Map(reserves.map((r) => [getReserveKey(r), r]));
-
-  const groupMap = new Map<string, EntryGroup>();
-  const supplySlots: SideSlot[] = [];
-  const borrowSlots: SideSlot[] = [];
-  for (const pos of visiblePositions) {
-    const slot: SideSlot = {
-      sideData: {
-        amount: pos.amount,
-        inputMode: pos.inputMode,
-        walletValue: pos.walletValue,
-        deltaSign: pos.deltaSign,
-      },
-      reserveId: pos.reserveId,
-    };
-    if (pos.side === 'supply') {
-      supplySlots.push(slot);
-    } else {
-      borrowSlots.push(slot);
     }
   }
 

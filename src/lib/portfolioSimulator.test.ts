@@ -3,8 +3,8 @@ import type { ReserveWithSpread } from '@/types/aave';
 import type { PortfolioReserveEntry, PortfolioSideData } from '@/types/portfolio';
 import type { RateCalcInput } from '@/lib/interestRateCalculator';
 import type { SimulationLane } from '@/lib/rateSimulationCalculator';
-import { simulatePortfolioPositions, buildPerReserveInputsFromEntries, buildMetricsFromLane, simulatePortfolioFromEntries } from './portfolioSimulator';
-import type { SimulatePortfolioPositionsArgs, SimulatePortfolioEntriesArgs } from './portfolioSimulator';
+import { buildPerReserveInputsFromEntries, buildMetricsFromLane, simulatePortfolioFromEntries } from './portfolioSimulator';
+import type { SimulatePortfolioEntriesArgs } from './portfolioSimulator';
 
 const makeRateCalcReserve = (
   overrides: Partial<ReserveWithSpread> = {},
@@ -47,30 +47,6 @@ const makeRateCalcReserve = (
     ...overrides,
   }) as ReserveWithSpread & RateCalcInput;
 
-type InlinePosition = {
-  reserveId: string;
-  side: 'supply' | 'borrow';
-  amount: string;
-  inputMode: 'usd' | 'token';
-  walletValue: number | null;
-  hidden: boolean;
-  isOrphan: boolean;
-  deltaSign?: 1 | -1;
-};
-
-const makePosition = (
-  overrides: Partial<InlinePosition> = {},
-): InlinePosition => ({
-  reserveId: 'r-usdc-v3',
-  side: 'supply',
-  amount: '10000',
-  inputMode: 'usd',
-  walletValue: null,
-  hidden: false,
-  isOrphan: false,
-  ...overrides,
-});
-
 const emptySide: PortfolioSideData = { amount: '', inputMode: 'usd', walletValue: null };
 
 const makeEntry = (
@@ -84,18 +60,6 @@ const makeEntry = (
   borrow: { ...emptySide },
   hidden: false,
   isOrphan: false,
-  ...overrides,
-});
-
-const baseSimArgs = (
-  overrides: Partial<SimulatePortfolioPositionsArgs> = {},
-): SimulatePortfolioPositionsArgs => ({
-  positions: [],
-  reserves: [],
-  isApy: true,
-  whitelistMerklCampaignIds: undefined,
-  tydroPointToUsdRate: 0,
-  forecastStates: {},
   ...overrides,
 });
 
@@ -355,20 +319,19 @@ describe('buildPerReserveInputsFromEntries', () => {
   });
 });
 
-describe('simulatePortfolioPositions', () => {
+describe('simulatePortfolioFromEntries', () => {
   it('v3: borrow increases utilization b supply afterNative rises', () => {
     const reserve = makeRateCalcReserve();
-    const basePositions = [
-      makePosition({ side: 'supply', amount: '10000' }),
+    const baseEntries = [
+      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
     ];
     const withBorrow = [
-      makePosition({ side: 'supply', amount: '10000' }),
-      makePosition({ side: 'borrow', amount: '5000' }),
+      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '5000', inputMode: 'usd', walletValue: null } }),
     ];
-    const baseArgs = baseSimArgs({ positions: basePositions, reserves: [reserve] });
-    const coupledArgs = baseSimArgs({ positions: withBorrow, reserves: [reserve] });
-    const baseResult = simulatePortfolioPositions(baseArgs);
-    const coupledResult = simulatePortfolioPositions(coupledArgs);
+    const baseArgs = baseEntriesSimArgs({ entries: baseEntries, reserves: [reserve] });
+    const coupledArgs = baseEntriesSimArgs({ entries: withBorrow, reserves: [reserve] });
+    const baseResult = simulatePortfolioFromEntries(baseArgs);
+    const coupledResult = simulatePortfolioFromEntries(coupledArgs);
     const baseSupply = baseResult.results.find((r) => r.side === 'supply')!;
     const coupledSupply = coupledResult.results.find((r) => r.side === 'supply')!;
     expect(coupledSupply.nativePercent).toBeGreaterThan(baseSupply.nativePercent);
@@ -377,15 +340,15 @@ describe('simulatePortfolioPositions', () => {
   it('v3: borrow increases utilization b borrow afterNative rises', () => {
     const reserve = makeRateCalcReserve();
     const smallBorrow = [
-      makePosition({ side: 'borrow', amount: '1000' }),
+      makeEntry({ supply: { ...emptySide }, borrow: { amount: '1000', inputMode: 'usd', walletValue: null } }),
     ];
     const largeBorrow = [
-      makePosition({ side: 'borrow', amount: '10000' }),
+      makeEntry({ supply: { ...emptySide }, borrow: { amount: '10000', inputMode: 'usd', walletValue: null } }),
     ];
-    const smallArgs = baseSimArgs({ positions: smallBorrow, reserves: [reserve] });
-    const largeArgs = baseSimArgs({ positions: largeBorrow, reserves: [reserve] });
-    const smallResult = simulatePortfolioPositions(smallArgs);
-    const largeResult = simulatePortfolioPositions(largeArgs);
+    const smallArgs = baseEntriesSimArgs({ entries: smallBorrow, reserves: [reserve] });
+    const largeArgs = baseEntriesSimArgs({ entries: largeBorrow, reserves: [reserve] });
+    const smallResult = simulatePortfolioFromEntries(smallArgs);
+    const largeResult = simulatePortfolioFromEntries(largeArgs);
     expect(largeResult.results[0].nativePercent).toBeGreaterThan(
       smallResult.results[0].nativePercent,
     );
@@ -404,13 +367,13 @@ describe('simulatePortfolioPositions', () => {
         { hubBorrowed: '40000000000000', hubSupplied: '60000000000000' },
       ],
     ]);
-    const positions = [
-      makePosition({ reserveId: 'r-usdc-v4', side: 'supply', amount: '10000' }),
+    const entries = [
+      makeEntry({ reserveId: 'r-usdc-v4', supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
     ];
-    const perSpokeArgs = baseSimArgs({ positions, reserves: [reserve] });
-    const hubArgs = baseSimArgs({ positions, reserves: [reserve], hubAggregationMap });
-    const perSpokeResult = simulatePortfolioPositions(perSpokeArgs);
-    const hubResult = simulatePortfolioPositions(hubArgs);
+    const perSpokeArgs = baseEntriesSimArgs({ entries, reserves: [reserve] });
+    const hubArgs = baseEntriesSimArgs({ entries, reserves: [reserve], hubAggregationMap });
+    const perSpokeResult = simulatePortfolioFromEntries(perSpokeArgs);
+    const hubResult = simulatePortfolioFromEntries(hubArgs);
     const perSpokeSupply = perSpokeResult.results.find((r) => r.side === 'supply')!;
     const hubSupply = hubResult.results.find((r) => r.side === 'supply')!;
     expect(hubSupply.nativePercent).toBeGreaterThan(perSpokeSupply.nativePercent);
@@ -428,15 +391,15 @@ describe('simulatePortfolioPositions', () => {
       borrowIncentives: [],
       tokenPrice: 1,
     } as ReserveWithSpread;
-    const positions = [
-      makePosition({
+    const entries = [
+      makeEntry({
         reserveId: 'r-no-calc',
-        side: 'supply',
-        amount: '10000',
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { ...emptySide },
       }),
     ];
-    const args = baseSimArgs({ positions, reserves: [reserve] });
-    const { results } = simulatePortfolioPositions(args);
+    const args = baseEntriesSimArgs({ entries, reserves: [reserve] });
+    const { results } = simulatePortfolioFromEntries(args);
     expect(results).toHaveLength(1);
     expect(results[0].nativePercent).toBe(3.0);
     expect(results[0].incentivePercent).toBe(0.5);
@@ -456,23 +419,23 @@ describe('simulatePortfolioPositions', () => {
       supplyApy: 1.2,
       borrowApy: 3.5,
     });
-    const positions = [
-      makePosition({
+    const entries = [
+      makeEntry({
         reserveId: 'r-usdc',
-        side: 'supply',
-        amount: '10000',
+        supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+        borrow: { ...emptySide },
       }),
-      makePosition({
+      makeEntry({
         reserveId: 'r-weth',
-        side: 'borrow',
-        amount: '5000',
+        supply: { ...emptySide },
+        borrow: { amount: '5000', inputMode: 'usd', walletValue: null },
       }),
     ];
-    const args = baseSimArgs({
-      positions,
+    const args = baseEntriesSimArgs({
+      entries,
       reserves: [usdcReserve, wethReserve],
     });
-    const { results } = simulatePortfolioPositions(args);
+    const { results } = simulatePortfolioFromEntries(args);
     expect(results).toHaveLength(2);
     const usdcResult = results.find((r) => r.reserveId === 'r-usdc');
     const wethResult = results.find((r) => r.reserveId === 'r-weth');
@@ -484,72 +447,104 @@ describe('simulatePortfolioPositions', () => {
 
   it('pure borrow without supply position', () => {
     const reserve = makeRateCalcReserve();
-    const positions = [
-      makePosition({
-        side: 'borrow',
-        amount: '5000',
+    const entries = [
+      makeEntry({
+        supply: { ...emptySide },
+        borrow: { amount: '5000', inputMode: 'usd', walletValue: null },
       }),
     ];
-    const args = baseSimArgs({ positions, reserves: [reserve] });
-    const { results } = simulatePortfolioPositions(args);
+    const args = baseEntriesSimArgs({ entries, reserves: [reserve] });
+    const { results } = simulatePortfolioFromEntries(args);
     expect(results).toHaveLength(1);
     expect(results[0].side).toBe('borrow');
     expect(results[0].nativePercent).toBeGreaterThan(0);
     expect(results[0].amountUsd).toBe(5000);
   });
 
-  it('empty positions returns empty results', () => {
-    const args = baseSimArgs({ positions: [], reserves: [makeRateCalcReserve()] });
-    const { results, summary } = simulatePortfolioPositions(args);
+  it('empty entries returns empty results', () => {
+    const args = baseEntriesSimArgs({ entries: [], reserves: [makeRateCalcReserve()] });
+    const { results, summary } = simulatePortfolioFromEntries(args);
     expect(results).toEqual([]);
     expect(summary.totalSupplyUsd).toBe(0);
     expect(summary.totalBorrowUsd).toBe(0);
   });
 
-  it('skips positions with zero amount', () => {
+  it('skips entries with zero amount', () => {
     const reserve = makeRateCalcReserve();
-    const positions = [
-      makePosition({ side: 'supply', amount: '0' }),
+    const entries = [
+      makeEntry({ supply: { amount: '0', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
     ];
-    const args = baseSimArgs({ positions, reserves: [reserve] });
-    const { results } = simulatePortfolioPositions(args);
+    const args = baseEntriesSimArgs({ entries, reserves: [reserve] });
+    const { results } = simulatePortfolioFromEntries(args);
     expect(results).toEqual([]);
   });
 
-  it('skips positions whose reserve is not found', () => {
+  it('skips entries whose reserve is not found', () => {
     const reserve = makeRateCalcReserve({ reserveId: 'r-exists' });
-    const positions = [
-      makePosition({ reserveId: 'r-missing', side: 'supply', amount: '10000' }),
+    const entries = [
+      makeEntry({ reserveId: 'r-missing', supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
     ];
-    const args = baseSimArgs({ positions, reserves: [reserve] });
-    const { results } = simulatePortfolioPositions(args);
+    const args = baseEntriesSimArgs({ entries, reserves: [reserve] });
+    const { results } = simulatePortfolioFromEntries(args);
     expect(results).toEqual([]);
   });
 
-  it('skips hidden positions from results and summary', () => {
+  it('skips hidden entries from results and summary', () => {
     const reserve = makeRateCalcReserve();
-    const positions = [
-      makePosition({ side: 'supply', amount: '10000', hidden: false }),
-      makePosition({ side: 'supply', amount: '5000', hidden: true }),
+    const entries = [
+      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide }, hidden: false }),
+      makeEntry({ supply: { amount: '5000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide }, hidden: true }),
     ];
-    const args = baseSimArgs({ positions, reserves: [reserve] });
-    const { results, summary } = simulatePortfolioPositions(args);
+    const args = baseEntriesSimArgs({ entries, reserves: [reserve] });
+    const { results, summary } = simulatePortfolioFromEntries(args);
     expect(results).toHaveLength(1);
     expect(summary.totalSupplyUsd).toBe(10000);
   });
 
-  it('mixed hidden + visible positions: summary excludes hidden contribution', () => {
+  it('mixed hidden + visible entries: summary excludes hidden contribution', () => {
     const reserve = makeRateCalcReserve();
-    const positions = [
-      makePosition({ side: 'supply', amount: '10000', hidden: false }),
-      makePosition({ side: 'borrow', amount: '3000', hidden: true }),
+    const entries = [
+      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide }, hidden: false }),
+      makeEntry({ supply: { ...emptySide }, borrow: { amount: '3000', inputMode: 'usd', walletValue: null }, hidden: true }),
     ];
-    const args = baseSimArgs({ positions, reserves: [reserve] });
-    const { results, summary } = simulatePortfolioPositions(args);
+    const args = baseEntriesSimArgs({ entries, reserves: [reserve] });
+    const { results, summary } = simulatePortfolioFromEntries(args);
     expect(results).toHaveLength(1);
     expect(results[0].side).toBe('supply');
     expect(summary.totalBorrowUsd).toBe(0);
     expect(summary.totalSupplyUsd).toBe(10000);
+  });
+
+  it('computes results from entries with supply and borrow', () => {
+    const reserve = makeRateCalcReserve();
+    const entries = [
+      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '5000', inputMode: 'usd', walletValue: null } }),
+    ];
+    const args = baseEntriesSimArgs({ entries, reserves: [reserve] });
+    const { results, summary } = simulatePortfolioFromEntries(args);
+    expect(results.length).toBeGreaterThan(0);
+    expect(summary.totalSupplyUsd).toBeGreaterThan(0);
+    expect(summary.totalBorrowUsd).toBeGreaterThan(0);
+  });
+
+  it('skips hidden entries', () => {
+    const reserve = makeRateCalcReserve();
+    const entries = [
+      makeEntry({ hidden: true, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
+    ];
+    const args = baseEntriesSimArgs({ entries, reserves: [reserve] });
+    const { results } = simulatePortfolioFromEntries(args);
+    expect(results).toEqual([]);
+  });
+
+  it('skips orphan entries', () => {
+    const reserve = makeRateCalcReserve();
+    const entries = [
+      makeEntry({ isOrphan: true, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
+    ];
+    const args = baseEntriesSimArgs({ entries, reserves: [reserve] });
+    const { results } = simulatePortfolioFromEntries(args);
+    expect(results).toEqual([]);
   });
 
   describe('cross-reserve net position constraint', () => {
@@ -585,21 +580,21 @@ describe('simulatePortfolioPositions', () => {
         ],
       });
 
-      const positions = [
-        makePosition({
+      const entries = [
+        makeEntry({
           reserveId: usdtReserveId,
-          side: 'supply',
-          amount: '10000',
+          supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+          borrow: { ...emptySide },
         }),
-        makePosition({
+        makeEntry({
           reserveId: usdcReserveId,
-          side: 'borrow',
-          amount: '10000',
+          supply: { ...emptySide },
+          borrow: { amount: '10000', inputMode: 'usd', walletValue: null },
         }),
       ];
 
-      const args = baseSimArgs({ positions, reserves: [usdtReserve, usdcReserve] });
-      const { results } = simulatePortfolioPositions(args);
+      const args = baseEntriesSimArgs({ entries, reserves: [usdtReserve, usdcReserve] });
+      const { results } = simulatePortfolioFromEntries(args);
 
       const usdtSupply = results.find((r) => r.reserveId === usdtReserveId && r.side === 'supply');
       expect(usdtSupply).toBeDefined();
@@ -633,31 +628,31 @@ describe('simulatePortfolioPositions', () => {
         ],
       });
 
-      const noBorrowPositions = [
-        makePosition({
+      const noBorrowEntries = [
+        makeEntry({
           reserveId: usdtReserveId,
-          side: 'supply',
-          amount: '10000',
+          supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+          borrow: { ...emptySide },
         }),
       ];
-      const withBorrowPositions = [
-        makePosition({
+      const withBorrowEntries = [
+        makeEntry({
           reserveId: usdtReserveId,
-          side: 'supply',
-          amount: '10000',
+          supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+          borrow: { ...emptySide },
         }),
-        makePosition({
+        makeEntry({
           reserveId: usdcReserveId,
-          side: 'borrow',
-          amount: '5000',
+          supply: { ...emptySide },
+          borrow: { amount: '5000', inputMode: 'usd', walletValue: null },
         }),
       ];
 
-      const noBorrowArgs = baseSimArgs({ positions: noBorrowPositions, reserves: [usdtReserve, usdcReserve] });
-      const withBorrowArgs = baseSimArgs({ positions: withBorrowPositions, reserves: [usdtReserve, usdcReserve] });
+      const noBorrowArgs = baseEntriesSimArgs({ entries: noBorrowEntries, reserves: [usdtReserve, usdcReserve] });
+      const withBorrowArgs = baseEntriesSimArgs({ entries: withBorrowEntries, reserves: [usdtReserve, usdcReserve] });
 
-      const noBorrowResult = simulatePortfolioPositions(noBorrowArgs);
-      const withBorrowResult = simulatePortfolioPositions(withBorrowArgs);
+      const noBorrowResult = simulatePortfolioFromEntries(noBorrowArgs);
+      const withBorrowResult = simulatePortfolioFromEntries(withBorrowArgs);
 
       const noBorrowSupply = noBorrowResult.results.find((r) => r.reserveId === usdtReserveId && r.side === 'supply')!;
       const withBorrowSupply = withBorrowResult.results.find((r) => r.reserveId === usdtReserveId && r.side === 'supply')!;
@@ -690,67 +685,25 @@ describe('simulatePortfolioPositions', () => {
         ],
       });
 
-      const positions = [
-        makePosition({
+      const entries = [
+        makeEntry({
           reserveId: usdtReserveId,
-          side: 'supply',
-          amount: '10000',
+          supply: { amount: '10000', inputMode: 'usd', walletValue: null },
+          borrow: { ...emptySide },
         }),
-        makePosition({
+        makeEntry({
           reserveId: usdcReserveId,
-          side: 'borrow',
-          amount: '10000',
+          supply: { ...emptySide },
+          borrow: { amount: '10000', inputMode: 'usd', walletValue: null },
         }),
       ];
 
-      const args = baseSimArgs({ positions, reserves: [usdtReserve, usdcReserve] });
-      const { results } = simulatePortfolioPositions(args);
+      const args = baseEntriesSimArgs({ entries, reserves: [usdtReserve, usdcReserve] });
+      const { results } = simulatePortfolioFromEntries(args);
 
       const usdtSupply = results.find((r) => r.reserveId === usdtReserveId && r.side === 'supply')!;
       expect(usdtSupply.incentivePercent).toBeGreaterThan(0);
     });
-  });
-});
-
-describe('simulatePortfolioFromEntries', () => {
-  it('computes results from entries with supply and borrow', () => {
-    const reserve = makeRateCalcReserve();
-    const entries = [
-      makeEntry({ supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { amount: '5000', inputMode: 'usd', walletValue: null } }),
-    ];
-    const args = baseEntriesSimArgs({ entries, reserves: [reserve] });
-    const { results, summary } = simulatePortfolioFromEntries(args);
-    expect(results.length).toBeGreaterThan(0);
-    expect(summary.totalSupplyUsd).toBeGreaterThan(0);
-    expect(summary.totalBorrowUsd).toBeGreaterThan(0);
-  });
-
-  it('empty entries returns empty results', () => {
-    const args = baseEntriesSimArgs({ entries: [], reserves: [makeRateCalcReserve()] });
-    const { results, summary } = simulatePortfolioFromEntries(args);
-    expect(results).toEqual([]);
-    expect(summary.totalSupplyUsd).toBe(0);
-    expect(summary.totalBorrowUsd).toBe(0);
-  });
-
-  it('skips hidden entries', () => {
-    const reserve = makeRateCalcReserve();
-    const entries = [
-      makeEntry({ hidden: true, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
-    ];
-    const args = baseEntriesSimArgs({ entries, reserves: [reserve] });
-    const { results } = simulatePortfolioFromEntries(args);
-    expect(results).toEqual([]);
-  });
-
-  it('skips orphan entries', () => {
-    const reserve = makeRateCalcReserve();
-    const entries = [
-      makeEntry({ isOrphan: true, supply: { amount: '10000', inputMode: 'usd', walletValue: null }, borrow: { ...emptySide } }),
-    ];
-    const args = baseEntriesSimArgs({ entries, reserves: [reserve] });
-    const { results } = simulatePortfolioFromEntries(args);
-    expect(results).toEqual([]);
   });
 });
 
